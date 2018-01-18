@@ -1,0 +1,6 @@
+.env
+bin/
+pkg/
+vendor/*
+!vendor/vendor.json
+.vscode

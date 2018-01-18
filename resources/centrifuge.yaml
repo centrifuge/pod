@@ -1,0 +1,5 @@
+constellation:
+    configuration: /Users/lucasvo/Code/go/src/github.com/lucasvo/go-centrifuge/resources/node1/node1.conf
+    socket:  /tmp/node1/data/constellation.ipc
+    key: /Users/lucasvo/Code/go/src/github.com/lucasvo/go-centrifuge/resources/node1/node1.pub
+nodePort: 8022

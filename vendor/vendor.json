@@ -1,0 +1,49 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "g/V4qrXjUGG9B+e3hB+4NAYJ5Gs=",
+			"path": "github.com/gorilla/context",
+			"revision": "08b5f424b9271eedf6f9f0ce86cb9396ed337a42",
+			"revisionTime": "2016-08-17T18:46:32Z"
+		},
+		{
+			"checksumSHA1": "fSs1WcPh2F5JJtxqYC+Jt8yCkYc=",
+			"path": "github.com/gorilla/mux",
+			"revision": "5bbbb5b2b5729b132181cc7f4aa3b3c973e9a0ed",
+			"revisionTime": "2018-01-07T15:57:08Z"
+		},
+		{
+			"checksumSHA1": "2xcr/mhxBFlDjpxe/Mc2Wb4RGR8=",
+			"path": "github.com/tv42/httpunix",
+			"revision": "b75d8614f926c077e48d85f1f8f7885b758c6225",
+			"revisionTime": "2015-04-27T01:28:21Z"
+		},
+		{
+			"checksumSHA1": "sOnQsHq64tJhRFThBFkhugFoayw=",
+			"path": "github.com/xsleonard/go-merkle",
+			"revision": "c71c7cc334c839f31f3760b2385eab8381daf64e",
+			"revisionTime": "2014-05-25T22:38:34Z"
+		},
+		{
+			"checksumSHA1": "1hwn8cgg4EVXhCpJIqmMbzqnUo0=",
+			"path": "golang.org/x/crypto/ed25519",
+			"revision": "5f55bce93ad2c89f411e009659bb1fd83da36e7b",
+			"revisionTime": "2018-01-08T14:34:49Z"
+		},
+		{
+			"checksumSHA1": "LXFcVx8I587SnWmKycSDEq9yvK8=",
+			"path": "golang.org/x/crypto/ed25519/internal/edwards25519",
+			"revision": "5f55bce93ad2c89f411e009659bb1fd83da36e7b",
+			"revisionTime": "2018-01-08T14:34:49Z"
+		},
+		{
+			"checksumSHA1": "iNE2KX9BQzCptlQC2DdQEVmn4R4=",
+			"path": "golang.org/x/crypto/sha3",
+			"revision": "5f55bce93ad2c89f411e009659bb1fd83da36e7b",
+			"revisionTime": "2018-01-08T14:34:49Z"
+		}
+	],
+	"rootPath": "github.com/lucasvo/go-centrifuge"
+}
