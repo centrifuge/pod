@@ -1,15 +1,26 @@
-package witness 
+package witness
 
 import (
 	"fmt"
 	"testing"
+
+	"golang.org/x/crypto/ed25519"
 )
 
 const examplePayload = `{"amount": "100", "date": "2016-12-12", "state": "due"}`
 
+// GenerateKeypair is a small helper method to generate a signing key
+func generateKeypair() (publicKey ed25519.PublicKey, privateKey ed25519.PrivateKey) {
+	publicKey, privateKey, err := ed25519.GenerateKey(nil)
+	if err != nil {
+		panic(err)
+	}
+	return
+}
+
 func TestSign(t *testing.T) {
-	alicePublicKey, alicePrivateKey := GenerateKeypair()
-	bobPublicKey, bobPrivateKey := GenerateKeypair()
+	alicePublicKey, alicePrivateKey := generateKeypair()
+	bobPublicKey, bobPrivateKey := generateKeypair()
 
 	// Prepare document with some empty data
 	doc := PrepareDocument(examplePayload)
@@ -76,4 +87,4 @@ func TestSign(t *testing.T) {
 		t.Fatal("Can't verify Alice's signature")
 	}
 	fmt.Println("Signatures", newDoc.Signatures)
-}package witness
+}

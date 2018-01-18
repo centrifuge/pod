@@ -39,9 +39,7 @@ type ReceiveResponseStruct struct {
 }
 
 func SignPayload(payload string) (signedPayload string) {
-	keyFiles := signingkeys.KeyFiles{"signing.pub", "signing.key"}
-	privateKey := signingkeys.GetPrivateKey(keyFiles)
-	publicKey := signingkeys.GetPublicKey(keyFiles)
+	publicKey, privateKey := signingkeys.GetKeysFromConfig()
 	document := witness.PrepareDocument(payload)
 	document.Sign(privateKey, publicKey)
 	// Check signature is right

@@ -5,15 +5,12 @@ import (
 	"io/ioutil"
 
 	"golang.org/x/crypto/ed25519"
+	"github.com/spf13/viper"
 )
 
-type KeyFiles struct {
-	PublicKeyPath  string
-	PrivateKeyPath string
-}
 
-func GetPublicKey(files KeyFiles) (publicKey ed25519.PublicKey) {
-	b64Key, err := ioutil.ReadFile(files.PublicKeyPath)
+func GetPublicKey(fileName string) (publicKey ed25519.PublicKey) {
+	b64Key, err := ioutil.ReadFile(fileName)
 	if err != nil {
 		panic(err)
 	}
@@ -23,8 +20,8 @@ func GetPublicKey(files KeyFiles) (publicKey ed25519.PublicKey) {
 	return
 }
 
-func GetPrivateKey(files KeyFiles) (privateKey ed25519.PrivateKey) {
-	b64Key, err := ioutil.ReadFile(files.PrivateKeyPath)
+func GetPrivateKey(fileName string) (privateKey ed25519.PrivateKey) {
+	b64Key, err := ioutil.ReadFile(fileName)
 	if err != nil {
 		panic(err)
 	}
@@ -34,32 +31,28 @@ func GetPrivateKey(files KeyFiles) (privateKey ed25519.PrivateKey) {
 	return
 }
 
-func GenerateKeypair(publicFileName, privateFileName string) (keyPair KeyFiles) {
+func GetKeysFromConfig() (publicKey ed25519.PublicKey, privateKey ed25519.PrivateKey) {
+	publicKey = GetPublicKey(viper.GetString("witness.publicKey"))
+	privateKey = GetPrivateKey(viper.GetString("witness.privateKey"))
+	return 
+}
+
+
+func GenerateKeypair(publicFileName, privateFileName string) (publicKey ed25519.PublicKey, privateKey ed25519.PrivateKey) {
 	publicKey, privateKey, err := ed25519.GenerateKey(nil)
 	if err != nil {
 		panic(err)
 	}
-	keyPair = KeyFiles{publicFileName, privateFileName}
-
-	keyPair.writePrivateKeyToFile(privateKey)
-	keyPair.writePublicKeyToFile(publicKey)
+	writeKeyToFile(privateFileName, privateKey)
+	writeKeyToFile(publicFileName, publicKey)
 	return
 }
 
-func (keyPair *KeyFiles) writePublicKeyToFile(publicKey ed25519.PublicKey) {
-	b64Key := make([]byte, base64.StdEncoding.EncodedLen(len(publicKey)))
+func writeKeyToFile(fileName string, key []byte) {
+	b64Key := make([]byte, base64.StdEncoding.EncodedLen(len(key)))
 
-	base64.StdEncoding.Encode(b64Key, publicKey)
-	err := ioutil.WriteFile(keyPair.PublicKeyPath, b64Key, 0600)
-	if err != nil {
-		panic(err)
-	}
-}
-
-func (keyPair *KeyFiles) writePrivateKeyToFile(privateKey ed25519.PrivateKey) {
-	b64Key := make([]byte, base64.StdEncoding.EncodedLen(len(privateKey)))
-	base64.StdEncoding.Encode(b64Key, privateKey)
-	err := ioutil.WriteFile(keyPair.PrivateKeyPath, b64Key, 0600)
+	base64.StdEncoding.Encode(b64Key, key)
+	err := ioutil.WriteFile(fileName, b64Key, 0600)
 	if err != nil {
 		panic(err)
 	}

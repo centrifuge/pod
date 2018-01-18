@@ -14,7 +14,7 @@ var generateSigningKeyCmd = &cobra.Command{
 	Short: "generate a signing key for use with centrifuge documents",
 	Long:  `TODO`,
 	Run: func(cmd *cobra.Command, args []string) {
-		_ = signingkeys.GenerateKeypair(publicKeyFile, privateKeyFile)
+		_, _= signingkeys.GenerateKeypair(publicKeyFile, privateKeyFile)
 	},
 }
 

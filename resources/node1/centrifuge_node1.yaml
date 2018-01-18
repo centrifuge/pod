@@ -1,0 +1,13 @@
+constellation:
+    configuration: /tmp/centrifuge/resources/node1/constellation_node1.conf
+    socket:  /tmp/centrifuge/node1/data/constellation.ipc
+    key: /tmp/centrifuge/node1/node1.pub
+nodePort: 8022
+witness:
+    publicKey: /tmp/centrifuge/node1/signing.pub
+    privateKey: /tmp/centrifuge/node1/signing.key 
+    ethereum:
+      account: 0x838f7dcA284eb69A9c489fE09c31cFf37DeFDEcA
+      contractPath: /tmp/centrifuge/contracts/witness.json
+      gethPort: "http://0.0.0.0:8545"
+

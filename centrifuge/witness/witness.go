@@ -30,14 +30,6 @@ type SignedDocument struct {
 	Signatures       [][2]string
 }
 
-// GenerateKeypair is a small helper method to generate a signing key
-func GenerateKeypair() (publicKey ed25519.PublicKey, privateKey ed25519.PrivateKey) {
-	publicKey, privateKey, err := ed25519.GenerateKey(nil)
-	if err != nil {
-		panic(err)
-	}
-	return
-}
 
 // SetNextDocumentID sets a nonce that is used to publish an update of the document
 func (doc *SignedDocument) SetNextDocumentID() {
