@@ -1,13 +1,11 @@
 package witness
 
 import (
-	"bytes"
 	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"sort"
 	"log"
+	"sort"
 	"strings"
 
 	"github.com/xsleonard/go-merkle"
@@ -15,49 +13,74 @@ import (
 	"golang.org/x/crypto/sha3"
 )
 
+// SignatureKeyPair is the signature of the merkle root & the associated public key
+type SignatureKeyPair struct {
+	Key       [32]byte
+	Signature [32]byte
+}
+
+// SignatureKeyPairArray contains all signatures of the documents merkle root & public keys. The sorting
+// is by public key
+type SignatureKeyPairArray []SignatureKeyPair
+
+func (s SignatureKeyPairArray) Len() int {
+	return len(s)
+}
+func (s SignatureKeyPairArray) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+func (s SignatureKeyPairArray) Less(i, j int) bool {
+	return s[i].Key < s[j].Key
+}
+
 /*
 SignedDocument is a struct that handles the four most important aspects of a transaction:
 1. JSON payload
-2. NextVersionID Nonce
-3. MerkleRoot
-4. Signatures
+2. Identifier A random and unique identifier for this document. Each update has a uses a new value
+3. NextIdentifier
+4. MerkleRoot
+5. Signatures
+6. WitnessRoot The merkle root of `MerkleRoot` & Signatures
 */
 type SignedDocument struct {
-	Payload          string `json:"payload"`
-	PreviousRoot     string
-	CurrentVersionID string
-	NextVersionID    string
-	MerkleRoot       string
-	Signatures       [][2]string
+	Payload        string `json:"payload"`
+	PreviousRoot   [32]byte
+	Identifier     [32]byte
+	NextIdentifier [32]byte
+	MerkleRoot     [32]byte
+	Signatures     SignatureKeyPairArray
+	WitnessRoot    [32]byte
 }
 
-func createRandomByte32  () (out []byte) {
+func createRandomByte32() (out [32]byte) {
 	r := make([]byte, 32)
 	_, err := rand.Read(r)
 	// Note that err == nil only if we read len(b) bytes.
 	if err != nil {
 		panic(err)
 	}
-	return r
+	copy(out[:], r[:32])
+	return
 }
 
-// SetNextDocumentID sets a nonce that is used to publish an update of the document
-func (doc *SignedDocument) SetNextDocumentID() {
-	doc.NextVersionID = base64.StdEncoding.EncodeToString(createRandomByte32())
+// SetNextIdentifier sets a nonce that is used to publish an update of the document
+func (doc *SignedDocument) SetNextIdentifier() {
+	doc.NextIdentifier = createRandomByte32()
 }
 
 // GenerateMerkleRoot creates a merkle root for payload & nonce
-func (doc *SignedDocument) GenerateMerkleRoot() (root string) {
-	// Set merkle root: replace this with actual merkle root
+func (doc *SignedDocument) GenerateMerkleRoot() (root [32]byte) {
 	merkleItems := doc.FlattenJSON()
 
 	// If there is a previous merkle root, this needs to be included in the merkle tree as the first item:
-	if doc.PreviousRoot != "" {
-		merkleItems = append([][]byte{[]byte(doc.PreviousRoot)}, merkleItems...)
+	if len(doc.PreviousRoot) == 0 {
+		previousRoot := make([]byte, 32)
+		copy(previousRoot[:], doc.PreviousRoot[:32])
+		merkleItems = append([][]byte{previousRoot}, merkleItems...)
 	}
 	tree := merkle.NewTree()
 	tree.Generate(merkleItems, sha3.New256())
-	root = base64.URLEncoding.EncodeToString(tree.Root().Hash)
+	copy(root[:], tree.Root().Hash[:32])
 	return
 }
 
@@ -66,55 +89,65 @@ func PrepareDocument(payload string) *SignedDocument {
 	// Fills the payload with a random string
 	doc := new(SignedDocument)
 	doc.Payload = payload
-	doc.CurrentVersionID = base64.StdEncoding.EncodeToString(createRandomByte32())
+	doc.Identifier = createRandomByte32()
 	doc.MerkleRoot = doc.GenerateMerkleRoot()
 	return doc
 }
 
-// UpdateDocument takes an existing document as a template for a new version.
+// UpdateDocument takes an existing document as a template to update any data in it
 func UpdateDocument(previousDoc *SignedDocument) *SignedDocument {
 	doc := new(SignedDocument)
 	doc.Payload = previousDoc.Payload
-	doc.CurrentVersionID = previousDoc.NextVersionID
+	doc.Identifier = previousDoc.NextIdentifier
 	doc.PreviousRoot = previousDoc.MerkleRoot
-	doc.SetNextDocumentID()
+	doc.SetNextIdentifier()
 	doc.MerkleRoot = doc.GenerateMerkleRoot()
 	return doc
 }
 
-func (doc *SignedDocument) createSignatureData() []byte {
-	signatureElements := [][]byte{[]byte(doc.MerkleRoot), []byte(","), []byte(doc.NextVersionID)}
-	signatureString := bytes.Join(signatureElements, []byte(""))
-	sigArray := []byte(signatureString)
-	return sigArray
+func (doc *SignedDocument) createSignatureData() (signatureData []byte) {
+	copy(signatureData[:32], doc.MerkleRoot[:32])
+	copy(signatureData[32:64], doc.NextIdentifier[:32])
+	return
 }
 
 // Sign a document with a provided public key
 func (doc *SignedDocument) Sign(privateKey ed25519.PrivateKey, publicKey ed25519.PublicKey) {
 	sigArray := doc.createSignatureData()
-	doc.Signatures = append(doc.Signatures, [2]string{base64.URLEncoding.EncodeToString(publicKey), base64.URLEncoding.EncodeToString(ed25519.Sign(privateKey, sigArray))})
+	var key, signature [32]byte
+	copy(key[:], publicKey[:32])
+	copy(signature[:], ed25519.Sign(privateKey, sigArray)[:32])
+	doc.Signatures = append(doc.Signatures, SignatureKeyPair{key, signature})
 }
 
+func (doc *SignedDocument) getSignatureListString() (list []byte) {
+	sort.Sort(doc.Signatures)
+	for _, keyPair := range doc.Signatures {
+		key := keyPair.Key
+		signature := keyPair.Signature
+		concat(list, key)
+		concat(list, signature)
+	}
+	return
+}
 
 // WitnessDocument pushes the calculated merkle root to ethereum using the "Witness" contract.
 func (doc *SignedDocument) WitnessDocument() {
-	version, _ := base64.StdEncoding.DecodeString(doc.CurrentVersionID)
-	root, _ := base64.StdEncoding.DecodeString(doc.MerkleRoot)
-
-	var versionArr, rootArr [32]byte
-	copy(versionArr[:], version[:32])
-	copy(rootArr[:], root[:32])
+	var merkleRoot []byte
+	copy(merkleRoot[:], doc.MerkleRoot[:32])
+	merkleItems := [][]byte{merkleRoot, doc.getSignatureListString()}
+	tree := merkle.NewTree()
+	tree.Generate(merkleItems, sha3.New256())
+	copy(doc.WitnessRoot[:], tree.Root().Hash[:32])
 
 	contract := GetWitnessContract()
 	opts := GetGethKey()
-	tx, err := contract.WitnessDocument(opts, versionArr, rootArr)
+	tx, err := contract.WitnessDocument(opts, doc.Identifier, doc.WitnessRoot)
 	if err != nil {
 		log.Fatalf("Transaction error")
 	}
 	fmt.Printf("Transfer pending: 0x%x\n", tx.Hash())
 }
-
-
 
 // Verify constists of two checks: verify merkleroot & signature
 func (doc *SignedDocument) Verify(publicKey ed25519.PublicKey) (verified bool) {
@@ -136,22 +169,41 @@ func (doc *SignedDocument) VerifyMerkleRoot() (verified bool) {
 // it against the provided public key
 func (doc *SignedDocument) VerifySignature(publicKey ed25519.PublicKey) (verified bool) {
 	// Find signature first
-	var signature string
+	var signature [32]byte
 	for i := range doc.Signatures {
-		if doc.Signatures[i][0] == base64.URLEncoding.EncodeToString(publicKey) {
-			signature = doc.Signatures[i][1]
+		if doc.Signatures[i].Key[:] == publicKey[:32] {
+			signature = doc.Signatures[i].Signature
 			// Found!
 			break
 		}
 	}
-	if signature == "" {
+	if len(signature) == 0 {
 		return false
 	}
 
-	sigArray := doc.createSignatureData()
-	sig, _ := base64.URLEncoding.DecodeString(signature)
-	verified = ed25519.Verify(publicKey, sigArray, sig[:])
+	signatureData := doc.createSignatureData()
+	verified = ed25519.Verify(publicKey, signatureData, signature)
 	return verified
+}
+
+// VerifyWitness checks if the root is present on ethereum and if a root for the next identifier exists.
+func (doc *SignedDocument) VerifyWitness() (verified bool, err string) {
+	contract := GetWitnessContract()
+	data, err := contract.GetWitness(opts, doc.Identifier)
+	if err {
+		log.Fatal(err)
+	}
+	if data[0] != doc.WitnessRoot {
+		return false, "WitnessRoot doesn't match"
+	}
+	data, err = contract.GetWitness(opts, doc.NextIdentifier)
+	if err {
+		log.Fatal(err)
+	}
+	if data[0] != 0 {
+		return false, "Witnessed Document is not the last version"
+	}
+	return true, nil
 }
 
 // keyValueArray is a structure used to serialize JSON Strings. The array is ordered

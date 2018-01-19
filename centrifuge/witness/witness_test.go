@@ -68,11 +68,11 @@ func TestSign(t *testing.T) {
 		t.Fatal("PreviousRoot doesn't match previous document's MerkleRoot")
 	}
 
-	if newDoc.CurrentVersionID != doc.NextVersionID {
+	if newDoc.Identifier != doc.NextIdentifier {
 		t.Fatal("CurrentVersionId doesn't match previous document's NextVersionId")
 	}
 
-	if newDoc.NextVersionID == doc.NextVersionID {
+	if newDoc.NextIdentifier == doc.NextIdentifier {
 		t.Fatal("Make sure NextVersionNonce is updated")
 	}
 
