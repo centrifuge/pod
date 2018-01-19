@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"log"
 	"strings"
 
 	"github.com/xsleonard/go-merkle"
@@ -30,16 +31,19 @@ type SignedDocument struct {
 	Signatures       [][2]string
 }
 
-
-// SetNextDocumentID sets a nonce that is used to publish an update of the document
-func (doc *SignedDocument) SetNextDocumentID() {
-	b := make([]byte, 256)
-	_, err := rand.Read(b)
+func createRandomByte32  () (out []byte) {
+	r := make([]byte, 32)
+	_, err := rand.Read(r)
 	// Note that err == nil only if we read len(b) bytes.
 	if err != nil {
 		panic(err)
 	}
-	doc.NextVersionID = base64.URLEncoding.EncodeToString(b)
+	return r
+}
+
+// SetNextDocumentID sets a nonce that is used to publish an update of the document
+func (doc *SignedDocument) SetNextDocumentID() {
+	doc.NextVersionID = base64.StdEncoding.EncodeToString(createRandomByte32())
 }
 
 // GenerateMerkleRoot creates a merkle root for payload & nonce
@@ -62,6 +66,7 @@ func PrepareDocument(payload string) *SignedDocument {
 	// Fills the payload with a random string
 	doc := new(SignedDocument)
 	doc.Payload = payload
+	doc.CurrentVersionID = base64.StdEncoding.EncodeToString(createRandomByte32())
 	doc.MerkleRoot = doc.GenerateMerkleRoot()
 	return doc
 }
@@ -86,17 +91,34 @@ func (doc *SignedDocument) createSignatureData() []byte {
 
 // Sign a document with a provided public key
 func (doc *SignedDocument) Sign(privateKey ed25519.PrivateKey, publicKey ed25519.PublicKey) {
-	fmt.Println("Creating signature:...")
 	sigArray := doc.createSignatureData()
-
 	doc.Signatures = append(doc.Signatures, [2]string{base64.URLEncoding.EncodeToString(publicKey), base64.URLEncoding.EncodeToString(ed25519.Sign(privateKey, sigArray))})
-	fmt.Println("Signature", doc.Signatures)
 }
+
+
+// WitnessDocument pushes the calculated merkle root to ethereum using the "Witness" contract.
+func (doc *SignedDocument) WitnessDocument() {
+	version, _ := base64.StdEncoding.DecodeString(doc.CurrentVersionID)
+	root, _ := base64.StdEncoding.DecodeString(doc.MerkleRoot)
+
+	var versionArr, rootArr [32]byte
+	copy(versionArr[:], version[:32])
+	copy(rootArr[:], root[:32])
+
+	contract := GetWitnessContract()
+	opts := GetGethKey()
+	tx, err := contract.WitnessDocument(opts, versionArr, rootArr)
+	if err != nil {
+		log.Fatalf("Transaction error")
+	}
+	fmt.Printf("Transfer pending: 0x%x\n", tx.Hash())
+}
+
+
 
 // Verify constists of two checks: verify merkleroot & signature
 func (doc *SignedDocument) Verify(publicKey ed25519.PublicKey) (verified bool) {
 	if !doc.VerifyMerkleRoot() {
-		fmt.Println("Failed Merkle Verification")
 		return false
 	}
 	if !doc.VerifySignature(publicKey) {
@@ -126,13 +148,9 @@ func (doc *SignedDocument) VerifySignature(publicKey ed25519.PublicKey) (verifie
 		return false
 	}
 
-	fmt.Println("Validating signature:...")
 	sigArray := doc.createSignatureData()
-	fmt.Println("Signature", signature)
 	sig, _ := base64.URLEncoding.DecodeString(signature)
 	verified = ed25519.Verify(publicKey, sigArray, sig[:])
-	fmt.Println("Signature verified", verified)
-
 	return verified
 }
 

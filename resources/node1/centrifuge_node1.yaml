@@ -7,7 +7,10 @@ witness:
     publicKey: /tmp/centrifuge/node1/signing.pub
     privateKey: /tmp/centrifuge/node1/signing.key 
     ethereum:
-      account: 0x838f7dcA284eb69A9c489fE09c31cFf37DeFDEcA
-      contractPath: /tmp/centrifuge/contracts/witness.json
-      gethPort: "http://0.0.0.0:8545"
+      account: "838f7dcA284eb69A9c489fE09c31cFf37DeFDEcA"
+      contractPath: /tmp/centrifuge/contracts/Witness.json
+      contractAddress: "5506f33100a6d7701e8cb4bc482e6abe0b778207"
+      geth: /tmp/centrifuge/geth.ipc
+      key: '{"address":"838f7dca284eb69a9c489fe09c31cff37defdeca","crypto":{"cipher":"aes-128-ctr","ciphertext":"b16312912c00712f02b43ed3cdd3b3172195329415527f7ee218656888aa5d92","cipherparams":{"iv":"19494c514fae0e4d83d9a7e464e89e29"},"kdf":"scrypt","kdfparams":{"dklen":32,"n":262144,"p":1,"r":8,"salt":"e9b7cf9b55eab4a54f6f6f5af98ca6add2ca49147d37f99a5fa26a89e9003517"},"mac":"04805d48727a24cc3ee2ac2198f7fd5be269e52ff105c125cd10b614ce0d856d"},"id":"cd3800bc-c85d-457b-925b-09d809d6b06e","version":3}'
+      password: 'ZhXfpAc#vHu4JTELA'
 
