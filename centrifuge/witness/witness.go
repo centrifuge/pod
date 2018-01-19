@@ -1,6 +1,7 @@
 package witness
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
@@ -30,7 +31,7 @@ func (s SignatureKeyPairArray) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 func (s SignatureKeyPairArray) Less(i, j int) bool {
-	return s[i].Key < s[j].Key
+	return bytes.Compare(s[i].Key[:], s[j].Key[:]) == -1
 }
 
 /*
@@ -125,8 +126,8 @@ func (doc *SignedDocument) getSignatureListString() (list []byte) {
 	for _, keyPair := range doc.Signatures {
 		key := keyPair.Key
 		signature := keyPair.Signature
-		concat(list, key)
-		concat(list, signature)
+		list = append(list, key[:]...)
+		list = append(list, signature[:]...)
 	}
 	return
 }
@@ -141,7 +142,7 @@ func (doc *SignedDocument) WitnessDocument() {
 	copy(doc.WitnessRoot[:], tree.Root().Hash[:32])
 
 	contract := GetWitnessContract()
-	opts := GetGethKey()
+	opts := GetGethTxOpts()
 	tx, err := contract.WitnessDocument(opts, doc.Identifier, doc.WitnessRoot)
 	if err != nil {
 		log.Fatalf("Transaction error")
@@ -155,6 +156,13 @@ func (doc *SignedDocument) Verify(publicKey ed25519.PublicKey) (verified bool) {
 		return false
 	}
 	if !doc.VerifySignature(publicKey) {
+		return false
+	}
+	verified, err := doc.VerifyWitness()
+	if err != "" {
+		log.Fatal("Error in witness verification")
+	}
+	if !verified {
 		return false
 	}
 	return true
@@ -171,7 +179,7 @@ func (doc *SignedDocument) VerifySignature(publicKey ed25519.PublicKey) (verifie
 	// Find signature first
 	var signature [32]byte
 	for i := range doc.Signatures {
-		if doc.Signatures[i].Key[:] == publicKey[:32] {
+		if bytes.Equal(doc.Signatures[i].Key[:32], publicKey[:32]) {
 			signature = doc.Signatures[i].Signature
 			// Found!
 			break
@@ -182,28 +190,29 @@ func (doc *SignedDocument) VerifySignature(publicKey ed25519.PublicKey) (verifie
 	}
 
 	signatureData := doc.createSignatureData()
-	verified = ed25519.Verify(publicKey, signatureData, signature)
+	verified = ed25519.Verify(publicKey[:], signatureData, signature[:])
 	return verified
 }
 
 // VerifyWitness checks if the root is present on ethereum and if a root for the next identifier exists.
 func (doc *SignedDocument) VerifyWitness() (verified bool, err string) {
 	contract := GetWitnessContract()
-	data, err := contract.GetWitness(opts, doc.Identifier)
-	if err {
-		log.Fatal(err)
+	opts := GetGethCallOpts()
+	data, call_err := contract.GetWitness(opts, doc.Identifier)
+	if call_err != nil {
+		log.Fatal(call_err)
 	}
 	if data[0] != doc.WitnessRoot {
 		return false, "WitnessRoot doesn't match"
 	}
-	data, err = contract.GetWitness(opts, doc.NextIdentifier)
-	if err {
-		log.Fatal(err)
+	data, call_err = contract.GetWitness(opts, doc.NextIdentifier)
+	if call_err != nil {
+		log.Fatal(call_err)
 	}
-	if data[0] != 0 {
+	if data[0] != [32]byte{} {
 		return false, "Witnessed Document is not the last version"
 	}
-	return true, nil
+	return true, ""
 }
 
 // keyValueArray is a structure used to serialize JSON Strings. The array is ordered

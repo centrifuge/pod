@@ -1,5 +1,5 @@
 constellation:
-    configuration: /tmp/centrifuge/resources/node2/constellation_node2.conf
+    configuration: /tmp/centrifuge/node2/constellation_node2.conf
     socket:  /tmp/centrifuge/node2/data/constellation.ipc
     key: /tmp/centrifuge/node2/node2.pub
 nodePort: 8023

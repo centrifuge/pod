@@ -18,12 +18,16 @@ func getConnection() (client *ethclient.Client) {
 	return
 }
 
-func GetGethKey() (auth *bind.TransactOpts) {
+func GetGethTxOpts() (auth *bind.TransactOpts) {
 	auth, err := bind.NewTransactor(strings.NewReader(viper.GetString("witness.ethereum.key")), viper.GetString("witness.ethereum.password"))
 	if err != nil {
 		log.Fatalf("Failed to load key")
 	}
 	return
+}
+
+func GetGethCallOpts() (auth *bind.CallOpts) {
+	return &bind.CallOpts{Pending: true}
 }
 
 func GetWitnessContract() (witnessContract *EthereumWitness) {
