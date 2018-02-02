@@ -42,7 +42,7 @@ func TestSign(t *testing.T) {
 
 	// Modify the MerkleRoot
 	oldRoot := doc.MerkleRoot
-	doc.MerkleRoot = "incorrect"
+	doc.MerkleRoot = [32]byte{}
 	fmt.Println("doc.MerkleRoot", doc.MerkleRoot)
 	verified = doc.Verify(alicePublicKey)
 	if verified {

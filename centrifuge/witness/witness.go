@@ -198,16 +198,16 @@ func (doc *SignedDocument) VerifySignature(publicKey ed25519.PublicKey) (verifie
 func (doc *SignedDocument) VerifyWitness() (verified bool, err string) {
 	contract := GetWitnessContract()
 	opts := GetGethCallOpts()
-	data, call_err := contract.GetWitness(opts, doc.Identifier)
-	if call_err != nil {
-		log.Fatal(call_err)
+	data, callErr := contract.GetWitness(opts, doc.Identifier)
+	if callErr != nil {
+		log.Fatal(callErr)
 	}
 	if data[0] != doc.WitnessRoot {
 		return false, "WitnessRoot doesn't match"
 	}
-	data, call_err = contract.GetWitness(opts, doc.NextIdentifier)
-	if call_err != nil {
-		log.Fatal(call_err)
+	data, callErr = contract.GetWitness(opts, doc.NextIdentifier)
+	if callErr != nil {
+		log.Fatal(callErr)
 	}
 	if data[0] != [32]byte{} {
 		return false, "Witnessed Document is not the last version"

@@ -14,7 +14,7 @@ import (
 )
 
 // EthereumWitnessABI is the input ABI used to generate the binding from.
-const EthereumWitnessABI = "[{\"constant\":true,\"inputs\":[{\"name\":\"version\",\"type\":\"bytes32\"}],\"name\":\"getWitness\",\"outputs\":[{\"name\":\"\",\"type\":\"bytes32[2]\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"bytes32\"},{\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"witness_list\",\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"version\",\"type\":\"bytes32\"},{\"name\":\"signature\",\"type\":\"bytes32\"}],\"name\":\"witnessDocument\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],"
+const EthereumWitnessABI = "[{\"constant\":true,\"inputs\":[{\"name\":\"identifier\",\"type\":\"bytes32\"}],\"name\":\"getWitness\",\"outputs\":[{\"name\":\"\",\"type\":\"bytes32[2]\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"bytes32\"},{\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"witness_list\",\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"identifier\",\"type\":\"bytes32\"},{\"name\":\"merkleRoot\",\"type\":\"bytes32\"}],\"name\":\"witnessDocument\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]"
 
 // EthereumWitness is an auto generated Go binding around an Ethereum contract.
 type EthereumWitness struct {
@@ -145,28 +145,28 @@ func (_EthereumWitness *EthereumWitnessTransactorRaw) Transact(opts *bind.Transa
 
 // GetWitness is a free data retrieval call binding the contract method 0x47e72246.
 //
-// Solidity: function getWitness(version bytes32) constant returns(bytes32[2])
-func (_EthereumWitness *EthereumWitnessCaller) GetWitness(opts *bind.CallOpts, version [32]byte) ([2][32]byte, error) {
+// Solidity: function getWitness(identifier bytes32) constant returns(bytes32[2])
+func (_EthereumWitness *EthereumWitnessCaller) GetWitness(opts *bind.CallOpts, identifier [32]byte) ([2][32]byte, error) {
 	var (
 		ret0 = new([2][32]byte)
 	)
 	out := ret0
-	err := _EthereumWitness.contract.Call(opts, out, "getWitness", version)
+	err := _EthereumWitness.contract.Call(opts, out, "getWitness", identifier)
 	return *ret0, err
 }
 
 // GetWitness is a free data retrieval call binding the contract method 0x47e72246.
 //
-// Solidity: function getWitness(version bytes32) constant returns(bytes32[2])
-func (_EthereumWitness *EthereumWitnessSession) GetWitness(version [32]byte) ([2][32]byte, error) {
-	return _EthereumWitness.Contract.GetWitness(&_EthereumWitness.CallOpts, version)
+// Solidity: function getWitness(identifier bytes32) constant returns(bytes32[2])
+func (_EthereumWitness *EthereumWitnessSession) GetWitness(identifier [32]byte) ([2][32]byte, error) {
+	return _EthereumWitness.Contract.GetWitness(&_EthereumWitness.CallOpts, identifier)
 }
 
 // GetWitness is a free data retrieval call binding the contract method 0x47e72246.
 //
-// Solidity: function getWitness(version bytes32) constant returns(bytes32[2])
-func (_EthereumWitness *EthereumWitnessCallerSession) GetWitness(version [32]byte) ([2][32]byte, error) {
-	return _EthereumWitness.Contract.GetWitness(&_EthereumWitness.CallOpts, version)
+// Solidity: function getWitness(identifier bytes32) constant returns(bytes32[2])
+func (_EthereumWitness *EthereumWitnessCallerSession) GetWitness(identifier [32]byte) ([2][32]byte, error) {
+	return _EthereumWitness.Contract.GetWitness(&_EthereumWitness.CallOpts, identifier)
 }
 
 // Witness_list is a free data retrieval call binding the contract method 0xd8133496.
@@ -197,21 +197,21 @@ func (_EthereumWitness *EthereumWitnessCallerSession) Witness_list(arg0 [32]byte
 
 // WitnessDocument is a paid mutator transaction binding the contract method 0xe617f632.
 //
-// Solidity: function witnessDocument(version bytes32, signature bytes32) returns()
-func (_EthereumWitness *EthereumWitnessTransactor) WitnessDocument(opts *bind.TransactOpts, version [32]byte, signature [32]byte) (*types.Transaction, error) {
-	return _EthereumWitness.contract.Transact(opts, "witnessDocument", version, signature)
+// Solidity: function witnessDocument(identifier bytes32, merkleRoot bytes32) returns()
+func (_EthereumWitness *EthereumWitnessTransactor) WitnessDocument(opts *bind.TransactOpts, identifier [32]byte, merkleRoot [32]byte) (*types.Transaction, error) {
+	return _EthereumWitness.contract.Transact(opts, "witnessDocument", identifier, merkleRoot)
 }
 
 // WitnessDocument is a paid mutator transaction binding the contract method 0xe617f632.
 //
-// Solidity: function witnessDocument(version bytes32, signature bytes32) returns()
-func (_EthereumWitness *EthereumWitnessSession) WitnessDocument(version [32]byte, signature [32]byte) (*types.Transaction, error) {
-	return _EthereumWitness.Contract.WitnessDocument(&_EthereumWitness.TransactOpts, version, signature)
+// Solidity: function witnessDocument(identifier bytes32, merkleRoot bytes32) returns()
+func (_EthereumWitness *EthereumWitnessSession) WitnessDocument(identifier [32]byte, merkleRoot [32]byte) (*types.Transaction, error) {
+	return _EthereumWitness.Contract.WitnessDocument(&_EthereumWitness.TransactOpts, identifier, merkleRoot)
 }
 
 // WitnessDocument is a paid mutator transaction binding the contract method 0xe617f632.
 //
-// Solidity: function witnessDocument(version bytes32, signature bytes32) returns()
-func (_EthereumWitness *EthereumWitnessTransactorSession) WitnessDocument(version [32]byte, signature [32]byte) (*types.Transaction, error) {
-	return _EthereumWitness.Contract.WitnessDocument(&_EthereumWitness.TransactOpts, version, signature)
+// Solidity: function witnessDocument(identifier bytes32, merkleRoot bytes32) returns()
+func (_EthereumWitness *EthereumWitnessTransactorSession) WitnessDocument(identifier [32]byte, merkleRoot [32]byte) (*types.Transaction, error) {
+	return _EthereumWitness.Contract.WitnessDocument(&_EthereumWitness.TransactOpts, identifier, merkleRoot)
 }
