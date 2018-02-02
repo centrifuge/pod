@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/lucasvo/go-centrifuge/centrifuge/server"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/server"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
