@@ -2,14 +2,14 @@
 Project Structure taken from: https://github.com/golang-standards/project-layout and https://github.com/ethereum/go-ethereum
 
 Quick Start:
-- mkdir -p $GOPATH/src/github.com/lucasvo/go-centrifuge/
-- git clone git@github.com:lucasvo/go-centrifuge.git $GOPATH/src/github.com/lucasvo/go-centrifuge
+- mkdir -p $GOPATH/src/github.com/CentrifugeInc/go-centrifuge/
+- git clone git@github.com:CentrifugeInc/go-centrifuge.git $GOPATH/src/github.com/CentrifugeInc/go-centrifuge
 - go get -u github.com/kardianos/govendor
-- cd $GOPATH/src/github.com/lucasvo/go-centrifuge
+- cd $GOPATH/src/github.com/CentrifugeInc/go-centrifuge
 - govendor sync
 
 Build pkg and bin:
-- cd $GOPATH/src/github.com/lucasvo/go-centrifuge
+- cd $GOPATH/src/github.com/CentrifugeInc/go-centrifuge
 - govendor build +p && govendor install +p
 
 Run Tests:
