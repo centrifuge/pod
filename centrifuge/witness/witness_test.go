@@ -28,6 +28,8 @@ func TestSign(t *testing.T) {
 	// Sign the document
 	doc.Sign(alicePrivateKey, alicePublicKey)
 
+	// Mocking GethWitness
+
 	// Check signature by Alice
 	verified := doc.Verify(alicePublicKey)
 	if !verified {
