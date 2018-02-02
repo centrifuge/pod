@@ -17,7 +17,7 @@ import (
 // SignatureKeyPair is the signature of the merkle root & the associated public key
 type SignatureKeyPair struct {
 	Key       [32]byte
-	Signature [32]byte
+	Signature [64]byte
 }
 
 // SignatureKeyPairArray contains all signatures of the documents merkle root & public keys. The sorting
@@ -107,6 +107,7 @@ func UpdateDocument(previousDoc *SignedDocument) *SignedDocument {
 }
 
 func (doc *SignedDocument) createSignatureData() (signatureData []byte) {
+	signatureData = make([]byte, 64)
 	copy(signatureData[:32], doc.MerkleRoot[:32])
 	copy(signatureData[32:64], doc.NextIdentifier[:32])
 	return
@@ -115,9 +116,10 @@ func (doc *SignedDocument) createSignatureData() (signatureData []byte) {
 // Sign a document with a provided public key
 func (doc *SignedDocument) Sign(privateKey ed25519.PrivateKey, publicKey ed25519.PublicKey) {
 	sigArray := doc.createSignatureData()
-	var key, signature [32]byte
+	var key [32]byte
+	var signature [64]byte
 	copy(key[:], publicKey[:32])
-	copy(signature[:], ed25519.Sign(privateKey, sigArray)[:32])
+	copy(signature[:], ed25519.Sign(privateKey, sigArray)[:64])
 	doc.Signatures = append(doc.Signatures, SignatureKeyPair{key, signature})
 }
 
@@ -177,7 +179,7 @@ func (doc *SignedDocument) VerifyMerkleRoot() (verified bool) {
 // it against the provided public key
 func (doc *SignedDocument) VerifySignature(publicKey ed25519.PublicKey) (verified bool) {
 	// Find signature first
-	var signature [32]byte
+	var signature [64]byte
 	for i := range doc.Signatures {
 		if bytes.Equal(doc.Signatures[i].Key[:32], publicKey[:32]) {
 			signature = doc.Signatures[i].Signature
@@ -190,7 +192,7 @@ func (doc *SignedDocument) VerifySignature(publicKey ed25519.PublicKey) (verifie
 	}
 
 	signatureData := doc.createSignatureData()
-	verified = ed25519.Verify(publicKey[:], signatureData, signature[:])
+	verified = ed25519.Verify(publicKey, signatureData, signature[:])
 	return verified
 }
 
