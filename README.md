@@ -6,6 +6,7 @@ Quick Start:
 - git clone git@github.com:CentrifugeInc/go-centrifuge.git $GOPATH/src/github.com/CentrifugeInc/go-centrifuge
 - go get -u github.com/kardianos/govendor
 - go get github.com/ethereum/go-ethereum
+- go get github.com/CentrifugeInc/centrifuge-ethereum-contracts
 - cd $GOPATH/src/github.com/CentrifugeInc/go-centrifuge
 - govendor sync
 
