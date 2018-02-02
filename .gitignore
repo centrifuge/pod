@@ -4,3 +4,4 @@ vendor/*
 !vendor/vendor.json
 .vscode
 .env
+.idea/

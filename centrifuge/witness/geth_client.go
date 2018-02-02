@@ -4,6 +4,7 @@ import (
 	"log"
 	"strings"
 
+	"github.com/CentrifugeInc/centrifuge-ethereum-contracts/centrifuge/witness"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -30,10 +31,10 @@ func GetGethCallOpts() (auth *bind.CallOpts) {
 	return &bind.CallOpts{Pending: true}
 }
 
-func GetWitnessContract() (witnessContract *EthereumWitness) {
+func GetWitnessContract() (witnessContract *witness.EthereumWitness) {
 	// Instantiate the contract and display its name
 	client := getConnection()
-	witnessContract, err := NewEthereumWitness(common.HexToAddress(viper.GetString("witness.ethereum.contractAddress")), client)
+	witnessContract, err := witness.NewEthereumWitness(common.HexToAddress(viper.GetString("witness.ethereum.contractAddress")), client)
 	if err != nil {
 		log.Fatalf("Failed to instantiate the witness contract contract: %v", err)
 	}

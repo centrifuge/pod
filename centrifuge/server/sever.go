@@ -8,9 +8,9 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/lucasvo/go-centrifuge/centrifuge/constellation"
-	"github.com/lucasvo/go-centrifuge/centrifuge/signingkeys"
-	"github.com/lucasvo/go-centrifuge/centrifuge/witness"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/constellation"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/signingkeys"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/witness"
 )
 
 var publicKeyPath string = ""
