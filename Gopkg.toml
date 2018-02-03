@@ -30,7 +30,7 @@ ignored = ["github.com/ethereum/go-ethereum"]
   branch = "master"
   name = "github.com/CentrifugeInc/centrifuge-ethereum-contracts"
 
-[[constraint]]
+[[ignored]]
   name = "github.com/ethereum/go-ethereum"
   version = "1.7.3"
 
