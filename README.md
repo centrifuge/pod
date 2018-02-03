@@ -14,6 +14,7 @@ brew install dep && brew update dep
 go get github.com/ethereum/go-ethereum
 cd $GOPATH/src/github.com/CentrifugeInc/go-centrifuge
 dep ensure
+rm -rf vendor/github.com/ethereum/go-ethereum
 ```
 
 Build, test & run
