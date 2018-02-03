@@ -1,4 +1,6 @@
 language: go
+go:
+  - master
 
 env:
   - DEP_VERSION="0.4.1"
@@ -11,8 +13,4 @@ before_install:
 
 install:
   - dep ensure
-
-go:
-  - master
-
 
