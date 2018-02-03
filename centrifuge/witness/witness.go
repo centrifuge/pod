@@ -34,6 +34,14 @@ func (s SignatureKeyPairArray) Less(i, j int) bool {
 	return bytes.Compare(s[i].Key[:], s[j].Key[:]) == -1
 }
 
+type WitnessExternal interface {
+	VerifyWitness() (bool, string)
+	WitnessDocument()
+}
+type WitnessExternalDoc struct {
+	doc *SignedDocument
+}
+
 /*
 SignedDocument is a struct that handles the four most important aspects of a transaction:
 1. JSON payload
@@ -51,6 +59,7 @@ type SignedDocument struct {
 	MerkleRoot     [32]byte
 	Signatures     SignatureKeyPairArray
 	WitnessRoot    [32]byte
+	WitnessExternal
 }
 
 func createRandomByte32() (out [32]byte) {
@@ -92,6 +101,7 @@ func PrepareDocument(payload string) *SignedDocument {
 	doc.Payload = payload
 	doc.Identifier = createRandomByte32()
 	doc.MerkleRoot = doc.GenerateMerkleRoot()
+	doc.WitnessExternal = &WitnessExternalDoc{doc}
 	return doc
 }
 
@@ -135,17 +145,17 @@ func (doc *SignedDocument) getSignatureListString() (list []byte) {
 }
 
 // WitnessDocument pushes the calculated merkle root to ethereum using the "Witness" contract.
-func (doc *SignedDocument) WitnessDocument() {
+func (wes *WitnessExternalDoc) WitnessDocument() {
 	var merkleRoot []byte
-	copy(merkleRoot[:], doc.MerkleRoot[:32])
-	merkleItems := [][]byte{merkleRoot, doc.getSignatureListString()}
+	copy(merkleRoot[:], wes.doc.MerkleRoot[:32])
+	merkleItems := [][]byte{merkleRoot, wes.doc.getSignatureListString()}
 	tree := merkle.NewTree()
 	tree.Generate(merkleItems, sha3.New256())
-	copy(doc.WitnessRoot[:], tree.Root().Hash[:32])
+	copy(wes.doc.WitnessRoot[:], tree.Root().Hash[:32])
 
 	contract := GetWitnessContract()
 	opts := GetGethTxOpts()
-	tx, err := contract.WitnessDocument(opts, doc.Identifier, doc.WitnessRoot)
+	tx, err := contract.WitnessDocument(opts, wes.doc.Identifier, wes.doc.WitnessRoot)
 	if err != nil {
 		log.Fatalf("Transaction error")
 	}
@@ -160,7 +170,7 @@ func (doc *SignedDocument) Verify(publicKey ed25519.PublicKey) (verified bool) {
 	if !doc.VerifySignature(publicKey) {
 		return false
 	}
-	verified, err := doc.VerifyWitness()
+	verified, err := doc.WitnessExternal.VerifyWitness()
 	if err != "" {
 		log.Fatal("Error in witness verification")
 	}
@@ -197,17 +207,17 @@ func (doc *SignedDocument) VerifySignature(publicKey ed25519.PublicKey) (verifie
 }
 
 // VerifyWitness checks if the root is present on ethereum and if a root for the next identifier exists.
-func (doc *SignedDocument) VerifyWitness() (verified bool, err string) {
+func (wes *WitnessExternalDoc) VerifyWitness() (verified bool, err string) {
 	contract := GetWitnessContract()
 	opts := GetGethCallOpts()
-	data, callErr := contract.GetWitness(opts, doc.Identifier)
+	data, callErr := contract.GetWitness(opts, wes.doc.Identifier)
 	if callErr != nil {
 		log.Fatal(callErr)
 	}
-	if data[0] != doc.WitnessRoot {
+	if data[0] != wes.doc.WitnessRoot {
 		return false, "WitnessRoot doesn't match"
 	}
-	data, callErr = contract.GetWitness(opts, doc.NextIdentifier)
+	data, callErr = contract.GetWitness(opts, wes.doc.NextIdentifier)
 	if callErr != nil {
 		log.Fatal(callErr)
 	}
