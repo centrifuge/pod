@@ -3,11 +3,17 @@ package witness
 import (
 	"fmt"
 	"testing"
-
 	"golang.org/x/crypto/ed25519"
 )
 
 const examplePayload = `{"amount": "100", "date": "2016-12-12", "state": "due"}`
+
+type mockWitnessExternal struct {
+	doc *SignedDocument
+}
+
+func (mockExternal *mockWitnessExternal) VerifyWitness() (verified bool, err string) {return true, ""}
+func (mockExternal *mockWitnessExternal) WitnessDocument() {}
 
 // GenerateKeypair is a small helper method to generate a signing key
 func generateKeypair() (publicKey ed25519.PublicKey, privateKey ed25519.PrivateKey) {
@@ -24,11 +30,11 @@ func TestSign(t *testing.T) {
 
 	// Prepare document with some empty data
 	doc := PrepareDocument(examplePayload)
+	// Mocking GethWitness
+	doc.WitnessExternal = &mockWitnessExternal{doc}
 
 	// Sign the document
 	doc.Sign(alicePrivateKey, alicePublicKey)
-
-	// Mocking GethWitness
 
 	// Check signature by Alice
 	verified := doc.Verify(alicePublicKey)
@@ -65,6 +71,8 @@ func TestSign(t *testing.T) {
 
 	// Create a new version of the document
 	newDoc := UpdateDocument(doc)
+	// Mocking GethWitness
+	newDoc.WitnessExternal = &mockWitnessExternal{doc}
 
 	if newDoc.PreviousRoot != doc.MerkleRoot {
 		t.Fatal("PreviousRoot doesn't match previous document's MerkleRoot")
