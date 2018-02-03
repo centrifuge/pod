@@ -22,7 +22,6 @@
 [[projects]]
   name = "github.com/ethereum/go-ethereum"
   packages = [
-    ".",
     "accounts",
     "accounts/abi",
     "accounts/abi/bind",
@@ -263,6 +262,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "3dad7856a76860058b4f5576e13272f24e0abfc41b7063a2cc971ae510f96117"
+  inputs-digest = "cc4d6dfd3614cc3e71d58ac4df90a82822d62f80c497cf6adf3227f96574b07a"
   solver-name = "gps-cdcl"
   solver-version = 1
