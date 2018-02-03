@@ -24,6 +24,7 @@
 #   go-tests = true
 #   unused-packages = true
 
+ignored = ["github.com/ethereum/go-ethereum"]
 
 [[constraint]]
   branch = "master"

@@ -27,7 +27,7 @@ go install ./centrifuge/
 Run Tests:
 
 ```
-go test ./centrifuge/*
+go test ./centrifuge/witness
 ```
 
 If you want to run tests continuously when a file changes, you first need to install reflex:
