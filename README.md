@@ -28,7 +28,7 @@ go install ./centrifuge/
 Run Tests:
 
 ```
-go test ./centrifuge/witness
+go test ./...
 ```
 
 If you want to run tests continuously when a file changes, you first need to install reflex:
@@ -40,7 +40,7 @@ go get github.com/cespare/reflex
 and then run:
 
 ```
-reflex -r centrifuge/ go test ./centrifuge/*
+reflex -r centrifuge/ go test ./...
 ```
 
 Run Cent-Constellation Nodes
