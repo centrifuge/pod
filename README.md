@@ -1,27 +1,50 @@
-# Centrifuge Protocol POC
+Centrifuge Protocol POC
+=======================
+
 Project Structure taken from: https://github.com/golang-standards/project-layout and https://github.com/ethereum/go-ethereum
 
-Quick Start:
-- mkdir -p $GOPATH/src/github.com/CentrifugeInc/go-centrifuge/
-- git clone git@github.com:CentrifugeInc/go-centrifuge.git $GOPATH/src/github.com/CentrifugeInc/go-centrifuge
-- go get -u github.com/kardianos/govendor
-- go get github.com/ethereum/go-ethereum
-- go get github.com/mitchellh/go-homedir
-- go get github.com/spf13/cobra
-- go get github.com/spf13/viper
-- go get github.com/CentrifugeInc/centrifuge-ethereum-contracts/centrifuge/witness
-- cd $GOPATH/src/github.com/CentrifugeInc/go-centrifuge
-- govendor sync
+Setup
+-----
 
-Build pkg and bin:
-- cd $GOPATH/src/github.com/CentrifugeInc/go-centrifuge
-- govendor build +p && govendor install +p
+```bash,
+mkdir -p $GOPATH/src/github.com/CentrifugeInc/go-centrifuge/
+git clone git@github.com:CentrifugeInc/go-centrifuge.git $GOPATH/src/github.com/CentrifugeInc/go-centrifuge
+brew install dep && brew update dep
+go get github.com/ethereum/go-ethereum
+cd $GOPATH/src/github.com/CentrifugeInc/go-centrifuge
+dep ensure
+```
+
+Build, test & run
+-----------------
+
+Build/install:
+```
+cd $GOPATH/src/github.com/CentrifugeInc/go-centrifuge
+go install ./centrifuge/
+```
 
 Run Tests:
-- govendor test ./centrifuge || go test ./centrifuge/*
-- reflex -r centrifuge/ govendor test ./centrifuge/*
 
-Run Cent-Constellation Nodes:
+```
+go test ./centrifuge/*
+```
+
+If you want to run tests continuously when a file changes, you first need to install reflex:
+
+```
+go get github.com/cespare/reflex
+```
+
+and then run:
+
+```
+reflex -r centrifuge/ go test ./centrifuge/*
+```
+
+Run Cent-Constellation Nodes
+----------------------------
+
 - Requires to have constellation-node installed and available in the PATH, follow instructions here: https://github.com/jpmorganchase/constellation/blob/master/README.md
 - Install according to section above
 - Make sure $GOPATH/bin is on your PATH
@@ -38,7 +61,8 @@ Run Cent-Constellation Nodes:
 
 
 Ethereum Contract Bindings
-==========================
+--------------------------
+
 To create the go bindings for the deployed truffle contract, use the following command:
 
 `abigen --abi build/contracts/Witness.abi --pkg witness --type EthereumWitness --out witness_contract.go`
