@@ -1,5 +1,6 @@
 Centrifuge Protocol POC
 =======================
+[![Build Status](https://travis-ci.com/CentrifugeInc/go-centrifuge.svg?token=Sbf68xBZUZLMB3kGTKcX&branch=master)](https://travis-ci.com/CentrifugeInc/go-centrifuge)
 
 Project Structure taken from: https://github.com/golang-standards/project-layout and https://github.com/ethereum/go-ethereum
 
@@ -13,6 +14,7 @@ brew install dep && brew update dep
 go get github.com/ethereum/go-ethereum
 cd $GOPATH/src/github.com/CentrifugeInc/go-centrifuge
 dep ensure
+rm -rf vendor/github.com/ethereum/go-ethereum
 ```
 
 Build, test & run
@@ -27,7 +29,7 @@ go install ./centrifuge/
 Run Tests:
 
 ```
-go test ./centrifuge/*
+go test ./...
 ```
 
 If you want to run tests continuously when a file changes, you first need to install reflex:
@@ -39,7 +41,7 @@ go get github.com/cespare/reflex
 and then run:
 
 ```
-reflex -r centrifuge/ go test ./centrifuge/*
+reflex -r centrifuge/ go test ./...
 ```
 
 Run Cent-Constellation Nodes
