@@ -17,5 +17,4 @@ install:
 
 # Exclude the vendor dir from test run. 
 # The test runner included it on travis if not explicitly excluded.
-# script:  go test $(go list ./... | grep -v /vendor/)
 script:  go test ./...
