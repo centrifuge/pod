@@ -5,7 +5,8 @@ go:
 cache:  
     directories:    
       - $GOPATH/pkg/dep  
-      # use a separate depbin to allow for caching
+      # use a separate depbin folder to allow for caching the bin itself is linked
+      # in the install-dependencies script
       - $GOPATH/pkg/depbin 
 
 install:
