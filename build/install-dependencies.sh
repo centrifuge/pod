@@ -7,7 +7,7 @@ DEPBIN_CACH_FOLDER=$GOPATH/pkg/depbin
 DEPBIN_CACHED=$DEPBIN_CACH_FOLDER/dep
 DEPBIN=$GOPATH/bin/dep
 
-GO_ETH_CACHED=$GOPATH/src/github.com/ethereum/go-ethereum
+GO_ETH_CACHED=$GOPATH/src/github.com/ethereum/go-ethereum/accounts/abi
 
 if [ -e "${DEPBIN_CACHED}" ]
 then
@@ -25,7 +25,7 @@ fi
 
 if [ -d "${GO_ETH_CACHED}" ]
 then
-    echo "Found ${GO_ETH_CACHED}. Not fetching again."
+    echo "Found ${GO_ETH_CACHED}. Not fetching go-ethereum again."
 else
     echo "Fetching go-ethereum dependency as not found in ${GO_ETH_CACHED}"
     go get github.com/ethereum/go-ethereum
