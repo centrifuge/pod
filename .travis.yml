@@ -14,5 +14,6 @@ install:
   - dep ensure
   - rm -rf vendor/github.com/ethereum
 
-
+# exclude the vendor dir from test run. 
+# the test runner included it on travis if not explicitly excluded
 script:  go test $(go list ./... | grep -v /vendor/)
