@@ -1,10 +1,3 @@
-
-witness:
-  publicKey: /tmp/centrifuge/node1/signing.pub
-  privateKey: /tmp/centrifuge/node1/signing.key
-  contractPath: /tmp/centrifuge/contracts/Witness.json
-  contractAddress: "5506f33100a6d7701e8cb4bc482e6abe0b778207"
-
 ethereum:
   account: "838f7dcA284eb69A9c489fE09c31cFf37DeFDEcA"
   gethIpc: /tmp/centrifuge/geth.ipc
