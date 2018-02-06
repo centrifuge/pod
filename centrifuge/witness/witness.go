@@ -12,6 +12,10 @@ import (
 	"github.com/xsleonard/go-merkle"
 	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/sha3"
+	"github.com/CentrifugeInc/centrifuge-ethereum-contracts/centrifuge/witness"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/spf13/viper"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
 )
 
 // SignatureKeyPair is the signature of the merkle root & the associated public key
@@ -144,6 +148,16 @@ func (doc *SignedDocument) getSignatureListString() (list []byte) {
 	return
 }
 
+func GetWitnessContract() (witnessContract *witness.EthereumWitness) {
+	// Instantiate the contract and display its name
+	client := ethereum.GetConnection()
+	witnessContract, err := witness.NewEthereumWitness(common.HexToAddress(viper.GetString("witness.ethereum.contractAddress")), client)
+	if err != nil {
+		log.Fatalf("Failed to instantiate the witness contract contract: %v", err)
+	}
+	return
+}
+
 // WitnessDocument pushes the calculated merkle root to ethereum using the "Witness" contract.
 func (wes *WitnessExternalDoc) WitnessDocument() {
 	var merkleRoot []byte
@@ -154,7 +168,7 @@ func (wes *WitnessExternalDoc) WitnessDocument() {
 	copy(wes.doc.WitnessRoot[:], tree.Root().Hash[:32])
 
 	contract := GetWitnessContract()
-	opts := GetGethTxOpts()
+	opts := ethereum.GetGethTxOpts()
 	tx, err := contract.WitnessDocument(opts, wes.doc.Identifier, wes.doc.WitnessRoot)
 	if err != nil {
 		log.Fatalf("Transaction error")
@@ -209,7 +223,7 @@ func (doc *SignedDocument) VerifySignature(publicKey ed25519.PublicKey) (verifie
 // VerifyWitness checks if the root is present on ethereum and if a root for the next identifier exists.
 func (wes *WitnessExternalDoc) VerifyWitness() (verified bool, err string) {
 	contract := GetWitnessContract()
-	opts := GetGethCallOpts()
+	opts := ethereum.GetGethCallOpts()
 	data, callErr := contract.GetWitness(opts, wes.doc.Identifier)
 	if callErr != nil {
 		log.Fatal(callErr)
