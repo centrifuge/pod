@@ -7,7 +7,8 @@ env:
 
 cache:  
     directories:    
-      - $GOPATH/pkg/dep       
+      - $GOPATH/pkg/dep  
+      - $GOPATH/bin/dep     
 
 before_install:
   # Download the binary to bin folder in $GOPATH
