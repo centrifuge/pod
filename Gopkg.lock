@@ -8,29 +8,23 @@
   revision = "09f487ccc6400455db32582fccd03d72804a045e"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/btcsuite/btcd"
-  packages = ["btcec"]
-  revision = "50de9da05b50eb15658bb350f6ea24368a111ab7"
-
-[[projects]]
-  name = "github.com/ethereum/go-ethereum"
-  packages = [
-    "accounts/abi",
-    "common/math",
-    "crypto",
-    "crypto/secp256k1",
-    "crypto/sha3",
-    "rlp"
-  ]
-  revision = "4bb3c89d44e372e6a9ab85a8be0c9345265c763a"
-  version = "v1.7.3"
-
-[[projects]]
   name = "github.com/fsnotify/fsnotify"
   packages = ["."]
   revision = "c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9"
   version = "v1.4.7"
+
+[[projects]]
+  name = "github.com/golang/protobuf"
+  packages = [
+    "jsonpb",
+    "proto",
+    "ptypes/any",
+    "ptypes/duration",
+    "ptypes/struct",
+    "ptypes/timestamp"
+  ]
+  revision = "925541529c1fa6821df4e44ce2723319eb2be768"
+  version = "v1.0.0"
 
 [[projects]]
   branch = "master"
@@ -49,6 +43,17 @@
   packages = ["."]
   revision = "53c1911da2b537f792e7cafcb446b05ffe33b996"
   version = "v1.6.1"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/grpc-ecosystem/grpc-gateway"
+  packages = [
+    "protoc-gen-swagger/options",
+    "runtime",
+    "runtime/internal",
+    "utilities"
+  ]
+  revision = "6658b3a4fd7017117532b54b5c6bf2fd2207ffc2"
 
 [[projects]]
   branch = "master"
@@ -174,7 +179,21 @@
     "ed25519/internal/edwards25519",
     "sha3"
   ]
-  revision = "5119cf507ed5294cc409c092980c7497ee5d6fd2"
+  revision = "1875d0a70c90e57f11972aefd42276df65e895b9"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/net"
+  packages = [
+    "context",
+    "http2",
+    "http2/hpack",
+    "idna",
+    "internal/timeseries",
+    "lex/httplex",
+    "trace"
+  ]
+  revision = "2fb46b16b8dda405028c50f7c7f0f9dd1fa6bfb1"
 
 [[projects]]
   branch = "master"
@@ -186,14 +205,34 @@
   branch = "master"
   name = "golang.org/x/text"
   packages = [
+    "collate",
+    "collate/build",
+    "internal/colltab",
     "internal/gen",
+    "internal/tag",
     "internal/triegen",
     "internal/ucd",
+    "language",
+    "secure/bidirule",
     "transform",
+    "unicode/bidi",
     "unicode/cldr",
-    "unicode/norm"
+    "unicode/norm",
+    "unicode/rangetable"
   ]
   revision = "4e4a3210bb54bb31f6ab2cdca2edcc0b50c420c1"
+
+[[projects]]
+  branch = "master"
+  name = "google.golang.org/genproto"
+  packages = ["googleapis/api/annotations"]
+  revision = "4eb30f4778eed4c258ba66527a0d4f9ec8a36c45"
+
+[[projects]]
+  name = "google.golang.org/grpc"
+  packages = ["."]
+  revision = "6b51017f791ae1cfbec89c52efdf444b13b550ef"
+  version = "v1.9.2"
 
 [[projects]]
   branch = "v2"
@@ -204,6 +243,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "3fc46315f9681ae5efa2f2ac9b1a5a21e43dbc0d961aacfb9486ecac8960a040"
+  inputs-digest = "3757f71908e7e9839bdeeb9c31e67ec80e56103f343d2e0907ecc1f54401f919"
   solver-name = "gps-cdcl"
   solver-version = 1

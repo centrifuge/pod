@@ -10,7 +10,7 @@ cache:
       - $GOPATH/pkg/depbin 
 
 install:
-  - build/install-dependencies.sh
+  - scripts/install-dependencies.sh
   - go get github.com/ethereum/go-ethereum
   - dep ensure
   - rm -rf vendor/github.com/ethereum

@@ -11,10 +11,15 @@ Setup
 mkdir -p $GOPATH/src/github.com/CentrifugeInc/go-centrifuge/
 git clone git@github.com:CentrifugeInc/go-centrifuge.git $GOPATH/src/github.com/CentrifugeInc/go-centrifuge
 brew install dep && brew update dep
-go get github.com/ethereum/go-ethereum
+go get -u github.com/ethereum/go-ethereum
+go get -u github.com/golang/protobuf/protoc-gen-go
+go get -u github.com/grpc-ecosystem/grpc-gateway/runtime
+go get -u github.com/grpc-ecosystem/grpc-gateway/utilities
+go get -u github.com/grpc-ecosystem/grpc-gateway/third_party
+go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
+go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
 cd $GOPATH/src/github.com/CentrifugeInc/go-centrifuge
 dep ensure
-rm -rf vendor/github.com/ethereum/go-ethereum
 ```
 
 Build, test & run
@@ -80,4 +85,8 @@ import(
 )
 ```
 
+
+Swagger
+-------
+You can run `./scripts/run_swagger.sh` to launch a docker container that serves teh swagger UI on http://localhost:8085
 

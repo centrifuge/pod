@@ -1,8 +1,9 @@
+nodeRestPort: 8082
+nodePort: 8022
 constellation:
     configuration: /tmp/centrifuge/node1/constellation_node1.conf
     socket:  /tmp/centrifuge/node1/data/constellation.ipc
     key: /tmp/centrifuge/node1/node1.pub
-nodePort: 8022
 witness:
     publicKey: /tmp/centrifuge/node1/signing.pub
     privateKey: /tmp/centrifuge/node1/signing.key 
