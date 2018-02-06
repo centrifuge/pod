@@ -2,9 +2,6 @@ language: go
 go:
   - 1.7.x
 
-env:
-  - 
-
 cache:  
     directories:    
       - $GOPATH/pkg/dep  
@@ -18,4 +15,4 @@ install:
   - rm -rf vendor/github.com/ethereum
 
 
-script:  go test ./...
+script:  go test $(go list ./... | grep -v /vendor/)
