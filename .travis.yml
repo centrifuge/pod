@@ -1,6 +1,6 @@
 language: go
 go:
-  - master
+  - 1.7.x
 
 env:
   - 
