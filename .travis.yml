@@ -8,7 +8,7 @@ cache:
       # use a separate depbin to allow for caching
       - $GOPATH/pkg/depbin 
       # cache the etherum go code so don't have to get each time
-      - $GOPATH/src/github.com/ethereum
+      - $GOPATH/src/github.com/ethereum/go-ethereum
 
 install:
   - build/install-dependencies.sh

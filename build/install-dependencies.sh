@@ -7,7 +7,7 @@ DEPBIN_CACH_FOLDER=$GOPATH/pkg/depbin
 DEPBIN_CACHED=$DEPBIN_CACH_FOLDER/dep
 DEPBIN=$GOPATH/bin/dep
 
-GO_ETH_CACHED=$GOPATH/src/github.com/ethereum/
+GO_ETH_CACHED=$GOPATH/src/github.com/ethereum/go-ethereum
 
 if [ ! -e "$DEPBIN_CACHED" ]
 then
