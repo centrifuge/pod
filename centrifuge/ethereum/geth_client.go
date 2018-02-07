@@ -8,13 +8,18 @@ import (
 	"github.com/spf13/viper"
 )
 
-func GetConnection() (client *ethclient.Client) {
+type EthereumClient struct {
+	Client *ethclient.Client
+}
+
+func GetConnection() (EthereumClient) {
+
 	//TODO this should be more flexible to support any connection type to get, not just IPC
 	client, err := ethclient.Dial(viper.GetString("ethereum.gethIpc"))
 	if err != nil {
 		log.Fatalf("Failed to connect to the Ethereum client: %v", err)
 	}
-	return
+	return EthereumClient{client}
 }
 
 func GetGethTxOpts() (auth *bind.TransactOpts) {

@@ -1,6 +1,9 @@
 package anchor
 
-import "crypto/rand"
+import (
+	"crypto/rand"
+	//"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
+)
 
 //Supported anchor schema version as stored on public registry
 const ANCHOR_SCHEMA_VERSION uint = 1
@@ -11,9 +14,8 @@ type Anchor struct {
 	schemaVersion uint
 }
 
-type RegisteredAnchor struct {
-	EthereumTransaction string
-	Anchor              Anchor
+type UsableAnchorRegistry interface {
+	registerAnchor(*Anchor) (Anchor, error)
 }
 
 func createRandomByte32() (out [32]byte) {
@@ -27,11 +29,24 @@ func createRandomByte32() (out [32]byte) {
 	return
 }
 
-func (anchor *Anchor) registerAnchor() (*Anchor, error) {
-	a := &Anchor{
-		anchorID:      "string(createRandomByte32()[:])",
-		rootHash:      "string(createRandomByte32()[:])",
-		schemaVersion: ANCHOR_SCHEMA_VERSION,
+type EthereumAnchorRegistry struct {
+
+}
+
+func (ethRegistry EthereumAnchorRegistry) registerAnchor(anchor *Anchor) (Anchor, error) {
+	return Anchor{anchor.anchorID, anchor.rootHash, anchor.schemaVersion}, nil
+}
+
+// Register the given Anchor with the configured public registry.
+func RegisterAnchor(anchor *Anchor) (Anchor, error) {
+	returnAnchor := Anchor{
+		anchorID:      anchor.anchorID,
+		rootHash:      anchor.rootHash,
+		schemaVersion: anchor.schemaVersion,
 	}
-	return a, nil
+	return returnAnchor, nil
+}
+
+func getConfiguredRegistry() (UsableAnchorRegistry, error) {
+	return EthereumAnchorRegistry{}, nil
 }
