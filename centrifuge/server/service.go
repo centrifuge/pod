@@ -1,7 +1,6 @@
 package server
 
 import (
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
 	"log"
 	pb "github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
@@ -27,15 +26,13 @@ func (s *centrifugeNodeService) AnchorDocument(ctx context.Context, doc *pb.Core
 }
 
 func (s *centrifugeNodeService) SendInvoiceDocument(ctx context.Context, sendInvoiceEnvelope *pb.SendInvoiceEnvelope) (*pb.InvoiceDocument, error) {
-	db := storage.GetStorage()
-	db.StoreInvoiceDocument(sendInvoiceEnvelope.Document)
 	return sendInvoiceEnvelope.Document, nil
 }
 
 func (s * centrifugeNodeService) GetInvoiceDocument(ctx context.Context, getInvoiceDocumentEnvelope *pb.GetInvoiceDocumentEnvelope) (*pb.InvoiceDocument, error) {
-	db := storage.GetStorage()
-	doc := db.GetInvoiceDocument(getInvoiceDocumentEnvelope.DocumentIdentifier)
-	return doc, nil
+	// Mocked for now
+	doc := pb.InvoiceDocument{getInvoiceDocumentEnvelope.DocumentIdentifier, nil, nil }
+	return &doc, nil
 }
 
 // newServer creates our our service that is used by the centrifuge OS clients.

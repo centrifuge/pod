@@ -10,7 +10,6 @@ import (
 	"net"
 	"net/http"
 	"strings"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/viper"
 	"golang.org/x/net/context"
@@ -56,10 +55,6 @@ func loadKeyPair() (keyPair tls.Certificate) {
 
 // ServeNode exposes the client APIs for interacting with a centrifuge node
 func ServeNode() {
-	// Initialize storage and make sure the db gets closed at the end of the process.
-	db := storage.GetStorage()
-	defer db.Close()
-
 	certPool := loadCertPool()
 	keyPair := loadKeyPair()
 	addr := getAddress()
