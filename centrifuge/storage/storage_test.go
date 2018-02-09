@@ -6,7 +6,7 @@ import (
 )
 
 func TestLeveldbDataStore(t *testing.T) {
-	instance = &LeveldbDataStore{config: configStruct{path:"/tmp/centrifuge_testing.leveldb"}}
+	instance = &LeveldbDataStore{Path:"/tmp/centrifuge_testing.leveldb"}
 	instance.Open()
 	one := []byte("1")
 	two := []byte("2")
