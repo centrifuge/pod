@@ -5,7 +5,7 @@
   branch = "master"
   name = "github.com/CentrifugeInc/centrifuge-ethereum-contracts"
   packages = ["centrifuge/witness"]
-  revision = "ec5702a4ca1e8da24e7331b98d8e06c9e1e702e7"
+  revision = "09f487ccc6400455db32582fccd03d72804a045e"
 
 [[projects]]
   branch = "master"
@@ -34,14 +34,21 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/golang/snappy"
+  packages = ["."]
+  revision = "553a641470496b2327abcac10b36396bd98e45c9"
+
+[[projects]]
   name = "github.com/gorilla/context"
   packages = ["."]
-  revision = "08b5f424b9271eedf6f9f0ce86cb9396ed337a42"
+  revision = "1ea25387ff6f684839d82767c1733ff4d4d15d0a"
+  version = "v1.1"
 
 [[projects]]
   name = "github.com/gorilla/mux"
   packages = ["."]
-  revision = "5bbbb5b2b5729b132181cc7f4aa3b3c973e9a0ed"
+  revision = "53c1911da2b537f792e7cafcb446b05ffe33b996"
+  version = "v1.6.1"
 
 [[projects]]
   branch = "master"
@@ -130,6 +137,25 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/syndtr/goleveldb"
+  packages = [
+    "leveldb",
+    "leveldb/cache",
+    "leveldb/comparer",
+    "leveldb/errors",
+    "leveldb/filter",
+    "leveldb/iterator",
+    "leveldb/journal",
+    "leveldb/memdb",
+    "leveldb/opt",
+    "leveldb/storage",
+    "leveldb/table",
+    "leveldb/util"
+  ]
+  revision = "211f780988068502fe874c44dae530528ebd840f"
+
+[[projects]]
+  branch = "master"
   name = "github.com/tv42/httpunix"
   packages = ["."]
   revision = "b75d8614f926c077e48d85f1f8f7885b758c6225"
@@ -141,13 +167,14 @@
   revision = "c71c7cc334c839f31f3760b2385eab8381daf64e"
 
 [[projects]]
+  branch = "master"
   name = "golang.org/x/crypto"
   packages = [
     "ed25519",
     "ed25519/internal/edwards25519",
     "sha3"
   ]
-  revision = "5f55bce93ad2c89f411e009659bb1fd83da36e7b"
+  revision = "5119cf507ed5294cc409c092980c7497ee5d6fd2"
 
 [[projects]]
   branch = "master"
@@ -166,7 +193,7 @@
     "unicode/cldr",
     "unicode/norm"
   ]
-  revision = "e19ae1496984b1c655b8044a65c0300a3c878dd3"
+  revision = "4e4a3210bb54bb31f6ab2cdca2edcc0b50c420c1"
 
 [[projects]]
   branch = "v2"
@@ -177,6 +204,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "e5db3a0914c2471a7908a4c251d15d637169d266bcd1c1a3149277c20bbb44a0"
+  inputs-digest = "3fc46315f9681ae5efa2f2ac9b1a5a21e43dbc0d961aacfb9486ecac8960a040"
   solver-name = "gps-cdcl"
   solver-version = 1

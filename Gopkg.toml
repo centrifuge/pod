@@ -26,6 +26,10 @@
 
 ignored = ["github.com/ethereum/go-ethereum", "github.com/ethereum/go-ethereum/common", "github.com/ethereum/go-ethereum/ethclient", "github.com/ethereum/go-ethereum/accounts/abi/bind", "github.com/ethereum/go-ethereum/core/types", "github.com/ethereum/go-ethereum/abi"]
 
+[prune]
+  go-tests = true
+  unused-packages = true
+
 [[constraint]]
   branch = "master"
   name = "github.com/CentrifugeInc/centrifuge-ethereum-contracts"
@@ -50,6 +54,6 @@ ignored = ["github.com/ethereum/go-ethereum", "github.com/ethereum/go-ethereum/c
   branch = "master"
   name = "github.com/xsleonard/go-merkle"
 
-[prune]
-  go-tests = true
-  unused-packages = true
+[[constraint]]
+  branch = "master"
+  name = "github.com/syndtr/goleveldb"
