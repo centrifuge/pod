@@ -24,7 +24,7 @@
 #   go-tests = true
 #   unused-packages = true
 
-ignored = ["github.com/ethereum/go-ethereum/*", "google.golang.org/grpc/*", "github.com/golang/protobuf/protoc-gen-go/*"]
+ignored = ["github.com/ethereum/go-ethereum/*", "google.golang.org/grpc", "google.golang.org/grpc/*", "github.com/golang/protobuf/protoc-gen-go/*"]
 
 # For some reason dep doesn't recognize these dependencies.
 # required = ["github.com/grpc-ecosystem/grpc-gateway/runtime", "github.com/grpc-ecosystem/grpc-gateway/utilities",]
