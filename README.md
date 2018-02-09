@@ -15,7 +15,6 @@ go get -u github.com/ethereum/go-ethereum
 go get -u github.com/golang/protobuf/protoc-gen-go
 go get -u github.com/grpc-ecosystem/grpc-gateway/runtime
 go get -u github.com/grpc-ecosystem/grpc-gateway/utilities
-go get -u github.com/grpc-ecosystem/grpc-gateway/third_party
 go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
 go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
 cd $GOPATH/src/github.com/CentrifugeInc/go-centrifuge
