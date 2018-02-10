@@ -14,7 +14,10 @@ cache:
 
 install:
   - scripts/install-dependencies.sh
-  - glide update
+  - glide install
+  - cd vendor/github.com/golang/protobuf && make install
+  - go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
+  - go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
 
 # Exclude the vendor dir from test run. 
 # The test runner included it on travis if not explicitly excluded.

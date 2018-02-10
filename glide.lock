@@ -1,5 +1,5 @@
-hash: aa5386f6f0eb5c073a95ff2d8d623c620582b71ec0ede31f73efed51fa83620d
-updated: 2018-02-09T21:59:36.95391-05:00
+hash: 4257862d0ad1e41485b7f9481ed868d073fdd8be55835ef6fd8b82984acc115f
+updated: 2018-02-10T10:52:03.211628-05:00
 imports:
 - name: github.com/aristanetworks/goarista
   version: 76d15ea364f9cab3eaa9935ff6893d49c3691c23
@@ -15,7 +15,7 @@ imports:
   subpackages:
   - centrifuge/witness
 - name: github.com/ethereum/go-ethereum
-  version: 42628ba7eda25830653763ced060f702861d0887
+  version: 5cf75a30c1ceb0ab35cd6b0532520d556996b21c
   repo: git@github.com:ethereum/go-ethereum
   subpackages:
   - accounts
@@ -49,6 +49,7 @@ imports:
   subpackages:
   - jsonpb
   - proto
+  - protoc-gen-go
   - protoc-gen-go/descriptor
   - ptypes
   - ptypes/any
@@ -164,7 +165,7 @@ imports:
   - unicode/bidi
   - unicode/norm
 - name: golang.org/x/tools
-  version: 70252dea49c01dbfc3f800978304eb00eb15b698
+  version: 95b47aa5df4eda9bfbc0133f77c0e320f0275eba
   subpackages:
   - go/ast/astutil
   - imports

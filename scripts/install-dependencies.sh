@@ -1,4 +1,5 @@
 #!/usr/bin/env sh
+
 GLIDEBIN=$GOPATH/bin/glide
 GLIDE_CACHE=~/glide
 GLIDE_BIN_CACHED=$GLIDE_CACHE/glide

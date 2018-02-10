@@ -78,6 +78,22 @@ import(
 )
 ```
 
+Modifying .proto files
+----------------------
+
+If you plan on modifying the protobuf definitions, you will need to install the required binaries:
+
+```
+cd vendor/github.com/golang/protobuf && make install
+go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
+go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
+```  
+
+You can then generate the necessary go code by running:
+```
+go generate ./centrifuge
+```
+
 
 Swagger
 -------
