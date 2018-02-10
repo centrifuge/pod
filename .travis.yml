@@ -3,22 +3,18 @@ go:
   - 1.9.x
 
 cache:  
-    directories:    
-      - $GOPATH/pkg/dep  
+    directories:
+      # Cache the glide binary
+      - ~/glide/
+      # Glide's own cache
+      - ~/.glide
       # Use a separate depbin folder to allow for caching. 
       # The bin itself is then linked (ln -s) in the install-dependencies script
       - $GOPATH/pkg/depbin 
 
 install:
   - scripts/install-dependencies.sh
-  - go get github.com/ethereum/go-ethereum
-  - go get -u github.com/golang/protobuf/protoc-gen-go
-  - go get -u github.com/grpc-ecosystem/grpc-gateway/runtime
-  - go get -u github.com/grpc-ecosystem/grpc-gateway/utilities
-  - go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
-  - go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
-  - dep ensure
-  - rm -rf vendor/github.com/ethereum
+  - glide update
 
 # Exclude the vendor dir from test run. 
 # The test runner included it on travis if not explicitly excluded.

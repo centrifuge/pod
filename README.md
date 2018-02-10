@@ -10,15 +10,9 @@ Setup
 ```bash,
 mkdir -p $GOPATH/src/github.com/CentrifugeInc/go-centrifuge/
 git clone git@github.com:CentrifugeInc/go-centrifuge.git $GOPATH/src/github.com/CentrifugeInc/go-centrifuge
-brew install dep && brew update dep
-go get -u github.com/ethereum/go-ethereum
-go get -u github.com/golang/protobuf/protoc-gen-go
-go get -u github.com/grpc-ecosystem/grpc-gateway/runtime
-go get -u github.com/grpc-ecosystem/grpc-gateway/utilities
-go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
-go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
+curl https://glide.sh/get | sh
 cd $GOPATH/src/github.com/CentrifugeInc/go-centrifuge
-dep ensure
+glide update
 ```
 
 Build, test & run

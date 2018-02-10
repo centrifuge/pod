@@ -1,0 +1,54 @@
+package: github.com/CentrifugeInc/go-centrifuge
+import:
+- package: github.com/CentrifugeInc/centrifuge-ethereum-contracts
+  repo: git@github.com:CentrifugeInc/centrifuge-ethereum-contracts
+  subpackages:
+  - centrifuge/witness
+- package: github.com/ethereum/go-ethereum
+  version: master
+  repo: git@github.com:ethereum/go-ethereum
+  subpackages:
+  - accounts/abi/bind
+  - common
+  - ethclient
+- package: github.com/golang/protobuf
+  version: ^1.0.0
+  subpackages:
+  - proto
+  - ptypes/timestamp
+- package: github.com/gorilla/mux
+  version: ^1.6.1
+- package: github.com/grpc-ecosystem/grpc-gateway
+  version: master
+  repo: git@github.com:grpc-ecosystem/grpc-gateway
+  subpackages:
+  - protoc-gen-swagger/options
+  - runtime
+  - utilities
+- package: github.com/mitchellh/go-homedir
+- package: github.com/spf13/cobra
+  version: ^0.0.1
+- package: github.com/spf13/viper
+  version: ^1.0.0
+- package: github.com/syndtr/goleveldb
+  subpackages:
+  - leveldb
+- package: github.com/tv42/httpunix
+- package: github.com/xsleonard/go-merkle
+- package: golang.org/x/crypto
+  subpackages:
+  - ed25519
+  - sha3
+- package: golang.org/x/net
+  subpackages:
+  - context
+- package: google.golang.org/genproto
+  subpackages:
+  - googleapis/api/annotations
+- package: google.golang.org/grpc
+  version: ^1.9.2
+  subpackages:
+  - codes
+  - credentials
+  - grpclog
+  - status
