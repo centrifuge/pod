@@ -6,9 +6,12 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
-var storageInstance = *storage.GetStorage()
-
 type StorageService struct {
+	storage storage.DataStore
+}
+
+func (srv *StorageService) SetStorageBackend (s *storage.DataStore) {
+	srv.storage = *s
 }
 
 func (srv *StorageService) GetDocumentKey(id []byte) (key []byte) {
@@ -17,7 +20,7 @@ func (srv *StorageService) GetDocumentKey(id []byte) (key []byte) {
 }
 
 func (srv *StorageService) GetDocument(id []byte) (doc *coredocument.InvoiceDocument, err error) {
-	doc_bytes, err := storageInstance.Get(srv.GetDocumentKey(id))
+	doc_bytes, err := srv.storage.Get(srv.GetDocumentKey(id))
 
 	doc = &coredocument.InvoiceDocument{}
 	err = proto.Unmarshal(doc_bytes, doc)
@@ -32,6 +35,6 @@ func (srv *StorageService) PutDocument(doc *coredocument.InvoiceDocument) (err e
 	if err != nil {
 		return
 	}
-	err = storageInstance.Put(key, data)
+	err = srv.storage.Put(key, data)
 	return
 }
