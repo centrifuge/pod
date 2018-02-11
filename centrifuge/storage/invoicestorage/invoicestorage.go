@@ -10,8 +10,8 @@ type StorageService struct {
 	storage storage.DataStore
 }
 
-func (srv *StorageService) SetStorageBackend (s *storage.DataStore) {
-	srv.storage = *s
+func (srv *StorageService) SetStorageBackend (s storage.DataStore) {
+	srv.storage = s
 }
 
 func (srv *StorageService) GetDocumentKey(id []byte) (key []byte) {
@@ -21,10 +21,15 @@ func (srv *StorageService) GetDocumentKey(id []byte) (key []byte) {
 
 func (srv *StorageService) GetDocument(id []byte) (doc *coredocument.InvoiceDocument, err error) {
 	doc_bytes, err := srv.storage.Get(srv.GetDocumentKey(id))
+	if err != nil {
+		return nil, err
+	}
 
 	doc = &coredocument.InvoiceDocument{}
 	err = proto.Unmarshal(doc_bytes, doc)
-
+	if err != nil {
+		return nil, err
+	}
 	return
 }
 

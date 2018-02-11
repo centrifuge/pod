@@ -39,9 +39,8 @@ func (db *LeveldbDataStore) Get(key []byte) (doc []byte, err error) {
 var once sync.Once
 var instance DataStore
 
-
 // GetStorage is a singleton implementation returning the default database as configured
-func GetStorage() *DataStore {
+func GetStorage() DataStore {
 	once.Do(func() {
 		if instance != nil {
 			return
@@ -56,13 +55,13 @@ func GetStorage() *DataStore {
 			panic(err)
 		}
 	})
-	return &instance
+	return instance
 }
 
 // SetStorage can be used to overwrite the default database with something else for testing purposes.
-func SetStorage (store *DataStore) {
+func SetStorage (store DataStore) {
 	if instance != nil {
 		panic("Can't set storage, storage already instantiated")
 	}
-	instance = *store
+	instance = store
 }
