@@ -15,7 +15,7 @@ cache:
 install:
   - scripts/install-dependencies.sh
   - glide install
-  - cd vendor/github.com/golang/protobuf && make install && cd
+  - echo "cd vendor/github.com/golang/protobuf && make install" | sh
   - go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
   - go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
 
