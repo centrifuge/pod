@@ -1,0 +1,120 @@
+syntax = "proto3";
+package coredocument;
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "protoc-gen-swagger/options/annotations.proto";
+
+option (grpc.gateway.protoc_gen_swagger.options.openapiv2_swagger) = {
+  host: "localhost:8082";
+  info: {
+    title: "Centrifuge OS Client API";
+    version: "0.0.1";
+    contact: {
+        name: "Centrifuge";
+        url: "https://github.com/CentrifugeInc";
+        email: "hello@centrifuge.one";
+        };
+    };
+    schemes: HTTPS;
+    consumes: "application/json";
+    produces: "application/json";
+};
+
+service CentrifugeNodeService {
+    // Anchors a document on chain. Returns updated document with signatures and root calculated.
+    rpc AnchorDocument (CoreDocument) returns (CoreDocument) {
+        option (google.api.http) = {
+            post: "/v1/coredocument/anchor"
+            body: "*"
+        };        
+    }
+
+    rpc SendInvoiceDocument(SendInvoiceEnvelope) returns (InvoiceDocument) {
+        option (google.api.http) = {
+            post: "/v1/invoice/send",
+            body: "*"
+        };
+    }
+    rpc GetInvoiceDocument(GetInvoiceDocumentEnvelope) returns (InvoiceDocument) {
+        option (google.api.http) = {
+            get: "/v1/coredocument/get/{documentIdentifier}"
+        };
+    }
+}
+
+
+// CoreDocument is a document that can be sent to different nodes and anchored on chain
+message CoreDocument {
+    // Identifier
+    // ----------
+    // This is for convenience: the first identifier that was ever used to refer to a 
+    // document is kept here. Internally the centrifuge node indexes & bundles documents 
+    // by original identifier.
+    bytes documentIdentifier = 9; 
+
+    // The current identifier is the location of the current anchor on chain and is used to 
+    // refer to the current state.
+    bytes currentIdentifier = 3;
+
+    // When creating the next version this should be used.
+    bytes nextIdentifier = 4;
+    
+    // Root
+    bytes previousRoot = 2;
+    bytes dataMerkleRoot = 5; 
+    bytes documentRoot = 7;
+
+    // Signatures
+    repeated Signature signatures = 6;
+
+    // List of collaborators on this document. These Centrifuge Identities have access 
+    // to the document and should receive new versions whenever a document is updated.
+    repeated bytes collaborators = 10;
+
+    // The previous document is referenced here but doesn't need to be provided and can
+    // be left blank
+    repeated CoreDocument previousVersion = 8;
+}
+
+// Signature contains the entity ID, public key used and signature)
+message Signature {
+    bytes entityId = 1;
+    bytes publicKey = 2;
+    bytes signature = 3;
+}
+
+// InvoiceDocument is a Centrifuge enabled document that can be used to represent
+message InvoiceDocument {
+    // documentIdentifier
+    bytes documentIdentifier = 3;
+    message InvoiceData {
+        string country = 2;
+        string currency = 3;
+        int64 amount = 4;
+
+        bytes recipient = 5;
+        bytes sender = 6;
+        bytes payee = 7;
+
+        string comment = 8;
+        google.protobuf.Timestamp dueDate = 9;
+        google.protobuf.Timestamp dateCreated = 11;
+    }
+
+    // CoreDocument contains data related to the Centrifuge OS layer
+    CoreDocument coreDocument = 1;
+
+    // InvoiceData has all invoice specific information.
+    InvoiceData data = 2;
+}
+
+message SendInvoiceEnvelope {
+    // Centrifuge OS Entity of the recipient
+    repeated bytes recipients = 1;
+    InvoiceDocument document = 10;
+}
+
+message GetInvoiceDocumentEnvelope {
+    bytes documentIdentifier = 1;
+}

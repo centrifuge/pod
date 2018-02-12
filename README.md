@@ -10,11 +10,9 @@ Setup
 ```bash,
 mkdir -p $GOPATH/src/github.com/CentrifugeInc/go-centrifuge/
 git clone git@github.com:CentrifugeInc/go-centrifuge.git $GOPATH/src/github.com/CentrifugeInc/go-centrifuge
-brew install dep && brew update dep
-go get github.com/ethereum/go-ethereum
+curl https://glide.sh/get | sh
 cd $GOPATH/src/github.com/CentrifugeInc/go-centrifuge
-dep ensure
-rm -rf vendor/github.com/ethereum/go-ethereum
+glide update
 ```
 
 Build, test & run
@@ -80,4 +78,24 @@ import(
 )
 ```
 
+Modifying .proto files
+----------------------
+
+If you plan on modifying the protobuf definitions, you will need to install the required binaries:
+
+```
+cd vendor/github.com/golang/protobuf && make install
+go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
+go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
+```  
+
+You can then generate the necessary go code by running:
+```
+go generate ./centrifuge
+```
+
+
+Swagger
+-------
+You can run `./scripts/run_swagger.sh` to launch a docker container that serves teh swagger UI on http://localhost:8085
 
