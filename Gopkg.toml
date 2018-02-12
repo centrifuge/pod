@@ -50,6 +50,11 @@ ignored = ["github.com/ethereum/go-ethereum", "github.com/ethereum/go-ethereum/c
   branch = "master"
   name = "github.com/xsleonard/go-merkle"
 
+[[constraint]]
+  branch = "master"
+  name = "github.com/go-errors/errors"
+
+
 [prune]
   go-tests = true
   unused-packages = true
