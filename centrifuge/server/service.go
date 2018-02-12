@@ -8,6 +8,7 @@ import (
 	"google.golang.org/grpc"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage/invoicestorage"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/p2p"
 )
 
 // coreDocumentService handles all interactions on our core documents
@@ -30,11 +31,26 @@ func (s *invoiceDocumentService) AnchorDocument(ctx context.Context, doc *invoic
 
 func (s *invoiceDocumentService) SendInvoiceDocument(ctx context.Context, sendInvoiceEnvelope *invoice.SendInvoiceEnvelope) (*invoice.InvoiceDocument, error) {
 	s.invoiceStorageService.PutDocument(sendInvoiceEnvelope.Document)
+
+	for _, element := range sendInvoiceEnvelope.Recipients {
+		addr := string(element[:])
+		client := p2p.OpenClient(addr)
+
+		_, err := client.TransmitInvoice(context.Background(), &p2p.TransmitInvoiceDocument{sendInvoiceEnvelope.Document})
+		if err != nil {
+			return nil, err
+		}
+	}
 	return sendInvoiceEnvelope.Document, nil
 }
 
 func (s *invoiceDocumentService) GetInvoiceDocument(ctx context.Context, getInvoiceDocumentEnvelope *invoice.GetInvoiceDocumentEnvelope) (*invoice.InvoiceDocument, error) {
 	doc, err := s.invoiceStorageService.GetDocument(getInvoiceDocumentEnvelope.DocumentIdentifier)
+	return doc, err
+}
+
+func (s *invoiceDocumentService) GetReceivedInvoiceDocuments (ctx context.Context, empty *invoice.Empty) (*invoice.ReceivedInvoices, error) {
+	doc, err := s.invoiceStorageService.GetReceivedDocuments()
 	return doc, err
 }
 

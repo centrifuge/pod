@@ -1,0 +1,18 @@
+syntax = "proto3";
+package p2p;
+
+option go_package = "github.com/CentrifugeInc/go-centrifuge/centrifuge/p2p";
+
+import "invoice/invoice.proto";
+
+message TransmitInvoiceDocument {
+  invoice.InvoiceDocument invoice = 1;
+}
+
+message TransmitReply {
+  invoice.InvoiceDocument invoice = 1;
+}
+
+service P2PService {
+  rpc TransmitInvoice (TransmitInvoiceDocument) returns (TransmitReply) {}
+}

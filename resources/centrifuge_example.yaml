@@ -4,6 +4,17 @@ storage:
 nodeHostname: localhost
 nodePort: 8082
 
+keys:
+  signing:
+    publicKey: resources/signingKey.pub
+    privateKey: resources/signingKey.key
+  encryption:
+    publicKey: resources/encryptionKey.pub
+    privateKey: resources/encryptionKey.key
+
+p2p:
+  port: 38202
+
 ethereum:
   account: "838f7dcA284eb69A9c489fE09c31cFf37DeFDEcA"
   gethIpc: /tmp/centrifuge/geth.ipc
