@@ -5,6 +5,7 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"bytes"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
 )
 
 func TestStorageService(t *testing.T) {
@@ -15,7 +16,7 @@ func TestStorageService(t *testing.T) {
 	service.storage.Open()
 	defer service.storage.Close()
 
-	invoice := coredocument.InvoiceDocument{DocumentIdentifier: []byte("1"), CoreDocument: &coredocument.CoreDocument{DocumentIdentifier:[]byte("1")}}
+	invoice := invoice.InvoiceDocument{DocumentIdentifier: []byte("1"), CoreDocument: &coredocument.CoreDocument{DocumentIdentifier:[]byte("1")}}
 	service.PutDocument(&invoice)
 
 	doc, err := service.GetDocument([]byte("1"))
