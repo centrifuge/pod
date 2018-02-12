@@ -1,0 +1,81 @@
+syntax = "proto3";
+package invoice;
+option go_package = "github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice";
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "protoc-gen-swagger/options/annotations.proto";
+import "coredocument/coredocument.proto";
+
+option (grpc.gateway.protoc_gen_swagger.options.openapiv2_swagger) = {
+    host: "localhost:8082";
+    info: {
+        title: "Centrifuge OS Client API";
+        version: "0.0.1";
+        contact: {
+            name: "Centrifuge";
+            url: "https://github.com/CentrifugeInc";
+            email: "hello@centrifuge.one";
+            };
+    };
+    schemes: HTTPS;
+    consumes: "application/json";
+    produces: "application/json";
+};
+
+service InvoiceDocumentService {
+    // Anchors a document on chain. Returns updated document with signatures and root calculated.
+    rpc AnchorDocument (InvoiceDocument) returns (InvoiceDocument) {
+        option (google.api.http) = {
+            post: "/invoice/anchor"
+            body: "*"
+        };
+    }
+
+    rpc SendInvoiceDocument(SendInvoiceEnvelope) returns (InvoiceDocument) {
+        option (google.api.http) = {
+            post: "/invoice/send"
+            body: "*"
+        };
+    }
+    rpc GetInvoiceDocument(GetInvoiceDocumentEnvelope) returns (InvoiceDocument) {
+        option (google.api.http) = {
+            get: "/invoice/get/{documentIdentifier}"
+        };
+    }
+}
+
+// InvoiceDocument is a Centrifuge enabled document that can be used to represent
+message InvoiceDocument {
+    // documentIdentifier
+    bytes documentIdentifier = 3;
+    message InvoiceData {
+        string country = 2;
+        string currency = 3;
+        int64 amount = 4;
+
+        bytes recipient = 5;
+        bytes sender = 6;
+        bytes payee = 7;
+
+        string comment = 8;
+        google.protobuf.Timestamp dueDate = 9;
+        google.protobuf.Timestamp dateCreated = 11;
+    }
+
+    // CoreDocument contains data related to the Centrifuge OS layer
+    coredocument.CoreDocument coreDocument = 1;
+
+    // InvoiceData has all invoice specific information.
+    InvoiceData data = 2;
+}
+
+message SendInvoiceEnvelope {
+    // Centrifuge OS Entity of the recipient
+    repeated bytes recipients = 1;
+    InvoiceDocument document = 10;
+}
+
+message GetInvoiceDocumentEnvelope {
+    bytes documentIdentifier = 1;
+}

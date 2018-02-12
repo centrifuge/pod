@@ -5,44 +5,7 @@ import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 import "protoc-gen-swagger/options/annotations.proto";
 
-option (grpc.gateway.protoc_gen_swagger.options.openapiv2_swagger) = {
-  host: "localhost:8082";
-  info: {
-    title: "Centrifuge OS Client API";
-    version: "0.0.1";
-    contact: {
-        name: "Centrifuge";
-        url: "https://github.com/CentrifugeInc";
-        email: "hello@centrifuge.one";
-        };
-    };
-    schemes: HTTPS;
-    consumes: "application/json";
-    produces: "application/json";
-};
-
-service CentrifugeNodeService {
-    // Anchors a document on chain. Returns updated document with signatures and root calculated.
-    rpc AnchorDocument (CoreDocument) returns (CoreDocument) {
-        option (google.api.http) = {
-            post: "/v1/coredocument/anchor"
-            body: "*"
-        };        
-    }
-
-    rpc SendInvoiceDocument(SendInvoiceEnvelope) returns (InvoiceDocument) {
-        option (google.api.http) = {
-            post: "/v1/invoice/send",
-            body: "*"
-        };
-    }
-    rpc GetInvoiceDocument(GetInvoiceDocumentEnvelope) returns (InvoiceDocument) {
-        option (google.api.http) = {
-            get: "/v1/coredocument/get/{documentIdentifier}"
-        };
-    }
-}
-
+option go_package = "github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument";
 
 // CoreDocument is a document that can be sent to different nodes and anchored on chain
 message CoreDocument {
@@ -68,9 +31,10 @@ message CoreDocument {
     // Signatures
     repeated Signature signatures = 6;
 
-    // List of collaborators on this document. These Centrifuge Identities have access 
+    // List of collaborators on this document. These Centrifuge Identities have access
     // to the document and should receive new versions whenever a document is updated.
     repeated bytes collaborators = 10;
+    repeated AccessControlEntry acl = 11;
 
     // The previous document is referenced here but doesn't need to be provided and can
     // be left blank
@@ -84,37 +48,31 @@ message Signature {
     bytes signature = 3;
 }
 
-// InvoiceDocument is a Centrifuge enabled document that can be used to represent
-message InvoiceDocument {
-    // documentIdentifier
-    bytes documentIdentifier = 3;
-    message InvoiceData {
-        string country = 2;
-        string currency = 3;
-        int64 amount = 4;
+// AccessControlEntry defines a member of the document
+message AccessControlEntry {
+    // All identities listed
+    repeated bytes identity = 1;
 
-        bytes recipient = 5;
-        bytes sender = 6;
-        bytes payee = 7;
-
-        string comment = 8;
-        google.protobuf.Timestamp dueDate = 9;
-        google.protobuf.Timestamp dateCreated = 11;
-    }
-
-    // CoreDocument contains data related to the Centrifuge OS layer
-    CoreDocument coreDocument = 1;
-
-    // InvoiceData has all invoice specific information.
-    InvoiceData data = 2;
+    // There are two ways to describe the acl schema. One of the standard ACL schemas can be referenced by a
+    // unique identifier or a schema can be embedded.
+    bytes aclSchemaIdentifier = 2;
+    AccessControlSchema embeddedAclSchema = 3;
 }
 
-message SendInvoiceEnvelope {
-    // Centrifuge OS Entity of the recipient
-    repeated bytes recipients = 1;
-    InvoiceDocument document = 10;
+message AccessControlSchema {
+    // Set either to true to grant access to also look at past versions of the document and/or future updates
+    // to the document.
+    bool grantPastVersionAccess = 2;
+    bool grantFutureVersionAccess = 3;
+
+    google.protobuf.Timestamp grantAccessToFutureVersionsUntil = 4;
+
+    // TODO: how granular do we want to grant these permissions? Fields?
+    repeated FieldAccess readFields = 5;
+    repeated FieldAccess writeFields = 6;
 }
 
-message GetInvoiceDocumentEnvelope {
-    bytes documentIdentifier = 1;
+message FieldAccess {
+    // TODO: how do we identify field names?
+    string fieldName = 1;
 }
