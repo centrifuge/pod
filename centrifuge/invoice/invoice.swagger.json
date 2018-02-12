@@ -1,0 +1,322 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Centrifuge OS Client API",
+    "version": "0.0.1",
+    "contact": {
+      "name": "Centrifuge",
+      "url": "https://github.com/CentrifugeInc",
+      "email": "hello@centrifuge.one"
+    }
+  },
+  "host": "localhost:8082",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/invoice/anchor": {
+      "post": {
+        "summary": "Anchors a document on chain. Returns updated document with signatures and root calculated.",
+        "operationId": "AnchorDocument",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/invoiceInvoiceDocument"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/invoiceInvoiceDocument"
+            }
+          }
+        ],
+        "tags": [
+          "InvoiceDocumentService"
+        ]
+      }
+    },
+    "/invoice/get/{documentIdentifier}": {
+      "get": {
+        "operationId": "GetInvoiceDocument",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/invoiceInvoiceDocument"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "documentIdentifier",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "byte"
+          }
+        ],
+        "tags": [
+          "InvoiceDocumentService"
+        ]
+      }
+    },
+    "/invoice/send": {
+      "post": {
+        "operationId": "SendInvoiceDocument",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/invoiceInvoiceDocument"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/invoiceSendInvoiceEnvelope"
+            }
+          }
+        ],
+        "tags": [
+          "InvoiceDocumentService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "InvoiceDocumentInvoiceData": {
+      "type": "object",
+      "properties": {
+        "country": {
+          "type": "string"
+        },
+        "currency": {
+          "type": "string"
+        },
+        "amount": {
+          "type": "string",
+          "format": "int64"
+        },
+        "recipient": {
+          "type": "string",
+          "format": "byte"
+        },
+        "sender": {
+          "type": "string",
+          "format": "byte"
+        },
+        "payee": {
+          "type": "string",
+          "format": "byte"
+        },
+        "comment": {
+          "type": "string"
+        },
+        "dueDate": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "dateCreated": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "coredocumentAccessControlEntry": {
+      "type": "object",
+      "properties": {
+        "identity": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "byte"
+          },
+          "title": "All identities listed"
+        },
+        "aclSchemaIdentifier": {
+          "type": "string",
+          "format": "byte",
+          "description": "There are two ways to describe the acl schema. One of the standard ACL schemas can be referenced by a\nunique identifier or a schema can be embedded."
+        },
+        "embeddedAclSchema": {
+          "$ref": "#/definitions/coredocumentAccessControlSchema"
+        }
+      },
+      "title": "AccessControlEntry defines a member of the document"
+    },
+    "coredocumentAccessControlSchema": {
+      "type": "object",
+      "properties": {
+        "grantPastVersionAccess": {
+          "type": "boolean",
+          "format": "boolean",
+          "description": "Set either to true to grant access to also look at past versions of the document and/or future updates\nto the document."
+        },
+        "grantFutureVersionAccess": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "grantAccessToFutureVersionsUntil": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "readFields": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/coredocumentFieldAccess"
+          },
+          "title": "TODO: how granular do we want to grant these permissions? Fields?"
+        },
+        "writeFields": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/coredocumentFieldAccess"
+          }
+        }
+      }
+    },
+    "coredocumentCoreDocument": {
+      "type": "object",
+      "properties": {
+        "documentIdentifier": {
+          "type": "string",
+          "format": "byte",
+          "description": "Identifier\n----------\nThis is for convenience: the first identifier that was ever used to refer to a \ndocument is kept here. Internally the centrifuge node indexes \u0026 bundles documents \nby original identifier."
+        },
+        "currentIdentifier": {
+          "type": "string",
+          "format": "byte",
+          "description": "The current identifier is the location of the current anchor on chain and is used to \nrefer to the current state."
+        },
+        "nextIdentifier": {
+          "type": "string",
+          "format": "byte",
+          "description": "When creating the next version this should be used."
+        },
+        "previousRoot": {
+          "type": "string",
+          "format": "byte",
+          "title": "Root"
+        },
+        "dataMerkleRoot": {
+          "type": "string",
+          "format": "byte"
+        },
+        "documentRoot": {
+          "type": "string",
+          "format": "byte"
+        },
+        "signatures": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/coredocumentSignature"
+          },
+          "title": "Signatures"
+        },
+        "collaborators": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "byte"
+          },
+          "description": "List of collaborators on this document. These Centrifuge Identities have access \nto the document and should receive new versions whenever a document is updated."
+        },
+        "acl": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/coredocumentAccessControlEntry"
+          }
+        },
+        "previousVersion": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/coredocumentCoreDocument"
+          },
+          "title": "The previous document is referenced here but doesn't need to be provided and can\nbe left blank"
+        }
+      },
+      "title": "CoreDocument is a document that can be sent to different nodes and anchored on chain"
+    },
+    "coredocumentFieldAccess": {
+      "type": "object",
+      "properties": {
+        "fieldName": {
+          "type": "string",
+          "title": "TODO: how do we identify field names?"
+        }
+      }
+    },
+    "coredocumentSignature": {
+      "type": "object",
+      "properties": {
+        "identityId": {
+          "type": "string",
+          "format": "byte",
+          "title": "256 bit identifier of the Centrifuge Identity on ethereum"
+        },
+        "publicKey": {
+          "type": "string",
+          "format": "byte",
+          "title": "256 bit ed25519 public key"
+        },
+        "signature": {
+          "type": "string",
+          "format": "byte",
+          "title": "512 bit ed25519 signature"
+        }
+      },
+      "title": "Signature contains the identity ID, public key used and signature"
+    },
+    "invoiceInvoiceDocument": {
+      "type": "object",
+      "properties": {
+        "documentIdentifier": {
+          "type": "string",
+          "format": "byte",
+          "title": "documentIdentifier"
+        },
+        "coreDocument": {
+          "$ref": "#/definitions/coredocumentCoreDocument",
+          "title": "CoreDocument contains data related to the Centrifuge OS layer"
+        },
+        "data": {
+          "$ref": "#/definitions/InvoiceDocumentInvoiceData",
+          "description": "InvoiceData has all invoice specific information."
+        }
+      },
+      "title": "InvoiceDocument is a Centrifuge enabled document that can be used to represent"
+    },
+    "invoiceSendInvoiceEnvelope": {
+      "type": "object",
+      "properties": {
+        "recipients": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "byte"
+          },
+          "title": "Centrifuge OS Entity of the recipient"
+        },
+        "document": {
+          "$ref": "#/definitions/invoiceInvoiceDocument"
+        }
+      }
+    }
+  }
+}
