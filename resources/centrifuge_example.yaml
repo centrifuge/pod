@@ -1,3 +1,9 @@
+storage:
+  path: /tmp/centrifuge_data.leveldb
+
+nodeHostname: localhost
+nodePort: 8082
+
 ethereum:
   account: "838f7dcA284eb69A9c489fE09c31cFf37DeFDEcA"
   gethIpc: /tmp/centrifuge/geth.ipc
