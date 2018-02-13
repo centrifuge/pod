@@ -86,11 +86,11 @@ func (ethRegistry *EthereumAnchorRegistry) RegisterAsAnchor(anchorID string, roo
 	return ret, err
 }
 
-func getAnchorContract() (anchorContract *EthereumAnchor, err error) {
+func getAnchorContract() (anchorContract *EthereumAnchorRegistryContract, err error) {
 	// Instantiate the contract and display its name
 	client := ethereum.GetConnection()
 
-	anchorContract, err = NewEthereumAnchor(common.HexToAddress("0x6e54f75413ddaf374188fd16b8e0888fee76715e"), client.GetClient())
+	anchorContract, err = NewEthereumAnchorRegistryContract(common.HexToAddress("0x6e54f75413ddaf374188fd16b8e0888fee76715e"), client.GetClient())
 	if err != nil {
 		log.Fatalf("Failed to instantiate the witness contract contract: %v", err)
 	}

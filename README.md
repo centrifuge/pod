@@ -65,9 +65,11 @@ Ethereum Contract Bindings
 
 To create the go bindings for the deployed truffle contract, use the following command:
 
-`abigen --abi build/contracts/Witness.abi --pkg witness --type EthereumWitness --out witness_contract.go`
+```bash
+abigen --abi abi/AnchorRegistry.abi --pkg anchor --type EthereumAnchorRegistryContract --out ethereum_anchor_registry_contract.go
+```
 
-and then copy the `witness_contract.go` file to `centrifuge/witness/`. You will also need to modify the file to add the following imports:
+and then copy the `ethereum_anchor_registry_contract.go` file to `centrifuge/anchor/`. You will also need to modify the file to add the following imports:
 
 ```go,
 import(

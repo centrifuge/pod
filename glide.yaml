@@ -5,12 +5,14 @@ import:
   subpackages:
   - centrifuge/witness
 - package: github.com/ethereum/go-ethereum
-  version: master
+  version: 1.7.3
   repo: git@github.com:ethereum/go-ethereum
   subpackages:
   - accounts/abi/bind
   - common
   - ethclient
+  - types
+  - ethereum
 - package: github.com/golang/protobuf
   version: ^1.0.0
   subpackages:
