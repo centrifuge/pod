@@ -16,6 +16,8 @@ var runCmd = &cobra.Command{
 	Short: "run a centrifuge node",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
+		// Below WaitGroup not the best solution to the concurrency issue. If one of the two methods return because of
+		// an error it will have to be killed manually and restarted.
 		var wg sync.WaitGroup
 		wg.Add(2)
 		go func() {
@@ -34,14 +36,9 @@ var Destination string
 
 
 func init() {
-
 	// Set defaults for Server
 	viper.SetDefault("nodeHostname", "localhost")
 	viper.SetDefault("nodePort", 8022)
 	viper.SetDefault("p2p.port", 53202)
-
-	runCmd.Flags().String("destination", "", "Destination to send a message to")
-	viper.BindPFlag("p2p.destination", rootCmd.PersistentFlags().Lookup("destination"))
-
 	rootCmd.AddCommand(runCmd)
 }

@@ -10,10 +10,14 @@ import (
 	"google.golang.org/grpc"
 	"sync"
 	"google.golang.org/grpc/connectivity"
+	gologging "github.com/whyrusleeping/go-logging"
+	golog "github.com/ipfs/go-log"
 )
 
 // Opens a client connection with libp2p
 func OpenClient (target string) P2PServiceClient {
+	golog.SetAllLoggers(gologging.DEBUG) // Change to DEBUG for extra info
+
 	log.Printf("Opening connection to: %s", target)
 	ipfsaddr, err := ma.NewMultiaddr(target)
 	if err != nil {
@@ -47,7 +51,7 @@ func OpenClient (target string) P2PServiceClient {
 	// make a new stream from host B to host A
 	var wg sync.WaitGroup
 	var grpcConn = make(chan *grpc.ClientConn)
-
+	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		g, err := grpcProtoInstance.Dial(context.Background(), peerid, grpc.WithInsecure())

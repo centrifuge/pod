@@ -12,8 +12,8 @@ var createEncryptionKey bool
 
 // generateSigningKeyCmd represents the generateSigningKey command
 var generateSigningKeyCmd = &cobra.Command{
-	Use:   "gemeratekeys",
-	Short: "generate key sfor use with centrifuge documents",
+	Use:   "generatekeys",
+	Short: "generate key for use with centrifuge documents",
 	Long:  `TODO`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if createSigningKey {

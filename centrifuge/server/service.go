@@ -35,7 +35,7 @@ func (s *invoiceDocumentService) SendInvoiceDocument(ctx context.Context, sendIn
 	for _, element := range sendInvoiceEnvelope.Recipients {
 		addr := string(element[:])
 		client := p2p.OpenClient(addr)
-
+		log.Print("Done opening connection")
 		_, err := client.TransmitInvoice(context.Background(), &p2p.TransmitInvoiceDocument{sendInvoiceEnvelope.Document})
 		if err != nil {
 			return nil, err

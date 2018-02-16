@@ -122,7 +122,7 @@ func RunP2P() {
 	// LibP2P code uses golog to log messages. They log with different
 	// string IDs (i.e. "swarm"). We can control the verbosity level for
 	// all loggers with:
-	golog.SetAllLoggers(gologging.INFO) // Change to DEBUG for extra info
+	golog.SetAllLoggers(gologging.DEBUG) // Change to DEBUG for extra info
 
 	// Parse options from the command line
 	port := viper.GetInt("p2p.port")
@@ -153,7 +153,6 @@ func GetHost() (h host.Host) {
 	}
 	return
 }
-
 
 func GetGRPCProto() (g *p2pgrpc.GRPCProtocol) {
 	g = <- GRPCProtoInstance
