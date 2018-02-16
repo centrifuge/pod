@@ -1,12 +1,12 @@
-hash: ca3cb4bd3a7d6ced2e32b907e65f0ddee4cad917572e31923a55a2989eba21da
-updated: 2018-02-13T15:28:07.124983683+01:00
+hash: ef8947e2a2e8b6f1bd857427cbdf70f3eef5acc45380eef2cfad7f51c4642244
+updated: 2018-02-16T16:40:04.240105171+01:00
 imports:
 - name: github.com/aristanetworks/goarista
-  version: 76d15ea364f9cab3eaa9935ff6893d49c3691c23
+  version: dabf8b263397da4b45596098bca0c33236045242
   subpackages:
   - monotime
 - name: github.com/btcsuite/btcd
-  version: 0ef0d8c59b58ccfc8ac814dd6dac3990d4a16be2
+  version: 9866016012e7992f394888a4e65ec4315dfa8d49
   subpackages:
   - btcec
 - name: github.com/CentrifugeInc/centrifuge-ethereum-contracts
@@ -15,7 +15,7 @@ imports:
   subpackages:
   - centrifuge/witness
 - name: github.com/ethereum/go-ethereum
-  version: 4bb3c89d44e372e6a9ab85a8be0c9345265c763a
+  version: 5f54075760748ae7f249bf735565924ea885c477
   repo: git@github.com:ethereum/go-ethereum
   subpackages:
   - accounts
@@ -32,12 +32,16 @@ imports:
   - crypto/secp256k1
   - crypto/sha3
   - ethclient
+  - ethdb
+  - ethereum
   - event
   - log
+  - metrics
   - params
   - rlp
   - rpc
   - trie
+  - types
 - name: github.com/fsnotify/fsnotify
   version: c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9
 - name: github.com/go-errors/errors
@@ -84,7 +88,7 @@ imports:
 - name: github.com/inconshreveable/mousetrap
   version: 76626ae9c91c4f2a10f34cad8ce83ea42c93bb75
 - name: github.com/magiconair/properties
-  version: 49d762b9817ba1c2e9d0c69183c2b4a8b8f1d934
+  version: c3beff4c2358b44d0493c7dda585e7db7ff28ae6
 - name: github.com/mitchellh/go-homedir
   version: b8bc1bf767474819792c23f32d8286a45736f1c6
 - name: github.com/mitchellh/mapstructure
@@ -95,6 +99,8 @@ imports:
   version: acdc4509485b587f5e675510c4f2c63e90ff68a8
 - name: github.com/rcrowley/go-metrics
   version: 8732c616f52954686704c8645fe1a9d59e9df7c1
+  subpackages:
+  - exp
 - name: github.com/rjeczalik/notify
   version: c31e5f2cb22b3e4ef3f882f413847669bf2652b9
 - name: github.com/rs/cors
@@ -104,7 +110,7 @@ imports:
   subpackages:
   - mem
 - name: github.com/spf13/cast
-  version: acbeb36b902d72a7a4c18e8f3241075e7ab763e4
+  version: 8965335b8c7107321228e3e3702cab9832751bac
 - name: github.com/spf13/cobra
   version: 7b2c5ac9fc04fc5efafb60700713d4fa609b777b
 - name: github.com/spf13/jwalterweatherman
@@ -133,7 +139,7 @@ imports:
 - name: github.com/xsleonard/go-merkle
   version: c71c7cc334c839f31f3760b2385eab8381daf64e
 - name: golang.org/x/crypto
-  version: 9de5f2eaf759b4c4550b3db39fed2e9e5f86f45c
+  version: 650f4a345ab4e5b245a3034b110ebc7299e68186
   subpackages:
   - ed25519
   - ed25519/internal/edwards25519
@@ -141,7 +147,7 @@ imports:
   - scrypt
   - sha3
 - name: golang.org/x/net
-  version: f5dfe339be1d06f81b22525fe34671ee7d2c8904
+  version: 2e7f24ace30034db6c258ddb329e5236a68c27fa
   subpackages:
   - context
   - http2
@@ -163,7 +169,7 @@ imports:
   - unicode/bidi
   - unicode/norm
 - name: golang.org/x/tools
-  version: f05340fad48926594a3c17968f98ffc30e075b59
+  version: ce871d178848e3eea1e8795e5cfb74053dde4bb9
   subpackages:
   - go/ast/astutil
   - imports
@@ -173,7 +179,7 @@ imports:
   - googleapis/api/annotations
   - googleapis/rpc/status
 - name: google.golang.org/grpc
-  version: 6b51017f791ae1cfbec89c52efdf444b13b550ef
+  version: 8e4536a86ab602859c20df5ebfd0bd4228d08655
   subpackages:
   - balancer
   - balancer/base
@@ -182,6 +188,7 @@ imports:
   - connectivity
   - credentials
   - encoding
+  - encoding/proto
   - grpclb/grpc_lb_v1/messages
   - grpclog
   - internal

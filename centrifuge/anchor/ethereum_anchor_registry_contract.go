@@ -6,10 +6,13 @@ package anchor
 import (
 	"math/big"
 	"strings"
+
+	ethereum "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/event"
 )
 
 // EthereumAnchorRegistryContractABI is the input ABI used to generate the binding from.
@@ -19,6 +22,7 @@ const EthereumAnchorRegistryContractABI = "[{\"constant\":true,\"inputs\":[{\"na
 type EthereumAnchorRegistryContract struct {
 	EthereumAnchorRegistryContractCaller     // Read-only binding to the contract
 	EthereumAnchorRegistryContractTransactor // Write-only binding to the contract
+	EthereumAnchorRegistryContractFilterer   // Log filterer for contract events
 }
 
 // EthereumAnchorRegistryContractCaller is an auto generated read-only Go binding around an Ethereum contract.
@@ -28,6 +32,11 @@ type EthereumAnchorRegistryContractCaller struct {
 
 // EthereumAnchorRegistryContractTransactor is an auto generated write-only Go binding around an Ethereum contract.
 type EthereumAnchorRegistryContractTransactor struct {
+	contract *bind.BoundContract // Generic contract wrapper for the low level calls
+}
+
+// EthereumAnchorRegistryContractFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
+type EthereumAnchorRegistryContractFilterer struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
@@ -70,16 +79,16 @@ type EthereumAnchorRegistryContractTransactorRaw struct {
 
 // NewEthereumAnchorRegistryContract creates a new instance of EthereumAnchorRegistryContract, bound to a specific deployed contract.
 func NewEthereumAnchorRegistryContract(address common.Address, backend bind.ContractBackend) (*EthereumAnchorRegistryContract, error) {
-	contract, err := bindEthereumAnchorRegistryContract(address, backend, backend)
+	contract, err := bindEthereumAnchorRegistryContract(address, backend, backend, backend)
 	if err != nil {
 		return nil, err
 	}
-	return &EthereumAnchorRegistryContract{EthereumAnchorRegistryContractCaller: EthereumAnchorRegistryContractCaller{contract: contract}, EthereumAnchorRegistryContractTransactor: EthereumAnchorRegistryContractTransactor{contract: contract}}, nil
+	return &EthereumAnchorRegistryContract{EthereumAnchorRegistryContractCaller: EthereumAnchorRegistryContractCaller{contract: contract}, EthereumAnchorRegistryContractTransactor: EthereumAnchorRegistryContractTransactor{contract: contract}, EthereumAnchorRegistryContractFilterer: EthereumAnchorRegistryContractFilterer{contract: contract}}, nil
 }
 
 // NewEthereumAnchorRegistryContractCaller creates a new read-only instance of EthereumAnchorRegistryContract, bound to a specific deployed contract.
 func NewEthereumAnchorRegistryContractCaller(address common.Address, caller bind.ContractCaller) (*EthereumAnchorRegistryContractCaller, error) {
-	contract, err := bindEthereumAnchorRegistryContract(address, caller, nil)
+	contract, err := bindEthereumAnchorRegistryContract(address, caller, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -88,20 +97,29 @@ func NewEthereumAnchorRegistryContractCaller(address common.Address, caller bind
 
 // NewEthereumAnchorRegistryContractTransactor creates a new write-only instance of EthereumAnchorRegistryContract, bound to a specific deployed contract.
 func NewEthereumAnchorRegistryContractTransactor(address common.Address, transactor bind.ContractTransactor) (*EthereumAnchorRegistryContractTransactor, error) {
-	contract, err := bindEthereumAnchorRegistryContract(address, nil, transactor)
+	contract, err := bindEthereumAnchorRegistryContract(address, nil, transactor, nil)
 	if err != nil {
 		return nil, err
 	}
 	return &EthereumAnchorRegistryContractTransactor{contract: contract}, nil
 }
 
+// NewEthereumAnchorRegistryContractFilterer creates a new log filterer instance of EthereumAnchorRegistryContract, bound to a specific deployed contract.
+func NewEthereumAnchorRegistryContractFilterer(address common.Address, filterer bind.ContractFilterer) (*EthereumAnchorRegistryContractFilterer, error) {
+	contract, err := bindEthereumAnchorRegistryContract(address, nil, nil, filterer)
+	if err != nil {
+		return nil, err
+	}
+	return &EthereumAnchorRegistryContractFilterer{contract: contract}, nil
+}
+
 // bindEthereumAnchorRegistryContract binds a generic wrapper to an already deployed contract.
-func bindEthereumAnchorRegistryContract(address common.Address, caller bind.ContractCaller, transactor bind.ContractTransactor) (*bind.BoundContract, error) {
+func bindEthereumAnchorRegistryContract(address common.Address, caller bind.ContractCaller, transactor bind.ContractTransactor, filterer bind.ContractFilterer) (*bind.BoundContract, error) {
 	parsed, err := abi.JSON(strings.NewReader(EthereumAnchorRegistryContractABI))
 	if err != nil {
 		return nil, err
 	}
-	return bind.NewBoundContract(address, parsed, caller, transactor), nil
+	return bind.NewBoundContract(address, parsed, caller, transactor, filterer), nil
 }
 
 // Call invokes the (constant) contract method with params as input values and
@@ -286,4 +304,270 @@ func (_EthereumAnchorRegistryContract *EthereumAnchorRegistryContractSession) Tr
 // Solidity: function transferOwnership(newOwner address) returns()
 func (_EthereumAnchorRegistryContract *EthereumAnchorRegistryContractTransactorSession) TransferOwnership(newOwner common.Address) (*types.Transaction, error) {
 	return _EthereumAnchorRegistryContract.Contract.TransferOwnership(&_EthereumAnchorRegistryContract.TransactOpts, newOwner)
+}
+
+// EthereumAnchorRegistryContractAnchorRegisteredIterator is returned from FilterAnchorRegistered and is used to iterate over the raw logs and unpacked data for AnchorRegistered events raised by the EthereumAnchorRegistryContract contract.
+type EthereumAnchorRegistryContractAnchorRegisteredIterator struct {
+	Event *EthereumAnchorRegistryContractAnchorRegistered // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *EthereumAnchorRegistryContractAnchorRegisteredIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(EthereumAnchorRegistryContractAnchorRegistered)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(EthereumAnchorRegistryContractAnchorRegistered)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *EthereumAnchorRegistryContractAnchorRegisteredIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *EthereumAnchorRegistryContractAnchorRegisteredIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// EthereumAnchorRegistryContractAnchorRegistered represents a AnchorRegistered event raised by the EthereumAnchorRegistryContract contract.
+type EthereumAnchorRegistryContractAnchorRegistered struct {
+	Identifier          [32]byte
+	RootHash            [32]byte
+	Timestamp           [32]byte
+	AnchorSchemaVersion *big.Int
+	Raw                 types.Log // Blockchain specific contextual infos
+}
+
+// FilterAnchorRegistered is a free log retrieval operation binding the contract event 0x806de78255d65032a99366494f2000b5351f400c6628e1d6b427f4f4c19fe42f.
+//
+// Solidity: event AnchorRegistered(identifier bytes32, rootHash bytes32, timestamp bytes32, anchorSchemaVersion uint256)
+func (_EthereumAnchorRegistryContract *EthereumAnchorRegistryContractFilterer) FilterAnchorRegistered(opts *bind.FilterOpts) (*EthereumAnchorRegistryContractAnchorRegisteredIterator, error) {
+
+	logs, sub, err := _EthereumAnchorRegistryContract.contract.FilterLogs(opts, "AnchorRegistered")
+	if err != nil {
+		return nil, err
+	}
+	return &EthereumAnchorRegistryContractAnchorRegisteredIterator{contract: _EthereumAnchorRegistryContract.contract, event: "AnchorRegistered", logs: logs, sub: sub}, nil
+}
+
+// WatchAnchorRegistered is a free log subscription operation binding the contract event 0x806de78255d65032a99366494f2000b5351f400c6628e1d6b427f4f4c19fe42f.
+//
+// Solidity: event AnchorRegistered(identifier bytes32, rootHash bytes32, timestamp bytes32, anchorSchemaVersion uint256)
+func (_EthereumAnchorRegistryContract *EthereumAnchorRegistryContractFilterer) WatchAnchorRegistered(opts *bind.WatchOpts, sink chan<- *EthereumAnchorRegistryContractAnchorRegistered) (event.Subscription, error) {
+
+	logs, sub, err := _EthereumAnchorRegistryContract.contract.WatchLogs(opts, "AnchorRegistered")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(EthereumAnchorRegistryContractAnchorRegistered)
+				if err := _EthereumAnchorRegistryContract.contract.UnpackLog(event, "AnchorRegistered", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// EthereumAnchorRegistryContractOwnershipTransferredIterator is returned from FilterOwnershipTransferred and is used to iterate over the raw logs and unpacked data for OwnershipTransferred events raised by the EthereumAnchorRegistryContract contract.
+type EthereumAnchorRegistryContractOwnershipTransferredIterator struct {
+	Event *EthereumAnchorRegistryContractOwnershipTransferred // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *EthereumAnchorRegistryContractOwnershipTransferredIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(EthereumAnchorRegistryContractOwnershipTransferred)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(EthereumAnchorRegistryContractOwnershipTransferred)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *EthereumAnchorRegistryContractOwnershipTransferredIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *EthereumAnchorRegistryContractOwnershipTransferredIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// EthereumAnchorRegistryContractOwnershipTransferred represents a OwnershipTransferred event raised by the EthereumAnchorRegistryContract contract.
+type EthereumAnchorRegistryContractOwnershipTransferred struct {
+	PreviousOwner common.Address
+	NewOwner      common.Address
+	Raw           types.Log // Blockchain specific contextual infos
+}
+
+// FilterOwnershipTransferred is a free log retrieval operation binding the contract event 0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0.
+//
+// Solidity: event OwnershipTransferred(previousOwner indexed address, newOwner indexed address)
+func (_EthereumAnchorRegistryContract *EthereumAnchorRegistryContractFilterer) FilterOwnershipTransferred(opts *bind.FilterOpts, previousOwner []common.Address, newOwner []common.Address) (*EthereumAnchorRegistryContractOwnershipTransferredIterator, error) {
+
+	var previousOwnerRule []interface{}
+	for _, previousOwnerItem := range previousOwner {
+		previousOwnerRule = append(previousOwnerRule, previousOwnerItem)
+	}
+	var newOwnerRule []interface{}
+	for _, newOwnerItem := range newOwner {
+		newOwnerRule = append(newOwnerRule, newOwnerItem)
+	}
+
+	logs, sub, err := _EthereumAnchorRegistryContract.contract.FilterLogs(opts, "OwnershipTransferred", previousOwnerRule, newOwnerRule)
+	if err != nil {
+		return nil, err
+	}
+	return &EthereumAnchorRegistryContractOwnershipTransferredIterator{contract: _EthereumAnchorRegistryContract.contract, event: "OwnershipTransferred", logs: logs, sub: sub}, nil
+}
+
+// WatchOwnershipTransferred is a free log subscription operation binding the contract event 0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0.
+//
+// Solidity: event OwnershipTransferred(previousOwner indexed address, newOwner indexed address)
+func (_EthereumAnchorRegistryContract *EthereumAnchorRegistryContractFilterer) WatchOwnershipTransferred(opts *bind.WatchOpts, sink chan<- *EthereumAnchorRegistryContractOwnershipTransferred, previousOwner []common.Address, newOwner []common.Address) (event.Subscription, error) {
+
+	var previousOwnerRule []interface{}
+	for _, previousOwnerItem := range previousOwner {
+		previousOwnerRule = append(previousOwnerRule, previousOwnerItem)
+	}
+	var newOwnerRule []interface{}
+	for _, newOwnerItem := range newOwner {
+		newOwnerRule = append(newOwnerRule, newOwnerItem)
+	}
+
+	logs, sub, err := _EthereumAnchorRegistryContract.contract.WatchLogs(opts, "OwnershipTransferred", previousOwnerRule, newOwnerRule)
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(EthereumAnchorRegistryContractOwnershipTransferred)
+				if err := _EthereumAnchorRegistryContract.contract.UnpackLog(event, "OwnershipTransferred", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
 }

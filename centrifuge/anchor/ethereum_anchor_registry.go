@@ -14,6 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"context"
 	"time"
+	//"encoding/hex"
 )
 
 //Supported anchor schema version as stored on public registry
@@ -39,18 +40,20 @@ func (ethRegistry *EthereumAnchorRegistry) RegisterAnchor(anchor *Anchor) (Ancho
 	var schemaVersion = big.NewInt(int64(anchor.schemaVersion))
 
 	tx, err := ethRegistryContract.RegisterAnchor(opts, bAnchorId, bMerkleRoot, schemaVersion)
-	//tx, err := contract.WitnessDocument(opts, wes.doc.Identifier, wes.doc.WitnessRoot)
+
 	if err != nil {
 		wError := errors.Wrap(err, 1)
-		log.Fatalf("Failed to register the anchor [id:%v, hash:%v, schemaVersion:%v] on registry: %v", bAnchorId, bMerkleRoot, schemaVersion, wError)
+		log.Fatalf("Failed to register the anchor [id: %x, hash: %x, schemaVersion:%v] on registry: %v", bAnchorId, bMerkleRoot, schemaVersion, wError)
 		//log.Fatalf(wError.(*errors.Error).ErrorStack())
 		return ret, err
+	} else {
+		fmt.Printf("Sent off the anchor [id: %x, hash: %x, schemaVersion:%v] to registry.", bAnchorId, bMerkleRoot, schemaVersion)
 	}
 	log.Printf("Transfer pending: 0x%x\n", tx.Hash())
 
-	waitForIt := make(chan bool, 1)
-	go waitForTransaction(tx, waitForIt)
-	<-waitForIt
+	//waitForIt := make(chan bool, 1)
+	//go waitForTransaction(tx, waitForIt)
+	//<-waitForIt
 
 	ret.anchorID = anchor.anchorID
 	ret.rootHash = anchor.rootHash
