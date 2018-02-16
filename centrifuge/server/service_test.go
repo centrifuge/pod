@@ -3,20 +3,20 @@ package server
 import (
 	"testing"
 	"context"
-	pb "github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"bytes"
 	"fmt"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
 )
 
 func TestCoreDocumentService(t *testing.T) {
 	identifier := []byte("identifier")
 	identifierIncorrect := []byte("incorrectIdentifier")
-	s := newCentrifugeNodeService()
-	doc := pb.InvoiceDocument{
+	s := newInvoiceDocumentService()
+	doc := invoice.InvoiceDocument{
 		DocumentIdentifier: identifier,
 	}
 
-	sentDoc, err := s.SendInvoiceDocument(context.Background(), &pb.SendInvoiceEnvelope{[][]byte{}, &doc})
+	sentDoc, err := s.SendInvoiceDocument(context.Background(), &invoice.SendInvoiceEnvelope{[][]byte{}, &doc})
 	if err != nil {
 		t.Fatal("Error in RPC Call", err)
 	}
@@ -25,7 +25,7 @@ func TestCoreDocumentService(t *testing.T) {
 	}
 
 	receivedDoc, err := s.GetInvoiceDocument(context.Background(),
-		&pb.GetInvoiceDocumentEnvelope{DocumentIdentifier: identifier})
+		&invoice.GetInvoiceDocumentEnvelope{DocumentIdentifier: identifier})
 	if err != nil {
 		t.Fatal("Error in RPC Call", err)
 	}
@@ -34,7 +34,7 @@ func TestCoreDocumentService(t *testing.T) {
 	}
 
 	docIncorrect, err := s.GetInvoiceDocument(context.Background(),
-		&pb.GetInvoiceDocumentEnvelope{DocumentIdentifier: identifierIncorrect})
+		&invoice.GetInvoiceDocumentEnvelope{DocumentIdentifier: identifierIncorrect})
 	fmt.Println(docIncorrect)
 	if err == nil {
 		t.Fatal("RPC call should have raised exception")
