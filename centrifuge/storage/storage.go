@@ -36,8 +36,10 @@ func (db *LeveldbDataStore) Get(key []byte) (doc []byte, err error) {
 	return
 }
 
-var once sync.Once
-var instance DataStore
+var (
+	once sync.Once
+	instance DataStore
+)
 
 // GetStorage is a singleton implementation returning the default database as configured
 func GetStorage() DataStore {

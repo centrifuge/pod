@@ -105,3 +105,4 @@ Swagger
 -------
 You can run `./scripts/run_swagger.sh` to launch a docker container that serves teh swagger UI on http://localhost:8085
 
+	"github.com/ipfs/go-log" "github.com/libp2p/go-libp2p-crypto" "github.com/libp2p/go-libp2p-host" "github.com/libp2p/go-libp2p-net" "github.com/libp2p/go-libp2p-peer" "github.com/libp2p/go-libp2p-peerstore" "github.com/libp2p/go-libp2p-swarm" "github.com/libp2p/go-libp2p/p2p/host/basic" "github.com/multiformats/go-multiaddr" "github.com/whyrusleeping/go-logging" "github.com/whyrusleeping/go-smux-multistream" "github.com/whyrusleeping/go-smux-yamux"

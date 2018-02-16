@@ -9,7 +9,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/constellation"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/signingkeys"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/witness"
 )
 
@@ -39,7 +39,7 @@ type ReceiveResponseStruct struct {
 }
 
 func SignPayload(payload string) (signedPayload string) {
-	publicKey, privateKey := signingkeys.GetKeysFromConfig()
+	publicKey, privateKey := keytools.GetSigningKeysFromConfig()
 	document := witness.PrepareDocument(payload)
 	document.Sign(privateKey, publicKey)
 	// Check signature is right

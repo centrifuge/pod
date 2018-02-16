@@ -9,18 +9,18 @@ import "coredocument/coredocument.proto";
 
 option (grpc.gateway.protoc_gen_swagger.options.openapiv2_swagger) = {
     host: "localhost:8082";
-    info: {
-        title: "Centrifuge OS Client API";
-        version: "0.0.1";
-        contact: {
-            name: "Centrifuge";
-            url: "https://github.com/CentrifugeInc";
-            email: "hello@centrifuge.one";
-            };
+    info:{
+        title:"Centrifuge OS Client API";
+        version:"0.0.1";
+        contact:{
+            name:"Centrifuge";
+            url:"https://github.com/CentrifugeInc";
+            email:"hello@centrifuge.one";
+        };
     };
-    schemes: HTTPS;
-    consumes: "application/json";
-    produces: "application/json";
+    schemes:HTTPS;
+    consumes:"application/json";
+    produces:"application/json";
 };
 
 service InvoiceDocumentService {
@@ -41,6 +41,12 @@ service InvoiceDocumentService {
     rpc GetInvoiceDocument(GetInvoiceDocumentEnvelope) returns (InvoiceDocument) {
         option (google.api.http) = {
             get: "/invoice/get/{documentIdentifier}"
+        };
+    }
+
+        rpc GetReceivedInvoiceDocuments (Empty) returns (ReceivedInvoices) {
+        option (google.api.http) = {
+            get: "/invoice/getReceived"
         };
     }
 }
@@ -78,4 +84,12 @@ message SendInvoiceEnvelope {
 
 message GetInvoiceDocumentEnvelope {
     bytes documentIdentifier = 1;
+}
+
+message ReceivedInvoices {
+    repeated bytes invoices = 1;
+}
+
+message Empty {
+
 }
