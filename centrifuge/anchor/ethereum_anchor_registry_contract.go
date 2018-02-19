@@ -6,7 +6,6 @@ package anchor
 import (
 	"math/big"
 	"strings"
-
 	ethereum "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -16,7 +15,7 @@ import (
 )
 
 // EthereumAnchorRegistryContractABI is the input ABI used to generate the binding from.
-const EthereumAnchorRegistryContractABI = "[{\"constant\":true,\"inputs\":[{\"name\":\"identifier\",\"type\":\"bytes32\"}],\"name\":\"getAnchorById\",\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\"},{\"name\":\"\",\"type\":\"bytes32\"},{\"name\":\"\",\"type\":\"bytes32\"},{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"identifier\",\"type\":\"bytes32\"},{\"name\":\"merkleRoot\",\"type\":\"bytes32\"},{\"name\":\"anchorSchemaVersion\",\"type\":\"uint256\"}],\"name\":\"registerAnchor\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"bytes32\"}],\"name\":\"anchors\",\"outputs\":[{\"name\":\"identifier\",\"type\":\"bytes32\"},{\"name\":\"merkleRoot\",\"type\":\"bytes32\"},{\"name\":\"timestamp\",\"type\":\"bytes32\"},{\"name\":\"schemaVersion\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"identifier\",\"type\":\"bytes32\"},{\"indexed\":false,\"name\":\"rootHash\",\"type\":\"bytes32\"},{\"indexed\":false,\"name\":\"timestamp\",\"type\":\"bytes32\"},{\"indexed\":false,\"name\":\"anchorSchemaVersion\",\"type\":\"uint256\"}],\"name\":\"AnchorRegistered\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"}]"
+const EthereumAnchorRegistryContractABI = "[{\"constant\":true,\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"bytes32\"}],\"name\":\"anchors\",\"outputs\":[{\"name\":\"identifier\",\"type\":\"bytes32\"},{\"name\":\"merkleRoot\",\"type\":\"bytes32\"},{\"name\":\"timestamp\",\"type\":\"bytes32\"},{\"name\":\"schemaVersion\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"from\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"identifier\",\"type\":\"bytes32\"},{\"indexed\":true,\"name\":\"rootHash\",\"type\":\"bytes32\"},{\"indexed\":false,\"name\":\"timestamp\",\"type\":\"bytes32\"},{\"indexed\":false,\"name\":\"anchorSchemaVersion\",\"type\":\"uint256\"}],\"name\":\"AnchorRegistered\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"constant\":false,\"inputs\":[{\"name\":\"identifier\",\"type\":\"bytes32\"},{\"name\":\"merkleRoot\",\"type\":\"bytes32\"},{\"name\":\"anchorSchemaVersion\",\"type\":\"uint256\"}],\"name\":\"registerAnchor\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"identifier\",\"type\":\"bytes32\"}],\"name\":\"getAnchorById\",\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\"},{\"name\":\"\",\"type\":\"bytes32\"},{\"name\":\"\",\"type\":\"bytes32\"},{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}]"
 
 // EthereumAnchorRegistryContract is an auto generated Go binding around an Ethereum contract.
 type EthereumAnchorRegistryContract struct {
@@ -375,6 +374,7 @@ func (it *EthereumAnchorRegistryContractAnchorRegisteredIterator) Close() error 
 
 // EthereumAnchorRegistryContractAnchorRegistered represents a AnchorRegistered event raised by the EthereumAnchorRegistryContract contract.
 type EthereumAnchorRegistryContractAnchorRegistered struct {
+	From                common.Address
 	Identifier          [32]byte
 	RootHash            [32]byte
 	Timestamp           [32]byte
@@ -382,24 +382,50 @@ type EthereumAnchorRegistryContractAnchorRegistered struct {
 	Raw                 types.Log // Blockchain specific contextual infos
 }
 
-// FilterAnchorRegistered is a free log retrieval operation binding the contract event 0x806de78255d65032a99366494f2000b5351f400c6628e1d6b427f4f4c19fe42f.
+// FilterAnchorRegistered is a free log retrieval operation binding the contract event 0xb5b2dfde590bcc9ed7e31e337bc1780f2c3e052da6e82cb35e7232a916ac3550.
 //
-// Solidity: event AnchorRegistered(identifier bytes32, rootHash bytes32, timestamp bytes32, anchorSchemaVersion uint256)
-func (_EthereumAnchorRegistryContract *EthereumAnchorRegistryContractFilterer) FilterAnchorRegistered(opts *bind.FilterOpts) (*EthereumAnchorRegistryContractAnchorRegisteredIterator, error) {
+// Solidity: event AnchorRegistered(from indexed address, identifier indexed bytes32, rootHash indexed bytes32, timestamp bytes32, anchorSchemaVersion uint256)
+func (_EthereumAnchorRegistryContract *EthereumAnchorRegistryContractFilterer) FilterAnchorRegistered(opts *bind.FilterOpts, from []common.Address, identifier [][32]byte, rootHash [][32]byte) (*EthereumAnchorRegistryContractAnchorRegisteredIterator, error) {
 
-	logs, sub, err := _EthereumAnchorRegistryContract.contract.FilterLogs(opts, "AnchorRegistered")
+	var fromRule []interface{}
+	for _, fromItem := range from {
+		fromRule = append(fromRule, fromItem)
+	}
+	var identifierRule []interface{}
+	for _, identifierItem := range identifier {
+		identifierRule = append(identifierRule, identifierItem)
+	}
+	var rootHashRule []interface{}
+	for _, rootHashItem := range rootHash {
+		rootHashRule = append(rootHashRule, rootHashItem)
+	}
+
+	logs, sub, err := _EthereumAnchorRegistryContract.contract.FilterLogs(opts, "AnchorRegistered", fromRule, identifierRule, rootHashRule)
 	if err != nil {
 		return nil, err
 	}
 	return &EthereumAnchorRegistryContractAnchorRegisteredIterator{contract: _EthereumAnchorRegistryContract.contract, event: "AnchorRegistered", logs: logs, sub: sub}, nil
 }
 
-// WatchAnchorRegistered is a free log subscription operation binding the contract event 0x806de78255d65032a99366494f2000b5351f400c6628e1d6b427f4f4c19fe42f.
+// WatchAnchorRegistered is a free log subscription operation binding the contract event 0xb5b2dfde590bcc9ed7e31e337bc1780f2c3e052da6e82cb35e7232a916ac3550.
 //
-// Solidity: event AnchorRegistered(identifier bytes32, rootHash bytes32, timestamp bytes32, anchorSchemaVersion uint256)
-func (_EthereumAnchorRegistryContract *EthereumAnchorRegistryContractFilterer) WatchAnchorRegistered(opts *bind.WatchOpts, sink chan<- *EthereumAnchorRegistryContractAnchorRegistered) (event.Subscription, error) {
+// Solidity: event AnchorRegistered(from indexed address, identifier indexed bytes32, rootHash indexed bytes32, timestamp bytes32, anchorSchemaVersion uint256)
+func (_EthereumAnchorRegistryContract *EthereumAnchorRegistryContractFilterer) WatchAnchorRegistered(opts *bind.WatchOpts, sink chan<- *EthereumAnchorRegistryContractAnchorRegistered, from []common.Address, identifier [][32]byte, rootHash [][32]byte) (event.Subscription, error) {
 
-	logs, sub, err := _EthereumAnchorRegistryContract.contract.WatchLogs(opts, "AnchorRegistered")
+	var fromRule []interface{}
+	for _, fromItem := range from {
+		fromRule = append(fromRule, fromItem)
+	}
+	var identifierRule []interface{}
+	for _, identifierItem := range identifier {
+		identifierRule = append(identifierRule, identifierItem)
+	}
+	var rootHashRule []interface{}
+	for _, rootHashItem := range rootHash {
+		rootHashRule = append(rootHashRule, rootHashItem)
+	}
+
+	logs, sub, err := _EthereumAnchorRegistryContract.contract.WatchLogs(opts, "AnchorRegistered", fromRule, identifierRule, rootHashRule)
 	if err != nil {
 		return nil, err
 	}

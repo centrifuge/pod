@@ -5,16 +5,16 @@ import (
 	//"github.com/ethereum/go-ethereum/common"
 	//"github.com/spf13/viper"
 	"github.com/ethereum/go-ethereum/common"
-	goEthereum "github.com/ethereum/go-ethereum"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
 	"log"
 	"math/big"
-	"fmt"
+	//"fmt"
 	"github.com/go-errors/errors"
-	"github.com/ethereum/go-ethereum/core/types"
+	//"encoding/hex"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"fmt"
 	"context"
 	"time"
-	//"encoding/hex"
 )
 
 //Supported anchor schema version as stored on public registry
@@ -39,6 +39,20 @@ func (ethRegistry *EthereumAnchorRegistry) RegisterAnchor(anchor *Anchor) (Ancho
 	copy(bAnchorId[:], anchor.anchorID[:32])
 	var schemaVersion = big.NewInt(int64(anchor.schemaVersion))
 
+	//listen to this particular anchor being mined/event is triggered
+	watchOpts := &bind.WatchOpts{}
+	watchOpts.Context = ethereum.DefaultWaitForTransactionMiningContext()
+
+	sinkNo := make(chan *EthereumAnchorRegistryContractAnchorRegistered, 100)
+	go waitForTransaction(sinkNo, watchOpts.Context)
+
+	_, err = ethRegistryContract.WatchAnchorRegistered(watchOpts, sinkNo,nil,([][32]byte{bAnchorId}),nil)
+	if err != nil{
+		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for anchor registration: %v",1)
+		log.Fatalf(wError.Error())
+		panic(wError)
+	}
+
 	tx, err := ethRegistryContract.RegisterAnchor(opts, bAnchorId, bMerkleRoot, schemaVersion)
 
 	if err != nil {
@@ -47,13 +61,15 @@ func (ethRegistry *EthereumAnchorRegistry) RegisterAnchor(anchor *Anchor) (Ancho
 		//log.Fatalf(wError.(*errors.Error).ErrorStack())
 		return ret, err
 	} else {
-		fmt.Printf("Sent off the anchor [id: %x, hash: %x, schemaVersion:%v] to registry.", bAnchorId, bMerkleRoot, schemaVersion)
+		log.Printf("Sent off the anchor [id: %x, hash: %x, schemaVersion:%v] to registry. Ethereum transaction hash [%x]", bAnchorId, bMerkleRoot, schemaVersion, tx.Hash())
 	}
 	log.Printf("Transfer pending: 0x%x\n", tx.Hash())
 
-	//waitForIt := make(chan bool, 1)
-	//go waitForTransaction(tx, waitForIt)
-	//<-waitForIt
+	select {
+
+	case <-watchOpts.Context.Done():
+		fmt.Println("waited long enough")
+	}
 
 	ret.anchorID = anchor.anchorID
 	ret.rootHash = anchor.rootHash
@@ -61,27 +77,15 @@ func (ethRegistry *EthereumAnchorRegistry) RegisterAnchor(anchor *Anchor) (Ancho
 	return ret, nil
 }
 
-func waitForTransaction(pendingTransaction *types.Transaction, conf chan bool) {
-	client := ethereum.GetConnection().GetClient()
-
-	ticker := time.NewTicker(500 * time.Millisecond)
-
-	for range ticker.C {
-		receipt, err := client.TransactionReceipt(context.TODO(), pendingTransaction.Hash())
-		if err != nil {
-			if err == goEthereum.NotFound {
-				//the transaction has not yet been mined
-			} else {
-				log.Fatalf("Failed to get transaction status for transaction [%v] on registry: %v", pendingTransaction.Hash().String(), err)
-			}
-
-		}
-		if receipt != nil {
-			break
+func waitForTransaction(conf <-chan *EthereumAnchorRegistryContractAnchorRegistered, ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			return // returning not to leak the goroutine
+		case res := <-conf:
+			log.Printf("Received log output from: %x, identifier: %x",res.From,res.Identifier)
 		}
 	}
-	fmt.Printf("Transaction completed: 0x%x\n", pendingTransaction.Hash())
-	conf <- true
 }
 
 func (ethRegistry *EthereumAnchorRegistry) RegisterAsAnchor(anchorID string, rootHash string) (Anchor, error) {
@@ -93,7 +97,7 @@ func getAnchorContract() (anchorContract *EthereumAnchorRegistryContract, err er
 	// Instantiate the contract and display its name
 	client := ethereum.GetConnection()
 
-	anchorContract, err = NewEthereumAnchorRegistryContract(common.HexToAddress("0x6e54f75413ddaf374188fd16b8e0888fee76715e"), client.GetClient())
+	anchorContract, err = NewEthereumAnchorRegistryContract(common.HexToAddress("0x995ef27e64cb9ef07eb6f9d255a3951ef20416fd"), client.GetClient())
 	if err != nil {
 		log.Fatalf("Failed to instantiate the witness contract contract: %v", err)
 	}
