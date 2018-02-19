@@ -5,10 +5,12 @@
     "eip155Block": 0,
     "eip158Block": 0
   },
-  "difficulty": "0x100",
-  "gasLimit": "0x2100000",
+  "difficulty": "2000",
+  "gasLimit": "134217728",
   "alloc": {
     "838f7dca284eb69a9c489fe09c31cff37defdeca":
-    { "balance": "0x9999900000000000000000" }
+    { "balance": "20000000000000000000" },
+    "4b1b843af77a8f7f4f0ad2145095937e3d90e3d8":
+    { "balance": "20000000000000000000" }
   }
 }
