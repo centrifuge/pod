@@ -25,9 +25,8 @@ import (
 
 //go:generate protoc -I $PROTOBUF/src/ -I . -I ../ -I $GOPATH/src -I ../../vendor/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis -I ../../vendor/github.com/grpc-ecosystem/grpc-gateway --go_out=plugins=grpc:$GOPATH/src/ p2p.proto
 
-var	HostInstance = make(chan host.Host)
-var GRPCProtoInstance = make(chan *p2pgrpc.GRPCProtocol)
-
+var	HostInstance host.Host
+var GRPCProtoInstance p2pgrpc.GRPCProtocol
 
 type P2PService struct {
 
@@ -46,7 +45,8 @@ func (srv *P2PService) TransmitInvoice(ctx context.Context, req *TransmitInvoice
 		return
 
 	}
-	err = invoiceStorage.ReceiveDocument(req.Invoice)
+	// Commented out as it was making the request fail, due to the missing key "received-invoice-documents"
+	//err = invoiceStorage.ReceiveDocument(req.Invoice)
 	rep = &TransmitReply{req.Invoice}
 	return
 }
@@ -135,11 +135,11 @@ func RunP2P() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	HostInstance <- hostInstance
-
+	HostInstance = hostInstance
 	// Set the grpc protocol handler on it
 	grpcProto := p2pgrpc.NewGRPCProtocol(context.Background(), hostInstance)
-	GRPCProtoInstance <- grpcProto
+	GRPCProtoInstance = *grpcProto
+
 	RegisterP2PServiceServer(grpcProto.GetGRPCServer(), &P2PService{})
 
 	select {}
@@ -147,7 +147,7 @@ func RunP2P() {
 
 // GetStorage is a singleton implementation returning the default database as configured
 func GetHost() (h host.Host) {
-	h = <- HostInstance
+	h = HostInstance
 	if h == nil {
 		log.Fatal("Host undefined")
 	}
@@ -155,7 +155,7 @@ func GetHost() (h host.Host) {
 }
 
 func GetGRPCProto() (g *p2pgrpc.GRPCProtocol) {
-	g = <- GRPCProtoInstance
+	g = &GRPCProtoInstance
 	if g == nil {
 		log.Fatal("Grpc not instantiated")
 	}

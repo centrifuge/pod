@@ -50,7 +50,7 @@ func OpenClient (target string) P2PServiceClient {
 
 	// make a new stream from host B to host A
 	var wg sync.WaitGroup
-	var grpcConn = make(chan *grpc.ClientConn)
+	var grpcConn *grpc.ClientConn
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -60,11 +60,11 @@ func OpenClient (target string) P2PServiceClient {
 		}
 		for {
 			if g.GetState() == connectivity.Ready {
-				break;
+				break
 			}
 		}
-		grpcConn <- g
+		grpcConn = g
 	}()
 	wg.Wait()
-	return NewP2PServiceClient(<-grpcConn)
+	return NewP2PServiceClient(grpcConn)
 }
