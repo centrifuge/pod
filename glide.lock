@@ -1,5 +1,5 @@
 hash: f480058560becfb0dde853efc4737b7ba557d5c3d31b1f656f6d2eca0aefe047
-updated: 2018-02-12T11:54:41.862335-05:00
+updated: 2018-02-20T14:03:19.113858108-05:00
 imports:
 - name: github.com/agl/ed25519
   version: 5312a61534124124185d41f09206b9fef1d88403
@@ -28,7 +28,7 @@ imports:
   subpackages:
   - spdy
 - name: github.com/ethereum/go-ethereum
-  version: 8d32c4b9906d2a97149c4312998d46e924d863d7
+  version: 5603715c06998ff9ed30eb134c4398ad1439ef48
   repo: git@github.com:ethereum/go-ethereum
   subpackages:
   - accounts
@@ -60,7 +60,7 @@ imports:
 - name: github.com/go-stack/stack
   version: 259ab82a6cad3992b4e21ff5cac294ccb06474bc
 - name: github.com/gogo/protobuf
-  version: 73bcffaacdca6dd9e3e8bbec5147f24f29fb2cc4
+  version: b75782e777cfa7ca469bc46cc313ddd26e6e9d1c
   subpackages:
   - io
   - proto
@@ -83,9 +83,9 @@ imports:
 - name: github.com/gorilla/mux
   version: 53c1911da2b537f792e7cafcb446b05ffe33b996
 - name: github.com/gorilla/websocket
-  version: 4ac909741dfa57448bfadfdbca0cf7eeaa68f0e2
+  version: f37d1588608ec036fa9b0b7b8afbde47dc06aea9
 - name: github.com/grpc-ecosystem/grpc-gateway
-  version: 93cbcb02d2dd334fa5c9073439417ea7d3f63e59
+  version: 424b8e1b005f9af4d801572c93d500f056b9754e
   repo: git@github.com:grpc-ecosystem/grpc-gateway
   subpackages:
   - protoc-gen-swagger/options
@@ -139,7 +139,7 @@ imports:
 - name: github.com/libp2p/go-flow-metrics
   version: 3b3bcfcf78f2dc0e85be13ef3c3adc64cc5a9347
 - name: github.com/libp2p/go-libp2p
-  version: 4910211e39de9459eb777c2b346ab897812d98e8
+  version: 784f1b4a715e16ee9eb659a63ec709b9bb15844a
   subpackages:
   - p2p/host/basic
   - p2p/protocol/identify
@@ -149,7 +149,7 @@ imports:
   subpackages:
   - pb
 - name: github.com/libp2p/go-libp2p-conn
-  version: cf95c77a062861a76742dce5422885acd786ed19
+  version: 8058ec7c7d8d3834119a164005482ea696f028e4
 - name: github.com/libp2p/go-libp2p-crypto
   version: f2afd8b3d4e358a6092159c813cb2bdf6d984e68
   subpackages:
@@ -186,7 +186,7 @@ imports:
   subpackages:
   - pb
 - name: github.com/libp2p/go-libp2p-swarm
-  version: 4184d147d5049245e539167badc06edb52dcd0f0
+  version: 881b974a81faf652c196bda4331300683f18b539
 - name: github.com/libp2p/go-libp2p-transport
   version: 7f67e6aa68aa4b679c21179d32ab08d77a149cef
 - name: github.com/libp2p/go-maddr-filter
@@ -196,7 +196,7 @@ imports:
   subpackages:
   - mpool
 - name: github.com/libp2p/go-peerstream
-  version: 7a17cea945a5c8a1d433e50656c4bf1252de7edd
+  version: de27dedf2287a2bd7030a1ecc94a6913385e6cfe
 - name: github.com/libp2p/go-reuseport
   version: 5f99154da15f232dd930262ecfaa44baa20bd2f8
   subpackages:
@@ -235,9 +235,9 @@ imports:
 - name: github.com/multiformats/go-multicodec-packed
   version: 9004b413b478e5a878e4a879358cce02e5df4995
 - name: github.com/multiformats/go-multihash
-  version: baff12aecdc71b5b2e28c62514beba0298fef3cb
+  version: 849814d6de4d66def119ee0315988e6541991fec
 - name: github.com/multiformats/go-multistream
-  version: b8f1996688ab586031517919b49b1967fca8d5d9
+  version: 3e47cc995d6da1d2313b1df0c0d4dba94309d42b
 - name: github.com/opentracing/opentracing-go
   version: 3999fca714c888484b78cb78d68cd49afc9eca7d
   subpackages:
@@ -373,7 +373,7 @@ imports:
   - googleapis/api/annotations
   - googleapis/rpc/status
 - name: google.golang.org/grpc
-  version: 6b51017f791ae1cfbec89c52efdf444b13b550ef
+  version: 8e4536a86ab602859c20df5ebfd0bd4228d08655
   subpackages:
   - balancer
   - balancer/base
@@ -382,6 +382,7 @@ imports:
   - connectivity
   - credentials
   - encoding
+  - encoding/proto
   - grpclb/grpc_lb_v1/messages
   - grpclog
   - internal
