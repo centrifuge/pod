@@ -5,28 +5,22 @@ import (
 )
 
 type AnchorRegistry interface {
-	RegisterAnchor(*Anchor) (Anchor, error)
-	RegisterAsAnchor(anchorID string, rootHash string) (Anchor, error)
-}
-
-// Register the given Anchor with the configured public registry.
-func RegisterAnchor(anchor *Anchor) (Anchor, error) {
-	registry, _ := getConfiguredRegistry()
-	ret, err := registry.RegisterAnchor(anchor)
-	if err != nil {
-		log.Fatalf("Failed to register the anchor [id:%v, hash:%v, schemaVersion:%v]: %v", anchor.anchorID, anchor.rootHash, anchor.schemaVersion, err)
-	}
-	return ret, err
+	RegisterAsAnchor(anchorID string, rootHash string, confirmations chan<- *Anchor) ( error)
 }
 
 // Register the given anchorID and root has as an anchor
-func RegisterAsAnchor(anchorID string, rootHash string) (Anchor, error) {
+func RegisterAsAnchor(anchorID string, rootHash string, confirmations chan<- *Anchor) ( error) {
 	registry, _ := getConfiguredRegistry()
-	ret, _ := registry.RegisterAsAnchor(anchorID, rootHash)
 
-	return ret, nil
+	 err := registry.RegisterAsAnchor(anchorID, rootHash, confirmations )
+	if err != nil {
+		log.Fatalf("Failed to register the anchor [id:%v, hash:%v ]: %v", anchorID, rootHash, err)
+	}
+	return  err
 }
 
+// This will later pull a configured registry (if not only using Ethereum as the anchor registry)
+// For now hard-coded to the Ethereum setup
 func getConfiguredRegistry() (AnchorRegistry, error) {
 	return &EthereumAnchorRegistry{}, nil
 }

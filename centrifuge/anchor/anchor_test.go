@@ -3,27 +3,19 @@ package anchor
 import (
 	"testing"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
+	"github.com/stretchr/testify/assert"
 )
-
-func TestRegisterAnchor(t *testing.T) {
-	storeThisAnchor := &Anchor{anchorID: tools.RandomString32(), rootHash: tools.RandomString32(), schemaVersion: 1}
-	anc, _ := RegisterAnchor(storeThisAnchor)
-	if anc.anchorID == "" {
-		t.Fatal("No Anchor ID set")
-	}
-}
 
 func TestRegisterAsAnchor(t *testing.T) {
 
-	anc, _ := RegisterAsAnchor(tools.RandomString32(), tools.RandomString32())
-	if anc.anchorID == "" {
-		t.Fatal("No Anchor ID set")
+	confirmations := make(chan *Anchor)
+	id := tools.RandomString32()
+	rootHash := tools.RandomString32()
+	err := RegisterAsAnchor(id, rootHash, confirmations)
+	if err != nil {
+		t.Fatalf("Error registering Ancho %v", err)
 	}
+	registeredAnchor := <-confirmations
+	assert.Equal(t, registeredAnchor.anchorID, id, "Resulting anchor should have the same ID as the input")
+	assert.Equal(t, registeredAnchor.rootHash, rootHash, "Resulting anchor should have the same root hash as the input")
 }
-
-//func TestRegisterAnchorIntegration(t *testing.T){
-//	anc, _ := RegisterAsAnchor("asdde", "dafrwfrw")
-//	if anc.anchorID == "" {
-//		t.Fatal("No Anchor ID set")
-//	}
-//}
