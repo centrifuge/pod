@@ -9,7 +9,7 @@ import (
 var ReceivedInvoiceDocumentsKey = []byte("received-invoice-documents")
 
 
-type 	StorageService struct {
+type StorageService struct {
 	storage storage.DataStore
 }
 
@@ -37,7 +37,7 @@ func (srv *StorageService) GetDocument(id []byte) (doc *invoice.InvoiceDocument,
 }
 
 func (srv *StorageService) PutDocument(doc *invoice.InvoiceDocument) (err error) {
-	key := srv.GetDocumentKey(doc.DocumentIdentifier)
+	key := srv.GetDocumentKey(doc.CoreDocument.DocumentIdentifier)
 	data, err := proto.Marshal(doc)
 
 	if err != nil {
@@ -53,7 +53,7 @@ func (srv *StorageService) ReceiveDocument (doc *invoice.InvoiceDocument) (err e
 		return
 	}
 
-	invoices.Invoices = append(invoices.Invoices, doc.DocumentIdentifier)
+	invoices.Invoices = append(invoices.Invoices, doc)
 
 	data, err := proto.Marshal(invoices)
 	if err != nil {

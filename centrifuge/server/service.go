@@ -23,12 +23,6 @@ func (s *invoiceDocumentService) Init () {
 	s.invoiceStorageService.SetStorageBackend(s.DataStore)
 }
 
-// anchorDocument anchors a CoreDocument
-func (s *invoiceDocumentService) AnchorDocument(ctx context.Context, doc *invoice.InvoiceDocument) (*invoice.InvoiceDocument, error) {
-	log.Fatalf("Identifier: %v", doc.GetDocumentIdentifier())
-	return doc, nil
-}
-
 func (s *invoiceDocumentService) SendInvoiceDocument(ctx context.Context, sendInvoiceEnvelope *invoice.SendInvoiceEnvelope) (*invoice.InvoiceDocument, error) {
 	s.invoiceStorageService.PutDocument(sendInvoiceEnvelope.Document)
 
@@ -36,7 +30,8 @@ func (s *invoiceDocumentService) SendInvoiceDocument(ctx context.Context, sendIn
 		addr := string(element[:])
 		client := p2p.OpenClient(addr)
 		log.Print("Done opening connection")
-		_, err := client.TransmitInvoice(context.Background(), &p2p.TransmitInvoiceDocument{sendInvoiceEnvelope.Document})
+		coreDoc := invoice.ConvertToCoreDocument(sendInvoiceEnvelope.Document)
+		_, err := client.Transmit(context.Background(), &p2p.P2PMessage{&coreDoc})
 		if err != nil {
 			return nil, err
 		}

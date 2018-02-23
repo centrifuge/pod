@@ -8,6 +8,7 @@ import (
 func TestLeveldbDataStore(t *testing.T) {
 	instance = &LeveldbDataStore{Path:"/tmp/centrifuge_testing.leveldb"}
 	instance.Open()
+	defer instance.Close()
 	one := []byte("1")
 	two := []byte("2")
 	three := []byte("3")

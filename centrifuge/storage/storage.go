@@ -4,6 +4,8 @@ import (
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/spf13/viper"
 	"sync"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
+	"github.com/golang/protobuf/proto"
 )
 
 
@@ -41,6 +43,37 @@ var (
 	instance DataStore
 )
 
+func (db *LeveldbDataStore) GetDocumentKey(id []byte) (key []byte) {
+	key = append([]byte("coredoc"), id...)
+	return key
+}
+
+func (db *LeveldbDataStore) GetDocument(id []byte) (doc *coredocument.CoreDocument, err error) {
+	doc_bytes, err := db.Get(db.GetDocumentKey(id))
+	if err != nil {
+		return nil, err
+	}
+
+	doc = &coredocument.CoreDocument{}
+	err = proto.Unmarshal(doc_bytes, doc)
+	if err != nil {
+		return nil, err
+	}
+	return
+}
+
+func (db *LeveldbDataStore) PutDocument(doc *coredocument.CoreDocument) (err error) {
+	key := db.GetDocumentKey(doc.DocumentIdentifier)
+	data, err := proto.Marshal(doc)
+
+	if err != nil {
+		return
+	}
+	err = db.Put(key, data)
+	return
+}
+
+
 // GetStorage is a singleton implementation returning the default database as configured
 func GetStorage() DataStore {
 	once.Do(func() {
@@ -67,3 +100,4 @@ func SetStorage (store DataStore) {
 	}
 	instance = store
 }
+

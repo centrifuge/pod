@@ -15,6 +15,9 @@ import (
 //go:generate protoc -I $PROTOBUF/src/ -I. -Iinvoice -I $GOPATH/src -I../vendor/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis -I../vendor/github.com/grpc-ecosystem/grpc-gateway --swagger_out=logtostderr=true:$GOPATH/src/ invoice/invoice.proto
 
 
+//go:generate protoc -I $PROTOBUF/src/ -I . -Ip2p -I $GOPATH/src -I../vendor/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis -I../vendor/github.com/grpc-ecosystem/grpc-gateway --go_out=plugins=grpc:$GOPATH/src/ p2p.proto
+
+
 func main() {
 	cmd.Execute()
 }

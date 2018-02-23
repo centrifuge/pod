@@ -24,14 +24,6 @@ option (grpc.gateway.protoc_gen_swagger.options.openapiv2_swagger) = {
 };
 
 service InvoiceDocumentService {
-    // Anchors a document on chain. Returns updated document with signatures and root calculated.
-    rpc AnchorDocument (InvoiceDocument) returns (InvoiceDocument) {
-        option (google.api.http) = {
-            post: "/invoice/anchor"
-            body: "*"
-        };
-    }
-
     rpc SendInvoiceDocument(SendInvoiceEnvelope) returns (InvoiceDocument) {
         option (google.api.http) = {
             post: "/invoice/send"
@@ -51,28 +43,23 @@ service InvoiceDocumentService {
     }
 }
 
-// InvoiceDocument is a Centrifuge enabled document that can be used to represent
+// InvoiceData is the default invoice schema
+message InvoiceData {
+    string country = 2;
+    string currency = 3;
+    int64 amount = 4;
+
+    bytes recipient = 5;
+    bytes sender = 6;
+    bytes payee = 7;
+
+    string comment = 8;
+    google.protobuf.Timestamp dueDate = 9;
+    google.protobuf.Timestamp dateCreated = 11;
+}
+
 message InvoiceDocument {
-    // documentIdentifier
-    bytes documentIdentifier = 3;
-    message InvoiceData {
-        string country = 2;
-        string currency = 3;
-        int64 amount = 4;
-
-        bytes recipient = 5;
-        bytes sender = 6;
-        bytes payee = 7;
-
-        string comment = 8;
-        google.protobuf.Timestamp dueDate = 9;
-        google.protobuf.Timestamp dateCreated = 11;
-    }
-
-    // CoreDocument contains data related to the Centrifuge OS layer
     coredocument.CoreDocument coreDocument = 1;
-
-    // InvoiceData has all invoice specific information.
     InvoiceData data = 2;
 }
 
@@ -87,7 +74,7 @@ message GetInvoiceDocumentEnvelope {
 }
 
 message ReceivedInvoices {
-    repeated bytes invoices = 1;
+    repeated InvoiceDocument invoices = 1;
 }
 
 message Empty {

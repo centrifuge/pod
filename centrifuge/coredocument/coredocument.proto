@@ -2,10 +2,15 @@ syntax = "proto3";
 package coredocument;
 
 import "google/api/annotations.proto";
+import "google/protobuf/any.proto";
 import "google/protobuf/timestamp.proto";
 import "protoc-gen-swagger/options/annotations.proto";
 
 option go_package = "github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument";
+
+// CoreDocument
+// P2P Document(Core + Schema + Doc)
+// Centrifuge Document (Core + Schema + Doc)
 
 // CoreDocument is a document that can be sent to different nodes and anchored on chain
 message CoreDocument {
@@ -38,7 +43,11 @@ message CoreDocument {
 
     // The previous document is referenced here but doesn't need to be provided and can
     // be left blank
-    repeated CoreDocument previousVersion = 8;
+    repeated CoreDocument previousVersions = 8;
+
+    // Document a serialized document
+    bytes documentSchemaId = 12;
+    google.protobuf.Any embeddedDocument = 13;
 }
 
 // Signature contains the entity ID, public key used and signature)

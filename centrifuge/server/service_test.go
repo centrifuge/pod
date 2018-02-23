@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 )
 
 func TestCoreDocumentService(t *testing.T) {
@@ -13,14 +14,14 @@ func TestCoreDocumentService(t *testing.T) {
 	identifierIncorrect := []byte("incorrectIdentifier")
 	s := newInvoiceDocumentService()
 	doc := invoice.InvoiceDocument{
-		DocumentIdentifier: identifier,
+		CoreDocument: &coredocument.CoreDocument{DocumentIdentifier:identifier},
 	}
 
 	sentDoc, err := s.SendInvoiceDocument(context.Background(), &invoice.SendInvoiceEnvelope{[][]byte{}, &doc})
 	if err != nil {
 		t.Fatal("Error in RPC Call", err)
 	}
-	if !bytes.Equal(sentDoc.DocumentIdentifier, identifier) {
+	if !bytes.Equal(sentDoc.CoreDocument.DocumentIdentifier, identifier) {
 		t.Fatal("DocumentIdentifier doesn't match")
 	}
 
@@ -29,7 +30,7 @@ func TestCoreDocumentService(t *testing.T) {
 	if err != nil {
 		t.Fatal("Error in RPC Call", err)
 	}
-	if !bytes.Equal(receivedDoc.DocumentIdentifier, identifier) {
+	if !bytes.Equal(receivedDoc.CoreDocument.DocumentIdentifier, identifier) {
 		t.Fatal("DocumentIdentifier doesn't match")
 	}
 
