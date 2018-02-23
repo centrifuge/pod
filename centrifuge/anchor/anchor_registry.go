@@ -8,7 +8,7 @@ type AnchorRegistry interface {
 	RegisterAsAnchor(anchorID string, rootHash string, confirmations chan<- *Anchor) ( error)
 }
 
-// Register the given anchorID and root has as an anchor
+// Register the given AnchorID and RootHash as an anchor
 func RegisterAsAnchor(anchorID string, rootHash string, confirmations chan<- *Anchor) ( error) {
 	registry, _ := getConfiguredRegistry()
 
