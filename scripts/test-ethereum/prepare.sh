@@ -1,6 +1,7 @@
 #!/bin/bash
 
-source ./env_vars.sh
+my_dir="$(dirname "$0")"
+source "${my_dir}/env_vars.sh"
 
 mkdir -p $DATA_DIR
 mkdir -p $DATA_DIR/keystore
