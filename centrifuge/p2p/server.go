@@ -16,17 +16,21 @@ import (
 	gologging "github.com/whyrusleeping/go-logging"
 	msmux "github.com/whyrusleeping/go-smux-multistream"
 	yamux "github.com/whyrusleeping/go-smux-yamux"
+	//dht "github.com/libp2p/go-libp2p-kad-dht"
+	//ds "github.com/ipfs/go-datastore"
 	"github.com/paralin/go-libp2p-grpc"
 	"github.com/spf13/viper"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage/invoicestorage"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
+	//"github.com/ipfs/go-ipfs/namesys"
 )
 
 //go:generate protoc -I $PROTOBUF/src/ -I . -I ../ -I $GOPATH/src -I ../../vendor/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis -I ../../vendor/github.com/grpc-ecosystem/grpc-gateway --go_out=plugins=grpc:$GOPATH/src/ p2p.proto
 
 var	HostInstance host.Host
 var GRPCProtoInstance p2pgrpc.GRPCProtocol
+const IpnsValidatorTag = "ipns"
 
 type P2PService struct {
 
@@ -118,6 +122,12 @@ func makeBasicHost(listenPort int) (host.Host, error) {
 	return basicHost, nil
 }
 
+//func RunDHT(ctx context.Context, h host.Host, dstore ds.Batching) {
+//	dhtRouting := dht.NewDHT(ctx, h, dstore)
+//	dhtRouting.Validator[IpnsValidatorTag] = namesys.NewIpnsRecordValidator(h.Peerstore())
+//	dhtRouting.Selector[IpnsValidatorTag] = namesys.IpnsSelectorFunc
+//}
+
 func RunP2P() {
 	// LibP2P code uses golog to log messages. They log with different
 	// string IDs (i.e. "swarm"). We can control the verbosity level for
@@ -136,6 +146,10 @@ func RunP2P() {
 		log.Fatal(err)
 	}
 	HostInstance = hostInstance
+
+	// Start DHT
+	//RunDHT(context.Background(), hostInstance, nil)
+
 	// Set the grpc protocol handler on it
 	grpcProto := p2pgrpc.NewGRPCProtocol(context.Background(), hostInstance)
 	GRPCProtoInstance = *grpcProto

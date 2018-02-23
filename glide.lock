@@ -1,5 +1,5 @@
 hash: f480058560becfb0dde853efc4737b7ba557d5c3d31b1f656f6d2eca0aefe047
-updated: 2018-02-20T14:03:19.113858108-05:00
+updated: 2018-02-22T13:12:25.516203157-05:00
 imports:
 - name: github.com/agl/ed25519
   version: 5312a61534124124185d41f09206b9fef1d88403
@@ -28,7 +28,7 @@ imports:
   subpackages:
   - spdy
 - name: github.com/ethereum/go-ethereum
-  version: 5603715c06998ff9ed30eb134c4398ad1439ef48
+  version: 8522b312210865022618489a46db87df44923d4a
   repo: git@github.com:ethereum/go-ethereum
   subpackages:
   - accounts
@@ -96,6 +96,10 @@ imports:
   version: 80a92cca79a8041496ccc9dd773fcb52a57ec6f9
 - name: github.com/gxed/GoEndian
   version: 0f5c6873267e5abf306ffcdfcfa4bf77517ef4a7
+- name: github.com/gxed/hashland
+  version: d9f6b97f8db22dd1e090fd0bbbe98f09cc7dd0a8
+  subpackages:
+  - keccakpg
 - name: github.com/hashicorp/hcl
   version: 23c074d0eceb2b8a5bfdbb271ab780cde70f05a8
   subpackages:
@@ -235,7 +239,7 @@ imports:
 - name: github.com/multiformats/go-multicodec-packed
   version: 9004b413b478e5a878e4a879358cce02e5df4995
 - name: github.com/multiformats/go-multihash
-  version: 849814d6de4d66def119ee0315988e6541991fec
+  version: 468a1b73e980e5aff011d308623e43e28c582b16
 - name: github.com/multiformats/go-multistream
   version: 3e47cc995d6da1d2313b1df0c0d4dba94309d42b
 - name: github.com/opentracing/opentracing-go
@@ -407,8 +411,4 @@ imports:
   version: c1b8fa8bdccecb0b8db834ee0b92fdbcfa606dd6
 - name: gopkg.in/yaml.v2
   version: d670f9405373e636a5a2765eea47fac0c9bc91a4
-- name: leb.io/hashland
-  version: 07375b562deaa8d6891f9618a04e94a0b98e2ee7
-  subpackages:
-  - keccakpg
 testImports: []
