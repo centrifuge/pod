@@ -16,14 +16,17 @@ import (
 	gologging "github.com/whyrusleeping/go-logging"
 	msmux "github.com/whyrusleeping/go-smux-multistream"
 	yamux "github.com/whyrusleeping/go-smux-yamux"
-	//dht "github.com/libp2p/go-libp2p-kad-dht"
-	//ds "github.com/ipfs/go-datastore"
+	dht "github.com/libp2p/go-libp2p-kad-dht"
+	ds "github.com/ipfs/go-datastore"
 	"github.com/paralin/go-libp2p-grpc"
 	"github.com/spf13/viper"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage/invoicestorage"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
-	//"github.com/ipfs/go-ipfs/namesys"
+	"github.com/ipfs/go-datastore/examples"
+	"github.com/libp2p/go-libp2p-record"
+	"github.com/ipfs/go-cid"
+	mh "github.com/multiformats/go-multihash"
 )
 
 //go:generate protoc -I $PROTOBUF/src/ -I . -I ../ -I $GOPATH/src -I ../../vendor/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis -I ../../vendor/github.com/grpc-ecosystem/grpc-gateway --go_out=plugins=grpc:$GOPATH/src/ p2p.proto
@@ -122,11 +125,31 @@ func makeBasicHost(listenPort int) (host.Host, error) {
 	return basicHost, nil
 }
 
-//func RunDHT(ctx context.Context, h host.Host, dstore ds.Batching) {
-//	dhtRouting := dht.NewDHT(ctx, h, dstore)
-//	dhtRouting.Validator[IpnsValidatorTag] = namesys.NewIpnsRecordValidator(h.Peerstore())
-//	dhtRouting.Selector[IpnsValidatorTag] = namesys.IpnsSelectorFunc
-//}
+func RunDHT(ctx context.Context, h host.Host, p peer.ID) {
+	dStore, _ := examples.NewDatastore("/tmp/dht_store")
+	rdStore:= ds.NewLogDatastore(dStore, "log_store")
+	dhtRouting := dht.NewDHT(ctx, h, rdStore)
+	dhtDestination := dht.NewDHT(ctx, h, rdStore)
+	defer dhtRouting.Close()
+	defer dhtDestination.Close()
+	dhtRouting.Validator["v"] = func(*record.ValidationRecord) error { return nil }
+	dhtDestination.Validator["v"] = func(*record.ValidationRecord) error { return nil }
+	dhtRouting.Selector["v"] = func(_ string, bs [][]byte) (int, error) { return 0, nil }
+	dhtDestination.Selector["v"] = func(_ string, bs [][]byte) (int, error) { return 0, nil }
+
+	pref := cid.Prefix{
+		Version: 1,
+		Codec: cid.Raw,
+		MhType: mh.SHA2_256,
+		MhLength: -1, // default length
+	}
+
+	c, _ := pref.Sum([]byte("/v/QmVf6EN6mkqWejWKW2qPu16XpdG3kJo1T3mhahPB5Se5n12"))
+	log.Printf("Created CID: %s", c)
+	dhtRouting.PutValue(ctx, c.String(), []byte("valueA"))
+	res, _ := dhtRouting.GetValue(ctx, c.String())
+	log.Printf("Value A: %s", string(res))
+}
 
 func RunP2P() {
 	// LibP2P code uses golog to log messages. They log with different
@@ -146,15 +169,16 @@ func RunP2P() {
 		log.Fatal(err)
 	}
 	HostInstance = hostInstance
-
-	// Start DHT
-	//RunDHT(context.Background(), hostInstance, nil)
-
 	// Set the grpc protocol handler on it
 	grpcProto := p2pgrpc.NewGRPCProtocol(context.Background(), hostInstance)
 	GRPCProtoInstance = *grpcProto
 
 	RegisterP2PServiceServer(grpcProto.GetGRPCServer(), &P2PService{})
+
+	hostInstance.Peerstore().AddAddr(hostInstance.ID(), hostInstance.Addrs()[0], pstore.TempAddrTTL)
+
+	// Start DHT
+	RunDHT(context.Background(), hostInstance, hostInstance.ID())
 
 	select {}
 }
