@@ -27,7 +27,6 @@ import (
 var	HostInstance host.Host
 var GRPCProtoInstance p2pgrpc.GRPCProtocol
 
-
 type P2PService struct {
 
 }

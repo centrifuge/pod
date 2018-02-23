@@ -35,6 +35,7 @@ func ConvertToInvoiceDocument(coredoc *coredocument.CoreDocument) (inv InvoiceDo
 	emptiedCoreDoc := coredocument.CoreDocument{}
 	proto.Merge(&emptiedCoreDoc, coredoc)
 	emptiedCoreDoc.EmbeddedDocument = nil
+	emptiedCoreDoc.DocumentSchemaId = nil
 	inv.Data = invoiceData
 	inv.CoreDocument = &emptiedCoreDoc
 	return

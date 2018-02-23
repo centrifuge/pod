@@ -7,7 +7,6 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
 	"bytes"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
-	"fmt"
 )
 
 var storageService = storage.LeveldbDataStore{Path:"/tmp/centrifuge_testing.leveldb"}
@@ -47,8 +46,4 @@ func TestP2PService(t *testing.T) {
 	if !bytes.Equal(doc.DocumentIdentifier, identifier) {
 		t.Fatal("Document Identifier doesn't match")
 	}
-
-
-
-
 }

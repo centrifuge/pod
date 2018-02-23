@@ -4,6 +4,7 @@ option go_package = "github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice";
 
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
 import "protoc-gen-swagger/options/annotations.proto";
 import "coredocument/coredocument.proto";
 
@@ -32,11 +33,11 @@ service InvoiceDocumentService {
     }
     rpc GetInvoiceDocument(GetInvoiceDocumentEnvelope) returns (InvoiceDocument) {
         option (google.api.http) = {
-            get: "/invoice/get/{documentIdentifier}"
+            get: "/invoice/get/{document_identifier}"
         };
     }
 
-        rpc GetReceivedInvoiceDocuments (Empty) returns (ReceivedInvoices) {
+        rpc GetReceivedInvoiceDocuments (google.protobuf.Empty) returns (ReceivedInvoices) {
         option (google.api.http) = {
             get: "/invoice/getReceived"
         };
@@ -54,12 +55,12 @@ message InvoiceData {
     bytes payee = 7;
 
     string comment = 8;
-    google.protobuf.Timestamp dueDate = 9;
-    google.protobuf.Timestamp dateCreated = 11;
+    google.protobuf.Timestamp due_date = 9;
+    google.protobuf.Timestamp date_created = 11;
 }
 
 message InvoiceDocument {
-    coredocument.CoreDocument coreDocument = 1;
+    coredocument.CoreDocument core_document = 1;
     InvoiceData data = 2;
 }
 
@@ -70,13 +71,9 @@ message SendInvoiceEnvelope {
 }
 
 message GetInvoiceDocumentEnvelope {
-    bytes documentIdentifier = 1;
+    bytes document_identifier = 1;
 }
 
 message ReceivedInvoices {
     repeated InvoiceDocument invoices = 1;
-}
-
-message Empty {
-
 }
