@@ -168,7 +168,7 @@ func (wes *WitnessExternalDoc) WitnessDocument() {
 	copy(wes.doc.WitnessRoot[:], tree.Root().Hash[:32])
 
 	contract := GetWitnessContract()
-	opts := ethereum.GetGethTxOpts()
+	opts,_ := ethereum.GetGethTxOpts()
 	tx, err := contract.WitnessDocument(opts, wes.doc.Identifier, wes.doc.WitnessRoot)
 	if err != nil {
 		log.Fatalf("Transaction error")
