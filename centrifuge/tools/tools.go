@@ -5,7 +5,16 @@ import (
 	"crypto/rand"
 	"math"
 	"strings"
+	"errors"
 )
+
+func StringToByte32(input string) (ret [32]byte, err error){
+	if len(input) != 32{
+		return ret, errors.New("can only work with strings of length 32")
+	}
+	copy(ret[:],input)
+	return
+}
 
 
 func RandomString32() (ret string){

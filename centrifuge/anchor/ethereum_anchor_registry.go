@@ -46,14 +46,14 @@ func (ethRegistry *EthereumAnchorRegistry) RegisterAsAnchor(anchorID string, roo
 	err = setUpRegistrationEventListener(ethRegistryContract, registerThisAnchor, confirmations)
 	if err != nil {
 		wError := errors.Wrap(err, 1)
-		log.Fatalf("Failed to set up event listener for anchor [id: %x, hash: %x, SchemaVersion:%v]: %v", registerThisAnchor.AnchorID, registerThisAnchor.RootHash, registerThisAnchor.SchemaVersion, wError)
+		log.Printf("Failed to set up event listener for anchor [id: %x, hash: %x, SchemaVersion:%v]: %v", registerThisAnchor.AnchorID, registerThisAnchor.RootHash, registerThisAnchor.SchemaVersion, wError)
 		return err
 	}
 
 	err = sendRegistrationTransaction(ethRegistryContract, opts, registerThisAnchor)
 	if err != nil {
 		wError := errors.Wrap(err, 1)
-		log.Fatalf("Failed to send Ethereum transaction to register anchor [id: %x, hash: %x, SchemaVersion:%v]: %v", registerThisAnchor.AnchorID, registerThisAnchor.RootHash, registerThisAnchor.SchemaVersion, wError)
+		log.Printf("Failed to send Ethereum transaction to register anchor [id: %x, hash: %x, SchemaVersion:%v]: %v", registerThisAnchor.AnchorID, registerThisAnchor.RootHash, registerThisAnchor.SchemaVersion, wError)
 		return err
 	}
 
@@ -89,8 +89,7 @@ func sendRegistrationTransaction(ethRegistryContract RegisterAnchor, opts *bind.
 	tx, err := ethRegistryContract.RegisterAnchor(opts, bAnchorId, bMerkleRoot, schemaVersion)
 
 	if err != nil {
-		wError := errors.Wrap(err, 1)
-		log.Fatalf("Failed to send anchor for registration [id: %x, hash: %x, SchemaVersion:%v] on registry: %v", bAnchorId, bMerkleRoot, schemaVersion, wError)
+		log.Printf("Failed to send anchor for registration [id: %x, hash: %x, SchemaVersion:%v] on registry: %v", bAnchorId, bMerkleRoot, schemaVersion, err)
 		return err
 	} else {
 		log.Printf("Sent off the anchor [id: %x, hash: %x, SchemaVersion:%v] to registry. Ethereum transaction hash [%x]", bAnchorId, bMerkleRoot, schemaVersion, tx.Hash())
@@ -121,8 +120,8 @@ func setUpRegistrationEventListener(ethRegistryContract WatchAnchorRegistered, a
 	// Subscriptions a bit better before writing this code.
 	_, err = ethRegistryContract.WatchAnchorRegistered(watchOpts, anchorRegisteredEvents, nil, [][32]byte{bAnchorId}, nil)
 	if err != nil {
-		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for anchor registration: %v", 1)
-		log.Fatalf(wError.Error())
+		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for anchor registration", 1)
+		log.Printf(wError.Error())
 		panic(wError)
 	}
 	return

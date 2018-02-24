@@ -16,7 +16,7 @@ func TestRegisterAsAnchor_Integration(t *testing.T) {
 	if !*ethereumTest{
 		return
 	}
-	confirmations := make(chan *anchor.Anchor)
+	confirmations := make(chan *anchor.Anchor,1)
 	id := tools.RandomString32()
 	rootHash := tools.RandomString32()
 	err := anchor.RegisterAsAnchor(id, rootHash, confirmations)
