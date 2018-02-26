@@ -6,11 +6,30 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/anchor"
 	"github.com/stretchr/testify/assert"
 	"flag"
+	"os"
+	"github.com/spf13/viper"
 )
 
 var (
 	ethereumTest = flag.Bool("ethereum", false, "run Ethereum integration tests")
 )
+
+func TestMain(m *testing.M) {
+	//flag.Parse()
+
+	//for now set up the env vars manually in integration test
+	//TODO move to generalized config once it is available
+	viper.BindEnv("ethereum.gethipc","CENT_ETHEREUM_GETHIPC")
+	viper.BindEnv("ethereum.gasLimit","CENT_ETHEREUM_GASLIMIT")
+	viper.BindEnv("ethereum.gasPrice","CENT_ETHEREUM_GASPRICE")
+	viper.BindEnv("ethereum.gethipc","CENT_ETHEREUM_GETHIPC")
+	viper.BindEnv("ethereum.accounts.main.password","CENT_ETHEREUM_ACCOUNTS_MAIN_PASSWORD")
+	viper.BindEnv("ethereum.accounts.main.key","CENT_ETHEREUM_ACCOUNTS_MAIN_KEY")
+
+
+	result := m.Run()
+	os.Exit(result)
+}
 
 func TestRegisterAsAnchor_Integration(t *testing.T) {
 	if !*ethereumTest{
