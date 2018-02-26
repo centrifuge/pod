@@ -6,15 +6,14 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
 	"bytes"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
-	"fmt"
+	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
 )
 
-var storageService = storage.LeveldbDataStore{Path:"/tmp/centrifuge_testing.leveldb"}
+func init() {
+	mockBootstrap()
+}
 
 func TestP2PService(t *testing.T) {
-	storage.SetStorage(&storageService)
-	defer storageService.Close()
 
 	identifier := []byte("1")
 	inv := invoice.InvoiceDocument{
@@ -37,7 +36,7 @@ func TestP2PService(t *testing.T) {
 		t.Fatal("Incorrect identifier")
 	}
 
-	doc, err := storageService.GetDocument(identifier)
+	doc, err := cc.Node.GetCoreDocumentStorageService().GetDocument(identifier)
 	unmarshalledInv := invoice.ConvertToInvoiceDocument(doc)
 	if unmarshalledInv.Data.Amount != inv.Data.Amount {
 		t.Fatal("Invoice Amount doesn't match")
@@ -48,7 +47,8 @@ func TestP2PService(t *testing.T) {
 		t.Fatal("Document Identifier doesn't match")
 	}
 
+}
 
-
-
+func mockBootstrap() {
+	(&cc.MockCentNode{}).BootstrapDependencies()
 }

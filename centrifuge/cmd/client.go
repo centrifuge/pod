@@ -19,6 +19,7 @@ func getDocument(client invoice.InvoiceDocumentServiceClient, id []byte) {
 	if err != nil {
 		panic(err)
 	}
+	log.Printf("Doc: %s\n", doc)
 }
 
 func loadCertPool() (certPool *x509.CertPool) {

@@ -5,14 +5,20 @@ import (
 	"context"
 	"bytes"
 	"fmt"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/invoiceservice"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
+	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
 )
+
+func init() {
+	mockBootstrap()
+}
 
 func TestCoreDocumentService(t *testing.T) {
 	identifier := []byte("identifier")
 	identifierIncorrect := []byte("incorrectIdentifier")
-	s := newInvoiceDocumentService()
+	s := invoiceservice.InvoiceDocumentService{}
 	doc := invoice.InvoiceDocument{
 		CoreDocument: &coredocument.CoreDocument{DocumentIdentifier:identifier},
 	}
@@ -40,4 +46,8 @@ func TestCoreDocumentService(t *testing.T) {
 	if err == nil {
 		t.Fatal("RPC call should have raised exception")
 	}
+}
+
+func mockBootstrap() {
+	(&cc.MockCentNode{}).BootstrapDependencies()
 }

@@ -19,9 +19,8 @@ import (
 	"github.com/paralin/go-libp2p-grpc"
 	"github.com/spf13/viper"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage/coredocumentstorage"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
+	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
 )
 
 var	HostInstance host.Host
@@ -29,13 +28,10 @@ var GRPCProtoInstance p2pgrpc.GRPCProtocol
 
 
 type P2PService struct {
-
 }
 
 func (srv *P2PService) Transmit(ctx context.Context, req *P2PMessage) (rep *P2PReply, err error) {
-	coreDocumentStorage := coredocumentstorage.StorageService{}
-	coreDocumentStorage.SetStorageBackend(storage.GetStorage())
-	err = coreDocumentStorage.PutDocument(req.Document)
+	err = cc.Node.GetCoreDocumentStorageService().PutDocument(req.Document)
 	if err != nil {
 		return nil, err
 	}

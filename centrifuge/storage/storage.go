@@ -75,7 +75,7 @@ func (db *LeveldbDataStore) PutDocument(doc *coredocument.CoreDocument) (err err
 
 
 // GetStorage is a singleton implementation returning the default database as configured
-func GetStorage() DataStore {
+func GetLeveldbStorage() DataStore {
 	once.Do(func() {
 		if instance != nil {
 			return
