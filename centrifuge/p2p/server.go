@@ -19,35 +19,33 @@ import (
 	"github.com/paralin/go-libp2p-grpc"
 	"github.com/spf13/viper"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage/invoicestorage"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
+	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
 )
-
-//go:generate protoc -I $PROTOBUF/src/ -I . -I ../ -I $GOPATH/src -I ../../vendor/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis -I ../../vendor/github.com/grpc-ecosystem/grpc-gateway --go_out=plugins=grpc:$GOPATH/src/ p2p.proto
 
 var	HostInstance host.Host
 var GRPCProtoInstance p2pgrpc.GRPCProtocol
 
-type P2PService struct {
 
+type P2PService struct {
 }
 
-func (srv *P2PService) TransmitInvoice(ctx context.Context, req *TransmitInvoiceDocument) (rep *TransmitReply, err error) {
-	invoiceStorage := invoicestorage.StorageService{}
-	invoiceStorage.SetStorageBackend(storage.GetStorage())
-
-	fmt.Println("I RECEIVED A DOCUMENT")
-	fmt.Println("I RECEIVED A DOCUMENT")
-	fmt.Println("I RECEIVED A DOCUMENT")
-
-	err = invoiceStorage.PutDocument(req.Invoice)
+func (srv *P2PService) Transmit(ctx context.Context, req *P2PMessage) (rep *P2PReply, err error) {
+	err = cc.Node.GetCoreDocumentStorageService().PutDocument(req.Document)
 	if err != nil {
-		return
-
+		return nil, err
 	}
-	// Commented out as it was making the request fail, due to the missing key "received-invoice-documents"
-	//err = invoiceStorage.ReceiveDocument(req.Invoice)
-	rep = &TransmitReply{req.Invoice}
+
+	switch schemaId := string(req.Document.DocumentSchemaId); {
+	case schemaId == coredocument.InvoiceSchema:
+		log.Print("Got invoice")
+	case schemaId == coredocument.PurchaseOrderSchema:
+		log.Print("Got purchase order")
+	default:
+		log.Fatal("Got unknown schema")
+	}
+
+	rep = &P2PReply{req.Document}
 	return
 }
 
@@ -145,7 +143,6 @@ func RunP2P() {
 	select {}
 }
 
-// GetStorage is a singleton implementation returning the default database as configured
 func GetHost() (h host.Host) {
 	h = HostInstance
 	if h == nil {
