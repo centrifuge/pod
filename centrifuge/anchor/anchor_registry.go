@@ -14,7 +14,7 @@ func RegisterAsAnchor(anchorID string, rootHash string, confirmations chan<- *An
 
 	 err := registry.RegisterAsAnchor(anchorID, rootHash, confirmations )
 	if err != nil {
-		log.Fatalf("Failed to register the anchor [id:%v, hash:%v ]: %v", anchorID, rootHash, err)
+		log.Fatalf("Failed to register the anchor [id:%x, hash:%x ]: %v", anchorID, rootHash, err)
 	}
 	return  err
 }

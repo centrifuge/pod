@@ -15,12 +15,14 @@ import (
 const (
 	// Timeouts
 	defaultWaitForTransactionMined = 30 * time.Second
+	mainAccountName                = "main"
 )
 
+var gc *GethClient
 
-func DefaultWaitForTransactionMiningContext() (ctx context.Context){
+func DefaultWaitForTransactionMiningContext() (ctx context.Context) {
 	toBeDone := time.Now().Add(defaultWaitForTransactionMined)
-	ctx,_ = context.WithDeadline(context.TODO(), toBeDone)
+	ctx, _ = context.WithDeadline(context.TODO(), toBeDone)
 	return
 }
 
@@ -31,7 +33,6 @@ type EthereumClient interface {
 	GetClient() (*ethclient.Client)
 }
 
-// Actual first implementation of the EthereumClient
 type GethClient struct {
 	Client *ethclient.Client
 }
@@ -41,27 +42,58 @@ func (gethClient GethClient) GetClient() (*ethclient.Client) {
 }
 
 func GetConnection() (EthereumClient) {
-	//TODO this should come from a more centralized configuration service to avoid strewing config gets around
-	client, err := ethclient.Dial(viper.GetString("ethereum.gethIpc"))
-	if err != nil {
-		log.Fatalf("Failed to connect to the Ethereum client: %v", err)
+	//TODO this needs to be made threadsafe to have only one client at any time
+	if gc == nil {
+		client, err := ethclient.Dial(viper.GetString("ethereum.gethIpc"))
+		if err != nil {
+			log.Fatalf("Failed to connect to the Ethereum client: %v", err)
+		}
+		gc = &GethClient{client}
 	}
-	return GethClient{client}
+	return gc
 }
 
-func GetGethTxOpts() (*bind.TransactOpts, error) {
-	key := viper.GetString("ethereum.accounts.main.key")
-	password := viper.GetString("ethereum.accounts.main.password")
+// Retrieves the geth transaction options for the given account name. The account name influences which configuration
+// is used. If no account name is provided the account as defined by `mainAccountName` constant is used
+// It is not supported to call with more than one account name.
+func GetGethTxOpts(optionalAccountName ...string) (*bind.TransactOpts, error) {
+	var accountName string
+	accsLen := len(optionalAccountName)
+	if accsLen > 1 {
+		err := errors.Errorf("error in use of method. can deal with maximum of one account name for ethereum transaction options. please check your code.")
+		log.Fatalf(err.Error())
+		return nil, err
+	} else {
+		switch accsLen {
+		case 1:
+			accountName = optionalAccountName[0]
+		default:
+			accountName = mainAccountName
+		}
+	}
+
+	key := viper.GetString("ethereum.accounts." + accountName + ".key")
+
+	// TODO: this could be done more elegantly if support for additional ways to configure keys should be added later on
+	// e.g. if key files would be supported instead of inline keys
+	if key == "" {
+		err := errors.Errorf("could not find configured ethereum key for account [%v]. please check your configuration.\n", accountName)
+		log.Printf(err.Error())
+		return nil, err
+	}
+
+	password := viper.GetString("ethereum.accounts." + accountName + ".password")
 
 	auth, err := bind.NewTransactor(strings.NewReader(key), password)
 	if err != nil {
 		err = errors.Errorf("Failed to load key with error: %v", err);
-		log.Fatal(err)
-
+		log.Println(err.Error())
+		return nil, err
+	} else {
+		auth.GasPrice = big.NewInt(viper.GetInt64("ethereum.gasPrice"))
+		auth.GasLimit = uint64(viper.GetInt64("ethereum.gasLimit"))
+		return auth, nil
 	}
-	auth.GasPrice = big.NewInt(viper.GetInt64("ethereum.gasPrice"))
-	auth.GasLimit = uint64(viper.GetInt64("ethereum.gasLimit"))
-	return auth, err
 }
 
 func GetGethCallOpts() (auth *bind.CallOpts) {
