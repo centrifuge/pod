@@ -7,10 +7,12 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
 	"bytes"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
+	"os"
 )
 
-func init() {
+func TestMain(m *testing.M) {
 	mockBootstrap()
+	os.Exit(m.Run())
 }
 
 func TestP2PService(t *testing.T) {
