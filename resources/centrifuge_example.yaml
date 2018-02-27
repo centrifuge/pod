@@ -16,6 +16,7 @@ keys:
   knownSigningKeys:
     1: resources/signingKey.pub
     2: resources/signingKeyAux.pub
+    3: resources/signingKeyExt.pub
 
 p2p:
   port: 38202

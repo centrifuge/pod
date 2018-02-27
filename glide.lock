@@ -1,5 +1,5 @@
 hash: f480058560becfb0dde853efc4737b7ba557d5c3d31b1f656f6d2eca0aefe047
-updated: 2018-02-20T14:03:19.113858108-05:00
+updated: 2018-02-27T16:29:06.0138522-05:00
 imports:
 - name: github.com/agl/ed25519
   version: 5312a61534124124185d41f09206b9fef1d88403
@@ -28,7 +28,7 @@ imports:
   subpackages:
   - spdy
 - name: github.com/ethereum/go-ethereum
-  version: 5603715c06998ff9ed30eb134c4398ad1439ef48
+  version: b574b5776695eb30e034fd8c7a468b3f03d4c6b9
   repo: git@github.com:ethereum/go-ethereum
   subpackages:
   - accounts
@@ -78,14 +78,12 @@ imports:
   - ptypes/timestamp
 - name: github.com/golang/snappy
   version: 553a641470496b2327abcac10b36396bd98e45c9
-- name: github.com/gorilla/context
-  version: 08b5f424b9271eedf6f9f0ce86cb9396ed337a42
 - name: github.com/gorilla/mux
   version: 53c1911da2b537f792e7cafcb446b05ffe33b996
 - name: github.com/gorilla/websocket
   version: f37d1588608ec036fa9b0b7b8afbde47dc06aea9
 - name: github.com/grpc-ecosystem/grpc-gateway
-  version: 424b8e1b005f9af4d801572c93d500f056b9754e
+  version: d96e01322cce0c898a216f4f3d04a9a0c543450b
   repo: git@github.com:grpc-ecosystem/grpc-gateway
   subpackages:
   - protoc-gen-swagger/options
@@ -96,6 +94,10 @@ imports:
   version: 80a92cca79a8041496ccc9dd773fcb52a57ec6f9
 - name: github.com/gxed/GoEndian
   version: 0f5c6873267e5abf306ffcdfcfa4bf77517ef4a7
+- name: github.com/gxed/hashland
+  version: d9f6b97f8db22dd1e090fd0bbbe98f09cc7dd0a8
+  subpackages:
+  - keccakpg
 - name: github.com/hashicorp/hcl
   version: 23c074d0eceb2b8a5bfdbb271ab780cde70f05a8
   subpackages:
@@ -235,7 +237,7 @@ imports:
 - name: github.com/multiformats/go-multicodec-packed
   version: 9004b413b478e5a878e4a879358cce02e5df4995
 - name: github.com/multiformats/go-multihash
-  version: 849814d6de4d66def119ee0315988e6541991fec
+  version: 468a1b73e980e5aff011d308623e43e28c582b16
 - name: github.com/multiformats/go-multistream
   version: 3e47cc995d6da1d2313b1df0c0d4dba94309d42b
 - name: github.com/opentracing/opentracing-go
@@ -251,10 +253,6 @@ imports:
   version: acdc4509485b587f5e675510c4f2c63e90ff68a8
 - name: github.com/pkg/errors
   version: 30136e27e2ac8d167177e8a583aa4c3fea5be833
-- name: github.com/rcrowley/go-metrics
-  version: 8732c616f52954686704c8645fe1a9d59e9df7c1
-  subpackages:
-  - exp
 - name: github.com/rjeczalik/notify
   version: c31e5f2cb22b3e4ef3f882f413847669bf2652b9
 - name: github.com/rs/cors
@@ -407,8 +405,4 @@ imports:
   version: c1b8fa8bdccecb0b8db834ee0b92fdbcfa606dd6
 - name: gopkg.in/yaml.v2
   version: d670f9405373e636a5a2765eea47fac0c9bc91a4
-- name: leb.io/hashland
-  version: 07375b562deaa8d6891f9618a04e94a0b98e2ee7
-  subpackages:
-  - keccakpg
 testImports: []

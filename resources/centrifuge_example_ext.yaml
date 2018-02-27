@@ -1,25 +1,25 @@
 storage:
-  path: /tmp/centrifuge_data_aux.leveldb
+  path: /tmp/centrifuge_data_ext.leveldb
 
 nodeHostname: localhost
-nodePort: 8083
+nodePort: 8084
 
-identityId: 2
+identityId: 3
 
 keys:
   signing:
-    publicKey: resources/signingKeyAux.pub
-    privateKey: resources/signingKeyAux.key
+    publicKey: resources/signingKeyExt.pub
+    privateKey: resources/signingKeyExt.key
   encryption:
-    publicKey: resources/encryptionKeyAux.pub
-    privateKey: resources/encryptionKeyAux.key
+    publicKey: resources/encryptionKeyExt.pub
+    privateKey: resources/encryptionKeyExt.key
   knownSigningKeys:
     1: resources/signingKey.pub
     2: resources/signingKeyAux.pub
     3: resources/signingKeyExt.pub
 
 p2p:
-  port: 38203
+  port: 38204
 
 ethereum:
   account: "838f7dcA284eb69A9c489fE09c31cFf37DeFDEcA"
