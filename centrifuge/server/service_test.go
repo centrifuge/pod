@@ -5,22 +5,29 @@ import (
 	"context"
 	"bytes"
 	"fmt"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/documentservice"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
+	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
 )
+
+func init() {
+	mockBootstrap()
+}
 
 func TestCoreDocumentService(t *testing.T) {
 	identifier := []byte("identifier")
 	identifierIncorrect := []byte("incorrectIdentifier")
-	s := newInvoiceDocumentService()
+	s := documentservice.InvoiceDocumentService{}
 	doc := invoice.InvoiceDocument{
-		DocumentIdentifier: identifier,
+		CoreDocument: &coredocument.CoreDocument{DocumentIdentifier:identifier},
 	}
 
 	sentDoc, err := s.SendInvoiceDocument(context.Background(), &invoice.SendInvoiceEnvelope{[][]byte{}, &doc})
 	if err != nil {
 		t.Fatal("Error in RPC Call", err)
 	}
-	if !bytes.Equal(sentDoc.DocumentIdentifier, identifier) {
+	if !bytes.Equal(sentDoc.CoreDocument.DocumentIdentifier, identifier) {
 		t.Fatal("DocumentIdentifier doesn't match")
 	}
 
@@ -29,7 +36,7 @@ func TestCoreDocumentService(t *testing.T) {
 	if err != nil {
 		t.Fatal("Error in RPC Call", err)
 	}
-	if !bytes.Equal(receivedDoc.DocumentIdentifier, identifier) {
+	if !bytes.Equal(receivedDoc.CoreDocument.DocumentIdentifier, identifier) {
 		t.Fatal("DocumentIdentifier doesn't match")
 	}
 
@@ -39,4 +46,8 @@ func TestCoreDocumentService(t *testing.T) {
 	if err == nil {
 		t.Fatal("RPC call should have raised exception")
 	}
+}
+
+func mockBootstrap() {
+	(&cc.MockCentNode{}).BootstrapDependencies()
 }
