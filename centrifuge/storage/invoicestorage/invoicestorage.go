@@ -3,6 +3,7 @@ package invoicestorage
 import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/golang/protobuf/proto"
 )
 
@@ -37,6 +38,10 @@ func (srv *StorageService) GetDocument(id []byte) (doc *invoice.InvoiceDocument,
 }
 
 func (srv *StorageService) PutDocument(doc *invoice.InvoiceDocument) (err error) {
+	if doc.CoreDocument == nil {
+		err = &errors.GenericError{"Invalid Empty (NIL) Invoice Document"}
+		return
+	}
 	key := srv.GetDocumentKey(doc.CoreDocument.DocumentIdentifier)
 	data, err := proto.Marshal(doc)
 
