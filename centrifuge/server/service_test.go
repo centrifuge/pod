@@ -9,10 +9,12 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
+	"os"
 )
 
-func init() {
+func TestMain(m *testing.M) {
 	mockBootstrap()
+	os.Exit(m.Run())
 }
 
 func TestCoreDocumentService(t *testing.T) {
