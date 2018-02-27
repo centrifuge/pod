@@ -5,12 +5,15 @@ import (
 	"crypto/rand"
 	"time"
 	"golang.org/x/crypto/ed25519"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 )
+
+
 
 func TestSignatureValidation(t *testing.T) {
 	var signingService = SigningService{}
 	var testKeys []KeyInfo
-	key1Pub, _, _ := ed25519.GenerateKey(rand.Reader)
+	key1Pub, key1, _ := ed25519.GenerateKey(rand.Reader)
 	key2Pub, _, _ := ed25519.GenerateKey(rand.Reader)
 	key3Pub, _, _ := ed25519.GenerateKey(rand.Reader)
 	key4Pub, _, _ := ed25519.GenerateKey(rand.Reader)
@@ -66,5 +69,18 @@ func TestSignatureValidation(t *testing.T) {
 	if valid || err == nil {
 		t.Fatal("Key should be invalid", err)
 	}
+	dataMerkleRoot := make([]byte, 32)
+	rand.Read(dataMerkleRoot)
+	documentIdentifier := make([]byte, 32)
+	rand.Read(documentIdentifier)
+	nextIdentifier := make([]byte, 32)
+	rand.Read(nextIdentifier)
+	doc := &coredocument.CoreDocument{
+		DataMerkleRoot: dataMerkleRoot,
+		DocumentIdentifier: documentIdentifier,
+		NextIdentifier: nextIdentifier,
+	}
+	signingService.Sign(doc, id1, key1, key1Pub)
+
 
 }

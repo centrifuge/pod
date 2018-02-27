@@ -26,8 +26,9 @@ type SigningService struct {
 
 // ValidateSignaturesOnDocument validates all signatures on the current document
 func (srv *SigningService) ValidateSignaturesOnDocument(doc *coredocument.CoreDocument) (valid bool, err error) {
+	message := srv.createSignatureData(doc)
 	for _, signature := range doc.Signatures {
-		valid, err := srv.ValidateSignature(signature)
+		valid, err := srv.ValidateSignature(signature, message)
 		if !valid {
 			return valid, err
 		}
@@ -35,13 +36,17 @@ func (srv *SigningService) ValidateSignaturesOnDocument(doc *coredocument.CoreDo
 	return true, nil
 }
 
-func (srv *SigningService) ValidateSignature(signature *coredocument.Signature) (valid bool, err error) {
+func (srv *SigningService) ValidateSignature(signature *coredocument.Signature, message []byte) (valid bool, err error) {
 	valid, err = srv.ValidateKey(signature.EntityId, signature.PublicKey, time.Now())
 	if err != nil {
 		return
 	}
 
-	// TODO: actually validate signature
+	valid = ed25519.Verify(signature.PublicKey, message, signature.Signature)
+	if !valid {
+		return false, errors.New("invalid signature")
+	}
+
 	return
 }
 
@@ -100,7 +105,7 @@ func (srv *SigningService) ValidateKey(identity []byte, key ed25519.PublicKey, t
 
 func (srv *SigningService) createSignatureData (doc *coredocument.CoreDocument) (signatureData []byte) {
 	signatureData = make([]byte, 64)
-	copy(signatureData[:32], doc.DocumentRoot[:32])
+	copy(signatureData[:32], doc.DataMerkleRoot[:32])
 	copy(signatureData[32:64], doc.NextIdentifier[:32])
 	return
 }
