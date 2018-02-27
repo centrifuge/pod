@@ -5,7 +5,7 @@ import (
 	"context"
 	"bytes"
 	"fmt"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/invoiceservice"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/documentservice"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
@@ -18,7 +18,7 @@ func init() {
 func TestCoreDocumentService(t *testing.T) {
 	identifier := []byte("identifier")
 	identifierIncorrect := []byte("incorrectIdentifier")
-	s := invoiceservice.InvoiceDocumentService{}
+	s := documentservice.InvoiceDocumentService{}
 	doc := invoice.InvoiceDocument{
 		CoreDocument: &coredocument.CoreDocument{DocumentIdentifier:identifier},
 	}

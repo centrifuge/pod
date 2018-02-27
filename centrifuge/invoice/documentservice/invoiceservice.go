@@ -1,4 +1,4 @@
-package invoiceservice
+package documentservice
 
 import (
 	"log"
