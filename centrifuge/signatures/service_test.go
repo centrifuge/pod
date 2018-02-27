@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"time"
 	"golang.org/x/crypto/ed25519"
-	"fmt"
 )
 
 func TestSignatureValidation(t *testing.T) {
@@ -18,16 +17,17 @@ func TestSignatureValidation(t *testing.T) {
 	id1 := []byte("1")
 	id2 := []byte("2")
 	id3 := []byte("3")
+
 	testKeys = append(testKeys, KeyInfo{
 		ed25519.PublicKey(key1Pub),
 		time.Now(),
-		time.Now().Add(3000000),
+		time.Now().Add(1*time.Hour),
 		id1,
 	})
 	testKeys =  append(testKeys, KeyInfo{
 		ed25519.PublicKey(key2Pub),
-		time.Now().Add(-4000000),
-		time.Now().Add(-3000000),
+		time.Now().Add(-1*time.Hour),
+		time.Now().Add(1*time.Hour),
 		id2,
 	})
 
@@ -51,20 +51,20 @@ func TestSignatureValidation(t *testing.T) {
 	}
 
 	// Signature timestamp is too early
-	valid, err = signingService.ValidateKey(id1, key1Pub, time.Now().Add(-1000))
+	valid, err = signingService.ValidateKey(id1, key1Pub, time.Now().Add(-10*time.Hour))
 	if valid || err == nil {
 		t.Fatal("Key should be invalid", err)
 	}
 	// Signature timestamp is too late
-	valid, err = signingService.ValidateKey(id1, key1Pub, time.Now().Add(4000000))
+	valid, err = signingService.ValidateKey(id1, key1Pub, time.Now().Add(5*time.Hour))
 	if valid || err == nil {
 		t.Fatal("Key should be invalid", err)
 	}
 
 	// Signature is using an incorrect key
 	valid, err = signingService.ValidateKey(id1, key4Pub, time.Now())
-	if !valid || err != nil {
-		t.Fatal("Key should be valid", err)
+	if valid || err == nil {
+		t.Fatal("Key should be invalid", err)
 	}
 
 }

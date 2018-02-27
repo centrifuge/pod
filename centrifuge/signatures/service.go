@@ -79,6 +79,10 @@ func (srv *SigningService) GetKeyInfo(key ed25519.PublicKey) (keyInfo KeyInfo, e
 func (srv *SigningService) ValidateKey(identity []byte, key ed25519.PublicKey, timestamp time.Time) (valid bool, err error) {
 	keyInfo, err :=  srv.GetKeyInfo(key)
 
+	if err != nil {
+		return false, errors.New("key not found")
+	}
+
 	if !bytes.Equal(identity, keyInfo.Identity) {
 		return false, errors.New(fmt.Sprintf("[Key: %s] Key Identity doesn't match", srv.GetIDFromKey(keyInfo.PublicKey)))
 	}
