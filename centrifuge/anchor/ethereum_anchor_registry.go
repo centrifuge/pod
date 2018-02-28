@@ -13,6 +13,8 @@ import (
 	"context"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/spf13/viper"
+	"fmt"
 )
 
 //Supported anchor schema version as stored on public registry
@@ -41,7 +43,10 @@ func (ethRegistry *EthereumAnchorRegistry) RegisterAsAnchor(anchorID string, roo
 	if err != nil {
 		return err
 	}
-	registerThisAnchor := generateAnchor(anchorID, rootHash)
+	registerThisAnchor, err := generateAnchor(anchorID, rootHash)
+	if err != nil {
+		return err
+	}
 
 	err = setUpRegistrationEventListener(ethRegistryContract, registerThisAnchor, confirmations)
 	if err != nil {
@@ -61,23 +66,41 @@ func (ethRegistry *EthereumAnchorRegistry) RegisterAsAnchor(anchorID string, roo
 }
 
 // Convenience method to create a "registerable" `Anchor` from anchor ID and root hash
-func generateAnchor(anchorID string, rootHash string) (*Anchor) {
-	returnAnchor := &Anchor{}
+func generateAnchor(anchorID string, rootHash string) (returnAnchor *Anchor, err error) {
+	err = checkLen32(anchorID, "anchorID needs to be length of 32. Got value [%v]")
+	if err != nil {
+		return nil, err
+	}
+	err = checkLen32(rootHash, "rootHash needs to be length of 32. Got value [%v]")
+	if err != nil {
+		return nil, err
+	}
+
+	returnAnchor = &Anchor{}
 	returnAnchor.AnchorID = anchorID
 	returnAnchor.RootHash = rootHash
 	// Rather using SchemaVersion as that's the real value that was passed around instead of calling `SupportedSchemaVersion`
 	// again.
 	returnAnchor.SchemaVersion = SupportedSchemaVersion()
-	return returnAnchor
+	return returnAnchor, nil
+}
+
+func checkLen32(val string, errorMessage string) (error) {
+	if len(val) != 32 {
+		return errors.New(fmt.Sprintf(errorMessage, val))
+	}
+	return nil
 }
 
 // Sends the actual transaction to register the Anchor on Ethereum registry contract
 func sendRegistrationTransaction(ethRegistryContract RegisterAnchor, opts *bind.TransactOpts, anchorToBeRegistered *Anchor) (err error) {
-	if len(anchorToBeRegistered.AnchorID) != 32 {
-		return errors.New("AnchorID needs to be length of 32")
+	err = checkLen32(anchorToBeRegistered.AnchorID, "AnchorID needs to be length of 32. Got value [%x]")
+	if err != nil {
+		return err
 	}
-	if len(anchorToBeRegistered.RootHash) != 32 {
-		return errors.New("RootHash needs to be length of 32")
+	err = checkLen32(anchorToBeRegistered.RootHash, "RootHash needs to be length of 32. Got value [%x]")
+	if err != nil {
+		return err
 	}
 
 	//preparation of data in specific types for the call to Ethereum
@@ -86,6 +109,8 @@ func sendRegistrationTransaction(ethRegistryContract RegisterAnchor, opts *bind.
 	copy(bAnchorId[:], anchorToBeRegistered.AnchorID[:32])
 	schemaVersion := big.NewInt(int64(anchorToBeRegistered.SchemaVersion))
 
+	// TODO for concurrency handling
+	ethereum.IncreaseNoncePlus1(opts)
 	tx, err := ethRegistryContract.RegisterAnchor(opts, bAnchorId, bMerkleRoot, schemaVersion)
 
 	if err != nil {
@@ -146,7 +171,7 @@ func getAnchorContract() (anchorContract *EthereumAnchorRegistryContract, err er
 	// Instantiate the contract and display its name
 	client := ethereum.GetConnection()
 
-	anchorContract, err = NewEthereumAnchorRegistryContract(common.HexToAddress("0x995ef27e64cb9ef07eb6f9d255a3951ef20416fd"), client.GetClient())
+	anchorContract, err = NewEthereumAnchorRegistryContract(common.HexToAddress(viper.GetString("anchor.ethereum.anchorRegistryAddress")), client.GetClient())
 	if err != nil {
 		log.Fatalf("Failed to instantiate the witness contract contract: %v", err)
 	}

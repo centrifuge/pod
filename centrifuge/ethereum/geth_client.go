@@ -11,6 +11,7 @@ import (
 	"time"
 	"context"
 	"sync"
+	//"fmt"
 )
 
 const (
@@ -86,16 +87,43 @@ func GetGethTxOpts(optionalAccountName ...string) (*bind.TransactOpts, error) {
 
 	password := viper.GetString("ethereum.accounts." + accountName + ".password")
 
-	auth, err := bind.NewTransactor(strings.NewReader(key), password)
+	authedTransactionOpts, err := bind.NewTransactor(strings.NewReader(key), password)
 	if err != nil {
 		err = errors.Errorf("Failed to load key with error: %v", err);
 		log.Println(err.Error())
 		return nil, err
 	} else {
-		auth.GasPrice = big.NewInt(viper.GetInt64("ethereum.gasPrice"))
-		auth.GasLimit = uint64(viper.GetInt64("ethereum.gasLimit"))
-		return auth, nil
+		authedTransactionOpts.GasPrice = big.NewInt(viper.GetInt64("ethereum.gasPrice"))
+		authedTransactionOpts.GasLimit = uint64(viper.GetInt64("ethereum.gasLimit"))
+		return authedTransactionOpts, nil
 	}
+}
+
+// TODO - make this lookup smarter so it can really take pending transactions into account
+// right now, if there is high concurrency, the code will still error out
+// this has to do with the transaction pool taking presedence before even sending transactions to geth
+// see go-ethereum/core/tx_pool.go line 639 -> https://github.com/ethereum/go-ethereum/blob/master/core/tx_pool.go#L639
+func IncreaseNoncePlus1(opts *bind.TransactOpts) (error) {
+	//var ctx context.Context
+	//if opts.Context != nil {
+	//	ctx = opts.Context
+	//} else {
+	//	ctx = context.TODO()
+	//}
+	//client := GetConnection().GetClient()
+	//nonce, err := client.PendingNonceAt(ctx, opts.From)
+	//if err != nil {
+	//	return fmt.Errorf("failed to retrieve pending account nonce: %v", err)
+	//}
+	//if &nonce == nil {
+	//	nonce, err = client.NonceAt(ctx, opts.From, nil)
+	//	if err != nil {
+	//		return fmt.Errorf("failed to retrieve account nonce from latest block: %v", err)
+	//	}
+	//}
+	//opts.Nonce = big.NewInt(int64(nonce) + 1)
+
+	return nil
 }
 
 func GetGethCallOpts() (auth *bind.CallOpts) {

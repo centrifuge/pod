@@ -13,9 +13,26 @@ import (
 )
 
 func TestGenerateAnchor(t *testing.T) {
-	anchor := generateAnchor("ABCD", "DCBA")
-	assert.Equal(t, anchor.AnchorID, "ABCD", "Anchor should have the passed ID")
-	assert.Equal(t, anchor.RootHash, "DCBA", "Anchor should have the passed root hash")
+	anchor, err := generateAnchor("ABCD", "DCBA")
+	assert.Nil(t, anchor)
+	assert.Error(t, err, "Should fail with too short input values")
+
+	anchor, err = generateAnchor("01234567890123456789012345678932", "DCBA")
+	assert.Nil(t, anchor)
+	assert.Error(t, err, "Should fail with too short input values")
+
+	anchor, err = generateAnchor("012345678901234567890123456789333", "012345678901234567890123456789333")
+	assert.Nil(t, anchor)
+	assert.Error(t, err, "Should fail with too long input values")
+
+	anchor, err = generateAnchor("01234567890123456789012345678932", "012345678901234567890123456789333")
+	assert.Nil(t, anchor)
+	assert.Error(t, err, "Should fail with too long input values")
+
+	anchor, err = generateAnchor("0123456789012345678901234567893A", "0123456789012345678901234567893B")
+	assert.Nil(t, err)
+	assert.Equal(t, anchor.AnchorID, "0123456789012345678901234567893A", "Anchor should have the passed ID")
+	assert.Equal(t, anchor.RootHash, "0123456789012345678901234567893B", "Anchor should have the passed root hash")
 	assert.Equal(t, anchor.SchemaVersion, SupportedSchemaVersion(), "Anchor should have the supported schema version")
 }
 
