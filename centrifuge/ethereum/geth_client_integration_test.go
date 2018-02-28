@@ -29,8 +29,7 @@ func TestGetConnection_returnsSameConnection(t *testing.T) {
 		return
 	}
 	//TODO this will currently fail if concurrency is at play - e.g. running with 3 go-routines the test will fail
-	howMany := 1
-	var connections [1]ethereum.EthereumClient
+	howMany := 5
 	confChannel := make(chan ethereum.EthereumClient, howMany)
 	for ix := 0; ix < howMany; ix++ {
 		go func() {
@@ -38,9 +37,7 @@ func TestGetConnection_returnsSameConnection(t *testing.T) {
 		}()
 	}
 	for ix := 0; ix < howMany; ix++ {
-		connections[ix] = <-confChannel
+		multiThreadCreatedCon := <-confChannel
+		assert.Equal(t, multiThreadCreatedCon , ethereum.GetConnection(), "Should only return a single ethereum client")
 	}
-	assert.Equal(t, connections[0], ethereum.GetConnection(), "Should only return a single ethereum client")
-	//assert.Equal(t, connections[1], ethereum.GetConnection(), "Should only return a single ethereum client")
-	//assert.Equal(t, connections[2], ethereum.GetConnection(), "Should only return a single ethereum client")
 }

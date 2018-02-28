@@ -10,6 +10,7 @@ import (
 	"math/big"
 	"time"
 	"context"
+	"sync"
 )
 
 const (
@@ -19,6 +20,7 @@ const (
 )
 
 var gc *GethClient
+var gcInit sync.Once
 
 func DefaultWaitForTransactionMiningContext() (ctx context.Context) {
 	toBeDone := time.Now().Add(defaultWaitForTransactionMined)
@@ -42,14 +44,14 @@ func (gethClient GethClient) GetClient() (*ethclient.Client) {
 }
 
 func GetConnection() (EthereumClient) {
-	//TODO this needs to be made threadsafe to have only one client at any time
-	if gc == nil {
+	gcInit.Do(func() {
 		client, err := ethclient.Dial(viper.GetString("ethereum.gethIpc"))
 		if err != nil {
 			log.Fatalf("Failed to connect to the Ethereum client: %v", err)
+		} else {
+			gc = &GethClient{client}
 		}
-		gc = &GethClient{client}
-	}
+	})
 	return gc
 }
 

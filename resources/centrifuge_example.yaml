@@ -17,6 +17,6 @@ ethereum:
   gasPrice: 40000
   gasLimit: 4712388
 
-anchoring:
+anchor:
   ethereum:
-    anchorRegistryAddress: "0x6e54f75413ddaf374188fd16b8e0888fee76715e"
+    anchorRegistryAddress: "0x995ef27e64cb9ef07eb6f9d255a3951ef20416fd"
