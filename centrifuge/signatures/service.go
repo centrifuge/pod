@@ -116,4 +116,3 @@ func (srv *SigningService) Sign (doc *coredocument.CoreDocument, identity []byte
 	signature := ed25519.Sign(privateKey, sigArray)
 	doc.Signatures = append(doc.Signatures, &coredocument.Signature{identity,publicKey, signature})
 }
-
