@@ -35,10 +35,10 @@ func (srv *P2PService) Transmit(ctx context.Context, req *P2PMessage) (rep *P2PR
 		return nil, err
 	}
 
-	switch schemaId := string(req.Document.DocumentSchemaId); {
-	case schemaId == coredocument.InvoiceSchema:
+	switch typeUrl := string(req.Document.EmbeddedDocument.TypeUrl); {
+	case typeUrl == coredocument.InvoiceSchema:
 		log.Print("Got invoice")
-	case schemaId == coredocument.PurchaseOrderSchema:
+	case typeUrl == coredocument.PurchaseOrderSchema:
 		log.Print("Got purchase order")
 	default:
 		log.Fatal("Got unknown schema")

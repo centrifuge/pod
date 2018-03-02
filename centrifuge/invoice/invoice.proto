@@ -44,6 +44,26 @@ service InvoiceDocumentService {
     }
 }
 
+message SaltedString {
+    string value = 1;
+    bytes salt = 2;
+}
+
+message SaltedInt64 {
+    int64 value = 1;
+    bytes salt = 2;
+}
+
+message SaltedBytes {
+    bytes value = 1;
+    bytes salt = 2;
+}
+
+message SaltedTimestamp {
+    google.protobuf.Timestamp value = 1;
+    bytes salt = 2;
+}
+
 // InvoiceData is the default invoice schema
 message InvoiceData {
     string country = 2;
@@ -57,6 +77,25 @@ message InvoiceData {
     string comment = 8;
     google.protobuf.Timestamp due_date = 9;
     google.protobuf.Timestamp date_created = 11;
+}
+
+message SaltedLineItem {
+    SaltedString comment = 1;
+    SaltedInt64 amount = 2;
+}
+
+message SaltedInvoiceData {
+    SaltedString country = 2;
+    SaltedString currency = 3;
+    SaltedInt64 amount = 4;
+    SaltedBytes recipient = 5;
+    SaltedBytes sender = 6;
+    SaltedBytes payee = 7;
+    SaltedString comment = 8;
+    SaltedTimestamp due_date = 9;
+    SaltedTimestamp date_created = 11;
+    repeated SaltedString discounts = 12;
+    repeated SaltedLineItem line_items = 13;
 }
 
 message InvoiceDocument {

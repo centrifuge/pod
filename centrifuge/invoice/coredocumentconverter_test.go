@@ -21,20 +21,19 @@ func TestCoreDocumentConverter(t *testing.T) {
 			},
 		Data: &invoiceData,
 	}
-	serializedInvoice, err := proto.Marshal(&invoiceData)
+	marshaledInvoice, err := proto.Marshal(&invoiceData)
 	if err != nil {
 		t.Fatalf("Could not serialize InvoiceData")
 	}
 
 	invoiceAny := any.Any{
-		TypeUrl: "http://github.com/CentrifugeInc/go-centrifuge/invoice/#"+proto.MessageName(&invoiceData),
-		Value: serializedInvoice,
+		TypeUrl: "https://github.com/CentrifugeInc/go-centrifuge/blob/master/centrifuge/invoice/invoice.proto#invoice.InvoiceDocument",
+		Value:   marshaledInvoice,
 	}
 
 	coreDocument := coredocument.CoreDocument{
 		DocumentIdentifier: identifier,
 		EmbeddedDocument: &invoiceAny,
-		DocumentSchemaId: []byte(coredocument.InvoiceSchema),
 	}
 
 	generatedCoreDocument := ConvertToCoreDocument(&invoiceDoc)

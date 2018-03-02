@@ -46,7 +46,6 @@ message CoreDocument {
     repeated CoreDocument previous_versions = 8;
 
     // Document a serialized document
-    bytes document_schema_id = 12;
     google.protobuf.Any embedded_document = 13;
 }
 
