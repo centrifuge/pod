@@ -4,23 +4,22 @@ import (
 	"context"
 	"fmt"
 	"log"
-
-	pb "github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
-	server "github.com/CentrifugeInc/go-centrifuge/centrifuge/server"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/server"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"crypto/x509"
 	"crypto/tls"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
 )
 
-func getDocument(client pb.CentrifugeNodeServiceClient, id []byte) {
-	doc, err := client.GetInvoiceDocument(context.Background(), &pb.GetInvoiceDocumentEnvelope{id})
+func getDocument(client invoice.InvoiceDocumentServiceClient, id []byte) {
+	doc, err := client.GetInvoiceDocument(context.Background(), &invoice.GetInvoiceDocumentEnvelope{id})
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(doc.DocumentIdentifier)
+	log.Printf("Doc: %s\n", doc)
 }
 
 func loadCertPool() (certPool *x509.CertPool) {
@@ -55,7 +54,7 @@ var runClient = &cobra.Command{
 			log.Fatalf("fail to dial: %v", err)
 		}
 		defer conn.Close()
-		client := pb.NewCentrifugeNodeServiceClient(conn)
+		client := invoice.NewInvoiceDocumentServiceClient(conn)
 
 		getDocument(client, []byte("1"))
 	},

@@ -94,7 +94,13 @@ import(
 Modifying .proto files
 ----------------------
 
-If you plan on modifying the protobuf definitions, you will need to install the required binaries:
+If you plan on modifying the protobuf definitions, there are a few things you need to install. Begin by installing
+protobuf according to https://github.com/google/protobuf#protocol-compiler-installation
+
+You will also need to check out the repository source to a folder that is then passed to the go generate command as
+`PROTOBUF`
+
+Next step is to compile the golang protobuf & grpc gateway binaries:
 
 ```
 cd vendor/github.com/golang/protobuf && make install
@@ -104,7 +110,7 @@ go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
 
 You can then generate the necessary go code by running:
 ```
-go generate ./centrifuge
+PROTOBUF=/path/to/protobuf_repo go generate main.go
 ```
 
 
@@ -112,3 +118,4 @@ Swagger
 -------
 You can run `./scripts/run_swagger.sh` to launch a docker container that serves teh swagger UI on http://localhost:8085
 
+	"github.com/ipfs/go-log" "github.com/libp2p/go-libp2p-crypto" "github.com/libp2p/go-libp2p-host" "github.com/libp2p/go-libp2p-net" "github.com/libp2p/go-libp2p-peer" "github.com/libp2p/go-libp2p-peerstore" "github.com/libp2p/go-libp2p-swarm" "github.com/libp2p/go-libp2p/p2p/host/basic" "github.com/multiformats/go-multiaddr" "github.com/whyrusleeping/go-logging" "github.com/whyrusleeping/go-smux-multistream" "github.com/whyrusleeping/go-smux-yamux"

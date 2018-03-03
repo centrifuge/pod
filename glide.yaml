@@ -57,3 +57,18 @@ import:
   - status
 - package: github.com/stretchr/testify/assert
   version: 1.2.1
+- package: github.com/paralin/go-libp2p-grpc
+- package: github.com/libp2p/go-libp2p-swarm
+- package: github.com/ipfs/go-log
+- package: github.com/libp2p/go-libp2p-crypto
+- package: github.com/libp2p/go-libp2p-host
+- package: github.com/libp2p/go-libp2p-net
+- package: github.com/libp2p/go-libp2p-peer
+- package: github.com/libp2p/go-libp2p-peerstore
+- package: github.com/libp2p/go-libp2p
+  subpackages:
+  - p2p/host/basic
+- package: github.com/multiformats/go-multiaddr
+- package: github.com/whyrusleeping/go-logging
+- package: github.com/whyrusleeping/go-smux-multistream
+- package: github.com/whyrusleeping/go-smux-yamux

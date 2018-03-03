@@ -199,7 +199,7 @@ func (doc *SignedDocument) VerifyMerkleRoot() (verified bool) {
 	return doc.MerkleRoot == doc.GenerateMerkleRoot()
 }
 
-// VerifySignature by checking if it exists on the document and then validating
+// ValidateSignature by checking if it exists on the document and then validating
 // it against the provided public key
 func (doc *SignedDocument) VerifySignature(publicKey ed25519.PublicKey) (verified bool) {
 	// Find signature first

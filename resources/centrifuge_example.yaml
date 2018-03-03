@@ -4,6 +4,23 @@ storage:
 nodeHostname: localhost
 nodePort: 8082
 
+identityId: 1
+
+keys:
+  signing:
+    publicKey: resources/signingKey.pub
+    privateKey: resources/signingKey.key
+  encryption:
+    publicKey: resources/encryptionKey.pub
+    privateKey: resources/encryptionKey.key
+  knownSigningKeys:
+    1: resources/signingKey.pub
+    2: resources/signingKeyAux.pub
+    3: resources/signingKeyExt.pub
+
+p2p:
+  port: 38202
+
 ethereum:
   accounts:
     - main:

@@ -1,0 +1,79 @@
+syntax = "proto3";
+package invoice;
+option go_package = "github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice";
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+import "protoc-gen-swagger/options/annotations.proto";
+import "coredocument/coredocument.proto";
+
+option (grpc.gateway.protoc_gen_swagger.options.openapiv2_swagger) = {
+    host: "localhost:8082";
+    info:{
+        title:"Centrifuge OS Client API";
+        version:"0.0.1";
+        contact:{
+            name:"Centrifuge";
+            url:"https://github.com/CentrifugeInc";
+            email:"hello@centrifuge.one";
+        };
+    };
+    schemes:HTTPS;
+    consumes:"application/json";
+    produces:"application/json";
+};
+
+service InvoiceDocumentService {
+    rpc SendInvoiceDocument(SendInvoiceEnvelope) returns (InvoiceDocument) {
+        option (google.api.http) = {
+            post: "/invoice/send"
+            body: "*"
+        };
+    }
+    rpc GetInvoiceDocument(GetInvoiceDocumentEnvelope) returns (InvoiceDocument) {
+        option (google.api.http) = {
+            get: "/invoice/get/{document_identifier}"
+        };
+    }
+
+        rpc GetReceivedInvoiceDocuments (google.protobuf.Empty) returns (ReceivedInvoices) {
+        option (google.api.http) = {
+            get: "/invoice/getReceived"
+        };
+    }
+}
+
+// InvoiceData is the default invoice schema
+message InvoiceData {
+    string country = 2;
+    string currency = 3;
+    int64 amount = 4;
+
+    bytes recipient = 5;
+    bytes sender = 6;
+    bytes payee = 7;
+
+    string comment = 8;
+    google.protobuf.Timestamp due_date = 9;
+    google.protobuf.Timestamp date_created = 11;
+}
+
+message InvoiceDocument {
+    coredocument.CoreDocument core_document = 1;
+    InvoiceData data = 2;
+}
+
+message SendInvoiceEnvelope {
+    // Centrifuge OS Entity of the recipient
+    repeated bytes recipients = 1;
+    InvoiceDocument document = 10;
+}
+
+message GetInvoiceDocumentEnvelope {
+    bytes document_identifier = 1;
+}
+
+message ReceivedInvoices {
+    repeated InvoiceDocument invoices = 1;
+}

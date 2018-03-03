@@ -3,40 +3,53 @@ package server
 import (
 	"testing"
 	"context"
-	pb "github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"bytes"
 	"fmt"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/documentservice"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
+	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
+	"os"
 )
+
+func TestMain(m *testing.M) {
+	mockBootstrap()
+	os.Exit(m.Run())
+}
 
 func TestCoreDocumentService(t *testing.T) {
 	identifier := []byte("identifier")
 	identifierIncorrect := []byte("incorrectIdentifier")
-	s := newCentrifugeNodeService()
-	doc := pb.InvoiceDocument{
-		DocumentIdentifier: identifier,
+	s := documentservice.InvoiceDocumentService{}
+	doc := invoice.InvoiceDocument{
+		CoreDocument: &coredocument.CoreDocument{DocumentIdentifier:identifier},
 	}
 
-	sentDoc, err := s.SendInvoiceDocument(context.Background(), &pb.SendInvoiceEnvelope{[][]byte{}, &doc})
+	sentDoc, err := s.SendInvoiceDocument(context.Background(), &invoice.SendInvoiceEnvelope{[][]byte{}, &doc})
 	if err != nil {
 		t.Fatal("Error in RPC Call", err)
 	}
-	if !bytes.Equal(sentDoc.DocumentIdentifier, identifier) {
+	if !bytes.Equal(sentDoc.CoreDocument.DocumentIdentifier, identifier) {
 		t.Fatal("DocumentIdentifier doesn't match")
 	}
 
 	receivedDoc, err := s.GetInvoiceDocument(context.Background(),
-		&pb.GetInvoiceDocumentEnvelope{DocumentIdentifier: identifier})
+		&invoice.GetInvoiceDocumentEnvelope{DocumentIdentifier: identifier})
 	if err != nil {
 		t.Fatal("Error in RPC Call", err)
 	}
-	if !bytes.Equal(receivedDoc.DocumentIdentifier, identifier) {
+	if !bytes.Equal(receivedDoc.CoreDocument.DocumentIdentifier, identifier) {
 		t.Fatal("DocumentIdentifier doesn't match")
 	}
 
 	docIncorrect, err := s.GetInvoiceDocument(context.Background(),
-		&pb.GetInvoiceDocumentEnvelope{DocumentIdentifier: identifierIncorrect})
+		&invoice.GetInvoiceDocumentEnvelope{DocumentIdentifier: identifierIncorrect})
 	fmt.Println(docIncorrect)
 	if err == nil {
 		t.Fatal("RPC call should have raised exception")
 	}
+}
+
+func mockBootstrap() {
+	(&cc.MockCentNode{}).BootstrapDependencies()
 }
