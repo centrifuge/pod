@@ -16,11 +16,15 @@ func (s *InvoiceDocumentService) SendInvoiceDocument(ctx context.Context, sendIn
 		return nil, err
 	}
 
+	coreDoc := invoice.ConvertToCoreDocument(sendInvoiceEnvelope.Document)
+	// Sign document
+	signingService := cc.Node.GetSigningService()
+	signingService.Sign(&coreDoc)
+
 	for _, element := range sendInvoiceEnvelope.Recipients {
 		addr := string(element[:])
 		client := p2p.OpenClient(addr)
 		log.Print("Done opening connection")
-		coreDoc := invoice.ConvertToCoreDocument(sendInvoiceEnvelope.Document)
 		_, err := client.Transmit(context.Background(), &p2p.P2PMessage{&coreDoc})
 		if err != nil {
 			return nil, err

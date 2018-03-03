@@ -22,6 +22,32 @@ type SigningService struct {
 	// For now we will hard code a few known signing keys. This should later be replaced with ethereum based identities
 	// Structure is: Identity ID, Key
 	KnownKeys map[[32]byte]KeyInfo
+
+	// For simplicity we only support one active identity for now.
+	IdentityId []byte
+	PublicKey ed25519.PublicKey
+	PrivateKey ed25519.PrivateKey
+}
+
+// LoadPublicKeys just loads public keys from the config for now until identity management does this for us.
+func (srv *SigningService) LoadPublicKeys () {
+	keys := viper.GetStringMapString("keys.knownSigningKeys")
+	for k, v := range keys {
+		key := keytools.GetPublicSigningKey(v)
+		var i [32]byte
+		copy(i[:], key[:32])
+		srv.KnownKeys[i] = KeyInfo{
+			PublicKey: key,
+			ValidUntil: time.Time{},
+			ValidFrom: time.Now(),
+			Identity: []byte(k),
+		}
+	}
+}
+
+func (srv *SigningService) LoadIdentityKeyFromConfig() {
+	srv.IdentityId = []byte(viper.GetString("identityId"))
+	srv.PublicKey, srv.PrivateKey = keytools.GetSigningKeysFromConfig()
 }
 
 // ValidateSignaturesOnDocument validates all signatures on the current document
@@ -48,23 +74,6 @@ func (srv *SigningService) ValidateSignature(signature *coredocument.Signature, 
 	}
 
 	return
-}
-
-// LoadPublicKeys just loads public keys from the config for now until identity management does this for us.
-func (srv *SigningService) LoadPublicKeys () {
-	keys := viper.GetStringMapString("keys.knownSigningKeys")
-	for k, v := range keys {
-		key := keytools.GetPublicSigningKey(v)
-		var i [32]byte
-		copy(i[:], key[:32])
-		srv.KnownKeys[i] = KeyInfo{
-			PublicKey: key,
-			ValidUntil: time.Time{},
-			ValidFrom: time.Now(),
-			Identity: []byte(k),
-		}
-
-	}
 }
 
 func (srv *SigningService) GetIDFromKey(key ed25519.PublicKey) (id [32]byte) {
@@ -110,9 +119,14 @@ func (srv *SigningService) createSignatureData (doc *coredocument.CoreDocument) 
 	return
 }
 
-// Sign a document with a provided public key
-func (srv *SigningService) Sign (doc *coredocument.CoreDocument, identity []byte, privateKey ed25519.PrivateKey, publicKey ed25519.PublicKey) {
+func (srv *SigningService) MakeSignature (doc *coredocument.CoreDocument, identity []byte, privateKey ed25519.PrivateKey, publicKey ed25519.PublicKey) (sig *coredocument.Signature){
 	sigArray := srv.createSignatureData(doc)
 	signature := ed25519.Sign(privateKey, sigArray)
-	doc.Signatures = append(doc.Signatures, &coredocument.Signature{identity,publicKey, signature})
+	return &coredocument.Signature{identity,publicKey, signature}
+}
+
+// Sign a document with a provided public key
+func (srv *SigningService) Sign (doc *coredocument.CoreDocument) {
+	sig := srv.MakeSignature(doc, srv.IdentityId, srv.PrivateKey, srv.PublicKey)
+	doc.Signatures = append(doc.Signatures, sig)
 }
