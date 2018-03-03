@@ -42,6 +42,15 @@ and then run:
 reflex -r centrifuge/ go test ./...
 ```
 
+Why you should test with a "real" Ethereum
+------------------------------------------
+Why you should not run `testrpc` for testing with go-ethereum clients:
+* Transaction IDs are randomly generated and you can not rely on finding your own transactions based on the .Hash() function.
+** https://github.com/trufflesuite/ganache-cli/issues/387
+* It is not possible to send more than one transaction per testrpc start as testrpc returns the pending transaction count erroneously with leading 0s - this freaks out the hex decoding and it breaks. Essentially testrpc returns for a transaction count of 1 `0x01` whereas _real_ geth returns `0x1`
+
+Save yourself some hassle and use a local testnet running.
+
 Run Cent-Constellation Nodes
 ----------------------------
 
@@ -65,16 +74,20 @@ Ethereum Contract Bindings
 
 To create the go bindings for the deployed truffle contract, use the following command:
 
-`abigen --abi build/contracts/Witness.abi --pkg witness --type EthereumWitness --out witness_contract.go`
+```bash
+abigen --abi abi/AnchorRegistry.abi --pkg anchor --type EthereumAnchorRegistryContract --out ${GOPATH}/src/github.com/CentrifugeInc/go-centrifuge/centrifuge/anchor/ethereum_anchor_registry_contract.go
+```
 
-and then copy the `witness_contract.go` file to `centrifuge/witness/`. You will also need to modify the file to add the following imports:
+and then copy the `ethereum_anchor_registry_contract.go` file to `centrifuge/anchor/`. You will also need to modify the file to add the following imports:
 
 ```go,
 import(
-   	"github.com/ethereum/go-ethereum/accounts/abi"
+	ethereum "github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/event"
 )
 ```
 

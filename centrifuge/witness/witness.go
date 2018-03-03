@@ -151,7 +151,7 @@ func (doc *SignedDocument) getSignatureListString() (list []byte) {
 func GetWitnessContract() (witnessContract *witness.EthereumWitness) {
 	// Instantiate the contract and display its name
 	client := ethereum.GetConnection()
-	witnessContract, err := witness.NewEthereumWitness(common.HexToAddress(viper.GetString("witness.ethereum.contractAddress")), client)
+	witnessContract, err := witness.NewEthereumWitness(common.HexToAddress(viper.GetString("witness.ethereum.contractAddress")), client.GetClient())
 	if err != nil {
 		log.Fatalf("Failed to instantiate the witness contract contract: %v", err)
 	}
@@ -168,7 +168,7 @@ func (wes *WitnessExternalDoc) WitnessDocument() {
 	copy(wes.doc.WitnessRoot[:], tree.Root().Hash[:32])
 
 	contract := GetWitnessContract()
-	opts := ethereum.GetGethTxOpts()
+	opts,_ := ethereum.GetGethTxOpts()
 	tx, err := contract.WitnessDocument(opts, wes.doc.Identifier, wes.doc.WitnessRoot)
 	if err != nil {
 		log.Fatalf("Transaction error")
