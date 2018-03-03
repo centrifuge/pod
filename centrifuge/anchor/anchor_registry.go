@@ -8,7 +8,7 @@ type AnchorRegistry interface {
 	RegisterAsAnchor(anchorID string, rootHash string, confirmations chan<- *Anchor) (error)
 }
 
-// Register the given AnchorID and RootHash as an anchor
+// RegisterAsAnchor registers the given AnchorID and RootHash as an anchor on the configured anchor registry
 func RegisterAsAnchor(anchorID string, rootHash string, confirmations chan<- *Anchor) (error) {
 	registry, _ := getConfiguredRegistry()
 
@@ -19,7 +19,7 @@ func RegisterAsAnchor(anchorID string, rootHash string, confirmations chan<- *An
 	return err
 }
 
-// This will later pull a configured registry (if not only using Ethereum as the anchor registry)
+// getConfiguredRegistry will later pull a configured registry (if not only using Ethereum as the anchor registry)
 // For now hard-coded to the Ethereum setup
 func getConfiguredRegistry() (AnchorRegistry, error) {
 	return &EthereumAnchorRegistry{}, nil

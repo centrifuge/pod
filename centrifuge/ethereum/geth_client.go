@@ -11,20 +11,22 @@ import (
 	"time"
 	"context"
 	"sync"
-	//"fmt"
 )
 
 const (
-	// Timeouts
-	defaultWaitForTransactionMined = 30 * time.Second
-	mainAccountName                = "main"
+	mainAccountName = "main"
 )
 
 var gc *GethClient
 var gcInit sync.Once
 
+// getDefaultContextTimeout retrieves the default duration before an Ethereum call context should time out
+func getDefaultContextTimeout() (time.Duration) {
+	return viper.GetDuration("ethereum.contextWaitTimeout")
+}
+
 func DefaultWaitForTransactionMiningContext() (ctx context.Context) {
-	toBeDone := time.Now().Add(defaultWaitForTransactionMined)
+	toBeDone := time.Now().Add(getDefaultContextTimeout())
 	ctx, _ = context.WithDeadline(context.TODO(), toBeDone)
 	return
 }
@@ -44,6 +46,8 @@ func (gethClient GethClient) GetClient() (*ethclient.Client) {
 	return gethClient.Client
 }
 
+// GetConnection returns the connection to the configured `ethereum.gethIpc`.
+// Note that this is a singleton and is the same connection for the whole application.
 func GetConnection() (EthereumClient) {
 	gcInit.Do(func() {
 		client, err := ethclient.Dial(viper.GetString("ethereum.gethIpc"))
@@ -56,7 +60,7 @@ func GetConnection() (EthereumClient) {
 	return gc
 }
 
-// Retrieves the geth transaction options for the given account name. The account name influences which configuration
+// GetGethTxOpts retrieves the geth transaction options for the given account name. The account name influences which configuration
 // is used. If no account name is provided the account as defined by `mainAccountName` constant is used
 // It is not supported to call with more than one account name.
 func GetGethTxOpts(optionalAccountName ...string) (*bind.TransactOpts, error) {

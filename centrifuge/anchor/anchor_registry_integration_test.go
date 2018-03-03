@@ -22,6 +22,7 @@ func TestMain(m *testing.M) {
 	viper.BindEnv("ethereum.gethipc", "CENT_ETHEREUM_GETHIPC")
 	viper.BindEnv("ethereum.gasLimit", "CENT_ETHEREUM_GASLIMIT")
 	viper.BindEnv("ethereum.gasPrice", "CENT_ETHEREUM_GASPRICE")
+	viper.BindEnv("ethereum.contextWaitTimeout", "CENT_ETHEREUM_CONTEXTWAITTIMEOUT")
 	viper.BindEnv("ethereum.accounts.main.password", "CENT_ETHEREUM_ACCOUNTS_MAIN_PASSWORD")
 	viper.BindEnv("ethereum.accounts.main.key", "CENT_ETHEREUM_ACCOUNTS_MAIN_KEY")
 	viper.BindEnv("anchor.ethereum.anchorRegistryAddress", "CENT_ANCHOR_ETHEREUM_ANCHORREGISTRYADDRESS")

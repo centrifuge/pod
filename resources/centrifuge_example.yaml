@@ -16,6 +16,7 @@ ethereum:
   gethIpc: /tmp/centrifuge/geth.ipc
   gasPrice: 40000
   gasLimit: 4712388
+  contextWaitTimeout: "30s"
 
 anchor:
   ethereum:

@@ -10,6 +10,7 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/event"
+	"github.com/spf13/viper"
 )
 
 func TestGenerateAnchor(t *testing.T) {
@@ -89,6 +90,8 @@ func TestSendRegistrationTransaction_InputParams(t *testing.T) {
 }
 
 func TestSetUpRegistrationEventListener_ErrorPassThrough(t *testing.T) {
+	viper.SetDefault("ethereum.contextWaitTimeout", "30s")
+
 	failingWatchAnchorRegistered := &MockWatchAnchorRegistered{shouldFail: true}
 	anchor := Anchor{tools.RandomString32(), tools.RandomString32(), 1}
 	confirmations := make(chan *Anchor)
@@ -99,23 +102,25 @@ func TestSetUpRegistrationEventListener_ErrorPassThrough(t *testing.T) {
 		}
 	}()
 
-	err := setUpRegistrationEventListener(failingWatchAnchorRegistered, &anchor, confirmations)
+	err := setUpRegistrationEventListener(failingWatchAnchorRegistered, common.Address{}, &anchor, confirmations)
 
 	assert.Error(t, err, "Should fail if the anchor registration watcher failed")
 }
 
 func TestSetUpRegistrationEventListener_ChannelSubscriptionCreated(t *testing.T) {
+	viper.SetDefault("ethereum.contextWaitTimeout", "30s")
+
 	mockWatchAnchorRegistered := &MockWatchAnchorRegistered{}
 	anchor := Anchor{tools.RandomString32(), tools.RandomString32(), 1}
 	confirmations := make(chan *Anchor, 1)
 
-	err := setUpRegistrationEventListener(mockWatchAnchorRegistered, &anchor, confirmations)
+	err := setUpRegistrationEventListener(mockWatchAnchorRegistered, common.Address{}, &anchor, confirmations)
 	assert.Nil(t, err, "Should not fail")
 
 	//sending one "event" into the registered sink should result in the confirmations channel to receive the anchor
 	//that has been created and passed through initially
 	b32Id, _ := tools.StringToByte32(anchor.AnchorID)
-	mockWatchAnchorRegistered.sink <- &EthereumAnchorRegistryContractAnchorRegistered{From:common.StringToAddress("0x0000000000000000001"),Identifier:b32Id}
-	receivedAnchor := <- confirmations
+	mockWatchAnchorRegistered.sink <- &EthereumAnchorRegistryContractAnchorRegistered{From: common.StringToAddress("0x0000000000000000001"), Identifier: b32Id}
+	receivedAnchor := <-confirmations
 	assert.Equal(t, anchor.AnchorID, receivedAnchor.AnchorID, "Received anchor should have the same data as the originally submitted anchor")
 }

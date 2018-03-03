@@ -1,9 +1,6 @@
 package anchor
 
 import (
-	//"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
-	//"github.com/ethereum/go-ethereum/common"
-	//"github.com/spf13/viper"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
 	"log"
@@ -35,6 +32,10 @@ type RegisterAnchor interface {
 	RegisterAnchor(opts *bind.TransactOpts, identifier [32]byte, merkleRoot [32]byte, anchorSchemaVersion *big.Int) (*types.Transaction, error)
 }
 
+// RegisterAsAnchor registers the given anchorID and rootHash on the Ethereum anchor registry and submits the confirmed Anchor
+// into the confirmations channel when done.
+// Could error out with Fatal error in case the confirmation is never received within the timeframe of configured value
+// of `ethereum.contextWaitTimeout`.
 func (ethRegistry *EthereumAnchorRegistry) RegisterAsAnchor(anchorID string, rootHash string, confirmations chan<- *Anchor) (error) {
 	var err error
 
@@ -48,7 +49,7 @@ func (ethRegistry *EthereumAnchorRegistry) RegisterAsAnchor(anchorID string, roo
 		return err
 	}
 
-	err = setUpRegistrationEventListener(ethRegistryContract, registerThisAnchor, confirmations)
+	err = setUpRegistrationEventListener(ethRegistryContract, opts.From, registerThisAnchor, confirmations)
 	if err != nil {
 		wError := errors.Wrap(err, 1)
 		log.Printf("Failed to set up event listener for anchor [id: %x, hash: %x, SchemaVersion:%v]: %v", registerThisAnchor.AnchorID, registerThisAnchor.RootHash, registerThisAnchor.SchemaVersion, wError)
@@ -65,7 +66,7 @@ func (ethRegistry *EthereumAnchorRegistry) RegisterAsAnchor(anchorID string, roo
 	return nil
 }
 
-// Convenience method to create a "registerable" `Anchor` from anchor ID and root hash
+// generateAnchor is a convenience method to create a "registerable" `Anchor` from anchor ID and root hash
 func generateAnchor(anchorID string, rootHash string) (returnAnchor *Anchor, err error) {
 	err = checkLen32(anchorID, "anchorID needs to be length of 32. Got value [%v]")
 	if err != nil {
@@ -85,6 +86,8 @@ func generateAnchor(anchorID string, rootHash string) (returnAnchor *Anchor, err
 	return returnAnchor, nil
 }
 
+// checkLen32 is used to validate that the given val is 32 characters long. If not, it returns an error with the error
+// message of `errorMessage`
 func checkLen32(val string, errorMessage string) (error) {
 	if len(val) != 32 {
 		return errors.New(fmt.Sprintf(errorMessage, val))
@@ -92,7 +95,7 @@ func checkLen32(val string, errorMessage string) (error) {
 	return nil
 }
 
-// Sends the actual transaction to register the Anchor on Ethereum registry contract
+// sendRegistrationTransaction sends the actual transaction to register the Anchor on Ethereum registry contract
 func sendRegistrationTransaction(ethRegistryContract RegisterAnchor, opts *bind.TransactOpts, anchorToBeRegistered *Anchor) (err error) {
 	err = checkLen32(anchorToBeRegistered.AnchorID, "AnchorID needs to be length of 32. Got value [%x]")
 	if err != nil {
@@ -124,9 +127,9 @@ func sendRegistrationTransaction(ethRegistryContract RegisterAnchor, opts *bind.
 	return
 }
 
-// Setting up the listened for the "AnchorRegistered" event to notify the upstream code about successful mining/creation
+// setUpRegistrationEventListener sets up the listened for the "AnchorRegistered" event to notify the upstream code about successful mining/creation
 // of the anchor.
-func setUpRegistrationEventListener(ethRegistryContract WatchAnchorRegistered, anchorToBeRegistered *Anchor, confirmations chan<- *Anchor) (err error) {
+func setUpRegistrationEventListener(ethRegistryContract WatchAnchorRegistered, from common.Address, anchorToBeRegistered *Anchor, confirmations chan<- *Anchor) (err error) {
 
 	//listen to this particular anchor being mined/event is triggered
 	watchOpts := &bind.WatchOpts{}
@@ -143,7 +146,7 @@ func setUpRegistrationEventListener(ethRegistryContract WatchAnchorRegistered, a
 	//TODO do something with the returned Subscription that is currently simply discarded
 	// Somehow there are some possible resource leakage situations with this handling but I have to understand
 	// Subscriptions a bit better before writing this code.
-	_, err = ethRegistryContract.WatchAnchorRegistered(watchOpts, anchorRegisteredEvents, nil, [][32]byte{bAnchorId}, nil)
+	_, err = ethRegistryContract.WatchAnchorRegistered(watchOpts, anchorRegisteredEvents, []common.Address{from}, [][32]byte{bAnchorId}, nil)
 	if err != nil {
 		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for anchor registration", 1)
 		log.Printf(wError.Error())
@@ -152,12 +155,12 @@ func setUpRegistrationEventListener(ethRegistryContract WatchAnchorRegistered, a
 	return
 }
 
-// Whenever the anchor registration is being noted as Ethereum event, notify the confirmations channel
+// waitAndRouteAnchorRegistrationEvent notififies the confirmations channel whenever the anchor registration is being noted as Ethereum event
 func waitAndRouteAnchorRegistrationEvent(conf <-chan *EthereumAnchorRegistryContractAnchorRegistered, ctx context.Context, confirmations chan<- *Anchor, pushThisAnchor *Anchor) {
 	for {
 		select {
 		case <-ctx.Done():
-			log.Fatalf("Context closed before receiving AnchorRegistered event for anchor ID: %v, RootHash: %v", pushThisAnchor.AnchorID, pushThisAnchor.RootHash)
+			log.Fatalf("Context [%v] closed before receiving AnchorRegistered event for anchor ID: %x, RootHash: %x\n", ctx, pushThisAnchor.AnchorID, pushThisAnchor.RootHash)
 			return
 		case res := <-conf:
 			log.Printf("Received AnchorRegistered event from: %x, identifier: %x", res.From, res.Identifier)

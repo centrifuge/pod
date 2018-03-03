@@ -8,7 +8,7 @@ import (
 	"errors"
 )
 
-// Converts a given 32 character long string into a [32]byte
+// StringToByte32 converts a given 32 character long string into a [32]byte
 // on error/invalid string lenght returns empty byte array and error
 func StringToByte32(input string) (ret [32]byte, err error){
 	if len(input) != 32{
@@ -18,7 +18,7 @@ func StringToByte32(input string) (ret [32]byte, err error){
 	return
 }
 
-// Converts a given [32]byte into a 32 char length string
+// Byte32ToString converts a given [32]byte into a 32 char length string
 // on error/invalid input, returns empty string and error
 func Byte32ToString(input [32]byte) (ret string, err error){
 	ret = string(input[:32])
@@ -32,7 +32,7 @@ func RandomString32() (ret string){
 	return
 }
 
-
+// RandomByte32 returns a randomly filled byte array with length of 32
 func RandomByte32() (out [32]byte) {
 	r := make([]byte, 32)
 	_, err := rand.Read(r)
