@@ -10,11 +10,18 @@ import (
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
 	"os"
+	"github.com/spf13/viper"
 )
 
+var dbFileName = "/tmp/centrifuge_testing_server_service.leveldb"
+
 func TestMain(m *testing.M) {
+	viper.Set("storage.Path", dbFileName)
 	mockBootstrap()
-	os.Exit(m.Run())
+
+	result := m.Run()
+	os.RemoveAll(dbFileName)
+	os.Exit(result)
 }
 
 func TestCoreDocumentService(t *testing.T) {
