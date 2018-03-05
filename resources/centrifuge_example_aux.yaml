@@ -20,6 +20,9 @@ keys:
 
 p2p:
   port: 38203
+  bootstrapPeers:
+   - "/ip4/127.0.0.1/tcp/38202/ipfs/QmTQxbwkuZYYDfuzTbxEAReTNCLozyy558vQngVvPMjLYk"
+   - "/ip4/127.0.0.1/tcp/38203/ipfs/QmVf6EN6mkqWejWKW2qPu16XpdG3kJo1T3mhahPB5Se5n1"
 
 ethereum:
   account: "838f7dcA284eb69A9c489fE09c31cFf37DeFDEcA"

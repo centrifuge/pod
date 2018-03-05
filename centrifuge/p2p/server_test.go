@@ -8,11 +8,18 @@ import (
 	"bytes"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
 	"os"
+	"github.com/spf13/viper"
 )
 
+var dbFileName = "/tmp/centrifuge_testing_p2p_server.leveldb"
+
 func TestMain(m *testing.M) {
+	viper.Set("storage.Path", dbFileName)
 	mockBootstrap()
-	os.Exit(m.Run())
+
+	result := m.Run()
+	os.RemoveAll(dbFileName)
+	os.Exit(result)
 }
 
 func TestP2PService(t *testing.T) {
