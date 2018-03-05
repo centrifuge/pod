@@ -6,7 +6,9 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/p2p"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
+ 	google_protobuf2 "github.com/golang/protobuf/ptypes/empty"
 )
+
 
 type InvoiceDocumentService struct {}
 
@@ -38,7 +40,7 @@ func (s *InvoiceDocumentService) GetInvoiceDocument(ctx context.Context, getInvo
 	return doc, err
 }
 
-func (s *InvoiceDocumentService) GetReceivedInvoiceDocuments (ctx context.Context, empty *invoice.Empty) (*invoice.ReceivedInvoices, error) {
+func (s *InvoiceDocumentService) GetReceivedInvoiceDocuments (ctx context.Context, empty *google_protobuf2.Empty) (*invoice.ReceivedInvoices, error) {
 	doc, err := cc.Node.GetInvoiceStorageService().GetReceivedDocuments()
 	return doc, err
 }

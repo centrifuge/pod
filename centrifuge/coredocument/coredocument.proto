@@ -26,7 +26,7 @@ message CoreDocument {
     bytes current_identifier = 3;
 
     // When creating the next version this should be used.
-    bytes next_ientifier = 4;
+    bytes next_identifier = 4;
     
     // Root
     bytes previous_root = 2;
