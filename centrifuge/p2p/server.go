@@ -16,45 +16,48 @@ import (
 	gologging "github.com/whyrusleeping/go-logging"
 	msmux "github.com/whyrusleeping/go-smux-multistream"
 	yamux "github.com/whyrusleeping/go-smux-yamux"
-	dht "github.com/libp2p/go-libp2p-kad-dht"
-	ds "github.com/ipfs/go-datastore"
 	"github.com/paralin/go-libp2p-grpc"
 	"github.com/spf13/viper"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage/invoicestorage"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
-	"github.com/ipfs/go-datastore/examples"
-	"github.com/libp2p/go-libp2p-record"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
+	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
 	"github.com/ipfs/go-cid"
 	mh "github.com/multiformats/go-multihash"
+	"github.com/ipfs/go-ipfs-addr"
+	"time"
+	"github.com/libp2p/go-libp2p-kad-dht"
+	ds "github.com/ipfs/go-datastore"
 )
-
-//go:generate protoc -I $PROTOBUF/src/ -I . -I ../ -I $GOPATH/src -I ../../vendor/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis -I ../../vendor/github.com/grpc-ecosystem/grpc-gateway --go_out=plugins=grpc:$GOPATH/src/ p2p.proto
 
 var	HostInstance host.Host
 var GRPCProtoInstance p2pgrpc.GRPCProtocol
-const IpnsValidatorTag = "ipns"
 
 type P2PService struct {
-
 }
 
-func (srv *P2PService) TransmitInvoice(ctx context.Context, req *TransmitInvoiceDocument) (rep *TransmitReply, err error) {
-	invoiceStorage := invoicestorage.StorageService{}
-	invoiceStorage.SetStorageBackend(storage.GetStorage())
-
-	fmt.Println("I RECEIVED A DOCUMENT")
-	fmt.Println("I RECEIVED A DOCUMENT")
-	fmt.Println("I RECEIVED A DOCUMENT")
-
-	err = invoiceStorage.PutDocument(req.Invoice)
+func (srv *P2PService) Transmit(ctx context.Context, req *P2PMessage) (rep *P2PReply, err error) {
+	err = cc.Node.GetCoreDocumentStorageService().PutDocument(req.Document)
 	if err != nil {
-		return
-
+		return nil, err
 	}
-	// Commented out as it was making the request fail, due to the missing key "received-invoice-documents"
-	//err = invoiceStorage.ReceiveDocument(req.Invoice)
-	rep = &TransmitReply{req.Invoice}
+
+	switch schemaId := string(req.Document.DocumentSchemaId); {
+	case schemaId == coredocument.InvoiceSchema:
+		log.Print("Got invoice")
+		// Convert and Store as Invoice Document
+		invoiceDocument := invoice.ConvertToInvoiceDocument(req.Document)
+		err = cc.Node.GetInvoiceStorageService().PutDocument(&invoiceDocument)
+		if err != nil {
+			return nil, err
+		}
+	case schemaId == coredocument.PurchaseOrderSchema:
+		log.Print("Got purchase order")
+	default:
+		log.Fatal("Got unknown schema")
+	}
+
+	rep = &P2PReply{req.Document}
 	return
 }
 
@@ -80,7 +83,7 @@ func makeBasicHost(listenPort int) (host.Host, error) {
 	}
 
 	// Create a multiaddress
-	addr, err := ma.NewMultiaddr(fmt.Sprintf("/ip4/127.0.0.1/tcp/%d", listenPort))
+	addr, err := ma.NewMultiaddr(fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", listenPort))
 	if err != nil {
 		return nil, err
 	}
@@ -125,30 +128,68 @@ func makeBasicHost(listenPort int) (host.Host, error) {
 	return basicHost, nil
 }
 
-func RunDHT(ctx context.Context, h host.Host, p peer.ID) {
-	dStore, _ := examples.NewDatastore("/tmp/dht_store")
-	rdStore:= ds.NewLogDatastore(dStore, "log_store")
-	dhtRouting := dht.NewDHT(ctx, h, rdStore)
-	dhtDestination := dht.NewDHT(ctx, h, rdStore)
-	defer dhtRouting.Close()
-	defer dhtDestination.Close()
-	dhtRouting.Validator["v"] = func(*record.ValidationRecord) error { return nil }
-	dhtDestination.Validator["v"] = func(*record.ValidationRecord) error { return nil }
-	dhtRouting.Selector["v"] = func(_ string, bs [][]byte) (int, error) { return 0, nil }
-	dhtDestination.Selector["v"] = func(_ string, bs [][]byte) (int, error) { return 0, nil }
+func RunDHT(ctx context.Context, h host.Host) {
 
-	pref := cid.Prefix{
-		Version: 1,
-		Codec: cid.Raw,
-		MhType: mh.SHA2_256,
-		MhLength: -1, // default length
+	//dhtClient := dht.NewDHTClient(ctx, h, rdStore) // Just run it as a client, will not respond to discovery requests
+	dhtClient := dht.NewDHT(ctx, h, ds.NewMapDatastore()) // Run it as a Bootstrap Node
+
+	// IPFS Bootstrap Peer nodes
+	//"/ip4/172.16.0.102/tcp/38204/ipfs/QmNYcCDjtCRdYaYPpNkTSiQTpLLxRapMe1P3EGsmA2wK7D",
+	//"/ip4/104.131.131.82/tcp/4001/ipfs/QmaCpDMGvV2BGHeYERUEnRQAwe3N8SzbUtfsmvsqQLuvuJ",
+	//"/ip4/104.236.179.241/tcp/4001/ipfs/QmSoLPppuBtQSGwKDZT2M73ULpjvfd3aZ6ha4oFGL1KrGM",
+	//"/ip4/104.236.76.40/tcp/4001/ipfs/QmSoLV4Bbm51jM9C4gDYZQ9Cy3U6aXMJDAbzgu2fzaDs64",
+	//"/ip4/128.199.219.111/tcp/4001/ipfs/QmSoLSafTMBsPKadTEgaXctDQVcqN88CNLHXMkTNwMKPnu",
+	//"/ip4/178.62.158.247/tcp/4001/ipfs/QmSoLer265NRgSp2LA3dPaeykiS1J6DifTC88f5uVQKNAd",
+	bootstrapPeers := viper.GetStringSlice("p2p.bootstrapPeers")
+
+	log.Printf("Bootstrapping %s\n", bootstrapPeers)
+	for _, addr := range bootstrapPeers {
+		iaddr, _ := ipfsaddr.ParseString(addr)
+
+		pinfo, _ := pstore.InfoFromP2pAddr(iaddr.Multiaddr())
+
+		if err := h.Connect(ctx, *pinfo); err != nil {
+			log.Println("Bootstrapping to peer failed: ", err)
+		}
 	}
 
-	c, _ := pref.Sum([]byte("/v/QmVf6EN6mkqWejWKW2qPu16XpdG3kJo1T3mhahPB5Se5n12"))
-	log.Printf("Created CID: %s", c)
-	dhtRouting.PutValue(ctx, c.String(), []byte("valueA"))
-	res, _ := dhtRouting.GetValue(ctx, c.String())
-	log.Printf("Value A: %s", string(res))
+	// Using the sha256 of our "topic" as our rendezvous value
+	c, _ := cid.NewPrefixV1(cid.Raw, mh.SHA2_256).Sum([]byte("centrifuge-dht"))
+
+	// First, announce ourselves as participating in this topic
+	log.Println("Announcing ourselves...")
+	tctx, _ := context.WithTimeout(ctx,  time.Second*10)
+	if err := dhtClient.Provide(tctx, c, true); err != nil {
+		// Important to keep this as Non-Fatal error, otherwise it will fail for a node that behaves as well as bootstrap one
+		log.Printf("Error: %s\n", err.Error())
+	}
+
+	// Now, look for others who have announced
+	log.Println("Searching for other peers ...")
+	tctx, _ = context.WithTimeout(ctx, time.Second*10)
+	peers, err := dhtClient.FindProviders(tctx, c)
+	if err != nil {
+		panic(err)
+	}
+	log.Printf("Found %d peers!\n", len(peers))
+	for _, p1 := range peers {
+		log.Printf("Peer %s %s\n", p1.ID.Pretty(), p1.Addrs)
+	}
+
+	// Now connect to them, so they are added to the PeerStore
+	for _, pe := range peers {
+		if pe.ID == h.ID() {
+			// No sense connecting to ourselves
+			continue
+		}
+
+		tctx, _ := context.WithTimeout(ctx, time.Second*5)
+		if err := h.Connect(tctx, pe); err != nil {
+			log.Println("Failed to connect to peer: ", err)
+		}
+	}
+
+	log.Println("Bootstrapping and discovery complete!")
 }
 
 func RunP2P() {
@@ -178,12 +219,11 @@ func RunP2P() {
 	hostInstance.Peerstore().AddAddr(hostInstance.ID(), hostInstance.Addrs()[0], pstore.TempAddrTTL)
 
 	// Start DHT
-	RunDHT(context.Background(), hostInstance, hostInstance.ID())
+	RunDHT(context.Background(), hostInstance)
 
 	select {}
 }
 
-// GetStorage is a singleton implementation returning the default database as configured
 func GetHost() (h host.Host) {
 	h = HostInstance
 	if h == nil {

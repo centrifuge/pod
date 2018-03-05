@@ -3,11 +3,25 @@ package storage
 import (
 	"testing"
 	"bytes"
+	"os"
 )
 
+var dbFileName = "/tmp/centrifuge_testing_storage.leveldb"
+var storageDb LeveldbDataStore
+
+func TestMain(m *testing.M) {
+	storageDb = LeveldbDataStore{Path: dbFileName}
+	storageDb.Open()
+	defer storageDb.Close()
+
+	result := m.Run()
+	os.RemoveAll(dbFileName)
+	os.Exit(result)
+}
+
 func TestLeveldbDataStore(t *testing.T) {
-	instance = &LeveldbDataStore{Path:"/tmp/centrifuge_testing.leveldb"}
-	instance.Open()
+	instance = &storageDb
+
 	one := []byte("1")
 	two := []byte("2")
 	three := []byte("3")

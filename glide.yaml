@@ -5,12 +5,14 @@ import:
   subpackages:
   - centrifuge/witness
 - package: github.com/ethereum/go-ethereum
-  version: master
+  version: 1.8.1
   repo: git@github.com:ethereum/go-ethereum
   subpackages:
   - accounts/abi/bind
   - common
   - ethclient
+  - types
+  - ethereum
 - package: github.com/golang/protobuf
   version: ^1.0.0
   subpackages:
@@ -53,6 +55,8 @@ import:
   - credentials
   - grpclog
   - status
+- package: github.com/stretchr/testify/assert
+  version: 1.2.1
 - package: github.com/paralin/go-libp2p-grpc
 - package: github.com/libp2p/go-libp2p-swarm
 - package: github.com/ipfs/go-log

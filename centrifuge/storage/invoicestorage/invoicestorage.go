@@ -3,13 +3,14 @@ package invoicestorage
 import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/golang/protobuf/proto"
 )
 
 var ReceivedInvoiceDocumentsKey = []byte("received-invoice-documents")
 
 
-type 	StorageService struct {
+type StorageService struct {
 	storage storage.DataStore
 }
 
@@ -37,7 +38,11 @@ func (srv *StorageService) GetDocument(id []byte) (doc *invoice.InvoiceDocument,
 }
 
 func (srv *StorageService) PutDocument(doc *invoice.InvoiceDocument) (err error) {
-	key := srv.GetDocumentKey(doc.DocumentIdentifier)
+	if doc.CoreDocument == nil {
+		err = &errors.GenericError{"Invalid Empty (NIL) Invoice Document"}
+		return
+	}
+	key := srv.GetDocumentKey(doc.CoreDocument.DocumentIdentifier)
 	data, err := proto.Marshal(doc)
 
 	if err != nil {
@@ -53,7 +58,7 @@ func (srv *StorageService) ReceiveDocument (doc *invoice.InvoiceDocument) (err e
 		return
 	}
 
-	invoices.Invoices = append(invoices.Invoices, doc.DocumentIdentifier)
+	invoices.Invoices = append(invoices.Invoices, doc)
 
 	data, err := proto.Marshal(invoices)
 	if err != nil {
