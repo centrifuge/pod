@@ -19,7 +19,7 @@ keys:
     3: resources/signingKeyExt.pub
 
 p2p:
-  port: 38205
+  port: 38204
   bootstrapPeers:
    - "/ip4/172.16.0.102/tcp/38202/ipfs/QmTQxbwkuZYYDfuzTbxEAReTNCLozyy558vQngVvPMjLYk"
    - "/ip4/172.16.0.102/tcp/38203/ipfs/QmVf6EN6mkqWejWKW2qPu16XpdG3kJo1T3mhahPB5Se5n1"
