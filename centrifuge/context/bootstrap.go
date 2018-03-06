@@ -89,8 +89,6 @@ func bootstrapMockStorageServices(centNode *MockCentNode) {
 	log.Printf("InvoiceStorageService Mocked\n")
 
 	centNode.signingService = &signatures.SigningService{}
-	//centNode.signingService.LoadPublicKeys()
-	//centNode.signingService.LoadIdentityKeyFromConfig()
 }
 
 func (centNode *MockCentNode) BootstrapDependencies() {
