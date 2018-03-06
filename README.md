@@ -27,7 +27,7 @@ go install ./centrifuge/
 Run Tests:
 
 ```
-go test ./...
+go test ./centrifuge/...
 ```
 
 If you want to run tests continuously when a file changes, you first need to install reflex:
@@ -50,23 +50,6 @@ Why you should not run `testrpc` for testing with go-ethereum clients:
 * It is not possible to send more than one transaction per testrpc start as testrpc returns the pending transaction count erroneously with leading 0s - this freaks out the hex decoding and it breaks. Essentially testrpc returns for a transaction count of 1 `0x01` whereas _real_ geth returns `0x1`
 
 Save yourself some hassle and use a local testnet running.
-
-Run Cent-Constellation Nodes
-----------------------------
-
-- Requires to have constellation-node installed and available in the PATH, follow instructions here: https://github.com/jpmorganchase/constellation/blob/master/README.md
-- Install according to section above
-- Make sure $GOPATH/bin is on your PATH
-- `cp -r resources /tmp/centrifuge/`
-- Modify /etc/hosts by adding:
-```
-127.0.0.1 node1
-127.0.0.1 node2
-127.0.0.1 node3
-```
-- In terminal one do: `centrifuge run --config /tmp/centrifuge/node1/centrifuge_node1.yaml`
-- In terminal one do: `centrifuge run --config /tmp/centrifuge/node2/centrifuge_node2.yaml`
-- In terminal one do: `centrifuge run --config /tmp/centrifuge/node3/centrifuge_node3.yaml`
 
 
 Ethereum Contract Bindings
