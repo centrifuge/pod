@@ -2,19 +2,14 @@ package signatures
 
 import (
 	"testing"
-	"crypto/rand"
 	"time"
 	"golang.org/x/crypto/ed25519"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"os"
 	"bytes"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 )
 
-func rand32Bytes () []byte {
-	randbytes := make([]byte, 32)
-	rand.Read(randbytes)
-	return randbytes
-}
 
 var (
 	signingService SigningService
@@ -149,9 +144,9 @@ func TestDocumentSignatures(t *testing.T) {
 }
 
 func TestDocumentSigning(t *testing.T) {
-	dataMerkleRoot := rand32Bytes()
-	documentIdentifier := rand32Bytes()
-	nextIdentifier := rand32Bytes()
+	dataMerkleRoot := testingutils.Rand32Bytes()
+	documentIdentifier := testingutils.Rand32Bytes()
+	nextIdentifier := testingutils.Rand32Bytes()
 
 	doc := &coredocument.CoreDocument{
 		DataMerkleRoot: dataMerkleRoot,
