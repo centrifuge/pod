@@ -26,7 +26,7 @@ func TestMain(m *testing.M) {
 
 func TestGetConnection_returnsSameConnection(t *testing.T) {
 	if !*ethereumTest {
-		return
+		t.SkipNow()
 	}
 	//TODO this will currently fail if concurrency is at play - e.g. running with 3 go-routines the test will fail
 	howMany := 5
