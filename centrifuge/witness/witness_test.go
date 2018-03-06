@@ -97,4 +97,6 @@ func TestSign(t *testing.T) {
 		t.Fatal("Can't verify Alice's signature")
 	}
 	fmt.Println("Signatures", newDoc.Signatures)
+
+
 }

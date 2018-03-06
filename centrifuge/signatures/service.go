@@ -22,27 +22,11 @@ type SigningService struct {
 	// For now we will hard code a few known signing keys. This should later be replaced with ethereum based identities
 	// Structure is: Identity ID, Key
 	KnownKeys map[[32]byte]KeyInfo
-}
 
-// ValidateSignaturesOnDocument validates all signatures on the current document
-func (srv *SigningService) ValidateSignaturesOnDocument(doc *coredocument.CoreDocument) (valid bool, err error) {
-	for _, signature := range doc.Signatures {
-		valid, err := srv.ValidateSignature(signature)
-		if !valid {
-			return valid, err
-		}
-	}
-	return true, nil
-}
-
-func (srv *SigningService) ValidateSignature(signature *coredocument.Signature) (valid bool, err error) {
-	valid, err = srv.ValidateKey(signature.EntityId, signature.PublicKey, time.Now())
-	if err != nil {
-		return
-	}
-
-	// TODO: actually validate signature
-	return
+	// For simplicity we only support one active identity for now.
+	IdentityId []byte
+	PublicKey ed25519.PublicKey
+	PrivateKey ed25519.PrivateKey
 }
 
 // LoadPublicKeys just loads public keys from the config for now until identity management does this for us.
@@ -58,8 +42,38 @@ func (srv *SigningService) LoadPublicKeys () {
 			ValidFrom: time.Now(),
 			Identity: []byte(k),
 		}
-
 	}
+}
+
+func (srv *SigningService) LoadIdentityKeyFromConfig() {
+	srv.IdentityId = []byte(viper.GetString("identityId"))
+	srv.PublicKey, srv.PrivateKey = keytools.GetSigningKeysFromConfig()
+}
+
+// ValidateSignaturesOnDocument validates all signatures on the current document
+func (srv *SigningService) ValidateSignaturesOnDocument(doc *coredocument.CoreDocument) (valid bool, err error) {
+	message := srv.createSignatureData(doc)
+	for _, signature := range doc.Signatures {
+		valid, err := srv.ValidateSignature(signature, message)
+		if !valid {
+			return valid, err
+		}
+	}
+	return true, nil
+}
+
+func (srv *SigningService) ValidateSignature(signature *coredocument.Signature, message []byte) (valid bool, err error) {
+	valid, err = srv.ValidateKey(signature.EntityId, signature.PublicKey, time.Now())
+	if err != nil {
+		return
+	}
+
+	valid = ed25519.Verify(signature.PublicKey, message, signature.Signature)
+	if !valid {
+		return false, errors.New("invalid signature")
+	}
+
+	return
 }
 
 func (srv *SigningService) GetIDFromKey(key ed25519.PublicKey) (id [32]byte) {
@@ -100,15 +114,19 @@ func (srv *SigningService) ValidateKey(identity []byte, key ed25519.PublicKey, t
 
 func (srv *SigningService) createSignatureData (doc *coredocument.CoreDocument) (signatureData []byte) {
 	signatureData = make([]byte, 64)
-	copy(signatureData[:32], doc.DocumentRoot[:32])
+	copy(signatureData[:32], doc.DataMerkleRoot[:32])
 	copy(signatureData[32:64], doc.NextIdentifier[:32])
 	return
 }
 
-// Sign a document with a provided public key
-func (srv *SigningService) Sign (doc *coredocument.CoreDocument, identity []byte, privateKey ed25519.PrivateKey, publicKey ed25519.PublicKey) {
+func (srv *SigningService) MakeSignature (doc *coredocument.CoreDocument, identity []byte, privateKey ed25519.PrivateKey, publicKey ed25519.PublicKey) (sig *coredocument.Signature){
 	sigArray := srv.createSignatureData(doc)
 	signature := ed25519.Sign(privateKey, sigArray)
-	doc.Signatures = append(doc.Signatures, &coredocument.Signature{identity,publicKey, signature})
+	return &coredocument.Signature{identity,publicKey, signature}
 }
 
+// Sign a document with a provided public key
+func (srv *SigningService) Sign (doc *coredocument.CoreDocument) {
+	sig := srv.MakeSignature(doc, srv.IdentityId, srv.PrivateKey, srv.PublicKey)
+	doc.Signatures = append(doc.Signatures, sig)
+}

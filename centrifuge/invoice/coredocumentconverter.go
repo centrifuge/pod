@@ -12,7 +12,7 @@ func ConvertToCoreDocument(inv *InvoiceDocument) (coredoc coredocument.CoreDocum
 	proto.Merge(&coredoc, inv.CoreDocument)
 	serializedInvoice, err := proto.Marshal(inv.Data)
 	if err != nil {
-		log.Fatalf("Could not serialize InvoiceData")
+		log.Fatalf("Could not serialize InvoiceData", err)
 	}
 
 	invoiceAny := any.Any{
