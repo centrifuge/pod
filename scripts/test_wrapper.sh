@@ -35,12 +35,12 @@ echo "ANCHOR ADDRESS: ${CENT_ANCHOR_ETHEREUM_ANCHORREGISTRYADDRESS}"
 # Exclude the vendor dir from test run.
 # The test runner included it on travis if not explicitly excluded.
 echo "Running Unit Tests"
-go test ./...  -v
+go test ./... -tags=unit | grep -v '\[no test files\]'
 # Store status of tests
 status1=$?
 
 echo "Running Integration Ethereum Tests against IPC [${CENT_ETHEREUM_GETHIPC}]"
-go test ./... --ethereum -v
+go test ./... -tags=ethereum | grep -v '\[no test files\]'
 # Store status of tests
 status2=$?
 ############################################################

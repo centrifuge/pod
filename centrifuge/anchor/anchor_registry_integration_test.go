@@ -1,3 +1,5 @@
+// +build ethereum
+
 package anchor_test
 
 import (
@@ -32,9 +34,9 @@ func TestMain(m *testing.M) {
 }
 
 func TestRegisterAsAnchor_Integration(t *testing.T) {
-	if !*ethereumTest{
-		t.SkipNow()
-	}
+	//if !*ethereumTest{
+	//	t.SkipNow()
+	//}
 	confirmations := make(chan *anchor.Anchor,1)
 	id := tools.RandomString32()
 	rootHash := tools.RandomString32()

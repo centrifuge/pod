@@ -1,3 +1,5 @@
+// +build unit
+
 package ethereum_test
 
 import (

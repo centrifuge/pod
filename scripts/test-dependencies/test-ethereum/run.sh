@@ -23,6 +23,7 @@ cp ${PARENT_DIR}/scripts/test-dependencies/test-ethereum/userAccount.json $DATA_
 ## Ethereum local testnet
 geth --identity "${IDENTITY}" --nodiscover --networkid=$NETWORK_ID --datadir=${DATA_DIR} --cache=512 --rpc --rpcport $RPC_PORT --rpcapi="db,eth,net,personal,web3" --mine --etherbase "${CENT_ETHEREUM_ACCOUNTS_MAIN_ADDRESS}" &> $DATA_DIR/geth.out &
 
+echo "Waiting for GETH to Start Up ..."
 # Wait until DAG has been generated
 maxCount=300 # Wait 10 minutes max
 count=0
