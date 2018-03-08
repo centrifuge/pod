@@ -1,8 +1,6 @@
 language: go
 go:
   - 1.9.x
-node_js:
-  - "8"
 
 env:
   - RUN_CONTEXT=travis
@@ -34,4 +32,5 @@ install:
   - go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
   - git clone git@github.com:CentrifugeInc/centrifuge-ethereum-contracts.git $GOPATH/src/github.com/CentrifugeInc/centrifuge-ethereum-contracts
 
-script: true
+script:
+  - scripts/test_wrapper.sh
