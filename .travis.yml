@@ -32,6 +32,6 @@ install:
   - echo "cd vendor/github.com/golang/protobuf && make install" | sh
   - go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
   - go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
-  - go get -u github.com/CentrifugeInc/centrifuge-ethereum-contracts
+  - git clone git@github.com:CentrifugeInc/centrifuge-ethereum-contracts.git $GOPATH/src/github.com/CentrifugeInc/centrifuge-ethereum-contracts
 
 script: true
