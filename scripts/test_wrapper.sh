@@ -18,12 +18,13 @@ done
 ############################################################
 
 ################# Prepare for tests ########################
+cd $CENT_ETHEREUM_CONTRACTS_DIR
+npm install
+
 # Unlock User to Run Migration
 geth attach "http://localhost:${RPC_PORT}" --exec "personal.unlockAccount('0x${CENT_ETHEREUM_ACCOUNTS_MAIN_ADDRESS}', '${CENT_ETHEREUM_ACCOUNTS_MAIN_PASSWORD}')"
 
 # Run Migration
-cd $CENT_ETHEREUM_CONTRACTS_DIR
-npm install
 truffle migrate --network localgeth -f 2
 export CENT_ANCHOR_ETHEREUM_ANCHORREGISTRYADDRESS=`cat build/contracts/AnchorRegistry.json | jq -r --arg NETWORK_ID "${NETWORK_ID}" '.networks[$NETWORK_ID].address' | tr -d '\n'`
 cd ${PARENT_DIR}
@@ -35,12 +36,12 @@ echo "ANCHOR ADDRESS: ${CENT_ANCHOR_ETHEREUM_ANCHORREGISTRYADDRESS}"
 # Exclude the vendor dir from test run.
 # The test runner included it on travis if not explicitly excluded.
 echo "Running Unit Tests"
-go test ./... -tags=unit | grep -v '\[no test files\]'
+go test ./... -tags=unit
 # Store status of tests
 status1=$?
 
 echo "Running Integration Ethereum Tests against IPC [${CENT_ETHEREUM_GETHIPC}]"
-go test ./... -tags=ethereum | grep -v '\[no test files\]'
+go test ./... -tags=ethereum
 # Store status of tests
 status2=$?
 ############################################################
