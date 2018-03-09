@@ -21,8 +21,7 @@ cp ${PARENT_DIR}/scripts/test-dependencies/test-ethereum/userAccount.json $DATA_
 #
 ################## Run GETH #########################
 ## Ethereum local testnet
-echo "${CENT_ETHEREUM_ACCOUNTS_MAIN_PASSWORD}" > $DATA_DIR/main_account.pwd
-geth --identity "${IDENTITY}" --nodiscover --networkid=$NETWORK_ID --datadir=${DATA_DIR} --cache=512 --rpc --rpcport $RPC_PORT --rpcapi="db,eth,net,personal,web3" --mine --etherbase "${CENT_ETHEREUM_ACCOUNTS_MAIN_ADDRESS}" --unlock "${CENT_ETHEREUM_ACCOUNTS_MAIN_ADDRESS}" --password "${DATA_DIR}/main_account.pwd" &> $DATA_DIR/geth.out &
+geth --identity "${IDENTITY}" --nodiscover --networkid=$NETWORK_ID --datadir=${DATA_DIR} --cache=512 --rpc --rpcport $RPC_PORT --rpcapi="db,eth,net,personal,web3" --mine --etherbase "${CENT_ETHEREUM_ACCOUNTS_MAIN_ADDRESS}" &> $DATA_DIR/geth.out &
 
 echo "Waiting for GETH to Start Up ..."
 # Wait until DAG has been generated
