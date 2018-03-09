@@ -16,6 +16,8 @@ cache:
       - $GOPATH/pkg/depbin
       # Cache DAG data
       - /tmp/geth_test_network/.ethash
+      # Cache geth binary
+      - /tmp/geth_bin
 
 before_install:
   - npm install -g truffle@4.0.4
@@ -23,9 +25,6 @@ before_install:
 install:
   - scripts/install-dependencies.sh
   - glide install
-  - mkdir -p /tmp/geth_bin
-  - wget https://gethstore.blob.core.windows.net/builds/geth-linux-amd64-1.8.2-b8b9f7f4.tar.gz -P /tmp/geth_bin
-  - tar -xzvf /tmp/geth_bin/geth-linux-amd64-1.8.2-b8b9f7f4.tar.gz -C /tmp/geth_bin/
   - export PATH=$PATH:/tmp/geth_bin/geth-linux-amd64-1.8.2-b8b9f7f4/
   - echo "cd vendor/github.com/golang/protobuf && make install" | sh
   - go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway

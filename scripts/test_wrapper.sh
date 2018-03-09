@@ -25,26 +25,20 @@ npm install
 geth attach "http://localhost:${RPC_PORT}" --exec "personal.unlockAccount('0x${CENT_ETHEREUM_ACCOUNTS_MIGRATE_ADDRESS}', '${CENT_ETHEREUM_ACCOUNTS_MIGRATE_PASSWORD}')" && truffle migrate --network localgeth -f 2
 status=$?
 
-export CENT_ANCHOR_ETHEREUM_ANCHORREGISTRYADDRESS=`cat build/contracts/AnchorRegistry.json | jq -r --arg NETWORK_ID "${NETWORK_ID}" '.networks[$NETWORK_ID].address' | tr -d '\n'`
 cd ${PARENT_DIR}
 
-echo "ANCHOR ADDRESS: ${CENT_ANCHOR_ETHEREUM_ANCHORREGISTRYADDRESS}"
 ############################################################
 
 ################# Run Tests ################################
-# Exclude the vendor dir from test run.
-# The test runner included it on travis if not explicitly excluded.
 if [ $status -eq 0 ]; then
-  echo "Running Unit Tests"
-  go test ./... -tags=unit
-  status1=$?
-
-  echo "Running Integration Ethereum Tests against IPC [${CENT_ETHEREUM_GETHIPC}]"
-  go test ./... -tags=ethereum
-  status2=$?
-
+  statusAux=0
+  for path in ${local_dir}/tests/*; do
+    [ -x "${path}" ] || continue # if not an executable, skip
+    ./$path
+    statusAux="$(( $statusAux | $? ))"
+  done
   # Store status of tests
-  status="$(( $status1 | $status2 ))"
+  status=$statusAux
 fi
 ############################################################
 
