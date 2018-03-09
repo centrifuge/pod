@@ -22,7 +22,7 @@ cd $CENT_ETHEREUM_CONTRACTS_DIR
 npm install
 
 # Unlock User to Run Migration and Run it
-geth attach "http://localhost:${RPC_PORT}" --exec "personal.unlockAccount('0x${CENT_ETHEREUM_ACCOUNTS_MAIN_ADDRESS}', '${CENT_ETHEREUM_ACCOUNTS_MAIN_PASSWORD}')" && truffle migrate --network localgeth -f 2
+geth attach "http://localhost:${RPC_PORT}" --exec "personal.unlockAccount('0x${CENT_ETHEREUM_ACCOUNTS_MIGRATE_ADDRESS}', '${CENT_ETHEREUM_ACCOUNTS_MIGRATE_PASSWORD}')" && truffle migrate --network localgeth -f 2
 status=$?
 
 export CENT_ANCHOR_ETHEREUM_ANCHORREGISTRYADDRESS=`cat build/contracts/AnchorRegistry.json | jq -r --arg NETWORK_ID "${NETWORK_ID}" '.networks[$NETWORK_ID].address' | tr -d '\n'`

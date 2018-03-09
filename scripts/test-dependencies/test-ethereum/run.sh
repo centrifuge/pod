@@ -18,6 +18,7 @@ fi
 geth --identity "${IDENTITY}" --nodiscover --networkid=$NETWORK_ID --datadir=${DATA_DIR} init ${PARENT_DIR}/scripts/test-dependencies/test-ethereum/genesis.json
 cp ${PARENT_DIR}/scripts/test-dependencies/test-ethereum/coinbase.json $DATA_DIR/keystore/
 cp ${PARENT_DIR}/scripts/test-dependencies/test-ethereum/userAccount.json $DATA_DIR/keystore/
+cp ${PARENT_DIR}/scripts/test-dependencies/test-ethereum/migrateAccount.json $DATA_DIR/keystore/
 #
 ################## Run GETH #########################
 ## Ethereum local testnet
@@ -25,7 +26,8 @@ geth --identity "${IDENTITY}" --nodiscover --networkid=$NETWORK_ID --datadir=${D
 
 echo "Waiting for GETH to Start Up ..."
 # Wait until DAG has been generated
-maxCount=300 # Wait 10 minutes max
+maxCount=$(( CENT_ETHEREUM_GETH_START_TIMEOUT / $CENT_ETHEREUM_GETH_START_INTERVAL ))
+echo "MaxCount: $maxCount"
 count=0
 while true
 do
@@ -38,6 +40,6 @@ do
     echo "Timeout Starting out GETH"
     exit 1
   fi
-  sleep 2;
+  sleep $CENT_ETHEREUM_GETH_START_INTERVAL;
   ((count++))
 done
