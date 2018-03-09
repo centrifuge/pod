@@ -22,9 +22,9 @@ cd $CENT_ETHEREUM_CONTRACTS_DIR
 npm install
 
 # Unlock User to Run Migration
-geth attach "http://localhost:${RPC_PORT}" --exec "personal.unlockAccount('0x${CENT_ETHEREUM_ACCOUNTS_MAIN_ADDRESS}', '${CENT_ETHEREUM_ACCOUNTS_MAIN_PASSWORD}')"
+geth attach "http://localhost:${RPC_PORT}" --exec "personal.unlockAccount('0x${CENT_ETHEREUM_ACCOUNTS_MAIN_ADDRESS}', '${CENT_ETHEREUM_ACCOUNTS_MAIN_PASSWORD}', 0)"
 
-cat truffle.js
+ifconfig
 # Run Migration
 truffle migrate --network localgeth -f 2
 status=$?
