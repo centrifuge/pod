@@ -24,10 +24,22 @@ cd $GOPATH/src/github.com/CentrifugeInc/go-centrifuge
 go install ./centrifuge/
 ```
 
-Run Tests:
-
+Run Unit+Integration Tests:
 ```
-go test ./centrifuge/...
+./scripts/test_wrapper.sh
+```
+This will:
+* Start up a local testnet
+* Run contract migration (fetched by ENV_VAR CENT_ETHEREUM_CONTRACTS_DIR under `scripts/test-dependencies/test-ethereum/env_vars.sh` )
+* Run unit + integration tests
+
+Run only Unit Tests:
+```
+./scripts/tests/run_unit_tests.sh
+```
+Run only Integration Tests:
+```
+./scripts/tests/run_integration_tests.sh
 ```
 
 If you want to run tests continuously when a file changes, you first need to install reflex:
@@ -36,10 +48,10 @@ If you want to run tests continuously when a file changes, you first need to ins
 go get github.com/cespare/reflex
 ```
 
-and then run:
+and then run (only for unit tests):
 
 ```
-reflex -r centrifuge/ go test ./...
+reflex -r centrifuge/ go test ./... -tags=unit
 ```
 
 Why you should test with a "real" Ethereum
@@ -49,8 +61,20 @@ Why you should not run `testrpc` for testing with go-ethereum clients:
 ** https://github.com/trufflesuite/ganache-cli/issues/387
 * It is not possible to send more than one transaction per testrpc start as testrpc returns the pending transaction count erroneously with leading 0s - this freaks out the hex decoding and it breaks. Essentially testrpc returns for a transaction count of 1 `0x01` whereas _real_ geth returns `0x1`
 
-Save yourself some hassle and use a local testnet running.
+Save yourself some hassle and use a local testnet running
 
+Start your local testnet (default port 9545):
+```
+./scripts/test-dependencies/test-ethereum/run.sh
+```
+
+Run very simple local ethscan
+-----------------------------
+Follow instructions here: https://github.com/carsenk/explorer
+
+Will need to modify `scripts/test-dependencies/test-ethereum/run.sh` to add cors flag
+
+**Note that is a pretty simple version but can list blocks and transactions**
 
 Ethereum Contract Bindings
 --------------------------
