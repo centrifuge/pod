@@ -22,7 +22,7 @@ cd $CENT_ETHEREUM_CONTRACTS_DIR
 npm install
 
 # Unlock User to Run Migration and Run it
-geth attach "${CENT_ETHEREUM_GETH_SOCKET}" --exec "personal.unlockAccount('0x${CENT_ETHEREUM_ACCOUNTS_MIGRATE_ADDRESS}', '${CENT_ETHEREUM_ACCOUNTS_MIGRATE_PASSWORD}')"
+docker run -it --net=host ethereum/client-go:$GETH_DOCKER_VERSION attach "${CENT_ETHEREUM_GETH_SOCKET}" --exec "personal.unlockAccount('0x${CENT_ETHEREUM_ACCOUNTS_MIGRATE_ADDRESS}', '${CENT_ETHEREUM_ACCOUNTS_MIGRATE_PASSWORD}')"
 truffle migrate --network localgeth -f 2
 status=$?
 
