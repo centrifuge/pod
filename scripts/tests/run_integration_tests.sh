@@ -1,4 +1,5 @@
 #!/bin/bash
+set -a
 
 PARENT_DIR=`pwd`
 source "${PARENT_DIR}/scripts/test-dependencies/test-ethereum/env_vars.sh"

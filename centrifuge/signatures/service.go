@@ -36,6 +36,7 @@ func (srv *SigningService) LoadPublicKeys () {
 		key := keytools.GetPublicSigningKey(v)
 		var i [32]byte
 		copy(i[:], key[:32])
+		srv.KnownKeys = make(map[[32]byte]KeyInfo)
 		srv.KnownKeys[i] = KeyInfo{
 			PublicKey: key,
 			ValidUntil: time.Time{},
