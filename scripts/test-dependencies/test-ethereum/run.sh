@@ -27,11 +27,11 @@ fi
 ################# Init GETH #########################
 DOCKER_DATA_DIR=/root/.ethereum
 DOCKER_DAG_DIR=/root/.ethash
-docker run -it -v $DATA_DIR:/$DOCKER_DATA_DIR -v $PARENT_DIR/scripts/test-dependencies/test-ethereum:$DOCKER_DATA_DIR/files ethereum/client-go:$GETH_DOCKER_VERSION --identity "${IDENTITY}" --nodiscover --networkid=$NETWORK_ID --datadir=${DOCKER_DATA_DIR} init ${DOCKER_DATA_DIR}/files/genesis.json
+mkdir -p $DATA_DIR/keystore
 cp ${PARENT_DIR}/scripts/test-dependencies/test-ethereum/coinbase.json $DATA_DIR/keystore/
 cp ${PARENT_DIR}/scripts/test-dependencies/test-ethereum/userAccount.json $DATA_DIR/keystore/
 cp ${PARENT_DIR}/scripts/test-dependencies/test-ethereum/migrateAccount.json $DATA_DIR/keystore/
-#
+docker run -it -v $DATA_DIR:/$DOCKER_DATA_DIR -v $PARENT_DIR/scripts/test-dependencies/test-ethereum:$DOCKER_DATA_DIR/files ethereum/client-go:$GETH_DOCKER_VERSION --identity "${IDENTITY}" --nodiscover --networkid=$NETWORK_ID --datadir=${DOCKER_DATA_DIR} init ${DOCKER_DATA_DIR}/files/genesis.json
 
 ################## Run GETH #########################
 ## Ethereum local testnet
