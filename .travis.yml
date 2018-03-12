@@ -2,6 +2,9 @@ language: go
 go:
   - 1.9.x
 
+env:
+  - RUN_CONTEXT=travis
+
 cache:  
     directories:
       # Cache the glide binary
@@ -10,15 +13,23 @@ cache:
       - ~/.glide
       # Use a separate depbin folder to allow for caching. 
       # The bin itself is then linked (ln -s) in the install-dependencies script
-      - $GOPATH/pkg/depbin 
+      - $GOPATH/pkg/depbin
+      # Cache DAG data
+      - /tmp/geth_test_network/.ethash
+      # Cache geth binary
+      - /tmp/geth_bin
+
+before_install:
+  - npm install -g truffle@4.0.4
 
 install:
   - scripts/install-dependencies.sh
   - glide install
+  - export PATH=$PATH:/tmp/geth_bin/geth-linux-amd64-1.8.2-b8b9f7f4/
   - echo "cd vendor/github.com/golang/protobuf && make install" | sh
   - go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
   - go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
+  - git clone git@github.com:CentrifugeInc/centrifuge-ethereum-contracts.git $GOPATH/src/github.com/CentrifugeInc/centrifuge-ethereum-contracts
 
-# Exclude the vendor dir from test run. 
-# The test runner included it on travis if not explicitly excluded.
-script:  go test ./...
+script:
+  - scripts/test_wrapper.sh
