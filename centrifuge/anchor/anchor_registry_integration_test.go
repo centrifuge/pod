@@ -14,7 +14,7 @@ import (
 func TestMain(m *testing.M) {
 	//for now set up the env vars manually in integration test
 	//TODO move to generalized config once it is available
-	viper.BindEnv("ethereum.gethIpc", "CENT_ETHEREUM_GETHIPC")
+	viper.BindEnv("ethereum.gethSocket", "CENT_ETHEREUM_GETH_SOCKET")
 	viper.BindEnv("ethereum.gasLimit", "CENT_ETHEREUM_GASLIMIT")
 	viper.BindEnv("ethereum.gasPrice", "CENT_ETHEREUM_GASPRICE")
 	viper.BindEnv("ethereum.contextWaitTimeout", "CENT_ETHEREUM_CONTEXTWAITTIMEOUT")

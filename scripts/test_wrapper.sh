@@ -22,7 +22,8 @@ cd $CENT_ETHEREUM_CONTRACTS_DIR
 npm install
 
 # Unlock User to Run Migration and Run it
-geth attach "http://localhost:${RPC_PORT}" --exec "personal.unlockAccount('0x${CENT_ETHEREUM_ACCOUNTS_MIGRATE_ADDRESS}', '${CENT_ETHEREUM_ACCOUNTS_MIGRATE_PASSWORD}')" && truffle migrate --network localgeth -f 2
+geth attach "${CENT_ETHEREUM_GETH_SOCKET}" --exec "personal.unlockAccount('0x${CENT_ETHEREUM_ACCOUNTS_MIGRATE_ADDRESS}', '${CENT_ETHEREUM_ACCOUNTS_MIGRATE_PASSWORD}')"
+truffle migrate --network localgeth -f 2
 status=$?
 
 cd ${PARENT_DIR}
@@ -44,9 +45,7 @@ fi
 
 ################# CleanUp ##################################
 echo "Bringing GETH Daemon Down"
-killall -HUP geth
-rm -Rf $DATA_DIR/geth.ipc
-rm -Rf $DATA_DIR/geth.out
+docker rm -f geth-node
 
 # Cleaning extra DAG file, so we do not cache it - travis
 if [[ "X${RUN_CONTEXT}" == "Xtravis" ]];

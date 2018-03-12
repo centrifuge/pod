@@ -46,11 +46,11 @@ func (gethClient GethClient) GetClient() (*ethclient.Client) {
 	return gethClient.Client
 }
 
-// GetConnection returns the connection to the configured `ethereum.gethIpc`.
+// GetConnection returns the connection to the configured `ethereum.gethSocket`.
 // Note that this is a singleton and is the same connection for the whole application.
 func GetConnection() (EthereumClient) {
 	gcInit.Do(func() {
-		client, err := ethclient.Dial(viper.GetString("ethereum.gethIpc"))
+		client, err := ethclient.Dial(viper.GetString("ethereum.gethSocket"))
 		if err != nil {
 			log.Fatalf("Failed to connect to the Ethereum client: %v", err)
 		} else {
