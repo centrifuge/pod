@@ -2,10 +2,13 @@ language: go
 go:
   - 1.9.x
 
-env:
-  - RUN_CONTEXT=travis
+services:
+  - docker
 
-cache:  
+env:
+  - RUN_CONTEXT=travis GETH_DOCKER_VERSION=v1.8.1
+
+cache:
     directories:
       # Cache the glide binary
       - ~/glide/
@@ -16,16 +19,14 @@ cache:
       - $GOPATH/pkg/depbin
       # Cache DAG data
       - /tmp/geth_test_network/.ethash
-      # Cache geth binary
-      - /tmp/geth_bin
 
 before_install:
   - npm install -g truffle@4.0.4
+  - docker pull ethereum/client-go:$GETH_DOCKER_VERSION
 
 install:
   - scripts/install-dependencies.sh
   - glide install
-  - export PATH=$PATH:/tmp/geth_bin/geth-linux-amd64-1.8.2-b8b9f7f4/
   - echo "cd vendor/github.com/golang/protobuf && make install" | sh
   - go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
   - go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger

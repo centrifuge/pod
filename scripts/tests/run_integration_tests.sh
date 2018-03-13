@@ -10,5 +10,5 @@ export CENT_ANCHOR_ETHEREUM_ANCHORREGISTRYADDRESS=`cat $CENT_ETHEREUM_CONTRACTS_
 echo "ANCHOR ADDRESS: ${CENT_ANCHOR_ETHEREUM_ANCHORREGISTRYADDRESS}"
 ############################################################
 
-echo "Running Integration Ethereum Tests against IPC [${CENT_ETHEREUM_GETHIPC}]"
+echo "Running Integration Ethereum Tests against [${CENT_ETHEREUM_GETH_SOCKET}]"
 go test ./... -tags=ethereum
