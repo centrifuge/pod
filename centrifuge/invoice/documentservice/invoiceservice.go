@@ -7,6 +7,9 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
  	google_protobuf2 "github.com/golang/protobuf/ptypes/empty"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/anchor"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
+	"github.com/spf13/viper"
 )
 
 
@@ -20,8 +23,18 @@ func (s *InvoiceDocumentService) SendInvoiceDocument(ctx context.Context, sendIn
 
 	coreDoc := invoice.ConvertToCoreDocument(sendInvoiceEnvelope.Document)
 	// Sign document
-	signingService := cc.Node.GetSigningService()
-	signingService.Sign(&coreDoc)
+	// Uncomment once fixed
+	//signingService := cc.Node.GetSigningService()
+	//signingService.Sign(&coreDoc)
+
+	// Anchor Document if configure to do so - temp approach
+	if (viper.GetBool("anchor.ethereum.enabled")) {
+		confirmations := make(chan *anchor.Anchor, 1)
+		id := tools.RandomString32()
+		rootHash := tools.RandomString32()
+		anchor.RegisterAsAnchor(id, rootHash, confirmations)
+		_ = <-confirmations
+	}
 
 	for _, element := range sendInvoiceEnvelope.Recipients {
 		addr := string(element[:])

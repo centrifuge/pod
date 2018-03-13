@@ -3,6 +3,7 @@
 GLIDEBIN=$GOPATH/bin/glide
 GLIDE_CACHE=~/glide
 GLIDE_BIN_CACHED=$GLIDE_CACHE/glide
+GETH_BIN_CACHED=/tmp/geth_bin/geth
 
 if [-e "${GLIDE_BIN_CACHED}"]
 then
