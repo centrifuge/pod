@@ -40,30 +40,29 @@ func TestRegisterAsAnchor_Integration(t *testing.T) {
 	assert.Equal(t, registeredAnchor.RootHash, rootHash, "Resulting anchor should have the same root hash as the input")
 }
 
+// As it will slow down the CI flow
+// Not sure if we should add concurrency here, or have another set of tests that run periodically as load-test/concurrent flags
+func TestRegisterAsAnchor_Integration_Concurrent(t *testing.T) {
+	var submittedIds [5]string
+	var submittedRhs [5]string
 
-// TODO make this work in high concurrency
-//func TestRegisterAsAnchor_Integration_Concurrency(t *testing.T) {
-//
-//	var submittedIds [5]string
-//	var submittedRhs [5]string
-//
-//	howMany := cap(submittedIds)
-//	confirmations := make(chan *anchor.Anchor, howMany)
-//
-//	for ix := 0; ix < howMany; ix++ {
-//		id := tools.RandomString32()
-//		submittedIds[ix] = id
-//
-//		rootHash := tools.RandomString32()
-//		submittedRhs[ix] = rootHash
-//
-//		err := anchor.RegisterAsAnchor(id, rootHash, confirmations)
-//		assert.Nil(t, err, "should not error out upon anchor registration")
-//	}
-//
-//	for ix := 0; ix < howMany; ix++ {
-//		singleAnchor := <-confirmations
-//		assert.Contains(t, submittedIds, singleAnchor.AnchorID , "Should have the ID that was passed into create function [%v]", singleAnchor.AnchorID)
-//		assert.Contains(t, submittedRhs, singleAnchor.RootHash , "Should have the RootHash that was passed into create function [%v]", singleAnchor.RootHash)
-//	}
-//}
+	howMany := cap(submittedIds)
+	confirmations := make(chan *anchor.Anchor, howMany)
+
+	for ix := 0; ix < howMany; ix++ {
+		id := tools.RandomString32()
+		submittedIds[ix] = id
+
+		rootHash := tools.RandomString32()
+		submittedRhs[ix] = rootHash
+
+		err := anchor.RegisterAsAnchor(id, rootHash, confirmations)
+		assert.Nil(t, err, "should not error out upon anchor registration")
+	}
+
+	for ix := 0; ix < howMany; ix++ {
+		singleAnchor := <-confirmations
+		assert.Contains(t, submittedIds, singleAnchor.AnchorID , "Should have the ID that was passed into create function [%v]", singleAnchor.AnchorID)
+		assert.Contains(t, submittedRhs, singleAnchor.RootHash , "Should have the RootHash that was passed into create function [%v]", singleAnchor.RootHash)
+	}
+}

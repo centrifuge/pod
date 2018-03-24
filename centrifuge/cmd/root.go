@@ -60,9 +60,14 @@ func initConfig() {
 			os.Exit(1)
 		}
 
-		// Search config in home directory with name ".centrifuge" (without extension).
-		viper.AddConfigPath(home)
-		viper.SetConfigName(".centrifuge")
+		filename := fmt.Sprintf("%s/%s", home, ".centrifuge.yaml")
+		if _, err := os.Stat(filename); err == nil {
+			// Search config in home directory with name ".centrifuge" (without extension).
+			viper.AddConfigPath(home)
+			viper.SetConfigName(".centrifuge.yaml")
+		} else {
+			panic("Config file not provided and default $HOME/.centrifuge.yaml does not exist")
+		}
 	}
 
 	viper.AutomaticEnv() // read in environment variables that match
