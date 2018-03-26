@@ -27,27 +27,27 @@ func TestMain(m *testing.M) {
 	os.Exit(result)
 }
 
-//func TestCreateAndResolveIdentity_Integration(t *testing.T) {
-//	centrifugeId := tools.RandomString32()
-//	nodePeerId := tools.RandomByte32()
-//	var m = make(map[int][]IdentityKey)
-//	confirmations := make(chan *Identity, 1)
-//	m[1] = append(m[1], IdentityKey{nodePeerId})
-//	identity := Identity{ CentrifugeId: centrifugeId, Keys: m }
-//	err := CreateIdentity(identity, confirmations)
-//	if err != nil {
-//		t.Fatalf("Error creating Identity: %v", err)
-//	}
-//	registeredIdentity := <-confirmations
-//	assert.Equal(t, centrifugeId, registeredIdentity.CentrifugeId, "Resulting Identity should have the same ID as the input")
-//
-//	id, err := ResolveIdentityForKey(centrifugeId, 0)
-//	if err != nil {
-//		t.Fatalf("Error resolving Identity: %v", err)
-//	}
-//	assert.Equal(t, centrifugeId, id.CentrifugeId, "CentrifugeId Should match provided one")
-//	assert.Equal(t, 0, len(id.Keys), "Identity Should have empty map of keys")
-//}
+func TestCreateAndResolveIdentity_Integration(t *testing.T) {
+	centrifugeId := tools.RandomString32()
+	nodePeerId := tools.RandomByte32()
+	var m = make(map[int][]IdentityKey)
+	confirmations := make(chan *Identity, 1)
+	m[1] = append(m[1], IdentityKey{nodePeerId})
+	identity := Identity{ CentrifugeId: centrifugeId, Keys: m }
+	err := CreateIdentity(identity, confirmations)
+	if err != nil {
+		t.Fatalf("Error creating Identity: %v", err)
+	}
+	registeredIdentity := <-confirmations
+	assert.Equal(t, centrifugeId, registeredIdentity.CentrifugeId, "Resulting Identity should have the same ID as the input")
+
+	id, err := ResolveIdentityForKey(centrifugeId, 0)
+	if err != nil {
+		t.Fatalf("Error resolving Identity: %v", err)
+	}
+	assert.Equal(t, centrifugeId, id.CentrifugeId, "CentrifugeId Should match provided one")
+	assert.Equal(t, 0, len(id.Keys), "Identity Should have empty map of keys")
+}
 
 func TestCreateIdentityAndAddKey_Integration(t *testing.T) {
 	centrifugeId := tools.RandomString32()
@@ -92,27 +92,27 @@ func TestCreateIdentityAndAddKey_Integration(t *testing.T) {
 
 // As it will slow down the CI flow
 // Not sure if we should add concurrency here, or have another set of tests that run periodically as load-test/concurrent flags
-//func TestCreateAndResolveIdentity_Integration_Concurrent(t *testing.T) {
-//	var submittedIds [5]string
-//	nodePeerId := tools.RandomByte32()
-//	var m = make(map[int][]IdentityKey)
-//	m[1] = append(m[1], IdentityKey{nodePeerId})
-//	howMany := cap(submittedIds)
-//	confirmations := make(chan *Identity, howMany)
-//
-//	for ix := 0; ix < howMany; ix++ {
-//		centId := tools.RandomString32()
-//		identity := Identity{ CentrifugeId: centId, Keys: m }
-//		submittedIds[ix] = centId
-//
-//		err := CreateIdentity(identity, confirmations)
-//		assert.Nil(t, err, "should not error out upon identity creation")
-//	}
-//
-//	for ix := 0; ix < howMany; ix++ {
-//		singleIdentity := <-confirmations
-//		id, err := ResolveIdentityForKey(singleIdentity.CentrifugeId, 1)
-//		assert.Nil(t, err, "should not error out upon identity resolution")
-//		assert.Contains(t, submittedIds, id.CentrifugeId , "Should have the ID that was passed into create function [%v]", id.CentrifugeId)
-//	}
-//}
+func TestCreateAndResolveIdentity_Integration_Concurrent(t *testing.T) {
+	var submittedIds [5]string
+	nodePeerId := tools.RandomByte32()
+	var m = make(map[int][]IdentityKey)
+	m[1] = append(m[1], IdentityKey{nodePeerId})
+	howMany := cap(submittedIds)
+	confirmations := make(chan *Identity, howMany)
+
+	for ix := 0; ix < howMany; ix++ {
+		centId := tools.RandomString32()
+		identity := Identity{ CentrifugeId: centId, Keys: m }
+		submittedIds[ix] = centId
+
+		err := CreateIdentity(identity, confirmations)
+		assert.Nil(t, err, "should not error out upon identity creation")
+	}
+
+	for ix := 0; ix < howMany; ix++ {
+		singleIdentity := <-confirmations
+		id, err := ResolveIdentityForKey(singleIdentity.CentrifugeId, 1)
+		assert.Nil(t, err, "should not error out upon identity resolution")
+		assert.Contains(t, submittedIds, id.CentrifugeId , "Should have the ID that was passed into create function [%v]", id.CentrifugeId)
+	}
+}

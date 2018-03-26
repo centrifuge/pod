@@ -48,6 +48,10 @@ func GenerateSigningKeypair(publicFileName, privateFileName string) (publicKey e
 
 func PublicKeyToP2PKey(publicKey [32]byte) (p2pId peer.ID, err error) {
 	// Taken from peer.go#IDFromPublicKey#L189
+	// TODO As soon as this is merged: https://github.com/libp2p/go-libp2p-kad-dht/pull/129 we can get rid of this function
+	// and only do:
+	// pk, err := crypto.UnmarshalEd25519PublicKey(publicKey[:])
+	// pid, error := IDFromPublicKey(pk)
 	pk, err := crypto.UnmarshalEd25519PublicKey(publicKey[:])
 	bpk, err := pk.Bytes()
 	hash, err := mh.Sum(bpk[:], mh.SHA2_256, -1)

@@ -42,10 +42,10 @@ ethereum:
 identity:
   ethereum:
     enabled: true
-    identityFactoryAddress: "0xf8f8c6942381cc9076e816e29ca40bde3b815e7b"
-    identityRegistryAddress: "0xb3305dd42e86e77dfce0a2fbeb063f49053f7517"
+    identityFactoryAddress: "0xf58fd7d84dcd5d8153399795e2e17f62343cb098"
+    identityRegistryAddress: "0xa4be073f151c6f5d02a90ee26e803d788b157070"
 
 anchor:
   ethereum:
     enabled: false
-    anchorRegistryAddress: "0x084c4dcbd28169a861d61c0fbb572e9d59db792a"
+    anchorRegistryAddress: "0xb0319512241533f0dc57c3ea7c64c5bd20f60f30"

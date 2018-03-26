@@ -5,6 +5,8 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools"
 	"log"
 	"fmt"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 )
 
 type IdentityKey struct {
@@ -58,8 +60,15 @@ func CheckIdentityExists(centrifugeId string) (exists bool, err error) {
 			return false, err
 		}
 		if idContract != nil {
-			log.Printf("Identity exists!")
-			exists = true
+			opts := ethereum.GetGethCallOpts()
+			centId, err := idContract.CentrifugeId(opts)
+			if err == bind.ErrNoCode {
+				return false, nil
+			}
+			if len(centId) != 0 {
+				log.Printf("Identity exists!")
+				exists = true
+			}
 		}
 	}
 	return
