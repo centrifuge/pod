@@ -60,7 +60,7 @@ func (s *InvoiceDocumentService) SendInvoiceDocument(ctx context.Context, sendIn
 		log.Printf("Sending Invoice to CentID [%v] with Key [%v]\n", centrifugeId, lastb58Key.Pretty())
 		clientWithProtocol := fmt.Sprintf("/ipfs/%s", lastb58Key.Pretty())
 		client := p2p.OpenClient(clientWithProtocol)
-		log.Printf("Done opening connection against [%s]\n", peerId.Keys[1][lastKey].String())
+		log.Printf("Done opening connection against [%s]\n", lastb58Key.Pretty())
 		_, err = client.Transmit(context.Background(), &p2p.P2PMessage{&coreDoc})
 		if err != nil {
 			return nil, err
