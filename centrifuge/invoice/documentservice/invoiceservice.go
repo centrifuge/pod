@@ -53,14 +53,14 @@ func (s *InvoiceDocumentService) SendInvoiceDocument(ctx context.Context, sendIn
 			return nil, errors.Wrap("Identity doesn't have p2p key", 1)
 		}
 		// Default to last key of that type
-		lastb58Key, err := keytools.PublicKeyToP2PKey(peerId.Keys[1][lastKey])
+		lastb58Key, err := keytools.PublicKeyToP2PKey(peerId.Keys[1][lastKey].Key)
 		if err != nil {
 			return nil, err
 		}
 		log.Printf("Sending Invoice to CentID [%v] with Key [%v]\n", centrifugeId, lastb58Key.Pretty())
 		clientWithProtocol := fmt.Sprintf("/ipfs/%s", lastb58Key.Pretty())
 		client := p2p.OpenClient(clientWithProtocol)
-		log.Printf("Done opening connection against [%s]\n", peerId.Keys[1])
+		log.Printf("Done opening connection against [%s]\n", peerId.Keys[1][lastKey].String())
 		_, err = client.Transmit(context.Background(), &p2p.P2PMessage{&coreDoc})
 		if err != nil {
 			return nil, err

@@ -7,13 +7,28 @@ import (
 	"fmt"
 )
 
+type IdentityKey struct {
+	Key [32]byte
+}
+
+func (idk *IdentityKey) String() string {
+	peerdId, _ := keytools.PublicKeyToP2PKey(idk.Key)
+	return fmt.Sprintf("%s", peerdId.Pretty())
+}
+
 type Identity struct {
 	CentrifugeId string
-	Keys map[int][][32]byte
+	Keys map[int][]IdentityKey
 }
 
 func (id *Identity) String() string {
-	return fmt.Sprintf("CentrifugeId [%v], Key [%v]", id.CentrifugeId, id.Keys)
+	joinedKeys := ""
+	for k, v := range id.Keys {
+		for i, _ := range v {
+			joinedKeys += fmt.Sprintf("[%v]%s ", k, v[i].String())
+		}
+	}
+	return fmt.Sprintf("CentrifugeId [%s], Keys [%s]", id.CentrifugeId, joinedKeys)
 }
 
 func (id *Identity) LastB58Key(keyType int) (ret string, err error) {
@@ -24,7 +39,7 @@ func (id *Identity) LastB58Key(keyType int) (ret string, err error) {
 	case 0:
 		log.Printf("Error not authorized type")
 	case 1:
-		p2pId, err1 := keytools.PublicKeyToP2PKey(id.Keys[keyType][len(id.Keys[keyType])-1])
+		p2pId, err1 := keytools.PublicKeyToP2PKey(id.Keys[keyType][len(id.Keys[keyType])-1].Key)
 		if err1 != nil {
 			err = err1
 			return
@@ -32,6 +47,20 @@ func (id *Identity) LastB58Key(keyType int) (ret string, err error) {
 		ret = p2pId.Pretty()
 	default:
 		log.Printf("keyType Not found")
+	}
+	return
+}
+
+func CheckIdentityExists(centrifugeId string) (exists bool, err error) {
+	if (viper.GetBool("identity.ethereum.enabled")) {
+		idContract, err := doFindIdentity(centrifugeId)
+		if err != nil {
+			return false, err
+		}
+		if idContract != nil {
+			log.Printf("Identity exists!")
+			exists = true
+		}
 	}
 	return
 }

@@ -30,62 +30,63 @@ func TestMain(m *testing.M) {
 func TestCreateAndResolveIdentity_Integration(t *testing.T) {
 	centrifugeId := tools.RandomString32()
 	nodePeerId := tools.RandomByte32()
-	var m = make(map[int][][32]byte)
+	var m = make(map[int][]IdentityKey)
 	confirmations := make(chan *Identity, 1)
-	m[1] = append(m[1], nodePeerId)
+	m[1] = append(m[1], IdentityKey{nodePeerId})
 	identity := Identity{ CentrifugeId: centrifugeId, Keys: m }
 	err := CreateIdentity(identity, confirmations)
 	if err != nil {
 		t.Fatalf("Error creating Identity: %v", err)
 	}
 	registeredIdentity := <-confirmations
-	assert.Equal(t, registeredIdentity.CentrifugeId, centrifugeId, "Resulting Identity should have the same ID as the input")
+	assert.Equal(t, centrifugeId, registeredIdentity.CentrifugeId, "Resulting Identity should have the same ID as the input")
 
 	id, err := ResolveIdentityForKey(centrifugeId, 0)
 	if err != nil {
 		t.Fatalf("Error resolving Identity: %v", err)
 	}
-	assert.Equal(t, id.CentrifugeId, centrifugeId, "CentrifugeId Should match provided one")
-	assert.Equal(t, len(id.Keys), 0, "Identity Should have empty map of keys")
+	assert.Equal(t, centrifugeId, id.CentrifugeId, "CentrifugeId Should match provided one")
+	assert.Equal(t, 0, len(id.Keys), "Identity Should have empty map of keys")
 }
 
 func TestCreateIdentityAndAddKey_Integration(t *testing.T) {
 	centrifugeId := tools.RandomString32()
 	nodePeerId := tools.RandomByte32()
-	var m = make(map[int][][32]byte)
+	var m = make(map[int][]IdentityKey)
 	confirmations := make(chan *Identity, 1)
-	m[1] = append(m[1], nodePeerId)
+	m[1] = append(m[1], IdentityKey{nodePeerId})
 	identity := Identity{ CentrifugeId: centrifugeId, Keys: m }
 	err := CreateIdentity(identity, confirmations)
 	if err != nil {
 		t.Fatalf("Error creating Identity: %v", err)
 	}
 	registeredIdentity := <-confirmations
-	assert.Equal(t, registeredIdentity.CentrifugeId, centrifugeId, "Resulting Identity should have the same ID as the input")
+	assert.Equal(t, centrifugeId, registeredIdentity.CentrifugeId, "Resulting Identity should have the same ID as the input")
 
 	id, err := ResolveIdentityForKey(centrifugeId, 1)
 	if err != nil {
 		t.Fatalf("Error resolving Identity: %v", err)
 	}
-	assert.Equal(t, id.CentrifugeId, centrifugeId, "CentrifugeId Should match provided one")
-	assert.Equal(t, len(id.Keys), 0, "Identity Should have empty map of keys")
+	assert.Equal(t, centrifugeId, id.CentrifugeId, "CentrifugeId Should match provided one")
+	assert.Equal(t, 0, len(id.Keys), "Identity Should have empty map of keys")
 
 	err = AddKeyToIdentity(identity, 1, confirmations)
 	if err != nil {
 		t.Fatalf("Error adding key to Identity: %v", err)
 	}
 	receivedIdentity := <-confirmations
-	assert.Equal(t, receivedIdentity.CentrifugeId, centrifugeId, "Resulting Identity should have the same ID as the input")
-	assert.Equal(t, len(receivedIdentity.Keys), 1, "Resulting Identity Key Map should have expected length")
-	assert.Equal(t, receivedIdentity.Keys[1][0], m[1][0], "Resulting Identity Key should match the one requested")
+	assert.Equal(t, centrifugeId, receivedIdentity.CentrifugeId, "Resulting Identity should have the same ID as the input")
+	assert.Equal(t, 1, len(receivedIdentity.Keys), "Resulting Identity Key Map should have expected length")
+	assert.Equal(t,1, len(receivedIdentity.Keys[1]), "Resulting Identity Key Type list should have expected length")
+	assert.Equal(t, m[1][0], receivedIdentity.Keys[1][0], "Resulting Identity Key should match the one requested")
 
 	// Double check that Key Exists in Identity
 	id, err = ResolveIdentityForKey(centrifugeId, 1)
 	if err != nil {
 		t.Fatalf("Error resolving Identity: %v", err)
 	}
-	assert.Equal(t, id.CentrifugeId, centrifugeId, "CentrifugeId Should match provided one")
-	assert.Equal(t, len(id.Keys), 1, "Identity Should have empty map of keys")
+	assert.Equal(t, centrifugeId, id.CentrifugeId, "CentrifugeId Should match provided one")
+	assert.Equal(t, 1, len(id.Keys), "Identity Should have empty map of keys")
 	assert.Equal(t, m[1][0], id.Keys[1][0], "Resulting Identity Key should match the one requested")
 }
 
@@ -94,8 +95,8 @@ func TestCreateIdentityAndAddKey_Integration(t *testing.T) {
 func TestCreateAndResolveIdentity_Integration_Concurrent(t *testing.T) {
 	var submittedIds [5]string
 	nodePeerId := tools.RandomByte32()
-	var m = make(map[int][][32]byte)
-	m[1] = append(m[1], nodePeerId)
+	var m = make(map[int][]IdentityKey)
+	m[1] = append(m[1], IdentityKey{nodePeerId})
 	howMany := cap(submittedIds)
 	confirmations := make(chan *Identity, howMany)
 

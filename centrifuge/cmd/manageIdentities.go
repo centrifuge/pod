@@ -23,6 +23,11 @@ var createIdentityCmd = &cobra.Command{
 			panic(err)
 		}
 		log.Printf("Centrifuge ID: String [%v] in bytes [%v]", centrifugeId, bCentId)
+
+		exists, err := identity.CheckIdentityExists(centrifugeId)
+		if err != nil  || exists {
+			panic(err)
+		}
 		publicKey, _ := keytools.GetSigningKeysFromConfig()
 
 		log.Printf("P2PKey: %v\n", publicKey)
@@ -31,10 +36,10 @@ var createIdentityCmd = &cobra.Command{
 		pid, err := keytools.PublicKeyToP2PKey(bPk)
 		log.Printf("PID: %v\n", pid.Pretty())
 
-		var m = make(map[int][][32]byte)
+		var m = make(map[int][]identity.IdentityKey)
 		var pk [32]byte
 		copy(pk[:], publicKey)
-		m[1] = append(m[1], pk)
+		m[1] = append(m[1], identity.IdentityKey{pk})
 		id := identity.Identity{centrifugeId, m}
 		confirmations := make(chan *identity.Identity, 1)
 
@@ -46,7 +51,8 @@ var createIdentityCmd = &cobra.Command{
 		log.Printf("Adding Key [%v] to Identity [%v]", id.Keys[1][0],id.CentrifugeId)
 		identity.AddKeyToIdentity(id, 1, confirmations)
 		addedToIdentity := <-confirmations
-		log.Printf("Key [%v] Added to Identity [%v]", addedToIdentity.Keys[1][0], addedToIdentity.CentrifugeId)
+		log.Printf("Key [%v] Added to Identity [%v]", addedToIdentity.Keys[1][0].String(), addedToIdentity.CentrifugeId)
+		log.Printf("Identity ToString method: [%s]", addedToIdentity.String())
 	},
 }
 

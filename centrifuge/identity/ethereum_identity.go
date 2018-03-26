@@ -153,9 +153,9 @@ func doResolveIdentityForKey(centrifugeId string, keyType int) (id Identity, err
 	if err != nil {
 		return
 	}
-	var m = make(map[int][][32]byte)
+	var m = make(map[int][]IdentityKey)
 	for _, key := range keys {
-		m[keyType] = append(m[keyType], key)
+		m[keyType] = append(m[keyType], IdentityKey{key})
 	}
 	id = Identity{ CentrifugeId: centrifugeId , Keys: m }
 	return
@@ -167,7 +167,7 @@ func sendKeyRegistrationTransaction(identityContract IdentityContract, opts *bin
 	//preparation of data in specific types for the call to Ethereum
 	var bKey [32]byte
 	lastKey := len(identity.Keys[keyType])-1
-	copy(bKey[:], identity.Keys[keyType][lastKey][:32])
+	copy(bKey[:], identity.Keys[keyType][lastKey].Key[:32])
 	bigInt := big.NewInt(int64(keyType))
 
 	// TODO for concurrency handling add init queuing and pass tx to queue
@@ -223,7 +223,7 @@ func setUpKeyRegisteredEventListener(ethCreatedContract WatchKeyRegistered, iden
 
 	var bKey [32]byte
 	lastKey := len(identity.Keys[keyType])-1
-	copy(bKey[:], identity.Keys[keyType][lastKey][:32])
+	copy(bKey[:], identity.Keys[keyType][lastKey].Key[:32])
 	bigInt := big.NewInt(int64(keyType))
 
 	//TODO do something with the returned Subscription that is currently simply discarded
@@ -276,8 +276,6 @@ func waitAndRouteKeyRegistrationEvent(conf <-chan *EthereumIdentityContractKeyRe
 			return
 		case res := <-conf:
 			log.Printf("Received KeyRegistered event from [%x] for keyType: %x and value: %x\n", pushThisIdentity.CentrifugeId, res.KType, res.Key)
-			kType := int(res.KType.Int64())
-			pushThisIdentity.Keys[kType] = append(pushThisIdentity.Keys[kType], res.Key)
 			confirmations <- pushThisIdentity
 			return
 		}
