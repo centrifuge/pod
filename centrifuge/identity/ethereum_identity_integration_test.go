@@ -78,7 +78,7 @@ func TestCreateIdentityAndAddKey_Integration(t *testing.T) {
 	assert.Equal(t, centrifugeId, receivedIdentity.CentrifugeId, "Resulting Identity should have the same ID as the input")
 	assert.Equal(t, 1, len(receivedIdentity.Keys), "Resulting Identity Key Map should have expected length")
 	assert.Equal(t,1, len(receivedIdentity.Keys[1]), "Resulting Identity Key Type list should have expected length")
-	assert.Equal(t, m[1][0], receivedIdentity.Keys[1][0], "Resulting Identity Key should match the one requested")
+	assert.Equal(t, m[1][0].Key, receivedIdentity.Keys[1][0].Key, "Resulting Identity Key should match the one requested")
 
 	// Double check that Key Exists in Identity
 	id, err = ResolveIdentityForKey(centrifugeId, 1)
@@ -111,7 +111,7 @@ func TestCreateAndResolveIdentity_Integration_Concurrent(t *testing.T) {
 
 	for ix := 0; ix < howMany; ix++ {
 		singleIdentity := <-confirmations
-		id, err := ResolveIdentityForKey(singleIdentity.CentrifugeId, 0)
+		id, err := ResolveIdentityForKey(singleIdentity.CentrifugeId, 1)
 		assert.Nil(t, err, "should not error out upon identity resolution")
 		assert.Contains(t, submittedIds, id.CentrifugeId , "Should have the ID that was passed into create function [%v]", id.CentrifugeId)
 	}
