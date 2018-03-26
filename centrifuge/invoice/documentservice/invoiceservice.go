@@ -12,7 +12,6 @@ import (
 	"github.com/spf13/viper"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
 	"github.com/go-errors/errors"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools"
 	"fmt"
 )
 
@@ -48,19 +47,19 @@ func (s *InvoiceDocumentService) SendInvoiceDocument(ctx context.Context, sendIn
 			return nil, err
 		}
 
-		lastKey := len(peerId.Keys[1])-1
 		if len(peerId.Keys[1]) == 0 {
 			return nil, errors.Wrap("Identity doesn't have p2p key", 1)
 		}
+
 		// Default to last key of that type
-		lastb58Key, err := keytools.PublicKeyToP2PKey(peerId.Keys[1][lastKey].Key)
+		lastb58Key, err := peerId.LastB58Key(1)
 		if err != nil {
 			return nil, err
 		}
-		log.Printf("Sending Invoice to CentID [%v] with Key [%v]\n", centrifugeId, lastb58Key.Pretty())
-		clientWithProtocol := fmt.Sprintf("/ipfs/%s", lastb58Key.Pretty())
+		log.Printf("Sending Invoice to CentID [%v] with Key [%v]\n", centrifugeId, lastb58Key)
+		clientWithProtocol := fmt.Sprintf("/ipfs/%s", lastb58Key)
 		client := p2p.OpenClient(clientWithProtocol)
-		log.Printf("Done opening connection against [%s]\n", lastb58Key.Pretty())
+		log.Printf("Done opening connection against [%s]\n", lastb58Key)
 		_, err = client.Transmit(context.Background(), &p2p.P2PMessage{&coreDoc})
 		if err != nil {
 			return nil, err

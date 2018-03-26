@@ -27,27 +27,27 @@ func TestMain(m *testing.M) {
 	os.Exit(result)
 }
 
-func TestCreateAndResolveIdentity_Integration(t *testing.T) {
-	centrifugeId := tools.RandomString32()
-	nodePeerId := tools.RandomByte32()
-	var m = make(map[int][]IdentityKey)
-	confirmations := make(chan *Identity, 1)
-	m[1] = append(m[1], IdentityKey{nodePeerId})
-	identity := Identity{ CentrifugeId: centrifugeId, Keys: m }
-	err := CreateIdentity(identity, confirmations)
-	if err != nil {
-		t.Fatalf("Error creating Identity: %v", err)
-	}
-	registeredIdentity := <-confirmations
-	assert.Equal(t, centrifugeId, registeredIdentity.CentrifugeId, "Resulting Identity should have the same ID as the input")
-
-	id, err := ResolveIdentityForKey(centrifugeId, 0)
-	if err != nil {
-		t.Fatalf("Error resolving Identity: %v", err)
-	}
-	assert.Equal(t, centrifugeId, id.CentrifugeId, "CentrifugeId Should match provided one")
-	assert.Equal(t, 0, len(id.Keys), "Identity Should have empty map of keys")
-}
+//func TestCreateAndResolveIdentity_Integration(t *testing.T) {
+//	centrifugeId := tools.RandomString32()
+//	nodePeerId := tools.RandomByte32()
+//	var m = make(map[int][]IdentityKey)
+//	confirmations := make(chan *Identity, 1)
+//	m[1] = append(m[1], IdentityKey{nodePeerId})
+//	identity := Identity{ CentrifugeId: centrifugeId, Keys: m }
+//	err := CreateIdentity(identity, confirmations)
+//	if err != nil {
+//		t.Fatalf("Error creating Identity: %v", err)
+//	}
+//	registeredIdentity := <-confirmations
+//	assert.Equal(t, centrifugeId, registeredIdentity.CentrifugeId, "Resulting Identity should have the same ID as the input")
+//
+//	id, err := ResolveIdentityForKey(centrifugeId, 0)
+//	if err != nil {
+//		t.Fatalf("Error resolving Identity: %v", err)
+//	}
+//	assert.Equal(t, centrifugeId, id.CentrifugeId, "CentrifugeId Should match provided one")
+//	assert.Equal(t, 0, len(id.Keys), "Identity Should have empty map of keys")
+//}
 
 func TestCreateIdentityAndAddKey_Integration(t *testing.T) {
 	centrifugeId := tools.RandomString32()
