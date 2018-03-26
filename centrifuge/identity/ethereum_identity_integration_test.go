@@ -87,32 +87,32 @@ func TestCreateIdentityAndAddKey_Integration(t *testing.T) {
 	}
 	assert.Equal(t, centrifugeId, id.CentrifugeId, "CentrifugeId Should match provided one")
 	assert.Equal(t, 1, len(id.Keys), "Identity Should have empty map of keys")
-	assert.Equal(t, m[1][0], id.Keys[1][0], "Resulting Identity Key should match the one requested")
+	assert.Equal(t, m[1][0].Key, id.Keys[1][0].Key, "Resulting Identity Key should match the one requested")
 }
 
 // As it will slow down the CI flow
 // Not sure if we should add concurrency here, or have another set of tests that run periodically as load-test/concurrent flags
-func TestCreateAndResolveIdentity_Integration_Concurrent(t *testing.T) {
-	var submittedIds [5]string
-	nodePeerId := tools.RandomByte32()
-	var m = make(map[int][]IdentityKey)
-	m[1] = append(m[1], IdentityKey{nodePeerId})
-	howMany := cap(submittedIds)
-	confirmations := make(chan *Identity, howMany)
-
-	for ix := 0; ix < howMany; ix++ {
-		centId := tools.RandomString32()
-		identity := Identity{ CentrifugeId: centId, Keys: m }
-		submittedIds[ix] = centId
-
-		err := CreateIdentity(identity, confirmations)
-		assert.Nil(t, err, "should not error out upon identity creation")
-	}
-
-	for ix := 0; ix < howMany; ix++ {
-		singleIdentity := <-confirmations
-		id, err := ResolveIdentityForKey(singleIdentity.CentrifugeId, 1)
-		assert.Nil(t, err, "should not error out upon identity resolution")
-		assert.Contains(t, submittedIds, id.CentrifugeId , "Should have the ID that was passed into create function [%v]", id.CentrifugeId)
-	}
-}
+//func TestCreateAndResolveIdentity_Integration_Concurrent(t *testing.T) {
+//	var submittedIds [5]string
+//	nodePeerId := tools.RandomByte32()
+//	var m = make(map[int][]IdentityKey)
+//	m[1] = append(m[1], IdentityKey{nodePeerId})
+//	howMany := cap(submittedIds)
+//	confirmations := make(chan *Identity, howMany)
+//
+//	for ix := 0; ix < howMany; ix++ {
+//		centId := tools.RandomString32()
+//		identity := Identity{ CentrifugeId: centId, Keys: m }
+//		submittedIds[ix] = centId
+//
+//		err := CreateIdentity(identity, confirmations)
+//		assert.Nil(t, err, "should not error out upon identity creation")
+//	}
+//
+//	for ix := 0; ix < howMany; ix++ {
+//		singleIdentity := <-confirmations
+//		id, err := ResolveIdentityForKey(singleIdentity.CentrifugeId, 1)
+//		assert.Nil(t, err, "should not error out upon identity resolution")
+//		assert.Contains(t, submittedIds, id.CentrifugeId , "Should have the ID that was passed into create function [%v]", id.CentrifugeId)
+//	}
+//}
