@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"errors"
 )
 
 type IdentityKey struct {
@@ -63,13 +64,15 @@ func CheckIdentityExists(centrifugeId string) (exists bool, err error) {
 			opts := ethereum.GetGethCallOpts()
 			centId, err := idContract.CentrifugeId(opts)
 			if err == bind.ErrNoCode {
-				return false, nil
-			}
-			if len(centId) != 0 {
+				log.Printf("Identity contract does not exist!")
+				err = nil
+			} else if len(centId) != 0 {
 				log.Printf("Identity exists!")
 				exists = true
 			}
 		}
+	} else {
+		err = errors.New("Ethereum Identity not enabled")
 	}
 	return
 }
@@ -77,6 +80,8 @@ func CheckIdentityExists(centrifugeId string) (exists bool, err error) {
 func ResolveIdentityForKey(centrifugeId string, keyType int) (id Identity, err error) {
 	if (viper.GetBool("identity.ethereum.enabled")) {
 		id, err = doResolveIdentityForKey(centrifugeId, keyType)
+	} else {
+		err = errors.New("Ethereum Identity not enabled")
 	}
 	return
 }
@@ -84,6 +89,8 @@ func ResolveIdentityForKey(centrifugeId string, keyType int) (id Identity, err e
 func CreateIdentity(identity Identity, confirmations chan<- *Identity) (err error) {
 	if (viper.GetBool("identity.ethereum.enabled")) {
 		err = doCreateIdentity(identity, confirmations)
+	} else {
+		err = errors.New("Ethereum Identity not enabled")
 	}
 	return
 }
@@ -91,6 +98,8 @@ func CreateIdentity(identity Identity, confirmations chan<- *Identity) (err erro
 func AddKeyToIdentity(identity Identity, keyType int, confirmations chan<- *Identity) (err error) {
 	if (viper.GetBool("identity.ethereum.enabled")) {
 		err = doAddKeyToIdentity(identity, keyType, confirmations)
+	} else {
+		err = errors.New("Ethereum Identity not enabled")
 	}
 	return
 }

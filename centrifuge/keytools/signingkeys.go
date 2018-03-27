@@ -6,9 +6,7 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/crypto/ed25519"
 	mh "github.com/multiformats/go-multihash"
-	mc "github.com/multiformats/go-multicodec-packed"
 	"github.com/libp2p/go-libp2p-peer"
-	"encoding/binary"
 	"github.com/libp2p/go-libp2p-crypto"
 )
 
@@ -59,20 +57,6 @@ func PublicKeyToP2PKey(publicKey [32]byte) (p2pId peer.ID, err error) {
 		return "", err
 	}
 	//
-	p2pId = peer.ID(hash)
-	return
-}
-
-func PublicKeyToEd25519P2PKey(publicKey [32]byte) (p2pId peer.ID, err error) {
-	// Build the ed25519 public key multi-codec
-	Ed25519PubMultiCodec := make([]byte, 2)
-	binary.PutUvarint(Ed25519PubMultiCodec, uint64(mc.Ed25519Pub))
-	hash, err := mh.Sum(append(Ed25519PubMultiCodec, publicKey[len(publicKey)-32:]...), mh.ID, 34)
-	if err != nil {
-		return "", err
-	}
-	//
-
 	p2pId = peer.ID(hash)
 	return
 }

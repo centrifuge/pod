@@ -23,12 +23,10 @@ type WatchKeyRegistered interface {
 }
 
 type IdentityFactory interface {
-	ethereum.EthereumTransactor
 	CreateIdentity(opts *bind.TransactOpts, _centrifugeId [32]byte) (*types.Transaction, error)
 }
 
 type IdentityContract interface {
-	ethereum.EthereumTransactor
 	AddKey(opts *bind.TransactOpts, _key [32]byte, _kType *big.Int) (*types.Transaction, error)
 }
 
@@ -171,7 +169,7 @@ func sendKeyRegistrationTransaction(identityContract IdentityContract, opts *bin
 	bigInt := big.NewInt(int64(keyType))
 
 	// TODO for concurrency handling add init queuing and pass tx to queue
-	tx, err := ethereum.InitTransactionWithRetries("AddKey", identityContract, opts, bKey, bigInt)
+	tx, err := ethereum.InitTransactionWithRetries(identityContract.AddKey, opts, bKey, bigInt)
 
 	if err != nil {
 		log.Printf("Failed to send key [%v:%x] to add to CentrifugeID [%x]: %v", keyType, bKey, identity.CentrifugeId, err)
@@ -197,7 +195,7 @@ func sendIdentityCreationTransaction(identityFactory IdentityFactory, opts *bind
 	copy(bCentId[:], identityToBeCreated.CentrifugeId[:32])
 
 	// TODO for concurrency handling add init queuing and pass tx to queue
-	tx, err := ethereum.InitTransactionWithRetries("CreateIdentity", identityFactory, opts, bCentId)
+	tx, err := ethereum.InitTransactionWithRetries(identityFactory.CreateIdentity, opts, bCentId)
 
 	if err != nil {
 		log.Printf("Failed to send identity for creation [CentrifugeID: %x] : %v", bCentId, err)

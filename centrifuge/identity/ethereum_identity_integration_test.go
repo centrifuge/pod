@@ -34,19 +34,41 @@ func TestCreateAndResolveIdentity_Integration(t *testing.T) {
 	confirmations := make(chan *Identity, 1)
 	m[1] = append(m[1], IdentityKey{nodePeerId})
 	identity := Identity{ CentrifugeId: centrifugeId, Keys: m }
+
 	err := CreateIdentity(identity, confirmations)
-	if err != nil {
-		t.Fatalf("Error creating Identity: %v", err)
-	}
+	assert.Nil(t, err, "should not error out when creating identity")
+
 	registeredIdentity := <-confirmations
 	assert.Equal(t, centrifugeId, registeredIdentity.CentrifugeId, "Resulting Identity should have the same ID as the input")
 
 	id, err := ResolveIdentityForKey(centrifugeId, 0)
-	if err != nil {
-		t.Fatalf("Error resolving Identity: %v", err)
-	}
+	assert.Nil(t, err, "should not error out when resolving identity")
 	assert.Equal(t, centrifugeId, id.CentrifugeId, "CentrifugeId Should match provided one")
 	assert.Equal(t, 0, len(id.Keys), "Identity Should have empty map of keys")
+}
+
+func TestCheckIdentityExists_Integration(t *testing.T) {
+	centrifugeId := tools.RandomString32()
+	nodePeerId := tools.RandomByte32()
+	var m = make(map[int][]IdentityKey)
+	confirmations := make(chan *Identity, 1)
+	m[1] = append(m[1], IdentityKey{nodePeerId})
+	identity := Identity{ CentrifugeId: centrifugeId, Keys: m }
+
+	err := CreateIdentity(identity, confirmations)
+	assert.Nil(t, err, "should not error out when creating identity")
+
+	registeredIdentity := <-confirmations
+	assert.Equal(t, centrifugeId, registeredIdentity.CentrifugeId, "Resulting Identity should have the same ID as the input")
+
+	exists, err := CheckIdentityExists(centrifugeId)
+	assert.Nil(t, err, "should not error out when looking for correct identity")
+	assert.Equal(t, true, exists, "Identity Should Exists")
+
+	wrongCentrifugeId := tools.RandomString32()
+	exists, err = CheckIdentityExists(wrongCentrifugeId)
+	assert.Nil(t, err, "should not error out when missing identity")
+	assert.Equal(t, false, exists, "Identity Should Exists")
 }
 
 func TestCreateIdentityAndAddKey_Integration(t *testing.T) {
@@ -56,24 +78,22 @@ func TestCreateIdentityAndAddKey_Integration(t *testing.T) {
 	confirmations := make(chan *Identity, 1)
 	m[1] = append(m[1], IdentityKey{nodePeerId})
 	identity := Identity{ CentrifugeId: centrifugeId, Keys: m }
+
 	err := CreateIdentity(identity, confirmations)
-	if err != nil {
-		t.Fatalf("Error creating Identity: %v", err)
-	}
+	assert.Nil(t, err, "should not error out when creating identity")
+
 	registeredIdentity := <-confirmations
 	assert.Equal(t, centrifugeId, registeredIdentity.CentrifugeId, "Resulting Identity should have the same ID as the input")
 
 	id, err := ResolveIdentityForKey(centrifugeId, 1)
-	if err != nil {
-		t.Fatalf("Error resolving Identity: %v", err)
-	}
+
+	assert.Nil(t, err, "should not error out when resolving identity")
 	assert.Equal(t, centrifugeId, id.CentrifugeId, "CentrifugeId Should match provided one")
 	assert.Equal(t, 0, len(id.Keys), "Identity Should have empty map of keys")
 
 	err = AddKeyToIdentity(identity, 1, confirmations)
-	if err != nil {
-		t.Fatalf("Error adding key to Identity: %v", err)
-	}
+	assert.Nil(t, err, "should not error out when adding key to identity")
+
 	receivedIdentity := <-confirmations
 	assert.Equal(t, centrifugeId, receivedIdentity.CentrifugeId, "Resulting Identity should have the same ID as the input")
 	assert.Equal(t, 1, len(receivedIdentity.Keys), "Resulting Identity Key Map should have expected length")
@@ -82,9 +102,8 @@ func TestCreateIdentityAndAddKey_Integration(t *testing.T) {
 
 	// Double check that Key Exists in Identity
 	id, err = ResolveIdentityForKey(centrifugeId, 1)
-	if err != nil {
-		t.Fatalf("Error resolving Identity: %v", err)
-	}
+
+	assert.Nil(t, err, "should not error out when resolving identity")
 	assert.Equal(t, centrifugeId, id.CentrifugeId, "CentrifugeId Should match provided one")
 	assert.Equal(t, 1, len(id.Keys), "Identity Should have empty map of keys")
 	assert.Equal(t, m[1][0].Key, id.Keys[1][0].Key, "Resulting Identity Key should match the one requested")

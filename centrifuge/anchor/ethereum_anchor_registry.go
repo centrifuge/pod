@@ -29,7 +29,6 @@ type WatchAnchorRegistered interface {
 }
 
 type RegisterAnchor interface {
-	ethereum.EthereumTransactor
 	RegisterAnchor(opts *bind.TransactOpts, identifier [32]byte, merkleRoot [32]byte, anchorSchemaVersion *big.Int) (*types.Transaction, error)
 }
 
@@ -105,7 +104,7 @@ func sendRegistrationTransaction(ethRegistryContract RegisterAnchor, opts *bind.
 	schemaVersion := big.NewInt(int64(anchorToBeRegistered.SchemaVersion))
 
 	// TODO for concurrency handling add init queuing and pass tx to queue
-	tx, err := ethereum.InitTransactionWithRetries("RegisterAnchor", ethRegistryContract, opts, bAnchorId, bMerkleRoot, schemaVersion)
+	tx, err := ethereum.InitTransactionWithRetries(ethRegistryContract.RegisterAnchor, opts, bAnchorId, bMerkleRoot, schemaVersion)
 
 	if err != nil {
 		log.Printf("Failed to send anchor for registration [id: %x, hash: %x, SchemaVersion:%v] on registry: %v", bAnchorId, bMerkleRoot, schemaVersion, err)
