@@ -13,7 +13,7 @@ var centrifugeId string
 var createIdentityCmd = &cobra.Command{
 	Use:   "createidentity",
 	Short: "creates identity with signing key as p2p id against ethereum",
-	Long:  `TODO`,
+	Long:  "creates identity with signing key as p2p id against ethereum",
 	Run: func(cmd *cobra.Command, args []string) {
 		if centrifugeId == "" {
 			panic("Centrifuge ID not provided")
@@ -28,7 +28,7 @@ var createIdentityCmd = &cobra.Command{
 		if err != nil  || exists {
 			panic(err)
 		}
-		publicKey, _ := keytools.GetSigningKeysFromConfig()
+		publicKey, _ := keytools.GetSigningKeyPairFromConfig()
 
 		log.Printf("P2PKey: %v\n", publicKey)
 		var bPk [32]byte
@@ -56,10 +56,10 @@ var createIdentityCmd = &cobra.Command{
 	},
 }
 
-var updateIdentityCmd = &cobra.Command{
-	Use:   "updateidentity",
-	Short: "updates identity adding a signing key as p2p id against ethereum",
-	Long:  `TODO`,
+var addKeyCmd = &cobra.Command{
+	Use:   "addkey",
+	Short: "add a signing key as p2p id against ethereum",
+	Long:  "add a signing key as p2p id against ethereum",
 	Run: func(cmd *cobra.Command, args []string) {
 		if centrifugeId == "" {
 			panic("Centrifuge ID not provided")
@@ -75,9 +75,9 @@ var updateIdentityCmd = &cobra.Command{
 			panic(err)
 		}
 
-		currentId, err := identity.ResolveIdentityForKey(centrifugeId, 1)
+		currentId, err := identity.ResolveP2PIdentityForId(centrifugeId, 1)
 
-		publicKey, _ := keytools.GetSigningKeysFromConfig()
+		publicKey, _ := keytools.GetSigningKeyPairFromConfig()
 
 		log.Printf("P2PKey: %v\n", publicKey)
 		var bPk [32]byte
@@ -106,7 +106,7 @@ var updateIdentityCmd = &cobra.Command{
 
 func init() {
 	createIdentityCmd.Flags().StringVarP(&centrifugeId, "centrifugeid", "i", "", "Centrifuge ID")
-	updateIdentityCmd.Flags().StringVarP(&centrifugeId, "centrifugeid", "i", "", "Centrifuge ID")
+	addKeyCmd.Flags().StringVarP(&centrifugeId, "centrifugeid", "i", "", "Centrifuge ID")
 	rootCmd.AddCommand(createIdentityCmd)
-	rootCmd.AddCommand(updateIdentityCmd)
+	rootCmd.AddCommand(addKeyCmd)
 }

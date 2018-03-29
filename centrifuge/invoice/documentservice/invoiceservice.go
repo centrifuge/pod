@@ -41,7 +41,7 @@ func (s *InvoiceDocumentService) SendInvoiceDocument(ctx context.Context, sendIn
 
 	for _, element := range sendInvoiceEnvelope.Recipients {
 		centrifugeId := string(element[:])
-		peerId, err := identity.ResolveIdentityForKey(centrifugeId, 1)
+		peerId, err := identity.ResolveP2PIdentityForId(centrifugeId, 1)
 		if err != nil {
 			log.Printf("Error: %v\n", err)
 			return nil, err
@@ -52,7 +52,7 @@ func (s *InvoiceDocumentService) SendInvoiceDocument(ctx context.Context, sendIn
 		}
 
 		// Default to last key of that type
-		lastb58Key, err := peerId.LastB58Key(1)
+		lastb58Key, err := peerId.GetLastB58Key(1)
 		if err != nil {
 			return nil, err
 		}

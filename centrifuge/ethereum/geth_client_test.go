@@ -63,26 +63,26 @@ func TestInitTransactionWithRetries(t *testing.T) {
 	mockRequest := &MockTransactionRequest{}
 
 	// Success at first
-	tx, err := ethereum.InitTransactionWithRetries(mockRequest.RegisterTransaction, "var1", "var2")
+	tx, err := ethereum.SubmitTransactionWithRetries(mockRequest.RegisterTransaction, "var1", "var2")
 	assert.Nil(t, err, "Should not error out")
 	assert.EqualValues(t, 1, tx.Nonce(), "Nonce should equal to the one provided")
 	assert.EqualValues(t, 1, mockRequest.count, "Transaction Run flag should be true")
 
 	// Failure with non-locking error
-	tx, err = ethereum.InitTransactionWithRetries(mockRequest.RegisterTransaction, "otherError", "var2")
+	tx, err = ethereum.SubmitTransactionWithRetries(mockRequest.RegisterTransaction, "otherError", "var2")
 	assert.EqualError(t, err, "Some other error" ,"Should error out")
 
 	viper.Set("ethereum.maxRetries", 10)
 
 	mockRequest.count = 0
 	// Failure and timeout with locking error
-	tx, err = ethereum.InitTransactionWithRetries(mockRequest.RegisterTransaction, "optimisticLockingTimeout", "var2")
+	tx, err = ethereum.SubmitTransactionWithRetries(mockRequest.RegisterTransaction, "optimisticLockingTimeout", "var2")
 	assert.EqualError(t, err, ethereum.TransactionUnderpriced ,"Should error out")
 	assert.EqualValues(t, 10, mockRequest.count, "Retries should be equal")
 
 	mockRequest.count = 0
 	// Success after locking race condition overcome
-	tx, err = ethereum.InitTransactionWithRetries(mockRequest.RegisterTransaction, "optimisticLockingEventualSuccess", "var2")
+	tx, err = ethereum.SubmitTransactionWithRetries(mockRequest.RegisterTransaction, "optimisticLockingEventualSuccess", "var2")
 	assert.Nil(t, err, "Should not error out")
 	assert.EqualValues(t, 3, mockRequest.count, "Retries should be equal")
 

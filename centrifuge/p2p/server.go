@@ -65,7 +65,7 @@ func (srv *P2PService) Transmit(ctx context.Context, req *P2PMessage) (rep *P2PR
 // given multiaddress.
 func makeBasicHost(listenPort int) (host.Host, error) {
 	// Get the signing key for the host.
-	publicKey, privateKey := keytools.GetSigningKeysFromConfig()
+	publicKey, privateKey := keytools.GetSigningKeyPairFromConfig()
 	var key []byte
 	key = append(key, privateKey...)
 	key = append(key, publicKey...)

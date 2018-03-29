@@ -34,7 +34,7 @@ func (id *Identity) String() string {
 	return fmt.Sprintf("CentrifugeId [%s], Keys [%s]", id.CentrifugeId, joinedKeys)
 }
 
-func (id *Identity) LastB58Key(keyType int) (ret string, err error) {
+func (id *Identity) GetLastB58Key(keyType int) (ret string, err error) {
 	if len(id.Keys[keyType]) == 0 {
 		return
 	}
@@ -63,7 +63,7 @@ func CheckIdentityExists(centrifugeId string) (exists bool, err error) {
 		if idContract != nil {
 			opts := ethereum.GetGethCallOpts()
 			centId, err := idContract.CentrifugeId(opts)
-			if err == bind.ErrNoCode {
+			if err == bind.ErrNoCode { //no contract in specified address, meaning Identity was not created
 				log.Printf("Identity contract does not exist!")
 				err = nil
 			} else if len(centId) != 0 {
@@ -77,9 +77,9 @@ func CheckIdentityExists(centrifugeId string) (exists bool, err error) {
 	return
 }
 
-func ResolveIdentityForKey(centrifugeId string, keyType int) (id Identity, err error) {
+func ResolveP2PIdentityForId(centrifugeId string, keyType int) (id Identity, err error) {
 	if (viper.GetBool("identity.ethereum.enabled")) {
-		id, err = doResolveIdentityForKey(centrifugeId, keyType)
+		id, err = doResolveIdentityForKeyType(centrifugeId, keyType)
 	} else {
 		err = errors.New("Ethereum Identity not enabled")
 	}

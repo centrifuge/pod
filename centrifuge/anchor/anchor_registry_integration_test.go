@@ -40,8 +40,6 @@ func TestRegisterAsAnchor_Integration(t *testing.T) {
 	assert.Equal(t, registeredAnchor.RootHash, rootHash, "Resulting anchor should have the same root hash as the input")
 }
 
-// As it will slow down the CI flow
-// Not sure if we should add concurrency here, or have another set of tests that run periodically as load-test/concurrent flags
 func TestRegisterAsAnchor_Integration_Concurrent(t *testing.T) {
 	var submittedIds [5]string
 	var submittedRhs [5]string

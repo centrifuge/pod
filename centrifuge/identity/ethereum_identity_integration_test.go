@@ -1,6 +1,6 @@
 // +build ethereum
 
-package identity
+package identity_test
 
 import (
 	"testing"
@@ -8,6 +8,7 @@ import (
 	"os"
 	"github.com/stretchr/testify/assert"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
 )
 
 func TestMain(m *testing.M) {
@@ -30,18 +31,18 @@ func TestMain(m *testing.M) {
 func TestCreateAndResolveIdentity_Integration(t *testing.T) {
 	centrifugeId := tools.RandomString32()
 	nodePeerId := tools.RandomByte32()
-	var m = make(map[int][]IdentityKey)
-	confirmations := make(chan *Identity, 1)
-	m[1] = append(m[1], IdentityKey{nodePeerId})
-	identity := Identity{ CentrifugeId: centrifugeId, Keys: m }
+	var m = make(map[int][]identity.IdentityKey)
+	confirmations := make(chan *identity.Identity, 1)
+	m[1] = append(m[1], identity.IdentityKey{nodePeerId})
+	identityObj := identity.Identity{ CentrifugeId: centrifugeId, Keys: m }
 
-	err := CreateIdentity(identity, confirmations)
+	err := identity.CreateIdentity(identityObj, confirmations)
 	assert.Nil(t, err, "should not error out when creating identity")
 
 	registeredIdentity := <-confirmations
 	assert.Equal(t, centrifugeId, registeredIdentity.CentrifugeId, "Resulting Identity should have the same ID as the input")
 
-	id, err := ResolveIdentityForKey(centrifugeId, 0)
+	id, err := identity.ResolveP2PIdentityForId(centrifugeId, 1)
 	assert.Nil(t, err, "should not error out when resolving identity")
 	assert.Equal(t, centrifugeId, id.CentrifugeId, "CentrifugeId Should match provided one")
 	assert.Equal(t, 0, len(id.Keys), "Identity Should have empty map of keys")
@@ -50,23 +51,23 @@ func TestCreateAndResolveIdentity_Integration(t *testing.T) {
 func TestCheckIdentityExists_Integration(t *testing.T) {
 	centrifugeId := tools.RandomString32()
 	nodePeerId := tools.RandomByte32()
-	var m = make(map[int][]IdentityKey)
-	confirmations := make(chan *Identity, 1)
-	m[1] = append(m[1], IdentityKey{nodePeerId})
-	identity := Identity{ CentrifugeId: centrifugeId, Keys: m }
+	var m = make(map[int][]identity.IdentityKey)
+	confirmations := make(chan *identity.Identity, 1)
+	m[1] = append(m[1], identity.IdentityKey{nodePeerId})
+	identityObj := identity.Identity{ CentrifugeId: centrifugeId, Keys: m }
 
-	err := CreateIdentity(identity, confirmations)
+	err := identity.CreateIdentity(identityObj, confirmations)
 	assert.Nil(t, err, "should not error out when creating identity")
 
 	registeredIdentity := <-confirmations
 	assert.Equal(t, centrifugeId, registeredIdentity.CentrifugeId, "Resulting Identity should have the same ID as the input")
 
-	exists, err := CheckIdentityExists(centrifugeId)
+	exists, err := identity.CheckIdentityExists(centrifugeId)
 	assert.Nil(t, err, "should not error out when looking for correct identity")
 	assert.Equal(t, true, exists, "Identity Should Exists")
 
 	wrongCentrifugeId := tools.RandomString32()
-	exists, err = CheckIdentityExists(wrongCentrifugeId)
+	exists, err = identity.CheckIdentityExists(wrongCentrifugeId)
 	assert.Nil(t, err, "should not error out when missing identity")
 	assert.Equal(t, false, exists, "Identity Should Exists")
 }
@@ -74,24 +75,24 @@ func TestCheckIdentityExists_Integration(t *testing.T) {
 func TestCreateIdentityAndAddKey_Integration(t *testing.T) {
 	centrifugeId := tools.RandomString32()
 	nodePeerId := tools.RandomByte32()
-	var m = make(map[int][]IdentityKey)
-	confirmations := make(chan *Identity, 1)
-	m[1] = append(m[1], IdentityKey{nodePeerId})
-	identity := Identity{ CentrifugeId: centrifugeId, Keys: m }
+	var m = make(map[int][]identity.IdentityKey)
+	confirmations := make(chan *identity.Identity, 1)
+	m[1] = append(m[1], identity.IdentityKey{nodePeerId})
+	identityObj := identity.Identity{ CentrifugeId: centrifugeId, Keys: m }
 
-	err := CreateIdentity(identity, confirmations)
+	err := identity.CreateIdentity(identityObj, confirmations)
 	assert.Nil(t, err, "should not error out when creating identity")
 
 	registeredIdentity := <-confirmations
 	assert.Equal(t, centrifugeId, registeredIdentity.CentrifugeId, "Resulting Identity should have the same ID as the input")
 
-	id, err := ResolveIdentityForKey(centrifugeId, 1)
+	id, err := identity.ResolveP2PIdentityForId(centrifugeId, 1)
 
 	assert.Nil(t, err, "should not error out when resolving identity")
 	assert.Equal(t, centrifugeId, id.CentrifugeId, "CentrifugeId Should match provided one")
 	assert.Equal(t, 0, len(id.Keys), "Identity Should have empty map of keys")
 
-	err = AddKeyToIdentity(identity, 1, confirmations)
+	err = identity.AddKeyToIdentity(identityObj, 1, confirmations)
 	assert.Nil(t, err, "should not error out when adding key to identity")
 
 	receivedIdentity := <-confirmations
@@ -101,7 +102,7 @@ func TestCreateIdentityAndAddKey_Integration(t *testing.T) {
 	assert.Equal(t, m[1][0].Key, receivedIdentity.Keys[1][0].Key, "Resulting Identity Key should match the one requested")
 
 	// Double check that Key Exists in Identity
-	id, err = ResolveIdentityForKey(centrifugeId, 1)
+	id, err = identity.ResolveP2PIdentityForId(centrifugeId, 1)
 
 	assert.Nil(t, err, "should not error out when resolving identity")
 	assert.Equal(t, centrifugeId, id.CentrifugeId, "CentrifugeId Should match provided one")
@@ -109,28 +110,26 @@ func TestCreateIdentityAndAddKey_Integration(t *testing.T) {
 	assert.Equal(t, m[1][0].Key, id.Keys[1][0].Key, "Resulting Identity Key should match the one requested")
 }
 
-// As it will slow down the CI flow
-// Not sure if we should add concurrency here, or have another set of tests that run periodically as load-test/concurrent flags
 func TestCreateAndResolveIdentity_Integration_Concurrent(t *testing.T) {
 	var submittedIds [5]string
 	nodePeerId := tools.RandomByte32()
-	var m = make(map[int][]IdentityKey)
-	m[1] = append(m[1], IdentityKey{nodePeerId})
+	var m = make(map[int][]identity.IdentityKey)
+	m[1] = append(m[1], identity.IdentityKey{nodePeerId})
 	howMany := cap(submittedIds)
-	confirmations := make(chan *Identity, howMany)
+	confirmations := make(chan *identity.Identity, howMany)
 
 	for ix := 0; ix < howMany; ix++ {
 		centId := tools.RandomString32()
-		identity := Identity{ CentrifugeId: centId, Keys: m }
+		identityObj := identity.Identity{ CentrifugeId: centId, Keys: m }
 		submittedIds[ix] = centId
 
-		err := CreateIdentity(identity, confirmations)
+		err := identity.CreateIdentity(identityObj, confirmations)
 		assert.Nil(t, err, "should not error out upon identity creation")
 	}
 
 	for ix := 0; ix < howMany; ix++ {
 		singleIdentity := <-confirmations
-		id, err := ResolveIdentityForKey(singleIdentity.CentrifugeId, 1)
+		id, err := identity.ResolveP2PIdentityForId(singleIdentity.CentrifugeId, 1)
 		assert.Nil(t, err, "should not error out upon identity resolution")
 		assert.Contains(t, submittedIds, id.CentrifugeId , "Should have the ID that was passed into create function [%v]", id.CentrifugeId)
 	}

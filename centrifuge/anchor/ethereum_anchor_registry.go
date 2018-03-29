@@ -103,8 +103,7 @@ func sendRegistrationTransaction(ethRegistryContract RegisterAnchor, opts *bind.
 	copy(bAnchorId[:], anchorToBeRegistered.AnchorID[:32])
 	schemaVersion := big.NewInt(int64(anchorToBeRegistered.SchemaVersion))
 
-	// TODO for concurrency handling add init queuing and pass tx to queue
-	tx, err := ethereum.InitTransactionWithRetries(ethRegistryContract.RegisterAnchor, opts, bAnchorId, bMerkleRoot, schemaVersion)
+	tx, err := ethereum.SubmitTransactionWithRetries(ethRegistryContract.RegisterAnchor, opts, bAnchorId, bMerkleRoot, schemaVersion)
 
 	if err != nil {
 		log.Printf("Failed to send anchor for registration [id: %x, hash: %x, SchemaVersion:%v] on registry: %v", bAnchorId, bMerkleRoot, schemaVersion, err)

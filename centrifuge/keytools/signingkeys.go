@@ -28,7 +28,7 @@ func GetPrivateSigningKey(fileName string) (privateKey ed25519.PrivateKey) {
 	return
 }
 
-func GetSigningKeysFromConfig() (publicKey ed25519.PublicKey, privateKey ed25519.PrivateKey) {
+func GetSigningKeyPairFromConfig() (publicKey ed25519.PublicKey, privateKey ed25519.PrivateKey) {
 	publicKey = GetPublicSigningKey(viper.GetString("keys.signing.publicKey"))
 	privateKey = GetPrivateSigningKey(viper.GetString("keys.signing.privateKey"))
 	return

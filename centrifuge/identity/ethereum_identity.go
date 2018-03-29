@@ -140,7 +140,7 @@ func doFindIdentity(centrifugeId string) (identityContract *EthereumIdentityCont
 	return
 }
 
-func doResolveIdentityForKey(centrifugeId string, keyType int) (id Identity, err error) {
+func doResolveIdentityForKeyType(centrifugeId string, keyType int) (id Identity, err error) {
 	ethIdentityContract, err := doFindIdentity(centrifugeId)
 	if err != nil {
 		return
@@ -168,8 +168,7 @@ func sendKeyRegistrationTransaction(identityContract IdentityContract, opts *bin
 	copy(bKey[:], identity.Keys[keyType][lastKey].Key[:32])
 	bigInt := big.NewInt(int64(keyType))
 
-	// TODO for concurrency handling add init queuing and pass tx to queue
-	tx, err := ethereum.InitTransactionWithRetries(identityContract.AddKey, opts, bKey, bigInt)
+	tx, err := ethereum.SubmitTransactionWithRetries(identityContract.AddKey, opts, bKey, bigInt)
 
 	if err != nil {
 		log.Printf("Failed to send key [%v:%x] to add to CentrifugeID [%x]: %v", keyType, bKey, identity.CentrifugeId, err)
@@ -194,8 +193,7 @@ func sendIdentityCreationTransaction(identityFactory IdentityFactory, opts *bind
 	var bCentId [32]byte
 	copy(bCentId[:], identityToBeCreated.CentrifugeId[:32])
 
-	// TODO for concurrency handling add init queuing and pass tx to queue
-	tx, err := ethereum.InitTransactionWithRetries(identityFactory.CreateIdentity, opts, bCentId)
+	tx, err := ethereum.SubmitTransactionWithRetries(identityFactory.CreateIdentity, opts, bCentId)
 
 	if err != nil {
 		log.Printf("Failed to send identity for creation [CentrifugeID: %x] : %v", bCentId, err)
