@@ -9,7 +9,6 @@ import (
  	google_protobuf2 "github.com/golang/protobuf/ptypes/empty"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/anchor"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
-	"github.com/spf13/viper"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
 	"github.com/go-errors/errors"
 	"fmt"
@@ -30,18 +29,20 @@ func (s *InvoiceDocumentService) SendInvoiceDocument(ctx context.Context, sendIn
 	//signingService := cc.Node.GetSigningService()
 	//signingService.Sign(&coreDoc)
 
-	// Anchor Document if configure to do so - temp approach
-	if (viper.GetBool("anchor.ethereum.enabled")) {
+	if (anchor.IsAnchoringRequired()) {
 		confirmations := make(chan *anchor.Anchor, 1)
 		id := tools.RandomString32()
 		rootHash := tools.RandomString32()
-		anchor.RegisterAsAnchor(id, rootHash, confirmations)
+		err = anchor.RegisterAsAnchor(id, rootHash, confirmations)
+		if err != nil {
+			return nil, err
+		}
 		_ = <-confirmations
 	}
 
 	for _, element := range sendInvoiceEnvelope.Recipients {
 		centrifugeId := string(element[:])
-		peerId, err := identity.ResolveP2PIdentityForId(centrifugeId, 1)
+		peerId, err := identity.ResolveP2PEthereumIdentityForId(centrifugeId)
 		if err != nil {
 			log.Printf("Error: %v\n", err)
 			return nil, err
@@ -52,7 +53,7 @@ func (s *InvoiceDocumentService) SendInvoiceDocument(ctx context.Context, sendIn
 		}
 
 		// Default to last key of that type
-		lastb58Key, err := peerId.GetLastB58Key(1)
+		lastb58Key, err := peerId.GetLastB58KeyForType(1)
 		if err != nil {
 			return nil, err
 		}
