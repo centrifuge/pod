@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
-	"log"
 	"fmt"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools"
 )
 
 func TestMain(m *testing.M) {
@@ -124,21 +124,23 @@ func TestCreateIdentityAndAddKey_Integration(t *testing.T) {
 func TestManageIdentity(t *testing.T) {
 	// Creation Succeeds
 	centrifugeId := tools.RandomString32()
-	log.Printf("CENTID: %v\n", centrifugeId)
-	err := identity.ManageEthereumIdentity(centrifugeId, identity.ACTION_CREATE)
+	publicKey, _ := keytools.GetSigningKeyPairFromConfig()
+	b32Key := tools.ConvertByteArrayToByte32(publicKey)
+
+	err := identity.CreateEthereumIdentityFromApi(centrifugeId, b32Key)
 	assert.Nil(t, err, "should not error out upon identity creation")
 
 	// AddKey Again Fails as Key already exists
-	err = identity.ManageEthereumIdentity(centrifugeId, identity.ACTION_ADDKEY)
+	err = identity.AddKeyToIdentityFromApi(centrifugeId, identity.KEY_TYPE_PEERID, b32Key)
 	assert.EqualError(t, err, "Key trying to be added already exists as latest. Skipping Update.", "should error out upon double key addition")
 
 	// Creation fails as CentId already exists
-	err = identity.ManageEthereumIdentity(centrifugeId, identity.ACTION_CREATE)
+	err = identity.CreateEthereumIdentityFromApi(centrifugeId, b32Key)
 	assert.EqualError(t, err, fmt.Sprintf("ACTION [%v] but identity exists [%v]", identity.ACTION_CREATE, true), "should error out if ID already exists")
 
 	// Adding Key fails as CentId does not exist
 	centrifugeId = tools.RandomString32()
-	err = identity.ManageEthereumIdentity(centrifugeId, identity.ACTION_ADDKEY)
+	err = identity.AddKeyToIdentityFromApi(centrifugeId, identity.KEY_TYPE_PEERID, b32Key)
 	assert.EqualError(t, err, fmt.Sprintf("ACTION [%v] but identity exists [%v]", identity.ACTION_ADDKEY, false), "should error if ID does not exist")
 }
 

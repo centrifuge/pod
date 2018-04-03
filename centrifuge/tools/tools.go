@@ -9,6 +9,12 @@ import (
 	"fmt"
 )
 
+// Converts unbounded byte array to 32 bytes - will truncate
+func ConvertByteArrayToByte32(in []byte) (out [32]byte) {
+	copy(out[:], in)
+	return
+}
+
 // StringToByte32 converts a given 32 character long string into a [32]byte
 // on error/invalid string lenght returns empty byte array and error
 func StringToByte32(input string) (ret [32]byte, err error){

@@ -373,7 +373,15 @@ func waitAndRouteIdentityRegistrationEvent(conf <-chan *EthereumIdentityFactoryC
 	}
 }
 
-func ManageEthereumIdentity(centrifugeId string, action string) (err error) {
+func CreateEthereumIdentityFromApi(centrifugeId string, idKey [32]byte) (err error) {
+	return createOrAddKeyOnEthereumIdentity(centrifugeId, KEY_TYPE_PEERID, idKey, ACTION_CREATE)
+}
+
+func AddKeyToIdentityFromApi(centrifugeId string, keyType int, idKey [32]byte) (err error) {
+	return createOrAddKeyOnEthereumIdentity(centrifugeId, keyType, idKey, ACTION_ADDKEY)
+}
+
+func createOrAddKeyOnEthereumIdentity(centrifugeId string, keyType int, idKey [32]byte, action string) (err error) {
 	if centrifugeId == "" {
 		err = errors.New("Centrifuge ID not provided")
 		return
@@ -394,11 +402,7 @@ func ManageEthereumIdentity(centrifugeId string, action string) (err error) {
 		return
 	}
 
-	publicKey, _ := keytools.GetSigningKeyPairFromConfig()
-
-	var bPk [32]byte
-	copy(bPk[:], publicKey)
-	pid, errLocal := keytools.PublicKeyToP2PKey(bPk)
+	pid, errLocal := keytools.PublicKeyToP2PKey(idKey)
 	if errLocal != nil {
 		err = errLocal
 		return
@@ -409,7 +413,7 @@ func ManageEthereumIdentity(centrifugeId string, action string) (err error) {
 			err = errLocal
 			return
 		}
-		currentKey, errLocal := currentId.GetLastB58KeyForType(1)
+		currentKey, errLocal := currentId.GetLastB58KeyForType(keyType)
 		if errLocal != nil {
 			err = errLocal
 			return
@@ -420,7 +424,7 @@ func ManageEthereumIdentity(centrifugeId string, action string) (err error) {
 		}
 	}
 
-	id.Keys[1] = append(id.Keys[1], EthereumIdentityKey{bPk})
+	id.Keys[keyType] = append(id.Keys[keyType], EthereumIdentityKey{idKey})
 	confirmations := make(chan *EthereumIdentity, 1)
 
 	if action == ACTION_CREATE {
@@ -434,13 +438,13 @@ func ManageEthereumIdentity(centrifugeId string, action string) (err error) {
 	}
 
 	log.Printf("Adding Key [%v] to Identity [%v]\n", pid.Pretty(), centrifugeId)
-	err = id.AddKeyToIdentity(1, confirmations)
+	err = id.AddKeyToIdentity(keyType, confirmations)
 	if err != nil {
 		return
 	}
 	addedToIdentity := <-confirmations
 
-	lastKey, errLocal := addedToIdentity.GetLastB58KeyForType(1)
+	lastKey, errLocal := addedToIdentity.GetLastB58KeyForType(keyType)
 	if errLocal != nil {
 		err = errLocal
 		return
