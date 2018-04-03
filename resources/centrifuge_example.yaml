@@ -37,8 +37,15 @@ ethereum:
   gasPrice: 40000
   gasLimit: 4712388
   contextWaitTimeout: "30s"
+  maxRetries: 200
+  intervalRetry: "100ms"
+
+identity:
+  ethereum:
+    identityFactoryAddress: "0x0589ed482af8d6809f022fc11aa399fc8a883d52"
+    identityRegistryAddress: "0xf9417cded133ba834d4cfdc6e452dbd2fc52674e"
 
 anchor:
   ethereum:
     enabled: false
-    anchorRegistryAddress: "0x084c4dcbd28169a861d61c0fbb572e9d59db792a"
+    anchorRegistryAddress: "0xb571fe40de2d61e954df9ca4e961f69488f135a0"

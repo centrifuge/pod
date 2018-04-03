@@ -6,7 +6,14 @@ import (
 	"math"
 	"strings"
 	"errors"
+	"fmt"
 )
+
+// Converts unbounded byte array to 32 bytes - will truncate
+func ConvertByteArrayToByte32(in []byte) (out [32]byte) {
+	copy(out[:], in)
+	return
+}
 
 // StringToByte32 converts a given 32 character long string into a [32]byte
 // on error/invalid string lenght returns empty byte array and error
@@ -48,6 +55,14 @@ func StrPadHex32(input string) string{
 	return StrPad(input, 32, "0","LEFT")
 }
 
+// checkLen32 is used to validate that the given val is 32 characters long. If not, it returns an error with the error
+// message of `errorMessage`
+func CheckLen32(val string, errorMessage string) (error) {
+	if len(val) != 32 {
+		return errors.New(fmt.Sprintf(errorMessage, val))
+	}
+	return nil
+}
 
 // StrPad returns the input string padded on the left, right or both sides using padType to the specified padding length padLength.
 //

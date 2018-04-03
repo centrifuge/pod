@@ -48,7 +48,7 @@ func (srv *SigningService) LoadPublicKeys () {
 
 func (srv *SigningService) LoadIdentityKeyFromConfig() {
 	srv.IdentityId = []byte(viper.GetString("identityId"))
-	srv.PublicKey, srv.PrivateKey = keytools.GetSigningKeysFromConfig()
+	srv.PublicKey, srv.PrivateKey = keytools.GetSigningKeyPairFromConfig()
 }
 
 // ValidateSignaturesOnDocument validates all signatures on the current document

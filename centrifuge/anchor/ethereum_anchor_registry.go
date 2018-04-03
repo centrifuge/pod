@@ -11,7 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/spf13/viper"
-	"fmt"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 )
 
 //Supported anchor schema version as stored on public registry
@@ -68,11 +68,11 @@ func (ethRegistry *EthereumAnchorRegistry) RegisterAsAnchor(anchorID string, roo
 
 // generateAnchor is a convenience method to create a "registerable" `Anchor` from anchor ID and root hash
 func generateAnchor(anchorID string, rootHash string) (returnAnchor *Anchor, err error) {
-	err = checkLen32(anchorID, "anchorID needs to be length of 32. Got value [%v]")
+	err = tools.CheckLen32(anchorID, "anchorID needs to be length of 32. Got value [%v]")
 	if err != nil {
 		return nil, err
 	}
-	err = checkLen32(rootHash, "rootHash needs to be length of 32. Got value [%v]")
+	err = tools.CheckLen32(rootHash, "rootHash needs to be length of 32. Got value [%v]")
 	if err != nil {
 		return nil, err
 	}
@@ -86,22 +86,13 @@ func generateAnchor(anchorID string, rootHash string) (returnAnchor *Anchor, err
 	return returnAnchor, nil
 }
 
-// checkLen32 is used to validate that the given val is 32 characters long. If not, it returns an error with the error
-// message of `errorMessage`
-func checkLen32(val string, errorMessage string) (error) {
-	if len(val) != 32 {
-		return errors.New(fmt.Sprintf(errorMessage, val))
-	}
-	return nil
-}
-
 // sendRegistrationTransaction sends the actual transaction to register the Anchor on Ethereum registry contract
 func sendRegistrationTransaction(ethRegistryContract RegisterAnchor, opts *bind.TransactOpts, anchorToBeRegistered *Anchor) (err error) {
-	err = checkLen32(anchorToBeRegistered.AnchorID, "AnchorID needs to be length of 32. Got value [%x]")
+	err = tools.CheckLen32(anchorToBeRegistered.AnchorID, "AnchorID needs to be length of 32. Got value [%x]")
 	if err != nil {
 		return err
 	}
-	err = checkLen32(anchorToBeRegistered.RootHash, "RootHash needs to be length of 32. Got value [%x]")
+	err = tools.CheckLen32(anchorToBeRegistered.RootHash, "RootHash needs to be length of 32. Got value [%x]")
 	if err != nil {
 		return err
 	}
@@ -112,9 +103,7 @@ func sendRegistrationTransaction(ethRegistryContract RegisterAnchor, opts *bind.
 	copy(bAnchorId[:], anchorToBeRegistered.AnchorID[:32])
 	schemaVersion := big.NewInt(int64(anchorToBeRegistered.SchemaVersion))
 
-	// TODO for concurrency handling
-	ethereum.IncreaseNoncePlus1(opts)
-	tx, err := ethRegistryContract.RegisterAnchor(opts, bAnchorId, bMerkleRoot, schemaVersion)
+	tx, err := ethereum.SubmitTransactionWithRetries(ethRegistryContract.RegisterAnchor, opts, bAnchorId, bMerkleRoot, schemaVersion)
 
 	if err != nil {
 		log.Printf("Failed to send anchor for registration [id: %x, hash: %x, SchemaVersion:%v] on registry: %v", bAnchorId, bMerkleRoot, schemaVersion, err)
@@ -163,7 +152,7 @@ func waitAndRouteAnchorRegistrationEvent(conf <-chan *EthereumAnchorRegistryCont
 			log.Fatalf("Context [%v] closed before receiving AnchorRegistered event for anchor ID: %x, RootHash: %x\n", ctx, pushThisAnchor.AnchorID, pushThisAnchor.RootHash)
 			return
 		case res := <-conf:
-			log.Printf("Received AnchorRegistered event from: %x, identifier: %x", res.From, res.Identifier)
+			log.Printf("Received AnchorRegistered event from: %x, identifier: %x\n", res.From, res.Identifier)
 			confirmations <- pushThisAnchor
 			return
 		}

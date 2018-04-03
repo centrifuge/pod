@@ -65,7 +65,7 @@ func (srv *P2PService) Transmit(ctx context.Context, req *P2PMessage) (rep *P2PR
 // given multiaddress.
 func makeBasicHost(listenPort int) (host.Host, error) {
 	// Get the signing key for the host.
-	publicKey, privateKey := keytools.GetSigningKeysFromConfig()
+	publicKey, privateKey := keytools.GetSigningKeyPairFromConfig()
 	var key []byte
 	key = append(key, privateKey...)
 	key = append(key, publicKey...)
@@ -77,6 +77,10 @@ func makeBasicHost(listenPort int) (host.Host, error) {
 	pub := priv.GetPublic()
 
 	// Obtain Peer ID from public key
+	// We should be using the following method to get the ID, but looks like is not compatible with
+	// secio when adding the pub and pvt keys, fail as id+pub/pvt key is checked to match and method defaults to
+	// IDFromPublicKey(pk)
+	//pid, err := peer.IDFromEd25519PublicKey(pub)
 	pid, err := peer.IDFromPublicKey(pub)
 	if err != nil {
 		return nil, err
@@ -93,8 +97,16 @@ func makeBasicHost(listenPort int) (host.Host, error) {
 
 	// Add the keys to the peerstore
 	// for this peer ID.
-	ps.AddPrivKey(pid, priv)
-	ps.AddPubKey(pid, pub)
+	err = ps.AddPubKey(pid, pub)
+	if err != nil {
+		log.Printf("Could not enable encryption: %v\n", err)
+		return nil, err
+	}
+	err = ps.AddPrivKey(pid, priv)
+	if err != nil {
+		log.Printf("Could not enable encryption: %v\n", err)
+		return nil, err
+	}
 
 	// Set up stream multiplexer
 	tpt := msmux.NewBlankTransport()
