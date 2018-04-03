@@ -21,13 +21,13 @@ type MockTransactionRequest struct {
 	count int
 }
 
-func (transactionRequest *MockTransactionRequest) RegisterTransaction(someVar string, anotherVar string) (tx *types.Transaction, err error) {
+func (transactionRequest *MockTransactionRequest) RegisterTransaction(transactionName string, anotherVar string) (tx *types.Transaction, err error) {
 	transactionRequest.count++
-	if someVar == "otherError" {
+	if transactionName == "otherError" {
 		err = errors.Wrap("Some other error", 1)
-	} else if someVar == "optimisticLockingTimeout" {
+	} else if transactionName == "optimisticLockingTimeout" {
 		err = errors.Wrap(ethereum.TransactionUnderpriced, 1)
-	} else if someVar == "optimisticLockingEventualSuccess" {
+	} else if transactionName == "optimisticLockingEventualSuccess" {
 		if transactionRequest.count < 3 {
 			err = errors.Wrap(ethereum.TransactionUnderpriced, 1)
 		}
