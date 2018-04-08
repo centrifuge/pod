@@ -6,7 +6,6 @@ import (
 	"testing"
 	"context"
 	"github.com/CentrifugeInc/centrifuge-protobufs/coredocument"
-	invoicepb "github.com/CentrifugeInc/centrifuge-protobufs/invoice"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
 	"os"
@@ -28,12 +27,10 @@ func TestMain(m *testing.M) {
 func TestP2PService(t *testing.T) {
 
 	identifier := []byte("1")
-	inv := invoicepb.InvoiceDocument{
-		CoreDocument: &coredocument.CoreDocument{DocumentIdentifier: identifier},
-		Data: &invoicepb.InvoiceData{Amount: 100},
-	}
+	inv := invoice.NewInvoiceDocument()
+	inv.CoreDocument = &coredocument.CoreDocument{DocumentIdentifier: identifier}
 
-	coredoc := invoice.ConvertToCoreDocument(&inv)
+	coredoc := invoice.ConvertToCoreDocument(inv)
 	req := P2PMessage{Document: &coredoc}
 	rpc := P2PService{}
 	res, err := rpc.Transmit(context.Background(), &req)

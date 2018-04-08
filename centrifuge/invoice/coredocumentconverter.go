@@ -16,25 +16,43 @@ func ConvertToCoreDocument(inv *invoicepb.InvoiceDocument) (coredoc coredocument
 	}
 
 	invoiceAny := any.Any{
-		TypeUrl: invoicepb.InvoiceDocumentTypeUrl,
+		TypeUrl: invoicepb.InvoiceDataTypeUrl,
 		Value: serializedInvoice,
 	}
 
-	coredoc.EmbeddedDocument = &invoiceAny
+	serializedSalts, err := proto.Marshal(inv.Salts)
+	if err != nil {
+		log.Fatalf("Could not serialize InvoiceSalts: %s", err)
+	}
+
+	invoiceSaltsAny := any.Any{
+		TypeUrl: invoicepb.InvoiceSaltsTypeUrl,
+		Value: serializedSalts,
+	}
+
+	coredoc.EmbeddedData = &invoiceAny
+	coredoc.EmbeddedDataSalts = &invoiceSaltsAny
 	return
 }
 
 func ConvertToInvoiceDocument(coredoc *coredocument.CoreDocument) (inv invoicepb.InvoiceDocument) {
-	if coredoc.EmbeddedDocument.TypeUrl != invoicepb.InvoiceDocumentTypeUrl {
+	if coredoc.EmbeddedData.TypeUrl != invoicepb.InvoiceDataTypeUrl ||
+		coredoc.EmbeddedDataSalts.TypeUrl != invoicepb.InvoiceSaltsTypeUrl {
 		log.Fatal("Trying to convert document with incorrect schema")
 	}
 
 	invoiceData := &invoicepb.InvoiceData{}
-	proto.Unmarshal(coredoc.EmbeddedDocument.Value, invoiceData)
+	proto.Unmarshal(coredoc.EmbeddedData.Value, invoiceData)
+
+	invoiceSalts := &invoicepb.InvoiceDataSalts{}
+	proto.Unmarshal(coredoc.EmbeddedDataSalts.Value, invoiceSalts)
+
 	emptiedCoreDoc := coredocument.CoreDocument{}
 	proto.Merge(&emptiedCoreDoc, coredoc)
-	emptiedCoreDoc.EmbeddedDocument = nil
+	emptiedCoreDoc.EmbeddedData = nil
+	emptiedCoreDoc.EmbeddedDataSalts = nil
 	inv.Data = invoiceData
+	inv.Salts = invoiceSalts
 	inv.CoreDocument = &emptiedCoreDoc
 	return
 }
