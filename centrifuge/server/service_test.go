@@ -7,12 +7,14 @@ import (
 	"context"
 	"bytes"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/documentservice"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
+	"github.com/CentrifugeInc/centrifuge-protobufs/coredocument"
+	invoicepb "github.com/CentrifugeInc/centrifuge-protobufs/invoice"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
 	"os"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/spf13/viper"
+	"github.com/stretchr/testify/assert"
 )
 
 var dbFileName = "/tmp/centrifuge_testing_server_service.leveldb"
@@ -36,36 +38,33 @@ func TestInvoiceService(t *testing.T) {
 	identifier := testingutils.Rand32Bytes()
 	identifierIncorrect := testingutils.Rand32Bytes()
 	s := documentservice.InvoiceDocumentService{}
-	doc := invoice.InvoiceDocument{
+	doc := invoicepb.InvoiceDocument{
 		CoreDocument: &coredocument.CoreDocument{
 			DocumentIdentifier:identifier,
 			CurrentIdentifier:identifier,
 			NextIdentifier:testingutils.Rand32Bytes(),
 			DataMerkleRoot: testingutils.Rand32Bytes(),
 			},
-		Data: &invoice.InvoiceData{},
+		Data: &invoicepb.InvoiceData{},
 	}
 
 	sentDoc, err := s.SendInvoiceDocument(context.Background(), &invoice.SendInvoiceEnvelope{[][]byte{}, &doc})
-	if err != nil {
-		t.Fatal("Error in RPC Call", err)
-	}
-	if !bytes.Equal(sentDoc.CoreDocument.DocumentIdentifier, identifier) {
-		t.Fatal("DocumentIdentifier doesn't match")
-	}
+	assert.Nil(t, err, "Error in RPC Call")
+
+	assert.Equal(t, sentDoc.CoreDocument.DocumentIdentifier, identifier,
+		"DocumentIdentifier doesn't match")
+
 	receivedDoc, err := s.GetInvoiceDocument(context.Background(),
 		&invoice.GetInvoiceDocumentEnvelope{DocumentIdentifier: identifier})
-	if err != nil {
-		t.Fatal("Error in RPC Call", err)
-	}
-	if !bytes.Equal(receivedDoc.CoreDocument.DocumentIdentifier, identifier) {
-		t.Fatal("DocumentIdentifier doesn't match")
-	}
+	assert.Nil(t, err, "Error in RPC Call")
+	assert.Equal(t, receivedDoc.CoreDocument.DocumentIdentifier, identifier,
+		"DocumentIdentifier doesn't match")
+
 	_, err = s.GetInvoiceDocument(context.Background(),
 		&invoice.GetInvoiceDocumentEnvelope{DocumentIdentifier: identifierIncorrect})
-	if err == nil {
-		t.Fatal("RPC call should have raised exception")
-	}
+	assert.Nil(t, err,
+		"RPC call should have raised exception")
+
 }
 
 func mockBootstrap() {

@@ -3,6 +3,7 @@ package invoicestorage
 import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
+	invoicepb "github.com/CentrifugeInc/centrifuge-protobufs/invoice"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/golang/protobuf/proto"
 )
@@ -23,13 +24,13 @@ func (srv *StorageService) GetDocumentKey(id []byte) (key []byte) {
 	return key
 }
 
-func (srv *StorageService) GetDocument(id []byte) (doc *invoice.InvoiceDocument, err error) {
+func (srv *StorageService) GetDocument(id []byte) (doc *invoicepb.InvoiceDocument, err error) {
 	doc_bytes, err := srv.storage.Get(srv.GetDocumentKey(id))
 	if err != nil {
 		return nil, err
 	}
 
-	doc = &invoice.InvoiceDocument{}
+	doc = &invoicepb.InvoiceDocument{}
 	err = proto.Unmarshal(doc_bytes, doc)
 	if err != nil {
 		return nil, err
@@ -37,7 +38,7 @@ func (srv *StorageService) GetDocument(id []byte) (doc *invoice.InvoiceDocument,
 	return
 }
 
-func (srv *StorageService) PutDocument(doc *invoice.InvoiceDocument) (err error) {
+func (srv *StorageService) PutDocument(doc *invoicepb.InvoiceDocument) (err error) {
 	if doc.CoreDocument == nil {
 		err = &errors.GenericError{"Invalid Empty (NIL) Invoice Document"}
 		return
@@ -52,7 +53,7 @@ func (srv *StorageService) PutDocument(doc *invoice.InvoiceDocument) (err error)
 	return
 }
 
-func (srv *StorageService) ReceiveDocument (doc *invoice.InvoiceDocument) (err error) {
+func (srv *StorageService) ReceiveDocument (doc *invoicepb.InvoiceDocument) (err error) {
 	invoices, err := srv.GetReceivedDocuments()
 	if err != nil {
 		return

@@ -2,7 +2,7 @@ package coredocumentstorage
 
 import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
+	"github.com/CentrifugeInc/centrifuge-protobufs/coredocument"
 )
 
 type StorageService struct {

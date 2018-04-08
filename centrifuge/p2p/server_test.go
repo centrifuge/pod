@@ -5,12 +5,13 @@ package p2p
 import (
 	"testing"
 	"context"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
+	"github.com/CentrifugeInc/centrifuge-protobufs/coredocument"
+	invoicepb "github.com/CentrifugeInc/centrifuge-protobufs/invoice"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
-	"bytes"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
 	"os"
 	"github.com/spf13/viper"
+	"github.com/stretchr/testify/assert"
 )
 
 var dbFileName = "/tmp/centrifuge_testing_p2p_server.leveldb"
@@ -27,36 +28,25 @@ func TestMain(m *testing.M) {
 func TestP2PService(t *testing.T) {
 
 	identifier := []byte("1")
-	inv := invoice.InvoiceDocument{
+	inv := invoicepb.InvoiceDocument{
 		CoreDocument: &coredocument.CoreDocument{DocumentIdentifier: identifier},
-		Data: &invoice.InvoiceData{Amount: 100},
+		Data: &invoicepb.InvoiceData{Amount: 100},
 	}
 
 	coredoc := invoice.ConvertToCoreDocument(&inv)
 	req := P2PMessage{Document: &coredoc}
 	rpc := P2PService{}
 	res, err := rpc.Transmit(context.Background(), &req)
-
-
-	if err != nil {
-		t.Fatal("Received error")
-
-	}
-
-	if !bytes.Equal(res.Document.DocumentIdentifier, identifier) {
-		t.Fatal("Incorrect identifier")
-	}
+	assert.Nil(t, err, "Received error")
+	assert.Equal(t, res.Document.DocumentIdentifier, identifier, "Incorrect identifier")
 
 	doc, err := cc.Node.GetCoreDocumentStorageService().GetDocument(identifier)
 	unmarshalledInv := invoice.ConvertToInvoiceDocument(doc)
-	if unmarshalledInv.Data.Amount != inv.Data.Amount {
-		t.Fatal("Invoice Amount doesn't match")
-	}
+	assert.Equal(t, unmarshalledInv.Data.Amount, inv.Data.Amount,
+		"Invoice Amount doesn't match")
+	assert.Equal(t, doc.DocumentIdentifier, identifier,
+		"Document Identifier doesn't match")
 
-
-	if !bytes.Equal(doc.DocumentIdentifier, identifier) {
-		t.Fatal("Document Identifier doesn't match")
-	}
 }
 
 func mockBootstrap() {

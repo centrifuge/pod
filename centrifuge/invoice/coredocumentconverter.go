@@ -1,14 +1,14 @@
 package invoice
 
 import (
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
-	"github.com/gogo/protobuf/proto"
+	"github.com/CentrifugeInc/centrifuge-protobufs/coredocument"
+	invoicepb "github.com/CentrifugeInc/centrifuge-protobufs/invoice"
+	"github.com/golang/protobuf/proto"
 	"log"
 	"github.com/golang/protobuf/ptypes/any"
-	"bytes"
 )
 
-func ConvertToCoreDocument(inv *InvoiceDocument) (coredoc coredocument.CoreDocument) {
+func ConvertToCoreDocument(inv *invoicepb.InvoiceDocument) (coredoc coredocument.CoreDocument) {
 	proto.Merge(&coredoc, inv.CoreDocument)
 	serializedInvoice, err := proto.Marshal(inv.Data)
 	if err != nil {
@@ -16,26 +16,24 @@ func ConvertToCoreDocument(inv *InvoiceDocument) (coredoc coredocument.CoreDocum
 	}
 
 	invoiceAny := any.Any{
-		TypeUrl: "http://github.com/CentrifugeInc/go-centrifuge/invoice/#"+proto.MessageName(inv.Data),
+		TypeUrl: invoicepb.InvoiceDocumentTypeUrl,
 		Value: serializedInvoice,
 	}
 
-	coredoc.DocumentSchemaId = []byte(coredocument.InvoiceSchema)
 	coredoc.EmbeddedDocument = &invoiceAny
 	return
 }
 
-func ConvertToInvoiceDocument(coredoc *coredocument.CoreDocument) (inv InvoiceDocument) {
-	if !bytes.Equal(coredoc.DocumentSchemaId, []byte(coredocument.InvoiceSchema)) {
+func ConvertToInvoiceDocument(coredoc *coredocument.CoreDocument) (inv invoicepb.InvoiceDocument) {
+	if coredoc.EmbeddedDocument.TypeUrl != invoicepb.InvoiceDocumentTypeUrl {
 		log.Fatal("Trying to convert document with incorrect schema")
 	}
 
-	invoiceData := &InvoiceData{}
+	invoiceData := &invoicepb.InvoiceData{}
 	proto.Unmarshal(coredoc.EmbeddedDocument.Value, invoiceData)
 	emptiedCoreDoc := coredocument.CoreDocument{}
 	proto.Merge(&emptiedCoreDoc, coredoc)
 	emptiedCoreDoc.EmbeddedDocument = nil
-	emptiedCoreDoc.DocumentSchemaId = nil
 	inv.Data = invoiceData
 	inv.CoreDocument = &emptiedCoreDoc
 	return
