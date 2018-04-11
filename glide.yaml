@@ -1,7 +1,5 @@
 package: github.com/CentrifugeInc/go-centrifuge
 import:
-- package: github.com/CentrifugeInc/centrifuge-protobufs
-  repo: git@github.com:CentrifugeInc/centrifuge-protobufs
 - package: github.com/CentrifugeInc/centrifuge-ethereum-contracts
   repo: git@github.com:CentrifugeInc/centrifuge-ethereum-contracts
   subpackages:
@@ -57,8 +55,10 @@ import:
   - credentials
   - grpclog
   - status
-- package: github.com/stretchr/testify/assert
+- package: github.com/stretchr/testify
   version: 1.2.1
+  subpackages:
+  - assert
 - package: github.com/paralin/go-libp2p-grpc
 - package: github.com/libp2p/go-libp2p-swarm
 - package: github.com/ipfs/go-log
@@ -74,3 +74,5 @@ import:
 - package: github.com/whyrusleeping/go-logging
 - package: github.com/whyrusleeping/go-smux-multistream
 - package: github.com/whyrusleeping/go-smux-yamux
+- package: github.com/CentrifugeInc/centrifuge-protobufs
+  repo:  git@github.com:CentrifugeInc/centrifuge-protobufs

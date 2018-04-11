@@ -1,5 +1,5 @@
-hash: 6407b2642c539d4a4d222ebc3b08d4c4818fc9caaacbdadf744dae4fc04a1645
-updated: 2018-03-05T14:53:58.976007-05:00
+hash: 5eb36c703056b19e5a69703117f3f39802ceb26a3f57e8789271852309426df3
+updated: 2018-04-11T14:25:49.267687+02:00
 imports:
 - name: github.com/agl/ed25519
   version: 5312a61534124124185d41f09206b9fef1d88403
@@ -19,6 +19,11 @@ imports:
   repo: git@github.com:CentrifugeInc/centrifuge-ethereum-contracts
   subpackages:
   - centrifuge/witness
+- name: github.com/CentrifugeInc/centrifuge-protobufs
+  version: dac848f89b4003b79ea45554c0a27ec2c7b1fddf
+  subpackages:
+  - coredocument
+  - invoice
 - name: github.com/coreos/go-semver
   version: e214231b295a8ea9479f11b70b35d5acf3556d9b
   subpackages:
@@ -78,6 +83,7 @@ imports:
   - ptypes
   - ptypes/any
   - ptypes/duration
+  - ptypes/empty
   - ptypes/struct
   - ptypes/timestamp
 - name: github.com/golang/snappy
@@ -87,7 +93,7 @@ imports:
 - name: github.com/gorilla/websocket
   version: 6656ddce919367f4c4090b0f89a45854d26da020
 - name: github.com/grpc-ecosystem/grpc-gateway
-  version: d96e01322cce0c898a216f4f3d04a9a0c543450b
+  version: 261dafe7abb6a223549d14d02faccffea736b7e8
   repo: git@github.com:grpc-ecosystem/grpc-gateway
   subpackages:
   - protoc-gen-swagger/options
@@ -109,6 +115,7 @@ imports:
   subpackages:
   - hcl/ast
   - hcl/parser
+  - hcl/printer
   - hcl/scanner
   - hcl/strconv
   - hcl/token
@@ -318,13 +325,13 @@ imports:
 - name: github.com/spf13/cast
   version: acbeb36b902d72a7a4c18e8f3241075e7ab763e4
 - name: github.com/spf13/cobra
-  version: 7b2c5ac9fc04fc5efafb60700713d4fa609b777b
+  version: a1f051bc3eba734da4772d60e2d677f47cf93ef4
 - name: github.com/spf13/jwalterweatherman
   version: 7c0cea34c8ece3fbeb2b27ab9b59511d360fb394
 - name: github.com/spf13/pflag
   version: 6a877ebacf28c5fc79846f4fcd380a5d9872b997
 - name: github.com/spf13/viper
-  version: 25b30aa063fc18e48662b86996252eabdcf2f0c7
+  version: b5e8006cbee93ec955a89ab31e0e3ce3204f3736
 - name: github.com/stretchr/testify
   version: 12b6f73e6084dad08a7c6e575284b177ecafbc71
   subpackages:
@@ -429,7 +436,7 @@ imports:
   - googleapis/api/annotations
   - googleapis/rpc/status
 - name: google.golang.org/grpc
-  version: 8e4536a86ab602859c20df5ebfd0bd4228d08655
+  version: d11072e7ca9811b1100b80ca0269ac831f06d024
   subpackages:
   - balancer
   - balancer/base
