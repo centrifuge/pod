@@ -5,7 +5,6 @@ package server
 import (
 	"testing"
 	"context"
-	"bytes"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/documentservice"
 	"github.com/CentrifugeInc/centrifuge-protobufs/coredocument"
 	invoicepb "github.com/CentrifugeInc/centrifuge-protobufs/invoice"
@@ -62,7 +61,7 @@ func TestInvoiceService(t *testing.T) {
 
 	_, err = s.GetInvoiceDocument(context.Background(),
 		&invoice.GetInvoiceDocumentEnvelope{DocumentIdentifier: identifierIncorrect})
-	assert.Nil(t, err,
+	assert.NotNil(t, err,
 		"RPC call should have raised exception")
 
 }

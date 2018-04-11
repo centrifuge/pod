@@ -33,6 +33,7 @@ func TestCoreDocumentConverter(t *testing.T) {
 	}
 
 	coreDocument := coredocument.CoreDocument{
+		DocumentIdentifier: identifier,
 		EmbeddedDocument: &invoiceAny,
 	}
 
