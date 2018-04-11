@@ -3,8 +3,7 @@ package signatures
 import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/coredocument"
 	"github.com/spf13/viper"
-	"golang.org/x/crypgit status" +
-		"/ed25519"
+	"golang.org/x/crypto/ed25519"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools"
 	"time"
 	"errors"
