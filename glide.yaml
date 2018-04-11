@@ -1,7 +1,7 @@
 package: github.com/CentrifugeInc/go-centrifuge
 import:
 - package: github.com/CentrifugeInc/centrifuge-protobufs
-  repo: git@github.com:lucasvo/centrifuge-protobufs
+  repo: git@github.com:CentrifugeInc/centrifuge-protobufs
 - package: github.com/CentrifugeInc/centrifuge-ethereum-contracts
   repo: git@github.com:CentrifugeInc/centrifuge-ethereum-contracts
   subpackages:
