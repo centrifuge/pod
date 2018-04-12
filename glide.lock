@@ -1,9 +1,5 @@
 hash: 5eb36c703056b19e5a69703117f3f39802ceb26a3f57e8789271852309426df3
-<<<<<<< HEAD
-updated: 2018-04-11T14:25:49.267687+02:00
-=======
 updated: 2018-04-12T23:30:59.557944+02:00
->>>>>>> 3c3f888... Removed outdated witness code
 imports:
 - name: github.com/agl/ed25519
   version: 5312a61534124124185d41f09206b9fef1d88403
