@@ -50,8 +50,6 @@ func (srv *P2PService) Transmit(ctx context.Context, req *P2PMessage) (rep *P2PR
 		if err != nil {
 			return nil, err
 		}
-	case schemaId == "NOT IMPLEMENTED":
-		log.Print("Got purchase order")
 	default:
 		log.Fatal("Got unknown schema")
 	}
