@@ -5,6 +5,7 @@ import (
 	"golang.org/x/net/context"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/p2p"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
+	invoicepb "github.com/CentrifugeInc/centrifuge-protobufs/invoice"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
  	google_protobuf2 "github.com/golang/protobuf/ptypes/empty"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/anchor"
@@ -14,10 +15,9 @@ import (
 	"fmt"
 )
 
-
 type InvoiceDocumentService struct {}
 
-func (s *InvoiceDocumentService) SendInvoiceDocument(ctx context.Context, sendInvoiceEnvelope *invoice.SendInvoiceEnvelope) (*invoice.InvoiceDocument, error) {
+func (s *InvoiceDocumentService) SendInvoiceDocument(ctx context.Context, sendInvoiceEnvelope *invoice.SendInvoiceEnvelope) (*invoicepb.InvoiceDocument, error) {
 	err := cc.Node.GetInvoiceStorageService().PutDocument(sendInvoiceEnvelope.Document)
 	if err != nil {
 		return nil, err
@@ -69,7 +69,7 @@ func (s *InvoiceDocumentService) SendInvoiceDocument(ctx context.Context, sendIn
 	return sendInvoiceEnvelope.Document, nil
 }
 
-func (s *InvoiceDocumentService) GetInvoiceDocument(ctx context.Context, getInvoiceDocumentEnvelope *invoice.GetInvoiceDocumentEnvelope) (*invoice.InvoiceDocument, error) {
+func (s *InvoiceDocumentService) GetInvoiceDocument(ctx context.Context, getInvoiceDocumentEnvelope *invoice.GetInvoiceDocumentEnvelope) (*invoicepb.InvoiceDocument, error) {
 	doc, err := cc.Node.GetInvoiceStorageService().GetDocument(getInvoiceDocumentEnvelope.DocumentIdentifier)
 	return doc, err
 }

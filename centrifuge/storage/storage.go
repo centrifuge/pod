@@ -4,7 +4,7 @@ import (
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/spf13/viper"
 	"sync"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
+	"github.com/CentrifugeInc/centrifuge-protobufs/coredocument"
 	"github.com/golang/protobuf/proto"
 )
 

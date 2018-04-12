@@ -8,6 +8,7 @@ Setup
 -----
 
 ```bash,
+brew install jq
 mkdir -p $GOPATH/src/github.com/CentrifugeInc/go-centrifuge/
 git clone git@github.com:CentrifugeInc/go-centrifuge.git $GOPATH/src/github.com/CentrifugeInc/go-centrifuge
 curl https://glide.sh/get | sh

@@ -4,10 +4,10 @@ package invoicestorage
 
 import (
 	"testing"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
-	"bytes"
+	"github.com/CentrifugeInc/centrifuge-protobufs/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
+	invoicepb "github.com/CentrifugeInc/centrifuge-protobufs/invoice"
+	"github.com/stretchr/testify/assert"
 	"os"
 )
 
@@ -32,20 +32,13 @@ func TestStorageService(t *testing.T) {
 	identifier := []byte("1")
 	invalidIdentifier := []byte("2")
 
-	invoice := invoice.InvoiceDocument{CoreDocument: &coredocument.CoreDocument{DocumentIdentifier:identifier}}
+	invoice := invoicepb.InvoiceDocument{CoreDocument: &coredocument.CoreDocument{DocumentIdentifier:identifier}}
 	service.PutDocument(&invoice)
 
-	doc, err := service.GetDocument(identifier)
-	if err != nil {
-		t.Fatal("Error getting document")
-	}
+	_, err := service.GetDocument(identifier)
+	assert.Nil(t, err, "GetDocument should not return error")
 
-	if !bytes.Equal(doc.CoreDocument.DocumentIdentifier, identifier) {
-		t.Fatal("Id doesn't match")
-	}
 	_, err = service.GetDocument(invalidIdentifier)
-	if err == nil {
-		t.Fatal("Should return error when getting invalid document")
-	}
+	assert.NotNil(t, err, "GetDocument should not return error")
 }
 

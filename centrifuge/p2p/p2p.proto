@@ -3,7 +3,7 @@ package p2p;
 
 option go_package = "github.com/CentrifugeInc/go-centrifuge/centrifuge/p2p";
 
-import "coredocument/coredocument.proto";
+import "centrifuge-protobufs/coredocument/coredocument.proto";
 
 // P2PMessage wraps a single CoreDocument to be transferred to another noed
 message P2PMessage {

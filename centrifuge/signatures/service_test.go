@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 	"golang.org/x/crypto/ed25519"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
+	"github.com/CentrifugeInc/centrifuge-protobufs/coredocument"
 	"os"
 	"bytes"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"

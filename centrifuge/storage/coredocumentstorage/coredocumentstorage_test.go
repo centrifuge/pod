@@ -4,7 +4,7 @@ package coredocumentstorage
 
 import (
 	"testing"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
+	"github.com/CentrifugeInc/centrifuge-protobufs/coredocument"
 	"bytes"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
 	"os"

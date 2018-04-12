@@ -1,6 +1,6 @@
 package storage
 
-import "github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
+import "github.com/CentrifugeInc/centrifuge-protobufs/coredocument"
 
 type DataStore interface {
 	Open () error
