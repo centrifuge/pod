@@ -75,5 +75,8 @@ import:
 - package: github.com/whyrusleeping/go-smux-multistream
 - package: github.com/whyrusleeping/go-smux-yamux
 - package: github.com/CentrifugeInc/centrifuge-protobufs
-  repo:  git@github.com:lucasvo/centrifuge-protobufs
   version: invoice
+  repo: git@github.com:lucasvo/centrifuge-protobufs
+- package: github.com/centrifuge/precise-proofs
+  repo: github.com/lucasvo/precise-proofs
+  version: e3d8dad68b55411dcd7202959d3bf8dff6420203
