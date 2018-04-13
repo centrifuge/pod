@@ -25,7 +25,7 @@ imports:
   - centrifuge/witness
 - name: github.com/CentrifugeInc/centrifuge-protobufs
   repo: git@github.com:lucasvo/centrifuge-protobufs
-  version: 5822a06c10406a24fe109f107479ed362b454823
+  version: a40ee716057f4607a0e4f28de3b2786cee7facdd
   subpackages:
   - coredocument
   - invoice
