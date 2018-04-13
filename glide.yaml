@@ -76,5 +76,4 @@ import:
 - package: github.com/whyrusleeping/go-smux-yamux
 - package: github.com/CentrifugeInc/centrifuge-protobufs
 - package: github.com/centrifuge/precise-proofs
-  repo: git@github.com:lucasvo/precise-proofs
-  version: nil-values
+  repo: git@github.com:centrifuge/precise-proofs
