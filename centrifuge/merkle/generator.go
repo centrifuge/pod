@@ -5,7 +5,7 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/coredocument"
 )
 
-func CalculateRoot (doc *coredocument.CoreDocument) (root []byte) {
+func CalculateRoot (doc *coredocumentpb.CoreDocument) (root []byte) {
 	return
 }
 

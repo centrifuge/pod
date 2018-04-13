@@ -37,7 +37,7 @@ func TestInvoiceService(t *testing.T) {
 	identifierIncorrect := testingutils.Rand32Bytes()
 	s := documentservice.InvoiceDocumentService{}
 	doc := invoice.NewInvoiceDocument()
-	doc.CoreDocument = &coredocument.CoreDocument{
+	doc.CoreDocument = &coredocumentpb.CoreDocument{
 			DocumentIdentifier:identifier,
 			CurrentIdentifier:identifier,
 			NextIdentifier:testingutils.Rand32Bytes(),

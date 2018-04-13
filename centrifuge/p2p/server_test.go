@@ -28,7 +28,7 @@ func TestP2PService(t *testing.T) {
 
 	identifier := []byte("1")
 	inv := invoice.NewInvoiceDocument()
-	inv.CoreDocument = &coredocument.CoreDocument{DocumentIdentifier: identifier}
+	inv.CoreDocument = &coredocumentpb.CoreDocument{DocumentIdentifier: identifier}
 
 	coredoc := invoice.ConvertToCoreDocument(inv)
 	req := P2PMessage{Document: &coredoc}

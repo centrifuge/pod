@@ -1,7 +1,7 @@
 package invoice
 
 import (
-	invoicepb "github.com/CentrifugeInc/centrifuge-protobufs/invoice"
+	"github.com/CentrifugeInc/centrifuge-protobufs/invoice"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/CentrifugeInc/centrifuge-protobufs/coredocument"
 )
@@ -10,7 +10,7 @@ func NewInvoiceDocument () *invoicepb.InvoiceDocument {
 	invoiceSalts := invoicepb.InvoiceDataSalts{}
 	proofs.FillSalts(&invoiceSalts)
 	doc := invoicepb.InvoiceDocument{
-		CoreDocument: &coredocument.CoreDocument{},
+		CoreDocument: &coredocumentpb.CoreDocument{},
 		Data: &invoicepb.InvoiceData{},
 		Salts: &invoiceSalts,
 	}

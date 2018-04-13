@@ -6,7 +6,7 @@ package invoice
 import (
 	"testing"
 	"github.com/CentrifugeInc/centrifuge-protobufs/coredocument"
-	invoicepb "github.com/CentrifugeInc/centrifuge-protobufs/invoice"
+	"github.com/CentrifugeInc/centrifuge-protobufs/invoice"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
@@ -21,7 +21,7 @@ func TestCoreDocumentConverter(t *testing.T) {
 	invoiceSalts := invoicepb.InvoiceDataSalts{}
 
 	invoiceDoc := NewInvoiceDocument()
-	invoiceDoc.CoreDocument =	&coredocument.CoreDocument{
+	invoiceDoc.CoreDocument =	&coredocumentpb.CoreDocument{
 			DocumentIdentifier:identifier,
 			}
 	invoiceDoc.Data = &invoiceData
@@ -41,7 +41,7 @@ func TestCoreDocumentConverter(t *testing.T) {
 		TypeUrl: invoicepb.InvoiceSaltsTypeUrl,
 		Value: serializedSalts,
 	}
-	coreDocument := coredocument.CoreDocument{
+	coreDocument := coredocumentpb.CoreDocument{
 		DocumentIdentifier: identifier,
 		EmbeddedData: &invoiceAny,
 		EmbeddedDataSalts: &invoiceSaltsAny,

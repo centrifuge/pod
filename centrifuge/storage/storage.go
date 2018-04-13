@@ -4,7 +4,7 @@ import (
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/spf13/viper"
 	"sync"
-	"github.com/CentrifugeInc/centrifuge-protobufs/coredocument"
+	coredocumentpb "github.com/CentrifugeInc/centrifuge-protobufs/coredocument"
 	"github.com/golang/protobuf/proto"
 )
 
@@ -48,13 +48,13 @@ func (db *LeveldbDataStore) GetDocumentKey(id []byte) (key []byte) {
 	return key
 }
 
-func (db *LeveldbDataStore) GetDocument(id []byte) (doc *coredocument.CoreDocument, err error) {
+func (db *LeveldbDataStore) GetDocument(id []byte) (doc *coredocumentpb.CoreDocument, err error) {
 	doc_bytes, err := db.Get(db.GetDocumentKey(id))
 	if err != nil {
 		return nil, err
 	}
 
-	doc = &coredocument.CoreDocument{}
+	doc = &coredocumentpb.CoreDocument{}
 	err = proto.Unmarshal(doc_bytes, doc)
 	if err != nil {
 		return nil, err
@@ -62,7 +62,7 @@ func (db *LeveldbDataStore) GetDocument(id []byte) (doc *coredocument.CoreDocume
 	return
 }
 
-func (db *LeveldbDataStore) PutDocument(doc *coredocument.CoreDocument) (err error) {
+func (db *LeveldbDataStore) PutDocument(doc *coredocumentpb.CoreDocument) (err error) {
 	key := db.GetDocumentKey(doc.DocumentIdentifier)
 	data, err := proto.Marshal(doc)
 
