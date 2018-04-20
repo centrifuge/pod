@@ -1,7 +1,7 @@
 package signatures
 
 import (
-	"github.com/CentrifugeInc/centrifuge-protobufs/coredocument"
+	coredocumentpb "github.com/CentrifugeInc/centrifuge-protobufs/coredocument"
 	"github.com/spf13/viper"
 	"golang.org/x/crypto/ed25519"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools"
@@ -52,7 +52,7 @@ func (srv *SigningService) LoadIdentityKeyFromConfig() {
 }
 
 // ValidateSignaturesOnDocument validates all signatures on the current document
-func (srv *SigningService) ValidateSignaturesOnDocument(doc *coredocument.CoreDocument) (valid bool, err error) {
+func (srv *SigningService) ValidateSignaturesOnDocument(doc *coredocumentpb.CoreDocument) (valid bool, err error) {
 	message := srv.createSignatureData(doc)
 	for _, signature := range doc.Signatures {
 		valid, err := srv.ValidateSignature(signature, message)
@@ -63,7 +63,7 @@ func (srv *SigningService) ValidateSignaturesOnDocument(doc *coredocument.CoreDo
 	return true, nil
 }
 
-func (srv *SigningService) ValidateSignature(signature *coredocument.Signature, message []byte) (valid bool, err error) {
+func (srv *SigningService) ValidateSignature(signature *coredocumentpb.Signature, message []byte) (valid bool, err error) {
 	valid, err = srv.ValidateKey(signature.EntityId, signature.PublicKey, time.Now())
 	if err != nil {
 		return
@@ -113,21 +113,21 @@ func (srv *SigningService) ValidateKey(identity []byte, key ed25519.PublicKey, t
 	return true, nil
 }
 
-func (srv *SigningService) createSignatureData (doc *coredocument.CoreDocument) (signatureData []byte) {
+func (srv *SigningService) createSignatureData (doc *coredocumentpb.CoreDocument) (signatureData []byte) {
 	signatureData = make([]byte, 64)
 	copy(signatureData[:32], doc.DataMerkleRoot[:32])
 	copy(signatureData[32:64], doc.NextIdentifier[:32])
 	return
 }
 
-func (srv *SigningService) MakeSignature (doc *coredocument.CoreDocument, identity []byte, privateKey ed25519.PrivateKey, publicKey ed25519.PublicKey) (sig *coredocument.Signature){
+func (srv *SigningService) MakeSignature (doc *coredocumentpb.CoreDocument, identity []byte, privateKey ed25519.PrivateKey, publicKey ed25519.PublicKey) (sig *coredocumentpb.Signature){
 	sigArray := srv.createSignatureData(doc)
 	signature := ed25519.Sign(privateKey, sigArray)
-	return &coredocument.Signature{identity,publicKey, signature}
+	return &coredocumentpb.Signature{identity,publicKey, signature}
 }
 
 // Sign a document with a provided public key
-func (srv *SigningService) Sign (doc *coredocument.CoreDocument) {
+func (srv *SigningService) Sign (doc *coredocumentpb.CoreDocument) {
 	sig := srv.MakeSignature(doc, srv.IdentityId, srv.PrivateKey, srv.PublicKey)
 	doc.Signatures = append(doc.Signatures, sig)
 }

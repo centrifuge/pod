@@ -1,5 +1,5 @@
-hash: 5eb36c703056b19e5a69703117f3f39802ceb26a3f57e8789271852309426df3
-updated: 2018-04-11T14:25:49.267687+02:00
+hash: 17336a016cb4af43b1d304bb4015652c4280f9e43a6416fbc4164220fd8c2247
+updated: 2018-04-13T13:34:01.441861+02:00
 imports:
 - name: github.com/agl/ed25519
   version: 5312a61534124124185d41f09206b9fef1d88403
@@ -14,6 +14,11 @@ imports:
   version: 0ef0d8c59b58ccfc8ac814dd6dac3990d4a16be2
   subpackages:
   - btcec
+- name: github.com/centrifuge/precise-proofs
+  repo: git@github.com:lucasvo/precise-proofs
+  version: e3d8dad68b55411dcd7202959d3bf8dff6420203
+  subpackages:
+  - proofs
 - name: github.com/CentrifugeInc/centrifuge-ethereum-contracts
   version: 09f487ccc6400455db32582fccd03d72804a045e
   repo: git@github.com:CentrifugeInc/centrifuge-ethereum-contracts
@@ -21,7 +26,7 @@ imports:
   - centrifuge/witness
 - name: github.com/CentrifugeInc/centrifuge-protobufs
   repo: git@github.com:CentrifugeInc/centrifuge-protobufs
-  version: dac848f89b4003b79ea45554c0a27ec2c7b1fddf
+  version: 260599d70584ed960c0c2feaae086c82cdfe6e11
   subpackages:
   - coredocument
   - invoice
@@ -65,6 +70,8 @@ imports:
   version: dcaf50131e4810440bed2cbb6f7f32c4f4cc95dd
 - name: github.com/fsnotify/fsnotify
   version: c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9
+- name: github.com/go-bongo/go-dotaccess
+  version: ae070a2d2a38fd7233e255ded21fb26fe36b4796
 - name: github.com/go-errors/errors
   version: a6af135bd4e28680facf08a3d206b454abc877a4
 - name: github.com/go-stack/stack
@@ -94,7 +101,7 @@ imports:
 - name: github.com/gorilla/websocket
   version: 6656ddce919367f4c4090b0f89a45854d26da020
 - name: github.com/grpc-ecosystem/grpc-gateway
-  version: 261dafe7abb6a223549d14d02faccffea736b7e8
+  version: 3189c0c0c638bd69bf223a1411ba20c4427647d5
   repo: git@github.com:grpc-ecosystem/grpc-gateway
   subpackages:
   - protoc-gen-swagger/options
@@ -294,6 +301,8 @@ imports:
   version: 468a1b73e980e5aff011d308623e43e28c582b16
 - name: github.com/multiformats/go-multistream
   version: 1bc5dd803d20cf91d8ec905ac3580e3ea3c8c995
+- name: github.com/oleiade/reflections
+  version: 0e86b3c98b2ff33e30c85cfe97d9a63d439fe7eb
 - name: github.com/opentracing/opentracing-go
   version: 3999fca714c888484b78cb78d68cd49afc9eca7d
   subpackages:
@@ -379,6 +388,7 @@ imports:
 - name: golang.org/x/crypto
   version: 5119cf507ed5294cc409c092980c7497ee5d6fd2
   subpackages:
+  - blake2b
   - blake2s
   - blowfish
   - ed25519

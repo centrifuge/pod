@@ -103,7 +103,7 @@ func TestDocumentSignatures(t *testing.T) {
 	documentIdentifier := key1Pub
 	nextIdentifier := key1Pub
 
-	doc := &coredocument.CoreDocument{
+	doc := &coredocumentpb.CoreDocument{
 		DataMerkleRoot: dataMerkleRoot,
 		DocumentIdentifier: documentIdentifier,
 		NextIdentifier: nextIdentifier,
@@ -150,7 +150,7 @@ func TestDocumentSigning(t *testing.T) {
 	documentIdentifier := testingutils.Rand32Bytes()
 	nextIdentifier := testingutils.Rand32Bytes()
 
-	doc := &coredocument.CoreDocument{
+	doc := &coredocumentpb.CoreDocument{
 		DataMerkleRoot: dataMerkleRoot,
 		DocumentIdentifier: documentIdentifier,
 		NextIdentifier: nextIdentifier,

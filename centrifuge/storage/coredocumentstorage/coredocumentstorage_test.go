@@ -29,7 +29,7 @@ func TestStorageService(t *testing.T) {
 	service.storage = &storageDb
 	identifier := []byte("1")
 	invalidIdentifier := []byte("2")
-	coredoc := coredocument.CoreDocument{DocumentIdentifier:identifier}
+	coredoc := coredocumentpb.CoreDocument{DocumentIdentifier:identifier}
 	service.PutDocument(&coredoc)
 
 	doc, err := service.GetDocument(identifier)

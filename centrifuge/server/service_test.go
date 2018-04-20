@@ -7,7 +7,6 @@ import (
 	"context"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/documentservice"
 	"github.com/CentrifugeInc/centrifuge-protobufs/coredocument"
-	invoicepb "github.com/CentrifugeInc/centrifuge-protobufs/invoice"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
 	"os"
@@ -37,17 +36,15 @@ func TestInvoiceService(t *testing.T) {
 	identifier := testingutils.Rand32Bytes()
 	identifierIncorrect := testingutils.Rand32Bytes()
 	s := documentservice.InvoiceDocumentService{}
-	doc := invoicepb.InvoiceDocument{
-		CoreDocument: &coredocument.CoreDocument{
+	doc := invoice.NewInvoiceDocument()
+	doc.CoreDocument = &coredocumentpb.CoreDocument{
 			DocumentIdentifier:identifier,
 			CurrentIdentifier:identifier,
 			NextIdentifier:testingutils.Rand32Bytes(),
 			DataMerkleRoot: testingutils.Rand32Bytes(),
-			},
-		Data: &invoicepb.InvoiceData{},
-	}
+			}
 
-	sentDoc, err := s.SendInvoiceDocument(context.Background(), &invoice.SendInvoiceEnvelope{[][]byte{}, &doc})
+	sentDoc, err := s.SendInvoiceDocument(context.Background(), &invoice.SendInvoiceEnvelope{[][]byte{}, doc})
 	assert.Nil(t, err, "Error in RPC Call")
 
 	assert.Equal(t, sentDoc.CoreDocument.DocumentIdentifier, identifier,

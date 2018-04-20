@@ -27,9 +27,6 @@ before_install:
 install:
   - scripts/install-dependencies.sh
   - glide install
-  - echo "cd vendor/github.com/golang/protobuf && make install" | sh
-  - go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
-  - go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
   - git clone git@github.com:CentrifugeInc/centrifuge-ethereum-contracts.git $GOPATH/src/github.com/CentrifugeInc/centrifuge-ethereum-contracts
 
 script:

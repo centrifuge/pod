@@ -42,8 +42,8 @@ func (srv *P2PService) Transmit(ctx context.Context, req *P2PMessage) (rep *P2PR
 		return nil, err
 	}
 
-	switch schemaId := string(req.Document.EmbeddedDocument.TypeUrl); {
-	case schemaId == invoicepb.InvoiceDocumentTypeUrl:
+	switch schemaId := string(req.Document.EmbeddedData.TypeUrl); {
+	case schemaId == invoicepb.InvoiceDataTypeUrl:
 		// Convert and Store as Invoice Document
 		invoiceDocument := invoice.ConvertToInvoiceDocument(req.Document)
 		err = cc.Node.GetInvoiceStorageService().PutDocument(&invoiceDocument)

@@ -6,7 +6,7 @@ package invoice
 import (
 	"testing"
 	"github.com/CentrifugeInc/centrifuge-protobufs/coredocument"
-	invoicepb "github.com/CentrifugeInc/centrifuge-protobufs/invoice"
+	"github.com/CentrifugeInc/centrifuge-protobufs/invoice"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
@@ -18,26 +18,36 @@ func TestCoreDocumentConverter(t *testing.T) {
 	invoiceData := invoicepb.InvoiceData{
 		Amount: 100,
 	}
-	invoiceDoc := invoicepb.InvoiceDocument{
-		CoreDocument: &coredocument.CoreDocument{
+	invoiceSalts := invoicepb.InvoiceDataSalts{}
+
+	invoiceDoc := NewInvoiceDocument()
+	invoiceDoc.CoreDocument =	&coredocumentpb.CoreDocument{
 			DocumentIdentifier:identifier,
-			},
-		Data: &invoiceData,
-	}
+			}
+	invoiceDoc.Data = &invoiceData
+	invoiceDoc.Salts = &invoiceSalts
+
 	serializedInvoice, err := proto.Marshal(&invoiceData)
 	assert.Nil(t, err, "Could not serialize InvoiceData")
 
+	serializedSalts, err := proto.Marshal(&invoiceSalts)
+	assert.Nil(t, err, "Could not serialize InvoiceDataSalts")
+
 	invoiceAny := any.Any{
-		TypeUrl: invoicepb.InvoiceDocumentTypeUrl,
+		TypeUrl: invoicepb.InvoiceDataTypeUrl,
 		Value: serializedInvoice,
 	}
-
-	coreDocument := coredocument.CoreDocument{
+	invoiceSaltsAny := any.Any{
+		TypeUrl: invoicepb.InvoiceSaltsTypeUrl,
+		Value: serializedSalts,
+	}
+	coreDocument := coredocumentpb.CoreDocument{
 		DocumentIdentifier: identifier,
-		EmbeddedDocument: &invoiceAny,
+		EmbeddedData: &invoiceAny,
+		EmbeddedDataSalts: &invoiceSaltsAny,
 	}
 
-	generatedCoreDocument := ConvertToCoreDocument(&invoiceDoc)
+	generatedCoreDocument := ConvertToCoreDocument(invoiceDoc)
 	generatedCoreDocumentBytes, err := proto.Marshal(&generatedCoreDocument)
 	assert.Nil(t, err, "Error marshaling generatedCoreDocument")
 
@@ -49,7 +59,7 @@ func TestCoreDocumentConverter(t *testing.T) {
 
 	convertedInvoiceDoc := ConvertToInvoiceDocument(&generatedCoreDocument)
 	convertedGeneratedInvoiceDoc := ConvertToInvoiceDocument(&generatedCoreDocument)
-	invoiceBytes, err := proto.Marshal(&invoiceDoc)
+	invoiceBytes, err := proto.Marshal(invoiceDoc)
 	assert.Nil(t, err, "Error marshaling invoiceDoc")
 
 	convertedGeneratedInvoiceBytes, err := proto.Marshal(&convertedGeneratedInvoiceDoc)

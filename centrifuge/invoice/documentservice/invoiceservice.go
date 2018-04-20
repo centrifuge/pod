@@ -23,11 +23,14 @@ func (s *InvoiceDocumentService) SendInvoiceDocument(ctx context.Context, sendIn
 		return nil, err
 	}
 
-	coreDoc := invoice.ConvertToCoreDocument(sendInvoiceEnvelope.Document)
+	doc := sendInvoiceEnvelope.Document
+	invoice.CalculateMerkleRoot(doc)
+	coreDoc := invoice.ConvertToCoreDocument(doc)
 	// Sign document
 	// Uncomment once fixed
 	//signingService := cc.Node.GetSigningService()
 	//signingService.Sign(&coreDoc)
+
 
 	if (anchor.IsAnchoringRequired()) {
 		confirmations := make(chan *anchor.Anchor, 1)

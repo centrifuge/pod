@@ -32,7 +32,7 @@ func TestStorageService(t *testing.T) {
 	identifier := []byte("1")
 	invalidIdentifier := []byte("2")
 
-	invoice := invoicepb.InvoiceDocument{CoreDocument: &coredocument.CoreDocument{DocumentIdentifier:identifier}}
+	invoice := invoicepb.InvoiceDocument{CoreDocument: &coredocumentpb.CoreDocument{DocumentIdentifier:identifier}}
 	service.PutDocument(&invoice)
 
 	_, err := service.GetDocument(identifier)
