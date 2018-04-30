@@ -19,7 +19,8 @@ var dbFileName = "/tmp/centrifuge_testing_server_service.leveldb"
 
 func TestMain(m *testing.M) {
 	viper.Set("storage.Path", dbFileName)
-	mockBootstrap()
+	cc.Bootstrap()
+	defer cc.LevelDB.Close()
 
 	result := m.Run()
 	os.RemoveAll(dbFileName)
@@ -31,20 +32,19 @@ func TestInvoiceService(t *testing.T) {
 	viper.Set("keys.signing.publicKey", "../../resources/signingKey.pub")
 	viper.Set("keys.signing.privateKey", "../../resources/signingKey.key")
 	viper.Set("identityId", "1")
-	cc.Node.GetSigningService().LoadIdentityKeyFromConfig()
 
 	identifier := testingutils.Rand32Bytes()
 	identifierIncorrect := testingutils.Rand32Bytes()
 	s := documentservice.InvoiceDocumentService{}
-	doc := invoice.NewInvoiceDocument()
-	doc.CoreDocument = &coredocumentpb.CoreDocument{
+	doc := invoice.NewEmptyInvoice()
+	doc.Document.CoreDocument = &coredocumentpb.CoreDocument{
 			DocumentIdentifier:identifier,
 			CurrentIdentifier:identifier,
 			NextIdentifier:testingutils.Rand32Bytes(),
 			DataMerkleRoot: testingutils.Rand32Bytes(),
 			}
 
-	sentDoc, err := s.SendInvoiceDocument(context.Background(), &invoice.SendInvoiceEnvelope{[][]byte{}, doc})
+	sentDoc, err := s.SendInvoiceDocument(context.Background(), &invoice.SendInvoiceEnvelope{[][]byte{}, doc.Document})
 	assert.Nil(t, err, "Error in RPC Call")
 
 	assert.Equal(t, sentDoc.CoreDocument.DocumentIdentifier, identifier,
@@ -61,8 +61,4 @@ func TestInvoiceService(t *testing.T) {
 	assert.NotNil(t, err,
 		"RPC call should have raised exception")
 
-}
-
-func mockBootstrap() {
-	(&cc.MockCentNode{}).BootstrapDependencies()
 }

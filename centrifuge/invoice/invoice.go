@@ -6,7 +6,15 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/coredocument"
 )
 
-func NewInvoiceDocument () *invoicepb.InvoiceDocument {
+type Invoice struct {
+	Document *invoicepb.InvoiceDocument
+}
+
+func NewInvoice(invDoc *invoicepb.InvoiceDocument) *Invoice {
+	return &Invoice{invDoc}
+}
+
+func NewEmptyInvoice() *Invoice {
 	invoiceSalts := invoicepb.InvoiceDataSalts{}
 	proofs.FillSalts(&invoiceSalts)
 	doc := invoicepb.InvoiceDocument{
@@ -14,11 +22,11 @@ func NewInvoiceDocument () *invoicepb.InvoiceDocument {
 		Data: &invoicepb.InvoiceData{},
 		Salts: &invoiceSalts,
 	}
-	return &doc
+	return &Invoice{&doc}
 }
 
-func CalculateMerkleRoot (doc *invoicepb.InvoiceDocument) {
+func (inv *Invoice) CalculateMerkleRoot() {
 	dtree := proofs.NewDocumentTree()
-	dtree.FillTree(doc.Data, doc.Salts)
-	doc.CoreDocument.DocumentRoot = dtree.RootHash()
+	dtree.FillTree(inv.Document.Data, inv.Document.Salts)
+	inv.Document.CoreDocument.DocumentRoot = dtree.RootHash()
 }
