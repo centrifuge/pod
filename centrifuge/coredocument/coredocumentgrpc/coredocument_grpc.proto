@@ -1,7 +1,7 @@
 syntax = "proto3";
-package grpc;
+package coredocumentgrpc;
 
-option go_package = "github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/grpc";
+option go_package = "github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/coredocumentgrpc";
 
 import "centrifuge-protobufs/coredocument/coredocument.proto";
 

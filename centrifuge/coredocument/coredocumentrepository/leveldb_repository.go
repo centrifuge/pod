@@ -1,4 +1,4 @@
-package coredocument_repository
+package coredocumentrepository
 
 import (
 	"github.com/syndtr/goleveldb/leveldb"

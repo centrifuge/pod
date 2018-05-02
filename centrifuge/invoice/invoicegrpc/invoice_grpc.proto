@@ -1,6 +1,7 @@
 syntax = "proto3";
-package grpc;
-option go_package = "github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/grpc";
+package invoicegrpc;
+
+option go_package = "github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/invoicegrpc";
 
 import "google/api/annotations.proto";
 import "google/protobuf/empty.proto";

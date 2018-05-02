@@ -1,4 +1,4 @@
-package coredocument_repository
+package coredocumentrepository
 
 import "github.com/CentrifugeInc/centrifuge-protobufs/coredocument"
 

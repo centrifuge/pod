@@ -1,4 +1,4 @@
-package invoice_repository
+package invoicerepository
 
 import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/invoice"

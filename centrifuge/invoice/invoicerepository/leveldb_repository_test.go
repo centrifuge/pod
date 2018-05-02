@@ -1,6 +1,6 @@
 // +build unit
 
-package invoice_repository
+package invoicerepository
 
 import (
 	"testing"
@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
 	"github.com/syndtr/goleveldb/leveldb"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/coredocument_repository"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/coredocumentrepository"
 )
 
 var dbFileName = "/tmp/centrifuge_testing_invdoc.leveldb"
@@ -44,7 +44,7 @@ func TestStorageService(t *testing.T) {
 func Bootstrap() (*leveldb.DB) {
 	levelDB := storage.NewLeveldbStorage(dbFileName)
 
-	coredocument_repository.NewLevelDBCoreDocumentRepository(&coredocument_repository.LevelDBCoreDocumentRepository{levelDB})
+	coredocumentrepository.NewLevelDBCoreDocumentRepository(&coredocumentrepository.LevelDBCoreDocumentRepository{levelDB})
 	NewLevelDBInvoiceRepository(&LevelDBInvoiceRepository{levelDB})
 
 	return levelDB
