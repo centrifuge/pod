@@ -16,7 +16,7 @@ package grpc
 import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
-import coredocument "centrifuge-protobufs/coredocument"
+import coredocument "github.com/CentrifugeInc/centrifuge-protobufs/coredocument"
 
 import (
 	context "golang.org/x/net/context"
