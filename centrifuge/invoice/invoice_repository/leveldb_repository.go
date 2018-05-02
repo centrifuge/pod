@@ -1,26 +1,32 @@
-package repository
+package invoice_repository
 
 import (
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/CentrifugeInc/centrifuge-protobufs/invoice"
 	"github.com/golang/protobuf/proto"
 	"github.com/go-errors/errors"
+	"sync"
 )
 
-type levelDBInvoiceRepository struct {
-	leveldb *leveldb.DB
+var once sync.Once
+
+type LevelDBInvoiceRepository struct {
+	Leveldb *leveldb.DB
 }
 
-func NewLevelDBInvoiceRepository(Conn *leveldb.DB) InvoiceRepository {
-	return &levelDBInvoiceRepository{Conn}
+func NewLevelDBInvoiceRepository(ir InvoiceRepository) {
+	once.Do(func() {
+		invoiceRepository = ir
+	})
+	return
 }
 
-func (repo *levelDBInvoiceRepository) GetKey(id []byte) ([]byte) {
+func (repo *LevelDBInvoiceRepository) GetKey(id []byte) ([]byte) {
 	return append([]byte("invoice"), id...)
 }
 
-func (repo *levelDBInvoiceRepository) FindById(id []byte) (inv *invoicepb.InvoiceDocument, err error) {
-	doc_bytes, err := repo.leveldb.Get(repo.GetKey(id), nil)
+func (repo *LevelDBInvoiceRepository) FindById(id []byte) (inv *invoicepb.InvoiceDocument, err error) {
+	doc_bytes, err := repo.Leveldb.Get(repo.GetKey(id), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -33,7 +39,7 @@ func (repo *levelDBInvoiceRepository) FindById(id []byte) (inv *invoicepb.Invoic
 	return
 }
 
-func (repo *levelDBInvoiceRepository) Store(inv *invoicepb.InvoiceDocument) (err error) {
+func (repo *LevelDBInvoiceRepository) Store(inv *invoicepb.InvoiceDocument) (err error) {
 	if inv.CoreDocument == nil {
 		err = errors.Errorf("Invalid Empty (NIL) Invoice Document")
 		return
@@ -44,6 +50,6 @@ func (repo *levelDBInvoiceRepository) Store(inv *invoicepb.InvoiceDocument) (err
 	if err != nil {
 		return
 	}
-	err = repo.leveldb.Put(key, data, nil)
+	err = repo.Leveldb.Put(key, data, nil)
 	return
 }

@@ -8,7 +8,7 @@ import (
 var once sync.Once
 
 // GetStorage is a singleton implementation returning the default database as configured
-func GetLeveldbStorage(path string) *leveldb.DB {
+func NewLeveldbStorage(path string) *leveldb.DB {
 	var instance *leveldb.DB
 	once.Do(func() {
 		i, err := leveldb.OpenFile(path, nil)

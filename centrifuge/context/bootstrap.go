@@ -1,23 +1,22 @@
 package context
 
 import (
-	"sync"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
-	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/spf13/viper"
+	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/coredocument_repository"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/invoice_repository"
 )
 
-var (
-	once sync.Once
-	LevelDB *leveldb.DB
-)
+var LevelDB *leveldb.DB
 
 func Bootstrap() {
-	once.Do(func() {
-		path := viper.GetString("storage.Path")
-		if path == "" {
-			path = "/tmp/centrifuge_data.leveldb_TESTING"
-		}
-		LevelDB = storage.GetLeveldbStorage(path)
-	})
+	path := viper.GetString("storage.Path")
+	if path == "" {
+		path = "/tmp/centrifuge_data.leveldb_TESTING"
+	}
+	LevelDB = storage.NewLeveldbStorage(path)
+
+	coredocument_repository.NewLevelDBCoreDocumentRepository(&coredocument_repository.LevelDBCoreDocumentRepository{LevelDB})
+	invoice_repository.NewLevelDBInvoiceRepository(&invoice_repository.LevelDBInvoiceRepository{LevelDB})
 }

@@ -1,8 +1,14 @@
-package repository
+package invoice_repository
 
 import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/invoice"
 )
+
+var invoiceRepository InvoiceRepository
+
+func GetInvoiceRepository() InvoiceRepository {
+	return invoiceRepository
+}
 
 type InvoiceRepository interface {
 	GetKey(id []byte) ([]byte)

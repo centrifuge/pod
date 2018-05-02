@@ -8,14 +8,14 @@ import (
 	"os"
 	"github.com/spf13/viper"
 	"github.com/CentrifugeInc/centrifuge-protobufs/coredocument"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/coredocument_repository"
 	"github.com/stretchr/testify/assert"
 	"context"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/grpc"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/documentservice"
 )
 
-var dbFileName = "/tmp/centrifuge_testing_p2p_server.leveldb"
+var dbFileName = "/tmp/centrifuge_testing_p2p_post.leveldb"
 
 func TestMain(m *testing.M) {
 	viper.Set("storage.Path", dbFileName)
@@ -38,7 +38,7 @@ func TestP2PService(t *testing.T) {
 	assert.Nil(t, err, "Received error")
 	assert.Equal(t, res.Document.DocumentIdentifier, identifier, "Incorrect identifier")
 
-	doc, err := repository.NewLevelDBCoreDocumentRepository(cc.LevelDB).FindById(identifier)
+	doc, err := coredocument_repository.GetCoreDocumentRepository().FindById(identifier)
 	assert.Equal(t, doc.DocumentIdentifier, identifier, "Document Identifier doesn't match")
 
 }

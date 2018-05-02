@@ -1,21 +1,20 @@
 // +build unit
 
-package server
+package documentservice
 
 import (
 	"testing"
-	"context"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/documentservice"
-	"github.com/CentrifugeInc/centrifuge-protobufs/coredocument"
-	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
+	"github.com/spf13/viper"
 	"os"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
-	"github.com/spf13/viper"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
+	"github.com/CentrifugeInc/centrifuge-protobufs/coredocument"
 	"github.com/stretchr/testify/assert"
+	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
+	"context"
 )
 
-var dbFileName = "/tmp/centrifuge_testing_server_service.leveldb"
+var dbFileName = "/tmp/centrifuge_testing_inv_service.leveldb"
 
 func TestMain(m *testing.M) {
 	viper.Set("storage.Path", dbFileName)
@@ -35,14 +34,14 @@ func TestInvoiceService(t *testing.T) {
 
 	identifier := testingutils.Rand32Bytes()
 	identifierIncorrect := testingutils.Rand32Bytes()
-	s := documentservice.InvoiceDocumentService{}
+	s := InvoiceDocumentService{}
 	doc := invoice.NewEmptyInvoice()
 	doc.Document.CoreDocument = &coredocumentpb.CoreDocument{
-			DocumentIdentifier:identifier,
-			CurrentIdentifier:identifier,
-			NextIdentifier:testingutils.Rand32Bytes(),
-			DataMerkleRoot: testingutils.Rand32Bytes(),
-			}
+		DocumentIdentifier:identifier,
+		CurrentIdentifier:identifier,
+		NextIdentifier:testingutils.Rand32Bytes(),
+		DataMerkleRoot: testingutils.Rand32Bytes(),
+	}
 
 	sentDoc, err := s.SendInvoiceDocument(context.Background(), &invoice.SendInvoiceEnvelope{[][]byte{}, doc.Document})
 	assert.Nil(t, err, "Error in RPC Call")
