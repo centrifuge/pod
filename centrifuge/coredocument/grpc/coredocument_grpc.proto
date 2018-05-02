@@ -1,7 +1,7 @@
 syntax = "proto3";
-package p2p;
+package grpc;
 
-option go_package = "github.com/CentrifugeInc/go-centrifuge/centrifuge/p2p";
+option go_package = "github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/grpc";
 
 import "centrifuge-protobufs/coredocument/coredocument.proto";
 
@@ -15,5 +15,5 @@ message P2PReply {
 }
 
 service P2PService {
-    rpc Transmit(P2PMessage) returns (P2PReply) {}
+    rpc Post(P2PMessage) returns (P2PReply) {}
 }

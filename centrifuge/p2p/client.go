@@ -10,10 +10,11 @@ import (
 	"google.golang.org/grpc"
 	"sync"
 	"google.golang.org/grpc/connectivity"
+	cgrpc "github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/grpc"
 )
 
 // Opens a client connection with libp2p
-func OpenClient (target string) P2PServiceClient {
+func OpenClient (target string) cgrpc.P2PServiceClient {
 	log.Printf("Opening connection to: %s", target)
 	ipfsaddr, err := ma.NewMultiaddr(target)
 	if err != nil {
@@ -62,5 +63,5 @@ func OpenClient (target string) P2PServiceClient {
 		grpcConn = g
 	}()
 	wg.Wait()
-	return NewP2PServiceClient(grpcConn)
+	return cgrpc.NewP2PServiceClient(grpcConn)
 }

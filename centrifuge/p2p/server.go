@@ -19,31 +19,18 @@ import (
 	"github.com/paralin/go-libp2p-grpc"
 	"github.com/spf13/viper"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools"
-	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
 	"github.com/ipfs/go-cid"
 	mh "github.com/multiformats/go-multihash"
 	"github.com/ipfs/go-ipfs-addr"
 	"time"
 	"github.com/libp2p/go-libp2p-kad-dht"
 	ds "github.com/ipfs/go-datastore"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/documentservice"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/grpc"
 )
 
 var	HostInstance host.Host
 var GRPCProtoInstance p2pgrpc.GRPCProtocol
-
-type P2PService struct {
-}
-
-func (srv *P2PService) Transmit(ctx context.Context, req *P2PMessage) (rep *P2PReply, err error) {
-	err = repository.NewLevelDBCoreDocumentRepository(cc.LevelDB).Store(req.Document)
-	if err != nil {
-		return nil, err
-	}
-
-	rep = &P2PReply{req.Document}
-	return
-}
 
 // makeBasicHost creates a LibP2P host with a random peer ID listening on the
 // given multiaddress.
@@ -210,7 +197,7 @@ func RunP2P() {
 	grpcProto := p2pgrpc.NewGRPCProtocol(context.Background(), hostInstance)
 	GRPCProtoInstance = *grpcProto
 
-	RegisterP2PServiceServer(grpcProto.GetGRPCServer(), &P2PService{})
+	grpc.RegisterP2PServiceServer(grpcProto.GetGRPCServer(), &documentservice.P2PService{})
 
 	hostInstance.Peerstore().AddAddr(hostInstance.ID(), hostInstance.Addrs()[0], pstore.TempAddrTTL)
 
