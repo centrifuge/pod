@@ -25,8 +25,8 @@ import (
 	"time"
 	"github.com/libp2p/go-libp2p-kad-dht"
 	ds "github.com/ipfs/go-datastore"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/coredocumentservice"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/coredocumentgrpc"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/service"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/grpc"
 )
 
 var	HostInstance host.Host

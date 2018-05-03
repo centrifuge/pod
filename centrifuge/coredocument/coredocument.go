@@ -10,7 +10,7 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/anchor"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/coredocumentgrpc"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/grpc"
 )
 
 type CoreDocument struct {

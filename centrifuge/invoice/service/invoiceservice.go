@@ -6,13 +6,14 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/invoice"
  	google_protobuf2 "github.com/golang/protobuf/ptypes/empty"
 	"github.com/spf13/viper"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/invoicerepository"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/repository"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/grpc"
 )
 
 // Struct needed as it is used to register the grpc services attached to the grpc server
 type InvoiceDocumentService struct {}
 
-func (s *InvoiceDocumentService) SendInvoiceDocument(ctx context.Context, sendInvoiceEnvelope *invoice.SendInvoiceEnvelope) (*invoicepb.InvoiceDocument, error) {
+func (s *InvoiceDocumentService) SendInvoiceDocument(ctx context.Context, sendInvoiceEnvelope *invoicegrpc.SendInvoiceEnvelope) (*invoicepb.InvoiceDocument, error) {
 	err := invoicerepository.GetInvoiceRepository().Store(sendInvoiceEnvelope.Document)
 	if err != nil {
 		return nil, err
@@ -35,12 +36,12 @@ func (s *InvoiceDocumentService) SendInvoiceDocument(ctx context.Context, sendIn
 	return sendInvoiceEnvelope.Document, nil
 }
 
-func (s *InvoiceDocumentService) GetInvoiceDocument(ctx context.Context, getInvoiceDocumentEnvelope *invoice.GetInvoiceDocumentEnvelope) (*invoicepb.InvoiceDocument, error) {
+func (s *InvoiceDocumentService) GetInvoiceDocument(ctx context.Context, getInvoiceDocumentEnvelope *invoicegrpc.GetInvoiceDocumentEnvelope) (*invoicepb.InvoiceDocument, error) {
 	doc, err := invoicerepository.GetInvoiceRepository().FindById(getInvoiceDocumentEnvelope.DocumentIdentifier)
 	return doc, err
 }
 
-func (s *InvoiceDocumentService) GetReceivedInvoiceDocuments (ctx context.Context, empty *google_protobuf2.Empty) (*invoice.ReceivedInvoices, error) {
+func (s *InvoiceDocumentService) GetReceivedInvoiceDocuments (ctx context.Context, empty *google_protobuf2.Empty) (*invoicegrpc.ReceivedInvoices, error) {
 	return nil, nil
 }
 

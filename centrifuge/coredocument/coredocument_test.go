@@ -11,10 +11,10 @@ import (
 	"context"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/coredocumentrepository"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/invoicerepository"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/coredocumentservice"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/coredocumentgrpc"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/repository"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/service"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/grpc"
 )
 
 var dbFileName = "/tmp/centrifuge_testing_p2p_post.leveldb"

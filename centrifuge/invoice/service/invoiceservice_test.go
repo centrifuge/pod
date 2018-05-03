@@ -12,9 +12,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"context"
 	"github.com/syndtr/goleveldb/leveldb"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/coredocumentrepository"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/invoicerepository"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/repository"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/grpc"
 )
 
 var dbFileName = "/tmp/centrifuge_testing_inv_service.leveldb"
@@ -45,20 +46,20 @@ func TestInvoiceService(t *testing.T) {
 		DataMerkleRoot: testingutils.Rand32Bytes(),
 	}
 
-	sentDoc, err := s.SendInvoiceDocument(context.Background(), &invoice.SendInvoiceEnvelope{[][]byte{}, doc.Document})
+	sentDoc, err := s.SendInvoiceDocument(context.Background(), &invoicegrpc.SendInvoiceEnvelope{[][]byte{}, doc.Document})
 	assert.Nil(t, err, "Error in RPC Call")
 
 	assert.Equal(t, sentDoc.CoreDocument.DocumentIdentifier, identifier,
 		"DocumentIdentifier doesn't match")
 
 	receivedDoc, err := s.GetInvoiceDocument(context.Background(),
-		&invoice.GetInvoiceDocumentEnvelope{DocumentIdentifier: identifier})
+		&invoicegrpc.GetInvoiceDocumentEnvelope{DocumentIdentifier: identifier})
 	assert.Nil(t, err, "Error in RPC Call")
 	assert.Equal(t, receivedDoc.CoreDocument.DocumentIdentifier, identifier,
 		"DocumentIdentifier doesn't match")
 
 	_, err = s.GetInvoiceDocument(context.Background(),
-		&invoice.GetInvoiceDocumentEnvelope{DocumentIdentifier: identifierIncorrect})
+		&invoicegrpc.GetInvoiceDocumentEnvelope{DocumentIdentifier: identifierIncorrect})
 	assert.NotNil(t, err,
 		"RPC call should have raised exception")
 

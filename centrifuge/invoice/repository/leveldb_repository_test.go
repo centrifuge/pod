@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
 	"github.com/syndtr/goleveldb/leveldb"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/coredocumentrepository"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 )
 
 var dbFileName = "/tmp/centrifuge_testing_invdoc.leveldb"

@@ -2,8 +2,8 @@ package coredocumentservice
 
 import (
 	"context"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/coredocumentrepository"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/coredocumentgrpc"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/grpc"
 )
 
 type P2PService struct {}

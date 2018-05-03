@@ -3,8 +3,8 @@ package context
 import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
 	"github.com/spf13/viper"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/coredocumentrepository"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/invoicerepository"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/repository"
 )
 
 func Bootstrap() {

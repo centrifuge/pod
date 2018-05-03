@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc"
 	"sync"
 	"google.golang.org/grpc/connectivity"
-	cdgrpc "github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/coredocumentgrpc"
+	cdgrpc "github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/grpc"
 )
 
 // Opens a client connection with libp2p

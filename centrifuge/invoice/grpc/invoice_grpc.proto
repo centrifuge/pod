@@ -1,7 +1,7 @@
 syntax = "proto3";
 package invoicegrpc;
 
-option go_package = "github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/invoicegrpc";
+option go_package = "invoicegrpc";
 
 import "google/api/annotations.proto";
 import "google/protobuf/empty.proto";
@@ -25,13 +25,13 @@ option (grpc.gateway.protoc_gen_swagger.options.openapiv2_swagger) = {
 };
 
 service InvoiceDocumentService {
-    rpc SendInvoiceDocument(SendInvoiceEnvelope) returns (InvoiceDocument) {
+    rpc SendInvoiceDocument(SendInvoiceEnvelope) returns (invoice.InvoiceDocument) {
         option (google.api.http) = {
             post: "/invoice/send"
             body: "*"
         };
     }
-    rpc GetInvoiceDocument(GetInvoiceDocumentEnvelope) returns (InvoiceDocument) {
+    rpc GetInvoiceDocument(GetInvoiceDocumentEnvelope) returns (invoice.InvoiceDocument) {
         option (google.api.http) = {
             get: "/invoice/get/{document_identifier}"
         };
@@ -49,7 +49,7 @@ service InvoiceDocumentService {
 message SendInvoiceEnvelope {
     // Centrifuge OS Entity of the recipient
     repeated bytes recipients = 1;
-    InvoiceDocument document = 10;
+    invoice.InvoiceDocument document = 10;
 }
 
 message GetInvoiceDocumentEnvelope {
@@ -57,5 +57,5 @@ message GetInvoiceDocumentEnvelope {
 }
 
 message ReceivedInvoices {
-    repeated InvoiceDocument invoices = 1;
+    repeated invoice.InvoiceDocument invoices = 1;
 }
