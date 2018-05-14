@@ -2,7 +2,7 @@ package coredocumentrepository
 
 import (
 	"github.com/syndtr/goleveldb/leveldb"
-	"github.com/CentrifugeInc/centrifuge-protobufs/coredocument"
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/golang/protobuf/proto"
 	"sync"
 )

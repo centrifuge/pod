@@ -1,8 +1,10 @@
 package invoice
 
 import (
-	coredocumentpb "github.com/CentrifugeInc/centrifuge-protobufs/coredocument"
-	invoicepb "github.com/CentrifugeInc/centrifuge-protobufs/invoice"
+	coredocumentpb "github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
+	invoicepb "github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
+	"github.com/CentrifugeInc/centrifuge-protobufs/documenttypes"
+
 	"github.com/golang/protobuf/proto"
 	"log"
 	"github.com/golang/protobuf/ptypes/any"
@@ -14,11 +16,11 @@ func ConvertToCoreDocument(inv *Invoice) (coredocument coredocument.CoreDocument
 	proto.Merge(coredocpb, inv.Document.CoreDocument)
 	serializedInvoice, err := proto.Marshal(inv.Document.Data)
 	if err != nil {
-		log.Fatalf("Could not serialize InvoiceData", err)
+		log.Fatalf("Could not serialize InvoiceData: %s", err)
 	}
 
 	invoiceAny := any.Any{
-		TypeUrl: invoicepb.InvoiceDataTypeUrl,
+		TypeUrl: documenttypes.InvoiceDataTypeUrl,
 		Value: serializedInvoice,
 	}
 
@@ -28,7 +30,7 @@ func ConvertToCoreDocument(inv *Invoice) (coredocument coredocument.CoreDocument
 	}
 
 	invoiceSaltsAny := any.Any{
-		TypeUrl: invoicepb.InvoiceSaltsTypeUrl,
+		TypeUrl: documenttypes.InvoiceSaltsTypeUrl,
 		Value: serializedSalts,
 	}
 
@@ -39,8 +41,8 @@ func ConvertToCoreDocument(inv *Invoice) (coredocument coredocument.CoreDocument
 }
 
 func ConvertToInvoiceDocument(coredocument *coredocument.CoreDocument) (inv Invoice) {
-	if coredocument.Document.EmbeddedData.TypeUrl != invoicepb.InvoiceDataTypeUrl ||
-		coredocument.Document.EmbeddedDataSalts.TypeUrl != invoicepb.InvoiceSaltsTypeUrl {
+	if coredocument.Document.EmbeddedData.TypeUrl != documenttypes.InvoiceDataTypeUrl ||
+		coredocument.Document.EmbeddedDataSalts.TypeUrl != documenttypes.InvoiceSaltsTypeUrl {
 		log.Fatal("Trying to convert document with incorrect schema")
 	}
 

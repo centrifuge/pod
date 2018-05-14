@@ -1,9 +1,9 @@
 package invoice
 
 import (
-	"github.com/CentrifugeInc/centrifuge-protobufs/invoice"
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
 	"github.com/centrifuge/precise-proofs/proofs"
-	"github.com/CentrifugeInc/centrifuge-protobufs/coredocument"
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 )
 
 type Invoice struct {

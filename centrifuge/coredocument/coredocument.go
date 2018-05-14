@@ -2,7 +2,7 @@ package coredocument
 
 import (
 	"context"
-	"github.com/CentrifugeInc/centrifuge-protobufs/coredocument"
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
 	"log"
 	"fmt"
@@ -10,7 +10,7 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/anchor"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/grpc"
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
 )
 
 type CoreDocument struct {
@@ -41,7 +41,7 @@ func (cd *CoreDocument) Send(ctx context.Context, recipient string) (err error) 
 	clientWithProtocol := fmt.Sprintf("/ipfs/%s", lastb58Key)
 	client := p2p.OpenClient(clientWithProtocol)
 	log.Printf("Done opening connection against [%s]\n", lastb58Key)
-	_, err = client.Post(context.Background(), &coredocumentgrpc.P2PMessage{cd.Document})
+	_, err = client.Post(context.Background(), &p2ppb.P2PMessage{Document: cd.Document})
 	if err != nil {
 		return err
 	}

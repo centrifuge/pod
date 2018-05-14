@@ -1,6 +1,6 @@
 package coredocumentrepository
 
-import "github.com/CentrifugeInc/centrifuge-protobufs/coredocument"
+import "github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 
 var coreDocumentRepository CoreDocumentRepository
 

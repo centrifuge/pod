@@ -2,7 +2,7 @@ package invoicerepository
 
 import (
 	"github.com/syndtr/goleveldb/leveldb"
-	"github.com/CentrifugeInc/centrifuge-protobufs/invoice"
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
 	"github.com/golang/protobuf/proto"
 	"github.com/go-errors/errors"
 	"sync"

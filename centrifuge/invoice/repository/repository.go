@@ -1,7 +1,7 @@
 package invoicerepository
 
 import (
-	"github.com/CentrifugeInc/centrifuge-protobufs/invoice"
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
 )
 
 var invoiceRepository InvoiceRepository

@@ -6,7 +6,7 @@ import (
 	"testing"
 	"os"
 	"github.com/spf13/viper"
-	"github.com/CentrifugeInc/centrifuge-protobufs/coredocument"
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/stretchr/testify/assert"
 	"context"
 	"github.com/syndtr/goleveldb/leveldb"
@@ -14,7 +14,7 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/service"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/grpc"
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
 )
 
 var dbFileName = "/tmp/centrifuge_testing_p2p_post.leveldb"
@@ -33,7 +33,7 @@ func TestP2PService(t *testing.T) {
 	identifier := []byte("1")
 	coredoc := NewCoreDocument(&coredocumentpb.CoreDocument{DocumentIdentifier: identifier})
 
-	req := coredocumentgrpc.P2PMessage{Document: coredoc.Document}
+	req := p2ppb.P2PMessage{Document: coredoc.Document}
 	rpc := coredocumentservice.P2PService{}
 	res, err := rpc.Post(context.Background(), &req)
 	assert.Nil(t, err, "Received error")

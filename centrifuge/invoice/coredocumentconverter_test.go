@@ -5,8 +5,9 @@ package invoice
 
 import (
 	"testing"
-	"github.com/CentrifugeInc/centrifuge-protobufs/coredocument"
-	"github.com/CentrifugeInc/centrifuge-protobufs/invoice"
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
+	"github.com/CentrifugeInc/centrifuge-protobufs/documenttypes"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
@@ -34,11 +35,11 @@ func TestCoreDocumentConverter(t *testing.T) {
 	assert.Nil(t, err, "Could not serialize InvoiceDataSalts")
 
 	invoiceAny := any.Any{
-		TypeUrl: invoicepb.InvoiceDataTypeUrl,
+		TypeUrl: documenttypes.InvoiceDataTypeUrl,
 		Value: serializedInvoice,
 	}
 	invoiceSaltsAny := any.Any{
-		TypeUrl: invoicepb.InvoiceSaltsTypeUrl,
+		TypeUrl: documenttypes.InvoiceSaltsTypeUrl,
 		Value: serializedSalts,
 	}
 	coreDocument := coredocumentpb.CoreDocument{

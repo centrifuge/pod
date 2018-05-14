@@ -5,8 +5,8 @@ package invoicerepository
 import (
 	"testing"
 	"os"
-	"github.com/CentrifugeInc/centrifuge-protobufs/invoice"
-	"github.com/CentrifugeInc/centrifuge-protobufs/coredocument"
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/stretchr/testify/assert"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
 	"github.com/syndtr/goleveldb/leveldb"
