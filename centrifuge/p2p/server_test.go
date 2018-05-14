@@ -25,7 +25,6 @@ func TestMain(m *testing.M) {
 }
 
 func TestP2PService(t *testing.T) {
-
 	identifier := []byte("1")
 	inv := invoice.NewInvoiceDocument()
 	inv.CoreDocument = &coredocumentpb.CoreDocument{DocumentIdentifier: identifier}

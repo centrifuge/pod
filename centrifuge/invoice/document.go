@@ -4,6 +4,7 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/invoice"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/CentrifugeInc/centrifuge-protobufs/coredocument"
+	"crypto/sha256"
 )
 
 func NewInvoiceDocument () *invoicepb.InvoiceDocument {
@@ -19,6 +20,11 @@ func NewInvoiceDocument () *invoicepb.InvoiceDocument {
 
 func CalculateMerkleRoot (doc *invoicepb.InvoiceDocument) {
 	dtree := proofs.NewDocumentTree()
-	dtree.FillTree(doc.Data, doc.Salts)
+	hashFunc := sha256.New()
+	dtree.SetHashFunc(hashFunc)
+	err := dtree.FillTree(doc.Data, doc.Salts)
+	if err != nil {
+		panic(err)
+	}
 	doc.CoreDocument.DocumentRoot = dtree.RootHash()
 }
