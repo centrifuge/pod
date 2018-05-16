@@ -6,11 +6,11 @@ import (
 	"log"
 
 	golog "github.com/ipfs/go-log"
-	crypto "github.com/libp2p/go-libp2p-crypto"
-	host "github.com/libp2p/go-libp2p-host"
-	peer "github.com/libp2p/go-libp2p-peer"
+	"github.com/libp2p/go-libp2p-crypto"
+	"github.com/libp2p/go-libp2p-host"
+	"github.com/libp2p/go-libp2p-peer"
 	pstore "github.com/libp2p/go-libp2p-peerstore"
-	swarm "github.com/libp2p/go-libp2p-swarm"
+	"github.com/libp2p/go-libp2p-swarm"
 	bhost "github.com/libp2p/go-libp2p/p2p/host/basic"
 	ma "github.com/multiformats/go-multiaddr"
 	gologging "github.com/whyrusleeping/go-logging"
@@ -19,44 +19,18 @@ import (
 	"github.com/paralin/go-libp2p-grpc"
 	"github.com/spf13/viper"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools"
-	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
 	"github.com/ipfs/go-cid"
 	mh "github.com/multiformats/go-multihash"
 	"github.com/ipfs/go-ipfs-addr"
 	"time"
 	"github.com/libp2p/go-libp2p-kad-dht"
 	ds "github.com/ipfs/go-datastore"
-	invoicepb "github.com/CentrifugeInc/centrifuge-protobufs/invoice"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/service"
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
 )
 
 var	HostInstance host.Host
 var GRPCProtoInstance p2pgrpc.GRPCProtocol
-
-type P2PService struct {
-}
-
-func (srv *P2PService) Transmit(ctx context.Context, req *P2PMessage) (rep *P2PReply, err error) {
-	err = cc.Node.GetCoreDocumentStorageService().PutDocument(req.Document)
-	if err != nil {
-		return nil, err
-	}
-
-	switch schemaId := string(req.Document.EmbeddedData.TypeUrl); {
-	case schemaId == invoicepb.InvoiceDataTypeUrl:
-		// Convert and Store as Invoice Document
-		invoiceDocument := invoice.ConvertToInvoiceDocument(req.Document)
-		err = cc.Node.GetInvoiceStorageService().PutDocument(&invoiceDocument)
-		if err != nil {
-			return nil, err
-		}
-	default:
-		log.Fatal("Got unknown schema")
-	}
-
-	rep = &P2PReply{req.Document}
-	return
-}
 
 // makeBasicHost creates a LibP2P host with a random peer ID listening on the
 // given multiaddress.
@@ -223,7 +197,7 @@ func RunP2P() {
 	grpcProto := p2pgrpc.NewGRPCProtocol(context.Background(), hostInstance)
 	GRPCProtoInstance = *grpcProto
 
-	RegisterP2PServiceServer(grpcProto.GetGRPCServer(), &P2PService{})
+	p2ppb.RegisterP2PServiceServer(grpcProto.GetGRPCServer(), &coredocumentservice.P2PService{})
 
 	hostInstance.Peerstore().AddAddr(hostInstance.ID(), hostInstance.Addrs()[0], pstore.TempAddrTTL)
 

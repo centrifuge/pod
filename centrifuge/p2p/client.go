@@ -10,10 +10,11 @@ import (
 	"google.golang.org/grpc"
 	"sync"
 	"google.golang.org/grpc/connectivity"
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
 )
 
 // Opens a client connection with libp2p
-func OpenClient (target string) P2PServiceClient {
+func OpenClient (target string) p2ppb.P2PServiceClient {
 	log.Printf("Opening connection to: %s", target)
 	ipfsaddr, err := ma.NewMultiaddr(target)
 	if err != nil {
@@ -32,10 +33,8 @@ func OpenClient (target string) P2PServiceClient {
 
 	// Decapsulate the /ipfs/<peerID> part from the target
 	// /ip4/<a.b.c.d>/ipfs/<peer> becomes /ip4/<a.b.c.d>
-	targetPeerAddr, _ := ma.NewMultiaddr(
-		fmt.Sprintf("/ipfs/%s", peer.IDB58Encode(peerid)))
+	targetPeerAddr, _ := ma.NewMultiaddr(fmt.Sprintf("/ipfs/%s", peer.IDB58Encode(peerid)))
 	targetAddr := ipfsaddr.Decapsulate(targetPeerAddr)
-
 
 	hostInstance := GetHost()
 	grpcProtoInstance := GetGRPCProto()
@@ -62,5 +61,5 @@ func OpenClient (target string) P2PServiceClient {
 		grpcConn = g
 	}()
 	wg.Wait()
-	return NewP2PServiceClient(grpcConn)
+	return p2ppb.NewP2PServiceClient(grpcConn)
 }

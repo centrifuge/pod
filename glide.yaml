@@ -14,7 +14,7 @@ import:
   - types
   - ethereum
 - package: github.com/golang/protobuf
-  version: ^1.0.0
+  version: b4deda0973fb4c70b50d226b1af49f3da59f5265
   subpackages:
   - proto
   - ptypes/timestamp
@@ -75,4 +75,6 @@ import:
 - package: github.com/whyrusleeping/go-smux-multistream
 - package: github.com/whyrusleeping/go-smux-yamux
 - package: github.com/CentrifugeInc/centrifuge-protobufs
+  repo: git@github.com:CentrifugeInc/centrifuge-protobufs
+  version: cefcf79a623dfc68cb05157ca77181932cac401a
 - package: github.com/centrifuge/precise-proofs
