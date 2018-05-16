@@ -1,7 +1,7 @@
 package signatures
 
 import (
-	coredocumentpb "github.com/CentrifugeInc/centrifuge-protobufs/coredocument"
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/spf13/viper"
 	"golang.org/x/crypto/ed25519"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools"
@@ -123,7 +123,7 @@ func (srv *SigningService) createSignatureData (doc *coredocumentpb.CoreDocument
 func (srv *SigningService) MakeSignature (doc *coredocumentpb.CoreDocument, identity []byte, privateKey ed25519.PrivateKey, publicKey ed25519.PublicKey) (sig *coredocumentpb.Signature){
 	sigArray := srv.createSignatureData(doc)
 	signature := ed25519.Sign(privateKey, sigArray)
-	return &coredocumentpb.Signature{identity,publicKey, signature}
+	return &coredocumentpb.Signature{EntityId: identity, PublicKey: publicKey, Signature: signature}
 }
 
 // Sign a document with a provided public key

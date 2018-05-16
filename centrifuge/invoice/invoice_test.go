@@ -2,30 +2,29 @@
 
 package invoice
 
-
 import (
 	"testing"
-	"github.com/CentrifugeInc/centrifuge-protobufs/coredocument"
-	"github.com/CentrifugeInc/centrifuge-protobufs/invoice"
-	"github.com/golang/protobuf/proto"
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/golang/protobuf/ptypes/any"
+	"github.com/CentrifugeInc/centrifuge-protobufs/documenttypes"
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
+	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 )
 
-
-func TestCoreDocumentConverter(t *testing.T) {
+func TestInvoiceCoreDocumentConverter(t *testing.T) {
 	identifier := []byte("1")
 	invoiceData := invoicepb.InvoiceData{
 		Amount: 100,
 	}
 	invoiceSalts := invoicepb.InvoiceDataSalts{}
 
-	invoiceDoc := NewInvoiceDocument()
-	invoiceDoc.CoreDocument =	&coredocumentpb.CoreDocument{
-			DocumentIdentifier:identifier,
-			}
-	invoiceDoc.Data = &invoiceData
-	invoiceDoc.Salts = &invoiceSalts
+	invoiceDoc := NewEmptyInvoice()
+	invoiceDoc.Document.CoreDocument =	&coredocumentpb.CoreDocument{
+		DocumentIdentifier:identifier,
+	}
+	invoiceDoc.Document.Data = &invoiceData
+	invoiceDoc.Document.Salts = &invoiceSalts
 
 	serializedInvoice, err := proto.Marshal(&invoiceData)
 	assert.Nil(t, err, "Could not serialize InvoiceData")
@@ -34,11 +33,11 @@ func TestCoreDocumentConverter(t *testing.T) {
 	assert.Nil(t, err, "Could not serialize InvoiceDataSalts")
 
 	invoiceAny := any.Any{
-		TypeUrl: invoicepb.InvoiceDataTypeUrl,
+		TypeUrl: documenttypes.InvoiceDataTypeUrl,
 		Value: serializedInvoice,
 	}
 	invoiceSaltsAny := any.Any{
-		TypeUrl: invoicepb.InvoiceSaltsTypeUrl,
+		TypeUrl: documenttypes.InvoiceSaltsTypeUrl,
 		Value: serializedSalts,
 	}
 	coreDocument := coredocumentpb.CoreDocument{
@@ -47,8 +46,8 @@ func TestCoreDocumentConverter(t *testing.T) {
 		EmbeddedDataSalts: &invoiceSaltsAny,
 	}
 
-	generatedCoreDocument := ConvertToCoreDocument(invoiceDoc)
-	generatedCoreDocumentBytes, err := proto.Marshal(&generatedCoreDocument)
+	generatedCoreDocument := invoiceDoc.ConvertToCoreDocument()
+	generatedCoreDocumentBytes, err := proto.Marshal(generatedCoreDocument.Document)
 	assert.Nil(t, err, "Error marshaling generatedCoreDocument")
 
 	coreDocumentBytes, err := proto.Marshal(&coreDocument)
@@ -57,15 +56,15 @@ func TestCoreDocumentConverter(t *testing.T) {
 		"Generated & converted documents are not identical")
 
 
-	convertedInvoiceDoc := ConvertToInvoiceDocument(&generatedCoreDocument)
-	convertedGeneratedInvoiceDoc := ConvertToInvoiceDocument(&generatedCoreDocument)
-	invoiceBytes, err := proto.Marshal(invoiceDoc)
+	convertedInvoiceDoc := NewInvoiceFromCoreDocument(&generatedCoreDocument)
+	convertedGeneratedInvoiceDoc := NewInvoiceFromCoreDocument(&generatedCoreDocument)
+	invoiceBytes, err := proto.Marshal(invoiceDoc.Document)
 	assert.Nil(t, err, "Error marshaling invoiceDoc")
 
-	convertedGeneratedInvoiceBytes, err := proto.Marshal(&convertedGeneratedInvoiceDoc)
+	convertedGeneratedInvoiceBytes, err := proto.Marshal(convertedGeneratedInvoiceDoc.Document)
 	assert.Nil(t, err, "Error marshaling convertedGeneratedInvoiceDoc")
 
-	convertedInvoiceBytes, err := proto.Marshal(&convertedInvoiceDoc)
+	convertedInvoiceBytes, err := proto.Marshal(convertedInvoiceDoc.Document)
 	assert.Nil(t, err, "Error marshaling convertedGeneratedInvoiceDoc")
 
 	assert.Equal(t, invoiceBytes, convertedGeneratedInvoiceBytes,
@@ -74,4 +73,5 @@ func TestCoreDocumentConverter(t *testing.T) {
 		"invoiceBytes and convertedInvoiceBytes do not match")
 
 }
+
 

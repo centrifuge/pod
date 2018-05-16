@@ -25,7 +25,7 @@ imports:
   - centrifuge/witness
 - name: github.com/CentrifugeInc/centrifuge-protobufs
   repo: git@github.com:CentrifugeInc/centrifuge-protobufs
-  version: 260599d70584ed960c0c2feaae086c82cdfe6e11
+  version: cefcf79a623dfc68cb05157ca77181932cac401a
   subpackages:
   - coredocument
   - invoice
@@ -81,7 +81,7 @@ imports:
   - io
   - proto
 - name: github.com/golang/protobuf
-  version: 925541529c1fa6821df4e44ce2723319eb2be768
+  version: b4deda0973fb4c70b50d226b1af49f3da59f5265
   subpackages:
   - jsonpb
   - proto

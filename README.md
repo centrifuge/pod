@@ -105,8 +105,12 @@ Modifying .proto files
 If you plan on modifying the protobuf definitions, there are a few things you need to install. Begin by installing
 protobuf according to https://github.com/google/protobuf#protocol-compiler-installation
 
-You will also need to check out the repository source to a folder that is then passed to the go generate command as
-`PROTOBUF`
+Check-out centrifuge protobuf document definitions: 
+```
+git clone git@github.com:CentrifugeInc/centrifuge-protobufs.git
+```
+
+Set Environment Variable `PROTOBUF` to point to location of above cloned repository.
 
 Next step is to compile the golang protobuf & grpc gateway binaries:
 
@@ -118,7 +122,7 @@ go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
 
 You can then generate the necessary go code by running:
 ```
-PROTOBUF=/path/to/protobuf_repo go generate main.go
+PROTOBUF=/path/to/centrifuge/protobuf_repo go generate main.go
 ```
 
 

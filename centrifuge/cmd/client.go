@@ -11,11 +11,11 @@ import (
 	"google.golang.org/grpc/credentials"
 	"crypto/x509"
 	"crypto/tls"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
 )
 
-func getDocument(client invoice.InvoiceDocumentServiceClient, id []byte) {
-	doc, err := client.GetInvoiceDocument(context.Background(), &invoice.GetInvoiceDocumentEnvelope{id})
+func getDocument(client invoicepb.InvoiceDocumentServiceClient, id []byte) {
+	doc, err := client.GetInvoiceDocument(context.Background(), &invoicepb.GetInvoiceDocumentEnvelope{DocumentIdentifier: id})
 	if err != nil {
 		panic(err)
 	}
@@ -54,7 +54,7 @@ var runClient = &cobra.Command{
 			log.Fatalf("fail to dial: %v", err)
 		}
 		defer conn.Close()
-		client := invoice.NewInvoiceDocumentServiceClient(conn)
+		client := invoicepb.NewInvoiceDocumentServiceClient(conn)
 
 		getDocument(client, []byte("1"))
 	},
