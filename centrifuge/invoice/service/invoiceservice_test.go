@@ -46,19 +46,19 @@ func TestInvoiceService(t *testing.T) {
 		DataMerkleRoot: testingutils.Rand32Bytes(),
 	}
 
-	sentDoc, err := s.SendInvoiceDocument(context.Background(), &invoicepb.SendInvoiceEnvelope{Recipients: [][]byte{}, Document: doc.Document})
+	sentDoc, err := s.HandleSendInvoiceDocument(context.Background(), &invoicepb.SendInvoiceEnvelope{Recipients: [][]byte{}, Document: doc.Document})
 	assert.Nil(t, err, "Error in RPC Call")
 
 	assert.Equal(t, sentDoc.CoreDocument.DocumentIdentifier, identifier,
 		"DocumentIdentifier doesn't match")
 
-	receivedDoc, err := s.GetInvoiceDocument(context.Background(),
+	receivedDoc, err := s.HandleGetInvoiceDocument(context.Background(),
 		&invoicepb.GetInvoiceDocumentEnvelope{DocumentIdentifier: identifier})
 	assert.Nil(t, err, "Error in RPC Call")
 	assert.Equal(t, receivedDoc.CoreDocument.DocumentIdentifier, identifier,
 		"DocumentIdentifier doesn't match")
 
-	_, err = s.GetInvoiceDocument(context.Background(),
+	_, err = s.HandleGetInvoiceDocument(context.Background(),
 		&invoicepb.GetInvoiceDocumentEnvelope{DocumentIdentifier: identifierIncorrect})
 	assert.NotNil(t, err,
 		"RPC call should have raised exception")

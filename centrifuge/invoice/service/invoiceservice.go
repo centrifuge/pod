@@ -12,7 +12,7 @@ import (
 // Struct needed as it is used to register the grpc services attached to the grpc server
 type InvoiceDocumentService struct {}
 
-func (s *InvoiceDocumentService) SendInvoiceDocument(ctx context.Context, sendInvoiceEnvelope *invoicepb.SendInvoiceEnvelope) (*invoicepb.InvoiceDocument, error) {
+func (s *InvoiceDocumentService) HandleSendInvoiceDocument(ctx context.Context, sendInvoiceEnvelope *invoicepb.SendInvoiceEnvelope) (*invoicepb.InvoiceDocument, error) {
 	err := invoicerepository.GetInvoiceRepository().Store(sendInvoiceEnvelope.Document)
 	if err != nil {
 		return nil, err
@@ -35,12 +35,12 @@ func (s *InvoiceDocumentService) SendInvoiceDocument(ctx context.Context, sendIn
 	return sendInvoiceEnvelope.Document, nil
 }
 
-func (s *InvoiceDocumentService) GetInvoiceDocument(ctx context.Context, getInvoiceDocumentEnvelope *invoicepb.GetInvoiceDocumentEnvelope) (*invoicepb.InvoiceDocument, error) {
+func (s *InvoiceDocumentService) HandleGetInvoiceDocument(ctx context.Context, getInvoiceDocumentEnvelope *invoicepb.GetInvoiceDocumentEnvelope) (*invoicepb.InvoiceDocument, error) {
 	doc, err := invoicerepository.GetInvoiceRepository().FindById(getInvoiceDocumentEnvelope.DocumentIdentifier)
 	return doc, err
 }
 
-func (s *InvoiceDocumentService) GetReceivedInvoiceDocuments (ctx context.Context, empty *google_protobuf2.Empty) (*invoicepb.ReceivedInvoices, error) {
+func (s *InvoiceDocumentService) HandleGetReceivedInvoiceDocuments (ctx context.Context, empty *google_protobuf2.Empty) (*invoicepb.ReceivedInvoices, error) {
 	return nil, nil
 }
 

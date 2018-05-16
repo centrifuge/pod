@@ -13,8 +13,8 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/repository"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/service"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/controller"
 )
 
 var dbFileName = "/tmp/centrifuge_testing_p2p_post.leveldb"
@@ -34,7 +34,7 @@ func TestP2PService(t *testing.T) {
 	coredoc := NewCoreDocument(&coredocumentpb.CoreDocument{DocumentIdentifier: identifier})
 
 	req := p2ppb.P2PMessage{Document: coredoc.Document}
-	rpc := coredocumentservice.P2PService{}
+	rpc := coredocumentcontroller.P2PService{}
 	res, err := rpc.Post(context.Background(), &req)
 	assert.Nil(t, err, "Received error")
 	assert.Equal(t, res.Document.DocumentIdentifier, identifier, "Incorrect identifier")
