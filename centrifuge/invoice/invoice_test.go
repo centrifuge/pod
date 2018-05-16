@@ -2,19 +2,17 @@
 
 package invoice
 
-
 import (
 	"testing"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
-	"github.com/CentrifugeInc/centrifuge-protobufs/documenttypes"
-	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
+	"github.com/CentrifugeInc/centrifuge-protobufs/documenttypes"
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
+	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 )
 
-
-func TestCoreDocumentConverter(t *testing.T) {
+func TestInvoiceCoreDocumentConverter(t *testing.T) {
 	identifier := []byte("1")
 	invoiceData := invoicepb.InvoiceData{
 		Amount: 100,
@@ -23,8 +21,8 @@ func TestCoreDocumentConverter(t *testing.T) {
 
 	invoiceDoc := NewEmptyInvoice()
 	invoiceDoc.Document.CoreDocument =	&coredocumentpb.CoreDocument{
-			DocumentIdentifier:identifier,
-			}
+		DocumentIdentifier:identifier,
+	}
 	invoiceDoc.Document.Data = &invoiceData
 	invoiceDoc.Document.Salts = &invoiceSalts
 
@@ -48,7 +46,7 @@ func TestCoreDocumentConverter(t *testing.T) {
 		EmbeddedDataSalts: &invoiceSaltsAny,
 	}
 
-	generatedCoreDocument := ConvertToCoreDocument(invoiceDoc)
+	generatedCoreDocument := invoiceDoc.ConvertToCoreDocument()
 	generatedCoreDocumentBytes, err := proto.Marshal(generatedCoreDocument.Document)
 	assert.Nil(t, err, "Error marshaling generatedCoreDocument")
 
@@ -58,8 +56,8 @@ func TestCoreDocumentConverter(t *testing.T) {
 		"Generated & converted documents are not identical")
 
 
-	convertedInvoiceDoc := ConvertToInvoiceDocument(&generatedCoreDocument)
-	convertedGeneratedInvoiceDoc := ConvertToInvoiceDocument(&generatedCoreDocument)
+	convertedInvoiceDoc := NewInvoiceFromCoreDocument(&generatedCoreDocument)
+	convertedGeneratedInvoiceDoc := NewInvoiceFromCoreDocument(&generatedCoreDocument)
 	invoiceBytes, err := proto.Marshal(invoiceDoc.Document)
 	assert.Nil(t, err, "Error marshaling invoiceDoc")
 
@@ -75,4 +73,5 @@ func TestCoreDocumentConverter(t *testing.T) {
 		"invoiceBytes and convertedInvoiceBytes do not match")
 
 }
+
 

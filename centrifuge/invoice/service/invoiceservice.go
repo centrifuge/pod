@@ -20,7 +20,7 @@ func (s *InvoiceDocumentService) SendInvoiceDocument(ctx context.Context, sendIn
 
 	inv := invoice.NewInvoice(sendInvoiceEnvelope.Document)
 	inv.CalculateMerkleRoot()
-	coreDoc := invoice.ConvertToCoreDocument(inv)
+	coreDoc := inv.ConvertToCoreDocument()
 	// Sign document
 	// Uncomment once fixed
 	//coreDoc.Sign()
