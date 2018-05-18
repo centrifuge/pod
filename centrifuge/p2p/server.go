@@ -25,8 +25,8 @@ import (
 	"time"
 	"github.com/libp2p/go-libp2p-kad-dht"
 	ds "github.com/ipfs/go-datastore"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/service"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/p2p/controller"
 )
 
 var	HostInstance host.Host
@@ -197,7 +197,7 @@ func RunP2P() {
 	grpcProto := p2pgrpc.NewGRPCProtocol(context.Background(), hostInstance)
 	GRPCProtoInstance = *grpcProto
 
-	p2ppb.RegisterP2PServiceServer(grpcProto.GetGRPCServer(), &coredocumentservice.P2PService{})
+	p2ppb.RegisterP2PServiceServer(grpcProto.GetGRPCServer(), &p2pcontroller.P2PService{})
 
 	hostInstance.Peerstore().AddAddr(hostInstance.ID(), hostInstance.Addrs()[0], pstore.TempAddrTTL)
 

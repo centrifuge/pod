@@ -5,3 +5,6 @@ vendor/*
 .vscode
 .env
 .idea/
+
+*.swp
+*.swo
