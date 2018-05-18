@@ -99,33 +99,6 @@ import(
 )
 ```
 
-Modifying .proto files
-----------------------
-
-If you plan on modifying the protobuf definitions, there are a few things you need to install. Begin by installing
-protobuf according to https://github.com/google/protobuf#protocol-compiler-installation
-
-Check-out centrifuge protobuf document definitions: 
-```
-git clone git@github.com:CentrifugeInc/centrifuge-protobufs.git
-```
-
-Set Environment Variable `PROTOBUF` to point to location of above cloned repository.
-
-Next step is to compile the golang protobuf & grpc gateway binaries:
-
-```
-cd vendor/github.com/golang/protobuf && make install
-go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
-go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
-```  
-
-You can then generate the necessary go code by running:
-```
-PROTOBUF=/path/to/centrifuge/protobuf_repo go generate main.go
-```
-
-
 Swagger
 -------
 You can run `./scripts/run_swagger.sh` to launch a docker container that serves teh swagger UI on http://localhost:8085

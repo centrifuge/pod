@@ -10,9 +10,6 @@ keys:
   signing:
     publicKey: resources/signingKeyAux.pub
     privateKey: resources/signingKeyAux.key
-  encryption:
-    publicKey: resources/encryptionKeyAux.pub
-    privateKey: resources/encryptionKeyAux.key
   knownSigningKeys:
     1: resources/signingKey.pub
     2: resources/signingKeyAux.pub
