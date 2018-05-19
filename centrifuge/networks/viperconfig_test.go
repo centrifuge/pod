@@ -4,7 +4,7 @@ package networks
 
 import (
 	"encoding/hex"
-	"fmt"
+	"errors"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -16,13 +16,18 @@ func TestViperNetworkConfigurationLoader_LoadNetworkConfig(t *testing.T) {
 	// Check a known value from the default configuration
 	assert.Equal(t, 4, cl.networksConfig.GetInt("networks.centrifuge-russianhill-eth-rinkeby.ethereumNetworkId"))
 
-	networkString := "centrifuge-russianhill-eth-rinkeby"
+	// Try loading a network that doesn't exist
+	networkString := "doesnotexist"
 	conf, err := cl.GetConfigurationFromKey(networkString)
+	assert.Equal(t, errors.New("networkConfig: Network configuration does not exist"), err)
+	assert.Nil(t, conf)
+
+	networkString = "centrifuge-russianhill-eth-rinkeby"
+	conf, err = cl.GetConfigurationFromKey(networkString)
 	assert.Nil(t, err)
 	assert.Equal(t, networkString, conf.GetNetworkString())
 
 	contractId, err := conf.GetContractAddress("identityFactory")
-	fmt.Println(err)
 	expectedContractId, _ := hex.DecodeString("0589ed482af8d6809f022fc11aa399fc8a883d52")
 	assert.Equal(t, expectedContractId, contractId)
 
@@ -40,6 +45,4 @@ func TestViperNetworkConfigurationLoader_LoadNetworkConfig(t *testing.T) {
 	}
 	err = cl.LoadNetworkConfig()
 	assert.Error(t, err)
-	fmt.Println(err)
-
 }
