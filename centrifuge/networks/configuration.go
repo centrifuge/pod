@@ -11,5 +11,5 @@ type NetworkConfiguration interface {
 // NetworkConfigurationLoader is used to get the NetworkConfiguration based on
 // the network identifier defined in the application's configuration.
 type NetworkConfigurationLoader interface {
-	GetConfigurationFromKey(key string) NetworkConfiguration
+	GetConfigurationFromKey(key string) (NetworkConfiguration, error)
 }

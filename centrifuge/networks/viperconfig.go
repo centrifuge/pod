@@ -14,7 +14,7 @@ const (
 )
 
 // ViperNetworkConfiguration is a NetworkConfiguration implementation that uses
-// Viper to fetch configs from a viper compatible source.
+// Viper to fetch configs from a compatible source.
 type ViperNetworkConfiguration struct {
 	networkString string
 	viperConfig   *viper.Viper
@@ -74,7 +74,7 @@ func (cl *ViperNetworkConfigurationLoader) GetConfigurationFromKey(key string) (
 	vc = &ViperNetworkConfiguration{networkString: key}
 	key = fmt.Sprintf("networks.%s", key)
 	if !cl.networksConfig.IsSet(key) {
-		return nil, errors.New("neworkConfig: Network configuration does not exist")
+		return nil, errors.New("networkConfig: Network configuration does not exist")
 	}
 	vc.viperConfig = cl.networksConfig.Sub(key)
 	return
