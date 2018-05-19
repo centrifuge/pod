@@ -31,3 +31,6 @@ install:
 
 script:
   - scripts/test_wrapper.sh
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)

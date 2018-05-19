@@ -17,4 +17,4 @@ echo "IDENTITY REGISTRY ADDRESS: ${CENT_IDENTITY_ETHEREUM_IDENTITYREGISTRYADDRES
 ############################################################
 
 echo "Running Integration Ethereum Tests against [${CENT_ETHEREUM_GETH_SOCKET}]"
-go test ./... -tags=ethereum
+go test ./... -tags=ethereum -race -coverprofile=coverage.txt -covermode=atomic

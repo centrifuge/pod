@@ -5,6 +5,10 @@ set -a
 local_dir="$(dirname "$0")"
 PARENT_DIR=`pwd`
 
+set -e
+mkdir -p coverage/
+echo "" > coverage.txt
+
 ################# Run Dependencies #########################
 for path in ${local_dir}/test-dependencies/*; do
     [ -d "${path}" ] || continue # if not a directory, skip
@@ -54,6 +58,13 @@ then
   rm -Rf $new_dag
 fi
 ############################################################
+
+############# Merge test coverage ##########################
+for path in ${local_dir}/coverage/*; do
+  cat $path >> coverage.txt
+done
+
+
 
 ################# Propagate test status ####################
 exit $status
