@@ -5,6 +5,7 @@ package networks
 import (
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -40,10 +41,18 @@ func TestViperNetworkConfigurationLoader_LoadNetworkConfig(t *testing.T) {
 	assert.Equal(t, expectedBootstrapPeers, bootstrapPeers)
 
 	// Try to load a nonexistent configuration
-	cl = &ViperNetworkConfigurationLoader{
+	cl = ViperNetworkConfigurationLoader{
 		networkConfigPath: ".",
 		networkConfigName: "doesnotexist",
 	}
 	err = cl.LoadNetworkConfig()
 	assert.Error(t, err)
+}
+
+func TestViperNetworkConfigurationLoader_InitViperNetworkConfigLoader(t *testing.T) {
+	networkString := "centrifuge-russianhill-eth-rinkeby"
+	cl := InitViperNetworkConfigurationLoader()
+	nc, err := cl.GetConfigurationFromKey(networkString)
+	assert.Nil(t, err)
+	assert.Equal(t, networkString, nc.GetNetworkString())
 }

@@ -83,18 +83,20 @@ func (cl *ViperNetworkConfigurationLoader) GetConfigurationFromKey(key string) (
 
 // NewViperNetworkConfigurationLoader returns a ViperNetworkConfigurationLoader configured
 // with the default options `NETWORK_DEFUALT_CONFIG_NAME` and `NETWORK_DEFAULT_CONFIG_PATH`
-func NewViperNetworkConfigurationLoader() *ViperNetworkConfigurationLoader {
+func NewViperNetworkConfigurationLoader() ViperNetworkConfigurationLoader {
 	cl := ViperNetworkConfigurationLoader{}
 	cl.SetNetworkConfigName(NETWORK_DEFAULT_CONFIG_NAME)
 	cl.SetNetworkConfigPath(NETWORK_DEFAULT_CONFIG_PATH)
-	return &cl
+	cl.LoadNetworkConfig()
+	return cl
 }
 
 var once sync.Once
 
-func InitViperNetworkConfigurationLoader(cl NetworkConfigurationLoader) {
+func InitViperNetworkConfigurationLoader() NetworkConfigurationLoader {
 	once.Do(func() {
-		networkConfigurationLoader = cl
+		cl := NewViperNetworkConfigurationLoader()
+		networkConfigurationLoader = &cl
 	})
-	return
+	return networkConfigurationLoader
 }

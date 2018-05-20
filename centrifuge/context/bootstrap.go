@@ -17,5 +17,5 @@ func Bootstrap() {
 
 	coredocumentrepository.NewLevelDBCoreDocumentRepository(&coredocumentrepository.LevelDBCoreDocumentRepository{levelDB})
 	invoicerepository.NewLevelDBInvoiceRepository(&invoicerepository.LevelDBInvoiceRepository{levelDB})
-	networks.InitViperNetworkConfigurationLoader(networks.NewViperNetworkConfigurationLoader())
+	networks.InitViperNetworkConfigurationLoader()
 }
