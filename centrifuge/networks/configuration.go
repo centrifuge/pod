@@ -1,10 +1,16 @@
 package networks
 
+var networkConfigurationLoader NetworkConfigurationLoader
+
+func GetNetworkConfigurationLoader() NetworkConfigurationLoader {
+	return networkConfigurationLoader
+}
+
 // NetworkConfiguration holds all information required for a Centrifuge node to
 // connnect to a given network.
 type NetworkConfiguration interface {
 	GetNetworkString() string
-	GetContractAddress(string) []byte
+	GetContractAddress(string) ([]byte, error)
 	GetBootstrapPeers() []string
 }
 

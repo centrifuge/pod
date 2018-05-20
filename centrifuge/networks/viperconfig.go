@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/spf13/viper"
+	"sync"
 )
 
 const (
@@ -70,21 +71,30 @@ func (cl *ViperNetworkConfigurationLoader) LoadNetworkConfig() (err error) {
 
 // GetConfigurationFromKey gets the network specific configuration from the list
 // of networks defined in the networks configuration file
-func (cl *ViperNetworkConfigurationLoader) GetConfigurationFromKey(key string) (vc *ViperNetworkConfiguration, err error) {
-	vc = &ViperNetworkConfiguration{networkString: key}
+func (cl *ViperNetworkConfigurationLoader) GetConfigurationFromKey(key string) (conf NetworkConfiguration, err error) {
+	vc := ViperNetworkConfiguration{networkString: key}
 	key = fmt.Sprintf("networks.%s", key)
 	if !cl.networksConfig.IsSet(key) {
 		return nil, errors.New("networkConfig: Network configuration does not exist")
 	}
 	vc.viperConfig = cl.networksConfig.Sub(key)
-	return
+	return &vc, err
 }
 
 // NewViperNetworkConfigurationLoader returns a ViperNetworkConfigurationLoader configured
 // with the default options `NETWORK_DEFUALT_CONFIG_NAME` and `NETWORK_DEFAULT_CONFIG_PATH`
 func NewViperNetworkConfigurationLoader() *ViperNetworkConfigurationLoader {
-	cl := &ViperNetworkConfigurationLoader{}
+	cl := ViperNetworkConfigurationLoader{}
 	cl.SetNetworkConfigName(NETWORK_DEFAULT_CONFIG_NAME)
 	cl.SetNetworkConfigPath(NETWORK_DEFAULT_CONFIG_PATH)
-	return cl
+	return &cl
+}
+
+var once sync.Once
+
+func InitViperNetworkConfigurationLoader(cl NetworkConfigurationLoader) {
+	once.Do(func() {
+		networkConfigurationLoader = cl
+	})
+	return
 }

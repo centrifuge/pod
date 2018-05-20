@@ -1,10 +1,11 @@
 package context
 
 import (
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
-	"github.com/spf13/viper"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/repository"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/networks"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
+	"github.com/spf13/viper"
 )
 
 func Bootstrap() {
@@ -16,4 +17,5 @@ func Bootstrap() {
 
 	coredocumentrepository.NewLevelDBCoreDocumentRepository(&coredocumentrepository.LevelDBCoreDocumentRepository{levelDB})
 	invoicerepository.NewLevelDBInvoiceRepository(&invoicerepository.LevelDBInvoiceRepository{levelDB})
+	networks.InitViperNetworkConfigurationLoader(networks.NewViperNetworkConfigurationLoader())
 }

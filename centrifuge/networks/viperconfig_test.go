@@ -28,6 +28,7 @@ func TestViperNetworkConfigurationLoader_LoadNetworkConfig(t *testing.T) {
 	assert.Equal(t, networkString, conf.GetNetworkString())
 
 	contractId, err := conf.GetContractAddress("identityFactory")
+	assert.Nil(t, err)
 	expectedContractId, _ := hex.DecodeString("0589ed482af8d6809f022fc11aa399fc8a883d52")
 	assert.Equal(t, expectedContractId, contractId)
 
