@@ -5,7 +5,6 @@ package networks
 import (
 	"encoding/hex"
 	"errors"
-	"fmt"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
