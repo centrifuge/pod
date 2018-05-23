@@ -16,7 +16,14 @@ type Invoice struct {
 }
 
 func NewInvoice(invDoc *invoicepb.InvoiceDocument) *Invoice {
-	return &Invoice{invDoc}
+	inv := &Invoice{invDoc}
+	// IF salts have not been provided, let's generate them
+	if invDoc.Salts == nil {
+		invoiceSalts := invoicepb.InvoiceDataSalts{}
+		proofs.FillSalts(&invoiceSalts)
+		inv.Document.Salts = &invoiceSalts
+	}
+	return inv
 }
 
 func NewEmptyInvoice() *Invoice {
