@@ -1,3 +1,4 @@
+centrifugeNetwork: centrifuge-russianhill-eth-rinkeby
 storage:
   path: /tmp/centrifuge_data.leveldb
 
@@ -8,18 +9,15 @@ identityId: 1
 
 keys:
   signing:
-    publicKey: resources/signingKey.pub
-    privateKey: resources/signingKey.key
+    publicKey: example/resources/signingKey.pub
+    privateKey: example/resources/signingKey.key
   knownSigningKeys:
-    1: resources/signingKey.pub
-    2: resources/signingKeyAux.pub
-    3: resources/signingKeyExt.pub
+    1: example/resources/signingKey.pub
+    2: example/resources/signingKeyAux.pub
+    3: example/resources/signingKeyExt.pub
 
 p2p:
   port: 38202
-  bootstrapPeers:
-   - "/ip4/127.0.0.1/tcp/38202/ipfs/QmTQxbwkuZYYDfuzTbxEAReTNCLozyy558vQngVvPMjLYk"
-   - "/ip4/127.0.0.1/tcp/38203/ipfs/QmVf6EN6mkqWejWKW2qPu16XpdG3kJo1T3mhahPB5Se5n1"
 
 ethereum:
   accounts:
@@ -37,12 +35,4 @@ ethereum:
   maxRetries: 200
   intervalRetry: "100ms"
 
-identity:
-  ethereum:
-    identityFactoryAddress: "0x0589ed482af8d6809f022fc11aa399fc8a883d52"
-    identityRegistryAddress: "0xf9417cded133ba834d4cfdc6e452dbd2fc52674e"
 
-anchor:
-  ethereum:
-    enabled: false
-    anchorRegistryAddress: "0xb571fe40de2d61e954df9ca4e961f69488f135a0"

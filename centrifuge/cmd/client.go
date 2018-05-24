@@ -2,16 +2,15 @@ package cmd
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
-	"log"
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/server"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-	"crypto/x509"
-	"crypto/tls"
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
 )
 
 func getDocument(client invoicepb.InvoiceDocumentServiceClient, id []byte) {
@@ -19,14 +18,14 @@ func getDocument(client invoicepb.InvoiceDocumentServiceClient, id []byte) {
 	if err != nil {
 		panic(err)
 	}
-	log.Printf("Doc: %s\n", doc)
+	log.Infof("Doc: %s\n", doc)
 }
 
 func loadCertPool() (certPool *x509.CertPool) {
 	certPool = x509.NewCertPool()
 	ok := certPool.AppendCertsFromPEM([]byte(server.InsecureCert))
 	if !ok {
-		panic("bad certs")
+		log.Panic("bad certs")
 	}
 	return
 }
@@ -41,9 +40,9 @@ var runClient = &cobra.Command{
 		var opts []grpc.DialOption
 		cert, err := tls.X509KeyPair([]byte(server.InsecureCert), []byte(server.InsecureKey))
 		creds := credentials.NewTLS(&tls.Config{
-			RootCAs:loadCertPool(),
-			ServerName: serverAddr,
-			Certificates:[]tls.Certificate{cert},
+			RootCAs:            loadCertPool(),
+			ServerName:         serverAddr,
+			Certificates:       []tls.Certificate{cert},
 			InsecureSkipVerify: true,
 		})
 
@@ -51,7 +50,7 @@ var runClient = &cobra.Command{
 
 		conn, err := grpc.Dial(serverAddr, opts...)
 		if err != nil {
-			log.Fatalf("fail to dial: %v", err)
+			log.Errorf("fail to dial: %v", err)
 		}
 		defer conn.Close()
 		client := invoicepb.NewInvoiceDocumentServiceClient(conn)
@@ -61,7 +60,5 @@ var runClient = &cobra.Command{
 }
 
 func init() {
-	viper.SetDefault("nodeHostname", "localhost")
-	viper.SetDefault("nodePort", 8022)
 	rootCmd.AddCommand(runClient)
 }

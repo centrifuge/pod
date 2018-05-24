@@ -1,15 +1,13 @@
 package cmd
 
 import (
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/server"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/p2p"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/server"
+	"github.com/spf13/cobra"
 	"sync"
 
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
 )
-
 
 // runCmd represents the run command
 var runCmd = &cobra.Command{
@@ -36,11 +34,6 @@ var runCmd = &cobra.Command{
 
 var Destination string
 
-
 func init() {
-	// Set defaults for Server
-	viper.SetDefault("nodeHostname", "localhost")
-	viper.SetDefault("nodePort", 8022)
-	viper.SetDefault("p2p.port", 53202)
 	rootCmd.AddCommand(runCmd)
 }

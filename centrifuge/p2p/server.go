@@ -3,33 +3,33 @@ package p2p
 import (
 	"context"
 	"fmt"
-	"log"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 
-	golog "github.com/ipfs/go-log"
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/p2p/controller"
+	"github.com/ipfs/go-cid"
+	ds "github.com/ipfs/go-datastore"
+	"github.com/ipfs/go-ipfs-addr"
+	logging "github.com/ipfs/go-log"
 	"github.com/libp2p/go-libp2p-crypto"
 	"github.com/libp2p/go-libp2p-host"
+	"github.com/libp2p/go-libp2p-kad-dht"
 	"github.com/libp2p/go-libp2p-peer"
 	pstore "github.com/libp2p/go-libp2p-peerstore"
 	"github.com/libp2p/go-libp2p-swarm"
 	bhost "github.com/libp2p/go-libp2p/p2p/host/basic"
 	ma "github.com/multiformats/go-multiaddr"
+	mh "github.com/multiformats/go-multihash"
+	"github.com/paralin/go-libp2p-grpc"
 	gologging "github.com/whyrusleeping/go-logging"
 	msmux "github.com/whyrusleeping/go-smux-multistream"
 	yamux "github.com/whyrusleeping/go-smux-yamux"
-	"github.com/paralin/go-libp2p-grpc"
-	"github.com/spf13/viper"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools"
-	"github.com/ipfs/go-cid"
-	mh "github.com/multiformats/go-multihash"
-	"github.com/ipfs/go-ipfs-addr"
 	"time"
-	"github.com/libp2p/go-libp2p-kad-dht"
-	ds "github.com/ipfs/go-datastore"
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/p2p/controller"
 )
 
-var	HostInstance host.Host
+var log = logging.Logger("p2p")
+var HostInstance host.Host
 var GRPCProtoInstance p2pgrpc.GRPCProtocol
 
 // makeBasicHost creates a LibP2P host with a random peer ID listening on the
@@ -70,12 +70,12 @@ func makeBasicHost(listenPort int) (host.Host, error) {
 	// for this peer ID.
 	err = ps.AddPubKey(pid, pub)
 	if err != nil {
-		log.Printf("Could not enable encryption: %v\n", err)
+		log.Infof("Could not enable encryption: %v\n", err)
 		return nil, err
 	}
 	err = ps.AddPrivKey(pid, priv)
 	if err != nil {
-		log.Printf("Could not enable encryption: %v\n", err)
+		log.Infof("Could not enable encryption: %v\n", err)
 		return nil, err
 	}
 
@@ -106,7 +106,7 @@ func makeBasicHost(listenPort int) (host.Host, error) {
 	// Now we can build a full multiaddress to reach this host
 	// by encapsulating both addresses:
 	fullAddr := addr.Encapsulate(hostAddr)
-	log.Printf("I am %s\n", fullAddr)
+	log.Infof("I am %s\n", fullAddr)
 
 	return basicHost, nil
 }
@@ -116,23 +116,16 @@ func RunDHT(ctx context.Context, h host.Host) {
 	//dhtClient := dht.NewDHTClient(ctx, h, rdStore) // Just run it as a client, will not respond to discovery requests
 	dhtClient := dht.NewDHT(ctx, h, ds.NewMapDatastore()) // Run it as a Bootstrap Node
 
-	// IPFS Bootstrap Peer nodes
-	//"/ip4/172.16.0.102/tcp/38204/ipfs/QmNYcCDjtCRdYaYPpNkTSiQTpLLxRapMe1P3EGsmA2wK7D",
-	//"/ip4/104.131.131.82/tcp/4001/ipfs/QmaCpDMGvV2BGHeYERUEnRQAwe3N8SzbUtfsmvsqQLuvuJ",
-	//"/ip4/104.236.179.241/tcp/4001/ipfs/QmSoLPppuBtQSGwKDZT2M73ULpjvfd3aZ6ha4oFGL1KrGM",
-	//"/ip4/104.236.76.40/tcp/4001/ipfs/QmSoLV4Bbm51jM9C4gDYZQ9Cy3U6aXMJDAbzgu2fzaDs64",
-	//"/ip4/128.199.219.111/tcp/4001/ipfs/QmSoLSafTMBsPKadTEgaXctDQVcqN88CNLHXMkTNwMKPnu",
-	//"/ip4/178.62.158.247/tcp/4001/ipfs/QmSoLer265NRgSp2LA3dPaeykiS1J6DifTC88f5uVQKNAd",
-	bootstrapPeers := viper.GetStringSlice("p2p.bootstrapPeers")
+	bootstrapPeers := config.Config.GetBootstrapPeers()
 
-	log.Printf("Bootstrapping %s\n", bootstrapPeers)
+	log.Infof("Bootstrapping %s\n", bootstrapPeers)
 	for _, addr := range bootstrapPeers {
 		iaddr, _ := ipfsaddr.ParseString(addr)
 
 		pinfo, _ := pstore.InfoFromP2pAddr(iaddr.Multiaddr())
 
 		if err := h.Connect(ctx, *pinfo); err != nil {
-			log.Println("Bootstrapping to peer failed: ", err)
+			log.Info("Bootstrapping to peer failed: ", err)
 		}
 	}
 
@@ -140,23 +133,23 @@ func RunDHT(ctx context.Context, h host.Host) {
 	c, _ := cid.NewPrefixV1(cid.Raw, mh.SHA2_256).Sum([]byte("centrifuge-dht"))
 
 	// First, announce ourselves as participating in this topic
-	log.Println("Announcing ourselves...")
-	tctx, _ := context.WithTimeout(ctx,  time.Second*10)
+	log.Info("Announcing ourselves...")
+	tctx, _ := context.WithTimeout(ctx, time.Second*10)
 	if err := dhtClient.Provide(tctx, c, true); err != nil {
 		// Important to keep this as Non-Fatal error, otherwise it will fail for a node that behaves as well as bootstrap one
-		log.Printf("Error: %s\n", err.Error())
+		log.Infof("Error: %s\n", err.Error())
 	}
 
 	// Now, look for others who have announced
-	log.Println("Searching for other peers ...")
+	log.Info("Searching for other peers ...")
 	tctx, _ = context.WithTimeout(ctx, time.Second*10)
 	peers, err := dhtClient.FindProviders(tctx, c)
 	if err != nil {
 		panic(err)
 	}
-	log.Printf("Found %d peers!\n", len(peers))
+	log.Infof("Found %d peers!\n", len(peers))
 	for _, p1 := range peers {
-		log.Printf("Peer %s %s\n", p1.ID.Pretty(), p1.Addrs)
+		log.Infof("Peer %s %s\n", p1.ID.Pretty(), p1.Addrs)
 	}
 
 	// Now connect to them, so they are added to the PeerStore
@@ -168,21 +161,21 @@ func RunDHT(ctx context.Context, h host.Host) {
 
 		tctx, _ := context.WithTimeout(ctx, time.Second*5)
 		if err := h.Connect(tctx, pe); err != nil {
-			log.Println("Failed to connect to peer: ", err)
+			log.Info("Failed to connect to peer: ", err)
 		}
 	}
 
-	log.Println("Bootstrapping and discovery complete!")
+	log.Info("Bootstrapping and discovery complete!")
 }
 
 func RunP2P() {
 	// LibP2P code uses golog to log messages. They log with different
 	// string IDs (i.e. "swarm"). We can control the verbosity level for
 	// all loggers with:
-	golog.SetAllLoggers(gologging.DEBUG) // Change to DEBUG for extra info
+	logging.SetAllLoggers(gologging.DEBUG) // Change to DEBUG for extra info
 
 	// Parse options from the command line
-	port := viper.GetInt("p2p.port")
+	port := config.Config.GetP2PPort()
 	if port == 0 {
 		log.Fatal("Please provide a port to bind on")
 	}

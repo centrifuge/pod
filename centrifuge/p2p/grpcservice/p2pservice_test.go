@@ -1,17 +1,17 @@
-package p2pservice
+package grpcservice
 
 import (
-	"testing"
-	"github.com/spf13/viper"
-	"os"
+	"context"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
-	"github.com/syndtr/goleveldb/leveldb"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/repository"
-	"context"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
+	"github.com/syndtr/goleveldb/leveldb"
+	"os"
+	"testing"
 )
 
 var dbFileName = "/tmp/centrifuge_testing_p2p_post.leveldb"
@@ -41,7 +41,7 @@ func TestP2PService(t *testing.T) {
 
 }
 
-func Bootstrap() (*leveldb.DB) {
+func Bootstrap() *leveldb.DB {
 	levelDB := storage.NewLeveldbStorage(dbFileName)
 
 	coredocumentrepository.NewLevelDBCoreDocumentRepository(&coredocumentrepository.LevelDBCoreDocumentRepository{levelDB})
