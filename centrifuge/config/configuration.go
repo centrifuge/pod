@@ -7,12 +7,12 @@ package config
 
 import (
 	"bytes"
-	"encoding/hex"
 	"fmt"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/resources"
 	logging "github.com/ipfs/go-log"
 	"github.com/spf13/viper"
 	"os"
+	"strings"
 )
 
 const (
@@ -53,10 +53,8 @@ func (c *Configuration) GetNetworkConfig() *viper.Viper {
 }
 
 // GetContractAddress returns the deployed contract address for a given contract.
-func (c *Configuration) GetContractAddress(contract string) (address []byte, err error) {
-	address, err = hex.DecodeString(
-		c.GetNetworkConfig().GetString(fmt.Sprintf("contractAddresses.%s", contract))[2:])
-	return
+func (c *Configuration) GetContractAddress(contract string) (address string) {
+	return c.GetNetworkConfig().GetString(fmt.Sprintf("contractAddresses.%s", contract))
 }
 
 // GetBootstrapPeers returns the list of configured bootstrap nodes for the given network.
@@ -106,6 +104,8 @@ func (c *Configuration) InitializeViper() {
 		log.Panicf("Error reading config %s, %s", c.configFile, err)
 	}
 	c.V.AutomaticEnv()
+	c.V.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	c.V.SetEnvPrefix("CENT")
 }
 
 func Bootstrap(configFile string) {

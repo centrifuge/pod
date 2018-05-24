@@ -3,16 +3,16 @@
 package anchor
 
 import (
-	"testing"
-	"github.com/stretchr/testify/assert"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"math/big"
-	"github.com/ethereum/go-ethereum/core/types"
 	"errors"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/event"
-	"github.com/spf13/viper"
+	"github.com/stretchr/testify/assert"
+	"math/big"
+	"testing"
 )
 
 func TestGenerateAnchor(t *testing.T) {
@@ -92,7 +92,7 @@ func TestSendRegistrationTransaction_InputParams(t *testing.T) {
 }
 
 func TestSetUpRegistrationEventListener_ErrorPassThrough(t *testing.T) {
-	viper.SetDefault("ethereum.contextWaitTimeout", "30s")
+	config.Config.V.Set("ethereum.contextWaitTimeout", "30s")
 
 	failingWatchAnchorRegistered := &MockWatchAnchorRegistered{shouldFail: true}
 	anchor := Anchor{tools.RandomString32(), tools.RandomString32(), 1}
@@ -110,7 +110,7 @@ func TestSetUpRegistrationEventListener_ErrorPassThrough(t *testing.T) {
 }
 
 func TestSetUpRegistrationEventListener_ChannelSubscriptionCreated(t *testing.T) {
-	viper.SetDefault("ethereum.contextWaitTimeout", "30s")
+	config.Config.V.Set("ethereum.contextWaitTimeout", "30s")
 
 	mockWatchAnchorRegistered := &MockWatchAnchorRegistered{}
 	anchor := Anchor{tools.RandomString32(), tools.RandomString32(), 1}

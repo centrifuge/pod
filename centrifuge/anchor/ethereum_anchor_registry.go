@@ -1,17 +1,16 @@
 package anchor
 
 import (
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
-	"log"
-	"math/big"
-	"github.com/go-errors/errors"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"context"
-	"github.com/ethereum/go-ethereum/event"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/spf13/viper"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/event"
+	"github.com/go-errors/errors"
+	"github.com/spf13/viper"
+	"math/big"
 )
 
 //Supported anchor schema version as stored on public registry
@@ -20,7 +19,7 @@ const ANCHOR_SCHEMA_VERSION uint = 1
 type EthereumAnchorRegistry struct {
 }
 
-func SupportedSchemaVersion() (uint) {
+func SupportedSchemaVersion() uint {
 	return ANCHOR_SCHEMA_VERSION
 }
 
@@ -36,7 +35,7 @@ type RegisterAnchor interface {
 // into the confirmations channel when done.
 // Could error out with Fatal error in case the confirmation is never received within the timeframe of configured value
 // of `ethereum.contextWaitTimeout`.
-func (ethRegistry *EthereumAnchorRegistry) RegisterAsAnchor(anchorID string, rootHash string, confirmations chan<- *Anchor) (error) {
+func (ethRegistry *EthereumAnchorRegistry) RegisterAsAnchor(anchorID string, rootHash string, confirmations chan<- *Anchor) error {
 	var err error
 
 	ethRegistryContract, _ := getAnchorContract()
@@ -52,14 +51,14 @@ func (ethRegistry *EthereumAnchorRegistry) RegisterAsAnchor(anchorID string, roo
 	err = setUpRegistrationEventListener(ethRegistryContract, opts.From, registerThisAnchor, confirmations)
 	if err != nil {
 		wError := errors.Wrap(err, 1)
-		log.Printf("Failed to set up event listener for anchor [id: %x, hash: %x, SchemaVersion:%v]: %v", registerThisAnchor.AnchorID, registerThisAnchor.RootHash, registerThisAnchor.SchemaVersion, wError)
+		log.Infof("Failed to set up event listener for anchor [id: %x, hash: %x, SchemaVersion:%v]: %v", registerThisAnchor.AnchorID, registerThisAnchor.RootHash, registerThisAnchor.SchemaVersion, wError)
 		return err
 	}
 
 	err = sendRegistrationTransaction(ethRegistryContract, opts, registerThisAnchor)
 	if err != nil {
 		wError := errors.Wrap(err, 1)
-		log.Printf("Failed to send Ethereum transaction to register anchor [id: %x, hash: %x, SchemaVersion:%v]: %v", registerThisAnchor.AnchorID, registerThisAnchor.RootHash, registerThisAnchor.SchemaVersion, wError)
+		log.Infof("Failed to send Ethereum transaction to register anchor [id: %x, hash: %x, SchemaVersion:%v]: %v", registerThisAnchor.AnchorID, registerThisAnchor.RootHash, registerThisAnchor.SchemaVersion, wError)
 		return err
 	}
 
@@ -106,13 +105,13 @@ func sendRegistrationTransaction(ethRegistryContract RegisterAnchor, opts *bind.
 	tx, err := ethereum.SubmitTransactionWithRetries(ethRegistryContract.RegisterAnchor, opts, bAnchorId, bMerkleRoot, schemaVersion)
 
 	if err != nil {
-		log.Printf("Failed to send anchor for registration [id: %x, hash: %x, SchemaVersion:%v] on registry: %v", bAnchorId, bMerkleRoot, schemaVersion, err)
+		log.Infof("Failed to send anchor for registration [id: %x, hash: %x, SchemaVersion:%v] on registry: %v", bAnchorId, bMerkleRoot, schemaVersion, err)
 		return err
 	} else {
-		log.Printf("Sent off the anchor [id: %x, hash: %x, SchemaVersion:%v] to registry. Ethereum transaction hash [%x]", bAnchorId, bMerkleRoot, schemaVersion, tx.Hash())
+		log.Infof("Sent off the anchor [id: %x, hash: %x, SchemaVersion:%v] to registry. Ethereum transaction hash [%x]", bAnchorId, bMerkleRoot, schemaVersion, tx.Hash())
 	}
 
-	log.Printf("Transfer pending: 0x%x\n", tx.Hash())
+	log.Infof("Transfer pending: 0x%x\n", tx.Hash())
 	return
 }
 
@@ -138,7 +137,7 @@ func setUpRegistrationEventListener(ethRegistryContract WatchAnchorRegistered, f
 	_, err = ethRegistryContract.WatchAnchorRegistered(watchOpts, anchorRegisteredEvents, []common.Address{from}, [][32]byte{bAnchorId}, nil)
 	if err != nil {
 		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for anchor registration", 1)
-		log.Printf(wError.Error())
+		log.Infof(wError.Error())
 		panic(wError)
 	}
 	return
@@ -152,7 +151,7 @@ func waitAndRouteAnchorRegistrationEvent(conf <-chan *EthereumAnchorRegistryCont
 			log.Fatalf("Context [%v] closed before receiving AnchorRegistered event for anchor ID: %x, RootHash: %x\n", ctx, pushThisAnchor.AnchorID, pushThisAnchor.RootHash)
 			return
 		case res := <-conf:
-			log.Printf("Received AnchorRegistered event from: %x, identifier: %x\n", res.From, res.Identifier)
+			log.Infof("Received AnchorRegistered event from: %x, identifier: %x\n", res.From, res.Identifier)
 			confirmations <- pushThisAnchor
 			return
 		}

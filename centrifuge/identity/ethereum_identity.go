@@ -1,20 +1,22 @@
 package identity
 
 import (
-	"github.com/spf13/viper"
+	"context"
+	"fmt"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
-	"github.com/ethereum/go-ethereum/common"
-	"log"
-	"math/big"
-	"github.com/go-errors/errors"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/event"
-	"context"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"fmt"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools"
+	"github.com/ethereum/go-ethereum/event"
+	"github.com/go-errors/errors"
+	logging "github.com/ipfs/go-log"
+	"math/big"
 )
+
+var log = logging.Logger("identity")
 
 type WatchIdentityCreated interface {
 	WatchIdentityCreated(opts *bind.WatchOpts, sink chan<- *EthereumIdentityFactoryContractIdentityCreated, centrifugeId [][32]byte) (event.Subscription, error)
@@ -43,7 +45,7 @@ func (idk *EthereumIdentityKey) String() string {
 
 type EthereumIdentity struct {
 	CentrifugeId string
-	Keys map[int][]EthereumIdentityKey
+	Keys         map[int][]EthereumIdentityKey
 }
 
 func NewEthereumIdentity() (id *EthereumIdentity) {
@@ -72,7 +74,7 @@ func (id *EthereumIdentity) GetLastB58KeyForType(keyType int) (ret string, err e
 	}
 	switch keyType {
 	case 0:
-		log.Printf("Error not authorized type")
+		log.Infof("Error not authorized type")
 	case 1:
 		p2pId, err1 := keytools.PublicKeyToP2PKey(id.Keys[keyType][len(id.Keys[keyType])-1].Key)
 		if err1 != nil {
@@ -81,7 +83,7 @@ func (id *EthereumIdentity) GetLastB58KeyForType(keyType int) (ret string, err e
 		}
 		ret = p2pId.Pretty()
 	default:
-		log.Printf("keyType Not found")
+		log.Infof("keyType Not found")
 	}
 	return
 }
@@ -95,10 +97,10 @@ func (id *EthereumIdentity) CheckIdentityExists() (exists bool, err error) {
 		opts := ethereum.GetGethCallOpts()
 		centId, err := idContract.CentrifugeId(opts)
 		if err == bind.ErrNoCode { //no contract in specified address, meaning Identity was not created
-			log.Printf("Identity contract does not exist!")
+			log.Infof("Identity contract does not exist!")
 			err = nil
 		} else if len(centId) != 0 {
-			log.Printf("Identity exists!")
+			log.Infof("Identity exists!")
 			exists = true
 		}
 	}
@@ -114,7 +116,7 @@ func (id *EthereumIdentity) AddKeyToIdentity(keyType int, confirmations chan<- *
 	err = setUpKeyRegisteredEventListener(ethIdentityContract, id, keyType, confirmations)
 	if err != nil {
 		wError := errors.Wrap(err, 1)
-		log.Printf("Failed to set up event listener for identity [id: %x]: %v", id.CentrifugeId, wError)
+		log.Infof("Failed to set up event listener for identity [id: %x]: %v", id.CentrifugeId, wError)
 		return
 	}
 
@@ -126,7 +128,7 @@ func (id *EthereumIdentity) AddKeyToIdentity(keyType int, confirmations chan<- *
 	err = sendKeyRegistrationTransaction(ethIdentityContract, opts, id, keyType)
 	if err != nil {
 		wError := errors.Wrap(err, 1)
-		log.Printf("Failed to create transaction for identity [id: %x]: %v", id.CentrifugeId, wError)
+		log.Infof("Failed to create transaction for identity [id: %x]: %v", id.CentrifugeId, wError)
 		return
 	}
 	return
@@ -135,9 +137,9 @@ func (id *EthereumIdentity) AddKeyToIdentity(keyType int, confirmations chan<- *
 func getIdentityFactoryContract() (identityFactoryContract *EthereumIdentityFactoryContract, err error) {
 	client := ethereum.GetConnection()
 
-	identityFactoryContract, err = NewEthereumIdentityFactoryContract(common.HexToAddress(viper.GetString("identity.ethereum.identityFactoryAddress")), client.GetClient())
+	identityFactoryContract, err = NewEthereumIdentityFactoryContract(common.HexToAddress(config.Config.GetContractAddress("identityFactory")), client.GetClient())
 	if err != nil {
-		log.Printf("Failed to instantiate the identity factory contract: %v", err)
+		log.Infof("Failed to instantiate the identity factory contract: %v", err)
 	}
 	return
 }
@@ -145,9 +147,9 @@ func getIdentityFactoryContract() (identityFactoryContract *EthereumIdentityFact
 func getIdentityRegistryContract() (identityRegistryContract *EthereumIdentityRegistryContract, err error) {
 	client := ethereum.GetConnection()
 
-	identityRegistryContract, err = NewEthereumIdentityRegistryContract(common.HexToAddress(viper.GetString("identity.ethereum.identityRegistryAddress")), client.GetClient())
+	identityRegistryContract, err = NewEthereumIdentityRegistryContract(common.HexToAddress(config.Config.GetContractAddress("identityRegistry")), client.GetClient())
 	if err != nil {
-		log.Printf("Failed to instantiate the identity registry contract: %v", err)
+		log.Infof("Failed to instantiate the identity registry contract: %v", err)
 	}
 	return
 }
@@ -157,7 +159,7 @@ func getIdentityContract(identityContractAddress string) (identityContract *Ethe
 
 	identityContract, err = NewEthereumIdentityContract(common.HexToAddress(identityContractAddress), client.GetClient())
 	if err != nil {
-		log.Printf("Failed to instantiate the identity contract: %v", err)
+		log.Infof("Failed to instantiate the identity contract: %v", err)
 	}
 	return
 }
@@ -179,14 +181,14 @@ func CreateEthereumIdentity(identity *EthereumIdentity, confirmations chan<- *Et
 	err = setUpRegistrationEventListener(ethIdentityFactoryContract, identity, confirmations)
 	if err != nil {
 		wError := errors.Wrap(err, 1)
-		log.Printf("Failed to set up event listener for identity [id: %x]: %v", identity.CentrifugeId, wError)
+		log.Infof("Failed to set up event listener for identity [id: %x]: %v", identity.CentrifugeId, wError)
 		return
 	}
 
 	err = sendIdentityCreationTransaction(ethIdentityFactoryContract, opts, identity)
 	if err != nil {
 		wError := errors.Wrap(err, 1)
-		log.Printf("Failed to create transaction for identity [id: %x]: %v", identity.CentrifugeId, wError)
+		log.Infof("Failed to create transaction for identity [id: %x]: %v", identity.CentrifugeId, wError)
 		return
 	}
 	return
@@ -244,20 +246,20 @@ func sendKeyRegistrationTransaction(identityContract IdentityContract, opts *bin
 
 	//preparation of data in specific types for the call to Ethereum
 	var bKey [32]byte
-	lastKey := len(identity.Keys[keyType])-1
+	lastKey := len(identity.Keys[keyType]) - 1
 	copy(bKey[:], identity.Keys[keyType][lastKey].Key[:32])
 	bigInt := big.NewInt(int64(keyType))
 
 	tx, err := ethereum.SubmitTransactionWithRetries(identityContract.AddKey, opts, bKey, bigInt)
 
 	if err != nil {
-		log.Printf("Failed to send key [%v:%x] to add to CentrifugeID [%x]: %v", keyType, bKey, identity.CentrifugeId, err)
+		log.Infof("Failed to send key [%v:%x] to add to CentrifugeID [%x]: %v", keyType, bKey, identity.CentrifugeId, err)
 		return err
 	} else {
-		log.Printf("Sent off key [%v:%x] to add to CentrifugeID [%x]. Ethereum transaction hash [%x]", keyType, bKey, identity.CentrifugeId, tx.Hash())
+		log.Infof("Sent off key [%v:%x] to add to CentrifugeID [%x]. Ethereum transaction hash [%x]", keyType, bKey, identity.CentrifugeId, tx.Hash())
 	}
 
-	log.Printf("Transfer pending: 0x%x\n", tx.Hash())
+	log.Infof("Transfer pending: 0x%x\n", tx.Hash())
 
 	return
 }
@@ -276,13 +278,13 @@ func sendIdentityCreationTransaction(identityFactory IdentityFactory, opts *bind
 	tx, err := ethereum.SubmitTransactionWithRetries(identityFactory.CreateIdentity, opts, bCentId)
 
 	if err != nil {
-		log.Printf("Failed to send identity for creation [CentrifugeID: %x] : %v", bCentId, err)
+		log.Infof("Failed to send identity for creation [CentrifugeID: %x] : %v", bCentId, err)
 		return err
 	} else {
-		log.Printf("Sent off identity creation [CentrifugeID: %x]. Ethereum transaction hash [%x]", bCentId, tx.Hash())
+		log.Infof("Sent off identity creation [CentrifugeID: %x]. Ethereum transaction hash [%x]", bCentId, tx.Hash())
 	}
 
-	log.Printf("Transfer pending: 0x%x\n", tx.Hash())
+	log.Infof("Transfer pending: 0x%x\n", tx.Hash())
 
 	return
 }
@@ -298,7 +300,7 @@ func setUpKeyRegisteredEventListener(ethCreatedContract WatchKeyRegistered, iden
 	go waitAndRouteKeyRegistrationEvent(keyAddedEvents, watchOpts.Context, confirmations, identity)
 
 	var bKey [32]byte
-	lastKey := len(identity.Keys[keyType])-1
+	lastKey := len(identity.Keys[keyType]) - 1
 	copy(bKey[:], identity.Keys[keyType][lastKey].Key[:32])
 	bigInt := big.NewInt(int64(keyType))
 
@@ -309,7 +311,7 @@ func setUpKeyRegisteredEventListener(ethCreatedContract WatchKeyRegistered, iden
 	_, err = ethCreatedContract.WatchKeyRegistered(watchOpts, keyAddedEvents, []*big.Int{bigInt}, [][32]byte{bKey})
 	if err != nil {
 		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for identity registration", 1)
-		log.Printf(wError.Error())
+		log.Infof(wError.Error())
 		panic(wError)
 	}
 	return
@@ -337,7 +339,7 @@ func setUpRegistrationEventListener(ethCreatedContract WatchIdentityCreated, ide
 	_, err = ethCreatedContract.WatchIdentityCreated(watchOpts, identityCreatedEvents, [][32]byte{bCentId})
 	if err != nil {
 		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for identity registration", 1)
-		log.Printf(wError.Error())
+		log.Infof(wError.Error())
 		panic(wError)
 	}
 	return
@@ -351,7 +353,7 @@ func waitAndRouteKeyRegistrationEvent(conf <-chan *EthereumIdentityContractKeyRe
 			log.Fatalf("Context [%v] closed before receiving KeyRegistered event for Identity ID: %x\n", ctx, pushThisIdentity)
 			return
 		case res := <-conf:
-			log.Printf("Received KeyRegistered event from [%x] for keyType: %x and value: %x\n", pushThisIdentity.CentrifugeId, res.KType, res.Key)
+			log.Infof("Received KeyRegistered event from [%x] for keyType: %x and value: %x\n", pushThisIdentity.CentrifugeId, res.KType, res.Key)
 			confirmations <- pushThisIdentity
 			return
 		}
@@ -366,7 +368,7 @@ func waitAndRouteIdentityRegistrationEvent(conf <-chan *EthereumIdentityFactoryC
 			log.Fatalf("Context [%v] closed before receiving IdentityCreated event for Identity ID: %x\n", ctx, pushThisIdentity)
 			return
 		case res := <-conf:
-			log.Printf("Received IdentityCreated event from: %x, identifier: %s\n", res.CentrifugeId, res.Identity.String())
+			log.Infof("Received IdentityCreated event from: %x, identifier: %s\n", res.CentrifugeId, res.Identity.String())
 			confirmations <- pushThisIdentity
 			return
 		}
@@ -428,16 +430,16 @@ func createOrAddKeyOnEthereumIdentity(centrifugeId string, keyType int, idKey [3
 	confirmations := make(chan *EthereumIdentity, 1)
 
 	if action == ACTION_CREATE {
-		log.Printf("Creating Identity [%v] with PeerID [%v]\n", centrifugeId, pid.Pretty())
+		log.Infof("Creating Identity [%v] with PeerID [%v]\n", centrifugeId, pid.Pretty())
 		err = CreateEthereumIdentity(id, confirmations)
 		if err != nil {
 			return
 		}
 		registeredIdentity := <-confirmations
-		log.Printf("Identity [%v] Created", registeredIdentity.CentrifugeId)
+		log.Infof("Identity [%v] Created", registeredIdentity.CentrifugeId)
 	}
 
-	log.Printf("Adding Key [%v] to Identity [%v]\n", pid.Pretty(), centrifugeId)
+	log.Infof("Adding Key [%v] to Identity [%v]\n", pid.Pretty(), centrifugeId)
 	err = id.AddKeyToIdentity(keyType, confirmations)
 	if err != nil {
 		return
@@ -449,6 +451,6 @@ func createOrAddKeyOnEthereumIdentity(centrifugeId string, keyType int, idKey [3
 		err = errLocal
 		return
 	}
-	log.Printf("%v Key [%v] Added to Identity [%v]", action, lastKey, addedToIdentity.CentrifugeId)
+	log.Infof("%v Key [%v] Added to Identity [%v]", action, lastKey, addedToIdentity.CentrifugeId)
 	return
 }

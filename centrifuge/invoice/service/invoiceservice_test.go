@@ -3,19 +3,19 @@
 package invoiceservice
 
 import (
-	"testing"
-	"github.com/spf13/viper"
-	"os"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/stretchr/testify/assert"
 	"context"
-	"github.com/syndtr/goleveldb/leveldb"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/repository"
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/repository"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
+	"github.com/spf13/viper"
+	"github.com/stretchr/testify/assert"
+	"github.com/syndtr/goleveldb/leveldb"
+	"os"
+	"testing"
 )
 
 var dbFileName = "/tmp/centrifuge_testing_inv_service.leveldb"
@@ -40,10 +40,10 @@ func TestInvoiceService(t *testing.T) {
 	s := InvoiceDocumentService{}
 	doc := invoice.NewEmptyInvoice()
 	doc.Document.CoreDocument = &coredocumentpb.CoreDocument{
-		DocumentIdentifier:identifier,
-		CurrentIdentifier:identifier,
-		NextIdentifier:testingutils.Rand32Bytes(),
-		DataMerkleRoot: testingutils.Rand32Bytes(),
+		DocumentIdentifier: identifier,
+		CurrentIdentifier:  identifier,
+		NextIdentifier:     testingutils.Rand32Bytes(),
+		DataMerkleRoot:     testingutils.Rand32Bytes(),
 	}
 
 	sentDoc, err := s.HandleSendInvoiceDocument(context.Background(), &invoicepb.SendInvoiceEnvelope{Recipients: [][]byte{}, Document: doc.Document})
@@ -65,7 +65,7 @@ func TestInvoiceService(t *testing.T) {
 
 }
 
-func Bootstrap() (*leveldb.DB) {
+func Bootstrap() *leveldb.DB {
 	levelDB := storage.NewLeveldbStorage(dbFileName)
 
 	coredocumentrepository.NewLevelDBCoreDocumentRepository(&coredocumentrepository.LevelDBCoreDocumentRepository{levelDB})
