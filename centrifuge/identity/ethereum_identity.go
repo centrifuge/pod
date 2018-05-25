@@ -120,7 +120,7 @@ func (id *EthereumIdentity) AddKeyToIdentity(keyType int, confirmations chan<- *
 		return
 	}
 
-	opts, err := ethereum.GetGethTxOpts()
+	opts, err := ethereum.GetGethTxOpts(config.Config.GetEthereumDefaultAccountName())
 	if err != nil {
 		return err
 	}
@@ -173,7 +173,7 @@ func CreateEthereumIdentity(identity *EthereumIdentity, confirmations chan<- *Et
 	if err != nil {
 		return
 	}
-	opts, err := ethereum.GetGethTxOpts()
+	opts, err := ethereum.GetGethTxOpts(config.Config.GetEthereumDefaultAccountName())
 	if err != nil {
 		return err
 	}

@@ -3,31 +3,20 @@
 package anchor_test
 
 import (
-	"testing"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/anchor"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/stretchr/testify/assert"
 	"os"
-	"github.com/spf13/viper"
+	"testing"
 )
 
 func TestMain(m *testing.M) {
-	//for now set up the env vars manually in integration test
-	//TODO move to generalized config once it is available
-	viper.BindEnv("ethereum.gethSocket", "CENT_ETHEREUM_GETH_SOCKET")
-	viper.BindEnv("ethereum.gasLimit", "CENT_ETHEREUM_GASLIMIT")
-	viper.BindEnv("ethereum.gasPrice", "CENT_ETHEREUM_GASPRICE")
-	viper.BindEnv("ethereum.contextWaitTimeout", "CENT_ETHEREUM_CONTEXTWAITTIMEOUT")
-	viper.BindEnv("ethereum.accounts.main.password", "CENT_ETHEREUM_ACCOUNTS_MAIN_PASSWORD")
-	viper.BindEnv("ethereum.accounts.main.key", "CENT_ETHEREUM_ACCOUNTS_MAIN_KEY")
-	viper.BindEnv("anchor.ethereum.anchorRegistryAddress", "CENT_ANCHOR_ETHEREUM_ANCHORREGISTRYADDRESS")
-
 	result := m.Run()
 	os.Exit(result)
 }
 
 func TestRegisterAsAnchor_Integration(t *testing.T) {
-	confirmations := make(chan *anchor.Anchor,1)
+	confirmations := make(chan *anchor.Anchor, 1)
 	id := tools.RandomString32()
 	rootHash := tools.RandomString32()
 	err := anchor.RegisterAsAnchor(id, rootHash, confirmations)
@@ -60,7 +49,7 @@ func TestRegisterAsAnchor_Integration_Concurrent(t *testing.T) {
 
 	for ix := 0; ix < howMany; ix++ {
 		singleAnchor := <-confirmations
-		assert.Contains(t, submittedIds, singleAnchor.AnchorID , "Should have the ID that was passed into create function [%v]", singleAnchor.AnchorID)
-		assert.Contains(t, submittedRhs, singleAnchor.RootHash , "Should have the RootHash that was passed into create function [%v]", singleAnchor.RootHash)
+		assert.Contains(t, submittedIds, singleAnchor.AnchorID, "Should have the ID that was passed into create function [%v]", singleAnchor.AnchorID)
+		assert.Contains(t, submittedRhs, singleAnchor.RootHash, "Should have the RootHash that was passed into create function [%v]", singleAnchor.RootHash)
 	}
 }

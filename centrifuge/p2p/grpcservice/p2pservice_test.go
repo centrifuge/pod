@@ -4,10 +4,10 @@ import (
 	"context"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
-	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/syndtr/goleveldb/leveldb"
 	"os"
@@ -17,7 +17,7 @@ import (
 var dbFileName = "/tmp/centrifuge_testing_p2p_post.leveldb"
 
 func TestMain(m *testing.M) {
-	viper.Set("storage.Path", dbFileName)
+	config.Config.V.Set("storage.Path", dbFileName)
 	defer Bootstrap().Close()
 
 	result := m.Run()

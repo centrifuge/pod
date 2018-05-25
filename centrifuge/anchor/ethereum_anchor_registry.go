@@ -2,6 +2,7 @@ package anchor
 
 import (
 	"context"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -9,7 +10,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/go-errors/errors"
-	"github.com/spf13/viper"
 	"math/big"
 )
 
@@ -39,7 +39,7 @@ func (ethRegistry *EthereumAnchorRegistry) RegisterAsAnchor(anchorID string, roo
 	var err error
 
 	ethRegistryContract, _ := getAnchorContract()
-	opts, err := ethereum.GetGethTxOpts()
+	opts, err := ethereum.GetGethTxOpts(config.Config.GetEthereumDefaultAccountName())
 	if err != nil {
 		return err
 	}
@@ -162,7 +162,7 @@ func getAnchorContract() (anchorContract *EthereumAnchorRegistryContract, err er
 	// Instantiate the contract and display its name
 	client := ethereum.GetConnection()
 
-	anchorContract, err = NewEthereumAnchorRegistryContract(common.HexToAddress(viper.GetString("anchor.ethereum.anchorRegistryAddress")), client.GetClient())
+	anchorContract, err = NewEthereumAnchorRegistryContract(common.HexToAddress(config.Config.GetContractAddress("anchorRegistry")), client.GetClient())
 	if err != nil {
 		log.Fatalf("Failed to instantiate the witness contract contract: %v", err)
 	}

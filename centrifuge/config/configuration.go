@@ -11,8 +11,10 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/resources"
 	logging "github.com/ipfs/go-log"
 	"github.com/spf13/viper"
+	"math/big"
 	"os"
 	"strings"
+	"time"
 )
 
 const (
@@ -35,6 +37,60 @@ func (c *Configuration) GetStoragePath() string {
 // P2P
 func (c *Configuration) GetP2PPort() int {
 	return c.V.GetInt("p2p.port")
+}
+
+//
+
+////////////////////////////////////////////////////////////////////////////////
+// Server
+////////////////////////////////////////////////////////////////////////////////
+
+func (c *Configuration) GetServerPort() int {
+	return c.V.GetInt("nodePort")
+}
+
+func (c *Configuration) GetServerAddress() string {
+	return fmt.Sprintf("%s:%s", c.V.GetString("nodeHostname"), c.V.GetString("nodePort"))
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Ethereum
+////////////////////////////////////////////////////////////////////////////////
+func (c *Configuration) GetEthereumNodeWebSocket() string {
+	return c.V.GetString("ethereum.nodeWebSocket")
+}
+
+func (c *Configuration) GetEthereumContextWaitTimeout() time.Duration {
+	return c.V.GetDuration("etheruem.contextWaitTimout")
+}
+
+func (c *Configuration) GetEthereumIntervalRetry() time.Duration {
+	return c.V.GetDuration("etheruem.intervalRetry")
+}
+
+func (c *Configuration) GetEthereumMaxRetries() int {
+	return c.V.GetInt("ethereum.maxRetries")
+}
+
+func (c *Configuration) GetEthereumGasPrice() *big.Int {
+	return big.NewInt(c.V.GetInt64("ethereum.gasPrice"))
+}
+
+func (c *Configuration) GetEthereumGasLimit() uint64 {
+	return uint64(c.V.GetInt64("ethereum.gasLimit"))
+}
+
+func (c *Configuration) GetEthereumDefaultAccountName() string {
+	return c.V.GetString("ethereum.defaultAccountName")
+}
+
+func (c *Configuration) GetEthereumAccountMap(accountName string) (accounts map[string]string, err error) {
+	k := fmt.Sprintf("ethereum.accounts.%s", accountName)
+
+	if !c.V.IsSet(k) {
+		return nil, fmt.Errorf("No account found with account name %s", accountName)
+	}
+	return c.V.GetStringMapString(k), nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -67,7 +123,16 @@ func (c *Configuration) GetNetworkID() int64 {
 	return c.GetNetworkConfig().GetInt64("id")
 }
 
-// SigningKeys
+// Identity:
+func (c *Configuration) GetIdentityId() []byte {
+	return []byte(c.V.GetString("identityId"))
+}
+
+// GetKnownSigningKeys is just a hack until we have implemented
+func (c *Configuration) GetKnownSigningKeys() map[string]string {
+	return c.V.GetStringMapString("keys.knownSigningKeys")
+}
+
 func (c *Configuration) GetSigningKeyPair() (pub, priv string) {
 	return c.V.GetString("keys.signing.publicKey"), c.V.GetString("keys.signing.privateKey")
 }

@@ -3,14 +3,14 @@
 package ethereum_test
 
 import (
-	"testing"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
-	"github.com/stretchr/testify/assert"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/config"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/go-errors/errors"
-	"github.com/spf13/viper"
+	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 type MockTransactionInterface interface {
@@ -37,6 +37,7 @@ func (transactionRequest *MockTransactionRequest) RegisterTransaction(transactio
 }
 
 func TestGetGethTxOpts(t *testing.T) {
+	maxRetries := config.Config.GetEthereumMaxRetries()
 	//invalid input params
 	bytes, err := tools.StringToByte32("too short")
 	assert.EqualValuesf(t, [32]byte{}, bytes, "Should receive empty byte array if string is not 32 chars")
@@ -70,14 +71,14 @@ func TestInitTransactionWithRetries(t *testing.T) {
 
 	// Failure with non-locking error
 	tx, err = ethereum.SubmitTransactionWithRetries(mockRequest.RegisterTransaction, "otherError", "var2")
-	assert.EqualError(t, err, "Some other error" ,"Should error out")
+	assert.EqualError(t, err, "Some other error", "Should error out")
 
-	viper.Set("ethereum.maxRetries", 10)
+	config.Config.V.Set("ethereum.maxRetries", 10)
 
 	mockRequest.count = 0
 	// Failure and timeout with locking error
 	tx, err = ethereum.SubmitTransactionWithRetries(mockRequest.RegisterTransaction, "optimisticLockingTimeout", "var2")
-	assert.EqualError(t, err, ethereum.TransactionUnderpriced ,"Should error out")
+	assert.EqualError(t, err, ethereum.TransactionUnderpriced, "Should error out")
 	assert.EqualValues(t, 10, mockRequest.count, "Retries should be equal")
 
 	mockRequest.count = 0
@@ -86,5 +87,5 @@ func TestInitTransactionWithRetries(t *testing.T) {
 	assert.Nil(t, err, "Should not error out")
 	assert.EqualValues(t, 3, mockRequest.count, "Retries should be equal")
 
-	viper.Set("ethereum.maxRetries", 0)
+	config.Config.V.Set("ethereum.maxRetries", maxRetries)
 }

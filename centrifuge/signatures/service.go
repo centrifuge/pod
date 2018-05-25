@@ -1,21 +1,21 @@
 package signatures
 
 import (
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/spf13/viper"
-	"golang.org/x/crypto/ed25519"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools"
-	"time"
-	"errors"
 	"bytes"
+	"errors"
 	"fmt"
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools"
+	"golang.org/x/crypto/ed25519"
+	"time"
 )
 
 type KeyInfo struct {
-	PublicKey ed25519.PublicKey
-	ValidFrom time.Time
+	PublicKey  ed25519.PublicKey
+	ValidFrom  time.Time
 	ValidUntil time.Time
-	Identity []byte
+	Identity   []byte
 }
 
 type SigningService struct {
@@ -25,29 +25,29 @@ type SigningService struct {
 
 	// For simplicity we only support one active identity for now.
 	IdentityId []byte
-	PublicKey ed25519.PublicKey
+	PublicKey  ed25519.PublicKey
 	PrivateKey ed25519.PrivateKey
 }
 
 // LoadPublicKeys just loads public keys from the config for now until identity management does this for us.
-func (srv *SigningService) LoadPublicKeys () {
-	keys := viper.GetStringMapString("keys.knownSigningKeys")
+func (srv *SigningService) LoadPublicKeys() {
+	keys := config.Config.GetLoad("")
 	for k, v := range keys {
 		key := keytools.GetPublicSigningKey(v)
 		var i [32]byte
 		copy(i[:], key[:32])
 		srv.KnownKeys = make(map[[32]byte]KeyInfo)
 		srv.KnownKeys[i] = KeyInfo{
-			PublicKey: key,
+			PublicKey:  key,
 			ValidUntil: time.Time{},
-			ValidFrom: time.Now(),
-			Identity: []byte(k),
+			ValidFrom:  time.Now(),
+			Identity:   []byte(k),
 		}
 	}
 }
 
 func (srv *SigningService) LoadIdentityKeyFromConfig() {
-	srv.IdentityId = []byte(viper.GetString("identityId"))
+	srv.IdentityId = conifg.Config.GetIdentityId()
 	srv.PublicKey, srv.PrivateKey = keytools.GetSigningKeyPairFromConfig()
 }
 
@@ -92,7 +92,7 @@ func (srv *SigningService) GetKeyInfo(key ed25519.PublicKey) (keyInfo KeyInfo, e
 
 // ValidateKey checks if a given key is valid for the given timestamp.
 func (srv *SigningService) ValidateKey(identity []byte, key ed25519.PublicKey, timestamp time.Time) (valid bool, err error) {
-	keyInfo, err :=  srv.GetKeyInfo(key)
+	keyInfo, err := srv.GetKeyInfo(key)
 
 	if err != nil {
 		return false, errors.New("key not found")
@@ -113,21 +113,21 @@ func (srv *SigningService) ValidateKey(identity []byte, key ed25519.PublicKey, t
 	return true, nil
 }
 
-func (srv *SigningService) createSignatureData (doc *coredocumentpb.CoreDocument) (signatureData []byte) {
+func (srv *SigningService) createSignatureData(doc *coredocumentpb.CoreDocument) (signatureData []byte) {
 	signatureData = make([]byte, 64)
 	copy(signatureData[:32], doc.DataMerkleRoot[:32])
 	copy(signatureData[32:64], doc.NextIdentifier[:32])
 	return
 }
 
-func (srv *SigningService) MakeSignature (doc *coredocumentpb.CoreDocument, identity []byte, privateKey ed25519.PrivateKey, publicKey ed25519.PublicKey) (sig *coredocumentpb.Signature){
+func (srv *SigningService) MakeSignature(doc *coredocumentpb.CoreDocument, identity []byte, privateKey ed25519.PrivateKey, publicKey ed25519.PublicKey) (sig *coredocumentpb.Signature) {
 	sigArray := srv.createSignatureData(doc)
 	signature := ed25519.Sign(privateKey, sigArray)
 	return &coredocumentpb.Signature{EntityId: identity, PublicKey: publicKey, Signature: signature}
 }
 
 // Sign a document with a provided public key
-func (srv *SigningService) Sign (doc *coredocumentpb.CoreDocument) {
+func (srv *SigningService) Sign(doc *coredocumentpb.CoreDocument) {
 	sig := srv.MakeSignature(doc, srv.IdentityId, srv.PrivateKey, srv.PublicKey)
 	doc.Signatures = append(doc.Signatures, sig)
 }

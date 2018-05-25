@@ -6,12 +6,12 @@ import (
 	"context"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
-	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/syndtr/goleveldb/leveldb"
 	"os"
@@ -21,7 +21,7 @@ import (
 var dbFileName = "/tmp/centrifuge_testing_inv_service.leveldb"
 
 func TestMain(m *testing.M) {
-	viper.Set("storage.Path", dbFileName)
+	config.Config.V.Set("storage.Path", dbFileName)
 	defer Bootstrap().Close()
 
 	result := m.Run()
@@ -31,9 +31,8 @@ func TestMain(m *testing.M) {
 
 func TestInvoiceService(t *testing.T) {
 	// Set default key to use for signing
-	viper.Set("keys.signing.publicKey", "../../resources/signingKey.pub")
-	viper.Set("keys.signing.privateKey", "../../resources/signingKey.key")
-	viper.Set("identityId", "1")
+	config.Config.V.Set("keys.signing.publicKey", "../../example/resources/signingKey.pub")
+	config.Config.V.Set("keys.signing.privateKey", "../../example/resources/signingKey.key")
 
 	identifier := testingutils.Rand32Bytes()
 	identifierIncorrect := testingutils.Rand32Bytes()

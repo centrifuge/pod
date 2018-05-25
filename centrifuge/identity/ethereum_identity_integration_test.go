@@ -3,30 +3,19 @@
 package identity_test
 
 import (
-	"testing"
-	"github.com/spf13/viper"
-	"os"
-	"github.com/stretchr/testify/assert"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
 	"fmt"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
+	"github.com/stretchr/testify/assert"
+	"os"
+	"testing"
 )
 
 func TestMain(m *testing.M) {
-	//for now set up the env vars manually in integration test
-	//TODO move to generalized config once it is available
-	viper.BindEnv("ethereum.gethSocket", "CENT_ETHEREUM_GETH_SOCKET")
-	viper.BindEnv("ethereum.gasLimit", "CENT_ETHEREUM_GASLIMIT")
-	viper.BindEnv("ethereum.gasPrice", "CENT_ETHEREUM_GASPRICE")
-	viper.BindEnv("ethereum.contextWaitTimeout", "CENT_ETHEREUM_CONTEXTWAITTIMEOUT")
-	viper.BindEnv("ethereum.accounts.main.password", "CENT_ETHEREUM_ACCOUNTS_MAIN_PASSWORD")
-	viper.BindEnv("ethereum.accounts.main.key", "CENT_ETHEREUM_ACCOUNTS_MAIN_KEY")
-	viper.BindEnv("identity.ethereum.identityFactoryAddress", "CENT_IDENTITY_ETHEREUM_IDENTITYFACTORYADDRESS")
-	viper.BindEnv("identity.ethereum.identityRegistryAddress", "CENT_IDENTITY_ETHEREUM_IDENTITYREGISTRYADDRESS")
-	viper.Set("identity.ethereum.enabled", "true")
-	viper.Set("keys.signing.publicKey", "../../resources/signingKey.pub")
-	viper.Set("keys.signing.privateKey", "../../resources/signingKey.key")
+	config.Config.V.Set("keys.signing.publicKey", "../../example/resources/signingKey.pub")
+	config.Config.V.Set("keys.signing.privateKey", "../../example/resources/signingKey.key")
 
 	result := m.Run()
 	os.Exit(result)
@@ -109,7 +98,7 @@ func TestCreateIdentityAndAddKey_Integration(t *testing.T) {
 	receivedIdentity := <-confirmations
 	assert.Equal(t, centrifugeId, receivedIdentity.CentrifugeId, "Resulting Identity should have the same ID as the input")
 	assert.Equal(t, 1, len(receivedIdentity.Keys), "Resulting Identity Key Map should have expected length")
-	assert.Equal(t,1, len(receivedIdentity.Keys[1]), "Resulting Identity Key Type list should have expected length")
+	assert.Equal(t, 1, len(receivedIdentity.Keys[1]), "Resulting Identity Key Type list should have expected length")
 	assert.Equal(t, identityObj.Keys[1][0].Key, receivedIdentity.Keys[1][0].Key, "Resulting Identity Key should match the one requested")
 
 	// Double check that Key Exists in Identity
@@ -163,6 +152,6 @@ func TestCreateAndResolveIdentity_Integration_Concurrent(t *testing.T) {
 		singleIdentity := <-confirmations
 		id, err := identity.ResolveP2PEthereumIdentityForId(singleIdentity.CentrifugeId)
 		assert.Nil(t, err, "should not error out upon identity resolution")
-		assert.Contains(t, submittedIds, id.CentrifugeId , "Should have the ID that was passed into create function [%v]", id.CentrifugeId)
+		assert.Contains(t, submittedIds, id.CentrifugeId, "Should have the ID that was passed into create function [%v]", id.CentrifugeId)
 	}
 }
