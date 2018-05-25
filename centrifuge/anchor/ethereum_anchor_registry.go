@@ -51,14 +51,14 @@ func (ethRegistry *EthereumAnchorRegistry) RegisterAsAnchor(anchorID string, roo
 	err = setUpRegistrationEventListener(ethRegistryContract, opts.From, registerThisAnchor, confirmations)
 	if err != nil {
 		wError := errors.Wrap(err, 1)
-		log.Infof("Failed to set up event listener for anchor [id: %x, hash: %x, SchemaVersion:%v]: %v", registerThisAnchor.AnchorID, registerThisAnchor.RootHash, registerThisAnchor.SchemaVersion, wError)
+		log.Errorf("Failed to set up event listener for anchor [id: %x, hash: %x, SchemaVersion:%v]: %v", registerThisAnchor.AnchorID, registerThisAnchor.RootHash, registerThisAnchor.SchemaVersion, wError)
 		return err
 	}
 
 	err = sendRegistrationTransaction(ethRegistryContract, opts, registerThisAnchor)
 	if err != nil {
 		wError := errors.Wrap(err, 1)
-		log.Infof("Failed to send Ethereum transaction to register anchor [id: %x, hash: %x, SchemaVersion:%v]: %v", registerThisAnchor.AnchorID, registerThisAnchor.RootHash, registerThisAnchor.SchemaVersion, wError)
+		log.Errorf("Failed to send Ethereum transaction to register anchor [id: %x, hash: %x, SchemaVersion:%v]: %v", registerThisAnchor.AnchorID, registerThisAnchor.RootHash, registerThisAnchor.SchemaVersion, wError)
 		return err
 	}
 
@@ -105,10 +105,10 @@ func sendRegistrationTransaction(ethRegistryContract RegisterAnchor, opts *bind.
 	tx, err := ethereum.SubmitTransactionWithRetries(ethRegistryContract.RegisterAnchor, opts, bAnchorId, bMerkleRoot, schemaVersion)
 
 	if err != nil {
-		log.Infof("Failed to send anchor for registration [id: %x, hash: %x, SchemaVersion:%v] on registry: %v", bAnchorId, bMerkleRoot, schemaVersion, err)
+		log.Errorf("Failed to send anchor for registration [id: %x, hash: %x, SchemaVersion:%v] on registry: %v", bAnchorId, bMerkleRoot, schemaVersion, err)
 		return err
 	} else {
-		log.Infof("Sent off the anchor [id: %x, hash: %x, SchemaVersion:%v] to registry. Ethereum transaction hash [%x]", bAnchorId, bMerkleRoot, schemaVersion, tx.Hash())
+		log.Errorf("Sent off the anchor [id: %x, hash: %x, SchemaVersion:%v] to registry. Ethereum transaction hash [%x]", bAnchorId, bMerkleRoot, schemaVersion, tx.Hash())
 	}
 
 	log.Infof("Transfer pending: 0x%x\n", tx.Hash())
@@ -137,8 +137,7 @@ func setUpRegistrationEventListener(ethRegistryContract WatchAnchorRegistered, f
 	_, err = ethRegistryContract.WatchAnchorRegistered(watchOpts, anchorRegisteredEvents, []common.Address{from}, [][32]byte{bAnchorId}, nil)
 	if err != nil {
 		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for anchor registration", 1)
-		log.Infof(wError.Error())
-		panic(wError)
+		log.Panicf(wError.Error())
 	}
 	return
 }

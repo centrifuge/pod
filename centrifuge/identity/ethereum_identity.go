@@ -83,7 +83,7 @@ func (id *EthereumIdentity) GetLastB58KeyForType(keyType int) (ret string, err e
 		}
 		ret = p2pId.Pretty()
 	default:
-		log.Infof("keyType Not found")
+		log.Infof("keyType not found")
 	}
 	return
 }
