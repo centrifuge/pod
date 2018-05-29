@@ -18,7 +18,22 @@ done
 ############################################################
 
 ################# Prepare for tests ########################
-cd $CENT_ETHEREUM_CONTRACTS_DIR
+# Even if other `env_vars.sh` might hold this variable
+# Let's not count on it and be clear instead
+if [ -z ${CENT_ETHEREUM_CONTRACTS_DIR} ]; then
+    CENT_ETHEREUM_CONTRACTS_DIR=$GOPATH/src/github.com/CentrifugeInc/centrifuge-ethereum-contracts
+fi
+
+# If the contracts dir doesn't exist - it has likely not been "installed" yet
+# Installing it in that case so it is usable
+if [ ! -d ${CENT_ETHEREUM_CONTRACTS_DIR} ]; then
+	echo "Ethereum contracts folder not found at ${CENT_ETHEREUM_CONTRACTS_DIR}. Checking them out."
+	# git clone here instead of `go get` as `go get` defaults back to HTTPS which causes issues
+    # with certificate-based github authentication
+    mkdir -p ${CENT_ETHEREUM_CONTRACTS_DIR}
+    git clone git@github.com:CentrifugeInc/centrifuge-ethereum-contracts.git ${CENT_ETHEREUM_CONTRACTS_DIR}
+fi
+cd ${CENT_ETHEREUM_CONTRACTS_DIR}
 npm install
 
 # Unlock User to Run Migration and Run it
