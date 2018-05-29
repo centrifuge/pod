@@ -3,7 +3,7 @@ package config
 // Package the default resources into binary data that is embedded in centrifuge
 // executable
 //
-//go:generate go-bindata -ignore=data\\.go -o ../resources/data.go ../../resources/...
+//go:generate go-bindata -pkg resources -prefix "../../" -o ../resources/data.go ../../resources/...
 
 import (
 	"bytes"
@@ -15,10 +15,6 @@ import (
 	"os"
 	"strings"
 	"time"
-)
-
-const (
-	NETWORK_DEFAULT_CONFIG_FILE = "resources/networks.yaml"
 )
 
 var log = logging.Logger("config")
@@ -119,8 +115,8 @@ func (c *Configuration) GetBootstrapPeers() []string {
 }
 
 // GetNetworkID returns the numerical network id.
-func (c *Configuration) GetNetworkID() int64 {
-	return c.GetNetworkConfig().GetInt64("id")
+func (c *Configuration) GetNetworkID() uint32 {
+	return uint32(c.GetNetworkConfig().GetInt("id"))
 }
 
 // Identity:
@@ -153,20 +149,30 @@ func (c *Configuration) ReadConfigFile(path string) error {
 }
 
 func (c *Configuration) InitializeViper() {
+	// This method should not have any effects if Viper is already initialized.
+	if c.V != nil {
+		return
+	}
+
 	c.V = viper.New()
 	c.V.SetConfigType("yaml")
 
 	// Load defaults
-	data, _ := resources.Asset(NETWORK_DEFAULT_CONFIG_FILE)
+	data, _ := resources.Asset("resources/default_config.yaml")
 	err := c.V.ReadConfig(bytes.NewReader(data))
 	if err != nil {
-		log.Panicf("Error reading config %s, %s", NETWORK_DEFAULT_CONFIG_FILE, err)
+		log.Panicf("Error reading from default configuration (resources/default_config.yaml): %s", err)
 	}
 
 	// Load user specified config
-	err = c.ReadConfigFile(c.configFile)
-	if err != nil {
-		log.Panicf("Error reading config %s, %s", c.configFile, err)
+	if c.configFile != "" {
+		log.Infof("Loading user specified config from %s", c.configFile)
+		err = c.ReadConfigFile(c.configFile)
+		if err != nil {
+			log.Panicf("Error reading config %s, %s", c.configFile, err)
+		}
+	} else {
+		log.Info("No user config specified")
 	}
 	c.V.AutomaticEnv()
 	c.V.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))

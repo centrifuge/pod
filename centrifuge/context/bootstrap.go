@@ -8,6 +8,7 @@ import (
 )
 
 func Bootstrap() {
+	config.Config.InitializeViper()
 	path := config.Config.GetStoragePath()
 	if path == "" {
 		path = "/tmp/centrifuge_data.leveldb_TESTING"

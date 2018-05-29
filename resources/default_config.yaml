@@ -1,4 +1,6 @@
 identityId: 1
+
+centrifugeNetwork: centrifuge-russianhill-eth-rinkeby
 networks: 
   centrifuge-russianhill-eth-rinkeby:
     id: 51
@@ -20,6 +22,4 @@ ethereum:
   contextWaitTimeout: "30s"
   maxRetries: 200
   intervalRetry: "100ms"
-
-
 

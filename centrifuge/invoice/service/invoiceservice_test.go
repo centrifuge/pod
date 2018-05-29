@@ -21,6 +21,7 @@ import (
 var dbFileName = "/tmp/centrifuge_testing_inv_service.leveldb"
 
 func TestMain(m *testing.M) {
+	config.Config.InitializeViper()
 	config.Config.V.Set("storage.Path", dbFileName)
 	defer Bootstrap().Close()
 

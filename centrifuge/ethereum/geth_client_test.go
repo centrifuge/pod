@@ -3,15 +3,24 @@
 package ethereum_test
 
 import (
+	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/config"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/go-errors/errors"
 	"github.com/stretchr/testify/assert"
+	"os"
 	"testing"
 )
+
+func TestMain(m *testing.M) {
+	cc.Bootstrap()
+
+	result := m.Run()
+	os.Exit(result)
+}
 
 type MockTransactionInterface interface {
 	RegisterTransaction(someVar string, anotherVar string) (tx *types.Transaction, err error)
@@ -37,7 +46,9 @@ func (transactionRequest *MockTransactionRequest) RegisterTransaction(transactio
 }
 
 func TestGetGethTxOpts(t *testing.T) {
-	maxRetries := config.Config.GetEthereumMaxRetries()
+	resetMock := testingutils.MockConfigOption("ethereum.maxRetries", 0)
+	defer resetMock()
+
 	//invalid input params
 	bytes, err := tools.StringToByte32("too short")
 	assert.EqualValuesf(t, [32]byte{}, bytes, "Should receive empty byte array if string is not 32 chars")
@@ -73,7 +84,8 @@ func TestInitTransactionWithRetries(t *testing.T) {
 	tx, err = ethereum.SubmitTransactionWithRetries(mockRequest.RegisterTransaction, "otherError", "var2")
 	assert.EqualError(t, err, "Some other error", "Should error out")
 
-	config.Config.V.Set("ethereum.maxRetries", 10)
+	mockRetries := testingutils.MockConfigOption("ethereum.maxRetries", 10)
+	defer mockRetries()
 
 	mockRequest.count = 0
 	// Failure and timeout with locking error
@@ -86,6 +98,4 @@ func TestInitTransactionWithRetries(t *testing.T) {
 	tx, err = ethereum.SubmitTransactionWithRetries(mockRequest.RegisterTransaction, "optimisticLockingEventualSuccess", "var2")
 	assert.Nil(t, err, "Should not error out")
 	assert.EqualValues(t, 3, mockRequest.count, "Retries should be equal")
-
-	config.Config.V.Set("ethereum.maxRetries", maxRetries)
 }

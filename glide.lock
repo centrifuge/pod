@@ -1,5 +1,5 @@
-hash: b3804928a8262f132c3b560d697e0b99c7be7ee369883585d37132bd4860b3ef
-updated: 2018-05-24T12:10:17.18922+02:00
+hash: b834e3640c9c08147721ec1aef5e30a6ba4bfa7209aea39be98bc17737e4e195
+updated: 2018-05-29T16:09:14.672476+02:00
 imports:
 - name: github.com/agl/ed25519
   version: 5312a61534124124185d41f09206b9fef1d88403
@@ -26,7 +26,7 @@ imports:
   subpackages:
   - centrifuge/witness
 - name: github.com/CentrifugeInc/centrifuge-protobufs
-  version: 5c51a3984be42fed52093ddc11a8fca23e5fb28d
+  version: 86ebc6a551b9d54b84bc23a546b8ce4db388c408 
   repo: git@github.com:lucasvo/centrifuge-protobufs
   subpackages:
   - documenttypes
@@ -108,7 +108,7 @@ imports:
 - name: github.com/gorilla/websocket
   version: 6656ddce919367f4c4090b0f89a45854d26da020
 - name: github.com/grpc-ecosystem/grpc-gateway
-  version: 3189c0c0c638bd69bf223a1411ba20c4427647d5
+  version: 92583770e3f01b09a0d3e9bdf64321d8bebd48f2
   repo: git@github.com:grpc-ecosystem/grpc-gateway
   subpackages:
   - protoc-gen-swagger/options
@@ -282,6 +282,8 @@ imports:
   version: 49d762b9817ba1c2e9d0c69183c2b4a8b8f1d934
   subpackages:
   - assert
+- name: github.com/Masterminds/semver
+  version: c7af12943936e8c39859482e61f0574c2fd7fc75
 - name: github.com/minio/blake2b-simd
   version: 3f5f724cb5b182a5c278d6d3d55b40e7f8c2efb4
 - name: github.com/minio/sha256-simd

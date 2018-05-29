@@ -95,7 +95,7 @@ func ServeNode() {
 		},
 	}
 
-	log.Printf("grpc on port: %s\n", config.Config.GetServerPort())
+	log.Printf("grpc on port: %d\n", config.Config.GetServerPort())
 	err = srv.Serve(tls.NewListener(conn, srv.TLSConfig))
 
 	if err != nil {

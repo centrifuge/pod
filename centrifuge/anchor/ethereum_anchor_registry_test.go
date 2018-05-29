@@ -5,6 +5,7 @@ package anchor
 import (
 	"errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
+	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -12,8 +13,21 @@ import (
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/stretchr/testify/assert"
 	"math/big"
+	"os"
 	"testing"
 )
+
+var dbFileName = "/tmp/centrifuge_testing_inv_service.leveldb"
+
+func TestMain(m *testing.M) {
+	config.Config.InitializeViper()
+	config.Config.V.Set("storage.Path", dbFileName)
+	cc.Bootstrap()
+
+	result := m.Run()
+	os.RemoveAll(dbFileName)
+	os.Exit(result)
+}
 
 func TestGenerateAnchor(t *testing.T) {
 	anchor, err := generateAnchor("ABCD", "DCBA")

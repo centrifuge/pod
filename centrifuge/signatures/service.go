@@ -31,23 +31,24 @@ type SigningService struct {
 
 // LoadPublicKeys just loads public keys from the config for now until identity management does this for us.
 func (srv *SigningService) LoadPublicKeys() {
-	keys := config.Config.GetLoad("")
-	for k, v := range keys {
-		key := keytools.GetPublicSigningKey(v)
-		var i [32]byte
-		copy(i[:], key[:32])
-		srv.KnownKeys = make(map[[32]byte]KeyInfo)
-		srv.KnownKeys[i] = KeyInfo{
-			PublicKey:  key,
-			ValidUntil: time.Time{},
-			ValidFrom:  time.Now(),
-			Identity:   []byte(k),
-		}
-	}
+	return
+	// TODO: this is a no-op and was merely for testing purposes. We should properly implement fetching signing keys from ethereum and caching them locally.
+	//      for k, v := range keys {
+	//	    key := keytools.GetPublicSigningKey(v)
+	//		var i [32]byte
+	//		copy(i[:], key[:32])
+	//		srv.KnownKeys = make(map[[32]byte]KeyInfo)
+	//		srv.KnownKeys[i] = KeyInfo{
+	//			PublicKey:  key,
+	//			ValidUntil: time.Time{},
+	//			ValidFrom:  time.Now(),
+	//			Identity:   []byte(k),
+	//		}
+	//	}
 }
 
 func (srv *SigningService) LoadIdentityKeyFromConfig() {
-	srv.IdentityId = conifg.Config.GetIdentityId()
+	srv.IdentityId = config.Config.GetIdentityId()
 	srv.PublicKey, srv.PrivateKey = keytools.GetSigningKeyPairFromConfig()
 }
 
