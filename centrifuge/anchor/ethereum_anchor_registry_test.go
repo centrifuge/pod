@@ -6,6 +6,7 @@ import (
 	"errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -17,15 +18,9 @@ import (
 	"testing"
 )
 
-var dbFileName = "/tmp/centrifuge_testing_inv_service.leveldb"
-
 func TestMain(m *testing.M) {
-	config.Config.InitializeViper()
-	config.Config.V.Set("storage.Path", dbFileName)
 	cc.Bootstrap()
-
 	result := m.Run()
-	os.RemoveAll(dbFileName)
 	os.Exit(result)
 }
 
@@ -106,7 +101,8 @@ func TestSendRegistrationTransaction_InputParams(t *testing.T) {
 }
 
 func TestSetUpRegistrationEventListener_ErrorPassThrough(t *testing.T) {
-	config.Config.V.Set("ethereum.contextWaitTimeout", "30s")
+	mockTimeout := testingutils.MockConfigOption("ethereum.contextWaitTimeout", "30s")
+	defer mockTimeout()
 
 	failingWatchAnchorRegistered := &MockWatchAnchorRegistered{shouldFail: true}
 	anchor := Anchor{tools.RandomString32(), tools.RandomString32(), 1}
