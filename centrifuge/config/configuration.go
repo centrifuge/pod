@@ -52,8 +52,8 @@ func (c *Configuration) GetServerAddress() string {
 ////////////////////////////////////////////////////////////////////////////////
 // Ethereum
 ////////////////////////////////////////////////////////////////////////////////
-func (c *Configuration) GetEthereumNodeWebSocket() string {
-	return c.V.GetString("ethereum.nodeWebSocket")
+func (c *Configuration) GetEthereumNodeURL() string {
+	return c.V.GetString("ethereum.nodeURL")
 }
 
 func (c *Configuration) GetEthereumContextWaitTimeout() time.Duration {

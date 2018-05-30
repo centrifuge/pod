@@ -52,7 +52,7 @@ func (gethClient GethClient) GetClient() *ethclient.Client {
 // Note that this is a singleton and is the same connection for the whole application.
 func GetConnection() EthereumClient {
 	gcInit.Do(func() {
-		u, err := url.Parse(config.Config.GetEthereumNodeWebSocket())
+		u, err := url.Parse(config.Config.GetEthereumNodeURL())
 		if err != nil {
 			log.Fatalf("Failed to connect to parse ethereum.gethSocket URL: %v", err)
 		}

@@ -4,6 +4,7 @@ package anchor
 
 import (
 	"errors"
+	"fmt"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
@@ -101,8 +102,7 @@ func TestSendRegistrationTransaction_InputParams(t *testing.T) {
 }
 
 func TestSetUpRegistrationEventListener_ErrorPassThrough(t *testing.T) {
-	mockTimeout := testingutils.MockConfigOption("ethereum.contextWaitTimeout", "30s")
-	defer mockTimeout()
+	testingutils.MockConfigOption("ethereum.contextWaitTimeout", "30s")
 
 	failingWatchAnchorRegistered := &MockWatchAnchorRegistered{shouldFail: true}
 	anchor := Anchor{tools.RandomString32(), tools.RandomString32(), 1}

@@ -16,7 +16,7 @@ networks:
 
 ethereum:
   defaultAccountName: "main"
-  nodeWebSocket: ws://localhost:9546
+  nodeURL: ws://localhost:9546
   gasPrice: 40000
   gasLimit: 4712388
   contextWaitTimeout: "30s"
