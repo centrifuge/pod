@@ -1,5 +1,5 @@
-hash: 17336a016cb4af43b1d304bb4015652c4280f9e43a6416fbc4164220fd8c2247
-updated: 2018-04-13T13:34:01.441861+02:00
+hash: 1b3a1a37ede3d7dd63e28ab127bd5ee01a60e9005ebce4e482f8cbdbc183bd73
+updated: 2018-05-29T18:09:00.514212221-07:00
 imports:
 - name: github.com/agl/ed25519
   version: 5312a61534124124185d41f09206b9fef1d88403
@@ -24,8 +24,8 @@ imports:
   subpackages:
   - centrifuge/witness
 - name: github.com/CentrifugeInc/centrifuge-protobufs
-  repo: git@github.com:CentrifugeInc/centrifuge-protobufs
-  version: cefcf79a623dfc68cb05157ca77181932cac401a
+  version: 9e877b6555b4b98480bf07b3e0831af31dc9800b
+  repo: git@github.com:pstehlik/centrifuge-protobufs
   subpackages:
   - coredocument
   - invoice
