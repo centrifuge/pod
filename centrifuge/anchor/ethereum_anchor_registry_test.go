@@ -22,6 +22,8 @@ import (
 func TestMain(m *testing.M) {
 	cc.Bootstrap()
 	result := m.Run()
+	fmt.Println("Run Done")
+	cc.Close()
 	os.Exit(result)
 }
 
@@ -125,14 +127,13 @@ func TestSetUpRegistrationEventListener_ChannelSubscriptionCreated(t *testing.T)
 	mockWatchAnchorRegistered := &MockWatchAnchorRegistered{}
 	anchor := Anchor{tools.RandomString32(), tools.RandomString32(), 1}
 	confirmations := make(chan *Anchor, 1)
-
 	err := setUpRegistrationEventListener(mockWatchAnchorRegistered, common.Address{}, &anchor, confirmations)
 	assert.Nil(t, err, "Should not fail")
-
 	//sending one "event" into the registered sink should result in the confirmations channel to receive the anchor
 	//that has been created and passed through initially
 	b32Id, _ := tools.StringToByte32(anchor.AnchorID)
 	mockWatchAnchorRegistered.sink <- &EthereumAnchorRegistryContractAnchorRegistered{From: common.StringToAddress("0x0000000000000000001"), Identifier: b32Id}
 	receivedAnchor := <-confirmations
 	assert.Equal(t, anchor.AnchorID, receivedAnchor.AnchorID, "Received anchor should have the same data as the originally submitted anchor")
+	fmt.Println("Test passes")
 }

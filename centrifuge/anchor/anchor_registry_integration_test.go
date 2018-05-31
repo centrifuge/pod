@@ -4,6 +4,7 @@ package anchor_test
 
 import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/anchor"
+	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/stretchr/testify/assert"
 	"os"
@@ -11,7 +12,9 @@ import (
 )
 
 func TestMain(m *testing.M) {
+	cc.Bootstrap()
 	result := m.Run()
+	cc.Close()
 	os.Exit(result)
 }
 

@@ -17,8 +17,8 @@ import (
 
 func TestMain(m *testing.M) {
 	cc.Bootstrap()
-
 	result := m.Run()
+	cc.Close()
 	os.Exit(result)
 }
 

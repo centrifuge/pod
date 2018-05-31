@@ -3,11 +3,19 @@
 package ethereum_test
 
 import (
+	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
 	"github.com/magiconair/properties/assert"
 	"os"
 	"testing"
 )
+
+func TestMain(m *testing.M) {
+	cc.Bootstrap()
+	result := m.Run()
+	cc.Close()
+	os.Exit(result)
+}
 
 func TestGetConnection_returnsSameConnection(t *testing.T) {
 	//TODO this will currently fail if concurrency is at play - e.g. running with 3 go-routines the test will fail

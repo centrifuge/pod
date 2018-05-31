@@ -5,6 +5,7 @@ package identity_test
 import (
 	"fmt"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
+	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
@@ -14,10 +15,12 @@ import (
 )
 
 func TestMain(m *testing.M) {
+	cc.Bootstrap()
 	config.Config.V.Set("keys.signing.publicKey", "../../example/resources/signingKey.pub")
 	config.Config.V.Set("keys.signing.privateKey", "../../example/resources/signingKey.key")
 
 	result := m.Run()
+	cc.Close()
 	os.Exit(result)
 }
 

@@ -7,11 +7,8 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/repository"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/version"
 	"github.com/stretchr/testify/assert"
-	"github.com/syndtr/goleveldb/leveldb"
 	"os"
 	"testing"
 )
@@ -22,14 +19,13 @@ func TestMain(m *testing.M) {
 	config.Config.InitializeViper()
 	config.Config.V.Set("storage.Path", dbFileName)
 	cc.Bootstrap()
-
 	result := m.Run()
+	cc.Close()
 	os.RemoveAll(dbFileName)
 	os.Exit(result)
 }
 
 func TestP2PService(t *testing.T) {
-
 	identifier := []byte("1")
 	coredoc := &coredocumentpb.CoreDocument{DocumentIdentifier: identifier}
 
@@ -42,13 +38,4 @@ func TestP2PService(t *testing.T) {
 	doc, err := coredocumentrepository.GetCoreDocumentRepository().FindById(identifier)
 	assert.Equal(t, doc.DocumentIdentifier, identifier, "Document Identifier doesn't match")
 
-}
-
-func Bootstrap() *leveldb.DB {
-	levelDB := storage.NewLeveldbStorage(dbFileName)
-
-	coredocumentrepository.NewLevelDBCoreDocumentRepository(&coredocumentrepository.LevelDBCoreDocumentRepository{levelDB})
-	invoicerepository.NewLevelDBInvoiceRepository(&invoicerepository.LevelDBInvoiceRepository{levelDB})
-
-	return levelDB
 }
