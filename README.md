@@ -69,6 +69,12 @@ Start your local testnet (default port 9545):
 ./scripts/test-dependencies/test-ethereum/run.sh
 ```
 
+In order to attach via geth to this node running in docker run
+```
+geth attach ws://localhost:9546
+```
+
+
 Run very simple local ethscan
 -----------------------------
 Follow instructions here: https://github.com/carsenk/explorer

@@ -15,6 +15,28 @@ import (
 // Struct needed as it is used to register the grpc services attached to the grpc server
 type InvoiceDocumentService struct {}
 
+// HandleAnchorInvoiceDocument anchors the given invoice document and returns the anchor details
+func (s *InvoiceDocumentService) HandleAnchorInvoiceDocument(ctx context.Context, anchorInvoiceEnvelope *invoicepb.AnchorInvoiceEnvelope) (*invoicepb.InvoiceDocument, error) {
+	err := invoicerepository.GetInvoiceRepository().Store(anchorInvoiceEnvelope.Document)
+	if err != nil {
+		return nil, err
+	}
+
+	inv := invoice.NewInvoice(anchorInvoiceEnvelope.Document)
+	inv.CalculateMerkleRoot()
+	coreDoc := inv.ConvertToCoreDocument()
+	// Signing of document missing so far
+
+	if (s.IsAnchoringRequired()) {
+		err = coreDoc.Anchor()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return anchorInvoiceEnvelope.Document, nil
+}
+
 func (s *InvoiceDocumentService) HandleSendInvoiceDocument(ctx context.Context, sendInvoiceEnvelope *invoicepb.SendInvoiceEnvelope) (*invoicepb.InvoiceDocument, error) {
 	err := invoicerepository.GetInvoiceRepository().Store(sendInvoiceEnvelope.Document)
 	if err != nil {
