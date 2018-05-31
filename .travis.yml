@@ -28,6 +28,7 @@ install:
   - scripts/install_glide.sh
   - glide install
   - git clone git@github.com:CentrifugeInc/centrifuge-ethereum-contracts.git $GOPATH/src/github.com/CentrifugeInc/centrifuge-ethereum-contracts
+  - git clone git@github.com:pstehlik/centrifuge-protobufs.git $GOPATH/src/github.com/CentrifugeInc/centrifuge-ethereum-contracts
 
 script:
   - scripts/test_wrapper.sh
