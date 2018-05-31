@@ -57,11 +57,11 @@ func (c *Configuration) GetEthereumNodeURL() string {
 }
 
 func (c *Configuration) GetEthereumContextWaitTimeout() time.Duration {
-	return c.V.GetDuration("etheruem.contextWaitTimout")
+	return c.V.GetDuration("ethereum.contextWaitTimeout")
 }
 
 func (c *Configuration) GetEthereumIntervalRetry() time.Duration {
-	return c.V.GetDuration("etheruem.intervalRetry")
+	return c.V.GetDuration("ethereum.intervalRetry")
 }
 
 func (c *Configuration) GetEthereumMaxRetries() int {

@@ -147,13 +147,15 @@ func waitAndRouteAnchorRegistrationEvent(conf <-chan *EthereumAnchorRegistryCont
 	for {
 		select {
 		case <-ctx.Done():
-			log.Fatalf("Context [%v] closed before receiving AnchorRegistered event for anchor ID: %x, RootHash: %x\n", ctx, pushThisAnchor.AnchorID, pushThisAnchor.RootHash)
+			log.Errorf("Context [%v] closed before receiving AnchorRegistered event for anchor ID: %x, RootHash: %x\n", ctx, pushThisAnchor.AnchorID, pushThisAnchor.RootHash)
 			return
 		case res := <-conf:
 			log.Infof("Received AnchorRegistered event from: %x, identifier: %x\n", res.From, res.Identifier)
 			confirmations <- pushThisAnchor
 			return
+
 		}
+
 	}
 }
 

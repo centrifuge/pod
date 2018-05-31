@@ -18,9 +18,9 @@ var dbFileName = "/tmp/centrifuge_testing_inv_service.leveldb"
 func TestMain(m *testing.M) {
 	config.Config.InitializeViper()
 	config.Config.V.Set("storage.Path", dbFileName)
-	cc.Bootstrap()
+	cc.TestBootstrap()
 	result := m.Run()
-	cc.Close()
+	cc.TestTearDown()
 	os.RemoveAll(dbFileName)
 	os.Exit(result)
 }

@@ -12,9 +12,9 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	cc.Bootstrap()
+	cc.TestBootstrap()
 	result := m.Run()
-	cc.Close()
+	cc.TestTearDown()
 	os.Exit(result)
 }
 

@@ -4,7 +4,6 @@ package anchor
 
 import (
 	"errors"
-	"fmt"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
@@ -20,10 +19,9 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	cc.Bootstrap()
+	cc.TestBootstrap()
 	result := m.Run()
-	fmt.Println("Run Done")
-	cc.Close()
+	cc.TestTearDown()
 	os.Exit(result)
 }
 
@@ -123,7 +121,6 @@ func TestSetUpRegistrationEventListener_ErrorPassThrough(t *testing.T) {
 
 func TestSetUpRegistrationEventListener_ChannelSubscriptionCreated(t *testing.T) {
 	config.Config.V.Set("ethereum.contextWaitTimeout", "30s")
-
 	mockWatchAnchorRegistered := &MockWatchAnchorRegistered{}
 	anchor := Anchor{tools.RandomString32(), tools.RandomString32(), 1}
 	confirmations := make(chan *Anchor, 1)
@@ -135,5 +132,4 @@ func TestSetUpRegistrationEventListener_ChannelSubscriptionCreated(t *testing.T)
 	mockWatchAnchorRegistered.sink <- &EthereumAnchorRegistryContractAnchorRegistered{From: common.StringToAddress("0x0000000000000000001"), Identifier: b32Id}
 	receivedAnchor := <-confirmations
 	assert.Equal(t, anchor.AnchorID, receivedAnchor.AnchorID, "Received anchor should have the same data as the originally submitted anchor")
-	fmt.Println("Test passes")
 }
