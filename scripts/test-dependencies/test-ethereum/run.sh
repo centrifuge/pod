@@ -35,7 +35,7 @@ docker run -it -v $DATA_DIR:/$DOCKER_DATA_DIR -v $PARENT_DIR/scripts/test-depend
 
 ################## Run GETH #########################
 ## Ethereum local testnet
-docker run -d --name geth-node -p 9545:9545 -p 9546:9546 -p 30303:30303 -v $DATA_DIR:/$DOCKER_DATA_DIR -v $HOME/.ethash:$DOCKER_DAG_DIR ethereum/client-go:$GETH_DOCKER_VERSION --identity "${IDENTITY}" --nodiscover --networkid=$NETWORK_ID --datadir=${DOCKER_DATA_DIR} --cache=512 --rpc --rpcaddr 0.0.0.0 --rpcport $RPC_PORT --rpcapi="db,eth,net,personal,web3" --mine --etherbase "${CENT_ETHEREUM_ACCOUNTS_MAIN_ADDRESS}" --ipcdisable --ws --wsport $WS_PORT --wsaddr 0.0.0.0 --wsorigins "*" --wsapi="db,eth,net,personal,web3"
+docker run -d --name ${GETH_DOCKER_CONTAINER_NAME} -p 9545:9545 -p 9546:9546 -p 30303:30303 -v $DATA_DIR:/$DOCKER_DATA_DIR -v $HOME/.ethash:$DOCKER_DAG_DIR ethereum/client-go:$GETH_DOCKER_VERSION --identity "${IDENTITY}" --nodiscover --networkid=$NETWORK_ID --datadir=${DOCKER_DATA_DIR} --cache=512 --rpc --rpcaddr 0.0.0.0 --rpcport $RPC_PORT --rpcapi="db,eth,net,personal,web3" --mine --etherbase "${CENT_ETHEREUM_ACCOUNTS_MAIN_ADDRESS}" --ipcdisable --ws --wsport $WS_PORT --wsaddr 0.0.0.0 --wsorigins "*" --wsapi="db,eth,net,personal,web3"
 
 echo "Waiting for GETH to Start Up ..."
 # Wait until DAG has been generated
