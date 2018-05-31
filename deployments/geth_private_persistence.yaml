@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: geth-pv
+spec:
+  storageClassName: ""
+  capacity:
+    storage: 200G
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  gcePersistentDisk:
+    pdName: geth-0-pd
+    fsType: ext4
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: geth-pvc
+spec:
+  storageClassName: ""
+  volumeName: geth-pv
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 200G

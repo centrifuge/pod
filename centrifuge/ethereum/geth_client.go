@@ -21,6 +21,7 @@ const (
 	defaultMaxRetries = 200
 	defaultIntervalRetry = (100 * time.Millisecond)
 	TransactionUnderpriced = "replacement transaction underpriced"
+	NonceTooLow = "nonce too low"
 )
 
 var gc *GethClient
@@ -163,7 +164,7 @@ func SubmitTransactionWithRetries(contractMethod interface{}, params ... interfa
 		}
 
 		if err != nil {
-			if err.Error() == TransactionUnderpriced {
+			if (err.Error() == TransactionUnderpriced) || (err.Error() == NonceTooLow) {
 				log.Printf("Concurrent transaction identified, trying again [%d/%d]\n", current, maxTries )
 				time.Sleep(getIntervalRetry())
 			} else {
