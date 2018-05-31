@@ -13,7 +13,7 @@ cache:
       # Cache the glide binary
       - ~/glide/
       # Glide's own cache
-#      - ~/.glide
+      - ~/.glide
       # Use a separate depbin folder to allow for caching. 
       # The bin itself is then linked (ln -s) in the install-dependencies script
       - $GOPATH/pkg/depbin
@@ -28,7 +28,6 @@ install:
   - scripts/install_glide.sh
   - glide install
   - git clone git@github.com:CentrifugeInc/centrifuge-ethereum-contracts.git $GOPATH/src/github.com/CentrifugeInc/centrifuge-ethereum-contracts
-  - git clone git@github.com:pstehlik/centrifuge-protobufs.git $GOPATH/src/github.com/CentrifugeInc/centrifuge-ethereum-contracts
 
 script:
   - scripts/test_wrapper.sh
