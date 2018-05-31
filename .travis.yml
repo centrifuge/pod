@@ -13,7 +13,7 @@ cache:
       # Cache the glide binary
       - ~/glide/
       # Glide's own cache
-      - ~/.glide
+#      - ~/.glide
       # Use a separate depbin folder to allow for caching. 
       # The bin itself is then linked (ln -s) in the install-dependencies script
       - $GOPATH/pkg/depbin
