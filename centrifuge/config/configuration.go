@@ -7,6 +7,7 @@ package config
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/resources"
 	logging "github.com/ipfs/go-log"
@@ -137,6 +138,15 @@ func (c *Configuration) GetSigningKeyPair() (pub, priv string) {
 func NewConfiguration(configFile string) Configuration {
 	c := Configuration{configFile: configFile}
 	return c
+}
+
+// SetConfigFile returns an error if viper was already initialized.
+func (c *Configuration) SetConfigFile(path string) error {
+	if c.V != nil {
+		return errors.New("Viper already initialized. Can't set config file")
+	}
+	c.configFile = path
+	return nil
 }
 
 func (c *Configuration) ReadConfigFile(path string) error {

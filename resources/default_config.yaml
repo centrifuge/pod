@@ -2,6 +2,17 @@ identityId: 1
 
 centrifugeNetwork: centrifuge-russianhill-eth-rinkeby
 networks: 
+  testing: 
+    id: 333
+    ethereumNetworkId: 8383
+    bootstrapPeers:
+      - "/ip4/127.0.0.1/tcp/38202/ipfs/QmTQxbwkuZYYDfuzTbxEAReTNCLozyy558vQngVvPMjLYk"
+      - "/ip4/127.0.0.1/tcp/38203/ipfs/QmVf6EN6mkqWejWKW2qPu16XpdG3kJo1T3mhahPB5Se5n1"
+  contractAddresses: 
+      identityFactory: "0x0589ed482af8d6809f022fc11aa399fc8a883d52"
+      identityRegistry: "0xf9417cded133ba834d4cfdc6e452dbd2fc52674e"
+      anchorRegistry: "0xb571fe40de2d61e954df9ca4e961f69488f135a0"
+
   centrifuge-russianhill-eth-rinkeby:
     id: 51
     bootstrapPeers:
