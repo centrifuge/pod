@@ -6,22 +6,22 @@ local_dir="$(dirname "$0")"
 PARENT_DIR=`pwd`
 GETH_DOCKER_CONTAINER_NAME="geth-node"
 CONTAINER_WAS_RUNNING=`docker ps -a --filter "name=${DOCKER_CONTAINER_NAME}" --filter "status=running" --quiet`
-
+echo "Running: [${CONTAINER_WAS_RUNNING}]"
 
 ################# Run Dependencies #########################
 for path in ${local_dir}/test-dependencies/*; do
     [ -d "${path}" ] || continue # if not a directory, skip
     source "${path}/env_vars.sh" # Every dependency should have env_vars.sh + run.sh executable files
 
-    if [ -z ${CONTAINER_WAS_RUNNING} ]; then
+    if [ -n ${CONTAINER_WAS_RUNNING} ]; then
+        echo "Container ${GETH_DOCKER_CONTAINER_NAME} is already running. Not starting again."
+    else
         echo "Container ${GETH_DOCKER_CONTAINER_NAME} is not currently running"
         echo "Executing [${path}/run.sh]"
         ${path}/run.sh
         if [ $? -ne 0 ]; then
-          exit 1
+            exit 1
         fi
-    else
-      echo "Container ${GETH_DOCKER_CONTAINER_NAME} is already running. Not starting again."
     fi
 done
 ############################################################
@@ -53,7 +53,10 @@ fi
 ############################################################
 
 ################# CleanUp ##################################
-if [ ! -z ${CONTAINER_WAS_RUNNING} ]; then
+echo "Running: [${CONTAINER_WAS_RUNNING}]"
+if [ -n ${CONTAINER_WAS_RUNNING} ]; then
+    echo "Container ${GETH_DOCKER_CONTAINER_NAME} was already running. Not tearing it down."
+else
     echo "Bringing GETH Daemon Down"
     docker rm -f geth-node
 
