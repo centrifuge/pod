@@ -13,7 +13,7 @@ for path in ${local_dir}/test-dependencies/*; do
     [ -d "${path}" ] || continue # if not a directory, skip
     source "${path}/env_vars.sh" # Every dependency should have env_vars.sh + run.sh executable files
 
-    if [ -n ${CONTAINER_WAS_RUNNING} ]; then
+    if [ -n "${CONTAINER_WAS_RUNNING}" ]; then
         echo "Container ${GETH_DOCKER_CONTAINER_NAME} is already running. Not starting again."
     else
         echo "Container ${GETH_DOCKER_CONTAINER_NAME} is not currently running"
@@ -54,7 +54,7 @@ fi
 
 ################# CleanUp ##################################
 echo "Running: [${CONTAINER_WAS_RUNNING}]"
-if [ -n ${CONTAINER_WAS_RUNNING} ]; then
+if [ -n "${CONTAINER_WAS_RUNNING}" ]; then
     echo "Container ${GETH_DOCKER_CONTAINER_NAME} was already running. Not tearing it down."
 else
     echo "Bringing GETH Daemon Down"
