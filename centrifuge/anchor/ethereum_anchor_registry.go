@@ -108,7 +108,7 @@ func sendRegistrationTransaction(ethRegistryContract RegisterAnchor, opts *bind.
 		log.Errorf("Failed to send anchor for registration [id: %x, hash: %x, SchemaVersion:%v] on registry: %v", bAnchorId, bMerkleRoot, schemaVersion, err)
 		return err
 	} else {
-		log.Errorf("Sent off the anchor [id: %x, hash: %x, SchemaVersion:%v] to registry. Ethereum transaction hash [%x]", bAnchorId, bMerkleRoot, schemaVersion, tx.Hash())
+		log.Infof("Sent off the anchor [id: %x, hash: %x, SchemaVersion:%v] to registry. Ethereum transaction hash [%x]", bAnchorId, bMerkleRoot, schemaVersion, tx.Hash())
 	}
 
 	log.Infof("Transfer pending: 0x%x\n", tx.Hash())
@@ -153,17 +153,14 @@ func waitAndRouteAnchorRegistrationEvent(conf <-chan *EthereumAnchorRegistryCont
 			log.Infof("Received AnchorRegistered event from: %x, identifier: %x\n", res.From, res.Identifier)
 			confirmations <- pushThisAnchor
 			return
-
 		}
-
 	}
 }
 
 func getAnchorContract() (anchorContract *EthereumAnchorRegistryContract, err error) {
 	// Instantiate the contract and display its name
 	client := ethereum.GetConnection()
-
-	anchorContract, err = NewEthereumAnchorRegistryContract(common.HexToAddress(config.Config.GetContractAddress("anchorRegistry")), client.GetClient())
+	anchorContract, err = NewEthereumAnchorRegistryContract(config.Config.GetContractAddress("anchorRegistry"), client.GetClient())
 	if err != nil {
 		log.Fatalf("Failed to instantiate the witness contract contract: %v", err)
 	}

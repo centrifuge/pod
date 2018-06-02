@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/resources"
+	"github.com/ethereum/go-ethereum/common"
 	logging "github.com/ipfs/go-log"
 	"github.com/spf13/viper"
 	"math/big"
@@ -97,27 +98,28 @@ func (c *Configuration) GetNetworkString() string {
 	return c.V.GetString("centrifugeNetwork")
 }
 
-func (c *Configuration) GetNetworkConfig() *viper.Viper {
-	key := fmt.Sprintf("networks.%s", c.GetNetworkString())
-	if !c.V.IsSet(key) {
-		log.Panicf("networkConfig: Network configuration with key [%] does not exist", key)
-	}
-	return c.V.Sub(key)
+func (c *Configuration) GetNetworkKey(k string) string {
+	return fmt.Sprintf("networks.%s.%s", c.GetNetworkString(), k)
+}
+
+// GetContractAddressString returns the deployed contract address for a given contract.
+func (c *Configuration) GetContractAddressString(contract string) (address string) {
+	return c.V.GetString(c.GetNetworkKey(fmt.Sprintf("contractAddresses.%s", contract)))
 }
 
 // GetContractAddress returns the deployed contract address for a given contract.
-func (c *Configuration) GetContractAddress(contract string) (address string) {
-	return c.GetNetworkConfig().GetString(fmt.Sprintf("contractAddresses.%s", contract))
+func (c *Configuration) GetContractAddress(contract string) (address common.Address) {
+	return common.HexToAddress(c.GetContractAddressString(contract))
 }
 
 // GetBootstrapPeers returns the list of configured bootstrap nodes for the given network.
 func (c *Configuration) GetBootstrapPeers() []string {
-	return c.GetNetworkConfig().GetStringSlice("bootstrapPeers")
+	return c.V.GetStringSlice(c.GetNetworkKey("bootstrapPeers"))
 }
 
 // GetNetworkID returns the numerical network id.
 func (c *Configuration) GetNetworkID() uint32 {
-	return uint32(c.GetNetworkConfig().GetInt("id"))
+	return uint32(c.V.GetInt(c.GetNetworkKey("id")))
 }
 
 // Identity:
