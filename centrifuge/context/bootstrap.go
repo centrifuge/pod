@@ -5,8 +5,11 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
+	logging "github.com/ipfs/go-log"
 	"os"
 )
+
+var log = logging.Logger("bootstrap")
 
 const TestStoragePath = "/tmp/centrifuge_data.leveldb_TESTING"
 
@@ -28,8 +31,11 @@ func TestBootstrap() {
 		config.Config.InitializeViper()
 		config.Config.V.SetDefault("storage.Path", TestStoragePath)
 	}
-	config.Config.V.BindEnv("networks.testing.contractAddresses.anchorRegistry", "CENT_ANCHOR_ETHEREUM_ANCHORREGISTRYADDRESS")
+
 	config.Config.V.Set("centrifugeNetwork", "testing")
+	log.Info("Writing config to /tmp/cent_config.yaml")
+	config.Config.V.WriteConfigAs("/tmp/cent_config.yaml")
+
 	levelDB := storage.NewLeveldbStorage(config.Config.GetStoragePath())
 
 	coredocumentrepository.NewLevelDBCoreDocumentRepository(&coredocumentrepository.LevelDBCoreDocumentRepository{levelDB})
