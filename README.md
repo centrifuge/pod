@@ -17,6 +17,7 @@ glide update
 ```
 
 Make sure you have docker-compose installed.
+Perform login `docker login -u $username --password`
 
 Build, test & run
 -----------------
