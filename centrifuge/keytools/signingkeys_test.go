@@ -3,13 +3,13 @@
 package keytools
 
 import (
-	"testing"
 	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 func TestPublicKeyToP2PKey(t *testing.T) {
 	expectedPeerId := "QmTQxbwkuZYYDfuzTbxEAReTNCLozyy558vQngVvPMjLYk"
-	publicKey := GetPublicSigningKey("../../resources/signingKey.pub")
+	publicKey := GetPublicSigningKey("../../example/resources/signingKey.pub")
 
 	var bPk [32]byte
 	copy(bPk[:], publicKey)

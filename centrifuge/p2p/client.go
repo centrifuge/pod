@@ -2,33 +2,33 @@ package p2p
 
 import (
 	"fmt"
-	"log"
-	ma "github.com/multiformats/go-multiaddr"
 	"github.com/libp2p/go-libp2p-peer"
 	pstore "github.com/libp2p/go-libp2p-peerstore"
+	ma "github.com/multiformats/go-multiaddr"
+
 	"context"
-	"google.golang.org/grpc"
-	"sync"
-	"google.golang.org/grpc/connectivity"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/connectivity"
+	"sync"
 )
 
 // Opens a client connection with libp2p
-func OpenClient (target string) p2ppb.P2PServiceClient {
-	log.Printf("Opening connection to: %s", target)
+func OpenClient(target string) p2ppb.P2PServiceClient {
+	log.Info("Opening connection to: %s", target)
 	ipfsaddr, err := ma.NewMultiaddr(target)
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatal(err)
 	}
 
 	pid, err := ipfsaddr.ValueForProtocol(ma.P_IPFS)
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatal(err)
 	}
 
 	peerid, err := peer.IDB58Decode(pid)
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatal(err)
 	}
 
 	// Decapsulate the /ipfs/<peerID> part from the target
@@ -51,7 +51,7 @@ func OpenClient (target string) p2ppb.P2PServiceClient {
 		defer wg.Done()
 		g, err := grpcProtoInstance.Dial(context.Background(), peerid, grpc.WithInsecure())
 		if err != nil {
-			log.Fatalln(err)
+			log.Fatal(err)
 		}
 		for {
 			if g.GetState() == connectivity.Ready {

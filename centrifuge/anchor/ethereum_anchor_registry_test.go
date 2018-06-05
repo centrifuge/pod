@@ -3,17 +3,27 @@
 package anchor
 
 import (
-	"testing"
-	"github.com/stretchr/testify/assert"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"math/big"
-	"github.com/ethereum/go-ethereum/core/types"
 	"errors"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
+	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/event"
-	"github.com/spf13/viper"
+	"github.com/stretchr/testify/assert"
+	"math/big"
+	"os"
+	"testing"
 )
+
+func TestMain(m *testing.M) {
+	cc.TestBootstrap()
+	result := m.Run()
+	cc.TestTearDown()
+	os.Exit(result)
+}
 
 func TestGenerateAnchor(t *testing.T) {
 	anchor, err := generateAnchor("ABCD", "DCBA")
@@ -92,7 +102,7 @@ func TestSendRegistrationTransaction_InputParams(t *testing.T) {
 }
 
 func TestSetUpRegistrationEventListener_ErrorPassThrough(t *testing.T) {
-	viper.SetDefault("ethereum.contextWaitTimeout", "30s")
+	resetMock := testingutils.MockConfigOption("ethereum.contextWaitTimeout", "30s")
 
 	failingWatchAnchorRegistered := &MockWatchAnchorRegistered{shouldFail: true}
 	anchor := Anchor{tools.RandomString32(), tools.RandomString32(), 1}
@@ -106,19 +116,17 @@ func TestSetUpRegistrationEventListener_ErrorPassThrough(t *testing.T) {
 
 	err := setUpRegistrationEventListener(failingWatchAnchorRegistered, common.Address{}, &anchor, confirmations)
 
+	defer resetMock()
 	assert.Error(t, err, "Should fail if the anchor registration watcher failed")
 }
 
 func TestSetUpRegistrationEventListener_ChannelSubscriptionCreated(t *testing.T) {
-	viper.SetDefault("ethereum.contextWaitTimeout", "30s")
-
+	config.Config.V.Set("ethereum.contextWaitTimeout", "30s")
 	mockWatchAnchorRegistered := &MockWatchAnchorRegistered{}
 	anchor := Anchor{tools.RandomString32(), tools.RandomString32(), 1}
 	confirmations := make(chan *Anchor, 1)
-
 	err := setUpRegistrationEventListener(mockWatchAnchorRegistered, common.Address{}, &anchor, confirmations)
 	assert.Nil(t, err, "Should not fail")
-
 	//sending one "event" into the registered sink should result in the confirmations channel to receive the anchor
 	//that has been created and passed through initially
 	b32Id, _ := tools.StringToByte32(anchor.AnchorID)
