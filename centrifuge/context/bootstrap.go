@@ -15,9 +15,6 @@ import (
 const testStoragePath = "/tmp/centrifuge_data.leveldb_TESTING"
 
 var log = logging.Logger("context")
-var format = gologging.MustStringFormatter(
-	"%{color}%{time:15:04:05.000} %{shortfunc} ▶ %{level:.4s} %{id:03x}%{color:reset} %{message}",
-)
 
 func Bootstrap() {
 	config.Config.InitializeViper()

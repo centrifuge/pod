@@ -102,7 +102,7 @@ func TestSendRegistrationTransaction_InputParams(t *testing.T) {
 }
 
 func TestSetUpRegistrationEventListener_ErrorPassThrough(t *testing.T) {
-	testingutils.MockConfigOption("ethereum.contextWaitTimeout", "30s")
+	resetMock = testingutils.MockConfigOption("ethereum.contextWaitTimeout", "30s")
 
 	failingWatchAnchorRegistered := &MockWatchAnchorRegistered{shouldFail: true}
 	anchor := Anchor{tools.RandomString32(), tools.RandomString32(), 1}
@@ -116,6 +116,7 @@ func TestSetUpRegistrationEventListener_ErrorPassThrough(t *testing.T) {
 
 	err := setUpRegistrationEventListener(failingWatchAnchorRegistered, common.Address{}, &anchor, confirmations)
 
+	defer resetMock()
 	assert.Error(t, err, "Should fail if the anchor registration watcher failed")
 }
 

@@ -1,14 +1,14 @@
 package invoiceservice
 
 import (
+	"fmt"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/repository"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	google_protobuf2 "github.com/golang/protobuf/ptypes/empty"
 	"golang.org/x/net/context"
-	"fmt"
 )
 
 // Struct needed as it is used to register the grpc services attached to the grpc server
@@ -26,10 +26,7 @@ func (s *InvoiceDocumentService) HandleSendInvoiceDocument(ctx context.Context, 
 	// Sign document
 	// Uncomment once fixed
 	//coreDoc.Sign()
-
-	if false {
-		coreDoc.Anchor()
-	}
+	//coreDoc.Anchor()
 
 	errs := []error{}
 	for _, element := range sendInvoiceEnvelope.Recipients {
