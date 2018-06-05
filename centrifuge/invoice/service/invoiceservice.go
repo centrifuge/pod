@@ -10,7 +10,10 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
+	logging "github.com/ipfs/go-log"
 )
+
+var log = logging.Logger("rest-api")
 
 // Struct needed as it is used to register the grpc services attached to the grpc server
 type InvoiceDocumentService struct {}
@@ -32,6 +35,8 @@ func (s *InvoiceDocumentService) HandleAnchorInvoiceDocument(ctx context.Context
 		if err != nil {
 			return nil, err
 		}
+	} else {
+		log.Warning("Calling the anchor endpoint to anchor an invoice but anchoring is not set to be required.")
 	}
 
 	return anchorInvoiceEnvelope.Document, nil
@@ -63,6 +68,7 @@ func (s *InvoiceDocumentService) HandleSendInvoiceDocument(ctx context.Context, 
 	}
 
 	if len(errs) != 0 {
+		log.Errorf("%v", errs)
 		return nil, errors.Errorf("%v", errs)
 	}
 	return sendInvoiceEnvelope.Document, nil
@@ -76,6 +82,7 @@ func (s *InvoiceDocumentService) HandleGetInvoiceDocument(ctx context.Context, g
 			doc = invoice.NewInvoiceFromCoreDocument(&coredocument.CoreDocument{doc1}).Document
 			err = err1
 		}
+		log.Errorf("%v", err)
 	}
 	return doc, err
 }
