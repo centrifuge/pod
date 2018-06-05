@@ -1,16 +1,18 @@
 package context
 
 import (
+	"fmt"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
 	logging "github.com/ipfs/go-log"
 	gologging "github.com/whyrusleeping/go-logging"
+	"math/rand"
 	"os"
 )
 
-const TestStoragePath = "/tmp/centrifuge_data.leveldb_TESTING"
+const testStoragePath = "/tmp/centrifuge_data.leveldb_TESTING"
 
 var log = logging.Logger("context")
 var format = gologging.MustStringFormatter(
@@ -21,42 +23,37 @@ func Bootstrap() {
 	config.Config.InitializeViper()
 
 	levelDB := storage.NewLeveldbStorage(config.Config.GetStoragePath())
-
 	coredocumentrepository.NewLevelDBCoreDocumentRepository(&coredocumentrepository.LevelDBCoreDocumentRepository{levelDB})
 	invoicerepository.NewLevelDBInvoiceRepository(&invoicerepository.LevelDBInvoiceRepository{levelDB})
 }
 
+func getRandomTestStoragePath() string {
+	return fmt.Sprintf("%s_%d", testStoragePath, rand.Int())
+}
+
 func TestBootstrap() {
-	logging.SetAllLoggers(gologging.INFO) // Change to DEBUG for extra info
+	logging.SetAllLoggers(gologging.DEBUG)
 	backend := gologging.NewLogBackend(os.Stdout, "", 0)
 	gologging.SetBackend(backend)
 
-	if config.Config.V == nil {
-		err := config.Config.SetConfigFile("../../resources/testing_config.yaml")
-		if err != nil {
-			panic(err)
-		}
-		config.Config.InitializeViper()
-		config.Config.V.SetDefault("storage.Path", TestStoragePath)
+	configPath, _ := os.LookupEnv("GOPATH")
+	err := config.Config.SetConfigFile(fmt.Sprintf("%s/src/github.com/CentrifugeInc/go-centrifuge/resources/testing_config.yaml", configPath))
+	if err != nil {
+		panic(err)
 	}
+	config.Config.InitializeViper()
+	config.Config.V.SetDefault("storage.Path", getRandomTestStoragePath())
 
 	config.Config.V.Set("centrifugeNetwork", "testing")
 	config.Config.V.WriteConfigAs("/tmp/cent_config.yaml")
 
+	log.Infof("Creating levelDb at: %s", config.Config.GetStoragePath())
 	levelDB := storage.NewLeveldbStorage(config.Config.GetStoragePath())
-
 	coredocumentrepository.NewLevelDBCoreDocumentRepository(&coredocumentrepository.LevelDBCoreDocumentRepository{levelDB})
 	invoicerepository.NewLevelDBInvoiceRepository(&invoicerepository.LevelDBInvoiceRepository{levelDB})
 }
 
 func TestTearDown() {
-	Close()
-	if config.Config.GetStoragePath() == TestStoragePath {
-		os.RemoveAll(TestStoragePath)
-	}
-}
-
-func Close() {
-	levelDB := storage.NewLeveldbStorage(config.Config.GetStoragePath())
-	levelDB.Close()
+	storage.CloseLeveldbStorage()
+	os.RemoveAll(config.Config.GetStoragePath())
 }

@@ -26,8 +26,8 @@ imports:
   subpackages:
   - centrifuge/witness
 - name: github.com/CentrifugeInc/centrifuge-protobufs
-  version: 86ebc6a551b9d54b84bc23a546b8ce4db388c408 
-  repo: git@github.com:lucasvo/centrifuge-protobufs
+  version: efca63f82b7713365e81bd50d686c6a68bf61117 
+  repo: git@github.com:CentrifugeInc/centrifuge-protobufs
   subpackages:
   - documenttypes
   - gen/go/coredocument
