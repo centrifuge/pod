@@ -22,7 +22,7 @@ cache:
 
 before_install:
   - npm install -g truffle@4.0.4
-  - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
+  - ./scripts/docker_login.sh
 install:
   - scripts/install_glide.sh
   - glide install
