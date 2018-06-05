@@ -22,7 +22,6 @@ cache:
     - "/tmp/geth_test_network/.ethash"
 before_install:
   - npm install -g truffle@4.0.4
-  - ./scripts/docker_login.sh
 install:
   - scripts/install_glide.sh
   - glide install
