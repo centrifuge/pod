@@ -13,7 +13,7 @@ RUN go install ./centrifuge
 
 FROM alpine:latest
 
-RUN apk update && apk add --no-cache git jq curl
+RUN apk update && apk add --no-cache jq curl
 
 WORKDIR /root/
 COPY --from=builder /go/bin/centrifuge .

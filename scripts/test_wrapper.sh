@@ -34,6 +34,8 @@ if [ ! -d ${CENT_ETHEREUM_CONTRACTS_DIR} ]; then
     git clone git@github.com:CentrifugeInc/centrifuge-ethereum-contracts.git ${CENT_ETHEREUM_CONTRACTS_DIR}
 fi
 cd ${CENT_ETHEREUM_CONTRACTS_DIR}
+# Clear up previous build
+rm -Rf ./build
 npm install
 
 # Unlock User to Run Migration and Run it
