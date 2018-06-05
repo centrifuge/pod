@@ -137,7 +137,7 @@ func (id *EthereumIdentity) AddKeyToIdentity(keyType int, confirmations chan<- *
 func getIdentityFactoryContract() (identityFactoryContract *EthereumIdentityFactoryContract, err error) {
 	client := ethereum.GetConnection()
 
-	identityFactoryContract, err = NewEthereumIdentityFactoryContract(common.HexToAddress(config.Config.GetContractAddress("identityFactory")), client.GetClient())
+	identityFactoryContract, err = NewEthereumIdentityFactoryContract(config.Config.GetContractAddress("identityFactory"), client.GetClient())
 	if err != nil {
 		log.Infof("Failed to instantiate the identity factory contract: %v", err)
 	}
@@ -147,7 +147,7 @@ func getIdentityFactoryContract() (identityFactoryContract *EthereumIdentityFact
 func getIdentityRegistryContract() (identityRegistryContract *EthereumIdentityRegistryContract, err error) {
 	client := ethereum.GetConnection()
 
-	identityRegistryContract, err = NewEthereumIdentityRegistryContract(common.HexToAddress(config.Config.GetContractAddress("identityRegistry")), client.GetClient())
+	identityRegistryContract, err = NewEthereumIdentityRegistryContract(config.Config.GetContractAddress("identityRegistry"), client.GetClient())
 	if err != nil {
 		log.Infof("Failed to instantiate the identity registry contract: %v", err)
 	}

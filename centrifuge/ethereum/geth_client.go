@@ -52,6 +52,7 @@ func (gethClient GethClient) GetClient() *ethclient.Client {
 // Note that this is a singleton and is the same connection for the whole application.
 func GetConnection() EthereumClient {
 	gcInit.Do(func() {
+		log.Info("Opening connection to Ethereum:", config.Config.GetEthereumNodeURL())
 		u, err := url.Parse(config.Config.GetEthereumNodeURL())
 		if err != nil {
 			log.Fatalf("Failed to connect to parse ethereum.gethSocket URL: %v", err)
@@ -122,7 +123,7 @@ func SubmitTransactionWithRetries(contractMethod interface{}, params ...interfac
 
 		if err != nil {
 			if err.Error() == TransactionUnderpriced {
-				log.Warning("Concurrent transaction identified, trying again [%d/%d]\n", current, maxTries)
+				log.Warningf("Concurrent transaction identified, trying again [%d/%d]\n", current, maxTries)
 				time.Sleep(config.Config.GetEthereumIntervalRetry())
 			} else {
 				done = true

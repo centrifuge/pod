@@ -18,7 +18,6 @@ func TestMain(m *testing.M) {
 	cc.TestBootstrap()
 	config.Config.V.Set("keys.signing.publicKey", "../../example/resources/signingKey.pub")
 	config.Config.V.Set("keys.signing.privateKey", "../../example/resources/signingKey.key")
-
 	result := m.Run()
 	cc.TestTearDown()
 	os.Exit(result)
