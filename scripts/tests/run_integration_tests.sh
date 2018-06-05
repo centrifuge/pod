@@ -16,4 +16,4 @@ echo "IDENTITY REGISTRY ADDRESS: ${CENT_NETWORKS_TESTING_CONTRACTADDRESSES_IDENT
 ############################################################
 
 echo "Running Integration Ethereum Tests against [${CENT_ETHEREUM_NODEURL}]"
-go test ./... -tags=ethereum -timeout 45s
+go test ./... -tags=ethereum -timeout 90s
