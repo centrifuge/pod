@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"fmt"
 	"github.com/syndtr/goleveldb/leveldb"
 	"sync"
 )
@@ -17,7 +16,6 @@ func NewLeveldbStorage(path string) *leveldb.DB {
 	}
 	dbPath = path
 	once.Do(func() {
-		fmt.Println("STORAGE", dbPath)
 		i, err := leveldb.OpenFile(dbPath, nil)
 		instance = i
 		if err != nil {

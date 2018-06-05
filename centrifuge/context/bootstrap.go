@@ -6,9 +6,9 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	logging "github.com/ipfs/go-log"
 	gologging "github.com/whyrusleeping/go-logging"
-	"math/rand"
 	"os"
 )
 
@@ -28,7 +28,7 @@ func Bootstrap() {
 }
 
 func getRandomTestStoragePath() string {
-	return fmt.Sprintf("%s_%d", testStoragePath, rand.Int())
+	return fmt.Sprintf("%s_%d", testStoragePath, tools.RandomByte32())
 }
 
 func TestBootstrap() {
@@ -36,14 +36,12 @@ func TestBootstrap() {
 	backend := gologging.NewLogBackend(os.Stdout, "", 0)
 	gologging.SetBackend(backend)
 
-	configPath, _ := os.LookupEnv("GOPATH")
-	err := config.Config.SetConfigFile(fmt.Sprintf("%s/src/github.com/CentrifugeInc/go-centrifuge/resources/testing_config.yaml", configPath))
-	if err != nil {
-		panic(err)
-	}
+	projectPath, _ := os.LookupEnv("GOPATH")
+	config.Config = config.NewConfiguration(fmt.Sprintf("%s/src/github.com/CentrifugeInc/go-centrifuge/resources/testing_config.yaml", projectPath))
 	config.Config.InitializeViper()
-	config.Config.V.SetDefault("storage.Path", getRandomTestStoragePath())
-
+	rs := getRandomTestStoragePath()
+	config.Config.V.SetDefault("storage.Path", rs)
+	log.Info("Set storage.Path to:", config.Config.GetStoragePath())
 	config.Config.V.Set("centrifugeNetwork", "testing")
 	config.Config.V.WriteConfigAs("/tmp/cent_config.yaml")
 
@@ -56,4 +54,5 @@ func TestBootstrap() {
 func TestTearDown() {
 	storage.CloseLeveldbStorage()
 	os.RemoveAll(config.Config.GetStoragePath())
+	config.Config = nil
 }

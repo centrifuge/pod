@@ -20,7 +20,7 @@ import (
 )
 
 var log = logging.Logger("config")
-var Config Configuration
+var Config *Configuration
 
 type Configuration struct {
 	configFile string
@@ -137,9 +137,9 @@ func (c *Configuration) GetSigningKeyPair() (pub, priv string) {
 }
 
 // Configuration Implementation
-func NewConfiguration(configFile string) Configuration {
+func NewConfiguration(configFile string) *Configuration {
 	c := Configuration{configFile: configFile}
-	return c
+	return &c
 }
 
 // SetConfigFile returns an error if viper was already initialized.
