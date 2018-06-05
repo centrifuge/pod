@@ -16,6 +16,8 @@ cd $GOPATH/src/github.com/CentrifugeInc/go-centrifuge
 glide update
 ```
 
+Make sure you have docker-compose installed.
+
 Build, test & run
 -----------------
 
@@ -54,6 +56,41 @@ and then run (only for unit tests):
 ```
 reflex -r centrifuge/ go test ./... -tags=unit
 ```
+
+Run a Geth node locally against Integration or Rinkeby environments
+--------------------------------------------------------------------------
+
+We make use of Docker Compose locally as it is easy and clear to bundle volume and environment configurations:
+Docker Compose files live here:
+`./scripts/docker/docker-compose.yml`
+
+#### Run as Local Mining mode ####
+`./scripts/test-dependencies/test-ethereum/run.sh`
+
+#### Run local peer connected to Integration ####
+First we need to initialize the Ethereum Data Dir:
+`./scripts/docker/run.sh init`
+Now we run the custom local node that by default points to the Integration node:
+`./scripts/docker/run.sh local`
+By default it uses:
+* ETH_DATADIR=${HOME}/Library/Ethereum
+* RPC_PORT=9545
+* WS_PORT=9546
+
+Override those when needed
+
+Let it catch up for a while until is fully synced with the remote peer
+
+#### Run local peer connected to Rinkeby ####
+Let's run the rinkeby local node:
+`./scripts/docker/run.sh rinkeby`
+By default it uses:
+* ETH_DATADIR=${HOME}/Library/Ethereum
+* RPC_PORT=9545
+
+Override those when needed
+
+Let it catch up for a while until is fully synced with the remote peer
 
 Why you should test with a "real" Ethereum
 ------------------------------------------

@@ -6,6 +6,10 @@ metadata:
   name: geth-node
 spec:
   ports:
+  - name: discovery
+    port: 30303
+    protocol: TCP
+    targetPort: 30303
   - name: rpc
     port: 8545
     protocol: TCP

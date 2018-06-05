@@ -29,12 +29,10 @@
                 value: CentTestEth
               - name: NETWORK_ID
                 value: '8383'
-              - name: DOCKER_DATA_DIR
-                value: /root/.ethereum
-              - name: DOCKER_ETHASH_DIR
-                value: /root/.ethereum/.ethash
               - name: CENT_ETHEREUM_ACCOUNTS_MAIN_ADDRESS
                 value: 4b1b843af77a8f7f4f0ad2145095937e3d90e3d8
+              - name: API
+                value: 'db,eth,net,web3'
               - name: RPC_PORT
                 value: '8545'
               - name: WS_PORT
@@ -71,10 +69,6 @@
                 value: CentTestEth
               - name: NETWORK_ID
                 value: '8383'
-              - name: DOCKER_ETHASH_DIR
-                value: /root/.ethereum/.ethash
-              - name: DOCKER_DATA_DIR
-                value: /root/.ethereum
             image: 'centrifugeio/cent-geth:latest'
             imagePullPolicy: Always
             name: geth-init
