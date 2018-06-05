@@ -2,6 +2,7 @@ package: github.com/CentrifugeInc/go-centrifuge
 import:
 - package: github.com/CentrifugeInc/centrifuge-ethereum-contracts
   repo: git@github.com:CentrifugeInc/centrifuge-ethereum-contracts
+  version: 3219c44d6beacbdc37885412db5424ac3e97f51e
   subpackages:
   - centrifuge/witness
 - package: github.com/ethereum/go-ethereum

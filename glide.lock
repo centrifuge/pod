@@ -21,7 +21,7 @@ imports:
   subpackages:
   - proofs
 - name: github.com/CentrifugeInc/centrifuge-ethereum-contracts
-  version: 09f487ccc6400455db32582fccd03d72804a045e
+  version: 3219c44d6beacbdc37885412db5424ac3e97f51e 
   repo: git@github.com:CentrifugeInc/centrifuge-ethereum-contracts
   subpackages:
   - centrifuge/witness
