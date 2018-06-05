@@ -5,6 +5,9 @@ set -a
 local_dir="$(dirname "$0")"
 PARENT_DIR=`pwd`
 
+set -e
+echo "" > coverage.txt
+
 ################# Run Dependencies #########################
 for path in ${local_dir}/test-dependencies/*; do
     [ -d "${path}" ] || continue # if not a directory, skip

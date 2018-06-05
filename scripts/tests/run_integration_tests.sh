@@ -17,4 +17,10 @@ echo "IDENTITY REGISTRY ADDRESS: ${CENT_IDENTITY_ETHEREUM_IDENTITYREGISTRYADDRES
 ############################################################
 
 echo "Running Integration Ethereum Tests against [${CENT_ETHEREUM_GETH_SOCKET}]"
-go test ./... -tags=ethereum
+for d in $(go list ./... | grep -v vendor); do
+    go test -race -coverprofile=profile.out -covermode=atomic -tags=ethereum $d
+    if [ -f profile.out ]; then
+        cat profile.out >> coverage.txt
+        rm profile.out
+    fi
+done
