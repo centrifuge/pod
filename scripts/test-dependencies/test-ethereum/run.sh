@@ -1,5 +1,12 @@
 #!/bin/bash
 
+if [ -n "${GETH_DOCKER_CONTAINER_WAS_RUNNING}" ]; then
+    echo "Container ${GETH_DOCKER_CONTAINER_NAME} is already running. Not starting again."
+    exit 0;
+else
+    echo "Container ${GETH_DOCKER_CONTAINER_NAME} is not currently running. Going to start."
+fi
+
 # Setup
 local_dir="$(dirname "$0")"
 PARENT_DIR=`pwd`
