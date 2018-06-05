@@ -7,26 +7,18 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
+	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/repository"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/stretchr/testify/assert"
-	"github.com/syndtr/goleveldb/leveldb"
 	"os"
 	"testing"
 )
 
-var dbFileName = "/tmp/centrifuge_testing_inv_service.leveldb"
-
 func TestMain(m *testing.M) {
-	config.Config.InitializeViper()
-	config.Config.V.Set("storage.Path", dbFileName)
-	defer Bootstrap().Close()
-
+	cc.TestBootstrap()
 	result := m.Run()
-	os.RemoveAll(dbFileName)
+	cc.TestTearDown()
 	os.Exit(result)
 }
 
@@ -63,13 +55,4 @@ func TestInvoiceService(t *testing.T) {
 	assert.NotNil(t, err,
 		"RPC call should have raised exception")
 
-}
-
-func Bootstrap() *leveldb.DB {
-	levelDB := storage.NewLeveldbStorage(dbFileName)
-
-	coredocumentrepository.NewLevelDBCoreDocumentRepository(&coredocumentrepository.LevelDBCoreDocumentRepository{levelDB})
-	invoicerepository.NewLevelDBInvoiceRepository(&invoicerepository.LevelDBInvoiceRepository{levelDB})
-
-	return levelDB
 }
