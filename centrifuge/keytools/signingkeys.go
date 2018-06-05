@@ -1,13 +1,12 @@
 package keytools
 
 import (
-	"io/ioutil"
-
-	"github.com/spf13/viper"
-	"golang.org/x/crypto/ed25519"
-	mh "github.com/multiformats/go-multihash"
-	"github.com/libp2p/go-libp2p-peer"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/libp2p/go-libp2p-crypto"
+	"github.com/libp2p/go-libp2p-peer"
+	mh "github.com/multiformats/go-multihash"
+	"golang.org/x/crypto/ed25519"
+	"io/ioutil"
 )
 
 func GetPublicSigningKey(fileName string) (publicKey ed25519.PublicKey) {
@@ -29,8 +28,9 @@ func GetPrivateSigningKey(fileName string) (privateKey ed25519.PrivateKey) {
 }
 
 func GetSigningKeyPairFromConfig() (publicKey ed25519.PublicKey, privateKey ed25519.PrivateKey) {
-	publicKey = GetPublicSigningKey(viper.GetString("keys.signing.publicKey"))
-	privateKey = GetPrivateSigningKey(viper.GetString("keys.signing.privateKey"))
+	pub, priv := config.Config.GetSigningKeyPair()
+	publicKey = GetPublicSigningKey(pub)
+	privateKey = GetPrivateSigningKey(priv)
 	return
 }
 
@@ -60,4 +60,3 @@ func PublicKeyToP2PKey(publicKey [32]byte) (p2pId peer.ID, err error) {
 	p2pId = peer.ID(hash)
 	return
 }
-
