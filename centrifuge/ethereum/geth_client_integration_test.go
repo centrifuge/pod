@@ -3,19 +3,17 @@
 package ethereum_test
 
 import (
-	"testing"
+	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
-	"os"
-	"github.com/spf13/viper"
 	"github.com/magiconair/properties/assert"
+	"os"
+	"testing"
 )
 
 func TestMain(m *testing.M) {
-	//for now set up the env vars manually in integration test
-	//TODO move to generalized config once it is available
-	viper.BindEnv("ethereum.gethSocket", "CENT_ETHEREUM_GETH_SOCKET")
-
+	cc.TestBootstrap()
 	result := m.Run()
+	cc.TestTearDown()
 	os.Exit(result)
 }
 
@@ -30,6 +28,6 @@ func TestGetConnection_returnsSameConnection(t *testing.T) {
 	}
 	for ix := 0; ix < howMany; ix++ {
 		multiThreadCreatedCon := <-confChannel
-		assert.Equal(t, multiThreadCreatedCon , ethereum.GetConnection(), "Should only return a single ethereum client")
+		assert.Equal(t, multiThreadCreatedCon, ethereum.GetConnection(), "Should only return a single ethereum client")
 	}
 }

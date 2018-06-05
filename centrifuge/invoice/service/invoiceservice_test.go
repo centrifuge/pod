@@ -3,47 +3,39 @@
 package invoiceservice
 
 import (
-	"testing"
-	"github.com/spf13/viper"
-	"os"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/stretchr/testify/assert"
 	"context"
-	"github.com/syndtr/goleveldb/leveldb"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/repository"
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
+	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
+	"github.com/stretchr/testify/assert"
+	"os"
+	"testing"
 )
 
-var dbFileName = "/tmp/centrifuge_testing_inv_service.leveldb"
-
 func TestMain(m *testing.M) {
-	viper.Set("storage.Path", dbFileName)
-	defer Bootstrap().Close()
-
+	cc.TestBootstrap()
 	result := m.Run()
-	os.RemoveAll(dbFileName)
+	cc.TestTearDown()
 	os.Exit(result)
 }
 
 func TestInvoiceService(t *testing.T) {
 	// Set default key to use for signing
-	viper.Set("keys.signing.publicKey", "../../resources/signingKey.pub")
-	viper.Set("keys.signing.privateKey", "../../resources/signingKey.key")
-	viper.Set("identityId", "1")
+	config.Config.V.Set("keys.signing.publicKey", "../../example/resources/signingKey.pub")
+	config.Config.V.Set("keys.signing.privateKey", "../../example/resources/signingKey.key")
 
 	identifier := testingutils.Rand32Bytes()
 	identifierIncorrect := testingutils.Rand32Bytes()
 	s := InvoiceDocumentService{}
 	doc := invoice.NewEmptyInvoice()
 	doc.Document.CoreDocument = &coredocumentpb.CoreDocument{
-		DocumentIdentifier:identifier,
-		CurrentIdentifier:identifier,
-		NextIdentifier:testingutils.Rand32Bytes(),
-		DataMerkleRoot: testingutils.Rand32Bytes(),
+		DocumentIdentifier: identifier,
+		CurrentIdentifier:  identifier,
+		NextIdentifier:     testingutils.Rand32Bytes(),
+		DataMerkleRoot:     testingutils.Rand32Bytes(),
 	}
 
 	sentDoc, err := s.HandleSendInvoiceDocument(context.Background(), &invoicepb.SendInvoiceEnvelope{Recipients: [][]byte{}, Document: doc.Document})
@@ -63,13 +55,4 @@ func TestInvoiceService(t *testing.T) {
 	assert.NotNil(t, err,
 		"RPC call should have raised exception")
 
-}
-
-func Bootstrap() (*leveldb.DB) {
-	levelDB := storage.NewLeveldbStorage(dbFileName)
-
-	coredocumentrepository.NewLevelDBCoreDocumentRepository(&coredocumentrepository.LevelDBCoreDocumentRepository{levelDB})
-	invoicerepository.NewLevelDBInvoiceRepository(&invoicerepository.LevelDBInvoiceRepository{levelDB})
-
-	return levelDB
 }

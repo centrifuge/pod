@@ -1,22 +1,21 @@
 package invoiceservice
 
 import (
-	"golang.org/x/net/context"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
+	"fmt"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
- 	google_protobuf2 "github.com/golang/protobuf/ptypes/empty"
-	"github.com/spf13/viper"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/repository"
-	"github.com/go-errors/errors"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	logging "github.com/ipfs/go-log"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/repository"
+	google_protobuf2 "github.com/golang/protobuf/ptypes/empty"
+	"golang.org/x/net/context"
 )
 
 var log = logging.Logger("rest-api")
 
 // Struct needed as it is used to register the grpc services attached to the grpc server
-type InvoiceDocumentService struct {}
+type InvoiceDocumentService struct{}
 
 // HandleAnchorInvoiceDocument anchors the given invoice document and returns the anchor details
 func (s *InvoiceDocumentService) HandleAnchorInvoiceDocument(ctx context.Context, anchorInvoiceEnvelope *invoicepb.AnchorInvoiceEnvelope) (*invoicepb.InvoiceDocument, error) {
@@ -30,13 +29,10 @@ func (s *InvoiceDocumentService) HandleAnchorInvoiceDocument(ctx context.Context
 	coreDoc := inv.ConvertToCoreDocument()
 	// Signing of document missing so far
 
-	if (s.IsAnchoringRequired()) {
-		err = coreDoc.Anchor()
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		log.Warning("Calling the anchor endpoint to anchor an invoice but anchoring is not set to be required.")
+
+	err = coreDoc.Anchor()
+	if err != nil {
+		return nil, err
 	}
 
 	return anchorInvoiceEnvelope.Document, nil
@@ -54,10 +50,7 @@ func (s *InvoiceDocumentService) HandleSendInvoiceDocument(ctx context.Context, 
 	// Sign document
 	// Uncomment once fixed
 	//coreDoc.Sign()
-
-	if (s.IsAnchoringRequired()) {
-		coreDoc.Anchor()
-	}
+	//coreDoc.Anchor()
 
 	errs := []error{}
 	for _, element := range sendInvoiceEnvelope.Recipients {
@@ -69,7 +62,7 @@ func (s *InvoiceDocumentService) HandleSendInvoiceDocument(ctx context.Context, 
 
 	if len(errs) != 0 {
 		log.Errorf("%v", errs)
-		return nil, errors.Errorf("%v", errs)
+		return nil, fmt.Errorf("%v", errs)
 	}
 	return sendInvoiceEnvelope.Document, nil
 }
@@ -87,13 +80,6 @@ func (s *InvoiceDocumentService) HandleGetInvoiceDocument(ctx context.Context, g
 	return doc, err
 }
 
-func (s *InvoiceDocumentService) HandleGetReceivedInvoiceDocuments (ctx context.Context, empty *google_protobuf2.Empty) (*invoicepb.ReceivedInvoices, error) {
+func (s *InvoiceDocumentService) HandleGetReceivedInvoiceDocuments(ctx context.Context, empty *google_protobuf2.Empty) (*invoicepb.ReceivedInvoices, error) {
 	return nil, nil
-}
-
-/*
-This function will be more complex in the future, to check if the document should be anchored or not.
-*/
-func (s *InvoiceDocumentService) IsAnchoringRequired() (bool) {
-	return viper.GetBool("anchor.ethereum.enabled")
 }

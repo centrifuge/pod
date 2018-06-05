@@ -1,5 +1,5 @@
-hash: 1b3a1a37ede3d7dd63e28ab127bd5ee01a60e9005ebce4e482f8cbdbc183bd73
-updated: 2018-05-31T12:32:58.15923439-07:00
+hash: b834e3640c9c08147721ec1aef5e30a6ba4bfa7209aea39be98bc17737e4e195
+updated: 2018-05-29T16:09:14.672476+02:00
 imports:
 - name: github.com/agl/ed25519
   version: 5312a61534124124185d41f09206b9fef1d88403
@@ -10,6 +10,8 @@ imports:
   version: 76d15ea364f9cab3eaa9935ff6893d49c3691c23
   subpackages:
   - monotime
+- name: github.com/blang/semver
+  version: 2ee87856327ba09384cabd113bc6b5d174e9ec0f
 - name: github.com/btcsuite/btcd
   version: 0ef0d8c59b58ccfc8ac814dd6dac3990d4a16be2
   subpackages:
@@ -19,13 +21,13 @@ imports:
   subpackages:
   - proofs
 - name: github.com/CentrifugeInc/centrifuge-ethereum-contracts
-  version: 09f487ccc6400455db32582fccd03d72804a045e
+  version: 3219c44d6beacbdc37885412db5424ac3e97f51e 
   repo: git@github.com:CentrifugeInc/centrifuge-ethereum-contracts
   subpackages:
   - centrifuge/witness
 - name: github.com/CentrifugeInc/centrifuge-protobufs
-  version: 9e877b6555b4b98480bf07b3e0831af31dc9800b
-  repo: git@github.com:pstehlik/centrifuge-protobufs
+  version: 78eafaa6abac9843b2b776451e09f632d5c8d885
+  repo: git@github.com:CentrifugeInc/centrifuge-protobufs
   subpackages:
   - documenttypes
   - gen/go/coredocument
@@ -71,6 +73,10 @@ imports:
   version: dcaf50131e4810440bed2cbb6f7f32c4f4cc95dd
 - name: github.com/fsnotify/fsnotify
   version: c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9
+- name: github.com/go-bindata/go-bindata
+  version: 5ebd2c033d84e12a7f4aae4483d98ec7dde53b66
+  subpackages:
+  - '...'
 - name: github.com/go-bongo/go-dotaccess
   version: ae070a2d2a38fd7233e255ded21fb26fe36b4796
 - name: github.com/go-errors/errors
@@ -102,7 +108,7 @@ imports:
 - name: github.com/gorilla/websocket
   version: 6656ddce919367f4c4090b0f89a45854d26da020
 - name: github.com/grpc-ecosystem/grpc-gateway
-  version: a5b66c16bab6156b1cc525e76159bdff463123ba
+  version: 92583770e3f01b09a0d3e9bdf64321d8bebd48f2
   repo: git@github.com:grpc-ecosystem/grpc-gateway
   subpackages:
   - protoc-gen-swagger/options
@@ -276,6 +282,8 @@ imports:
   version: 49d762b9817ba1c2e9d0c69183c2b4a8b8f1d934
   subpackages:
   - assert
+- name: github.com/Masterminds/semver
+  version: c7af12943936e8c39859482e61f0574c2fd7fc75
 - name: github.com/minio/blake2b-simd
   version: 3f5f724cb5b182a5c278d6d3d55b40e7f8c2efb4
 - name: github.com/minio/sha256-simd
@@ -342,7 +350,7 @@ imports:
 - name: github.com/spf13/pflag
   version: 583c0c0531f06d5278b7d917446061adc344b5cd
 - name: github.com/spf13/viper
-  version: b5e8006cbee93ec955a89ab31e0e3ce3204f3736
+  version: 15738813a09db5c8e5b60a19d67d3f9bd38da3a4
 - name: github.com/stretchr/testify
   version: 12b6f73e6084dad08a7c6e575284b177ecafbc71
   subpackages:
