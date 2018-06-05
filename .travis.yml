@@ -1,27 +1,31 @@
 language: go
 go:
-- 1.9.x
+  - 1.9.x
 services:
-- docker
+  - docker
 env:
   matrix:
-  - RUN_CONTEXT=travis GETH_DOCKER_VERSION=v1.8.1
+    - RUN_CONTEXT=travis GETH_DOCKER_VERSION=v1.8.1
   global:
-  - secure: DeQrT/Z19G8F3z8M6c4Ie8RdlZPNcF0hQpXPr5q2h6vut03LQOPe3kyfZ/z9rKo708p5qj38GOYNfa5mXTqDK7tMhA4OyrZmgEzb3Oksu6C+PQhdSnotukwX0u0T+89hlHQjecWgMh+Y2PnB+4ZD4IVqeIEyf9RVr3ThH0Cy/fKVJRnDQP0lH5fj8fXjSZkAmlqcRSuGR4Qh1jrKllYv+v42O3+RQqv117ch0tsGBsPnIdKK1jm1bXYzQcjgCWFfXyCSZ9Uxb5fABAQ993176NBYA+Mqqz9JzmCEw778Ahz+mtQVsW6khqu06owjl9+t/WhrgPfyGlZLyKPpah4NyHrNEOWmPTngXO6DFySn/kGwOIbGdI2mB8V0+aapwF2PN9roX2Hy4IM8q3FHA3SUhID++s2ITKgS5Wh7ozSwT6GkhHYh78ewVwaKSZff676/Zvg2PmwPcEI7hYXMjlrkw00sUEY+m8lZZjJdkyFvxmTLFweKB04UMeZm/WUKGC/najCKLhuIOe07Nf3wR8gHhnG0NSEzyUv1VxK7vF9RU4XvHYBPovZxpbJP6R0mOkhCROKelt2CnVD+zYFi3JCSwnqYEFb2vxg4ByZvzcJHTNMHeMoYjPH6APTp1Krm/Aw0QOvllwR+tRZ5IVHoACfcpOcRN56vmKnxqnRlkmt0mv8=
-  - secure: C9mLAX6m7A1AUisOYO6viYwUJCkE1q5/+4ZIsSZtAVUBis8Xbj6CP88GAOa1IdBHcsSzRRluSy3tP3g6P3YwPqtit/YI+e2z6T6ahv6rip1dpUo4UtGQTJ1iV+Kd1cDT3/DeAGCAAmtDyocZ/UAzb2zPmnGYdUR7z6aNI7+g2zj6FyMKgB8O7uWMZivtIyyQ0yT5cv+O/rwSX9PzOWn1oNDwhvFx17zAtBycNoZ3XLvvVfUKdxGEQXO/JnHaX1m4wluCnLURboZIpxkF3CH/oYdwe/hW7FCW2InToBFXNkOjT0iXuHCf4sbbLvIoftYBPg3dhe5GXm1SaVvcLCp5beSCXJqs0f/E5QqAw+G0LJxQ+GRDEYaG7az+YIrz3We3wKd2sEwwpcHRRxng23RG85El2qok0H+nD0f5TR+QkvBUTJQ1Sz3hJOrVX9fExZGP6Z2mh19wJ3SrGtdIUW7jLEqMXdyX98+HlHK6r1+Nnmb1Es7mT08vBL691CNL+0do/tVMIop6tqBUdO0upgipCI/5lrOHprLuUYdt7c6J7maKEICt1rEOUziS7WWcVBUNCtwwKeWVDVyyWdka4qI1KikrZslZHD1DWpBIZmpxS8jtDbnx4FG2xkDogtPuyMrGBoG0Yt8JEInHnfxLCQdNwubbJ4C4lfq4llVzT5tpjw0=
+    - secure: DeQrT/Z19G8F3z8M6c4Ie8RdlZPNcF0hQpXPr5q2h6vut03LQOPe3kyfZ/z9rKo708p5qj38GOYNfa5mXTqDK7tMhA4OyrZmgEzb3Oksu6C+PQhdSnotukwX0u0T+89hlHQjecWgMh+Y2PnB+4ZD4IVqeIEyf9RVr3ThH0Cy/fKVJRnDQP0lH5fj8fXjSZkAmlqcRSuGR4Qh1jrKllYv+v42O3+RQqv117ch0tsGBsPnIdKK1jm1bXYzQcjgCWFfXyCSZ9Uxb5fABAQ993176NBYA+Mqqz9JzmCEw778Ahz+mtQVsW6khqu06owjl9+t/WhrgPfyGlZLyKPpah4NyHrNEOWmPTngXO6DFySn/kGwOIbGdI2mB8V0+aapwF2PN9roX2Hy4IM8q3FHA3SUhID++s2ITKgS5Wh7ozSwT6GkhHYh78ewVwaKSZff676/Zvg2PmwPcEI7hYXMjlrkw00sUEY+m8lZZjJdkyFvxmTLFweKB04UMeZm/WUKGC/najCKLhuIOe07Nf3wR8gHhnG0NSEzyUv1VxK7vF9RU4XvHYBPovZxpbJP6R0mOkhCROKelt2CnVD+zYFi3JCSwnqYEFb2vxg4ByZvzcJHTNMHeMoYjPH6APTp1Krm/Aw0QOvllwR+tRZ5IVHoACfcpOcRN56vmKnxqnRlkmt0mv8=
+    - secure: C9mLAX6m7A1AUisOYO6viYwUJCkE1q5/+4ZIsSZtAVUBis8Xbj6CP88GAOa1IdBHcsSzRRluSy3tP3g6P3YwPqtit/YI+e2z6T6ahv6rip1dpUo4UtGQTJ1iV+Kd1cDT3/DeAGCAAmtDyocZ/UAzb2zPmnGYdUR7z6aNI7+g2zj6FyMKgB8O7uWMZivtIyyQ0yT5cv+O/rwSX9PzOWn1oNDwhvFx17zAtBycNoZ3XLvvVfUKdxGEQXO/JnHaX1m4wluCnLURboZIpxkF3CH/oYdwe/hW7FCW2InToBFXNkOjT0iXuHCf4sbbLvIoftYBPg3dhe5GXm1SaVvcLCp5beSCXJqs0f/E5QqAw+G0LJxQ+GRDEYaG7az+YIrz3We3wKd2sEwwpcHRRxng23RG85El2qok0H+nD0f5TR+QkvBUTJQ1Sz3hJOrVX9fExZGP6Z2mh19wJ3SrGtdIUW7jLEqMXdyX98+HlHK6r1+Nnmb1Es7mT08vBL691CNL+0do/tVMIop6tqBUdO0upgipCI/5lrOHprLuUYdt7c6J7maKEICt1rEOUziS7WWcVBUNCtwwKeWVDVyyWdka4qI1KikrZslZHD1DWpBIZmpxS8jtDbnx4FG2xkDogtPuyMrGBoG0Yt8JEInHnfxLCQdNwubbJ4C4lfq4llVzT5tpjw0=
 cache:
   directories:
-  - "~/glide/"
-  - "~/.glide"
-  - "$GOPATH/pkg/depbin"
-  - "/tmp/geth_test_network/.ethash"
+    # Cache the glide binary
+    - "~/glide/"
+    # Glide's own cache
+    - "~/.glide"
+    # Use a separate depbin folder to allow for caching.
+    # The bin itself is then linked (ln -s) in the install-dependencies script
+    - "$GOPATH/pkg/depbin"
+    # Cache DAG data
+    - "/tmp/geth_test_network/.ethash"
 before_install:
-- npm install -g truffle@4.0.4
-- docker pull ethereum/client-go:$GETH_DOCKER_VERSION
-- echo "$DOCKERHUBPWD" | docker login -u $DOCKERHUBUSER --password-stdin
+  - npm install -g truffle@4.0.4
+  - docker pull ethereum/client-go:$GETH_DOCKER_VERSION
+  - echo "$DOCKERHUBPWD" | docker login -u $DOCKERHUBUSER --password-stdin
 install:
-- scripts/install_glide.sh
-- glide install
-- git clone git@github.com:CentrifugeInc/centrifuge-ethereum-contracts.git $GOPATH/src/github.com/CentrifugeInc/centrifuge-ethereum-contracts
+  - scripts/install_glide.sh
+  - glide install
 script:
-- scripts/test_wrapper.sh
+  - scripts/test_wrapper.sh
