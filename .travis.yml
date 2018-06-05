@@ -22,10 +22,7 @@ cache:
     - "/tmp/geth_test_network/.ethash"
 before_install:
   - npm install -g truffle@4.0.4
-  - docker pull ethereum/client-go:$GETH_DOCKER_VERSION
-  - echo "$DOCKERHUBPWD" | wc
-  - echo "$DOCKERHUBUSER" | wc
-  - echo "$DOCKERHUBPWD" | docker login -u $DOCKERHUBUSER --password-stdin
+  - ./scripts/docker_login.sh
 install:
   - scripts/install_glide.sh
   - glide install
