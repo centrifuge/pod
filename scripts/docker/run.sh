@@ -26,6 +26,7 @@ CENT_ETHEREUM_ACCOUNTS_MAIN_ADDRESS=${CENT_ETHEREUM_ACCOUNTS_MAIN_ADDRESS:-'0x4b
 case "$mode" in
   init)
     mkdir -p ${ETH_DATADIR}/${NETWORK_ID}/files
+    mkdir -p ${ETH_DATADIR}/${NETWORK_ID}/keystore
     if [ ! -f ${ETH_DATADIR}/${NETWORK_ID}/files/genesis.json ]; then
       cp $local_dir/../test-dependencies/test-ethereum/genesis.json ${ETH_DATADIR}/${NETWORK_ID}/files
     fi
