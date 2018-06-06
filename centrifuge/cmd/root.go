@@ -4,13 +4,12 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
+	logging "github.com/ipfs/go-log"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	gologging "github.com/whyrusleeping/go-logging"
-	golog "github.com/ipfs/go-log"
 )
-
 
 var cfgFile string
 
@@ -18,18 +17,27 @@ var cfgFile string
 var rootCmd = &cobra.Command{
 	Use:   "centrifuge",
 	Short: "Centrifuge protocol node",
-	Long: `POC for centrifuge app`,
+	Long:  `POC for centrifuge app`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	//	Run: func(cmd *cobra.Command, args []string) { },
 }
 
+var log = logging.Logger("centrifuge-cmd")
+
+var format = gologging.MustStringFormatter(
+	"%{color}%{time:15:04:05.000} %{shortfunc} ▶ %{level:.4s} %{id:03x}%{color:reset} %{message}",
+)
+
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	golog.SetAllLoggers(gologging.INFO) // Change to DEBUG for extra info
+	logging.SetAllLoggers(gologging.INFO) // Change to DEBUG for extra info
+	backend := gologging.NewLogBackend(os.Stdout, "", 0)
+	gologging.SetBackend(backend)
+
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
+		log.Error(err)
 		os.Exit(1)
 	}
 }
@@ -41,39 +49,24 @@ func init() {
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.centrifuge.yaml)")
-
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-	if cfgFile != "" {
-		// Use config file from the flag.
-		viper.SetConfigFile(cfgFile)
-	} else {
+	if cfgFile == "" {
 		// Find home directory.
 		home, err := homedir.Dir()
 		if err != nil {
-			fmt.Println(err)
+			log.Error(err)
 			os.Exit(1)
 		}
 
-		filename := fmt.Sprintf("%s/%s", home, ".centrifuge.yaml")
-		if _, err := os.Stat(filename); err == nil {
-			// Search config in home directory with name ".centrifuge" (without extension).
-			viper.AddConfigPath(home)
-			viper.SetConfigName(".centrifuge.yaml")
-		} else {
-			panic("Config file not provided and default $HOME/.centrifuge.yaml does not exist")
+		cfgFile = fmt.Sprintf("%s/%s", home, ".centrifuge.yaml")
+		if _, err := os.Stat(cfgFile); err != nil {
+			log.Error("Config file not provided and default $HOME/.centrifuge.yaml does not exist")
+			os.Exit(1)
 		}
 	}
-
-	viper.AutomaticEnv() // read in environment variables that match
-
 	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
-		fmt.Println("Using config file:", viper.ConfigFileUsed())
-	}
+	config.Bootstrap(cfgFile)
 }

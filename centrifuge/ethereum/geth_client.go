@@ -1,50 +1,30 @@
 package ethereum
 
 import (
-	"log"
-	"strings"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/spf13/viper"
-	"github.com/go-errors/errors"
-	"math/big"
-	"time"
 	"context"
-	"sync"
-	"net/url"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/go-errors/errors"
+	logging "github.com/ipfs/go-log"
+	"net/url"
 	"reflect"
+	"strings"
+	"sync"
+	"time"
 )
 
-const (
-	mainAccountName = "main"
-	defaultMaxRetries = 200
-	defaultIntervalRetry = (100 * time.Millisecond)
-	TransactionUnderpriced = "replacement transaction underpriced"
-)
+const TransactionUnderpriced = "replacement transaction underpriced"
+const NonceTooLow = "nonce too low"
 
+var log = logging.Logger("geth-client")
 var gc *GethClient
 var gcInit sync.Once
 
 // getDefaultContextTimeout retrieves the default duration before an Ethereum call context should time out
-func getDefaultContextTimeout() (time.Duration) {
-	return viper.GetDuration("ethereum.contextWaitTimeout")
-}
-
-func getMaxRetries() (x int) {
-	x = viper.GetInt("ethereum.maxRetries")
-	if x == 0 {
-		x = defaultMaxRetries
-	}
-	return
-}
-
-func getIntervalRetry() (x time.Duration) {
-	x = viper.GetDuration("ethereum.intervalRetry")
-	if x == (0 * time.Second) {
-		x = defaultIntervalRetry
-	}
-	return
+func getDefaultContextTimeout() time.Duration {
+	return config.Config.GetEthereumContextWaitTimeout()
 }
 
 func DefaultWaitForTransactionMiningContext() (ctx context.Context) {
@@ -57,23 +37,24 @@ func DefaultWaitForTransactionMiningContext() (ctx context.Context) {
 // besides Geth (e.g. quorum)
 // Also make it easier to mock tests
 type EthereumClient interface {
-	GetClient() (*ethclient.Client)
+	GetClient() *ethclient.Client
 }
 
 type GethClient struct {
 	Client *ethclient.Client
-	Host *url.URL
+	Host   *url.URL
 }
 
-func (gethClient GethClient) GetClient() (*ethclient.Client) {
+func (gethClient GethClient) GetClient() *ethclient.Client {
 	return gethClient.Client
 }
 
 // GetConnection returns the connection to the configured `ethereum.gethSocket`.
 // Note that this is a singleton and is the same connection for the whole application.
-func GetConnection() (EthereumClient) {
+func GetConnection() EthereumClient {
 	gcInit.Do(func() {
-		u, err := url.Parse(viper.GetString("ethereum.gethSocket"))
+		log.Info("Opening connection to Ethereum:", config.Config.GetEthereumNodeURL())
+		u, err := url.Parse(config.Config.GetEthereumNodeURL())
 		if err != nil {
 			log.Fatalf("Failed to connect to parse ethereum.gethSocket URL: %v", err)
 		}
@@ -88,58 +69,37 @@ func GetConnection() (EthereumClient) {
 }
 
 // GetGethTxOpts retrieves the geth transaction options for the given account name. The account name influences which configuration
-// is used. If no account name is provided the account as defined by `mainAccountName` constant is used
-// It is not supported to call with more than one account name.
-func GetGethTxOpts(optionalAccountName ...string) (*bind.TransactOpts, error) {
-	var accountName string
-	accsLen := len(optionalAccountName)
-	if accsLen > 1 {
-		err := errors.Errorf("error in use of method. can deal with maximum of one account name for ethereum transaction options. please check your code.")
-		log.Fatalf(err.Error())
-		return nil, err
-	} else {
-		switch accsLen {
-		case 1:
-			accountName = optionalAccountName[0]
-		default:
-			accountName = mainAccountName
-		}
-	}
-
-	key := viper.GetString("ethereum.accounts." + accountName + ".key")
-
-	// TODO: this could be done more elegantly if support for additional ways to configure keys should be added later on
-	// e.g. if key files would be supported instead of inline keys
-	if key == "" {
-		err := errors.Errorf("could not find configured ethereum key for account [%v]. please check your configuration.\n", accountName)
-		log.Printf(err.Error())
-		return nil, err
-	}
-
-	password := viper.GetString("ethereum.accounts." + accountName + ".password")
-
-	authedTransactionOpts, err := bind.NewTransactor(strings.NewReader(key), password)
+// is used.
+func GetGethTxOpts(accountName string) (*bind.TransactOpts, error) {
+	account, err := config.Config.GetEthereumAccountMap(accountName)
 	if err != nil {
-		err = errors.Errorf("Failed to load key with error: %v", err);
-		log.Println(err.Error())
+		err = errors.Errorf("could not find configured ethereum key for account [%v]. please check your configuration.\n", accountName)
+		log.Error(err.Error())
+		return nil, err
+	}
+
+	authedTransactionOpts, err := bind.NewTransactor(strings.NewReader(account["key"]), account["password"])
+	if err != nil {
+		err = errors.Errorf("Failed to load key with error: %v", err)
+		log.Error(err.Error())
 		return nil, err
 	} else {
-		authedTransactionOpts.GasPrice = big.NewInt(viper.GetInt64("ethereum.gasPrice"))
-		authedTransactionOpts.GasLimit = uint64(viper.GetInt64("ethereum.gasLimit"))
+		authedTransactionOpts.GasPrice = config.Config.GetEthereumGasPrice()
+		authedTransactionOpts.GasLimit = config.Config.GetEthereumGasLimit()
 		return authedTransactionOpts, nil
 	}
 }
 
 /**
- Blocking Function that sends transaction using reflection wrapped in a retrial block. It is based on the TransactionUnderpriced error,
- meaning that a transaction is being attempted to run twice, and the logic is to override the existing one. As we have constant
- gas prices that means that a concurrent transaction race condition event has happened.
- - contractMethod: Contract Method that implements GenericEthereumAsset (usually autogenerated binding from abi)
- - params: Arbitrary number of parameters that are passed to the function fname call
- */
-func SubmitTransactionWithRetries(contractMethod interface{}, params ... interface{}) (tx *types.Transaction, err error) {
+Blocking Function that sends transaction using reflection wrapped in a retrial block. It is based on the TransactionUnderpriced error,
+meaning that a transaction is being attempted to run twice, and the logic is to override the existing one. As we have constant
+gas prices that means that a concurrent transaction race condition event has happened.
+- contractMethod: Contract Method that implements GenericEthereumAsset (usually autogenerated binding from abi)
+- params: Arbitrary number of parameters that are passed to the function fname call
+*/
+func SubmitTransactionWithRetries(contractMethod interface{}, params ...interface{}) (tx *types.Transaction, err error) {
 	done := false
-	maxTries := getMaxRetries()
+	maxTries := config.Config.GetEthereumMaxRetries()
 	current := 0
 	var f reflect.Value
 	var in []reflect.Value
@@ -147,7 +107,7 @@ func SubmitTransactionWithRetries(contractMethod interface{}, params ... interfa
 	f = reflect.ValueOf(contractMethod)
 	for !done {
 		if current >= maxTries {
-			log.Println("Max Concurrent transaction tries reached")
+			log.Error("Max Concurrent transaction tries reached")
 			break
 		}
 		current += 1
@@ -163,9 +123,9 @@ func SubmitTransactionWithRetries(contractMethod interface{}, params ... interfa
 		}
 
 		if err != nil {
-			if err.Error() == TransactionUnderpriced {
-				log.Printf("Concurrent transaction identified, trying again [%d/%d]\n", current, maxTries )
-				time.Sleep(getIntervalRetry())
+			if (err.Error() == TransactionUnderpriced) || (err.Error() == NonceTooLow) {
+				log.Warningf("Concurrent transaction identified, trying again [%d/%d]\n", current, maxTries)
+				time.Sleep(config.Config.GetEthereumIntervalRetry())
 			} else {
 				done = true
 			}

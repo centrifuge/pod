@@ -1,22 +1,21 @@
 package server
+
 // LICENSE: Apache
 // This is taken from https://github.com/philips/grpc-gateway-example/
 
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"fmt"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
+	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"log"
 	"net"
 	"net/http"
 	"strings"
-	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	"github.com/spf13/viper"
-	"golang.org/x/net/context"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 )
-
 
 // grpcHandlerFunc returns an http.Handler that delegates to grpcServer on incoming gRPC
 // connections or otherHandler otherwise. Copied from cockroachdb.
@@ -29,10 +28,6 @@ func grpcHandlerFunc(grpcServer *grpc.Server, otherHandler http.Handler) http.Ha
 			otherHandler.ServeHTTP(w, r)
 		}
 	})
-}
-
-func getAddress () (addr string) {
-	return fmt.Sprintf("%s:%s", viper.GetString("nodeHostname"), viper.GetString("nodePort"))
 }
 
 func loadCertPool() (certPool *x509.CertPool) {
@@ -57,12 +52,12 @@ func loadKeyPair() (keyPair tls.Certificate) {
 func ServeNode() {
 	certPool := loadCertPool()
 	keyPair := loadKeyPair()
-	addr := getAddress()
+	addr := config.Config.GetServerAddress()
 
 	creds := credentials.NewTLS(&tls.Config{
-		RootCAs: certPool,
-		ServerName: addr,
-		Certificates: []tls.Certificate{keyPair},
+		RootCAs:            certPool,
+		ServerName:         addr,
+		Certificates:       []tls.Certificate{keyPair},
 		InsecureSkipVerify: true,
 	})
 
@@ -73,9 +68,9 @@ func ServeNode() {
 	ctx := context.Background()
 
 	dcreds := credentials.NewTLS(&tls.Config{
-		ServerName: addr,
-		RootCAs:    certPool,
-		InsecureSkipVerify:true,
+		ServerName:         addr,
+		RootCAs:            certPool,
+		InsecureSkipVerify: true,
 	})
 	dopts := []grpc.DialOption{grpc.WithTransportCredentials(dcreds)}
 
@@ -86,13 +81,13 @@ func ServeNode() {
 
 	mux.Handle("/", gwmux)
 
-	conn, err := net.Listen("tcp", fmt.Sprintf("%s:%s", viper.GetString("nodeHostname"), viper.GetString("nodePort")))
+	conn, err := net.Listen("tcp", config.Config.GetServerAddress())
 	if err != nil {
 		panic(err)
 	}
 
 	srv := &http.Server{
-		Addr:   addr,
+		Addr:    addr,
 		Handler: grpcHandlerFunc(grpcServer, mux),
 		TLSConfig: &tls.Config{
 			Certificates: []tls.Certificate{keyPair},
@@ -100,7 +95,7 @@ func ServeNode() {
 		},
 	}
 
-	log.Printf("grpc on port: %s\n", viper.GetString("nodePort"))
+	log.Printf("grpc on port: %d\n", config.Config.GetServerPort())
 	err = srv.Serve(tls.NewListener(conn, srv.TLSConfig))
 
 	if err != nil {

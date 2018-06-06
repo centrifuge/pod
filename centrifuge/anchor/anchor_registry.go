@@ -1,20 +1,22 @@
 package anchor
 
 import (
-	"log"
+	logging "github.com/ipfs/go-log"
 )
 
+var log = logging.Logger("anchor")
+
 type AnchorRegistry interface {
-	RegisterAsAnchor(anchorID string, rootHash string, confirmations chan<- *Anchor) (error)
+	RegisterAsAnchor(anchorID string, rootHash string, confirmations chan<- *Anchor) error
 }
 
 // RegisterAsAnchor registers the given AnchorID and RootHash as an anchor on the configured anchor registry
-func RegisterAsAnchor(anchorID string, rootHash string, confirmations chan<- *Anchor) (error) {
+func RegisterAsAnchor(anchorID string, rootHash string, confirmations chan<- *Anchor) error {
 	registry, _ := getConfiguredRegistry()
 
 	err := registry.RegisterAsAnchor(anchorID, rootHash, confirmations)
 	if err != nil {
-		log.Fatalf("Failed to register the anchor [id:%x, hash:%x ]: %v", anchorID, rootHash, err)
+		log.Errorf("Failed to register the anchor [id:%x, hash:%x ]: %v", anchorID, rootHash, err)
 	}
 	return err
 }

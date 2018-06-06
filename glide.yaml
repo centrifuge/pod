@@ -2,6 +2,7 @@ package: github.com/CentrifugeInc/go-centrifuge
 import:
 - package: github.com/CentrifugeInc/centrifuge-ethereum-contracts
   repo: git@github.com:CentrifugeInc/centrifuge-ethereum-contracts
+  version: 3219c44d6beacbdc37885412db5424ac3e97f51e
   subpackages:
   - centrifuge/witness
 - package: github.com/ethereum/go-ethereum
@@ -30,9 +31,9 @@ import:
   - utilities
 - package: github.com/mitchellh/go-homedir
 - package: github.com/spf13/cobra
-  version: ^0.0.1
+  version: ef82de70bb3f60c65fb8eebacbb2d122ef517385
 - package: github.com/spf13/viper
-  version: ^1.0.0
+  version: 15738813a09db5c8e5b60a19d67d3f9bd38da3a4
 - package: github.com/syndtr/goleveldb
   subpackages:
   - leveldb
@@ -75,6 +76,13 @@ import:
 - package: github.com/whyrusleeping/go-smux-multistream
 - package: github.com/whyrusleeping/go-smux-yamux
 - package: github.com/CentrifugeInc/centrifuge-protobufs
-  repo: git@github.com:CentrifugeInc/centrifuge-protobufs
-  version: cefcf79a623dfc68cb05157ca77181932cac401a
+  version: 78eafaa6abac9843b2b776451e09f632d5c8d885
 - package: github.com/centrifuge/precise-proofs
+- package: github.com/blang/semver
+  version: ^3.5.1
+- package: github.com/go-bindata/go-bindata
+  version: ^1.0.0
+  subpackages:
+  - '...'
+- package: github.com/Masterminds/semver
+  version: ~1.4.2

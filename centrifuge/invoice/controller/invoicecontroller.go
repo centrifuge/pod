@@ -10,6 +10,11 @@ import (
 // Struct needed as it is used to register the grpc services attached to the grpc server
 type InvoiceDocumentController struct {}
 
+func (s *InvoiceDocumentController) AnchorInvoiceDocument(ctx context.Context, anchorInvoiceEnvelope *invoicepb.AnchorInvoiceEnvelope ) (*invoicepb.InvoiceDocument, error) {
+	var svc = &invoiceservice.InvoiceDocumentService{}
+	return svc.HandleAnchorInvoiceDocument(ctx, anchorInvoiceEnvelope)
+}
+
 func (s *InvoiceDocumentController) SendInvoiceDocument(ctx context.Context, sendInvoiceEnvelope *invoicepb.SendInvoiceEnvelope) (*invoicepb.InvoiceDocument, error) {
 	var svc = &invoiceservice.InvoiceDocumentService{}
 	return svc.HandleSendInvoiceDocument(ctx, sendInvoiceEnvelope)
