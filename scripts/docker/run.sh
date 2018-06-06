@@ -43,6 +43,8 @@ case "$mode" in
     docker-compose -f $local_dir/docker-compose.yml up > /tmp/geth.log 2>&1 &
   ;;
   mine)
+    ls -la ${ETH_DATADIR}/${NETWORK_ID}
+    whoami
     cp $local_dir/../test-dependencies/test-ethereum/*.json ${ETH_DATADIR}/${NETWORK_ID}/keystore
 
     IDENTITY=$IDENTITY NETWORK_ID=$NETWORK_ID ETH_DATADIR=${ETH_DATADIR}/${NETWORK_ID} RPC_PORT=$RPC_PORT API=$API \

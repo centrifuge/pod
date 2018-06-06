@@ -73,7 +73,7 @@ else
     # Cleaning extra DAG file, so we do not cache it - travis
     if [[ "X${RUN_CONTEXT}" == "Xtravis" ]];
     then
-      new_dag=`ls -ltr $DATA_DIR/.ethash/* | tail -1 | awk '{print $9}' | tr -d '\n'`
+      new_dag=`ls -ltr $DATA_DIR/$NETWORK_ID/.ethash/* | tail -1 | awk '{print $9}' | tr -d '\n'`
       rm -Rf $new_dag
     fi
 fi
