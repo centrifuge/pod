@@ -16,8 +16,7 @@ cd $GOPATH/src/github.com/CentrifugeInc/go-centrifuge
 glide update
 ```
 
-Make sure you have docker-compose installed.
-Perform login `docker login -u $username --password`
+Make sure you have docker-compose installed, usually comes bundled with Mac OS Docker. Otherwise: https://docs.docker.com/compose/install/ 
 
 Build, test & run
 -----------------
@@ -63,7 +62,7 @@ Run a Geth node locally against Integration or Rinkeby environments
 
 We make use of Docker Compose locally as it is easy and clear to bundle volume and environment configurations:
 Docker Compose files live here:
-`./scripts/docker/docker-compose.yml`
+`./scripts/docker`
 
 #### Run as Local Mining mode ####
 `./scripts/test-dependencies/test-ethereum/run.sh`
