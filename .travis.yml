@@ -14,7 +14,7 @@ cache:
       - ~/glide/
       # Glide's own cache
       - ~/.glide
-      # Use a separate depbin folder to allow for caching. 
+      # Use a separate depbin folder to allow for caching.
       # The bin itself is then linked (ln -s) in the install-dependencies script
       - $GOPATH/pkg/depbin
       # Cache DAG data
@@ -22,7 +22,6 @@ cache:
 
 before_install:
   - npm install -g truffle@4.0.4
-  - docker pull ethereum/client-go:$GETH_DOCKER_VERSION
 
 install:
   - scripts/install_glide.sh

@@ -1,0 +1,95 @@
+- apiVersion: extensions/v1beta1
+  kind: Deployment
+  metadata:
+    labels:
+      app: geth-node
+      version: '1'
+    name: geth-node
+    namespace: default
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 1
+    revisionHistoryLimit: 2
+    selector:
+      matchLabels:
+        app: geth-node
+        tier: geth-node
+    strategy:
+      type: Recreate
+    template:
+      metadata:
+        labels:
+          app: geth-node
+          tier: geth-node
+          version: '1'
+      spec:
+        containers:
+          - env:
+              - name: IDENTITY
+                value: CentTestEth
+              - name: NETWORK_ID
+                value: '8383'
+              - name: CENT_ETHEREUM_ACCOUNTS_MAIN_ADDRESS
+                value: 4b1b843af77a8f7f4f0ad2145095937e3d90e3d8
+              - name: API
+                value: 'db,eth,net,web3'
+              - name: RPC_PORT
+                value: '8545'
+              - name: WS_PORT
+                value: '8546'
+            image: 'centrifugeio/cent-geth:latest'
+            imagePullPolicy: Always
+            name: geth
+            ports:
+              - containerPort: 30303
+                name: geth-discovery
+                protocol: TCP
+              - containerPort: 8545
+                name: geth-rpc
+                protocol: TCP
+              - containerPort: 8546
+                name: geth-ws
+                protocol: TCP
+            resources: {}
+            terminationMessagePath: /dev/termination-log
+            terminationMessagePolicy: File
+            volumeMounts:
+              - mountPath: /root/.ethereum
+                name: geth-persistent-storage
+        nodeSelector:
+          workload: geth
+        dnsPolicy: ClusterFirst
+        imagePullSecrets:
+          - name: myregistrykey
+        initContainers:
+          - env:
+              - name: INIT_ETH
+                value: 'true'
+              - name: IDENTITY
+                value: CentTestEth
+              - name: NETWORK_ID
+                value: '8383'
+            image: 'centrifugeio/cent-geth:latest'
+            imagePullPolicy: Always
+            name: geth-init
+            volumeMounts:
+              - mountPath: /root/.ethereum
+                name: geth-persistent-storage
+              - mountPath: /root/.ethereum/files
+                name: geth-configs
+              - mountPath: /root/.ethereum/secrets
+                name: geth-secrets
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        volumes:
+          - name: geth-persistent-storage
+            persistentVolumeClaim:
+              claimName: geth-pvc
+          - configMap:
+              name: geth-config
+            name: geth-configs
+          - name: geth-secrets
+            secret:
+              secretName: geth-0

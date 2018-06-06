@@ -1,0 +1,40 @@
+- apiVersion: extensions/v1beta1
+  kind: Deployment
+  metadata:
+    labels:
+      app: centnode
+      version: '1'
+    name: centnode
+  spec:
+    replicas: 1
+    revisionHistoryLimit: 2
+    selector:
+      matchLabels:
+        app: centnode
+    strategy:
+      type: RollingUpdate
+    template:
+      metadata:
+        labels:
+          app: centnode
+          version: '1'
+        name: centnode
+      spec:
+        containers:
+          - image: 'centrifugeio/go-centrifuge:latest'
+            name: centnode
+            ports:
+              - containerPort: 8082
+              - containerPort: 38202
+            volumeMounts:
+              - mountPath: /root/config
+                name: secrets-volume
+                readOnly: true
+        nodeSelector:
+          workload: default
+        imagePullSecrets:
+          - name: myregistrykey
+        volumes:
+          - name: secrets-volume
+            secret:
+              secretName: gcent-0

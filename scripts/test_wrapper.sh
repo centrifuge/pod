@@ -37,10 +37,12 @@ if [ ! -d ${CENT_ETHEREUM_CONTRACTS_DIR} ]; then
     git clone git@github.com:CentrifugeInc/centrifuge-ethereum-contracts.git ${CENT_ETHEREUM_CONTRACTS_DIR}
 fi
 cd ${CENT_ETHEREUM_CONTRACTS_DIR}
+# Clear up previous build
+rm -Rf ./build
 npm install
 
 # Unlock User to Run Migration and Run it
-docker run -it --net=host ethereum/client-go:$GETH_DOCKER_VERSION attach "${CENT_ETHEREUM_NODEURL}" --exec "personal.unlockAccount('0x${CENT_ETHEREUM_ACCOUNTS_MIGRATE_ADDRESS}', '${CENT_ETHEREUM_ACCOUNTS_MIGRATE_PASSWORD}')"
+docker run -it --net=host --entrypoint "/geth" centrifugeio/cent-geth:latest attach "${CENT_ETHEREUM_NODEURL}" --exec "personal.unlockAccount('0x${CENT_ETHEREUM_ACCOUNTS_MIGRATE_ADDRESS}', '${CENT_ETHEREUM_ACCOUNTS_MIGRATE_PASSWORD}')"
 truffle migrate --network localgeth -f 2
 status=$?
 
@@ -71,7 +73,7 @@ else
     # Cleaning extra DAG file, so we do not cache it - travis
     if [[ "X${RUN_CONTEXT}" == "Xtravis" ]];
     then
-      new_dag=`ls -ltr $DATA_DIR/.ethash/* | tail -1 | awk '{print $9}' | tr -d '\n'`
+      new_dag=`ls -ltr $DATA_DIR/$NETWORK_ID/.ethash/* | tail -1 | awk '{print $9}' | tr -d '\n'`
       rm -Rf $new_dag
     fi
 fi

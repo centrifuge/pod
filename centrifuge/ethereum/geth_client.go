@@ -16,6 +16,7 @@ import (
 )
 
 const TransactionUnderpriced = "replacement transaction underpriced"
+const NonceTooLow = "nonce too low"
 
 var log = logging.Logger("geth-client")
 var gc *GethClient
@@ -122,7 +123,7 @@ func SubmitTransactionWithRetries(contractMethod interface{}, params ...interfac
 		}
 
 		if err != nil {
-			if err.Error() == TransactionUnderpriced {
+			if (err.Error() == TransactionUnderpriced) || (err.Error() == NonceTooLow) {
 				log.Warningf("Concurrent transaction identified, trying again [%d/%d]\n", current, maxTries)
 				time.Sleep(config.Config.GetEthereumIntervalRetry())
 			} else {
