@@ -23,21 +23,12 @@ spec:
         tier: geth-node
     spec:
       containers:
-      - args:
-        - -c
-        - /geth --rinkeby --rpc --rpccorsdomain localhost,geth --rpcaddr 0.0.0.0  --password
-          $(ACCOUNT_PASSWORD) --unlock $(ACCOUNT_ID)
-        command:
-        - /bin/sh
-        env:
-        - name: ACCOUNT_PASSWORD
-          value: /data/account/pw
-        - name: ACCOUNT_ID
-          valueFrom:
-            secretKeyRef:
-              key: account
-              name: eth-account-password
-        image: ethereum/client-go:alpine
+      - env:
+        - name: RINKEBY
+          value: true
+        - name: RPC_PORT
+          value: '8545'
+        image: 'centrifugeio/cent-geth:latest'
         imagePullPolicy: IfNotPresent
         name: geth
         ports:
@@ -53,9 +44,6 @@ spec:
         volumeMounts:
         - mountPath: /root/.ethereum
           name: geth-persistent-storage
-        - mountPath: /data/account
-          name: eth-account-password
-          readOnly: true
       dnsPolicy: ClusterFirst
       restartPolicy: Always
       schedulerName: default-scheduler
