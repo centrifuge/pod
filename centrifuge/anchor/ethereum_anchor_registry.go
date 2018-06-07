@@ -158,11 +158,10 @@ func waitAndRouteAnchorRegistrationEvent(conf <-chan *EthereumAnchorRegistryCont
 }
 
 func getAnchorContract() (anchorContract *EthereumAnchorRegistryContract, err error) {
-	// Instantiate the contract and display its name
 	client := ethereum.GetConnection()
 	anchorContract, err = NewEthereumAnchorRegistryContract(config.Config.GetContractAddress("anchorRegistry"), client.GetClient())
 	if err != nil {
-		log.Fatalf("Failed to instantiate the witness contract contract: %v", err)
+		log.Fatalf("Failed to instantiate the witness contract: %v", err)
 	}
 	return
 }
