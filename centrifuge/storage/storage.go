@@ -22,7 +22,7 @@ func NewLeveldbStorage(path string) *leveldb.DB {
 		i, err := leveldb.OpenFile(dbPath, nil)
 		instance = i
 		if err != nil {
-			log.Fatalf(err)
+			log.Fatal(err)
 		}
 	})
 	return instance

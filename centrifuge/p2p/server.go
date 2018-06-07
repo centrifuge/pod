@@ -145,7 +145,7 @@ func RunDHT(ctx context.Context, h host.Host) {
 	tctx, _ = context.WithTimeout(ctx, time.Second*10)
 	peers, err := dhtClient.FindProviders(tctx, c)
 	if err != nil {
-		log.Errorf(err)
+		log.Error(err)
 	}
 	log.Infof("Found %d peers!\n", len(peers))
 	for _, p1 := range peers {

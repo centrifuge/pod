@@ -32,8 +32,6 @@ var runCmd = &cobra.Command{
 	},
 }
 
-var Destination string
-
 func init() {
 	rootCmd.AddCommand(runCmd)
 }

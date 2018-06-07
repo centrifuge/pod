@@ -45,7 +45,7 @@ func loadKeyPair() (keyPair tls.Certificate) {
 	var err error
 	pair, err := tls.X509KeyPair([]byte(InsecureCert), []byte(InsecureKey))
 	if err != nil {
-		log.Fatalf(err)
+		log.Fatal(err)
 	}
 	return pair
 }
@@ -85,7 +85,7 @@ func ServeNode() {
 
 	conn, err := net.Listen("tcp", config.Config.GetServerAddress())
 	if err != nil {
-		log.Fatalf(err)
+		log.Fatal(err)
 	}
 
 	srv := &http.Server{
@@ -97,7 +97,7 @@ func ServeNode() {
 		},
 	}
 
-	log.Printf("grpc on port: %d\n", config.Config.GetServerPort())
+	log.Infof("grpc on port: %d\n", config.Config.GetServerPort())
 	err = srv.Serve(tls.NewListener(conn, srv.TLSConfig))
 
 	if err != nil {

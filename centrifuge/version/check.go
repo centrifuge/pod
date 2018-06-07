@@ -7,16 +7,19 @@ import (
 
 var log = logging.Logger("centrifuge-version")
 
+// SemverNodeVersion gets the semver Version struct of the app
 func SemverNodeVersion() *semver.Version {
-	v, err := semver.NewVersion(CENTRIFUGE_NODE_VERSION)
+	v, err := semver.NewVersion(CentrifugeNodeVersion)
 
 	if err != nil {
-		log.Panicf("Invalid CENTRIFUGE_NODE_VERSION specified: %s", CENTRIFUGE_NODE_VERSION)
+		log.Panicf("Invalid CentrifugeNodeVersion specified: %s", CentrifugeNodeVersion)
 	}
 	return v
 
 }
 
+// CheckMajorCompatibility ensures that a version string matches the major version of
+// the app.
 func CheckMajorCompatibility(versionString string) (match bool, err error) {
 	v, err := semver.NewVersion(versionString)
 	if err != nil {

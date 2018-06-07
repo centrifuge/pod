@@ -15,7 +15,7 @@ var log = logging.Logger("keytools")
 func GetPublicSigningKey(fileName string) (publicKey ed25519.PublicKey) {
 	key, err := ioutil.ReadFile(fileName)
 	if err != nil {
-		log.Fatalf(err)
+		log.Fatal(err)
 	}
 	publicKey = ed25519.PublicKey(key)
 	return
@@ -24,7 +24,7 @@ func GetPublicSigningKey(fileName string) (publicKey ed25519.PublicKey) {
 func GetPrivateSigningKey(fileName string) (privateKey ed25519.PrivateKey) {
 	key, err := ioutil.ReadFile(fileName)
 	if err != nil {
-		log.Fatalf(err)
+		log.Fatal(err)
 	}
 	privateKey = ed25519.PrivateKey(key)
 	return
@@ -40,7 +40,7 @@ func GetSigningKeyPairFromConfig() (publicKey ed25519.PublicKey, privateKey ed25
 func GenerateSigningKeypair(publicFileName, privateFileName string) (publicKey ed25519.PublicKey, privateKey ed25519.PrivateKey) {
 	publicKey, privateKey, err := ed25519.GenerateKey(nil)
 	if err != nil {
-		log.Fatalf(err)
+		log.Fatal(err)
 	}
 	writeKeyToFile(privateFileName, privateKey)
 	writeKeyToFile(publicFileName, publicKey)

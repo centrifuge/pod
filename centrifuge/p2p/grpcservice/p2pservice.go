@@ -22,7 +22,7 @@ type IncompatibleVersionError struct {
 }
 
 func (e *IncompatibleVersionError) Error() string {
-	return fmt.Sprintf("Incompatible version: this node has version: %s, client reported: %s", version.CENTRIFUGE_NODE_VERSION, e.clientVersion)
+	return fmt.Sprintf("Incompatible version: this node has version: %s, client reported: %s", version.CentrifugeNodeVersion, e.clientVersion)
 }
 
 type P2PService struct{}
@@ -53,7 +53,7 @@ func (srv *P2PService) HandleP2PPost(ctx context.Context, req *p2ppb.P2PMessage)
 	}
 
 	rep = &p2ppb.P2PReply{
-		CentNodeVersion: version.CENTRIFUGE_NODE_VERSION,
+		CentNodeVersion: version.CentrifugeNodeVersion,
 		Document:        req.Document,
 	}
 	return

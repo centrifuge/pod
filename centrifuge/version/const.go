@@ -1,3 +1,4 @@
 package version
 
-const CENTRIFUGE_NODE_VERSION = "0.1.1-pre-alpha"
+// CentrifugeNodeVersion is the current version of the app
+const CentrifugeNodeVersion = "0.0.1-pre-alpha"
