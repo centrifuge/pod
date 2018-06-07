@@ -2,8 +2,8 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   labels:
-    app: geth-node
-  name: geth-node
+    app: geth-rinkeby-node
+  name: geth-rinkeby-node
   namespace: default
 spec:
   progressDeadlineSeconds: 600
@@ -11,16 +11,16 @@ spec:
   revisionHistoryLimit: 2
   selector:
     matchLabels:
-      app: geth-node
-      tier: geth-node
+      app: geth-rinkeby-node
+      tier: geth-rinkeby-node
   strategy:
     type: Recreate
   template:
     metadata:
       creationTimestamp: null
       labels:
-        app: geth-node
-        tier: geth-node
+        app: geth-rinkeby-node
+        tier: geth-rinkeby-node
     spec:
       containers:
       - env:
@@ -30,7 +30,7 @@ spec:
           value: '8545'
         image: 'centrifugeio/cent-geth:latest'
         imagePullPolicy: IfNotPresent
-        name: geth
+        name: geth-rinkeby
         ports:
         - containerPort: 30303
           name: geth-discovery
@@ -52,11 +52,4 @@ spec:
       volumes:
       - name: geth-persistent-storage
         persistentVolumeClaim:
-          claimName: geth-pv-claim
-      - name: eth-account-password
-        secret:
-          defaultMode: 420
-          items:
-          - key: password
-            path: pw
-          secretName: eth-account-password
+          claimName: geth-rinkeby-0-pvc
