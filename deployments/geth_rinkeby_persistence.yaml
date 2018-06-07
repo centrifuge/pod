@@ -5,7 +5,7 @@ metadata:
 spec:
   storageClassName: ""
   capacity:
-    storage: 200G
+    storage: 400G
   accessModes:
     - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
@@ -24,4 +24,4 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 200G
+      storage: 400G

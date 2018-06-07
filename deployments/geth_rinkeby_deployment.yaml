@@ -3,6 +3,7 @@ kind: Deployment
 metadata:
   labels:
     app: geth-rinkeby-node
+    version: '1'
   name: geth-rinkeby-node
   namespace: default
 spec:
@@ -21,11 +22,12 @@ spec:
       labels:
         app: geth-rinkeby-node
         tier: geth-rinkeby-node
+        version: '1'
     spec:
       containers:
       - env:
         - name: RINKEBY
-          value: true
+          value: 'true'
         - name: RPC_PORT
           value: '8545'
         image: 'centrifugeio/cent-geth:latest'
@@ -45,6 +47,8 @@ spec:
         - mountPath: /root/.ethereum
           name: geth-persistent-storage
       dnsPolicy: ClusterFirst
+      nodeSelector:
+        workload: default
       restartPolicy: Always
       schedulerName: default-scheduler
       securityContext: {}
