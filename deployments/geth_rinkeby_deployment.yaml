@@ -31,7 +31,7 @@ spec:
         - name: RPC_PORT
           value: '8545'
         image: 'centrifugeio/cent-geth:latest'
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         name: geth-rinkeby
         ports:
         - containerPort: 30303
