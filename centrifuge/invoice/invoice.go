@@ -1,15 +1,18 @@
 package invoice
 
 import (
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
-	"github.com/centrifuge/precise-proofs/proofs"
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
-	"log"
-	"github.com/golang/protobuf/ptypes/any"
+	"crypto/sha256"
 	"github.com/CentrifugeInc/centrifuge-protobufs/documenttypes"
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
+	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes/any"
+	logging "github.com/ipfs/go-log"
 )
+
+var log = logging.Logger("invoice")
 
 type Invoice struct {
 	Document *invoicepb.InvoiceDocument
@@ -31,8 +34,8 @@ func NewEmptyInvoice() *Invoice {
 	proofs.FillSalts(&invoiceSalts)
 	doc := invoicepb.InvoiceDocument{
 		CoreDocument: &coredocumentpb.CoreDocument{},
-		Data: &invoicepb.InvoiceData{},
-		Salts: &invoiceSalts,
+		Data:         &invoicepb.InvoiceData{},
+		Salts:        &invoiceSalts,
 	}
 	return &Invoice{&doc}
 }
@@ -60,10 +63,43 @@ func NewInvoiceFromCoreDocument(coredocument *coredocument.CoreDocument) (inv *I
 	return
 }
 
-func (inv *Invoice) CalculateMerkleRoot() {
-	dtree := proofs.NewDocumentTree()
-	dtree.FillTree(inv.Document.Data, inv.Document.Salts)
-	inv.Document.CoreDocument.DocumentRoot = dtree.RootHash()
+func (inv *Invoice) getDocumentTree() (tree *proofs.DocumentTree, err error) {
+	t := proofs.NewDocumentTree()
+	sha256Hash := sha256.New()
+	t.SetHashFunc(sha256Hash)
+	err = t.FillTree(inv.Document.Data, inv.Document.Salts)
+	if err != nil {
+		log.Error("getDocumentTree:", err)
+		return nil, err
+	}
+	return &t, nil
+}
+
+func (inv *Invoice) CalculateMerkleRoot() error {
+	tree, err := inv.getDocumentTree()
+	if err != nil {
+		return err
+	}
+	// TODO: below should actually be stored as CoreDocument.DataMerkleRoot
+	inv.Document.CoreDocument.DocumentRoot = tree.RootHash()
+	return nil
+}
+
+func (inv *Invoice) CreateProofs(fields []string) (proofs []*proofs.Proof, err error) {
+	tree, err := inv.getDocumentTree()
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+	for _, field := range fields {
+		proof, err := tree.CreateProof(field)
+		if err != nil {
+			log.Error(err)
+			return nil, err
+		}
+		proofs = append(proofs, &proof)
+	}
+	return
 }
 
 func (inv *Invoice) ConvertToCoreDocument() (coredocument coredocument.CoreDocument) {
@@ -76,7 +112,7 @@ func (inv *Invoice) ConvertToCoreDocument() (coredocument coredocument.CoreDocum
 
 	invoiceAny := any.Any{
 		TypeUrl: documenttypes.InvoiceDataTypeUrl,
-		Value: serializedInvoice,
+		Value:   serializedInvoice,
 	}
 
 	serializedSalts, err := proto.Marshal(inv.Document.Salts)
@@ -86,7 +122,7 @@ func (inv *Invoice) ConvertToCoreDocument() (coredocument coredocument.CoreDocum
 
 	invoiceSaltsAny := any.Any{
 		TypeUrl: documenttypes.InvoiceSaltsTypeUrl,
-		Value: serializedSalts,
+		Value:   serializedSalts,
 	}
 
 	coredocpb.EmbeddedData = &invoiceAny
