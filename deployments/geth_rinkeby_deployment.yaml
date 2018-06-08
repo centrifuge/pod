@@ -30,6 +30,8 @@ spec:
           value: 'true'
         - name: RPC_PORT
           value: '8545'
+        - name: WS_PORT
+          value: '8546'
         image: 'centrifugeio/cent-geth:latest'
         imagePullPolicy: Always
         name: geth-rinkeby
@@ -39,6 +41,9 @@ spec:
           protocol: TCP
         - containerPort: 8545
           name: geth-jsonrpc
+          protocol: TCP
+        - containerPort: 8546
+          name: geth-ws
           protocol: TCP
         resources: {}
         terminationMessagePath: /dev/termination-log
