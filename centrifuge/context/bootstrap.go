@@ -25,7 +25,7 @@ func Bootstrap() {
 }
 
 func getRandomTestStoragePath() string {
-	return fmt.Sprintf("%s_%d", testStoragePath, tools.RandomByte32())
+	return fmt.Sprintf("%s_%x", testStoragePath, tools.RandomByte32())
 }
 
 func TestBootstrap() {

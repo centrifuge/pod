@@ -11,11 +11,13 @@ then
   fi
 elif [[ "X$RINKEBY" = "Xtrue" ]];
 then
-  /geth --rinkeby --light --rpc --rpcport $RPC_PORT --rpcaddr 0.0.0.0 --rpcapi db,eth,net,web3,personal \
+  /geth --rinkeby --light --rpc --rpcport $RPC_PORT --rpcaddr 0.0.0.0 --rpcapi db,eth,net,web3 \
+        --ws --wsport $WS_PORT --wsaddr 0.0.0.0 --wsorigins "*" --wsapi db,eth,net,web3 \
         --datadir /root/.ethereum --ethash.dagdir /root/.ethereum/.ethash
 elif [[ "X$GETH_LOCAL" = "Xtrue" ]];
 then
   /geth --identity "${IDENTITY}" --networkid $NETWORK_ID --rpc --rpcport $RPC_PORT --rpcaddr 0.0.0.0 --rpcapi db,eth,net,web3,personal,admin \
+      --ws --wsport $WS_PORT --wsaddr 0.0.0.0 --wsorigins "*" --wsapi db,eth,net,web3,personal,admin \
       --datadir /root/.ethereum --ethash.dagdir /root/.ethereum/.ethash --cache 512 \
       --bootnodes "${BOOT_NODES}"
 else

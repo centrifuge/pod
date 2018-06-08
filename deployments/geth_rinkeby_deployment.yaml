@@ -2,8 +2,9 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   labels:
-    app: geth-node
-  name: geth-node
+    app: geth-rinkeby-node
+    version: '1'
+  name: geth-rinkeby-node
   namespace: default
 spec:
   progressDeadlineSeconds: 600
@@ -11,35 +12,29 @@ spec:
   revisionHistoryLimit: 2
   selector:
     matchLabels:
-      app: geth-node
-      tier: geth-node
+      app: geth-rinkeby-node
+      tier: geth-rinkeby-node
   strategy:
     type: Recreate
   template:
     metadata:
       creationTimestamp: null
       labels:
-        app: geth-node
-        tier: geth-node
+        app: geth-rinkeby-node
+        tier: geth-rinkeby-node
+        version: '1'
     spec:
       containers:
-      - args:
-        - -c
-        - /geth --rinkeby --rpc --rpccorsdomain localhost,geth --rpcaddr 0.0.0.0  --password
-          $(ACCOUNT_PASSWORD) --unlock $(ACCOUNT_ID)
-        command:
-        - /bin/sh
-        env:
-        - name: ACCOUNT_PASSWORD
-          value: /data/account/pw
-        - name: ACCOUNT_ID
-          valueFrom:
-            secretKeyRef:
-              key: account
-              name: eth-account-password
-        image: ethereum/client-go:alpine
-        imagePullPolicy: IfNotPresent
-        name: geth
+      - env:
+        - name: RINKEBY
+          value: 'true'
+        - name: RPC_PORT
+          value: '8545'
+        - name: WS_PORT
+          value: '8546'
+        image: 'centrifugeio/cent-geth:latest'
+        imagePullPolicy: Always
+        name: geth-rinkeby
         ports:
         - containerPort: 30303
           name: geth-discovery
@@ -47,16 +42,18 @@ spec:
         - containerPort: 8545
           name: geth-jsonrpc
           protocol: TCP
+        - containerPort: 8546
+          name: geth-ws
+          protocol: TCP
         resources: {}
         terminationMessagePath: /dev/termination-log
         terminationMessagePolicy: File
         volumeMounts:
         - mountPath: /root/.ethereum
           name: geth-persistent-storage
-        - mountPath: /data/account
-          name: eth-account-password
-          readOnly: true
       dnsPolicy: ClusterFirst
+      nodeSelector:
+        workload: default
       restartPolicy: Always
       schedulerName: default-scheduler
       securityContext: {}
@@ -64,11 +61,4 @@ spec:
       volumes:
       - name: geth-persistent-storage
         persistentVolumeClaim:
-          claimName: geth-pv-claim
-      - name: eth-account-password
-        secret:
-          defaultMode: 420
-          items:
-          - key: password
-            path: pw
-          secretName: eth-account-password
+          claimName: geth-rinkeby-0-pvc

@@ -8,14 +8,16 @@ import (
 	"crypto/x509"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	logging "github.com/ipfs/go-log"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-	"log"
 	"net"
 	"net/http"
 	"strings"
 )
+
+var log = logging.Logger("server")
 
 // grpcHandlerFunc returns an http.Handler that delegates to grpcServer on incoming gRPC
 // connections or otherHandler otherwise. Copied from cockroachdb.
@@ -34,7 +36,7 @@ func loadCertPool() (certPool *x509.CertPool) {
 	certPool = x509.NewCertPool()
 	ok := certPool.AppendCertsFromPEM([]byte(InsecureCert))
 	if !ok {
-		panic("bad certs")
+		log.Fatalf("Bad certs")
 	}
 	return
 }
@@ -43,7 +45,7 @@ func loadKeyPair() (keyPair tls.Certificate) {
 	var err error
 	pair, err := tls.X509KeyPair([]byte(InsecureCert), []byte(InsecureKey))
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	return pair
 }
@@ -83,7 +85,7 @@ func ServeNode() {
 
 	conn, err := net.Listen("tcp", config.Config.GetServerAddress())
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	srv := &http.Server{
@@ -95,7 +97,7 @@ func ServeNode() {
 		},
 	}
 
-	log.Printf("grpc on port: %d\n", config.Config.GetServerPort())
+	log.Infof("grpc on port: %d\n", config.Config.GetServerPort())
 	err = srv.Serve(tls.NewListener(conn, srv.TLSConfig))
 
 	if err != nil {

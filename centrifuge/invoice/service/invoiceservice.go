@@ -2,13 +2,13 @@ package invoiceservice
 
 import (
 	"fmt"
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
+	invoicepb "github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
-	logging "github.com/ipfs/go-log"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/repository"
 	google_protobuf2 "github.com/golang/protobuf/ptypes/empty"
+	logging "github.com/ipfs/go-log"
 	"golang.org/x/net/context"
 )
 
@@ -28,7 +28,6 @@ func (s *InvoiceDocumentService) HandleAnchorInvoiceDocument(ctx context.Context
 	inv.CalculateMerkleRoot()
 	coreDoc := inv.ConvertToCoreDocument()
 	// Signing of document missing so far
-
 
 	err = coreDoc.Anchor()
 	if err != nil {
@@ -50,7 +49,7 @@ func (s *InvoiceDocumentService) HandleSendInvoiceDocument(ctx context.Context, 
 	// Sign document
 	// Uncomment once fixed
 	//coreDoc.Sign()
-	//coreDoc.Anchor()
+	coreDoc.Anchor()
 
 	errs := []error{}
 	for _, element := range sendInvoiceEnvelope.Recipients {

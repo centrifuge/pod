@@ -36,11 +36,11 @@ case "$mode" in
     docker-compose -f $local_dir/docker-compose-init.yml up
   ;;
   rinkeby)
-    ETH_DATADIR=${ETH_DATADIR}/rinkeby RPC_PORT=$RPC_PORT RINKEBY=true \
+    ETH_DATADIR=${ETH_DATADIR}/rinkeby RPC_PORT=$RPC_PORT WS_PORT=$WS_PORT RINKEBY=true \
     docker-compose -f $local_dir/docker-compose.yml up > /tmp/geth.log 2>&1 &
   ;;
   local)
-    IDENTITY=$IDENTITY NETWORK_ID=$NETWORK_ID ETH_DATADIR=${ETH_DATADIR}/${NETWORK_ID} GETH_LOCAL=true RPC_PORT=$RPC_PORT \
+    IDENTITY=$IDENTITY NETWORK_ID=$NETWORK_ID ETH_DATADIR=${ETH_DATADIR}/${NETWORK_ID} GETH_LOCAL=true RPC_PORT=$RPC_PORT WS_PORT=$WS_PORT \
     BOOT_NODES=$BOOT_NODES \
     docker-compose -f $local_dir/docker-compose.yml up > /tmp/geth.log 2>&1 &
   ;;

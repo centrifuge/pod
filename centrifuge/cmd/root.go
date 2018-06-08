@@ -25,10 +25,6 @@ var rootCmd = &cobra.Command{
 
 var log = logging.Logger("centrifuge-cmd")
 
-var format = gologging.MustStringFormatter(
-	"%{color}%{time:15:04:05.000} %{shortfunc} ▶ %{level:.4s} %{id:03x}%{color:reset} %{message}",
-)
-
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {

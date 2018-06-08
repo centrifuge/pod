@@ -1,3 +1,4 @@
+// build +unit
 package grpcservice
 
 import (
@@ -20,11 +21,11 @@ func TestMain(m *testing.M) {
 	os.Exit(result)
 }
 
-func TestP2PService(t *testing.T) {
-	identifier := []byte("1")
-	coredoc := &coredocumentpb.CoreDocument{DocumentIdentifier: identifier}
+var identifier = []byte("1")
+var coredoc = &coredocumentpb.CoreDocument{DocumentIdentifier: identifier}
 
-	req := p2ppb.P2PMessage{Document: coredoc, CentNodeVersion: version.CENTRIFUGE_NODE_VERSION, NetworkIdentifier: config.Config.GetNetworkID()}
+func TestP2PService(t *testing.T) {
+	req := p2ppb.P2PMessage{Document: coredoc, CentNodeVersion: version.CentrifugeNodeVersion, NetworkIdentifier: config.Config.GetNetworkID()}
 	rpc := P2PService{}
 	res, err := rpc.HandleP2PPost(context.Background(), &req)
 	assert.Nil(t, err, "Received error")
@@ -32,5 +33,23 @@ func TestP2PService(t *testing.T) {
 
 	doc, err := coredocumentrepository.GetCoreDocumentRepository().FindById(identifier)
 	assert.Equal(t, doc.DocumentIdentifier, identifier, "Document Identifier doesn't match")
+}
 
+func TestP2PService_IncompatibleRequest(t *testing.T) {
+	// Test invalid version
+	req := p2ppb.P2PMessage{Document: coredoc, CentNodeVersion: "1000.0.0-invalid", NetworkIdentifier: config.Config.GetNetworkID()}
+	rpc := P2PService{}
+	res, err := rpc.HandleP2PPost(context.Background(), &req)
+
+	assert.Error(t, err)
+	assert.IsType(t, &IncompatibleVersionError{""}, err)
+	assert.Nil(t, res)
+
+	// Test invalid network
+	req = p2ppb.P2PMessage{Document: coredoc, CentNodeVersion: version.CentrifugeNodeVersion, NetworkIdentifier: config.Config.GetNetworkID() + 1}
+	res, err = rpc.HandleP2PPost(context.Background(), &req)
+
+	assert.Error(t, err)
+	assert.IsType(t, &IncompatibleNetworkError{0}, err)
+	assert.Nil(t, res)
 }
