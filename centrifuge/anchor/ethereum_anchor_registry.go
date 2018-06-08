@@ -161,7 +161,7 @@ func getAnchorContract() (anchorContract *EthereumAnchorRegistryContract, err er
 	client := ethereum.GetConnection()
 	anchorContract, err = NewEthereumAnchorRegistryContract(config.Config.GetContractAddress("anchorRegistry"), client.GetClient())
 	if err != nil {
-		log.Fatalf("Failed to instantiate the witness contract: %v", err)
+		log.Fatalf("Failed to instantiate the anchor contract: %v", err)
 	}
 	return
 }
