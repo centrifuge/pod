@@ -17,7 +17,8 @@ imports:
   subpackages:
   - btcec
 - name: github.com/centrifuge/precise-proofs
-  version: d55a856a7532ac54a1d378602cbae38a6dd7ad0e
+  repo: git@github.com:lucasvo/precise-proofs
+  version: xxx-fields 
   subpackages:
   - proofs
 - name: github.com/CentrifugeInc/centrifuge-ethereum-contracts

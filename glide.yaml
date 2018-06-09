@@ -79,6 +79,8 @@ import:
   repo: git@github.com:lucasvo/centrifuge-protobufs
   version: create-proof
 - package: github.com/centrifuge/precise-proofs
+  repo: git@github.com:lucasvo/precise-proofs
+  version: xxx-fields
 - package: github.com/blang/semver
   version: ^3.5.1
 - package: github.com/go-bindata/go-bindata
