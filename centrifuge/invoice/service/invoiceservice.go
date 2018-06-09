@@ -57,7 +57,7 @@ func (s *InvoiceDocumentService) HandleAnchorInvoiceDocument(ctx context.Context
 	return anchorInvoiceEnvelope.Document, nil
 }
 
-// HandleSendInvoiceDocument anchors and sends an invoice to teh recipient
+// HandleSendInvoiceDocument anchors and sends an invoice to the recipient
 func (s *InvoiceDocumentService) HandleSendInvoiceDocument(ctx context.Context, sendInvoiceEnvelope *invoicepb.SendInvoiceEnvelope) (*invoicepb.InvoiceDocument, error) {
 	err := invoicerepository.GetInvoiceRepository().Store(sendInvoiceEnvelope.Document)
 	if err != nil {
