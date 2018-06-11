@@ -31,7 +31,7 @@ func (s *InvoiceDocumentService) HandleCreateInvoiceProof(ctx context.Context, c
 		log.Error(err)
 		return nil, err
 	}
-	return &invoicepb.InvoiceProof{FieldProofs: proofs, DocumentIdentifier: inv.Document.CoreDocument.CurrentIdentifier}, nil
+	return &invoicepb.InvoiceProof{FieldProofs: proofs, DocumentIdentifier: inv.Document.CoreDocument.DocumentIdentifier}, nil
 
 }
 

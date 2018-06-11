@@ -78,6 +78,7 @@ func TestInvoiceDocumentService_HandleCreateInvoiceProof(t *testing.T) {
 
 	invoiceProof, err := s.HandleCreateInvoiceProof(context.Background(), proofRequest)
 	assert.Nil(t, err)
+	assert.Equal(t, identifier, invoiceProof.DocumentIdentifier)
 	assert.Equal(t, len(proofRequest.Fields), len(invoiceProof.FieldProofs))
 	assert.Equal(t, proofRequest.Fields[0], invoiceProof.FieldProofs[0].Property)
 	sha256Hash := sha256.New()
