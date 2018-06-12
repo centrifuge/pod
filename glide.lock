@@ -17,7 +17,7 @@ imports:
   subpackages:
   - btcec
 - name: github.com/centrifuge/precise-proofs
-  version: d55a856a7532ac54a1d378602cbae38a6dd7ad0e
+  version: b27f5da7254f3200cef96451d7b2d8d163358f99
   subpackages:
   - proofs
 - name: github.com/CentrifugeInc/centrifuge-ethereum-contracts
@@ -25,9 +25,11 @@ imports:
   repo: git@github.com:CentrifugeInc/centrifuge-ethereum-contracts
   subpackages:
   - centrifuge/witness
+- name: github.com/iancoleman/strcase
+  version: 90d371a664d668ca3e61d3ddddf1916662959f11
 - name: github.com/CentrifugeInc/centrifuge-protobufs
-  version: 78eafaa6abac9843b2b776451e09f632d5c8d885
   repo: git@github.com:CentrifugeInc/centrifuge-protobufs
+  version: c54c484c680a98e7da036e69f3c16865fbb4770e
   subpackages:
   - documenttypes
   - gen/go/coredocument

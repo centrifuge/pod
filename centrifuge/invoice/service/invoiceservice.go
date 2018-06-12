@@ -17,26 +17,47 @@ var log = logging.Logger("rest-api")
 // Struct needed as it is used to register the grpc services attached to the grpc server
 type InvoiceDocumentService struct{}
 
-// HandleAnchorInvoiceDocument anchors the given invoice document and returns the anchor details
-func (s *InvoiceDocumentService) HandleAnchorInvoiceDocument(ctx context.Context, anchorInvoiceEnvelope *invoicepb.AnchorInvoiceEnvelope) (*invoicepb.InvoiceDocument, error) {
-	err := invoicerepository.GetInvoiceRepository().Store(anchorInvoiceEnvelope.Document)
+// HandleCreateInvoiceProof creates proofs for a list of fields
+func (s *InvoiceDocumentService) HandleCreateInvoiceProof(ctx context.Context, createInvoiceProofEnvelope *invoicepb.CreateInvoiceProofEnvelope) (*invoicepb.InvoiceProof, error) {
+	invdoc, err := invoicerepository.GetInvoiceRepository().FindById(createInvoiceProofEnvelope.DocumentIdentifier)
 	if err != nil {
 		return nil, err
 	}
 
+	inv := invoice.NewInvoice(invdoc)
+
+	proofs, err := inv.CreateProofs(createInvoiceProofEnvelope.Fields)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+	return &invoicepb.InvoiceProof{FieldProofs: proofs, DocumentIdentifier: inv.Document.CoreDocument.DocumentIdentifier}, nil
+
+}
+
+// HandleAnchorInvoiceDocument anchors the given invoice document and returns the anchor details
+func (s *InvoiceDocumentService) HandleAnchorInvoiceDocument(ctx context.Context, anchorInvoiceEnvelope *invoicepb.AnchorInvoiceEnvelope) (*invoicepb.InvoiceDocument, error) {
+	err := invoicerepository.GetInvoiceRepository().Store(anchorInvoiceEnvelope.Document)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	// TODO: the calculated merkle root should be persisted locally as well.
 	inv := invoice.NewInvoice(anchorInvoiceEnvelope.Document)
 	inv.CalculateMerkleRoot()
 	coreDoc := inv.ConvertToCoreDocument()
-	// Signing of document missing so far
 
 	err = coreDoc.Anchor()
 	if err != nil {
+		log.Error(err)
 		return nil, err
 	}
 
 	return anchorInvoiceEnvelope.Document, nil
 }
 
+// HandleSendInvoiceDocument anchors and sends an invoice to the recipient
 func (s *InvoiceDocumentService) HandleSendInvoiceDocument(ctx context.Context, sendInvoiceEnvelope *invoicepb.SendInvoiceEnvelope) (*invoicepb.InvoiceDocument, error) {
 	err := invoicerepository.GetInvoiceRepository().Store(sendInvoiceEnvelope.Document)
 	if err != nil {
@@ -46,10 +67,6 @@ func (s *InvoiceDocumentService) HandleSendInvoiceDocument(ctx context.Context, 
 	inv := invoice.NewInvoice(sendInvoiceEnvelope.Document)
 	inv.CalculateMerkleRoot()
 	coreDoc := inv.ConvertToCoreDocument()
-	// Sign document
-	// Uncomment once fixed
-	//coreDoc.Sign()
-	coreDoc.Anchor()
 
 	errs := []error{}
 	for _, element := range sendInvoiceEnvelope.Recipients {

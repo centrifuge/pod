@@ -12,6 +12,7 @@ import (
 )
 
 var cfgFile string
+var verbose bool
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -28,7 +29,7 @@ var log = logging.Logger("centrifuge-cmd")
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	logging.SetAllLoggers(gologging.INFO) // Change to DEBUG for extra info
+	logging.SetAllLoggers(gologging.INFO)
 	backend := gologging.NewLogBackend(os.Stdout, "", 0)
 	gologging.SetBackend(backend)
 
@@ -39,16 +40,22 @@ func Execute() {
 }
 
 func init() {
-	cobra.OnInitialize(initConfig)
+	cobra.OnInitialize(initCentrifuge)
 
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.centrifuge.yaml)")
+	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default is $HOME/.centrifuge.yaml)")
+	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "set loglevel to debug")
 }
 
-// initConfig reads in config file and ENV variables if set.
-func initConfig() {
+// initCentrifuge reads in config file and ENV variables if set.
+func initCentrifuge() {
+	if verbose {
+		logging.SetAllLoggers(gologging.DEBUG)
+	} else {
+		logging.SetAllLoggers(gologging.INFO)
+	}
 	if cfgFile == "" {
 		// Find home directory.
 		home, err := homedir.Dir()
@@ -59,8 +66,8 @@ func initConfig() {
 
 		cfgFile = fmt.Sprintf("%s/%s", home, ".centrifuge.yaml")
 		if _, err := os.Stat(cfgFile); err != nil {
-			log.Error("Config file not provided and default $HOME/.centrifuge.yaml does not exist")
-			os.Exit(1)
+			log.Info("Config file not provided and default $HOME/.centrifuge.yaml does not exist")
+			cfgFile = ""
 		}
 	}
 	// If a config file is found, read it in.

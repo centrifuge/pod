@@ -22,7 +22,6 @@ import (
 	ma "github.com/multiformats/go-multiaddr"
 	mh "github.com/multiformats/go-multihash"
 	"github.com/paralin/go-libp2p-grpc"
-	gologging "github.com/whyrusleeping/go-logging"
 	msmux "github.com/whyrusleeping/go-smux-multistream"
 	yamux "github.com/whyrusleeping/go-smux-yamux"
 	"time"
@@ -169,11 +168,6 @@ func RunDHT(ctx context.Context, h host.Host) {
 }
 
 func RunP2P() {
-	// LibP2P code uses golog to log messages. They log with different
-	// string IDs (i.e. "swarm"). We can control the verbosity level for
-	// all loggers with:
-	logging.SetAllLoggers(gologging.DEBUG) // Change to DEBUG for extra info
-
 	// Parse options from the command line
 	port := config.Config.GetP2PPort()
 	if port == 0 {
