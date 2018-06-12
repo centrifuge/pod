@@ -15,8 +15,8 @@ import (
 	"github.com/spf13/viper"
 	"math/big"
 	"os"
-	"strings"
 	"time"
+	"strings"
 )
 
 var log = logging.Logger("config")
@@ -88,7 +88,14 @@ func (c *Configuration) GetEthereumAccountMap(accountName string) (accounts map[
 	if !c.V.IsSet(k) {
 		return nil, fmt.Errorf("No account found with account name %s", accountName)
 	}
-	return c.V.GetStringMapString(k), nil
+
+	// Workaround for bug https://github.com/spf13/viper/issues/309 && https://github.com/spf13/viper/issues/513
+	accounts = make(map[string]string)
+	accounts["key"] = c.V.GetString(fmt.Sprintf("%s.key", k))
+	accounts["password"] = c.V.GetString(fmt.Sprintf("%s.password", k))
+	accounts["address"] = c.V.GetString(fmt.Sprintf("%s.address", k))
+
+	return accounts, nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////

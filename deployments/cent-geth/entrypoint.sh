@@ -11,17 +11,17 @@ then
   fi
 elif [[ "X$RINKEBY" = "Xtrue" ]];
 then
-  /geth --rinkeby --light --rpc --rpcport $RPC_PORT --rpcaddr 0.0.0.0 --rpcapi db,eth,net,web3 \
-        --ws --wsport $WS_PORT --wsaddr 0.0.0.0 --wsorigins "*" --wsapi db,eth,net,web3 \
+  /geth --rinkeby --light --rpc --rpcport $RPC_PORT --rpcaddr 0.0.0.0 --rpcapi db,eth,net,web3,txpool \
+        --ws --wsport $WS_PORT --wsaddr 0.0.0.0 --wsorigins "*" --wsapi db,eth,net,web3,txpool \
         --datadir /root/.ethereum --ethash.dagdir /root/.ethereum/.ethash
 elif [[ "X$GETH_LOCAL" = "Xtrue" ]];
 then
-  /geth --identity "${IDENTITY}" --networkid $NETWORK_ID --rpc --rpcport $RPC_PORT --rpcaddr 0.0.0.0 --rpcapi db,eth,net,web3,personal,admin \
-      --ws --wsport $WS_PORT --wsaddr 0.0.0.0 --wsorigins "*" --wsapi db,eth,net,web3,personal,admin \
+  /geth --identity "${IDENTITY}" --networkid $NETWORK_ID --rpc --rpcport $RPC_PORT --rpcaddr 0.0.0.0 --rpcapi db,eth,net,web3,personal,admin,txpool \
+      --ws --wsport $WS_PORT --wsaddr 0.0.0.0 --wsorigins "*" --wsapi db,eth,net,web3,personal,admin,txpool \
       --datadir /root/.ethereum --ethash.dagdir /root/.ethereum/.ethash --cache 512 \
       --bootnodes "${BOOT_NODES}"
 else
   /geth --identity "${IDENTITY}" --networkid $NETWORK_ID --datadir /root/.ethereum --ethash.dagdir /root/.ethereum/.ethash \
         --cache 512 --rpc --rpcaddr 0.0.0.0 --rpcport $RPC_PORT --rpcapi $API --mine --etherbase "${CENT_ETHEREUM_ACCOUNTS_MAIN_ADDRESS}" \
-        --ipcdisable --ws --wsport $WS_PORT --wsaddr 0.0.0.0 --wsorigins "*" --wsapi $API
+        --ipcdisable --ws --wsport $WS_PORT --wsaddr 0.0.0.0 --wsorigins "*" --wsapi $API --gasprice "40000"
 fi

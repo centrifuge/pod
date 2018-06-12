@@ -9,8 +9,19 @@ networks:
       - "/ip4/127.0.0.1/tcp/38202/ipfs/QmTQxbwkuZYYDfuzTbxEAReTNCLozyy558vQngVvPMjLYk"
       - "/ip4/127.0.0.1/tcp/38203/ipfs/QmVf6EN6mkqWejWKW2qPu16XpdG3kJo1T3mhahPB5Se5n1"
     contractAddresses:
-      identityFactory: "0x0589ed482af8d6809f022fc11aa399fc8a883d52"
-      identityRegistry: "0xf9417cded133ba834d4cfdc6e452dbd2fc52674e"
+      identityFactory: ""
+      identityRegistry: ""
+      anchorRegistry: ""
+
+  centrifuge-russianhill-eth-integration:
+    id: 101
+    ethereumNetworkId: 8383
+    bootstrapPeers:
+      - "/ip4/127.0.0.1/tcp/38202/ipfs/QmTQxbwkuZYYDfuzTbxEAReTNCLozyy558vQngVvPMjLYk"
+      - "/ip4/127.0.0.1/tcp/38203/ipfs/QmVf6EN6mkqWejWKW2qPu16XpdG3kJo1T3mhahPB5Se5n1"
+    contractAddresses:
+      identityFactory: "0x73231b49306acb6ab074a07378f376fc9bdb2716"
+      identityRegistry: "0xd68c607bbc2080006893140916a6821fd713b292"
       anchorRegistry: "0xb571fe40de2d61e954df9ca4e961f69488f135a0"
 
   centrifuge-russianhill-eth-rinkeby:
@@ -21,16 +32,16 @@ networks:
 
     ethereumNetworkId: 4
     contractAddresses: 
-      identityFactory: "0x0589ed482af8d6809f022fc11aa399fc8a883d52"
-      identityRegistry: "0xf9417cded133ba834d4cfdc6e452dbd2fc52674e"
-      anchorRegistry: "0xb571fe40de2d61e954df9ca4e961f69488f135a0"
+      identityFactory: "0x5c0a30a8cff3fb40ada045b0f053bea7dab4e414"
+      identityRegistry: "0x35dee0e722cbc9a8904f59c25b7e2baaff673efd"
+      anchorRegistry: "0x8754cabcd0760b7b25c500da5ac3843166d0dc86"
 
 ethereum:
   defaultAccountName: "main"
   nodeURL: ws://localhost:9546
-  gasPrice: 40000
+  gasPrice: 1000000000
   gasLimit: 4712388
   contextWaitTimeout: "30s"
   maxRetries: 200
-  intervalRetry: "100ms"
+  intervalRetry: "2s"
 

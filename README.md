@@ -120,6 +120,20 @@ Will need to modify `scripts/test-dependencies/test-ethereum/run.sh` to add cors
 
 **Note that is a pretty simple version but can list blocks and transactions**
 
+Modify Default Config File
+--------------------------
+Everytime a change needs to be done in the default config `resources/default_config.yaml` it is needed to regenerate the go config data.
+
+It is needed to install go-bindata:
+```
+go get -u github.com/jteeuwen/go-bindata/...
+```
+
+Then run go generate:
+```
+go generate ./centrifuge/config/configuration.go
+```
+
 Ethereum Contract Bindings
 --------------------------
 
