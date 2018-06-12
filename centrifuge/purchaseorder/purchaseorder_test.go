@@ -15,7 +15,7 @@ import (
 func TestPurchaseOrderCoreDocumentConverter(t *testing.T) {
 	identifier := []byte("1")
 	purchaseorderData := purchaseorderpb.PurchaseOrderData{
-		GrossAmount: 100,
+		Amount: 100,
 	}
 	purchaseorderSalts := purchaseorderpb.PurchaseOrderDataSalts{}
 

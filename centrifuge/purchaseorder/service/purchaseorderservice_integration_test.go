@@ -3,18 +3,17 @@
 package purchaseorderservice
 
 import (
-	"testing"
-	"os"
 	"context"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/stretchr/testify/assert"
-	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
+	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder/repository"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
+	"github.com/stretchr/testify/assert"
+	"os"
+	"testing"
 )
-
 
 func TestMain(m *testing.M) {
 	cc.TestBootstrap()
@@ -23,7 +22,7 @@ func TestMain(m *testing.M) {
 	os.Exit(result)
 }
 
-func generateEmptyPurchaseOrderForProcessing() (doc *purchaseorder.PurchaseOrder){
+func generateEmptyPurchaseOrderForProcessing() (doc *purchaseorder.PurchaseOrder) {
 	identifier := testingutils.Rand32Bytes()
 	doc = purchaseorder.NewEmptyPurchaseOrder()
 	doc.Document.CoreDocument = &coredocumentpb.CoreDocument{
@@ -38,7 +37,7 @@ func generateEmptyPurchaseOrderForProcessing() (doc *purchaseorder.PurchaseOrder
 func TestPurchaseOrderDocumentService_HandleAnchorPurchaseOrderDocument_Integration(t *testing.T) {
 	s := PurchaseOrderDocumentService{}
 	doc := generateEmptyPurchaseOrderForProcessing()
-	doc.Document.Data.SenderCountry = "DE"
+	doc.Document.Data.Country = "DE"
 
 	anchoredDoc, err := s.HandleAnchorPurchaseOrderDocument(context.Background(), &purchaseorderpb.AnchorPurchaseOrderEnvelope{Document: doc.Document})
 
@@ -49,6 +48,6 @@ func TestPurchaseOrderDocumentService_HandleAnchorPurchaseOrderDocument_Integrat
 
 	//PurchaseOrder document got stored in the DB
 	loadedPurchaseOrder, _ := purchaseorderrepository.GetPurchaseOrderRepository().FindById(doc.Document.CoreDocument.DocumentIdentifier)
-	assert.Equal(t, "DE", loadedPurchaseOrder.Data.SenderCountry,
+	assert.Equal(t, "DE", loadedPurchaseOrder.Data.Country,
 		"Didn't save the purchaseorder data correctly")
 }

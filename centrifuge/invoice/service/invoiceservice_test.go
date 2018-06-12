@@ -73,7 +73,7 @@ func TestInvoiceDocumentService_HandleCreateInvoiceProof(t *testing.T) {
 
 	proofRequest := &invoicepb.CreateInvoiceProofEnvelope{
 		DocumentIdentifier: identifier,
-		Fields:             []string{"currency", "country", "amount"},
+		Fields:             []string{"currency", "sender_country", "gross_amount"},
 	}
 
 	invoiceProof, err := s.HandleCreateInvoiceProof(context.Background(), proofRequest)
