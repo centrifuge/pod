@@ -76,11 +76,10 @@ import:
 - package: github.com/whyrusleeping/go-smux-multistream
 - package: github.com/whyrusleeping/go-smux-yamux
 - package: github.com/CentrifugeInc/centrifuge-protobufs
-  repo: git@github.com:lucasvo/centrifuge-protobufs
-  version: create-proof
+  repo: git@github.com:CentrifugeInc/centrifuge-protobufs
+  version: c54c484c680a98e7da036e69f3c16865fbb4770e
 - package: github.com/centrifuge/precise-proofs
-  repo: git@github.com:lucasvo/precise-proofs
-  version: xxx-fields
+  version: b27f5da7254f3200cef96451d7b2d8d163358f99
 - package: github.com/blang/semver
   version: ^3.5.1
 - package: github.com/go-bindata/go-bindata
