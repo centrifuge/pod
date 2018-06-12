@@ -38,7 +38,7 @@ func generateEmptyPurchaseOrderForProcessing() (doc *purchaseorder.PurchaseOrder
 func TestPurchaseOrderDocumentService_HandleAnchorPurchaseOrderDocument_Integration(t *testing.T) {
 	s := PurchaseOrderDocumentService{}
 	doc := generateEmptyPurchaseOrderForProcessing()
-	doc.Document.Data.Country = "DE"
+	doc.Document.Data.SenderCountry = "DE"
 
 	anchoredDoc, err := s.HandleAnchorPurchaseOrderDocument(context.Background(), &purchaseorderpb.AnchorPurchaseOrderEnvelope{Document: doc.Document})
 
@@ -49,6 +49,6 @@ func TestPurchaseOrderDocumentService_HandleAnchorPurchaseOrderDocument_Integrat
 
 	//PurchaseOrder document got stored in the DB
 	loadedPurchaseOrder, _ := purchaseorderrepository.GetPurchaseOrderRepository().FindById(doc.Document.CoreDocument.DocumentIdentifier)
-	assert.Equal(t, "DE", loadedPurchaseOrder.Data.Country,
+	assert.Equal(t, "DE", loadedPurchaseOrder.Data.SenderCountry,
 		"Didn't save the purchaseorder data correctly")
 }

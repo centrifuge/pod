@@ -29,7 +29,7 @@ imports:
   version: 90d371a664d668ca3e61d3ddddf1916662959f11
 - name: github.com/CentrifugeInc/centrifuge-protobufs
   repo: git@github.com:CentrifugeInc/centrifuge-protobufs
-  version: c772adc01eb713325fa2e671e2467d9ccf6cc80a 
+  version: 6c049bcbb8fd5ba41e68045a007d5fbd963baa4d 
   subpackages:
   - documenttypes
   - gen/go/coredocument

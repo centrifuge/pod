@@ -77,7 +77,7 @@ import:
 - package: github.com/whyrusleeping/go-smux-yamux
 - package: github.com/CentrifugeInc/centrifuge-protobufs
   repo: git@github.com:CentrifugeInc/centrifuge-protobufs
-  version: c772adc01eb713325fa2e671e2467d9ccf6cc80a 
+  version: 6c049bcbb8fd5ba41e68045a007d5fbd963baa4d 
 - package: github.com/centrifuge/precise-proofs
   version: b27f5da7254f3200cef96451d7b2d8d163358f99
 - package: github.com/blang/semver

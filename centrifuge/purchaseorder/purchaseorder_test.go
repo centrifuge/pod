@@ -3,25 +3,25 @@
 package purchaseorder
 
 import (
-	"testing"
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/golang/protobuf/ptypes/any"
 	"github.com/CentrifugeInc/centrifuge-protobufs/documenttypes"
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
 	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 func TestPurchaseOrderCoreDocumentConverter(t *testing.T) {
 	identifier := []byte("1")
 	purchaseorderData := purchaseorderpb.PurchaseOrderData{
-		Amount: 100,
+		GrossAmount: 100,
 	}
 	purchaseorderSalts := purchaseorderpb.PurchaseOrderDataSalts{}
 
 	purchaseorderDoc := NewEmptyPurchaseOrder()
-	purchaseorderDoc.Document.CoreDocument =	&coredocumentpb.CoreDocument{
-		DocumentIdentifier:identifier,
+	purchaseorderDoc.Document.CoreDocument = &coredocumentpb.CoreDocument{
+		DocumentIdentifier: identifier,
 	}
 	purchaseorderDoc.Document.Data = &purchaseorderData
 	purchaseorderDoc.Document.Salts = &purchaseorderSalts
@@ -34,16 +34,16 @@ func TestPurchaseOrderCoreDocumentConverter(t *testing.T) {
 
 	purchaseorderAny := any.Any{
 		TypeUrl: documenttypes.PurchaseOrderDataTypeUrl,
-		Value: serializedPurchaseOrder,
+		Value:   serializedPurchaseOrder,
 	}
 	purchaseorderSaltsAny := any.Any{
 		TypeUrl: documenttypes.PurchaseOrderSaltsTypeUrl,
-		Value: serializedSalts,
+		Value:   serializedSalts,
 	}
 	coreDocument := coredocumentpb.CoreDocument{
 		DocumentIdentifier: identifier,
-		EmbeddedData: &purchaseorderAny,
-		EmbeddedDataSalts: &purchaseorderSaltsAny,
+		EmbeddedData:       &purchaseorderAny,
+		EmbeddedDataSalts:  &purchaseorderSaltsAny,
 	}
 
 	generatedCoreDocument := purchaseorderDoc.ConvertToCoreDocument()
@@ -54,7 +54,6 @@ func TestPurchaseOrderCoreDocumentConverter(t *testing.T) {
 	assert.Nil(t, err, "Error marshaling coreDocument")
 	assert.Equal(t, coreDocumentBytes, generatedCoreDocumentBytes,
 		"Generated & converted documents are not identical")
-
 
 	convertedPurchaseOrderDoc := NewPurchaseOrderFromCoreDocument(&generatedCoreDocument)
 	convertedGeneratedPurchaseOrderDoc := NewPurchaseOrderFromCoreDocument(&generatedCoreDocument)
@@ -73,5 +72,3 @@ func TestPurchaseOrderCoreDocumentConverter(t *testing.T) {
 		"purchaseorderBytes and convertedPurchaseOrderBytes do not match")
 
 }
-
-
