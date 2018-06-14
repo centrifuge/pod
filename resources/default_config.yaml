@@ -1,6 +1,6 @@
 identityId: 1
 
-centrifugeNetwork: centrifuge-russianhill-eth-rinkeby
+centrifugeNetwork: centrifugeRussianhillEthRinkeby
 networks: 
   testing: 
     id: 333
@@ -13,7 +13,7 @@ networks:
       identityRegistry: ""
       anchorRegistry: ""
 
-  centrifuge-russianhill-eth-integration:
+  centrifugeRussianhillEthIntegration:
     id: 101
     ethereumNetworkId: 8383
     bootstrapPeers:
@@ -24,7 +24,7 @@ networks:
       identityRegistry: "0xd68c607bbc2080006893140916a6821fd713b292"
       anchorRegistry: "0xb571fe40de2d61e954df9ca4e961f69488f135a0"
 
-  centrifuge-russianhill-eth-rinkeby:
+  centrifugeRussianhillEthRinkeby:
     id: 51
     bootstrapPeers:
       - "/ip4/127.0.0.1/tcp/38202/ipfs/QmTQxbwkuZYYDfuzTbxEAReTNCLozyy558vQngVvPMjLYk"
@@ -44,4 +44,5 @@ ethereum:
   contextWaitTimeout: "30s"
   maxRetries: 200
   intervalRetry: "2s"
+  txPoolAccessEnabled: true
 

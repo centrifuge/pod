@@ -98,6 +98,11 @@ func (c *Configuration) GetEthereumAccountMap(accountName string) (accounts map[
 	return accounts, nil
 }
 
+// Important flag for concurrency handling. Disable if Ethereum client doesn't support txpool API (INFURA)
+func (c *Configuration) GetTxPoolAccessEnabled() bool {
+	return c.V.GetBool("ethereum.txPoolAccessEnabled")
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Network Configuration
 ////////////////////////////////////////////////////////////////////////////////

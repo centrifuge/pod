@@ -20,6 +20,7 @@ import (
 
 func TestMain(m *testing.M) {
 	cc.TestBootstrap()
+	config.Config.V.Set("ethereum.txPoolAccessEnabled", false)
 	result := m.Run()
 	cc.TestTearDown()
 	os.Exit(result)
