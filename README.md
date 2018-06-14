@@ -92,6 +92,60 @@ Override those when needed
 
 Let it catch up for a while until is fully synced with the remote peer
 
+ Run Integration Tests against Local/Integration/Rinkeby Environments
+-------------------------------------------------------------------------
+#### Configure local mining + run integration/functional tests ####
+  - Remove running container if any:
+    - docker rm -f geth-node
+  - Clear up ~/Library/Ethereum/8383 folder (keep in mind this will clear up all previous data you had before)
+    - cd ~/Library/Ethereum/8383
+    - rm -Rf files/ geth/ geth.ipc keystore/ .ethash/
+  - In go-centrifuge project run:
+    - ./scripts/docker/run.sh init
+    - ./scripts/docker/run.sh mine
+    - Wait until DAG is generated:
+      - docker logs geth-node 2>&1 | grep 'mined potential block'
+  - Run contract migration to generate local contract address artifact:
+    - In centrifuge-ethereum-contracts project:
+      - ./scripts/migrate.sh local
+      - Verify that ./deployments/local.json has been generated (note that local.json is excluded in .gitignore)
+  - Run tests:
+    - To run only integration tests:
+      - ./scripts/tests/run_integration_tests.sh
+      
+#### Configure node to point to integration + run integration/functional tests ####
+  - Remove running container if any:
+    - docker rm -f geth-node
+  - Clear up ~/Library/Ethereum/8383 folder (keep in mind this will clear up all previous data you had before) (no need if node has synced before with peer)
+    - cd ~/Library/Ethereum/8383
+    - rm -Rf files/ geth/ geth.ipc keystore/ .ethash/
+  - In go-centrifuge project run:
+    - ./scripts/docker/run.sh init (no need if node has synced before with peer)
+    - /.scripts/docker/run.sh local
+    - Wait until node is in sync with remote peer:
+      - geth attach ws://localhost:9546 --exec "net.peerCount" > 0
+      - geth attach ws://localhost:9546 --exec "eth.syncing" -> false
+  - Run tests:
+    - To run only integration tests (3-4 mins):
+      - CENT_CENTRIFUGENETWORK='centrifugeRussianhillEthIntegration' TEST_TARGET_ENVIRONMENT='integration' ./scripts/tests/run_integration_tests.sh
+
+#### Configure node to point to rinkeby + run integration/functional tests ####
+  - Remove running container if any:
+    - docker rm -f geth-node
+  - In go-centrifuge project run:
+    - ./scripts/docker/run.sh rinkeby
+    - Wait until node is in sync with remote peer (1-2 hours):
+      - geth attach ws://localhost:9546 --exec "net.peerCount" > 0 (rinkeby takes additional time to sync as it needs a peer to pull from, and has shortage of full node peers)
+      - geth attach ws://localhost:9546 --exec "eth.syncing" -> false
+  - Run tests:
+    - To run only integration tests:
+      - CENT_CENTRIFUGENETWORK='centrifugeRussianhillEthRinkeby' TEST_TARGET_ENVIRONMENT='rinkeby' CENT_ETHEREUM_ACCOUNTS_MAIN_KEY='$JSON_KEY' CENT_ETHEREUM_ACCOUNTS_MAIN_PASSWORD="$PASS" CENT_ETHEREUM_ACCOUNTS_MAIN_ADDRESS="$ADDR" ./scripts/tests/run_integration_tests.sh
+
+#### Configure node to point to infura-rinkeby + run integration/functional tests ####
+  - Run tests:
+    - To run only integration tests:
+      - CENT_ETHEREUM_TXPOOLACCESSENABLED=false CENT_ETHEREUM_NODEURL='wss://rinkeby.infura.io/ws/MtCWERMbJtnqPKI8co84' CENT_CENTRIFUGENETWORK='centrifugeRussianhillEthRinkeby' TEST_TARGET_ENVIRONMENT='rinkeby' CENT_ETHEREUM_ACCOUNTS_MAIN_KEY='$JSON_KEY' CENT_ETHEREUM_ACCOUNTS_MAIN_PASSWORD="$PASS" CENT_ETHEREUM_ACCOUNTS_MAIN_ADDRESS="$ADDR" ./scripts/tests/run_integration_tests.sh
+
 Why you should test with a "real" Ethereum
 ------------------------------------------
 Why you should not run `testrpc` for testing with go-ethereum clients:
