@@ -16,11 +16,13 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"math/big"
+	"time"
 )
 
 func TestMain(m *testing.M) {
-	cc.TestBootstrap()
+	cc.TestUnitBootstrap()
 	config.Config.V.Set("ethereum.txPoolAccessEnabled", false)
+	config.Config.V.Set("ethereum.intervalRetry", time.Millisecond*100)
 	result := m.Run()
 	cc.TestTearDown()
 	os.Exit(result)

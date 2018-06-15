@@ -12,10 +12,6 @@ import (
 	gologging "github.com/whyrusleeping/go-logging"
 	"os"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
-	"github.com/ethereum/go-ethereum/ethclient"
-	"sync"
-	"net/url"
-	"github.com/ethereum/go-ethereum/rpc"
 )
 
 const testStoragePath = "/tmp/centrifuge_data.leveldb_TESTING"
@@ -33,21 +29,8 @@ func Bootstrap() {
 }
 
 func createEthereumConnection() {
-	log.Info("Opening connection to Ethereum:", config.Config.GetEthereumNodeURL())
-	u, err := url.Parse(config.Config.GetEthereumNodeURL())
-	if err != nil {
-		log.Fatalf("Failed to connect to parse ethereum.gethSocket URL: %v", err)
-	}
-	c, err := rpc.Dial(u.String())
-	if err != nil {
-		log.Fatalf("Failed to connect to the Ethereum client [%s]: %v", u.String(), err)
-	}
-	client := ethclient.NewClient(c)
-	if err != nil {
-		log.Fatalf("Failed to connect to the Ethereum client [%s]: %v", u.String(), err)
-	} else {
-		ethereum.SetConnection(ethereum.GethClient{client,c, u, &sync.Mutex{}})
-	}
+	client := ethereum.NewClientConnection()
+	ethereum.SetConnection(client)
 }
 
 func getRandomTestStoragePath() string {
@@ -55,6 +38,11 @@ func getRandomTestStoragePath() string {
 }
 
 func TestBootstrap() {
+	TestUnitBootstrap()
+	createEthereumConnection()
+}
+
+func TestUnitBootstrap() {
 	logging.SetAllLoggers(gologging.DEBUG)
 	backend := gologging.NewLogBackend(os.Stdout, "", 0)
 	gologging.SetBackend(backend)
@@ -72,7 +60,6 @@ func TestBootstrap() {
 	coredocumentrepository.NewLevelDBCoreDocumentRepository(&coredocumentrepository.LevelDBCoreDocumentRepository{levelDB})
 	invoicerepository.NewLevelDBInvoiceRepository(&invoicerepository.LevelDBInvoiceRepository{levelDB})
 	purchaseorderrepository.NewLevelDBPurchaseOrderRepository(&purchaseorderrepository.LevelDBPurchaseOrderRepository{levelDB})
-	createEthereumConnection()
 }
 
 func TestTearDown() {

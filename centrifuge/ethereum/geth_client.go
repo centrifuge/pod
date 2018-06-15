@@ -70,6 +70,23 @@ func (gethClient GethClient) GetNonceMutex() *sync.Mutex {
 	return gethClient.NonceMutex
 }
 
+func NewClientConnection() (GethClient) {
+	log.Info("Opening connection to Ethereum:", config.Config.GetEthereumNodeURL())
+	u, err := url.Parse(config.Config.GetEthereumNodeURL())
+	if err != nil {
+		log.Fatalf("Failed to connect to parse ethereum.gethSocket URL: %v", err)
+	}
+	c, err := rpc.Dial(u.String())
+	if err != nil {
+		log.Fatalf("Failed to connect to the Ethereum client [%s]: %v", u.String(), err)
+	}
+	client := ethclient.NewClient(c)
+	if err != nil {
+		log.Fatalf("Failed to connect to the Ethereum client [%s]: %v", u.String(), err)
+	}
+	return GethClient{client,c, u, &sync.Mutex{}}
+}
+
 // Note that this is a singleton and is the same connection for the whole application.
 func SetConnection(conn EthereumClient) {
 	gcInit.Do(func() {
@@ -86,14 +103,14 @@ func GetConnection() EthereumClient {
 // GetGethTxOpts retrieves the geth transaction options for the given account name. The account name influences which configuration
 // is used.
 func GetGethTxOpts(accountName string) (*bind.TransactOpts, error) {
-	account, err := config.Config.GetEthereumAccountMap(accountName)
+	account, err := config.Config.GetEthereumAccount(accountName)
 	if err != nil {
 		err = errors.Errorf("could not find configured ethereum key for account [%v]. please check your configuration.\n", accountName)
 		log.Error(err.Error())
 		return nil, err
 	}
 
-	authedTransactionOpts, err := bind.NewTransactor(strings.NewReader(account["key"]), account["password"])
+	authedTransactionOpts, err := bind.NewTransactor(strings.NewReader(account.Key), account.Password)
 	if err != nil {
 		err = errors.Errorf("Failed to load key with error: %v", err)
 		log.Error(err.Error())
@@ -127,7 +144,7 @@ func SubmitTransactionWithRetries(contractMethod interface{}, opts *bind.Transac
 		}
 		current += 1
 
-		err = IncrementNonceCheck(opts)
+		err = IncrementNonce(opts)
 		if err != nil {
 			return
 		}
@@ -159,7 +176,7 @@ func SubmitTransactionWithRetries(contractMethod interface{}, opts *bind.Transac
 	return
 }
 
-func IncrementNonceCheck(opts *bind.TransactOpts) (err error) {
+func IncrementNonce(opts *bind.TransactOpts) (err error) {
 	if !config.Config.GetTxPoolAccessEnabled() {
 		log.Warningf("Ethereum Client doesn't support txpool API, may cause concurrency issues.")
 		return

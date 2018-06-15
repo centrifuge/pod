@@ -18,7 +18,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	cc.TestBootstrap()
+	cc.TestUnitBootstrap()
 	result := m.Run()
 	cc.TestTearDown()
 	os.Exit(result)
