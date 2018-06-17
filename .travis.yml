@@ -6,7 +6,7 @@ services:
   - docker
 
 env:
-  - RUN_CONTEXT=travis GETH_DOCKER_VERSION=v1.8.1
+  - RUN_CONTEXT=travis
 
 cache:
     directories:

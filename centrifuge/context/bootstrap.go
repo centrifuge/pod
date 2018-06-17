@@ -11,6 +11,7 @@ import (
 	logging "github.com/ipfs/go-log"
 	gologging "github.com/whyrusleeping/go-logging"
 	"os"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
 )
 
 const testStoragePath = "/tmp/centrifuge_data.leveldb_TESTING"
@@ -21,9 +22,15 @@ func Bootstrap() {
 	config.Config.InitializeViper()
 
 	levelDB := storage.NewLeveldbStorage(config.Config.GetStoragePath())
-	coredocumentrepository.NewLevelDBCoreDocumentRepository(&coredocumentrepository.LevelDBCoreDocumentRepository{levelDB})	
+	coredocumentrepository.NewLevelDBCoreDocumentRepository(&coredocumentrepository.LevelDBCoreDocumentRepository{levelDB})
 	invoicerepository.NewLevelDBInvoiceRepository(&invoicerepository.LevelDBInvoiceRepository{levelDB})
 	purchaseorderrepository.NewLevelDBPurchaseOrderRepository(&purchaseorderrepository.LevelDBPurchaseOrderRepository{levelDB})
+	createEthereumConnection()
+}
+
+func createEthereumConnection() {
+	client := ethereum.NewClientConnection()
+	ethereum.SetConnection(client)
 }
 
 func getRandomTestStoragePath() string {
@@ -31,6 +38,11 @@ func getRandomTestStoragePath() string {
 }
 
 func TestBootstrap() {
+	TestUnitBootstrap()
+	createEthereumConnection()
+}
+
+func TestUnitBootstrap() {
 	logging.SetAllLoggers(gologging.DEBUG)
 	backend := gologging.NewLogBackend(os.Stdout, "", 0)
 	gologging.SetBackend(backend)
@@ -41,7 +53,6 @@ func TestBootstrap() {
 	rs := getRandomTestStoragePath()
 	config.Config.V.SetDefault("storage.Path", rs)
 	log.Info("Set storage.Path to:", config.Config.GetStoragePath())
-	config.Config.V.Set("centrifugeNetwork", "testing")
 	config.Config.V.WriteConfigAs("/tmp/cent_config.yaml")
 
 	log.Infof("Creating levelDb at: %s", config.Config.GetStoragePath())

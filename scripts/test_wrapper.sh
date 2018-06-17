@@ -4,6 +4,12 @@ set -a
 # Setup
 local_dir="$(dirname "$0")"
 PARENT_DIR=`pwd`
+
+if [[ "X${1}" == "Xmigrate" ]] || [[ "X${RUN_CONTEXT}" == "Xtravis" ]];
+then
+  FORCE_MIGRATE='true'
+fi
+
 GETH_DOCKER_CONTAINER_NAME="geth-node"
 GETH_DOCKER_CONTAINER_WAS_RUNNING=`docker ps -a --filter "name=${DOCKER_CONTAINER_NAME}" --filter "status=running" --quiet`
 echo "Running: [${GETH_DOCKER_CONTAINER_WAS_RUNNING}]"
@@ -41,9 +47,10 @@ cd ${CENT_ETHEREUM_CONTRACTS_DIR}
 rm -Rf ./build
 npm install
 
-# Unlock User to Run Migration and Run it
-docker run -it --net=host --entrypoint "/geth" centrifugeio/cent-geth:latest attach "${CENT_ETHEREUM_NODEURL}" --exec "personal.unlockAccount('0x${CENT_ETHEREUM_ACCOUNTS_MIGRATE_ADDRESS}', '${CENT_ETHEREUM_ACCOUNTS_MIGRATE_PASSWORD}')"
-truffle migrate --network localgeth -f 2
+if [[ "X${FORCE_MIGRATE}" == "Xtrue" ]];
+then
+  ./scripts/migrate.sh local
+fi
 status=$?
 
 cd ${PARENT_DIR}
