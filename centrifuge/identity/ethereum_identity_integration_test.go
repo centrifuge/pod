@@ -12,9 +12,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
+	"time"
 )
 
 func TestMain(m *testing.M) {
+	// Adding delay to startup (concurrency hack)
+	time.Sleep(time.Second + 2)
+
 	cc.TestBootstrap()
 	config.Config.V.Set("keys.signing.publicKey", "../../example/resources/signingKey.pub")
 	config.Config.V.Set("keys.signing.privateKey", "../../example/resources/signingKey.key")

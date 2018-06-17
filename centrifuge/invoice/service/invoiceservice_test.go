@@ -18,7 +18,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	cc.TestBootstrap()
+	cc.TestUnitBootstrap()
 	result := m.Run()
 	cc.TestTearDown()
 	os.Exit(result)
@@ -73,7 +73,7 @@ func TestInvoiceDocumentService_HandleCreateInvoiceProof(t *testing.T) {
 
 	proofRequest := &invoicepb.CreateInvoiceProofEnvelope{
 		DocumentIdentifier: identifier,
-		Fields:             []string{"currency", "country", "amount"},
+		Fields:             []string{"currency", "sender_country", "gross_amount"},
 	}
 
 	invoiceProof, err := s.HandleCreateInvoiceProof(context.Background(), proofRequest)

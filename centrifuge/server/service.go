@@ -1,11 +1,13 @@
 package server
 
 import (
-	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	"google.golang.org/grpc"
-	"golang.org/x/net/context"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/controller"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder/controller"
+	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
 )
 
 // RegisterServices registers all endpoints to the grpc server
@@ -15,5 +17,9 @@ func RegisterServices(grpcServer *grpc.Server, ctx context.Context, gwmux *runti
 	if err != nil {
 		panic(err)
 	}
-
+	purchaseorderpb.RegisterPurchaseOrderDocumentServiceServer(grpcServer, &purchaseordercontroller.PurchaseOrderDocumentController{})
+	err = purchaseorderpb.RegisterPurchaseOrderDocumentServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
+	if err != nil {
+		panic(err)
+	}
 }

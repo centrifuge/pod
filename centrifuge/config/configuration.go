@@ -15,8 +15,8 @@ import (
 	"github.com/spf13/viper"
 	"math/big"
 	"os"
-	"strings"
 	"time"
+	"strings"
 )
 
 var log = logging.Logger("config")
@@ -25,6 +25,12 @@ var Config *Configuration
 type Configuration struct {
 	configFile string
 	V          *viper.Viper
+}
+
+type AccountConfig struct {
+	Address string
+	Key string
+	Password string
 }
 
 // Storage backend
@@ -82,13 +88,26 @@ func (c *Configuration) GetEthereumDefaultAccountName() string {
 	return c.V.GetString("ethereum.defaultAccountName")
 }
 
-func (c *Configuration) GetEthereumAccountMap(accountName string) (accounts map[string]string, err error) {
+func (c *Configuration) GetEthereumAccount(accountName string) (account *AccountConfig, err error) {
 	k := fmt.Sprintf("ethereum.accounts.%s", accountName)
 
 	if !c.V.IsSet(k) {
 		return nil, fmt.Errorf("No account found with account name %s", accountName)
 	}
-	return c.V.GetStringMapString(k), nil
+
+	// Workaround for bug https://github.com/spf13/viper/issues/309 && https://github.com/spf13/viper/issues/513
+	account = &AccountConfig{
+		Address: c.V.GetString(fmt.Sprintf("%s.address", k)),
+		Key: c.V.GetString(fmt.Sprintf("%s.key", k)),
+		Password: c.V.GetString(fmt.Sprintf("%s.password", k)),
+	}
+
+	return account, nil
+}
+
+// Important flag for concurrency handling. Disable if Ethereum client doesn't support txpool API (INFURA)
+func (c *Configuration) GetTxPoolAccessEnabled() bool {
+	return c.V.GetBool("ethereum.txPoolAccessEnabled")
 }
 
 ////////////////////////////////////////////////////////////////////////////////

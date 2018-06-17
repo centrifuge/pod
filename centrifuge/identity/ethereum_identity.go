@@ -281,7 +281,7 @@ func sendIdentityCreationTransaction(identityFactory IdentityFactory, opts *bind
 		log.Infof("Failed to send identity for creation [CentrifugeID: %x] : %v", bCentId, err)
 		return err
 	} else {
-		log.Infof("Sent off identity creation [CentrifugeID: %x]. Ethereum transaction hash [%x]", bCentId, tx.Hash())
+		log.Infof("Sent off identity creation [CentrifugeID: %x]. Ethereum transaction hash [%x] and Nonce [%v] and Check [%v]", bCentId, tx.Hash(), tx.Nonce(), tx.CheckNonce())
 	}
 
 	log.Infof("Transfer pending: 0x%x\n", tx.Hash())

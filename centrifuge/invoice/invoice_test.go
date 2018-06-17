@@ -3,25 +3,25 @@
 package invoice
 
 import (
-	"testing"
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/golang/protobuf/ptypes/any"
 	"github.com/CentrifugeInc/centrifuge-protobufs/documenttypes"
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
 	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 func TestInvoiceCoreDocumentConverter(t *testing.T) {
 	identifier := []byte("1")
 	invoiceData := invoicepb.InvoiceData{
-		Amount: 100,
+		GrossAmount: 100,
 	}
 	invoiceSalts := invoicepb.InvoiceDataSalts{}
 
 	invoiceDoc := NewEmptyInvoice()
-	invoiceDoc.Document.CoreDocument =	&coredocumentpb.CoreDocument{
-		DocumentIdentifier:identifier,
+	invoiceDoc.Document.CoreDocument = &coredocumentpb.CoreDocument{
+		DocumentIdentifier: identifier,
 	}
 	invoiceDoc.Document.Data = &invoiceData
 	invoiceDoc.Document.Salts = &invoiceSalts
@@ -34,16 +34,16 @@ func TestInvoiceCoreDocumentConverter(t *testing.T) {
 
 	invoiceAny := any.Any{
 		TypeUrl: documenttypes.InvoiceDataTypeUrl,
-		Value: serializedInvoice,
+		Value:   serializedInvoice,
 	}
 	invoiceSaltsAny := any.Any{
 		TypeUrl: documenttypes.InvoiceSaltsTypeUrl,
-		Value: serializedSalts,
+		Value:   serializedSalts,
 	}
 	coreDocument := coredocumentpb.CoreDocument{
 		DocumentIdentifier: identifier,
-		EmbeddedData: &invoiceAny,
-		EmbeddedDataSalts: &invoiceSaltsAny,
+		EmbeddedData:       &invoiceAny,
+		EmbeddedDataSalts:  &invoiceSaltsAny,
 	}
 
 	generatedCoreDocument := invoiceDoc.ConvertToCoreDocument()
@@ -54,7 +54,6 @@ func TestInvoiceCoreDocumentConverter(t *testing.T) {
 	assert.Nil(t, err, "Error marshaling coreDocument")
 	assert.Equal(t, coreDocumentBytes, generatedCoreDocumentBytes,
 		"Generated & converted documents are not identical")
-
 
 	convertedInvoiceDoc := NewInvoiceFromCoreDocument(&generatedCoreDocument)
 	convertedGeneratedInvoiceDoc := NewInvoiceFromCoreDocument(&generatedCoreDocument)
@@ -73,5 +72,3 @@ func TestInvoiceCoreDocumentConverter(t *testing.T) {
 		"invoiceBytes and convertedInvoiceBytes do not match")
 
 }
-
-

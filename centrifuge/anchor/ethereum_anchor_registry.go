@@ -108,7 +108,7 @@ func sendRegistrationTransaction(ethRegistryContract RegisterAnchor, opts *bind.
 		log.Errorf("Failed to send anchor for registration [id: %x, hash: %x, SchemaVersion:%v] on registry: %v", bAnchorId, bMerkleRoot, schemaVersion, err)
 		return err
 	} else {
-		log.Infof("Sent off the anchor [id: %x, hash: %x, SchemaVersion:%v] to registry. Ethereum transaction hash [%x]", bAnchorId, bMerkleRoot, schemaVersion, tx.Hash())
+		log.Infof("Sent off the anchor [id: %x, hash: %x, SchemaVersion:%v] to registry. Ethereum transaction hash [%x] and Nonce [%v] and Check [%v]", bAnchorId, bMerkleRoot, schemaVersion, tx.Hash(), tx.Nonce(), tx.CheckNonce())
 	}
 
 	log.Infof("Transfer pending: 0x%x\n", tx.Hash())

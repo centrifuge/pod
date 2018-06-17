@@ -33,6 +33,6 @@ ethereum:
   gasLimit: 4712388
   contextWaitTimeout: "30s"
   maxRetries: 200
-  intervalRetry: "100ms"
+  intervalRetry: "2s"
 
 
