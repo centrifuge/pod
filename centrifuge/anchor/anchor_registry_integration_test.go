@@ -19,7 +19,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestRegisterAsAnchor_Integration(t *testing.T) {
-	confirmations := make(chan *anchor.Anchor, 1)
+	confirmations := make(chan *anchor.WatchAnchor, 1)
 	id := tools.RandomString32()
 	rootHash := tools.RandomString32()
 	err := anchor.RegisterAsAnchor(id, rootHash, confirmations)
@@ -27,9 +27,10 @@ func TestRegisterAsAnchor_Integration(t *testing.T) {
 		t.Fatalf("Error registering Anchor %v", err)
 	}
 
-	registeredAnchor := <-confirmations
-	assert.Equal(t, registeredAnchor.AnchorID, id, "Resulting anchor should have the same ID as the input")
-	assert.Equal(t, registeredAnchor.RootHash, rootHash, "Resulting anchor should have the same root hash as the input")
+	watchRegisteredAnchor := <-confirmations
+	assert.Nil(t, watchRegisteredAnchor.Error, "No error thrown by context")
+	assert.Equal(t, watchRegisteredAnchor.Anchor.AnchorID, id, "Resulting anchor should have the same ID as the input")
+	assert.Equal(t, watchRegisteredAnchor.Anchor.RootHash, rootHash, "Resulting anchor should have the same root hash as the input")
 }
 
 func TestRegisterAsAnchor_Integration_Concurrent(t *testing.T) {
@@ -37,7 +38,7 @@ func TestRegisterAsAnchor_Integration_Concurrent(t *testing.T) {
 	var submittedRhs [5]string
 
 	howMany := cap(submittedIds)
-	confirmations := make(chan *anchor.Anchor, howMany)
+	confirmations := make(chan *anchor.WatchAnchor, howMany)
 
 	for ix := 0; ix < howMany; ix++ {
 		id := tools.RandomString32()
@@ -51,8 +52,9 @@ func TestRegisterAsAnchor_Integration_Concurrent(t *testing.T) {
 	}
 
 	for ix := 0; ix < howMany; ix++ {
-		singleAnchor := <-confirmations
-		assert.Contains(t, submittedIds, singleAnchor.AnchorID, "Should have the ID that was passed into create function [%v]", singleAnchor.AnchorID)
-		assert.Contains(t, submittedRhs, singleAnchor.RootHash, "Should have the RootHash that was passed into create function [%v]", singleAnchor.RootHash)
+		watchSingleAnchor := <-confirmations
+		assert.Nil(t, watchSingleAnchor.Error, "No error thrown by context")
+		assert.Contains(t, submittedIds, watchSingleAnchor.Anchor.AnchorID, "Should have the ID that was passed into create function [%v]", watchSingleAnchor.Anchor.AnchorID)
+		assert.Contains(t, submittedRhs, watchSingleAnchor.Anchor.RootHash, "Should have the RootHash that was passed into create function [%v]", watchSingleAnchor.Anchor.RootHash)
 	}
 }

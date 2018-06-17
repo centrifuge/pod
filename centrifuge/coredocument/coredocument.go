@@ -53,12 +53,13 @@ func (cd *CoreDocument) Anchor() (err error) {
 	id := tools.RandomString32()
 	rootHash := tools.RandomString32()
 	//
-	confirmations := make(chan *anchor.Anchor, 1)
+	confirmations := make(chan *anchor.WatchAnchor, 1)
 	err = anchor.RegisterAsAnchor(id, rootHash, confirmations)
 	if err != nil {
 		return err
 	}
-	_ = <-confirmations
+	anchorWatch := <-confirmations
+	err = anchorWatch.Error
 	return
 }
 

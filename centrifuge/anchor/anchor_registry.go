@@ -7,11 +7,11 @@ import (
 var log = logging.Logger("anchor")
 
 type AnchorRegistry interface {
-	RegisterAsAnchor(anchorID string, rootHash string, confirmations chan<- *Anchor) error
+	RegisterAsAnchor(anchorID string, rootHash string, confirmations chan<- *WatchAnchor) error
 }
 
 // RegisterAsAnchor registers the given AnchorID and RootHash as an anchor on the configured anchor registry
-func RegisterAsAnchor(anchorID string, rootHash string, confirmations chan<- *Anchor) error {
+func RegisterAsAnchor(anchorID string, rootHash string, confirmations chan<- *WatchAnchor) error {
 	registry, _ := getConfiguredRegistry()
 
 	err := registry.RegisterAsAnchor(anchorID, rootHash, confirmations)

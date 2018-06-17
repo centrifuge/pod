@@ -107,7 +107,7 @@ func TestSetUpRegistrationEventListener_ErrorPassThrough(t *testing.T) {
 
 	failingWatchAnchorRegistered := &MockWatchAnchorRegistered{shouldFail: true}
 	anchor := Anchor{tools.RandomString32(), tools.RandomString32(), 1}
-	confirmations := make(chan *Anchor)
+	confirmations := make(chan *WatchAnchor)
 
 	defer func() {
 		if r := recover(); r == nil {
@@ -125,13 +125,13 @@ func TestSetUpRegistrationEventListener_ChannelSubscriptionCreated(t *testing.T)
 	config.Config.V.Set("ethereum.contextWaitTimeout", "30s")
 	mockWatchAnchorRegistered := &MockWatchAnchorRegistered{}
 	anchor := Anchor{tools.RandomString32(), tools.RandomString32(), 1}
-	confirmations := make(chan *Anchor, 1)
+	confirmations := make(chan *WatchAnchor, 1)
 	err := setUpRegistrationEventListener(mockWatchAnchorRegistered, common.Address{}, &anchor, confirmations)
 	assert.Nil(t, err, "Should not fail")
 	//sending one "event" into the registered sink should result in the confirmations channel to receive the anchor
 	//that has been created and passed through initially
 	b32Id, _ := tools.StringToByte32(anchor.AnchorID)
 	mockWatchAnchorRegistered.sink <- &EthereumAnchorRegistryContractAnchorRegistered{From: common.StringToAddress("0x0000000000000000001"), Identifier: b32Id}
-	receivedAnchor := <-confirmations
-	assert.Equal(t, anchor.AnchorID, receivedAnchor.AnchorID, "Received anchor should have the same data as the originally submitted anchor")
+	watchReceivedAnchor := <-confirmations
+	assert.Equal(t, anchor.AnchorID, watchReceivedAnchor.Anchor.AnchorID, "Received anchor should have the same data as the originally submitted anchor")
 }

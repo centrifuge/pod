@@ -35,7 +35,7 @@ type RegisterAnchor interface {
 // into the confirmations channel when done.
 // Could error out with Fatal error in case the confirmation is never received within the timeframe of configured value
 // of `ethereum.contextWaitTimeout`.
-func (ethRegistry *EthereumAnchorRegistry) RegisterAsAnchor(anchorID string, rootHash string, confirmations chan<- *Anchor) error {
+func (ethRegistry *EthereumAnchorRegistry) RegisterAsAnchor(anchorID string, rootHash string, confirmations chan<- *WatchAnchor) error {
 	var err error
 
 	ethRegistryContract, _ := getAnchorContract()
@@ -117,7 +117,7 @@ func sendRegistrationTransaction(ethRegistryContract RegisterAnchor, opts *bind.
 
 // setUpRegistrationEventListener sets up the listened for the "AnchorRegistered" event to notify the upstream code about successful mining/creation
 // of the anchor.
-func setUpRegistrationEventListener(ethRegistryContract WatchAnchorRegistered, from common.Address, anchorToBeRegistered *Anchor, confirmations chan<- *Anchor) (err error) {
+func setUpRegistrationEventListener(ethRegistryContract WatchAnchorRegistered, from common.Address, anchorToBeRegistered *Anchor, confirmations chan<- *WatchAnchor) (err error) {
 
 	//listen to this particular anchor being mined/event is triggered
 	watchOpts := &bind.WatchOpts{}
@@ -143,15 +143,16 @@ func setUpRegistrationEventListener(ethRegistryContract WatchAnchorRegistered, f
 }
 
 // waitAndRouteAnchorRegistrationEvent notififies the confirmations channel whenever the anchor registration is being noted as Ethereum event
-func waitAndRouteAnchorRegistrationEvent(conf <-chan *EthereumAnchorRegistryContractAnchorRegistered, ctx context.Context, confirmations chan<- *Anchor, pushThisAnchor *Anchor) {
+func waitAndRouteAnchorRegistrationEvent(conf <-chan *EthereumAnchorRegistryContractAnchorRegistered, ctx context.Context, confirmations chan<- *WatchAnchor, pushThisAnchor *Anchor) {
 	for {
 		select {
 		case <-ctx.Done():
 			log.Errorf("Context [%v] closed before receiving AnchorRegistered event for anchor ID: %x, RootHash: %x\n", ctx, pushThisAnchor.AnchorID, pushThisAnchor.RootHash)
+			confirmations <- &WatchAnchor{pushThisAnchor, ctx.Err()}
 			return
 		case res := <-conf:
 			log.Infof("Received AnchorRegistered event from: %x, identifier: %x\n", res.From, res.Identifier)
-			confirmations <- pushThisAnchor
+			confirmations <- &WatchAnchor{pushThisAnchor, nil}
 			return
 		}
 	}
