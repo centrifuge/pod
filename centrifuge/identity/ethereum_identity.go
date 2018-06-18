@@ -48,6 +48,11 @@ type EthereumIdentity struct {
 	Keys         map[int][]EthereumIdentityKey
 }
 
+type WatchEthereumIdentity struct {
+	EthereumIdentity *EthereumIdentity
+	Error error
+}
+
 func NewEthereumIdentity() (id *EthereumIdentity) {
 	id = new(EthereumIdentity)
 	id.Keys = make(map[int][]EthereumIdentityKey)
@@ -107,7 +112,7 @@ func (id *EthereumIdentity) CheckIdentityExists() (exists bool, err error) {
 	return
 }
 
-func (id *EthereumIdentity) AddKeyToIdentity(keyType int, confirmations chan<- *EthereumIdentity) (err error) {
+func (id *EthereumIdentity) AddKeyToIdentity(keyType int, confirmations chan<- *WatchEthereumIdentity) (err error) {
 	ethIdentityContract, err := findIdentity(id.CentrifugeId)
 	if err != nil {
 		return
@@ -164,7 +169,7 @@ func getIdentityContract(identityContractAddress string) (identityContract *Ethe
 	return
 }
 
-func CreateEthereumIdentity(identity *EthereumIdentity, confirmations chan<- *EthereumIdentity) (err error) {
+func CreateEthereumIdentity(identity *EthereumIdentity, confirmations chan<- *WatchEthereumIdentity) (err error) {
 	err = tools.CheckLen32(identity.CentrifugeId, "centrifugeId needs to be length of 32. Got value [%v]")
 	if err != nil {
 		return
@@ -289,7 +294,7 @@ func sendIdentityCreationTransaction(identityFactory IdentityFactory, opts *bind
 	return
 }
 
-func setUpKeyRegisteredEventListener(ethCreatedContract WatchKeyRegistered, identity *EthereumIdentity, keyType int, confirmations chan<- *EthereumIdentity) (err error) {
+func setUpKeyRegisteredEventListener(ethCreatedContract WatchKeyRegistered, identity *EthereumIdentity, keyType int, confirmations chan<- *WatchEthereumIdentity) (err error) {
 	//listen to this particular key being mined/event is triggered
 	watchOpts := &bind.WatchOpts{}
 	watchOpts.Context = ethereum.DefaultWaitForTransactionMiningContext()
@@ -318,7 +323,7 @@ func setUpKeyRegisteredEventListener(ethCreatedContract WatchKeyRegistered, iden
 
 // setUpRegistrationEventListener sets up the listened for the "IdentityCreated" event to notify the upstream code about successful mining/creation
 // of the identity.
-func setUpRegistrationEventListener(ethCreatedContract WatchIdentityCreated, identityToBeCreated *EthereumIdentity, confirmations chan<- *EthereumIdentity) (err error) {
+func setUpRegistrationEventListener(ethCreatedContract WatchIdentityCreated, identityToBeCreated *EthereumIdentity, confirmations chan<- *WatchEthereumIdentity) (err error) {
 
 	//listen to this particular identity being mined/event is triggered
 	watchOpts := &bind.WatchOpts{}
@@ -344,30 +349,32 @@ func setUpRegistrationEventListener(ethCreatedContract WatchIdentityCreated, ide
 }
 
 // waitAndRouteKeyRegistrationEvent notifies the confirmations channel whenever the key has been added to the identity and has been noted as Ethereum event
-func waitAndRouteKeyRegistrationEvent(conf <-chan *EthereumIdentityContractKeyRegistered, ctx context.Context, confirmations chan<- *EthereumIdentity, pushThisIdentity *EthereumIdentity) {
+func waitAndRouteKeyRegistrationEvent(conf <-chan *EthereumIdentityContractKeyRegistered, ctx context.Context, confirmations chan<- *WatchEthereumIdentity, pushThisIdentity *EthereumIdentity) {
 	for {
 		select {
 		case <-ctx.Done():
 			log.Errorf("Context [%v] closed before receiving KeyRegistered event for Identity ID: %x\n", ctx, pushThisIdentity)
+			confirmations <- &WatchEthereumIdentity{pushThisIdentity, ctx.Err()}
 			return
 		case res := <-conf:
 			log.Infof("Received KeyRegistered event from [%x] for keyType: %x and value: %x\n", pushThisIdentity.CentrifugeId, res.KType, res.Key)
-			confirmations <- pushThisIdentity
+			confirmations <- &WatchEthereumIdentity{pushThisIdentity, nil}
 			return
 		}
 	}
 }
 
 // waitAndRouteIdentityRegistrationEvent notifies the confirmations channel whenever the identity creation is being noted as Ethereum event
-func waitAndRouteIdentityRegistrationEvent(conf <-chan *EthereumIdentityFactoryContractIdentityCreated, ctx context.Context, confirmations chan<- *EthereumIdentity, pushThisIdentity *EthereumIdentity) {
+func waitAndRouteIdentityRegistrationEvent(conf <-chan *EthereumIdentityFactoryContractIdentityCreated, ctx context.Context, confirmations chan<- *WatchEthereumIdentity, pushThisIdentity *EthereumIdentity) {
 	for {
 		select {
 		case <-ctx.Done():
 			log.Errorf("Context [%v] closed before receiving IdentityCreated event for Identity ID: %x\n", ctx, pushThisIdentity)
+			confirmations <- &WatchEthereumIdentity{pushThisIdentity, ctx.Err()}
 			return
 		case res := <-conf:
 			log.Infof("Received IdentityCreated event from: %x, identifier: %s\n", res.CentrifugeId, res.Identity.String())
-			confirmations <- pushThisIdentity
+			confirmations <- &WatchEthereumIdentity{pushThisIdentity, nil}
 			return
 		}
 	}
@@ -425,7 +432,7 @@ func createOrAddKeyOnEthereumIdentity(centrifugeId string, keyType int, idKey [3
 	}
 
 	id.Keys[keyType] = append(id.Keys[keyType], EthereumIdentityKey{idKey})
-	confirmations := make(chan *EthereumIdentity, 1)
+	confirmations := make(chan *WatchEthereumIdentity, 1)
 
 	if action == ACTION_CREATE {
 		log.Infof("Creating Identity [%v] with PeerID [%v]\n", centrifugeId, pid.Pretty())
@@ -433,8 +440,8 @@ func createOrAddKeyOnEthereumIdentity(centrifugeId string, keyType int, idKey [3
 		if err != nil {
 			return
 		}
-		registeredIdentity := <-confirmations
-		log.Infof("Identity [%v] Created", registeredIdentity.CentrifugeId)
+		watchRegisteredIdentity := <-confirmations
+		log.Infof("Identity [%v] Created", watchRegisteredIdentity.EthereumIdentity.CentrifugeId)
 	}
 
 	log.Infof("Adding Key [%v] to Identity [%v]\n", pid.Pretty(), centrifugeId)
@@ -442,13 +449,13 @@ func createOrAddKeyOnEthereumIdentity(centrifugeId string, keyType int, idKey [3
 	if err != nil {
 		return
 	}
-	addedToIdentity := <-confirmations
+	watchAddedToIdentity := <-confirmations
 
-	lastKey, errLocal := addedToIdentity.GetLastB58KeyForType(keyType)
+	lastKey, errLocal := watchAddedToIdentity.EthereumIdentity.GetLastB58KeyForType(keyType)
 	if errLocal != nil {
 		err = errLocal
 		return
 	}
-	log.Infof("%v Key [%v] Added to Identity [%v]", action, lastKey, addedToIdentity.CentrifugeId)
+	log.Infof("%v Key [%v] Added to Identity [%v]", action, lastKey, watchAddedToIdentity.EthereumIdentity.CentrifugeId)
 	return
 }
