@@ -41,7 +41,7 @@ ethereum:
   nodeURL: ws://localhost:9546
   gasPrice: 1000000000
   gasLimit: 4712388
-  contextWaitTimeout: "30s"
+  contextWaitTimeout: "600s"
   maxRetries: 200
   intervalRetry: "2s"
   txPoolAccessEnabled: true
