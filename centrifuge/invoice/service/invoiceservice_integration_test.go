@@ -35,7 +35,9 @@ func generateEmptyInvoiceForProcessing() (doc *invoice.Invoice) {
 }
 
 func TestInvoiceDocumentService_HandleAnchorInvoiceDocument_Integration(t *testing.T) {
-	s := InvoiceDocumentService{}
+	s := InvoiceDocumentService{
+		InvoiceRepository: invoicerepository.GetInvoiceRepository(),
+	}
 	doc := generateEmptyInvoiceForProcessing()
 	doc.Document.Data.SenderCountry = "DE"
 

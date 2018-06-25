@@ -17,11 +17,21 @@ type CoreDocument struct {
 	Document *coredocumentpb.CoreDocument
 }
 
+// Sender identifies someone who can send a given CoreDocument via the Context to the recipient
+type Sender interface {
+	Send(cd *CoreDocument, ctx context.Context, recipient string) (err error)
+}
+
+// SendP2P is a sender specifcially for the peer to peer layer
+type SendP2P struct{}
+
+
 func NewCoreDocument(document *coredocumentpb.CoreDocument) (*CoreDocument) {
 	return &CoreDocument{Document: document}
 }
 
-func (cd *CoreDocument) Send(ctx context.Context, recipient string) (err error) {
+// Send sends the given CoreDocument to the given recipient on the P2P layer
+func (sendP2P SendP2P) Send(cd *CoreDocument, ctx context.Context, recipient string) (err error) {
 	peerId, err := identity.ResolveP2PEthereumIdentityForId(recipient)
 	if err != nil {
 		log.Printf("Error: %v\n", err)
