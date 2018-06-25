@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 if [ -n "${GETH_DOCKER_CONTAINER_WAS_RUNNING}" ]; then
     echo "Container ${GETH_DOCKER_CONTAINER_NAME} is already running. Not starting again."

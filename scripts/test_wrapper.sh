@@ -14,6 +14,9 @@ GETH_DOCKER_CONTAINER_NAME="geth-node"
 GETH_DOCKER_CONTAINER_WAS_RUNNING=`docker ps -a --filter "name=${DOCKER_CONTAINER_NAME}" --filter "status=running" --quiet`
 echo "Running: [${GETH_DOCKER_CONTAINER_WAS_RUNNING}]"
 
+# Code coverage is stored in coverage.txt
+echo "" > coverage.txt
+
 ################# Run Dependencies #########################
 for path in ${local_dir}/test-dependencies/*; do
     [ -d "${path}" ] || continue # if not a directory, skip

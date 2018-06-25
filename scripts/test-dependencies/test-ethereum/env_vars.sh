@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 DATA_DIR="/tmp/geth_test_network"
 RPC_PORT=9545

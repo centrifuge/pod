@@ -1,6 +1,6 @@
 language: go
 go:
-  - 1.9.x
+  - 1.10.x
 
 # Maybe this helps with building branches in a fork
 go_import_path: github.com/CentrifugeInc/go-centrifuge
@@ -24,3 +24,6 @@ install:
 
 script:
   - scripts/test_wrapper.sh
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
