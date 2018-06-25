@@ -9,10 +9,11 @@ services:
 
 env:
   - RUN_CONTEXT=travis
-
+  - DEPCACHEDIR=/tmp/depcache
 cache:
       # Cache DAG data
       - /tmp/geth_test_network/.ethash
+      - /tmp/depcache
 
 before_install:
   - npm install -g truffle@4.0.4
