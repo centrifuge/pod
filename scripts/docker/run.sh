@@ -53,3 +53,4 @@ case "$mode" in
   ;;
   *) usage
 esac
+echo "Done"
