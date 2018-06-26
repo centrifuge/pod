@@ -8,8 +8,7 @@ services:
   - docker
 
 env:
-  - RUN_CONTEXT=travis
-  - DEPCACHEDIR=/tmp/depcache
+  - RUN_CONTEXT=travis DEPCACHEDIR=/tmp/depcache
 cache:
       # Cache DAG data
       - /tmp/geth_test_network/.ethash
