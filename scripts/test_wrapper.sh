@@ -11,7 +11,7 @@ then
 fi
 
 GETH_DOCKER_CONTAINER_NAME="geth-node"
-GETH_DOCKER_CONTAINER_WAS_RUNNING=`docker ps -a --filter "name=${DOCKER_CONTAINER_NAME}" --filter "status=running" --quiet`
+GETH_DOCKER_CONTAINER_WAS_RUNNING=`docker ps -a --filter "name=${GETH_DOCKER_CONTAINER_NAME}" --filter "status=running" --quiet`
 echo "Running: [${GETH_DOCKER_CONTAINER_WAS_RUNNING}]"
 
 ################# Run Dependencies #########################

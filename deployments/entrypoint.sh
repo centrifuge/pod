@@ -2,4 +2,6 @@
 
 set -x
 
-/root/centrifuge run --config /root/config/config.yaml
+CENT_MODE=${CENT_MODE:-run}
+
+/root/centrifuge ${CENT_MODE} --config /root/.centrifuge/config/config.yaml $@

@@ -3,11 +3,11 @@
 local_dir="$(dirname "$0")"
 
 usage() {
-  echo "Usage: $0 mode[init|rinkeby|local|mine]"
+  echo "Usage: $0 mode[init|rinkeby|local|mine|centapi]"
   exit 1
 }
 
-if [ "$#" -ne 1 ]
+if [ "$#" -lt 1 ]
 then
   usage
 fi
@@ -22,6 +22,14 @@ API=${API:-'db,eth,net,web3,personal,txpool'}
 RPC_PORT=${RPC_PORT:-9545}
 WS_PORT=${WS_PORT:-9546}
 CENT_ETHEREUM_ACCOUNTS_MAIN_ADDRESS=${CENT_ETHEREUM_ACCOUNTS_MAIN_ADDRESS:-'0x4b1b843af77a8f7f4f0ad2145095937e3d90e3d8'}
+API_PORT=${API_PORT:-8082}
+P2P_PORT=${P2P_PORT:-38202}
+DEFAULT_DATADIR=/tmp/centrifuge_data_${API_PORT}.leveldb
+API_DATADIR=${API_DATADIR:-$DEFAULT_DATADIR}
+DEFAULT_CONFIGDIR="${HOME}/centrifuge/cent-api-${API_PORT}"
+API_CONFIGDIR=${API_CONFIGDIR:-$DEFAULT_CONFIGDIR}
+
+ADDITIONAL_CMD="${@:2}"
 
 case "$mode" in
   init)
@@ -33,23 +41,28 @@ case "$mode" in
     fi
 
     INIT_ETH=true IDENTITY=$IDENTITY NETWORK_ID=$NETWORK_ID ETH_DATADIR=${ETH_DATADIR}/${NETWORK_ID} \
-    docker-compose -f $local_dir/docker-compose-init.yml up
+    docker-compose -f $local_dir/docker-compose-geth-init.yml up
   ;;
   rinkeby)
     ETH_DATADIR=${ETH_DATADIR}/rinkeby RPC_PORT=$RPC_PORT WS_PORT=$WS_PORT RINKEBY=true \
-    docker-compose -f $local_dir/docker-compose.yml up > /tmp/geth.log 2>&1 &
+    docker-compose -f $local_dir/docker-compose-geth.yml up > /tmp/geth.log 2>&1 &
   ;;
   local)
     IDENTITY=$IDENTITY NETWORK_ID=$NETWORK_ID ETH_DATADIR=${ETH_DATADIR}/${NETWORK_ID} GETH_LOCAL=true RPC_PORT=$RPC_PORT WS_PORT=$WS_PORT \
     BOOT_NODES=$BOOT_NODES \
-    docker-compose -f $local_dir/docker-compose.yml up > /tmp/geth.log 2>&1 &
+    docker-compose -f $local_dir/docker-compose-geth.yml up > /tmp/geth.log 2>&1 &
   ;;
   mine)
     cp $local_dir/../test-dependencies/test-ethereum/*.json ${ETH_DATADIR}/${NETWORK_ID}/keystore
 
     IDENTITY=$IDENTITY NETWORK_ID=$NETWORK_ID ETH_DATADIR=${ETH_DATADIR}/${NETWORK_ID} RPC_PORT=$RPC_PORT API=$API \
     WS_PORT=$WS_PORT CENT_ETHEREUM_ACCOUNTS_MAIN_ADDRESS=$CENT_ETHEREUM_ACCOUNTS_MAIN_ADDRESS \
-    docker-compose -f $local_dir/docker-compose.yml up > /tmp/geth.log 2>&1 &
+    docker-compose -f $local_dir/docker-compose-geth.yml up > /tmp/geth.log 2>&1 &
+  ;;
+  centapi)
+    CENT_MODE=$CENT_MODE ADDITIONAL_CMD=$ADDITIONAL_CMD API_DATADIR=$API_DATADIR API_CONFIGDIR=$API_CONFIGDIR \
+    API_PORT=$API_PORT P2P_PORT=$P2P_PORT \
+    docker-compose -f $local_dir/docker-compose-cent-api.yml up > /tmp/cent-api-${API_PORT}.log 2>&1 &
   ;;
   *) usage
 esac
