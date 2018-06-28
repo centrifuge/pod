@@ -16,6 +16,7 @@ import (
 	"os"
 	"testing"
 	"github.com/stretchr/testify/mock"
+	"fmt"
 )
 
 func TestMain(m *testing.M) {
@@ -50,6 +51,15 @@ func (m *MockCoreDocumentSender) Send(cd *coredocument.CoreDocument, ctx context
 	return args.Error(0)
 }
 
+func generateP2PRecipients(quantity int)([][]byte){
+	recipients := make([][]byte, quantity)
+
+	for i := 0;  i< quantity; i++ {
+		recipients[0] = []byte(fmt.Sprintf("RecipientNo[%d]", quantity))
+	}
+	return recipients
+}
+
 func TestInvoiceDocumentService_Send(t *testing.T) {
 	mockSender := new(MockCoreDocumentSender)
 	s := InvoiceDocumentService{
@@ -66,9 +76,9 @@ func TestInvoiceDocumentService_Send(t *testing.T) {
 		DataMerkleRoot:     testingutils.Rand32Bytes(),
 	}
 
-	mockSender.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(nil)
-	recipients := make([][]byte, 1)
-	recipients[0] = []byte("abcd")
+	mockSender.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
+	recipients := generateP2PRecipients(1)
+
 	sentDoc, err := s.HandleSendInvoiceDocument(context.Background(), &invoicepb.SendInvoiceEnvelope{Recipients: recipients, Document: doc.Document})
 	mockSender.AssertExpectations(t)
 	assert.Nil(t, err)
@@ -76,6 +86,36 @@ func TestInvoiceDocumentService_Send(t *testing.T) {
 	assert.Equal(t, sentDoc.CoreDocument.DocumentIdentifier, identifier,
 		"DocumentIdentifier doesn't match")
 }
+
+//func TestInvoiceDocumentService_SendFails(t *testing.T) {
+//	mockSender := new(MockCoreDocumentSender)
+//	s := InvoiceDocumentService{
+//		InvoiceRepository: new(MockInvoiceRepository),
+//		CoreDocumentSender: mockSender,
+//	}
+//
+//	identifier := testingutils.Rand32Bytes()
+//	doc := invoice.NewEmptyInvoice()
+//	doc.Document.CoreDocument = &coredocumentpb.CoreDocument{
+//		DocumentIdentifier: identifier,
+//		CurrentIdentifier:  identifier,
+//		NextIdentifier:     testingutils.Rand32Bytes(),
+//		DataMerkleRoot:     testingutils.Rand32Bytes(),
+//	}
+//
+//	sendError := errors.Errorf("error sending", accountName)
+//	mockSender.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(sendError ).Once()
+//	recipients := make([][]byte, 1)
+//	recipients[0] = []byte("abcd")
+//
+//	sentDoc, err := s.HandleSendInvoiceDocument(context.Background(), &invoicepb.SendInvoiceEnvelope{Recipients: recipients, Document: doc.Document})
+//	mockSender.AssertExpectations(t)
+//	assert.Nil(t, err)
+//
+//	assert.Equal(t, sentDoc.CoreDocument.DocumentIdentifier, identifier,
+//		"DocumentIdentifier doesn't match")
+//}
+
 
 func TestInvoiceDocumentService_HandleCreateInvoiceProof(t *testing.T) {
 	mockRepo := new(MockInvoiceRepository)
