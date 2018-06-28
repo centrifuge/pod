@@ -44,7 +44,7 @@ case "$mode" in
     docker-compose -f $local_dir/docker-compose-geth-init.yml up
   ;;
   rinkeby)
-    ETH_DATADIR=${ETH_DATADIR}/rinkeby RPC_PORT=$RPC_PORT WS_PORT=$WS_PORT RINKEBY=true \
+    API=$API ETH_DATADIR=${ETH_DATADIR}/rinkeby RPC_PORT=$RPC_PORT WS_PORT=$WS_PORT RINKEBY=true \
     docker-compose -f $local_dir/docker-compose-geth.yml up > /tmp/geth.log 2>&1 &
   ;;
   local)

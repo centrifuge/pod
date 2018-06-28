@@ -32,9 +32,9 @@ networks:
 
     ethereumNetworkId: 4
     contractAddresses: 
-      identityFactory: "0x5c0a30a8cff3fb40ada045b0f053bea7dab4e414"
-      identityRegistry: "0x35dee0e722cbc9a8904f59c25b7e2baaff673efd"
-      anchorRegistry: "0x8754cabcd0760b7b25c500da5ac3843166d0dc86"
+      identityFactory: "0x85b32f7a3f40481f12334041670c8cbe07f7d79c"
+      identityRegistry: "0x54ae373f096faf2db6b8a46717c0b98ecfa075dd"
+      anchorRegistry: "0x342a74b382d19da64988b376d0e4a656b7bfa5dd"
 
 ethereum:
   defaultAccountName: "main"
