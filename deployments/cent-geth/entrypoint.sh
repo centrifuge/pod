@@ -2,6 +2,8 @@
 
 set -x
 
+API=${API:-"db,eth,net,web3,txpool"}
+
 if [[ "X$INIT_ETH" = "Xtrue" ]];
 then
   /geth --identity $IDENTITY --datadir /root/.ethereum --ethash.dagdir /root/.ethereum/.ethash --networkid $NETWORK_ID init /root/.ethereum/files/genesis.json
@@ -11,8 +13,8 @@ then
   fi
 elif [[ "X$RINKEBY" = "Xtrue" ]];
 then
-  /geth --rinkeby --light --rpc --rpcport $RPC_PORT --rpcaddr 0.0.0.0 --rpcapi db,eth,net,web3,txpool \
-        --ws --wsport $WS_PORT --wsaddr 0.0.0.0 --wsorigins "*" --wsapi db,eth,net,web3,txpool \
+  /geth --rinkeby --light --rpc --rpcport $RPC_PORT --rpcaddr 0.0.0.0 --rpcapi $API \
+        --ws --wsport $WS_PORT --wsaddr 0.0.0.0 --wsorigins "*" --wsapi $API \
         --datadir /root/.ethereum --ethash.dagdir /root/.ethereum/.ethash
 elif [[ "X$GETH_LOCAL" = "Xtrue" ]];
 then
