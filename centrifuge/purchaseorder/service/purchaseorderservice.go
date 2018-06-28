@@ -2,7 +2,7 @@ package purchaseorderservice
 
 import (
 	"fmt"
-	purchaseorderpb "github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder"
@@ -15,7 +15,10 @@ import (
 var log = logging.Logger("rest-api")
 
 // Struct needed as it is used to register the grpc services attached to the grpc server
-type PurchaseOrderDocumentService struct{}
+type PurchaseOrderDocumentService struct{
+	PurchaseOrderRepository purchaseorderrepository.PurchaseOrderRepository
+	CoreDocumentSender      coredocument.Sender
+}
 
 // HandleCreatePurchaseOrderProof creates proofs for a list of fields
 func (s *PurchaseOrderDocumentService) HandleCreatePurchaseOrderProof(ctx context.Context, createPurchaseOrderProofEnvelope *purchaseorderpb.CreatePurchaseOrderProofEnvelope) (*purchaseorderpb.PurchaseOrderProof, error) {
@@ -70,7 +73,7 @@ func (s *PurchaseOrderDocumentService) HandleSendPurchaseOrderDocument(ctx conte
 
 	errs := []error{}
 	for _, element := range sendPurchaseOrderEnvelope.Recipients {
-		err1 := coredocument.SendP2P{}.Send(&coreDoc, ctx, string(element[:]))
+		err1 := s.CoreDocumentSender.Send(&coreDoc, ctx, string(element[:]))
 		if err1 != nil {
 			errs = append(errs, err1)
 		}

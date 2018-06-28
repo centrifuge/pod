@@ -22,9 +22,13 @@ type Sender interface {
 	Send(cd *CoreDocument, ctx context.Context, recipient string) (err error)
 }
 
-// SendP2P is a sender specifcially for the peer to peer layer
+// SendP2P is a sender specifically for the peer to peer layer
 type SendP2P struct{}
 
+
+func GetDefaultSender()(sender Sender){
+	return SendP2P{}
+}
 
 func NewCoreDocument(document *coredocumentpb.CoreDocument) (*CoreDocument) {
 	return &CoreDocument{Document: document}

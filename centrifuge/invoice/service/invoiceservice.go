@@ -16,7 +16,8 @@ var log = logging.Logger("rest-api")
 
 
 type InvoiceDocumentService struct {
-	InvoiceRepository invoicerepository.InvoiceRepository
+	InvoiceRepository  invoicerepository.InvoiceRepository
+	CoreDocumentSender coredocument.Sender
 }
 
 // HandleCreateInvoiceProof creates proofs for a list of fields
@@ -72,7 +73,7 @@ func (s *InvoiceDocumentService) HandleSendInvoiceDocument(ctx context.Context, 
 
 	errs := []error{}
 	for _, element := range sendInvoiceEnvelope.Recipients {
-		err1 := coredocument.SendP2P{}.Send(&coreDoc, ctx, string(element[:]))
+		err1 := s.CoreDocumentSender.Send(&coreDoc, ctx, string(element[:]))
 		if err1 != nil {
 			errs = append(errs, err1)
 		}

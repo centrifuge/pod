@@ -9,6 +9,7 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/stretchr/testify/assert"
@@ -23,7 +24,6 @@ func TestMain(m *testing.M) {
 	cc.TestTearDown()
 	os.Exit(result)
 }
-
 
 // Allows mocking out the storage to have no dependencies during the unit testing phase
 type MockInvoiceRepository struct {
@@ -41,11 +41,22 @@ func (m *MockInvoiceRepository) Store(inv *invoicepb.InvoiceDocument) (err error
 	return nil
 }
 
+type MockCoreDocumentSender struct {
+	mock.Mock
+}
+
+func (m *MockCoreDocumentSender) Send(cd *coredocument.CoreDocument, ctx context.Context, recipient string) (err error) {
+	args := m.Called(cd, ctx, recipient)
+	return args.Error(0)
+}
 
 func TestInvoiceDocumentService_Send(t *testing.T) {
+	mockSender := new(MockCoreDocumentSender)
 	s := InvoiceDocumentService{
 		InvoiceRepository: new(MockInvoiceRepository),
+		CoreDocumentSender: mockSender,
 	}
+
 	identifier := testingutils.Rand32Bytes()
 	doc := invoice.NewEmptyInvoice()
 	doc.Document.CoreDocument = &coredocumentpb.CoreDocument{
@@ -55,8 +66,12 @@ func TestInvoiceDocumentService_Send(t *testing.T) {
 		DataMerkleRoot:     testingutils.Rand32Bytes(),
 	}
 
-	sentDoc, err := s.HandleSendInvoiceDocument(context.Background(), &invoicepb.SendInvoiceEnvelope{Recipients: [][]byte{}, Document: doc.Document})
-	assert.Nil(t, err, "Error in RPC Call")
+	mockSender.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	recipients := make([][]byte, 1)
+	recipients[0] = []byte("abcd")
+	sentDoc, err := s.HandleSendInvoiceDocument(context.Background(), &invoicepb.SendInvoiceEnvelope{Recipients: recipients, Document: doc.Document})
+	mockSender.AssertExpectations(t)
+	assert.Nil(t, err)
 
 	assert.Equal(t, sentDoc.CoreDocument.DocumentIdentifier, identifier,
 		"DocumentIdentifier doesn't match")
