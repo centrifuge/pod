@@ -16,7 +16,6 @@ import (
 var log = logging.Logger("coredocument")
 
 type CoreDocumentProcessor struct {
-	Document *coredocumentpb.CoreDocument
 }
 
 // Sender identifies someone who can send a given CoreDocumentProcessor via the Context to the recipient
@@ -33,10 +32,6 @@ func GetDefaultSender()(Sender){
 }
 func GetDefaultAnchorer()(Anchorer){
 	return &CoreDocumentProcessor{}
-}
-
-func NewCoreDocument(document *coredocumentpb.CoreDocument) (*CoreDocumentProcessor) {
-	return &CoreDocumentProcessor{Document: document}
 }
 
 // Send sends the given CoreDocumentProcessor to the given recipient on the P2P layer
