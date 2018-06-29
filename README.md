@@ -11,9 +11,9 @@ Setup
 brew install jq
 mkdir -p $GOPATH/src/github.com/CentrifugeInc/go-centrifuge/
 git clone git@github.com:CentrifugeInc/go-centrifuge.git $GOPATH/src/github.com/CentrifugeInc/go-centrifuge
-curl https://glide.sh/get | sh
+go get -u github.com/golang/dep/...
 cd $GOPATH/src/github.com/CentrifugeInc/go-centrifuge
-glide update
+dep ensure
 ```
 
 Make sure you have docker-compose installed, usually comes bundled with Mac OS Docker. Otherwise: https://docs.docker.com/compose/install/ 

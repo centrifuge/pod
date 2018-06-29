@@ -5,6 +5,7 @@ vendor/*
 .vscode
 .env*
 .idea/
-
+coverage/
+coverage.txt
 *.swp
 *.swo

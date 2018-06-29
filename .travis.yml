@@ -1,31 +1,28 @@
 language: go
 go:
-  - 1.9.x
+  - 1.10.x
 
+# Maybe this helps with building branches in a fork
+go_import_path: github.com/CentrifugeInc/go-centrifuge
 services:
   - docker
 
 env:
-  - RUN_CONTEXT=travis
-
+  - RUN_CONTEXT=travis DEPCACHEDIR=/tmp/depcache
 cache:
-    directories:
-      # Cache the glide binary
-      - ~/glide/
-      # Glide's own cache
-      - ~/.glide
-      # Use a separate depbin folder to allow for caching.
-      # The bin itself is then linked (ln -s) in the install-dependencies script
-      - $GOPATH/pkg/depbin
       # Cache DAG data
       - /tmp/geth_test_network/.ethash
+      - /tmp/depcache
 
 before_install:
   - npm install -g truffle@4.0.4
-
 install:
-  - scripts/install_glide.sh
-  - glide install
+  - go get -u github.com/golang/dep/...
+  - dep ensure
+
 
 script:
   - scripts/test_wrapper.sh
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)

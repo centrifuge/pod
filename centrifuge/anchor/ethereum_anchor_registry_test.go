@@ -58,7 +58,7 @@ func (mra *MockRegisterAnchor) RegisterAnchor(opts *bind.TransactOpts, identifie
 	if mra.shouldFail == true {
 		return nil, errors.New("for testing - error if identifier == merkleRoot")
 	}
-	hashableTransaction := types.NewTransaction(1, common.StringToAddress("0x0000000000000000001"), big.NewInt(1000), 1000, big.NewInt(1000), nil)
+	hashableTransaction := types.NewTransaction(1, common.HexToAddress("0x0000000000000000001"), big.NewInt(1000), 1000, big.NewInt(1000), nil)
 
 	return hashableTransaction, nil
 }
@@ -131,7 +131,7 @@ func TestSetUpRegistrationEventListener_ChannelSubscriptionCreated(t *testing.T)
 	//sending one "event" into the registered sink should result in the confirmations channel to receive the anchor
 	//that has been created and passed through initially
 	b32Id, _ := tools.StringToByte32(anchor.AnchorID)
-	mockWatchAnchorRegistered.sink <- &EthereumAnchorRegistryContractAnchorRegistered{From: common.StringToAddress("0x0000000000000000001"), Identifier: b32Id}
+	mockWatchAnchorRegistered.sink <- &EthereumAnchorRegistryContractAnchorRegistered{From: common.HexToAddress("0x0000000000000000001"), Identifier: b32Id}
 	watchReceivedAnchor := <-confirmations
 	assert.Equal(t, anchor.AnchorID, watchReceivedAnchor.Anchor.AnchorID, "Received anchor should have the same data as the originally submitted anchor")
 }

@@ -4,14 +4,16 @@ import (
 	"fmt"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder/repository"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/repository"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	logging "github.com/ipfs/go-log"
 	gologging "github.com/whyrusleeping/go-logging"
 	"os"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
+	"path/filepath"
+	"strings"
 )
 
 const testStoragePath = "/tmp/centrifuge_data.leveldb_TESTING"
@@ -47,8 +49,19 @@ func TestUnitBootstrap() {
 	backend := gologging.NewLogBackend(os.Stdout, "", 0)
 	gologging.SetBackend(backend)
 
-	projectPath, _ := os.LookupEnv("GOPATH")
-	config.Config = config.NewConfiguration(fmt.Sprintf("%s/src/github.com/CentrifugeInc/go-centrifuge/resources/testing_config.yaml", projectPath))
+	// To get the config location, we need to traverse the path to find the `go-centrifuge` folder
+	path, _ := filepath.Abs("./")
+	match := ""
+	for match == "" {
+		path = filepath.Join(path, "../")
+		if strings.HasSuffix(path, "go-centrifuge") {
+			match = path
+		}
+		if filepath.Dir(path) == "/" {
+			log.Fatal("Current working dir is not in `go-centrifuge`")
+		}
+	}
+	config.Config = config.NewConfiguration(fmt.Sprintf("%s/resources/testing_config.yaml", match))
 	config.Config.InitializeViper()
 	rs := getRandomTestStoragePath()
 	config.Config.V.SetDefault("storage.Path", rs)
