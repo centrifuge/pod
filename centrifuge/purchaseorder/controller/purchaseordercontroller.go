@@ -12,10 +12,11 @@ import (
 // Struct needed as it is used to register the grpc services attached to the grpc server
 type PurchaseOrderDocumentController struct{}
 
-func getPurchaseOrderDocumentService() *purchaseorderservice.PurchaseOrderDocumentService{
+func getPurchaseOrderDocumentService() *purchaseorderservice.PurchaseOrderDocumentService {
 	return &purchaseorderservice.PurchaseOrderDocumentService{
 		PurchaseOrderRepository: purchaseorderrepository.GetPurchaseOrderRepository(),
 		CoreDocumentSender:      coredocument.GetDefaultSender(),
+		CoreDocumentAnchorer:    coredocument.GetDefaultAnchorer(),
 	}
 }
 

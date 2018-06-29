@@ -23,12 +23,12 @@ type PurchaseOrderDocumentService struct{
 
 // HandleCreatePurchaseOrderProof creates proofs for a list of fields
 func (s *PurchaseOrderDocumentService) HandleCreatePurchaseOrderProof(ctx context.Context, createPurchaseOrderProofEnvelope *purchaseorderpb.CreatePurchaseOrderProofEnvelope) (*purchaseorderpb.PurchaseOrderProof, error) {
-	invdoc, err := purchaseorderrepository.GetPurchaseOrderRepository().FindById(createPurchaseOrderProofEnvelope.DocumentIdentifier)
+	orderDoc, err := s.PurchaseOrderRepository.FindById(createPurchaseOrderProofEnvelope.DocumentIdentifier)
 	if err != nil {
 		return nil, err
 	}
 
-	inv := purchaseorder.NewPurchaseOrder(invdoc)
+	inv := purchaseorder.NewPurchaseOrder(orderDoc)
 
 	proofs, err := inv.CreateProofs(createPurchaseOrderProofEnvelope.Fields)
 	if err != nil {
@@ -41,7 +41,7 @@ func (s *PurchaseOrderDocumentService) HandleCreatePurchaseOrderProof(ctx contex
 
 // HandleAnchorPurchaseOrderDocument anchors the given purchaseorder document and returns the anchor details
 func (s *PurchaseOrderDocumentService) HandleAnchorPurchaseOrderDocument(ctx context.Context, anchorPurchaseOrderEnvelope *purchaseorderpb.AnchorPurchaseOrderEnvelope) (*purchaseorderpb.PurchaseOrderDocument, error) {
-	err := purchaseorderrepository.GetPurchaseOrderRepository().Store(anchorPurchaseOrderEnvelope.Document)
+	err := s.PurchaseOrderRepository.Store(anchorPurchaseOrderEnvelope.Document)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -63,7 +63,7 @@ func (s *PurchaseOrderDocumentService) HandleAnchorPurchaseOrderDocument(ctx con
 
 // HandleSendPurchaseOrderDocument anchors and sends an purchaseorder to the recipient
 func (s *PurchaseOrderDocumentService) HandleSendPurchaseOrderDocument(ctx context.Context, sendPurchaseOrderEnvelope *purchaseorderpb.SendPurchaseOrderEnvelope) (*purchaseorderpb.PurchaseOrderDocument, error) {
-	err := purchaseorderrepository.GetPurchaseOrderRepository().Store(sendPurchaseOrderEnvelope.Document)
+	err := s.PurchaseOrderRepository.Store(sendPurchaseOrderEnvelope.Document)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +88,7 @@ func (s *PurchaseOrderDocumentService) HandleSendPurchaseOrderDocument(ctx conte
 }
 
 func (s *PurchaseOrderDocumentService) HandleGetPurchaseOrderDocument(ctx context.Context, getPurchaseOrderDocumentEnvelope *purchaseorderpb.GetPurchaseOrderDocumentEnvelope) (*purchaseorderpb.PurchaseOrderDocument, error) {
-	doc, err := purchaseorderrepository.GetPurchaseOrderRepository().FindById(getPurchaseOrderDocumentEnvelope.DocumentIdentifier)
+	doc, err := s.PurchaseOrderRepository.FindById(getPurchaseOrderDocumentEnvelope.DocumentIdentifier)
 	if err != nil {
 		doc1, err1 := coredocumentrepository.GetCoreDocumentRepository().FindById(getPurchaseOrderDocumentEnvelope.DocumentIdentifier)
 		if err1 == nil {

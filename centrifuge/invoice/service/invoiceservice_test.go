@@ -16,7 +16,6 @@ import (
 	"os"
 	"testing"
 	"github.com/stretchr/testify/mock"
-	"fmt"
 )
 
 func TestMain(m *testing.M) {
@@ -27,7 +26,6 @@ func TestMain(m *testing.M) {
 }
 
 // ----- MOCKS -----
-// Allows mocking out the storage to have no dependencies during the unit testing phase
 type MockInvoiceRepository struct {
 	mock.Mock
 }
@@ -44,53 +42,19 @@ func (m *MockInvoiceRepository) Store(inv *invoicepb.InvoiceDocument) (err error
 	args := m.Called(inv)
 	return args.Error(0)
 }
-
-type MockCoreDocumentSender struct {
-	mock.Mock
-}
-
-func (m *MockCoreDocumentSender) Send(coreDocument *coredocumentpb.CoreDocument, ctx context.Context, recipient string) (err error) {
-	args := m.Called(coreDocument, ctx, recipient)
-	return args.Error(0)
-}
-
-type MockCoreDocumentAnchorer struct {
-	mock.Mock
-}
-
-func (m *MockCoreDocumentAnchorer) Anchor(coreDocument *coredocumentpb.CoreDocument) (err error) {
-	args := m.Called(coreDocument)
-	return args.Error(0)
-}
-
 // ----- END MOCKS -----
 
 // ----- HELPER FUNCTIONS -----
-func generateP2PRecipients(quantity int) ([][]byte) {
-	recipients := make([][]byte, quantity)
-
-	for i := 0; i < quantity; i++ {
-		recipients[0] = []byte(fmt.Sprintf("RecipientNo[%d]", quantity))
-	}
-	return recipients
-}
-
 func generateSendableInvoice() (*invoice.Invoice) {
-	identifier := testingutils.Rand32Bytes()
 	doc := invoice.NewEmptyInvoice()
-	doc.Document.CoreDocument = &coredocumentpb.CoreDocument{
-		DocumentIdentifier: identifier,
-		CurrentIdentifier:  identifier,
-		NextIdentifier:     testingutils.Rand32Bytes(),
-		DataMerkleRoot:     testingutils.Rand32Bytes(),
-	}
+	doc.Document.CoreDocument = testingutils.GenerateCoreDocument()
 	return doc
 }
 
-func generateMockedOutInvoiceService() (srv *InvoiceDocumentService, repo *MockInvoiceRepository, sender *MockCoreDocumentSender, anchorer *MockCoreDocumentAnchorer) {
+func generateMockedOutInvoiceService() (srv *InvoiceDocumentService, repo *MockInvoiceRepository, sender *testingutils.MockCoreDocumentSender, anchorer *testingutils.MockCoreDocumentAnchorer) {
 	repo = new(MockInvoiceRepository)
-	sender = new(MockCoreDocumentSender)
-	anchorer = new(MockCoreDocumentAnchorer)
+	sender = new(testingutils.MockCoreDocumentSender)
+	anchorer = new(testingutils.MockCoreDocumentAnchorer)
 	srv = &InvoiceDocumentService{
 		InvoiceRepository:  repo,
 		CoreDocumentSender: sender,
@@ -98,7 +62,6 @@ func generateMockedOutInvoiceService() (srv *InvoiceDocumentService, repo *MockI
 	}
 	return
 }
-
 // ----- END HELPER FUNCTIONS -----
 
 // ----- TESTS -----
@@ -122,7 +85,7 @@ func TestInvoiceDocumentService_AnchorFails(t *testing.T) {
 	doc := generateSendableInvoice()
 
 	mockRepo.On("Store", doc.Document).Return(nil).Once()
-	anchorer .On("Anchor", mock.Anything).Return(errors.New("error anchoring")).Once()
+	anchorer.On("Anchor", mock.Anything).Return(errors.New("error anchoring")).Once()
 
 	anchoredDoc, err := s.HandleAnchorInvoiceDocument(context.Background(), &invoicepb.AnchorInvoiceEnvelope{Document: doc.Document})
 
@@ -136,7 +99,7 @@ func TestInvoiceDocumentService_Send(t *testing.T) {
 	s, mockRepo, mockSender, _ := generateMockedOutInvoiceService()
 
 	doc := generateSendableInvoice()
-	recipients := generateP2PRecipients(1)
+	recipients := testingutils.GenerateP2PRecipients(1)
 
 	mockRepo.On("Store", doc.Document).Return(nil).Once()
 	mockSender.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
@@ -151,11 +114,10 @@ func TestInvoiceDocumentService_Send(t *testing.T) {
 func TestInvoiceDocumentService_SendFails(t *testing.T) {
 	s, mockRepo, mockSender, _ := generateMockedOutInvoiceService()
 	doc := generateSendableInvoice()
-	recipients := generateP2PRecipients(2)
+	recipients := testingutils.GenerateP2PRecipients(2)
 
 	mockRepo.On("Store", doc.Document).Return(nil).Once()
-	sendError := errors.New("error sending")
-	mockSender.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(sendError).Twice()
+	mockSender.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(errors.New("error sending")).Twice()
 
 	_, err := s.HandleSendInvoiceDocument(context.Background(), &invoicepb.SendInvoiceEnvelope{Recipients: recipients, Document: doc.Document})
 
