@@ -35,6 +35,6 @@ after_success:
 
 deploy:
   provider: script
-  script: bash scripts/docker_push.sh
+  script: bash scripts/docker_build_push.sh
   on:
     branch: master
