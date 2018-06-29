@@ -18,6 +18,7 @@ var log = logging.Logger("rest-api")
 type PurchaseOrderDocumentService struct{
 	PurchaseOrderRepository purchaseorderrepository.PurchaseOrderRepository
 	CoreDocumentSender      coredocument.Sender
+	CoreDocumentAnchorer    coredocument.Anchorer
 }
 
 // HandleCreatePurchaseOrderProof creates proofs for a list of fields
@@ -51,7 +52,7 @@ func (s *PurchaseOrderDocumentService) HandleAnchorPurchaseOrderDocument(ctx con
 	inv.CalculateMerkleRoot()
 	coreDoc := inv.ConvertToCoreDocument()
 
-	err = coreDoc.Anchor()
+	err = s.CoreDocumentAnchorer.Anchor(coreDoc)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -67,13 +68,13 @@ func (s *PurchaseOrderDocumentService) HandleSendPurchaseOrderDocument(ctx conte
 		return nil, err
 	}
 
-	inv := purchaseorder.NewPurchaseOrder(sendPurchaseOrderEnvelope.Document)
-	inv.CalculateMerkleRoot()
-	coreDoc := inv.ConvertToCoreDocument()
+	order := purchaseorder.NewPurchaseOrder(sendPurchaseOrderEnvelope.Document)
+	order.CalculateMerkleRoot()
+	coreDoc := order.ConvertToCoreDocument()
 
 	errs := []error{}
 	for _, element := range sendPurchaseOrderEnvelope.Recipients {
-		err1 := s.CoreDocumentSender.Send(&coreDoc, ctx, string(element[:]))
+		err1 := s.CoreDocumentSender.Send(coreDoc, ctx, string(element[:]))
 		if err1 != nil {
 			errs = append(errs, err1)
 		}
@@ -91,7 +92,7 @@ func (s *PurchaseOrderDocumentService) HandleGetPurchaseOrderDocument(ctx contex
 	if err != nil {
 		doc1, err1 := coredocumentrepository.GetCoreDocumentRepository().FindById(getPurchaseOrderDocumentEnvelope.DocumentIdentifier)
 		if err1 == nil {
-			doc = purchaseorder.NewPurchaseOrderFromCoreDocument(&coredocument.CoreDocumentProcessor{doc1}).Document
+			doc = purchaseorder.NewPurchaseOrderFromCoreDocument(doc1).Document
 			err = err1
 		}
 		log.Errorf("%v", err)

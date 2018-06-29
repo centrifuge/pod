@@ -24,7 +24,7 @@ type InvoiceDocumentService struct {
 // HandleCreateInvoiceProof creates proofs for a list of fields
 func (s *InvoiceDocumentService) HandleCreateInvoiceProof(ctx context.Context, createInvoiceProofEnvelope *invoicepb.CreateInvoiceProofEnvelope) (*invoicepb.InvoiceProof, error) {
 	invdoc, err := s.InvoiceRepository.FindById(createInvoiceProofEnvelope.DocumentIdentifier)
-	if err != nil {
+	if err != nil { 
 		return nil, err
 	}
 

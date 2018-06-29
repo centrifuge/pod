@@ -5,7 +5,6 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/documenttypes"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
@@ -19,14 +18,14 @@ type PurchaseOrder struct {
 }
 
 func NewPurchaseOrder(invDoc *purchaseorderpb.PurchaseOrderDocument) *PurchaseOrder {
-	inv := &PurchaseOrder{invDoc}
+	order := &PurchaseOrder{invDoc}
 	// IF salts have not been provided, let's generate them
 	if invDoc.Salts == nil {
 		purchaseorderSalts := purchaseorderpb.PurchaseOrderDataSalts{}
 		proofs.FillSalts(&purchaseorderSalts)
-		inv.Document.Salts = &purchaseorderSalts
+		order.Document.Salts = &purchaseorderSalts
 	}
-	return inv
+	return order
 }
 
 func NewEmptyPurchaseOrder() *PurchaseOrder {
@@ -40,20 +39,20 @@ func NewEmptyPurchaseOrder() *PurchaseOrder {
 	return &PurchaseOrder{&doc}
 }
 
-func NewPurchaseOrderFromCoreDocument(coredocument *coredocument.CoreDocumentProcessor) (inv *PurchaseOrder) {
-	if coredocument.Document.EmbeddedData.TypeUrl != documenttypes.PurchaseOrderDataTypeUrl ||
-		coredocument.Document.EmbeddedDataSalts.TypeUrl != documenttypes.PurchaseOrderSaltsTypeUrl {
+func NewPurchaseOrderFromCoreDocument(coredocument *coredocumentpb.CoreDocument) (inv *PurchaseOrder) {
+	if coredocument.EmbeddedData.TypeUrl != documenttypes.PurchaseOrderDataTypeUrl ||
+		coredocument.EmbeddedDataSalts.TypeUrl != documenttypes.PurchaseOrderSaltsTypeUrl {
 		log.Fatal("Trying to convert document with incorrect schema")
 	}
 
 	purchaseorderData := &purchaseorderpb.PurchaseOrderData{}
-	proto.Unmarshal(coredocument.Document.EmbeddedData.Value, purchaseorderData)
+	proto.Unmarshal(coredocument.EmbeddedData.Value, purchaseorderData)
 
 	purchaseorderSalts := &purchaseorderpb.PurchaseOrderDataSalts{}
-	proto.Unmarshal(coredocument.Document.EmbeddedDataSalts.Value, purchaseorderSalts)
+	proto.Unmarshal(coredocument.EmbeddedDataSalts.Value, purchaseorderSalts)
 
 	emptiedCoreDoc := coredocumentpb.CoreDocument{}
-	proto.Merge(&emptiedCoreDoc, coredocument.Document)
+	proto.Merge(&emptiedCoreDoc, coredocument)
 	emptiedCoreDoc.EmbeddedData = nil
 	emptiedCoreDoc.EmbeddedDataSalts = nil
 	inv = NewEmptyPurchaseOrder()
@@ -102,8 +101,8 @@ func (inv *PurchaseOrder) CreateProofs(fields []string) (proofs []*proofs.Proof,
 	return
 }
 
-func (inv *PurchaseOrder) ConvertToCoreDocument() (coredocument coredocument.CoreDocumentProcessor) {
-	coredocpb := &coredocumentpb.CoreDocument{}
+func (inv *PurchaseOrder) ConvertToCoreDocument() (coredocpb *coredocumentpb.CoreDocument) {
+	coredocpb = &coredocumentpb.CoreDocument{}
 	proto.Merge(coredocpb, inv.Document.CoreDocument)
 	serializedPurchaseOrder, err := proto.Marshal(inv.Document.Data)
 	if err != nil {
@@ -127,6 +126,5 @@ func (inv *PurchaseOrder) ConvertToCoreDocument() (coredocument coredocument.Cor
 
 	coredocpb.EmbeddedData = &purchaseorderAny
 	coredocpb.EmbeddedDataSalts = &purchaseorderSaltsAny
-	coredocument.Document = coredocpb
-	return
+	return coredocpb
 }
