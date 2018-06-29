@@ -4,25 +4,37 @@ go:
 
 # Maybe this helps with building branches in a fork
 go_import_path: github.com/CentrifugeInc/go-centrifuge
+
 services:
   - docker
 
 env:
-  - RUN_CONTEXT=travis DEPCACHEDIR=/tmp/depcache
+  matrix:
+  - RUN_CONTEXT=travis DEPCACHEDIR=/tmp/depcache IMAGE_NAME=centrifugeio/go-centrifuge
+  global:
+  - secure: O+GSbCArYkvB+n7sv97Dob2I1HNDds/FhlfWLEkjJIvP7eS2yubeWdACmAjOnALobAcR6aiq7xZu3/sX3Br7VgyE3J9fefxd8JLPHM1uYgtD5BasQWNGFIfRrqAHZcqD39z5U7waVi2gTQ0Dx2kVvH7mxorgeXe3QnjM1brBCypBoYR2xEH2lD5Gv2VMA1c4F6mvEh5gT1yaRXu+U5tzrbogAER/IDrcVjRSH2U9cg3XZa4Lo1iAk2px0TUB3qClIpwzHcZF9krRZjjSAB1+3yra2ICbYrs+j3oqzZfZJrFoCjd/mxx4Fj/1rLamsFiOBbSoN2NiEUx9zoQpgr5SxIegry4ba+j8Mez6hm6C+/Vsxk6RpGRTBIJ8sdV4NyqkpwHauxBEHrD53XhdQ0QMbkAFcRFE18b/v8VoAcP4CqOaJwWUZmhCK2pmu48TEJmN3IUujxfqgDiGi+UN9eb68NK/IvnzO12rOUvto/wSaocfQSDF0d4j0U1G1vw4ZNVLZHGO/gapjgpx6XPm5oWLPh/lj0IU8YBekj2wfki/RK7gno7nI0Aa0Ol+5eJs2zwxSDR3A1sJX8eYAMbdmZ3YT9ZAwiGZ6vOHBsr+Bw/x9VX3hlAaTU4rBS3zYAb/bPz5eN8PisAjAPrtLSf6QQrDCJPT7LqWI2xI9C3ME5BEa+A=
+  - secure: JotmqT+F+BudAgmzDYRAJgyyEIPeSKaEHCL5iryzI4E3B6LtEOp8OE+K4jhC0dMffAANXTi4WIG8McMyEq/w9u+XO6ydVImsMCNPn9EklMEAWiNBkwzsS8nnt+v+AXUDYg8bjzHepmZ+UABtnaXVR2pa6KquLDW4Nxdai21+WTH0aAqgf7oU9yrwSrAWuRpezR9s2Lrp4UbSobLxi44AabJPIoPrXT7RVZ4f2sCyzYQ5bkkXnMpVMYjWPSqv0j93c1MbifduHX25/I+hvk/rUSaisjdjd4R/hV2ZcJnIagTUp4wR2jq6NRFz4S1HpKeeRYDHoh1BEH658xUGUJLBXPyjHEFHqOlrBHK8VONTOndeLiQaTkp3hEjpQbhHYn5SJVV3XfUlwudFrbEVwx1YPukKNvpMUnh2N9kNPn3EB4CTyq6v2l1rxC3aP2vS2G50ApYBnAjjjutWL1oO1zX5x5EaYEoJarpYgYvqDKh2yQBlOHb7WnxemdX3r2BhuxRfHvnoHPGaBc5ly0oqWz3cbdY1U4hDFgMJNP1iPr205YxBZFHxgaYxldhBR6+zOcuISNq563ApZ0VDkdeAWFaYrs+bMrXtplV9wJ/D8vKIAy8dAT7UDv9wS+hmFrOnuJzTdoG00QJuVBAng6nW6Jb4aF+eveEH9N8jnS1RboTzW18=
+
 cache:
-      # Cache DAG data
-      - /tmp/geth_test_network/.ethash
-      - /tmp/depcache
+  # Cache DAG data
+  - /tmp/geth_test_network/.ethash
+  - /tmp/depcache
 
 before_install:
   - npm install -g truffle@4.0.4
+
 install:
   - go get -u github.com/golang/dep/...
   - dep ensure
-
 
 script:
   - scripts/test_wrapper.sh
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
+
+deploy:
+  provider: script
+  script: bash scripts/docker_push.sh
+  on:
+    branch: master
