@@ -91,7 +91,7 @@ func (s *PurchaseOrderDocumentService) HandleGetPurchaseOrderDocument(ctx contex
 	if err != nil {
 		doc1, err1 := coredocumentrepository.GetCoreDocumentRepository().FindById(getPurchaseOrderDocumentEnvelope.DocumentIdentifier)
 		if err1 == nil {
-			doc = purchaseorder.NewPurchaseOrderFromCoreDocument(&coredocument.CoreDocument{doc1}).Document
+			doc = purchaseorder.NewPurchaseOrderFromCoreDocument(&coredocument.CoreDocumentProcessor{doc1}).Document
 			err = err1
 		}
 		log.Errorf("%v", err)

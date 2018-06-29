@@ -40,7 +40,7 @@ func NewEmptyPurchaseOrder() *PurchaseOrder {
 	return &PurchaseOrder{&doc}
 }
 
-func NewPurchaseOrderFromCoreDocument(coredocument *coredocument.CoreDocument) (inv *PurchaseOrder) {
+func NewPurchaseOrderFromCoreDocument(coredocument *coredocument.CoreDocumentProcessor) (inv *PurchaseOrder) {
 	if coredocument.Document.EmbeddedData.TypeUrl != documenttypes.PurchaseOrderDataTypeUrl ||
 		coredocument.Document.EmbeddedDataSalts.TypeUrl != documenttypes.PurchaseOrderSaltsTypeUrl {
 		log.Fatal("Trying to convert document with incorrect schema")
@@ -80,7 +80,7 @@ func (inv *PurchaseOrder) CalculateMerkleRoot() error {
 	if err != nil {
 		return err
 	}
-	// TODO: below should actually be stored as CoreDocument.DataMerkleRoot
+	// TODO: below should actually be stored as CoreDocumentProcessor.DataMerkleRoot
 	inv.Document.CoreDocument.DocumentRoot = tree.RootHash()
 	return nil
 }
@@ -102,7 +102,7 @@ func (inv *PurchaseOrder) CreateProofs(fields []string) (proofs []*proofs.Proof,
 	return
 }
 
-func (inv *PurchaseOrder) ConvertToCoreDocument() (coredocument coredocument.CoreDocument) {
+func (inv *PurchaseOrder) ConvertToCoreDocument() (coredocument coredocument.CoreDocumentProcessor) {
 	coredocpb := &coredocumentpb.CoreDocument{}
 	proto.Merge(coredocpb, inv.Document.CoreDocument)
 	serializedPurchaseOrder, err := proto.Marshal(inv.Document.Data)

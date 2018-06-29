@@ -16,6 +16,7 @@ func getInvoiceDocumentService() *invoiceservice.InvoiceDocumentService {
 	return &invoiceservice.InvoiceDocumentService{
 		InvoiceRepository:  invoicerepository.GetInvoiceRepository(),
 		CoreDocumentSender: coredocument.GetDefaultSender(),
+		CoreDocumentAnchorer: coredocument.GetDefaultAnchorer(),
 	}
 }
 

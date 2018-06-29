@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
-	"log"
+	logging "github.com/ipfs/go-log"
 	"fmt"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/p2p"
 	"github.com/go-errors/errors"
@@ -13,32 +13,37 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
 )
 
-type CoreDocument struct {
+var log = logging.Logger("coredocument")
+
+type CoreDocumentProcessor struct {
 	Document *coredocumentpb.CoreDocument
 }
 
-// Sender identifies someone who can send a given CoreDocument via the Context to the recipient
+// Sender identifies someone who can send a given CoreDocumentProcessor via the Context to the recipient
 type Sender interface {
-	Send(cd *CoreDocument, ctx context.Context, recipient string) (err error)
+	Send(coreDocument *coredocumentpb.CoreDocument, ctx context.Context, recipient string) (err error)
 }
 
-// SendP2P is a sender specifically for the peer to peer layer
-type SendP2P struct{}
-
-
-func GetDefaultSender()(sender Sender){
-	return SendP2P{}
+type Anchorer interface {
+	Anchor(document *coredocumentpb.CoreDocument) (err error)
 }
 
-func NewCoreDocument(document *coredocumentpb.CoreDocument) (*CoreDocument) {
-	return &CoreDocument{Document: document}
+func GetDefaultSender()(Sender){
+	return &CoreDocumentProcessor{}
+}
+func GetDefaultAnchorer()(Anchorer){
+	return &CoreDocumentProcessor{}
 }
 
-// Send sends the given CoreDocument to the given recipient on the P2P layer
-func (sendP2P SendP2P) Send(cd *CoreDocument, ctx context.Context, recipient string) (err error) {
+func NewCoreDocument(document *coredocumentpb.CoreDocument) (*CoreDocumentProcessor) {
+	return &CoreDocumentProcessor{Document: document}
+}
+
+// Send sends the given CoreDocumentProcessor to the given recipient on the P2P layer
+func (cdp *CoreDocumentProcessor) Send(coreDocument *coredocumentpb.CoreDocument, ctx context.Context, recipient string) (err error) {
 	peerId, err := identity.ResolveP2PEthereumIdentityForId(recipient)
 	if err != nil {
-		log.Printf("Error: %v\n", err)
+		log.Errorf("Error: %v\n", err)
 		return err
 	}
 
@@ -51,22 +56,23 @@ func (sendP2P SendP2P) Send(cd *CoreDocument, ctx context.Context, recipient str
 	if err != nil {
 		return err
 	}
-	log.Printf("Sending Document to CentID [%v] with Key [%v]\n", recipient, lastb58Key)
+	log.Infof("Sending Document to CentID [%v] with Key [%v]\n", recipient, lastb58Key)
 	clientWithProtocol := fmt.Sprintf("/ipfs/%s", lastb58Key)
 	client := p2p.OpenClient(clientWithProtocol)
-	log.Printf("Done opening connection against [%s]\n", lastb58Key)
-	_, err = client.Post(context.Background(), &p2ppb.P2PMessage{Document: cd.Document})
+	log.Infof("Done opening connection against [%s]\n", lastb58Key)
+	_, err = client.Post(context.Background(), &p2ppb.P2PMessage{Document: coreDocument})
 	if err != nil {
 		return err
 	}
 	return
 }
 
-func (cd *CoreDocument) Anchor() (err error) {
-	//Remove this as soon as signing is fixed, we will read from the CoreDocument signature fields
+func (cd *CoreDocumentProcessor) Anchor(document *coredocumentpb.CoreDocument) (err error) {
+	log.Infof("Anchoring document %v", document)
+
+	//Remove this as soon as signing is fixed, we will read from the CoreDocumentProcessor signature fields
 	id := tools.RandomString32()
 	rootHash := tools.RandomString32()
-	//
 	confirmations := make(chan *anchor.WatchAnchor, 1)
 	err = anchor.RegisterAsAnchor(id, rootHash, confirmations)
 	if err != nil {
@@ -77,7 +83,7 @@ func (cd *CoreDocument) Anchor() (err error) {
 	return
 }
 
-func (cd *CoreDocument) Sign() {
+func (cd *CoreDocumentProcessor) Sign() {
 	//signingService := cc.Node.GetSigningService()
 	//signingService.Sign(cd.Document)
 	return

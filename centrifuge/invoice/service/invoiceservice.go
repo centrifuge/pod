@@ -18,6 +18,7 @@ var log = logging.Logger("rest-api")
 type InvoiceDocumentService struct {
 	InvoiceRepository  invoicerepository.InvoiceRepository
 	CoreDocumentSender coredocument.Sender
+	CoreDocumentAnchorer coredocument.Anchorer
 }
 
 // HandleCreateInvoiceProof creates proofs for a list of fields
@@ -51,7 +52,7 @@ func (s *InvoiceDocumentService) HandleAnchorInvoiceDocument(ctx context.Context
 	inv.CalculateMerkleRoot()
 	coreDoc := inv.ConvertToCoreDocument()
 
-	err = coreDoc.Anchor()
+	err = s.CoreDocumentAnchorer.Anchor(coreDoc)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -73,7 +74,7 @@ func (s *InvoiceDocumentService) HandleSendInvoiceDocument(ctx context.Context, 
 
 	errs := []error{}
 	for _, element := range sendInvoiceEnvelope.Recipients {
-		err1 := s.CoreDocumentSender.Send(&coreDoc, ctx, string(element[:]))
+		err1 := s.CoreDocumentSender.Send(coreDoc, ctx, string(element[:]))
 		if err1 != nil {
 			errs = append(errs, err1)
 		}
@@ -91,7 +92,7 @@ func (s *InvoiceDocumentService) HandleGetInvoiceDocument(ctx context.Context, g
 	if err != nil {
 		doc1, err1 := coredocumentrepository.GetCoreDocumentRepository().FindById(getInvoiceDocumentEnvelope.DocumentIdentifier)
 		if err1 == nil {
-			doc = invoice.NewInvoiceFromCoreDocument(&coredocument.CoreDocument{doc1}).Document
+			doc = invoice.NewInvoiceFromCoreDocument(doc1).Document
 			err = err1
 		}
 		log.Errorf("%v", err)

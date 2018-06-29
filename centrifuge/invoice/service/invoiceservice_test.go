@@ -10,7 +10,6 @@ import (
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
 	"github.com/go-errors/errors"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/stretchr/testify/assert"
@@ -49,8 +48,8 @@ func (m *MockInvoiceRepository) Store(inv *invoicepb.InvoiceDocument) (err error
 type MockCoreDocumentSender struct {
 	mock.Mock
 }
-func (m *MockCoreDocumentSender) Send(cd *coredocument.CoreDocument, ctx context.Context, recipient string) (err error) {
-	args := m.Called(cd, ctx, recipient)
+func (m *MockCoreDocumentSender) Send(coreDocument *coredocumentpb.CoreDocument, ctx context.Context, recipient string) (err error) {
+	args := m.Called(coreDocument, ctx, recipient)
 	return args.Error(0)
 }
 // ----- END MOCKS -----
