@@ -13,7 +13,7 @@ PARENT_DIR=`pwd`
 source "${local_dir}/env_vars.sh"
 
 # For caching when running from travis
-if [[ "X${RUN_CONTEXT}" == "Xtravis" ]];
+if [[ "X${TRAVIS}" == "Xtrue" ]];
 then
   ln -s $DATA_DIR/.ethash ~/.ethash
   echo "TRAVIS"
