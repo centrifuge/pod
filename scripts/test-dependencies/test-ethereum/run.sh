@@ -15,7 +15,7 @@ source "${local_dir}/env_vars.sh"
 # For caching when running from travis
 if [[ "X${TRAVIS}" == "Xtrue" ]];
 then
-  ln -s $DATA_DIR/.ethash ~/.ethash
+  ln -s $DATA_DIR/$NETWORK_ID/.ethash ~/.ethash
   echo "TRAVIS"
 else
   echo "LOCAL CONTEXT"
