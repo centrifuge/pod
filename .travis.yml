@@ -8,11 +8,6 @@ go_import_path: github.com/CentrifugeInc/go-centrifuge
 services:
   - docker
 
-stages:
-  - test
-  - name: build_image
-    if: branch = master
-
 env:
   matrix:
   - DEPCACHEDIR=/tmp/depcache IMAGE_NAME=centrifugeio/go-centrifuge
@@ -39,4 +34,5 @@ jobs:
       after_success:
        - bash <(curl -s https://codecov.io/bash)
     - stage: build_image
+      if: (NOT type IN (pull_request)) AND (branch = master)
       script: scripts/docker_build_push.sh
