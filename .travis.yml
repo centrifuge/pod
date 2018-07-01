@@ -17,7 +17,7 @@ env:
 
 cache:
   # Cache DAG data
-  - /tmp/geth_test_network/.ethash
+  - /tmp/geth_test_network/8383/.ethash
   - /tmp/depcache
 
 before_install:
