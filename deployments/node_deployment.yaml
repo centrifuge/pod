@@ -22,13 +22,13 @@
         name: centnode
       spec:
         containers:
-          - image: 'centrifugeio/go-centrifuge:latest'
+          - image: 'index.docker.io/centrifugeio/go-centrifuge'
             name: centnode
             ports:
               - containerPort: 8082
               - containerPort: 38202
             volumeMounts:
-              - mountPath: /root/config
+              - mountPath: /root/.centrifuge/config
                 name: secrets-volume
                 readOnly: true
         nodeSelector:
