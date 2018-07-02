@@ -34,4 +34,8 @@ echo "IDENTITY FACTORY ADDRESS: ${vtemp2}"
 #############################################################
 #
 echo "Running Integration Ethereum Tests against [${CENT_ETHEREUM_NODEURL}] with TIMEOUT [${TEST_TIMEOUT}]"
-go test ./... -tags=ethereum -timeout ${TEST_TIMEOUT}
+THESE_TESTS='./...'
+if [ -n  ${1} ]; then
+    THESE_TESTS="${1}"
+fi
+go test ${THESE_TESTS} -v -tags=ethereum -timeout ${TEST_TIMEOUT}
