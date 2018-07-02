@@ -1,6 +1,6 @@
 // +build ethereum
 
-package invoiceservice_integration_test
+package invoiceservice_test
 
 import (
 	"context"

@@ -1,6 +1,6 @@
 // +build unit
 
-package invoiceservice
+package invoiceservice_test
 
 import (
 	"context"
@@ -9,6 +9,7 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/service"
 	"github.com/go-errors/errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/precise-proofs/proofs"
@@ -51,11 +52,11 @@ func generateSendableInvoice() (*invoice.Invoice) {
 	return doc
 }
 
-func generateMockedOutInvoiceService() (srv *InvoiceDocumentService, repo *MockInvoiceRepository, sender *testingutils.MockCoreDocumentSender, anchorer *testingutils.MockCoreDocumentAnchorer) {
+func generateMockedOutInvoiceService() (srv *invoiceservice.InvoiceDocumentService, repo *MockInvoiceRepository, sender *testingutils.MockCoreDocumentSender, anchorer *testingutils.MockCoreDocumentAnchorer) {
 	repo = new(MockInvoiceRepository)
 	sender = new(testingutils.MockCoreDocumentSender)
 	anchorer = new(testingutils.MockCoreDocumentAnchorer)
-	srv = &InvoiceDocumentService{
+	srv = &invoiceservice.InvoiceDocumentService{
 		InvoiceRepository:  repo,
 		CoreDocumentSender: sender,
 		CoreDocumentAnchorer: anchorer,
@@ -174,7 +175,7 @@ func TestInvoiceDocumentService_HandleCreateInvoiceProof_NotExistingInvoice(t *t
 
 	//mock the storage
 	mockRepo := new(MockInvoiceRepository)
-	s := InvoiceDocumentService{
+	s := invoiceservice.InvoiceDocumentService{
 		InvoiceRepository: mockRepo,
 	}
 
