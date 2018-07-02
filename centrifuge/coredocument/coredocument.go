@@ -64,8 +64,8 @@ func (cd *CoreDocumentProcessor) Anchor(document *coredocumentpb.CoreDocument) (
 	log.Infof("Anchoring document %v", document)
 
 	//Remove this as soon as signing is fixed, we will read from the CoreDocumentProcessor signature fields
-	id := tools.RandomString32()
-	rootHash := tools.RandomString32()
+	id := tools.RandomByte32()
+	rootHash := tools.RandomByte32()
 	confirmations := make(chan *anchor.WatchAnchor, 1)
 	err = anchor.RegisterAsAnchor(id, rootHash, confirmations)
 	if err != nil {

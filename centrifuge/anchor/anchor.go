@@ -1,8 +1,8 @@
 package anchor
 
 type Anchor struct {
-	AnchorID      string
-	RootHash      string
+	AnchorID      [32]byte
+	RootHash      [32]byte
 	SchemaVersion uint
 }
 

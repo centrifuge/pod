@@ -4,13 +4,13 @@ import (
 	"context"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/go-errors/errors"
 	"math/big"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 )
 
 //Supported anchor schema version as stored on public registry
@@ -35,47 +35,44 @@ type RegisterAnchor interface {
 // into the confirmations channel when done.
 // Could error out with Fatal error in case the confirmation is never received within the timeframe of configured value
 // of `ethereum.contextWaitTimeout`.
-func (ethRegistry *EthereumAnchorRegistry) RegisterAsAnchor(anchorID string, rootHash string, confirmations chan<- *WatchAnchor) error {
-	var err error
+func (ethRegistry *EthereumAnchorRegistry) RegisterAsAnchor(anchorID [32]byte, rootHash [32]byte, confirmations chan<- *WatchAnchor) (err error) {
+	if tools.IsEmptyByte32(anchorID) {
+		err = errors.New("Can not work with empty anchor ID")
+		return
+	}
+	if tools.IsEmptyByte32(rootHash) {
+		err = errors.New("Can not work with empty root hash")
+		return
+	}
 
 	ethRegistryContract, _ := getAnchorContract()
 	opts, err := ethereum.GetGethTxOpts(config.Config.GetEthereumDefaultAccountName())
 	if err != nil {
-		return err
+		return
 	}
 	registerThisAnchor, err := generateAnchor(anchorID, rootHash)
 	if err != nil {
-		return err
+		return
 	}
 
 	err = setUpRegistrationEventListener(ethRegistryContract, opts.From, registerThisAnchor, confirmations)
 	if err != nil {
 		wError := errors.Wrap(err, 1)
 		log.Errorf("Failed to set up event listener for anchor [id: %x, hash: %x, SchemaVersion:%v]: %v", registerThisAnchor.AnchorID, registerThisAnchor.RootHash, registerThisAnchor.SchemaVersion, wError)
-		return err
+		return
 	}
 
 	err = sendRegistrationTransaction(ethRegistryContract, opts, registerThisAnchor)
 	if err != nil {
 		wError := errors.Wrap(err, 1)
 		log.Errorf("Failed to send Ethereum transaction to register anchor [id: %x, hash: %x, SchemaVersion:%v]: %v", registerThisAnchor.AnchorID, registerThisAnchor.RootHash, registerThisAnchor.SchemaVersion, wError)
-		return err
+		return
 	}
-
-	return nil
+	return
 }
 
 // generateAnchor is a convenience method to create a "registerable" `Anchor` from anchor ID and root hash
-func generateAnchor(anchorID string, rootHash string) (returnAnchor *Anchor, err error) {
-	err = tools.CheckLen32(anchorID, "anchorID needs to be length of 32. Got value [%v]")
-	if err != nil {
-		return nil, err
-	}
-	err = tools.CheckLen32(rootHash, "rootHash needs to be length of 32. Got value [%v]")
-	if err != nil {
-		return nil, err
-	}
-
+func generateAnchor(anchorID [32]byte, rootHash [32]byte) (returnAnchor *Anchor, err error) {
 	returnAnchor = &Anchor{}
 	returnAnchor.AnchorID = anchorID
 	returnAnchor.RootHash = rootHash
@@ -87,28 +84,17 @@ func generateAnchor(anchorID string, rootHash string) (returnAnchor *Anchor, err
 
 // sendRegistrationTransaction sends the actual transaction to register the Anchor on Ethereum registry contract
 func sendRegistrationTransaction(ethRegistryContract RegisterAnchor, opts *bind.TransactOpts, anchorToBeRegistered *Anchor) (err error) {
-	err = tools.CheckLen32(anchorToBeRegistered.AnchorID, "AnchorID needs to be length of 32. Got value [%x]")
-	if err != nil {
-		return err
-	}
-	err = tools.CheckLen32(anchorToBeRegistered.RootHash, "RootHash needs to be length of 32. Got value [%x]")
-	if err != nil {
-		return err
-	}
 
 	//preparation of data in specific types for the call to Ethereum
-	var bMerkleRoot, bAnchorId [32]byte
-	copy(bMerkleRoot[:], anchorToBeRegistered.RootHash[:32])
-	copy(bAnchorId[:], anchorToBeRegistered.AnchorID[:32])
 	schemaVersion := big.NewInt(int64(anchorToBeRegistered.SchemaVersion))
 
-	tx, err := ethereum.SubmitTransactionWithRetries(ethRegistryContract.RegisterAnchor, opts, bAnchorId, bMerkleRoot, schemaVersion)
+	tx, err := ethereum.SubmitTransactionWithRetries(ethRegistryContract.RegisterAnchor, opts, anchorToBeRegistered.AnchorID, anchorToBeRegistered.RootHash, schemaVersion)
 
 	if err != nil {
-		log.Errorf("Failed to send anchor for registration [id: %x, hash: %x, SchemaVersion:%v] on registry: %v", bAnchorId, bMerkleRoot, schemaVersion, err)
+		log.Errorf("Failed to send anchor for registration [id: %x, hash: %x, SchemaVersion:%v] on registry: %v", anchorToBeRegistered.AnchorID, anchorToBeRegistered.RootHash, schemaVersion, err)
 		return err
 	} else {
-		log.Infof("Sent off the anchor [id: %x, hash: %x, SchemaVersion:%v] to registry. Ethereum transaction hash [%x] and Nonce [%v] and Check [%v]", bAnchorId, bMerkleRoot, schemaVersion, tx.Hash(), tx.Nonce(), tx.CheckNonce())
+		log.Infof("Sent off the anchor [id: %x, hash: %x, SchemaVersion:%v] to registry. Ethereum transaction hash [%x] and Nonce [%v] and Check [%v]", anchorToBeRegistered.AnchorID, anchorToBeRegistered.RootHash, schemaVersion, tx.Hash(), tx.Nonce(), tx.CheckNonce())
 	}
 
 	log.Infof("Transfer pending: 0x%x\n", tx.Hash())
@@ -128,13 +114,10 @@ func setUpRegistrationEventListener(ethRegistryContract WatchAnchorRegistered, f
 	anchorRegisteredEvents := make(chan *EthereumAnchorRegistryContractAnchorRegistered, 1)
 	go waitAndRouteAnchorRegistrationEvent(anchorRegisteredEvents, watchOpts.Context, confirmations, anchorToBeRegistered)
 
-	var bAnchorId [32]byte
-	copy(bAnchorId[:], anchorToBeRegistered.AnchorID[:32])
-
 	//TODO do something with the returned Subscription that is currently simply discarded
 	// Somehow there are some possible resource leakage situations with this handling but I have to understand
 	// Subscriptions a bit better before writing this code.
-	_, err = ethRegistryContract.WatchAnchorRegistered(watchOpts, anchorRegisteredEvents, []common.Address{from}, [][32]byte{bAnchorId}, nil)
+	_, err = ethRegistryContract.WatchAnchorRegistered(watchOpts, anchorRegisteredEvents, []common.Address{from}, [][32]byte{anchorToBeRegistered.AnchorID}, nil)
 	if err != nil {
 		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for anchor registration", 1)
 		log.Panicf(wError.Error())

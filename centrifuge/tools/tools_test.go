@@ -42,3 +42,13 @@ func TestRandomString32(t *testing.T) {
 	assert.NotNil(t, random, "Should receive non-nil")
 	assert.NotEqual(t, "", random, "Should receive a filled string")
 }
+
+func TestIsEmptyByte(t *testing.T){
+	assert.True(t, tools.IsEmptyByteSlice([]byte{}))
+	assert.False(t, tools.IsEmptyByteSlice([]byte{'1','1'}))
+}
+
+func TestIsEmptyByte32(t *testing.T){
+	assert.True(t, tools.IsEmptyByte32([32]byte{}))
+	assert.False(t, tools.IsEmptyByte32([32]byte{'1','1'}))
+}
