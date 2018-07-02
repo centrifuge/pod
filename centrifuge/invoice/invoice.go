@@ -126,5 +126,5 @@ func (inv *Invoice) ConvertToCoreDocument() (coredocpb *coredocumentpb.CoreDocum
 
 	coredocpb.EmbeddedData = &invoiceAny
 	coredocpb.EmbeddedDataSalts = &invoiceSaltsAny
-	return coredocpb
+	return
 }
