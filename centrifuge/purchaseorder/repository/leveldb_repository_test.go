@@ -13,7 +13,7 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 )
 
-var dbFileName = "/tmp/centrifuge_testing_invdoc.leveldb"
+var dbFileName = "/tmp/centrifuge_testing_podoc.leveldb"
 
 func TestMain(m *testing.M) {
 	defer Bootstrap().Close()
@@ -32,13 +32,13 @@ func TestStorageService(t *testing.T) {
 	err := repo.Store(&purchaseorder)
 	assert.Nil(t, err, "Store should not return error")
 
-	inv, err := repo.FindById(identifier)
+	orderDocument, err := repo.FindById(identifier)
 	assert.Nil(t, err, "FindById should not return error")
-	assert.Equal(t, purchaseorder.CoreDocument.DocumentIdentifier, inv.CoreDocument.DocumentIdentifier, "PurchaseOrder DocumentIdentifier should be equal")
+	assert.Equal(t, purchaseorder.CoreDocument.DocumentIdentifier, orderDocument.CoreDocument.DocumentIdentifier, "PurchaseOrder DocumentIdentifier should be equal")
 
-	inv, err = repo.FindById(invalidIdentifier)
+	orderDocument, err = repo.FindById(invalidIdentifier)
 	assert.NotNil(t, err, "FindById should not return error")
-	assert.Nil(t, inv, "PurchaseOrder should be NIL")
+	assert.Nil(t, orderDocument, "PurchaseOrder should be NIL")
 }
 
 func Bootstrap() (*leveldb.DB) {

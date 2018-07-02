@@ -17,10 +17,10 @@ type PurchaseOrder struct {
 	Document *purchaseorderpb.PurchaseOrderDocument
 }
 
-func NewPurchaseOrder(invDoc *purchaseorderpb.PurchaseOrderDocument) *PurchaseOrder {
-	order := &PurchaseOrder{invDoc}
+func NewPurchaseOrder(poDoc *purchaseorderpb.PurchaseOrderDocument) *PurchaseOrder {
+	order := &PurchaseOrder{poDoc}
 	// IF salts have not been provided, let's generate them
-	if invDoc.Salts == nil {
+	if poDoc.Salts == nil {
 		purchaseorderSalts := purchaseorderpb.PurchaseOrderDataSalts{}
 		proofs.FillSalts(&purchaseorderSalts)
 		order.Document.Salts = &purchaseorderSalts
@@ -39,7 +39,7 @@ func NewEmptyPurchaseOrder() *PurchaseOrder {
 	return &PurchaseOrder{&doc}
 }
 
-func NewPurchaseOrderFromCoreDocument(coredocument *coredocumentpb.CoreDocument) (inv *PurchaseOrder) {
+func NewPurchaseOrderFromCoreDocument(coredocument *coredocumentpb.CoreDocument) (order *PurchaseOrder) {
 	if coredocument.EmbeddedData.TypeUrl != documenttypes.PurchaseOrderDataTypeUrl ||
 		coredocument.EmbeddedDataSalts.TypeUrl != documenttypes.PurchaseOrderSaltsTypeUrl {
 		log.Fatal("Trying to convert document with incorrect schema")
@@ -55,18 +55,18 @@ func NewPurchaseOrderFromCoreDocument(coredocument *coredocumentpb.CoreDocument)
 	proto.Merge(&emptiedCoreDoc, coredocument)
 	emptiedCoreDoc.EmbeddedData = nil
 	emptiedCoreDoc.EmbeddedDataSalts = nil
-	inv = NewEmptyPurchaseOrder()
-	inv.Document.Data = purchaseorderData
-	inv.Document.Salts = purchaseorderSalts
-	inv.Document.CoreDocument = &emptiedCoreDoc
+	order = NewEmptyPurchaseOrder()
+	order.Document.Data = purchaseorderData
+	order.Document.Salts = purchaseorderSalts
+	order.Document.CoreDocument = &emptiedCoreDoc
 	return
 }
 
-func (inv *PurchaseOrder) getDocumentTree() (tree *proofs.DocumentTree, err error) {
+func (order *PurchaseOrder) getDocumentTree() (tree *proofs.DocumentTree, err error) {
 	t := proofs.NewDocumentTree()
 	sha256Hash := sha256.New()
 	t.SetHashFunc(sha256Hash)
-	err = t.FillTree(inv.Document.Data, inv.Document.Salts)
+	err = t.FillTree(order.Document.Data, order.Document.Salts)
 	if err != nil {
 		log.Error("getDocumentTree:", err)
 		return nil, err
@@ -74,18 +74,18 @@ func (inv *PurchaseOrder) getDocumentTree() (tree *proofs.DocumentTree, err erro
 	return &t, nil
 }
 
-func (inv *PurchaseOrder) CalculateMerkleRoot() error {
-	tree, err := inv.getDocumentTree()
+func (order *PurchaseOrder) CalculateMerkleRoot() error {
+	tree, err := order.getDocumentTree()
 	if err != nil {
 		return err
 	}
 	// TODO: below should actually be stored as CoreDocumentProcessor.DataMerkleRoot
-	inv.Document.CoreDocument.DocumentRoot = tree.RootHash()
+	order.Document.CoreDocument.DocumentRoot = tree.RootHash()
 	return nil
 }
 
-func (inv *PurchaseOrder) CreateProofs(fields []string) (proofs []*proofs.Proof, err error) {
-	tree, err := inv.getDocumentTree()
+func (order *PurchaseOrder) CreateProofs(fields []string) (proofs []*proofs.Proof, err error) {
+	tree, err := order.getDocumentTree()
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -101,10 +101,10 @@ func (inv *PurchaseOrder) CreateProofs(fields []string) (proofs []*proofs.Proof,
 	return
 }
 
-func (inv *PurchaseOrder) ConvertToCoreDocument() (coredocpb *coredocumentpb.CoreDocument) {
+func (order *PurchaseOrder) ConvertToCoreDocument() (coredocpb *coredocumentpb.CoreDocument) {
 	coredocpb = &coredocumentpb.CoreDocument{}
-	proto.Merge(coredocpb, inv.Document.CoreDocument)
-	serializedPurchaseOrder, err := proto.Marshal(inv.Document.Data)
+	proto.Merge(coredocpb, order.Document.CoreDocument)
+	serializedPurchaseOrder, err := proto.Marshal(order.Document.Data)
 	if err != nil {
 		log.Fatalf("Could not serialize PurchaseOrderData: %s", err)
 	}
@@ -114,7 +114,7 @@ func (inv *PurchaseOrder) ConvertToCoreDocument() (coredocpb *coredocumentpb.Cor
 		Value:   serializedPurchaseOrder,
 	}
 
-	serializedSalts, err := proto.Marshal(inv.Document.Salts)
+	serializedSalts, err := proto.Marshal(order.Document.Salts)
 	if err != nil {
 		log.Fatalf("Could not serialize PurchaseOrderSalts: %s", err)
 	}

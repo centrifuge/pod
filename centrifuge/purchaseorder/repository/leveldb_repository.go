@@ -25,27 +25,27 @@ func (repo *LevelDBPurchaseOrderRepository) GetKey(id []byte) ([]byte) {
 	return append([]byte("purchaseorder"), id...)
 }
 
-func (repo *LevelDBPurchaseOrderRepository) FindById(id []byte) (inv *purchaseorderpb.PurchaseOrderDocument, err error) {
+func (repo *LevelDBPurchaseOrderRepository) FindById(id []byte) (orderDocument *purchaseorderpb.PurchaseOrderDocument, err error) {
 	doc_bytes, err := repo.Leveldb.Get(repo.GetKey(id), nil)
 	if err != nil {
 		return nil, err
 	}
 
-	inv = &purchaseorderpb.PurchaseOrderDocument{}
-	err = proto.Unmarshal(doc_bytes, inv)
+	orderDocument = &purchaseorderpb.PurchaseOrderDocument{}
+	err = proto.Unmarshal(doc_bytes, orderDocument)
 	if err != nil {
 		return nil, err
 	}
 	return
 }
 
-func (repo *LevelDBPurchaseOrderRepository) Store(inv *purchaseorderpb.PurchaseOrderDocument) (err error) {
-	if inv.CoreDocument == nil {
+func (repo *LevelDBPurchaseOrderRepository) Store(orderDocument *purchaseorderpb.PurchaseOrderDocument) (err error) {
+	if orderDocument.CoreDocument == nil {
 		err = errors.Errorf("Invalid Empty (NIL) PurchaseOrder Document")
 		return
 	}
-	key := repo.GetKey(inv.CoreDocument.DocumentIdentifier)
-	data, err := proto.Marshal(inv)
+	key := repo.GetKey(orderDocument.CoreDocument.DocumentIdentifier)
+	data, err := proto.Marshal(orderDocument)
 
 	if err != nil {
 		return

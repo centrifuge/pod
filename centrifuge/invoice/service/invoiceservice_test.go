@@ -75,7 +75,7 @@ func TestInvoiceDocumentService_Anchor(t *testing.T) {
 	doc, s, mockRepo, _, anchorer := getTestSetupData()
 
 	mockRepo.On("Store", doc.Document).Return(nil).Once()
-	anchorer .On("Anchor", mock.Anything).Return(nil).Once()
+	anchorer.On("Anchor", mock.Anything).Return(nil).Once()
 
 	anchoredDoc, err := s.HandleAnchorInvoiceDocument(context.Background(), &invoicepb.AnchorInvoiceEnvelope{Document: doc.Document})
 

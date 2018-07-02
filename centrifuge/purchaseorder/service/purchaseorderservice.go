@@ -28,14 +28,14 @@ func (s *PurchaseOrderDocumentService) HandleCreatePurchaseOrderProof(ctx contex
 		return nil, err
 	}
 
-	inv := purchaseorder.NewPurchaseOrder(orderDoc)
+	order := purchaseorder.NewPurchaseOrder(orderDoc)
 
-	proofs, err := inv.CreateProofs(createPurchaseOrderProofEnvelope.Fields)
+	proofs, err := order.CreateProofs(createPurchaseOrderProofEnvelope.Fields)
 	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
-	return &purchaseorderpb.PurchaseOrderProof{FieldProofs: proofs, DocumentIdentifier: inv.Document.CoreDocument.DocumentIdentifier}, nil
+	return &purchaseorderpb.PurchaseOrderProof{FieldProofs: proofs, DocumentIdentifier: order.Document.CoreDocument.DocumentIdentifier}, nil
 
 }
 
