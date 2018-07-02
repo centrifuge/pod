@@ -15,14 +15,17 @@ import (
 
 var log = logging.Logger("coredocument")
 
+// CoreDocumentProcessor is the processor that can deal with CoreDocuments and performs actions on them such as
+// anchoring, sending on the p2p level, or signing.
 type CoreDocumentProcessor struct {
 }
 
-// Sender identifies someone who can send a given CoreDocumentProcessor via the Context to the recipient
+// Sender identifies implementation, which can send a given CoreDocument via the Context to the recipient
 type Sender interface {
 	Send(coreDocument *coredocumentpb.CoreDocument, ctx context.Context, recipient string) (err error)
 }
 
+// Anchorer identifies an implementation, which can anchor a given CoreDocument
 type Anchorer interface {
 	Anchor(document *coredocumentpb.CoreDocument) (err error)
 }
@@ -62,6 +65,7 @@ func (cdp *CoreDocumentProcessor) Send(coreDocument *coredocumentpb.CoreDocument
 	return
 }
 
+// Anchor anchors the given CoreDocument
 func (cd *CoreDocumentProcessor) Anchor(document *coredocumentpb.CoreDocument) (err error) {
 	log.Infof("Anchoring document %v", document)
 
