@@ -63,12 +63,16 @@ func generateMockedOutInvoiceService() (srv *invoiceservice.InvoiceDocumentServi
 	}
 	return
 }
+func getTestSetupData()(doc *invoice.Invoice, srv *invoiceservice.InvoiceDocumentService, repo *MockInvoiceRepository, sender *testingutils.MockCoreDocumentSender, anchorer *testingutils.MockCoreDocumentAnchorer){
+	doc = generateSendableInvoice()
+	srv, repo, sender, anchorer = generateMockedOutInvoiceService()
+	return
+}
 // ----- END HELPER FUNCTIONS -----
 
 // ----- TESTS -----
 func TestInvoiceDocumentService_Anchor(t *testing.T) {
-	s, mockRepo, _, anchorer := generateMockedOutInvoiceService()
-	doc := generateSendableInvoice()
+	doc, s, mockRepo, _, anchorer := getTestSetupData()
 
 	mockRepo.On("Store", doc.Document).Return(nil).Once()
 	anchorer .On("Anchor", mock.Anything).Return(nil).Once()
@@ -82,8 +86,7 @@ func TestInvoiceDocumentService_Anchor(t *testing.T) {
 }
 
 func TestInvoiceDocumentService_AnchorFails(t *testing.T) {
-	s, mockRepo, _, anchorer := generateMockedOutInvoiceService()
-	doc := generateSendableInvoice()
+	doc, s, mockRepo, _, anchorer := getTestSetupData()
 
 	mockRepo.On("Store", doc.Document).Return(nil).Once()
 	anchorer.On("Anchor", mock.Anything).Return(errors.New("error anchoring")).Once()
@@ -97,9 +100,8 @@ func TestInvoiceDocumentService_AnchorFails(t *testing.T) {
 }
 
 func TestInvoiceDocumentService_Send(t *testing.T) {
-	s, mockRepo, mockSender, _ := generateMockedOutInvoiceService()
+	doc, s, mockRepo, mockSender, _ := getTestSetupData()
 
-	doc := generateSendableInvoice()
 	recipients := testingutils.GenerateP2PRecipients(1)
 
 	mockRepo.On("Store", doc.Document).Return(nil).Once()
@@ -113,8 +115,7 @@ func TestInvoiceDocumentService_Send(t *testing.T) {
 }
 
 func TestInvoiceDocumentService_SendFails(t *testing.T) {
-	s, mockRepo, mockSender, _ := generateMockedOutInvoiceService()
-	doc := generateSendableInvoice()
+	doc, s, mockRepo, mockSender, _ := getTestSetupData()
 	recipients := testingutils.GenerateP2PRecipients(2)
 
 	mockRepo.On("Store", doc.Document).Return(nil).Once()
@@ -173,11 +174,7 @@ func TestInvoiceDocumentService_HandleCreateInvoiceProof_NotExistingInvoice(t *t
 	}
 	inv.CalculateMerkleRoot()
 
-	//mock the storage
-	mockRepo := new(MockInvoiceRepository)
-	s := invoiceservice.InvoiceDocumentService{
-		InvoiceRepository: mockRepo,
-	}
+	s, mockRepo, _, _ := generateMockedOutInvoiceService()
 
 	proofRequest := &invoicepb.CreateInvoiceProofEnvelope{
 		DocumentIdentifier: identifier,
