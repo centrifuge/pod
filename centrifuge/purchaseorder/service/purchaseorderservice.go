@@ -48,9 +48,9 @@ func (s *PurchaseOrderDocumentService) HandleAnchorPurchaseOrderDocument(ctx con
 	}
 
 	// TODO: the calculated merkle root should be persisted locally as well.
-	inv := purchaseorder.NewPurchaseOrder(anchorPurchaseOrderEnvelope.Document)
-	inv.CalculateMerkleRoot()
-	coreDoc := inv.ConvertToCoreDocument()
+	orderDoc := purchaseorder.NewPurchaseOrder(anchorPurchaseOrderEnvelope.Document)
+	orderDoc.CalculateMerkleRoot()
+	coreDoc := orderDoc.ConvertToCoreDocument()
 
 	err = s.CoreDocumentAnchorer.Anchor(coreDoc)
 	if err != nil {
