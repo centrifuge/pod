@@ -1,13 +1,15 @@
 // +build ethereum
 
-package purchaseorderservice
+package purchaseorderservice_test
 
 import (
 	"context"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder/service"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/stretchr/testify/assert"
@@ -35,7 +37,11 @@ func generateEmptyPurchaseOrderForProcessing() (doc *purchaseorder.PurchaseOrder
 }
 
 func TestPurchaseOrderDocumentService_HandleAnchorPurchaseOrderDocument_Integration(t *testing.T) {
-	s := PurchaseOrderDocumentService{}
+	s := purchaseorderservice.PurchaseOrderDocumentService{
+		PurchaseOrderRepository: purchaseorderrepository.GetPurchaseOrderRepository(),
+		CoreDocumentSender:      coredocument.GetDefaultSender(),
+		CoreDocumentAnchorer:    coredocument.GetDefaultAnchorer(),
+	}
 	doc := generateEmptyPurchaseOrderForProcessing()
 	doc.Document.Data.Country = "DE"
 

@@ -5,7 +5,6 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/documenttypes"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
@@ -40,20 +39,20 @@ func NewEmptyInvoice() *Invoice {
 	return &Invoice{&doc}
 }
 
-func NewInvoiceFromCoreDocument(coredocument *coredocument.CoreDocument) (inv *Invoice) {
-	if coredocument.Document.EmbeddedData.TypeUrl != documenttypes.InvoiceDataTypeUrl ||
-		coredocument.Document.EmbeddedDataSalts.TypeUrl != documenttypes.InvoiceSaltsTypeUrl {
+func NewInvoiceFromCoreDocument(coreDocument *coredocumentpb.CoreDocument) (inv *Invoice) {
+	if coreDocument.EmbeddedData.TypeUrl != documenttypes.InvoiceDataTypeUrl ||
+		coreDocument.EmbeddedDataSalts.TypeUrl != documenttypes.InvoiceSaltsTypeUrl {
 		log.Fatal("Trying to convert document with incorrect schema")
 	}
 
 	invoiceData := &invoicepb.InvoiceData{}
-	proto.Unmarshal(coredocument.Document.EmbeddedData.Value, invoiceData)
+	proto.Unmarshal(coreDocument.EmbeddedData.Value, invoiceData)
 
 	invoiceSalts := &invoicepb.InvoiceDataSalts{}
-	proto.Unmarshal(coredocument.Document.EmbeddedDataSalts.Value, invoiceSalts)
+	proto.Unmarshal(coreDocument.EmbeddedDataSalts.Value, invoiceSalts)
 
 	emptiedCoreDoc := coredocumentpb.CoreDocument{}
-	proto.Merge(&emptiedCoreDoc, coredocument.Document)
+	proto.Merge(&emptiedCoreDoc, coreDocument)
 	emptiedCoreDoc.EmbeddedData = nil
 	emptiedCoreDoc.EmbeddedDataSalts = nil
 	inv = NewEmptyInvoice()
@@ -80,7 +79,7 @@ func (inv *Invoice) CalculateMerkleRoot() error {
 	if err != nil {
 		return err
 	}
-	// TODO: below should actually be stored as CoreDocument.DataMerkleRoot
+	// TODO: below should actually be stored as CoreDocumentProcessor.DataMerkleRoot
 	inv.Document.CoreDocument.DocumentRoot = tree.RootHash()
 	return nil
 }
@@ -102,8 +101,8 @@ func (inv *Invoice) CreateProofs(fields []string) (proofs []*proofs.Proof, err e
 	return
 }
 
-func (inv *Invoice) ConvertToCoreDocument() (coredocument coredocument.CoreDocument) {
-	coredocpb := &coredocumentpb.CoreDocument{}
+func (inv *Invoice) ConvertToCoreDocument() (coredocpb *coredocumentpb.CoreDocument) {
+	coredocpb = &coredocumentpb.CoreDocument{}
 	proto.Merge(coredocpb, inv.Document.CoreDocument)
 	serializedInvoice, err := proto.Marshal(inv.Document.Data)
 	if err != nil {
@@ -127,6 +126,5 @@ func (inv *Invoice) ConvertToCoreDocument() (coredocument coredocument.CoreDocum
 
 	coredocpb.EmbeddedData = &invoiceAny
 	coredocpb.EmbeddedDataSalts = &invoiceSaltsAny
-	coredocument.Document = coredocpb
-	return
+	return coredocpb
 }

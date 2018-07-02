@@ -9,10 +9,11 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
+	"github.com/go-errors/errors"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"os"
 	"testing"
 )
@@ -24,65 +25,170 @@ func TestMain(m *testing.M) {
 	os.Exit(result)
 }
 
-func TestPurchaseOrderDocumentService_SendReceive(t *testing.T) {
-	s := PurchaseOrderDocumentService{}
-	identifier := testingutils.Rand32Bytes()
-	identifierIncorrect := testingutils.Rand32Bytes()
+// ----- MOCKS -----
+type MockPurchaseOrderRepository struct {
+	mock.Mock
+}
+
+func (m *MockPurchaseOrderRepository) GetKey(id []byte) ([]byte) {
+	args := m.Called(id)
+	return args.Get(0).([]byte)
+}
+func (m *MockPurchaseOrderRepository) FindById(id []byte) (doc *purchaseorderpb.PurchaseOrderDocument, err error) {
+	args := m.Called(id)
+	return args.Get(0).(*purchaseorderpb.PurchaseOrderDocument), args.Error(1)
+}
+func (m *MockPurchaseOrderRepository) Store(doc *purchaseorderpb.PurchaseOrderDocument) (err error) {
+	args := m.Called(doc)
+	return args.Error(0)
+}
+
+// ----- END MOCKS -----
+
+// ----- HELPER FUNCTIONS -----
+func generateSendablePurchaseOrder() (*purchaseorder.PurchaseOrder) {
 	doc := purchaseorder.NewEmptyPurchaseOrder()
-	doc.Document.CoreDocument = &coredocumentpb.CoreDocument{
-		DocumentIdentifier: identifier,
-		CurrentIdentifier:  identifier,
-		NextIdentifier:     testingutils.Rand32Bytes(),
-		DataMerkleRoot:     testingutils.Rand32Bytes(),
+	doc.Document.CoreDocument = testingutils.GenerateCoreDocument()
+	return doc
+}
+
+func generateMockedOutPurchaseOrderService() (srv *PurchaseOrderDocumentService, repo *MockPurchaseOrderRepository, sender *testingutils.MockCoreDocumentSender, anchorer *testingutils.MockCoreDocumentAnchorer) {
+	repo = new(MockPurchaseOrderRepository)
+	sender = new(testingutils.MockCoreDocumentSender)
+	anchorer = new(testingutils.MockCoreDocumentAnchorer)
+	srv = &PurchaseOrderDocumentService{
+		PurchaseOrderRepository: repo,
+		CoreDocumentSender:      sender,
+		CoreDocumentAnchorer:    anchorer,
 	}
+	return
+}
 
-	sentDoc, err := s.HandleSendPurchaseOrderDocument(context.Background(), &purchaseorderpb.SendPurchaseOrderEnvelope{Recipients: [][]byte{}, Document: doc.Document})
-	assert.Nil(t, err, "Error in RPC Call")
+func getTestSetupData()(po *purchaseorder.PurchaseOrder, srv *PurchaseOrderDocumentService, repo *MockPurchaseOrderRepository, sender *testingutils.MockCoreDocumentSender, anchorer *testingutils.MockCoreDocumentAnchorer){
+	po = generateSendablePurchaseOrder()
+	srv, repo, sender, anchorer = generateMockedOutPurchaseOrderService()
+	return
+}
 
-	assert.Equal(t, sentDoc.CoreDocument.DocumentIdentifier, identifier,
-		"DocumentIdentifier doesn't match")
+// ----- END HELPER FUNCTIONS -----
+func TestInvoiceDocumentService_Anchor(t *testing.T) {
+	doc, s, mockRepo, _, mockAnchorer := getTestSetupData()
 
-	receivedDoc, err := s.HandleGetPurchaseOrderDocument(context.Background(),
-		&purchaseorderpb.GetPurchaseOrderDocumentEnvelope{DocumentIdentifier: identifier})
-	assert.Nil(t, err, "Error in RPC Call")
-	assert.Equal(t, receivedDoc.CoreDocument.DocumentIdentifier, identifier,
-		"DocumentIdentifier doesn't match")
+	mockRepo.On("Store", doc.Document).Return(nil).Once()
+	mockAnchorer.On("Anchor", mock.Anything).Return(nil).Once()
 
-	_, err = s.HandleGetPurchaseOrderDocument(context.Background(),
-		&purchaseorderpb.GetPurchaseOrderDocumentEnvelope{DocumentIdentifier: identifierIncorrect})
-	assert.NotNil(t, err,
-		"RPC call should have raised exception")
+	anchoredDoc, err := s.HandleAnchorPurchaseOrderDocument(context.Background(), &purchaseorderpb.AnchorPurchaseOrderEnvelope{Document: doc.Document})
 
+	mockRepo.AssertExpectations(t)
+	mockAnchorer.AssertExpectations(t)
+	assert.Nil(t, err)
+	assert.Equal(t, doc.Document.CoreDocument.DocumentIdentifier, anchoredDoc.CoreDocument.DocumentIdentifier)
+}
+
+func TestInvoiceDocumentService_AnchorFails(t *testing.T) {
+	doc, s, mockRepo, _, mockAnchorer := getTestSetupData()
+
+	mockRepo.On("Store", doc.Document).Return(nil).Once()
+	mockAnchorer.On("Anchor", mock.Anything).Return(errors.New("error anchoring")).Once()
+
+	anchoredDoc, err := s.HandleAnchorPurchaseOrderDocument(context.Background(), &purchaseorderpb.AnchorPurchaseOrderEnvelope{Document: doc.Document})
+
+	mockRepo.AssertExpectations(t)
+	mockAnchorer.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Nil(t, anchoredDoc)
+}
+
+func TestPurchaseOrderDocumentService_Send(t *testing.T) {
+	doc, s, mockRepo, mockSender, mockAnchorer := getTestSetupData()
+
+	recipients := testingutils.GenerateP2PRecipients(1)
+
+	mockRepo.On("Store", doc.Document).Return(nil).Once()
+	mockAnchorer.On("Anchor", mock.Anything).Return(nil).Once()
+	mockSender.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
+
+	_, err := s.HandleSendPurchaseOrderDocument(context.Background(), &purchaseorderpb.SendPurchaseOrderEnvelope{Recipients: recipients, Document: doc.Document})
+
+	mockRepo.AssertExpectations(t)
+	mockAnchorer.AssertExpectations(t)
+	mockSender.AssertExpectations(t)
+	assert.Nil(t, err)
+}
+
+func TestPurchaseOrderDocumentService_Send_StoreFails(t *testing.T) {
+	doc, s, mockRepo, _, _ := getTestSetupData()
+	recipients := testingutils.GenerateP2PRecipients(2)
+
+	mockRepo.On("Store", doc.Document).Return(errors.New("error storing")).Once()
+
+	_, err := s.HandleSendPurchaseOrderDocument(context.Background(), &purchaseorderpb.SendPurchaseOrderEnvelope{Recipients: recipients, Document: doc.Document})
+
+	mockRepo.AssertExpectations(t)
+	assert.Equal(t, "error storing", err.Error())
+}
+
+func TestPurchaseOrderDocumentService_Send_AnchorFails(t *testing.T) {
+	doc, s, mockRepo, _, mockAnchorer := getTestSetupData()
+	recipients := testingutils.GenerateP2PRecipients(2)
+
+	mockRepo.On("Store", doc.Document).Return(nil).Once()
+	mockAnchorer.On("Anchor", mock.Anything).Return(errors.New("error anchoring")).Once()
+
+	_, err := s.HandleSendPurchaseOrderDocument(context.Background(), &purchaseorderpb.SendPurchaseOrderEnvelope{Recipients: recipients, Document: doc.Document})
+
+	mockRepo.AssertExpectations(t)
+	mockAnchorer.AssertExpectations(t)
+	assert.Equal(t, "error anchoring", err.Error())
+}
+
+func TestPurchaseOrderDocumentService_SendFails(t *testing.T) {
+	doc, s, mockRepo, mockSender, mockAnchorer := getTestSetupData()
+	recipients := testingutils.GenerateP2PRecipients(2)
+
+	mockRepo.On("Store", doc.Document).Return(nil).Once()
+	mockAnchorer.On("Anchor", mock.Anything).Return(nil).Once()
+	mockSender.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(errors.New("error sending")).Twice()
+
+	_, err := s.HandleSendPurchaseOrderDocument(context.Background(), &purchaseorderpb.SendPurchaseOrderEnvelope{Recipients: recipients, Document: doc.Document})
+
+	mockRepo.AssertExpectations(t)
+	mockAnchorer.AssertExpectations(t)
+	mockSender.AssertExpectations(t)
+	assert.Equal(t, "[error sending error sending]", err.Error())
 }
 
 func TestPurchaseOrderDocumentService_HandleCreatePurchaseOrderProof(t *testing.T) {
-	s := PurchaseOrderDocumentService{}
+	s, mockRepo, _, _ := generateMockedOutPurchaseOrderService()
 
 	identifier := testingutils.Rand32Bytes()
-	inv := purchaseorder.NewEmptyPurchaseOrder()
-	inv.Document.CoreDocument = &coredocumentpb.CoreDocument{
+	order := purchaseorder.NewEmptyPurchaseOrder()
+	order.Document.CoreDocument = &coredocumentpb.CoreDocument{
 		DocumentIdentifier: identifier,
 		CurrentIdentifier:  identifier,
 		NextIdentifier:     testingutils.Rand32Bytes(),
 		// TODO: below should be actual merkle root
 		DataMerkleRoot: testingutils.Rand32Bytes(),
 	}
-	inv.CalculateMerkleRoot()
-	err := purchaseorderrepository.GetPurchaseOrderRepository().Store(inv.Document)
-	assert.Nil(t, err)
+	order.CalculateMerkleRoot()
+
 
 	proofRequest := &purchaseorderpb.CreatePurchaseOrderProofEnvelope{
 		DocumentIdentifier: identifier,
 		Fields:             []string{"currency", "country", "amount"},
 	}
 
+	mockRepo.On("FindById", proofRequest.DocumentIdentifier).Return(order.Document, nil).Once()
+
 	purchaseorderProof, err := s.HandleCreatePurchaseOrderProof(context.Background(), proofRequest)
+
+	mockRepo.AssertExpectations(t)
 	assert.Nil(t, err)
 	assert.Equal(t, identifier, purchaseorderProof.DocumentIdentifier)
 	assert.Equal(t, len(proofRequest.Fields), len(purchaseorderProof.FieldProofs))
 	assert.Equal(t, proofRequest.Fields[0], purchaseorderProof.FieldProofs[0].Property)
 	sha256Hash := sha256.New()
-	valid, err := proofs.ValidateProof(purchaseorderProof.FieldProofs[0], inv.Document.CoreDocument.DocumentRoot, sha256Hash)
+	valid, err := proofs.ValidateProof(purchaseorderProof.FieldProofs[0], order.Document.CoreDocument.DocumentRoot, sha256Hash)
 	assert.True(t, valid)
 	assert.Nil(t, err)
 }
