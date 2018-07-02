@@ -72,53 +72,56 @@ func getTestSetupData()(doc *invoice.Invoice, srv *invoiceservice.InvoiceDocumen
 
 // ----- TESTS -----
 func TestInvoiceDocumentService_Anchor(t *testing.T) {
-	doc, s, mockRepo, _, anchorer := getTestSetupData()
+	doc, s, mockRepo, _, mockAnchorer := getTestSetupData()
 
 	mockRepo.On("Store", doc.Document).Return(nil).Once()
-	anchorer .On("Anchor", mock.Anything).Return(nil).Once()
+	mockAnchorer.On("Anchor", mock.Anything).Return(nil).Once()
 
 	anchoredDoc, err := s.HandleAnchorInvoiceDocument(context.Background(), &invoicepb.AnchorInvoiceEnvelope{Document: doc.Document})
 
 	mockRepo.AssertExpectations(t)
-	anchorer.AssertExpectations(t)
+	mockAnchorer.AssertExpectations(t)
 	assert.Nil(t, err)
 	assert.Equal(t, doc.Document.CoreDocument.DocumentIdentifier, anchoredDoc.CoreDocument.DocumentIdentifier)
 }
 
 func TestInvoiceDocumentService_AnchorFails(t *testing.T) {
-	doc, s, mockRepo, _, anchorer := getTestSetupData()
+	doc, s, mockRepo, _, mockAnchorer := getTestSetupData()
 
 	mockRepo.On("Store", doc.Document).Return(nil).Once()
-	anchorer.On("Anchor", mock.Anything).Return(errors.New("error anchoring")).Once()
+	mockAnchorer.On("Anchor", mock.Anything).Return(errors.New("error anchoring")).Once()
 
 	anchoredDoc, err := s.HandleAnchorInvoiceDocument(context.Background(), &invoicepb.AnchorInvoiceEnvelope{Document: doc.Document})
 
 	mockRepo.AssertExpectations(t)
-	anchorer.AssertExpectations(t)
+	mockAnchorer.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Nil(t, anchoredDoc)
 }
 
 func TestInvoiceDocumentService_Send(t *testing.T) {
-	doc, s, mockRepo, mockSender, _ := getTestSetupData()
+	doc, s, mockRepo, mockSender, mockAnchorer := getTestSetupData()
 
 	recipients := testingutils.GenerateP2PRecipients(1)
 
 	mockRepo.On("Store", doc.Document).Return(nil).Once()
+	mockAnchorer.On("Anchor", mock.Anything).Return(nil).Once()
 	mockSender.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 
 	_, err := s.HandleSendInvoiceDocument(context.Background(), &invoicepb.SendInvoiceEnvelope{Recipients: recipients, Document: doc.Document})
 
 	mockRepo.AssertExpectations(t)
+	mockAnchorer.AssertExpectations(t)
 	mockSender.AssertExpectations(t)
 	assert.Nil(t, err)
 }
 
 func TestInvoiceDocumentService_SendFails(t *testing.T) {
-	doc, s, mockRepo, mockSender, _ := getTestSetupData()
+	doc, s, mockRepo, mockSender, mockAnchorer := getTestSetupData()
 	recipients := testingutils.GenerateP2PRecipients(2)
 
 	mockRepo.On("Store", doc.Document).Return(nil).Once()
+	mockAnchorer.On("Anchor", mock.Anything).Return(nil).Once()
 	mockSender.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(errors.New("error sending")).Twice()
 
 	_, err := s.HandleSendInvoiceDocument(context.Background(), &invoicepb.SendInvoiceEnvelope{Recipients: recipients, Document: doc.Document})
@@ -127,6 +130,32 @@ func TestInvoiceDocumentService_SendFails(t *testing.T) {
 	//the error handling in the send handler simply prints out the list of errors without much formatting
 	//OK for now but could be done nicer in the future
 	assert.Equal(t, "[error sending error sending]", err.Error())
+}
+
+func TestInvoiceDocumentService_Send_StoreFails(t *testing.T) {
+	doc, s, mockRepo, _, _ := getTestSetupData()
+	recipients := testingutils.GenerateP2PRecipients(2)
+
+	mockRepo.On("Store", doc.Document).Return(errors.New("error storing")).Once()
+
+	_, err := s.HandleSendInvoiceDocument(context.Background(), &invoicepb.SendInvoiceEnvelope{Recipients: recipients, Document: doc.Document})
+
+	mockRepo.AssertExpectations(t)
+	assert.Equal(t, "error storing", err.Error())
+}
+
+func TestInvoiceDocumentService_Send_AnchorFails(t *testing.T) {
+	doc, s, mockRepo, _, mockAnchorer := getTestSetupData()
+	recipients := testingutils.GenerateP2PRecipients(2)
+
+	mockRepo.On("Store", doc.Document).Return(nil).Once()
+	mockAnchorer.On("Anchor", mock.Anything).Return(errors.New("error anchoring")).Once()
+
+	_, err := s.HandleSendInvoiceDocument(context.Background(), &invoicepb.SendInvoiceEnvelope{Recipients: recipients, Document: doc.Document})
+
+	mockRepo.AssertExpectations(t)
+	mockAnchorer.AssertExpectations(t)
+	assert.Equal(t, "error anchoring", err.Error())
 }
 
 func TestInvoiceDocumentService_HandleCreateInvoiceProof(t *testing.T) {
