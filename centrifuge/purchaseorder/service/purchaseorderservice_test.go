@@ -64,12 +64,44 @@ func generateMockedOutPurchaseOrderService() (srv *PurchaseOrderDocumentService,
 	return
 }
 
+func getTestSetupData()(po *purchaseorder.PurchaseOrder, srv *PurchaseOrderDocumentService, repo *MockPurchaseOrderRepository, sender *testingutils.MockCoreDocumentSender, anchorer *testingutils.MockCoreDocumentAnchorer){
+	po = generateSendablePurchaseOrder()
+	srv, repo, sender, anchorer = generateMockedOutPurchaseOrderService()
+	return
+}
+
 // ----- END HELPER FUNCTIONS -----
+func TestInvoiceDocumentService_Anchor(t *testing.T) {
+	doc, s, mockRepo, _, anchorer := getTestSetupData()
+
+	mockRepo.On("Store", doc.Document).Return(nil).Once()
+	anchorer.On("Anchor", mock.Anything).Return(nil).Once()
+
+	anchoredDoc, err := s.HandleAnchorPurchaseOrderDocument(context.Background(), &purchaseorderpb.AnchorPurchaseOrderEnvelope{Document: doc.Document})
+
+	mockRepo.AssertExpectations(t)
+	anchorer.AssertExpectations(t)
+	assert.Nil(t, err)
+	assert.Equal(t, doc.Document.CoreDocument.DocumentIdentifier, anchoredDoc.CoreDocument.DocumentIdentifier)
+}
+
+func TestInvoiceDocumentService_AnchorFails(t *testing.T) {
+	doc, s, mockRepo, _, anchorer := getTestSetupData()
+
+	mockRepo.On("Store", doc.Document).Return(nil).Once()
+	anchorer.On("Anchor", mock.Anything).Return(errors.New("error anchoring")).Once()
+
+	anchoredDoc, err := s.HandleAnchorPurchaseOrderDocument(context.Background(), &purchaseorderpb.AnchorPurchaseOrderEnvelope{Document: doc.Document})
+
+	mockRepo.AssertExpectations(t)
+	anchorer.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Nil(t, anchoredDoc)
+}
 
 func TestPurchaseOrderDocumentService_Send(t *testing.T) {
-	s, mockRepo, mockSender, _ := generateMockedOutPurchaseOrderService()
+	doc, s, mockRepo, mockSender, _ := getTestSetupData()
 
-	doc := generateSendablePurchaseOrder()
 	recipients := testingutils.GenerateP2PRecipients(1)
 
 	mockRepo.On("Store", doc.Document).Return(nil).Once()
@@ -83,9 +115,7 @@ func TestPurchaseOrderDocumentService_Send(t *testing.T) {
 }
 
 func TestPurchaseOrderDocumentService_SendFails(t *testing.T) {
-	s, mockRepo, mockSender, _ := generateMockedOutPurchaseOrderService()
-
-	doc := generateSendablePurchaseOrder()
+	doc, s, mockRepo, mockSender, _ := getTestSetupData()
 	recipients := testingutils.GenerateP2PRecipients(2)
 
 	mockRepo.On("Store", doc.Document).Return(nil).Once()
