@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 if [ -n "${GETH_DOCKER_CONTAINER_WAS_RUNNING}" ]; then
     echo "Container ${GETH_DOCKER_CONTAINER_NAME} is already running. Not starting again."
@@ -13,9 +13,9 @@ PARENT_DIR=`pwd`
 source "${local_dir}/env_vars.sh"
 
 # For caching when running from travis
-if [[ "X${RUN_CONTEXT}" == "Xtravis" ]];
+if [[ "X${TRAVIS}" == "Xtrue" ]];
 then
-  ln -s $DATA_DIR/.ethash ~/.ethash
+  ln -s $DATA_DIR/$NETWORK_ID/.ethash ~/.ethash
   echo "TRAVIS"
 else
   echo "LOCAL CONTEXT"

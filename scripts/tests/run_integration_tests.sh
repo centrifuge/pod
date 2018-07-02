@@ -38,4 +38,10 @@ THESE_TESTS='./...'
 if [ -n  ${1} ]; then
     THESE_TESTS="${1}"
 fi
-go test ${THESE_TESTS} -v -tags=ethereum -timeout ${TEST_TIMEOUT}
+for d in $(go list ./... | grep -v vendor); do
+    go test ${THESE_TESTS} -v -coverprofile=profile.out -covermode=atomic -tags=ethereum -timeout ${TEST_TIMEOUT} $d |  while IFS= read -r line; do printf '[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$line"; done
+    if [ -f profile.out ]; then
+        cat profile.out >> coverage.txt
+        rm profile.out
+    fi
+done

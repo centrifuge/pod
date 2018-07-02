@@ -5,14 +5,17 @@ set -a
 local_dir="$(dirname "$0")"
 PARENT_DIR=`pwd`
 
-if [[ "X${1}" == "Xmigrate" ]] || [[ "X${RUN_CONTEXT}" == "Xtravis" ]];
+if [[ "X${1}" == "Xmigrate" ]] || [[ "X${TRAVIS}" == "Xtrue" ]];
 then
   FORCE_MIGRATE='true'
 fi
 
 GETH_DOCKER_CONTAINER_NAME="geth-node"
-GETH_DOCKER_CONTAINER_WAS_RUNNING=`docker ps -a --filter "name=${DOCKER_CONTAINER_NAME}" --filter "status=running" --quiet`
+GETH_DOCKER_CONTAINER_WAS_RUNNING=`docker ps -a --filter "name=${GETH_DOCKER_CONTAINER_NAME}" --filter "status=running" --quiet`
 echo "Running: [${GETH_DOCKER_CONTAINER_WAS_RUNNING}]"
+
+# Code coverage is stored in coverage.txt
+echo "" > coverage.txt
 
 ################# Run Dependencies #########################
 for path in ${local_dir}/test-dependencies/*; do
@@ -78,7 +81,7 @@ else
     docker rm -f geth-node
 
     # Cleaning extra DAG file, so we do not cache it - travis
-    if [[ "X${RUN_CONTEXT}" == "Xtravis" ]];
+    if [[ "X${TRAVIS}" == "Xtrue" ]];
     then
       new_dag=`ls -ltr $DATA_DIR/$NETWORK_ID/.ethash/* | tail -1 | awk '{print $9}' | tr -d '\n'`
       rm -Rf $new_dag
