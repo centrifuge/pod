@@ -39,8 +39,7 @@ func generateEmptyPurchaseOrderForProcessing() (doc *purchaseorder.PurchaseOrder
 func TestPurchaseOrderDocumentService_HandleAnchorPurchaseOrderDocument_Integration(t *testing.T) {
 	s := purchaseorderservice.PurchaseOrderDocumentService{
 		PurchaseOrderRepository: purchaseorderrepository.GetPurchaseOrderRepository(),
-		CoreDocumentSender:      coredocument.GetDefaultSender(),
-		CoreDocumentAnchorer:    coredocument.GetDefaultAnchorer(),
+		CoreDocumentProcessor:   coredocument.GetDefaultCoreDocumentProcessor(),
 	}
 	doc := generateEmptyPurchaseOrderForProcessing()
 	doc.Document.Data.Country = "DE"

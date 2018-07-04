@@ -20,20 +20,14 @@ var log = logging.Logger("coredocument")
 type CoreDocumentProcessor struct {
 }
 
-// Sender identifies implementation, which can send a given CoreDocument via the Context to the recipient
-type Sender interface {
+// CoreDocumentProcessorer identifies an implementation, which can do a bunch of things with a CoreDocument.
+// E.g. send, anchor, etc.
+type CoreDocumentProcessorer interface {
 	Send(coreDocument *coredocumentpb.CoreDocument, ctx context.Context, recipient string) (err error)
-}
-
-// Anchorer identifies an implementation, which can anchor a given CoreDocument
-type Anchorer interface {
 	Anchor(document *coredocumentpb.CoreDocument) (err error)
 }
 
-func GetDefaultSender()(Sender){
-	return &CoreDocumentProcessor{}
-}
-func GetDefaultAnchorer()(Anchorer){
+func GetDefaultCoreDocumentProcessor()(CoreDocumentProcessorer){
 	return &CoreDocumentProcessor{}
 }
 

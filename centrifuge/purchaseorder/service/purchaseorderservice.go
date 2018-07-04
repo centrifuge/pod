@@ -17,8 +17,7 @@ var log = logging.Logger("rest-api")
 // Struct needed as it is used to register the grpc services attached to the grpc server
 type PurchaseOrderDocumentService struct{
 	PurchaseOrderRepository purchaseorderrepository.PurchaseOrderRepository
-	CoreDocumentSender      coredocument.Sender
-	CoreDocumentAnchorer    coredocument.Anchorer
+	CoreDocumentProcessor   coredocument.CoreDocumentProcessorer
 }
 
 // HandleCreatePurchaseOrderProof creates proofs for a list of fields
@@ -52,7 +51,7 @@ func (s *PurchaseOrderDocumentService) HandleAnchorPurchaseOrderDocument(ctx con
 	orderDoc.CalculateMerkleRoot()
 	coreDoc := orderDoc.ConvertToCoreDocument()
 
-	err = s.CoreDocumentAnchorer.Anchor(coreDoc)
+	err = s.CoreDocumentProcessor.Anchor(coreDoc)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -74,7 +73,7 @@ func (s *PurchaseOrderDocumentService) HandleSendPurchaseOrderDocument(ctx conte
 
 	errs := []error{}
 	for _, element := range sendPurchaseOrderEnvelope.Recipients {
-		err1 := s.CoreDocumentSender.Send(coreDoc, ctx, string(element[:]))
+		err1 := s.CoreDocumentProcessor.Send(coreDoc, ctx, string(element[:]))
 		if err1 != nil {
 			errs = append(errs, err1)
 		}

@@ -42,20 +42,16 @@ func GenerateCoreDocument()(*coredocumentpb.CoreDocument){
 	}
 }
 
-type MockCoreDocumentSender struct {
+type MockCoreDocumentProcessor struct {
 	mock.Mock
 }
 
-func (m *MockCoreDocumentSender) Send(coreDocument *coredocumentpb.CoreDocument, ctx context.Context, recipient string) (err error) {
+func (m *MockCoreDocumentProcessor) Send(coreDocument *coredocumentpb.CoreDocument, ctx context.Context, recipient string) (err error) {
 	args := m.Called(coreDocument, ctx, recipient)
 	return args.Error(0)
 }
 
-type MockCoreDocumentAnchorer struct {
-	mock.Mock
-}
-
-func (m *MockCoreDocumentAnchorer) Anchor(coreDocument *coredocumentpb.CoreDocument) (err error) {
+func (m *MockCoreDocumentProcessor) Anchor(coreDocument *coredocumentpb.CoreDocument) (err error) {
 	args := m.Called(coreDocument)
 	return args.Error(0)
 }
