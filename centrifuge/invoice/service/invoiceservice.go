@@ -10,6 +10,7 @@ import (
 	google_protobuf2 "github.com/golang/protobuf/ptypes/empty"
 	logging "github.com/ipfs/go-log"
 	"golang.org/x/net/context"
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 )
 
 var log = logging.Logger("rest-api")
@@ -23,7 +24,7 @@ type InvoiceDocumentService struct {
 // HandleCreateInvoiceProof creates proofs for a list of fields
 func (s *InvoiceDocumentService) HandleCreateInvoiceProof(ctx context.Context, createInvoiceProofEnvelope *invoicepb.CreateInvoiceProofEnvelope) (*invoicepb.InvoiceProof, error) {
 	invdoc, err := s.InvoiceRepository.FindById(createInvoiceProofEnvelope.DocumentIdentifier)
-	if err != nil { 
+	if err != nil {
 		return nil, err
 	}
 
@@ -46,12 +47,7 @@ func (s *InvoiceDocumentService) HandleAnchorInvoiceDocument(ctx context.Context
 		return nil, err
 	}
 
-	// TODO: the calculated merkle root should be persisted locally as well.
-	inv := invoice.NewInvoice(anchorInvoiceEnvelope.Document)
-	inv.CalculateMerkleRoot()
-	coreDoc := inv.ConvertToCoreDocument()
-
-	err = s.CoreDocumentProcessor.Anchor(coreDoc)
+	anchorInvoiceEnvelope.Document.CoreDocument, err = s.anchorInvoiceDocument(anchorInvoiceEnvelope.Document)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -67,9 +63,11 @@ func (s *InvoiceDocumentService) HandleSendInvoiceDocument(ctx context.Context, 
 		return nil, err
 	}
 
-	inv := invoice.NewInvoice(sendInvoiceEnvelope.Document)
-	inv.CalculateMerkleRoot()
-	coreDoc := inv.ConvertToCoreDocument()
+	coreDoc, err := s.anchorInvoiceDocument(sendInvoiceEnvelope.Document)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
 
 	errs := []error{}
 	for _, element := range sendInvoiceEnvelope.Recipients {
@@ -101,4 +99,20 @@ func (s *InvoiceDocumentService) HandleGetInvoiceDocument(ctx context.Context, g
 
 func (s *InvoiceDocumentService) HandleGetReceivedInvoiceDocuments(ctx context.Context, empty *google_protobuf2.Empty) (*invoicepb.ReceivedInvoices, error) {
 	return nil, nil
+}
+
+// anchorInvoiceDocument anchors the given invoice document and returns the anchor details
+func (s *InvoiceDocumentService) anchorInvoiceDocument(doc *invoicepb.InvoiceDocument) (*coredocumentpb.CoreDocument, error) {
+
+	// TODO: the calculated merkle root should be persisted locally as well.
+	inv := invoice.NewInvoice(doc)
+	inv.CalculateMerkleRoot()
+	coreDoc := inv.ConvertToCoreDocument()
+
+	err := s.CoreDocumentProcessor.Anchor(coreDoc)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+	return coreDoc, nil
 }
