@@ -12,6 +12,6 @@ func GetPurchaseOrderRepository() PurchaseOrderRepository {
 
 type PurchaseOrderRepository interface {
 	GetKey(id []byte) ([]byte)
-	FindById(id []byte) (inv *purchaseorderpb.PurchaseOrderDocument, err error)
-	Store(inv *purchaseorderpb.PurchaseOrderDocument) (err error)
+	FindById(id []byte) (doc *purchaseorderpb.PurchaseOrderDocument, err error)
+	Store(doc *purchaseorderpb.PurchaseOrderDocument) (err error)
 }

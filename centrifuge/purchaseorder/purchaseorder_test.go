@@ -47,7 +47,7 @@ func TestPurchaseOrderCoreDocumentConverter(t *testing.T) {
 	}
 
 	generatedCoreDocument := purchaseorderDoc.ConvertToCoreDocument()
-	generatedCoreDocumentBytes, err := proto.Marshal(generatedCoreDocument.Document)
+	generatedCoreDocumentBytes, err := proto.Marshal(generatedCoreDocument)
 	assert.Nil(t, err, "Error marshaling generatedCoreDocument")
 
 	coreDocumentBytes, err := proto.Marshal(&coreDocument)
@@ -55,8 +55,8 @@ func TestPurchaseOrderCoreDocumentConverter(t *testing.T) {
 	assert.Equal(t, coreDocumentBytes, generatedCoreDocumentBytes,
 		"Generated & converted documents are not identical")
 
-	convertedPurchaseOrderDoc := NewPurchaseOrderFromCoreDocument(&generatedCoreDocument)
-	convertedGeneratedPurchaseOrderDoc := NewPurchaseOrderFromCoreDocument(&generatedCoreDocument)
+	convertedPurchaseOrderDoc := NewPurchaseOrderFromCoreDocument(generatedCoreDocument)
+	convertedGeneratedPurchaseOrderDoc := NewPurchaseOrderFromCoreDocument(generatedCoreDocument)
 	purchaseorderBytes, err := proto.Marshal(purchaseorderDoc.Document)
 	assert.Nil(t, err, "Error marshaling purchaseorderDoc")
 
