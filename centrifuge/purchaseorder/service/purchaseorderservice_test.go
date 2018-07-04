@@ -10,8 +10,8 @@ import (
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
-	"github.com/go-errors/errors"
 	"github.com/centrifuge/precise-proofs/proofs"
+	"github.com/go-errors/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"os"
@@ -30,7 +30,7 @@ type MockPurchaseOrderRepository struct {
 	mock.Mock
 }
 
-func (m *MockPurchaseOrderRepository) GetKey(id []byte) ([]byte) {
+func (m *MockPurchaseOrderRepository) GetKey(id []byte) []byte {
 	args := m.Called(id)
 	return args.Get(0).([]byte)
 }
@@ -46,7 +46,7 @@ func (m *MockPurchaseOrderRepository) Store(doc *purchaseorderpb.PurchaseOrderDo
 // ----- END MOCKS -----
 
 // ----- HELPER FUNCTIONS -----
-func generateSendablePurchaseOrder() (*purchaseorder.PurchaseOrder) {
+func generateSendablePurchaseOrder() *purchaseorder.PurchaseOrder {
 	doc := purchaseorder.NewEmptyPurchaseOrder()
 	doc.Document.CoreDocument = testingutils.GenerateCoreDocument()
 	return doc
@@ -136,13 +136,13 @@ func TestPurchaseOrderDocumentService_HandleCreatePurchaseOrderProof(t *testing.
 		CurrentIdentifier:  identifier,
 		NextIdentifier:     testingutils.Rand32Bytes(),
 		// TODO: below should be actual merkle root
-		DataMerkleRoot: testingutils.Rand32Bytes(),
+		DataRoot: testingutils.Rand32Bytes(),
 	}
 	order.CalculateMerkleRoot()
 
 	proofRequest := &purchaseorderpb.CreatePurchaseOrderProofEnvelope{
 		DocumentIdentifier: identifier,
-		Fields:             []string{"currency", "country", "amount"},
+		Fields:             []string{"currency", "sender_country", "gross_amount"},
 	}
 
 	mockRepo.On("FindById", proofRequest.DocumentIdentifier).Return(order.Document, nil).Once()

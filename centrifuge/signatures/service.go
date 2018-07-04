@@ -116,7 +116,7 @@ func (srv *SigningService) ValidateKey(identity []byte, key ed25519.PublicKey, t
 
 func (srv *SigningService) createSignatureData(doc *coredocumentpb.CoreDocument) (signatureData []byte) {
 	signatureData = make([]byte, 64)
-	copy(signatureData[:32], doc.DataMerkleRoot[:32])
+	copy(signatureData[:32], doc.DataRoot[:32])
 	copy(signatureData[32:64], doc.NextIdentifier[:32])
 	return
 }

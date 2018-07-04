@@ -36,3 +36,8 @@ jobs:
     - stage: build_image
       if: (NOT type IN (pull_request)) AND (branch = master)
       script: scripts/docker_build_push.sh
+script:
+  - scripts/test_wrapper.sh
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
