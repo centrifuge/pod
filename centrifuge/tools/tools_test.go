@@ -43,12 +43,56 @@ func TestRandomString32(t *testing.T) {
 	assert.NotEqual(t, "", random, "Should receive a filled string")
 }
 
-func TestIsEmptyByte(t *testing.T){
+func TestIsEmptyByte(t *testing.T) {
 	assert.True(t, tools.IsEmptyByteSlice([]byte{}))
-	assert.False(t, tools.IsEmptyByteSlice([]byte{'1','1'}))
+	assert.False(t, tools.IsEmptyByteSlice([]byte{'1', '1'}))
 }
 
-func TestIsEmptyByte32(t *testing.T){
+func TestIsEmptyByte32(t *testing.T) {
 	assert.True(t, tools.IsEmptyByte32([32]byte{}))
-	assert.False(t, tools.IsEmptyByte32([32]byte{'1','1'}))
+	assert.False(t, tools.IsEmptyByte32([32]byte{'1', '1'}))
+}
+
+var testDataIsSameByteSlice = []struct {
+	a        []byte
+	b        []byte
+	expected bool
+}{
+	{
+		[]byte("abc1"),
+		[]byte("abc1"),
+		true,
+	},
+	{
+		nil,
+		nil,
+		true,
+	},
+	{
+		[]byte{},
+		[]byte{},
+		true,
+	},
+	{
+		nil,
+		[]byte("abc1"),
+		false,
+	},
+	{
+		[]byte("abc1"),
+		nil,
+		false,
+	},
+	{
+		[]byte("abc1"),
+		[]byte("abc2"),
+		false,
+	},
+}
+
+func TestIsSameByteSlice(t *testing.T) {
+	for _, tt := range testDataIsSameByteSlice {
+		actual := tools.IsSameByteSlice(tt.a, tt.b)
+		assert.Equal(t, tt.expected, actual)
+	}
 }

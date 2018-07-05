@@ -56,11 +56,36 @@ func IsEmptyByte32(source [32]byte) bool {
 }
 
 func IsEmptyByteSlice(s []byte) bool {
+	if s == nil {
+		return true
+	}
 	for _, v := range s {
 		if v != 0 {
 			return false
 		}
 	}
+	return true
+}
+
+func IsSameByteSlice(a []byte, b []byte) bool {
+	if a == nil && b == nil {
+		return true;
+	}
+
+	if a == nil || b == nil {
+		return false;
+	}
+
+	if len(a) != len(b) {
+		return false
+	}
+
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+
 	return true
 }
 

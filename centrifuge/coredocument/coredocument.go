@@ -15,6 +15,25 @@ import (
 
 var log = logging.Logger("coredocument")
 
+// ----- ERROR -----
+type ErrInconsistentState struct {
+	message string
+}
+func NewErrInconsistentState(message string) *ErrInconsistentState {
+	padded := ""
+	if len(message) > 0  {
+		padded = ": "+message
+	}
+	return &ErrInconsistentState{
+		message: "Inconsistent CoreDocument state" + padded,
+	}
+}
+func (e *ErrInconsistentState) Error() string {
+	return e.message
+}
+// ----- END ERROR -----
+
+
 // CoreDocumentProcessor is the processor that can deal with CoreDocuments and performs actions on them such as
 // anchoring, sending on the p2p level, or signing.
 type CoreDocumentProcessor struct {
