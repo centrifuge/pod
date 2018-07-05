@@ -4,13 +4,13 @@ package invoiceservice_test
 
 import (
 	"context"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/service"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/repository"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/service"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/stretchr/testify/assert"
 	"os"
@@ -31,7 +31,7 @@ func generateEmptyInvoiceForProcessing() (doc *invoice.Invoice) {
 		DocumentIdentifier: identifier,
 		CurrentIdentifier:  identifier,
 		NextIdentifier:     testingutils.Rand32Bytes(),
-		DataMerkleRoot:     testingutils.Rand32Bytes(),
+		DataRoot:           testingutils.Rand32Bytes(),
 	}
 	return
 }

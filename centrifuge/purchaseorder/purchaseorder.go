@@ -79,7 +79,7 @@ func (order *PurchaseOrder) CalculateMerkleRoot() error {
 	if err != nil {
 		return err
 	}
-	// TODO: below should actually be stored as CoreDocumentProcessor.DataMerkleRoot
+	// TODO: below should actually be stored as CoreDocument.DataRoot
 	order.Document.CoreDocument.DocumentRoot = tree.RootHash()
 	return nil
 }

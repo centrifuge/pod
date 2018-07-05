@@ -31,7 +31,7 @@ func generateEmptyPurchaseOrderForProcessing() (doc *purchaseorder.PurchaseOrder
 		DocumentIdentifier: identifier,
 		CurrentIdentifier:  identifier,
 		NextIdentifier:     testingutils.Rand32Bytes(),
-		DataMerkleRoot:     testingutils.Rand32Bytes(),
+		DataRoot:           testingutils.Rand32Bytes(),
 	}
 	return
 }
