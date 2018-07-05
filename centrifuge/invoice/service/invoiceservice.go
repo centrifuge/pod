@@ -2,7 +2,7 @@ package invoiceservice
 
 import (
 	"fmt"
-	invoicepb "github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
@@ -10,7 +10,6 @@ import (
 	google_protobuf2 "github.com/golang/protobuf/ptypes/empty"
 	logging "github.com/ipfs/go-log"
 	"golang.org/x/net/context"
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 )
 
 var log = logging.Logger("rest-api")
@@ -41,29 +40,31 @@ func (s *InvoiceDocumentService) HandleCreateInvoiceProof(ctx context.Context, c
 
 // HandleAnchorInvoiceDocument anchors the given invoice document and returns the anchor details
 func (s *InvoiceDocumentService) HandleAnchorInvoiceDocument(ctx context.Context, anchorInvoiceEnvelope *invoicepb.AnchorInvoiceEnvelope) (*invoicepb.InvoiceDocument, error) {
-	err := s.InvoiceRepository.Store(anchorInvoiceEnvelope.Document)
+	invoiceDocument := anchorInvoiceEnvelope.Document
+	err := s.InvoiceRepository.Store(invoiceDocument)
 	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
 
-	anchorInvoiceEnvelope.Document.CoreDocument, err = s.anchorInvoiceDocument(anchorInvoiceEnvelope.Document)
+	anchoredInvoiceDocument, err := s.anchorInvoiceDocument(invoiceDocument)
 	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
 
-	return anchorInvoiceEnvelope.Document, nil
+	return anchoredInvoiceDocument, nil
 }
 
 // HandleSendInvoiceDocument anchors and sends an invoice to the recipient
 func (s *InvoiceDocumentService) HandleSendInvoiceDocument(ctx context.Context, sendInvoiceEnvelope *invoicepb.SendInvoiceEnvelope) (*invoicepb.InvoiceDocument, error) {
-	err := s.InvoiceRepository.Store(sendInvoiceEnvelope.Document)
+	invoiceDocument := sendInvoiceEnvelope.Document
+	err := s.InvoiceRepository.Store(invoiceDocument)
 	if err != nil {
 		return nil, err
 	}
 
-	coreDoc, err := s.anchorInvoiceDocument(sendInvoiceEnvelope.Document)
+	anchoredInvoiceDocument, err := s.anchorInvoiceDocument(invoiceDocument)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -71,7 +72,7 @@ func (s *InvoiceDocumentService) HandleSendInvoiceDocument(ctx context.Context, 
 
 	errs := []error{}
 	for _, element := range sendInvoiceEnvelope.Recipients {
-		err1 := s.CoreDocumentProcessor.Send(coreDoc, ctx, string(element[:]))
+		err1 := s.CoreDocumentProcessor.Send(anchoredInvoiceDocument.CoreDocument, ctx, string(element[:]))
 		if err1 != nil {
 			errs = append(errs, err1)
 		}
@@ -81,7 +82,7 @@ func (s *InvoiceDocumentService) HandleSendInvoiceDocument(ctx context.Context, 
 		log.Errorf("%v", errs)
 		return nil, fmt.Errorf("%v", errs)
 	}
-	return sendInvoiceEnvelope.Document, nil
+	return anchoredInvoiceDocument, nil
 }
 
 func (s *InvoiceDocumentService) HandleGetInvoiceDocument(ctx context.Context, getInvoiceDocumentEnvelope *invoicepb.GetInvoiceDocumentEnvelope) (*invoicepb.InvoiceDocument, error) {
@@ -102,7 +103,7 @@ func (s *InvoiceDocumentService) HandleGetReceivedInvoiceDocuments(ctx context.C
 }
 
 // anchorInvoiceDocument anchors the given invoice document and returns the anchor details
-func (s *InvoiceDocumentService) anchorInvoiceDocument(doc *invoicepb.InvoiceDocument) (*coredocumentpb.CoreDocument, error) {
+func (s *InvoiceDocumentService) anchorInvoiceDocument(doc *invoicepb.InvoiceDocument) (*invoicepb.InvoiceDocument, error) {
 
 	// TODO: the calculated merkle root should be persisted locally as well.
 	inv := invoice.NewInvoice(doc)
@@ -114,5 +115,5 @@ func (s *InvoiceDocumentService) anchorInvoiceDocument(doc *invoicepb.InvoiceDoc
 		log.Error(err)
 		return nil, err
 	}
-	return coreDoc, nil
+	return invoice.NewInvoiceFromCoreDocument(coreDoc).Document, nil
 }
