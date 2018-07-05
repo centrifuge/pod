@@ -104,6 +104,7 @@ func TestPurchaseOrderDocumentService_Send(t *testing.T) {
 
 	mockRepo.On("Store", doc.Document).Return(nil).Once()
 	mockCDP.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
+	mockCDP.On("Anchor", mock.Anything).Return(nil).Once()
 
 	_, err := s.HandleSendPurchaseOrderDocument(context.Background(), &purchaseorderpb.SendPurchaseOrderEnvelope{Recipients: recipients, Document: doc.Document})
 
@@ -112,11 +113,38 @@ func TestPurchaseOrderDocumentService_Send(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+func TestPurchaseOrderDocumentService_Send_StoreFails(t *testing.T) {
+	doc, s, mockRepo, _ := getTestSetupData()
+	recipients := testingutils.GenerateP2PRecipients(2)
+
+	mockRepo.On("Store", doc.Document).Return(errors.New("error storing")).Once()
+
+	_, err := s.HandleSendPurchaseOrderDocument(context.Background(), &purchaseorderpb.SendPurchaseOrderEnvelope{Recipients: recipients, Document: doc.Document})
+
+	mockRepo.AssertExpectations(t)
+	assert.Equal(t, "error storing", err.Error())
+}
+
+func TestPurchaseOrderDocumentService_Send_AnchorFails(t *testing.T) {
+	doc, s, mockRepo, mockCDP := getTestSetupData()
+	recipients := testingutils.GenerateP2PRecipients(2)
+
+	mockRepo.On("Store", doc.Document).Return(nil).Once()
+	mockCDP.On("Anchor", mock.Anything).Return(errors.New("error anchoring")).Once()
+
+	_, err := s.HandleSendPurchaseOrderDocument(context.Background(), &purchaseorderpb.SendPurchaseOrderEnvelope{Recipients: recipients, Document: doc.Document})
+
+	mockRepo.AssertExpectations(t)
+	mockCDP.AssertExpectations(t)
+	assert.Equal(t, "error anchoring", err.Error())
+}
+
 func TestPurchaseOrderDocumentService_SendFails(t *testing.T) {
 	doc, s, mockRepo, mockCDP := getTestSetupData()
 	recipients := testingutils.GenerateP2PRecipients(2)
 
 	mockRepo.On("Store", doc.Document).Return(nil).Once()
+	mockCDP.On("Anchor", mock.Anything).Return(nil).Once()
 	mockCDP.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(errors.New("error sending")).Twice()
 
 	_, err := s.HandleSendPurchaseOrderDocument(context.Background(), &purchaseorderpb.SendPurchaseOrderEnvelope{Recipients: recipients, Document: doc.Document})
