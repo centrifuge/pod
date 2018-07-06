@@ -38,7 +38,7 @@ func GenerateCoreDocument()(*coredocumentpb.CoreDocument){
 		DocumentIdentifier: identifier,
 		CurrentIdentifier:  identifier,
 		NextIdentifier:     Rand32Bytes(),
-		DataMerkleRoot:     Rand32Bytes(),
+		DataRoot:     Rand32Bytes(),
 	}
 }
 

@@ -255,3 +255,7 @@ revision = "64c31f18a9753193909544f1a606148894cbe878"
 [prune]
   go-tests = true
   unused-packages = true
+
+[[constraint]]
+  name = "gopkg.in/resty.v1"
+  version = "1.7.0"
