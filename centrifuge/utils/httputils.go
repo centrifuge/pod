@@ -1,9 +1,9 @@
 package utils
 
 import (
-	"fmt"
 	logging "github.com/ipfs/go-log"
 	"gopkg.in/resty.v1"
+	"github.com/go-errors/errors"
 )
 
 var log = logging.Logger("http-utils")
@@ -19,7 +19,7 @@ func SendPOSTRequest(url string, contentType string, payload []byte) (statusCode
 		return
 	}
 	if resp.StatusCode() != 200 {
-		err = fmt.Errorf("%s", resp.Status)
+		err = errors.Errorf("%s", resp.Status)
 	}
 	statusCode = resp.StatusCode()
 	return
