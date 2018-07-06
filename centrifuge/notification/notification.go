@@ -5,7 +5,7 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"encoding/json"
 	logging "github.com/ipfs/go-log"
-	"github.com/CentrifugeInc/go-centrifuge/utils"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/utils"
 	"time"
 )
 

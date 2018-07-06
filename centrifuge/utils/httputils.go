@@ -19,7 +19,7 @@ func SendPOSTRequest(url string, contentType string, payload []byte) (statusCode
 		return
 	}
 	if resp.StatusCode() != 200 {
-		err = fmt.Errorf("%v", resp.Status)
+		err = fmt.Errorf("%s", resp.Status)
 	}
 	statusCode = resp.StatusCode()
 	return
