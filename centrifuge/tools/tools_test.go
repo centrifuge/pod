@@ -41,6 +41,7 @@ func TestRandomString32(t *testing.T) {
 	random := tools.RandomString32()
 	assert.NotNil(t, random, "Should receive non-nil")
 	assert.NotEqual(t, "", random, "Should receive a filled string")
+	assert.Equal(t, 32, len(random), "Should receive 32 long string")
 }
 
 func TestIsEmptyByte(t *testing.T) {

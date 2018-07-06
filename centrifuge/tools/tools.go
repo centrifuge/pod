@@ -51,7 +51,7 @@ func RandomByte32() (out [32]byte) {
 
 func IsEmptyByte32(source [32]byte) bool {
 	sl := make([]byte, 32)
-	copy(sl, source[:31])
+	copy(sl, source[:32])
 	return IsEmptyByteSlice(sl)
 }
 
