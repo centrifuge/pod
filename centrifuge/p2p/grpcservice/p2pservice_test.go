@@ -58,4 +58,4 @@ func TestP2PService_IncompatibleRequest(t *testing.T) {
 
 // Mocks //
 type MockWebhookSender struct {}
-func (wh *MockWebhookSender) Send(notification *notification.Notification) (statusCode int, err error) {return}
+func (wh *MockWebhookSender) Send(notification *notification.Notification) (status notification.NotificationStatus, err error) {return}

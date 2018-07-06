@@ -57,7 +57,7 @@ func (srv *P2PService) HandleP2PPost(ctx context.Context, req *p2ppb.P2PMessage)
 	}
 
 	// Async until we add queuing
-	go srv.Notifier.Send(&notification.Notification{0, "cId", "aId", time.Now().UTC(), req.Document})
+	go srv.Notifier.Send(&notification.Notification{0, "cId", time.Now().UTC(), req.Document})
 	//
 
 	rep = &p2ppb.P2PReply{

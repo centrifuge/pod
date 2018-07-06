@@ -866,6 +866,7 @@
     "http2/hpack",
     "idna",
     "internal/timeseries",
+    "publicsuffix",
     "trace",
     "websocket"
   ]
@@ -984,6 +985,12 @@
   revision = "c1b8fa8bdccecb0b8db834ee0b92fdbcfa606dd6"
 
 [[projects]]
+  name = "gopkg.in/resty.v1"
+  packages = ["."]
+  revision = "fccc498aed22c31ff3768bcac00795f94149a21d"
+  version = "v1.7.0"
+
+[[projects]]
   name = "gopkg.in/yaml.v2"
   packages = ["."]
   revision = "5420a8b6744d3b0345ab293f6fcba19c978f1183"
@@ -992,6 +999,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "07ac1c34ba37709007cf6e260c8b793a22f75fec9808268ed24a231c4a83a305"
+  inputs-digest = "799a975974a4f5f8e9d9c7682d846a8d4d8d38b931dbbc07c0512378cd416341"
   solver-name = "gps-cdcl"
   solver-version = 1

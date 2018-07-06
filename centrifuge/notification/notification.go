@@ -11,35 +11,42 @@ import (
 
 var log = logging.Logger("notification-api")
 
+type NotificationStatus int
+const (
+	FAILURE NotificationStatus = 0
+	SUCCESS NotificationStatus = 1
+)
 
 type Notification struct {
 	EventType int
 	CentrifugeID string
-	AccountID string
-	Timestamp time.Time
+	Recorded time.Time
 	CoreDocument *coredocumentpb.CoreDocument
 }
 
 type Sender interface {
-	Send(notification *Notification) (statusCode int, err error)
+	Send(notification *Notification) (NotificationStatus, error)
 }
 
 type WebhookSender struct {}
 
-func (wh *WebhookSender) Send(notification *Notification) (statusCode int, err error) {
+func (wh *WebhookSender) Send(notification *Notification) (NotificationStatus, error) {
 	url := config.Config.GetReceiveEventNotificationEndpoint()
 	if url == "" {
 		log.Warningf("Webhook URL not defined, manually fetch received document")
-		return
+		return SUCCESS, nil
 	}
 	payload, err := json.Marshal(notification)
 
 	if err != nil {
 		log.Error(err)
-		return
+		return FAILURE, err
 	}
 
-	statusCode, err = utils.SendPOSTRequest(url, "application/json", payload)
+	httpStatusCode, err := utils.SendPOSTRequest(url, "application/json", payload)
+	if httpStatusCode != 200 {
+		return FAILURE, err
+	}
 
-	return
+	return SUCCESS, nil
 }
