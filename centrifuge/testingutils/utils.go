@@ -7,6 +7,8 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"context"
 	"fmt"
+	"net/http"
+	"net"
 )
 
 func MockConfigOption(key string, value interface{}) func() {
@@ -38,7 +40,7 @@ func GenerateCoreDocument()(*coredocumentpb.CoreDocument){
 		DocumentIdentifier: identifier,
 		CurrentIdentifier:  identifier,
 		NextIdentifier:     Rand32Bytes(),
-		DataMerkleRoot:     Rand32Bytes(),
+		DataRoot:     Rand32Bytes(),
 	}
 }
 
@@ -54,4 +56,33 @@ func (m *MockCoreDocumentProcessor) Send(coreDocument *coredocumentpb.CoreDocume
 func (m *MockCoreDocumentProcessor) Anchor(coreDocument *coredocumentpb.CoreDocument) (err error) {
 	args := m.Called(coreDocument)
 	return args.Error(0)
+}
+
+func StartWebhookServer() (port int, srv *http.Server) {
+	port, _ = GetFreePort()
+
+	srv = &http.Server{Addr: fmt.Sprintf(":%d", port)}
+	http.HandleFunc("/webhook", func(w http.ResponseWriter, r *http.Request) {})
+	go func() {
+		srv.ListenAndServe()
+	}()
+	return
+}
+
+func StopWebhookServer(srv *http.Server) {
+	srv.Shutdown(nil)
+}
+
+func GetFreePort() (int, error) {
+	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+	if err != nil {
+		return 0, err
+	}
+
+	l, err := net.ListenTCP("tcp", addr)
+	if err != nil {
+		return 0, err
+	}
+	defer l.Close()
+	return l.Addr().(*net.TCPAddr).Port, nil
 }
