@@ -16,12 +16,12 @@ import (
 var log = logging.Logger("rest-api")
 
 // Struct needed as it is used to register the grpc services attached to the grpc server
-type PurchaseOrderDocumentService struct{
+type PurchaseOrderDocumentService struct {
 	PurchaseOrderRepository purchaseorderrepository.PurchaseOrderRepository
 	CoreDocumentProcessor   coredocument.CoreDocumentProcessorer
 }
 
-func fillCoreDocIdentifiers(doc *purchaseorderpb.PurchaseOrderDocument) error{
+func fillCoreDocIdentifiers(doc *purchaseorderpb.PurchaseOrderDocument) error {
 	filledCoreDoc, err := coredocumentservice.AutoFillDocumentIdentifiers(*doc.CoreDocument)
 	if err != nil {
 		log.Error(err)
@@ -53,46 +53,45 @@ func (s *PurchaseOrderDocumentService) HandleCreatePurchaseOrderProof(ctx contex
 func (s *PurchaseOrderDocumentService) HandleAnchorPurchaseOrderDocument(ctx context.Context, anchorPurchaseOrderEnvelope *purchaseorderpb.AnchorPurchaseOrderEnvelope) (*purchaseorderpb.PurchaseOrderDocument, error) {
 	doc := anchorPurchaseOrderEnvelope.Document
 
-	err := fillCoreDocIdentifiers(doc )
+	err := fillCoreDocIdentifiers(doc)
 	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
 
-	err = s.PurchaseOrderRepository.Store(doc )
+	err = s.PurchaseOrderRepository.Store(doc)
 	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
 
-	// TODO: the calculated merkle root should be persisted locally as well.
-	orderDoc := purchaseorder.NewPurchaseOrder(anchorPurchaseOrderEnvelope.Document)
-	orderDoc.CalculateMerkleRoot()
-	coreDoc := orderDoc.ConvertToCoreDocument()
-
-	err = s.CoreDocumentProcessor.Anchor(coreDoc)
+	anchoredPurchaseOrder, err := s.anchorPurchaseOrderDocument(doc)
 	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
 
-	return anchorPurchaseOrderEnvelope.Document, nil
+	return anchoredPurchaseOrder, nil
 }
 
 // HandleSendPurchaseOrderDocument anchors and sends an purchaseorder to the recipient
 func (s *PurchaseOrderDocumentService) HandleSendPurchaseOrderDocument(ctx context.Context, sendPurchaseOrderEnvelope *purchaseorderpb.SendPurchaseOrderEnvelope) (*purchaseorderpb.PurchaseOrderDocument, error) {
-	err := s.PurchaseOrderRepository.Store(sendPurchaseOrderEnvelope.Document)
+	purchaseOrder := sendPurchaseOrderEnvelope.Document
+	err := s.PurchaseOrderRepository.Store(purchaseOrder)
 	if err != nil {
+		log.Error(err)
 		return nil, err
 	}
 
-	order := purchaseorder.NewPurchaseOrder(sendPurchaseOrderEnvelope.Document)
-	order.CalculateMerkleRoot()
-	coreDoc := order.ConvertToCoreDocument()
+	anchoredPurchaseOrder, err := s.anchorPurchaseOrderDocument(sendPurchaseOrderEnvelope.Document)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
 
 	errs := []error{}
 	for _, element := range sendPurchaseOrderEnvelope.Recipients {
-		err1 := s.CoreDocumentProcessor.Send(coreDoc, ctx, string(element[:]))
+		err1 := s.CoreDocumentProcessor.Send(anchoredPurchaseOrder.CoreDocument, ctx, string(element[:]))
 		if err1 != nil {
 			errs = append(errs, err1)
 		}
@@ -102,7 +101,7 @@ func (s *PurchaseOrderDocumentService) HandleSendPurchaseOrderDocument(ctx conte
 		log.Errorf("%v", errs)
 		return nil, fmt.Errorf("%v", errs)
 	}
-	return sendPurchaseOrderEnvelope.Document, nil
+	return anchoredPurchaseOrder, nil
 }
 
 func (s *PurchaseOrderDocumentService) HandleGetPurchaseOrderDocument(ctx context.Context, getPurchaseOrderDocumentEnvelope *purchaseorderpb.GetPurchaseOrderDocumentEnvelope) (*purchaseorderpb.PurchaseOrderDocument, error) {
@@ -120,4 +119,19 @@ func (s *PurchaseOrderDocumentService) HandleGetPurchaseOrderDocument(ctx contex
 
 func (s *PurchaseOrderDocumentService) HandleGetReceivedPurchaseOrderDocuments(ctx context.Context, empty *google_protobuf2.Empty) (*purchaseorderpb.ReceivedPurchaseOrders, error) {
 	return nil, nil
+}
+
+// anchorPurchaseOrderDocument anchors the given purchaseorder document and returns the anchor details
+func (s *PurchaseOrderDocumentService) anchorPurchaseOrderDocument(doc *purchaseorderpb.PurchaseOrderDocument) (*purchaseorderpb.PurchaseOrderDocument, error) {
+	// TODO: the calculated merkle root should be persisted locally as well.
+	orderDoc := purchaseorder.NewPurchaseOrder(doc)
+	orderDoc.CalculateMerkleRoot()
+	coreDoc := orderDoc.ConvertToCoreDocument()
+
+	err := s.CoreDocumentProcessor.Anchor(coreDoc)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+	return purchaseorder.NewPurchaseOrderFromCoreDocument(coreDoc).Document, nil
 }

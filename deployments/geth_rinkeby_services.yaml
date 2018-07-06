@@ -22,4 +22,4 @@ spec:
     app: geth-rinkeby-node
     tier: geth-rinkeby-node
   sessionAffinity: None
-  type: LoadBalancer
+  clusterIP: 10.55.249.202

@@ -2,7 +2,6 @@
 
 
 [[projects]]
-  branch = "master"
   name = "github.com/CentrifugeInc/centrifuge-protobufs"
   packages = [
     "documenttypes",
@@ -11,7 +10,7 @@
     "gen/go/p2p",
     "gen/go/purchaseorder"
   ]
-  revision = "6c049bcbb8fd5ba41e68045a007d5fbd963baa4d"
+  revision = "43df8f27d67da2e85e7d917540f699d5a8b2e561"
   source = "git@github.com:CentrifugeInc/centrifuge-protobufs"
 
 [[projects]]
@@ -984,6 +983,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "7110d1911c4e604647c3a0d24a46ccbefbc94b11cbe5644cf5dd35bafd30fe3b"
+  inputs-digest = "66f3e29d5827d7895911ede8a016f64c6a2f87310ef81c9609c3a18da1fa3a09"
   solver-name = "gps-cdcl"
   solver-version = 1

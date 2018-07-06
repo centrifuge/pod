@@ -10,13 +10,13 @@ import (
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/service"
-	"github.com/go-errors/errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/precise-proofs/proofs"
+	"github.com/go-errors/errors"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"os"
 	"testing"
-	"github.com/stretchr/testify/mock"
 )
 
 func TestMain(m *testing.M) {
@@ -31,7 +31,7 @@ type MockInvoiceRepository struct {
 	mock.Mock
 }
 
-func (m *MockInvoiceRepository) GetKey(id []byte) ([]byte) {
+func (m *MockInvoiceRepository) GetKey(id []byte) []byte {
 	args := m.Called(id)
 	return args.Get(0).([]byte)
 }
@@ -43,10 +43,11 @@ func (m *MockInvoiceRepository) Store(inv *invoicepb.InvoiceDocument) (err error
 	args := m.Called(inv)
 	return args.Error(0)
 }
+
 // ----- END MOCKS -----
 
 // ----- HELPER FUNCTIONS -----
-func generateSendableInvoice() (*invoice.Invoice) {
+func generateSendableInvoice() *invoice.Invoice {
 	doc := invoice.NewEmptyInvoice()
 	doc.Document.CoreDocument = testingutils.GenerateCoreDocument()
 	return doc
@@ -61,11 +62,12 @@ func generateMockedOutInvoiceService() (srv *invoiceservice.InvoiceDocumentServi
 	}
 	return
 }
-func getTestSetupData()(doc *invoice.Invoice, srv *invoiceservice.InvoiceDocumentService, repo *MockInvoiceRepository, coreDocumentProcessor *testingutils.MockCoreDocumentProcessor){
+func getTestSetupData() (doc *invoice.Invoice, srv *invoiceservice.InvoiceDocumentService, repo *MockInvoiceRepository, coreDocumentProcessor *testingutils.MockCoreDocumentProcessor) {
 	doc = generateSendableInvoice()
 	srv, repo, coreDocumentProcessor = generateMockedOutInvoiceService()
 	return
 }
+
 // ----- END HELPER FUNCTIONS -----
 
 // ----- TESTS -----
@@ -103,6 +105,7 @@ func TestInvoiceDocumentService_Send(t *testing.T) {
 	recipients := testingutils.GenerateP2PRecipients(1)
 
 	mockRepo.On("Store", doc.Document).Return(nil).Once()
+	mockCDP.On("Anchor", mock.Anything).Return(nil).Once()
 	mockCDP.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 
 	_, err := s.HandleSendInvoiceDocument(context.Background(), &invoicepb.SendInvoiceEnvelope{Recipients: recipients, Document: doc.Document})
@@ -117,6 +120,7 @@ func TestInvoiceDocumentService_SendFails(t *testing.T) {
 	recipients := testingutils.GenerateP2PRecipients(2)
 
 	mockRepo.On("Store", doc.Document).Return(nil).Once()
+	mockCDP.On("Anchor", mock.Anything).Return(nil).Once()
 	mockCDP.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(errors.New("error sending")).Twice()
 
 	_, err := s.HandleSendInvoiceDocument(context.Background(), &invoicepb.SendInvoiceEnvelope{Recipients: recipients, Document: doc.Document})
@@ -127,6 +131,32 @@ func TestInvoiceDocumentService_SendFails(t *testing.T) {
 	assert.Equal(t, "[error sending error sending]", err.Error())
 }
 
+func TestInvoiceDocumentService_Send_StoreFails(t *testing.T) {
+	doc, s, mockRepo, _ := getTestSetupData()
+	recipients := testingutils.GenerateP2PRecipients(2)
+
+	mockRepo.On("Store", doc.Document).Return(errors.New("error storing")).Once()
+
+	_, err := s.HandleSendInvoiceDocument(context.Background(), &invoicepb.SendInvoiceEnvelope{Recipients: recipients, Document: doc.Document})
+
+	mockRepo.AssertExpectations(t)
+	assert.Equal(t, "error storing", err.Error())
+}
+
+func TestInvoiceDocumentService_Send_AnchorFails(t *testing.T) {
+	doc, s, mockRepo, mockCDP := getTestSetupData()
+	recipients := testingutils.GenerateP2PRecipients(2)
+
+	mockRepo.On("Store", doc.Document).Return(nil).Once()
+	mockCDP.On("Anchor", mock.Anything).Return(errors.New("error anchoring")).Once()
+
+	_, err := s.HandleSendInvoiceDocument(context.Background(), &invoicepb.SendInvoiceEnvelope{Recipients: recipients, Document: doc.Document})
+
+	mockRepo.AssertExpectations(t)
+	mockCDP.AssertExpectations(t)
+	assert.Equal(t, "error anchoring", err.Error())
+}
+
 func TestInvoiceDocumentService_HandleCreateInvoiceProof(t *testing.T) {
 	identifier := testingutils.Rand32Bytes()
 	inv := invoice.NewEmptyInvoice()
@@ -135,7 +165,7 @@ func TestInvoiceDocumentService_HandleCreateInvoiceProof(t *testing.T) {
 		CurrentIdentifier:  identifier,
 		NextIdentifier:     testingutils.Rand32Bytes(),
 		// TODO: below should be actual merkle root
-		DataMerkleRoot: testingutils.Rand32Bytes(),
+		DataRoot: testingutils.Rand32Bytes(),
 	}
 	inv.CalculateMerkleRoot()
 

@@ -10,8 +10,8 @@ import (
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
-	"github.com/go-errors/errors"
 	"github.com/centrifuge/precise-proofs/proofs"
+	"github.com/go-errors/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"os"
@@ -30,7 +30,7 @@ type MockPurchaseOrderRepository struct {
 	mock.Mock
 }
 
-func (m *MockPurchaseOrderRepository) GetKey(id []byte) ([]byte) {
+func (m *MockPurchaseOrderRepository) GetKey(id []byte) []byte {
 	args := m.Called(id)
 	return args.Get(0).([]byte)
 }
@@ -46,7 +46,7 @@ func (m *MockPurchaseOrderRepository) Store(doc *purchaseorderpb.PurchaseOrderDo
 // ----- END MOCKS -----
 
 // ----- HELPER FUNCTIONS -----
-func generateSendablePurchaseOrder() (*purchaseorder.PurchaseOrder) {
+func generateSendablePurchaseOrder() *purchaseorder.PurchaseOrder {
 	doc := purchaseorder.NewEmptyPurchaseOrder()
 	doc.Document.CoreDocument = testingutils.GenerateCoreDocument()
 	return doc
@@ -104,6 +104,7 @@ func TestPurchaseOrderDocumentService_Send(t *testing.T) {
 
 	mockRepo.On("Store", doc.Document).Return(nil).Once()
 	mockCDP.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
+	mockCDP.On("Anchor", mock.Anything).Return(nil).Once()
 
 	_, err := s.HandleSendPurchaseOrderDocument(context.Background(), &purchaseorderpb.SendPurchaseOrderEnvelope{Recipients: recipients, Document: doc.Document})
 
@@ -112,11 +113,38 @@ func TestPurchaseOrderDocumentService_Send(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+func TestPurchaseOrderDocumentService_Send_StoreFails(t *testing.T) {
+	doc, s, mockRepo, _ := getTestSetupData()
+	recipients := testingutils.GenerateP2PRecipients(2)
+
+	mockRepo.On("Store", doc.Document).Return(errors.New("error storing")).Once()
+
+	_, err := s.HandleSendPurchaseOrderDocument(context.Background(), &purchaseorderpb.SendPurchaseOrderEnvelope{Recipients: recipients, Document: doc.Document})
+
+	mockRepo.AssertExpectations(t)
+	assert.Equal(t, "error storing", err.Error())
+}
+
+func TestPurchaseOrderDocumentService_Send_AnchorFails(t *testing.T) {
+	doc, s, mockRepo, mockCDP := getTestSetupData()
+	recipients := testingutils.GenerateP2PRecipients(2)
+
+	mockRepo.On("Store", doc.Document).Return(nil).Once()
+	mockCDP.On("Anchor", mock.Anything).Return(errors.New("error anchoring")).Once()
+
+	_, err := s.HandleSendPurchaseOrderDocument(context.Background(), &purchaseorderpb.SendPurchaseOrderEnvelope{Recipients: recipients, Document: doc.Document})
+
+	mockRepo.AssertExpectations(t)
+	mockCDP.AssertExpectations(t)
+	assert.Equal(t, "error anchoring", err.Error())
+}
+
 func TestPurchaseOrderDocumentService_SendFails(t *testing.T) {
 	doc, s, mockRepo, mockCDP := getTestSetupData()
 	recipients := testingutils.GenerateP2PRecipients(2)
 
 	mockRepo.On("Store", doc.Document).Return(nil).Once()
+	mockCDP.On("Anchor", mock.Anything).Return(nil).Once()
 	mockCDP.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(errors.New("error sending")).Twice()
 
 	_, err := s.HandleSendPurchaseOrderDocument(context.Background(), &purchaseorderpb.SendPurchaseOrderEnvelope{Recipients: recipients, Document: doc.Document})
@@ -136,13 +164,13 @@ func TestPurchaseOrderDocumentService_HandleCreatePurchaseOrderProof(t *testing.
 		CurrentIdentifier:  identifier,
 		NextIdentifier:     testingutils.Rand32Bytes(),
 		// TODO: below should be actual merkle root
-		DataMerkleRoot: testingutils.Rand32Bytes(),
+		DataRoot: testingutils.Rand32Bytes(),
 	}
 	order.CalculateMerkleRoot()
 
 	proofRequest := &purchaseorderpb.CreatePurchaseOrderProofEnvelope{
 		DocumentIdentifier: identifier,
-		Fields:             []string{"currency", "country", "amount"},
+		Fields:             []string{"currency", "sender_country", "gross_amount"},
 	}
 
 	mockRepo.On("FindById", proofRequest.DocumentIdentifier).Return(order.Document, nil).Once()
