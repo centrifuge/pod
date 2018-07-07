@@ -170,7 +170,7 @@ func TestPurchaseOrderDocumentService_HandleCreatePurchaseOrderProof(t *testing.
 
 	proofRequest := &purchaseorderpb.CreatePurchaseOrderProofEnvelope{
 		DocumentIdentifier: identifier,
-		Fields:             []string{"currency", "sender_country", "gross_amount"},
+		Fields:             []string{"currency", "order_country", "net_amount"},
 	}
 
 	mockRepo.On("FindById", proofRequest.DocumentIdentifier).Return(order.Document, nil).Once()

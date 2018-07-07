@@ -198,7 +198,7 @@ func TestInvoiceDocumentService_HandleCreateInvoiceProof_NotExistingInvoice(t *t
 		CurrentIdentifier:  identifier,
 		NextIdentifier:     testingutils.Rand32Bytes(),
 		// TODO: below should be actual merkle root
-		DataMerkleRoot: testingutils.Rand32Bytes(),
+		DataRoot: testingutils.Rand32Bytes(),
 	}
 	inv.CalculateMerkleRoot()
 

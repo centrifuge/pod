@@ -7,6 +7,8 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/version"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/notification"
+	"time"
 )
 
 type IncompatibleNetworkError struct {
@@ -25,9 +27,11 @@ func (e *IncompatibleVersionError) Error() string {
 	return fmt.Sprintf("Incompatible version: this node has version: %s, client reported: %s", version.CentrifugeNodeVersion, e.clientVersion)
 }
 
-type P2PService struct{}
+type P2PService struct {
+	Notifier notification.Sender
+}
 
-// HandleP2PPost does the basic P2P handshake and stores the document received.
+// HandleP2PPost does the basic P2P handshake, stores the document received and sends notification to listener.
 // It currently does not do any more processing.
 //
 // The handshake is currently quite primitive as it only allows the request-server
@@ -51,6 +55,10 @@ func (srv *P2PService) HandleP2PPost(ctx context.Context, req *p2ppb.P2PMessage)
 	if err != nil {
 		return nil, err
 	}
+
+	// Async until we add queuing
+	go srv.Notifier.Send(&notification.Notification{0, "cId", time.Now().UTC(), req.Document})
+	//
 
 	rep = &p2ppb.P2PReply{
 		CentNodeVersion: version.CentrifugeNodeVersion,
