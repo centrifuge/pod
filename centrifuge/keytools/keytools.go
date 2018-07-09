@@ -1,11 +1,38 @@
 package keytools
 
-import "io/ioutil"
+import (
+	"encoding/pem"
+	"fmt"
+	"io/ioutil"
+	"os"
+)
 
-func writeKeyToFile(fileName string, key []byte) {
-	err := ioutil.WriteFile(fileName, key, 0600)
+func writeKeyToPemFile(fileName string, keyType string, key []byte) error {
+	f, err := os.Create(fileName)
 	if err != nil {
-		panic(err)
+		return err
 	}
+
+	block := &pem.Block{
+		Type:  keyType,
+		Bytes: key,
+	}
+	if err := pem.Encode(f, block); err != nil {
+		return err
+	}
+	f.Close()
+	return nil
 }
 
+func readKeyFromPemFile(fileName, keyType string) (key []byte, err error) {
+	pemData, err := ioutil.ReadFile(fileName)
+	if err != nil {
+		return []byte{}, err
+	}
+	block, rest := pem.Decode(pemData)
+	if block.Type != keyType {
+		return []byte{}, fmt.Errorf("Key type mismatch got [%s] but expected [%s]", block.Type, keyType)
+	}
+
+	return block.Bytes, nil
+}

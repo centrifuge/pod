@@ -1,19 +1,24 @@
 package keytools
 
 import (
+	"fmt"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	logging "github.com/ipfs/go-log"
 	"github.com/libp2p/go-libp2p-crypto"
 	"github.com/libp2p/go-libp2p-peer"
 	mh "github.com/multiformats/go-multihash"
 	"golang.org/x/crypto/ed25519"
-	"io/ioutil"
 )
 
 var log = logging.Logger("keytools")
 
+const (
+	PUBLIC_KEY  = "PUBLIC KEY"
+	PRIVATE_KEY = "PRIVATE KEY"
+)
+
 func GetPublicSigningKey(fileName string) (publicKey ed25519.PublicKey) {
-	key, err := ioutil.ReadFile(fileName)
+	key, err := readKeyFromPemFile(fileName, PUBLIC_KEY)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -22,7 +27,7 @@ func GetPublicSigningKey(fileName string) (publicKey ed25519.PublicKey) {
 }
 
 func GetPrivateSigningKey(fileName string) (privateKey ed25519.PrivateKey) {
-	key, err := ioutil.ReadFile(fileName)
+	key, err := readKeyFromPemFile(fileName, PRIVATE_KEY)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -42,8 +47,8 @@ func GenerateSigningKeypair(publicFileName, privateFileName string) (publicKey e
 	if err != nil {
 		log.Fatal(err)
 	}
-	writeKeyToFile(privateFileName, privateKey)
-	writeKeyToFile(publicFileName, publicKey)
+	writeKeyToPemFile(privateFileName, "PRIVATE KEY", privateKey)
+	writeKeyToPemFile(publicFileName, "PUBLIC KEY", publicKey)
 	return
 }
 

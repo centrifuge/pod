@@ -14,10 +14,10 @@ var createEncryptionKey bool
 var generateSigningKeyCmd = &cobra.Command{
 	Use:   "generatekeys",
 	Short: "generate key for use with centrifuge documents",
-	Long:  `TODO`,
+	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
 		if createSigningKey {
-		_, _= keytools.GenerateSigningKeypair(publicKeyFile, privateKeyFile)
+			_, _ = keytools.GenerateSigningKeypair(publicKeyFile, privateKeyFile)
 		}
 		if createEncryptionKey {
 			panic("Not implemented")
@@ -26,7 +26,7 @@ var generateSigningKeyCmd = &cobra.Command{
 }
 
 func init() {
-	generateSigningKeyCmd.Flags().BoolVarP(&createSigningKey, "signing",  "s", true, "Generate signing keys")
+	generateSigningKeyCmd.Flags().BoolVarP(&createSigningKey, "signing", "s", true, "Generate signing keys")
 	generateSigningKeyCmd.Flags().BoolVarP(&createEncryptionKey, "encryption", "e", false, "Generate encryption keys")
 	generateSigningKeyCmd.Flags().StringVarP(&privateKeyFile, "private", "p", "", "Private key path")
 	generateSigningKeyCmd.Flags().StringVarP(&publicKeyFile, "public", "q", "", "Public key path")
