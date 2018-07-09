@@ -20,8 +20,8 @@ func TestMain(m *testing.M) {
 	time.Sleep(time.Second + 2)
 
 	cc.TestBootstrap()
-	config.Config.V.Set("keys.signing.publicKey", "../../example/resources/signingKey.pub")
-	config.Config.V.Set("keys.signing.privateKey", "../../example/resources/signingKey.key")
+	config.Config.V.Set("keys.signing.publicKey", "../../example/resources/signingKey.pub.pem")
+	config.Config.V.Set("keys.signing.privateKey", "../../example/resources/signingKey.key.pem")
 	result := m.Run()
 	cc.TestTearDown()
 	os.Exit(result)

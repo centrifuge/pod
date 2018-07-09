@@ -15,8 +15,8 @@ import (
 	"github.com/spf13/viper"
 	"math/big"
 	"os"
-	"time"
 	"strings"
+	"time"
 )
 
 var log = logging.Logger("config")
@@ -28,8 +28,8 @@ type Configuration struct {
 }
 
 type AccountConfig struct {
-	Address string
-	Key string
+	Address  string
+	Key      string
 	Password string
 }
 
@@ -42,8 +42,8 @@ func (c *Configuration) GetStoragePath() string {
 func (c *Configuration) GetP2PPort() int {
 	return c.V.GetInt("p2p.port")
 }
-//
 
+//
 
 ////////////////////////////////////////////////////////////////////////////////
 // Notifications
@@ -104,8 +104,8 @@ func (c *Configuration) GetEthereumAccount(accountName string) (account *Account
 
 	// Workaround for bug https://github.com/spf13/viper/issues/309 && https://github.com/spf13/viper/issues/513
 	account = &AccountConfig{
-		Address: c.V.GetString(fmt.Sprintf("%s.address", k)),
-		Key: c.V.GetString(fmt.Sprintf("%s.key", k)),
+		Address:  c.V.GetString(fmt.Sprintf("%s.address", k)),
+		Key:      c.V.GetString(fmt.Sprintf("%s.key", k)),
 		Password: c.V.GetString(fmt.Sprintf("%s.password", k)),
 	}
 
@@ -151,11 +151,6 @@ func (c *Configuration) GetNetworkID() uint32 {
 // Identity:
 func (c *Configuration) GetIdentityId() []byte {
 	return []byte(c.V.GetString("identityId"))
-}
-
-// GetKnownSigningKeys is just a hack until we have implemented
-func (c *Configuration) GetKnownSigningKeys() map[string]string {
-	return c.V.GetStringMapString("keys.knownSigningKeys")
 }
 
 func (c *Configuration) GetSigningKeyPair() (pub, priv string) {
