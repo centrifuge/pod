@@ -76,8 +76,15 @@ func (s *PurchaseOrderDocumentService) HandleAnchorPurchaseOrderDocument(ctx con
 
 // HandleSendPurchaseOrderDocument anchors and sends an purchaseorder to the recipient
 func (s *PurchaseOrderDocumentService) HandleSendPurchaseOrderDocument(ctx context.Context, sendPurchaseOrderEnvelope *purchaseorderpb.SendPurchaseOrderEnvelope) (*purchaseorderpb.PurchaseOrderDocument, error) {
-	purchaseOrder := sendPurchaseOrderEnvelope.Document
-	err := s.PurchaseOrderRepository.Store(purchaseOrder)
+	doc := sendPurchaseOrderEnvelope.Document
+
+	err := fillCoreDocIdentifiers(doc)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	err = s.PurchaseOrderRepository.Store(doc)
 	if err != nil {
 		log.Error(err)
 		return nil, err
