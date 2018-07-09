@@ -29,7 +29,7 @@ func readKeyFromPemFile(fileName, keyType string) (key []byte, err error) {
 	if err != nil {
 		return []byte{}, err
 	}
-	block, rest := pem.Decode(pemData)
+	block, _ := pem.Decode(pemData)
 	if block.Type != keyType {
 		return []byte{}, fmt.Errorf("Key type mismatch got [%s] but expected [%s]", block.Type, keyType)
 	}
