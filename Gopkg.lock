@@ -7,10 +7,11 @@
     "documenttypes",
     "gen/go/coredocument",
     "gen/go/invoice",
+    "gen/go/notification",
     "gen/go/p2p",
     "gen/go/purchaseorder"
   ]
-  revision = "43df8f27d67da2e85e7d917540f699d5a8b2e561"
+  revision = "020198720538aaa6b2a82e053384a11987086908"
   source = "git@github.com:CentrifugeInc/centrifuge-protobufs"
 
 [[projects]]
@@ -999,6 +1000,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "799a975974a4f5f8e9d9c7682d846a8d4d8d38b931dbbc07c0512378cd416341"
+  inputs-digest = "abed7f270418d4f0bae325fc41a5fc539bf2e2e7dcd4a5722fec8ca5e96285e4"
   solver-name = "gps-cdcl"
   solver-version = 1

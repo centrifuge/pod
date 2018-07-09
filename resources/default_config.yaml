@@ -1,8 +1,7 @@
-identityId: 1
-
 centrifugeNetwork: centrifugeRussianhillEthRinkeby
-networks: 
-  testing: 
+networks:
+  # Local testing contract addresses need to be set with env variables.
+  testing:
     id: 333
     ethereumNetworkId: 8383
     bootstrapPeers:

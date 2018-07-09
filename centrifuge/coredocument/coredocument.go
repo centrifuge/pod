@@ -52,7 +52,13 @@ func (cdp *CoreDocumentProcessor) Send(coreDocument *coredocumentpb.CoreDocument
 	clientWithProtocol := fmt.Sprintf("/ipfs/%s", lastb58Key)
 	client := p2p.OpenClient(clientWithProtocol)
 	log.Infof("Done opening connection against [%s]\n", lastb58Key)
-	_, err = client.Post(context.Background(), &p2ppb.P2PMessage{Document: coreDocument})
+
+	hostInstance := p2p.GetHost()
+	bSenderId, err := hostInstance.ID().ExtractPublicKey().Bytes()
+	if err != nil {
+		return err
+	}
+	_, err = client.Post(context.Background(), &p2ppb.P2PMessage{Document: coreDocument, SenderCentrifugeId: bSenderId})
 	if err != nil {
 		return err
 	}
