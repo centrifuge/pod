@@ -13,6 +13,7 @@ import (
 	"os"
 	"testing"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/notification"
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/notification"
 )
 
 func TestMain(m *testing.M) {
@@ -56,6 +57,6 @@ func TestP2PService_IncompatibleRequest(t *testing.T) {
 	assert.Nil(t, res)
 }
 
-// Mocks //
+// Webhook Notification Mocks //
 type MockWebhookSender struct {}
-func (wh *MockWebhookSender) Send(notification *notification.Notification) (status notification.NotificationStatus, err error) {return}
+func (wh *MockWebhookSender) Send(notification *notificationpb.NotificationMessage) (status notification.NotificationStatus, err error) {return}

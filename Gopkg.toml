@@ -28,7 +28,8 @@
 [[constraint]]
   name = "github.com/CentrifugeInc/centrifuge-protobufs"
   source = "git@github.com:CentrifugeInc/centrifuge-protobufs"
-  revision = "43df8f27d67da2e85e7d917540f699d5a8b2e561"
+  revision = "020198720538aaa6b2a82e053384a11987086908"
+
 [[constraint]]
   name = "github.com/Masterminds/semver"
   version = "1.4.2"

@@ -1,15 +1,19 @@
 package notification
 
 import (
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
-	"encoding/json"
 	logging "github.com/ipfs/go-log"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/utils"
-	"time"
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/notification"
+	"github.com/golang/protobuf/jsonpb"
 )
 
 var log = logging.Logger("notification-api")
+
+type NotificationEventType int
+const (
+	RECEIVED_PAYLOAD NotificationEventType = 1
+)
 
 type NotificationStatus int
 const (
@@ -17,27 +21,20 @@ const (
 	SUCCESS NotificationStatus = 1
 )
 
-type Notification struct {
-	EventType int
-	CentrifugeID string
-	Recorded time.Time
-	CoreDocument *coredocumentpb.CoreDocument
-}
-
 type Sender interface {
-	Send(notification *Notification) (NotificationStatus, error)
+	Send(notification *notificationpb.NotificationMessage) (NotificationStatus, error)
 }
 
 type WebhookSender struct {}
 
-func (wh *WebhookSender) Send(notification *Notification) (NotificationStatus, error) {
+func (wh *WebhookSender) Send(notification *notificationpb.NotificationMessage) (NotificationStatus, error) {
 	url := config.Config.GetReceiveEventNotificationEndpoint()
 	if url == "" {
 		log.Warningf("Webhook URL not defined, manually fetch received document")
 		return SUCCESS, nil
 	}
-	payload, err := json.Marshal(notification)
 
+	payload, err := wh.constructPayload(notification)
 	if err != nil {
 		log.Error(err)
 		return FAILURE, err
@@ -49,4 +46,14 @@ func (wh *WebhookSender) Send(notification *Notification) (NotificationStatus, e
 	}
 
 	return SUCCESS, nil
+}
+
+func (wh *WebhookSender) constructPayload(notification *notificationpb.NotificationMessage) ([]byte, error) {
+	marshaler := jsonpb.Marshaler{}
+	payload, err := marshaler.MarshalToString(notification)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+	return []byte(payload), nil
 }

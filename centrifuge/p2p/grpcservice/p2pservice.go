@@ -8,7 +8,9 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/version"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/notification"
+	"github.com/golang/protobuf/ptypes"
 	"time"
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/notification"
 )
 
 type IncompatibleNetworkError struct {
@@ -56,8 +58,20 @@ func (srv *P2PService) HandleP2PPost(ctx context.Context, req *p2ppb.P2PMessage)
 		return nil, err
 	}
 
+	ts, err := ptypes.TimestampProto(time.Now().UTC())
+	if err != nil {
+		return nil, err
+	}
+
+	notificationMsg := &notificationpb.NotificationMessage{
+		EventType: uint32(notification.RECEIVED_PAYLOAD),
+		CentrifugeId: req.SenderCentrifugeId,
+		Recorded: ts,
+		Document: req.Document,
+	}
+
 	// Async until we add queuing
-	go srv.Notifier.Send(&notification.Notification{0, "cId", time.Now().UTC(), req.Document})
+	go srv.Notifier.Send(notificationMsg)
 	//
 
 	rep = &p2ppb.P2PReply{
