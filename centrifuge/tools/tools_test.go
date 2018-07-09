@@ -97,3 +97,16 @@ func TestIsSameByteSlice(t *testing.T) {
 		assert.Equal(t, tt.expected, actual)
 	}
 }
+
+func TestByte32toByte(t *testing.T) {
+	b32, err := tools.StringToByte32("12345678901234567890123456789032")
+	assert.Nil(t, err)
+
+	actual := tools.Byte32ToByteArray(b32)
+	exp := []byte("12345678901234567890123456789032")
+	assert.Truef(t, tools.IsSameByteSlice(exp, actual), "Expected to be [%v] but got [%v]", exp, actual)
+
+	actual = tools.Byte32ToByteArray([32]byte{})
+	exp = []byte{}
+	assert.Truef(t, tools.IsSameByteSlice(exp, actual), "Expected to be [%v] but got [%v]", exp, actual)
+}

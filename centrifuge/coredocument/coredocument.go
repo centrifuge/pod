@@ -82,9 +82,9 @@ func (cdp *CoreDocumentProcessor) Send(coreDocument *coredocumentpb.CoreDocument
 func (cd *CoreDocumentProcessor) Anchor(document *coredocumentpb.CoreDocument) (err error) {
 	log.Infof("Anchoring document %v", document)
 
-	//Remove this as soon as signing is fixed, we will read from the CoreDocumentProcessor signature fields
-	id := tools.RandomByte32()
-	rootHash := tools.RandomByte32()
+	id := tools.ByteArrayToByte32(document.CurrentIdentifier)
+	rootHash := tools.ByteArrayToByte32(document.DocumentRoot)
+
 	confirmations := make(chan *anchor.WatchAnchor, 1)
 	err = anchor.RegisterAsAnchor(id, rootHash, confirmations)
 	if err != nil {

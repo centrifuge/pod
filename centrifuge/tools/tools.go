@@ -9,9 +9,18 @@ import (
 )
 
 // Converts unbounded byte array to 32 bytes - will truncate
-func ConvertByteArrayToByte32(in []byte) (out [32]byte) {
+func ByteArrayToByte32(in []byte) (out [32]byte) {
 	copy(out[:], in)
 	return
+}
+
+// Byte32ToByteArray converts a [32]bytes to an unbounded byte array
+func Byte32ToByteArray(in [32]byte) ([]byte) {
+	if IsEmptyByte32(in) {
+		return []byte{}
+	} else {
+		return in[:]
+	}
 }
 
 // StringToByte32 converts a given 32 character long string into a [32]byte

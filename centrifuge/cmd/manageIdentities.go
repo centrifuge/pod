@@ -15,7 +15,7 @@ var createIdentityCmd = &cobra.Command{
 	Long:  "creates identity with signing key as p2p id against ethereum",
 	Run: func(cmd *cobra.Command, args []string) {
 		publicKey, _ := keytools.GetSigningKeyPairFromConfig()
-		err := identity.CreateEthereumIdentityFromApi(centrifugeId, tools.ConvertByteArrayToByte32(publicKey))
+		err := identity.CreateEthereumIdentityFromApi(centrifugeId, tools.ByteArrayToByte32(publicKey))
 		if err != nil {
 			panic(err)
 		}
@@ -29,7 +29,7 @@ var addKeyCmd = &cobra.Command{
 	Long:  "add a signing key as p2p id against ethereum",
 	Run: func(cmd *cobra.Command, args []string) {
 		publicKey, _ := keytools.GetSigningKeyPairFromConfig()
-		err := identity.AddKeyToIdentityFromApi(centrifugeId, identity.KEY_TYPE_PEERID, tools.ConvertByteArrayToByte32(publicKey))
+		err := identity.AddKeyToIdentityFromApi(centrifugeId, identity.KEY_TYPE_PEERID, tools.ByteArrayToByte32(publicKey))
 		if err != nil {
 			panic(err)
 		}
