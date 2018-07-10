@@ -9,8 +9,8 @@ identityId: 1
 
 keys:
   signing:
-    publicKey: example/resources/signingKey.pub
-    privateKey: example/resources/signingKey.key
+    publicKey: example/resources/signingKey.pub.pem
+    privateKey: example/resources/signingKey.key.pem
   
 p2p:
   port: 38202
