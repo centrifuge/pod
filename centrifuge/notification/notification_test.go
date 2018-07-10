@@ -11,7 +11,7 @@ import (
 	"time"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/stretchr/testify/assert"
-	"github.com/gogo/protobuf/jsonpb"
+	"github.com/golang/protobuf/jsonpb"
 )
 
 func TestMain(m *testing.M) {
