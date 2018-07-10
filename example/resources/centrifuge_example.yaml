@@ -11,11 +11,7 @@ keys:
   signing:
     publicKey: example/resources/signingKey.pub
     privateKey: example/resources/signingKey.key
-  knownSigningKeys:
-    1: example/resources/signingKey.pub
-    2: example/resources/signingKeyAux.pub
-    3: example/resources/signingKeyExt.pub
-
+  
 p2p:
   port: 38202
 
