@@ -51,11 +51,17 @@ If you want to run tests continuously when a file changes, you first need to ins
 go get github.com/cespare/reflex
 ```
 
-and then run (only for unit tests):
+Then run (only for unit tests). It is a good idea to exclude the `vendor` and ``.idea` folders from scanning by reflex as it hogs a lot of resources for no good reason.
 
 ```
-reflex -r centrifuge/ go test ./... -tags=unit
+reflex -R '(^|/)vendor/|(^|/)\\.idea/' -- go test ./centrifuge/... -tags=unit
 ```
+
+Or run for specific tests only:
+```
+reflex -R '(^|/)vendor/|(^|/)\\.idea/' -- go test ./centrifuge/invoice/... -tags=unit
+```
+
 
 Run a Geth node locally against Integration or Rinkeby environments
 --------------------------------------------------------------------------

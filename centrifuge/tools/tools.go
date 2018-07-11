@@ -1,6 +1,5 @@
 package tools
 
-
 import (
 	"crypto/rand"
 	"math"
@@ -10,30 +9,41 @@ import (
 )
 
 // Converts unbounded byte array to 32 bytes - will truncate
-func ConvertByteArrayToByte32(in []byte) (out [32]byte) {
+func ByteArrayToByte32(in []byte) (out [32]byte, err error) {
+	if len(in) > 32 {
+		return [32]byte{}, errors.New("input exceeds length of 32")
+	}
 	copy(out[:], in)
 	return
 }
 
+// Byte32ToByteArray converts a [32]bytes to an unbounded byte array
+func Byte32ToByteArray(in [32]byte) ([]byte) {
+	if IsEmptyByte32(in) {
+		return []byte{}
+	} else {
+		return in[:]
+	}
+}
+
 // StringToByte32 converts a given 32 character long string into a [32]byte
 // on error/invalid string lenght returns empty byte array and error
-func StringToByte32(input string) (ret [32]byte, err error){
-	if len(input) != 32{
+func StringToByte32(input string) (ret [32]byte, err error) {
+	if len(input) != 32 {
 		return ret, errors.New("can only work with strings of length 32")
 	}
-	copy(ret[:],input)
+	copy(ret[:], input)
 	return
 }
 
 // Byte32ToString converts a given [32]byte into a 32 char length string
 // on error/invalid input, returns empty string and error
-func Byte32ToString(input [32]byte) (ret string, err error){
+func Byte32ToString(input [32]byte) (ret string, err error) {
 	ret = string(input[:32])
 	return
 }
 
-
-func RandomString32() (ret string){
+func RandomString32() (ret string) {
 	b := RandomByte32()
 	ret = string(b[:32])
 	return
@@ -51,8 +61,48 @@ func RandomByte32() (out [32]byte) {
 	return
 }
 
-func StrPadHex32(input string) string{
-	return StrPad(input, 32, "0","LEFT")
+func IsEmptyByte32(source [32]byte) bool {
+	sl := make([]byte, 32)
+	copy(sl, source[:32])
+	return IsEmptyByteSlice(sl)
+}
+
+func IsEmptyByteSlice(s []byte) bool {
+	if s == nil {
+		return true
+	}
+	for _, v := range s {
+		if v != 0 {
+			return false
+		}
+	}
+	return true
+}
+
+func IsSameByteSlice(a []byte, b []byte) bool {
+	if a == nil && b == nil {
+		return true;
+	}
+
+	if a == nil || b == nil {
+		return false;
+	}
+
+	if len(a) != len(b) {
+		return false
+	}
+
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+
+	return true
+}
+
+func StrPadHex32(input string) string {
+	return StrPad(input, 32, "0", "LEFT")
 }
 
 // checkLen32 is used to validate that the given val is 32 characters long. If not, it returns an error with the error
@@ -83,7 +133,7 @@ func StrPad(input string, padLength int, padString string, padType string) strin
 		return input
 	}
 
-	repeat := math.Ceil(float64(1) + (float64(padLength-padStringLength))/float64(padStringLength))
+	repeat := math.Ceil(float64(1) + (float64(padLength - padStringLength))/float64(padStringLength))
 
 	switch padType {
 	case "RIGHT":

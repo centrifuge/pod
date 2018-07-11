@@ -10,6 +10,7 @@ import (
 	google_protobuf2 "github.com/golang/protobuf/ptypes/empty"
 	logging "github.com/ipfs/go-log"
 	"golang.org/x/net/context"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/service"
 )
 
 var log = logging.Logger("rest-api")
@@ -18,6 +19,16 @@ var log = logging.Logger("rest-api")
 type InvoiceDocumentService struct {
 	InvoiceRepository     invoicerepository.InvoiceRepository
 	CoreDocumentProcessor coredocument.CoreDocumentProcessorer
+}
+
+func fillCoreDocIdentifiers(doc *invoicepb.InvoiceDocument) error {
+	filledCoreDoc, err := coredocumentservice.AutoFillDocumentIdentifiers(*doc.CoreDocument)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+	doc.CoreDocument = &filledCoreDoc
+	return nil
 }
 
 // HandleCreateInvoiceProof creates proofs for a list of fields
@@ -40,14 +51,21 @@ func (s *InvoiceDocumentService) HandleCreateInvoiceProof(ctx context.Context, c
 
 // HandleAnchorInvoiceDocument anchors the given invoice document and returns the anchor details
 func (s *InvoiceDocumentService) HandleAnchorInvoiceDocument(ctx context.Context, anchorInvoiceEnvelope *invoicepb.AnchorInvoiceEnvelope) (*invoicepb.InvoiceDocument, error) {
-	invoiceDocument := anchorInvoiceEnvelope.Document
-	err := s.InvoiceRepository.Store(invoiceDocument)
+	doc := anchorInvoiceEnvelope.Document
+
+	err := fillCoreDocIdentifiers(doc)
 	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
 
-	anchoredInvoiceDocument, err := s.anchorInvoiceDocument(invoiceDocument)
+	err = s.InvoiceRepository.Store(doc)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	anchoredInvoiceDocument, err := s.anchorInvoiceDocument(doc)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -58,13 +76,20 @@ func (s *InvoiceDocumentService) HandleAnchorInvoiceDocument(ctx context.Context
 
 // HandleSendInvoiceDocument anchors and sends an invoice to the recipient
 func (s *InvoiceDocumentService) HandleSendInvoiceDocument(ctx context.Context, sendInvoiceEnvelope *invoicepb.SendInvoiceEnvelope) (*invoicepb.InvoiceDocument, error) {
-	invoiceDocument := sendInvoiceEnvelope.Document
-	err := s.InvoiceRepository.Store(invoiceDocument)
+	doc := sendInvoiceEnvelope.Document
+
+	err := fillCoreDocIdentifiers(doc)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	err = s.InvoiceRepository.Store(doc)
 	if err != nil {
 		return nil, err
 	}
 
-	anchoredInvoiceDocument, err := s.anchorInvoiceDocument(invoiceDocument)
+	anchoredInvoiceDocument, err := s.anchorInvoiceDocument(doc)
 	if err != nil {
 		log.Error(err)
 		return nil, err

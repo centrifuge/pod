@@ -10,6 +10,7 @@ import (
 	google_protobuf2 "github.com/golang/protobuf/ptypes/empty"
 	logging "github.com/ipfs/go-log"
 	"golang.org/x/net/context"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/service"
 )
 
 var log = logging.Logger("rest-api")
@@ -18,6 +19,16 @@ var log = logging.Logger("rest-api")
 type PurchaseOrderDocumentService struct {
 	PurchaseOrderRepository purchaseorderrepository.PurchaseOrderRepository
 	CoreDocumentProcessor   coredocument.CoreDocumentProcessorer
+}
+
+func fillCoreDocIdentifiers(doc *purchaseorderpb.PurchaseOrderDocument) error {
+	filledCoreDoc, err := coredocumentservice.AutoFillDocumentIdentifiers(*doc.CoreDocument)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+	doc.CoreDocument = &filledCoreDoc
+	return nil
 }
 
 // HandleCreatePurchaseOrderProof creates proofs for a list of fields
@@ -40,14 +51,21 @@ func (s *PurchaseOrderDocumentService) HandleCreatePurchaseOrderProof(ctx contex
 
 // HandleAnchorPurchaseOrderDocument anchors the given purchaseorder document and returns the anchor details
 func (s *PurchaseOrderDocumentService) HandleAnchorPurchaseOrderDocument(ctx context.Context, anchorPurchaseOrderEnvelope *purchaseorderpb.AnchorPurchaseOrderEnvelope) (*purchaseorderpb.PurchaseOrderDocument, error) {
-	purchaseOrder := anchorPurchaseOrderEnvelope.Document
-	err := s.PurchaseOrderRepository.Store(purchaseOrder)
+	doc := anchorPurchaseOrderEnvelope.Document
+
+	err := fillCoreDocIdentifiers(doc)
 	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
 
-	anchoredPurchaseOrder, err := s.anchorPurchaseOrderDocument(purchaseOrder)
+	err = s.PurchaseOrderRepository.Store(doc)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	anchoredPurchaseOrder, err := s.anchorPurchaseOrderDocument(doc)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -58,8 +76,15 @@ func (s *PurchaseOrderDocumentService) HandleAnchorPurchaseOrderDocument(ctx con
 
 // HandleSendPurchaseOrderDocument anchors and sends an purchaseorder to the recipient
 func (s *PurchaseOrderDocumentService) HandleSendPurchaseOrderDocument(ctx context.Context, sendPurchaseOrderEnvelope *purchaseorderpb.SendPurchaseOrderEnvelope) (*purchaseorderpb.PurchaseOrderDocument, error) {
-	purchaseOrder := sendPurchaseOrderEnvelope.Document
-	err := s.PurchaseOrderRepository.Store(purchaseOrder)
+	doc := sendPurchaseOrderEnvelope.Document
+
+	err := fillCoreDocIdentifiers(doc)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	err = s.PurchaseOrderRepository.Store(doc)
 	if err != nil {
 		log.Error(err)
 		return nil, err

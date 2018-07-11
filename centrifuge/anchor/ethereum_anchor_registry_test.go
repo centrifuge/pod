@@ -3,19 +3,19 @@
 package anchor
 
 import (
-	"errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/stretchr/testify/assert"
 	"math/big"
 	"os"
 	"testing"
+	"github.com/go-errors/errors"
 )
 
 func TestMain(m *testing.M) {
@@ -26,30 +26,7 @@ func TestMain(m *testing.M) {
 	os.Exit(result)
 }
 
-func TestGenerateAnchor(t *testing.T) {
-	anchor, err := generateAnchor("ABCD", "DCBA")
-	assert.Nil(t, anchor)
-	assert.Error(t, err, "Should fail with too short input values")
-
-	anchor, err = generateAnchor("01234567890123456789012345678932", "DCBA")
-	assert.Nil(t, anchor)
-	assert.Error(t, err, "Should fail with too short input values")
-
-	anchor, err = generateAnchor("012345678901234567890123456789333", "012345678901234567890123456789333")
-	assert.Nil(t, anchor)
-	assert.Error(t, err, "Should fail with too long input values")
-
-	anchor, err = generateAnchor("01234567890123456789012345678932", "012345678901234567890123456789333")
-	assert.Nil(t, anchor)
-	assert.Error(t, err, "Should fail with too long input values")
-
-	anchor, err = generateAnchor("0123456789012345678901234567893A", "0123456789012345678901234567893B")
-	assert.Nil(t, err)
-	assert.Equal(t, anchor.AnchorID, "0123456789012345678901234567893A", "Anchor should have the passed ID")
-	assert.Equal(t, anchor.RootHash, "0123456789012345678901234567893B", "Anchor should have the passed root hash")
-	assert.Equal(t, anchor.SchemaVersion, SupportedSchemaVersion(), "Anchor should have the supported schema version")
-}
-
+// ----- MOCKING -----
 type MockRegisterAnchor struct {
 	shouldFail bool
 }
@@ -78,35 +55,51 @@ func (mwar *MockWatchAnchorRegistered) WatchAnchorRegistered(opts *bind.WatchOpt
 		return nil, nil
 	}
 }
+// END ----- MOCKING -----
+
+
+func TestGenerateAnchor(t *testing.T) {
+	anchorID := tools.RandomByte32()
+	rootHash := tools.RandomByte32()
+
+	anchor, err := generateAnchor(anchorID, rootHash)
+	assert.Nil(t, err)
+	assert.Equal(t, anchor.AnchorID, anchorID, "Anchor should have the passed ID")
+	assert.Equal(t, anchor.RootHash, rootHash, "Anchor should have the passed root hash")
+	assert.Equal(t, anchor.SchemaVersion, SupportedSchemaVersion(), "Anchor should have the supported schema version")
+}
+
+//started building this as table based test
+//TODO build the rest of the suite like this and makre more unit-testable
+var registerAsAnchorData = []struct {
+	id        [32]byte
+	hs        [32]byte
+	chn       chan<- *WatchAnchor
+	expected error // expected result
+}{
+	{[32]byte{}, [32]byte{'1'}, nil, errors.New("Can not work with empty anchor ID")},
+	{[32]byte{'1'}, [32]byte{}, nil, errors.New("Can not work with empty root hash")},
+}
+func TestRegisterAsAnchor(t *testing.T){
+	for _, tt := range registerAsAnchorData {
+		actual := new(EthereumAnchorRegistry).RegisterAsAnchor(tt.id, tt.hs, tt.chn)
+		assert.Equal(t, tt.expected.Error(), actual.Error())
+	}
+}
 
 func TestSendRegistrationTransaction_ErrorPassThrough(t *testing.T) {
-	anchor := Anchor{tools.RandomString32(), tools.RandomString32(), 1}
+	anchor := Anchor{tools.RandomByte32(), tools.RandomByte32(), 1}
 	failingAnchorRegistrar := &MockRegisterAnchor{shouldFail: true}
 
 	err := sendRegistrationTransaction(failingAnchorRegistrar, nil, &anchor)
 	assert.Error(t, err, "Should have an error if registerAnchor returns error")
 }
 
-func TestSendRegistrationTransaction_InputParams(t *testing.T) {
-	anchor := Anchor{"someId", "someRootHash", 1}
-
-	err := sendRegistrationTransaction(&MockRegisterAnchor{}, nil, &anchor)
-	assert.Contains(t, err.Error(), "32")
-	anchor.AnchorID = tools.RandomString32()
-
-	err = sendRegistrationTransaction(&MockRegisterAnchor{}, nil, &anchor)
-	assert.Contains(t, err.Error(), "32")
-	anchor.RootHash = tools.RandomString32()
-
-	err = sendRegistrationTransaction(&MockRegisterAnchor{}, nil, &anchor)
-	assert.Nil(t, err, "All inputs should validate now")
-}
-
 func TestSetUpRegistrationEventListener_ErrorPassThrough(t *testing.T) {
 	resetMock := testingutils.MockConfigOption("ethereum.contextWaitTimeout", "30s")
 
 	failingWatchAnchorRegistered := &MockWatchAnchorRegistered{shouldFail: true}
-	anchor := Anchor{tools.RandomString32(), tools.RandomString32(), 1}
+	anchor := Anchor{tools.RandomByte32(), tools.RandomByte32(), 1}
 	confirmations := make(chan *WatchAnchor)
 
 	defer func() {
@@ -124,14 +117,13 @@ func TestSetUpRegistrationEventListener_ErrorPassThrough(t *testing.T) {
 func TestSetUpRegistrationEventListener_ChannelSubscriptionCreated(t *testing.T) {
 	config.Config.V.Set("ethereum.contextWaitTimeout", "30s")
 	mockWatchAnchorRegistered := &MockWatchAnchorRegistered{}
-	anchor := Anchor{tools.RandomString32(), tools.RandomString32(), 1}
+	anchor := Anchor{tools.RandomByte32(), tools.RandomByte32(), 1}
 	confirmations := make(chan *WatchAnchor, 1)
 	err := setUpRegistrationEventListener(mockWatchAnchorRegistered, common.Address{}, &anchor, confirmations)
 	assert.Nil(t, err, "Should not fail")
 	//sending one "event" into the registered sink should result in the confirmations channel to receive the anchor
 	//that has been created and passed through initially
-	b32Id, _ := tools.StringToByte32(anchor.AnchorID)
-	mockWatchAnchorRegistered.sink <- &EthereumAnchorRegistryContractAnchorRegistered{From: common.HexToAddress("0x0000000000000000001"), Identifier: b32Id}
+	mockWatchAnchorRegistered.sink <- &EthereumAnchorRegistryContractAnchorRegistered{From: common.HexToAddress("0x0000000000000000001"), Identifier: anchor.AnchorID}
 	watchReceivedAnchor := <-confirmations
 	assert.Equal(t, anchor.AnchorID, watchReceivedAnchor.Anchor.AnchorID, "Received anchor should have the same data as the originally submitted anchor")
 }

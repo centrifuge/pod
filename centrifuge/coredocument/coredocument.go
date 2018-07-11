@@ -15,6 +15,26 @@ import (
 
 var log = logging.Logger("coredocument")
 
+// ----- ERROR -----
+type ErrInconsistentState struct {
+	message string
+}
+
+func NewErrInconsistentState(message string) *ErrInconsistentState {
+	padded := ""
+	if len(message) > 0 {
+		padded = fmt.Sprintf(": %s", message)
+	}
+	return &ErrInconsistentState{
+		message: fmt.Sprintf("Inconsistent CoreDocument state%s", padded),
+	}
+}
+func (e *ErrInconsistentState) Error() string {
+	return e.message
+}
+
+// ----- END ERROR -----
+
 // CoreDocumentProcessor is the processor that can deal with CoreDocuments and performs actions on them such as
 // anchoring, sending on the p2p level, or signing.
 type CoreDocumentProcessor struct {
@@ -27,7 +47,7 @@ type CoreDocumentProcessorer interface {
 	Anchor(document *coredocumentpb.CoreDocument) (err error)
 }
 
-func GetDefaultCoreDocumentProcessor()(CoreDocumentProcessorer){
+func GetDefaultCoreDocumentProcessor() (CoreDocumentProcessorer) {
 	return &CoreDocumentProcessor{}
 }
 
@@ -66,20 +86,29 @@ func (cdp *CoreDocumentProcessor) Send(coreDocument *coredocumentpb.CoreDocument
 }
 
 // Anchor anchors the given CoreDocument
-func (cd *CoreDocumentProcessor) Anchor(document *coredocumentpb.CoreDocument) (err error) {
+func (cd *CoreDocumentProcessor) Anchor(document *coredocumentpb.CoreDocument) (error) {
 	log.Infof("Anchoring document %v", document)
 
-	//Remove this as soon as signing is fixed, we will read from the CoreDocumentProcessor signature fields
-	id := tools.RandomString32()
-	rootHash := tools.RandomString32()
+	id, err := tools.ByteArrayToByte32(document.CurrentIdentifier)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+	rootHash, err := tools.ByteArrayToByte32(document.DocumentRoot)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+
 	confirmations := make(chan *anchor.WatchAnchor, 1)
 	err = anchor.RegisterAsAnchor(id, rootHash, confirmations)
 	if err != nil {
+		log.Error(err)
 		return err
 	}
 	anchorWatch := <-confirmations
 	err = anchorWatch.Error
-	return
+	return err
 }
 
 func (cd *CoreDocumentProcessor) Sign() {
