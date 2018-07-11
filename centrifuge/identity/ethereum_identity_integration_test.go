@@ -123,9 +123,10 @@ func TestManageIdentity(t *testing.T) {
 	// Creation Succeeds
 	centrifugeId := tools.RandomString32()
 	publicKey, _ := keytools.GetSigningKeyPairFromConfig()
-	b32Key := tools.ByteArrayToByte32(publicKey)
+	b32Key, err := tools.ByteArrayToByte32(publicKey)
+	assert.Nil(t, err)
 
-	err := identity.CreateEthereumIdentityFromApi(centrifugeId, b32Key)
+	err = identity.CreateEthereumIdentityFromApi(centrifugeId, b32Key)
 	assert.Nil(t, err, "should not error out upon identity creation")
 
 	// AddKey Again Fails as Key already exists

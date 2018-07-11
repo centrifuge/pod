@@ -27,6 +27,8 @@ func TestStringToByte32_andBack(t *testing.T) {
 	bytes, err = tools.StringToByte32(convertThis)
 	assert.Nil(t, err, "Should not return error on 32 length string")
 
+	assert.EqualValues(t, []byte("12345678901234567890123456789032")[:], bytes[:])
+
 	convertedBack, _ := tools.Byte32ToString(bytes)
 	assert.EqualValues(t, convertThis, convertedBack, "Converted back value should be the same as original input")
 }
@@ -109,4 +111,29 @@ func TestByte32toByte(t *testing.T) {
 	actual = tools.Byte32ToByteArray([32]byte{})
 	exp = []byte{}
 	assert.Truef(t, tools.IsSameByteSlice(exp, actual), "Expected to be [%v] but got [%v]", exp, actual)
+}
+
+func TestByteArrayToByte32(t *testing.T){
+	exp := [32]byte{}
+	act := [32]byte{}
+	tst := []byte{}
+
+	tst = []byte("12345678901234567890123456789032")
+	exp, err := tools.StringToByte32("12345678901234567890123456789032")
+	assert.Nil(t, err)
+	act, err = tools.ByteArrayToByte32(tst)
+	assert.Nil(t, err)
+	assert.EqualValues(t, exp, act, "Expected to be [%v] but got [%v]", exp, act)
+
+	tst = []byte{}
+	exp = [32]byte{}
+	act, err = tools.ByteArrayToByte32(tst)
+	assert.Nil(t, err)
+	assert.EqualValues(t, exp, act, "Expected to be [%v] but got [%v]", exp, act)
+
+	tst = []byte("123456789012345678901234567890321")
+	exp = [32]byte{}
+	act, err = tools.ByteArrayToByte32(tst)
+	assert.Error(t, err)
+	assert.EqualValues(t, exp, act, "Expected to be [%v] but got [%v]", exp, act)
 }

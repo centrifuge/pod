@@ -20,8 +20,8 @@ func TestMain(m *testing.M) {
 
 func TestRegisterAsAnchor_Integration(t *testing.T) {
 	confirmations := make(chan *anchor.WatchAnchor, 1)
-	id := tools.RandomString32()
-	rootHash := tools.RandomString32()
+	id := tools.RandomByte32()
+	rootHash := tools.RandomByte32()
 	err := anchor.RegisterAsAnchor(id, rootHash, confirmations)
 	if err != nil {
 		t.Fatalf("Error registering Anchor %v", err)
@@ -34,17 +34,17 @@ func TestRegisterAsAnchor_Integration(t *testing.T) {
 }
 
 func TestRegisterAsAnchor_Integration_Concurrent(t *testing.T) {
-	var submittedIds [5]string
-	var submittedRhs [5]string
+	var submittedIds [5][32]byte
+	var submittedRhs [5][32]byte
 
 	howMany := cap(submittedIds)
 	confirmations := make(chan *anchor.WatchAnchor, howMany)
 
 	for ix := 0; ix < howMany; ix++ {
-		id := tools.RandomString32()
+		id := tools.RandomByte32()
 		submittedIds[ix] = id
 
-		rootHash := tools.RandomString32()
+		rootHash := tools.RandomByte32()
 		submittedRhs[ix] = rootHash
 
 		err := anchor.RegisterAsAnchor(id, rootHash, confirmations)

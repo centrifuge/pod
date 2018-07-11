@@ -9,7 +9,10 @@ import (
 )
 
 // Converts unbounded byte array to 32 bytes - will truncate
-func ByteArrayToByte32(in []byte) (out [32]byte) {
+func ByteArrayToByte32(in []byte) (out [32]byte, err error) {
+	if len(in) > 32 {
+		return [32]byte{}, errors.New("input exceeds length of 32")
+	}
 	copy(out[:], in)
 	return
 }

@@ -80,20 +80,29 @@ func (cdp *CoreDocumentProcessor) Send(coreDocument *coredocumentpb.CoreDocument
 }
 
 // Anchor anchors the given CoreDocument
-func (cd *CoreDocumentProcessor) Anchor(document *coredocumentpb.CoreDocument) (err error) {
+func (cd *CoreDocumentProcessor) Anchor(document *coredocumentpb.CoreDocument) (error) {
 	log.Infof("Anchoring document %v", document)
 
-	id := tools.ByteArrayToByte32(document.CurrentIdentifier)
-	rootHash := tools.ByteArrayToByte32(document.DocumentRoot)
+	id, err := tools.ByteArrayToByte32(document.CurrentIdentifier)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+	rootHash, err := tools.ByteArrayToByte32(document.DocumentRoot)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
 
 	confirmations := make(chan *anchor.WatchAnchor, 1)
 	err = anchor.RegisterAsAnchor(id, rootHash, confirmations)
 	if err != nil {
+		log.Error(err)
 		return err
 	}
 	anchorWatch := <-confirmations
 	err = anchorWatch.Error
-	return
+	return err
 }
 
 func (cd *CoreDocumentProcessor) Sign() {
