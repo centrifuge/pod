@@ -55,8 +55,8 @@ func TestInvoiceCoreDocumentConverter(t *testing.T) {
 	assert.Equal(t, coreDocumentBytes, generatedCoreDocumentBytes,
 		"Generated & converted documents are not identical")
 
-	convertedInvoiceDoc := NewInvoiceFromCoreDocument(generatedCoreDocument)
-	convertedGeneratedInvoiceDoc := NewInvoiceFromCoreDocument(generatedCoreDocument)
+	convertedInvoiceDoc, err := NewInvoiceFromCoreDocument(generatedCoreDocument)
+	convertedGeneratedInvoiceDoc, err := NewInvoiceFromCoreDocument(generatedCoreDocument)
 	invoiceBytes, err := proto.Marshal(invoiceDoc.Document)
 	assert.Nil(t, err, "Error marshaling invoiceDoc")
 

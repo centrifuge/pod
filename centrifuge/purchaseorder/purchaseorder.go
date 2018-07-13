@@ -9,6 +9,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	logging "github.com/ipfs/go-log"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 )
 
 var log = logging.Logger("purchaseorder")
@@ -17,7 +18,10 @@ type PurchaseOrder struct {
 	Document *purchaseorderpb.PurchaseOrderDocument
 }
 
-func NewPurchaseOrder(poDoc *purchaseorderpb.PurchaseOrderDocument) *PurchaseOrder {
+func NewPurchaseOrder(poDoc *purchaseorderpb.PurchaseOrderDocument) (*PurchaseOrder, error) {
+	if poDoc == nil {
+		return nil, errors.GenerateNilParameterError(poDoc)
+	}
 	order := &PurchaseOrder{poDoc}
 	// IF salts have not been provided, let's generate them
 	if poDoc.Salts == nil {
@@ -25,7 +29,7 @@ func NewPurchaseOrder(poDoc *purchaseorderpb.PurchaseOrderDocument) *PurchaseOrd
 		proofs.FillSalts(&purchaseorderSalts)
 		order.Document.Salts = &purchaseorderSalts
 	}
-	return order
+	return order, nil
 }
 
 func NewEmptyPurchaseOrder() *PurchaseOrder {
@@ -39,10 +43,13 @@ func NewEmptyPurchaseOrder() *PurchaseOrder {
 	return &PurchaseOrder{&doc}
 }
 
-func NewPurchaseOrderFromCoreDocument(coredocument *coredocumentpb.CoreDocument) (order *PurchaseOrder) {
+func NewPurchaseOrderFromCoreDocument(coredocument *coredocumentpb.CoreDocument) (*PurchaseOrder, error) {
+	if coredocument == nil {
+		return nil, errors.GenerateNilParameterError(coredocument)
+	}
 	if coredocument.EmbeddedData.TypeUrl != documenttypes.PurchaseOrderDataTypeUrl ||
 		coredocument.EmbeddedDataSalts.TypeUrl != documenttypes.PurchaseOrderSaltsTypeUrl {
-		log.Fatal("Trying to convert document with incorrect schema")
+		return nil, errors.New("Trying to convert document with incorrect schema")
 	}
 
 	purchaseorderData := &purchaseorderpb.PurchaseOrderData{}
@@ -55,11 +62,11 @@ func NewPurchaseOrderFromCoreDocument(coredocument *coredocumentpb.CoreDocument)
 	proto.Merge(&emptiedCoreDoc, coredocument)
 	emptiedCoreDoc.EmbeddedData = nil
 	emptiedCoreDoc.EmbeddedDataSalts = nil
-	order = NewEmptyPurchaseOrder()
+	order := NewEmptyPurchaseOrder()
 	order.Document.Data = purchaseorderData
 	order.Document.Salts = purchaseorderSalts
 	order.Document.CoreDocument = &emptiedCoreDoc
-	return
+	return order, nil
 }
 
 func (order *PurchaseOrder) getDocumentTree() (tree *proofs.DocumentTree, err error) {
