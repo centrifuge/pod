@@ -4,8 +4,8 @@ import (
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
 	"github.com/golang/protobuf/proto"
-	"github.com/go-errors/errors"
 	"sync"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 )
 
 var once sync.Once
@@ -40,10 +40,13 @@ func (repo *LevelDBPurchaseOrderRepository) FindById(id []byte) (orderDocument *
 }
 
 func (repo *LevelDBPurchaseOrderRepository) Store(orderDocument *purchaseorderpb.PurchaseOrderDocument) (err error) {
-	if orderDocument.CoreDocument == nil {
-		err = errors.Errorf("Invalid Empty (NIL) PurchaseOrder Document")
-		return
+	if orderDocument == nil {
+		return errors.GenerateNilParameterError(orderDocument)
 	}
+	if orderDocument.CoreDocument == nil {
+		return errors.GenerateNilParameterError(orderDocument.CoreDocument)
+	}
+
 	key := repo.GetKey(orderDocument.CoreDocument.DocumentIdentifier)
 	data, err := proto.Marshal(orderDocument)
 

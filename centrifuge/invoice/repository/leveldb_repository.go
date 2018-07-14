@@ -41,11 +41,10 @@ func (repo *LevelDBInvoiceRepository) FindById(id []byte) (inv *invoicepb.Invoic
 
 func (repo *LevelDBInvoiceRepository) Store(inv *invoicepb.InvoiceDocument) (err error) {
 	if inv == nil {
-		err = errors.GenerateNilParameterError(inv)
+		return errors.GenerateNilParameterError(inv)
 	}
 	if inv.CoreDocument == nil {
-		err = errors.GenerateNilParameterError(inv.CoreDocument)
-		return
+		return errors.GenerateNilParameterError(inv.CoreDocument)
 	}
 	key := repo.GetKey(inv.CoreDocument.DocumentIdentifier)
 	data, err := proto.Marshal(inv)

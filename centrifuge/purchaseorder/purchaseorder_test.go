@@ -72,3 +72,17 @@ func TestPurchaseOrderCoreDocumentConverter(t *testing.T) {
 		"purchaseorderBytes and convertedPurchaseOrderBytes do not match")
 
 }
+
+func TestNewInvoiceFromCoreDocument_NilDocument(t *testing.T) {
+	po, err := NewPurchaseOrderFromCoreDocument(nil)
+
+	assert.Error(t, err, "should have thrown an error")
+	assert.Nil(t, po, "document should be nil")
+}
+
+func TestNewInvoice_NilDocument(t *testing.T) {
+	po, err := NewPurchaseOrder(nil)
+
+	assert.Error(t, err, "should have thrown an error")
+	assert.Nil(t, po, "document should be nil")
+}

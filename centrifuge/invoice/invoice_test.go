@@ -72,3 +72,17 @@ func TestInvoiceCoreDocumentConverter(t *testing.T) {
 		"invoiceBytes and convertedInvoiceBytes do not match")
 
 }
+
+func TestNewInvoiceFromCoreDocument_NilDocument(t *testing.T) {
+	inv, err := NewInvoiceFromCoreDocument(nil)
+
+	assert.Error(t, err, "should have thrown an error")
+	assert.Nil(t, inv, "document should be nil")
+}
+
+func TestNewInvoice_NilDocument(t *testing.T) {
+	inv, err := NewInvoice(nil)
+
+	assert.Error(t, err, "should have thrown an error")
+	assert.Nil(t, inv, "document should be nil")
+}
