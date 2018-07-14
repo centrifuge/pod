@@ -7,7 +7,7 @@ import (
 	"crypto/sha256"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
-	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
+	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/service"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
@@ -20,9 +20,9 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	cc.TestUnitBootstrap()
+	cc.TestIntegrationBootstrap()
 	result := m.Run()
-	cc.TestTearDown()
+	cc.TestIntegrationTearDown()
 	os.Exit(result)
 }
 
@@ -40,6 +40,10 @@ func (m *MockInvoiceRepository) FindById(id []byte) (inv *invoicepb.InvoiceDocum
 	return args.Get(0).(*invoicepb.InvoiceDocument), args.Error(1)
 }
 func (m *MockInvoiceRepository) Store(inv *invoicepb.InvoiceDocument) (err error) {
+	args := m.Called(inv)
+	return args.Error(0)
+}
+func (m *MockInvoiceRepository) StoreOnce(inv *invoicepb.InvoiceDocument) (err error) {
 	args := m.Called(inv)
 	return args.Error(0)
 }

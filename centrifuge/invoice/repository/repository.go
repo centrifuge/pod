@@ -14,4 +14,5 @@ type InvoiceRepository interface {
 	GetKey(id []byte) ([]byte)
 	FindById(id []byte) (inv *invoicepb.InvoiceDocument, err error)
 	Store(inv *invoicepb.InvoiceDocument) (err error)
+	StoreOnce(inv *invoicepb.InvoiceDocument) (err error)
 }

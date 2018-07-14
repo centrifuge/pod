@@ -14,6 +14,17 @@ type LevelDBInvoiceRepository struct {
 	Leveldb *leveldb.DB
 }
 
+func checkIfCoreDocumentFilledCorrectly(inv *invoicepb.InvoiceDocument) error {
+	//TODO use the new error coming from Miguel's changes
+	if inv.CoreDocument == nil {
+		return errors.Errorf("Invalid Empty (NIL) Invoice Document")
+	}
+	if inv.CoreDocument.DocumentIdentifier == nil {
+		return errors.Errorf("Invalid Empty (NIL) Invoice Document")
+	}
+	return nil
+}
+
 func NewLevelDBInvoiceRepository(ir InvoiceRepository) {
 	once.Do(func() {
 		invoiceRepository = ir
@@ -52,4 +63,19 @@ func (repo *LevelDBInvoiceRepository) Store(inv *invoicepb.InvoiceDocument) (err
 	}
 	err = repo.Leveldb.Put(key, data, nil)
 	return
+}
+
+func (repo *LevelDBInvoiceRepository) StoreOnce(inv *invoicepb.InvoiceDocument) (err error) {
+	err = checkIfCoreDocumentFilledCorrectly(inv)
+	if err != nil {
+		return err
+	}
+	loadDoc, readErr := repo.FindById(inv.CoreDocument.DocumentIdentifier)
+	if loadDoc != nil {
+		return errors.Errorf("Document already exists. StoreOnce will not overwrite.")
+	} else if readErr != nil && !errors.Is(leveldb.ErrNotFound, readErr) {
+		return readErr
+	} else {
+		return repo.Store(inv)
+	}
 }
