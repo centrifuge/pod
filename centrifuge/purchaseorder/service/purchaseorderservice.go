@@ -5,13 +5,13 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/service"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder/repository"
 	google_protobuf2 "github.com/golang/protobuf/ptypes/empty"
 	logging "github.com/ipfs/go-log"
 	"golang.org/x/net/context"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/service"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 )
 
 var log = logging.Logger("rest-api")
@@ -19,7 +19,7 @@ var log = logging.Logger("rest-api")
 // Struct needed as it is used to register the grpc services attached to the grpc server
 type PurchaseOrderDocumentService struct {
 	PurchaseOrderRepository purchaseorderrepository.PurchaseOrderRepository
-	CoreDocumentProcessor   coredocument.CoreDocumentProcessorer
+	CoreDocumentProcessor   coredocument.CoreDocumentProcessorInterface
 }
 
 func fillCoreDocIdentifiers(doc *purchaseorderpb.PurchaseOrderDocument) error {

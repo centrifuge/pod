@@ -2,6 +2,7 @@ package coredocument
 
 import (
 	"context"
+	"crypto/sha256"
 	"fmt"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
@@ -9,7 +10,9 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/p2p"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/signatures"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/precise-proofs/proofs"
 	goerrors "github.com/go-errors/errors"
 	logging "github.com/ipfs/go-log"
 )
@@ -41,14 +44,14 @@ func (e *ErrInconsistentState) Error() string {
 type CoreDocumentProcessor struct {
 }
 
-// CoreDocumentProcessorer identifies an implementation, which can do a bunch of things with a CoreDocument.
+// CoreDocumentProcessorInterface identifies an implementation, which can do a bunch of things with a CoreDocument.
 // E.g. send, anchor, etc.
-type CoreDocumentProcessorer interface {
+type CoreDocumentProcessorInterface interface {
 	Send(coreDocument *coredocumentpb.CoreDocument, ctx context.Context, recipient string) (err error)
 	Anchor(document *coredocumentpb.CoreDocument) (err error)
 }
 
-func GetDefaultCoreDocumentProcessor() CoreDocumentProcessorer {
+func GetDefaultCoreDocumentProcessor() CoreDocumentProcessorInterface {
 	return &CoreDocumentProcessor{}
 }
 
@@ -119,8 +122,80 @@ func (cd *CoreDocumentProcessor) Anchor(document *coredocumentpb.CoreDocument) e
 	return err
 }
 
-func (cd *CoreDocumentProcessor) Sign() {
-	//signingService := cc.Node.GetSigningService()
-	//signingService.Sign(cd.Document)
-	return
+func Check32BytesFilled(b []byte) bool {
+	if len(b) != 32 {
+		return false
+	}
+	for _, v := range b {
+		if v != 0x0 {
+			return true
+		}
+	}
+	return false
+}
+
+func CheckMultiple32BytesFilled(b []byte, bs ...[]byte) bool {
+	if !Check32BytesFilled(b) {
+		return false
+	}
+	for _, v := range bs {
+		if !Check32BytesFilled(v) {
+			return false
+		}
+	}
+	return true
+}
+
+// ValidateCoreDocument checks that all required fields are set before doing any processing with it
+func (cd *CoreDocumentProcessor) ValidateCoreDocument(document *coredocumentpb.CoreDocument) (valid bool, err error) {
+	if !CheckMultiple32BytesFilled(document.DocumentIdentifier, document.NextIdentifier, document.CurrentIdentifier, document.DataRoot) {
+		return false, errors.New("Found empty value in CoreDocument")
+	}
+
+	if document.CoredocumentSalts == nil {
+		return false, errors.New("CoreDocumentSalts is not set")
+	}
+
+	// Spot checking that DocumentIdentifier salt is filled. Perhaps it would be better to validate all salts in the future.
+	if !Check32BytesFilled(document.CoredocumentSalts.DocumentIdentifier) {
+		return false, errors.New("CoreDocumentSalts not filled")
+	}
+
+	return true, nil
+}
+
+func (cd *CoreDocumentProcessor) getDocumentTree(document *coredocumentpb.CoreDocument) (tree *proofs.DocumentTree, err error) {
+	t := proofs.NewDocumentTree()
+	tree = &t
+	sha256Hash := sha256.New()
+	tree.SetHashFunc(sha256Hash)
+	err = tree.FillTree(document, document.CoredocumentSalts)
+	if err != nil {
+		return nil, err
+	}
+	return tree, nil
+}
+
+func (cd *CoreDocumentProcessor) CalculateSigningRoot(document *coredocumentpb.CoreDocument) error {
+	valid, err := cd.ValidateCoreDocument(document)
+	if !valid {
+		return err
+	}
+	tree, err := cd.getDocumentTree(document)
+	document.SigningRoot = tree.RootHash()
+	return nil
+}
+
+func (cd *CoreDocumentProcessor) Sign(document *coredocumentpb.CoreDocument) (err error) {
+	// TODO: The signing root shouldn't be set in this method, instead we should split the entire flow into two separate parts: create/update document & sign document
+	err = cd.CalculateSigningRoot(document)
+	if err != nil {
+		return err
+	}
+	signingService := signatures.GetSigningService()
+	err = signingService.Sign(document)
+	if err != nil {
+		return err
+	}
+	return nil
 }

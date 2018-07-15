@@ -7,6 +7,7 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/centrifuge/precise-proofs/proofs"
+	proofspb "github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	logging "github.com/ipfs/go-log"
@@ -90,7 +91,7 @@ func (order *PurchaseOrder) CalculateMerkleRoot() error {
 	return nil
 }
 
-func (order *PurchaseOrder) CreateProofs(fields []string) (proofs []*proofs.Proof, err error) {
+func (order *PurchaseOrder) CreateProofs(fields []string) (proofs []*proofspb.Proof, err error) {
 	tree, err := order.getDocumentTree()
 	if err != nil {
 		log.Error(err)
