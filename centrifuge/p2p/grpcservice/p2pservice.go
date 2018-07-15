@@ -11,6 +11,7 @@ import (
 	"github.com/golang/protobuf/ptypes"
 	"time"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/notification"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 )
 
 type IncompatibleNetworkError struct {
@@ -51,6 +52,10 @@ func (srv *P2PService) HandleP2PPost(ctx context.Context, req *p2ppb.P2PMessage)
 
 	if req.NetworkIdentifier != config.Config.GetNetworkID() {
 		return nil, &IncompatibleNetworkError{req.NetworkIdentifier}
+	}
+
+	if req.Document == nil {
+		return nil, errors.GenerateNilParameterError(req.Document)
 	}
 
 	err = coredocumentrepository.GetCoreDocumentRepository().Store(req.Document)

@@ -37,8 +37,22 @@ func TestStorageService(t *testing.T) {
 	assert.Equal(t, invoice.CoreDocument.DocumentIdentifier, inv.CoreDocument.DocumentIdentifier, "Invoice DocumentIdentifier should be equal")
 
 	inv, err = repo.FindById(invalidIdentifier)
-	assert.NotNil(t, err, "FindById should not return error")
+	assert.NotNil(t, err, "FindById should return error")
 	assert.Nil(t, inv, "Invoice should be NIL")
+}
+
+func TestLevelDBInvoiceRepository_StoreNilDocument(t *testing.T) {
+	repo := GetInvoiceRepository()
+	err := repo.Store(nil)
+
+	assert.Error(t, err, "should have thrown an error")
+}
+
+func TestLevelDBInvoiceRepository_StoreNilCoreDocument(t *testing.T) {
+	repo := GetInvoiceRepository()
+	err := repo.Store(&invoicepb.InvoiceDocument{})
+
+	assert.Error(t, err, "should have thrown an error")
 }
 
 func Bootstrap() (*leveldb.DB) {

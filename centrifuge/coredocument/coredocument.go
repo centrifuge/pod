@@ -7,10 +7,11 @@ import (
 	logging "github.com/ipfs/go-log"
 	"fmt"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/p2p"
-	"github.com/go-errors/errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/anchor"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
+	goerrors "github.com/go-errors/errors"
 )
 
 var log = logging.Logger("coredocument")
@@ -53,14 +54,19 @@ func GetDefaultCoreDocumentProcessor() (CoreDocumentProcessorer) {
 
 // Send sends the given CoreDocumentProcessor to the given recipient on the P2P layer
 func (cdp *CoreDocumentProcessor) Send(coreDocument *coredocumentpb.CoreDocument, ctx context.Context, recipient string) (err error) {
+	if coreDocument == nil {
+		return errors.GenerateNilParameterError(coreDocument)
+	}
+
 	peerId, err := identity.ResolveP2PEthereumIdentityForId(recipient)
 	if err != nil {
 		log.Errorf("Error: %v\n", err)
 		return err
 	}
 
+
 	if len(peerId.Keys[1]) == 0 {
-		return errors.Wrap("Identity doesn't have p2p key", 1)
+		return goerrors.Wrap("Identity doesn't have p2p key", 1)
 	}
 
 	// Default to last key of that type
@@ -87,6 +93,9 @@ func (cdp *CoreDocumentProcessor) Send(coreDocument *coredocumentpb.CoreDocument
 
 // Anchor anchors the given CoreDocument
 func (cd *CoreDocumentProcessor) Anchor(document *coredocumentpb.CoreDocument) (error) {
+	if document == nil {
+		return errors.GenerateNilParameterError(document)
+	}
 	log.Infof("Anchoring document %v", document)
 
 	id, err := tools.ByteArrayToByte32(document.CurrentIdentifier)

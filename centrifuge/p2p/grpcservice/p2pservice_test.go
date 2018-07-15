@@ -57,6 +57,15 @@ func TestP2PService_IncompatibleRequest(t *testing.T) {
 	assert.Nil(t, res)
 }
 
+func TestP2PService_HandleP2PPostNilDocument(t *testing.T) {
+	req := p2ppb.P2PMessage{CentNodeVersion: version.CentrifugeNodeVersion, NetworkIdentifier: config.Config.GetNetworkID()}
+	rpc := P2PService{&MockWebhookSender{}}
+	res, err := rpc.HandleP2PPost(context.Background(), &req)
+
+	assert.Error(t, err)
+	assert.Nil(t, res)
+}
+
 // Webhook Notification Mocks //
 type MockWebhookSender struct {}
 func (wh *MockWebhookSender) Send(notification *notificationpb.NotificationMessage) (status notification.NotificationStatus, err error) {return}

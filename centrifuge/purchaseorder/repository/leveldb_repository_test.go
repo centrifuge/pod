@@ -41,6 +41,20 @@ func TestStorageService(t *testing.T) {
 	assert.Nil(t, orderDocument, "PurchaseOrder should be NIL")
 }
 
+func TestLevelDBInvoiceRepository_StoreNilDocument(t *testing.T) {
+	repo := GetPurchaseOrderRepository()
+	err := repo.Store(nil)
+
+	assert.Error(t, err, "should have thrown an error")
+}
+
+func TestLevelDBInvoiceRepository_StoreNilCoreDocument(t *testing.T) {
+	repo := GetPurchaseOrderRepository()
+	err := repo.Store(&purchaseorderpb.PurchaseOrderDocument{})
+
+	assert.Error(t, err, "should have thrown an error")
+}
+
 func Bootstrap() (*leveldb.DB) {
 	levelDB := storage.NewLeveldbStorage(dbFileName)
 

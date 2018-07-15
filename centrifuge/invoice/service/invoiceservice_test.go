@@ -99,6 +99,15 @@ func TestInvoiceDocumentService_AnchorFails(t *testing.T) {
 	assert.Nil(t, anchoredDoc)
 }
 
+func TestInvoiceDocumentService_AnchorFailsWithNilDocument(t *testing.T) {
+	_, s, _, _ := getTestSetupData()
+
+	anchoredDoc, err := s.HandleAnchorInvoiceDocument(context.Background(), &invoicepb.AnchorInvoiceEnvelope{})
+
+	assert.Error(t, err)
+	assert.Nil(t, anchoredDoc)
+}
+
 func TestInvoiceDocumentService_Send(t *testing.T) {
 	doc, s, mockRepo, mockCDP := getTestSetupData()
 
