@@ -31,7 +31,6 @@ func generateEmptyInvoiceForProcessing() (doc *invoice.Invoice) {
 		DocumentIdentifier: identifier,
 		CurrentIdentifier:  identifier,
 		NextIdentifier:     testingutils.Rand32Bytes(),
-		DataRoot:           testingutils.Rand32Bytes(),
 	}
 	return
 }

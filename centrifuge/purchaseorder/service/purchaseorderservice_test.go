@@ -172,8 +172,6 @@ func TestPurchaseOrderDocumentService_HandleCreatePurchaseOrderProof(t *testing.
 		DocumentIdentifier: identifier,
 		CurrentIdentifier:  identifier,
 		NextIdentifier:     testingutils.Rand32Bytes(),
-		// TODO: below should be actual merkle root
-		DataRoot: testingutils.Rand32Bytes(),
 	}
 	order.CalculateMerkleRoot()
 
@@ -192,7 +190,7 @@ func TestPurchaseOrderDocumentService_HandleCreatePurchaseOrderProof(t *testing.
 	assert.Equal(t, len(proofRequest.Fields), len(purchaseorderProof.FieldProofs))
 	assert.Equal(t, proofRequest.Fields[0], purchaseorderProof.FieldProofs[0].Property)
 	sha256Hash := sha256.New()
-	valid, err := proofs.ValidateProof(purchaseorderProof.FieldProofs[0], order.Document.CoreDocument.DocumentRoot, sha256Hash)
+	valid, err := proofs.ValidateProof(purchaseorderProof.FieldProofs[0], order.Document.CoreDocument.DataRoot, sha256Hash)
 	assert.True(t, valid)
 	assert.Nil(t, err)
 }
