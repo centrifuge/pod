@@ -8,8 +8,23 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools"
 	"golang.org/x/crypto/ed25519"
+	"sync"
 	"time"
 )
+
+var signingService SigningService
+var once sync.Once
+
+func GetSigningService() *SigningService {
+	return &signingService
+}
+
+func NewSigningService() {
+	once.Do(func() {
+		signingService = SigningService{}
+	})
+	return
+}
 
 type KeyInfo struct {
 	PublicKey  ed25519.PublicKey
@@ -32,13 +47,14 @@ func (srv *SigningService) LoadIdentityKeyFromConfig() {
 
 // ValidateSignaturesOnDocument validates all signatures on the current document
 func (srv *SigningService) ValidateSignaturesOnDocument(doc *coredocumentpb.CoreDocument) (valid bool, err error) {
-	message := srv.createSignatureData(doc)
-	for _, signature := range doc.Signatures {
+	//message := srv.createSignatureData(doc)
+	return false, nil
+	/*for _, signature := range doc.Signatures {
 		valid, err := srv.ValidateSignature(signature, message)
 		if !valid {
 			return valid, err
-		}
-	}
+		}/
+	}*/
 	return true, nil
 }
 
@@ -62,7 +78,7 @@ func (srv *SigningService) GetIDFromKey(key ed25519.PublicKey) (id [32]byte) {
 }
 
 func (srv *SigningService) GetKeyInfo(key ed25519.PublicKey) (keyInfo KeyInfo, err error) {
-	keyInfo, exists = nil, false
+	exists := false
 	// TODO: implement key fetching
 	if !exists {
 		return keyInfo, errors.New("key not found")
@@ -93,21 +109,14 @@ func (srv *SigningService) ValidateKey(identity []byte, key ed25519.PublicKey, t
 	return true, nil
 }
 
-func (srv *SigningService) createSignatureData(doc *coredocumentpb.CoreDocument) (signatureData []byte) {
-	signatureData = make([]byte, 64)
-	copy(signatureData[:32], doc.DataRoot[:32])
-	copy(signatureData[32:64], doc.NextIdentifier[:32])
-	return
-}
-
 func (srv *SigningService) MakeSignature(doc *coredocumentpb.CoreDocument, identity []byte, privateKey ed25519.PrivateKey, publicKey ed25519.PublicKey) (sig *coredocumentpb.Signature) {
-	sigArray := srv.createSignatureData(doc)
-	signature := ed25519.Sign(privateKey, sigArray)
+	signature := ed25519.Sign(privateKey, doc.SigningRoot)
 	return &coredocumentpb.Signature{EntityId: identity, PublicKey: publicKey, Signature: signature}
 }
 
 // Sign a document with a provided public key
-func (srv *SigningService) Sign(doc *coredocumentpb.CoreDocument) {
+func (srv *SigningService) Sign(doc *coredocumentpb.CoreDocument) (err error) {
 	sig := srv.MakeSignature(doc, srv.IdentityId, srv.PrivateKey, srv.PublicKey)
 	doc.Signatures = append(doc.Signatures, sig)
+	return nil
 }

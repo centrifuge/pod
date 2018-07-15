@@ -7,6 +7,7 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder/repository"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/signatures"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/version"
@@ -29,6 +30,7 @@ func Bootstrap() {
 	coredocumentrepository.NewLevelDBCoreDocumentRepository(&coredocumentrepository.LevelDBCoreDocumentRepository{levelDB})
 	invoicerepository.NewLevelDBInvoiceRepository(&invoicerepository.LevelDBInvoiceRepository{levelDB})
 	purchaseorderrepository.NewLevelDBPurchaseOrderRepository(&purchaseorderrepository.LevelDBPurchaseOrderRepository{levelDB})
+	signatures.NewSigningService()
 	createEthereumConnection()
 }
 
