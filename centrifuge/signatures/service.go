@@ -19,32 +19,10 @@ type KeyInfo struct {
 }
 
 type SigningService struct {
-	// For now we will hard code a few known signing keys. This should later be replaced with ethereum based identities
-	// Structure is: Identity ID, Key
-	KnownKeys map[[32]byte]KeyInfo
-
 	// For simplicity we only support one active identity for now.
 	IdentityId []byte
 	PublicKey  ed25519.PublicKey
 	PrivateKey ed25519.PrivateKey
-}
-
-// LoadPublicKeys just loads public keys from the config for now until identity management does this for us.
-func (srv *SigningService) LoadPublicKeys() {
-	return
-	// TODO: this is a no-op and was merely for testing purposes. We should properly implement fetching signing keys from ethereum and caching them locally.
-	//      for k, v := range keys {
-	//	    key := keytools.GetPublicSigningKey(v)
-	//		var i [32]byte
-	//		copy(i[:], key[:32])
-	//		srv.KnownKeys = make(map[[32]byte]KeyInfo)
-	//		srv.KnownKeys[i] = KeyInfo{
-	//			PublicKey:  key,
-	//			ValidUntil: time.Time{},
-	//			ValidFrom:  time.Now(),
-	//			Identity:   []byte(k),
-	//		}
-	//	}
 }
 
 func (srv *SigningService) LoadIdentityKeyFromConfig() {
@@ -84,7 +62,8 @@ func (srv *SigningService) GetIDFromKey(key ed25519.PublicKey) (id [32]byte) {
 }
 
 func (srv *SigningService) GetKeyInfo(key ed25519.PublicKey) (keyInfo KeyInfo, err error) {
-	keyInfo, exists := srv.KnownKeys[srv.GetIDFromKey(key)]
+	keyInfo, exists = nil, false
+	// TODO: implement key fetching
 	if !exists {
 		return keyInfo, errors.New("key not found")
 	}
@@ -96,7 +75,7 @@ func (srv *SigningService) ValidateKey(identity []byte, key ed25519.PublicKey, t
 	keyInfo, err := srv.GetKeyInfo(key)
 
 	if err != nil {
-		return false, errors.New("key not found")
+		return false, err
 	}
 
 	if !bytes.Equal(identity, keyInfo.Identity) {
