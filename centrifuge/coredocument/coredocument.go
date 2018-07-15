@@ -2,16 +2,16 @@ package coredocument
 
 import (
 	"context"
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
-	logging "github.com/ipfs/go-log"
 	"fmt"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/p2p"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/anchor"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/anchor"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/p2p"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	goerrors "github.com/go-errors/errors"
+	logging "github.com/ipfs/go-log"
 )
 
 var log = logging.Logger("coredocument")
@@ -48,7 +48,7 @@ type CoreDocumentProcessorer interface {
 	Anchor(document *coredocumentpb.CoreDocument) (err error)
 }
 
-func GetDefaultCoreDocumentProcessor() (CoreDocumentProcessorer) {
+func GetDefaultCoreDocumentProcessor() CoreDocumentProcessorer {
 	return &CoreDocumentProcessor{}
 }
 
@@ -63,7 +63,6 @@ func (cdp *CoreDocumentProcessor) Send(coreDocument *coredocumentpb.CoreDocument
 		log.Errorf("Error: %v\n", err)
 		return err
 	}
-
 
 	if len(peerId.Keys[1]) == 0 {
 		return goerrors.Wrap("Identity doesn't have p2p key", 1)
@@ -92,7 +91,7 @@ func (cdp *CoreDocumentProcessor) Send(coreDocument *coredocumentpb.CoreDocument
 }
 
 // Anchor anchors the given CoreDocument
-func (cd *CoreDocumentProcessor) Anchor(document *coredocumentpb.CoreDocument) (error) {
+func (cd *CoreDocumentProcessor) Anchor(document *coredocumentpb.CoreDocument) error {
 	if document == nil {
 		return errors.GenerateNilParameterError(document)
 	}

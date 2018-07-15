@@ -5,11 +5,11 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/documenttypes"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	logging "github.com/ipfs/go-log"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 )
 
 var log = logging.Logger("invoice")
@@ -86,8 +86,7 @@ func (inv *Invoice) CalculateMerkleRoot() error {
 	if err != nil {
 		return err
 	}
-	// TODO: below should actually be stored as CoreDocument.DataRoot
-	inv.Document.CoreDocument.DocumentRoot = tree.RootHash()
+	inv.Document.CoreDocument.DataRoot = tree.RootHash()
 	return nil
 }
 
