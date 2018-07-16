@@ -15,10 +15,17 @@ const (
 
 type Identity interface {
 	String() string
-	GetCentrifugeId() string
+	GetCentrifugeId() []byte
+	CentrifugeIdString() string
+	CentrifugeIdB32() [32]byte
 	GetLastB58KeyForType(keyType int) (ret string, err error)
-	AddKeyToIdentity(keyType int, confirmations chan<- *Identity) (err error)
+	AddKeyToIdentity(keyType int, confirmations chan<- *WatchIdentity) (err error)
 	CheckIdentityExists() (exists bool, err error)
+}
+
+type WatchIdentity struct {
+	Identity Identity
+	Error    error
 }
 
 // IdentityService is used to fetch identities
