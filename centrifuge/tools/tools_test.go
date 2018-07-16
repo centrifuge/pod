@@ -75,10 +75,8 @@ func TestSliceToByte32(t *testing.T) {
 
 	tst = []byte("12345678901234567890123456789032")
 	copy(exp[:], tst[:32])
-
 	act, err := tools.SliceToByte32(tst)
 	assert.Nil(t, err)
-	copy(exp[:], tst[:32])
 	assert.EqualValues(t, exp, act)
 	assert.Nil(t, err)
 	assert.EqualValues(t, exp, act, "Expected to be [%v] but got [%v]", exp, act)
