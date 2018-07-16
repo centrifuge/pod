@@ -5,7 +5,7 @@ RUN apk update && apk add --no-cache openssh git jq curl gcc libc-dev build-base
 ADD . /go/src/github.com/CentrifugeInc/go-centrifuge
 WORKDIR /go/src/github.com/CentrifugeInc/go-centrifuge
 
-RUN go install ./centrifuge
+RUN go install -ldflags "-X github.com/CentrifugeInc/go-centrifuge/centrifuge/version.gitCommit=`git rev-parse HEAD`" ./centrifuge
 
 FROM alpine:latest
 

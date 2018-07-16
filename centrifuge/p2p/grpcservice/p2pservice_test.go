@@ -27,7 +27,7 @@ var identifier = []byte("1")
 var coredoc = &coredocumentpb.CoreDocument{DocumentIdentifier: identifier}
 
 func TestP2PService(t *testing.T) {
-	req := p2ppb.P2PMessage{Document: coredoc, CentNodeVersion: version.CentrifugeNodeVersion, NetworkIdentifier: config.Config.GetNetworkID()}
+	req := p2ppb.P2PMessage{Document: coredoc, CentNodeVersion: version.GetVersion().String(), NetworkIdentifier: config.Config.GetNetworkID()}
 	rpc := P2PService{&MockWebhookSender{}}
 
 	res, err := rpc.HandleP2PPost(context.Background(), &req)
@@ -49,7 +49,7 @@ func TestP2PService_IncompatibleRequest(t *testing.T) {
 	assert.Nil(t, res)
 
 	// Test invalid network
-	req = p2ppb.P2PMessage{Document: coredoc, CentNodeVersion: version.CentrifugeNodeVersion, NetworkIdentifier: config.Config.GetNetworkID() + 1}
+	req = p2ppb.P2PMessage{Document: coredoc, CentNodeVersion: version.GetVersion().String(), NetworkIdentifier: config.Config.GetNetworkID() + 1}
 	res, err = rpc.HandleP2PPost(context.Background(), &req)
 
 	assert.Error(t, err)
@@ -58,7 +58,7 @@ func TestP2PService_IncompatibleRequest(t *testing.T) {
 }
 
 func TestP2PService_HandleP2PPostNilDocument(t *testing.T) {
-	req := p2ppb.P2PMessage{CentNodeVersion: version.CentrifugeNodeVersion, NetworkIdentifier: config.Config.GetNetworkID()}
+	req := p2ppb.P2PMessage{CentNodeVersion: version.GetVersion().String(), NetworkIdentifier: config.Config.GetNetworkID()}
 	rpc := P2PService{&MockWebhookSender{}}
 	res, err := rpc.HandleP2PPost(context.Background(), &req)
 
