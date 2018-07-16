@@ -67,7 +67,7 @@ func (cdp *CoreDocumentProcessor) Send(coreDocument *coredocumentpb.CoreDocument
 		return err
 	}
 
-	lastb58Key, err := id.GetLastB58KeyForType(1)
+	lastb58Key, err := id.GetCurrentP2PKey()
 	if err != nil {
 		log.Errorf("Error: %v\n", err)
 		return err
