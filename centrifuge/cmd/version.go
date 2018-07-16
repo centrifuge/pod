@@ -12,7 +12,7 @@ var versionCmd = &cobra.Command{
 	Short: "print centrifuge version",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("go-centrifuge version", version.CentrifugeNodeVersion)
+		fmt.Println("go-centrifuge version", version.GetVersion())
 	},
 }
 
