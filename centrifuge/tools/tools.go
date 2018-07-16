@@ -2,14 +2,14 @@ package tools
 
 import (
 	"crypto/rand"
-	"math"
-	"strings"
 	"errors"
 	"fmt"
+	"math"
+	"strings"
 )
 
-// Converts unbounded byte array to 32 bytes - will truncate
-func ByteArrayToByte32(in []byte) (out [32]byte, err error) {
+// SliceToByte32 converts a 32 byte slice to an array. Will thorw error if the slice is too long
+func SliceToByte32(in []byte) (out [32]byte, err error) {
 	if len(in) > 32 {
 		return [32]byte{}, errors.New("input exceeds length of 32")
 	}
@@ -17,8 +17,8 @@ func ByteArrayToByte32(in []byte) (out [32]byte, err error) {
 	return
 }
 
-// Byte32ToByteArray converts a [32]bytes to an unbounded byte array
-func Byte32ToByteArray(in [32]byte) ([]byte) {
+// Byte32ToSlice converts a [32]bytes to an unbounded byte array
+func Byte32ToSlice(in [32]byte) []byte {
 	if IsEmptyByte32(in) {
 		return []byte{}
 	} else {
@@ -26,21 +26,17 @@ func Byte32ToByteArray(in [32]byte) ([]byte) {
 	}
 }
 
-// StringToByte32 converts a given 32 character long string into a [32]byte
-// on error/invalid string lenght returns empty byte array and error
-func StringToByte32(input string) (ret [32]byte, err error) {
-	if len(input) != 32 {
-		return ret, errors.New("can only work with strings of length 32")
+// Check32BytesFilled takes multiple []byte slices and ensures they are all of length 32 and don't contain all 0x0 bytes.
+func CheckMultiple32BytesFilled(b []byte, bs ...[]byte) bool {
+	if IsEmptyByteSlice(b) || len(b) != 32 {
+		return false
 	}
-	copy(ret[:], input)
-	return
-}
-
-// Byte32ToString converts a given [32]byte into a 32 char length string
-// on error/invalid input, returns empty string and error
-func Byte32ToString(input [32]byte) (ret string, err error) {
-	ret = string(input[:32])
-	return
+	for _, v := range bs {
+		if !IsEmptyByteSlice(v) || len(v) != 32 {
+			return false
+		}
+	}
+	return true
 }
 
 func RandomString32() (ret string) {
@@ -81,11 +77,11 @@ func IsEmptyByteSlice(s []byte) bool {
 
 func IsSameByteSlice(a []byte, b []byte) bool {
 	if a == nil && b == nil {
-		return true;
+		return true
 	}
 
 	if a == nil || b == nil {
-		return false;
+		return false
 	}
 
 	if len(a) != len(b) {
@@ -105,9 +101,18 @@ func StrPadHex32(input string) string {
 	return StrPad(input, 32, "0", "LEFT")
 }
 
-// checkLen32 is used to validate that the given val is 32 characters long. If not, it returns an error with the error
+// CheckLen32 is used to validate that the given val is 32 characters long. If not, it returns an error with the error
 // message of `errorMessage`
-func CheckLen32(val string, errorMessage string) (error) {
+func CheckLen32(val string, errorMessage string) error {
+	if len(val) != 32 {
+		return errors.New(fmt.Sprintf(errorMessage, val))
+	}
+	return nil
+}
+
+// CheckBytesLen32 is used to validate that a given byte slice is of length 32, if not it returns an error with the error
+// message of `errorMessage`
+func CheckBytesLen32(val []byte, errorMessage string) error {
 	if len(val) != 32 {
 		return errors.New(fmt.Sprintf(errorMessage, val))
 	}
@@ -133,7 +138,7 @@ func StrPad(input string, padLength int, padString string, padType string) strin
 		return input
 	}
 
-	repeat := math.Ceil(float64(1) + (float64(padLength - padStringLength))/float64(padStringLength))
+	repeat := math.Ceil(float64(1) + (float64(padLength-padStringLength))/float64(padStringLength))
 
 	switch padType {
 	case "RIGHT":

@@ -47,7 +47,7 @@ type CoreDocumentProcessor struct {
 // CoreDocumentProcessorInterface identifies an implementation, which can do a bunch of things with a CoreDocument.
 // E.g. send, anchor, etc.
 type CoreDocumentProcessorInterface interface {
-	Send(coreDocument *coredocumentpb.CoreDocument, ctx context.Context, recipient string) (err error)
+	Send(coreDocument *coredocumentpb.CoreDocument, ctx context.Context, recipient []byte) (err error)
 	Anchor(document *coredocumentpb.CoreDocument) (err error)
 }
 
@@ -56,7 +56,7 @@ func GetDefaultCoreDocumentProcessor() CoreDocumentProcessorInterface {
 }
 
 // Send sends the given CoreDocumentProcessor to the given recipient on the P2P layer
-func (cdp *CoreDocumentProcessor) Send(coreDocument *coredocumentpb.CoreDocument, ctx context.Context, recipient string) (err error) {
+func (cdp *CoreDocumentProcessor) Send(coreDocument *coredocumentpb.CoreDocument, ctx context.Context, recipient []byte) (err error) {
 	if coreDocument == nil {
 		return errors.GenerateNilParameterError(coreDocument)
 	}
@@ -100,12 +100,12 @@ func (cd *CoreDocumentProcessor) Anchor(document *coredocumentpb.CoreDocument) e
 	}
 	log.Infof("Anchoring document %v", document)
 
-	id, err := tools.ByteArrayToByte32(document.CurrentIdentifier)
+	id, err := tools.SliceToByte32(document.CurrentIdentifier)
 	if err != nil {
 		log.Error(err)
 		return err
 	}
-	rootHash, err := tools.ByteArrayToByte32(document.DocumentRoot)
+	rootHash, err := tools.SliceToByte32(document.DocumentRoot)
 	if err != nil {
 		log.Error(err)
 		return err
@@ -122,33 +122,9 @@ func (cd *CoreDocumentProcessor) Anchor(document *coredocumentpb.CoreDocument) e
 	return err
 }
 
-func Check32BytesFilled(b []byte) bool {
-	if len(b) != 32 {
-		return false
-	}
-	for _, v := range b {
-		if v != 0x0 {
-			return true
-		}
-	}
-	return false
-}
-
-func CheckMultiple32BytesFilled(b []byte, bs ...[]byte) bool {
-	if !Check32BytesFilled(b) {
-		return false
-	}
-	for _, v := range bs {
-		if !Check32BytesFilled(v) {
-			return false
-		}
-	}
-	return true
-}
-
 // ValidateCoreDocument checks that all required fields are set before doing any processing with it
 func (cd *CoreDocumentProcessor) ValidateCoreDocument(document *coredocumentpb.CoreDocument) (valid bool, err error) {
-	if !CheckMultiple32BytesFilled(document.DocumentIdentifier, document.NextIdentifier, document.CurrentIdentifier, document.DataRoot) {
+	if !tools.CheckMultiple32BytesFilled(document.DocumentIdentifier, document.NextIdentifier, document.CurrentIdentifier, document.DataRoot) {
 		return false, errors.New("Found empty value in CoreDocument")
 	}
 
@@ -157,7 +133,7 @@ func (cd *CoreDocumentProcessor) ValidateCoreDocument(document *coredocumentpb.C
 	}
 
 	// Spot checking that DocumentIdentifier salt is filled. Perhaps it would be better to validate all salts in the future.
-	if !Check32BytesFilled(document.CoredocumentSalts.DocumentIdentifier) {
+	if tools.IsEmptyByteSlice(document.CoredocumentSalts.DocumentIdentifier) || len(document.CoredocumentSalts.DocumentIdentifier) != 32 {
 		return false, errors.New("CoreDocumentSalts not filled")
 	}
 
