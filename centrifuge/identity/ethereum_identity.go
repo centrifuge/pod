@@ -90,23 +90,30 @@ func (id *EthereumIdentity) GetCentrifugeId() []byte {
 	return id.CentrifugeId
 }
 
-func (id *EthereumIdentity) GetLastB58KeyForType(keyType int) (ret string, err error) {
-	if len(id.Keys[keyType]) == 0 {
+func (id *EthereumIdentity) GetLastKeyForType(keyType int) (key []byte, err error) {
+	err = id.fetchKeysByType(keyType)
+	if err != nil {
 		return
 	}
-	switch keyType {
-	case 0:
-		log.Infof("Error not authorized type")
-	case 1:
-		p2pId, err1 := keytools.PublicKeyToP2PKey(id.Keys[keyType][len(id.Keys[keyType])-1].Key)
-		if err1 != nil {
-			err = err1
-			return
-		}
-		ret = p2pId.Pretty()
-	default:
-		log.Infof("keyType not found")
+
+	if len(id.Keys[keyType]) == 0 {
+		return []byte{}, fmt.Errorf("No key found for type [%d] in id [%s]", keyType, id.CentrifugeIdString())
 	}
+
+	copy(key[:], id.Keys[keyType][len(id.Keys[keyType])-1].Key[:32])
+	return key, nil
+}
+func (id *EthereumIdentity) GetCurrentP2PKey() (ret string, err error) {
+	key, err := id.GetLastKeyForType(KEY_TYPE_PEERID)
+	if err != nil {
+		return
+	}
+	key32, _ := tools.SliceToByte32(key)
+	p2pId, err := keytools.PublicKeyToP2PKey(key32)
+	if err != nil {
+		return
+	}
+	ret = p2pId.Pretty()
 	return
 }
 
@@ -178,6 +185,23 @@ func (id *EthereumIdentity) AddKeyToIdentity(keyType int, confirmations chan<- *
 		return
 	}
 	return
+}
+
+func (id *EthereumIdentity) fetchKeysByType(keyType int) error {
+	contract, err := id.getContract()
+	if err != nil {
+		return err
+	}
+	opts := ethereum.GetGethCallOpts()
+	bigInt := big.NewInt(int64(keyType))
+	keys, err := contract.GetKeysByType(opts, bigInt)
+	if err != nil {
+		return err
+	}
+	for _, key := range keys {
+		id.Keys[keyType] = append(id.Keys[keyType], EthereumIdentityKey{key})
+	}
+	return nil
 }
 
 func getIdentityFactoryContract() (identityFactoryContract *EthereumIdentityFactoryContract, err error) {
@@ -382,17 +406,6 @@ func createOrAddKeyOnEthereumIdentity(centrifugeId []byte, keyType int, idKey [3
 		err = errLocal
 		return
 	}
-	if action == ACTION_ADDKEY {
-		currentKey, errLocal := id.GetLastB58KeyForType(keyType)
-		if errLocal != nil {
-			err = errLocal
-			return
-		}
-		if currentKey == pid.Pretty() {
-			err = errors.New("Key trying to be added already exists as latest. Skipping Update.")
-			return
-		}
-	}
 
 	id.Keys[keyType] = append(id.Keys[keyType], EthereumIdentityKey{idKey})
 	confirmations := make(chan *WatchIdentity, 1)
@@ -414,7 +427,7 @@ func createOrAddKeyOnEthereumIdentity(centrifugeId []byte, keyType int, idKey [3
 	}
 	watchAddedToIdentity := <-confirmations
 
-	lastKey, errLocal := watchAddedToIdentity.Identity.GetLastB58KeyForType(keyType)
+	lastKey, errLocal := watchAddedToIdentity.Identity.GetLastKeyForType(keyType)
 	if errLocal != nil {
 		err = errLocal
 		return
