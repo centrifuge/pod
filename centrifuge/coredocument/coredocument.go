@@ -13,7 +13,6 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/signatures"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/centrifuge/precise-proofs/proofs"
-	goerrors "github.com/go-errors/errors"
 	logging "github.com/ipfs/go-log"
 )
 
@@ -42,6 +41,7 @@ func (e *ErrInconsistentState) Error() string {
 // CoreDocumentProcessor is the processor that can deal with CoreDocuments and performs actions on them such as
 // anchoring, sending on the p2p level, or signing.
 type CoreDocumentProcessor struct {
+	IdentityService identity.IdentityService
 }
 
 // CoreDocumentProcessorInterface identifies an implementation, which can do a bunch of things with a CoreDocument.
@@ -52,7 +52,7 @@ type CoreDocumentProcessorInterface interface {
 }
 
 func GetDefaultCoreDocumentProcessor() CoreDocumentProcessorInterface {
-	return &CoreDocumentProcessor{}
+	return &CoreDocumentProcessor{IdentityService: identity.NewEthereumIdentityService()}
 }
 
 // Send sends the given CoreDocumentProcessor to the given recipient on the P2P layer
@@ -61,21 +61,18 @@ func (cdp *CoreDocumentProcessor) Send(coreDocument *coredocumentpb.CoreDocument
 		return errors.GenerateNilParameterError(coreDocument)
 	}
 
-	peerId, err := identity.ResolveP2PEthereumIdentityForId(recipient)
+	id, err := cdp.IdentityService.LookupIdentityForId(recipient)
 	if err != nil {
 		log.Errorf("Error: %v\n", err)
 		return err
 	}
 
-	if len(peerId.Keys[1]) == 0 {
-		return goerrors.Wrap("Identity doesn't have p2p key", 1)
-	}
-
-	// Default to last key of that type
-	lastb58Key, err := peerId.GetLastB58KeyForType(1)
+	lastb58Key, err := id.GetLastB58KeyForType(1)
 	if err != nil {
+		log.Errorf("Error: %v\n", err)
 		return err
 	}
+
 	log.Infof("Sending Document to CentID [%v] with Key [%v]\n", recipient, lastb58Key)
 	clientWithProtocol := fmt.Sprintf("/ipfs/%s", lastb58Key)
 	client := p2p.OpenClient(clientWithProtocol)

@@ -19,9 +19,9 @@ func GetSigningService() *SigningService {
 	return &signingService
 }
 
-func NewSigningService() {
+func NewSigningService(srv SigningService) {
 	once.Do(func() {
-		signingService = SigningService{}
+		signingService = srv
 	})
 	return
 }
