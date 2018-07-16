@@ -10,10 +10,10 @@ echo "Building Alpine Docker Image"
 docker build -t ${IMAGE_NAME}:${tag} .
 
 echo "Building Ubuntu Docker Image for Linux Binary creation"
-docker build -t ${IMAGE_NAME}:${tag} -f Dockerfile.ubuntu .
+docker build -t ${IMAGE_NAME}:ubuntu -f Dockerfile.ubuntu .
 
 mkdir -p build/linux
-cid=$(docker create ${IMAGE_NAME}:${tag})
+cid=$(docker create ${IMAGE_NAME}:ubuntu)
 docker cp $cid:/root/centrifuge build/linux/
 docker rm -v $cid
 
