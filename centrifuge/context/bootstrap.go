@@ -30,7 +30,7 @@ func Bootstrap() {
 	coredocumentrepository.NewLevelDBCoreDocumentRepository(&coredocumentrepository.LevelDBCoreDocumentRepository{levelDB})
 	invoicerepository.NewLevelDBInvoiceRepository(&invoicerepository.LevelDBInvoiceRepository{levelDB})
 	purchaseorderrepository.NewLevelDBPurchaseOrderRepository(&purchaseorderrepository.LevelDBPurchaseOrderRepository{levelDB})
-	signatures.NewSigningService()
+	signatures.NewSigningService(signatures.SigningService{})
 	createEthereumConnection()
 }
 
@@ -77,6 +77,7 @@ func TestUnitBootstrap() {
 	coredocumentrepository.NewLevelDBCoreDocumentRepository(&coredocumentrepository.LevelDBCoreDocumentRepository{levelDB})
 	invoicerepository.NewLevelDBInvoiceRepository(&invoicerepository.LevelDBInvoiceRepository{levelDB})
 	purchaseorderrepository.NewLevelDBPurchaseOrderRepository(&purchaseorderrepository.LevelDBPurchaseOrderRepository{levelDB})
+	signatures.NewSigningService(signatures.SigningService{})
 }
 
 func TestTearDown() {

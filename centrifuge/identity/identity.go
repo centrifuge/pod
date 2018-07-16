@@ -18,6 +18,7 @@ type Identity interface {
 	GetCentrifugeId() []byte
 	CentrifugeIdString() string
 	CentrifugeIdB32() [32]byte
+	SetCentrifugeId(b []byte) error
 	GetLastB58KeyForType(keyType int) (ret string, err error)
 	AddKeyToIdentity(keyType int, confirmations chan<- *WatchIdentity) (err error)
 	CheckIdentityExists() (exists bool, err error)
