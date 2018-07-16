@@ -19,7 +19,6 @@ cache:
   # Cache DAG data
   - /tmp/geth_test_network/8383/.ethash
   - /tmp/depcache
-  - $HOME/google-cloud-sdk/
 
 before_install:
   - npm install -g truffle@4.0.4
