@@ -31,12 +31,11 @@ install:
 jobs:
   include:
     - stage: test
-      before_script:
-       - gcloud version
-       - gsutil version
       script: scripts/test_wrapper.sh
       after_success:
        - bash <(curl -s https://codecov.io/bash)
-    - stage: build_image
+    - stage: build_artifacts
       if: (NOT type IN (pull_request)) AND (branch = master)
-      script: scripts/docker_build_push.sh
+      before_script:
+       - openssl aes-256-cbc -K $encrypted_f84a564476a2_key -iv $encrypted_f84a564476a2_iv -in peak-vista-185616-9f70002df7eb.json.enc -out peak-vista-185616-9f70002df7eb.json -d
+      script: scripts/artifact_build_push.sh
