@@ -27,8 +27,8 @@
 
 [[constraint]]
   name = "github.com/CentrifugeInc/centrifuge-protobufs"
-  source = "git@github.com:lucasvo/centrifuge-protobufs"
-  branch = "signatures" #revision = "a281545f572b9d90fc816520bc0293f3cf370879"
+  source = "git@github.com:CentrifugeInc/centrifuge-protobufs"
+  revision = "ca7ecd84fb2ca69d917ad881cdfbce11504836d0"
 
 [[constraint]]
   name = "github.com/Masterminds/semver"

@@ -2,7 +2,6 @@
 
 
 [[projects]]
-  branch = "signatures"
   name = "github.com/CentrifugeInc/centrifuge-protobufs"
   packages = [
     "documenttypes",
@@ -12,8 +11,8 @@
     "gen/go/p2p",
     "gen/go/purchaseorder"
   ]
-  revision = "948dfd43797c3ded908e01697f07c01cbbcc5032"
-  source = "git@github.com:lucasvo/centrifuge-protobufs"
+  revision = "ca7ecd84fb2ca69d917ad881cdfbce11504836d0"
+  source = "git@github.com:CentrifugeInc/centrifuge-protobufs"
 
 [[projects]]
   name = "github.com/Masterminds/semver"
@@ -937,7 +936,7 @@
     "googleapis/api/annotations",
     "googleapis/rpc/status"
   ]
-  revision = "e92b116572682a5b432ddd840aeaba2a559eeff1"
+  revision = "2731d4fa720b67f9fe38e9051a2a9b38e4609260"
 
 [[projects]]
   name = "google.golang.org/grpc"
@@ -1004,6 +1003,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "d67365f0f71ef78401cbf29b712701767e72db08910ccbd897f95f2f6c937cf2"
+  inputs-digest = "9144dd9608afd5658a9de4a8b7a786d30c89b1c8e33a7210b4fb81b7c16e54d0"
   solver-name = "gps-cdcl"
   solver-version = 1
