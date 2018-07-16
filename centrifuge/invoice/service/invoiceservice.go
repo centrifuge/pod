@@ -104,7 +104,7 @@ func (s *InvoiceDocumentService) HandleSendInvoiceDocument(ctx context.Context, 
 
 	errs := []error{}
 	for _, element := range sendInvoiceEnvelope.Recipients {
-		err1 := s.CoreDocumentProcessor.Send(anchoredInvoiceDocument.CoreDocument, ctx, string(element[:]))
+		err1 := s.CoreDocumentProcessor.Send(anchoredInvoiceDocument.CoreDocument, ctx, element[:])
 		if err1 != nil {
 			errs = append(errs, err1)
 		}

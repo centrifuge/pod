@@ -105,8 +105,8 @@ func (s *PurchaseOrderDocumentService) HandleSendPurchaseOrderDocument(ctx conte
 	}
 
 	errs := []error{}
-	for _, element := range sendPurchaseOrderEnvelope.Recipients {
-		err1 := s.CoreDocumentProcessor.Send(anchoredPurchaseOrder.CoreDocument, ctx, string(element[:]))
+	for _, recipient := range sendPurchaseOrderEnvelope.Recipients {
+		err1 := s.CoreDocumentProcessor.Send(anchoredPurchaseOrder.CoreDocument, ctx, recipient)
 		if err1 != nil {
 			errs = append(errs, err1)
 		}

@@ -55,7 +55,6 @@ func (srv *SigningService) ValidateSignaturesOnDocument(doc *coredocumentpb.Core
 			return valid, err
 		}/
 	}*/
-	return true, nil
 }
 
 func (srv *SigningService) ValidateSignature(signature *coredocumentpb.Signature, message []byte) (valid bool, err error) {
