@@ -14,6 +14,14 @@ help: ## Show this help message.
 	@echo 'targets:'
 	@egrep '^(.+)\:\ ##\ (.+)' ${MAKEFILE_LIST} | column -t -c 2 -s ':#'
 
+install-deps: ## Installing Dependencies
+	@command -v dep >/dev/null 2>&1 || go get -u github.com/golang/dep/...
+	@dep ensure
+
+install: ## Builds and Install binary for development
+install: install-deps
+	@go install ./centrifuge/
+
 install-xgo: ## Install XGO
 	@echo "Ensuring XGO is installed"
 	@command -v xgo >/dev/null 2>&1 || go get github.com/karalabe/xgo
