@@ -44,3 +44,7 @@ build-ci: build-linux-amd64 build-docker
 	@gcloud auth activate-service-account --key-file ${GCLOUD_SERVICE}
 	@gsutil cp cent-api-*-${TAG}.tar.gz gs://centrifuge-artifact-releases/
 	@gsutil acl ch -u AllUsers:R gs://centrifuge-artifact-releases/cent-api-*-${TAG}.tar.gz
+	@echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
+	@docker tag "${IMAGE_NAME}:${TAG}" "${IMAGE_NAME}:latest"
+	@docker push ${IMAGE_NAME}:latest
+	@docker push ${IMAGE_NAME}:${TAG}
