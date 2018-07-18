@@ -37,4 +37,4 @@ jobs:
       if: (NOT type IN (pull_request)) AND (branch = master)
       before_script:
        - openssl aes-256-cbc -K $encrypted_f84a564476a2_key -iv $encrypted_f84a564476a2_iv -in peak-vista-185616-9f70002df7eb.json.enc -out peak-vista-185616-9f70002df7eb.json -d
-      script: scripts/artifact_build_push.sh
+      script: make build-ci
