@@ -24,8 +24,7 @@ before_install:
   - npm install -g truffle@4.0.4
 
 install:
-  - go get -u github.com/golang/dep/...
-  - dep ensure
+  - make install
 
 jobs:
   include:
