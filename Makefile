@@ -29,6 +29,8 @@ install-xgo: ## Install XGO
 build-linux-amd64: ## Build linux/amd64
 build-linux-amd64: install-xgo
 	@echo "Building amd64 with flags [${LD_FLAGS}]"
+	@mkdir -p build/linux-amd64
+	@chmod -R 0777 build/
 	@xgo -dest build/linux-amd64 -targets=linux/amd64 -ldflags=${LD_FLAGS} ./centrifuge
 	@mv build/linux-amd64/centrifuge-linux-amd64 build/linux-amd64/centrifuge
 	@tar -zcvf cent-api-linux-amd64-${TAG}.tar.gz -C build/linux-amd64/ ./centrifuge
