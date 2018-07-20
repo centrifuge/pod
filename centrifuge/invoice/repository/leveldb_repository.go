@@ -10,18 +10,19 @@ import (
 )
 
 var once sync.Once
+var ErrDocumentExists = errors.New("syntax error in pattern")
+
 
 type LevelDBInvoiceRepository struct {
 	Leveldb *leveldb.DB
 }
 
 func checkIfCoreDocumentFilledCorrectly(inv *invoicepb.InvoiceDocument) error {
-	//TODO use the new error coming from Miguel's changes
 	if inv.CoreDocument == nil {
-		return gerrors.Errorf("Invalid Empty (NIL) Invoice Document")
+		return errors.GenerateNilParameterError(inv.CoreDocument)
 	}
 	if inv.CoreDocument.DocumentIdentifier == nil {
-		return gerrors.Errorf("Invalid Empty (NIL) Invoice Document")
+		return errors.GenerateNilParameterError(inv.CoreDocument.DocumentIdentifier)
 	}
 	return nil
 }

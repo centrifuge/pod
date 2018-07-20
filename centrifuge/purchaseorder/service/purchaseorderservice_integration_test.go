@@ -19,6 +19,9 @@ import (
 
 func TestMain(m *testing.M) {
 	cc.TestFunctionalEthereumBootstrap()
+	purchaseorderrepository.NewLevelDBPurchaseOrderRepository(&purchaseorderrepository.LevelDBPurchaseOrderRepository{cc.GetLevelDBStorage()})
+
+
 	result := m.Run()
 	cc.TestIntegrationTearDown()
 	os.Exit(result)

@@ -78,7 +78,7 @@ func getTestSetupData() (doc *invoice.Invoice, srv *invoiceservice.InvoiceDocume
 func TestInvoiceDocumentService_Anchor(t *testing.T) {
 	doc, s, mockRepo, mockCDP := getTestSetupData()
 
-	mockRepo.On("Store", doc.Document).Return(nil).Once()
+	mockRepo.On("StoreOnce", doc.Document).Return(nil).Once()
 	mockCDP.On("Anchor", mock.Anything).Return(nil).Once()
 
 	anchoredDoc, err := s.HandleAnchorInvoiceDocument(context.Background(), &invoicepb.AnchorInvoiceEnvelope{Document: doc.Document})
@@ -92,7 +92,7 @@ func TestInvoiceDocumentService_Anchor(t *testing.T) {
 func TestInvoiceDocumentService_AnchorFails(t *testing.T) {
 	doc, s, mockRepo, mockCDP := getTestSetupData()
 
-	mockRepo.On("Store", doc.Document).Return(nil).Once()
+	mockRepo.On("StoreOnce", doc.Document).Return(nil).Once()
 	mockCDP.On("Anchor", mock.Anything).Return(errors.New("error anchoring")).Once()
 
 	anchoredDoc, err := s.HandleAnchorInvoiceDocument(context.Background(), &invoicepb.AnchorInvoiceEnvelope{Document: doc.Document})
@@ -117,7 +117,7 @@ func TestInvoiceDocumentService_Send(t *testing.T) {
 
 	recipients := testingutils.GenerateP2PRecipients(1)
 
-	mockRepo.On("Store", doc.Document).Return(nil).Once()
+	mockRepo.On("StoreOnce", doc.Document).Return(nil).Once()
 	mockCDP.On("Anchor", mock.Anything).Return(nil).Once()
 	mockCDP.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 
@@ -132,7 +132,7 @@ func TestInvoiceDocumentService_SendFails(t *testing.T) {
 	doc, s, mockRepo, mockCDP := getTestSetupData()
 	recipients := testingutils.GenerateP2PRecipients(2)
 
-	mockRepo.On("Store", doc.Document).Return(nil).Once()
+	mockRepo.On("StoreOnce", doc.Document).Return(nil).Once()
 	mockCDP.On("Anchor", mock.Anything).Return(nil).Once()
 	mockCDP.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(errors.New("error sending")).Twice()
 
@@ -148,7 +148,7 @@ func TestInvoiceDocumentService_Send_StoreFails(t *testing.T) {
 	doc, s, mockRepo, _ := getTestSetupData()
 	recipients := testingutils.GenerateP2PRecipients(2)
 
-	mockRepo.On("Store", doc.Document).Return(errors.New("error storing")).Once()
+	mockRepo.On("StoreOnce", doc.Document).Return(errors.New("error storing")).Once()
 
 	_, err := s.HandleSendInvoiceDocument(context.Background(), &invoicepb.SendInvoiceEnvelope{Recipients: recipients, Document: doc.Document})
 
@@ -160,7 +160,7 @@ func TestInvoiceDocumentService_Send_AnchorFails(t *testing.T) {
 	doc, s, mockRepo, mockCDP := getTestSetupData()
 	recipients := testingutils.GenerateP2PRecipients(2)
 
-	mockRepo.On("Store", doc.Document).Return(nil).Once()
+	mockRepo.On("StoreOnce", doc.Document).Return(nil).Once()
 	mockCDP.On("Anchor", mock.Anything).Return(errors.New("error anchoring")).Once()
 
 	_, err := s.HandleSendInvoiceDocument(context.Background(), &invoicepb.SendInvoiceEnvelope{Recipients: recipients, Document: doc.Document})
