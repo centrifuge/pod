@@ -47,24 +47,6 @@ func TestStoreOnce(t *testing.T) {
 	invoice := invoicepb.InvoiceDocument{CoreDocument: &coredocumentpb.CoreDocument{DocumentIdentifier: identifier, CurrentIdentifier: []byte("333")}}
 	err := repo.StoreOnce(&invoice)
 	assert.Nil(t, err)
-}
-
-func TestLevelDBInvoiceRepository_StoreNilDocument(t *testing.T) {
-	repo := GetInvoiceRepository()
-	err := repo.Store(nil)
-
-	assert.Error(t, err, "should have thrown an error")
-}
-
-func TestLevelDBInvoiceRepository_StoreNilCoreDocument(t *testing.T) {
-	repo := GetInvoiceRepository()
-	err := repo.Store(&invoicepb.InvoiceDocument{})
-
-	assert.Error(t, err, "should have thrown an error")
-}
-
-func Bootstrap() (*leveldb.DB) {
-	levelDB := storage.NewLeveldbStorage(dbFileName)
 
 	loadedInvoice, err := repo.FindById(identifier)
 	assert.Nil(t, err)
@@ -82,4 +64,18 @@ func Bootstrap() (*leveldb.DB) {
 	assert.Equal(t, []byte("333"), loadedInvoice.CoreDocument.CurrentIdentifier, "Loaded invoice should still have the old values as the overwrite should have failed")
 	//TODO make into a generic error from the errors package after Miguel's merge
 
+}
+
+func TestLevelDBInvoiceRepository_StoreNilDocument(t *testing.T) {
+	repo := invoicerepository.GetInvoiceRepository()
+	err := repo.Store(nil)
+
+	assert.Error(t, err, "should have thrown an error")
+}
+
+func TestLevelDBInvoiceRepository_StoreNilCoreDocument(t *testing.T) {
+	repo := invoicerepository.GetInvoiceRepository()
+	err := repo.Store(&invoicepb.InvoiceDocument{})
+
+	assert.Error(t, err, "should have thrown an error")
 }

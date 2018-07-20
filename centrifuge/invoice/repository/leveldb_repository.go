@@ -6,6 +6,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"sync"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
+	gerrors "github.com/go-errors/errors"
 )
 
 var once sync.Once
@@ -17,10 +18,10 @@ type LevelDBInvoiceRepository struct {
 func checkIfCoreDocumentFilledCorrectly(inv *invoicepb.InvoiceDocument) error {
 	//TODO use the new error coming from Miguel's changes
 	if inv.CoreDocument == nil {
-		return errors.Errorf("Invalid Empty (NIL) Invoice Document")
+		return gerrors.Errorf("Invalid Empty (NIL) Invoice Document")
 	}
 	if inv.CoreDocument.DocumentIdentifier == nil {
-		return errors.Errorf("Invalid Empty (NIL) Invoice Document")
+		return gerrors.Errorf("Invalid Empty (NIL) Invoice Document")
 	}
 	return nil
 }
@@ -74,8 +75,8 @@ func (repo *LevelDBInvoiceRepository) StoreOnce(inv *invoicepb.InvoiceDocument) 
 	}
 	loadDoc, readErr := repo.FindById(inv.CoreDocument.DocumentIdentifier)
 	if loadDoc != nil {
-		return errors.Errorf("Document already exists. StoreOnce will not overwrite.")
-	} else if readErr != nil && !errors.Is(leveldb.ErrNotFound, readErr) {
+		return gerrors.Errorf("Document already exists. StoreOnce will not overwrite.")
+	} else if readErr != nil && !gerrors.Is(leveldb.ErrNotFound, readErr) {
 		return readErr
 	} else {
 		return repo.Store(inv)
