@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-
 func TestMain(m *testing.M) {
 	cc.TestIntegrationBootstrap()
 	invoicerepository.NewLevelDBInvoiceRepository(&invoicerepository.LevelDBInvoiceRepository{cc.GetLevelDBStorage()})
@@ -21,7 +20,6 @@ func TestMain(m *testing.M) {
 	cc.TestIntegrationTearDown()
 	os.Exit(result)
 }
-
 
 func TestStorageService(t *testing.T) {
 	identifier := []byte("1")
@@ -37,7 +35,7 @@ func TestStorageService(t *testing.T) {
 	assert.Equal(t, invoice.CoreDocument.DocumentIdentifier, inv.CoreDocument.DocumentIdentifier, "Invoice DocumentIdentifier should be equal")
 
 	inv, err = repo.FindById(invalidIdentifier)
-	assert.NotNil(t, err, "FindById should not return error")
+	assert.NotNil(t, err, "FindById should return error")
 	assert.Nil(t, inv, "Invoice should be NIL")
 }
 
@@ -49,6 +47,24 @@ func TestStoreOnce(t *testing.T) {
 	invoice := invoicepb.InvoiceDocument{CoreDocument: &coredocumentpb.CoreDocument{DocumentIdentifier: identifier, CurrentIdentifier: []byte("333")}}
 	err := repo.StoreOnce(&invoice)
 	assert.Nil(t, err)
+}
+
+func TestLevelDBInvoiceRepository_StoreNilDocument(t *testing.T) {
+	repo := GetInvoiceRepository()
+	err := repo.Store(nil)
+
+	assert.Error(t, err, "should have thrown an error")
+}
+
+func TestLevelDBInvoiceRepository_StoreNilCoreDocument(t *testing.T) {
+	repo := GetInvoiceRepository()
+	err := repo.Store(&invoicepb.InvoiceDocument{})
+
+	assert.Error(t, err, "should have thrown an error")
+}
+
+func Bootstrap() (*leveldb.DB) {
+	levelDB := storage.NewLeveldbStorage(dbFileName)
 
 	loadedInvoice, err := repo.FindById(identifier)
 	assert.Nil(t, err)
@@ -67,4 +83,3 @@ func TestStoreOnce(t *testing.T) {
 	//TODO make into a generic error from the errors package after Miguel's merge
 
 }
-

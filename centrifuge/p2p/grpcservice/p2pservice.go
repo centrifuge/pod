@@ -11,6 +11,7 @@ import (
 	"github.com/golang/protobuf/ptypes"
 	"time"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/notification"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 )
 
 type IncompatibleNetworkError struct {
@@ -26,7 +27,7 @@ type IncompatibleVersionError struct {
 }
 
 func (e *IncompatibleVersionError) Error() string {
-	return fmt.Sprintf("Incompatible version: this node has version: %s, client reported: %s", version.CentrifugeNodeVersion, e.clientVersion)
+	return fmt.Sprintf("Incompatible version: this node has version: %s, client reported: %s", version.GetVersion(), e.clientVersion)
 }
 
 type P2PService struct {
@@ -53,6 +54,10 @@ func (srv *P2PService) HandleP2PPost(ctx context.Context, req *p2ppb.P2PMessage)
 		return nil, &IncompatibleNetworkError{req.NetworkIdentifier}
 	}
 
+	if req.Document == nil {
+		return nil, errors.GenerateNilParameterError(req.Document)
+	}
+
 	err = coredocumentrepository.GetCoreDocumentRepository().Store(req.Document)
 	if err != nil {
 		return nil, err
@@ -75,7 +80,7 @@ func (srv *P2PService) HandleP2PPost(ctx context.Context, req *p2ppb.P2PMessage)
 	//
 
 	rep = &p2ppb.P2PReply{
-		CentNodeVersion: version.CentrifugeNodeVersion,
+		CentNodeVersion: version.GetVersion().String(),
 		Document:        req.Document,
 	}
 	return

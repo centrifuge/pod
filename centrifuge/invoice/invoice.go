@@ -9,6 +9,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	logging "github.com/ipfs/go-log"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 )
 
 var log = logging.Logger("invoice")
@@ -17,7 +18,10 @@ type Invoice struct {
 	Document *invoicepb.InvoiceDocument
 }
 
-func NewInvoice(invDoc *invoicepb.InvoiceDocument) *Invoice {
+func NewInvoice(invDoc *invoicepb.InvoiceDocument) (*Invoice, error) {
+	if invDoc == nil {
+		return nil, errors.GenerateNilParameterError(invDoc)
+	}
 	inv := &Invoice{invDoc}
 	// IF salts have not been provided, let's generate them
 	if invDoc.Salts == nil {
@@ -25,7 +29,7 @@ func NewInvoice(invDoc *invoicepb.InvoiceDocument) *Invoice {
 		proofs.FillSalts(&invoiceSalts)
 		inv.Document.Salts = &invoiceSalts
 	}
-	return inv
+	return inv, nil
 }
 
 func NewEmptyInvoice() *Invoice {
@@ -39,10 +43,13 @@ func NewEmptyInvoice() *Invoice {
 	return &Invoice{&doc}
 }
 
-func NewInvoiceFromCoreDocument(coreDocument *coredocumentpb.CoreDocument) (inv *Invoice) {
+func NewInvoiceFromCoreDocument(coreDocument *coredocumentpb.CoreDocument) (*Invoice, error) {
+	if coreDocument == nil {
+		return nil, errors.GenerateNilParameterError(coreDocument)
+	}
 	if coreDocument.EmbeddedData.TypeUrl != documenttypes.InvoiceDataTypeUrl ||
 		coreDocument.EmbeddedDataSalts.TypeUrl != documenttypes.InvoiceSaltsTypeUrl {
-		log.Fatal("Trying to convert document with incorrect schema")
+		return nil, errors.New("Trying to convert document with incorrect schema")
 	}
 
 	invoiceData := &invoicepb.InvoiceData{}
@@ -55,11 +62,11 @@ func NewInvoiceFromCoreDocument(coreDocument *coredocumentpb.CoreDocument) (inv 
 	proto.Merge(&emptiedCoreDoc, coreDocument)
 	emptiedCoreDoc.EmbeddedData = nil
 	emptiedCoreDoc.EmbeddedDataSalts = nil
-	inv = NewEmptyInvoice()
+	inv := NewEmptyInvoice()
 	inv.Document.Data = invoiceData
 	inv.Document.Salts = invoiceSalts
 	inv.Document.CoreDocument = &emptiedCoreDoc
-	return
+	return inv, nil
 }
 
 func (inv *Invoice) getDocumentTree() (tree *proofs.DocumentTree, err error) {

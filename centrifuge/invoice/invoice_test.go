@@ -55,8 +55,8 @@ func TestInvoiceCoreDocumentConverter(t *testing.T) {
 	assert.Equal(t, coreDocumentBytes, generatedCoreDocumentBytes,
 		"Generated & converted documents are not identical")
 
-	convertedInvoiceDoc := NewInvoiceFromCoreDocument(generatedCoreDocument)
-	convertedGeneratedInvoiceDoc := NewInvoiceFromCoreDocument(generatedCoreDocument)
+	convertedInvoiceDoc, err := NewInvoiceFromCoreDocument(generatedCoreDocument)
+	convertedGeneratedInvoiceDoc, err := NewInvoiceFromCoreDocument(generatedCoreDocument)
 	invoiceBytes, err := proto.Marshal(invoiceDoc.Document)
 	assert.Nil(t, err, "Error marshaling invoiceDoc")
 
@@ -71,4 +71,18 @@ func TestInvoiceCoreDocumentConverter(t *testing.T) {
 	assert.Equal(t, invoiceBytes, convertedInvoiceBytes,
 		"invoiceBytes and convertedInvoiceBytes do not match")
 
+}
+
+func TestNewInvoiceFromCoreDocument_NilDocument(t *testing.T) {
+	inv, err := NewInvoiceFromCoreDocument(nil)
+
+	assert.Error(t, err, "should have thrown an error")
+	assert.Nil(t, inv, "document should be nil")
+}
+
+func TestNewInvoice_NilDocument(t *testing.T) {
+	inv, err := NewInvoice(nil)
+
+	assert.Error(t, err, "should have thrown an error")
+	assert.Nil(t, inv, "document should be nil")
 }

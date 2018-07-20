@@ -4,8 +4,8 @@ import (
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
 	"github.com/golang/protobuf/proto"
-	"github.com/go-errors/errors"
 	"sync"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 )
 
 var once sync.Once
@@ -51,9 +51,11 @@ func (repo *LevelDBInvoiceRepository) FindById(id []byte) (inv *invoicepb.Invoic
 }
 
 func (repo *LevelDBInvoiceRepository) Store(inv *invoicepb.InvoiceDocument) (err error) {
+	if inv == nil {
+		return errors.GenerateNilParameterError(inv)
+	}
 	if inv.CoreDocument == nil {
-		err = errors.Errorf("Invalid Empty (NIL) Invoice Document")
-		return
+		return errors.GenerateNilParameterError(inv.CoreDocument)
 	}
 	key := repo.GetKey(inv.CoreDocument.DocumentIdentifier)
 	data, err := proto.Marshal(inv)

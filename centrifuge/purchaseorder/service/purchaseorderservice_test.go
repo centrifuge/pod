@@ -97,6 +97,15 @@ func TestInvoiceDocumentService_AnchorFails(t *testing.T) {
 	assert.Nil(t, anchoredDoc)
 }
 
+func TestInvoiceDocumentService_AnchorFailsWithNilDocument(t *testing.T) {
+	_, s, _, _ := getTestSetupData()
+
+	anchoredDoc, err := s.HandleAnchorPurchaseOrderDocument(context.Background(), &purchaseorderpb.AnchorPurchaseOrderEnvelope{})
+
+	assert.Error(t, err)
+	assert.Nil(t, anchoredDoc)
+}
+
 func TestPurchaseOrderDocumentService_Send(t *testing.T) {
 	doc, s, mockRepo, mockCDP := getTestSetupData()
 

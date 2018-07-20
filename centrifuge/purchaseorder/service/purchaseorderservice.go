@@ -11,6 +11,7 @@ import (
 	logging "github.com/ipfs/go-log"
 	"golang.org/x/net/context"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/service"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 )
 
 var log = logging.Logger("rest-api")
@@ -22,6 +23,9 @@ type PurchaseOrderDocumentService struct {
 }
 
 func fillCoreDocIdentifiers(doc *purchaseorderpb.PurchaseOrderDocument) error {
+	if doc == nil {
+		return errors.GenerateNilParameterError(doc)
+	}
 	filledCoreDoc, err := coredocumentservice.AutoFillDocumentIdentifiers(*doc.CoreDocument)
 	if err != nil {
 		log.Error(err)
@@ -38,7 +42,11 @@ func (s *PurchaseOrderDocumentService) HandleCreatePurchaseOrderProof(ctx contex
 		return nil, err
 	}
 
-	order := purchaseorder.NewPurchaseOrder(orderDoc)
+	order, err := purchaseorder.NewPurchaseOrder(orderDoc)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
 
 	proofs, err := order.CreateProofs(createPurchaseOrderProofEnvelope.Fields)
 	if err != nil {
@@ -114,9 +122,10 @@ func (s *PurchaseOrderDocumentService) HandleSendPurchaseOrderDocument(ctx conte
 func (s *PurchaseOrderDocumentService) HandleGetPurchaseOrderDocument(ctx context.Context, getPurchaseOrderDocumentEnvelope *purchaseorderpb.GetPurchaseOrderDocumentEnvelope) (*purchaseorderpb.PurchaseOrderDocument, error) {
 	doc, err := s.PurchaseOrderRepository.FindById(getPurchaseOrderDocumentEnvelope.DocumentIdentifier)
 	if err != nil {
-		doc1, err1 := coredocumentrepository.GetCoreDocumentRepository().FindById(getPurchaseOrderDocumentEnvelope.DocumentIdentifier)
+		docFound, err1 := coredocumentrepository.GetCoreDocumentRepository().FindById(getPurchaseOrderDocumentEnvelope.DocumentIdentifier)
 		if err1 == nil {
-			doc = purchaseorder.NewPurchaseOrderFromCoreDocument(doc1).Document
+			doc1, err1 := purchaseorder.NewPurchaseOrderFromCoreDocument(docFound)
+			doc = doc1.Document
 			err = err1
 		}
 		log.Errorf("%v", err)
@@ -131,14 +140,25 @@ func (s *PurchaseOrderDocumentService) HandleGetReceivedPurchaseOrderDocuments(c
 // anchorPurchaseOrderDocument anchors the given purchaseorder document and returns the anchor details
 func (s *PurchaseOrderDocumentService) anchorPurchaseOrderDocument(doc *purchaseorderpb.PurchaseOrderDocument) (*purchaseorderpb.PurchaseOrderDocument, error) {
 	// TODO: the calculated merkle root should be persisted locally as well.
-	orderDoc := purchaseorder.NewPurchaseOrder(doc)
-	orderDoc.CalculateMerkleRoot()
-	coreDoc := orderDoc.ConvertToCoreDocument()
-
-	err := s.CoreDocumentProcessor.Anchor(coreDoc)
+	orderDoc, err := purchaseorder.NewPurchaseOrder(doc)
 	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
-	return purchaseorder.NewPurchaseOrderFromCoreDocument(coreDoc).Document, nil
+	orderDoc.CalculateMerkleRoot()
+	coreDoc := orderDoc.ConvertToCoreDocument()
+
+	err = s.CoreDocumentProcessor.Anchor(coreDoc)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	newPo, err := purchaseorder.NewPurchaseOrderFromCoreDocument(coreDoc)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	return newPo.Document, nil
 }

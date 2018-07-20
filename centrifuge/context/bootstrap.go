@@ -7,12 +7,14 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/version"
 	logging "github.com/ipfs/go-log"
 )
 
 var log = logging.Logger("context")
 
 func Bootstrap() {
+	log.Infof("Running cent node on version: %s", version.GetVersion())
 	config.Config.InitializeViper()
 
 	levelDB := storage.NewLeveldbStorage(config.Config.GetStoragePath())
