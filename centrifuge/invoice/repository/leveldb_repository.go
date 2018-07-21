@@ -17,12 +17,12 @@ type LevelDBInvoiceRepository struct {
 	Leveldb *leveldb.DB
 }
 
-func checkIfCoreDocumentFilledCorrectly(inv *invoicepb.InvoiceDocument) error {
-	if inv.CoreDocument == nil {
-		return errors.GenerateNilParameterError(inv.CoreDocument)
+func checkIfCoreDocumentFilledCorrectly(doc *invoicepb.InvoiceDocument) error {
+	if doc.CoreDocument == nil {
+		return errors.GenerateNilParameterError(doc.CoreDocument)
 	}
-	if inv.CoreDocument.DocumentIdentifier == nil {
-		return errors.GenerateNilParameterError(inv.CoreDocument.DocumentIdentifier)
+	if doc.CoreDocument.DocumentIdentifier == nil {
+		return errors.GenerateNilParameterError(doc.CoreDocument.DocumentIdentifier)
 	}
 	return nil
 }

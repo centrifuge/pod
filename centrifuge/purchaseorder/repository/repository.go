@@ -14,4 +14,5 @@ type PurchaseOrderRepository interface {
 	GetKey(id []byte) ([]byte)
 	FindById(id []byte) (doc *purchaseorderpb.PurchaseOrderDocument, err error)
 	Store(doc *purchaseorderpb.PurchaseOrderDocument) (err error)
+	StoreOnce(doc *purchaseorderpb.PurchaseOrderDocument) (err error)
 }

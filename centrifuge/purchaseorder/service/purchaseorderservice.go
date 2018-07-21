@@ -12,6 +12,7 @@ import (
 	"golang.org/x/net/context"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/service"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
+	gerrors "github.com/go-errors/errors"
 )
 
 var log = logging.Logger("rest-api")
@@ -64,19 +65,19 @@ func (s *PurchaseOrderDocumentService) HandleAnchorPurchaseOrderDocument(ctx con
 	err := fillCoreDocIdentifiers(doc)
 	if err != nil {
 		log.Error(err)
-		return nil, err
+		return nil, gerrors.Errorf("Error filling document IDs: [%v]", err.Error() )
 	}
 
-	err = s.PurchaseOrderRepository.Store(doc)
+	err = s.PurchaseOrderRepository.StoreOnce(doc)
 	if err != nil {
 		log.Error(err)
-		return nil, err
+		return nil, gerrors.Errorf("Error saving document: [%v]", err.Error() )
 	}
 
 	anchoredPurchaseOrder, err := s.anchorPurchaseOrderDocument(doc)
 	if err != nil {
 		log.Error(err)
-		return nil, err
+		return nil, gerrors.Errorf("Error anchoring document: [%v]", err.Error() )
 	}
 
 	return anchoredPurchaseOrder, nil
@@ -92,7 +93,7 @@ func (s *PurchaseOrderDocumentService) HandleSendPurchaseOrderDocument(ctx conte
 		return nil, err
 	}
 
-	err = s.PurchaseOrderRepository.Store(doc)
+	err = s.PurchaseOrderRepository.StoreOnce(doc)
 	if err != nil {
 		log.Error(err)
 		return nil, err
