@@ -3,19 +3,18 @@
 package ethereum_test
 
 import (
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/go-errors/errors"
 	"github.com/stretchr/testify/assert"
+	"math/big"
 	"os"
 	"testing"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
-	"math/big"
 	"time"
 )
 
@@ -51,32 +50,6 @@ func (transactionRequest *MockTransactionRequest) RegisterTransaction(opts *bind
 	return
 }
 
-func TestGetGethTxOpts(t *testing.T) {
-	resetMock := testingutils.MockConfigOption("ethereum.maxRetries", 0)
-	defer resetMock()
-
-	//invalid input params
-	bytes, err := tools.StringToByte32("too short")
-	assert.EqualValuesf(t, [32]byte{}, bytes, "Should receive empty byte array if string is not 32 chars")
-	assert.Error(t, err, "Should return error on invalid input parameter")
-
-	bytes, err = tools.StringToByte32("")
-	assert.EqualValuesf(t, [32]byte{}, bytes, "Should receive empty byte array if string is not 32 chars")
-	assert.Error(t, err, "Should return error on invalid input parameter")
-
-	bytes, err = tools.StringToByte32("too long. 12345678901234567890123456789032")
-	assert.EqualValuesf(t, [32]byte{}, bytes, "Should receive empty byte array if string is not 32 chars")
-	assert.Error(t, err, "Should return error on invalid input parameter")
-
-	//valid input param
-	convertThis := "12345678901234567890123456789032"
-	bytes, err = tools.StringToByte32(convertThis)
-	assert.Nil(t, err, "Should not return error on 32 length string")
-
-	convertedBack, _ := tools.Byte32ToString(bytes)
-	assert.EqualValues(t, convertThis, convertedBack, "Converted back value should be the same as original input")
-}
-
 func TestInitTransactionWithRetries(t *testing.T) {
 	mockRequest := &MockTransactionRequest{}
 
@@ -95,7 +68,7 @@ func TestInitTransactionWithRetries(t *testing.T) {
 
 	mockRequest.count = 0
 	// Failure and timeout with locking error
-	tx, err = ethereum.SubmitTransactionWithRetries(mockRequest.RegisterTransaction, &bind.TransactOpts{},"optimisticLockingTimeout", "var2")
+	tx, err = ethereum.SubmitTransactionWithRetries(mockRequest.RegisterTransaction, &bind.TransactOpts{}, "optimisticLockingTimeout", "var2")
 	assert.EqualError(t, err, ethereum.TransactionUnderpriced, "Should error out")
 	assert.EqualValues(t, 10, mockRequest.count, "Retries should be equal")
 
@@ -119,7 +92,7 @@ func TestCalculateIncrement(t *testing.T) {
 		},
 	}
 
-	opts := &bind.TransactOpts{ From: common.HexToAddress(strAddress) }
+	opts := &bind.TransactOpts{From: common.HexToAddress(strAddress)}
 
 	// OnChain Transaction Count is behind local tx pool
 	chainNonce := 3

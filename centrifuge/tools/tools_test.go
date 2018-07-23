@@ -3,47 +3,15 @@
 package tools_test
 
 import (
-	"testing"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/stretchr/testify/assert"
+	"testing"
 )
-
-func TestStringToByte32_andBack(t *testing.T) {
-	//invalid input params
-	bytes, err := tools.StringToByte32("too short")
-	assert.EqualValuesf(t, [32]byte{}, bytes, "Should receive empty byte array if string is not 32 chars")
-	assert.Error(t, err, "Should return error on invalid input parameter")
-
-	bytes, err = tools.StringToByte32("")
-	assert.EqualValuesf(t, [32]byte{}, bytes, "Should receive empty byte array if string is not 32 chars")
-	assert.Error(t, err, "Should return error on invalid input parameter")
-
-	bytes, err = tools.StringToByte32("too long. 12345678901234567890123456789032")
-	assert.EqualValuesf(t, [32]byte{}, bytes, "Should receive empty byte array if string is not 32 chars")
-	assert.Error(t, err, "Should return error on invalid input parameter")
-
-	//valid input param
-	convertThis := "12345678901234567890123456789032"
-	bytes, err = tools.StringToByte32(convertThis)
-	assert.Nil(t, err, "Should not return error on 32 length string")
-
-	assert.EqualValues(t, []byte("12345678901234567890123456789032")[:], bytes[:])
-
-	convertedBack, _ := tools.Byte32ToString(bytes)
-	assert.EqualValues(t, convertThis, convertedBack, "Converted back value should be the same as original input")
-}
 
 func TestRandomByte32(t *testing.T) {
 	random := tools.RandomByte32()
 	assert.NotNil(t, random, "Should receive non-nil")
 	assert.NotEqual(t, [32]byte{}, random, "Should receive a filled byte array")
-}
-
-func TestRandomString32(t *testing.T) {
-	random := tools.RandomString32()
-	assert.NotNil(t, random, "Should receive non-nil")
-	assert.NotEqual(t, "", random, "Should receive a filled string")
-	assert.Equal(t, 32, len(random), "Should receive 32 long string")
 }
 
 func TestIsEmptyByte(t *testing.T) {
@@ -100,40 +68,28 @@ func TestIsSameByteSlice(t *testing.T) {
 	}
 }
 
-func TestByte32toByte(t *testing.T) {
-	b32, err := tools.StringToByte32("12345678901234567890123456789032")
-	assert.Nil(t, err)
-
-	actual := tools.Byte32ToByteArray(b32)
-	exp := []byte("12345678901234567890123456789032")
-	assert.Truef(t, tools.IsSameByteSlice(exp, actual), "Expected to be [%v] but got [%v]", exp, actual)
-
-	actual = tools.Byte32ToByteArray([32]byte{})
-	exp = []byte{}
-	assert.Truef(t, tools.IsSameByteSlice(exp, actual), "Expected to be [%v] but got [%v]", exp, actual)
-}
-
-func TestByteArrayToByte32(t *testing.T){
+func TestSliceToByte32(t *testing.T) {
 	exp := [32]byte{}
 	act := [32]byte{}
 	tst := []byte{}
 
 	tst = []byte("12345678901234567890123456789032")
-	exp, err := tools.StringToByte32("12345678901234567890123456789032")
+	copy(exp[:], tst[:32])
+	act, err := tools.SliceToByte32(tst)
 	assert.Nil(t, err)
-	act, err = tools.ByteArrayToByte32(tst)
+	assert.EqualValues(t, exp, act)
 	assert.Nil(t, err)
 	assert.EqualValues(t, exp, act, "Expected to be [%v] but got [%v]", exp, act)
 
 	tst = []byte{}
 	exp = [32]byte{}
-	act, err = tools.ByteArrayToByte32(tst)
+	act, err = tools.SliceToByte32(tst)
 	assert.Nil(t, err)
 	assert.EqualValues(t, exp, act, "Expected to be [%v] but got [%v]", exp, act)
 
 	tst = []byte("123456789012345678901234567890321")
 	exp = [32]byte{}
-	act, err = tools.ByteArrayToByte32(tst)
+	act, err = tools.SliceToByte32(tst)
 	assert.Error(t, err)
 	assert.EqualValues(t, exp, act, "Expected to be [%v] but got [%v]", exp, act)
 }

@@ -11,7 +11,7 @@
     "gen/go/p2p",
     "gen/go/purchaseorder"
   ]
-  revision = "020198720538aaa6b2a82e053384a11987086908"
+  revision = "ca7ecd84fb2ca69d917ad881cdfbce11504836d0"
   source = "git@github.com:CentrifugeInc/centrifuge-protobufs"
 
 [[projects]]
@@ -34,19 +34,21 @@
   branch = "master"
   name = "github.com/aristanetworks/goarista"
   packages = ["monotime"]
-  revision = "06cfa1db77dae2425e143980408e642f7a9d5b09"
+  revision = "32f94db2e6faa2c7250286dfb4c7ad3dc0f3ead2"
 
 [[projects]]
   branch = "master"
   name = "github.com/btcsuite/btcd"
   packages = ["btcec"]
-  revision = "86fed781132ac890ee03e906e4ecd5d6fa180c64"
+  revision = "fdfc19097e7ac6b57035062056f5b7b4638b8898"
 
 [[projects]]
-  branch = "master"
   name = "github.com/centrifuge/precise-proofs"
-  packages = ["proofs"]
-  revision = "b27f5da7254f3200cef96451d7b2d8d163358f99"
+  packages = [
+    "proofs",
+    "proofs/proto"
+  ]
+  revision = "f8ef5392db436f8678e972810bf919c0406d1b83"
 
 [[projects]]
   name = "github.com/coreos/go-semver"
@@ -97,9 +99,9 @@
     "rpc",
     "trie"
   ]
-  revision = "dea1ce052a10cd7d401a5c04f83f371a06fe293c"
+  revision = "37685930d953bcbe023f9bc65b135a8d8b8f1488"
   source = "git@github.com:ethereum/go-ethereum"
-  version = "v1.8.11"
+  version = "v1.8.12"
 
 [[projects]]
   name = "github.com/fd/go-nat"
@@ -137,12 +139,13 @@
     "io",
     "proto"
   ]
-  revision = "1adfc126b41513cc696b209667c8656ea7aac67c"
-  version = "v1.0.0"
+  revision = "7d68e886eac4f7e34d0d82241a6273d6c304c5cf"
+  version = "v1.1.0"
 
 [[projects]]
   name = "github.com/golang/protobuf"
   packages = [
+    "descriptor",
     "jsonpb",
     "proto",
     "protoc-gen-go/descriptor",
@@ -169,7 +172,6 @@
   version = "v1.2.0"
 
 [[projects]]
-  branch = "master"
   name = "github.com/grpc-ecosystem/grpc-gateway"
   packages = [
     "protoc-gen-swagger/options",
@@ -177,8 +179,9 @@
     "runtime/internal",
     "utilities"
   ]
-  revision = "ee3ef70b7777cde4e61e4e224cb11e92beecee6a"
+  revision = "92583770e3f01b09a0d3e9bdf64321d8bebd48f2"
   source = "git@github.com:grpc-ecosystem/grpc-gateway"
+  version = "v1.4.1"
 
 [[projects]]
   branch = "master"
@@ -268,8 +271,8 @@
 [[projects]]
   name = "github.com/ipfs/go-ipfs-addr"
   packages = ["."]
-  revision = "25333b7bd949a92d00acb4e98f28dfe4999a0e9b"
-  version = "v0.1.13"
+  revision = "ae66399309c1cd6ea4e3b5a757508899907dfa31"
+  version = "v0.1.16"
 
 [[projects]]
   name = "github.com/ipfs/go-ipfs-util"
@@ -407,14 +410,14 @@
     ".",
     "keyspace"
   ]
-  revision = "a88e1b7030c460c8bb9f09cab9bb3f4bc727edb2"
-  version = "v2.2.2"
+  revision = "5f4553e0df3d8f3b4325f7e606b5a13d462a64af"
+  version = "v2.2.4"
 
 [[projects]]
   name = "github.com/libp2p/go-libp2p-loggables"
   packages = ["."]
-  revision = "6ce2bbea380b481b0663c51b8969e0472590a5a3"
-  version = "v1.1.16"
+  revision = "825bdca6800792bf8013c54670072023f58f2770"
+  version = "v1.1.18"
 
 [[projects]]
   name = "github.com/libp2p/go-libp2p-metrics"
@@ -428,8 +431,8 @@
 [[projects]]
   name = "github.com/libp2p/go-libp2p-nat"
   packages = ["."]
-  revision = "866e8f0397fb46125a4e08ee07945407c9c9a6ee"
-  version = "v0.8.2"
+  revision = "b2342fe96714ea4535cd80706967f7deab0706e9"
+  version = "v0.8.4"
 
 [[projects]]
   name = "github.com/libp2p/go-libp2p-net"
@@ -496,8 +499,8 @@
 [[projects]]
   name = "github.com/libp2p/go-maddr-filter"
   packages = ["."]
-  revision = "42d77c66758d30044bc76ce97d99d26ae22ffb73"
-  version = "v1.1.8"
+  revision = "57fd7e2ed649ba28b4f2c7bcab3a606e7cc4b12c"
+  version = "v1.1.9"
 
 [[projects]]
   name = "github.com/libp2p/go-msgio"
@@ -521,8 +524,8 @@
     "poll",
     "singlepoll"
   ]
-  revision = "2b9dda1feae6520af5cbfd0f8175569e5da925c7"
-  version = "v0.1.15"
+  revision = "c2c3368efe65c8b85ddff6b278df5bef3ce235e2"
+  version = "v0.1.16"
 
 [[projects]]
   name = "github.com/libp2p/go-sockaddr"
@@ -589,7 +592,7 @@
   branch = "master"
   name = "github.com/mitchellh/mapstructure"
   packages = ["."]
-  revision = "bb74f1db0675b241733089d5a1faa5dd8b0ef57b"
+  revision = "f15292f7a699fcc1a38a80977f80a046874ba8ac"
 
 [[projects]]
   branch = "master"
@@ -679,10 +682,10 @@
   version = "v1.0.0"
 
 [[projects]]
-  branch = "master"
   name = "github.com/rjeczalik/notify"
   packages = ["."]
-  revision = "f7ce7f74cca0c606cd22c366f8ac3a09ded2aac0"
+  revision = "52ae50d8490436622a8941bd70c3dbe0acdd4bbf"
+  version = "v0.9.0"
 
 [[projects]]
   name = "github.com/rs/cors"
@@ -772,7 +775,7 @@
     "leveldb/table",
     "leveldb/util"
   ]
-  revision = "0d5a0ceb10cf9ab89fdd744cc8c50a83134f6697"
+  revision = "c4c61651e9e37fa117f53c5a906d3b63090d8445"
 
 [[projects]]
   branch = "master"
@@ -820,7 +823,7 @@
   branch = "master"
   name = "github.com/whyrusleeping/mafmt"
   packages = ["."]
-  revision = "794419fbc8492a4d5b7ba38b58c2bb47d9e37eaa"
+  revision = "1dc32401ee9fdd3f6cdb3405ec984d5dae877b2a"
 
 [[projects]]
   branch = "master"
@@ -832,7 +835,7 @@
   branch = "master"
   name = "github.com/whyrusleeping/yamux"
   packages = ["."]
-  revision = "35d045d4429ecf19430a2b94efc590bc40f2f7af"
+  revision = "cb29a700b01dc3c2fdd743c00cf54685056bb62a"
 
 [[projects]]
   branch = "master"
@@ -871,7 +874,7 @@
     "trace",
     "websocket"
   ]
-  revision = "afe8f62b1d6bbd81f31868121a50b06d8188e1f9"
+  revision = "d0887baf81f4598189d4e12a37c6da86f0bba4d0"
 
 [[projects]]
   branch = "master"
@@ -881,7 +884,7 @@
     "unix",
     "windows"
   ]
-  revision = "63fc586f45fe72d95d5240a5d5eb95e6503907d3"
+  revision = "ac767d655b305d4e9612f5f6e33120b9176c4ad4"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -924,7 +927,7 @@
     "imports",
     "internal/fastwalk"
   ]
-  revision = "25b95b48224cce18163c7d49dcfb89a2d5ecd209"
+  revision = "fd2d2c45eb2dff7b87eab4303a1016b4dbf95e81"
 
 [[projects]]
   branch = "master"
@@ -933,7 +936,7 @@
     "googleapis/api/annotations",
     "googleapis/rpc/status"
   ]
-  revision = "80063a038e333bbe006c878e4c5ce4c74d055498"
+  revision = "2731d4fa720b67f9fe38e9051a2a9b38e4609260"
 
 [[projects]]
   name = "google.golang.org/grpc"
@@ -1000,6 +1003,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "c02fc0054a98b1344044aa7289a8d3790ebc215d4a05c3ea7d06abecd3bdcd7c"
+  inputs-digest = "9144dd9608afd5658a9de4a8b7a786d30c89b1c8e33a7210b4fb81b7c16e54d0"
   solver-name = "gps-cdcl"
   solver-version = 1

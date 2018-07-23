@@ -1,12 +1,12 @@
 package testingutils
 
 import (
+	"context"
 	"crypto/rand"
+	"fmt"
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/stretchr/testify/mock"
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
-	"context"
-	"fmt"
 )
 
 func MockConfigOption(key string, value interface{}) func() {
@@ -23,7 +23,7 @@ func Rand32Bytes() []byte {
 	return randbytes
 }
 
-func GenerateP2PRecipients(quantity int) ([][]byte) {
+func GenerateP2PRecipients(quantity int) [][]byte {
 	recipients := make([][]byte, quantity)
 
 	for i := 0; i < quantity; i++ {
@@ -32,13 +32,12 @@ func GenerateP2PRecipients(quantity int) ([][]byte) {
 	return recipients
 }
 
-func GenerateCoreDocument()(*coredocumentpb.CoreDocument){
+func GenerateCoreDocument() *coredocumentpb.CoreDocument {
 	identifier := Rand32Bytes()
 	return &coredocumentpb.CoreDocument{
 		DocumentIdentifier: identifier,
 		CurrentIdentifier:  identifier,
 		NextIdentifier:     Rand32Bytes(),
-		DataRoot:     Rand32Bytes(),
 	}
 }
 
@@ -46,7 +45,7 @@ type MockCoreDocumentProcessor struct {
 	mock.Mock
 }
 
-func (m *MockCoreDocumentProcessor) Send(coreDocument *coredocumentpb.CoreDocument, ctx context.Context, recipient string) (err error) {
+func (m *MockCoreDocumentProcessor) Send(coreDocument *coredocumentpb.CoreDocument, ctx context.Context, recipient []byte) (err error) {
 	args := m.Called(coreDocument, ctx, recipient)
 	return args.Error(0)
 }

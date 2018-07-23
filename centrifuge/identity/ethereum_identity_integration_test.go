@@ -123,7 +123,7 @@ func TestManageIdentity(t *testing.T) {
 	// Creation Succeeds
 	centrifugeId := tools.RandomString32()
 	publicKey, _ := keytools.GetSigningKeyPairFromConfig()
-	b32Key, err := tools.ByteArrayToByte32(publicKey)
+	b32Key, err := tools.SliceToByte32(publicKey)
 	assert.Nil(t, err)
 
 	err = identity.CreateEthereumIdentityFromApi(centrifugeId, b32Key)

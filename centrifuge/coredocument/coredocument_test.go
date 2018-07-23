@@ -3,12 +3,12 @@
 package coredocument
 
 import (
-	"testing"
 	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 func TestCoreDocumentProcessor_SendNilDocument(t *testing.T) {
-	err := GetDefaultCoreDocumentProcessor().Send(nil, nil, "")
+	err := GetDefaultCoreDocumentProcessor().Send(nil, nil, []byte{})
 
 	assert.Error(t, err, "should have thrown an error")
 }
