@@ -52,7 +52,7 @@ func (repo *LevelDBInvoiceRepository) FindById(id []byte) (inv *invoicepb.Invoic
 	return
 }
 
-func (repo *LevelDBInvoiceRepository) Store(inv *invoicepb.InvoiceDocument) (err error) {
+func (repo *LevelDBInvoiceRepository) CreateOrUpdate(inv *invoicepb.InvoiceDocument) (err error) {
 	if inv == nil {
 		return errors.GenerateNilParameterError(inv)
 	}
@@ -69,17 +69,17 @@ func (repo *LevelDBInvoiceRepository) Store(inv *invoicepb.InvoiceDocument) (err
 	return
 }
 
-func (repo *LevelDBInvoiceRepository) StoreOnce(inv *invoicepb.InvoiceDocument) (err error) {
+func (repo *LevelDBInvoiceRepository) Create(inv *invoicepb.InvoiceDocument) (err error) {
 	err = checkIfCoreDocumentFilledCorrectly(inv)
 	if err != nil {
 		return err
 	}
 	loadDoc, readErr := repo.FindById(inv.CoreDocument.DocumentIdentifier)
 	if loadDoc != nil {
-		return gerrors.Errorf("Document already exists. StoreOnce will not overwrite.")
+		return gerrors.Errorf("Document already exists. Create will not overwrite.")
 	} else if readErr != nil && !gerrors.Is(leveldb.ErrNotFound, readErr) {
 		return readErr
 	} else {
-		return repo.Store(inv)
+		return repo.CreateOrUpdate(inv)
 	}
 }

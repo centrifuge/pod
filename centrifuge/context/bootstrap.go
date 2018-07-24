@@ -1,4 +1,4 @@
-package testing
+package context
 
 import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"

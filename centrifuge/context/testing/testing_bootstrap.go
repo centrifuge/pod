@@ -28,11 +28,21 @@ func getRandomTestStoragePath() string {
 	return fmt.Sprintf("%s_%x", testStoragePath, tools.RandomByte32())
 }
 
+func GetLevelDBStorage() *leveldb.DB{
+	return storage.NewLeveldbStorage(config.Config.GetStoragePath())
+}
+
+// ---- Ethereum ----
 func TestFunctionalEthereumBootstrap() {
 	TestIntegrationBootstrap()
 	createEthereumConnection()
 }
+func TestFunctionalEthereumTearDown() {
+	TestIntegrationTearDown()
+}
+// ---- END Ethereum ----
 
+// ---- Integration Testing ----
 func TestIntegrationBootstrap() {
 	logging.SetAllLoggers(gologging.DEBUG)
 	backend := gologging.NewLogBackend(os.Stdout, "", 0)
@@ -60,12 +70,9 @@ func TestIntegrationBootstrap() {
 	log.Infof("Creating levelDb at: %s", config.Config.GetStoragePath())
 }
 
-func GetLevelDBStorage() *leveldb.DB{
-	return storage.NewLeveldbStorage(config.Config.GetStoragePath())
-}
-
 func TestIntegrationTearDown() {
 	storage.CloseLeveldbStorage()
 	os.RemoveAll(config.Config.GetStoragePath())
 	config.Config = nil
 }
+// ---- End Integration Testing ----

@@ -68,7 +68,7 @@ func (s *PurchaseOrderDocumentService) HandleAnchorPurchaseOrderDocument(ctx con
 		return nil, gerrors.Errorf("Error filling document IDs: [%v]", err.Error() )
 	}
 
-	err = s.PurchaseOrderRepository.StoreOnce(doc)
+	err = s.PurchaseOrderRepository.Create(doc)
 	if err != nil {
 		log.Error(err)
 		return nil, gerrors.Errorf("Error saving document: [%v]", err.Error() )
@@ -93,7 +93,7 @@ func (s *PurchaseOrderDocumentService) HandleSendPurchaseOrderDocument(ctx conte
 		return nil, err
 	}
 
-	err = s.PurchaseOrderRepository.StoreOnce(doc)
+	err = s.PurchaseOrderRepository.Create(doc)
 	if err != nil {
 		log.Error(err)
 		return nil, err

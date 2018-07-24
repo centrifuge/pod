@@ -68,7 +68,7 @@ func (s *InvoiceDocumentService) HandleAnchorInvoiceDocument(ctx context.Context
 		return nil, gerrors.Errorf("Error filling document IDs: [%v]", err.Error() )
 	}
 
-	err = s.InvoiceRepository.StoreOnce(doc)
+	err = s.InvoiceRepository.Create(doc)
 	if err != nil {
 		log.Error(err)
 		return nil, gerrors.Errorf("Error saving document: [%v]", err.Error() )
@@ -93,7 +93,7 @@ func (s *InvoiceDocumentService) HandleSendInvoiceDocument(ctx context.Context, 
 		return nil, err
 	}
 
-	err = s.InvoiceRepository.StoreOnce(doc)
+	err = s.InvoiceRepository.Create(doc)
 	if err != nil {
 		return nil, err
 	}

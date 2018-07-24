@@ -23,7 +23,7 @@ func TestMain(m *testing.M) {
 	config.Config.V.Set("keys.signing.publicKey", "../../example/resources/signingKey.pub.pem")
 	config.Config.V.Set("keys.signing.privateKey", "../../example/resources/signingKey.key.pem")
 	result := m.Run()
-	cc.TestIntegrationTearDown()
+	cc.TestFunctionalEthereumTearDown()
 	os.Exit(result)
 }
 
@@ -131,7 +131,7 @@ func TestManageIdentity(t *testing.T) {
 
 	// AddKey Again Fails as Key already exists
 	err = identity.AddKeyToIdentityFromApi(centrifugeId, identity.KEY_TYPE_PEERID, b32Key)
-	assert.EqualError(t, err, "Key trying to be added already exists as latest. Skipping Update.", "should error out upon double key addition")
+	assert.EqualError(t, err, "Key trying to be added already exists as latest. Skipping CreateOrUpdate.", "should error out upon double key addition")
 
 	// Creation fails as CentId already exists
 	err = identity.CreateEthereumIdentityFromApi(centrifugeId, b32Key)

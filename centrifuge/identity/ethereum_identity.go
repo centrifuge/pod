@@ -426,7 +426,7 @@ func createOrAddKeyOnEthereumIdentity(centrifugeId string, keyType int, idKey [3
 			return
 		}
 		if currentKey == pid.Pretty() {
-			err = errors.New("Key trying to be added already exists as latest. Skipping Update.")
+			err = errors.New("Key trying to be added already exists as latest. Skipping CreateOrUpdate.")
 			return
 		}
 	}

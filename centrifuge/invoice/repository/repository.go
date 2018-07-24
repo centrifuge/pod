@@ -13,6 +13,11 @@ func GetInvoiceRepository() InvoiceRepository {
 type InvoiceRepository interface {
 	GetKey(id []byte) ([]byte)
 	FindById(id []byte) (inv *invoicepb.InvoiceDocument, err error)
-	Store(inv *invoicepb.InvoiceDocument) (err error)
-	StoreOnce(inv *invoicepb.InvoiceDocument) (err error)
+
+	// CreateOrUpdate functions similar to a REST HTTP PUT where the document is either created or updated regardless if it existed before
+	CreateOrUpdate(inv *invoicepb.InvoiceDocument) (err error)
+
+	// Create will only create a document initially. If the same document (as identified by its DocumentIdentifier) exists
+	// the Create method will error out
+	Create(inv *invoicepb.InvoiceDocument) (err error)
 }

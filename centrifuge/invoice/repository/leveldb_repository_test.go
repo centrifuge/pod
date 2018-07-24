@@ -27,8 +27,8 @@ func TestStorageService(t *testing.T) {
 
 	invoice := invoicepb.InvoiceDocument{CoreDocument: &coredocumentpb.CoreDocument{DocumentIdentifier: identifier}}
 	repo := invoicerepository.GetInvoiceRepository()
-	err := repo.Store(&invoice)
-	assert.Nil(t, err, "Store should not return error")
+	err := repo.CreateOrUpdate(&invoice)
+	assert.Nil(t, err, "CreateOrUpdate should not return error")
 
 	inv, err := repo.FindById(identifier)
 	assert.Nil(t, err, "FindById should not return error")
@@ -45,7 +45,7 @@ func TestStoreOnce(t *testing.T) {
 	repo := invoicerepository.GetInvoiceRepository()
 
 	invoice := invoicepb.InvoiceDocument{CoreDocument: &coredocumentpb.CoreDocument{DocumentIdentifier: identifier, CurrentIdentifier: []byte("333")}}
-	err := repo.StoreOnce(&invoice)
+	err := repo.Create(&invoice)
 	assert.Nil(t, err)
 
 	loadedInvoice, err := repo.FindById(identifier)
@@ -54,9 +54,9 @@ func TestStoreOnce(t *testing.T) {
 	assert.Equal(t, []byte("333"), loadedInvoice.CoreDocument.CurrentIdentifier)
 
 	invoice2 := invoicepb.InvoiceDocument{CoreDocument: &coredocumentpb.CoreDocument{DocumentIdentifier: identifier, CurrentIdentifier: []byte("666")}}
-	err = repo.StoreOnce(&invoice2)
+	err = repo.Create(&invoice2)
 	assert.Error(t, err)
-	assert.Equal(t, "Document already exists. StoreOnce will not overwrite.", err.Error())
+	assert.Equal(t, "Document already exists. Create will not overwrite.", err.Error())
 
 	loadedInvoice, err = repo.FindById(identifier)
 	assert.Nil(t, err)
@@ -68,14 +68,14 @@ func TestStoreOnce(t *testing.T) {
 
 func TestLevelDBInvoiceRepository_StoreNilDocument(t *testing.T) {
 	repo := invoicerepository.GetInvoiceRepository()
-	err := repo.Store(nil)
+	err := repo.CreateOrUpdate(nil)
 
 	assert.Error(t, err, "should have thrown an error")
 }
 
 func TestLevelDBInvoiceRepository_StoreNilCoreDocument(t *testing.T) {
 	repo := invoicerepository.GetInvoiceRepository()
-	err := repo.Store(&invoicepb.InvoiceDocument{})
+	err := repo.CreateOrUpdate(&invoicepb.InvoiceDocument{})
 
 	assert.Error(t, err, "should have thrown an error")
 }

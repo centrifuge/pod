@@ -50,7 +50,7 @@ func (repo *LevelDBPurchaseOrderRepository) FindById(id []byte) (orderDocument *
 	return
 }
 
-func (repo *LevelDBPurchaseOrderRepository) Store(orderDocument *purchaseorderpb.PurchaseOrderDocument) (err error) {
+func (repo *LevelDBPurchaseOrderRepository) CreateOrUpdate(orderDocument *purchaseorderpb.PurchaseOrderDocument) (err error) {
 	if orderDocument == nil {
 		return errors.GenerateNilParameterError(orderDocument)
 	}
@@ -68,17 +68,17 @@ func (repo *LevelDBPurchaseOrderRepository) Store(orderDocument *purchaseorderpb
 	return
 }
 
-func (repo *LevelDBPurchaseOrderRepository) StoreOnce(doc *purchaseorderpb.PurchaseOrderDocument) (err error) {
+func (repo *LevelDBPurchaseOrderRepository) Create(doc *purchaseorderpb.PurchaseOrderDocument) (err error) {
 	err = checkIfCoreDocumentFilledCorrectly(doc)
 	if err != nil {
 		return err
 	}
 	loadDoc, readErr := repo.FindById(doc.CoreDocument.DocumentIdentifier)
 	if loadDoc != nil {
-		return gerrors.Errorf("Document already exists. StoreOnce will not overwrite.")
+		return gerrors.Errorf("Document already exists. Create will not overwrite.")
 	} else if readErr != nil && !gerrors.Is(leveldb.ErrNotFound, readErr) {
 		return readErr
 	} else {
-		return repo.Store(doc)
+		return repo.CreateOrUpdate(doc)
 	}
 }
