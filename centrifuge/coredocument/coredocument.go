@@ -102,7 +102,8 @@ func (cd *CoreDocumentProcessor) Anchor(document *coredocumentpb.CoreDocument) e
 		log.Error(err)
 		return err
 	}
-	rootHash, err := tools.SliceToByte32(document.DocumentRoot)
+	// TODO: we should replace this with using the DocumentRoot once signing has been properly implemented
+	rootHash, err := tools.SliceToByte32(document.DataRoot)
 	if err != nil {
 		log.Error(err)
 		return err
