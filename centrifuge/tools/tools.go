@@ -45,6 +45,17 @@ func RandomString32() (ret string) {
 	return
 }
 
+// RandomSlice32 returns a randomly filled byte array with length of 32
+func RandomSlice32() (out []byte) {
+	r := make([]byte, 32)
+	_, err := rand.Read(r)
+	// Note that err == nil only if we read len(b) bytes.
+	if err != nil {
+		panic(err)
+	}
+	return r
+}
+
 // RandomByte32 returns a randomly filled byte array with length of 32
 func RandomByte32() (out [32]byte) {
 	r := make([]byte, 32)
