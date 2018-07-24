@@ -47,14 +47,8 @@ func (srv *SigningService) LoadIdentityKeyFromConfig() {
 
 // ValidateSignaturesOnDocument validates all signatures on the current document
 func (srv *SigningService) ValidateSignaturesOnDocument(doc *coredocumentpb.CoreDocument) (valid bool, err error) {
-	//message := srv.createSignatureData(doc)
+	// TODO: Signature Validation not yet implemented
 	return false, nil
-	/*for _, signature := range doc.Signatures {
-		valid, err := srv.ValidateSignature(signature, message)
-		if !valid {
-			return valid, err
-		}/
-	}*/
 }
 
 func (srv *SigningService) ValidateSignature(signature *coredocumentpb.Signature, message []byte) (valid bool, err error) {
@@ -78,7 +72,7 @@ func (srv *SigningService) GetIDFromKey(key ed25519.PublicKey) (id [32]byte) {
 
 func (srv *SigningService) GetKeyInfo(key ed25519.PublicKey) (keyInfo KeyInfo, err error) {
 	exists := false
-	// TODO: implement key fetching
+	// TODO: Get Key Info not yet implemented
 	if !exists {
 		return keyInfo, errors.New("key not found")
 	}

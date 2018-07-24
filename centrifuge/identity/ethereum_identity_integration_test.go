@@ -3,6 +3,7 @@
 package identity_test
 
 import (
+	"fmt"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
@@ -24,6 +25,7 @@ func TestMain(m *testing.M) {
 	config.Config.V.Set("keys.signing.publicKey", "../../example/resources/signingKey.pub.pem")
 	config.Config.V.Set("keys.signing.privateKey", "../../example/resources/signingKey.key.pem")
 
+	identityService = &identity.EthereumIdentityService{}
 	result := m.Run()
 	cc.TestTearDown()
 	os.Exit(result)
@@ -32,6 +34,10 @@ func TestMain(m *testing.M) {
 func TestCreateAndLookupIdentity_Integration(t *testing.T) {
 	centrifugeId := tools.RandomSlice32()
 	wrongCentrifugeId := tools.RandomSlice32()
+	wrongCentrifugeId[0] = 0x0
+	wrongCentrifugeId[1] = 0x0
+	wrongCentrifugeId[2] = 0x0
+	wrongCentrifugeId[2] = 0x0
 
 	confirmations := make(chan *identity.WatchIdentity, 1)
 
@@ -49,25 +55,26 @@ func TestCreateAndLookupIdentity_Integration(t *testing.T) {
 
 	wrongId, err := identityService.LookupIdentityForId(wrongCentrifugeId)
 	assert.Nil(t, err, "should not error out when resolving identity")
-	assert.Equal(t, wrongCentrifugeId, id.GetCentrifugeId(), "CentrifugeId Should match provided one")
 
 	// CheckIdentityExists
 	exists, err := id.CheckIdentityExists()
 	assert.Nil(t, err, "should not error out when looking for correct identity")
-	assert.Equal(t, true, exists, "Identity Should Exists")
+	assert.True(t, exists)
 
 	exists, err = identityService.CheckIdentityExists(centrifugeId)
 	assert.Nil(t, err, "should not error out when looking for correct identity")
-	assert.Equal(t, true, exists, "Identity Should Exists")
+	assert.True(t, exists)
+
+	fmt.Errorf("------------------------------------------\n\n\nSHOULD FAIL BELOW")
+
+	exists, err = identityService.CheckIdentityExists(wrongCentrifugeId)
+	assert.Nil(t, err, "should not err when looking for incorrect identity")
+	assert.False(t, exists)
 
 	wrongId = identity.NewEthereumIdentity()
 	wrongId.SetCentrifugeId(wrongCentrifugeId)
 	exists, err = wrongId.CheckIdentityExists()
 	assert.Nil(t, err, "should not error out when missing identity")
-	assert.Equal(t, false, exists, "Identity Should Exists")
-
-	exists, err = identityService.CheckIdentityExists(wrongCentrifugeId)
-	assert.Nil(t, err, "should not err when looking for incorrect identity")
 	assert.False(t, exists)
 
 	// Add Key

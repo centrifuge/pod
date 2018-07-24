@@ -63,6 +63,7 @@ func (id *EthereumIdentity) SetCentrifugeId(b []byte) error {
 		return errors.New("CentrifugeId can't be empty")
 	}
 	id.CentrifugeId = b
+	log.Errorf("SetID: %s", id)
 	return nil
 }
 
@@ -118,7 +119,7 @@ func (id *EthereumIdentity) findContract() (exists bool, err error) {
 
 	ethIdentityRegistryContract, err := getIdentityRegistryContract()
 	if err != nil {
-		return
+		return false, err
 	}
 	opts := ethereum.GetGethCallOpts()
 	idAddress, err := ethIdentityRegistryContract.GetIdentityByCentrifugeId(opts, id.CentrifugeIdB32())
@@ -127,7 +128,7 @@ func (id *EthereumIdentity) findContract() (exists bool, err error) {
 	}
 
 	client := ethereum.GetConnection()
-	id.Contract, err = NewEthereumIdentityContract(idAddress, client.GetClient())
+	idContract, err := NewEthereumIdentityContract(idAddress, client.GetClient())
 	if err == bind.ErrNoCode {
 		return false, err
 	}
@@ -135,6 +136,7 @@ func (id *EthereumIdentity) findContract() (exists bool, err error) {
 		log.Errorf("Failed to instantiate the identity contract: %v", err)
 		return false, err
 	}
+	id.Contract = idContract
 	return true, nil
 }
 
@@ -238,7 +240,7 @@ func sendKeyRegistrationTransaction(identityContract IdentityContract, opts *bin
 		return err
 	}
 
-	log.Infof("Sent off key [%v:%x] to add to CentrifugeID [%x]. Ethereum transaction hash [%x]", keyType, bKey, identity.CentrifugeId, tx.Hash())
+	log.Infof("Sent off key [%v:%x] to add to CentrifugeID [%s]. Ethereum transaction hash [%x]", keyType, bKey, identity, tx.Hash())
 	return
 }
 
@@ -251,7 +253,7 @@ func sendIdentityCreationTransaction(identityFactory IdentityFactory, opts *bind
 		log.Infof("Failed to send identity for creation [CentrifugeID: %s] : %v", identityToBeCreated, err)
 		return err
 	} else {
-		log.Infof("Sent off identity creation [CentrifugeID: %s]. Ethereum transaction hash [%x] and Nonce [%v] and Check [%v]", identityToBeCreated, tx.Hash(), tx.Nonce(), tx.CheckNonce())
+		log.Infof("Sent off identity creation [%s]. Ethereum transaction hash [%x] and Nonce [%v] and Check [%v]", identityToBeCreated, tx.Hash(), tx.Nonce(), tx.CheckNonce())
 	}
 
 	log.Infof("Transfer pending: 0x%x\n", tx.Hash())
@@ -336,7 +338,7 @@ func waitAndRouteIdentityRegistrationEvent(conf <-chan *EthereumIdentityFactoryC
 			confirmations <- &WatchIdentity{pushThisIdentity, ctx.Err()}
 			return
 		case res := <-conf:
-			log.Infof("Received IdentityCreated event from: %s, identifier: %s\n", res.CentrifugeId, res.Identity)
+			log.Infof("Received IdentityCreated event from: %x, identifier: %x\n", res.CentrifugeId, res.Identity)
 			confirmations <- &WatchIdentity{pushThisIdentity, nil}
 			return
 		}
@@ -358,6 +360,7 @@ func (ids *EthereumIdentityService) CheckIdentityExists(centrifugeId []byte) (ex
 	id := NewEthereumIdentity()
 	id.CentrifugeId = centrifugeId
 	exists, err = id.CheckIdentityExists()
+	log.Errorf("Check exists: [%s %s]", exists, err)
 	return
 }
 
