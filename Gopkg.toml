@@ -35,7 +35,7 @@
   version = "1.4.2"
 
 [[constraint]]
-  branch = "master"
+  revision = "f8ef5392db436f8678e972810bf919c0406d1b83"
   name = "github.com/centrifuge/precise-proofs"
 
 [[constraint]]
