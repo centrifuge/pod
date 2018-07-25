@@ -3,7 +3,7 @@
 package coredocumentservice
 
 import (
-	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
+	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
 	"os"
 	"testing"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
@@ -13,9 +13,9 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	cc.TestUnitBootstrap()
+	cc.TestIntegrationBootstrap()
 	result := m.Run()
-	cc.TestTearDown()
+	cc.TestIntegrationTearDown()
 	os.Exit(result)
 }
 

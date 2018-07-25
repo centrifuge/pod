@@ -6,12 +6,23 @@ import (
 	"github.com/golang/protobuf/proto"
 	"sync"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
+	gerrors "github.com/go-errors/errors"
 )
 
 var once sync.Once
 
 type LevelDBPurchaseOrderRepository struct {
 	Leveldb *leveldb.DB
+}
+
+func checkIfCoreDocumentFilledCorrectly(doc *purchaseorderpb.PurchaseOrderDocument) error {
+	if doc.CoreDocument == nil {
+		return errors.GenerateNilParameterError(doc.CoreDocument)
+	}
+	if doc.CoreDocument.DocumentIdentifier == nil {
+		return errors.GenerateNilParameterError(doc.CoreDocument.DocumentIdentifier)
+	}
+	return nil
 }
 
 func NewLevelDBPurchaseOrderRepository(ir PurchaseOrderRepository) {
@@ -39,7 +50,7 @@ func (repo *LevelDBPurchaseOrderRepository) FindById(id []byte) (orderDocument *
 	return
 }
 
-func (repo *LevelDBPurchaseOrderRepository) Store(orderDocument *purchaseorderpb.PurchaseOrderDocument) (err error) {
+func (repo *LevelDBPurchaseOrderRepository) CreateOrUpdate(orderDocument *purchaseorderpb.PurchaseOrderDocument) (err error) {
 	if orderDocument == nil {
 		return errors.GenerateNilParameterError(orderDocument)
 	}
@@ -55,4 +66,19 @@ func (repo *LevelDBPurchaseOrderRepository) Store(orderDocument *purchaseorderpb
 	}
 	err = repo.Leveldb.Put(key, data, nil)
 	return
+}
+
+func (repo *LevelDBPurchaseOrderRepository) Create(doc *purchaseorderpb.PurchaseOrderDocument) (err error) {
+	err = checkIfCoreDocumentFilledCorrectly(doc)
+	if err != nil {
+		return err
+	}
+	loadDoc, readErr := repo.FindById(doc.CoreDocument.DocumentIdentifier)
+	if loadDoc != nil {
+		return gerrors.Errorf("Document already exists. Create will not overwrite.")
+	} else if readErr != nil && !gerrors.Is(leveldb.ErrNotFound, readErr) {
+		return readErr
+	} else {
+		return repo.CreateOrUpdate(doc)
+	}
 }

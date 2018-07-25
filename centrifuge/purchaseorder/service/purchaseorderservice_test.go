@@ -7,7 +7,7 @@ import (
 	"crypto/sha256"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
-	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
+	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/precise-proofs/proofs"
@@ -19,9 +19,9 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	cc.TestUnitBootstrap()
+	cc.TestIntegrationBootstrap()
 	result := m.Run()
-	cc.TestTearDown()
+	cc.TestIntegrationTearDown()
 	os.Exit(result)
 }
 
@@ -38,11 +38,14 @@ func (m *MockPurchaseOrderRepository) FindById(id []byte) (doc *purchaseorderpb.
 	args := m.Called(id)
 	return args.Get(0).(*purchaseorderpb.PurchaseOrderDocument), args.Error(1)
 }
-func (m *MockPurchaseOrderRepository) Store(doc *purchaseorderpb.PurchaseOrderDocument) (err error) {
+func (m *MockPurchaseOrderRepository) CreateOrUpdate(doc *purchaseorderpb.PurchaseOrderDocument) (err error) {
 	args := m.Called(doc)
 	return args.Error(0)
 }
-
+func (m *MockPurchaseOrderRepository) Create(doc *purchaseorderpb.PurchaseOrderDocument) (err error) {
+	args := m.Called(doc)
+	return args.Error(0)
+}
 // ----- END MOCKS -----
 
 // ----- HELPER FUNCTIONS -----
@@ -69,10 +72,10 @@ func getTestSetupData() (po *purchaseorder.PurchaseOrder, srv *PurchaseOrderDocu
 }
 
 // ----- END HELPER FUNCTIONS -----
-func TestInvoiceDocumentService_Anchor(t *testing.T) {
+func TestPurchaseOrderDocumentService_Anchor(t *testing.T) {
 	doc, s, mockRepo, mockCDP := getTestSetupData()
 
-	mockRepo.On("Store", doc.Document).Return(nil).Once()
+	mockRepo.On("Create", doc.Document).Return(nil).Once()
 	mockCDP.On("Anchor", mock.Anything).Return(nil).Once()
 
 	anchoredDoc, err := s.HandleAnchorPurchaseOrderDocument(context.Background(), &purchaseorderpb.AnchorPurchaseOrderEnvelope{Document: doc.Document})
@@ -83,10 +86,10 @@ func TestInvoiceDocumentService_Anchor(t *testing.T) {
 	assert.Equal(t, doc.Document.CoreDocument.DocumentIdentifier, anchoredDoc.CoreDocument.DocumentIdentifier)
 }
 
-func TestInvoiceDocumentService_AnchorFails(t *testing.T) {
+func TestPurchaseOrderDocumentService_AnchorFails(t *testing.T) {
 	doc, s, mockRepo, mockCDP := getTestSetupData()
 
-	mockRepo.On("Store", doc.Document).Return(nil).Once()
+	mockRepo.On("Create", doc.Document).Return(nil).Once()
 	mockCDP.On("Anchor", mock.Anything).Return(errors.New("error anchoring")).Once()
 
 	anchoredDoc, err := s.HandleAnchorPurchaseOrderDocument(context.Background(), &purchaseorderpb.AnchorPurchaseOrderEnvelope{Document: doc.Document})
@@ -97,7 +100,7 @@ func TestInvoiceDocumentService_AnchorFails(t *testing.T) {
 	assert.Nil(t, anchoredDoc)
 }
 
-func TestInvoiceDocumentService_AnchorFailsWithNilDocument(t *testing.T) {
+func TestPurchaseOrderDocumentService_AnchorFailsWithNilDocument(t *testing.T) {
 	_, s, _, _ := getTestSetupData()
 
 	anchoredDoc, err := s.HandleAnchorPurchaseOrderDocument(context.Background(), &purchaseorderpb.AnchorPurchaseOrderEnvelope{})
@@ -111,7 +114,7 @@ func TestPurchaseOrderDocumentService_Send(t *testing.T) {
 
 	recipients := testingutils.GenerateP2PRecipients(1)
 
-	mockRepo.On("Store", doc.Document).Return(nil).Once()
+	mockRepo.On("Create", doc.Document).Return(nil).Once()
 	mockCDP.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 	mockCDP.On("Anchor", mock.Anything).Return(nil).Once()
 
@@ -126,7 +129,7 @@ func TestPurchaseOrderDocumentService_Send_StoreFails(t *testing.T) {
 	doc, s, mockRepo, _ := getTestSetupData()
 	recipients := testingutils.GenerateP2PRecipients(2)
 
-	mockRepo.On("Store", doc.Document).Return(errors.New("error storing")).Once()
+	mockRepo.On("Create", doc.Document).Return(errors.New("error storing")).Once()
 
 	_, err := s.HandleSendPurchaseOrderDocument(context.Background(), &purchaseorderpb.SendPurchaseOrderEnvelope{Recipients: recipients, Document: doc.Document})
 
@@ -138,7 +141,7 @@ func TestPurchaseOrderDocumentService_Send_AnchorFails(t *testing.T) {
 	doc, s, mockRepo, mockCDP := getTestSetupData()
 	recipients := testingutils.GenerateP2PRecipients(2)
 
-	mockRepo.On("Store", doc.Document).Return(nil).Once()
+	mockRepo.On("Create", doc.Document).Return(nil).Once()
 	mockCDP.On("Anchor", mock.Anything).Return(errors.New("error anchoring")).Once()
 
 	_, err := s.HandleSendPurchaseOrderDocument(context.Background(), &purchaseorderpb.SendPurchaseOrderEnvelope{Recipients: recipients, Document: doc.Document})
@@ -152,7 +155,7 @@ func TestPurchaseOrderDocumentService_SendFails(t *testing.T) {
 	doc, s, mockRepo, mockCDP := getTestSetupData()
 	recipients := testingutils.GenerateP2PRecipients(2)
 
-	mockRepo.On("Store", doc.Document).Return(nil).Once()
+	mockRepo.On("Create", doc.Document).Return(nil).Once()
 	mockCDP.On("Anchor", mock.Anything).Return(nil).Once()
 	mockCDP.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(errors.New("error sending")).Twice()
 

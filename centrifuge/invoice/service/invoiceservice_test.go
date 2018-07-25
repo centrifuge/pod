@@ -7,7 +7,7 @@ import (
 	"crypto/sha256"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
-	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
+	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/service"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
@@ -20,9 +20,9 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	cc.TestUnitBootstrap()
+	cc.TestIntegrationBootstrap()
 	result := m.Run()
-	cc.TestTearDown()
+	cc.TestIntegrationTearDown()
 	os.Exit(result)
 }
 
@@ -39,7 +39,11 @@ func (m *MockInvoiceRepository) FindById(id []byte) (inv *invoicepb.InvoiceDocum
 	args := m.Called(id)
 	return args.Get(0).(*invoicepb.InvoiceDocument), args.Error(1)
 }
-func (m *MockInvoiceRepository) Store(inv *invoicepb.InvoiceDocument) (err error) {
+func (m *MockInvoiceRepository) CreateOrUpdate(inv *invoicepb.InvoiceDocument) (err error) {
+	args := m.Called(inv)
+	return args.Error(0)
+}
+func (m *MockInvoiceRepository) Create(inv *invoicepb.InvoiceDocument) (err error) {
 	args := m.Called(inv)
 	return args.Error(0)
 }
@@ -74,7 +78,7 @@ func getTestSetupData() (doc *invoice.Invoice, srv *invoiceservice.InvoiceDocume
 func TestInvoiceDocumentService_Anchor(t *testing.T) {
 	doc, s, mockRepo, mockCDP := getTestSetupData()
 
-	mockRepo.On("Store", doc.Document).Return(nil).Once()
+	mockRepo.On("Create", doc.Document).Return(nil).Once()
 	mockCDP.On("Anchor", mock.Anything).Return(nil).Once()
 
 	anchoredDoc, err := s.HandleAnchorInvoiceDocument(context.Background(), &invoicepb.AnchorInvoiceEnvelope{Document: doc.Document})
@@ -88,7 +92,7 @@ func TestInvoiceDocumentService_Anchor(t *testing.T) {
 func TestInvoiceDocumentService_AnchorFails(t *testing.T) {
 	doc, s, mockRepo, mockCDP := getTestSetupData()
 
-	mockRepo.On("Store", doc.Document).Return(nil).Once()
+	mockRepo.On("Create", doc.Document).Return(nil).Once()
 	mockCDP.On("Anchor", mock.Anything).Return(errors.New("error anchoring")).Once()
 
 	anchoredDoc, err := s.HandleAnchorInvoiceDocument(context.Background(), &invoicepb.AnchorInvoiceEnvelope{Document: doc.Document})
@@ -113,7 +117,7 @@ func TestInvoiceDocumentService_Send(t *testing.T) {
 
 	recipients := testingutils.GenerateP2PRecipients(1)
 
-	mockRepo.On("Store", doc.Document).Return(nil).Once()
+	mockRepo.On("Create", doc.Document).Return(nil).Once()
 	mockCDP.On("Anchor", mock.Anything).Return(nil).Once()
 	mockCDP.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 
@@ -128,7 +132,7 @@ func TestInvoiceDocumentService_SendFails(t *testing.T) {
 	doc, s, mockRepo, mockCDP := getTestSetupData()
 	recipients := testingutils.GenerateP2PRecipients(2)
 
-	mockRepo.On("Store", doc.Document).Return(nil).Once()
+	mockRepo.On("Create", doc.Document).Return(nil).Once()
 	mockCDP.On("Anchor", mock.Anything).Return(nil).Once()
 	mockCDP.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(errors.New("error sending")).Twice()
 
@@ -144,7 +148,7 @@ func TestInvoiceDocumentService_Send_StoreFails(t *testing.T) {
 	doc, s, mockRepo, _ := getTestSetupData()
 	recipients := testingutils.GenerateP2PRecipients(2)
 
-	mockRepo.On("Store", doc.Document).Return(errors.New("error storing")).Once()
+	mockRepo.On("Create", doc.Document).Return(errors.New("error storing")).Once()
 
 	_, err := s.HandleSendInvoiceDocument(context.Background(), &invoicepb.SendInvoiceEnvelope{Recipients: recipients, Document: doc.Document})
 
@@ -156,7 +160,7 @@ func TestInvoiceDocumentService_Send_AnchorFails(t *testing.T) {
 	doc, s, mockRepo, mockCDP := getTestSetupData()
 	recipients := testingutils.GenerateP2PRecipients(2)
 
-	mockRepo.On("Store", doc.Document).Return(nil).Once()
+	mockRepo.On("Create", doc.Document).Return(nil).Once()
 	mockCDP.On("Anchor", mock.Anything).Return(errors.New("error anchoring")).Once()
 
 	_, err := s.HandleSendInvoiceDocument(context.Background(), &invoicepb.SendInvoiceEnvelope{Recipients: recipients, Document: doc.Document})

@@ -12,6 +12,7 @@ import (
 	"golang.org/x/net/context"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/service"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
+	gerrors "github.com/go-errors/errors"
 )
 
 var log = logging.Logger("rest-api")
@@ -64,19 +65,19 @@ func (s *InvoiceDocumentService) HandleAnchorInvoiceDocument(ctx context.Context
 	err := fillCoreDocIdentifiers(doc)
 	if err != nil {
 		log.Error(err)
-		return nil, err
+		return nil, gerrors.Errorf("Error filling document IDs: [%v]", err.Error() )
 	}
 
-	err = s.InvoiceRepository.Store(doc)
+	err = s.InvoiceRepository.Create(doc)
 	if err != nil {
 		log.Error(err)
-		return nil, err
+		return nil, gerrors.Errorf("Error saving document: [%v]", err.Error() )
 	}
 
 	anchoredInvoiceDocument, err := s.anchorInvoiceDocument(doc)
 	if err != nil {
 		log.Error(err)
-		return nil, err
+		return nil, gerrors.Errorf("Error anchoring document: [%v]", err.Error() )
 	}
 
 	return anchoredInvoiceDocument, nil
@@ -92,7 +93,7 @@ func (s *InvoiceDocumentService) HandleSendInvoiceDocument(ctx context.Context, 
 		return nil, err
 	}
 
-	err = s.InvoiceRepository.Store(doc)
+	err = s.InvoiceRepository.Create(doc)
 	if err != nil {
 		return nil, err
 	}
