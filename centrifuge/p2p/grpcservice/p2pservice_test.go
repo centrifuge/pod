@@ -6,7 +6,7 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
-	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
+	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/version"
 	"github.com/stretchr/testify/assert"
@@ -17,9 +17,11 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	cc.TestUnitBootstrap()
+	cc.TestIntegrationBootstrap()
+	coredocumentrepository.NewLevelDBCoreDocumentRepository(&coredocumentrepository.LevelDBCoreDocumentRepository{cc.GetLevelDBStorage()})
+
 	result := m.Run()
-	cc.TestTearDown()
+	cc.TestIntegrationTearDown()
 	os.Exit(result)
 }
 

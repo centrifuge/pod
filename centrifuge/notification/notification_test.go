@@ -4,7 +4,7 @@ package notification
 import (
 	"testing"
 	"os"
-	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
+	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/notification"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
@@ -15,9 +15,9 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	cc.TestUnitBootstrap()
+	cc.TestIntegrationBootstrap()
 	result := m.Run()
-	cc.TestTearDown()
+	cc.TestIntegrationTearDown()
 	os.Exit(result)
 }
 

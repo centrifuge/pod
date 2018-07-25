@@ -6,12 +6,25 @@ import (
 	"github.com/golang/protobuf/proto"
 	"sync"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
+	gerrors "github.com/go-errors/errors"
 )
 
 var once sync.Once
+var ErrDocumentExists = errors.New("syntax error in pattern")
+
 
 type LevelDBInvoiceRepository struct {
 	Leveldb *leveldb.DB
+}
+
+func checkIfCoreDocumentFilledCorrectly(doc *invoicepb.InvoiceDocument) error {
+	if doc.CoreDocument == nil {
+		return errors.GenerateNilParameterError(doc.CoreDocument)
+	}
+	if doc.CoreDocument.DocumentIdentifier == nil {
+		return errors.GenerateNilParameterError(doc.CoreDocument.DocumentIdentifier)
+	}
+	return nil
 }
 
 func NewLevelDBInvoiceRepository(ir InvoiceRepository) {
@@ -39,7 +52,7 @@ func (repo *LevelDBInvoiceRepository) FindById(id []byte) (inv *invoicepb.Invoic
 	return
 }
 
-func (repo *LevelDBInvoiceRepository) Store(inv *invoicepb.InvoiceDocument) (err error) {
+func (repo *LevelDBInvoiceRepository) CreateOrUpdate(inv *invoicepb.InvoiceDocument) (err error) {
 	if inv == nil {
 		return errors.GenerateNilParameterError(inv)
 	}
@@ -54,4 +67,19 @@ func (repo *LevelDBInvoiceRepository) Store(inv *invoicepb.InvoiceDocument) (err
 	}
 	err = repo.Leveldb.Put(key, data, nil)
 	return
+}
+
+func (repo *LevelDBInvoiceRepository) Create(inv *invoicepb.InvoiceDocument) (err error) {
+	err = checkIfCoreDocumentFilledCorrectly(inv)
+	if err != nil {
+		return err
+	}
+	loadDoc, readErr := repo.FindById(inv.CoreDocument.DocumentIdentifier)
+	if loadDoc != nil {
+		return gerrors.Errorf("Document already exists. Create will not overwrite.")
+	} else if readErr != nil && !gerrors.Is(leveldb.ErrNotFound, readErr) {
+		return readErr
+	} else {
+		return repo.CreateOrUpdate(inv)
+	}
 }

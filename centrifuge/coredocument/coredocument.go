@@ -95,7 +95,8 @@ func (cd *CoreDocumentProcessor) Anchor(document *coredocumentpb.CoreDocument) e
 	if document == nil {
 		return errors.GenerateNilParameterError(document)
 	}
-	log.Infof("Anchoring document %v", document)
+	log.Infof("Anchoring document with identifiers: [document: %#x, current: %#x, next: %#x], rootHash: %#x", document.DocumentIdentifier, document.CurrentIdentifier, document.NextIdentifier, document.DocumentRoot)
+	log.Debugf("Anchoring document with details %v", document)
 
 	id, err := tools.SliceToByte32(document.CurrentIdentifier)
 	if err != nil {

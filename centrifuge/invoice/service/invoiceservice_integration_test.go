@@ -6,7 +6,7 @@ import (
 	"context"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
-	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
+	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/repository"
@@ -18,9 +18,11 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	cc.TestBootstrap()
+	cc.TestFunctionalEthereumBootstrap()
+	invoicerepository.NewLevelDBInvoiceRepository(&invoicerepository.LevelDBInvoiceRepository{cc.GetLevelDBStorage()})
+
 	result := m.Run()
-	cc.TestTearDown()
+	cc.TestIntegrationTearDown()
 	os.Exit(result)
 }
 
@@ -54,4 +56,16 @@ func TestInvoiceDocumentService_HandleAnchorInvoiceDocument_Integration(t *testi
 	loadedInvoice, _ := invoicerepository.GetInvoiceRepository().FindById(doc.Document.CoreDocument.DocumentIdentifier)
 	assert.Equal(t, "DE", loadedInvoice.Data.SenderCountry,
 		"Didn't save the invoice data correctly")
+
+
+	//Invoice Service should error out if trying to anchor the same document ID again
+	doc.Document.Data.SenderCountry = "ES"
+	anchoredDoc2, err := s.HandleAnchorInvoiceDocument(context.Background(), &invoicepb.AnchorInvoiceEnvelope{Document: doc.Document})
+	assert.Nil(t, anchoredDoc2)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "Document already exists")
+
+	loadedInvoice2, _ := invoicerepository.GetInvoiceRepository().FindById(doc.Document.CoreDocument.DocumentIdentifier)
+	assert.Equal(t, "DE", loadedInvoice2.Data.SenderCountry,
+		"Invoice document on DB should have not not gotten overwritten after rejected anchor call")
 }

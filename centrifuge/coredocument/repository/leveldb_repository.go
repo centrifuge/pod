@@ -38,7 +38,7 @@ func (repo *LevelDBCoreDocumentRepository) FindById(id []byte) (doc *coredocumen
 	return
 }
 
-func (repo *LevelDBCoreDocumentRepository) Store(doc *coredocumentpb.CoreDocument) (err error) {
+func (repo *LevelDBCoreDocumentRepository) CreateOrUpdate(doc *coredocumentpb.CoreDocument) (err error) {
 	key := repo.GetKey(doc.DocumentIdentifier)
 	data, err := proto.Marshal(doc)
 

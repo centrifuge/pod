@@ -29,8 +29,8 @@ func TestStorageService(t *testing.T) {
 
 	purchaseorder := purchaseorderpb.PurchaseOrderDocument{CoreDocument: &coredocumentpb.CoreDocument{DocumentIdentifier:identifier}}
 	repo := GetPurchaseOrderRepository()
-	err := repo.Store(&purchaseorder)
-	assert.Nil(t, err, "Store should not return error")
+	err := repo.CreateOrUpdate(&purchaseorder)
+	assert.Nil(t, err, "CreateOrUpdate should not return error")
 
 	orderDocument, err := repo.FindById(identifier)
 	assert.Nil(t, err, "FindById should not return error")
@@ -43,14 +43,14 @@ func TestStorageService(t *testing.T) {
 
 func TestLevelDBInvoiceRepository_StoreNilDocument(t *testing.T) {
 	repo := GetPurchaseOrderRepository()
-	err := repo.Store(nil)
+	err := repo.CreateOrUpdate(nil)
 
 	assert.Error(t, err, "should have thrown an error")
 }
 
 func TestLevelDBInvoiceRepository_StoreNilCoreDocument(t *testing.T) {
 	repo := GetPurchaseOrderRepository()
-	err := repo.Store(&purchaseorderpb.PurchaseOrderDocument{})
+	err := repo.CreateOrUpdate(&purchaseorderpb.PurchaseOrderDocument{})
 
 	assert.Error(t, err, "should have thrown an error")
 }

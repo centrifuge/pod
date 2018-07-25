@@ -5,7 +5,7 @@ package identity_test
 import (
 	"fmt"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
-	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
+	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/stretchr/testify/assert"
@@ -21,13 +21,13 @@ func TestMain(m *testing.M) {
 	// TODO: look for other sleep statements in tests and fix the underlying issues
 	time.Sleep(time.Second + 2)
 
-	cc.TestBootstrap()
+	cc.TestFunctionalEthereumBootstrap()
 	config.Config.V.Set("keys.signing.publicKey", "../../example/resources/signingKey.pub.pem")
 	config.Config.V.Set("keys.signing.privateKey", "../../example/resources/signingKey.key.pem")
 
 	identityService = &identity.EthereumIdentityService{}
 	result := m.Run()
-	cc.TestTearDown()
+	cc.TestFunctionalEthereumTearDown()
 	os.Exit(result)
 }
 
@@ -91,6 +91,7 @@ func TestCreateAndLookupIdentity_Integration(t *testing.T) {
 
 	_, err = id.GetLastKeyForType(2)
 	assert.NotNil(t, err)
+
 }
 
 func TestCreateAndLookupIdentity_Integration_Concurrent(t *testing.T) {

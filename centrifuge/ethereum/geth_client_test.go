@@ -4,7 +4,7 @@ package ethereum_test
 
 import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
-	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
+	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -19,11 +19,11 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	cc.TestUnitBootstrap()
+	cc.TestIntegrationBootstrap()
 	config.Config.V.Set("ethereum.txPoolAccessEnabled", false)
 	config.Config.V.Set("ethereum.intervalRetry", time.Millisecond*100)
 	result := m.Run()
-	cc.TestTearDown()
+	cc.TestIntegrationTearDown()
 	os.Exit(result)
 }
 

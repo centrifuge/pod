@@ -385,7 +385,7 @@ func (ids *EthereumIdentityService) CreateIdentity(centrifugeId []byte, confirma
 		log.Infof("Failed to set up event listener for identity [id: %s]: %v", id, wError)
 		return
 	}
-
+  
 	err = sendIdentityCreationTransaction(ethIdentityFactoryContract, opts, id)
 	if err != nil {
 		wError := errors.Wrap(err, 1)

@@ -1,25 +1,23 @@
-// +build unit
+// +build integration
 
-package invoicerepository
+package invoicerepository_test
 
 import (
 	"testing"
 	"os"
+	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/repository"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/stretchr/testify/assert"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
-	"github.com/syndtr/goleveldb/leveldb"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 )
 
-var dbFileName = "/tmp/centrifuge_testing_invdoc.leveldb"
-
 func TestMain(m *testing.M) {
-	defer Bootstrap().Close()
+	cc.TestIntegrationBootstrap()
+	invoicerepository.NewLevelDBInvoiceRepository(&invoicerepository.LevelDBInvoiceRepository{cc.GetLevelDBStorage()})
 
 	result := m.Run()
-	os.RemoveAll(dbFileName)
+	cc.TestIntegrationTearDown()
 	os.Exit(result)
 }
 
@@ -27,10 +25,10 @@ func TestStorageService(t *testing.T) {
 	identifier := []byte("1")
 	invalidIdentifier := []byte("2")
 
-	invoice := invoicepb.InvoiceDocument{CoreDocument: &coredocumentpb.CoreDocument{DocumentIdentifier:identifier}}
-	repo := GetInvoiceRepository()
-	err := repo.Store(&invoice)
-	assert.Nil(t, err, "Store should not return error")
+	invoice := invoicepb.InvoiceDocument{CoreDocument: &coredocumentpb.CoreDocument{DocumentIdentifier: identifier}}
+	repo := invoicerepository.GetInvoiceRepository()
+	err := repo.CreateOrUpdate(&invoice)
+	assert.Nil(t, err, "CreateOrUpdate should not return error")
 
 	inv, err := repo.FindById(identifier)
 	assert.Nil(t, err, "FindById should not return error")
@@ -41,25 +39,43 @@ func TestStorageService(t *testing.T) {
 	assert.Nil(t, inv, "Invoice should be NIL")
 }
 
+func TestStoreOnce(t *testing.T) {
+	identifier := []byte("1234")
+
+	repo := invoicerepository.GetInvoiceRepository()
+
+	invoice := invoicepb.InvoiceDocument{CoreDocument: &coredocumentpb.CoreDocument{DocumentIdentifier: identifier, CurrentIdentifier: []byte("333")}}
+	err := repo.Create(&invoice)
+	assert.Nil(t, err)
+
+	loadedInvoice, err := repo.FindById(identifier)
+	assert.Nil(t, err)
+	assert.Equal(t, identifier, loadedInvoice.CoreDocument.DocumentIdentifier)
+	assert.Equal(t, []byte("333"), loadedInvoice.CoreDocument.CurrentIdentifier)
+
+	invoice2 := invoicepb.InvoiceDocument{CoreDocument: &coredocumentpb.CoreDocument{DocumentIdentifier: identifier, CurrentIdentifier: []byte("666")}}
+	err = repo.Create(&invoice2)
+	assert.Error(t, err)
+	assert.Equal(t, "Document already exists. Create will not overwrite.", err.Error())
+
+	loadedInvoice, err = repo.FindById(identifier)
+	assert.Nil(t, err)
+	assert.Equal(t, identifier, loadedInvoice.CoreDocument.DocumentIdentifier)
+	assert.Equal(t, []byte("333"), loadedInvoice.CoreDocument.CurrentIdentifier, "Loaded invoice should still have the old values as the overwrite should have failed")
+	//TODO make into a generic error from the errors package after Miguel's merge
+
+}
+
 func TestLevelDBInvoiceRepository_StoreNilDocument(t *testing.T) {
-	repo := GetInvoiceRepository()
-	err := repo.Store(nil)
+	repo := invoicerepository.GetInvoiceRepository()
+	err := repo.CreateOrUpdate(nil)
 
 	assert.Error(t, err, "should have thrown an error")
 }
 
 func TestLevelDBInvoiceRepository_StoreNilCoreDocument(t *testing.T) {
-	repo := GetInvoiceRepository()
-	err := repo.Store(&invoicepb.InvoiceDocument{})
+	repo := invoicerepository.GetInvoiceRepository()
+	err := repo.CreateOrUpdate(&invoicepb.InvoiceDocument{})
 
 	assert.Error(t, err, "should have thrown an error")
-}
-
-func Bootstrap() (*leveldb.DB) {
-	levelDB := storage.NewLeveldbStorage(dbFileName)
-
-	coredocumentrepository.NewLevelDBCoreDocumentRepository(&coredocumentrepository.LevelDBCoreDocumentRepository{levelDB})
-	NewLevelDBInvoiceRepository(&LevelDBInvoiceRepository{levelDB})
-
-	return levelDB
 }

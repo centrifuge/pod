@@ -58,7 +58,7 @@ func (srv *P2PService) HandleP2PPost(ctx context.Context, req *p2ppb.P2PMessage)
 		return nil, errors.GenerateNilParameterError(req.Document)
 	}
 
-	err = coredocumentrepository.GetCoreDocumentRepository().Store(req.Document)
+	err = coredocumentrepository.GetCoreDocumentRepository().CreateOrUpdate(req.Document)
 	if err != nil {
 		return nil, err
 	}

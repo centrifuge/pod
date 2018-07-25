@@ -6,8 +6,8 @@ import (
 	"context"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
-	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
+	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder/service"
@@ -18,9 +18,12 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	cc.TestBootstrap()
+	cc.TestFunctionalEthereumBootstrap()
+	purchaseorderrepository.NewLevelDBPurchaseOrderRepository(&purchaseorderrepository.LevelDBPurchaseOrderRepository{cc.GetLevelDBStorage()})
+
+
 	result := m.Run()
-	cc.TestTearDown()
+	cc.TestIntegrationTearDown()
 	os.Exit(result)
 }
 
@@ -54,4 +57,15 @@ func TestPurchaseOrderDocumentService_HandleAnchorPurchaseOrderDocument_Integrat
 	loadedPurchaseOrder, _ := purchaseorderrepository.GetPurchaseOrderRepository().FindById(doc.Document.CoreDocument.DocumentIdentifier)
 	assert.Equal(t, "DE", loadedPurchaseOrder.Data.OrderCountry,
 		"Didn't save the purchaseorder data correctly")
+
+	//PO Service should error out if trying to anchor the same document ID again
+	doc.Document.Data.OrderCountry = "ES"
+	anchoredDoc2, err := s.HandleAnchorPurchaseOrderDocument(context.Background(), &purchaseorderpb.AnchorPurchaseOrderEnvelope{Document: doc.Document})
+	assert.Nil(t, anchoredDoc2)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "Document already exists")
+
+	loadedPurchaseOrder2, _ := purchaseorderrepository.GetPurchaseOrderRepository().FindById(doc.Document.CoreDocument.DocumentIdentifier)
+	assert.Equal(t, "DE", loadedPurchaseOrder2.Data.OrderCountry,
+		"Document on DB should have not not gotten overwritten after rejected anchor call")
 }

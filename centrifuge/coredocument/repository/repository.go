@@ -11,5 +11,7 @@ func GetCoreDocumentRepository() CoreDocumentRepository {
 type CoreDocumentRepository interface {
 	GetKey(id []byte) ([]byte)
 	FindById(id []byte) (doc *coredocumentpb.CoreDocument, err error)
-	Store(doc *coredocumentpb.CoreDocument) (err error)
+
+	// CreateOrUpdate functions similar to a REST HTTP PUT where the document is either created or updated regardless if it existed before
+	CreateOrUpdate(doc *coredocumentpb.CoreDocument) (err error)
 }
