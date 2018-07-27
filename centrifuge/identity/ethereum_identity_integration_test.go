@@ -7,7 +7,6 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/stretchr/testify/assert"
 	"os"
@@ -15,154 +14,104 @@ import (
 	"time"
 )
 
+var identityService identity.IdentityService
+
 func TestMain(m *testing.M) {
 	// Adding delay to startup (concurrency hack)
+	// TODO: look for other sleep statements in tests and fix the underlying issues
 	time.Sleep(time.Second + 2)
 
 	cc.TestFunctionalEthereumBootstrap()
 	config.Config.V.Set("keys.signing.publicKey", "../../example/resources/signingKey.pub.pem")
 	config.Config.V.Set("keys.signing.privateKey", "../../example/resources/signingKey.key.pem")
+
+	identityService = &identity.EthereumIdentityService{}
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()
 	os.Exit(result)
 }
 
-func TestCreateAndResolveIdentity_Integration(t *testing.T) {
-	centrifugeId := tools.RandomString32()
-	nodePeerId := tools.RandomByte32()
+func TestCreateAndLookupIdentity_Integration(t *testing.T) {
+	centrifugeId := tools.RandomSlice32()
+	wrongCentrifugeId := tools.RandomSlice32()
+	wrongCentrifugeId[0] = 0x0
+	wrongCentrifugeId[1] = 0x0
+	wrongCentrifugeId[2] = 0x0
+	wrongCentrifugeId[2] = 0x0
 
-	identityObj := identity.NewEthereumIdentity()
-	identityObj.CentrifugeId = centrifugeId
-	identityObj.Keys[1] = append(identityObj.Keys[1], identity.EthereumIdentityKey{nodePeerId})
+	confirmations := make(chan *identity.WatchIdentity, 1)
 
-	confirmations := make(chan *identity.WatchEthereumIdentity, 1)
-
-	err := identity.CreateEthereumIdentity(identityObj, confirmations)
+	id, err := identityService.CreateIdentity(centrifugeId, confirmations)
 	assert.Nil(t, err, "should not error out when creating identity")
 
 	watchRegisteredIdentity := <-confirmations
 	assert.Nil(t, watchRegisteredIdentity.Error, "No error thrown by context")
-	assert.Equal(t, centrifugeId, watchRegisteredIdentity.EthereumIdentity.CentrifugeId, "Resulting Identity should have the same ID as the input")
+	assert.Equal(t, centrifugeId, watchRegisteredIdentity.Identity.GetCentrifugeId(), "Resulting Identity should have the same ID as the input")
 
-	id, err := identity.ResolveP2PEthereumIdentityForId(centrifugeId)
+	// LookupIdentityForId
+	id, err = identityService.LookupIdentityForId(centrifugeId)
 	assert.Nil(t, err, "should not error out when resolving identity")
-	assert.Equal(t, centrifugeId, id.CentrifugeId, "CentrifugeId Should match provided one")
-	assert.Equal(t, 0, len(id.Keys), "Identity Should have empty map of keys")
-}
+	assert.Equal(t, centrifugeId, id.GetCentrifugeId(), "CentrifugeId Should match provided one")
 
-func TestCheckIdentityExists_Integration(t *testing.T) {
-	centrifugeId := tools.RandomString32()
-	nodePeerId := tools.RandomByte32()
+	wrongId, err := identityService.LookupIdentityForId(wrongCentrifugeId)
+	assert.Nil(t, err, "should not error out when resolving identity")
 
-	identityObj := identity.NewEthereumIdentity()
-	identityObj.CentrifugeId = centrifugeId
-	identityObj.Keys[1] = append(identityObj.Keys[1], identity.EthereumIdentityKey{nodePeerId})
-
-	confirmations := make(chan *identity.WatchEthereumIdentity, 1)
-
-	err := identity.CreateEthereumIdentity(identityObj, confirmations)
-	assert.Nil(t, err, "should not error out when creating identity")
-
-	watchRegisteredIdentity := <-confirmations
-	assert.Nil(t, watchRegisteredIdentity.Error, "No error thrown by context")
-	assert.Equal(t, centrifugeId, watchRegisteredIdentity.EthereumIdentity.CentrifugeId, "Resulting Identity should have the same ID as the input")
-
-	exists, err := identityObj.CheckIdentityExists()
+	// CheckIdentityExists
+	exists, err := id.CheckIdentityExists()
 	assert.Nil(t, err, "should not error out when looking for correct identity")
-	assert.Equal(t, true, exists, "Identity Should Exists")
+	assert.True(t, exists)
 
-	wrongCentrifugeId := tools.RandomString32()
-	identityObj.CentrifugeId = wrongCentrifugeId
-	exists, err = identityObj.CheckIdentityExists()
+	exists, err = identityService.CheckIdentityExists(centrifugeId)
+	assert.Nil(t, err, "should not error out when looking for correct identity")
+	assert.True(t, exists)
+
+	fmt.Errorf("------------------------------------------\n\n\nSHOULD FAIL BELOW")
+
+	exists, err = identityService.CheckIdentityExists(wrongCentrifugeId)
+	assert.Nil(t, err, "should not err when looking for incorrect identity")
+	assert.False(t, exists)
+
+	wrongId = identity.NewEthereumIdentity()
+	wrongId.SetCentrifugeId(wrongCentrifugeId)
+	exists, err = wrongId.CheckIdentityExists()
 	assert.Nil(t, err, "should not error out when missing identity")
-	assert.Equal(t, false, exists, "Identity Should Exists")
-}
+	assert.False(t, exists)
 
-func TestCreateIdentityAndAddKey_Integration(t *testing.T) {
-	centrifugeId := tools.RandomString32()
-	nodePeerId := tools.RandomByte32()
-
-	identityObj := identity.NewEthereumIdentity()
-	identityObj.CentrifugeId = centrifugeId
-	identityObj.Keys[1] = append(identityObj.Keys[1], identity.EthereumIdentityKey{nodePeerId})
-
-	confirmations := make(chan *identity.WatchEthereumIdentity, 1)
-
-	err := identity.CreateEthereumIdentity(identityObj, confirmations)
-	assert.Nil(t, err, "should not error out when creating identity")
-
-	watchRegisteredIdentity := <-confirmations
-	assert.Nil(t, watchRegisteredIdentity.Error, "No error thrown by context")
-	assert.Equal(t, centrifugeId, watchRegisteredIdentity.EthereumIdentity.CentrifugeId, "Resulting Identity should have the same ID as the input")
-
-	id, err := identity.ResolveP2PEthereumIdentityForId(centrifugeId)
-
-	assert.Nil(t, err, "should not error out when resolving identity")
-	assert.Equal(t, centrifugeId, id.CentrifugeId, "CentrifugeId Should match provided one")
-	assert.Equal(t, 0, len(id.Keys), "Identity Should have empty map of keys")
-
-	err = identityObj.AddKeyToIdentity(1, confirmations)
+	// Add Key
+	key := tools.RandomSlice32()
+	confirmations = make(chan *identity.WatchIdentity, 1)
+	err = id.AddKeyToIdentity(1, key, confirmations)
 	assert.Nil(t, err, "should not error out when adding key to identity")
-
 	watchReceivedIdentity := <-confirmations
-	assert.Equal(t, centrifugeId, watchReceivedIdentity.EthereumIdentity.CentrifugeId, "Resulting Identity should have the same ID as the input")
-	assert.Equal(t, 1, len(watchReceivedIdentity.EthereumIdentity.Keys), "Resulting Identity Key Map should have expected length")
-	assert.Equal(t, 1, len(watchReceivedIdentity.EthereumIdentity.Keys[1]), "Resulting Identity Key Type list should have expected length")
-	assert.Equal(t, identityObj.Keys[1][0].Key, watchReceivedIdentity.EthereumIdentity.Keys[1][0].Key, "Resulting Identity Key should match the one requested")
+	assert.Equal(t, centrifugeId, watchReceivedIdentity.Identity.GetCentrifugeId(), "Resulting Identity should have the same ID as the input")
 
-	// Double check that Key Exists in Identity
-	id, err = identity.ResolveP2PEthereumIdentityForId(centrifugeId)
-
-	assert.Nil(t, err, "should not error out when resolving identity")
-	assert.Equal(t, centrifugeId, id.CentrifugeId, "CentrifugeId Should match provided one")
-	assert.Equal(t, 1, len(id.Keys), "Identity Should have empty map of keys")
-	assert.Equal(t, identityObj.Keys[1][0].Key, id.Keys[1][0].Key, "Resulting Identity Key should match the one requested")
-}
-
-func TestManageIdentity(t *testing.T) {
-	// Creation Succeeds
-	centrifugeId := tools.RandomString32()
-	publicKey, _ := keytools.GetSigningKeyPairFromConfig()
-	b32Key, err := tools.ByteArrayToByte32(publicKey)
+	recKey, err := id.GetLastKeyForType(1)
+	assert.Equal(t, recKey, key)
 	assert.Nil(t, err)
 
-	err = identity.CreateEthereumIdentityFromApi(centrifugeId, b32Key)
-	assert.Nil(t, err, "should not error out upon identity creation")
+	_, err = id.GetLastKeyForType(2)
+	assert.NotNil(t, err)
 
-	// AddKey Again Fails as Key already exists
-	err = identity.AddKeyToIdentityFromApi(centrifugeId, identity.KEY_TYPE_PEERID, b32Key)
-	assert.EqualError(t, err, "Key trying to be added already exists as latest. Skipping CreateOrUpdate.", "should error out upon double key addition")
-
-	// Creation fails as CentId already exists
-	err = identity.CreateEthereumIdentityFromApi(centrifugeId, b32Key)
-	assert.EqualError(t, err, fmt.Sprintf("ACTION [%v] but identity exists [%v]", identity.ACTION_CREATE, true), "should error out if ID already exists")
-
-	// Adding Key fails as CentId does not exist
-	centrifugeId = tools.RandomString32()
-	err = identity.AddKeyToIdentityFromApi(centrifugeId, identity.KEY_TYPE_PEERID, b32Key)
-	assert.EqualError(t, err, fmt.Sprintf("ACTION [%v] but identity exists [%v]", identity.ACTION_ADDKEY, false), "should error if ID does not exist")
 }
 
-func TestCreateAndResolveIdentity_Integration_Concurrent(t *testing.T) {
-	var submittedIds [5]string
+func TestCreateAndLookupIdentity_Integration_Concurrent(t *testing.T) {
+	var submittedIds [5][]byte
 
 	howMany := cap(submittedIds)
-	confirmations := make(chan *identity.WatchEthereumIdentity, howMany)
+	confirmations := make(chan *identity.WatchIdentity, howMany)
 
 	for ix := 0; ix < howMany; ix++ {
-		centId := tools.RandomString32()
-		identityObj := identity.NewEthereumIdentity()
-		identityObj.CentrifugeId = centId
+		centId := tools.RandomSlice32()
 		submittedIds[ix] = centId
-		err := identity.CreateEthereumIdentity(identityObj, confirmations)
+		_, err := identityService.CreateIdentity(centId, confirmations)
 		assert.Nil(t, err, "should not error out upon identity creation")
 	}
 
 	for ix := 0; ix < howMany; ix++ {
 		watchSingleIdentity := <-confirmations
 		assert.Nil(t, watchSingleIdentity.Error, "No error thrown by context")
-		id, err := identity.ResolveP2PEthereumIdentityForId(watchSingleIdentity.EthereumIdentity.CentrifugeId)
+		id, err := identityService.LookupIdentityForId(watchSingleIdentity.Identity.GetCentrifugeId())
 		assert.Nil(t, err, "should not error out upon identity resolution")
-		assert.Contains(t, submittedIds, id.CentrifugeId, "Should have the ID that was passed into create function [%v]", id.CentrifugeId)
+		assert.Contains(t, submittedIds, id.GetCentrifugeId(), "Should have the ID that was passed into create function [%v]", id.GetCentrifugeId())
 	}
 }

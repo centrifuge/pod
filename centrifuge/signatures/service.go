@@ -8,8 +8,23 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools"
 	"golang.org/x/crypto/ed25519"
+	"sync"
 	"time"
 )
+
+var signingService SigningService
+var once sync.Once
+
+func GetSigningService() *SigningService {
+	return &signingService
+}
+
+func NewSigningService(srv SigningService) {
+	once.Do(func() {
+		signingService = srv
+	})
+	return
+}
 
 type KeyInfo struct {
 	PublicKey  ed25519.PublicKey
@@ -19,32 +34,10 @@ type KeyInfo struct {
 }
 
 type SigningService struct {
-	// For now we will hard code a few known signing keys. This should later be replaced with ethereum based identities
-	// Structure is: Identity ID, Key
-	KnownKeys map[[32]byte]KeyInfo
-
 	// For simplicity we only support one active identity for now.
 	IdentityId []byte
 	PublicKey  ed25519.PublicKey
 	PrivateKey ed25519.PrivateKey
-}
-
-// LoadPublicKeys just loads public keys from the config for now until identity management does this for us.
-func (srv *SigningService) LoadPublicKeys() {
-	return
-	// TODO: this is a no-op and was merely for testing purposes. We should properly implement fetching signing keys from ethereum and caching them locally.
-	//      for k, v := range keys {
-	//	    key := keytools.GetPublicSigningKey(v)
-	//		var i [32]byte
-	//		copy(i[:], key[:32])
-	//		srv.KnownKeys = make(map[[32]byte]KeyInfo)
-	//		srv.KnownKeys[i] = KeyInfo{
-	//			PublicKey:  key,
-	//			ValidUntil: time.Time{},
-	//			ValidFrom:  time.Now(),
-	//			Identity:   []byte(k),
-	//		}
-	//	}
 }
 
 func (srv *SigningService) LoadIdentityKeyFromConfig() {
@@ -54,14 +47,8 @@ func (srv *SigningService) LoadIdentityKeyFromConfig() {
 
 // ValidateSignaturesOnDocument validates all signatures on the current document
 func (srv *SigningService) ValidateSignaturesOnDocument(doc *coredocumentpb.CoreDocument) (valid bool, err error) {
-	message := srv.createSignatureData(doc)
-	for _, signature := range doc.Signatures {
-		valid, err := srv.ValidateSignature(signature, message)
-		if !valid {
-			return valid, err
-		}
-	}
-	return true, nil
+	// TODO: Signature Validation not yet implemented
+	return false, nil
 }
 
 func (srv *SigningService) ValidateSignature(signature *coredocumentpb.Signature, message []byte) (valid bool, err error) {
@@ -84,7 +71,8 @@ func (srv *SigningService) GetIDFromKey(key ed25519.PublicKey) (id [32]byte) {
 }
 
 func (srv *SigningService) GetKeyInfo(key ed25519.PublicKey) (keyInfo KeyInfo, err error) {
-	keyInfo, exists := srv.KnownKeys[srv.GetIDFromKey(key)]
+	exists := false
+	// TODO: Get Key Info not yet implemented
 	if !exists {
 		return keyInfo, errors.New("key not found")
 	}
@@ -96,7 +84,7 @@ func (srv *SigningService) ValidateKey(identity []byte, key ed25519.PublicKey, t
 	keyInfo, err := srv.GetKeyInfo(key)
 
 	if err != nil {
-		return false, errors.New("key not found")
+		return false, err
 	}
 
 	if !bytes.Equal(identity, keyInfo.Identity) {
@@ -114,21 +102,14 @@ func (srv *SigningService) ValidateKey(identity []byte, key ed25519.PublicKey, t
 	return true, nil
 }
 
-func (srv *SigningService) createSignatureData(doc *coredocumentpb.CoreDocument) (signatureData []byte) {
-	signatureData = make([]byte, 64)
-	copy(signatureData[:32], doc.DataRoot[:32])
-	copy(signatureData[32:64], doc.NextIdentifier[:32])
-	return
-}
-
 func (srv *SigningService) MakeSignature(doc *coredocumentpb.CoreDocument, identity []byte, privateKey ed25519.PrivateKey, publicKey ed25519.PublicKey) (sig *coredocumentpb.Signature) {
-	sigArray := srv.createSignatureData(doc)
-	signature := ed25519.Sign(privateKey, sigArray)
+	signature := ed25519.Sign(privateKey, doc.SigningRoot)
 	return &coredocumentpb.Signature{EntityId: identity, PublicKey: publicKey, Signature: signature}
 }
 
 // Sign a document with a provided public key
-func (srv *SigningService) Sign(doc *coredocumentpb.CoreDocument) {
+func (srv *SigningService) Sign(doc *coredocumentpb.CoreDocument) (err error) {
 	sig := srv.MakeSignature(doc, srv.IdentityId, srv.PrivateKey, srv.PublicKey)
 	doc.Signatures = append(doc.Signatures, sig)
+	return nil
 }

@@ -28,14 +28,14 @@
 [[constraint]]
   name = "github.com/CentrifugeInc/centrifuge-protobufs"
   source = "git@github.com:CentrifugeInc/centrifuge-protobufs"
-  revision = "020198720538aaa6b2a82e053384a11987086908"
+  revision = "ca7ecd84fb2ca69d917ad881cdfbce11504836d0"
 
 [[constraint]]
   name = "github.com/Masterminds/semver"
   version = "1.4.2"
 
 [[constraint]]
-  branch = "master"
+  revision = "f8ef5392db436f8678e972810bf919c0406d1b83"
   name = "github.com/centrifuge/precise-proofs"
 
 [[constraint]]
@@ -55,7 +55,7 @@
   version = "1.1.0"
 
 [[constraint]]
-  branch = "master"
+  version="^1.4.1"
   name = "github.com/grpc-ecosystem/grpc-gateway"
   source = "git@github.com:grpc-ecosystem/grpc-gateway"
 

@@ -177,8 +177,6 @@ func TestInvoiceDocumentService_HandleCreateInvoiceProof(t *testing.T) {
 		DocumentIdentifier: identifier,
 		CurrentIdentifier:  identifier,
 		NextIdentifier:     testingutils.Rand32Bytes(),
-		// TODO: below should be actual merkle root
-		DataRoot: testingutils.Rand32Bytes(),
 	}
 	inv.CalculateMerkleRoot()
 
@@ -198,7 +196,7 @@ func TestInvoiceDocumentService_HandleCreateInvoiceProof(t *testing.T) {
 	assert.Equal(t, len(proofRequest.Fields), len(invoiceProof.FieldProofs))
 	assert.Equal(t, proofRequest.Fields[0], invoiceProof.FieldProofs[0].Property)
 	sha256Hash := sha256.New()
-	valid, err := proofs.ValidateProof(invoiceProof.FieldProofs[0], inv.Document.CoreDocument.DocumentRoot, sha256Hash)
+	valid, err := proofs.ValidateProof(invoiceProof.FieldProofs[0], inv.Document.CoreDocument.DataRoot, sha256Hash)
 	assert.True(t, valid)
 	assert.Nil(t, err)
 }
@@ -210,8 +208,6 @@ func TestInvoiceDocumentService_HandleCreateInvoiceProof_NotExistingInvoice(t *t
 		DocumentIdentifier: identifier,
 		CurrentIdentifier:  identifier,
 		NextIdentifier:     testingutils.Rand32Bytes(),
-		// TODO: below should be actual merkle root
-		DataRoot: testingutils.Rand32Bytes(),
 	}
 	inv.CalculateMerkleRoot()
 
