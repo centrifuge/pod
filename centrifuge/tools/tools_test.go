@@ -1,27 +1,26 @@
 // +build unit
 
-package tools_test
+package tools
 
 import (
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func TestRandomByte32(t *testing.T) {
-	random := tools.RandomByte32()
+	random := RandomByte32()
 	assert.NotNil(t, random, "Should receive non-nil")
 	assert.NotEqual(t, [32]byte{}, random, "Should receive a filled byte array")
 }
 
 func TestIsEmptyByte(t *testing.T) {
-	assert.True(t, tools.IsEmptyByteSlice([]byte{}))
-	assert.False(t, tools.IsEmptyByteSlice([]byte{'1', '1'}))
+	assert.True(t, IsEmptyByteSlice([]byte{}))
+	assert.False(t, IsEmptyByteSlice([]byte{'1', '1'}))
 }
 
 func TestIsEmptyByte32(t *testing.T) {
-	assert.True(t, tools.IsEmptyByte32([32]byte{}))
-	assert.False(t, tools.IsEmptyByte32([32]byte{'1', '1'}))
+	assert.True(t, IsEmptyByte32([32]byte{}))
+	assert.False(t, IsEmptyByte32([32]byte{'1', '1'}))
 }
 
 var testDataIsSameByteSlice = []struct {
@@ -63,9 +62,38 @@ var testDataIsSameByteSlice = []struct {
 
 func TestIsSameByteSlice(t *testing.T) {
 	for _, tt := range testDataIsSameByteSlice {
-		actual := tools.IsSameByteSlice(tt.a, tt.b)
+		actual := IsSameByteSlice(tt.a, tt.b)
 		assert.Equal(t, tt.expected, actual)
 	}
+}
+
+func TestCheckMultiple32BytesFilled(t *testing.T) {
+	emptySlice := make([]byte, 32)
+	filledSlice := make([]byte, 32)
+	filledSlice2 := make([]byte, 32)
+
+	for i := 0; i < 32; i++ {
+		filledSlice[i] = 0x1
+		filledSlice2[i] = 0x1
+	}
+	assert.True(t, CheckMultiple32BytesFilled(filledSlice))
+	assert.True(t, CheckMultiple32BytesFilled(filledSlice, filledSlice2))
+	assert.False(t, CheckMultiple32BytesFilled(emptySlice, filledSlice))
+	assert.False(t, CheckMultiple32BytesFilled(filledSlice, emptySlice))
+}
+
+func TestByte32ToSlice(t *testing.T) {
+	b32Empty := [32]byte{}
+	assert.Equal(t, []byte{}, Byte32ToSlice(b32Empty))
+
+	b32Full := [32]byte{}
+	expectedSlice := make([]byte, 32)
+	for i := 0; i < 32; i++ {
+		b32Full[i] = 0x1
+		expectedSlice[i] = 0x1
+	}
+	assert.Equal(t, expectedSlice, Byte32ToSlice(b32Full))
+
 }
 
 func TestSliceToByte32(t *testing.T) {
@@ -75,7 +103,7 @@ func TestSliceToByte32(t *testing.T) {
 
 	tst = []byte("12345678901234567890123456789032")
 	copy(exp[:], tst[:32])
-	act, err := tools.SliceToByte32(tst)
+	act, err := SliceToByte32(tst)
 	assert.Nil(t, err)
 	assert.EqualValues(t, exp, act)
 	assert.Nil(t, err)
@@ -83,13 +111,13 @@ func TestSliceToByte32(t *testing.T) {
 
 	tst = []byte{}
 	exp = [32]byte{}
-	act, err = tools.SliceToByte32(tst)
+	act, err = SliceToByte32(tst)
 	assert.Nil(t, err)
 	assert.EqualValues(t, exp, act, "Expected to be [%v] but got [%v]", exp, act)
 
 	tst = []byte("123456789012345678901234567890321")
 	exp = [32]byte{}
-	act, err = tools.SliceToByte32(tst)
+	act, err = SliceToByte32(tst)
 	assert.Error(t, err)
 	assert.EqualValues(t, exp, act, "Expected to be [%v] but got [%v]", exp, act)
 }
