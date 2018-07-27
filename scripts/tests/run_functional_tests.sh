@@ -30,6 +30,12 @@ vtemp3=$(eval "echo \"\$$temp3\"")
 echo "ANCHOR REGISTRY ADDRESS: ${vtemp1}"
 echo "IDENTITY REGISTRY ADDRESS: ${vtemp3}"
 echo "IDENTITY FACTORY ADDRESS: ${vtemp2}"
+
+if [ -z $vtemp1 ] || [ -z $vtemp2 ] || [ -z $vtemp3 ]; then
+    echo "One of the required contract addresses is not set. Aborting."
+    exit -1
+fi
+
 #
 #############################################################
 #

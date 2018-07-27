@@ -29,6 +29,25 @@ docker logs geth-node -f
 ./scripts/tests/run_integration_tests.sh
 ```
 
+To check on the DAG generation progress (will take about 30-45 minutes):
+```
+docker logs geth-node -f
+[...]
+INFO [07-27|22:03:25] Generating DAG in progress               epoch=1 percentage=50 elapsed=7m40.893s
+INFO [07-27|22:03:35] Generating DAG in progress               epoch=1 percentage=51 elapsed=7m51.045s
+[...]
+INFO [07-27|22:19:37] Generating DAG in progress               epoch=0 percentage=98 elapsed=6m35.368s
+INFO [07-27|22:19:40] Generating DAG in progress               epoch=0 percentage=99 elapsed=6m38.744s
+INFO [07-27|22:19:40] Generated ethash verification cache      epoch=0 elapsed=6m38.750s
+INFO [07-27|22:19:44] Generating ethash verification cache     epoch=1 percentage=93 elapsed=3.020s
+INFO [07-27|22:19:44] Generated ethash verification cache      epoch=1 elapsed=3.352s
+INFO [07-27|22:19:51] Generating DAG in progress               epoch=1 percentage=0  elapsed=7.177s
+INFO [07-27|22:19:58] Successfully sealed new block            number=1 hash=b5a50a…d9d2e9
+INFO [07-27|22:19:58] 🔨 mined potential block                  number=1 hash=b5a50a…d9d2e9
+INFO [07-27|22:19:58] Commit new mining work                   number=2 txs=0 uncles=0 elapsed=985.5µs
+```
+
+When you see `Commit new mining work` for the first time, then it is time to run the functional tests.
 
 Make sure you have docker-compose installed, usually comes bundled with Mac OS Docker. Otherwise: https://docs.docker.com/compose/install/ 
 
@@ -52,7 +71,15 @@ To run functional tests a few other components need to be set up.
 - Local account keys need to be set and able to call the right contracts on Ethereum
 
 To do this setup + run all the tests (unit, integration, functional) use the `test_wrapper.sh` script.
-This will take a while to execute - especially the first time you run it as it will set up geth via docker, check out the Solidity contracts, etc.
+
+If you are running this for the first time, make sure to have run
+```bash
+./scripts/docker/run.sh init
+./scripts/docker/run.sh mine
+```
+beforehand and made sure that the DAG generation was completed as described in the setup chapter above.
+
+Then run the whole test-suite with
 ```bash
 ./scripts/test_wrapper.sh
 ```
@@ -61,6 +88,7 @@ This will take a while to execute - especially the first time you run it as it w
 ### Troubleshooting functional test setup
 
 One of the most-likely issues during your first run of the `./scripts/test_wrapper.sh` will be that your geth node has not yet synced (if run against rinkeby) or finished building the DAG (if running locally).
+This issue will likely show up with an error about gas limits. That's a misleading error by Truffle. Check on your DAG generation status via `docker logs geth-node -f`. If the DAG is still generating, wait.
 
 Another case (if you ran your geth node manually via `./scripts/docker/run.sh` - instead of using `./scripts/test_wrapper.sh` - make sure to run it with the `mine` parameter instead of `local`. Otherwise it will not mine new transactions.
 

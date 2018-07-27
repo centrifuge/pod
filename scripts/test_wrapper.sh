@@ -12,7 +12,6 @@ fi
 
 GETH_DOCKER_CONTAINER_NAME="geth-node"
 GETH_DOCKER_CONTAINER_WAS_RUNNING=`docker ps -a --filter "name=${GETH_DOCKER_CONTAINER_NAME}" --filter "status=running" --quiet`
-echo "Running: [${GETH_DOCKER_CONTAINER_WAS_RUNNING}]"
 
 # Code coverage is stored in coverage.txt
 echo "" > coverage.txt
@@ -63,9 +62,17 @@ cd ${CENT_ETHEREUM_CONTRACTS_DIR}
 # Clear up previous build
 rm -Rf ./build
 
+
+# TODO move this out into the test dependencies folder instead of doing it here
+LOCAL_ETH_CONTRACT_ADDRESSES="${CENT_ETHEREUM_CONTRACTS_DIR}/deployments/local.json"
+if [ ! -e $LOCAL_ETH_CONTRACT_ADDRESSES ]; then
+    echo "$LOCAL_ETH_CONTRACT_ADDRESSES doesn't exist. Probably no migrations run yet. Forcing migrations."
+    FORCE_MIGRATE='true'
+fi
+
 if [[ "X${FORCE_MIGRATE}" == "Xtrue" ]];
 then
-    echo "Running the Solidity contracts migrations"
+    echo "Running the Solidity contracts migrations for local geth"
     ${CENT_ETHEREUM_CONTRACTS_DIR}/scripts/migrate.sh local
 else
     echo "Not migrating the Solidity contracts"
@@ -81,8 +88,14 @@ if [ $status -eq 0 ]; then
   statusAux=0
   for path in ${local_dir}/tests/*; do
     [ -x "${path}" ] || continue # if not an executable, skip
+
+    echo "Executing test suite [${path}]"
     ./$path
     statusAux="$(( $statusAux | $? ))"
+    if [ $statusAux -ne 0 ]; then
+        echo "Test suite encountered an error. Code [${statusAux}]. Aborting tests."
+        break
+    fi
   done
   # Store status of tests
   status=$statusAux
