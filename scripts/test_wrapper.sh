@@ -50,7 +50,7 @@ if [ ! -d ${CENT_ETHEREUM_CONTRACTS_DIR} ]; then
     echo "Due to a fresh checkout of the contracts, requesting a force of the Solidity migrations"
     if [ -z ${FORCE_MIGRATE} ]; then
         FORCE_MIGRATE='true'
-    elif [ ${FORCE_MIGRATE} <> 'true' ]; then
+    elif [ ${FORCE_MIGRATE} != 'true' ]; then
         echo "Trying to force migrations but variable is already set to [${FORCE_MIGRATE}]. Error out."
         exit -1
     fi
