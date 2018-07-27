@@ -43,16 +43,32 @@ if [ ! -d ${CENT_ETHEREUM_CONTRACTS_DIR} ]; then
 	# git clone here instead of `go get` as `go get` defaults back to HTTPS which causes issues
     # with certificate-based github authentication
     mkdir -p ${CENT_ETHEREUM_CONTRACTS_DIR}
-    git clone git@github.com:CentrifugeInc/centrifuge-ethereum-contracts.git ${CENT_ETHEREUM_CONTRACTS_DIR}
+    git clone -b 86freshstart git@github.com:pstehlik/centrifuge-ethereum-contracts.git ${CENT_ETHEREUM_CONTRACTS_DIR}
+
+    # Assure that all the dependencies are installed
+    npm install --cwd ${CENT_ETHEREUM_CONTRACTS_DIR} --prefix=${CENT_ETHEREUM_CONTRACTS_DIR}
+
+    echo "Due to a fresh checkout of the contracts, requesting a force of the Solidity migrations"
+    if [ -z ${FORCE_MIGRATE} ]; then
+        FORCE_MIGRATE='true'
+    elif [ ${FORCE_MIGRATE} <> 'true' ]; then
+        echo "Trying to force migrations but variable is already set to [${FORCE_MIGRATE}]. Error out."
+        exit -1
+    fi
 fi
+
+# TODO - ideally we would avoid 'cd-ing' into another directory, but in this case
+# `truffle migrate` will fail if not executed in the sub-dir
 cd ${CENT_ETHEREUM_CONTRACTS_DIR}
 # Clear up previous build
 rm -Rf ./build
-npm install
 
 if [[ "X${FORCE_MIGRATE}" == "Xtrue" ]];
 then
-  ./scripts/migrate.sh local
+    echo "Running the Solidity contracts migrations"
+    ${CENT_ETHEREUM_CONTRACTS_DIR}/scripts/migrate.sh local
+else
+    echo "Not migrating the Solidity contracts"
 fi
 status=$?
 

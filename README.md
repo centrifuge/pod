@@ -7,56 +7,62 @@ Project Structure taken from: https://github.com/golang-standards/project-layout
 Setup
 -----
 
-```bash,
+```bash
 brew install jq
+npm install -g truffle
 mkdir -p $GOPATH/src/github.com/CentrifugeInc/go-centrifuge/
 git clone git@github.com:CentrifugeInc/go-centrifuge.git $GOPATH/src/github.com/CentrifugeInc/go-centrifuge
 ```
 
 Make sure you have docker-compose installed, usually comes bundled with Mac OS Docker. Otherwise: https://docs.docker.com/compose/install/ 
 
-Build, test & run
+Test
 -----------------
 
-Build/install:
-```
-cd $GOPATH/src/github.com/CentrifugeInc/go-centrifuge
-make install
-```
-
-Run Unit+Integration Tests:
-```
-./scripts/test_wrapper.sh
-```
-This will:
-* Start up a local testnet
-* Run contract migration (fetched by ENV_VAR CENT_ETHEREUM_CONTRACTS_DIR under `scripts/test-dependencies/test-ethereum/env_vars.sh` )
-* Run unit + integration tests
-
-Run only Unit Tests:
-```
+Run unit tests
+```bash
 ./scripts/tests/run_unit_tests.sh
 ```
-Run only Integration Tests:
-```
+
+Run only integration Tests:
+```bash
 ./scripts/tests/run_integration_tests.sh
 ```
 
-If you want to run tests continuously when a file changes, you first need to install reflex:
+To run functional tests a few other components need to be set up.
+* Geth node needs to be up and running
+* Contracts need to be deployed
+..* Run contract migration (fetched by ENV_VAR CENT_ETHEREUM_CONTRACTS_DIR under `scripts/test-dependencies/test-ethereum/env_vars.sh` )
+* Local account keys need to be set and able to call the right contracts on Ethereum
 
+To do this setup + run all the tests (unit, integration, functional) use the `test_wrapper.sh` script.
+```bash
+./scripts/test_wrapper.sh
 ```
+
+If you want to run tests continuously when a file changes, you can use [reflex](https://github.com/cespare/reflex):
+```bash
 go get github.com/cespare/reflex
 ```
 
 Then run (only for unit tests). It is a good idea to exclude the `vendor` and ``.idea` folders from scanning by reflex as it hogs a lot of resources for no good reason.
-
-```
+```bash
 reflex -R '(^|/)vendor/|(^|/)\\.idea/' -- go test ./centrifuge/... -tags=unit
 ```
 
 Or run for specific tests only:
-```
+```bash
 reflex -R '(^|/)vendor/|(^|/)\\.idea/' -- go test ./centrifuge/invoice/... -tags=unit
+```
+
+
+Build
+-----------------
+
+Build & install the Centrifuge OS Node
+```bash
+cd $GOPATH/src/github.com/CentrifugeInc/go-centrifuge
+make install
 ```
 
 
@@ -64,27 +70,19 @@ Run a Geth node locally against Integration or Rinkeby environments
 --------------------------------------------------------------------------
 
 We make use of Docker Compose locally as it is easy and clear to bundle volume and environment configurations:
-Docker Compose files live here:
-`./scripts/docker`
+Docker Compose files live in `./scripts/docker`
 
-#### Run as Local Mining mode ####
-`./scripts/test-dependencies/test-ethereum/run.sh`
+#### Run as local node with mining enabled
+The first time, initialize the config" `./scripts/docker/run.sh init`
 
-#### Run local peer connected to Integration ####
-First we need to initialize the Ethereum Data Dir:
-`./scripts/docker/run.sh init`
-Now we run the custom local node that by default points to the Integration node:
-`./scripts/docker/run.sh local`
+Then run the local node via `./scripts/docker/run.sh local`
 By default it uses:
 * ETH_DATADIR=${HOME}/Library/Ethereum
 * RPC_PORT=9545
 * WS_PORT=9546
 
-Override those when needed
 
-Let it catch up for a while until is fully synced with the remote peer
-
-#### Run local peer connected to Rinkeby ####
+#### Run local peer connected to Rinkeby
 Let's run the rinkeby local node:
 `./scripts/docker/run.sh rinkeby`
 By default it uses:
@@ -95,9 +93,21 @@ Override those when needed
 
 Let it catch up for a while until is fully synced with the remote peer
 
+#### Checking on your local geth node
+To see what's up with your local geth node (e.g. to see how the DAG generation is going or if it is mining) use
+```bash
+docker logs geth-node -f
+```
+
+#### Attaching to your local geth node
+In order to attach via geth to this node running in docker run
+```bash
+geth attach ws://localhost:9546
+```
+
  Run Integration Tests against Local/Integration/Rinkeby Environments
 -------------------------------------------------------------------------
-#### Configure local mining + run integration/functional tests ####
+#### Configure local mining + run integration/functional tests
   - Remove running container if any:
     - docker rm -f geth-node
   - Clear up ~/Library/Ethereum/8383 folder (keep in mind this will clear up all previous data you had before)
@@ -116,7 +126,7 @@ Let it catch up for a while until is fully synced with the remote peer
     - To run only integration tests:
       - ./scripts/tests/run_integration_tests.sh
       
-#### Configure node to point to integration + run integration/functional tests ####
+#### Configure node to point to integration + run integration/functional tests
   - Remove running container if any:
     - docker rm -f geth-node
   - Clear up ~/Library/Ethereum/8383 folder (keep in mind this will clear up all previous data you had before) (no need if node has synced before with peer)
@@ -132,7 +142,7 @@ Let it catch up for a while until is fully synced with the remote peer
     - To run only integration tests (3-4 mins):
       - CENT_CENTRIFUGENETWORK='centrifugeRussianhillEthIntegration' TEST_TARGET_ENVIRONMENT='integration' ./scripts/tests/run_integration_tests.sh
 
-#### Configure node to point to rinkeby + run integration/functional tests ####
+#### Configure node to point to rinkeby + run integration/functional tests
   - Remove running container if any:
     - docker rm -f geth-node
   - In go-centrifuge project run:
@@ -149,24 +159,15 @@ Let it catch up for a while until is fully synced with the remote peer
     - To run only integration tests:
       - CENT_ETHEREUM_TXPOOLACCESSENABLED=false CENT_ETHEREUM_NODEURL='wss://rinkeby.infura.io/ws/MtCWERMbJtnqPKI8co84' CENT_CENTRIFUGENETWORK='centrifugeRussianhillEthRinkeby' TEST_TARGET_ENVIRONMENT='rinkeby' CENT_ETHEREUM_ACCOUNTS_MAIN_KEY='$JSON_KEY' CENT_ETHEREUM_ACCOUNTS_MAIN_PASSWORD="$PASS" CENT_ETHEREUM_ACCOUNTS_MAIN_ADDRESS="$ADDR" ./scripts/tests/run_integration_tests.sh
 
+
 Why you should test with a "real" Ethereum
 ------------------------------------------
 Why you should not run `testrpc` for testing with go-ethereum clients:
 * Transaction IDs are randomly generated and you can not rely on finding your own transactions based on the .Hash() function.
-** https://github.com/trufflesuite/ganache-cli/issues/387
+..* https://github.com/trufflesuite/ganache-cli/issues/387
 * It is not possible to send more than one transaction per testrpc start as testrpc returns the pending transaction count erroneously with leading 0s - this freaks out the hex decoding and it breaks. Essentially testrpc returns for a transaction count of 1 `0x01` whereas _real_ geth returns `0x1`
 
 Save yourself some hassle and use a local testnet running
-
-Start your local testnet (default port 9545):
-```
-./scripts/test-dependencies/test-ethereum/run.sh
-```
-
-In order to attach via geth to this node running in docker run
-```
-geth attach ws://localhost:9546
-```
 
 
 Run very simple local ethscan
@@ -176,6 +177,7 @@ Follow instructions here: https://github.com/carsenk/explorer
 Will need to modify `scripts/test-dependencies/test-ethereum/run.sh` to add cors flag
 
 **Note that is a pretty simple version but can list blocks and transactions**
+
 
 Modify Default Config File
 --------------------------
@@ -190,6 +192,7 @@ Then run go generate:
 ```
 go generate ./centrifuge/config/configuration.go
 ```
+
 
 Ethereum Contract Bindings
 --------------------------
