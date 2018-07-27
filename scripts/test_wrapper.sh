@@ -52,6 +52,7 @@ npm install
 
 if [[ "X${FORCE_MIGRATE}" == "Xtrue" ]];
 then
+  echo "MIGRATING"
   ./scripts/migrate.sh local
 fi
 status=$?

@@ -5,11 +5,12 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/documenttypes"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/centrifuge/precise-proofs/proofs"
+	proofspb "github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	logging "github.com/ipfs/go-log"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 )
 
 var log = logging.Logger("purchaseorder")
@@ -86,12 +87,11 @@ func (order *PurchaseOrder) CalculateMerkleRoot() error {
 	if err != nil {
 		return err
 	}
-	// TODO: below should actually be stored as CoreDocument.DataRoot
-	order.Document.CoreDocument.DocumentRoot = tree.RootHash()
+	order.Document.CoreDocument.DataRoot = tree.RootHash()
 	return nil
 }
 
-func (order *PurchaseOrder) CreateProofs(fields []string) (proofs []*proofs.Proof, err error) {
+func (order *PurchaseOrder) CreateProofs(fields []string) (proofs []*proofspb.Proof, err error) {
 	tree, err := order.getDocumentTree()
 	if err != nil {
 		log.Error(err)
