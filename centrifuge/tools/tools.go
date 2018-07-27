@@ -3,9 +3,6 @@ package tools
 import (
 	"crypto/rand"
 	"errors"
-	"fmt"
-	"math"
-	"strings"
 )
 
 // SliceToByte32 converts a 32 byte slice to an array. Will thorw error if the slice is too long
