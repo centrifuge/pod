@@ -140,6 +140,7 @@ func (cd *CoreDocumentProcessor) ValidateCoreDocument(document *coredocumentpb.C
 }
 
 func (cd *CoreDocumentProcessor) getDocumentTree(document *coredocumentpb.CoreDocument) (tree *proofs.DocumentTree, err error) {
+	// TODO: this currently panics if salts are not filled. It should return an error instead. Add test case for that
 	t := proofs.NewDocumentTree()
 	tree = &t
 	sha256Hash := sha256.New()
