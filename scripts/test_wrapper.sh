@@ -93,8 +93,7 @@ if [ $status -eq 0 ]; then
     ./$path
     statusAux="$(( $statusAux | $? ))"
     if [ $statusAux -ne 0 ]; then
-        echo "Test suite encountered an error. Code [${statusAux}]. Aborting tests."
-        break
+        echo "Test suite encountered an error/fail. Status: [${statusAux}]."
     fi
   done
   # Store status of tests
@@ -119,5 +118,6 @@ fi
 ############################################################
 
 ################# Propagate test status ####################
+echo "The test suite overall is exiting with status [$status]"
 exit $status
 ############################################################
