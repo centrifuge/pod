@@ -7,7 +7,7 @@ source "${PARENT_DIR}/scripts/test-dependencies/test-ethereum/env_vars.sh"
 
 ################# Prepare for tests ########################
 # Get latest Anchor Registry Address from contract json
-export TEST_TIMEOUT=${TEST_TIMEOUT:-30s}
+export TEST_TIMEOUT=${TEST_TIMEOUT:-600s}
 export TEST_TARGET_ENVIRONMENT=${TEST_TARGET_ENVIRONMENT:-'local'}
 export CENT_CENTRIFUGENETWORK=${CENT_CENTRIFUGENETWORK:-'testing'}
 
@@ -30,18 +30,20 @@ vtemp3=$(eval "echo \"\$$temp3\"")
 echo "ANCHOR REGISTRY ADDRESS: ${vtemp1}"
 echo "IDENTITY REGISTRY ADDRESS: ${vtemp3}"
 echo "IDENTITY FACTORY ADDRESS: ${vtemp2}"
+
+if [ -z $vtemp1 ] || [ -z $vtemp2 ] || [ -z $vtemp3 ]; then
+    echo "One of the required contract addresses is not set. Aborting."
+    exit -1
+fi
+
 #
 #############################################################
 #
-echo "Running Integration Ethereum Tests against [${CENT_ETHEREUM_NODEURL}] with TIMEOUT [${TEST_TIMEOUT}]"
-THESE_TESTS='./...'
-if [ -n  ${1} ]; then
-    THESE_TESTS="${1}"
-fi
+echo "Running Functional Ethereum Tests against [${CENT_ETHEREUM_NODEURL}] with TIMEOUT [${TEST_TIMEOUT}]"
 
 status=$?
-for d in $(go list $THESE_TESTS | grep -v vendor); do
-    output=$(go test ${THESE_TESTS} -v -coverprofile=profile.out -covermode=atomic -tags=ethereum -timeout ${TEST_TIMEOUT} $d)
+for d in $(go list ./... | grep -v vendor); do
+    output=$(go test -v -coverprofile=profile.out -covermode=atomic -tags=ethereum -timeout ${TEST_TIMEOUT} $d)
     if [ $? -ne 0 ]; then
       status=1
     fi

@@ -12,7 +12,6 @@ fi
 
 GETH_DOCKER_CONTAINER_NAME="geth-node"
 GETH_DOCKER_CONTAINER_WAS_RUNNING=`docker ps -a --filter "name=${GETH_DOCKER_CONTAINER_NAME}" --filter "status=running" --quiet`
-echo "Running: [${GETH_DOCKER_CONTAINER_WAS_RUNNING}]"
 
 # Code coverage is stored in coverage.txt
 echo "" > coverage.txt
@@ -44,16 +43,39 @@ if [ ! -d ${CENT_ETHEREUM_CONTRACTS_DIR} ]; then
     # with certificate-based github authentication
     mkdir -p ${CENT_ETHEREUM_CONTRACTS_DIR}
     git clone git@github.com:CentrifugeInc/centrifuge-ethereum-contracts.git ${CENT_ETHEREUM_CONTRACTS_DIR}
+
+    # Assure that all the dependencies are installed
+    npm install --cwd ${CENT_ETHEREUM_CONTRACTS_DIR} --prefix=${CENT_ETHEREUM_CONTRACTS_DIR}
+
+    echo "Due to a fresh checkout of the contracts, requesting a force of the Solidity migrations"
+    if [ -z ${FORCE_MIGRATE} ]; then
+        FORCE_MIGRATE='true'
+    elif [ ${FORCE_MIGRATE} != 'true' ]; then
+        echo "Trying to force migrations but variable is already set to [${FORCE_MIGRATE}]. Error out."
+        exit -1
+    fi
 fi
+
+# TODO - ideally we would avoid 'cd-ing' into another directory, but in this case
+# `truffle migrate` will fail if not executed in the sub-dir
 cd ${CENT_ETHEREUM_CONTRACTS_DIR}
 # Clear up previous build
 rm -Rf ./build
-npm install
+
+
+# TODO move this out into the test dependencies folder instead of doing it here
+LOCAL_ETH_CONTRACT_ADDRESSES="${CENT_ETHEREUM_CONTRACTS_DIR}/deployments/local.json"
+if [ ! -e $LOCAL_ETH_CONTRACT_ADDRESSES ]; then
+    echo "$LOCAL_ETH_CONTRACT_ADDRESSES doesn't exist. Probably no migrations run yet. Forcing migrations."
+    FORCE_MIGRATE='true'
+fi
 
 if [[ "X${FORCE_MIGRATE}" == "Xtrue" ]];
 then
-  echo "MIGRATING"
-  ./scripts/migrate.sh local
+    echo "Running the Solidity contracts migrations for local geth"
+    ${CENT_ETHEREUM_CONTRACTS_DIR}/scripts/migrate.sh local
+else
+    echo "Not migrating the Solidity contracts"
 fi
 status=$?
 
@@ -66,6 +88,8 @@ if [ $status -eq 0 ]; then
   statusAux=0
   for path in ${local_dir}/tests/*; do
     [ -x "${path}" ] || continue # if not an executable, skip
+
+    echo "Executing test suite [${path}]"
     ./$path
     statusAux="$(( $statusAux | $? ))"
   done
@@ -91,5 +115,6 @@ fi
 ############################################################
 
 ################# Propagate test status ####################
+echo "The test suite overall is exiting with status [$status]"
 exit $status
 ############################################################
