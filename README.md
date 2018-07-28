@@ -10,7 +10,7 @@ Project Structure taken from: https://github.com/golang-standards/project-layout
 ```bash
 # dependencies and checkout of code
 brew install jq
-npm install -g truffle
+npm install -g truffle@4.0.4
 mkdir -p $GOPATH/src/github.com/CentrifugeInc/go-centrifuge/
 git clone git@github.com:CentrifugeInc/go-centrifuge.git $GOPATH/src/github.com/CentrifugeInc/go-centrifuge
 

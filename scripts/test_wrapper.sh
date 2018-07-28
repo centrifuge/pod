@@ -92,9 +92,6 @@ if [ $status -eq 0 ]; then
     echo "Executing test suite [${path}]"
     ./$path
     statusAux="$(( $statusAux | $? ))"
-    if [ $statusAux -ne 0 ]; then
-        echo "Test suite encountered an error/fail. Status: [${statusAux}]."
-    fi
   done
   # Store status of tests
   status=$statusAux
