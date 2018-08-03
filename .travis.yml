@@ -9,6 +9,7 @@ services:
   - docker
 
 env:
+  - PROTOTOOL_VERSION=0.4.0 PROTOTOOL_BIN=~/bin/0.4.0/prototool
   matrix:
     - DEPCACHEDIR=/tmp/depcache IMAGE_NAME=centrifugeio/go-centrifuge
   global:
@@ -17,6 +18,8 @@ env:
 
 cache:
   # Cache DAG data
+  - ~/bin/
+  - ~/.cache/prototool/Linux/x86_64/protobuf/
   - /tmp/geth_test_network/8383/.ethash
   - /tmp/depcache
 
@@ -24,10 +27,17 @@ before_install:
   - npm install -g truffle@4.0.4
 
 install:
+  - mkdir -p ~/bin
+  - PROTOTOOL_VERSION=$PROTOTOOL_VERSION ./scripts/install_prototool.sh
   - make install
 
 jobs:
   include:
+    - stage: protobufs-check
+      script:
+        - make lint
+        - make gen_go
+        - echo "Checking that `prototool gen` doesn't result in a modified git tree" && git diff --exit-code centrifuge/protobufs/gen
     - stage: test
       script: scripts/test_wrapper.sh
       after_success:
