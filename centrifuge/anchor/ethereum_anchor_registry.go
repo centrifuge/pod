@@ -120,12 +120,12 @@ func setUpRegistrationEventListener(ethRegistryContract WatchAnchorRegistered, f
 	_, err = ethRegistryContract.WatchAnchorRegistered(watchOpts, anchorRegisteredEvents, []common.Address{from}, [][32]byte{anchorToBeRegistered.AnchorID}, nil)
 	if err != nil {
 		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for anchor registration", 1)
-		log.Panicf(wError.Error())
+		log.Errorf(wError.Error())
 	}
 	return
 }
 
-// waitAndRouteAnchorRegistrationEvent notififies the confirmations channel whenever the anchor registration is being noted as Ethereum event
+// waitAndRouteAnchorRegistrationEvent notifies the confirmations channel whenever the anchor registration is being noted as Ethereum event
 func waitAndRouteAnchorRegistrationEvent(conf <-chan *EthereumAnchorRegistryContractAnchorRegistered, ctx context.Context, confirmations chan<- *WatchAnchor, pushThisAnchor *Anchor) {
 	for {
 		select {
