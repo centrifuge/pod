@@ -3,7 +3,6 @@
 package identity_test
 
 import (
-	"fmt"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
@@ -37,7 +36,7 @@ func TestCreateAndLookupIdentity_Integration(t *testing.T) {
 	wrongCentrifugeId[0] = 0x0
 	wrongCentrifugeId[1] = 0x0
 	wrongCentrifugeId[2] = 0x0
-	wrongCentrifugeId[2] = 0x0
+	wrongCentrifugeId[3] = 0x0
 
 	confirmations := make(chan *identity.WatchIdentity, 1)
 
@@ -54,27 +53,21 @@ func TestCreateAndLookupIdentity_Integration(t *testing.T) {
 	assert.Equal(t, centrifugeId, id.GetCentrifugeId(), "CentrifugeId Should match provided one")
 
 	wrongId, err := identityService.LookupIdentityForId(wrongCentrifugeId)
-	assert.Nil(t, err, "should not error out when resolving identity")
+	assert.NotNil(t, err, "should error out when resolving wrong identity")
 
 	// CheckIdentityExists
 	exists, err := id.CheckIdentityExists()
 	assert.Nil(t, err, "should not error out when looking for correct identity")
 	assert.True(t, exists)
 
-	exists, err = identityService.CheckIdentityExists(centrifugeId)
-	assert.Nil(t, err, "should not error out when looking for correct identity")
-	assert.True(t, exists)
-
-	fmt.Errorf("------------------------------------------\n\n\nSHOULD FAIL BELOW")
-
 	exists, err = identityService.CheckIdentityExists(wrongCentrifugeId)
-	assert.Nil(t, err, "should not err when looking for incorrect identity")
+	assert.NotNil(t, err, "should err when looking for incorrect identity")
 	assert.False(t, exists)
 
 	wrongId = identity.NewEthereumIdentity()
 	wrongId.SetCentrifugeId(wrongCentrifugeId)
 	exists, err = wrongId.CheckIdentityExists()
-	assert.Nil(t, err, "should not error out when missing identity")
+	assert.NotNil(t, err, "should error out when missing identity")
 	assert.False(t, exists)
 
 	// Add Key
@@ -86,8 +79,8 @@ func TestCreateAndLookupIdentity_Integration(t *testing.T) {
 	assert.Equal(t, centrifugeId, watchReceivedIdentity.Identity.GetCentrifugeId(), "Resulting Identity should have the same ID as the input")
 
 	recKey, err := id.GetLastKeyForType(1)
-	assert.Equal(t, recKey, key)
 	assert.Nil(t, err)
+	assert.Equal(t, key, recKey)
 
 	_, err = id.GetLastKeyForType(2)
 	assert.NotNil(t, err)
