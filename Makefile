@@ -18,8 +18,23 @@ install-deps: ## Install Dependencies
 	@command -v dep >/dev/null 2>&1 || go get -u github.com/golang/dep/...
 	@dep ensure
 
+lint: ## runs prototool lint
+	$(PROTOTOOL_BIN) lint
+
+gen_go: ## generates the go bindings
+	$(PROTOTOOL_BIN) gen
+
+gen_proto: ## runs prototool all
+	$(PROTOTOOL_BIN) all
+
+vendorinstall: ## Installs all protobuf dependencies with go-vendorinstall
+	go install github.com/CentrifugeInc/go-centrifuge/vendor/github.com/roboll/go-vendorinstall
+	go-vendorinstall github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
+	go-vendorinstall github.com/golang/protobuf/protoc-gen-go
+	go-vendorinstall github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
+
 install: ## Builds and Install binary for development
-install: install-deps
+install: install-deps vendorinstall
 	@go install ./centrifuge/
 
 install-xgo: ## Install XGO
