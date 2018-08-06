@@ -3,7 +3,7 @@ package server
 import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/healthcheck/healthcheckcontroller"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/healthcheck/controller"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/controller"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/protobufs/gen/go/health"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder/controller"
