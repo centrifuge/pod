@@ -13,7 +13,7 @@ RUN apk update && apk add --no-cache jq curl
 
 WORKDIR /root/
 COPY --from=builder /go/bin/centrifuge .
-COPY deployments/entrypoint.sh /root
+COPY docker/files/entrypoint.sh /root
 
 VOLUME ["/root/config"]
 
