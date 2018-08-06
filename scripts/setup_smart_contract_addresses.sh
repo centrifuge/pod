@@ -1,11 +1,6 @@
 #!/usr/bin/env bash
 
-## run this so that latest local code is rebuilt
-make install
-
-################# Prepare for run ########################
-# Get latest Anchor Registry Address from contract json
-export CENT_ETHEREUM_CONTRACTS_DIR=$GOPATH/src/github.com/CentrifugeInc/centrifuge-ethereum-contracts
+# Get latest Anchor and Identity Registry Addresses from contract json
 export TEST_TIMEOUT=${TEST_TIMEOUT:-600s}
 export TEST_TARGET_ENVIRONMENT=${TEST_TARGET_ENVIRONMENT:-'local'}
 export CENT_CENTRIFUGENETWORK=${CENT_CENTRIFUGENETWORK:-'testing'}
@@ -34,5 +29,3 @@ if [ -z $vtemp1 ] || [ -z $vtemp2 ] || [ -z $vtemp3 ]; then
     echo "One of the required contract addresses is not set. Aborting."
     exit -1
 fi
-
-centrifuge run --config example/resources/centrifuge_example.yaml

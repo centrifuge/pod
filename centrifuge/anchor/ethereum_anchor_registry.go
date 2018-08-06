@@ -120,7 +120,7 @@ func setUpRegistrationEventListener(ethRegistryContract WatchAnchorRegistered, f
 	_, err = ethRegistryContract.WatchAnchorRegistered(watchOpts, anchorRegisteredEvents, []common.Address{from}, [][32]byte{anchorToBeRegistered.AnchorID}, nil)
 	if err != nil {
 		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for anchor registration", 1)
-		log.Errorf("Failed to watch anchore registered event: %v", wError.Error())
+		log.Errorf("Failed to watch anchor registered event: %v", wError.Error())
 	}
 	return
 }
