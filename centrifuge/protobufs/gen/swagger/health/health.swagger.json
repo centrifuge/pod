@@ -37,7 +37,10 @@
     "healthPong": {
       "type": "object",
       "properties": {
-        "message": {
+        "version": {
+          "type": "string"
+        },
+        "network": {
           "type": "string"
         }
       },

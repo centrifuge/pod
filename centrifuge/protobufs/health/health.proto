@@ -13,7 +13,8 @@ import "protoc-gen-swagger/options/annotations.proto";
 
 // Pong contains basic information about the node
 message Pong {
-  string message = 1;
+  string version = 1;
+  string network = 2;
 }
 
 // HealthCheckService contains Ping rpc for node health check
