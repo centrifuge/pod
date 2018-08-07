@@ -1,19 +1,19 @@
 centrifugeNetwork: centrifugeRussianhillEthRinkeby
 storage:
-  path: /tmp/centrifuge_data.leveldb
+  path: /tmp/centrifuge_data_aux.leveldb
 
 nodeHostname: localhost
-nodePort: 8082
+nodePort: 8083
 
 identityId: 1
 
 keys:
   signing:
-    publicKey: example/resources/signingKey.pub.pem
-    privateKey: example/resources/signingKey.key.pem
+    publicKey: example/resources/signature1.pub.pem
+    privateKey: example/resources/signature1.key.pem
   
 p2p:
-  port: 38202
+  port: 38203
 
 ethereum:
   accounts:

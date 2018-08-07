@@ -267,3 +267,12 @@ import(
 	"github.com/ethereum/go-ethereum/event"
 )
 ```
+
+## Protobufs bindings
+
+Create any new `.proto` files in its own package under `protobufs` folder.
+Generating go bindings and swagger with the following command
+
+```bash
+make gen_proto
+```
