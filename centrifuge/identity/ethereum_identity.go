@@ -14,6 +14,7 @@ import (
 	"github.com/go-errors/errors"
 	logging "github.com/ipfs/go-log"
 	"math/big"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/utils"
 )
 
 var log = logging.Logger("identity")
@@ -271,7 +272,8 @@ func setUpKeyRegisteredEventListener(ethCreatedContract WatchKeyRegistered, iden
 	//only setting up a channel of 1 notification as there should always be only one notification coming for this
 	//single key being registered
 	keyAddedEvents := make(chan *EthereumIdentityContractKeyRegistered, 1)
-	go waitAndRouteKeyRegistrationEvent(keyAddedEvents, watchOpts.Context, confirmations, identity)
+	cancel := make(chan interface{})
+	go waitAndRouteKeyRegistrationEvent(keyAddedEvents, watchOpts.Context, confirmations, identity, cancel)
 
 	b32Key, err := tools.SliceToByte32(key)
 	if err != nil {
@@ -282,11 +284,12 @@ func setUpKeyRegisteredEventListener(ethCreatedContract WatchKeyRegistered, iden
 	//TODO do something with the returned Subscription that is currently simply discarded
 	// Somehow there are some possible resource leakage situations with this handling but I have to understand
 	// Subscriptions a bit better before writing this code.
-
 	_, err = ethCreatedContract.WatchKeyRegistered(watchOpts, keyAddedEvents, []*big.Int{bigInt}, [][32]byte{b32Key})
 	if err != nil {
 		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for identity registration", 1)
 		log.Errorf(wError.Error())
+		utils.SendNonBlocking(true, cancel)
+		return wError
 	}
 	return
 }
@@ -318,7 +321,7 @@ func setUpRegistrationEventListener(ethCreatedContract WatchIdentityCreated, ide
 }
 
 // waitAndRouteKeyRegistrationEvent notifies the confirmations channel whenever the key has been added to the identity and has been noted as Ethereum event
-func waitAndRouteKeyRegistrationEvent(conf <-chan *EthereumIdentityContractKeyRegistered, ctx context.Context, confirmations chan<- *WatchIdentity, pushThisIdentity Identity) {
+func waitAndRouteKeyRegistrationEvent(conf <-chan *EthereumIdentityContractKeyRegistered, ctx context.Context, confirmations chan<- *WatchIdentity, pushThisIdentity Identity, cancel <-chan interface{}) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -328,6 +331,9 @@ func waitAndRouteKeyRegistrationEvent(conf <-chan *EthereumIdentityContractKeyRe
 		case res := <-conf:
 			log.Infof("Received KeyRegistered event from [%s] for keyType: %x and value: %x\n", pushThisIdentity, res.KType, res.Key)
 			confirmations <- &WatchIdentity{pushThisIdentity, nil}
+			return
+		case <-cancel:
+			log.Info("Key registration event handling was cancelled by upstream")
 			return
 		}
 	}
