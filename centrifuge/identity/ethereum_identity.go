@@ -14,8 +14,7 @@ import (
 	"github.com/go-errors/errors"
 	logging "github.com/ipfs/go-log"
 	"math/big"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/utils"
-)
+	)
 
 var log = logging.Logger("identity")
 
@@ -266,14 +265,13 @@ func sendIdentityCreationTransaction(identityFactory IdentityFactory, opts *bind
 
 func setUpKeyRegisteredEventListener(ethCreatedContract WatchKeyRegistered, identity *EthereumIdentity, keyType int, key []byte, confirmations chan<- *WatchIdentity) (err error) {
 	//listen to this particular key being mined/event is triggered
-	watchOpts := &bind.WatchOpts{}
-	watchOpts.Context = ethereum.DefaultWaitForTransactionMiningContext()
+	ctx, cancelFunc := ethereum.DefaultWaitForTransactionMiningContext()
+	watchOpts := &bind.WatchOpts{Context:ctx}
 
 	//only setting up a channel of 1 notification as there should always be only one notification coming for this
 	//single key being registered
 	keyAddedEvents := make(chan *EthereumIdentityContractKeyRegistered, 1)
-	cancel := make(chan interface{})
-	go waitAndRouteKeyRegistrationEvent(keyAddedEvents, watchOpts.Context, confirmations, identity, cancel)
+	go waitAndRouteKeyRegistrationEvent(keyAddedEvents, watchOpts.Context, confirmations, identity)
 
 	b32Key, err := tools.SliceToByte32(key)
 	if err != nil {
@@ -288,7 +286,7 @@ func setUpKeyRegisteredEventListener(ethCreatedContract WatchKeyRegistered, iden
 	if err != nil {
 		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for identity registration", 1)
 		log.Errorf(wError.Error())
-		utils.SendNonBlocking(true, cancel)
+		cancelFunc()
 		return wError
 	}
 	return
@@ -297,10 +295,9 @@ func setUpKeyRegisteredEventListener(ethCreatedContract WatchKeyRegistered, iden
 // setUpRegistrationEventListener sets up the listened for the "IdentityCreated" event to notify the upstream code about successful mining/creation
 // of the identity.
 func setUpRegistrationEventListener(ethCreatedContract WatchIdentityCreated, identityToBeCreated Identity, confirmations chan<- *WatchIdentity) (err error) {
-
 	//listen to this particular identity being mined/event is triggered
-	watchOpts := &bind.WatchOpts{}
-	watchOpts.Context = ethereum.DefaultWaitForTransactionMiningContext()
+	ctx, cancelFunc := ethereum.DefaultWaitForTransactionMiningContext()
+	watchOpts := &bind.WatchOpts{Context:ctx}
 
 	//only setting up a channel of 1 notification as there should always be only one notification coming for this
 	//single identity being registered
@@ -316,12 +313,13 @@ func setUpRegistrationEventListener(ethCreatedContract WatchIdentityCreated, ide
 	if err != nil {
 		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for identity registration", 1)
 		log.Errorf(wError.Error())
+		cancelFunc()
 	}
 	return
 }
 
 // waitAndRouteKeyRegistrationEvent notifies the confirmations channel whenever the key has been added to the identity and has been noted as Ethereum event
-func waitAndRouteKeyRegistrationEvent(conf <-chan *EthereumIdentityContractKeyRegistered, ctx context.Context, confirmations chan<- *WatchIdentity, pushThisIdentity Identity, cancel <-chan interface{}) {
+func waitAndRouteKeyRegistrationEvent(conf <-chan *EthereumIdentityContractKeyRegistered, ctx context.Context, confirmations chan<- *WatchIdentity, pushThisIdentity Identity) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -331,9 +329,6 @@ func waitAndRouteKeyRegistrationEvent(conf <-chan *EthereumIdentityContractKeyRe
 		case res := <-conf:
 			log.Infof("Received KeyRegistered event from [%s] for keyType: %x and value: %x\n", pushThisIdentity, res.KType, res.Key)
 			confirmations <- &WatchIdentity{pushThisIdentity, nil}
-			return
-		case <-cancel:
-			log.Info("Key registration event handling was cancelled by upstream")
 			return
 		}
 	}

@@ -11,8 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/go-errors/errors"
 	"math/big"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/utils"
-)
+	)
 
 //Supported anchor schema version as stored on public registry
 const ANCHOR_SCHEMA_VERSION uint = 1
@@ -105,16 +104,14 @@ func sendRegistrationTransaction(ethRegistryContract RegisterAnchor, opts *bind.
 // setUpRegistrationEventListener sets up the listened for the "AnchorRegistered" event to notify the upstream code about successful mining/creation
 // of the anchor.
 func setUpRegistrationEventListener(ethRegistryContract WatchAnchorRegistered, from common.Address, anchorToBeRegistered *Anchor, confirmations chan<- *WatchAnchor) (err error) {
-
 	//listen to this particular anchor being mined/event is triggered
-	watchOpts := &bind.WatchOpts{}
-	watchOpts.Context = ethereum.DefaultWaitForTransactionMiningContext()
+	ctx, cancelFunc := ethereum.DefaultWaitForTransactionMiningContext()
+	watchOpts := &bind.WatchOpts{Context:ctx}
 
 	//only setting up a channel of 1 notification as there should always be only one notification coming for this
 	//single anchor being registered
 	anchorRegisteredEvents := make(chan *EthereumAnchorRegistryContractAnchorRegistered, 1)
-	cancel := make(chan interface{})
-	go waitAndRouteAnchorRegistrationEvent(anchorRegisteredEvents, watchOpts.Context, confirmations, anchorToBeRegistered, cancel)
+	go waitAndRouteAnchorRegistrationEvent(anchorRegisteredEvents, watchOpts.Context, confirmations, anchorToBeRegistered)
 
 	//TODO do something with the returned Subscription that is currently simply discarded
 	// Somehow there are some possible resource leakage situations with this handling but I have to understand
@@ -123,16 +120,14 @@ func setUpRegistrationEventListener(ethRegistryContract WatchAnchorRegistered, f
 	if err != nil {
 		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for anchor registration", 1)
 		log.Errorf("Failed to watch anchor registered event: %v", wError.Error())
-		// stop the awaiting go routine
-		utils.SendNonBlocking(true, cancel)
+		cancelFunc() // cancel the event router
 		return wError
 	}
 	return
 }
 
 // waitAndRouteAnchorRegistrationEvent notifies the confirmations channel whenever the anchor registration is being noted as Ethereum event
-func waitAndRouteAnchorRegistrationEvent(conf <-chan *EthereumAnchorRegistryContractAnchorRegistered,
-	ctx context.Context, confirmations chan<- *WatchAnchor, pushThisAnchor *Anchor, cancel <-chan interface{}) {
+func waitAndRouteAnchorRegistrationEvent(conf <-chan *EthereumAnchorRegistryContractAnchorRegistered, ctx context.Context, confirmations chan<- *WatchAnchor, pushThisAnchor *Anchor) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -142,9 +137,6 @@ func waitAndRouteAnchorRegistrationEvent(conf <-chan *EthereumAnchorRegistryCont
 		case res := <-conf:
 			log.Infof("Received AnchorRegistered event from: %x, identifier: %x\n", res.From, res.Identifier)
 			confirmations <- &WatchAnchor{pushThisAnchor, nil}
-			return
-		case <-cancel:
-			log.Info("Anchor registration event handling was cancelled by upstream")
 			return
 		}
 	}
