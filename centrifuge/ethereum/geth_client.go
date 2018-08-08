@@ -31,10 +31,9 @@ func getDefaultContextTimeout() time.Duration {
 	return config.Config.GetEthereumContextWaitTimeout()
 }
 
-func DefaultWaitForTransactionMiningContext() (ctx context.Context) {
+func DefaultWaitForTransactionMiningContext() (ctx context.Context, cancelFunc context.CancelFunc) {
 	toBeDone := time.Now().Add(getDefaultContextTimeout())
-	ctx, _ = context.WithDeadline(context.TODO(), toBeDone)
-	return
+	return context.WithDeadline(context.TODO(), toBeDone)
 }
 
 // Abstract the "ethereum client" out so we can more easily support other clients

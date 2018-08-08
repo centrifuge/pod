@@ -4,14 +4,14 @@ import (
 	"context"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/go-errors/errors"
 	"math/big"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
-)
+	)
 
 //Supported anchor schema version as stored on public registry
 const ANCHOR_SCHEMA_VERSION uint = 1
@@ -104,10 +104,9 @@ func sendRegistrationTransaction(ethRegistryContract RegisterAnchor, opts *bind.
 // setUpRegistrationEventListener sets up the listened for the "AnchorRegistered" event to notify the upstream code about successful mining/creation
 // of the anchor.
 func setUpRegistrationEventListener(ethRegistryContract WatchAnchorRegistered, from common.Address, anchorToBeRegistered *Anchor, confirmations chan<- *WatchAnchor) (err error) {
-
 	//listen to this particular anchor being mined/event is triggered
-	watchOpts := &bind.WatchOpts{}
-	watchOpts.Context = ethereum.DefaultWaitForTransactionMiningContext()
+	ctx, cancelFunc := ethereum.DefaultWaitForTransactionMiningContext()
+	watchOpts := &bind.WatchOpts{Context:ctx}
 
 	//only setting up a channel of 1 notification as there should always be only one notification coming for this
 	//single anchor being registered
@@ -120,12 +119,14 @@ func setUpRegistrationEventListener(ethRegistryContract WatchAnchorRegistered, f
 	_, err = ethRegistryContract.WatchAnchorRegistered(watchOpts, anchorRegisteredEvents, []common.Address{from}, [][32]byte{anchorToBeRegistered.AnchorID}, nil)
 	if err != nil {
 		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for anchor registration", 1)
-		log.Panicf(wError.Error())
+		log.Errorf("Failed to watch anchor registered event: %v", wError.Error())
+		cancelFunc() // cancel the event router
+		return wError
 	}
 	return
 }
 
-// waitAndRouteAnchorRegistrationEvent notififies the confirmations channel whenever the anchor registration is being noted as Ethereum event
+// waitAndRouteAnchorRegistrationEvent notifies the confirmations channel whenever the anchor registration is being noted as Ethereum event
 func waitAndRouteAnchorRegistrationEvent(conf <-chan *EthereumAnchorRegistryContractAnchorRegistered, ctx context.Context, confirmations chan<- *WatchAnchor, pushThisAnchor *Anchor) {
 	for {
 		select {

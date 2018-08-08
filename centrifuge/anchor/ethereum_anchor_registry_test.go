@@ -5,8 +5,7 @@ package anchor
 import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
+		"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/common"
@@ -96,21 +95,11 @@ func TestSendRegistrationTransaction_ErrorPassThrough(t *testing.T) {
 }
 
 func TestSetUpRegistrationEventListener_ErrorPassThrough(t *testing.T) {
-	resetMock := testingutils.MockConfigOption("ethereum.contextWaitTimeout", "30s")
-
 	failingWatchAnchorRegistered := &MockWatchAnchorRegistered{shouldFail: true}
 	anchor := Anchor{tools.RandomByte32(), tools.RandomByte32(), 1}
 	confirmations := make(chan *WatchAnchor)
 
-	defer func() {
-		if r := recover(); r == nil {
-			t.Errorf("Code should have paniced if the subscription to confirmation channel failed")
-		}
-	}()
-
 	err := setUpRegistrationEventListener(failingWatchAnchorRegistered, common.Address{}, &anchor, confirmations)
-
-	defer resetMock()
 	assert.Error(t, err, "Should fail if the anchor registration watcher failed")
 }
 
