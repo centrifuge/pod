@@ -13,7 +13,7 @@ type EnqueueOptions struct {
 // Helps to isolate Cent Node business logic from any specific queue implementation.
 type Queue interface {
 
-	// We may need to add an config options object here
+	// We may need to add a config options object here
 	Start()
 
 	// msg can be any deserialized struct, should we change the type to bytes?
