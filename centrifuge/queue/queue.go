@@ -9,6 +9,19 @@ type EnqueueOptions struct {
 	numRetries int
 }
 
+type Header struct {
+	CentId   []byte
+	TenantId []byte
+}
+
+// All queued messages within the Cent node must implement the Message interface
+type Message interface {
+
+	Header() *Header
+
+	SerializedMessage() string
+}
+
 // Queue interface to be implemented by any queue provider for a Cent node.
 // Helps to isolate Cent Node business logic from any specific queue implementation.
 type Queue interface {
@@ -17,11 +30,11 @@ type Queue interface {
 	Start()
 
 	// msg can be any deserialized struct, should we change the type to bytes?
-	Enqueue(queueName string, msg string, options *EnqueueOptions) error
+	Enqueue(queueName string, msg Message, options *EnqueueOptions) error
 
 	// Dequeue the message but resurface it after the set timeOut
 	// (Pull model)
-	Dequeue(queue string) (id, msg string, options *EnqueueOptions, err error)
+	Dequeue(queue string) (id, msg Message, options *EnqueueOptions, err error)
 
 	// Delete the message with the given id, no resurface afterwards
 	Delete(queue, id string) error
@@ -42,7 +55,7 @@ const (
 // A handler function receives a single message from a queue and handles it after deserializing to proper type.
 // Also returns a proper status after the execution.
 // Rationale: abstract away the queuing details from business logic. Makes it easier to test the handlers.
-type Handler func(msg string, options *EnqueueOptions) (HandlerStatus, error)
+type Handler func(msg Message, options *EnqueueOptions) (HandlerStatus, error)
 
 type WorkerConfig struct {
 	queueName string
