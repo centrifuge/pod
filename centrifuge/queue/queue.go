@@ -9,7 +9,8 @@ type EnqueueOptions struct {
 	numRetries int
 }
 
-// Queue interface to be implemented by any queue provider for a Cent node
+// Queue interface to be implemented by any queue provider for a Cent node.
+// Helps to isolate Cent Node business logic from any specific queue implementation.
 type Queue interface {
 
 	// We may need to add an config options object here
@@ -39,12 +40,12 @@ const (
 )
 
 // A handler function receives a single message from a queue and handles it(after deserializing to proper type), returning a proper status after the execution
-// Rationale: abstract away the queuing details from business logic
+// Rationale: abstract away the queuing details from business logic. Makes it easier to test the handlers.
 type Handler func(msg string, options *EnqueueOptions) HandlerStatus
 
 // Worker interface is an abstraction over all queue message receivers (go routines).
 // It might contain queuing system specific details such as retry logic based on EnqueueOptions.
-// Rationale: abstract away the queuing system details from business logic
+// Rationale: abstract away the queuing system details from business logic. Makes it easier to test the workers in isolation from business logic.
 type Worker interface {
 
 	// We may need to add an config options object here
