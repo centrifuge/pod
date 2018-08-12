@@ -8,41 +8,41 @@ func (InmemoryQueue) Start() {
 	panic("implement me")
 }
 
-func (InmemoryQueue) Enqueue(queueName string, msg string, options *queue.EnqueueOptions) error {
+func (iq *InmemoryQueue) Enqueue(queueName string, msg string, options *queue.EnqueueOptions) error {
 	panic("implement me")
 }
 
-func (InmemoryQueue) Dequeue(queue string) (id, msg string, options *queue.EnqueueOptions, err error) {
+func (iq *InmemoryQueue) Dequeue(queue string) (id, msg string, options *queue.EnqueueOptions, err error) {
 	panic("implement me")
 }
 
-func (InmemoryQueue) Delete(queue, id string) error {
+func (iq *InmemoryQueue) Delete(queue, id string) error {
 	panic("implement me")
 }
 
-func (InmemoryQueue) DeleteAll(queue string) error {
+func (iq *InmemoryQueue) DeleteAll(queue string) error {
 	panic("implement me")
 }
 
-func (InmemoryQueue) Stop() {
+func (iq *InmemoryQueue) Stop() {
 	panic("implement me")
 }
 
 type InmemoryWorker struct{}
 
-func (InmemoryWorker) Start(config interface{}) {
+func (iw *InmemoryWorker) Start(config interface{}) {
 	panic("implement me")
 }
 
-func (InmemoryWorker) AddHandler(handler queue.Handler) {
+func (iw *InmemoryWorker) AddHandler(handler queue.Handler) {
 	panic("implement me")
 }
 
-func (InmemoryWorker) RemoveAllHandlers() {
+func (iw *InmemoryWorker) RemoveAllHandlers() {
 	panic("implement me")
 }
 
-func (InmemoryWorker) Stop() {
+func (iw *InmemoryWorker) Stop() {
 	panic("implement me")
 }
 
