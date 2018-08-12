@@ -11,7 +11,9 @@ import (
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/go-errors/errors"
 	"math/big"
-	)
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/queue/inmemory"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/queue"
+)
 
 //Supported anchor schema version as stored on public registry
 const ANCHOR_SCHEMA_VERSION uint = 1
@@ -55,7 +57,7 @@ func (ethRegistry *EthereumAnchorRegistry) RegisterAsAnchor(anchorID [32]byte, r
 		return
 	}
 
-	err = setUpRegistrationEventListener(ethRegistryContract, opts.From, registerThisAnchor, confirmations)
+	err = setUpRegistrationEventListener(opts.From, registerThisAnchor)
 	if err != nil {
 		wError := errors.Wrap(err, 1)
 		log.Errorf("Failed to set up event listener for anchor [id: %x, hash: %x, SchemaVersion:%v]: %v", registerThisAnchor.AnchorID, registerThisAnchor.RootHash, registerThisAnchor.SchemaVersion, wError)
@@ -103,26 +105,32 @@ func sendRegistrationTransaction(ethRegistryContract RegisterAnchor, opts *bind.
 
 // setUpRegistrationEventListener sets up the listened for the "AnchorRegistered" event to notify the upstream code about successful mining/creation
 // of the anchor.
-func setUpRegistrationEventListener(ethRegistryContract WatchAnchorRegistered, from common.Address, anchorToBeRegistered *Anchor, confirmations chan<- *WatchAnchor) (err error) {
-	//listen to this particular anchor being mined/event is triggered
-	ctx, cancelFunc := ethereum.DefaultWaitForTransactionMiningContext()
-	watchOpts := &bind.WatchOpts{Context:ctx}
+func setUpRegistrationEventListener(/* TODO find this in the handler it self. ethRegistryContract WatchAnchorRegistered,*/ from common.Address, anchorToBeRegistered *Anchor/* TODO remove this so that API doesn't wait for confirmations. , confirmations chan<- *WatchAnchor*/) (err error) {
+	workers := inmemory.GetWorkerConfig()
+	anchoringQueueWorker, _ := workers.Get("AnchoringQueue") // ignore error for now
 
-	//only setting up a channel of 1 notification as there should always be only one notification coming for this
-	//single anchor being registered
-	anchorRegisteredEvents := make(chan *EthereumAnchorRegistryContractAnchorRegistered, 1)
-	go waitAndRouteAnchorRegistrationEvent(anchorRegisteredEvents, watchOpts.Context, confirmations, anchorToBeRegistered)
+	anchoringQueueWorker.AddHandler(func(msg string, options *queue.EnqueueOptions) (queue.HandlerStatus, error) {
+		//listen to this particular anchor being mined/event is triggered
+		ctx, cancelFunc := ethereum.DefaultWaitForTransactionMiningContext()
+		watchOpts := &bind.WatchOpts{Context:ctx}
 
-	//TODO do something with the returned Subscription that is currently simply discarded
-	// Somehow there are some possible resource leakage situations with this handling but I have to understand
-	// Subscriptions a bit better before writing this code.
-	_, err = ethRegistryContract.WatchAnchorRegistered(watchOpts, anchorRegisteredEvents, []common.Address{from}, [][32]byte{anchorToBeRegistered.AnchorID}, nil)
-	if err != nil {
-		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for anchor registration", 1)
-		log.Errorf("Failed to watch anchor registered event: %v", wError.Error())
-		cancelFunc() // cancel the event router
-		return wError
-	}
+		//only setting up a channel of 1 notification as there should always be only one notification coming for this
+		//single anchor being registered
+		anchorRegisteredEvents := make(chan *EthereumAnchorRegistryContractAnchorRegistered, 1)
+
+		// TODO do a finite wait here and no need of a separate go routine as this is already a queue handler. The worker can manage go routines if needed
+		go waitAndRouteAnchorRegistrationEvent(anchorRegisteredEvents, watchOpts.Context, confirmations, anchorToBeRegistered)
+
+		_, err = ethRegistryContract.WatchAnchorRegistered(watchOpts, anchorRegisteredEvents, []common.Address{from}, [][32]byte{anchorToBeRegistered.AnchorID}, nil)
+		if err != nil {
+			wError := errors.WrapPrefix(err, "Could not subscribe to event logs for anchor registration", 1)
+			log.Errorf("Failed to watch anchor registered event: %v", wError.Error())
+			cancelFunc() // cancel the event router
+			return queue.ERROR, wError
+		}
+		return queue.SUCCESS, nil
+	})
+
 	return
 }
 

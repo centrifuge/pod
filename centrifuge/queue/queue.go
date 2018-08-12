@@ -50,11 +50,24 @@ type Handler func(msg string, options *EnqueueOptions) (HandlerStatus, error)
 type Worker interface {
 
 	// We may need to add an config options object here
+	Start(config WorkerConfig)
+
+	// Add a handler for the queue that this worker handles
+	AddHandler(handler Handler)
+
+	// remove all handlers
+	RemoveAllHandlers()
+
+	Stop()
+}
+
+// manage the queue workers declared in the system. Holds on to all declared workers in working memory, eg: in a map
+type WorkerRegistry interface {
+
+	// Start all the workers.
 	Start()
 
-	AddHandler(queueName string, handler Handler)
-
-	RemoveHandlers(queueName string)
+	Get(queueName string) (Worker, error)
 
 	Stop()
 }
