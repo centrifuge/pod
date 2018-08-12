@@ -53,10 +53,10 @@ func (iw *InmemoryWorker) RemoveAllHandlers() {
 func (iw *InmemoryWorker) Stop() {
 	panic("implement me")
 }
+
 ///////////////////////////////////////////////////////////////////
 // An implementation of queue.WorkerRegistry for InmemoryWorkers
 //////////////////////////////////////////////////////////////////
-
 
 type InmemoryWorkerRegistry struct{}
 
