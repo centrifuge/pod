@@ -30,7 +30,7 @@ func (iq *InmemoryQueue) Stop() {
 
 type InmemoryWorker struct{}
 
-func (iw *InmemoryWorker) Start(config interface{}) {
+func (iw *InmemoryWorker) Start(config queue.WorkerConfig) {
 	panic("implement me")
 }
 
