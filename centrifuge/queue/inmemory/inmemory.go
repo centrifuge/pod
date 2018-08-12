@@ -46,22 +46,21 @@ func (iw *InmemoryWorker) Stop() {
 	panic("implement me")
 }
 
-type WorkerConfig struct {
-	queueName string
-}
+type InmemoryWorkerRegistry struct{}
 
-func (*WorkerConfig) Start() {
+func (InmemoryWorkerRegistry) Start() {
 	panic("implement me")
 }
 
-func (*WorkerConfig) Get(queueName string) (queue.Worker, error) {
+func (InmemoryWorkerRegistry) Get(queueName string) (queue.Worker, error) {
 	panic("implement me")
 }
 
-func (*WorkerConfig) Stop() {
+func (InmemoryWorkerRegistry) Stop() {
 	panic("implement me")
 }
 
-func GetWorkerConfig() WorkerConfig {
-	return WorkerConfig{}
+func GetWorkerRegistry() queue.WorkerRegistry {
+	// TODO modify this to store the registry inmemory and return a ref to that
+	return InmemoryWorkerRegistry{}
 }

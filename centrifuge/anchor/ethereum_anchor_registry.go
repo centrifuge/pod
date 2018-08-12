@@ -106,7 +106,7 @@ func sendRegistrationTransaction(ethRegistryContract RegisterAnchor, opts *bind.
 // setUpRegistrationEventListener sets up the listened for the "AnchorRegistered" event to notify the upstream code about successful mining/creation
 // of the anchor.
 func setUpRegistrationEventListener(/* TODO find this in the handler it self. ethRegistryContract WatchAnchorRegistered,*/ from common.Address, anchorToBeRegistered *Anchor/* TODO remove this so that API doesn't wait for confirmations. , confirmations chan<- *WatchAnchor*/) (err error) {
-	workers := inmemory.GetWorkerConfig()
+	workers := inmemory.GetWorkerRegistry()
 	anchoringQueueWorker, _ := workers.Get("AnchoringQueue") // ignore error for now
 
 	anchoringQueueWorker.AddHandler(func(msg string, options *queue.EnqueueOptions) (queue.HandlerStatus, error) {

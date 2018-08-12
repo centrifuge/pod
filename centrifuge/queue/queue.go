@@ -44,6 +44,10 @@ const (
 // Rationale: abstract away the queuing details from business logic. Makes it easier to test the handlers.
 type Handler func(msg string, options *EnqueueOptions) (HandlerStatus, error)
 
+type WorkerConfig struct {
+	queueName string
+}
+
 // Worker interface is an abstraction over all queue message receivers (go routines).
 // It might contain queuing system specific details such as retry logic based on EnqueueOptions.
 // Rationale: abstract away the queuing system details from business logic. Makes it easier to test the workers in isolation from business logic.
