@@ -39,7 +39,8 @@ const (
 	UNKNOWN HandlerStatus = 2
 )
 
-// A handler function receives a single message from a queue and handles it(after deserializing to proper type), returning a proper status after the execution
+// A handler function receives a single message from a queue and handles it after deserializing to proper type.
+// Also returns a proper status after the execution.
 // Rationale: abstract away the queuing details from business logic. Makes it easier to test the handlers.
 type Handler func(msg string, options *EnqueueOptions) (HandlerStatus, error)
 
