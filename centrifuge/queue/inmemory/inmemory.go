@@ -2,6 +2,10 @@ package inmemory
 
 import "github.com/CentrifugeInc/go-centrifuge/centrifuge/queue"
 
+///////////////////////////////////////////////////////////////////
+// An inmemory implementation of the queue.Queue interface
+///////////////////////////////////////////////////////////////////
+
 type InmemoryQueue struct{}
 
 func (InmemoryQueue) Start() {
@@ -28,6 +32,10 @@ func (iq *InmemoryQueue) Stop() {
 	panic("implement me")
 }
 
+///////////////////////////////////////////////////////////////////
+// An inmemory queue based implementation of queue.Worker interface
+///////////////////////////////////////////////////////////////////
+
 type InmemoryWorker struct{}
 
 func (iw *InmemoryWorker) Start(config queue.WorkerConfig) {
@@ -45,6 +53,10 @@ func (iw *InmemoryWorker) RemoveAllHandlers() {
 func (iw *InmemoryWorker) Stop() {
 	panic("implement me")
 }
+///////////////////////////////////////////////////////////////////
+// An implementation of queue.WorkerRegistry for InmemoryWorkers
+//////////////////////////////////////////////////////////////////
+
 
 type InmemoryWorkerRegistry struct{}
 
