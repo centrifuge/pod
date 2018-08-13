@@ -3,32 +3,32 @@ package inmemory
 import "github.com/CentrifugeInc/go-centrifuge/centrifuge/queue"
 
 ///////////////////////////////////////////////////////////////////
-// An inmemory implementation of the queue.Queue interface
+// An in memory implementation of the queue.Queue interface
 ///////////////////////////////////////////////////////////////////
 
-type InmemoryQueue struct{}
+type Queue struct{}
 
-func (InmemoryQueue) Start() {
+func (Queue) Start() {
 	panic("implement me")
 }
 
-func (iq *InmemoryQueue) Enqueue(queueName string, msg string, options *queue.EnqueueOptions) error {
+func (iq *Queue) Enqueue(queueName string, msg string, options *queue.EnqueueOptions) error {
 	panic("implement me")
 }
 
-func (iq *InmemoryQueue) Dequeue(queue string) (id, msg string, options *queue.EnqueueOptions, err error) {
+func (iq *Queue) Dequeue(queue string) (id, msg string, options *queue.EnqueueOptions, err error) {
 	panic("implement me")
 }
 
-func (iq *InmemoryQueue) Delete(queue, id string) error {
+func (iq *Queue) Delete(queue, id string) error {
 	panic("implement me")
 }
 
-func (iq *InmemoryQueue) DeleteAll(queue string) error {
+func (iq *Queue) DeleteAll(queue string) error {
 	panic("implement me")
 }
 
-func (iq *InmemoryQueue) Stop() {
+func (iq *Queue) Stop() {
 	panic("implement me")
 }
 
@@ -36,21 +36,21 @@ func (iq *InmemoryQueue) Stop() {
 // An inmemory queue based implementation of queue.Worker interface
 ///////////////////////////////////////////////////////////////////
 
-type InmemoryWorker struct{}
+type Worker struct{}
 
-func (iw *InmemoryWorker) Start(config queue.WorkerConfig) {
+func (iw *Worker) Start(config queue.WorkerConfig) {
 	panic("implement me")
 }
 
-func (iw *InmemoryWorker) AddHandler(handler queue.Handler) {
+func (iw *Worker) AddHandler(handler queue.Handler) {
 	panic("implement me")
 }
 
-func (iw *InmemoryWorker) RemoveAllHandlers() {
+func (iw *Worker) RemoveAllHandlers() {
 	panic("implement me")
 }
 
-func (iw *InmemoryWorker) Stop() {
+func (iw *Worker) Stop() {
 	panic("implement me")
 }
 
@@ -58,21 +58,21 @@ func (iw *InmemoryWorker) Stop() {
 // An implementation of queue.WorkerRegistry for InmemoryWorkers
 //////////////////////////////////////////////////////////////////
 
-type InmemoryWorkerRegistry struct{}
+type WorkerRegistry struct{}
 
-func (InmemoryWorkerRegistry) Start() {
+func (WorkerRegistry) Start() {
 	panic("implement me")
 }
 
-func (InmemoryWorkerRegistry) Get(queueName string) (queue.Worker, error) {
+func (WorkerRegistry) Get(queueName string) (queue.Worker, error) {
 	panic("implement me")
 }
 
-func (InmemoryWorkerRegistry) Stop() {
+func (WorkerRegistry) Stop() {
 	panic("implement me")
 }
 
 func GetWorkerRegistry() queue.WorkerRegistry {
 	// TODO modify this to store the registry inmemory and return a ref to that
-	return InmemoryWorkerRegistry{}
+	return WorkerRegistry{}
 }
