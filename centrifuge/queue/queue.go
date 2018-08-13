@@ -63,10 +63,10 @@ type WorkerConfig struct {
 
 // Worker interface is an abstraction over all queue message receivers (go routines).
 // It might contain queuing system specific details such as retry logic based on EnqueueOptions.
-// Rationale: abstract away the queuing system details from business logic. Makes it easier to test the workers in isolation from business logic.
+// Rationale: abstract away the queuing system details from business logic. Makes it easier to implement either a push or pull based queue system
+// while also better isolating queue interaction based tests.
 type Worker interface {
 
-	// We may need to add an config options object here
 	Start(config WorkerConfig)
 
 	// Add a handler for the queue that this worker handles
