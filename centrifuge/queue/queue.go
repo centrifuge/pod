@@ -55,7 +55,7 @@ const (
 // A handler function receives a single message from a queue and handles it after deserializing to proper type.
 // Also returns a proper status after the execution.
 // Rationale: abstract away the queuing details from business logic. Makes it easier to test the handlers.
-type Handler func(msg Message, options *EnqueueOptions) (HandlerStatus, error)
+type MessageHandler func(msg Message, options *EnqueueOptions) (HandlerStatus, error)
 
 type WorkerConfig struct {
 	queueName string
@@ -70,7 +70,7 @@ type Worker interface {
 	Start(config WorkerConfig)
 
 	// Add a handler for the queue that this worker handles
-	AddHandler(handler Handler)
+	AddHandler(handler MessageHandler)
 
 	// remove all handlers
 	RemoveAllHandlers()

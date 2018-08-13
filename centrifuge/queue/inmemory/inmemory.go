@@ -42,7 +42,7 @@ func (iw *Worker) Start(config queue.WorkerConfig) {
 	panic("implement me")
 }
 
-func (iw *Worker) AddHandler(handler queue.Handler) {
+func (iw *Worker) AddHandler(handler queue.MessageHandler) {
 	panic("implement me")
 }
 
