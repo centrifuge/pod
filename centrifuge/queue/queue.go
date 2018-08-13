@@ -19,6 +19,7 @@ type Message interface {
 
 	Header() *Header
 
+	// SerializedMessage can be any deserialized struct, should we change the type to bytes?
 	SerializedMessage() string
 }
 
@@ -29,7 +30,6 @@ type Queue interface {
 	// We may need to add a config options object here
 	Start()
 
-	// msg can be any deserialized struct, should we change the type to bytes?
 	Enqueue(queueName string, msg Message, options *EnqueueOptions) error
 
 	// Dequeue the message but resurface it after the set timeOut
