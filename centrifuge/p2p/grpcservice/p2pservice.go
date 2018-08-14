@@ -51,6 +51,7 @@ func (srv *P2PService) HandleP2PPost(ctx context.Context, req *p2ppb.P2PMessage)
 		return nil, errors.New(errors.DocumentInvalid, errors.NilError(req.Document).Error())
 	}
 
+	// TODO(ved): do coredoc validation before create/update
 	err = coredocumentrepository.GetCoreDocumentRepository().CreateOrUpdate(req.Document)
 	if err != nil {
 		return nil, errors.New(errors.Unknown, err.Error())
