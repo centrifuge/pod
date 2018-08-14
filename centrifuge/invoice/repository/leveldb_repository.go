@@ -1,17 +1,18 @@
 package invoicerepository
 
 import (
-	"github.com/syndtr/goleveldb/leveldb"
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
-	"github.com/golang/protobuf/proto"
+	"fmt"
 	"sync"
+
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	gerrors "github.com/go-errors/errors"
+	"github.com/golang/protobuf/proto"
+	"github.com/syndtr/goleveldb/leveldb"
 )
 
 var once sync.Once
-var ErrDocumentExists = errors.New("syntax error in pattern")
-
+var ErrDocumentExists = fmt.Errorf("syntax error in pattern")
 
 type LevelDBInvoiceRepository struct {
 	Leveldb *leveldb.DB
@@ -19,10 +20,10 @@ type LevelDBInvoiceRepository struct {
 
 func checkIfCoreDocumentFilledCorrectly(doc *invoicepb.InvoiceDocument) error {
 	if doc.CoreDocument == nil {
-		return errors.GenerateNilParameterError(doc.CoreDocument)
+		return errors.NilError(doc.CoreDocument)
 	}
 	if doc.CoreDocument.DocumentIdentifier == nil {
-		return errors.GenerateNilParameterError(doc.CoreDocument.DocumentIdentifier)
+		return errors.NilError(doc.CoreDocument.DocumentIdentifier)
 	}
 	return nil
 }
@@ -34,7 +35,7 @@ func NewLevelDBInvoiceRepository(ir InvoiceRepository) {
 	return
 }
 
-func (repo *LevelDBInvoiceRepository) GetKey(id []byte) ([]byte) {
+func (repo *LevelDBInvoiceRepository) GetKey(id []byte) []byte {
 	return append([]byte("invoice"), id...)
 }
 
@@ -54,10 +55,10 @@ func (repo *LevelDBInvoiceRepository) FindById(id []byte) (inv *invoicepb.Invoic
 
 func (repo *LevelDBInvoiceRepository) CreateOrUpdate(inv *invoicepb.InvoiceDocument) (err error) {
 	if inv == nil {
-		return errors.GenerateNilParameterError(inv)
+		return errors.NilError(inv)
 	}
 	if inv.CoreDocument == nil {
-		return errors.GenerateNilParameterError(inv.CoreDocument)
+		return errors.NilError(inv.CoreDocument)
 	}
 	key := repo.GetKey(inv.CoreDocument.DocumentIdentifier)
 	data, err := proto.Marshal(inv)

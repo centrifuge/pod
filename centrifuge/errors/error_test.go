@@ -34,7 +34,7 @@ func TestP2PError(t *testing.T) {
 	}
 
 	for _, c := range tests {
-		err := NewPBError(c.code, c.msg, c.errors)
+		err := NewWithErrors(c.code, c.msg, c.errors)
 		p2perr, ok := FromError(err)
 		if !ok {
 			t.Fatalf("unexpected conversion error: %T", err)

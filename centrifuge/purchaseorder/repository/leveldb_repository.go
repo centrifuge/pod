@@ -1,12 +1,13 @@
 package purchaseorderrepository
 
 import (
-	"github.com/syndtr/goleveldb/leveldb"
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
-	"github.com/golang/protobuf/proto"
 	"sync"
+
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	gerrors "github.com/go-errors/errors"
+	"github.com/golang/protobuf/proto"
+	"github.com/syndtr/goleveldb/leveldb"
 )
 
 var once sync.Once
@@ -17,10 +18,10 @@ type LevelDBPurchaseOrderRepository struct {
 
 func checkIfCoreDocumentFilledCorrectly(doc *purchaseorderpb.PurchaseOrderDocument) error {
 	if doc.CoreDocument == nil {
-		return errors.GenerateNilParameterError(doc.CoreDocument)
+		return errors.NilError(doc.CoreDocument)
 	}
 	if doc.CoreDocument.DocumentIdentifier == nil {
-		return errors.GenerateNilParameterError(doc.CoreDocument.DocumentIdentifier)
+		return errors.NilError(doc.CoreDocument.DocumentIdentifier)
 	}
 	return nil
 }
@@ -32,7 +33,7 @@ func NewLevelDBPurchaseOrderRepository(ir PurchaseOrderRepository) {
 	return
 }
 
-func (repo *LevelDBPurchaseOrderRepository) GetKey(id []byte) ([]byte) {
+func (repo *LevelDBPurchaseOrderRepository) GetKey(id []byte) []byte {
 	return append([]byte("purchaseorder"), id...)
 }
 
@@ -52,10 +53,10 @@ func (repo *LevelDBPurchaseOrderRepository) FindById(id []byte) (orderDocument *
 
 func (repo *LevelDBPurchaseOrderRepository) CreateOrUpdate(orderDocument *purchaseorderpb.PurchaseOrderDocument) (err error) {
 	if orderDocument == nil {
-		return errors.GenerateNilParameterError(orderDocument)
+		return errors.NilError(orderDocument)
 	}
 	if orderDocument.CoreDocument == nil {
-		return errors.GenerateNilParameterError(orderDocument.CoreDocument)
+		return errors.NilError(orderDocument.CoreDocument)
 	}
 
 	key := repo.GetKey(orderDocument.CoreDocument.DocumentIdentifier)

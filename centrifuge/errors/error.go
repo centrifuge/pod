@@ -21,8 +21,13 @@ func (err *errpb) Error() string {
 	return fmt.Sprintf("[%d]%s: %v", err.Code, err.Message, err.Errors)
 }
 
-// NewPBError constructs and returns a new error with code and message passed
-func NewPBError(code Code, message string, errors map[string]string) error {
+// New constructs a new error with code and error message
+func New(code Code, message string) error {
+	return NewWithErrors(code, message, nil)
+}
+
+// NewWithErrors constructs a new error with code, error message, and errors
+func NewWithErrors(code Code, message string, errors map[string]string) error {
 	return &errpb{
 		Code:    int32(code),
 		Message: message,
@@ -45,7 +50,7 @@ func FromError(err error) (*P2PError, bool) {
 
 	errpb, ok := err.(*errpb)
 	if !ok {
-		return &P2PError{err: &errorspb.Error{Code: int32(Unknown), Message: "unknown error"}}, false
+		return &P2PError{err: &errorspb.Error{Code: int32(Unknown), Message: err.Error()}}, false
 	}
 
 	return &P2PError{err: (*errorspb.Error)(errpb)}, true
@@ -78,10 +83,6 @@ func (p2pErr *P2PError) Errors() map[string]string {
 	return p2pErr.err.Errors
 }
 
-func GenerateNilParameterError(param interface{}) error {
+func NilError(param interface{}) error {
 	return errors.Errorf("NIL %v provided", reflect.TypeOf(param))
-}
-
-func New(message string) error {
-	return errors.New(message)
 }

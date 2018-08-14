@@ -2,6 +2,8 @@ package purchaseorder
 
 import (
 	"crypto/sha256"
+	"fmt"
+
 	"github.com/CentrifugeInc/centrifuge-protobufs/documenttypes"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
@@ -21,7 +23,7 @@ type PurchaseOrder struct {
 
 func NewPurchaseOrder(poDoc *purchaseorderpb.PurchaseOrderDocument) (*PurchaseOrder, error) {
 	if poDoc == nil {
-		return nil, errors.GenerateNilParameterError(poDoc)
+		return nil, errors.NilError(poDoc)
 	}
 	order := &PurchaseOrder{poDoc}
 	// IF salts have not been provided, let's generate them
@@ -46,11 +48,11 @@ func NewEmptyPurchaseOrder() *PurchaseOrder {
 
 func NewPurchaseOrderFromCoreDocument(coredocument *coredocumentpb.CoreDocument) (*PurchaseOrder, error) {
 	if coredocument == nil {
-		return nil, errors.GenerateNilParameterError(coredocument)
+		return nil, errors.NilError(coredocument)
 	}
 	if coredocument.EmbeddedData.TypeUrl != documenttypes.PurchaseOrderDataTypeUrl ||
 		coredocument.EmbeddedDataSalts.TypeUrl != documenttypes.PurchaseOrderSaltsTypeUrl {
-		return nil, errors.New("Trying to convert document with incorrect schema")
+		return nil, fmt.Errorf("trying to convert document with incorrect schema")
 	}
 
 	purchaseorderData := &purchaseorderpb.PurchaseOrderData{}
