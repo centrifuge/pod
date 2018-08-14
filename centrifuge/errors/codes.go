@@ -47,9 +47,9 @@ var httpMapping = map[Code]int{
 	DocumentNotFound:     http.StatusNotFound,
 }
 
-// GetHTTPCode returns mapped HTTP code for error code
+// HTTPCode returns mapped HTTP code for error code
 // returns 500 for unknown error
-func GetHTTPCode(code Code) int {
+func HTTPCode(code Code) int {
 	if httpCode, ok := httpMapping[code]; ok {
 		return httpCode
 	}
