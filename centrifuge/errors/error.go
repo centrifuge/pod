@@ -83,6 +83,7 @@ func (p2pErr *P2PError) Errors() map[string]string {
 	return p2pErr.err.Errors
 }
 
+// NilError returns error with Type added to message
 func NilError(param interface{}) error {
 	return errors.Errorf("NIL %v provided", reflect.TypeOf(param))
 }

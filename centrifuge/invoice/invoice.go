@@ -2,7 +2,6 @@ package invoice
 
 import (
 	"crypto/sha256"
-
 	"fmt"
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/documenttypes"
