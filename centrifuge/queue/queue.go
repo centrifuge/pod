@@ -18,8 +18,8 @@ type Message interface {
 
 	Header() *Header
 
-	// SerializedMessage can be any deserialized struct, should we change the type to bytes?
-	SerializedMessage() []byte
+	// SerializedMessage can be any serialized struct, should we change the type to bytes?
+	MarshalBinary() (data []byte, err error)
 }
 
 // Queue interface to be implemented by any queue provider for a Cent node.
@@ -46,9 +46,9 @@ type Queue interface {
 type HandlerStatus int
 
 const (
-	SUCCESS HandlerStatus = 0
-	ERROR HandlerStatus = 1
-	UNKNOWN HandlerStatus = 2
+	Success HandlerStatus = 0
+	Error HandlerStatus = 1
+	Unknown HandlerStatus = 2
 )
 
 // A handler function receives a single message from a queue and handles it after deserializing to proper type.

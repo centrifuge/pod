@@ -109,7 +109,7 @@ func setUpRegistrationEventListener(/* TODO find this in the handler it self. et
 	workers := inmemory.GetWorkerRegistry()
 	anchoringQueueWorker, _ := workers.Get("AnchoringQueue") // ignore error for now
 
-	anchoringQueueWorker.AddHandler(func(msg queue.Message, options *queue.EnqueueOptions) (queue.HandlerStatus, error) {
+	anchoringQueueWorker.AddHandler(func(msg queue.Message) (queue.HandlerStatus, error) {
 		//listen to this particular anchor being mined/event is triggered
 		ctx, cancelFunc := ethereum.DefaultWaitForTransactionMiningContext()
 		watchOpts := &bind.WatchOpts{Context:ctx}
@@ -126,9 +126,9 @@ func setUpRegistrationEventListener(/* TODO find this in the handler it self. et
 			wError := errors.WrapPrefix(err, "Could not subscribe to event logs for anchor registration", 1)
 			log.Errorf("Failed to watch anchor registered event: %v", wError.Error())
 			cancelFunc() // cancel the event router
-			return queue.ERROR, wError
+			return queue.Error, wError
 		}
-		return queue.SUCCESS, nil
+		return queue.Success, nil
 	})
 
 	return
