@@ -6,6 +6,10 @@ type Anchor struct {
 	SchemaVersion uint
 }
 
+func (*Anchor) MarshalBinary() (data []byte, err error) {
+	panic("implement me")
+}
+
 type WatchAnchor struct {
 	Anchor *Anchor
 	Error error
