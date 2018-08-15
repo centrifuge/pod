@@ -13,6 +13,7 @@ import (
 	"math/big"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/queue/inmemory"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/queue"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/queue/rabbitmq"
 )
 
 //Supported anchor schema version as stored on public registry
@@ -70,6 +71,9 @@ func (ethRegistry *EthereumAnchorRegistry) RegisterAsAnchor(anchorID [32]byte, r
 		log.Errorf("Failed to send Ethereum transaction to register anchor [id: %x, hash: %x, SchemaVersion:%v]: %v", registerThisAnchor.AnchorID, registerThisAnchor.RootHash, registerThisAnchor.SchemaVersion, wError)
 		return
 	}
+	// send the anchor to the queue so that workers can pick and check confirmations, may need to wrap rabbitmq package so that its not exposed to parts other than
+	// queue package
+	rabbitmq.GetQueue().Enqueue("anchor", &queue.MessageWrapper{&queue.Header{}, registerThisAnchor})
 	return
 }
 
@@ -109,7 +113,7 @@ func setUpRegistrationEventListener(/* TODO find this in the handler it self. et
 	workers := inmemory.GetWorkerRegistry()
 	anchoringQueueWorker, _ := workers.Get("AnchoringQueue") // ignore error for now
 
-	anchoringQueueWorker.AddHandler(func(msg queue.Message) (queue.HandlerStatus, error) {
+	anchoringQueueWorker.AddHandler(func(msg []byte) (queue.HandlerStatus, error) {
 		//listen to this particular anchor being mined/event is triggered
 		ctx, cancelFunc := ethereum.DefaultWaitForTransactionMiningContext()
 		watchOpts := &bind.WatchOpts{Context:ctx}
@@ -119,9 +123,10 @@ func setUpRegistrationEventListener(/* TODO find this in the handler it self. et
 		anchorRegisteredEvents := make(chan *EthereumAnchorRegistryContractAnchorRegistered, 1)
 
 		// TODO do a finite wait here and no need of a separate go routine as this is already a queue handler. The worker can manage go routines if needed
-		go waitAndRouteAnchorRegistrationEvent(anchorRegisteredEvents, watchOpts.Context, confirmations, /* TODO get this from the message */anchorToBeRegistered)
+		waitAndRouteAnchorRegistrationEvent(anchorRegisteredEvents, watchOpts.Context, nil, /* TODO get this from the message */anchorToBeRegistered)
 
-		_, err = ethRegistryContract.WatchAnchorRegistered(watchOpts, anchorRegisteredEvents, /* TODO get this from the message */[]common.Address{from}, /* TODO get this from the message */[][32]byte{anchorToBeRegistered.AnchorID}, nil)
+		// TODO commented for now
+		//_, err = ethRegistryContract.WatchAnchorRegistered(watchOpts, anchorRegisteredEvents, /* TODO get this from the message */[]common.Address{from}, /* TODO get this from the message */[][32]byte{anchorToBeRegistered.AnchorID}, nil)
 		if err != nil {
 			wError := errors.WrapPrefix(err, "Could not subscribe to event logs for anchor registration", 1)
 			log.Errorf("Failed to watch anchor registered event: %v", wError.Error())

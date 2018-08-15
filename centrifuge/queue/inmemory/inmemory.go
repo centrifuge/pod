@@ -12,11 +12,11 @@ func (Queue) Start() {
 	panic("implement me")
 }
 
-func (iq *Queue) Enqueue(queueName string, msg queue.Message, options *queue.EnqueueOptions) error {
+func (iq *Queue) Enqueue(queueName string, msg queue.Message) error {
 	panic("implement me")
 }
 
-func (iq *Queue) Dequeue(queue string) (id, msg queue.Message, options *queue.EnqueueOptions, err error) {
+func (iq *Queue) Dequeue(queue string) (id, msg queue.Message, err error) {
 	panic("implement me")
 }
 

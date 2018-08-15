@@ -1,5 +1,7 @@
 package queue
 
+import "encoding"
+
 type Header struct {
 	CentId   []byte
 	TenantId []byte
@@ -18,8 +20,22 @@ type Message interface {
 
 	Header() *Header
 
-	// SerializedMessage can be any serialized struct, should we change the type to bytes?
+	// MarshalBinary should marshal the message body to binary format
 	MarshalBinary() (data []byte, err error)
+}
+
+type MessageWrapper struct {
+	ReceivedHeader *Header
+	BinaryMarshaler encoding.BinaryMarshaler
+}
+
+func (rm *MessageWrapper) Header() *Header {
+	return rm.ReceivedHeader
+}
+
+func (rm *MessageWrapper) MarshalBinary() (data []byte, err error) {
+	// TODO marshaling implementation is not decided yet
+	return rm.BinaryMarshaler.MarshalBinary()
 }
 
 // Queue interface to be implemented by any queue provider for a Cent node.
@@ -33,7 +49,7 @@ type Queue interface {
 
 	// Dequeue the message but resurface it after the set timeOut
 	// (Pull model)
-	Dequeue(queue string) (id, msg Message, err error)
+	Dequeue(queue string) (id string, msg []byte, err error)
 
 	// Delete the message with the given id, no resurface afterwards
 	Delete(queue, id string) error
@@ -54,7 +70,7 @@ const (
 // A handler function receives a single message from a queue and handles it after deserializing to proper type.
 // Also returns a proper status after the execution.
 // Rationale: abstract away the queuing details from business logic. Makes it easier to test the handlers.
-type MessageHandler func(msg Message) (HandlerStatus, error)
+type MessageHandler func(msg []byte) (HandlerStatus, error)
 
 type WorkerConfig struct {
 	queueName string
@@ -66,7 +82,7 @@ type WorkerConfig struct {
 // while also better isolating queue interaction based tests.
 type Worker interface {
 
-	Start(config WorkerConfig)
+	Start(config *WorkerConfig)
 
 	// Add a handler for the queue that this worker handles
 	AddHandler(handler MessageHandler)
