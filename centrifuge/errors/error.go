@@ -5,6 +5,7 @@ import (
 	"reflect"
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/errors"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/code"
 	"github.com/go-errors/errors"
 )
 
@@ -22,12 +23,12 @@ func (err *errpb) Error() string {
 }
 
 // New constructs a new error with code and error message
-func New(code Code, message string) error {
+func New(code code.Code, message string) error {
 	return NewWithErrors(code, message, nil)
 }
 
 // NewWithErrors constructs a new error with code, error message, and errors
-func NewWithErrors(code Code, message string, errors map[string]string) error {
+func NewWithErrors(code code.Code, message string, errors map[string]string) error {
 	return &errpb{
 		Code:    int32(code),
 		Message: message,
@@ -45,24 +46,24 @@ type P2PError struct {
 // else failed and returns unknown P2PError
 func FromError(err error) (*P2PError, bool) {
 	if err == nil {
-		return &P2PError{err: &errorspb.Error{Code: int32(Ok)}}, true
+		return &P2PError{err: &errorspb.Error{Code: int32(code.Ok)}}, true
 	}
 
 	errpb, ok := err.(*errpb)
 	if !ok {
-		return &P2PError{err: &errorspb.Error{Code: int32(Unknown), Message: err.Error()}}, false
+		return &P2PError{err: &errorspb.Error{Code: int32(code.Unknown), Message: err.Error()}}, false
 	}
 
 	return &P2PError{err: (*errorspb.Error)(errpb)}, true
 }
 
 // Code returns the error code
-func (p2pErr *P2PError) Code() Code {
+func (p2pErr *P2PError) Code() code.Code {
 	if p2pErr == nil || p2pErr.err == nil {
-		return Ok
+		return code.Ok
 	}
 
-	return getCode(p2pErr.err.Code)
+	return code.To(p2pErr.err.Code)
 }
 
 // Message returns error message

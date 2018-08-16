@@ -1,4 +1,4 @@
-package errors
+package code
 
 import "net/http"
 
@@ -57,8 +57,9 @@ func HTTPCode(code Code) int {
 	return http.StatusInternalServerError
 }
 
-// getCode converts int32 to Code
-func getCode(code int32) Code {
+// To converts int32 to Code
+// returns unknown if code >= maxCode
+func To(code int32) Code {
 	if code >= int32(maxCode) {
 		return Unknown
 	}

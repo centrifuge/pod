@@ -9,6 +9,7 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/notification"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/code"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
@@ -50,7 +51,7 @@ func TestP2PService_IncompatibleRequest(t *testing.T) {
 
 	assert.Error(t, err)
 	p2perr, _ := errors.FromError(err)
-	assert.Equal(t, p2perr.Code(), errors.VersionMismatch)
+	assert.Equal(t, p2perr.Code(), code.VersionMismatch)
 	assert.Nil(t, res)
 
 	// Test invalid network
@@ -59,7 +60,7 @@ func TestP2PService_IncompatibleRequest(t *testing.T) {
 
 	assert.Error(t, err)
 	p2perr, _ = errors.FromError(err)
-	assert.Equal(t, p2perr.Code(), errors.NetworkMismatch)
+	assert.Equal(t, p2perr.Code(), code.NetworkMismatch)
 	assert.Nil(t, res)
 }
 

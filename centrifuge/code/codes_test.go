@@ -1,6 +1,6 @@
 // +build unit
 
-package errors
+package code
 
 import (
 	"net/http"
@@ -35,7 +35,7 @@ func TestHTTPCode(t *testing.T) {
 	}
 }
 
-func Test_getCode(t *testing.T) {
+func TestToCode(t *testing.T) {
 	tests := []struct {
 		code int32
 		want Code
@@ -57,7 +57,7 @@ func Test_getCode(t *testing.T) {
 	}
 
 	for _, c := range tests {
-		if got := getCode(c.code); got != c.want {
+		if got := To(c.code); got != c.want {
 			t.Fatalf("Error code mismatch: %d != %d", got, c.want)
 		}
 	}

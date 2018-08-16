@@ -5,21 +5,23 @@ package errors
 import (
 	"reflect"
 	"testing"
+
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/code"
 )
 
 func TestP2PError(t *testing.T) {
 	tests := []struct {
-		code   Code
+		code   code.Code
 		msg    string
 		errors map[string]string
 	}{
 		{
-			code: AuthenticationFailed,
+			code: code.AuthenticationFailed,
 			msg:  "Node authentication failed",
 		},
 
 		{
-			code: DocumentNotFound,
+			code: code.DocumentNotFound,
 			msg:  "Invalid document",
 			errors: map[string]string{
 				"document_root":   "root empty",
@@ -28,7 +30,7 @@ func TestP2PError(t *testing.T) {
 		},
 
 		{
-			code: Code(100),
+			code: code.Code(100),
 			msg:  "Unknown error",
 		},
 	}
@@ -48,10 +50,7 @@ func TestP2PError(t *testing.T) {
 			t.Fatalf("errors mismatch: %v != %v", got, c.errors)
 		}
 
-		want := c.code
-		if want >= maxCode {
-			want = Unknown
-		}
+		want := code.To(int32(c.code))
 
 		if got := p2perr.Code(); got != want {
 			t.Fatalf("code mismatch: %v != %v", got, want)
