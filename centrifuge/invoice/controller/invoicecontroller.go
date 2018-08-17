@@ -2,11 +2,12 @@ package invoicecontroller
 
 import (
 	"context"
+
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/service"
 	google_protobuf2 "github.com/golang/protobuf/ptypes/empty"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/repository"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 )
 
 // Struct needed as it is used to register the grpc services attached to the grpc server
@@ -15,7 +16,7 @@ type InvoiceDocumentController struct{}
 func getInvoiceDocumentService() *invoiceservice.InvoiceDocumentService {
 	return &invoiceservice.InvoiceDocumentService{
 		InvoiceRepository:     invoicerepository.GetInvoiceRepository(),
-		CoreDocumentProcessor: coredocument.GetDefaultCoreDocumentProcessor(),
+		CoreDocumentProcessor: coredocument.NewDefaultProcessor(),
 	}
 }
 

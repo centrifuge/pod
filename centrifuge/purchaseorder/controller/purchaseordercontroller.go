@@ -2,11 +2,12 @@ package purchaseordercontroller
 
 import (
 	"context"
+
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder/service"
-	google_protobuf2 "github.com/golang/protobuf/ptypes/empty"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder/repository"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder/service"
+	google_protobuf2 "github.com/golang/protobuf/ptypes/empty"
 )
 
 // Struct needed as it is used to register the grpc services attached to the grpc server
@@ -15,7 +16,7 @@ type PurchaseOrderDocumentController struct{}
 func getPurchaseOrderDocumentService() *purchaseorderservice.PurchaseOrderDocumentService {
 	return &purchaseorderservice.PurchaseOrderDocumentService{
 		PurchaseOrderRepository: purchaseorderrepository.GetPurchaseOrderRepository(),
-		CoreDocumentProcessor:   coredocument.GetDefaultCoreDocumentProcessor(),
+		CoreDocumentProcessor:   coredocument.NewDefaultProcessor(),
 	}
 }
 

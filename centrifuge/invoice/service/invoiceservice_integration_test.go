@@ -4,6 +4,9 @@ package invoiceservice_test
 
 import (
 	"context"
+	"os"
+	"testing"
+
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
@@ -13,8 +16,6 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/service"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/stretchr/testify/assert"
-	"os"
-	"testing"
 )
 
 func TestMain(m *testing.M) {
@@ -40,7 +41,7 @@ func generateEmptyInvoiceForProcessing() (doc *invoice.Invoice) {
 func TestInvoiceDocumentService_HandleAnchorInvoiceDocument_Integration(t *testing.T) {
 	s := invoiceservice.InvoiceDocumentService{
 		InvoiceRepository:     invoicerepository.GetInvoiceRepository(),
-		CoreDocumentProcessor: coredocument.GetDefaultCoreDocumentProcessor(),
+		CoreDocumentProcessor: coredocument.NewDefaultProcessor(),
 	}
 	doc := generateEmptyInvoiceForProcessing()
 	doc.Document.Data.SenderCountry = "DE"
@@ -56,7 +57,6 @@ func TestInvoiceDocumentService_HandleAnchorInvoiceDocument_Integration(t *testi
 	loadedInvoice, _ := invoicerepository.GetInvoiceRepository().FindById(doc.Document.CoreDocument.DocumentIdentifier)
 	assert.Equal(t, "DE", loadedInvoice.Data.SenderCountry,
 		"Didn't save the invoice data correctly")
-
 
 	//Invoice Service should error out if trying to anchor the same document ID again
 	doc.Document.Data.SenderCountry = "ES"

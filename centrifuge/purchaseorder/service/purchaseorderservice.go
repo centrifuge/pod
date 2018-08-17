@@ -21,7 +21,7 @@ var log = logging.Logger("rest-api")
 // Struct needed as it is used to register the grpc services attached to the grpc server
 type PurchaseOrderDocumentService struct {
 	PurchaseOrderRepository purchaseorderrepository.PurchaseOrderRepository
-	CoreDocumentProcessor   coredocument.CoreDocumentProcessorInterface
+	CoreDocumentProcessor   coredocument.Processor
 }
 
 func fillCoreDocIdentifiers(doc *purchaseorderpb.PurchaseOrderDocument) error {

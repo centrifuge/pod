@@ -8,6 +8,7 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/anchor"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/code"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/p2p"
@@ -19,83 +20,68 @@ import (
 
 var log = logging.Logger("coredocument")
 
-// ----- ERROR -----
-type ErrInconsistentState struct {
-	message string
-}
-
-func NewErrInconsistentState(message string) *ErrInconsistentState {
-	padded := ""
-	if len(message) > 0 {
-		padded = fmt.Sprintf(": %s", message)
-	}
-	return &ErrInconsistentState{
-		message: fmt.Sprintf("Inconsistent CoreDocument state%s", padded),
-	}
-}
-func (e *ErrInconsistentState) Error() string {
-	return e.message
-}
-
-// ----- END ERROR -----
-
-// CoreDocumentProcessor is the processor that can deal with CoreDocuments and performs actions on them such as
-// anchoring, sending on the p2p level, or signing.
-type CoreDocumentProcessor struct {
-	IdentityService identity.IdentityService
-}
-
-// CoreDocumentProcessorInterface identifies an implementation, which can do a bunch of things with a CoreDocument.
+// Processor identifies an implementation, which can do a bunch of things with a CoreDocument.
 // E.g. send, anchor, etc.
-type CoreDocumentProcessorInterface interface {
+type Processor interface {
 	Send(coreDocument *coredocumentpb.CoreDocument, ctx context.Context, recipient []byte) (err error)
 	Anchor(document *coredocumentpb.CoreDocument) (err error)
 }
 
-func GetDefaultCoreDocumentProcessor() CoreDocumentProcessorInterface {
-	return &CoreDocumentProcessor{IdentityService: identity.NewEthereumIdentityService()}
+// defaultProcessor implements Processor interface
+type defaultProcessor struct {
+	IdentityService identity.IdentityService
 }
 
-// Send sends the given CoreDocumentProcessor to the given recipient on the P2P layer
-func (cdp *CoreDocumentProcessor) Send(coreDocument *coredocumentpb.CoreDocument, ctx context.Context, recipient []byte) (err error) {
+// NewDefaultProcessor returns the default implementation of CoreDocument Processor
+func NewDefaultProcessor() Processor {
+	return &defaultProcessor{
+		IdentityService: identity.NewEthereumIdentityService()}
+}
+
+// Send sends the given defaultProcessor to the given recipient on the P2P layer
+func (dp *defaultProcessor) Send(coreDocument *coredocumentpb.CoreDocument, ctx context.Context, recipient []byte) (err error) {
 	if coreDocument == nil {
 		return errors.NilError(coreDocument)
 	}
 
-	id, err := cdp.IdentityService.LookupIdentityForId(recipient)
+	id, err := dp.IdentityService.LookupIdentityForId(recipient)
 	if err != nil {
-		log.Errorf("Error: %v\n", err)
+		log.Errorf("error fetching receiver identity: %v\n", err)
 		return err
 	}
 
-	lastb58Key, err := id.GetCurrentP2PKey()
+	lastB58Key, err := id.GetCurrentP2PKey()
 	if err != nil {
-		log.Errorf("Error: %v\n", err)
+		log.Errorf("error fetching p2p key: %v\n", err)
 		return err
 	}
 
-	log.Infof("Sending Document to CentID [%v] with Key [%v]\n", recipient, lastb58Key)
-	clientWithProtocol := fmt.Sprintf("/ipfs/%s", lastb58Key)
+	log.Infof("Sending Document to CentID [%v] with Key [%v]\n", recipient, lastB58Key)
+	clientWithProtocol := fmt.Sprintf("/ipfs/%s", lastB58Key)
 	client := p2p.OpenClient(clientWithProtocol)
-	log.Infof("Done opening connection against [%s]\n", lastb58Key)
+	log.Infof("Done opening connection against [%s]\n", lastB58Key)
 
 	hostInstance := p2p.GetHost()
 	bSenderId, err := hostInstance.ID().ExtractPublicKey().Bytes()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to extract pub key: %v", err)
 	}
+
 	_, err = client.Post(context.Background(), &p2ppb.P2PMessage{Document: coreDocument, SenderCentrifugeId: bSenderId})
 	if err != nil {
+		// this is p2pError, lets not format it
 		return err
 	}
-	return
+
+	return nil
 }
 
 // Anchor anchors the given CoreDocument
-func (cd *CoreDocumentProcessor) Anchor(document *coredocumentpb.CoreDocument) error {
+func (dp *defaultProcessor) Anchor(document *coredocumentpb.CoreDocument) error {
 	if document == nil {
 		return errors.NilError(document)
 	}
+
 	log.Infof("Anchoring document with identifiers: [document: %#x, current: %#x, next: %#x], rootHash: %#x", document.DocumentIdentifier, document.CurrentIdentifier, document.NextIdentifier, document.DocumentRoot)
 	log.Debugf("Anchoring document with details %v", document)
 
@@ -104,6 +90,7 @@ func (cd *CoreDocumentProcessor) Anchor(document *coredocumentpb.CoreDocument) e
 		log.Error(err)
 		return err
 	}
+
 	// TODO: we should replace this with using the DocumentRoot once signing has been properly implemented
 	rootHash, err := tools.SliceToByte32(document.DataRoot)
 	if err != nil {
@@ -117,31 +104,41 @@ func (cd *CoreDocumentProcessor) Anchor(document *coredocumentpb.CoreDocument) e
 		log.Error(err)
 		return err
 	}
+
 	anchorWatch := <-confirmations
-	err = anchorWatch.Error
-	return err
+	return anchorWatch.Error
 }
 
 // ValidateCoreDocument checks that all required fields are set before doing any processing with it
-func (cd *CoreDocumentProcessor) ValidateCoreDocument(document *coredocumentpb.CoreDocument) (valid bool, err error) {
-	if !tools.CheckMultiple32BytesFilled(document.DocumentIdentifier, document.NextIdentifier, document.CurrentIdentifier, document.DataRoot) {
-		return false, fmt.Errorf("found empty value in CoreDocument")
+func (dp *defaultProcessor) Validate(document *coredocumentpb.CoreDocument) (valid bool, errMsg string, errors map[string]string) {
+	errors = make(map[string]string)
+	if !tools.CheckMultiple32BytesFilled(
+		document.DocumentIdentifier,
+		document.NextIdentifier,
+		document.CurrentIdentifier,
+		document.DataRoot) {
+		errors["empty_identifiers"] = "Document contains empty identifiers"
 	}
 
-	if document.CoredocumentSalts == nil {
-		return false, fmt.Errorf("CoreDocumentSalts is not set")
+	salts := document.CoredocumentSalts
+	if salts == nil ||
+		!tools.CheckMultiple32BytesFilled(
+			salts.CurrentIdentifier,
+			salts.DataRoot,
+			salts.NextIdentifier,
+			salts.DocumentIdentifier,
+			salts.PreviousRoot) {
+		errors["empty_salts"] = "Document contains empty salts"
 	}
 
-	// Spot checking that DocumentIdentifier salt is filled. Perhaps it would be better to validate all salts in the future.
-	if tools.IsEmptyByteSlice(document.CoredocumentSalts.DocumentIdentifier) || len(document.CoredocumentSalts.DocumentIdentifier) != 32 {
-		return false, fmt.Errorf("CoreDocumentSalts not filled")
+	if len(errors) < 1 {
+		return true, "", nil
 	}
 
-	return true, nil
+	return false, "Invalid CoreDocument", errors
 }
 
-func (cd *CoreDocumentProcessor) getDocumentTree(document *coredocumentpb.CoreDocument) (tree *proofs.DocumentTree, err error) {
-	// TODO: this currently panics if salts are not filled. It should return an error instead. Add test case for that
+func (dp *defaultProcessor) getDocumentTree(document *coredocumentpb.CoreDocument) (tree *proofs.DocumentTree, err error) {
 	t := proofs.NewDocumentTree()
 	tree = &t
 	sha256Hash := sha256.New()
@@ -153,19 +150,23 @@ func (cd *CoreDocumentProcessor) getDocumentTree(document *coredocumentpb.CoreDo
 	return tree, nil
 }
 
-func (cd *CoreDocumentProcessor) CalculateSigningRoot(document *coredocumentpb.CoreDocument) error {
-	valid, err := cd.ValidateCoreDocument(document)
+func (dp *defaultProcessor) calculateSigningRoot(document *coredocumentpb.CoreDocument) error {
+	valid, errMsg, errs := dp.Validate(document)
 	if !valid {
-		return err
+		return errors.NewWithErrors(code.DocumentInvalid, errMsg, errs)
 	}
-	tree, err := cd.getDocumentTree(document)
+
+	tree, err := dp.getDocumentTree(document)
+	if err != nil {
+
+	}
 	document.SigningRoot = tree.RootHash()
 	return nil
 }
 
-func (cd *CoreDocumentProcessor) Sign(document *coredocumentpb.CoreDocument) (err error) {
+func (dp *defaultProcessor) Sign(document *coredocumentpb.CoreDocument) (err error) {
 	// TODO: The signing root shouldn't be set in this method, instead we should split the entire flow into two separate parts: create/update document & sign document
-	err = cd.CalculateSigningRoot(document)
+	err = dp.calculateSigningRoot(document)
 	if err != nil {
 		return err
 	}

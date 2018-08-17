@@ -3,18 +3,19 @@
 package coredocument
 
 import (
+	"os"
+	"testing"
+
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/stretchr/testify/assert"
-	"os"
-	"testing"
 )
 
-var cdp CoreDocumentProcessor
+var cdp defaultProcessor
 
 func TestMain(m *testing.M) {
-	cdp = CoreDocumentProcessor{}
+	cdp = defaultProcessor{}
 	result := m.Run()
 	os.Exit(result)
 }

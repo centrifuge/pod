@@ -1,16 +1,17 @@
 package coredocumentrepository
 
 import (
-	"github.com/syndtr/goleveldb/leveldb"
+	"sync"
+
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/golang/protobuf/proto"
-	"sync"
+	"github.com/syndtr/goleveldb/leveldb"
 )
 
 var once sync.Once
 
 type LevelDBCoreDocumentRepository struct {
-	Leveldb *leveldb.DB
+	LevelDB *leveldb.DB
 }
 
 func NewLevelDBCoreDocumentRepository(cdr CoreDocumentRepository) {
@@ -20,18 +21,18 @@ func NewLevelDBCoreDocumentRepository(cdr CoreDocumentRepository) {
 	return
 }
 
-func (repo *LevelDBCoreDocumentRepository) GetKey(id []byte) ([]byte) {
+func (repo *LevelDBCoreDocumentRepository) GetKey(id []byte) []byte {
 	return append([]byte("coredoc"), id...)
 }
 
 func (repo *LevelDBCoreDocumentRepository) FindById(id []byte) (doc *coredocumentpb.CoreDocument, err error) {
-	doc_bytes, err := repo.Leveldb.Get(repo.GetKey(id), nil)
+	docBytes, err := repo.LevelDB.Get(repo.GetKey(id), nil)
 	if err != nil {
 		return nil, err
 	}
 
 	doc = &coredocumentpb.CoreDocument{}
-	err = proto.Unmarshal(doc_bytes, doc)
+	err = proto.Unmarshal(docBytes, doc)
 	if err != nil {
 		return nil, err
 	}
@@ -45,6 +46,6 @@ func (repo *LevelDBCoreDocumentRepository) CreateOrUpdate(doc *coredocumentpb.Co
 	if err != nil {
 		return
 	}
-	err = repo.Leveldb.Put(key, data, nil)
+	err = repo.LevelDB.Put(key, data, nil)
 	return
 }

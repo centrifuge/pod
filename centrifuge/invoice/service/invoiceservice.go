@@ -20,7 +20,7 @@ var log = logging.Logger("rest-api")
 
 type InvoiceDocumentService struct {
 	InvoiceRepository     invoicerepository.InvoiceRepository
-	CoreDocumentProcessor coredocument.CoreDocumentProcessorInterface
+	CoreDocumentProcessor coredocument.Processor
 }
 
 func fillCoreDocIdentifiers(doc *invoicepb.InvoiceDocument) error {
