@@ -57,3 +57,10 @@ func TestP2PError(t *testing.T) {
 		}
 	}
 }
+
+func TestNilError(t *testing.T) {
+	err := New(code.Ok, "Success")
+	if err != nil {
+		t.Fatalf("expected nil error")
+	}
+}

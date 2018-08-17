@@ -28,9 +28,13 @@ func New(code code.Code, message string) error {
 }
 
 // NewWithErrors constructs a new error with code, error message, and errors
-func NewWithErrors(code code.Code, message string, errors map[string]string) error {
+func NewWithErrors(c code.Code, message string, errors map[string]string) error {
+	if c == code.Ok {
+		return nil
+	}
+
 	return &errpb{
-		Code:    int32(code),
+		Code:    int32(c),
 		Message: message,
 		Errors:  errors,
 	}

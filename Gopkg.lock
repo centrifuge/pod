@@ -2,18 +2,19 @@
 
 
 [[projects]]
-  digest = "1:28e5230a4ea9b2dcf6423250cf96414449739804d703f0269180d4388a0a03f9"
+  digest = "1:c75da3666c696707c1330645a550f3f6ed907ad71ee3333e5294504fe7ccab28"
   name = "github.com/CentrifugeInc/centrifuge-protobufs"
   packages = [
     "documenttypes",
     "gen/go/coredocument",
+    "gen/go/errors",
     "gen/go/invoice",
     "gen/go/notification",
     "gen/go/p2p",
     "gen/go/purchaseorder",
   ]
   pruneopts = "T"
-  revision = "390445583d8f9c34803d4625abb8607a86f8bad1"
+  revision = "b7fa428427399b8de836278cbb6810e023c3a816"
   source = "git@github.com:CentrifugeInc/centrifuge-protobufs"
 
 [[projects]]
@@ -42,7 +43,7 @@
   name = "github.com/aristanetworks/goarista"
   packages = ["monotime"]
   pruneopts = "UT"
-  revision = "70ad3c3262ada0444973f3f02e4a8339319236b3"
+  revision = "18b896026201d8e1758468d9c5d5a558c69c5e9b"
 
 [[projects]]
   branch = "master"
@@ -977,11 +978,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:080e5f630945ad754f4b920e60b4d3095ba0237ebf88dc462eb28002932e3805"
+  digest = "1:8a020f916b23ff574845789daee6818daf8d25a4852419aae3f0b12378ba432a"
   name = "github.com/spf13/jwalterweatherman"
   packages = ["."]
   pruneopts = "UT"
-  revision = "7c0cea34c8ece3fbeb2b27ab9b59511d360fb394"
+  revision = "14d3d4c518341bea657dd8a226f5121c0ff8c9f2"
 
 [[projects]]
   digest = "1:dab83a1bbc7ad3d7a6ba1a1cc1760f25ac38cdf7d96a5cdd55cd915a4f5ceaf9"
@@ -1020,7 +1021,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:b3cfb8d82b1601a846417c3f31c03a7961862cb2c98dcf0959c473843e6d9a2b"
+  digest = "1:f2ffd421680b0a3f7887501b3c6974bcf19217ecd301d0e2c9b681940ec363d5"
   name = "github.com/syndtr/goleveldb"
   packages = [
     "leveldb",
@@ -1037,7 +1038,7 @@
     "leveldb/util",
   ]
   pruneopts = "UT"
-  revision = "c4c61651e9e37fa117f53c5a906d3b63090d8445"
+  revision = "ae2bd5eed72d46b28834ec3f60db3a3ebedd8dbd"
 
 [[projects]]
   branch = "master"
@@ -1141,11 +1142,11 @@
     "sha3",
   ]
   pruneopts = "UT"
-  revision = "de0752318171da717af4ce24d0a2e8626afaeb11"
+  revision = "aabede6cba87e37f413b3e60ebfc214f8eeca1b0"
 
 [[projects]]
   branch = "master"
-  digest = "1:32ccedeb989ddbbc16d33bd5dc6091d8e32d9cba96bf698a932f2c00adde849f"
+  digest = "1:d3ec973d61cc168a464181fc13778a928695d5ad136cf6fe9e8f33b24f8fd1de"
   name = "golang.org/x/net"
   packages = [
     "context",
@@ -1162,11 +1163,11 @@
     "websocket",
   ]
   pruneopts = "UT"
-  revision = "c39426892332e1bb5ec0a434a079bf82f5d30c54"
+  revision = "aaf60122140d3fcf75376d319f0554393160eb50"
 
 [[projects]]
   branch = "master"
-  digest = "1:ada3f6483b5d87199a41dfccf9e9965019d2c26ef9b199c58ab12bc57a9823cd"
+  digest = "1:4553db1a37356272494df0bd32ceba56f0183a17c136e696e25515392434bbfe"
   name = "golang.org/x/sys"
   packages = [
     "cpu",
@@ -1174,7 +1175,7 @@
     "windows",
   ]
   pruneopts = "UT"
-  revision = "98c5dad5d1a0e8a73845ecc8897d0bd56586511d"
+  revision = "1c9583448a9c3aa0f9a6a5241bf73c0bd8aafded"
 
 [[projects]]
   digest = "1:436b24586f8fee329e0dd65fd67c817681420cda1d7f934345c13fe78c212a73"
@@ -1221,18 +1222,18 @@
     "internal/fastwalk",
   ]
   pruneopts = "UT"
-  revision = "a434f64ace81347eff0fb4a32bc80a235e0ad762"
+  revision = "1dfe8478fdec02e49c998048ab9f761d64949349"
 
 [[projects]]
   branch = "master"
-  digest = "1:6c6b70cf6d2788d9f7dc6589bc88e0e1c7edc40612294431ebb7d09536d12240"
+  digest = "1:edfc7a0bed09f4d7af304129d96d563a53bcc9d8ebc8cd5443b845fda30f170b"
   name = "google.golang.org/genproto"
   packages = [
     "googleapis/api/annotations",
     "googleapis/rpc/status",
   ]
   pruneopts = "UT"
-  revision = "383e8b2c3b9e36c4076b235b32537292176bae20"
+  revision = "d0a8f471bba2dbb160885b0000d814ee5d559bad"
 
 [[projects]]
   digest = "1:3dd7996ce6bf52dec6a2f69fa43e7c4cefea1d4dfa3c8ab7a5f8a9f7434e239d"
@@ -1307,6 +1308,7 @@
   input-imports = [
     "github.com/CentrifugeInc/centrifuge-protobufs/documenttypes",
     "github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument",
+    "github.com/CentrifugeInc/centrifuge-protobufs/gen/go/errors",
     "github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice",
     "github.com/CentrifugeInc/centrifuge-protobufs/gen/go/notification",
     "github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p",

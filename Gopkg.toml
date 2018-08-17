@@ -29,7 +29,7 @@ required = ["github.com/roboll/go-vendorinstall", "github.com/golang/protobuf/pr
 [[constraint]]
   name = "github.com/CentrifugeInc/centrifuge-protobufs"
   source = "git@github.com:CentrifugeInc/centrifuge-protobufs"
-  revision = "390445583d8f9c34803d4625abb8607a86f8bad1"
+  revision = "b7fa428427399b8de836278cbb6810e023c3a816"
 
 [[constraint]]
   name = "github.com/Masterminds/semver"
