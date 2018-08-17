@@ -23,7 +23,7 @@ cache:
   - /tmp/depcache
 
 before_install:
-  - npm install -g truffle@4.1.14
+  - npm install -g truffle@4.1.13
 
 install:
   - mkdir -p ~/bin
