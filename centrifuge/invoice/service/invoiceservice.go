@@ -6,7 +6,6 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/service"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/repository"
@@ -27,7 +26,7 @@ func fillCoreDocIdentifiers(doc *invoicepb.InvoiceDocument) error {
 	if doc == nil {
 		return errors.NilError(doc)
 	}
-	filledCoreDoc, err := coredocumentservice.AutoFillDocumentIdentifiers(*doc.CoreDocument)
+	filledCoreDoc, err := coredocument.FillIdentifiers(*doc.CoreDocument)
 	if err != nil {
 		log.Error(err)
 		return err
@@ -122,7 +121,7 @@ func (s *InvoiceDocumentService) HandleSendInvoiceDocument(ctx context.Context, 
 func (s *InvoiceDocumentService) HandleGetInvoiceDocument(ctx context.Context, getInvoiceDocumentEnvelope *invoicepb.GetInvoiceDocumentEnvelope) (*invoicepb.InvoiceDocument, error) {
 	doc, err := s.InvoiceRepository.FindById(getInvoiceDocumentEnvelope.DocumentIdentifier)
 	if err != nil {
-		docFound, err1 := coredocumentrepository.GetCoreDocumentRepository().FindById(getInvoiceDocumentEnvelope.DocumentIdentifier)
+		docFound, err1 := coredocumentrepository.GetRepository().FindById(getInvoiceDocumentEnvelope.DocumentIdentifier)
 		if err1 == nil {
 			doc1, err1 := invoice.NewInvoiceFromCoreDocument(docFound)
 			doc = doc1.Document

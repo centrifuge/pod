@@ -6,7 +6,6 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/service"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder/repository"
@@ -28,7 +27,7 @@ func fillCoreDocIdentifiers(doc *purchaseorderpb.PurchaseOrderDocument) error {
 	if doc == nil {
 		return errors.NilError(doc)
 	}
-	filledCoreDoc, err := coredocumentservice.AutoFillDocumentIdentifiers(*doc.CoreDocument)
+	filledCoreDoc, err := coredocument.FillIdentifiers(*doc.CoreDocument)
 	if err != nil {
 		log.Error(err)
 		return err
@@ -124,7 +123,7 @@ func (s *PurchaseOrderDocumentService) HandleSendPurchaseOrderDocument(ctx conte
 func (s *PurchaseOrderDocumentService) HandleGetPurchaseOrderDocument(ctx context.Context, getPurchaseOrderDocumentEnvelope *purchaseorderpb.GetPurchaseOrderDocumentEnvelope) (*purchaseorderpb.PurchaseOrderDocument, error) {
 	doc, err := s.PurchaseOrderRepository.FindById(getPurchaseOrderDocumentEnvelope.DocumentIdentifier)
 	if err != nil {
-		docFound, err1 := coredocumentrepository.GetCoreDocumentRepository().FindById(getPurchaseOrderDocumentEnvelope.DocumentIdentifier)
+		docFound, err1 := coredocumentrepository.GetRepository().FindById(getPurchaseOrderDocumentEnvelope.DocumentIdentifier)
 		if err1 == nil {
 			doc1, err1 := purchaseorder.NewPurchaseOrderFromCoreDocument(docFound)
 			doc = doc1.Document

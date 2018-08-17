@@ -19,7 +19,7 @@ func Bootstrap() {
 	config.Config.InitializeViper()
 
 	levelDB := storage.NewLeveldbStorage(config.Config.GetStoragePath())
-	coredocumentrepository.NewLevelDBCoreDocumentRepository(&coredocumentrepository.LevelDBCoreDocumentRepository{levelDB})
+	coredocumentrepository.NewLevelDBRepository(&coredocumentrepository.LevelDBRepository{levelDB})
 	invoicerepository.NewLevelDBInvoiceRepository(&invoicerepository.LevelDBInvoiceRepository{levelDB})
 	purchaseorderrepository.NewLevelDBPurchaseOrderRepository(&purchaseorderrepository.LevelDBPurchaseOrderRepository{levelDB})
 	signatures.NewSigningService(signatures.SigningService{})
@@ -30,4 +30,3 @@ func createEthereumConnection() {
 	client := ethereum.NewClientConnection()
 	ethereum.SetConnection(client)
 }
-

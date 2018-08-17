@@ -3,14 +3,15 @@
 package purchaseorderrepository
 
 import (
-	"testing"
 	"os"
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
+	"testing"
+
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/stretchr/testify/assert"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
-	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
+	"github.com/stretchr/testify/assert"
+	"github.com/syndtr/goleveldb/leveldb"
 )
 
 var dbFileName = "/tmp/centrifuge_testing_podoc.leveldb"
@@ -27,7 +28,7 @@ func TestStorageService(t *testing.T) {
 	identifier := []byte("1")
 	invalidIdentifier := []byte("2")
 
-	purchaseorder := purchaseorderpb.PurchaseOrderDocument{CoreDocument: &coredocumentpb.CoreDocument{DocumentIdentifier:identifier}}
+	purchaseorder := purchaseorderpb.PurchaseOrderDocument{CoreDocument: &coredocumentpb.CoreDocument{DocumentIdentifier: identifier}}
 	repo := GetPurchaseOrderRepository()
 	err := repo.CreateOrUpdate(&purchaseorder)
 	assert.Nil(t, err, "CreateOrUpdate should not return error")
@@ -55,10 +56,10 @@ func TestLevelDBInvoiceRepository_StoreNilCoreDocument(t *testing.T) {
 	assert.Error(t, err, "should have thrown an error")
 }
 
-func Bootstrap() (*leveldb.DB) {
+func Bootstrap() *leveldb.DB {
 	levelDB := storage.NewLeveldbStorage(dbFileName)
 
-	coredocumentrepository.NewLevelDBCoreDocumentRepository(&coredocumentrepository.LevelDBCoreDocumentRepository{levelDB})
+	coredocumentrepository.NewLevelDBRepository(&coredocumentrepository.LevelDBRepository{levelDB})
 	NewLevelDBPurchaseOrderRepository(&LevelDBPurchaseOrderRepository{levelDB})
 
 	return levelDB

@@ -10,22 +10,23 @@ import (
 
 var once sync.Once
 
-type LevelDBCoreDocumentRepository struct {
+// LevelDBRepository is an implementation of Core Document Repository
+type LevelDBRepository struct {
 	LevelDB *leveldb.DB
 }
 
-func NewLevelDBCoreDocumentRepository(cdr CoreDocumentRepository) {
+func NewLevelDBRepository(cdr Repository) {
 	once.Do(func() {
 		coreDocumentRepository = cdr
 	})
 	return
 }
 
-func (repo *LevelDBCoreDocumentRepository) GetKey(id []byte) []byte {
+func (repo *LevelDBRepository) GetKey(id []byte) []byte {
 	return append([]byte("coredoc"), id...)
 }
 
-func (repo *LevelDBCoreDocumentRepository) FindById(id []byte) (doc *coredocumentpb.CoreDocument, err error) {
+func (repo *LevelDBRepository) FindById(id []byte) (doc *coredocumentpb.CoreDocument, err error) {
 	docBytes, err := repo.LevelDB.Get(repo.GetKey(id), nil)
 	if err != nil {
 		return nil, err
@@ -39,7 +40,7 @@ func (repo *LevelDBCoreDocumentRepository) FindById(id []byte) (doc *coredocumen
 	return
 }
 
-func (repo *LevelDBCoreDocumentRepository) CreateOrUpdate(doc *coredocumentpb.CoreDocument) (err error) {
+func (repo *LevelDBRepository) CreateOrUpdate(doc *coredocumentpb.CoreDocument) (err error) {
 	key := repo.GetKey(doc.DocumentIdentifier)
 	data, err := proto.Marshal(doc)
 

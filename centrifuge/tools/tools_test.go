@@ -3,14 +3,22 @@
 package tools
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestRandomByte32(t *testing.T) {
 	random := RandomByte32()
 	assert.NotNil(t, random, "Should receive non-nil")
 	assert.NotEqual(t, [32]byte{}, random, "Should receive a filled byte array")
+}
+
+func TestRandomSlice32(t *testing.T) {
+	random := RandomSlice32()
+	assert.NotNil(t, random, "should receive non-nil")
+	assert.False(t, IsEmptyByteSlice(random))
+	assert.Len(t, random, 32)
 }
 
 func TestIsEmptyByte(t *testing.T) {
