@@ -1,9 +1,8 @@
 package coredocument
 
 import (
-	"testing"
-
 	"reflect"
+	"testing"
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"

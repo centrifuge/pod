@@ -5,13 +5,12 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 )
 
-// coreDocValidator implements Validate method for document validation
-// Needs to typecast for document validation
-type coreDocValidator coredocumentpb.CoreDocument
+// Validate checks that all required fields are set before doing any processing with core document
+func Validate(document *coredocumentpb.CoreDocument) (valid bool, errMsg string, errors map[string]string) {
+	if document == nil {
+		return false, "Nil core document passed", nil
+	}
 
-// Validate validates the core document
-// doesn't mutate core document
-func (document *coreDocValidator) Validate() (valid bool, errMsg string, errors map[string]string) {
 	errors = make(map[string]string)
 
 	if tools.IsEmptyByteSlice(document.DocumentIdentifier) {
@@ -52,15 +51,4 @@ func (document *coreDocValidator) Validate() (valid bool, errMsg string, errors 
 	}
 
 	return false, "Invalid CoreDocument", errors
-}
-
-// Validate checks that all required fields are set before doing any processing with core document
-// will panic if the coreDocument is nil
-func Validate(coreDoc *coredocumentpb.CoreDocument) (valid bool, errMsg string, errors map[string]string) {
-	if coreDoc == nil {
-		panic("Nil core document passed")
-	}
-
-	v := (*coreDocValidator)(coreDoc)
-	return v.Validate()
 }
