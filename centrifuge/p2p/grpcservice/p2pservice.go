@@ -3,31 +3,25 @@ package grpcservice
 import (
 	"context"
 	"fmt"
+	"time"
+
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/notification"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/code"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/version"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/notification"
-	"github.com/golang/protobuf/ptypes"
-	"time"
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/notification"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/notification"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/version"
+	"github.com/golang/protobuf/ptypes"
 )
 
-type IncompatibleNetworkError struct {
-	clientNetworkId uint32
+func incompatibleVersionError(nodeVersion string) error {
+	return errors.New(code.VersionMismatch, fmt.Sprintf("Incompatible version: node version: %s, client version: %s", version.GetVersion(), nodeVersion))
 }
 
-func (e *IncompatibleNetworkError) Error() string {
-	return fmt.Sprintf("Incompatible network id: this node is on: %d, client reported: %d", config.Config.GetNetworkID(), e.clientNetworkId)
-}
-
-type IncompatibleVersionError struct {
-	clientVersion string
-}
-
-func (e *IncompatibleVersionError) Error() string {
-	return fmt.Sprintf("Incompatible version: this node has version: %s, client reported: %s", version.GetVersion(), e.clientVersion)
+func incompatibleNetworkError(nodeNetwork uint32) error {
+	return errors.New(code.NetworkMismatch, fmt.Sprintf("Incompatible network id: node network: %d, client network: %d", config.Config.GetNetworkID(), nodeNetwork))
 }
 
 type P2PService struct {
@@ -44,44 +38,43 @@ func (srv *P2PService) HandleP2PPost(ctx context.Context, req *p2ppb.P2PMessage)
 	// Check call compatibility:
 	compatible, err := version.CheckMajorCompatibility(req.CentNodeVersion)
 	if err != nil {
-		return nil, err
+		return nil, errors.New(code.Unknown, err.Error())
 	}
 	if !compatible {
-		return nil, &IncompatibleVersionError{req.CentNodeVersion}
+		return nil, incompatibleVersionError(req.CentNodeVersion)
 	}
 
 	if req.NetworkIdentifier != config.Config.GetNetworkID() {
-		return nil, &IncompatibleNetworkError{req.NetworkIdentifier}
+		return nil, incompatibleNetworkError(req.NetworkIdentifier)
 	}
 
 	if req.Document == nil {
-		return nil, errors.GenerateNilParameterError(req.Document)
+		return nil, errors.New(code.DocumentInvalid, errors.NilError(req.Document).Error())
 	}
 
+	// TODO(ved): do coredoc validation before create/update
 	err = coredocumentrepository.GetCoreDocumentRepository().CreateOrUpdate(req.Document)
 	if err != nil {
-		return nil, err
+		return nil, errors.New(code.Unknown, err.Error())
 	}
 
 	ts, err := ptypes.TimestampProto(time.Now().UTC())
 	if err != nil {
-		return nil, err
+		return nil, errors.New(code.Unknown, err.Error())
 	}
 
 	notificationMsg := &notificationpb.NotificationMessage{
-		EventType: uint32(notification.RECEIVED_PAYLOAD),
+		EventType:    uint32(notification.RECEIVED_PAYLOAD),
 		CentrifugeId: req.SenderCentrifugeId,
-		Recorded: ts,
-		Document: req.Document,
+		Recorded:     ts,
+		Document:     req.Document,
 	}
 
 	// Async until we add queuing
 	go srv.Notifier.Send(notificationMsg)
-	//
 
-	rep = &p2ppb.P2PReply{
+	return &p2ppb.P2PReply{
 		CentNodeVersion: version.GetVersion().String(),
 		Document:        req.Document,
-	}
-	return
+	}, nil
 }
