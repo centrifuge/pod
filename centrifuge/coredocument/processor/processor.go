@@ -1,4 +1,4 @@
-package coredocument
+package coredocumentprocessor
 
 import (
 	"context"
@@ -9,6 +9,7 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/anchor"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/code"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/p2p"
@@ -109,35 +110,6 @@ func (dp *defaultProcessor) Anchor(document *coredocumentpb.CoreDocument) error 
 	return anchorWatch.Error
 }
 
-// ValidateCoreDocument checks that all required fields are set before doing any processing with it
-func (dp *defaultProcessor) Validate(document *coredocumentpb.CoreDocument) (valid bool, errMsg string, errors map[string]string) {
-	errors = make(map[string]string)
-	if !tools.CheckMultiple32BytesFilled(
-		document.DocumentIdentifier,
-		document.NextIdentifier,
-		document.CurrentIdentifier,
-		document.DataRoot) {
-		errors["empty_identifiers"] = "Document contains empty identifiers"
-	}
-
-	salts := document.CoredocumentSalts
-	if salts == nil ||
-		!tools.CheckMultiple32BytesFilled(
-			salts.CurrentIdentifier,
-			salts.DataRoot,
-			salts.NextIdentifier,
-			salts.DocumentIdentifier,
-			salts.PreviousRoot) {
-		errors["empty_salts"] = "Document contains empty salts"
-	}
-
-	if len(errors) < 1 {
-		return true, "", nil
-	}
-
-	return false, "Invalid CoreDocument", errors
-}
-
 func (dp *defaultProcessor) getDocumentTree(document *coredocumentpb.CoreDocument) (tree *proofs.DocumentTree, err error) {
 	t := proofs.NewDocumentTree()
 	tree = &t
@@ -151,7 +123,7 @@ func (dp *defaultProcessor) getDocumentTree(document *coredocumentpb.CoreDocumen
 }
 
 func (dp *defaultProcessor) calculateSigningRoot(document *coredocumentpb.CoreDocument) error {
-	valid, errMsg, errs := dp.Validate(document)
+	valid, errMsg, errs := coredocument.Validate(document)
 	if !valid {
 		return errors.NewWithErrors(code.DocumentInvalid, errMsg, errs)
 	}

@@ -57,6 +57,10 @@ func IsEmptyByte32(source [32]byte) bool {
 	return IsEmptyByteSlice(sl)
 }
 
+// IsEmptyByteSlice checks if the provided slice is empty
+// returns true if:
+// s == nil
+// every element is == 0
 func IsEmptyByteSlice(s []byte) bool {
 	if s == nil {
 		return true

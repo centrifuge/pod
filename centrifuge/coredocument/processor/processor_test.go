@@ -1,6 +1,6 @@
 // +build unit
 
-package coredocument
+package coredocumentprocessor
 
 import (
 	"os"

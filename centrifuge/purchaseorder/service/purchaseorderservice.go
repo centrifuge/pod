@@ -5,6 +5,7 @@ import (
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/processor"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder"
@@ -20,7 +21,7 @@ var log = logging.Logger("rest-api")
 // Struct needed as it is used to register the grpc services attached to the grpc server
 type PurchaseOrderDocumentService struct {
 	PurchaseOrderRepository purchaseorderrepository.PurchaseOrderRepository
-	CoreDocumentProcessor   coredocument.Processor
+	CoreDocumentProcessor   coredocumentprocessor.Processor
 }
 
 func fillCoreDocIdentifiers(doc *purchaseorderpb.PurchaseOrderDocument) error {

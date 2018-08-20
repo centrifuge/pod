@@ -5,6 +5,7 @@ import (
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/processor"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
@@ -19,7 +20,7 @@ var log = logging.Logger("rest-api")
 
 type InvoiceDocumentService struct {
 	InvoiceRepository     invoicerepository.InvoiceRepository
-	CoreDocumentProcessor coredocument.Processor
+	CoreDocumentProcessor coredocumentprocessor.Processor
 }
 
 func fillCoreDocIdentifiers(doc *invoicepb.InvoiceDocument) error {
