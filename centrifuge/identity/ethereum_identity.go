@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"math/big"
+
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools"
@@ -13,8 +15,7 @@ import (
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/go-errors/errors"
 	logging "github.com/ipfs/go-log"
-	"math/big"
-	)
+)
 
 var log = logging.Logger("identity")
 
@@ -266,7 +267,7 @@ func sendIdentityCreationTransaction(identityFactory IdentityFactory, opts *bind
 func setUpKeyRegisteredEventListener(ethCreatedContract WatchKeyRegistered, identity *EthereumIdentity, keyType int, key []byte, confirmations chan<- *WatchIdentity) (err error) {
 	//listen to this particular key being mined/event is triggered
 	ctx, cancelFunc := ethereum.DefaultWaitForTransactionMiningContext()
-	watchOpts := &bind.WatchOpts{Context:ctx}
+	watchOpts := &bind.WatchOpts{Context: ctx}
 
 	//only setting up a channel of 1 notification as there should always be only one notification coming for this
 	//single key being registered
@@ -297,7 +298,7 @@ func setUpKeyRegisteredEventListener(ethCreatedContract WatchKeyRegistered, iden
 func setUpRegistrationEventListener(ethCreatedContract WatchIdentityCreated, identityToBeCreated Identity, confirmations chan<- *WatchIdentity) (err error) {
 	//listen to this particular identity being mined/event is triggered
 	ctx, cancelFunc := ethereum.DefaultWaitForTransactionMiningContext()
-	watchOpts := &bind.WatchOpts{Context:ctx}
+	watchOpts := &bind.WatchOpts{Context: ctx}
 
 	//only setting up a channel of 1 notification as there should always be only one notification coming for this
 	//single identity being registered
@@ -389,7 +390,7 @@ func (ids *EthereumIdentityService) CreateIdentity(centrifugeId []byte, confirma
 		log.Infof("Failed to set up event listener for identity [id: %s]: %v", id, wError)
 		return
 	}
-  
+
 	err = sendIdentityCreationTransaction(ethIdentityFactoryContract, opts, id)
 	if err != nil {
 		wError := errors.Wrap(err, 1)

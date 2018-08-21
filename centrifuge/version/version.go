@@ -1,8 +1,9 @@
 package version
 
 import (
-	"github.com/Masterminds/semver"
 	"fmt"
+
+	"github.com/Masterminds/semver"
 )
 
 // Git SHA1 commit hash of the release (set via linker flags - ldflags)

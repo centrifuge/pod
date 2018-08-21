@@ -2,16 +2,17 @@
 package notification
 
 import (
-	"testing"
 	"os"
-	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/notification"
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
+	"testing"
 	"time"
+
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/notification"
+	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
+	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/stretchr/testify/assert"
-	"github.com/golang/protobuf/jsonpb"
 )
 
 func TestMain(m *testing.M) {
@@ -43,5 +44,3 @@ func TestWebhookConstructPayload(t *testing.T) {
 	assert.Equal(t, notificationMessage.CentrifugeId, unmarshaledNotificationMessage.CentrifugeId, "CentrifugeId should be equal")
 	assert.Equal(t, notificationMessage.EventType, unmarshaledNotificationMessage.EventType, "EventType should be equal")
 }
-
-

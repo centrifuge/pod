@@ -1,9 +1,10 @@
 package storage
 
 import (
+	"sync"
+
 	logging "github.com/ipfs/go-log"
 	"github.com/syndtr/goleveldb/leveldb"
-	"sync"
 )
 
 var log = logging.Logger("storage")

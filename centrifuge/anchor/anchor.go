@@ -8,5 +8,5 @@ type Anchor struct {
 
 type WatchAnchor struct {
 	Anchor *Anchor
-	Error error
+	Error  error
 }

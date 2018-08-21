@@ -3,11 +3,12 @@
 package ethereum_test
 
 import (
+	"os"
+	"testing"
+
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
 	"github.com/magiconair/properties/assert"
-	"os"
-	"testing"
 )
 
 func TestMain(m *testing.M) {

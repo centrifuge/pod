@@ -2,21 +2,22 @@ package ethereum
 
 import (
 	"context"
+	"math/big"
+	"net/url"
+	"reflect"
+	"sort"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/go-errors/errors"
 	logging "github.com/ipfs/go-log"
-	"net/url"
-	"reflect"
-	"strings"
-	"sync"
-	"time"
-	"github.com/ethereum/go-ethereum/rpc"
-	"strconv"
-	"sort"
-	"math/big"
 )
 
 const TransactionUnderpriced = "replacement transaction underpriced"
@@ -69,7 +70,7 @@ func (gethClient GethClient) GetNonceMutex() *sync.Mutex {
 	return gethClient.NonceMutex
 }
 
-func NewClientConnection() (GethClient) {
+func NewClientConnection() GethClient {
 	log.Info("Opening connection to Ethereum:", config.Config.GetEthereumNodeURL())
 	u, err := url.Parse(config.Config.GetEthereumNodeURL())
 	if err != nil {
@@ -83,7 +84,7 @@ func NewClientConnection() (GethClient) {
 	if err != nil {
 		log.Fatalf("Failed to connect to the Ethereum client [%s]: %v", u.String(), err)
 	}
-	return GethClient{client,c, u, &sync.Mutex{}}
+	return GethClient{client, c, u, &sync.Mutex{}}
 }
 
 // Note that this is a singleton and is the same connection for the whole application.
@@ -204,7 +205,7 @@ func IncrementNonce(opts *bind.TransactOpts) (err error) {
 func CalculateIncrement(chainNonce uint64, res map[string]map[string]map[string][]string, opts *bind.TransactOpts) {
 	keys := make([]int, 0, len(res["pending"][opts.From.Hex()]))
 	for k, _ := range res["pending"][opts.From.Hex()] {
-		ki, _ :=strconv.Atoi(k)
+		ki, _ := strconv.Atoi(k)
 		keys = append(keys, ki)
 	}
 	sort.Ints(keys)

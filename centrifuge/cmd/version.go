@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/version"
 	"github.com/spf13/cobra"
 )

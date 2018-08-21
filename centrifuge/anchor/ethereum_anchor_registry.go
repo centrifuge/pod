@@ -2,6 +2,8 @@ package anchor
 
 import (
 	"context"
+	"math/big"
+
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
@@ -10,8 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/go-errors/errors"
-	"math/big"
-	)
+)
 
 //Supported anchor schema version as stored on public registry
 const ANCHOR_SCHEMA_VERSION uint = 1
@@ -106,7 +107,7 @@ func sendRegistrationTransaction(ethRegistryContract RegisterAnchor, opts *bind.
 func setUpRegistrationEventListener(ethRegistryContract WatchAnchorRegistered, from common.Address, anchorToBeRegistered *Anchor, confirmations chan<- *WatchAnchor) (err error) {
 	//listen to this particular anchor being mined/event is triggered
 	ctx, cancelFunc := ethereum.DefaultWaitForTransactionMiningContext()
-	watchOpts := &bind.WatchOpts{Context:ctx}
+	watchOpts := &bind.WatchOpts{Context: ctx}
 
 	//only setting up a channel of 1 notification as there should always be only one notification coming for this
 	//single anchor being registered

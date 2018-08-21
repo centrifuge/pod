@@ -3,6 +3,11 @@
 package ethereum_test
 
 import (
+	"math/big"
+	"os"
+	"testing"
+	"time"
+
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
@@ -12,10 +17,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/go-errors/errors"
 	"github.com/stretchr/testify/assert"
-	"math/big"
-	"os"
-	"testing"
-	"time"
 )
 
 func TestMain(m *testing.M) {

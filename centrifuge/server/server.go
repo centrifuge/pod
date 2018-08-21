@@ -6,15 +6,16 @@ package server
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"net"
+	"net/http"
+	"strings"
+
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	logging "github.com/ipfs/go-log"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-	"net"
-	"net/http"
-	"strings"
 )
 
 var log = logging.Logger("server")

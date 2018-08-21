@@ -3,12 +3,13 @@
 package anchor_test
 
 import (
+	"os"
+	"testing"
+
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/anchor"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/stretchr/testify/assert"
-	"os"
-	"testing"
 )
 
 func TestMain(m *testing.M) {

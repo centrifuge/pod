@@ -3,12 +3,13 @@
 package invoicerepository_test
 
 import (
-	"testing"
 	"os"
+	"testing"
+
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/repository"
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/stretchr/testify/assert"
 )
 

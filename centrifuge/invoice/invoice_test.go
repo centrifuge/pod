@@ -3,13 +3,14 @@
 package invoice
 
 import (
+	"testing"
+
 	"github.com/CentrifugeInc/centrifuge-protobufs/documenttypes"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestInvoiceCoreDocumentConverter(t *testing.T) {
