@@ -28,13 +28,15 @@ before_install:
 install:
   - mkdir -p ~/bin
   - PROTOTOOL_VERSION=$PROTOTOOL_VERSION ./scripts/install_prototool.sh
+  - go get golang.org/x/tools/cmd/goimports
   - make install
 
 jobs:
   include:
     - stage: test
       script:
-        - make lint
+        - make proto-lint
+        - scripts/format.sh
         - make gen_go
         - echo "Checking that `prototool gen` doesn't result in a modified git tree" && git diff --exit-code centrifuge/protobufs/gen
         - scripts/test_wrapper.sh

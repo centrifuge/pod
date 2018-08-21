@@ -18,7 +18,7 @@ install-deps: ## Install Dependencies
 	@command -v dep >/dev/null 2>&1 || go get -u github.com/golang/dep/...
 	@dep ensure
 
-lint: ## runs prototool lint
+proto-lint: ## runs prototool lint
 	$(PROTOTOOL_BIN) lint
 
 gen_go: ## generates the go bindings
