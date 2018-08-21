@@ -10,7 +10,7 @@ import (
 	google_protobuf2 "github.com/golang/protobuf/ptypes/empty"
 )
 
-// Struct needed as it is used to register the grpc services attached to the grpc server
+// PurchaseOrderDocumentController needed as it is used to register the grpc services attached to the grpc server
 type PurchaseOrderDocumentController struct{}
 
 func getPurchaseOrderDocumentService() *purchaseorderservice.PurchaseOrderDocumentService {
