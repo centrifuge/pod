@@ -36,7 +36,7 @@ jobs:
     - stage: test
       script:
         - make proto-lint
-        - scripts/format.sh
+        - scripts/format_go.sh
         - make gen_go
         - echo "Checking that `prototool gen` doesn't result in a modified git tree" && git diff --exit-code centrifuge/protobufs/gen
         - scripts/test_wrapper.sh
