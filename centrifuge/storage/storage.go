@@ -1,44 +1,8 @@
 package storage
 
 import (
-	"sync"
-
 	"github.com/golang/protobuf/proto"
-	logging "github.com/ipfs/go-log"
-	"github.com/syndtr/goleveldb/leveldb"
 )
-
-var log = logging.Logger("storage")
-
-var once sync.Once
-var instance *leveldb.DB
-var dbPath string
-
-// GetStorage is a singleton implementation returning the default database as configured
-func NewLeveldbStorage(path string) *leveldb.DB {
-	if dbPath != "" {
-		log.Fatalf("Can't open new DB, db already open")
-	}
-	dbPath = path
-	once.Do(func() {
-		i, err := leveldb.OpenFile(dbPath, nil)
-		instance = i
-		if err != nil {
-			log.Fatal(err)
-		}
-	})
-	return instance
-}
-
-func GetLeveldbStorage() *leveldb.DB {
-	return instance
-}
-
-func CloseLeveldbStorage() {
-	if instance != nil {
-		instance.Close()
-	}
-}
 
 // Getter interface can be implemented by any repository that handles document retrieval
 type Getter interface {
@@ -70,7 +34,7 @@ type Updater interface {
 	Update(id []byte, msg proto.Message) error
 }
 
-// Repository interface for easy combination
+// Repository interface combines above interfaces
 type Repository interface {
 	Checker
 	Getter

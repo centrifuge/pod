@@ -9,19 +9,18 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/service"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder/repository"
-	gerrors "github.com/go-errors/errors"
-	google_protobuf2 "github.com/golang/protobuf/ptypes/empty"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
+	googleprotobuf2 "github.com/golang/protobuf/ptypes/empty"
 	logging "github.com/ipfs/go-log"
 	"golang.org/x/net/context"
 )
 
 var log = logging.Logger("rest-api")
 
-// Struct needed as it is used to register the grpc services attached to the grpc server
+// PurchaseOrderDocumentService needed as it is used to register the grpc services attached to the grpc server
 type PurchaseOrderDocumentService struct {
-	PurchaseOrderRepository purchaseorderrepository.PurchaseOrderRepository
-	CoreDocumentProcessor   coredocument.CoreDocumentProcessorInterface
+	Repository            storage.Repository
+	CoreDocumentProcessor coredocument.CoreDocumentProcessorInterface
 }
 
 func fillCoreDocIdentifiers(doc *purchaseorderpb.PurchaseOrderDocument) error {
@@ -39,24 +38,25 @@ func fillCoreDocIdentifiers(doc *purchaseorderpb.PurchaseOrderDocument) error {
 
 // HandleCreatePurchaseOrderProof creates proofs for a list of fields
 func (s *PurchaseOrderDocumentService) HandleCreatePurchaseOrderProof(ctx context.Context, createPurchaseOrderProofEnvelope *purchaseorderpb.CreatePurchaseOrderProofEnvelope) (*purchaseorderpb.PurchaseOrderProof, error) {
-	orderDoc, err := s.PurchaseOrderRepository.FindById(createPurchaseOrderProofEnvelope.DocumentIdentifier)
+	orderDoc := new(purchaseorderpb.PurchaseOrderDocument)
+	err := s.Repository.GetByID(createPurchaseOrderProofEnvelope.DocumentIdentifier, orderDoc)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get document from DB: %v", err)
 	}
 
 	order, err := purchaseorder.NewPurchaseOrder(orderDoc)
 	if err != nil {
 		log.Error(err)
-		return nil, err
+		return nil, fmt.Errorf("failed to create new order: %v", err)
 	}
 
 	proofs, err := order.CreateProofs(createPurchaseOrderProofEnvelope.Fields)
 	if err != nil {
 		log.Error(err)
-		return nil, err
+		return nil, fmt.Errorf("failed to create proofs: %v", err)
 	}
-	return &purchaseorderpb.PurchaseOrderProof{FieldProofs: proofs, DocumentIdentifier: order.Document.CoreDocument.DocumentIdentifier}, nil
 
+	return &purchaseorderpb.PurchaseOrderProof{FieldProofs: proofs, DocumentIdentifier: order.Document.CoreDocument.DocumentIdentifier}, nil
 }
 
 // HandleAnchorPurchaseOrderDocument anchors the given purchaseorder document and returns the anchor details
@@ -66,19 +66,19 @@ func (s *PurchaseOrderDocumentService) HandleAnchorPurchaseOrderDocument(ctx con
 	err := fillCoreDocIdentifiers(doc)
 	if err != nil {
 		log.Error(err)
-		return nil, gerrors.Errorf("Error filling document IDs: [%v]", err.Error())
+		return nil, fmt.Errorf("failed to fill document IDs: %v", err)
 	}
 
-	err = s.PurchaseOrderRepository.Create(doc)
+	err = s.Repository.Create(doc.CoreDocument.DocumentIdentifier, doc)
 	if err != nil {
 		log.Error(err)
-		return nil, gerrors.Errorf("Error saving document: [%v]", err.Error())
+		return nil, fmt.Errorf("failed to save document: %v", err)
 	}
 
 	anchoredPurchaseOrder, err := s.anchorPurchaseOrderDocument(doc)
 	if err != nil {
 		log.Error(err)
-		return nil, gerrors.Errorf("Error anchoring document: [%v]", err.Error())
+		return nil, fmt.Errorf("failed to anchor document: %v", err)
 	}
 
 	return anchoredPurchaseOrder, nil
@@ -94,7 +94,7 @@ func (s *PurchaseOrderDocumentService) HandleSendPurchaseOrderDocument(ctx conte
 		return nil, err
 	}
 
-	err = s.PurchaseOrderRepository.Create(doc)
+	err = s.Repository.Create(doc.CoreDocument.DocumentIdentifier, doc)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -106,11 +106,11 @@ func (s *PurchaseOrderDocumentService) HandleSendPurchaseOrderDocument(ctx conte
 		return nil, err
 	}
 
-	errs := []error{}
+	var errs []error
 	for _, recipient := range sendPurchaseOrderEnvelope.Recipients {
-		err1 := s.CoreDocumentProcessor.Send(anchoredPurchaseOrder.CoreDocument, ctx, recipient)
-		if err1 != nil {
-			errs = append(errs, err1)
+		err = s.CoreDocumentProcessor.Send(anchoredPurchaseOrder.CoreDocument, ctx, recipient)
+		if err != nil {
+			errs = append(errs, err)
 		}
 	}
 
@@ -118,24 +118,32 @@ func (s *PurchaseOrderDocumentService) HandleSendPurchaseOrderDocument(ctx conte
 		log.Errorf("%v", errs)
 		return nil, fmt.Errorf("%v", errs)
 	}
+
 	return anchoredPurchaseOrder, nil
 }
 
 func (s *PurchaseOrderDocumentService) HandleGetPurchaseOrderDocument(ctx context.Context, getPurchaseOrderDocumentEnvelope *purchaseorderpb.GetPurchaseOrderDocumentEnvelope) (*purchaseorderpb.PurchaseOrderDocument, error) {
-	doc, err := s.PurchaseOrderRepository.FindById(getPurchaseOrderDocumentEnvelope.DocumentIdentifier)
-	if err != nil {
-		docFound, err1 := coredocumentrepository.GetCoreDocumentRepository().FindById(getPurchaseOrderDocumentEnvelope.DocumentIdentifier)
-		if err1 == nil {
-			doc1, err1 := purchaseorder.NewPurchaseOrderFromCoreDocument(docFound)
-			doc = doc1.Document
-			err = err1
-		}
-		log.Errorf("%v", err)
+	doc := new(purchaseorderpb.PurchaseOrderDocument)
+	err := s.Repository.GetByID(getPurchaseOrderDocumentEnvelope.DocumentIdentifier, doc)
+	if err == nil {
+		return doc, nil
 	}
-	return doc, err
+
+	docFound, err := coredocumentrepository.GetCoreDocumentRepository().FindById(getPurchaseOrderDocumentEnvelope.DocumentIdentifier)
+	if err != nil {
+		log.Error(err)
+		return nil, fmt.Errorf("failed to get document: %v", err)
+	}
+
+	purchaseOrder, err := purchaseorder.NewPurchaseOrderFromCoreDocument(docFound)
+	if err != nil {
+		return nil, fmt.Errorf("failed convert coredoc to purchase order: %v", err)
+	}
+
+	return purchaseOrder.Document, nil
 }
 
-func (s *PurchaseOrderDocumentService) HandleGetReceivedPurchaseOrderDocuments(ctx context.Context, empty *google_protobuf2.Empty) (*purchaseorderpb.ReceivedPurchaseOrders, error) {
+func (s *PurchaseOrderDocumentService) HandleGetReceivedPurchaseOrderDocuments(ctx context.Context, empty *googleprotobuf2.Empty) (*purchaseorderpb.ReceivedPurchaseOrders, error) {
 	return nil, nil
 }
 

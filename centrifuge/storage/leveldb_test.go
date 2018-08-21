@@ -14,7 +14,7 @@ var dbFileName = "/tmp/centrifuge_testing_storage.leveldb"
 var storageDb *leveldb.DB
 
 func TestMain(m *testing.M) {
-	storageDb = NewLeveldbStorage(dbFileName)
+	storageDb = NewLevelDBStorage(dbFileName)
 	defer storageDb.Close()
 
 	result := m.Run()

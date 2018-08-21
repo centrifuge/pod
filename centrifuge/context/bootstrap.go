@@ -18,10 +18,10 @@ func Bootstrap() {
 	log.Infof("Running cent node on version: %s", version.GetVersion())
 	config.Config.InitializeViper()
 
-	levelDB := storage.NewLeveldbStorage(config.Config.GetStoragePath())
+	levelDB := storage.NewLevelDBStorage(config.Config.GetStoragePath())
 	coredocumentrepository.NewLevelDBCoreDocumentRepository(&coredocumentrepository.LevelDBCoreDocumentRepository{levelDB})
 	invoicerepository.NewLevelDBInvoiceRepository(&invoicerepository.LevelDBInvoiceRepository{levelDB})
-	purchaseorderrepository.NewLevelDBPurchaseOrderRepository(&purchaseorderrepository.LevelDBPurchaseOrderRepository{levelDB})
+	purchaseorderrepository.InitLevelDBRepository(levelDB)
 	signatures.NewSigningService(signatures.SigningService{})
 	createEthereumConnection()
 }

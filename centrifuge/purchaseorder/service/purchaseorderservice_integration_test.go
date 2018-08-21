@@ -20,7 +20,7 @@ import (
 
 func TestMain(m *testing.M) {
 	cc.TestFunctionalEthereumBootstrap()
-	purchaseorderrepository.NewLevelDBPurchaseOrderRepository(&purchaseorderrepository.LevelDBPurchaseOrderRepository{cc.GetLevelDBStorage()})
+	purchaseorderrepository.InitLevelDBRepository(&purchaseorderrepository.levelDBRepository{cc.GetLevelDBStorage()})
 
 	result := m.Run()
 	cc.TestIntegrationTearDown()
@@ -40,8 +40,8 @@ func generateEmptyPurchaseOrderForProcessing() (doc *purchaseorder.PurchaseOrder
 
 func TestPurchaseOrderDocumentService_HandleAnchorPurchaseOrderDocument_Integration(t *testing.T) {
 	s := purchaseorderservice.PurchaseOrderDocumentService{
-		PurchaseOrderRepository: purchaseorderrepository.GetPurchaseOrderRepository(),
-		CoreDocumentProcessor:   coredocument.GetDefaultCoreDocumentProcessor(),
+		Repository:            purchaseorderrepository.GetPurchaseOrderRepository(),
+		CoreDocumentProcessor: coredocument.GetDefaultCoreDocumentProcessor(),
 	}
 	doc := generateEmptyPurchaseOrderForProcessing()
 	doc.Document.Data.OrderCountry = "DE"

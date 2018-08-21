@@ -61,8 +61,8 @@ func generateMockedOutPurchaseOrderService() (srv *PurchaseOrderDocumentService,
 	repo = new(MockPurchaseOrderRepository)
 	coreDocumentProcessor = new(testingutils.MockCoreDocumentProcessor)
 	srv = &PurchaseOrderDocumentService{
-		PurchaseOrderRepository: repo,
-		CoreDocumentProcessor:   coreDocumentProcessor,
+		Repository:            repo,
+		CoreDocumentProcessor: coreDocumentProcessor,
 	}
 	return
 }
