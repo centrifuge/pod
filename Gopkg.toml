@@ -29,7 +29,7 @@ required = ["github.com/roboll/go-vendorinstall", "github.com/golang/protobuf/pr
 [[constraint]]
   name = "github.com/CentrifugeInc/centrifuge-protobufs"
   source = "git@github.com:CentrifugeInc/centrifuge-protobufs"
-  revision = "ca7ecd84fb2ca69d917ad881cdfbce11504836d0"
+  revision = "b7fa428427399b8de836278cbb6810e023c3a816"
 
 [[constraint]]
   name = "github.com/Masterminds/semver"
@@ -251,6 +251,11 @@ revision = "64c31f18a9753193909544f1a606148894cbe878"
 
 [[prune.project]]
     name = "github.com/ethereum/go-ethereum"
+    non-go = false
+    unused-packages = false
+
+[[prune.project]]
+    name = "github.com/CentrifugeInc/centrifuge-protobufs"
     non-go = false
     unused-packages = false
 

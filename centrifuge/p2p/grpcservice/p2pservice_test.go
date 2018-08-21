@@ -3,17 +3,20 @@ package grpcservice
 
 import (
 	"context"
+	"os"
+	"testing"
+
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/notification"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/code"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/notification"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/version"
 	"github.com/stretchr/testify/assert"
-	"os"
-	"testing"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/notification"
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/notification"
 )
 
 func TestMain(m *testing.M) {
@@ -47,7 +50,8 @@ func TestP2PService_IncompatibleRequest(t *testing.T) {
 	res, err := rpc.HandleP2PPost(context.Background(), &req)
 
 	assert.Error(t, err)
-	assert.IsType(t, &IncompatibleVersionError{""}, err)
+	p2perr, _ := errors.FromError(err)
+	assert.Equal(t, p2perr.Code(), code.VersionMismatch)
 	assert.Nil(t, res)
 
 	// Test invalid network
@@ -55,7 +59,8 @@ func TestP2PService_IncompatibleRequest(t *testing.T) {
 	res, err = rpc.HandleP2PPost(context.Background(), &req)
 
 	assert.Error(t, err)
-	assert.IsType(t, &IncompatibleNetworkError{0}, err)
+	p2perr, _ = errors.FromError(err)
+	assert.Equal(t, p2perr.Code(), code.NetworkMismatch)
 	assert.Nil(t, res)
 }
 
@@ -69,5 +74,8 @@ func TestP2PService_HandleP2PPostNilDocument(t *testing.T) {
 }
 
 // Webhook Notification Mocks //
-type MockWebhookSender struct {}
-func (wh *MockWebhookSender) Send(notification *notificationpb.NotificationMessage) (status notification.NotificationStatus, err error) {return}
+type MockWebhookSender struct{}
+
+func (wh *MockWebhookSender) Send(notification *notificationpb.NotificationMessage) (status notification.NotificationStatus, err error) {
+	return
+}

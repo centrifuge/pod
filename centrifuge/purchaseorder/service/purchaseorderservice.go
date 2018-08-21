@@ -2,6 +2,7 @@ package purchaseorderservice
 
 import (
 	"fmt"
+
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
@@ -9,10 +10,10 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder/repository"
+	gerrors "github.com/go-errors/errors"
 	google_protobuf2 "github.com/golang/protobuf/ptypes/empty"
 	logging "github.com/ipfs/go-log"
 	"golang.org/x/net/context"
-	gerrors "github.com/go-errors/errors"
 )
 
 var log = logging.Logger("rest-api")
@@ -25,7 +26,7 @@ type PurchaseOrderDocumentService struct {
 
 func fillCoreDocIdentifiers(doc *purchaseorderpb.PurchaseOrderDocument) error {
 	if doc == nil {
-		return errors.GenerateNilParameterError(doc)
+		return errors.NilError(doc)
 	}
 	filledCoreDoc, err := coredocumentservice.AutoFillDocumentIdentifiers(*doc.CoreDocument)
 	if err != nil {
@@ -65,19 +66,19 @@ func (s *PurchaseOrderDocumentService) HandleAnchorPurchaseOrderDocument(ctx con
 	err := fillCoreDocIdentifiers(doc)
 	if err != nil {
 		log.Error(err)
-		return nil, gerrors.Errorf("Error filling document IDs: [%v]", err.Error() )
+		return nil, gerrors.Errorf("Error filling document IDs: [%v]", err.Error())
 	}
 
 	err = s.PurchaseOrderRepository.Create(doc)
 	if err != nil {
 		log.Error(err)
-		return nil, gerrors.Errorf("Error saving document: [%v]", err.Error() )
+		return nil, gerrors.Errorf("Error saving document: [%v]", err.Error())
 	}
 
 	anchoredPurchaseOrder, err := s.anchorPurchaseOrderDocument(doc)
 	if err != nil {
 		log.Error(err)
-		return nil, gerrors.Errorf("Error anchoring document: [%v]", err.Error() )
+		return nil, gerrors.Errorf("Error anchoring document: [%v]", err.Error())
 	}
 
 	return anchoredPurchaseOrder, nil

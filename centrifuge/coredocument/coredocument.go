@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"fmt"
+
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/anchor"
@@ -58,7 +59,7 @@ func GetDefaultCoreDocumentProcessor() CoreDocumentProcessorInterface {
 // Send sends the given CoreDocumentProcessor to the given recipient on the P2P layer
 func (cdp *CoreDocumentProcessor) Send(coreDocument *coredocumentpb.CoreDocument, ctx context.Context, recipient []byte) (err error) {
 	if coreDocument == nil {
-		return errors.GenerateNilParameterError(coreDocument)
+		return errors.NilError(coreDocument)
 	}
 
 	id, err := cdp.IdentityService.LookupIdentityForId(recipient)
@@ -93,7 +94,7 @@ func (cdp *CoreDocumentProcessor) Send(coreDocument *coredocumentpb.CoreDocument
 // Anchor anchors the given CoreDocument
 func (cd *CoreDocumentProcessor) Anchor(document *coredocumentpb.CoreDocument) error {
 	if document == nil {
-		return errors.GenerateNilParameterError(document)
+		return errors.NilError(document)
 	}
 	log.Infof("Anchoring document with identifiers: [document: %#x, current: %#x, next: %#x], rootHash: %#x", document.DocumentIdentifier, document.CurrentIdentifier, document.NextIdentifier, document.DocumentRoot)
 	log.Debugf("Anchoring document with details %v", document)
@@ -124,16 +125,16 @@ func (cd *CoreDocumentProcessor) Anchor(document *coredocumentpb.CoreDocument) e
 // ValidateCoreDocument checks that all required fields are set before doing any processing with it
 func (cd *CoreDocumentProcessor) ValidateCoreDocument(document *coredocumentpb.CoreDocument) (valid bool, err error) {
 	if !tools.CheckMultiple32BytesFilled(document.DocumentIdentifier, document.NextIdentifier, document.CurrentIdentifier, document.DataRoot) {
-		return false, errors.New("Found empty value in CoreDocument")
+		return false, fmt.Errorf("found empty value in CoreDocument")
 	}
 
 	if document.CoredocumentSalts == nil {
-		return false, errors.New("CoreDocumentSalts is not set")
+		return false, fmt.Errorf("CoreDocumentSalts is not set")
 	}
 
 	// Spot checking that DocumentIdentifier salt is filled. Perhaps it would be better to validate all salts in the future.
 	if tools.IsEmptyByteSlice(document.CoredocumentSalts.DocumentIdentifier) || len(document.CoredocumentSalts.DocumentIdentifier) != 32 {
-		return false, errors.New("CoreDocumentSalts not filled")
+		return false, fmt.Errorf("CoreDocumentSalts not filled")
 	}
 
 	return true, nil

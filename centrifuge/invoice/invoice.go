@@ -2,12 +2,14 @@ package invoice
 
 import (
 	"crypto/sha256"
+	"fmt"
+
 	"github.com/CentrifugeInc/centrifuge-protobufs/documenttypes"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/centrifuge/precise-proofs/proofs"
-	proofspb "github.com/centrifuge/precise-proofs/proofs/proto"
+	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	logging "github.com/ipfs/go-log"
@@ -21,7 +23,7 @@ type Invoice struct {
 
 func NewInvoice(invDoc *invoicepb.InvoiceDocument) (*Invoice, error) {
 	if invDoc == nil {
-		return nil, errors.GenerateNilParameterError(invDoc)
+		return nil, errors.NilError(invDoc)
 	}
 	inv := &Invoice{invDoc}
 	// IF salts have not been provided, let's generate them
@@ -46,11 +48,11 @@ func NewEmptyInvoice() *Invoice {
 
 func NewInvoiceFromCoreDocument(coreDocument *coredocumentpb.CoreDocument) (*Invoice, error) {
 	if coreDocument == nil {
-		return nil, errors.GenerateNilParameterError(coreDocument)
+		return nil, errors.NilError(coreDocument)
 	}
 	if coreDocument.EmbeddedData.TypeUrl != documenttypes.InvoiceDataTypeUrl ||
 		coreDocument.EmbeddedDataSalts.TypeUrl != documenttypes.InvoiceSaltsTypeUrl {
-		return nil, errors.New("Trying to convert document with incorrect schema")
+		return nil, fmt.Errorf("trying to convert document with incorrect schema")
 	}
 
 	invoiceData := &invoicepb.InvoiceData{}
