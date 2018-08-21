@@ -18,8 +18,7 @@ var createIdentityCmd = &cobra.Command{
 		if err != nil {
 			panic(err)
 		}
-		confirmations := make(chan *identity.WatchIdentity, 1)
-		_, err = identityService.CreateIdentity(centrifugeId, confirmations)
+		_, _, err = identityService.CreateIdentity(centrifugeId)
 		if err != nil {
 			panic(err)
 		}
