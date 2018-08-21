@@ -39,9 +39,7 @@ func TestCreateAndLookupIdentity_Integration(t *testing.T) {
 	wrongCentrifugeId[2] = 0x0
 	wrongCentrifugeId[3] = 0x0
 
-	confirmations := make(chan *identity.WatchIdentity, 1)
-
-	id, err := identityService.CreateIdentity(centrifugeId, confirmations)
+	id, confirmations, err := identityService.CreateIdentity(centrifugeId)
 	assert.Nil(t, err, "should not error out when creating identity")
 
 	watchRegisteredIdentity := <-confirmations
@@ -73,8 +71,7 @@ func TestCreateAndLookupIdentity_Integration(t *testing.T) {
 
 	// Add Key
 	key := tools.RandomSlice32()
-	confirmations = make(chan *identity.WatchIdentity, 1)
-	err = id.AddKeyToIdentity(1, key, confirmations)
+	confirmations, err = id.AddKeyToIdentity(1, key)
 	assert.Nil(t, err, "should not error out when adding key to identity")
 	watchReceivedIdentity := <-confirmations
 	assert.Equal(t, centrifugeId, watchReceivedIdentity.Identity.GetCentrifugeId(), "Resulting Identity should have the same ID as the input")
@@ -97,7 +94,7 @@ func TestCreateAndLookupIdentity_Integration_Concurrent(t *testing.T) {
 	for ix := 0; ix < howMany; ix++ {
 		centId := tools.RandomSlice32()
 		submittedIds[ix] = centId
-		_, err := identityService.CreateIdentity(centId, confirmations)
+		_, _, err := identityService.CreateIdentity(centId)
 		assert.Nil(t, err, "should not error out upon identity creation")
 	}
 

@@ -158,9 +158,9 @@ func (id *EthereumIdentity) CheckIdentityExists() (exists bool, err error) {
 	return
 }
 
-func (id *EthereumIdentity) AddKeyToIdentity(keyType int, key []byte, confirmations chan<- *WatchIdentity) (err error) {
+func (id *EthereumIdentity) AddKeyToIdentity(keyType int, key []byte) (confirmations chan *WatchIdentity, err error) {
 	if tools.IsEmptyByteSlice(key) || len(key) != 32 {
-		return errors.New("Can't add key to identity: Inavlid key")
+		return confirmations, errors.New("Can't add key to identity: Inavlid key")
 	}
 
 	ethIdentityContract, err := id.getContract()
@@ -168,7 +168,7 @@ func (id *EthereumIdentity) AddKeyToIdentity(keyType int, key []byte, confirmati
 		return
 	}
 
-	err = setUpKeyRegisteredEventListener(ethIdentityContract, id, keyType, key, confirmations)
+	confirmations, err = setUpKeyRegisteredEventListener(ethIdentityContract, id, keyType, key)
 	if err != nil {
 		wError := errors.Wrap(err, 1)
 		log.Infof("Failed to set up event listener for identity [id: %s]: %v", id, wError)
@@ -177,16 +177,16 @@ func (id *EthereumIdentity) AddKeyToIdentity(keyType int, key []byte, confirmati
 
 	opts, err := ethereum.GetGethTxOpts(config.Config.GetEthereumDefaultAccountName())
 	if err != nil {
-		return err
+		return confirmations, err
 	}
 
 	err = sendKeyRegistrationTransaction(ethIdentityContract, opts, id, keyType, key)
 	if err != nil {
 		wError := errors.Wrap(err, 1)
 		log.Infof("Failed to create transaction for identity [id: %s]: %v", id, wError)
-		return
+		return confirmations, wError
 	}
-	return
+	return confirmations, nil
 }
 
 func (id *EthereumIdentity) fetchKeysByType(keyType int) error {
@@ -264,7 +264,7 @@ func sendIdentityCreationTransaction(identityFactory IdentityFactory, opts *bind
 	return
 }
 
-func setUpKeyRegisteredEventListener(ethCreatedContract WatchKeyRegistered, identity *EthereumIdentity, keyType int, key []byte, confirmations chan<- *WatchIdentity) (err error) {
+func setUpKeyRegisteredEventListener(ethCreatedContract WatchKeyRegistered, identity *EthereumIdentity, keyType int, key []byte) (confirmations chan *WatchIdentity, err error) {
 	//listen to this particular key being mined/event is triggered
 	ctx, cancelFunc := ethereum.DefaultWaitForTransactionMiningContext()
 	watchOpts := &bind.WatchOpts{Context: ctx}
@@ -272,11 +272,12 @@ func setUpKeyRegisteredEventListener(ethCreatedContract WatchKeyRegistered, iden
 	//only setting up a channel of 1 notification as there should always be only one notification coming for this
 	//single key being registered
 	keyAddedEvents := make(chan *EthereumIdentityContractKeyRegistered, 1)
+	confirmations = make(chan *WatchIdentity)
 	go waitAndRouteKeyRegistrationEvent(keyAddedEvents, watchOpts.Context, confirmations, identity)
 
 	b32Key, err := tools.SliceToByte32(key)
 	if err != nil {
-		return err
+		return confirmations, err
 	}
 	bigInt := big.NewInt(int64(keyType))
 
@@ -288,14 +289,14 @@ func setUpKeyRegisteredEventListener(ethCreatedContract WatchKeyRegistered, iden
 		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for identity registration", 1)
 		log.Errorf(wError.Error())
 		cancelFunc()
-		return wError
+		return confirmations, wError
 	}
 	return
 }
 
 // setUpRegistrationEventListener sets up the listened for the "IdentityCreated" event to notify the upstream code about successful mining/creation
 // of the identity.
-func setUpRegistrationEventListener(ethCreatedContract WatchIdentityCreated, identityToBeCreated Identity, confirmations chan<- *WatchIdentity) (err error) {
+func setUpRegistrationEventListener(ethCreatedContract WatchIdentityCreated, identityToBeCreated Identity) (confirmations chan *WatchIdentity, err error) {
 	//listen to this particular identity being mined/event is triggered
 	ctx, cancelFunc := ethereum.DefaultWaitForTransactionMiningContext()
 	watchOpts := &bind.WatchOpts{Context: ctx}
@@ -303,6 +304,7 @@ func setUpRegistrationEventListener(ethCreatedContract WatchIdentityCreated, ide
 	//only setting up a channel of 1 notification as there should always be only one notification coming for this
 	//single identity being registered
 	identityCreatedEvents := make(chan *EthereumIdentityFactoryContractIdentityCreated, 1)
+	confirmations = make(chan *WatchIdentity)
 	go waitAndRouteIdentityRegistrationEvent(identityCreatedEvents, watchOpts.Context, confirmations, identityToBeCreated)
 
 	bCentId := identityToBeCreated.CentrifugeIdB32()
@@ -369,7 +371,7 @@ func (ids *EthereumIdentityService) CheckIdentityExists(centrifugeId []byte) (ex
 	return
 }
 
-func (ids *EthereumIdentityService) CreateIdentity(centrifugeId []byte, confirmations chan<- *WatchIdentity) (id Identity, err error) {
+func (ids *EthereumIdentityService) CreateIdentity(centrifugeId []byte) (id Identity, confirmations chan *WatchIdentity, err error) {
 	log.Infof("Creating Identity [%v]", centrifugeId)
 
 	id = NewEthereumIdentity()
@@ -381,23 +383,23 @@ func (ids *EthereumIdentityService) CreateIdentity(centrifugeId []byte, confirma
 	}
 	opts, err := ethereum.GetGethTxOpts(config.Config.GetEthereumDefaultAccountName())
 	if err != nil {
-		return nil, err
+		return nil, confirmations, err
 	}
 
-	err = setUpRegistrationEventListener(ethIdentityFactoryContract, id, confirmations)
+	confirmations, err = setUpRegistrationEventListener(ethIdentityFactoryContract, id)
 	if err != nil {
 		wError := errors.Wrap(err, 1)
 		log.Infof("Failed to set up event listener for identity [id: %s]: %v", id, wError)
-		return
+		return nil, confirmations, wError
 	}
 
 	err = sendIdentityCreationTransaction(ethIdentityFactoryContract, opts, id)
 	if err != nil {
 		wError := errors.Wrap(err, 1)
 		log.Infof("Failed to create transaction for identity [id: %s]: %v", id, wError)
-		return
+		return nil, confirmations, wError
 	}
-	return
+	return id, confirmations, nil
 }
 
 func (ids *EthereumIdentityService) LookupIdentityForId(centrifugeId []byte) (Identity, error) {

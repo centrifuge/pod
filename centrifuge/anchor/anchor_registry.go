@@ -7,18 +7,18 @@ import (
 var log = logging.Logger("anchor")
 
 type AnchorRegistry interface {
-	RegisterAsAnchor(anchorID [32]byte, rootHash [32]byte, confirmations chan<- *WatchAnchor) error
+	RegisterAsAnchor(anchorID [32]byte, rootHash [32]byte) (<-chan *WatchAnchor, error)
 }
 
 // RegisterAsAnchor registers the given AnchorID and RootHash as an anchor on the configured anchor registry
-func RegisterAsAnchor(anchorID [32]byte, rootHash [32]byte, confirmations chan<- *WatchAnchor) error {
+func RegisterAsAnchor(anchorID [32]byte, rootHash [32]byte) (<-chan *WatchAnchor, error) {
 	registry, _ := getConfiguredRegistry()
 
-	err := registry.RegisterAsAnchor(anchorID, rootHash, confirmations)
+	confirmations, err := registry.RegisterAsAnchor(anchorID, rootHash)
 	if err != nil {
 		log.Errorf("Failed to register the anchor [id:%x, hash:%x ]: %v", anchorID, rootHash, err)
 	}
-	return err
+	return confirmations, err
 }
 
 // getConfiguredRegistry will later pull a configured registry (if not only using Ethereum as the anchor registry)

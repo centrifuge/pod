@@ -20,10 +20,9 @@ func TestMain(m *testing.M) {
 }
 
 func TestRegisterAsAnchor_Integration(t *testing.T) {
-	confirmations := make(chan *anchor.WatchAnchor, 1)
 	id := tools.RandomByte32()
 	rootHash := tools.RandomByte32()
-	err := anchor.RegisterAsAnchor(id, rootHash, confirmations)
+	confirmations, err := anchor.RegisterAsAnchor(id, rootHash)
 	if err != nil {
 		t.Fatalf("Error registering Anchor %v", err)
 	}
@@ -35,27 +34,16 @@ func TestRegisterAsAnchor_Integration(t *testing.T) {
 }
 
 func TestRegisterAsAnchor_Integration_Concurrent(t *testing.T) {
-	var submittedIds [5][32]byte
-	var submittedRhs [5][32]byte
-
-	howMany := cap(submittedIds)
-	confirmations := make(chan *anchor.WatchAnchor, howMany)
-
-	for ix := 0; ix < howMany; ix++ {
+	for ix := 0; ix < 5; ix++ {
 		id := tools.RandomByte32()
-		submittedIds[ix] = id
-
 		rootHash := tools.RandomByte32()
-		submittedRhs[ix] = rootHash
 
-		err := anchor.RegisterAsAnchor(id, rootHash, confirmations)
+		confirmations, err := anchor.RegisterAsAnchor(id, rootHash)
+		watchSingleAnchor := <- confirmations
 		assert.Nil(t, err, "should not error out upon anchor registration")
-	}
-
-	for ix := 0; ix < howMany; ix++ {
-		watchSingleAnchor := <-confirmations
 		assert.Nil(t, watchSingleAnchor.Error, "No error thrown by context")
-		assert.Contains(t, submittedIds, watchSingleAnchor.Anchor.AnchorID, "Should have the ID that was passed into create function [%v]", watchSingleAnchor.Anchor.AnchorID)
-		assert.Contains(t, submittedRhs, watchSingleAnchor.Anchor.RootHash, "Should have the RootHash that was passed into create function [%v]", watchSingleAnchor.Anchor.RootHash)
+		assert.Equal(t, id, watchSingleAnchor.Anchor.AnchorID, "Should have the ID that was passed into create function [%v]", watchSingleAnchor.Anchor.AnchorID)
+		assert.Equal(t, rootHash, watchSingleAnchor.Anchor.RootHash, "Should have the RootHash that was passed into create function [%v]", watchSingleAnchor.Anchor.RootHash)
+
 	}
 }

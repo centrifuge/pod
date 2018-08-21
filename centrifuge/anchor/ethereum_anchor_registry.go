@@ -36,7 +36,7 @@ type RegisterAnchor interface {
 // into the confirmations channel when done.
 // Could error out with Fatal error in case the confirmation is never received within the timeframe of configured value
 // of `ethereum.contextWaitTimeout`.
-func (ethRegistry *EthereumAnchorRegistry) RegisterAsAnchor(anchorID [32]byte, rootHash [32]byte, confirmations chan<- *WatchAnchor) (err error) {
+func (ethRegistry *EthereumAnchorRegistry) RegisterAsAnchor(anchorID [32]byte, rootHash [32]byte) (confirmations <-chan *WatchAnchor, err error) {
 	if tools.IsEmptyByte32(anchorID) {
 		err = errors.New("Can not work with empty anchor ID")
 		return
@@ -56,7 +56,7 @@ func (ethRegistry *EthereumAnchorRegistry) RegisterAsAnchor(anchorID [32]byte, r
 		return
 	}
 
-	err = setUpRegistrationEventListener(ethRegistryContract, opts.From, registerThisAnchor, confirmations)
+	confirmations, err = setUpRegistrationEventListener(ethRegistryContract, opts.From, registerThisAnchor)
 	if err != nil {
 		wError := errors.Wrap(err, 1)
 		log.Errorf("Failed to set up event listener for anchor [id: %x, hash: %x, SchemaVersion:%v]: %v", registerThisAnchor.AnchorID, registerThisAnchor.RootHash, registerThisAnchor.SchemaVersion, wError)
@@ -104,7 +104,7 @@ func sendRegistrationTransaction(ethRegistryContract RegisterAnchor, opts *bind.
 
 // setUpRegistrationEventListener sets up the listened for the "AnchorRegistered" event to notify the upstream code about successful mining/creation
 // of the anchor.
-func setUpRegistrationEventListener(ethRegistryContract WatchAnchorRegistered, from common.Address, anchorToBeRegistered *Anchor, confirmations chan<- *WatchAnchor) (err error) {
+func setUpRegistrationEventListener(ethRegistryContract WatchAnchorRegistered, from common.Address, anchorToBeRegistered *Anchor) (confirmations chan *WatchAnchor, err error) {
 	//listen to this particular anchor being mined/event is triggered
 	ctx, cancelFunc := ethereum.DefaultWaitForTransactionMiningContext()
 	watchOpts := &bind.WatchOpts{Context: ctx}
@@ -112,6 +112,7 @@ func setUpRegistrationEventListener(ethRegistryContract WatchAnchorRegistered, f
 	//only setting up a channel of 1 notification as there should always be only one notification coming for this
 	//single anchor being registered
 	anchorRegisteredEvents := make(chan *EthereumAnchorRegistryContractAnchorRegistered, 1)
+	confirmations = make(chan *WatchAnchor)
 	go waitAndRouteAnchorRegistrationEvent(anchorRegisteredEvents, watchOpts.Context, confirmations, anchorToBeRegistered)
 
 	//TODO do something with the returned Subscription that is currently simply discarded
@@ -122,9 +123,9 @@ func setUpRegistrationEventListener(ethRegistryContract WatchAnchorRegistered, f
 		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for anchor registration", 1)
 		log.Errorf("Failed to watch anchor registered event: %v", wError.Error())
 		cancelFunc() // cancel the event router
-		return wError
+		return confirmations, wError
 	}
-	return
+	return confirmations, nil
 }
 
 // waitAndRouteAnchorRegistrationEvent notifies the confirmations channel whenever the anchor registration is being noted as Ethereum event

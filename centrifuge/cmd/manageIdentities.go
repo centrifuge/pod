@@ -48,8 +48,7 @@ var addKeyCmd = &cobra.Command{
 			panic(err)
 		}
 
-		confirmations := make(chan *identity.WatchIdentity, 1)
-		err = id.AddKeyToIdentity(identity.KEY_TYPE_PEERID, idKey, confirmations)
+		confirmations, err := id.AddKeyToIdentity(identity.KEY_TYPE_PEERID, idKey)
 		if err != nil {
 			panic(err)
 		}
