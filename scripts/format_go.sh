@@ -2,8 +2,9 @@
 set -e
 set -x
 
-if [ -n "$($GOPATH/bin/goimports -d -e -l .)" ]; then
+FMT_OUT="$($GOPATH/bin/goimports -d -e -l ./centrifuge)"
+
+if [[ "$FMT_OUT" ]]; then
     echo "Go code is not formatted:"
-    $GOPATH/bin/goimports -d -e -l ./centrifuge
     exit 1
 fi
