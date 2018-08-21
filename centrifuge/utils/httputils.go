@@ -1,9 +1,9 @@
 package utils
 
 import (
+	"github.com/go-errors/errors"
 	logging "github.com/ipfs/go-log"
 	"gopkg.in/resty.v1"
-	"github.com/go-errors/errors"
 )
 
 var log = logging.Logger("http-utils")

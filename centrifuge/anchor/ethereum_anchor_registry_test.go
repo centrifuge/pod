@@ -3,18 +3,19 @@
 package anchor
 
 import (
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
-	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
-		"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/event"
-	"github.com/stretchr/testify/assert"
 	"math/big"
 	"os"
 	"testing"
+
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
+	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/event"
 	"github.com/go-errors/errors"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMain(m *testing.M) {
@@ -54,8 +55,8 @@ func (mwar *MockWatchAnchorRegistered) WatchAnchorRegistered(opts *bind.WatchOpt
 		return nil, nil
 	}
 }
-// END ----- MOCKING -----
 
+// END ----- MOCKING -----
 
 func TestGenerateAnchor(t *testing.T) {
 	anchorID := tools.RandomByte32()
@@ -71,15 +72,16 @@ func TestGenerateAnchor(t *testing.T) {
 //started building this as table based test
 //TODO build the rest of the suite like this and makre more unit-testable
 var registerAsAnchorData = []struct {
-	id        [32]byte
-	hs        [32]byte
-	chn       chan<- *WatchAnchor
+	id       [32]byte
+	hs       [32]byte
+	chn      chan<- *WatchAnchor
 	expected error // expected result
 }{
 	{[32]byte{}, [32]byte{'1'}, nil, errors.New("Can not work with empty anchor ID")},
 	{[32]byte{'1'}, [32]byte{}, nil, errors.New("Can not work with empty root hash")},
 }
-func TestRegisterAsAnchor(t *testing.T){
+
+func TestRegisterAsAnchor(t *testing.T) {
 	for _, tt := range registerAsAnchorData {
 		actual := new(EthereumAnchorRegistry).RegisterAsAnchor(tt.id, tt.hs, tt.chn)
 		assert.Equal(t, tt.expected.Error(), actual.Error())

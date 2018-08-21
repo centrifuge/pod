@@ -9,14 +9,15 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/resources"
-	"github.com/ethereum/go-ethereum/common"
-	logging "github.com/ipfs/go-log"
-	"github.com/spf13/viper"
 	"math/big"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/resources"
+	"github.com/ethereum/go-ethereum/common"
+	logging "github.com/ipfs/go-log"
+	"github.com/spf13/viper"
 )
 
 var log = logging.Logger("config")

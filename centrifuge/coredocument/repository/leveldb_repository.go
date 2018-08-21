@@ -1,10 +1,11 @@
 package coredocumentrepository
 
 import (
-	"github.com/syndtr/goleveldb/leveldb"
+	"sync"
+
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/golang/protobuf/proto"
-	"sync"
+	"github.com/syndtr/goleveldb/leveldb"
 )
 
 var once sync.Once
@@ -20,7 +21,7 @@ func NewLevelDBCoreDocumentRepository(cdr CoreDocumentRepository) {
 	return
 }
 
-func (repo *LevelDBCoreDocumentRepository) GetKey(id []byte) ([]byte) {
+func (repo *LevelDBCoreDocumentRepository) GetKey(id []byte) []byte {
 	return append([]byte("coredoc"), id...)
 }
 

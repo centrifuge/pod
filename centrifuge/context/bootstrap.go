@@ -30,4 +30,3 @@ func createEthereumConnection() {
 	client := ethereum.NewClientConnection()
 	ethereum.SetConnection(client)
 }
-
