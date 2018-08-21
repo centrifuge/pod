@@ -130,7 +130,7 @@ func (dp *defaultProcessor) calculateSigningRoot(document *coredocumentpb.CoreDo
 
 	tree, err := dp.getDocumentTree(document)
 	if err != nil {
-
+		return err
 	}
 	document.SigningRoot = tree.RootHash()
 	return nil

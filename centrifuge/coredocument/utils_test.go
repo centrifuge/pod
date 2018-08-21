@@ -3,11 +3,10 @@
 package coredocument
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/code"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/stretchr/testify/assert"
 )
@@ -57,26 +56,26 @@ func TestFillIdentifiers(t *testing.T) {
 			DocIdentifier:     id1,
 			CurrentIdentifier: id1,
 			NextIdentifier:    id1,
-			err:               errors.New(code.DocumentInvalid, "Reusing old Identifier"),
+			err:               fmt.Errorf("reusing old identifier"),
 		},
 
 		// re-used next identifier with missing current identifier
 		{
 			DocIdentifier:  id1,
 			NextIdentifier: id1,
-			err:            errors.New(code.DocumentInvalid, "Reusing old Identifier"),
+			err:            fmt.Errorf("reusing old identifier"),
 		},
 
 		// missing doc identifier and filled up current identifier
 		{
 			CurrentIdentifier: id2,
-			err:               errors.New(code.DocumentInvalid, "No DocumentIdentifier but has CurrentIdentifier"),
+			err:               fmt.Errorf("no DocumentIdentifier but has CurrentIdentifier"),
 		},
 
 		// missing doc identifier and filled up next identifier
 		{
 			NextIdentifier: id3,
-			err:            errors.New(code.DocumentInvalid, "No CurrentIdentifier but has NextIdentifier"),
+			err:            fmt.Errorf("no CurrentIdentifier but has NextIdentifier"),
 		},
 
 		// missing all identifiers

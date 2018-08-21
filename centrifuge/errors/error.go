@@ -22,8 +22,8 @@ func (err *errpb) Error() string {
 	return fmt.Sprintf("[%d]%s: %v", err.Code, err.Message, err.Errors)
 }
 
-// New constructs a new error with code and error message
-func New(code code.Code, message string) error {
+// NewP2PError constructs a new error with code and error message
+func NewP2PError(code code.Code, message string) error {
 	return NewWithErrors(code, message, nil)
 }
 
@@ -91,4 +91,15 @@ func (p2pErr *P2PError) Errors() map[string]string {
 // NilError returns error with Type added to message
 func NilError(param interface{}) error {
 	return errors.Errorf("NIL %v provided", reflect.TypeOf(param))
+}
+
+// Wrap checks for P2PError and appends the message
+func Wrap(err error, msg string) error {
+	errpb, ok := err.(*errpb)
+	if !ok {
+		return fmt.Errorf("%s: %v", msg, err)
+	}
+
+	errpb.Message = fmt.Sprintf("%s: %v", msg, errpb.Message)
+	return errpb
 }

@@ -1,3 +1,5 @@
+// +build unit
+
 package coredocument
 
 import (
@@ -106,6 +108,27 @@ func TestValidate(t *testing.T) {
 					"cd_data_root": "Empty Document Data Root",
 					"cd_salts":     "Empty Document salts",
 				},
+			},
+		},
+
+		// All okay
+		{
+			doc: &coredocumentpb.CoreDocument{
+				DocumentRoot:       tools.RandomSlice32(),
+				DocumentIdentifier: tools.RandomSlice32(),
+				CurrentIdentifier:  tools.RandomSlice32(),
+				NextIdentifier:     tools.RandomSlice32(),
+				DataRoot:           tools.RandomSlice32(),
+				CoredocumentSalts: &coredocumentpb.CoreDocumentSalts{
+					DocumentIdentifier: tools.RandomSlice32(),
+					CurrentIdentifier:  tools.RandomSlice32(),
+					NextIdentifier:     tools.RandomSlice32(),
+					DataRoot:           tools.RandomSlice32(),
+					PreviousRoot:       tools.RandomSlice32(),
+				},
+			},
+			want: want{
+				valid: true,
 			},
 		},
 	}

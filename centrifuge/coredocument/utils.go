@@ -1,9 +1,9 @@
 package coredocument
 
 import (
+	"fmt"
+
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/code"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 )
 
@@ -18,12 +18,12 @@ func FillIdentifiers(document coredocumentpb.CoreDocument) (coredocumentpb.CoreD
 
 		// check if current and next identifier are empty
 		if !isEmptyId(document.CurrentIdentifier) {
-			return document, errors.New(code.DocumentInvalid, "No DocumentIdentifier but has CurrentIdentifier")
+			return document, fmt.Errorf("no DocumentIdentifier but has CurrentIdentifier")
 		}
 
 		// check if the next identifier is empty
 		if !isEmptyId(document.NextIdentifier) {
-			return document, errors.New(code.DocumentInvalid, "No CurrentIdentifier but has NextIdentifier")
+			return document, fmt.Errorf("no CurrentIdentifier but has NextIdentifier")
 		}
 
 		// fill the identifiers
@@ -48,7 +48,7 @@ func FillIdentifiers(document coredocumentpb.CoreDocument) (coredocumentpb.CoreD
 	// Problem (re-using an old identifier for NextIdentifier): CurrentIdentifier or DocumentIdentifier same as NextIdentifier
 	if isSameBytes(document.NextIdentifier, document.DocumentIdentifier) ||
 		isSameBytes(document.NextIdentifier, document.CurrentIdentifier) {
-		return document, errors.New(code.DocumentInvalid, "Reusing old Identifier")
+		return document, fmt.Errorf("reusing old identifier")
 	}
 
 	return document, nil
