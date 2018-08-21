@@ -3,7 +3,10 @@ package p2p
 import (
 	"context"
 	"fmt"
+
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
+
+	"time"
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools"
@@ -24,7 +27,6 @@ import (
 	"github.com/paralin/go-libp2p-grpc"
 	msmux "github.com/whyrusleeping/go-smux-multistream"
 	yamux "github.com/whyrusleeping/go-smux-yamux"
-	"time"
 )
 
 var log = logging.Logger("p2p")

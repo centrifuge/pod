@@ -3,13 +3,14 @@
 package coredocumentservice
 
 import (
-	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
 	"os"
 	"testing"
+
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/stretchr/testify/assert"
+	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMain(m *testing.M) {
@@ -74,8 +75,7 @@ var documentIdentifierPrefillCheckData = []struct {
 		coredocument.NewErrInconsistentState("Reusing old Identifier"),
 	},
 	{
-		coredocumentpb.CoreDocument{
-		},
+		coredocumentpb.CoreDocument{},
 		coredocumentpb.CoreDocument{
 			DocumentIdentifier: []byte("should_be_filled"),
 			CurrentIdentifier:  []byte("should_be_filled"),
@@ -137,7 +137,7 @@ var documentIdentifierPrefillCheckData = []struct {
 func TestCheckForValidDocumentIdentifiers(t *testing.T) {
 	for _, tt := range documentIdentifierPrefillCheckData {
 		actualDoc, actual := AutoFillDocumentIdentifiers(tt.cd)
-		if (tt.expected == nil) {
+		if tt.expected == nil {
 			assert.Nilf(t, actual, "Expected nil but got [%v] for test [%v]", actual, tt)
 			expectedDoc := coredocumentpb.CoreDocument(tt.expectedDoc)
 

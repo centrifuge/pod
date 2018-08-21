@@ -2,15 +2,17 @@ package p2p
 
 import (
 	"fmt"
+
 	"github.com/libp2p/go-libp2p-peer"
 	pstore "github.com/libp2p/go-libp2p-peerstore"
 	ma "github.com/multiformats/go-multiaddr"
 
 	"context"
+	"sync"
+
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
-	"sync"
 )
 
 // Opens a client connection with libp2p

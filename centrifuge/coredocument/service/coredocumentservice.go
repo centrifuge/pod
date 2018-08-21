@@ -1,9 +1,9 @@
 package coredocumentservice
 
 import (
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 )
 
 func isEmptyId(cdi []byte) bool {
@@ -12,7 +12,7 @@ func isEmptyId(cdi []byte) bool {
 
 // GenerateCoreDocumentIdentifier generates a random identifier that is compatible to be used with the CoreDocument
 // identifiers like DocumentIdentifier, CurrentIdentifier, NextIdentifier
-func GenerateCoreDocumentIdentifier() ([]byte) {
+func GenerateCoreDocumentIdentifier() []byte {
 	cdi := make([]byte, 32)
 	cdi32 := tools.RandomByte32()
 	copy(cdi, cdi32[:32])
@@ -41,11 +41,11 @@ func AutoFillDocumentIdentifiers(document coredocumentpb.CoreDocument) (coredocu
 		return coredocumentpb.CoreDocument{}, coredocument.NewErrInconsistentState("No CurrentIdentifier but has NextIdentifier")
 	} else if !isEmptyId(document.DocumentIdentifier) && !isEmptyId(document.CurrentIdentifier) && !isEmptyId(document.NextIdentifier) {
 		// Good: all identifiers are different
-		if !tools.IsSameByteSlice(document.DocumentIdentifier, document.CurrentIdentifier) && !tools.IsSameByteSlice(document.DocumentIdentifier, document.NextIdentifier) && !tools.IsSameByteSlice(document.CurrentIdentifier, document.NextIdentifier){
+		if !tools.IsSameByteSlice(document.DocumentIdentifier, document.CurrentIdentifier) && !tools.IsSameByteSlice(document.DocumentIdentifier, document.NextIdentifier) && !tools.IsSameByteSlice(document.CurrentIdentifier, document.NextIdentifier) {
 			return document, nil
 		}
 		// Good: DocumentIdentifier == CurrentIdentifier but NextIdentifier is different
-		if tools.IsSameByteSlice(document.DocumentIdentifier, document.CurrentIdentifier) && !tools.IsSameByteSlice(document.DocumentIdentifier, document.NextIdentifier){
+		if tools.IsSameByteSlice(document.DocumentIdentifier, document.CurrentIdentifier) && !tools.IsSameByteSlice(document.DocumentIdentifier, document.NextIdentifier) {
 			return document, nil
 		}
 		// Problem (re-using an old identifier for NextIdentifier): CurrentIdentifier or DocumentIdentifier same as NextIdentifier
@@ -55,4 +55,3 @@ func AutoFillDocumentIdentifiers(document coredocumentpb.CoreDocument) (coredocu
 	}
 	return coredocumentpb.CoreDocument{}, coredocument.NewErrInconsistentState("Unexpected state")
 }
-

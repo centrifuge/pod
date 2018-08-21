@@ -5,6 +5,9 @@ package invoiceservice_test
 import (
 	"context"
 	"crypto/sha256"
+	"os"
+	"testing"
+
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
@@ -15,8 +18,6 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"os"
-	"testing"
 )
 
 func TestMain(m *testing.M) {

@@ -5,12 +5,13 @@ package signatures
 import (
 	"bytes"
 	"fmt"
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
-	"golang.org/x/crypto/ed25519"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
+	"golang.org/x/crypto/ed25519"
 )
 
 var (

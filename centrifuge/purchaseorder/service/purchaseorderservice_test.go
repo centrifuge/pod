@@ -5,6 +5,9 @@ package purchaseorderservice
 import (
 	"context"
 	"crypto/sha256"
+	"os"
+	"testing"
+
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
@@ -14,8 +17,6 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"os"
-	"testing"
 )
 
 func TestMain(m *testing.M) {
@@ -46,6 +47,7 @@ func (m *MockPurchaseOrderRepository) Create(doc *purchaseorderpb.PurchaseOrderD
 	args := m.Called(doc)
 	return args.Error(0)
 }
+
 // ----- END MOCKS -----
 
 // ----- HELPER FUNCTIONS -----

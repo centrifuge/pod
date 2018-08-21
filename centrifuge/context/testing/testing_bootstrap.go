@@ -2,22 +2,22 @@ package testing
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	logging "github.com/ipfs/go-log"
-	gologging "github.com/whyrusleeping/go-logging"
-	"os"
-	"path/filepath"
-	"strings"
 	"github.com/syndtr/goleveldb/leveldb"
+	gologging "github.com/whyrusleeping/go-logging"
 )
 
 const testStoragePath = "/tmp/centrifuge_data.leveldb_TESTING"
 
 var log = logging.Logger("context")
-
 
 func createEthereumConnection() {
 	client := ethereum.NewClientConnection()
@@ -28,7 +28,7 @@ func getRandomTestStoragePath() string {
 	return fmt.Sprintf("%s_%x", testStoragePath, tools.RandomByte32())
 }
 
-func GetLevelDBStorage() *leveldb.DB{
+func GetLevelDBStorage() *leveldb.DB {
 	return storage.NewLeveldbStorage(config.Config.GetStoragePath())
 }
 
@@ -40,6 +40,7 @@ func TestFunctionalEthereumBootstrap() {
 func TestFunctionalEthereumTearDown() {
 	TestIntegrationTearDown()
 }
+
 // ---- END Ethereum ----
 
 // ---- Integration Testing ----
@@ -75,4 +76,5 @@ func TestIntegrationTearDown() {
 	os.RemoveAll(config.Config.GetStoragePath())
 	config.Config = nil
 }
+
 // ---- End Integration Testing ----
