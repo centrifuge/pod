@@ -39,7 +39,7 @@ func TestRegisterAsAnchor_Integration_Concurrent(t *testing.T) {
 		rootHash := tools.RandomByte32()
 
 		confirmations, err := anchor.RegisterAsAnchor(id, rootHash)
-		watchSingleAnchor := <- confirmations
+		watchSingleAnchor := <-confirmations
 		assert.Nil(t, err, "should not error out upon anchor registration")
 		assert.Nil(t, watchSingleAnchor.Error, "No error thrown by context")
 		assert.Equal(t, id, watchSingleAnchor.Anchor.AnchorID, "Should have the ID that was passed into create function [%v]", watchSingleAnchor.Anchor.AnchorID)
