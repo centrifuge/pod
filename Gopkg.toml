@@ -28,8 +28,8 @@ required = ["github.com/roboll/go-vendorinstall", "github.com/golang/protobuf/pr
 
 [[constraint]]
   name = "github.com/CentrifugeInc/centrifuge-protobufs"
-  source = "git@github.com:CentrifugeInc/centrifuge-protobufs"
-  revision = "b7fa428427399b8de836278cbb6810e023c3a816"
+  source = "git@github.com:lucasvo/centrifuge-protobufs"
+  branch = "move-services"
 
 [[constraint]]
   name = "github.com/Masterminds/semver"

@@ -6,6 +6,13 @@ IMAGE_NAME?=centrifugeio/go-centrifuge
 LD_FLAGS?="-X github.com/CentrifugeInc/go-centrifuge/centrifuge/version.gitCommit=${GIT_COMMIT}"
 GCLOUD_SERVICE?="peak-vista-185616-9f70002df7eb.json"
 
+# GOBIN needs to be set to ensure govendor can actually be found and executed 
+PATH=$(shell printenv PATH):$(GOBIN)
+
+# If you need to overwrite PROTOTOOL_BIN, you can set this environment variable.
+PROTOTOOL_BIN ?=$(shell which prototool)
+
+
 .PHONY: help
 
 help: ## Show this help message.
@@ -21,10 +28,10 @@ install-deps: ## Install Dependencies
 proto-lint: ## runs prototool lint
 	$(PROTOTOOL_BIN) lint
 
-gen_go: ## generates the go bindings
+proto-gen-go: ## generates the go bindings
 	$(PROTOTOOL_BIN) gen
 
-gen_proto: ## runs prototool all
+proto-all: ## runs prototool all
 	$(PROTOTOOL_BIN) all
 
 vendorinstall: ## Installs all protobuf dependencies with go-vendorinstall
