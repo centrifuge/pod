@@ -272,7 +272,7 @@ func setUpKeyRegisteredEventListener(ethCreatedContract WatchKeyRegistered, iden
 	//only setting up a channel of 1 notification as there should always be only one notification coming for this
 	//single key being registered
 	keyAddedEvents := make(chan *EthereumIdentityContractKeyRegistered, 1)
-	confirmations = make(chan *WatchIdentity)
+	confirmations = make(chan *WatchIdentity, 1)
 	go waitAndRouteKeyRegistrationEvent(keyAddedEvents, watchOpts.Context, confirmations, identity)
 
 	b32Key, err := tools.SliceToByte32(key)
@@ -304,7 +304,7 @@ func setUpRegistrationEventListener(ethCreatedContract WatchIdentityCreated, ide
 	//only setting up a channel of 1 notification as there should always be only one notification coming for this
 	//single identity being registered
 	identityCreatedEvents := make(chan *EthereumIdentityFactoryContractIdentityCreated, 1)
-	confirmations = make(chan *WatchIdentity)
+	confirmations = make(chan *WatchIdentity, 1)
 	go waitAndRouteIdentityRegistrationEvent(identityCreatedEvents, watchOpts.Context, confirmations, identityToBeCreated)
 
 	bCentId := identityToBeCreated.CentrifugeIdB32()

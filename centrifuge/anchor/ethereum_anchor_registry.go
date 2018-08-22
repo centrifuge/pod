@@ -112,7 +112,7 @@ func setUpRegistrationEventListener(ethRegistryContract WatchAnchorRegistered, f
 	//only setting up a channel of 1 notification as there should always be only one notification coming for this
 	//single anchor being registered
 	anchorRegisteredEvents := make(chan *EthereumAnchorRegistryContractAnchorRegistered, 1)
-	confirmations = make(chan *WatchAnchor)
+	confirmations = make(chan *WatchAnchor, 1)
 	go waitAndRouteAnchorRegistrationEvent(anchorRegisteredEvents, watchOpts.Context, confirmations, anchorToBeRegistered)
 
 	//TODO do something with the returned Subscription that is currently simply discarded
