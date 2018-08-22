@@ -86,14 +86,20 @@ func TestCreateAndLookupIdentity_Integration(t *testing.T) {
 }
 
 func TestCreateAndLookupIdentity_Integration_Concurrent(t *testing.T) {
+	var centIds [5][]byte
+	var identityConfirmations [5]<-chan *identity.WatchIdentity
+	var err error
 	for ix := 0; ix < 5; ix++ {
 		centId := tools.RandomSlice32()
-		_, confirmations, err := identityService.CreateIdentity(centId)
+		centIds[ix] = centId
+		_, identityConfirmations[ix], err = identityService.CreateIdentity(centId)
 		assert.Nil(t, err, "should not error out upon identity creation")
-		watchSingleIdentity := <-confirmations
-		assert.Nil(t, watchSingleIdentity.Error, "No error thrown by context")
+	}
+
+	for ix := 0; ix < 5; ix++ {
+		watchSingleIdentity := <-identityConfirmations[ix]
 		id, err := identityService.LookupIdentityForId(watchSingleIdentity.Identity.GetCentrifugeId())
 		assert.Nil(t, err, "should not error out upon identity resolution")
-		assert.Equal(t, centId, id.GetCentrifugeId(), "Should have the ID that was passed into create function [%v]", id.GetCentrifugeId())
+		assert.Equal(t, centIds[ix], id.GetCentrifugeId(), "Should have the ID that was passed into create function [%v]", id.GetCentrifugeId())
 	}
 }
