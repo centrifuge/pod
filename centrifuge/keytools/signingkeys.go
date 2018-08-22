@@ -7,6 +7,10 @@ import (
 	"github.com/libp2p/go-libp2p-peer"
 	mh "github.com/multiformats/go-multihash"
 	"golang.org/x/crypto/ed25519"
+	"github.com/ethereum/go-ethereum/crypto/secp256k1"
+	"crypto/ecdsa"
+	"crypto/rand"
+	"crypto/elliptic"
 )
 
 var log = logging.Logger("keytools")
@@ -47,7 +51,7 @@ func GetSigningKeyPairFromConfig() (publicKey ed25519.PublicKey, privateKey ed25
 	return
 }
 
-func GenerateSigningKeypairED25519 (publicFileName, privateFileName string) (publicKey ed25519.PublicKey, privateKey ed25519.PrivateKey) {
+func GenerateSigningKeyPairED25519 () (publicKey ed25519.PublicKey, privateKey ed25519.PrivateKey) {
 
 	log.Debug("sign ED25519")
 	publicKey, privateKey, err := ed25519.GenerateKey(nil)
@@ -58,22 +62,32 @@ func GenerateSigningKeypairED25519 (publicFileName, privateFileName string) (pub
 	return
 }
 
-func GenerateSigningKeypairSECP256K1 (publicFileName, privateFileName string) (publicKey, privateKey []byte){
+func GenerateSigningKeyPairSECP256K1 () (publicKey, privateKey []byte){
 
-	//TODO: implement secp256k1 signing
-	log.Debug("sign SECP256K1")
-	return []byte("SECP256K1_PUBLIC_DUMMY"), []byte("SECP256K1_PRIVATE_DUMMY")
+	key, err := ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
+	if err != nil {
+		log.Fatal(err)
+	}
+	publicKey = elliptic.Marshal(secp256k1.S256(), key.X, key.Y)
+
+	privateKey = make([]byte, 32)
+	blob := key.D.Bytes()
+	copy(privateKey[32-len(blob):], blob)
+
+	return publicKey, privateKey
 }
 
-func GenerateSigningKeypair(publicFileName, privateFileName, curveType string) {
+func GenerateSigningKeyPair(publicFileName, privateFileName, curveType string) {
 
 	var publicKey, privateKey []byte
+
 	switch (curveType) {
-	case CURVE_SECP256K1: publicKey, privateKey = GenerateSigningKeypairSECP256K1(publicFileName,privateFileName)
 
-	case CURVE_ED25519: publicKey, privateKey = GenerateSigningKeypairED25519(publicFileName,privateFileName)
+	case CURVE_SECP256K1: publicKey, privateKey = GenerateSigningKeyPairSECP256K1()
 
-	default: publicKey, privateKey = GenerateSigningKeypairED25519(publicFileName,privateFileName)
+	case CURVE_ED25519: publicKey, privateKey = GenerateSigningKeyPairED25519()
+
+	default: publicKey, privateKey = GenerateSigningKeyPairED25519()
 
 	}
 	writeKeyToPemFile(privateFileName, "PRIVATE KEY", privateKey)

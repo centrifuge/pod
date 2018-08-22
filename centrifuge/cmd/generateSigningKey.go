@@ -18,7 +18,7 @@ var generateSigningKeyCmd = &cobra.Command{
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
 		if createSigningKey {
-			keytools.GenerateSigningKeypair(publicKeyFile, privateKeyFile,curveType)
+			keytools.GenerateSigningKeyPair(publicKeyFile, privateKeyFile,curveType)
 		}
 		if createEncryptionKey {
 			panic("Not implemented")
