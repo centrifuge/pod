@@ -34,6 +34,9 @@ proto-gen-go: ## generates the go bindings
 proto-all: ## runs prototool all
 	$(PROTOTOOL_BIN) all
 
+gen-swagger: ## generates the swagger documentation
+	npm run build_swagger
+
 vendorinstall: ## Installs all protobuf dependencies with go-vendorinstall
 	go install github.com/CentrifugeInc/go-centrifuge/vendor/github.com/roboll/go-vendorinstall
 	go-vendorinstall github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway

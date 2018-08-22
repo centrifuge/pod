@@ -1,0 +1,22 @@
+{
+  "name": "centrifuge-protobufs",
+  "version": "0.0.1",
+  "description": "Protobuf files &amp; go bindings for Centrifuge Documents",
+  "main": "index.js",
+  "scripts": {
+    "build_swagger": "node scripts/build_swagger.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CentrifugeInc/go-centrifuge.git"
+  },
+  "author": "",
+  "bugs": {
+    "url": "https://github.com/CentrifugeInc/go-centrifuge/issues"
+  },
+  "homepage": "https://github.com/CentrifugeInc/go-centrifuge#readme",
+  "devDependencies": {
+    "spectacle-docs": "^1.0.3",
+    "swagger-merge": "^0.3.3"
+  }
+}
