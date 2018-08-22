@@ -9,6 +9,7 @@ var privateKeyFile string
 var publicKeyFile string
 var createSigningKey bool
 var createEncryptionKey bool
+var curveType string
 
 // generateSigningKeyCmd represents the generateSigningKey command
 var generateSigningKeyCmd = &cobra.Command{
@@ -17,7 +18,7 @@ var generateSigningKeyCmd = &cobra.Command{
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
 		if createSigningKey {
-			_, _ = keytools.GenerateSigningKeypair(publicKeyFile, privateKeyFile)
+			keytools.GenerateSigningKeypair(publicKeyFile, privateKeyFile,curveType)
 		}
 		if createEncryptionKey {
 			panic("Not implemented")
@@ -30,5 +31,6 @@ func init() {
 	generateSigningKeyCmd.Flags().BoolVarP(&createEncryptionKey, "encryption", "e", false, "Generate encryption keys")
 	generateSigningKeyCmd.Flags().StringVarP(&privateKeyFile, "private", "p", "", "Private key path")
 	generateSigningKeyCmd.Flags().StringVarP(&publicKeyFile, "public", "q", "", "Public key path")
+	generateSigningKeyCmd.Flags().StringVarP(&curveType, "type", "t", "", "type of the curve (default: 'ed25519') ")
 	rootCmd.AddCommand(generateSigningKeyCmd)
 }
