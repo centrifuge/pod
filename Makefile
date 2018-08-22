@@ -24,6 +24,7 @@ help: ## Show this help message.
 install-deps: ## Install Dependencies
 	@command -v dep >/dev/null 2>&1 || go get -u github.com/golang/dep/...
 	@dep ensure
+	@npm install
 
 proto-lint: ## runs prototool lint
 	$(PROTOTOOL_BIN) lint
