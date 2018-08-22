@@ -83,7 +83,7 @@ var registerAsAnchorData = []struct {
 
 func TestRegisterAsAnchor(t *testing.T) {
 	for _, tt := range registerAsAnchorData {
-		actual := new(EthereumAnchorRegistry).RegisterAsAnchor(tt.id, tt.hs, tt.chn)
+		_, actual := new(EthereumAnchorRegistry).RegisterAsAnchor(tt.id, tt.hs)
 		assert.Equal(t, tt.expected.Error(), actual.Error())
 	}
 }
@@ -99,9 +99,8 @@ func TestSendRegistrationTransaction_ErrorPassThrough(t *testing.T) {
 func TestSetUpRegistrationEventListener_ErrorPassThrough(t *testing.T) {
 	failingWatchAnchorRegistered := &MockWatchAnchorRegistered{shouldFail: true}
 	anchor := Anchor{tools.RandomByte32(), tools.RandomByte32(), 1}
-	confirmations := make(chan *WatchAnchor)
 
-	err := setUpRegistrationEventListener(failingWatchAnchorRegistered, common.Address{}, &anchor, confirmations)
+	_, err := setUpRegistrationEventListener(failingWatchAnchorRegistered, common.Address{}, &anchor)
 	assert.Error(t, err, "Should fail if the anchor registration watcher failed")
 }
 
@@ -109,8 +108,7 @@ func TestSetUpRegistrationEventListener_ChannelSubscriptionCreated(t *testing.T)
 	config.Config.V.Set("ethereum.contextWaitTimeout", "30s")
 	mockWatchAnchorRegistered := &MockWatchAnchorRegistered{}
 	anchor := Anchor{tools.RandomByte32(), tools.RandomByte32(), 1}
-	confirmations := make(chan *WatchAnchor, 1)
-	err := setUpRegistrationEventListener(mockWatchAnchorRegistered, common.Address{}, &anchor, confirmations)
+	confirmations, err := setUpRegistrationEventListener(mockWatchAnchorRegistered, common.Address{}, &anchor)
 	assert.Nil(t, err, "Should not fail")
 	//sending one "event" into the registered sink should result in the confirmations channel to receive the anchor
 	//that has been created and passed through initially

@@ -21,7 +21,7 @@ type Identity interface {
 	SetCentrifugeId(b []byte) error
 	GetCurrentP2PKey() (ret string, err error)
 	GetLastKeyForType(keyType int) (key []byte, err error)
-	AddKeyToIdentity(keyType int, key []byte, confirmations chan<- *WatchIdentity) (err error)
+	AddKeyToIdentity(keyType int, key []byte) (confirmations chan *WatchIdentity, err error)
 	CheckIdentityExists() (exists bool, err error)
 }
 
@@ -33,7 +33,7 @@ type WatchIdentity struct {
 // IdentityService is used to fetch identities
 type IdentityService interface {
 	LookupIdentityForId(centrifugeId []byte) (id Identity, err error)
-	CreateIdentity(centrifugeId []byte, confirmations chan<- *WatchIdentity) (id Identity, err error)
+	CreateIdentity(centrifugeId []byte) (id Identity, confirmations chan *WatchIdentity, err error)
 	CheckIdentityExists(centrifugeId []byte) (exists bool, err error)
 }
 
