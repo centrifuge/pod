@@ -5,11 +5,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var privateKeyFile string
-var publicKeyFile string
-var createSigningKey bool
-var createEncryptionKey bool
-var curveType string
 
 // generateSigningKeyCmd represents the generateSigningKey command
 var generateSigningKeyCmd = &cobra.Command{

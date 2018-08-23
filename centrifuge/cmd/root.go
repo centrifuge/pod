@@ -11,8 +11,17 @@ import (
 	gologging "github.com/whyrusleeping/go-logging"
 )
 
+//global flags
 var cfgFile string
 var verbose bool
+
+//specific flags
+var privateKeyFile string
+var publicKeyFile string
+var createSigningKey bool
+var createEncryptionKey bool
+var curveType string
+var message string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{

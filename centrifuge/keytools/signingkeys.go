@@ -22,6 +22,7 @@ const (
 	CURVE_SECP256K1 string = "secp256k1"
 )
 
+const MAX_MSG_LEN = 32
 
 func GetPublicSigningKey(fileName string) (publicKey ed25519.PublicKey) {
 	key, err := readKeyFromPemFile(fileName, PUBLIC_KEY)
@@ -59,17 +60,46 @@ func GenerateSigningKeyPairED25519 () (publicKey ed25519.PublicKey, privateKey e
 	return
 }
 
+func SignMessage(privateKeyPath,message, curveType string) ([]byte){
+
+	privateKey, err := readKeyFromPemFile(privateKeyPath,PRIVATE_KEY)
+
+	if(len(message) > MAX_MSG_LEN){
+		log.Fatal("max message len is 32 bytes current len:",len(message))
+	}
+
+	msg := make([]byte, MAX_MSG_LEN)
+	copy(msg, message)
+
+	if(err != nil){
+		log.Fatal(err)
+	}
+
+	switch (curveType) {
+
+	case CURVE_SECP256K1:
+		return signing.SignSECP256K1(msg,privateKey)
+	default:
+		return signing.SignSECP256K1(msg,privateKey)
+
+	}
+
+}
+
 func GenerateSigningKeyPair(publicFileName, privateFileName, curveType string) {
 
 	var publicKey, privateKey []byte
 
 	switch (curveType) {
 
-	case CURVE_SECP256K1: publicKey, privateKey = signing.GenerateSigningKeyPairSECP256K1()
+	case CURVE_SECP256K1:
+		publicKey, privateKey = signing.GenerateSigningKeyPairSECP256K1()
 
-	case CURVE_ED25519: publicKey, privateKey = GenerateSigningKeyPairED25519()
+	case CURVE_ED25519:
+		publicKey, privateKey = GenerateSigningKeyPairED25519()
 
-	default: publicKey, privateKey = GenerateSigningKeyPairED25519()
+	default:
+		publicKey, privateKey = GenerateSigningKeyPairED25519()
 
 	}
 	writeKeyToPemFile(privateFileName, "PRIVATE KEY", privateKey)

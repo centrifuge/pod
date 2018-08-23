@@ -5,6 +5,8 @@ import (
 	"github.com/magiconair/properties/assert"
 )
 
+const MAX_MSG_LEN = 32
+
 func TestGenerateSigningKeyPairSECP256K1(t *testing.T) {
 
 	const LEN_PUBLIC_KEY = 65
@@ -17,7 +19,7 @@ func TestGenerateSigningKeyPairSECP256K1(t *testing.T) {
 
 func TestSigningMsgSECP256K1(t *testing.T) {
 
-	testMsg := make([]byte, 32)
+	testMsg := make([]byte, MAX_MSG_LEN)
 	copy(testMsg, "test123")
 
 	publicKey, privateKey := GenerateSigningKeyPairSECP256K1()
@@ -32,10 +34,10 @@ func TestSigningMsgSECP256K1(t *testing.T) {
 
 func TestVerifyFalseMsgSECP256K1(t *testing.T) {
 
-	testMsg := make([]byte, 32)
+	testMsg := make([]byte, MAX_MSG_LEN)
 	copy(testMsg, "test123")
 
-	falseMsg := make([]byte, 32)
+	falseMsg := make([]byte, MAX_MSG_LEN)
 	copy(falseMsg, "false")
 
 	publicKey, privateKey := GenerateSigningKeyPairSECP256K1()
@@ -50,7 +52,7 @@ func TestVerifyFalseMsgSECP256K1(t *testing.T) {
 
 func TestVerifyFalsePublicKeySECP256K1(t *testing.T) {
 
-	testMsg := make([]byte, 32)
+	testMsg := make([]byte, MAX_MSG_LEN)
 	copy(testMsg, "test123")
 
 	_, privateKey := GenerateSigningKeyPairSECP256K1()
