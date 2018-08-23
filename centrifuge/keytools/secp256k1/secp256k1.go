@@ -1,4 +1,4 @@
-package signing
+package secp256k1
 
 import (
 	"crypto/ecdsa"
@@ -12,7 +12,7 @@ var log = logging.Logger("signing")
 
 const LEN_SIGNATURE = 64 //64 byte [R || S] format
 
-func GenerateSigningKeyPairSECP256K1() (publicKey, privateKey []byte) {
+func GenerateSigningKeyPair() (publicKey, privateKey []byte) {
 
 	log.Debug("generate secp256k1 keys")
 	key, err := ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
@@ -28,7 +28,7 @@ func GenerateSigningKeyPairSECP256K1() (publicKey, privateKey []byte) {
 	return publicKey, privateKey
 }
 
-func SignSECP256K1(message []byte, privateKey []byte) (signature []byte){
+func Sign(message []byte, privateKey []byte) (signature []byte){
 	signature, err := secp256k1.Sign(message,privateKey)
 
 	if err != nil {
@@ -38,7 +38,7 @@ func SignSECP256K1(message []byte, privateKey []byte) (signature []byte){
 
 }
 
-func VerifySignatureSECP256K1(publicKey,message,signature []byte)(bool){
+func VerifySignature(publicKey,message,signature []byte)(bool){
     if(len(signature) == LEN_SIGNATURE+1){
     	signature = signature[0:LEN_SIGNATURE] // signature in [R || S || V] format is 65 bytes
 	}

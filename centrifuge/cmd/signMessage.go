@@ -12,7 +12,7 @@ var signMessageCmd = &cobra.Command{
 	Short: "sign a message with private key",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
-		signature := keytools.SignMessage(privateKeyFile,message, curveType)
+		signature := keytools.SignMessage(privateKeyFileParam,messageParam, curveTypeParam)
 		fmt.Println(hex.EncodeToString(signature))
 
 	},
@@ -20,8 +20,8 @@ var signMessageCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(signMessageCmd)
-	signMessageCmd.Flags().StringVarP(&message, "message", "m", "", "message to sign (max 32 bytes)")
-	signMessageCmd.Flags().StringVarP(&privateKeyFile, "private", "p", "", "private key path")
-	signMessageCmd.Flags().StringVarP(&curveType, "type", "t", "", "type of the curve (default: 'secp256k1') ")
+	signMessageCmd.Flags().StringVarP(&messageParam, "message", "m", "", "message to sign (max 32 bytes)")
+	signMessageCmd.Flags().StringVarP(&privateKeyFileParam, "private", "p", "", "private key path")
+	signMessageCmd.Flags().StringVarP(&curveTypeParam, "type", "t", "", "type of the curve (default: 'secp256k1') ")
 }
 

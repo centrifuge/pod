@@ -2,7 +2,7 @@ package keytools
 
 import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/signing"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/secp256k1"
 	logging "github.com/ipfs/go-log"
 	"github.com/libp2p/go-libp2p-crypto"
 	"github.com/libp2p/go-libp2p-peer"
@@ -81,9 +81,9 @@ func SignMessage(privateKeyPath,message, curveType string) ([]byte){
 	switch (curveType) {
 
 	case CURVE_SECP256K1:
-		return signing.SignSECP256K1(msg,privateKey)
+		return secp256k1.Sign(msg,privateKey)
 	default:
-		return signing.SignSECP256K1(msg,privateKey)
+		return secp256k1.Sign(msg,privateKey)
 
 	}
 
@@ -106,9 +106,9 @@ func VerifyMessage(publicKeyPath string,message string,signature []byte,curveTyp
 	switch (curveType) {
 
 	case CURVE_SECP256K1:
-		return signing.VerifySignatureSECP256K1(publicKey,msg,signatureBytes)
+		return secp256k1.VerifySignature(publicKey,msg,signatureBytes)
 	default:
-		return signing.VerifySignatureSECP256K1(publicKey,msg,signatureBytes)
+		return secp256k1.VerifySignature(publicKey,msg,signatureBytes)
 	}
 
 }
@@ -122,7 +122,7 @@ func GenerateSigningKeyPair(publicFileName, privateFileName, curveType string) {
 	switch (curveType) {
 
 	case CURVE_SECP256K1:
-		publicKey, privateKey = signing.GenerateSigningKeyPairSECP256K1()
+		publicKey, privateKey = secp256k1.GenerateSigningKeyPair()
 
 	case CURVE_ED25519:
 		publicKey, privateKey = GenerateSigningKeyPairED25519()

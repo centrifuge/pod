@@ -12,22 +12,22 @@ var verifyMsgCmd  = &cobra.Command{
 	Short: "verify a signature",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
-		signatureBytes, err := hex.DecodeString(signature)
+		signatureBytes, err := hex.DecodeString(signatureParam)
 
 		if(err != nil){
 			log.Fatal(err)
 		}
-		correctSignature := keytools.VerifyMessage(publicKeyFile,message,signatureBytes,curveType)
+		correctSignature := keytools.VerifyMessage(publicKeyFileParam,messageParam,signatureBytes,curveTypeParam)
 		fmt.Println(correctSignature)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(verifyMsgCmd)
-	verifyMsgCmd.Flags().StringVarP(&message, "message", "m", "", "message to verify (max 32 bytes)")
-	verifyMsgCmd.Flags().StringVarP(&publicKeyFile, "public", "q", "", "public key path")
-	verifyMsgCmd.Flags().StringVarP(&curveType, "type", "t", "", "type of the curve (default: 'secp256k1') ")
-	verifyMsgCmd.Flags().StringVarP(&signature, "signature", "s", "", "signature")
+	verifyMsgCmd.Flags().StringVarP(&messageParam, "message", "m", "", "message to verify (max 32 bytes)")
+	verifyMsgCmd.Flags().StringVarP(&publicKeyFileParam, "public", "q", "", "public key path")
+	verifyMsgCmd.Flags().StringVarP(&curveTypeParam, "type", "t", "", "type of the curve (default: 'secp256k1') ")
+	verifyMsgCmd.Flags().StringVarP(&signatureParam, "signature", "s", "", "signature")
 }
 
 
