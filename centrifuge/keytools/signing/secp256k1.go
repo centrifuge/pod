@@ -40,7 +40,7 @@ func SignSECP256K1(message []byte, privateKey []byte) (signature []byte){
 
 func VerifySignatureSECP256K1(publicKey,message,signature []byte)(bool){
     if(len(signature) == LEN_SIGNATURE+1){
-    	signature = signature[0:LEN_SIGNATURE]
+    	signature = signature[0:LEN_SIGNATURE] // signature in [R || S || V] format is 65 bytes
 	}
 	// the signature should have the 64 byte [R || S] format
 	return secp256k1.VerifySignature(publicKey,message,signature)

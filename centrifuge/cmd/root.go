@@ -22,6 +22,7 @@ var createSigningKey bool
 var createEncryptionKey bool
 var curveType string
 var message string
+var signature string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
