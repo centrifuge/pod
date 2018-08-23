@@ -18,10 +18,12 @@ var createIdentityCmd = &cobra.Command{
 		if err != nil {
 			panic(err)
 		}
-		_, _, err = identityService.CreateIdentity(centrifugeId)
+		_, confirmations, err := identityService.CreateIdentity(centrifugeId)
+		watchIdentity := <-confirmations
 		if err != nil {
 			panic(err)
 		}
+		log.Infof("Identity created [%s]", watchIdentity.Identity.CentrifugeIdString())
 	},
 }
 
