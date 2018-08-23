@@ -1,10 +1,11 @@
 package cmd
 
 import (
-	"github.com/spf13/cobra"
-	"fmt"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools"
 	"encoding/hex"
+	"fmt"
+
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools"
+	"github.com/spf13/cobra"
 )
 
 var signMessageCmd = &cobra.Command{
@@ -12,7 +13,7 @@ var signMessageCmd = &cobra.Command{
 	Short: "sign a message with private key",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
-		signature := keytools.SignMessage(privateKeyFileParam,messageParam, curveTypeParam)
+		signature := keytools.SignMessage(privateKeyFileParam, messageParam, curveTypeParam)
 		fmt.Println(hex.EncodeToString(signature))
 
 	},
@@ -24,4 +25,3 @@ func init() {
 	signMessageCmd.Flags().StringVarP(&privateKeyFileParam, "private", "p", "", "private key path")
 	signMessageCmd.Flags().StringVarP(&curveTypeParam, "type", "t", "", "type of the curve (default: 'secp256k1') ")
 }
-

@@ -2,6 +2,7 @@ package secp256k1
 
 import (
 	"testing"
+
 	"github.com/magiconair/properties/assert"
 )
 
@@ -12,8 +13,8 @@ func TestGenerateSigningKeyPairSECP256K1(t *testing.T) {
 	const LEN_PUBLIC_KEY = 65
 	const LEN_PRIVATE_KEY = 32
 	publicKey, privateKey := GenerateSigningKeyPair()
-	assert.Equal(t,len(publicKey),LEN_PUBLIC_KEY,"secp256k1 public key not correct")
-	assert.Equal(t,len(privateKey),LEN_PRIVATE_KEY,"secp256k1 private key not correct")
+	assert.Equal(t, len(publicKey), LEN_PUBLIC_KEY, "secp256k1 public key not correct")
+	assert.Equal(t, len(privateKey), LEN_PRIVATE_KEY, "secp256k1 private key not correct")
 
 }
 
@@ -24,11 +25,11 @@ func TestSigningMsgSECP256K1(t *testing.T) {
 
 	publicKey, privateKey := GenerateSigningKeyPair()
 
-	signature := Sign(testMsg,privateKey)
+	signature := Sign(testMsg, privateKey)
 
-	correct := VerifySignature(publicKey,testMsg,signature)
+	correct := VerifySignature(publicKey, testMsg, signature)
 
-	assert.Equal(t,correct,true,"sign message didn't work correctly")
+	assert.Equal(t, correct, true, "sign message didn't work correctly")
 
 }
 
@@ -42,11 +43,11 @@ func TestVerifyFalseMsgSECP256K1(t *testing.T) {
 
 	publicKey, privateKey := GenerateSigningKeyPair()
 
-	signature := Sign(testMsg,privateKey)
+	signature := Sign(testMsg, privateKey)
 
-	correct := VerifySignature(publicKey,falseMsg,signature)
+	correct := VerifySignature(publicKey, falseMsg, signature)
 
-	assert.Equal(t,correct,false,"false msg verify should be false ")
+	assert.Equal(t, correct, false, "false msg verify should be false ")
 
 }
 
@@ -59,11 +60,10 @@ func TestVerifyFalsePublicKeySECP256K1(t *testing.T) {
 
 	falsePublicKey, _ := GenerateSigningKeyPair()
 
-	signature := Sign(testMsg,privateKey)
+	signature := Sign(testMsg, privateKey)
 
-	correct := VerifySignature(falsePublicKey,testMsg,signature)
+	correct := VerifySignature(falsePublicKey, testMsg, signature)
 
-	assert.Equal(t,correct,false,"verify of false public key should be false")
+	assert.Equal(t, correct, false, "verify of false public key should be false")
 
 }
-

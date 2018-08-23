@@ -1,11 +1,11 @@
 package keytools
 
 import (
-	"golang.org/x/crypto/ed25519"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
-	mh "github.com/multiformats/go-multihash"
-	"github.com/libp2p/go-libp2p-peer"
 	"github.com/libp2p/go-libp2p-crypto"
+	"github.com/libp2p/go-libp2p-peer"
+	mh "github.com/multiformats/go-multihash"
+	"golang.org/x/crypto/ed25519"
 )
 
 func GetPublicSigningKey(fileName string) (publicKey ed25519.PublicKey) {
@@ -33,7 +33,7 @@ func GetSigningKeyPairFromConfig() (publicKey ed25519.PublicKey, privateKey ed25
 	return
 }
 
-func GenerateSigningKeyPairED25519 () (publicKey ed25519.PublicKey, privateKey ed25519.PrivateKey) {
+func GenerateSigningKeyPairED25519() (publicKey ed25519.PublicKey, privateKey ed25519.PrivateKey) {
 
 	log.Debug("sign ED25519")
 	publicKey, privateKey, err := ed25519.GenerateKey(nil)
@@ -60,4 +60,3 @@ func PublicKeyToP2PKey(publicKey [32]byte) (p2pId peer.ID, err error) {
 	p2pId = peer.ID(hash)
 	return
 }
-

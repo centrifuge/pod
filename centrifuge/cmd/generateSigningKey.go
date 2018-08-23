@@ -5,7 +5,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-
 // generateSigningKeyCmd represents the generateSigningKey command
 var generateSigningKeyCmd = &cobra.Command{
 	Use:   "generatekeys",
@@ -13,7 +12,7 @@ var generateSigningKeyCmd = &cobra.Command{
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
 		if createSigningKeyParam {
-			keytools.GenerateSigningKeyPair(publicKeyFileParam, privateKeyFileParam,curveTypeParam)
+			keytools.GenerateSigningKeyPair(publicKeyFileParam, privateKeyFileParam, curveTypeParam)
 		}
 		if createEncryptionKeyParam {
 			panic("Not implemented")
