@@ -18,8 +18,7 @@ var createIdentityCmd = &cobra.Command{
 		if err != nil {
 			panic(err)
 		}
-		confirmations := make(chan *identity.WatchIdentity, 1)
-		_, err = identityService.CreateIdentity(centrifugeId, confirmations)
+		_, _, err = identityService.CreateIdentity(centrifugeId)
 		if err != nil {
 			panic(err)
 		}
@@ -48,8 +47,7 @@ var addKeyCmd = &cobra.Command{
 			panic(err)
 		}
 
-		confirmations := make(chan *identity.WatchIdentity, 1)
-		err = id.AddKeyToIdentity(identity.KEY_TYPE_PEERID, idKey, confirmations)
+		confirmations, err := id.AddKeyToIdentity(identity.KEY_TYPE_PEERID, idKey)
 		if err != nil {
 			panic(err)
 		}

@@ -39,9 +39,7 @@ func TestCreateAndLookupIdentity_Integration(t *testing.T) {
 	wrongCentrifugeId[2] = 0x0
 	wrongCentrifugeId[3] = 0x0
 
-	confirmations := make(chan *identity.WatchIdentity, 1)
-
-	id, err := identityService.CreateIdentity(centrifugeId, confirmations)
+	id, confirmations, err := identityService.CreateIdentity(centrifugeId)
 	assert.Nil(t, err, "should not error out when creating identity")
 
 	watchRegisteredIdentity := <-confirmations
@@ -73,8 +71,7 @@ func TestCreateAndLookupIdentity_Integration(t *testing.T) {
 
 	// Add Key
 	key := tools.RandomSlice32()
-	confirmations = make(chan *identity.WatchIdentity, 1)
-	err = id.AddKeyToIdentity(1, key, confirmations)
+	confirmations, err = id.AddKeyToIdentity(1, key)
 	assert.Nil(t, err, "should not error out when adding key to identity")
 	watchReceivedIdentity := <-confirmations
 	assert.Equal(t, centrifugeId, watchReceivedIdentity.Identity.GetCentrifugeId(), "Resulting Identity should have the same ID as the input")
@@ -89,23 +86,20 @@ func TestCreateAndLookupIdentity_Integration(t *testing.T) {
 }
 
 func TestCreateAndLookupIdentity_Integration_Concurrent(t *testing.T) {
-	var submittedIds [5][]byte
-
-	howMany := cap(submittedIds)
-	confirmations := make(chan *identity.WatchIdentity, howMany)
-
-	for ix := 0; ix < howMany; ix++ {
+	var centIds [5][]byte
+	var identityConfirmations [5]<-chan *identity.WatchIdentity
+	var err error
+	for ix := 0; ix < 5; ix++ {
 		centId := tools.RandomSlice32()
-		submittedIds[ix] = centId
-		_, err := identityService.CreateIdentity(centId, confirmations)
+		centIds[ix] = centId
+		_, identityConfirmations[ix], err = identityService.CreateIdentity(centId)
 		assert.Nil(t, err, "should not error out upon identity creation")
 	}
 
-	for ix := 0; ix < howMany; ix++ {
-		watchSingleIdentity := <-confirmations
-		assert.Nil(t, watchSingleIdentity.Error, "No error thrown by context")
+	for ix := 0; ix < 5; ix++ {
+		watchSingleIdentity := <-identityConfirmations[ix]
 		id, err := identityService.LookupIdentityForId(watchSingleIdentity.Identity.GetCentrifugeId())
 		assert.Nil(t, err, "should not error out upon identity resolution")
-		assert.Contains(t, submittedIds, id.GetCentrifugeId(), "Should have the ID that was passed into create function [%v]", id.GetCentrifugeId())
+		assert.Equal(t, centIds[ix], id.GetCentrifugeId(), "Should have the ID that was passed into create function [%v]", id.GetCentrifugeId())
 	}
 }

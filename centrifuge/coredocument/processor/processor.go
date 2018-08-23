@@ -99,8 +99,7 @@ func (dp *defaultProcessor) Anchor(document *coredocumentpb.CoreDocument) error 
 		return err
 	}
 
-	confirmations := make(chan *anchor.WatchAnchor, 1)
-	err = anchor.RegisterAsAnchor(id, rootHash, confirmations)
+	confirmations, err := anchor.RegisterAsAnchor(id, rootHash)
 	if err != nil {
 		log.Error(err)
 		return err
