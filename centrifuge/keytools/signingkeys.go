@@ -2,15 +2,12 @@ package keytools
 
 import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/signing"
 	logging "github.com/ipfs/go-log"
 	"github.com/libp2p/go-libp2p-crypto"
 	"github.com/libp2p/go-libp2p-peer"
 	mh "github.com/multiformats/go-multihash"
 	"golang.org/x/crypto/ed25519"
-	"github.com/ethereum/go-ethereum/crypto/secp256k1"
-	"crypto/ecdsa"
-	"crypto/rand"
-	"crypto/elliptic"
 )
 
 var log = logging.Logger("keytools")
@@ -62,28 +59,13 @@ func GenerateSigningKeyPairED25519 () (publicKey ed25519.PublicKey, privateKey e
 	return
 }
 
-func GenerateSigningKeyPairSECP256K1 () (publicKey, privateKey []byte){
-
-	key, err := ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
-	if err != nil {
-		log.Fatal(err)
-	}
-	publicKey = elliptic.Marshal(secp256k1.S256(), key.X, key.Y)
-
-	privateKey = make([]byte, 32)
-	blob := key.D.Bytes()
-	copy(privateKey[32-len(blob):], blob)
-
-	return publicKey, privateKey
-}
-
 func GenerateSigningKeyPair(publicFileName, privateFileName, curveType string) {
 
 	var publicKey, privateKey []byte
 
 	switch (curveType) {
 
-	case CURVE_SECP256K1: publicKey, privateKey = GenerateSigningKeyPairSECP256K1()
+	case CURVE_SECP256K1: publicKey, privateKey = signing.GenerateSigningKeyPairSECP256K1()
 
 	case CURVE_ED25519: publicKey, privateKey = GenerateSigningKeyPairED25519()
 

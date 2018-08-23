@@ -19,3 +19,4 @@ func TestPublicKeyToP2PKey(t *testing.T) {
 	assert.Equal(t, expectedPeerId, peerId.Pretty())
 
 }
+
