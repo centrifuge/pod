@@ -1,12 +1,13 @@
+// +build unit
+
 package purchaseorderservice
 
 import (
 	"context"
 	"crypto/sha256"
+	"fmt"
 	"os"
 	"testing"
-
-	"fmt"
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
