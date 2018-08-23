@@ -10,7 +10,7 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/processor"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/service"
@@ -20,7 +20,7 @@ import (
 
 func TestMain(m *testing.M) {
 	cc.TestFunctionalEthereumBootstrap()
-	invoicerepository.NewLevelDBInvoiceRepository(&invoicerepository.LevelDBInvoiceRepository{cc.GetLevelDBStorage()})
+	invoicerepository.NewLevelDBInvoiceRepository(&invoicerepository.LevelDBInvoiceRepository{Leveldb: cc.GetLevelDBStorage()})
 
 	result := m.Run()
 	cc.TestIntegrationTearDown()
@@ -41,7 +41,7 @@ func generateEmptyInvoiceForProcessing() (doc *invoice.Invoice) {
 func TestInvoiceDocumentService_HandleAnchorInvoiceDocument_Integration(t *testing.T) {
 	s := invoiceservice.InvoiceDocumentService{
 		InvoiceRepository:     invoicerepository.GetInvoiceRepository(),
-		CoreDocumentProcessor: coredocument.NewDefaultProcessor(),
+		CoreDocumentProcessor: coredocumentprocessor.NewDefaultProcessor(),
 	}
 	doc := generateEmptyInvoiceForProcessing()
 	doc.Document.Data.SenderCountry = "DE"

@@ -10,7 +10,7 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/processor"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder/service"
@@ -41,7 +41,7 @@ func generateEmptyPurchaseOrderForProcessing() (doc *purchaseorder.PurchaseOrder
 func TestPurchaseOrderDocumentService_HandleAnchorPurchaseOrderDocument_Integration(t *testing.T) {
 	s := purchaseorderservice.PurchaseOrderDocumentService{
 		PurchaseOrderRepository: purchaseorderrepository.GetPurchaseOrderRepository(),
-		CoreDocumentProcessor:   coredocument.NewDefaultProcessor(),
+		CoreDocumentProcessor:   coredocumentprocessor.NewDefaultProcessor(),
 	}
 	doc := generateEmptyPurchaseOrderForProcessing()
 	doc.Document.Data.OrderCountry = "DE"
