@@ -15,6 +15,8 @@ import (
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/go-errors/errors"
 	logging "github.com/ipfs/go-log"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/queue"
+	"time"
 )
 
 var log = logging.Logger("identity")
@@ -272,7 +274,7 @@ func setUpKeyRegisteredEventListener(ethCreatedContract WatchKeyRegistered, iden
 	//only setting up a channel of 1 notification as there should always be only one notification coming for this
 	//single key being registered
 	keyAddedEvents := make(chan *EthereumIdentityContractKeyRegistered, 1)
-	confirmations = make(chan *WatchIdentity, 1)
+	confirmations = make(chan *WatchIdentity)
 	go waitAndRouteKeyRegistrationEvent(keyAddedEvents, watchOpts.Context, confirmations, identity)
 
 	b32Key, err := tools.SliceToByte32(key)
@@ -297,28 +299,17 @@ func setUpKeyRegisteredEventListener(ethCreatedContract WatchKeyRegistered, iden
 // setUpRegistrationEventListener sets up the listened for the "IdentityCreated" event to notify the upstream code about successful mining/creation
 // of the identity.
 func setUpRegistrationEventListener(ethCreatedContract WatchIdentityCreated, identityToBeCreated Identity) (confirmations chan *WatchIdentity, err error) {
-	//listen to this particular identity being mined/event is triggered
-	ctx, cancelFunc := ethereum.DefaultWaitForTransactionMiningContext()
-	watchOpts := &bind.WatchOpts{Context: ctx}
-
-	//only setting up a channel of 1 notification as there should always be only one notification coming for this
-	//single identity being registered
-	identityCreatedEvents := make(chan *EthereumIdentityFactoryContractIdentityCreated, 1)
-	confirmations = make(chan *WatchIdentity, 1)
-	go waitAndRouteIdentityRegistrationEvent(identityCreatedEvents, watchOpts.Context, confirmations, identityToBeCreated)
-
+	confirmations = make(chan *WatchIdentity)
 	bCentId := identityToBeCreated.CentrifugeIdB32()
-
-	//TODO do something with the returned Subscription that is currently simply discarded
-	// Somehow there are some possible resource leakage situations with this handling but I have to understand
-	// Subscriptions a bit better before writing this code.
-	_, err = ethCreatedContract.WatchIdentityCreated(watchOpts, identityCreatedEvents, [][32]byte{bCentId})
+	asyncRes, err := queue.Queue.DelayKwargs(RegistrationConfirmationTaskName, map[string]interface{}{CentIdParam : bCentId})
 	if err != nil {
-		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for identity registration", 1)
-		log.Errorf(wError.Error())
-		cancelFunc()
+		return confirmations, err
 	}
-	return
+	_, err = asyncRes.Get(1 * time.Second)
+	if err != nil {
+		return confirmations, err
+	}
+	return confirmations, err
 }
 
 // waitAndRouteKeyRegistrationEvent notifies the confirmations channel whenever the key has been added to the identity and has been noted as Ethereum event
