@@ -20,7 +20,7 @@ import (
 
 func TestMain(m *testing.M) {
 	cc.TestFunctionalEthereumBootstrap()
-	purchaseorderrepository.InitLevelDBRepository(&purchaseorderrepository.levelDBRepository{cc.GetLevelDBStorage()})
+	purchaseorderrepository.InitLevelDBRepository(cc.GetLevelDBStorage())
 
 	result := m.Run()
 	cc.TestIntegrationTearDown()
@@ -40,7 +40,7 @@ func generateEmptyPurchaseOrderForProcessing() (doc *purchaseorder.PurchaseOrder
 
 func TestPurchaseOrderDocumentService_HandleAnchorPurchaseOrderDocument_Integration(t *testing.T) {
 	s := purchaseorderservice.PurchaseOrderDocumentService{
-		Repository:            purchaseorderrepository.GetPurchaseOrderRepository(),
+		Repository:            purchaseorderrepository.GetRepository(),
 		CoreDocumentProcessor: coredocument.GetDefaultCoreDocumentProcessor(),
 	}
 	doc := generateEmptyPurchaseOrderForProcessing()
@@ -54,8 +54,10 @@ func TestPurchaseOrderDocumentService_HandleAnchorPurchaseOrderDocument_Integrat
 		"DocumentIdentifier doesn't match")
 
 	//PurchaseOrder document got stored in the DB
-	loadedPurchaseOrder, _ := purchaseorderrepository.GetPurchaseOrderRepository().FindById(doc.Document.CoreDocument.DocumentIdentifier)
-	assert.Equal(t, "DE", loadedPurchaseOrder.Data.OrderCountry,
+	loadedDoc := new(purchaseorderpb.PurchaseOrderDocument)
+	err = purchaseorderrepository.GetRepository().GetByID(doc.Document.CoreDocument.DocumentIdentifier, loadedDoc)
+	assert.Nil(t, err)
+	assert.Equal(t, "DE", loadedDoc.Data.OrderCountry,
 		"Didn't save the purchaseorder data correctly")
 
 	//PO Service should error out if trying to anchor the same document ID again
@@ -65,7 +67,9 @@ func TestPurchaseOrderDocumentService_HandleAnchorPurchaseOrderDocument_Integrat
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "Document already exists")
 
-	loadedPurchaseOrder2, _ := purchaseorderrepository.GetPurchaseOrderRepository().FindById(doc.Document.CoreDocument.DocumentIdentifier)
-	assert.Equal(t, "DE", loadedPurchaseOrder2.Data.OrderCountry,
+	loadedDoc2 := new(purchaseorderpb.PurchaseOrderDocument)
+	err = purchaseorderrepository.GetRepository().GetByID(doc.Document.CoreDocument.DocumentIdentifier, loadedDoc2)
+	assert.Nil(t, err)
+	assert.Equal(t, "DE", loadedDoc2.Data.OrderCountry,
 		"Document on DB should have not not gotten overwritten after rejected anchor call")
 }
