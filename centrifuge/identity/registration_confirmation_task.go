@@ -33,7 +33,7 @@ func (rct *RegistrationConfirmationTask) ParseKwargs(kwargs map[string]interface
 	}
 	CentIdTyped, err := getBytes(CentId)
 	if err != nil {
-		return fmt.Errorf("malformed kwarg " + CentIdParam)
+		return fmt.Errorf("malformed kwarg [%s] because [%s]", CentIdParam, err.Error())
 	}
 	rct.CentId = CentIdTyped
 	return nil
@@ -69,7 +69,7 @@ func (rct *RegistrationConfirmationTask) RunTask() (interface{}, error) {
 }
 
 func getBytes(key interface{}) ([32]byte, error) {
-	b, ok := key.([]byte)
+	b, ok := key.([32]byte)
 	var fixed [32]byte
 	if !ok {
 		return fixed, errors.New("Could not parse interface to []byte")
