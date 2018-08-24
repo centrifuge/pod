@@ -393,7 +393,7 @@ func (ids *EthereumIdentityService) LookupIdentityForId(centrifugeId []byte) (Id
 	exists, err := instanceId.CheckIdentityExists()
 
 	if !exists {
-		return instanceId, fmt.Errorf("Identity [%s] does not exist", instanceId.CentrifugeIdString())
+		return instanceId, fmt.Errorf("identity [%s] does not exist", instanceId.CentrifugeIdString())
 	}
 
 	if err != nil {

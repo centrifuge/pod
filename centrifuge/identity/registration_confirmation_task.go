@@ -39,7 +39,8 @@ func (rct *RegistrationConfirmationTask) ParseKwargs(kwargs map[string]interface
 	return nil
 }
 
-// RunTask - define a method to run
+// RunTask calls listens to events from geth related to RegistrationConfirmationTask#CentId and records result.
+// Currently covered by TestCreateAndLookupIdentity_Integration test.
 func (rct *RegistrationConfirmationTask) RunTask() (interface{}, error) {
 	ctx, cancelFunc := ethereum.DefaultWaitForTransactionMiningContext()
 	watchOpts := &bind.WatchOpts{Context: ctx}
@@ -69,9 +70,15 @@ func (rct *RegistrationConfirmationTask) RunTask() (interface{}, error) {
 }
 
 func getBytes(key interface{}) ([32]byte, error) {
-	b, ok := key.([32]byte)
+	var fixed [32]byte
+	b, ok := key.([]interface{})
 	if !ok {
-		return b, errors.New("Could not parse interface to []byte")
+		return fixed, errors.New("Could not parse interface to []byte")
 	}
-	return b, nil
+	// convert and copy b byte values
+	for i, v := range b {
+		fv := v.(float64)
+		fixed[i] = byte(fv)
+	}
+	return fixed, nil
 }

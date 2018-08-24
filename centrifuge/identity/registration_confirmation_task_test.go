@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/gocelery"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -12,7 +13,8 @@ func TestRegistrationConfirmationTask_ParseKwargsHappyPath(t *testing.T) {
 	id := tools.RandomSlice32()
 	var b32Id [32]byte
 	copy(b32Id[:], id[:32])
-	err := rct.ParseKwargs(map[string]interface{}{CentIdParam: b32Id})
+	decoded, err := simulateJsonDecode(b32Id)
+	err = rct.ParseKwargs(decoded)
 	if err != nil {
 		t.Errorf("Could not parse %s for [%x]", CentIdParam, id)
 	}
@@ -28,9 +30,13 @@ func TestRegistrationConfirmationTask_ParseKwargsDoesNotExist(t *testing.T) {
 	assert.NotNil(t, err, "Should not allow parsing without centId")
 }
 
-func TestRegistrationConfirmationTask_ParseKwargsMalformedCentId(t *testing.T) {
-	rct := RegistrationConfirmationTask{}
-	id := tools.RandomSlice32()
-	err := rct.ParseKwargs(map[string]interface{}{CentIdParam: id})
-	assert.NotNil(t, err, "Should not parse CentId of type other than [32]byte")
+func simulateJsonDecode(b32Id [32]byte) (map[string]interface{}, error) {
+	kwargs := map[string]interface{}{CentIdParam: b32Id}
+	t1 := gocelery.TaskMessage{Kwargs: kwargs}
+	encoded, err := t1.Encode()
+	if err != nil {
+		return nil, err
+	}
+	t2, err := gocelery.DecodeTaskMessage(encoded)
+	return t2.Kwargs, err
 }
