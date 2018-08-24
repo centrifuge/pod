@@ -11,6 +11,7 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/version"
 	logging "github.com/ipfs/go-log"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
 )
 
 var log = logging.Logger("context")
@@ -25,7 +26,9 @@ func Bootstrap() {
 	purchaseorderrepository.NewLevelDBPurchaseOrderRepository(&purchaseorderrepository.LevelDBPurchaseOrderRepository{levelDB})
 	signatures.NewSigningService(signatures.SigningService{})
 	createEthereumConnection()
-	queue.InitQueue()
+	queue.InitQueue([]queue.QueuedTask{
+		&identity.RegistrationConfirmationTask{},
+	})
 }
 
 func createEthereumConnection() {

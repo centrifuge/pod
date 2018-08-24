@@ -54,6 +54,14 @@
   revision = "f899737d7f2764dc13e4d01ff00108ec58f766a9"
 
 [[projects]]
+  branch = "master"
+  digest = "1:85d7d9fae7d030956766e2a2c591e481ad0f89d6b10686b9477d7a237543c215"
+  name = "github.com/centrifuge/gocelery"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "2fbbc54d394c106d1ef5593cc41f5096abb2226f"
+
+[[projects]]
   digest = "1:5c65ea082148892bd4a93881b2810a7d20d86a25034dcf520292c8fd38cee3b1"
   name = "github.com/centrifuge/precise-proofs"
   packages = [
@@ -229,6 +237,17 @@
   packages = ["."]
   pruneopts = "UT"
   revision = "2e65f85255dbc3072edf28d6b5b8efc472979f5a"
+
+[[projects]]
+  digest = "1:38ec74012390146c45af1f92d46e5382b50531247929ff3a685d2b2be65155ac"
+  name = "github.com/gomodule/redigo"
+  packages = [
+    "internal",
+    "redis",
+  ]
+  pruneopts = "UT"
+  revision = "9c11da706d9b7902c6da69c592f75637793fe121"
+  version = "v2.0.0"
 
 [[projects]]
   digest = "1:8f8811f9be822914c3a25c6a071e93beb4c805d7b026cbf298bc577bc1cc945b"
@@ -1001,6 +1020,14 @@
   version = "v1.1.0"
 
 [[projects]]
+  branch = "master"
+  digest = "1:0c088044c1c1ee83e723692442df4fec9b3f2e57f7a99773485c97adfbc31695"
+  name = "github.com/streadway/amqp"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "70e15c650864f4fc47f5d3c82ea117285480895d"
+
+[[projects]]
   digest = "1:ac83cf90d08b63ad5f7e020ef480d319ae890c208f8524622a2f3136e2686b02"
   name = "github.com/stretchr/objx"
   packages = ["."]
@@ -1314,6 +1341,7 @@
     "github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p",
     "github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder",
     "github.com/Masterminds/semver",
+    "github.com/centrifuge/gocelery",
     "github.com/centrifuge/precise-proofs/proofs",
     "github.com/centrifuge/precise-proofs/proofs/proto",
     "github.com/ethereum/go-ethereum",

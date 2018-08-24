@@ -17,7 +17,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/go-errors/errors"
-	"github.com/gocelery/gocelery"
+	"github.com/centrifuge/gocelery"
 	logging "github.com/ipfs/go-log"
 )
 
@@ -305,7 +305,6 @@ func setUpRegistrationEventListener(ethCreatedContract WatchIdentityCreated, ide
 	bCentId := identityToBeCreated.CentrifugeIdB32()
 	asyncRes, err := queue.Queue.DelayKwargs(RegistrationConfirmationTaskName, map[string]interface{}{CentIdParam: bCentId})
 	if err != nil {
-		// do not return the channel in the error case to make the program fail fast on not checking the error first
 		return nil, err
 	}
 	go waitAndRouteIdentityRegistrationEvent(asyncRes, confirmations, identityToBeCreated)
@@ -330,7 +329,7 @@ func waitAndRouteKeyRegistrationEvent(conf <-chan *EthereumIdentityContractKeyRe
 
 // waitAndRouteIdentityRegistrationEvent notifies the confirmations channel whenever the identity creation is being noted as Ethereum event
 func waitAndRouteIdentityRegistrationEvent(asyncRes *gocelery.AsyncResult, confirmations chan<- *WatchIdentity, pushThisIdentity Identity) {
-	// TODO decide the delay required here
+	// TODO decide the delay required here, based on ethereum confirmation times
 	_, err := asyncRes.Get(1 * time.Second)
 	select {
 	case confirmations <- &WatchIdentity{pushThisIdentity, err}:

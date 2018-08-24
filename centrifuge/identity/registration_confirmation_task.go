@@ -6,6 +6,7 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/go-errors/errors"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/queue"
 )
 
 const RegistrationConfirmationTaskName string = "RegistrationConfirmationTaskName"
@@ -13,6 +14,15 @@ const CentIdParam string = "CentId"
 
 type RegistrationConfirmationTask struct {
 	CentId [32]byte
+}
+
+func (rct *RegistrationConfirmationTask) Name() string {
+	return RegistrationConfirmationTaskName
+}
+
+func (rct *RegistrationConfirmationTask) Init() error {
+	queue.Queue.Register(RegistrationConfirmationTaskName, rct)
+	return nil
 }
 
 // ParseKwargs - define a method to parse CentId
