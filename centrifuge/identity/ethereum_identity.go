@@ -332,12 +332,6 @@ func waitAndRouteIdentityRegistrationEvent(asyncRes *gocelery.AsyncResult, confi
 	// TODO decide the delay required here, based on ethereum confirmation times
 	_, err := asyncRes.Get(100 * time.Second)
 	confirmations <- &WatchIdentity{pushThisIdentity, err}
-	//select {
-	//case confirmations <- &WatchIdentity{pushThisIdentity, err}:
-	//	log.Infof("Identity registration result received for [%s]", pushThisIdentity)
-	//default:
-	//	log.Infof("Identity registration result received for [%s], but no one was listening to confirmations :|", pushThisIdentity)
-	//}
 }
 
 func NewEthereumIdentityService() IdentityService {
