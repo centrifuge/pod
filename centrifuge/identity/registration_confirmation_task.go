@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/queue"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/go-errors/errors"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/queue"
 )
 
 const RegistrationConfirmationTaskName string = "RegistrationConfirmationTaskName"
