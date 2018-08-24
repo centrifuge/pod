@@ -16,8 +16,8 @@ type PurchaseOrderDocumentController struct{}
 
 func getPurchaseOrderDocumentService() *purchaseorderservice.PurchaseOrderDocumentService {
 	return &purchaseorderservice.PurchaseOrderDocumentService{
-		PurchaseOrderRepository: purchaseorderrepository.GetPurchaseOrderRepository(),
-		CoreDocumentProcessor:   coredocument.GetDefaultCoreDocumentProcessor(),
+		Repository:            purchaseorderrepository.GetRepository(),
+		CoreDocumentProcessor: coredocument.GetDefaultCoreDocumentProcessor(),
 	}
 }
 
