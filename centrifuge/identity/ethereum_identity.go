@@ -6,17 +6,19 @@ import (
 	"fmt"
 	"math/big"
 
+	"time"
+
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/queue"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/go-errors/errors"
+	"github.com/gocelery/gocelery"
 	logging "github.com/ipfs/go-log"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/queue"
-	"time"
 )
 
 var log = logging.Logger("identity")
@@ -301,15 +303,13 @@ func setUpKeyRegisteredEventListener(ethCreatedContract WatchKeyRegistered, iden
 func setUpRegistrationEventListener(ethCreatedContract WatchIdentityCreated, identityToBeCreated Identity) (confirmations chan *WatchIdentity, err error) {
 	confirmations = make(chan *WatchIdentity)
 	bCentId := identityToBeCreated.CentrifugeIdB32()
-	asyncRes, err := queue.Queue.DelayKwargs(RegistrationConfirmationTaskName, map[string]interface{}{CentIdParam : bCentId})
+	asyncRes, err := queue.Queue.DelayKwargs(RegistrationConfirmationTaskName, map[string]interface{}{CentIdParam: bCentId})
 	if err != nil {
-		return confirmations, err
+		// do not return the channel in the error case to make the program fail fast on not checking the error first
+		return nil, err
 	}
-	_, err = asyncRes.Get(1 * time.Second)
-	if err != nil {
-		return confirmations, err
-	}
-	return confirmations, err
+	go waitAndRouteIdentityRegistrationEvent(asyncRes, confirmations, identityToBeCreated)
+	return confirmations, nil
 }
 
 // waitAndRouteKeyRegistrationEvent notifies the confirmations channel whenever the key has been added to the identity and has been noted as Ethereum event
@@ -329,18 +329,14 @@ func waitAndRouteKeyRegistrationEvent(conf <-chan *EthereumIdentityContractKeyRe
 }
 
 // waitAndRouteIdentityRegistrationEvent notifies the confirmations channel whenever the identity creation is being noted as Ethereum event
-func waitAndRouteIdentityRegistrationEvent(conf <-chan *EthereumIdentityFactoryContractIdentityCreated, ctx context.Context, confirmations chan<- *WatchIdentity, pushThisIdentity Identity) {
-	for {
-		select {
-		case <-ctx.Done():
-			log.Errorf("Context [%v] closed before receiving IdentityCreated event for Identity ID: %x\n", ctx, pushThisIdentity)
-			confirmations <- &WatchIdentity{pushThisIdentity, ctx.Err()}
-			return
-		case res := <-conf:
-			log.Infof("Received IdentityCreated event from: %x, identifier: %x\n", res.CentrifugeId, res.Identity)
-			confirmations <- &WatchIdentity{pushThisIdentity, nil}
-			return
-		}
+func waitAndRouteIdentityRegistrationEvent(asyncRes *gocelery.AsyncResult, confirmations chan<- *WatchIdentity, pushThisIdentity Identity) {
+	// TODO decide the delay required here
+	_, err := asyncRes.Get(1 * time.Second)
+	select {
+	case confirmations <- &WatchIdentity{pushThisIdentity, err}:
+		log.Infof("Identity registration result received for [%s]", pushThisIdentity)
+	default:
+		log.Infof("Identity registration result received for [%s], but no one was listening to confirmations :|", pushThisIdentity)
 	}
 }
 

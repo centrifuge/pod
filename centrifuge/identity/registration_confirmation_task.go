@@ -2,6 +2,7 @@ package identity
 
 import (
 	"fmt"
+
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/go-errors/errors"
@@ -15,6 +16,7 @@ type RegistrationConfirmationTask struct {
 }
 
 // ParseKwargs - define a method to parse CentId
+// TODO test this !!!!
 func (rct *RegistrationConfirmationTask) ParseKwargs(kwargs map[string]interface{}) error {
 	CentId, ok := kwargs[CentIdParam]
 	if !ok {
@@ -34,6 +36,10 @@ func (rct *RegistrationConfirmationTask) RunTask() (interface{}, error) {
 	watchOpts := &bind.WatchOpts{Context: ctx}
 	contract, err := getIdentityFactoryContract()
 	identityCreatedEvents := make(chan *EthereumIdentityFactoryContractIdentityCreated)
+
+	//TODO do something with the returned Subscription that is currently simply discarded
+	// Somehow there are some possible resource leakage situations with this handling but I have to understand
+	// Subscriptions a bit better before writing this code.
 	_, err = contract.WatchIdentityCreated(watchOpts, identityCreatedEvents, [][32]byte{rct.CentId})
 	if err != nil {
 		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for identity registration", 1)
