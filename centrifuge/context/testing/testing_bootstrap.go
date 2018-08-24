@@ -8,6 +8,8 @@ import (
 
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/queue"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	logging "github.com/ipfs/go-log"
@@ -22,6 +24,16 @@ var log = logging.Logger("context")
 func createEthereumConnection() {
 	client := ethereum.NewClientConnection()
 	ethereum.SetConnection(client)
+}
+
+func bootstrapQueuing() {
+	queue.InitQueue([]queue.QueuedTask{
+		&identity.RegistrationConfirmationTask{},
+	})
+}
+
+func tearDownQueuing() {
+	queue.StopQueue()
 }
 
 func getRandomTestStoragePath() string {
@@ -69,12 +81,15 @@ func TestIntegrationBootstrap() {
 	config.Config.V.WriteConfigAs("/tmp/cent_config.yaml")
 
 	log.Infof("Creating levelDb at: %s", config.Config.GetStoragePath())
+
+	bootstrapQueuing()
 }
 
 func TestIntegrationTearDown() {
 	storage.CloseLeveldbStorage()
 	os.RemoveAll(config.Config.GetStoragePath())
 	config.Config = nil
+	tearDownQueuing()
 }
 
 // ---- End Integration Testing ----

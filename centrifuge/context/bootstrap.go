@@ -26,6 +26,10 @@ func Bootstrap() {
 	purchaseorderrepository.NewLevelDBPurchaseOrderRepository(&purchaseorderrepository.LevelDBPurchaseOrderRepository{levelDB})
 	signatures.NewSigningService(signatures.SigningService{})
 	createEthereumConnection()
+	bootstrapQueuing()
+}
+
+func bootstrapQueuing() {
 	queue.InitQueue([]queue.QueuedTask{
 		&identity.RegistrationConfirmationTask{},
 	})

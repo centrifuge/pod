@@ -20,11 +20,16 @@ func InitQueue(tasks []QueuedTask) {
 	queueInit.Do(func() {
 		var err error
 		Queue, err = gocelery.NewCeleryClient(gocelery.NewInMemoryBroker(), gocelery.NewInMemoryBackend(), 1)
-		for _, task := range tasks {
-			task.Init()
-		}
 		if err != nil {
 			panic("Could not initialize the queue")
 		}
+		for _, task := range tasks {
+			task.Init()
+		}
+		Queue.StartWorker()
 	})
+}
+
+func StopQueue() {
+	Queue.StopWorker()
 }
