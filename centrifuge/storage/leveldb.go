@@ -101,7 +101,7 @@ func (repo *DefaultLevelDB) Create(id []byte, msg proto.Message) error {
 	}
 
 	if repo.Exists(id) {
-		return fmt.Errorf("document(%s) already exists", string(id))
+		return fmt.Errorf("document already exists")
 	}
 
 	if repo.ValidateFunc != nil {
@@ -126,7 +126,7 @@ func (repo *DefaultLevelDB) Update(id []byte, msg proto.Message) error {
 	}
 
 	if !repo.Exists(id) {
-		return fmt.Errorf("document(%s) doesn't exists", string(id))
+		return fmt.Errorf("document doesn't exists")
 	}
 
 	if repo.ValidateFunc != nil {

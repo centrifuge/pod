@@ -65,7 +65,7 @@ func TestPurchaseOrderDocumentService_HandleAnchorPurchaseOrderDocument_Integrat
 	anchoredDoc2, err := s.HandleAnchorPurchaseOrderDocument(context.Background(), &purchaseorderpb.AnchorPurchaseOrderEnvelope{Document: doc.Document})
 	assert.Nil(t, anchoredDoc2)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "Document already exists")
+	assert.Contains(t, err.Error(), "document already exists")
 
 	loadedDoc2 := new(purchaseorderpb.PurchaseOrderDocument)
 	err = purchaseorderrepository.GetRepository().GetByID(doc.Document.CoreDocument.DocumentIdentifier, loadedDoc2)
