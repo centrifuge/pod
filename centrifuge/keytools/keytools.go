@@ -39,3 +39,5 @@ func readKeyFromPemFile(fileName, keyType string) (key []byte, err error) {
 
 	return block.Bytes, nil
 }
+
+

@@ -1,11 +1,11 @@
 package cmd
 
 import (
-	"encoding/hex"
 	"fmt"
 
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools"
 	"github.com/spf13/cobra"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/utils"
 )
 
 
@@ -23,7 +23,7 @@ func init() {
 		Short: "verify a signature",
 		Long:  ``,
 		Run: func(cmd *cobra.Command, args []string) {
-			signatureBytes, err := hex.DecodeString(signatureParam)
+			signatureBytes, err := utils.HexToByteArray(signatureParam)
 
 			if err != nil {
 				log.Fatal(err)

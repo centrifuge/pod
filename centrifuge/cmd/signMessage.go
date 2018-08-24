@@ -1,11 +1,11 @@
 package cmd
 
 import (
-	"encoding/hex"
 	"fmt"
 
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools"
 	"github.com/spf13/cobra"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/utils"
 )
 
 func init() {
@@ -22,7 +22,7 @@ func init() {
 		Long:  ``,
 		Run: func(cmd *cobra.Command, args []string) {
 			signature := keytools.SignMessage(privateKeyFileParam, messageParam, curveTypeParam)
-			fmt.Println(hex.EncodeToString(signature))
+			fmt.Println(utils.ByteArrayToHex(signature))
 
 		},
 	}
