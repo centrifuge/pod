@@ -26,17 +26,13 @@ func TestRegistrationConfirmationTask_ParseKwargsHappyPath(t *testing.T) {
 func TestRegistrationConfirmationTask_ParseKwargsDoesNotExist(t *testing.T) {
 	rct := IdRegistrationConfirmationTask{}
 	id := tools.RandomSlice32()
-	var b32Id [32]byte
-	copy(b32Id[:], id[:32])
-	err := rct.ParseKwargs(map[string]interface{}{"notId": b32Id})
+	err := rct.ParseKwargs(map[string]interface{}{"notId": id})
 	assert.NotNil(t, err, "Should not allow parsing without centId")
 }
 
 func TestRegistrationConfirmationTask_ParseKwargsInvalidType(t *testing.T) {
 	rct := IdRegistrationConfirmationTask{}
 	id := tools.RandomSlice32()
-	var b32Id [32]byte
-	copy(b32Id[:], id[:32])
 	err := rct.ParseKwargs(map[string]interface{}{CentIdParam: id})
 	assert.NotNil(t, err, "Should not parse without the correct type of centId")
 }
