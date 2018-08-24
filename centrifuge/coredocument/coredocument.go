@@ -2,35 +2,45 @@ package coredocument
 
 import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 )
 
 // Validate checks that all required fields are set before doing any processing with core document
-func Validate(document *coredocumentpb.CoreDocument) (valid bool, errMsg string, errors map[string]string) {
+func Validate(document *coredocumentpb.CoreDocument) (valid bool, errMsg string, errs map[string]string) {
 	if document == nil {
-		return false, "Nil core document passed", nil
+		return false, errors.NilDocument, nil
 	}
 
-	errors = make(map[string]string)
+	errs = make(map[string]string)
 
 	if tools.IsEmptyByteSlice(document.DocumentIdentifier) {
-		errors["cd_identifier"] = "Empty Document Identifier"
+		errs["cd_identifier"] = errors.RequiredField
 	}
 
 	if tools.IsEmptyByteSlice(document.DocumentRoot) {
-		errors["cd_root"] = "Empty Document Root"
+		errs["cd_root"] = errors.RequiredField
 	}
 
 	if tools.IsEmptyByteSlice(document.CurrentIdentifier) {
-		errors["cd_current_identifier"] = "Empty Document Current Identifier"
+		errs["cd_current_identifier"] = errors.RequiredField
 	}
 
 	if tools.IsEmptyByteSlice(document.NextIdentifier) {
-		errors["cd_next_identifier"] = "Empty Document Next Identifier"
+		errs["cd_next_identifier"] = errors.RequiredField
 	}
 
 	if tools.IsEmptyByteSlice(document.DataRoot) {
-		errors["cd_data_root"] = "Empty Document Data Root"
+		errs["cd_data_root"] = errors.RequiredField
+	}
+
+	// double check the identifiers
+	isSameBytes := tools.IsSameByteSlice
+
+	// Problem (re-using an old identifier for NextIdentifier): CurrentIdentifier or DocumentIdentifier same as NextIdentifier
+	if isSameBytes(document.NextIdentifier, document.DocumentIdentifier) ||
+		isSameBytes(document.NextIdentifier, document.CurrentIdentifier) {
+		errs["cd_overall"] = errors.IdentifierReUsed
 	}
 
 	// lets not do verbose check like earlier since these will be
@@ -43,12 +53,12 @@ func Validate(document *coredocumentpb.CoreDocument) (valid bool, errMsg string,
 			salts.NextIdentifier,
 			salts.DocumentIdentifier,
 			salts.PreviousRoot) {
-		errors["cd_salts"] = "Empty Document salts"
+		errs["cd_salts"] = errors.RequiredField
 	}
 
-	if len(errors) < 1 {
+	if len(errs) < 1 {
 		return true, "", nil
 	}
 
-	return false, "Invalid CoreDocument", errors
+	return false, "Invalid CoreDocument", errs
 }

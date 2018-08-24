@@ -14,42 +14,32 @@ func FillIdentifiers(document coredocumentpb.CoreDocument) (coredocumentpb.CoreD
 	isEmptyId := tools.IsEmptyByteSlice
 
 	// check if the document identifier is empty
-	if isEmptyId(document.DocumentIdentifier) {
-
-		// check if current and next identifier are empty
-		if !isEmptyId(document.CurrentIdentifier) {
-			return document, fmt.Errorf("no DocumentIdentifier but has CurrentIdentifier")
+	if !isEmptyId(document.DocumentIdentifier) {
+		// check and fill current and next identifiers
+		if isEmptyId(document.CurrentIdentifier) {
+			document.CurrentIdentifier = document.DocumentIdentifier
 		}
 
-		// check if the next identifier is empty
-		if !isEmptyId(document.NextIdentifier) {
-			return document, fmt.Errorf("no CurrentIdentifier but has NextIdentifier")
+		if isEmptyId(document.NextIdentifier) {
+			document.NextIdentifier = tools.RandomSlice32()
 		}
 
-		// fill the identifiers
-		document.DocumentIdentifier = tools.RandomSlice32()
-		document.CurrentIdentifier = document.DocumentIdentifier
-		document.NextIdentifier = tools.RandomSlice32()
 		return document, nil
 	}
 
-	// check and fill current and next identifiers
-	if isEmptyId(document.CurrentIdentifier) {
-		document.CurrentIdentifier = document.DocumentIdentifier
+	// check if current and next identifier are empty
+	if !isEmptyId(document.CurrentIdentifier) {
+		return document, fmt.Errorf("no DocumentIdentifier but has CurrentIdentifier")
 	}
 
-	if isEmptyId(document.NextIdentifier) {
-		document.NextIdentifier = tools.RandomSlice32()
+	// check if the next identifier is empty
+	if !isEmptyId(document.NextIdentifier) {
+		return document, fmt.Errorf("no CurrentIdentifier but has NextIdentifier")
 	}
 
-	// double check the identifiers
-	isSameBytes := tools.IsSameByteSlice
-
-	// Problem (re-using an old identifier for NextIdentifier): CurrentIdentifier or DocumentIdentifier same as NextIdentifier
-	if isSameBytes(document.NextIdentifier, document.DocumentIdentifier) ||
-		isSameBytes(document.NextIdentifier, document.CurrentIdentifier) {
-		return document, fmt.Errorf("reusing old identifier")
-	}
-
+	// fill the identifiers
+	document.DocumentIdentifier = tools.RandomSlice32()
+	document.CurrentIdentifier = document.DocumentIdentifier
+	document.NextIdentifier = tools.RandomSlice32()
 	return document, nil
 }

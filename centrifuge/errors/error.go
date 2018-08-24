@@ -9,6 +9,17 @@ import (
 	"github.com/go-errors/errors"
 )
 
+const (
+	// RequiredField error when required field is empty
+	RequiredField = "Required field"
+
+	// NilDocument error when document passed is Nil
+	NilDocument = "Nil Document"
+
+	// IdentifierReUsed error when same identifier is re-used
+	IdentifierReUsed = "Identifier re-used"
+)
+
 // errpb is the type alias for errorspb.Error
 type errpb errorspb.Error
 

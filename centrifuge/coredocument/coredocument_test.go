@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 )
 
@@ -17,6 +18,14 @@ func TestValidate(t *testing.T) {
 		errs   map[string]string
 	}
 
+	var (
+		id1 = tools.RandomSlice32()
+		id2 = tools.RandomSlice32()
+		id3 = tools.RandomSlice32()
+		id4 = tools.RandomSlice32()
+		id5 = tools.RandomSlice32()
+	)
+
 	tests := []struct {
 		doc  *coredocumentpb.CoreDocument
 		want want
@@ -24,17 +33,17 @@ func TestValidate(t *testing.T) {
 		// empty salts in document
 		{
 			doc: &coredocumentpb.CoreDocument{
-				DocumentRoot:       tools.RandomSlice32(),
-				DocumentIdentifier: tools.RandomSlice32(),
-				CurrentIdentifier:  tools.RandomSlice32(),
-				NextIdentifier:     tools.RandomSlice32(),
-				DataRoot:           tools.RandomSlice32(),
+				DocumentRoot:       id1,
+				DocumentIdentifier: id2,
+				CurrentIdentifier:  id3,
+				NextIdentifier:     id4,
+				DataRoot:           id5,
 			},
 			want: want{
 				valid:  false,
 				errMsg: "Invalid CoreDocument",
 				errs: map[string]string{
-					"cd_salts": "Empty Document salts",
+					"cd_salts": errors.RequiredField,
 				},
 			},
 		},
@@ -42,23 +51,23 @@ func TestValidate(t *testing.T) {
 		// salts missing previous root
 		{
 			doc: &coredocumentpb.CoreDocument{
-				DocumentRoot:       tools.RandomSlice32(),
-				DocumentIdentifier: tools.RandomSlice32(),
-				CurrentIdentifier:  tools.RandomSlice32(),
-				NextIdentifier:     tools.RandomSlice32(),
-				DataRoot:           tools.RandomSlice32(),
+				DocumentRoot:       id1,
+				DocumentIdentifier: id2,
+				CurrentIdentifier:  id3,
+				NextIdentifier:     id4,
+				DataRoot:           id5,
 				CoredocumentSalts: &coredocumentpb.CoreDocumentSalts{
-					DocumentIdentifier: tools.RandomSlice32(),
-					CurrentIdentifier:  tools.RandomSlice32(),
-					NextIdentifier:     tools.RandomSlice32(),
-					DataRoot:           tools.RandomSlice32(),
+					DocumentIdentifier: id1,
+					CurrentIdentifier:  id2,
+					NextIdentifier:     id3,
+					DataRoot:           id4,
 				},
 			},
 			want: want{
 				valid:  false,
 				errMsg: "Invalid CoreDocument",
 				errs: map[string]string{
-					"cd_salts": "Empty Document salts",
+					"cd_salts": errors.RequiredField,
 				},
 			},
 		},
@@ -66,23 +75,23 @@ func TestValidate(t *testing.T) {
 		// missing identifiers in core document
 		{
 			doc: &coredocumentpb.CoreDocument{
-				DocumentRoot:       tools.RandomSlice32(),
-				DocumentIdentifier: tools.RandomSlice32(),
-				CurrentIdentifier:  tools.RandomSlice32(),
-				NextIdentifier:     tools.RandomSlice32(),
+				DocumentRoot:       id1,
+				DocumentIdentifier: id2,
+				CurrentIdentifier:  id3,
+				NextIdentifier:     id4,
 				CoredocumentSalts: &coredocumentpb.CoreDocumentSalts{
-					DocumentIdentifier: tools.RandomSlice32(),
-					CurrentIdentifier:  tools.RandomSlice32(),
-					NextIdentifier:     tools.RandomSlice32(),
-					DataRoot:           tools.RandomSlice32(),
-					PreviousRoot:       tools.RandomSlice32(),
+					DocumentIdentifier: id1,
+					CurrentIdentifier:  id2,
+					NextIdentifier:     id3,
+					DataRoot:           id4,
+					PreviousRoot:       id5,
 				},
 			},
 			want: want{
 				valid:  false,
 				errMsg: "Invalid CoreDocument",
 				errs: map[string]string{
-					"cd_data_root": "Empty Document Data Root",
+					"cd_data_root": errors.RequiredField,
 				},
 			},
 		},
@@ -90,23 +99,73 @@ func TestValidate(t *testing.T) {
 		// missing identifiers in core document and salts
 		{
 			doc: &coredocumentpb.CoreDocument{
-				DocumentRoot:       tools.RandomSlice32(),
-				DocumentIdentifier: tools.RandomSlice32(),
-				CurrentIdentifier:  tools.RandomSlice32(),
-				NextIdentifier:     tools.RandomSlice32(),
+				DocumentRoot:       id1,
+				DocumentIdentifier: id2,
+				CurrentIdentifier:  id3,
+				NextIdentifier:     id4,
 				CoredocumentSalts: &coredocumentpb.CoreDocumentSalts{
-					DocumentIdentifier: tools.RandomSlice32(),
-					CurrentIdentifier:  tools.RandomSlice32(),
-					NextIdentifier:     tools.RandomSlice32(),
-					DataRoot:           tools.RandomSlice32(),
+					DocumentIdentifier: id1,
+					CurrentIdentifier:  id2,
+					NextIdentifier:     id3,
+					DataRoot:           id4,
 				},
 			},
 			want: want{
 				valid:  false,
 				errMsg: "Invalid CoreDocument",
 				errs: map[string]string{
-					"cd_data_root": "Empty Document Data Root",
-					"cd_salts":     "Empty Document salts",
+					"cd_data_root": errors.RequiredField,
+					"cd_salts":     errors.RequiredField,
+				},
+			},
+		},
+
+		// repeated identifiers
+		{
+			doc: &coredocumentpb.CoreDocument{
+				DocumentRoot:       id1,
+				DocumentIdentifier: id2,
+				CurrentIdentifier:  id3,
+				NextIdentifier:     id3,
+				DataRoot:           id5,
+				CoredocumentSalts: &coredocumentpb.CoreDocumentSalts{
+					DocumentIdentifier: id1,
+					CurrentIdentifier:  id2,
+					NextIdentifier:     id3,
+					DataRoot:           id4,
+					PreviousRoot:       id5,
+				},
+			},
+			want: want{
+				valid:  false,
+				errMsg: "Invalid CoreDocument",
+				errs: map[string]string{
+					"cd_overall": errors.IdentifierReUsed,
+				},
+			},
+		},
+
+		// repeated identifiers
+		{
+			doc: &coredocumentpb.CoreDocument{
+				DocumentRoot:       id1,
+				DocumentIdentifier: id2,
+				CurrentIdentifier:  id3,
+				NextIdentifier:     id2,
+				DataRoot:           id5,
+				CoredocumentSalts: &coredocumentpb.CoreDocumentSalts{
+					DocumentIdentifier: id1,
+					CurrentIdentifier:  id2,
+					NextIdentifier:     id3,
+					DataRoot:           id4,
+					PreviousRoot:       id5,
+				},
+			},
+			want: want{
+				valid:  false,
+				errMsg: "Invalid CoreDocument",
+				errs: map[string]string{
+					"cd_overall": errors.IdentifierReUsed,
 				},
 			},
 		},
@@ -114,17 +173,17 @@ func TestValidate(t *testing.T) {
 		// All okay
 		{
 			doc: &coredocumentpb.CoreDocument{
-				DocumentRoot:       tools.RandomSlice32(),
-				DocumentIdentifier: tools.RandomSlice32(),
-				CurrentIdentifier:  tools.RandomSlice32(),
-				NextIdentifier:     tools.RandomSlice32(),
-				DataRoot:           tools.RandomSlice32(),
+				DocumentRoot:       id1,
+				DocumentIdentifier: id2,
+				CurrentIdentifier:  id3,
+				NextIdentifier:     id4,
+				DataRoot:           id5,
 				CoredocumentSalts: &coredocumentpb.CoreDocumentSalts{
-					DocumentIdentifier: tools.RandomSlice32(),
-					CurrentIdentifier:  tools.RandomSlice32(),
-					NextIdentifier:     tools.RandomSlice32(),
-					DataRoot:           tools.RandomSlice32(),
-					PreviousRoot:       tools.RandomSlice32(),
+					DocumentIdentifier: id1,
+					CurrentIdentifier:  id2,
+					NextIdentifier:     id3,
+					DataRoot:           id4,
+					PreviousRoot:       id5,
 				},
 			},
 			want: want{

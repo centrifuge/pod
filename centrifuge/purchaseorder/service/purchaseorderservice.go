@@ -18,7 +18,7 @@ import (
 
 var log = logging.Logger("rest-api")
 
-// Struct needed as it is used to register the grpc services attached to the grpc server
+// PurchaseOrderDocumentService needed as it is used to register the grpc services attached to the grpc server
 type PurchaseOrderDocumentService struct {
 	PurchaseOrderRepository purchaseorderrepository.PurchaseOrderRepository
 	CoreDocumentProcessor   coredocumentprocessor.Processor

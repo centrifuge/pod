@@ -20,27 +20,20 @@ func TestFillIdentifiers(t *testing.T) {
 		NextIdentifier    []byte
 		err               error
 	}{
-		// all three different identifiers are filled
+		// all three identifiers are filled
 		{
 			DocIdentifier:     id1,
 			CurrentIdentifier: id2,
 			NextIdentifier:    id3,
 		},
 
-		// Doc and current identifiers are same, different next identifier
+		// Doc and current identifiers are filled, missing next identifier
 		{
 			DocIdentifier:     id1,
-			CurrentIdentifier: id1,
-			NextIdentifier:    id3,
+			CurrentIdentifier: id2,
 		},
 
-		// Doc and current identifiers are same, missing next identifier
-		{
-			DocIdentifier:     id1,
-			CurrentIdentifier: id1,
-		},
-
-		// Doc and next identifiers are same, missing current identifier
+		// Doc and next identifiers are filled, missing current identifier
 		{
 			DocIdentifier:  id1,
 			NextIdentifier: id3,
@@ -49,21 +42,6 @@ func TestFillIdentifiers(t *testing.T) {
 		// missing current and next identifier
 		{
 			DocIdentifier: id1,
-		},
-
-		// re-used next identifier
-		{
-			DocIdentifier:     id1,
-			CurrentIdentifier: id1,
-			NextIdentifier:    id1,
-			err:               fmt.Errorf("reusing old identifier"),
-		},
-
-		// re-used next identifier with missing current identifier
-		{
-			DocIdentifier:  id1,
-			NextIdentifier: id1,
-			err:            fmt.Errorf("reusing old identifier"),
 		},
 
 		// missing doc identifier and filled up current identifier
