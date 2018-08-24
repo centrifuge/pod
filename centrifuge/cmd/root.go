@@ -15,14 +15,7 @@ import (
 var cfgFile string
 var verbose bool
 
-//specific param
-var privateKeyFileParam string
-var publicKeyFileParam string
-var createSigningKeyParam bool
-var createEncryptionKeyParam bool
-var curveTypeParam string
-var messageParam string
-var signatureParam string
+
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
