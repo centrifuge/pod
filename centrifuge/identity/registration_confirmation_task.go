@@ -70,10 +70,8 @@ func (rct *RegistrationConfirmationTask) RunTask() (interface{}, error) {
 
 func getBytes(key interface{}) ([32]byte, error) {
 	b, ok := key.([32]byte)
-	var fixed [32]byte
 	if !ok {
-		return fixed, errors.New("Could not parse interface to []byte")
+		return b, errors.New("Could not parse interface to []byte")
 	}
-	copy(fixed[:], b[:32])
-	return fixed, nil
+	return b, nil
 }
