@@ -28,7 +28,7 @@ func createEthereumConnection() {
 
 func bootstrapQueuing() {
 	queue.InitQueue([]queue.QueuedTask{
-		&identity.RegistrationConfirmationTask{},
+		&identity.IdRegistrationConfirmationTask{},
 	})
 }
 

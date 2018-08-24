@@ -303,7 +303,7 @@ func setUpKeyRegisteredEventListener(ethCreatedContract WatchKeyRegistered, iden
 func setUpRegistrationEventListener(identityToBeCreated Identity) (confirmations chan *WatchIdentity, err error) {
 	confirmations = make(chan *WatchIdentity, 1)
 	bCentId := identityToBeCreated.CentrifugeIdB32()
-	asyncRes, err := queue.Queue.DelayKwargs(RegistrationConfirmationTaskName, map[string]interface{}{CentIdParam: bCentId})
+	asyncRes, err := queue.Queue.DelayKwargs(IdRegistrationConfirmationTaskName, map[string]interface{}{CentIdParam: bCentId})
 	if err != nil {
 		return nil, err
 	}

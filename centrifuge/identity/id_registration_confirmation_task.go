@@ -9,24 +9,24 @@ import (
 	"github.com/go-errors/errors"
 )
 
-const RegistrationConfirmationTaskName string = "RegistrationConfirmationTaskName"
+const IdRegistrationConfirmationTaskName string = "IdRegistrationConfirmationTaskName"
 const CentIdParam string = "CentId"
 
-type RegistrationConfirmationTask struct {
+type IdRegistrationConfirmationTask struct {
 	CentId [32]byte
 }
 
-func (rct *RegistrationConfirmationTask) Name() string {
-	return RegistrationConfirmationTaskName
+func (rct *IdRegistrationConfirmationTask) Name() string {
+	return IdRegistrationConfirmationTaskName
 }
 
-func (rct *RegistrationConfirmationTask) Init() error {
-	queue.Queue.Register(RegistrationConfirmationTaskName, rct)
+func (rct *IdRegistrationConfirmationTask) Init() error {
+	queue.Queue.Register(IdRegistrationConfirmationTaskName, rct)
 	return nil
 }
 
 // ParseKwargs - define a method to parse CentId
-func (rct *RegistrationConfirmationTask) ParseKwargs(kwargs map[string]interface{}) error {
+func (rct *IdRegistrationConfirmationTask) ParseKwargs(kwargs map[string]interface{}) error {
 	CentId, ok := kwargs[CentIdParam]
 	if !ok {
 		return fmt.Errorf("undefined kwarg " + CentIdParam)
@@ -39,9 +39,9 @@ func (rct *RegistrationConfirmationTask) ParseKwargs(kwargs map[string]interface
 	return nil
 }
 
-// RunTask calls listens to events from geth related to RegistrationConfirmationTask#CentId and records result.
+// RunTask calls listens to events from geth related to IdRegistrationConfirmationTask#CentId and records result.
 // Currently covered by TestCreateAndLookupIdentity_Integration test.
-func (rct *RegistrationConfirmationTask) RunTask() (interface{}, error) {
+func (rct *IdRegistrationConfirmationTask) RunTask() (interface{}, error) {
 	ctx, cancelFunc := ethereum.DefaultWaitForTransactionMiningContext()
 	watchOpts := &bind.WatchOpts{Context: ctx}
 	contract, err := getIdentityFactoryContract()
