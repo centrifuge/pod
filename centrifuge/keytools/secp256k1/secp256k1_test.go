@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/magiconair/properties/assert"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/utils"
 )
 
 const MAX_MSG_LEN = 32
@@ -71,22 +70,25 @@ func TestVerifyFalsePublicKey(t *testing.T) {
 
 func TestVerifySignatureWithAddress(t *testing.T) {
 
-
 	testAddress := "0xd77c534aed04d7ce34cd425073a033db4fbe6a9d"
-	testMsg := make([]byte, MAX_MSG_LEN)
-	copy(testMsg, "centrifuge")
+	//signature generated with other libary
 	testSignature := "0x526ea99711a545c745a300e363d277b221d06da2814c521f1b7aa2a3fd0741b85044541da1f985afb51bc4b25a2ab2282721957f694c37a0c68f2fa3220c5cea1c"
+	testMsg := "centrifuge"
 
-	testSignatureBytes, err := utils.HexToByteArray(testSignature)
+	correct := VerifySignatureWithAddress(
+		testAddress,
+		testSignature,
+		[]byte(testMsg))
 
-	if(err != nil){
-		log.Fatal(err)
-	}
-
-	correct := VerifySignatureWithAddress(testAddress,testMsg,testSignatureBytes)
-
-	assert.Equal(t,correct,true,"address from signature not correctly calculated")
+	assert.Equal(t,correct,true, "recovering public key from signature doesn't work correctly")
 
 }
+
+
+
+
+
+
+
 
 
