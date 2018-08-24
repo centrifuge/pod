@@ -6,7 +6,10 @@ import (
 	"reflect"
 	"testing"
 
+	"fmt"
+
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/code"
+	"github.com/magiconair/properties/assert"
 )
 
 func TestP2PError(t *testing.T) {
@@ -56,4 +59,16 @@ func TestP2PError(t *testing.T) {
 			t.Fatalf("code mismatch: %v != %v", got, want)
 		}
 	}
+}
+
+func TestWrap(t *testing.T) {
+	// simple error
+	err := fmt.Errorf("simple-error")
+	err = Wrap(err, "wrapped error")
+	assert.Equal(t, err.Error(), "wrapped error: simple-error")
+
+	// p2p error
+	err = New(code.Unknown, "p2p-error")
+	err = Wrap(err, "wrapped error")
+	assert.Equal(t, err.Error(), "[1]wrapped error: p2p-error")
 }

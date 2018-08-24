@@ -33,8 +33,8 @@ func (err *errpb) Error() string {
 	return fmt.Sprintf("[%d]%s: %v", err.Code, err.Message, err.Errors)
 }
 
-// NewP2PError constructs a new error with code and error message
-func NewP2PError(code code.Code, message string) error {
+// New constructs a new error with code and error message
+func New(code code.Code, message string) error {
 	return NewWithErrors(code, message, nil)
 }
 

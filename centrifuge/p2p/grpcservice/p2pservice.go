@@ -18,11 +18,11 @@ import (
 )
 
 func incompatibleVersionError(nodeVersion string) error {
-	return errors.NewP2PError(code.VersionMismatch, fmt.Sprintf("Incompatible version: node version: %s, client version: %s", version.GetVersion(), nodeVersion))
+	return errors.New(code.VersionMismatch, fmt.Sprintf("Incompatible version: node version: %s, client version: %s", version.GetVersion(), nodeVersion))
 }
 
 func incompatibleNetworkError(nodeNetwork uint32) error {
-	return errors.NewP2PError(code.NetworkMismatch, fmt.Sprintf("Incompatible network id: node network: %d, client network: %d", config.Config.GetNetworkID(), nodeNetwork))
+	return errors.New(code.NetworkMismatch, fmt.Sprintf("Incompatible network id: node network: %d, client network: %d", config.Config.GetNetworkID(), nodeNetwork))
 }
 
 type P2PService struct {
@@ -39,7 +39,7 @@ func (srv *P2PService) HandleP2PPost(ctx context.Context, req *p2ppb.P2PMessage)
 	// Check call compatibility:
 	compatible, err := version.CheckMajorCompatibility(req.CentNodeVersion)
 	if err != nil {
-		return nil, errors.NewP2PError(code.Unknown, err.Error())
+		return nil, errors.New(code.Unknown, err.Error())
 	}
 	if !compatible {
 		return nil, incompatibleVersionError(req.CentNodeVersion)
@@ -50,7 +50,7 @@ func (srv *P2PService) HandleP2PPost(ctx context.Context, req *p2ppb.P2PMessage)
 	}
 
 	if req.Document == nil {
-		return nil, errors.NewP2PError(code.DocumentInvalid, errors.NilError(req.Document).Error())
+		return nil, errors.New(code.DocumentInvalid, errors.NilError(req.Document).Error())
 	}
 
 	valid, errMsg, errs := coredocument.Validate(req.Document)
@@ -60,12 +60,12 @@ func (srv *P2PService) HandleP2PPost(ctx context.Context, req *p2ppb.P2PMessage)
 
 	err = coredocumentrepository.GetRepository().CreateOrUpdate(req.Document)
 	if err != nil {
-		return nil, errors.NewP2PError(code.Unknown, err.Error())
+		return nil, errors.New(code.Unknown, err.Error())
 	}
 
 	ts, err := ptypes.TimestampProto(time.Now().UTC())
 	if err != nil {
-		return nil, errors.NewP2PError(code.Unknown, err.Error())
+		return nil, errors.New(code.Unknown, err.Error())
 	}
 
 	notificationMsg := &notificationpb.NotificationMessage{
