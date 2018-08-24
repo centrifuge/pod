@@ -2,7 +2,6 @@
 
 
 [[projects]]
-  branch = "move-services"
   name = "github.com/CentrifugeInc/centrifuge-protobufs"
   packages = [
     "documenttypes",
@@ -13,8 +12,8 @@
     "gen/go/p2p",
     "gen/go/purchaseorder"
   ]
-  revision = "55f1db8df0aa89343e6c0f90bbcdc0efc69206cb"
-  source = "git@github.com:lucasvo/centrifuge-protobufs"
+  revision = "32e51c3a94b73ee1191f601f25c0bf58ca486116"
+  source = "git@github.com:CentrifugeInc/centrifuge-protobufs"
 
 [[projects]]
   name = "github.com/Masterminds/semver"
@@ -1040,6 +1039,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "5415cd240a3c1d718ba7d20cb6ccd8447771ef3b97268c3fb177ab80e39d1d11"
+  inputs-digest = "0e6d297594ff04d6a81284f9d1b3f695f271574fa4b2e90716d62091b64f171e"
   solver-name = "gps-cdcl"
   solver-version = 1
