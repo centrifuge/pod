@@ -1,6 +1,7 @@
 package context
 
 import (
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/bootstrapper"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
@@ -9,24 +10,25 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/signatures"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/version"
-	logging "github.com/ipfs/go-log"
+	"github.com/ethereum/go-ethereum/log"
 )
 
-var log = logging.Logger("context")
-
 func Bootstrap() {
-	log.Infof("Running cent node on version: %s", version.GetVersion())
-	config.Config.InitializeViper()
-
-	levelDB := storage.NewLevelDBStorage(config.Config.GetStoragePath())
-	coredocumentrepository.NewLevelDBRepository(&coredocumentrepository.LevelDBRepository{LevelDB: levelDB})
-	invoicerepository.NewLevelDBInvoiceRepository(&invoicerepository.LevelDBInvoiceRepository{Leveldb: levelDB})
-	purchaseorderrepository.InitLevelDBRepository(levelDB)
-	signatures.NewSigningService(signatures.SigningService{})
-	createEthereumConnection()
-}
-
-func createEthereumConnection() {
-	client := ethereum.NewClientConnection()
-	ethereum.SetConnection(client)
+	context := make(map[string]interface{})
+	for _, b := range []bootstrapper.Bootstrapper{
+		&version.Bootstrapper{},
+		&config.Bootstrapper{},
+		&storage.Bootstrapper{},
+		&coredocumentrepository.Bootstrapper{},
+		&invoicerepository.Bootstrapper{},
+		&purchaseorderrepository.Bootstrapper{},
+		&signatures.Bootstrapper{},
+		&ethereum.Bootstrapper{},
+	} {
+		err := b.Bootstrap(context)
+		if err != nil {
+			log.Error("Error encountered while bootstrapping", err)
+			panic("Terminating node on bootstrap error")
+		}
+	}
 }
