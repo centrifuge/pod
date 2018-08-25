@@ -2,13 +2,15 @@ package coredocumentrepository
 
 import "github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 
-var coreDocumentRepository CoreDocumentRepository
+var coreDocumentRepository Repository
 
-func GetCoreDocumentRepository() CoreDocumentRepository {
+// GetRepository returns CoreDocument repository implementation
+func GetRepository() Repository {
 	return coreDocumentRepository
 }
 
-type CoreDocumentRepository interface {
+// Repository defines functions for Repository
+type Repository interface {
 	GetKey(id []byte) []byte
 	FindById(id []byte) (doc *coredocumentpb.CoreDocument, err error)
 

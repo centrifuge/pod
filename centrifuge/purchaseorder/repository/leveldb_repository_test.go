@@ -17,7 +17,7 @@ var dbFileName = "/tmp/centrifuge_testing_podoc.leveldb"
 
 func TestMain(m *testing.M) {
 	levelDB := storage.NewLevelDBStorage(dbFileName)
-	coredocumentrepository.NewLevelDBCoreDocumentRepository(&coredocumentrepository.LevelDBCoreDocumentRepository{levelDB})
+	coredocumentrepository.NewLevelDBRepository(&coredocumentrepository.LevelDBRepository{LevelDB: levelDB})
 	InitLevelDBRepository(levelDB)
 	result := m.Run()
 	levelDB.Close()

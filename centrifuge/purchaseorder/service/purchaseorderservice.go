@@ -5,8 +5,8 @@ import (
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/processor"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/service"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	clientpurchaseorderpb "github.com/CentrifugeInc/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder"
@@ -21,14 +21,14 @@ var log = logging.Logger("rest-api")
 // PurchaseOrderDocumentService needed as it is used to register the grpc services attached to the grpc server
 type PurchaseOrderDocumentService struct {
 	Repository            storage.Repository
-	CoreDocumentProcessor coredocument.CoreDocumentProcessorInterface
+	CoreDocumentProcessor coredocumentprocessor.Processor
 }
 
 func fillCoreDocIdentifiers(doc *purchaseorderpb.PurchaseOrderDocument) error {
 	if doc == nil {
 		return errors.NilError(doc)
 	}
-	filledCoreDoc, err := coredocumentservice.AutoFillDocumentIdentifiers(*doc.CoreDocument)
+	filledCoreDoc, err := coredocument.FillIdentifiers(*doc.CoreDocument)
 	if err != nil {
 		log.Error(err)
 		return err
@@ -130,7 +130,7 @@ func (s *PurchaseOrderDocumentService) HandleGetPurchaseOrderDocument(ctx contex
 		return doc, nil
 	}
 
-	docFound, err := coredocumentrepository.GetCoreDocumentRepository().FindById(getPurchaseOrderDocumentEnvelope.DocumentIdentifier)
+	docFound, err := coredocumentrepository.GetRepository().FindById(getPurchaseOrderDocumentEnvelope.DocumentIdentifier)
 	if err != nil {
 		log.Error(err)
 		return nil, fmt.Errorf("failed to get document: %v", err)
