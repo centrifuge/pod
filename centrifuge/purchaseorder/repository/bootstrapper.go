@@ -1,9 +1,10 @@
 package purchaseorderrepository
 
 import (
+	"errors"
+
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/bootstrapper"
 	"github.com/syndtr/goleveldb/leveldb"
-	"errors"
 )
 
 type Bootstrapper struct {
