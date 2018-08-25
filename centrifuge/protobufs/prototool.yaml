@@ -22,6 +22,9 @@ protoc_version: 3.5.1
 protoc_includes:
   - ../../vendor/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis
   - ../../vendor/github.com/grpc-ecosystem/grpc-gateway/
+  - ../../vendor/github.com/centrifuge/
+  - ../../vendor/github.com/CentrifugeInc/
+  - ../../vendor/github.com/CentrifugeInc/centrifuge-protobufs
 
 # Include the Well-Known Types when compiling with protoc.
 # For example, this allows you to do import "google/protobuf/timestamp.proto" in your Protobuf files.
@@ -74,6 +77,7 @@ lint:
   # Linters to exclude from the lint group.
   exclude_ids:
     - REQUEST_RESPONSE_TYPES_IN_SAME_FILE
+    - REQUEST_RESPONSE_TYPES_UNIQUE
 
 # Code generation directives.
 gen:
@@ -95,6 +99,10 @@ gen:
       google/api/annotations.proto: google.golang.org/genproto/googleapis/api/annotations
       google/api/http.proto: google.golang.org/genproto/googleapis/api/annotations
       protoc-gen-swagger/options/annotations.proto: github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger/options
+      coredocument/coredocument.proto: github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument
+      precise-proofs/proofs/proto/proof.proto: github.com/centrifuge/precise-proofs/proofs/proto
+      invoice/invoice.proto: github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice
+      purchaseorder/purchaseorder.proto: github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder
 
   # Plugin overrides. For example, if you set "grpc-gpp: /usr/local/bin/grpc_cpp_plugin",
   # This will mean that a plugin named "grpc-gpp" in the plugins list will be looked for

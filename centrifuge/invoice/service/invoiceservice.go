@@ -10,8 +10,9 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/repository"
+	clientinvoicepb "github.com/CentrifugeInc/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	gerrors "github.com/go-errors/errors"
-	google_protobuf2 "github.com/golang/protobuf/ptypes/empty"
+	"github.com/golang/protobuf/ptypes/empty"
 	logging "github.com/ipfs/go-log"
 	"golang.org/x/net/context"
 )
@@ -37,7 +38,7 @@ func fillCoreDocIdentifiers(doc *invoicepb.InvoiceDocument) error {
 }
 
 // HandleCreateInvoiceProof creates proofs for a list of fields
-func (s *InvoiceDocumentService) HandleCreateInvoiceProof(ctx context.Context, createInvoiceProofEnvelope *invoicepb.CreateInvoiceProofEnvelope) (*invoicepb.InvoiceProof, error) {
+func (s *InvoiceDocumentService) HandleCreateInvoiceProof(ctx context.Context, createInvoiceProofEnvelope *clientinvoicepb.CreateInvoiceProofEnvelope) (*clientinvoicepb.InvoiceProof, error) {
 	invdoc, err := s.InvoiceRepository.FindById(createInvoiceProofEnvelope.DocumentIdentifier)
 	if err != nil {
 		return nil, err
@@ -54,12 +55,12 @@ func (s *InvoiceDocumentService) HandleCreateInvoiceProof(ctx context.Context, c
 		log.Error(err)
 		return nil, err
 	}
-	return &invoicepb.InvoiceProof{FieldProofs: proofs, DocumentIdentifier: inv.Document.CoreDocument.DocumentIdentifier}, nil
+	return &clientinvoicepb.InvoiceProof{FieldProofs: proofs, DocumentIdentifier: inv.Document.CoreDocument.DocumentIdentifier}, nil
 
 }
 
 // HandleAnchorInvoiceDocument anchors the given invoice document and returns the anchor details
-func (s *InvoiceDocumentService) HandleAnchorInvoiceDocument(ctx context.Context, anchorInvoiceEnvelope *invoicepb.AnchorInvoiceEnvelope) (*invoicepb.InvoiceDocument, error) {
+func (s *InvoiceDocumentService) HandleAnchorInvoiceDocument(ctx context.Context, anchorInvoiceEnvelope *clientinvoicepb.AnchorInvoiceEnvelope) (*invoicepb.InvoiceDocument, error) {
 	doc := anchorInvoiceEnvelope.Document
 
 	err := fillCoreDocIdentifiers(doc)
@@ -84,7 +85,7 @@ func (s *InvoiceDocumentService) HandleAnchorInvoiceDocument(ctx context.Context
 }
 
 // HandleSendInvoiceDocument anchors and sends an invoice to the recipient
-func (s *InvoiceDocumentService) HandleSendInvoiceDocument(ctx context.Context, sendInvoiceEnvelope *invoicepb.SendInvoiceEnvelope) (*invoicepb.InvoiceDocument, error) {
+func (s *InvoiceDocumentService) HandleSendInvoiceDocument(ctx context.Context, sendInvoiceEnvelope *clientinvoicepb.SendInvoiceEnvelope) (*invoicepb.InvoiceDocument, error) {
 	doc := sendInvoiceEnvelope.Document
 
 	err := fillCoreDocIdentifiers(doc)
@@ -119,7 +120,7 @@ func (s *InvoiceDocumentService) HandleSendInvoiceDocument(ctx context.Context, 
 	return anchoredInvoiceDocument, nil
 }
 
-func (s *InvoiceDocumentService) HandleGetInvoiceDocument(ctx context.Context, getInvoiceDocumentEnvelope *invoicepb.GetInvoiceDocumentEnvelope) (*invoicepb.InvoiceDocument, error) {
+func (s *InvoiceDocumentService) HandleGetInvoiceDocument(ctx context.Context, getInvoiceDocumentEnvelope *clientinvoicepb.GetInvoiceDocumentEnvelope) (*invoicepb.InvoiceDocument, error) {
 	doc, err := s.InvoiceRepository.FindById(getInvoiceDocumentEnvelope.DocumentIdentifier)
 	if err != nil {
 		docFound, err1 := coredocumentrepository.GetRepository().FindById(getInvoiceDocumentEnvelope.DocumentIdentifier)
@@ -133,7 +134,7 @@ func (s *InvoiceDocumentService) HandleGetInvoiceDocument(ctx context.Context, g
 	return doc, err
 }
 
-func (s *InvoiceDocumentService) HandleGetReceivedInvoiceDocuments(ctx context.Context, empty *google_protobuf2.Empty) (*invoicepb.ReceivedInvoices, error) {
+func (s *InvoiceDocumentService) HandleGetReceivedInvoiceDocuments(ctx context.Context, empty *empty.Empty) (*clientinvoicepb.ReceivedInvoices, error) {
 	return nil, nil
 }
 

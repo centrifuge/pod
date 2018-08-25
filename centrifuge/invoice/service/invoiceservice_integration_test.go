@@ -8,12 +8,12 @@ import (
 	"testing"
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/processor"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/service"
+	clientinvoicepb "github.com/CentrifugeInc/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/stretchr/testify/assert"
 )
@@ -46,7 +46,7 @@ func TestInvoiceDocumentService_HandleAnchorInvoiceDocument_Integration(t *testi
 	doc := generateEmptyInvoiceForProcessing()
 	doc.Document.Data.SenderCountry = "DE"
 
-	anchoredDoc, err := s.HandleAnchorInvoiceDocument(context.Background(), &invoicepb.AnchorInvoiceEnvelope{Document: doc.Document})
+	anchoredDoc, err := s.HandleAnchorInvoiceDocument(context.Background(), &clientinvoicepb.AnchorInvoiceEnvelope{Document: doc.Document})
 
 	//Call overall worked well and receive roughly sensical data back
 	assert.Nil(t, err)
@@ -60,7 +60,7 @@ func TestInvoiceDocumentService_HandleAnchorInvoiceDocument_Integration(t *testi
 
 	//Invoice Service should error out if trying to anchor the same document ID again
 	doc.Document.Data.SenderCountry = "ES"
-	anchoredDoc2, err := s.HandleAnchorInvoiceDocument(context.Background(), &invoicepb.AnchorInvoiceEnvelope{Document: doc.Document})
+	anchoredDoc2, err := s.HandleAnchorInvoiceDocument(context.Background(), &clientinvoicepb.AnchorInvoiceEnvelope{Document: doc.Document})
 	assert.Nil(t, anchoredDoc2)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "Document already exists")
