@@ -10,8 +10,10 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/signatures"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/version"
-	"github.com/ethereum/go-ethereum/log"
+	logging "github.com/ipfs/go-log"
 )
+
+var log = logging.Logger("context")
 
 func Bootstrap() {
 	context := make(map[string]interface{})
