@@ -3,6 +3,7 @@ package purchaseorderrepository
 import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/bootstrapper"
 	"github.com/syndtr/goleveldb/leveldb"
+	"errors"
 )
 
 type Bootstrapper struct {
@@ -15,5 +16,5 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 			return nil
 		}
 	}
-	return nil
+	return errors.New("could not initialize purchase order repository")
 }
