@@ -10,7 +10,7 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/centrifuge/precise-proofs/proofs"
-	proofspb "github.com/centrifuge/precise-proofs/proofs/proto"
+	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	logging "github.com/ipfs/go-log"
@@ -140,13 +140,13 @@ func (order *PurchaseOrder) ConvertToCoreDocument() (coredocpb *coredocumentpb.C
 }
 
 // Validate validates the purchase order document
-func Validate(doc *purchaseorderpb.PurchaseOrderDocument) (valid bool, msg string, errs map[string]string) {
+func Validate(doc *purchaseorderpb.PurchaseOrderDocument) (valid bool, errMsg string, errs map[string]string) {
 	if doc == nil {
 		return false, errors.NilDocument, nil
 	}
 
-	if valid, msg, errs = coredocument.Validate(doc.CoreDocument); !valid {
-		return valid, msg, errs
+	if valid, errMsg, errs = coredocument.Validate(doc.CoreDocument); !valid {
+		return valid, errMsg, errs
 	}
 
 	if doc.Data == nil {

@@ -154,7 +154,7 @@ func TestValidate(t *testing.T) {
 				CoreDocument: validCoreDoc,
 				Data: &purchaseorderpb.PurchaseOrderData{
 					PoNumber:         "po1234",
-					OrderName:        "Purchase",
+					OrderName:        "Jack",
 					OrderZipcode:     "921007",
 					OrderCountry:     "AUS",
 					RecipientName:    "John",
@@ -178,7 +178,7 @@ func TestValidate(t *testing.T) {
 				CoreDocument: validCoreDoc,
 				Data: &purchaseorderpb.PurchaseOrderData{
 					PoNumber:         "po1234",
-					OrderName:        "Purchase",
+					OrderName:        "Jack",
 					OrderZipcode:     "921007",
 					OrderCountry:     "Australia",
 					RecipientName:    "John",
@@ -202,7 +202,7 @@ func TestValidate(t *testing.T) {
 				CoreDocument: validCoreDoc,
 				Data: &purchaseorderpb.PurchaseOrderData{
 					PoNumber:         "po1234",
-					OrderName:        "Purchase",
+					OrderName:        "Jack",
 					OrderZipcode:     "921007",
 					OrderCountry:     "Australia",
 					RecipientName:    "John",
