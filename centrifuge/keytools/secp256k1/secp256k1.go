@@ -8,18 +8,17 @@ import (
 	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"github.com/ethereum/go-ethereum/crypto"
 	logging "github.com/ipfs/go-log"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common"
 	"fmt"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/utils"
 )
 
 var log = logging.Logger("signing")
 
-const LEN_SIGNATURE_R_S_FORMAT = 64 //64 byte [R || S] format
-const LEN_SIGNATURE_R_S_V_FORMAT = 65 //65 byte [R || S || V] format
+const SIGNATURE_R_S_FORMAT_LEN = 64 //64 byte [R || S] format
+const SIGNATURE_R_S_V_FORMAT_LEN = 65 //65 byte [R || S || V] format
 const SIGNATURE_V_POSITION  = 64
-
-const LEN_OF_ADDRESS = 20
+const PRIVATE_KEY_LEN = 32
 
 func GenerateSigningKeyPair() (publicKey, privateKey []byte) {
 
@@ -30,9 +29,9 @@ func GenerateSigningKeyPair() (publicKey, privateKey []byte) {
 	}
 	publicKey = elliptic.Marshal(secp256k1.S256(), key.X, key.Y)
 
-	privateKey = make([]byte, 32)
+	privateKey = make([]byte, PRIVATE_KEY_LEN)
 	blob := key.D.Bytes()
-	copy(privateKey[32-len(blob):], blob)
+	copy(privateKey[PRIVATE_KEY_LEN-len(blob):], blob)
 
 	return publicKey, privateKey
 }
@@ -51,9 +50,9 @@ func Sign(message []byte, privateKey []byte) (signature []byte) {
 func VerifySignatureWithAddress(address, sigHex string, msg []byte) bool {
 	fromAddr := common.HexToAddress(address)
 
-	sig := hexutil.MustDecode(sigHex)
+	sig := utils.HexToByteArray(sigHex)
 
-	if(len(sig) != LEN_SIGNATURE_R_S_V_FORMAT){
+	if(len(sig) != SIGNATURE_R_S_V_FORMAT_LEN){
 		log.Fatal("signature must be 65 bytes long")
 		return false
 	}
@@ -77,24 +76,23 @@ func VerifySignatureWithAddress(address, sigHex string, msg []byte) bool {
 	return fromAddr == recoveredAddr
 }
 
-// For more information
-// https://github.com/ethereum/go-ethereum/blob/55599ee95d4151a2502465e0afc7c47bd1acba77/internal/ethapi/api.go#L404
 // The hash is calculated as
-//   keccak256("\x19Ethereum Signed Message:\n"${message length}${message}).
-//
+// keccak256("\x19Ethereum Signed Message:\n"${message length}${message}).
+// for further details see
+// https://github.com/ethereum/go-ethereum/blob/55599ee95d4151a2502465e0afc7c47bd1acba77/internal/ethapi/api.go#L404
+
 func signHash(data []byte) []byte {
 	msg := fmt.Sprintf("\x19Ethereum Signed Message:\n%d%s", len(data), data)
-	fmt.Println(msg)
 	return crypto.Keccak256([]byte(msg))
 }
 
 
 func VerifySignature(publicKey, message, signature []byte) bool {
-	if len(signature) == LEN_SIGNATURE_R_S_FORMAT+1 {
+	if len(signature) == SIGNATURE_R_S_FORMAT_LEN+1 {
 		// signature in [R || S || V] format is 65 bytes
 		//https://bitcoin.stackexchange.com/questions/38351/ecdsa-v-r-s-what-is-v
 
-		signature = signature[0:LEN_SIGNATURE_R_S_FORMAT]
+		signature = signature[0:SIGNATURE_R_S_FORMAT_LEN]
 	}
 	// the signature should have the 64 byte [R || S] format
 	return secp256k1.VerifySignature(publicKey, message, signature)
