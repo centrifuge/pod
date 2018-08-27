@@ -17,10 +17,10 @@ func GenerateSigningKeyPair(publicFileName, privateFileName, curveType string) {
 
 	switch curveType {
 
-	case CURVE_SECP256K1:
+	case CurveSecp256K1:
 		publicKey, privateKey = secp256k1.GenerateSigningKeyPair()
 
-	case CURVE_ED25519:
+	case CurveEd25519:
 		publicKey, privateKey = ed25519.GenerateSigningKeyPair()
 
 	default:
@@ -28,7 +28,7 @@ func GenerateSigningKeyPair(publicFileName, privateFileName, curveType string) {
 
 	}
 
-	io.WriteKeyToPemFile(privateFileName,PRIVATE_KEY, privateKey)
-	io.WriteKeyToPemFile(publicFileName, PUBLIC_KEY, publicKey)
+	io.WriteKeyToPemFile(privateFileName, PrivateKey, privateKey)
+	io.WriteKeyToPemFile(publicFileName, PublicKey, publicKey)
 
 }

@@ -1,10 +1,10 @@
 package io
 
 import (
-	"os"
 	"encoding/pem"
-	"io/ioutil"
 	"fmt"
+	"io/ioutil"
+	"os"
 )
 
 func WriteKeyToPemFile(fileName string, keyType string, key []byte) error {

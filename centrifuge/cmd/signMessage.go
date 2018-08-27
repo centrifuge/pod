@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools"
-	"github.com/spf13/cobra"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/utils"
+	"github.com/spf13/cobra"
 )
 
 func init() {
@@ -14,7 +14,6 @@ func init() {
 	var privateKeyFileParam string
 	var curveTypeParam string
 	var messageParam string
-
 
 	var signMessageCmd = &cobra.Command{
 		Use:   "sign",

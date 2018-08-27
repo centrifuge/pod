@@ -2,8 +2,8 @@ package cmd
 
 import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
-	"github.com/spf13/cobra"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
+	"github.com/spf13/cobra"
 )
 
 var centrifugeIdString string

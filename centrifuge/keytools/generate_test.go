@@ -1,41 +1,42 @@
 package keytools
 
 import (
-	"testing"
 	"os"
-	"github.com/magiconair/properties/assert"
+	"testing"
+
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/io"
+	"github.com/magiconair/properties/assert"
 )
 
 const (
-	PRIVATE_KEY_SECP256K1_LEN = 32
-	PUBLIC_KEY_SECP256K1_LEN = 65
-	PUBLIC_KEY_ED25519_LEN = 32
-	PRIVATE_KEY_ED25519_LEN = 64
+	PrivateKeySECP256K1Len = 32
+	PublicKeySECP256K1Len  = 65
+	PublicKeyED25519Len    = 32
+	PrivateKeyED25519Len   = 64
 )
 
-func GenerateKeyFilesForTest(t *testing.T,curve string) (publicKey, privateKey []byte){
+func GenerateKeyFilesForTest(t *testing.T, curve string) (publicKey, privateKey []byte) {
 
 	publicFileName := "publicKeyFile"
 	privateFileName := "privateKeyFile"
 
-	GenerateSigningKeyPair(publicFileName,privateFileName,curve)
+	GenerateSigningKeyPair(publicFileName, privateFileName, curve)
 
 	_, err := os.Stat(publicFileName)
 
-	assert.Equal(t,err != nil,false, "public key file not generated")
+	assert.Equal(t, err != nil, false, "public key file not generated")
 
 	_, err = os.Stat(privateFileName)
 
-	assert.Equal(t,err != nil,false, "private key file not generated")
+	assert.Equal(t, err != nil, false, "private key file not generated")
 
-	publicKey, err = io.ReadKeyFromPemFile(publicFileName,PUBLIC_KEY)
+	publicKey, err = io.ReadKeyFromPemFile(publicFileName, PublicKey)
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	privateKey, err = io.ReadKeyFromPemFile(privateFileName,PRIVATE_KEY)
+	privateKey, err = io.ReadKeyFromPemFile(privateFileName, PrivateKey)
 
 	if err != nil {
 		log.Fatal(err)
@@ -50,19 +51,19 @@ func GenerateKeyFilesForTest(t *testing.T,curve string) (publicKey, privateKey [
 
 func TestGenerateSigningKeyPairSECP256K1(t *testing.T) {
 
-	curve := CURVE_SECP256K1
-	publicKey,privateKey := GenerateKeyFilesForTest(t,curve)
+	curve := CurveSecp256K1
+	publicKey, privateKey := GenerateKeyFilesForTest(t, curve)
 
-	assert.Equal(t,len(publicKey),PUBLIC_KEY_SECP256K1_LEN,"public key length not correct")
-	assert.Equal(t,len(privateKey),PRIVATE_KEY_SECP256K1_LEN,"private key length not correct")
+	assert.Equal(t, len(publicKey), PublicKeySECP256K1Len, "public key length not correct")
+	assert.Equal(t, len(privateKey), PrivateKeySECP256K1Len, "private key length not correct")
 
 }
 
 func TestGenerateSigningKeyPairED25519(t *testing.T) {
 
-	curve := CURVE_ED25519
-	publicKey,privateKey := GenerateKeyFilesForTest(t,curve)
+	curve := CurveEd25519
+	publicKey, privateKey := GenerateKeyFilesForTest(t, curve)
 
-	assert.Equal(t,len(publicKey),PUBLIC_KEY_ED25519_LEN,"public key length not correct")
-	assert.Equal(t,len(privateKey),PRIVATE_KEY_ED25519_LEN,"private key length not correct")
+	assert.Equal(t, len(publicKey), PublicKeyED25519Len, "public key length not correct")
+	assert.Equal(t, len(privateKey), PrivateKeyED25519Len, "private key length not correct")
 }

@@ -4,16 +4,16 @@ import (
 	"encoding/hex"
 )
 
-const HEX_PREFIX = "0x"
+const HexPrefix = "0x"
 
-func HexToByteArray(hexString string) ([]byte){
+func HexToByteArray(hexString string) []byte {
 
-	if(hexString[0:len(HEX_PREFIX)] == HEX_PREFIX){
-		hexString = hexString[len(HEX_PREFIX):]
+	if hexString[0:len(HexPrefix)] == HexPrefix {
+		hexString = hexString[len(HexPrefix):]
 	}
 	byteArray, err := hex.DecodeString(hexString)
 
-	if(err != nil){
+	if err != nil {
 		log.Fatal(err)
 	}
 
@@ -21,7 +21,7 @@ func HexToByteArray(hexString string) ([]byte){
 
 }
 
-func ByteArrayToHex(byteArray []byte) (string){
-	return HEX_PREFIX+hex.EncodeToString(byteArray)
+func ByteArrayToHex(byteArray []byte) string {
+	return HexPrefix + hex.EncodeToString(byteArray)
 
 }

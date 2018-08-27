@@ -2,23 +2,23 @@ package ed25519
 
 import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/io"
+	logging "github.com/ipfs/go-log"
 	"github.com/libp2p/go-libp2p-crypto"
 	"github.com/libp2p/go-libp2p-peer"
 	mh "github.com/multiformats/go-multihash"
 	"golang.org/x/crypto/ed25519"
-	logging "github.com/ipfs/go-log"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/io"
 )
 
 var log = logging.Logger("ed25519")
 
 const (
-	PUBLIC_KEY  = "PUBLIC KEY"
-	PRIVATE_KEY = "PRIVATE KEY"
+	PublicKey  = "PUBLIC KEY"
+	PrivateKey = "PRIVATE KEY"
 )
 
 func GetPublicSigningKey(fileName string) (publicKey ed25519.PublicKey) {
-	key, err := io.ReadKeyFromPemFile(fileName, PUBLIC_KEY)
+	key, err := io.ReadKeyFromPemFile(fileName, PublicKey)
 
 	if err != nil {
 		log.Fatal(err)
@@ -28,7 +28,7 @@ func GetPublicSigningKey(fileName string) (publicKey ed25519.PublicKey) {
 }
 
 func GetPrivateSigningKey(fileName string) (privateKey ed25519.PrivateKey) {
-	key, err := io.ReadKeyFromPemFile(fileName, PRIVATE_KEY)
+	key, err := io.ReadKeyFromPemFile(fileName, PrivateKey)
 	if err != nil {
 		log.Fatal(err)
 	}

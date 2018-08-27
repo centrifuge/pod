@@ -5,20 +5,21 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 
-	"github.com/ethereum/go-ethereum/crypto/secp256k1"
-	"github.com/ethereum/go-ethereum/crypto"
-	logging "github.com/ipfs/go-log"
-	"github.com/ethereum/go-ethereum/common"
 	"fmt"
+
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/crypto/secp256k1"
+	logging "github.com/ipfs/go-log"
 )
 
 var log = logging.Logger("signing")
 
-const SIGNATURE_R_S_FORMAT_LEN = 64 //64 byte [R || S] format
-const SIGNATURE_R_S_V_FORMAT_LEN = 65 //65 byte [R || S || V] format
-const SIGNATURE_V_POSITION  = 64
-const PRIVATE_KEY_LEN = 32
+const SignatureRSFormatLen = 64  //64 byte [R || S] format
+const SignatureRSVFormatLen = 65 //65 byte [R || S || V] format
+const SignatureVPosition = 64
+const PrivateKeyLen = 32
 
 func GenerateSigningKeyPair() (publicKey, privateKey []byte) {
 
@@ -29,9 +30,9 @@ func GenerateSigningKeyPair() (publicKey, privateKey []byte) {
 	}
 	publicKey = elliptic.Marshal(secp256k1.S256(), key.X, key.Y)
 
-	privateKey = make([]byte, PRIVATE_KEY_LEN)
+	privateKey = make([]byte, PrivateKeyLen)
 	blob := key.D.Bytes()
-	copy(privateKey[PRIVATE_KEY_LEN-len(blob):], blob)
+	copy(privateKey[PrivateKeyLen-len(blob):], blob)
 
 	return publicKey, privateKey
 }
@@ -46,24 +47,23 @@ func Sign(message []byte, privateKey []byte) (signature []byte) {
 
 }
 
-
 func VerifySignatureWithAddress(address, sigHex string, msg []byte) bool {
 	fromAddr := common.HexToAddress(address)
 
 	sig := utils.HexToByteArray(sigHex)
 
-	if(len(sig) != SIGNATURE_R_S_V_FORMAT_LEN){
+	if len(sig) != SignatureRSVFormatLen {
 		log.Fatal("signature must be 65 bytes long")
 		return false
 	}
 
 	// see implementation in go-ethereum for further details
 	// https://github.com/ethereum/go-ethereum/blob/55599ee95d4151a2502465e0afc7c47bd1acba77/internal/ethapi/api.go#L442
-	if sig[SIGNATURE_V_POSITION] != 27 && sig[SIGNATURE_V_POSITION] != 28 {
+	if sig[SignatureVPosition] != 27 && sig[SignatureVPosition] != 28 {
 		log.Fatal("V value in signature has to be 27 or 28")
 		return false
 	}
-	sig[SIGNATURE_V_POSITION] -= 27 // change V value to 0 or 1
+	sig[SignatureVPosition] -= 27 // change V value to 0 or 1
 
 	pubKey, err := crypto.SigToPub(signHash(msg), sig)
 	if err != nil {
@@ -86,13 +86,12 @@ func signHash(data []byte) []byte {
 	return crypto.Keccak256([]byte(msg))
 }
 
-
 func VerifySignature(publicKey, message, signature []byte) bool {
-	if len(signature) == SIGNATURE_R_S_FORMAT_LEN+1 {
+	if len(signature) == SignatureRSFormatLen+1 {
 		// signature in [R || S || V] format is 65 bytes
 		//https://bitcoin.stackexchange.com/questions/38351/ecdsa-v-r-s-what-is-v
 
-		signature = signature[0:SIGNATURE_R_S_FORMAT_LEN]
+		signature = signature[0:SignatureRSFormatLen]
 	}
 	// the signature should have the 64 byte [R || S] format
 	return secp256k1.VerifySignature(publicKey, message, signature)

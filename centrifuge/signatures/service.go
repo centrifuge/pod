@@ -9,7 +9,7 @@ import (
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
-	centrifugeED25519"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
+	centrifugeED25519 "github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
 	"golang.org/x/crypto/ed25519"
 )
 

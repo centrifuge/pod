@@ -5,8 +5,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-
-
 func init() {
 
 	//specific param
@@ -15,7 +13,6 @@ func init() {
 	var createSigningKeyParam bool
 	var createEncryptionKeyParam bool
 	var curveTypeParam string
-
 
 	// generateSigningKeyCmd represents the generateSigningKey command
 	var generateSigningKeyCmd = &cobra.Command{

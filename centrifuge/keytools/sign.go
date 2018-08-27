@@ -1,14 +1,16 @@
 package keytools
 
-import ("strings"
-		"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/secp256k1"
+import (
 	"fmt"
+	"strings"
+
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/io"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/secp256k1"
 )
 
 func SignMessage(privateKeyPath, message, curveType string) []byte {
 
-	privateKey, err := io.ReadKeyFromPemFile(privateKeyPath, PRIVATE_KEY)
+	privateKey, err := io.ReadKeyFromPemFile(privateKeyPath, PrivateKey)
 
 	if err != nil {
 		log.Fatal(err)
@@ -16,19 +18,19 @@ func SignMessage(privateKeyPath, message, curveType string) []byte {
 
 	curveType = strings.ToLower(curveType)
 
-	if len(message) > MAX_MSG_LEN {
+	if len(message) > MaxMsgLen {
 		log.Fatal("max message len is 32 bytes current len:", len(message))
 	}
 
-	msg := make([]byte, MAX_MSG_LEN)
+	msg := make([]byte, MaxMsgLen)
 	copy(msg, message)
 
 	switch curveType {
 
-	case CURVE_SECP256K1:
+	case CurveSecp256K1:
 		return secp256k1.Sign(msg, privateKey)
 
-	case CURVE_ED25519:
+	case CurveEd25519:
 		fmt.Println("curve ed25519 not support yet")
 		return []byte("")
 

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/p2p/controller"
 	"github.com/ipfs/go-cid"
 	ds "github.com/ipfs/go-datastore"
@@ -26,7 +27,6 @@ import (
 	"github.com/paralin/go-libp2p-grpc"
 	msmux "github.com/whyrusleeping/go-smux-multistream"
 	yamux "github.com/whyrusleeping/go-smux-yamux"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
 )
 
 var log = logging.Logger("p2p")

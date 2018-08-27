@@ -8,13 +8,13 @@ import (
 
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/go-errors/errors"
 	logging "github.com/ipfs/go-log"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
 )
 
 var log = logging.Logger("identity")

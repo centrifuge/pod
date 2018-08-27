@@ -6,21 +6,21 @@ import (
 	"github.com/magiconair/properties/assert"
 )
 
-const MAX_MSG_LEN = 32
+const MaxMsgLen = 32
 
 func TestGenerateSigningKeyPair(t *testing.T) {
 
-	const LEN_PUBLIC_KEY = 65
-	const LEN_PRIVATE_KEY = 32
+	const PublicKeyLen = 65
+	const PrivateKeyLen = 32
 	publicKey, privateKey := GenerateSigningKeyPair()
-	assert.Equal(t, len(publicKey), LEN_PUBLIC_KEY, "secp256k1 public key not correct")
-	assert.Equal(t, len(privateKey), LEN_PRIVATE_KEY, "secp256k1 private key not correct")
+	assert.Equal(t, len(publicKey), PublicKeyLen, "secp256k1 public key not correct")
+	assert.Equal(t, len(privateKey), PrivateKeyLen, "secp256k1 private key not correct")
 
 }
 
 func TestSigningMsg(t *testing.T) {
 
-	testMsg := make([]byte, MAX_MSG_LEN)
+	testMsg := make([]byte, MaxMsgLen)
 	copy(testMsg, "test123")
 
 	publicKey, privateKey := GenerateSigningKeyPair()
@@ -35,10 +35,10 @@ func TestSigningMsg(t *testing.T) {
 
 func TestVerifyFalseMsg(t *testing.T) {
 
-	testMsg := make([]byte, MAX_MSG_LEN)
+	testMsg := make([]byte, MaxMsgLen)
 	copy(testMsg, "test123")
 
-	falseMsg := make([]byte, MAX_MSG_LEN)
+	falseMsg := make([]byte, MaxMsgLen)
 	copy(falseMsg, "false")
 
 	publicKey, privateKey := GenerateSigningKeyPair()
@@ -53,7 +53,7 @@ func TestVerifyFalseMsg(t *testing.T) {
 
 func TestVerifyFalsePublicKey(t *testing.T) {
 
-	testMsg := make([]byte, MAX_MSG_LEN)
+	testMsg := make([]byte, MaxMsgLen)
 	copy(testMsg, "test123")
 
 	_, privateKey := GenerateSigningKeyPair()
@@ -80,7 +80,7 @@ func TestVerifySignatureWithAddress(t *testing.T) {
 		testSignature,
 		[]byte(testMsg))
 
-	assert.Equal(t,correct,true, "recovering public key from signature doesn't work correctly")
+	assert.Equal(t, correct, true, "recovering public key from signature doesn't work correctly")
 
 }
 
@@ -96,7 +96,7 @@ func TestVerifySignatureWithAddressFalseMsg(t *testing.T) {
 		testSignature,
 		[]byte(falseMsg))
 
-	assert.Equal(t,correct,false, "verify signature should be false (false msg)")
+	assert.Equal(t, correct, false, "verify signature should be false (false msg)")
 
 }
 
@@ -112,7 +112,7 @@ func TestVerifySignatureWithFalseAddress(t *testing.T) {
 		testSignature,
 		[]byte(testMsg))
 
-	assert.Equal(t,correct,false, "verify signature should be false (false address)")
+	assert.Equal(t, correct, false, "verify signature should be false (false address)")
 
 }
 
@@ -128,17 +128,6 @@ func TestVerifySignatureWithFalseSignature(t *testing.T) {
 		falseSignature,
 		[]byte(testMsg))
 
-	assert.Equal(t,correct,false, "verify signature should be false (false signature)")
+	assert.Equal(t, correct, false, "verify signature should be false (false signature)")
 
 }
-
-
-
-
-
-
-
-
-
-
-

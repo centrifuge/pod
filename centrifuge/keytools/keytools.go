@@ -7,15 +7,13 @@ import (
 var log = logging.Logger("keytools")
 
 const (
-	PUBLIC_KEY  = "PUBLIC KEY"
-	PRIVATE_KEY = "PRIVATE KEY"
+	PublicKey  = "PUBLIC KEY"
+	PrivateKey = "PRIVATE KEY"
 )
 
 const (
-	CURVE_ED25519   string = "ed25519"
-	CURVE_SECP256K1 string = "secp256k1"
+	CurveEd25519   string = "ed25519"
+	CurveSecp256K1 string = "secp256k1"
 )
 
-const MAX_MSG_LEN = 32
-
-
+const MaxMsgLen = 32

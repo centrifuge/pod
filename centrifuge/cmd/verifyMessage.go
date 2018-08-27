@@ -4,11 +4,9 @@ import (
 	"fmt"
 
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools"
-	"github.com/spf13/cobra"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/utils"
+	"github.com/spf13/cobra"
 )
-
-
 
 func init() {
 
@@ -29,7 +27,6 @@ func init() {
 			fmt.Println(correct)
 		},
 	}
-
 
 	rootCmd.AddCommand(verifyMsgCmd)
 	verifyMsgCmd.Flags().StringVarP(&messageParam, "message", "m", "", "message to verify (max 32 bytes)")
