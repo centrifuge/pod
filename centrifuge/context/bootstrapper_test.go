@@ -14,7 +14,7 @@ func TestMainBootstrapper_Bootstrap(t *testing.T) {
 	testing2.InitTestConfig()
 	testing2.InitTestStoragePath()
 	// set a dummy url here so that ethereum will always fail to connect
-	config.Config.V.SetDefault("ethereum.nodeURL", "blah")
+	config.Config.V.Set("ethereum.nodeURL", "blah")
 	m := &MainBootstrapper{}
 	m.PopulateDefaultBootstrappers()
 	err := m.Bootstrap(map[string]interface{}{})
