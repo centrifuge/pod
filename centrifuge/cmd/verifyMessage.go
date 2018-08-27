@@ -23,13 +23,10 @@ func init() {
 		Short: "verify a signature",
 		Long:  ``,
 		Run: func(cmd *cobra.Command, args []string) {
-			signatureBytes, err := utils.HexToByteArray(signatureParam)
+			signatureBytes := utils.HexToByteArray(signatureParam)
 
-			if err != nil {
-				log.Fatal(err)
-			}
-			correctSignature := keytools.VerifyMessage(publicKeyFileParam, messageParam, signatureBytes, curveTypeParam)
-			fmt.Println(correctSignature)
+			correct := keytools.VerifyMessage(publicKeyFileParam, messageParam, signatureBytes, curveTypeParam)
+			fmt.Println(correct)
 		},
 	}
 
@@ -37,6 +34,6 @@ func init() {
 	rootCmd.AddCommand(verifyMsgCmd)
 	verifyMsgCmd.Flags().StringVarP(&messageParam, "message", "m", "", "message to verify (max 32 bytes)")
 	verifyMsgCmd.Flags().StringVarP(&publicKeyFileParam, "public", "q", "", "public key path")
-	verifyMsgCmd.Flags().StringVarP(&curveTypeParam, "type", "t", "", "type of the curve (default: 'secp256k1') ")
+	verifyMsgCmd.Flags().StringVarP(&curveTypeParam, "type", "t", "", "type of the curve (supported:'secp256k1')")
 	verifyMsgCmd.Flags().StringVarP(&signatureParam, "signature", "s", "", "signature")
 }
