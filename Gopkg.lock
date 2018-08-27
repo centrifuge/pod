@@ -55,11 +55,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:85d7d9fae7d030956766e2a2c591e481ad0f89d6b10686b9477d7a237543c215"
+  digest = "1:eab9720115c67a5dd4487630d774917800945b54e2f34605c3099212865f2d75"
   name = "github.com/centrifuge/gocelery"
   packages = ["."]
   pruneopts = "UT"
-  revision = "2fbbc54d394c106d1ef5593cc41f5096abb2226f"
+  revision = "840d02135ac447e77bd0d669246b602feca5e8b4"
 
 [[projects]]
   digest = "1:5c65ea082148892bd4a93881b2810a7d20d86a25034dcf520292c8fd38cee3b1"
@@ -1349,6 +1349,8 @@
     "github.com/ethereum/go-ethereum/accounts/abi/bind",
     "github.com/ethereum/go-ethereum/common",
     "github.com/ethereum/go-ethereum/core/types",
+    "github.com/ethereum/go-ethereum/crypto",
+    "github.com/ethereum/go-ethereum/crypto/secp256k1",
     "github.com/ethereum/go-ethereum/ethclient",
     "github.com/ethereum/go-ethereum/event",
     "github.com/ethereum/go-ethereum/rpc",

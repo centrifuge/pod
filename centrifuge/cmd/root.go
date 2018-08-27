@@ -11,6 +11,7 @@ import (
 	gologging "github.com/whyrusleeping/go-logging"
 )
 
+//global flags
 var cfgFile string
 var verbose bool
 
