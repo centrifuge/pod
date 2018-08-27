@@ -1,41 +1,19 @@
 package keytools
 
 import (
-	"encoding/pem"
-	"fmt"
-	"io/ioutil"
-	"os"
+	logging "github.com/ipfs/go-log"
 )
 
-func writeKeyToPemFile(fileName string, keyType string, key []byte) error {
-	f, err := os.Create(fileName)
-	if err != nil {
-		return err
-	}
+var log = logging.Logger("keytools")
 
-	block := &pem.Block{
-		Type:  keyType,
-		Bytes: key,
-	}
-	if err := pem.Encode(f, block); err != nil {
-		return err
-	}
-	f.Close()
-	return nil
-}
+const (
+	PublicKey  = "PUBLIC KEY"
+	PrivateKey = "PRIVATE KEY"
+)
 
-func readKeyFromPemFile(fileName, keyType string) (key []byte, err error) {
-	pemData, err := ioutil.ReadFile(fileName)
-	if err != nil {
-		return []byte{}, err
-	}
-	block, _ := pem.Decode(pemData)
-	if block == nil {
-		return []byte{}, fmt.Errorf("File [%s] is not a valid pem file", fileName)
-	}
-	if block.Type != keyType {
-		return []byte{}, fmt.Errorf("Key type mismatch got [%s] but expected [%s]", block.Type, keyType)
-	}
+const (
+	CurveEd25519   string = "ed25519"
+	CurveSecp256K1 string = "secp256k1"
+)
 
-	return block.Bytes, nil
-}
+const MaxMsgLen = 32
