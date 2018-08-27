@@ -4,13 +4,44 @@
 
 Project Structure taken from: https://github.com/golang-standards/project-layout and https://github.com/ethereum/go-ethereum
 
+## Installing pre-requisites
+### Linux
+```bash
+# install jq
+sudo apt-get install jq
 
-## Setup
+# install truffle framework
+npm install -g truffle@4.0.4
+
+# install Dep
+curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+```
+#### Install Docker Compose
+```bash
+# Run this command to download the latest version of Docker Compose
+sudo curl -L https://github.com/docker/compose/releases/download/1.22.0/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose
+
+# Apply executable permissions to the binary
+sudo chmod +x /usr/local/bin/docker-compose
+```
+### Mac
+```bash
+# install jq
+brew install jq
+
+# install truffle framework
+npm install -g truffle@4.0.4
+
+# install Dep
+curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+```
+#### Install Docker Compose
+Make sure you have docker-compose installed, usually comes bundled with Mac OS Docker. Otherwise: https://docs.docker.com/compose/install/
+
+
+## Install
 
 ```bash
-# dependencies and checkout of code
-brew install jq
-npm install -g truffle@4.0.4
 mkdir -p $GOPATH/src/github.com/CentrifugeInc/go-centrifuge/
 git clone git@github.com:CentrifugeInc/go-centrifuge.git $GOPATH/src/github.com/CentrifugeInc/go-centrifuge
 
@@ -49,11 +80,12 @@ INFO [07-27|22:19:58] Commit new mining work                   number=2 txs=0 un
 
 When you see `Commit new mining work` for the first time, then it is time to run the functional tests.
 
-Make sure you have docker-compose installed, usually comes bundled with Mac OS Docker. Otherwise: https://docs.docker.com/compose/install/ 
-
-
 ## Running Tests
 
+Install packages and dependencies
+```bash
+dep ensure
+```
 Run only unit tests
 ```bash
 ./scripts/tests/run_unit_tests.sh
@@ -178,7 +210,7 @@ geth attach ws://localhost:9546
   - Run tests:
     - To run only integration tests:
       - ./scripts/tests/run_integration_tests.sh
-      
+
 ### Configure node to point to integration + run integration/functional tests
   - Remove running container if any:
     - docker rm -f geth-node
