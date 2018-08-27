@@ -5,6 +5,7 @@ package context
 import (
 	"testing"
 
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	testing2 "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
 	"github.com/stretchr/testify/assert"
 )
@@ -12,6 +13,8 @@ import (
 func TestMainBootstrapper_Bootstrap(t *testing.T) {
 	testing2.InitTestConfig()
 	testing2.InitTestStoragePath()
+	// set a dummy url here so that ethereum will always fail to connect
+	config.Config.V.SetDefault("ethereum.nodeURL", "blah")
 	m := &MainBootstrapper{}
 	m.PopulateDefaultBootstrappers()
 	err := m.Bootstrap(map[string]interface{}{})
