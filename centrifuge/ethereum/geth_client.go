@@ -70,21 +70,24 @@ func (gethClient GethClient) GetNonceMutex() *sync.Mutex {
 	return gethClient.NonceMutex
 }
 
-func NewClientConnection() GethClient {
+func NewClientConnection() (GethClient, error) {
 	log.Info("Opening connection to Ethereum:", config.Config.GetEthereumNodeURL())
 	u, err := url.Parse(config.Config.GetEthereumNodeURL())
 	if err != nil {
-		log.Fatalf("Failed to connect to parse ethereum.gethSocket URL: %v", err)
+		log.Errorf("Failed to connect to parse ethereum.gethSocket URL: %v", err)
+		return GethClient{}, err
 	}
 	c, err := rpc.Dial(u.String())
 	if err != nil {
-		log.Fatalf("Failed to connect to the Ethereum client [%s]: %v", u.String(), err)
+		log.Errorf("Failed to connect to the Ethereum client [%s]: %v", u.String(), err)
+		return GethClient{}, err
 	}
 	client := ethclient.NewClient(c)
 	if err != nil {
-		log.Fatalf("Failed to connect to the Ethereum client [%s]: %v", u.String(), err)
+		log.Errorf("Failed to connect to the Ethereum client [%s]: %v", u.String(), err)
+		return GethClient{}, err
 	}
-	return GethClient{client, c, u, &sync.Mutex{}}
+	return GethClient{client, c, u, &sync.Mutex{}}, nil
 }
 
 // Note that this is a singleton and is the same connection for the whole application.

@@ -15,9 +15,12 @@ import (
 
 var log = logging.Logger("context")
 
-func Bootstrap() {
-	context := make(map[string]interface{})
-	for _, b := range []bootstrapper.Bootstrapper{
+type MainBootstrapper struct {
+	Bootstrappers []bootstrapper.Bootstrapper
+}
+
+func (m *MainBootstrapper) PopulateDefaultBootstrappers() {
+	m.Bootstrappers = []bootstrapper.Bootstrapper{
 		&version.Bootstrapper{},
 		&config.Bootstrapper{},
 		&storage.Bootstrapper{},
@@ -26,11 +29,17 @@ func Bootstrap() {
 		&purchaseorderrepository.Bootstrapper{},
 		&signatures.Bootstrapper{},
 		&ethereum.Bootstrapper{},
-	} {
+	}
+}
+
+func (m *MainBootstrapper) Bootstrap(context map[string]interface{}) error {
+	//context := make(map[string]interface{})
+	for _, b := range m.Bootstrappers {
 		err := b.Bootstrap(context)
 		if err != nil {
 			log.Error("Error encountered while bootstrapping", err)
-			panic("Terminating node on bootstrap error")
+			return err
 		}
 	}
+	return nil
 }
