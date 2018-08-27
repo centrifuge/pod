@@ -27,13 +27,13 @@ var log = logging.Logger("geth-client")
 var gc EthereumClient
 var gcInit sync.Once
 
-// getDefaultContextTimeout retrieves the default duration before an Ethereum call context should time out
-func getDefaultContextTimeout() time.Duration {
+// GetDefaultContextTimeout retrieves the default duration before an Ethereum call context should time out
+func GetDefaultContextTimeout() time.Duration {
 	return config.Config.GetEthereumContextWaitTimeout()
 }
 
 func DefaultWaitForTransactionMiningContext() (ctx context.Context, cancelFunc context.CancelFunc) {
-	toBeDone := time.Now().Add(getDefaultContextTimeout())
+	toBeDone := time.Now().Add(GetDefaultContextTimeout())
 	return context.WithDeadline(context.TODO(), toBeDone)
 }
 
@@ -190,7 +190,7 @@ func IncrementNonce(opts *bind.TransactOpts) (err error) {
 
 	var res map[string]map[string]map[string][]string
 	// Important to not create a DeadLock if network latency
-	txctx, _ := context.WithTimeout(context.Background(), getDefaultContextTimeout())
+	txctx, _ := context.WithTimeout(context.Background(), GetDefaultContextTimeout())
 	gc.GetRpcClient().CallContext(txctx, &res, "txpool_inspect")
 
 	if len(res["pending"][opts.From.Hex()]) > 0 {

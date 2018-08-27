@@ -11,8 +11,8 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/version"
 	logging "github.com/ipfs/go-log"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/queue"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/queue"
 )
 
 var log = logging.Logger("context")
@@ -31,6 +31,8 @@ func (m *MainBootstrapper) PopulateDefaultBootstrappers() {
 		&purchaseorderrepository.Bootstrapper{},
 		&signatures.Bootstrapper{},
 		&ethereum.Bootstrapper{},
+		&identity.Bootstrapper{},
+		&queue.Bootstrapper{},
 	}
 }
 
@@ -43,10 +45,4 @@ func (m *MainBootstrapper) Bootstrap(context map[string]interface{}) error {
 		}
 	}
 	return nil
-}
-
-func bootstrapQueuing() {
-	queue.InitQueue([]queue.QueuedTask{
-		&identity.IdRegistrationConfirmationTask{},
-	})
 }

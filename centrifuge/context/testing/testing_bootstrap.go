@@ -21,6 +21,41 @@ const testStoragePath = "/tmp/centrifuge_data.leveldb_TESTING"
 
 var log = logging.Logger("context")
 
+// ---- Ethereum ----
+func TestFunctionalEthereumBootstrap() {
+	TestIntegrationBootstrap()
+	createEthereumConnection()
+}
+func TestFunctionalEthereumTearDown() {
+	TestIntegrationTearDown()
+}
+
+// ---- END Ethereum ----
+
+// ---- Integration Testing ----
+func TestIntegrationBootstrap() {
+	logging.SetAllLoggers(gologging.DEBUG)
+	backend := gologging.NewLogBackend(os.Stdout, "", 0)
+	gologging.SetBackend(backend)
+
+	InitTestConfig()
+	InitTestStoragePath()
+	config.Config.V.WriteConfigAs("/tmp/cent_config.yaml")
+
+	log.Infof("Creating levelDb at: %s", config.Config.GetStoragePath())
+
+	bootstrapQueuing()
+}
+
+func TestIntegrationTearDown() {
+	storage.CloseLevelDBStorage()
+	os.RemoveAll(config.Config.GetStoragePath())
+	config.Config = nil
+	tearDownQueuing()
+}
+
+// ---- End Integration Testing ----
+
 func createEthereumConnection() {
 	client, err := ethereum.NewClientConnection()
 	if err != nil {
@@ -64,43 +99,8 @@ func InitTestConfig() {
 	config.Config.InitializeViper()
 }
 
-// ---- Ethereum ----
-func TestFunctionalEthereumBootstrap() {
-	TestIntegrationBootstrap()
-	createEthereumConnection()
-}
-func TestFunctionalEthereumTearDown() {
-	TestIntegrationTearDown()
-}
-
-// ---- END Ethereum ----
-
-// ---- Integration Testing ----
-func TestIntegrationBootstrap() {
-	logging.SetAllLoggers(gologging.DEBUG)
-	backend := gologging.NewLogBackend(os.Stdout, "", 0)
-	gologging.SetBackend(backend)
-
-	InitTestConfig()
-	InitTestStoragePath()
-	config.Config.V.WriteConfigAs("/tmp/cent_config.yaml")
-
-	log.Infof("Creating levelDb at: %s", config.Config.GetStoragePath())
-
-	bootstrapQueuing()
-}
-
 func InitTestStoragePath() {
 	rs := getRandomTestStoragePath()
 	config.Config.V.SetDefault("storage.Path", rs)
 	log.Info("Set storage.Path to:", config.Config.GetStoragePath())
 }
-
-func TestIntegrationTearDown() {
-	storage.CloseLevelDBStorage()
-	os.RemoveAll(config.Config.GetStoragePath())
-	config.Config = nil
-	tearDownQueuing()
-}
-
-// ---- End Integration Testing ----

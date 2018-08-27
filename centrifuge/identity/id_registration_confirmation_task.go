@@ -3,17 +3,37 @@ package identity
 import (
 	"fmt"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
+	"context"
+
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/queue"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/event"
 	"github.com/go-errors/errors"
 )
 
 const IdRegistrationConfirmationTaskName string = "IdRegistrationConfirmationTaskName"
 const CentIdParam string = "CentId"
 
+type IdentityCreatedWatcher interface {
+	WatchIdentityCreated(opts *bind.WatchOpts, sink chan<- *EthereumIdentityFactoryContractIdentityCreated, centrifugeId [][32]byte) (event.Subscription, error)
+}
+
 type IdRegistrationConfirmationTask struct {
-	CentId [32]byte
+	CentId                 [32]byte
+	EthContextInitializer  func() (ctx context.Context, cancelFunc context.CancelFunc)
+	IdentityCreatedEvents  chan *EthereumIdentityFactoryContractIdentityCreated
+	EthContext             context.Context
+	IdentityCreatedWatcher IdentityCreatedWatcher
+}
+
+func NewIdRegistrationConfirmationTask(
+	identityCreatedWatcher IdentityCreatedWatcher,
+	ethContextInitializer func() (ctx context.Context, cancelFunc context.CancelFunc),
+) *IdRegistrationConfirmationTask {
+	return &IdRegistrationConfirmationTask{
+		IdentityCreatedWatcher: identityCreatedWatcher,
+		EthContextInitializer:  ethContextInitializer,
+	}
 }
 
 func (rct *IdRegistrationConfirmationTask) Name() string {
@@ -42,27 +62,25 @@ func (rct *IdRegistrationConfirmationTask) ParseKwargs(kwargs map[string]interfa
 // RunTask calls listens to events from geth related to IdRegistrationConfirmationTask#CentId and records result.
 // Currently covered by TestCreateAndLookupIdentity_Integration test.
 func (rct *IdRegistrationConfirmationTask) RunTask() (interface{}, error) {
-	ctx, cancelFunc := ethereum.DefaultWaitForTransactionMiningContext()
-	watchOpts := &bind.WatchOpts{Context: ctx}
-	contract, err := getIdentityFactoryContract()
-	identityCreatedEvents := make(chan *EthereumIdentityFactoryContractIdentityCreated)
+	rct.EthContext, _ = rct.EthContextInitializer()
+	watchOpts := &bind.WatchOpts{Context: rct.EthContext}
+	rct.IdentityCreatedEvents = make(chan *EthereumIdentityFactoryContractIdentityCreated)
 
 	//TODO do something with the returned Subscription that is currently simply discarded
 	// Somehow there are some possible resource leakage situations with this handling but I have to understand
 	// Subscriptions a bit better before writing this code.
-	_, err = contract.WatchIdentityCreated(watchOpts, identityCreatedEvents, [][32]byte{rct.CentId})
+	_, err := rct.IdentityCreatedWatcher.WatchIdentityCreated(watchOpts, rct.IdentityCreatedEvents, [][32]byte{rct.CentId})
 	if err != nil {
 		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for identity registration", 1)
 		log.Errorf(wError.Error())
-		cancelFunc()
 		return nil, wError
 	}
 	for {
 		select {
-		case <-ctx.Done():
-			log.Errorf("Context [%v] closed before receiving KeyRegistered event for Identity ID: %x\n", ctx, rct.CentId)
-			return nil, ctx.Err()
-		case res := <-identityCreatedEvents:
+		case <-rct.EthContext.Done():
+			log.Errorf("Context [%v] closed before receiving KeyRegistered event for Identity ID: %x\n", rct.EthContext, rct.CentId)
+			return nil, rct.EthContext.Err()
+		case res := <-rct.IdentityCreatedEvents:
 			log.Infof("Received IdentityCreated event from: %x, identifier: %x\n", res.CentrifugeId, res.Identity)
 			return res, nil
 		}

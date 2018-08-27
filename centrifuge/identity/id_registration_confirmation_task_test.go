@@ -5,16 +5,20 @@ package identity
 import (
 	"testing"
 
+	"context"
+	"time"
+
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/centrifuge/gocelery"
 	"github.com/stretchr/testify/assert"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/event"
 )
 
 func TestRegistrationConfirmationTask_ParseKwargsHappyPath(t *testing.T) {
 	rct := IdRegistrationConfirmationTask{}
 	id := tools.RandomSlice32()
-	var b32Id [32]byte
-	copy(b32Id[:], id[:32])
+	b32Id := createCentId(id)
 	decoded, err := simulateJsonDecode(b32Id)
 	err = rct.ParseKwargs(decoded)
 	if err != nil {
@@ -37,6 +41,29 @@ func TestRegistrationConfirmationTask_ParseKwargsInvalidType(t *testing.T) {
 	assert.NotNil(t, err, "Should not parse without the correct type of centId")
 }
 
+type MockIdentityCreatedWatcher struct {
+	shouldFail bool
+	sink       chan<- *EthereumIdentityFactoryContractIdentityCreated
+}
+
+func (*MockIdentityCreatedWatcher) WatchIdentityCreated(opts *bind.WatchOpts, sink chan<- *EthereumIdentityFactoryContractIdentityCreated, centrifugeId [][32]byte) (event.Subscription, error) {
+	return nil, nil
+}
+
+func TestIdRegistrationConfirmationTask_RunTask(t *testing.T) {
+	rct := IdRegistrationConfirmationTask{
+		CentId: createCentId(tools.RandomSlice32()),
+		EthContextInitializer: func() (ctx context.Context, cancelFunc context.CancelFunc) {
+			toBeDone := time.Now().Add(time.Duration(1 * time.Millisecond))
+			return context.WithDeadline(context.TODO(), toBeDone)
+		},
+		IdentityCreatedWatcher: &MockIdentityCreatedWatcher{},
+	}
+	go rct.RunTask()
+	time.Sleep(1 * time.Millisecond)
+	rct.EthContext.Done()
+}
+
 func simulateJsonDecode(b32Id [32]byte) (map[string]interface{}, error) {
 	kwargs := map[string]interface{}{CentIdParam: b32Id}
 	t1 := gocelery.TaskMessage{Kwargs: kwargs}
@@ -46,4 +73,10 @@ func simulateJsonDecode(b32Id [32]byte) (map[string]interface{}, error) {
 	}
 	t2, err := gocelery.DecodeTaskMessage(encoded)
 	return t2.Kwargs, err
+}
+
+func createCentId(id []byte) [32]byte {
+	var b32Id [32]byte
+	copy(b32Id[:], id[:32])
+	return b32Id
 }
