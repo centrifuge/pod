@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/p2p/controller"
 	"github.com/ipfs/go-cid"
 	ds "github.com/ipfs/go-datastore"
@@ -27,6 +26,7 @@ import (
 	"github.com/paralin/go-libp2p-grpc"
 	msmux "github.com/whyrusleeping/go-smux-multistream"
 	yamux "github.com/whyrusleeping/go-smux-yamux"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
 )
 
 var log = logging.Logger("p2p")
@@ -37,7 +37,7 @@ var GRPCProtoInstance p2pgrpc.GRPCProtocol
 // given multiaddress.
 func makeBasicHost(listenPort int) (host.Host, error) {
 	// Get the signing key for the host.
-	publicKey, privateKey := keytools.GetSigningKeyPairFromConfig()
+	publicKey, privateKey := ed25519.GetSigningKeyPairFromConfig()
 	var key []byte
 	key = append(key, privateKey...)
 	key = append(key, publicKey...)

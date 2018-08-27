@@ -2,8 +2,8 @@ package cmd
 
 import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools"
 	"github.com/spf13/cobra"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
 )
 
 var centrifugeIdString string
@@ -35,7 +35,7 @@ var addKeyCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		identityService := identity.EthereumIdentityService{}
 
-		publicKey, _ := keytools.GetSigningKeyPairFromConfig()
+		publicKey, _ := ed25519.GetSigningKeyPairFromConfig()
 		idKey := []byte{}
 		copy(idKey[:], publicKey[:32])
 

@@ -3,11 +3,12 @@ package keytools
 import ("strings"
 		"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/secp256k1"
 	"fmt"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/io"
 )
 
 func SignMessage(privateKeyPath, message, curveType string) []byte {
 
-	privateKey, err := readKeyFromPemFile(privateKeyPath, PRIVATE_KEY)
+	privateKey, err := io.ReadKeyFromPemFile(privateKeyPath, PRIVATE_KEY)
 
 	if err != nil {
 		log.Fatal(err)

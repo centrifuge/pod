@@ -1,4 +1,4 @@
-package keytools
+package ed25519
 
 import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
@@ -6,10 +6,20 @@ import (
 	"github.com/libp2p/go-libp2p-peer"
 	mh "github.com/multiformats/go-multihash"
 	"golang.org/x/crypto/ed25519"
+	logging "github.com/ipfs/go-log"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/io"
+)
+
+var log = logging.Logger("ed25519")
+
+const (
+	PUBLIC_KEY  = "PUBLIC KEY"
+	PRIVATE_KEY = "PRIVATE KEY"
 )
 
 func GetPublicSigningKey(fileName string) (publicKey ed25519.PublicKey) {
-	key, err := readKeyFromPemFile(fileName, PUBLIC_KEY)
+	key, err := io.ReadKeyFromPemFile(fileName, PUBLIC_KEY)
+
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -18,7 +28,7 @@ func GetPublicSigningKey(fileName string) (publicKey ed25519.PublicKey) {
 }
 
 func GetPrivateSigningKey(fileName string) (privateKey ed25519.PrivateKey) {
-	key, err := readKeyFromPemFile(fileName, PRIVATE_KEY)
+	key, err := io.ReadKeyFromPemFile(fileName, PRIVATE_KEY)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -33,7 +43,7 @@ func GetSigningKeyPairFromConfig() (publicKey ed25519.PublicKey, privateKey ed25
 	return
 }
 
-func GenerateSigningKeyPairED25519() (publicKey ed25519.PublicKey, privateKey ed25519.PrivateKey) {
+func GenerateSigningKeyPair() (publicKey ed25519.PublicKey, privateKey ed25519.PrivateKey) {
 
 	log.Debug("sign ED25519")
 	publicKey, privateKey, err := ed25519.GenerateKey(nil)

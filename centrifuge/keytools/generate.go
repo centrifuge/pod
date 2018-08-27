@@ -5,6 +5,8 @@ import (
 
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/secp256k1"
 
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/io"
 )
 
 func GenerateSigningKeyPair(publicFileName, privateFileName, curveType string) {
@@ -19,14 +21,14 @@ func GenerateSigningKeyPair(publicFileName, privateFileName, curveType string) {
 		publicKey, privateKey = secp256k1.GenerateSigningKeyPair()
 
 	case CURVE_ED25519:
-		publicKey, privateKey = GenerateSigningKeyPairED25519()
+		publicKey, privateKey = ed25519.GenerateSigningKeyPair()
 
 	default:
-		publicKey, privateKey = GenerateSigningKeyPairED25519()
+		publicKey, privateKey = ed25519.GenerateSigningKeyPair()
 
 	}
 
-	writeKeyToPemFile(privateFileName, "PRIVATE KEY", privateKey)
-	writeKeyToPemFile(publicFileName, "PUBLIC KEY", publicKey)
+	io.WriteKeyToPemFile(privateFileName,PRIVATE_KEY, privateKey)
+	io.WriteKeyToPemFile(publicFileName, PUBLIC_KEY, publicKey)
 
 }

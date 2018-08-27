@@ -9,7 +9,7 @@ import (
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools"
+	centrifugeED25519"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
 	"golang.org/x/crypto/ed25519"
 )
 
@@ -43,7 +43,7 @@ type SigningService struct {
 
 func (srv *SigningService) LoadIdentityKeyFromConfig() {
 	srv.IdentityId = config.Config.GetIdentityId()
-	srv.PublicKey, srv.PrivateKey = keytools.GetSigningKeyPairFromConfig()
+	srv.PublicKey, srv.PrivateKey = centrifugeED25519.GetSigningKeyPairFromConfig()
 }
 
 // ValidateSignaturesOnDocument validates all signatures on the current document
