@@ -9,6 +9,17 @@ import (
 	"github.com/go-errors/errors"
 )
 
+const (
+	// RequiredField error when required field is empty
+	RequiredField = "Required field"
+
+	// NilDocument error when document passed is Nil
+	NilDocument = "Nil Document"
+
+	// IdentifierReUsed error when same identifier is re-used
+	IdentifierReUsed = "Identifier re-used"
+)
+
 // errpb is the type alias for errorspb.Error
 type errpb errorspb.Error
 
@@ -91,4 +102,15 @@ func (p2pErr *P2PError) Errors() map[string]string {
 // NilError returns error with Type added to message
 func NilError(param interface{}) error {
 	return errors.Errorf("NIL %v provided", reflect.TypeOf(param))
+}
+
+// Wrap checks for P2PError and appends the message
+func Wrap(err error, msg string) error {
+	errpb, ok := err.(*errpb)
+	if !ok {
+		return fmt.Errorf("%s: %v", msg, err)
+	}
+
+	errpb.Message = fmt.Sprintf("%s: %v", msg, errpb.Message)
+	return errpb
 }

@@ -41,7 +41,7 @@ func getRandomTestStoragePath() string {
 }
 
 func GetLevelDBStorage() *leveldb.DB {
-	return storage.NewLeveldbStorage(config.Config.GetStoragePath())
+	return storage.NewLevelDBStorage(config.Config.GetStoragePath())
 }
 
 // ---- Ethereum ----
@@ -86,7 +86,7 @@ func TestIntegrationBootstrap() {
 }
 
 func TestIntegrationTearDown() {
-	storage.CloseLeveldbStorage()
+	storage.CloseLevelDBStorage()
 	os.RemoveAll(config.Config.GetStoragePath())
 	config.Config = nil
 	tearDownQueuing()

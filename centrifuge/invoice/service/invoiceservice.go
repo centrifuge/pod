@@ -3,16 +3,16 @@ package invoiceservice
 import (
 	"fmt"
 
-	invoicepb "github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/processor"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/service"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/repository"
 	clientinvoicepb "github.com/CentrifugeInc/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	gerrors "github.com/go-errors/errors"
-	google_protobuf2 "github.com/golang/protobuf/ptypes/empty"
+	"github.com/golang/protobuf/ptypes/empty"
 	logging "github.com/ipfs/go-log"
 	"golang.org/x/net/context"
 )
@@ -21,14 +21,14 @@ var log = logging.Logger("rest-api")
 
 type InvoiceDocumentService struct {
 	InvoiceRepository     invoicerepository.InvoiceRepository
-	CoreDocumentProcessor coredocument.CoreDocumentProcessorInterface
+	CoreDocumentProcessor coredocumentprocessor.Processor
 }
 
 func fillCoreDocIdentifiers(doc *invoicepb.InvoiceDocument) error {
 	if doc == nil {
 		return errors.NilError(doc)
 	}
-	filledCoreDoc, err := coredocumentservice.AutoFillDocumentIdentifiers(*doc.CoreDocument)
+	filledCoreDoc, err := coredocument.FillIdentifiers(*doc.CoreDocument)
 	if err != nil {
 		log.Error(err)
 		return err
@@ -123,7 +123,7 @@ func (s *InvoiceDocumentService) HandleSendInvoiceDocument(ctx context.Context, 
 func (s *InvoiceDocumentService) HandleGetInvoiceDocument(ctx context.Context, getInvoiceDocumentEnvelope *clientinvoicepb.GetInvoiceDocumentEnvelope) (*invoicepb.InvoiceDocument, error) {
 	doc, err := s.InvoiceRepository.FindById(getInvoiceDocumentEnvelope.DocumentIdentifier)
 	if err != nil {
-		docFound, err1 := coredocumentrepository.GetCoreDocumentRepository().FindById(getInvoiceDocumentEnvelope.DocumentIdentifier)
+		docFound, err1 := coredocumentrepository.GetRepository().FindById(getInvoiceDocumentEnvelope.DocumentIdentifier)
 		if err1 == nil {
 			doc1, err1 := invoice.NewInvoiceFromCoreDocument(docFound)
 			doc = doc1.Document
@@ -134,7 +134,7 @@ func (s *InvoiceDocumentService) HandleGetInvoiceDocument(ctx context.Context, g
 	return doc, err
 }
 
-func (s *InvoiceDocumentService) HandleGetReceivedInvoiceDocuments(ctx context.Context, empty *google_protobuf2.Empty) (*clientinvoicepb.ReceivedInvoices, error) {
+func (s *InvoiceDocumentService) HandleGetReceivedInvoiceDocuments(ctx context.Context, empty *empty.Empty) (*clientinvoicepb.ReceivedInvoices, error) {
 	return nil, nil
 }
 

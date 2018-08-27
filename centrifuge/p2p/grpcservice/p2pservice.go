@@ -9,6 +9,7 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/code"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/notification"
@@ -52,8 +53,12 @@ func (srv *P2PService) HandleP2PPost(ctx context.Context, req *p2ppb.P2PMessage)
 		return nil, errors.New(code.DocumentInvalid, errors.NilError(req.Document).Error())
 	}
 
-	// TODO(ved): do coredoc validation before create/update
-	err = coredocumentrepository.GetCoreDocumentRepository().CreateOrUpdate(req.Document)
+	valid, errMsg, errs := coredocument.Validate(req.Document)
+	if !valid {
+		return nil, errors.NewWithErrors(code.DocumentInvalid, errMsg, errs)
+	}
+
+	err = coredocumentrepository.GetRepository().CreateOrUpdate(req.Document)
 	if err != nil {
 		return nil, errors.New(code.Unknown, err.Error())
 	}
