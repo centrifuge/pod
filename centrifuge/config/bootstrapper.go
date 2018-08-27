@@ -7,6 +7,6 @@ type Bootstrapper struct {
 
 func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	Config.InitializeViper()
-	context[bootstrapper.BOOTSTRAPPED_CONFIG] = Config
+	context[bootstrapper.BootstrappedConfig] = Config
 	return nil
 }

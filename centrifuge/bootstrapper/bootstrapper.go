@@ -3,8 +3,8 @@ package bootstrapper
 // DO NOT PUT any app logic in this package to avoid any dependency cycles
 
 const (
-	BOOTSTRAPPED_CONFIG  string = "BOOTSTRAPPED_CONFIG"
-	BOOTSTRAPPED_LEVELDB string = "BOOTSTRAPPED_LEVELDB"
+	BootstrappedConfig  string = "BootstrappedConfig"
+	BootstrappedLevelDb string = "BootstrappedLevelDb"
 )
 
 // Bootstrapper must be implemented by all packages that needs bootstrapping at application start

@@ -11,7 +11,7 @@ type Bootstrapper struct {
 }
 
 func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
-	if _, ok := context[bootstrapper.BOOTSTRAPPED_LEVELDB]; ok {
+	if _, ok := context[bootstrapper.BootstrappedLevelDb]; ok {
 		NewLevelDBInvoiceRepository(&LevelDBInvoiceRepository{Leveldb: storage.GetLevelDBStorage()})
 		return nil
 	}

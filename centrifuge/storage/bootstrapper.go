@@ -11,9 +11,9 @@ type Bootstrapper struct {
 }
 
 func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
-	if _, ok := context[bootstrapper.BOOTSTRAPPED_CONFIG]; ok {
+	if _, ok := context[bootstrapper.BootstrappedConfig]; ok {
 		levelDB := NewLevelDBStorage(config.Config.GetStoragePath())
-		context[bootstrapper.BOOTSTRAPPED_LEVELDB] = levelDB
+		context[bootstrapper.BootstrappedLevelDb] = levelDB
 		return nil
 	}
 	return errors.New("Could not initialize leveldb")
