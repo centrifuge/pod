@@ -33,7 +33,6 @@ func (m *MainBootstrapper) PopulateDefaultBootstrappers() {
 }
 
 func (m *MainBootstrapper) Bootstrap(context map[string]interface{}) error {
-	//context := make(map[string]interface{})
 	for _, b := range m.Bootstrappers {
 		err := b.Bootstrap(context)
 		if err != nil {
