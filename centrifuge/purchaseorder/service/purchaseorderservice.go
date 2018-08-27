@@ -28,11 +28,13 @@ func fillCoreDocIdentifiers(doc *purchaseorderpb.PurchaseOrderDocument) error {
 	if doc == nil {
 		return errors.NilError(doc)
 	}
+
 	filledCoreDoc, err := coredocument.FillIdentifiers(*doc.CoreDocument)
 	if err != nil {
 		log.Error(err)
 		return err
 	}
+
 	doc.CoreDocument = &filledCoreDoc
 	return nil
 }
@@ -63,7 +65,6 @@ func (s *PurchaseOrderDocumentService) HandleCreatePurchaseOrderProof(ctx contex
 // HandleAnchorPurchaseOrderDocument anchors the given purchaseorder document and returns the anchor details
 func (s *PurchaseOrderDocumentService) HandleAnchorPurchaseOrderDocument(ctx context.Context, anchorPurchaseOrderEnvelope *clientpurchaseorderpb.AnchorPurchaseOrderEnvelope) (*purchaseorderpb.PurchaseOrderDocument, error) {
 	doc := anchorPurchaseOrderEnvelope.Document
-
 	err := fillCoreDocIdentifiers(doc)
 	if err != nil {
 		log.Error(err)

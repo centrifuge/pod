@@ -3,11 +3,14 @@
 package purchaseorder
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/documenttypes"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
@@ -86,4 +89,139 @@ func TestNewInvoice_NilDocument(t *testing.T) {
 
 	assert.Error(t, err, "should have thrown an error")
 	assert.Nil(t, po, "document should be nil")
+}
+
+func TestValidate(t *testing.T) {
+	type want struct {
+		valid  bool
+		errMsg string
+		errs   map[string]string
+	}
+
+	var (
+		id1 = tools.RandomSlice32()
+		id2 = tools.RandomSlice32()
+		id3 = tools.RandomSlice32()
+		id4 = tools.RandomSlice32()
+		id5 = tools.RandomSlice32()
+	)
+
+	validCoreDoc := &coredocumentpb.CoreDocument{
+		DocumentRoot:       id1,
+		DocumentIdentifier: id2,
+		CurrentIdentifier:  id3,
+		NextIdentifier:     id4,
+		DataRoot:           id5,
+		CoredocumentSalts: &coredocumentpb.CoreDocumentSalts{
+			DocumentIdentifier: id1,
+			CurrentIdentifier:  id2,
+			NextIdentifier:     id3,
+			DataRoot:           id4,
+			PreviousRoot:       id5,
+		},
+	}
+
+	tests := []struct {
+		po   *purchaseorderpb.PurchaseOrderDocument
+		want want
+	}{
+		{
+			po: nil,
+			want: want{
+				valid:  false,
+				errMsg: errors.NilDocument,
+			},
+		},
+
+		{
+			po: &purchaseorderpb.PurchaseOrderDocument{},
+			want: want{
+				valid:  false,
+				errMsg: errors.NilDocument,
+			},
+		},
+
+		{
+			po: &purchaseorderpb.PurchaseOrderDocument{CoreDocument: validCoreDoc},
+			want: want{
+				valid:  false,
+				errMsg: errors.NilDocumentData,
+			},
+		},
+
+		{
+			po: &purchaseorderpb.PurchaseOrderDocument{
+				CoreDocument: validCoreDoc,
+				Data: &purchaseorderpb.PurchaseOrderData{
+					PoNumber:         "po1234",
+					OrderName:        "Purchase",
+					OrderZipcode:     "921007",
+					OrderCountry:     "AUS",
+					RecipientName:    "John",
+					RecipientZipcode: "12345",
+					Currency:         "EUR",
+				},
+			},
+			want: want{
+				valid:  false,
+				errMsg: "Invalid Purchase Order",
+				errs: map[string]string{
+					"po_recipient_country": errors.RequiredField,
+					"po_order_amount":      errors.RequirePositiveNumber,
+					"po_salts":             errors.RequiredField,
+				},
+			},
+		},
+
+		{
+			po: &purchaseorderpb.PurchaseOrderDocument{
+				CoreDocument: validCoreDoc,
+				Data: &purchaseorderpb.PurchaseOrderData{
+					PoNumber:         "po1234",
+					OrderName:        "Purchase",
+					OrderZipcode:     "921007",
+					OrderCountry:     "Australia",
+					RecipientName:    "John",
+					RecipientZipcode: "12345",
+					RecipientCountry: "Germany",
+					Currency:         "EUR",
+					OrderAmount:      800,
+				},
+			},
+			want: want{
+				valid:  false,
+				errMsg: "Invalid Purchase Order",
+				errs: map[string]string{
+					"po_salts": errors.RequiredField,
+				},
+			},
+		},
+
+		{
+			po: &purchaseorderpb.PurchaseOrderDocument{
+				CoreDocument: validCoreDoc,
+				Data: &purchaseorderpb.PurchaseOrderData{
+					PoNumber:         "po1234",
+					OrderName:        "Purchase",
+					OrderZipcode:     "921007",
+					OrderCountry:     "Australia",
+					RecipientName:    "John",
+					RecipientZipcode: "12345",
+					RecipientCountry: "Germany",
+					Currency:         "EUR",
+					OrderAmount:      800,
+				},
+				Salts: &purchaseorderpb.PurchaseOrderDataSalts{},
+			},
+			want: want{valid: true},
+		},
+	}
+
+	for _, c := range tests {
+		got := want{}
+		got.valid, got.errMsg, got.errs = Validate(c.po)
+		if !reflect.DeepEqual(c.want, got) {
+			t.Fatalf("%v != %v", c.want, got)
+		}
+	}
 }

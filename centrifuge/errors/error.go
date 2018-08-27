@@ -14,10 +14,16 @@ const (
 	RequiredField = "Required field"
 
 	// NilDocument error when document passed is Nil
-	NilDocument = "Nil Document"
+	NilDocument = "Nil document"
 
 	// IdentifierReUsed error when same identifier is re-used
 	IdentifierReUsed = "Identifier re-used"
+
+	// NilDocumentData error when document data is Nil
+	NilDocumentData = "Nil document data"
+
+	// RequirePositiveNumber error when amount or any such is zero or negative
+	RequirePositiveNumber = "Require positive number"
 )
 
 // errpb is the type alias for errorspb.Error
@@ -106,6 +112,10 @@ func NilError(param interface{}) error {
 
 // Wrap checks for P2PError and appends the message
 func Wrap(err error, msg string) error {
+	if err == nil {
+		return fmt.Errorf(msg)
+	}
+
 	errpb, ok := err.(*errpb)
 	if !ok {
 		return fmt.Errorf("%s: %v", msg, err)

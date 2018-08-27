@@ -7,6 +7,7 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/documenttypes"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/centrifuge/precise-proofs/proofs"
 	proofspb "github.com/centrifuge/precise-proofs/proofs/proto"
@@ -136,4 +137,74 @@ func (order *PurchaseOrder) ConvertToCoreDocument() (coredocpb *coredocumentpb.C
 	coredocpb.EmbeddedData = &purchaseorderAny
 	coredocpb.EmbeddedDataSalts = &purchaseorderSaltsAny
 	return coredocpb
+}
+
+// Validate validates the purchase order document
+func Validate(doc *purchaseorderpb.PurchaseOrderDocument) (valid bool, msg string, errs map[string]string) {
+	if doc == nil {
+		return false, errors.NilDocument, nil
+	}
+
+	if valid, msg, errs = coredocument.Validate(doc.CoreDocument); !valid {
+		return valid, msg, errs
+	}
+
+	if doc.Data == nil {
+		return false, errors.NilDocumentData, nil
+	}
+
+	data := doc.Data
+	errs = make(map[string]string)
+
+	// ideally these check should be done in the client purchase order
+	// once the converters are done, we can move the following checks there
+	if data.PoNumber == "" {
+		errs["po_po_number"] = errors.RequiredField
+	}
+
+	if data.OrderName == "" {
+		errs["po_order_name"] = errors.RequiredField
+	}
+
+	if data.OrderZipcode == "" {
+		errs["po_order_zip_code"] = errors.RequiredField
+	}
+
+	// for now, mandating at least one character
+	if data.OrderCountry == "" {
+		errs["po_order_country"] = errors.RequiredField
+	}
+
+	if data.RecipientName == "" {
+		errs["po_recipient_name"] = errors.RequiredField
+	}
+
+	if data.RecipientZipcode == "" {
+		errs["po_recipient_zip_code"] = errors.RequiredField
+	}
+
+	if data.RecipientCountry == "" {
+		errs["po_recipient_country"] = errors.RequiredField
+	}
+
+	if data.Currency == "" {
+		errs["po_currency"] = errors.RequiredField
+	}
+
+	if data.OrderAmount <= 0 {
+		errs["po_order_amount"] = errors.RequirePositiveNumber
+	}
+
+	// checking for nil salts should be okay for now
+	// once the converters are in, salts will be filled during conversion
+	// TODO(ved):check each salt?
+	if doc.Salts == nil {
+		errs["po_salts"] = errors.RequiredField
+	}
+
+	if len(errs) < 1 {
+		return true, "", nil
+	}
+
+	return false, "Invalid Purchase Order", errs
 }
