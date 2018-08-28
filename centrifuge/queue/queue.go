@@ -3,8 +3,8 @@ package queue
 import (
 	"sync"
 
-	"github.com/centrifuge/gocelery"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
+	"github.com/centrifuge/gocelery"
 )
 
 var Queue *gocelery.CeleryClient
