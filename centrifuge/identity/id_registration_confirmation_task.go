@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/go-errors/errors"
+	"github.com/gocelery/gocelery"
 )
 
 const IdRegistrationConfirmationTaskName string = "IdRegistrationConfirmationTaskName"
@@ -43,6 +44,15 @@ func (rct *IdRegistrationConfirmationTask) Name() string {
 func (rct *IdRegistrationConfirmationTask) Init() error {
 	queue.Queue.Register(IdRegistrationConfirmationTaskName, rct)
 	return nil
+}
+
+func (m *IdRegistrationConfirmationTask) Copy() (gocelery.CeleryTask, error) {
+	return &IdRegistrationConfirmationTask{
+		m.CentId,
+		m.EthContextInitializer,
+		m.IdentityCreatedEvents,
+		m.EthContext,
+		m.IdentityCreatedWatcher}, nil
 }
 
 // ParseKwargs - define a method to parse CentId
