@@ -61,10 +61,10 @@ func TestIdRegistrationConfirmationTask_RunTaskContextError(t *testing.T) {
 	ctx, _ := context.WithDeadline(context.TODO(), toBeDone)
 	eifc := make(chan *EthereumIdentityFactoryContractIdentityCreated)
 	rct := IdRegistrationConfirmationTask{
-		CentId: createCentId(tools.RandomSlice32()),
+		CentId:                 createCentId(tools.RandomSlice32()),
 		IdentityCreatedWatcher: &MockIdentityCreatedWatcher{},
-		EthContext: ctx,
-		IdentityCreatedEvents: eifc,
+		EthContext:             ctx,
+		IdentityCreatedEvents:  eifc,
 	}
 	exit := make(chan bool)
 	go func() {
@@ -103,10 +103,10 @@ func TestIdRegistrationConfirmationTask_RunTaskSuccess(t *testing.T) {
 	ctx, _ := context.WithDeadline(context.TODO(), toBeDone)
 	eifc := make(chan *EthereumIdentityFactoryContractIdentityCreated)
 	rct := IdRegistrationConfirmationTask{
-		CentId: createCentId(tools.RandomSlice32()),
+		CentId:                 createCentId(tools.RandomSlice32()),
 		IdentityCreatedWatcher: &MockIdentityCreatedWatcher{},
-		EthContext: ctx,
-		IdentityCreatedEvents: eifc,
+		EthContext:             ctx,
+		IdentityCreatedEvents:  eifc,
 	}
 	exit := make(chan bool)
 	go func() {
