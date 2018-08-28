@@ -81,6 +81,6 @@ func TestInvoiceDocumentService_HandleAnchorInvoiceDocument_Integration(t *testi
 	assert.Contains(t, err.Error(), "Document already exists")
 
 	loadedInvoice2, _ := invoicerepository.GetInvoiceRepository().FindById(doc.Document.CoreDocument.DocumentIdentifier)
-	assert.Equal(t, "DE", loadedInvoice2.Data.SenderCountry,
+	assert.Equal(t, "AUS", loadedInvoice2.Data.SenderCountry,
 		"Invoice document on DB should have not not gotten overwritten after rejected anchor call")
 }
