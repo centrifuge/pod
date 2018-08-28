@@ -17,6 +17,18 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+type MockIdentityCreatedWatcher struct {
+	shouldFail bool
+	sink       chan<- *EthereumIdentityFactoryContractIdentityCreated
+}
+
+func (mcw *MockIdentityCreatedWatcher) WatchIdentityCreated(opts *bind.WatchOpts, sink chan<- *EthereumIdentityFactoryContractIdentityCreated, centrifugeId [][32]byte) (event.Subscription, error) {
+	if mcw.shouldFail {
+		return nil, errors.New("Identity watching could not be started")
+	}
+	return nil, nil
+}
+
 func TestRegistrationConfirmationTask_ParseKwargsHappyPath(t *testing.T) {
 	rct := IdRegistrationConfirmationTask{}
 	id := tools.RandomSlice32()
@@ -41,18 +53,6 @@ func TestRegistrationConfirmationTask_ParseKwargsInvalidType(t *testing.T) {
 	id := tools.RandomSlice32()
 	err := rct.ParseKwargs(map[string]interface{}{CentIdParam: id})
 	assert.NotNil(t, err, "Should not parse without the correct type of centId")
-}
-
-type MockIdentityCreatedWatcher struct {
-	shouldFail bool
-	sink       chan<- *EthereumIdentityFactoryContractIdentityCreated
-}
-
-func (mcw *MockIdentityCreatedWatcher) WatchIdentityCreated(opts *bind.WatchOpts, sink chan<- *EthereumIdentityFactoryContractIdentityCreated, centrifugeId [][32]byte) (event.Subscription, error) {
-	if mcw.shouldFail {
-		return nil, errors.New("Identity watching could not be started")
-	}
-	return nil, nil
 }
 
 func TestIdRegistrationConfirmationTask_RunTaskContextError(t *testing.T) {

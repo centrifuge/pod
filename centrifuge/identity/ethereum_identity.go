@@ -323,7 +323,6 @@ func waitAndRouteKeyRegistrationEvent(conf <-chan *EthereumIdentityContractKeyRe
 
 // waitAndRouteIdentityRegistrationEvent notifies the confirmations channel whenever the identity creation is being noted as Ethereum event
 func waitAndRouteIdentityRegistrationEvent(asyncRes *gocelery.AsyncResult, confirmations chan<- *WatchIdentity, pushThisIdentity Identity) {
-	// TODO decide the delay required here, based on ethereum confirmation times
 	_, err := asyncRes.Get(ethereum.GetDefaultContextTimeout())
 	confirmations <- &WatchIdentity{pushThisIdentity, err}
 }

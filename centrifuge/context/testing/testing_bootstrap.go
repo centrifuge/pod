@@ -26,6 +26,7 @@ var log = logging.Logger("context")
 func TestFunctionalEthereumBootstrap() {
 	TestIntegrationBootstrap()
 	createEthereumConnection()
+	bootstrapQueuing()
 }
 func TestFunctionalEthereumTearDown() {
 	TestIntegrationTearDown()
@@ -44,8 +45,6 @@ func TestIntegrationBootstrap() {
 	config.Config.V.WriteConfigAs("/tmp/cent_config.yaml")
 
 	log.Infof("Creating levelDb at: %s", config.Config.GetStoragePath())
-
-	bootstrapQueuing()
 }
 
 func TestIntegrationTearDown() {
