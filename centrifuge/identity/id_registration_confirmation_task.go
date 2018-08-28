@@ -6,10 +6,10 @@ import (
 	"context"
 
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/queue"
+	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/go-errors/errors"
-	"github.com/gocelery/gocelery"
 )
 
 const IdRegistrationConfirmationTaskName string = "IdRegistrationConfirmationTaskName"

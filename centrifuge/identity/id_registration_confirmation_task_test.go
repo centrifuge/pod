@@ -8,6 +8,8 @@ import (
 	"context"
 	"time"
 
+	"errors"
+
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -46,11 +48,14 @@ type MockIdentityCreatedWatcher struct {
 	sink       chan<- *EthereumIdentityFactoryContractIdentityCreated
 }
 
-func (*MockIdentityCreatedWatcher) WatchIdentityCreated(opts *bind.WatchOpts, sink chan<- *EthereumIdentityFactoryContractIdentityCreated, centrifugeId [][32]byte) (event.Subscription, error) {
+func (mcw *MockIdentityCreatedWatcher) WatchIdentityCreated(opts *bind.WatchOpts, sink chan<- *EthereumIdentityFactoryContractIdentityCreated, centrifugeId [][32]byte) (event.Subscription, error) {
+	if mcw.shouldFail {
+		return nil, errors.New("Identity watching could not be started")
+	}
 	return nil, nil
 }
 
-func TestIdRegistrationConfirmationTask_RunTask(t *testing.T) {
+func TestIdRegistrationConfirmationTask_RunTaskContextError(t *testing.T) {
 	rct := IdRegistrationConfirmationTask{
 		CentId: createCentId(tools.RandomSlice32()),
 		EthContextInitializer: func() (ctx context.Context, cancelFunc context.CancelFunc) {
@@ -59,9 +64,61 @@ func TestIdRegistrationConfirmationTask_RunTask(t *testing.T) {
 		},
 		IdentityCreatedWatcher: &MockIdentityCreatedWatcher{},
 	}
-	go rct.RunTask()
+	exit := make(chan bool)
+	go func() {
+		_, err := rct.RunTask()
+		assert.NotNil(t, err)
+		exit <- true
+	}()
 	time.Sleep(1 * time.Millisecond)
+	// this would cause an error exit in the task
 	rct.EthContext.Done()
+	<-exit
+}
+
+func TestIdRegistrationConfirmationTask_RunTaskCallError(t *testing.T) {
+	identityCreatedWatcher := &MockIdentityCreatedWatcher{shouldFail: true}
+	rct := IdRegistrationConfirmationTask{
+		CentId: createCentId(tools.RandomSlice32()),
+		EthContextInitializer: func() (ctx context.Context, cancelFunc context.CancelFunc) {
+			toBeDone := time.Now().Add(time.Duration(1 * time.Millisecond))
+			return context.WithDeadline(context.TODO(), toBeDone)
+		},
+		IdentityCreatedWatcher: identityCreatedWatcher,
+	}
+	exit := make(chan bool)
+	go func() {
+		_, err := rct.RunTask()
+		assert.NotNil(t, err)
+		exit <- true
+	}()
+	time.Sleep(1 * time.Millisecond)
+	// this would cause an error exit in the task
+	rct.EthContext.Done()
+	<-exit
+}
+
+func TestIdRegistrationConfirmationTask_RunTaskSuccess(t *testing.T) {
+	identityCreatedWatcher := &MockIdentityCreatedWatcher{shouldFail: false}
+	rct := IdRegistrationConfirmationTask{
+		CentId: createCentId(tools.RandomSlice32()),
+		EthContextInitializer: func() (ctx context.Context, cancelFunc context.CancelFunc) {
+			toBeDone := time.Now().Add(time.Duration(1 * time.Second))
+			return context.WithDeadline(context.TODO(), toBeDone)
+		},
+		IdentityCreatedWatcher: identityCreatedWatcher,
+	}
+	exit := make(chan bool)
+	go func() {
+		res, err := rct.RunTask()
+		assert.Nil(t, err)
+		assert.NotNil(t, res)
+		exit <- true
+	}()
+	time.Sleep(1 * time.Millisecond)
+	// this would cause an error exit in the task
+	rct.IdentityCreatedEvents <- &EthereumIdentityFactoryContractIdentityCreated{}
+	<-exit
 }
 
 func simulateJsonDecode(b32Id [32]byte) (map[string]interface{}, error) {
