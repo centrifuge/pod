@@ -105,17 +105,17 @@ func (s *InvoiceDocumentService) HandleSendInvoiceDocument(ctx context.Context, 
 		return nil, err
 	}
 
-	errs := make(map[string]string)
+	var errs []error
 	for _, element := range sendInvoiceEnvelope.Recipients {
 		err = s.CoreDocumentProcessor.Send(doc.CoreDocument, ctx, element[:])
 		if err != nil {
-			errs[string(element)] = err.Error()
+			errs = append(errs, err)
 		}
 	}
 
 	if len(errs) != 0 {
 		log.Errorf("%v", errs)
-		return nil, errors.NewWithErrors(code.Unknown, "failed to send document", errs)
+		return nil, errors.New(code.Unknown, fmt.Sprintf("%v", errs))
 	}
 
 	return doc, nil

@@ -1,5 +1,3 @@
-// +build unit
-
 package invoiceservice_test
 
 import (
@@ -149,7 +147,7 @@ func TestInvoiceDocumentService_SendFails(t *testing.T) {
 	mockCDP.AssertExpectations(t)
 	//the error handling in the send handler simply prints out the list of errors without much formatting
 	//OK for now but could be done nicer in the future
-	assert.Equal(t, "[1]failed to send document: map[RecipientNo[0]:error sending RecipientNo[1]:error sending]", err.Error())
+	assert.Contains(t, err.Error(), "error sending error sending")
 }
 
 func TestInvoiceDocumentService_Send_StoreFails(t *testing.T) {
@@ -161,7 +159,7 @@ func TestInvoiceDocumentService_Send_StoreFails(t *testing.T) {
 	_, err := s.HandleSendInvoiceDocument(context.Background(), &clientinvoicepb.SendInvoiceEnvelope{Recipients: recipients, Document: doc.Document})
 
 	mockRepo.AssertExpectations(t)
-	assert.Equal(t, "error storing", err.Error())
+	assert.Contains(t, err.Error(), "error storing")
 }
 
 func TestInvoiceDocumentService_Send_AnchorFails(t *testing.T) {
@@ -175,7 +173,7 @@ func TestInvoiceDocumentService_Send_AnchorFails(t *testing.T) {
 
 	mockRepo.AssertExpectations(t)
 	mockCDP.AssertExpectations(t)
-	assert.Equal(t, "error anchoring", err.Error())
+	assert.Contains(t, err.Error(), "error anchoring")
 }
 
 func TestInvoiceDocumentService_HandleCreateInvoiceProof(t *testing.T) {

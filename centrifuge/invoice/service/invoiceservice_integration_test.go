@@ -16,6 +16,7 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/service"
 	clientinvoicepb "github.com/CentrifugeInc/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
+	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -31,10 +32,13 @@ func TestMain(m *testing.M) {
 func generateEmptyInvoiceForProcessing() (doc *invoice.Invoice) {
 	identifier := testingutils.Rand32Bytes()
 	doc = invoice.Empty()
+	salts := &coredocumentpb.CoreDocumentSalts{}
+	proofs.FillSalts(salts)
 	doc.Document.CoreDocument = &coredocumentpb.CoreDocument{
 		DocumentIdentifier: identifier,
 		CurrentIdentifier:  identifier,
 		NextIdentifier:     testingutils.Rand32Bytes(),
+		CoredocumentSalts:  salts,
 	}
 	return
 }
