@@ -37,6 +37,33 @@ func fillCoreDocIdentifiers(doc *invoicepb.InvoiceDocument) error {
 	return nil
 }
 
+// anchorInvoiceDocument anchors the given invoice document and returns the anchor details
+func (s *InvoiceDocumentService) anchorInvoiceDocument(doc *invoicepb.InvoiceDocument) (*invoicepb.InvoiceDocument, error) {
+
+	// TODO: the calculated merkle root should be persisted locally as well.
+	inv, err := invoice.NewInvoice(doc)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	inv.CalculateMerkleRoot()
+	coreDoc := inv.ConvertToCoreDocument()
+	err = s.CoreDocumentProcessor.Anchor(coreDoc)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	newInvoice, err := invoice.NewInvoiceFromCoreDocument(coreDoc)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	return newInvoice.Document, nil
+}
+
 // HandleCreateInvoiceProof creates proofs for a list of fields
 func (s *InvoiceDocumentService) HandleCreateInvoiceProof(ctx context.Context, createInvoiceProofEnvelope *clientinvoicepb.CreateInvoiceProofEnvelope) (*clientinvoicepb.InvoiceProof, error) {
 	invdoc, err := s.InvoiceRepository.FindById(createInvoiceProofEnvelope.DocumentIdentifier)
@@ -136,31 +163,4 @@ func (s *InvoiceDocumentService) HandleGetInvoiceDocument(ctx context.Context, g
 
 func (s *InvoiceDocumentService) HandleGetReceivedInvoiceDocuments(ctx context.Context, empty *empty.Empty) (*clientinvoicepb.ReceivedInvoices, error) {
 	return nil, nil
-}
-
-// anchorInvoiceDocument anchors the given invoice document and returns the anchor details
-func (s *InvoiceDocumentService) anchorInvoiceDocument(doc *invoicepb.InvoiceDocument) (*invoicepb.InvoiceDocument, error) {
-
-	// TODO: the calculated merkle root should be persisted locally as well.
-	inv, err := invoice.NewInvoice(doc)
-	if err != nil {
-		log.Error(err)
-		return nil, err
-	}
-
-	inv.CalculateMerkleRoot()
-	coreDoc := inv.ConvertToCoreDocument()
-	err = s.CoreDocumentProcessor.Anchor(coreDoc)
-	if err != nil {
-		log.Error(err)
-		return nil, err
-	}
-
-	newInvoice, err := invoice.NewInvoiceFromCoreDocument(coreDoc)
-	if err != nil {
-		log.Error(err)
-		return nil, err
-	}
-
-	return newInvoice.Document, nil
 }
