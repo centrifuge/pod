@@ -17,6 +17,18 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+type MockSubscription struct {
+	ErrChan chan error
+}
+
+func (m *MockSubscription) Err() <-chan error {
+	return m.ErrChan
+}
+
+func (*MockSubscription) Unsubscribe() {
+
+}
+
 type MockIdentityCreatedWatcher struct {
 	shouldFail bool
 	sink       chan<- *EthereumIdentityFactoryContractIdentityCreated
@@ -27,7 +39,7 @@ func (mcw *MockIdentityCreatedWatcher) WatchIdentityCreated(opts *bind.WatchOpts
 		return nil, errors.New("Identity watching could not be started")
 	}
 	mcw.sink = sink
-	return nil, nil
+	return &MockSubscription{}, nil
 }
 
 func TestRegistrationConfirmationTask_ParseKwargsHappyPath(t *testing.T) {
@@ -116,7 +128,7 @@ func TestIdRegistrationConfirmationTask_RunTaskSuccess(t *testing.T) {
 		exit <- true
 	}()
 	time.Sleep(1 * time.Millisecond)
-	// this would cause an error exit in the task
+	// this would cause a successful exit in the task
 	eifc <- &EthereumIdentityFactoryContractIdentityCreated{}
 	<-exit
 }

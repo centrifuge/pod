@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/centrifuge/gocelery"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 )
 
 var Queue *gocelery.CeleryClient
@@ -19,7 +20,10 @@ func InitQueue(tasks []QueuedTask) {
 	// TODO do this based on config i.e. type of broker and backend, numWorkers
 	queueInit.Do(func() {
 		var err error
-		Queue, err = gocelery.NewCeleryClient(gocelery.NewInMemoryBroker(), gocelery.NewInMemoryBackend(), 1)
+		Queue, err = gocelery.NewCeleryClient(
+			gocelery.NewInMemoryBroker(),
+			gocelery.NewInMemoryBackend(),
+			config.Config.GetNumWorkers())
 		if err != nil {
 			panic("Could not initialize the queue")
 		}

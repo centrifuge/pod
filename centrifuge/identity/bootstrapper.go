@@ -11,6 +11,8 @@ import (
 type Bootstrapper struct {
 }
 
+// Bootstrap initializes the IdentityFactoryContract as well as the IdRegistrationConfirmationTask that depends on it.
+// the IdRegistrationConfirmationTask is added to be registered on the Queue at queue.Bootstrapper
 func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	if _, ok := context[bootstrapper.BootstrappedConfig]; !ok {
 		return errors.New("config hasn't been initialized")

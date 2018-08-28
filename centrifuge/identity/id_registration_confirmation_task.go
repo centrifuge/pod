@@ -19,6 +19,8 @@ type IdentityCreatedWatcher interface {
 	WatchIdentityCreated(opts *bind.WatchOpts, sink chan<- *EthereumIdentityFactoryContractIdentityCreated, centrifugeId [][32]byte) (event.Subscription, error)
 }
 
+// IdRegistrationConfirmationTask is a queued task to watch ID registration events on Ethereum using EthereumIdentityFactoryContract.
+// To see how it gets registered see bootstrapper.go and to see how it gets used see setUpRegistrationEventListener method
 type IdRegistrationConfirmationTask struct {
 	CentId                 [32]byte
 	EthContextInitializer  func() (ctx context.Context, cancelFunc context.CancelFunc)
@@ -80,10 +82,7 @@ func (rct *IdRegistrationConfirmationTask) RunTask() (interface{}, error) {
 		rct.IdentityCreatedEvents = make(chan *EthereumIdentityFactoryContractIdentityCreated)
 	}
 
-	//TODO do something with the returned Subscription that is currently simply discarded
-	// Somehow there are some possible resource leakage situations with this handling but I have to understand
-	// Subscriptions a bit better before writing this code.
-	_, err := rct.IdentityCreatedWatcher.WatchIdentityCreated(watchOpts, rct.IdentityCreatedEvents, [][32]byte{rct.CentId})
+	subscription, err := rct.IdentityCreatedWatcher.WatchIdentityCreated(watchOpts, rct.IdentityCreatedEvents, [][32]byte{rct.CentId})
 	if err != nil {
 		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for identity registration", 1)
 		log.Errorf(wError.Error())
@@ -91,11 +90,15 @@ func (rct *IdRegistrationConfirmationTask) RunTask() (interface{}, error) {
 	}
 	for {
 		select {
+		case err := <-subscription.Err():
+			log.Errorf("Subscription error %s", err.Error())
+			return nil, err
 		case <-rct.EthContext.Done():
 			log.Errorf("Context [%v] closed before receiving KeyRegistered event for Identity ID: %x\n", rct.EthContext, rct.CentId)
 			return nil, rct.EthContext.Err()
 		case res := <-rct.IdentityCreatedEvents:
 			log.Infof("Received IdentityCreated event from: %x, identifier: %x\n", res.CentrifugeId, res.Identity)
+			subscription.Unsubscribe()
 			return res, nil
 		}
 	}
