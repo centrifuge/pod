@@ -23,7 +23,7 @@ func TestPurchaseOrderCoreDocumentConverter(t *testing.T) {
 	}
 	purchaseorderSalts := purchaseorderpb.PurchaseOrderDataSalts{}
 
-	purchaseorderDoc := NewEmptyPurchaseOrder()
+	purchaseorderDoc := Empty()
 	purchaseorderDoc.Document.CoreDocument = &coredocumentpb.CoreDocument{
 		DocumentIdentifier: identifier,
 	}
@@ -59,8 +59,8 @@ func TestPurchaseOrderCoreDocumentConverter(t *testing.T) {
 	assert.Equal(t, coreDocumentBytes, generatedCoreDocumentBytes,
 		"Generated & converted documents are not identical")
 
-	convertedPurchaseOrderDoc, err := NewPurchaseOrderFromCoreDocument(generatedCoreDocument)
-	convertedGeneratedPurchaseOrderDoc, err := NewPurchaseOrderFromCoreDocument(generatedCoreDocument)
+	convertedPurchaseOrderDoc, err := NewFromCoreDocument(generatedCoreDocument)
+	convertedGeneratedPurchaseOrderDoc, err := NewFromCoreDocument(generatedCoreDocument)
 	purchaseorderBytes, err := proto.Marshal(purchaseorderDoc.Document)
 	assert.Nil(t, err, "Error marshaling purchaseorderDoc")
 
@@ -78,14 +78,14 @@ func TestPurchaseOrderCoreDocumentConverter(t *testing.T) {
 }
 
 func TestNewInvoiceFromCoreDocument_NilDocument(t *testing.T) {
-	po, err := NewPurchaseOrderFromCoreDocument(nil)
+	po, err := NewFromCoreDocument(nil)
 
 	assert.Error(t, err, "should have thrown an error")
 	assert.Nil(t, po, "document should be nil")
 }
 
 func TestNewInvoice_NilDocument(t *testing.T) {
-	po, err := NewPurchaseOrder(nil)
+	po, err := New(nil)
 
 	assert.Error(t, err, "should have thrown an error")
 	assert.Nil(t, po, "document should be nil")

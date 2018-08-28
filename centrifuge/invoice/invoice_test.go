@@ -23,7 +23,7 @@ func TestInvoiceCoreDocumentConverter(t *testing.T) {
 	}
 	invoiceSalts := invoicepb.InvoiceDataSalts{}
 
-	invoiceDoc := NewEmptyInvoice()
+	invoiceDoc := Empty()
 	invoiceDoc.Document.CoreDocument = &coredocumentpb.CoreDocument{
 		DocumentIdentifier: identifier,
 	}
@@ -59,8 +59,8 @@ func TestInvoiceCoreDocumentConverter(t *testing.T) {
 	assert.Equal(t, coreDocumentBytes, generatedCoreDocumentBytes,
 		"Generated & converted documents are not identical")
 
-	convertedInvoiceDoc, err := NewInvoiceFromCoreDocument(generatedCoreDocument)
-	convertedGeneratedInvoiceDoc, err := NewInvoiceFromCoreDocument(generatedCoreDocument)
+	convertedInvoiceDoc, err := NewFromCoreDocument(generatedCoreDocument)
+	convertedGeneratedInvoiceDoc, err := NewFromCoreDocument(generatedCoreDocument)
 	invoiceBytes, err := proto.Marshal(invoiceDoc.Document)
 	assert.Nil(t, err, "Error marshaling invoiceDoc")
 
@@ -78,14 +78,14 @@ func TestInvoiceCoreDocumentConverter(t *testing.T) {
 }
 
 func TestNewInvoiceFromCoreDocument_NilDocument(t *testing.T) {
-	inv, err := NewInvoiceFromCoreDocument(nil)
+	inv, err := NewFromCoreDocument(nil)
 
 	assert.Error(t, err, "should have thrown an error")
 	assert.Nil(t, inv, "document should be nil")
 }
 
 func TestNewInvoice_NilDocument(t *testing.T) {
-	inv, err := NewInvoice(nil)
+	inv, err := New(nil)
 
 	assert.Error(t, err, "should have thrown an error")
 	assert.Nil(t, inv, "document should be nil")

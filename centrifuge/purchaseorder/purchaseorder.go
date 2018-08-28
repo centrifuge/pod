@@ -22,53 +22,67 @@ type PurchaseOrder struct {
 	Document *purchaseorderpb.PurchaseOrderDocument
 }
 
-func NewPurchaseOrder(poDoc *purchaseorderpb.PurchaseOrderDocument) (*PurchaseOrder, error) {
+func New(poDoc *purchaseorderpb.PurchaseOrderDocument) (*PurchaseOrder, error) {
 	if poDoc == nil {
 		return nil, errors.NilError(poDoc)
 	}
+
 	order := &PurchaseOrder{poDoc}
-	// IF salts have not been provided, let's generate them
+	// If salts have not been provided, let's generate them
 	if poDoc.Salts == nil {
-		purchaseorderSalts := purchaseorderpb.PurchaseOrderDataSalts{}
-		proofs.FillSalts(&purchaseorderSalts)
-		order.Document.Salts = &purchaseorderSalts
+		salts := purchaseorderpb.PurchaseOrderDataSalts{}
+		proofs.FillSalts(&salts)
+		order.Document.Salts = &salts
 	}
+
+	po := &PurchaseOrder{poDoc}
+	if po.Document.CoreDocument == nil {
+		po.Document.CoreDocument = coredocument.New()
+	}
+
+	err := po.CalculateMerkleRoot()
+	if err != nil {
+		return nil, err
+	}
+
+	return po, nil
 	return order, nil
 }
 
-func NewEmptyPurchaseOrder() *PurchaseOrder {
-	purchaseorderSalts := purchaseorderpb.PurchaseOrderDataSalts{}
-	proofs.FillSalts(&purchaseorderSalts)
+func Empty() *PurchaseOrder {
+	salts := purchaseorderpb.PurchaseOrderDataSalts{}
+	proofs.FillSalts(&salts)
 	doc := purchaseorderpb.PurchaseOrderDocument{
 		CoreDocument: &coredocumentpb.CoreDocument{},
 		Data:         &purchaseorderpb.PurchaseOrderData{},
-		Salts:        &purchaseorderSalts,
+		Salts:        &salts,
 	}
 	return &PurchaseOrder{&doc}
 }
 
-func NewPurchaseOrderFromCoreDocument(coredocument *coredocumentpb.CoreDocument) (*PurchaseOrder, error) {
+func NewFromCoreDocument(coredocument *coredocumentpb.CoreDocument) (*PurchaseOrder, error) {
 	if coredocument == nil {
 		return nil, errors.NilError(coredocument)
 	}
+
 	if coredocument.EmbeddedData.TypeUrl != documenttypes.PurchaseOrderDataTypeUrl ||
 		coredocument.EmbeddedDataSalts.TypeUrl != documenttypes.PurchaseOrderSaltsTypeUrl {
 		return nil, fmt.Errorf("trying to convert document with incorrect schema")
 	}
 
-	purchaseorderData := &purchaseorderpb.PurchaseOrderData{}
-	proto.Unmarshal(coredocument.EmbeddedData.Value, purchaseorderData)
+	poData := &purchaseorderpb.PurchaseOrderData{}
+	proto.Unmarshal(coredocument.EmbeddedData.Value, poData)
 
-	purchaseorderSalts := &purchaseorderpb.PurchaseOrderDataSalts{}
-	proto.Unmarshal(coredocument.EmbeddedDataSalts.Value, purchaseorderSalts)
+	poSalts := &purchaseorderpb.PurchaseOrderDataSalts{}
+	proto.Unmarshal(coredocument.EmbeddedDataSalts.Value, poSalts)
 
 	emptiedCoreDoc := coredocumentpb.CoreDocument{}
 	proto.Merge(&emptiedCoreDoc, coredocument)
 	emptiedCoreDoc.EmbeddedData = nil
 	emptiedCoreDoc.EmbeddedDataSalts = nil
-	order := NewEmptyPurchaseOrder()
-	order.Document.Data = purchaseorderData
-	order.Document.Salts = purchaseorderSalts
+	order := Empty()
+	order.Document.Data = poData
+	order.Document.Salts = poSalts
 	order.Document.CoreDocument = &emptiedCoreDoc
 	return order, nil
 }
@@ -119,7 +133,7 @@ func (order *PurchaseOrder) ConvertToCoreDocument() (coredocpb *coredocumentpb.C
 		log.Fatalf("Could not serialize PurchaseOrderData: %s", err)
 	}
 
-	purchaseorderAny := any.Any{
+	po := any.Any{
 		TypeUrl: documenttypes.PurchaseOrderDataTypeUrl,
 		Value:   serializedPurchaseOrder,
 	}
@@ -129,13 +143,13 @@ func (order *PurchaseOrder) ConvertToCoreDocument() (coredocpb *coredocumentpb.C
 		log.Fatalf("Could not serialize PurchaseOrderSalts: %s", err)
 	}
 
-	purchaseorderSaltsAny := any.Any{
+	poSalts := any.Any{
 		TypeUrl: documenttypes.PurchaseOrderSaltsTypeUrl,
 		Value:   serializedSalts,
 	}
 
-	coredocpb.EmbeddedData = &purchaseorderAny
-	coredocpb.EmbeddedDataSalts = &purchaseorderSaltsAny
+	coredocpb.EmbeddedData = &po
+	coredocpb.EmbeddedDataSalts = &poSalts
 	return coredocpb
 }
 

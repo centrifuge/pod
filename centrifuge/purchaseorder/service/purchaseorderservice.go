@@ -5,7 +5,6 @@ import (
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/code"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/processor"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
@@ -25,39 +24,24 @@ type PurchaseOrderDocumentService struct {
 	CoreDocumentProcessor coredocumentprocessor.Processor
 }
 
-func fillCoreDocIdentifiers(doc *purchaseorderpb.PurchaseOrderDocument) error {
-	if doc == nil {
-		return errors.NilError(doc)
-	}
-
-	filledCoreDoc, err := coredocument.FillIdentifiers(*doc.CoreDocument)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-
-	doc.CoreDocument = &filledCoreDoc
-	return nil
-}
-
 // anchorPurchaseOrderDocument anchors the given purchaseorder document and returns the anchor details
 func (s *PurchaseOrderDocumentService) anchorPurchaseOrderDocument(doc *purchaseorderpb.PurchaseOrderDocument) (*purchaseorderpb.PurchaseOrderDocument, error) {
-	// TODO: the calculated merkle root should be persisted locally as well.
-	orderDoc, err := purchaseorder.NewPurchaseOrder(doc)
+
+	orderDoc, err := purchaseorder.New(doc)
 	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
-	orderDoc.CalculateMerkleRoot()
-	coreDoc := orderDoc.ConvertToCoreDocument()
 
+	// TODO: persist these changes to repository
+	coreDoc := orderDoc.ConvertToCoreDocument()
 	err = s.CoreDocumentProcessor.Anchor(coreDoc)
 	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
 
-	newPo, err := purchaseorder.NewPurchaseOrderFromCoreDocument(coreDoc)
+	newPo, err := purchaseorder.NewFromCoreDocument(coreDoc)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -75,7 +59,7 @@ func (s *PurchaseOrderDocumentService) HandleCreatePurchaseOrderProof(ctx contex
 		return nil, errors.New(code.DocumentNotFound, err.Error())
 	}
 
-	order, err := purchaseorder.NewPurchaseOrder(orderDoc)
+	order, err := purchaseorder.New(orderDoc)
 	if err != nil {
 		log.Error(err)
 		return nil, errors.New(code.Unknown, err.Error())
@@ -92,15 +76,9 @@ func (s *PurchaseOrderDocumentService) HandleCreatePurchaseOrderProof(ctx contex
 
 // HandleAnchorPurchaseOrderDocument anchors the given purchaseorder document and returns the anchor details
 func (s *PurchaseOrderDocumentService) HandleAnchorPurchaseOrderDocument(ctx context.Context, anchorPurchaseOrderEnvelope *clientpurchaseorderpb.AnchorPurchaseOrderEnvelope) (*purchaseorderpb.PurchaseOrderDocument, error) {
-	doc, err := purchaseorder.NewPurchaseOrder(anchorPurchaseOrderEnvelope.Document)
+	doc, err := purchaseorder.New(anchorPurchaseOrderEnvelope.Document)
 	if err != nil {
 		return nil, errors.New(code.Unknown, err.Error())
-	}
-
-	err = fillCoreDocIdentifiers(doc.Document)
-	if err != nil {
-		log.Error(err)
-		return nil, errors.New(code.Unknown, fmt.Sprintf("failed to fill document IDs: %v", err))
 	}
 
 	if valid, msg, errs := purchaseorder.Validate(doc.Document); !valid {
@@ -158,7 +136,7 @@ func (s *PurchaseOrderDocumentService) HandleGetPurchaseOrderDocument(ctx contex
 		return nil, errors.New(code.DocumentNotFound, fmt.Sprintf("failed to get document: %v", err))
 	}
 
-	purchaseOrder, err := purchaseorder.NewPurchaseOrderFromCoreDocument(docFound)
+	purchaseOrder, err := purchaseorder.NewFromCoreDocument(docFound)
 	if err != nil {
 		return nil, errors.New(code.Unknown, fmt.Sprintf("failed convert coredoc to purchase order: %v", err))
 	}

@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/processor"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
@@ -29,7 +30,7 @@ func TestMain(m *testing.M) {
 
 func generateEmptyInvoiceForProcessing() (doc *invoice.Invoice) {
 	identifier := testingutils.Rand32Bytes()
-	doc = invoice.NewEmptyInvoice()
+	doc = invoice.Empty()
 	doc.Document.CoreDocument = &coredocumentpb.CoreDocument{
 		DocumentIdentifier: identifier,
 		CurrentIdentifier:  identifier,
@@ -44,7 +45,17 @@ func TestInvoiceDocumentService_HandleAnchorInvoiceDocument_Integration(t *testi
 		CoreDocumentProcessor: coredocumentprocessor.NewDefaultProcessor(),
 	}
 	doc := generateEmptyInvoiceForProcessing()
-	doc.Document.Data.SenderCountry = "DE"
+	doc.Document.Data = &invoicepb.InvoiceData{
+		InvoiceNumber:    "inv1234",
+		SenderName:       "Jack",
+		SenderZipcode:    "921007",
+		SenderCountry:    "AUS",
+		RecipientName:    "John",
+		RecipientZipcode: "12345",
+		RecipientCountry: "Germany",
+		Currency:         "EUR",
+		GrossAmount:      800,
+	}
 
 	anchoredDoc, err := s.HandleAnchorInvoiceDocument(context.Background(), &clientinvoicepb.AnchorInvoiceEnvelope{Document: doc.Document})
 
@@ -55,7 +66,7 @@ func TestInvoiceDocumentService_HandleAnchorInvoiceDocument_Integration(t *testi
 
 	//Invoice document got stored in the DB
 	loadedInvoice, _ := invoicerepository.GetInvoiceRepository().FindById(doc.Document.CoreDocument.DocumentIdentifier)
-	assert.Equal(t, "DE", loadedInvoice.Data.SenderCountry,
+	assert.Equal(t, "AUS", loadedInvoice.Data.SenderCountry,
 		"Didn't save the invoice data correctly")
 
 	//Invoice Service should error out if trying to anchor the same document ID again

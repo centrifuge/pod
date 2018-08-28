@@ -22,21 +22,33 @@ type Invoice struct {
 	Document *invoicepb.InvoiceDocument
 }
 
-func NewInvoice(invDoc *invoicepb.InvoiceDocument) (*Invoice, error) {
+// New returns fills salts, coredoc and returns a new invoice
+func New(invDoc *invoicepb.InvoiceDocument) (*Invoice, error) {
 	if invDoc == nil {
 		return nil, errors.NilError(invDoc)
 	}
-	inv := &Invoice{invDoc}
-	// IF salts have not been provided, let's generate them
+
 	if invDoc.Salts == nil {
 		invoiceSalts := invoicepb.InvoiceDataSalts{}
 		proofs.FillSalts(&invoiceSalts)
-		inv.Document.Salts = &invoiceSalts
+		invDoc.Salts = &invoiceSalts
 	}
+
+	inv := &Invoice{invDoc}
+	if inv.Document.CoreDocument == nil {
+		inv.Document.CoreDocument = coredocument.New()
+	}
+
+	err := inv.CalculateMerkleRoot()
+	if err != nil {
+		return nil, err
+	}
+
 	return inv, nil
 }
 
-func NewEmptyInvoice() *Invoice {
+// Empty returns an empty invoice
+func Empty() *Invoice {
 	invoiceSalts := invoicepb.InvoiceDataSalts{}
 	proofs.FillSalts(&invoiceSalts)
 	doc := invoicepb.InvoiceDocument{
@@ -47,7 +59,8 @@ func NewEmptyInvoice() *Invoice {
 	return &Invoice{&doc}
 }
 
-func NewInvoiceFromCoreDocument(coreDocument *coredocumentpb.CoreDocument) (*Invoice, error) {
+// NewFromCoreDocument returns a Invoice from Core Document
+func NewFromCoreDocument(coreDocument *coredocumentpb.CoreDocument) (*Invoice, error) {
 	if coreDocument == nil {
 		return nil, errors.NilError(coreDocument)
 	}
@@ -66,7 +79,7 @@ func NewInvoiceFromCoreDocument(coreDocument *coredocumentpb.CoreDocument) (*Inv
 	proto.Merge(&emptiedCoreDoc, coreDocument)
 	emptiedCoreDoc.EmbeddedData = nil
 	emptiedCoreDoc.EmbeddedDataSalts = nil
-	inv := NewEmptyInvoice()
+	inv := Empty()
 	inv.Document.Data = invoiceData
 	inv.Document.Salts = invoiceSalts
 	inv.Document.CoreDocument = &emptiedCoreDoc
