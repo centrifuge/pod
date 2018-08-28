@@ -35,6 +35,9 @@ networks:
       identityRegistry: "0x54ae373f096faf2db6b8a46717c0b98ecfa075dd"
       anchorRegistry: "0x342a74b382d19da64988b376d0e4a656b7bfa5dd"
 
+queue:
+  numWorkers: 2
+
 ethereum:
   defaultAccountName: "main"
   nodeURL: ws://localhost:9546
