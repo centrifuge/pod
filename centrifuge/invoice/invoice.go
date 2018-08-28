@@ -159,7 +159,7 @@ func Validate(doc *invoicepb.InvoiceDocument) (valid bool, errMsg string, errs m
 	// ideally these check should be done in the client invoice order
 	// once the converters are done, we can move the following checks there
 	if data.InvoiceNumber == "" {
-		errs["inv_inv_number"] = errors.RequiredField
+		errs["inv_number"] = errors.RequiredField
 	}
 
 	if data.SenderName == "" {

@@ -159,7 +159,7 @@ func Validate(doc *purchaseorderpb.PurchaseOrderDocument) (valid bool, errMsg st
 	// ideally these check should be done in the client purchase order
 	// once the converters are done, we can move the following checks there
 	if data.PoNumber == "" {
-		errs["po_po_number"] = errors.RequiredField
+		errs["po_number"] = errors.RequiredField
 	}
 
 	if data.OrderName == "" {

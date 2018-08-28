@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/code"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/processor"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
@@ -11,7 +12,6 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/repository"
 	clientinvoicepb "github.com/CentrifugeInc/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
-	gerrors "github.com/go-errors/errors"
 	"github.com/golang/protobuf/ptypes/empty"
 	logging "github.com/ipfs/go-log"
 	"golang.org/x/net/context"
@@ -61,77 +61,77 @@ func (s *InvoiceDocumentService) HandleCreateInvoiceProof(ctx context.Context, c
 
 // HandleAnchorInvoiceDocument anchors the given invoice document and returns the anchor details
 func (s *InvoiceDocumentService) HandleAnchorInvoiceDocument(ctx context.Context, anchorInvoiceEnvelope *clientinvoicepb.AnchorInvoiceEnvelope) (*invoicepb.InvoiceDocument, error) {
-	doc := anchorInvoiceEnvelope.Document
-
-	err := fillCoreDocIdentifiers(doc)
+	inv, err := invoice.NewInvoice(anchorInvoiceEnvelope.Document)
 	if err != nil {
 		log.Error(err)
-		return nil, gerrors.Errorf("Error filling document IDs: [%v]", err.Error())
+		return nil, errors.New(code.DocumentInvalid, err.Error())
 	}
 
-	err = s.InvoiceRepository.Create(doc)
+	err = fillCoreDocIdentifiers(inv.Document)
 	if err != nil {
 		log.Error(err)
-		return nil, gerrors.Errorf("Error saving document: [%v]", err.Error())
+		return nil, errors.New(code.DocumentInvalid, err.Error())
 	}
 
-	anchoredInvoiceDocument, err := s.anchorInvoiceDocument(doc)
+	if valid, msg, errs := invoice.Validate(inv.Document); !valid {
+		return nil, errors.NewWithErrors(code.DocumentInvalid, msg, errs)
+	}
+
+	err = s.InvoiceRepository.Create(inv.Document)
 	if err != nil {
 		log.Error(err)
-		return nil, gerrors.Errorf("Error anchoring document: [%v]", err.Error())
+		return nil, errors.New(code.Unknown, fmt.Sprintf("error saving invoice: %v", err))
 	}
 
-	return anchoredInvoiceDocument, nil
+	anchoredInvDoc, err := s.anchorInvoiceDocument(inv.Document)
+	if err != nil {
+		log.Error(err)
+		return nil, errors.New(code.Unknown, fmt.Sprintf("failed to anchor: %v", err))
+	}
+
+	return anchoredInvDoc, nil
 }
 
 // HandleSendInvoiceDocument anchors and sends an invoice to the recipient
 func (s *InvoiceDocumentService) HandleSendInvoiceDocument(ctx context.Context, sendInvoiceEnvelope *clientinvoicepb.SendInvoiceEnvelope) (*invoicepb.InvoiceDocument, error) {
-	doc := sendInvoiceEnvelope.Document
-
-	err := fillCoreDocIdentifiers(doc)
-	if err != nil {
-		log.Error(err)
-		return nil, err
-	}
-
-	err = s.InvoiceRepository.Create(doc)
+	doc, err := s.HandleAnchorInvoiceDocument(ctx, &clientinvoicepb.AnchorInvoiceEnvelope{Document: sendInvoiceEnvelope.Document})
 	if err != nil {
 		return nil, err
 	}
 
-	anchoredInvoiceDocument, err := s.anchorInvoiceDocument(doc)
-	if err != nil {
-		log.Error(err)
-		return nil, err
-	}
-
-	errs := []error{}
+	errs := make(map[string]string)
 	for _, element := range sendInvoiceEnvelope.Recipients {
-		err1 := s.CoreDocumentProcessor.Send(anchoredInvoiceDocument.CoreDocument, ctx, element[:])
-		if err1 != nil {
-			errs = append(errs, err1)
+		err = s.CoreDocumentProcessor.Send(doc.CoreDocument, ctx, element[:])
+		if err != nil {
+			errs[string(element)] = err.Error()
 		}
 	}
 
 	if len(errs) != 0 {
 		log.Errorf("%v", errs)
-		return nil, fmt.Errorf("%v", errs)
+		return nil, errors.NewWithErrors(code.Unknown, "failed to send document", errs)
 	}
-	return anchoredInvoiceDocument, nil
+
+	return doc, nil
 }
 
 func (s *InvoiceDocumentService) HandleGetInvoiceDocument(ctx context.Context, getInvoiceDocumentEnvelope *clientinvoicepb.GetInvoiceDocumentEnvelope) (*invoicepb.InvoiceDocument, error) {
 	doc, err := s.InvoiceRepository.FindById(getInvoiceDocumentEnvelope.DocumentIdentifier)
-	if err != nil {
-		docFound, err1 := coredocumentrepository.GetRepository().FindById(getInvoiceDocumentEnvelope.DocumentIdentifier)
-		if err1 == nil {
-			doc1, err1 := invoice.NewInvoiceFromCoreDocument(docFound)
-			doc = doc1.Document
-			err = err1
-		}
-		log.Errorf("%v", err)
+	if err == nil {
+		return doc, nil
 	}
-	return doc, err
+
+	coreDoc, err := coredocumentrepository.GetRepository().FindById(getInvoiceDocumentEnvelope.DocumentIdentifier)
+	if err != nil {
+		return nil, errors.New(code.DocumentNotFound, err.Error())
+	}
+
+	inv, err := invoice.NewInvoiceFromCoreDocument(coreDoc)
+	if err != nil {
+		return nil, errors.New(code.Unknown, err.Error())
+	}
+
+	return inv.Document, nil
 }
 
 func (s *InvoiceDocumentService) HandleGetReceivedInvoiceDocuments(ctx context.Context, empty *empty.Empty) (*clientinvoicepb.ReceivedInvoices, error) {
@@ -147,14 +147,15 @@ func (s *InvoiceDocumentService) anchorInvoiceDocument(doc *invoicepb.InvoiceDoc
 		log.Error(err)
 		return nil, err
 	}
+
 	inv.CalculateMerkleRoot()
 	coreDoc := inv.ConvertToCoreDocument()
-
 	err = s.CoreDocumentProcessor.Anchor(coreDoc)
 	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
+
 	newInvoice, err := invoice.NewInvoiceFromCoreDocument(coreDoc)
 	if err != nil {
 		log.Error(err)
