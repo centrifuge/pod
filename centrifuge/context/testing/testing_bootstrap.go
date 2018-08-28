@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/bootstrapper"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
@@ -65,9 +66,18 @@ func createEthereumConnection() {
 }
 
 func bootstrapQueuing() {
-	queue.InitQueue([]queue.QueuedTask{
-		&identity.IdRegistrationConfirmationTask{},
-	})
+	// TODO here we would not have to put the bootstrapper.BootstrappedConfig after the TestBootstrapper refactoring
+	context := map[string]interface{}{bootstrapper.BootstrappedConfig: true}
+	for _, b := range []bootstrapper.TestBootstrapper{
+		&identity.Bootstrapper{},
+		&queue.Bootstrapper{},
+	} {
+		err := b.TestBootstrap(context)
+		if err != nil {
+			log.Error("Error encountered while bootstrapping", err)
+			panic(err)
+		}
+	}
 }
 
 func tearDownQueuing() {

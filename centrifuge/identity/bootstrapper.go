@@ -34,6 +34,10 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	}
 }
 
+func (b *Bootstrapper) TestBootstrap(context map[string]interface{}) error {
+	return b.Bootstrap(context)
+}
+
 func createIdRegistrationConfirmationTask(identityContract *EthereumIdentityFactoryContract) *IdRegistrationConfirmationTask {
 	return NewIdRegistrationConfirmationTask(
 		&identityContract.EthereumIdentityFactoryContractFilterer,
