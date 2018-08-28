@@ -181,7 +181,7 @@ func TestPurchaseOrderDocumentService_SendFails(t *testing.T) {
 
 	mockRepo.AssertExpectations(t)
 	mockCDP.AssertExpectations(t)
-	assert.Equal(t, "[1]failed to send purchase order: map[RecipientNo[0]:error sending RecipientNo[1]:error sending]", err.Error())
+	assert.Equal(t, "[1][error sending error sending]", err.Error())
 }
 
 func TestPurchaseOrderDocumentService_HandleCreatePurchaseOrderProof(t *testing.T) {

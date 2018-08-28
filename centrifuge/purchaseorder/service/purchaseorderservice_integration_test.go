@@ -85,6 +85,6 @@ func TestPurchaseOrderDocumentService_HandleAnchorPurchaseOrderDocument_Integrat
 	loadedDoc2 := new(purchaseorderpb.PurchaseOrderDocument)
 	err = purchaseorderrepository.GetRepository().GetByID(doc.Document.CoreDocument.DocumentIdentifier, loadedDoc2)
 	assert.Nil(t, err)
-	assert.Equal(t, "DE", loadedDoc2.Data.OrderCountry,
+	assert.Equal(t, "AUS", loadedDoc2.Data.OrderCountry,
 		"Document on DB should have not not gotten overwritten after rejected anchor call")
 }

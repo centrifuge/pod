@@ -1,3 +1,5 @@
+// +build unit
+
 package invoiceservice_test
 
 import (
