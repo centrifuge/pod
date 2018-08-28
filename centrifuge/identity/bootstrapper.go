@@ -1,14 +1,14 @@
 package identity
 
 import (
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/queue"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
 	"errors"
+
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/bootstrapper"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/queue"
 )
 
 type Bootstrapper struct {
-
 }
 
 func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
@@ -39,4 +39,3 @@ func createIdRegistrationConfirmationTask(identityContract *EthereumIdentityFact
 		&identityContract.EthereumIdentityFactoryContractFilterer,
 		ethereum.DefaultWaitForTransactionMiningContext)
 }
-
