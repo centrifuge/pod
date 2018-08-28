@@ -30,6 +30,7 @@ func TestFunctionalEthereumBootstrap() {
 }
 func TestFunctionalEthereumTearDown() {
 	TestIntegrationTearDown()
+	tearDownQueuing()
 }
 
 // ---- END Ethereum ----
@@ -51,7 +52,6 @@ func TestIntegrationTearDown() {
 	storage.CloseLevelDBStorage()
 	os.RemoveAll(config.Config.GetStoragePath())
 	config.Config = nil
-	tearDownQueuing()
 }
 
 // ---- End Integration Testing ----

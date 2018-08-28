@@ -72,9 +72,13 @@ func (rct *IdRegistrationConfirmationTask) ParseKwargs(kwargs map[string]interfa
 // RunTask calls listens to events from geth related to IdRegistrationConfirmationTask#CentId and records result.
 // Currently covered by TestCreateAndLookupIdentity_Integration test.
 func (rct *IdRegistrationConfirmationTask) RunTask() (interface{}, error) {
-	rct.EthContext, _ = rct.EthContextInitializer()
+	if rct.EthContext == nil {
+		rct.EthContext, _ = rct.EthContextInitializer()
+	}
 	watchOpts := &bind.WatchOpts{Context: rct.EthContext}
-	rct.IdentityCreatedEvents = make(chan *EthereumIdentityFactoryContractIdentityCreated)
+	if rct.IdentityCreatedEvents == nil {
+		rct.IdentityCreatedEvents = make(chan *EthereumIdentityFactoryContractIdentityCreated)
+	}
 
 	//TODO do something with the returned Subscription that is currently simply discarded
 	// Somehow there are some possible resource leakage situations with this handling but I have to understand

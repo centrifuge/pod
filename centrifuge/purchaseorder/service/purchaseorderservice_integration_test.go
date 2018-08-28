@@ -24,7 +24,7 @@ func TestMain(m *testing.M) {
 	purchaseorderrepository.InitLevelDBRepository(cc.GetLevelDBStorage())
 
 	result := m.Run()
-	cc.TestIntegrationTearDown()
+	cc.TestFunctionalEthereumTearDown()
 	os.Exit(result)
 }
 

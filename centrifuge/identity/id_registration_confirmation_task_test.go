@@ -26,6 +26,7 @@ func (mcw *MockIdentityCreatedWatcher) WatchIdentityCreated(opts *bind.WatchOpts
 	if mcw.shouldFail {
 		return nil, errors.New("Identity watching could not be started")
 	}
+	mcw.sink = sink
 	return nil, nil
 }
 
@@ -56,13 +57,14 @@ func TestRegistrationConfirmationTask_ParseKwargsInvalidType(t *testing.T) {
 }
 
 func TestIdRegistrationConfirmationTask_RunTaskContextError(t *testing.T) {
+	toBeDone := time.Now().Add(time.Duration(1 * time.Millisecond))
+	ctx, _ := context.WithDeadline(context.TODO(), toBeDone)
+	eifc := make(chan *EthereumIdentityFactoryContractIdentityCreated)
 	rct := IdRegistrationConfirmationTask{
 		CentId: createCentId(tools.RandomSlice32()),
-		EthContextInitializer: func() (ctx context.Context, cancelFunc context.CancelFunc) {
-			toBeDone := time.Now().Add(time.Duration(1 * time.Millisecond))
-			return context.WithDeadline(context.TODO(), toBeDone)
-		},
 		IdentityCreatedWatcher: &MockIdentityCreatedWatcher{},
+		EthContext: ctx,
+		IdentityCreatedEvents: eifc,
 	}
 	exit := make(chan bool)
 	go func() {
@@ -72,7 +74,7 @@ func TestIdRegistrationConfirmationTask_RunTaskContextError(t *testing.T) {
 	}()
 	time.Sleep(1 * time.Millisecond)
 	// this would cause an error exit in the task
-	rct.EthContext.Done()
+	ctx.Done()
 	<-exit
 }
 
@@ -93,20 +95,18 @@ func TestIdRegistrationConfirmationTask_RunTaskCallError(t *testing.T) {
 		exit <- true
 	}()
 	time.Sleep(1 * time.Millisecond)
-	// this would cause an error exit in the task
-	rct.EthContext.Done()
 	<-exit
 }
 
 func TestIdRegistrationConfirmationTask_RunTaskSuccess(t *testing.T) {
-	identityCreatedWatcher := &MockIdentityCreatedWatcher{shouldFail: false}
+	toBeDone := time.Now().Add(time.Duration(1 * time.Second))
+	ctx, _ := context.WithDeadline(context.TODO(), toBeDone)
+	eifc := make(chan *EthereumIdentityFactoryContractIdentityCreated)
 	rct := IdRegistrationConfirmationTask{
 		CentId: createCentId(tools.RandomSlice32()),
-		EthContextInitializer: func() (ctx context.Context, cancelFunc context.CancelFunc) {
-			toBeDone := time.Now().Add(time.Duration(1 * time.Second))
-			return context.WithDeadline(context.TODO(), toBeDone)
-		},
-		IdentityCreatedWatcher: identityCreatedWatcher,
+		IdentityCreatedWatcher: &MockIdentityCreatedWatcher{},
+		EthContext: ctx,
+		IdentityCreatedEvents: eifc,
 	}
 	exit := make(chan bool)
 	go func() {
@@ -117,7 +117,7 @@ func TestIdRegistrationConfirmationTask_RunTaskSuccess(t *testing.T) {
 	}()
 	time.Sleep(1 * time.Millisecond)
 	// this would cause an error exit in the task
-	rct.IdentityCreatedEvents <- &EthereumIdentityFactoryContractIdentityCreated{}
+	eifc <- &EthereumIdentityFactoryContractIdentityCreated{}
 	<-exit
 }
 
