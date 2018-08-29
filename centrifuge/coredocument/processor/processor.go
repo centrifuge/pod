@@ -83,17 +83,22 @@ func (dp *defaultProcessor) Anchor(document *coredocumentpb.CoreDocument) error 
 		return errors.NilError(document)
 	}
 
-	log.Infof("Anchoring document with identifiers: [document: %#x, current: %#x, next: %#x], rootHash: %#x", document.DocumentIdentifier, document.CurrentIdentifier, document.NextIdentifier, document.DocumentRoot)
-	log.Debugf("Anchoring document with details %v", document)
-
 	id, err := tools.SliceToByte32(document.CurrentIdentifier)
 	if err != nil {
 		log.Error(err)
 		return err
 	}
 
-	// TODO: we should replace this with using the DocumentRoot once signing has been properly implemented
-	rootHash, err := tools.SliceToByte32(document.DataRoot)
+	log.Infof("Anchoring document with identifiers: [document: %#x, current: %#x, next: %#x], rootHash: %#x", document.DocumentIdentifier, document.CurrentIdentifier, document.NextIdentifier, document.DocumentRoot)
+	log.Debugf("Anchoring document with details %v", document)
+
+	err = dp.calculateSigningRoot(document)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+
+	rootHash, err := tools.SliceToByte32(document.SigningRoot)
 	if err != nil {
 		log.Error(err)
 		return err
