@@ -59,15 +59,15 @@ func (m *IdRegistrationConfirmationTask) Copy() (gocelery.CeleryTask, error) {
 
 // ParseKwargs - define a method to parse CentId
 func (rct *IdRegistrationConfirmationTask) ParseKwargs(kwargs map[string]interface{}) error {
-	CentId, ok := kwargs[CentIdParam]
+	centId, ok := kwargs[CentIdParam]
 	if !ok {
 		return fmt.Errorf("undefined kwarg " + CentIdParam)
 	}
-	CentIdTyped, err := getBytes(CentId)
+	centIdTyped, err := getBytes(centId)
 	if err != nil {
 		return fmt.Errorf("malformed kwarg [%s] because [%s]", CentIdParam, err.Error())
 	}
-	rct.CentId = CentIdTyped
+	rct.CentId = centIdTyped
 	return nil
 }
 
@@ -94,7 +94,7 @@ func (rct *IdRegistrationConfirmationTask) RunTask() (interface{}, error) {
 			log.Errorf("Subscription error %s", err.Error())
 			return nil, err
 		case <-rct.EthContext.Done():
-			log.Errorf("Context [%v] closed before receiving KeyRegistered event for Identity ID: %x\n", rct.EthContext, rct.CentId)
+			log.Errorf("Context [%v] closed before receiving IdRegistered event for Identity ID: %x\n", rct.EthContext, rct.CentId)
 			return nil, rct.EthContext.Err()
 		case res := <-rct.IdentityCreatedEvents:
 			log.Infof("Received IdentityCreated event from: %x, identifier: %x\n", res.CentrifugeId, res.Identity)
