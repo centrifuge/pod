@@ -110,11 +110,13 @@ func (dp *defaultProcessor) Anchor(document *coredocumentpb.CoreDocument) error 
 }
 
 func (dp *defaultProcessor) getDocumentTree(document *coredocumentpb.CoreDocument) (tree *proofs.DocumentTree, err error) {
-	t := proofs.NewDocumentTree()
+	t := proofs.NewDocumentTree(proofs.TreeOptions{Hash: sha256.New()})
 	tree = &t
-	sha256Hash := sha256.New()
-	tree.SetHashFunc(sha256Hash)
-	err = tree.FillTree(document, document.CoredocumentSalts)
+	err = tree.AddLeavesFromDocument(document, document.CoredocumentSalts)
+	if err != nil {
+		return nil, err
+	}
+	err = tree.Generate()
 	if err != nil {
 		return nil, err
 	}

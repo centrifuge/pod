@@ -33,7 +33,7 @@ func TestCoreDocumentProcessor_AnchorNilDocument(t *testing.T) {
 func TestCoreDocumentProcessor_getDocumentTree(t *testing.T) {
 	cd := &coredocumentpb.CoreDocument{DocumentIdentifier: tools.RandomSlice32()}
 	cds := &coredocumentpb.CoreDocumentSalts{}
-	proofs.FillSalts(cds)
+	proofs.FillSalts(cd, cds)
 	cd.CoredocumentSalts = cds
 	tree, err := cdp.getDocumentTree(cd)
 	assert.Nil(t, err)

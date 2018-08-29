@@ -205,7 +205,8 @@ func TestPurchaseOrderDocumentService_HandleCreatePurchaseOrderProof(t *testing.
 	assert.Equal(t, proofRequest.Fields[0], purchaseOrderProof.FieldProofs[0].Property)
 	sha256Hash := sha256.New()
 	fmt.Println(order.Document.CoreDocument.DataRoot)
-	valid, err := proofs.ValidateProof(purchaseOrderProof.FieldProofs[0], order.Document.CoreDocument.DataRoot, sha256Hash)
+	fieldHash, err := proofs.CalculateHashForProofField(purchaseOrderProof.FieldProofs[0], sha256Hash)
+	valid, err := proofs.ValidateProofHashes(fieldHash, purchaseOrderProof.FieldProofs[0].Hashes, order.Document.CoreDocument.DataRoot, sha256Hash)
 	assert.True(t, valid)
 	assert.Nil(t, err)
 }

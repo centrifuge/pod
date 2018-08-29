@@ -29,7 +29,7 @@ func NewInvoice(invDoc *invoicepb.InvoiceDocument) (*Invoice, error) {
 	// IF salts have not been provided, let's generate them
 	if invDoc.Salts == nil {
 		invoiceSalts := invoicepb.InvoiceDataSalts{}
-		proofs.FillSalts(&invoiceSalts)
+		proofs.FillSalts(invDoc.Data, &invoiceSalts)
 		inv.Document.Salts = &invoiceSalts
 	}
 	return inv, nil
@@ -37,10 +37,11 @@ func NewInvoice(invDoc *invoicepb.InvoiceDocument) (*Invoice, error) {
 
 func NewEmptyInvoice() *Invoice {
 	invoiceSalts := invoicepb.InvoiceDataSalts{}
-	proofs.FillSalts(&invoiceSalts)
+	invoiceData := invoicepb.InvoiceData{}
+	proofs.FillSalts(&invoiceData, &invoiceSalts)
 	doc := invoicepb.InvoiceDocument{
 		CoreDocument: &coredocumentpb.CoreDocument{},
-		Data:         &invoicepb.InvoiceData{},
+		Data:         &invoiceData,
 		Salts:        &invoiceSalts,
 	}
 	return &Invoice{&doc}
@@ -73,10 +74,13 @@ func NewInvoiceFromCoreDocument(coreDocument *coredocumentpb.CoreDocument) (*Inv
 }
 
 func (inv *Invoice) getDocumentTree() (tree *proofs.DocumentTree, err error) {
-	t := proofs.NewDocumentTree()
-	sha256Hash := sha256.New()
-	t.SetHashFunc(sha256Hash)
-	err = t.FillTree(inv.Document.Data, inv.Document.Salts)
+	t := proofs.NewDocumentTree(proofs.TreeOptions{Hash: sha256.New()})
+	err = t.AddLeavesFromDocument(inv.Document.Data, inv.Document.Salts)
+	if err != nil {
+		log.Error("getDocumentTree:", err)
+		return nil, err
+	}
+	err = t.Generate()
 	if err != nil {
 		log.Error("getDocumentTree:", err)
 		return nil, err
