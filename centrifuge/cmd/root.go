@@ -5,11 +5,11 @@ import (
 	"os"
 
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
+	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
 	logging "github.com/ipfs/go-log"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	gologging "github.com/whyrusleeping/go-logging"
-	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
 )
 
 //global flags

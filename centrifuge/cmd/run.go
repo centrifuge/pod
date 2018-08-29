@@ -6,8 +6,7 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/p2p"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/server"
 	"github.com/spf13/cobra"
-
-	)
+)
 
 // runCmd represents the run command
 var runCmd = &cobra.Command{
