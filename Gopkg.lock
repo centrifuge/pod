@@ -2,7 +2,7 @@
 
 
 [[projects]]
-  branch = "precise-proofs"
+  branch = "master"
   name = "github.com/CentrifugeInc/centrifuge-protobufs"
   packages = [
     "documenttypes",
@@ -13,8 +13,8 @@
     "gen/go/p2p",
     "gen/go/purchaseorder"
   ]
-  revision = "16da6f933f3af3a0c81de9faf3eed07f079cff2c"
-  source = "git@github.com:lucasvo/centrifuge-protobufs"
+  revision = "87eb09261744844c5caa136673205a9338e464a2"
+  source = "git@github.com:CentrifugeInc/centrifuge-protobufs"
 
 [[projects]]
   name = "github.com/Masterminds/semver"
@@ -51,14 +51,14 @@
   revision = "840d02135ac447e77bd0d669246b602feca5e8b4"
 
 [[projects]]
-  branch = "hash-leaves"
+  branch = "master"
   name = "github.com/centrifuge/precise-proofs"
   packages = [
     "proofs",
     "proofs/proto"
   ]
-  revision = "b8f7de169e54be286a44bb672a22d722ccc9cb39"
-  source = "git@github.com:lucasvo/precise-proofs"
+  revision = "fbe68f46da974e764087a51de73e043778dadbef"
+  source = "git@github.com:centrifuge/precise-proofs"
 
 [[projects]]
   name = "github.com/coreos/go-semver"
@@ -1050,6 +1050,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "55857e72d2fecf43f987ae277da3936b60afa4b79465e3ae83be3fc54a2e8312"
+  inputs-digest = "4f52dfcfc48400c46a71569d8ef76068d27c392b2ad6dee6af4beb8aa0037585"
   solver-name = "gps-cdcl"
   solver-version = 1
