@@ -281,10 +281,23 @@
           "type": "string",
           "format": "byte"
         },
+        "hash": {
+          "type": "string",
+          "format": "byte",
+          "title": "hash is filled if value \u0026 salt are not available"
+        },
         "hashes": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/proofsMerkleHash"
+          },
+          "title": "Fills either 'hashes' for standard Merkle trees or 'sortedHashes' for a lexicograhical ordered of a node hash\nnot both"
+        },
+        "sortedHashes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "byte"
           }
         }
       }
