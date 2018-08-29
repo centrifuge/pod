@@ -199,7 +199,7 @@ func TestInvoiceDocumentService_HandleCreateInvoiceProof(t *testing.T) {
 	assert.Equal(t, proofRequest.Fields[0], invoiceProof.FieldProofs[0].Property)
 	sha256Hash := sha256.New()
 	fieldHash, err := proofs.CalculateHashForProofField(invoiceProof.FieldProofs[0], sha256Hash)
-	valid, err := proofs.ValidateProofHashes(fieldHash, invoiceProof.FieldProofs[0].Hashes, inv.Document.CoreDocument.DataRoot, sha256Hash)
+	valid, err := proofs.ValidateProofSortedHashes(fieldHash, invoiceProof.FieldProofs[0].SortedHashes, inv.Document.CoreDocument.DataRoot, sha256Hash)
 	assert.True(t, valid)
 	assert.Nil(t, err)
 }

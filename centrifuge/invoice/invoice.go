@@ -74,7 +74,7 @@ func NewInvoiceFromCoreDocument(coreDocument *coredocumentpb.CoreDocument) (*Inv
 }
 
 func (inv *Invoice) getDocumentTree() (tree *proofs.DocumentTree, err error) {
-	t := proofs.NewDocumentTree(proofs.TreeOptions{Hash: sha256.New()})
+	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: sha256.New()})
 	err = t.AddLeavesFromDocument(inv.Document.Data, inv.Document.Salts)
 	if err != nil {
 		log.Error("getDocumentTree:", err)

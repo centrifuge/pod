@@ -74,7 +74,7 @@ func NewPurchaseOrderFromCoreDocument(coredocument *coredocumentpb.CoreDocument)
 }
 
 func (order *PurchaseOrder) getDocumentTree() (tree *proofs.DocumentTree, err error) {
-	t := proofs.NewDocumentTree(proofs.TreeOptions{Hash: sha256.New()})
+	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: sha256.New()})
 	err = t.AddLeavesFromDocument(order.Document.Data, order.Document.Salts)
 	if err != nil {
 		log.Error("getDocumentTree:", err)

@@ -110,7 +110,7 @@ func (dp *defaultProcessor) Anchor(document *coredocumentpb.CoreDocument) error 
 }
 
 func (dp *defaultProcessor) getDocumentTree(document *coredocumentpb.CoreDocument) (tree *proofs.DocumentTree, err error) {
-	t := proofs.NewDocumentTree(proofs.TreeOptions{Hash: sha256.New()})
+	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: sha256.New()})
 	tree = &t
 	err = tree.AddLeavesFromDocument(document, document.CoredocumentSalts)
 	if err != nil {
