@@ -4,6 +4,7 @@
 package identity
 
 import (
+	"math/big"
 	"strings"
 
 	ethereum "github.com/ethereum/go-ethereum"
@@ -15,7 +16,7 @@ import (
 )
 
 // EthereumIdentityFactoryContractABI is the input ABI used to generate the binding from.
-const EthereumIdentityFactoryContractABI = "[{\"constant\":false,\"inputs\":[{\"name\":\"_centrifugeId\",\"type\":\"bytes32\"}],\"name\":\"createIdentity\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"name\":\"_registry\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"centrifugeId\",\"type\":\"bytes32\"},{\"indexed\":false,\"name\":\"identity\",\"type\":\"address\"}],\"name\":\"IdentityCreated\",\"type\":\"event\"}]"
+const EthereumIdentityFactoryContractABI = "[{\"inputs\":[{\"name\":\"_registry\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"centrifugeId\",\"type\":\"uint48\"},{\"indexed\":false,\"name\":\"identity\",\"type\":\"address\"}],\"name\":\"IdentityCreated\",\"type\":\"event\"},{\"constant\":false,\"inputs\":[{\"name\":\"_centrifugeId\",\"type\":\"uint48\"}],\"name\":\"createIdentity\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]"
 
 // EthereumIdentityFactoryContract is an auto generated Go binding around an Ethereum contract.
 type EthereumIdentityFactoryContract struct {
@@ -159,24 +160,24 @@ func (_EthereumIdentityFactoryContract *EthereumIdentityFactoryContractTransacto
 	return _EthereumIdentityFactoryContract.Contract.contract.Transact(opts, method, params...)
 }
 
-// CreateIdentity is a paid mutator transaction binding the contract method 0x216b0089.
+// CreateIdentity is a paid mutator transaction binding the contract method 0x340e963a.
 //
-// Solidity: function createIdentity(_centrifugeId bytes32) returns()
-func (_EthereumIdentityFactoryContract *EthereumIdentityFactoryContractTransactor) CreateIdentity(opts *bind.TransactOpts, _centrifugeId [32]byte) (*types.Transaction, error) {
+// Solidity: function createIdentity(_centrifugeId uint48) returns()
+func (_EthereumIdentityFactoryContract *EthereumIdentityFactoryContractTransactor) CreateIdentity(opts *bind.TransactOpts, _centrifugeId *big.Int) (*types.Transaction, error) {
 	return _EthereumIdentityFactoryContract.contract.Transact(opts, "createIdentity", _centrifugeId)
 }
 
-// CreateIdentity is a paid mutator transaction binding the contract method 0x216b0089.
+// CreateIdentity is a paid mutator transaction binding the contract method 0x340e963a.
 //
-// Solidity: function createIdentity(_centrifugeId bytes32) returns()
-func (_EthereumIdentityFactoryContract *EthereumIdentityFactoryContractSession) CreateIdentity(_centrifugeId [32]byte) (*types.Transaction, error) {
+// Solidity: function createIdentity(_centrifugeId uint48) returns()
+func (_EthereumIdentityFactoryContract *EthereumIdentityFactoryContractSession) CreateIdentity(_centrifugeId *big.Int) (*types.Transaction, error) {
 	return _EthereumIdentityFactoryContract.Contract.CreateIdentity(&_EthereumIdentityFactoryContract.TransactOpts, _centrifugeId)
 }
 
-// CreateIdentity is a paid mutator transaction binding the contract method 0x216b0089.
+// CreateIdentity is a paid mutator transaction binding the contract method 0x340e963a.
 //
-// Solidity: function createIdentity(_centrifugeId bytes32) returns()
-func (_EthereumIdentityFactoryContract *EthereumIdentityFactoryContractTransactorSession) CreateIdentity(_centrifugeId [32]byte) (*types.Transaction, error) {
+// Solidity: function createIdentity(_centrifugeId uint48) returns()
+func (_EthereumIdentityFactoryContract *EthereumIdentityFactoryContractTransactorSession) CreateIdentity(_centrifugeId *big.Int) (*types.Transaction, error) {
 	return _EthereumIdentityFactoryContract.Contract.CreateIdentity(&_EthereumIdentityFactoryContract.TransactOpts, _centrifugeId)
 }
 
@@ -249,15 +250,15 @@ func (it *EthereumIdentityFactoryContractIdentityCreatedIterator) Close() error 
 
 // EthereumIdentityFactoryContractIdentityCreated represents a IdentityCreated event raised by the EthereumIdentityFactoryContract contract.
 type EthereumIdentityFactoryContractIdentityCreated struct {
-	CentrifugeId [32]byte
+	CentrifugeId *big.Int
 	Identity     common.Address
 	Raw          types.Log // Blockchain specific contextual infos
 }
 
-// FilterIdentityCreated is a free log retrieval operation binding the contract event 0xd5413e953e9014ac81206e92bce8c06461ad70cfc75b747d1e8ec20cf95b68d9.
+// FilterIdentityCreated is a free log retrieval operation binding the contract event 0x66c4bdc16b835463ee3a16003a3d42b54e9ead21ac72ebc421bb07afd19d4a68.
 //
-// Solidity: event IdentityCreated(centrifugeId indexed bytes32, identity address)
-func (_EthereumIdentityFactoryContract *EthereumIdentityFactoryContractFilterer) FilterIdentityCreated(opts *bind.FilterOpts, centrifugeId [][32]byte) (*EthereumIdentityFactoryContractIdentityCreatedIterator, error) {
+// Solidity: e IdentityCreated(centrifugeId indexed uint48, identity address)
+func (_EthereumIdentityFactoryContract *EthereumIdentityFactoryContractFilterer) FilterIdentityCreated(opts *bind.FilterOpts, centrifugeId []*big.Int) (*EthereumIdentityFactoryContractIdentityCreatedIterator, error) {
 
 	var centrifugeIdRule []interface{}
 	for _, centrifugeIdItem := range centrifugeId {
@@ -271,10 +272,10 @@ func (_EthereumIdentityFactoryContract *EthereumIdentityFactoryContractFilterer)
 	return &EthereumIdentityFactoryContractIdentityCreatedIterator{contract: _EthereumIdentityFactoryContract.contract, event: "IdentityCreated", logs: logs, sub: sub}, nil
 }
 
-// WatchIdentityCreated is a free log subscription operation binding the contract event 0xd5413e953e9014ac81206e92bce8c06461ad70cfc75b747d1e8ec20cf95b68d9.
+// WatchIdentityCreated is a free log subscription operation binding the contract event 0x66c4bdc16b835463ee3a16003a3d42b54e9ead21ac72ebc421bb07afd19d4a68.
 //
-// Solidity: event IdentityCreated(centrifugeId indexed bytes32, identity address)
-func (_EthereumIdentityFactoryContract *EthereumIdentityFactoryContractFilterer) WatchIdentityCreated(opts *bind.WatchOpts, sink chan<- *EthereumIdentityFactoryContractIdentityCreated, centrifugeId [][32]byte) (event.Subscription, error) {
+// Solidity: e IdentityCreated(centrifugeId indexed uint48, identity address)
+func (_EthereumIdentityFactoryContract *EthereumIdentityFactoryContractFilterer) WatchIdentityCreated(opts *bind.WatchOpts, sink chan<- *EthereumIdentityFactoryContractIdentityCreated, centrifugeId []*big.Int) (event.Subscription, error) {
 
 	var centrifugeIdRule []interface{}
 	for _, centrifugeIdItem := range centrifugeId {
@@ -312,3 +313,4 @@ func (_EthereumIdentityFactoryContract *EthereumIdentityFactoryContractFilterer)
 		}
 	}), nil
 }
+
