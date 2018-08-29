@@ -55,3 +55,8 @@ func (m *MockCoreDocumentProcessor) Anchor(coreDocument *coredocumentpb.CoreDocu
 	args := m.Called(coreDocument)
 	return args.Error(0)
 }
+
+func (m *MockCoreDocumentProcessor) GetDataProofHashes(coreDocument *coredocumentpb.CoreDocument) (hashes [][]byte, err error) {
+	args := m.Called(coreDocument)
+	return args.Get(0).([][]byte), args.Error(1)
+}

@@ -26,6 +26,7 @@ var log = logging.Logger("coredocument")
 type Processor interface {
 	Send(coreDocument *coredocumentpb.CoreDocument, ctx context.Context, recipient []byte) (err error)
 	Anchor(document *coredocumentpb.CoreDocument) (err error)
+	GetDataProofHashes(document *coredocumentpb.CoreDocument) (hashes [][]byte, err error)
 }
 
 // defaultProcessor implements Processor interface
@@ -114,7 +115,7 @@ func (dp *defaultProcessor) Anchor(document *coredocumentpb.CoreDocument) error 
 	return anchorWatch.Error
 }
 
-func (dp *defaultProcessor) getDocumentTree(document *coredocumentpb.CoreDocument) (tree *proofs.DocumentTree, err error) {
+func (dp *defaultProcessor) getDocumentSigningTree(document *coredocumentpb.CoreDocument) (tree *proofs.DocumentTree, err error) {
 	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: sha256.New()})
 	tree = &t
 	err = tree.AddLeavesFromDocument(document, document.CoredocumentSalts)
@@ -134,12 +135,27 @@ func (dp *defaultProcessor) calculateSigningRoot(document *coredocumentpb.CoreDo
 		return errors.NewWithErrors(code.DocumentInvalid, errMsg, errs)
 	}
 
-	tree, err := dp.getDocumentTree(document)
+	tree, err := dp.getDocumentSigningTree(document)
 	if err != nil {
 		return err
 	}
 	document.SigningRoot = tree.RootHash()
 	return nil
+}
+
+// GetDataProofHashes returns the hashes needed to create a proof from DataRoot to SigningRoot. This method is used
+// to create field proofs
+// TODO: when signature is properly implemented, this needs to be changed to the DocumentRoot
+func (dp *defaultProcessor) GetDataProofHashes(document *coredocumentpb.CoreDocument) (hashes [][]byte, err error) {
+	tree, err := dp.getDocumentSigningTree(document)
+	if err != nil {
+		return
+	}
+	proof, err := tree.CreateProof("data_root")
+	if err != nil {
+		return
+	}
+	return proof.SortedHashes, err
 }
 
 func (dp *defaultProcessor) Sign(document *coredocumentpb.CoreDocument) (err error) {

@@ -68,7 +68,7 @@ func TestFillIdentifiers(t *testing.T) {
 		}
 
 		var err error
-		doc, err = FillIdentifiers(doc)
+		err = FillIdentifiers(&doc)
 		if err != nil {
 			if c.err == nil {
 				t.Fatalf("unexpected error: %v", err)

@@ -28,12 +28,11 @@ func fillCoreDocIdentifiers(doc *invoicepb.InvoiceDocument) error {
 	if doc == nil {
 		return errors.NilError(doc)
 	}
-	filledCoreDoc, err := coredocument.FillIdentifiers(*doc.CoreDocument)
+	err := coredocument.FillIdentifiers(doc.CoreDocument)
 	if err != nil {
 		log.Error(err)
 		return err
 	}
-	doc.CoreDocument = &filledCoreDoc
 	return nil
 }
 
@@ -50,13 +49,23 @@ func (s *InvoiceDocumentService) HandleCreateInvoiceProof(ctx context.Context, c
 		return nil, err
 	}
 
+	dataRootHashes, err := s.CoreDocumentProcessor.GetDataProofHashes(inv.Document.CoreDocument)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
 	proofs, err := inv.CreateProofs(createInvoiceProofEnvelope.Fields)
 	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
-	return &clientinvoicepb.InvoiceProof{FieldProofs: proofs, DocumentIdentifier: inv.Document.CoreDocument.DocumentIdentifier}, nil
 
+	for _, proof := range proofs {
+		proof.SortedHashes = append(proof.SortedHashes, dataRootHashes...)
+	}
+
+	return &clientinvoicepb.InvoiceProof{FieldProofs: proofs, DocumentIdentifier: inv.Document.CoreDocument.DocumentIdentifier}, nil
 }
 
 // HandleAnchorInvoiceDocument anchors the given invoice document and returns the anchor details

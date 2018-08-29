@@ -182,13 +182,16 @@ func TestInvoiceDocumentService_HandleCreateInvoiceProof(t *testing.T) {
 	}
 	inv.CalculateMerkleRoot()
 
-	s, mockRepo, _ := generateMockedOutInvoiceService()
+	s, mockRepo, mockProcessor := generateMockedOutInvoiceService()
 
 	proofRequest := &clientinvoicepb.CreateInvoiceProofEnvelope{
 		DocumentIdentifier: identifier,
 		Fields:             []string{"currency", "sender_country", "gross_amount"},
 	}
+
 	mockRepo.On("FindById", proofRequest.DocumentIdentifier).Return(inv.Document, nil).Once()
+	// In this test we mock out the signing root generation and return empty hashes for the CoreDocumentProcessor.GetProofHashes
+	mockProcessor.On("GetDataProofHashes", inv.Document.CoreDocument).Return([][]byte{}, nil).Once()
 
 	invoiceProof, err := s.HandleCreateInvoiceProof(context.Background(), proofRequest)
 	mockRepo.AssertExpectations(t)
@@ -199,6 +202,8 @@ func TestInvoiceDocumentService_HandleCreateInvoiceProof(t *testing.T) {
 	assert.Equal(t, proofRequest.Fields[0], invoiceProof.FieldProofs[0].Property)
 	sha256Hash := sha256.New()
 	fieldHash, err := proofs.CalculateHashForProofField(invoiceProof.FieldProofs[0], sha256Hash)
+
+	// This test does not test that the DataRoot is properly added to SigningRoot
 	valid, err := proofs.ValidateProofSortedHashes(fieldHash, invoiceProof.FieldProofs[0].SortedHashes, inv.Document.CoreDocument.DataRoot, sha256Hash)
 	assert.True(t, valid)
 	assert.Nil(t, err)
