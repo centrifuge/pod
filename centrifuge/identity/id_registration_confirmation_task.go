@@ -72,7 +72,6 @@ func (rct *IdRegistrationConfirmationTask) ParseKwargs(kwargs map[string]interfa
 }
 
 // RunTask calls listens to events from geth related to IdRegistrationConfirmationTask#CentId and records result.
-// Currently covered by TestCreateAndLookupIdentity_Integration test.
 func (rct *IdRegistrationConfirmationTask) RunTask() (interface{}, error) {
 	log.Infof("Waiting for confirmation for the ID [%x]", rct.CentId)
 	if rct.EthContext == nil {
