@@ -154,3 +154,12 @@ func TestSignForEthereum(t *testing.T) {
 	assert.Equal(t, correct, true, "generating ethereum signature for msg doesn't work correctly")
 
 }
+
+func TestGetAddress(t *testing.T) {
+	//privateKey := "0xde411bde02fdc6998b859241ec6681f29137379cea95c90b1b72540e561a344d"
+	publicKey := "0x0476464b646617c572f27ee4e0ff7646466bb6cecff1e71f30431cd9ef5f9b163e19bfc5831267fed3818c0b9423386138c2636a0744cf492e12da77e903df592c"
+	correctAddress := "0x4ee4a0113f1c833cafcc481e3b3667088607aaa8"
+
+	address := GetAddress(utils.HexToByteArray(publicKey))
+	assert.Equal(t, address, correctAddress, "address is not correctly calculated from public key")
+}

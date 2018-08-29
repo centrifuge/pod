@@ -8,7 +8,7 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/secp256k1"
 )
 
-func SignMessage(privateKeyPath, message, curveType string) []byte {
+func SignMessage(privateKeyPath, message, curveType string, ethereumSign bool) []byte {
 
 	privateKey, err := io.ReadKeyFromPemFile(privateKeyPath, PrivateKey)
 
@@ -18,16 +18,24 @@ func SignMessage(privateKeyPath, message, curveType string) []byte {
 
 	curveType = strings.ToLower(curveType)
 
-	if len(message) > MaxMsgLen {
-		log.Fatal("max message len is 32 bytes current len:", len(message))
-	}
+	var msg []byte
+	if ethereumSign == true {
+		msg = []byte(message)
+	} else {
+		if len(message) > MaxMsgLen {
+			log.Fatal("max message len is 32 bytes current len:", len(message))
+		}
 
-	msg := make([]byte, MaxMsgLen)
-	copy(msg, message)
+		msg = make([]byte, MaxMsgLen)
+		copy(msg, message)
+	}
 
 	switch curveType {
 
 	case CurveSecp256K1:
+		if ethereumSign {
+			return secp256k1.SignEthereum(msg, privateKey)
+		}
 		return secp256k1.Sign(msg, privateKey)
 
 	case CurveEd25519:
@@ -35,6 +43,9 @@ func SignMessage(privateKeyPath, message, curveType string) []byte {
 		return []byte("")
 
 	default:
+		if ethereumSign {
+			return secp256k1.SignEthereum(msg, privateKey)
+		}
 		return secp256k1.Sign(msg, privateKey)
 
 	}

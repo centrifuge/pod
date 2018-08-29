@@ -54,6 +54,13 @@ func SignEthereum(message []byte, privateKey []byte) (signature []byte) {
 	return Sign(hash, privateKey)
 }
 
+func GetAddress(publicKey []byte) string {
+
+	hash := crypto.Keccak256(publicKey[1:])
+	address := hash[12:] //address is the last 20 bytes of the hash len(hash) = 20
+	return utils.ByteArrayToHex(address)
+}
+
 func VerifySignatureWithAddress(address, sigHex string, msg []byte) bool {
 	fromAddr := common.HexToAddress(address)
 

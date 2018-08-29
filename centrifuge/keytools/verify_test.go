@@ -14,7 +14,7 @@ func TestVerifyMessageED25519(t *testing.T) {
 	testMsg := "test"
 
 	GenerateSigningKeyPair(publicKeyFile, privateKeyFile, CurveEd25519)
-	signature := SignMessage(privateKeyFile, testMsg, CurveEd25519)
+	signature := SignMessage(privateKeyFile, testMsg, CurveEd25519, false)
 
 	os.Remove(publicKeyFile)
 	os.Remove(privateKeyFile)
