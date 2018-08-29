@@ -9,6 +9,7 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	gologging "github.com/whyrusleeping/go-logging"
+	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
 )
 
 //global flags
@@ -73,4 +74,14 @@ func initCentrifuge() {
 	}
 	// If a config file is found, read it in.
 	config.Bootstrap(cfgFile)
+}
+
+func defaultBootstrap() {
+	mb := cc.MainBootstrapper{}
+	mb.PopulateDefaultBootstrappers()
+	err := mb.Bootstrap(map[string]interface{}{})
+	if err != nil {
+		// application must not continue to run
+		panic(err)
+	}
 }
