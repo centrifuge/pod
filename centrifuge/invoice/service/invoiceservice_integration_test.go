@@ -58,6 +58,9 @@ func TestInvoiceDocumentService_HandleAnchorInvoiceDocument_Integration(t *testi
 	assert.Equal(t, "DE", loadedInvoice.Data.SenderCountry,
 		"Didn't save the invoice data correctly")
 
+	// Invoice stored after anchoring has Salts populated
+	assert.NotNil(t, loadedInvoice.Salts.SenderCountry)
+
 	//Invoice Service should error out if trying to anchor the same document ID again
 	doc.Document.Data.SenderCountry = "ES"
 	anchoredDoc2, err := s.HandleAnchorInvoiceDocument(context.Background(), &clientinvoicepb.AnchorInvoiceEnvelope{Document: doc.Document})

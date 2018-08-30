@@ -25,7 +25,7 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	// with different tasks types queued in the node
 	if queuedTasks, ok := context[queue.BootstrappedQueuedTasks]; ok {
 		if queuedTasksTyped, ok := queuedTasks.([]queue.QueuedTask); ok {
-			queuedTasksTyped = append(queuedTasksTyped, createIdRegistrationConfirmationTask(identityContract))
+			context[queue.BootstrappedQueuedTasks] = append(queuedTasksTyped, createIdRegistrationConfirmationTask(identityContract))
 			return nil
 		} else {
 			return errors.New(queue.BootstrappedQueuedTasks + " is of an unexpected type")
