@@ -211,7 +211,6 @@ func Validate(doc *purchaseorderpb.PurchaseOrderDocument) (valid bool, errMsg st
 
 	// checking for nil salts should be okay for now
 	// once the converters are in, salts will be filled during conversion
-	// TODO(ved):check each salt?
 	if doc.Salts == nil {
 		errs["po_salts"] = errors.RequiredField
 	}

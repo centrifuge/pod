@@ -23,7 +23,7 @@ type InvoiceDocumentService struct {
 	CoreDocumentProcessor coredocumentprocessor.Processor
 }
 
-// anchorInvoiceDocument anchors the given invoice document and returns the anchor details
+// anchorInvoiceDocument anchors the given invoice document and returns the anchored document
 func (s *InvoiceDocumentService) anchorInvoiceDocument(doc *invoicepb.InvoiceDocument) (*invoicepb.InvoiceDocument, error) {
 
 	inv, err := invoice.New(doc)

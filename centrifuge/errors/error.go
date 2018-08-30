@@ -110,7 +110,8 @@ func NilError(param interface{}) error {
 	return errors.Errorf("NIL %v provided", reflect.TypeOf(param))
 }
 
-// Wrap checks for P2PError and appends the message
+// Wrap appends msg to errpb.Message if it is of type *errpb
+// else appends the msg to error through fmt.Errorf
 func Wrap(err error, msg string) error {
 	if err == nil {
 		return fmt.Errorf(msg)

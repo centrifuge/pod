@@ -22,7 +22,7 @@ type Invoice struct {
 	Document *invoicepb.InvoiceDocument
 }
 
-// New returns fills salts, coredoc and returns a new invoice
+// New fills salts, coredoc and returns a new invoice
 func New(invDoc *invoicepb.InvoiceDocument) (*Invoice, error) {
 	if invDoc == nil {
 		return nil, errors.NilError(invDoc)
@@ -59,7 +59,7 @@ func Empty() *Invoice {
 	return &Invoice{&doc}
 }
 
-// NewFromCoreDocument returns a Invoice from Core Document
+// NewFromCoreDocument returns an Invoice from Core Document
 func NewFromCoreDocument(coreDocument *coredocumentpb.CoreDocument) (*Invoice, error) {
 	if coreDocument == nil {
 		return nil, errors.NilError(coreDocument)
@@ -210,7 +210,6 @@ func Validate(doc *invoicepb.InvoiceDocument) (valid bool, errMsg string, errs m
 
 	// checking for nil salts should be okay for now
 	// once the converters are in, salts will be filled during conversion
-	// TODO(ved):check each salt?
 	if doc.Salts == nil {
 		errs["inv_salts"] = errors.RequiredField
 	}
