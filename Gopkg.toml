@@ -51,6 +51,10 @@ required = ["github.com/roboll/go-vendorinstall", "github.com/golang/protobuf/pr
   name = "github.com/go-errors/errors"
   version = "1.0.1"
 
+[[override]]
+  name = "github.com/rjeczalik/notify"
+  version = "0.9.1"
+
 [[constraint]]
   name = "github.com/golang/protobuf"
   version = "1.1.0"
