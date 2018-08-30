@@ -28,7 +28,7 @@ func GenerateKeyFilesForTest(t *testing.T, curve string) (publicKey, privateKey 
 
 	_, err = os.Stat(privateFileName)
 
-	assert.False(t, err != nil,  "private key file not generated")
+	assert.False(t, err != nil, "private key file not generated")
 
 	publicKey, err = io.ReadKeyFromPemFile(publicFileName, PublicKey)
 

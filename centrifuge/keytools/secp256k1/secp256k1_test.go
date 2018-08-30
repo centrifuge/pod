@@ -3,10 +3,10 @@ package secp256k1
 import (
 	"fmt"
 	"testing"
+
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/utils"
 	"github.com/stretchr/testify/assert"
 )
-
 
 const MaxMsgLen = 32
 
@@ -49,7 +49,7 @@ func TestVerifyFalseMsg(t *testing.T) {
 
 	correct := VerifySignature(publicKey, falseMsg, signature)
 
-	assert.False(t, correct,  "false msg verify should be false ")
+	assert.False(t, correct, "false msg verify should be false ")
 
 }
 
@@ -82,7 +82,7 @@ func TestVerifySignatureWithAddress(t *testing.T) {
 		testSignature,
 		[]byte(testMsg))
 
-	assert.True(t, correct,  "recovering public key from signature doesn't work correctly")
+	assert.True(t, correct, "recovering public key from signature doesn't work correctly")
 
 }
 
@@ -98,7 +98,7 @@ func TestVerifySignatureWithAddressFalseMsg(t *testing.T) {
 		testSignature,
 		[]byte(falseMsg))
 
-	assert.False(t, correct,  "verify signature should be false (false msg)")
+	assert.False(t, correct, "verify signature should be false (false msg)")
 
 }
 
@@ -114,7 +114,7 @@ func TestVerifySignatureWithFalseAddress(t *testing.T) {
 		testSignature,
 		[]byte(testMsg))
 
-	assert.False(t, correct,"verify signature should be false (false address)")
+	assert.False(t, correct, "verify signature should be false (false address)")
 
 }
 
@@ -130,7 +130,7 @@ func TestVerifySignatureWithFalseSignature(t *testing.T) {
 		falseSignature,
 		[]byte(testMsg))
 
-	assert.False(t, correct,"verify signature should be false (false signature)")
+	assert.False(t, correct, "verify signature should be false (false signature)")
 
 }
 
