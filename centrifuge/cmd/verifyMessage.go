@@ -15,6 +15,7 @@ func init() {
 	var messageParam string
 	var signatureParam string
 	var publicKeyFileParam string
+	var ethereumSignFlag bool
 
 	var verifyMsgCmd = &cobra.Command{
 		Use:   "verify",
@@ -23,14 +24,15 @@ func init() {
 		Run: func(cmd *cobra.Command, args []string) {
 			signatureBytes := utils.HexToByteArray(signatureParam)
 
-			correct := keytools.VerifyMessage(publicKeyFileParam, messageParam, signatureBytes, curveTypeParam)
+			correct := keytools.VerifyMessage(publicKeyFileParam, messageParam, signatureBytes, curveTypeParam, ethereumSignFlag)
 			fmt.Println(correct)
 		},
 	}
 
 	rootCmd.AddCommand(verifyMsgCmd)
-	verifyMsgCmd.Flags().StringVarP(&messageParam, "message", "m", "", "message to verify (max 32 bytes)")
+	verifyMsgCmd.Flags().StringVarP(&messageParam, "message", "m", "", "message to verify")
 	verifyMsgCmd.Flags().StringVarP(&publicKeyFileParam, "public", "q", "", "public key path")
 	verifyMsgCmd.Flags().StringVarP(&curveTypeParam, "type", "t", "", "type of the curve (supported:'secp256k1')")
 	verifyMsgCmd.Flags().StringVarP(&signatureParam, "signature", "s", "", "signature")
+	verifyMsgCmd.Flags().BoolVarP(&ethereumSignFlag, "ethereum", "e", false, "verify message which was signed with Ethereum")
 }

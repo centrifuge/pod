@@ -1,9 +1,11 @@
 package secp256k1
 
 import (
+	"fmt"
 	"testing"
 
-	"github.com/magiconair/properties/assert"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/utils"
+	"github.com/stretchr/testify/assert"
 )
 
 const MaxMsgLen = 32
@@ -29,7 +31,7 @@ func TestSigningMsg(t *testing.T) {
 
 	correct := VerifySignature(publicKey, testMsg, signature)
 
-	assert.Equal(t, correct, true, "sign message didn't work correctly")
+	assert.True(t, correct, "sign message didn't work correctly")
 
 }
 
@@ -47,7 +49,7 @@ func TestVerifyFalseMsg(t *testing.T) {
 
 	correct := VerifySignature(publicKey, falseMsg, signature)
 
-	assert.Equal(t, correct, false, "false msg verify should be false ")
+	assert.False(t, correct, "false msg verify should be false ")
 
 }
 
@@ -64,14 +66,14 @@ func TestVerifyFalsePublicKey(t *testing.T) {
 
 	correct := VerifySignature(falsePublicKey, testMsg, signature)
 
-	assert.Equal(t, correct, false, "verify of false public key should be false")
+	assert.False(t, correct, "verify of false public key should be false")
 
 }
 
 func TestVerifySignatureWithAddress(t *testing.T) {
 
 	testAddress := "0xd77c534aed04d7ce34cd425073a033db4fbe6a9d"
-	//signature generated with an external library
+	//signature generated with an external library (www.myetherwallet.com)
 	testSignature := "0x526ea99711a545c745a300e363d277b221d06da2814c521f1b7aa2a3fd0741b85044541da1f985afb51bc4b25a2ab2282721957f694c37a0c68f2fa3220c5cea1c"
 	testMsg := "centrifuge"
 
@@ -80,7 +82,7 @@ func TestVerifySignatureWithAddress(t *testing.T) {
 		testSignature,
 		[]byte(testMsg))
 
-	assert.Equal(t, correct, true, "recovering public key from signature doesn't work correctly")
+	assert.True(t, correct, "recovering public key from signature doesn't work correctly")
 
 }
 
@@ -96,7 +98,7 @@ func TestVerifySignatureWithAddressFalseMsg(t *testing.T) {
 		testSignature,
 		[]byte(falseMsg))
 
-	assert.Equal(t, correct, false, "verify signature should be false (false msg)")
+	assert.False(t, correct, "verify signature should be false (false msg)")
 
 }
 
@@ -112,7 +114,7 @@ func TestVerifySignatureWithFalseAddress(t *testing.T) {
 		testSignature,
 		[]byte(testMsg))
 
-	assert.Equal(t, correct, false, "verify signature should be false (false address)")
+	assert.False(t, correct, "verify signature should be false (false address)")
 
 }
 
@@ -128,6 +130,58 @@ func TestVerifySignatureWithFalseSignature(t *testing.T) {
 		falseSignature,
 		[]byte(testMsg))
 
-	assert.Equal(t, correct, false, "verify signature should be false (false signature)")
+	assert.False(t, correct, "verify signature should be false (false signature)")
 
+}
+
+func TestSignForEthereum(t *testing.T) {
+	privateKey := "0xb5fffc3933d93dc956772c69b42c4bc66123631a24e3465956d80b5b604a2d13"
+	address := "0xd77c534aed04d7ce34cd425073a033db4fbe6a9d"
+	testMsg := "Centrifuge likes Ethereum"
+
+	testMsgBytes := []byte(testMsg)
+
+	//signature should be 0xc158e04b7e22af2380af7b2581c9f89505761d3e517a07fa6bb76889bdb50c604b1517eb4a920053e878478d171ab63c732deb8eb182e3374bcebd046e773a4500
+	//verification should work on external services like https://etherscan.io/verifySig
+	signature := SignEthereum(testMsgBytes, utils.HexToByteArray(privateKey))
+
+	sigHex := utils.ByteArrayToHex(signature)
+	fmt.Println(sigHex)
+
+	correct := VerifySignatureWithAddress(address, sigHex, testMsgBytes)
+
+	assert.Equal(t, correct, true, "generating ethereum signature for msg doesn't work correctly")
+
+}
+
+func TestSignForEthereum32Bytes(t *testing.T) {
+	privateKey := "0xb5fffc3933d93dc956772c69b42c4bc66123631a24e3465956d80b5b604a2d13"
+	address := "0xd77c534aed04d7ce34cd425073a033db4fbe6a9d"
+
+	testMsgBytes := make([]byte, 32)
+	copy(testMsgBytes, "Centrifuge likes Ethereum")
+
+	// this signature will not work on external services like etherscan.io because the size of testMsgBytes (32 bytes)
+	// is longer than the testMessage in bytes
+	signature := SignEthereum(testMsgBytes, utils.HexToByteArray(privateKey))
+
+	sigHex := utils.ByteArrayToHex(signature)
+
+	fmt.Println("address", address)
+	fmt.Println("msg:", utils.ByteArrayToHex(testMsgBytes))
+	fmt.Println("signature:", sigHex)
+
+	correct := VerifySignatureWithAddress(address, sigHex, testMsgBytes)
+
+	assert.Equal(t, correct, true, "generating ethereum signature for msg doesn't work correctly")
+
+}
+
+func TestGetAddress(t *testing.T) {
+	//privateKey := "0xde411bde02fdc6998b859241ec6681f29137379cea95c90b1b72540e561a344d"
+	publicKey := "0x0476464b646617c572f27ee4e0ff7646466bb6cecff1e71f30431cd9ef5f9b163e19bfc5831267fed3818c0b9423386138c2636a0744cf492e12da77e903df592c"
+	correctAddress := "0x4ee4a0113f1c833cafcc481e3b3667088607aaa8"
+
+	address := GetAddress(utils.HexToByteArray(publicKey))
+	assert.Equal(t, address, correctAddress, "address is not correctly calculated from public key")
 }
