@@ -168,8 +168,8 @@ func TestSignForEthereum32Bytes(t *testing.T) {
 
 	sigHex := utils.ByteArrayToHex(signature)
 
-	fmt.Println("address",address)
-	fmt.Println("msg:",utils.ByteArrayToHex(testMsgBytes))
+	fmt.Println("address", address)
+	fmt.Println("msg:", utils.ByteArrayToHex(testMsgBytes))
 	fmt.Println("signature:", sigHex)
 
 	correct := VerifySignatureWithAddress(address, sigHex, testMsgBytes)

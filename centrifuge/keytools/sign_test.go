@@ -47,7 +47,7 @@ func TestSignAndVerifyMessageEthereum(t *testing.T) {
 	fmt.Println("publicKey: ", utils.ByteArrayToHex(publicKey))
 	fmt.Println("address:", address)
 	fmt.Println("msg:", testMsg)
-	fmt.Println("msg in hex:",utils.ByteArrayToHex([]byte(testMsg)))
+	fmt.Println("msg in hex:", utils.ByteArrayToHex([]byte(testMsg)))
 	fmt.Println("hash of msg: ", utils.ByteArrayToHex(secp256k1.SignHash([]byte(testMsg))))
 	fmt.Println("signature:", utils.ByteArrayToHex(signature))
 	fmt.Println("Generated Signature can also be verified at https://etherscan.io/verifySig")
