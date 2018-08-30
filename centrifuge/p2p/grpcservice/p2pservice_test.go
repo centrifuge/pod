@@ -30,17 +30,17 @@ func TestMain(m *testing.M) {
 }
 
 var coreDoc = &coredocumentpb.CoreDocument{
-	DocumentRoot:       tools.RandomSliceN(32),
-	DocumentIdentifier: tools.RandomSliceN(32),
-	CurrentIdentifier:  tools.RandomSliceN(32),
-	NextIdentifier:     tools.RandomSliceN(32),
-	DataRoot:           tools.RandomSliceN(32),
+	DocumentRoot:       tools.RandomSlice(32),
+	DocumentIdentifier: tools.RandomSlice(32),
+	CurrentIdentifier:  tools.RandomSlice(32),
+	NextIdentifier:     tools.RandomSlice(32),
+	DataRoot:           tools.RandomSlice(32),
 	CoredocumentSalts: &coredocumentpb.CoreDocumentSalts{
-		DocumentIdentifier: tools.RandomSliceN(32),
-		CurrentIdentifier:  tools.RandomSliceN(32),
-		NextIdentifier:     tools.RandomSliceN(32),
-		DataRoot:           tools.RandomSliceN(32),
-		PreviousRoot:       tools.RandomSliceN(32),
+		DocumentIdentifier: tools.RandomSlice(32),
+		CurrentIdentifier:  tools.RandomSlice(32),
+		NextIdentifier:     tools.RandomSlice(32),
+		DataRoot:           tools.RandomSlice(32),
+		PreviousRoot:       tools.RandomSlice(32),
 	},
 }
 

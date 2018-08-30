@@ -34,9 +34,9 @@ func CheckMultiple32BytesFilled(bs ...[]byte) bool {
 	return true
 }
 
-// RandomSliceN returns a randomly filled byte array with length of n
-func RandomSliceN(n int) (out []byte) {
-	r := make([]byte, n)
+// RandomSlice returns a randomly filled byte array with length of given size
+func RandomSlice(size int) (out []byte) {
+	r := make([]byte, size)
 	_, err := rand.Read(r)
 	// Note that err == nil only if we read len(b) bytes.
 	if err != nil {
@@ -47,7 +47,7 @@ func RandomSliceN(n int) (out []byte) {
 
 // RandomByte32 returns a randomly filled byte array with length of 32
 func RandomByte32() (out [32]byte) {
-	r := RandomSliceN(32)
+	r := RandomSlice(32)
 	copy(out[:], r[:32])
 	return
 }
@@ -102,8 +102,8 @@ func ByteSliceToBigInt(slice []byte) *big.Int {
 	return bi
 }
 
-func Byte48ToBigInt(bytesArr [48]byte) *big.Int {
+func BytesToBigInt(bytes []byte, size int) *big.Int {
 	bi := new(big.Int)
-	bi.SetBytes(bytesArr[:])
+	bi.SetBytes(bytes[:size])
 	return bi
 }

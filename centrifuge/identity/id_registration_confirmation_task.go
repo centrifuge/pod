@@ -13,7 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/go-errors/errors"
-)
+	)
 
 const IdRegistrationConfirmationTaskName string = "IdRegistrationConfirmationTaskName"
 const CentIdParam string = "CentId"
@@ -25,7 +25,7 @@ type IdentityCreatedWatcher interface {
 // IdRegistrationConfirmationTask is a queued task to watch ID registration events on Ethereum using EthereumIdentityFactoryContract.
 // To see how it gets registered see bootstrapper.go and to see how it gets used see setUpRegistrationEventListener method
 type IdRegistrationConfirmationTask struct {
-	CentId                 [48]byte
+	CentId                 [CentIdByteLength]byte
 	EthContextInitializer  func() (ctx context.Context, cancelFunc context.CancelFunc)
 	IdentityCreatedEvents  chan *EthereumIdentityFactoryContractIdentityCreated
 	EthContext             context.Context
@@ -85,7 +85,7 @@ func (rct *IdRegistrationConfirmationTask) RunTask() (interface{}, error) {
 		rct.IdentityCreatedEvents = make(chan *EthereumIdentityFactoryContractIdentityCreated)
 	}
 
-	subscription, err := rct.IdentityCreatedWatcher.WatchIdentityCreated(watchOpts, rct.IdentityCreatedEvents, []*big.Int{tools.Byte48ToBigInt(rct.CentId)})
+	subscription, err := rct.IdentityCreatedWatcher.WatchIdentityCreated(watchOpts, rct.IdentityCreatedEvents, []*big.Int{tools.BytesToBigInt(rct.CentId[:], CentIdByteLength)})
 	if err != nil {
 		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for identity registration", 1)
 		log.Errorf(wError.Error())
@@ -107,8 +107,8 @@ func (rct *IdRegistrationConfirmationTask) RunTask() (interface{}, error) {
 	}
 }
 
-func getBytes(key interface{}) ([48]byte, error) {
-	var fixed [48]byte
+func getBytes(key interface{}) ([CentIdByteLength]byte, error) {
+	var fixed [CentIdByteLength]byte
 	b, ok := key.([]interface{})
 	if !ok {
 		return fixed, errors.New("Could not parse interface to []byte")

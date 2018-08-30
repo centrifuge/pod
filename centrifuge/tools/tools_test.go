@@ -15,7 +15,7 @@ func TestRandomByte32(t *testing.T) {
 }
 
 func TestRandomSliceN(t *testing.T) {
-	random := RandomSliceN(32)
+	random := RandomSlice(32)
 	assert.NotNil(t, random, "should receive non-nil")
 	assert.False(t, IsEmptyByteSlice(random))
 	assert.Len(t, random, 32)
@@ -128,4 +128,11 @@ func TestSliceToByte32(t *testing.T) {
 	act, err = SliceToByte32(tst)
 	assert.Error(t, err)
 	assert.EqualValues(t, exp, act, "Expected to be [%v] but got [%v]", exp, act)
+}
+
+func TestByteSliceToBigInt(t *testing.T) {
+
+}
+
+func TestByte48ToBigInt(t *testing.T) {
 }

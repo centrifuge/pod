@@ -31,7 +31,7 @@ func TestCoreDocumentProcessor_AnchorNilDocument(t *testing.T) {
 }
 
 func TestCoreDocumentProcessor_getDocumentTree(t *testing.T) {
-	cd := &coredocumentpb.CoreDocument{DocumentIdentifier: tools.RandomSliceN(32)}
+	cd := &coredocumentpb.CoreDocument{DocumentIdentifier: tools.RandomSlice(32)}
 	cds := &coredocumentpb.CoreDocumentSalts{}
 	proofs.FillSalts(cds)
 	cd.CoredocumentSalts = cds

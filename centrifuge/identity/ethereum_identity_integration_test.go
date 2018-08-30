@@ -1,4 +1,4 @@
-// +build ethereum
+
 
 package identity_test
 
@@ -32,8 +32,8 @@ func TestMain(m *testing.M) {
 }
 
 func TestCreateAndLookupIdentity_Integration(t *testing.T) {
-	centrifugeId := tools.RandomSliceN(48)
-	wrongCentrifugeId := tools.RandomSliceN(48)
+	centrifugeId := tools.RandomSlice(identity.CentIdByteLength)
+	wrongCentrifugeId := tools.RandomSlice(identity.CentIdByteLength)
 	wrongCentrifugeId[0] = 0x0
 	wrongCentrifugeId[1] = 0x0
 	wrongCentrifugeId[2] = 0x0
@@ -70,17 +70,17 @@ func TestCreateAndLookupIdentity_Integration(t *testing.T) {
 	assert.False(t, exists)
 
 	// Add Key
-	key := tools.RandomSliceN(32)
+	key := tools.RandomSlice(32)
 	confirmations, err = id.AddKeyToIdentity(1, key)
 	assert.Nil(t, err, "should not error out when adding key to identity")
 	watchReceivedIdentity := <-confirmations
 	assert.Equal(t, centrifugeId, watchReceivedIdentity.Identity.GetCentrifugeId(), "Resulting Identity should have the same ID as the input")
 
-	recKey, err := id.GetLastKeyForType(1)
+	recKey, err := id.GetLastKeyForPurpose(1)
 	assert.Nil(t, err)
 	assert.Equal(t, key, recKey)
 
-	_, err = id.GetLastKeyForType(2)
+	_, err = id.GetLastKeyForPurpose(2)
 	assert.NotNil(t, err)
 
 }
@@ -90,7 +90,7 @@ func TestCreateAndLookupIdentity_Integration_Concurrent(t *testing.T) {
 	var identityConfirmations [5]<-chan *identity.WatchIdentity
 	var err error
 	for ix := 0; ix < 5; ix++ {
-		centId := tools.RandomSliceN(48)
+		centId := tools.RandomSlice(identity.CentIdByteLength)
 		centIds[ix] = centId
 		_, identityConfirmations[ix], err = identityService.CreateIdentity(centId)
 		assert.Nil(t, err, "should not error out upon identity creation")
