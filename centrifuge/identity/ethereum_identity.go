@@ -352,7 +352,7 @@ func (ids *EthereumIdentityService) CheckIdentityExists(centrifugeId []byte) (ex
 }
 
 func (ids *EthereumIdentityService) CreateIdentity(centrifugeId []byte) (id Identity, confirmations chan *WatchIdentity, err error) {
-	log.Infof("Creating Identity [%v]", centrifugeId)
+	log.Infof("Creating Identity [%x]", centrifugeId)
 
 	id = NewEthereumIdentity()
 	id.SetCentrifugeId(centrifugeId)

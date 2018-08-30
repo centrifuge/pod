@@ -96,13 +96,15 @@ func IsSameByteSlice(a []byte, b []byte) bool {
 	return true
 }
 
+// ByteFixedToBigInt convert bute slices to big.Int
 func ByteSliceToBigInt(slice []byte) *big.Int {
 	bi := new(big.Int)
 	bi.SetBytes(slice)
 	return bi
 }
 
-func BytesToBigInt(bytes []byte, size int) *big.Int {
+// ByteFixedToBigInt convert arbitrary length byte arrays to big.Int
+func ByteFixedToBigInt(bytes []byte, size int) *big.Int {
 	bi := new(big.Int)
 	bi.SetBytes(bytes[:size])
 	return bi

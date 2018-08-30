@@ -1,5 +1,3 @@
-
-
 package identity_test
 
 import (

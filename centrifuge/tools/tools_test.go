@@ -1,9 +1,9 @@
-// +build unit
-
 package tools
 
 import (
 	"testing"
+
+	"encoding/binary"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -131,8 +131,31 @@ func TestSliceToByte32(t *testing.T) {
 }
 
 func TestByteSliceToBigInt(t *testing.T) {
+	// uint32
+	expected := uint32(15)
+	byteVal := make([]byte, 4)
+	binary.BigEndian.PutUint32(byteVal, expected)
+	bigInt := ByteSliceToBigInt(byteVal)
+	actual := uint32(bigInt.Uint64())
+	assert.Equal(t, expected, actual)
 
+	// uint48
+	tst := []byte{1, 2, 3, 4, 5, 6}
+	bigInt = ByteSliceToBigInt(tst)
+	assert.Equal(t, tst, bigInt.Bytes())
 }
 
-func TestByte48ToBigInt(t *testing.T) {
+func TestByteFixedToBigInt(t *testing.T) {
+	// uint32
+	expected := uint32(15)
+	byteVal := make([]byte, 4)
+	binary.BigEndian.PutUint32(byteVal, expected)
+	bigInt := ByteFixedToBigInt(byteVal, 4)
+	actual := uint32(bigInt.Uint64())
+	assert.Equal(t, expected, actual)
+
+	// uint48
+	tst := []byte{1, 2, 3, 4, 5, 6}
+	bigInt = ByteFixedToBigInt(tst, 6)
+	assert.Equal(t, tst, bigInt.Bytes())
 }

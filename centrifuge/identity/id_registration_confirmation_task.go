@@ -13,7 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/go-errors/errors"
-	)
+)
 
 const IdRegistrationConfirmationTaskName string = "IdRegistrationConfirmationTaskName"
 const CentIdParam string = "CentId"
@@ -85,7 +85,7 @@ func (rct *IdRegistrationConfirmationTask) RunTask() (interface{}, error) {
 		rct.IdentityCreatedEvents = make(chan *EthereumIdentityFactoryContractIdentityCreated)
 	}
 
-	subscription, err := rct.IdentityCreatedWatcher.WatchIdentityCreated(watchOpts, rct.IdentityCreatedEvents, []*big.Int{tools.BytesToBigInt(rct.CentId[:], CentIdByteLength)})
+	subscription, err := rct.IdentityCreatedWatcher.WatchIdentityCreated(watchOpts, rct.IdentityCreatedEvents, []*big.Int{tools.ByteFixedToBigInt(rct.CentId[:], CentIdByteLength)})
 	if err != nil {
 		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for identity registration", 1)
 		log.Errorf(wError.Error())
