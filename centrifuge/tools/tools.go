@@ -107,4 +107,3 @@ func Byte48ToBigInt(bytesArr [48]byte) *big.Int {
 	bi.SetBytes(bytesArr[:])
 	return bi
 }
-

@@ -493,4 +493,3 @@ func (_EthereumIdentityRegistryContract *EthereumIdentityRegistryContractFiltere
 		}
 	}), nil
 }
-

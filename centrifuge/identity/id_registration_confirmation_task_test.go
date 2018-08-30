@@ -10,12 +10,13 @@ import (
 
 	"errors"
 
+	"math/big"
+
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/stretchr/testify/assert"
-	"math/big"
 )
 
 type MockSubscription struct {

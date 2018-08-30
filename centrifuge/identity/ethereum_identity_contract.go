@@ -989,4 +989,3 @@ func (_EthereumIdentityContract *EthereumIdentityContractFilterer) WatchOwnershi
 		}
 	}), nil
 }
-

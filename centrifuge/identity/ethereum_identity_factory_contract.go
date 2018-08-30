@@ -313,4 +313,3 @@ func (_EthereumIdentityFactoryContract *EthereumIdentityFactoryContractFilterer)
 		}
 	}), nil
 }
-

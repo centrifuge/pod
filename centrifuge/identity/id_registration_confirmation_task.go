@@ -5,13 +5,14 @@ import (
 
 	"context"
 
+	"math/big"
+
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/queue"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/go-errors/errors"
-	"math/big"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 )
 
 const IdRegistrationConfirmationTaskName string = "IdRegistrationConfirmationTaskName"
