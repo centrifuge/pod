@@ -21,11 +21,18 @@ type Invoice struct {
 	Document *invoicepb.InvoiceDocument
 }
 
-func NewInvoice(invDoc *invoicepb.InvoiceDocument) (*Invoice, error) {
+func WrapInvoice(invDoc *invoicepb.InvoiceDocument) (*Invoice, error) {
 	if invDoc == nil {
 		return nil, errors.NilError(invDoc)
 	}
-	inv := &Invoice{invDoc}
+	return &Invoice{invDoc}, nil
+}
+
+func NewInvoice(invDoc *invoicepb.InvoiceDocument) (*Invoice, error) {
+	inv, err := WrapInvoice(invDoc)
+	if err != nil {
+		return nil, err
+	}
 	// IF salts have not been provided, let's generate them
 	if invDoc.Salts == nil {
 		invoiceSalts := invoicepb.InvoiceDataSalts{}
