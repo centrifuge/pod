@@ -138,16 +138,39 @@ func TestVerifySignatureWithFalseSignature(t *testing.T) {
 func TestSignForEthereum(t *testing.T) {
 	privateKey := "0xb5fffc3933d93dc956772c69b42c4bc66123631a24e3465956d80b5b604a2d13"
 	address := "0xd77c534aed04d7ce34cd425073a033db4fbe6a9d"
-	testMsg := "centrifuge likes ethereum"
+	testMsg := "Centrifuge likes Ethereum"
 
 	testMsgBytes := []byte(testMsg)
 
-	//signature should be 0x063e5ae505efd05a028fdf55eeea74434cb9a46efeaa07ffcf1e767620f858981bd9011c1a00e32cda45fb9b9c4f32b5e6e1cdb4bced067942bc4bd78c71c23801
+	//signature should be 0xc158e04b7e22af2380af7b2581c9f89505761d3e517a07fa6bb76889bdb50c604b1517eb4a920053e878478d171ab63c732deb8eb182e3374bcebd046e773a4500
 	//verification should work on external services like https://etherscan.io/verifySig
 	signature := SignEthereum(testMsgBytes, utils.HexToByteArray(privateKey))
 
 	sigHex := utils.ByteArrayToHex(signature)
 	fmt.Println(sigHex)
+
+	correct := VerifySignatureWithAddress(address, sigHex, testMsgBytes)
+
+	assert.Equal(t, correct, true, "generating ethereum signature for msg doesn't work correctly")
+
+}
+
+func TestSignForEthereum32Bytes(t *testing.T) {
+	privateKey := "0xb5fffc3933d93dc956772c69b42c4bc66123631a24e3465956d80b5b604a2d13"
+	address := "0xd77c534aed04d7ce34cd425073a033db4fbe6a9d"
+
+	testMsgBytes := make([]byte, 32)
+	copy(testMsgBytes, "Centrifuge likes Ethereum")
+
+	// this signature will not work on external services like etherscan.io because the size of testMsgBytes (32 bytes)
+	// is longer than the testMessage in bytes
+	signature := SignEthereum(testMsgBytes, utils.HexToByteArray(privateKey))
+
+	sigHex := utils.ByteArrayToHex(signature)
+
+	fmt.Println("address",address)
+	fmt.Println("msg:",utils.ByteArrayToHex(testMsgBytes))
+	fmt.Println("signature:", sigHex)
 
 	correct := VerifySignatureWithAddress(address, sigHex, testMsgBytes)
 

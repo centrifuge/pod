@@ -50,7 +50,7 @@ func Sign(message []byte, privateKey []byte) (signature []byte) {
 func SignEthereum(message []byte, privateKey []byte) (signature []byte) {
 	// The hash is calculated in Ethereum in the following way
 	// keccak256("\x19Ethereum Signed Message:\n"${message length}${message}).
-	hash := signHash(message)
+	hash := SignHash(message)
 	return Sign(hash, privateKey)
 }
 
@@ -81,7 +81,7 @@ func VerifySignatureWithAddress(address, sigHex string, msg []byte) bool {
 		sig[SignatureVPosition] -= 27 // change V value to 0 or 1
 	}
 
-	pubKey, err := crypto.SigToPub(signHash(msg), sig)
+	pubKey, err := crypto.SigToPub(SignHash(msg), sig)
 	if err != nil {
 
 		return false
@@ -97,7 +97,7 @@ func VerifySignatureWithAddress(address, sigHex string, msg []byte) bool {
 // for further details see
 // https://github.com/ethereum/go-ethereum/blob/55599ee95d4151a2502465e0afc7c47bd1acba77/internal/ethapi/api.go#L404
 
-func signHash(data []byte) []byte {
+func SignHash(data []byte) []byte {
 	msg := fmt.Sprintf("\x19Ethereum Signed Message:\n%d%s", len(data), data)
 	return crypto.Keccak256([]byte(msg))
 }
