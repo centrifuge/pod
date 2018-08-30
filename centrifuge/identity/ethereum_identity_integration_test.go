@@ -1,3 +1,5 @@
+// +build ethereum
+
 package identity_test
 
 import (
