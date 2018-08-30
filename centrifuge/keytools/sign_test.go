@@ -9,7 +9,7 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/secp256k1"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/utils"
 
-	"github.com/magiconair/properties/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSignMessage(t *testing.T) {
@@ -26,7 +26,7 @@ func TestSignMessage(t *testing.T) {
 	os.Remove(publicKeyFile)
 	os.Remove(privateKeyFile)
 
-	assert.Equal(t, correct, true, "signature or verification didn't work correctly")
+	assert.True(t, correct, "signature or verification didn't work correctly")
 
 }
 
@@ -57,6 +57,6 @@ func TestSignAndVerifyMessageEthereum(t *testing.T) {
 	os.Remove(publicKeyFile)
 	os.Remove(privateKeyFile)
 
-	assert.Equal(t, correct, true, "signature or verification didn't work correctly")
+	assert.True(t, correct, "signature or verification didn't work correctly")
 
 }

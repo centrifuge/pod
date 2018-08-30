@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/magiconair/properties/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestVerifyMessageED25519(t *testing.T) {
@@ -19,6 +19,6 @@ func TestVerifyMessageED25519(t *testing.T) {
 	os.Remove(publicKeyFile)
 	os.Remove(privateKeyFile)
 
-	assert.Equal(t, len(signature) == 0, true, "verify ed25519 is not implemented yet and should not work")
+	assert.True(t, len(signature) == 0, "verify ed25519 is not implemented yet and should not work")
 
 }

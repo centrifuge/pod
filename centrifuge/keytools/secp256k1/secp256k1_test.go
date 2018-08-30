@@ -3,11 +3,10 @@ package secp256k1
 import (
 	"fmt"
 	"testing"
-
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/utils"
-
-	"github.com/magiconair/properties/assert"
+	"github.com/stretchr/testify/assert"
 )
+
 
 const MaxMsgLen = 32
 
@@ -32,7 +31,7 @@ func TestSigningMsg(t *testing.T) {
 
 	correct := VerifySignature(publicKey, testMsg, signature)
 
-	assert.Equal(t, correct, true, "sign message didn't work correctly")
+	assert.True(t, correct, "sign message didn't work correctly")
 
 }
 
@@ -50,7 +49,7 @@ func TestVerifyFalseMsg(t *testing.T) {
 
 	correct := VerifySignature(publicKey, falseMsg, signature)
 
-	assert.Equal(t, correct, false, "false msg verify should be false ")
+	assert.False(t, correct,  "false msg verify should be false ")
 
 }
 
@@ -67,7 +66,7 @@ func TestVerifyFalsePublicKey(t *testing.T) {
 
 	correct := VerifySignature(falsePublicKey, testMsg, signature)
 
-	assert.Equal(t, correct, false, "verify of false public key should be false")
+	assert.False(t, correct, "verify of false public key should be false")
 
 }
 
@@ -83,7 +82,7 @@ func TestVerifySignatureWithAddress(t *testing.T) {
 		testSignature,
 		[]byte(testMsg))
 
-	assert.Equal(t, correct, true, "recovering public key from signature doesn't work correctly")
+	assert.True(t, correct,  "recovering public key from signature doesn't work correctly")
 
 }
 
@@ -99,7 +98,7 @@ func TestVerifySignatureWithAddressFalseMsg(t *testing.T) {
 		testSignature,
 		[]byte(falseMsg))
 
-	assert.Equal(t, correct, false, "verify signature should be false (false msg)")
+	assert.False(t, correct,  "verify signature should be false (false msg)")
 
 }
 
@@ -115,7 +114,7 @@ func TestVerifySignatureWithFalseAddress(t *testing.T) {
 		testSignature,
 		[]byte(testMsg))
 
-	assert.Equal(t, correct, false, "verify signature should be false (false address)")
+	assert.False(t, correct,"verify signature should be false (false address)")
 
 }
 
@@ -131,7 +130,7 @@ func TestVerifySignatureWithFalseSignature(t *testing.T) {
 		falseSignature,
 		[]byte(testMsg))
 
-	assert.Equal(t, correct, false, "verify signature should be false (false signature)")
+	assert.False(t, correct,"verify signature should be false (false signature)")
 
 }
 
