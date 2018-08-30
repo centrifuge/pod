@@ -3,6 +3,7 @@ package tools
 import (
 	"crypto/rand"
 	"errors"
+	"math/big"
 )
 
 // SliceToByte32 converts a 32 byte slice to an array. Will thorw error if the slice is too long
@@ -33,9 +34,9 @@ func CheckMultiple32BytesFilled(bs ...[]byte) bool {
 	return true
 }
 
-// RandomSlice32 returns a randomly filled byte array with length of 32
-func RandomSlice32() (out []byte) {
-	r := make([]byte, 32)
+// RandomSliceN returns a randomly filled byte array with length of n
+func RandomSliceN(n int) (out []byte) {
+	r := make([]byte, n)
 	_, err := rand.Read(r)
 	// Note that err == nil only if we read len(b) bytes.
 	if err != nil {
@@ -46,7 +47,7 @@ func RandomSlice32() (out []byte) {
 
 // RandomByte32 returns a randomly filled byte array with length of 32
 func RandomByte32() (out [32]byte) {
-	r := RandomSlice32()
+	r := RandomSliceN(32)
 	copy(out[:], r[:32])
 	return
 }
@@ -94,3 +95,16 @@ func IsSameByteSlice(a []byte, b []byte) bool {
 
 	return true
 }
+
+func ByteSliceToBigInt(slice []byte) *big.Int {
+	bi := new(big.Int)
+	bi.SetBytes(slice)
+	return bi
+}
+
+func Byte48ToBigInt(bytesArr [48]byte) *big.Int {
+	bi := new(big.Int)
+	bi.SetBytes(bytesArr[:])
+	return bi
+}
+

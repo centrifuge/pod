@@ -19,11 +19,11 @@ func TestValidate(t *testing.T) {
 	}
 
 	var (
-		id1 = tools.RandomSlice32()
-		id2 = tools.RandomSlice32()
-		id3 = tools.RandomSlice32()
-		id4 = tools.RandomSlice32()
-		id5 = tools.RandomSlice32()
+		id1 = tools.RandomSliceN(32)
+		id2 = tools.RandomSliceN(32)
+		id3 = tools.RandomSliceN(32)
+		id4 = tools.RandomSliceN(32)
+		id5 = tools.RandomSliceN(32)
 	)
 
 	tests := []struct {

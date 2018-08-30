@@ -14,8 +14,8 @@ func TestRandomByte32(t *testing.T) {
 	assert.NotEqual(t, [32]byte{}, random, "Should receive a filled byte array")
 }
 
-func TestRandomSlice32(t *testing.T) {
-	random := RandomSlice32()
+func TestRandomSliceN(t *testing.T) {
+	random := RandomSliceN(32)
 	assert.NotNil(t, random, "should receive non-nil")
 	assert.False(t, IsEmptyByteSlice(random))
 	assert.Len(t, random, 32)

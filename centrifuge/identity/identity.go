@@ -3,6 +3,7 @@ package identity
 import (
 	"encoding/base64"
 	"fmt"
+	"math/big"
 )
 
 const (
@@ -17,7 +18,8 @@ type Identity interface {
 	String() string
 	GetCentrifugeId() []byte
 	CentrifugeIdString() string
-	CentrifugeIdB32() [32]byte
+	CentrifugeIdB48() [48]byte
+	CentrifugeIdBigInt() *big.Int
 	SetCentrifugeId(b []byte) error
 	GetCurrentP2PKey() (ret string, err error)
 	GetLastKeyForType(keyType int) (key []byte, err error)
