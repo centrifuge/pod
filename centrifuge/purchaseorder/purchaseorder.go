@@ -36,7 +36,7 @@ func NewPurchaseOrder(poDoc *purchaseorderpb.PurchaseOrderDocument) (*PurchaseOr
 	// IF salts have not been provided, let's generate them
 	if poDoc.Salts == nil {
 		purchaseorderSalts := purchaseorderpb.PurchaseOrderDataSalts{}
-		proofs.FillSalts(&purchaseorderSalts)
+		proofs.FillSalts(poDoc.Data, &purchaseorderSalts)
 		order.Document.Salts = &purchaseorderSalts
 	}
 	return order, nil
@@ -44,10 +44,11 @@ func NewPurchaseOrder(poDoc *purchaseorderpb.PurchaseOrderDocument) (*PurchaseOr
 
 func NewEmptyPurchaseOrder() *PurchaseOrder {
 	purchaseorderSalts := purchaseorderpb.PurchaseOrderDataSalts{}
-	proofs.FillSalts(&purchaseorderSalts)
+	purchaseorderData := purchaseorderpb.PurchaseOrderData{}
+	proofs.FillSalts(&purchaseorderData, &purchaseorderSalts)
 	doc := purchaseorderpb.PurchaseOrderDocument{
 		CoreDocument: &coredocumentpb.CoreDocument{},
-		Data:         &purchaseorderpb.PurchaseOrderData{},
+		Data:         &purchaseorderData,
 		Salts:        &purchaseorderSalts,
 	}
 	return &PurchaseOrder{&doc}
@@ -80,10 +81,13 @@ func NewPurchaseOrderFromCoreDocument(coredocument *coredocumentpb.CoreDocument)
 }
 
 func (order *PurchaseOrder) getDocumentTree() (tree *proofs.DocumentTree, err error) {
-	t := proofs.NewDocumentTree()
-	sha256Hash := sha256.New()
-	t.SetHashFunc(sha256Hash)
-	err = t.FillTree(order.Document.Data, order.Document.Salts)
+	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: sha256.New()})
+	err = t.AddLeavesFromDocument(order.Document.Data, order.Document.Salts)
+	if err != nil {
+		log.Error("getDocumentTree:", err)
+		return nil, err
+	}
+	err = t.Generate()
 	if err != nil {
 		log.Error("getDocumentTree:", err)
 		return nil, err

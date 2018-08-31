@@ -28,12 +28,11 @@ func fillCoreDocIdentifiers(doc *purchaseorderpb.PurchaseOrderDocument) error {
 	if doc == nil {
 		return errors.NilError(doc)
 	}
-	filledCoreDoc, err := coredocument.FillIdentifiers(*doc.CoreDocument)
+	err := coredocument.FillIdentifiers(doc.CoreDocument)
 	if err != nil {
 		log.Error(err)
 		return err
 	}
-	doc.CoreDocument = &filledCoreDoc
 	return nil
 }
 

@@ -15,12 +15,13 @@ func Validate(document *coredocumentpb.CoreDocument) (valid bool, errMsg string,
 	errs = make(map[string]string)
 
 	if tools.IsEmptyByteSlice(document.DocumentIdentifier) {
-		errs["cd_identifier"] = errors.RequiredField
+		errs["cd_document_identifier"] = errors.RequiredField
 	}
 
-	if tools.IsEmptyByteSlice(document.DocumentRoot) {
-		errs["cd_root"] = errors.RequiredField
-	}
+	// TODO: This shouldn't always be enforced
+	//if tools.IsEmptyByteSlice(document.DocumentRoot) {
+	//	errs["cd_root"] = errors.RequiredField
+	//}
 
 	if tools.IsEmptyByteSlice(document.CurrentIdentifier) {
 		errs["cd_current_identifier"] = errors.RequiredField

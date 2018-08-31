@@ -1072,11 +1072,15 @@
       <span class="hljs-attr">&quot;property&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
       <span class="hljs-attr">&quot;value&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
       <span class="hljs-attr">&quot;salt&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;hash&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
       <span class="hljs-attr">&quot;hashes&quot;</span>: [
         {
           <span class="hljs-attr">&quot;left&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
           <span class="hljs-attr">&quot;right&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
         }
+      ],
+      <span class="hljs-attr">&quot;sortedHashes&quot;</span>: [
+        <span class="hljs-string">&quot;string (byte)&quot;</span>
       ]
     }
   ]
@@ -1970,11 +1974,15 @@
       <span class="hljs-attr">&quot;property&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
       <span class="hljs-attr">&quot;value&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
       <span class="hljs-attr">&quot;salt&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;hash&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
       <span class="hljs-attr">&quot;hashes&quot;</span>: [
         {
           <span class="hljs-attr">&quot;left&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
           <span class="hljs-attr">&quot;right&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
         }
+      ],
+      <span class="hljs-attr">&quot;sortedHashes&quot;</span>: [
+        <span class="hljs-string">&quot;string (byte)&quot;</span>
       ]
     }
   ]
@@ -3042,11 +3050,15 @@
       <span class="hljs-attr">&quot;property&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
       <span class="hljs-attr">&quot;value&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
       <span class="hljs-attr">&quot;salt&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;hash&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
       <span class="hljs-attr">&quot;hashes&quot;</span>: [
         {
           <span class="hljs-attr">&quot;left&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
           <span class="hljs-attr">&quot;right&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
         }
+      ],
+      <span class="hljs-attr">&quot;sortedHashes&quot;</span>: [
+        <span class="hljs-string">&quot;string (byte)&quot;</span>
       ]
     }
   ]
@@ -3396,6 +3408,12 @@
                       <span class="json-property-format">(byte)</span>
                       <span class="json-property-range" title="Value limits"></span>
                     </dt>
+                    <dt data-property-name="hash">
+                      <span class="json-property-name">hash:</span>
+                      <span class="json-property-type">string</span>
+                      <span class="json-property-format">(byte)</span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
                     <dt data-property-name="hashes">
                       <span class="json-property-name">hashes:</span>
                       <span class="json-property-type">
@@ -3416,6 +3434,19 @@
                         <div class="json-inner-schema"> </div>
                       </section>
                     </dt>
+                    <dt data-property-name="sortedHashes">
+                      <span class="json-property-name">sortedHashes:</span>
+                      <span class="json-property-type">string[]</span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
+                    <dt class="json-inner-schema">
+                      <section class="json-schema-array-items">
+                        <span class="json-property-type">string</span>
+                        <span class="json-property-format">(byte)</span>
+                        <span class="json-property-range" title="Value limits"></span>
+                        <div class="json-inner-schema"> </div>
+                      </section>
+                    </dt>
                   </dl>
                 </section>
               </div>
@@ -3426,11 +3457,15 @@
   <span class="hljs-attr">&quot;property&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
   <span class="hljs-attr">&quot;value&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
   <span class="hljs-attr">&quot;salt&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+  <span class="hljs-attr">&quot;hash&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
   <span class="hljs-attr">&quot;hashes&quot;</span>: [
     {
       <span class="hljs-attr">&quot;left&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
       <span class="hljs-attr">&quot;right&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
     }
+  ],
+  <span class="hljs-attr">&quot;sortedHashes&quot;</span>: [
+    <span class="hljs-string">&quot;string (byte)&quot;</span>
   ]
 }
 </code></pre>
@@ -4271,11 +4306,15 @@
       <span class="hljs-attr">&quot;property&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
       <span class="hljs-attr">&quot;value&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
       <span class="hljs-attr">&quot;salt&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;hash&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
       <span class="hljs-attr">&quot;hashes&quot;</span>: [
         {
           <span class="hljs-attr">&quot;left&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
           <span class="hljs-attr">&quot;right&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
         }
+      ],
+      <span class="hljs-attr">&quot;sortedHashes&quot;</span>: [
+        <span class="hljs-string">&quot;string (byte)&quot;</span>
       ]
     }
   ]

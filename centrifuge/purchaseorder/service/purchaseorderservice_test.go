@@ -5,7 +5,6 @@ package purchaseorderservice
 import (
 	"context"
 	"crypto/sha256"
-	"fmt"
 	"os"
 	"testing"
 
@@ -205,8 +204,8 @@ func TestPurchaseOrderDocumentService_HandleCreatePurchaseOrderProof(t *testing.
 	assert.Equal(t, len(proofRequest.Fields), len(purchaseOrderProof.FieldProofs))
 	assert.Equal(t, proofRequest.Fields[0], purchaseOrderProof.FieldProofs[0].Property)
 	sha256Hash := sha256.New()
-	fmt.Println(order.Document.CoreDocument.DataRoot)
-	valid, err := proofs.ValidateProof(purchaseOrderProof.FieldProofs[0], order.Document.CoreDocument.DataRoot, sha256Hash)
+	fieldHash, err := proofs.CalculateHashForProofField(purchaseOrderProof.FieldProofs[0], sha256Hash)
+	valid, err := proofs.ValidateProofSortedHashes(fieldHash, purchaseOrderProof.FieldProofs[0].SortedHashes, order.Document.CoreDocument.DataRoot, sha256Hash)
 	assert.True(t, valid)
 	assert.Nil(t, err)
 }

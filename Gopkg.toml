@@ -29,15 +29,20 @@ required = ["github.com/roboll/go-vendorinstall", "github.com/golang/protobuf/pr
 [[constraint]]
   name = "github.com/CentrifugeInc/centrifuge-protobufs"
   source = "git@github.com:CentrifugeInc/centrifuge-protobufs"
-  revision = "32e51c3a94b73ee1191f601f25c0bf58ca486116"
+  branch = "master"
 
 [[constraint]]
   name = "github.com/Masterminds/semver"
   version = "1.4.2"
 
 [[constraint]]
-  revision = "f8ef5392db436f8678e972810bf919c0406d1b83"
   name = "github.com/centrifuge/precise-proofs"
+  source = "git@github.com:centrifuge/precise-proofs"
+  branch = "master"
+
+[[override]]
+  revision = "fbb7cafc5ae411e13e718172f5af7917ad6c3ed7"
+  name = "github.com/xsleonard/go-merkle"
 
 [[constraint]]
   name = "github.com/ethereum/go-ethereum"

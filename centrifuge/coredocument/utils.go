@@ -10,7 +10,7 @@ import (
 // FillIdentifiers fills in missing identifiers for the given CoreDocument.
 // It does checks on document consistency (e.g. re-using an old identifier).
 // In the case of an error, it returns the error and an empty CoreDocument.
-func FillIdentifiers(document coredocumentpb.CoreDocument) (coredocumentpb.CoreDocument, error) {
+func FillIdentifiers(document *coredocumentpb.CoreDocument) error {
 	isEmptyId := tools.IsEmptyByteSlice
 
 	// check if the document identifier is empty
@@ -24,22 +24,22 @@ func FillIdentifiers(document coredocumentpb.CoreDocument) (coredocumentpb.CoreD
 			document.NextIdentifier = tools.RandomSlice32()
 		}
 
-		return document, nil
+		return nil
 	}
 
 	// check if current and next identifier are empty
 	if !isEmptyId(document.CurrentIdentifier) {
-		return document, fmt.Errorf("no DocumentIdentifier but has CurrentIdentifier")
+		return fmt.Errorf("no DocumentIdentifier but has CurrentIdentifier")
 	}
 
 	// check if the next identifier is empty
 	if !isEmptyId(document.NextIdentifier) {
-		return document, fmt.Errorf("no CurrentIdentifier but has NextIdentifier")
+		return fmt.Errorf("no CurrentIdentifier but has NextIdentifier")
 	}
 
 	// fill the identifiers
 	document.DocumentIdentifier = tools.RandomSlice32()
 	document.CurrentIdentifier = document.DocumentIdentifier
 	document.NextIdentifier = tools.RandomSlice32()
-	return document, nil
+	return nil
 }
