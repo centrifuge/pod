@@ -7,6 +7,7 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/documenttypes"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
@@ -21,15 +22,17 @@ type Invoice struct {
 	Document *invoicepb.InvoiceDocument
 }
 
-func WrapInvoice(invDoc *invoicepb.InvoiceDocument) (*Invoice, error) {
+// Wrap wraps the protobuf invoice within Invoice
+func Wrap(invDoc *invoicepb.InvoiceDocument) (*Invoice, error) {
 	if invDoc == nil {
 		return nil, errors.NilError(invDoc)
 	}
 	return &Invoice{invDoc}, nil
 }
 
-func NewInvoice(invDoc *invoicepb.InvoiceDocument) (*Invoice, error) {
-	inv, err := WrapInvoice(invDoc)
+// New returns a new Invoice with salts, merkle root, and coredocument generated
+func New(invDoc *invoicepb.InvoiceDocument) (*Invoice, error) {
+	inv, err := Wrap(invDoc)
 	if err != nil {
 		return nil, err
 	}
@@ -37,12 +40,23 @@ func NewInvoice(invDoc *invoicepb.InvoiceDocument) (*Invoice, error) {
 	if invDoc.Salts == nil {
 		invoiceSalts := invoicepb.InvoiceDataSalts{}
 		proofs.FillSalts(&invoiceSalts)
-		inv.Document.Salts = &invoiceSalts
+		invDoc.Salts = &invoiceSalts
 	}
+
+	if inv.Document.CoreDocument == nil {
+		inv.Document.CoreDocument = coredocument.New()
+	}
+
+	err = inv.CalculateMerkleRoot()
+	if err != nil {
+		return nil, err
+	}
+
 	return inv, nil
 }
 
-func NewEmptyInvoice() *Invoice {
+// Empty returns an empty invoice
+func Empty() *Invoice {
 	invoiceSalts := invoicepb.InvoiceDataSalts{}
 	proofs.FillSalts(&invoiceSalts)
 	doc := invoicepb.InvoiceDocument{
@@ -53,7 +67,8 @@ func NewEmptyInvoice() *Invoice {
 	return &Invoice{&doc}
 }
 
-func NewInvoiceFromCoreDocument(coreDocument *coredocumentpb.CoreDocument) (*Invoice, error) {
+// NewFromCoreDocument returns an Invoice from Core Document
+func NewFromCoreDocument(coreDocument *coredocumentpb.CoreDocument) (*Invoice, error) {
 	if coreDocument == nil {
 		return nil, errors.NilError(coreDocument)
 	}
@@ -72,7 +87,7 @@ func NewInvoiceFromCoreDocument(coreDocument *coredocumentpb.CoreDocument) (*Inv
 	proto.Merge(&emptiedCoreDoc, coreDocument)
 	emptiedCoreDoc.EmbeddedData = nil
 	emptiedCoreDoc.EmbeddedDataSalts = nil
-	inv := NewEmptyInvoice()
+	inv := Empty()
 	inv.Document.Data = invoiceData
 	inv.Document.Salts = invoiceSalts
 	inv.Document.CoreDocument = &emptiedCoreDoc
@@ -143,4 +158,73 @@ func (inv *Invoice) ConvertToCoreDocument() (coredocpb *coredocumentpb.CoreDocum
 	coredocpb.EmbeddedData = &invoiceAny
 	coredocpb.EmbeddedDataSalts = &invoiceSaltsAny
 	return
+}
+
+// Validate validates the invoice document
+func Validate(doc *invoicepb.InvoiceDocument) (valid bool, errMsg string, errs map[string]string) {
+	if doc == nil {
+		return false, errors.NilDocument, nil
+	}
+
+	if valid, errMsg, errs = coredocument.Validate(doc.CoreDocument); !valid {
+		return valid, errMsg, errs
+	}
+
+	if doc.Data == nil {
+		return false, errors.NilDocumentData, nil
+	}
+
+	data := doc.Data
+	errs = make(map[string]string)
+
+	// ideally these check should be done in the client invoice order
+	// once the converters are done, we can move the following checks there
+	if data.InvoiceNumber == "" {
+		errs["inv_number"] = errors.RequiredField
+	}
+
+	if data.SenderName == "" {
+		errs["inv_sender_name"] = errors.RequiredField
+	}
+
+	if data.SenderZipcode == "" {
+		errs["inv_sender_zip_code"] = errors.RequiredField
+	}
+
+	// for now, mandating at least one character
+	if data.SenderCountry == "" {
+		errs["inv_sender_country"] = errors.RequiredField
+	}
+
+	if data.RecipientName == "" {
+		errs["inv_recipient_name"] = errors.RequiredField
+	}
+
+	if data.RecipientZipcode == "" {
+		errs["inv_recipient_zip_code"] = errors.RequiredField
+	}
+
+	if data.RecipientCountry == "" {
+		errs["inv_recipient_country"] = errors.RequiredField
+	}
+
+	if data.Currency == "" {
+		errs["inv_currency"] = errors.RequiredField
+	}
+
+	if data.GrossAmount <= 0 {
+		errs["inv_gross_amount"] = errors.RequirePositiveNumber
+	}
+
+	// checking for nil salts should be okay for now
+	// once the converters are in, salts will be filled during conversion
+	if doc.Salts == nil {
+		errs["inv_salts"] = errors.RequiredField
+	}
+
+	if len(errs) < 1 {
+		return true, "", nil
+	}
+
+	return false, "Invalid Invoice", errs
 }
