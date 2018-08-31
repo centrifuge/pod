@@ -28,7 +28,7 @@ var createIdentityCmd = &cobra.Command{
 	},
 }
 
-//We should support multiple types of keys to add, at the moment only keyType 1 - PeerID/Signature/Encryption
+//We should support multiple types of keys to add, at the moment only keyPurpose 1 - PeerID/Signature/Encryption
 var addKeyCmd = &cobra.Command{
 	Use:   "addkey",
 	Short: "add a signing key as p2p id against ethereum",
@@ -51,13 +51,13 @@ var addKeyCmd = &cobra.Command{
 			panic(err)
 		}
 
-		confirmations, err := id.AddKeyToIdentity(identity.KEY_TYPE_PEERID, idKey)
+		confirmations, err := id.AddKeyToIdentity(identity.KeyPurposeP2p, idKey)
 		if err != nil {
 			panic(err)
 		}
 		watchAddedToIdentity := <-confirmations
 
-		lastKey, errLocal := watchAddedToIdentity.Identity.GetLastKeyForType(identity.KEY_TYPE_PEERID)
+		lastKey, errLocal := watchAddedToIdentity.Identity.GetLastKeyForPurpose(identity.KeyPurposeP2p)
 		if errLocal != nil {
 			err = errLocal
 			return

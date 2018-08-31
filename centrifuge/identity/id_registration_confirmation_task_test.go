@@ -10,6 +10,8 @@ import (
 
 	"errors"
 
+	"math/big"
+
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -34,7 +36,7 @@ type MockIdentityCreatedWatcher struct {
 	sink       chan<- *EthereumIdentityFactoryContractIdentityCreated
 }
 
-func (mcw *MockIdentityCreatedWatcher) WatchIdentityCreated(opts *bind.WatchOpts, sink chan<- *EthereumIdentityFactoryContractIdentityCreated, centrifugeId [][32]byte) (event.Subscription, error) {
+func (mcw *MockIdentityCreatedWatcher) WatchIdentityCreated(opts *bind.WatchOpts, sink chan<- *EthereumIdentityFactoryContractIdentityCreated, centrifugeId []*big.Int) (event.Subscription, error) {
 	if mcw.shouldFail {
 		return nil, errors.New("Identity watching could not be started")
 	}
@@ -44,26 +46,26 @@ func (mcw *MockIdentityCreatedWatcher) WatchIdentityCreated(opts *bind.WatchOpts
 
 func TestRegistrationConfirmationTask_ParseKwargsHappyPath(t *testing.T) {
 	rct := IdRegistrationConfirmationTask{}
-	id := tools.RandomSlice32()
-	b32Id := createCentId(id)
-	decoded, err := simulateJsonDecode(b32Id)
+	id := tools.RandomSlice(CentIdByteLength)
+	idBytes := createCentId(id)
+	decoded, err := simulateJsonDecode(idBytes)
 	err = rct.ParseKwargs(decoded)
 	if err != nil {
 		t.Errorf("Could not parse %s for [%x]", CentIdParam, id)
 	}
-	assert.Equal(t, b32Id, rct.CentId, "Resulting id should have the same ID as the input")
+	assert.Equal(t, idBytes, rct.CentId, "Resulting id should have the same ID as the input")
 }
 
 func TestRegistrationConfirmationTask_ParseKwargsDoesNotExist(t *testing.T) {
 	rct := IdRegistrationConfirmationTask{}
-	id := tools.RandomSlice32()
+	id := tools.RandomSlice(CentIdByteLength)
 	err := rct.ParseKwargs(map[string]interface{}{"notId": id})
 	assert.NotNil(t, err, "Should not allow parsing without centId")
 }
 
 func TestRegistrationConfirmationTask_ParseKwargsInvalidType(t *testing.T) {
 	rct := IdRegistrationConfirmationTask{}
-	id := tools.RandomSlice32()
+	id := tools.RandomSlice(CentIdByteLength)
 	err := rct.ParseKwargs(map[string]interface{}{CentIdParam: id})
 	assert.NotNil(t, err, "Should not parse without the correct type of centId")
 }
@@ -73,7 +75,7 @@ func TestIdRegistrationConfirmationTask_RunTaskContextError(t *testing.T) {
 	ctx, _ := context.WithDeadline(context.TODO(), toBeDone)
 	eifc := make(chan *EthereumIdentityFactoryContractIdentityCreated)
 	rct := IdRegistrationConfirmationTask{
-		CentId:                 createCentId(tools.RandomSlice32()),
+		CentId:                 createCentId(tools.RandomSlice(CentIdByteLength)),
 		IdentityCreatedWatcher: &MockIdentityCreatedWatcher{},
 		EthContext:             ctx,
 		IdentityCreatedEvents:  eifc,
@@ -93,7 +95,7 @@ func TestIdRegistrationConfirmationTask_RunTaskContextError(t *testing.T) {
 func TestIdRegistrationConfirmationTask_RunTaskCallError(t *testing.T) {
 	identityCreatedWatcher := &MockIdentityCreatedWatcher{shouldFail: true}
 	rct := IdRegistrationConfirmationTask{
-		CentId: createCentId(tools.RandomSlice32()),
+		CentId: createCentId(tools.RandomSlice(CentIdByteLength)),
 		EthContextInitializer: func() (ctx context.Context, cancelFunc context.CancelFunc) {
 			toBeDone := time.Now().Add(time.Duration(1 * time.Millisecond))
 			return context.WithDeadline(context.TODO(), toBeDone)
@@ -115,7 +117,7 @@ func TestIdRegistrationConfirmationTask_RunTaskSuccess(t *testing.T) {
 	ctx, _ := context.WithDeadline(context.TODO(), toBeDone)
 	eifc := make(chan *EthereumIdentityFactoryContractIdentityCreated)
 	rct := IdRegistrationConfirmationTask{
-		CentId:                 createCentId(tools.RandomSlice32()),
+		CentId:                 createCentId(tools.RandomSlice(CentIdByteLength)),
 		IdentityCreatedWatcher: &MockIdentityCreatedWatcher{},
 		EthContext:             ctx,
 		IdentityCreatedEvents:  eifc,
@@ -133,8 +135,8 @@ func TestIdRegistrationConfirmationTask_RunTaskSuccess(t *testing.T) {
 	<-exit
 }
 
-func simulateJsonDecode(b32Id [32]byte) (map[string]interface{}, error) {
-	kwargs := map[string]interface{}{CentIdParam: b32Id}
+func simulateJsonDecode(idBytes [CentIdByteLength]byte) (map[string]interface{}, error) {
+	kwargs := map[string]interface{}{CentIdParam: idBytes}
 	t1 := gocelery.TaskMessage{Kwargs: kwargs}
 	encoded, err := t1.Encode()
 	if err != nil {
@@ -144,8 +146,8 @@ func simulateJsonDecode(b32Id [32]byte) (map[string]interface{}, error) {
 	return t2.Kwargs, err
 }
 
-func createCentId(id []byte) [32]byte {
-	var b32Id [32]byte
-	copy(b32Id[:], id[:32])
-	return b32Id
+func createCentId(id []byte) [CentIdByteLength]byte {
+	var idBytes [CentIdByteLength]byte
+	copy(idBytes[:], id[:CentIdByteLength])
+	return idBytes
 }

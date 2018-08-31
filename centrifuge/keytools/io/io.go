@@ -7,14 +7,14 @@ import (
 	"os"
 )
 
-func WriteKeyToPemFile(fileName string, keyType string, key []byte) error {
+func WriteKeyToPemFile(fileName string, keyPurpose string, key []byte) error {
 	f, err := os.Create(fileName)
 	if err != nil {
 		return err
 	}
 
 	block := &pem.Block{
-		Type:  keyType,
+		Type:  keyPurpose,
 		Bytes: key,
 	}
 	if err := pem.Encode(f, block); err != nil {
@@ -24,7 +24,7 @@ func WriteKeyToPemFile(fileName string, keyType string, key []byte) error {
 	return nil
 }
 
-func ReadKeyFromPemFile(fileName, keyType string) (key []byte, err error) {
+func ReadKeyFromPemFile(fileName, keyPurpose string) (key []byte, err error) {
 	pemData, err := ioutil.ReadFile(fileName)
 	if err != nil {
 		return []byte{}, err
@@ -33,8 +33,8 @@ func ReadKeyFromPemFile(fileName, keyType string) (key []byte, err error) {
 	if block == nil {
 		return []byte{}, fmt.Errorf("File [%s] is not a valid pem file", fileName)
 	}
-	if block.Type != keyType {
-		return []byte{}, fmt.Errorf("Key type mismatch got [%s] but expected [%s]", block.Type, keyType)
+	if block.Type != keyPurpose {
+		return []byte{}, fmt.Errorf("Key type mismatch got [%s] but expected [%s]", block.Type, keyPurpose)
 	}
 
 	return block.Bytes, nil
