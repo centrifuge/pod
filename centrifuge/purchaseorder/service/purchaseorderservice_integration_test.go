@@ -25,7 +25,7 @@ func TestMain(m *testing.M) {
 	purchaseorderrepository.InitLevelDBRepository(cc.GetLevelDBStorage())
 
 	result := m.Run()
-	cc.TestIntegrationTearDown()
+	cc.TestFunctionalEthereumTearDown()
 	os.Exit(result)
 }
 
@@ -74,6 +74,9 @@ func TestPurchaseOrderDocumentService_HandleAnchorPurchaseOrderDocument_Integrat
 	assert.Nil(t, err)
 	assert.Equal(t, "AUS", loadedDoc.Data.OrderCountry,
 		"Didn't save the purchaseorder data correctly")
+
+	// Invoice stored after anchoring has Salts populated
+	assert.NotNil(t, loadedDoc.Salts.OrderCountry)
 
 	//PO Service should error out if trying to anchor the same document ID again
 	doc.Document.Data.OrderCountry = "ES"

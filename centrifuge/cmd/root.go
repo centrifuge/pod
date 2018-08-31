@@ -5,12 +5,14 @@ import (
 	"os"
 
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
+	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
 	logging "github.com/ipfs/go-log"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	gologging "github.com/whyrusleeping/go-logging"
 )
 
+//global flags
 var cfgFile string
 var verbose bool
 
@@ -72,4 +74,14 @@ func initCentrifuge() {
 	}
 	// If a config file is found, read it in.
 	config.Bootstrap(cfgFile)
+}
+
+func defaultBootstrap() {
+	mb := cc.MainBootstrapper{}
+	mb.PopulateDefaultBootstrappers()
+	err := mb.Bootstrap(map[string]interface{}{})
+	if err != nil {
+		// application must not continue to run
+		panic(err)
+	}
 }

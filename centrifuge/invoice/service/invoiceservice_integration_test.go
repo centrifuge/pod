@@ -25,7 +25,7 @@ func TestMain(m *testing.M) {
 	invoicerepository.NewLevelDBInvoiceRepository(&invoicerepository.LevelDBInvoiceRepository{Leveldb: cc.GetLevelDBStorage()})
 
 	result := m.Run()
-	cc.TestIntegrationTearDown()
+	cc.TestFunctionalEthereumTearDown()
 	os.Exit(result)
 }
 
@@ -72,6 +72,9 @@ func TestInvoiceDocumentService_HandleAnchorInvoiceDocument_Integration(t *testi
 	loadedInvoice, _ := invoicerepository.GetInvoiceRepository().FindById(doc.Document.CoreDocument.DocumentIdentifier)
 	assert.Equal(t, "AUS", loadedInvoice.Data.SenderCountry,
 		"Didn't save the invoice data correctly")
+
+	// Invoice stored after anchoring has Salts populated
+	assert.NotNil(t, loadedInvoice.Salts.SenderCountry)
 
 	//Invoice Service should error out if trying to anchor the same document ID again
 	doc.Document.Data.SenderCountry = "ES"

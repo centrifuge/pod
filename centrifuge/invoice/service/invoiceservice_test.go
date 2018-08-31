@@ -87,6 +87,7 @@ func TestInvoiceDocumentService_Anchor(t *testing.T) {
 	doc, s, mockRepo, mockCDP := getTestSetupData()
 
 	mockRepo.On("Create", doc.Document).Return(nil).Once()
+	mockRepo.On("CreateOrUpdate", doc.Document).Return(nil).Once()
 	mockCDP.On("Anchor", mock.Anything).Return(nil).Once()
 
 	anchoredDoc, err := s.HandleAnchorInvoiceDocument(context.Background(), &clientinvoicepb.AnchorInvoiceEnvelope{Document: doc.Document})
@@ -207,6 +208,29 @@ func TestInvoiceDocumentService_HandleCreateInvoiceProof(t *testing.T) {
 	valid, err := proofs.ValidateProof(invoiceProof.FieldProofs[0], inv.Document.CoreDocument.DataRoot, sha256Hash)
 	assert.True(t, valid)
 	assert.Nil(t, err)
+}
+
+func TestInvoiceDocumentService_HandleCreateInvoiceProof_NotFilledSalts(t *testing.T) {
+	identifier := testingutils.Rand32Bytes()
+	inv := invoice.NewEmptyInvoice()
+	inv.Document.CoreDocument = &coredocumentpb.CoreDocument{
+		DocumentIdentifier: identifier,
+		CurrentIdentifier:  identifier,
+		NextIdentifier:     testingutils.Rand32Bytes(),
+	}
+	inv.Document.Salts = &invoicepb.InvoiceDataSalts{}
+	s, mockRepo, _ := generateMockedOutInvoiceService()
+
+	proofRequest := &clientinvoicepb.CreateInvoiceProofEnvelope{
+		DocumentIdentifier: identifier,
+		Fields:             []string{"currency", "sender_country", "gross_amount"},
+	}
+	mockRepo.On("FindById", proofRequest.DocumentIdentifier).Return(inv.Document, nil).Once()
+
+	invoiceProof, err := s.HandleCreateInvoiceProof(context.Background(), proofRequest)
+	mockRepo.AssertExpectations(t)
+	assert.NotNil(t, err)
+	assert.Nil(t, invoiceProof)
 }
 
 func TestInvoiceDocumentService_HandleCreateInvoiceProof_NotExistingInvoice(t *testing.T) {

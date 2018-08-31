@@ -44,6 +44,12 @@
   revision = "f899737d7f2764dc13e4d01ff00108ec58f766a9"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/centrifuge/gocelery"
+  packages = ["."]
+  revision = "840d02135ac447e77bd0d669246b602feca5e8b4"
+
+[[projects]]
   name = "github.com/centrifuge/precise-proofs"
   packages = [
     "proofs",
@@ -187,6 +193,15 @@
   name = "github.com/golang/snappy"
   packages = ["."]
   revision = "2e65f85255dbc3072edf28d6b5b8efc472979f5a"
+
+[[projects]]
+  name = "github.com/gomodule/redigo"
+  packages = [
+    "internal",
+    "redis"
+  ]
+  revision = "9c11da706d9b7902c6da69c592f75637793fe121"
+  version = "v2.0.0"
 
 [[projects]]
   name = "github.com/google/uuid"
@@ -719,8 +734,8 @@
 [[projects]]
   name = "github.com/rjeczalik/notify"
   packages = ["."]
-  revision = "52ae50d8490436622a8941bd70c3dbe0acdd4bbf"
-  version = "v0.9.0"
+  revision = "0f065fa99b48b842c3fd3e2c8b194c6f2b69f6b8"
+  version = "v0.9.1"
 
 [[projects]]
   branch = "master"
@@ -783,6 +798,12 @@
   packages = ["."]
   revision = "907c19d40d9a6c9bb55f040ff4ae45271a4754b9"
   version = "v1.1.0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/streadway/amqp"
+  packages = ["."]
+  revision = "70e15c650864f4fc47f5d3c82ea117285480895d"
 
 [[projects]]
   name = "github.com/stretchr/objx"
@@ -1039,6 +1060,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "0e6d297594ff04d6a81284f9d1b3f695f271574fa4b2e90716d62091b64f171e"
+  inputs-digest = "8c874d747b7a885b6bb1522f49c27d1f830e7445578bef0f36902471dfb14f7b"
   solver-name = "gps-cdcl"
   solver-version = 1

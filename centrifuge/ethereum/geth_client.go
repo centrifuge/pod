@@ -27,13 +27,13 @@ var log = logging.Logger("geth-client")
 var gc EthereumClient
 var gcInit sync.Once
 
-// getDefaultContextTimeout retrieves the default duration before an Ethereum call context should time out
-func getDefaultContextTimeout() time.Duration {
+// GetDefaultContextTimeout retrieves the default duration before an Ethereum call context should time out
+func GetDefaultContextTimeout() time.Duration {
 	return config.Config.GetEthereumContextWaitTimeout()
 }
 
 func DefaultWaitForTransactionMiningContext() (ctx context.Context, cancelFunc context.CancelFunc) {
-	toBeDone := time.Now().Add(getDefaultContextTimeout())
+	toBeDone := time.Now().Add(GetDefaultContextTimeout())
 	return context.WithDeadline(context.TODO(), toBeDone)
 }
 
@@ -70,21 +70,24 @@ func (gethClient GethClient) GetNonceMutex() *sync.Mutex {
 	return gethClient.NonceMutex
 }
 
-func NewClientConnection() GethClient {
+func NewClientConnection() (GethClient, error) {
 	log.Info("Opening connection to Ethereum:", config.Config.GetEthereumNodeURL())
 	u, err := url.Parse(config.Config.GetEthereumNodeURL())
 	if err != nil {
-		log.Fatalf("Failed to connect to parse ethereum.gethSocket URL: %v", err)
+		log.Errorf("Failed to connect to parse ethereum.gethSocket URL: %v", err)
+		return GethClient{}, err
 	}
 	c, err := rpc.Dial(u.String())
 	if err != nil {
-		log.Fatalf("Failed to connect to the Ethereum client [%s]: %v", u.String(), err)
+		log.Errorf("Failed to connect to the Ethereum client [%s]: %v", u.String(), err)
+		return GethClient{}, err
 	}
 	client := ethclient.NewClient(c)
 	if err != nil {
-		log.Fatalf("Failed to connect to the Ethereum client [%s]: %v", u.String(), err)
+		log.Errorf("Failed to connect to the Ethereum client [%s]: %v", u.String(), err)
+		return GethClient{}, err
 	}
-	return GethClient{client, c, u, &sync.Mutex{}}
+	return GethClient{client, c, u, &sync.Mutex{}}, nil
 }
 
 // Note that this is a singleton and is the same connection for the whole application.
@@ -187,7 +190,7 @@ func IncrementNonce(opts *bind.TransactOpts) (err error) {
 
 	var res map[string]map[string]map[string][]string
 	// Important to not create a DeadLock if network latency
-	txctx, _ := context.WithTimeout(context.Background(), getDefaultContextTimeout())
+	txctx, _ := context.WithTimeout(context.Background(), GetDefaultContextTimeout())
 	gc.GetRpcClient().CallContext(txctx, &res, "txpool_inspect")
 
 	if len(res["pending"][opts.From.Hex()]) > 0 {

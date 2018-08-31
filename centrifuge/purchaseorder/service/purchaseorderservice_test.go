@@ -94,6 +94,7 @@ func TestPurchaseOrderDocumentService_Anchor(t *testing.T) {
 	doc, s, mockRepo, mockCDP := getTestSetupData()
 
 	mockRepo.On("Create", doc.Document.CoreDocument.DocumentIdentifier, doc.Document).Return(nil).Once()
+	mockRepo.On("Update", doc.Document.CoreDocument.DocumentIdentifier, doc.Document).Return(nil).Once()
 	mockCDP.On("Anchor", mock.Anything).Return(nil).Once()
 
 	anchoredDoc, err := s.HandleAnchorPurchaseOrderDocument(context.Background(), &clientpurchaseorderpb.AnchorPurchaseOrderEnvelope{Document: doc.Document})
@@ -214,4 +215,28 @@ func TestPurchaseOrderDocumentService_HandleCreatePurchaseOrderProof(t *testing.
 	valid, err := proofs.ValidateProof(purchaseOrderProof.FieldProofs[0], order.Document.CoreDocument.DataRoot, sha256Hash)
 	assert.True(t, valid)
 	assert.Nil(t, err)
+}
+
+func TestInvoiceDocumentService_HandleCreatePurchaseOrderProof_NotFilledSalts(t *testing.T) {
+	s, mockRepo, _ := generateMockedOutPurchaseOrderService()
+
+	identifier := testingutils.Rand32Bytes()
+	order := purchaseorder.NewEmptyPurchaseOrder()
+	order.Document.CoreDocument = &coredocumentpb.CoreDocument{
+		DocumentIdentifier: identifier,
+		CurrentIdentifier:  identifier,
+		NextIdentifier:     testingutils.Rand32Bytes(),
+	}
+	mockRepo.replaceDoc = order.Document
+	order.Document.Salts = &purchaseorderpb.PurchaseOrderDataSalts{}
+	proofRequest := &clientpurchaseorderpb.CreatePurchaseOrderProofEnvelope{
+		DocumentIdentifier: identifier,
+		Fields:             []string{"currency", "order_country", "net_amount"},
+	}
+
+	mockRepo.On("GetByID", proofRequest.DocumentIdentifier, new(purchaseorderpb.PurchaseOrderDocument)).Return(nil).Once()
+	purchaseOrderProof, err := s.HandleCreatePurchaseOrderProof(context.Background(), proofRequest)
+	mockRepo.AssertExpectations(t)
+	assert.NotNil(t, err)
+	assert.Nil(t, purchaseOrderProof)
 }

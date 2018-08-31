@@ -15,7 +15,7 @@ import (
 func TestMain(m *testing.M) {
 	cc.TestFunctionalEthereumBootstrap()
 	result := m.Run()
-	cc.TestIntegrationTearDown()
+	cc.TestFunctionalEthereumTearDown()
 	os.Exit(result)
 }
 

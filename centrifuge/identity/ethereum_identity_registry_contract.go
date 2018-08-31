@@ -4,6 +4,7 @@
 package identity
 
 import (
+	"math/big"
 	"strings"
 
 	ethereum "github.com/ethereum/go-ethereum"
@@ -15,7 +16,7 @@ import (
 )
 
 // EthereumIdentityRegistryContractABI is the input ABI used to generate the binding from.
-const EthereumIdentityRegistryContractABI = "[{\"constant\":false,\"inputs\":[{\"name\":\"_centrifugeId\",\"type\":\"bytes32\"},{\"name\":\"_identity\",\"type\":\"address\"}],\"name\":\"updateIdentityAddress\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_centrifugeId\",\"type\":\"bytes32\"},{\"name\":\"_identity\",\"type\":\"address\"}],\"name\":\"registerIdentity\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_centrifugeId\",\"type\":\"bytes32\"}],\"name\":\"getIdentityByCentrifugeId\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"centrifugeId\",\"type\":\"bytes32\"},{\"indexed\":false,\"name\":\"identity\",\"type\":\"address\"}],\"name\":\"IdentityRegistered\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"centrifugeId\",\"type\":\"bytes32\"},{\"indexed\":false,\"name\":\"identity\",\"type\":\"address\"}],\"name\":\"IdentityUpdated\",\"type\":\"event\"}]"
+const EthereumIdentityRegistryContractABI = "[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"centrifugeId\",\"type\":\"uint48\"},{\"indexed\":false,\"name\":\"identity\",\"type\":\"address\"}],\"name\":\"IdentityRegistered\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"centrifugeId\",\"type\":\"uint48\"},{\"indexed\":false,\"name\":\"identity\",\"type\":\"address\"}],\"name\":\"IdentityUpdated\",\"type\":\"event\"},{\"constant\":false,\"inputs\":[{\"name\":\"_centrifugeId\",\"type\":\"uint48\"},{\"name\":\"_identity\",\"type\":\"address\"}],\"name\":\"registerIdentity\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_centrifugeId\",\"type\":\"uint48\"},{\"name\":\"_identity\",\"type\":\"address\"}],\"name\":\"updateIdentityAddress\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_centrifugeId\",\"type\":\"uint48\"}],\"name\":\"getIdentityByCentrifugeId\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}]"
 
 // EthereumIdentityRegistryContract is an auto generated Go binding around an Ethereum contract.
 type EthereumIdentityRegistryContract struct {
@@ -159,10 +160,10 @@ func (_EthereumIdentityRegistryContract *EthereumIdentityRegistryContractTransac
 	return _EthereumIdentityRegistryContract.Contract.contract.Transact(opts, method, params...)
 }
 
-// GetIdentityByCentrifugeId is a free data retrieval call binding the contract method 0xdf448e56.
+// GetIdentityByCentrifugeId is a free data retrieval call binding the contract method 0x5c7bf661.
 //
-// Solidity: function getIdentityByCentrifugeId(_centrifugeId bytes32) constant returns(address)
-func (_EthereumIdentityRegistryContract *EthereumIdentityRegistryContractCaller) GetIdentityByCentrifugeId(opts *bind.CallOpts, _centrifugeId [32]byte) (common.Address, error) {
+// Solidity: function getIdentityByCentrifugeId(_centrifugeId uint48) constant returns(address)
+func (_EthereumIdentityRegistryContract *EthereumIdentityRegistryContractCaller) GetIdentityByCentrifugeId(opts *bind.CallOpts, _centrifugeId *big.Int) (common.Address, error) {
 	var (
 		ret0 = new(common.Address)
 	)
@@ -171,59 +172,59 @@ func (_EthereumIdentityRegistryContract *EthereumIdentityRegistryContractCaller)
 	return *ret0, err
 }
 
-// GetIdentityByCentrifugeId is a free data retrieval call binding the contract method 0xdf448e56.
+// GetIdentityByCentrifugeId is a free data retrieval call binding the contract method 0x5c7bf661.
 //
-// Solidity: function getIdentityByCentrifugeId(_centrifugeId bytes32) constant returns(address)
-func (_EthereumIdentityRegistryContract *EthereumIdentityRegistryContractSession) GetIdentityByCentrifugeId(_centrifugeId [32]byte) (common.Address, error) {
+// Solidity: function getIdentityByCentrifugeId(_centrifugeId uint48) constant returns(address)
+func (_EthereumIdentityRegistryContract *EthereumIdentityRegistryContractSession) GetIdentityByCentrifugeId(_centrifugeId *big.Int) (common.Address, error) {
 	return _EthereumIdentityRegistryContract.Contract.GetIdentityByCentrifugeId(&_EthereumIdentityRegistryContract.CallOpts, _centrifugeId)
 }
 
-// GetIdentityByCentrifugeId is a free data retrieval call binding the contract method 0xdf448e56.
+// GetIdentityByCentrifugeId is a free data retrieval call binding the contract method 0x5c7bf661.
 //
-// Solidity: function getIdentityByCentrifugeId(_centrifugeId bytes32) constant returns(address)
-func (_EthereumIdentityRegistryContract *EthereumIdentityRegistryContractCallerSession) GetIdentityByCentrifugeId(_centrifugeId [32]byte) (common.Address, error) {
+// Solidity: function getIdentityByCentrifugeId(_centrifugeId uint48) constant returns(address)
+func (_EthereumIdentityRegistryContract *EthereumIdentityRegistryContractCallerSession) GetIdentityByCentrifugeId(_centrifugeId *big.Int) (common.Address, error) {
 	return _EthereumIdentityRegistryContract.Contract.GetIdentityByCentrifugeId(&_EthereumIdentityRegistryContract.CallOpts, _centrifugeId)
 }
 
-// RegisterIdentity is a paid mutator transaction binding the contract method 0xa134531c.
+// RegisterIdentity is a paid mutator transaction binding the contract method 0xfa3a3106.
 //
-// Solidity: function registerIdentity(_centrifugeId bytes32, _identity address) returns()
-func (_EthereumIdentityRegistryContract *EthereumIdentityRegistryContractTransactor) RegisterIdentity(opts *bind.TransactOpts, _centrifugeId [32]byte, _identity common.Address) (*types.Transaction, error) {
+// Solidity: function registerIdentity(_centrifugeId uint48, _identity address) returns()
+func (_EthereumIdentityRegistryContract *EthereumIdentityRegistryContractTransactor) RegisterIdentity(opts *bind.TransactOpts, _centrifugeId *big.Int, _identity common.Address) (*types.Transaction, error) {
 	return _EthereumIdentityRegistryContract.contract.Transact(opts, "registerIdentity", _centrifugeId, _identity)
 }
 
-// RegisterIdentity is a paid mutator transaction binding the contract method 0xa134531c.
+// RegisterIdentity is a paid mutator transaction binding the contract method 0xfa3a3106.
 //
-// Solidity: function registerIdentity(_centrifugeId bytes32, _identity address) returns()
-func (_EthereumIdentityRegistryContract *EthereumIdentityRegistryContractSession) RegisterIdentity(_centrifugeId [32]byte, _identity common.Address) (*types.Transaction, error) {
+// Solidity: function registerIdentity(_centrifugeId uint48, _identity address) returns()
+func (_EthereumIdentityRegistryContract *EthereumIdentityRegistryContractSession) RegisterIdentity(_centrifugeId *big.Int, _identity common.Address) (*types.Transaction, error) {
 	return _EthereumIdentityRegistryContract.Contract.RegisterIdentity(&_EthereumIdentityRegistryContract.TransactOpts, _centrifugeId, _identity)
 }
 
-// RegisterIdentity is a paid mutator transaction binding the contract method 0xa134531c.
+// RegisterIdentity is a paid mutator transaction binding the contract method 0xfa3a3106.
 //
-// Solidity: function registerIdentity(_centrifugeId bytes32, _identity address) returns()
-func (_EthereumIdentityRegistryContract *EthereumIdentityRegistryContractTransactorSession) RegisterIdentity(_centrifugeId [32]byte, _identity common.Address) (*types.Transaction, error) {
+// Solidity: function registerIdentity(_centrifugeId uint48, _identity address) returns()
+func (_EthereumIdentityRegistryContract *EthereumIdentityRegistryContractTransactorSession) RegisterIdentity(_centrifugeId *big.Int, _identity common.Address) (*types.Transaction, error) {
 	return _EthereumIdentityRegistryContract.Contract.RegisterIdentity(&_EthereumIdentityRegistryContract.TransactOpts, _centrifugeId, _identity)
 }
 
-// UpdateIdentityAddress is a paid mutator transaction binding the contract method 0x5c1b60bb.
+// UpdateIdentityAddress is a paid mutator transaction binding the contract method 0xc3e82b06.
 //
-// Solidity: function updateIdentityAddress(_centrifugeId bytes32, _identity address) returns()
-func (_EthereumIdentityRegistryContract *EthereumIdentityRegistryContractTransactor) UpdateIdentityAddress(opts *bind.TransactOpts, _centrifugeId [32]byte, _identity common.Address) (*types.Transaction, error) {
+// Solidity: function updateIdentityAddress(_centrifugeId uint48, _identity address) returns()
+func (_EthereumIdentityRegistryContract *EthereumIdentityRegistryContractTransactor) UpdateIdentityAddress(opts *bind.TransactOpts, _centrifugeId *big.Int, _identity common.Address) (*types.Transaction, error) {
 	return _EthereumIdentityRegistryContract.contract.Transact(opts, "updateIdentityAddress", _centrifugeId, _identity)
 }
 
-// UpdateIdentityAddress is a paid mutator transaction binding the contract method 0x5c1b60bb.
+// UpdateIdentityAddress is a paid mutator transaction binding the contract method 0xc3e82b06.
 //
-// Solidity: function updateIdentityAddress(_centrifugeId bytes32, _identity address) returns()
-func (_EthereumIdentityRegistryContract *EthereumIdentityRegistryContractSession) UpdateIdentityAddress(_centrifugeId [32]byte, _identity common.Address) (*types.Transaction, error) {
+// Solidity: function updateIdentityAddress(_centrifugeId uint48, _identity address) returns()
+func (_EthereumIdentityRegistryContract *EthereumIdentityRegistryContractSession) UpdateIdentityAddress(_centrifugeId *big.Int, _identity common.Address) (*types.Transaction, error) {
 	return _EthereumIdentityRegistryContract.Contract.UpdateIdentityAddress(&_EthereumIdentityRegistryContract.TransactOpts, _centrifugeId, _identity)
 }
 
-// UpdateIdentityAddress is a paid mutator transaction binding the contract method 0x5c1b60bb.
+// UpdateIdentityAddress is a paid mutator transaction binding the contract method 0xc3e82b06.
 //
-// Solidity: function updateIdentityAddress(_centrifugeId bytes32, _identity address) returns()
-func (_EthereumIdentityRegistryContract *EthereumIdentityRegistryContractTransactorSession) UpdateIdentityAddress(_centrifugeId [32]byte, _identity common.Address) (*types.Transaction, error) {
+// Solidity: function updateIdentityAddress(_centrifugeId uint48, _identity address) returns()
+func (_EthereumIdentityRegistryContract *EthereumIdentityRegistryContractTransactorSession) UpdateIdentityAddress(_centrifugeId *big.Int, _identity common.Address) (*types.Transaction, error) {
 	return _EthereumIdentityRegistryContract.Contract.UpdateIdentityAddress(&_EthereumIdentityRegistryContract.TransactOpts, _centrifugeId, _identity)
 }
 
@@ -296,15 +297,15 @@ func (it *EthereumIdentityRegistryContractIdentityRegisteredIterator) Close() er
 
 // EthereumIdentityRegistryContractIdentityRegistered represents a IdentityRegistered event raised by the EthereumIdentityRegistryContract contract.
 type EthereumIdentityRegistryContractIdentityRegistered struct {
-	CentrifugeId [32]byte
+	CentrifugeId *big.Int
 	Identity     common.Address
 	Raw          types.Log // Blockchain specific contextual infos
 }
 
-// FilterIdentityRegistered is a free log retrieval operation binding the contract event 0xd0c90c8049cdcd414cc4e521cc98d9c70f84ba695cde160691c0aebc48df058a.
+// FilterIdentityRegistered is a free log retrieval operation binding the contract event 0xdce3b1d0a5d5575f7d94c88f0300b0af4cbe28c211f11c315cbac957b32ddb49.
 //
-// Solidity: event IdentityRegistered(centrifugeId indexed bytes32, identity address)
-func (_EthereumIdentityRegistryContract *EthereumIdentityRegistryContractFilterer) FilterIdentityRegistered(opts *bind.FilterOpts, centrifugeId [][32]byte) (*EthereumIdentityRegistryContractIdentityRegisteredIterator, error) {
+// Solidity: e IdentityRegistered(centrifugeId indexed uint48, identity address)
+func (_EthereumIdentityRegistryContract *EthereumIdentityRegistryContractFilterer) FilterIdentityRegistered(opts *bind.FilterOpts, centrifugeId []*big.Int) (*EthereumIdentityRegistryContractIdentityRegisteredIterator, error) {
 
 	var centrifugeIdRule []interface{}
 	for _, centrifugeIdItem := range centrifugeId {
@@ -318,10 +319,10 @@ func (_EthereumIdentityRegistryContract *EthereumIdentityRegistryContractFiltere
 	return &EthereumIdentityRegistryContractIdentityRegisteredIterator{contract: _EthereumIdentityRegistryContract.contract, event: "IdentityRegistered", logs: logs, sub: sub}, nil
 }
 
-// WatchIdentityRegistered is a free log subscription operation binding the contract event 0xd0c90c8049cdcd414cc4e521cc98d9c70f84ba695cde160691c0aebc48df058a.
+// WatchIdentityRegistered is a free log subscription operation binding the contract event 0xdce3b1d0a5d5575f7d94c88f0300b0af4cbe28c211f11c315cbac957b32ddb49.
 //
-// Solidity: event IdentityRegistered(centrifugeId indexed bytes32, identity address)
-func (_EthereumIdentityRegistryContract *EthereumIdentityRegistryContractFilterer) WatchIdentityRegistered(opts *bind.WatchOpts, sink chan<- *EthereumIdentityRegistryContractIdentityRegistered, centrifugeId [][32]byte) (event.Subscription, error) {
+// Solidity: e IdentityRegistered(centrifugeId indexed uint48, identity address)
+func (_EthereumIdentityRegistryContract *EthereumIdentityRegistryContractFilterer) WatchIdentityRegistered(opts *bind.WatchOpts, sink chan<- *EthereumIdentityRegistryContractIdentityRegistered, centrifugeId []*big.Int) (event.Subscription, error) {
 
 	var centrifugeIdRule []interface{}
 	for _, centrifugeIdItem := range centrifugeId {
@@ -429,15 +430,15 @@ func (it *EthereumIdentityRegistryContractIdentityUpdatedIterator) Close() error
 
 // EthereumIdentityRegistryContractIdentityUpdated represents a IdentityUpdated event raised by the EthereumIdentityRegistryContract contract.
 type EthereumIdentityRegistryContractIdentityUpdated struct {
-	CentrifugeId [32]byte
+	CentrifugeId *big.Int
 	Identity     common.Address
 	Raw          types.Log // Blockchain specific contextual infos
 }
 
-// FilterIdentityUpdated is a free log retrieval operation binding the contract event 0x043d2bc4475f97a36335b76dbd57eb79e7a7f8f052230b56e5e0473605b975b5.
+// FilterIdentityUpdated is a free log retrieval operation binding the contract event 0xb0eb267eb8047ce01327cdd07db5733b07c2d488cb922b20b723a596b53b659c.
 //
-// Solidity: event IdentityUpdated(centrifugeId indexed bytes32, identity address)
-func (_EthereumIdentityRegistryContract *EthereumIdentityRegistryContractFilterer) FilterIdentityUpdated(opts *bind.FilterOpts, centrifugeId [][32]byte) (*EthereumIdentityRegistryContractIdentityUpdatedIterator, error) {
+// Solidity: e IdentityUpdated(centrifugeId indexed uint48, identity address)
+func (_EthereumIdentityRegistryContract *EthereumIdentityRegistryContractFilterer) FilterIdentityUpdated(opts *bind.FilterOpts, centrifugeId []*big.Int) (*EthereumIdentityRegistryContractIdentityUpdatedIterator, error) {
 
 	var centrifugeIdRule []interface{}
 	for _, centrifugeIdItem := range centrifugeId {
@@ -451,10 +452,10 @@ func (_EthereumIdentityRegistryContract *EthereumIdentityRegistryContractFiltere
 	return &EthereumIdentityRegistryContractIdentityUpdatedIterator{contract: _EthereumIdentityRegistryContract.contract, event: "IdentityUpdated", logs: logs, sub: sub}, nil
 }
 
-// WatchIdentityUpdated is a free log subscription operation binding the contract event 0x043d2bc4475f97a36335b76dbd57eb79e7a7f8f052230b56e5e0473605b975b5.
+// WatchIdentityUpdated is a free log subscription operation binding the contract event 0xb0eb267eb8047ce01327cdd07db5733b07c2d488cb922b20b723a596b53b659c.
 //
-// Solidity: event IdentityUpdated(centrifugeId indexed bytes32, identity address)
-func (_EthereumIdentityRegistryContract *EthereumIdentityRegistryContractFilterer) WatchIdentityUpdated(opts *bind.WatchOpts, sink chan<- *EthereumIdentityRegistryContractIdentityUpdated, centrifugeId [][32]byte) (event.Subscription, error) {
+// Solidity: e IdentityUpdated(centrifugeId indexed uint48, identity address)
+func (_EthereumIdentityRegistryContract *EthereumIdentityRegistryContractFilterer) WatchIdentityUpdated(opts *bind.WatchOpts, sink chan<- *EthereumIdentityRegistryContractIdentityUpdated, centrifugeId []*big.Int) (event.Subscription, error) {
 
 	var centrifugeIdRule []interface{}
 	for _, centrifugeIdItem := range centrifugeId {

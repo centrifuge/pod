@@ -22,33 +22,40 @@ type PurchaseOrder struct {
 	Document *purchaseorderpb.PurchaseOrderDocument
 }
 
-func New(poDoc *purchaseorderpb.PurchaseOrderDocument) (*PurchaseOrder, error) {
+// Wrap wraps the purchase order protobuf inside PurchaseOrder
+func Wrap(poDoc *purchaseorderpb.PurchaseOrderDocument) (*PurchaseOrder, error) {
 	if poDoc == nil {
 		return nil, errors.NilError(poDoc)
 	}
+	return &PurchaseOrder{poDoc}, nil
+}
 
-	order := &PurchaseOrder{poDoc}
-	// If salts have not been provided, let's generate them
+// New generates a new purchase order and generate salts, merkle root and coredocument
+func New(poDoc *purchaseorderpb.PurchaseOrderDocument) (*PurchaseOrder, error) {
+	po, err := Wrap(poDoc)
+	if err != nil {
+		return nil, err
+	}
+	// IF salts have not been provided, let's generate them
 	if poDoc.Salts == nil {
 		salts := purchaseorderpb.PurchaseOrderDataSalts{}
 		proofs.FillSalts(&salts)
-		order.Document.Salts = &salts
+		po.Document.Salts = &salts
 	}
 
-	po := &PurchaseOrder{poDoc}
 	if po.Document.CoreDocument == nil {
 		po.Document.CoreDocument = coredocument.New()
 	}
 
-	err := po.CalculateMerkleRoot()
+	err = po.CalculateMerkleRoot()
 	if err != nil {
 		return nil, err
 	}
 
 	return po, nil
-	return order, nil
 }
 
+// Empty returns an empty purchase order with salts filled
 func Empty() *PurchaseOrder {
 	salts := purchaseorderpb.PurchaseOrderDataSalts{}
 	proofs.FillSalts(&salts)
@@ -60,6 +67,7 @@ func Empty() *PurchaseOrder {
 	return &PurchaseOrder{&doc}
 }
 
+// NewFromCoreDocument unmarshalls invoice from coredocument
 func NewFromCoreDocument(coredocument *coredocumentpb.CoreDocument) (*PurchaseOrder, error) {
 	if coredocument == nil {
 		return nil, errors.NilError(coredocument)
@@ -99,6 +107,7 @@ func (order *PurchaseOrder) getDocumentTree() (tree *proofs.DocumentTree, err er
 	return &t, nil
 }
 
+// CalculateMerkleRoot calculates MerkleRoot of the document
 func (order *PurchaseOrder) CalculateMerkleRoot() error {
 	tree, err := order.getDocumentTree()
 	if err != nil {

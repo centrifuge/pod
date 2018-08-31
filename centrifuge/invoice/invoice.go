@@ -22,24 +22,32 @@ type Invoice struct {
 	Document *invoicepb.InvoiceDocument
 }
 
-// New fills salts, coredoc and returns a new invoice
-func New(invDoc *invoicepb.InvoiceDocument) (*Invoice, error) {
+// Wrap wraps the protobuf invoice within Invoice
+func Wrap(invDoc *invoicepb.InvoiceDocument) (*Invoice, error) {
 	if invDoc == nil {
 		return nil, errors.NilError(invDoc)
 	}
+	return &Invoice{invDoc}, nil
+}
 
+// New returns a new Invoice with salts, merkle root, and coredocument generated
+func New(invDoc *invoicepb.InvoiceDocument) (*Invoice, error) {
+	inv, err := Wrap(invDoc)
+	if err != nil {
+		return nil, err
+	}
+	// IF salts have not been provided, let's generate them
 	if invDoc.Salts == nil {
 		invoiceSalts := invoicepb.InvoiceDataSalts{}
 		proofs.FillSalts(&invoiceSalts)
 		invDoc.Salts = &invoiceSalts
 	}
 
-	inv := &Invoice{invDoc}
 	if inv.Document.CoreDocument == nil {
 		inv.Document.CoreDocument = coredocument.New()
 	}
 
-	err := inv.CalculateMerkleRoot()
+	err = inv.CalculateMerkleRoot()
 	if err != nil {
 		return nil, err
 	}
