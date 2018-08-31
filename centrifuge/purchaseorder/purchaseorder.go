@@ -36,6 +36,7 @@ func New(poDoc *purchaseorderpb.PurchaseOrderDocument) (*PurchaseOrder, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	// IF salts have not been provided, let's generate them
 	if poDoc.Salts == nil {
 		salts := purchaseorderpb.PurchaseOrderDataSalts{}

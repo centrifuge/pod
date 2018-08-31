@@ -85,6 +85,9 @@ func getTestSetupData() (po *purchaseorder.PurchaseOrder, srv *PurchaseOrderDocu
 		Currency:         "EUR",
 		OrderAmount:      800,
 	}
+	salts := new(purchaseorderpb.PurchaseOrderDataSalts)
+	proofs.FillSalts(salts)
+	po.Document.Salts = salts
 	po.Document.CoreDocument = testingutils.GenerateCoreDocument()
 	srv, repo, mockCoreDocumentProcessor = generateMockedOutPurchaseOrderService()
 	return

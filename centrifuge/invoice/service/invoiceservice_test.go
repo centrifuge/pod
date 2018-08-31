@@ -75,7 +75,9 @@ func getTestSetupData() (doc *invoice.Invoice, srv *invoiceservice.InvoiceDocume
 		Currency:         "EUR",
 		GrossAmount:      800,
 	}
-
+	salts := new(invoicepb.InvoiceDataSalts)
+	proofs.FillSalts(salts)
+	doc.Document.Salts = salts
 	srv, repo, coreDocumentProcessor = generateMockedOutInvoiceService()
 	return
 }
