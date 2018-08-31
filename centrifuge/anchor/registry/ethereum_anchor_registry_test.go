@@ -1,6 +1,6 @@
 // +build unit
 
-package anchor
+package registry
 
 import (
 	"math/big"

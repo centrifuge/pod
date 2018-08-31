@@ -1,4 +1,4 @@
-package anchor
+package registry
 
 import (
 	logging "github.com/ipfs/go-log"

@@ -7,7 +7,7 @@ import (
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/anchor"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/anchor/registry"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/code"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
@@ -104,7 +104,7 @@ func (dp *defaultProcessor) Anchor(document *coredocumentpb.CoreDocument) error 
 		return err
 	}
 
-	confirmations, err := anchor.RegisterAsAnchor(id, rootHash)
+	confirmations, err := registry.RegisterAsAnchor(id, rootHash)
 	if err != nil {
 		log.Error(err)
 		return err
