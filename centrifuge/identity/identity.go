@@ -12,7 +12,7 @@ const (
 	ActionAddKey         = "addkey"
 	KeyPurposeP2p        = 1
 	KeyPurposeSigning    = 2
-	KeyPurposeManagement = 3
+	KeyPurposeEthMsgAuth = 3
 )
 
 type Identity interface {
