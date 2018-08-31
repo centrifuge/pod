@@ -221,7 +221,7 @@ func TestInvoiceDocumentService_HandleCreatePurchaseOrderProof_NotFilledSalts(t 
 	s, mockRepo, _ := generateMockedOutPurchaseOrderService()
 
 	identifier := testingutils.Rand32Bytes()
-	order := purchaseorder.NewEmptyPurchaseOrder()
+	order := purchaseorder.Empty()
 	order.Document.CoreDocument = &coredocumentpb.CoreDocument{
 		DocumentIdentifier: identifier,
 		CurrentIdentifier:  identifier,

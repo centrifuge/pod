@@ -212,7 +212,7 @@ func TestInvoiceDocumentService_HandleCreateInvoiceProof(t *testing.T) {
 
 func TestInvoiceDocumentService_HandleCreateInvoiceProof_NotFilledSalts(t *testing.T) {
 	identifier := testingutils.Rand32Bytes()
-	inv := invoice.NewEmptyInvoice()
+	inv := invoice.Empty()
 	inv.Document.CoreDocument = &coredocumentpb.CoreDocument{
 		DocumentIdentifier: identifier,
 		CurrentIdentifier:  identifier,
