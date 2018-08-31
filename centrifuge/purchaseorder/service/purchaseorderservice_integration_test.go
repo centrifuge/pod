@@ -61,6 +61,9 @@ func TestPurchaseOrderDocumentService_HandleAnchorPurchaseOrderDocument_Integrat
 	assert.Equal(t, "DE", loadedDoc.Data.OrderCountry,
 		"Didn't save the purchaseorder data correctly")
 
+	// Invoice stored after anchoring has Salts populated
+	assert.NotNil(t, loadedDoc.Salts.OrderCountry)
+
 	//PO Service should error out if trying to anchor the same document ID again
 	doc.Document.Data.OrderCountry = "ES"
 	anchoredDoc2, err := s.HandleAnchorPurchaseOrderDocument(context.Background(), &clientpurchaseorderpb.AnchorPurchaseOrderEnvelope{Document: doc.Document})

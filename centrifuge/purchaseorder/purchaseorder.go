@@ -21,11 +21,18 @@ type PurchaseOrder struct {
 	Document *purchaseorderpb.PurchaseOrderDocument
 }
 
-func NewPurchaseOrder(poDoc *purchaseorderpb.PurchaseOrderDocument) (*PurchaseOrder, error) {
+func WrapPurchaseOrder(poDoc *purchaseorderpb.PurchaseOrderDocument) (*PurchaseOrder, error) {
 	if poDoc == nil {
 		return nil, errors.NilError(poDoc)
 	}
-	order := &PurchaseOrder{poDoc}
+	return &PurchaseOrder{poDoc}, nil
+}
+
+func NewPurchaseOrder(poDoc *purchaseorderpb.PurchaseOrderDocument) (*PurchaseOrder, error) {
+	order, err := WrapPurchaseOrder(poDoc)
+	if err != nil {
+		return nil, err
+	}
 	// IF salts have not been provided, let's generate them
 	if poDoc.Salts == nil {
 		purchaseorderSalts := purchaseorderpb.PurchaseOrderDataSalts{}
