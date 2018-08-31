@@ -56,7 +56,7 @@ func CloseLevelDBStorage() {
 type DefaultLevelDB struct {
 	KeyPrefix    string
 	LevelDB      *leveldb.DB
-	ValidateFunc func([]byte, proto.Message) error
+	ValidateFunc func(proto.Message) error
 }
 
 // Exists returns if the document exists in the repository
@@ -105,7 +105,7 @@ func (repo *DefaultLevelDB) Create(id []byte, msg proto.Message) error {
 	}
 
 	if repo.ValidateFunc != nil {
-		err := repo.ValidateFunc(id, msg)
+		err := repo.ValidateFunc(msg)
 		if err != nil {
 			return fmt.Errorf("validation failed: %v", err)
 		}
@@ -130,7 +130,7 @@ func (repo *DefaultLevelDB) Update(id []byte, msg proto.Message) error {
 	}
 
 	if repo.ValidateFunc != nil {
-		err := repo.ValidateFunc(id, msg)
+		err := repo.ValidateFunc(msg)
 		if err != nil {
 			return fmt.Errorf("validation failed: %v", err)
 		}

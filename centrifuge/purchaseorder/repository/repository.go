@@ -20,7 +20,7 @@ type levelDBRepository struct {
 // levelDBRepo is singleton instance
 var levelDBRepo *levelDBRepository
 
-// once to guard from multiple instances
+// once to guard from creating multiple instances
 var once sync.Once
 
 // InitLevelDBRepository initialises new repository if not exists
@@ -47,7 +47,7 @@ func GetRepository() storage.Repository {
 }
 
 // checkIfCoreDocumentFilledCorrectly checks if the core document details are filled
-func checkIfCoreDocumentFilledCorrectly(_ []byte, msg proto.Message) error {
+func checkIfCoreDocumentFilledCorrectly(msg proto.Message) error {
 	doc, ok := msg.(*purchaseorderpb.PurchaseOrderDocument)
 	if !ok {
 		return fmt.Errorf("unrecognized type: %T", msg)

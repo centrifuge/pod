@@ -3,6 +3,7 @@ package purchaseorderservice
 import (
 	"fmt"
 
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/processor"
@@ -137,7 +138,9 @@ func (s *PurchaseOrderDocumentService) HandleGetPurchaseOrderDocument(ctx contex
 		return doc, nil
 	}
 
-	docFound, err := coredocumentrepository.GetRepository().FindById(getPurchaseOrderDocumentEnvelope.DocumentIdentifier)
+	// TODO(ved): where are we saving this coredocument?
+	docFound := new(coredocumentpb.CoreDocument)
+	err = coredocumentrepository.GetRepository().GetByID(getPurchaseOrderDocumentEnvelope.DocumentIdentifier, docFound)
 	if err != nil {
 		log.Error(err)
 		return nil, fmt.Errorf("failed to get document: %v", err)

@@ -8,7 +8,7 @@ import (
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
 	"github.com/stretchr/testify/assert"
 )
@@ -17,7 +17,7 @@ var dbFileName = "/tmp/centrifuge_testing_podoc.leveldb"
 
 func TestMain(m *testing.M) {
 	levelDB := storage.NewLevelDBStorage(dbFileName)
-	coredocumentrepository.NewLevelDBRepository(&coredocumentrepository.LevelDBRepository{LevelDB: levelDB})
+	coredocument.InitLevelDBRepository(storage.GetLevelDBStorage())
 	InitLevelDBRepository(levelDB)
 	result := m.Run()
 	levelDB.Close()
