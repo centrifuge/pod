@@ -71,4 +71,8 @@ func TestWrap(t *testing.T) {
 	err = New(code.Unknown, "p2p-error")
 	err = Wrap(err, "wrapped error")
 	assert.Equal(t, err.Error(), "[1]wrapped error: p2p-error")
+
+	// nil error
+	err = Wrap(nil, "nil error")
+	assert.Equal(t, err.Error(), "nil error")
 }

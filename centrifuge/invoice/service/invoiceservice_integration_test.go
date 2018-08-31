@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/processor"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
@@ -15,6 +16,7 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/service"
 	clientinvoicepb "github.com/CentrifugeInc/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
+	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -29,11 +31,14 @@ func TestMain(m *testing.M) {
 
 func generateEmptyInvoiceForProcessing() (doc *invoice.Invoice) {
 	identifier := testingutils.Rand32Bytes()
-	doc = invoice.NewEmptyInvoice()
+	doc = invoice.Empty()
+	salts := &coredocumentpb.CoreDocumentSalts{}
+	proofs.FillSalts(salts)
 	doc.Document.CoreDocument = &coredocumentpb.CoreDocument{
 		DocumentIdentifier: identifier,
 		CurrentIdentifier:  identifier,
 		NextIdentifier:     testingutils.Rand32Bytes(),
+		CoredocumentSalts:  salts,
 	}
 	return
 }
@@ -44,7 +49,17 @@ func TestInvoiceDocumentService_HandleAnchorInvoiceDocument_Integration(t *testi
 		CoreDocumentProcessor: coredocumentprocessor.NewDefaultProcessor(),
 	}
 	doc := generateEmptyInvoiceForProcessing()
-	doc.Document.Data.SenderCountry = "DE"
+	doc.Document.Data = &invoicepb.InvoiceData{
+		InvoiceNumber:    "inv1234",
+		SenderName:       "Jack",
+		SenderZipcode:    "921007",
+		SenderCountry:    "AUS",
+		RecipientName:    "John",
+		RecipientZipcode: "12345",
+		RecipientCountry: "Germany",
+		Currency:         "EUR",
+		GrossAmount:      800,
+	}
 
 	anchoredDoc, err := s.HandleAnchorInvoiceDocument(context.Background(), &clientinvoicepb.AnchorInvoiceEnvelope{Document: doc.Document})
 
@@ -55,7 +70,7 @@ func TestInvoiceDocumentService_HandleAnchorInvoiceDocument_Integration(t *testi
 
 	//Invoice document got stored in the DB
 	loadedInvoice, _ := invoicerepository.GetInvoiceRepository().FindById(doc.Document.CoreDocument.DocumentIdentifier)
-	assert.Equal(t, "DE", loadedInvoice.Data.SenderCountry,
+	assert.Equal(t, "AUS", loadedInvoice.Data.SenderCountry,
 		"Didn't save the invoice data correctly")
 
 	// Invoice stored after anchoring has Salts populated
@@ -69,6 +84,6 @@ func TestInvoiceDocumentService_HandleAnchorInvoiceDocument_Integration(t *testi
 	assert.Contains(t, err.Error(), "Document already exists")
 
 	loadedInvoice2, _ := invoicerepository.GetInvoiceRepository().FindById(doc.Document.CoreDocument.DocumentIdentifier)
-	assert.Equal(t, "DE", loadedInvoice2.Data.SenderCountry,
+	assert.Equal(t, "AUS", loadedInvoice2.Data.SenderCountry,
 		"Invoice document on DB should have not not gotten overwritten after rejected anchor call")
 }
