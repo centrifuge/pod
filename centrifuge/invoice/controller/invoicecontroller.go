@@ -17,8 +17,8 @@ type InvoiceDocumentController struct{}
 
 func getInvoiceDocumentService() *invoiceservice.InvoiceDocumentService {
 	return &invoiceservice.InvoiceDocumentService{
-		InvoiceRepository:     invoicerepository.GetInvoiceRepository(),
-		CoreDocumentProcessor: coredocumentprocessor.NewDefaultProcessor(),
+		InvoiceRepository:     invoicerepository.GetRepository(),
+		CoreDocumentProcessor: coredocumentprocessor.DefaultProcessor(),
 	}
 }
 

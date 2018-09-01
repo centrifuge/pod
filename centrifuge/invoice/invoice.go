@@ -133,7 +133,7 @@ func (inv *Invoice) CreateProofs(fields []string) (proofs []*proofspb.Proof, err
 }
 
 func (inv *Invoice) ConvertToCoreDocument() (coredocpb *coredocumentpb.CoreDocument) {
-	coredocpb = &coredocumentpb.CoreDocument{}
+	coredocpb = new(coredocumentpb.CoreDocument)
 	proto.Merge(coredocpb, inv.Document.CoreDocument)
 	serializedInvoice, err := proto.Marshal(inv.Document.Data)
 	if err != nil {

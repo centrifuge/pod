@@ -33,8 +33,8 @@ type defaultProcessor struct {
 	IdentityService identity.IdentityService
 }
 
-// NewDefaultProcessor returns the default implementation of CoreDocument Processor
-func NewDefaultProcessor() Processor {
+// DefaultProcessor returns the default implementation of CoreDocument Processor
+func DefaultProcessor() Processor {
 	return &defaultProcessor{
 		IdentityService: identity.NewEthereumIdentityService()}
 }
@@ -65,12 +65,11 @@ func (dp *defaultProcessor) Send(coreDocument *coredocumentpb.CoreDocument, ctx 
 	hostInstance := p2p.GetHost()
 	bSenderId, err := hostInstance.ID().ExtractPublicKey().Bytes()
 	if err != nil {
-		return fmt.Errorf("failed to extract pub key: %v", err)
+		return errors.Wrap(err, "failed to extract pub key")
 	}
 
 	_, err = client.Post(context.Background(), &p2ppb.P2PMessage{Document: coreDocument, SenderCentrifugeId: bSenderId})
 	if err != nil {
-		// this is p2pError, lets not format it
 		return err
 	}
 

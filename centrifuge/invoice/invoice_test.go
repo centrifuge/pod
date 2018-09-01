@@ -10,7 +10,7 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
@@ -98,29 +98,7 @@ func TestValidate(t *testing.T) {
 		errs   map[string]string
 	}
 
-	var (
-		id1 = tools.RandomSlice(32)
-		id2 = tools.RandomSlice(32)
-		id3 = tools.RandomSlice(32)
-		id4 = tools.RandomSlice(32)
-		id5 = tools.RandomSlice(32)
-	)
-
-	validCoreDoc := &coredocumentpb.CoreDocument{
-		DocumentRoot:       id1,
-		DocumentIdentifier: id2,
-		CurrentIdentifier:  id3,
-		NextIdentifier:     id4,
-		DataRoot:           id5,
-		CoredocumentSalts: &coredocumentpb.CoreDocumentSalts{
-			DocumentIdentifier: id1,
-			CurrentIdentifier:  id2,
-			NextIdentifier:     id3,
-			DataRoot:           id4,
-			PreviousRoot:       id5,
-		},
-	}
-
+	validCoreDoc := testingutils.GenerateCoreDocument()
 	tests := []struct {
 		inv  *invoicepb.InvoiceDocument
 		want want

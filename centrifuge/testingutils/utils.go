@@ -7,6 +7,7 @@ import (
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/stretchr/testify/mock"
 )
@@ -39,6 +40,7 @@ func GenerateCoreDocument() *coredocumentpb.CoreDocument {
 	salts := &coredocumentpb.CoreDocumentSalts{}
 	proofs.FillSalts(salts)
 	return &coredocumentpb.CoreDocument{
+		DataRoot:           tools.RandomSlice(32),
 		DocumentIdentifier: identifier,
 		CurrentIdentifier:  identifier,
 		NextIdentifier:     Rand32Bytes(),
