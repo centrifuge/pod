@@ -50,7 +50,8 @@ func TestInvoiceCoreDocumentConverter(t *testing.T) {
 		EmbeddedDataSalts:  &invoiceSaltsAny,
 	}
 
-	generatedCoreDocument := invoiceDoc.ConvertToCoreDocument()
+	generatedCoreDocument, err := invoiceDoc.ConvertToCoreDocument()
+	assert.Nil(t, err, "error converting to coredocument")
 	generatedCoreDocumentBytes, err := proto.Marshal(generatedCoreDocument)
 	assert.Nil(t, err, "Error marshaling generatedCoreDocument")
 

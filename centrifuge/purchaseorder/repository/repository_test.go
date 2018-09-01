@@ -6,10 +6,10 @@ import (
 	"os"
 	"testing"
 
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -17,7 +17,7 @@ var dbFileName = "/tmp/centrifuge_testing_podoc.leveldb"
 
 func TestMain(m *testing.M) {
 	levelDB := storage.NewLevelDBStorage(dbFileName)
-	coredocument.InitLevelDBRepository(storage.GetLevelDBStorage())
+	coredocumentrepository.InitLevelDBRepository(levelDB)
 	InitLevelDBRepository(levelDB)
 	result := m.Run()
 	levelDB.Close()
@@ -25,32 +25,53 @@ func TestMain(m *testing.M) {
 	os.Exit(result)
 }
 
-func TestStorageService(t *testing.T) {
-	identifier := []byte("1")
-	invalidIdentifier := []byte("2")
-
-	purchaseorder := purchaseorderpb.PurchaseOrderDocument{CoreDocument: &coredocumentpb.CoreDocument{DocumentIdentifier: identifier}}
+func TestRepository(t *testing.T) {
 	repo := GetRepository()
-	err := repo.Create(identifier, &purchaseorder)
-	assert.Nil(t, err, "Create should not return error")
 
-	orderDocument := &purchaseorderpb.PurchaseOrderDocument{}
-	err = repo.GetByID(identifier, orderDocument)
-	assert.Nil(t, err, "GetByID should not return error")
-	assert.Equal(t, purchaseorder.CoreDocument.DocumentIdentifier, orderDocument.CoreDocument.DocumentIdentifier, "PurchaseOrder DocumentIdentifier should be equal")
+	// failed validation for create
+	doc := &purchaseorderpb.PurchaseOrderDocument{
+		CoreDocument: testingutils.GenerateCoreDocument(),
+		Data: &purchaseorderpb.PurchaseOrderData{
+			PoNumber:         "po1234",
+			OrderName:        "Jack",
+			OrderZipcode:     "921007",
+			OrderCountry:     "Australia",
+			RecipientName:    "John",
+			RecipientZipcode: "12345",
+			RecipientCountry: "Germany",
+			Currency:         "EUR",
+			OrderAmount:      800,
+		},
+	}
 
-	err = repo.GetByID(invalidIdentifier, orderDocument)
-	assert.NotNil(t, err, "FindById should not return error")
-}
+	docID := doc.CoreDocument.DocumentIdentifier
+	err := repo.Create(docID, doc)
+	assert.Error(t, err, "create must fail")
 
-func TestLevelDBPurchaseRepository_StoreNilDocument(t *testing.T) {
-	repo := GetRepository()
-	err := repo.Create([]byte("1"), nil)
-	assert.Error(t, err, "should have thrown an error")
-}
+	// successful creation
+	doc.Salts = &purchaseorderpb.PurchaseOrderDataSalts{}
+	err = repo.Create(docID, doc)
+	assert.Nil(t, err, "create must pass")
 
-func TestLevelDBPurchaseRepository_StoreNilCoreDocument(t *testing.T) {
-	repo := GetRepository()
-	err := repo.Create([]byte("1"), &purchaseorderpb.PurchaseOrderDocument{})
-	assert.Error(t, err, "should have thrown an error")
+	// failed get
+	getDoc := new(purchaseorderpb.PurchaseOrderDocument)
+	err = repo.GetByID(doc.CoreDocument.NextIdentifier, getDoc)
+	assert.Error(t, err, "get must fail")
+
+	// successful get
+	err = repo.GetByID(docID, getDoc)
+	assert.Nil(t, err, "get must pass")
+	assert.Equal(t, getDoc.CoreDocument.DocumentIdentifier, docID, "identifiers mismatch")
+
+	// failed update
+	doc.Data.OrderAmount = 0
+	err = repo.Update(docID, doc)
+	assert.Error(t, err, "update must fail")
+
+	// successful update
+	doc.Data.OrderAmount = 200
+	err = repo.Update(docID, doc)
+	assert.Nil(t, err, "update must pass")
+	assert.Nil(t, repo.GetByID(docID, getDoc), "get must pass")
+	assert.Equal(t, getDoc.Data.OrderAmount, doc.Data.OrderAmount, "amount must match")
 }

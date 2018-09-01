@@ -47,13 +47,15 @@ func (dp *defaultProcessor) Send(coreDocument *coredocumentpb.CoreDocument, ctx 
 
 	id, err := dp.IdentityService.LookupIdentityForId(recipient)
 	if err != nil {
-		log.Errorf("error fetching receiver identity: %v\n", err)
+		err = errors.Wrap(err, "error fetching receiver identity")
+		log.Error(err)
 		return err
 	}
 
 	lastB58Key, err := id.GetCurrentP2PKey()
 	if err != nil {
-		log.Errorf("error fetching p2p key: %v\n", err)
+		err = errors.Wrap(err, "error fetching p2p key")
+		log.Error(err)
 		return err
 	}
 
@@ -65,11 +67,15 @@ func (dp *defaultProcessor) Send(coreDocument *coredocumentpb.CoreDocument, ctx 
 	hostInstance := p2p.GetHost()
 	bSenderId, err := hostInstance.ID().ExtractPublicKey().Bytes()
 	if err != nil {
-		return errors.Wrap(err, "failed to extract pub key")
+		err = errors.Wrap(err, "failed to extract pub key")
+		log.Error(err)
+		return err
 	}
 
 	_, err = client.Post(context.Background(), &p2ppb.P2PMessage{Document: coreDocument, SenderCentrifugeId: bSenderId})
 	if err != nil {
+		err = errors.Wrap(err, "failed to post to the node")
+		log.Error(err)
 		return err
 	}
 

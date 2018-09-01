@@ -50,7 +50,8 @@ func TestPurchaseOrderCoreDocumentConverter(t *testing.T) {
 		EmbeddedDataSalts:  &purchaseorderSaltsAny,
 	}
 
-	generatedCoreDocument := purchaseorderDoc.ConvertToCoreDocument()
+	generatedCoreDocument, err := purchaseorderDoc.ConvertToCoreDocument()
+	assert.Nil(t, err, "Error converting to CoreDocument")
 	generatedCoreDocumentBytes, err := proto.Marshal(generatedCoreDocument)
 	assert.Nil(t, err, "Error marshaling generatedCoreDocument")
 

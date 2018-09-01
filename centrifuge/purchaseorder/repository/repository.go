@@ -1,12 +1,15 @@
 package purchaseorderrepository
 
 import (
-	"fmt"
 	"log"
 	"sync"
 
+	"fmt"
+
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/code"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
 	"github.com/golang/protobuf/proto"
 	"github.com/syndtr/goleveldb/leveldb"
@@ -30,7 +33,7 @@ func InitLevelDBRepository(db *leveldb.DB) {
 			storage.DefaultLevelDB{
 				KeyPrefix:    "purchaseorder",
 				LevelDB:      db,
-				ValidateFunc: checkIfCoreDocumentFilledCorrectly,
+				ValidateFunc: validate,
 			},
 		}
 	})
@@ -46,19 +49,14 @@ func GetRepository() storage.Repository {
 	return levelDBRepo
 }
 
-// checkIfCoreDocumentFilledCorrectly checks if the core document details are filled
-func checkIfCoreDocumentFilledCorrectly(msg proto.Message) error {
-	doc, ok := msg.(*purchaseorderpb.PurchaseOrderDocument)
+func validate(doc proto.Message) error {
+	poDoc, ok := doc.(*purchaseorderpb.PurchaseOrderDocument)
 	if !ok {
-		return fmt.Errorf("unrecognized type: %T", msg)
+		return errors.New(code.DocumentInvalid, fmt.Sprintf("invalid document of type: %T", doc))
 	}
 
-	if doc.CoreDocument == nil {
-		return errors.NilError(doc.CoreDocument)
-	}
-
-	if doc.CoreDocument.DocumentIdentifier == nil {
-		return errors.NilError(doc.CoreDocument.DocumentIdentifier)
+	if valid, msg, errs := purchaseorder.Validate(poDoc); !valid {
+		return errors.NewWithErrors(code.DocumentInvalid, msg, errs)
 	}
 
 	return nil

@@ -34,7 +34,12 @@ func (s *PurchaseOrderDocumentService) anchorPurchaseOrderDocument(doc *purchase
 		return nil, err
 	}
 
-	coreDoc := orderDoc.ConvertToCoreDocument()
+	coreDoc, err := orderDoc.ConvertToCoreDocument()
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
 	err = s.CoreDocumentProcessor.Anchor(coreDoc)
 	if err != nil {
 		log.Error(err)
@@ -79,10 +84,6 @@ func (s *PurchaseOrderDocumentService) HandleAnchorPurchaseOrderDocument(ctx con
 	doc, err := purchaseorder.New(anchorPurchaseOrderEnvelope.Document)
 	if err != nil {
 		return nil, errors.New(code.Unknown, err.Error())
-	}
-
-	if valid, msg, errs := purchaseorder.Validate(doc.Document); !valid {
-		return nil, errors.NewWithErrors(code.DocumentInvalid, msg, errs)
 	}
 
 	err = s.Repository.Create(doc.Document.CoreDocument.DocumentIdentifier, doc.Document)

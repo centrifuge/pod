@@ -19,6 +19,8 @@ import (
 
 var log = logging.Logger("rest-api")
 
+// InvoiceDocumentService handles all the invoice document related actions
+// anchoring, sending, proof generation, finding stored invoice document
 type InvoiceDocumentService struct {
 	InvoiceRepository     storage.Repository
 	CoreDocumentProcessor coredocumentprocessor.Processor
@@ -26,14 +28,18 @@ type InvoiceDocumentService struct {
 
 // anchorInvoiceDocument anchors the given invoice document and returns the anchored document
 func (s *InvoiceDocumentService) anchorInvoiceDocument(doc *invoicepb.InvoiceDocument) (*invoicepb.InvoiceDocument, error) {
-
 	inv, err := invoice.New(doc)
 	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
 
-	coreDoc := inv.ConvertToCoreDocument()
+	coreDoc, err := inv.ConvertToCoreDocument()
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
 	err = s.CoreDocumentProcessor.Anchor(coreDoc)
 	if err != nil {
 		log.Error(err)

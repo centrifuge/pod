@@ -24,7 +24,6 @@ import (
 func TestMain(m *testing.M) {
 	cc.TestFunctionalEthereumBootstrap()
 	invoicerepository.InitLevelDBRepository(storage.GetLevelDBStorage())
-
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()
 	os.Exit(result)
