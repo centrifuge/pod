@@ -17,7 +17,7 @@ const (
 	AnchoringConfirmationTaskName string = "AnchoringConfirmationTaskName"
 	AnchorIdParam                 string = "AnchorIdParam"
 	AddressParam                  string = "AddressParam"
-	ThirtyTwo                            = 32
+	AnchorIdLength                       = 32
 )
 
 type AnchorRegisteredWatcher interface {
@@ -29,7 +29,7 @@ type AnchorRegisteredWatcher interface {
 type AnchoringConfirmationTask struct {
 	// task parameters
 	From     common.Address
-	AnchorId [ThirtyTwo]byte
+	AnchorId [AnchorIdLength]byte
 
 	// state
 	EthContextInitializer   func() (ctx context.Context, cancelFunc context.CancelFunc)
@@ -130,8 +130,8 @@ func (act *AnchoringConfirmationTask) RunTask() (interface{}, error) {
 	}
 }
 
-func get32Bytes(key interface{}) ([ThirtyTwo]byte, error) {
-	var fixed [ThirtyTwo]byte
+func get32Bytes(key interface{}) ([AnchorIdLength]byte, error) {
+	var fixed [AnchorIdLength]byte
 	b, ok := key.([]interface{})
 	if !ok {
 		return fixed, errors.New("Could not parse interface to []byte")
