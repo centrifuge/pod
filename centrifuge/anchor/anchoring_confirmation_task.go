@@ -85,7 +85,11 @@ func (act *AnchoringConfirmationTask) ParseKwargs(kwargs map[string]interface{})
 	if !ok {
 		return fmt.Errorf("undefined kwarg " + AddressParam)
 	}
-	addressTyped, err := getAddress(address)
+	addressStr, ok := address.(string)
+	if !ok {
+		return fmt.Errorf("param is not hex string " + AddressParam)
+	}
+	addressTyped, err := getAddressFromHexString(addressStr)
 	if err != nil {
 		return fmt.Errorf("malformed kwarg [%s] because [%s]", AddressParam, err.Error())
 	}
@@ -140,17 +144,6 @@ func get32Bytes(key interface{}) ([ThirtyTwo]byte, error) {
 	return fixed, nil
 }
 
-func getAddress(key interface{}) (common.Address, error) {
-	// for safety always use length fixed bytes
-	var fixed [common.AddressLength]byte
-	b, ok := key.([]interface{})
-	if !ok {
-		return fixed, errors.New("Could not parse interface to []byte")
-	}
-	// convert and copy b byte values
-	for i, v := range b {
-		fv := v.(float64)
-		fixed[i] = byte(fv)
-	}
-	return common.BytesToAddress(fixed[:]), nil
+func getAddressFromHexString(hex string) (common.Address, error) {
+	return common.BytesToAddress(common.FromHex(hex)), nil
 }
