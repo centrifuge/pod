@@ -41,7 +41,7 @@ type AnchoringConfirmationTask struct {
 func NewAnchoringConfirmationTask(
 	anchorRegisteredWatcher AnchorRegisteredWatcher,
 	ethContextInitializer func() (ctx context.Context, cancelFunc context.CancelFunc),
-) *AnchoringConfirmationTask {
+) queue.QueuedTask {
 	return &AnchoringConfirmationTask{
 		AnchorRegisteredWatcher: anchorRegisteredWatcher,
 		EthContextInitializer:   ethContextInitializer,

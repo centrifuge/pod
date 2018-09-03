@@ -21,26 +21,16 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	if err != nil {
 		return err
 	}
-	// the following code will add a queued task to the context so that when the queue initializes it can update it self
-	// with different tasks types queued in the node
-	if queuedTasks, ok := context[queue.BootstrappedQueuedTasks]; ok {
-		if queuedTasksTyped, ok := queuedTasks.([]queue.QueuedTask); ok {
-			context[queue.BootstrappedQueuedTasks] = append(queuedTasksTyped, createAnchoringConfirmationTask(anchorContract))
-			return nil
-		} else {
-			return errors.New(queue.BootstrappedQueuedTasks + " is of an unexpected type")
-		}
-	} else {
-		context[queue.BootstrappedQueuedTasks] = []queue.QueuedTask{createAnchoringConfirmationTask(anchorContract)}
-		return nil
-	}
+	return queue.InstallQueuedTask(context, func() queue.QueuedTask {
+		return createAnchoringConfirmationTask(anchorContract)
+	})
 }
 
 func (b *Bootstrapper) TestBootstrap(context map[string]interface{}) error {
 	return b.Bootstrap(context)
 }
 
-func createAnchoringConfirmationTask(anchorContract *EthereumAnchorRegistryContract) *AnchoringConfirmationTask {
+func createAnchoringConfirmationTask(anchorContract *EthereumAnchorRegistryContract) queue.QueuedTask {
 	return NewAnchoringConfirmationTask(
 		&anchorContract.EthereumAnchorRegistryContractFilterer,
 		ethereum.DefaultWaitForTransactionMiningContext)

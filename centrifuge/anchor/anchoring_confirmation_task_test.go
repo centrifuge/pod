@@ -58,14 +58,14 @@ func TestAnchoringConfirmationTask_ParseKwargsAnchorNotPassed(t *testing.T) {
 
 func TestAnchoringConfirmationTask_ParseKwargsInvalidAnchor(t *testing.T) {
 	act := AnchoringConfirmationTask{}
-	anchorId := [31]byte{1, 2, 3}
+	anchorId := 123
 	address := common.BytesToAddress([]byte{1, 2, 3, 4})
 	kwargs, _ := tools.SimulateJsonDecodeForGocelery(map[string]interface{}{
 		AnchorIdParam: anchorId,
 		AddressParam:  address,
 	})
 	err := act.ParseKwargs(kwargs)
-	assert.NotNil(t, err, "Anchor id should not have been parsed because it was of incorrect length")
+	assert.NotNil(t, err, "Anchor id should not have been parsed because it was of incorrect type")
 }
 
 func TestAnchoringConfirmationTask_ParseKwargsAddressNotPassed(t *testing.T) {
@@ -99,7 +99,7 @@ func TestAnchoringConfirmationTask_RunTaskContextClose(t *testing.T) {
 	act := AnchoringConfirmationTask{
 		AnchorId: anchorId,
 		From:     address,
-		AnchorRegisteredWatcher: &MockAnchorRegisteredWatcher{},
+		AnchorRegisteredWatcher: &MockAnchorRegisteredWatcher{Subscription: &testingutils.MockSubscription{}},
 		EthContext:              ctx,
 		AnchorRegisteredEvents:  earcar,
 	}
@@ -173,7 +173,7 @@ func TestAnchoringConfirmationTask_RunTaskSuccess(t *testing.T) {
 	act := AnchoringConfirmationTask{
 		AnchorId: anchorId,
 		From:     address,
-		AnchorRegisteredWatcher: &MockAnchorRegisteredWatcher{},
+		AnchorRegisteredWatcher: &MockAnchorRegisteredWatcher{Subscription: &testingutils.MockSubscription{}},
 		EthContext:              ctx,
 		AnchorRegisteredEvents:  earcar,
 	}
