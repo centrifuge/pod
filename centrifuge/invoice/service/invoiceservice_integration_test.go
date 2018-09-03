@@ -15,7 +15,6 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/service"
 	clientinvoicepb "github.com/CentrifugeInc/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/stretchr/testify/assert"
@@ -23,7 +22,7 @@ import (
 
 func TestMain(m *testing.M) {
 	cc.TestFunctionalEthereumBootstrap()
-	invoicerepository.InitLevelDBRepository(storage.GetLevelDBStorage())
+	invoicerepository.InitLevelDBRepository(cc.GetLevelDBStorage())
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()
 	os.Exit(result)
@@ -82,7 +81,7 @@ func TestInvoiceDocumentService_HandleAnchorInvoiceDocument_Integration(t *testi
 	anchoredDoc2, err := s.HandleAnchorInvoiceDocument(context.Background(), &clientinvoicepb.AnchorInvoiceEnvelope{Document: doc.Document})
 	assert.Nil(t, anchoredDoc2)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "Document already exists")
+	assert.Contains(t, err.Error(), "document already exists")
 
 	loadedInvoice2 := new(invoicepb.InvoiceDocument)
 	err = invoicerepository.GetRepository().GetByID(doc.Document.CoreDocument.DocumentIdentifier, loadedInvoice2)
