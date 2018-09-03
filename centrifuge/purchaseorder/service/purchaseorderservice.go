@@ -3,6 +3,7 @@ package purchaseorderservice
 import (
 	"fmt"
 
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/code"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/processor"
@@ -33,7 +34,12 @@ func (s *PurchaseOrderDocumentService) anchorPurchaseOrderDocument(doc *purchase
 		return nil, err
 	}
 
-	coreDoc := orderDoc.ConvertToCoreDocument()
+	coreDoc, err := orderDoc.ConvertToCoreDocument()
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
 	err = s.CoreDocumentProcessor.Anchor(coreDoc)
 	if err != nil {
 		log.Error(err)
@@ -78,10 +84,6 @@ func (s *PurchaseOrderDocumentService) HandleAnchorPurchaseOrderDocument(ctx con
 	doc, err := purchaseorder.New(anchorPurchaseOrderEnvelope.Document)
 	if err != nil {
 		return nil, errors.New(code.Unknown, err.Error())
-	}
-
-	if valid, msg, errs := purchaseorder.Validate(doc.Document); !valid {
-		return nil, errors.NewWithErrors(code.DocumentInvalid, msg, errs)
 	}
 
 	err = s.Repository.Create(doc.Document.CoreDocument.DocumentIdentifier, doc.Document)
@@ -136,7 +138,9 @@ func (s *PurchaseOrderDocumentService) HandleGetPurchaseOrderDocument(ctx contex
 		return doc, nil
 	}
 
-	docFound, err := coredocumentrepository.GetRepository().FindById(getPurchaseOrderDocumentEnvelope.DocumentIdentifier)
+	// TODO(ved): where are we saving this coredocument?
+	docFound := new(coredocumentpb.CoreDocument)
+	err = coredocumentrepository.GetRepository().GetByID(getPurchaseOrderDocumentEnvelope.DocumentIdentifier, docFound)
 	if err != nil {
 		log.Error(err)
 		return nil, errors.New(code.DocumentNotFound, fmt.Sprintf("failed to get document: %v", err))

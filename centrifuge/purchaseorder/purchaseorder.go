@@ -118,12 +118,14 @@ func (order *PurchaseOrder) CalculateMerkleRoot() error {
 	return nil
 }
 
+// CreateProofs generates proofs for given fields
 func (order *PurchaseOrder) CreateProofs(fields []string) (proofs []*proofspb.Proof, err error) {
 	tree, err := order.getDocumentTree()
 	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
+
 	for _, field := range fields {
 		proof, err := tree.CreateProof(field)
 		if err != nil {
@@ -132,15 +134,17 @@ func (order *PurchaseOrder) CreateProofs(fields []string) (proofs []*proofspb.Pr
 		}
 		proofs = append(proofs, &proof)
 	}
-	return
+
+	return proofs, nil
 }
 
-func (order *PurchaseOrder) ConvertToCoreDocument() (coredocpb *coredocumentpb.CoreDocument) {
+// ConvertToCoreDocument converts purchaseOrder to a core document
+func (order *PurchaseOrder) ConvertToCoreDocument() (coredocpb *coredocumentpb.CoreDocument, err error) {
 	coredocpb = &coredocumentpb.CoreDocument{}
 	proto.Merge(coredocpb, order.Document.CoreDocument)
 	serializedPurchaseOrder, err := proto.Marshal(order.Document.Data)
 	if err != nil {
-		log.Fatalf("Could not serialize PurchaseOrderData: %s", err)
+		return nil, errors.Wrap(err, "couldn't serialize PurchaseOrderData")
 	}
 
 	po := any.Any{
@@ -150,7 +154,7 @@ func (order *PurchaseOrder) ConvertToCoreDocument() (coredocpb *coredocumentpb.C
 
 	serializedSalts, err := proto.Marshal(order.Document.Salts)
 	if err != nil {
-		log.Fatalf("Could not serialize PurchaseOrderSalts: %s", err)
+		return nil, errors.Wrap(err, "couldn't serialize PurchaseOrderSalts")
 	}
 
 	poSalts := any.Any{
@@ -160,7 +164,7 @@ func (order *PurchaseOrder) ConvertToCoreDocument() (coredocpb *coredocumentpb.C
 
 	coredocpb.EmbeddedData = &po
 	coredocpb.EmbeddedDataSalts = &poSalts
-	return coredocpb
+	return coredocpb, nil
 }
 
 // Validate validates the purchase order document

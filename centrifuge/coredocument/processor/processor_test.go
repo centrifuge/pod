@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// TODO(ved): more tests required for processor
 var cdp defaultProcessor
 
 func TestMain(m *testing.M) {

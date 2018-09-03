@@ -50,7 +50,7 @@ func TestDefaultLevelDB_Create(t *testing.T) {
 	err = defaultDB.Create(order.CoreDocument.DocumentIdentifier, &order)
 	assert.Error(t, err, "create must fail")
 
-	defaultDB.ValidateFunc = func([]byte, proto.Message) error {
+	defaultDB.ValidateFunc = func(proto.Message) error {
 		return fmt.Errorf("failed validation")
 	}
 
@@ -99,7 +99,7 @@ func TestDefaultLevelDB_Update(t *testing.T) {
 	err = defaultDB.Update(order.CoreDocument.DocumentIdentifier, &order)
 	assert.Nil(t, err, "update must pass")
 
-	defaultDB.ValidateFunc = func([]byte, proto.Message) error {
+	defaultDB.ValidateFunc = func(proto.Message) error {
 		return fmt.Errorf("failed validation")
 	}
 

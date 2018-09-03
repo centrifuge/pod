@@ -18,6 +18,7 @@ import (
 
 var log = logging.Logger("invoice")
 
+// Invoice is a wrapper for invoice protobuf
 type Invoice struct {
 	Document *invoicepb.InvoiceDocument
 }
@@ -106,6 +107,7 @@ func (inv *Invoice) getDocumentTree() (tree *proofs.DocumentTree, err error) {
 	return &t, nil
 }
 
+// CalculateMerkleRoot calculates the invoice merkle root
 func (inv *Invoice) CalculateMerkleRoot() error {
 	tree, err := inv.getDocumentTree()
 	if err != nil {
@@ -115,6 +117,7 @@ func (inv *Invoice) CalculateMerkleRoot() error {
 	return nil
 }
 
+// CreateProofs generates proofs for given fields
 func (inv *Invoice) CreateProofs(fields []string) (proofs []*proofspb.Proof, err error) {
 	tree, err := inv.getDocumentTree()
 	if err != nil {
@@ -132,12 +135,13 @@ func (inv *Invoice) CreateProofs(fields []string) (proofs []*proofspb.Proof, err
 	return
 }
 
-func (inv *Invoice) ConvertToCoreDocument() (coredocpb *coredocumentpb.CoreDocument) {
-	coredocpb = &coredocumentpb.CoreDocument{}
+// ConvertToCoreDocument converts invoice document to coredocument
+func (inv *Invoice) ConvertToCoreDocument() (coredocpb *coredocumentpb.CoreDocument, err error) {
+	coredocpb = new(coredocumentpb.CoreDocument)
 	proto.Merge(coredocpb, inv.Document.CoreDocument)
 	serializedInvoice, err := proto.Marshal(inv.Document.Data)
 	if err != nil {
-		log.Fatalf("Could not serialize InvoiceData: %s", err)
+		return nil, errors.Wrap(err, "couldn't serialise InvoiceData")
 	}
 
 	invoiceAny := any.Any{
@@ -147,7 +151,7 @@ func (inv *Invoice) ConvertToCoreDocument() (coredocpb *coredocumentpb.CoreDocum
 
 	serializedSalts, err := proto.Marshal(inv.Document.Salts)
 	if err != nil {
-		log.Fatalf("Could not serialize InvoiceSalts: %s", err)
+		return nil, errors.Wrap(err, "couldn't serialise InvoiceSalts")
 	}
 
 	invoiceSaltsAny := any.Any{

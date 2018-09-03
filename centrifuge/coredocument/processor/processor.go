@@ -33,8 +33,8 @@ type defaultProcessor struct {
 	IdentityService identity.IdentityService
 }
 
-// NewDefaultProcessor returns the default implementation of CoreDocument Processor
-func NewDefaultProcessor() Processor {
+// DefaultProcessor returns the default implementation of CoreDocument Processor
+func DefaultProcessor() Processor {
 	return &defaultProcessor{
 		IdentityService: identity.NewEthereumIdentityService()}
 }
@@ -47,13 +47,15 @@ func (dp *defaultProcessor) Send(coreDocument *coredocumentpb.CoreDocument, ctx 
 
 	id, err := dp.IdentityService.LookupIdentityForId(recipient)
 	if err != nil {
-		log.Errorf("error fetching receiver identity: %v\n", err)
+		err = errors.Wrap(err, "error fetching receiver identity")
+		log.Error(err)
 		return err
 	}
 
 	lastB58Key, err := id.GetCurrentP2PKey()
 	if err != nil {
-		log.Errorf("error fetching p2p key: %v\n", err)
+		err = errors.Wrap(err, "error fetching p2p key")
+		log.Error(err)
 		return err
 	}
 
@@ -65,12 +67,15 @@ func (dp *defaultProcessor) Send(coreDocument *coredocumentpb.CoreDocument, ctx 
 	hostInstance := p2p.GetHost()
 	bSenderId, err := hostInstance.ID().ExtractPublicKey().Bytes()
 	if err != nil {
-		return fmt.Errorf("failed to extract pub key: %v", err)
+		err = errors.Wrap(err, "failed to extract pub key")
+		log.Error(err)
+		return err
 	}
 
 	_, err = client.Post(context.Background(), &p2ppb.P2PMessage{Document: coreDocument, SenderCentrifugeId: bSenderId})
 	if err != nil {
-		// this is p2pError, lets not format it
+		err = errors.Wrap(err, "failed to post to the node")
+		log.Error(err)
 		return err
 	}
 
