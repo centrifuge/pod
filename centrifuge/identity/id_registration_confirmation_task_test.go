@@ -12,6 +12,7 @@ import (
 
 	"math/big"
 
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/event"
@@ -28,7 +29,7 @@ func (mcw *MockIdentityCreatedWatcher) WatchIdentityCreated(opts *bind.WatchOpts
 		return nil, errors.New("Identity watching could not be started")
 	}
 	mcw.sink = sink
-	return &MockSubscription{}, nil
+	return &testingutils.MockSubscription{}, nil
 }
 
 func TestRegistrationConfirmationTask_ParseKwargsHappyPath(t *testing.T) {
