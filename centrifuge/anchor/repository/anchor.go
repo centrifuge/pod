@@ -31,10 +31,10 @@ type WatchPreCommit struct {
 }
 
 //Supported anchor schema version as stored on public repository
-const ANCHOR_SCHEMA_VERSION uint = 1
+const AnchorSchemaVersion uint = 1
 
 func SupportedSchemaVersion() uint {
-	return ANCHOR_SCHEMA_VERSION
+	return AnchorSchemaVersion
 }
 
 func generatePreCommitData(anchorId *big.Int, signingRoot [32]byte, centrifugeId *big.Int, signature []byte, expirationBlock *big.Int) (preCommitData *PreCommitData, err error) {

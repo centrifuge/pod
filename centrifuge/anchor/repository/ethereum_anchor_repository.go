@@ -31,6 +31,7 @@ type AnchorRepositoryContract interface {
 		from []common.Address, anchorId []*big.Int, centrifugeId []*big.Int) (event.Subscription, error)
 }
 
+//PreCommitAnchor will call the transaction PreCommit on the smart contract
 func (ethRepository *EthereumAnchorRepository) PreCommitAnchor(anchorId *big.Int, signingRoot [32]byte, centrifugeId *big.Int, signature []byte, expirationBlock *big.Int) (confirmations <-chan *WatchPreCommit, err error) {
 
 	//TODO check if parameters are valid
@@ -47,7 +48,7 @@ func (ethRepository *EthereumAnchorRepository) PreCommitAnchor(anchorId *big.Int
 	confirmations, err = setUpPreCommitEventListener(ethRepositoryContract, opts.From, preCommitData)
 	if err != nil {
 		wError := errors.Wrap(err, 1)
-		log.Errorf("Failed to set up event listener for anchor [id: %x, hash: %x, SchemaVersion:%v]: %v",
+		log.Errorf("Failed to set up event listener for pre-commit transaction [id: %x, signingRoot: %x, SchemaVersion:%v]: %v",
 			preCommitData.anchorId, preCommitData.signingRoot, preCommitData.SchemaVersion, wError)
 		return
 	}
@@ -55,14 +56,14 @@ func (ethRepository *EthereumAnchorRepository) PreCommitAnchor(anchorId *big.Int
 	err = sendPreCommitTransaction(ethRepositoryContract, opts, preCommitData)
 	if err != nil {
 		wError := errors.Wrap(err, 1)
-		log.Errorf("Failed to send Ethereum transaction to register anchor [id: %x, hash: %x, SchemaVersion:%v]: %v",
+		log.Errorf("Failed to send Ethereum pre-commit transaction [id: %x, signingRoot: %x, SchemaVersion:%v]: %v",
 			preCommitData.anchorId, preCommitData.signingRoot, preCommitData.SchemaVersion, wError)
 		return
 	}
 	return confirmations, err
 }
 
-// sendPreCommitTransaction sends the actual transaction to register the Anchor on Ethereum registry contract
+// sendPreCommitTransaction sends the actual transaction to the ethereum node
 func sendPreCommitTransaction(contract AnchorRepositoryContract, opts *bind.TransactOpts, preCommitData *PreCommitData) (err error) {
 
 	//preparation of data in specific types for the call to Ethereum
@@ -72,10 +73,9 @@ func sendPreCommitTransaction(contract AnchorRepositoryContract, opts *bind.Tran
 		preCommitData.centrifugeId, preCommitData.signature, preCommitData.expirationBlock, schemaVersion)
 
 	if err != nil {
-		log.Errorf("Failed to pre commit anchor[id: %x, hash: %x, SchemaVersion:%v] on registry: %v", preCommitData.anchorId, preCommitData.signingRoot, schemaVersion, err)
-		return err
+		return
 	} else {
-		log.Infof("Sent off the anchor [id: %x, hash: %x, SchemaVersion:%v] to registry. Ethereum transaction hash [%x] and Nonce [%v] and Check [%v]", preCommitData.anchorId,
+		log.Infof("Sent off transaction pre-commit [id: %x, hash: %x, SchemaVersion:%v] to registry. Ethereum transaction hash [%x] and Nonce [%v] and Check [%v]", preCommitData.anchorId,
 			preCommitData.signingRoot, schemaVersion, tx.Hash(), tx.Nonce(), tx.CheckNonce())
 	}
 
@@ -83,14 +83,13 @@ func sendPreCommitTransaction(contract AnchorRepositoryContract, opts *bind.Tran
 	return
 }
 
-// sendPreCommitTransaction sends the actual transaction to register the Anchor on Ethereum registry contract
+// sendCommitTransaction sends the actual transaction to register the Anchor on Ethereum registry contract
 func sendCommitTransaction(contract AnchorRepositoryContract, opts *bind.TransactOpts, commitData *CommitData) (err error) {
 
 	tx, err := ethereum.SubmitTransactionWithRetries(contract.Commit, opts, commitData.anchorId, commitData.documentRoot,
 		commitData.centrifugeId, commitData.documentProofs, commitData.signature)
 
 	if err != nil {
-		log.Errorf("Failed to pre commit anchor[id: %x, hash: %x", commitData.anchorId, commitData.documentRoot, err)
 		return err
 	} else {
 		log.Infof("Sent off the anchor [id: %x, hash: %x] to registry. Ethereum transaction hash [%x] and Nonce [%v] and Check [%v]", commitData.anchorId,
@@ -101,6 +100,7 @@ func sendCommitTransaction(contract AnchorRepositoryContract, opts *bind.Transac
 	return
 }
 
+//CommitAnchor will call the transaction Commit on the smart contract
 func (ethRepository *EthereumAnchorRepository) CommitAnchor(anchorId *big.Int, documentRoot [32]byte, centrifugeId *big.Int, documentProofs [][32]byte, signature []byte) (confirmations <-chan *WatchCommit, err error) {
 
 	ethRepositoryContract, _ := getRepositoryContract()
@@ -117,21 +117,20 @@ func (ethRepository *EthereumAnchorRepository) CommitAnchor(anchorId *big.Int, d
 	confirmations, err = setUpCommitEventListener(ethRepositoryContract, opts.From, commitData)
 	if err != nil {
 		wError := errors.Wrap(err, 1)
-		log.Errorf("Failed to set up event listener for anchor [id: %x, hash: %x, SchemaVersion:%v]: %v",
-			commitData.anchorId, commitData.documentRoot, commitData.SchemaVersion, wError)
+		log.Errorf("Failed to set up event listener for commit transaction [id: %x, hash: %x]: %v",
+			commitData.anchorId, commitData.documentRoot, wError)
 		return
 	}
 
 	err = sendCommitTransaction(ethRepositoryContract, opts, commitData)
+
 	if err != nil {
 		wError := errors.Wrap(err, 1)
-		log.Errorf("Failed to send Ethereum transaction to register anchor [id: %x, hash: %x, SchemaVersion:%v]: %v",
+		log.Errorf("Failed to send Ethereum commit transaction[id: %x, hash: %x, SchemaVersion:%v]: %v",
 			commitData.anchorId, commitData.documentRoot, commitData.SchemaVersion, wError)
 		return
 	}
 	return confirmations, err
-
-	return nil, nil
 }
 
 func generateEventContext() (*bind.WatchOpts, context.CancelFunc) {
@@ -143,8 +142,8 @@ func generateEventContext() (*bind.WatchOpts, context.CancelFunc) {
 
 }
 
-// setUpPreCommitEventListener sets up the listened for the "PreCommit" event to notify the upstream code about successful mining/creation
-// of a pre-commit.
+// setUpPreCommitEventListener sets up the listened for the "PreCommit" event to notify the upstream code
+// about successful mining/creation of a pre-commit.
 func setUpPreCommitEventListener(contract AnchorRepositoryContract, from common.Address, preCommitData *PreCommitData) (confirmations chan *WatchPreCommit, err error) {
 
 	watchOpts, cancelFunc := generateEventContext()
@@ -168,8 +167,8 @@ func setUpPreCommitEventListener(contract AnchorRepositoryContract, from common.
 	return confirmations, nil
 }
 
-// setUpCommitEventListener sets up the listened for the "AnchorCommitted" event to notify the upstream code about successful mining/creation
-// of a commit
+// setUpCommitEventListener sets up the listened for the "AnchorCommitted" event to notify the upstream code
+// about successful mining/creation of a commit
 func setUpCommitEventListener(contract AnchorRepositoryContract, from common.Address, commitData *CommitData) (confirmations chan *WatchCommit, err error) {
 
 	watchOpts, cancelFunc := generateEventContext()
@@ -198,7 +197,7 @@ func waitAndRoutePreCommitEvent(conf <-chan *EthereumAnchorRepositoryContractAnc
 	for {
 		select {
 		case <-ctx.Done():
-			log.Errorf("Context [%v] closed before receiving AnchorPreCommitted event for anchor ID: %x, RootHash: %x\n", ctx, preCommitData.anchorId, preCommitData.signingRoot)
+			log.Errorf("Context [%v] closed before receiving AnchorPreCommitted event for anchor ID: %x, DocumentRoot: %x\n", ctx, preCommitData.anchorId, preCommitData.signingRoot)
 			confirmations <- &WatchPreCommit{preCommitData, ctx.Err()}
 			return
 		case res := <-conf:
@@ -209,12 +208,12 @@ func waitAndRoutePreCommitEvent(conf <-chan *EthereumAnchorRepositoryContractAnc
 	}
 }
 
-// waitAndRoutePreCommitEvent notifies the confirmations channel whenever a pre-commit is being noted as Ethereum event
+// waitAndRouteCommitEvent notifies the confirmations channel whenever a commit is being noted as Ethereum event
 func waitAndRouteCommitEvent(conf <-chan *EthereumAnchorRepositoryContractAnchorCommitted, ctx context.Context, confirmations chan<- *WatchCommit, commitData *CommitData) {
 	for {
 		select {
 		case <-ctx.Done():
-			log.Errorf("Context [%v] closed before receiving AnchorPreCommitted event for anchor ID: %x, RootHash: %x\n", ctx, commitData.anchorId, commitData.documentRoot)
+			log.Errorf("Context [%v] closed before receiving AnchorCommitted event for anchor ID: %x, DocumentRoot: %x\n", ctx, commitData.anchorId, commitData.documentRoot)
 			confirmations <- &WatchCommit{commitData, ctx.Err()}
 			return
 		case res := <-conf:
@@ -231,7 +230,7 @@ func getRepositoryContract() (repositoryContract *EthereumAnchorRepositoryContra
 	// TODO add parameter anchorRepository to config
 	repositoryContract, err = NewEthereumAnchorRepositoryContract(config.Config.GetContractAddress("anchorRegistry"), client.GetClient())
 	if err != nil {
-		log.Fatalf("Failed to instantiate the anchor contract: %v", err)
+		log.Fatalf("Failed to instantiate the anchor repository contract: %v", err)
 	}
 	return
 }
