@@ -15,69 +15,41 @@ import "protoc-gen-swagger/options/annotations.proto";
 
 // InvoiceDocumentService contains all common interactions for invoice documents
 service InvoiceDocumentService {
-  rpc CreateInvoiceProof(CreateInvoiceProofEnvelope) returns (InvoiceProof) {
+  rpc CreateDocument(CreateDocumentRequest) returns (InvoiceDocument) {
     option (google.api.http) = {
-      post: "/invoice/{document_identifier}/proof"
+      post: "/invoice/"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Creates a list of precise proofs for the specified fields"
+      description: ""
     };
+
   }
-  rpc AnchorInvoiceDocument(AnchorInvoiceEnvelope) returns (InvoiceDocument) {
-    option (google.api.http) = {
-      post: "/invoice/anchor"
-      body: "*"
-    };
-    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Anchor an invoice document"
-    };
+  // TODO PUT  Method
+  rpc UpdateDocument(UpdateDocument) returns (InvoiceDocument) {
+  
   }
-  rpc SendInvoiceDocument(SendInvoiceEnvelope) returns (InvoiceDocument) {
-    option (google.api.http) = {
-      post: "/invoice/send"
-      body: "*"
-    };
-    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Send an invoice document to the specified party"
-    };
-  }
-  rpc GetInvoiceDocument(GetInvoiceDocumentEnvelope) returns (InvoiceDocument) {
-    option (google.api.http) = {
-      get: "/invoice/{document_identifier}"
-    };
-  }
-  rpc GetReceivedInvoiceDocuments(google.protobuf.Empty) returns (ReceivedInvoices) {
-    option (google.api.http) = {
-      get: "/invoice/getReceived"
-    };
-  }
+  
+  rpc GetDocument() returns () {}
+  
+
+
+  // Use case specific endpoints
+  rpc CreateDocumentProof () reutrns () {}
+
+  // Should add/remove collaborators be explicit calls or just be part of the CRUD calls?
+  // - AddCollaborator()
+  // - RemoveCollaborator
+
+  // NFT Minting
+  // - TokenizeDocument
+  //   Request:
+  //   * Token Registry ID (either contract address or "WKID"
+  //   * Optional, if not a well known registry: fields to prove
+  //   * Optional, if the registry requires any extra data, a way to provide it
+  // - CheckTokenOwnership
+  // - RequestDocumentByToken (registry id, token id, owning centrifuge id)
+  
+
 }
 
-message CreateInvoiceProofEnvelope {
-  bytes document_identifier = 1;
-  repeated string fields = 2;
-}
-
-message InvoiceProof {
-  bytes document_identifier = 1;
-  repeated proofs.Proof field_proofs = 2;
-}
-
-message AnchorInvoiceEnvelope {
-  InvoiceDocument document = 1;
-}
-
-message SendInvoiceEnvelope {
-  // Centrifuge OS Entity of the recipient
-  repeated bytes recipients = 1;
-  InvoiceDocument document = 10;
-}
-
-message GetInvoiceDocumentEnvelope {
-  bytes document_identifier = 1;
-}
-
-message ReceivedInvoices {
-  repeated InvoiceDocument invoices = 1;
-}
