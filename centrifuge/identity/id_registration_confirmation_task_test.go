@@ -13,23 +13,10 @@ import (
 	"math/big"
 
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
-	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/stretchr/testify/assert"
 )
-
-type MockSubscription struct {
-	ErrChan chan error
-}
-
-func (m *MockSubscription) Err() <-chan error {
-	return m.ErrChan
-}
-
-func (*MockSubscription) Unsubscribe() {
-
-}
 
 type MockIdentityCreatedWatcher struct {
 	shouldFail bool
@@ -48,7 +35,8 @@ func TestRegistrationConfirmationTask_ParseKwargsHappyPath(t *testing.T) {
 	rct := IdRegistrationConfirmationTask{}
 	id := tools.RandomSlice(CentIdByteLength)
 	idBytes := createCentId(id)
-	decoded, err := simulateJsonDecode(idBytes)
+	kwargs := map[string]interface{}{CentIdParam: idBytes}
+	decoded, err := tools.SimulateJsonDecodeForGocelery(kwargs)
 	err = rct.ParseKwargs(decoded)
 	if err != nil {
 		t.Errorf("Could not parse %s for [%x]", CentIdParam, id)
@@ -133,17 +121,6 @@ func TestIdRegistrationConfirmationTask_RunTaskSuccess(t *testing.T) {
 	// this would cause a successful exit in the task
 	eifc <- &EthereumIdentityFactoryContractIdentityCreated{}
 	<-exit
-}
-
-func simulateJsonDecode(idBytes [CentIdByteLength]byte) (map[string]interface{}, error) {
-	kwargs := map[string]interface{}{CentIdParam: idBytes}
-	t1 := gocelery.TaskMessage{Kwargs: kwargs}
-	encoded, err := t1.Encode()
-	if err != nil {
-		return nil, err
-	}
-	t2, err := gocelery.DecodeTaskMessage(encoded)
-	return t2.Kwargs, err
 }
 
 func createCentId(id []byte) [CentIdByteLength]byte {

@@ -4,6 +4,8 @@ import (
 	"crypto/rand"
 	"errors"
 	"math/big"
+
+	"github.com/centrifuge/gocelery"
 )
 
 // SliceToByte32 converts a 32 byte slice to an array. Will thorw error if the slice is too long
@@ -108,4 +110,15 @@ func ByteFixedToBigInt(bytes []byte, size int) *big.Int {
 	bi := new(big.Int)
 	bi.SetBytes(bytes[:size])
 	return bi
+}
+
+// Useful for tests
+func SimulateJsonDecodeForGocelery(kwargs map[string]interface{}) (map[string]interface{}, error) {
+	t1 := gocelery.TaskMessage{Kwargs: kwargs}
+	encoded, err := t1.Encode()
+	if err != nil {
+		return nil, err
+	}
+	t2, err := gocelery.DecodeTaskMessage(encoded)
+	return t2.Kwargs, err
 }

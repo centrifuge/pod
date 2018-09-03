@@ -55,3 +55,15 @@ func (m *MockCoreDocumentProcessor) Anchor(coreDocument *coredocumentpb.CoreDocu
 	args := m.Called(coreDocument)
 	return args.Error(0)
 }
+
+type MockSubscription struct {
+	ErrChan chan error
+}
+
+func (m *MockSubscription) Err() <-chan error {
+	return m.ErrChan
+}
+
+func (*MockSubscription) Unsubscribe() {
+
+}

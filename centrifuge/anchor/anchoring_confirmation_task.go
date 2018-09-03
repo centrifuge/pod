@@ -24,7 +24,7 @@ type AnchorRegisteredWatcher interface {
 	WatchAnchorRegistered(opts *bind.WatchOpts, sink chan<- *EthereumAnchorRegistryContractAnchorRegistered, from []common.Address, identifier [][32]byte, rootHash [][32]byte) (event.Subscription, error)
 }
 
-// AnchoringConfirmationTask is a queued task to watch ID registration events on Ethereum using EthereumIdentityFactoryContract.
+// AnchoringConfirmationTask is a queued task to watch ID registration events on Ethereum using EthereumAnchorRegistryContract.
 // To see how it gets registered see bootstrapper.go and to see how it gets used see setUpRegistrationEventListener method
 type AnchoringConfirmationTask struct {
 	// task parameters
@@ -110,7 +110,7 @@ func (act *AnchoringConfirmationTask) RunTask() (interface{}, error) {
 
 	subscription, err := act.AnchorRegisteredWatcher.WatchAnchorRegistered(watchOpts, act.AnchorRegisteredEvents, []common.Address{act.From}, [][32]byte{act.AnchorId}, nil)
 	if err != nil {
-		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for identity registration", 1)
+		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for anchor registration", 1)
 		log.Errorf(wError.Error())
 		return nil, wError
 	}
