@@ -29,7 +29,7 @@ required = ["github.com/roboll/go-vendorinstall", "github.com/golang/protobuf/pr
 [[constraint]]
   name = "github.com/CentrifugeInc/centrifuge-protobufs"
   source = "git@github.com:CentrifugeInc/centrifuge-protobufs"
-  branch = "master"
+  revision = "a74fc9bce50769089c335874c28de959665dee86"
 
 [[constraint]]
   name = "github.com/Masterminds/semver"
@@ -38,7 +38,7 @@ required = ["github.com/roboll/go-vendorinstall", "github.com/golang/protobuf/pr
 [[constraint]]
   name = "github.com/centrifuge/precise-proofs"
   source = "git@github.com:centrifuge/precise-proofs"
-  branch = "master"
+  revision = "15bc79ad1aca6630e6489e253aef6955686b36a1"
 
 [[override]]
   revision = "fbb7cafc5ae411e13e718172f5af7917ad6c3ed7"

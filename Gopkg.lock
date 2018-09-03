@@ -2,8 +2,7 @@
 
 
 [[projects]]
-  branch = "master"
-  digest = "1:5f003af5cdc0fdff9dcd9f8ef00e4914a7c347afd3123e4e7b34946da88fa414"
+  digest = "1:b38a7ca90a98498eb596b1422e8d604aaac4cfe66687e79bbe3e587d1cc21dce"
   name = "github.com/CentrifugeInc/centrifuge-protobufs"
   packages = [
     "documenttypes",
@@ -15,7 +14,7 @@
     "gen/go/purchaseorder",
   ]
   pruneopts = "T"
-  revision = "87eb09261744844c5caa136673205a9338e464a2"
+  revision = "a74fc9bce50769089c335874c28de959665dee86"
   source = "git@github.com:CentrifugeInc/centrifuge-protobufs"
 
 [[projects]]
@@ -44,7 +43,7 @@
   name = "github.com/aristanetworks/goarista"
   packages = ["monotime"]
   pruneopts = "UT"
-  revision = "18b896026201d8e1758468d9c5d5a558c69c5e9b"
+  revision = "c2e37c381520048ad67de8a2ef5c471603282ab7"
 
 [[projects]]
   branch = "master"
@@ -63,15 +62,14 @@
   revision = "840d02135ac447e77bd0d669246b602feca5e8b4"
 
 [[projects]]
-  branch = "master"
-  digest = "1:bcf14997cc2dc45a214bd06c913b79aa8f85d2b5855a704c3511c5dad0e5537e"
+  digest = "1:9ecc8c63be5b2a2e9c4daefc265ea476757d91a04394fbb984bcdb3c652129da"
   name = "github.com/centrifuge/precise-proofs"
   packages = [
     "proofs",
     "proofs/proto",
   ]
   pruneopts = "UT"
-  revision = "fbe68f46da974e764087a51de73e043778dadbef"
+  revision = "15bc79ad1aca6630e6489e253aef6955686b36a1"
   source = "git@github.com:centrifuge/precise-proofs"
 
 [[projects]]
@@ -253,12 +251,12 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:cee8e8ac80df6373e7daa11baf1f98c1b6f7242c49ccae7e1ec34a971dc408d9"
+  digest = "1:7b5c6e2eeaa9ae5907c391a91c132abfd5c9e8a784a341b5625e750c67e6825d"
   name = "github.com/gorilla/websocket"
   packages = ["."]
   pruneopts = "UT"
-  revision = "3ff3320c2a1756a3691521efc290b4701575147c"
-  version = "v1.3.0"
+  revision = "66b9c49e59c6c48f0ffce28c2d8b8a5678502c6d"
+  version = "v1.4.0"
 
 [[projects]]
   digest = "1:69cd81163a00bb8405194d47b8be19283744779b6104f2d6b3735e2a01cdb6fa"
@@ -305,15 +303,15 @@
   revision = "d9f6b97f8db22dd1e090fd0bbbe98f09cc7dd0a8"
 
 [[projects]]
-  branch = "master"
-  digest = "1:cf296baa185baae04a9a7004efee8511d08e2f5f51d4cbe5375da89722d681db"
+  digest = "1:8ec8d88c248041a6df5f6574b87bc00e7e0b493881dad2e7ef47b11dc69093b5"
   name = "github.com/hashicorp/golang-lru"
   packages = [
     ".",
     "simplelru",
   ]
   pruneopts = "UT"
-  revision = "0fb14efe8c47ae851c0034ed7a448854d3d34cf3"
+  revision = "20f1fb78b0740ba8c3cb143a61e86ba5c8669768"
+  version = "v0.5.0"
 
 [[projects]]
   digest = "1:c0d19ab64b32ce9fe5cf4ddceba78d5bc9807f0016db6b1183599da3dcc24d10"
@@ -386,12 +384,12 @@
   revision = "f2426c09e56ae390fc416f21b224c7d7ad13418c"
 
 [[projects]]
-  digest = "1:41d073c0402e18b079c81829289a10ad7d37f7d4885e078b4cd7a71deae4478b"
+  digest = "1:449b4171390f861d5bf913e6a1dea13c51ce94202d807016f69f81b584e42a96"
   name = "github.com/ipfs/go-ipfs-addr"
   packages = ["."]
   pruneopts = "UT"
-  revision = "d0447b512ce04eccf713103ccfbf7697ce92a182"
-  version = "v0.1.19"
+  revision = "d9eba81e7e65aa7a31e737b70f692d64f4172ef9"
+  version = "v0.1.21"
 
 [[projects]]
   digest = "1:aae82c244bd91107575a0244a29e82e34ba23e06b6892557e33728de48deba96"
@@ -573,12 +571,12 @@
   version = "v2.2.6"
 
 [[projects]]
-  digest = "1:0adb0e02c23a86b398f70ab1cce06323009a4cbbcf282af630d15681bcac0e90"
+  digest = "1:6ca532827baa778302be770435a0834539e9694bed294978e12d3be7da9cd6ba"
   name = "github.com/libp2p/go-libp2p-loggables"
   packages = ["."]
   pruneopts = "UT"
-  revision = "58a5d94871458043fc0797727b24fc77a94f203b"
-  version = "v1.1.20"
+  revision = "d6d01a5f5e0bcc27c612fd1e6aa8fc97e1cac488"
+  version = "v1.1.21"
 
 [[projects]]
   digest = "1:853768bb27c84e0be3a1a30b53c6d7e2f64ad10a556a37b32ff1a3868bd191bd"
@@ -768,12 +766,12 @@
   version = "v0.0.9"
 
 [[projects]]
-  digest = "1:d4d17353dbd05cb52a2a52b7fe1771883b682806f68db442b436294926bbfafb"
+  digest = "1:0981502f9816113c9c8c4ac301583841855c8cf4da8c72f696b3ebedf6d0e4e5"
   name = "github.com/mattn/go-isatty"
   packages = ["."]
   pruneopts = "UT"
-  revision = "0360b2af4f38e8d38c7fce2a9f4e702702d73a39"
-  version = "v0.0.3"
+  revision = "6ca4dbf54d38eea1a992b3c722a76a5d1c4cb25c"
+  version = "v0.0.4"
 
 [[projects]]
   branch = "master"
@@ -1088,11 +1086,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:12d64a892e0dedd762afb848165bbb1216cc90f3ee6be0cdc1bc7a2bc292445b"
+  digest = "1:262e85ef9e2082fcb44335f6349699d61d5ac3672d24dcf3bf4cbc7377b51e96"
   name = "github.com/whyrusleeping/go-smux-multistream"
   packages = ["."]
   pruneopts = "UT"
-  revision = "c707bf3c25fa380b20b54907790efde288775938"
+  revision = "e799b10bc6eea2cc5ce18f7b7b4d8e1a0439476d"
 
 [[projects]]
   branch = "master"
@@ -1155,7 +1153,7 @@
     "sha3",
   ]
   pruneopts = "UT"
-  revision = "614d502a4dac94afa3a6ce146bd1736da82514c6"
+  revision = "182538f80094b6a8efaade63a8fd8e0d9d5843dd"
 
 [[projects]]
   branch = "master"
@@ -1180,7 +1178,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:d07a7ee9784e2c260a3f45bb2a9c7b9a10eccd319f488ca6447723b2129ec29e"
+  digest = "1:d71b7a5455394ded1a75a4dd55367303b0146605c719689ef0b0b6cba40650c8"
   name = "golang.org/x/sys"
   packages = [
     "cpu",
@@ -1188,7 +1186,7 @@
     "windows",
   ]
   pruneopts = "UT"
-  revision = "d99a578cf41bfccdeaf48b0845c823a4b8b0ad5e"
+  revision = "fa5fdf94c78965f1aa8423f0cc50b8b8d728b05a"
 
 [[projects]]
   digest = "1:436b24586f8fee329e0dd65fd67c817681420cda1d7f934345c13fe78c212a73"
@@ -1235,7 +1233,7 @@
     "internal/fastwalk",
   ]
   pruneopts = "UT"
-  revision = "6cd1fcedba52a3e8045a1c96970cec308e4a632c"
+  revision = "7ca132754999accbaa5c1735eda29e7ce0f3bf03"
 
 [[projects]]
   branch = "master"
@@ -1246,7 +1244,7 @@
     "googleapis/rpc/status",
   ]
   pruneopts = "UT"
-  revision = "c66870c02cf823ceb633bcd05be3c7cda29976f4"
+  revision = "11092d34479b07829b72e10713b159248caf5dad"
 
 [[projects]]
   digest = "1:3dd7996ce6bf52dec6a2f69fa43e7c4cefea1d4dfa3c8ab7a5f8a9f7434e239d"
@@ -1300,12 +1298,12 @@
   revision = "c1b8fa8bdccecb0b8db834ee0b92fdbcfa606dd6"
 
 [[projects]]
-  digest = "1:4a4785749b54b948fd45be3824c6bb1d606578a440657f7cabc79dbbbdc7c476"
+  digest = "1:b7fc4c3fd91df516486f53cc86f4b55a0c815782dbe852c5a19cce8e6c577aac"
   name = "gopkg.in/resty.v1"
   packages = ["."]
   pruneopts = "UT"
-  revision = "383acc8a8b687098ee02168c0335a43dfee701f0"
-  version = "v1.9.0"
+  revision = "d4920dcf5b7689548a6db640278a9b35a5b48ec6"
+  version = "v1.9.1"
 
 [[projects]]
   digest = "1:342378ac4dcb378a5448dd723f0784ae519383532f5e70ade24132c4c8693202"

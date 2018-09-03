@@ -53,12 +53,6 @@ func (m *MockInvoiceRepository) Create(inv *invoicepb.InvoiceDocument) (err erro
 // ----- END MOCKS -----
 
 // ----- HELPER FUNCTIONS -----
-func generateSendableInvoice() *invoice.Invoice {
-	doc := invoice.NewEmptyInvoice()
-	doc.Document.CoreDocument = testingutils.GenerateCoreDocument()
-	return doc
-}
-
 func generateMockedOutInvoiceService() (srv *invoiceservice.InvoiceDocumentService, repo *MockInvoiceRepository, coreDocumentProcessor *testingutils.MockCoreDocumentProcessor) {
 	repo = new(MockInvoiceRepository)
 	coreDocumentProcessor = new(testingutils.MockCoreDocumentProcessor)
@@ -69,7 +63,21 @@ func generateMockedOutInvoiceService() (srv *invoiceservice.InvoiceDocumentServi
 	return
 }
 func getTestSetupData() (doc *invoice.Invoice, srv *invoiceservice.InvoiceDocumentService, repo *MockInvoiceRepository, coreDocumentProcessor *testingutils.MockCoreDocumentProcessor) {
-	doc = generateSendableInvoice()
+	doc = &invoice.Invoice{Document: &invoicepb.InvoiceDocument{}}
+	doc.Document.Data = &invoicepb.InvoiceData{
+		InvoiceNumber:    "inv1234",
+		SenderName:       "Jack",
+		SenderZipcode:    "921007",
+		SenderCountry:    "AUS",
+		RecipientName:    "John",
+		RecipientZipcode: "12345",
+		RecipientCountry: "Germany",
+		Currency:         "EUR",
+		GrossAmount:      800,
+	}
+	salts := new(invoicepb.InvoiceDataSalts)
+	proofs.FillSalts(salts)
+	doc.Document.Salts = salts
 	srv, repo, coreDocumentProcessor = generateMockedOutInvoiceService()
 	return
 }
@@ -81,7 +89,7 @@ func TestInvoiceDocumentService_Anchor(t *testing.T) {
 	doc, s, mockRepo, mockCDP := getTestSetupData()
 
 	mockRepo.On("Create", doc.Document).Return(nil).Once()
-	mockRepo.On("CreateOrUpdate", doc.Document).Return(nil).Once()
+	mockRepo.On("CreateOrUpdate", mock.Anything).Return(nil).Once()
 	mockCDP.On("Anchor", mock.Anything).Return(nil).Once()
 
 	anchoredDoc, err := s.HandleAnchorInvoiceDocument(context.Background(), &clientinvoicepb.AnchorInvoiceEnvelope{Document: doc.Document})
@@ -121,6 +129,7 @@ func TestInvoiceDocumentService_Send(t *testing.T) {
 	recipients := testingutils.GenerateP2PRecipients(1)
 
 	mockRepo.On("Create", doc.Document).Return(nil).Once()
+	mockRepo.On("CreateOrUpdate", mock.Anything).Return(nil).Once()
 	mockCDP.On("Anchor", mock.Anything).Return(nil).Once()
 	mockCDP.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 
@@ -136,6 +145,7 @@ func TestInvoiceDocumentService_SendFails(t *testing.T) {
 	recipients := testingutils.GenerateP2PRecipients(2)
 
 	mockRepo.On("Create", doc.Document).Return(nil).Once()
+	mockRepo.On("CreateOrUpdate", mock.Anything).Return(nil).Once()
 	mockCDP.On("Anchor", mock.Anything).Return(nil).Once()
 	mockCDP.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(errors.New("error sending")).Twice()
 
@@ -144,7 +154,7 @@ func TestInvoiceDocumentService_SendFails(t *testing.T) {
 	mockCDP.AssertExpectations(t)
 	//the error handling in the send handler simply prints out the list of errors without much formatting
 	//OK for now but could be done nicer in the future
-	assert.Equal(t, "[error sending error sending]", err.Error())
+	assert.Contains(t, err.Error(), "error sending error sending")
 }
 
 func TestInvoiceDocumentService_Send_StoreFails(t *testing.T) {
@@ -156,7 +166,7 @@ func TestInvoiceDocumentService_Send_StoreFails(t *testing.T) {
 	_, err := s.HandleSendInvoiceDocument(context.Background(), &clientinvoicepb.SendInvoiceEnvelope{Recipients: recipients, Document: doc.Document})
 
 	mockRepo.AssertExpectations(t)
-	assert.Equal(t, "error storing", err.Error())
+	assert.Contains(t, err.Error(), "error storing")
 }
 
 func TestInvoiceDocumentService_Send_AnchorFails(t *testing.T) {
@@ -170,12 +180,12 @@ func TestInvoiceDocumentService_Send_AnchorFails(t *testing.T) {
 
 	mockRepo.AssertExpectations(t)
 	mockCDP.AssertExpectations(t)
-	assert.Equal(t, "error anchoring", err.Error())
+	assert.Contains(t, err.Error(), "error anchoring")
 }
 
 func TestInvoiceDocumentService_HandleCreateInvoiceProof(t *testing.T) {
 	identifier := testingutils.Rand32Bytes()
-	inv := invoice.NewEmptyInvoice()
+	inv := invoice.Empty()
 	inv.Document.CoreDocument = &coredocumentpb.CoreDocument{
 		DocumentIdentifier: identifier,
 		CurrentIdentifier:  identifier,
@@ -212,7 +222,7 @@ func TestInvoiceDocumentService_HandleCreateInvoiceProof(t *testing.T) {
 
 func TestInvoiceDocumentService_HandleCreateInvoiceProof_NotFilledSalts(t *testing.T) {
 	identifier := testingutils.Rand32Bytes()
-	inv := invoice.NewEmptyInvoice()
+	inv := invoice.Empty()
 	inv.Document.CoreDocument = &coredocumentpb.CoreDocument{
 		DocumentIdentifier: identifier,
 		CurrentIdentifier:  identifier,
@@ -237,7 +247,7 @@ func TestInvoiceDocumentService_HandleCreateInvoiceProof_NotFilledSalts(t *testi
 
 func TestInvoiceDocumentService_HandleCreateInvoiceProof_NotExistingInvoice(t *testing.T) {
 	identifier := testingutils.Rand32Bytes()
-	inv := invoice.NewEmptyInvoice()
+	inv := invoice.Empty()
 	inv.Document.CoreDocument = &coredocumentpb.CoreDocument{
 		DocumentIdentifier: identifier,
 		CurrentIdentifier:  identifier,
@@ -252,7 +262,7 @@ func TestInvoiceDocumentService_HandleCreateInvoiceProof_NotExistingInvoice(t *t
 		Fields:             []string{"currency", "sender_country", "gross_amount"},
 	}
 	//return an "empty" invoice as mock can't return nil
-	mockRepo.On("FindById", proofRequest.DocumentIdentifier).Return(invoice.NewEmptyInvoice().Document, errors.New("couldn't find invoice")).Once()
+	mockRepo.On("FindById", proofRequest.DocumentIdentifier).Return(invoice.Empty().Document, errors.New("couldn't find invoice")).Once()
 
 	invoiceProof, err := s.HandleCreateInvoiceProof(context.Background(), proofRequest)
 	mockRepo.AssertExpectations(t)

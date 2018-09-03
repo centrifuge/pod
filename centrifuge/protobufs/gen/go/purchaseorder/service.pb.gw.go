@@ -37,24 +37,6 @@ func request_PurchaseOrderDocumentService_CreatePurchaseOrderProof_0(ctx context
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["document_identifier"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "document_identifier")
-	}
-
-	protoReq.DocumentIdentifier, err = runtime.Bytes(val)
-
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "document_identifier", err)
-	}
-
 	msg, err := client.CreatePurchaseOrderProof(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
@@ -309,7 +291,7 @@ func RegisterPurchaseOrderDocumentServiceHandlerClient(ctx context.Context, mux 
 }
 
 var (
-	pattern_PurchaseOrderDocumentService_CreatePurchaseOrderProof_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2}, []string{"purchaseorder", "document_identifier", "proof"}, ""))
+	pattern_PurchaseOrderDocumentService_CreatePurchaseOrderProof_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"purchaseorder", "proof"}, ""))
 
 	pattern_PurchaseOrderDocumentService_AnchorPurchaseOrderDocument_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"purchaseorder", "anchor"}, ""))
 

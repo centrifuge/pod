@@ -12,7 +12,7 @@ import (
 )
 
 func TestFillIdentifiers(t *testing.T) {
-	id1, id2, id3 := tools.RandomSlice32(), tools.RandomSlice32(), tools.RandomSlice32()
+	id1, id2, id3 := tools.RandomSlice(32), tools.RandomSlice(32), tools.RandomSlice(32)
 
 	tests := []struct {
 		DocIdentifier     []byte

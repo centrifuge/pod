@@ -21,7 +21,7 @@ func FillIdentifiers(document *coredocumentpb.CoreDocument) error {
 		}
 
 		if isEmptyId(document.NextIdentifier) {
-			document.NextIdentifier = tools.RandomSlice32()
+			document.NextIdentifier = tools.RandomSlice(32)
 		}
 
 		return nil
@@ -38,8 +38,8 @@ func FillIdentifiers(document *coredocumentpb.CoreDocument) error {
 	}
 
 	// fill the identifiers
-	document.DocumentIdentifier = tools.RandomSlice32()
+	document.DocumentIdentifier = tools.RandomSlice(32)
 	document.CurrentIdentifier = document.DocumentIdentifier
-	document.NextIdentifier = tools.RandomSlice32()
+	document.NextIdentifier = tools.RandomSlice(32)
 	return nil
 }

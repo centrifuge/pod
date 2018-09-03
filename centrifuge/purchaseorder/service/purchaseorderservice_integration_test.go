@@ -16,6 +16,7 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder/service"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
+	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -30,11 +31,14 @@ func TestMain(m *testing.M) {
 
 func generateEmptyPurchaseOrderForProcessing() (doc *purchaseorder.PurchaseOrder) {
 	identifier := testingutils.Rand32Bytes()
-	doc = purchaseorder.NewEmptyPurchaseOrder()
+	doc = purchaseorder.Empty()
+	salts := &coredocumentpb.CoreDocumentSalts{}
+	proofs.FillSalts(salts)
 	doc.Document.CoreDocument = &coredocumentpb.CoreDocument{
 		DocumentIdentifier: identifier,
 		CurrentIdentifier:  identifier,
 		NextIdentifier:     testingutils.Rand32Bytes(),
+		CoredocumentSalts:  salts,
 	}
 	return
 }
@@ -45,7 +49,17 @@ func TestPurchaseOrderDocumentService_HandleAnchorPurchaseOrderDocument_Integrat
 		CoreDocumentProcessor: coredocumentprocessor.NewDefaultProcessor(),
 	}
 	doc := generateEmptyPurchaseOrderForProcessing()
-	doc.Document.Data.OrderCountry = "DE"
+	doc.Document.Data = &purchaseorderpb.PurchaseOrderData{
+		PoNumber:         "po1234",
+		OrderName:        "Jack",
+		OrderZipcode:     "921007",
+		OrderCountry:     "AUS",
+		RecipientName:    "John",
+		RecipientZipcode: "12345",
+		RecipientCountry: "DE",
+		Currency:         "EUR",
+		OrderAmount:      800,
+	}
 
 	anchoredDoc, err := s.HandleAnchorPurchaseOrderDocument(context.Background(), &clientpurchaseorderpb.AnchorPurchaseOrderEnvelope{Document: doc.Document})
 
@@ -58,7 +72,7 @@ func TestPurchaseOrderDocumentService_HandleAnchorPurchaseOrderDocument_Integrat
 	loadedDoc := new(purchaseorderpb.PurchaseOrderDocument)
 	err = purchaseorderrepository.GetRepository().GetByID(doc.Document.CoreDocument.DocumentIdentifier, loadedDoc)
 	assert.Nil(t, err)
-	assert.Equal(t, "DE", loadedDoc.Data.OrderCountry,
+	assert.Equal(t, "AUS", loadedDoc.Data.OrderCountry,
 		"Didn't save the purchaseorder data correctly")
 
 	// Invoice stored after anchoring has Salts populated
@@ -74,6 +88,6 @@ func TestPurchaseOrderDocumentService_HandleAnchorPurchaseOrderDocument_Integrat
 	loadedDoc2 := new(purchaseorderpb.PurchaseOrderDocument)
 	err = purchaseorderrepository.GetRepository().GetByID(doc.Document.CoreDocument.DocumentIdentifier, loadedDoc2)
 	assert.Nil(t, err)
-	assert.Equal(t, "DE", loadedDoc2.Data.OrderCountry,
+	assert.Equal(t, "AUS", loadedDoc2.Data.OrderCountry,
 		"Document on DB should have not not gotten overwritten after rejected anchor call")
 }

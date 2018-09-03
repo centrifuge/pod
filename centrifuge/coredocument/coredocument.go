@@ -4,6 +4,7 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/precise-proofs/proofs"
 )
 
 // Validate checks that all required fields are set before doing any processing with core document
@@ -15,10 +16,10 @@ func Validate(document *coredocumentpb.CoreDocument) (valid bool, errMsg string,
 	errs = make(map[string]string)
 
 	if tools.IsEmptyByteSlice(document.DocumentIdentifier) {
-		errs["cd_document_identifier"] = errors.RequiredField
+		errs["cd_identifier"] = errors.RequiredField
 	}
 
-	// TODO: This shouldn't always be enforced
+	// TODO(ved): where do we fill these
 	//if tools.IsEmptyByteSlice(document.DocumentRoot) {
 	//	errs["cd_root"] = errors.RequiredField
 	//}
@@ -62,4 +63,13 @@ func Validate(document *coredocumentpb.CoreDocument) (valid bool, errMsg string,
 	}
 
 	return false, "Invalid CoreDocument", errs
+}
+
+// New returns a new core document from the proto message
+func New() *coredocumentpb.CoreDocument {
+	doc, _ := FillIdentifiers(coredocumentpb.CoreDocument{})
+	salts := &coredocumentpb.CoreDocumentSalts{}
+	proofs.FillSalts(salts)
+	doc.CoredocumentSalts = salts
+	return &doc
 }

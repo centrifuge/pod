@@ -37,24 +37,6 @@ func request_InvoiceDocumentService_CreateInvoiceProof_0(ctx context.Context, ma
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["document_identifier"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "document_identifier")
-	}
-
-	protoReq.DocumentIdentifier, err = runtime.Bytes(val)
-
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "document_identifier", err)
-	}
-
 	msg, err := client.CreateInvoiceProof(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
@@ -309,7 +291,7 @@ func RegisterInvoiceDocumentServiceHandlerClient(ctx context.Context, mux *runti
 }
 
 var (
-	pattern_InvoiceDocumentService_CreateInvoiceProof_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2}, []string{"invoice", "document_identifier", "proof"}, ""))
+	pattern_InvoiceDocumentService_CreateInvoiceProof_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"invoice", "proof"}, ""))
 
 	pattern_InvoiceDocumentService_AnchorInvoiceDocument_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"invoice", "anchor"}, ""))
 

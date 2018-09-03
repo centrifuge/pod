@@ -32,8 +32,8 @@ func TestCoreDocumentProcessor_AnchorNilDocument(t *testing.T) {
 	assert.Error(t, err, "should have thrown an error")
 }
 
-func TestCoreDocumentProcessor_getDocumentSigningTree(t *testing.T) {
-	cd := &coredocumentpb.CoreDocument{}
+func TestCoreDocumentProcessor_getDocumentTree(t *testing.T) {
+	cd := &coredocumentpb.CoreDocument{DocumentIdentifier: tools.RandomSlice(32)}
 	coredocument.FillIdentifiers(cd)
 	cds := &coredocumentpb.CoreDocumentSalts{}
 	proofs.FillSalts(cd, cds)
@@ -45,7 +45,7 @@ func TestCoreDocumentProcessor_getDocumentSigningTree(t *testing.T) {
 
 func TestCoreDocumentProcessor_GetDataProofHashes(t *testing.T) {
 	cd := &coredocumentpb.CoreDocument{
-		DataRoot: tools.RandomSlice32(),
+		DataRoot: tools.RandomSlice(32),
 	}
 	err := coredocument.FillIdentifiers(cd)
 	assert.Nil(t, err)
