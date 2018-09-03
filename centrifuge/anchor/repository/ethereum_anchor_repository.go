@@ -17,14 +17,15 @@ import (
 type EthereumAnchorRepository struct {
 }
 
-type WatchPreCommitEvent interface {
+type AnchorRepositoryContract interface {
+
+	//transactions
+	PreCommit(opts *bind.TransactOpts, anchorId *big.Int, signingRoot [32]byte, centrifugeId *big.Int, signature []byte, expirationBlock *big.Int) (*types.Transaction, error)
+	Commit(opts *bind.TransactOpts, _anchorId *big.Int, _documentRoot [32]byte, _centrifugeId *big.Int, _documentProofs [][32]byte, _signature []byte) (*types.Transaction, error)
+
 	//event name in the smart contract: AnchorPreCommitted
 	WatchAnchorPreCommitted(opts *bind.WatchOpts, sink chan<- *EthereumAnchorRepositoryContractAnchorPreCommitted,
 		from []common.Address, anchorId []*big.Int) (event.Subscription, error)
-}
-
-type PreCommit interface {
-	PreCommit(opts *bind.TransactOpts, anchorId *big.Int, signingRoot [32]byte, centrifugeId *big.Int, signature []byte, expirationBlock *big.Int) (*types.Transaction, error)
 }
 
 func (ethRepository *EthereumAnchorRepository) PreCommitAnchor(anchorId *big.Int, signingRoot [32]byte, centrifugeId *big.Int, signature []byte, expirationBlock *big.Int) (confirmations <-chan *WatchPreCommit, err error) {
@@ -55,11 +56,11 @@ func (ethRepository *EthereumAnchorRepository) PreCommitAnchor(anchorId *big.Int
 			preCommitData.anchorId, preCommitData.signingRoot, preCommitData.SchemaVersion, wError)
 		return
 	}
-	return nil,nil
+	return confirmations,err
 }
 
 // sendPreCommitTransaction sends the actual transaction to register the Anchor on Ethereum registry contract
-func sendPreCommitTransaction(contract PreCommit, opts *bind.TransactOpts, preCommitData *PreCommitData) (err error) {
+func sendPreCommitTransaction(contract AnchorRepositoryContract, opts *bind.TransactOpts, preCommitData *PreCommitData) (err error) {
 
 	//preparation of data in specific types for the call to Ethereum
 	schemaVersion := big.NewInt(int64(preCommitData.SchemaVersion))
@@ -86,7 +87,7 @@ func (ethRepository *EthereumAnchorRepository) CommitAnchor(anchorId *big.Int, d
 
 // setUpPreCommitEventListener sets up the listened for the "PreCommit" event to notify the upstream code about successful mining/creation
 // of a pre-commit.
-func setUpPreCommitEventListener(contractEvent WatchPreCommitEvent, from common.Address, preCommitData *PreCommitData) (confirmations chan *WatchPreCommit, err error) {
+func setUpPreCommitEventListener(contract AnchorRepositoryContract, from common.Address, preCommitData *PreCommitData) (confirmations chan *WatchPreCommit, err error) {
 	//listen to this particular anchor being mined/event is triggered
 	ctx, cancelFunc := ethereum.DefaultWaitForTransactionMiningContext()
 	watchOpts := &bind.WatchOpts{Context: ctx}
@@ -101,7 +102,7 @@ func setUpPreCommitEventListener(contractEvent WatchPreCommitEvent, from common.
 	// Somehow there are some possible resource leakage situations with this handling but I have to understand
 	// Subscriptions a bit better before writing this code.
 
-	_, err = contractEvent.WatchAnchorPreCommitted(watchOpts, anchorRegisteredEvents, []common.Address{from}, []*big.Int{preCommitData.anchorId})
+	_, err = contract.WatchAnchorPreCommitted(watchOpts, anchorRegisteredEvents, []common.Address{from}, []*big.Int{preCommitData.anchorId})
 	if err != nil {
 		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for anchor registration", 1)
 		log.Errorf("Failed to watch anchor registered event: %v", wError.Error())
