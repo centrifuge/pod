@@ -3,31 +3,31 @@ package repository
 import "math/big"
 
 type PreCommitData struct {
-	anchorId *big.Int
-	signingRoot [32]byte
-	centrifugeId *big.Int
-	signature []byte
+	anchorId        *big.Int
+	signingRoot     [32]byte
+	centrifugeId    *big.Int
+	signature       []byte
 	expirationBlock *big.Int
-	SchemaVersion uint
+	SchemaVersion   uint
 }
 
 type CommitData struct {
-	anchorId *big.Int
-	documentRoot [32]byte
-	centrifugeId *big.Int
+	anchorId       *big.Int
+	documentRoot   [32]byte
+	centrifugeId   *big.Int
 	documentProofs [][32]byte
-	signature []byte
-	SchemaVersion uint
+	signature      []byte
+	SchemaVersion  uint
 }
 
 type WatchCommit struct {
 	CommitData *CommitData
-	Error  error
+	Error      error
 }
 
 type WatchPreCommit struct {
 	PreCommit *PreCommitData
-	Error  error
+	Error     error
 }
 
 //Supported anchor schema version as stored on public repository
@@ -58,5 +58,3 @@ func generateCommitData(anchorId *big.Int, documentRoot [32]byte, centrifugeId *
 	return commitData, nil
 
 }
-
-
