@@ -16,5 +16,5 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		context[bootstrapper.BootstrappedLevelDb] = levelDB
 		return nil
 	}
-	return errors.New("Could not initialize leveldb")
+	return errors.New("could not initialize levelDB")
 }

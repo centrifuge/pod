@@ -3,12 +3,10 @@ package p2p
 import (
 	"context"
 	"fmt"
-
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
-
 	"time"
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/p2p/controller"
 	"github.com/ipfs/go-cid"

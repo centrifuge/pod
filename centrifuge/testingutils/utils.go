@@ -7,6 +7,7 @@ import (
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/stretchr/testify/mock"
 )
@@ -37,13 +38,15 @@ func GenerateP2PRecipients(quantity int) [][]byte {
 func GenerateCoreDocument() *coredocumentpb.CoreDocument {
 	identifier := Rand32Bytes()
 	salts := &coredocumentpb.CoreDocumentSalts{}
-	proofs.FillSalts(salts)
-	return &coredocumentpb.CoreDocument{
+	doc := &coredocumentpb.CoreDocument{
+		DataRoot:           tools.RandomSlice(32),
 		DocumentIdentifier: identifier,
 		CurrentIdentifier:  identifier,
 		NextIdentifier:     Rand32Bytes(),
 		CoredocumentSalts:  salts,
 	}
+	proofs.FillSalts(doc, salts)
+	return doc
 }
 
 type MockCoreDocumentProcessor struct {

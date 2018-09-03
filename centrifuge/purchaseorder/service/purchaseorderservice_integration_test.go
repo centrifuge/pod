@@ -46,7 +46,7 @@ func generateEmptyPurchaseOrderForProcessing() (doc *purchaseorder.PurchaseOrder
 func TestPurchaseOrderDocumentService_HandleAnchorPurchaseOrderDocument_Integration(t *testing.T) {
 	s := purchaseorderservice.PurchaseOrderDocumentService{
 		Repository:            purchaseorderrepository.GetRepository(),
-		CoreDocumentProcessor: coredocumentprocessor.NewDefaultProcessor(),
+		CoreDocumentProcessor: coredocumentprocessor.DefaultProcessor(),
 	}
 	doc := generateEmptyPurchaseOrderForProcessing()
 	doc.Document.Data = &purchaseorderpb.PurchaseOrderData{

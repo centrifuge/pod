@@ -68,7 +68,7 @@ func generateMockedOutPurchaseOrderService() (srv *PurchaseOrderDocumentService,
 		Repository:            repo,
 		CoreDocumentProcessor: coreDocumentProcessor,
 	}
-	return
+	return srv, repo, coreDocumentProcessor
 }
 
 func getTestSetupData() (po *purchaseorder.PurchaseOrder, srv *PurchaseOrderDocumentService, repo *mockPurchaseOrderRepository, mockCoreDocumentProcessor *testingutils.MockCoreDocumentProcessor) {
@@ -85,11 +85,11 @@ func getTestSetupData() (po *purchaseorder.PurchaseOrder, srv *PurchaseOrderDocu
 		OrderAmount:      800,
 	}
 	salts := new(purchaseorderpb.PurchaseOrderDataSalts)
-	proofs.FillSalts(salts)
+	proofs.FillSalts(po.Document.Data, salts)
 	po.Document.Salts = salts
 	po.Document.CoreDocument = testingutils.GenerateCoreDocument()
 	srv, repo, mockCoreDocumentProcessor = generateMockedOutPurchaseOrderService()
-	return
+	return po, srv, repo, mockCoreDocumentProcessor
 }
 
 func TestPurchaseOrderDocumentService_Anchor(t *testing.T) {

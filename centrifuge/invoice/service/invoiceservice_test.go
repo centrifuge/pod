@@ -17,6 +17,7 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/go-errors/errors"
+	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -28,41 +29,50 @@ func TestMain(m *testing.M) {
 	os.Exit(result)
 }
 
-// ----- MOCKS -----
-type MockInvoiceRepository struct {
+// mockInvoiceRepository implements storage.Repository
+type mockInvoiceRepository struct {
 	mock.Mock
+	replaceDoc *invoicepb.InvoiceDocument
 }
 
-func (m *MockInvoiceRepository) GetKey(id []byte) []byte {
+func (m *mockInvoiceRepository) Exists(id []byte) bool {
+	args := m.Called(id)
+	return args.Get(0).(bool)
+}
+
+func (m *mockInvoiceRepository) GetKey(id []byte) []byte {
 	args := m.Called(id)
 	return args.Get(0).([]byte)
 }
-func (m *MockInvoiceRepository) FindById(id []byte) (inv *invoicepb.InvoiceDocument, err error) {
-	args := m.Called(id)
-	return args.Get(0).(*invoicepb.InvoiceDocument), args.Error(1)
-}
-func (m *MockInvoiceRepository) CreateOrUpdate(inv *invoicepb.InvoiceDocument) (err error) {
-	args := m.Called(inv)
-	return args.Error(0)
-}
-func (m *MockInvoiceRepository) Create(inv *invoicepb.InvoiceDocument) (err error) {
-	args := m.Called(inv)
+
+func (m *mockInvoiceRepository) GetByID(id []byte, doc proto.Message) (err error) {
+	args := m.Called(id, doc)
+	order := doc.(*invoicepb.InvoiceDocument)
+	*order = *m.replaceDoc
+	doc = order
 	return args.Error(0)
 }
 
-// ----- END MOCKS -----
+func (m *mockInvoiceRepository) Create(id []byte, doc proto.Message) (err error) {
+	args := m.Called(id, doc)
+	return args.Error(0)
+}
 
-// ----- HELPER FUNCTIONS -----
-func generateMockedOutInvoiceService() (srv *invoiceservice.InvoiceDocumentService, repo *MockInvoiceRepository, coreDocumentProcessor *testingutils.MockCoreDocumentProcessor) {
-	repo = new(MockInvoiceRepository)
+func (m *mockInvoiceRepository) Update(id []byte, doc proto.Message) (err error) {
+	args := m.Called(id, doc)
+	return args.Error(0)
+}
+
+func generateMockedOutInvoiceService() (srv *invoiceservice.InvoiceDocumentService, repo *mockInvoiceRepository, coreDocumentProcessor *testingutils.MockCoreDocumentProcessor) {
+	repo = new(mockInvoiceRepository)
 	coreDocumentProcessor = new(testingutils.MockCoreDocumentProcessor)
 	srv = &invoiceservice.InvoiceDocumentService{
 		InvoiceRepository:     repo,
 		CoreDocumentProcessor: coreDocumentProcessor,
 	}
-	return
+	return srv, repo, coreDocumentProcessor
 }
-func getTestSetupData() (doc *invoice.Invoice, srv *invoiceservice.InvoiceDocumentService, repo *MockInvoiceRepository, coreDocumentProcessor *testingutils.MockCoreDocumentProcessor) {
+func getTestSetupData() (doc *invoice.Invoice, srv *invoiceservice.InvoiceDocumentService, repo *mockInvoiceRepository, coreDocumentProcessor *testingutils.MockCoreDocumentProcessor) {
 	doc = &invoice.Invoice{Document: &invoicepb.InvoiceDocument{}}
 	doc.Document.Data = &invoicepb.InvoiceData{
 		InvoiceNumber:    "inv1234",
@@ -76,20 +86,18 @@ func getTestSetupData() (doc *invoice.Invoice, srv *invoiceservice.InvoiceDocume
 		GrossAmount:      800,
 	}
 	salts := new(invoicepb.InvoiceDataSalts)
-	proofs.FillSalts(salts)
+	proofs.FillSalts(doc.Document.Data, salts)
+	doc.Document.CoreDocument = testingutils.GenerateCoreDocument()
 	doc.Document.Salts = salts
 	srv, repo, coreDocumentProcessor = generateMockedOutInvoiceService()
-	return
+	return doc, srv, repo, coreDocumentProcessor
 }
 
-// ----- END HELPER FUNCTIONS -----
-
-// ----- TESTS -----
 func TestInvoiceDocumentService_Anchor(t *testing.T) {
 	doc, s, mockRepo, mockCDP := getTestSetupData()
 
-	mockRepo.On("Create", doc.Document).Return(nil).Once()
-	mockRepo.On("CreateOrUpdate", mock.Anything).Return(nil).Once()
+	mockRepo.On("Create", doc.Document.CoreDocument.DocumentIdentifier, doc.Document).Return(nil).Once()
+	mockRepo.On("Update", doc.Document.CoreDocument.DocumentIdentifier, mock.Anything).Return(nil).Once()
 	mockCDP.On("Anchor", mock.Anything).Return(nil).Once()
 
 	anchoredDoc, err := s.HandleAnchorInvoiceDocument(context.Background(), &clientinvoicepb.AnchorInvoiceEnvelope{Document: doc.Document})
@@ -103,7 +111,7 @@ func TestInvoiceDocumentService_Anchor(t *testing.T) {
 func TestInvoiceDocumentService_AnchorFails(t *testing.T) {
 	doc, s, mockRepo, mockCDP := getTestSetupData()
 
-	mockRepo.On("Create", doc.Document).Return(nil).Once()
+	mockRepo.On("Create", doc.Document.CoreDocument.DocumentIdentifier, doc.Document).Return(nil).Once()
 	mockCDP.On("Anchor", mock.Anything).Return(errors.New("error anchoring")).Once()
 
 	anchoredDoc, err := s.HandleAnchorInvoiceDocument(context.Background(), &clientinvoicepb.AnchorInvoiceEnvelope{Document: doc.Document})
@@ -128,8 +136,8 @@ func TestInvoiceDocumentService_Send(t *testing.T) {
 
 	recipients := testingutils.GenerateP2PRecipients(1)
 
-	mockRepo.On("Create", doc.Document).Return(nil).Once()
-	mockRepo.On("CreateOrUpdate", mock.Anything).Return(nil).Once()
+	mockRepo.On("Create", doc.Document.CoreDocument.DocumentIdentifier, doc.Document).Return(nil).Once()
+	mockRepo.On("Update", doc.Document.CoreDocument.DocumentIdentifier, mock.Anything).Return(nil).Once()
 	mockCDP.On("Anchor", mock.Anything).Return(nil).Once()
 	mockCDP.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 
@@ -144,8 +152,8 @@ func TestInvoiceDocumentService_SendFails(t *testing.T) {
 	doc, s, mockRepo, mockCDP := getTestSetupData()
 	recipients := testingutils.GenerateP2PRecipients(2)
 
-	mockRepo.On("Create", doc.Document).Return(nil).Once()
-	mockRepo.On("CreateOrUpdate", mock.Anything).Return(nil).Once()
+	mockRepo.On("Create", doc.Document.CoreDocument.DocumentIdentifier, doc.Document).Return(nil).Once()
+	mockRepo.On("Update", doc.Document.CoreDocument.DocumentIdentifier, mock.Anything).Return(nil).Once()
 	mockCDP.On("Anchor", mock.Anything).Return(nil).Once()
 	mockCDP.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(errors.New("error sending")).Twice()
 
@@ -161,7 +169,7 @@ func TestInvoiceDocumentService_Send_StoreFails(t *testing.T) {
 	doc, s, mockRepo, _ := getTestSetupData()
 	recipients := testingutils.GenerateP2PRecipients(2)
 
-	mockRepo.On("Create", doc.Document).Return(errors.New("error storing")).Once()
+	mockRepo.On("Create", doc.Document.CoreDocument.DocumentIdentifier, doc.Document).Return(errors.New("error storing")).Once()
 
 	_, err := s.HandleSendInvoiceDocument(context.Background(), &clientinvoicepb.SendInvoiceEnvelope{Recipients: recipients, Document: doc.Document})
 
@@ -173,7 +181,7 @@ func TestInvoiceDocumentService_Send_AnchorFails(t *testing.T) {
 	doc, s, mockRepo, mockCDP := getTestSetupData()
 	recipients := testingutils.GenerateP2PRecipients(2)
 
-	mockRepo.On("Create", doc.Document).Return(nil).Once()
+	mockRepo.On("Create", doc.Document.CoreDocument.DocumentIdentifier, doc.Document).Return(nil).Once()
 	mockCDP.On("Anchor", mock.Anything).Return(errors.New("error anchoring")).Once()
 
 	_, err := s.HandleSendInvoiceDocument(context.Background(), &clientinvoicepb.SendInvoiceEnvelope{Recipients: recipients, Document: doc.Document})
@@ -199,8 +207,8 @@ func TestInvoiceDocumentService_HandleCreateInvoiceProof(t *testing.T) {
 		DocumentIdentifier: identifier,
 		Fields:             []string{"currency", "sender_country", "gross_amount"},
 	}
-
-	mockRepo.On("FindById", proofRequest.DocumentIdentifier).Return(inv.Document, nil).Once()
+	mockRepo.On("GetByID", proofRequest.DocumentIdentifier, new(invoicepb.InvoiceDocument)).Return(nil).Once()
+	mockRepo.replaceDoc = inv.Document
 	// In this test we mock out the signing root generation and return empty hashes for the CoreDocumentProcessor.GetProofHashes
 	mockProcessor.On("GetDataProofHashes", inv.Document.CoreDocument).Return([][]byte{}, nil).Once()
 
@@ -235,9 +243,10 @@ func TestInvoiceDocumentService_HandleCreateInvoiceProof_NotFilledSalts(t *testi
 		DocumentIdentifier: identifier,
 		Fields:             []string{"currency", "sender_country", "gross_amount"},
 	}
-	mockRepo.On("FindById", proofRequest.DocumentIdentifier).Return(inv.Document, nil).Once()
 	// In this test we mock out the signing root generation and return empty hashes for the CoreDocumentProcessor.GetProofHashes
 	mockProcessor.On("GetDataProofHashes", inv.Document.CoreDocument).Return([][]byte{}, nil).Once()
+	mockRepo.On("GetByID", proofRequest.DocumentIdentifier, new(invoicepb.InvoiceDocument)).Return(nil).Once()
+	mockRepo.replaceDoc = inv.Document
 
 	invoiceProof, err := s.HandleCreateInvoiceProof(context.Background(), proofRequest)
 	mockRepo.AssertExpectations(t)
@@ -262,8 +271,8 @@ func TestInvoiceDocumentService_HandleCreateInvoiceProof_NotExistingInvoice(t *t
 		Fields:             []string{"currency", "sender_country", "gross_amount"},
 	}
 	//return an "empty" invoice as mock can't return nil
-	mockRepo.On("FindById", proofRequest.DocumentIdentifier).Return(invoice.Empty().Document, errors.New("couldn't find invoice")).Once()
-
+	mockRepo.On("GetByID", proofRequest.DocumentIdentifier, new(invoicepb.InvoiceDocument)).Return(errors.New("couldn't find invoice")).Once()
+	mockRepo.replaceDoc = inv.Document
 	invoiceProof, err := s.HandleCreateInvoiceProof(context.Background(), proofRequest)
 	mockRepo.AssertExpectations(t)
 

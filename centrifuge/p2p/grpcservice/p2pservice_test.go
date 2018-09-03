@@ -22,7 +22,7 @@ import (
 
 func TestMain(m *testing.M) {
 	cc.TestIntegrationBootstrap()
-	coredocumentrepository.NewLevelDBRepository(&coredocumentrepository.LevelDBRepository{cc.GetLevelDBStorage()})
+	coredocumentrepository.InitLevelDBRepository(cc.GetLevelDBStorage())
 
 	result := m.Run()
 	cc.TestIntegrationTearDown()
@@ -52,7 +52,8 @@ func TestP2PService(t *testing.T) {
 	assert.Nil(t, err, "Received error")
 	assert.Equal(t, res.Document.DocumentIdentifier, coreDoc.DocumentIdentifier, "Incorrect identifier")
 
-	doc, err := coredocumentrepository.GetRepository().FindById(coreDoc.DocumentIdentifier)
+	doc := new(coredocumentpb.CoreDocument)
+	err = coredocumentrepository.GetRepository().GetByID(coreDoc.DocumentIdentifier, doc)
 	assert.Equal(t, doc.DocumentIdentifier, coreDoc.DocumentIdentifier, "Document Identifier doesn't match")
 }
 

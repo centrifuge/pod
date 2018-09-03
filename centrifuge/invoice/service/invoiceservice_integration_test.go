@@ -22,8 +22,7 @@ import (
 
 func TestMain(m *testing.M) {
 	cc.TestFunctionalEthereumBootstrap()
-	invoicerepository.NewLevelDBInvoiceRepository(&invoicerepository.LevelDBInvoiceRepository{Leveldb: cc.GetLevelDBStorage()})
-
+	invoicerepository.InitLevelDBRepository(cc.GetLevelDBStorage())
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()
 	os.Exit(result)
@@ -45,8 +44,8 @@ func generateEmptyInvoiceForProcessing() (doc *invoice.Invoice) {
 
 func TestInvoiceDocumentService_HandleAnchorInvoiceDocument_Integration(t *testing.T) {
 	s := invoiceservice.InvoiceDocumentService{
-		InvoiceRepository:     invoicerepository.GetInvoiceRepository(),
-		CoreDocumentProcessor: coredocumentprocessor.NewDefaultProcessor(),
+		InvoiceRepository:     invoicerepository.GetRepository(),
+		CoreDocumentProcessor: coredocumentprocessor.DefaultProcessor(),
 	}
 	doc := generateEmptyInvoiceForProcessing()
 	doc.Document.Data = &invoicepb.InvoiceData{
@@ -69,7 +68,8 @@ func TestInvoiceDocumentService_HandleAnchorInvoiceDocument_Integration(t *testi
 		"DocumentIdentifier doesn't match")
 
 	//Invoice document got stored in the DB
-	loadedInvoice, _ := invoicerepository.GetInvoiceRepository().FindById(doc.Document.CoreDocument.DocumentIdentifier)
+	loadedInvoice := new(invoicepb.InvoiceDocument)
+	err = invoicerepository.GetRepository().GetByID(doc.Document.CoreDocument.DocumentIdentifier, loadedInvoice)
 	assert.Equal(t, "AUS", loadedInvoice.Data.SenderCountry,
 		"Didn't save the invoice data correctly")
 
@@ -81,9 +81,10 @@ func TestInvoiceDocumentService_HandleAnchorInvoiceDocument_Integration(t *testi
 	anchoredDoc2, err := s.HandleAnchorInvoiceDocument(context.Background(), &clientinvoicepb.AnchorInvoiceEnvelope{Document: doc.Document})
 	assert.Nil(t, anchoredDoc2)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "Document already exists")
+	assert.Contains(t, err.Error(), "document already exists")
 
-	loadedInvoice2, _ := invoicerepository.GetInvoiceRepository().FindById(doc.Document.CoreDocument.DocumentIdentifier)
+	loadedInvoice2 := new(invoicepb.InvoiceDocument)
+	err = invoicerepository.GetRepository().GetByID(doc.Document.CoreDocument.DocumentIdentifier, loadedInvoice2)
 	assert.Equal(t, "AUS", loadedInvoice2.Data.SenderCountry,
 		"Invoice document on DB should have not not gotten overwritten after rejected anchor call")
 }

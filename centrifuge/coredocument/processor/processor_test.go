@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// TODO(ved): more tests required for processor
 var cdp defaultProcessor
 
 func TestMain(m *testing.M) {
@@ -33,31 +34,31 @@ func TestCoreDocumentProcessor_AnchorNilDocument(t *testing.T) {
 }
 
 func TestCoreDocumentProcessor_getDocumentTree(t *testing.T) {
-	cd := &coredocumentpb.CoreDocument{DocumentIdentifier: tools.RandomSlice(32)}
-	coredocument.FillIdentifiers(cd)
+	cd := coredocumentpb.CoreDocument{DocumentIdentifier: tools.RandomSlice(32)}
+	cd, _ = coredocument.FillIdentifiers(cd)
 	cds := &coredocumentpb.CoreDocumentSalts{}
-	proofs.FillSalts(cd, cds)
+	proofs.FillSalts(&cd, cds)
 	cd.CoredocumentSalts = cds
-	tree, err := cdp.getDocumentSigningTree(cd)
+	tree, err := cdp.getDocumentSigningTree(&cd)
 	assert.Nil(t, err)
 	assert.NotNil(t, tree)
 }
 
 func TestCoreDocumentProcessor_GetDataProofHashes(t *testing.T) {
-	cd := &coredocumentpb.CoreDocument{
+	cd := coredocumentpb.CoreDocument{
 		DataRoot: tools.RandomSlice(32),
 	}
-	err := coredocument.FillIdentifiers(cd)
+	cd , err := coredocument.FillIdentifiers(cd)
 	assert.Nil(t, err)
 	cds := &coredocumentpb.CoreDocumentSalts{}
-	proofs.FillSalts(cd, cds)
+	proofs.FillSalts(&cd, cds)
 
 	cd.CoredocumentSalts = cds
 
-	err = cdp.calculateSigningRoot(cd)
+	err = cdp.calculateSigningRoot(&cd)
 	assert.Nil(t, err)
 
-	hashes, err := cdp.GetDataProofHashes(cd)
+	hashes, err := cdp.GetDataProofHashes(&cd)
 	assert.Nil(t, err)
 	assert.Equal(t, 3, len(hashes))
 
