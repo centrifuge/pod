@@ -8,25 +8,25 @@ import (
 var log = logging.Logger("anchorRepository")
 
 type AnchorRepository interface {
-	PreCommit(anchorId *big.Int, signingRoot [32]byte, centrifugeId *big.Int, signature []byte, expirationBlock *big.Int) (<-chan *WatchCommit, error)
-	Commit(anchorId *big.Int, documentRoot [32]byte, centrifugeId *big.Int, documentProofs [][32]byte, signature []byte) (<-chan *WatchPreCommit, error)
+	PreCommitAnchor(anchorId *big.Int, signingRoot [32]byte, centrifugeId *big.Int, signature []byte, expirationBlock *big.Int) (<-chan *WatchPreCommit, error)
+	CommitAnchor(anchorId *big.Int, documentRoot [32]byte, centrifugeId *big.Int, documentProofs [][32]byte, signature []byte) (<-chan *WatchCommit, error)
 }
 
 
-func PreCommit(anchorId *big.Int, signingRoot [32]byte, centrifugeId *big.Int, signature []byte, expirationBlock *big.Int) (<-chan *WatchPreCommit, error) {
+func PreCommitAnchor(anchorId *big.Int, signingRoot [32]byte, centrifugeId *big.Int, signature []byte, expirationBlock *big.Int) (<-chan *WatchPreCommit, error) {
 	anchorRepository,_ := getConfiguredRepository()
 
-	confirmations, err := anchorRepository.PreCommit(anchorId, signingRoot,centrifugeId,signature,expirationBlock)
+	confirmations, err := anchorRepository.PreCommitAnchor(anchorId, signingRoot,centrifugeId,signature,expirationBlock)
 	if err != nil {
 		log.Errorf("Failed to pre-commit the anchor [id:%x, hash:%x ]: %v", anchorId, signingRoot, err)
 	}
 	return confirmations, err
 }
 
-func Commit(anchorId *big.Int, documentRoot [32]byte, centrifugeId *big.Int, documentProofs [][32]byte, signature []byte) (<-chan *WatchCommit, error) {
+func CommitAnchor(anchorId *big.Int, documentRoot [32]byte, centrifugeId *big.Int, documentProofs [][32]byte, signature []byte) (<-chan *WatchCommit, error) {
 	anchorRepository,_ := getConfiguredRepository()
 
-	confirmations, err := anchorRepository.Commit(anchorId, documentRoot, centrifugeId, documentProofs, signature)
+	confirmations, err := anchorRepository.CommitAnchor(anchorId, documentRoot, centrifugeId, documentProofs, signature)
 	if err != nil {
 		log.Errorf("Failed to commit the anchor [id:%x, hash:%x ]: %v", anchorId, documentRoot, err)
 	}
