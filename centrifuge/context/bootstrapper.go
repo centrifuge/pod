@@ -1,6 +1,7 @@
 package context
 
 import (
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/anchor"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/bootstrapper"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
@@ -31,6 +32,7 @@ func (m *MainBootstrapper) PopulateDefaultBootstrappers() {
 		&purchaseorderrepository.Bootstrapper{},
 		&signatures.Bootstrapper{},
 		&ethereum.Bootstrapper{},
+		&anchor.Bootstrapper{},
 		&identity.Bootstrapper{},
 		&queue.Bootstrapper{},
 	}

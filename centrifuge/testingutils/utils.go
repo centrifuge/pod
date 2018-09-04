@@ -85,3 +85,13 @@ func (srv *MockIDService) CheckIdentityExists(centID []byte) (exists bool, err e
 	args := srv.Called(centID)
 	return args.Bool(0), args.Error(1)
 }
+
+type MockSubscription struct {
+	ErrChan chan error
+}
+
+func (m *MockSubscription) Err() <-chan error {
+	return m.ErrChan
+}
+
+func (*MockSubscription) Unsubscribe() {}
