@@ -12,6 +12,7 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/signatures"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/version"
@@ -22,6 +23,7 @@ import (
 
 func TestMain(m *testing.M) {
 	cc.TestIntegrationBootstrap()
+	signatures.NewSigningService(signatures.SigningService{})
 	result := m.Run()
 	cc.TestIntegrationTearDown()
 	os.Exit(result)
@@ -74,7 +76,8 @@ func TestGetSignatureForDocument_fail_version_check(t *testing.T) {
 	assert.Nil(t, resp, "must be nil")
 }
 
-func TestGetSignatureForDocument_success(t *testing.T) {
+// TODO(ved): once keyinfo is done, add a successful test
+func TestGetSignatureForDocument_fail_signature(t *testing.T) {
 	client := &p2pMockClient{}
 	coreDoc := testingutils.GenerateCoreDocument()
 	ctx := context.Background()
@@ -86,12 +89,12 @@ func TestGetSignatureForDocument_success(t *testing.T) {
 	client.On("RequestDocumentSignature", ctx, mock.Anything, mock.Anything).Return(sigResp, nil).Once()
 	resp, err := getSignatureForDocument(ctx, *coreDoc, client)
 	client.AssertExpectations(t)
-	assert.NotNil(t, resp, "must not be nil")
-	assert.Equal(t, resp, sigResp, "must be equal")
-	assert.Nil(t, err, "must be nil")
+	assert.Nil(t, resp, "must be nil")
+	assert.Error(t, err, "must not be nil")
+	assert.Contains(t, err.Error(), "failed to validate signature")
 }
 
-func TestGetSignaturesForDocument_fail(t *testing.T) {
+func TestGetSignaturesForDocument_fail_identity(t *testing.T) {
 	err := GetSignaturesForDocument(nil, nil, nil)
 	assert.Error(t, err, "must not be nil")
 

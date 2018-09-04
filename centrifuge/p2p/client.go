@@ -86,6 +86,16 @@ func getSignatureForDocument(ctx context.Context, doc coredocumentpb.CoreDocumen
 		return nil, version.IncompatibleVersionError(resp.CentNodeVersion)
 	}
 
+	ss := signatures.GetSigningService()
+	valid, err := ss.ValidateSignature(resp.Signature, doc.SigningRoot)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to validate signature")
+	}
+
+	if !valid {
+		return nil, errors.New(code.AuthenticationFailed, "signature invalid")
+	}
+
 	return resp, nil
 }
 
@@ -111,16 +121,6 @@ func GetSignaturesForDocument(doc *coredocumentpb.CoreDocument, idService identi
 		resp, err := getSignatureForDocument(context.Background(), *doc, client)
 		if err != nil {
 			return errors.Wrap(err, "failed to get signature")
-		}
-
-		ss := signatures.GetSigningService()
-		valid, err := ss.ValidateSignature(resp.Signature, doc.SigningRoot)
-		if err != nil {
-			return errors.Wrap(err, "failed to validate signature")
-		}
-
-		if !valid {
-			return errors.New(code.AuthenticationFailed, "signature invalid")
 		}
 
 		doc.Signatures = append(doc.Signatures, resp.Signature)
