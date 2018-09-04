@@ -1,4 +1,4 @@
-package registry
+package anchor
 
 import (
 	"math/big"

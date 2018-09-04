@@ -1,4 +1,4 @@
-package registry
+package anchor
 
 type Anchor struct {
 	AnchorID      [32]byte

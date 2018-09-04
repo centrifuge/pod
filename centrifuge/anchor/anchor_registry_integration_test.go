@@ -1,6 +1,6 @@
 // +build ethereum
 
-package registry
+package anchor
 
 import (
 	"os"
