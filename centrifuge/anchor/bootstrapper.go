@@ -21,9 +21,7 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	if err != nil {
 		return err
 	}
-	return queue.InstallQueuedTask(context, func() queue.QueuedTask {
-		return createAnchoringConfirmationTask(anchorContract)
-	})
+	return queue.InstallQueuedTask(context, createAnchoringConfirmationTask(anchorContract))
 }
 
 func (b *Bootstrapper) TestBootstrap(context map[string]interface{}) error {
