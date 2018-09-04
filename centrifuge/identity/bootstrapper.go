@@ -21,15 +21,9 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	if err != nil {
 		return err
 	}
-	return queue.InstallQueuedTask(context, createIdRegistrationConfirmationTask(identityContract))
+	return queue.InstallQueuedTask(context, NewIdRegistrationConfirmationTask(&identityContract.EthereumIdentityFactoryContractFilterer, ethereum.DefaultWaitForTransactionMiningContext))
 }
 
 func (b *Bootstrapper) TestBootstrap(context map[string]interface{}) error {
 	return b.Bootstrap(context)
-}
-
-func createIdRegistrationConfirmationTask(identityContract *EthereumIdentityFactoryContract) queue.QueuedTask {
-	return NewIdRegistrationConfirmationTask(
-		&identityContract.EthereumIdentityFactoryContractFilterer,
-		ethereum.DefaultWaitForTransactionMiningContext)
 }

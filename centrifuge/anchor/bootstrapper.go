@@ -21,15 +21,9 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	if err != nil {
 		return err
 	}
-	return queue.InstallQueuedTask(context, createAnchoringConfirmationTask(anchorContract))
+	return queue.InstallQueuedTask(context, NewAnchoringConfirmationTask(&anchorContract.EthereumAnchorRegistryContractFilterer, ethereum.DefaultWaitForTransactionMiningContext))
 }
 
 func (b *Bootstrapper) TestBootstrap(context map[string]interface{}) error {
 	return b.Bootstrap(context)
-}
-
-func createAnchoringConfirmationTask(anchorContract *EthereumAnchorRegistryContract) queue.QueuedTask {
-	return NewAnchoringConfirmationTask(
-		&anchorContract.EthereumAnchorRegistryContractFilterer,
-		ethereum.DefaultWaitForTransactionMiningContext)
 }
