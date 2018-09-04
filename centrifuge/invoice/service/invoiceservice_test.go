@@ -193,15 +193,16 @@ func TestInvoiceDocumentService_Send_AnchorFails(t *testing.T) {
 
 func TestInvoiceDocumentService_HandleCreateInvoiceProof(t *testing.T) {
 	identifier := testingutils.Rand32Bytes()
-	inv := invoice.Empty()
-	inv.Document.CoreDocument = &coredocumentpb.CoreDocument{
+	invoiceDoc := &invoicepb.InvoiceDocument{CoreDocument: &coredocumentpb.CoreDocument{
 		DocumentIdentifier: identifier,
 		CurrentIdentifier:  identifier,
 		NextIdentifier:     testingutils.Rand32Bytes(),
-	}
+	}}
+	inv, err := invoice.New(invoiceDoc)
+	assert.Nil(t, err)
 	inv.CalculateMerkleRoot()
 
-	s, mockRepo, mockProcessor := generateMockedOutInvoiceService()
+	s, mockRepo, _ := generateMockedOutInvoiceService()
 
 	proofRequest := &clientinvoicepb.CreateInvoiceProofEnvelope{
 		DocumentIdentifier: identifier,
@@ -209,8 +210,6 @@ func TestInvoiceDocumentService_HandleCreateInvoiceProof(t *testing.T) {
 	}
 	mockRepo.On("GetByID", proofRequest.DocumentIdentifier, new(invoicepb.InvoiceDocument)).Return(nil).Once()
 	mockRepo.replaceDoc = inv.Document
-	// In this test we mock out the signing root generation and return empty hashes for the CoreDocumentProcessor.GetProofHashes
-	mockProcessor.On("GetDataProofHashes", inv.Document.CoreDocument).Return([][]byte{}, nil).Once()
 
 	invoiceProof, err := s.HandleCreateInvoiceProof(context.Background(), proofRequest)
 	mockRepo.AssertExpectations(t)
@@ -222,8 +221,7 @@ func TestInvoiceDocumentService_HandleCreateInvoiceProof(t *testing.T) {
 	sha256Hash := sha256.New()
 	fieldHash, err := proofs.CalculateHashForProofField(invoiceProof.FieldProofs[0], sha256Hash)
 
-	// This test does not test that the DataRoot is properly added to SigningRoot
-	valid, err := proofs.ValidateProofSortedHashes(fieldHash, invoiceProof.FieldProofs[0].SortedHashes, inv.Document.CoreDocument.DataRoot, sha256Hash)
+	valid, err := proofs.ValidateProofSortedHashes(fieldHash, invoiceProof.FieldProofs[0].SortedHashes, inv.Document.CoreDocument.SigningRoot, sha256Hash)
 	assert.True(t, valid)
 	assert.Nil(t, err)
 }

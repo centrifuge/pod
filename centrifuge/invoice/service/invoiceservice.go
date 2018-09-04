@@ -70,7 +70,7 @@ func (s *InvoiceDocumentService) HandleCreateInvoiceProof(ctx context.Context, c
 		return nil, err
 	}
 
-	proofs, err := inv.CreateProofs(s.CoreDocumentProcessor, createInvoiceProofEnvelope.Fields)
+	proofs, err := inv.CreateProofs(createInvoiceProofEnvelope.Fields)
 	if err != nil {
 		log.Error(err)
 		return nil, err

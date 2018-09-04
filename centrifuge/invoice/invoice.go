@@ -14,7 +14,6 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	logging "github.com/ipfs/go-log"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/processor"
 )
 
 var log = logging.Logger("invoice")
@@ -122,8 +121,8 @@ func (inv *Invoice) CalculateMerkleRoot() error {
 }
 
 // CreateProofs generates proofs for given fields
-func (inv *Invoice) CreateProofs(processor coredocumentprocessor.Processor, fields []string) (proofs []*proofspb.Proof, err error) {
-	dataRootHashes, err := processor.GetDataProofHashes(inv.Document.CoreDocument)
+func (inv *Invoice) CreateProofs(fields []string) (proofs []*proofspb.Proof, err error) {
+	dataRootHashes, err := coredocument.GetDataProofHashes(inv.Document.CoreDocument)
 	if err != nil {
 		log.Error(err)
 		return nil, err
