@@ -4,7 +4,14 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/code"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/signatures"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/version"
 	"github.com/libp2p/go-libp2p-peer"
 	pstore "github.com/libp2p/go-libp2p-peerstore"
 	ma "github.com/multiformats/go-multiaddr"
@@ -54,4 +61,70 @@ func OpenClient(target string) (p2ppb.P2PServiceClient, error) {
 		}
 	}
 	return p2ppb.NewP2PServiceClient(g), nil
+}
+
+// getSignatureForDocument requests the target node to sign the document
+func getSignatureForDocument(ctx context.Context, doc coredocumentpb.CoreDocument, client p2ppb.P2PServiceClient) (*p2ppb.SignatureResponse, error) {
+	header := p2ppb.CentrifugeHeader{
+		NetworkIdentifier:  config.Config.GetNetworkID(),
+		CentNodeVersion:    version.GetVersion().String(),
+		SenderCentrifugeId: config.Config.GetIdentityId(),
+	}
+
+	req := &p2ppb.SignatureRequest{
+		Header:   &header,
+		Document: &doc,
+	}
+
+	resp, err := client.RequestDocumentSignature(ctx, req)
+	if err != nil {
+		return nil, errors.Wrap(err, "request for document signature failed")
+	}
+
+	compatible := version.CheckVersion(resp.CentNodeVersion)
+	if !compatible {
+		return nil, version.IncompatibleVersionError(resp.CentNodeVersion)
+	}
+
+	return resp, nil
+}
+
+// GetSignaturesForDocument requests peer nodes for the signature and verifies them
+func GetSignaturesForDocument(doc *coredocumentpb.CoreDocument, idService identity.Service, centIDs [][]byte) error {
+	if doc == nil {
+		return errors.NilError(doc)
+	}
+
+	targets, err := identity.GetClientsP2PURLs(idService, centIDs)
+	if err != nil {
+		return errors.Wrap(err, "failed to get P2P urls")
+	}
+
+	for _, target := range targets {
+		client, err := OpenClient(target)
+		if err != nil {
+			return errors.Wrap(err, "failed to connect to target")
+		}
+
+		// for now going with context.background, once we have a timeout for request
+		// we can use context.Timeout for that
+		resp, err := getSignatureForDocument(context.Background(), *doc, client)
+		if err != nil {
+			return errors.Wrap(err, "failed to get signature")
+		}
+
+		ss := signatures.GetSigningService()
+		valid, err := ss.ValidateSignature(resp.Signature, doc.SigningRoot)
+		if err != nil {
+			return errors.Wrap(err, "failed to validate signature")
+		}
+
+		if !valid {
+			return errors.New(code.AuthenticationFailed, "signature invalid")
+		}
+
+		doc.Signatures = append(doc.Signatures, resp.Signature)
+	}
+
+	return nil
 }
