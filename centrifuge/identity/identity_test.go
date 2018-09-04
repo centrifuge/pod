@@ -3,12 +3,10 @@
 package identity
 
 import (
+	"fmt"
 	"math/big"
 	"testing"
 
-	"fmt"
-
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -69,10 +67,32 @@ func (i *mockID) CheckIdentityExists() (exists bool, err error) {
 	return args.Bool(0), args.Error(1)
 }
 
+// MockIDService implements Service
+type MockIDService struct {
+	mock.Mock
+}
+
+func (srv *MockIDService) LookupIdentityForID(centID []byte) (Identity, error) {
+	args := srv.Called(centID)
+	id, _ := args.Get(0).(Identity)
+	return id, args.Error(1)
+}
+
+func (srv *MockIDService) CreateIdentity(centID []byte) (Identity, chan *WatchIdentity, error) {
+	args := srv.Called(centID)
+	id, _ := args.Get(0).(Identity)
+	return id, args.Get(1).(chan *WatchIdentity), args.Error(2)
+}
+
+func (srv *MockIDService) CheckIdentityExists(centID []byte) (exists bool, err error) {
+	args := srv.Called(centID)
+	return args.Bool(0), args.Error(1)
+}
+
 func TestGetClientP2PURL_fail_service(t *testing.T) {
 	centID := tools.RandomSlice(CentIdByteLength)
-	srv := &testingutils.MockIDService{}
-	srv.On("LookupIdentityForId", centID).Return(nil, fmt.Errorf("failed service")).Once()
+	srv := &MockIDService{}
+	srv.On("LookupIdentityForID", centID).Return(nil, fmt.Errorf("failed service")).Once()
 	p2p, err := GetClientP2PURL(srv, centID)
 	srv.AssertExpectations(t)
 	assert.Empty(t, p2p, "p2p is not empty")
@@ -82,10 +102,10 @@ func TestGetClientP2PURL_fail_service(t *testing.T) {
 
 func TestGetClientP2PURL_fail_identity(t *testing.T) {
 	centID := tools.RandomSlice(CentIdByteLength)
-	srv := &testingutils.MockIDService{}
+	srv := &MockIDService{}
 	id := &mockID{}
 	id.On("GetCurrentP2PKey").Return("", fmt.Errorf("error identity")).Once()
-	srv.On("LookupIdentityForId", centID).Return(id, nil).Once()
+	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
 	p2p, err := GetClientP2PURL(srv, centID)
 	srv.AssertExpectations(t)
 	id.AssertExpectations(t)
@@ -96,10 +116,10 @@ func TestGetClientP2PURL_fail_identity(t *testing.T) {
 
 func TestGetClientP2PURL_Success(t *testing.T) {
 	centID := tools.RandomSlice(CentIdByteLength)
-	srv := &testingutils.MockIDService{}
+	srv := &MockIDService{}
 	id := &mockID{}
 	id.On("GetCurrentP2PKey").Return("target", nil).Once()
-	srv.On("LookupIdentityForId", centID).Return(id, nil).Once()
+	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
 	p2p, err := GetClientP2PURL(srv, centID)
 	srv.AssertExpectations(t)
 	id.AssertExpectations(t)
@@ -109,10 +129,10 @@ func TestGetClientP2PURL_Success(t *testing.T) {
 
 func TestGetClientsP2PURLs_fail(t *testing.T) {
 	centIDs := [][]byte{tools.RandomSlice(CentIdByteLength)}
-	srv := &testingutils.MockIDService{}
+	srv := &MockIDService{}
 	id := &mockID{}
 	id.On("GetCurrentP2PKey").Return("", fmt.Errorf("error identity")).Once()
-	srv.On("LookupIdentityForId", centIDs[0]).Return(id, nil).Once()
+	srv.On("LookupIdentityForID", centIDs[0]).Return(id, nil).Once()
 	p2pURLs, err := GetClientsP2PURLs(srv, centIDs)
 	srv.AssertExpectations(t)
 	id.AssertExpectations(t)
@@ -125,8 +145,8 @@ func TestGetClientsP2PURLs_success(t *testing.T) {
 	centIDs := [][]byte{tools.RandomSlice(CentIdByteLength)}
 	id := &mockID{}
 	id.On("GetCurrentP2PKey").Return("target", nil).Once()
-	srv := &testingutils.MockIDService{}
-	srv.On("LookupIdentityForId", centIDs[0]).Return(id, nil).Once()
+	srv := &MockIDService{}
+	srv.On("LookupIdentityForID", centIDs[0]).Return(id, nil).Once()
 	p2pURLs, err := GetClientsP2PURLs(srv, centIDs)
 	srv.AssertExpectations(t)
 	id.AssertExpectations(t)

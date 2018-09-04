@@ -382,7 +382,7 @@ func (ids *EthereumIdentityService) CreateIdentity(centrifugeId []byte) (id Iden
 	return id, confirmations, nil
 }
 
-func (ids *EthereumIdentityService) LookupIdentityForId(centrifugeId []byte) (Identity, error) {
+func (ids *EthereumIdentityService) LookupIdentityForID(centrifugeId []byte) (Identity, error) {
 	instanceId := NewEthereumIdentity()
 	err := instanceId.SetCentrifugeID(centrifugeId)
 	if err != nil {

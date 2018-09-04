@@ -37,7 +37,7 @@ type WatchIdentity struct {
 
 // Service is used to fetch identities
 type Service interface {
-	LookupIdentityForId(centrifugeId []byte) (id Identity, err error)
+	LookupIdentityForID(centrifugeId []byte) (id Identity, err error)
 	CreateIdentity(centrifugeId []byte) (id Identity, confirmations chan *WatchIdentity, err error)
 	CheckIdentityExists(centrifugeId []byte) (exists bool, err error)
 }
@@ -57,7 +57,7 @@ func CentrifugeIdStringToSlice(s string) (id []byte, err error) {
 
 // GetClientP2PURL returns the p2p url associated with the centID
 func GetClientP2PURL(idService Service, centID []byte) (url string, err error) {
-	target, err := idService.LookupIdentityForId(centID)
+	target, err := idService.LookupIdentityForID(centID)
 	if err != nil {
 		return url, errors.Wrap(err, "error fetching receiver identity")
 	}

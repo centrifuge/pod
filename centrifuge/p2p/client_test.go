@@ -11,10 +11,8 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/signatures"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/version"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -92,18 +90,4 @@ func TestGetSignatureForDocument_fail_signature(t *testing.T) {
 	assert.Nil(t, resp, "must be nil")
 	assert.Error(t, err, "must not be nil")
 	assert.Contains(t, err.Error(), "failed to validate signature")
-}
-
-func TestGetSignaturesForDocument_fail_identity(t *testing.T) {
-	err := GetSignaturesForDocument(nil, nil, nil)
-	assert.Error(t, err, "must not be nil")
-
-	coreDoc := testingutils.GenerateCoreDocument()
-	centIDs := [][]byte{tools.RandomSlice(identity.CentIdByteLength)}
-	srv := &testingutils.MockIDService{}
-	srv.On("LookupIdentityForId", centIDs[0]).Return(nil, fmt.Errorf("error"))
-	err = GetSignaturesForDocument(coreDoc, srv, centIDs)
-	srv.AssertExpectations(t)
-	assert.Error(t, err, "must not be nil")
-	assert.Contains(t, err.Error(), "failed to get P2P urls")
 }

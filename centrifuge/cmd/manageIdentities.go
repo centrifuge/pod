@@ -45,7 +45,7 @@ var addKeyCmd = &cobra.Command{
 		if err != nil {
 			panic(err)
 		}
-		id, err := identityService.LookupIdentityForId(centrifugeId)
+		id, err := identityService.LookupIdentityForID(centrifugeId)
 
 		if err != nil {
 			panic(err)

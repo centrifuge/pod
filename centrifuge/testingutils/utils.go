@@ -7,7 +7,6 @@ import (
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/stretchr/testify/mock"
@@ -61,29 +60,6 @@ func (m *MockCoreDocumentProcessor) Send(coreDocument *coredocumentpb.CoreDocume
 func (m *MockCoreDocumentProcessor) Anchor(coreDocument *coredocumentpb.CoreDocument) (err error) {
 	args := m.Called(coreDocument)
 	return args.Error(0)
-}
-
-// MockIDService implements Service
-type MockIDService struct {
-	mock.Mock
-}
-
-// LookUpIdentityForID returns a
-func (srv *MockIDService) LookupIdentityForId(centID []byte) (identity.Identity, error) {
-	args := srv.Called(centID)
-	id, _ := args.Get(0).(identity.Identity)
-	return id, args.Error(1)
-}
-
-func (srv *MockIDService) CreateIdentity(centID []byte) (identity.Identity, chan *identity.WatchIdentity, error) {
-	args := srv.Called(centID)
-	id, _ := args.Get(0).(identity.Identity)
-	return id, args.Get(1).(chan *identity.WatchIdentity), args.Error(2)
-}
-
-func (srv *MockIDService) CheckIdentityExists(centID []byte) (exists bool, err error) {
-	args := srv.Called(centID)
-	return args.Bool(0), args.Error(1)
 }
 
 type MockSubscription struct {

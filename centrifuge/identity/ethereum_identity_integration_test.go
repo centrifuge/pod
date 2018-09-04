@@ -46,12 +46,12 @@ func TestCreateAndLookupIdentity_Integration(t *testing.T) {
 	assert.Nil(t, watchRegisteredIdentity.Error, "No error thrown by context")
 	assert.Equal(t, centrifugeId, watchRegisteredIdentity.Identity.GetCentrifugeID(), "Resulting Identity should have the same ID as the input")
 
-	// LookupIdentityForId
-	id, err = identityService.LookupIdentityForId(centrifugeId)
+	// LookupIdentityForID
+	id, err = identityService.LookupIdentityForID(centrifugeId)
 	assert.Nil(t, err, "should not error out when resolving identity")
 	assert.Equal(t, centrifugeId, id.GetCentrifugeID(), "CentrifugeId Should match provided one")
 
-	wrongId, err := identityService.LookupIdentityForId(wrongCentrifugeId)
+	wrongId, err := identityService.LookupIdentityForID(wrongCentrifugeId)
 	assert.NotNil(t, err, "should error out when resolving wrong identity")
 
 	// CheckIdentityExists
@@ -98,7 +98,7 @@ func TestCreateAndLookupIdentity_Integration_Concurrent(t *testing.T) {
 
 	for ix := 0; ix < 5; ix++ {
 		watchSingleIdentity := <-identityConfirmations[ix]
-		id, err := identityService.LookupIdentityForId(watchSingleIdentity.Identity.GetCentrifugeID())
+		id, err := identityService.LookupIdentityForID(watchSingleIdentity.Identity.GetCentrifugeID())
 		assert.Nil(t, err, "should not error out upon identity resolution")
 		assert.Equal(t, centIds[ix], id.GetCentrifugeID(), "Should have the ID that was passed into create function [%v]", id.GetCentrifugeID())
 	}

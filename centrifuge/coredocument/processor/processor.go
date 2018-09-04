@@ -45,7 +45,7 @@ func (dp *defaultProcessor) Send(coreDocument *coredocumentpb.CoreDocument, ctx 
 		return errors.NilError(coreDocument)
 	}
 
-	id, err := dp.IdentityService.LookupIdentityForId(recipient)
+	id, err := dp.IdentityService.LookupIdentityForID(recipient)
 	if err != nil {
 		err = errors.Wrap(err, "error fetching receiver identity")
 		log.Error(err)
