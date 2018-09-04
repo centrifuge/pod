@@ -193,13 +193,16 @@ func TestInvoiceDocumentService_Send_AnchorFails(t *testing.T) {
 
 func TestInvoiceDocumentService_HandleCreateInvoiceProof(t *testing.T) {
 	identifier := testingutils.Rand32Bytes()
-	invoiceDoc := &invoicepb.InvoiceDocument{CoreDocument: &coredocumentpb.CoreDocument{
+	inv := invoice.Empty()
+	inv.Document.CoreDocument = &coredocumentpb.CoreDocument{
 		DocumentIdentifier: identifier,
 		CurrentIdentifier:  identifier,
 		NextIdentifier:     testingutils.Rand32Bytes(),
-	}}
-	inv, err := invoice.New(invoiceDoc)
-	assert.Nil(t, err)
+	}
+	cdSalts := &coredocumentpb.CoreDocumentSalts{}
+	proofs.FillSalts(inv.Document.CoreDocument, cdSalts)
+	inv.Document.CoreDocument.CoredocumentSalts = cdSalts
+
 	inv.CalculateMerkleRoot()
 
 	s, mockRepo, _ := generateMockedOutInvoiceService()
@@ -210,7 +213,6 @@ func TestInvoiceDocumentService_HandleCreateInvoiceProof(t *testing.T) {
 	}
 	mockRepo.On("GetByID", proofRequest.DocumentIdentifier, new(invoicepb.InvoiceDocument)).Return(nil).Once()
 	mockRepo.replaceDoc = inv.Document
-
 	invoiceProof, err := s.HandleCreateInvoiceProof(context.Background(), proofRequest)
 	mockRepo.AssertExpectations(t)
 
@@ -233,6 +235,7 @@ func TestInvoiceDocumentService_HandleCreateInvoiceProof_NotFilledSalts(t *testi
 		DocumentIdentifier: identifier,
 		CurrentIdentifier:  identifier,
 		NextIdentifier:     testingutils.Rand32Bytes(),
+		CoredocumentSalts:  &coredocumentpb.CoreDocumentSalts{},
 	}
 	inv.Document.Salts = &invoicepb.InvoiceDataSalts{}
 	s, mockRepo, mockProcessor := generateMockedOutInvoiceService()

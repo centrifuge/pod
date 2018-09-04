@@ -117,7 +117,8 @@ func (inv *Invoice) CalculateMerkleRoot() error {
 		return err
 	}
 	inv.Document.CoreDocument.DataRoot = tree.RootHash()
-	return nil
+	err = coredocument.CalculateSigningRoot(inv.Document.CoreDocument)
+	return err
 }
 
 // CreateProofs generates proofs for given fields
