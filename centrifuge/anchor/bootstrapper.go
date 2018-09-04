@@ -1,4 +1,4 @@
-package identity
+package anchor
 
 import (
 	"errors"
@@ -11,18 +11,18 @@ import (
 type Bootstrapper struct {
 }
 
-// Bootstrap initializes the IdentityFactoryContract as well as the IdRegistrationConfirmationTask that depends on it.
-// the IdRegistrationConfirmationTask is added to be registered on the Queue at queue.Bootstrapper
+// Bootstrap initializes the AnchorRegistryContract as well as the AnchoringConfirmationTask that depends on it.
+// the AnchoringConfirmationTask is added to be registered on the Queue at queue.Bootstrapper
 func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	if _, ok := context[bootstrapper.BootstrappedConfig]; !ok {
 		return errors.New("config hasn't been initialized")
 	}
-	identityContract, err := getIdentityFactoryContract()
+	anchorContract, err := getAnchorContract()
 	if err != nil {
 		return err
 	}
 	return queue.InstallQueuedTask(context, func() queue.QueuedTask {
-		return createIdRegistrationConfirmationTask(identityContract)
+		return createAnchoringConfirmationTask(anchorContract)
 	})
 }
 
@@ -30,8 +30,8 @@ func (b *Bootstrapper) TestBootstrap(context map[string]interface{}) error {
 	return b.Bootstrap(context)
 }
 
-func createIdRegistrationConfirmationTask(identityContract *EthereumIdentityFactoryContract) queue.QueuedTask {
-	return NewIdRegistrationConfirmationTask(
-		&identityContract.EthereumIdentityFactoryContractFilterer,
+func createAnchoringConfirmationTask(anchorContract *EthereumAnchorRegistryContract) queue.QueuedTask {
+	return NewAnchoringConfirmationTask(
+		&anchorContract.EthereumAnchorRegistryContractFilterer,
 		ethereum.DefaultWaitForTransactionMiningContext)
 }
