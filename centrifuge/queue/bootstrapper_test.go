@@ -19,33 +19,21 @@ func (MockQueuedTask) Init() error {
 }
 
 func TestInstallQueuedTaskCreatingNewListOfTasks(t *testing.T) {
-	called := false
-	err := InstallQueuedTask(map[string]interface{}{}, func() QueuedTask {
-		called = true
-		return nil
-	})
+	context := map[string]interface{}{}
+	err := InstallQueuedTask(context, MockQueuedTask{})
 	assert.Nil(t, err, "Installation of tasks should be successful")
-	assert.True(t, called, "task creation callback should have been executed")
+	assert.Equal(t, 1, len(context[BootstrappedQueuedTasks].([]QueuedTask)))
 }
 
 func TestInstallQueuedTaskappendingToListOfTasks(t *testing.T) {
-	called := false
 	queuedTasks := []QueuedTask{MockQueuedTask{}}
 	context := map[string]interface{}{BootstrappedQueuedTasks: queuedTasks}
-	err := InstallQueuedTask(context, func() QueuedTask {
-		called = true
-		return nil
-	})
+	err := InstallQueuedTask(context, MockQueuedTask{})
 	assert.Nil(t, err, "Installation of tasks should be successful")
-	assert.True(t, called, "task creation callback should have been executed")
 	assert.Equal(t, 2, len(context[BootstrappedQueuedTasks].([]QueuedTask)))
 }
 
 func TestInstallQueuedTaskQueuedTasksListHasInvalidType(t *testing.T) {
-	called := false
-	err := InstallQueuedTask(map[string]interface{}{BootstrappedQueuedTasks: 1}, func() QueuedTask {
-		called = true
-		return nil
-	})
+	err := InstallQueuedTask(map[string]interface{}{BootstrappedQueuedTasks: 1}, MockQueuedTask{})
 	assert.NotNil(t, err, "Installation of tasks should NOT be successful")
 }

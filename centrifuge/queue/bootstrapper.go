@@ -22,18 +22,18 @@ func (b *Bootstrapper) TestBootstrap(context map[string]interface{}) error {
 	return b.Bootstrap(context)
 }
 
-func InstallQueuedTask(context map[string]interface{}, taskCreator func() QueuedTask) error {
-	// the following code will add a queued task to the context so that when the queue initializes it can update it self
-	// with different tasks types queued in the node
+// InstallQueuedTask adds a queued task to the context so that when the queue initializes it can update it self
+// with different tasks types queued in the node
+func InstallQueuedTask(context map[string]interface{}, queuedTask QueuedTask) error {
 	if queuedTasks, ok := context[BootstrappedQueuedTasks]; ok {
 		if queuedTasksTyped, ok := queuedTasks.([]QueuedTask); ok {
-			context[BootstrappedQueuedTasks] = append(queuedTasksTyped, taskCreator())
+			context[BootstrappedQueuedTasks] = append(queuedTasksTyped, queuedTask)
 			return nil
 		} else {
 			return errors.New(BootstrappedQueuedTasks + " is of an unexpected type")
 		}
 	} else {
-		context[BootstrappedQueuedTasks] = []QueuedTask{taskCreator()}
+		context[BootstrappedQueuedTasks] = []QueuedTask{queuedTask}
 		return nil
 	}
 }
