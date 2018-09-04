@@ -1,7 +1,6 @@
 package signatures
 
-type Bootstrapper struct {
-}
+type Bootstrapper struct{}
 
 func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	NewSigningService(SigningService{})

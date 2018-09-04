@@ -30,7 +30,7 @@ type Processor interface {
 
 // defaultProcessor implements Processor interface
 type defaultProcessor struct {
-	IdentityService identity.IdentityService
+	IdentityService identity.Service
 }
 
 // DefaultProcessor returns the default implementation of CoreDocument Processor
@@ -61,9 +61,12 @@ func (dp *defaultProcessor) Send(coreDocument *coredocumentpb.CoreDocument, ctx 
 
 	log.Infof("Sending Document to CentID [%v] with Key [%v]\n", recipient, lastB58Key)
 	clientWithProtocol := fmt.Sprintf("/ipfs/%s", lastB58Key)
-	client := p2p.OpenClient(clientWithProtocol)
-	log.Infof("Done opening connection against [%s]\n", lastB58Key)
+	client, err := p2p.OpenClient(clientWithProtocol)
+	if err != nil {
+		return fmt.Errorf("failed to open client: %v", err)
+	}
 
+	log.Infof("Done opening connection against [%s]\n", lastB58Key)
 	hostInstance := p2p.GetHost()
 	bSenderId, err := hostInstance.ID().ExtractPublicKey().Bytes()
 	if err != nil {

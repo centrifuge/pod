@@ -3,6 +3,7 @@ package grpcservice
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"testing"
 
@@ -15,9 +16,11 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/notification"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/version"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"google.golang.org/grpc"
 )
 
 func TestMain(m *testing.M) {
@@ -29,20 +32,7 @@ func TestMain(m *testing.M) {
 	os.Exit(result)
 }
 
-var coreDoc = &coredocumentpb.CoreDocument{
-	DocumentRoot:       tools.RandomSlice(32),
-	DocumentIdentifier: tools.RandomSlice(32),
-	CurrentIdentifier:  tools.RandomSlice(32),
-	NextIdentifier:     tools.RandomSlice(32),
-	DataRoot:           tools.RandomSlice(32),
-	CoredocumentSalts: &coredocumentpb.CoreDocumentSalts{
-		DocumentIdentifier: tools.RandomSlice(32),
-		CurrentIdentifier:  tools.RandomSlice(32),
-		NextIdentifier:     tools.RandomSlice(32),
-		DataRoot:           tools.RandomSlice(32),
-		PreviousRoot:       tools.RandomSlice(32),
-	},
-}
+var coreDoc = testingutils.GenerateCoreDocument()
 
 func TestP2PService(t *testing.T) {
 	req := p2ppb.P2PMessage{Document: coreDoc, CentNodeVersion: version.GetVersion().String(), NetworkIdentifier: config.Config.GetNetworkID()}
@@ -92,4 +82,61 @@ type MockWebhookSender struct{}
 
 func (wh *MockWebhookSender) Send(notification *notificationpb.NotificationMessage) (status notification.NotificationStatus, err error) {
 	return
+}
+
+// p2pMockClient implements p2ppb.P2PServiceClient
+type p2pMockClient struct {
+	mock.Mock
+}
+
+func (p2p *p2pMockClient) Post(ctx context.Context, in *p2ppb.P2PMessage, opts ...grpc.CallOption) (*p2ppb.P2PReply, error) {
+	args := p2p.Called(ctx, in, opts)
+	resp, _ := args.Get(0).(*p2ppb.P2PReply)
+	return resp, args.Error(1)
+}
+
+func (p2p *p2pMockClient) RequestDocumentSignature(ctx context.Context, in *p2ppb.SignatureRequest, opts ...grpc.CallOption) (*p2ppb.SignatureResponse, error) {
+	args := p2p.Called(ctx, in, opts)
+	resp, _ := args.Get(0).(*p2ppb.SignatureResponse)
+	return resp, args.Error(1)
+}
+
+func (p2p *p2pMockClient) SendAnchoredDocument(ctx context.Context, in *p2ppb.AnchDocumentRequest, opts ...grpc.CallOption) (*p2ppb.AnchDocumentResponse, error) {
+	args := p2p.Called(ctx, in, opts)
+	resp, _ := args.Get(0).(*p2ppb.AnchDocumentResponse)
+	return resp, args.Error(1)
+}
+
+func TestGetSignatureForDocument_fail(t *testing.T) {
+	client := &p2pMockClient{}
+	coreDoc := testingutils.GenerateCoreDocument()
+	req := newSignatureReq(coreDoc)
+	ctx := context.Background()
+	client.On("RequestDocumentSignature", ctx, req).Return(nil, fmt.Errorf("signature failed")).Once()
+	resp, err := getSignatureForDocument(ctx, req, client)
+	client.AssertExpectations(t)
+	assert.Error(t, err, "must fail")
+	assert.Nil(t, resp, "must be nil")
+}
+
+func TestGetSignatureForDocument_success(t *testing.T) {
+	client := &p2pMockClient{}
+	coreDoc := testingutils.GenerateCoreDocument()
+	req := newSignatureReq(coreDoc)
+	ctx := context.Background()
+	sigResp := p2ppb.SignatureResponse{
+		CentNodeVersion: "someversion",
+		Signature:       &coredocumentpb.Signature{},
+	}
+	client.On("RequestDocumentSignature", ctx, req).Return(&sigResp, nil).Once()
+	resp, err := getSignatureForDocument(ctx, req, client)
+	client.AssertExpectations(t)
+	assert.NotNil(t, resp, "must not be nil")
+	assert.Equal(t, resp, sigResp, "must be equal")
+	assert.Nil(t, err, "must be nil")
+}
+
+// TODO
+func TestGetSignaturesForDocument_fail(t *testing.T) {
+
 }

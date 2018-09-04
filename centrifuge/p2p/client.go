@@ -13,21 +13,21 @@ import (
 )
 
 // Opens a client connection with libp2p
-func OpenClient(target string) p2ppb.P2PServiceClient {
+func OpenClient(target string) (p2ppb.P2PServiceClient, error) {
 	log.Info("Opening connection to: %s", target)
 	ipfsAddr, err := ma.NewMultiaddr(target)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	pid, err := ipfsAddr.ValueForProtocol(ma.P_IPFS)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	peerID, err := peer.IDB58Decode(pid)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	// Decapsulate the /ipfs/<peerID> part from the target
@@ -45,7 +45,7 @@ func OpenClient(target string) p2ppb.P2PServiceClient {
 	// make a new stream from host B to host A
 	g, err := grpcProtoInstance.Dial(context.Background(), peerID, grpc.WithInsecure())
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	for {
@@ -53,5 +53,5 @@ func OpenClient(target string) p2ppb.P2PServiceClient {
 			break
 		}
 	}
-	return p2ppb.NewP2PServiceClient(g)
+	return p2ppb.NewP2PServiceClient(g), nil
 }
