@@ -99,6 +99,19 @@ func getSignatureForDocument(ctx context.Context, doc coredocumentpb.CoreDocumen
 	return resp, nil
 }
 
+type signatureResponseWrap struct {
+	resp *p2ppb.SignatureResponse
+	err  error
+}
+
+func getSignatureAsync(ctx context.Context, doc coredocumentpb.CoreDocument, client p2ppb.P2PServiceClient, out chan<- signatureResponseWrap) {
+	resp, err := getSignatureForDocument(ctx, doc, client)
+	out <- signatureResponseWrap{
+		resp: resp,
+		err:  err,
+	}
+}
+
 // GetSignaturesForDocument requests peer nodes for the signature and verifies them
 func GetSignaturesForDocument(doc *coredocumentpb.CoreDocument, idService identity.Service, centIDs [][]byte) error {
 	if doc == nil {
@@ -110,6 +123,9 @@ func GetSignaturesForDocument(doc *coredocumentpb.CoreDocument, idService identi
 		return errors.Wrap(err, "failed to get P2P urls")
 	}
 
+	in := make(chan signatureResponseWrap)
+	defer close(in)
+
 	for _, target := range targets {
 		client, err := OpenClient(target)
 		if err != nil {
@@ -118,12 +134,20 @@ func GetSignaturesForDocument(doc *coredocumentpb.CoreDocument, idService identi
 
 		// for now going with context.background, once we have a timeout for request
 		// we can use context.Timeout for that
-		resp, err := getSignatureForDocument(context.Background(), *doc, client)
-		if err != nil {
-			return errors.Wrap(err, "failed to get signature")
+		go getSignatureAsync(context.Background(), *doc, client, in)
+	}
+
+	var responses []signatureResponseWrap
+	for range targets {
+		responses = append(responses, <-in)
+	}
+
+	for _, resp := range responses {
+		if resp.err != nil {
+			return err
 		}
 
-		doc.Signatures = append(doc.Signatures, resp.Signature)
+		doc.Signatures = append(doc.Signatures, resp.resp.Signature)
 	}
 
 	return nil
