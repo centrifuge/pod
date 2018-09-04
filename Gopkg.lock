@@ -12,7 +12,7 @@
     "gen/go/p2p",
     "gen/go/purchaseorder"
   ]
-  revision = "32e51c3a94b73ee1191f601f25c0bf58ca486116"
+  revision = "a74fc9bce50769089c335874c28de959665dee86"
   source = "git@github.com:CentrifugeInc/centrifuge-protobufs"
 
 [[projects]]
@@ -55,7 +55,7 @@
     "proofs",
     "proofs/proto"
   ]
-  revision = "f8ef5392db436f8678e972810bf919c0406d1b83"
+  revision = "15bc79ad1aca6630e6489e253aef6955686b36a1"
 
 [[projects]]
   name = "github.com/coreos/go-semver"
@@ -132,12 +132,6 @@
   packages = ["."]
   revision = "0ca9ea5df5451ffdf184b4428c902747c2c11cd7"
   version = "v1.0.0"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/go-bongo/go-dotaccess"
-  packages = ["."]
-  revision = "ae070a2d2a38fd7233e255ded21fb26fe36b4796"
 
 [[projects]]
   name = "github.com/go-errors/errors"
@@ -686,12 +680,6 @@
   revision = "1bc5dd803d20cf91d8ec905ac3580e3ea3c8c995"
 
 [[projects]]
-  name = "github.com/oleiade/reflections"
-  packages = ["."]
-  revision = "2b6ec3da648e3e834dc41bad8d9ed7f2dc6a9496"
-  version = "v1.0.0"
-
-[[projects]]
   name = "github.com/opentracing/opentracing-go"
   packages = [
     ".",
@@ -1060,6 +1048,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "8c874d747b7a885b6bb1522f49c27d1f830e7445578bef0f36902471dfb14f7b"
+  inputs-digest = "b3e9b595084899a6e7ec4736e693390ee15cca518263cc561d713dc7b9c38f62"
   solver-name = "gps-cdcl"
   solver-version = 1
