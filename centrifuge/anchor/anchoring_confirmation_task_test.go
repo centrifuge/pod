@@ -97,8 +97,8 @@ func TestAnchoringConfirmationTask_RunTaskContextClose(t *testing.T) {
 	anchorId := [32]byte{1, 2, 3}
 	address := common.BytesToAddress([]byte{1, 2, 3, 4})
 	act := AnchoringConfirmationTask{
-		AnchorId: anchorId,
-		From:     address,
+		AnchorId:                anchorId,
+		From:                    address,
 		AnchorRegisteredWatcher: &MockAnchorRegisteredWatcher{Subscription: &testingutils.MockSubscription{}},
 		EthContext:              ctx,
 		AnchorRegisteredEvents:  earcar,
@@ -122,8 +122,8 @@ func TestAnchoringConfirmationTask_RunTaskWatchError(t *testing.T) {
 	anchorId := [32]byte{1, 2, 3}
 	address := common.BytesToAddress([]byte{1, 2, 3, 4})
 	act := AnchoringConfirmationTask{
-		AnchorId: anchorId,
-		From:     address,
+		AnchorId:                anchorId,
+		From:                    address,
 		AnchorRegisteredWatcher: &MockAnchorRegisteredWatcher{shouldFail: true},
 		EthContext:              ctx,
 		AnchorRegisteredEvents:  earcar,
@@ -147,8 +147,8 @@ func TestAnchoringConfirmationTask_RunTaskSubscriptionError(t *testing.T) {
 	errChan := make(chan error)
 	watcher := &MockAnchorRegisteredWatcher{Subscription: &testingutils.MockSubscription{ErrChan: errChan}}
 	act := AnchoringConfirmationTask{
-		AnchorId: anchorId,
-		From:     address,
+		AnchorId:                anchorId,
+		From:                    address,
 		AnchorRegisteredWatcher: watcher,
 		EthContext:              ctx,
 		AnchorRegisteredEvents:  earcar,
@@ -171,8 +171,8 @@ func TestAnchoringConfirmationTask_RunTaskSuccess(t *testing.T) {
 	anchorId := [32]byte{1, 2, 3}
 	address := common.BytesToAddress([]byte{1, 2, 3, 4})
 	act := AnchoringConfirmationTask{
-		AnchorId: anchorId,
-		From:     address,
+		AnchorId:                anchorId,
+		From:                    address,
 		AnchorRegisteredWatcher: &MockAnchorRegisteredWatcher{Subscription: &testingutils.MockSubscription{}},
 		EthContext:              ctx,
 		AnchorRegisteredEvents:  earcar,

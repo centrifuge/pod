@@ -228,7 +228,7 @@ func getRepositoryContract() (repositoryContract *EthereumAnchorRepositoryContra
 	client := ethereum.GetConnection()
 
 	// TODO add parameter anchorRepository to config
-	repositoryContract, err = NewEthereumAnchorRepositoryContract(config.Config.GetContractAddress("anchorRegistry"), client.GetClient())
+	repositoryContract, err = NewEthereumAnchorRepositoryContract(config.Config.GetContractAddress("anchorRepository"), client.GetClient())
 	if err != nil {
 		log.Fatalf("Failed to instantiate the anchor repository contract: %v", err)
 	}

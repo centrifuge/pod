@@ -1,11 +1,12 @@
 // +build ethereum
 
-package anchor
+package anchor_test
 
 import (
 	"os"
 	"testing"
 
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/anchor"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/stretchr/testify/assert"
@@ -21,7 +22,7 @@ func TestMain(m *testing.M) {
 func TestRegisterAsAnchor_Integration(t *testing.T) {
 	id := tools.RandomByte32()
 	rootHash := tools.RandomByte32()
-	confirmations, err := RegisterAsAnchor(id, rootHash)
+	confirmations, err := anchor.RegisterAsAnchor(id, rootHash)
 	if err != nil {
 		t.Fatalf("Error registering Anchor %v", err)
 	}
@@ -35,14 +36,14 @@ func TestRegisterAsAnchor_Integration(t *testing.T) {
 func TestRegisterAsAnchor_Integration_Concurrent(t *testing.T) {
 	var submittedIds [5][32]byte
 	var submittedRhs [5][32]byte
-	var anchorsConfirmations [5]<-chan *WatchAnchor
+	var anchorsConfirmations [5]<-chan *anchor.WatchAnchor
 	var err error
 	for ix := 0; ix < 5; ix++ {
 		id := tools.RandomByte32()
 		rootHash := tools.RandomByte32()
 		submittedIds[ix] = id
 		submittedRhs[ix] = rootHash
-		anchorsConfirmations[ix], err = RegisterAsAnchor(id, rootHash)
+		anchorsConfirmations[ix], err = anchor.RegisterAsAnchor(id, rootHash)
 		assert.Nil(t, err, "should not error out upon anchor registration")
 	}
 	for ix := 0; ix < 5; ix++ {
