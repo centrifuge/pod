@@ -44,7 +44,8 @@ func TestGetDataProofHashes(t *testing.T) {
 	assert.True(t, valid)
 	assert.Nil(t, err)
 }
-func TestGetDocumentTree(t *testing.T) {
+
+func TestGetDocumentSigningTree(t *testing.T) {
 	cd := coredocumentpb.CoreDocument{DocumentIdentifier: tools.RandomSlice(32)}
 	cd, _ = FillIdentifiers(cd)
 	cds := &coredocumentpb.CoreDocumentSalts{}
@@ -53,6 +54,19 @@ func TestGetDocumentTree(t *testing.T) {
 	tree, err := GetDocumentSigningTree(&cd)
 	assert.Nil(t, err)
 	assert.NotNil(t, tree)
+}
+
+func TestGetDocumentRootTree(t *testing.T) {
+	cd := &coredocumentpb.CoreDocument{SigningRoot: tools.RandomSlice(32)}
+	tree, err := GetDocumentRootTree(cd)
+	assert.Nil(t, err)
+	fmt.Println(tree.RootHash(), cd.SigningRoot)
+	fmt.Println(tree.PropertyOrder())
+	p, err := tree.CreateProof("signatures.length")
+	fmt.Println(p.SortedHashes)
+	// FAIL: why does below tree have the same root hash as signing root?
+	assert.Equal(t, tree.RootHash(), cd.SigningRoot)
+	assert.False(t, true)
 }
 
 func TestValidate(t *testing.T) {

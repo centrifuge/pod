@@ -42,6 +42,45 @@ func CalculateSigningRoot(document *coredocumentpb.CoreDocument) error {
 	return nil
 }
 
+// GetDocumentRootTree returns the merkle tree for the document root
+func GetDocumentRootTree(document *coredocumentpb.CoreDocument) (tree *proofs.DocumentTree, err error) {
+	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: sha256.New()})
+	tree = &t
+
+	// The first leave added is the signing_root
+	err = tree.AddLeaf(proofs.LeafNode{Hash: document.SigningRoot, Hashed: true, Property: "signing_root"})
+	if err != nil {
+		return nil, err
+	}
+	// For every signature we create a LeafNode
+	// TODO: we should modify this to use the proper message flattener once precise proofs is modified to support it
+	sigLeafList := make([]proofs.LeafNode, len(document.Signatures)+1)
+	sigLeafList[0] = proofs.LeafNode{
+		Property: "signatures.length",
+		Salt:     make([]byte, 32),
+		Value:    fmt.Sprintf("%d", len(document.Signatures)),
+	}
+	for i, sig := range document.Signatures {
+		payload := sha256.Sum256(append(sig.EntityId, append(sig.PublicKey, sig.Signature...)...))
+		leaf := proofs.LeafNode{
+			Hash:     payload[:],
+			Hashed:   true,
+			Property: fmt.Sprintf("signatures[%d]", i),
+		}
+		sigLeafList[i+1] = leaf
+	}
+	err = tree.AddLeaves(sigLeafList)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println(sigLeafList)
+	err = tree.Generate()
+	if err != nil {
+		return nil, err
+	}
+	return tree, nil
+}
+
 // GetDocumentSigningTree returns the merkle tree for the signing root
 func GetDocumentSigningTree(document *coredocumentpb.CoreDocument) (tree *proofs.DocumentTree, err error) {
 	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: sha256.New()})
