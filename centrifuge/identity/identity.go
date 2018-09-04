@@ -4,6 +4,8 @@ import (
 	"encoding/base64"
 	"fmt"
 	"math/big"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
+	centrifugeED25519 "github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
 )
 
 const (
@@ -26,6 +28,13 @@ type Identity interface {
 	GetLastKeyForPurpose(keyPurpose int) (key []byte, err error)
 	AddKeyToIdentity(keyPurpose int, key []byte) (confirmations chan *WatchIdentity, err error)
 	CheckIdentityExists() (exists bool, err error)
+	FetchKey() (IdentityKey, error)
+}
+
+type IdentityKey interface {
+	GetKey() [32]byte
+	GetPurposes() []*big.Int
+	GetRevokedAt() *big.Int
 }
 
 type WatchIdentity struct {
@@ -51,4 +60,14 @@ func CentrifugeIdStringToSlice(s string) (id []byte, err error) {
 		return []byte{}, fmt.Errorf("CentrifugeId has invalid length [%d]", len(id))
 	}
 	return id, nil
+}
+
+func NewIdentityConfig() (identityConfig *config.IdentityConfig) {
+	pk,pvk := centrifugeED25519.GetSigningKeyPairFromConfig()
+	identityConfig = &config.IdentityConfig{
+		IdentityId: config.Config.GetIdentityId(),
+		PublicKey: pk,
+		PrivateKey: pvk,
+	}
+	return
 }

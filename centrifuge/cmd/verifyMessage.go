@@ -6,6 +6,7 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/utils"
 	"github.com/spf13/cobra"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/io"
 )
 
 func init() {
@@ -23,8 +24,12 @@ func init() {
 		Long:  ``,
 		Run: func(cmd *cobra.Command, args []string) {
 			signatureBytes := utils.HexToByteArray(signatureParam)
+			publicKey, err := io.ReadKeyFromPemFile(publicKeyFileParam, keytools.PublicKey)
 
-			correct := keytools.VerifyMessage(publicKeyFileParam, messageParam, signatureBytes, curveTypeParam, ethereumSignFlag)
+			if err != nil {
+				log.Fatal(err)
+			}
+			correct := keytools.VerifyMessage(publicKey, []byte(messageParam), signatureBytes, curveTypeParam, ethereumSignFlag)
 			fmt.Println(correct)
 		},
 	}

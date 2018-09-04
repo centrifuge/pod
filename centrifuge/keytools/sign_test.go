@@ -16,12 +16,16 @@ func TestSignMessage(t *testing.T) {
 
 	publicKeyFile := "publicKey"
 	privateKeyFile := "privateKey"
-	testMsg := "test"
+	testMsg := []byte("test")
 
 	GenerateSigningKeyPair(publicKeyFile, privateKeyFile, CurveSecp256K1)
-	signature := SignMessage(privateKeyFile, "test", CurveSecp256K1, false)
-
-	correct := VerifyMessage(publicKeyFile, testMsg, signature, CurveSecp256K1, false)
+	privateKey, err := io.ReadKeyFromPemFile(privateKeyFile, PrivateKey)
+	assert.Nil(t, err)
+	publicKey, err := io.ReadKeyFromPemFile(publicKeyFile, PublicKey)
+	assert.Nil(t, err)
+	signature, err := SignMessage(privateKey, testMsg, CurveSecp256K1, false)
+	assert.Nil(t, err)
+	correct := VerifyMessage(publicKey, testMsg, signature, CurveSecp256K1, false)
 
 	os.Remove(publicKeyFile)
 	os.Remove(privateKeyFile)
@@ -34,25 +38,27 @@ func TestSignAndVerifyMessageEthereum(t *testing.T) {
 
 	publicKeyFile := "publicKey"
 	privateKeyFile := "privateKey"
-	testMsg := "Centrifuge likes Ethereum"
+	testMsg := []byte("Centrifuge likes Ethereum")
 
 	GenerateSigningKeyPair(publicKeyFile, privateKeyFile, CurveSecp256K1)
-	signature := SignMessage(privateKeyFile, testMsg, CurveSecp256K1, true)
+	privateKey, err := io.ReadKeyFromPemFile(privateKeyFile, PrivateKey)
+	assert.Nil(t, err)
+	signature, err := SignMessage(privateKey, testMsg, CurveSecp256K1, true)
+	assert.Nil(t, err)
 
-	privateKey, _ := io.ReadKeyFromPemFile(privateKeyFile, PrivateKey)
 	publicKey, _ := io.ReadKeyFromPemFile(publicKeyFile, PublicKey)
 	address := secp256k1.GetAddress(publicKey)
 
 	fmt.Println("privateKey: ", utils.ByteArrayToHex(privateKey))
 	fmt.Println("publicKey: ", utils.ByteArrayToHex(publicKey))
 	fmt.Println("address:", address)
-	fmt.Println("msg:", testMsg)
-	fmt.Println("msg in hex:", utils.ByteArrayToHex([]byte(testMsg)))
-	fmt.Println("hash of msg: ", utils.ByteArrayToHex(secp256k1.SignHash([]byte(testMsg))))
+	fmt.Println("msg:", string(testMsg[:]))
+	fmt.Println("msg in hex:", utils.ByteArrayToHex(testMsg))
+	fmt.Println("hash of msg: ", utils.ByteArrayToHex(secp256k1.SignHash(testMsg)))
 	fmt.Println("signature:", utils.ByteArrayToHex(signature))
 	fmt.Println("Generated Signature can also be verified at https://etherscan.io/verifySig")
 
-	correct := VerifyMessage(publicKeyFile, testMsg, signature, CurveSecp256K1, true)
+	correct := VerifyMessage(publicKey, testMsg, signature, CurveSecp256K1, true)
 
 	os.Remove(publicKeyFile)
 	os.Remove(privateKeyFile)

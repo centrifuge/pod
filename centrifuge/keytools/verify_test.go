@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/io"
 )
 
 func TestVerifyMessageED25519(t *testing.T) {
@@ -14,8 +15,10 @@ func TestVerifyMessageED25519(t *testing.T) {
 	testMsg := "test"
 
 	GenerateSigningKeyPair(publicKeyFile, privateKeyFile, CurveEd25519)
-	signature := SignMessage(privateKeyFile, testMsg, CurveEd25519, false)
-
+	privateKey, err := io.ReadKeyFromPemFile(privateKeyFile, PrivateKey)
+	assert.Nil(t, err)
+	signature, err := SignMessage(privateKey, []byte(testMsg), CurveEd25519, false)
+	assert.NotNil(t, err)
 	os.Remove(publicKeyFile)
 	os.Remove(privateKeyFile)
 

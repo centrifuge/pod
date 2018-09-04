@@ -34,6 +34,12 @@ type AccountConfig struct {
 	Password string
 }
 
+type IdentityConfig struct {
+	IdentityId []byte
+	PublicKey  []byte
+	PrivateKey []byte
+}
+
 // Storage backend
 func (c *Configuration) GetStoragePath() string {
 	return c.V.GetString("storage.Path")

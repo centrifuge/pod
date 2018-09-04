@@ -5,12 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"sync"
-	"time"
-
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
-	centrifugeED25519 "github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
 	"golang.org/x/crypto/ed25519"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
+	"math/big"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 )
 
 var signingService SigningService
@@ -28,22 +27,13 @@ func NewSigningService(srv SigningService) {
 }
 
 type KeyInfo struct {
-	PublicKey  ed25519.PublicKey
-	ValidFrom  time.Time
-	ValidUntil time.Time
-	Identity   []byte
+	Key []byte
+	Purposes  []int
+	RevokedAt *big.Int
 }
 
 type SigningService struct {
-	// For simplicity we only support one active identity for now.
-	IdentityId []byte
-	PublicKey  ed25519.PublicKey
-	PrivateKey ed25519.PrivateKey
-}
-
-func (srv *SigningService) LoadIdentityKeyFromConfig() {
-	srv.IdentityId = config.Config.GetIdentityId()
-	srv.PublicKey, srv.PrivateKey = centrifugeED25519.GetSigningKeyPairFromConfig()
+	IdentityService identity.IdentityService
 }
 
 // ValidateSignaturesOnDocument validates all signatures on the current document
@@ -53,7 +43,7 @@ func (srv *SigningService) ValidateSignaturesOnDocument(doc *coredocumentpb.Core
 }
 
 func (srv *SigningService) ValidateSignature(signature *coredocumentpb.Signature, message []byte) (valid bool, err error) {
-	valid, err = srv.ValidateKey(signature.EntityId, signature.PublicKey, time.Now())
+	valid, err = srv.ValidateKey(signature.EntityId, signature.PublicKey)
 	if err != nil {
 		return
 	}
@@ -71,33 +61,42 @@ func (srv *SigningService) GetIDFromKey(key ed25519.PublicKey) (id [32]byte) {
 	return
 }
 
-func (srv *SigningService) GetKeyInfo(key ed25519.PublicKey) (keyInfo KeyInfo, err error) {
-	exists := false
-	// TODO: Get Key Info not yet implemented
-	if !exists {
-		return keyInfo, errors.New("key not found")
+func (srv *SigningService) GetIdentityKey(identity []byte, key ed25519.PublicKey) (keyInfo identity.IdentityKey, err error) {
+	identityInstance, err := srv.IdentityService.LookupIdentityForId(identity)
+	if err != nil {
+		return keyInfo, err
 	}
-	return
+
+	keyInstance, err := identityInstance.FetchKey()
+	if err != nil {
+		return keyInfo, err
+	}
+
+	if len(keyInstance.GetKey()) == 0 {
+		return keyInfo, errors.New(fmt.Sprintf("key not found for identity: %x", identity))
+	}
+
+	return keyInstance, nil
 }
 
-// ValidateKey checks if a given key is valid for the given timestamp.
-func (srv *SigningService) ValidateKey(identity []byte, key ed25519.PublicKey, timestamp time.Time) (valid bool, err error) {
-	keyInfo, err := srv.GetKeyInfo(key)
-
+// ValidateKey checks if a given key is valid for the given centrifugeId.
+func (srv *SigningService) ValidateKey(centrifugeId []byte, key ed25519.PublicKey) (valid bool, err error) {
+	identityKey, err := srv.GetIdentityKey(centrifugeId, key)
 	if err != nil {
 		return false, err
 	}
 
-	if !bytes.Equal(identity, keyInfo.Identity) {
-		return false, errors.New(fmt.Sprintf("[Key: %s] Key Identity doesn't match", srv.GetIDFromKey(keyInfo.PublicKey)))
+	if !bytes.Equal(key, tools.Byte32ToSlice(identityKey.GetKey())) {
+		return false, errors.New(fmt.Sprintf("[Key: %x] Key doesn't match", identityKey.GetKey()))
 	}
 
-	if !keyInfo.ValidFrom.IsZero() && timestamp.Unix() < keyInfo.ValidFrom.Unix() {
-		return false, errors.New(fmt.Sprintf("[Key: %s] Signature timestamp is before key was added", srv.GetIDFromKey(keyInfo.PublicKey)))
+	if !tools.ContainsBigIntInSlice(big.NewInt(identity.KeyPurposeSigning), identityKey.GetPurposes()) {
+		return false, errors.New(fmt.Sprintf("[Key: %x] Key doesn't have purpose [%d]", identityKey.GetKey(), identity.KeyPurposeSigning))
 	}
 
-	if !keyInfo.ValidUntil.IsZero() && timestamp.Unix() > keyInfo.ValidUntil.Unix() {
-		return false, errors.New(fmt.Sprintf("[Key: %s] Signature timestamp is past key revocation", srv.GetIDFromKey(keyInfo.PublicKey)))
+	// TODO Check if revokation block happened before the timeframe of the document signing, for historical validations
+	if identityKey.GetRevokedAt().Cmp(big.NewInt(0)) != 0 {
+		return false, errors.New(fmt.Sprintf("[Key: %x] Key is currently revoked since block [%d]", identityKey.GetKey(), identityKey.GetRevokedAt()))
 	}
 
 	return true, nil
@@ -110,7 +109,8 @@ func (srv *SigningService) MakeSignature(doc *coredocumentpb.CoreDocument, ident
 
 // Sign a document with a provided public key
 func (srv *SigningService) Sign(doc *coredocumentpb.CoreDocument) (err error) {
-	sig := srv.MakeSignature(doc, srv.IdentityId, srv.PrivateKey, srv.PublicKey)
+	identityConfig := identity.NewIdentityConfig()
+	sig := srv.MakeSignature(doc, identityConfig.IdentityId, identityConfig.PrivateKey, identityConfig.PublicKey)
 	doc.Signatures = append(doc.Signatures, sig)
 	return nil
 }
