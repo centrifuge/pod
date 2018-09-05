@@ -3,14 +3,15 @@
 package coredocument
 
 import (
+	"crypto/sha256"
 	"fmt"
-	"reflect"
-	"testing"
-
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/stretchr/testify/assert"
+	"reflect"
+	"testing"
 )
 
 var (
@@ -20,6 +21,53 @@ var (
 	id4 = tools.RandomSlice(32)
 	id5 = tools.RandomSlice(32)
 )
+
+func TestGetDataProofHashes(t *testing.T) {
+	cd := coredocumentpb.CoreDocument{
+		DataRoot: tools.RandomSlice(32),
+	}
+	cd, err := FillIdentifiers(cd)
+	assert.Nil(t, err)
+	cds := &coredocumentpb.CoreDocumentSalts{}
+	proofs.FillSalts(&cd, cds)
+
+	cd.CoredocumentSalts = cds
+
+	err = CalculateSigningRoot(&cd)
+	assert.Nil(t, err)
+
+	hashes, err := GetDataProofHashes(&cd)
+	assert.Nil(t, err)
+	assert.Equal(t, 3, len(hashes))
+
+	valid, err := proofs.ValidateProofSortedHashes(cd.DataRoot, hashes, cd.SigningRoot, sha256.New())
+	assert.True(t, valid)
+	assert.Nil(t, err)
+}
+
+func TestGetDocumentSigningTree(t *testing.T) {
+	cd := coredocumentpb.CoreDocument{DocumentIdentifier: tools.RandomSlice(32)}
+	cd, _ = FillIdentifiers(cd)
+	cds := &coredocumentpb.CoreDocumentSalts{}
+	proofs.FillSalts(&cd, cds)
+	cd.CoredocumentSalts = cds
+	tree, err := GetDocumentSigningTree(&cd)
+	assert.Nil(t, err)
+	assert.NotNil(t, tree)
+}
+
+func TestGetDocumentRootTree(t *testing.T) {
+	cd := &coredocumentpb.CoreDocument{SigningRoot: tools.RandomSlice(32)}
+	tree, err := GetDocumentRootTree(cd)
+	assert.Nil(t, err)
+	fmt.Println(tree.RootHash(), cd.SigningRoot)
+	fmt.Println(tree.PropertyOrder())
+	p, err := tree.CreateProof("signatures.length")
+	fmt.Println(p.SortedHashes)
+	// FAIL: why does below tree have the same root hash as signing root?
+	assert.Equal(t, tree.RootHash(), cd.SigningRoot)
+	assert.False(t, true)
+}
 
 func TestValidate(t *testing.T) {
 	type want struct {
