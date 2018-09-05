@@ -7,12 +7,14 @@ import (
 	"os"
 	"testing"
 
+	"fmt"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/anchor/repository"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/secp256k1"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/utils"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -40,8 +42,8 @@ func createIdentityWithKeys(t *testing.T) []byte {
 	assert.Nil(t, watchRegisteredIdentity.Error, "No error thrown by context")
 	assert.Equal(t, centrifugeId, watchRegisteredIdentity.Identity.GetCentrifugeId(), "Resulting Identity should have the same ID as the input")
 
-	testAddress = "0xd77c534aed04d7ce34cd425073a033db4fbe6a9d"
-	testPrivateKey = "0xb5fffc3933d93dc956772c69b42c4bc66123631a24e3465956d80b5b604a2d13"
+	testAddress = "0xc8dd3d66e112fae5c88fe6a677be24013e53c33e"
+	testPrivateKey = "0x17e063fa17dd8274b09c14b253697d9a20afff74ace3c04fdb1b9c814ce0ada5"
 
 	confirmations, err = id.AddKeyToIdentity(2, utils.HexToByteArray(testAddress))
 
@@ -49,7 +51,7 @@ func createIdentityWithKeys(t *testing.T) []byte {
 
 }
 
-/*
+
 func TestMessageConcatSign(t *testing.T){
 	anchorId := tools.RandomSlice(32)
 	documentRoot := tools.RandomSlice(32)
@@ -59,7 +61,6 @@ func TestMessageConcatSign(t *testing.T){
 	fmt.Println(utils.ByteArrayToHex(documentRoot))
 	fmt.Println(utils.ByteArrayToHex(centrifugeId))
 
-
 	var message []byte
 
 	message = append(anchorId, documentRoot...)
@@ -68,30 +69,69 @@ func TestMessageConcatSign(t *testing.T){
 
 	fmt.Println(utils.ByteArrayToHex(message))
 
+}
+
+func TestCorrectCommitSignatureGen(t *testing.T){
+
+	// hardcoded values are generated with centrifuge-ethereum-contracts
+	anchorId := "0x154cc26833dec2f4ad7ead9d65f9ec968a1aa5efbf6fe762f8f2a67d18a2d9b1"
+	documentRoot := "0x65a35574f70281ae4d1f6c9f3adccd5378743f858c67a802a49a08ce185bc975"
+	centrifugeId := "0x1851943e76d2"
+
+	correctCommitToSign := "0x15f9cb57608a7ef31428fd6b1cb7ea2002ab032211d882b920c1474334004d6b"
+	correctCommitSignature := "0xb4051d6d03c3bf39f4ec4ba949a91a358b0cacb4804b82ed2ba978d338f5e747770c00b63c8e50c1a7aa5ba629870b54c2068a56f8b43460aa47891c6635d36d01"
+
+	testPrivateKey := "0x17e063fa17dd8274b09c14b253697d9a20afff74ace3c04fdb1b9c814ce0ada5"
+
+	anchorIdByte := utils.HexToByteArray(anchorId)
+	documentRootByte := utils.HexToByteArray(documentRoot)
+	centrifugeIdByte := utils.HexToByteArray(centrifugeId)
+
+	messageToSign := generateCommitHash(anchorIdByte,centrifugeIdByte,documentRootByte)
+
+	assert.Equal(t,correctCommitToSign,utils.ByteArrayToHex(messageToSign),"messageToSign not calculated correctly")
+
+	signature := secp256k1.SignEthereum(messageToSign, utils.HexToByteArray(testPrivateKey))
+
+	assert.Equal(t,correctCommitSignature,utils.ByteArrayToHex(signature),"signature not correct")
 
 }
-*/
+
+func generateCommitHash(anchorIdByte []byte,centrifugeIdByte []byte,documentRootByte []byte) ([]byte) {
+
+	message := append(anchorIdByte, documentRootByte...)
+
+	message = append(message, centrifugeIdByte...)
+
+	messageToSign := crypto.Keccak256(message)
+	return messageToSign
+}
+
 
 func TestCommitAnchor_Integration(t *testing.T) {
-	anchorId := tools.RandomSlice(32)
-	documentRoot := tools.RandomSlice(32)
+
+
 	documentProof := tools.RandomByte32()
-	signature := tools.RandomSlice(65)
+
+	anchorId := utils.HexToByteArray("0x154cc26833dec2f4ad7ead9d65f9ec968a1aa5efbf6fe762f8f2a67d18a2d9b1")
+	documentRoot := utils.HexToByteArray("0x65a35574f70281ae4d1f6c9f3adccd5378743f858c67a802a49a08ce185bc975")
+	centrifugeId := utils.HexToByteArray("0x1851943e76d2")
+
+	correctCommitSignature := "0xb4051d6d03c3bf39f4ec4ba949a91a358b0cacb4804b82ed2ba978d338f5e747770c00b63c8e50c1a7aa5ba629870b54c2068a56f8b43460aa47891c6635d36d01"
+
+	testPrivateKey := "0x17e063fa17dd8274b09c14b253697d9a20afff74ace3c04fdb1b9c814ce0ada5"
 
 	var documentProofs [][32]byte
 
 	documentProofs = append(documentProofs, documentProof)
 
-	centrifugeId := createIdentityWithKeys(t)
+	messageToSign := generateCommitHash(anchorId,centrifugeId,documentRoot)
 
-	var message []byte
+	signature := secp256k1.SignEthereum(messageToSign, utils.HexToByteArray(testPrivateKey))
 
-	message = append(anchorId, documentRoot...)
+	assert.Equal(t,correctCommitSignature,utils.ByteArrayToHex(signature),"signature not correct")
 
-	message = append(message, centrifugeId...)
-
-	signature = secp256k1.SignEthereum(message, utils.HexToByteArray(testPrivateKey))
-
+	// Big endian encoding is need for ethereum
 	var anchorIdBigInt big.Int
 	anchorIdBigInt.SetBytes(anchorId)
 
