@@ -1,4 +1,4 @@
-// +build ethereum
+// +build ethereumt
 
 package repository_test
 
@@ -7,7 +7,6 @@ import (
 	"os"
 	"testing"
 
-	"fmt"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/anchor/repository"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
@@ -48,26 +47,6 @@ func createIdentityWithKeys(t *testing.T) []byte {
 	confirmations, err = id.AddKeyToIdentity(2, utils.HexToByteArray(testAddress))
 
 	return centrifugeId
-
-}
-
-
-func TestMessageConcatSign(t *testing.T){
-	anchorId := tools.RandomSlice(32)
-	documentRoot := tools.RandomSlice(32)
-	centrifugeId := tools.RandomSlice(32)
-
-	fmt.Println(utils.ByteArrayToHex(anchorId))
-	fmt.Println(utils.ByteArrayToHex(documentRoot))
-	fmt.Println(utils.ByteArrayToHex(centrifugeId))
-
-	var message []byte
-
-	message = append(anchorId, documentRoot...)
-
-	message = append(message, centrifugeId...)
-
-	fmt.Println(utils.ByteArrayToHex(message))
 
 }
 

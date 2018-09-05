@@ -22,14 +22,20 @@ type AnchorRepositoryContract interface {
 	PreCommit(opts *bind.TransactOpts, anchorId *big.Int, signingRoot [32]byte, centrifugeId *big.Int, signature []byte, expirationBlock *big.Int) (*types.Transaction, error)
 	Commit(opts *bind.TransactOpts, _anchorId *big.Int, _documentRoot [32]byte, _centrifugeId *big.Int, _documentProofs [][32]byte, _signature []byte) (*types.Transaction, error)
 
+}
+type WatchAnchorPreCommitted interface {
 	//event name: AnchorPreCommitted
 	WatchAnchorPreCommitted(opts *bind.WatchOpts, sink chan<- *EthereumAnchorRepositoryContractAnchorPreCommitted,
 		from []common.Address, anchorId []*big.Int) (event.Subscription, error)
+}
 
+type WatchAnchorCommitted interface {
 	//event name: AnchorCommitted
 	WatchAnchorCommitted(opts *bind.WatchOpts, sink chan<- *EthereumAnchorRepositoryContractAnchorCommitted,
 		from []common.Address, anchorId []*big.Int, centrifugeId []*big.Int) (event.Subscription, error)
 }
+
+
 
 //PreCommitAnchor will call the transaction PreCommit on the smart contract
 func (ethRepository *EthereumAnchorRepository) PreCommitAnchor(anchorId *big.Int, signingRoot [32]byte, centrifugeId *big.Int, signature []byte, expirationBlock *big.Int) (confirmations <-chan *WatchPreCommit, err error) {
@@ -144,7 +150,7 @@ func generateEventContext() (*bind.WatchOpts, context.CancelFunc) {
 
 // setUpPreCommitEventListener sets up the listened for the "PreCommit" event to notify the upstream code
 // about successful mining/creation of a pre-commit.
-func setUpPreCommitEventListener(contract AnchorRepositoryContract, from common.Address, preCommitData *PreCommitData) (confirmations chan *WatchPreCommit, err error) {
+func setUpPreCommitEventListener(contractEvent WatchAnchorPreCommitted, from common.Address, preCommitData *PreCommitData) (confirmations chan *WatchPreCommit, err error) {
 
 	watchOpts, cancelFunc := generateEventContext()
 
@@ -157,7 +163,7 @@ func setUpPreCommitEventListener(contract AnchorRepositoryContract, from common.
 	//TODO do something with the returned Subscription that is currently simply discarded
 	// Somehow there are some possible resource leakage situations with this handling but I have to understand
 	// Subscriptions a bit better before writing this code.
-	_, err = contract.WatchAnchorPreCommitted(watchOpts, anchorPreCommittedEvents, []common.Address{from}, []*big.Int{preCommitData.anchorId})
+	_, err = contractEvent.WatchAnchorPreCommitted(watchOpts, anchorPreCommittedEvents, []common.Address{from}, []*big.Int{preCommitData.anchorId})
 	if err != nil {
 		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for anchor registration", 1)
 		log.Errorf("Failed to watch anchor registered event: %v", wError.Error())
@@ -169,7 +175,7 @@ func setUpPreCommitEventListener(contract AnchorRepositoryContract, from common.
 
 // setUpCommitEventListener sets up the listened for the "AnchorCommitted" event to notify the upstream code
 // about successful mining/creation of a commit
-func setUpCommitEventListener(contract AnchorRepositoryContract, from common.Address, commitData *CommitData) (confirmations chan *WatchCommit, err error) {
+func setUpCommitEventListener(contractEvent WatchAnchorCommitted, from common.Address, commitData *CommitData) (confirmations chan *WatchCommit, err error) {
 
 	watchOpts, cancelFunc := generateEventContext()
 
@@ -182,7 +188,7 @@ func setUpCommitEventListener(contract AnchorRepositoryContract, from common.Add
 	//TODO do something with the returned Subscription that is currently simply discarded
 	// Somehow there are some possible resource leakage situations with this handling but I have to understand
 	// Subscriptions a bit better before writing this code.
-	_, err = contract.WatchAnchorCommitted(watchOpts, anchorCommittedEvents, []common.Address{from}, []*big.Int{commitData.anchorId}, []*big.Int{commitData.centrifugeId})
+	_, err = contractEvent.WatchAnchorCommitted(watchOpts, anchorCommittedEvents, []common.Address{from}, []*big.Int{commitData.anchorId}, []*big.Int{commitData.centrifugeId})
 	if err != nil {
 		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for anchor registration", 1)
 		log.Errorf("Failed to watch anchor registered event: %v", wError.Error())
