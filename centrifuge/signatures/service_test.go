@@ -3,18 +3,23 @@
 package signatures
 
 import (
+	"encoding/base64"
 	"fmt"
+	"math/big"
 	"os"
 	"testing"
-	testing2 "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
+
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
-	"golang.org/x/crypto/ed25519"
-	"math/big"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
+	testing2 "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
-	"github.com/stretchr/testify/assert"
-	"encoding/base64"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/io"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/go-errors/errors"
+	"github.com/stretchr/testify/assert"
+	"golang.org/x/crypto/ed25519"
 )
 
 var (
@@ -25,13 +30,14 @@ var (
 	id1                                = []byte{1, 1, 1, 1, 1, 1}
 	id2                                = []byte{2, 2, 2, 2, 2, 2}
 	id3                                = []byte{3, 3, 3, 3, 3, 3}
-	testCase													 = 0
+	testCase                           = 0
 )
 
 // Mock IdentityService
 type EthereumIdentityMocked struct {
 	CentrifugeId []byte
 }
+
 func (id *EthereumIdentityMocked) String() string {
 	return fmt.Sprintf("CentrifugeId [%s]", id.CentrifugeIdString())
 }
@@ -69,14 +75,15 @@ func (id *EthereumIdentityMocked) GetLastKeyForPurpose(keyPurpose int) (key []by
 func (id *EthereumIdentityMocked) AddKeyToIdentity(keyPurpose int, key []byte) (confirmations chan *identity.WatchIdentity, err error) {
 	return nil, nil
 }
-func (id *EthereumIdentityMocked)CheckIdentityExists() (exists bool, err error) {
+func (id *EthereumIdentityMocked) CheckIdentityExists() (exists bool, err error) {
 	return true, nil
 }
-func (id *EthereumIdentityMocked) FetchKey() (identity.IdentityKey, error) {
+func (id *EthereumIdentityMocked) FetchKey(key []byte) (identity.IdentityKey, error) {
 	return testKeys[testCase], nil
 }
 
-type EthereumIdentityMockedService struct {}
+type EthereumIdentityMockedService struct{}
+
 func (ids *EthereumIdentityMockedService) CheckIdentityExists(centrifugeId []byte) (exists bool, err error) {
 	return true, nil
 }
@@ -88,6 +95,7 @@ func (ids *EthereumIdentityMockedService) LookupIdentityForId(centrifugeId []byt
 func (ids *EthereumIdentityMockedService) CreateIdentity(centrifugeId []byte) (id identity.Identity, confirmations chan *identity.WatchIdentity, err error) {
 	return
 }
+
 //
 
 func TestMain(m *testing.M) {
@@ -104,9 +112,9 @@ func TestMain(m *testing.M) {
 	key4 = []byte{122, 14, 67, 51, 130, 66, 68, 193, 100, 229, 106, 56, 134, 179, 142, 245, 213, 199, 100, 108, 18, 156, 27, 10, 143, 156, 250, 85, 253, 123, 12, 255}
 	key4Pub = []byte{142, 110, 173, 1, 3, 27, 149, 34, 232, 120, 203, 249, 23, 246, 46, 66, 9, 136, 96, 204, 31, 123, 166, 133, 36, 102, 58, 27, 26, 252, 239, 116, 122, 14, 67, 51, 130, 66, 68, 193, 100, 229, 106, 56, 134, 179, 142, 245, 213, 199, 100, 108, 18, 156, 27, 10, 143, 156, 250, 85, 253, 123, 12, 255}
 
-	b32k1Pub ,_ := tools.SliceToByte32(key1Pub)
-	b32k2Pub ,_ := tools.SliceToByte32(key2Pub)
-	b32k3Pub ,_ := tools.SliceToByte32(key3Pub)
+	b32k1Pub, _ := tools.SliceToByte32(key1Pub)
+	b32k2Pub, _ := tools.SliceToByte32(key2Pub)
+	b32k3Pub, _ := tools.SliceToByte32(key3Pub)
 
 	// Valid key
 	testKeys = []*identity.EthereumIdentityKey{
@@ -146,9 +154,9 @@ func TestDocumentSignatures(t *testing.T) {
 
 	sig := testSigningService.MakeSignature(doc, id1, key1, key1Pub)
 	assert.Equal(t, sig.Signature, []byte{0x4e, 0x3d, 0x90, 0x5f, 0x25, 0xc7, 0x90, 0x63, 0x7e, 0x6c, 0xd0, 0xe6, 0xc7, 0xbd, 0xe6,
-	0x81, 0x3b, 0xd0, 0x5b, 0x94, 0x76, 0x86, 0x4e, 0xcb, 0xb9, 0x36, 0x48, 0x44, 0x4b, 0x98, 0xd2, 0x4b, 0x6a, 0x65, 0x22, 0x92,
-	0x1c, 0x8a, 0xdb, 0xfe, 0xb7, 0x6f, 0xfe, 0x34, 0x52, 0xa3, 0x49, 0xe4, 0xda, 0xdc, 0x5d, 0x1b, 0x0, 0x79, 0x54, 0x60, 0x29,
-	0x22, 0x94, 0xb, 0x3c, 0x90, 0x3c, 0x3})
+		0x81, 0x3b, 0xd0, 0x5b, 0x94, 0x76, 0x86, 0x4e, 0xcb, 0xb9, 0x36, 0x48, 0x44, 0x4b, 0x98, 0xd2, 0x4b, 0x6a, 0x65, 0x22, 0x92,
+		0x1c, 0x8a, 0xdb, 0xfe, 0xb7, 0x6f, 0xfe, 0x34, 0x52, 0xa3, 0x49, 0xe4, 0xda, 0xdc, 0x5d, 0x1b, 0x0, 0x79, 0x54, 0x60, 0x29,
+		0x22, 0x94, 0xb, 0x3c, 0x90, 0x3c, 0x3})
 
 	valid, err := testSigningService.ValidateSignature(sig, doc.SigningRoot)
 	assert.Nil(t, err)
@@ -158,9 +166,9 @@ func TestDocumentSignatures(t *testing.T) {
 
 	sig = testSigningService.MakeSignature(doc, id1, key2, key2Pub)
 	assert.Equal(t, sig.Signature, []byte{0x20, 0x66, 0xb0, 0x94, 0xf8, 0xce, 0x6, 0x85, 0xe0, 0xa9, 0x21, 0xe1, 0xd6, 0xde,
-	0xd2, 0xd9, 0x3d, 0x42, 0x3e, 0x70, 0x92, 0x7, 0xa6, 0xa9, 0xdf, 0x68, 0xa, 0x9f, 0x7e, 0x6d, 0xf0, 0x3d, 0x1d, 0x1a, 0x3,
-	0xc, 0xe4, 0x32, 0x8c, 0x9b, 0xbe, 0x31, 0xba, 0x67, 0xca, 0xa1, 0xba, 0xc9, 0x9b, 0x29, 0x68, 0xdb, 0x5e, 0x56, 0xa6, 0xd3,
-	0x6e, 0x35, 0xfa, 0xe1, 0x19, 0xc2, 0x45, 0x4})
+		0xd2, 0xd9, 0x3d, 0x42, 0x3e, 0x70, 0x92, 0x7, 0xa6, 0xa9, 0xdf, 0x68, 0xa, 0x9f, 0x7e, 0x6d, 0xf0, 0x3d, 0x1d, 0x1a, 0x3,
+		0xc, 0xe4, 0x32, 0x8c, 0x9b, 0xbe, 0x31, 0xba, 0x67, 0xca, 0xa1, 0xba, 0xc9, 0x9b, 0x29, 0x68, 0xdb, 0x5e, 0x56, 0xa6, 0xd3,
+		0x6e, 0x35, 0xfa, 0xe1, 0x19, 0xc2, 0x45, 0x4})
 
 	valid, err = testSigningService.ValidateSignature(sig, doc.SigningRoot)
 	assert.NotNil(t, err)
@@ -170,31 +178,41 @@ func TestDocumentSignatures(t *testing.T) {
 
 	sig = testSigningService.MakeSignature(doc, id1, key3, key3Pub)
 	assert.Equal(t, sig.Signature, []byte{0x1d, 0x1a, 0xb9, 0xf2, 0xf2, 0x25, 0x89, 0x66, 0xb, 0xf8, 0x79, 0xc8, 0x31, 0x93,
-	0xc3, 0x57, 0x8, 0xaa, 0x2a, 0x53, 0x42, 0x2, 0xe5, 0x51, 0xcc, 0xb6, 0x5e, 0xf, 0x12, 0xb7, 0xe6, 0x18, 0x7f, 0x3e, 0xfb,
-	0x23, 0xdb, 0x13, 0xc8, 0xd7, 0x73, 0x8f, 0x65, 0x71, 0x87, 0xe7, 0x4e, 0x10, 0x50, 0x80, 0xf1, 0x17, 0x55, 0xb7, 0xd4, 0xeb,
-	0x0, 0x3d, 0x90, 0xd7, 0x9c, 0x1b, 0xfc, 0x5})
+		0xc3, 0x57, 0x8, 0xaa, 0x2a, 0x53, 0x42, 0x2, 0xe5, 0x51, 0xcc, 0xb6, 0x5e, 0xf, 0x12, 0xb7, 0xe6, 0x18, 0x7f, 0x3e, 0xfb,
+		0x23, 0xdb, 0x13, 0xc8, 0xd7, 0x73, 0x8f, 0x65, 0x71, 0x87, 0xe7, 0x4e, 0x10, 0x50, 0x80, 0xf1, 0x17, 0x55, 0xb7, 0xd4, 0xeb,
+		0x0, 0x3d, 0x90, 0xd7, 0x9c, 0x1b, 0xfc, 0x5})
 
 	valid, err = testSigningService.ValidateSignature(sig, doc.SigningRoot)
 	assert.NotNil(t, err)
 	assert.EqualError(t, err, "[Key: 9926d2b90378d0399fb2afb8fd7cbc48e4f5426207017cf4315c4b3b93ba2591] Key doesn't have purpose [2]")
 
+	testCase = 0
 }
 
-//func TestDocumentSigning(t *testing.T) {
-//	dataRoot := testingutils.Rand32Bytes()
-//	documentIdentifier := testingutils.Rand32Bytes()
-//	nextIdentifier := testingutils.Rand32Bytes()
-//
-//	doc := &coredocumentpb.CoreDocument{
-//		DataRoot:           dataRoot,
-//		DocumentIdentifier: documentIdentifier,
-//		NextIdentifier:     nextIdentifier,
-//	}
-//
-//	testSigningService.Sign(doc)
-//	valid, err := testSigningService.ValidateSignaturesOnDocument(doc)
-//	if !valid || err != nil {
-//		// t.Fatal("Signature validation failed")
-//		fmt.Println("TEST IGNORED") // TODO
-//	}
-//}
+func TestDocumentSigning(t *testing.T) {
+	dataRoot := testingutils.Rand32Bytes()
+	documentIdentifier := testingutils.Rand32Bytes()
+	nextIdentifier := testingutils.Rand32Bytes()
+
+	doc := &coredocumentpb.CoreDocument{
+		DataRoot:           dataRoot,
+		DocumentIdentifier: documentIdentifier,
+		NextIdentifier:     nextIdentifier,
+		SigningRoot:        key1Pub,
+	}
+	publicFileName := "publicKey"
+	privateFileName := "privateKey"
+	io.WriteKeyToPemFile(privateFileName, keytools.PrivateKey, key1)
+	io.WriteKeyToPemFile(publicFileName, keytools.PublicKey, key1Pub)
+
+	config.Config.V.Set("keys.signing.publicKey", publicFileName)
+	config.Config.V.Set("keys.signing.privateKey", privateFileName)
+
+	testSigningService.Sign(doc)
+	valid, err := testSigningService.ValidateSignaturesOnDocument(doc)
+	assert.Nil(t, err)
+	assert.True(t, valid)
+
+	os.Remove(publicFileName)
+	os.Remove(privateFileName)
+}

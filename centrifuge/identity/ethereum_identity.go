@@ -34,7 +34,7 @@ type IdentityContract interface {
 }
 
 type EthereumIdentityKey struct {
-	Key [32]byte
+	Key       [32]byte
 	Purposes  []*big.Int
 	RevokedAt *big.Int
 }
@@ -116,22 +116,22 @@ func (id *EthereumIdentity) GetLastKeyForPurpose(keyPurpose int) (key []byte, er
 	return id.cachedKeys[keyPurpose][len(id.cachedKeys[keyPurpose])-1].Key[:32], nil
 }
 
-func (id *EthereumIdentity) FetchKey() (IdentityKey, error) {
+func (id *EthereumIdentity) FetchKey(key []byte) (IdentityKey, error) {
 	contract, err := id.getContract()
 	if err != nil {
 		return nil, err
 	}
 	opts := ethereum.GetGethCallOpts()
-	key32, _ := tools.SliceToByte32(id.GetCentrifugeId())
-	key, err := contract.GetKey(opts, key32)
+	key32, _ := tools.SliceToByte32(key)
+	keyInstance, err := contract.GetKey(opts, key32)
 	if err != nil {
 		return nil, err
 	}
 
 	return &EthereumIdentityKey{
-		Key: key.Key,
-		Purposes: key.Purposes,
-		RevokedAt: key.RevokedAt,
+		Key:       keyInstance.Key,
+		Purposes:  keyInstance.Purposes,
+		RevokedAt: keyInstance.RevokedAt,
 	}, nil
 
 }

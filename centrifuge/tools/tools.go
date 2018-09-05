@@ -6,7 +6,7 @@ import (
 	"math/big"
 )
 
-func ContainsBigIntInSlice(value *big.Int, list []*big.Int) (bool) {
+func ContainsBigIntInSlice(value *big.Int, list []*big.Int) bool {
 	for _, v := range list {
 		if v.Cmp(value) == 0 {
 			return true

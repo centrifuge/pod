@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/io"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/utils"
 	"github.com/spf13/cobra"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/io"
 )
 
 func init() {

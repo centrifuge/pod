@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"sync"
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
-	"golang.org/x/crypto/ed25519"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
 	"math/big"
+	"sync"
+
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
+	"golang.org/x/crypto/ed25519"
 )
 
 var signingService SigningService
@@ -27,7 +28,7 @@ func NewSigningService(srv SigningService) {
 }
 
 type KeyInfo struct {
-	Key []byte
+	Key       []byte
 	Purposes  []int
 	RevokedAt *big.Int
 }
@@ -38,8 +39,13 @@ type SigningService struct {
 
 // ValidateSignaturesOnDocument validates all signatures on the current document
 func (srv *SigningService) ValidateSignaturesOnDocument(doc *coredocumentpb.CoreDocument) (valid bool, err error) {
-	// TODO: Signature Validation not yet implemented
-	return false, nil
+	for _, sig := range doc.Signatures {
+		valid, err := srv.ValidateSignature(sig, doc.SigningRoot)
+		if err != nil || !valid {
+			return false, err
+		}
+	}
+	return true, nil
 }
 
 func (srv *SigningService) ValidateSignature(signature *coredocumentpb.Signature, message []byte) (valid bool, err error) {
@@ -67,12 +73,12 @@ func (srv *SigningService) GetIdentityKey(identity []byte, key ed25519.PublicKey
 		return keyInfo, err
 	}
 
-	keyInstance, err := identityInstance.FetchKey()
+	keyInstance, err := identityInstance.FetchKey(key)
 	if err != nil {
 		return keyInfo, err
 	}
 
-	if len(keyInstance.GetKey()) == 0 {
+	if tools.IsEmptyByte32(keyInstance.GetKey()) {
 		return keyInfo, errors.New(fmt.Sprintf("key not found for identity: %x", identity))
 	}
 
@@ -109,7 +115,10 @@ func (srv *SigningService) MakeSignature(doc *coredocumentpb.CoreDocument, ident
 
 // Sign a document with a provided public key
 func (srv *SigningService) Sign(doc *coredocumentpb.CoreDocument) (err error) {
-	identityConfig := identity.NewIdentityConfig()
+	identityConfig, err := identity.NewIdentityConfig()
+	if err != nil {
+		return err
+	}
 	sig := srv.MakeSignature(doc, identityConfig.IdentityId, identityConfig.PrivateKey, identityConfig.PublicKey)
 	doc.Signatures = append(doc.Signatures, sig)
 	return nil

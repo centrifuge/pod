@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"math/big"
+
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	centrifugeED25519 "github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
 )
@@ -28,7 +29,7 @@ type Identity interface {
 	GetLastKeyForPurpose(keyPurpose int) (key []byte, err error)
 	AddKeyToIdentity(keyPurpose int, key []byte) (confirmations chan *WatchIdentity, err error)
 	CheckIdentityExists() (exists bool, err error)
-	FetchKey() (IdentityKey, error)
+	FetchKey(key []byte) (IdentityKey, error)
 }
 
 type IdentityKey interface {
@@ -62,11 +63,15 @@ func CentrifugeIdStringToSlice(s string) (id []byte, err error) {
 	return id, nil
 }
 
-func NewIdentityConfig() (identityConfig *config.IdentityConfig) {
-	pk,pvk := centrifugeED25519.GetSigningKeyPairFromConfig()
+func NewIdentityConfig() (identityConfig *config.IdentityConfig, err error) {
+	pk, pvk := centrifugeED25519.GetSigningKeyPairFromConfig()
+	decodedId, err := base64.StdEncoding.DecodeString(string(config.Config.GetIdentityId()))
+	if err != nil {
+		return nil, err
+	}
 	identityConfig = &config.IdentityConfig{
-		IdentityId: config.Config.GetIdentityId(),
-		PublicKey: pk,
+		IdentityId: decodedId,
+		PublicKey:  pk,
 		PrivateKey: pvk,
 	}
 	return

@@ -1,11 +1,13 @@
+// +build unit
+
 package keytools
 
 import (
 	"os"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/io"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestVerifyMessageED25519(t *testing.T) {

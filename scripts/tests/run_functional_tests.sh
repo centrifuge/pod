@@ -14,7 +14,7 @@ source "${PARENT_DIR}/scripts/setup_smart_contract_addresses.sh"
 echo "Running Functional Ethereum Tests against [${CENT_ETHEREUM_NODEURL}] with TIMEOUT [${TEST_TIMEOUT}]"
 
 status=$?
-for d in $(go list ./... | grep -v vendor); do
+for d in $(go list -tags=ethereum ./... | grep -v vendor); do
     output=$(go test -v -race -coverprofile=profile.out -covermode=atomic -tags=ethereum -timeout ${TEST_TIMEOUT} $d)
     if [ $? -ne 0 ]; then
       status=1

@@ -48,7 +48,7 @@ func TestCoreDocumentProcessor_GetDataProofHashes(t *testing.T) {
 	cd := coredocumentpb.CoreDocument{
 		DataRoot: tools.RandomSlice(32),
 	}
-	cd , err := coredocument.FillIdentifiers(cd)
+	cd, err := coredocument.FillIdentifiers(cd)
 	assert.Nil(t, err)
 	cds := &coredocumentpb.CoreDocumentSalts{}
 	proofs.FillSalts(&cd, cds)
