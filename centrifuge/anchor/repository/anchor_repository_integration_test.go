@@ -32,8 +32,8 @@ func TestMain(m *testing.M) {
 	os.Exit(result)
 }
 
-func createIdentityWithKeys(t *testing.T) []byte {
-	centrifugeId := tools.RandomSlice(identity.CentIdByteLength)
+func createIdentityWithKeys(t *testing.T,centrifugeId []byte) []byte {
+
 	id, confirmations, err := identityService.CreateIdentity(centrifugeId)
 	assert.Nil(t, err, "should not error out when creating identity")
 
@@ -41,10 +41,15 @@ func createIdentityWithKeys(t *testing.T) []byte {
 	assert.Nil(t, watchRegisteredIdentity.Error, "No error thrown by context")
 	assert.Equal(t, centrifugeId, watchRegisteredIdentity.Identity.GetCentrifugeId(), "Resulting Identity should have the same ID as the input")
 
+	// LookupIdentityForId
+	id, err = identityService.LookupIdentityForId(centrifugeId)
+	assert.Nil(t, err, "should not error out when resolving identity")
+	assert.Equal(t, centrifugeId, id.GetCentrifugeId(), "CentrifugeId Should match provided one")
+
 	testAddress = "0xc8dd3d66e112fae5c88fe6a677be24013e53c33e"
 	testPrivateKey = "0x17e063fa17dd8274b09c14b253697d9a20afff74ace3c04fdb1b9c814ce0ada5"
 
-	confirmations, err = id.AddKeyToIdentity(2, utils.HexToByteArray(testAddress))
+	confirmations, err = id.AddKeyToIdentity(3, utils.HexToByteArray(testAddress))
 
 	return centrifugeId
 
@@ -96,6 +101,8 @@ func TestCommitAnchor_Integration(t *testing.T) {
 	documentRoot := utils.HexToByteArray("0x65a35574f70281ae4d1f6c9f3adccd5378743f858c67a802a49a08ce185bc975")
 	centrifugeId := utils.HexToByteArray("0x1851943e76d2")
 
+	createIdentityWithKeys(t,centrifugeId)
+
 	correctCommitSignature := "0xb4051d6d03c3bf39f4ec4ba949a91a358b0cacb4804b82ed2ba978d338f5e747770c00b63c8e50c1a7aa5ba629870b54c2068a56f8b43460aa47891c6635d36d01"
 
 	testPrivateKey := "0x17e063fa17dd8274b09c14b253697d9a20afff74ace3c04fdb1b9c814ce0ada5"
@@ -110,6 +117,12 @@ func TestCommitAnchor_Integration(t *testing.T) {
 
 	assert.Equal(t,correctCommitSignature,utils.ByteArrayToHex(signature),"signature not correct")
 
+	commitAnchor(t,anchorId,centrifugeId,documentRoot,signature,documentProofs)
+
+
+}
+
+func commitAnchor(t *testing.T,anchorId, centrifugeId,documentRoot,signature []byte,documentProofs [][32]byte) {
 	// Big endian encoding is need for ethereum
 	var anchorIdBigInt big.Int
 	anchorIdBigInt.SetBytes(anchorId)
@@ -121,11 +134,56 @@ func TestCommitAnchor_Integration(t *testing.T) {
 	copy(documentRoot32Bytes[:], documentRoot[:32])
 
 	confirmations, err := repository.CommitAnchor(&anchorIdBigInt, documentRoot32Bytes, &centrifugeIdBigInt, documentProofs, signature)
+
+
 	if err != nil {
 		t.Fatalf("Error commit Anchor %v", err)
 	}
 
 	watchCommittedAnchor := <-confirmations
 	assert.Nil(t, watchCommittedAnchor.Error, "No error thrown by context")
-
+	assert.Equal(t, watchCommittedAnchor.CommitData.AnchorId, &anchorIdBigInt, "Resulting anchor should have the same ID as the input")
+	assert.Equal(t, watchCommittedAnchor.CommitData.DocumentRoot, documentRoot32Bytes, "Resulting anchor should have the same document hash as the input")
 }
+
+/*
+func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
+	var submittedAnchorCommitIds [5] big.Int
+	var submittedDocumentRoots [5][32]byte
+	var anchorsConfirmations [5]<-chan *repository.WatchCommit
+	var err error
+	testPrivateKey := "0x17e063fa17dd8274b09c14b253697d9a20afff74ace3c04fdb1b9c814ce0ada5"
+
+	centrifugeId := tools.RandomSlice(identity.CentIdByteLength)
+
+	createIdentityWithKeys(t,centrifugeId)
+
+	for ix := 0; ix < 5; ix++ {
+		currentAnchorId := tools.RandomByte32()
+		currentDocumentRoot := tools.RandomByte32()
+		documentProof := tools.RandomByte32()
+
+
+		var documentProofs [][32]byte
+
+		documentProofs = append(documentProofs, documentProof)
+
+		messageToSign := generateCommitHash(currentAnchorId[:],centrifugeId,currentDocumentRoot[:])
+
+		signature := secp256k1.SignEthereum(messageToSign, utils.HexToByteArray(testPrivateKey))
+
+
+		submittedIds[ix] = id
+		submittedRhs[ix] = rootHash
+		anchorsConfirmations[ix], err = anchor.RegisterAsAnchor(id, rootHash)
+		assert.Nil(t, err, "should not error out upon anchor registration")
+	}
+	for ix := 0; ix < 5; ix++ {
+		watchSingleAnchor := <-anchorsConfirmations[ix]
+		assert.Nil(t, watchSingleAnchor.Error, "No error thrown by context")
+		assert.Equal(t, submittedIds[ix], watchSingleAnchor.Anchor.AnchorID, "Should have the ID that was passed into create function [%v]", watchSingleAnchor.Anchor.AnchorID)
+		assert.Equal(t, submittedRhs[ix], watchSingleAnchor.Anchor.RootHash, "Should have the RootHash that was passed into create function [%v]", watchSingleAnchor.Anchor.RootHash)
+	}
+}
+*/
+

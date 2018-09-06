@@ -3,20 +3,20 @@ package repository
 import "math/big"
 
 type PreCommitData struct {
-	anchorId        *big.Int
-	signingRoot     [32]byte
-	centrifugeId    *big.Int
-	signature       []byte
-	expirationBlock *big.Int
+	AnchorId        *big.Int
+	SigningRoot     [32]byte
+	CentrifugeId    *big.Int
+	Signature       []byte
+	ExpirationBlock *big.Int
 	SchemaVersion   uint
 }
 
 type CommitData struct {
-	anchorId       *big.Int
-	documentRoot   [32]byte
-	centrifugeId   *big.Int
-	documentProofs [][32]byte
-	signature      []byte
+	AnchorId       *big.Int
+	DocumentRoot   [32]byte
+	CentrifugeId   *big.Int
+	DocumentProofs [][32]byte
+	Signature      []byte
 	SchemaVersion  uint
 }
 
@@ -39,22 +39,22 @@ func SupportedSchemaVersion() uint {
 
 func generatePreCommitData(anchorId *big.Int, signingRoot [32]byte, centrifugeId *big.Int, signature []byte, expirationBlock *big.Int) (preCommitData *PreCommitData, err error) {
 	preCommitData = &PreCommitData{}
-	preCommitData.anchorId = anchorId
-	preCommitData.signingRoot = signingRoot
-	preCommitData.centrifugeId = centrifugeId
-	preCommitData.signature = signature
-	preCommitData.expirationBlock = expirationBlock
+	preCommitData.AnchorId = anchorId
+	preCommitData.SigningRoot = signingRoot
+	preCommitData.CentrifugeId = centrifugeId
+	preCommitData.Signature = signature
+	preCommitData.ExpirationBlock = expirationBlock
 	preCommitData.SchemaVersion = SupportedSchemaVersion()
 	return preCommitData, nil
 }
 
 func generateCommitData(anchorId *big.Int, documentRoot [32]byte, centrifugeId *big.Int, documentProofs [][32]byte, signature []byte) (commitData *CommitData, err error) {
 	commitData = &CommitData{}
-	commitData.anchorId = anchorId
-	commitData.documentRoot = documentRoot
-	commitData.centrifugeId = centrifugeId
-	commitData.documentProofs = documentProofs
-	commitData.signature = signature
+	commitData.AnchorId = anchorId
+	commitData.DocumentRoot = documentRoot
+	commitData.CentrifugeId = centrifugeId
+	commitData.DocumentProofs = documentProofs
+	commitData.Signature = signature
 	return commitData, nil
 
 }
