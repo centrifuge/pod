@@ -32,7 +32,7 @@ type AnchorCommittedWatcher interface {
 type AnchoringConfirmationTask struct {
 	// task parameters
 	From     common.Address
-	AnchorId [AnchorIdLength]byte
+	AnchorId [32]byte
 
 	// state
 	EthContextInitializer   func() (ctx context.Context, cancelFunc context.CancelFunc)
@@ -77,11 +77,14 @@ func (act *AnchoringConfirmationTask) ParseKwargs(kwargs map[string]interface{})
 	if !ok {
 		return fmt.Errorf("undefined kwarg " + AnchorIdParam)
 	}
-	anchorIdTyped, err := get32Bytes(anchorId)
+
+	anchorIdBytes ,err := getBytes(anchorId)
+
 	if err != nil {
 		return fmt.Errorf("malformed kwarg [%s] because [%s]", AnchorIdParam, err.Error())
 	}
-	act.AnchorId = anchorIdTyped
+
+	act.AnchorId = anchorIdBytes
 
 	// parse the address
 	address, ok := kwargs[AddressParam]
@@ -111,6 +114,7 @@ func (act *AnchoringConfirmationTask) RunTask() (interface{}, error) {
 		act.AnchorRegisteredEvents = make(chan *EthereumAnchorRepositoryContractAnchorCommitted)
 	}
 
+
 	subscription, err := act.AnchorCommittedWatcher.WatchAnchorCommitted(watchOpts, act.AnchorRegisteredEvents, []common.Address{act.From}, []*big.Int{tools.ByteFixedToBigInt(act.AnchorId[:], 32)},nil)
 	if err != nil {
 		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for anchor repository", 1)
@@ -133,7 +137,7 @@ func (act *AnchoringConfirmationTask) RunTask() (interface{}, error) {
 	}
 }
 
-func get32Bytes(key interface{}) ([AnchorIdLength]byte, error) {
+func getBytes(key interface{}) ([AnchorIdLength]byte, error) {
 	var fixed [AnchorIdLength]byte
 	b, ok := key.([]interface{})
 	if !ok {

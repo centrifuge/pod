@@ -15,7 +15,7 @@ echo "Running Functional Ethereum Tests against [${CENT_ETHEREUM_NODEURL}] with 
 
 status=$?
 for d in $(go list ./... | grep -v vendor); do
-    output=$(go test -v -race -coverprofile=profile.out -covermode=atomic -tags=ethereumt -timeout ${TEST_TIMEOUT} $d)
+    output=$(go test -v -race -coverprofile=profile.out -covermode=atomic -tags=ethereum -timeout ${TEST_TIMEOUT} $d)
     if [ $? -ne 0 ]; then
       status=1
     fi

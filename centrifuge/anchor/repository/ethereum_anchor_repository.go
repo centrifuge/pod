@@ -180,8 +180,12 @@ func setUpPreCommitEventListener(contractEvent WatchAnchorPreCommitted, from com
 func setUpCommitEventListener(from common.Address, commitData *CommitData) (confirmations chan *WatchCommit, err error) {
 
 	confirmations = make(chan *WatchCommit)
+
+	var anchorId32Byte [32] byte
+	copy(anchorId32Byte[:],commitData.AnchorId.Bytes()[:32])
+
 	asyncRes, err := queue.Queue.DelayKwargs(AnchoringConfirmationTaskName, map[string]interface{}{
-		AnchorIdParam: commitData.AnchorId,
+		AnchorIdParam: anchorId32Byte,
 		AddressParam:  from,
 	})
 	if err != nil {

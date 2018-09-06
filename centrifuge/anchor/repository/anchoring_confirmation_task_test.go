@@ -35,17 +35,26 @@ func (m *MockAnchorCommittedWatcher) WatchAnchorCommitted(opts *bind.WatchOpts, 
 
 func TestAnchoringConfirmationTask_ParseKwargsHappy(t *testing.T) {
 	act := AnchoringConfirmationTask{}
-	anchorId := [32]byte{1, 2, 3}
+	tmp := [32]byte{1, 2, 3}
+	anchorBigInt := new(big.Int).SetBytes(tmp[:])
 	address := common.BytesToAddress([]byte{1, 2, 3, 4})
+
+	//convert big int to byte 32
+	var byte32anchorId [32]byte
+	copy(byte32anchorId[:],anchorBigInt.Bytes()[:32])
+
 	kwargs, _ := tools.SimulateJsonDecodeForGocelery(map[string]interface{}{
-		AnchorIdParam: anchorId,
+		AnchorIdParam: byte32anchorId,
 		AddressParam:  address,
 	})
 	err := act.ParseKwargs(kwargs)
 	if err != nil {
 		t.Fatalf("Could not parse %s or %s", AnchorIdParam, AddressParam)
 	}
-	assert.Equal(t, anchorId, act.AnchorId, "Resulting anchor Id should have the same ID as the input")
+
+	//convert byte 32 to big int
+	actBigInt := tools.ByteFixedToBigInt(act.AnchorId[:], 32)
+	assert.Equal(t, anchorBigInt, actBigInt, "Resulting anchor Id should have the same ID as the input")
 	assert.Equal(t, address, act.From, "Resulting address should have the same ID as the input")
 }
 
@@ -98,6 +107,7 @@ func TestAnchoringConfirmationTask_RunTaskContextClose(t *testing.T) {
 	ctx, _ := context.WithDeadline(context.TODO(), toBeDone)
 	earcar := make(chan *EthereumAnchorRepositoryContractAnchorCommitted)
 	anchorId := [32]byte{1, 2, 3}
+
 	address := common.BytesToAddress([]byte{1, 2, 3, 4})
 	act := AnchoringConfirmationTask{
 		AnchorId:                anchorId,
@@ -172,6 +182,8 @@ func TestAnchoringConfirmationTask_RunTaskSuccess(t *testing.T) {
 	ctx, _ := context.WithDeadline(context.TODO(), toBeDone)
 	earcar := make(chan *EthereumAnchorRepositoryContractAnchorCommitted)
 	anchorId := [32]byte{1, 2, 3}
+
+
 	address := common.BytesToAddress([]byte{1, 2, 3, 4})
 	act := AnchoringConfirmationTask{
 		AnchorId:                anchorId,

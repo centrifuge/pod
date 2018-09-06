@@ -1,4 +1,4 @@
-// +build ethereumt
+// +build ethereum
 
 package repository_test
 
@@ -120,7 +120,7 @@ func commitAnchor(t *testing.T,anchorId, centrifugeId,documentRoot,signature []b
 	assert.Equal(t, watchCommittedAnchor.CommitData.DocumentRoot, documentRoot32Bytes, "Resulting anchor should have the same document hash as the input")
 }
 
-/*
+
 func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
 	var commitDataList [5] *repository.CommitData
 	var confirmationList [5]<-chan *repository.WatchCommit
@@ -167,7 +167,7 @@ func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
 		assert.Equal(t, commitDataList[ix].DocumentRoot, watchSingleAnchor.CommitData.DocumentRoot, "Should have the document root that was passed into create function [%v]", watchSingleAnchor.CommitData.DocumentRoot)
 	}
 }
-*/
+
 
 
 
