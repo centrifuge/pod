@@ -55,32 +55,6 @@ func createIdentityWithKeys(t *testing.T,centrifugeId []byte) []byte {
 
 }
 
-func TestCorrectCommitSignatureGen(t *testing.T){
-
-	// hardcoded values are generated with centrifuge-ethereum-contracts
-	anchorId := "0x154cc26833dec2f4ad7ead9d65f9ec968a1aa5efbf6fe762f8f2a67d18a2d9b1"
-	documentRoot := "0x65a35574f70281ae4d1f6c9f3adccd5378743f858c67a802a49a08ce185bc975"
-	centrifugeId := "0x1851943e76d2"
-
-	correctCommitToSign := "0x15f9cb57608a7ef31428fd6b1cb7ea2002ab032211d882b920c1474334004d6b"
-	correctCommitSignature := "0xb4051d6d03c3bf39f4ec4ba949a91a358b0cacb4804b82ed2ba978d338f5e747770c00b63c8e50c1a7aa5ba629870b54c2068a56f8b43460aa47891c6635d36d01"
-
-	testPrivateKey := "0x17e063fa17dd8274b09c14b253697d9a20afff74ace3c04fdb1b9c814ce0ada5"
-
-	anchorIdByte := utils.HexToByteArray(anchorId)
-	documentRootByte := utils.HexToByteArray(documentRoot)
-	centrifugeIdByte := utils.HexToByteArray(centrifugeId)
-
-	messageToSign := generateCommitHash(anchorIdByte,centrifugeIdByte,documentRootByte)
-
-	assert.Equal(t,correctCommitToSign,utils.ByteArrayToHex(messageToSign),"messageToSign not calculated correctly")
-
-	signature := secp256k1.SignEthereum(messageToSign, utils.HexToByteArray(testPrivateKey))
-
-	assert.Equal(t,correctCommitSignature,utils.ByteArrayToHex(signature),"signature not correct")
-
-}
-
 func generateCommitHash(anchorIdByte []byte,centrifugeIdByte []byte,documentRootByte []byte) ([]byte) {
 
 	message := append(anchorIdByte, documentRootByte...)
@@ -193,6 +167,7 @@ func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
 		assert.Equal(t, commitDataList[ix].DocumentRoot, watchSingleAnchor.CommitData.DocumentRoot, "Should have the document root that was passed into create function [%v]", watchSingleAnchor.CommitData.DocumentRoot)
 	}
 }
+
 
 
 
