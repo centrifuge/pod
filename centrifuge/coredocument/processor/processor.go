@@ -150,9 +150,7 @@ func (dp *defaultProcessor) Sign(document *coredocumentpb.CoreDocument) (err err
 		return err
 	}
 	signingService := signatures.GetSigningService()
-	err = signingService.Sign(document)
-	if err != nil {
-		return err
-	}
+	sig := signingService.Sign(document)
+	document.Signatures = append(document.Signatures, sig)
 	return nil
 }
