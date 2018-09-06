@@ -113,7 +113,7 @@ func getSignatureAsync(ctx context.Context, doc coredocumentpb.CoreDocument, cli
 }
 
 // GetSignaturesForDocument requests peer nodes for the signature and verifies them
-func GetSignaturesForDocument(doc *coredocumentpb.CoreDocument, idService identity.Service, centIDs [][]byte) error {
+func GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocument, idService identity.Service, centIDs [][]byte) error {
 	if doc == nil {
 		return errors.NilError(doc)
 	}
@@ -134,7 +134,7 @@ func GetSignaturesForDocument(doc *coredocumentpb.CoreDocument, idService identi
 
 		// for now going with context.background, once we have a timeout for request
 		// we can use context.Timeout for that
-		go getSignatureAsync(context.Background(), *doc, client, in)
+		go getSignatureAsync(ctx, *doc, client, in)
 	}
 
 	var responses []signatureResponseWrap
