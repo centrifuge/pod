@@ -37,7 +37,7 @@ func SupportedSchemaVersion() uint {
 	return AnchorSchemaVersion
 }
 
-func generatePreCommitData(anchorId *big.Int, signingRoot [32]byte, centrifugeId *big.Int, signature []byte, expirationBlock *big.Int) (preCommitData *PreCommitData, err error) {
+func GeneratePreCommitData(anchorId *big.Int, signingRoot [32]byte, centrifugeId *big.Int, signature []byte, expirationBlock *big.Int) (preCommitData *PreCommitData, err error) {
 	preCommitData = &PreCommitData{}
 	preCommitData.AnchorId = anchorId
 	preCommitData.SigningRoot = signingRoot
@@ -48,7 +48,7 @@ func generatePreCommitData(anchorId *big.Int, signingRoot [32]byte, centrifugeId
 	return preCommitData, nil
 }
 
-func generateCommitData(anchorId *big.Int, documentRoot [32]byte, centrifugeId *big.Int, documentProofs [][32]byte, signature []byte) (commitData *CommitData, err error) {
+func GenerateCommitData(anchorId *big.Int, documentRoot [32]byte, centrifugeId *big.Int, documentProofs [][32]byte, signature []byte) (commitData *CommitData, err error) {
 	commitData = &CommitData{}
 	commitData.AnchorId = anchorId
 	commitData.DocumentRoot = documentRoot

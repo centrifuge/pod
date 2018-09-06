@@ -124,16 +124,16 @@ func TestCommitAnchor_Integration(t *testing.T) {
 
 func commitAnchor(t *testing.T,anchorId, centrifugeId,documentRoot,signature []byte,documentProofs [][32]byte) {
 	// Big endian encoding is need for ethereum
-	var anchorIdBigInt big.Int
+	var anchorIdBigInt = new(big.Int)
 	anchorIdBigInt.SetBytes(anchorId)
 
-	var centrifugeIdBigInt big.Int
+	var centrifugeIdBigInt = new(big.Int)
 	centrifugeIdBigInt.SetBytes(centrifugeId)
 
 	var documentRoot32Bytes [32]byte
 	copy(documentRoot32Bytes[:], documentRoot[:32])
 
-	confirmations, err := repository.CommitAnchor(&anchorIdBigInt, documentRoot32Bytes, &centrifugeIdBigInt, documentProofs, signature)
+	confirmations, err := repository.CommitAnchor(anchorIdBigInt, documentRoot32Bytes, centrifugeIdBigInt, documentProofs, signature)
 
 
 	if err != nil {
@@ -142,15 +142,14 @@ func commitAnchor(t *testing.T,anchorId, centrifugeId,documentRoot,signature []b
 
 	watchCommittedAnchor := <-confirmations
 	assert.Nil(t, watchCommittedAnchor.Error, "No error thrown by context")
-	assert.Equal(t, watchCommittedAnchor.CommitData.AnchorId, &anchorIdBigInt, "Resulting anchor should have the same ID as the input")
+	assert.Equal(t, watchCommittedAnchor.CommitData.AnchorId, anchorIdBigInt, "Resulting anchor should have the same ID as the input")
 	assert.Equal(t, watchCommittedAnchor.CommitData.DocumentRoot, documentRoot32Bytes, "Resulting anchor should have the same document hash as the input")
 }
 
-/*
+
 func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
-	var submittedAnchorCommitIds [5] big.Int
-	var submittedDocumentRoots [5][32]byte
-	var anchorsConfirmations [5]<-chan *repository.WatchCommit
+	var commitDataList [5] *repository.CommitData
+	var confirmationList [5]<-chan *repository.WatchCommit
 	var err error
 	testPrivateKey := "0x17e063fa17dd8274b09c14b253697d9a20afff74ace3c04fdb1b9c814ce0ada5"
 
@@ -163,27 +162,37 @@ func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
 		currentDocumentRoot := tools.RandomByte32()
 		documentProof := tools.RandomByte32()
 
-
 		var documentProofs [][32]byte
 
 		documentProofs = append(documentProofs, documentProof)
-
 		messageToSign := generateCommitHash(currentAnchorId[:],centrifugeId,currentDocumentRoot[:])
-
 		signature := secp256k1.SignEthereum(messageToSign, utils.HexToByteArray(testPrivateKey))
 
+		var anchorIdBigInt  = new(big.Int)
+		anchorIdBigInt.SetBytes(currentAnchorId[:])
 
-		submittedIds[ix] = id
-		submittedRhs[ix] = rootHash
-		anchorsConfirmations[ix], err = anchor.RegisterAsAnchor(id, rootHash)
+		var centrifugeIdBigInt = new(big.Int)
+		centrifugeIdBigInt.SetBytes(centrifugeId)
+
+		var documentRoot32Bytes [32]byte
+		copy(documentRoot32Bytes[:], currentDocumentRoot[:32])
+
+		commitDataList[ix],err = repository.GenerateCommitData(anchorIdBigInt,documentRoot32Bytes,centrifugeIdBigInt,documentProofs,signature)
+
+		confirmationList[ix], err = repository.CommitAnchor(anchorIdBigInt, documentRoot32Bytes, centrifugeIdBigInt, documentProofs, signature)
+
+		if err != nil {
+			t.Fatalf("Error commit Anchor %v", err)
+		}
 		assert.Nil(t, err, "should not error out upon anchor registration")
 	}
 	for ix := 0; ix < 5; ix++ {
-		watchSingleAnchor := <-anchorsConfirmations[ix]
+		watchSingleAnchor := <-confirmationList[ix]
 		assert.Nil(t, watchSingleAnchor.Error, "No error thrown by context")
-		assert.Equal(t, submittedIds[ix], watchSingleAnchor.Anchor.AnchorID, "Should have the ID that was passed into create function [%v]", watchSingleAnchor.Anchor.AnchorID)
-		assert.Equal(t, submittedRhs[ix], watchSingleAnchor.Anchor.RootHash, "Should have the RootHash that was passed into create function [%v]", watchSingleAnchor.Anchor.RootHash)
+		assert.Equal(t, commitDataList[ix].AnchorId, watchSingleAnchor.CommitData.AnchorId, "Should have the ID that was passed into create function [%v]", watchSingleAnchor.CommitData.AnchorId)
+		assert.Equal(t, commitDataList[ix].DocumentRoot, watchSingleAnchor.CommitData.DocumentRoot, "Should have the document root that was passed into create function [%v]", watchSingleAnchor.CommitData.DocumentRoot)
 	}
 }
-*/
+
+
 

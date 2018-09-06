@@ -46,7 +46,7 @@ func (ethRepository *EthereumAnchorRepository) PreCommitAnchor(anchorId *big.Int
 	if err != nil {
 		return
 	}
-	preCommitData, err := generatePreCommitData(anchorId, signingRoot, centrifugeId, signature, expirationBlock)
+	preCommitData, err := GeneratePreCommitData(anchorId, signingRoot, centrifugeId, signature, expirationBlock)
 	if err != nil {
 		return
 	}
@@ -115,7 +115,7 @@ func (ethRepository *EthereumAnchorRepository) CommitAnchor(anchorId *big.Int, d
 		return
 	}
 	//TODO check if parameters are valid
-	commitData, err := generateCommitData(anchorId, documentRoot, centrifugeId, documentProofs, signature)
+	commitData, err := GenerateCommitData(anchorId, documentRoot, centrifugeId, documentProofs, signature)
 	if err != nil {
 		return
 	}
@@ -233,7 +233,6 @@ func waitAndRouteCommitEvent(conf <-chan *EthereumAnchorRepositoryContractAnchor
 func getRepositoryContract() (repositoryContract *EthereumAnchorRepositoryContract, err error) {
 	client := ethereum.GetConnection()
 
-	// TODO add parameter anchorRepository to config
 	repositoryContract, err = NewEthereumAnchorRepositoryContract(config.Config.GetContractAddress("anchorRepository"), client.GetClient())
 	if err != nil {
 		log.Fatalf("Failed to instantiate the anchor repository contract: %v", err)
