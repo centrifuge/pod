@@ -2,6 +2,7 @@ package repository
 
 import (
 	"fmt"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"math/big"
 
 	"context"
@@ -26,7 +27,7 @@ type AnchorCommittedWatcher interface {
 		from []common.Address, anchorId []*big.Int, centrifugeId []*big.Int) (event.Subscription, error)
 }
 
-// AnchoringConfirmationTask is a queued task to watch ID registration events on Ethereum using EthereumAnchorRegistryContract.
+// AnchoringConfirmationTask is a queued task to watch ID registration events on Ethereum using EthereumAnchoryRepositoryContract.
 // To see how it gets registered see bootstrapper.go and to see how it gets used see setUpRegistrationEventListener method
 type AnchoringConfirmationTask struct {
 	// task parameters
@@ -110,15 +111,9 @@ func (act *AnchoringConfirmationTask) RunTask() (interface{}, error) {
 		act.AnchorRegisteredEvents = make(chan *EthereumAnchorRepositoryContractAnchorCommitted)
 	}
 
-	var anchorIdBigInt big.Int
-	anchorIdBigInt.SetBytes(act.AnchorId[:])
-
-	var anchorIdArray []*big.Int
-	anchorIdArray = append(anchorIdArray, &anchorIdBigInt)
-
-	subscription, err := act.AnchorCommittedWatcher.WatchAnchorCommitted(watchOpts, act.AnchorRegisteredEvents, []common.Address{act.From}, anchorIdArray,nil)
+	subscription, err := act.AnchorCommittedWatcher.WatchAnchorCommitted(watchOpts, act.AnchorRegisteredEvents, []common.Address{act.From}, []*big.Int{tools.ByteFixedToBigInt(act.AnchorId[:], 32)},nil)
 	if err != nil {
-		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for anchor registration", 1)
+		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for anchor repository", 1)
 		log.Errorf(wError.Error())
 		return nil, wError
 	}

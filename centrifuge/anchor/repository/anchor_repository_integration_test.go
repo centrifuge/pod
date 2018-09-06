@@ -75,7 +75,7 @@ func TestCommitAnchor_Integration(t *testing.T) {
 	documentRoot := utils.HexToByteArray("0x65a35574f70281ae4d1f6c9f3adccd5378743f858c67a802a49a08ce185bc975")
 	centrifugeId := utils.HexToByteArray("0x1851943e76d2")
 
-	createIdentityWithKeys(t,centrifugeId)
+	//createIdentityWithKeys(t,centrifugeId)
 
 	correctCommitSignature := "0xb4051d6d03c3bf39f4ec4ba949a91a358b0cacb4804b82ed2ba978d338f5e747770c00b63c8e50c1a7aa5ba629870b54c2068a56f8b43460aa47891c6635d36d01"
 
@@ -120,7 +120,7 @@ func commitAnchor(t *testing.T,anchorId, centrifugeId,documentRoot,signature []b
 	assert.Equal(t, watchCommittedAnchor.CommitData.DocumentRoot, documentRoot32Bytes, "Resulting anchor should have the same document hash as the input")
 }
 
-
+/*
 func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
 	var commitDataList [5] *repository.CommitData
 	var confirmationList [5]<-chan *repository.WatchCommit
@@ -167,6 +167,7 @@ func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
 		assert.Equal(t, commitDataList[ix].DocumentRoot, watchSingleAnchor.CommitData.DocumentRoot, "Should have the document root that was passed into create function [%v]", watchSingleAnchor.CommitData.DocumentRoot)
 	}
 }
+*/
 
 
 

@@ -26,7 +26,9 @@ type MockAnchorCommittedWatcher struct {
 
 func (m *MockAnchorCommittedWatcher) WatchAnchorCommitted(opts *bind.WatchOpts, sink chan<- *EthereumAnchorRepositoryContractAnchorCommitted,
 	from []common.Address, anchorId []*big.Int, centrifugeId []*big.Int) (event.Subscription, error) {
+	if m.shouldFail {
 		return nil, errors.New("Just a dummy error")
+	}
 
 	return m.Subscription, nil
 }

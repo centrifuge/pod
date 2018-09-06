@@ -2,6 +2,8 @@ package repository
 
 import (
 	"context"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/queue"
+	"github.com/centrifuge/gocelery"
 	"math/big"
 
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
@@ -120,7 +122,7 @@ func (ethRepository *EthereumAnchorRepository) CommitAnchor(anchorId *big.Int, d
 		return
 	}
 
-	confirmations, err = setUpCommitEventListener(ethRepositoryContract, opts.From, commitData)
+	confirmations, err = setUpCommitEventListener(opts.From, commitData)
 	if err != nil {
 		wError := errors.Wrap(err, 1)
 		log.Errorf("Failed to set up event listener for commit transaction [id: %x, hash: %x]: %v",
@@ -175,26 +177,17 @@ func setUpPreCommitEventListener(contractEvent WatchAnchorPreCommitted, from com
 
 // setUpCommitEventListener sets up the listened for the "AnchorCommitted" event to notify the upstream code
 // about successful mining/creation of a commit
-func setUpCommitEventListener(contractEvent WatchAnchorCommitted, from common.Address, commitData *CommitData) (confirmations chan *WatchCommit, err error) {
+func setUpCommitEventListener(from common.Address, commitData *CommitData) (confirmations chan *WatchCommit, err error) {
 
-	watchOpts, cancelFunc := generateEventContext()
-
-	//there should always be only one notification coming for this
-	//single anchor being committed
-	anchorCommittedEvents := make(chan *EthereumAnchorRepositoryContractAnchorCommitted)
 	confirmations = make(chan *WatchCommit)
-	go waitAndRouteCommitEvent(anchorCommittedEvents, watchOpts.Context, confirmations, commitData)
-
-	//TODO do something with the returned Subscription that is currently simply discarded
-	// Somehow there are some possible resource leakage situations with this handling but I have to understand
-	// Subscriptions a bit better before writing this code.
-	_, err = contractEvent.WatchAnchorCommitted(watchOpts, anchorCommittedEvents, []common.Address{from}, []*big.Int{commitData.AnchorId}, []*big.Int{commitData.CentrifugeId})
+	asyncRes, err := queue.Queue.DelayKwargs(AnchoringConfirmationTaskName, map[string]interface{}{
+		AnchorIdParam: commitData.AnchorId,
+		AddressParam:  from,
+	})
 	if err != nil {
-		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for anchor registration", 1)
-		log.Errorf("Failed to watch anchor registered event: %v", wError.Error())
-		cancelFunc() // cancel the event router
-		return confirmations, wError
+		return nil, err
 	}
+	go waitAndRouteCommitEvent(asyncRes, confirmations, commitData)
 	return confirmations, nil
 }
 
@@ -215,19 +208,9 @@ func waitAndRoutePreCommitEvent(conf <-chan *EthereumAnchorRepositoryContractAnc
 }
 
 // waitAndRouteCommitEvent notifies the confirmations channel whenever a commit is being noted as Ethereum event
-func waitAndRouteCommitEvent(conf <-chan *EthereumAnchorRepositoryContractAnchorCommitted, ctx context.Context, confirmations chan<- *WatchCommit, commitData *CommitData) {
-	for {
-		select {
-		case <-ctx.Done():
-			log.Errorf("Context [%v] closed before receiving AnchorCommitted event for anchor ID: %x, DocumentRoot: %x\n", ctx, commitData.AnchorId, commitData.DocumentRoot)
-			confirmations <- &WatchCommit{commitData, ctx.Err()}
-			return
-		case res := <-conf:
-			log.Infof("Received AnchorCommitted event from: %x\n", res.From)
-			confirmations <- &WatchCommit{commitData, nil}
-			return
-		}
-	}
+func waitAndRouteCommitEvent(asyncResult *gocelery.AsyncResult, confirmations chan<- *WatchCommit, commitData *CommitData) {
+	_, err := asyncResult.Get(ethereum.GetDefaultContextTimeout())
+	confirmations <- &WatchCommit{commitData, err}
 }
 
 func getRepositoryContract() (repositoryContract *EthereumAnchorRepositoryContract, err error) {
