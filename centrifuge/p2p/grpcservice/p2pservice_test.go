@@ -15,7 +15,7 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/notification"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/version"
 	"github.com/stretchr/testify/assert"
 )
@@ -29,20 +29,7 @@ func TestMain(m *testing.M) {
 	os.Exit(result)
 }
 
-var coreDoc = &coredocumentpb.CoreDocument{
-	DocumentRoot:       tools.RandomSlice(32),
-	DocumentIdentifier: tools.RandomSlice(32),
-	CurrentIdentifier:  tools.RandomSlice(32),
-	NextIdentifier:     tools.RandomSlice(32),
-	DataRoot:           tools.RandomSlice(32),
-	CoredocumentSalts: &coredocumentpb.CoreDocumentSalts{
-		DocumentIdentifier: tools.RandomSlice(32),
-		CurrentIdentifier:  tools.RandomSlice(32),
-		NextIdentifier:     tools.RandomSlice(32),
-		DataRoot:           tools.RandomSlice(32),
-		PreviousRoot:       tools.RandomSlice(32),
-	},
-}
+var coreDoc = testingutils.GenerateCoreDocument()
 
 func TestP2PService(t *testing.T) {
 	req := p2ppb.P2PMessage{Document: coreDoc, CentNodeVersion: version.GetVersion().String(), NetworkIdentifier: config.Config.GetNetworkID()}

@@ -16,10 +16,6 @@ import (
 	"github.com/golang/protobuf/ptypes"
 )
 
-func incompatibleVersionError(nodeVersion string) error {
-	return errors.New(code.VersionMismatch, fmt.Sprintf("Incompatible version: node version: %s, client version: %s", version.GetVersion(), nodeVersion))
-}
-
 func incompatibleNetworkError(nodeNetwork uint32) error {
 	return errors.New(code.NetworkMismatch, fmt.Sprintf("Incompatible network id: node network: %d, client network: %d", config.Config.GetNetworkID(), nodeNetwork))
 }
@@ -36,12 +32,9 @@ type P2PService struct {
 // request could not decide for itself if the request handshake should succeed or not.
 func (srv *P2PService) HandleP2PPost(ctx context.Context, req *p2ppb.P2PMessage) (rep *p2ppb.P2PReply, err error) {
 	// Check call compatibility:
-	compatible, err := version.CheckMajorCompatibility(req.CentNodeVersion)
-	if err != nil {
-		return nil, errors.New(code.Unknown, err.Error())
-	}
+	compatible := version.CheckVersion(req.CentNodeVersion)
 	if !compatible {
-		return nil, incompatibleVersionError(req.CentNodeVersion)
+		return nil, version.IncompatibleVersionError(req.CentNodeVersion)
 	}
 
 	if req.NetworkIdentifier != config.Config.GetNetworkID() {

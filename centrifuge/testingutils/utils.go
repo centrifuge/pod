@@ -70,6 +70,4 @@ func (m *MockSubscription) Err() <-chan error {
 	return m.ErrChan
 }
 
-func (*MockSubscription) Unsubscribe() {
-
-}
+func (*MockSubscription) Unsubscribe() {}
