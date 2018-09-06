@@ -60,13 +60,7 @@ func TestGetDocumentRootTree(t *testing.T) {
 	cd := &coredocumentpb.CoreDocument{SigningRoot: tools.RandomSlice(32)}
 	tree, err := GetDocumentRootTree(cd)
 	assert.Nil(t, err)
-	fmt.Println(tree.RootHash(), cd.SigningRoot)
-	fmt.Println(tree.PropertyOrder())
-	p, err := tree.CreateProof("signatures.length")
-	fmt.Println(p.SortedHashes)
-	// FAIL: why does below tree have the same root hash as signing root?
-	assert.Equal(t, tree.RootHash(), cd.SigningRoot)
-	assert.False(t, true)
+	assert.Equal(t, tree.RootHash(), cd.DocumentRoot)
 }
 
 func TestValidate(t *testing.T) {
