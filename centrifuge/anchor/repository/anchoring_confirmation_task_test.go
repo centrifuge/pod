@@ -43,9 +43,12 @@ func TestAnchoringConfirmationTask_ParseKwargsHappy(t *testing.T) {
 	var byte32anchorId [32]byte
 	copy(byte32anchorId[:],anchorBigInt.Bytes()[:32])
 
+	var centrifugeIdBytes [6]byte
+
 	kwargs, _ := tools.SimulateJsonDecodeForGocelery(map[string]interface{}{
 		AnchorIdParam: byte32anchorId,
 		AddressParam:  address,
+		CentrifugeIdParam: centrifugeIdBytes,
 	})
 	err := act.ParseKwargs(kwargs)
 	if err != nil {
@@ -61,8 +64,12 @@ func TestAnchoringConfirmationTask_ParseKwargsHappy(t *testing.T) {
 func TestAnchoringConfirmationTask_ParseKwargsAnchorNotPassed(t *testing.T) {
 	act := AnchoringConfirmationTask{}
 	address := common.BytesToAddress([]byte{1, 2, 3, 4})
+	var centrifugeIdBytes [6]byte
+
 	kwargs, _ := tools.SimulateJsonDecodeForGocelery(map[string]interface{}{
 		AddressParam: address,
+		CentrifugeIdParam: centrifugeIdBytes,
+
 	})
 	err := act.ParseKwargs(kwargs)
 	assert.NotNil(t, err, "Anchor id should not have been parsed")
@@ -182,7 +189,6 @@ func TestAnchoringConfirmationTask_RunTaskSuccess(t *testing.T) {
 	ctx, _ := context.WithDeadline(context.TODO(), toBeDone)
 	earcar := make(chan *EthereumAnchorRepositoryContractAnchorCommitted)
 	anchorId := [32]byte{1, 2, 3}
-
 
 	address := common.BytesToAddress([]byte{1, 2, 3, 4})
 	act := AnchoringConfirmationTask{

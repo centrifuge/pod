@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/queue"
 	"github.com/centrifuge/gocelery"
 	"math/big"
@@ -181,12 +182,16 @@ func setUpCommitEventListener(from common.Address, commitData *CommitData) (conf
 
 	confirmations = make(chan *WatchCommit)
 
-	var anchorId32Byte [32] byte
-	copy(anchorId32Byte[:],commitData.AnchorId.Bytes()[:32])
+	var anchorId32Byte [AnchorIdLength] byte
+	copy(anchorId32Byte[:],commitData.AnchorId.Bytes()[:AnchorIdLength])
+
+	var centrifugeIdByte [identity.CentIdByteLength] byte
+	copy(centrifugeIdByte[:],commitData.CentrifugeId.Bytes()[:identity.CentIdByteLength])
 
 	asyncRes, err := queue.Queue.DelayKwargs(AnchoringConfirmationTaskName, map[string]interface{}{
 		AnchorIdParam: anchorId32Byte,
 		AddressParam:  from,
+		CentrifugeIdParam: centrifugeIdByte,
 	})
 	if err != nil {
 		return nil, err
