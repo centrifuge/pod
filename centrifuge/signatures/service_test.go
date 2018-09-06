@@ -3,8 +3,6 @@
 package signatures
 
 import (
-	"encoding/base64"
-	"fmt"
 	"math/big"
 	"os"
 	"testing"
@@ -17,13 +15,11 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/io"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
-	"github.com/go-errors/errors"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/crypto/ed25519"
 )
 
 var (
-	testSigningService                 SigningService
 	testKeys                           []*identity.EthereumIdentityKey
 	key1Pub, key2Pub, key3Pub, key4Pub ed25519.PublicKey
 	key1, key2, key3, key4             ed25519.PrivateKey
@@ -32,71 +28,6 @@ var (
 	id3                                = []byte{3, 3, 3, 3, 3, 3}
 	testCase                           = 0
 )
-
-// Mock IdentityService
-type EthereumIdentityMocked struct {
-	CentrifugeId []byte
-}
-
-func (id *EthereumIdentityMocked) String() string {
-	return fmt.Sprintf("CentrifugeId [%s]", id.CentrifugeIdString())
-}
-func (id *EthereumIdentityMocked) GetCentrifugeId() []byte {
-	return id.CentrifugeId
-}
-func (id *EthereumIdentityMocked) CentrifugeIdString() string {
-	return base64.StdEncoding.EncodeToString(id.CentrifugeId)
-}
-func (id *EthereumIdentityMocked) CentrifugeIdBytes() [identity.CentIdByteLength]byte {
-	var idBytes [identity.CentIdByteLength]byte
-	copy(idBytes[:], id.CentrifugeId[:identity.CentIdByteLength])
-	return idBytes
-}
-func (id *EthereumIdentityMocked) CentrifugeIdBigInt() *big.Int {
-	bi := tools.ByteSliceToBigInt(id.CentrifugeId)
-	return bi
-}
-func (id *EthereumIdentityMocked) SetCentrifugeId(b []byte) error {
-	if len(b) != identity.CentIdByteLength {
-		return errors.New("CentrifugeId has incorrect length")
-	}
-	if tools.IsEmptyByteSlice(b) {
-		return errors.New("CentrifugeId can't be empty")
-	}
-	id.CentrifugeId = b
-	return nil
-}
-func (id *EthereumIdentityMocked) GetCurrentP2PKey() (ret string, err error) {
-	return "", nil
-}
-func (id *EthereumIdentityMocked) GetLastKeyForPurpose(keyPurpose int) (key []byte, err error) {
-	return []byte{}, nil
-}
-func (id *EthereumIdentityMocked) AddKeyToIdentity(keyPurpose int, key []byte) (confirmations chan *identity.WatchIdentity, err error) {
-	return nil, nil
-}
-func (id *EthereumIdentityMocked) CheckIdentityExists() (exists bool, err error) {
-	return true, nil
-}
-func (id *EthereumIdentityMocked) FetchKey(key []byte) (identity.IdentityKey, error) {
-	return testKeys[testCase], nil
-}
-
-type EthereumIdentityMockedService struct{}
-
-func (ids *EthereumIdentityMockedService) CheckIdentityExists(centrifugeId []byte) (exists bool, err error) {
-	return true, nil
-}
-func (ids *EthereumIdentityMockedService) LookupIdentityForId(centrifugeId []byte) (id identity.Identity, err error) {
-	return &EthereumIdentityMocked{
-		CentrifugeId: centrifugeId,
-	}, nil
-}
-func (ids *EthereumIdentityMockedService) CreateIdentity(centrifugeId []byte) (id identity.Identity, confirmations chan *identity.WatchIdentity, err error) {
-	return
-}
-
-//
 
 func TestMain(m *testing.M) {
 	testing2.InitTestConfig()
@@ -208,7 +139,8 @@ func TestDocumentSigning(t *testing.T) {
 	config.Config.V.Set("keys.signing.publicKey", publicFileName)
 	config.Config.V.Set("keys.signing.privateKey", privateFileName)
 
-	testSigningService.Sign(doc)
+	sig := testSigningService.Sign(doc)
+	doc.Signatures = append(doc.Signatures, sig)
 	valid, err := testSigningService.ValidateSignaturesOnDocument(doc)
 	assert.Nil(t, err)
 	assert.True(t, valid)

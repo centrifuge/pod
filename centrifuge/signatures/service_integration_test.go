@@ -40,7 +40,7 @@ func TestValidateDocumentSignature(t *testing.T) {
 	centrifugeId := tools.RandomSlice(identity.CentIdByteLength)
 	config.Config.V.Set("identityId", base64.StdEncoding.EncodeToString(centrifugeId))
 
-	identityConfig, err := identity.NewIdentityConfig()
+	identityConfig, err := identity.FromConfig()
 	assert.Nil(t, err, "should not error out wrapping identity config")
 
 	id, confirmations, err := identityService.CreateIdentity(centrifugeId)

@@ -67,3 +67,13 @@ func (m *MockCoreDocumentProcessor) GetDataProofHashes(coreDocument *coredocumen
 	args := m.Called(coreDocument)
 	return args.Get(0).([][]byte), args.Error(1)
 }
+
+type MockSubscription struct {
+	ErrChan chan error
+}
+
+func (m *MockSubscription) Err() <-chan error {
+	return m.ErrChan
+}
+
+func (*MockSubscription) Unsubscribe() {}

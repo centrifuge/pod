@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var identityService identity.IdentityService
+var identityService identity.Service
 
 func TestMain(m *testing.M) {
 	// Adding delay to startup (concurrency hack)
@@ -44,14 +44,14 @@ func TestCreateAndLookupIdentity_Integration(t *testing.T) {
 
 	watchRegisteredIdentity := <-confirmations
 	assert.Nil(t, watchRegisteredIdentity.Error, "No error thrown by context")
-	assert.Equal(t, centrifugeId, watchRegisteredIdentity.Identity.GetCentrifugeId(), "Resulting Identity should have the same ID as the input")
+	assert.Equal(t, centrifugeId, watchRegisteredIdentity.Identity.GetCentrifugeID(), "Resulting Identity should have the same ID as the input")
 
-	// LookupIdentityForId
-	id, err = identityService.LookupIdentityForId(centrifugeId)
+	// LookupIdentityForID
+	id, err = identityService.LookupIdentityForID(centrifugeId)
 	assert.Nil(t, err, "should not error out when resolving identity")
-	assert.Equal(t, centrifugeId, id.GetCentrifugeId(), "CentrifugeId Should match provided one")
+	assert.Equal(t, centrifugeId, id.GetCentrifugeID(), "CentrifugeId Should match provided one")
 
-	wrongId, err := identityService.LookupIdentityForId(wrongCentrifugeId)
+	wrongId, err := identityService.LookupIdentityForID(wrongCentrifugeId)
 	assert.NotNil(t, err, "should error out when resolving wrong identity")
 
 	// CheckIdentityExists
@@ -64,7 +64,7 @@ func TestCreateAndLookupIdentity_Integration(t *testing.T) {
 	assert.False(t, exists)
 
 	wrongId = identity.NewEthereumIdentity()
-	wrongId.SetCentrifugeId(wrongCentrifugeId)
+	wrongId.SetCentrifugeID(wrongCentrifugeId)
 	exists, err = wrongId.CheckIdentityExists()
 	assert.NotNil(t, err, "should error out when missing identity")
 	assert.False(t, exists)
@@ -74,7 +74,7 @@ func TestCreateAndLookupIdentity_Integration(t *testing.T) {
 	confirmations, err = id.AddKeyToIdentity(1, key)
 	assert.Nil(t, err, "should not error out when adding key to identity")
 	watchReceivedIdentity := <-confirmations
-	assert.Equal(t, centrifugeId, watchReceivedIdentity.Identity.GetCentrifugeId(), "Resulting Identity should have the same ID as the input")
+	assert.Equal(t, centrifugeId, watchReceivedIdentity.Identity.GetCentrifugeID(), "Resulting Identity should have the same ID as the input")
 
 	recKey, err := id.GetLastKeyForPurpose(1)
 	assert.Nil(t, err)
@@ -98,8 +98,8 @@ func TestCreateAndLookupIdentity_Integration_Concurrent(t *testing.T) {
 
 	for ix := 0; ix < 5; ix++ {
 		watchSingleIdentity := <-identityConfirmations[ix]
-		id, err := identityService.LookupIdentityForId(watchSingleIdentity.Identity.GetCentrifugeId())
+		id, err := identityService.LookupIdentityForID(watchSingleIdentity.Identity.GetCentrifugeID())
 		assert.Nil(t, err, "should not error out upon identity resolution")
-		assert.Equal(t, centIds[ix], id.GetCentrifugeId(), "Should have the ID that was passed into create function [%v]", id.GetCentrifugeId())
+		assert.Equal(t, centIds[ix], id.GetCentrifugeID(), "Should have the ID that was passed into create function [%v]", id.GetCentrifugeID())
 	}
 }
