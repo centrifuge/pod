@@ -149,7 +149,8 @@ func TestDocumentSigning(t *testing.T) {
 		NextIdentifier:     nextIdentifier,
 	}
 
-	testSigningService.Sign(doc)
+	sig := testSigningService.Sign(doc)
+	doc.Signatures = append(doc.Signatures, sig)
 	valid, err := testSigningService.ValidateSignaturesOnDocument(doc)
 	if !valid || err != nil {
 		// t.Fatal("Signature validation failed")
