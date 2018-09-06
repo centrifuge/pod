@@ -81,6 +81,10 @@ func (srv *Handler) Post(ctx context.Context, req *p2ppb.P2PMessage) (*p2ppb.P2P
 }
 
 // RequestDocumentSignature signs the received document and returns the signature
+//
+// How do we verify if we want to sign the document?
+// Can we assume that if we are called to sign, we simply sign?
+// Or maybe we can check the SenderID against KeyInfo?
 func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.SignatureRequest) (*p2ppb.SignatureResponse, error) {
 	err := basicChecks(sigReq.Header.CentNodeVersion, sigReq.Header.NetworkIdentifier)
 	if err != nil {
