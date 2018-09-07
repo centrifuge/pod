@@ -20,7 +20,7 @@ func GetDataProofHashes(document *coredocumentpb.CoreDocument) (hashes [][]byte,
 		return
 	}
 
-	signing_proof, err := tree.CreateProof("data_root")
+	signingProof, err := tree.CreateProof("data_root")
 	if err != nil {
 		return
 	}
@@ -29,11 +29,11 @@ func GetDataProofHashes(document *coredocumentpb.CoreDocument) (hashes [][]byte,
 	if err != nil {
 		return
 	}
-	root_proof, err := tree.CreateProof("signing_root")
+	rootProof, err := tree.CreateProof("signing_root")
 	if err != nil {
 		return
 	}
-	return append(signing_proof.SortedHashes, root_proof.SortedHashes...), err
+	return append(signingProof.SortedHashes, rootProof.SortedHashes...), err
 }
 
 func CalculateSigningRoot(document *coredocumentpb.CoreDocument) error {

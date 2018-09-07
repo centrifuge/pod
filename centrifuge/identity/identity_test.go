@@ -179,7 +179,7 @@ func TestGetIdentityKey_fail_FetchKey(t *testing.T) {
 	srv := &mockIDService{}
 	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
 	id.On("FetchKey", pubKey).Return(nil, fmt.Errorf("fetch key failed")).Once()
-	key, err := GetIdentityKey(srv, centID, tools.RandomSlice(32))
+	key, err := GetIdentityKey(srv, centID, pubKey)
 	srv.AssertExpectations(t)
 	id.AssertExpectations(t)
 	assert.Error(t, err, "must be not nil")

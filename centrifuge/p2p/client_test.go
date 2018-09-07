@@ -11,7 +11,7 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/signatures"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/version"
 	"github.com/stretchr/testify/assert"
@@ -21,7 +21,6 @@ import (
 
 func TestMain(m *testing.M) {
 	cc.TestIntegrationBootstrap()
-	signatures.NewSigningService(signatures.SigningService{})
 	result := m.Run()
 	cc.TestIntegrationTearDown()
 	os.Exit(result)
@@ -55,7 +54,7 @@ func TestGetSignatureForDocument_fail_connect(t *testing.T) {
 	coreDoc := testingutils.GenerateCoreDocument()
 	ctx := context.Background()
 	client.On("RequestDocumentSignature", ctx, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("signature failed")).Once()
-	resp, err := getSignatureForDocument(ctx, *coreDoc, client)
+	resp, err := getSignatureForDocument(ctx, nil, *coreDoc, client)
 	client.AssertExpectations(t)
 	assert.Error(t, err, "must fail")
 	assert.Nil(t, resp, "must be nil")
@@ -67,7 +66,7 @@ func TestGetSignatureForDocument_fail_version_check(t *testing.T) {
 	ctx := context.Background()
 	resp := &p2ppb.SignatureResponse{CentNodeVersion: "1.0.0"}
 	client.On("RequestDocumentSignature", ctx, mock.Anything, mock.Anything).Return(resp, nil).Once()
-	resp, err := getSignatureForDocument(ctx, *coreDoc, client)
+	resp, err := getSignatureForDocument(ctx, nil, *coreDoc, client)
 	client.AssertExpectations(t)
 	assert.Error(t, err, "must fail")
 	assert.Contains(t, err.Error(), "Incompatible version")
@@ -85,7 +84,7 @@ func TestGetSignatureForDocument_fail_signature(t *testing.T) {
 	}
 
 	client.On("RequestDocumentSignature", ctx, mock.Anything, mock.Anything).Return(sigResp, nil).Once()
-	resp, err := getSignatureForDocument(ctx, *coreDoc, client)
+	resp, err := getSignatureForDocument(ctx, identity.NewEthereumIdentityService(), *coreDoc, client)
 	client.AssertExpectations(t)
 	assert.Nil(t, resp, "must be nil")
 	assert.Error(t, err, "must not be nil")
