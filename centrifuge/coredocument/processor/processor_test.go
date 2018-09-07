@@ -3,9 +3,10 @@
 package coredocumentprocessor
 
 import (
-	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 // TODO(ved): more tests required for processor

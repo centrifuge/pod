@@ -24,7 +24,7 @@
 #   go-tests = true
 #   unused-packages = true
 
-required = ["github.com/roboll/go-vendorinstall", "github.com/golang/protobuf/protoc-gen-go", "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway"]
+required = ["github.com/roboll/go-vendorinstall", "github.com/golang/protobuf/protoc-gen-go", "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway", "golang.org/x/tools/cmd/goimports"]
 
 [[constraint]]
   name = "github.com/CentrifugeInc/centrifuge-protobufs"

@@ -5,9 +5,10 @@ package invoiceservice_test
 import (
 	"context"
 	"crypto/sha256"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"os"
 	"testing"
+
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
