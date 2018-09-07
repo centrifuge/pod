@@ -17,11 +17,11 @@ import (
 )
 
 const (
-	AnchoringConfirmationTaskName string = "AnchoringConfirmationTaskName"
-	AnchorIdParam                 string = "AnchorIdParam"
-	CentrifugeIdParam			  string = "CentrifugeIdParam"
-	AddressParam                  string = "AddressParam"
-	AnchorIdLength                       = 32
+	AnchoringRepositoryConfirmationTaskName string = "AnchoringRepositoryConfirmationTaskName"
+	AnchorIdParam                           string = "AnchorIdParam"
+	CentrifugeIdParam                       string = "CentrifugeIdParam"
+	AddressParam                            string = "AddressParam"
+	AnchorIdLength                                 = 32
 )
 
 type AnchorCommittedWatcher interface {
@@ -55,11 +55,11 @@ func NewAnchoringConfirmationTask(
 }
 
 func (act *AnchoringConfirmationTask) Name() string {
-	return AnchoringConfirmationTaskName
+	return AnchoringRepositoryConfirmationTaskName
 }
 
 func (act *AnchoringConfirmationTask) Init() error {
-	queue.Queue.Register(AnchoringConfirmationTaskName, act)
+	queue.Queue.Register(act.Name(), act)
 	return nil
 }
 

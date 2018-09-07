@@ -111,7 +111,7 @@ func TestGenerateAnchor(t *testing.T) {
 	var documentRoot32Bytes [32]byte
 	copy(documentRoot32Bytes[:], currentDocumentRoot[:32])
 
-	commitData,err := GenerateCommitData(anchorIdBigInt,documentRoot32Bytes,centrifugeIdBigInt,documentProofs,signature)
+	commitData,err := NewCommitData(anchorIdBigInt,documentRoot32Bytes,centrifugeIdBigInt,documentProofs,signature)
 	assert.Nil(t,err,"err should be nil")
 
 	assert.Equal(t, commitData.AnchorId, anchorIdBigInt, "Anchor should have the passed ID")

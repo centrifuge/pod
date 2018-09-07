@@ -154,7 +154,7 @@ func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
 		var documentRoot32Bytes [32]byte
 		copy(documentRoot32Bytes[:], currentDocumentRoot[:32])
 
-		commitDataList[ix],err = repository.GenerateCommitData(anchorIdBigInt,documentRoot32Bytes,centrifugeIdBigInt,documentProofs,signature)
+		commitDataList[ix],err = repository.NewCommitData(anchorIdBigInt,documentRoot32Bytes,centrifugeIdBigInt,documentProofs,signature)
 
 		confirmationList[ix], err = repository.CommitAnchor(anchorIdBigInt, documentRoot32Bytes, centrifugeIdBigInt, documentProofs, signature)
 

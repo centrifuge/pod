@@ -49,7 +49,7 @@ func (ethRepository *EthereumAnchorRepository) PreCommitAnchor(anchorId *big.Int
 	if err != nil {
 		return
 	}
-	preCommitData, err := GeneratePreCommitData(anchorId, signingRoot, centrifugeId, signature, expirationBlock)
+	preCommitData, err := NewPreCommitData(anchorId, signingRoot, centrifugeId, signature, expirationBlock)
 	if err != nil {
 		return
 	}
@@ -118,7 +118,7 @@ func (ethRepository *EthereumAnchorRepository) CommitAnchor(anchorId *big.Int, d
 		return
 	}
 	//TODO check if parameters are valid
-	commitData, err := GenerateCommitData(anchorId, documentRoot, centrifugeId, documentProofs, signature)
+	commitData, err := NewCommitData(anchorId, documentRoot, centrifugeId, documentProofs, signature)
 	if err != nil {
 		return
 	}
@@ -188,7 +188,7 @@ func setUpCommitEventListener(from common.Address, commitData *CommitData) (conf
 	var centrifugeIdByte [identity.CentIdByteLength] byte
 	copy(centrifugeIdByte[:],commitData.CentrifugeId.Bytes()[:identity.CentIdByteLength])
 
-	asyncRes, err := queue.Queue.DelayKwargs(AnchoringConfirmationTaskName, map[string]interface{}{
+	asyncRes, err := queue.Queue.DelayKwargs(AnchoringRepositoryConfirmationTaskName, map[string]interface{}{
 		AnchorIdParam: anchorId32Byte,
 		AddressParam:  from,
 		CentrifugeIdParam: centrifugeIdByte,
