@@ -111,6 +111,7 @@ func (inv *Invoice) getDocumentTree() (tree *proofs.DocumentTree, err error) {
 }
 
 // CalculateMerkleRoot calculates the invoice merkle root
+// TODO: this method is a dangerous one. Generating the different roots shouldn't be done in one step (lucas)
 func (inv *Invoice) CalculateMerkleRoot() error {
 	tree, err := inv.getDocumentTree()
 	if err != nil {
