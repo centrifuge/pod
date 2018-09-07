@@ -4,11 +4,8 @@ package anchor
 
 import (
 	"math/big"
-	"os"
 	"testing"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
-	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -17,14 +14,6 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/stretchr/testify/assert"
 )
-
-func TestMain(m *testing.M) {
-	cc.TestIntegrationBootstrap()
-	config.Config.V.Set("ethereum.txPoolAccessEnabled", false)
-	result := m.Run()
-	cc.TestIntegrationTearDown()
-	os.Exit(result)
-}
 
 // ----- MOCKING -----
 type MockRegisterAnchor struct {
@@ -86,33 +75,4 @@ func TestRegisterAsAnchor(t *testing.T) {
 		_, actual := new(EthereumAnchorRegistry).RegisterAsAnchor(tt.id, tt.hs)
 		assert.Equal(t, tt.expected.Error(), actual.Error())
 	}
-}
-
-func TestSendRegistrationTransaction_ErrorPassThrough(t *testing.T) {
-	anchor := Anchor{tools.RandomByte32(), tools.RandomByte32(), 1}
-	failingAnchorRegistrar := &MockRegisterAnchor{shouldFail: true}
-
-	err := sendRegistrationTransaction(failingAnchorRegistrar, nil, &anchor)
-	assert.Error(t, err, "Should have an error if registerAnchor returns error")
-}
-
-func TestSetUpRegistrationEventListener_ErrorPassThrough(t *testing.T) {
-	failingWatchAnchorRegistered := &MockWatchAnchorRegistered{shouldFail: true}
-	anchor := Anchor{tools.RandomByte32(), tools.RandomByte32(), 1}
-
-	_, err := setUpRegistrationEventListener(failingWatchAnchorRegistered, common.Address{}, &anchor)
-	assert.Error(t, err, "Should fail if the anchor registration watcher failed")
-}
-
-func TestSetUpRegistrationEventListener_ChannelSubscriptionCreated(t *testing.T) {
-	config.Config.V.Set("ethereum.contextWaitTimeout", "30s")
-	mockWatchAnchorRegistered := &MockWatchAnchorRegistered{}
-	anchor := Anchor{tools.RandomByte32(), tools.RandomByte32(), 1}
-	confirmations, err := setUpRegistrationEventListener(mockWatchAnchorRegistered, common.Address{}, &anchor)
-	assert.Nil(t, err, "Should not fail")
-	//sending one "event" into the registered sink should result in the confirmations channel to receive the anchor
-	//that has been created and passed through initially
-	mockWatchAnchorRegistered.sink <- &EthereumAnchorRegistryContractAnchorRegistered{From: common.HexToAddress("0x0000000000000000001"), Identifier: anchor.AnchorID}
-	watchReceivedAnchor := <-confirmations
-	assert.Equal(t, anchor.AnchorID, watchReceivedAnchor.Anchor.AnchorID, "Received anchor should have the same data as the originally submitted anchor")
 }

@@ -35,7 +35,7 @@ type IdRegistrationConfirmationTask struct {
 func NewIdRegistrationConfirmationTask(
 	identityCreatedWatcher IdentityCreatedWatcher,
 	ethContextInitializer func() (ctx context.Context, cancelFunc context.CancelFunc),
-) *IdRegistrationConfirmationTask {
+) queue.QueuedTask {
 	return &IdRegistrationConfirmationTask{
 		IdentityCreatedWatcher: identityCreatedWatcher,
 		EthContextInitializer:  ethContextInitializer,

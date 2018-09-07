@@ -10,6 +10,7 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
+	centrED25519 "github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/p2p"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/signatures"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
@@ -27,7 +28,7 @@ type Processor interface {
 
 // defaultProcessor implements Processor interface
 type defaultProcessor struct {
-	IdentityService identity.IdentityService
+	IdentityService identity.Service
 }
 
 // DefaultProcessor returns the default implementation of CoreDocument Processor
@@ -42,7 +43,7 @@ func (dp *defaultProcessor) Send(coreDocument *coredocumentpb.CoreDocument, ctx 
 		return errors.NilError(coreDocument)
 	}
 
-	id, err := dp.IdentityService.LookupIdentityForId(recipient)
+	id, err := dp.IdentityService.LookupIdentityForID(recipient)
 	if err != nil {
 		err = errors.Wrap(err, "error fetching receiver identity")
 		log.Error(err)
@@ -58,9 +59,12 @@ func (dp *defaultProcessor) Send(coreDocument *coredocumentpb.CoreDocument, ctx 
 
 	log.Infof("Sending Document to CentID [%v] with Key [%v]\n", recipient, lastB58Key)
 	clientWithProtocol := fmt.Sprintf("/ipfs/%s", lastB58Key)
-	client := p2p.OpenClient(clientWithProtocol)
-	log.Infof("Done opening connection against [%s]\n", lastB58Key)
+	client, err := p2p.OpenClient(clientWithProtocol)
+	if err != nil {
+		return fmt.Errorf("failed to open client: %v", err)
+	}
 
+	log.Infof("Done opening connection against [%s]\n", lastB58Key)
 	hostInstance := p2p.GetHost()
 	bSenderId, err := hostInstance.ID().ExtractPublicKey().Bytes()
 	if err != nil {
@@ -100,7 +104,7 @@ func (dp *defaultProcessor) Anchor(document *coredocumentpb.CoreDocument) error 
 		return err
 	}
 
-	rootHash, err := tools.SliceToByte32(document.SigningRoot)
+	rootHash, err := tools.SliceToByte32(document.SigningRoot) //TODO: CHANGE
 	if err != nil {
 		log.Error(err)
 		return err
@@ -122,10 +126,13 @@ func (dp *defaultProcessor) Sign(document *coredocumentpb.CoreDocument) (err err
 	if err != nil {
 		return err
 	}
-	signingService := signatures.GetSigningService()
-	err = signingService.Sign(document)
+
+	idConfig, err := centrED25519.GetIDConfig()
 	if err != nil {
 		return err
 	}
+
+	sig := signatures.Sign(idConfig, document)
+	document.Signatures = append(document.Signatures, sig)
 	return nil
 }

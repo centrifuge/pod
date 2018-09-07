@@ -4,7 +4,14 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/code"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/signatures"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/version"
 	"github.com/libp2p/go-libp2p-peer"
 	pstore "github.com/libp2p/go-libp2p-peerstore"
 	ma "github.com/multiformats/go-multiaddr"
@@ -13,21 +20,21 @@ import (
 )
 
 // Opens a client connection with libp2p
-func OpenClient(target string) p2ppb.P2PServiceClient {
+func OpenClient(target string) (p2ppb.P2PServiceClient, error) {
 	log.Info("Opening connection to: %s", target)
 	ipfsAddr, err := ma.NewMultiaddr(target)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	pid, err := ipfsAddr.ValueForProtocol(ma.P_IPFS)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	peerID, err := peer.IDB58Decode(pid)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	// Decapsulate the /ipfs/<peerID> part from the target
@@ -45,7 +52,7 @@ func OpenClient(target string) p2ppb.P2PServiceClient {
 	// make a new stream from host B to host A
 	g, err := grpcProtoInstance.Dial(context.Background(), peerID, grpc.WithInsecure())
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	for {
@@ -53,5 +60,94 @@ func OpenClient(target string) p2ppb.P2PServiceClient {
 			break
 		}
 	}
-	return p2ppb.NewP2PServiceClient(g)
+	return p2ppb.NewP2PServiceClient(g), nil
+}
+
+// getSignatureForDocument requests the target node to sign the document
+func getSignatureForDocument(ctx context.Context, idService identity.Service, doc coredocumentpb.CoreDocument, client p2ppb.P2PServiceClient) (*p2ppb.SignatureResponse, error) {
+	header := p2ppb.CentrifugeHeader{
+		NetworkIdentifier:  config.Config.GetNetworkID(),
+		CentNodeVersion:    version.GetVersion().String(),
+		SenderCentrifugeId: config.Config.GetIdentityId(),
+	}
+
+	req := &p2ppb.SignatureRequest{
+		Header:   &header,
+		Document: &doc,
+	}
+
+	resp, err := client.RequestDocumentSignature(ctx, req)
+	if err != nil {
+		return nil, errors.Wrap(err, "request for document signature failed")
+	}
+
+	compatible := version.CheckVersion(resp.CentNodeVersion)
+	if !compatible {
+		return nil, version.IncompatibleVersionError(resp.CentNodeVersion)
+	}
+
+	valid, err := signatures.ValidateSignature(idService, resp.Signature, doc.SigningRoot)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to validate signature")
+	}
+
+	if !valid {
+		return nil, errors.New(code.AuthenticationFailed, "signature invalid")
+	}
+
+	return resp, nil
+}
+
+type signatureResponseWrap struct {
+	resp *p2ppb.SignatureResponse
+	err  error
+}
+
+func getSignatureAsync(ctx context.Context, idService identity.Service, doc coredocumentpb.CoreDocument, client p2ppb.P2PServiceClient, out chan<- signatureResponseWrap) {
+	resp, err := getSignatureForDocument(ctx, idService, doc, client)
+	out <- signatureResponseWrap{
+		resp: resp,
+		err:  err,
+	}
+}
+
+// GetSignaturesForDocument requests peer nodes for the signature and verifies them
+func GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocument, idService identity.Service, centIDs [][]byte) error {
+	if doc == nil {
+		return errors.NilError(doc)
+	}
+
+	targets, err := identity.GetClientsP2PURLs(idService, centIDs)
+	if err != nil {
+		return errors.Wrap(err, "failed to get P2P urls")
+	}
+
+	in := make(chan signatureResponseWrap)
+	defer close(in)
+
+	for _, target := range targets {
+		client, err := OpenClient(target)
+		if err != nil {
+			return errors.Wrap(err, "failed to connect to target")
+		}
+
+		// for now going with context.background, once we have a timeout for request
+		// we can use context.Timeout for that
+		go getSignatureAsync(ctx, idService, *doc, client, in)
+	}
+
+	var responses []signatureResponseWrap
+	for range targets {
+		responses = append(responses, <-in)
+	}
+
+	for _, resp := range responses {
+		if resp.err != nil {
+			return err
+		}
+
+		doc.Signatures = append(doc.Signatures, resp.resp.Signature)
+	}
+
+	return nil
 }

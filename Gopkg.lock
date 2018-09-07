@@ -12,7 +12,7 @@
     "gen/go/p2p",
     "gen/go/purchaseorder"
   ]
-  revision = "a74fc9bce50769089c335874c28de959665dee86"
+  revision = "0360114f218245cb89f9d0700b34d264f4b3818f"
   source = "git@github.com:CentrifugeInc/centrifuge-protobufs"
 
 [[projects]]
@@ -41,7 +41,7 @@
   branch = "master"
   name = "github.com/btcsuite/btcd"
   packages = ["btcec"]
-  revision = "79e00513b1011888b1e675157ab89f527f901cae"
+  revision = "cff30e1d23fc9e800b2b5b4b41ef1817dda07e9f"
 
 [[projects]]
   branch = "master"
@@ -55,7 +55,7 @@
     "proofs",
     "proofs/proto"
   ]
-  revision = "15bc79ad1aca6630e6489e253aef6955686b36a1"
+  revision = "c673e56ee0de0d721a10dee5cd2aa59015e4420a"
   source = "git@github.com:centrifuge/precise-proofs"
 
 [[projects]]
@@ -628,10 +628,10 @@
   revision = "ad98a36ba0da87206e3378c556abbfeaeaa98668"
 
 [[projects]]
-  branch = "master"
   name = "github.com/mitchellh/go-homedir"
   packages = ["."]
   revision = "ae18d6b8b3205b561c79e8e5f69bff09736185f4"
+  version = "v1.0.0"
 
 [[projects]]
   name = "github.com/mitchellh/mapstructure"
@@ -853,10 +853,10 @@
   revision = "097c5d47330ff6a823f67e3515faa13566a62c6f"
 
 [[projects]]
-  branch = "master"
   name = "github.com/whyrusleeping/go-smux-multistream"
   packages = ["."]
   revision = "e799b10bc6eea2cc5ce18f7b7b4d8e1a0439476d"
+  version = "v2.0.2"
 
 [[projects]]
   branch = "master"
@@ -905,7 +905,7 @@
     "scrypt",
     "sha3"
   ]
-  revision = "182538f80094b6a8efaade63a8fd8e0d9d5843dd"
+  revision = "0709b304e793a5edb4a2c0145f281ecdc20838a4"
 
 [[projects]]
   branch = "master"
@@ -934,7 +934,7 @@
     "unix",
     "windows"
   ]
-  revision = "fa5fdf94c78965f1aa8423f0cc50b8b8d728b05a"
+  revision = "8cf3aee429924738c56c34bb819c4ea8273fc434"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -977,7 +977,7 @@
     "imports",
     "internal/fastwalk"
   ]
-  revision = "7ca132754999accbaa5c1735eda29e7ce0f3bf03"
+  revision = "0aa4b8830f481fed77b73cf7cea2bc3129e05148"
 
 [[projects]]
   branch = "master"
@@ -1048,6 +1048,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "6c64443d3e07039976051b2d52314514a9de7b557f388f247dafa6f891ed8860"
+  inputs-digest = "bb8482a6afc1b75ec86e4b57c217f3d6f413df0747cd198ec911c13e252889e5"
   solver-name = "gps-cdcl"
   solver-version = 1

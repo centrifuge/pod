@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
-	centrifugeED25519 "github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
+	"golang.org/x/crypto/ed25519"
 )
 
 const (
@@ -20,11 +21,11 @@ const (
 
 type Identity interface {
 	String() string
-	GetCentrifugeId() []byte
-	CentrifugeIdString() string
-	CentrifugeIdBytes() [CentIdByteLength]byte
-	CentrifugeIdBigInt() *big.Int
-	SetCentrifugeId(b []byte) error
+	GetCentrifugeID() []byte
+	CentrifugeIDString() string
+	CentrifugeIDBytes() [CentIdByteLength]byte
+	CentrifugeIDBigInt() *big.Int
+	SetCentrifugeID(b []byte) error
 	GetCurrentP2PKey() (ret string, err error)
 	GetLastKeyForPurpose(keyPurpose int) (key []byte, err error)
 	AddKeyToIdentity(keyPurpose int, key []byte) (confirmations chan *WatchIdentity, err error)
@@ -43,9 +44,9 @@ type WatchIdentity struct {
 	Error    error
 }
 
-// IdentityService is used to fetch identities
-type IdentityService interface {
-	LookupIdentityForId(centrifugeId []byte) (id Identity, err error)
+// Service is used to fetch identities
+type Service interface {
+	LookupIdentityForID(centrifugeId []byte) (id Identity, err error)
 	CreateIdentity(centrifugeId []byte) (id Identity, confirmations chan *WatchIdentity, err error)
 	CheckIdentityExists(centrifugeId []byte) (exists bool, err error)
 }
@@ -63,16 +64,52 @@ func CentrifugeIdStringToSlice(s string) (id []byte, err error) {
 	return id, nil
 }
 
-func NewIdentityConfig() (identityConfig *config.IdentityConfig, err error) {
-	pk, pvk := centrifugeED25519.GetSigningKeyPairFromConfig()
-	decodedId, err := base64.StdEncoding.DecodeString(string(config.Config.GetIdentityId()))
+// GetClientP2PURL returns the p2p url associated with the centID
+func GetClientP2PURL(idService Service, centID []byte) (url string, err error) {
+	target, err := idService.LookupIdentityForID(centID)
 	if err != nil {
-		return nil, err
+		return url, errors.Wrap(err, "error fetching receiver identity")
 	}
-	identityConfig = &config.IdentityConfig{
-		IdentityId: decodedId,
-		PublicKey:  pk,
-		PrivateKey: pvk,
+
+	p2pKey, err := target.GetCurrentP2PKey()
+	if err != nil {
+		return url, errors.Wrap(err, "error fetching p2p key")
 	}
-	return
+
+	return fmt.Sprintf("/ipfs/%s", p2pKey), nil
+}
+
+// GetClientsP2PURLs returns p2p urls associated with each centIDs
+// will error out at first failure
+func GetClientsP2PURLs(idService Service, centIDs [][]byte) ([]string, error) {
+	var p2pURLs []string
+	for _, id := range centIDs {
+		url, err := GetClientP2PURL(idService, id)
+		if err != nil {
+			return nil, err
+		}
+
+		p2pURLs = append(p2pURLs, url)
+	}
+
+	return p2pURLs, nil
+}
+
+// GetIdentityKey returns the key for provided identity
+func GetIdentityKey(idSrv Service, identity []byte, pubKey ed25519.PublicKey) (keyInfo IdentityKey, err error) {
+	id, err := idSrv.LookupIdentityForID(identity)
+	if err != nil {
+		return keyInfo, err
+	}
+
+	key, err := id.FetchKey(pubKey)
+	if err != nil {
+		return keyInfo, err
+	}
+
+	if tools.IsEmptyByte32(key.GetKey()) {
+		return keyInfo, fmt.Errorf(fmt.Sprintf("key not found for identity: %x", identity))
+	}
+
+	return key, nil
 }
