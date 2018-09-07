@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
-	centrifugeED25519 "github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
+	"golang.org/x/crypto/ed25519"
 )
 
 const (
@@ -64,22 +64,6 @@ func CentrifugeIdStringToSlice(s string) (id []byte, err error) {
 	return id, nil
 }
 
-// FromConfig reads the keys and ID from the config and returns a the Identity config
-func FromConfig() (identityConfig *config.IdentityConfig, err error) {
-	pk, pvk := centrifugeED25519.GetSigningKeyPairFromConfig()
-	decodedId, err := base64.StdEncoding.DecodeString(string(config.Config.GetIdentityId()))
-	if err != nil {
-		return nil, err
-	}
-
-	identityConfig = &config.IdentityConfig{
-		IdentityId: decodedId,
-		PublicKey:  pk,
-		PrivateKey: pvk,
-	}
-	return
-}
-
 // GetClientP2PURL returns the p2p url associated with the centID
 func GetClientP2PURL(idService Service, centID []byte) (url string, err error) {
 	target, err := idService.LookupIdentityForID(centID)
@@ -109,4 +93,23 @@ func GetClientsP2PURLs(idService Service, centIDs [][]byte) ([]string, error) {
 	}
 
 	return p2pURLs, nil
+}
+
+// GetIdentityKey returns the key for provided identity
+func GetIdentityKey(idSrv Service, identity []byte, pubKey ed25519.PublicKey) (keyInfo IdentityKey, err error) {
+	id, err := idSrv.LookupIdentityForID(identity)
+	if err != nil {
+		return keyInfo, err
+	}
+
+	key, err := id.FetchKey(pubKey)
+	if err != nil {
+		return keyInfo, err
+	}
+
+	if tools.IsEmptyByte32(key.GetKey()) {
+		return keyInfo, fmt.Errorf(fmt.Sprintf("key not found for identity: %x", identity))
+	}
+
+	return key, nil
 }

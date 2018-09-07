@@ -31,7 +31,6 @@ var (
 
 func TestMain(m *testing.M) {
 	testing2.InitTestConfig()
-	testSigningService = SigningService{IdentityService: &EthereumIdentityMockedService{}}
 
 	// Generated with: key1Pub, key1, _ := ed25519.GenerateKey(rand.Reader)
 	key1Pub = []byte{230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}

@@ -1,6 +1,8 @@
 package ed25519
 
 import (
+	"encoding/base64"
+
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/io"
 	logging "github.com/ipfs/go-log"
@@ -68,5 +70,21 @@ func PublicKeyToP2PKey(publicKey [32]byte) (p2pId peer.ID, err error) {
 	}
 	//
 	p2pId = peer.ID(hash)
+	return
+}
+
+// GetIDConfig reads the keys and ID from the config and returns a the Identity config
+func GetIDConfig() (identityConfig *config.IdentityConfig, err error) {
+	pk, pvk := GetSigningKeyPairFromConfig()
+	decodedId, err := base64.StdEncoding.DecodeString(string(config.Config.GetIdentityId()))
+	if err != nil {
+		return nil, err
+	}
+
+	identityConfig = &config.IdentityConfig{
+		IdentityId: decodedId,
+		PublicKey:  pk,
+		PrivateKey: pvk,
+	}
 	return
 }

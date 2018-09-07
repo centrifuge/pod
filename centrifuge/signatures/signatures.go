@@ -13,13 +13,6 @@ import (
 	"golang.org/x/crypto/ed25519"
 )
 
-// KeyInfo holds public key for a given identity
-type KeyInfo struct {
-	Key       []byte
-	Purposes  []int
-	RevokedAt *big.Int
-}
-
 // ValidateSignaturesOnDocument validates all signatures on the current document
 func ValidateSignaturesOnDocument(idSrv identity.Service, doc *coredocumentpb.CoreDocument) (valid bool, err error) {
 	for _, sig := range doc.Signatures {
@@ -46,28 +39,9 @@ func ValidateSignature(idSrv identity.Service, signature *coredocumentpb.Signatu
 	return
 }
 
-// GetIdentityKey returns the key for provided identity
-func GetIdentityKey(idSrv identity.Service, identity []byte, pubKey ed25519.PublicKey) (keyInfo identity.IdentityKey, err error) {
-	id, err := idSrv.LookupIdentityForID(identity)
-	if err != nil {
-		return keyInfo, err
-	}
-
-	key, err := id.FetchKey(pubKey)
-	if err != nil {
-		return keyInfo, err
-	}
-
-	if tools.IsEmptyByte32(key.GetKey()) {
-		return keyInfo, errors.New(fmt.Sprintf("key not found for identity: %x", identity))
-	}
-
-	return key, nil
-}
-
-// ValidateKey checks if a given key is valid for the given centrifugeId.
+// ValidateKey checks if a given key is valid for the given centrifugeID.
 func ValidateKey(idSrv identity.Service, centrifugeId []byte, key ed25519.PublicKey) (valid bool, err error) {
-	idKey, err := GetIdentityKey(idSrv, centrifugeId, key)
+	idKey, err := identity.GetIdentityKey(idSrv, centrifugeId, key)
 	if err != nil {
 		return false, err
 	}
