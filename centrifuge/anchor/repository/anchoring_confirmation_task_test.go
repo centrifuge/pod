@@ -41,13 +41,13 @@ func TestAnchoringConfirmationTask_ParseKwargsHappy(t *testing.T) {
 
 	//convert big int to byte 32
 	var byte32anchorId [32]byte
-	copy(byte32anchorId[:],anchorBigInt.Bytes()[:32])
+	copy(byte32anchorId[:], anchorBigInt.Bytes()[:32])
 
 	var centrifugeIdBytes [6]byte
 
 	kwargs, _ := tools.SimulateJsonDecodeForGocelery(map[string]interface{}{
-		AnchorIdParam: byte32anchorId,
-		AddressParam:  address,
+		AnchorIdParam:     byte32anchorId,
+		AddressParam:      address,
 		CentrifugeIdParam: centrifugeIdBytes,
 	})
 	err := act.ParseKwargs(kwargs)
@@ -67,9 +67,8 @@ func TestAnchoringConfirmationTask_ParseKwargsAnchorNotPassed(t *testing.T) {
 	var centrifugeIdBytes [6]byte
 
 	kwargs, _ := tools.SimulateJsonDecodeForGocelery(map[string]interface{}{
-		AddressParam: address,
+		AddressParam:      address,
 		CentrifugeIdParam: centrifugeIdBytes,
-
 	})
 	err := act.ParseKwargs(kwargs)
 	assert.NotNil(t, err, "Anchor id should not have been parsed")
@@ -117,11 +116,11 @@ func TestAnchoringConfirmationTask_RunTaskContextClose(t *testing.T) {
 
 	address := common.BytesToAddress([]byte{1, 2, 3, 4})
 	act := AnchoringConfirmationTask{
-		AnchorId:                anchorId,
-		From:                    address,
+		AnchorId: anchorId,
+		From:     address,
 		AnchorCommittedWatcher: &MockAnchorCommittedWatcher{Subscription: &testingutils.MockSubscription{}},
-		EthContext:              ctx,
-		AnchorRegisteredEvents:  earcar,
+		EthContext:             ctx,
+		AnchorRegisteredEvents: earcar,
 	}
 	exit := make(chan bool)
 	go func() {
@@ -142,11 +141,11 @@ func TestAnchoringConfirmationTask_RunTaskWatchError(t *testing.T) {
 	anchorId := [32]byte{1, 2, 3}
 	address := common.BytesToAddress([]byte{1, 2, 3, 4})
 	act := AnchoringConfirmationTask{
-		AnchorId:                anchorId,
-		From:                    address,
+		AnchorId: anchorId,
+		From:     address,
 		AnchorCommittedWatcher: &MockAnchorCommittedWatcher{shouldFail: true},
-		EthContext:              ctx,
-		AnchorRegisteredEvents:  earcar,
+		EthContext:             ctx,
+		AnchorRegisteredEvents: earcar,
 	}
 	exit := make(chan bool)
 	go func() {
@@ -167,11 +166,11 @@ func TestAnchoringConfirmationTask_RunTaskSubscriptionError(t *testing.T) {
 	errChan := make(chan error)
 	watcher := &MockAnchorCommittedWatcher{Subscription: &testingutils.MockSubscription{ErrChan: errChan}}
 	act := AnchoringConfirmationTask{
-		AnchorId:                anchorId,
-		From:                    address,
+		AnchorId: anchorId,
+		From:     address,
 		AnchorCommittedWatcher: watcher,
-		EthContext:              ctx,
-		AnchorRegisteredEvents:  earcar,
+		EthContext:             ctx,
+		AnchorRegisteredEvents: earcar,
 	}
 	exit := make(chan bool)
 	go func() {
@@ -192,11 +191,11 @@ func TestAnchoringConfirmationTask_RunTaskSuccess(t *testing.T) {
 
 	address := common.BytesToAddress([]byte{1, 2, 3, 4})
 	act := AnchoringConfirmationTask{
-		AnchorId:                anchorId,
-		From:                    address,
+		AnchorId: anchorId,
+		From:     address,
 		AnchorCommittedWatcher: &MockAnchorCommittedWatcher{Subscription: &testingutils.MockSubscription{}},
-		EthContext:              ctx,
-		AnchorRegisteredEvents:  earcar,
+		EthContext:             ctx,
+		AnchorRegisteredEvents: earcar,
 	}
 	exit := make(chan bool)
 	go func() {

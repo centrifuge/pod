@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/anchor"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/anchor/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/bootstrapper"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
@@ -17,7 +18,6 @@ import (
 	logging "github.com/ipfs/go-log"
 	"github.com/syndtr/goleveldb/leveldb"
 	gologging "github.com/whyrusleeping/go-logging"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/anchor/repository"
 )
 
 const testStoragePath = "/tmp/centrifuge_data.leveldb_TESTING"

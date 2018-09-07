@@ -3,12 +3,13 @@
 package repository
 
 import (
+	"math/big"
+	"testing"
+
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/secp256k1"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/utils"
 	"github.com/ethereum/go-ethereum/crypto"
-	"math/big"
-	"testing"
 
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -38,7 +39,7 @@ type MockWatchAnchorRegistered struct {
 	sink       chan<- *EthereumAnchorRepositoryContractAnchorCommitted
 }
 
-func (mwar *MockWatchAnchorRegistered)WatchAnchorCommitted(opts *bind.WatchOpts, sink chan<- *EthereumAnchorRepositoryContractAnchorCommitted,
+func (mwar *MockWatchAnchorRegistered) WatchAnchorCommitted(opts *bind.WatchOpts, sink chan<- *EthereumAnchorRepositoryContractAnchorCommitted,
 	from []common.Address, anchorId []*big.Int, centrifugeId []*big.Int) (event.Subscription, error) {
 	if mwar.shouldFail == true {
 		return nil, errors.New("forced error during test")
@@ -52,7 +53,7 @@ func (mwar *MockWatchAnchorRegistered)WatchAnchorCommitted(opts *bind.WatchOpts,
 
 // END ----- MOCKING -----
 
-func generateCommitHash(anchorIdByte []byte,centrifugeIdByte []byte,documentRootByte []byte) ([]byte) {
+func generateCommitHash(anchorIdByte []byte, centrifugeIdByte []byte, documentRootByte []byte) []byte {
 
 	message := append(anchorIdByte, documentRootByte...)
 
@@ -62,7 +63,7 @@ func generateCommitHash(anchorIdByte []byte,centrifugeIdByte []byte,documentRoot
 	return messageToSign
 }
 
-func TestCorrectCommitSignatureGen(t *testing.T){
+func TestCorrectCommitSignatureGen(t *testing.T) {
 
 	// hardcoded values are generated with centrifuge-ethereum-contracts
 	anchorId := "0x154cc26833dec2f4ad7ead9d65f9ec968a1aa5efbf6fe762f8f2a67d18a2d9b1"
@@ -78,13 +79,13 @@ func TestCorrectCommitSignatureGen(t *testing.T){
 	documentRootByte := utils.HexToByteArray(documentRoot)
 	centrifugeIdByte := utils.HexToByteArray(centrifugeId)
 
-	messageToSign := generateCommitHash(anchorIdByte,centrifugeIdByte,documentRootByte)
+	messageToSign := generateCommitHash(anchorIdByte, centrifugeIdByte, documentRootByte)
 
-	assert.Equal(t,correctCommitToSign,utils.ByteArrayToHex(messageToSign),"messageToSign not calculated correctly")
+	assert.Equal(t, correctCommitToSign, utils.ByteArrayToHex(messageToSign), "messageToSign not calculated correctly")
 
 	signature := secp256k1.SignEthereum(messageToSign, utils.HexToByteArray(testPrivateKey))
 
-	assert.Equal(t,correctCommitSignature,utils.ByteArrayToHex(signature),"signature not correct")
+	assert.Equal(t, correctCommitSignature, utils.ByteArrayToHex(signature), "signature not correct")
 
 }
 
@@ -99,10 +100,10 @@ func TestGenerateAnchor(t *testing.T) {
 	var documentProofs [][32]byte
 
 	documentProofs = append(documentProofs, documentProof)
-	messageToSign := generateCommitHash(currentAnchorId[:],centrifugeId,currentDocumentRoot[:])
+	messageToSign := generateCommitHash(currentAnchorId[:], centrifugeId, currentDocumentRoot[:])
 	signature := secp256k1.SignEthereum(messageToSign, utils.HexToByteArray(testPrivateKey))
 
-	var anchorIdBigInt  = new(big.Int)
+	var anchorIdBigInt = new(big.Int)
 	anchorIdBigInt.SetBytes(currentAnchorId[:])
 
 	var centrifugeIdBigInt = new(big.Int)
@@ -111,8 +112,8 @@ func TestGenerateAnchor(t *testing.T) {
 	var documentRoot32Bytes [32]byte
 	copy(documentRoot32Bytes[:], currentDocumentRoot[:32])
 
-	commitData,err := NewCommitData(anchorIdBigInt,documentRoot32Bytes,centrifugeIdBigInt,documentProofs,signature)
-	assert.Nil(t,err,"err should be nil")
+	commitData, err := NewCommitData(anchorIdBigInt, documentRoot32Bytes, centrifugeIdBigInt, documentProofs, signature)
+	assert.Nil(t, err, "err should be nil")
 
 	assert.Equal(t, commitData.AnchorId, anchorIdBigInt, "Anchor should have the passed ID")
 	assert.Equal(t, commitData.DocumentRoot, documentRoot32Bytes, "Anchor should have the passed document root")
@@ -120,7 +121,4 @@ func TestGenerateAnchor(t *testing.T) {
 	assert.Equal(t, commitData.DocumentProofs, documentProofs, "Anchor should have the document proofs")
 	assert.Equal(t, commitData.Signature, signature, "Anchor should have the signature")
 
-
 }
-
-
