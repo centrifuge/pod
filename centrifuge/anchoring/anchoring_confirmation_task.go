@@ -2,9 +2,10 @@ package anchoring
 
 import (
 	"fmt"
+	"math/big"
+
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
-	"math/big"
 
 	"context"
 
@@ -32,14 +33,14 @@ type AnchorCommittedWatcher interface {
 // To see how it gets registered see bootstrapper.go and to see how it gets used see setUpRegistrationEventListener method
 type AnchoringConfirmationTask struct {
 	// task parameters
-	From     common.Address
-	AnchorId [AnchorIdLength]byte
-	CentrifugeId [identity.CentIdByteLength] byte
+	From         common.Address
+	AnchorId     [AnchorIdLength]byte
+	CentrifugeId [identity.CentIdByteLength]byte
 
 	// state
-	EthContextInitializer   func() (ctx context.Context, cancelFunc context.CancelFunc)
-	AnchorRegisteredEvents  chan *EthereumAnchorRepositoryContractAnchorCommitted
-	EthContext              context.Context
+	EthContextInitializer  func() (ctx context.Context, cancelFunc context.CancelFunc)
+	AnchorRegisteredEvents chan *EthereumAnchorRepositoryContractAnchorCommitted
+	EthContext             context.Context
 	AnchorCommittedWatcher AnchorCommittedWatcher
 }
 
@@ -49,7 +50,7 @@ func NewAnchoringConfirmationTask(
 ) queue.QueuedTask {
 	return &AnchoringConfirmationTask{
 		AnchorCommittedWatcher: anchorCommittedWatcher,
-		EthContextInitializer:   ethContextInitializer,
+		EthContextInitializer:  ethContextInitializer,
 	}
 }
 
@@ -81,7 +82,7 @@ func (act *AnchoringConfirmationTask) ParseKwargs(kwargs map[string]interface{})
 		return fmt.Errorf("undefined kwarg " + AnchorIdParam)
 	}
 
-	anchorIdBytes ,err := getBytes32(anchorId)
+	anchorIdBytes, err := getBytes32(anchorId)
 
 	if err != nil {
 		return fmt.Errorf("malformed kwarg [%s] because [%s]", AnchorIdParam, err.Error())
@@ -130,10 +131,9 @@ func (act *AnchoringConfirmationTask) RunTask() (interface{}, error) {
 		act.AnchorRegisteredEvents = make(chan *EthereumAnchorRepositoryContractAnchorCommitted)
 	}
 
-
 	subscription, err := act.AnchorCommittedWatcher.WatchAnchorCommitted(watchOpts, act.AnchorRegisteredEvents,
-						[]common.Address{act.From}, []*big.Int{tools.ByteFixedToBigInt(act.AnchorId[:], AnchorIdLength)},
-						[]*big.Int{tools.ByteFixedToBigInt(act.CentrifugeId[:], identity.CentIdByteLength)})
+		[]common.Address{act.From}, []*big.Int{tools.ByteFixedToBigInt(act.AnchorId[:], AnchorIdLength)},
+		[]*big.Int{tools.ByteFixedToBigInt(act.CentrifugeId[:], identity.CentIdByteLength)})
 
 	if err != nil {
 		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for anchor repository", 1)

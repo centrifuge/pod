@@ -2,10 +2,11 @@ package anchoring
 
 import (
 	"context"
+	"math/big"
+
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/queue"
 	"github.com/centrifuge/gocelery"
-	"math/big"
 
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
@@ -24,7 +25,6 @@ type AnchorRepositoryContract interface {
 	//transactions
 	PreCommit(opts *bind.TransactOpts, anchorId *big.Int, signingRoot [32]byte, centrifugeId *big.Int, signature []byte, expirationBlock *big.Int) (*types.Transaction, error)
 	Commit(opts *bind.TransactOpts, _anchorId *big.Int, _documentRoot [32]byte, _centrifugeId *big.Int, _documentProofs [][32]byte, _signature []byte) (*types.Transaction, error)
-
 }
 type WatchAnchorPreCommitted interface {
 	//event name: AnchorPreCommitted
@@ -37,8 +37,6 @@ type WatchAnchorCommitted interface {
 	WatchAnchorCommitted(opts *bind.WatchOpts, sink chan<- *EthereumAnchorRepositoryContractAnchorCommitted,
 		from []common.Address, anchorId []*big.Int, centrifugeId []*big.Int) (event.Subscription, error)
 }
-
-
 
 //PreCommitAnchor will call the transaction PreCommit on the smart contract
 func (ethRepository *EthereumAnchorRepository) PreCommitAnchor(anchorId *big.Int, signingRoot [32]byte, centrifugeId *big.Int, signature []byte, expirationBlock *big.Int) (confirmations <-chan *WatchPreCommit, err error) {
@@ -182,15 +180,15 @@ func setUpCommitEventListener(from common.Address, commitData *CommitData) (conf
 
 	confirmations = make(chan *WatchCommit)
 
-	var anchorId32Byte [AnchorIdLength] byte
-	copy(anchorId32Byte[:],commitData.AnchorId.Bytes()[:AnchorIdLength])
+	var anchorId32Byte [AnchorIdLength]byte
+	copy(anchorId32Byte[:], commitData.AnchorId.Bytes()[:AnchorIdLength])
 
-	var centrifugeIdByte [identity.CentIdByteLength] byte
-	copy(centrifugeIdByte[:],commitData.CentrifugeId.Bytes()[:identity.CentIdByteLength])
+	var centrifugeIdByte [identity.CentIdByteLength]byte
+	copy(centrifugeIdByte[:], commitData.CentrifugeId.Bytes()[:identity.CentIdByteLength])
 
 	asyncRes, err := queue.Queue.DelayKwargs(AnchoringRepositoryConfirmationTaskName, map[string]interface{}{
-		AnchorIdParam: anchorId32Byte,
-		AddressParam:  from,
+		AnchorIdParam:     anchorId32Byte,
+		AddressParam:      from,
 		CentrifugeIdParam: centrifugeIdByte,
 	})
 	if err != nil {
