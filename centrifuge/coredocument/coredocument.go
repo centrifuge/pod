@@ -37,7 +37,7 @@ func GetDataProofHashes(document *coredocumentpb.CoreDocument) (hashes [][]byte,
 }
 
 func CalculateSigningRoot(document *coredocumentpb.CoreDocument) error {
-	valid, errMsg, errs := Validate(document)
+	valid, errMsg, errs := Validate(document) // TODO: Validation
 	if !valid {
 		return errors.NewWithErrors(code.DocumentInvalid, errMsg, errs)
 	}
@@ -47,6 +47,18 @@ func CalculateSigningRoot(document *coredocumentpb.CoreDocument) error {
 		return err
 	}
 	document.SigningRoot = tree.RootHash()
+	return nil
+}
+
+func CalculateDocumentRoot(document *coredocumentpb.CoreDocument) error {
+	if len(document.SigningRoot) != 32 {
+		return errors.New(code.DocumentInvalid, "signing root invalid")
+	}
+	tree, err := GetDocumentRootTree(document)
+	if err != nil {
+		return err
+	}
+	document.DocumentRoot = tree.RootHash()
 	return nil
 }
 

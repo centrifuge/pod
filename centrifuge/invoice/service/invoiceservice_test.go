@@ -5,6 +5,7 @@ package invoiceservice_test
 import (
 	"context"
 	"crypto/sha256"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"os"
 	"testing"
 
@@ -204,7 +205,7 @@ func TestInvoiceDocumentService_HandleCreateInvoiceProof(t *testing.T) {
 	inv.Document.CoreDocument.CoredocumentSalts = cdSalts
 
 	inv.CalculateMerkleRoot()
-
+	coredocument.CalculateDocumentRoot(inv.Document.CoreDocument)
 	s, mockRepo, _ := generateMockedOutInvoiceService()
 
 	proofRequest := &clientinvoicepb.CreateInvoiceProofEnvelope{
@@ -223,7 +224,7 @@ func TestInvoiceDocumentService_HandleCreateInvoiceProof(t *testing.T) {
 	sha256Hash := sha256.New()
 	fieldHash, err := proofs.CalculateHashForProofField(invoiceProof.FieldProofs[0], sha256Hash)
 
-	valid, err := proofs.ValidateProofSortedHashes(fieldHash, invoiceProof.FieldProofs[0].SortedHashes, inv.Document.CoreDocument.SigningRoot, sha256Hash)
+	valid, err := proofs.ValidateProofSortedHashes(fieldHash, invoiceProof.FieldProofs[0].SortedHashes, inv.Document.CoreDocument.DocumentRoot, sha256Hash)
 	assert.True(t, valid)
 	assert.Nil(t, err)
 }
