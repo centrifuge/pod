@@ -39,12 +39,10 @@ func createIdentityWithKeys(t *testing.T, centrifugeId []byte) []byte {
 
 	watchRegisteredIdentity := <-confirmations
 	assert.Nil(t, watchRegisteredIdentity.Error, "No error thrown by context")
-	assert.Equal(t, centrifugeId, watchRegisteredIdentity.Identity.CentrifugeIDBytes(), "Resulting Identity should have the same ID as the input")
 
 	// LookupIdentityForId
 	id, err = identityService.LookupIdentityForID(centrifugeId)
 	assert.Nil(t, err, "should not error out when resolving identity")
-	assert.Equal(t, centrifugeId, id.CentrifugeIDBytes(), "CentrifugeId Should match provided one")
 
 	testAddress = "0xc8dd3d66e112fae5c88fe6a677be24013e53c33e"
 	testPrivateKey = "0x17e063fa17dd8274b09c14b253697d9a20afff74ace3c04fdb1b9c814ce0ada5"
