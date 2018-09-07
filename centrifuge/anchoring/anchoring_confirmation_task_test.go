@@ -1,6 +1,6 @@
 // +build unit
 
-package repository
+package anchoring
 
 import (
 	"math/big"

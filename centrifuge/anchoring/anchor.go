@@ -1,6 +1,11 @@
-package repository
+package anchoring
 
 import "math/big"
+
+const AnchorIdLength = 32
+const RootLength = 32
+type AnchorId [AnchorIdLength]byte
+type Root [RootLength]byte
 
 type PreCommitData struct {
 	AnchorId        *big.Int

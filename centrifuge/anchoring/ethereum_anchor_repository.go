@@ -1,4 +1,4 @@
-package repository
+package anchoring
 
 import (
 	"context"

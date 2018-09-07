@@ -1,6 +1,6 @@
-// +build ethereum
 
-package repository_test
+
+package anchoring
 
 import (
 	"math/big"
@@ -17,7 +17,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var identityService identity.IdentityService
+var identityService identity.Service
 
 // Add Key
 var testAddress string

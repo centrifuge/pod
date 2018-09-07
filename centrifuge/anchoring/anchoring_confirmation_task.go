@@ -1,4 +1,4 @@
-package repository
+package anchoring
 
 import (
 	"fmt"
@@ -21,7 +21,6 @@ const (
 	AnchorIdParam                           string = "AnchorIdParam"
 	CentrifugeIdParam                       string = "CentrifugeIdParam"
 	AddressParam                            string = "AddressParam"
-	AnchorIdLength                                 = 32
 )
 
 type AnchorCommittedWatcher interface {
