@@ -13,13 +13,20 @@ import (
 	"golang.org/x/crypto/ed25519"
 )
 
+// signingService is a single instance of SigningService
 var signingService SigningService
+
+// once to guard from multiple instantiations
 var once sync.Once
 
+// GetSigningService returns an initialised SigningService
+// returns nil if there is none initialised
 func GetSigningService() *SigningService {
 	return &signingService
 }
 
+// NewSigningService initialises the given SigningService if not already initialised
+// no-op id already initialised
 func NewSigningService(srv SigningService) {
 	once.Do(func() {
 		signingService = srv
@@ -27,6 +34,7 @@ func NewSigningService(srv SigningService) {
 	return
 }
 
+// KeyInfo holds public key for a given identity
 type KeyInfo struct {
 	PublicKey  ed25519.PublicKey
 	ValidFrom  time.Time
@@ -34,6 +42,7 @@ type KeyInfo struct {
 	Identity   []byte
 }
 
+// SigningService holds the identity and keys of the node
 type SigningService struct {
 	// For simplicity we only support one active identity for now.
 	IdentityId []byte
@@ -41,6 +50,7 @@ type SigningService struct {
 	PrivateKey ed25519.PrivateKey
 }
 
+// LoadIdentityKeyFromConfig loads the keys from the configuration
 func (srv *SigningService) LoadIdentityKeyFromConfig() {
 	srv.IdentityId = config.Config.GetIdentityId()
 	srv.PublicKey, srv.PrivateKey = centrifugeED25519.GetSigningKeyPairFromConfig()
@@ -108,9 +118,7 @@ func (srv *SigningService) MakeSignature(doc *coredocumentpb.CoreDocument, ident
 	return &coredocumentpb.Signature{EntityId: identity, PublicKey: publicKey, Signature: signature}
 }
 
-// Sign a document with a provided public key
-func (srv *SigningService) Sign(doc *coredocumentpb.CoreDocument) (err error) {
-	sig := srv.MakeSignature(doc, srv.IdentityId, srv.PrivateKey, srv.PublicKey)
-	doc.Signatures = append(doc.Signatures, sig)
-	return nil
+// Sign the document with the private key and return the signature along with the public key for the verification
+func (srv *SigningService) Sign(doc *coredocumentpb.CoreDocument) *coredocumentpb.Signature {
+	return srv.MakeSignature(doc, srv.IdentityId, srv.PrivateKey, srv.PublicKey)
 }

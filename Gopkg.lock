@@ -2,7 +2,7 @@
 
 
 [[projects]]
-  digest = "1:5bf8580459a15512e94417ca76106a960197a988db882149436f028507b9bcdb"
+  digest = "1:5e4184dbeecae510a377e09684b7c583affecb9e3fb1eb62ac625b3dbf67d833"
   name = "github.com/CentrifugeInc/centrifuge-protobufs"
   packages = [
     "documenttypes",
@@ -14,8 +14,8 @@
     "gen/go/purchaseorder",
   ]
   pruneopts = "T"
-  revision = "32e51c3a94b73ee1191f601f25c0bf58ca486116"
-  source = "git@github.com:CentrifugeInc/centrifuge-protobufs"
+  revision = "d370640bebfb5d52115252da54560193c8369c13"
+  source = "git@github.com:vedhavyas/centrifuge-protobufs"
 
 [[projects]]
   digest = "1:55388fd080150b9a072912f97b1f5891eb0b50df43401f8b75fb4273d3fec9fc"
@@ -62,14 +62,14 @@
   revision = "840d02135ac447e77bd0d669246b602feca5e8b4"
 
 [[projects]]
-  digest = "1:5c65ea082148892bd4a93881b2810a7d20d86a25034dcf520292c8fd38cee3b1"
+  digest = "1:640dd34da62e19805447c33fc6c8ca2cb66bfa2bf9b0c015ff6d2f31b3dbbfb0"
   name = "github.com/centrifuge/precise-proofs"
   packages = [
     "proofs",
     "proofs/proto",
   ]
   pruneopts = "UT"
-  revision = "f8ef5392db436f8678e972810bf919c0406d1b83"
+  revision = "82d1c4fdccd4c8bc0d148904835db27bac527b6c"
 
 [[projects]]
   digest = "1:0ef770954bca104ee99b3b6b7f9b240605ac03517d9f98cbc1893daa03f3c038"
@@ -107,14 +107,6 @@
   revision = "bc6354cbbc295e925e4c611ffe90c1f287ee54db"
 
 [[projects]]
-  branch = "master"
-  digest = "1:67d0b50be0549e610017cb91e0b0b745ec0cad7c613bc8e18ff2d1c1fc8825a7"
-  name = "github.com/edsrzf/mmap-go"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "0bce6a6887123b67a60366d2c9fe2dfb74289d2e"
-
-[[projects]]
   digest = "1:b2f36e5422bda96da299f9e48c7dcdd3177b18477297f84ff1a45ec3032c2994"
   name = "github.com/ethereum/go-ethereum"
   packages = [
@@ -123,63 +115,24 @@
     "accounts/abi",
     "accounts/abi/bind",
     "accounts/keystore",
-    "accounts/usbwallet",
-    "accounts/usbwallet/internal/trezor",
     "common",
-    "common/bitutil",
     "common/hexutil",
     "common/math",
     "common/mclock",
-    "consensus",
-    "consensus/clique",
-    "consensus/ethash",
-    "consensus/misc",
-    "core",
-    "core/bloombits",
-    "core/rawdb",
-    "core/state",
     "core/types",
-    "core/vm",
     "crypto",
-    "crypto/bn256",
-    "crypto/bn256/cloudflare",
-    "crypto/bn256/google",
-    "crypto/ecies",
     "crypto/secp256k1",
     "crypto/sha3",
-    "eth",
-    "eth/downloader",
-    "eth/fetcher",
-    "eth/filters",
-    "eth/gasprice",
-    "eth/tracers",
-    "eth/tracers/internal/tracers",
     "ethclient",
     "ethdb",
-    "ethstats",
     "event",
-    "internal/debug",
-    "internal/ethapi",
-    "les",
-    "les/flowcontrol",
-    "light",
     "log",
-    "log/term",
     "metrics",
-    "metrics/exp",
-    "miner",
-    "mobile",
-    "node",
-    "p2p",
-    "p2p/discover",
-    "p2p/discv5",
-    "p2p/nat",
     "p2p/netutil",
     "params",
     "rlp",
     "rpc",
     "trie",
-    "whisper/whisperv6",
   ]
   pruneopts = "T"
   revision = "225171a4bfcc16bd12a1906b1e0d43d0b18c353b"
@@ -193,17 +146,6 @@
   pruneopts = "UT"
   revision = "bad65a492f32121a87197f4a085905c35e2a367e"
   version = "v1.0.0"
-
-[[projects]]
-  branch = "master"
-  digest = "1:0e46990e9f1b0c4f6f84003ba9c7b5e5b8adccbcfb3595b6f0d2312080356bfb"
-  name = "github.com/fjl/memsize"
-  packages = [
-    ".",
-    "memsizeui",
-  ]
-  pruneopts = "UT"
-  revision = "f6d5545993d68e9e42df43eb57958f898dea3623"
 
 [[projects]]
   digest = "1:abeb38ade3f32a92943e5be54f55ed6d6e3b6602761d74b4aab4c9dd45c18abd"
@@ -534,14 +476,6 @@
   revision = "b497e2f366b8624394fb2e89c10ab607bebdde0b"
 
 [[projects]]
-  branch = "master"
-  digest = "1:d1ba92510c0233d4f56d658f68d6faab12cbaf595051e610c6a43c4d85465b37"
-  name = "github.com/karalabe/hid"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "2b4488a37358b7283de4f9622553e85ebbe73125"
-
-[[projects]]
   digest = "1:d38d6658922388905ca5d129ee4af7893efaa66f1f96e962dfed931acd8b3eb8"
   name = "github.com/libp2p/go-addr-util"
   packages = ["."]
@@ -847,6 +781,14 @@
   version = "v0.0.3"
 
 [[projects]]
+  branch = "add-sort-option"
+  digest = "1:dc3522d1617d78cefd549b8f41a249d82833747959bd34f26daff51c9f3ba03a"
+  name = "github.com/mikiquantum/go-merkle"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "b5ef3e0499c7771f368e862a7b3107b692abd8d9"
+
+[[projects]]
   branch = "master"
   digest = "1:130cefe87d7eeefc824978dcb78e35672d4c49a11f25c153fbf0cfd952756fa3"
   name = "github.com/minio/blake2b-simd"
@@ -994,14 +936,6 @@
   pruneopts = "UT"
   revision = "792786c7400a136282c1664665ae0a8db921c6c2"
   version = "v1.0.0"
-
-[[projects]]
-  digest = "1:9ffc0db15d8de463144fdc52af75a21b9d6ffc9af2a91e3ed294758ac19c734e"
-  name = "github.com/prometheus/prometheus"
-  packages = ["util/flock"]
-  pruneopts = "UT"
-  revision = "85f23d82a045d103ea7f3c89a91fba4a93e6367a"
-  version = "v2.1.0"
 
 [[projects]]
   digest = "1:8f4b365e527c00e2ba6b25a4c41ee7b84078c375fba83c971e54d2f0582df279"
@@ -1223,15 +1157,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:80618f2ab482af3de624ba3573fae22ec3dfbe9949c8784a42a019f7597dfd20"
-  name = "github.com/xsleonard/go-merkle"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "c71c7cc334c839f31f3760b2385eab8381daf64e"
-
-[[projects]]
-  branch = "master"
-  digest = "1:0a7afe79e7cf911f9878f8c004f94205135a6f26c65ac57d88f4b9231aaa4d83"
+  digest = "1:b5a8fada1cb985bd2b823735e9ec922c4ecd7252880cbea5921d0a9343be648e"
   name = "golang.org/x/crypto"
   packages = [
     "blake2s",
@@ -1239,7 +1165,6 @@
     "ed25519",
     "ed25519/internal/edwards25519",
     "pbkdf2",
-    "ripemd160",
     "scrypt",
     "sha3",
   ]
@@ -1266,14 +1191,6 @@
   ]
   pruneopts = "UT"
   revision = "aaf60122140d3fcf75376d319f0554393160eb50"
-
-[[projects]]
-  branch = "master"
-  digest = "1:9f303486d623f840492bfeb48eb906a94e9d3fe638a761639b72ce64bf7bfcc3"
-  name = "golang.org/x/sync"
-  packages = ["syncmap"]
-  pruneopts = "UT"
-  revision = "1d60e4601c6fd243af51cc01ddf169918a5407ca"
 
 [[projects]]
   branch = "master"
@@ -1397,28 +1314,12 @@
   revision = "c1b8fa8bdccecb0b8db834ee0b92fdbcfa606dd6"
 
 [[projects]]
-  branch = "v3"
-  digest = "1:94a7e206cc476d55ea7e5924324259d89a61b74589007193e0f35da1389202f3"
-  name = "gopkg.in/olebedev/go-duktape.v3"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "d53328019b21fe1987c97f368f98c072c8f44455"
-
-[[projects]]
   digest = "1:cf9c32df6fe209f9b5db1aa91c6e4084d3867baa9063803df07c5b80a37f1f90"
   name = "gopkg.in/resty.v1"
   packages = ["."]
   pruneopts = "UT"
   revision = "97a15579492cd5f35632499f315d7a8df94160a1"
   version = "v1.8.0"
-
-[[projects]]
-  digest = "1:b24d38b282bacf9791408a080f606370efa3d364e4b5fd9ba0f7b87786d3b679"
-  name = "gopkg.in/urfave/cli.v1"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "cfb38830724cc34fedffe9a2a29fb54fa9169cd1"
-  version = "v1.20.0"
 
 [[projects]]
   digest = "1:342378ac4dcb378a5448dd723f0784ae519383532f5e70ade24132c4c8693202"
@@ -1452,7 +1353,6 @@
     "github.com/ethereum/go-ethereum/crypto/secp256k1",
     "github.com/ethereum/go-ethereum/ethclient",
     "github.com/ethereum/go-ethereum/event",
-    "github.com/ethereum/go-ethereum/mobile",
     "github.com/ethereum/go-ethereum/rpc",
     "github.com/go-errors/errors",
     "github.com/golang/protobuf/jsonpb",
