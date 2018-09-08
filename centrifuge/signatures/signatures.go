@@ -44,5 +44,5 @@ func verifySignature(pubKey, message, signature []byte) (bool, error) {
 // assumes that signing root for the document is generated
 func Sign(idConfig *config.IdentityConfig, doc *coredocumentpb.CoreDocument) *coredocumentpb.Signature {
 	signature := ed25519.Sign(idConfig.PrivateKey, doc.SigningRoot)
-	return &coredocumentpb.Signature{EntityId: idConfig.IdentityId, PublicKey: idConfig.PublicKey, Signature: signature}
+	return &coredocumentpb.Signature{EntityId: idConfig.ID, PublicKey: idConfig.PublicKey, Signature: signature}
 }

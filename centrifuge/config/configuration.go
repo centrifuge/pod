@@ -34,8 +34,9 @@ type AccountConfig struct {
 	Password string
 }
 
+// IdentityConfig holds ID, public and private key of a single entity
 type IdentityConfig struct {
-	IdentityId []byte
+	ID         []byte
 	PublicKey  []byte
 	PrivateKey []byte
 }

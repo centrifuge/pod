@@ -10,7 +10,7 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
-	centrED25519 "github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
+	centED25519 "github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/p2p"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/signatures"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
@@ -127,7 +127,7 @@ func (dp *defaultProcessor) Sign(document *coredocumentpb.CoreDocument) (err err
 		return err
 	}
 
-	idConfig, err := centrED25519.GetIDConfig()
+	idConfig, err := centED25519.GetIDConfig()
 	if err != nil {
 		return err
 	}

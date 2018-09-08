@@ -84,7 +84,7 @@ func GetIDConfig() (identityConfig *config.IdentityConfig, err error) {
 	}
 
 	identityConfig = &config.IdentityConfig{
-		IdentityId: decodedId,
+		ID:         decodedId,
 		PublicKey:  pk,
 		PrivateKey: pvk,
 	}

@@ -26,7 +26,7 @@ func TestSign(t *testing.T) {
 	coreDoc := testingutils.GenerateCoreDocument()
 	coreDoc.SigningRoot = key1Pub
 	idConfig := config.IdentityConfig{
-		IdentityId: id1,
+		ID:         id1,
 		PublicKey:  key1Pub,
 		PrivateKey: key1,
 	}
