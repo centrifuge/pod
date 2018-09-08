@@ -3,10 +3,8 @@ package ed25519
 import (
 	"encoding/base64"
 
-	"fmt"
-
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/io"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/utils"
 	logging "github.com/ipfs/go-log"
 	"github.com/libp2p/go-libp2p-crypto"
 	"github.com/libp2p/go-libp2p-peer"
@@ -21,8 +19,9 @@ const (
 	PrivateKey = "PRIVATE KEY"
 )
 
+// GetPublicSigningKey returns the public key from the file
 func GetPublicSigningKey(fileName string) (publicKey ed25519.PublicKey) {
-	key, err := io.ReadKeyFromPemFile(fileName, PublicKey)
+	key, err := utils.ReadKeyFromPemFile(fileName, PublicKey)
 
 	if err != nil {
 		log.Fatal(err)
@@ -31,8 +30,9 @@ func GetPublicSigningKey(fileName string) (publicKey ed25519.PublicKey) {
 	return
 }
 
+// GetPrivateSigningKey returns the private key from the file
 func GetPrivateSigningKey(fileName string) (privateKey ed25519.PrivateKey) {
-	key, err := io.ReadKeyFromPemFile(fileName, PrivateKey)
+	key, err := utils.ReadKeyFromPemFile(fileName, PrivateKey)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -40,6 +40,7 @@ func GetPrivateSigningKey(fileName string) (privateKey ed25519.PrivateKey) {
 	return
 }
 
+// GetSigningKeyPairFromConfig returns the public and private key pair from the config
 func GetSigningKeyPairFromConfig() (publicKey ed25519.PublicKey, privateKey ed25519.PrivateKey) {
 	pub, priv := config.Config.GetSigningKeyPair()
 	publicKey = GetPublicSigningKey(pub)
@@ -47,17 +48,16 @@ func GetSigningKeyPairFromConfig() (publicKey ed25519.PublicKey, privateKey ed25
 	return
 }
 
+// GenerateSigningKeyPair generates ed25519 key pair
 func GenerateSigningKeyPair() (publicKey ed25519.PublicKey, privateKey ed25519.PrivateKey) {
-
-	log.Debug("sign ED25519")
 	publicKey, privateKey, err := ed25519.GenerateKey(nil)
-
 	if err != nil {
 		log.Fatal(err)
 	}
 	return
 }
 
+// PublicKeyToP2PKey returns p2pId from the public key
 func PublicKeyToP2PKey(publicKey [32]byte) (p2pId peer.ID, err error) {
 	// Taken from peer.go#IDFromPublicKey#L189
 	// TODO As soon as this is merged: https://github.com/libp2p/go-libp2p-kad-dht/pull/129 we can get rid of this function
@@ -70,7 +70,7 @@ func PublicKeyToP2PKey(publicKey [32]byte) (p2pId peer.ID, err error) {
 	if err != nil {
 		return "", err
 	}
-	//
+
 	p2pId = peer.ID(hash)
 	return
 }
@@ -78,7 +78,6 @@ func PublicKeyToP2PKey(publicKey [32]byte) (p2pId peer.ID, err error) {
 // GetIDConfig reads the keys and ID from the config and returns a the Identity config
 func GetIDConfig() (identityConfig *config.IdentityConfig, err error) {
 	pk, pvk := GetSigningKeyPairFromConfig()
-	fmt.Println(pk, pvk)
 	decodedId, err := base64.StdEncoding.DecodeString(string(config.Config.GetIdentityId()))
 	if err != nil {
 		return nil, err

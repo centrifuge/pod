@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/io"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/utils"
 	"github.com/spf13/cobra"
 )
@@ -22,7 +21,7 @@ func init() {
 		Short: "sign a message with private key",
 		Long:  ``,
 		Run: func(cmd *cobra.Command, args []string) {
-			privateKey, err := io.ReadKeyFromPemFile(privateKeyFileParam, keytools.PrivateKey)
+			privateKey, err := utils.ReadKeyFromPemFile(privateKeyFileParam, keytools.PrivateKey)
 
 			if err != nil {
 				log.Fatal(err)

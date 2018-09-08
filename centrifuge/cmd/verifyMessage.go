@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/io"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/utils"
 	"github.com/spf13/cobra"
 )
@@ -24,7 +23,7 @@ func init() {
 		Long:  ``,
 		Run: func(cmd *cobra.Command, args []string) {
 			signatureBytes := utils.HexToByteArray(signatureParam)
-			publicKey, err := io.ReadKeyFromPemFile(publicKeyFileParam, keytools.PublicKey)
+			publicKey, err := utils.ReadKeyFromPemFile(publicKeyFileParam, keytools.PublicKey)
 
 			if err != nil {
 				log.Fatal(err)
