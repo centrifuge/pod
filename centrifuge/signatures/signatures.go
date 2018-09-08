@@ -1,7 +1,7 @@
 package signatures
 
 import (
-	"errors"
+	"fmt"
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
@@ -27,12 +27,17 @@ func ValidateSignature(idSrv identity.Service, signature *coredocumentpb.Signatu
 		return valid, err
 	}
 
-	valid = ed25519.Verify(signature.PublicKey, message, signature.Signature)
+	return verifySignature(signature.PublicKey, message, signature.Signature)
+}
+
+// verifySignature verifies the signature using ed25519
+func verifySignature(pubKey, message, signature []byte) (bool, error) {
+	valid := ed25519.Verify(pubKey, message, signature)
 	if !valid {
-		return false, errors.New("invalid signature")
+		return false, fmt.Errorf("invalid signature")
 	}
 
-	return
+	return true, nil
 }
 
 // Sign the document with the private key and return the signature along with the public key for the verification
