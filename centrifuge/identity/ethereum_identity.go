@@ -116,7 +116,7 @@ func (id *EthereumIdentity) GetLastKeyForPurpose(keyPurpose int) (key []byte, er
 	return id.cachedKeys[keyPurpose][len(id.cachedKeys[keyPurpose])-1].Key[:32], nil
 }
 
-func (id *EthereumIdentity) FetchKey(key []byte) (IdentityKey, error) {
+func (id *EthereumIdentity) FetchKey(key []byte) (Key, error) {
 	contract, err := id.getContract()
 	if err != nil {
 		return nil, err

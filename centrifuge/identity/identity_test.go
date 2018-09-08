@@ -67,9 +67,9 @@ func (i *mockID) CheckIdentityExists() (exists bool, err error) {
 	return args.Bool(0), args.Error(1)
 }
 
-func (i *mockID) FetchKey(key []byte) (IdentityKey, error) {
+func (i *mockID) FetchKey(key []byte) (Key, error) {
 	args := i.Called(key)
-	idKey, _ := args.Get(0).(IdentityKey)
+	idKey, _ := args.Get(0).(Key)
 	return idKey, args.Error(1)
 }
 
@@ -219,4 +219,87 @@ func TestGetIdentityKey_Success(t *testing.T) {
 	assert.Nil(t, err, "error must be nil")
 	assert.NotNil(t, key, "must not be nil")
 	assert.Equal(t, key, idkey)
+}
+
+func TestValidateKey_fail_getId(t *testing.T) {
+	centID := tools.RandomSlice(CentIdByteLength)
+	pubKey := tools.RandomSlice(32)
+	srv := &mockIDService{}
+	srv.On("LookupIdentityForID", centID).Return(nil, fmt.Errorf("failed at GetIdentity")).Once()
+	valid, err := ValidateKey(srv, centID, pubKey)
+	srv.AssertExpectations(t)
+	assert.False(t, valid, "must be false")
+	assert.Error(t, err, "must be not nil")
+	assert.Contains(t, err.Error(), "failed at GetIdentity")
+}
+
+func TestValidateKey_fail_mismatch_key(t *testing.T) {
+	centID := tools.RandomSlice(CentIdByteLength)
+	pubKey := tools.RandomSlice(32)
+	idkey := &EthereumIdentityKey{Key: tools.RandomByte32()}
+	id := &mockID{}
+	srv := &mockIDService{}
+	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
+	id.On("FetchKey", pubKey).Return(idkey, nil).Once()
+	valid, err := ValidateKey(srv, centID, pubKey)
+	srv.AssertExpectations(t)
+	id.AssertExpectations(t)
+	assert.False(t, valid, "must be false")
+	assert.Error(t, err, "must be not nil")
+	assert.Contains(t, err.Error(), " Key doesn't match")
+}
+
+func TestValidateKey_fail_missing_purpose(t *testing.T) {
+	centID := tools.RandomSlice(CentIdByteLength)
+	pubKey := tools.RandomByte32()
+	idkey := &EthereumIdentityKey{Key: pubKey}
+	id := &mockID{}
+	srv := &mockIDService{}
+	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
+	id.On("FetchKey", pubKey[:]).Return(idkey, nil).Once()
+	valid, err := ValidateKey(srv, centID, pubKey[:])
+	srv.AssertExpectations(t)
+	id.AssertExpectations(t)
+	assert.False(t, valid, "must be false")
+	assert.Error(t, err, "must be not nil")
+	assert.Contains(t, err.Error(), "Key doesn't have purpose")
+}
+
+func TestValidateKey_fail_revocation(t *testing.T) {
+	centID := tools.RandomSlice(CentIdByteLength)
+	pubKey := tools.RandomByte32()
+	idkey := &EthereumIdentityKey{
+		Key:       pubKey,
+		Purposes:  []*big.Int{big.NewInt(KeyPurposeSigning)},
+		RevokedAt: big.NewInt(1),
+	}
+	id := &mockID{}
+	srv := &mockIDService{}
+	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
+	id.On("FetchKey", pubKey[:]).Return(idkey, nil).Once()
+	valid, err := ValidateKey(srv, centID, pubKey[:])
+	srv.AssertExpectations(t)
+	id.AssertExpectations(t)
+	assert.False(t, valid, "must be false")
+	assert.Error(t, err, "must be not nil")
+	assert.Contains(t, err.Error(), "Key is currently revoked since block")
+}
+
+func TestValidateKey_success(t *testing.T) {
+	centID := tools.RandomSlice(CentIdByteLength)
+	pubKey := tools.RandomByte32()
+	idkey := &EthereumIdentityKey{
+		Key:       pubKey,
+		Purposes:  []*big.Int{big.NewInt(KeyPurposeSigning)},
+		RevokedAt: big.NewInt(0),
+	}
+	id := &mockID{}
+	srv := &mockIDService{}
+	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
+	id.On("FetchKey", pubKey[:]).Return(idkey, nil).Once()
+	valid, err := ValidateKey(srv, centID, pubKey[:])
+	srv.AssertExpectations(t)
+	id.AssertExpectations(t)
+	assert.True(t, valid, "must be true")
+	assert.Nil(t, err, "must be nil")
 }

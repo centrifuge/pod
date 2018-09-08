@@ -1,6 +1,7 @@
 package identity
 
 import (
+	"bytes"
 	"encoding/base64"
 	"fmt"
 	"math/big"
@@ -19,6 +20,7 @@ const (
 	KeyPurposeEthMsgAuth = 3
 )
 
+// Identity defines an Identity on chain
 type Identity interface {
 	String() string
 	GetCentrifugeID() []byte
@@ -30,10 +32,11 @@ type Identity interface {
 	GetLastKeyForPurpose(keyPurpose int) (key []byte, err error)
 	AddKeyToIdentity(keyPurpose int, key []byte) (confirmations chan *WatchIdentity, err error)
 	CheckIdentityExists() (exists bool, err error)
-	FetchKey(key []byte) (IdentityKey, error)
+	FetchKey(key []byte) (Key, error)
 }
 
-type IdentityKey interface {
+// Key defines a single ERC725 identity key
+type Key interface {
 	GetKey() [32]byte
 	GetPurposes() []*big.Int
 	GetRevokedAt() *big.Int
@@ -96,7 +99,7 @@ func GetClientsP2PURLs(idService Service, centIDs [][]byte) ([]string, error) {
 }
 
 // GetIdentityKey returns the key for provided identity
-func GetIdentityKey(idSrv Service, identity []byte, pubKey ed25519.PublicKey) (keyInfo IdentityKey, err error) {
+func GetIdentityKey(idSrv Service, identity []byte, pubKey ed25519.PublicKey) (keyInfo Key, err error) {
 	id, err := idSrv.LookupIdentityForID(identity)
 	if err != nil {
 		return keyInfo, err
@@ -112,4 +115,27 @@ func GetIdentityKey(idSrv Service, identity []byte, pubKey ed25519.PublicKey) (k
 	}
 
 	return key, nil
+}
+
+// ValidateKey checks if a given key is valid for the given centrifugeID.
+func ValidateKey(idSrv Service, centrifugeId []byte, key ed25519.PublicKey) (valid bool, err error) {
+	idKey, err := GetIdentityKey(idSrv, centrifugeId, key)
+	if err != nil {
+		return false, err
+	}
+
+	if !bytes.Equal(key, tools.Byte32ToSlice(idKey.GetKey())) {
+		return false, fmt.Errorf(fmt.Sprintf("[Key: %x] Key doesn't match", idKey.GetKey()))
+	}
+
+	if !tools.ContainsBigIntInSlice(big.NewInt(KeyPurposeSigning), idKey.GetPurposes()) {
+		return false, fmt.Errorf(fmt.Sprintf("[Key: %x] Key doesn't have purpose [%d]", idKey.GetKey(), KeyPurposeSigning))
+	}
+
+	// TODO Check if revokation block happened before the timeframe of the document signing, for historical validations
+	if idKey.GetRevokedAt().Cmp(big.NewInt(0)) != 0 {
+		return false, fmt.Errorf(fmt.Sprintf("[Key: %x] Key is currently revoked since block [%d]", idKey.GetKey(), idKey.GetRevokedAt()))
+	}
+
+	return true, nil
 }
