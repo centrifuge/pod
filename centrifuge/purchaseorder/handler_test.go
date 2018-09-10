@@ -1,6 +1,6 @@
 // +build unit
 
-package purchaseorderhandler
+package purchaseorder
 
 import (
 	"context"
@@ -13,7 +13,6 @@ import (
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	clientpurchaseorderpb "github.com/CentrifugeInc/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/go-errors/errors"
@@ -62,18 +61,18 @@ func (m *mockPurchaseOrderRepository) Update(id []byte, doc proto.Message) (err 
 	return args.Error(0)
 }
 
-func generateMockedOutPurchaseOrderService() (srv *PurchaseOrderDocumentService, repo *mockPurchaseOrderRepository, coreDocumentProcessor *testingutils.MockCoreDocumentProcessor) {
+func generateMockedOutPurchaseOrderService() (srv *Handler, repo *mockPurchaseOrderRepository, coreDocumentProcessor *testingutils.MockCoreDocumentProcessor) {
 	repo = new(mockPurchaseOrderRepository)
 	coreDocumentProcessor = new(testingutils.MockCoreDocumentProcessor)
-	srv = &PurchaseOrderDocumentService{
+	srv = &Handler{
 		Repository:            repo,
 		CoreDocumentProcessor: coreDocumentProcessor,
 	}
 	return srv, repo, coreDocumentProcessor
 }
 
-func getTestSetupData() (po *purchaseorder.PurchaseOrder, srv *PurchaseOrderDocumentService, repo *mockPurchaseOrderRepository, mockCoreDocumentProcessor *testingutils.MockCoreDocumentProcessor) {
-	po = &purchaseorder.PurchaseOrder{Document: &purchaseorderpb.PurchaseOrderDocument{}}
+func getTestSetupData() (po *PurchaseOrder, srv *Handler, repo *mockPurchaseOrderRepository, mockCoreDocumentProcessor *testingutils.MockCoreDocumentProcessor) {
+	po = &PurchaseOrder{Document: &purchaseorderpb.PurchaseOrderDocument{}}
 	po.Document.Data = &purchaseorderpb.PurchaseOrderData{
 		PoNumber:         "po1234",
 		OrderName:        "Jack",
@@ -192,7 +191,7 @@ func TestPurchaseOrderDocumentService_SendFails(t *testing.T) {
 
 func TestPurchaseOrderDocumentService_HandleCreatePurchaseOrderProof(t *testing.T) {
 	identifier := testingutils.Rand32Bytes()
-	order := purchaseorder.Empty()
+	order := Empty()
 	order.Document.CoreDocument = &coredocumentpb.CoreDocument{
 		DocumentIdentifier: identifier,
 		CurrentIdentifier:  identifier,
@@ -214,7 +213,6 @@ func TestPurchaseOrderDocumentService_HandleCreatePurchaseOrderProof(t *testing.
 	mockRepo.replaceDoc = order.Document
 	purchaseOrderProof, err := s.CreatePurchaseOrderProof(context.Background(), proofRequest)
 	mockRepo.AssertExpectations(t)
-
 	assert.Nil(t, err)
 	assert.Equal(t, identifier, purchaseOrderProof.DocumentIdentifier)
 	assert.Equal(t, len(proofRequest.Fields), len(purchaseOrderProof.FieldProofs))
@@ -229,7 +227,7 @@ func TestPurchaseOrderDocumentService_HandleCreatePurchaseOrderProof(t *testing.
 
 func TestPurchaseOrderDocumentService_HandleCreatePurchaseOrderProof_NotFilledSalts(t *testing.T) {
 	identifier := testingutils.Rand32Bytes()
-	order := purchaseorder.Empty()
+	order := Empty()
 	order.Document.CoreDocument = &coredocumentpb.CoreDocument{
 		DocumentIdentifier: identifier,
 		CurrentIdentifier:  identifier,
@@ -247,7 +245,6 @@ func TestPurchaseOrderDocumentService_HandleCreatePurchaseOrderProof_NotFilledSa
 	mockProcessor.On("GetDataProofHashes", order.Document.CoreDocument).Return([][]byte{}, nil).Once()
 	mockRepo.On("GetByID", proofRequest.DocumentIdentifier, new(purchaseorderpb.PurchaseOrderDocument)).Return(nil).Once()
 	mockRepo.replaceDoc = order.Document
-
 	purchaseOrderProof, err := s.CreatePurchaseOrderProof(context.Background(), proofRequest)
 	mockRepo.AssertExpectations(t)
 	assert.NotNil(t, err)
@@ -256,7 +253,7 @@ func TestPurchaseOrderDocumentService_HandleCreatePurchaseOrderProof_NotFilledSa
 
 func TestPurchaseOrderDocumentService_HandleCreatePurchaseOrderProof_NotExistingPurchaseOrder(t *testing.T) {
 	identifier := testingutils.Rand32Bytes()
-	order := purchaseorder.Empty()
+	order := Empty()
 	order.Document.CoreDocument = &coredocumentpb.CoreDocument{
 		DocumentIdentifier: identifier,
 		CurrentIdentifier:  identifier,
@@ -275,7 +272,6 @@ func TestPurchaseOrderDocumentService_HandleCreatePurchaseOrderProof_NotExisting
 	mockRepo.replaceDoc = order.Document
 	purchaseOrderProof, err := s.CreatePurchaseOrderProof(context.Background(), proofRequest)
 	mockRepo.AssertExpectations(t)
-
 	assert.Nil(t, purchaseOrderProof)
 	assert.Error(t, err)
 }

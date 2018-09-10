@@ -1,4 +1,4 @@
-package purchaseorderhandler
+package purchaseorder
 
 import (
 	"fmt"
@@ -10,24 +10,20 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	clientpurchaseorderpb "github.com/CentrifugeInc/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
 	googleprotobuf2 "github.com/golang/protobuf/ptypes/empty"
-	logging "github.com/ipfs/go-log"
 	"golang.org/x/net/context"
 )
 
-var log = logging.Logger("rest-api")
-
-// PurchaseOrderDocumentService needed as it is used to register the grpc services attached to the grpc server
-type PurchaseOrderDocumentService struct {
+// Handler needed as it is used to register the grpc services attached to the grpc server
+type Handler struct {
 	Repository            storage.Repository
 	CoreDocumentProcessor coredocumentprocessor.Processor
 }
 
 // anchorPurchaseOrderDocument anchors the given purchaseorder document and returns the anchor details
-func (s *PurchaseOrderDocumentService) anchorPurchaseOrderDocument(doc *purchaseorderpb.PurchaseOrderDocument) (*purchaseorderpb.PurchaseOrderDocument, error) {
-	orderDoc, err := purchaseorder.New(doc)
+func (s *Handler) anchorPurchaseOrderDocument(doc *purchaseorderpb.PurchaseOrderDocument) (*purchaseorderpb.PurchaseOrderDocument, error) {
+	orderDoc, err := New(doc)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -45,7 +41,7 @@ func (s *PurchaseOrderDocumentService) anchorPurchaseOrderDocument(doc *purchase
 		return nil, err
 	}
 
-	newPo, err := purchaseorder.NewFromCoreDocument(coreDoc)
+	newPo, err := NewFromCoreDocument(coreDoc)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -55,7 +51,7 @@ func (s *PurchaseOrderDocumentService) anchorPurchaseOrderDocument(doc *purchase
 }
 
 // CreatePurchaseOrderProof creates proofs for a list of fields
-func (s *PurchaseOrderDocumentService) CreatePurchaseOrderProof(ctx context.Context, createPurchaseOrderProofEnvelope *clientpurchaseorderpb.CreatePurchaseOrderProofEnvelope) (*clientpurchaseorderpb.PurchaseOrderProof, error) {
+func (s *Handler) CreatePurchaseOrderProof(ctx context.Context, createPurchaseOrderProofEnvelope *clientpurchaseorderpb.CreatePurchaseOrderProofEnvelope) (*clientpurchaseorderpb.PurchaseOrderProof, error) {
 	orderDoc := new(purchaseorderpb.PurchaseOrderDocument)
 	err := s.Repository.GetByID(createPurchaseOrderProofEnvelope.DocumentIdentifier, orderDoc)
 	if err != nil {
@@ -63,7 +59,7 @@ func (s *PurchaseOrderDocumentService) CreatePurchaseOrderProof(ctx context.Cont
 		return nil, errors.New(code.DocumentNotFound, err.Error())
 	}
 
-	order, err := purchaseorder.Wrap(orderDoc)
+	order, err := Wrap(orderDoc)
 	if err != nil {
 		log.Error(err)
 		return nil, errors.New(code.Unknown, err.Error())
@@ -79,8 +75,8 @@ func (s *PurchaseOrderDocumentService) CreatePurchaseOrderProof(ctx context.Cont
 }
 
 // AnchorPurchaseOrderDocument anchors the given purchaseorder document and returns the anchor details
-func (s *PurchaseOrderDocumentService) AnchorPurchaseOrderDocument(ctx context.Context, anchorPurchaseOrderEnvelope *clientpurchaseorderpb.AnchorPurchaseOrderEnvelope) (*purchaseorderpb.PurchaseOrderDocument, error) {
-	doc, err := purchaseorder.New(anchorPurchaseOrderEnvelope.Document)
+func (s *Handler) AnchorPurchaseOrderDocument(ctx context.Context, anchorPurchaseOrderEnvelope *clientpurchaseorderpb.AnchorPurchaseOrderEnvelope) (*purchaseorderpb.PurchaseOrderDocument, error) {
+	doc, err := New(anchorPurchaseOrderEnvelope.Document)
 	if err != nil {
 		return nil, errors.New(code.Unknown, err.Error())
 	}
@@ -108,7 +104,7 @@ func (s *PurchaseOrderDocumentService) AnchorPurchaseOrderDocument(ctx context.C
 }
 
 // SendPurchaseOrderDocument anchors and sends an purchaseorder to the recipient
-func (s *PurchaseOrderDocumentService) SendPurchaseOrderDocument(ctx context.Context, sendPurchaseOrderEnvelope *clientpurchaseorderpb.SendPurchaseOrderEnvelope) (*purchaseorderpb.PurchaseOrderDocument, error) {
+func (s *Handler) SendPurchaseOrderDocument(ctx context.Context, sendPurchaseOrderEnvelope *clientpurchaseorderpb.SendPurchaseOrderEnvelope) (*purchaseorderpb.PurchaseOrderDocument, error) {
 	doc, err := s.AnchorPurchaseOrderDocument(ctx, &clientpurchaseorderpb.AnchorPurchaseOrderEnvelope{Document: sendPurchaseOrderEnvelope.Document})
 	if err != nil {
 		return nil, err
@@ -131,7 +127,7 @@ func (s *PurchaseOrderDocumentService) SendPurchaseOrderDocument(ctx context.Con
 }
 
 // GetPurchaseOrderDocument returns the purchaseorder, if exists, with provided document identifier
-func (s *PurchaseOrderDocumentService) GetPurchaseOrderDocument(ctx context.Context, getPurchaseOrderDocumentEnvelope *clientpurchaseorderpb.GetPurchaseOrderDocumentEnvelope) (*purchaseorderpb.PurchaseOrderDocument, error) {
+func (s *Handler) GetPurchaseOrderDocument(ctx context.Context, getPurchaseOrderDocumentEnvelope *clientpurchaseorderpb.GetPurchaseOrderDocumentEnvelope) (*purchaseorderpb.PurchaseOrderDocument, error) {
 	doc := new(purchaseorderpb.PurchaseOrderDocument)
 	err := s.Repository.GetByID(getPurchaseOrderDocumentEnvelope.DocumentIdentifier, doc)
 	if err == nil {
@@ -146,7 +142,7 @@ func (s *PurchaseOrderDocumentService) GetPurchaseOrderDocument(ctx context.Cont
 		return nil, errors.New(code.DocumentNotFound, fmt.Sprintf("failed to get document: %v", err))
 	}
 
-	purchaseOrder, err := purchaseorder.NewFromCoreDocument(docFound)
+	purchaseOrder, err := NewFromCoreDocument(docFound)
 	if err != nil {
 		return nil, errors.New(code.Unknown, fmt.Sprintf("failed convert coredoc to purchase order: %v", err))
 	}
@@ -155,6 +151,6 @@ func (s *PurchaseOrderDocumentService) GetPurchaseOrderDocument(ctx context.Cont
 }
 
 // GetReceivedPurchaseOrderDocuments returns all the received purchase orders
-func (s *PurchaseOrderDocumentService) GetReceivedPurchaseOrderDocuments(ctx context.Context, empty *googleprotobuf2.Empty) (*clientpurchaseorderpb.ReceivedPurchaseOrders, error) {
+func (s *Handler) GetReceivedPurchaseOrderDocuments(ctx context.Context, empty *googleprotobuf2.Empty) (*clientpurchaseorderpb.ReceivedPurchaseOrders, error) {
 	return nil, nil
 }
