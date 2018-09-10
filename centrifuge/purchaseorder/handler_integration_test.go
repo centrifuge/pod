@@ -13,7 +13,6 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/processor"
 	clientpurchaseorderpb "github.com/CentrifugeInc/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/stretchr/testify/assert"
@@ -21,8 +20,7 @@ import (
 
 func TestMain(m *testing.M) {
 	cc.TestFunctionalEthereumBootstrap()
-	purchaseorderrepository.InitLevelDBRepository(cc.GetLevelDBStorage())
-
+	purchaseorder.InitLevelDBRepository(cc.GetLevelDBStorage())
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()
 	os.Exit(result)
@@ -44,7 +42,7 @@ func generateEmptyPurchaseOrderForProcessing() (doc *purchaseorder.PurchaseOrder
 
 func TestPurchaseOrderDocumentService_HandleAnchorPurchaseOrderDocument_Integration(t *testing.T) {
 	s := purchaseorder.Handler{
-		Repository:            purchaseorderrepository.GetRepository(),
+		Repository:            purchaseorder.GetRepository(),
 		CoreDocumentProcessor: coredocumentprocessor.DefaultProcessor(),
 	}
 	doc := generateEmptyPurchaseOrderForProcessing()
@@ -69,7 +67,7 @@ func TestPurchaseOrderDocumentService_HandleAnchorPurchaseOrderDocument_Integrat
 
 	//PurchaseOrder document got stored in the DB
 	loadedDoc := new(purchaseorderpb.PurchaseOrderDocument)
-	err = purchaseorderrepository.GetRepository().GetByID(doc.Document.CoreDocument.DocumentIdentifier, loadedDoc)
+	err = purchaseorder.GetRepository().GetByID(doc.Document.CoreDocument.DocumentIdentifier, loadedDoc)
 	assert.Nil(t, err)
 	assert.Equal(t, "AUS", loadedDoc.Data.OrderCountry,
 		"Didn't save the purchaseorder data correctly")
@@ -85,7 +83,7 @@ func TestPurchaseOrderDocumentService_HandleAnchorPurchaseOrderDocument_Integrat
 	assert.Contains(t, err.Error(), "document already exists")
 
 	loadedDoc2 := new(purchaseorderpb.PurchaseOrderDocument)
-	err = purchaseorderrepository.GetRepository().GetByID(doc.Document.CoreDocument.DocumentIdentifier, loadedDoc2)
+	err = purchaseorder.GetRepository().GetByID(doc.Document.CoreDocument.DocumentIdentifier, loadedDoc2)
 	assert.Nil(t, err)
 	assert.Equal(t, "AUS", loadedDoc2.Data.OrderCountry,
 		"Document on DB should have not not gotten overwritten after rejected anchor call")

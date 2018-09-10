@@ -5,12 +5,10 @@ package purchaseorder
 import (
 	"context"
 	"crypto/sha256"
-	"os"
 	"testing"
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
-	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	clientpurchaseorderpb "github.com/CentrifugeInc/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
@@ -20,13 +18,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
-
-func TestMain(m *testing.M) {
-	cc.TestIntegrationBootstrap()
-	result := m.Run()
-	cc.TestIntegrationTearDown()
-	os.Exit(result)
-}
 
 type mockPurchaseOrderRepository struct {
 	mock.Mock
