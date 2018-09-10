@@ -69,7 +69,7 @@ func SignMessage(privateKey, message []byte, curveType string, ethereumSign bool
 		}
 		return secp256k1.Sign(msg, privateKey)
 	default:
-		return []byte(""), fmt.Errorf("curve %s not supported", curveType)
+		return nil, fmt.Errorf("curve %s not supported", curveType)
 	}
 
 }

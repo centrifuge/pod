@@ -1,4 +1,5 @@
-// build +unit
+// +build unit
+
 package p2p
 
 import (
@@ -14,6 +15,7 @@ import (
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/notification"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/version"
@@ -30,6 +32,7 @@ func (wh *MockWebhookSender) Send(notification *notificationpb.NotificationMessa
 func TestMain(m *testing.M) {
 	cc.TestIntegrationBootstrap()
 	coredocumentrepository.InitLevelDBRepository(cc.GetLevelDBStorage())
+	identity.SetIdentityService(identity.NewEthereumIdentityService())
 	result := m.Run()
 	cc.TestIntegrationTearDown()
 	os.Exit(result)
@@ -104,12 +107,16 @@ func TestHandler_RequestDocumentSignature_version_fail(t *testing.T) {
 }
 
 func TestHandler_RequestDocumentSignature(t *testing.T) {
-	req := &p2ppb.SignatureRequest{Header: &p2ppb.CentrifugeHeader{
-		CentNodeVersion: version.GetVersion().String(), NetworkIdentifier: config.Config.GetNetworkID(),
-	}, Document: testingutils.GenerateCoreDocument()}
+	req := &p2ppb.SignatureRequest{
+		Header: &p2ppb.CentrifugeHeader{
+			CentNodeVersion: version.GetVersion().String(), NetworkIdentifier: config.Config.GetNetworkID(),
+		},
+		Document: testingutils.GenerateCoreDocument()}
 
+	config.Config.V.Set("keys.signing.publicKey", "../../example/resources/signingKey.pub.pem")
+	config.Config.V.Set("keys.signing.privateKey", "../../example/resources/signingKey.key.pem")
 	handler := Handler{Notifier: &MockWebhookSender{}}
-	wantSig := []byte{0x0, 0x14, 0x36, 0x51, 0xa6, 0xe6, 0x2c, 0xb5, 0xe5, 0x16, 0x8a, 0x7a, 0x18, 0xd8, 0x87, 0xe0, 0xb3, 0x9e, 0xca, 0x9b, 0x2c, 0xa3, 0xeb, 0xd7, 0xbc, 0x86, 0xf2, 0xad, 0xc3, 0x97, 0x11, 0x7f, 0x1e, 0x89, 0x8b, 0x8a, 0xc7, 0xce, 0x4f, 0x71, 0xd5, 0x75, 0xd3, 0xf, 0xe7, 0xae, 0x39, 0x48, 0x16, 0x2f, 0x9d, 0xe5, 0x33, 0x81, 0xef, 0xff, 0xa2, 0x17, 0xc9, 0x34, 0x24, 0x7b, 0x93, 0x8}
+	wantSig := []byte{0x52, 0x2, 0x7f, 0x51, 0xcc, 0xb, 0x36, 0x1b, 0x52, 0x71, 0xfa, 0xc0, 0x1b, 0x21, 0x34, 0xef, 0xae, 0x76, 0x72, 0x3f, 0xe0, 0x93, 0x5f, 0xe8, 0xc4, 0x15, 0xd0, 0xf3, 0x77, 0x78, 0x1a, 0x2f, 0xf8, 0xa6, 0x42, 0x8b, 0x9, 0xbe, 0x96, 0xa2, 0xb5, 0xc8, 0xce, 0xf2, 0xd9, 0x6a, 0x5f, 0x40, 0x61, 0x52, 0xb5, 0x1e, 0x93, 0x92, 0xf8, 0xc0, 0xad, 0xc2, 0x4e, 0x66, 0xa5, 0xd1, 0x93, 0xa}
 	resp, err := handler.RequestDocumentSignature(context.Background(), req)
 	assert.Nil(t, err, "must be nil")
 	assert.Equal(t, resp.CentNodeVersion, version.GetVersion().String())

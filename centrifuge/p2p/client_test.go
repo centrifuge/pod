@@ -5,27 +5,16 @@ package p2p
 import (
 	"context"
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
-	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/version"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"google.golang.org/grpc"
 )
-
-func TestMain(m *testing.M) {
-	cc.TestIntegrationBootstrap()
-	identity.SetIdentityService(identity.NewEthereumIdentityService())
-	result := m.Run()
-	cc.TestIntegrationTearDown()
-	os.Exit(result)
-}
 
 // p2pMockClient implements p2ppb.P2PServiceClient
 type p2pMockClient struct {
