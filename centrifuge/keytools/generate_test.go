@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/io"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -32,13 +32,13 @@ func GenerateKeyFilesForTest(t *testing.T, curve string) (publicKey, privateKey 
 
 	assert.False(t, err != nil, "private key file not generated")
 
-	publicKey, err = io.ReadKeyFromPemFile(publicFileName, PublicKey)
+	publicKey, err = utils.ReadKeyFromPemFile(publicFileName, PublicKey)
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	privateKey, err = io.ReadKeyFromPemFile(privateFileName, PrivateKey)
+	privateKey, err = utils.ReadKeyFromPemFile(privateFileName, PrivateKey)
 
 	if err != nil {
 		log.Fatal(err)
