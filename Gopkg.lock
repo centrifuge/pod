@@ -12,8 +12,8 @@
     "gen/go/p2p",
     "gen/go/purchaseorder"
   ]
-  revision = "d370640bebfb5d52115252da54560193c8369c13"
-  source = "git@github.com:vedhavyas/centrifuge-protobufs"
+  revision = "0360114f218245cb89f9d0700b34d264f4b3818f"
+  source = "git@github.com:CentrifugeInc/centrifuge-protobufs"
 
 [[projects]]
   name = "github.com/Masterminds/semver"
@@ -35,13 +35,13 @@
   branch = "master"
   name = "github.com/aristanetworks/goarista"
   packages = ["monotime"]
-  revision = "18b896026201d8e1758468d9c5d5a558c69c5e9b"
+  revision = "c2e37c381520048ad67de8a2ef5c471603282ab7"
 
 [[projects]]
   branch = "master"
   name = "github.com/btcsuite/btcd"
   packages = ["btcec"]
-  revision = "f899737d7f2764dc13e4d01ff00108ec58f766a9"
+  revision = "cff30e1d23fc9e800b2b5b4b41ef1817dda07e9f"
 
 [[projects]]
   branch = "master"
@@ -55,7 +55,8 @@
     "proofs",
     "proofs/proto"
   ]
-  revision = "82d1c4fdccd4c8bc0d148904835db27bac527b6c"
+  revision = "c673e56ee0de0d721a10dee5cd2aa59015e4420a"
+  source = "git@github.com:centrifuge/precise-proofs"
 
 [[projects]]
   name = "github.com/coreos/go-semver"
@@ -66,8 +67,8 @@
 [[projects]]
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
-  revision = "346938d642f2ec3594ed81d874461961cd0faa76"
-  version = "v1.1.0"
+  revision = "8991bc29aa16c548c550c7ff78260e27b9ab7c73"
+  version = "v1.1.1"
 
 [[projects]]
   name = "github.com/deckarep/golang-set"
@@ -111,9 +112,9 @@
     "rpc",
     "trie"
   ]
-  revision = "225171a4bfcc16bd12a1906b1e0d43d0b18c353b"
+  revision = "89451f7c382ad2185987ee369f16416f89c28a7d"
   source = "git@github.com:ethereum/go-ethereum"
-  version = "v1.8.13"
+  version = "v1.8.15"
 
 [[projects]]
   name = "github.com/fd/go-nat"
@@ -134,12 +135,6 @@
   version = "v1.0.0"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/go-bongo/go-dotaccess"
-  packages = ["."]
-  revision = "ae070a2d2a38fd7233e255ded21fb26fe36b4796"
-
-[[projects]]
   name = "github.com/go-errors/errors"
   packages = ["."]
   revision = "a6af135bd4e28680facf08a3d206b454abc877a4"
@@ -148,8 +143,8 @@
 [[projects]]
   name = "github.com/go-stack/stack"
   packages = ["."]
-  revision = "259ab82a6cad3992b4e21ff5cac294ccb06474bc"
-  version = "v1.7.0"
+  revision = "2fee6af1a9795aafbe0253a0cfbdf668e1fb8a9a"
+  version = "v1.8.0"
 
 [[projects]]
   name = "github.com/gogo/protobuf"
@@ -185,8 +180,8 @@
     "ptypes/struct",
     "ptypes/timestamp"
   ]
-  revision = "b4deda0973fb4c70b50d226b1af49f3da59f5265"
-  version = "v1.1.0"
+  revision = "aa810b61a9c79d51363740d207bb46cf8e620ed5"
+  version = "v1.2.0"
 
 [[projects]]
   branch = "master"
@@ -206,14 +201,14 @@
 [[projects]]
   name = "github.com/google/uuid"
   packages = ["."]
-  revision = "064e2069ce9c359c118179501254f67d7d37ba24"
-  version = "0.2"
+  revision = "d460ce9f8df2e77fb1ba55ca87fafed96c607494"
+  version = "v1.0.0"
 
 [[projects]]
   name = "github.com/gorilla/websocket"
   packages = ["."]
-  revision = "ea4d1f681babbce9545c9c5f3d5194a789c89f5b"
-  version = "v1.2.0"
+  revision = "66b9c49e59c6c48f0ffce28c2d8b8a5678502c6d"
+  version = "v1.4.0"
 
 [[projects]]
   name = "github.com/grpc-ecosystem/grpc-gateway"
@@ -252,16 +247,15 @@
   revision = "d9f6b97f8db22dd1e090fd0bbbe98f09cc7dd0a8"
 
 [[projects]]
-  branch = "master"
   name = "github.com/hashicorp/golang-lru"
   packages = [
     ".",
     "simplelru"
   ]
-  revision = "0fb14efe8c47ae851c0034ed7a448854d3d34cf3"
+  revision = "20f1fb78b0740ba8c3cb143a61e86ba5c8669768"
+  version = "v0.5.0"
 
 [[projects]]
-  branch = "master"
   name = "github.com/hashicorp/hcl"
   packages = [
     ".",
@@ -275,7 +269,8 @@
     "json/scanner",
     "json/token"
   ]
-  revision = "ef8a98b0bbce4a65b5aa4c368430a80ddc533168"
+  revision = "8cb6e5b959231cc1119e43259c4a608f9c51a241"
+  version = "v1.0.0"
 
 [[projects]]
   branch = "master"
@@ -321,8 +316,8 @@
 [[projects]]
   name = "github.com/ipfs/go-ipfs-addr"
   packages = ["."]
-  revision = "0fa9617e13014d73f80e1ce7f0387a3fadafb6a4"
-  version = "v0.1.18"
+  revision = "d9eba81e7e65aa7a31e737b70f692d64f4172ef9"
+  version = "v0.1.21"
 
 [[projects]]
   name = "github.com/ipfs/go-ipfs-util"
@@ -460,14 +455,14 @@
     ".",
     "keyspace"
   ]
-  revision = "bd4b5b3d001cfb0a6aaf67c5c04c52b132078481"
-  version = "v2.2.5"
+  revision = "18e74109a3c0c2897925da4d6b7ad4dea62857d5"
+  version = "v2.2.6"
 
 [[projects]]
   name = "github.com/libp2p/go-libp2p-loggables"
   packages = ["."]
-  revision = "58a5d94871458043fc0797727b24fc77a94f203b"
-  version = "v1.1.20"
+  revision = "d6d01a5f5e0bcc27c612fd1e6aa8fc97e1cac488"
+  version = "v1.1.21"
 
 [[projects]]
   name = "github.com/libp2p/go-libp2p-metrics"
@@ -617,14 +612,8 @@
 [[projects]]
   name = "github.com/mattn/go-isatty"
   packages = ["."]
-  revision = "0360b2af4f38e8d38c7fce2a9f4e702702d73a39"
-  version = "v0.0.3"
-
-[[projects]]
-  branch = "add-sort-option"
-  name = "github.com/mikiquantum/go-merkle"
-  packages = ["."]
-  revision = "b5ef3e0499c7771f368e862a7b3107b692abd8d9"
+  revision = "6ca4dbf54d38eea1a992b3c722a76a5d1c4cb25c"
+  version = "v0.0.4"
 
 [[projects]]
   branch = "master"
@@ -639,16 +628,16 @@
   revision = "ad98a36ba0da87206e3378c556abbfeaeaa98668"
 
 [[projects]]
-  branch = "master"
   name = "github.com/mitchellh/go-homedir"
   packages = ["."]
-  revision = "58046073cbffe2f25d425fe1331102f55cf719de"
+  revision = "ae18d6b8b3205b561c79e8e5f69bff09736185f4"
+  version = "v1.0.0"
 
 [[projects]]
-  branch = "master"
   name = "github.com/mitchellh/mapstructure"
   packages = ["."]
-  revision = "f15292f7a699fcc1a38a80977f80a046874ba8ac"
+  revision = "fa473d140ef3c6adf42d6b391fe76707f1f243c8"
+  version = "v1.0.0"
 
 [[projects]]
   branch = "master"
@@ -690,12 +679,6 @@
   name = "github.com/multiformats/go-multistream"
   packages = ["."]
   revision = "1bc5dd803d20cf91d8ec905ac3580e3ea3c8c995"
-
-[[projects]]
-  name = "github.com/oleiade/reflections"
-  packages = ["."]
-  revision = "2b6ec3da648e3e834dc41bad8d9ed7f2dc6a9496"
-  version = "v1.0.0"
 
 [[projects]]
   name = "github.com/opentracing/opentracing-go"
@@ -870,10 +853,10 @@
   revision = "097c5d47330ff6a823f67e3515faa13566a62c6f"
 
 [[projects]]
-  branch = "master"
   name = "github.com/whyrusleeping/go-smux-multistream"
   packages = ["."]
-  revision = "c707bf3c25fa380b20b54907790efde288775938"
+  revision = "e799b10bc6eea2cc5ce18f7b7b4d8e1a0439476d"
+  version = "v2.0.2"
 
 [[projects]]
   branch = "master"
@@ -906,6 +889,11 @@
   revision = "cb29a700b01dc3c2fdd743c00cf54685056bb62a"
 
 [[projects]]
+  name = "github.com/xsleonard/go-merkle"
+  packages = ["."]
+  revision = "fbb7cafc5ae411e13e718172f5af7917ad6c3ed7"
+
+[[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
   packages = [
@@ -917,7 +905,7 @@
     "scrypt",
     "sha3"
   ]
-  revision = "aabede6cba87e37f413b3e60ebfc214f8eeca1b0"
+  revision = "0709b304e793a5edb4a2c0145f281ecdc20838a4"
 
 [[projects]]
   branch = "master"
@@ -936,7 +924,7 @@
     "trace",
     "websocket"
   ]
-  revision = "aaf60122140d3fcf75376d319f0554393160eb50"
+  revision = "8a410e7b638dca158bf9e766925842f6651ff828"
 
 [[projects]]
   branch = "master"
@@ -946,7 +934,7 @@
     "unix",
     "windows"
   ]
-  revision = "1c9583448a9c3aa0f9a6a5241bf73c0bd8aafded"
+  revision = "8cf3aee429924738c56c34bb819c4ea8273fc434"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -985,11 +973,12 @@
   branch = "master"
   name = "golang.org/x/tools"
   packages = [
+    "cmd/goimports",
     "go/ast/astutil",
     "imports",
     "internal/fastwalk"
   ]
-  revision = "1dfe8478fdec02e49c998048ab9f761d64949349"
+  revision = "0aa4b8830f481fed77b73cf7cea2bc3129e05148"
 
 [[projects]]
   branch = "master"
@@ -998,7 +987,7 @@
     "googleapis/api/annotations",
     "googleapis/rpc/status"
   ]
-  revision = "d0a8f471bba2dbb160885b0000d814ee5d559bad"
+  revision = "11092d34479b07829b72e10713b159248caf5dad"
 
 [[projects]]
   name = "google.golang.org/grpc"
@@ -1048,8 +1037,8 @@
 [[projects]]
   name = "gopkg.in/resty.v1"
   packages = ["."]
-  revision = "97a15579492cd5f35632499f315d7a8df94160a1"
-  version = "v1.8.0"
+  revision = "d4920dcf5b7689548a6db640278a9b35a5b48ec6"
+  version = "v1.9.1"
 
 [[projects]]
   name = "gopkg.in/yaml.v2"
@@ -1060,6 +1049,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "41247b1c941efa9bf0bbf6d8385649769c8edd3b30bc162e4d2510935f0bdf2b"
+  inputs-digest = "86ce2eabbbf97d28e2b19c8d47158302fe4215437f09a75823f59a596434cd94"
   solver-name = "gps-cdcl"
   solver-version = 1

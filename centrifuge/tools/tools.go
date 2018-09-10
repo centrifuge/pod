@@ -8,6 +8,15 @@ import (
 	"github.com/centrifuge/gocelery"
 )
 
+func ContainsBigIntInSlice(value *big.Int, list []*big.Int) bool {
+	for _, v := range list {
+		if v.Cmp(value) == 0 {
+			return true
+		}
+	}
+	return false
+}
+
 // SliceToByte32 converts a 32 byte slice to an array. Will thorw error if the slice is too long
 func SliceToByte32(in []byte) (out [32]byte, err error) {
 	if len(in) > 32 {

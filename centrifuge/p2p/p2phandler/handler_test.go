@@ -15,7 +15,6 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/notification"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/signatures"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/version"
 	"github.com/stretchr/testify/assert"
@@ -109,9 +108,6 @@ func TestHandler_RequestDocumentSignature(t *testing.T) {
 		CentNodeVersion: version.GetVersion().String(), NetworkIdentifier: config.Config.GetNetworkID(),
 	}, Document: testingutils.GenerateCoreDocument()}
 
-	srv := signatures.SigningService{}
-	srv.LoadIdentityKeyFromConfig()
-	signatures.NewSigningService(srv)
 	handler := Handler{Notifier: &MockWebhookSender{}}
 	wantSig := []byte{0x0, 0x14, 0x36, 0x51, 0xa6, 0xe6, 0x2c, 0xb5, 0xe5, 0x16, 0x8a, 0x7a, 0x18, 0xd8, 0x87, 0xe0, 0xb3, 0x9e, 0xca, 0x9b, 0x2c, 0xa3, 0xeb, 0xd7, 0xbc, 0x86, 0xf2, 0xad, 0xc3, 0x97, 0x11, 0x7f, 0x1e, 0x89, 0x8b, 0x8a, 0xc7, 0xce, 0x4f, 0x71, 0xd5, 0x75, 0xd3, 0xf, 0xe7, 0xae, 0x39, 0x48, 0x16, 0x2f, 0x9d, 0xe5, 0x33, 0x81, 0xef, 0xff, 0xa2, 0x17, 0xc9, 0x34, 0x24, 0x7b, 0x93, 0x8}
 	resp, err := handler.RequestDocumentSignature(context.Background(), req)

@@ -32,7 +32,7 @@ func generateEmptyInvoiceForProcessing() (doc *invoice.Invoice) {
 	identifier := testingutils.Rand32Bytes()
 	doc = invoice.Empty()
 	salts := &coredocumentpb.CoreDocumentSalts{}
-	proofs.FillSalts(salts)
+	proofs.FillSalts(doc.Document.Data, salts)
 	doc.Document.CoreDocument = &coredocumentpb.CoreDocument{
 		DocumentIdentifier: identifier,
 		CurrentIdentifier:  identifier,

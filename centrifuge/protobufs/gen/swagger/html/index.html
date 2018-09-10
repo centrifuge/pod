@@ -38,13 +38,13 @@
                 <a href="#operation--invoice-getReceived-get"> GET /invoice/getReceived </a>
               </li>
               <li>
+                <a href="#operation--invoice-proof-post"> POST /invoice/proof </a>
+              </li>
+              <li>
                 <a href="#operation--invoice-send-post"> POST /invoice/send </a>
               </li>
               <li>
                 <a href="#operation--invoice--document_identifier--get"> GET /invoice/{document_identifier} </a>
-              </li>
-              <li>
-                <a href="#operation--invoice--document_identifier--proof-post"> POST /invoice/{document_identifier}/proof </a>
               </li>
             </ul>
           </section>
@@ -58,13 +58,13 @@
                 <a href="#operation--purchaseorder-getReceived-get"> GET /purchaseorder/getReceived </a>
               </li>
               <li>
+                <a href="#operation--purchaseorder-proof-post"> POST /purchaseorder/proof </a>
+              </li>
+              <li>
                 <a href="#operation--purchaseorder-send-post"> POST /purchaseorder/send </a>
               </li>
               <li>
                 <a href="#operation--purchaseorder--document_identifier--get"> GET /purchaseorder/{document_identifier} </a>
-              </li>
-              <li>
-                <a href="#operation--purchaseorder--document_identifier--proof-post"> POST /purchaseorder/{document_identifier}/proof </a>
               </li>
             </ul>
           </section>
@@ -572,6 +572,109 @@
               </div>
             </div>
           </div>
+          <div id="operation--invoice-proof-post" class="operation panel" data-traverse-target="operation--invoice-proof-post">
+            <!-- <section class="operation-tags row"> -->
+            <!-- <div class="doc-copy"> -->
+            <div class="operation-tags">
+              <a class="label" href="#tag-InvoiceDocumentService">InvoiceDocumentService</a>
+              <!---->
+            </div>
+            <!-- </div> -->
+            <!-- </section> -->
+            <h2 class="operation-title">
+              <span class="operation-name">
+                <span class="operation-name">POST</span>
+                <span class="operation-path">/invoice/proof</span>
+              </span>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <section class="swagger-operation-description">
+                  <p>Creates a list of precise proofs for the specified fields</p>
+                </section>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <section class="swagger-request-body">
+                  <div class="prop-row">
+                    <div class="prop-name">
+                      <div class="swagger-request-model">
+                        <span class="">
+                          <a class="json-schema-ref" href="#/definitions/invoiceCreateInvoiceProofEnvelope">invoiceCreateInvoiceProofEnvelope</a>
+                        </span>
+                      </div>
+                    </div>
+                    <div class="prop-value columns small-6">
+                      <!-- <div class="swagger-request-description"> -->
+                      <p>undefined</p>
+                      <!-- </div> -->
+                    </div>
+                  </div>
+                </section>
+              </div>
+              <div class="doc-examples">
+                <section>
+                  <h5>Request Example</h5>
+                  <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
+  <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+  <span class="hljs-attr">&quot;fields&quot;</span>: [
+    <span class="hljs-string">&quot;string&quot;</span>
+  ]
+}
+</code></pre>
+                  <!-- </div> -->
+                </section>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <section class="swagger-responses">
+                  <div class="prop-row prop-group">
+                    <div class="prop-name">
+                      <div class="prop-title">200 OK</div>
+                      <div class="prop-ref">
+                        <span class="">
+                          <a class="json-schema-ref" href="#/definitions/invoiceInvoiceProof">invoiceInvoiceProof</a>
+                        </span>
+                      </div>
+                      <!-- <span class="swagger-global"></span> <span class="json-schema-reference"><a href=""></a></span> -->
+                    </div>
+                    <div class="prop-value"> </div>
+                  </div>
+                </section>
+              </div>
+              <div class="doc-examples">
+                <section>
+                  <h5>Response Example
+                    <span>(200 OK)</span>
+                  </h5>
+                  <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
+  <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+  <span class="hljs-attr">&quot;field_proofs&quot;</span>: [
+    {
+      <span class="hljs-attr">&quot;property&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+      <span class="hljs-attr">&quot;value&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+      <span class="hljs-attr">&quot;salt&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;hash&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;hashes&quot;</span>: [
+        {
+          <span class="hljs-attr">&quot;left&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+          <span class="hljs-attr">&quot;right&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
+        }
+      ],
+      <span class="hljs-attr">&quot;sortedHashes&quot;</span>: [
+        <span class="hljs-string">&quot;string (byte)&quot;</span>
+      ]
+    }
+  ]
+}
+</code></pre>
+                  <!-- </div> -->
+                </section>
+              </div>
+            </div>
+          </div>
           <div id="operation--invoice-send-post" class="operation panel" data-traverse-target="operation--invoice-send-post">
             <!-- <section class="operation-tags row"> -->
             <!-- <div class="doc-copy"> -->
@@ -971,122 +1074,6 @@
               </div>
             </div>
           </div>
-          <div id="operation--invoice--document_identifier--proof-post" class="operation panel" data-traverse-target="operation--invoice--document_identifier--proof-post">
-            <!-- <section class="operation-tags row"> -->
-            <!-- <div class="doc-copy"> -->
-            <div class="operation-tags">
-              <a class="label" href="#tag-InvoiceDocumentService">InvoiceDocumentService</a>
-              <!---->
-            </div>
-            <!-- </div> -->
-            <!-- </section> -->
-            <h2 class="operation-title">
-              <span class="operation-name">
-                <span class="operation-name">POST</span>
-                <span class="operation-path">/invoice/{document_identifier}/proof</span>
-              </span>
-            </h2>
-            <div class="doc-row">
-              <div class="doc-copy">
-                <section class="swagger-operation-description">
-                  <p>Creates a list of precise proofs for the specified fields</p>
-                </section>
-              </div>
-            </div>
-            <div class="doc-row">
-              <div class="doc-copy">
-                <section class="swagger-request-body">
-                  <div class="prop-row">
-                    <div class="prop-name">
-                      <div class="swagger-request-model">
-                        <span class="">
-                          <a class="json-schema-ref" href="#/definitions/invoiceCreateInvoiceProofEnvelope">invoiceCreateInvoiceProofEnvelope</a>
-                        </span>
-                      </div>
-                    </div>
-                    <div class="prop-value columns small-6">
-                      <!-- <div class="swagger-request-description"> -->
-                      <p>undefined</p>
-                      <!-- </div> -->
-                    </div>
-                  </div>
-                </section>
-                <section class="swagger-request-params">
-                  <div class="prop-row prop-group">
-                    <div class="prop-name">
-                      <div class="prop-title">document_identifier</div>
-                      <span class="json-property-required"></span>
-                      <div class="prop-subtitle"> in path </div>
-                      <div class="prop-subtitle">
-                        <span class="json-property-type">string</span>
-                        <span class="json-property-format">(byte)</span>
-                        <span class="json-property-range" title="Value limits"></span>
-                      </div>
-                    </div>
-                    <div class="prop-value">
-                      <p class="no-description">(no description)</p>
-                    </div>
-                  </div>
-                </section>
-              </div>
-              <div class="doc-examples">
-                <section>
-                  <h5>Request Example</h5>
-                  <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
-  <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-  <span class="hljs-attr">&quot;fields&quot;</span>: [
-    <span class="hljs-string">&quot;string&quot;</span>
-  ]
-}
-</code></pre>
-                  <!-- </div> -->
-                </section>
-              </div>
-            </div>
-            <div class="doc-row">
-              <div class="doc-copy">
-                <section class="swagger-responses">
-                  <div class="prop-row prop-group">
-                    <div class="prop-name">
-                      <div class="prop-title">200 OK</div>
-                      <div class="prop-ref">
-                        <span class="">
-                          <a class="json-schema-ref" href="#/definitions/invoiceInvoiceProof">invoiceInvoiceProof</a>
-                        </span>
-                      </div>
-                      <!-- <span class="swagger-global"></span> <span class="json-schema-reference"><a href=""></a></span> -->
-                    </div>
-                    <div class="prop-value"> </div>
-                  </div>
-                </section>
-              </div>
-              <div class="doc-examples">
-                <section>
-                  <h5>Response Example
-                    <span>(200 OK)</span>
-                  </h5>
-                  <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
-  <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-  <span class="hljs-attr">&quot;field_proofs&quot;</span>: [
-    {
-      <span class="hljs-attr">&quot;property&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
-      <span class="hljs-attr">&quot;value&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
-      <span class="hljs-attr">&quot;salt&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;hashes&quot;</span>: [
-        {
-          <span class="hljs-attr">&quot;left&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-          <span class="hljs-attr">&quot;right&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
-        }
-      ]
-    }
-  ]
-}
-</code></pre>
-                  <!-- </div> -->
-                </section>
-              </div>
-            </div>
-          </div>
           <h1 id="tag-PurchaseOrderDocumentService" class="swagger-summary-tag" data-traverse-target="tag-PurchaseOrderDocumentService">PurchaseOrderDocumentService</h1>
           <div id="operation--purchaseorder-anchor-post" class="operation panel" data-traverse-target="operation--purchaseorder-anchor-post">
             <!-- <section class="operation-tags row"> -->
@@ -1461,6 +1448,109 @@
         <span class="hljs-attr">&quot;date_created&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
         <span class="hljs-attr">&quot;extra_data&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
       }
+    }
+  ]
+}
+</code></pre>
+                  <!-- </div> -->
+                </section>
+              </div>
+            </div>
+          </div>
+          <div id="operation--purchaseorder-proof-post" class="operation panel" data-traverse-target="operation--purchaseorder-proof-post">
+            <!-- <section class="operation-tags row"> -->
+            <!-- <div class="doc-copy"> -->
+            <div class="operation-tags">
+              <a class="label" href="#tag-PurchaseOrderDocumentService">PurchaseOrderDocumentService</a>
+              <!---->
+            </div>
+            <!-- </div> -->
+            <!-- </section> -->
+            <h2 class="operation-title">
+              <span class="operation-name">
+                <span class="operation-name">POST</span>
+                <span class="operation-path">/purchaseorder/proof</span>
+              </span>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <section class="swagger-operation-description">
+                  <p>Creates a list of precise proofs for the specified fields</p>
+                </section>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <section class="swagger-request-body">
+                  <div class="prop-row">
+                    <div class="prop-name">
+                      <div class="swagger-request-model">
+                        <span class="">
+                          <a class="json-schema-ref" href="#/definitions/purchaseorderCreatePurchaseOrderProofEnvelope">purchaseorderCreatePurchaseOrderProofEnvelope</a>
+                        </span>
+                      </div>
+                    </div>
+                    <div class="prop-value columns small-6">
+                      <!-- <div class="swagger-request-description"> -->
+                      <p>undefined</p>
+                      <!-- </div> -->
+                    </div>
+                  </div>
+                </section>
+              </div>
+              <div class="doc-examples">
+                <section>
+                  <h5>Request Example</h5>
+                  <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
+  <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+  <span class="hljs-attr">&quot;fields&quot;</span>: [
+    <span class="hljs-string">&quot;string&quot;</span>
+  ]
+}
+</code></pre>
+                  <!-- </div> -->
+                </section>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <section class="swagger-responses">
+                  <div class="prop-row prop-group">
+                    <div class="prop-name">
+                      <div class="prop-title">200 OK</div>
+                      <div class="prop-ref">
+                        <span class="">
+                          <a class="json-schema-ref" href="#/definitions/purchaseorderPurchaseOrderProof">purchaseorderPurchaseOrderProof</a>
+                        </span>
+                      </div>
+                      <!-- <span class="swagger-global"></span> <span class="json-schema-reference"><a href=""></a></span> -->
+                    </div>
+                    <div class="prop-value"> </div>
+                  </div>
+                </section>
+              </div>
+              <div class="doc-examples">
+                <section>
+                  <h5>Response Example
+                    <span>(200 OK)</span>
+                  </h5>
+                  <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
+  <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+  <span class="hljs-attr">&quot;field_proofs&quot;</span>: [
+    {
+      <span class="hljs-attr">&quot;property&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+      <span class="hljs-attr">&quot;value&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+      <span class="hljs-attr">&quot;salt&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;hash&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;hashes&quot;</span>: [
+        {
+          <span class="hljs-attr">&quot;left&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+          <span class="hljs-attr">&quot;right&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
+        }
+      ],
+      <span class="hljs-attr">&quot;sortedHashes&quot;</span>: [
+        <span class="hljs-string">&quot;string (byte)&quot;</span>
+      ]
     }
   ]
 }
@@ -1862,122 +1952,6 @@
     <span class="hljs-attr">&quot;date_created&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
     <span class="hljs-attr">&quot;extra_data&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
   }
-}
-</code></pre>
-                  <!-- </div> -->
-                </section>
-              </div>
-            </div>
-          </div>
-          <div id="operation--purchaseorder--document_identifier--proof-post" class="operation panel" data-traverse-target="operation--purchaseorder--document_identifier--proof-post">
-            <!-- <section class="operation-tags row"> -->
-            <!-- <div class="doc-copy"> -->
-            <div class="operation-tags">
-              <a class="label" href="#tag-PurchaseOrderDocumentService">PurchaseOrderDocumentService</a>
-              <!---->
-            </div>
-            <!-- </div> -->
-            <!-- </section> -->
-            <h2 class="operation-title">
-              <span class="operation-name">
-                <span class="operation-name">POST</span>
-                <span class="operation-path">/purchaseorder/{document_identifier}/proof</span>
-              </span>
-            </h2>
-            <div class="doc-row">
-              <div class="doc-copy">
-                <section class="swagger-operation-description">
-                  <p>Creates a list of precise proofs for the specified fields</p>
-                </section>
-              </div>
-            </div>
-            <div class="doc-row">
-              <div class="doc-copy">
-                <section class="swagger-request-body">
-                  <div class="prop-row">
-                    <div class="prop-name">
-                      <div class="swagger-request-model">
-                        <span class="">
-                          <a class="json-schema-ref" href="#/definitions/purchaseorderCreatePurchaseOrderProofEnvelope">purchaseorderCreatePurchaseOrderProofEnvelope</a>
-                        </span>
-                      </div>
-                    </div>
-                    <div class="prop-value columns small-6">
-                      <!-- <div class="swagger-request-description"> -->
-                      <p>undefined</p>
-                      <!-- </div> -->
-                    </div>
-                  </div>
-                </section>
-                <section class="swagger-request-params">
-                  <div class="prop-row prop-group">
-                    <div class="prop-name">
-                      <div class="prop-title">document_identifier</div>
-                      <span class="json-property-required"></span>
-                      <div class="prop-subtitle"> in path </div>
-                      <div class="prop-subtitle">
-                        <span class="json-property-type">string</span>
-                        <span class="json-property-format">(byte)</span>
-                        <span class="json-property-range" title="Value limits"></span>
-                      </div>
-                    </div>
-                    <div class="prop-value">
-                      <p class="no-description">(no description)</p>
-                    </div>
-                  </div>
-                </section>
-              </div>
-              <div class="doc-examples">
-                <section>
-                  <h5>Request Example</h5>
-                  <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
-  <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-  <span class="hljs-attr">&quot;fields&quot;</span>: [
-    <span class="hljs-string">&quot;string&quot;</span>
-  ]
-}
-</code></pre>
-                  <!-- </div> -->
-                </section>
-              </div>
-            </div>
-            <div class="doc-row">
-              <div class="doc-copy">
-                <section class="swagger-responses">
-                  <div class="prop-row prop-group">
-                    <div class="prop-name">
-                      <div class="prop-title">200 OK</div>
-                      <div class="prop-ref">
-                        <span class="">
-                          <a class="json-schema-ref" href="#/definitions/purchaseorderPurchaseOrderProof">purchaseorderPurchaseOrderProof</a>
-                        </span>
-                      </div>
-                      <!-- <span class="swagger-global"></span> <span class="json-schema-reference"><a href=""></a></span> -->
-                    </div>
-                    <div class="prop-value"> </div>
-                  </div>
-                </section>
-              </div>
-              <div class="doc-examples">
-                <section>
-                  <h5>Response Example
-                    <span>(200 OK)</span>
-                  </h5>
-                  <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
-  <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-  <span class="hljs-attr">&quot;field_proofs&quot;</span>: [
-    {
-      <span class="hljs-attr">&quot;property&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
-      <span class="hljs-attr">&quot;value&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
-      <span class="hljs-attr">&quot;salt&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;hashes&quot;</span>: [
-        {
-          <span class="hljs-attr">&quot;left&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-          <span class="hljs-attr">&quot;right&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
-        }
-      ]
-    }
-  ]
 }
 </code></pre>
                   <!-- </div> -->
@@ -3042,11 +3016,15 @@
       <span class="hljs-attr">&quot;property&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
       <span class="hljs-attr">&quot;value&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
       <span class="hljs-attr">&quot;salt&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;hash&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
       <span class="hljs-attr">&quot;hashes&quot;</span>: [
         {
           <span class="hljs-attr">&quot;left&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
           <span class="hljs-attr">&quot;right&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
         }
+      ],
+      <span class="hljs-attr">&quot;sortedHashes&quot;</span>: [
+        <span class="hljs-string">&quot;string (byte)&quot;</span>
       ]
     }
   ]
@@ -3396,6 +3374,12 @@
                       <span class="json-property-format">(byte)</span>
                       <span class="json-property-range" title="Value limits"></span>
                     </dt>
+                    <dt data-property-name="hash">
+                      <span class="json-property-name">hash:</span>
+                      <span class="json-property-type">string</span>
+                      <span class="json-property-format">(byte)</span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
                     <dt data-property-name="hashes">
                       <span class="json-property-name">hashes:</span>
                       <span class="json-property-type">
@@ -3416,6 +3400,19 @@
                         <div class="json-inner-schema"> </div>
                       </section>
                     </dt>
+                    <dt data-property-name="sortedHashes">
+                      <span class="json-property-name">sortedHashes:</span>
+                      <span class="json-property-type">string[]</span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
+                    <dt class="json-inner-schema">
+                      <section class="json-schema-array-items">
+                        <span class="json-property-type">string</span>
+                        <span class="json-property-format">(byte)</span>
+                        <span class="json-property-range" title="Value limits"></span>
+                        <div class="json-inner-schema"> </div>
+                      </section>
+                    </dt>
                   </dl>
                 </section>
               </div>
@@ -3426,11 +3423,15 @@
   <span class="hljs-attr">&quot;property&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
   <span class="hljs-attr">&quot;value&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
   <span class="hljs-attr">&quot;salt&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+  <span class="hljs-attr">&quot;hash&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
   <span class="hljs-attr">&quot;hashes&quot;</span>: [
     {
       <span class="hljs-attr">&quot;left&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
       <span class="hljs-attr">&quot;right&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
     }
+  ],
+  <span class="hljs-attr">&quot;sortedHashes&quot;</span>: [
+    <span class="hljs-string">&quot;string (byte)&quot;</span>
   ]
 }
 </code></pre>
@@ -4271,11 +4272,15 @@
       <span class="hljs-attr">&quot;property&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
       <span class="hljs-attr">&quot;value&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
       <span class="hljs-attr">&quot;salt&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;hash&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
       <span class="hljs-attr">&quot;hashes&quot;</span>: [
         {
           <span class="hljs-attr">&quot;left&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
           <span class="hljs-attr">&quot;right&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
         }
+      ],
+      <span class="hljs-attr">&quot;sortedHashes&quot;</span>: [
+        <span class="hljs-string">&quot;string (byte)&quot;</span>
       ]
     }
   ]

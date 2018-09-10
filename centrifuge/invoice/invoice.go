@@ -40,7 +40,7 @@ func New(invDoc *invoicepb.InvoiceDocument) (*Invoice, error) {
 	// IF salts have not been provided, let's generate them
 	if invDoc.Salts == nil {
 		invoiceSalts := invoicepb.InvoiceDataSalts{}
-		proofs.FillSalts(&invoiceSalts)
+		proofs.FillSalts(invDoc.Data, &invoiceSalts)
 		invDoc.Salts = &invoiceSalts
 	}
 
@@ -59,7 +59,7 @@ func New(invDoc *invoicepb.InvoiceDocument) (*Invoice, error) {
 // Empty returns an empty invoice
 func Empty() *Invoice {
 	invoiceSalts := invoicepb.InvoiceDataSalts{}
-	proofs.FillSalts(&invoiceSalts)
+	proofs.FillSalts(&invoicepb.InvoiceData{}, &invoiceSalts)
 	doc := invoicepb.InvoiceDocument{
 		CoreDocument: &coredocumentpb.CoreDocument{},
 		Data:         &invoicepb.InvoiceData{},
@@ -95,31 +95,42 @@ func NewFromCoreDocument(coreDocument *coredocumentpb.CoreDocument) (*Invoice, e
 	return inv, nil
 }
 
-func (inv *Invoice) getDocumentTree() (tree *proofs.DocumentTree, err error) {
-	t := proofs.NewDocumentTree()
-	sha256Hash := sha256.New()
-	t.SetHashFunc(sha256Hash)
-	err = t.FillTree(inv.Document.Data, inv.Document.Salts)
+func (inv *Invoice) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
+	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: sha256.New()})
+	err = t.AddLeavesFromDocument(inv.Document.Data, inv.Document.Salts)
 	if err != nil {
-		log.Error("getDocumentTree:", err)
+		log.Error("getDocumentDataTree:", err)
+		return nil, err
+	}
+	err = t.Generate()
+	if err != nil {
+		log.Error("getDocumentDataTree:", err)
 		return nil, err
 	}
 	return &t, nil
 }
 
 // CalculateMerkleRoot calculates the invoice merkle root
+// TODO: this method is a dangerous one. Generating the different roots shouldn't be done in one step (lucas)
 func (inv *Invoice) CalculateMerkleRoot() error {
-	tree, err := inv.getDocumentTree()
+	tree, err := inv.getDocumentDataTree()
 	if err != nil {
 		return err
 	}
 	inv.Document.CoreDocument.DataRoot = tree.RootHash()
-	return nil
+	err = coredocument.CalculateSigningRoot(inv.Document.CoreDocument)
+	return err
 }
 
 // CreateProofs generates proofs for given fields
 func (inv *Invoice) CreateProofs(fields []string) (proofs []*proofspb.Proof, err error) {
-	tree, err := inv.getDocumentTree()
+	dataRootHashes, err := coredocument.GetDataProofHashes(inv.Document.CoreDocument)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	tree, err := inv.getDocumentDataTree()
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -132,6 +143,11 @@ func (inv *Invoice) CreateProofs(fields []string) (proofs []*proofspb.Proof, err
 		}
 		proofs = append(proofs, &proof)
 	}
+
+	for _, proof := range proofs {
+		proof.SortedHashes = append(proof.SortedHashes, dataRootHashes...)
+	}
+
 	return
 }
 

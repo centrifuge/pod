@@ -11,7 +11,7 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/signatures"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/version"
 	"github.com/stretchr/testify/assert"
@@ -21,7 +21,7 @@ import (
 
 func TestMain(m *testing.M) {
 	cc.TestIntegrationBootstrap()
-	signatures.NewSigningService(signatures.SigningService{})
+	identity.SetIdentityService(identity.NewEthereumIdentityService())
 	result := m.Run()
 	cc.TestIntegrationTearDown()
 	os.Exit(result)

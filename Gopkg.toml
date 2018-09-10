@@ -24,20 +24,25 @@
 #   go-tests = true
 #   unused-packages = true
 
-required = ["github.com/roboll/go-vendorinstall", "github.com/golang/protobuf/protoc-gen-go", "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway"]
+required = ["github.com/roboll/go-vendorinstall", "github.com/golang/protobuf/protoc-gen-go", "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway", "golang.org/x/tools/cmd/goimports"]
 
 [[constraint]]
   name = "github.com/CentrifugeInc/centrifuge-protobufs"
-  source = "git@github.com:vedhavyas/centrifuge-protobufs"
-  revision = "d370640bebfb5d52115252da54560193c8369c13"
+  source = "git@github.com:CentrifugeInc/centrifuge-protobufs"
+  revision = "0360114f218245cb89f9d0700b34d264f4b3818f"
 
 [[constraint]]
   name = "github.com/Masterminds/semver"
   version = "1.4.2"
 
 [[constraint]]
-  revision = "82d1c4fdccd4c8bc0d148904835db27bac527b6c"
   name = "github.com/centrifuge/precise-proofs"
+  source = "git@github.com:centrifuge/precise-proofs"
+  revision = "c673e56ee0de0d721a10dee5cd2aa59015e4420a"
+
+[[override]]
+  revision = "fbb7cafc5ae411e13e718172f5af7917ad6c3ed7"
+  name = "github.com/xsleonard/go-merkle"
 
 [[constraint]]
   name = "github.com/ethereum/go-ethereum"
@@ -255,17 +260,14 @@ revision = "64c31f18a9753193909544f1a606148894cbe878"
 
 [[prune.project]]
     name = "github.com/ethereum/go-ethereum"
-    non-go = false
     unused-packages = false
 
 [[prune.project]]
     name = "github.com/CentrifugeInc/centrifuge-protobufs"
-    non-go = false
     unused-packages = false
 
 [[prune.project]]
     name = "github.com/grpc-ecosystem/grpc-gateway"
-    non-go = false
     unused-packages = false
 
 [prune]
