@@ -1,4 +1,4 @@
-package p2phandler
+package p2p
 
 import (
 	"context"
@@ -92,6 +92,7 @@ func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.
 		return nil, err
 	}
 
+	// TODO(ved): validate core document here
 	if sigReq.Document == nil {
 		return nil, errors.New(code.DocumentInvalid, errors.NilError(sigReq.Document).Error())
 	}
