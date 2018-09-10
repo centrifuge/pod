@@ -1,4 +1,4 @@
-package coredocumentrepository
+package coredocument
 
 import (
 	"fmt"
@@ -7,7 +7,6 @@ import (
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/code"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
 	"github.com/golang/protobuf/proto"
@@ -55,7 +54,7 @@ func validate(doc proto.Message) error {
 		return errors.New(code.DocumentInvalid, fmt.Sprintf("invalid document of type: %T", doc))
 	}
 
-	if valid, msg, errs := coredocument.Validate(coreDoc); !valid {
+	if valid, msg, errs := Validate(coreDoc); !valid {
 		return errors.NewWithErrors(code.DocumentInvalid, msg, errs)
 	}
 

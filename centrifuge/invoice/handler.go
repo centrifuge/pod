@@ -6,8 +6,8 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/code"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/processor"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	clientinvoicepb "github.com/CentrifugeInc/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
@@ -139,7 +139,7 @@ func (s *Handler) GetInvoiceDocument(ctx context.Context, getInvoiceDocumentEnve
 	}
 
 	coreDoc := new(coredocumentpb.CoreDocument)
-	err = coredocumentrepository.GetRepository().GetByID(getInvoiceDocumentEnvelope.DocumentIdentifier, coreDoc)
+	err = coredocument.GetRepository().GetByID(getInvoiceDocumentEnvelope.DocumentIdentifier, coreDoc)
 	if err != nil {
 		return nil, errors.New(code.DocumentNotFound, err.Error())
 	}

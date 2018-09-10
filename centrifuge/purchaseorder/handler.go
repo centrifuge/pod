@@ -6,8 +6,8 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/code"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/processor"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	clientpurchaseorderpb "github.com/CentrifugeInc/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
@@ -136,7 +136,7 @@ func (s *Handler) GetPurchaseOrderDocument(ctx context.Context, getPurchaseOrder
 
 	// TODO(ved): where are we saving this coredocument?
 	docFound := new(coredocumentpb.CoreDocument)
-	err = coredocumentrepository.GetRepository().GetByID(getPurchaseOrderDocumentEnvelope.DocumentIdentifier, docFound)
+	err = coredocument.GetRepository().GetByID(getPurchaseOrderDocumentEnvelope.DocumentIdentifier, docFound)
 	if err != nil {
 		log.Error(err)
 		return nil, errors.New(code.DocumentNotFound, fmt.Sprintf("failed to get document: %v", err))

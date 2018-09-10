@@ -9,7 +9,7 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/code"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	centED25519 "github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/notification"
@@ -57,7 +57,7 @@ func (srv *Handler) Post(ctx context.Context, req *p2ppb.P2PMessage) (*p2ppb.P2P
 		return nil, errors.New(code.DocumentInvalid, errors.NilError(req.Document).Error())
 	}
 
-	err = coredocumentrepository.GetRepository().Create(req.Document.DocumentIdentifier, req.Document)
+	err = coredocument.GetRepository().Create(req.Document.DocumentIdentifier, req.Document)
 	if err != nil {
 		return nil, errors.New(code.Unknown, err.Error())
 	}

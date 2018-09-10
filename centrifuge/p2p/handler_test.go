@@ -13,7 +13,7 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/code"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/notification"
@@ -31,7 +31,7 @@ func (wh *MockWebhookSender) Send(notification *notificationpb.NotificationMessa
 
 func TestMain(m *testing.M) {
 	cc.TestIntegrationBootstrap()
-	coredocumentrepository.InitLevelDBRepository(cc.GetLevelDBStorage())
+	coredocument.InitLevelDBRepository(cc.GetLevelDBStorage())
 	identity.SetIdentityService(identity.NewEthereumIdentityService())
 	result := m.Run()
 	cc.TestIntegrationTearDown()
@@ -49,7 +49,7 @@ func TestP2PService(t *testing.T) {
 	assert.Equal(t, res.Document.DocumentIdentifier, coreDoc.DocumentIdentifier, "Incorrect identifier")
 
 	doc := new(coredocumentpb.CoreDocument)
-	err = coredocumentrepository.GetRepository().GetByID(coreDoc.DocumentIdentifier, doc)
+	err = coredocument.GetRepository().GetByID(coreDoc.DocumentIdentifier, doc)
 	assert.Equal(t, doc.DocumentIdentifier, coreDoc.DocumentIdentifier, "Document Identifier doesn't match")
 }
 
