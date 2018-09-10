@@ -11,6 +11,7 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	clientpurchaseorderpb "github.com/CentrifugeInc/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
@@ -19,7 +20,6 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 )
 
 func TestMain(m *testing.M) {
@@ -226,7 +226,6 @@ func TestPurchaseOrderDocumentService_HandleCreatePurchaseOrderProof(t *testing.
 	assert.True(t, valid)
 	assert.Nil(t, err)
 }
-
 
 func TestPurchaseOrderDocumentService_HandleCreatePurchaseOrderProof_NotFilledSalts(t *testing.T) {
 	identifier := testingutils.Rand32Bytes()
