@@ -7,11 +7,11 @@ import (
 
 	"fmt"
 
-		"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	logging "github.com/ipfs/go-log"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 var log = logging.Logger("signing")

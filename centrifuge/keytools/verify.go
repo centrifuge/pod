@@ -3,7 +3,7 @@ package keytools
 import (
 	"fmt"
 
-		"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/secp256k1"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/secp256k1"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 

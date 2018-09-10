@@ -5,8 +5,8 @@ import (
 
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/utils"
-	"github.com/spf13/cobra"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/spf13/cobra"
 )
 
 func init() {

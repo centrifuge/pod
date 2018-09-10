@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"testing"
 
-		"github.com/stretchr/testify/assert"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/stretchr/testify/assert"
 )
 
 const MaxMsgLen = 32

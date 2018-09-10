@@ -3,16 +3,16 @@
 package anchoring_test
 
 import (
-		"os"
+	"os"
 	"testing"
 
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/anchoring"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/secp256k1"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
-		"github.com/ethereum/go-ethereum/common/hexutil"
-		"github.com/stretchr/testify/assert"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/anchoring"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/stretchr/testify/assert"
 )
 
 var identityService identity.Service
@@ -97,16 +97,15 @@ func commitAnchor(t *testing.T, anchorId, centrifugeId, documentRoot, signature 
 	assert.Equal(t, watchCommittedAnchor.CommitData.DocumentRoot, docRootTyped, "Resulting anchor should have the same document hash as the input")
 }
 
-
 func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
-	var commitDataList [5] *anchoring.CommitData
+	var commitDataList [5]*anchoring.CommitData
 	var confirmationList [5]<-chan *anchoring.WatchCommit
 	var err error
 	testPrivateKey, _ := hexutil.Decode("0x17e063fa17dd8274b09c14b253697d9a20afff74ace3c04fdb1b9c814ce0ada5")
 
 	centrifugeId := tools.RandomSlice(identity.CentIdByteLength)
 
-	createIdentityWithKeys(t,centrifugeId)
+	createIdentityWithKeys(t, centrifugeId)
 
 	for ix := 0; ix < 5; ix++ {
 		currentAnchorId := tools.RandomByte32()
@@ -117,7 +116,7 @@ func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
 		centIdFixed := centIdToFixed(centrifugeId)
 		documentProofs := [][anchoring.DocumentProofLength]byte{tools.RandomByte32()}
 
-		commitDataList[ix] = anchoring.NewCommitData(currentAnchorId ,currentDocumentRoot, centIdFixed, documentProofs, signature)
+		commitDataList[ix] = anchoring.NewCommitData(currentAnchorId, currentDocumentRoot, centIdFixed, documentProofs, signature)
 
 		confirmationList[ix], err = anchoring.CommitAnchor(currentAnchorId, currentDocumentRoot, centIdFixed, documentProofs, signature)
 

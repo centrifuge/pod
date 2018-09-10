@@ -2,17 +2,17 @@ package anchoring
 
 import (
 	"math/big"
+
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
 const (
-	AnchorIdLength = 32
-	RootLength = 32
+	AnchorIdLength      = 32
+	RootLength          = 32
 	DocumentProofLength = 32
 )
-
 
 type AnchorId [AnchorIdLength]byte
 

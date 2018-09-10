@@ -3,8 +3,8 @@ package anchoring
 import (
 	"math/big"
 
-	logging "github.com/ipfs/go-log"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
+	logging "github.com/ipfs/go-log"
 )
 
 var log = logging.Logger("anchorRepository")

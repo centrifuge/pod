@@ -6,17 +6,17 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/anchoring"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/secp256k1"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/go-errors/errors"
 	"github.com/stretchr/testify/assert"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/anchoring"
 )
 
 // ----- MOCKING -----
