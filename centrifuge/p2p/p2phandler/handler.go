@@ -66,7 +66,7 @@ func (srv *Handler) Post(ctx context.Context, req *p2ppb.P2PMessage) (*p2ppb.P2P
 	ts, _ := ptypes.TimestampProto(time.Now().UTC())
 
 	notificationMsg := &notificationpb.NotificationMessage{
-		EventType:    uint32(notification.RECEIVED_PAYLOAD),
+		EventType:    uint32(notification.ReceivedPayload),
 		CentrifugeId: req.SenderCentrifugeId,
 		Recorded:     ts,
 		Document:     req.Document,

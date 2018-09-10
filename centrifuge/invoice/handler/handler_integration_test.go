@@ -1,6 +1,6 @@
 // +build ethereum
 
-package invoiceservice_test
+package invoicehandler_test
 
 import (
 	"context"
@@ -13,7 +13,6 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/processor"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/repository"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/service"
 	clientinvoicepb "github.com/CentrifugeInc/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/precise-proofs/proofs"
@@ -43,7 +42,7 @@ func generateEmptyInvoiceForProcessing() (doc *invoice.Invoice) {
 }
 
 func TestInvoiceDocumentService_HandleAnchorInvoiceDocument_Integration(t *testing.T) {
-	s := invoiceservice.InvoiceDocumentService{
+	s := invoicehandler.Handler{
 		InvoiceRepository:     invoicerepository.GetRepository(),
 		CoreDocumentProcessor: coredocumentprocessor.DefaultProcessor(),
 	}
@@ -60,7 +59,7 @@ func TestInvoiceDocumentService_HandleAnchorInvoiceDocument_Integration(t *testi
 		GrossAmount:      800,
 	}
 
-	anchoredDoc, err := s.HandleAnchorInvoiceDocument(context.Background(), &clientinvoicepb.AnchorInvoiceEnvelope{Document: doc.Document})
+	anchoredDoc, err := s.AnchorInvoiceDocument(context.Background(), &clientinvoicepb.AnchorInvoiceEnvelope{Document: doc.Document})
 
 	//Call overall worked well and receive roughly sensical data back
 	assert.Nil(t, err)
@@ -78,7 +77,7 @@ func TestInvoiceDocumentService_HandleAnchorInvoiceDocument_Integration(t *testi
 
 	//Invoice Service should error out if trying to anchor the same document ID again
 	doc.Document.Data.SenderCountry = "ES"
-	anchoredDoc2, err := s.HandleAnchorInvoiceDocument(context.Background(), &clientinvoicepb.AnchorInvoiceEnvelope{Document: doc.Document})
+	anchoredDoc2, err := s.AnchorInvoiceDocument(context.Background(), &clientinvoicepb.AnchorInvoiceEnvelope{Document: doc.Document})
 	assert.Nil(t, anchoredDoc2)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "document already exists")

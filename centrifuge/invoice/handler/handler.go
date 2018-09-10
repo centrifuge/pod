@@ -1,4 +1,4 @@
-package invoiceservice
+package invoicehandler
 
 import (
 	"fmt"
@@ -17,17 +17,17 @@ import (
 	"golang.org/x/net/context"
 )
 
-var log = logging.Logger("rest-api")
+var log = logging.Logger("invoice-rest-api")
 
-// InvoiceDocumentService handles all the invoice document related actions
+// Handler handles all the invoice document related actions
 // anchoring, sending, proof generation, finding stored invoice document
-type InvoiceDocumentService struct {
+type Handler struct {
 	InvoiceRepository     storage.Repository
 	CoreDocumentProcessor coredocumentprocessor.Processor
 }
 
 // anchorInvoiceDocument anchors the given invoice document and returns the anchored document
-func (s *InvoiceDocumentService) anchorInvoiceDocument(doc *invoicepb.InvoiceDocument) (*invoicepb.InvoiceDocument, error) {
+func (s *Handler) anchorInvoiceDocument(doc *invoicepb.InvoiceDocument) (*invoicepb.InvoiceDocument, error) {
 	inv, err := invoice.New(doc)
 	if err != nil {
 		log.Error(err)
@@ -56,8 +56,8 @@ func (s *InvoiceDocumentService) anchorInvoiceDocument(doc *invoicepb.InvoiceDoc
 	return newInvoice.Document, nil
 }
 
-// HandleCreateInvoiceProof creates proofs for a list of fields
-func (s *InvoiceDocumentService) HandleCreateInvoiceProof(ctx context.Context, createInvoiceProofEnvelope *clientinvoicepb.CreateInvoiceProofEnvelope) (*clientinvoicepb.InvoiceProof, error) {
+// CreateInvoiceProof creates proofs for a list of fields
+func (s *Handler) CreateInvoiceProof(ctx context.Context, createInvoiceProofEnvelope *clientinvoicepb.CreateInvoiceProofEnvelope) (*clientinvoicepb.InvoiceProof, error) {
 	invDoc := new(invoicepb.InvoiceDocument)
 	err := s.InvoiceRepository.GetByID(createInvoiceProofEnvelope.DocumentIdentifier, invDoc)
 	if err != nil {
@@ -80,8 +80,8 @@ func (s *InvoiceDocumentService) HandleCreateInvoiceProof(ctx context.Context, c
 
 }
 
-// HandleAnchorInvoiceDocument anchors the given invoice document and returns the anchor details
-func (s *InvoiceDocumentService) HandleAnchorInvoiceDocument(ctx context.Context, anchorInvoiceEnvelope *clientinvoicepb.AnchorInvoiceEnvelope) (*invoicepb.InvoiceDocument, error) {
+// AnchorInvoiceDocument anchors the given invoice document and returns the anchor details
+func (s *Handler) AnchorInvoiceDocument(ctx context.Context, anchorInvoiceEnvelope *clientinvoicepb.AnchorInvoiceEnvelope) (*invoicepb.InvoiceDocument, error) {
 	inv, err := invoice.New(anchorInvoiceEnvelope.Document)
 	if err != nil {
 		log.Error(err)
@@ -111,9 +111,9 @@ func (s *InvoiceDocumentService) HandleAnchorInvoiceDocument(ctx context.Context
 
 }
 
-// HandleSendInvoiceDocument anchors and sends an invoice to the recipient
-func (s *InvoiceDocumentService) HandleSendInvoiceDocument(ctx context.Context, sendInvoiceEnvelope *clientinvoicepb.SendInvoiceEnvelope) (*invoicepb.InvoiceDocument, error) {
-	doc, err := s.HandleAnchorInvoiceDocument(ctx, &clientinvoicepb.AnchorInvoiceEnvelope{Document: sendInvoiceEnvelope.Document})
+// SendInvoiceDocument anchors and sends an invoice to the recipient
+func (s *Handler) SendInvoiceDocument(ctx context.Context, sendInvoiceEnvelope *clientinvoicepb.SendInvoiceEnvelope) (*invoicepb.InvoiceDocument, error) {
+	doc, err := s.AnchorInvoiceDocument(ctx, &clientinvoicepb.AnchorInvoiceEnvelope{Document: sendInvoiceEnvelope.Document})
 	if err != nil {
 		return nil, err
 	}
@@ -134,8 +134,8 @@ func (s *InvoiceDocumentService) HandleSendInvoiceDocument(ctx context.Context, 
 	return doc, nil
 }
 
-// HandleGetInvoiceDocument returns already stored invoice document
-func (s *InvoiceDocumentService) HandleGetInvoiceDocument(ctx context.Context, getInvoiceDocumentEnvelope *clientinvoicepb.GetInvoiceDocumentEnvelope) (*invoicepb.InvoiceDocument, error) {
+// GetInvoiceDocument returns already stored invoice document
+func (s *Handler) GetInvoiceDocument(ctx context.Context, getInvoiceDocumentEnvelope *clientinvoicepb.GetInvoiceDocumentEnvelope) (*invoicepb.InvoiceDocument, error) {
 	doc := new(invoicepb.InvoiceDocument)
 	err := s.InvoiceRepository.GetByID(getInvoiceDocumentEnvelope.DocumentIdentifier, doc)
 	if err == nil {
@@ -156,7 +156,7 @@ func (s *InvoiceDocumentService) HandleGetInvoiceDocument(ctx context.Context, g
 	return inv.Document, nil
 }
 
-// HandleGetReceivedInvoiceDocuments returns all the received invoice documents
-func (s *InvoiceDocumentService) HandleGetReceivedInvoiceDocuments(ctx context.Context, empty *empty.Empty) (*clientinvoicepb.ReceivedInvoices, error) {
+// GetReceivedInvoiceDocuments returns all the received invoice documents
+func (s *Handler) GetReceivedInvoiceDocuments(ctx context.Context, empty *empty.Empty) (*clientinvoicepb.ReceivedInvoices, error) {
 	return nil, nil
 }

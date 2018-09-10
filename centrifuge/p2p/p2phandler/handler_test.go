@@ -23,7 +23,7 @@ import (
 // MockWebhookSender implements notification.Sender
 type MockWebhookSender struct{}
 
-func (wh *MockWebhookSender) Send(notification *notificationpb.NotificationMessage) (status notification.NotificationStatus, err error) {
+func (wh *MockWebhookSender) Send(notification *notificationpb.NotificationMessage) (status notification.Status, err error) {
 	return
 }
 

@@ -29,7 +29,7 @@ func TestWebhookConstructPayload(t *testing.T) {
 	ts, err := ptypes.TimestampProto(time.Now().UTC())
 	assert.Nil(t, err, "Should not error out")
 
-	notificationMessage := &notificationpb.NotificationMessage{Document: coredoc, CentrifugeId: cid, EventType: uint32(RECEIVED_PAYLOAD), Recorded: ts}
+	notificationMessage := &notificationpb.NotificationMessage{Document: coredoc, CentrifugeId: cid, EventType: uint32(ReceivedPayload), Recorded: ts}
 
 	whs := WebhookSender{}
 	bresult, err := whs.constructPayload(notificationMessage)

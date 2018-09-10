@@ -185,7 +185,13 @@ func RunP2P() {
 	grpcProto := p2pgrpc.NewGRPCProtocol(context.Background(), hostInstance)
 	GRPCProtoInstance = *grpcProto
 
-	p2ppb.RegisterP2PServiceServer(grpcProto.GetGRPCServer(), &p2phandler.Handler{Notifier: &notification.WebhookSender{}})
+	p2ppb.RegisterP2PServiceServer(
+		grpcProto.GetGRPCServer(),
+		&p2phandler.Handler{
+			Notifier: &notification.WebhookSender{
+				URL: config.Config.GetReceiveEventNotificationEndpoint(),
+			},
+		})
 
 	hostInstance.Peerstore().AddAddr(hostInstance.ID(), hostInstance.Addrs()[0], pstore.TempAddrTTL)
 
