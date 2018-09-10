@@ -1,10 +1,9 @@
 package purchaseorderrepository
 
 import (
+	"fmt"
 	"log"
 	"sync"
-
-	"fmt"
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/code"

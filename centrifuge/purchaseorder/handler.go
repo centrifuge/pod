@@ -15,7 +15,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-// Handler needed as it is used to register the grpc services attached to the grpc server
+// Handler implements gRpc PurchaseOrderDocumentServiceServer
 type Handler struct {
 	Repository            storage.Repository
 	CoreDocumentProcessor coredocumentprocessor.Processor

@@ -7,8 +7,7 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
 )
 
-type Bootstrapper struct {
-}
+type Bootstrapper struct{}
 
 func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	if _, ok := context[bootstrapper.BootstrappedLevelDb]; ok {
