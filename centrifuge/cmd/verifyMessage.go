@@ -23,8 +23,12 @@ func init() {
 		Long:  ``,
 		Run: func(cmd *cobra.Command, args []string) {
 			signatureBytes := utils.HexToByteArray(signatureParam)
+			publicKey, err := utils.ReadKeyFromPemFile(publicKeyFileParam, keytools.PublicKey)
 
-			correct := keytools.VerifyMessage(publicKeyFileParam, messageParam, signatureBytes, curveTypeParam, ethereumSignFlag)
+			if err != nil {
+				log.Fatal(err)
+			}
+			correct := keytools.VerifyMessage(publicKey, []byte(messageParam), signatureBytes, curveTypeParam, ethereumSignFlag)
 			fmt.Println(correct)
 		},
 	}

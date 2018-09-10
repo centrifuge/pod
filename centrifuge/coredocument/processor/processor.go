@@ -2,20 +2,18 @@ package coredocumentprocessor
 
 import (
 	"context"
-	"crypto/sha256"
 	"fmt"
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/anchor"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/code"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
+	centED25519 "github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/p2p"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/signatures"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
-	"github.com/centrifuge/precise-proofs/proofs"
 	logging "github.com/ipfs/go-log"
 )
 
@@ -34,6 +32,7 @@ type defaultProcessor struct {
 }
 
 // DefaultProcessor returns the default implementation of CoreDocument Processor
+// TODO(ved): I don't think we need the processor since IdentityService is available globally
 func DefaultProcessor() Processor {
 	return &defaultProcessor{
 		IdentityService: identity.NewEthereumIdentityService()}
@@ -91,17 +90,22 @@ func (dp *defaultProcessor) Anchor(document *coredocumentpb.CoreDocument) error 
 		return errors.NilError(document)
 	}
 
-	log.Infof("Anchoring document with identifiers: [document: %#x, current: %#x, next: %#x], rootHash: %#x", document.DocumentIdentifier, document.CurrentIdentifier, document.NextIdentifier, document.DocumentRoot)
-	log.Debugf("Anchoring document with details %v", document)
-
 	id, err := tools.SliceToByte32(document.CurrentIdentifier)
 	if err != nil {
 		log.Error(err)
 		return err
 	}
 
-	// TODO: we should replace this with using the DocumentRoot once signing has been properly implemented
-	rootHash, err := tools.SliceToByte32(document.DataRoot)
+	log.Infof("Anchoring document with identifiers: [document: %#x, current: %#x, next: %#x], rootHash: %#x", document.DocumentIdentifier, document.CurrentIdentifier, document.NextIdentifier, document.DocumentRoot)
+	log.Debugf("Anchoring document with details %v", document)
+
+	err = coredocument.CalculateSigningRoot(document)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+
+	rootHash, err := tools.SliceToByte32(document.SigningRoot) //TODO: CHANGE
 	if err != nil {
 		log.Error(err)
 		return err
@@ -117,40 +121,19 @@ func (dp *defaultProcessor) Anchor(document *coredocumentpb.CoreDocument) error 
 	return anchorWatch.Error
 }
 
-func (dp *defaultProcessor) getDocumentTree(document *coredocumentpb.CoreDocument) (tree *proofs.DocumentTree, err error) {
-	t := proofs.NewDocumentTree()
-	tree = &t
-	sha256Hash := sha256.New()
-	tree.SetHashFunc(sha256Hash)
-	err = tree.FillTree(document, document.CoredocumentSalts)
-	if err != nil {
-		return nil, err
-	}
-	return tree, nil
-}
-
-func (dp *defaultProcessor) calculateSigningRoot(document *coredocumentpb.CoreDocument) error {
-	valid, errMsg, errs := coredocument.Validate(document)
-	if !valid {
-		return errors.NewWithErrors(code.DocumentInvalid, errMsg, errs)
-	}
-
-	tree, err := dp.getDocumentTree(document)
-	if err != nil {
-		return err
-	}
-	document.SigningRoot = tree.RootHash()
-	return nil
-}
-
 func (dp *defaultProcessor) Sign(document *coredocumentpb.CoreDocument) (err error) {
 	// TODO: The signing root shouldn't be set in this method, instead we should split the entire flow into two separate parts: create/update document & sign document
-	err = dp.calculateSigningRoot(document)
+	err = coredocument.CalculateSigningRoot(document)
 	if err != nil {
 		return err
 	}
-	signingService := signatures.GetSigningService()
-	sig := signingService.Sign(document)
+
+	idConfig, err := centED25519.GetIDConfig()
+	if err != nil {
+		return err
+	}
+
+	sig := signatures.Sign(idConfig, document)
 	document.Signatures = append(document.Signatures, sig)
 	return nil
 }

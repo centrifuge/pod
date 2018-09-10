@@ -38,14 +38,15 @@ func GenerateP2PRecipients(quantity int) [][]byte {
 func GenerateCoreDocument() *coredocumentpb.CoreDocument {
 	identifier := Rand32Bytes()
 	salts := &coredocumentpb.CoreDocumentSalts{}
-	proofs.FillSalts(salts)
-	return &coredocumentpb.CoreDocument{
+	doc := &coredocumentpb.CoreDocument{
 		DataRoot:           tools.RandomSlice(32),
 		DocumentIdentifier: identifier,
 		CurrentIdentifier:  identifier,
 		NextIdentifier:     Rand32Bytes(),
 		CoredocumentSalts:  salts,
 	}
+	proofs.FillSalts(doc, salts)
+	return doc
 }
 
 type MockCoreDocumentProcessor struct {
@@ -60,6 +61,11 @@ func (m *MockCoreDocumentProcessor) Send(coreDocument *coredocumentpb.CoreDocume
 func (m *MockCoreDocumentProcessor) Anchor(coreDocument *coredocumentpb.CoreDocument) (err error) {
 	args := m.Called(coreDocument)
 	return args.Error(0)
+}
+
+func (m *MockCoreDocumentProcessor) GetDataProofHashes(coreDocument *coredocumentpb.CoreDocument) (hashes [][]byte, err error) {
+	args := m.Called(coreDocument)
+	return args.Get(0).([][]byte), args.Error(1)
 }
 
 type MockSubscription struct {

@@ -34,7 +34,21 @@ type IdentityContract interface {
 }
 
 type EthereumIdentityKey struct {
-	Key [32]byte
+	Key       [32]byte
+	Purposes  []*big.Int
+	RevokedAt *big.Int
+}
+
+func (idk *EthereumIdentityKey) GetKey() [32]byte {
+	return idk.Key
+}
+
+func (idk *EthereumIdentityKey) GetPurposes() []*big.Int {
+	return idk.Purposes
+}
+
+func (idk *EthereumIdentityKey) GetRevokedAt() *big.Int {
+	return idk.RevokedAt
 }
 
 func (idk *EthereumIdentityKey) String() string {
@@ -101,6 +115,27 @@ func (id *EthereumIdentity) GetLastKeyForPurpose(keyPurpose int) (key []byte, er
 
 	return id.cachedKeys[keyPurpose][len(id.cachedKeys[keyPurpose])-1].Key[:32], nil
 }
+
+func (id *EthereumIdentity) FetchKey(key []byte) (Key, error) {
+	contract, err := id.getContract()
+	if err != nil {
+		return nil, err
+	}
+	opts := ethereum.GetGethCallOpts()
+	key32, _ := tools.SliceToByte32(key)
+	keyInstance, err := contract.GetKey(opts, key32)
+	if err != nil {
+		return nil, err
+	}
+
+	return &EthereumIdentityKey{
+		Key:       keyInstance.Key,
+		Purposes:  keyInstance.Purposes,
+		RevokedAt: keyInstance.RevokedAt,
+	}, nil
+
+}
+
 func (id *EthereumIdentity) GetCurrentP2PKey() (ret string, err error) {
 	key, err := id.GetLastKeyForPurpose(KeyPurposeP2p)
 	if err != nil {
@@ -158,8 +193,7 @@ func (id *EthereumIdentity) getContract() (contract *EthereumIdentityContract, e
 }
 
 func (id *EthereumIdentity) CheckIdentityExists() (exists bool, err error) {
-	exists, err = id.findContract()
-	return
+	return id.findContract()
 }
 
 func (id *EthereumIdentity) AddKeyToIdentity(keyPurpose int, key []byte) (confirmations chan *WatchIdentity, err error) {
@@ -208,7 +242,7 @@ func (id *EthereumIdentity) fetchKeysByPurpose(keyPurpose int) error {
 	}
 	log.Infof("fetched keys: %d %x\n", keyPurpose, keys)
 	for _, key := range keys {
-		id.cachedKeys[keyPurpose] = append(id.cachedKeys[keyPurpose], EthereumIdentityKey{key})
+		id.cachedKeys[keyPurpose] = append(id.cachedKeys[keyPurpose], EthereumIdentityKey{key, nil, nil})
 	}
 	return nil
 }
@@ -343,8 +377,7 @@ func NewEthereumIdentityService() Service {
 }
 
 // EthereumidentityService implements `Service`
-type EthereumIdentityService struct {
-}
+type EthereumIdentityService struct{}
 
 func (ids *EthereumIdentityService) CheckIdentityExists(centrifugeId []byte) (exists bool, err error) {
 	if tools.IsEmptyByteSlice(centrifugeId) || len(centrifugeId) != CentIdByteLength {

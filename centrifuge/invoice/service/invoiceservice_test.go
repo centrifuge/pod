@@ -11,6 +11,7 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/service"
 	clientinvoicepb "github.com/CentrifugeInc/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
@@ -86,7 +87,7 @@ func getTestSetupData() (doc *invoice.Invoice, srv *invoiceservice.InvoiceDocume
 		GrossAmount:      800,
 	}
 	salts := new(invoicepb.InvoiceDataSalts)
-	proofs.FillSalts(salts)
+	proofs.FillSalts(doc.Document.Data, salts)
 	doc.Document.CoreDocument = testingutils.GenerateCoreDocument()
 	doc.Document.Salts = salts
 	srv, repo, coreDocumentProcessor = generateMockedOutInvoiceService()
@@ -199,8 +200,12 @@ func TestInvoiceDocumentService_HandleCreateInvoiceProof(t *testing.T) {
 		CurrentIdentifier:  identifier,
 		NextIdentifier:     testingutils.Rand32Bytes(),
 	}
-	inv.CalculateMerkleRoot()
+	cdSalts := &coredocumentpb.CoreDocumentSalts{}
+	proofs.FillSalts(inv.Document.CoreDocument, cdSalts)
+	inv.Document.CoreDocument.CoredocumentSalts = cdSalts
 
+	inv.CalculateMerkleRoot()
+	coredocument.CalculateDocumentRoot(inv.Document.CoreDocument)
 	s, mockRepo, _ := generateMockedOutInvoiceService()
 
 	proofRequest := &clientinvoicepb.CreateInvoiceProofEnvelope{
@@ -217,7 +222,9 @@ func TestInvoiceDocumentService_HandleCreateInvoiceProof(t *testing.T) {
 	assert.Equal(t, len(proofRequest.Fields), len(invoiceProof.FieldProofs))
 	assert.Equal(t, proofRequest.Fields[0], invoiceProof.FieldProofs[0].Property)
 	sha256Hash := sha256.New()
-	valid, err := proofs.ValidateProof(invoiceProof.FieldProofs[0], inv.Document.CoreDocument.DataRoot, sha256Hash)
+	fieldHash, err := proofs.CalculateHashForProofField(invoiceProof.FieldProofs[0], sha256Hash)
+
+	valid, err := proofs.ValidateProofSortedHashes(fieldHash, invoiceProof.FieldProofs[0].SortedHashes, inv.Document.CoreDocument.DocumentRoot, sha256Hash)
 	assert.True(t, valid)
 	assert.Nil(t, err)
 }
@@ -229,16 +236,20 @@ func TestInvoiceDocumentService_HandleCreateInvoiceProof_NotFilledSalts(t *testi
 		DocumentIdentifier: identifier,
 		CurrentIdentifier:  identifier,
 		NextIdentifier:     testingutils.Rand32Bytes(),
+		CoredocumentSalts:  &coredocumentpb.CoreDocumentSalts{},
 	}
 	inv.Document.Salts = &invoicepb.InvoiceDataSalts{}
-	s, mockRepo, _ := generateMockedOutInvoiceService()
+	s, mockRepo, mockProcessor := generateMockedOutInvoiceService()
 
 	proofRequest := &clientinvoicepb.CreateInvoiceProofEnvelope{
 		DocumentIdentifier: identifier,
 		Fields:             []string{"currency", "sender_country", "gross_amount"},
 	}
+	// In this test we mock out the signing root generation and return empty hashes for the CoreDocumentProcessor.GetProofHashes
+	mockProcessor.On("GetDataProofHashes", inv.Document.CoreDocument).Return([][]byte{}, nil).Once()
 	mockRepo.On("GetByID", proofRequest.DocumentIdentifier, new(invoicepb.InvoiceDocument)).Return(nil).Once()
 	mockRepo.replaceDoc = inv.Document
+
 	invoiceProof, err := s.HandleCreateInvoiceProof(context.Background(), proofRequest)
 	mockRepo.AssertExpectations(t)
 	assert.NotNil(t, err)

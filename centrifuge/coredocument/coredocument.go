@@ -1,13 +1,122 @@
 package coredocument
 
 import (
+	"crypto/sha256"
 	"fmt"
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/code"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/centrifuge/precise-proofs/proofs"
 )
+
+// GetDataProofHashes returns the hashes needed to create a proof from DataRoot to SigningRoot. This method is used
+// to create field proofs
+func GetDataProofHashes(document *coredocumentpb.CoreDocument) (hashes [][]byte, err error) {
+	tree, err := GetDocumentSigningTree(document)
+	if err != nil {
+		return
+	}
+
+	signingProof, err := tree.CreateProof("data_root")
+	if err != nil {
+		return
+	}
+
+	tree, err = GetDocumentRootTree(document)
+	if err != nil {
+		return
+	}
+	rootProof, err := tree.CreateProof("signing_root")
+	if err != nil {
+		return
+	}
+	return append(signingProof.SortedHashes, rootProof.SortedHashes...), err
+}
+
+func CalculateSigningRoot(document *coredocumentpb.CoreDocument) error {
+	valid, errMsg, errs := Validate(document) // TODO: Validation
+	if !valid {
+		return errors.NewWithErrors(code.DocumentInvalid, errMsg, errs)
+	}
+
+	tree, err := GetDocumentSigningTree(document)
+	if err != nil {
+		return err
+	}
+	document.SigningRoot = tree.RootHash()
+	return nil
+}
+
+func CalculateDocumentRoot(document *coredocumentpb.CoreDocument) error {
+	if len(document.SigningRoot) != 32 {
+		return errors.New(code.DocumentInvalid, "signing root invalid")
+	}
+	tree, err := GetDocumentRootTree(document)
+	if err != nil {
+		return err
+	}
+	document.DocumentRoot = tree.RootHash()
+	return nil
+}
+
+// GetDocumentRootTree returns the merkle tree for the document root
+func GetDocumentRootTree(document *coredocumentpb.CoreDocument) (tree *proofs.DocumentTree, err error) {
+	h := sha256.New()
+	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: h})
+	tree = &t
+
+	// The first leave added is the signing_root
+	err = tree.AddLeaf(proofs.LeafNode{Hash: document.SigningRoot, Hashed: true, Property: "signing_root"})
+	if err != nil {
+		return nil, err
+	}
+	// For every signature we create a LeafNode
+	// TODO: we should modify this to use the proper message flattener once precise proofs is modified to support it
+	sigLeafList := make([]proofs.LeafNode, len(document.Signatures)+1)
+	sigLengthNode := proofs.LeafNode{
+		Property: "signatures.length",
+		Salt:     make([]byte, 32),
+		Value:    fmt.Sprintf("%d", len(document.Signatures)),
+	}
+	sigLengthNode.HashNode(h)
+	sigLeafList[0] = sigLengthNode
+	for i, sig := range document.Signatures {
+		payload := sha256.Sum256(append(sig.EntityId, append(sig.PublicKey, sig.Signature...)...))
+		leaf := proofs.LeafNode{
+			Hash:     payload[:],
+			Hashed:   true,
+			Property: fmt.Sprintf("signatures[%d]", i),
+		}
+		leaf.HashNode(h)
+		sigLeafList[i+1] = leaf
+	}
+	err = tree.AddLeaves(sigLeafList)
+	if err != nil {
+		return nil, err
+	}
+	err = tree.Generate()
+	if err != nil {
+		return nil, err
+	}
+	return tree, nil
+}
+
+// GetDocumentSigningTree returns the merkle tree for the signing root
+func GetDocumentSigningTree(document *coredocumentpb.CoreDocument) (tree *proofs.DocumentTree, err error) {
+	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: sha256.New()})
+	tree = &t
+	err = tree.AddLeavesFromDocument(document, document.CoredocumentSalts)
+	if err != nil {
+		return nil, err
+	}
+	err = tree.Generate()
+	if err != nil {
+		return nil, err
+	}
+	return tree, nil
+}
 
 // Validate checks that all required fields are set before doing any processing with core document
 func Validate(document *coredocumentpb.CoreDocument) (valid bool, errMsg string, errs map[string]string) {
@@ -53,7 +162,6 @@ func Validate(document *coredocumentpb.CoreDocument) (valid bool, errMsg string,
 	if salts == nil ||
 		!tools.CheckMultiple32BytesFilled(
 			salts.CurrentIdentifier,
-			salts.DataRoot,
 			salts.NextIdentifier,
 			salts.DocumentIdentifier,
 			salts.PreviousRoot) {
@@ -108,7 +216,7 @@ func FillIdentifiers(document coredocumentpb.CoreDocument) (coredocumentpb.CoreD
 func New() *coredocumentpb.CoreDocument {
 	doc, _ := FillIdentifiers(coredocumentpb.CoreDocument{})
 	salts := &coredocumentpb.CoreDocumentSalts{}
-	proofs.FillSalts(salts)
+	proofs.FillSalts(&doc, salts)
 	doc.CoredocumentSalts = salts
 	return &doc
 }

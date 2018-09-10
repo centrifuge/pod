@@ -21,7 +21,15 @@ func init() {
 		Short: "sign a message with private key",
 		Long:  ``,
 		Run: func(cmd *cobra.Command, args []string) {
-			signature := keytools.SignMessage(privateKeyFileParam, messageParam, curveTypeParam, ethereumSignFlag)
+			privateKey, err := utils.ReadKeyFromPemFile(privateKeyFileParam, keytools.PrivateKey)
+
+			if err != nil {
+				log.Fatal(err)
+			}
+			signature, err := keytools.SignMessage(privateKey, []byte(messageParam), curveTypeParam, ethereumSignFlag)
+			if err != nil {
+				log.Fatal(err)
+			}
 			fmt.Println(utils.ByteArrayToHex(signature))
 
 		},

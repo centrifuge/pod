@@ -40,7 +40,7 @@ func New(poDoc *purchaseorderpb.PurchaseOrderDocument) (*PurchaseOrder, error) {
 	// IF salts have not been provided, let's generate them
 	if poDoc.Salts == nil {
 		salts := purchaseorderpb.PurchaseOrderDataSalts{}
-		proofs.FillSalts(&salts)
+		proofs.FillSalts(poDoc.Data, &salts)
 		po.Document.Salts = &salts
 	}
 
@@ -59,7 +59,7 @@ func New(poDoc *purchaseorderpb.PurchaseOrderDocument) (*PurchaseOrder, error) {
 // Empty returns an empty purchase order with salts filled
 func Empty() *PurchaseOrder {
 	salts := purchaseorderpb.PurchaseOrderDataSalts{}
-	proofs.FillSalts(&salts)
+	proofs.FillSalts(&purchaseorderpb.PurchaseOrderData{}, &salts)
 	doc := purchaseorderpb.PurchaseOrderDocument{
 		CoreDocument: &coredocumentpb.CoreDocument{},
 		Data:         &purchaseorderpb.PurchaseOrderData{},
@@ -96,13 +96,16 @@ func NewFromCoreDocument(coredocument *coredocumentpb.CoreDocument) (*PurchaseOr
 	return order, nil
 }
 
-func (order *PurchaseOrder) getDocumentTree() (tree *proofs.DocumentTree, err error) {
-	t := proofs.NewDocumentTree()
-	sha256Hash := sha256.New()
-	t.SetHashFunc(sha256Hash)
-	err = t.FillTree(order.Document.Data, order.Document.Salts)
+func (order *PurchaseOrder) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
+	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: sha256.New()})
+	err = t.AddLeavesFromDocument(order.Document.Data, order.Document.Salts)
 	if err != nil {
-		log.Error("getDocumentTree:", err)
+		log.Error("getDocumentDataTree:", err)
+		return nil, err
+	}
+	err = t.Generate()
+	if err != nil {
+		log.Error("getDocumentDataTree:", err)
 		return nil, err
 	}
 	return &t, nil
@@ -110,17 +113,24 @@ func (order *PurchaseOrder) getDocumentTree() (tree *proofs.DocumentTree, err er
 
 // CalculateMerkleRoot calculates MerkleRoot of the document
 func (order *PurchaseOrder) CalculateMerkleRoot() error {
-	tree, err := order.getDocumentTree()
+	tree, err := order.getDocumentDataTree()
 	if err != nil {
 		return err
 	}
 	order.Document.CoreDocument.DataRoot = tree.RootHash()
-	return nil
+	err = coredocument.CalculateSigningRoot(order.Document.CoreDocument)
+	return err
 }
 
 // CreateProofs generates proofs for given fields
 func (order *PurchaseOrder) CreateProofs(fields []string) (proofs []*proofspb.Proof, err error) {
-	tree, err := order.getDocumentTree()
+	dataRootHashes, err := coredocument.GetDataProofHashes(order.Document.CoreDocument)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	tree, err := order.getDocumentDataTree()
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -133,6 +143,10 @@ func (order *PurchaseOrder) CreateProofs(fields []string) (proofs []*proofspb.Pr
 			return nil, err
 		}
 		proofs = append(proofs, &proof)
+	}
+
+	for _, proof := range proofs {
+		proof.SortedHashes = append(proof.SortedHashes, dataRootHashes...)
 	}
 
 	return proofs, nil

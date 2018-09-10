@@ -3,6 +3,7 @@
 package coredocument
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"reflect"
 	"testing"
@@ -10,6 +11,7 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -20,6 +22,55 @@ var (
 	id4 = tools.RandomSlice(32)
 	id5 = tools.RandomSlice(32)
 )
+
+func TestGetDataProofHashes(t *testing.T) {
+	cd := coredocumentpb.CoreDocument{
+		DataRoot: tools.RandomSlice(32),
+	}
+	cd, err := FillIdentifiers(cd)
+	assert.Nil(t, err)
+	cds := &coredocumentpb.CoreDocumentSalts{}
+	proofs.FillSalts(&cd, cds)
+
+	cd.CoredocumentSalts = cds
+
+	err = CalculateSigningRoot(&cd)
+	assert.Nil(t, err)
+
+	err = CalculateDocumentRoot(&cd)
+	assert.Nil(t, err)
+
+	hashes, err := GetDataProofHashes(&cd)
+	assert.Nil(t, err)
+	assert.Equal(t, 4, len(hashes))
+
+	valid, err := proofs.ValidateProofSortedHashes(cd.DataRoot, hashes, cd.DocumentRoot, sha256.New())
+	assert.True(t, valid)
+	assert.Nil(t, err)
+}
+
+func TestGetDocumentSigningTree(t *testing.T) {
+	cd := coredocumentpb.CoreDocument{DocumentIdentifier: tools.RandomSlice(32)}
+	cd, _ = FillIdentifiers(cd)
+	cds := &coredocumentpb.CoreDocumentSalts{}
+	proofs.FillSalts(&cd, cds)
+	cd.CoredocumentSalts = cds
+	tree, err := GetDocumentSigningTree(&cd)
+	assert.Nil(t, err)
+	assert.NotNil(t, tree)
+}
+
+// TestGetDocumentRootTree tests that the documentroottree is properly calculated
+func TestGetDocumentRootTree(t *testing.T) {
+	cd := &coredocumentpb.CoreDocument{SigningRoot: []byte{0x72, 0xee, 0xb8, 0x88, 0x92, 0xf7, 0x6, 0x19, 0x82, 0x76, 0xe9, 0xe7, 0xfe, 0xcc, 0x33, 0xa, 0x66, 0x78, 0xd4, 0xa6, 0x5f, 0xf6, 0xa, 0xca, 0x2b, 0xe4, 0x17, 0xa9, 0xf6, 0x15, 0x67, 0xa1}}
+	tree, err := GetDocumentRootTree(cd)
+
+	// Manually constructing the two node tree:
+	signaturesLengthLeaf := sha256.Sum256(append([]byte("signatures.length0"), make([]byte, 32)...))
+	expectedRootHash := sha256.Sum256(append(signaturesLengthLeaf[:], cd.SigningRoot...))
+	assert.Nil(t, err)
+	assert.Equal(t, expectedRootHash[:], tree.RootHash())
+}
 
 func TestValidate(t *testing.T) {
 	type want struct {

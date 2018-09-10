@@ -58,6 +58,33 @@
         ]
       }
     },
+    "/purchaseorder/proof": {
+      "post": {
+        "description": "Creates a list of precise proofs for the specified fields",
+        "operationId": "CreatePurchaseOrderProof",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/purchaseorderPurchaseOrderProof"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/purchaseorderCreatePurchaseOrderProofEnvelope"
+            }
+          }
+        ],
+        "tags": [
+          "PurchaseOrderDocumentService"
+        ]
+      }
+    },
     "/purchaseorder/send": {
       "post": {
         "description": "Send a purchaseorder document to the specified party",
@@ -103,40 +130,6 @@
             "required": true,
             "type": "string",
             "format": "byte"
-          }
-        ],
-        "tags": [
-          "PurchaseOrderDocumentService"
-        ]
-      }
-    },
-    "/purchaseorder/{document_identifier}/proof": {
-      "post": {
-        "description": "Creates a list of precise proofs for the specified fields",
-        "operationId": "CreatePurchaseOrderProof",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/purchaseorderPurchaseOrderProof"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "document_identifier",
-            "in": "path",
-            "required": true,
-            "type": "string",
-            "format": "byte"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/purchaseorderCreatePurchaseOrderProofEnvelope"
-            }
           }
         ],
         "tags": [
@@ -281,10 +274,23 @@
           "type": "string",
           "format": "byte"
         },
+        "hash": {
+          "type": "string",
+          "format": "byte",
+          "title": "hash is filled if value \u0026 salt are not available"
+        },
         "hashes": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/proofsMerkleHash"
+          },
+          "title": "Fills either 'hashes' for standard Merkle trees or 'sortedHashes' for a lexicograhical ordered of a node hash\nnot both"
+        },
+        "sortedHashes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "byte"
           }
         }
       }

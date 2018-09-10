@@ -86,8 +86,7 @@ func getSignatureForDocument(ctx context.Context, doc coredocumentpb.CoreDocumen
 		return nil, version.IncompatibleVersionError(resp.CentNodeVersion)
 	}
 
-	ss := signatures.GetSigningService()
-	valid, err := ss.ValidateSignature(resp.Signature, doc.SigningRoot)
+	valid, err := signatures.ValidateSignature(resp.Signature, doc.SigningRoot)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to validate signature")
 	}
@@ -118,7 +117,7 @@ func GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocum
 		return errors.NilError(doc)
 	}
 
-	targets, err := identity.GetClientsP2PURLs(idService, centIDs)
+	targets, err := identity.GetClientsP2PURLs(centIDs)
 	if err != nil {
 		return errors.Wrap(err, "failed to get P2P urls")
 	}
