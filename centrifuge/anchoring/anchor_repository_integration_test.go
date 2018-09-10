@@ -92,7 +92,7 @@ func TestCommitAnchor_Integration(t *testing.T) {
 
 	messageToSign := generateCommitHash(anchorId, centrifugeId, documentRoot)
 
-	signature := secp256k1.SignEthereum(messageToSign, utils.HexToByteArray(testPrivateKey))
+	signature, _ := secp256k1.SignEthereum(messageToSign, utils.HexToByteArray(testPrivateKey))
 
 	assert.Equal(t, correctCommitSignature, utils.ByteArrayToHex(signature), "signature not correct")
 

@@ -83,7 +83,7 @@ func TestCorrectCommitSignatureGen(t *testing.T) {
 
 	assert.Equal(t, correctCommitToSign, utils.ByteArrayToHex(messageToSign), "messageToSign not calculated correctly")
 
-	signature := secp256k1.SignEthereum(messageToSign, utils.HexToByteArray(testPrivateKey))
+	signature, _ := secp256k1.SignEthereum(messageToSign, utils.HexToByteArray(testPrivateKey))
 
 	assert.Equal(t, correctCommitSignature, utils.ByteArrayToHex(signature), "signature not correct")
 
@@ -101,7 +101,7 @@ func TestGenerateAnchor(t *testing.T) {
 
 	documentProofs = append(documentProofs, documentProof)
 	messageToSign := generateCommitHash(currentAnchorId[:], centrifugeId, currentDocumentRoot[:])
-	signature := secp256k1.SignEthereum(messageToSign, utils.HexToByteArray(testPrivateKey))
+	signature, _ := secp256k1.SignEthereum(messageToSign, utils.HexToByteArray(testPrivateKey))
 
 	var anchorIdBigInt = new(big.Int)
 	anchorIdBigInt.SetBytes(currentAnchorId[:])
