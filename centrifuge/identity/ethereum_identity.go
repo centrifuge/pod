@@ -197,7 +197,7 @@ func (id *EthereumIdentity) CheckIdentityExists() (exists bool, err error) {
 }
 
 func (id *EthereumIdentity) AddKeyToIdentity(keyPurpose int, key []byte) (confirmations chan *WatchIdentity, err error) {
-	if tools.IsEmptyByteSlice(key) || len(key) <= 32 {
+	if tools.IsEmptyByteSlice(key) || len(key) > 32 {
 		log.Errorf("Can't add key to identity: empty or invalid length(>32) key for [id: %s]: %x", id, key)
 		return confirmations, errors.New("Can't add key to identity: Invalid key")
 	}
