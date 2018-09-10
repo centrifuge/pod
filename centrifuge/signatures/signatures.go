@@ -10,9 +10,9 @@ import (
 )
 
 // ValidateSignaturesOnDocument validates all signatures on the current document
-func ValidateSignaturesOnDocument(idSrv identity.Service, doc *coredocumentpb.CoreDocument) (valid bool, err error) {
+func ValidateSignaturesOnDocument(doc *coredocumentpb.CoreDocument) (valid bool, err error) {
 	for _, sig := range doc.Signatures {
-		valid, err := ValidateSignature(idSrv, sig, doc.SigningRoot)
+		valid, err := ValidateSignature(sig, doc.SigningRoot)
 		if err != nil || !valid {
 			return false, err
 		}
@@ -21,8 +21,8 @@ func ValidateSignaturesOnDocument(idSrv identity.Service, doc *coredocumentpb.Co
 }
 
 // ValidateSignature verifies the signature on the document
-func ValidateSignature(idSrv identity.Service, signature *coredocumentpb.Signature, message []byte) (valid bool, err error) {
-	valid, err = identity.ValidateKey(idSrv, signature.EntityId, signature.PublicKey)
+func ValidateSignature(signature *coredocumentpb.Signature, message []byte) (valid bool, err error) {
+	valid, err = identity.ValidateKey(signature.EntityId, signature.PublicKey)
 	if err != nil {
 		return valid, err
 	}

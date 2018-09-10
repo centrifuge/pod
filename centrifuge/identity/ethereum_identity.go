@@ -372,8 +372,7 @@ func NewEthereumIdentityService() Service {
 }
 
 // EthereumidentityService implements `Service`
-type EthereumIdentityService struct {
-}
+type EthereumIdentityService struct{}
 
 func (ids *EthereumIdentityService) CheckIdentityExists(centrifugeId []byte) (exists bool, err error) {
 	if tools.IsEmptyByteSlice(centrifugeId) || len(centrifugeId) != CentIdByteLength {

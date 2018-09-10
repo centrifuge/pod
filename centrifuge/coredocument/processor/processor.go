@@ -32,6 +32,7 @@ type defaultProcessor struct {
 }
 
 // DefaultProcessor returns the default implementation of CoreDocument Processor
+// TODO(ved): I don't think we need the processor since IdentityService is available globally
 func DefaultProcessor() Processor {
 	return &defaultProcessor{
 		IdentityService: identity.NewEthereumIdentityService()}

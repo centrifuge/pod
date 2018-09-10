@@ -9,7 +9,6 @@ import (
 
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/secp256k1"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/utils"
-
 	"github.com/stretchr/testify/assert"
 )
 

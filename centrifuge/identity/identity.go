@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"math/big"
 
+	"sync"
+
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 )
@@ -18,6 +20,29 @@ const (
 	KeyPurposeSigning    = 2
 	KeyPurposeEthMsgAuth = 3
 )
+
+// idService is a default implementation of the Service
+var idService Service
+
+// once guard the idService from multiple sets
+var once sync.Once
+
+// SetIdentityService sets the srv to default identity service
+func SetIdentityService(srv Service) {
+	once.Do(func() {
+		idService = srv
+	})
+}
+
+// GetIdentityService returns the default identity service
+// panics if service is not set
+func GetIdentityService() Service {
+	if idService == nil {
+		log.Fatal("identity service not initialised yet")
+	}
+
+	return idService
+}
 
 // Identity defines an Identity on chain
 type Identity interface {
@@ -67,7 +92,7 @@ func CentrifugeIdStringToSlice(s string) (id []byte, err error) {
 }
 
 // GetClientP2PURL returns the p2p url associated with the centID
-func GetClientP2PURL(idService Service, centID []byte) (url string, err error) {
+func GetClientP2PURL(centID []byte) (url string, err error) {
 	target, err := idService.LookupIdentityForID(centID)
 	if err != nil {
 		return url, errors.Wrap(err, "error fetching receiver identity")
@@ -83,10 +108,10 @@ func GetClientP2PURL(idService Service, centID []byte) (url string, err error) {
 
 // GetClientsP2PURLs returns p2p urls associated with each centIDs
 // will error out at first failure
-func GetClientsP2PURLs(idService Service, centIDs [][]byte) ([]string, error) {
+func GetClientsP2PURLs(centIDs [][]byte) ([]string, error) {
 	var p2pURLs []string
 	for _, id := range centIDs {
-		url, err := GetClientP2PURL(idService, id)
+		url, err := GetClientP2PURL(id)
 		if err != nil {
 			return nil, err
 		}
@@ -98,8 +123,8 @@ func GetClientsP2PURLs(idService Service, centIDs [][]byte) ([]string, error) {
 }
 
 // GetIdentityKey returns the key for provided identity
-func GetIdentityKey(idSrv Service, identity, pubKey []byte) (keyInfo Key, err error) {
-	id, err := idSrv.LookupIdentityForID(identity)
+func GetIdentityKey(identity, pubKey []byte) (keyInfo Key, err error) {
+	id, err := idService.LookupIdentityForID(identity)
 	if err != nil {
 		return keyInfo, err
 	}
@@ -117,8 +142,8 @@ func GetIdentityKey(idSrv Service, identity, pubKey []byte) (keyInfo Key, err er
 }
 
 // ValidateKey checks if a given key is valid for the given centrifugeID.
-func ValidateKey(idSrv Service, centrifugeId, key []byte) (valid bool, err error) {
-	idKey, err := GetIdentityKey(idSrv, centrifugeId, key)
+func ValidateKey(centrifugeId []byte, key []byte) (valid bool, err error) {
+	idKey, err := GetIdentityKey(centrifugeId, key)
 	if err != nil {
 		return false, err
 	}

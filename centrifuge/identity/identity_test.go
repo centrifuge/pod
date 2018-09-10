@@ -99,7 +99,8 @@ func TestGetClientP2PURL_fail_service(t *testing.T) {
 	centID := tools.RandomSlice(CentIdByteLength)
 	srv := &mockIDService{}
 	srv.On("LookupIdentityForID", centID).Return(nil, fmt.Errorf("failed service")).Once()
-	p2p, err := GetClientP2PURL(srv, centID)
+	idService = srv
+	p2p, err := GetClientP2PURL(centID)
 	srv.AssertExpectations(t)
 	assert.Empty(t, p2p, "p2p is not empty")
 	assert.Errorf(t, err, "error should not be nil")
@@ -112,7 +113,8 @@ func TestGetClientP2PURL_fail_identity(t *testing.T) {
 	id := &mockID{}
 	id.On("GetCurrentP2PKey").Return("", fmt.Errorf("error identity")).Once()
 	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
-	p2p, err := GetClientP2PURL(srv, centID)
+	idService = srv
+	p2p, err := GetClientP2PURL(centID)
 	srv.AssertExpectations(t)
 	id.AssertExpectations(t)
 	assert.Empty(t, p2p, "p2p is not empty")
@@ -126,7 +128,8 @@ func TestGetClientP2PURL_Success(t *testing.T) {
 	id := &mockID{}
 	id.On("GetCurrentP2PKey").Return("target", nil).Once()
 	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
-	p2p, err := GetClientP2PURL(srv, centID)
+	idService = srv
+	p2p, err := GetClientP2PURL(centID)
 	srv.AssertExpectations(t)
 	id.AssertExpectations(t)
 	assert.Nil(t, err, "must be nil")
@@ -139,7 +142,8 @@ func TestGetClientsP2PURLs_fail(t *testing.T) {
 	id := &mockID{}
 	id.On("GetCurrentP2PKey").Return("", fmt.Errorf("error identity")).Once()
 	srv.On("LookupIdentityForID", centIDs[0]).Return(id, nil).Once()
-	p2pURLs, err := GetClientsP2PURLs(srv, centIDs)
+	idService = srv
+	p2pURLs, err := GetClientsP2PURLs(centIDs)
 	srv.AssertExpectations(t)
 	id.AssertExpectations(t)
 	assert.Empty(t, p2pURLs, "p2p is not empty")
@@ -153,7 +157,8 @@ func TestGetClientsP2PURLs_success(t *testing.T) {
 	id.On("GetCurrentP2PKey").Return("target", nil).Once()
 	srv := &mockIDService{}
 	srv.On("LookupIdentityForID", centIDs[0]).Return(id, nil).Once()
-	p2pURLs, err := GetClientsP2PURLs(srv, centIDs)
+	idService = srv
+	p2pURLs, err := GetClientsP2PURLs(centIDs)
 	srv.AssertExpectations(t)
 	id.AssertExpectations(t)
 	assert.Nil(t, err, "should be nil")
@@ -165,7 +170,8 @@ func TestGetIdentityKey_fail_lookup(t *testing.T) {
 	centID := tools.RandomSlice(CentIdByteLength)
 	srv := &mockIDService{}
 	srv.On("LookupIdentityForID", centID).Return(nil, fmt.Errorf("lookup failed")).Once()
-	id, err := GetIdentityKey(srv, centID, tools.RandomSlice(32))
+	idService = srv
+	id, err := GetIdentityKey(centID, tools.RandomSlice(32))
 	srv.AssertExpectations(t)
 	assert.Error(t, err, "must be not nil")
 	assert.Contains(t, err.Error(), "lookup failed")
@@ -179,7 +185,8 @@ func TestGetIdentityKey_fail_FetchKey(t *testing.T) {
 	srv := &mockIDService{}
 	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
 	id.On("FetchKey", pubKey).Return(nil, fmt.Errorf("fetch key failed")).Once()
-	key, err := GetIdentityKey(srv, centID, pubKey)
+	idService = srv
+	key, err := GetIdentityKey(centID, pubKey)
 	srv.AssertExpectations(t)
 	id.AssertExpectations(t)
 	assert.Error(t, err, "must be not nil")
@@ -196,7 +203,8 @@ func TestGetIdentityKey_fail_empty(t *testing.T) {
 	srv := &mockIDService{}
 	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
 	id.On("FetchKey", pubKey).Return(idkey, nil).Once()
-	key, err := GetIdentityKey(srv, centID, pubKey)
+	idService = srv
+	key, err := GetIdentityKey(centID, pubKey)
 	srv.AssertExpectations(t)
 	id.AssertExpectations(t)
 	assert.Error(t, err, "must be not nil")
@@ -213,7 +221,8 @@ func TestGetIdentityKey_Success(t *testing.T) {
 	srv := &mockIDService{}
 	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
 	id.On("FetchKey", pubKey).Return(idkey, nil).Once()
-	key, err := GetIdentityKey(srv, centID, pubKey)
+	idService = srv
+	key, err := GetIdentityKey(centID, pubKey)
 	srv.AssertExpectations(t)
 	id.AssertExpectations(t)
 	assert.Nil(t, err, "error must be nil")
@@ -226,7 +235,8 @@ func TestValidateKey_fail_getId(t *testing.T) {
 	pubKey := tools.RandomSlice(32)
 	srv := &mockIDService{}
 	srv.On("LookupIdentityForID", centID).Return(nil, fmt.Errorf("failed at GetIdentity")).Once()
-	valid, err := ValidateKey(srv, centID, pubKey)
+	idService = srv
+	valid, err := ValidateKey(centID, pubKey)
 	srv.AssertExpectations(t)
 	assert.False(t, valid, "must be false")
 	assert.Error(t, err, "must be not nil")
@@ -241,7 +251,8 @@ func TestValidateKey_fail_mismatch_key(t *testing.T) {
 	srv := &mockIDService{}
 	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
 	id.On("FetchKey", pubKey).Return(idkey, nil).Once()
-	valid, err := ValidateKey(srv, centID, pubKey)
+	idService = srv
+	valid, err := ValidateKey(centID, pubKey)
 	srv.AssertExpectations(t)
 	id.AssertExpectations(t)
 	assert.False(t, valid, "must be false")
@@ -257,7 +268,8 @@ func TestValidateKey_fail_missing_purpose(t *testing.T) {
 	srv := &mockIDService{}
 	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
 	id.On("FetchKey", pubKey[:]).Return(idkey, nil).Once()
-	valid, err := ValidateKey(srv, centID, pubKey[:])
+	idService = srv
+	valid, err := ValidateKey(centID, pubKey[:])
 	srv.AssertExpectations(t)
 	id.AssertExpectations(t)
 	assert.False(t, valid, "must be false")
@@ -277,7 +289,8 @@ func TestValidateKey_fail_revocation(t *testing.T) {
 	srv := &mockIDService{}
 	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
 	id.On("FetchKey", pubKey[:]).Return(idkey, nil).Once()
-	valid, err := ValidateKey(srv, centID, pubKey[:])
+	idService = srv
+	valid, err := ValidateKey(centID, pubKey[:])
 	srv.AssertExpectations(t)
 	id.AssertExpectations(t)
 	assert.False(t, valid, "must be false")
@@ -297,7 +310,8 @@ func TestValidateKey_success(t *testing.T) {
 	srv := &mockIDService{}
 	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
 	id.On("FetchKey", pubKey[:]).Return(idkey, nil).Once()
-	valid, err := ValidateKey(srv, centID, pubKey[:])
+	idService = srv
+	valid, err := ValidateKey(centID, pubKey[:])
 	srv.AssertExpectations(t)
 	id.AssertExpectations(t)
 	assert.True(t, valid, "must be true")

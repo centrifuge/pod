@@ -64,7 +64,7 @@ func OpenClient(target string) (p2ppb.P2PServiceClient, error) {
 }
 
 // getSignatureForDocument requests the target node to sign the document
-func getSignatureForDocument(ctx context.Context, idService identity.Service, doc coredocumentpb.CoreDocument, client p2ppb.P2PServiceClient) (*p2ppb.SignatureResponse, error) {
+func getSignatureForDocument(ctx context.Context, doc coredocumentpb.CoreDocument, client p2ppb.P2PServiceClient) (*p2ppb.SignatureResponse, error) {
 	header := p2ppb.CentrifugeHeader{
 		NetworkIdentifier:  config.Config.GetNetworkID(),
 		CentNodeVersion:    version.GetVersion().String(),
@@ -86,7 +86,7 @@ func getSignatureForDocument(ctx context.Context, idService identity.Service, do
 		return nil, version.IncompatibleVersionError(resp.CentNodeVersion)
 	}
 
-	valid, err := signatures.ValidateSignature(idService, resp.Signature, doc.SigningRoot)
+	valid, err := signatures.ValidateSignature(resp.Signature, doc.SigningRoot)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to validate signature")
 	}
@@ -103,8 +103,8 @@ type signatureResponseWrap struct {
 	err  error
 }
 
-func getSignatureAsync(ctx context.Context, idService identity.Service, doc coredocumentpb.CoreDocument, client p2ppb.P2PServiceClient, out chan<- signatureResponseWrap) {
-	resp, err := getSignatureForDocument(ctx, idService, doc, client)
+func getSignatureAsync(ctx context.Context, doc coredocumentpb.CoreDocument, client p2ppb.P2PServiceClient, out chan<- signatureResponseWrap) {
+	resp, err := getSignatureForDocument(ctx, doc, client)
 	out <- signatureResponseWrap{
 		resp: resp,
 		err:  err,
@@ -117,7 +117,7 @@ func GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocum
 		return errors.NilError(doc)
 	}
 
-	targets, err := identity.GetClientsP2PURLs(idService, centIDs)
+	targets, err := identity.GetClientsP2PURLs(centIDs)
 	if err != nil {
 		return errors.Wrap(err, "failed to get P2P urls")
 	}
@@ -133,7 +133,7 @@ func GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocum
 
 		// for now going with context.background, once we have a timeout for request
 		// we can use context.Timeout for that
-		go getSignatureAsync(ctx, idService, *doc, client, in)
+		go getSignatureAsync(ctx, *doc, client, in)
 	}
 
 	var responses []signatureResponseWrap
