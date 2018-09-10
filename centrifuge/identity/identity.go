@@ -49,6 +49,7 @@ type Identity interface {
 	String() string
 	GetCentrifugeID() []byte
 	CentrifugeIDString() string
+	// todo convert this to a - type CentrifugeId [CentIdByteLength]byte
 	CentrifugeIDBytes() [CentIdByteLength]byte
 	CentrifugeIDBigInt() *big.Int
 	SetCentrifugeID(b []byte) error

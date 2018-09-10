@@ -1,21 +1,18 @@
+// +build ethereum
 
-
-package anchoring
+package anchoring_test
 
 import (
-	"math/big"
-	"os"
+		"os"
 	"testing"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/anchor/repository"
-	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
+	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/secp256k1"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/utils"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/stretchr/testify/assert"
+		"github.com/ethereum/go-ethereum/common/hexutil"
+		"github.com/stretchr/testify/assert"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/anchoring"
 )
 
 var identityService identity.Service
@@ -59,23 +56,10 @@ func createIdentityWithKeys(t *testing.T, centrifugeId []byte) []byte {
 
 }
 
-func generateCommitHash(anchorIdByte []byte, centrifugeIdByte []byte, documentRootByte []byte) []byte {
-
-	message := append(anchorIdByte, documentRootByte...)
-
-	message = append(message, centrifugeIdByte...)
-
-	messageToSign := crypto.Keccak256(message)
-	return messageToSign
-}
-
 func TestCommitAnchor_Integration(t *testing.T) {
-
-	documentProof := tools.RandomByte32()
-
-	anchorId := utils.HexToByteArray("0x154cc26833dec2f4ad7ead9d65f9ec968a1aa5efbf6fe762f8f2a67d18a2d9b1")
-	documentRoot := utils.HexToByteArray("0x65a35574f70281ae4d1f6c9f3adccd5378743f858c67a802a49a08ce185bc975")
-	centrifugeId := utils.HexToByteArray("0x1851943e76d2")
+	anchorId, _ := hexutil.Decode("0x154cc26833dec2f4ad7ead9d65f9ec968a1aa5efbf6fe762f8f2a67d18a2d9b1")
+	documentRoot, _ := hexutil.Decode("0x65a35574f70281ae4d1f6c9f3adccd5378743f858c67a802a49a08ce185bc975")
+	centrifugeId, _ := hexutil.Decode("0x1851943e76d2")
 
 	//centrifugeId is a constant value
 	// the identity will only be created once.
@@ -84,34 +68,24 @@ func TestCommitAnchor_Integration(t *testing.T) {
 
 	correctCommitSignature := "0xb4051d6d03c3bf39f4ec4ba949a91a358b0cacb4804b82ed2ba978d338f5e747770c00b63c8e50c1a7aa5ba629870b54c2068a56f8b43460aa47891c6635d36d01"
 
-	testPrivateKey := "0x17e063fa17dd8274b09c14b253697d9a20afff74ace3c04fdb1b9c814ce0ada5"
+	testPrivateKey, _ := hexutil.Decode("0x17e063fa17dd8274b09c14b253697d9a20afff74ace3c04fdb1b9c814ce0ada5")
 
-	var documentProofs [][repository.AnchorIdLength]byte
+	messageToSign := anchoring.GenerateCommitHash(anchoring.NewAnchorId(anchorId), centIdToFixed(centrifugeId), anchoring.NewDocRoot(documentRoot))
 
-	documentProofs = append(documentProofs, documentProof)
+	signature, _ := secp256k1.SignEthereum(messageToSign, testPrivateKey)
 
-	messageToSign := generateCommitHash(anchorId, centrifugeId, documentRoot)
+	assert.Equal(t, correctCommitSignature, hexutil.Encode(signature), "signature not correct")
 
-	signature, _ := secp256k1.SignEthereum(messageToSign, utils.HexToByteArray(testPrivateKey))
-
-	assert.Equal(t, correctCommitSignature, utils.ByteArrayToHex(signature), "signature not correct")
-
-	commitAnchor(t, anchorId, centrifugeId, documentRoot, signature, documentProofs)
+	commitAnchor(t, anchorId, centrifugeId, documentRoot, signature, [][anchoring.DocumentProofLength]byte{tools.RandomByte32()})
 
 }
 
 func commitAnchor(t *testing.T, anchorId, centrifugeId, documentRoot, signature []byte, documentProofs [][32]byte) {
-	// Big endian encoding is need for ethereum
-	var anchorIdBigInt = new(big.Int)
-	anchorIdBigInt.SetBytes(anchorId)
+	anchorIdTyped := anchoring.NewAnchorId(anchorId)
+	docRootTyped := anchoring.NewDocRoot(documentRoot)
+	centIdFixed := centIdToFixed(centrifugeId)
 
-	var centrifugeIdBigInt = new(big.Int)
-	centrifugeIdBigInt.SetBytes(centrifugeId)
-
-	var documentRoot32Bytes [repository.AnchorIdLength]byte
-	copy(documentRoot32Bytes[:], documentRoot[:repository.AnchorIdLength])
-
-	confirmations, err := repository.CommitAnchor(anchorIdBigInt, documentRoot32Bytes, centrifugeIdBigInt, documentProofs, signature)
+	confirmations, err := anchoring.CommitAnchor(anchorIdTyped, docRootTyped, centIdFixed, documentProofs, signature)
 
 	if err != nil {
 		t.Fatalf("Error commit Anchor %v", err)
@@ -119,16 +93,16 @@ func commitAnchor(t *testing.T, anchorId, centrifugeId, documentRoot, signature 
 
 	watchCommittedAnchor := <-confirmations
 	assert.Nil(t, watchCommittedAnchor.Error, "No error should be thrown by context")
-	assert.Equal(t, watchCommittedAnchor.CommitData.AnchorId, anchorIdBigInt, "Resulting anchor should have the same ID as the input")
-	assert.Equal(t, watchCommittedAnchor.CommitData.DocumentRoot, documentRoot32Bytes, "Resulting anchor should have the same document hash as the input")
+	assert.Equal(t, watchCommittedAnchor.CommitData.AnchorId, anchorIdTyped, "Resulting anchor should have the same ID as the input")
+	assert.Equal(t, watchCommittedAnchor.CommitData.DocumentRoot, docRootTyped, "Resulting anchor should have the same document hash as the input")
 }
 
-/*
+
 func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
-	var commitDataList [5] *repository.CommitData
-	var confirmationList [5]<-chan *repository.WatchCommit
+	var commitDataList [5] *anchoring.CommitData
+	var confirmationList [5]<-chan *anchoring.WatchCommit
 	var err error
-	testPrivateKey := "0x17e063fa17dd8274b09c14b253697d9a20afff74ace3c04fdb1b9c814ce0ada5"
+	testPrivateKey, _ := hexutil.Decode("0x17e063fa17dd8274b09c14b253697d9a20afff74ace3c04fdb1b9c814ce0ada5")
 
 	centrifugeId := tools.RandomSlice(identity.CentIdByteLength)
 
@@ -137,26 +111,15 @@ func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
 	for ix := 0; ix < 5; ix++ {
 		currentAnchorId := tools.RandomByte32()
 		currentDocumentRoot := tools.RandomByte32()
-		documentProof := tools.RandomByte32()
+		messageToSign := anchoring.GenerateCommitHash(currentAnchorId, centIdToFixed(centrifugeId), currentDocumentRoot)
+		signature, _ := secp256k1.SignEthereum(messageToSign, testPrivateKey)
 
-		var documentProofs [][32]byte
+		centIdFixed := centIdToFixed(centrifugeId)
+		documentProofs := [][anchoring.DocumentProofLength]byte{tools.RandomByte32()}
 
-		documentProofs = append(documentProofs, documentProof)
-		messageToSign := generateCommitHash(currentAnchorId[:],centrifugeId,currentDocumentRoot[:])
-		signature := secp256k1.SignEthereum(messageToSign, utils.HexToByteArray(testPrivateKey))
+		commitDataList[ix] = anchoring.NewCommitData(currentAnchorId ,currentDocumentRoot, centIdFixed, documentProofs, signature)
 
-		var anchorIdBigInt  = new(big.Int)
-		anchorIdBigInt.SetBytes(currentAnchorId[:])
-
-		var centrifugeIdBigInt = new(big.Int)
-		centrifugeIdBigInt.SetBytes(centrifugeId)
-
-		var documentRoot32Bytes [32]byte
-		copy(documentRoot32Bytes[:], currentDocumentRoot[:32])
-
-		commitDataList[ix],err = repository.NewCommitData(anchorIdBigInt,documentRoot32Bytes,centrifugeIdBigInt,documentProofs,signature)
-
-		confirmationList[ix], err = repository.CommitAnchor(anchorIdBigInt, documentRoot32Bytes, centrifugeIdBigInt, documentProofs, signature)
+		confirmationList[ix], err = anchoring.CommitAnchor(currentAnchorId, currentDocumentRoot, centIdFixed, documentProofs, signature)
 
 		if err != nil {
 			t.Fatalf("Error commit Anchor %v", err)
@@ -169,4 +132,11 @@ func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
 		assert.Equal(t, commitDataList[ix].AnchorId, watchSingleAnchor.CommitData.AnchorId, "Should have the ID that was passed into create function [%v]", watchSingleAnchor.CommitData.AnchorId)
 		assert.Equal(t, commitDataList[ix].DocumentRoot, watchSingleAnchor.CommitData.DocumentRoot, "Should have the document root that was passed into create function [%v]", watchSingleAnchor.CommitData.DocumentRoot)
 	}
-}*/
+}
+
+// TODO remove this after converting CentId to a proper type
+func centIdToFixed(centrifugeId []byte) [6]byte {
+	var centIdFixed [identity.CentIdByteLength]byte
+	copy(centIdFixed[:], centrifugeId[:identity.CentIdByteLength])
+	return centIdFixed
+}

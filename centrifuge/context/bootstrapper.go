@@ -1,8 +1,6 @@
 package context
 
 import (
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/anchor"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/anchor/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/bootstrapper"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
@@ -14,6 +12,7 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/version"
 	logging "github.com/ipfs/go-log"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/anchoring"
 )
 
 var log = logging.Logger("context")
@@ -31,8 +30,7 @@ func (m *MainBootstrapper) PopulateDefaultBootstrappers() {
 		&invoicerepository.Bootstrapper{},
 		&purchaseorderrepository.Bootstrapper{},
 		&ethereum.Bootstrapper{},
-		&repository.Bootstrapper{},
-		&anchor.Bootstrapper{},
+		&anchoring.Bootstrapper{},
 		&identity.Bootstrapper{},
 		&queue.Bootstrapper{},
 	}

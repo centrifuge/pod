@@ -7,11 +7,11 @@ import (
 
 	"fmt"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/utils"
-	"github.com/ethereum/go-ethereum/common"
+		"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	logging "github.com/ipfs/go-log"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 var log = logging.Logger("signing")
@@ -53,16 +53,21 @@ func GetAddress(publicKey []byte) string {
 
 	hash := crypto.Keccak256(publicKey[1:])
 	address := hash[12:] //address is the last 20 bytes of the hash len(hash) = 20
-	return utils.ByteArrayToHex(address)
+	return hexutil.Encode(address)
 }
 
 func VerifySignatureWithAddress(address, sigHex string, msg []byte) bool {
 	fromAddr := common.HexToAddress(address)
 
-	sig := utils.HexToByteArray(sigHex)
+	sig, err := hexutil.Decode(sigHex)
+
+	if err != nil {
+		log.Error(err.Error())
+		return false
+	}
 
 	if len(sig) != SignatureRSVFormatLen {
-		log.Fatal("signature must be 65 bytes long")
+		log.Error("signature must be 65 bytes long")
 		return false
 	}
 
@@ -70,7 +75,7 @@ func VerifySignatureWithAddress(address, sigHex string, msg []byte) bool {
 	// https://github.com/ethereum/go-ethereum/blob/55599ee95d4151a2502465e0afc7c47bd1acba77/internal/ethapi/api.go#L442
 	if sig[SignatureVPosition] != 0 && sig[SignatureVPosition] != 1 {
 		if sig[SignatureVPosition] != 27 && sig[SignatureVPosition] != 28 {
-			log.Fatal("V value in signature has to be 27 or 28")
+			log.Error("V value in signature has to be 27 or 28")
 			return false
 		}
 		sig[SignatureVPosition] -= 27 // change V value to 0 or 1

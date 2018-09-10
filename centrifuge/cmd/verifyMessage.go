@@ -6,6 +6,7 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/utils"
 	"github.com/spf13/cobra"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 func init() {
@@ -22,7 +23,11 @@ func init() {
 		Short: "verify a signature",
 		Long:  ``,
 		Run: func(cmd *cobra.Command, args []string) {
-			signatureBytes := utils.HexToByteArray(signatureParam)
+			signatureBytes, err := hexutil.Decode(signatureParam)
+			if err != nil {
+				log.Fatal(err)
+			}
+
 			publicKey, err := utils.ReadKeyFromPemFile(publicKeyFileParam, keytools.PublicKey)
 
 			if err != nil {

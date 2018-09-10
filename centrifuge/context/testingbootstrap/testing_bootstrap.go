@@ -1,4 +1,4 @@
-package testing
+package testingbootstrap
 
 import (
 	"fmt"
@@ -6,8 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/anchor"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/anchor/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/bootstrapper"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
@@ -18,6 +16,7 @@ import (
 	logging "github.com/ipfs/go-log"
 	"github.com/syndtr/goleveldb/leveldb"
 	gologging "github.com/whyrusleeping/go-logging"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/anchoring"
 )
 
 const testStoragePath = "/tmp/centrifuge_data.leveldb_TESTING"
@@ -70,8 +69,7 @@ func bootstrapQueuing() {
 	// TODO here we would not have to put the bootstrapper.BootstrappedConfig after the TestBootstrapper refactoring
 	context := map[string]interface{}{bootstrapper.BootstrappedConfig: true}
 	for _, b := range []bootstrapper.TestBootstrapper{
-		&repository.Bootstrapper{},
-		&anchor.Bootstrapper{},
+		&anchoring.Bootstrapper{},
 		&identity.Bootstrapper{},
 		&queue.Bootstrapper{},
 	} {

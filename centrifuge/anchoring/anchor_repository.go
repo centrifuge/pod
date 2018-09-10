@@ -4,17 +4,18 @@ import (
 	"math/big"
 
 	logging "github.com/ipfs/go-log"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
 )
 
 var log = logging.Logger("anchorRepository")
 
 // wrapper for the Ethereum implementation
 type AnchorRepository interface {
-	PreCommitAnchor(anchorId *big.Int, signingRoot [32]byte, centrifugeId *big.Int, signature []byte, expirationBlock *big.Int) (<-chan *WatchPreCommit, error)
-	CommitAnchor(anchorId *big.Int, documentRoot [32]byte, centrifugeId *big.Int, documentProofs [][32]byte, signature []byte) (<-chan *WatchCommit, error)
+	PreCommitAnchor(anchorId AnchorId, signingRoot DocRoot, centrifugeId [identity.CentIdByteLength]byte, signature []byte, expirationBlock *big.Int) (<-chan *WatchPreCommit, error)
+	CommitAnchor(anchorId AnchorId, documentRoot DocRoot, centrifugeId [identity.CentIdByteLength]byte, documentProofs [][32]byte, signature []byte) (<-chan *WatchCommit, error)
 }
 
-func PreCommitAnchor(anchorId *big.Int, signingRoot [32]byte, centrifugeId *big.Int, signature []byte, expirationBlock *big.Int) (<-chan *WatchPreCommit, error) {
+func PreCommitAnchor(anchorId AnchorId, signingRoot DocRoot, centrifugeId [identity.CentIdByteLength]byte, signature []byte, expirationBlock *big.Int) (<-chan *WatchPreCommit, error) {
 	anchorRepository, _ := getConfiguredRepository()
 
 	confirmations, err := anchorRepository.PreCommitAnchor(anchorId, signingRoot, centrifugeId, signature, expirationBlock)
@@ -24,7 +25,7 @@ func PreCommitAnchor(anchorId *big.Int, signingRoot [32]byte, centrifugeId *big.
 	return confirmations, err
 }
 
-func CommitAnchor(anchorId *big.Int, documentRoot [32]byte, centrifugeId *big.Int, documentProofs [][32]byte, signature []byte) (<-chan *WatchCommit, error) {
+func CommitAnchor(anchorId AnchorId, documentRoot DocRoot, centrifugeId [identity.CentIdByteLength]byte, documentProofs [][32]byte, signature []byte) (<-chan *WatchCommit, error) {
 	anchorRepository, _ := getConfiguredRepository()
 
 	confirmations, err := anchorRepository.CommitAnchor(anchorId, documentRoot, centrifugeId, documentProofs, signature)

@@ -6,6 +6,7 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/utils"
 	"github.com/spf13/cobra"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 func init() {
@@ -30,7 +31,7 @@ func init() {
 			if err != nil {
 				log.Fatal(err)
 			}
-			fmt.Println(utils.ByteArrayToHex(signature))
+			fmt.Println(hexutil.Encode(signature))
 
 		},
 	}

@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
-	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
+	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/stretchr/testify/assert"

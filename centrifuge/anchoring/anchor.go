@@ -1,25 +1,52 @@
 package anchoring
 
-import "math/big"
+import (
+	"math/big"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
+	"github.com/ethereum/go-ethereum/crypto"
+)
 
-const AnchorIdLength = 32
-const RootLength = 32
+const (
+	AnchorIdLength = 32
+	RootLength = 32
+	DocumentProofLength = 32
+)
+
+
 type AnchorId [AnchorIdLength]byte
-type Root [RootLength]byte
+
+func NewAnchorId(anchorBytes []byte) AnchorId {
+	var bytes [AnchorIdLength]byte
+	copy(bytes[:], anchorBytes[:AnchorIdLength])
+	return bytes
+}
+
+func (a *AnchorId) toBigInt() *big.Int {
+	return tools.ByteSliceToBigInt(a[:])
+}
+
+type DocRoot [RootLength]byte
+
+func NewDocRoot(docRootBytes []byte) DocRoot {
+	var bytes [RootLength]byte
+	copy(bytes[:], docRootBytes[:RootLength])
+	return bytes
+}
 
 type PreCommitData struct {
-	AnchorId        *big.Int
-	SigningRoot     [32]byte
-	CentrifugeId    *big.Int
+	AnchorId        AnchorId
+	SigningRoot     DocRoot
+	CentrifugeId    [identity.CentIdByteLength]byte
 	Signature       []byte
 	ExpirationBlock *big.Int
 	SchemaVersion   uint
 }
 
 type CommitData struct {
-	AnchorId       *big.Int
-	DocumentRoot   [32]byte
-	CentrifugeId   *big.Int
+	AnchorId       AnchorId
+	DocumentRoot   DocRoot
+	CentrifugeId   [identity.CentIdByteLength]byte
 	DocumentProofs [][32]byte
 	Signature      []byte
 	SchemaVersion  uint
@@ -42,7 +69,7 @@ func SupportedSchemaVersion() uint {
 	return AnchorSchemaVersion
 }
 
-func NewPreCommitData(anchorId *big.Int, signingRoot [32]byte, centrifugeId *big.Int, signature []byte, expirationBlock *big.Int) (preCommitData *PreCommitData, err error) {
+func NewPreCommitData(anchorId AnchorId, signingRoot DocRoot, centrifugeId [identity.CentIdByteLength]byte, signature []byte, expirationBlock *big.Int) (preCommitData *PreCommitData) {
 	preCommitData = &PreCommitData{}
 	preCommitData.AnchorId = anchorId
 	preCommitData.SigningRoot = signingRoot
@@ -50,16 +77,22 @@ func NewPreCommitData(anchorId *big.Int, signingRoot [32]byte, centrifugeId *big
 	preCommitData.Signature = signature
 	preCommitData.ExpirationBlock = expirationBlock
 	preCommitData.SchemaVersion = SupportedSchemaVersion()
-	return preCommitData, nil
+	return preCommitData
 }
 
-func NewCommitData(anchorId *big.Int, documentRoot [32]byte, centrifugeId *big.Int, documentProofs [][32]byte, signature []byte) (commitData *CommitData, err error) {
+func NewCommitData(anchorId AnchorId, documentRoot DocRoot, centrifugeId [identity.CentIdByteLength]byte, documentProofs [][32]byte, signature []byte) (commitData *CommitData) {
 	commitData = &CommitData{}
 	commitData.AnchorId = anchorId
 	commitData.DocumentRoot = documentRoot
 	commitData.CentrifugeId = centrifugeId
 	commitData.DocumentProofs = documentProofs
 	commitData.Signature = signature
-	return commitData, nil
+	return commitData
+}
 
+func GenerateCommitHash(anchorId AnchorId, centrifugeId [identity.CentIdByteLength]byte, documentRoot DocRoot) []byte {
+	message := append(anchorId[:], documentRoot[:]...)
+	message = append(message, centrifugeId[:]...)
+	messageToSign := crypto.Keccak256(message)
+	return messageToSign
 }

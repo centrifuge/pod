@@ -39,7 +39,7 @@ type WatchAnchorCommitted interface {
 }
 
 //PreCommitAnchor will call the transaction PreCommit on the smart contract
-func (ethRepository *EthereumAnchorRepository) PreCommitAnchor(anchorId *big.Int, signingRoot [32]byte, centrifugeId *big.Int, signature []byte, expirationBlock *big.Int) (confirmations <-chan *WatchPreCommit, err error) {
+func (ethRepository *EthereumAnchorRepository) PreCommitAnchor(anchorId AnchorId, signingRoot DocRoot, centrifugeId [identity.CentIdByteLength]byte, signature []byte, expirationBlock *big.Int) (confirmations <-chan *WatchPreCommit, err error) {
 
 	//TODO check if parameters are valid
 	ethRepositoryContract, _ := getRepositoryContract()
@@ -47,7 +47,7 @@ func (ethRepository *EthereumAnchorRepository) PreCommitAnchor(anchorId *big.Int
 	if err != nil {
 		return
 	}
-	preCommitData, err := NewPreCommitData(anchorId, signingRoot, centrifugeId, signature, expirationBlock)
+	preCommitData := NewPreCommitData(anchorId, signingRoot, centrifugeId, signature, expirationBlock)
 	if err != nil {
 		return
 	}
@@ -108,7 +108,7 @@ func sendCommitTransaction(contract AnchorRepositoryContract, opts *bind.Transac
 }
 
 //CommitAnchor will call the transaction Commit on the smart contract
-func (ethRepository *EthereumAnchorRepository) CommitAnchor(anchorId *big.Int, documentRoot [32]byte, centrifugeId *big.Int, documentProofs [][32]byte, signature []byte) (confirmations <-chan *WatchCommit, err error) {
+func (ethRepository *EthereumAnchorRepository) CommitAnchor(anchorId AnchorId, documentRoot DocRoot, centrifugeId [identity.CentIdByteLength]byte, documentProofs [][32]byte, signature []byte) (confirmations <-chan *WatchCommit, err error) {
 
 	ethRepositoryContract, _ := getRepositoryContract()
 	opts, err := ethereum.GetGethTxOpts(config.Config.GetEthereumDefaultAccountName())
@@ -116,10 +116,7 @@ func (ethRepository *EthereumAnchorRepository) CommitAnchor(anchorId *big.Int, d
 		return
 	}
 	//TODO check if parameters are valid
-	commitData, err := NewCommitData(anchorId, documentRoot, centrifugeId, documentProofs, signature)
-	if err != nil {
-		return
-	}
+	commitData := NewCommitData(anchorId, documentRoot, centrifugeId, documentProofs, signature)
 
 	confirmations, err = setUpCommitEventListener(opts.From, commitData)
 	if err != nil {
@@ -164,7 +161,7 @@ func setUpPreCommitEventListener(contractEvent WatchAnchorPreCommitted, from com
 	//TODO do something with the returned Subscription that is currently simply discarded
 	// Somehow there are some possible resource leakage situations with this handling but I have to understand
 	// Subscriptions a bit better before writing this code.
-	_, err = contractEvent.WatchAnchorPreCommitted(watchOpts, anchorPreCommittedEvents, []common.Address{from}, []*big.Int{preCommitData.AnchorId})
+	_, err = contractEvent.WatchAnchorPreCommitted(watchOpts, anchorPreCommittedEvents, []common.Address{from}, []*big.Int{preCommitData.AnchorId.toBigInt()})
 	if err != nil {
 		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for anchor registration", 1)
 		log.Errorf("Failed to watch anchor registered event: %v", wError.Error())
@@ -177,19 +174,11 @@ func setUpPreCommitEventListener(contractEvent WatchAnchorPreCommitted, from com
 // setUpCommitEventListener sets up the listened for the "AnchorCommitted" event to notify the upstream code
 // about successful mining/creation of a commit
 func setUpCommitEventListener(from common.Address, commitData *CommitData) (confirmations chan *WatchCommit, err error) {
-
 	confirmations = make(chan *WatchCommit)
-
-	var anchorId32Byte [AnchorIdLength]byte
-	copy(anchorId32Byte[:], commitData.AnchorId.Bytes()[:AnchorIdLength])
-
-	var centrifugeIdByte [identity.CentIdByteLength]byte
-	copy(centrifugeIdByte[:], commitData.CentrifugeId.Bytes()[:identity.CentIdByteLength])
-
 	asyncRes, err := queue.Queue.DelayKwargs(AnchoringRepositoryConfirmationTaskName, map[string]interface{}{
-		AnchorIdParam:     anchorId32Byte,
+		AnchorIdParam:     commitData.AnchorId,
 		AddressParam:      from,
-		CentrifugeIdParam: centrifugeIdByte,
+		CentrifugeIdParam: commitData.CentrifugeId,
 	})
 	if err != nil {
 		return nil, err
