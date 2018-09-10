@@ -8,7 +8,6 @@ import (
 
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
-	"golang.org/x/crypto/ed25519"
 )
 
 const (
@@ -99,7 +98,7 @@ func GetClientsP2PURLs(idService Service, centIDs [][]byte) ([]string, error) {
 }
 
 // GetIdentityKey returns the key for provided identity
-func GetIdentityKey(idSrv Service, identity []byte, pubKey ed25519.PublicKey) (keyInfo Key, err error) {
+func GetIdentityKey(idSrv Service, identity, pubKey []byte) (keyInfo Key, err error) {
 	id, err := idSrv.LookupIdentityForID(identity)
 	if err != nil {
 		return keyInfo, err
@@ -118,7 +117,7 @@ func GetIdentityKey(idSrv Service, identity []byte, pubKey ed25519.PublicKey) (k
 }
 
 // ValidateKey checks if a given key is valid for the given centrifugeID.
-func ValidateKey(idSrv Service, centrifugeId []byte, key ed25519.PublicKey) (valid bool, err error) {
+func ValidateKey(idSrv Service, centrifugeId, key []byte) (valid bool, err error) {
 	idKey, err := GetIdentityKey(idSrv, centrifugeId, key)
 	if err != nil {
 		return false, err

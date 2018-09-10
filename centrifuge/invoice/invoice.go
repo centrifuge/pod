@@ -95,16 +95,16 @@ func NewFromCoreDocument(coreDocument *coredocumentpb.CoreDocument) (*Invoice, e
 	return inv, nil
 }
 
-func (inv *Invoice) getDocumentTree() (tree *proofs.DocumentTree, err error) {
+func (inv *Invoice) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
 	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: sha256.New()})
 	err = t.AddLeavesFromDocument(inv.Document.Data, inv.Document.Salts)
 	if err != nil {
-		log.Error("getDocumentTree:", err)
+		log.Error("getDocumentDataTree:", err)
 		return nil, err
 	}
 	err = t.Generate()
 	if err != nil {
-		log.Error("getDocumentTree:", err)
+		log.Error("getDocumentDataTree:", err)
 		return nil, err
 	}
 	return &t, nil
@@ -113,7 +113,7 @@ func (inv *Invoice) getDocumentTree() (tree *proofs.DocumentTree, err error) {
 // CalculateMerkleRoot calculates the invoice merkle root
 // TODO: this method is a dangerous one. Generating the different roots shouldn't be done in one step (lucas)
 func (inv *Invoice) CalculateMerkleRoot() error {
-	tree, err := inv.getDocumentTree()
+	tree, err := inv.getDocumentDataTree()
 	if err != nil {
 		return err
 	}
@@ -130,7 +130,7 @@ func (inv *Invoice) CreateProofs(fields []string) (proofs []*proofspb.Proof, err
 		return nil, err
 	}
 
-	tree, err := inv.getDocumentTree()
+	tree, err := inv.getDocumentDataTree()
 	if err != nil {
 		log.Error(err)
 		return nil, err

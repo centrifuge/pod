@@ -7,7 +7,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/io"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/secp256k1"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/utils"
 
@@ -21,9 +20,9 @@ func TestSignMessage(t *testing.T) {
 	testMsg := []byte("test")
 
 	GenerateSigningKeyPair(publicKeyFile, privateKeyFile, CurveSecp256K1)
-	privateKey, err := io.ReadKeyFromPemFile(privateKeyFile, PrivateKey)
+	privateKey, err := utils.ReadKeyFromPemFile(privateKeyFile, PrivateKey)
 	assert.Nil(t, err)
-	publicKey, err := io.ReadKeyFromPemFile(publicKeyFile, PublicKey)
+	publicKey, err := utils.ReadKeyFromPemFile(publicKeyFile, PublicKey)
 	assert.Nil(t, err)
 	signature, err := SignMessage(privateKey, testMsg, CurveSecp256K1, false)
 	assert.Nil(t, err)
@@ -43,12 +42,12 @@ func TestSignAndVerifyMessageEthereum(t *testing.T) {
 	testMsg := []byte("Centrifuge likes Ethereum")
 
 	GenerateSigningKeyPair(publicKeyFile, privateKeyFile, CurveSecp256K1)
-	privateKey, err := io.ReadKeyFromPemFile(privateKeyFile, PrivateKey)
+	privateKey, err := utils.ReadKeyFromPemFile(privateKeyFile, PrivateKey)
 	assert.Nil(t, err)
 	signature, err := SignMessage(privateKey, testMsg, CurveSecp256K1, true)
 	assert.Nil(t, err)
 
-	publicKey, _ := io.ReadKeyFromPemFile(publicKeyFile, PublicKey)
+	publicKey, _ := utils.ReadKeyFromPemFile(publicKeyFile, PublicKey)
 	address := secp256k1.GetAddress(publicKey)
 
 	fmt.Println("privateKey: ", utils.ByteArrayToHex(privateKey))
