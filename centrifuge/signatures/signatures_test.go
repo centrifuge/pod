@@ -66,7 +66,8 @@ func TestValidateSignature_invalid_key(t *testing.T) {
 	sig := &coredocumentpb.Signature{EntityId: tools.RandomSlice(identity.CentIdByteLength)}
 	srv := &mockIDService{}
 	srv.On("LookupIdentityForID", sig.EntityId).Return(nil, fmt.Errorf("failed GetIdentity")).Once()
-	valid, err := ValidateSignature(srv, sig, key1Pub)
+	identity.SetIdentityService(srv)
+	valid, err := ValidateSignature(sig, key1Pub)
 	srv.AssertExpectations(t)
 	assert.False(t, valid, "should be false")
 	assert.NotNil(t, err, "must be not nil")
