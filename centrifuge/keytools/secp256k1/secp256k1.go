@@ -22,7 +22,6 @@ const SignatureVPosition = 64
 const PrivateKeyLen = 32
 
 func GenerateSigningKeyPair() (publicKey, privateKey []byte) {
-
 	log.Debug("generate secp256k1 keys")
 	key, err := ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
 	if err != nil {
@@ -33,13 +32,11 @@ func GenerateSigningKeyPair() (publicKey, privateKey []byte) {
 	privateKey = make([]byte, PrivateKeyLen)
 	blob := key.D.Bytes()
 	copy(privateKey[PrivateKeyLen-len(blob):], blob)
-
 	return publicKey, privateKey
 }
 
 func Sign(message []byte, privateKey []byte) (signature []byte, err error) {
 	return secp256k1.Sign(message, privateKey)
-
 }
 
 func SignEthereum(message []byte, privateKey []byte) (signature []byte, err error) {
@@ -50,7 +47,6 @@ func SignEthereum(message []byte, privateKey []byte) (signature []byte, err erro
 }
 
 func GetAddress(publicKey []byte) string {
-
 	hash := crypto.Keccak256(publicKey[1:])
 	address := hash[12:] //address is the last 20 bytes of the hash len(hash) = 20
 	return utils.ByteArrayToHex(address)
@@ -58,9 +54,7 @@ func GetAddress(publicKey []byte) string {
 
 func VerifySignatureWithAddress(address, sigHex string, msg []byte) bool {
 	fromAddr := common.HexToAddress(address)
-
 	sig := utils.HexToByteArray(sigHex)
-
 	if len(sig) != SignatureRSVFormatLen {
 		log.Fatal("signature must be 65 bytes long")
 		return false
@@ -73,30 +67,30 @@ func VerifySignatureWithAddress(address, sigHex string, msg []byte) bool {
 			log.Fatal("V value in signature has to be 27 or 28")
 			return false
 		}
+
 		sig[SignatureVPosition] -= 27 // change V value to 0 or 1
 	}
 
 	pubKey, err := crypto.SigToPub(SignHash(msg), sig)
 	if err != nil {
-
 		return false
 	}
 
 	recoveredAddr := crypto.PubkeyToAddress(*pubKey)
-
 	return fromAddr == recoveredAddr
 }
 
+// SignHash formats the data as per ethereum format
 // The hash is calculated as
 // keccak256("\x19Ethereum Signed Message:\n"${message length}${message}).
 // for further details see
 // https://github.com/ethereum/go-ethereum/blob/55599ee95d4151a2502465e0afc7c47bd1acba77/internal/ethapi/api.go#L404
-
 func SignHash(data []byte) []byte {
 	msg := fmt.Sprintf("\x19Ethereum Signed Message:\n%d", len(data))
 	return crypto.Keccak256(append([]byte(msg), data...))
 }
 
+// VerifySignature verifies the signature using the public key provided
 func VerifySignature(publicKey, message, signature []byte) bool {
 	if len(signature) == SignatureRSFormatLen+1 {
 		// signature in [R || S || V] format is 65 bytes
@@ -106,5 +100,4 @@ func VerifySignature(publicKey, message, signature []byte) bool {
 	}
 	// the signature should have the 64 byte [R || S] format
 	return secp256k1.VerifySignature(publicKey, message, signature)
-
 }
