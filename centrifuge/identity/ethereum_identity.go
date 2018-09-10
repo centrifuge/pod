@@ -163,20 +163,22 @@ func (id *EthereumIdentity) CheckIdentityExists() (exists bool, err error) {
 }
 
 func (id *EthereumIdentity) AddKeyToIdentity(keyPurpose int, key []byte) (confirmations chan *WatchIdentity, err error) {
-	if tools.IsEmptyByteSlice(key) || len(key) != 32 {
-		return confirmations, errors.New("Can't add key to identity: Inavlid key")
+	if tools.IsEmptyByteSlice(key) || len(key) <= 32 {
+		log.Errorf("Can't add key to identity: empty or invalid length(>32) key for [id: %s]: %x", id, key)
+		return confirmations, errors.New("Can't add key to identity: Invalid key")
 	}
 
 	ethIdentityContract, err := id.getContract()
 	if err != nil {
-		return
+		log.Errorf("Failed to set up event listener for identity [id: %s]: %v", id, err)
+		return confirmations, err
 	}
 
 	confirmations, err = setUpKeyRegisteredEventListener(ethIdentityContract, id, keyPurpose, key)
 	if err != nil {
 		wError := errors.Wrap(err, 1)
-		log.Infof("Failed to set up event listener for identity [mockID: %s]: %v", id, wError)
-		return
+		log.Errorf("Failed to set up event listener for identity [id: %s]: %v", id, wError)
+		return confirmations, wError
 	}
 
 	opts, err := ethereum.GetGethTxOpts(config.Config.GetEthereumDefaultAccountName())
@@ -187,7 +189,7 @@ func (id *EthereumIdentity) AddKeyToIdentity(keyPurpose int, key []byte) (confir
 	err = sendKeyRegistrationTransaction(ethIdentityContract, opts, id, keyPurpose, key)
 	if err != nil {
 		wError := errors.Wrap(err, 1)
-		log.Infof("Failed to create transaction for identity [mockID: %s]: %v", id, wError)
+		log.Errorf("Failed to create transaction for identity [id: %s]: %v", id, wError)
 		return confirmations, wError
 	}
 	return confirmations, nil
@@ -204,7 +206,7 @@ func (id *EthereumIdentity) fetchKeysByPurpose(keyPurpose int) error {
 	if err != nil {
 		return err
 	}
-	log.Errorf("HERE: %d %x\n", keyPurpose, keys)
+	log.Infof("fetched keys: %d %x\n", keyPurpose, keys)
 	for _, key := range keys {
 		id.cachedKeys[keyPurpose] = append(id.cachedKeys[keyPurpose], EthereumIdentityKey{key})
 	}
@@ -277,24 +279,24 @@ func setUpKeyRegisteredEventListener(ethCreatedContract WatchKeyAdded, identity 
 	// single key being registered
 	keyAddedEvents := make(chan *EthereumIdentityContractKeyAdded)
 	confirmations = make(chan *WatchIdentity)
-	go waitAndRouteKeyRegistrationEvent(keyAddedEvents, watchOpts.Context, confirmations, identity)
 
 	b32Key, err := tools.SliceToByte32(key)
 	if err != nil {
 		return confirmations, err
 	}
-	bigInt := big.NewInt(int64(keyPurpose))
+	keyPurposeInt := big.NewInt(int64(keyPurpose))
 
 	//TODO do something with the returned Subscription that is currently simply discarded
 	// Somehow there are some possible resource leakage situations with this handling but I have to understand
 	// Subscriptions a bit better before writing this code.
-	_, err = ethCreatedContract.WatchKeyAdded(watchOpts, keyAddedEvents, [][32]byte{b32Key}, []*big.Int{bigInt})
+	subscription, err := ethCreatedContract.WatchKeyAdded(watchOpts, keyAddedEvents, [][32]byte{b32Key}, []*big.Int{keyPurposeInt})
 	if err != nil {
 		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for identity registration", 1)
 		log.Errorf(wError.Error())
 		cancelFunc()
 		return confirmations, wError
 	}
+	go waitAndRouteKeyRegistrationEvent(keyAddedEvents, subscription, watchOpts.Context, confirmations, identity)
 	return
 }
 
@@ -312,9 +314,12 @@ func setUpRegistrationEventListener(identityToBeCreated Identity) (confirmations
 }
 
 // waitAndRouteKeyRegistrationEvent notifies the confirmations channel whenever the key has been added to the identity and has been noted as Ethereum event
-func waitAndRouteKeyRegistrationEvent(conf <-chan *EthereumIdentityContractKeyAdded, ctx context.Context, confirmations chan<- *WatchIdentity, pushThisIdentity Identity) {
+func waitAndRouteKeyRegistrationEvent(conf <-chan *EthereumIdentityContractKeyAdded, subscription event.Subscription, ctx context.Context, confirmations chan<- *WatchIdentity, pushThisIdentity Identity) {
 	for {
 		select {
+		case err := <-subscription.Err():
+			log.Errorf("Subscription error %s", err.Error())
+			return
 		case <-ctx.Done():
 			log.Errorf("Context [%v] closed before receiving KeyRegistered event for Identity ID: %x\n", ctx, pushThisIdentity)
 			confirmations <- &WatchIdentity{pushThisIdentity, ctx.Err()}
