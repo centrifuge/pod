@@ -11,6 +11,7 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
+	centED25519 "github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/notification"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/signatures"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/version"
@@ -95,8 +96,12 @@ func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.
 		return nil, errors.New(code.DocumentInvalid, errors.NilError(sigReq.Document).Error())
 	}
 
-	ss := signatures.GetSigningService()
-	sig := ss.Sign(sigReq.Document)
+	idConfig, err := centED25519.GetIDConfig()
+	if err != nil {
+		return nil, errors.New(code.Unknown, fmt.Sprintf("failed to get ID Config: %v", err))
+	}
+
+	sig := signatures.Sign(idConfig, sigReq.Document)
 	return &p2ppb.SignatureResponse{
 		CentNodeVersion: version.GetVersion().String(),
 		Signature:       sig,

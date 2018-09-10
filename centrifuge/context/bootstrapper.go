@@ -11,7 +11,6 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/queue"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/signatures"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/version"
 	logging "github.com/ipfs/go-log"
@@ -31,7 +30,6 @@ func (m *MainBootstrapper) PopulateDefaultBootstrappers() {
 		&coredocumentrepository.Bootstrapper{},
 		&invoicerepository.Bootstrapper{},
 		&purchaseorderrepository.Bootstrapper{},
-		&signatures.Bootstrapper{},
 		&ethereum.Bootstrapper{},
 		&repository.Bootstrapper{},
 		&anchor.Bootstrapper{},

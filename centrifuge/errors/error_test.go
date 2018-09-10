@@ -3,10 +3,9 @@
 package errors
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
-
-	"fmt"
 
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/code"
 	"github.com/magiconair/properties/assert"

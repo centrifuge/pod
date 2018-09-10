@@ -28,8 +28,8 @@ const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 // Pong contains basic information about the node
 type Pong struct {
-	Version              string   `protobuf:"bytes,1,opt,name=version" json:"version,omitempty"`
-	Network              string   `protobuf:"bytes,2,opt,name=network" json:"network,omitempty"`
+	Version              string   `protobuf:"bytes,1,opt,name=version,proto3" json:"version,omitempty"`
+	Network              string   `protobuf:"bytes,2,opt,name=network,proto3" json:"network,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -85,8 +85,9 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
-// Client API for HealthCheckService service
-
+// HealthCheckServiceClient is the client API for HealthCheckService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type HealthCheckServiceClient interface {
 	Ping(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*Pong, error)
 }
@@ -101,15 +102,14 @@ func NewHealthCheckServiceClient(cc *grpc.ClientConn) HealthCheckServiceClient {
 
 func (c *healthCheckServiceClient) Ping(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*Pong, error) {
 	out := new(Pong)
-	err := grpc.Invoke(ctx, "/health.HealthCheckService/Ping", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/health.HealthCheckService/Ping", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// Server API for HealthCheckService service
-
+// HealthCheckServiceServer is the server API for HealthCheckService service.
 type HealthCheckServiceServer interface {
 	Ping(context.Context, *empty.Empty) (*Pong, error)
 }

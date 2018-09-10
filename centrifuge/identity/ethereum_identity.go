@@ -34,7 +34,21 @@ type IdentityContract interface {
 }
 
 type EthereumIdentityKey struct {
-	Key [32]byte
+	Key       [32]byte
+	Purposes  []*big.Int
+	RevokedAt *big.Int
+}
+
+func (idk *EthereumIdentityKey) GetKey() [32]byte {
+	return idk.Key
+}
+
+func (idk *EthereumIdentityKey) GetPurposes() []*big.Int {
+	return idk.Purposes
+}
+
+func (idk *EthereumIdentityKey) GetRevokedAt() *big.Int {
+	return idk.RevokedAt
 }
 
 func (idk *EthereumIdentityKey) String() string {
@@ -101,6 +115,27 @@ func (id *EthereumIdentity) GetLastKeyForPurpose(keyPurpose int) (key []byte, er
 
 	return id.cachedKeys[keyPurpose][len(id.cachedKeys[keyPurpose])-1].Key[:32], nil
 }
+
+func (id *EthereumIdentity) FetchKey(key []byte) (Key, error) {
+	contract, err := id.getContract()
+	if err != nil {
+		return nil, err
+	}
+	opts := ethereum.GetGethCallOpts()
+	key32, _ := tools.SliceToByte32(key)
+	keyInstance, err := contract.GetKey(opts, key32)
+	if err != nil {
+		return nil, err
+	}
+
+	return &EthereumIdentityKey{
+		Key:       keyInstance.Key,
+		Purposes:  keyInstance.Purposes,
+		RevokedAt: keyInstance.RevokedAt,
+	}, nil
+
+}
+
 func (id *EthereumIdentity) GetCurrentP2PKey() (ret string, err error) {
 	key, err := id.GetLastKeyForPurpose(KeyPurposeP2p)
 	if err != nil {
@@ -158,25 +193,26 @@ func (id *EthereumIdentity) getContract() (contract *EthereumIdentityContract, e
 }
 
 func (id *EthereumIdentity) CheckIdentityExists() (exists bool, err error) {
-	exists, err = id.findContract()
-	return
+	return id.findContract()
 }
 
 func (id *EthereumIdentity) AddKeyToIdentity(keyPurpose int, key []byte) (confirmations chan *WatchIdentity, err error) {
-	if tools.IsEmptyByteSlice(key) || len(key) != 32 {
-		return confirmations, errors.New("Can't add key to identity: Inavlid key")
+	if tools.IsEmptyByteSlice(key) || len(key) <= 32 {
+		log.Errorf("Can't add key to identity: empty or invalid length(>32) key for [id: %s]: %x", id, key)
+		return confirmations, errors.New("Can't add key to identity: Invalid key")
 	}
 
 	ethIdentityContract, err := id.getContract()
 	if err != nil {
-		return
+		log.Errorf("Failed to set up event listener for identity [id: %s]: %v", id, err)
+		return confirmations, err
 	}
 
 	confirmations, err = setUpKeyRegisteredEventListener(ethIdentityContract, id, keyPurpose, key)
 	if err != nil {
 		wError := errors.Wrap(err, 1)
-		log.Infof("Failed to set up event listener for identity [mockID: %s]: %v", id, wError)
-		return
+		log.Errorf("Failed to set up event listener for identity [id: %s]: %v", id, wError)
+		return confirmations, wError
 	}
 
 	opts, err := ethereum.GetGethTxOpts(config.Config.GetEthereumDefaultAccountName())
@@ -187,7 +223,7 @@ func (id *EthereumIdentity) AddKeyToIdentity(keyPurpose int, key []byte) (confir
 	err = sendKeyRegistrationTransaction(ethIdentityContract, opts, id, keyPurpose, key)
 	if err != nil {
 		wError := errors.Wrap(err, 1)
-		log.Infof("Failed to create transaction for identity [mockID: %s]: %v", id, wError)
+		log.Errorf("Failed to create transaction for identity [id: %s]: %v", id, wError)
 		return confirmations, wError
 	}
 	return confirmations, nil
@@ -204,9 +240,9 @@ func (id *EthereumIdentity) fetchKeysByPurpose(keyPurpose int) error {
 	if err != nil {
 		return err
 	}
-	log.Errorf("HERE: %d %x\n", keyPurpose, keys)
+	log.Infof("fetched keys: %d %x\n", keyPurpose, keys)
 	for _, key := range keys {
-		id.cachedKeys[keyPurpose] = append(id.cachedKeys[keyPurpose], EthereumIdentityKey{key})
+		id.cachedKeys[keyPurpose] = append(id.cachedKeys[keyPurpose], EthereumIdentityKey{key, nil, nil})
 	}
 	return nil
 }
@@ -277,24 +313,24 @@ func setUpKeyRegisteredEventListener(ethCreatedContract WatchKeyAdded, identity 
 	// single key being registered
 	keyAddedEvents := make(chan *EthereumIdentityContractKeyAdded)
 	confirmations = make(chan *WatchIdentity)
-	go waitAndRouteKeyRegistrationEvent(keyAddedEvents, watchOpts.Context, confirmations, identity)
 
 	b32Key, err := tools.SliceToByte32(key)
 	if err != nil {
 		return confirmations, err
 	}
-	bigInt := big.NewInt(int64(keyPurpose))
+	keyPurposeInt := big.NewInt(int64(keyPurpose))
 
 	//TODO do something with the returned Subscription that is currently simply discarded
 	// Somehow there are some possible resource leakage situations with this handling but I have to understand
 	// Subscriptions a bit better before writing this code.
-	_, err = ethCreatedContract.WatchKeyAdded(watchOpts, keyAddedEvents, [][32]byte{b32Key}, []*big.Int{bigInt})
+	subscription, err := ethCreatedContract.WatchKeyAdded(watchOpts, keyAddedEvents, [][32]byte{b32Key}, []*big.Int{keyPurposeInt})
 	if err != nil {
 		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for identity registration", 1)
 		log.Errorf(wError.Error())
 		cancelFunc()
 		return confirmations, wError
 	}
+	go waitAndRouteKeyRegistrationEvent(keyAddedEvents, subscription, watchOpts.Context, confirmations, identity)
 	return
 }
 
@@ -312,9 +348,12 @@ func setUpRegistrationEventListener(identityToBeCreated Identity) (confirmations
 }
 
 // waitAndRouteKeyRegistrationEvent notifies the confirmations channel whenever the key has been added to the identity and has been noted as Ethereum event
-func waitAndRouteKeyRegistrationEvent(conf <-chan *EthereumIdentityContractKeyAdded, ctx context.Context, confirmations chan<- *WatchIdentity, pushThisIdentity Identity) {
+func waitAndRouteKeyRegistrationEvent(conf <-chan *EthereumIdentityContractKeyAdded, subscription event.Subscription, ctx context.Context, confirmations chan<- *WatchIdentity, pushThisIdentity Identity) {
 	for {
 		select {
+		case err := <-subscription.Err():
+			log.Errorf("Subscription error %s", err.Error())
+			return
 		case <-ctx.Done():
 			log.Errorf("Context [%v] closed before receiving KeyRegistered event for Identity ID: %x\n", ctx, pushThisIdentity)
 			confirmations <- &WatchIdentity{pushThisIdentity, ctx.Err()}
@@ -338,8 +377,7 @@ func NewEthereumIdentityService() Service {
 }
 
 // EthereumidentityService implements `Service`
-type EthereumIdentityService struct {
-}
+type EthereumIdentityService struct{}
 
 func (ids *EthereumIdentityService) CheckIdentityExists(centrifugeId []byte) (exists bool, err error) {
 	if tools.IsEmptyByteSlice(centrifugeId) || len(centrifugeId) != CentIdByteLength {

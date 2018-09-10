@@ -26,6 +26,9 @@ install-deps: ## Install Dependencies
 	@dep ensure
 	@npm install
 
+format-go: ## formats go code
+	@goimports -w ./centrifuge
+
 proto-lint: ## runs prototool lint
 	$(PROTOTOOL_BIN) lint
 
@@ -40,6 +43,7 @@ gen-swagger: ## generates the swagger documentation
 
 vendorinstall: ## Installs all protobuf dependencies with go-vendorinstall
 	go install github.com/CentrifugeInc/go-centrifuge/vendor/github.com/roboll/go-vendorinstall
+	go-vendorinstall golang.org/x/tools/cmd/goimports
 	go-vendorinstall github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
 	go-vendorinstall github.com/golang/protobuf/protoc-gen-go
 	go-vendorinstall github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger

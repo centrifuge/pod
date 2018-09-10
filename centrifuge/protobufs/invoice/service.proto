@@ -17,7 +17,7 @@ import "protoc-gen-swagger/options/annotations.proto";
 service InvoiceDocumentService {
   rpc CreateInvoiceProof(CreateInvoiceProofEnvelope) returns (InvoiceProof) {
     option (google.api.http) = {
-      post: "/invoice/{document_identifier}/proof"
+      post: "/invoice/proof"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {

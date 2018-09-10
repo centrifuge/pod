@@ -5,13 +5,13 @@ package purchaseorderservice
 import (
 	"context"
 	"crypto/sha256"
-	"fmt"
 	"os"
 	"testing"
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	clientpurchaseorderpb "github.com/CentrifugeInc/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
@@ -86,7 +86,7 @@ func getTestSetupData() (po *purchaseorder.PurchaseOrder, srv *PurchaseOrderDocu
 		OrderAmount:      800,
 	}
 	salts := new(purchaseorderpb.PurchaseOrderDataSalts)
-	proofs.FillSalts(salts)
+	proofs.FillSalts(po.Document.Data, salts)
 	po.Document.Salts = salts
 	po.Document.CoreDocument = testingutils.GenerateCoreDocument()
 	srv, repo, mockCoreDocumentProcessor = generateMockedOutPurchaseOrderService()
@@ -191,8 +191,70 @@ func TestPurchaseOrderDocumentService_SendFails(t *testing.T) {
 }
 
 func TestPurchaseOrderDocumentService_HandleCreatePurchaseOrderProof(t *testing.T) {
+	identifier := testingutils.Rand32Bytes()
+	order := purchaseorder.Empty()
+	order.Document.CoreDocument = &coredocumentpb.CoreDocument{
+		DocumentIdentifier: identifier,
+		CurrentIdentifier:  identifier,
+		NextIdentifier:     testingutils.Rand32Bytes(),
+	}
+	cdSalts := &coredocumentpb.CoreDocumentSalts{}
+	proofs.FillSalts(order.Document.CoreDocument, cdSalts)
+	order.Document.CoreDocument.CoredocumentSalts = cdSalts
+
+	order.CalculateMerkleRoot()
+	coredocument.CalculateDocumentRoot(order.Document.CoreDocument)
 	s, mockRepo, _ := generateMockedOutPurchaseOrderService()
 
+	proofRequest := &clientpurchaseorderpb.CreatePurchaseOrderProofEnvelope{
+		DocumentIdentifier: identifier,
+		Fields:             []string{"currency", "order_country", "net_amount"},
+	}
+	mockRepo.On("GetByID", proofRequest.DocumentIdentifier, new(purchaseorderpb.PurchaseOrderDocument)).Return(nil).Once()
+	mockRepo.replaceDoc = order.Document
+	purchaseOrderProof, err := s.HandleCreatePurchaseOrderProof(context.Background(), proofRequest)
+	mockRepo.AssertExpectations(t)
+
+	assert.Nil(t, err)
+	assert.Equal(t, identifier, purchaseOrderProof.DocumentIdentifier)
+	assert.Equal(t, len(proofRequest.Fields), len(purchaseOrderProof.FieldProofs))
+	assert.Equal(t, proofRequest.Fields[0], purchaseOrderProof.FieldProofs[0].Property)
+	sha256Hash := sha256.New()
+	fieldHash, err := proofs.CalculateHashForProofField(purchaseOrderProof.FieldProofs[0], sha256Hash)
+
+	valid, err := proofs.ValidateProofSortedHashes(fieldHash, purchaseOrderProof.FieldProofs[0].SortedHashes, order.Document.CoreDocument.DocumentRoot, sha256Hash)
+	assert.True(t, valid)
+	assert.Nil(t, err)
+}
+
+func TestPurchaseOrderDocumentService_HandleCreatePurchaseOrderProof_NotFilledSalts(t *testing.T) {
+	identifier := testingutils.Rand32Bytes()
+	order := purchaseorder.Empty()
+	order.Document.CoreDocument = &coredocumentpb.CoreDocument{
+		DocumentIdentifier: identifier,
+		CurrentIdentifier:  identifier,
+		NextIdentifier:     testingutils.Rand32Bytes(),
+		CoredocumentSalts:  &coredocumentpb.CoreDocumentSalts{},
+	}
+	order.Document.Salts = &purchaseorderpb.PurchaseOrderDataSalts{}
+	s, mockRepo, mockProcessor := generateMockedOutPurchaseOrderService()
+
+	proofRequest := &clientpurchaseorderpb.CreatePurchaseOrderProofEnvelope{
+		DocumentIdentifier: identifier,
+		Fields:             []string{"currency", "order_country", "net_amount"},
+	}
+	// In this test we mock out the signing root generation and return empty hashes for the CoreDocumentProcessor.GetProofHashes
+	mockProcessor.On("GetDataProofHashes", order.Document.CoreDocument).Return([][]byte{}, nil).Once()
+	mockRepo.On("GetByID", proofRequest.DocumentIdentifier, new(purchaseorderpb.PurchaseOrderDocument)).Return(nil).Once()
+	mockRepo.replaceDoc = order.Document
+
+	purchaseOrderProof, err := s.HandleCreatePurchaseOrderProof(context.Background(), proofRequest)
+	mockRepo.AssertExpectations(t)
+	assert.NotNil(t, err)
+	assert.Nil(t, purchaseOrderProof)
+}
+
+func TestPurchaseOrderDocumentService_HandleCreatePurchaseOrderProof_NotExistingPurchaseOrder(t *testing.T) {
 	identifier := testingutils.Rand32Bytes()
 	order := purchaseorder.Empty()
 	order.Document.CoreDocument = &coredocumentpb.CoreDocument{
@@ -201,47 +263,19 @@ func TestPurchaseOrderDocumentService_HandleCreatePurchaseOrderProof(t *testing.
 		NextIdentifier:     testingutils.Rand32Bytes(),
 	}
 	order.CalculateMerkleRoot()
-	mockRepo.replaceDoc = order.Document
 
-	proofRequest := &clientpurchaseorderpb.CreatePurchaseOrderProofEnvelope{
-		DocumentIdentifier: identifier,
-		Fields:             []string{"currency", "order_country", "net_amount"},
-	}
-
-	mockRepo.On("GetByID", proofRequest.DocumentIdentifier, new(purchaseorderpb.PurchaseOrderDocument)).Return(nil).Once()
-	purchaseOrderProof, err := s.HandleCreatePurchaseOrderProof(context.Background(), proofRequest)
-	mockRepo.AssertExpectations(t)
-	assert.Nil(t, err)
-	assert.Equal(t, identifier, purchaseOrderProof.DocumentIdentifier)
-	assert.Equal(t, len(proofRequest.Fields), len(purchaseOrderProof.FieldProofs))
-	assert.Equal(t, proofRequest.Fields[0], purchaseOrderProof.FieldProofs[0].Property)
-	sha256Hash := sha256.New()
-	fmt.Println(order.Document.CoreDocument.DataRoot)
-	valid, err := proofs.ValidateProof(purchaseOrderProof.FieldProofs[0], order.Document.CoreDocument.DataRoot, sha256Hash)
-	assert.True(t, valid)
-	assert.Nil(t, err)
-}
-
-func TestInvoiceDocumentService_HandleCreatePurchaseOrderProof_NotFilledSalts(t *testing.T) {
 	s, mockRepo, _ := generateMockedOutPurchaseOrderService()
 
-	identifier := testingutils.Rand32Bytes()
-	order := purchaseorder.Empty()
-	order.Document.CoreDocument = &coredocumentpb.CoreDocument{
-		DocumentIdentifier: identifier,
-		CurrentIdentifier:  identifier,
-		NextIdentifier:     testingutils.Rand32Bytes(),
-	}
-	mockRepo.replaceDoc = order.Document
-	order.Document.Salts = &purchaseorderpb.PurchaseOrderDataSalts{}
 	proofRequest := &clientpurchaseorderpb.CreatePurchaseOrderProofEnvelope{
 		DocumentIdentifier: identifier,
 		Fields:             []string{"currency", "order_country", "net_amount"},
 	}
-
-	mockRepo.On("GetByID", proofRequest.DocumentIdentifier, new(purchaseorderpb.PurchaseOrderDocument)).Return(nil).Once()
+	//return an "empty" invoice as mock can't return nil
+	mockRepo.On("GetByID", proofRequest.DocumentIdentifier, new(purchaseorderpb.PurchaseOrderDocument)).Return(errors.New("couldn't find invoice")).Once()
+	mockRepo.replaceDoc = order.Document
 	purchaseOrderProof, err := s.HandleCreatePurchaseOrderProof(context.Background(), proofRequest)
 	mockRepo.AssertExpectations(t)
-	assert.NotNil(t, err)
+
 	assert.Nil(t, purchaseOrderProof)
+	assert.Error(t, err)
 }

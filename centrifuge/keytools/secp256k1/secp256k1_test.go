@@ -1,3 +1,5 @@
+// +build unit
+
 package secp256k1
 
 import (
@@ -27,8 +29,8 @@ func TestSigningMsg(t *testing.T) {
 
 	publicKey, privateKey := GenerateSigningKeyPair()
 
-	signature := Sign(testMsg, privateKey)
-
+	signature, err := Sign(testMsg, privateKey)
+	assert.Nil(t, err)
 	correct := VerifySignature(publicKey, testMsg, signature)
 
 	assert.True(t, correct, "sign message didn't work correctly")
@@ -45,8 +47,8 @@ func TestVerifyFalseMsg(t *testing.T) {
 
 	publicKey, privateKey := GenerateSigningKeyPair()
 
-	signature := Sign(testMsg, privateKey)
-
+	signature, err := Sign(testMsg, privateKey)
+	assert.Nil(t, err)
 	correct := VerifySignature(publicKey, falseMsg, signature)
 
 	assert.False(t, correct, "false msg verify should be false ")
@@ -62,8 +64,8 @@ func TestVerifyFalsePublicKey(t *testing.T) {
 
 	falsePublicKey, _ := GenerateSigningKeyPair()
 
-	signature := Sign(testMsg, privateKey)
-
+	signature, err := Sign(testMsg, privateKey)
+	assert.Nil(t, err)
 	correct := VerifySignature(falsePublicKey, testMsg, signature)
 
 	assert.False(t, correct, "verify of false public key should be false")
@@ -143,8 +145,8 @@ func TestSignForEthereum(t *testing.T) {
 
 	//signature should be 0xc158e04b7e22af2380af7b2581c9f89505761d3e517a07fa6bb76889bdb50c604b1517eb4a920053e878478d171ab63c732deb8eb182e3374bcebd046e773a4500
 	//verification should work on external services like https://etherscan.io/verifySig
-	signature := SignEthereum(testMsgBytes, utils.HexToByteArray(privateKey))
-
+	signature, err := SignEthereum(testMsgBytes, utils.HexToByteArray(privateKey))
+	assert.Nil(t, err)
 	sigHex := utils.ByteArrayToHex(signature)
 	fmt.Println(sigHex)
 
@@ -163,8 +165,8 @@ func TestSignForEthereum32Bytes(t *testing.T) {
 
 	// this signature will not work on external services like etherscan.io because the size of testMsgBytes (32 bytes)
 	// is longer than the testMessage in bytes
-	signature := SignEthereum(testMsgBytes, utils.HexToByteArray(privateKey))
-
+	signature, err := SignEthereum(testMsgBytes, utils.HexToByteArray(privateKey))
+	assert.Nil(t, err)
 	sigHex := utils.ByteArrayToHex(signature)
 
 	fmt.Println("address", address)
