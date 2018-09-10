@@ -1,4 +1,4 @@
-package invoicehandler
+package invoice
 
 import (
 	"fmt"
@@ -9,15 +9,11 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/processor"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
 	clientinvoicepb "github.com/CentrifugeInc/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
 	"github.com/golang/protobuf/ptypes/empty"
-	logging "github.com/ipfs/go-log"
 	"golang.org/x/net/context"
 )
-
-var log = logging.Logger("invoice-rest-api")
 
 // Handler handles all the invoice document related actions
 // anchoring, sending, proof generation, finding stored invoice document
@@ -28,7 +24,7 @@ type Handler struct {
 
 // anchorInvoiceDocument anchors the given invoice document and returns the anchored document
 func (s *Handler) anchorInvoiceDocument(doc *invoicepb.InvoiceDocument) (*invoicepb.InvoiceDocument, error) {
-	inv, err := invoice.New(doc)
+	inv, err := New(doc)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -47,7 +43,7 @@ func (s *Handler) anchorInvoiceDocument(doc *invoicepb.InvoiceDocument) (*invoic
 	}
 
 	// we do not need this conversion again
-	newInvoice, err := invoice.NewFromCoreDocument(coreDoc)
+	newInvoice, err := NewFromCoreDocument(coreDoc)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -64,7 +60,7 @@ func (s *Handler) CreateInvoiceProof(ctx context.Context, createInvoiceProofEnve
 		return nil, err
 	}
 
-	inv, err := invoice.Wrap(invDoc)
+	inv, err := Wrap(invDoc)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -82,7 +78,7 @@ func (s *Handler) CreateInvoiceProof(ctx context.Context, createInvoiceProofEnve
 
 // AnchorInvoiceDocument anchors the given invoice document and returns the anchor details
 func (s *Handler) AnchorInvoiceDocument(ctx context.Context, anchorInvoiceEnvelope *clientinvoicepb.AnchorInvoiceEnvelope) (*invoicepb.InvoiceDocument, error) {
-	inv, err := invoice.New(anchorInvoiceEnvelope.Document)
+	inv, err := New(anchorInvoiceEnvelope.Document)
 	if err != nil {
 		log.Error(err)
 		return nil, errors.New(code.DocumentInvalid, err.Error())
@@ -148,7 +144,7 @@ func (s *Handler) GetInvoiceDocument(ctx context.Context, getInvoiceDocumentEnve
 		return nil, errors.New(code.DocumentNotFound, err.Error())
 	}
 
-	inv, err := invoice.NewFromCoreDocument(coreDoc)
+	inv, err := NewFromCoreDocument(coreDoc)
 	if err != nil {
 		return nil, errors.New(code.Unknown, err.Error())
 	}

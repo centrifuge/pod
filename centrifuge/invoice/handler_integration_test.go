@@ -1,6 +1,6 @@
 // +build ethereum
 
-package invoicehandler_test
+package invoice_test
 
 import (
 	"context"
@@ -42,7 +42,7 @@ func generateEmptyInvoiceForProcessing() (doc *invoice.Invoice) {
 }
 
 func TestInvoiceDocumentService_HandleAnchorInvoiceDocument_Integration(t *testing.T) {
-	s := invoicehandler.Handler{
+	s := invoice.Handler{
 		InvoiceRepository:     invoicerepository.GetRepository(),
 		CoreDocumentProcessor: coredocumentprocessor.DefaultProcessor(),
 	}
