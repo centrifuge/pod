@@ -1,14 +1,12 @@
-package invoicerepository
+package invoice
 
 import (
 	"fmt"
-	"log"
 	"sync"
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/code"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
 	"github.com/golang/protobuf/proto"
 	"github.com/syndtr/goleveldb/leveldb"
@@ -55,7 +53,7 @@ func validate(doc proto.Message) error {
 		return errors.New(code.DocumentInvalid, fmt.Sprintf("invalid document of type: %T", doc))
 	}
 
-	if valid, msg, errs := invoice.Validate(invoiceDoc); !valid {
+	if valid, msg, errs := Validate(invoiceDoc); !valid {
 		return errors.NewWithErrors(code.DocumentInvalid, msg, errs)
 	}
 

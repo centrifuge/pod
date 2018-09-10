@@ -1,4 +1,4 @@
-package invoicerepository
+package invoice
 
 import (
 	"errors"
