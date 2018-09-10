@@ -1,6 +1,6 @@
 // +build ethereum
 
-package purchaseorderservice_test
+package purchaseorderhandler_test
 
 import (
 	"context"
@@ -44,7 +44,7 @@ func generateEmptyPurchaseOrderForProcessing() (doc *purchaseorder.PurchaseOrder
 }
 
 func TestPurchaseOrderDocumentService_HandleAnchorPurchaseOrderDocument_Integration(t *testing.T) {
-	s := purchaseorderservice.PurchaseOrderDocumentService{
+	s := purchaseorderhandler.PurchaseOrderDocumentService{
 		Repository:            purchaseorderrepository.GetRepository(),
 		CoreDocumentProcessor: coredocumentprocessor.DefaultProcessor(),
 	}
@@ -61,7 +61,7 @@ func TestPurchaseOrderDocumentService_HandleAnchorPurchaseOrderDocument_Integrat
 		OrderAmount:      800,
 	}
 
-	anchoredDoc, err := s.HandleAnchorPurchaseOrderDocument(context.Background(), &clientpurchaseorderpb.AnchorPurchaseOrderEnvelope{Document: doc.Document})
+	anchoredDoc, err := s.AnchorPurchaseOrderDocument(context.Background(), &clientpurchaseorderpb.AnchorPurchaseOrderEnvelope{Document: doc.Document})
 
 	//Call overall worked well and receive roughly sensical data back
 	assert.Nil(t, err)
@@ -80,7 +80,7 @@ func TestPurchaseOrderDocumentService_HandleAnchorPurchaseOrderDocument_Integrat
 
 	//PO Service should error out if trying to anchor the same document ID again
 	doc.Document.Data.OrderCountry = "ES"
-	anchoredDoc2, err := s.HandleAnchorPurchaseOrderDocument(context.Background(), &clientpurchaseorderpb.AnchorPurchaseOrderEnvelope{Document: doc.Document})
+	anchoredDoc2, err := s.AnchorPurchaseOrderDocument(context.Background(), &clientpurchaseorderpb.AnchorPurchaseOrderEnvelope{Document: doc.Document})
 	assert.Nil(t, anchoredDoc2)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "document already exists")

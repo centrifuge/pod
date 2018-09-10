@@ -6,7 +6,7 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/protobufs/gen/go/health"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder/controller"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder/service"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -19,7 +19,7 @@ func RegisterServices(grpcServer *grpc.Server, ctx context.Context, gwmux *runti
 	if err != nil {
 		panic(err)
 	}
-	purchaseorderpb.RegisterPurchaseOrderDocumentServiceServer(grpcServer, &purchaseordercontroller.PurchaseOrderDocumentController{})
+	purchaseorderpb.RegisterPurchaseOrderDocumentServiceServer(grpcServer, &purchaseorderhandler.PurchaseOrderDocumentService{})
 	err = purchaseorderpb.RegisterPurchaseOrderDocumentServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
 	if err != nil {
 		panic(err)
