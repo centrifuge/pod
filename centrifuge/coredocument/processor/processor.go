@@ -89,7 +89,7 @@ func (dp *defaultProcessor) Anchor(document *coredocumentpb.CoreDocument) error 
 		return errors.NilError(document)
 	}
 
-	id, err := tools.SliceToByte32(document.CurrentIdentifier)
+	_, err := tools.SliceToByte32(document.CurrentIdentifier)
 	if err != nil {
 		log.Error(err)
 		return err
