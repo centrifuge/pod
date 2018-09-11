@@ -9,8 +9,8 @@ import (
 
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/secp256k1"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/utils"
-	"github.com/stretchr/testify/assert"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSignMessage(t *testing.T) {
