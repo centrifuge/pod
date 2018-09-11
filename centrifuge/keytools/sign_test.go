@@ -10,6 +10,7 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/secp256k1"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/utils"
 	"github.com/stretchr/testify/assert"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 func TestSignMessage(t *testing.T) {
@@ -49,13 +50,13 @@ func TestSignAndVerifyMessageEthereum(t *testing.T) {
 	publicKey, _ := utils.ReadKeyFromPemFile(publicKeyFile, PublicKey)
 	address := secp256k1.GetAddress(publicKey)
 
-	fmt.Println("privateKey: ", utils.ByteArrayToHex(privateKey))
-	fmt.Println("publicKey: ", utils.ByteArrayToHex(publicKey))
+	fmt.Println("privateKey: ", hexutil.Encode(privateKey))
+	fmt.Println("publicKey: ", hexutil.Encode(publicKey))
 	fmt.Println("address:", address)
 	fmt.Println("msg:", string(testMsg[:]))
-	fmt.Println("msg in hex:", utils.ByteArrayToHex(testMsg))
-	fmt.Println("hash of msg: ", utils.ByteArrayToHex(secp256k1.SignHash(testMsg)))
-	fmt.Println("signature:", utils.ByteArrayToHex(signature))
+	fmt.Println("msg in hex:", hexutil.Encode(testMsg))
+	fmt.Println("hash of msg: ", hexutil.Encode(secp256k1.SignHash(testMsg)))
+	fmt.Println("signature:", hexutil.Encode(signature))
 	fmt.Println("Generated Signature can also be verified at https://etherscan.io/verifySig")
 
 	correct := VerifyMessage(publicKey, testMsg, signature, CurveSecp256K1, true)
