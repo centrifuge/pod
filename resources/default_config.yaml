@@ -11,6 +11,7 @@ networks:
       identityFactory: ""
       identityRegistry: ""
       anchorRegistry: ""
+      anchorRepository: ""
 
   centrifugeRussianhillEthIntegration:
     id: 101

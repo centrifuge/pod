@@ -1,8 +1,9 @@
 // +build unit
 
-package anchor
+package anchoring
 
 import (
+	"math/big"
 	"testing"
 
 	"context"
@@ -17,40 +18,57 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type MockAnchorRegisteredWatcher struct {
+type MockAnchorCommittedWatcher struct {
 	shouldFail   bool
-	sink         chan<- *EthereumAnchorRegistryContractAnchorRegistered
+	sink         chan<- *EthereumAnchorRepositoryContractAnchorCommitted
 	Subscription event.Subscription
 }
 
-func (m *MockAnchorRegisteredWatcher) WatchAnchorRegistered(opts *bind.WatchOpts, sink chan<- *EthereumAnchorRegistryContractAnchorRegistered, from []common.Address, identifier [][32]byte, rootHash [][32]byte) (event.Subscription, error) {
+func (m *MockAnchorCommittedWatcher) WatchAnchorCommitted(opts *bind.WatchOpts, sink chan<- *EthereumAnchorRepositoryContractAnchorCommitted,
+	from []common.Address, anchorId []*big.Int, centrifugeId []*big.Int) (event.Subscription, error) {
 	if m.shouldFail {
 		return nil, errors.New("Just a dummy error")
 	}
+
 	return m.Subscription, nil
 }
 
 func TestAnchoringConfirmationTask_ParseKwargsHappy(t *testing.T) {
 	act := AnchoringConfirmationTask{}
-	anchorId := [32]byte{1, 2, 3}
+	tmp := [32]byte{1, 2, 3}
+	anchorBigInt := new(big.Int).SetBytes(tmp[:])
 	address := common.BytesToAddress([]byte{1, 2, 3, 4})
+
+	//convert big int to byte 32
+	var byte32anchorId [32]byte
+	copy(byte32anchorId[:], anchorBigInt.Bytes()[:32])
+
+	var centrifugeIdBytes [6]byte
+
 	kwargs, _ := tools.SimulateJsonDecodeForGocelery(map[string]interface{}{
-		AnchorIdParam: anchorId,
-		AddressParam:  address,
+		AnchorIdParam:     byte32anchorId,
+		AddressParam:      address,
+		CentrifugeIdParam: centrifugeIdBytes,
 	})
 	err := act.ParseKwargs(kwargs)
 	if err != nil {
 		t.Fatalf("Could not parse %s or %s", AnchorIdParam, AddressParam)
 	}
-	assert.Equal(t, anchorId, act.AnchorId, "Resulting anchor Id should have the same ID as the input")
+
+	//convert byte 32 to big int
+	actBigInt := tools.ByteFixedToBigInt(act.AnchorId[:], 32)
+	assert.Equal(t, anchorBigInt, actBigInt, "Resulting anchor Id should have the same ID as the input")
 	assert.Equal(t, address, act.From, "Resulting address should have the same ID as the input")
 }
 
 func TestAnchoringConfirmationTask_ParseKwargsAnchorNotPassed(t *testing.T) {
 	act := AnchoringConfirmationTask{}
 	address := common.BytesToAddress([]byte{1, 2, 3, 4})
+	var centrifugeIdBytes [6]byte
+
 	kwargs, _ := tools.SimulateJsonDecodeForGocelery(map[string]interface{}{
-		AddressParam: address,
+		AddressParam:      address,
+		CentrifugeIdParam: centrifugeIdBytes,
 	})
 	err := act.ParseKwargs(kwargs)
 	assert.NotNil(t, err, "Anchor id should not have been parsed")
@@ -93,15 +111,16 @@ func TestAnchoringConfirmationTask_ParseKwargsInvalidAddress(t *testing.T) {
 func TestAnchoringConfirmationTask_RunTaskContextClose(t *testing.T) {
 	toBeDone := time.Now().Add(time.Duration(1 * time.Millisecond))
 	ctx, _ := context.WithDeadline(context.TODO(), toBeDone)
-	earcar := make(chan *EthereumAnchorRegistryContractAnchorRegistered)
+	earcar := make(chan *EthereumAnchorRepositoryContractAnchorCommitted)
 	anchorId := [32]byte{1, 2, 3}
+
 	address := common.BytesToAddress([]byte{1, 2, 3, 4})
 	act := AnchoringConfirmationTask{
 		AnchorId: anchorId,
 		From:     address,
-		AnchorRegisteredWatcher: &MockAnchorRegisteredWatcher{Subscription: &testingutils.MockSubscription{}},
-		EthContext:              ctx,
-		AnchorRegisteredEvents:  earcar,
+		AnchorCommittedWatcher: &MockAnchorCommittedWatcher{Subscription: &testingutils.MockSubscription{}},
+		EthContext:             ctx,
+		AnchorRegisteredEvents: earcar,
 	}
 	exit := make(chan bool)
 	go func() {
@@ -118,15 +137,15 @@ func TestAnchoringConfirmationTask_RunTaskContextClose(t *testing.T) {
 func TestAnchoringConfirmationTask_RunTaskWatchError(t *testing.T) {
 	toBeDone := time.Now().Add(time.Duration(1 * time.Second))
 	ctx, _ := context.WithDeadline(context.TODO(), toBeDone)
-	earcar := make(chan *EthereumAnchorRegistryContractAnchorRegistered)
+	earcar := make(chan *EthereumAnchorRepositoryContractAnchorCommitted)
 	anchorId := [32]byte{1, 2, 3}
 	address := common.BytesToAddress([]byte{1, 2, 3, 4})
 	act := AnchoringConfirmationTask{
 		AnchorId: anchorId,
 		From:     address,
-		AnchorRegisteredWatcher: &MockAnchorRegisteredWatcher{shouldFail: true},
-		EthContext:              ctx,
-		AnchorRegisteredEvents:  earcar,
+		AnchorCommittedWatcher: &MockAnchorCommittedWatcher{shouldFail: true},
+		EthContext:             ctx,
+		AnchorRegisteredEvents: earcar,
 	}
 	exit := make(chan bool)
 	go func() {
@@ -141,17 +160,17 @@ func TestAnchoringConfirmationTask_RunTaskWatchError(t *testing.T) {
 func TestAnchoringConfirmationTask_RunTaskSubscriptionError(t *testing.T) {
 	toBeDone := time.Now().Add(time.Duration(1 * time.Second))
 	ctx, _ := context.WithDeadline(context.TODO(), toBeDone)
-	earcar := make(chan *EthereumAnchorRegistryContractAnchorRegistered)
+	earcar := make(chan *EthereumAnchorRepositoryContractAnchorCommitted)
 	anchorId := [32]byte{1, 2, 3}
 	address := common.BytesToAddress([]byte{1, 2, 3, 4})
 	errChan := make(chan error)
-	watcher := &MockAnchorRegisteredWatcher{Subscription: &testingutils.MockSubscription{ErrChan: errChan}}
+	watcher := &MockAnchorCommittedWatcher{Subscription: &testingutils.MockSubscription{ErrChan: errChan}}
 	act := AnchoringConfirmationTask{
 		AnchorId: anchorId,
 		From:     address,
-		AnchorRegisteredWatcher: watcher,
-		EthContext:              ctx,
-		AnchorRegisteredEvents:  earcar,
+		AnchorCommittedWatcher: watcher,
+		EthContext:             ctx,
+		AnchorRegisteredEvents: earcar,
 	}
 	exit := make(chan bool)
 	go func() {
@@ -167,15 +186,16 @@ func TestAnchoringConfirmationTask_RunTaskSubscriptionError(t *testing.T) {
 func TestAnchoringConfirmationTask_RunTaskSuccess(t *testing.T) {
 	toBeDone := time.Now().Add(time.Duration(1 * time.Second))
 	ctx, _ := context.WithDeadline(context.TODO(), toBeDone)
-	earcar := make(chan *EthereumAnchorRegistryContractAnchorRegistered)
+	earcar := make(chan *EthereumAnchorRepositoryContractAnchorCommitted)
 	anchorId := [32]byte{1, 2, 3}
+
 	address := common.BytesToAddress([]byte{1, 2, 3, 4})
 	act := AnchoringConfirmationTask{
 		AnchorId: anchorId,
 		From:     address,
-		AnchorRegisteredWatcher: &MockAnchorRegisteredWatcher{Subscription: &testingutils.MockSubscription{}},
-		EthContext:              ctx,
-		AnchorRegisteredEvents:  earcar,
+		AnchorCommittedWatcher: &MockAnchorCommittedWatcher{Subscription: &testingutils.MockSubscription{}},
+		EthContext:             ctx,
+		AnchorRegisteredEvents: earcar,
 	}
 	exit := make(chan bool)
 	go func() {
@@ -185,6 +205,6 @@ func TestAnchoringConfirmationTask_RunTaskSuccess(t *testing.T) {
 		exit <- true
 	}()
 	time.Sleep(1 * time.Millisecond)
-	act.AnchorRegisteredEvents <- &EthereumAnchorRegistryContractAnchorRegistered{}
+	act.AnchorRegisteredEvents <- &EthereumAnchorRepositoryContractAnchorCommitted{}
 	<-exit
 }
