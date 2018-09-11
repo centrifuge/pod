@@ -35,7 +35,7 @@ func (mcw *MockIdentityCreatedWatcher) WatchIdentityCreated(opts *bind.WatchOpts
 func TestRegistrationConfirmationTask_ParseKwargsHappyPath(t *testing.T) {
 	rct := IdRegistrationConfirmationTask{}
 	id := tools.RandomSlice(CentIdByteLength)
-	idBytes := NewCentId(id)
+	idBytes, _ := NewCentId(id)
 	kwargs := map[string]interface{}{CentIdParam: idBytes}
 	decoded, err := tools.SimulateJsonDecodeForGocelery(kwargs)
 	err = rct.ParseKwargs(decoded)
@@ -60,11 +60,12 @@ func TestRegistrationConfirmationTask_ParseKwargsInvalidType(t *testing.T) {
 }
 
 func TestIdRegistrationConfirmationTask_RunTaskContextError(t *testing.T) {
+	cenId, _ := NewCentId(tools.RandomSlice(CentIdByteLength))
 	toBeDone := time.Now().Add(time.Duration(1 * time.Millisecond))
 	ctx, _ := context.WithDeadline(context.TODO(), toBeDone)
 	eifc := make(chan *EthereumIdentityFactoryContractIdentityCreated)
 	rct := IdRegistrationConfirmationTask{
-		CentId:                 NewCentId(tools.RandomSlice(CentIdByteLength)),
+		CentId:                 cenId,
 		IdentityCreatedWatcher: &MockIdentityCreatedWatcher{},
 		EthContext:             ctx,
 		IdentityCreatedEvents:  eifc,
@@ -82,9 +83,10 @@ func TestIdRegistrationConfirmationTask_RunTaskContextError(t *testing.T) {
 }
 
 func TestIdRegistrationConfirmationTask_RunTaskCallError(t *testing.T) {
+	cenId, _ := NewCentId(tools.RandomSlice(CentIdByteLength))
 	identityCreatedWatcher := &MockIdentityCreatedWatcher{shouldFail: true}
 	rct := IdRegistrationConfirmationTask{
-		CentId: NewCentId(tools.RandomSlice(CentIdByteLength)),
+		CentId: cenId,
 		EthContextInitializer: func() (ctx context.Context, cancelFunc context.CancelFunc) {
 			toBeDone := time.Now().Add(time.Duration(1 * time.Millisecond))
 			return context.WithDeadline(context.TODO(), toBeDone)
@@ -102,11 +104,12 @@ func TestIdRegistrationConfirmationTask_RunTaskCallError(t *testing.T) {
 }
 
 func TestIdRegistrationConfirmationTask_RunTaskSuccess(t *testing.T) {
+	cenId, _ := NewCentId(tools.RandomSlice(CentIdByteLength))
 	toBeDone := time.Now().Add(time.Duration(1 * time.Second))
 	ctx, _ := context.WithDeadline(context.TODO(), toBeDone)
 	eifc := make(chan *EthereumIdentityFactoryContractIdentityCreated)
 	rct := IdRegistrationConfirmationTask{
-		CentId:                 NewCentId(tools.RandomSlice(CentIdByteLength)),
+		CentId:                 cenId,
 		IdentityCreatedWatcher: &MockIdentityCreatedWatcher{},
 		EthContext:             ctx,
 		IdentityCreatedEvents:  eifc,

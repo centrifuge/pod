@@ -45,19 +45,19 @@ type mockIDService struct {
 	mock.Mock
 }
 
-func (srv *mockIDService) LookupIdentityForID(centID []byte) (identity.Identity, error) {
+func (srv *mockIDService) LookupIdentityForID(centID identity.CentId) (identity.Identity, error) {
 	args := srv.Called(centID)
 	id, _ := args.Get(0).(identity.Identity)
 	return id, args.Error(1)
 }
 
-func (srv *mockIDService) CreateIdentity(centID []byte) (identity.Identity, chan *identity.WatchIdentity, error) {
+func (srv *mockIDService) CreateIdentity(centID identity.CentId) (identity.Identity, chan *identity.WatchIdentity, error) {
 	args := srv.Called(centID)
 	id, _ := args.Get(0).(identity.Identity)
 	return id, args.Get(1).(chan *identity.WatchIdentity), args.Error(2)
 }
 
-func (srv *mockIDService) CheckIdentityExists(centID []byte) (exists bool, err error) {
+func (srv *mockIDService) CheckIdentityExists(centID identity.CentId) (exists bool, err error) {
 	args := srv.Called(centID)
 	return args.Bool(0), args.Error(1)
 }
@@ -65,7 +65,8 @@ func (srv *mockIDService) CheckIdentityExists(centID []byte) (exists bool, err e
 func TestValidateSignature_invalid_key(t *testing.T) {
 	sig := &coredocumentpb.Signature{EntityId: tools.RandomSlice(identity.CentIdByteLength)}
 	srv := &mockIDService{}
-	srv.On("LookupIdentityForID", sig.EntityId).Return(nil, fmt.Errorf("failed GetIdentity")).Once()
+	centId, _ := identity.NewCentId(sig.EntityId)
+	srv.On("LookupIdentityForID", centId).Return(nil, fmt.Errorf("failed GetIdentity")).Once()
 	identity.SetIdentityService(srv)
 	valid, err := ValidateSignature(sig, key1Pub)
 	srv.AssertExpectations(t)

@@ -9,7 +9,7 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/documenttypes"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/centerrors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
@@ -108,7 +108,7 @@ func TestValidate(t *testing.T) {
 			inv: nil,
 			want: want{
 				valid:  false,
-				errMsg: errors.NilDocument,
+				errMsg: centerrors.NilDocument,
 			},
 		},
 
@@ -116,7 +116,7 @@ func TestValidate(t *testing.T) {
 			inv: &invoicepb.InvoiceDocument{},
 			want: want{
 				valid:  false,
-				errMsg: errors.NilDocument,
+				errMsg: centerrors.NilDocument,
 			},
 		},
 
@@ -124,7 +124,7 @@ func TestValidate(t *testing.T) {
 			inv: &invoicepb.InvoiceDocument{CoreDocument: validCoreDoc},
 			want: want{
 				valid:  false,
-				errMsg: errors.NilDocumentData,
+				errMsg: centerrors.NilDocumentData,
 			},
 		},
 
@@ -145,9 +145,9 @@ func TestValidate(t *testing.T) {
 				valid:  false,
 				errMsg: "Invalid Invoice",
 				errs: map[string]string{
-					"inv_recipient_country": errors.RequiredField,
-					"inv_gross_amount":      errors.RequirePositiveNumber,
-					"inv_salts":             errors.RequiredField,
+					"inv_recipient_country": centerrors.RequiredField,
+					"inv_gross_amount":      centerrors.RequirePositiveNumber,
+					"inv_salts":             centerrors.RequiredField,
 				},
 			},
 		},
@@ -171,7 +171,7 @@ func TestValidate(t *testing.T) {
 				valid:  false,
 				errMsg: "Invalid Invoice",
 				errs: map[string]string{
-					"inv_salts": errors.RequiredField,
+					"inv_salts": centerrors.RequiredField,
 				},
 			},
 		},

@@ -8,7 +8,9 @@ import (
 
 	"sync"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
+	"errors"
+
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/centerrors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 )
 
@@ -23,10 +25,31 @@ const (
 
 type CentId [CentIdByteLength]byte
 
-func NewCentId(centIdBytes []byte) CentId {
+func NewCentId(centIdBytes []byte) (CentId, error) {
 	var bytes [CentIdByteLength]byte
+	if tools.IsValidByteSliceForLength(centIdBytes, CentIdByteLength) {
+		return bytes, errors.New("invalid length byte slice provided for centId")
+	}
 	copy(bytes[:], centIdBytes[:CentIdByteLength])
-	return bytes
+	return bytes, nil
+}
+
+func (c CentId) String() string {
+	return base64.StdEncoding.EncodeToString(c[:])
+}
+
+func (c CentId) MarshalBinary() (data []byte, err error) {
+	return c[:], nil
+}
+
+func (c CentId) BigInt() *big.Int {
+	return tools.ByteSliceToBigInt(c[:])
+}
+
+func (c CentId) ByteArray() [CentIdByteLength]byte {
+	var idBytes [CentIdByteLength]byte
+	copy(idBytes[:], c[:CentIdByteLength])
+	return idBytes
 }
 
 // idService is a default implementation of the Service
@@ -54,12 +77,9 @@ func GetIdentityService() Service {
 
 // Identity defines an Identity on chain
 type Identity interface {
-	String() string
-	GetCentrifugeID() []byte
-	CentrifugeIDString() string
-	CentrifugeIDBytes() CentId
-	CentrifugeIDBigInt() *big.Int
-	SetCentrifugeID(b []byte) error
+	fmt.Stringer
+	GetCentrifugeID() CentId
+	CentrifugeID(cenId CentId)
 	GetCurrentP2PKey() (ret string, err error)
 	GetLastKeyForPurpose(keyPurpose int) (key []byte, err error)
 	AddKeyToIdentity(keyPurpose int, key []byte) (confirmations chan *WatchIdentity, err error)
@@ -81,9 +101,9 @@ type WatchIdentity struct {
 
 // Service is used to fetch identities
 type Service interface {
-	LookupIdentityForID(centrifugeId []byte) (id Identity, err error)
-	CreateIdentity(centrifugeId []byte) (id Identity, confirmations chan *WatchIdentity, err error)
-	CheckIdentityExists(centrifugeId []byte) (exists bool, err error)
+	LookupIdentityForID(centrifugeId CentId) (id Identity, err error)
+	CreateIdentity(centrifugeId CentId) (id Identity, confirmations chan *WatchIdentity, err error)
+	CheckIdentityExists(centrifugeId CentId) (exists bool, err error)
 }
 
 // CentrifugeIdStringToSlice takes a string and decodes it using base64 to convert it into a slice
@@ -100,15 +120,15 @@ func CentrifugeIdStringToSlice(s string) (id []byte, err error) {
 }
 
 // GetClientP2PURL returns the p2p url associated with the centID
-func GetClientP2PURL(centID []byte) (url string, err error) {
+func GetClientP2PURL(centID CentId) (url string, err error) {
 	target, err := idService.LookupIdentityForID(centID)
 	if err != nil {
-		return url, errors.Wrap(err, "error fetching receiver identity")
+		return url, centerrors.Wrap(err, "error fetching receiver identity")
 	}
 
 	p2pKey, err := target.GetCurrentP2PKey()
 	if err != nil {
-		return url, errors.Wrap(err, "error fetching p2p key")
+		return url, centerrors.Wrap(err, "error fetching p2p key")
 	}
 
 	return fmt.Sprintf("/ipfs/%s", p2pKey), nil
@@ -116,7 +136,7 @@ func GetClientP2PURL(centID []byte) (url string, err error) {
 
 // GetClientsP2PURLs returns p2p urls associated with each centIDs
 // will error out at first failure
-func GetClientsP2PURLs(centIDs [][]byte) ([]string, error) {
+func GetClientsP2PURLs(centIDs []CentId) ([]string, error) {
 	var p2pURLs []string
 	for _, id := range centIDs {
 		url, err := GetClientP2PURL(id)
@@ -131,7 +151,7 @@ func GetClientsP2PURLs(centIDs [][]byte) ([]string, error) {
 }
 
 // GetIdentityKey returns the key for provided identity
-func GetIdentityKey(identity, pubKey []byte) (keyInfo Key, err error) {
+func GetIdentityKey(identity CentId, pubKey []byte) (keyInfo Key, err error) {
 	id, err := idService.LookupIdentityForID(identity)
 	if err != nil {
 		return keyInfo, err
@@ -150,7 +170,7 @@ func GetIdentityKey(identity, pubKey []byte) (keyInfo Key, err error) {
 }
 
 // ValidateKey checks if a given key is valid for the given centrifugeID.
-func ValidateKey(centrifugeId []byte, key []byte) (valid bool, err error) {
+func ValidateKey(centrifugeId CentId, key []byte) (valid bool, err error) {
 	idKey, err := GetIdentityKey(centrifugeId, key)
 	if err != nil {
 		return false, err

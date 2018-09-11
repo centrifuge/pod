@@ -110,11 +110,6 @@ func sendCommitTransaction(contract AnchorRepositoryContract, opts *bind.Transac
 
 //CommitAnchor will call the transaction Commit on the smart contract
 func (ethRepository *EthereumAnchorRepository) CommitAnchor(anchorId AnchorId, documentRoot DocRoot, centrifugeId identity.CentId, documentProofs [][32]byte, signature []byte) (confirmations <-chan *WatchCommit, err error) {
-
-	if anchorId.isEmpty() || documentRoot.isEmpty() {
-		return nil, errors.New("empty anchorId or documentRoot provided")
-	}
-
 	ethRepositoryContract, _ := getRepositoryContract()
 	opts, err := ethereum.GetGethTxOpts(config.Config.GetEthereumDefaultAccountName())
 	if err != nil {

@@ -3,6 +3,8 @@ package anchoring
 import (
 	"math/big"
 
+	"errors"
+
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -16,10 +18,13 @@ const (
 
 type AnchorId [AnchorIdLength]byte
 
-func NewAnchorId(anchorBytes []byte) AnchorId {
+func NewAnchorId(anchorBytes []byte) (AnchorId, error) {
 	var bytes [AnchorIdLength]byte
+	if tools.IsValidByteSliceForLength(anchorBytes, AnchorIdLength) {
+		return bytes, errors.New("invalid length byte slice provided for anchorId")
+	}
 	copy(bytes[:], anchorBytes[:AnchorIdLength])
-	return bytes
+	return bytes, nil
 }
 
 func (a *AnchorId) toBigInt() *big.Int {
@@ -32,10 +37,13 @@ func (a *AnchorId) isEmpty() bool {
 
 type DocRoot [RootLength]byte
 
-func NewDocRoot(docRootBytes []byte) DocRoot {
+func NewDocRoot(docRootBytes []byte) (DocRoot, error) {
 	var bytes [RootLength]byte
+	if tools.IsValidByteSliceForLength(docRootBytes, RootLength) {
+		return bytes, errors.New("invalid length byte slice provided for docRoot")
+	}
 	copy(bytes[:], docRootBytes[:RootLength])
-	return bytes
+	return bytes, nil
 }
 
 func (d *DocRoot) isEmpty() bool {
