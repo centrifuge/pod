@@ -27,7 +27,7 @@ type CentId [CentIdByteLength]byte
 
 func NewCentId(centIdBytes []byte) (CentId, error) {
 	var centBytes [CentIdByteLength]byte
-	if tools.IsValidByteSliceForLength(centIdBytes, CentIdByteLength) {
+	if !tools.IsValidByteSliceForLength(centIdBytes, CentIdByteLength) {
 		return centBytes, errors.New("invalid length byte slice provided for centId")
 	}
 	copy(centBytes[:], centIdBytes[:CentIdByteLength])
@@ -108,15 +108,16 @@ type Service interface {
 
 // CentrifugeIdStringToSlice takes a string and decodes it using base64 to convert it into a slice
 // of length 32.
-func CentrifugeIdStringToSlice(s string) (id []byte, err error) {
-	id, err = base64.StdEncoding.DecodeString(s)
+func CentrifugeIdStringToSlice(s string) (id CentId, err error) {
+	centBytes, err := base64.StdEncoding.DecodeString(s)
 	if err != nil {
-		return []byte{}, err
+		return [CentIdByteLength]byte{}, err
 	}
-	if len(id) != CentIdByteLength {
-		return []byte{}, fmt.Errorf("CentrifugeId has invalid length [%d]", len(id))
+	centId, err := NewCentId(centBytes)
+	if err != nil {
+		return [CentIdByteLength]byte{}, err
 	}
-	return id, nil
+	return centId, nil
 }
 
 // GetClientP2PURL returns the p2p url associated with the centID

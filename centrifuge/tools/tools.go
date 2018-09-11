@@ -132,6 +132,6 @@ func SimulateJsonDecodeForGocelery(kwargs map[string]interface{}) (map[string]in
 	return t2.Kwargs, err
 }
 
-func IsValidByteSliceForLength(bytes []byte, length int) bool {
-	return IsEmptyByteSlice(bytes) || len(bytes) > length
+func IsValidByteSliceForLength(slice []byte, length int) bool {
+	return len(slice) == length
 }

@@ -20,7 +20,7 @@ type AnchorId [AnchorIdLength]byte
 
 func NewAnchorId(anchorBytes []byte) (AnchorId, error) {
 	var bytes [AnchorIdLength]byte
-	if tools.IsValidByteSliceForLength(anchorBytes, AnchorIdLength) {
+	if !tools.IsValidByteSliceForLength(anchorBytes, AnchorIdLength) {
 		return bytes, errors.New("invalid length byte slice provided for anchorId")
 	}
 	copy(bytes[:], anchorBytes[:AnchorIdLength])
@@ -35,7 +35,7 @@ type DocRoot [RootLength]byte
 
 func NewDocRoot(docRootBytes []byte) (DocRoot, error) {
 	var bytes [RootLength]byte
-	if tools.IsValidByteSliceForLength(docRootBytes, RootLength) {
+	if !tools.IsValidByteSliceForLength(docRootBytes, RootLength) {
 		return bytes, errors.New("invalid length byte slice provided for docRoot")
 	}
 	copy(bytes[:], docRootBytes[:RootLength])

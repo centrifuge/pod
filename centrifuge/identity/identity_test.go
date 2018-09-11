@@ -79,6 +79,36 @@ func (srv *mockIDService) CheckIdentityExists(centID CentId) (exists bool, err e
 	return args.Bool(0), args.Error(1)
 }
 
+func TestNewCentId(t *testing.T) {
+	tests := []struct {
+		name string;
+		slice []byte;
+		err string;
+	}{
+		{
+			"smallerSlice",
+			tools.RandomSlice( CentIdByteLength - 1),
+			"invalid length byte slice provided for centId",
+		},
+		{
+			"largerSlice",
+			tools.RandomSlice(CentIdByteLength + 1),
+			"invalid length byte slice provided for centId",
+		},
+		{
+			"nilSlice",
+			nil,
+			"invalid length byte slice provided for centId",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := NewCentId(test.slice)
+			assert.Equal(t, test.err, err.Error())
+		})
+	}
+}
+
 func TestGetClientP2PURL_fail_service(t *testing.T) {
 	centID, _ := NewCentId(tools.RandomSlice(CentIdByteLength))
 	srv := &mockIDService{}

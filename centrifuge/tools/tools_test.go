@@ -161,3 +161,43 @@ func TestByteFixedToBigInt(t *testing.T) {
 	bigInt = ByteFixedToBigInt(tst, 6)
 	assert.Equal(t, tst, bigInt.Bytes())
 }
+
+func TestIsValidByteSliceForLength(t *testing.T) {
+	tests := []struct {
+		name string;
+		slice []byte;
+		length int;
+		result bool;
+	}{
+		{
+			"validByteSlice",
+			RandomSlice(3),
+			3,
+			true,
+		},
+		{
+			"smallerSlice",
+			RandomSlice(2),
+			3,
+			false,
+		},
+		{
+			"largerSlice",
+			RandomSlice(4),
+			3,
+			false,
+		},
+		{
+			"nilSlice",
+			nil,
+			3,
+			false,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			assert.Equal(t, test.result, IsValidByteSliceForLength(test.slice, test.length))
+		})
+	}
+}
+

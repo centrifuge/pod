@@ -43,7 +43,14 @@ func (dp *defaultProcessor) Send(coreDocument *coredocumentpb.CoreDocument, ctx 
 		return centerrors.NilError(coreDocument)
 	}
 
-	id, err := dp.IdentityService.LookupIdentityForID(recipient)
+	centId, err := identity.NewCentId(recipient)
+	if err != nil {
+		err = centerrors.Wrap(err, "error parsing receiver centId")
+		log.Error(err)
+		return err
+	}
+
+	id, err := dp.IdentityService.LookupIdentityForID(centId)
 	if err != nil {
 		err = centerrors.Wrap(err, "error fetching receiver identity")
 		log.Error(err)
