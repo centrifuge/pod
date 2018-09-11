@@ -11,11 +11,11 @@ var log = logging.Logger("anchorRepository")
 
 // wrapper for the Ethereum implementation
 type AnchorRepository interface {
-	PreCommitAnchor(anchorId AnchorId, signingRoot DocRoot, centrifugeId identity.CentId, signature []byte, expirationBlock *big.Int) (<-chan *WatchPreCommit, error)
-	CommitAnchor(anchorId AnchorId, documentRoot DocRoot, centrifugeId identity.CentId, documentProofs [][32]byte, signature []byte) (<-chan *WatchCommit, error)
+	PreCommitAnchor(anchorId AnchorID, signingRoot DocRoot, centrifugeID identity.CentID, signature []byte, expirationBlock *big.Int) (<-chan *WatchPreCommit, error)
+	CommitAnchor(anchorId AnchorID, documentRoot DocRoot, centrifugeId identity.CentID, documentProofs [][32]byte, signature []byte) (<-chan *WatchCommit, error)
 }
 
-func PreCommitAnchor(anchorId AnchorId, signingRoot DocRoot, centrifugeId identity.CentId, signature []byte, expirationBlock *big.Int) (<-chan *WatchPreCommit, error) {
+func PreCommitAnchor(anchorId AnchorID, signingRoot DocRoot, centrifugeId identity.CentID, signature []byte, expirationBlock *big.Int) (<-chan *WatchPreCommit, error) {
 	anchorRepository, _ := getConfiguredRepository()
 
 	confirmations, err := anchorRepository.PreCommitAnchor(anchorId, signingRoot, centrifugeId, signature, expirationBlock)
@@ -25,10 +25,10 @@ func PreCommitAnchor(anchorId AnchorId, signingRoot DocRoot, centrifugeId identi
 	return confirmations, err
 }
 
-func CommitAnchor(anchorId AnchorId, documentRoot DocRoot, centrifugeId identity.CentId, documentProofs [][32]byte, signature []byte) (<-chan *WatchCommit, error) {
+func CommitAnchor(anchorId AnchorID, documentRoot DocRoot, centrifugeID identity.CentID, documentProofs [][32]byte, signature []byte) (<-chan *WatchCommit, error) {
 	anchorRepository, _ := getConfiguredRepository()
 
-	confirmations, err := anchorRepository.CommitAnchor(anchorId, documentRoot, centrifugeId, documentProofs, signature)
+	confirmations, err := anchorRepository.CommitAnchor(anchorId, documentRoot, centrifugeID, documentProofs, signature)
 	if err != nil {
 		log.Errorf("Failed to commit the anchor [id:%x, hash:%x ]: %v", anchorId, documentRoot, err)
 	}

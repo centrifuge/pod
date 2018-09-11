@@ -17,12 +17,12 @@ func TestNewAnchorId(t *testing.T) {
 	}{
 		{
 			"smallerSlice",
-			tools.RandomSlice(AnchorIdLength - 1),
+			tools.RandomSlice(AnchorIDLength - 1),
 			"invalid length byte slice provided for anchorId",
 		},
 		{
 			"largerSlice",
-			tools.RandomSlice(AnchorIdLength + 1),
+			tools.RandomSlice(AnchorIDLength + 1),
 			"invalid length byte slice provided for anchorId",
 		},
 		{
@@ -33,7 +33,7 @@ func TestNewAnchorId(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := NewAnchorId(test.slice)
+			_, err := NewAnchorID(test.slice)
 			assert.Equal(t, test.err, err.Error())
 		})
 	}

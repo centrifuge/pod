@@ -44,7 +44,7 @@ func (dp *defaultProcessor) Send(coreDocument *coredocumentpb.CoreDocument, ctx 
 		return centerrors.NilError(coreDocument)
 	}
 
-	centId, err := identity.NewCentId(recipient)
+	centId, err := identity.NewCentID(recipient)
 	if err != nil {
 		err = centerrors.Wrap(err, "error parsing receiver centId")
 		log.Error(err)
@@ -147,8 +147,8 @@ func (dp *defaultProcessor) Anchor(document *coredocumentpb.CoreDocument) error 
 	//	return err
 	//}
 	//
-	//var centId [identity.CentIdByteLength]byte
-	//copy(centId[:], idConfig.ID[:identity.CentIdByteLength])
+	//var centId [identity.CentIDByteLength]byte
+	//copy(centId[:], idConfig.ID[:identity.CentIDByteLength])
 	//
 	//signature, err := secp256k1.SignEthereum(anchoring.GenerateCommitHash(id, centId, rootHash), idConfig.PrivateKey)
 	//if err != nil {

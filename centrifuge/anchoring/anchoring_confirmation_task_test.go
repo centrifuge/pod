@@ -36,10 +36,10 @@ func (m *MockAnchorCommittedWatcher) WatchAnchorCommitted(opts *bind.WatchOpts, 
 
 func TestAnchoringConfirmationTask_ParseKwargsHappy(t *testing.T) {
 	act := AnchoringConfirmationTask{}
-	anchorId, _ := NewAnchorId(tools.RandomSlice(AnchorIdLength))
+	anchorId, _ := NewAnchorID(tools.RandomSlice(AnchorIDLength))
 	address := common.BytesToAddress([]byte{1, 2, 3, 4})
 
-	centId, _ := identity.NewCentId(tools.RandomSlice(identity.CentIdByteLength))
+	centId, _ := identity.NewCentID(tools.RandomSlice(identity.CentIDByteLength))
 
 	kwargs, _ := tools.SimulateJsonDecodeForGocelery(map[string]interface{}{
 		AnchorIdParam:     anchorId,

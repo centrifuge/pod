@@ -64,8 +64,8 @@ func TestCorrectCommitSignatureGen(t *testing.T) {
 
 	testPrivateKey, _ := hexutil.Decode("0x17e063fa17dd8274b09c14b253697d9a20afff74ace3c04fdb1b9c814ce0ada5")
 
-	anchorIdTyped, _ := anchoring.NewAnchorId(anchorId)
-	centIdTyped, _ := identity.NewCentId(centrifugeId)
+	anchorIdTyped, _ := anchoring.NewAnchorID(anchorId)
+	centIdTyped, _ := identity.NewCentID(centrifugeId)
 	docRootTyped, _ := anchoring.NewDocRoot(documentRoot)
 
 	messageToSign := anchoring.GenerateCommitHash(anchorIdTyped, centIdTyped, docRootTyped)
@@ -83,13 +83,13 @@ func TestGenerateAnchor(t *testing.T) {
 	currentAnchorId := tools.RandomByte32()
 	currentDocumentRoot := tools.RandomByte32()
 	documentProof := tools.RandomByte32()
-	centrifugeId := tools.RandomSlice(identity.CentIdByteLength)
+	centrifugeId := tools.RandomSlice(identity.CentIDByteLength)
 	testPrivateKey, _ := hexutil.Decode("0x17e063fa17dd8274b09c14b253697d9a20afff74ace3c04fdb1b9c814ce0ada5")
 
 	var documentProofs [][32]byte
 
 	documentProofs = append(documentProofs, documentProof)
-	centIdTyped, _ := identity.NewCentId(centrifugeId)
+	centIdTyped, _ := identity.NewCentID(centrifugeId)
 	messageToSign := anchoring.GenerateCommitHash(currentAnchorId, centIdTyped, currentDocumentRoot)
 	signature, _ := secp256k1.SignEthereum(messageToSign, testPrivateKey)
 
@@ -98,7 +98,7 @@ func TestGenerateAnchor(t *testing.T) {
 
 	commitData := anchoring.NewCommitData(currentAnchorId, documentRoot32Bytes, centIdTyped, documentProofs, signature)
 
-	anchorId, _ := anchoring.NewAnchorId(currentAnchorId[:])
+	anchorId, _ := anchoring.NewAnchorID(currentAnchorId[:])
 	docRoot, _ := anchoring.NewDocRoot(documentRoot32Bytes[:])
 
 	assert.Equal(t, commitData.AnchorId, anchorId, "Anchor should have the passed ID")

@@ -32,7 +32,7 @@ func TestMain(m *testing.M) {
 
 func createIdentityWithKeys(t *testing.T, centrifugeId []byte) []byte {
 
-	centIdTyped, _ := identity.NewCentId(centrifugeId)
+	centIdTyped, _ := identity.NewCentID(centrifugeId)
 	id, confirmations, err := identityService.CreateIdentity(centIdTyped)
 	assert.Nil(t, err, "should not error out when creating identity")
 
@@ -71,8 +71,8 @@ func TestCommitAnchor_Integration(t *testing.T) {
 
 	testPrivateKey, _ := hexutil.Decode("0x17e063fa17dd8274b09c14b253697d9a20afff74ace3c04fdb1b9c814ce0ada5")
 
-	anchorIdTyped, _ := anchoring.NewAnchorId(anchorId)
-	centIdTyped, _ := identity.NewCentId(centrifugeId)
+	anchorIdTyped, _ := anchoring.NewAnchorID(anchorId)
+	centIdTyped, _ := identity.NewCentID(centrifugeId)
 	docRootTyped, _ := anchoring.NewDocRoot(documentRoot)
 
 	messageToSign := anchoring.GenerateCommitHash(anchorIdTyped, centIdTyped, docRootTyped)
@@ -86,9 +86,9 @@ func TestCommitAnchor_Integration(t *testing.T) {
 }
 
 func commitAnchor(t *testing.T, anchorId, centrifugeId, documentRoot, signature []byte, documentProofs [][32]byte) {
-	anchorIdTyped, _ := anchoring.NewAnchorId(anchorId)
+	anchorIdTyped, _ := anchoring.NewAnchorID(anchorId)
 	docRootTyped, _ := anchoring.NewDocRoot(documentRoot)
-	centIdFixed, _ := identity.NewCentId(centrifugeId)
+	centIdFixed, _ := identity.NewCentID(centrifugeId)
 
 	confirmations, err := anchoring.CommitAnchor(anchorIdTyped, docRootTyped, centIdFixed, documentProofs, signature)
 
@@ -108,14 +108,14 @@ func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
 	var err error
 	testPrivateKey, _ := hexutil.Decode("0x17e063fa17dd8274b09c14b253697d9a20afff74ace3c04fdb1b9c814ce0ada5")
 
-	centrifugeId := tools.RandomSlice(identity.CentIdByteLength)
+	centrifugeId := tools.RandomSlice(identity.CentIDByteLength)
 
 	createIdentityWithKeys(t, centrifugeId)
 
 	for ix := 0; ix < 5; ix++ {
 		currentAnchorId := tools.RandomByte32()
 		currentDocumentRoot := tools.RandomByte32()
-		centIdFixed, _ := identity.NewCentId(centrifugeId)
+		centIdFixed, _ := identity.NewCentID(centrifugeId)
 		messageToSign := anchoring.GenerateCommitHash(currentAnchorId, centIdFixed, currentDocumentRoot)
 		signature, _ := secp256k1.SignEthereum(messageToSign, testPrivateKey)
 		documentProofs := [][anchoring.DocumentProofLength]byte{tools.RandomByte32()}

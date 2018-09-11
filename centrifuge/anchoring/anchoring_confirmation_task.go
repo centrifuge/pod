@@ -34,8 +34,8 @@ type AnchorCommittedWatcher interface {
 type AnchoringConfirmationTask struct {
 	// task parameters
 	From         common.Address
-	AnchorId     AnchorId
-	CentrifugeId identity.CentId
+	AnchorId     AnchorID
+	CentrifugeId identity.CentID
 
 	// state
 	EthContextInitializer  func() (ctx context.Context, cancelFunc context.CancelFunc)
@@ -75,7 +75,7 @@ func (act *AnchoringConfirmationTask) Copy() (gocelery.CeleryTask, error) {
 	}, nil
 }
 
-// ParseKwargs - define a method to parse AnchorId, Address and RootHash
+// ParseKwargs - define a method to parse AnchorID, Address and RootHash
 func (act *AnchoringConfirmationTask) ParseKwargs(kwargs map[string]interface{}) error {
 	anchorId, ok := kwargs[AnchorIdParam]
 	if !ok {
@@ -120,7 +120,7 @@ func (act *AnchoringConfirmationTask) ParseKwargs(kwargs map[string]interface{})
 	return nil
 }
 
-// RunTask calls listens to events from geth related to AnchoringConfirmationTask#AnchorId and records result.
+// RunTask calls listens to events from geth related to AnchoringConfirmationTask#AnchorID and records result.
 func (act *AnchoringConfirmationTask) RunTask() (interface{}, error) {
 	log.Infof("Waiting for confirmation for the anchorID [%x]", act.AnchorId)
 	if act.EthContext == nil {
@@ -132,8 +132,8 @@ func (act *AnchoringConfirmationTask) RunTask() (interface{}, error) {
 	}
 
 	subscription, err := act.AnchorCommittedWatcher.WatchAnchorCommitted(watchOpts, act.AnchorRegisteredEvents,
-		[]common.Address{act.From}, []*big.Int{tools.ByteFixedToBigInt(act.AnchorId[:], AnchorIdLength)},
-		[]*big.Int{tools.ByteFixedToBigInt(act.CentrifugeId[:], identity.CentIdByteLength)})
+		[]common.Address{act.From}, []*big.Int{tools.ByteFixedToBigInt(act.AnchorId[:], AnchorIDLength)},
+		[]*big.Int{tools.ByteFixedToBigInt(act.CentrifugeId[:], identity.CentIDByteLength)})
 
 	if err != nil {
 		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for anchor repository", 1)
@@ -156,8 +156,8 @@ func (act *AnchoringConfirmationTask) RunTask() (interface{}, error) {
 	}
 }
 
-func getBytes32(key interface{}) ([AnchorIdLength]byte, error) {
-	var fixed [AnchorIdLength]byte
+func getBytes32(key interface{}) ([AnchorIDLength]byte, error) {
+	var fixed [AnchorIDLength]byte
 	b, ok := key.([]interface{})
 	if !ok {
 		return fixed, errors.New("Could not parse interface to []byte")
@@ -169,7 +169,7 @@ func getBytes32(key interface{}) ([AnchorIdLength]byte, error) {
 	}
 	return fixed, nil
 }
-func getBytesCentrifugeId(key interface{}) ([identity.CentIdByteLength]byte, error) {
+func getBytesCentrifugeId(key interface{}) ([identity.CentIDByteLength]byte, error) {
 	var fixed [6]byte
 	b, ok := key.([]interface{})
 	if !ok {

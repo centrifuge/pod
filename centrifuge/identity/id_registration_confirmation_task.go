@@ -16,7 +16,7 @@ import (
 )
 
 const IdRegistrationConfirmationTaskName string = "IdRegistrationConfirmationTaskName"
-const CentIdParam string = "CentId"
+const CentIdParam string = "CentID"
 
 type IdentityCreatedWatcher interface {
 	WatchIdentityCreated(opts *bind.WatchOpts, sink chan<- *EthereumIdentityFactoryContractIdentityCreated, centrifugeId []*big.Int) (event.Subscription, error)
@@ -25,7 +25,7 @@ type IdentityCreatedWatcher interface {
 // IdRegistrationConfirmationTask is a queued task to watch ID registration events on Ethereum using EthereumIdentityFactoryContract.
 // To see how it gets registered see bootstrapper.go and to see how it gets used see setUpRegistrationEventListener method
 type IdRegistrationConfirmationTask struct {
-	CentId                 CentId
+	CentId                 CentID
 	EthContextInitializer  func() (ctx context.Context, cancelFunc context.CancelFunc)
 	IdentityCreatedEvents  chan *EthereumIdentityFactoryContractIdentityCreated
 	EthContext             context.Context
@@ -60,7 +60,7 @@ func (m *IdRegistrationConfirmationTask) Copy() (gocelery.CeleryTask, error) {
 		m.IdentityCreatedWatcher}, nil
 }
 
-// ParseKwargs - define a method to parse CentId
+// ParseKwargs - define a method to parse CentID
 func (rct *IdRegistrationConfirmationTask) ParseKwargs(kwargs map[string]interface{}) error {
 	centId, ok := kwargs[CentIdParam]
 	if !ok {
@@ -74,7 +74,7 @@ func (rct *IdRegistrationConfirmationTask) ParseKwargs(kwargs map[string]interfa
 	return nil
 }
 
-// RunTask calls listens to events from geth related to IdRegistrationConfirmationTask#CentId and records result.
+// RunTask calls listens to events from geth related to IdRegistrationConfirmationTask#CentID and records result.
 func (rct *IdRegistrationConfirmationTask) RunTask() (interface{}, error) {
 	log.Infof("Waiting for confirmation for the ID [%x]", rct.CentId)
 	if rct.EthContext == nil {
@@ -85,7 +85,7 @@ func (rct *IdRegistrationConfirmationTask) RunTask() (interface{}, error) {
 		rct.IdentityCreatedEvents = make(chan *EthereumIdentityFactoryContractIdentityCreated)
 	}
 
-	subscription, err := rct.IdentityCreatedWatcher.WatchIdentityCreated(watchOpts, rct.IdentityCreatedEvents, []*big.Int{tools.ByteFixedToBigInt(rct.CentId[:], CentIdByteLength)})
+	subscription, err := rct.IdentityCreatedWatcher.WatchIdentityCreated(watchOpts, rct.IdentityCreatedEvents, []*big.Int{tools.ByteFixedToBigInt(rct.CentId[:], CentIDByteLength)})
 	if err != nil {
 		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for identity registration", 1)
 		log.Errorf(wError.Error())
@@ -107,8 +107,8 @@ func (rct *IdRegistrationConfirmationTask) RunTask() (interface{}, error) {
 	}
 }
 
-func getBytes(key interface{}) (CentId, error) {
-	var fixed [CentIdByteLength]byte
+func getBytes(key interface{}) (CentID, error) {
+	var fixed [CentIDByteLength]byte
 	b, ok := key.([]interface{})
 	if !ok {
 		return fixed, errors.New("Could not parse interface to []byte")

@@ -34,8 +34,8 @@ func (mcw *MockIdentityCreatedWatcher) WatchIdentityCreated(opts *bind.WatchOpts
 
 func TestRegistrationConfirmationTask_ParseKwargsHappyPath(t *testing.T) {
 	rct := IdRegistrationConfirmationTask{}
-	id := tools.RandomSlice(CentIdByteLength)
-	idBytes, _ := NewCentId(id)
+	id := tools.RandomSlice(CentIDByteLength)
+	idBytes, _ := NewCentID(id)
 	kwargs := map[string]interface{}{CentIdParam: idBytes}
 	decoded, err := tools.SimulateJsonDecodeForGocelery(kwargs)
 	err = rct.ParseKwargs(decoded)
@@ -47,20 +47,20 @@ func TestRegistrationConfirmationTask_ParseKwargsHappyPath(t *testing.T) {
 
 func TestRegistrationConfirmationTask_ParseKwargsDoesNotExist(t *testing.T) {
 	rct := IdRegistrationConfirmationTask{}
-	id := tools.RandomSlice(CentIdByteLength)
+	id := tools.RandomSlice(CentIDByteLength)
 	err := rct.ParseKwargs(map[string]interface{}{"notId": id})
 	assert.NotNil(t, err, "Should not allow parsing without centId")
 }
 
 func TestRegistrationConfirmationTask_ParseKwargsInvalidType(t *testing.T) {
 	rct := IdRegistrationConfirmationTask{}
-	id := tools.RandomSlice(CentIdByteLength)
+	id := tools.RandomSlice(CentIDByteLength)
 	err := rct.ParseKwargs(map[string]interface{}{CentIdParam: id})
 	assert.NotNil(t, err, "Should not parse without the correct type of centId")
 }
 
 func TestIdRegistrationConfirmationTask_RunTaskContextError(t *testing.T) {
-	cenId, _ := NewCentId(tools.RandomSlice(CentIdByteLength))
+	cenId, _ := NewCentID(tools.RandomSlice(CentIDByteLength))
 	toBeDone := time.Now().Add(time.Duration(1 * time.Millisecond))
 	ctx, _ := context.WithDeadline(context.TODO(), toBeDone)
 	eifc := make(chan *EthereumIdentityFactoryContractIdentityCreated)
@@ -83,7 +83,7 @@ func TestIdRegistrationConfirmationTask_RunTaskContextError(t *testing.T) {
 }
 
 func TestIdRegistrationConfirmationTask_RunTaskCallError(t *testing.T) {
-	cenId, _ := NewCentId(tools.RandomSlice(CentIdByteLength))
+	cenId, _ := NewCentID(tools.RandomSlice(CentIDByteLength))
 	identityCreatedWatcher := &MockIdentityCreatedWatcher{shouldFail: true}
 	rct := IdRegistrationConfirmationTask{
 		CentId: cenId,
@@ -104,7 +104,7 @@ func TestIdRegistrationConfirmationTask_RunTaskCallError(t *testing.T) {
 }
 
 func TestIdRegistrationConfirmationTask_RunTaskSuccess(t *testing.T) {
-	cenId, _ := NewCentId(tools.RandomSlice(CentIdByteLength))
+	cenId, _ := NewCentID(tools.RandomSlice(CentIDByteLength))
 	toBeDone := time.Now().Add(time.Duration(1 * time.Second))
 	ctx, _ := context.WithDeadline(context.TODO(), toBeDone)
 	eifc := make(chan *EthereumIdentityFactoryContractIdentityCreated)

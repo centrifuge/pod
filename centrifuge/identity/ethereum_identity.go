@@ -62,18 +62,18 @@ func NewEthereumIdentity() (id *EthereumIdentity) {
 }
 
 type EthereumIdentity struct {
-	CentrifugeId CentId
+	CentrifugeId CentID
 	cachedKeys   map[int][]EthereumIdentityKey
 	Contract     *EthereumIdentityContract
 }
 
-func (id *EthereumIdentity) CentrifugeID(cenId CentId) {
+func (id *EthereumIdentity) CentrifugeID(cenId CentID) {
 	id.CentrifugeId = cenId
 }
 
-func (id *EthereumIdentity) CentrifugeIDBytes() CentId {
-	var idBytes [CentIdByteLength]byte
-	copy(idBytes[:], id.CentrifugeId[:CentIdByteLength])
+func (id *EthereumIdentity) CentrifugeIDBytes() CentID {
+	var idBytes [CentIDByteLength]byte
+	copy(idBytes[:], id.CentrifugeId[:CentIDByteLength])
 	return idBytes
 }
 
@@ -81,7 +81,7 @@ func (id *EthereumIdentity) String() string {
 	return fmt.Sprintf("CentrifugeId [%s]", id.CentrifugeId)
 }
 
-func (id *EthereumIdentity) GetCentrifugeID() CentId {
+func (id *EthereumIdentity) GetCentrifugeID() CentID {
 	return id.CentrifugeId
 }
 
@@ -364,18 +364,18 @@ func NewEthereumIdentityService() Service {
 // EthereumidentityService implements `Service`
 type EthereumIdentityService struct{}
 
-func (ids *EthereumIdentityService) CheckIdentityExists(centrifugeId CentId) (exists bool, err error) {
+func (ids *EthereumIdentityService) CheckIdentityExists(centrifugeID CentID) (exists bool, err error) {
 	id := NewEthereumIdentity()
-	id.CentrifugeId = centrifugeId
+	id.CentrifugeId = centrifugeID
 	exists, err = id.CheckIdentityExists()
 	return
 }
 
-func (ids *EthereumIdentityService) CreateIdentity(centrifugeId CentId) (id Identity, confirmations chan *WatchIdentity, err error) {
-	log.Infof("Creating Identity [%x]", centrifugeId)
+func (ids *EthereumIdentityService) CreateIdentity(centrifugeID CentID) (id Identity, confirmations chan *WatchIdentity, err error) {
+	log.Infof("Creating Identity [%x]", centrifugeID)
 
 	id = NewEthereumIdentity()
-	id.CentrifugeID(centrifugeId)
+	id.CentrifugeID(centrifugeID)
 
 	ethIdentityFactoryContract, err := getIdentityFactoryContract()
 	if err != nil {
@@ -402,9 +402,9 @@ func (ids *EthereumIdentityService) CreateIdentity(centrifugeId CentId) (id Iden
 	return id, confirmations, nil
 }
 
-func (ids *EthereumIdentityService) LookupIdentityForID(centrifugeId CentId) (Identity, error) {
+func (ids *EthereumIdentityService) LookupIdentityForID(centrifugeID CentID) (Identity, error) {
 	instanceId := NewEthereumIdentity()
-	instanceId.CentrifugeID(centrifugeId)
+	instanceId.CentrifugeID(centrifugeID)
 	exists, err := instanceId.CheckIdentityExists()
 	if !exists {
 		return instanceId, fmt.Errorf("identity [%s] does not exist", instanceId.CentrifugeId)

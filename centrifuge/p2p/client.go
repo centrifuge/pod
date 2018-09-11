@@ -112,7 +112,7 @@ func getSignatureAsync(ctx context.Context, doc coredocumentpb.CoreDocument, cli
 }
 
 // GetSignaturesForDocument requests peer nodes for the signature and verifies them
-func GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocument, centIDs []identity.CentId) error {
+func GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocument, centIDs []identity.CentID) error {
 	if doc == nil {
 		return centerrors.NilError(doc)
 	}

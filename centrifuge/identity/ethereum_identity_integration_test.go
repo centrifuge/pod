@@ -32,12 +32,14 @@ func TestMain(m *testing.M) {
 }
 
 func TestCreateAndLookupIdentity_Integration(t *testing.T) {
-	centrifugeId := tools.RandomSlice(identity.CentIdByteLength)
-	wrongCentrifugeId := tools.RandomSlice(identity.CentIdByteLength)
+	centrifugeId, _ := identity.NewCentID(tools.RandomSlice(identity.CentIDByteLength))
+	wrongCentrifugeId := tools.RandomSlice(identity.CentIDByteLength)
 	wrongCentrifugeId[0] = 0x0
 	wrongCentrifugeId[1] = 0x0
 	wrongCentrifugeId[2] = 0x0
 	wrongCentrifugeId[3] = 0x0
+	wrongCentrifugeIdTyped, _ := identity.NewCentID(wrongCentrifugeId)
+
 
 	id, confirmations, err := identityService.CreateIdentity(centrifugeId)
 	assert.Nil(t, err, "should not error out when creating identity")
@@ -51,7 +53,7 @@ func TestCreateAndLookupIdentity_Integration(t *testing.T) {
 	assert.Nil(t, err, "should not error out when resolving identity")
 	assert.Equal(t, centrifugeId, id.GetCentrifugeID(), "CentrifugeId Should match provided one")
 
-	wrongId, err := identityService.LookupIdentityForID(wrongCentrifugeId)
+	wrongId, err := identityService.LookupIdentityForID(wrongCentrifugeIdTyped)
 	assert.NotNil(t, err, "should error out when resolving wrong identity")
 
 	// CheckIdentityExists
@@ -59,12 +61,12 @@ func TestCreateAndLookupIdentity_Integration(t *testing.T) {
 	assert.Nil(t, err, "should not error out when looking for correct identity")
 	assert.True(t, exists)
 
-	exists, err = identityService.CheckIdentityExists(wrongCentrifugeId)
+	exists, err = identityService.CheckIdentityExists(wrongCentrifugeIdTyped)
 	assert.NotNil(t, err, "should err when looking for incorrect identity")
 	assert.False(t, exists)
 
 	wrongId = identity.NewEthereumIdentity()
-	wrongId.SetCentrifugeID(wrongCentrifugeId)
+	wrongId.CentrifugeID(wrongCentrifugeIdTyped)
 	exists, err = wrongId.CheckIdentityExists()
 	assert.NotNil(t, err, "should error out when missing identity")
 	assert.False(t, exists)
@@ -87,11 +89,11 @@ func TestCreateAndLookupIdentity_Integration(t *testing.T) {
 }
 
 func TestCreateAndLookupIdentity_Integration_Concurrent(t *testing.T) {
-	var centIds [5][]byte
+	var centIds [5]identity.CentID
 	var identityConfirmations [5]<-chan *identity.WatchIdentity
 	var err error
 	for ix := 0; ix < 5; ix++ {
-		centId := tools.RandomSlice(identity.CentIdByteLength)
+		centId, _ := identity.NewCentID(tools.RandomSlice(identity.CentIDByteLength))
 		centIds[ix] = centId
 		_, identityConfirmations[ix], err = identityService.CreateIdentity(centId)
 		assert.Nil(t, err, "should not error out upon identity creation")
