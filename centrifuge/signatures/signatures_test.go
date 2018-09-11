@@ -31,7 +31,7 @@ func TestSign(t *testing.T) {
 		PrivateKey: key1,
 	}
 
-	sig := Sign(&idConfig, coreDoc)
+	sig := Sign(&idConfig, coreDoc.SigningRoot)
 	assert.NotNil(t, sig)
 	assert.Equal(t, sig.PublicKey, []byte(key1Pub))
 	assert.Equal(t, sig.EntityId, id1)
