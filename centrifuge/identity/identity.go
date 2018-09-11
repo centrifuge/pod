@@ -26,12 +26,12 @@ const (
 type CentId [CentIdByteLength]byte
 
 func NewCentId(centIdBytes []byte) (CentId, error) {
-	var bytes [CentIdByteLength]byte
+	var centBytes [CentIdByteLength]byte
 	if tools.IsValidByteSliceForLength(centIdBytes, CentIdByteLength) {
-		return bytes, errors.New("invalid length byte slice provided for centId")
+		return centBytes, errors.New("invalid length byte slice provided for centId")
 	}
-	copy(bytes[:], centIdBytes[:CentIdByteLength])
-	return bytes, nil
+	copy(centBytes[:], centIdBytes[:CentIdByteLength])
+	return centBytes, nil
 }
 
 func (c CentId) String() string {
