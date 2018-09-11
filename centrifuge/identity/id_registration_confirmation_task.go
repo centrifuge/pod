@@ -25,7 +25,7 @@ type IdentityCreatedWatcher interface {
 // IdRegistrationConfirmationTask is a queued task to watch ID registration events on Ethereum using EthereumIdentityFactoryContract.
 // To see how it gets registered see bootstrapper.go and to see how it gets used see setUpRegistrationEventListener method
 type IdRegistrationConfirmationTask struct {
-	CentId                 [CentIdByteLength]byte
+	CentId                 CentId
 	EthContextInitializer  func() (ctx context.Context, cancelFunc context.CancelFunc)
 	IdentityCreatedEvents  chan *EthereumIdentityFactoryContractIdentityCreated
 	EthContext             context.Context
@@ -107,7 +107,7 @@ func (rct *IdRegistrationConfirmationTask) RunTask() (interface{}, error) {
 	}
 }
 
-func getBytes(key interface{}) ([CentIdByteLength]byte, error) {
+func getBytes(key interface{}) (CentId, error) {
 	var fixed [CentIdByteLength]byte
 	b, ok := key.([]interface{})
 	if !ok {

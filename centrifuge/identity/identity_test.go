@@ -32,9 +32,9 @@ func (i *mockID) CentrifugeIDString() string {
 	return args.String(0)
 }
 
-func (i *mockID) CentrifugeIDBytes() [CentIdByteLength]byte {
+func (i *mockID) CentrifugeIDBytes() CentId {
 	args := i.Called()
-	return args.Get(0).([CentIdByteLength]byte)
+	return args.Get(0).(CentId)
 }
 
 func (i *mockID) CentrifugeIDBigInt() *big.Int {

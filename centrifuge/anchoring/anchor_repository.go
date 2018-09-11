@@ -11,11 +11,11 @@ var log = logging.Logger("anchorRepository")
 
 // wrapper for the Ethereum implementation
 type AnchorRepository interface {
-	PreCommitAnchor(anchorId AnchorId, signingRoot DocRoot, centrifugeId [identity.CentIdByteLength]byte, signature []byte, expirationBlock *big.Int) (<-chan *WatchPreCommit, error)
-	CommitAnchor(anchorId AnchorId, documentRoot DocRoot, centrifugeId [identity.CentIdByteLength]byte, documentProofs [][32]byte, signature []byte) (<-chan *WatchCommit, error)
+	PreCommitAnchor(anchorId AnchorId, signingRoot DocRoot, centrifugeId identity.CentId, signature []byte, expirationBlock *big.Int) (<-chan *WatchPreCommit, error)
+	CommitAnchor(anchorId AnchorId, documentRoot DocRoot, centrifugeId identity.CentId, documentProofs [][32]byte, signature []byte) (<-chan *WatchCommit, error)
 }
 
-func PreCommitAnchor(anchorId AnchorId, signingRoot DocRoot, centrifugeId [identity.CentIdByteLength]byte, signature []byte, expirationBlock *big.Int) (<-chan *WatchPreCommit, error) {
+func PreCommitAnchor(anchorId AnchorId, signingRoot DocRoot, centrifugeId identity.CentId, signature []byte, expirationBlock *big.Int) (<-chan *WatchPreCommit, error) {
 	anchorRepository, _ := getConfiguredRepository()
 
 	confirmations, err := anchorRepository.PreCommitAnchor(anchorId, signingRoot, centrifugeId, signature, expirationBlock)
@@ -25,7 +25,7 @@ func PreCommitAnchor(anchorId AnchorId, signingRoot DocRoot, centrifugeId [ident
 	return confirmations, err
 }
 
-func CommitAnchor(anchorId AnchorId, documentRoot DocRoot, centrifugeId [identity.CentIdByteLength]byte, documentProofs [][32]byte, signature []byte) (<-chan *WatchCommit, error) {
+func CommitAnchor(anchorId AnchorId, documentRoot DocRoot, centrifugeId identity.CentId, documentProofs [][32]byte, signature []byte) (<-chan *WatchCommit, error) {
 	anchorRepository, _ := getConfiguredRepository()
 
 	confirmations, err := anchorRepository.CommitAnchor(anchorId, documentRoot, centrifugeId, documentProofs, signature)

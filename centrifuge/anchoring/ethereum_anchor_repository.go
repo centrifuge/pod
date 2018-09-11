@@ -39,7 +39,7 @@ type WatchAnchorCommitted interface {
 }
 
 //PreCommitAnchor will call the transaction PreCommit on the smart contract
-func (ethRepository *EthereumAnchorRepository) PreCommitAnchor(anchorId AnchorId, signingRoot DocRoot, centrifugeId [identity.CentIdByteLength]byte, signature []byte, expirationBlock *big.Int) (confirmations <-chan *WatchPreCommit, err error) {
+func (ethRepository *EthereumAnchorRepository) PreCommitAnchor(anchorId AnchorId, signingRoot DocRoot, centrifugeId identity.CentId, signature []byte, expirationBlock *big.Int) (confirmations <-chan *WatchPreCommit, err error) {
 
 	//TODO check if parameters are valid
 	ethRepositoryContract, _ := getRepositoryContract()
@@ -109,7 +109,7 @@ func sendCommitTransaction(contract AnchorRepositoryContract, opts *bind.Transac
 }
 
 //CommitAnchor will call the transaction Commit on the smart contract
-func (ethRepository *EthereumAnchorRepository) CommitAnchor(anchorId AnchorId, documentRoot DocRoot, centrifugeId [identity.CentIdByteLength]byte, documentProofs [][32]byte, signature []byte) (confirmations <-chan *WatchCommit, err error) {
+func (ethRepository *EthereumAnchorRepository) CommitAnchor(anchorId AnchorId, documentRoot DocRoot, centrifugeId identity.CentId, documentProofs [][32]byte, signature []byte) (confirmations <-chan *WatchCommit, err error) {
 
 	if anchorId.isEmpty() || documentRoot.isEmpty() {
 		return nil, errors.New("empty anchorId or documentRoot provided")

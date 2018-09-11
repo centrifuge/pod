@@ -70,7 +70,7 @@ func TestCommitAnchor_Integration(t *testing.T) {
 
 	testPrivateKey, _ := hexutil.Decode("0x17e063fa17dd8274b09c14b253697d9a20afff74ace3c04fdb1b9c814ce0ada5")
 
-	messageToSign := anchoring.GenerateCommitHash(anchoring.NewAnchorId(anchorId), centIdToFixed(centrifugeId), anchoring.NewDocRoot(documentRoot))
+	messageToSign := anchoring.GenerateCommitHash(anchoring.NewAnchorId(anchorId), identity.NewCentId(centrifugeId), anchoring.NewDocRoot(documentRoot))
 
 	signature, _ := secp256k1.SignEthereum(messageToSign, testPrivateKey)
 
@@ -83,7 +83,7 @@ func TestCommitAnchor_Integration(t *testing.T) {
 func commitAnchor(t *testing.T, anchorId, centrifugeId, documentRoot, signature []byte, documentProofs [][32]byte) {
 	anchorIdTyped := anchoring.NewAnchorId(anchorId)
 	docRootTyped := anchoring.NewDocRoot(documentRoot)
-	centIdFixed := centIdToFixed(centrifugeId)
+	centIdFixed := identity.NewCentId(centrifugeId)
 
 	confirmations, err := anchoring.CommitAnchor(anchorIdTyped, docRootTyped, centIdFixed, documentProofs, signature)
 
@@ -110,10 +110,10 @@ func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
 	for ix := 0; ix < 5; ix++ {
 		currentAnchorId := tools.RandomByte32()
 		currentDocumentRoot := tools.RandomByte32()
-		messageToSign := anchoring.GenerateCommitHash(currentAnchorId, centIdToFixed(centrifugeId), currentDocumentRoot)
+		messageToSign := anchoring.GenerateCommitHash(currentAnchorId, identity.NewCentId(centrifugeId), currentDocumentRoot)
 		signature, _ := secp256k1.SignEthereum(messageToSign, testPrivateKey)
 
-		centIdFixed := centIdToFixed(centrifugeId)
+		centIdFixed := identity.NewCentId(centrifugeId)
 		documentProofs := [][anchoring.DocumentProofLength]byte{tools.RandomByte32()}
 
 		commitDataList[ix] = anchoring.NewCommitData(currentAnchorId, currentDocumentRoot, centIdFixed, documentProofs, signature)
@@ -131,11 +131,4 @@ func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
 		assert.Equal(t, commitDataList[ix].AnchorId, watchSingleAnchor.CommitData.AnchorId, "Should have the ID that was passed into create function [%v]", watchSingleAnchor.CommitData.AnchorId)
 		assert.Equal(t, commitDataList[ix].DocumentRoot, watchSingleAnchor.CommitData.DocumentRoot, "Should have the document root that was passed into create function [%v]", watchSingleAnchor.CommitData.DocumentRoot)
 	}
-}
-
-// TODO remove this after converting CentId to a proper type
-func centIdToFixed(centrifugeId []byte) [6]byte {
-	var centIdFixed [identity.CentIdByteLength]byte
-	copy(centIdFixed[:], centrifugeId[:identity.CentIdByteLength])
-	return centIdFixed
 }

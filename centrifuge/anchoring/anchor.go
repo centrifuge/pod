@@ -45,7 +45,7 @@ func (d *DocRoot) isEmpty() bool {
 type PreCommitData struct {
 	AnchorId        AnchorId
 	SigningRoot     DocRoot
-	CentrifugeId    [identity.CentIdByteLength]byte
+	CentrifugeId    identity.CentId
 	Signature       []byte
 	ExpirationBlock *big.Int
 	SchemaVersion   uint
@@ -54,7 +54,7 @@ type PreCommitData struct {
 type CommitData struct {
 	AnchorId       AnchorId
 	DocumentRoot   DocRoot
-	CentrifugeId   [identity.CentIdByteLength]byte
+	CentrifugeId   identity.CentId
 	DocumentProofs [][32]byte
 	Signature      []byte
 	SchemaVersion  uint
@@ -77,7 +77,7 @@ func SupportedSchemaVersion() uint {
 	return AnchorSchemaVersion
 }
 
-func NewPreCommitData(anchorId AnchorId, signingRoot DocRoot, centrifugeId [identity.CentIdByteLength]byte, signature []byte, expirationBlock *big.Int) (preCommitData *PreCommitData) {
+func NewPreCommitData(anchorId AnchorId, signingRoot DocRoot, centrifugeId identity.CentId, signature []byte, expirationBlock *big.Int) (preCommitData *PreCommitData) {
 	preCommitData = &PreCommitData{}
 	preCommitData.AnchorId = anchorId
 	preCommitData.SigningRoot = signingRoot
@@ -88,7 +88,7 @@ func NewPreCommitData(anchorId AnchorId, signingRoot DocRoot, centrifugeId [iden
 	return preCommitData
 }
 
-func NewCommitData(anchorId AnchorId, documentRoot DocRoot, centrifugeId [identity.CentIdByteLength]byte, documentProofs [][32]byte, signature []byte) (commitData *CommitData) {
+func NewCommitData(anchorId AnchorId, documentRoot DocRoot, centrifugeId identity.CentId, documentProofs [][32]byte, signature []byte) (commitData *CommitData) {
 	commitData = &CommitData{}
 	commitData.AnchorId = anchorId
 	commitData.DocumentRoot = documentRoot
@@ -98,7 +98,7 @@ func NewCommitData(anchorId AnchorId, documentRoot DocRoot, centrifugeId [identi
 	return commitData
 }
 
-func GenerateCommitHash(anchorId AnchorId, centrifugeId [identity.CentIdByteLength]byte, documentRoot DocRoot) []byte {
+func GenerateCommitHash(anchorId AnchorId, centrifugeId identity.CentId, documentRoot DocRoot) []byte {
 	message := append(anchorId[:], documentRoot[:]...)
 	message = append(message, centrifugeId[:]...)
 	messageToSign := crypto.Keccak256(message)

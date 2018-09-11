@@ -21,6 +21,14 @@ const (
 	KeyPurposeEthMsgAuth = 3
 )
 
+type CentId [CentIdByteLength]byte
+
+func NewCentId(centIdBytes []byte) CentId {
+	var bytes [CentIdByteLength]byte
+	copy(bytes[:], centIdBytes[:CentIdByteLength])
+	return bytes
+}
+
 // idService is a default implementation of the Service
 var idService Service
 
@@ -49,8 +57,7 @@ type Identity interface {
 	String() string
 	GetCentrifugeID() []byte
 	CentrifugeIDString() string
-	// todo convert this to a - type CentrifugeId [CentIdByteLength]byte
-	CentrifugeIDBytes() [CentIdByteLength]byte
+	CentrifugeIDBytes() CentId
 	CentrifugeIDBigInt() *big.Int
 	SetCentrifugeID(b []byte) error
 	GetCurrentP2PKey() (ret string, err error)
@@ -166,7 +173,7 @@ func ValidateKey(centrifugeId []byte, key []byte) (valid bool, err error) {
 }
 
 // TODO remove after adding a type for CentId
-func CentIdToBigInt(centrifugeId [CentIdByteLength]byte) *big.Int {
+func CentIdToBigInt(centrifugeId CentId) *big.Int {
 	centIdBig := new(big.Int)
 	centIdBig.SetBytes(centrifugeId[:])
 	return centIdBig

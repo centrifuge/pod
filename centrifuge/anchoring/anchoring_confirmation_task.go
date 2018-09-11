@@ -34,8 +34,8 @@ type AnchorCommittedWatcher interface {
 type AnchoringConfirmationTask struct {
 	// task parameters
 	From         common.Address
-	AnchorId     [AnchorIdLength]byte
-	CentrifugeId [identity.CentIdByteLength]byte
+	AnchorId     AnchorId
+	CentrifugeId identity.CentId
 
 	// state
 	EthContextInitializer  func() (ctx context.Context, cancelFunc context.CancelFunc)

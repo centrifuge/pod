@@ -83,7 +83,7 @@ func (id *EthereumIdentity) CentrifugeIDString() string {
 	return base64.StdEncoding.EncodeToString(id.CentrifugeId)
 }
 
-func (id *EthereumIdentity) CentrifugeIDBytes() [CentIdByteLength]byte {
+func (id *EthereumIdentity) CentrifugeIDBytes() CentId {
 	var idBytes [CentIdByteLength]byte
 	copy(idBytes[:], id.CentrifugeId[:CentIdByteLength])
 	return idBytes
