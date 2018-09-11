@@ -1,7 +1,11 @@
-package anchor
+package anchoring
 
 import (
 	"fmt"
+	"math/big"
+
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 
 	"context"
 
@@ -14,46 +18,48 @@ import (
 )
 
 const (
-	AnchoringConfirmationTaskName string = "AnchoringConfirmationTaskName"
-	AnchorIdParam                 string = "AnchorIdParam"
-	AddressParam                  string = "AddressParam"
-	AnchorIdLength                       = 32
+	AnchoringRepositoryConfirmationTaskName string = "AnchoringRepositoryConfirmationTaskName"
+	AnchorIdParam                           string = "AnchorIdParam"
+	CentrifugeIdParam                       string = "CentrifugeIdParam"
+	AddressParam                            string = "AddressParam"
 )
 
-type AnchorRegisteredWatcher interface {
-	WatchAnchorRegistered(opts *bind.WatchOpts, sink chan<- *EthereumAnchorRegistryContractAnchorRegistered, from []common.Address, identifier [][32]byte, rootHash [][32]byte) (event.Subscription, error)
+type AnchorCommittedWatcher interface {
+	WatchAnchorCommitted(opts *bind.WatchOpts, sink chan<- *EthereumAnchorRepositoryContractAnchorCommitted,
+		from []common.Address, anchorId []*big.Int, centrifugeId []*big.Int) (event.Subscription, error)
 }
 
-// AnchoringConfirmationTask is a queued task to watch ID registration events on Ethereum using EthereumAnchorRegistryContract.
+// AnchoringConfirmationTask is a queued task to watch ID registration events on Ethereum using EthereumAnchoryRepositoryContract.
 // To see how it gets registered see bootstrapper.go and to see how it gets used see setUpRegistrationEventListener method
 type AnchoringConfirmationTask struct {
 	// task parameters
-	From     common.Address
-	AnchorId [AnchorIdLength]byte
+	From         common.Address
+	AnchorId     [AnchorIdLength]byte
+	CentrifugeId [identity.CentIdByteLength]byte
 
 	// state
-	EthContextInitializer   func() (ctx context.Context, cancelFunc context.CancelFunc)
-	AnchorRegisteredEvents  chan *EthereumAnchorRegistryContractAnchorRegistered
-	EthContext              context.Context
-	AnchorRegisteredWatcher AnchorRegisteredWatcher
+	EthContextInitializer  func() (ctx context.Context, cancelFunc context.CancelFunc)
+	AnchorRegisteredEvents chan *EthereumAnchorRepositoryContractAnchorCommitted
+	EthContext             context.Context
+	AnchorCommittedWatcher AnchorCommittedWatcher
 }
 
 func NewAnchoringConfirmationTask(
-	anchorRegisteredWatcher AnchorRegisteredWatcher,
+	anchorCommittedWatcher AnchorCommittedWatcher,
 	ethContextInitializer func() (ctx context.Context, cancelFunc context.CancelFunc),
 ) queue.QueuedTask {
 	return &AnchoringConfirmationTask{
-		AnchorRegisteredWatcher: anchorRegisteredWatcher,
-		EthContextInitializer:   ethContextInitializer,
+		AnchorCommittedWatcher: anchorCommittedWatcher,
+		EthContextInitializer:  ethContextInitializer,
 	}
 }
 
 func (act *AnchoringConfirmationTask) Name() string {
-	return AnchoringConfirmationTaskName
+	return AnchoringRepositoryConfirmationTaskName
 }
 
 func (act *AnchoringConfirmationTask) Init() error {
-	queue.Queue.Register(AnchoringConfirmationTaskName, act)
+	queue.Queue.Register(act.Name(), act)
 	return nil
 }
 
@@ -61,10 +67,11 @@ func (act *AnchoringConfirmationTask) Copy() (gocelery.CeleryTask, error) {
 	return &AnchoringConfirmationTask{
 		act.From,
 		act.AnchorId,
+		act.CentrifugeId,
 		act.EthContextInitializer,
 		act.AnchorRegisteredEvents,
 		act.EthContext,
-		act.AnchorRegisteredWatcher,
+		act.AnchorCommittedWatcher,
 	}, nil
 }
 
@@ -74,11 +81,27 @@ func (act *AnchoringConfirmationTask) ParseKwargs(kwargs map[string]interface{})
 	if !ok {
 		return fmt.Errorf("undefined kwarg " + AnchorIdParam)
 	}
-	anchorIdTyped, err := get32Bytes(anchorId)
+
+	anchorIdBytes, err := getBytes32(anchorId)
+
 	if err != nil {
 		return fmt.Errorf("malformed kwarg [%s] because [%s]", AnchorIdParam, err.Error())
 	}
-	act.AnchorId = anchorIdTyped
+
+	act.AnchorId = anchorIdBytes
+
+	//parse the centrifuge id
+	centrifugeId, ok := kwargs[CentrifugeIdParam]
+	if !ok {
+		return fmt.Errorf("undefined kwarg " + CentrifugeIdParam)
+	}
+
+	centrifugeIdBytes, err := getBytesCentrifugeId(centrifugeId)
+	if err != nil {
+		return fmt.Errorf("malformed kwarg [%s] because [%s]", CentrifugeIdParam, err.Error())
+	}
+
+	act.CentrifugeId = centrifugeIdBytes
 
 	// parse the address
 	address, ok := kwargs[AddressParam]
@@ -105,12 +128,15 @@ func (act *AnchoringConfirmationTask) RunTask() (interface{}, error) {
 	}
 	watchOpts := &bind.WatchOpts{Context: act.EthContext}
 	if act.AnchorRegisteredEvents == nil {
-		act.AnchorRegisteredEvents = make(chan *EthereumAnchorRegistryContractAnchorRegistered)
+		act.AnchorRegisteredEvents = make(chan *EthereumAnchorRepositoryContractAnchorCommitted)
 	}
 
-	subscription, err := act.AnchorRegisteredWatcher.WatchAnchorRegistered(watchOpts, act.AnchorRegisteredEvents, []common.Address{act.From}, [][32]byte{act.AnchorId}, nil)
+	subscription, err := act.AnchorCommittedWatcher.WatchAnchorCommitted(watchOpts, act.AnchorRegisteredEvents,
+		[]common.Address{act.From}, []*big.Int{tools.ByteFixedToBigInt(act.AnchorId[:], AnchorIdLength)},
+		[]*big.Int{tools.ByteFixedToBigInt(act.CentrifugeId[:], identity.CentIdByteLength)})
+
 	if err != nil {
-		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for anchor registration", 1)
+		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for anchor repository", 1)
 		log.Errorf(wError.Error())
 		return nil, wError
 	}
@@ -123,15 +149,28 @@ func (act *AnchoringConfirmationTask) RunTask() (interface{}, error) {
 			log.Errorf("Context closed before receiving AnchorRegistered event for anchor ID: %x\n", act.AnchorId)
 			return nil, act.EthContext.Err()
 		case res := <-act.AnchorRegisteredEvents:
-			log.Infof("Received AnchorRegistered event from: %x, identifier: %x\n", res.From, res.Identifier)
+			log.Infof("Received AnchorRegistered event from: %x, identifier: %x\n", res.From, res.AnchorId)
 			subscription.Unsubscribe()
 			return res, nil
 		}
 	}
 }
 
-func get32Bytes(key interface{}) ([AnchorIdLength]byte, error) {
+func getBytes32(key interface{}) ([AnchorIdLength]byte, error) {
 	var fixed [AnchorIdLength]byte
+	b, ok := key.([]interface{})
+	if !ok {
+		return fixed, errors.New("Could not parse interface to []byte")
+	}
+	// convert and copy b byte values
+	for i, v := range b {
+		fv := v.(float64)
+		fixed[i] = byte(fv)
+	}
+	return fixed, nil
+}
+func getBytesCentrifugeId(key interface{}) ([identity.CentIdByteLength]byte, error) {
+	var fixed [6]byte
 	b, ok := key.([]interface{})
 	if !ok {
 		return fixed, errors.New("Could not parse interface to []byte")

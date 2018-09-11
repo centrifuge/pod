@@ -8,6 +8,7 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/secp256k1"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	logging "github.com/ipfs/go-log"
 )
 
@@ -86,7 +87,7 @@ func VerifyMessage(publicKey, message []byte, signature []byte, curveType string
 		copy(msg, message)
 		if ethereumVerify {
 			address := secp256k1.GetAddress(publicKey)
-			return secp256k1.VerifySignatureWithAddress(address, utils.ByteArrayToHex(signatureBytes), msg)
+			return secp256k1.VerifySignatureWithAddress(address, hexutil.Encode(signatureBytes), msg)
 		}
 		return secp256k1.VerifySignature(publicKey, msg, signatureBytes)
 	default:

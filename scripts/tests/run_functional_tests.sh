@@ -8,9 +8,9 @@ source "${PARENT_DIR}/scripts/test-dependencies/test-ethereum/env_vars.sh"
 ################# Prepare for tests ########################
 source "${PARENT_DIR}/scripts/setup_smart_contract_addresses.sh"
 
-#
-#############################################################
-#
+
+############################################################
+
 echo "Running Functional Ethereum Tests against [${CENT_ETHEREUM_NODEURL}] with TIMEOUT [${TEST_TIMEOUT}]"
 
 status=$?
