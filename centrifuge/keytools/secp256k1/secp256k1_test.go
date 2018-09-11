@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -137,7 +137,7 @@ func TestVerifySignatureWithFalseSignature(t *testing.T) {
 }
 
 func TestSignForEthereum(t *testing.T) {
-	privateKey := "0xb5fffc3933d93dc956772c69b42c4bc66123631a24e3465956d80b5b604a2d13"
+	privateKey, _ := hexutil.Decode("0xb5fffc3933d93dc956772c69b42c4bc66123631a24e3465956d80b5b604a2d13")
 	address := "0xd77c534aed04d7ce34cd425073a033db4fbe6a9d"
 	testMsg := "Centrifuge likes Ethereum"
 
@@ -145,9 +145,9 @@ func TestSignForEthereum(t *testing.T) {
 
 	//signature should be 0xc158e04b7e22af2380af7b2581c9f89505761d3e517a07fa6bb76889bdb50c604b1517eb4a920053e878478d171ab63c732deb8eb182e3374bcebd046e773a4500
 	//verification should work on external services like https://etherscan.io/verifySig
-	signature, err := SignEthereum(testMsgBytes, utils.HexToByteArray(privateKey))
+	signature, err := SignEthereum(testMsgBytes, privateKey)
 	assert.Nil(t, err)
-	sigHex := utils.ByteArrayToHex(signature)
+	sigHex := hexutil.Encode(signature)
 	fmt.Println(sigHex)
 
 	correct := VerifySignatureWithAddress(address, sigHex, testMsgBytes)
@@ -157,7 +157,7 @@ func TestSignForEthereum(t *testing.T) {
 }
 
 func TestSignForEthereum32Bytes(t *testing.T) {
-	privateKey := "0xb5fffc3933d93dc956772c69b42c4bc66123631a24e3465956d80b5b604a2d13"
+	privateKey, _ := hexutil.Decode("0xb5fffc3933d93dc956772c69b42c4bc66123631a24e3465956d80b5b604a2d13")
 	address := "0xd77c534aed04d7ce34cd425073a033db4fbe6a9d"
 
 	testMsgBytes := make([]byte, 32)
@@ -165,12 +165,12 @@ func TestSignForEthereum32Bytes(t *testing.T) {
 
 	// this signature will not work on external services like etherscan.io because the size of testMsgBytes (32 bytes)
 	// is longer than the testMessage in bytes
-	signature, err := SignEthereum(testMsgBytes, utils.HexToByteArray(privateKey))
+	signature, err := SignEthereum(testMsgBytes, privateKey)
 	assert.Nil(t, err)
-	sigHex := utils.ByteArrayToHex(signature)
+	sigHex := hexutil.Encode(signature)
 
 	fmt.Println("address", address)
-	fmt.Println("msg:", utils.ByteArrayToHex(testMsgBytes))
+	fmt.Println("msg:", hexutil.Encode(testMsgBytes))
 	fmt.Println("signature:", sigHex)
 
 	correct := VerifySignatureWithAddress(address, sigHex, testMsgBytes)
@@ -181,9 +181,9 @@ func TestSignForEthereum32Bytes(t *testing.T) {
 
 func TestGetAddress(t *testing.T) {
 	//privateKey := "0xde411bde02fdc6998b859241ec6681f29137379cea95c90b1b72540e561a344d"
-	publicKey := "0x0476464b646617c572f27ee4e0ff7646466bb6cecff1e71f30431cd9ef5f9b163e19bfc5831267fed3818c0b9423386138c2636a0744cf492e12da77e903df592c"
+	publicKey, _ := hexutil.Decode("0x0476464b646617c572f27ee4e0ff7646466bb6cecff1e71f30431cd9ef5f9b163e19bfc5831267fed3818c0b9423386138c2636a0744cf492e12da77e903df592c")
 	correctAddress := "0x4ee4a0113f1c833cafcc481e3b3667088607aaa8"
 
-	address := GetAddress(utils.HexToByteArray(publicKey))
+	address := GetAddress(publicKey)
 	assert.Equal(t, address, correctAddress, "address is not correctly calculated from public key")
 }

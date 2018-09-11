@@ -7,25 +7,34 @@ export CENT_CENTRIFUGENETWORK=${CENT_CENTRIFUGENETWORK:-'testing'}
 
 ## Making Env Var Name dynamic
 cent_upper_network=`echo $CENT_CENTRIFUGENETWORK | awk '{print toupper($0)}'`
-temp1="CENT_NETWORKS_${cent_upper_network}_CONTRACTADDRESSES_ANCHORREGISTRY"
-printf -v $temp1 `cat $CENT_ETHEREUM_CONTRACTS_DIR/deployments/$TEST_TARGET_ENVIRONMENT.json | jq -r '.contracts.AnchorRegistry.address' | tr -d '\n'`
-temp2="CENT_NETWORKS_${cent_upper_network}_CONTRACTADDRESSES_IDENTITYFACTORY"
-printf -v $temp2 `cat $CENT_ETHEREUM_CONTRACTS_DIR/deployments/$TEST_TARGET_ENVIRONMENT.json | jq -r '.contracts.IdentityFactory.address' | tr -d '\n'`
-temp3="CENT_NETWORKS_${cent_upper_network}_CONTRACTADDRESSES_IDENTITYREGISTRY"
-printf -v $temp3 `cat $CENT_ETHEREUM_CONTRACTS_DIR/deployments/$TEST_TARGET_ENVIRONMENT.json | jq -r '.contracts.IdentityRegistry.address' | tr -d '\n'`
-export $temp1
-export $temp2
-export $temp3
-vtemp1=$(eval "echo \"\$$temp1\"")
-vtemp2=$(eval "echo \"\$$temp2\"")
-vtemp3=$(eval "echo \"\$$temp3\"")
+tempAnchorRegistry="CENT_NETWORKS_${cent_upper_network}_CONTRACTADDRESSES_ANCHORREGISTRY"
+printf -v $tempAnchorRegistry `cat $CENT_ETHEREUM_CONTRACTS_DIR/deployments/$TEST_TARGET_ENVIRONMENT.json | jq -r '.contracts.AnchorRegistry.address' | tr -d '\n'`
+tempIdentityFactory="CENT_NETWORKS_${cent_upper_network}_CONTRACTADDRESSES_IDENTITYFACTORY"
+printf -v $tempIdentityFactory `cat $CENT_ETHEREUM_CONTRACTS_DIR/deployments/$TEST_TARGET_ENVIRONMENT.json | jq -r '.contracts.IdentityFactory.address' | tr -d '\n'`
+tempIdentityRegistry="CENT_NETWORKS_${cent_upper_network}_CONTRACTADDRESSES_IDENTITYREGISTRY"
+printf -v $tempIdentityRegistry `cat $CENT_ETHEREUM_CONTRACTS_DIR/deployments/$TEST_TARGET_ENVIRONMENT.json | jq -r '.contracts.IdentityRegistry.address' | tr -d '\n'`
+tempIdentityRepository="CENT_NETWORKS_${cent_upper_network}_CONTRACTADDRESSES_ANCHORREPOSITORY"
+printf -v $tempIdentityRepository `cat $CENT_ETHEREUM_CONTRACTS_DIR/deployments/$TEST_TARGET_ENVIRONMENT.json | jq -r '.contracts.AnchorRepository.address' | tr -d '\n'`
+
+
+export $tempAnchorRegistry
+export $tempIdentityFactory
+export $tempIdentityRegistry
+export $tempIdentityRepository
+
+vtempAnchorRegistry=$(eval "echo \"\$$tempAnchorRegistry\"")
+vtempIdentityFactory=$(eval "echo \"\$$tempIdentityFactory\"")
+vtempIdentityRegistry=$(eval "echo \"\$$tempIdentityRegistry\"")
+vtempIdentityRepository=$(eval "echo \"\$$tempIdentityRepository\"")
 #
 
-echo "ANCHOR REGISTRY ADDRESS: ${vtemp1}"
-echo "IDENTITY REGISTRY ADDRESS: ${vtemp3}"
-echo "IDENTITY FACTORY ADDRESS: ${vtemp2}"
+echo "ANCHOR REGISTRY ADDRESS: ${vtempAnchorRegistry}"
+echo "ANCHOR REPOSITORY ADDRESS: ${vtempIdentityRepository}"
+echo "IDENTITY REGISTRY ADDRESS: ${vtempIdentityRegistry}"
+echo "IDENTITY FACTORY ADDRESS: ${vtempIdentityFactory}"
 
-if [ -z $vtemp1 ] || [ -z $vtemp2 ] || [ -z $vtemp3 ]; then
+
+if [ -z $vtempAnchorRegistry ] || [ -z $vtempIdentityFactory ] || [ -z $vtempIdentityRegistry ] || [ -z $vtempIdentityRepository ]; then
     echo "One of the required contract addresses is not set. Aborting."
     exit -1
 fi
