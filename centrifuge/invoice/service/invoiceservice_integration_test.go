@@ -18,11 +18,14 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/stretchr/testify/assert"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 )
 
 func TestMain(m *testing.M) {
 	cc.TestFunctionalEthereumBootstrap()
-	invoicerepository.InitLevelDBRepository(cc.GetLevelDBStorage())
+	db := cc.GetLevelDBStorage()
+	invoicerepository.InitLevelDBRepository(db)
+	coredocumentrepository.InitLevelDBRepository(db)
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()
 	os.Exit(result)

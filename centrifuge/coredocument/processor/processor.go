@@ -14,6 +14,7 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/signatures"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	logging "github.com/ipfs/go-log"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 )
 
 var log = logging.Logger("coredocument")
@@ -84,6 +85,15 @@ func (dp *defaultProcessor) Send(coreDocument *coredocumentpb.CoreDocument, ctx 
 }
 
 // Anchor anchors the given CoreDocument
+// This method should: (TODO)
+// - calculate the signing root
+// - sign document with own key
+// - collect signatures (incl. validate)
+// - store signatures on coredocument
+// - calculate DocumentRoot
+// - store doc in db
+// - anchor the document
+// - send anchored document to collaborators
 func (dp *defaultProcessor) Anchor(document *coredocumentpb.CoreDocument) error {
 	if document == nil {
 		return errors.NilError(document)
@@ -103,6 +113,19 @@ func (dp *defaultProcessor) Anchor(document *coredocumentpb.CoreDocument) error 
 		log.Error(err)
 		return err
 	}
+
+	// Sign signingRoot and append mac to signatures
+	idConfig, err := centED25519.GetIDConfig()
+	if err != nil {
+		return err
+	}
+	sig := signatures.Sign(idConfig, document.SigningRoot)
+	document.Signatures = append(document.Signatures, sig)
+	err = coredocumentrepository.GetRepository().Create(document.CurrentIdentifier, document)
+	if err != nil {
+		return err
+	}
+	//
 
 	// TODO anchoring
 	//rootHash, err := tools.SliceToByte32(document.DocumentRoot) //TODO: CHANGE
@@ -134,22 +157,5 @@ func (dp *defaultProcessor) Anchor(document *coredocumentpb.CoreDocument) error 
 	//}
 	//
 	//anchorWatch := <-confirmations
-	return nil
-}
-
-func (dp *defaultProcessor) Sign(document *coredocumentpb.CoreDocument) (err error) {
-	// TODO: The signing root shouldn't be set in this method, instead we should split the entire flow into two separate parts: create/update document & sign document
-	err = coredocument.CalculateSigningRoot(document)
-	if err != nil {
-		return err
-	}
-
-	idConfig, err := centED25519.GetIDConfig()
-	if err != nil {
-		return err
-	}
-
-	sig := signatures.Sign(idConfig, document)
-	document.Signatures = append(document.Signatures, sig)
 	return nil
 }
