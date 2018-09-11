@@ -40,7 +40,6 @@ func TestCreateAndLookupIdentity_Integration(t *testing.T) {
 	wrongCentrifugeId[3] = 0x0
 	wrongCentrifugeIdTyped, _ := identity.NewCentID(wrongCentrifugeId)
 
-
 	id, confirmations, err := identityService.CreateIdentity(centrifugeId)
 	assert.Nil(t, err, "should not error out when creating identity")
 
