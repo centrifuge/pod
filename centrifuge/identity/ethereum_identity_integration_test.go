@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
-	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
+	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/stretchr/testify/assert"
@@ -73,6 +73,7 @@ func TestCreateAndLookupIdentity_Integration(t *testing.T) {
 	key := tools.RandomSlice(32)
 	confirmations, err = id.AddKeyToIdentity(1, key)
 	assert.Nil(t, err, "should not error out when adding key to identity")
+	assert.NotNil(t, confirmations, "confirmations channel should not be nil")
 	watchReceivedIdentity := <-confirmations
 	assert.Equal(t, centrifugeId, watchReceivedIdentity.Identity.GetCentrifugeID(), "Resulting Identity should have the same ID as the input")
 

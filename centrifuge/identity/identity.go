@@ -49,6 +49,7 @@ type Identity interface {
 	String() string
 	GetCentrifugeID() []byte
 	CentrifugeIDString() string
+	// todo convert this to a - type CentrifugeId [CentIdByteLength]byte
 	CentrifugeIDBytes() [CentIdByteLength]byte
 	CentrifugeIDBigInt() *big.Int
 	SetCentrifugeID(b []byte) error
@@ -162,4 +163,11 @@ func ValidateKey(centrifugeId []byte, key []byte) error {
 	}
 
 	return nil
+}
+
+// TODO remove after adding a type for CentId
+func CentIdToBigInt(centrifugeId [CentIdByteLength]byte) *big.Int {
+	centIdBig := new(big.Int)
+	centIdBig.SetBytes(centrifugeId[:])
+	return centIdBig
 }

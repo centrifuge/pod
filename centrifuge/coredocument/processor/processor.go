@@ -6,11 +6,11 @@ import (
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/anchor"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
-	centED25519 "github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/p2p"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/signatures"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
@@ -85,12 +85,21 @@ func (dp *defaultProcessor) Send(coreDocument *coredocumentpb.CoreDocument, ctx 
 }
 
 // Anchor anchors the given CoreDocument
+// This method should: (TODO)
+// - calculate the signing root
+// - sign document with own key
+// - collect signatures (incl. validate)
+// - store signatures on coredocument
+// - calculate DocumentRoot
+// - store doc in db
+// - anchor the document
+// - send anchored document to collaborators
 func (dp *defaultProcessor) Anchor(document *coredocumentpb.CoreDocument) error {
 	if document == nil {
 		return errors.NilError(document)
 	}
 
-	id, err := tools.SliceToByte32(document.CurrentIdentifier)
+	_, err := tools.SliceToByte32(document.CurrentIdentifier)
 	if err != nil {
 		log.Error(err)
 		return err
@@ -105,35 +114,48 @@ func (dp *defaultProcessor) Anchor(document *coredocumentpb.CoreDocument) error 
 		return err
 	}
 
-	rootHash, err := tools.SliceToByte32(document.SigningRoot) //TODO: CHANGE
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-
-	confirmations, err := anchor.RegisterAsAnchor(id, rootHash)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-
-	anchorWatch := <-confirmations
-	return anchorWatch.Error
-}
-
-func (dp *defaultProcessor) Sign(document *coredocumentpb.CoreDocument) (err error) {
-	// TODO: The signing root shouldn't be set in this method, instead we should split the entire flow into two separate parts: create/update document & sign document
-	err = coredocument.CalculateSigningRoot(document)
+	// Sign signingRoot and append mac to signatures
+	idConfig, err := ed25519.GetIDConfig()
 	if err != nil {
 		return err
 	}
-
-	idConfig, err := centED25519.GetIDConfig()
-	if err != nil {
-		return err
-	}
-
-	sig := signatures.Sign(idConfig, document)
+	sig := signatures.Sign(idConfig, document.SigningRoot)
 	document.Signatures = append(document.Signatures, sig)
+	err = coredocumentrepository.GetRepository().Create(document.CurrentIdentifier, document)
+	if err != nil {
+		return err
+	}
+	//
+
+	// TODO anchoring
+	//rootHash, err := tools.SliceToByte32(document.DocumentRoot) //TODO: CHANGE
+	//if err != nil {
+	//	log.Error(err)
+	//	return err
+	//}
+	//
+	//idConfig, err := centED25519.GetIDConfig()
+	//if err != nil {
+	//	log.Error(err)
+	//	return err
+	//}
+	//
+	//var centId [identity.CentIdByteLength]byte
+	//copy(centId[:], idConfig.ID[:identity.CentIdByteLength])
+	//
+	//signature, err := secp256k1.SignEthereum(anchoring.GenerateCommitHash(id, centId, rootHash), idConfig.PrivateKey)
+	//if err != nil {
+	//	log.Error(err)
+	//	return err
+	//}
+	//
+	//// TODO documentProofs has to be included when we develop precommit flow
+	//confirmations, err := anchoring.CommitAnchor(id, rootHash, centId, [][anchoring.DocumentProofLength]byte{tools.RandomByte32()}, signature)
+	//if err != nil {
+	//	log.Error(err)
+	//	return err
+	//}
+	//
+	//anchorWatch := <-confirmations
 	return nil
 }

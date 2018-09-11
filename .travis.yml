@@ -39,13 +39,12 @@ jobs:
         - scripts/format_go.sh
         - make proto-all
         - make gen-swagger
-
-        - echo "Checking that `prototool gen` doesn't result in a modified git tree" && git diff --exit-code centrifuge/protobufs/gen
+        - echo "Checking that 'prototool gen' doesn't result in a modified git tree" && git diff --exit-code centrifuge/protobufs/gen
         - scripts/test_wrapper.sh
       after_success:
        - bash <(curl -s https://codecov.io/bash)
     - stage: build_artifacts
-      if: (NOT type IN (pull_request)) AND (branch = master)
+      if: (NOT type IN (pull_request)) AND (branch = develop)
       before_script:
        - openssl aes-256-cbc -K $encrypted_f84a564476a2_key -iv $encrypted_f84a564476a2_iv -in peak-vista-185616-9f70002df7eb.json.enc -out peak-vista-185616-9f70002df7eb.json -d
       script: make build-ci
