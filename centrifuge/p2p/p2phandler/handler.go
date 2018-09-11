@@ -81,7 +81,7 @@ func (srv *Handler) Post(ctx context.Context, req *p2ppb.P2PMessage) (*p2ppb.P2P
 	}, nil
 }
 
-// RequestDocumentSignature signs the received document and returns the signature
+// RequestDocumentSignature signs the received document and returns the signature of the signingRoot
 //
 // How do we verify if we want to sign the document?
 // Can we assume that if we are called to sign, we simply sign?
@@ -101,7 +101,7 @@ func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.
 		return nil, errors.New(code.Unknown, fmt.Sprintf("failed to get ID Config: %v", err))
 	}
 
-	sig := signatures.Sign(idConfig, sigReq.Document)
+	sig := signatures.Sign(idConfig, sigReq.Document.SigningRoot)
 	return &p2ppb.SignatureResponse{
 		CentNodeVersion: version.GetVersion().String(),
 		Signature:       sig,
