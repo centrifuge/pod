@@ -10,7 +10,9 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/p2p"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/signatures"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	logging "github.com/ipfs/go-log"
 )
@@ -113,7 +115,7 @@ func (dp *defaultProcessor) Anchor(document *coredocumentpb.CoreDocument) error 
 	}
 
 	// Sign signingRoot and append mac to signatures
-	idConfig, err := centED25519.GetIDConfig()
+	idConfig, err := ed25519.GetIDConfig()
 	if err != nil {
 		return err
 	}
