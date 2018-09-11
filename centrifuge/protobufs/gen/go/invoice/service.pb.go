@@ -30,7 +30,7 @@ const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type CreateInvoiceProofEnvelope struct {
 	DocumentIdentifier   []byte   `protobuf:"bytes,1,opt,name=document_identifier,json=documentIdentifier,proto3" json:"document_identifier,omitempty"`
-	Fields               []string `protobuf:"bytes,2,rep,name=fields" json:"fields,omitempty"`
+	Fields               []string `protobuf:"bytes,2,rep,name=fields,proto3" json:"fields,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -76,7 +76,7 @@ func (m *CreateInvoiceProofEnvelope) GetFields() []string {
 
 type InvoiceProof struct {
 	DocumentIdentifier   []byte          `protobuf:"bytes,1,opt,name=document_identifier,json=documentIdentifier,proto3" json:"document_identifier,omitempty"`
-	FieldProofs          []*proto1.Proof `protobuf:"bytes,2,rep,name=field_proofs,json=fieldProofs" json:"field_proofs,omitempty"`
+	FieldProofs          []*proto1.Proof `protobuf:"bytes,2,rep,name=field_proofs,json=fieldProofs,proto3" json:"field_proofs,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
 	XXX_unrecognized     []byte          `json:"-"`
 	XXX_sizecache        int32           `json:"-"`
@@ -121,7 +121,7 @@ func (m *InvoiceProof) GetFieldProofs() []*proto1.Proof {
 }
 
 type AnchorInvoiceEnvelope struct {
-	Document             *invoice.InvoiceDocument `protobuf:"bytes,1,opt,name=document" json:"document,omitempty"`
+	Document             *invoice.InvoiceDocument `protobuf:"bytes,1,opt,name=document,proto3" json:"document,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                 `json:"-"`
 	XXX_unrecognized     []byte                   `json:"-"`
 	XXX_sizecache        int32                    `json:"-"`
@@ -161,7 +161,7 @@ func (m *AnchorInvoiceEnvelope) GetDocument() *invoice.InvoiceDocument {
 type SendInvoiceEnvelope struct {
 	// Centrifuge OS Entity of the recipient
 	Recipients           [][]byte                 `protobuf:"bytes,1,rep,name=recipients,proto3" json:"recipients,omitempty"`
-	Document             *invoice.InvoiceDocument `protobuf:"bytes,10,opt,name=document" json:"document,omitempty"`
+	Document             *invoice.InvoiceDocument `protobuf:"bytes,10,opt,name=document,proto3" json:"document,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                 `json:"-"`
 	XXX_unrecognized     []byte                   `json:"-"`
 	XXX_sizecache        int32                    `json:"-"`
@@ -244,7 +244,7 @@ func (m *GetInvoiceDocumentEnvelope) GetDocumentIdentifier() []byte {
 }
 
 type ReceivedInvoices struct {
-	Invoices             []*invoice.InvoiceDocument `protobuf:"bytes,1,rep,name=invoices" json:"invoices,omitempty"`
+	Invoices             []*invoice.InvoiceDocument `protobuf:"bytes,1,rep,name=invoices,proto3" json:"invoices,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                   `json:"-"`
 	XXX_unrecognized     []byte                     `json:"-"`
 	XXX_sizecache        int32                      `json:"-"`
@@ -298,8 +298,9 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
-// Client API for InvoiceDocumentService service
-
+// InvoiceDocumentServiceClient is the client API for InvoiceDocumentService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type InvoiceDocumentServiceClient interface {
 	CreateInvoiceProof(ctx context.Context, in *CreateInvoiceProofEnvelope, opts ...grpc.CallOption) (*InvoiceProof, error)
 	AnchorInvoiceDocument(ctx context.Context, in *AnchorInvoiceEnvelope, opts ...grpc.CallOption) (*invoice.InvoiceDocument, error)
@@ -318,7 +319,7 @@ func NewInvoiceDocumentServiceClient(cc *grpc.ClientConn) InvoiceDocumentService
 
 func (c *invoiceDocumentServiceClient) CreateInvoiceProof(ctx context.Context, in *CreateInvoiceProofEnvelope, opts ...grpc.CallOption) (*InvoiceProof, error) {
 	out := new(InvoiceProof)
-	err := grpc.Invoke(ctx, "/invoice.InvoiceDocumentService/CreateInvoiceProof", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/invoice.InvoiceDocumentService/CreateInvoiceProof", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -327,7 +328,7 @@ func (c *invoiceDocumentServiceClient) CreateInvoiceProof(ctx context.Context, i
 
 func (c *invoiceDocumentServiceClient) AnchorInvoiceDocument(ctx context.Context, in *AnchorInvoiceEnvelope, opts ...grpc.CallOption) (*invoice.InvoiceDocument, error) {
 	out := new(invoice.InvoiceDocument)
-	err := grpc.Invoke(ctx, "/invoice.InvoiceDocumentService/AnchorInvoiceDocument", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/invoice.InvoiceDocumentService/AnchorInvoiceDocument", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -336,7 +337,7 @@ func (c *invoiceDocumentServiceClient) AnchorInvoiceDocument(ctx context.Context
 
 func (c *invoiceDocumentServiceClient) SendInvoiceDocument(ctx context.Context, in *SendInvoiceEnvelope, opts ...grpc.CallOption) (*invoice.InvoiceDocument, error) {
 	out := new(invoice.InvoiceDocument)
-	err := grpc.Invoke(ctx, "/invoice.InvoiceDocumentService/SendInvoiceDocument", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/invoice.InvoiceDocumentService/SendInvoiceDocument", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -345,7 +346,7 @@ func (c *invoiceDocumentServiceClient) SendInvoiceDocument(ctx context.Context, 
 
 func (c *invoiceDocumentServiceClient) GetInvoiceDocument(ctx context.Context, in *GetInvoiceDocumentEnvelope, opts ...grpc.CallOption) (*invoice.InvoiceDocument, error) {
 	out := new(invoice.InvoiceDocument)
-	err := grpc.Invoke(ctx, "/invoice.InvoiceDocumentService/GetInvoiceDocument", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/invoice.InvoiceDocumentService/GetInvoiceDocument", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -354,15 +355,14 @@ func (c *invoiceDocumentServiceClient) GetInvoiceDocument(ctx context.Context, i
 
 func (c *invoiceDocumentServiceClient) GetReceivedInvoiceDocuments(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*ReceivedInvoices, error) {
 	out := new(ReceivedInvoices)
-	err := grpc.Invoke(ctx, "/invoice.InvoiceDocumentService/GetReceivedInvoiceDocuments", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/invoice.InvoiceDocumentService/GetReceivedInvoiceDocuments", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// Server API for InvoiceDocumentService service
-
+// InvoiceDocumentServiceServer is the server API for InvoiceDocumentService service.
 type InvoiceDocumentServiceServer interface {
 	CreateInvoiceProof(context.Context, *CreateInvoiceProofEnvelope) (*InvoiceProof, error)
 	AnchorInvoiceDocument(context.Context, *AnchorInvoiceEnvelope) (*invoice.InvoiceDocument, error)

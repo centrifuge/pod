@@ -30,7 +30,7 @@ const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type CreatePurchaseOrderProofEnvelope struct {
 	DocumentIdentifier   []byte   `protobuf:"bytes,1,opt,name=document_identifier,json=documentIdentifier,proto3" json:"document_identifier,omitempty"`
-	Fields               []string `protobuf:"bytes,2,rep,name=fields" json:"fields,omitempty"`
+	Fields               []string `protobuf:"bytes,2,rep,name=fields,proto3" json:"fields,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -76,7 +76,7 @@ func (m *CreatePurchaseOrderProofEnvelope) GetFields() []string {
 
 type PurchaseOrderProof struct {
 	DocumentIdentifier   []byte          `protobuf:"bytes,1,opt,name=document_identifier,json=documentIdentifier,proto3" json:"document_identifier,omitempty"`
-	FieldProofs          []*proto1.Proof `protobuf:"bytes,2,rep,name=field_proofs,json=fieldProofs" json:"field_proofs,omitempty"`
+	FieldProofs          []*proto1.Proof `protobuf:"bytes,2,rep,name=field_proofs,json=fieldProofs,proto3" json:"field_proofs,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
 	XXX_unrecognized     []byte          `json:"-"`
 	XXX_sizecache        int32           `json:"-"`
@@ -121,7 +121,7 @@ func (m *PurchaseOrderProof) GetFieldProofs() []*proto1.Proof {
 }
 
 type AnchorPurchaseOrderEnvelope struct {
-	Document             *purchaseorder.PurchaseOrderDocument `protobuf:"bytes,1,opt,name=document" json:"document,omitempty"`
+	Document             *purchaseorder.PurchaseOrderDocument `protobuf:"bytes,1,opt,name=document,proto3" json:"document,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                             `json:"-"`
 	XXX_unrecognized     []byte                               `json:"-"`
 	XXX_sizecache        int32                                `json:"-"`
@@ -161,7 +161,7 @@ func (m *AnchorPurchaseOrderEnvelope) GetDocument() *purchaseorder.PurchaseOrder
 type SendPurchaseOrderEnvelope struct {
 	// Centrifuge OS Entity of the recipient
 	Recipients           [][]byte                             `protobuf:"bytes,1,rep,name=recipients,proto3" json:"recipients,omitempty"`
-	Document             *purchaseorder.PurchaseOrderDocument `protobuf:"bytes,10,opt,name=document" json:"document,omitempty"`
+	Document             *purchaseorder.PurchaseOrderDocument `protobuf:"bytes,10,opt,name=document,proto3" json:"document,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                             `json:"-"`
 	XXX_unrecognized     []byte                               `json:"-"`
 	XXX_sizecache        int32                                `json:"-"`
@@ -244,7 +244,7 @@ func (m *GetPurchaseOrderDocumentEnvelope) GetDocumentIdentifier() []byte {
 }
 
 type ReceivedPurchaseOrders struct {
-	Purchaseorders       []*purchaseorder.PurchaseOrderDocument `protobuf:"bytes,1,rep,name=purchaseorders" json:"purchaseorders,omitempty"`
+	Purchaseorders       []*purchaseorder.PurchaseOrderDocument `protobuf:"bytes,1,rep,name=purchaseorders,proto3" json:"purchaseorders,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                               `json:"-"`
 	XXX_unrecognized     []byte                                 `json:"-"`
 	XXX_sizecache        int32                                  `json:"-"`
@@ -298,8 +298,9 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
-// Client API for PurchaseOrderDocumentService service
-
+// PurchaseOrderDocumentServiceClient is the client API for PurchaseOrderDocumentService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type PurchaseOrderDocumentServiceClient interface {
 	CreatePurchaseOrderProof(ctx context.Context, in *CreatePurchaseOrderProofEnvelope, opts ...grpc.CallOption) (*PurchaseOrderProof, error)
 	AnchorPurchaseOrderDocument(ctx context.Context, in *AnchorPurchaseOrderEnvelope, opts ...grpc.CallOption) (*purchaseorder.PurchaseOrderDocument, error)
@@ -318,7 +319,7 @@ func NewPurchaseOrderDocumentServiceClient(cc *grpc.ClientConn) PurchaseOrderDoc
 
 func (c *purchaseOrderDocumentServiceClient) CreatePurchaseOrderProof(ctx context.Context, in *CreatePurchaseOrderProofEnvelope, opts ...grpc.CallOption) (*PurchaseOrderProof, error) {
 	out := new(PurchaseOrderProof)
-	err := grpc.Invoke(ctx, "/purchaseorder.PurchaseOrderDocumentService/CreatePurchaseOrderProof", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/purchaseorder.PurchaseOrderDocumentService/CreatePurchaseOrderProof", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -327,7 +328,7 @@ func (c *purchaseOrderDocumentServiceClient) CreatePurchaseOrderProof(ctx contex
 
 func (c *purchaseOrderDocumentServiceClient) AnchorPurchaseOrderDocument(ctx context.Context, in *AnchorPurchaseOrderEnvelope, opts ...grpc.CallOption) (*purchaseorder.PurchaseOrderDocument, error) {
 	out := new(purchaseorder.PurchaseOrderDocument)
-	err := grpc.Invoke(ctx, "/purchaseorder.PurchaseOrderDocumentService/AnchorPurchaseOrderDocument", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/purchaseorder.PurchaseOrderDocumentService/AnchorPurchaseOrderDocument", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -336,7 +337,7 @@ func (c *purchaseOrderDocumentServiceClient) AnchorPurchaseOrderDocument(ctx con
 
 func (c *purchaseOrderDocumentServiceClient) SendPurchaseOrderDocument(ctx context.Context, in *SendPurchaseOrderEnvelope, opts ...grpc.CallOption) (*purchaseorder.PurchaseOrderDocument, error) {
 	out := new(purchaseorder.PurchaseOrderDocument)
-	err := grpc.Invoke(ctx, "/purchaseorder.PurchaseOrderDocumentService/SendPurchaseOrderDocument", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/purchaseorder.PurchaseOrderDocumentService/SendPurchaseOrderDocument", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -345,7 +346,7 @@ func (c *purchaseOrderDocumentServiceClient) SendPurchaseOrderDocument(ctx conte
 
 func (c *purchaseOrderDocumentServiceClient) GetPurchaseOrderDocument(ctx context.Context, in *GetPurchaseOrderDocumentEnvelope, opts ...grpc.CallOption) (*purchaseorder.PurchaseOrderDocument, error) {
 	out := new(purchaseorder.PurchaseOrderDocument)
-	err := grpc.Invoke(ctx, "/purchaseorder.PurchaseOrderDocumentService/GetPurchaseOrderDocument", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/purchaseorder.PurchaseOrderDocumentService/GetPurchaseOrderDocument", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -354,15 +355,14 @@ func (c *purchaseOrderDocumentServiceClient) GetPurchaseOrderDocument(ctx contex
 
 func (c *purchaseOrderDocumentServiceClient) GetReceivedPurchaseOrderDocuments(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*ReceivedPurchaseOrders, error) {
 	out := new(ReceivedPurchaseOrders)
-	err := grpc.Invoke(ctx, "/purchaseorder.PurchaseOrderDocumentService/GetReceivedPurchaseOrderDocuments", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/purchaseorder.PurchaseOrderDocumentService/GetReceivedPurchaseOrderDocuments", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// Server API for PurchaseOrderDocumentService service
-
+// PurchaseOrderDocumentServiceServer is the server API for PurchaseOrderDocumentService service.
 type PurchaseOrderDocumentServiceServer interface {
 	CreatePurchaseOrderProof(context.Context, *CreatePurchaseOrderProofEnvelope) (*PurchaseOrderProof, error)
 	AnchorPurchaseOrderDocument(context.Context, *AnchorPurchaseOrderEnvelope) (*purchaseorder.PurchaseOrderDocument, error)
