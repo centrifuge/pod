@@ -39,8 +39,7 @@ jobs:
         - scripts/format_go.sh
         - make proto-all
         - make gen-swagger
-
-        - echo "Checking that `prototool gen` doesn't result in a modified git tree" && git diff --exit-code centrifuge/protobufs/gen
+        - echo "Checking that 'prototool gen' doesn't result in a modified git tree" && git diff --exit-code centrifuge/protobufs/gen
         - scripts/test_wrapper.sh
       after_success:
        - bash <(curl -s https://codecov.io/bash)
