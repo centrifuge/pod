@@ -1,4 +1,4 @@
-package testing
+package testingbootstrap
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/anchor"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/anchoring"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/bootstrapper"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
@@ -69,7 +69,7 @@ func bootstrapQueuing() {
 	// TODO here we would not have to put the bootstrapper.BootstrappedConfig after the TestBootstrapper refactoring
 	context := map[string]interface{}{bootstrapper.BootstrappedConfig: true}
 	for _, b := range []bootstrapper.TestBootstrapper{
-		&anchor.Bootstrapper{},
+		&anchoring.Bootstrapper{},
 		&identity.Bootstrapper{},
 		&queue.Bootstrapper{},
 	} {
