@@ -112,7 +112,7 @@ func getSignatureAsync(ctx context.Context, doc coredocumentpb.CoreDocument, cli
 }
 
 // GetSignaturesForDocument requests peer nodes for the signature and verifies them
-func GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocument, idService identity.Service, centIDs [][]byte) error {
+func GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocument, centIDs [][]byte) error {
 	if doc == nil {
 		return errors.NilError(doc)
 	}
@@ -125,25 +125,29 @@ func GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocum
 	in := make(chan signatureResponseWrap)
 	defer close(in)
 
+	var count int
 	for _, target := range targets {
 		client, err := OpenClient(target)
 		if err != nil {
-			return errors.Wrap(err, "failed to connect to target")
+			log.Error(errors.Wrap(err, "failed to connect to target"))
+			continue
 		}
 
 		// for now going with context.background, once we have a timeout for request
 		// we can use context.Timeout for that
+		count++
 		go getSignatureAsync(ctx, *doc, client, in)
 	}
 
 	var responses []signatureResponseWrap
-	for range targets {
+	for i := 0; i < count; i++ {
 		responses = append(responses, <-in)
 	}
 
 	for _, resp := range responses {
 		if resp.err != nil {
-			return err
+			log.Error(err)
+			continue
 		}
 
 		doc.Signatures = append(doc.Signatures, resp.resp.Signature)
