@@ -8,8 +8,11 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/centerrors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
+	centED25519 "github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/p2p"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/signatures"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	logging "github.com/ipfs/go-log"
 )
@@ -89,6 +92,15 @@ func (dp *defaultProcessor) Send(coreDocument *coredocumentpb.CoreDocument, ctx 
 }
 
 // Anchor anchors the given CoreDocument
+// This method should: (TODO)
+// - calculate the signing root
+// - sign document with own key
+// - collect signatures (incl. validate)
+// - store signatures on coredocument
+// - calculate DocumentRoot
+// - store doc in db
+// - anchor the document
+// - send anchored document to collaborators
 func (dp *defaultProcessor) Anchor(document *coredocumentpb.CoreDocument) error {
 	if document == nil {
 		return centerrors.NilError(document)
@@ -108,6 +120,19 @@ func (dp *defaultProcessor) Anchor(document *coredocumentpb.CoreDocument) error 
 		log.Error(err)
 		return err
 	}
+
+	// Sign signingRoot and append mac to signatures
+	idConfig, err := centED25519.GetIDConfig()
+	if err != nil {
+		return err
+	}
+	sig := signatures.Sign(idConfig, document.SigningRoot)
+	document.Signatures = append(document.Signatures, sig)
+	err = coredocumentrepository.GetRepository().Create(document.CurrentIdentifier, document)
+	if err != nil {
+		return err
+	}
+	//
 
 	// TODO anchoring
 	//rootHash, err := tools.SliceToByte32(document.DocumentRoot) //TODO: CHANGE
