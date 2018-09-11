@@ -92,6 +92,9 @@ func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.
 		return nil, err
 	}
 
+	// TODO: validate core doc and verifying the signing root matches the sent one
+	// TODO: verify the signature of the requester using his public key and validated signing root done above
+	// TODO: store the document once the signature is done
 	if sigReq.Document == nil {
 		return nil, errors.New(code.DocumentInvalid, errors.NilError(sigReq.Document).Error())
 	}

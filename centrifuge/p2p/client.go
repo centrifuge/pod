@@ -86,12 +86,8 @@ func getSignatureForDocument(ctx context.Context, doc coredocumentpb.CoreDocumen
 		return nil, version.IncompatibleVersionError(resp.CentNodeVersion)
 	}
 
-	valid, err := signatures.ValidateSignature(resp.Signature, doc.SigningRoot)
+	err = signatures.ValidateSignature(resp.Signature, doc.SigningRoot)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to validate signature")
-	}
-
-	if !valid {
 		return nil, errors.New(code.AuthenticationFailed, "signature invalid")
 	}
 
