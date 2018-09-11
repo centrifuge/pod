@@ -4,15 +4,16 @@ package anchoring
 
 import (
 	"testing"
-	"github.com/stretchr/testify/assert"
+
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewAnchorId(t *testing.T) {
 	tests := []struct {
-		name string;
-		slice []byte;
-		err string;
+		name  string
+		slice []byte
+		err   string
 	}{
 		{
 			"smallerSlice",
@@ -40,13 +41,13 @@ func TestNewAnchorId(t *testing.T) {
 
 func TestNewDocRoot(t *testing.T) {
 	tests := []struct {
-		name string;
-		slice []byte;
-		err string;
+		name  string
+		slice []byte
+		err   string
 	}{
 		{
 			"smallerSlice",
-			tools.RandomSlice( RootLength - 1),
+			tools.RandomSlice(RootLength - 1),
 			"invalid length byte slice provided for docRoot",
 		},
 		{

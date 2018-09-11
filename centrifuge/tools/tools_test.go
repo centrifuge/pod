@@ -164,10 +164,10 @@ func TestByteFixedToBigInt(t *testing.T) {
 
 func TestIsValidByteSliceForLength(t *testing.T) {
 	tests := []struct {
-		name string;
-		slice []byte;
-		length int;
-		result bool;
+		name   string
+		slice  []byte
+		length int
+		result bool
 	}{
 		{
 			"validByteSlice",
@@ -200,4 +200,3 @@ func TestIsValidByteSliceForLength(t *testing.T) {
 		})
 	}
 }
-

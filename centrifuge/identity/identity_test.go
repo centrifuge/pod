@@ -81,13 +81,13 @@ func (srv *mockIDService) CheckIdentityExists(centID CentId) (exists bool, err e
 
 func TestNewCentId(t *testing.T) {
 	tests := []struct {
-		name string;
-		slice []byte;
-		err string;
+		name  string
+		slice []byte
+		err   string
 	}{
 		{
 			"smallerSlice",
-			tools.RandomSlice( CentIdByteLength - 1),
+			tools.RandomSlice(CentIdByteLength - 1),
 			"invalid length byte slice provided for centId",
 		},
 		{
