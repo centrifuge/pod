@@ -42,7 +42,7 @@ func TestRegistrationConfirmationTask_ParseKwargsHappyPath(t *testing.T) {
 	if err != nil {
 		t.Errorf("Could not parse %s for [%x]", CentIdParam, id)
 	}
-	assert.Equal(t, idBytes, rct.CentId, "Resulting mockID should have the same ID as the input")
+	assert.Equal(t, idBytes, rct.CentID, "Resulting mockID should have the same ID as the input")
 }
 
 func TestRegistrationConfirmationTask_ParseKwargsDoesNotExist(t *testing.T) {
@@ -65,7 +65,7 @@ func TestIdRegistrationConfirmationTask_RunTaskContextError(t *testing.T) {
 	ctx, _ := context.WithDeadline(context.TODO(), toBeDone)
 	eifc := make(chan *EthereumIdentityFactoryContractIdentityCreated)
 	rct := IdRegistrationConfirmationTask{
-		CentId:                 cenId,
+		CentID:                 cenId,
 		IdentityCreatedWatcher: &MockIdentityCreatedWatcher{},
 		EthContext:             ctx,
 		IdentityCreatedEvents:  eifc,
@@ -86,7 +86,7 @@ func TestIdRegistrationConfirmationTask_RunTaskCallError(t *testing.T) {
 	cenId, _ := NewCentID(tools.RandomSlice(CentIDByteLength))
 	identityCreatedWatcher := &MockIdentityCreatedWatcher{shouldFail: true}
 	rct := IdRegistrationConfirmationTask{
-		CentId: cenId,
+		CentID: cenId,
 		EthContextInitializer: func() (ctx context.Context, cancelFunc context.CancelFunc) {
 			toBeDone := time.Now().Add(time.Duration(1 * time.Millisecond))
 			return context.WithDeadline(context.TODO(), toBeDone)
@@ -109,7 +109,7 @@ func TestIdRegistrationConfirmationTask_RunTaskSuccess(t *testing.T) {
 	ctx, _ := context.WithDeadline(context.TODO(), toBeDone)
 	eifc := make(chan *EthereumIdentityFactoryContractIdentityCreated)
 	rct := IdRegistrationConfirmationTask{
-		CentId:                 cenId,
+		CentID:                 cenId,
 		IdentityCreatedWatcher: &MockIdentityCreatedWatcher{},
 		EthContext:             ctx,
 		IdentityCreatedEvents:  eifc,

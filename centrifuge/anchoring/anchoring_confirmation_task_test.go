@@ -54,7 +54,7 @@ func TestAnchoringConfirmationTask_ParseKwargsHappy(t *testing.T) {
 	//convert byte 32 to big int
 	assert.Equal(t, anchorId, anchorId, "Resulting anchor Id should have the same ID as the input")
 	assert.Equal(t, address, act.From, "Resulting address should have the same ID as the input")
-	assert.Equal(t, centId, act.CentrifugeId, "Resulting centId should have the same centId as the input")
+	assert.Equal(t, centId, act.CentrifugeID, "Resulting centId should have the same centId as the input")
 }
 
 func TestAnchoringConfirmationTask_ParseKwargsAnchorNotPassed(t *testing.T) {
@@ -112,7 +112,7 @@ func TestAnchoringConfirmationTask_RunTaskContextClose(t *testing.T) {
 
 	address := common.BytesToAddress([]byte{1, 2, 3, 4})
 	act := AnchoringConfirmationTask{
-		AnchorId: anchorId,
+		AnchorID: anchorId,
 		From:     address,
 		AnchorCommittedWatcher: &MockAnchorCommittedWatcher{Subscription: &testingutils.MockSubscription{}},
 		EthContext:             ctx,
@@ -137,7 +137,7 @@ func TestAnchoringConfirmationTask_RunTaskWatchError(t *testing.T) {
 	anchorId := [32]byte{1, 2, 3}
 	address := common.BytesToAddress([]byte{1, 2, 3, 4})
 	act := AnchoringConfirmationTask{
-		AnchorId: anchorId,
+		AnchorID: anchorId,
 		From:     address,
 		AnchorCommittedWatcher: &MockAnchorCommittedWatcher{shouldFail: true},
 		EthContext:             ctx,
@@ -162,7 +162,7 @@ func TestAnchoringConfirmationTask_RunTaskSubscriptionError(t *testing.T) {
 	errChan := make(chan error)
 	watcher := &MockAnchorCommittedWatcher{Subscription: &testingutils.MockSubscription{ErrChan: errChan}}
 	act := AnchoringConfirmationTask{
-		AnchorId: anchorId,
+		AnchorID: anchorId,
 		From:     address,
 		AnchorCommittedWatcher: watcher,
 		EthContext:             ctx,
@@ -187,7 +187,7 @@ func TestAnchoringConfirmationTask_RunTaskSuccess(t *testing.T) {
 
 	address := common.BytesToAddress([]byte{1, 2, 3, 4})
 	act := AnchoringConfirmationTask{
-		AnchorId: anchorId,
+		AnchorID: anchorId,
 		From:     address,
 		AnchorCommittedWatcher: &MockAnchorCommittedWatcher{Subscription: &testingutils.MockSubscription{}},
 		EthContext:             ctx,

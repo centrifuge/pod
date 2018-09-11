@@ -103,7 +103,7 @@ func TestGenerateAnchor(t *testing.T) {
 
 	assert.Equal(t, commitData.AnchorId, anchorId, "Anchor should have the passed ID")
 	assert.Equal(t, commitData.DocumentRoot, docRoot, "Anchor should have the passed document root")
-	assert.Equal(t, commitData.CentrifugeId, centIdTyped, "Anchor should have the centrifuge id")
+	assert.Equal(t, commitData.CentrifugeID, centIdTyped, "Anchor should have the centrifuge id")
 	assert.Equal(t, commitData.DocumentProofs, documentProofs, "Anchor should have the document proofs")
 	assert.Equal(t, commitData.Signature, signature, "Anchor should have the signature")
 

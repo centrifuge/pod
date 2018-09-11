@@ -34,8 +34,8 @@ type AnchorCommittedWatcher interface {
 type AnchoringConfirmationTask struct {
 	// task parameters
 	From         common.Address
-	AnchorId     AnchorID
-	CentrifugeId identity.CentID
+	AnchorID     AnchorID
+	CentrifugeID identity.CentID
 
 	// state
 	EthContextInitializer  func() (ctx context.Context, cancelFunc context.CancelFunc)
@@ -66,8 +66,8 @@ func (act *AnchoringConfirmationTask) Init() error {
 func (act *AnchoringConfirmationTask) Copy() (gocelery.CeleryTask, error) {
 	return &AnchoringConfirmationTask{
 		act.From,
-		act.AnchorId,
-		act.CentrifugeId,
+		act.AnchorID,
+		act.CentrifugeID,
 		act.EthContextInitializer,
 		act.AnchorRegisteredEvents,
 		act.EthContext,
@@ -88,7 +88,7 @@ func (act *AnchoringConfirmationTask) ParseKwargs(kwargs map[string]interface{})
 		return fmt.Errorf("malformed kwarg [%s] because [%s]", AnchorIdParam, err.Error())
 	}
 
-	act.AnchorId = anchorIdBytes
+	act.AnchorID = anchorIdBytes
 
 	//parse the centrifuge id
 	centrifugeId, ok := kwargs[CentrifugeIdParam]
@@ -101,7 +101,7 @@ func (act *AnchoringConfirmationTask) ParseKwargs(kwargs map[string]interface{})
 		return fmt.Errorf("malformed kwarg [%s] because [%s]", CentrifugeIdParam, err.Error())
 	}
 
-	act.CentrifugeId = centrifugeIdBytes
+	act.CentrifugeID = centrifugeIdBytes
 
 	// parse the address
 	address, ok := kwargs[AddressParam]
@@ -122,7 +122,7 @@ func (act *AnchoringConfirmationTask) ParseKwargs(kwargs map[string]interface{})
 
 // RunTask calls listens to events from geth related to AnchoringConfirmationTask#AnchorID and records result.
 func (act *AnchoringConfirmationTask) RunTask() (interface{}, error) {
-	log.Infof("Waiting for confirmation for the anchorID [%x]", act.AnchorId)
+	log.Infof("Waiting for confirmation for the anchorID [%x]", act.AnchorID)
 	if act.EthContext == nil {
 		act.EthContext, _ = act.EthContextInitializer()
 	}
@@ -132,8 +132,8 @@ func (act *AnchoringConfirmationTask) RunTask() (interface{}, error) {
 	}
 
 	subscription, err := act.AnchorCommittedWatcher.WatchAnchorCommitted(watchOpts, act.AnchorRegisteredEvents,
-		[]common.Address{act.From}, []*big.Int{tools.ByteFixedToBigInt(act.AnchorId[:], AnchorIDLength)},
-		[]*big.Int{tools.ByteFixedToBigInt(act.CentrifugeId[:], identity.CentIDByteLength)})
+		[]common.Address{act.From}, []*big.Int{tools.ByteFixedToBigInt(act.AnchorID[:], AnchorIDLength)},
+		[]*big.Int{tools.ByteFixedToBigInt(act.CentrifugeID[:], identity.CentIDByteLength)})
 
 	if err != nil {
 		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for anchor repository", 1)
@@ -143,10 +143,10 @@ func (act *AnchoringConfirmationTask) RunTask() (interface{}, error) {
 	for {
 		select {
 		case err := <-subscription.Err():
-			log.Errorf("Subscription error %s for anchor ID: %x\n", err.Error(), act.AnchorId)
+			log.Errorf("Subscription error %s for anchor ID: %x\n", err.Error(), act.AnchorID)
 			return nil, err
 		case <-act.EthContext.Done():
-			log.Errorf("Context closed before receiving AnchorRegistered event for anchor ID: %x\n", act.AnchorId)
+			log.Errorf("Context closed before receiving AnchorRegistered event for anchor ID: %x\n", act.AnchorID)
 			return nil, act.EthContext.Err()
 		case res := <-act.AnchorRegisteredEvents:
 			log.Infof("Received AnchorRegistered event from: %x, identifier: %x\n", res.From, res.AnchorId)

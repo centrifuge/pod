@@ -45,7 +45,7 @@ func NewDocRoot(docRootBytes []byte) (DocRoot, error) {
 type PreCommitData struct {
 	AnchorId        AnchorID
 	SigningRoot     DocRoot
-	CentrifugeId    identity.CentID
+	CentrifugeID    identity.CentID
 	Signature       []byte
 	ExpirationBlock *big.Int
 	SchemaVersion   uint
@@ -54,7 +54,7 @@ type PreCommitData struct {
 type CommitData struct {
 	AnchorId       AnchorID
 	DocumentRoot   DocRoot
-	CentrifugeId   identity.CentID
+	CentrifugeID   identity.CentID
 	DocumentProofs [][32]byte
 	Signature      []byte
 	SchemaVersion  uint
@@ -77,30 +77,30 @@ func SupportedSchemaVersion() uint {
 	return AnchorSchemaVersion
 }
 
-func NewPreCommitData(anchorId AnchorID, signingRoot DocRoot, centrifugeId identity.CentID, signature []byte, expirationBlock *big.Int) (preCommitData *PreCommitData) {
+func NewPreCommitData(anchorId AnchorID, signingRoot DocRoot, centrifugeID identity.CentID, signature []byte, expirationBlock *big.Int) (preCommitData *PreCommitData) {
 	preCommitData = &PreCommitData{}
 	preCommitData.AnchorId = anchorId
 	preCommitData.SigningRoot = signingRoot
-	preCommitData.CentrifugeId = centrifugeId
+	preCommitData.CentrifugeID = centrifugeID
 	preCommitData.Signature = signature
 	preCommitData.ExpirationBlock = expirationBlock
 	preCommitData.SchemaVersion = SupportedSchemaVersion()
 	return preCommitData
 }
 
-func NewCommitData(anchorId AnchorID, documentRoot DocRoot, centrifugeId identity.CentID, documentProofs [][32]byte, signature []byte) (commitData *CommitData) {
+func NewCommitData(anchorId AnchorID, documentRoot DocRoot, centrifugeID identity.CentID, documentProofs [][32]byte, signature []byte) (commitData *CommitData) {
 	commitData = &CommitData{}
 	commitData.AnchorId = anchorId
 	commitData.DocumentRoot = documentRoot
-	commitData.CentrifugeId = centrifugeId
+	commitData.CentrifugeID = centrifugeID
 	commitData.DocumentProofs = documentProofs
 	commitData.Signature = signature
 	return commitData
 }
 
-func GenerateCommitHash(anchorId AnchorID, centrifugeId identity.CentID, documentRoot DocRoot) []byte {
+func GenerateCommitHash(anchorId AnchorID, centrifugeID identity.CentID, documentRoot DocRoot) []byte {
 	message := append(anchorId[:], documentRoot[:]...)
-	message = append(message, centrifugeId[:]...)
+	message = append(message, centrifugeID[:]...)
 	messageToSign := crypto.Keccak256(message)
 	return messageToSign
 }

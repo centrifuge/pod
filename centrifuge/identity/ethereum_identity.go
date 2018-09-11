@@ -78,7 +78,7 @@ func (id *EthereumIdentity) CentrifugeIDBytes() CentID {
 }
 
 func (id *EthereumIdentity) String() string {
-	return fmt.Sprintf("CentrifugeId [%s]", id.CentrifugeId)
+	return fmt.Sprintf("CentrifugeID [%s]", id.CentrifugeId)
 }
 
 func (id *EthereumIdentity) GetCentrifugeID() CentID {

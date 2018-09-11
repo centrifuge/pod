@@ -51,7 +51,7 @@ func TestCreateAndLookupIdentity_Integration(t *testing.T) {
 	// LookupIdentityForID
 	id, err = identityService.LookupIdentityForID(centrifugeId)
 	assert.Nil(t, err, "should not error out when resolving identity")
-	assert.Equal(t, centrifugeId, id.GetCentrifugeID(), "CentrifugeId Should match provided one")
+	assert.Equal(t, centrifugeId, id.GetCentrifugeID(), "CentrifugeID Should match provided one")
 
 	wrongId, err := identityService.LookupIdentityForID(wrongCentrifugeIdTyped)
 	assert.NotNil(t, err, "should error out when resolving wrong identity")
