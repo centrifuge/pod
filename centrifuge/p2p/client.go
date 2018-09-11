@@ -125,6 +125,7 @@ func GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocum
 	in := make(chan signatureResponseWrap)
 	defer close(in)
 
+	var count int
 	for _, target := range targets {
 		client, err := OpenClient(target)
 		if err != nil {
@@ -134,11 +135,12 @@ func GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocum
 
 		// for now going with context.background, once we have a timeout for request
 		// we can use context.Timeout for that
+		count++
 		go getSignatureAsync(ctx, *doc, client, in)
 	}
 
 	var responses []signatureResponseWrap
-	for range targets {
+	for i := 0; i < count; i++ {
 		responses = append(responses, <-in)
 	}
 
