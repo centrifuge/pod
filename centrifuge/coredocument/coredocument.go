@@ -7,6 +7,7 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/centerrors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/code"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/signatures"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/centrifuge/precise-proofs/proofs"
 )
@@ -118,7 +119,8 @@ func GetDocumentSigningTree(document *coredocumentpb.CoreDocument) (tree *proofs
 	return tree, nil
 }
 
-// Validate checks that all required fields are set before doing any processing with core document
+// Validate checks the basic requirements for Core document
+// checks Identifiers and data_root to be preset
 func Validate(document *coredocumentpb.CoreDocument) (valid bool, errMsg string, errs map[string]string) {
 	if document == nil {
 		return false, centerrors.NilDocument, nil
@@ -129,11 +131,6 @@ func Validate(document *coredocumentpb.CoreDocument) (valid bool, errMsg string,
 	if tools.IsEmptyByteSlice(document.DocumentIdentifier) {
 		errs["cd_identifier"] = centerrors.RequiredField
 	}
-
-	// TODO(ved): where do we fill these
-	//if tools.IsEmptyByteSlice(document.DocumentRoot) {
-	//	errs["cd_root"] = errors.RequiredField
-	//}
 
 	if tools.IsEmptyByteSlice(document.CurrentIdentifier) {
 		errs["cd_current_identifier"] = centerrors.RequiredField
@@ -173,6 +170,42 @@ func Validate(document *coredocumentpb.CoreDocument) (valid bool, errMsg string,
 	}
 
 	return false, "Invalid CoreDocument", errs
+}
+
+// ValidateWithSignature does a basic validations and signature validations
+// signing_root is recalculated and verified
+// signatures are validated
+func ValidateWithSignature(doc *coredocumentpb.CoreDocument) error {
+	if valid, errMsg, errs := Validate(doc); !valid {
+		return centerrors.NewWithErrors(code.DocumentInvalid, errMsg, errs)
+	}
+
+	if tools.IsEmptyByteSlice(doc.SigningRoot) {
+		return centerrors.New(code.DocumentInvalid, "signing_root is missing")
+	}
+
+	t, err := GetDocumentSigningTree(doc)
+	if err != nil {
+		return centerrors.New(code.Unknown, err.Error())
+	}
+
+	if msg := t.RootHash(); !tools.IsSameByteSlice(msg, doc.SigningRoot) {
+		return centerrors.New(code.DocumentInvalid, "signing_root mismatch")
+	}
+
+	var errs []error
+	for _, sig := range doc.Signatures {
+		err := signatures.ValidateSignature(sig, doc.SigningRoot)
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	if len(errs) > 0 {
+		return fmt.Errorf("signature verification failed: %v", errs)
+	}
+
+	return nil
 }
 
 // FillIdentifiers fills in missing identifiers for the given CoreDocument.

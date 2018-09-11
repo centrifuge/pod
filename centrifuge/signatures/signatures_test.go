@@ -68,9 +68,8 @@ func TestValidateSignature_invalid_key(t *testing.T) {
 	centId, _ := identity.NewCentID(sig.EntityId)
 	srv.On("LookupIdentityForID", centId).Return(nil, fmt.Errorf("failed GetIdentity")).Once()
 	identity.SetIdentityService(srv)
-	valid, err := ValidateSignature(sig, key1Pub)
+	err := ValidateSignature(sig, key1Pub)
 	srv.AssertExpectations(t)
-	assert.False(t, valid, "should be false")
 	assert.NotNil(t, err, "must be not nil")
 	assert.Contains(t, err.Error(), "failed GetIdentity")
 }
@@ -79,8 +78,7 @@ func TestValidateSignature_invalid_sig(t *testing.T) {
 	pubKey := key1Pub
 	message := key1Pub
 	signature := tools.RandomSlice(32)
-	valid, err := verifySignature(pubKey, message, signature)
-	assert.False(t, valid, "must be false")
+	err := verifySignature(pubKey, message, signature)
 	assert.NotNil(t, err, "must be not nil")
 	assert.Contains(t, err.Error(), "invalid signature")
 }
@@ -88,7 +86,6 @@ func TestValidateSignature_invalid_sig(t *testing.T) {
 func TestValidateSignature_success(t *testing.T) {
 	pubKey := key1Pub
 	message := key1Pub
-	valid, err := verifySignature(pubKey, message, signature)
-	assert.True(t, valid, "must be true")
+	err := verifySignature(pubKey, message, signature)
 	assert.Nil(t, err, "must be nil")
 }

@@ -10,6 +10,7 @@ import (
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/centerrors"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/stretchr/testify/assert"
@@ -324,3 +325,34 @@ func TestFillIdentifiers(t *testing.T) {
 		assert.NotNil(t, doc.NextIdentifier)
 	}
 }
+
+func TestValidateWithSignature_fail_basic_check(t *testing.T) {
+	doc := &coredocumentpb.CoreDocument{
+		DocumentRoot:       id1,
+		DocumentIdentifier: id2,
+		CurrentIdentifier:  id3,
+		NextIdentifier:     id4,
+		DataRoot:           id5,
+	}
+
+	err := ValidateWithSignature(doc)
+	assert.NotNil(t, err, "must be not nil")
+	assert.Contains(t, err.Error(), "Invalid CoreDocument")
+}
+
+func TestValidateWithSignature_fail_missing_signing_root(t *testing.T) {
+	doc := testingutils.GenerateCoreDocument()
+	err := ValidateWithSignature(doc)
+	assert.Error(t, err, "must be a non nil error")
+	assert.Contains(t, err.Error(), "signing_root is missing")
+}
+
+func TestValidateWithSignature_fail_mismatch_signing_root(t *testing.T) {
+	doc := testingutils.GenerateCoreDocument()
+	doc.SigningRoot = tools.RandomSlice(32)
+	err := ValidateWithSignature(doc)
+	assert.Error(t, err, "signing root must mismatch")
+	assert.Contains(t, err.Error(), "signing_root mismatch")
+}
+
+// TODO(ved): signature tests

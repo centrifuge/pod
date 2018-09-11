@@ -10,38 +10,39 @@ import (
 )
 
 // ValidateSignaturesOnDocument validates all signatures on the current document
-func ValidateSignaturesOnDocument(doc *coredocumentpb.CoreDocument) (valid bool, err error) {
+func ValidateSignaturesOnDocument(doc *coredocumentpb.CoreDocument) error {
 	for _, sig := range doc.Signatures {
-		valid, err := ValidateSignature(sig, doc.SigningRoot)
-		if err != nil || !valid {
-			return false, err
+		err := ValidateSignature(sig, doc.SigningRoot)
+		if err != nil {
+			return err
 		}
 	}
-	return true, nil
+	return nil
 }
 
 // ValidateSignature verifies the signature on the document
-func ValidateSignature(signature *coredocumentpb.Signature, message []byte) (valid bool, err error) {
+func ValidateSignature(signature *coredocumentpb.Signature, message []byte) error {
 	centid, err := identity.NewCentID(signature.EntityId)
 	if err != nil {
-		return valid, err
+		return err
 	}
-	valid, err = identity.ValidateKey(centid, signature.PublicKey)
+
+	err = identity.ValidateKey(centid, signature.PublicKey)
 	if err != nil {
-		return valid, err
+		return err
 	}
 
 	return verifySignature(signature.PublicKey, message, signature.Signature)
 }
 
 // verifySignature verifies the signature using ed25519
-func verifySignature(pubKey, message, signature []byte) (bool, error) {
+func verifySignature(pubKey, message, signature []byte) error {
 	valid := ed25519.Verify(pubKey, message, signature)
 	if !valid {
-		return false, fmt.Errorf("invalid signature")
+		return fmt.Errorf("invalid signature")
 	}
 
-	return true, nil
+	return nil
 }
 
 // Sign the document with the private key and return the signature along with the public key for the verification

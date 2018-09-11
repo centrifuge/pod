@@ -161,24 +161,24 @@ func GetIdentityKey(identity CentID, pubKey []byte) (keyInfo Key, err error) {
 }
 
 // ValidateKey checks if a given key is valid for the given centrifugeID.
-func ValidateKey(centrifugeId CentID, key []byte) (valid bool, err error) {
+func ValidateKey(centrifugeId CentID, key []byte) error {
 	idKey, err := GetIdentityKey(centrifugeId, key)
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	if !bytes.Equal(key, tools.Byte32ToSlice(idKey.GetKey())) {
-		return false, fmt.Errorf(fmt.Sprintf("[Key: %x] Key doesn't match", idKey.GetKey()))
+		return fmt.Errorf(fmt.Sprintf("[Key: %x] Key doesn't match", idKey.GetKey()))
 	}
 
 	if !tools.ContainsBigIntInSlice(big.NewInt(KeyPurposeSigning), idKey.GetPurposes()) {
-		return false, fmt.Errorf(fmt.Sprintf("[Key: %x] Key doesn't have purpose [%d]", idKey.GetKey(), KeyPurposeSigning))
+		return fmt.Errorf(fmt.Sprintf("[Key: %x] Key doesn't have purpose [%d]", idKey.GetKey(), KeyPurposeSigning))
 	}
 
 	// TODO Check if revokation block happened before the timeframe of the document signing, for historical validations
 	if idKey.GetRevokedAt().Cmp(big.NewInt(0)) != 0 {
-		return false, fmt.Errorf(fmt.Sprintf("[Key: %x] Key is currently revoked since block [%d]", idKey.GetKey(), idKey.GetRevokedAt()))
+		return fmt.Errorf(fmt.Sprintf("[Key: %x] Key is currently revoked since block [%d]", idKey.GetKey(), idKey.GetRevokedAt()))
 	}
 
-	return true, nil
+	return nil
 }
