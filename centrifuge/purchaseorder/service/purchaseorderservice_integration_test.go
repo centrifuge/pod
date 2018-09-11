@@ -11,6 +11,7 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/processor"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 	clientpurchaseorderpb "github.com/CentrifugeInc/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder/repository"
@@ -18,7 +19,6 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/stretchr/testify/assert"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 )
 
 func TestMain(m *testing.M) {
