@@ -19,12 +19,12 @@ const (
 type AnchorID [AnchorIDLength]byte
 
 func NewAnchorID(anchorBytes []byte) (AnchorID, error) {
-	var bytes [AnchorIDLength]byte
+	var anchorBytesFixed [AnchorIDLength]byte
 	if !tools.IsValidByteSliceForLength(anchorBytes, AnchorIDLength) {
-		return bytes, errors.New("invalid length byte slice provided for anchorId")
+		return anchorBytesFixed, errors.New("invalid length byte slice provided for anchorId")
 	}
-	copy(bytes[:], anchorBytes[:AnchorIDLength])
-	return bytes, nil
+	copy(anchorBytesFixed[:], anchorBytes[:AnchorIDLength])
+	return anchorBytesFixed, nil
 }
 
 func (a *AnchorID) toBigInt() *big.Int {
@@ -34,12 +34,12 @@ func (a *AnchorID) toBigInt() *big.Int {
 type DocRoot [RootLength]byte
 
 func NewDocRoot(docRootBytes []byte) (DocRoot, error) {
-	var bytes [RootLength]byte
+	var rootBytes [RootLength]byte
 	if !tools.IsValidByteSliceForLength(docRootBytes, RootLength) {
-		return bytes, errors.New("invalid length byte slice provided for docRoot")
+		return rootBytes, errors.New("invalid length byte slice provided for docRoot")
 	}
-	copy(bytes[:], docRootBytes[:RootLength])
-	return bytes, nil
+	copy(rootBytes[:], docRootBytes[:RootLength])
+	return rootBytes, nil
 }
 
 type PreCommitData struct {

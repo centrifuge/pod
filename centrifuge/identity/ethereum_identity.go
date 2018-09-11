@@ -320,7 +320,7 @@ func setUpKeyRegisteredEventListener(ethCreatedContract WatchKeyAdded, identity 
 // of the identity.
 func setUpRegistrationEventListener(identityToBeCreated Identity) (confirmations chan *WatchIdentity, err error) {
 	confirmations = make(chan *WatchIdentity)
-	bCentId, err := identityToBeCreated.GetCentrifugeID().MarshalBinary()
+	bCentId := identityToBeCreated.GetCentrifugeID()
 	if err != nil {
 		return nil, err
 	}

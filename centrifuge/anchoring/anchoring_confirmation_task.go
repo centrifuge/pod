@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
-
 	"context"
+
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
 
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/queue"
 	"github.com/centrifuge/gocelery"
@@ -132,8 +131,8 @@ func (act *AnchoringConfirmationTask) RunTask() (interface{}, error) {
 	}
 
 	subscription, err := act.AnchorCommittedWatcher.WatchAnchorCommitted(watchOpts, act.AnchorRegisteredEvents,
-		[]common.Address{act.From}, []*big.Int{tools.ByteFixedToBigInt(act.AnchorID[:], AnchorIDLength)},
-		[]*big.Int{tools.ByteFixedToBigInt(act.CentrifugeID[:], identity.CentIDByteLength)})
+		[]common.Address{act.From}, []*big.Int{act.AnchorID.toBigInt()},
+		[]*big.Int{act.CentrifugeID.BigInt()})
 
 	if err != nil {
 		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for anchor repository", 1)

@@ -8,7 +8,6 @@ import (
 	"math/big"
 
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/queue"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/event"
@@ -85,7 +84,7 @@ func (rct *IdRegistrationConfirmationTask) RunTask() (interface{}, error) {
 		rct.IdentityCreatedEvents = make(chan *EthereumIdentityFactoryContractIdentityCreated)
 	}
 
-	subscription, err := rct.IdentityCreatedWatcher.WatchIdentityCreated(watchOpts, rct.IdentityCreatedEvents, []*big.Int{tools.ByteFixedToBigInt(rct.CentID[:], CentIDByteLength)})
+	subscription, err := rct.IdentityCreatedWatcher.WatchIdentityCreated(watchOpts, rct.IdentityCreatedEvents, []*big.Int{rct.CentID.BigInt()})
 	if err != nil {
 		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for identity registration", 1)
 		log.Errorf(wError.Error())
