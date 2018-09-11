@@ -164,3 +164,10 @@ func ValidateKey(centrifugeId []byte, key []byte) (valid bool, err error) {
 
 	return true, nil
 }
+
+// TODO remove after adding a type for CentId
+func CentIdToBigInt(centrifugeId [CentIdByteLength]byte) *big.Int {
+	centIdBig := new(big.Int)
+	centIdBig.SetBytes(centrifugeId[:])
+	return centIdBig
+}

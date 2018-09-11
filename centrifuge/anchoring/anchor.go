@@ -26,12 +26,20 @@ func (a *AnchorId) toBigInt() *big.Int {
 	return tools.ByteSliceToBigInt(a[:])
 }
 
+func (a *AnchorId) isEmpty() bool {
+	return tools.IsEmptyByteSlice(a[:])
+}
+
 type DocRoot [RootLength]byte
 
 func NewDocRoot(docRootBytes []byte) DocRoot {
 	var bytes [RootLength]byte
 	copy(bytes[:], docRootBytes[:RootLength])
 	return bytes
+}
+
+func (d *DocRoot) isEmpty() bool {
+	return tools.IsEmptyByteSlice(d[:])
 }
 
 type PreCommitData struct {

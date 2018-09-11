@@ -93,8 +93,9 @@ func sendPreCommitTransaction(contract AnchorRepositoryContract, opts *bind.Tran
 // sendCommitTransaction sends the actual transaction to register the Anchor on Ethereum registry contract
 func sendCommitTransaction(contract AnchorRepositoryContract, opts *bind.TransactOpts, commitData *CommitData) (err error) {
 
-	tx, err := ethereum.SubmitTransactionWithRetries(contract.Commit, opts, commitData.AnchorId, commitData.DocumentRoot,
-		commitData.CentrifugeId, commitData.DocumentProofs, commitData.Signature)
+	// _anchorId *big.Int, _documentRoot [32]byte, _centrifugeId *big.Int, _documentProofs [][32]byte, _signature []byte
+	tx, err := ethereum.SubmitTransactionWithRetries(contract.Commit, opts, commitData.AnchorId.toBigInt(), commitData.DocumentRoot,
+		identity.CentIdToBigInt(commitData.CentrifugeId), commitData.DocumentProofs, commitData.Signature)
 
 	if err != nil {
 		return err
@@ -110,14 +111,17 @@ func sendCommitTransaction(contract AnchorRepositoryContract, opts *bind.Transac
 //CommitAnchor will call the transaction Commit on the smart contract
 func (ethRepository *EthereumAnchorRepository) CommitAnchor(anchorId AnchorId, documentRoot DocRoot, centrifugeId [identity.CentIdByteLength]byte, documentProofs [][32]byte, signature []byte) (confirmations <-chan *WatchCommit, err error) {
 
+	if anchorId.isEmpty() || documentRoot.isEmpty() {
+		return nil, errors.New("empty anchorId or documentRoot provided")
+	}
+
 	ethRepositoryContract, _ := getRepositoryContract()
 	opts, err := ethereum.GetGethTxOpts(config.Config.GetEthereumDefaultAccountName())
 	if err != nil {
 		return
 	}
-	//TODO check if parameters are valid
-	commitData := NewCommitData(anchorId, documentRoot, centrifugeId, documentProofs, signature)
 
+	commitData := NewCommitData(anchorId, documentRoot, centrifugeId, documentProofs, signature)
 	confirmations, err = setUpCommitEventListener(opts.From, commitData)
 	if err != nil {
 		wError := errors.Wrap(err, 1)

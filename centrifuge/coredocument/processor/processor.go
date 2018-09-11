@@ -6,12 +6,10 @@ import (
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/anchoring"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
 	centED25519 "github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/secp256k1"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/p2p"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/signatures"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
@@ -106,36 +104,37 @@ func (dp *defaultProcessor) Anchor(document *coredocumentpb.CoreDocument) error 
 		return err
 	}
 
-	rootHash, err := tools.SliceToByte32(document.DocumentRoot) //TODO: CHANGE
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-
-	idConfig, err := centED25519.GetIDConfig()
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-
-	var centId [identity.CentIdByteLength]byte
-	copy(centId[:], idConfig.ID[:identity.CentIdByteLength])
-
-	signature, err := secp256k1.SignEthereum(anchoring.GenerateCommitHash(id, centId, rootHash), idConfig.PrivateKey)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-
-	// TODO documentProofs has to be included when we develop precommit flow
-	confirmations, err := anchoring.CommitAnchor(id, rootHash, centId, [][anchoring.DocumentProofLength]byte{tools.RandomByte32()}, signature)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-
-	anchorWatch := <-confirmations
-	return anchorWatch.Error
+	// TODO anchoring
+	//rootHash, err := tools.SliceToByte32(document.DocumentRoot) //TODO: CHANGE
+	//if err != nil {
+	//	log.Error(err)
+	//	return err
+	//}
+	//
+	//idConfig, err := centED25519.GetIDConfig()
+	//if err != nil {
+	//	log.Error(err)
+	//	return err
+	//}
+	//
+	//var centId [identity.CentIdByteLength]byte
+	//copy(centId[:], idConfig.ID[:identity.CentIdByteLength])
+	//
+	//signature, err := secp256k1.SignEthereum(anchoring.GenerateCommitHash(id, centId, rootHash), idConfig.PrivateKey)
+	//if err != nil {
+	//	log.Error(err)
+	//	return err
+	//}
+	//
+	//// TODO documentProofs has to be included when we develop precommit flow
+	//confirmations, err := anchoring.CommitAnchor(id, rootHash, centId, [][anchoring.DocumentProofLength]byte{tools.RandomByte32()}, signature)
+	//if err != nil {
+	//	log.Error(err)
+	//	return err
+	//}
+	//
+	//anchorWatch := <-confirmations
+	return nil
 }
 
 func (dp *defaultProcessor) Sign(document *coredocumentpb.CoreDocument) (err error) {
