@@ -58,16 +58,11 @@ func createIdentityWithKeys(t *testing.T, centrifugeId []byte) []byte {
 }
 
 func TestCommitAnchor_Integration(t *testing.T) {
-	anchorId, _ := hexutil.Decode("0x154cc26833dec2f4ad7ead9d65f9ec968a1aa5efbf6fe762f8f2a67d18a2d9b1")
+	anchorId := tools.RandomSlice(anchoring.AnchorIDLength)
 	documentRoot, _ := hexutil.Decode("0x65a35574f70281ae4d1f6c9f3adccd5378743f858c67a802a49a08ce185bc975")
-	centrifugeId, _ := hexutil.Decode("0x1851943e76d2")
+	centrifugeId := tools.RandomSlice(identity.CentIDByteLength)
 
-	//centrifugeId is a constant value
-	// the identity will only be created once.
-	// re-running the test against the same node will not create a new identity
 	createIdentityWithKeys(t, centrifugeId)
-
-	correctCommitSignature := "0xb4051d6d03c3bf39f4ec4ba949a91a358b0cacb4804b82ed2ba978d338f5e747770c00b63c8e50c1a7aa5ba629870b54c2068a56f8b43460aa47891c6635d36d01"
 
 	testPrivateKey, _ := hexutil.Decode("0x17e063fa17dd8274b09c14b253697d9a20afff74ace3c04fdb1b9c814ce0ada5")
 
@@ -78,8 +73,6 @@ func TestCommitAnchor_Integration(t *testing.T) {
 	messageToSign := anchoring.GenerateCommitHash(anchorIdTyped, centIdTyped, docRootTyped)
 
 	signature, _ := secp256k1.SignEthereum(messageToSign, testPrivateKey)
-
-	assert.Equal(t, correctCommitSignature, hexutil.Encode(signature), "signature not correct")
 
 	commitAnchor(t, anchorId, centrifugeId, documentRoot, signature, [][anchoring.DocumentProofLength]byte{tools.RandomByte32()})
 
@@ -129,6 +122,7 @@ func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
 		}
 		assert.Nil(t, err, "should not error out upon anchor registration")
 	}
+
 	for ix := 0; ix < 5; ix++ {
 		watchSingleAnchor := <-confirmationList[ix]
 		assert.Nil(t, watchSingleAnchor.Error, "No error thrown by context")
