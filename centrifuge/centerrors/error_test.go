@@ -1,6 +1,6 @@
 // +build unit
 
-package errors
+package centerrors
 
 import (
 	"fmt"

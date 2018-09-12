@@ -64,7 +64,11 @@ func TestCorrectCommitSignatureGen(t *testing.T) {
 
 	testPrivateKey, _ := hexutil.Decode("0x17e063fa17dd8274b09c14b253697d9a20afff74ace3c04fdb1b9c814ce0ada5")
 
-	messageToSign := anchoring.GenerateCommitHash(anchoring.NewAnchorId(anchorId), centIdToFixed2(centrifugeId), anchoring.NewDocRoot(documentRoot))
+	anchorIdTyped, _ := anchoring.NewAnchorID(anchorId)
+	centIdTyped, _ := identity.NewCentID(centrifugeId)
+	docRootTyped, _ := anchoring.NewDocRoot(documentRoot)
+
+	messageToSign := anchoring.GenerateCommitHash(anchorIdTyped, centIdTyped, docRootTyped)
 
 	assert.Equal(t, correctCommitToSign, hexutil.Encode(messageToSign), "messageToSign not calculated correctly")
 
@@ -79,33 +83,28 @@ func TestGenerateAnchor(t *testing.T) {
 	currentAnchorId := tools.RandomByte32()
 	currentDocumentRoot := tools.RandomByte32()
 	documentProof := tools.RandomByte32()
-	centrifugeId := tools.RandomSlice(identity.CentIdByteLength)
+	centrifugeId := tools.RandomSlice(identity.CentIDByteLength)
 	testPrivateKey, _ := hexutil.Decode("0x17e063fa17dd8274b09c14b253697d9a20afff74ace3c04fdb1b9c814ce0ada5")
 
 	var documentProofs [][32]byte
 
 	documentProofs = append(documentProofs, documentProof)
-	messageToSign := anchoring.GenerateCommitHash(currentAnchorId, centIdToFixed2(centrifugeId), currentDocumentRoot)
+	centIdTyped, _ := identity.NewCentID(centrifugeId)
+	messageToSign := anchoring.GenerateCommitHash(currentAnchorId, centIdTyped, currentDocumentRoot)
 	signature, _ := secp256k1.SignEthereum(messageToSign, testPrivateKey)
 
 	var documentRoot32Bytes [32]byte
 	copy(documentRoot32Bytes[:], currentDocumentRoot[:32])
 
-	centIdFixed := centIdToFixed2(centrifugeId)
+	commitData := anchoring.NewCommitData(currentAnchorId, documentRoot32Bytes, centIdTyped, documentProofs, signature)
 
-	commitData := anchoring.NewCommitData(currentAnchorId, documentRoot32Bytes, centIdFixed, documentProofs, signature)
+	anchorId, _ := anchoring.NewAnchorID(currentAnchorId[:])
+	docRoot, _ := anchoring.NewDocRoot(documentRoot32Bytes[:])
 
-	assert.Equal(t, commitData.AnchorId, anchoring.NewAnchorId(currentAnchorId[:]), "Anchor should have the passed ID")
-	assert.Equal(t, commitData.DocumentRoot, anchoring.NewDocRoot(documentRoot32Bytes[:]), "Anchor should have the passed document root")
-	assert.Equal(t, commitData.CentrifugeId, centIdFixed, "Anchor should have the centrifuge id")
+	assert.Equal(t, commitData.AnchorId, anchorId, "Anchor should have the passed ID")
+	assert.Equal(t, commitData.DocumentRoot, docRoot, "Anchor should have the passed document root")
+	assert.Equal(t, commitData.CentrifugeID, centIdTyped, "Anchor should have the centrifuge id")
 	assert.Equal(t, commitData.DocumentProofs, documentProofs, "Anchor should have the document proofs")
 	assert.Equal(t, commitData.Signature, signature, "Anchor should have the signature")
 
-}
-
-// TODO remove this after converting CentId to a proper type
-func centIdToFixed2(centrifugeId []byte) [6]byte {
-	var centIdFixed [identity.CentIdByteLength]byte
-	copy(centIdFixed[:], centrifugeId[:identity.CentIdByteLength])
-	return centIdFixed
 }

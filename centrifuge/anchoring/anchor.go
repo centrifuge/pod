@@ -3,58 +3,58 @@ package anchoring
 import (
 	"math/big"
 
+	"errors"
+
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
 const (
-	AnchorIdLength      = 32
+	AnchorIDLength      = 32
 	RootLength          = 32
 	DocumentProofLength = 32
 )
 
-type AnchorId [AnchorIdLength]byte
+type AnchorID [AnchorIDLength]byte
 
-func NewAnchorId(anchorBytes []byte) AnchorId {
-	var bytes [AnchorIdLength]byte
-	copy(bytes[:], anchorBytes[:AnchorIdLength])
-	return bytes
+func NewAnchorID(anchorBytes []byte) (AnchorID, error) {
+	var anchorBytesFixed [AnchorIDLength]byte
+	if !tools.IsValidByteSliceForLength(anchorBytes, AnchorIDLength) {
+		return anchorBytesFixed, errors.New("invalid length byte slice provided for anchorId")
+	}
+	copy(anchorBytesFixed[:], anchorBytes[:AnchorIDLength])
+	return anchorBytesFixed, nil
 }
 
-func (a *AnchorId) toBigInt() *big.Int {
+func (a *AnchorID) toBigInt() *big.Int {
 	return tools.ByteSliceToBigInt(a[:])
-}
-
-func (a *AnchorId) isEmpty() bool {
-	return tools.IsEmptyByteSlice(a[:])
 }
 
 type DocRoot [RootLength]byte
 
-func NewDocRoot(docRootBytes []byte) DocRoot {
-	var bytes [RootLength]byte
-	copy(bytes[:], docRootBytes[:RootLength])
-	return bytes
-}
-
-func (d *DocRoot) isEmpty() bool {
-	return tools.IsEmptyByteSlice(d[:])
+func NewDocRoot(docRootBytes []byte) (DocRoot, error) {
+	var rootBytes [RootLength]byte
+	if !tools.IsValidByteSliceForLength(docRootBytes, RootLength) {
+		return rootBytes, errors.New("invalid length byte slice provided for docRoot")
+	}
+	copy(rootBytes[:], docRootBytes[:RootLength])
+	return rootBytes, nil
 }
 
 type PreCommitData struct {
-	AnchorId        AnchorId
+	AnchorId        AnchorID
 	SigningRoot     DocRoot
-	CentrifugeId    [identity.CentIdByteLength]byte
+	CentrifugeID    identity.CentID
 	Signature       []byte
 	ExpirationBlock *big.Int
 	SchemaVersion   uint
 }
 
 type CommitData struct {
-	AnchorId       AnchorId
+	AnchorId       AnchorID
 	DocumentRoot   DocRoot
-	CentrifugeId   [identity.CentIdByteLength]byte
+	CentrifugeID   identity.CentID
 	DocumentProofs [][32]byte
 	Signature      []byte
 	SchemaVersion  uint
@@ -77,30 +77,30 @@ func SupportedSchemaVersion() uint {
 	return AnchorSchemaVersion
 }
 
-func NewPreCommitData(anchorId AnchorId, signingRoot DocRoot, centrifugeId [identity.CentIdByteLength]byte, signature []byte, expirationBlock *big.Int) (preCommitData *PreCommitData) {
+func NewPreCommitData(anchorId AnchorID, signingRoot DocRoot, centrifugeID identity.CentID, signature []byte, expirationBlock *big.Int) (preCommitData *PreCommitData) {
 	preCommitData = &PreCommitData{}
 	preCommitData.AnchorId = anchorId
 	preCommitData.SigningRoot = signingRoot
-	preCommitData.CentrifugeId = centrifugeId
+	preCommitData.CentrifugeID = centrifugeID
 	preCommitData.Signature = signature
 	preCommitData.ExpirationBlock = expirationBlock
 	preCommitData.SchemaVersion = SupportedSchemaVersion()
 	return preCommitData
 }
 
-func NewCommitData(anchorId AnchorId, documentRoot DocRoot, centrifugeId [identity.CentIdByteLength]byte, documentProofs [][32]byte, signature []byte) (commitData *CommitData) {
+func NewCommitData(anchorId AnchorID, documentRoot DocRoot, centrifugeID identity.CentID, documentProofs [][32]byte, signature []byte) (commitData *CommitData) {
 	commitData = &CommitData{}
 	commitData.AnchorId = anchorId
 	commitData.DocumentRoot = documentRoot
-	commitData.CentrifugeId = centrifugeId
+	commitData.CentrifugeID = centrifugeID
 	commitData.DocumentProofs = documentProofs
 	commitData.Signature = signature
 	return commitData
 }
 
-func GenerateCommitHash(anchorId AnchorId, centrifugeId [identity.CentIdByteLength]byte, documentRoot DocRoot) []byte {
+func GenerateCommitHash(anchorId AnchorID, centrifugeID identity.CentID, documentRoot DocRoot) []byte {
 	message := append(anchorId[:], documentRoot[:]...)
-	message = append(message, centrifugeId[:]...)
+	message = append(message, centrifugeID[:]...)
 	messageToSign := crypto.Keccak256(message)
 	return messageToSign
 }

@@ -8,18 +8,49 @@ import (
 
 	"sync"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
+	"errors"
+
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/centerrors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 )
 
 const (
-	CentIdByteLength     = 6
+	CentIDByteLength     = 6
 	ActionCreate         = "create"
 	ActionAddKey         = "addkey"
 	KeyPurposeP2p        = 1
 	KeyPurposeSigning    = 2
 	KeyPurposeEthMsgAuth = 3
 )
+
+type CentID [CentIDByteLength]byte
+
+func NewCentID(centIDBytes []byte) (CentID, error) {
+	var centBytes [CentIDByteLength]byte
+	if !tools.IsValidByteSliceForLength(centIDBytes, CentIDByteLength) {
+		return centBytes, errors.New("invalid length byte slice provided for centId")
+	}
+	copy(centBytes[:], centIDBytes[:CentIDByteLength])
+	return centBytes, nil
+}
+
+func (c CentID) String() string {
+	return base64.StdEncoding.EncodeToString(c[:])
+}
+
+func (c CentID) MarshalBinary() (data []byte, err error) {
+	return c[:], nil
+}
+
+func (c CentID) BigInt() *big.Int {
+	return tools.ByteSliceToBigInt(c[:])
+}
+
+func (c CentID) ByteArray() [CentIDByteLength]byte {
+	var idBytes [CentIDByteLength]byte
+	copy(idBytes[:], c[:CentIDByteLength])
+	return idBytes
+}
 
 // idService is a default implementation of the Service
 var idService Service
@@ -46,13 +77,9 @@ func GetIdentityService() Service {
 
 // Identity defines an Identity on chain
 type Identity interface {
-	String() string
-	GetCentrifugeID() []byte
-	CentrifugeIDString() string
-	// todo convert this to a - type CentrifugeId [CentIdByteLength]byte
-	CentrifugeIDBytes() [CentIdByteLength]byte
-	CentrifugeIDBigInt() *big.Int
-	SetCentrifugeID(b []byte) error
+	fmt.Stringer
+	GetCentrifugeID() CentID
+	CentrifugeID(cenId CentID)
 	GetCurrentP2PKey() (ret string, err error)
 	GetLastKeyForPurpose(keyPurpose int) (key []byte, err error)
 	AddKeyToIdentity(keyPurpose int, key []byte) (confirmations chan *WatchIdentity, err error)
@@ -74,34 +101,35 @@ type WatchIdentity struct {
 
 // Service is used to fetch identities
 type Service interface {
-	LookupIdentityForID(centrifugeId []byte) (id Identity, err error)
-	CreateIdentity(centrifugeId []byte) (id Identity, confirmations chan *WatchIdentity, err error)
-	CheckIdentityExists(centrifugeId []byte) (exists bool, err error)
+	LookupIdentityForID(centrifugeID CentID) (id Identity, err error)
+	CreateIdentity(centrifugeID CentID) (id Identity, confirmations chan *WatchIdentity, err error)
+	CheckIdentityExists(centrifugeID CentID) (exists bool, err error)
 }
 
 // CentrifugeIdStringToSlice takes a string and decodes it using base64 to convert it into a slice
 // of length 32.
-func CentrifugeIdStringToSlice(s string) (id []byte, err error) {
-	id, err = base64.StdEncoding.DecodeString(s)
+func CentrifugeIdStringToSlice(s string) (id CentID, err error) {
+	centBytes, err := base64.StdEncoding.DecodeString(s)
 	if err != nil {
-		return []byte{}, err
+		return [CentIDByteLength]byte{}, err
 	}
-	if len(id) != CentIdByteLength {
-		return []byte{}, fmt.Errorf("CentrifugeId has invalid length [%d]", len(id))
+	centId, err := NewCentID(centBytes)
+	if err != nil {
+		return [CentIDByteLength]byte{}, err
 	}
-	return id, nil
+	return centId, nil
 }
 
 // GetClientP2PURL returns the p2p url associated with the centID
-func GetClientP2PURL(centID []byte) (url string, err error) {
+func GetClientP2PURL(centID CentID) (url string, err error) {
 	target, err := idService.LookupIdentityForID(centID)
 	if err != nil {
-		return url, errors.Wrap(err, "error fetching receiver identity")
+		return url, centerrors.Wrap(err, "error fetching receiver identity")
 	}
 
 	p2pKey, err := target.GetCurrentP2PKey()
 	if err != nil {
-		return url, errors.Wrap(err, "error fetching p2p key")
+		return url, centerrors.Wrap(err, "error fetching p2p key")
 	}
 
 	return fmt.Sprintf("/ipfs/%s", p2pKey), nil
@@ -109,7 +137,7 @@ func GetClientP2PURL(centID []byte) (url string, err error) {
 
 // GetClientsP2PURLs returns p2p urls associated with each centIDs
 // will error out at first failure
-func GetClientsP2PURLs(centIDs [][]byte) ([]string, error) {
+func GetClientsP2PURLs(centIDs []CentID) ([]string, error) {
 	var p2pURLs []string
 	for _, id := range centIDs {
 		url, err := GetClientP2PURL(id)
@@ -124,7 +152,7 @@ func GetClientsP2PURLs(centIDs [][]byte) ([]string, error) {
 }
 
 // GetIdentityKey returns the key for provided identity
-func GetIdentityKey(identity, pubKey []byte) (keyInfo Key, err error) {
+func GetIdentityKey(identity CentID, pubKey []byte) (keyInfo Key, err error) {
 	id, err := idService.LookupIdentityForID(identity)
 	if err != nil {
 		return keyInfo, err
@@ -143,7 +171,7 @@ func GetIdentityKey(identity, pubKey []byte) (keyInfo Key, err error) {
 }
 
 // ValidateKey checks if a given key is valid for the given centrifugeID.
-func ValidateKey(centrifugeId []byte, key []byte) (valid bool, err error) {
+func ValidateKey(centrifugeId CentID, key []byte) (valid bool, err error) {
 	idKey, err := GetIdentityKey(centrifugeId, key)
 	if err != nil {
 		return false, err
@@ -165,8 +193,8 @@ func ValidateKey(centrifugeId []byte, key []byte) (valid bool, err error) {
 	return true, nil
 }
 
-// TODO remove after adding a type for CentId
-func CentIdToBigInt(centrifugeId [CentIdByteLength]byte) *big.Int {
+// TODO remove after adding a type for CentID
+func CentIdToBigInt(centrifugeId CentID) *big.Int {
 	centIdBig := new(big.Int)
 	centIdBig.SetBytes(centrifugeId[:])
 	return centIdBig

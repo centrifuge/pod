@@ -7,8 +7,8 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/documenttypes"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/centerrors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/golang/protobuf/proto"
@@ -25,7 +25,7 @@ type PurchaseOrder struct {
 // Wrap wraps the purchase order protobuf inside PurchaseOrder
 func Wrap(poDoc *purchaseorderpb.PurchaseOrderDocument) (*PurchaseOrder, error) {
 	if poDoc == nil {
-		return nil, errors.NilError(poDoc)
+		return nil, centerrors.NilError(poDoc)
 	}
 	return &PurchaseOrder{poDoc}, nil
 }
@@ -71,7 +71,7 @@ func Empty() *PurchaseOrder {
 // NewFromCoreDocument unmarshalls invoice from coredocument
 func NewFromCoreDocument(coredocument *coredocumentpb.CoreDocument) (*PurchaseOrder, error) {
 	if coredocument == nil {
-		return nil, errors.NilError(coredocument)
+		return nil, centerrors.NilError(coredocument)
 	}
 
 	if coredocument.EmbeddedData.TypeUrl != documenttypes.PurchaseOrderDataTypeUrl ||
@@ -158,7 +158,7 @@ func (order *PurchaseOrder) ConvertToCoreDocument() (coredocpb *coredocumentpb.C
 	proto.Merge(coredocpb, order.Document.CoreDocument)
 	serializedPurchaseOrder, err := proto.Marshal(order.Document.Data)
 	if err != nil {
-		return nil, errors.Wrap(err, "couldn't serialize PurchaseOrderData")
+		return nil, centerrors.Wrap(err, "couldn't serialize PurchaseOrderData")
 	}
 
 	po := any.Any{
@@ -168,7 +168,7 @@ func (order *PurchaseOrder) ConvertToCoreDocument() (coredocpb *coredocumentpb.C
 
 	serializedSalts, err := proto.Marshal(order.Document.Salts)
 	if err != nil {
-		return nil, errors.Wrap(err, "couldn't serialize PurchaseOrderSalts")
+		return nil, centerrors.Wrap(err, "couldn't serialize PurchaseOrderSalts")
 	}
 
 	poSalts := any.Any{
@@ -184,7 +184,7 @@ func (order *PurchaseOrder) ConvertToCoreDocument() (coredocpb *coredocumentpb.C
 // Validate validates the purchase order document
 func Validate(doc *purchaseorderpb.PurchaseOrderDocument) (valid bool, errMsg string, errs map[string]string) {
 	if doc == nil {
-		return false, errors.NilDocument, nil
+		return false, centerrors.NilDocument, nil
 	}
 
 	if valid, errMsg, errs = coredocument.Validate(doc.CoreDocument); !valid {
@@ -192,7 +192,7 @@ func Validate(doc *purchaseorderpb.PurchaseOrderDocument) (valid bool, errMsg st
 	}
 
 	if doc.Data == nil {
-		return false, errors.NilDocumentData, nil
+		return false, centerrors.NilDocumentData, nil
 	}
 
 	data := doc.Data
@@ -201,46 +201,46 @@ func Validate(doc *purchaseorderpb.PurchaseOrderDocument) (valid bool, errMsg st
 	// ideally these check should be done in the client purchase order
 	// once the converters are done, we can move the following checks there
 	if data.PoNumber == "" {
-		errs["po_number"] = errors.RequiredField
+		errs["po_number"] = centerrors.RequiredField
 	}
 
 	if data.OrderName == "" {
-		errs["po_order_name"] = errors.RequiredField
+		errs["po_order_name"] = centerrors.RequiredField
 	}
 
 	if data.OrderZipcode == "" {
-		errs["po_order_zip_code"] = errors.RequiredField
+		errs["po_order_zip_code"] = centerrors.RequiredField
 	}
 
 	// for now, mandating at least one character
 	if data.OrderCountry == "" {
-		errs["po_order_country"] = errors.RequiredField
+		errs["po_order_country"] = centerrors.RequiredField
 	}
 
 	if data.RecipientName == "" {
-		errs["po_recipient_name"] = errors.RequiredField
+		errs["po_recipient_name"] = centerrors.RequiredField
 	}
 
 	if data.RecipientZipcode == "" {
-		errs["po_recipient_zip_code"] = errors.RequiredField
+		errs["po_recipient_zip_code"] = centerrors.RequiredField
 	}
 
 	if data.RecipientCountry == "" {
-		errs["po_recipient_country"] = errors.RequiredField
+		errs["po_recipient_country"] = centerrors.RequiredField
 	}
 
 	if data.Currency == "" {
-		errs["po_currency"] = errors.RequiredField
+		errs["po_currency"] = centerrors.RequiredField
 	}
 
 	if data.OrderAmount <= 0 {
-		errs["po_order_amount"] = errors.RequirePositiveNumber
+		errs["po_order_amount"] = centerrors.RequirePositiveNumber
 	}
 
 	// checking for nil salts should be okay for now
 	// once the converters are in, salts will be filled during conversion
 	if doc.Salts == nil {
-		errs["po_salts"] = errors.RequiredField
+		errs["po_salts"] = centerrors.RequiredField
 	}
 
 	if len(errs) < 1 {

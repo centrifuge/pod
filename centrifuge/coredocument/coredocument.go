@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/centerrors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/code"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/centrifuge/precise-proofs/proofs"
 )
@@ -38,7 +38,7 @@ func GetDataProofHashes(document *coredocumentpb.CoreDocument) (hashes [][]byte,
 func CalculateSigningRoot(document *coredocumentpb.CoreDocument) error {
 	valid, errMsg, errs := Validate(document) // TODO: Validation
 	if !valid {
-		return errors.NewWithErrors(code.DocumentInvalid, errMsg, errs)
+		return centerrors.NewWithErrors(code.DocumentInvalid, errMsg, errs)
 	}
 
 	tree, err := GetDocumentSigningTree(document)
@@ -51,7 +51,7 @@ func CalculateSigningRoot(document *coredocumentpb.CoreDocument) error {
 
 func CalculateDocumentRoot(document *coredocumentpb.CoreDocument) error {
 	if len(document.SigningRoot) != 32 {
-		return errors.New(code.DocumentInvalid, "signing root invalid")
+		return centerrors.New(code.DocumentInvalid, "signing root invalid")
 	}
 	tree, err := GetDocumentRootTree(document)
 	if err != nil {
@@ -121,13 +121,13 @@ func GetDocumentSigningTree(document *coredocumentpb.CoreDocument) (tree *proofs
 // Validate checks that all required fields are set before doing any processing with core document
 func Validate(document *coredocumentpb.CoreDocument) (valid bool, errMsg string, errs map[string]string) {
 	if document == nil {
-		return false, errors.NilDocument, nil
+		return false, centerrors.NilDocument, nil
 	}
 
 	errs = make(map[string]string)
 
 	if tools.IsEmptyByteSlice(document.DocumentIdentifier) {
-		errs["cd_identifier"] = errors.RequiredField
+		errs["cd_identifier"] = centerrors.RequiredField
 	}
 
 	// TODO(ved): where do we fill these
@@ -136,15 +136,15 @@ func Validate(document *coredocumentpb.CoreDocument) (valid bool, errMsg string,
 	//}
 
 	if tools.IsEmptyByteSlice(document.CurrentIdentifier) {
-		errs["cd_current_identifier"] = errors.RequiredField
+		errs["cd_current_identifier"] = centerrors.RequiredField
 	}
 
 	if tools.IsEmptyByteSlice(document.NextIdentifier) {
-		errs["cd_next_identifier"] = errors.RequiredField
+		errs["cd_next_identifier"] = centerrors.RequiredField
 	}
 
 	if tools.IsEmptyByteSlice(document.DataRoot) {
-		errs["cd_data_root"] = errors.RequiredField
+		errs["cd_data_root"] = centerrors.RequiredField
 	}
 
 	// double check the identifiers
@@ -153,7 +153,7 @@ func Validate(document *coredocumentpb.CoreDocument) (valid bool, errMsg string,
 	// Problem (re-using an old identifier for NextIdentifier): CurrentIdentifier or DocumentIdentifier same as NextIdentifier
 	if isSameBytes(document.NextIdentifier, document.DocumentIdentifier) ||
 		isSameBytes(document.NextIdentifier, document.CurrentIdentifier) {
-		errs["cd_overall"] = errors.IdentifierReUsed
+		errs["cd_overall"] = centerrors.IdentifierReUsed
 	}
 
 	// lets not do verbose check like earlier since these will be
@@ -165,7 +165,7 @@ func Validate(document *coredocumentpb.CoreDocument) (valid bool, errMsg string,
 			salts.NextIdentifier,
 			salts.DocumentIdentifier,
 			salts.PreviousRoot) {
-		errs["cd_salts"] = errors.RequiredField
+		errs["cd_salts"] = centerrors.RequiredField
 	}
 
 	if len(errs) < 1 {
