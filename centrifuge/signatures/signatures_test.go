@@ -9,10 +9,10 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingcommons"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
 var (
@@ -38,39 +38,17 @@ func TestSign(t *testing.T) {
 	assert.NotEmpty(t, sig.Signature)
 	assert.Len(t, sig.Signature, 64)
 	assert.Equal(t, sig.Signature, signature)
-}
-
-// mockIDService implements Service
-type mockIDService struct {
-	mock.Mock
-}
-
-func (srv *mockIDService) LookupIdentityForID(centID identity.CentID) (identity.Identity, error) {
-	args := srv.Called(centID)
-	id, _ := args.Get(0).(identity.Identity)
-	return id, args.Error(1)
-}
-
-func (srv *mockIDService) CreateIdentity(centID identity.CentID) (identity.Identity, chan *identity.WatchIdentity, error) {
-	args := srv.Called(centID)
-	id, _ := args.Get(0).(identity.Identity)
-	return id, args.Get(1).(chan *identity.WatchIdentity), args.Error(2)
-}
-
-func (srv *mockIDService) CheckIdentityExists(centID identity.CentID) (exists bool, err error) {
-	args := srv.Called(centID)
-	return args.Bool(0), args.Error(1)
+	assert.NotNil(t, sig.Timestamp, "must be non nil")
 }
 
 func TestValidateSignature_invalid_key(t *testing.T) {
 	sig := &coredocumentpb.Signature{EntityId: tools.RandomSlice(identity.CentIDByteLength)}
-	srv := &mockIDService{}
+	srv := &testingcommons.MockIDService{}
 	centId, _ := identity.NewCentID(sig.EntityId)
 	srv.On("LookupIdentityForID", centId).Return(nil, fmt.Errorf("failed GetIdentity")).Once()
-	identity.SetIdentityService(srv)
-	valid, err := ValidateSignature(sig, key1Pub)
+	identity.IDService = srv
+	err := ValidateSignature(sig, key1Pub)
 	srv.AssertExpectations(t)
-	assert.False(t, valid, "should be false")
 	assert.NotNil(t, err, "must be not nil")
 	assert.Contains(t, err.Error(), "failed GetIdentity")
 }
@@ -79,8 +57,7 @@ func TestValidateSignature_invalid_sig(t *testing.T) {
 	pubKey := key1Pub
 	message := key1Pub
 	signature := tools.RandomSlice(32)
-	valid, err := verifySignature(pubKey, message, signature)
-	assert.False(t, valid, "must be false")
+	err := verifySignature(pubKey, message, signature)
 	assert.NotNil(t, err, "must be not nil")
 	assert.Contains(t, err.Error(), "invalid signature")
 }
@@ -88,8 +65,7 @@ func TestValidateSignature_invalid_sig(t *testing.T) {
 func TestValidateSignature_success(t *testing.T) {
 	pubKey := key1Pub
 	message := key1Pub
-	valid, err := verifySignature(pubKey, message, signature)
-	assert.True(t, valid, "must be true")
+	err := verifySignature(pubKey, message, signature)
 	assert.Nil(t, err, "must be nil")
 }
 

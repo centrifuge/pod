@@ -5,7 +5,7 @@ storage:
 nodeHostname: localhost
 nodePort: 8084
 
-identityId: MQ==
+identityId: AQEBAQEB
 
 keys:
   signing:
