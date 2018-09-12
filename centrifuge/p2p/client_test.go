@@ -21,7 +21,7 @@ import (
 
 func TestMain(m *testing.M) {
 	cc.TestIntegrationBootstrap()
-	identity.SetIdentityService(identity.NewEthereumIdentityService())
+	identity.IDService = identity.NewEthereumIdentityService()
 	result := m.Run()
 	cc.TestIntegrationTearDown()
 	os.Exit(result)

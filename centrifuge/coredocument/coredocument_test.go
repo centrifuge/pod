@@ -5,11 +5,16 @@ package coredocument
 import (
 	"crypto/sha256"
 	"fmt"
+	"math/big"
 	"reflect"
 	"testing"
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/centerrors"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/signatures"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingcommons"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/centrifuge/precise-proofs/proofs"
@@ -22,6 +27,10 @@ var (
 	id3 = tools.RandomSlice(32)
 	id4 = tools.RandomSlice(32)
 	id5 = tools.RandomSlice(32)
+
+	centID  = tools.RandomSlice(identity.CentIDByteLength)
+	key1Pub = [...]byte{230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
+	key1    = []byte{102, 109, 71, 239, 130, 229, 128, 189, 37, 96, 223, 5, 189, 91, 210, 47, 89, 4, 165, 6, 188, 53, 49, 250, 109, 151, 234, 139, 57, 205, 231, 253, 230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
 )
 
 func TestGetDataProofHashes(t *testing.T) {
@@ -355,4 +364,52 @@ func TestValidateWithSignature_fail_mismatch_signing_root(t *testing.T) {
 	assert.Contains(t, err.Error(), "signing_root mismatch")
 }
 
-// TODO(ved): signature tests
+func TestValidateWithSignature_failed_signature_verification(t *testing.T) {
+	sig := &coredocumentpb.Signature{
+		EntityId:  centID,
+		PublicKey: key1Pub[:],
+		Signature: tools.RandomSlice(32)}
+	srv := &testingcommons.MockIDService{}
+	centID, _ := identity.NewCentID(sig.EntityId)
+	srv.On("LookupIdentityForID", centID).Return(nil, fmt.Errorf("failed GetIdentity")).Once()
+	identity.IDService = srv
+	doc := testingutils.GenerateCoreDocument()
+	tree, _ := GetDocumentSigningTree(doc)
+	doc.SigningRoot = tree.RootHash()
+	doc.Signatures = append(doc.Signatures, sig)
+	err := ValidateWithSignature(doc)
+	srv.AssertExpectations(t)
+	assert.NotNil(t, err, "must be not nil")
+	assert.Contains(t, err.Error(), "failed GetIdentity")
+}
+
+func TestValidateWithSignature_successful_verification(t *testing.T) {
+	sig := &coredocumentpb.Signature{
+		EntityId:  centID,
+		PublicKey: key1Pub[:],
+	}
+	centID, _ := identity.NewCentID(sig.EntityId)
+	idkey := &identity.EthereumIdentityKey{
+		Key:       key1Pub,
+		Purposes:  []*big.Int{big.NewInt(identity.KeyPurposeSigning)},
+		RevokedAt: big.NewInt(0),
+	}
+	id := &testingcommons.MockID{}
+	srv := &testingcommons.MockIDService{}
+	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
+	id.On("FetchKey", key1Pub[:]).Return(idkey, nil).Once()
+	identity.IDService = srv
+	doc := testingutils.GenerateCoreDocument()
+	tree, _ := GetDocumentSigningTree(doc)
+	doc.SigningRoot = tree.RootHash()
+	sig = signatures.Sign(&config.IdentityConfig{
+		ID:         sig.EntityId,
+		PublicKey:  key1Pub[:],
+		PrivateKey: key1,
+	}, doc.SigningRoot)
+	doc.Signatures = append(doc.Signatures, sig)
+	err := ValidateWithSignature(doc)
+	srv.AssertExpectations(t)
+	id.AssertExpectations(t)
+	assert.Nil(t, err, "must be nil")
+}

@@ -2,23 +2,14 @@ package signatures
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/utils"
 	"golang.org/x/crypto/ed25519"
 )
-
-// ValidateSignaturesOnDocument validates all signatures on the current document
-func ValidateSignaturesOnDocument(doc *coredocumentpb.CoreDocument) error {
-	for _, sig := range doc.Signatures {
-		err := ValidateSignature(sig, doc.SigningRoot)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
 
 // ValidateSignature verifies the signature on the document
 func ValidateSignature(signature *coredocumentpb.Signature, message []byte) error {
@@ -49,5 +40,10 @@ func verifySignature(pubKey, message, signature []byte) error {
 // assumes that signing root for the document is generated
 func Sign(idConfig *config.IdentityConfig, payload []byte) *coredocumentpb.Signature {
 	signature := ed25519.Sign(idConfig.PrivateKey, payload)
-	return &coredocumentpb.Signature{EntityId: idConfig.ID, PublicKey: idConfig.PublicKey, Signature: signature}
+	return &coredocumentpb.Signature{
+		EntityId:  idConfig.ID,
+		PublicKey: idConfig.PublicKey,
+		Signature: signature,
+		Timestamp: utils.ToTimestamp(time.Now().UTC()),
+	}
 }
