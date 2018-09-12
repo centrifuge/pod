@@ -188,8 +188,8 @@ func ValidateWithSignature(doc *coredocumentpb.CoreDocument) error {
 		return centerrors.New(code.Unknown, err.Error())
 	}
 
-	if msg := t.RootHash(); !tools.IsSameByteSlice(msg, doc.SigningRoot) {
-		return centerrors.New(code.DocumentInvalid, "signing_root mismatch")
+	if !tools.IsSameByteSlice(t.RootHash(), doc.SigningRoot) {
+		return centerrors.New(code.DocumentInvalid, fmt.Sprintf("signing_root mismatch %v != %v", t.RootHash(), doc.SigningRoot))
 	}
 
 	var errs []error

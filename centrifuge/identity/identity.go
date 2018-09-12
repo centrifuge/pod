@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"math/big"
 
-	"sync"
-
 	"errors"
 
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/centerrors"
@@ -52,28 +50,8 @@ func (c CentID) ByteArray() [CentIDByteLength]byte {
 	return idBytes
 }
 
-// idService is a default implementation of the Service
-var idService Service
-
-// once guard the idService from multiple sets
-var once sync.Once
-
-// SetIdentityService sets the srv to default identity service
-func SetIdentityService(srv Service) {
-	once.Do(func() {
-		idService = srv
-	})
-}
-
-// GetIdentityService returns the default identity service
-// panics if service is not set
-func GetIdentityService() Service {
-	if idService == nil {
-		log.Fatal("identity service not initialised yet")
-	}
-
-	return idService
-}
+// IDService is a default implementation of the Service
+var IDService Service
 
 // Identity defines an Identity on chain
 type Identity interface {
@@ -122,7 +100,7 @@ func CentrifugeIdStringToSlice(s string) (id CentID, err error) {
 
 // GetClientP2PURL returns the p2p url associated with the centID
 func GetClientP2PURL(centID CentID) (url string, err error) {
-	target, err := idService.LookupIdentityForID(centID)
+	target, err := IDService.LookupIdentityForID(centID)
 	if err != nil {
 		return url, centerrors.Wrap(err, "error fetching receiver identity")
 	}
@@ -153,7 +131,7 @@ func GetClientsP2PURLs(centIDs []CentID) ([]string, error) {
 
 // GetIdentityKey returns the key for provided identity
 func GetIdentityKey(identity CentID, pubKey []byte) (keyInfo Key, err error) {
-	id, err := idService.LookupIdentityForID(identity)
+	id, err := IDService.LookupIdentityForID(identity)
 	if err != nil {
 		return keyInfo, err
 	}
