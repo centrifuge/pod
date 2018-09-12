@@ -3,12 +3,9 @@ package identity
 import (
 	"bytes"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"math/big"
-
-	"sync"
-
-	"errors"
 
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/centerrors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
@@ -34,6 +31,16 @@ func NewCentID(centIDBytes []byte) (CentID, error) {
 	return centBytes, nil
 }
 
+func (c CentID) Equal(other CentID) bool {
+	for i := range c {
+		if c[i] != other[i] {
+			return false
+		}
+	}
+
+	return true
+}
+
 func (c CentID) String() string {
 	return base64.StdEncoding.EncodeToString(c[:])
 }
@@ -52,18 +59,8 @@ func (c CentID) ByteArray() [CentIDByteLength]byte {
 	return idBytes
 }
 
-// idService is a default implementation of the Service
-var idService Service
-
-// once guard the idService from multiple sets
-var once sync.Once
-
-// SetIdentityService sets the srv to default identity service
-func SetIdentityService(srv Service) {
-	once.Do(func() {
-		idService = srv
-	})
-}
+// IDService is a default implementation of the Service
+var IDService Service
 
 // Identity defines an Identity on chain
 type Identity interface {
@@ -112,7 +109,7 @@ func CentrifugeIdStringToSlice(s string) (id CentID, err error) {
 
 // GetClientP2PURL returns the p2p url associated with the centID
 func GetClientP2PURL(centID CentID) (url string, err error) {
-	target, err := idService.LookupIdentityForID(centID)
+	target, err := IDService.LookupIdentityForID(centID)
 	if err != nil {
 		return url, centerrors.Wrap(err, "error fetching receiver identity")
 	}
@@ -143,7 +140,7 @@ func GetClientsP2PURLs(centIDs []CentID) ([]string, error) {
 
 // GetIdentityKey returns the key for provided identity
 func GetIdentityKey(identity CentID, pubKey []byte) (keyInfo Key, err error) {
-	id, err := idService.LookupIdentityForID(identity)
+	id, err := IDService.LookupIdentityForID(identity)
 	if err != nil {
 		return keyInfo, err
 	}
@@ -161,24 +158,24 @@ func GetIdentityKey(identity CentID, pubKey []byte) (keyInfo Key, err error) {
 }
 
 // ValidateKey checks if a given key is valid for the given centrifugeID.
-func ValidateKey(centrifugeId CentID, key []byte) (valid bool, err error) {
+func ValidateKey(centrifugeId CentID, key []byte) error {
 	idKey, err := GetIdentityKey(centrifugeId, key)
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	if !bytes.Equal(key, tools.Byte32ToSlice(idKey.GetKey())) {
-		return false, fmt.Errorf(fmt.Sprintf("[Key: %x] Key doesn't match", idKey.GetKey()))
+		return fmt.Errorf(fmt.Sprintf("[Key: %x] Key doesn't match", idKey.GetKey()))
 	}
 
 	if !tools.ContainsBigIntInSlice(big.NewInt(KeyPurposeSigning), idKey.GetPurposes()) {
-		return false, fmt.Errorf(fmt.Sprintf("[Key: %x] Key doesn't have purpose [%d]", idKey.GetKey(), KeyPurposeSigning))
+		return fmt.Errorf(fmt.Sprintf("[Key: %x] Key doesn't have purpose [%d]", idKey.GetKey(), KeyPurposeSigning))
 	}
 
 	// TODO Check if revokation block happened before the timeframe of the document signing, for historical validations
 	if idKey.GetRevokedAt().Cmp(big.NewInt(0)) != 0 {
-		return false, fmt.Errorf(fmt.Sprintf("[Key: %x] Key is currently revoked since block [%d]", idKey.GetKey(), idKey.GetRevokedAt()))
+		return fmt.Errorf(fmt.Sprintf("[Key: %x] Key is currently revoked since block [%d]", idKey.GetKey(), idKey.GetRevokedAt()))
 	}
 
-	return true, nil
+	return nil
 }

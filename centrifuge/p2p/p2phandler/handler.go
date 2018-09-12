@@ -10,6 +10,7 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/centerrors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/code"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 	centED25519 "github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/notification"
@@ -82,18 +83,22 @@ func (srv *Handler) Post(ctx context.Context, req *p2ppb.P2PMessage) (*p2ppb.P2P
 }
 
 // RequestDocumentSignature signs the received document and returns the signature of the signingRoot
-//
-// How do we verify if we want to sign the document?
-// Can we assume that if we are called to sign, we simply sign?
-// Or maybe we can check the SenderID against KeyInfo?
+// Document signing root will be recalculated and verified
+// Existing signatures on the document will be verified
+// Document will be stored to the repository for state management
 func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.SignatureRequest) (*p2ppb.SignatureResponse, error) {
 	err := basicChecks(sigReq.Header.CentNodeVersion, sigReq.Header.NetworkIdentifier)
 	if err != nil {
 		return nil, err
 	}
 
-	if sigReq.Document == nil {
+	doc := sigReq.Document
+	if doc == nil {
 		return nil, centerrors.New(code.DocumentInvalid, centerrors.NilError(sigReq.Document).Error())
+	}
+
+	if err := coredocument.ValidateWithSignature(doc); err != nil {
+		return nil, centerrors.New(code.DocumentInvalid, err.Error())
 	}
 
 	idConfig, err := centED25519.GetIDConfig()
@@ -101,7 +106,13 @@ func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get ID Config: %v", err))
 	}
 
-	sig := signatures.Sign(idConfig, sigReq.Document.SigningRoot)
+	sig := signatures.Sign(idConfig, doc.SigningRoot)
+	doc.Signatures = append(doc.Signatures, sig)
+	err = coredocumentrepository.GetRepository().Create(doc.DocumentIdentifier, doc)
+	if err != nil {
+		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to store document: %v", err))
+	}
+
 	return &p2ppb.SignatureResponse{
 		CentNodeVersion: version.GetVersion().String(),
 		Signature:       sig,
