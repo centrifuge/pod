@@ -34,6 +34,16 @@ func NewCentID(centIDBytes []byte) (CentID, error) {
 	return centBytes, nil
 }
 
+func (c CentID) Equal(other CentID) bool {
+	for i := range c {
+		if c[i] != other[i] {
+			return false
+		}
+	}
+
+	return true
+}
+
 func (c CentID) String() string {
 	return base64.StdEncoding.EncodeToString(c[:])
 }

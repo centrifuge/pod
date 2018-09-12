@@ -20,6 +20,18 @@ func ValidateSignaturesOnDocument(doc *coredocumentpb.CoreDocument) (valid bool,
 	return true, nil
 }
 
+func ValidateCentrifugeId(signature *coredocumentpb.Signature, centrifugeId identity.CentID) (valid bool, err error) {
+
+	centIDSignature, err := identity.NewCentID(signature.EntityId)
+
+	if err != nil {
+		return false, err
+	}
+
+	return centrifugeId.Equal(centIDSignature), nil
+
+}
+
 // ValidateSignature verifies the signature on the document
 func ValidateSignature(signature *coredocumentpb.Signature, message []byte) (valid bool, err error) {
 	centid, err := identity.NewCentID(signature.EntityId)

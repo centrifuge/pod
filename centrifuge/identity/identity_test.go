@@ -109,6 +109,25 @@ func TestNewCentId(t *testing.T) {
 	}
 }
 
+func TestNewCentIdEqual(t *testing.T) {
+
+	randomBytes := tools.RandomSlice(CentIDByteLength)
+
+	centrifugeIdA, err := NewCentID(randomBytes)
+	assert.Nil(t, err, "centrifugeId not initialized correctly ")
+
+	centrifugeIdB, err := NewCentID(randomBytes)
+	assert.Nil(t, err, "centrifugeId not initialized correctly ")
+
+	assert.True(t, centrifugeIdA.Equal(centrifugeIdB), "centrifuge Id's should be the equal")
+
+	randomBytes = tools.RandomSlice(CentIDByteLength)
+	centrifugeIdC, _ := NewCentID(randomBytes)
+
+	assert.False(t, centrifugeIdA.Equal(centrifugeIdC), "centrifuge Id's should not be equal")
+
+}
+
 func TestGetClientP2PURL_fail_service(t *testing.T) {
 	centID, _ := NewCentID(tools.RandomSlice(CentIDByteLength))
 	srv := &mockIDService{}
