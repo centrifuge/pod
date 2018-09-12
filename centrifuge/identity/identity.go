@@ -65,16 +65,6 @@ func SetIdentityService(srv Service) {
 	})
 }
 
-// GetIdentityService returns the default identity service
-// panics if service is not set
-func GetIdentityService() Service {
-	if idService == nil {
-		log.Fatal("identity service not initialised yet")
-	}
-
-	return idService
-}
-
 // Identity defines an Identity on chain
 type Identity interface {
 	fmt.Stringer
@@ -191,11 +181,4 @@ func ValidateKey(centrifugeId CentID, key []byte) (valid bool, err error) {
 	}
 
 	return true, nil
-}
-
-// TODO remove after adding a type for CentID
-func CentIdToBigInt(centrifugeId CentID) *big.Int {
-	centIdBig := new(big.Int)
-	centIdBig.SetBytes(centrifugeId[:])
-	return centIdBig
 }

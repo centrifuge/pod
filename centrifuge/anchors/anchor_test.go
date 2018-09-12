@@ -1,6 +1,6 @@
 // +build unit
 
-package anchoring
+package anchors
 
 import (
 	"testing"
@@ -18,17 +18,17 @@ func TestNewAnchorId(t *testing.T) {
 		{
 			"smallerSlice",
 			tools.RandomSlice(AnchorIDLength - 1),
-			"invalid length byte slice provided for anchorId",
+			"invalid length byte slice provided for anchorID",
 		},
 		{
 			"largerSlice",
 			tools.RandomSlice(AnchorIDLength + 1),
-			"invalid length byte slice provided for anchorId",
+			"invalid length byte slice provided for anchorID",
 		},
 		{
 			"nilSlice",
 			nil,
-			"invalid length byte slice provided for anchorId",
+			"invalid length byte slice provided for anchorID",
 		},
 	}
 	for _, test := range tests {
