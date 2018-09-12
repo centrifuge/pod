@@ -4,7 +4,7 @@ echo "Running Unit Tests"
 
 status=$?
 for d in $(go list ./... | grep -v vendor); do
-    output=$(go test -v -race -coverprofile=profile.out -covermode=atomic -tags=unit $d 2>&1)
+    output=$(go test -v -race -coverprofile=profile.out -covermode=atomic -tags=unit $d 2>&1 | tee >(richgo testfilter))
     if [ $? -ne 0 ]; then
       status=1
     fi
