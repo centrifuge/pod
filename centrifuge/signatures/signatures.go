@@ -11,7 +11,6 @@ import (
 	"golang.org/x/crypto/ed25519"
 )
 
-
 func ValidateCentrifugeId(signature *coredocumentpb.Signature, centrifugeId identity.CentID) (valid bool, err error) {
 
 	centIDSignature, err := identity.NewCentID(signature.EntityId)
