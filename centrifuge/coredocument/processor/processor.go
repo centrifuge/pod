@@ -6,9 +6,9 @@ import (
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/centerrors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/p2p"
@@ -41,19 +41,26 @@ func DefaultProcessor() Processor {
 // Send sends the given defaultProcessor to the given recipient on the P2P layer
 func (dp *defaultProcessor) Send(coreDocument *coredocumentpb.CoreDocument, ctx context.Context, recipient []byte) (err error) {
 	if coreDocument == nil {
-		return errors.NilError(coreDocument)
+		return centerrors.NilError(coreDocument)
 	}
 
-	id, err := dp.IdentityService.LookupIdentityForID(recipient)
+	centId, err := identity.NewCentID(recipient)
 	if err != nil {
-		err = errors.Wrap(err, "error fetching receiver identity")
+		err = centerrors.Wrap(err, "error parsing receiver centId")
+		log.Error(err)
+		return err
+	}
+
+	id, err := dp.IdentityService.LookupIdentityForID(centId)
+	if err != nil {
+		err = centerrors.Wrap(err, "error fetching receiver identity")
 		log.Error(err)
 		return err
 	}
 
 	lastB58Key, err := id.GetCurrentP2PKey()
 	if err != nil {
-		err = errors.Wrap(err, "error fetching p2p key")
+		err = centerrors.Wrap(err, "error fetching p2p key")
 		log.Error(err)
 		return err
 	}
@@ -69,14 +76,14 @@ func (dp *defaultProcessor) Send(coreDocument *coredocumentpb.CoreDocument, ctx 
 	hostInstance := p2p.GetHost()
 	bSenderId, err := hostInstance.ID().ExtractPublicKey().Bytes()
 	if err != nil {
-		err = errors.Wrap(err, "failed to extract pub key")
+		err = centerrors.Wrap(err, "failed to extract pub key")
 		log.Error(err)
 		return err
 	}
 
 	_, err = client.Post(context.Background(), &p2ppb.P2PMessage{Document: coreDocument, SenderCentrifugeId: bSenderId})
 	if err != nil {
-		err = errors.Wrap(err, "failed to post to the node")
+		err = centerrors.Wrap(err, "failed to post to the node")
 		log.Error(err)
 		return err
 	}
@@ -96,7 +103,7 @@ func (dp *defaultProcessor) Send(coreDocument *coredocumentpb.CoreDocument, ctx 
 // - send anchored document to collaborators
 func (dp *defaultProcessor) Anchor(document *coredocumentpb.CoreDocument) error {
 	if document == nil {
-		return errors.NilError(document)
+		return centerrors.NilError(document)
 	}
 
 	_, err := tools.SliceToByte32(document.CurrentIdentifier)
@@ -140,8 +147,8 @@ func (dp *defaultProcessor) Anchor(document *coredocumentpb.CoreDocument) error 
 	//	return err
 	//}
 	//
-	//var centId [identity.CentIdByteLength]byte
-	//copy(centId[:], idConfig.ID[:identity.CentIdByteLength])
+	//var centId [identity.CentIDByteLength]byte
+	//copy(centId[:], idConfig.ID[:identity.CentIDByteLength])
 	//
 	//signature, err := secp256k1.SignEthereum(anchoring.GenerateCommitHash(id, centId, rootHash), idConfig.PrivateKey)
 	//if err != nil {

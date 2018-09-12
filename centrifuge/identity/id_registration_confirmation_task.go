@@ -8,7 +8,6 @@ import (
 	"math/big"
 
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/queue"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/event"
@@ -16,7 +15,7 @@ import (
 )
 
 const IdRegistrationConfirmationTaskName string = "IdRegistrationConfirmationTaskName"
-const CentIdParam string = "CentId"
+const CentIdParam string = "CentID"
 
 type IdentityCreatedWatcher interface {
 	WatchIdentityCreated(opts *bind.WatchOpts, sink chan<- *EthereumIdentityFactoryContractIdentityCreated, centrifugeId []*big.Int) (event.Subscription, error)
@@ -25,7 +24,7 @@ type IdentityCreatedWatcher interface {
 // IdRegistrationConfirmationTask is a queued task to watch ID registration events on Ethereum using EthereumIdentityFactoryContract.
 // To see how it gets registered see bootstrapper.go and to see how it gets used see setUpRegistrationEventListener method
 type IdRegistrationConfirmationTask struct {
-	CentId                 [CentIdByteLength]byte
+	CentID                 CentID
 	EthContextInitializer  func() (ctx context.Context, cancelFunc context.CancelFunc)
 	IdentityCreatedEvents  chan *EthereumIdentityFactoryContractIdentityCreated
 	EthContext             context.Context
@@ -53,14 +52,14 @@ func (rct *IdRegistrationConfirmationTask) Init() error {
 
 func (m *IdRegistrationConfirmationTask) Copy() (gocelery.CeleryTask, error) {
 	return &IdRegistrationConfirmationTask{
-		m.CentId,
+		m.CentID,
 		m.EthContextInitializer,
 		m.IdentityCreatedEvents,
 		m.EthContext,
 		m.IdentityCreatedWatcher}, nil
 }
 
-// ParseKwargs - define a method to parse CentId
+// ParseKwargs - define a method to parse CentID
 func (rct *IdRegistrationConfirmationTask) ParseKwargs(kwargs map[string]interface{}) error {
 	centId, ok := kwargs[CentIdParam]
 	if !ok {
@@ -70,13 +69,13 @@ func (rct *IdRegistrationConfirmationTask) ParseKwargs(kwargs map[string]interfa
 	if err != nil {
 		return fmt.Errorf("malformed kwarg [%s] because [%s]", CentIdParam, err.Error())
 	}
-	rct.CentId = centIdTyped
+	rct.CentID = centIdTyped
 	return nil
 }
 
-// RunTask calls listens to events from geth related to IdRegistrationConfirmationTask#CentId and records result.
+// RunTask calls listens to events from geth related to IdRegistrationConfirmationTask#CentID and records result.
 func (rct *IdRegistrationConfirmationTask) RunTask() (interface{}, error) {
-	log.Infof("Waiting for confirmation for the ID [%x]", rct.CentId)
+	log.Infof("Waiting for confirmation for the ID [%x]", rct.CentID)
 	if rct.EthContext == nil {
 		rct.EthContext, _ = rct.EthContextInitializer()
 	}
@@ -85,7 +84,7 @@ func (rct *IdRegistrationConfirmationTask) RunTask() (interface{}, error) {
 		rct.IdentityCreatedEvents = make(chan *EthereumIdentityFactoryContractIdentityCreated)
 	}
 
-	subscription, err := rct.IdentityCreatedWatcher.WatchIdentityCreated(watchOpts, rct.IdentityCreatedEvents, []*big.Int{tools.ByteFixedToBigInt(rct.CentId[:], CentIdByteLength)})
+	subscription, err := rct.IdentityCreatedWatcher.WatchIdentityCreated(watchOpts, rct.IdentityCreatedEvents, []*big.Int{rct.CentID.BigInt()})
 	if err != nil {
 		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for identity registration", 1)
 		log.Errorf(wError.Error())
@@ -97,7 +96,7 @@ func (rct *IdRegistrationConfirmationTask) RunTask() (interface{}, error) {
 			log.Errorf("Subscription error %s", err.Error())
 			return nil, err
 		case <-rct.EthContext.Done():
-			log.Errorf("Context [%v] closed before receiving IdRegistered event for Identity ID: %x\n", rct.EthContext, rct.CentId)
+			log.Errorf("Context [%v] closed before receiving IdRegistered event for Identity ID: %x\n", rct.EthContext, rct.CentID)
 			return nil, rct.EthContext.Err()
 		case res := <-rct.IdentityCreatedEvents:
 			log.Infof("Received IdentityCreated event from: %x, identifier: %x\n", res.CentrifugeId, res.Identity)
@@ -107,8 +106,8 @@ func (rct *IdRegistrationConfirmationTask) RunTask() (interface{}, error) {
 	}
 }
 
-func getBytes(key interface{}) ([CentIdByteLength]byte, error) {
-	var fixed [CentIdByteLength]byte
+func getBytes(key interface{}) (CentID, error) {
+	var fixed [CentIDByteLength]byte
 	b, ok := key.([]interface{})
 	if !ok {
 		return fixed, errors.New("Could not parse interface to []byte")

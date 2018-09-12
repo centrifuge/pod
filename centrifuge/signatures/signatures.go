@@ -22,7 +22,11 @@ func ValidateSignaturesOnDocument(doc *coredocumentpb.CoreDocument) (valid bool,
 
 // ValidateSignature verifies the signature on the document
 func ValidateSignature(signature *coredocumentpb.Signature, message []byte) (valid bool, err error) {
-	valid, err = identity.ValidateKey(signature.EntityId, signature.PublicKey)
+	centid, err := identity.NewCentID(signature.EntityId)
+	if err != nil {
+		return valid, err
+	}
+	valid, err = identity.ValidateKey(centid, signature.PublicKey)
 	if err != nil {
 		return valid, err
 	}

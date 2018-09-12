@@ -9,11 +9,11 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/notification"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/centerrors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/code"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/notification"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/version"
@@ -57,7 +57,7 @@ func TestP2PService_IncompatibleRequest(t *testing.T) {
 	res, err := rpc.Post(context.Background(), &req)
 
 	assert.Error(t, err)
-	p2perr, _ := errors.FromError(err)
+	p2perr, _ := centerrors.FromError(err)
 	assert.Equal(t, p2perr.Code(), code.VersionMismatch)
 	assert.Nil(t, res)
 
@@ -66,7 +66,7 @@ func TestP2PService_IncompatibleRequest(t *testing.T) {
 	res, err = rpc.Post(context.Background(), &req)
 
 	assert.Error(t, err)
-	p2perr, _ = errors.FromError(err)
+	p2perr, _ = centerrors.FromError(err)
 	assert.Equal(t, p2perr.Code(), code.NetworkMismatch)
 	assert.Nil(t, res)
 }
