@@ -78,5 +78,5 @@ func TestGetSignatureForDocument_fail_signature(t *testing.T) {
 	client.AssertExpectations(t)
 	assert.Nil(t, resp, "must be nil")
 	assert.Error(t, err, "must not be nil")
-	assert.Contains(t, err.Error(), "failed to validate signature")
+	assert.Contains(t, err.Error(), "signature invalid")
 }

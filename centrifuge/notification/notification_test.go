@@ -41,6 +41,6 @@ func TestWebhookConstructPayload(t *testing.T) {
 
 	assert.Equal(t, notificationMessage.Recorded, unmarshaledNotificationMessage.Recorded, "Recorder Timestamp should be equal")
 	assert.Equal(t, notificationMessage.Document, unmarshaledNotificationMessage.Document, "CoreDocument should be equal")
-	assert.Equal(t, notificationMessage.CentrifugeId, unmarshaledNotificationMessage.CentrifugeId, "CentrifugeId should be equal")
+	assert.Equal(t, notificationMessage.CentrifugeId, unmarshaledNotificationMessage.CentrifugeId, "CentrifugeID should be equal")
 	assert.Equal(t, notificationMessage.EventType, unmarshaledNotificationMessage.EventType, "EventType should be equal")
 }

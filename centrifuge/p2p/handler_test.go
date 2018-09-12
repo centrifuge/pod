@@ -4,22 +4,33 @@ package p2p
 
 import (
 	"context"
+	"math/big"
 	"os"
 	"testing"
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/notification"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/centerrors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/code"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
+	cented25519 "github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/notification"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/signatures"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingcommons"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/version"
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/crypto/ed25519"
+)
+
+var (
+	key1Pub = [...]byte{230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
+	key1    = []byte{102, 109, 71, 239, 130, 229, 128, 189, 37, 96, 223, 5, 189, 91, 210, 47, 89, 4, 165, 6, 188, 53, 49, 250, 109, 151, 234, 139, 57, 205, 231, 253, 230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
+	handler = Handler{Notifier: &MockWebhookSender{}}
 )
 
 // MockWebhookSender implements notification.Sender
@@ -32,7 +43,7 @@ func (wh *MockWebhookSender) Send(notification *notificationpb.NotificationMessa
 func TestMain(m *testing.M) {
 	cc.TestIntegrationBootstrap()
 	coredocument.InitLevelDBRepository(cc.GetLevelDBStorage())
-	identity.SetIdentityService(identity.NewEthereumIdentityService())
+	identity.IDService = identity.NewEthereumIdentityService()
 	result := m.Run()
 	cc.TestIntegrationTearDown()
 	os.Exit(result)
@@ -42,9 +53,7 @@ var coreDoc = testingutils.GenerateCoreDocument()
 
 func TestP2PService(t *testing.T) {
 	req := p2ppb.P2PMessage{Document: coreDoc, CentNodeVersion: version.GetVersion().String(), NetworkIdentifier: config.Config.GetNetworkID()}
-	rpc := Handler{&MockWebhookSender{}}
-
-	res, err := rpc.Post(context.Background(), &req)
+	res, err := handler.Post(context.Background(), &req)
 	assert.Nil(t, err, "Received error")
 	assert.Equal(t, res.Document.DocumentIdentifier, coreDoc.DocumentIdentifier, "Incorrect identifier")
 
@@ -56,28 +65,26 @@ func TestP2PService(t *testing.T) {
 func TestP2PService_IncompatibleRequest(t *testing.T) {
 	// Test invalid version
 	req := p2ppb.P2PMessage{Document: coreDoc, CentNodeVersion: "1000.0.0-invalid", NetworkIdentifier: config.Config.GetNetworkID()}
-	rpc := Handler{&MockWebhookSender{}}
-	res, err := rpc.Post(context.Background(), &req)
+	res, err := handler.Post(context.Background(), &req)
 
 	assert.Error(t, err)
-	p2perr, _ := errors.FromError(err)
+	p2perr, _ := centerrors.FromError(err)
 	assert.Equal(t, p2perr.Code(), code.VersionMismatch)
 	assert.Nil(t, res)
 
 	// Test invalid network
 	req = p2ppb.P2PMessage{Document: coreDoc, CentNodeVersion: version.GetVersion().String(), NetworkIdentifier: config.Config.GetNetworkID() + 1}
-	res, err = rpc.Post(context.Background(), &req)
+	res, err = handler.Post(context.Background(), &req)
 
 	assert.Error(t, err)
-	p2perr, _ = errors.FromError(err)
+	p2perr, _ = centerrors.FromError(err)
 	assert.Equal(t, p2perr.Code(), code.NetworkMismatch)
 	assert.Nil(t, res)
 }
 
 func TestP2PService_HandleP2PPostNilDocument(t *testing.T) {
 	req := p2ppb.P2PMessage{CentNodeVersion: version.GetVersion().String(), NetworkIdentifier: config.Config.GetNetworkID()}
-	rpc := Handler{&MockWebhookSender{}}
-	res, err := rpc.Post(context.Background(), &req)
+	res, err := handler.Post(context.Background(), &req)
 
 	assert.Error(t, err)
 	assert.Nil(t, res)
@@ -88,7 +95,6 @@ func TestHandler_RequestDocumentSignature_nilDocument(t *testing.T) {
 		CentNodeVersion: version.GetVersion().String(), NetworkIdentifier: config.Config.GetNetworkID(),
 	}}
 
-	handler := Handler{Notifier: &MockWebhookSender{}}
 	resp, err := handler.RequestDocumentSignature(context.Background(), req)
 	assert.Error(t, err, "must return error")
 	assert.Nil(t, resp, "must be nil")
@@ -99,14 +105,13 @@ func TestHandler_RequestDocumentSignature_version_fail(t *testing.T) {
 		CentNodeVersion: "1000.0.1-invalid", NetworkIdentifier: config.Config.GetNetworkID(),
 	}}
 
-	handler := Handler{Notifier: &MockWebhookSender{}}
 	resp, err := handler.RequestDocumentSignature(context.Background(), req)
 	assert.Error(t, err, "must return error")
 	assert.Contains(t, err.Error(), "Incompatible version")
 	assert.Nil(t, resp, "must be nil")
 }
 
-func TestHandler_RequestDocumentSignature(t *testing.T) {
+func TestHandler_RequestDocumentSignature_fail(t *testing.T) {
 	req := &p2ppb.SignatureRequest{
 		Header: &p2ppb.CentrifugeHeader{
 			CentNodeVersion: version.GetVersion().String(), NetworkIdentifier: config.Config.GetNetworkID(),
@@ -116,11 +121,63 @@ func TestHandler_RequestDocumentSignature(t *testing.T) {
 	config.Config.V.Set("keys.signing.publicKey", "../../example/resources/signingKey.pub.pem")
 	config.Config.V.Set("keys.signing.privateKey", "../../example/resources/signingKey.key.pem")
 	handler := Handler{Notifier: &MockWebhookSender{}}
-	wantSig := []byte{0x52, 0x2, 0x7f, 0x51, 0xcc, 0xb, 0x36, 0x1b, 0x52, 0x71, 0xfa, 0xc0, 0x1b, 0x21, 0x34, 0xef, 0xae, 0x76, 0x72, 0x3f, 0xe0, 0x93, 0x5f, 0xe8, 0xc4, 0x15, 0xd0, 0xf3, 0x77, 0x78, 0x1a, 0x2f, 0xf8, 0xa6, 0x42, 0x8b, 0x9, 0xbe, 0x96, 0xa2, 0xb5, 0xc8, 0xce, 0xf2, 0xd9, 0x6a, 0x5f, 0x40, 0x61, 0x52, 0xb5, 0x1e, 0x93, 0x92, 0xf8, 0xc0, 0xad, 0xc2, 0x4e, 0x66, 0xa5, 0xd1, 0x93, 0xa}
 	resp, err := handler.RequestDocumentSignature(context.Background(), req)
+	assert.Nil(t, resp, "must be nil")
+	assert.Error(t, err, "must be non nil")
+}
+
+func getSignatureRequest() *p2ppb.SignatureRequest {
+	req := &p2ppb.SignatureRequest{Header: &p2ppb.CentrifugeHeader{
+		CentNodeVersion: version.GetVersion().String(), NetworkIdentifier: config.Config.GetNetworkID(),
+	}, Document: testingutils.GenerateCoreDocument()}
+
+	return req
+}
+
+func TestHandler_RequestDocumentSignature_verification_fail(t *testing.T) {
+	req := getSignatureRequest()
+	resp, err := handler.RequestDocumentSignature(context.Background(), req)
+	assert.NotNil(t, err, "must be non nil")
+	assert.Nil(t, resp, "must be nil")
+	assert.Contains(t, err.Error(), "signing_root is missing")
+}
+
+func TestHandler_RequestDocumentSignature_successful(t *testing.T) {
+	idConfig, _ := cented25519.GetIDConfig()
+	sig := &coredocumentpb.Signature{
+		EntityId:  idConfig.ID,
+		PublicKey: key1Pub[:],
+	}
+	centID, _ := identity.NewCentID(sig.EntityId)
+	idkey := &identity.EthereumIdentityKey{
+		Key:       key1Pub,
+		Purposes:  []*big.Int{big.NewInt(identity.KeyPurposeSigning)},
+		RevokedAt: big.NewInt(0),
+	}
+	id := &testingcommons.MockID{}
+	srv := &testingcommons.MockIDService{}
+	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
+	id.On("FetchKey", key1Pub[:]).Return(idkey, nil).Once()
+	identity.IDService = srv
+	doc := testingutils.GenerateCoreDocument()
+	tree, _ := coredocument.GetDocumentSigningTree(doc)
+	doc.SigningRoot = tree.RootHash()
+	sig = signatures.Sign(&config.IdentityConfig{
+		ID:         sig.EntityId,
+		PublicKey:  key1Pub[:],
+		PrivateKey: key1,
+	}, doc.SigningRoot)
+	doc.Signatures = append(doc.Signatures, sig)
+	req := getSignatureRequest()
+	req.Document = doc
+	resp, err := handler.RequestDocumentSignature(context.Background(), req)
+	srv.AssertExpectations(t)
+	id.AssertExpectations(t)
 	assert.Nil(t, err, "must be nil")
-	assert.Equal(t, resp.CentNodeVersion, version.GetVersion().String())
-	assert.Equal(t, wantSig, resp.Signature.Signature)
+	assert.NotNil(t, resp, "must be non nil")
+	assert.NotNil(t, resp.Signature.Signature, "must be non nil")
+	sig = resp.Signature
+	assert.True(t, ed25519.Verify(sig.PublicKey, doc.SigningRoot, sig.Signature), "signature must be valid")
 }
 
 func TestP2PService_basicChecks(t *testing.T) {

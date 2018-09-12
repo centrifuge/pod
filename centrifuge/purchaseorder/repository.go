@@ -5,8 +5,8 @@ import (
 	"sync"
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/centerrors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/code"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
 	"github.com/golang/protobuf/proto"
 	"github.com/syndtr/goleveldb/leveldb"
@@ -49,11 +49,11 @@ func GetRepository() storage.Repository {
 func validate(doc proto.Message) error {
 	poDoc, ok := doc.(*purchaseorderpb.PurchaseOrderDocument)
 	if !ok {
-		return errors.New(code.DocumentInvalid, fmt.Sprintf("invalid document of type: %T", doc))
+		return centerrors.New(code.DocumentInvalid, fmt.Sprintf("invalid document of type: %T", doc))
 	}
 
 	if valid, msg, errs := Validate(poDoc); !valid {
-		return errors.NewWithErrors(code.DocumentInvalid, msg, errs)
+		return centerrors.NewWithErrors(code.DocumentInvalid, msg, errs)
 	}
 
 	return nil

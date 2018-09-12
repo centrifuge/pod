@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/centerrors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/secp256k1"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/utils"
@@ -44,12 +44,12 @@ func GenerateSigningKeyPair(curveType string) (publicKey, privateKey []byte) {
 func SaveKeyPair(publicFileName, privateFileName string, publicKey, privateKey []byte) error {
 	err := utils.WriteKeyToPemFile(publicFileName, PublicKey, publicKey)
 	if err != nil {
-		return errors.Wrap(err, "failed to save public key")
+		return centerrors.Wrap(err, "failed to save public key")
 	}
 
 	err = utils.WriteKeyToPemFile(privateFileName, PrivateKey, privateKey)
 	if err != nil {
-		return errors.Wrap(err, "failed to save private key")
+		return centerrors.Wrap(err, "failed to save private key")
 	}
 
 	return nil

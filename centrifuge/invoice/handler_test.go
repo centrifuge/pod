@@ -102,7 +102,7 @@ func TestInvoiceDocumentService_AnchorFails(t *testing.T) {
 	doc, s, mockRepo, mockCDP := getTestSetupData()
 
 	mockRepo.On("Create", doc.Document.CoreDocument.DocumentIdentifier, doc.Document).Return(nil).Once()
-	mockCDP.On("Anchor", mock.Anything).Return(errors.New("error anchoring")).Once()
+	mockCDP.On("Anchor", mock.Anything).Return(errors.New("error anchors")).Once()
 
 	anchoredDoc, err := s.AnchorInvoiceDocument(context.Background(), &clientinvoicepb.AnchorInvoiceEnvelope{Document: doc.Document})
 
@@ -172,13 +172,13 @@ func TestInvoiceDocumentService_Send_AnchorFails(t *testing.T) {
 	recipients := testingutils.GenerateP2PRecipients(2)
 
 	mockRepo.On("Create", doc.Document.CoreDocument.DocumentIdentifier, doc.Document).Return(nil).Once()
-	mockCDP.On("Anchor", mock.Anything).Return(errors.New("error anchoring")).Once()
+	mockCDP.On("Anchor", mock.Anything).Return(errors.New("error anchors")).Once()
 
 	_, err := s.SendInvoiceDocument(context.Background(), &clientinvoicepb.SendInvoiceEnvelope{Recipients: recipients, Document: doc.Document})
 
 	mockRepo.AssertExpectations(t)
 	mockCDP.AssertExpectations(t)
-	assert.Contains(t, err.Error(), "error anchoring")
+	assert.Contains(t, err.Error(), "error anchors")
 }
 
 func TestInvoiceDocumentService_HandleCreateInvoiceProof(t *testing.T) {

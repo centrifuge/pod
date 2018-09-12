@@ -9,7 +9,7 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/documenttypes"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/centerrors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
@@ -130,7 +130,7 @@ func TestValidate(t *testing.T) {
 			po: nil,
 			want: want{
 				valid:  false,
-				errMsg: errors.NilDocument,
+				errMsg: centerrors.NilDocument,
 			},
 		},
 
@@ -138,7 +138,7 @@ func TestValidate(t *testing.T) {
 			po: &purchaseorderpb.PurchaseOrderDocument{},
 			want: want{
 				valid:  false,
-				errMsg: errors.NilDocument,
+				errMsg: centerrors.NilDocument,
 			},
 		},
 
@@ -146,7 +146,7 @@ func TestValidate(t *testing.T) {
 			po: &purchaseorderpb.PurchaseOrderDocument{CoreDocument: validCoreDoc},
 			want: want{
 				valid:  false,
-				errMsg: errors.NilDocumentData,
+				errMsg: centerrors.NilDocumentData,
 			},
 		},
 
@@ -167,9 +167,9 @@ func TestValidate(t *testing.T) {
 				valid:  false,
 				errMsg: "Invalid Purchase Order",
 				errs: map[string]string{
-					"po_recipient_country": errors.RequiredField,
-					"po_order_amount":      errors.RequirePositiveNumber,
-					"po_salts":             errors.RequiredField,
+					"po_recipient_country": centerrors.RequiredField,
+					"po_order_amount":      centerrors.RequirePositiveNumber,
+					"po_salts":             centerrors.RequiredField,
 				},
 			},
 		},
@@ -193,7 +193,7 @@ func TestValidate(t *testing.T) {
 				valid:  false,
 				errMsg: "Invalid Purchase Order",
 				errs: map[string]string{
-					"po_salts": errors.RequiredField,
+					"po_salts": centerrors.RequiredField,
 				},
 			},
 		},

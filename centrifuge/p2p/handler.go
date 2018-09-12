@@ -7,10 +7,10 @@ import (
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/notification"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/centerrors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/code"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	centED25519 "github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/notification"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/signatures"
@@ -19,7 +19,7 @@ import (
 )
 
 func incompatibleNetworkError(nodeNetwork uint32) error {
-	return errors.New(code.NetworkMismatch, fmt.Sprintf("Incompatible network id: node network: %d, client network: %d", config.Config.GetNetworkID(), nodeNetwork))
+	return centerrors.New(code.NetworkMismatch, fmt.Sprintf("Incompatible network id: node network: %d, client network: %d", config.Config.GetNetworkID(), nodeNetwork))
 }
 
 // basicChecks does a network and version check for any incompatibility
@@ -54,12 +54,12 @@ func (srv *Handler) Post(ctx context.Context, req *p2ppb.P2PMessage) (*p2ppb.P2P
 	}
 
 	if req.Document == nil {
-		return nil, errors.New(code.DocumentInvalid, errors.NilError(req.Document).Error())
+		return nil, centerrors.New(code.DocumentInvalid, centerrors.NilError(req.Document).Error())
 	}
 
 	err = coredocument.GetRepository().Create(req.Document.DocumentIdentifier, req.Document)
 	if err != nil {
-		return nil, errors.New(code.Unknown, err.Error())
+		return nil, centerrors.New(code.Unknown, err.Error())
 	}
 
 	// this should ideally never fail. lets ignore the error
@@ -81,28 +81,37 @@ func (srv *Handler) Post(ctx context.Context, req *p2ppb.P2PMessage) (*p2ppb.P2P
 	}, nil
 }
 
-// RequestDocumentSignature signs the received document and returns the signature
-//
-// How do we verify if we want to sign the document?
-// Can we assume that if we are called to sign, we simply sign?
-// Or maybe we can check the SenderID against KeyInfo?
+// RequestDocumentSignature signs the received document and returns the signature of the signingRoot
+// Document signing root will be recalculated and verified
+// Existing signatures on the document will be verified
+// Document will be stored to the repository for state management
 func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.SignatureRequest) (*p2ppb.SignatureResponse, error) {
 	err := basicChecks(sigReq.Header.CentNodeVersion, sigReq.Header.NetworkIdentifier)
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO(ved): validate core document here
-	if sigReq.Document == nil {
-		return nil, errors.New(code.DocumentInvalid, errors.NilError(sigReq.Document).Error())
+	doc := sigReq.Document
+	if doc == nil {
+		return nil, centerrors.New(code.DocumentInvalid, centerrors.NilError(sigReq.Document).Error())
+	}
+
+	if err := coredocument.ValidateWithSignature(doc); err != nil {
+		return nil, centerrors.New(code.DocumentInvalid, err.Error())
 	}
 
 	idConfig, err := centED25519.GetIDConfig()
 	if err != nil {
-		return nil, errors.New(code.Unknown, fmt.Sprintf("failed to get ID Config: %v", err))
+		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get ID Config: %v", err))
 	}
 
-	sig := signatures.Sign(idConfig, sigReq.Document)
+	sig := signatures.Sign(idConfig, doc.SigningRoot)
+	doc.Signatures = append(doc.Signatures, sig)
+	err = coredocument.GetRepository().Create(doc.DocumentIdentifier, doc)
+	if err != nil {
+		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to store document: %v", err))
+	}
+
 	return &p2ppb.SignatureResponse{
 		CentNodeVersion: version.GetVersion().String(),
 		Signature:       sig,

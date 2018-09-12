@@ -7,6 +7,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
+
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testingbootstrap"
@@ -20,7 +22,9 @@ import (
 
 func TestMain(m *testing.M) {
 	cc.TestFunctionalEthereumBootstrap()
-	invoice.InitLevelDBRepository(cc.GetLevelDBStorage())
+	db := cc.GetLevelDBStorage()
+	invoice.InitLevelDBRepository(db)
+	coredocument.InitLevelDBRepository(db)
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()
 	os.Exit(result)

@@ -6,10 +6,10 @@ import (
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/centerrors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
-	centED25519 "github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/p2p"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/signatures"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
@@ -40,19 +40,26 @@ func DefaultProcessor() Processor {
 // Send sends the given defaultProcessor to the given recipient on the P2P layer
 func (dp *defaultProcessor) Send(coreDocument *coredocumentpb.CoreDocument, ctx context.Context, recipient []byte) (err error) {
 	if coreDocument == nil {
-		return errors.NilError(coreDocument)
+		return centerrors.NilError(coreDocument)
 	}
 
-	id, err := dp.IdentityService.LookupIdentityForID(recipient)
+	centId, err := identity.NewCentID(recipient)
 	if err != nil {
-		err = errors.Wrap(err, "error fetching receiver identity")
+		err = centerrors.Wrap(err, "error parsing receiver centId")
+		log.Error(err)
+		return err
+	}
+
+	id, err := dp.IdentityService.LookupIdentityForID(centId)
+	if err != nil {
+		err = centerrors.Wrap(err, "error fetching receiver identity")
 		log.Error(err)
 		return err
 	}
 
 	lastB58Key, err := id.GetCurrentP2PKey()
 	if err != nil {
-		err = errors.Wrap(err, "error fetching p2p key")
+		err = centerrors.Wrap(err, "error fetching p2p key")
 		log.Error(err)
 		return err
 	}
@@ -68,14 +75,14 @@ func (dp *defaultProcessor) Send(coreDocument *coredocumentpb.CoreDocument, ctx 
 	hostInstance := p2p.GetHost()
 	bSenderId, err := hostInstance.ID().ExtractPublicKey().Bytes()
 	if err != nil {
-		err = errors.Wrap(err, "failed to extract pub key")
+		err = centerrors.Wrap(err, "failed to extract pub key")
 		log.Error(err)
 		return err
 	}
 
 	_, err = client.Post(context.Background(), &p2ppb.P2PMessage{Document: coreDocument, SenderCentrifugeId: bSenderId})
 	if err != nil {
-		err = errors.Wrap(err, "failed to post to the node")
+		err = centerrors.Wrap(err, "failed to post to the node")
 		log.Error(err)
 		return err
 	}
@@ -84,9 +91,18 @@ func (dp *defaultProcessor) Send(coreDocument *coredocumentpb.CoreDocument, ctx 
 }
 
 // Anchor anchors the given CoreDocument
+// This method should: (TODO)
+// - calculate the signing root
+// - sign document with own key
+// - collect signatures (incl. validate)
+// - store signatures on coredocument
+// - calculate DocumentRoot
+// - store doc in db
+// - anchor the document
+// - send anchored document to collaborators
 func (dp *defaultProcessor) Anchor(document *coredocumentpb.CoreDocument) error {
 	if document == nil {
-		return errors.NilError(document)
+		return centerrors.NilError(document)
 	}
 
 	_, err := tools.SliceToByte32(document.CurrentIdentifier)
@@ -104,6 +120,19 @@ func (dp *defaultProcessor) Anchor(document *coredocumentpb.CoreDocument) error 
 		return err
 	}
 
+	// Sign signingRoot and append mac to signatures
+	idConfig, err := ed25519.GetIDConfig()
+	if err != nil {
+		return err
+	}
+	sig := signatures.Sign(idConfig, document.SigningRoot)
+	document.Signatures = append(document.Signatures, sig)
+	err = coredocument.GetRepository().Create(document.CurrentIdentifier, document)
+	if err != nil {
+		return err
+	}
+	//
+
 	// TODO anchoring
 	//rootHash, err := tools.SliceToByte32(document.DocumentRoot) //TODO: CHANGE
 	//if err != nil {
@@ -117,39 +146,22 @@ func (dp *defaultProcessor) Anchor(document *coredocumentpb.CoreDocument) error 
 	//	return err
 	//}
 	//
-	//var centId [identity.CentIdByteLength]byte
-	//copy(centId[:], idConfig.ID[:identity.CentIdByteLength])
+	//var centId [identity.CentIDByteLength]byte
+	//copy(centId[:], idConfig.ID[:identity.CentIDByteLength])
 	//
-	//signature, err := secp256k1.SignEthereum(anchoring.GenerateCommitHash(id, centId, rootHash), idConfig.PrivateKey)
+	//signature, err := secp256k1.SignEthereum(anchors.GenerateCommitHash(id, centId, rootHash), idConfig.PrivateKey)
 	//if err != nil {
 	//	log.Error(err)
 	//	return err
 	//}
 	//
 	//// TODO documentProofs has to be included when we develop precommit flow
-	//confirmations, err := anchoring.CommitAnchor(id, rootHash, centId, [][anchoring.DocumentProofLength]byte{tools.RandomByte32()}, signature)
+	//confirmations, err := anchors.CommitAnchor(id, rootHash, centId, [][anchors.DocumentProofLength]byte{tools.RandomByte32()}, signature)
 	//if err != nil {
 	//	log.Error(err)
 	//	return err
 	//}
 	//
 	//anchorWatch := <-confirmations
-	return nil
-}
-
-func (dp *defaultProcessor) Sign(document *coredocumentpb.CoreDocument) (err error) {
-	// TODO: The signing root shouldn't be set in this method, instead we should split the entire flow into two separate parts: create/update document & sign document
-	err = coredocument.CalculateSigningRoot(document)
-	if err != nil {
-		return err
-	}
-
-	idConfig, err := centED25519.GetIDConfig()
-	if err != nil {
-		return err
-	}
-
-	sig := signatures.Sign(idConfig, document)
-	document.Signatures = append(document.Signatures, sig)
 	return nil
 }

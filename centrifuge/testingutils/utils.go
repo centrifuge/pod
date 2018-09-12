@@ -21,9 +21,9 @@ func MockConfigOption(key string, value interface{}) func() {
 }
 
 func Rand32Bytes() []byte {
-	randbytes := make([]byte, 32)
-	rand.Read(randbytes)
-	return randbytes
+	bytes := make([]byte, 32)
+	rand.Read(bytes)
+	return bytes
 }
 
 func GenerateP2PRecipients(quantity int) [][]byte {
