@@ -7,10 +7,10 @@ import (
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/notification"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/centerrors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/code"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	centED25519 "github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/notification"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/signatures"
@@ -19,7 +19,7 @@ import (
 )
 
 func incompatibleNetworkError(nodeNetwork uint32) error {
-	return errors.New(code.NetworkMismatch, fmt.Sprintf("Incompatible network id: node network: %d, client network: %d", config.Config.GetNetworkID(), nodeNetwork))
+	return centerrors.New(code.NetworkMismatch, fmt.Sprintf("Incompatible network id: node network: %d, client network: %d", config.Config.GetNetworkID(), nodeNetwork))
 }
 
 // basicChecks does a network and version check for any incompatibility
@@ -54,12 +54,12 @@ func (srv *Handler) Post(ctx context.Context, req *p2ppb.P2PMessage) (*p2ppb.P2P
 	}
 
 	if req.Document == nil {
-		return nil, errors.New(code.DocumentInvalid, errors.NilError(req.Document).Error())
+		return nil, centerrors.New(code.DocumentInvalid, centerrors.NilError(req.Document).Error())
 	}
 
 	err = coredocumentrepository.GetRepository().Create(req.Document.DocumentIdentifier, req.Document)
 	if err != nil {
-		return nil, errors.New(code.Unknown, err.Error())
+		return nil, centerrors.New(code.Unknown, err.Error())
 	}
 
 	// this should ideally never fail. lets ignore the error
@@ -96,12 +96,12 @@ func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.
 	// TODO: verify the signature of the requester using his public key and validated signing root done above
 	// TODO: store the document once the signature is done
 	if sigReq.Document == nil {
-		return nil, errors.New(code.DocumentInvalid, errors.NilError(sigReq.Document).Error())
+		return nil, centerrors.New(code.DocumentInvalid, centerrors.NilError(sigReq.Document).Error())
 	}
 
 	idConfig, err := centED25519.GetIDConfig()
 	if err != nil {
-		return nil, errors.New(code.Unknown, fmt.Sprintf("failed to get ID Config: %v", err))
+		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get ID Config: %v", err))
 	}
 
 	sig := signatures.Sign(idConfig, sigReq.Document.SigningRoot)

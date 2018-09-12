@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/centerrors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/centrifuge/precise-proofs/proofs"
@@ -99,7 +99,7 @@ func TestValidate(t *testing.T) {
 				valid:  false,
 				errMsg: "Invalid CoreDocument",
 				errs: map[string]string{
-					"cd_salts": errors.RequiredField,
+					"cd_salts": centerrors.RequiredField,
 				},
 			},
 		},
@@ -123,7 +123,7 @@ func TestValidate(t *testing.T) {
 				valid:  false,
 				errMsg: "Invalid CoreDocument",
 				errs: map[string]string{
-					"cd_salts": errors.RequiredField,
+					"cd_salts": centerrors.RequiredField,
 				},
 			},
 		},
@@ -147,7 +147,7 @@ func TestValidate(t *testing.T) {
 				valid:  false,
 				errMsg: "Invalid CoreDocument",
 				errs: map[string]string{
-					"cd_data_root": errors.RequiredField,
+					"cd_data_root": centerrors.RequiredField,
 				},
 			},
 		},
@@ -170,8 +170,8 @@ func TestValidate(t *testing.T) {
 				valid:  false,
 				errMsg: "Invalid CoreDocument",
 				errs: map[string]string{
-					"cd_data_root": errors.RequiredField,
-					"cd_salts":     errors.RequiredField,
+					"cd_data_root": centerrors.RequiredField,
+					"cd_salts":     centerrors.RequiredField,
 				},
 			},
 		},
@@ -196,7 +196,7 @@ func TestValidate(t *testing.T) {
 				valid:  false,
 				errMsg: "Invalid CoreDocument",
 				errs: map[string]string{
-					"cd_overall": errors.IdentifierReUsed,
+					"cd_overall": centerrors.IdentifierReUsed,
 				},
 			},
 		},
@@ -221,7 +221,7 @@ func TestValidate(t *testing.T) {
 				valid:  false,
 				errMsg: "Invalid CoreDocument",
 				errs: map[string]string{
-					"cd_overall": errors.IdentifierReUsed,
+					"cd_overall": centerrors.IdentifierReUsed,
 				},
 			},
 		},

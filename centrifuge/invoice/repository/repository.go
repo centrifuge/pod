@@ -6,8 +6,8 @@ import (
 	"sync"
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/centerrors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/code"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
 	"github.com/golang/protobuf/proto"
@@ -52,11 +52,11 @@ func GetRepository() storage.Repository {
 func validate(doc proto.Message) error {
 	invoiceDoc, ok := doc.(*invoicepb.InvoiceDocument)
 	if !ok {
-		return errors.New(code.DocumentInvalid, fmt.Sprintf("invalid document of type: %T", doc))
+		return centerrors.New(code.DocumentInvalid, fmt.Sprintf("invalid document of type: %T", doc))
 	}
 
 	if valid, msg, errs := invoice.Validate(invoiceDoc); !valid {
-		return errors.NewWithErrors(code.DocumentInvalid, msg, errs)
+		return centerrors.NewWithErrors(code.DocumentInvalid, msg, errs)
 	}
 
 	return nil

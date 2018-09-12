@@ -6,9 +6,9 @@ import (
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/centerrors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/code"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/signatures"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/version"
@@ -78,7 +78,7 @@ func getSignatureForDocument(ctx context.Context, doc coredocumentpb.CoreDocumen
 
 	resp, err := client.RequestDocumentSignature(ctx, req)
 	if err != nil {
-		return nil, errors.Wrap(err, "request for document signature failed")
+		return nil, centerrors.Wrap(err, "request for document signature failed")
 	}
 
 	compatible := version.CheckVersion(resp.CentNodeVersion)
@@ -88,7 +88,7 @@ func getSignatureForDocument(ctx context.Context, doc coredocumentpb.CoreDocumen
 
 	err = signatures.ValidateSignature(resp.Signature, doc.SigningRoot)
 	if err != nil {
-		return nil, errors.New(code.AuthenticationFailed, "signature invalid")
+		return nil, centerrors.New(code.AuthenticationFailed, "signature invalid")
 	}
 
 	return resp, nil
@@ -108,14 +108,14 @@ func getSignatureAsync(ctx context.Context, doc coredocumentpb.CoreDocument, cli
 }
 
 // GetSignaturesForDocument requests peer nodes for the signature and verifies them
-func GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocument, centIDs [][]byte) error {
+func GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocument, centIDs []identity.CentID) error {
 	if doc == nil {
-		return errors.NilError(doc)
+		return centerrors.NilError(doc)
 	}
 
 	targets, err := identity.GetClientsP2PURLs(centIDs)
 	if err != nil {
-		return errors.Wrap(err, "failed to get P2P urls")
+		return centerrors.Wrap(err, "failed to get P2P urls")
 	}
 
 	in := make(chan signatureResponseWrap)
@@ -125,7 +125,7 @@ func GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocum
 	for _, target := range targets {
 		client, err := OpenClient(target)
 		if err != nil {
-			log.Error(errors.Wrap(err, "failed to connect to target"))
+			log.Error(centerrors.Wrap(err, "failed to connect to target"))
 			continue
 		}
 

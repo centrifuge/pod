@@ -107,7 +107,7 @@ func IsSameByteSlice(a []byte, b []byte) bool {
 	return true
 }
 
-// ByteFixedToBigInt convert bute slices to big.Int
+// ByteFixedToBigInt convert bute slices to big.Int (bigendian)
 func ByteSliceToBigInt(slice []byte) *big.Int {
 	bi := new(big.Int)
 	bi.SetBytes(slice)
@@ -130,4 +130,8 @@ func SimulateJsonDecodeForGocelery(kwargs map[string]interface{}) (map[string]in
 	}
 	t2, err := gocelery.DecodeTaskMessage(encoded)
 	return t2.Kwargs, err
+}
+
+func IsValidByteSliceForLength(slice []byte, length int) bool {
+	return len(slice) == length
 }

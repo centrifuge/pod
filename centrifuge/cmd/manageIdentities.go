@@ -24,7 +24,7 @@ var createIdentityCmd = &cobra.Command{
 		if err != nil {
 			panic(err)
 		}
-		log.Infof("Identity created [%s]", watchIdentity.Identity.CentrifugeIDString())
+		log.Infof("Identity created [%s]", watchIdentity.Identity.GetCentrifugeID())
 	},
 }
 
