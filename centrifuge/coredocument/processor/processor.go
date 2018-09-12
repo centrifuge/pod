@@ -150,14 +150,14 @@ func (dp *defaultProcessor) Anchor(document *coredocumentpb.CoreDocument) error 
 	//var centId [identity.CentIDByteLength]byte
 	//copy(centId[:], idConfig.ID[:identity.CentIDByteLength])
 	//
-	//signature, err := secp256k1.SignEthereum(anchoring.GenerateCommitHash(id, centId, rootHash), idConfig.PrivateKey)
+	//signature, err := secp256k1.SignEthereum(anchors.GenerateCommitHash(id, centId, rootHash), idConfig.PrivateKey)
 	//if err != nil {
 	//	log.Error(err)
 	//	return err
 	//}
 	//
 	//// TODO documentProofs has to be included when we develop precommit flow
-	//confirmations, err := anchoring.CommitAnchor(id, rootHash, centId, [][anchoring.DocumentProofLength]byte{tools.RandomByte32()}, signature)
+	//confirmations, err := anchors.CommitAnchor(id, rootHash, centId, [][anchors.DocumentProofLength]byte{tools.RandomByte32()}, signature)
 	//if err != nil {
 	//	log.Error(err)
 	//	return err

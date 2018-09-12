@@ -1,12 +1,12 @@
 // +build unit
 
-package anchoring_test
+package anchors_test
 
 import (
 	"math/big"
 	"testing"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/anchoring"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/anchors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/secp256k1"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
@@ -24,7 +24,7 @@ type MockRepositoryAnchor struct {
 	shouldFail bool
 }
 
-func (mra *MockRepositoryAnchor) Commit(opts *bind.TransactOpts, _anchorId *big.Int, _documentRoot [32]byte, _centrifugeId *big.Int, _documentProofs [][32]byte, _signature []byte) (*types.Transaction, error) {
+func (mra *MockRepositoryAnchor) Commit(opts *bind.TransactOpts, _anchorID *big.Int, _documentRoot [32]byte, _centrifugeId *big.Int, _documentProofs [][32]byte, _signature []byte) (*types.Transaction, error) {
 	if mra.shouldFail == true {
 		return nil, errors.New("for testing - error if identifier == merkleRoot")
 	}
@@ -35,11 +35,11 @@ func (mra *MockRepositoryAnchor) Commit(opts *bind.TransactOpts, _anchorId *big.
 
 type MockWatchAnchorRegistered struct {
 	shouldFail bool
-	sink       chan<- *anchoring.EthereumAnchorRepositoryContractAnchorCommitted
+	sink       chan<- *anchors.EthereumAnchorRepositoryContractAnchorCommitted
 }
 
-func (mwar *MockWatchAnchorRegistered) WatchAnchorCommitted(opts *bind.WatchOpts, sink chan<- *anchoring.EthereumAnchorRepositoryContractAnchorCommitted,
-	from []common.Address, anchorId []*big.Int, centrifugeId []*big.Int) (event.Subscription, error) {
+func (mwar *MockWatchAnchorRegistered) WatchAnchorCommitted(opts *bind.WatchOpts, sink chan<- *anchors.EthereumAnchorRepositoryContractAnchorCommitted,
+	from []common.Address, anchorID []*big.Int, centrifugeId []*big.Int) (event.Subscription, error) {
 	if mwar.shouldFail == true {
 		return nil, errors.New("forced error during test")
 	} else {
@@ -55,7 +55,7 @@ func (mwar *MockWatchAnchorRegistered) WatchAnchorCommitted(opts *bind.WatchOpts
 func TestCorrectCommitSignatureGen(t *testing.T) {
 
 	// hardcoded values are generated with centrifuge-ethereum-contracts
-	anchorId, _ := hexutil.Decode("0x154cc26833dec2f4ad7ead9d65f9ec968a1aa5efbf6fe762f8f2a67d18a2d9b1")
+	anchorID, _ := hexutil.Decode("0x154cc26833dec2f4ad7ead9d65f9ec968a1aa5efbf6fe762f8f2a67d18a2d9b1")
 	documentRoot, _ := hexutil.Decode("0x65a35574f70281ae4d1f6c9f3adccd5378743f858c67a802a49a08ce185bc975")
 	centrifugeId, _ := hexutil.Decode("0x1851943e76d2")
 
@@ -64,11 +64,11 @@ func TestCorrectCommitSignatureGen(t *testing.T) {
 
 	testPrivateKey, _ := hexutil.Decode("0x17e063fa17dd8274b09c14b253697d9a20afff74ace3c04fdb1b9c814ce0ada5")
 
-	anchorIdTyped, _ := anchoring.NewAnchorID(anchorId)
+	anchorIDTyped, _ := anchors.NewAnchorID(anchorID)
 	centIdTyped, _ := identity.NewCentID(centrifugeId)
-	docRootTyped, _ := anchoring.NewDocRoot(documentRoot)
+	docRootTyped, _ := anchors.NewDocRoot(documentRoot)
 
-	messageToSign := anchoring.GenerateCommitHash(anchorIdTyped, centIdTyped, docRootTyped)
+	messageToSign := anchors.GenerateCommitHash(anchorIDTyped, centIdTyped, docRootTyped)
 
 	assert.Equal(t, correctCommitToSign, hexutil.Encode(messageToSign), "messageToSign not calculated correctly")
 
@@ -80,7 +80,7 @@ func TestCorrectCommitSignatureGen(t *testing.T) {
 
 func TestGenerateAnchor(t *testing.T) {
 
-	currentAnchorId := tools.RandomByte32()
+	currentanchorID := tools.RandomByte32()
 	currentDocumentRoot := tools.RandomByte32()
 	documentProof := tools.RandomByte32()
 	centrifugeId := tools.RandomSlice(identity.CentIDByteLength)
@@ -90,18 +90,18 @@ func TestGenerateAnchor(t *testing.T) {
 
 	documentProofs = append(documentProofs, documentProof)
 	centIdTyped, _ := identity.NewCentID(centrifugeId)
-	messageToSign := anchoring.GenerateCommitHash(currentAnchorId, centIdTyped, currentDocumentRoot)
+	messageToSign := anchors.GenerateCommitHash(currentanchorID, centIdTyped, currentDocumentRoot)
 	signature, _ := secp256k1.SignEthereum(messageToSign, testPrivateKey)
 
 	var documentRoot32Bytes [32]byte
 	copy(documentRoot32Bytes[:], currentDocumentRoot[:32])
 
-	commitData := anchoring.NewCommitData(currentAnchorId, documentRoot32Bytes, centIdTyped, documentProofs, signature)
+	commitData := anchors.NewCommitData(currentanchorID, documentRoot32Bytes, centIdTyped, documentProofs, signature)
 
-	anchorId, _ := anchoring.NewAnchorID(currentAnchorId[:])
-	docRoot, _ := anchoring.NewDocRoot(documentRoot32Bytes[:])
+	anchorID, _ := anchors.NewAnchorID(currentAnchorId[:])
+	docRoot, _ := anchors.NewDocRoot(documentRoot32Bytes[:])
 
-	assert.Equal(t, commitData.AnchorId, anchorId, "Anchor should have the passed ID")
+	assert.Equal(t, commitData.AnchorID, anchorID, "Anchor should have the passed ID")
 	assert.Equal(t, commitData.DocumentRoot, docRoot, "Anchor should have the passed document root")
 	assert.Equal(t, commitData.CentrifugeID, centIdTyped, "Anchor should have the centrifuge id")
 	assert.Equal(t, commitData.DocumentProofs, documentProofs, "Anchor should have the document proofs")

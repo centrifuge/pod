@@ -1,4 +1,4 @@
-package anchoring
+package anchors
 
 import (
 	"fmt"
@@ -17,15 +17,15 @@ import (
 )
 
 const (
-	AnchoringRepositoryConfirmationTaskName string = "AnchoringRepositoryConfirmationTaskName"
-	AnchorIdParam                           string = "AnchorIdParam"
-	CentrifugeIdParam                       string = "CentrifugeIdParam"
-	AddressParam                            string = "AddressParam"
+	AnchorRepositoryConfirmationTaskName string = "AnchorRepositoryConfirmationTaskName"
+	AnchorIDParam                        string = "AnchorIDParam"
+	CentrifugeIDParam                    string = "CentrifugeIDParam"
+	AddressParam                         string = "AddressParam"
 )
 
 type AnchorCommittedWatcher interface {
 	WatchAnchorCommitted(opts *bind.WatchOpts, sink chan<- *EthereumAnchorRepositoryContractAnchorCommitted,
-		from []common.Address, anchorId []*big.Int, centrifugeId []*big.Int) (event.Subscription, error)
+		from []common.Address, anchorID []*big.Int, centrifugeId []*big.Int) (event.Subscription, error)
 }
 
 // AnchoringConfirmationTask is a queued task to watch ID registration events on Ethereum using EthereumAnchoryRepositoryContract.
@@ -54,7 +54,7 @@ func NewAnchoringConfirmationTask(
 }
 
 func (act *AnchoringConfirmationTask) Name() string {
-	return AnchoringRepositoryConfirmationTaskName
+	return AnchorRepositoryConfirmationTaskName
 }
 
 func (act *AnchoringConfirmationTask) Init() error {
@@ -76,28 +76,28 @@ func (act *AnchoringConfirmationTask) Copy() (gocelery.CeleryTask, error) {
 
 // ParseKwargs - define a method to parse AnchorID, Address and RootHash
 func (act *AnchoringConfirmationTask) ParseKwargs(kwargs map[string]interface{}) error {
-	anchorId, ok := kwargs[AnchorIdParam]
+	anchorID, ok := kwargs[AnchorIDParam]
 	if !ok {
-		return fmt.Errorf("undefined kwarg " + AnchorIdParam)
+		return fmt.Errorf("undefined kwarg " + AnchorIDParam)
 	}
 
-	anchorIdBytes, err := getBytes32(anchorId)
+	anchorIDBytes, err := getBytes32(anchorID)
 
 	if err != nil {
-		return fmt.Errorf("malformed kwarg [%s] because [%s]", AnchorIdParam, err.Error())
+		return fmt.Errorf("malformed kwarg [%s] because [%s]", AnchorIDParam, err.Error())
 	}
 
-	act.AnchorID = anchorIdBytes
+	act.AnchorID = anchorIDBytes
 
 	//parse the centrifuge id
-	centrifugeId, ok := kwargs[CentrifugeIdParam]
+	centrifugeId, ok := kwargs[CentrifugeIDParam]
 	if !ok {
-		return fmt.Errorf("undefined kwarg " + CentrifugeIdParam)
+		return fmt.Errorf("undefined kwarg " + CentrifugeIDParam)
 	}
 
 	centrifugeIdBytes, err := getBytesCentrifugeId(centrifugeId)
 	if err != nil {
-		return fmt.Errorf("malformed kwarg [%s] because [%s]", CentrifugeIdParam, err.Error())
+		return fmt.Errorf("malformed kwarg [%s] because [%s]", CentrifugeIDParam, err.Error())
 	}
 
 	act.CentrifugeID = centrifugeIdBytes

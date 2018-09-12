@@ -1,4 +1,4 @@
-package anchoring
+package anchors
 
 import (
 	"errors"
