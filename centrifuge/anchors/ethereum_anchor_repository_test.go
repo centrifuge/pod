@@ -80,7 +80,7 @@ func TestCorrectCommitSignatureGen(t *testing.T) {
 
 func TestGenerateAnchor(t *testing.T) {
 
-	currentanchorID := tools.RandomByte32()
+	currentAnchorID := tools.RandomByte32()
 	currentDocumentRoot := tools.RandomByte32()
 	documentProof := tools.RandomByte32()
 	centrifugeId := tools.RandomSlice(identity.CentIDByteLength)
@@ -90,15 +90,15 @@ func TestGenerateAnchor(t *testing.T) {
 
 	documentProofs = append(documentProofs, documentProof)
 	centIdTyped, _ := identity.NewCentID(centrifugeId)
-	messageToSign := anchors.GenerateCommitHash(currentanchorID, centIdTyped, currentDocumentRoot)
+	messageToSign := anchors.GenerateCommitHash(currentAnchorID, centIdTyped, currentDocumentRoot)
 	signature, _ := secp256k1.SignEthereum(messageToSign, testPrivateKey)
 
 	var documentRoot32Bytes [32]byte
 	copy(documentRoot32Bytes[:], currentDocumentRoot[:32])
 
-	commitData := anchors.NewCommitData(currentanchorID, documentRoot32Bytes, centIdTyped, documentProofs, signature)
+	commitData := anchors.NewCommitData(currentAnchorID, documentRoot32Bytes, centIdTyped, documentProofs, signature)
 
-	anchorID, _ := anchors.NewAnchorID(currentAnchorId[:])
+	anchorID, _ := anchors.NewAnchorID(currentAnchorID[:])
 	docRoot, _ := anchors.NewDocRoot(documentRoot32Bytes[:])
 
 	assert.Equal(t, commitData.AnchorID, anchorID, "Anchor should have the passed ID")
