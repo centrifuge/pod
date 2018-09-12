@@ -105,13 +105,6 @@ if [ -n "${GETH_DOCKER_CONTAINER_WAS_RUNNING}" ]; then
 else
     echo "Bringing GETH Daemon Down"
     docker rm -f geth-node
-
-    # Cleaning extra DAG file, so we do not cache it - travis
-    if [[ "X${TRAVIS}" == "Xtrue" ]];
-    then
-      new_dag=`ls -ltr $DATA_DIR/$NETWORK_ID/.ethash/* | tail -1 | awk '{print $9}' | tr -d '\n'`
-      rm -Rf $new_dag
-    fi
 fi
 ############################################################
 
