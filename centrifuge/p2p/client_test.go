@@ -21,7 +21,7 @@ import (
 
 func TestMain(m *testing.M) {
 	cc.TestIntegrationBootstrap()
-	identity.SetIdentityService(identity.NewEthereumIdentityService())
+	identity.IDService = identity.NewEthereumIdentityService()
 	result := m.Run()
 	cc.TestIntegrationTearDown()
 	os.Exit(result)
@@ -89,5 +89,5 @@ func TestGetSignatureForDocument_fail_signature(t *testing.T) {
 	client.AssertExpectations(t)
 	assert.Nil(t, resp, "must be nil")
 	assert.Error(t, err, "must not be nil")
-	assert.Contains(t, err.Error(), "failed to validate signature")
+	assert.Contains(t, err.Error(), "signature invalid")
 }
