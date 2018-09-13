@@ -37,6 +37,20 @@ func GenerateP2PRecipients(quantity int) [][]byte {
 	return recipients
 }
 
+// USE WITH CARE as this will create eth transactions for each identity
+func GenerateP2PRecipientsOnEthereum(quantity int) [][]byte {
+	recipients := make([][]byte, quantity)
+	idService := identity.NewEthereumIdentityService()
+
+	for i := 0; i < quantity; i++ {
+		ID := identity.NewRandomCentID()
+		_, confirmations, _ := idService.CreateIdentity(ID)
+		<-confirmations
+		recipients[i] = ID[:]
+	}
+	return recipients
+}
+
 func GenerateCoreDocument() *coredocumentpb.CoreDocument {
 	identifier := Rand32Bytes()
 	salts := &coredocumentpb.CoreDocumentSalts{}

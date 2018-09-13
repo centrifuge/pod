@@ -88,7 +88,7 @@ func (id *EthereumIdentity) GetCentrifugeID() CentID {
 func (id *EthereumIdentity) GetLastKeyForPurpose(keyPurpose int) (key []byte, err error) {
 	err = id.fetchKeysByPurpose(keyPurpose)
 	if err != nil {
-		return
+		return []byte{}, err
 	}
 
 	if len(id.cachedKeys[keyPurpose]) == 0 {

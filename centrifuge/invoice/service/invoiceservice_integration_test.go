@@ -95,7 +95,7 @@ func TestInvoiceDocumentService_HandleSendInvoiceDocument_Integration(t *testing
 
 	anchoredDoc, err := s.HandleSendInvoiceDocument(context.Background(), &clientinvoicepb.SendInvoiceEnvelope{
 		Document:   doc.Document,
-		Recipients: testingutils.GenerateP2PRecipients(2),
+		Recipients: testingutils.GenerateP2PRecipientsOnEthereum(2),
 	})
 	assertDocument(t, err, anchoredDoc, doc, s)
 }

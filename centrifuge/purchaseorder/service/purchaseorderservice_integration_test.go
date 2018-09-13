@@ -95,7 +95,7 @@ func TestPurchaseOrderDocumentService_HandleSendPurchaseOrderDocument_Integratio
 
 	anchoredDoc, err := s.HandleSendPurchaseOrderDocument(context.Background(), &clientpurchaseorderpb.SendPurchaseOrderEnvelope{
 		Document:   doc.Document,
-		Recipients: testingutils.GenerateP2PRecipients(2),
+		Recipients: testingutils.GenerateP2PRecipientsOnEthereum(2),
 	})
 	assertDocument(t, err, anchoredDoc, doc, s)
 }
