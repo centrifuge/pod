@@ -1,4 +1,5 @@
-// build +unit
+// +build unit
+
 package notification
 
 import (
