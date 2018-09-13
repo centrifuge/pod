@@ -57,13 +57,11 @@ func (idk *EthereumIdentityKey) String() string {
 
 func NewEthereumIdentity() (id *EthereumIdentity) {
 	id = new(EthereumIdentity)
-	id.cachedKeys = make(map[int][]EthereumIdentityKey)
 	return
 }
 
 type EthereumIdentity struct {
 	CentrifugeId CentID
-	cachedKeys   map[int][]EthereumIdentityKey
 	Contract     *EthereumIdentityContract
 }
 
@@ -86,16 +84,16 @@ func (id *EthereumIdentity) GetCentrifugeID() CentID {
 }
 
 func (id *EthereumIdentity) GetLastKeyForPurpose(keyPurpose int) (key []byte, err error) {
-	err = id.fetchKeysByPurpose(keyPurpose)
+	idKeys, err := id.fetchKeysByPurpose(keyPurpose)
 	if err != nil {
 		return
 	}
 
-	if len(id.cachedKeys[keyPurpose]) == 0 {
-		return []byte{}, fmt.Errorf("no key found for type [%d] in mockID [%s]", keyPurpose, id.CentrifugeId)
+	if len(idKeys) == 0 {
+		return []byte{}, fmt.Errorf("no key found for type [%d] in ID [%s]", keyPurpose, id.CentrifugeId)
 	}
 
-	return id.cachedKeys[keyPurpose][len(id.cachedKeys[keyPurpose])-1].Key[:32], nil
+	return idKeys[len(idKeys)-1].Key[:32], nil
 }
 
 func (id *EthereumIdentity) FetchKey(key []byte) (Key, error) {
@@ -211,22 +209,25 @@ func (id *EthereumIdentity) AddKeyToIdentity(keyPurpose int, key []byte) (confir
 	return confirmations, nil
 }
 
-func (id *EthereumIdentity) fetchKeysByPurpose(keyPurpose int) error {
+func (id *EthereumIdentity) fetchKeysByPurpose(keyPurpose int) ([]EthereumIdentityKey, error) {
 	contract, err := id.getContract()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	opts := ethereum.GetGethCallOpts()
 	bigInt := big.NewInt(int64(keyPurpose))
 	keys, err := contract.GetKeysByPurpose(opts, bigInt)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	log.Infof("fetched keys: %d %x\n", keyPurpose, keys)
+
+	var ids []EthereumIdentityKey
 	for _, key := range keys {
-		id.cachedKeys[keyPurpose] = append(id.cachedKeys[keyPurpose], EthereumIdentityKey{key, nil, nil})
+		ids = append(ids, EthereumIdentityKey{Key: key})
 	}
-	return nil
+
+	return ids, nil
 }
 
 func getIdentityFactoryContract() (identityFactoryContract *EthereumIdentityFactoryContract, err error) {
