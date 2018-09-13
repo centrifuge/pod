@@ -173,6 +173,10 @@ func (c *Configuration) GetSigningKeyPair() (pub, priv string) {
 	return c.V.GetString("keys.signing.publicKey"), c.V.GetString("keys.signing.privateKey")
 }
 
+func (c *Configuration) GetEthAuthKey() (priv string) {
+	return c.V.GetString("keys.ethauth.privateKey")
+}
+
 // Configuration Implementation
 func NewConfiguration(configFile string) *Configuration {
 	c := Configuration{configFile: configFile}

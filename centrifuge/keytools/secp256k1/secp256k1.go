@@ -7,6 +7,10 @@ import (
 
 	"fmt"
 
+	"encoding/base64"
+
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -20,6 +24,8 @@ const SignatureRSFormatLen = 64  //64 byte [R || S] format
 const SignatureRSVFormatLen = 65 //65 byte [R || S || V] format
 const SignatureVPosition = 64
 const PrivateKeyLen = 32
+const PublicKey = "PUBLIC KEY"
+const PrivateKey = "PRIVATE KEY"
 
 func GenerateSigningKeyPair() (publicKey, privateKey []byte) {
 
@@ -112,4 +118,39 @@ func VerifySignature(publicKey, message, signature []byte) bool {
 	// the signature should have the 64 byte [R || S] format
 	return secp256k1.VerifySignature(publicKey, message, signature)
 
+}
+
+// GetIDConfig reads the keys and ID from the config and returns a the Identity config
+func GetIDConfig() (identityConfig *config.IdentityConfig, err error) {
+	pvk := GetEthAuthKeyFromConfig()
+	decodedId, err := base64.StdEncoding.DecodeString(string(config.Config.GetIdentityId()))
+	if err != nil {
+		return nil, err
+	}
+
+	identityConfig = &config.IdentityConfig{
+		ID:         decodedId,
+		PrivateKey: pvk,
+	}
+	return
+}
+
+// GetEthAuthKeyFromConfig returns the private key as byte array
+func GetEthAuthKeyFromConfig() []byte {
+	priv := config.Config.GetEthAuthKey()
+	privateKey, err := GetPrivateEthAuthKey(priv)
+	if err != nil {
+		log.Error(err)
+		return nil
+	}
+	return privateKey
+}
+
+// GetPrivateEthAuthKey returns the private key from the file
+func GetPrivateEthAuthKey(fileName string) (key []byte, err error) {
+	key, err = utils.ReadKeyFromPemFile(fileName, PrivateKey)
+	if err != nil {
+		log.Error(err)
+	}
+	return
 }
