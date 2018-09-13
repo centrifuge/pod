@@ -12,6 +12,8 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	logging "github.com/ipfs/go-log"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
+	"encoding/base64"
 )
 
 var log = logging.Logger("signing")
@@ -112,4 +114,22 @@ func VerifySignature(publicKey, message, signature []byte) bool {
 	// the signature should have the 64 byte [R || S] format
 	return secp256k1.VerifySignature(publicKey, message, signature)
 
+}
+
+// GetIDConfig reads the keys and ID from the config and returns a the Identity config
+func GetIDConfig() (identityConfig *config.IdentityConfig, err error) {
+	// TODO change this when master has this config reading part
+	testPrivateKey, _ := hexutil.Decode("0x17e063fa17dd8274b09c14b253697d9a20afff74ace3c04fdb1b9c814ce0ada5")
+	testPubKey, _ := hexutil.Decode("0xc8dd3d66e112fae5c88fe6a677be24013e53c33e")
+	decodedId, err := base64.StdEncoding.DecodeString(string(config.Config.GetIdentityId()))
+	if err != nil {
+		return nil, err
+	}
+
+	identityConfig = &config.IdentityConfig{
+		ID:         decodedId,
+		PublicKey:  testPubKey,
+		PrivateKey: testPrivateKey,
+	}
+	return
 }

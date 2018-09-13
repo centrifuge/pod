@@ -3,14 +3,14 @@ package testingutils
 import (
 	"context"
 	"crypto/rand"
-	"fmt"
-
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
+		"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/stretchr/testify/mock"
-)
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/secp256k1"
+	)
 
 func MockConfigOption(key string, value interface{}) func() {
 	mockedValue := config.Config.V.Get(key)
@@ -30,7 +30,7 @@ func GenerateP2PRecipients(quantity int) [][]byte {
 	recipients := make([][]byte, quantity)
 
 	for i := 0; i < quantity; i++ {
-		recipients[i] = []byte(fmt.Sprintf("RecipientNo[%d]", i))
+		recipients[i] = tools.RandomSlice(identity.CentIDByteLength)
 	}
 	return recipients
 }
@@ -53,12 +53,12 @@ type MockCoreDocumentProcessor struct {
 	mock.Mock
 }
 
-func (m *MockCoreDocumentProcessor) Send(coreDocument *coredocumentpb.CoreDocument, ctx context.Context, recipient []byte) (err error) {
+func (m *MockCoreDocumentProcessor) Send(ctx context.Context, coreDocument *coredocumentpb.CoreDocument, recipient identity.CentID) (err error) {
 	args := m.Called(coreDocument, ctx, recipient)
 	return args.Error(0)
 }
 
-func (m *MockCoreDocumentProcessor) Anchor(coreDocument *coredocumentpb.CoreDocument) (err error) {
+func (m *MockCoreDocumentProcessor) Anchor(ctx context.Context, coreDocument *coredocumentpb.CoreDocument, collaborators []identity.CentID) (err error) {
 	args := m.Called(coreDocument)
 	return args.Error(0)
 }
@@ -77,3 +77,17 @@ func (m *MockSubscription) Err() <-chan error {
 }
 
 func (*MockSubscription) Unsubscribe() {}
+
+func CreateIdentityWithKeys() identity.CentID {
+	idService := identity.NewEthereumIdentityService()
+	idConfig, _ := secp256k1.GetIDConfig()
+	centIdTyped, _ := identity.NewCentID(idConfig.ID)
+	id, confirmations, _ := idService.CreateIdentity(centIdTyped)
+	<-confirmations
+
+	// LookupIdentityForId
+	id, _ = idService.LookupIdentityForID(centIdTyped)
+	confirmations, _ = id.AddKeyToIdentity(identity.KeyPurposeEthMsgAuth, idConfig.PublicKey)
+	<-confirmations
+	return centIdTyped
+}

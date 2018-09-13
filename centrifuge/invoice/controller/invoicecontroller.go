@@ -10,6 +10,8 @@ import (
 
 	clientinvoicepb "github.com/CentrifugeInc/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/golang/protobuf/ptypes/empty"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/p2p"
 )
 
 // InvoiceDocumentController needed as it is used to register the grpc services attached to the grpc server
@@ -18,7 +20,7 @@ type InvoiceDocumentController struct{}
 func getInvoiceDocumentService() *invoiceservice.InvoiceDocumentService {
 	return &invoiceservice.InvoiceDocumentService{
 		InvoiceRepository:     invoicerepository.GetRepository(),
-		CoreDocumentProcessor: coredocumentprocessor.DefaultProcessor(),
+		CoreDocumentProcessor: coredocumentprocessor.DefaultProcessor(identity.IDService, p2p.NewP2PClient()),
 	}
 }
 

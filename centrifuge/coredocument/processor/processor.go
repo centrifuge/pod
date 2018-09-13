@@ -33,13 +33,15 @@ type Processor interface {
 // defaultProcessor implements Processor interface
 type defaultProcessor struct {
 	IdentityService identity.Service
+	P2PClient p2p.Client
 }
 
 // DefaultProcessor returns the default implementation of CoreDocument Processor
-// TODO(ved): I don't think we need the processor since IdentityService is available globally
-func DefaultProcessor() Processor {
+func DefaultProcessor(idService identity.Service, p2pClient p2p.Client) Processor {
 	return &defaultProcessor{
-		IdentityService: identity.NewEthereumIdentityService()}
+		IdentityService: idService,
+		P2PClient: p2pClient,
+	}
 }
 
 // Send sends the given defaultProcessor to the given recipient on the P2P layer
@@ -64,7 +66,7 @@ func (dp *defaultProcessor) Send(ctx context.Context, coreDocument *coredocument
 
 	log.Infof("Sending Document to CentID [%v] with Key [%v]\n", recipient, lastB58Key)
 	clientWithProtocol := fmt.Sprintf("/ipfs/%s", lastB58Key)
-	client, err := p2p.OpenClient(clientWithProtocol)
+	client, err := dp.P2PClient.OpenClient(clientWithProtocol)
 	if err != nil {
 		return fmt.Errorf("failed to open client: %v", err)
 	}
@@ -105,18 +107,21 @@ func (dp *defaultProcessor) Anchor(ctx context.Context, document *coredocumentpb
 
 	anchorID, err := anchors.NewAnchorID(document.CurrentIdentifier)
 	if err != nil {
+		log.Error(err)
 		return centerrors.Wrap(err, "anchoring error")
 	}
 
 	// calculate the signing root
 	err = coredocument.CalculateSigningRoot(document)
 	if err != nil {
+		log.Error(err)
 		return centerrors.Wrap(err, "anchoring error")
 	}
 
 	// sign document with own key and append it to signatures
 	idConfig, err := ed25519.GetIDConfig()
 	if err != nil {
+		log.Error(err)
 		return centerrors.Wrap(err, "anchoring error")
 	}
 	sig := signatures.Sign(idConfig, document.SigningRoot)
@@ -124,36 +129,43 @@ func (dp *defaultProcessor) Anchor(ctx context.Context, document *coredocumentpb
 
 	// collect signatures (incl. validate)
 	// store signatures on coredocument
-	err = p2p.GetSignaturesForDocument(ctx, document, collaborators)
+	err = dp.P2PClient.GetSignaturesForDocument(ctx, document, collaborators)
 	if err != nil {
+		log.Error(err)
 		return centerrors.Wrap(err, "anchoring error")
 	}
 
 	// calculate DocumentRoot
 	err = coredocument.CalculateDocumentRoot(document)
 	if err != nil {
+		log.Error(err)
 		return centerrors.Wrap(err, "anchoring error")
 	}
 
 	// store doc in db
 	err = coredocumentrepository.GetRepository().Create(document.CurrentIdentifier, document)
 	if err != nil {
+		log.Error(err)
 		return centerrors.Wrap(err, "anchoring error")
 	}
 
 	rootHash, err := anchors.NewDocRoot(document.DocumentRoot)
 	if err != nil {
+		log.Error(err)
 		return centerrors.Wrap(err, "anchoring error")
 	}
 
 	myCentID, err := identity.NewCentID(idConfig.ID)
 	if err != nil {
+		log.Error(err)
 		return centerrors.Wrap(err, "anchoring error")
 	}
 
 	// generate message authentication code for the anchor call
-	mac, err := secp256k1.SignEthereum(anchors.GenerateCommitHash(anchorID, myCentID, rootHash), idConfig.PrivateKey)
+	secpIDConfig, err := secp256k1.GetIDConfig()
+	mac, err := secp256k1.SignEthereum(anchors.GenerateCommitHash(anchorID, myCentID, rootHash), secpIDConfig.PrivateKey)
 	if err != nil {
+		log.Error(err)
 		return centerrors.Wrap(err, "anchoring error")
 	}
 
@@ -162,6 +174,7 @@ func (dp *defaultProcessor) Anchor(ctx context.Context, document *coredocumentpb
 	// TODO documentProofs has to be included when we develop precommit flow
 	confirmations, err := anchors.CommitAnchor(anchorID, rootHash, myCentID, [][anchors.DocumentProofLength]byte{tools.RandomByte32()}, mac)
 	if err != nil {
+		log.Error(err)
 		return centerrors.Wrap(err, "anchoring error")
 	}
 	<-confirmations

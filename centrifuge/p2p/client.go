@@ -19,8 +19,20 @@ import (
 	"google.golang.org/grpc/connectivity"
 )
 
+type Client interface {
+	OpenClient(target string) (p2ppb.P2PServiceClient, error)
+	GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocument, collaborators []identity.CentID) error
+}
+
+func NewP2PClient() Client {
+	return &defaultClient{}
+}
+
+type defaultClient struct {
+}
+
 // Opens a client connection with libp2p
-func OpenClient(target string) (p2ppb.P2PServiceClient, error) {
+func (d *defaultClient) OpenClient(target string) (p2ppb.P2PServiceClient, error) {
 	log.Info("Opening connection to: %s", target)
 	ipfsAddr, err := ma.NewMultiaddr(target)
 	if err != nil {
@@ -113,7 +125,7 @@ func getSignatureAsync(ctx context.Context, doc coredocumentpb.CoreDocument, cli
 }
 
 // GetSignaturesForDocument requests peer nodes for the signature and verifies them
-func GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocument, collaborators []identity.CentID) error {
+func (d *defaultClient) GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocument, collaborators []identity.CentID) error {
 	if doc == nil {
 		return centerrors.NilError(doc)
 	}
@@ -129,7 +141,7 @@ func GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocum
 			return centerrors.Wrap(err, "failed to get P2P url")
 		}
 
-		client, err := OpenClient(target)
+		client, err := d.OpenClient(target)
 		if err != nil {
 			log.Error(centerrors.Wrap(err, "failed to connect to target"))
 			continue

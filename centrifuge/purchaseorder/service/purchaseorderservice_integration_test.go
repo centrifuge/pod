@@ -19,6 +19,8 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/stretchr/testify/assert"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingcommons"
 )
 
 func TestMain(m *testing.M) {
@@ -26,6 +28,7 @@ func TestMain(m *testing.M) {
 	db := cc.GetLevelDBStorage()
 	purchaseorderrepository.InitLevelDBRepository(db)
 	coredocumentrepository.InitLevelDBRepository(db)
+	testingutils.CreateIdentityWithKeys()
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()
 	os.Exit(result)
@@ -48,7 +51,7 @@ func generateEmptyPurchaseOrderForProcessing() (doc *purchaseorder.PurchaseOrder
 func TestPurchaseOrderDocumentService_HandleAnchorPurchaseOrderDocument_Integration(t *testing.T) {
 	s := purchaseorderservice.PurchaseOrderDocumentService{
 		Repository:            purchaseorderrepository.GetRepository(),
-		CoreDocumentProcessor: coredocumentprocessor.DefaultProcessor(),
+		CoreDocumentProcessor: coredocumentprocessor.DefaultProcessor(identity.NewEthereumIdentityService(), &testingcommons.MockP2PWrapperClient{}),
 	}
 	doc := generateEmptyPurchaseOrderForProcessing()
 	doc.Document.Data = &purchaseorderpb.PurchaseOrderData{
