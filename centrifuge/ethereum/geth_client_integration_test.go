@@ -1,4 +1,4 @@
-// +build ethereum
+// +build integration
 
 package ethereum_test
 
@@ -8,7 +8,7 @@ import (
 
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
-	"github.com/magiconair/properties/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMain(m *testing.M) {

@@ -1,4 +1,4 @@
-// +build ethereum
+// +build integration
 
 package invoiceservice_test
 
