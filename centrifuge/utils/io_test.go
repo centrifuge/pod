@@ -10,11 +10,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const (
-	PublicKey  = "PUBLIC KEY"
-	PrivateKey = "PRIVATE KEY"
-)
-
 func TestWriteAndReadPemFile(t *testing.T) {
 
 	randomBytes := tools.RandomSlice(32)
