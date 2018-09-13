@@ -13,6 +13,9 @@ var createIdentityCmd = &cobra.Command{
 	Short: "creates identity with signing key as p2p id against ethereum",
 	Long:  "",
 	Run: func(cmd *cobra.Command, args []string) {
+		//cmd requires a config file
+		readConfigFile()
+
 		defaultBootstrap()
 		identityService := identity.EthereumIdentityService{}
 		centrifugeId, err := identity.CentrifugeIdStringToSlice(centrifugeIdString)
@@ -34,6 +37,9 @@ var addKeyCmd = &cobra.Command{
 	Short: "add a signing key as p2p id against ethereum",
 	Long:  "add a signing key as p2p id against ethereum",
 	Run: func(cmd *cobra.Command, args []string) {
+		//cmd requires a config file
+		readConfigFile()
+
 		defaultBootstrap()
 		identityService := identity.EthereumIdentityService{}
 
