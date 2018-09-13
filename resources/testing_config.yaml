@@ -14,3 +14,6 @@ keys:
   signing:
     publicKey: ../../../example/resources/signature1.pub.pem
     privateKey: ../../../example/resources/signature1.key.pem
+  ethauth:
+    publicKey: ../../../example/resources/ethauth.pub.pem
+    privateKey: ../../../example/resources/ethauth.key.pem

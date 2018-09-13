@@ -11,7 +11,10 @@ keys:
   signing:
     publicKey: example/resources/signingKey.pub.pem
     privateKey: example/resources/signingKey.key.pem
-  
+  ethauth:
+    publicKey: example/resources/ethauth.pub.pem
+    privateKey: example/resources/ethauth.key.pem
+
 p2p:
   port: 38202
 

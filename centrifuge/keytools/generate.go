@@ -19,6 +19,6 @@ func GenerateSigningKeyPair(publicFileName, privateFileName, curveType string) {
 		publicKey, privateKey = ed25519.GenerateSigningKeyPair()
 	}
 
-	utils.WriteKeyToPemFile(privateFileName, PrivateKey, privateKey)
-	utils.WriteKeyToPemFile(publicFileName, PublicKey, publicKey)
+	utils.WriteKeyToPemFile(privateFileName, utils.PrivateKey, privateKey)
+	utils.WriteKeyToPemFile(publicFileName, utils.PublicKey, publicKey)
 }

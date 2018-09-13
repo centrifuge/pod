@@ -1,4 +1,5 @@
-// build +unit
+// +build unit
+
 package p2phandler
 
 import (
@@ -20,8 +21,8 @@ import (
 	cented25519 "github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/notification"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/signatures"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingcommons"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils/commons"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/version"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/crypto/ed25519"
