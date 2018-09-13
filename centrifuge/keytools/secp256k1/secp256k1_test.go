@@ -8,7 +8,6 @@ import (
 
 	"os"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
@@ -18,7 +17,6 @@ const MaxMsgLen = 32
 
 func TestMain(m *testing.M) {
 	cc.InitTestConfig()
-	config.Config.V.Set("keys.ethauth.privateKey", "../../../example/resources/ethauth.key.pem")
 	result := m.Run()
 	os.Exit(result)
 }
