@@ -74,7 +74,7 @@ func TestCommitAnchor_Integration(t *testing.T) {
 
 	signature, _ := secp256k1.SignEthereum(messageToSign, testPrivateKey)
 
-	commitAnchor(t, anchorID, centrifugeId, documentRoot, signature, [][anchoring.DocumentProofLength]byte{tools.RandomByte32()})
+	commitAnchor(t, anchorID, centrifugeId, documentRoot, signature, [][anchors.DocumentProofLength]byte{tools.RandomByte32()})
 
 }
 

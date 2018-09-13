@@ -53,7 +53,7 @@ type GethClient struct {
 	RpcClient  *rpc.Client
 	Host       *url.URL
 	NonceMutex *sync.Mutex
-	Accounts map[string]*bind.TransactOpts
+	Accounts   map[string]*bind.TransactOpts
 }
 
 func (gethClient GethClient) GetTxOpts(accountName string) (*bind.TransactOpts, error) {
