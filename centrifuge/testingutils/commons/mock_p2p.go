@@ -39,10 +39,8 @@ type MockP2PWrapperClient struct {
 }
 
 func NewMockP2PWrapperClient() *MockP2PWrapperClient {
-	client := &P2PMockClient{}
-	client.On("RequestDocumentSignature", ctx, mock.Anything, mock.Anything).Return(sigResp, nil).Once()
 	return &MockP2PWrapperClient{
-		P2PMockClient: client,
+		P2PMockClient: &P2PMockClient{},
 	}
 }
 
