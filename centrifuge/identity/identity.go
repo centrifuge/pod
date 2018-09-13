@@ -31,6 +31,11 @@ func NewCentID(centIDBytes []byte) (CentID, error) {
 	return centBytes, nil
 }
 
+func NewRandomCentID() CentID {
+	ID, _ := NewCentID(tools.RandomSlice(CentIDByteLength))
+	return ID
+}
+
 func (c CentID) Equal(other CentID) bool {
 	for i := range c {
 		if c[i] != other[i] {
@@ -57,6 +62,19 @@ func (c CentID) ByteArray() [CentIDByteLength]byte {
 	var idBytes [CentIDByteLength]byte
 	copy(idBytes[:], c[:CentIDByteLength])
 	return idBytes
+}
+
+func ParseCentIDs(centIDByteArray [][]byte) (errs []error, centIDs []CentID) {
+	for _, element := range centIDByteArray {
+		centID, err := NewCentID(element)
+		if err != nil {
+			err = centerrors.Wrap(err, "error parsing receiver centId")
+			errs = append(errs, err)
+			continue
+		}
+		centIDs = append(centIDs, centID)
+	}
+	return errs, centIDs
 }
 
 // IDService is a default implementation of the Service

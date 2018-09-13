@@ -21,7 +21,7 @@ IDENTITY=${IDENTITY:-CentTestEth}
 API=${API:-'db,eth,net,web3,personal,txpool'}
 RPC_PORT=${RPC_PORT:-9545}
 WS_PORT=${WS_PORT:-9546}
-CENT_ETHEREUM_ACCOUNTS_MAIN_ADDRESS=${CENT_ETHEREUM_ACCOUNTS_MAIN_ADDRESS:-'0x4b1b843af77a8f7f4f0ad2145095937e3d90e3d8'}
+CENT_ETHEREUM_ACCOUNTS_MAIN_ADDRESS=${CENT_ETHEREUM_ACCOUNTS_MAIN_ADDRESS:-'0x89b0a86583c4444acfd71b463e0d3c55ae1412a5'}
 API_PORT=${API_PORT:-8082}
 P2P_PORT=${P2P_PORT:-38202}
 DEFAULT_DATADIR=/tmp/centrifuge_data_${API_PORT}.leveldb
@@ -55,6 +55,13 @@ case "$mode" in
   mine)
     cp $local_dir/../test-dependencies/test-ethereum/*.json ${ETH_DATADIR}/${NETWORK_ID}/keystore
 
+    IDENTITY=$IDENTITY NETWORK_ID=$NETWORK_ID ETH_DATADIR=${ETH_DATADIR}/${NETWORK_ID} RPC_PORT=$RPC_PORT API=$API \
+    WS_PORT=$WS_PORT CENT_ETHEREUM_ACCOUNTS_MAIN_ADDRESS=$CENT_ETHEREUM_ACCOUNTS_MAIN_ADDRESS GETH_MINE=true \
+    docker-compose -f $local_dir/docker-compose-geth.yml up > /tmp/geth.log 2>&1 &
+  ;;
+  dev)
+    mkdir -p ${ETH_DATADIR}/${NETWORK_ID}/keystore
+    cp $local_dir/../test-dependencies/test-ethereum/*.json ${ETH_DATADIR}/${NETWORK_ID}/keystore
     IDENTITY=$IDENTITY NETWORK_ID=$NETWORK_ID ETH_DATADIR=${ETH_DATADIR}/${NETWORK_ID} RPC_PORT=$RPC_PORT API=$API \
     WS_PORT=$WS_PORT CENT_ETHEREUM_ACCOUNTS_MAIN_ADDRESS=$CENT_ETHEREUM_ACCOUNTS_MAIN_ADDRESS \
     docker-compose -f $local_dir/docker-compose-geth.yml up > /tmp/geth.log 2>&1 &

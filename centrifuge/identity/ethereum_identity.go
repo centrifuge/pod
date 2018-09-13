@@ -81,7 +81,7 @@ func (id *EthereumIdentity) GetCentrifugeID() CentID {
 func (id *EthereumIdentity) GetLastKeyForPurpose(keyPurpose int) (key []byte, err error) {
 	idKeys, err := id.fetchKeysByPurpose(keyPurpose)
 	if err != nil {
-		return
+		return []byte{}, err
 	}
 
 	if len(idKeys) == 0 {
@@ -190,7 +190,7 @@ func (id *EthereumIdentity) AddKeyToIdentity(keyPurpose int, key []byte) (confir
 		return confirmations, wError
 	}
 
-	opts, err := ethereum.GetGethTxOpts(config.Config.GetEthereumDefaultAccountName())
+	opts, err := ethereum.GetConnection().GetTxOpts(config.Config.GetEthereumDefaultAccountName())
 	if err != nil {
 		return confirmations, err
 	}
@@ -377,7 +377,7 @@ func (ids *EthereumIdentityService) CreateIdentity(centrifugeID CentID) (id Iden
 	if err != nil {
 		return
 	}
-	opts, err := ethereum.GetGethTxOpts(config.Config.GetEthereumDefaultAccountName())
+	opts, err := ethereum.GetConnection().GetTxOpts(config.Config.GetEthereumDefaultAccountName())
 	if err != nil {
 		return nil, confirmations, err
 	}

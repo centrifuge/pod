@@ -46,7 +46,7 @@ type AnchoringConfirmationTask struct {
 func NewAnchoringConfirmationTask(
 	anchorCommittedWatcher AnchorCommittedWatcher,
 	ethContextInitializer func() (ctx context.Context, cancelFunc context.CancelFunc),
-) queue.QueuedTask {
+) *AnchoringConfirmationTask {
 	return &AnchoringConfirmationTask{
 		AnchorCommittedWatcher: anchorCommittedWatcher,
 		EthContextInitializer:  ethContextInitializer,
@@ -81,7 +81,7 @@ func (act *AnchoringConfirmationTask) ParseKwargs(kwargs map[string]interface{})
 		return fmt.Errorf("undefined kwarg " + AnchorIDParam)
 	}
 
-	anchorIDBytes, err := getBytes32(anchorID)
+	anchorIDBytes, err := getBytesAnchorID(anchorID)
 
 	if err != nil {
 		return fmt.Errorf("malformed kwarg [%s] because [%s]", AnchorIDParam, err.Error())
@@ -95,7 +95,7 @@ func (act *AnchoringConfirmationTask) ParseKwargs(kwargs map[string]interface{})
 		return fmt.Errorf("undefined kwarg " + CentrifugeIDParam)
 	}
 
-	centrifugeIdBytes, err := getBytesCentrifugeId(centrifugeId)
+	centrifugeIdBytes, err := getBytesCentrifugeID(centrifugeId)
 	if err != nil {
 		return fmt.Errorf("malformed kwarg [%s] because [%s]", CentrifugeIDParam, err.Error())
 	}
@@ -155,7 +155,7 @@ func (act *AnchoringConfirmationTask) RunTask() (interface{}, error) {
 	}
 }
 
-func getBytes32(key interface{}) ([AnchorIDLength]byte, error) {
+func getBytesAnchorID(key interface{}) (AnchorID, error) {
 	var fixed [AnchorIDLength]byte
 	b, ok := key.([]interface{})
 	if !ok {
@@ -168,8 +168,9 @@ func getBytes32(key interface{}) ([AnchorIDLength]byte, error) {
 	}
 	return fixed, nil
 }
-func getBytesCentrifugeId(key interface{}) ([identity.CentIDByteLength]byte, error) {
-	var fixed [6]byte
+
+func getBytesCentrifugeID(key interface{}) (identity.CentID, error) {
+	var fixed [identity.CentIDByteLength]byte
 	b, ok := key.([]interface{})
 	if !ok {
 		return fixed, errors.New("Could not parse interface to []byte")

@@ -1,4 +1,4 @@
-// +build ethereum
+// +build integration
 
 package identity_test
 
