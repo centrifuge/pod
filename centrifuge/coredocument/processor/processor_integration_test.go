@@ -6,15 +6,30 @@ import (
 	"context"
 	"testing"
 
+	"os"
+
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/anchors"
+	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils/commons"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestMain(m *testing.M) {
+	cc.TestFunctionalEthereumBootstrap()
+	db := cc.GetLevelDBStorage()
+	coredocumentrepository.InitLevelDBRepository(db)
+	testingutils.CreateIdentityWithKeys()
+	result := m.Run()
+	cc.TestFunctionalEthereumTearDown()
+	os.Exit(result)
+}
 
 func TestDefaultProcessor_Anchor(t *testing.T) {
 	ctx := context.Background()

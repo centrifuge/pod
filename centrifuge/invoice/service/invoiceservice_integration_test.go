@@ -67,28 +67,52 @@ func TestInvoiceDocumentService_HandleAnchorInvoiceDocument_Integration(t *testi
 	}
 
 	anchoredDoc, err := s.HandleAnchorInvoiceDocument(context.Background(), &clientinvoicepb.AnchorInvoiceEnvelope{Document: doc.Document})
+	assertDocument(t, err, anchoredDoc, doc, s)
+}
 
+func TestInvoiceDocumentService_HandleSendInvoiceDocument_Integration(t *testing.T) {
+	s := invoiceservice.InvoiceDocumentService{
+		InvoiceRepository:     invoicerepository.GetRepository(),
+		CoreDocumentProcessor: coredocumentprocessor.DefaultProcessor(identity.NewEthereumIdentityService(), &testingcommons.MockP2PWrapperClient{}),
+	}
+	doc := generateEmptyInvoiceForProcessing()
+	doc.Document.Data = &invoicepb.InvoiceData{
+		InvoiceNumber:    "inv1234",
+		SenderName:       "Jack",
+		SenderZipcode:    "921007",
+		SenderCountry:    "AUS",
+		RecipientName:    "John",
+		RecipientZipcode: "12345",
+		RecipientCountry: "Germany",
+		Currency:         "EUR",
+		GrossAmount:      800,
+	}
+
+	anchoredDoc, err := s.HandleSendInvoiceDocument(context.Background(), &clientinvoicepb.SendInvoiceEnvelope{
+		Document:   doc.Document,
+		Recipients: testingutils.GenerateP2PRecipients(2),
+	})
+	assertDocument(t, err, anchoredDoc, doc, s)
+}
+
+func assertDocument(t *testing.T, err error, anchoredDoc *invoicepb.InvoiceDocument, doc *invoice.Invoice, s invoiceservice.InvoiceDocumentService) {
 	//Call overall worked well and receive roughly sensical data back
 	assert.Nil(t, err)
 	assert.Equal(t, anchoredDoc.CoreDocument.DocumentIdentifier, doc.Document.CoreDocument.DocumentIdentifier,
 		"DocumentIdentifier doesn't match")
-
 	//Invoice document got stored in the DB
 	loadedInvoice := new(invoicepb.InvoiceDocument)
 	err = invoicerepository.GetRepository().GetByID(doc.Document.CoreDocument.DocumentIdentifier, loadedInvoice)
 	assert.Equal(t, "AUS", loadedInvoice.Data.SenderCountry,
 		"Didn't save the invoice data correctly")
-
 	// Invoice stored after anchoring has Salts populated
 	assert.NotNil(t, loadedInvoice.Salts.SenderCountry)
-
 	//Invoice Service should error out if trying to anchor the same document ID again
 	doc.Document.Data.SenderCountry = "ES"
 	anchoredDoc2, err := s.HandleAnchorInvoiceDocument(context.Background(), &clientinvoicepb.AnchorInvoiceEnvelope{Document: doc.Document})
 	assert.Nil(t, anchoredDoc2)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "document already exists")
-
 	loadedInvoice2 := new(invoicepb.InvoiceDocument)
 	err = invoicerepository.GetRepository().GetByID(doc.Document.CoreDocument.DocumentIdentifier, loadedInvoice2)
 	assert.Equal(t, "AUS", loadedInvoice2.Data.SenderCountry,
