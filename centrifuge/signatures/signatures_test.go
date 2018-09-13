@@ -79,19 +79,13 @@ func TestValidateCentrifugeId(t *testing.T) {
 
 	sig := &coredocumentpb.Signature{EntityId: randomBytes}
 
-	correct, err := ValidateCentrifugeId(sig, centrifugeId)
+	err = ValidateCentrifugeID(sig, centrifugeId)
 	assert.Nil(t, err, "Validate centrifuge id didn't work correctly")
-
-	assert.True(t, correct, "centrifuge id and centrifuge id in the coredocument signature should be the same")
 
 	randomBytes = tools.RandomSlice(identity.CentIDByteLength)
-
 	centrifugeId, err = identity.NewCentID(randomBytes)
-	assert.Nil(t, err, "centrifugeId not initialized correctly ")
 
-	correct, err = ValidateCentrifugeId(sig, centrifugeId)
-	assert.Nil(t, err, "Validate centrifuge id didn't work correctly")
-
-	assert.False(t, correct, "centrifuge id and centrifuge id in the coredocument signature are not the same")
+	err = ValidateCentrifugeID(sig, centrifugeId)
+	assert.NotNil(t, err, "Validate centrifuge id didn't work correctly")
 
 }

@@ -86,14 +86,9 @@ func getSignatureForDocument(ctx context.Context, doc coredocumentpb.CoreDocumen
 		return nil, version.IncompatibleVersionError(resp.CentNodeVersion)
 	}
 
-	correctCentId, err := signatures.ValidateCentrifugeId(resp.Signature, receiverCentId)
-
+	err = signatures.ValidateCentrifugeID(resp.Signature, receiverCentId)
 	if err != nil {
-		return nil, centerrors.Wrap(err, "failed to validate centrifuge Id")
-	}
-
-	if !correctCentId {
-		return nil, centerrors.New(code.AuthenticationFailed, "invalid centrifuge id in the signature document")
+		return nil, centerrors.New(code.AuthenticationFailed, err.Error())
 	}
 
 	err = signatures.ValidateSignature(resp.Signature, doc.SigningRoot)
@@ -118,7 +113,7 @@ func getSignatureAsync(ctx context.Context, doc coredocumentpb.CoreDocument, cli
 }
 
 // GetSignaturesForDocument requests peer nodes for the signature and verifies them
-func GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocument, centIDs []identity.CentID) error {
+func GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocument, collaborators []identity.CentID) error {
 	if doc == nil {
 		return centerrors.NilError(doc)
 	}
@@ -127,8 +122,8 @@ func GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocum
 	defer close(in)
 
 	var count int
-	for _, centID := range centIDs {
-		target, err := identity.GetClientP2PURL(centID)
+	for _, collaborator := range collaborators {
+		target, err := identity.GetClientP2PURL(collaborator)
 
 		if err != nil {
 			return centerrors.Wrap(err, "failed to get P2P url")
@@ -143,7 +138,7 @@ func GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocum
 		// for now going with context.background, once we have a timeout for request
 		// we can use context.Timeout for that
 		count++
-		go getSignatureAsync(ctx, *doc, client, centID, in)
+		go getSignatureAsync(ctx, *doc, client, collaborator, in)
 	}
 
 	var responses []signatureResponseWrap

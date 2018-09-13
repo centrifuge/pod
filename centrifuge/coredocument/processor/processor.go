@@ -6,11 +6,13 @@ import (
 
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/anchors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/centerrors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/secp256k1"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/p2p"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/signatures"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
@@ -22,8 +24,10 @@ var log = logging.Logger("coredocument")
 // Processor identifies an implementation, which can do a bunch of things with a CoreDocument.
 // E.g. send, anchor, etc.
 type Processor interface {
-	Send(coreDocument *coredocumentpb.CoreDocument, ctx context.Context, recipient []byte) (err error)
-	Anchor(document *coredocumentpb.CoreDocument) (err error)
+	Send(ctx context.Context, coreDocument *coredocumentpb.CoreDocument, recipient identity.CentID) (err error)
+	Anchor(ctx context.Context, document *coredocumentpb.CoreDocument,
+		/* TODO remove collaborators once we have them in the document it self */
+		collaborators []identity.CentID) (err error)
 }
 
 // defaultProcessor implements Processor interface
@@ -39,19 +43,12 @@ func DefaultProcessor() Processor {
 }
 
 // Send sends the given defaultProcessor to the given recipient on the P2P layer
-func (dp *defaultProcessor) Send(coreDocument *coredocumentpb.CoreDocument, ctx context.Context, recipient []byte) (err error) {
+func (dp *defaultProcessor) Send(ctx context.Context, coreDocument *coredocumentpb.CoreDocument, recipient identity.CentID) (err error) {
 	if coreDocument == nil {
 		return centerrors.NilError(coreDocument)
 	}
 
-	centId, err := identity.NewCentID(recipient)
-	if err != nil {
-		err = centerrors.Wrap(err, "error parsing receiver centId")
-		log.Error(err)
-		return err
-	}
-
-	id, err := dp.IdentityService.LookupIdentityForID(centId)
+	id, err := dp.IdentityService.LookupIdentityForID(recipient)
 	if err != nil {
 		err = centerrors.Wrap(err, "error fetching receiver identity")
 		log.Error(err)
@@ -92,7 +89,7 @@ func (dp *defaultProcessor) Send(coreDocument *coredocumentpb.CoreDocument, ctx 
 }
 
 // Anchor anchors the given CoreDocument
-// This method should: (TODO)
+// This method should:
 // - calculate the signing root
 // - sign document with own key
 // - collect signatures (incl. validate)
@@ -100,69 +97,72 @@ func (dp *defaultProcessor) Send(coreDocument *coredocumentpb.CoreDocument, ctx 
 // - calculate DocumentRoot
 // - store doc in db
 // - anchor the document
-// - send anchored document to collaborators
-func (dp *defaultProcessor) Anchor(document *coredocumentpb.CoreDocument) error {
+// - send anchored document to collaborators [NOT NEEDED since we do this in the current flow already because HandleSend****Document does it after anchoring]
+func (dp *defaultProcessor) Anchor(ctx context.Context, document *coredocumentpb.CoreDocument, collaborators []identity.CentID) error {
 	if document == nil {
 		return centerrors.NilError(document)
 	}
 
-	_, err := tools.SliceToByte32(document.CurrentIdentifier)
+	anchorID, err := anchors.NewAnchorID(document.CurrentIdentifier)
 	if err != nil {
-		log.Error(err)
-		return err
+		return centerrors.Wrap(err, "anchoring error")
+	}
+
+	// calculate the signing root
+	err = coredocument.CalculateSigningRoot(document)
+	if err != nil {
+		return centerrors.Wrap(err, "anchoring error")
+	}
+
+	// sign document with own key and append it to signatures
+	idConfig, err := ed25519.GetIDConfig()
+	if err != nil {
+		return centerrors.Wrap(err, "anchoring error")
+	}
+	sig := signatures.Sign(idConfig, document.SigningRoot)
+	document.Signatures = append(document.Signatures, sig)
+
+	// collect signatures (incl. validate)
+	// store signatures on coredocument
+	err = p2p.GetSignaturesForDocument(ctx, document, collaborators)
+	if err != nil {
+		return centerrors.Wrap(err, "anchoring error")
+	}
+
+	// calculate DocumentRoot
+	err = coredocument.CalculateDocumentRoot(document)
+	if err != nil {
+		return centerrors.Wrap(err, "anchoring error")
+	}
+
+	// store doc in db
+	err = coredocumentrepository.GetRepository().Create(document.CurrentIdentifier, document)
+	if err != nil {
+		return centerrors.Wrap(err, "anchoring error")
+	}
+
+	rootHash, err := anchors.NewDocRoot(document.DocumentRoot)
+	if err != nil {
+		return centerrors.Wrap(err, "anchoring error")
+	}
+
+	myCentID, err := identity.NewCentID(idConfig.ID)
+	if err != nil {
+		return centerrors.Wrap(err, "anchoring error")
+	}
+
+	signature, err := secp256k1.SignEthereum(anchors.GenerateCommitHash(anchorID, myCentID, rootHash), idConfig.PrivateKey)
+	if err != nil {
+		return centerrors.Wrap(err, "anchoring error")
 	}
 
 	log.Infof("Anchoring document with identifiers: [document: %#x, current: %#x, next: %#x], rootHash: %#x", document.DocumentIdentifier, document.CurrentIdentifier, document.NextIdentifier, document.DocumentRoot)
 	log.Debugf("Anchoring document with details %v", document)
-
-	err = coredocument.CalculateSigningRoot(document)
+	// TODO documentProofs has to be included when we develop precommit flow
+	confirmations, err := anchors.CommitAnchor(anchorID, rootHash, myCentID, [][anchors.DocumentProofLength]byte{tools.RandomByte32()}, signature)
 	if err != nil {
-		log.Error(err)
-		return err
+		return centerrors.Wrap(err, "anchoring error")
 	}
-
-	// Sign signingRoot and append mac to signatures
-	idConfig, err := ed25519.GetIDConfig()
-	if err != nil {
-		return err
-	}
-	sig := signatures.Sign(idConfig, document.SigningRoot)
-	document.Signatures = append(document.Signatures, sig)
-	err = coredocumentrepository.GetRepository().Create(document.CurrentIdentifier, document)
-	if err != nil {
-		return err
-	}
-	//
-
-	// TODO anchoring
-	//rootHash, err := tools.SliceToByte32(document.DocumentRoot) //TODO: CHANGE
-	//if err != nil {
-	//	log.Error(err)
-	//	return err
-	//}
-	//
-	//idConfig, err := centED25519.GetIDConfig()
-	//if err != nil {
-	//	log.Error(err)
-	//	return err
-	//}
-	//
-	//var centId [identity.CentIDByteLength]byte
-	//copy(centId[:], idConfig.ID[:identity.CentIDByteLength])
-	//
-	//signature, err := secp256k1.SignEthereum(anchors.GenerateCommitHash(id, centId, rootHash), idConfig.PrivateKey)
-	//if err != nil {
-	//	log.Error(err)
-	//	return err
-	//}
-	//
-	//// TODO documentProofs has to be included when we develop precommit flow
-	//confirmations, err := anchors.CommitAnchor(id, rootHash, centId, [][anchors.DocumentProofLength]byte{tools.RandomByte32()}, signature)
-	//if err != nil {
-	//	log.Error(err)
-	//	return err
-	//}
-	//
-	//anchorWatch := <-confirmations
+	<-confirmations
 	return nil
 }

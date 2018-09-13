@@ -59,6 +59,19 @@ func (c CentID) ByteArray() [CentIDByteLength]byte {
 	return idBytes
 }
 
+func ParseCentIDs(centIDByteArray [][]byte) (errs []error, centIDs []CentID) {
+	for _, element := range centIDByteArray {
+		centID, err := NewCentID(element)
+		if err != nil {
+			err = centerrors.Wrap(err, "error parsing receiver centId")
+			errs = append(errs, err)
+			continue
+		}
+		centIDs = append(centIDs, centID)
+	}
+	return errs, centIDs
+}
+
 // IDService is a default implementation of the Service
 var IDService Service
 

@@ -105,6 +105,6 @@ func TestGetSignatureForDocument_fail_centrifugeId(t *testing.T) {
 	client.AssertExpectations(t)
 	assert.Nil(t, resp, "must be nil")
 	assert.Error(t, err, "must not be nil")
-	assert.Contains(t, err.Error(), "invalid centrifuge id in the signature document")
+	assert.Contains(t, err.Error(), "[5]signature entity doesn't match provided centID")
 
 }
