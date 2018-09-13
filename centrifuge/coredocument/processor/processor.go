@@ -151,7 +151,8 @@ func (dp *defaultProcessor) Anchor(ctx context.Context, document *coredocumentpb
 		return centerrors.Wrap(err, "anchoring error")
 	}
 
-	signature, err := secp256k1.SignEthereum(anchors.GenerateCommitHash(anchorID, myCentID, rootHash), idConfig.PrivateKey)
+	// generate message authentication code for the anchor call
+	mac, err := secp256k1.SignEthereum(anchors.GenerateCommitHash(anchorID, myCentID, rootHash), idConfig.PrivateKey)
 	if err != nil {
 		return centerrors.Wrap(err, "anchoring error")
 	}
@@ -159,7 +160,7 @@ func (dp *defaultProcessor) Anchor(ctx context.Context, document *coredocumentpb
 	log.Infof("Anchoring document with identifiers: [document: %#x, current: %#x, next: %#x], rootHash: %#x", document.DocumentIdentifier, document.CurrentIdentifier, document.NextIdentifier, document.DocumentRoot)
 	log.Debugf("Anchoring document with details %v", document)
 	// TODO documentProofs has to be included when we develop precommit flow
-	confirmations, err := anchors.CommitAnchor(anchorID, rootHash, myCentID, [][anchors.DocumentProofLength]byte{tools.RandomByte32()}, signature)
+	confirmations, err := anchors.CommitAnchor(anchorID, rootHash, myCentID, [][anchors.DocumentProofLength]byte{tools.RandomByte32()}, mac)
 	if err != nil {
 		return centerrors.Wrap(err, "anchoring error")
 	}

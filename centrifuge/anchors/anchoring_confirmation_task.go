@@ -168,6 +168,7 @@ func getBytesAnchorID(key interface{}) (AnchorID, error) {
 	}
 	return fixed, nil
 }
+
 func getBytesCentrifugeID(key interface{}) (identity.CentID, error) {
 	var fixed [identity.CentIDByteLength]byte
 	b, ok := key.([]interface{})
