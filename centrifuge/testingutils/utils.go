@@ -89,6 +89,7 @@ func CreateIdentityWithKeys() identity.CentID {
 
 	// LookupIdentityForId
 	id, _ = idService.LookupIdentityForID(centIdTyped)
+
 	confirmations, _ = id.AddKeyToIdentity(identity.KeyPurposeEthMsgAuth, idConfig.PublicKey)
 	<-confirmations
 	return centIdTyped
