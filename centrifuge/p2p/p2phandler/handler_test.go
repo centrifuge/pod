@@ -1,4 +1,5 @@
-// build +unit
+// +build unit
+
 package p2phandler
 
 import (
