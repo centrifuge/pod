@@ -2,9 +2,10 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/mitchellh/go-homedir"
-	"os"
 
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
 	logging "github.com/ipfs/go-log"
@@ -70,7 +71,6 @@ func readConfigFile() {
 	// If a config file is found, read it in.
 	config.Bootstrap(cfgFile)
 }
-
 
 //setCentrifugeLoggers sets the loggers.
 func setCentrifugeLoggers() {
