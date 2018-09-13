@@ -21,6 +21,7 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils/commons"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestMain(m *testing.M) {
@@ -49,10 +50,12 @@ func generateEmptyInvoiceForProcessing() (doc *invoice.Invoice) {
 }
 
 func TestInvoiceDocumentService_HandleAnchorInvoiceDocument_Integration(t *testing.T) {
+	p2pClient := &testingcommons.MockP2PWrapperClient{}
 	s := invoiceservice.InvoiceDocumentService{
 		InvoiceRepository:     invoicerepository.GetRepository(),
 		CoreDocumentProcessor: coredocumentprocessor.DefaultProcessor(identity.NewEthereumIdentityService(), &testingcommons.MockP2PWrapperClient{}),
 	}
+	p2pClient.On("GetSignaturesForDocument", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	doc := generateEmptyInvoiceForProcessing()
 	doc.Document.Data = &invoicepb.InvoiceData{
 		InvoiceNumber:    "inv1234",
@@ -71,10 +74,12 @@ func TestInvoiceDocumentService_HandleAnchorInvoiceDocument_Integration(t *testi
 }
 
 func TestInvoiceDocumentService_HandleSendInvoiceDocument_Integration(t *testing.T) {
+	p2pClient := &testingcommons.MockP2PWrapperClient{}
 	s := invoiceservice.InvoiceDocumentService{
 		InvoiceRepository:     invoicerepository.GetRepository(),
 		CoreDocumentProcessor: coredocumentprocessor.DefaultProcessor(identity.NewEthereumIdentityService(), &testingcommons.MockP2PWrapperClient{}),
 	}
+	p2pClient.On("GetSignaturesForDocument", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	doc := generateEmptyInvoiceForProcessing()
 	doc.Document.Data = &invoicepb.InvoiceData{
 		InvoiceNumber:    "inv1234",
