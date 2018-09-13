@@ -64,7 +64,7 @@ func OpenClient(target string) (p2ppb.P2PServiceClient, error) {
 }
 
 // getSignatureForDocument requests the target node to sign the document
-func getSignatureForDocument(ctx context.Context, doc coredocumentpb.CoreDocument, client p2ppb.P2PServiceClient) (*p2ppb.SignatureResponse, error) {
+func getSignatureForDocument(ctx context.Context, doc coredocumentpb.CoreDocument, client p2ppb.P2PServiceClient, receiverCentId identity.CentID) (*p2ppb.SignatureResponse, error) {
 	header := p2ppb.CentrifugeHeader{
 		NetworkIdentifier:  config.Config.GetNetworkID(),
 		CentNodeVersion:    version.GetVersion().String(),
@@ -86,12 +86,18 @@ func getSignatureForDocument(ctx context.Context, doc coredocumentpb.CoreDocumen
 		return nil, version.IncompatibleVersionError(resp.CentNodeVersion)
 	}
 
-	valid, err := signatures.ValidateSignature(resp.Signature, doc.SigningRoot)
+	correctCentId, err := signatures.ValidateCentrifugeId(resp.Signature, receiverCentId)
+
 	if err != nil {
-		return nil, centerrors.Wrap(err, "failed to validate signature")
+		return nil, centerrors.Wrap(err, "failed to validate centrifuge Id")
 	}
 
-	if !valid {
+	if !correctCentId {
+		return nil, centerrors.New(code.AuthenticationFailed, "invalid centrifuge id in the signature document")
+	}
+
+	err = signatures.ValidateSignature(resp.Signature, doc.SigningRoot)
+	if err != nil {
 		return nil, centerrors.New(code.AuthenticationFailed, "signature invalid")
 	}
 
@@ -103,8 +109,8 @@ type signatureResponseWrap struct {
 	err  error
 }
 
-func getSignatureAsync(ctx context.Context, doc coredocumentpb.CoreDocument, client p2ppb.P2PServiceClient, out chan<- signatureResponseWrap) {
-	resp, err := getSignatureForDocument(ctx, doc, client)
+func getSignatureAsync(ctx context.Context, doc coredocumentpb.CoreDocument, client p2ppb.P2PServiceClient, receiverCentId identity.CentID, out chan<- signatureResponseWrap) {
+	resp, err := getSignatureForDocument(ctx, doc, client, receiverCentId)
 	out <- signatureResponseWrap{
 		resp: resp,
 		err:  err,
@@ -117,16 +123,17 @@ func GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocum
 		return centerrors.NilError(doc)
 	}
 
-	targets, err := identity.GetClientsP2PURLs(centIDs)
-	if err != nil {
-		return centerrors.Wrap(err, "failed to get P2P urls")
-	}
-
 	in := make(chan signatureResponseWrap)
 	defer close(in)
 
 	var count int
-	for _, target := range targets {
+	for _, centID := range centIDs {
+		target, err := identity.GetClientP2PURL(centID)
+
+		if err != nil {
+			return centerrors.Wrap(err, "failed to get P2P url")
+		}
+
 		client, err := OpenClient(target)
 		if err != nil {
 			log.Error(centerrors.Wrap(err, "failed to connect to target"))
@@ -136,7 +143,7 @@ func GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocum
 		// for now going with context.background, once we have a timeout for request
 		// we can use context.Timeout for that
 		count++
-		go getSignatureAsync(ctx, *doc, client, in)
+		go getSignatureAsync(ctx, *doc, client, centID, in)
 	}
 
 	var responses []signatureResponseWrap
@@ -146,7 +153,7 @@ func GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocum
 
 	for _, resp := range responses {
 		if resp.err != nil {
-			log.Error(err)
+			log.Error(resp.err)
 			continue
 		}
 

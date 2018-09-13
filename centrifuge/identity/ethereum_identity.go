@@ -92,7 +92,7 @@ func (id *EthereumIdentity) GetLastKeyForPurpose(keyPurpose int) (key []byte, er
 	}
 
 	if len(id.cachedKeys[keyPurpose]) == 0 {
-		return []byte{}, fmt.Errorf("No key found for type [%d] in mockID [%s]", keyPurpose, id.CentrifugeId)
+		return []byte{}, fmt.Errorf("no key found for type [%d] in mockID [%s]", keyPurpose, id.CentrifugeId)
 	}
 
 	return id.cachedKeys[keyPurpose][len(id.cachedKeys[keyPurpose])-1].Key[:32], nil

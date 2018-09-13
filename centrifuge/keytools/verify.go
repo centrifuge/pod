@@ -1,8 +1,6 @@
 package keytools
 
 import (
-	"fmt"
-
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/secp256k1"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
@@ -24,11 +22,9 @@ func VerifyMessage(publicKey, message []byte, signature []byte, curveType string
 		return secp256k1.VerifySignature(publicKey, msg, signatureBytes)
 
 	case CurveEd25519:
-		fmt.Errorf("curve ed25519 not supported yet")
 		return false
 
 	default:
-		fmt.Errorf("curve %s not supported yet", curveType)
 		return false
 	}
 
