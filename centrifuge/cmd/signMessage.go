@@ -22,7 +22,7 @@ func init() {
 		Short: "sign a message with private key",
 		Long:  ``,
 		Run: func(cmd *cobra.Command, args []string) {
-			privateKey, err := utils.ReadKeyFromPemFile(privateKeyFileParam, keytools.PrivateKey)
+			privateKey, err := utils.ReadKeyFromPemFile(privateKeyFileParam, utils.PrivateKey)
 
 			if err != nil {
 				log.Fatal(err)
