@@ -31,6 +31,11 @@ func NewCentID(centIDBytes []byte) (CentID, error) {
 	return centBytes, nil
 }
 
+func NewRandomCentID() CentID {
+	ID, _ := NewCentID(tools.RandomSlice(CentIDByteLength))
+	return ID
+}
+
 func (c CentID) Equal(other CentID) bool {
 	for i := range c {
 		if c[i] != other[i] {

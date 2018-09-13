@@ -6,8 +6,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
+	"github.com/stretchr/testify/assert"
 )
 
 // TODO(ved): more tests required for processor

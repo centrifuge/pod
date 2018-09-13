@@ -1,12 +1,13 @@
 package testingcommons
 
 import (
-	"github.com/stretchr/testify/mock"
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
-	"google.golang.org/grpc"
 	"context"
+
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
+	"github.com/stretchr/testify/mock"
+	"google.golang.org/grpc"
 )
 
 // P2PMockClient implements p2ppb.P2PServiceClient
@@ -33,6 +34,7 @@ func (p2p *P2PMockClient) SendAnchoredDocument(ctx context.Context, in *p2ppb.An
 }
 
 type MockP2PWrapperClient struct {
+	mock.Mock
 	P2PMockClient *P2PMockClient
 }
 
@@ -42,6 +44,6 @@ func (m *MockP2PWrapperClient) OpenClient(target string) (p2ppb.P2PServiceClient
 }
 
 func (m *MockP2PWrapperClient) GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocument, collaborators []identity.CentID) error {
-	_, err := m.P2PMockClient.RequestDocumentSignature(ctx, &p2ppb.SignatureRequest{Document: doc})
-	return err
+	m.Called(ctx, doc, collaborators)
+	return nil
 }

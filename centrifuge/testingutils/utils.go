@@ -3,14 +3,15 @@ package testingutils
 import (
 	"context"
 	"crypto/rand"
-		"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
+
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/secp256k1"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/stretchr/testify/mock"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/secp256k1"
-	)
+)
 
 func MockConfigOption(key string, value interface{}) func() {
 	mockedValue := config.Config.V.Get(key)
@@ -30,7 +31,8 @@ func GenerateP2PRecipients(quantity int) [][]byte {
 	recipients := make([][]byte, quantity)
 
 	for i := 0; i < quantity; i++ {
-		recipients[i] = tools.RandomSlice(identity.CentIDByteLength)
+		ID := identity.NewRandomCentID()
+		recipients[i] = ID[:]
 	}
 	return recipients
 }

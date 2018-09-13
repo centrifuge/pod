@@ -42,6 +42,11 @@ func NewDocRoot(docRootBytes []byte) (DocRoot, error) {
 	return rootBytes, nil
 }
 
+func NewRandomDocRoot() DocRoot {
+	root, _ := NewDocRoot(tools.RandomSlice(RootLength))
+	return root
+}
+
 type PreCommitData struct {
 	AnchorID        AnchorID
 	SigningRoot     DocRoot
@@ -55,7 +60,7 @@ type CommitData struct {
 	AnchorID       AnchorID
 	DocumentRoot   DocRoot
 	CentrifugeID   identity.CentID
-	DocumentProofs [][32]byte
+	DocumentProofs [][DocumentProofLength]byte
 	Signature      []byte
 	SchemaVersion  uint
 }

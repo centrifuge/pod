@@ -8,10 +8,10 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/service"
 
-	clientinvoicepb "github.com/CentrifugeInc/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
-	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/p2p"
+	clientinvoicepb "github.com/CentrifugeInc/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
+	"github.com/golang/protobuf/ptypes/empty"
 )
 
 // InvoiceDocumentController needed as it is used to register the grpc services attached to the grpc server

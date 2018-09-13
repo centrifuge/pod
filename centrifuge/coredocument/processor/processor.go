@@ -33,14 +33,14 @@ type Processor interface {
 // defaultProcessor implements Processor interface
 type defaultProcessor struct {
 	IdentityService identity.Service
-	P2PClient p2p.Client
+	P2PClient       p2p.Client
 }
 
 // DefaultProcessor returns the default implementation of CoreDocument Processor
 func DefaultProcessor(idService identity.Service, p2pClient p2p.Client) Processor {
 	return &defaultProcessor{
 		IdentityService: idService,
-		P2PClient: p2pClient,
+		P2PClient:       p2pClient,
 	}
 }
 
