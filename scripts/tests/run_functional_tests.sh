@@ -15,7 +15,7 @@ echo "Running Functional Ethereum Tests against [${CENT_ETHEREUM_NODEURL}] with 
 
 status=$?
 for d in $(go list -tags=ethereum ./... | grep -v vendor); do
-    output="go test -v -race -coverprofile=profile.out -covermode=atomic -tags=functional -timeout ${TEST_TIMEOUT} $d"
+    output="go test -v -race -coverprofile=profile.out -covermode=atomic -tags=ethereum -timeout ${TEST_TIMEOUT} $d"
 
     if [ -x "$(command -v richgo)" ]; then
      output="$output | tee >(richgo testfilter)"
