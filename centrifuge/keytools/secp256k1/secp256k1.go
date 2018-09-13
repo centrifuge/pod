@@ -24,8 +24,6 @@ const SignatureRSFormatLen = 64  //64 byte [R || S] format
 const SignatureRSVFormatLen = 65 //65 byte [R || S || V] format
 const SignatureVPosition = 64
 const PrivateKeyLen = 32
-const PublicKey = "PUBLIC KEY"
-const PrivateKey = "PRIVATE KEY"
 
 func GenerateSigningKeyPair() (publicKey, privateKey []byte) {
 
@@ -154,7 +152,7 @@ func GetEthAuthKeyFromConfig() (public, private []byte) {
 
 // GetPrivateEthAuthKey returns the private key from the file
 func GetPrivateEthAuthKey(fileName string) (key []byte, err error) {
-	key, err = utils.ReadKeyFromPemFile(fileName, PrivateKey)
+	key, err = utils.ReadKeyFromPemFile(fileName, utils.PrivateKey)
 	if err != nil {
 		log.Error(err)
 	}
@@ -163,7 +161,7 @@ func GetPrivateEthAuthKey(fileName string) (key []byte, err error) {
 
 // GetPublicEthAuthKey returns the public key from the file
 func GetPublicEthAuthKey(fileName string) (key []byte, err error) {
-	key, err = utils.ReadKeyFromPemFile(fileName, PublicKey)
+	key, err = utils.ReadKeyFromPemFile(fileName, utils.PublicKey)
 	if err != nil {
 		log.Error(err)
 	}
