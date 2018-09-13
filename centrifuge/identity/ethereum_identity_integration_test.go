@@ -52,7 +52,7 @@ func TestCreateAndLookupIdentity_Integration(t *testing.T) {
 	assert.Nil(t, err, "should not error out when resolving identity")
 	assert.Equal(t, centrifugeId, id.GetCentrifugeID(), "CentrifugeID Should match provided one")
 
-	wrongId, err := identityService.LookupIdentityForID(wrongCentrifugeIdTyped)
+	wrongID, err := identityService.LookupIdentityForID(wrongCentrifugeIdTyped)
 	assert.NotNil(t, err, "should error out when resolving wrong identity")
 
 	// CheckIdentityExists
@@ -64,9 +64,9 @@ func TestCreateAndLookupIdentity_Integration(t *testing.T) {
 	assert.NotNil(t, err, "should err when looking for incorrect identity")
 	assert.False(t, exists)
 
-	wrongId = identity.NewEthereumIdentity()
-	wrongId.CentrifugeID(wrongCentrifugeIdTyped)
-	exists, err = wrongId.CheckIdentityExists()
+	wrongID = new(identity.EthereumIdentity)
+	wrongID.CentrifugeID(wrongCentrifugeIdTyped)
+	exists, err = wrongID.CheckIdentityExists()
 	assert.NotNil(t, err, "should error out when missing identity")
 	assert.False(t, exists)
 

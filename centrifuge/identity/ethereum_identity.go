@@ -51,13 +51,8 @@ func (idk *EthereumIdentityKey) GetRevokedAt() *big.Int {
 }
 
 func (idk *EthereumIdentityKey) String() string {
-	peerdId, _ := ed25519.PublicKeyToP2PKey(idk.Key)
-	return fmt.Sprintf("%s", peerdId.Pretty())
-}
-
-func NewEthereumIdentity() (id *EthereumIdentity) {
-	id = new(EthereumIdentity)
-	return
+	peerID, _ := ed25519.PublicKeyToP2PKey(idk.Key)
+	return fmt.Sprintf("%s", peerID.Pretty())
 }
 
 type EthereumIdentity struct {
@@ -366,7 +361,7 @@ func NewEthereumIdentityService() Service {
 type EthereumIdentityService struct{}
 
 func (ids *EthereumIdentityService) CheckIdentityExists(centrifugeID CentID) (exists bool, err error) {
-	id := NewEthereumIdentity()
+	id := new(EthereumIdentity)
 	id.CentrifugeId = centrifugeID
 	exists, err = id.CheckIdentityExists()
 	return
@@ -375,7 +370,7 @@ func (ids *EthereumIdentityService) CheckIdentityExists(centrifugeID CentID) (ex
 func (ids *EthereumIdentityService) CreateIdentity(centrifugeID CentID) (id Identity, confirmations chan *WatchIdentity, err error) {
 	log.Infof("Creating Identity [%x]", centrifugeID)
 
-	id = NewEthereumIdentity()
+	id = new(EthereumIdentity)
 	id.CentrifugeID(centrifugeID)
 
 	ethIdentityFactoryContract, err := getIdentityFactoryContract()
@@ -404,16 +399,16 @@ func (ids *EthereumIdentityService) CreateIdentity(centrifugeID CentID) (id Iden
 }
 
 func (ids *EthereumIdentityService) LookupIdentityForID(centrifugeID CentID) (Identity, error) {
-	instanceId := NewEthereumIdentity()
-	instanceId.CentrifugeID(centrifugeID)
-	exists, err := instanceId.CheckIdentityExists()
+	id := new(EthereumIdentity)
+	id.CentrifugeID(centrifugeID)
+	exists, err := id.CheckIdentityExists()
 	if !exists {
-		return instanceId, fmt.Errorf("identity [%s] does not exist", instanceId.CentrifugeId)
+		return id, fmt.Errorf("identity [%s] does not exist", id.CentrifugeId)
 	}
 
 	if err != nil {
-		return instanceId, err
+		return id, err
 	}
 
-	return instanceId, nil
+	return id, nil
 }
