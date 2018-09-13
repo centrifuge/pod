@@ -84,13 +84,20 @@ func CreateIdentityWithKeys() identity.CentID {
 	idService := identity.NewEthereumIdentityService()
 	idConfig, _ := secp256k1.GetIDConfig()
 	centIdTyped, _ := identity.NewCentID(idConfig.ID)
-	id, confirmations, _ := idService.CreateIdentity(centIdTyped)
-	<-confirmations
+	// only create identity if it doesn't exist
+	id, err := idService.LookupIdentityForID(centIdTyped)
+	if err != nil {
+		_, confirmations, _ := idService.CreateIdentity(centIdTyped)
+		<-confirmations
+		// LookupIdentityForId
+		id, _ = idService.LookupIdentityForID(centIdTyped)
+	}
 
-	// LookupIdentityForId
-	id, _ = idService.LookupIdentityForID(centIdTyped)
-
-	confirmations, _ = id.AddKeyToIdentity(identity.KeyPurposeEthMsgAuth, idConfig.PublicKey)
-	<-confirmations
+	// only add key if it doesn't exist
+	_, err = id.GetLastKeyForPurpose(identity.KeyPurposeEthMsgAuth)
+	if err != nil {
+		confirmations, _ := id.AddKeyToIdentity(identity.KeyPurposeEthMsgAuth, idConfig.PublicKey)
+		<-confirmations
+	}
 	return centIdTyped
 }
