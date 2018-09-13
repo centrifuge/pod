@@ -8,7 +8,6 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/centerrors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/p2p"
@@ -128,7 +127,7 @@ func (dp *defaultProcessor) Anchor(document *coredocumentpb.CoreDocument) error 
 	}
 	sig := signatures.Sign(idConfig, document.SigningRoot)
 	document.Signatures = append(document.Signatures, sig)
-	err = coredocumentrepository.GetRepository().Create(document.CurrentIdentifier, document)
+	err = coredocument.GetRepository().Create(document.CurrentIdentifier, document)
 	if err != nil {
 		return err
 	}

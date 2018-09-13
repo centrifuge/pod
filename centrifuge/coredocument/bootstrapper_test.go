@@ -1,6 +1,6 @@
 // +build unit
 
-package coredocumentrepository
+package coredocument
 
 import (
 	"testing"

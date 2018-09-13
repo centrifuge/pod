@@ -1,5 +1,6 @@
-// build +unit
-package p2phandler
+// +build unit
+
+package p2p
 
 import (
 	"context"
@@ -15,7 +16,6 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
 	cented25519 "github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/notification"
@@ -36,13 +36,14 @@ var (
 // MockWebhookSender implements notification.Sender
 type MockWebhookSender struct{}
 
-func (wh *MockWebhookSender) Send(notification *notificationpb.NotificationMessage) (status notification.NotificationStatus, err error) {
+func (wh *MockWebhookSender) Send(notification *notificationpb.NotificationMessage) (status notification.Status, err error) {
 	return
 }
 
 func TestMain(m *testing.M) {
 	cc.TestIntegrationBootstrap()
-	coredocumentrepository.InitLevelDBRepository(cc.GetLevelDBStorage())
+	coredocument.InitLevelDBRepository(cc.GetLevelDBStorage())
+	identity.IDService = identity.NewEthereumIdentityService()
 	result := m.Run()
 	cc.TestIntegrationTearDown()
 	os.Exit(result)
@@ -57,7 +58,7 @@ func TestP2PService(t *testing.T) {
 	assert.Equal(t, res.Document.DocumentIdentifier, coreDoc.DocumentIdentifier, "Incorrect identifier")
 
 	doc := new(coredocumentpb.CoreDocument)
-	err = coredocumentrepository.GetRepository().GetByID(coreDoc.DocumentIdentifier, doc)
+	err = coredocument.GetRepository().GetByID(coreDoc.DocumentIdentifier, doc)
 	assert.Equal(t, doc.DocumentIdentifier, coreDoc.DocumentIdentifier, "Document Identifier doesn't match")
 }
 
@@ -110,6 +111,21 @@ func TestHandler_RequestDocumentSignature_version_fail(t *testing.T) {
 	assert.Nil(t, resp, "must be nil")
 }
 
+func TestHandler_RequestDocumentSignature_fail(t *testing.T) {
+	req := &p2ppb.SignatureRequest{
+		Header: &p2ppb.CentrifugeHeader{
+			CentNodeVersion: version.GetVersion().String(), NetworkIdentifier: config.Config.GetNetworkID(),
+		},
+		Document: testingutils.GenerateCoreDocument()}
+
+	config.Config.V.Set("keys.signing.publicKey", "../../example/resources/signingKey.pub.pem")
+	config.Config.V.Set("keys.signing.privateKey", "../../example/resources/signingKey.key.pem")
+	handler := Handler{Notifier: &MockWebhookSender{}}
+	resp, err := handler.RequestDocumentSignature(context.Background(), req)
+	assert.Nil(t, resp, "must be nil")
+	assert.Error(t, err, "must be non nil")
+}
+
 func getSignatureRequest() *p2ppb.SignatureRequest {
 	req := &p2ppb.SignatureRequest{Header: &p2ppb.CentrifugeHeader{
 		CentNodeVersion: version.GetVersion().String(), NetworkIdentifier: config.Config.GetNetworkID(),
@@ -126,7 +142,7 @@ func TestHandler_RequestDocumentSignature_verification_fail(t *testing.T) {
 	assert.Contains(t, err.Error(), "signing_root is missing")
 }
 
-func TestHandler_RequestDocumentSignature(t *testing.T) {
+func TestHandler_RequestDocumentSignature_successful(t *testing.T) {
 	idConfig, _ := cented25519.GetIDConfig()
 	sig := &coredocumentpb.Signature{
 		EntityId:  idConfig.ID,

@@ -1,4 +1,4 @@
-package coredocumentrepository
+package coredocument
 
 import (
 	"errors"

@@ -1,6 +1,6 @@
-// build integration
+// +build unit
 
-package coredocumentrepository
+package coredocument
 
 import (
 	"os"
@@ -22,14 +22,6 @@ func TestMain(m *testing.M) {
 	os.RemoveAll(dbFileName)
 	os.Exit(result)
 }
-
-var (
-	id1 = tools.RandomSlice(32)
-	id2 = tools.RandomSlice(32)
-	id3 = tools.RandomSlice(32)
-	id4 = tools.RandomSlice(32)
-	id5 = tools.RandomSlice(32)
-)
 
 func TestRepository(t *testing.T) {
 	repo := GetRepository()

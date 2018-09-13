@@ -1,14 +1,12 @@
-package coredocumentrepository
+package invoice
 
 import (
 	"fmt"
-	"log"
 	"sync"
 
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/centerrors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/code"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
 	"github.com/golang/protobuf/proto"
 	"github.com/syndtr/goleveldb/leveldb"
@@ -30,7 +28,7 @@ func InitLevelDBRepository(db *leveldb.DB) {
 	once.Do(func() {
 		levelDBRepo = &levelDBRepository{
 			storage.DefaultLevelDB{
-				KeyPrefix:    "coredoc",
+				KeyPrefix:    "invoice",
 				LevelDB:      db,
 				ValidateFunc: validate,
 			},
@@ -42,7 +40,7 @@ func InitLevelDBRepository(db *leveldb.DB) {
 // Must be called only after repository initialisation
 func GetRepository() storage.Repository {
 	if levelDBRepo == nil {
-		log.Fatal("CoreDocument repository not initialised")
+		log.Fatal("Invoice repository not initialised")
 	}
 
 	return levelDBRepo
@@ -50,12 +48,12 @@ func GetRepository() storage.Repository {
 
 // validate typecasts and validates the coredocument
 func validate(doc proto.Message) error {
-	coreDoc, ok := doc.(*coredocumentpb.CoreDocument)
+	invoiceDoc, ok := doc.(*invoicepb.InvoiceDocument)
 	if !ok {
 		return centerrors.New(code.DocumentInvalid, fmt.Sprintf("invalid document of type: %T", doc))
 	}
 
-	if valid, msg, errs := coredocument.Validate(coreDoc); !valid {
+	if valid, msg, errs := Validate(invoiceDoc); !valid {
 		return centerrors.NewWithErrors(code.DocumentInvalid, msg, errs)
 	}
 

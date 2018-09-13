@@ -1,4 +1,4 @@
-package purchaseorderrepository
+package invoice
 
 import (
 	"errors"
@@ -15,5 +15,5 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		InitLevelDBRepository(storage.GetLevelDBStorage())
 		return nil
 	}
-	return errors.New("could not initialize purchase order repository")
+	return errors.New("could not initialize invoice repository")
 }

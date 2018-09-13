@@ -1,4 +1,4 @@
-package p2phandler
+package p2p
 
 import (
 	"context"
@@ -11,7 +11,6 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/code"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 	centED25519 "github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/notification"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/signatures"
@@ -58,7 +57,7 @@ func (srv *Handler) Post(ctx context.Context, req *p2ppb.P2PMessage) (*p2ppb.P2P
 		return nil, centerrors.New(code.DocumentInvalid, centerrors.NilError(req.Document).Error())
 	}
 
-	err = coredocumentrepository.GetRepository().Create(req.Document.DocumentIdentifier, req.Document)
+	err = coredocument.GetRepository().Create(req.Document.DocumentIdentifier, req.Document)
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
@@ -67,7 +66,7 @@ func (srv *Handler) Post(ctx context.Context, req *p2ppb.P2PMessage) (*p2ppb.P2P
 	ts, _ := ptypes.TimestampProto(time.Now().UTC())
 
 	notificationMsg := &notificationpb.NotificationMessage{
-		EventType:    uint32(notification.RECEIVED_PAYLOAD),
+		EventType:    uint32(notification.ReceivedPayload),
 		CentrifugeId: req.SenderCentrifugeId,
 		Recorded:     ts,
 		Document:     req.Document,
@@ -108,7 +107,7 @@ func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.
 
 	sig := signatures.Sign(idConfig, doc.SigningRoot)
 	doc.Signatures = append(doc.Signatures, sig)
-	err = coredocumentrepository.GetRepository().Create(doc.DocumentIdentifier, doc)
+	err = coredocument.GetRepository().Create(doc.DocumentIdentifier, doc)
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to store document: %v", err))
 	}

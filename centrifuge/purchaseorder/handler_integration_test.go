@@ -1,6 +1,6 @@
 // +build ethereum
 
-package purchaseorderservice_test
+package purchaseorder_test
 
 import (
 	"context"
@@ -10,12 +10,10 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testingbootstrap"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/processor"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 	clientpurchaseorderpb "github.com/CentrifugeInc/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder/repository"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder/service"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/stretchr/testify/assert"
@@ -24,8 +22,8 @@ import (
 func TestMain(m *testing.M) {
 	cc.TestFunctionalEthereumBootstrap()
 	db := cc.GetLevelDBStorage()
-	purchaseorderrepository.InitLevelDBRepository(db)
-	coredocumentrepository.InitLevelDBRepository(db)
+	purchaseorder.InitLevelDBRepository(db)
+	coredocument.InitLevelDBRepository(db)
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()
 	os.Exit(result)
@@ -46,8 +44,8 @@ func generateEmptyPurchaseOrderForProcessing() (doc *purchaseorder.PurchaseOrder
 }
 
 func TestPurchaseOrderDocumentService_HandleAnchorPurchaseOrderDocument_Integration(t *testing.T) {
-	s := purchaseorderservice.PurchaseOrderDocumentService{
-		Repository:            purchaseorderrepository.GetRepository(),
+	s := purchaseorder.Handler{
+		Repository:            purchaseorder.GetRepository(),
 		CoreDocumentProcessor: coredocumentprocessor.DefaultProcessor(),
 	}
 	doc := generateEmptyPurchaseOrderForProcessing()
@@ -63,7 +61,7 @@ func TestPurchaseOrderDocumentService_HandleAnchorPurchaseOrderDocument_Integrat
 		OrderAmount:      800,
 	}
 
-	anchoredDoc, err := s.HandleAnchorPurchaseOrderDocument(context.Background(), &clientpurchaseorderpb.AnchorPurchaseOrderEnvelope{Document: doc.Document})
+	anchoredDoc, err := s.AnchorPurchaseOrderDocument(context.Background(), &clientpurchaseorderpb.AnchorPurchaseOrderEnvelope{Document: doc.Document})
 
 	//Call overall worked well and receive roughly sensical data back
 	assert.Nil(t, err)
@@ -72,7 +70,7 @@ func TestPurchaseOrderDocumentService_HandleAnchorPurchaseOrderDocument_Integrat
 
 	//PurchaseOrder document got stored in the DB
 	loadedDoc := new(purchaseorderpb.PurchaseOrderDocument)
-	err = purchaseorderrepository.GetRepository().GetByID(doc.Document.CoreDocument.DocumentIdentifier, loadedDoc)
+	err = purchaseorder.GetRepository().GetByID(doc.Document.CoreDocument.DocumentIdentifier, loadedDoc)
 	assert.Nil(t, err)
 	assert.Equal(t, "AUS", loadedDoc.Data.OrderCountry,
 		"Didn't save the purchaseorder data correctly")
@@ -82,13 +80,13 @@ func TestPurchaseOrderDocumentService_HandleAnchorPurchaseOrderDocument_Integrat
 
 	//PO Service should error out if trying to anchor the same document ID again
 	doc.Document.Data.OrderCountry = "ES"
-	anchoredDoc2, err := s.HandleAnchorPurchaseOrderDocument(context.Background(), &clientpurchaseorderpb.AnchorPurchaseOrderEnvelope{Document: doc.Document})
+	anchoredDoc2, err := s.AnchorPurchaseOrderDocument(context.Background(), &clientpurchaseorderpb.AnchorPurchaseOrderEnvelope{Document: doc.Document})
 	assert.Nil(t, anchoredDoc2)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "document already exists")
 
 	loadedDoc2 := new(purchaseorderpb.PurchaseOrderDocument)
-	err = purchaseorderrepository.GetRepository().GetByID(doc.Document.CoreDocument.DocumentIdentifier, loadedDoc2)
+	err = purchaseorder.GetRepository().GetByID(doc.Document.CoreDocument.DocumentIdentifier, loadedDoc2)
 	assert.Nil(t, err)
 	assert.Equal(t, "AUS", loadedDoc2.Data.OrderCountry,
 		"Document on DB should have not not gotten overwritten after rejected anchor call")

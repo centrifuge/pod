@@ -1,6 +1,6 @@
 // +build unit
 
-package purchaseorderrepository
+package invoice
 
 import (
 	"testing"

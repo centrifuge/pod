@@ -17,5 +17,4 @@ func TestPublicKeyToP2PKey(t *testing.T) {
 	peerId, err := PublicKeyToP2PKey(bPk)
 	assert.Nil(t, err, "Should not error out")
 	assert.Equal(t, expectedPeerId, peerId.Pretty())
-
 }
