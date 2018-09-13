@@ -173,8 +173,8 @@ func (c *Configuration) GetSigningKeyPair() (pub, priv string) {
 	return c.V.GetString("keys.signing.publicKey"), c.V.GetString("keys.signing.privateKey")
 }
 
-func (c *Configuration) GetEthAuthKey() (priv string) {
-	return c.V.GetString("keys.ethauth.privateKey")
+func (c *Configuration) GetEthAuthKeyPair() (pub, priv string) {
+	return c.V.GetString("keys.ethauth.publicKey"), c.V.GetString("keys.ethauth.privateKey")
 }
 
 // Configuration Implementation
