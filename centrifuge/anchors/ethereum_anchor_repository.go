@@ -43,7 +43,7 @@ func (ethRepository *EthereumAnchorRepository) PreCommitAnchor(anchorID AnchorID
 
 	//TODO check if parameters are valid
 	ethRepositoryContract, _ := getRepositoryContract()
-	opts, err := ethereum.GetGethTxOpts(config.Config.GetEthereumDefaultAccountName())
+	opts, err := ethereum.GetConnection().GetTxOpts(config.Config.GetEthereumDefaultAccountName())
 	if err != nil {
 		return
 	}
@@ -109,7 +109,7 @@ func sendCommitTransaction(contract AnchorRepositoryContract, opts *bind.Transac
 //CommitAnchor will call the transaction Commit on the smart contract
 func (ethRepository *EthereumAnchorRepository) CommitAnchor(anchorID AnchorID, documentRoot DocRoot, centrifugeId identity.CentID, documentProofs [][32]byte, signature []byte) (confirmations <-chan *WatchCommit, err error) {
 	ethRepositoryContract, _ := getRepositoryContract()
-	opts, err := ethereum.GetGethTxOpts(config.Config.GetEthereumDefaultAccountName())
+	opts, err := ethereum.GetConnection().GetTxOpts(config.Config.GetEthereumDefaultAccountName())
 	if err != nil {
 		return
 	}
