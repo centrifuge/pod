@@ -126,9 +126,13 @@ func GetIDConfig() (identityConfig *config.IdentityConfig, err error) {
 		return nil, err
 	}
 
+	pubKey, err := hexutil.Decode(GetAddress(pub))
+	if err != nil {
+		return nil, err
+	}
 	identityConfig = &config.IdentityConfig{
 		ID:         decodedId,
-		PublicKey:  pub,
+		PublicKey:  pubKey,
 		PrivateKey: pvk,
 	}
 	return

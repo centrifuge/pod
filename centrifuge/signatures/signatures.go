@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"errors"
+
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
@@ -11,26 +13,28 @@ import (
 	"golang.org/x/crypto/ed25519"
 )
 
-func ValidateCentrifugeId(signature *coredocumentpb.Signature, centrifugeId identity.CentID) (valid bool, err error) {
-
+func ValidateCentrifugeID(signature *coredocumentpb.Signature, centrifugeId identity.CentID) error {
 	centIDSignature, err := identity.NewCentID(signature.EntityId)
-
 	if err != nil {
-		return false, err
+		return err
 	}
 
-	return centrifugeId.Equal(centIDSignature), nil
+	if !centrifugeId.Equal(centIDSignature) {
+		return errors.New("signature entity doesn't match provided centID")
+	}
+
+	return nil
 
 }
 
 // ValidateSignature verifies the signature on the document
 func ValidateSignature(signature *coredocumentpb.Signature, message []byte) error {
-	centid, err := identity.NewCentID(signature.EntityId)
+	centID, err := identity.NewCentID(signature.EntityId)
 	if err != nil {
 		return err
 	}
 
-	err = identity.ValidateKey(centid, signature.PublicKey)
+	err = identity.ValidateKey(centID, signature.PublicKey)
 	if err != nil {
 		return err
 	}

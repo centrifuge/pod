@@ -13,11 +13,11 @@ import (
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils/commons"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/version"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"google.golang.org/grpc"
 )
 
 func TestMain(m *testing.M) {
@@ -28,31 +28,8 @@ func TestMain(m *testing.M) {
 	os.Exit(result)
 }
 
-// p2pMockClient implements p2ppb.P2PServiceClient
-type p2pMockClient struct {
-	mock.Mock
-}
-
-func (p2p *p2pMockClient) Post(ctx context.Context, in *p2ppb.P2PMessage, opts ...grpc.CallOption) (*p2ppb.P2PReply, error) {
-	args := p2p.Called(ctx, in, opts)
-	resp, _ := args.Get(0).(*p2ppb.P2PReply)
-	return resp, args.Error(1)
-}
-
-func (p2p *p2pMockClient) RequestDocumentSignature(ctx context.Context, in *p2ppb.SignatureRequest, opts ...grpc.CallOption) (*p2ppb.SignatureResponse, error) {
-	args := p2p.Called(ctx, in, opts)
-	resp, _ := args.Get(0).(*p2ppb.SignatureResponse)
-	return resp, args.Error(1)
-}
-
-func (p2p *p2pMockClient) SendAnchoredDocument(ctx context.Context, in *p2ppb.AnchDocumentRequest, opts ...grpc.CallOption) (*p2ppb.AnchDocumentResponse, error) {
-	args := p2p.Called(ctx, in, opts)
-	resp, _ := args.Get(0).(*p2ppb.AnchDocumentResponse)
-	return resp, args.Error(1)
-}
-
 func TestGetSignatureForDocument_fail_connect(t *testing.T) {
-	client := &p2pMockClient{}
+	client := &testingcommons.P2PMockClient{}
 	coreDoc := testingutils.GenerateCoreDocument()
 	ctx := context.Background()
 
@@ -66,7 +43,7 @@ func TestGetSignatureForDocument_fail_connect(t *testing.T) {
 }
 
 func TestGetSignatureForDocument_fail_version_check(t *testing.T) {
-	client := &p2pMockClient{}
+	client := &testingcommons.P2PMockClient{}
 	coreDoc := testingutils.GenerateCoreDocument()
 	ctx := context.Background()
 	resp := &p2ppb.SignatureResponse{CentNodeVersion: "1.0.0"}
@@ -84,7 +61,7 @@ func TestGetSignatureForDocument_fail_version_check(t *testing.T) {
 
 // TODO(ved): once keyinfo is done, add a successful test
 func TestGetSignatureForDocument_fail_centrifugeId(t *testing.T) {
-	client := &p2pMockClient{}
+	client := &testingcommons.P2PMockClient{}
 	coreDoc := testingutils.GenerateCoreDocument()
 	ctx := context.Background()
 
@@ -105,6 +82,6 @@ func TestGetSignatureForDocument_fail_centrifugeId(t *testing.T) {
 	client.AssertExpectations(t)
 	assert.Nil(t, resp, "must be nil")
 	assert.Error(t, err, "must not be nil")
-	assert.Contains(t, err.Error(), "invalid centrifuge id in the signature document")
+	assert.Contains(t, err.Error(), "[5]signature entity doesn't match provided centID")
 
 }
