@@ -1,4 +1,4 @@
-package anchoring
+package anchors
 
 import (
 	"math/big"
@@ -21,7 +21,7 @@ type AnchorID [AnchorIDLength]byte
 func NewAnchorID(anchorBytes []byte) (AnchorID, error) {
 	var anchorBytesFixed [AnchorIDLength]byte
 	if !tools.IsValidByteSliceForLength(anchorBytes, AnchorIDLength) {
-		return anchorBytesFixed, errors.New("invalid length byte slice provided for anchorId")
+		return anchorBytesFixed, errors.New("invalid length byte slice provided for anchorID")
 	}
 	copy(anchorBytesFixed[:], anchorBytes[:AnchorIDLength])
 	return anchorBytesFixed, nil
@@ -43,7 +43,7 @@ func NewDocRoot(docRootBytes []byte) (DocRoot, error) {
 }
 
 type PreCommitData struct {
-	AnchorId        AnchorID
+	AnchorID        AnchorID
 	SigningRoot     DocRoot
 	CentrifugeID    identity.CentID
 	Signature       []byte
@@ -52,7 +52,7 @@ type PreCommitData struct {
 }
 
 type CommitData struct {
-	AnchorId       AnchorID
+	AnchorID       AnchorID
 	DocumentRoot   DocRoot
 	CentrifugeID   identity.CentID
 	DocumentProofs [][32]byte
@@ -77,9 +77,9 @@ func SupportedSchemaVersion() uint {
 	return AnchorSchemaVersion
 }
 
-func NewPreCommitData(anchorId AnchorID, signingRoot DocRoot, centrifugeID identity.CentID, signature []byte, expirationBlock *big.Int) (preCommitData *PreCommitData) {
+func NewPreCommitData(anchorID AnchorID, signingRoot DocRoot, centrifugeID identity.CentID, signature []byte, expirationBlock *big.Int) (preCommitData *PreCommitData) {
 	preCommitData = &PreCommitData{}
-	preCommitData.AnchorId = anchorId
+	preCommitData.AnchorID = anchorID
 	preCommitData.SigningRoot = signingRoot
 	preCommitData.CentrifugeID = centrifugeID
 	preCommitData.Signature = signature
@@ -88,9 +88,9 @@ func NewPreCommitData(anchorId AnchorID, signingRoot DocRoot, centrifugeID ident
 	return preCommitData
 }
 
-func NewCommitData(anchorId AnchorID, documentRoot DocRoot, centrifugeID identity.CentID, documentProofs [][32]byte, signature []byte) (commitData *CommitData) {
+func NewCommitData(anchorID AnchorID, documentRoot DocRoot, centrifugeID identity.CentID, documentProofs [][32]byte, signature []byte) (commitData *CommitData) {
 	commitData = &CommitData{}
-	commitData.AnchorId = anchorId
+	commitData.AnchorID = anchorID
 	commitData.DocumentRoot = documentRoot
 	commitData.CentrifugeID = centrifugeID
 	commitData.DocumentProofs = documentProofs
@@ -98,8 +98,8 @@ func NewCommitData(anchorId AnchorID, documentRoot DocRoot, centrifugeID identit
 	return commitData
 }
 
-func GenerateCommitHash(anchorId AnchorID, centrifugeID identity.CentID, documentRoot DocRoot) []byte {
-	message := append(anchorId[:], documentRoot[:]...)
+func GenerateCommitHash(anchorID AnchorID, centrifugeID identity.CentID, documentRoot DocRoot) []byte {
+	message := append(anchorID[:], documentRoot[:]...)
 	message = append(message, centrifugeID[:]...)
 	messageToSign := crypto.Keccak256(message)
 	return messageToSign

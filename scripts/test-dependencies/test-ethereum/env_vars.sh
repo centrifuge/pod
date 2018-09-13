@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-DATA_DIR="/tmp/geth_test_network"
 RPC_PORT=9545
 WS_PORT=9546
 NETWORK_ID=8383

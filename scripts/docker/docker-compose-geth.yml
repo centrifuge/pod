@@ -1,11 +1,12 @@
 version: '3'
 services:
   geth:
-    image: "centrifugeio/cent-geth:latest"
+    image: "centrifugeio/cent-geth:v0.1.0"
     container_name: geth-node
     environment:
       - RINKEBY
       - GETH_LOCAL
+      - GETH_MINE
       - IDENTITY
       - NETWORK_ID
       - API

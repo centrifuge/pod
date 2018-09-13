@@ -1,13 +1,19 @@
 ethereum:
   accounts:
     main: 
-      key: '{"address":"4b1b843af77a8f7f4f0ad2145095937e3d90e3d8","crypto":{"cipher":"aes-128-ctr","ciphertext":"a74796ca5eb4ec46f7ccff9c307054620ae087821db1dcf37d34b413977fc25d","cipherparams":{"iv":"f82cf3caa3db19c158ea844f28e7187b"},"kdf":"scrypt","kdfparams":{"dklen":32,"n":262144,"p":1,"r":8,"salt":"1121581cbb26b0c5009705ed040578d41991b1b3e93d4c0690f818a488a130af"},"mac":"53613541c0fef2705fd1894cfd99d0aae60ab0e2599eacc01d65ad8f93972c15"},"id":"5504703d-7825-4e0b-89ad-d24a54c6343a","version":3}'
-      password: fenrwf34nr3cdlsmk
-      address: 4b1b843af77a8f7f4f0ad2145095937e3d90e3d8
+      key: '{"address":"89b0a86583c4444acfd71b463e0d3c55ae1412a5","crypto":{"cipher":"aes-128-ctr","ciphertext":"c779f8379d770d92cfc1ddd4a8f31d5a0adc8f2a0b2a1401370d3630f38c0c8a","cipherparams":{"iv":"36c168e73bf980fe75b0727f890a71ad"},"kdf":"scrypt","kdfparams":{"dklen":32,"n":262144,"p":1,"r":8,"salt":"de1be16e3c981944d1eca2b8b27e4e6e0b5bfb43be0376a5d8889fa679a28122"},"mac":"cc128b815555ba1ead7cae9060e8842afca8356d06455bd9a5752ba6fcc092ef"},"id":"45e060a6-d2ae-43b8-922f-44829499d37d","version":3}'
+      password: ''
+      address: 89b0a86583c4444acfd71b463e0d3c55ae1412a5
 
-identityId: MQ==
+identityId: AQEBAQEB
+
+queue:
+  numWorkers: 5
 
 keys:
   signing:
     publicKey: ../../../example/resources/signature1.pub.pem
     privateKey: ../../../example/resources/signature1.key.pem
+  ethauth:
+    publicKey: ../../../example/resources/ethauth.pub.pem
+    privateKey: ../../../example/resources/ethauth.key.pem

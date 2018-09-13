@@ -42,7 +42,7 @@ func Execute() {
 }
 
 func init() {
-	cobra.OnInitialize(initCentrifuge)
+	cobra.OnInitialize(setCentrifugeLoggers)
 
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
@@ -51,13 +51,8 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "set loglevel to debug")
 }
 
-// initCentrifuge reads in config file and ENV variables if set.
-func initCentrifuge() {
-	if verbose {
-		logging.SetAllLoggers(gologging.DEBUG)
-	} else {
-		logging.SetAllLoggers(gologging.INFO)
-	}
+// readConfigFile reads in config file and ENV variables if set.
+func readConfigFile() {
 	if cfgFile == "" {
 		// Find home directory.
 		home, err := homedir.Dir()
@@ -74,6 +69,17 @@ func initCentrifuge() {
 	}
 	// If a config file is found, read it in.
 	config.Bootstrap(cfgFile)
+}
+
+//setCentrifugeLoggers sets the loggers.
+func setCentrifugeLoggers() {
+	if verbose {
+		logging.SetAllLoggers(gologging.DEBUG)
+		return
+	}
+
+	logging.SetAllLoggers(gologging.INFO)
+
 }
 
 func defaultBootstrap() {

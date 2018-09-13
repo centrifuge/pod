@@ -28,7 +28,7 @@ func init() {
 				log.Fatal(err)
 			}
 
-			publicKey, err := utils.ReadKeyFromPemFile(publicKeyFileParam, keytools.PublicKey)
+			publicKey, err := utils.ReadKeyFromPemFile(publicKeyFileParam, utils.PublicKey)
 
 			if err != nil {
 				log.Fatal(err)

@@ -14,14 +14,9 @@ import (
 
 var log = logging.Logger("ed25519")
 
-const (
-	PublicKey  = "PUBLIC KEY"
-	PrivateKey = "PRIVATE KEY"
-)
-
 // GetPublicSigningKey returns the public key from the file
 func GetPublicSigningKey(fileName string) (publicKey ed25519.PublicKey) {
-	key, err := utils.ReadKeyFromPemFile(fileName, PublicKey)
+	key, err := utils.ReadKeyFromPemFile(fileName, utils.PublicKey)
 
 	if err != nil {
 		log.Fatal(err)
@@ -32,7 +27,7 @@ func GetPublicSigningKey(fileName string) (publicKey ed25519.PublicKey) {
 
 // GetPrivateSigningKey returns the private key from the file
 func GetPrivateSigningKey(fileName string) (privateKey ed25519.PrivateKey) {
-	key, err := utils.ReadKeyFromPemFile(fileName, PrivateKey)
+	key, err := utils.ReadKeyFromPemFile(fileName, utils.PrivateKey)
 	if err != nil {
 		log.Fatal(err)
 	}

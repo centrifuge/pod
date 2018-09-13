@@ -115,7 +115,7 @@ func (c *Configuration) GetEthereumAccount(accountName string) (account *Account
 	k := fmt.Sprintf("ethereum.accounts.%s", accountName)
 
 	if !c.V.IsSet(k) {
-		return nil, fmt.Errorf("No account found with account name %s", accountName)
+		return nil, fmt.Errorf("no account found with account name %s", accountName)
 	}
 
 	// Workaround for bug https://github.com/spf13/viper/issues/309 && https://github.com/spf13/viper/issues/513
@@ -173,6 +173,10 @@ func (c *Configuration) GetSigningKeyPair() (pub, priv string) {
 	return c.V.GetString("keys.signing.publicKey"), c.V.GetString("keys.signing.privateKey")
 }
 
+func (c *Configuration) GetEthAuthKeyPair() (pub, priv string) {
+	return c.V.GetString("keys.ethauth.publicKey"), c.V.GetString("keys.ethauth.privateKey")
+}
+
 // Configuration Implementation
 func NewConfiguration(configFile string) *Configuration {
 	c := Configuration{configFile: configFile}
@@ -182,7 +186,7 @@ func NewConfiguration(configFile string) *Configuration {
 // SetConfigFile returns an error if viper was already initialized.
 func (c *Configuration) SetConfigFile(path string) error {
 	if c.V != nil {
-		return errors.New("Viper already initialized. Can't set config file")
+		return errors.New("viper already initialized. Can't set config file")
 	}
 	c.configFile = path
 	return nil

@@ -20,9 +20,9 @@ func TestSignMessage(t *testing.T) {
 	testMsg := []byte("test")
 
 	GenerateSigningKeyPair(publicKeyFile, privateKeyFile, CurveSecp256K1)
-	privateKey, err := utils.ReadKeyFromPemFile(privateKeyFile, PrivateKey)
+	privateKey, err := utils.ReadKeyFromPemFile(privateKeyFile, utils.PrivateKey)
 	assert.Nil(t, err)
-	publicKey, err := utils.ReadKeyFromPemFile(publicKeyFile, PublicKey)
+	publicKey, err := utils.ReadKeyFromPemFile(publicKeyFile, utils.PublicKey)
 	assert.Nil(t, err)
 	signature, err := SignMessage(privateKey, testMsg, CurveSecp256K1, false)
 	assert.Nil(t, err)
@@ -42,12 +42,12 @@ func TestSignAndVerifyMessageEthereum(t *testing.T) {
 	testMsg := []byte("Centrifuge likes Ethereum")
 
 	GenerateSigningKeyPair(publicKeyFile, privateKeyFile, CurveSecp256K1)
-	privateKey, err := utils.ReadKeyFromPemFile(privateKeyFile, PrivateKey)
+	privateKey, err := utils.ReadKeyFromPemFile(privateKeyFile, utils.PrivateKey)
 	assert.Nil(t, err)
 	signature, err := SignMessage(privateKey, testMsg, CurveSecp256K1, true)
 	assert.Nil(t, err)
 
-	publicKey, _ := utils.ReadKeyFromPemFile(publicKeyFile, PublicKey)
+	publicKey, _ := utils.ReadKeyFromPemFile(publicKeyFile, utils.PublicKey)
 	address := secp256k1.GetAddress(publicKey)
 
 	fmt.Println("privateKey: ", hexutil.Encode(privateKey))

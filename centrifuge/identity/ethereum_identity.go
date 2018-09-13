@@ -92,7 +92,7 @@ func (id *EthereumIdentity) GetLastKeyForPurpose(keyPurpose int) (key []byte, er
 	}
 
 	if len(id.cachedKeys[keyPurpose]) == 0 {
-		return []byte{}, fmt.Errorf("No key found for type [%d] in mockID [%s]", keyPurpose, id.CentrifugeId)
+		return []byte{}, fmt.Errorf("no key found for type [%d] in mockID [%s]", keyPurpose, id.CentrifugeId)
 	}
 
 	return id.cachedKeys[keyPurpose][len(id.cachedKeys[keyPurpose])-1].Key[:32], nil
@@ -197,7 +197,7 @@ func (id *EthereumIdentity) AddKeyToIdentity(keyPurpose int, key []byte) (confir
 		return confirmations, wError
 	}
 
-	opts, err := ethereum.GetGethTxOpts(config.Config.GetEthereumDefaultAccountName())
+	opts, err := ethereum.GetConnection().GetTxOpts(config.Config.GetEthereumDefaultAccountName())
 	if err != nil {
 		return confirmations, err
 	}
@@ -381,7 +381,7 @@ func (ids *EthereumIdentityService) CreateIdentity(centrifugeID CentID) (id Iden
 	if err != nil {
 		return
 	}
-	opts, err := ethereum.GetGethTxOpts(config.Config.GetEthereumDefaultAccountName())
+	opts, err := ethereum.GetConnection().GetTxOpts(config.Config.GetEthereumDefaultAccountName())
 	if err != nil {
 		return nil, confirmations, err
 	}
