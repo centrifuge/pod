@@ -5,10 +5,9 @@ import (
 	"os"
 
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
-	"github.com/mitchellh/go-homedir"
-
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context"
 	logging "github.com/ipfs/go-log"
+	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	gologging "github.com/whyrusleeping/go-logging"
 )
@@ -76,9 +75,10 @@ func readConfigFile() {
 func setCentrifugeLoggers() {
 	if verbose {
 		logging.SetAllLoggers(gologging.DEBUG)
-	} else {
-		logging.SetAllLoggers(gologging.INFO)
+		return
 	}
+
+	logging.SetAllLoggers(gologging.INFO)
 
 }
 
