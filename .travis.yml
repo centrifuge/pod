@@ -29,6 +29,7 @@ install:
   - mkdir -p ~/bin
   - PROTOTOOL_VERSION=$PROTOTOOL_VERSION ./scripts/install_prototool.sh
   - go get golang.org/x/tools/cmd/goimports
+  - go get -u github.com/kyoh86/richgo
   - make install
 
 jobs:
