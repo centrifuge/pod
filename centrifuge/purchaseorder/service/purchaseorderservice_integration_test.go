@@ -21,6 +21,7 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils/commons"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestMain(m *testing.M) {
@@ -49,10 +50,12 @@ func generateEmptyPurchaseOrderForProcessing() (doc *purchaseorder.PurchaseOrder
 }
 
 func TestPurchaseOrderDocumentService_HandleAnchorPurchaseOrderDocument_Integration(t *testing.T) {
+	p2pClient := &testingcommons.MockP2PWrapperClient{}
 	s := purchaseorderservice.PurchaseOrderDocumentService{
 		Repository:            purchaseorderrepository.GetRepository(),
-		CoreDocumentProcessor: coredocumentprocessor.DefaultProcessor(identity.NewEthereumIdentityService(), &testingcommons.MockP2PWrapperClient{}),
+		CoreDocumentProcessor: coredocumentprocessor.DefaultProcessor(identity.NewEthereumIdentityService(), p2pClient),
 	}
+	p2pClient.On("GetSignaturesForDocument", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	doc := generateEmptyPurchaseOrderForProcessing()
 	doc.Document.Data = &purchaseorderpb.PurchaseOrderData{
 		PoNumber:         "po1234",
@@ -71,10 +74,12 @@ func TestPurchaseOrderDocumentService_HandleAnchorPurchaseOrderDocument_Integrat
 }
 
 func TestPurchaseOrderDocumentService_HandleSendPurchaseOrderDocument_Integration(t *testing.T) {
+	p2pClient := &testingcommons.MockP2PWrapperClient{}
 	s := purchaseorderservice.PurchaseOrderDocumentService{
 		Repository:            purchaseorderrepository.GetRepository(),
-		CoreDocumentProcessor: coredocumentprocessor.DefaultProcessor(identity.NewEthereumIdentityService(), &testingcommons.MockP2PWrapperClient{}),
+		CoreDocumentProcessor: coredocumentprocessor.DefaultProcessor(identity.NewEthereumIdentityService(), p2pClient),
 	}
+	p2pClient.On("GetSignaturesForDocument", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	doc := generateEmptyPurchaseOrderForProcessing()
 	doc.Document.Data = &purchaseorderpb.PurchaseOrderData{
 		PoNumber:         "po1234",
