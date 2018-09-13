@@ -31,7 +31,7 @@ done
 ################# Prepare for tests ########################
 # Even if other `env_vars.sh` might hold this variable
 # Let's not count on it and be clear instead
-CONTRACTS_TAG=${CONTRACTS_TAG:-master}
+CONTRACTS_TAG=${CONTRACTS_TAG:-develop}
 if [ -z ${CENT_ETHEREUM_CONTRACTS_DIR} ]; then
     CENT_ETHEREUM_CONTRACTS_DIR=$GOPATH/src/github.com/CentrifugeInc/centrifuge-ethereum-contracts
 fi

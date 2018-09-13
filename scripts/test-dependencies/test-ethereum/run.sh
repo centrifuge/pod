@@ -13,9 +13,6 @@ local_dir="$(dirname "$0")"
 PARENT_DIR=`pwd`
 source "${local_dir}/env_vars.sh"
 
-################# Init GETH #########################
-ETH_DATADIR=$DATA_DIR ${PARENT_DIR}/scripts/docker/run.sh init
-
 ################## Run GETH #########################
 ## Ethereum local POA Dev testnet
 ETH_DATADIR=$DATA_DIR ${PARENT_DIR}/scripts/docker/run.sh dev

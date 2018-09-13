@@ -1,12 +1,9 @@
 #!/usr/bin/env bash
 
-DATA_DIR="/tmp/geth_test_network"
 RPC_PORT=9545
 WS_PORT=9546
 NETWORK_ID=8383
 IDENTITY=CentTestEth
-#NETWORK_ID=1984
-#IDENTITY=1984
 GETH_DOCKER_CONTAINER_NAME="geth-node"
 CENT_ETHEREUM_CONTRACTS_DIR=$GOPATH/src/github.com/CentrifugeInc/centrifuge-ethereum-contracts
 CENT_ETHEREUM_CONTEXTWAITTIMEOUT="180s"
