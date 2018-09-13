@@ -38,6 +38,14 @@ type MockP2PWrapperClient struct {
 	P2PMockClient *P2PMockClient
 }
 
+func NewMockP2PWrapperClient() *MockP2PWrapperClient {
+	client := &P2PMockClient{}
+	client.On("RequestDocumentSignature", ctx, mock.Anything, mock.Anything).Return(sigResp, nil).Once()
+	return &MockP2PWrapperClient{
+		P2PMockClient: client,
+	}
+}
+
 func (m *MockP2PWrapperClient) OpenClient(target string) (p2ppb.P2PServiceClient, error) {
 	m.P2PMockClient = &P2PMockClient{}
 	return m.P2PMockClient, nil
