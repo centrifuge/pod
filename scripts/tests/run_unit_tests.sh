@@ -10,8 +10,8 @@ for d in $(go list -tags=unit ./... | grep -v vendor); do
      output="$output | tee >(richgo testfilter)"
     fi
 
-    eval "$output"
-    if [ $? -ne 0 ]; then
+    eval "$output" | while IFS= read -r line; do printf '[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$line"; done
+    if [ ${PIPESTATUS[0]} -ne 0 ]; then
       status=1
     fi
 
