@@ -19,7 +19,10 @@ require (
 	github.com/golang/snappy v0.0.0-20180518054509-2e65f85255db // indirect
 	github.com/gomodule/redigo v2.0.0+incompatible // indirect
 	github.com/google/uuid v1.0.0 // indirect
+	github.com/gorilla/websocket v1.4.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.5.0
+	github.com/gxed/GoEndian v0.0.0-20160916112711-0f5c6873267e // indirect
+	github.com/gxed/eventfd v0.0.0-20160916113412-80a92cca79a8 // indirect
 	github.com/gxed/hashland v0.0.0-20180221191214-d9f6b97f8db2 // indirect
 	github.com/hashicorp/golang-lru v0.5.0 // indirect
 	github.com/iancoleman/strcase v0.0.0-20180726023541-3605ed457bf7 // indirect
@@ -35,6 +38,7 @@ require (
 	github.com/jbenet/goprocess v0.0.0-20160826012719-b497e2f366b8 // indirect
 	github.com/libp2p/go-addr-util v2.0.5+incompatible // indirect
 	github.com/libp2p/go-conn-security v0.1.9 // indirect
+	github.com/libp2p/go-conn-security-multistream v0.1.9 // indirect
 	github.com/libp2p/go-flow-metrics v0.2.0 // indirect
 	github.com/libp2p/go-libp2p v6.0.11+incompatible
 	github.com/libp2p/go-libp2p-circuit v2.2.1+incompatible // indirect
@@ -53,11 +57,18 @@ require (
 	github.com/libp2p/go-libp2p-protocol v1.0.0 // indirect
 	github.com/libp2p/go-libp2p-record v4.1.6+incompatible // indirect
 	github.com/libp2p/go-libp2p-routing v2.4.10+incompatible // indirect
-	github.com/libp2p/go-libp2p-swarm v3.0.11+incompatible
+	github.com/libp2p/go-libp2p-secio v2.0.9+incompatible // indirect
+	github.com/libp2p/go-libp2p-swarm v3.0.11+incompatible // indirect
 	github.com/libp2p/go-libp2p-transport v3.0.9+incompatible // indirect
 	github.com/libp2p/go-libp2p-transport-upgrader v0.1.9 // indirect
 	github.com/libp2p/go-maddr-filter v1.1.9 // indirect
+	github.com/libp2p/go-msgio v0.0.3 // indirect
+	github.com/libp2p/go-reuseport v0.1.17 // indirect
+	github.com/libp2p/go-reuseport-transport v0.1.9 // indirect
+	github.com/libp2p/go-sockaddr v1.0.3 // indirect
 	github.com/libp2p/go-stream-muxer v3.0.1+incompatible // indirect
+	github.com/libp2p/go-tcp-transport v2.0.9+incompatible // indirect
+	github.com/libp2p/go-ws-transport v2.0.9+incompatible // indirect
 	github.com/magiconair/properties v1.8.0
 	github.com/mattn/go-colorable v0.0.9 // indirect
 	github.com/mattn/go-isatty v0.0.4 // indirect
@@ -89,7 +100,9 @@ require (
 	github.com/whyrusleeping/base32 v0.0.0-20170828182744-c30ac30633cc // indirect
 	github.com/whyrusleeping/go-keyspace v0.0.0-20160322163242-5b898ac5add1 // indirect
 	github.com/whyrusleeping/go-logging v0.0.0-20170515211332-0457bb6b88fc
+	github.com/whyrusleeping/go-multiplex v0.2.25 // indirect
 	github.com/whyrusleeping/go-notifier v0.0.0-20170827234753-097c5d47330f // indirect
+	github.com/whyrusleeping/go-smux-multiplex v3.0.12+incompatible // indirect
 	github.com/whyrusleeping/go-smux-multistream v2.0.2+incompatible
 	github.com/whyrusleeping/go-smux-yamux v0.0.0-20180604123621-eac25f3e2d47
 	github.com/whyrusleeping/mafmt v0.0.0-20180627004827-1dc32401ee9f // indirect

@@ -19,13 +19,12 @@ import (
 	"github.com/libp2p/go-libp2p-kad-dht"
 	"github.com/libp2p/go-libp2p-peer"
 	pstore "github.com/libp2p/go-libp2p-peerstore"
-	"github.com/libp2p/go-libp2p-swarm"
-	bhost "github.com/libp2p/go-libp2p/p2p/host/basic"
-	ma "github.com/multiformats/go-multiaddr"
+	//"github.com/libp2p/go-libp2p-swarm"
+	//bhost "github.com/libp2p/go-libp2p/p2p/host/basic"
+	//ma "github.com/multiformats/go-multiaddr"
 	mh "github.com/multiformats/go-multihash"
 	"github.com/paralin/go-libp2p-grpc"
-	msmux "github.com/whyrusleeping/go-smux-multistream"
-	yamux "github.com/whyrusleeping/go-smux-yamux"
+	"github.com/libp2p/go-libp2p"
 )
 
 var log = logging.Logger("p2p")
@@ -57,12 +56,6 @@ func makeBasicHost(listenPort int) (host.Host, error) {
 		return nil, err
 	}
 
-	// Create a multiaddress
-	addr, err := ma.NewMultiaddr(fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", listenPort))
-	if err != nil {
-		return nil, err
-	}
-
 	// Create a peerstore
 	ps := pstore.NewPeerstore()
 
@@ -79,34 +72,26 @@ func makeBasicHost(listenPort int) (host.Host, error) {
 		return nil, err
 	}
 
-	// Set up stream multiplexer
-	tpt := msmux.NewBlankTransport()
-	tpt.AddTransport("/yamux/1.0.0", yamux.DefaultTransport)
-
-	// Create swarm (implements libP2P Network)
-	swrm := swarm.NewSwarm(
-		context.Background(),
-		pid,
-		ps,
-		nil,
-	)
-
-	bhost.DefaultAddrsFactory = func(addrs []ma.Multiaddr) []ma.Multiaddr {
-		addrs = append(addrs, addr)
-		return addrs
+	opts := []libp2p.Option{
+		libp2p.ListenAddrStrings(fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", listenPort)),
+		libp2p.Identity(priv),
+		libp2p.DefaultMuxers,
 	}
 
-	basicHost := bhost.New(swrm)
+	bhost, err := libp2p.New(context.Background(), opts...)
+	if err != nil {
+		return nil, err
+	}
 
 	// Build host multiaddress
-	hostAddr, _ := ma.NewMultiaddr(fmt.Sprintf("/ipfs/%s", basicHost.ID().Pretty()))
+	//hostAddr, _ := ma.NewMultiaddr(fmt.Sprintf("/ipfs/%s", basicHost.ID().Pretty()))
+	//
+	//// Now we can build a full multiaddress to reach this host
+	//// by encapsulating both addresses:
+	//fullAddr := addr.Encapsulate(hostAddr)
+	//log.Infof("I am %s\n", fullAddr)
 
-	// Now we can build a full multiaddress to reach this host
-	// by encapsulating both addresses:
-	fullAddr := addr.Encapsulate(hostAddr)
-	log.Infof("I am %s\n", fullAddr)
-
-	return basicHost, nil
+	return bhost, nil
 }
 
 func RunDHT(ctx context.Context, h host.Host) {
