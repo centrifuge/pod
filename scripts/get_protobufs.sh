@@ -9,4 +9,5 @@ go get golang.org/x/tools/cmd/goimports
 go get -u github.com/kyoh86/richgo
 go get github.com/grpc-ecosystem/grpc-gateway/
 go get github.com/CentrifugeInc/centrifuge-protobufs/
+go get github.com/centrifuge/precise-proofs
 exit $status
