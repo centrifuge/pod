@@ -45,6 +45,8 @@ gen-swagger: ## generates the swagger documentation
 
 install: ## Builds and Install binary for development
 install: install-deps
+	## TODO: remove this once we open source the centrifuge protobufs
+	git config --global --add url."git@github.com:".insteadOf "https://github.com/"
 	@go install ./centrifuge/
 
 install-xgo: ## Install XGO
