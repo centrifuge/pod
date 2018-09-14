@@ -46,6 +46,7 @@ gen-swagger: ## generates the swagger documentation
 install: ## Builds and Install binary for development
 install: install-deps
 	@go install ./centrifuge/
+	@go mod vendor
 
 install-xgo: ## Install XGO
 	@echo "Ensuring XGO is installed"
