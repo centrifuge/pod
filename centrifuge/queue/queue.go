@@ -25,7 +25,7 @@ func InitQueue(tasks []QueuedTask) {
 			gocelery.NewInMemoryBackend(),
 			config.Config.GetNumWorkers(),
 			config.Config.GetWorkerWaitTimeMS(),
-			)
+		)
 		if err != nil {
 			panic("Could not initialize the queue")
 		}
