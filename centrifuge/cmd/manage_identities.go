@@ -54,6 +54,9 @@ var addKeyCmd = &cobra.Command{
 		case "p2p":
 			identityConfig, err = ed25519.GetIDConfig()
 			purposeInt = identity.KeyPurposeP2p
+		case "sign":
+			identityConfig, err = ed25519.GetIDConfig()
+			purposeInt = identity.KeyPurposeSigning
 		case "ethauth":
 			identityConfig, err = secp256k1.GetIDConfig()
 			purposeInt = identity.KeyPurposeEthMsgAuth
@@ -88,7 +91,7 @@ var addKeyCmd = &cobra.Command{
 func init() {
 	createIdentityCmd.Flags().StringVarP(&centrifugeIdString, "centrifugeid", "i", "", "Centrifuge ID")
 	addKeyCmd.Flags().StringVarP(&centrifugeIdString, "centrifugeid", "i", "", "Centrifuge ID")
-	addKeyCmd.Flags().StringVarP(&purpose, "purpose", "p", "", "Key Purpose [p2p|ethauth]")
+	addKeyCmd.Flags().StringVarP(&purpose, "purpose", "p", "", "Key Purpose [p2p|sign|ethauth]")
 	rootCmd.AddCommand(createIdentityCmd)
 	rootCmd.AddCommand(addKeyCmd)
 }

@@ -88,6 +88,8 @@ func getSignatureForDocument(ctx context.Context, doc coredocumentpb.CoreDocumen
 		Document: &doc,
 	}
 
+	log.Infof("Reguesting signature from %s\n", receiverCentId)
+
 	resp, err := client.RequestDocumentSignature(ctx, req)
 	if err != nil {
 		return nil, centerrors.Wrap(err, "request for document signature failed")
@@ -107,6 +109,8 @@ func getSignatureForDocument(ctx context.Context, doc coredocumentpb.CoreDocumen
 	if err != nil {
 		return nil, centerrors.New(code.AuthenticationFailed, "signature invalid")
 	}
+
+	log.Infof("Signature successfully received from %s\n", receiverCentId)
 
 	return resp, nil
 }
