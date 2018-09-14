@@ -9,6 +9,7 @@ identityId: AQEBAQEB
 
 queue:
   numWorkers: 5
+  workerWaitTimeMS: 1
 
 keys:
   signing:

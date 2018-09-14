@@ -40,6 +40,11 @@ required = ["github.com/roboll/go-vendorinstall", "github.com/golang/protobuf/pr
   source = "git@github.com:centrifuge/precise-proofs"
   revision = "c673e56ee0de0d721a10dee5cd2aa59015e4420a"
 
+[[constraint]]
+  name = "github.com/centrifuge/gocelerey"
+  source = "git@github.com:centrifuge/gocelerey"
+  revision = "80f35a18b9a0c632d7843e7e536873b0536f0040"
+
 [[override]]
   revision = "fbb7cafc5ae411e13e718172f5af7917ad6c3ed7"
   name = "github.com/xsleonard/go-merkle"
