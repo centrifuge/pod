@@ -55,11 +55,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:eab9720115c67a5dd4487630d774917800945b54e2f34605c3099212865f2d75"
+  digest = "1:c925cd40d25fe72f5916e010b79b5d9f6e0e97ec9b190fa658c6c67b913229ea"
   name = "github.com/centrifuge/gocelery"
   packages = ["."]
   pruneopts = "UT"
-  revision = "840d02135ac447e77bd0d669246b602feca5e8b4"
+  revision = "80f35a18b9a0c632d7843e7e536873b0536f0040"
 
 [[projects]]
   digest = "1:9ecc8c63be5b2a2e9c4daefc265ea476757d91a04394fbb984bcdb3c652129da"
@@ -1347,6 +1347,7 @@
     "github.com/golang/protobuf/ptypes",
     "github.com/golang/protobuf/ptypes/any",
     "github.com/golang/protobuf/ptypes/empty",
+    "github.com/golang/protobuf/ptypes/timestamp",
     "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway",
     "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger/options",
     "github.com/grpc-ecosystem/grpc-gateway/runtime",

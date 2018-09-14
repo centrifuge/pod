@@ -208,7 +208,7 @@ func TestGetIDConfig(t *testing.T) {
 	assert.NotNil(t, signature)
 
 	sigHex := hexutil.Encode(signature)
-	correct := VerifySignatureWithAddress(GetAddress(idconfig.PublicKey), sigHex, testMsgBytes)
+	correct := VerifySignatureWithAddress(hexutil.Encode(idconfig.PublicKey), sigHex, testMsgBytes)
 	assert.Equal(t, correct, true, "generating ethereum signature for msg doesn't work correctly")
 
 }
