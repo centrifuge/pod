@@ -29,7 +29,7 @@ var log = logging.Logger("p2p")
 var HostInstance host.Host
 var GRPCProtoInstance p2pgrpc.GRPCProtocol
 
-// makeBasicHost creates a LibP2P host with a random peer ID listening on the given port
+// makeBasicHost creates a LibP2P host with a peer ID listening on the given port
 func makeBasicHost(listenPort int) (host.Host, error) {
 	// Get the signing key for the host.
 	publicKey, privateKey := ed25519.GetSigningKeyPairFromConfig()
