@@ -38,6 +38,7 @@ networks:
 
 queue:
   numWorkers: 2
+  workerWaitTimeMS: 1
 
 ethereum:
   defaultAccountName: "main"
