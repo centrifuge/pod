@@ -4,9 +4,12 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
 	"github.com/spf13/cobra"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/secp256k1"
 )
 
 var centrifugeIdString string
+var purpose string
 
 var createIdentityCmd = &cobra.Command{
 	Use:   "createidentity",
@@ -43,32 +46,41 @@ var addKeyCmd = &cobra.Command{
 		defaultBootstrap()
 		identityService := identity.EthereumIdentityService{}
 
-		publicKey, _ := ed25519.GetSigningKeyPairFromConfig()
-		idKey := []byte{}
-		copy(idKey[:], publicKey[:32])
+		var identityConfig *config.IdentityConfig
+		var purposeInt int
+		var err error
 
-		centrifugeId, err := identity.CentrifugeIdStringToSlice(centrifugeIdString)
+		switch purpose {
+		case "p2p":
+			identityConfig, err = ed25519.GetIDConfig()
+			purposeInt = identity.KeyPurposeP2p
+		case "ethauth":
+			identityConfig, err = secp256k1.GetIDConfig()
+			purposeInt = identity.KeyPurposeEthMsgAuth
+		default:
+			panic("Option not supported")
+		}
+
+		centId, err := identity.NewCentID(identityConfig.ID)
 		if err != nil {
 			panic(err)
 		}
-		id, err := identityService.LookupIdentityForID(centrifugeId)
-
+		id, err := identityService.LookupIdentityForID(centId)
 		if err != nil {
 			panic(err)
 		}
 
-		confirmations, err := id.AddKeyToIdentity(identity.KeyPurposeP2p, idKey)
+		confirmations, err := id.AddKeyToIdentity(purposeInt, identityConfig.PublicKey)
 		if err != nil {
 			panic(err)
 		}
 		watchAddedToIdentity := <-confirmations
 
-		lastKey, errLocal := watchAddedToIdentity.Identity.GetLastKeyForPurpose(identity.KeyPurposeP2p)
+		lastKey, errLocal := watchAddedToIdentity.Identity.GetLastKeyForPurpose(purposeInt)
 		if errLocal != nil {
-			err = errLocal
-			return
+			panic(err)
 		}
-		log.Infof("Key [%v] Added to Identity [%s]", lastKey, watchAddedToIdentity.Identity)
+		log.Infof("Key [%v] with type [$s] Added to Identity [%s]", lastKey, purpose, watchAddedToIdentity.Identity)
 		return
 	},
 }
@@ -76,6 +88,7 @@ var addKeyCmd = &cobra.Command{
 func init() {
 	createIdentityCmd.Flags().StringVarP(&centrifugeIdString, "centrifugeid", "i", "", "Centrifuge ID")
 	addKeyCmd.Flags().StringVarP(&centrifugeIdString, "centrifugeid", "i", "", "Centrifuge ID")
+	addKeyCmd.Flags().StringVarP(&purpose, "purpose", "p", "", "Key Purpose [p2p|ethauth]")
 	rootCmd.AddCommand(createIdentityCmd)
 	rootCmd.AddCommand(addKeyCmd)
 }
