@@ -84,21 +84,19 @@ func makeBasicHost(listenPort int) (host.Host, error) {
 	tpt.AddTransport("/yamux/1.0.0", yamux.DefaultTransport)
 
 	// Create swarm (implements libP2P Network)
-	swrm, err := swarm.NewSwarmWithProtector(
+	swrm := swarm.NewSwarm(
 		context.Background(),
-		[]ma.Multiaddr{addr},
 		pid,
 		ps,
 		nil,
-		tpt,
-		nil,
 	)
-	if err != nil {
-		return nil, err
+
+	bhost.DefaultAddrsFactory = func(addrs []ma.Multiaddr) []ma.Multiaddr {
+		addrs = append(addrs, addr)
+		return addrs
 	}
 
-	netw := (*swarm.Network)(swrm)
-	basicHost := bhost.New(netw)
+	basicHost := bhost.New(swrm)
 
 	// Build host multiaddress
 	hostAddr, _ := ma.NewMultiaddr(fmt.Sprintf("/ipfs/%s", basicHost.ID().Pretty()))
