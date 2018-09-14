@@ -8,7 +8,7 @@ require (
 	github.com/agl/ed25519 v0.0.0-20170116200512-5312a6153412 // indirect
 	github.com/aristanetworks/goarista v0.0.0-20180907105523-ff33da284e76 // indirect
 	github.com/btcsuite/btcd v0.0.0-20180903232927-cff30e1d23fc // indirect
-	github.com/centrifuge/gocelery v0.0.0-20180827133206-840d02135ac4
+	github.com/centrifuge/gocelery v0.0.0-20180914100317-80f35a18b9a0
 	github.com/centrifuge/precise-proofs v0.0.0-20180904114007-c673e56ee0de
 	github.com/cespare/cp v1.0.0 // indirect
 	github.com/coreos/go-semver v0.2.0 // indirect
@@ -19,6 +19,7 @@ require (
 	github.com/ethereum/go-ethereum v1.8.15
 	github.com/fd/go-nat v1.0.0 // indirect
 	github.com/fjl/memsize v0.0.0-20180427083637-f6d5545993d6 // indirect
+	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-check/check v0.0.0-20180628173108-788fd7840127 // indirect
 	github.com/go-errors/errors v1.0.1
 	github.com/go-stack/stack v1.8.0 // indirect
