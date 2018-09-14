@@ -51,6 +51,7 @@ vendorinstall: ## Installs all protobuf dependencies with go-vendorinstall
 install: ## Builds and Install binary for development
 install: install-deps vendorinstall
 	@go install ./centrifuge/
+	@go mod vendor
 
 install-xgo: ## Install XGO
 	@echo "Ensuring XGO is installed"
