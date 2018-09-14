@@ -20,6 +20,7 @@ cache:
   - ~/.cache/prototool/Linux/x86_64/protobuf/
 
 before_install:
+  - git config --global --add url."git@github.com:".insteadOf "https://github.com/"
   - npm install -g truffle@4.1.13
 
 install:
