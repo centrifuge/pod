@@ -43,9 +43,8 @@ func createIdentityWithKeys(t *testing.T, centrifugeId []byte) []byte {
 	id, err = identityService.LookupIdentityForID(centIdTyped)
 	assert.Nil(t, err, "should not error out when resolving identity")
 
-	testAddress = "0xc8dd3d66e112fae5c88fe6a677be24013e53c33e"
 	testPrivateKey = "0x17e063fa17dd8274b09c14b253697d9a20afff74ace3c04fdb1b9c814ce0ada5"
-	pubKey, _ := hexutil.Decode(testAddress)
+	pubKey, _ := hexutil.Decode("0xc8dd3d66e112fae5c88fe6a677be24013e53c33e")
 
 	confirmations, err = id.AddKeyToIdentity(identity.KeyPurposeEthMsgAuth, pubKey)
 	assert.Nil(t, err, "should not error out when adding keys")
@@ -54,7 +53,6 @@ func createIdentityWithKeys(t *testing.T, centrifugeId []byte) []byte {
 	assert.Nil(t, watchRegisteredIdentityKey.Error, "No error thrown by context")
 
 	return centrifugeId
-
 }
 
 func TestCommitAnchor_Integration(t *testing.T) {
