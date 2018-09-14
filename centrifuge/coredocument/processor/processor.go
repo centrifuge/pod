@@ -73,9 +73,16 @@ func (dp *defaultProcessor) Send(ctx context.Context, coreDocument *coredocument
 
 	log.Infof("Done opening connection against [%s]\n", lastB58Key)
 	hostInstance := p2p.GetHost()
-	bSenderId, err := hostInstance.ID().ExtractPublicKey().Bytes()
+	pubKey, err := hostInstance.ID().ExtractPublicKey()
 	if err != nil {
-		err = centerrors.Wrap(err, "failed to extract pub key")
+		err = centerrors.Wrap(err, "failed to get pub key")
+		log.Error(err)
+		return err
+	}
+
+	bSenderId, err := pubKey.Bytes()
+	if err != nil {
+		err = centerrors.Wrap(err, "failed to extract bytes")
 		log.Error(err)
 		return err
 	}
