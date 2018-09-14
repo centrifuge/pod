@@ -14,22 +14,26 @@ import (
 	ds "github.com/ipfs/go-datastore"
 	"github.com/ipfs/go-ipfs-addr"
 	logging "github.com/ipfs/go-log"
-	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p-crypto"
 	"github.com/libp2p/go-libp2p-host"
 	"github.com/libp2p/go-libp2p-kad-dht"
 	"github.com/libp2p/go-libp2p-peer"
 	pstore "github.com/libp2p/go-libp2p-peerstore"
+	"github.com/libp2p/go-libp2p-swarm"
+	bhost "github.com/libp2p/go-libp2p/p2p/host/basic"
 	ma "github.com/multiformats/go-multiaddr"
 	mh "github.com/multiformats/go-multihash"
 	"github.com/paralin/go-libp2p-grpc"
+	msmux "github.com/whyrusleeping/go-smux-multistream"
+	yamux "github.com/whyrusleeping/go-smux-yamux"
 )
 
 var log = logging.Logger("p2p")
 var HostInstance host.Host
 var GRPCProtoInstance p2pgrpc.GRPCProtocol
 
-// makeBasicHost creates a LibP2P host with a peer ID listening on the given port
+// makeBasicHost creates a LibP2P host with a random peer ID listening on the
+// given multiaddress.
 func makeBasicHost(listenPort int) (host.Host, error) {
 	// Get the signing key for the host.
 	publicKey, privateKey := ed25519.GetSigningKeyPairFromConfig()
@@ -53,6 +57,12 @@ func makeBasicHost(listenPort int) (host.Host, error) {
 		return nil, err
 	}
 
+	// Create a multiaddress
+	addr, err := ma.NewMultiaddr(fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", listenPort))
+	if err != nil {
+		return nil, err
+	}
+
 	// Create a peerstore
 	ps := pstore.NewPeerstore()
 
@@ -69,24 +79,36 @@ func makeBasicHost(listenPort int) (host.Host, error) {
 		return nil, err
 	}
 
-	opts := []libp2p.Option{
-		libp2p.ListenAddrStrings(fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", listenPort)),
-		libp2p.Identity(priv),
-		libp2p.DefaultMuxers,
-	}
+	// Set up stream multiplexer
+	tpt := msmux.NewBlankTransport()
+	tpt.AddTransport("/yamux/1.0.0", yamux.DefaultTransport)
 
-	bhost, err := libp2p.New(context.Background(), opts...)
+	// Create swarm (implements libP2P Network)
+	swrm, err := swarm.NewSwarmWithProtector(
+		context.Background(),
+		[]ma.Multiaddr{addr},
+		pid,
+		ps,
+		nil,
+		tpt,
+		nil,
+	)
 	if err != nil {
 		return nil, err
 	}
 
-	hostAddr, err := ma.NewMultiaddr(fmt.Sprintf("/ipfs/%s", bhost.ID().Pretty()))
-	if err != nil {
-		return nil, fmt.Errorf("failed to get addr: %v", err)
-	}
+	netw := (*swarm.Network)(swrm)
+	basicHost := bhost.New(netw)
 
-	log.Infof("P2P Server at: %s %s\n", hostAddr.String(), bhost.Addrs())
-	return bhost, nil
+	// Build host multiaddress
+	hostAddr, _ := ma.NewMultiaddr(fmt.Sprintf("/ipfs/%s", basicHost.ID().Pretty()))
+
+	// Now we can build a full multiaddress to reach this host
+	// by encapsulating both addresses:
+	fullAddr := addr.Encapsulate(hostAddr)
+	log.Infof("I am %s\n", fullAddr)
+
+	return basicHost, nil
 }
 
 func RunDHT(ctx context.Context, h host.Host) {

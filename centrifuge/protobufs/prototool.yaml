@@ -20,11 +20,11 @@ protoc_version: 3.5.1
 #protoc_includes:
 #  - ../../vendor/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis
 protoc_includes:
-  - ../../../../grpc-ecosystem/grpc-gateway/third_party/googleapis
-  - ../../../../grpc-ecosystem/grpc-gateway/
-  - ../../../../centrifuge/
-  - ../../../../CentrifugeInc/
-  - ../../../../CentrifugeInc/centrifuge-protobufs
+  - ../../vendor/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis
+  - ../../vendor/github.com/grpc-ecosystem/grpc-gateway/
+  - ../../vendor/github.com/centrifuge/
+  - ../../vendor/github.com/CentrifugeInc/
+  - ../../vendor/github.com/CentrifugeInc/centrifuge-protobufs
 
 # Include the Well-Known Types when compiling with protoc.
 # For example, this allows you to do import "google/protobuf/timestamp.proto" in your Protobuf files.
