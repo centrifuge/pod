@@ -22,11 +22,9 @@ help: ## Show this help message.
 	@egrep '^(.+)\:\ ##\ (.+)' ${MAKEFILE_LIST} | column -t -c 2 -s ':#'
 
 install-deps: ## Install Dependencies
+	@command -v dep >/dev/null 2>&1 || go get -u github.com/golang/dep/...
+	@dep ensure
 	@npm install
-	go install golang.org/x/tools/cmd/goimports
-	go install github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
-	go install github.com/golang/protobuf/protoc-gen-go
-	go install github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
 
 format-go: ## formats go code
 	@goimports -w ./centrifuge
@@ -43,10 +41,16 @@ proto-all: ## runs prototool all
 gen-swagger: ## generates the swagger documentation
 	npm run build_swagger
 
+vendorinstall: ## Installs all protobuf dependencies with go-vendorinstall
+	go install github.com/CentrifugeInc/go-centrifuge/vendor/github.com/roboll/go-vendorinstall
+	go-vendorinstall golang.org/x/tools/cmd/goimports
+	go-vendorinstall github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
+	go-vendorinstall github.com/golang/protobuf/protoc-gen-go
+	go-vendorinstall github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
+
 install: ## Builds and Install binary for development
-install: install-deps
+install: install-deps vendorinstall
 	@go install ./centrifuge/
-	@go mod vendor
 
 install-xgo: ## Install XGO
 	@echo "Ensuring XGO is installed"

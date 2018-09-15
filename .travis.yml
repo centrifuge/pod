@@ -1,6 +1,6 @@
 language: go
 go:
-  - 1.11.x
+  - 1.10.x
 
 # Maybe this helps with building branches in a fork
 go_import_path: github.com/CentrifugeInc/go-centrifuge
@@ -18,14 +18,16 @@ env:
 cache:
   - ~/bin/
   - ~/.cache/prototool/Linux/x86_64/protobuf/
+  - /tmp/depcache
 
 before_install:
-  - git config --global --add url."git@github.com:".insteadOf "https://github.com/"
   - npm install -g truffle@4.1.13
 
 install:
-  - ./scripts/get_protobufs.sh
-  - export GO111MODULE=on
+  - mkdir -p ~/bin
+  - PROTOTOOL_VERSION=$PROTOTOOL_VERSION ./scripts/install_prototool.sh
+  - go get golang.org/x/tools/cmd/goimports
+  - go get -u github.com/kyoh86/richgo
   - make install
 
 jobs:
