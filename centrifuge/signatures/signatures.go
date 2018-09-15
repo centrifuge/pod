@@ -34,7 +34,7 @@ func ValidateSignature(signature *coredocumentpb.Signature, message []byte) erro
 		return err
 	}
 
-	err = identity.ValidateKey(centID, signature.PublicKey)
+	err = identity.ValidateKey(centID, signature.PublicKey, identity.KeyPurposeSigning)
 	if err != nil {
 		return err
 	}

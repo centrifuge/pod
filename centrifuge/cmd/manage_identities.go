@@ -69,6 +69,7 @@ var addKeyCmd = &cobra.Command{
 			panic(err)
 		}
 		id, err := identityService.LookupIdentityForID(centId)
+
 		if err != nil {
 			panic(err)
 		}

@@ -84,7 +84,7 @@ func (dp *defaultProcessor) Send(ctx context.Context, coreDocument *coredocument
 
 	bSenderId, err := pubKey.Bytes()
 	if err != nil {
-		err = centerrors.Wrap(err, "failed to extract pub key")
+		err = centerrors.Wrap(err, "failed to extract bytes")
 		log.Error(err)
 		return err
 	}

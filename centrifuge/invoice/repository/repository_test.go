@@ -61,11 +61,6 @@ func TestRepository(t *testing.T) {
 	assert.Nil(t, err, "get must pass")
 	assert.Equal(t, getDoc.CoreDocument.DocumentIdentifier, docID, "identifiers mismatch")
 
-	// failed update
-	doc.Data.GrossAmount = 0
-	err = repo.Update(docID, doc)
-	assert.Error(t, err, "update must fail")
-
 	// successful update
 	doc.Data.GrossAmount = 200
 	err = repo.Update(docID, doc)

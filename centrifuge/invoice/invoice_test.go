@@ -138,30 +138,6 @@ func TestValidate(t *testing.T) {
 					SenderCountry:    "AUS",
 					RecipientName:    "John",
 					RecipientZipcode: "12345",
-					Currency:         "EUR",
-				},
-			},
-			want: want{
-				valid:  false,
-				errMsg: "Invalid Invoice",
-				errs: map[string]string{
-					"inv_recipient_country": centerrors.RequiredField,
-					"inv_gross_amount":      centerrors.RequirePositiveNumber,
-					"inv_salts":             centerrors.RequiredField,
-				},
-			},
-		},
-
-		{
-			inv: &invoicepb.InvoiceDocument{
-				CoreDocument: validCoreDoc,
-				Data: &invoicepb.InvoiceData{
-					InvoiceNumber:    "inv1234",
-					SenderName:       "Jack",
-					SenderZipcode:    "921007",
-					SenderCountry:    "AUS",
-					RecipientName:    "John",
-					RecipientZipcode: "12345",
 					RecipientCountry: "Germany",
 					Currency:         "EUR",
 					GrossAmount:      800,
