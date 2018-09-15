@@ -313,8 +313,8 @@ func TestValidateKey_fail_wrong_purpose(t *testing.T) {
 	centID, _ := NewCentID(tools.RandomSlice(CentIDByteLength))
 	pubKey := tools.RandomByte32()
 	idkey := &EthereumIdentityKey{
-		Key: pubKey,
-		Purposes:  []*big.Int{big.NewInt(KeyPurposeEthMsgAuth)},
+		Key:      pubKey,
+		Purposes: []*big.Int{big.NewInt(KeyPurposeEthMsgAuth)},
 	}
 	id := &mockID{}
 	srv := &mockIDService{}
