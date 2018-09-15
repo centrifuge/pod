@@ -15,6 +15,7 @@ import (
 	centED25519 "github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/notification"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/signatures"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/utils"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/version"
 	"github.com/golang/protobuf/ptypes"
 )
@@ -134,9 +135,7 @@ func (srv *Handler) SendAnchoredDocument(ctx context.Context, docReq *p2ppb.Anch
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
 
-	// this should ideally never fail. lets ignore the error
-	ts, _ := ptypes.TimestampProto(time.Now().UTC())
-
+	ts := utils.ToTimestamp(time.Now().UTC())
 	notificationMsg := &notificationpb.NotificationMessage{
 		EventType:    uint32(notification.RECEIVED_PAYLOAD),
 		CentrifugeId: docReq.Header.SenderCentrifugeId,
