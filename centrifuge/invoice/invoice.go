@@ -194,47 +194,7 @@ func Validate(doc *invoicepb.InvoiceDocument) (valid bool, errMsg string, errs m
 		return false, centerrors.NilDocumentData, nil
 	}
 
-	data := doc.Data
 	errs = make(map[string]string)
-
-	// ideally these check should be done in the client invoice order
-	// once the converters are done, we can move the following checks there
-	if data.InvoiceNumber == "" {
-		errs["inv_number"] = centerrors.RequiredField
-	}
-
-	if data.SenderName == "" {
-		errs["inv_sender_name"] = centerrors.RequiredField
-	}
-
-	if data.SenderZipcode == "" {
-		errs["inv_sender_zip_code"] = centerrors.RequiredField
-	}
-
-	// for now, mandating at least one character
-	if data.SenderCountry == "" {
-		errs["inv_sender_country"] = centerrors.RequiredField
-	}
-
-	if data.RecipientName == "" {
-		errs["inv_recipient_name"] = centerrors.RequiredField
-	}
-
-	if data.RecipientZipcode == "" {
-		errs["inv_recipient_zip_code"] = centerrors.RequiredField
-	}
-
-	if data.RecipientCountry == "" {
-		errs["inv_recipient_country"] = centerrors.RequiredField
-	}
-
-	if data.Currency == "" {
-		errs["inv_currency"] = centerrors.RequiredField
-	}
-
-	if data.GrossAmount <= 0 {
-		errs["inv_gross_amount"] = centerrors.RequirePositiveNumber
-	}
 
 	// checking for nil salts should be okay for now
 	// once the converters are in, salts will be filled during conversion

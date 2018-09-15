@@ -15,6 +15,7 @@ import (
 	centED25519 "github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/notification"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/signatures"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/utils"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/version"
 	"github.com/golang/protobuf/ptypes"
 )
@@ -120,5 +121,33 @@ func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.
 }
 
 func (srv *Handler) SendAnchoredDocument(ctx context.Context, docReq *p2ppb.AnchDocumentRequest) (*p2ppb.AnchDocumentResponse, error) {
-	return nil, nil
+	err := basicChecks(docReq.Header.CentNodeVersion, docReq.Header.NetworkIdentifier)
+	if err != nil {
+		return nil, err
+	}
+
+	if docReq.Document == nil {
+		return nil, centerrors.New(code.DocumentInvalid, centerrors.NilError(docReq.Document).Error())
+	}
+
+	err = coredocumentrepository.GetRepository().Update(docReq.Document.DocumentIdentifier, docReq.Document)
+	if err != nil {
+		return nil, centerrors.New(code.Unknown, err.Error())
+	}
+
+	ts := utils.ToTimestamp(time.Now().UTC())
+	notificationMsg := &notificationpb.NotificationMessage{
+		EventType:    uint32(notification.RECEIVED_PAYLOAD),
+		CentrifugeId: docReq.Header.SenderCentrifugeId,
+		Recorded:     ts,
+		Document:     docReq.Document,
+	}
+
+	// Async until we add queuing
+	go srv.Notifier.Send(notificationMsg)
+
+	return &p2ppb.AnchDocumentResponse{
+		CentNodeVersion: version.GetVersion().String(),
+		Accepted:        true,
+	}, nil
 }

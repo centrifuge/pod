@@ -195,47 +195,7 @@ func Validate(doc *purchaseorderpb.PurchaseOrderDocument) (valid bool, errMsg st
 		return false, centerrors.NilDocumentData, nil
 	}
 
-	data := doc.Data
 	errs = make(map[string]string)
-
-	// ideally these check should be done in the client purchase order
-	// once the converters are done, we can move the following checks there
-	if data.PoNumber == "" {
-		errs["po_number"] = centerrors.RequiredField
-	}
-
-	if data.OrderName == "" {
-		errs["po_order_name"] = centerrors.RequiredField
-	}
-
-	if data.OrderZipcode == "" {
-		errs["po_order_zip_code"] = centerrors.RequiredField
-	}
-
-	// for now, mandating at least one character
-	if data.OrderCountry == "" {
-		errs["po_order_country"] = centerrors.RequiredField
-	}
-
-	if data.RecipientName == "" {
-		errs["po_recipient_name"] = centerrors.RequiredField
-	}
-
-	if data.RecipientZipcode == "" {
-		errs["po_recipient_zip_code"] = centerrors.RequiredField
-	}
-
-	if data.RecipientCountry == "" {
-		errs["po_recipient_country"] = centerrors.RequiredField
-	}
-
-	if data.Currency == "" {
-		errs["po_currency"] = centerrors.RequiredField
-	}
-
-	if data.OrderAmount <= 0 {
-		errs["po_order_amount"] = centerrors.RequirePositiveNumber
-	}
 
 	// checking for nil salts should be okay for now
 	// once the converters are in, salts will be filled during conversion

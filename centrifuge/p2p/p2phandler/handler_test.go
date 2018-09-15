@@ -165,6 +165,56 @@ func TestHandler_RequestDocumentSignature(t *testing.T) {
 	assert.True(t, ed25519.Verify(sig.PublicKey, doc.SigningRoot, sig.Signature), "signature must be valid")
 }
 
+func TestSendAnchoredDocument(t *testing.T) {
+	header := &p2ppb.CentrifugeHeader{
+		CentNodeVersion:   version.GetVersion().String(),
+		NetworkIdentifier: config.Config.GetNetworkID(),
+	}
+	req := p2ppb.AnchDocumentRequest{Document: coreDoc, Header: header}
+	res, err := handler.SendAnchoredDocument(context.Background(), &req)
+	assert.Nil(t, err, "Received error")
+	assert.True(t, res.Accepted, "Document not accepted")
+
+	doc := new(coredocumentpb.CoreDocument)
+	err = coredocumentrepository.GetRepository().GetByID(coreDoc.DocumentIdentifier, doc)
+	assert.Equal(t, doc.DocumentIdentifier, coreDoc.DocumentIdentifier, "Document Identifier doesn't match")
+}
+
+func TestSendAnchoredDocument_IncompatibleRequest(t *testing.T) {
+	// Test invalid version
+	header := &p2ppb.CentrifugeHeader{
+		CentNodeVersion:   "1000.0.0-invalid",
+		NetworkIdentifier: config.Config.GetNetworkID(),
+	}
+	req := p2ppb.AnchDocumentRequest{Document: coreDoc, Header: header}
+	res, err := handler.SendAnchoredDocument(context.Background(), &req)
+	assert.Error(t, err)
+	p2perr, _ := centerrors.FromError(err)
+	assert.Equal(t, p2perr.Code(), code.VersionMismatch)
+	assert.Nil(t, res)
+
+	// Test invalid network
+	header.NetworkIdentifier = config.Config.GetNetworkID() + 1
+	header.CentNodeVersion = version.GetVersion().String()
+	res, err = handler.SendAnchoredDocument(context.Background(), &req)
+	assert.Error(t, err)
+	p2perr, _ = centerrors.FromError(err)
+	assert.Equal(t, p2perr.Code(), code.NetworkMismatch)
+	assert.Nil(t, res)
+}
+
+func TestSendAnchoredDocument_NilDocument(t *testing.T) {
+	header := &p2ppb.CentrifugeHeader{
+		CentNodeVersion:   version.GetVersion().String(),
+		NetworkIdentifier: config.Config.GetNetworkID(),
+	}
+	req := p2ppb.AnchDocumentRequest{Header: header}
+	res, err := handler.SendAnchoredDocument(context.Background(), &req)
+
+	assert.Error(t, err)
+	assert.Nil(t, res)
+}
+
 func TestP2PService_basicChecks(t *testing.T) {
 	tests := []struct {
 		version   string

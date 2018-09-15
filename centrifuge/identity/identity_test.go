@@ -271,7 +271,7 @@ func TestValidateKey_fail_getId(t *testing.T) {
 	srv := &mockIDService{}
 	srv.On("LookupIdentityForID", centID).Return(nil, fmt.Errorf("failed at GetIdentity")).Once()
 	IDService = srv
-	err := ValidateKey(centID, pubKey)
+	err := ValidateKey(centID, pubKey, KeyPurposeSigning)
 	srv.AssertExpectations(t)
 	assert.Error(t, err, "must be not nil")
 	assert.Contains(t, err.Error(), "failed at GetIdentity")
@@ -286,7 +286,7 @@ func TestValidateKey_fail_mismatch_key(t *testing.T) {
 	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
 	id.On("FetchKey", pubKey).Return(idkey, nil).Once()
 	IDService = srv
-	err := ValidateKey(centID, pubKey)
+	err := ValidateKey(centID, pubKey, KeyPurposeSigning)
 	srv.AssertExpectations(t)
 	id.AssertExpectations(t)
 	assert.Error(t, err, "must be not nil")
@@ -302,7 +302,26 @@ func TestValidateKey_fail_missing_purpose(t *testing.T) {
 	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
 	id.On("FetchKey", pubKey[:]).Return(idkey, nil).Once()
 	IDService = srv
-	err := ValidateKey(centID, pubKey[:])
+	err := ValidateKey(centID, pubKey[:], KeyPurposeSigning)
+	srv.AssertExpectations(t)
+	id.AssertExpectations(t)
+	assert.Error(t, err, "must be not nil")
+	assert.Contains(t, err.Error(), "Key doesn't have purpose")
+}
+
+func TestValidateKey_fail_wrong_purpose(t *testing.T) {
+	centID, _ := NewCentID(tools.RandomSlice(CentIDByteLength))
+	pubKey := tools.RandomByte32()
+	idkey := &EthereumIdentityKey{
+		Key:      pubKey,
+		Purposes: []*big.Int{big.NewInt(KeyPurposeEthMsgAuth)},
+	}
+	id := &mockID{}
+	srv := &mockIDService{}
+	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
+	id.On("FetchKey", pubKey[:]).Return(idkey, nil).Once()
+	IDService = srv
+	err := ValidateKey(centID, pubKey[:], KeyPurposeSigning)
 	srv.AssertExpectations(t)
 	id.AssertExpectations(t)
 	assert.Error(t, err, "must be not nil")
@@ -322,7 +341,7 @@ func TestValidateKey_fail_revocation(t *testing.T) {
 	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
 	id.On("FetchKey", pubKey[:]).Return(idkey, nil).Once()
 	IDService = srv
-	err := ValidateKey(centID, pubKey[:])
+	err := ValidateKey(centID, pubKey[:], KeyPurposeSigning)
 	srv.AssertExpectations(t)
 	id.AssertExpectations(t)
 	assert.Error(t, err, "must be not nil")
@@ -342,7 +361,7 @@ func TestValidateKey_success(t *testing.T) {
 	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
 	id.On("FetchKey", pubKey[:]).Return(idkey, nil).Once()
 	IDService = srv
-	err := ValidateKey(centID, pubKey[:])
+	err := ValidateKey(centID, pubKey[:], KeyPurposeSigning)
 	srv.AssertExpectations(t)
 	id.AssertExpectations(t)
 	assert.Nil(t, err, "must be nil")

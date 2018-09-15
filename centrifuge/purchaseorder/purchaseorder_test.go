@@ -157,30 +157,6 @@ func TestValidate(t *testing.T) {
 					PoNumber:         "po1234",
 					OrderName:        "Jack",
 					OrderZipcode:     "921007",
-					OrderCountry:     "AUS",
-					RecipientName:    "John",
-					RecipientZipcode: "12345",
-					Currency:         "EUR",
-				},
-			},
-			want: want{
-				valid:  false,
-				errMsg: "Invalid Purchase Order",
-				errs: map[string]string{
-					"po_recipient_country": centerrors.RequiredField,
-					"po_order_amount":      centerrors.RequirePositiveNumber,
-					"po_salts":             centerrors.RequiredField,
-				},
-			},
-		},
-
-		{
-			po: &purchaseorderpb.PurchaseOrderDocument{
-				CoreDocument: validCoreDoc,
-				Data: &purchaseorderpb.PurchaseOrderData{
-					PoNumber:         "po1234",
-					OrderName:        "Jack",
-					OrderZipcode:     "921007",
 					OrderCountry:     "Australia",
 					RecipientName:    "John",
 					RecipientZipcode: "12345",
