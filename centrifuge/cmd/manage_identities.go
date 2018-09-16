@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"io/ioutil"
+
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
@@ -21,16 +23,30 @@ var createIdentityCmd = &cobra.Command{
 
 		defaultBootstrap()
 		identityService := identity.EthereumIdentityService{}
-		centrifugeId, err := identity.CentrifugeIdStringToSlice(centrifugeIdString)
-		if err != nil {
-			panic(err)
+		var centrifugeId identity.CentID
+		var err error
+		if centrifugeIdString == "" {
+			centrifugeId = identity.NewRandomCentID()
+		} else {
+			centrifugeId, err = identity.CentrifugeIdStringToSlice(centrifugeIdString)
+			if err != nil {
+				panic(err)
+			}
 		}
 		_, confirmations, err := identityService.CreateIdentity(centrifugeId)
 		watchIdentity := <-confirmations
 		if err != nil {
 			panic(err)
 		}
-		log.Infof("Identity created [%s]", watchIdentity.Identity.GetCentrifugeID())
+		log.Infof("Identity created [%s]", watchIdentity.Identity.GetCentrifugeID().String())
+
+		// A bit hacky but we need a way to return the identity so it can be read by an automated process as well
+		id := []byte("{\"id\": \"" + centrifugeId.String() + "\"}")
+		err = ioutil.WriteFile("newidentity.json", id, 0644)
+		if err != nil {
+			panic(err)
+		}
+
 	},
 }
 
