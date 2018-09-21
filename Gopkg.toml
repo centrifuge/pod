@@ -34,7 +34,7 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
 [[override]]
   name = "github.com/centrifuge/centrifuge-ethereum-contracts"
   source = "git@github.com:centrifuge/centrifuge-ethereum-contracts"
-  branch = "go-file"
+  branch = "develop"
 
 [[constraint]]
   name = "github.com/Masterminds/semver"

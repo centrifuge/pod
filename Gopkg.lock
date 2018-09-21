@@ -44,10 +44,10 @@
   revision = "cff30e1d23fc9e800b2b5b4b41ef1817dda07e9f"
 
 [[projects]]
-  branch = "go-file"
+  branch = "develop"
   name = "github.com/centrifuge/centrifuge-ethereum-contracts"
   packages = ["."]
-  revision = "4444821f38de205064c4a0008c9f74a23df5c54e"
+  revision = "ec2109aca5959ddcc2a28d15d44f2acf991c8870"
   source = "git@github.com:centrifuge/centrifuge-ethereum-contracts"
 
 [[projects]]
@@ -1074,6 +1074,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "181ec2ac48d149021c7c376a820801f4696b681ca5bc20239c1c84aecf15f9da"
+  inputs-digest = "57102b70784da899fca8fe319d12f6cdaae52669199a6d6fa459544e62ce2038"
   solver-name = "gps-cdcl"
   solver-version = 1
