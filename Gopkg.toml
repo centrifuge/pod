@@ -278,23 +278,19 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
 
 [[prune.project]]
     name = "github.com/centrifuge/centrifuge-ethereum-contracts"
-    non-go = false
     unused-packages = false
 
 [[prune.project]]
     name = "github.com/ethereum/go-ethereum"
-    non-go = false
     unused-packages = false
 
 [[prune.project]]
     name = "github.com/centrifuge/centrifuge-protobufs"
     unused-packages = false
-    non-go = false
 
 [[prune.project]]
     name = "github.com/grpc-ecosystem/grpc-gateway"
     unused-packages = false
-    non-go = false
 
 [prune]
   go-tests = true
