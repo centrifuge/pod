@@ -35,20 +35,8 @@ if [ -z ${CENT_ETHEREUM_CONTRACTS_DIR} ]; then
     CENT_ETHEREUM_CONTRACTS_DIR=${PARENT_DIR}/vendor/github.com/centrifuge/centrifuge-ethereum-contracts
 fi
 
-# If the contracts dir doesn't exist - it has likely not been "installed" yet
-# Installing it in that case so it is usable
-if [ ! -d ${CENT_ETHEREUM_CONTRACTS_DIR} ]; then
-    # Assure that all the dependencies are installed
-    cd ${CENT_ETHEREUM_CONTRACTS_DIR} && npm install
-
-    echo "Due to a fresh checkout of the contracts, requesting a force of the Solidity migrations"
-    if [ -z ${FORCE_MIGRATE} ]; then
-        FORCE_MIGRATE='true'
-    elif [ ${FORCE_MIGRATE} != 'true' ]; then
-        echo "Trying to force migrations but variable is already set to [${FORCE_MIGRATE}]. Error out."
-        exit -1
-    fi
-fi
+# Assure that all the dependencies for the contracts are installed
+npm install --pwd ${CENT_ETHEREUM_CONTRACTS_DIR} --prefix=${CENT_ETHEREUM_CONTRACTS_DIR}
 
 # TODO - ideally we would avoid 'cd-ing' into another directory, but in this case
 # `truffle migrate` will fail if not executed in the sub-dir
