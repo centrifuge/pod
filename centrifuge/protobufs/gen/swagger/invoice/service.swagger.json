@@ -42,6 +42,32 @@
         ]
       }
     },
+    "/invoice/get": {
+      "post": {
+        "operationId": "GetInvoiceDocument",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/invoiceInvoiceDocument"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/invoiceGetInvoiceDocumentEnvelope"
+            }
+          }
+        ],
+        "tags": [
+          "InvoiceDocumentService"
+        ]
+      }
+    },
     "/invoice/getReceived": {
       "get": {
         "operationId": "GetReceivedInvoiceDocuments",
@@ -105,31 +131,6 @@
             "schema": {
               "$ref": "#/definitions/invoiceSendInvoiceEnvelope"
             }
-          }
-        ],
-        "tags": [
-          "InvoiceDocumentService"
-        ]
-      }
-    },
-    "/invoice/{document_identifier}": {
-      "get": {
-        "operationId": "GetInvoiceDocument",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/invoiceInvoiceDocument"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "document_identifier",
-            "in": "path",
-            "required": true,
-            "type": "string",
-            "format": "byte"
           }
         ],
         "tags": [
@@ -268,6 +269,15 @@
           "items": {
             "type": "string"
           }
+        }
+      }
+    },
+    "invoiceGetInvoiceDocumentEnvelope": {
+      "type": "object",
+      "properties": {
+        "document_identifier": {
+          "type": "string",
+          "format": "byte"
         }
       }
     },

@@ -42,6 +42,32 @@
         ]
       }
     },
+    "/purchaseorder/get": {
+      "post": {
+        "operationId": "GetPurchaseOrderDocument",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/purchaseorderPurchaseOrderDocument"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/purchaseorderGetPurchaseOrderDocumentEnvelope"
+            }
+          }
+        ],
+        "tags": [
+          "PurchaseOrderDocumentService"
+        ]
+      }
+    },
     "/purchaseorder/getReceived": {
       "get": {
         "operationId": "GetReceivedPurchaseOrderDocuments",
@@ -105,31 +131,6 @@
             "schema": {
               "$ref": "#/definitions/purchaseorderSendPurchaseOrderEnvelope"
             }
-          }
-        ],
-        "tags": [
-          "PurchaseOrderDocumentService"
-        ]
-      }
-    },
-    "/purchaseorder/{document_identifier}": {
-      "get": {
-        "operationId": "GetPurchaseOrderDocument",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/purchaseorderPurchaseOrderDocument"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "document_identifier",
-            "in": "path",
-            "required": true,
-            "type": "string",
-            "format": "byte"
           }
         ],
         "tags": [
@@ -330,6 +331,15 @@
           "items": {
             "type": "string"
           }
+        }
+      }
+    },
+    "purchaseorderGetPurchaseOrderDocumentEnvelope": {
+      "type": "object",
+      "properties": {
+        "document_identifier": {
+          "type": "string",
+          "format": "byte"
         }
       }
     },
