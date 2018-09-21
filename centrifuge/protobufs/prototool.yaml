@@ -23,7 +23,6 @@ protoc_includes:
   - ../../vendor/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis
   - ../../vendor/github.com/grpc-ecosystem/grpc-gateway/
   - ../../vendor/github.com/centrifuge/
-  - ../../vendor/github.com/CentrifugeInc/
   - ../../vendor/github.com/centrifuge/centrifuge-protobufs
 
 # Include the Well-Known Types when compiling with protoc.
