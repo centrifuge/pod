@@ -12,6 +12,7 @@ import (
 	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
 	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 	clientpurchaseorderpb "github.com/CentrifugeInc/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
@@ -24,6 +25,8 @@ import (
 
 func TestMain(m *testing.M) {
 	cc.TestIntegrationBootstrap()
+	db := cc.GetLevelDBStorage()
+	coredocumentrepository.InitLevelDBRepository(db)
 	result := m.Run()
 	cc.TestIntegrationTearDown()
 	os.Exit(result)
@@ -136,6 +139,8 @@ func TestPurchaseOrderDocumentService_Send(t *testing.T) {
 
 	recipients := testingutils.GenerateP2PRecipients(1)
 
+	coredocumentrepository.GetRepository().Create(doc.Document.CoreDocument.DocumentIdentifier, doc.Document.CoreDocument)
+
 	mockRepo.On("Create", doc.Document.CoreDocument.DocumentIdentifier, doc.Document).Return(nil).Once()
 	mockRepo.On("Update", mock.Anything, mock.Anything).Return(nil).Once()
 	mockCDP.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
@@ -177,6 +182,8 @@ func TestPurchaseOrderDocumentService_Send_AnchorFails(t *testing.T) {
 func TestPurchaseOrderDocumentService_SendFails(t *testing.T) {
 	doc, s, mockRepo, mockCDP := getTestSetupData()
 	recipients := testingutils.GenerateP2PRecipients(2)
+
+	coredocumentrepository.GetRepository().Create(doc.Document.CoreDocument.DocumentIdentifier, doc.Document.CoreDocument)
 
 	mockRepo.On("Create", doc.Document.CoreDocument.DocumentIdentifier, doc.Document).Return(nil).Once()
 	mockRepo.On("Update", mock.Anything, mock.Anything).Return(nil).Once()
