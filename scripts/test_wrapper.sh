@@ -39,7 +39,7 @@ fi
 # Installing it in that case so it is usable
 if [ ! -d ${CENT_ETHEREUM_CONTRACTS_DIR} ]; then
     # Assure that all the dependencies are installed
-    npm install --cwd ${CENT_ETHEREUM_CONTRACTS_DIR} --prefix=${CENT_ETHEREUM_CONTRACTS_DIR}
+    cd ${CENT_ETHEREUM_CONTRACTS_DIR} && npm install
 
     echo "Due to a fresh checkout of the contracts, requesting a force of the Solidity migrations"
     if [ -z ${FORCE_MIGRATE} ]; then
