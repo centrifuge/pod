@@ -6,7 +6,7 @@ set -a
 make install
 
 # Set local contracts directory
-export CENT_ETHEREUM_CONTRACTS_DIR=$GOPATH/src/github.com/CentrifugeInc/centrifuge-ethereum-contracts
+export CENT_ETHEREUM_CONTRACTS_DIR=${PARENT_DIR}/vendor/github.com/centrifuge/centrifuge-ethereum-contracts
 
 ################# Prepare for run ########################
 PARENT_DIR=`pwd`

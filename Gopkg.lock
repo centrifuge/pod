@@ -55,6 +55,14 @@
 
 [[projects]]
   digest = "1:c925cd40d25fe72f5916e010b79b5d9f6e0e97ec9b190fa658c6c67b913229ea"
+  branch = "go-file"
+  name = "github.com/centrifuge/centrifuge-ethereum-contracts"
+  packages = ["."]
+  revision = "4444821f38de205064c4a0008c9f74a23df5c54e"
+  source = "git@github.com:centrifuge/centrifuge-ethereum-contracts"
+
+[[projects]]
+  branch = "master"
   name = "github.com/centrifuge/gocelery"
   packages = ["."]
   pruneopts = "UT"
