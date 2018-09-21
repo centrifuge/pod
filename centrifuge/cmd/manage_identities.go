@@ -1,12 +1,13 @@
 package cmd
 
 import (
+	"io/ioutil"
+
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/secp256k1"
 	"github.com/spf13/cobra"
-	"io/ioutil"
 )
 
 var centrifugeIdString string
