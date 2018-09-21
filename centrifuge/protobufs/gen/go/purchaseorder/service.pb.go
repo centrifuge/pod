@@ -6,7 +6,7 @@ package purchaseorderpb
 import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
-import purchaseorder "github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
+import purchaseorder "github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
 import proto1 "github.com/centrifuge/precise-proofs/proofs/proto"
 import empty "github.com/golang/protobuf/ptypes/empty"
 import _ "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger/options"

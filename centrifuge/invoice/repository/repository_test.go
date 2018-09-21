@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/stretchr/testify/assert"

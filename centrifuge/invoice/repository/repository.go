@@ -5,7 +5,7 @@ import (
 	"log"
 	"sync"
 
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/centerrors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/code"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/notification"
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/centerrors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/code"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
