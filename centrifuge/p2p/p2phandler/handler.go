@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/centerrors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/code"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
@@ -17,6 +15,8 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/signatures"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/utils"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/version"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/golang/protobuf/ptypes"
 )
 
