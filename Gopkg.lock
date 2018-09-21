@@ -2,20 +2,6 @@
 
 
 [[projects]]
-  name = "github.com/CentrifugeInc/centrifuge-protobufs"
-  packages = [
-    "documenttypes",
-    "gen/go/coredocument",
-    "gen/go/errors",
-    "gen/go/invoice",
-    "gen/go/notification",
-    "gen/go/p2p",
-    "gen/go/purchaseorder"
-  ]
-  revision = "0360114f218245cb89f9d0700b34d264f4b3818f"
-  source = "git@github.com:CentrifugeInc/centrifuge-protobufs"
-
-[[projects]]
   name = "github.com/Masterminds/semver"
   packages = ["."]
   revision = "c7af12943936e8c39859482e61f0574c2fd7fc75"
@@ -49,6 +35,21 @@
   packages = ["."]
   revision = "ec2109aca5959ddcc2a28d15d44f2acf991c8870"
   source = "git@github.com:centrifuge/centrifuge-ethereum-contracts"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/centrifuge/centrifuge-protobufs"
+  packages = [
+    "documenttypes",
+    "gen/go/coredocument",
+    "gen/go/errors",
+    "gen/go/invoice",
+    "gen/go/notification",
+    "gen/go/p2p",
+    "gen/go/purchaseorder"
+  ]
+  revision = "886299add3cee8873b01dcd11add80ae31ad4205"
+  source = "git@github.com:centrifuge/centrifuge-protobufs"
 
 [[projects]]
   name = "github.com/centrifuge/gocelery"
@@ -1074,6 +1075,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "57102b70784da899fca8fe319d12f6cdaae52669199a6d6fa459544e62ce2038"
+  inputs-digest = "6f176a87e26e6c493aaa84bee04a3a5beff040522261804223950280ad8f9f0e"
   solver-name = "gps-cdcl"
   solver-version = 1
