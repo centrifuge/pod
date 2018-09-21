@@ -60,7 +60,7 @@ def createConfigFile():
         addrs = getDevContractAddresses()
         tpl['centrifugeNetwork'] = "testing"
         tpl['networks'] = {'testing': {'contractAddresses': {'IdentityFactory': addrs[0].encode('utf-8'), 'IdentityRegistry': addrs[1].encode('utf-8'), 'AnchorRepository': addrs[2].encode('utf-8')}}}
-        if len(args.bootstraps) > 0:
+        if (args.bootstraps != None) and (len(args.bootstraps) > 0):
             tpl['networks']['testing']['bootstrapPeers'] = [args.bootstraps]
 
     fname = '/config_'+rndname+'.yaml'
