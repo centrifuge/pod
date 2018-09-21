@@ -6,9 +6,9 @@ import (
 
 	"errors"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/utils"
+	"github.com/centrifuge/go-centrifuge/centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"golang.org/x/crypto/ed25519"
 )

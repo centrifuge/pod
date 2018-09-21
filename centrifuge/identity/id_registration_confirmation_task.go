@@ -7,7 +7,7 @@ import (
 
 	"math/big"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/queue"
+	"github.com/centrifuge/go-centrifuge/centrifuge/queue"
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/event"

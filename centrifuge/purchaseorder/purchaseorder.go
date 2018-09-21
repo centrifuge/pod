@@ -4,8 +4,8 @@ import (
 	"crypto/sha256"
 	"fmt"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/centerrors"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
+	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
+	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"

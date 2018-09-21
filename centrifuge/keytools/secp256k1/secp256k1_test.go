@@ -8,7 +8,7 @@ import (
 
 	"os"
 
-	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testingbootstrap"
+	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 )

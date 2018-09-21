@@ -3,7 +3,7 @@ go:
   - 1.10.x
 
 # Maybe this helps with building branches in a fork
-go_import_path: github.com/CentrifugeInc/go-centrifuge
+go_import_path: github.com/centrifuge/go-centrifuge
 
 services:
   - docker

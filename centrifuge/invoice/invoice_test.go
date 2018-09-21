@@ -6,8 +6,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/centerrors"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
+	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
+	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"

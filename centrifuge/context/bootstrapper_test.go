@@ -5,8 +5,8 @@ package context
 import (
 	"testing"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
-	testing2 "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testingbootstrap"
+	"github.com/centrifuge/go-centrifuge/centrifuge/config"
+	testing2 "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/stretchr/testify/assert"
 )
 

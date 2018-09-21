@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/secp256k1"
+	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/secp256k1"
 )
 
 func SignMessage(privateKey, message []byte, curveType string, ethereumSign bool) ([]byte, error) {

@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testingbootstrap"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
+	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
+	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
 	"github.com/golang/protobuf/jsonpb"

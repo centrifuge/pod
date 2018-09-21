@@ -12,9 +12,9 @@ import (
 
 	"math/big"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
+	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/stretchr/testify/assert"
