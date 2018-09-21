@@ -124,8 +124,16 @@ func (s *InvoiceDocumentService) HandleSendInvoiceDocument(ctx context.Context, 
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("error saving document: %v", err))
 	}
 
+	// Load the CoreDocument stored in DB before sending to Collaborators
+	// So it contains the whole CoreDocument Data
+	coreDoc := new(coredocumentpb.CoreDocument)
+	err = coredocumentrepository.GetRepository().GetByID(doc.CoreDocument.DocumentIdentifier, coreDoc)
+	if err != nil {
+		return nil, centerrors.New(code.DocumentNotFound, err.Error())
+	}
+
 	for _, recipient := range recipientIDs {
-		err = s.CoreDocumentProcessor.Send(ctx, doc.CoreDocument, recipient)
+		err = s.CoreDocumentProcessor.Send(ctx, coreDoc, recipient)
 		if err != nil {
 			errs = append(errs, err)
 		}
