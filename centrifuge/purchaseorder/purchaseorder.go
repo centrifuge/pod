@@ -69,6 +69,7 @@ func Empty() *PurchaseOrder {
 }
 
 // NewFromCoreDocument unmarshalls invoice from coredocument
+// Will Empty embedded fields as they are represented as data in the purchase order header
 func NewFromCoreDocument(coredocument *coredocumentpb.CoreDocument) (*PurchaseOrder, error) {
 	if coredocument == nil {
 		return nil, centerrors.NilError(coredocument)

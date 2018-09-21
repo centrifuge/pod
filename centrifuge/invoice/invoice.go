@@ -69,6 +69,7 @@ func Empty() *Invoice {
 }
 
 // NewFromCoreDocument returns an Invoice from Core Document
+// Will Empty embedded fields as they are represented as data in the invoice header
 func NewFromCoreDocument(coreDocument *coredocumentpb.CoreDocument) (*Invoice, error) {
 	if coreDocument == nil {
 		return nil, centerrors.NilError(coreDocument)
