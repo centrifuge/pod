@@ -27,7 +27,6 @@ before_install:
 install:
   - mkdir -p ~/bin
   - PROTOTOOL_VERSION=$PROTOTOOL_VERSION ./scripts/install_prototool.sh
-  - go get golang.org/x/tools/cmd/goimports
   - go get -u github.com/kyoh86/richgo
   - make install
 
@@ -35,11 +34,8 @@ jobs:
   include:
     - stage: test
       script:
-        - make proto-lint
-        - scripts/format_go.sh
-        - make proto-all
-        - make gen-swagger
-        - echo "Checking that 'prototool gen' doesn't result in a modified git tree" && git diff --exit-code centrifuge/protobufs/gen
+        - make proto-lint proto-all gen-swagger format-go 
+        - echo "Checking that prototool and format-go don't result in a modified git tree" && git diff --exit-code centrifuge/protobufs/gen
         - scripts/test_wrapper.sh
       after_success:
        - bash <(curl -s https://codecov.io/bash)

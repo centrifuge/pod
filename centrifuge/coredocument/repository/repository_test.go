@@ -6,9 +6,9 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/stretchr/testify/assert"
 )
 

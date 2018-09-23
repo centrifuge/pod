@@ -7,6 +7,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/processor"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
@@ -17,8 +19,6 @@ import (
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/commons"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"

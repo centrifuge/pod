@@ -5,11 +5,11 @@ import (
 	"log"
 	"sync"
 
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/centrifuge/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/golang/protobuf/proto"
 	"github.com/syndtr/goleveldb/leveldb"
 )

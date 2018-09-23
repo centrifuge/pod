@@ -8,6 +8,9 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
@@ -21,9 +24,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/centrifuge/version"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/crypto/ed25519"
 )

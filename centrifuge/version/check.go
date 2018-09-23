@@ -3,9 +3,9 @@ package version
 import (
 	"fmt"
 
+	"github.com/Masterminds/semver"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/code"
-	"github.com/Masterminds/semver"
 	logging "github.com/ipfs/go-log"
 )
 

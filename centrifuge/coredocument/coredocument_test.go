@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
@@ -16,7 +17,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/stretchr/testify/assert"
 )

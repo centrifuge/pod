@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
@@ -16,8 +18,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/centrifuge/go-centrifuge/centrifuge/version"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	logging "github.com/ipfs/go-log"
 )
 

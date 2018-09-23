@@ -3,6 +3,8 @@ package invoiceservice
 import (
 	"fmt"
 
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/processor"
@@ -11,8 +13,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/invoice"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/golang/protobuf/ptypes/empty"
 	logging "github.com/ipfs/go-log"
 	"golang.org/x/net/context"

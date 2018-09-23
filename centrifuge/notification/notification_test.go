@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
-	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
+	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
+	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/stretchr/testify/assert"

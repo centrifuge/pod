@@ -3,6 +3,8 @@ package purchaseorderservice
 import (
 	"fmt"
 
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/processor"
@@ -11,8 +13,6 @@ import (
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
 	googleprotobuf2 "github.com/golang/protobuf/ptypes/empty"
 	logging "github.com/ipfs/go-log"
 	"golang.org/x/net/context"

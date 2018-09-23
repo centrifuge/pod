@@ -8,6 +8,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
@@ -15,8 +17,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/invoice/service"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/go-errors/errors"
 	"github.com/golang/protobuf/proto"

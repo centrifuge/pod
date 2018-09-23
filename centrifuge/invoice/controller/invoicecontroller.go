@@ -3,10 +3,10 @@ package invoicecontroller
 import (
 	"context"
 
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/processor"
 	"github.com/centrifuge/go-centrifuge/centrifuge/invoice/repository"
 	"github.com/centrifuge/go-centrifuge/centrifuge/invoice/service"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/centrifuge/p2p"

@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519"
 	"github.com/centrifuge/go-centrifuge/centrifuge/notification"
 	"github.com/centrifuge/go-centrifuge/centrifuge/p2p/p2phandler"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/ipfs/go-cid"
 	ds "github.com/ipfs/go-datastore"
 	"github.com/ipfs/go-ipfs-addr"

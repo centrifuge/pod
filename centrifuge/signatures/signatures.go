@@ -6,10 +6,10 @@ import (
 
 	"errors"
 
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"golang.org/x/crypto/ed25519"
 )
 
