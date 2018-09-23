@@ -75,7 +75,7 @@ func (rct *IdRegistrationConfirmationTask) ParseKwargs(kwargs map[string]interfa
 
 // RunTask calls listens to events from geth related to IdRegistrationConfirmationTask#CentID and records result.
 func (rct *IdRegistrationConfirmationTask) RunTask() (interface{}, error) {
-	log.Infof("Waiting for confirmation for the ID [%x]", rct.CentID)
+	log.Infof("Waiting for confirmation for the ID [%x]", rct.CentID.ByteArray())
 	if rct.EthContext == nil {
 		rct.EthContext, _ = rct.EthContextInitializer()
 	}
@@ -96,7 +96,7 @@ func (rct *IdRegistrationConfirmationTask) RunTask() (interface{}, error) {
 			log.Errorf("Subscription error %s", err.Error())
 			return nil, err
 		case <-rct.EthContext.Done():
-			log.Errorf("Context [%v] closed before receiving IdRegistered event for Identity ID: %x\n", rct.EthContext, rct.CentID)
+			log.Errorf("Context [%v] closed before receiving IdRegistered event for Identity ID: %x\n", rct.EthContext, rct.CentID.ByteArray())
 			return nil, rct.EthContext.Err()
 		case res := <-rct.IdentityCreatedEvents:
 			log.Infof("Received IdentityCreated event from: %x, identifier: %x\n", res.CentrifugeId, res.Identity)
