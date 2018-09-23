@@ -1,38 +1,39 @@
 package identity
 
 import (
-	"fmt"
-
 	"context"
-
+	"fmt"
 	"math/big"
 
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/centerrors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/queue"
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/event"
 	"github.com/go-errors/errors"
 )
 
-const IdRegistrationConfirmationTaskName string = "IdRegistrationConfirmationTaskName"
-const CentIdParam string = "CentID"
+const (
+	IdRegistrationConfirmationTaskName string = "IdRegistrationConfirmationTaskName"
+	CentIdParam                        string = "CentID"
+	BlockHeight                        string = "BlockHeight"
+)
 
-type IdentityCreatedWatcher interface {
-	WatchIdentityCreated(opts *bind.WatchOpts, sink chan<- *EthereumIdentityFactoryContractIdentityCreated, centrifugeId []*big.Int) (event.Subscription, error)
+type IdentitiesCreatedFilterer interface {
+	FilterIdentityCreated(opts *bind.FilterOpts, centrifugeId []*big.Int) (*EthereumIdentityFactoryContractIdentityCreatedIterator, error)
 }
 
 // IdRegistrationConfirmationTask is a queued task to watch ID registration events on Ethereum using EthereumIdentityFactoryContract.
 // To see how it gets registered see bootstrapper.go and to see how it gets used see setUpRegistrationEventListener method
 type IdRegistrationConfirmationTask struct {
 	CentID                 CentID
+	BlockHeight            uint64
 	EthContextInitializer  func() (ctx context.Context, cancelFunc context.CancelFunc)
-	IdentityCreatedEvents  chan *EthereumIdentityFactoryContractIdentityCreated
 	EthContext             context.Context
-	IdentityCreatedWatcher IdentityCreatedWatcher
+	IdentityCreatedWatcher IdentitiesCreatedFilterer
 }
 
 func NewIdRegistrationConfirmationTask(
-	identityCreatedWatcher IdentityCreatedWatcher,
+	identityCreatedWatcher IdentitiesCreatedFilterer,
 	ethContextInitializer func() (ctx context.Context, cancelFunc context.CancelFunc),
 ) *IdRegistrationConfirmationTask {
 	return &IdRegistrationConfirmationTask{
@@ -50,13 +51,13 @@ func (rct *IdRegistrationConfirmationTask) Init() error {
 	return nil
 }
 
-func (m *IdRegistrationConfirmationTask) Copy() (gocelery.CeleryTask, error) {
+func (rct *IdRegistrationConfirmationTask) Copy() (gocelery.CeleryTask, error) {
 	return &IdRegistrationConfirmationTask{
-		m.CentID,
-		m.EthContextInitializer,
-		m.IdentityCreatedEvents,
-		m.EthContext,
-		m.IdentityCreatedWatcher}, nil
+		rct.CentID,
+		rct.BlockHeight,
+		rct.EthContextInitializer,
+		rct.EthContext,
+		rct.IdentityCreatedWatcher}, nil
 }
 
 // ParseKwargs - define a method to parse CentID
@@ -69,41 +70,61 @@ func (rct *IdRegistrationConfirmationTask) ParseKwargs(kwargs map[string]interfa
 	if err != nil {
 		return fmt.Errorf("malformed kwarg [%s] because [%s]", CentIdParam, err.Error())
 	}
+
 	rct.CentID = centIdTyped
+	rct.BlockHeight = uint64(kwargs[BlockHeight].(float64))
 	return nil
+}
+
+func startWatching(ctx context.Context, iter *EthereumIdentityFactoryContractIdentityCreatedIterator) (*EthereumIdentityFactoryContractIdentityCreated, error) {
+	defer iter.Close()
+
+	for iter.Next() {
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		default:
+			return iter.Event, nil
+		}
+	}
+
+	err := iter.Error()
+	if err != nil {
+		return nil, err
+	}
+
+	return nil, fmt.Errorf("no matching events found")
 }
 
 // RunTask calls listens to events from geth related to IdRegistrationConfirmationTask#CentID and records result.
 func (rct *IdRegistrationConfirmationTask) RunTask() (interface{}, error) {
-	log.Infof("Waiting for confirmation for the ID [%x]", rct.CentID.ByteArray())
+	log.Infof("Waiting for confirmation for the ID [%x]", rct.CentID)
 	if rct.EthContext == nil {
 		rct.EthContext, _ = rct.EthContextInitializer()
 	}
-	watchOpts := &bind.WatchOpts{Context: rct.EthContext}
-	if rct.IdentityCreatedEvents == nil {
-		rct.IdentityCreatedEvents = make(chan *EthereumIdentityFactoryContractIdentityCreated)
+
+	fOpts := &bind.FilterOpts{
+		Context: rct.EthContext,
+		Start:   rct.BlockHeight,
 	}
 
-	subscription, err := rct.IdentityCreatedWatcher.WatchIdentityCreated(watchOpts, rct.IdentityCreatedEvents, []*big.Int{rct.CentID.BigInt()})
-	if err != nil {
-		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for identity registration", 1)
-		log.Errorf(wError.Error())
-		return nil, wError
-	}
-	for {
-		select {
-		case err := <-subscription.Err():
-			log.Errorf("Subscription error %s", err.Error())
-			return nil, err
-		case <-rct.EthContext.Done():
-			log.Errorf("Context [%v] closed before receiving IdRegistered event for Identity ID: %x\n", rct.EthContext, rct.CentID.ByteArray())
-			return nil, rct.EthContext.Err()
-		case res := <-rct.IdentityCreatedEvents:
-			log.Infof("Received IdentityCreated event from: %x, identifier: %x\n", res.CentrifugeId, res.Identity)
-			subscription.Unsubscribe()
-			return res, nil
+	var err error
+	for err == nil {
+		iter, err := rct.IdentityCreatedWatcher.FilterIdentityCreated(
+			fOpts,
+			[]*big.Int{rct.CentID.BigInt()},
+		)
+		if err != nil {
+			return nil, centerrors.Wrap(err, "failed to start filtering identity event logs")
+		}
+
+		res, err := startWatching(rct.EthContext, iter)
+		if err == nil {
+			return res, err
 		}
 	}
+
+	return nil, fmt.Errorf("failed to filter identity events: %v", err)
 }
 
 func getBytes(key interface{}) (CentID, error) {

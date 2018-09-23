@@ -1,18 +1,16 @@
 package anchors
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 
-	"context"
-
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/centerrors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
-
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/queue"
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/event"
 	"github.com/go-errors/errors"
 )
 
@@ -20,12 +18,16 @@ const (
 	AnchorRepositoryConfirmationTaskName string = "AnchorRepositoryConfirmationTaskName"
 	AnchorIDParam                        string = "AnchorIDParam"
 	CentrifugeIDParam                    string = "CentrifugeIDParam"
+	BlockHeight                          string = "BlockHeight"
 	AddressParam                         string = "AddressParam"
 )
 
 type AnchorCommittedWatcher interface {
-	WatchAnchorCommitted(opts *bind.WatchOpts, sink chan<- *EthereumAnchorRepositoryContractAnchorCommitted,
-		from []common.Address, anchorID []*big.Int, centrifugeId []*big.Int) (event.Subscription, error)
+	FilterAnchorCommitted(
+		opts *bind.FilterOpts,
+		from []common.Address,
+		anchorId []*big.Int,
+		centrifugeId []*big.Int) (*EthereumAnchorRepositoryContractAnchorCommittedIterator, error)
 }
 
 // AnchoringConfirmationTask is a queued task to watch ID registration events on Ethereum using EthereumAnchoryRepositoryContract.
@@ -35,12 +37,13 @@ type AnchoringConfirmationTask struct {
 	From         common.Address
 	AnchorID     AnchorID
 	CentrifugeID identity.CentID
+	BlockHeight  uint64
 
 	// state
-	EthContextInitializer  func() (ctx context.Context, cancelFunc context.CancelFunc)
-	AnchorRegisteredEvents chan *EthereumAnchorRepositoryContractAnchorCommitted
-	EthContext             context.Context
-	AnchorCommittedWatcher AnchorCommittedWatcher
+	EthContextInitializer   func() (ctx context.Context, cancelFunc context.CancelFunc)
+	AnchorRegisteredEvents  chan *EthereumAnchorRepositoryContractAnchorCommitted
+	EthContext              context.Context
+	AnchorCommittedFilterer AnchorCommittedWatcher
 }
 
 func NewAnchoringConfirmationTask(
@@ -48,8 +51,8 @@ func NewAnchoringConfirmationTask(
 	ethContextInitializer func() (ctx context.Context, cancelFunc context.CancelFunc),
 ) *AnchoringConfirmationTask {
 	return &AnchoringConfirmationTask{
-		AnchorCommittedWatcher: anchorCommittedWatcher,
-		EthContextInitializer:  ethContextInitializer,
+		AnchorCommittedFilterer: anchorCommittedWatcher,
+		EthContextInitializer:   ethContextInitializer,
 	}
 }
 
@@ -67,10 +70,11 @@ func (act *AnchoringConfirmationTask) Copy() (gocelery.CeleryTask, error) {
 		act.From,
 		act.AnchorID,
 		act.CentrifugeID,
+		act.BlockHeight,
 		act.EthContextInitializer,
 		act.AnchorRegisteredEvents,
 		act.EthContext,
-		act.AnchorCommittedWatcher,
+		act.AnchorCommittedFilterer,
 	}, nil
 }
 
@@ -116,7 +120,28 @@ func (act *AnchoringConfirmationTask) ParseKwargs(kwargs map[string]interface{})
 		return fmt.Errorf("malformed kwarg [%s] because [%s]", AddressParam, err.Error())
 	}
 	act.From = addressTyped
+	act.BlockHeight = uint64(kwargs[BlockHeight].(float64))
 	return nil
+}
+
+func startWatching(ctx context.Context, iter *EthereumAnchorRepositoryContractAnchorCommittedIterator) (*EthereumAnchorRepositoryContractAnchorCommitted, bool, error) {
+	defer iter.Close()
+	for iter.Next() {
+		select {
+		case <-ctx.Done():
+			// TODO add continue
+			return nil, false, ctx.Err()
+		default:
+			return iter.Event, false, nil
+		}
+	}
+
+	err := iter.Error()
+	if err != nil {
+		return nil, false, err
+	}
+
+	return nil, true, fmt.Errorf("no matching events found")
 }
 
 // RunTask calls listens to events from geth related to AnchoringConfirmationTask#AnchorID and records result.
@@ -125,34 +150,30 @@ func (act *AnchoringConfirmationTask) RunTask() (interface{}, error) {
 	if act.EthContext == nil {
 		act.EthContext, _ = act.EthContextInitializer()
 	}
-	watchOpts := &bind.WatchOpts{Context: act.EthContext}
-	if act.AnchorRegisteredEvents == nil {
-		act.AnchorRegisteredEvents = make(chan *EthereumAnchorRepositoryContractAnchorCommitted)
+
+	fOpts := &bind.FilterOpts{
+		Context: act.EthContext,
+		Start:   act.BlockHeight,
 	}
 
-	subscription, err := act.AnchorCommittedWatcher.WatchAnchorCommitted(watchOpts, act.AnchorRegisteredEvents,
-		[]common.Address{act.From}, []*big.Int{act.AnchorID.toBigInt()},
-		[]*big.Int{act.CentrifugeID.BigInt()})
-
-	if err != nil {
-		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for anchor repository", 1)
-		log.Errorf(wError.Error())
-		return nil, wError
-	}
 	for {
-		select {
-		case err := <-subscription.Err():
-			log.Errorf("Subscription error %s for anchor ID: %x\n", err.Error(), act.AnchorID)
-			return nil, err
-		case <-act.EthContext.Done():
-			log.Errorf("Context closed before receiving AnchorRegistered event for anchor ID: %x\n", act.AnchorID)
-			return nil, act.EthContext.Err()
-		case res := <-act.AnchorRegisteredEvents:
-			log.Infof("Received AnchorRegistered event from: %x, identifier: %x\n", res.From, res.AnchorId)
-			subscription.Unsubscribe()
-			return res, nil
+		iter, err := act.AnchorCommittedFilterer.FilterAnchorCommitted(
+			fOpts,
+			[]common.Address{act.From},
+			[]*big.Int{act.AnchorID.toBigInt()},
+			[]*big.Int{act.CentrifugeID.BigInt()},
+		)
+		if err != nil {
+			return nil, centerrors.Wrap(err, "failed to start filtering anchor event logs")
+		}
+
+		res, proceed, err := startWatching(act.EthContext, iter)
+		if err == nil || !proceed {
+			return res, err
 		}
 	}
+
+	return nil, fmt.Errorf("failed to filter anchor events")
 }
 
 func getBytesAnchorID(key interface{}) (AnchorID, error) {

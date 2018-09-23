@@ -57,6 +57,7 @@ type PreCommitData struct {
 }
 
 type CommitData struct {
+	BlockHeight    uint64
 	AnchorID       AnchorID
 	DocumentRoot   DocRoot
 	CentrifugeID   identity.CentID
@@ -93,14 +94,15 @@ func NewPreCommitData(anchorID AnchorID, signingRoot DocRoot, centrifugeID ident
 	return preCommitData
 }
 
-func NewCommitData(anchorID AnchorID, documentRoot DocRoot, centrifugeID identity.CentID, documentProofs [][32]byte, signature []byte) (commitData *CommitData) {
-	commitData = &CommitData{}
-	commitData.AnchorID = anchorID
-	commitData.DocumentRoot = documentRoot
-	commitData.CentrifugeID = centrifugeID
-	commitData.DocumentProofs = documentProofs
-	commitData.Signature = signature
-	return commitData
+func NewCommitData(blockHeight uint64, anchorID AnchorID, documentRoot DocRoot, centrifugeID identity.CentID, documentProofs [][32]byte, signature []byte) (commitData *CommitData) {
+	return &CommitData{
+		BlockHeight:    blockHeight,
+		AnchorID:       anchorID,
+		DocumentRoot:   documentRoot,
+		CentrifugeID:   centrifugeID,
+		DocumentProofs: documentProofs,
+		Signature:      signature,
+	}
 }
 
 func GenerateCommitHash(anchorID AnchorID, centrifugeID identity.CentID, documentRoot DocRoot) []byte {

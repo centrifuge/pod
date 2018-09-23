@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/centerrors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
@@ -13,15 +14,14 @@ import (
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/event"
 	"github.com/go-errors/errors"
 	logging "github.com/ipfs/go-log"
 )
 
 var log = logging.Logger("identity")
 
-type WatchKeyAdded interface {
-	WatchKeyAdded(opts *bind.WatchOpts, sink chan<- *EthereumIdentityContractKeyAdded, key [][32]byte, purpose []*big.Int) (event.Subscription, error)
+type KeyAddFilterer interface {
+	FilterKeyAdded(opts *bind.FilterOpts, key [][32]byte, purpose []*big.Int) (*EthereumIdentityContractKeyAddedIterator, error)
 }
 
 type IdentityFactory interface {
@@ -183,16 +183,23 @@ func (id *EthereumIdentity) AddKeyToIdentity(keyPurpose int, key []byte) (confir
 		return confirmations, err
 	}
 
-	confirmations, err = setUpKeyRegisteredEventListener(ethIdentityContract, id, keyPurpose, key)
+	conn := ethereum.GetConnection()
+	opts, err := ethereum.GetConnection().GetTxOpts(config.Config.GetEthereumDefaultAccountName())
+	if err != nil {
+		return confirmations, err
+	}
+
+	h, err := conn.GetClient().HeaderByNumber(context.Background(), nil)
+	if err != nil {
+		return confirmations, err
+	}
+
+	// TODO: contextWithDeadline should come as args
+	confirmations, err = setUpKeyRegisteredEventListener(context.Background(), ethIdentityContract, id, keyPurpose, key, h.Number.Uint64())
 	if err != nil {
 		wError := errors.Wrap(err, 1)
 		log.Errorf("Failed to set up event listener for identity [id: %s]: %v", id, wError)
 		return confirmations, wError
-	}
-
-	opts, err := ethereum.GetConnection().GetTxOpts(config.Config.GetEthereumDefaultAccountName())
-	if err != nil {
-		return confirmations, err
 	}
 
 	err = sendKeyRegistrationTransaction(ethIdentityContract, opts, id, keyPurpose, key)
@@ -282,45 +289,27 @@ func sendIdentityCreationTransaction(identityFactory IdentityFactory, opts *bind
 	return
 }
 
-func setUpKeyRegisteredEventListener(ethCreatedContract WatchKeyAdded, identity *EthereumIdentity, keyPurpose int, key []byte) (confirmations chan *WatchIdentity, err error) {
-	//listen to this particular key being mined/event is triggered
-	ctx, cancelFunc := ethereum.DefaultWaitForTransactionMiningContext()
-	watchOpts := &bind.WatchOpts{Context: ctx}
-
-	// there should always be only one notification coming for this
-	// single key being registered
-	keyAddedEvents := make(chan *EthereumIdentityContractKeyAdded)
+func setUpKeyRegisteredEventListener(ctx context.Context, filterer KeyAddFilterer, identity *EthereumIdentity, keyPurpose int, key []byte, blockHeight uint64) (confirmations chan *WatchIdentity, err error) {
 	confirmations = make(chan *WatchIdentity)
-
 	b32Key, err := tools.SliceToByte32(key)
 	if err != nil {
-		return confirmations, err
+		return nil, err
 	}
-	keyPurposeInt := big.NewInt(int64(keyPurpose))
 
-	//TODO do something with the returned Subscription that is currently simply discarded
-	// Somehow there are some possible resource leakage situations with this handling but I have to understand
-	// Subscriptions a bit better before writing this code.
-	subscription, err := ethCreatedContract.WatchKeyAdded(watchOpts, keyAddedEvents, [][32]byte{b32Key}, []*big.Int{keyPurposeInt})
-	if err != nil {
-		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for identity registration", 1)
-		log.Errorf(wError.Error())
-		cancelFunc()
-		return confirmations, wError
-	}
-	go waitAndRouteKeyRegistrationEvent(keyAddedEvents, subscription, watchOpts.Context, confirmations, identity)
-	return
+	keyPurposeInt := big.NewInt(int64(keyPurpose))
+	go waitAndRouteKeyRegistrationEvent(ctx, filterer, confirmations, identity, b32Key, keyPurposeInt, blockHeight)
+	return confirmations, nil
 }
 
 // setUpRegistrationEventListener sets up the listened for the "IdentityCreated" event to notify the upstream code about successful mining/creation
 // of the identity.
-func setUpRegistrationEventListener(identityToBeCreated Identity) (confirmations chan *WatchIdentity, err error) {
+func setUpRegistrationEventListener(identityToBeCreated Identity, blockHeight uint64) (confirmations chan *WatchIdentity, err error) {
 	confirmations = make(chan *WatchIdentity)
 	bCentId := identityToBeCreated.GetCentrifugeID()
 	if err != nil {
 		return nil, err
 	}
-	asyncRes, err := queue.Queue.DelayKwargs(IdRegistrationConfirmationTaskName, map[string]interface{}{CentIdParam: bCentId})
+	asyncRes, err := queue.Queue.DelayKwargs(IdRegistrationConfirmationTaskName, map[string]interface{}{CentIdParam: bCentId, BlockHeight: blockHeight})
 	if err != nil {
 		return nil, err
 	}
@@ -328,23 +317,50 @@ func setUpRegistrationEventListener(identityToBeCreated Identity) (confirmations
 	return confirmations, nil
 }
 
-// waitAndRouteKeyRegistrationEvent notifies the confirmations channel whenever the key has been added to the identity and has been noted as Ethereum event
-func waitAndRouteKeyRegistrationEvent(conf <-chan *EthereumIdentityContractKeyAdded, subscription event.Subscription, ctx context.Context, confirmations chan<- *WatchIdentity, pushThisIdentity Identity) {
-	for {
+func startKeyAddWatch(ctx context.Context, iter *EthereumIdentityContractKeyAddedIterator) error {
+	defer iter.Close()
+
+	for iter.Next() {
 		select {
-		case err := <-subscription.Err():
-			log.Errorf("Subscription error %s", err.Error())
-			return
 		case <-ctx.Done():
-			log.Errorf("Context [%v] closed before receiving KeyRegistered event for Identity ID: %x\n", ctx, pushThisIdentity)
-			confirmations <- &WatchIdentity{pushThisIdentity, ctx.Err()}
+			return ctx.Err()
+		default:
+			return nil
+		}
+	}
+
+	err := iter.Error()
+	if err != nil {
+		return err
+	}
+
+	return fmt.Errorf("no matching events found")
+}
+
+// waitAndRouteKeyRegistrationEvent notifies the confirmations channel whenever the key has been added to the identity and has been noted as Ethereum event
+func waitAndRouteKeyRegistrationEvent(ctx context.Context, filterer KeyAddFilterer, confirmations chan<- *WatchIdentity, pushThisIdentity Identity, key [32]byte, keyPurpose *big.Int, blockHeight uint64) {
+	opts := &bind.FilterOpts{Context: ctx, Start: blockHeight}
+	var err error
+	for err == nil {
+		iter, err := filterer.FilterKeyAdded(
+			opts,
+			[][32]byte{key},
+			[]*big.Int{keyPurpose},
+		)
+
+		if err != nil {
+			confirmations <- &WatchIdentity{Error: centerrors.Wrap(err, "failed to start filtering identity event logs")}
 			return
-		case res := <-conf:
-			log.Infof("Received KeyRegistered event from [%s] for keyPurpose: %x and value: %x\n", pushThisIdentity, res.Purpose, res.Key)
-			confirmations <- &WatchIdentity{pushThisIdentity, nil}
+		}
+
+		err = startKeyAddWatch(ctx, iter)
+		if err == nil {
+			confirmations <- &WatchIdentity{Identity: pushThisIdentity}
 			return
 		}
 	}
+
+	confirmations <- &WatchIdentity{Error: err}
 }
 
 // waitAndRouteIdentityRegistrationEvent notifies the confirmations channel whenever the identity creation is being noted as Ethereum event
@@ -377,12 +393,19 @@ func (ids *EthereumIdentityService) CreateIdentity(centrifugeID CentID) (id Iden
 	if err != nil {
 		return
 	}
-	opts, err := ethereum.GetConnection().GetTxOpts(config.Config.GetEthereumDefaultAccountName())
+
+	conn := ethereum.GetConnection()
+	opts, err := conn.GetTxOpts(config.Config.GetEthereumDefaultAccountName())
 	if err != nil {
 		return nil, confirmations, err
 	}
 
-	confirmations, err = setUpRegistrationEventListener(id)
+	h, err := conn.GetClient().HeaderByNumber(context.Background(), nil)
+	if err != nil {
+		return nil, confirmations, err
+	}
+
+	confirmations, err = setUpRegistrationEventListener(id, h.Number.Uint64())
 	if err != nil {
 		wError := errors.Wrap(err, 1)
 		log.Infof("Failed to set up event listener for identity [mockID: %s]: %v", id, wError)
