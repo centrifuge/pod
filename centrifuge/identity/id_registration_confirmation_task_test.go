@@ -34,7 +34,10 @@ func TestRegistrationConfirmationTask_ParseKwargsHappyPath(t *testing.T) {
 	rct := identity.IdRegistrationConfirmationTask{}
 	id := tools.RandomSlice(identity.CentIDByteLength)
 	idBytes, _ := identity.NewCentID(id)
-	kwargs := map[string]interface{}{identity.CentIdParam: idBytes}
+	kwargs := map[string]interface{}{
+		identity.CentIdParam: idBytes,
+		identity.BlockHeight: float64(0),
+	}
 	decoded, err := tools.SimulateJsonDecodeForGocelery(kwargs)
 	err = rct.ParseKwargs(decoded)
 	if err != nil {

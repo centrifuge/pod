@@ -41,6 +41,7 @@ func TestAnchoringConfirmationTask_ParseKwargsHappy(t *testing.T) {
 		AnchorIDParam:     anchorID,
 		AddressParam:      address,
 		CentrifugeIDParam: centId,
+		BlockHeight:       float64(0),
 	})
 	err := act.ParseKwargs(kwargs)
 	if err != nil {
