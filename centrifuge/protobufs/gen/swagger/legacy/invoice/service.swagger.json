@@ -15,7 +15,7 @@
     "application/json"
   ],
   "paths": {
-    "/invoice/anchor": {
+    "/legacy/invoice/anchor": {
       "post": {
         "description": "Anchor an invoice document",
         "operationId": "AnchorInvoiceDocument",
@@ -42,7 +42,7 @@
         ]
       }
     },
-    "/invoice/getReceived": {
+    "/legacy/invoice/getReceived": {
       "get": {
         "operationId": "GetReceivedInvoiceDocuments",
         "responses": {
@@ -58,7 +58,7 @@
         ]
       }
     },
-    "/invoice/send": {
+    "/legacy/invoice/send": {
       "post": {
         "description": "Send an invoice document to the specified party",
         "operationId": "SendInvoiceDocument",
@@ -85,7 +85,7 @@
         ]
       }
     },
-    "/invoice/{document_identifier}": {
+    "/legacy/invoice/{document_identifier}": {
       "get": {
         "operationId": "GetInvoiceDocument",
         "responses": {
@@ -110,7 +110,7 @@
         ]
       }
     },
-    "/invoice/{document_identifier}/proof": {
+    "/legacy/invoice/{document_identifier}/proof": {
       "post": {
         "description": "Creates a list of precise proofs for the specified fields",
         "operationId": "CreateInvoiceProof",

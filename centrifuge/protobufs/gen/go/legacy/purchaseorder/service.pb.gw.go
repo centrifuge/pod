@@ -277,15 +277,15 @@ func RegisterPurchaseOrderDocumentServiceHandlerClient(ctx context.Context, mux 
 }
 
 var (
-	pattern_PurchaseOrderDocumentService_CreatePurchaseOrderProof_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"purchaseorder", "proof"}, ""))
+	pattern_PurchaseOrderDocumentService_CreatePurchaseOrderProof_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"legacy", "purchaseorder", "proof"}, ""))
 
-	pattern_PurchaseOrderDocumentService_AnchorPurchaseOrderDocument_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"purchaseorder", "anchor"}, ""))
+	pattern_PurchaseOrderDocumentService_AnchorPurchaseOrderDocument_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"legacy", "purchaseorder", "anchor"}, ""))
 
-	pattern_PurchaseOrderDocumentService_SendPurchaseOrderDocument_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"purchaseorder", "send"}, ""))
+	pattern_PurchaseOrderDocumentService_SendPurchaseOrderDocument_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"legacy", "purchaseorder", "send"}, ""))
 
-	pattern_PurchaseOrderDocumentService_GetPurchaseOrderDocument_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"purchaseorder", "get"}, ""))
+	pattern_PurchaseOrderDocumentService_GetPurchaseOrderDocument_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"legacy", "purchaseorder", "get"}, ""))
 
-	pattern_PurchaseOrderDocumentService_GetReceivedPurchaseOrderDocuments_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"purchaseorder", "getReceived"}, ""))
+	pattern_PurchaseOrderDocumentService_GetReceivedPurchaseOrderDocuments_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"legacy", "purchaseorder", "getReceived"}, ""))
 )
 
 var (

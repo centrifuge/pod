@@ -309,15 +309,15 @@ func RegisterInvoiceDocumentServiceHandlerClient(ctx context.Context, mux *runti
 }
 
 var (
-	pattern_InvoiceDocumentService_CreateInvoiceProof_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2}, []string{"invoice", "document_identifier", "proof"}, ""))
+	pattern_InvoiceDocumentService_CreateInvoiceProof_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"legacy", "invoice", "document_identifier", "proof"}, ""))
 
-	pattern_InvoiceDocumentService_AnchorInvoiceDocument_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"invoice", "anchor"}, ""))
+	pattern_InvoiceDocumentService_AnchorInvoiceDocument_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"legacy", "invoice", "anchor"}, ""))
 
-	pattern_InvoiceDocumentService_SendInvoiceDocument_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"invoice", "send"}, ""))
+	pattern_InvoiceDocumentService_SendInvoiceDocument_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"legacy", "invoice", "send"}, ""))
 
-	pattern_InvoiceDocumentService_GetInvoiceDocument_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"invoice", "document_identifier"}, ""))
+	pattern_InvoiceDocumentService_GetInvoiceDocument_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"legacy", "invoice", "document_identifier"}, ""))
 
-	pattern_InvoiceDocumentService_GetReceivedInvoiceDocuments_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"invoice", "getReceived"}, ""))
+	pattern_InvoiceDocumentService_GetReceivedInvoiceDocuments_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"legacy", "invoice", "getReceived"}, ""))
 )
 
 var (

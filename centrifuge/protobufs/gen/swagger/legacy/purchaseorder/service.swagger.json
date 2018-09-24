@@ -15,7 +15,7 @@
     "application/json"
   ],
   "paths": {
-    "/purchaseorder/anchor": {
+    "/legacy/purchaseorder/anchor": {
       "post": {
         "description": "Anchor a purchaseorder document",
         "operationId": "AnchorPurchaseOrderDocument",
@@ -42,7 +42,7 @@
         ]
       }
     },
-    "/purchaseorder/get": {
+    "/legacy/purchaseorder/get": {
       "post": {
         "operationId": "GetPurchaseOrderDocument",
         "responses": {
@@ -68,7 +68,7 @@
         ]
       }
     },
-    "/purchaseorder/getReceived": {
+    "/legacy/purchaseorder/getReceived": {
       "get": {
         "operationId": "GetReceivedPurchaseOrderDocuments",
         "responses": {
@@ -84,7 +84,7 @@
         ]
       }
     },
-    "/purchaseorder/proof": {
+    "/legacy/purchaseorder/proof": {
       "post": {
         "description": "Creates a list of precise proofs for the specified fields",
         "operationId": "CreatePurchaseOrderProof",
@@ -111,7 +111,7 @@
         ]
       }
     },
-    "/purchaseorder/send": {
+    "/legacy/purchaseorder/send": {
       "post": {
         "description": "Send a purchaseorder document to the specified party",
         "operationId": "SendPurchaseOrderDocument",
