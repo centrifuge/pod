@@ -131,7 +131,6 @@ func startWatching(ctx context.Context, iter *EthereumAnchorRepositoryContractAn
 	for iter.Next() {
 		select {
 		case <-ctx.Done():
-			// TODO add continue
 			return nil, false, ctx.Err()
 		default:
 			return iter.Event, false, nil

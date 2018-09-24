@@ -530,7 +530,7 @@ func (_EthereumIdentityContract *EthereumIdentityContractFilterer) FilterKeyAdde
 	return &EthereumIdentityContractKeyAddedIterator{contract: _EthereumIdentityContract.contract, event: "KeyAdded", logs: logs, sub: sub}, nil
 }
 
-// KeyAddFilterer is a free log subscription operation binding the contract event 0x90cf26894583787fe4a16185f0128c58652d10939f4b0185a951efc8452bcaa8.
+// WatchKeyAdded is a free log subscription operation binding the contract event 0x90cf26894583787fe4a16185f0128c58652d10939f4b0185a951efc8452bcaa8.
 //
 // Solidity: e KeyAdded(key indexed bytes32, purpose indexed uint256)
 func (_EthereumIdentityContract *EthereumIdentityContractFilterer) WatchKeyAdded(opts *bind.WatchOpts, sink chan<- *EthereumIdentityContractKeyAdded, key [][32]byte, purpose []*big.Int) (event.Subscription, error) {

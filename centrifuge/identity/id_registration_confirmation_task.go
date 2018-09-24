@@ -98,7 +98,7 @@ func startWatching(ctx context.Context, iter *EthereumIdentityFactoryContractIde
 
 // RunTask calls listens to events from geth related to IdRegistrationConfirmationTask#CentID and records result.
 func (rct *IdRegistrationConfirmationTask) RunTask() (interface{}, error) {
-	log.Infof("Waiting for confirmation for the ID [%x]", rct.CentID)
+	log.Infof("Waiting for confirmation for the ID [%x]", rct.CentID.ByteArray())
 	if rct.EthContext == nil {
 		rct.EthContext, _ = rct.EthContextInitializer()
 	}
