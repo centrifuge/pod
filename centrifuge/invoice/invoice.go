@@ -4,11 +4,11 @@ import (
 	"crypto/sha256"
 	"fmt"
 
-	"github.com/CentrifugeInc/centrifuge-protobufs/documenttypes"
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/centerrors"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
+	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/golang/protobuf/proto"
@@ -26,7 +26,7 @@ type Invoice struct {
 // Wrap wraps the protobuf invoice within Invoice
 func Wrap(invDoc *invoicepb.InvoiceDocument) (*Invoice, error) {
 	if invDoc == nil {
-		return nil, errors.NilError(invDoc)
+		return nil, centerrors.NilError(invDoc)
 	}
 	return &Invoice{invDoc}, nil
 }
@@ -69,9 +69,10 @@ func Empty() *Invoice {
 }
 
 // NewFromCoreDocument returns an Invoice from Core Document
+// Will Empty embedded fields as they are represented as data in the invoice header
 func NewFromCoreDocument(coreDocument *coredocumentpb.CoreDocument) (*Invoice, error) {
 	if coreDocument == nil {
-		return nil, errors.NilError(coreDocument)
+		return nil, centerrors.NilError(coreDocument)
 	}
 	if coreDocument.EmbeddedData.TypeUrl != documenttypes.InvoiceDataTypeUrl ||
 		coreDocument.EmbeddedDataSalts.TypeUrl != documenttypes.InvoiceSaltsTypeUrl {
@@ -157,7 +158,7 @@ func (inv *Invoice) ConvertToCoreDocument() (coredocpb *coredocumentpb.CoreDocum
 	proto.Merge(coredocpb, inv.Document.CoreDocument)
 	serializedInvoice, err := proto.Marshal(inv.Document.Data)
 	if err != nil {
-		return nil, errors.Wrap(err, "couldn't serialise InvoiceData")
+		return nil, centerrors.Wrap(err, "couldn't serialise InvoiceData")
 	}
 
 	invoiceAny := any.Any{
@@ -167,7 +168,7 @@ func (inv *Invoice) ConvertToCoreDocument() (coredocpb *coredocumentpb.CoreDocum
 
 	serializedSalts, err := proto.Marshal(inv.Document.Salts)
 	if err != nil {
-		return nil, errors.Wrap(err, "couldn't serialise InvoiceSalts")
+		return nil, centerrors.Wrap(err, "couldn't serialise InvoiceSalts")
 	}
 
 	invoiceSaltsAny := any.Any{
@@ -183,7 +184,7 @@ func (inv *Invoice) ConvertToCoreDocument() (coredocpb *coredocumentpb.CoreDocum
 // Validate validates the invoice document
 func Validate(doc *invoicepb.InvoiceDocument) (valid bool, errMsg string, errs map[string]string) {
 	if doc == nil {
-		return false, errors.NilDocument, nil
+		return false, centerrors.NilDocument, nil
 	}
 
 	if valid, errMsg, errs = coredocument.Validate(doc.CoreDocument); !valid {
@@ -191,55 +192,15 @@ func Validate(doc *invoicepb.InvoiceDocument) (valid bool, errMsg string, errs m
 	}
 
 	if doc.Data == nil {
-		return false, errors.NilDocumentData, nil
+		return false, centerrors.NilDocumentData, nil
 	}
 
-	data := doc.Data
 	errs = make(map[string]string)
-
-	// ideally these check should be done in the client invoice order
-	// once the converters are done, we can move the following checks there
-	if data.InvoiceNumber == "" {
-		errs["inv_number"] = errors.RequiredField
-	}
-
-	if data.SenderName == "" {
-		errs["inv_sender_name"] = errors.RequiredField
-	}
-
-	if data.SenderZipcode == "" {
-		errs["inv_sender_zip_code"] = errors.RequiredField
-	}
-
-	// for now, mandating at least one character
-	if data.SenderCountry == "" {
-		errs["inv_sender_country"] = errors.RequiredField
-	}
-
-	if data.RecipientName == "" {
-		errs["inv_recipient_name"] = errors.RequiredField
-	}
-
-	if data.RecipientZipcode == "" {
-		errs["inv_recipient_zip_code"] = errors.RequiredField
-	}
-
-	if data.RecipientCountry == "" {
-		errs["inv_recipient_country"] = errors.RequiredField
-	}
-
-	if data.Currency == "" {
-		errs["inv_currency"] = errors.RequiredField
-	}
-
-	if data.GrossAmount <= 0 {
-		errs["inv_gross_amount"] = errors.RequirePositiveNumber
-	}
 
 	// checking for nil salts should be okay for now
 	// once the converters are in, salts will be filled during conversion
 	if doc.Salts == nil {
-		errs["inv_salts"] = errors.RequiredField
+		errs["inv_salts"] = centerrors.RequiredField
 	}
 
 	if len(errs) < 1 {

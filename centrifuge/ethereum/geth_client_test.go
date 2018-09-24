@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
-	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
+	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"

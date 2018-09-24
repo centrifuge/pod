@@ -3,12 +3,13 @@
 echo "Running Unit Tests"
 
 status=$?
-for d in $(go list ./... | grep -v vendor); do
-    output=$(go test -v -race -coverprofile=profile.out -covermode=atomic -tags=unit $d 2>&1)
-    if [ $? -ne 0 ]; then
+for d in $(go list -tags=unit ./... | grep -v vendor); do
+    output="go test -v -race -coverprofile=profile.out -covermode=atomic -tags=unit $d 2>&1"
+    eval "$output" | while IFS= read -r line; do printf '[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$line"; done
+    if [ ${PIPESTATUS[0]} -ne 0 ]; then
       status=1
     fi
-    echo "${output}" | while IFS= read -r line; do printf '[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$line"; done
+
     if [ -f profile.out ]; then
         cat profile.out >> coverage.txt
         rm profile.out

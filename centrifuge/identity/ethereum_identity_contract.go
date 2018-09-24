@@ -160,7 +160,7 @@ func (_EthereumIdentityContract *EthereumIdentityContractTransactorRaw) Transact
 	return _EthereumIdentityContract.Contract.contract.Transact(opts, method, params...)
 }
 
-// CentrifugeId is a free data retrieval call binding the contract method 0x41a43c38.
+// CentrifugeID is a free data retrieval call binding the contract method 0x41a43c38.
 //
 // Solidity: function centrifugeId() constant returns(uint48)
 func (_EthereumIdentityContract *EthereumIdentityContractCaller) CentrifugeId(opts *bind.CallOpts) (*big.Int, error) {
@@ -172,14 +172,14 @@ func (_EthereumIdentityContract *EthereumIdentityContractCaller) CentrifugeId(op
 	return *ret0, err
 }
 
-// CentrifugeId is a free data retrieval call binding the contract method 0x41a43c38.
+// CentrifugeID is a free data retrieval call binding the contract method 0x41a43c38.
 //
 // Solidity: function centrifugeId() constant returns(uint48)
 func (_EthereumIdentityContract *EthereumIdentityContractSession) CentrifugeId() (*big.Int, error) {
 	return _EthereumIdentityContract.Contract.CentrifugeId(&_EthereumIdentityContract.CallOpts)
 }
 
-// CentrifugeId is a free data retrieval call binding the contract method 0x41a43c38.
+// CentrifugeID is a free data retrieval call binding the contract method 0x41a43c38.
 //
 // Solidity: function centrifugeId() constant returns(uint48)
 func (_EthereumIdentityContract *EthereumIdentityContractCallerSession) CentrifugeId() (*big.Int, error) {

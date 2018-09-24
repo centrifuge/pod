@@ -1,9 +1,9 @@
 package notification
 
 import (
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/notification"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/utils"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
 	"github.com/golang/protobuf/jsonpb"
 	logging "github.com/ipfs/go-log"
 )

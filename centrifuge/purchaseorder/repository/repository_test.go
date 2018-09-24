@@ -6,10 +6,10 @@ import (
 	"os"
 	"testing"
 
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -62,11 +62,6 @@ func TestRepository(t *testing.T) {
 	err = repo.GetByID(docID, getDoc)
 	assert.Nil(t, err, "get must pass")
 	assert.Equal(t, getDoc.CoreDocument.DocumentIdentifier, docID, "identifiers mismatch")
-
-	// failed update
-	doc.Data.OrderAmount = 0
-	err = repo.Update(docID, doc)
-	assert.Error(t, err, "update must fail")
 
 	// successful update
 	doc.Data.OrderAmount = 200

@@ -2,47 +2,64 @@ package signatures
 
 import (
 	"fmt"
+	"time"
 
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
+	"errors"
+
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/utils"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"golang.org/x/crypto/ed25519"
 )
 
-// ValidateSignaturesOnDocument validates all signatures on the current document
-func ValidateSignaturesOnDocument(doc *coredocumentpb.CoreDocument) (valid bool, err error) {
-	for _, sig := range doc.Signatures {
-		valid, err := ValidateSignature(sig, doc.SigningRoot)
-		if err != nil || !valid {
-			return false, err
-		}
+func ValidateCentrifugeID(signature *coredocumentpb.Signature, centrifugeId identity.CentID) error {
+	centIDSignature, err := identity.NewCentID(signature.EntityId)
+	if err != nil {
+		return err
 	}
-	return true, nil
+
+	if !centrifugeId.Equal(centIDSignature) {
+		return errors.New("signature entity doesn't match provided centID")
+	}
+
+	return nil
+
 }
 
 // ValidateSignature verifies the signature on the document
-func ValidateSignature(signature *coredocumentpb.Signature, message []byte) (valid bool, err error) {
-	valid, err = identity.ValidateKey(signature.EntityId, signature.PublicKey)
+func ValidateSignature(signature *coredocumentpb.Signature, message []byte) error {
+	centID, err := identity.NewCentID(signature.EntityId)
 	if err != nil {
-		return valid, err
+		return err
+	}
+
+	err = identity.ValidateKey(centID, signature.PublicKey, identity.KeyPurposeSigning)
+	if err != nil {
+		return err
 	}
 
 	return verifySignature(signature.PublicKey, message, signature.Signature)
 }
 
 // verifySignature verifies the signature using ed25519
-func verifySignature(pubKey, message, signature []byte) (bool, error) {
+func verifySignature(pubKey, message, signature []byte) error {
 	valid := ed25519.Verify(pubKey, message, signature)
 	if !valid {
-		return false, fmt.Errorf("invalid signature")
+		return fmt.Errorf("invalid signature")
 	}
 
-	return true, nil
+	return nil
 }
 
 // Sign the document with the private key and return the signature along with the public key for the verification
 // assumes that signing root for the document is generated
-func Sign(idConfig *config.IdentityConfig, doc *coredocumentpb.CoreDocument) *coredocumentpb.Signature {
-	signature := ed25519.Sign(idConfig.PrivateKey, doc.SigningRoot)
-	return &coredocumentpb.Signature{EntityId: idConfig.ID, PublicKey: idConfig.PublicKey, Signature: signature}
+func Sign(idConfig *config.IdentityConfig, payload []byte) *coredocumentpb.Signature {
+	signature := ed25519.Sign(idConfig.PrivateKey, payload)
+	return &coredocumentpb.Signature{
+		EntityId:  idConfig.ID,
+		PublicKey: idConfig.PublicKey,
+		Signature: signature,
+		Timestamp: utils.ToTimestamp(time.Now().UTC()),
+	}
 }

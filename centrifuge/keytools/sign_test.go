@@ -9,6 +9,7 @@ import (
 
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/secp256k1"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -19,9 +20,9 @@ func TestSignMessage(t *testing.T) {
 	testMsg := []byte("test")
 
 	GenerateSigningKeyPair(publicKeyFile, privateKeyFile, CurveSecp256K1)
-	privateKey, err := utils.ReadKeyFromPemFile(privateKeyFile, PrivateKey)
+	privateKey, err := utils.ReadKeyFromPemFile(privateKeyFile, utils.PrivateKey)
 	assert.Nil(t, err)
-	publicKey, err := utils.ReadKeyFromPemFile(publicKeyFile, PublicKey)
+	publicKey, err := utils.ReadKeyFromPemFile(publicKeyFile, utils.PublicKey)
 	assert.Nil(t, err)
 	signature, err := SignMessage(privateKey, testMsg, CurveSecp256K1, false)
 	assert.Nil(t, err)
@@ -41,21 +42,21 @@ func TestSignAndVerifyMessageEthereum(t *testing.T) {
 	testMsg := []byte("Centrifuge likes Ethereum")
 
 	GenerateSigningKeyPair(publicKeyFile, privateKeyFile, CurveSecp256K1)
-	privateKey, err := utils.ReadKeyFromPemFile(privateKeyFile, PrivateKey)
+	privateKey, err := utils.ReadKeyFromPemFile(privateKeyFile, utils.PrivateKey)
 	assert.Nil(t, err)
 	signature, err := SignMessage(privateKey, testMsg, CurveSecp256K1, true)
 	assert.Nil(t, err)
 
-	publicKey, _ := utils.ReadKeyFromPemFile(publicKeyFile, PublicKey)
+	publicKey, _ := utils.ReadKeyFromPemFile(publicKeyFile, utils.PublicKey)
 	address := secp256k1.GetAddress(publicKey)
 
-	fmt.Println("privateKey: ", utils.ByteArrayToHex(privateKey))
-	fmt.Println("publicKey: ", utils.ByteArrayToHex(publicKey))
+	fmt.Println("privateKey: ", hexutil.Encode(privateKey))
+	fmt.Println("publicKey: ", hexutil.Encode(publicKey))
 	fmt.Println("address:", address)
 	fmt.Println("msg:", string(testMsg[:]))
-	fmt.Println("msg in hex:", utils.ByteArrayToHex(testMsg))
-	fmt.Println("hash of msg: ", utils.ByteArrayToHex(secp256k1.SignHash(testMsg)))
-	fmt.Println("signature:", utils.ByteArrayToHex(signature))
+	fmt.Println("msg in hex:", hexutil.Encode(testMsg))
+	fmt.Println("hash of msg: ", hexutil.Encode(secp256k1.SignHash(testMsg)))
+	fmt.Println("signature:", hexutil.Encode(signature))
 	fmt.Println("Generated Signature can also be verified at https://etherscan.io/verifySig")
 
 	correct := VerifyMessage(publicKey, testMsg, signature, CurveSecp256K1, true)
