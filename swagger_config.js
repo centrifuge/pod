@@ -5,7 +5,7 @@ module.exports = {
         description: "\n",
         contact: {
             name: "Centrifuge",
-            url: "https://github.com/CentrifugeInc/go-centrifuge",
+            url: "https://github.com/centrifuge/go-centrifuge",
             email: "hello@centrifuge.io",
         }
     },

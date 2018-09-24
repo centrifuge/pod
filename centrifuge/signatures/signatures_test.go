@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils/commons"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
+	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/stretchr/testify/assert"
 )
 

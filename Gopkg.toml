@@ -82,7 +82,7 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
 
 [[constraint]]
   name = "github.com/ipfs/go-cid"
-  version = "0.7.21"
+  revision = "5b04f3043387b02aeeee6a35899f0e767bae3b33"
 
 [[constraint]]
   name = "github.com/ipfs/go-datastore"

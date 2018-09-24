@@ -3,13 +3,13 @@ package purchaseordercontroller
 import (
 	"context"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/processor"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/p2p"
-	clientpurchaseorderpb "github.com/CentrifugeInc/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder/repository"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder/service"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
+	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/processor"
+	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/centrifuge/p2p"
+	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
+	"github.com/centrifuge/go-centrifuge/centrifuge/purchaseorder/repository"
+	"github.com/centrifuge/go-centrifuge/centrifuge/purchaseorder/service"
 	googleprotobuf2 "github.com/golang/protobuf/ptypes/empty"
 )
 

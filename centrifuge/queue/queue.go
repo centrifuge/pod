@@ -3,7 +3,7 @@ package queue
 import (
 	"sync"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/gocelery"
 )
 

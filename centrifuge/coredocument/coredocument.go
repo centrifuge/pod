@@ -4,11 +4,11 @@ import (
 	"crypto/sha256"
 	"fmt"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/centerrors"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/code"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/signatures"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
+	"github.com/centrifuge/go-centrifuge/centrifuge/code"
+	"github.com/centrifuge/go-centrifuge/centrifuge/signatures"
+	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/centrifuge/precise-proofs/proofs"
 )
 
