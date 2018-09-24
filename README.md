@@ -1,6 +1,6 @@
 # Centrifuge OS Client
 
-[![Build Status](https://travis-ci.com/CentrifugeInc/go-centrifuge.svg?token=Sbf68xBZUZLMB3kGTKcX&branch=master)](https://travis-ci.com/CentrifugeInc/go-centrifuge)
+[![Build Status](https://travis-ci.com/centrifuge/go-centrifuge.svg?token=Sbf68xBZUZLMB3kGTKcX&branch=master)](https://travis-ci.com/centrifuge/go-centrifuge)
 
 Project Structure taken from: https://github.com/golang-standards/project-layout and https://github.com/ethereum/go-ethereum
 
@@ -42,8 +42,8 @@ Make sure you have docker-compose installed, usually comes bundled with Mac OS D
 ## Install
 
 ```bash
-mkdir -p $GOPATH/src/github.com/CentrifugeInc/go-centrifuge/
-git clone git@github.com:CentrifugeInc/go-centrifuge.git $GOPATH/src/github.com/CentrifugeInc/go-centrifuge
+mkdir -p $GOPATH/src/github.com/centrifuge/go-centrifuge/
+git clone git@github.com:centrifuge/go-centrifuge.git $GOPATH/src/github.com/centrifuge/go-centrifuge
 
 # initialize your local geth node deployment
 ./scripts/docker/run.sh init
@@ -147,7 +147,7 @@ reflex -R '(^|/)vendor/|(^|/)\\.idea/' -- go test ./centrifuge/invoice/... -tags
 
 Build & install the Centrifuge OS Node
 ```bash
-cd $GOPATH/src/github.com/CentrifugeInc/go-centrifuge
+cd $GOPATH/src/github.com/centrifuge/go-centrifuge
 make install
 ```
 
@@ -284,7 +284,7 @@ go generate ./centrifuge/config/configuration.go
 To create the go bindings for the deployed truffle contract, use the following command:
 
 ```bash
-abigen --abi abi/AnchorRegistry.abi --pkg anchor --type EthereumAnchorRegistryContract --out ${GOPATH}/src/github.com/CentrifugeInc/go-centrifuge/centrifuge/anchor/ethereum_anchor_registry_contract.go
+abigen --abi abi/AnchorRegistry.abi --pkg anchor --type EthereumAnchorRegistryContract --out ${GOPATH}/src/github.com/centrifuge/go-centrifuge/centrifuge/anchor/ethereum_anchor_registry_contract.go
 ```
 
 and then copy the `ethereum_anchor_registry_contract.go` file to `centrifuge/anchor/`. You will also need to modify the file to add the following imports:

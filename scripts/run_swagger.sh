@@ -1,5 +1,5 @@
 #!/bin/sh
-SWAGGER_PATH=$GOPATH/src/github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice
+SWAGGER_PATH=$GOPATH/src/github.com/centrifuge/go-centrifuge/centrifuge/invoice
 
 echo "Launching swagger-ui docker container..."
 echo "Loading swagger.json from: $SWAGGER_PATH"

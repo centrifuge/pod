@@ -6,7 +6,7 @@ package testingcommons
 import (
 	"context"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/stretchr/testify/mock"
 )
 

@@ -3,11 +3,11 @@ package cmd
 import (
 	"io/ioutil"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/secp256k1"
+	"github.com/centrifuge/go-centrifuge/centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/centrifuge/ethereum"
+	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519"
+	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/secp256k1"
 	"github.com/spf13/cobra"
 )
 

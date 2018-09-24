@@ -1,17 +1,17 @@
 package context
 
 import (
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/anchors"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/bootstrapper"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/repository"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder/repository"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/queue"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/version"
+	"github.com/centrifuge/go-centrifuge/centrifuge/anchors"
+	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrapper"
+	"github.com/centrifuge/go-centrifuge/centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
+	"github.com/centrifuge/go-centrifuge/centrifuge/ethereum"
+	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/centrifuge/invoice/repository"
+	"github.com/centrifuge/go-centrifuge/centrifuge/purchaseorder/repository"
+	"github.com/centrifuge/go-centrifuge/centrifuge/queue"
+	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
+	"github.com/centrifuge/go-centrifuge/centrifuge/version"
 	logging "github.com/ipfs/go-log"
 )
 

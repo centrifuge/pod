@@ -1,7 +1,7 @@
 package keytools
 
 import (
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/secp256k1"
+	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/secp256k1"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 

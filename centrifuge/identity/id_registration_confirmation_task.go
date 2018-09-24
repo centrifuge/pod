@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/centerrors"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/queue"
+	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
+	"github.com/centrifuge/go-centrifuge/centrifuge/queue"
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/go-errors/errors"

@@ -7,12 +7,12 @@ import (
 	"os"
 	"testing"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/anchors"
-	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testingbootstrap"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/secp256k1"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/go-centrifuge/centrifuge/anchors"
+	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
+	"github.com/centrifuge/go-centrifuge/centrifuge/ethereum"
+	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/secp256k1"
+	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 )
