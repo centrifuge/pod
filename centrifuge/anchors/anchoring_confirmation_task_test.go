@@ -3,31 +3,32 @@
 package anchors
 
 import (
-	"errors"
+	"context"
+	"fmt"
 	"math/big"
 	"testing"
+	"time"
 
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/event"
 	"github.com/stretchr/testify/assert"
 )
 
-type MockAnchorCommittedWatcher struct {
-	shouldFail   bool
-	sink         chan<- *EthereumAnchorRepositoryContractAnchorCommitted
-	Subscription event.Subscription
+type MockAnchorCommittedFilter struct {
+	iter *EthereumAnchorRepositoryContractAnchorCommittedIterator
+	err  error
 }
 
-func (m *MockAnchorCommittedWatcher) WatchAnchorCommitted(opts *bind.WatchOpts, sink chan<- *EthereumAnchorRepositoryContractAnchorCommitted,
-	from []common.Address, anchorID []*big.Int, centrifugeId []*big.Int) (event.Subscription, error) {
-	if m.shouldFail {
-		return nil, errors.New("just a dummy error")
-	}
+func (m *MockAnchorCommittedFilter) FilterAnchorCommitted(
+	opts *bind.FilterOpts,
+	from []common.Address,
+	anchorID []*big.Int,
+	centrifugeID []*big.Int) (*EthereumAnchorRepositoryContractAnchorCommittedIterator, error) {
 
-	return m.Subscription, nil
+	return m.iter, m.err
 }
 
 func TestAnchoringConfirmationTask_ParseKwargsHappy(t *testing.T) {
@@ -101,103 +102,37 @@ func TestAnchoringConfirmationTask_ParseKwargsInvalidAddress(t *testing.T) {
 	assert.NotNil(t, err, "address should not have been parsed because it was of incorrect type")
 }
 
-//func TestAnchoringConfirmationTask_RunTaskContextClose(t *testing.T) {
-//	toBeDone := time.Now().Add(time.Duration(1 * time.Millisecond))
-//	ctx, _ := context.WithDeadline(context.TODO(), toBeDone)
-//	earcar := make(chan *EthereumAnchorRepositoryContractAnchorCommitted)
-//	anchorID := [32]byte{1, 2, 3}
-//
-//	address := common.BytesToAddress([]byte{1, 2, 3, 4})
-//	act := AnchoringConfirmationTask{
-//		AnchorID:               anchorID,
-//		From:                   address,
-//		AnchorCommittedFilterer: &MockAnchorCommittedWatcher{Subscription: &testingutils.MockSubscription{}},
-//		EthContext:             ctx,
-//		AnchorRegisteredEvents: earcar,
-//	}
-//	exit := make(chan bool)
-//	go func() {
-//		_, err := act.RunTask()
-//		assert.NotNil(t, err)
-//		exit <- true
-//	}()
-//	time.Sleep(1 * time.Millisecond)
-//	// this would cause an error exit in the task
-//	ctx.Done()
-//	<-exit
-//}
-//
-//func TestAnchoringConfirmationTask_RunTaskWatchError(t *testing.T) {
-//	toBeDone := time.Now().Add(time.Duration(1 * time.Second))
-//	ctx, _ := context.WithDeadline(context.TODO(), toBeDone)
-//	earcar := make(chan *EthereumAnchorRepositoryContractAnchorCommitted)
-//	anchorID := [32]byte{1, 2, 3}
-//	address := common.BytesToAddress([]byte{1, 2, 3, 4})
-//	act := AnchoringConfirmationTask{
-//		AnchorID:               anchorID,
-//		From:                   address,
-//		AnchorCommittedFilterer: &MockAnchorCommittedWatcher{shouldFail: true},
-//		EthContext:             ctx,
-//		AnchorRegisteredEvents: earcar,
-//	}
-//	exit := make(chan bool)
-//	go func() {
-//		_, err := act.RunTask()
-//		assert.NotNil(t, err)
-//		exit <- true
-//	}()
-//	time.Sleep(1 * time.Millisecond)
-//	<-exit
-//}
-//
-//func TestAnchoringConfirmationTask_RunTaskSubscriptionError(t *testing.T) {
-//	toBeDone := time.Now().Add(time.Duration(1 * time.Second))
-//	ctx, _ := context.WithDeadline(context.TODO(), toBeDone)
-//	earcar := make(chan *EthereumAnchorRepositoryContractAnchorCommitted)
-//	anchorID := [32]byte{1, 2, 3}
-//	address := common.BytesToAddress([]byte{1, 2, 3, 4})
-//	errChan := make(chan error)
-//	watcher := &MockAnchorCommittedWatcher{Subscription: &testingutils.MockSubscription{ErrChan: errChan}}
-//	act := AnchoringConfirmationTask{
-//		AnchorID:               anchorID,
-//		From:                   address,
-//		AnchorCommittedFilterer: watcher,
-//		EthContext:             ctx,
-//		AnchorRegisteredEvents: earcar,
-//	}
-//	exit := make(chan bool)
-//	go func() {
-//		_, err := act.RunTask()
-//		assert.NotNil(t, err)
-//		exit <- true
-//	}()
-//	time.Sleep(1 * time.Millisecond)
-//	errChan <- errors.New("Dummy subscription error")
-//	<-exit
-//}
-//
-//func TestAnchoringConfirmationTask_RunTaskSuccess(t *testing.T) {
-//	toBeDone := time.Now().Add(time.Duration(1 * time.Second))
-//	ctx, _ := context.WithDeadline(context.TODO(), toBeDone)
-//	earcar := make(chan *EthereumAnchorRepositoryContractAnchorCommitted)
-//	anchorID := [32]byte{1, 2, 3}
-//
-//	address := common.BytesToAddress([]byte{1, 2, 3, 4})
-//	act := AnchoringConfirmationTask{
-//		AnchorID:               anchorID,
-//		From:                   address,
-//		AnchorCommittedFilterer: &MockAnchorCommittedWatcher{Subscription: &testingutils.MockSubscription{}},
-//		EthContext:             ctx,
-//		AnchorRegisteredEvents: earcar,
-//	}
-//	exit := make(chan bool)
-//	go func() {
-//		res, err := act.RunTask()
-//		assert.Nil(t, err)
-//		assert.NotNil(t, res)
-//		exit <- true
-//	}()
-//	time.Sleep(1 * time.Millisecond)
-//	act.AnchorRegisteredEvents <- &EthereumAnchorRepositoryContractAnchorCommitted{}
-//	<-exit
-//}
+func TestAnchoringConfirmationTask_RunTaskIterError(t *testing.T) {
+	anchorID := [32]byte{1, 2, 3}
+	address := common.BytesToAddress([]byte{1, 2, 3, 4})
+	act := AnchoringConfirmationTask{
+		AnchorID:                anchorID,
+		From:                    address,
+		AnchorCommittedFilterer: &MockAnchorCommittedFilter{err: fmt.Errorf("failed iterator")},
+		EthContext:              context.Background(),
+	}
+
+	_, err := act.RunTask()
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "failed iterator")
+}
+
+func TestAnchoringConfirmationTask_RunTaskWatchError(t *testing.T) {
+	toBeDone := time.Now().Add(time.Duration(1 * time.Millisecond))
+	ctx, _ := context.WithDeadline(context.Background(), toBeDone)
+	anchorID := [32]byte{1, 2, 3}
+	address := common.BytesToAddress([]byte{1, 2, 3, 4})
+	act := AnchoringConfirmationTask{
+		AnchorID: anchorID,
+		From:     address,
+		AnchorCommittedFilterer: &MockAnchorCommittedFilter{iter: &EthereumAnchorRepositoryContractAnchorCommittedIterator{
+			fail: fmt.Errorf("watch error"),
+			sub:  &testingutils.MockSubscription{},
+		}},
+		EthContext: ctx,
+	}
+
+	_, err := act.RunTask()
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "watch error")
+}

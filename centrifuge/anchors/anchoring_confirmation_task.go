@@ -41,7 +41,6 @@ type AnchoringConfirmationTask struct {
 
 	// state
 	EthContextInitializer   func() (ctx context.Context, cancelFunc context.CancelFunc)
-	AnchorRegisteredEvents  chan *EthereumAnchorRepositoryContractAnchorCommitted
 	EthContext              context.Context
 	AnchorCommittedFilterer AnchorCommittedWatcher
 }
@@ -72,7 +71,6 @@ func (act *AnchoringConfirmationTask) Copy() (gocelery.CeleryTask, error) {
 		act.CentrifugeID,
 		act.BlockHeight,
 		act.EthContextInitializer,
-		act.AnchorRegisteredEvents,
 		act.EthContext,
 		act.AnchorCommittedFilterer,
 	}, nil
@@ -119,8 +117,12 @@ func (act *AnchoringConfirmationTask) ParseKwargs(kwargs map[string]interface{})
 	if err != nil {
 		return fmt.Errorf("malformed kwarg [%s] because [%s]", AddressParam, err.Error())
 	}
+
+	if bh, ok := kwargs[BlockHeight]; ok {
+		act.BlockHeight = uint64(bh.(float64))
+	}
+
 	act.From = addressTyped
-	act.BlockHeight = uint64(kwargs[BlockHeight].(float64))
 	return nil
 }
 

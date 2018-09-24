@@ -171,7 +171,7 @@ func (id *EthereumIdentity) CheckIdentityExists() (exists bool, err error) {
 	return id.findContract()
 }
 
-func (id *EthereumIdentity) AddKeyToIdentity(keyPurpose int, key []byte) (confirmations chan *WatchIdentity, err error) {
+func (id *EthereumIdentity) AddKeyToIdentity(ctx context.Context, keyPurpose int, key []byte) (confirmations chan *WatchIdentity, err error) {
 	if tools.IsEmptyByteSlice(key) || len(key) > 32 {
 		log.Errorf("Can't add key to identity: empty or invalid length(>32) key for [id: %s]: %x", id, key)
 		return confirmations, errors.New("Can't add key to identity: Invalid key")
@@ -189,13 +189,12 @@ func (id *EthereumIdentity) AddKeyToIdentity(keyPurpose int, key []byte) (confir
 		return confirmations, err
 	}
 
-	h, err := conn.GetClient().HeaderByNumber(context.Background(), nil)
+	h, err := conn.GetClient().HeaderByNumber(ctx, nil)
 	if err != nil {
 		return confirmations, err
 	}
 
-	// TODO: contextWithDeadline should come as args
-	confirmations, err = setUpKeyRegisteredEventListener(context.Background(), ethIdentityContract, id, keyPurpose, key, h.Number.Uint64())
+	confirmations, err = setUpKeyRegisteredEventListener(ctx, ethIdentityContract, id, keyPurpose, key, h.Number.Uint64())
 	if err != nil {
 		wError := errors.Wrap(err, 1)
 		log.Errorf("Failed to set up event listener for identity [id: %s]: %v", id, wError)
@@ -317,31 +316,30 @@ func setUpRegistrationEventListener(identityToBeCreated Identity, blockHeight ui
 	return confirmations, nil
 }
 
-func startKeyAddWatch(ctx context.Context, iter *EthereumIdentityContractKeyAddedIterator) error {
+func startKeyAddWatch(ctx context.Context, iter *EthereumIdentityContractKeyAddedIterator) (bool, error) {
 	defer iter.Close()
 
 	for iter.Next() {
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
+			return false, ctx.Err()
 		default:
-			return nil
+			return false, nil
 		}
 	}
 
 	err := iter.Error()
 	if err != nil {
-		return err
+		return false, err
 	}
 
-	return fmt.Errorf("no matching events found")
+	return true, fmt.Errorf("no matching events found")
 }
 
 // waitAndRouteKeyRegistrationEvent notifies the confirmations channel whenever the key has been added to the identity and has been noted as Ethereum event
 func waitAndRouteKeyRegistrationEvent(ctx context.Context, filterer KeyAddFilterer, confirmations chan<- *WatchIdentity, pushThisIdentity Identity, key [32]byte, keyPurpose *big.Int, blockHeight uint64) {
 	opts := &bind.FilterOpts{Context: ctx, Start: blockHeight}
-	var err error
-	for err == nil {
+	for {
 		iter, err := filterer.FilterKeyAdded(
 			opts,
 			[][32]byte{key},
@@ -353,14 +351,14 @@ func waitAndRouteKeyRegistrationEvent(ctx context.Context, filterer KeyAddFilter
 			return
 		}
 
-		err = startKeyAddWatch(ctx, iter)
-		if err == nil {
+		proceed, err := startKeyAddWatch(ctx, iter)
+		if err == nil || !proceed {
 			confirmations <- &WatchIdentity{Identity: pushThisIdentity}
 			return
 		}
 	}
 
-	confirmations <- &WatchIdentity{Error: err}
+	confirmations <- &WatchIdentity{Error: fmt.Errorf("failed to filter key add events")}
 }
 
 // waitAndRouteIdentityRegistrationEvent notifies the confirmations channel whenever the identity creation is being noted as Ethereum event

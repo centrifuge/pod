@@ -3,6 +3,7 @@
 package identity_test
 
 import (
+	"context"
 	"os"
 	"testing"
 	"time"
@@ -72,7 +73,7 @@ func TestCreateAndLookupIdentity_Integration(t *testing.T) {
 
 	// Add Key
 	key := tools.RandomSlice(32)
-	confirmations, err = id.AddKeyToIdentity(1, key)
+	confirmations, err = id.AddKeyToIdentity(context.Background(), 1, key)
 	assert.Nil(t, err, "should not error out when adding key to identity")
 	assert.NotNil(t, confirmations, "confirmations channel should not be nil")
 	watchReceivedIdentity := <-confirmations

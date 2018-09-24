@@ -4,7 +4,6 @@ package anchors_test
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"testing"
 
@@ -48,7 +47,7 @@ func createIdentityWithKeys(t *testing.T, centrifugeId []byte) []byte {
 	testPrivateKey = "0x17e063fa17dd8274b09c14b253697d9a20afff74ace3c04fdb1b9c814ce0ada5"
 	pubKey, _ := hexutil.Decode("0xc8dd3d66e112fae5c88fe6a677be24013e53c33e")
 
-	confirmations, err = id.AddKeyToIdentity(identity.KeyPurposeEthMsgAuth, pubKey)
+	confirmations, err = id.AddKeyToIdentity(context.Background(), identity.KeyPurposeEthMsgAuth, pubKey)
 	assert.Nil(t, err, "should not error out when adding keys")
 	assert.NotNil(t, confirmations, "confirmations channel should not be nil")
 	watchRegisteredIdentityKey := <-confirmations
@@ -88,9 +87,7 @@ func commitAnchor(t *testing.T, anchorID, centrifugeId, documentRoot, signature 
 		t.Fatalf("Error commit Anchor %v", err)
 	}
 
-	fmt.Println("waiting for confirmation")
 	watchCommittedAnchor := <-confirmations
-	fmt.Println("Anchor committed")
 	assert.Nil(t, watchCommittedAnchor.Error, "No error should be thrown by context")
 	assert.Equal(t, watchCommittedAnchor.CommitData.AnchorID, anchorIDTyped, "Resulting anchor should have the same ID as the input")
 	assert.Equal(t, watchCommittedAnchor.CommitData.DocumentRoot, docRootTyped, "Resulting anchor should have the same document hash as the input")

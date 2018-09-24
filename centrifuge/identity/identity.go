@@ -2,6 +2,7 @@ package identity
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -87,7 +88,7 @@ type Identity interface {
 	CentrifugeID(cenId CentID)
 	GetCurrentP2PKey() (ret string, err error)
 	GetLastKeyForPurpose(keyPurpose int) (key []byte, err error)
-	AddKeyToIdentity(keyPurpose int, key []byte) (confirmations chan *WatchIdentity, err error)
+	AddKeyToIdentity(ctx context.Context, keyPurpose int, key []byte) (confirmations chan *WatchIdentity, err error)
 	CheckIdentityExists() (exists bool, err error)
 	FetchKey(key []byte) (Key, error)
 }

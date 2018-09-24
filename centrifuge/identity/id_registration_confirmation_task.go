@@ -76,24 +76,24 @@ func (rct *IdRegistrationConfirmationTask) ParseKwargs(kwargs map[string]interfa
 	return nil
 }
 
-func startWatching(ctx context.Context, iter *EthereumIdentityFactoryContractIdentityCreatedIterator) (*EthereumIdentityFactoryContractIdentityCreated, error) {
+func startWatching(ctx context.Context, iter *EthereumIdentityFactoryContractIdentityCreatedIterator) (*EthereumIdentityFactoryContractIdentityCreated, bool, error) {
 	defer iter.Close()
 
 	for iter.Next() {
 		select {
 		case <-ctx.Done():
-			return nil, ctx.Err()
+			return nil, false, ctx.Err()
 		default:
-			return iter.Event, nil
+			return iter.Event, false, nil
 		}
 	}
 
 	err := iter.Error()
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
-	return nil, fmt.Errorf("no matching events found")
+	return nil, true, fmt.Errorf("no matching events found")
 }
 
 // RunTask calls listens to events from geth related to IdRegistrationConfirmationTask#CentID and records result.
@@ -108,8 +108,7 @@ func (rct *IdRegistrationConfirmationTask) RunTask() (interface{}, error) {
 		Start:   rct.BlockHeight,
 	}
 
-	var err error
-	for err == nil {
+	for {
 		iter, err := rct.IdentityCreatedWatcher.FilterIdentityCreated(
 			fOpts,
 			[]*big.Int{rct.CentID.BigInt()},
@@ -118,13 +117,13 @@ func (rct *IdRegistrationConfirmationTask) RunTask() (interface{}, error) {
 			return nil, centerrors.Wrap(err, "failed to start filtering identity event logs")
 		}
 
-		res, err := startWatching(rct.EthContext, iter)
-		if err == nil {
+		res, proceed, err := startWatching(rct.EthContext, iter)
+		if err == nil || !proceed {
 			return res, err
 		}
 	}
 
-	return nil, fmt.Errorf("failed to filter identity events: %v", err)
+	return nil, fmt.Errorf("failed to filter identity events")
 }
 
 func getBytes(key interface{}) (CentID, error) {
