@@ -3,8 +3,8 @@ package purchaseorderrepository
 import (
 	"errors"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/bootstrapper"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
+	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrapper"
+	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
 )
 
 type Bootstrapper struct {

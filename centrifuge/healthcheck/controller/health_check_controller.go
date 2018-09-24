@@ -3,8 +3,8 @@ package healthcheckcontroller
 import (
 	"context"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/healthcheck/service"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/protobufs/gen/go/health"
+	"github.com/centrifuge/go-centrifuge/centrifuge/healthcheck/service"
+	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/health"
 	"github.com/golang/protobuf/ptypes/empty"
 )
 

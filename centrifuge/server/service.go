@@ -1,12 +1,12 @@
 package server
 
 import (
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/healthcheck/controller"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/controller"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/protobufs/gen/go/health"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/protobufs/gen/go/legacy/invoice"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder/controller"
+	"github.com/centrifuge/go-centrifuge/centrifuge/healthcheck/controller"
+	"github.com/centrifuge/go-centrifuge/centrifuge/invoice/controller"
+	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/health"
+	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/legacy/invoice"
+	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
+	"github.com/centrifuge/go-centrifuge/centrifuge/purchaseorder/controller"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"

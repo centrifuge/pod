@@ -3,14 +3,14 @@ package invoicecontroller
 import (
 	"context"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/processor"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/repository"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/service"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/legacy/invoice"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
+	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/processor"
+	"github.com/centrifuge/go-centrifuge/centrifuge/invoice/repository"
+	"github.com/centrifuge/go-centrifuge/centrifuge/invoice/service"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/p2p"
-	clientinvoicepb "github.com/CentrifugeInc/go-centrifuge/centrifuge/protobufs/gen/go/legacy/invoice"
+	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/centrifuge/p2p"
+	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/legacy/invoice"
 	"github.com/golang/protobuf/ptypes/empty"
 )
 

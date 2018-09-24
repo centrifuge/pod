@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/code"
+	"github.com/centrifuge/go-centrifuge/centrifuge/code"
 	"github.com/magiconair/properties/assert"
 )
 

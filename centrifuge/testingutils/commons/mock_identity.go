@@ -4,7 +4,7 @@ The reason for this package is to avoid any kind of cyclic dependencies but shar
 package testingcommons
 
 import (
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/stretchr/testify/mock"
 )
 

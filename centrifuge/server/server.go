@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	logging "github.com/ipfs/go-log"
 	"golang.org/x/net/context"
