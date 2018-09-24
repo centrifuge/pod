@@ -8,13 +8,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/CentrifugeInc/go-centrifuge.git"
+    "url": "git+https://github.com/centrifuge/go-centrifuge.git"
   },
   "author": "",
   "bugs": {
-    "url": "https://github.com/CentrifugeInc/go-centrifuge/issues"
+    "url": "https://github.com/centrifuge/go-centrifuge/issues"
   },
-  "homepage": "https://github.com/CentrifugeInc/go-centrifuge#readme",
+  "homepage": "https://github.com/centrifuge/go-centrifuge#readme",
   "devDependencies": {
     "spectacle-docs": "^1.0.3",
     "swagger-merge": "^0.3.3"

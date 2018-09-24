@@ -7,8 +7,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/secp256k1"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/utils"
+	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/secp256k1"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 )

@@ -3,7 +3,7 @@ package anchors
 import (
 	"math/big"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	logging "github.com/ipfs/go-log"
 )
 

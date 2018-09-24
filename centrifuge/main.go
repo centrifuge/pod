@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/cmd"
+	"github.com/centrifuge/go-centrifuge/centrifuge/cmd"
 )
 
 func main() {

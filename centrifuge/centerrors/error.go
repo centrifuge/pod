@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/code"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/errors"
+	"github.com/centrifuge/go-centrifuge/centrifuge/code"
 	"github.com/go-errors/errors"
 )
 

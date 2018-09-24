@@ -1,6 +1,6 @@
 package config
 
-import "github.com/CentrifugeInc/go-centrifuge/centrifuge/bootstrapper"
+import "github.com/centrifuge/go-centrifuge/centrifuge/bootstrapper"
 
 type Bootstrapper struct {
 }

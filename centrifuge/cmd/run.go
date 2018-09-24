@@ -3,8 +3,8 @@ package cmd
 import (
 	"sync"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/p2p"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/server"
+	"github.com/centrifuge/go-centrifuge/centrifuge/p2p"
+	"github.com/centrifuge/go-centrifuge/centrifuge/server"
 	"github.com/spf13/cobra"
 )
 

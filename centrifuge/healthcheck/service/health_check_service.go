@@ -1,9 +1,9 @@
 package healthcheckservice
 
 import (
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/protobufs/gen/go/health"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/version"
+	"github.com/centrifuge/go-centrifuge/centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/health"
+	"github.com/centrifuge/go-centrifuge/centrifuge/version"
 )
 
 type HealthCheckService struct{}
