@@ -3,12 +3,14 @@ package invoicecontroller
 import (
 	"context"
 
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/processor"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/service"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/legacy/invoice"
 
-	clientinvoicepb "github.com/CentrifugeInc/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/p2p"
+	clientinvoicepb "github.com/CentrifugeInc/go-centrifuge/centrifuge/protobufs/gen/go/legacy/invoice"
 	"github.com/golang/protobuf/ptypes/empty"
 )
 
@@ -17,8 +19,8 @@ type InvoiceDocumentController struct{}
 
 func getInvoiceDocumentService() *invoiceservice.InvoiceDocumentService {
 	return &invoiceservice.InvoiceDocumentService{
-		InvoiceRepository:     invoicerepository.GetInvoiceRepository(),
-		CoreDocumentProcessor: coredocumentprocessor.NewDefaultProcessor(),
+		InvoiceRepository:     invoicerepository.GetRepository(),
+		CoreDocumentProcessor: coredocumentprocessor.DefaultProcessor(identity.IDService, p2p.NewP2PClient()),
 	}
 }
 

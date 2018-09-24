@@ -3,11 +3,14 @@
 package invoice
 
 import (
+	"reflect"
 	"testing"
 
-	"github.com/CentrifugeInc/centrifuge-protobufs/documenttypes"
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/centerrors"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
+	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
@@ -20,7 +23,7 @@ func TestInvoiceCoreDocumentConverter(t *testing.T) {
 	}
 	invoiceSalts := invoicepb.InvoiceDataSalts{}
 
-	invoiceDoc := NewEmptyInvoice()
+	invoiceDoc := Empty()
 	invoiceDoc.Document.CoreDocument = &coredocumentpb.CoreDocument{
 		DocumentIdentifier: identifier,
 	}
@@ -47,7 +50,8 @@ func TestInvoiceCoreDocumentConverter(t *testing.T) {
 		EmbeddedDataSalts:  &invoiceSaltsAny,
 	}
 
-	generatedCoreDocument := invoiceDoc.ConvertToCoreDocument()
+	generatedCoreDocument, err := invoiceDoc.ConvertToCoreDocument()
+	assert.Nil(t, err, "error converting to coredocument")
 	generatedCoreDocumentBytes, err := proto.Marshal(generatedCoreDocument)
 	assert.Nil(t, err, "Error marshaling generatedCoreDocument")
 
@@ -56,8 +60,8 @@ func TestInvoiceCoreDocumentConverter(t *testing.T) {
 	assert.Equal(t, coreDocumentBytes, generatedCoreDocumentBytes,
 		"Generated & converted documents are not identical")
 
-	convertedInvoiceDoc, err := NewInvoiceFromCoreDocument(generatedCoreDocument)
-	convertedGeneratedInvoiceDoc, err := NewInvoiceFromCoreDocument(generatedCoreDocument)
+	convertedInvoiceDoc, err := NewFromCoreDocument(generatedCoreDocument)
+	convertedGeneratedInvoiceDoc, err := NewFromCoreDocument(generatedCoreDocument)
 	invoiceBytes, err := proto.Marshal(invoiceDoc.Document)
 	assert.Nil(t, err, "Error marshaling invoiceDoc")
 
@@ -75,15 +79,104 @@ func TestInvoiceCoreDocumentConverter(t *testing.T) {
 }
 
 func TestNewInvoiceFromCoreDocument_NilDocument(t *testing.T) {
-	inv, err := NewInvoiceFromCoreDocument(nil)
+	inv, err := NewFromCoreDocument(nil)
 
 	assert.Error(t, err, "should have thrown an error")
 	assert.Nil(t, inv, "document should be nil")
 }
 
 func TestNewInvoice_NilDocument(t *testing.T) {
-	inv, err := NewInvoice(nil)
+	inv, err := New(nil)
 
 	assert.Error(t, err, "should have thrown an error")
 	assert.Nil(t, inv, "document should be nil")
+}
+
+func TestValidate(t *testing.T) {
+	type want struct {
+		valid  bool
+		errMsg string
+		errs   map[string]string
+	}
+
+	validCoreDoc := testingutils.GenerateCoreDocument()
+	tests := []struct {
+		inv  *invoicepb.InvoiceDocument
+		want want
+	}{
+		{
+			inv: nil,
+			want: want{
+				valid:  false,
+				errMsg: centerrors.NilDocument,
+			},
+		},
+
+		{
+			inv: &invoicepb.InvoiceDocument{},
+			want: want{
+				valid:  false,
+				errMsg: centerrors.NilDocument,
+			},
+		},
+
+		{
+			inv: &invoicepb.InvoiceDocument{CoreDocument: validCoreDoc},
+			want: want{
+				valid:  false,
+				errMsg: centerrors.NilDocumentData,
+			},
+		},
+
+		{
+			inv: &invoicepb.InvoiceDocument{
+				CoreDocument: validCoreDoc,
+				Data: &invoicepb.InvoiceData{
+					InvoiceNumber:    "inv1234",
+					SenderName:       "Jack",
+					SenderZipcode:    "921007",
+					SenderCountry:    "AUS",
+					RecipientName:    "John",
+					RecipientZipcode: "12345",
+					RecipientCountry: "Germany",
+					Currency:         "EUR",
+					GrossAmount:      800,
+				},
+			},
+			want: want{
+				valid:  false,
+				errMsg: "Invalid Invoice",
+				errs: map[string]string{
+					"inv_salts": centerrors.RequiredField,
+				},
+			},
+		},
+
+		{
+			inv: &invoicepb.InvoiceDocument{
+				CoreDocument: validCoreDoc,
+				Data: &invoicepb.InvoiceData{
+					InvoiceNumber:    "inv1234",
+					SenderName:       "Jack",
+					SenderZipcode:    "921007",
+					SenderCountry:    "AUS",
+					RecipientName:    "John",
+					RecipientZipcode: "12345",
+					RecipientCountry: "Germany",
+					Currency:         "EUR",
+					GrossAmount:      800,
+				},
+				Salts: &invoicepb.InvoiceDataSalts{},
+			},
+			want: want{valid: true},
+		},
+	}
+
+	for _, c := range tests {
+		got := want{}
+		got.valid, got.errMsg, got.errs = Validate(c.inv)
+		if !reflect.DeepEqual(c.want, got) {
+			t.Fatalf("%v != %v", c.want, got)
+		}
+	}
 }

@@ -24,24 +24,40 @@
 #   go-tests = true
 #   unused-packages = true
 
-required = ["github.com/roboll/go-vendorinstall", "github.com/golang/protobuf/protoc-gen-go", "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway"]
+required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/roboll/go-vendorinstall", "github.com/golang/protobuf/protoc-gen-go", "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway", "golang.org/x/tools/cmd/goimports"]
 
 [[constraint]]
-  name = "github.com/CentrifugeInc/centrifuge-protobufs"
-  source = "git@github.com:CentrifugeInc/centrifuge-protobufs"
-  revision = "32e51c3a94b73ee1191f601f25c0bf58ca486116"
+  name = "github.com/centrifuge/centrifuge-protobufs"
+  source = "git@github.com:centrifuge/centrifuge-protobufs"
+  branch = "master"
+
+[[override]]
+  name = "github.com/centrifuge/centrifuge-ethereum-contracts"
+  source = "git@github.com:centrifuge/centrifuge-ethereum-contracts"
+  branch = "develop"
 
 [[constraint]]
   name = "github.com/Masterminds/semver"
   version = "1.4.2"
 
 [[constraint]]
-  revision = "f8ef5392db436f8678e972810bf919c0406d1b83"
   name = "github.com/centrifuge/precise-proofs"
+  source = "git@github.com:centrifuge/precise-proofs"
+  revision = "c673e56ee0de0d721a10dee5cd2aa59015e4420a"
+
+[[constraint]]
+  name = "github.com/centrifuge/gocelery"
+  source = "git@github.com:centrifuge/gocelery"
+  revision = "80f35a18b9a0c632d7843e7e536873b0536f0040"
+
+[[override]]
+  name = "github.com/xsleonard/go-merkle"
+  revision = "fbb7cafc5ae411e13e718172f5af7917ad6c3ed7"
 
 [[constraint]]
   name = "github.com/ethereum/go-ethereum"
   source = "git@github.com:ethereum/go-ethereum"
+  version = "1.8.15"
 
 [[override]]
   name = "github.com/satori/go.uuid"
@@ -51,14 +67,18 @@ required = ["github.com/roboll/go-vendorinstall", "github.com/golang/protobuf/pr
   name = "github.com/go-errors/errors"
   version = "1.0.1"
 
-[[constraint]]
-  name = "github.com/golang/protobuf"
-  version = "1.1.0"
+[[override]]
+  name = "github.com/rjeczalik/notify"
+  version = "0.9.1"
 
 [[constraint]]
-  version="^1.4.1"
+  name = "github.com/golang/protobuf"
+  version = "1.2.0"
+
+[[constraint]]
   name = "github.com/grpc-ecosystem/grpc-gateway"
   source = "git@github.com:grpc-ecosystem/grpc-gateway"
+  version= "1.5.0"
 
 [[constraint]]
   name = "github.com/ipfs/go-cid"
@@ -66,11 +86,11 @@ required = ["github.com/roboll/go-vendorinstall", "github.com/golang/protobuf/pr
 
 [[constraint]]
   name = "github.com/ipfs/go-datastore"
-  revision = "f2426c09e56ae390fc416f21b224c7d7ad13418c"
+  revision = "bd0caea1845f2ffebea4f3d20ec5b4b50a4c78c5"
 
 [[constraint]]
   name = "github.com/ipfs/go-ipfs-addr"
-  version = "0.1.13"
+  version = "0.1.22"
 
 [[constraint]]
   name = "github.com/ipfs/go-log"
@@ -78,124 +98,119 @@ required = ["github.com/roboll/go-vendorinstall", "github.com/golang/protobuf/pr
 
 [[override]]
   name = "github.com/libp2p/go-libp2p-metrics"
-  revision  = "a3a76fa99809135a2421982ff2958a544aa517ee"
+  version = "2.1.5"
 
 [[override]]
   name = "github.com/libp2p/go-flow-metrics"
-  revision = "3b3bcfcf78f2dc0e85be13ef3c3adc64cc5a9347"
+  version = "0.2.0"
 
 [[override]]
   name = "github.com/libp2p/go-libp2p-routing"
-  revision = "559f55cc93672421b61e89e2c19d35e5bed761e9"
+  version = "2.4.10"
 
 [[override]]
   name = "github.com/libp2p/go-tcp-transport"
-  revision = "578cd65fcec1d08d226d1b186e4548065e6bd65c"
+  version = "2.0.9"
 
 [[override]]
   name = "github.com/libp2p/go-libp2p-transport"
-  revision = "7f67e6aa68aa4b679c21179d32ab08d77a149cef"
+  version = "3.0.9"
 
 [[override]]
   name = "github.com/libp2p/go-ws-transport"
-  revision = "0cf90461ccc19765a5afafa9c2f58291471f1f09"
-
-[[override]]
-  name = "github.com/libp2p/go-libp2p-conn"
-  revision = "8058ec7c7d8d3834119a164005482ea696f028e4"
+  version = "2.0.9"
 
 [[override]]
   name = "github.com/libp2p/go-libp2p-record"
-  revision = "6774ecef51dde72303f21f45aa4bf72a3aed18d1"
+  version = "4.1.6"
 
 [[override]]
   name = "github.com/libp2p/go-libp2p-secio"
-  revision = "437de218ca1fc65dfbf7b2b084519665bbaf7781"
+  version = "2.0.9"
 
 [[override]]
   name = "github.com/libp2p/go-libp2p-interface-pnet"
-  revision = "adc9472a14d21a9da75b21a8fba6b97f18ec545e"
+  version = "3.0.0"
 
 [[override]]
   name = "github.com/libp2p/go-libp2p-circuit"
-  revision = "e85b2ba300206b73ffce804a1af20862ff1e12de"
+  version = "2.2.1"
+
 [[override]]
-name = "github.com/libp2p/go-libp2p-net"
-revision = "64c31f18a9753193909544f1a606148894cbe878"
+  name = "github.com/libp2p/go-libp2p-net"
+  version = "3.0.9"
 
 [[override]]
   name = "github.com/libp2p/go-libp2p-host"
-  revision = "dfeeb00fc9decef43a6bc47b555a530cb38e0c62"
-[[override]] 
-  name = "github.com/libp2p/go-libp2p-interface-conn"
-  revision = "0635e022759c738c55b7769cc6307506946089b9"
+  version = "3.0.9"
+
 [[override]]
   name = "github.com/libp2p/go-libp2p-interface-connmgr"
-  revision = "201197111979ad70393a51d80cb12c5dfcee9d01"
-
-
+  version = "0.0.15"
 
 [[override]]
   name = "github.com/multiformats/go-multiaddr"
-  revision = "123a717755e0559ec8fda308019cd24e0a37bb07"
+  version = "1.2.7"
+
 [[override]]
   name = "github.com/multiformats/go-multiaddr-dns"
-  revision = "b431cd0a670beb991d0d0dc3defd2b89125aa34e"
+  version = "0.2.3"
+
 [[override]]
   name = "github.com/multiformats/go-multiaddr-net"
-  revision = "6040dff26de27e20b248b08041fdb65e6ba45b58"
+  version = "1.6.2"
+
 [[override]]
   name = "github.com/multiformats/go-multibase"
-  revision = "dfd5076869faca5aed2886dcba60b44a0d0e9c01"
-[[override]]
-  name = "github.com/multiformats/go-multicodec-packed"
-  revision = "9004b413b478e5a878e4a879358cce02e5df4995"
+  version = "0.2.6"
+
 [[override]]
   name = "github.com/multiformats/go-multihash"
-  revision = "468a1b73e980e5aff011d308623e43e28c582b16"
+  version = "1.0.8"
+
 [[override]]
   name = "github.com/multiformats/go-multistream"
-  revision = "1bc5dd803d20cf91d8ec905ac3580e3ea3c8c995"
+  version = "0.3.7"
 
 [[override]]
   name = "github.com/libp2p/go-addr-util"
-  revision = "a9d6b939b59796c4933f56a8e628d6682d8d2a05"
+  version = "2.0.5"
 
 [[constraint]]
   name = "github.com/libp2p/go-libp2p"
-  revision = "5180df872e5ef34074bc6977b78f6b6e98553788"
+  version = "6.0.1"
 
 [[constraint]]
   name = "github.com/libp2p/go-libp2p-crypto"
-  revision = "f2afd8b3d4e358a6092159c813cb2bdf6d984e68"
+  version = "2.0.1"
 
 [[constraint]]
   name = "github.com/libp2p/go-libp2p-host"
-  revision = "dfeeb00fc9decef43a6bc47b555a530cb38e0c62"
+  version = "3.0.9"
 
 [[constraint]]
   name = "github.com/libp2p/go-libp2p-kad-dht"
-  revision = "911433bc89860f0286b5d61d993bb8ccaec000d4"
+  version = "4.3.9"
 
 [[constraint]]
   name = "github.com/libp2p/go-libp2p-peer"
-  revision = "296ae64e3db4af20e64270faa18e28797643480e"
+  version = "2.3.7"
 
 [[constraint]]
   name = "github.com/libp2p/go-libp2p-peerstore"
-  revision = "2c122745dcc9c03c80b0203ce89c445ace6aa596"
+  version = "1.5.0"
 
-[[constraint]]
+[[override]]
   name = "github.com/libp2p/go-libp2p-swarm"
-  revision = "881b974a81faf652c196bda4331300683f18b539" 
+  version = "3.0.11"
 
 [[constraint]]
   name = "github.com/magiconair/properties"
   version = "1.8.0"
 
 [[constraint]]
-  branch = "master"
   name = "github.com/mitchellh/go-homedir"
+  version = "1.0.0"
 
 [[constraint]]
   name = "github.com/multiformats/go-multiaddr"
@@ -206,8 +221,8 @@ revision = "64c31f18a9753193909544f1a606148894cbe878"
   version = "1.0.8"
 
 [[constraint]]
-  branch = "master"
   name = "github.com/paralin/go-libp2p-grpc"
+  revision = "3d5d33466aef613c8ed7992fe35987b34245424e"
 
 [[constraint]]
   name = "github.com/spf13/cobra"
@@ -215,59 +230,68 @@ revision = "64c31f18a9753193909544f1a606148894cbe878"
 
 [[constraint]]
   name = "github.com/spf13/viper"
-  version = "1.0.2"
+  version = "1.2.0"
 
 [[constraint]]
   name = "github.com/stretchr/testify"
   version = "1.2.2"
 
 [[constraint]]
-  branch = "master"
   name = "github.com/syndtr/goleveldb"
+  revision = "ae2bd5eed72d46b28834ec3f60db3a3ebedd8dbd"
 
 [[constraint]]
-  branch = "master"
   name = "github.com/whyrusleeping/go-logging"
+  revision = "0457bb6b88fc1973573aaf6b5145d8d3ae972390"
 
-[[constraint]]
-  branch = "master"
+[[override]]
   name = "github.com/whyrusleeping/go-smux-multistream"
+  version = "2.0.2"
 
-[[constraint]]
-  branch = "master"
+[[override]]
   name = "github.com/whyrusleeping/go-smux-yamux"
+  revision = "eac25f3e2d47aae211e457e7664b52634c95eea8"
 
 [[constraint]]
-  branch = "master"
   name = "golang.org/x/crypto"
+  revision = "0e37d006457bf46f9e6692014ba72ef82c33022c"
 
 [[constraint]]
-  branch = "master"
   name = "golang.org/x/net"
+  revision = "26e67e76b6c3f6ce91f7c52def5af501b4e0f3a2"
 
 [[constraint]]
   name = "google.golang.org/grpc"
-  version = "1.13.0"
+  version = "1.15.0"
+
+[[constraint]]
+  name = "gopkg.in/resty.v1"
+  version = "1.9.1"
+
+[[override]]
+  name = "google.golang.org/genproto"
+  revision = "5a2fd4cab2d6d4a18e70c34937662526cd0c4bd1"
 
 [[prune.project]]
-    name = "github.com/ethereum/go-ethereum"
-    non-go = false
+    name = "github.com/libp2p/go-libp2p"
     unused-packages = false
 
 [[prune.project]]
-    name = "github.com/CentrifugeInc/centrifuge-protobufs"
-    non-go = false
+    name = "github.com/centrifuge/centrifuge-ethereum-contracts"
+    unused-packages = false
+
+[[prune.project]]
+    name = "github.com/ethereum/go-ethereum"
+    unused-packages = false
+
+[[prune.project]]
+    name = "github.com/centrifuge/centrifuge-protobufs"
     unused-packages = false
 
 [[prune.project]]
     name = "github.com/grpc-ecosystem/grpc-gateway"
-    non-go = false
     unused-packages = false
 
 [prune]
   go-tests = true
   unused-packages = true
-
-[[constraint]]
-  name = "gopkg.in/resty.v1"
-  version = "1.7.0"

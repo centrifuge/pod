@@ -3,11 +3,13 @@ package purchaseordercontroller
 import (
 	"context"
 
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/processor"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/p2p"
 	clientpurchaseorderpb "github.com/CentrifugeInc/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder/service"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
 	googleprotobuf2 "github.com/golang/protobuf/ptypes/empty"
 )
 
@@ -17,7 +19,7 @@ type PurchaseOrderDocumentController struct{}
 func getPurchaseOrderDocumentService() *purchaseorderservice.PurchaseOrderDocumentService {
 	return &purchaseorderservice.PurchaseOrderDocumentService{
 		Repository:            purchaseorderrepository.GetRepository(),
-		CoreDocumentProcessor: coredocumentprocessor.NewDefaultProcessor(),
+		CoreDocumentProcessor: coredocumentprocessor.DefaultProcessor(identity.IDService, p2p.NewP2PClient()),
 	}
 }
 

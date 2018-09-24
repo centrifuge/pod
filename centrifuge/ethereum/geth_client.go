@@ -45,6 +45,7 @@ type EthereumClient interface {
 	GetRpcClient() *rpc.Client
 	GetHost() *url.URL
 	GetNonceMutex() *sync.Mutex
+	GetTxOpts(accountName string) (*bind.TransactOpts, error)
 }
 
 type GethClient struct {
@@ -52,6 +53,20 @@ type GethClient struct {
 	RpcClient  *rpc.Client
 	Host       *url.URL
 	NonceMutex *sync.Mutex
+	Accounts   map[string]*bind.TransactOpts
+}
+
+func (gethClient GethClient) GetTxOpts(accountName string) (*bind.TransactOpts, error) {
+	if acc, ok := gethClient.Accounts[accountName]; !ok {
+		txOpts, err := GetGethTxOpts(accountName)
+		if err != nil {
+			return nil, err
+		}
+		gethClient.Accounts[accountName] = txOpts
+		return txOpts, nil
+	} else {
+		return acc, nil
+	}
 }
 
 func (gethClient GethClient) GetClient() *ethclient.Client {
@@ -87,7 +102,7 @@ func NewClientConnection() (GethClient, error) {
 		log.Errorf("Failed to connect to the Ethereum client [%s]: %v", u.String(), err)
 		return GethClient{}, err
 	}
-	return GethClient{client, c, u, &sync.Mutex{}}, nil
+	return GethClient{client, c, u, &sync.Mutex{}, make(map[string]*bind.TransactOpts)}, nil
 }
 
 // Note that this is a singleton and is the same connection for the whole application.

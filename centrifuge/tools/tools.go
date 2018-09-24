@@ -3,7 +3,19 @@ package tools
 import (
 	"crypto/rand"
 	"errors"
+	"math/big"
+
+	"github.com/centrifuge/gocelery"
 )
+
+func ContainsBigIntInSlice(value *big.Int, list []*big.Int) bool {
+	for _, v := range list {
+		if v.Cmp(value) == 0 {
+			return true
+		}
+	}
+	return false
+}
 
 // SliceToByte32 converts a 32 byte slice to an array. Will thorw error if the slice is too long
 func SliceToByte32(in []byte) (out [32]byte, err error) {
@@ -33,9 +45,9 @@ func CheckMultiple32BytesFilled(bs ...[]byte) bool {
 	return true
 }
 
-// RandomSlice32 returns a randomly filled byte array with length of 32
-func RandomSlice32() (out []byte) {
-	r := make([]byte, 32)
+// RandomSlice returns a randomly filled byte array with length of given size
+func RandomSlice(size int) (out []byte) {
+	r := make([]byte, size)
 	_, err := rand.Read(r)
 	// Note that err == nil only if we read len(b) bytes.
 	if err != nil {
@@ -46,7 +58,7 @@ func RandomSlice32() (out []byte) {
 
 // RandomByte32 returns a randomly filled byte array with length of 32
 func RandomByte32() (out [32]byte) {
-	r := RandomSlice32()
+	r := RandomSlice(32)
 	copy(out[:], r[:32])
 	return
 }
@@ -93,4 +105,33 @@ func IsSameByteSlice(a []byte, b []byte) bool {
 	}
 
 	return true
+}
+
+// ByteFixedToBigInt convert bute slices to big.Int (bigendian)
+func ByteSliceToBigInt(slice []byte) *big.Int {
+	bi := new(big.Int)
+	bi.SetBytes(slice)
+	return bi
+}
+
+// ByteFixedToBigInt convert arbitrary length byte arrays to big.Int
+func ByteFixedToBigInt(bytes []byte, size int) *big.Int {
+	bi := new(big.Int)
+	bi.SetBytes(bytes[:size])
+	return bi
+}
+
+// Useful for tests
+func SimulateJsonDecodeForGocelery(kwargs map[string]interface{}) (map[string]interface{}, error) {
+	t1 := gocelery.TaskMessage{Kwargs: kwargs}
+	encoded, err := t1.Encode()
+	if err != nil {
+		return nil, err
+	}
+	t2, err := gocelery.DecodeTaskMessage(encoded)
+	return t2.Kwargs, err
+}
+
+func IsValidByteSliceForLength(slice []byte, length int) bool {
+	return len(slice) == length
 }

@@ -10,17 +10,16 @@ services:
 
 env:
   matrix:
-    - DEPCACHEDIR=/tmp/depcache IMAGE_NAME=centrifugeio/go-centrifuge PROTOTOOL_VERSION=0.4.0 PROTOTOOL_BIN=~/bin/0.4.0/prototool CONTRACTS_TAG=0.1.0
+    - DEPCACHEDIR=/tmp/depcache IMAGE_NAME=centrifugeio/go-centrifuge PROTOTOOL_VERSION=0.4.0 PROTOTOOL_BIN=~/bin/0.4.0/prototool
   global:
     - secure: XDK6tU10HRQOLqYBquB69KJ0ZcA/avqWZ3o73ET+RurApvlYqEY1YA1FtPs2+vY9BlvvzN0c7v9RoxIqwYsYl7m/qoZHBcl4gpjCcFJtjPqpudkrigFZmb5voSelqKXdh4UmwQa4hQPq4W002eju82FHXEtdFSThNi1jAPMitLEmFhG22JoKda2M810HbPqrBctye6RD/2ZSsSLMZQgeTDkwvU5FFDzO2qfKQqtYrMqfpvcqTsfqr6vpUyZyaOVsr2AzLtu3qLB9UBSHw98yOoSsTpZ+rg6d2X5PWn8ndOKSyswelHoPCdNjTwPOxRie+P7tEClr90LtdWrtXbQDxp0j6dutP0FQALv38sSioazag0sDePl6yjGvSH9s8UgvnpSIHUZsS+ZxntVEOSNnxzP+wFwP05XEpzd5XL+dn9CjH8PtXOX+lv+KHc8NGHeKdnw/eiwD5eikW13V9u6Fm2ZyAOeLSqXb+m0Hfj0+OirUnisZII1dO2AAWbigop7tk0xn/UPQQaT/TEREdhM9cSXhQOyHB4UoHac7zipbDKtBveJPbaGNe9iRqPaLViPO9XwUAHkOGrNv8gl+WaNzrmiOFgWpVg7KUUxzKu5n2QyuNZb5H27+u4RpUbv6qTQiU0VhSW9F2xcwgHLVoJGSDVwyOM1XuTidX/aTQ/G0pZQ=
     - secure: Id6nD7LQ//FySnKgFAae4Gi60JEnpXw1lWARfcJbYOVIH7usbyKm+lHyyCb9tsj5eJmdHovpzd4ZO52arMdDbvzGmnBHbWMXhjJe7oGJNgJ4ifI0GTSCCHOshox5kzhom3OekjOs5QZgcg/DN0Aflt5JkJY+PQy0KGqSo449uvB86QMesrDI2FVZlCL/a81HaSRIB9UhWfgyQrpEY6CqmIQtWY4MTHPnb1YegG04OKrUVdmD0iPbN3diDciiS5xCXi4JyiP+hSbUbnAakEr071CptRaGiJXkCkMK28AUvn5ox6xffDNeA2snDfE36EUUZYLkcs89fUKAp8Quu4i18HTFCtfC8o82mt2nAu+ZNEuU+SJzK4mKUwdSwt/kDMMxdHZ5ss7aoTlreHGDehts12OGBMsp7w/cYqKnnaLf8uHFfcasOD+51SDGyo5jzA5QDM6lrt28Cptb/3NwH+xmFTY85YxE9tnTAKkBd/NRPlB8Q1HNzLWu4QGC4u0wnWeM0IvWhtEFguEb8E9MtcvKHHC5iVyyxJUavJ9s+41Xg4x0KF2Z0fmmsZTu1WYrcFLhWtBnkUGeS70NfQpGZ5UkuL9yJN3SvVApdku9QMbw6Bn/ep05V5JnFSOGlHx5HztyMpkq/CJRcuzq1lxnoUWhXVulhwBrDelvsgO8pBVALJw=
 
 cache:
-  # Cache DAG data
-  - ~/bin/
-  - ~/.cache/prototool/Linux/x86_64/protobuf/
-  - /tmp/geth_test_network/8383/.ethash
-  - /tmp/depcache
+  directories:
+    - ~/bin/
+    - ~/.cache/prototool/Linux/x86_64/protobuf/
+    - /tmp/depcache
 
 before_install:
   - npm install -g truffle@4.1.13
@@ -29,6 +28,7 @@ install:
   - mkdir -p ~/bin
   - PROTOTOOL_VERSION=$PROTOTOOL_VERSION ./scripts/install_prototool.sh
   - go get golang.org/x/tools/cmd/goimports
+  - go get -u github.com/kyoh86/richgo
   - make install
 
 jobs:
@@ -39,13 +39,12 @@ jobs:
         - scripts/format_go.sh
         - make proto-all
         - make gen-swagger
-
-        - echo "Checking that `prototool gen` doesn't result in a modified git tree" && git diff --exit-code centrifuge/protobufs/gen
+        - echo "Checking that 'prototool gen' doesn't result in a modified git tree" && git diff --exit-code centrifuge/protobufs/gen
         - scripts/test_wrapper.sh
       after_success:
        - bash <(curl -s https://codecov.io/bash)
     - stage: build_artifacts
-      if: (NOT type IN (pull_request)) AND (branch = master)
+      if: (NOT type IN (pull_request)) AND (branch = develop)
       before_script:
        - openssl aes-256-cbc -K $encrypted_f84a564476a2_key -iv $encrypted_f84a564476a2_iv -in peak-vista-185616-9f70002df7eb.json.enc -out peak-vista-185616-9f70002df7eb.json -d
       script: make build-ci

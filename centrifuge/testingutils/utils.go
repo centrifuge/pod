@@ -3,10 +3,13 @@ package testingutils
 import (
 	"context"
 	"crypto/rand"
-	"fmt"
 
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/secp256k1"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -19,39 +22,99 @@ func MockConfigOption(key string, value interface{}) func() {
 }
 
 func Rand32Bytes() []byte {
-	randbytes := make([]byte, 32)
-	rand.Read(randbytes)
-	return randbytes
+	bytes := make([]byte, 32)
+	rand.Read(bytes)
+	return bytes
 }
 
 func GenerateP2PRecipients(quantity int) [][]byte {
 	recipients := make([][]byte, quantity)
 
 	for i := 0; i < quantity; i++ {
-		recipients[0] = []byte(fmt.Sprintf("RecipientNo[%d]", quantity))
+		ID := identity.NewRandomCentID()
+		recipients[i] = ID[:]
+	}
+	return recipients
+}
+
+// USE WITH CARE as this will create 2 eth transactions for each identity
+func GenerateP2PRecipientsOnEthereum(quantity int) [][]byte {
+	recipients := make([][]byte, quantity)
+	idService := identity.NewEthereumIdentityService()
+
+	for i := 0; i < quantity; i++ {
+		ID := identity.NewRandomCentID()
+		_, confirmations, _ := idService.CreateIdentity(ID)
+		<-confirmations
+		id, _ := idService.LookupIdentityForID(ID)
+		confirmations, _ = id.AddKeyToIdentity(identity.KeyPurposeP2p, tools.RandomSlice(32))
+		<-confirmations
+		recipients[i] = ID[:]
 	}
 	return recipients
 }
 
 func GenerateCoreDocument() *coredocumentpb.CoreDocument {
 	identifier := Rand32Bytes()
-	return &coredocumentpb.CoreDocument{
+	salts := &coredocumentpb.CoreDocumentSalts{}
+	doc := &coredocumentpb.CoreDocument{
+		DataRoot:           tools.RandomSlice(32),
 		DocumentIdentifier: identifier,
 		CurrentIdentifier:  identifier,
 		NextIdentifier:     Rand32Bytes(),
+		CoredocumentSalts:  salts,
 	}
+	proofs.FillSalts(doc, salts)
+	return doc
 }
 
 type MockCoreDocumentProcessor struct {
 	mock.Mock
 }
 
-func (m *MockCoreDocumentProcessor) Send(coreDocument *coredocumentpb.CoreDocument, ctx context.Context, recipient []byte) (err error) {
+func (m *MockCoreDocumentProcessor) Send(ctx context.Context, coreDocument *coredocumentpb.CoreDocument, recipient identity.CentID) (err error) {
 	args := m.Called(coreDocument, ctx, recipient)
 	return args.Error(0)
 }
 
-func (m *MockCoreDocumentProcessor) Anchor(coreDocument *coredocumentpb.CoreDocument) (err error) {
+func (m *MockCoreDocumentProcessor) Anchor(ctx context.Context, coreDocument *coredocumentpb.CoreDocument, collaborators []identity.CentID) (err error) {
 	args := m.Called(coreDocument)
 	return args.Error(0)
+}
+
+func (m *MockCoreDocumentProcessor) GetDataProofHashes(coreDocument *coredocumentpb.CoreDocument) (hashes [][]byte, err error) {
+	args := m.Called(coreDocument)
+	return args.Get(0).([][]byte), args.Error(1)
+}
+
+type MockSubscription struct {
+	ErrChan chan error
+}
+
+func (m *MockSubscription) Err() <-chan error {
+	return m.ErrChan
+}
+
+func (*MockSubscription) Unsubscribe() {}
+
+func CreateIdentityWithKeys() identity.CentID {
+	idService := identity.NewEthereumIdentityService()
+	idConfig, _ := secp256k1.GetIDConfig()
+	centIdTyped, _ := identity.NewCentID(idConfig.ID)
+	// only create identity if it doesn't exist
+	id, err := idService.LookupIdentityForID(centIdTyped)
+	if err != nil {
+		_, confirmations, _ := idService.CreateIdentity(centIdTyped)
+		<-confirmations
+		// LookupIdentityForId
+		id, _ = idService.LookupIdentityForID(centIdTyped)
+	}
+
+	// only add key if it doesn't exist
+	_, err = id.GetLastKeyForPurpose(identity.KeyPurposeEthMsgAuth)
+	if err != nil {
+		confirmations, _ := id.AddKeyToIdentity(identity.KeyPurposeEthMsgAuth, idConfig.PublicKey)
+		<-confirmations
+	}
+	return centIdTyped
 }

@@ -42,6 +42,32 @@
         ]
       }
     },
+    "/invoice/get": {
+      "post": {
+        "operationId": "GetInvoiceDocument",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/invoiceInvoiceDocument"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/invoiceGetInvoiceDocumentEnvelope"
+            }
+          }
+        ],
+        "tags": [
+          "InvoiceDocumentService"
+        ]
+      }
+    },
     "/invoice/getReceived": {
       "get": {
         "operationId": "GetReceivedInvoiceDocuments",
@@ -53,6 +79,33 @@
             }
           }
         },
+        "tags": [
+          "InvoiceDocumentService"
+        ]
+      }
+    },
+    "/invoice/proof": {
+      "post": {
+        "description": "Creates a list of precise proofs for the specified fields",
+        "operationId": "CreateInvoiceProof",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/invoiceInvoiceProof"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/invoiceCreateInvoiceProofEnvelope"
+            }
+          }
+        ],
         "tags": [
           "InvoiceDocumentService"
         ]
@@ -77,65 +130,6 @@
             "required": true,
             "schema": {
               "$ref": "#/definitions/invoiceSendInvoiceEnvelope"
-            }
-          }
-        ],
-        "tags": [
-          "InvoiceDocumentService"
-        ]
-      }
-    },
-    "/invoice/{document_identifier}": {
-      "get": {
-        "operationId": "GetInvoiceDocument",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/invoiceInvoiceDocument"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "document_identifier",
-            "in": "path",
-            "required": true,
-            "type": "string",
-            "format": "byte"
-          }
-        ],
-        "tags": [
-          "InvoiceDocumentService"
-        ]
-      }
-    },
-    "/invoice/{document_identifier}/proof": {
-      "post": {
-        "description": "Creates a list of precise proofs for the specified fields",
-        "operationId": "CreateInvoiceProof",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/invoiceInvoiceProof"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "document_identifier",
-            "in": "path",
-            "required": true,
-            "type": "string",
-            "format": "byte"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/invoiceCreateInvoiceProofEnvelope"
             }
           }
         ],
@@ -275,6 +269,15 @@
           "items": {
             "type": "string"
           }
+        }
+      }
+    },
+    "invoiceGetInvoiceDocumentEnvelope": {
+      "type": "object",
+      "properties": {
+        "document_identifier": {
+          "type": "string",
+          "format": "byte"
         }
       }
     },
@@ -553,10 +556,23 @@
           "type": "string",
           "format": "byte"
         },
+        "hash": {
+          "type": "string",
+          "format": "byte",
+          "title": "hash is filled if value \u0026 salt are not available"
+        },
         "hashes": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/proofsMerkleHash"
+          },
+          "title": "Fills either 'hashes' for standard Merkle trees or 'sortedHashes' for a lexicograhical ordered of a node hash\nnot both"
+        },
+        "sortedHashes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "byte"
           }
         }
       }

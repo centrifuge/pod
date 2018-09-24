@@ -11,6 +11,7 @@ networks:
       identityFactory: ""
       identityRegistry: ""
       anchorRegistry: ""
+      anchorRepository: ""
 
   centrifugeRussianhillEthIntegration:
     id: 101
@@ -31,12 +32,14 @@ networks:
 
     ethereumNetworkId: 4
     contractAddresses: 
-      identityFactory: "0x85b32f7a3f40481f12334041670c8cbe07f7d79c"
-      identityRegistry: "0x54ae373f096faf2db6b8a46717c0b98ecfa075dd"
+      identityFactory: "0x90d294571e73842697a66b7a99a09dd6c73d356d"
+      identityRegistry: "0x9660c039d311453af0d58c5666723d9c2fa7d6ec"
       anchorRegistry: "0x342a74b382d19da64988b376d0e4a656b7bfa5dd"
+      anchorRepository: "0x7f854dfa98012d7fa55c803bba2260bcdee4b5ed"
 
 queue:
   numWorkers: 2
+  workerWaitTimeMS: 1
 
 ethereum:
   defaultAccountName: "main"

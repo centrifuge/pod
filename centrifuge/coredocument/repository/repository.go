@@ -1,19 +1,63 @@
 package coredocumentrepository
 
-import "github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
+import (
+	"fmt"
+	"log"
+	"sync"
 
-var coreDocumentRepository Repository
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/centerrors"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/code"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/golang/protobuf/proto"
+	"github.com/syndtr/goleveldb/leveldb"
+)
 
-// GetRepository returns CoreDocument repository implementation
-func GetRepository() Repository {
-	return coreDocumentRepository
+// levelDBRepository implements storage.Repository
+type levelDBRepository struct {
+	storage.DefaultLevelDB
 }
 
-// Repository defines functions for Repository
-type Repository interface {
-	GetKey(id []byte) []byte
-	FindById(id []byte) (doc *coredocumentpb.CoreDocument, err error)
+// levelDBRepo is singleton instance
+var levelDBRepo *levelDBRepository
 
-	// CreateOrUpdate functions similar to a REST HTTP PUT where the document is either created or updated regardless if it existed before
-	CreateOrUpdate(doc *coredocumentpb.CoreDocument) (err error)
+// once to guard from creating multiple instances
+var once sync.Once
+
+// InitLevelDBRepository initialises new repository if not exists
+func InitLevelDBRepository(db *leveldb.DB) {
+	once.Do(func() {
+		levelDBRepo = &levelDBRepository{
+			storage.DefaultLevelDB{
+				KeyPrefix:    "coredoc",
+				LevelDB:      db,
+				ValidateFunc: validate,
+			},
+		}
+	})
+}
+
+// GetRepository returns a repository implementation
+// Must be called only after repository initialisation
+func GetRepository() storage.Repository {
+	if levelDBRepo == nil {
+		log.Fatal("CoreDocument repository not initialised")
+	}
+
+	return levelDBRepo
+}
+
+// validate typecasts and validates the coredocument
+func validate(doc proto.Message) error {
+	coreDoc, ok := doc.(*coredocumentpb.CoreDocument)
+	if !ok {
+		return centerrors.New(code.DocumentInvalid, fmt.Sprintf("invalid document of type: %T", doc))
+	}
+
+	if valid, msg, errs := coredocument.Validate(coreDoc); !valid {
+		return centerrors.NewWithErrors(code.DocumentInvalid, msg, errs)
+	}
+
+	return nil
 }

@@ -1,28 +1,102 @@
 package identity
 
 import (
+	"bytes"
 	"encoding/base64"
+	"errors"
 	"fmt"
+	"math/big"
+
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/centerrors"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
 )
 
 const (
-	ACTION_CREATE       = "create"
-	ACTION_ADDKEY       = "addkey"
-	KEY_TYPE_PEERID     = 1
-	KEY_TYPE_SIGNATURE  = 2
-	KEY_TYPE_ENCRYPTION = 3
+	CentIDByteLength     = 6
+	ActionCreate         = "create"
+	ActionAddKey         = "addkey"
+	KeyPurposeP2p        = 1
+	KeyPurposeSigning    = 2
+	KeyPurposeEthMsgAuth = 3
 )
 
+type CentID [CentIDByteLength]byte
+
+func NewCentID(centIDBytes []byte) (CentID, error) {
+	var centBytes [CentIDByteLength]byte
+	if !tools.IsValidByteSliceForLength(centIDBytes, CentIDByteLength) {
+		return centBytes, errors.New("invalid length byte slice provided for centId")
+	}
+	copy(centBytes[:], centIDBytes[:CentIDByteLength])
+	return centBytes, nil
+}
+
+func NewRandomCentID() CentID {
+	ID, _ := NewCentID(tools.RandomSlice(CentIDByteLength))
+	return ID
+}
+
+func (c CentID) Equal(other CentID) bool {
+	for i := range c {
+		if c[i] != other[i] {
+			return false
+		}
+	}
+
+	return true
+}
+
+func (c CentID) String() string {
+	return base64.StdEncoding.EncodeToString(c[:])
+}
+
+func (c CentID) MarshalBinary() (data []byte, err error) {
+	return c[:], nil
+}
+
+func (c CentID) BigInt() *big.Int {
+	return tools.ByteSliceToBigInt(c[:])
+}
+
+func (c CentID) ByteArray() [CentIDByteLength]byte {
+	var idBytes [CentIDByteLength]byte
+	copy(idBytes[:], c[:CentIDByteLength])
+	return idBytes
+}
+
+func ParseCentIDs(centIDByteArray [][]byte) (errs []error, centIDs []CentID) {
+	for _, element := range centIDByteArray {
+		centID, err := NewCentID(element)
+		if err != nil {
+			err = centerrors.Wrap(err, "error parsing receiver centId")
+			errs = append(errs, err)
+			continue
+		}
+		centIDs = append(centIDs, centID)
+	}
+	return errs, centIDs
+}
+
+// IDService is a default implementation of the Service
+var IDService Service
+
+// Identity defines an Identity on chain
 type Identity interface {
-	String() string
-	GetCentrifugeId() []byte
-	CentrifugeIdString() string
-	CentrifugeIdB32() [32]byte
-	SetCentrifugeId(b []byte) error
+	fmt.Stringer
+	GetCentrifugeID() CentID
+	CentrifugeID(cenId CentID)
 	GetCurrentP2PKey() (ret string, err error)
-	GetLastKeyForType(keyType int) (key []byte, err error)
-	AddKeyToIdentity(keyType int, key []byte) (confirmations chan *WatchIdentity, err error)
+	GetLastKeyForPurpose(keyPurpose int) (key []byte, err error)
+	AddKeyToIdentity(keyPurpose int, key []byte) (confirmations chan *WatchIdentity, err error)
 	CheckIdentityExists() (exists bool, err error)
+	FetchKey(key []byte) (Key, error)
+}
+
+// Key defines a single ERC725 identity key
+type Key interface {
+	GetKey() [32]byte
+	GetPurposes() []*big.Int
+	GetRevokedAt() *big.Int
 }
 
 type WatchIdentity struct {
@@ -30,22 +104,96 @@ type WatchIdentity struct {
 	Error    error
 }
 
-// IdentityService is used to fetch identities
-type IdentityService interface {
-	LookupIdentityForId(centrifugeId []byte) (id Identity, err error)
-	CreateIdentity(centrifugeId []byte) (id Identity, confirmations chan *WatchIdentity, err error)
-	CheckIdentityExists(centrifugeId []byte) (exists bool, err error)
+// Service is used to fetch identities
+type Service interface {
+	LookupIdentityForID(centrifugeID CentID) (id Identity, err error)
+	CreateIdentity(centrifugeID CentID) (id Identity, confirmations chan *WatchIdentity, err error)
+	CheckIdentityExists(centrifugeID CentID) (exists bool, err error)
 }
 
 // CentrifugeIdStringToSlice takes a string and decodes it using base64 to convert it into a slice
 // of length 32.
-func CentrifugeIdStringToSlice(s string) (id []byte, err error) {
-	id, err = base64.StdEncoding.DecodeString(s)
+func CentrifugeIdStringToSlice(s string) (id CentID, err error) {
+	centBytes, err := base64.StdEncoding.DecodeString(s)
 	if err != nil {
-		return []byte{}, err
+		return [CentIDByteLength]byte{}, err
 	}
-	if len(id) != 32 {
-		return []byte{}, fmt.Errorf("CentrifugeId has invalid length [%d]", len(id))
+	centId, err := NewCentID(centBytes)
+	if err != nil {
+		return [CentIDByteLength]byte{}, err
 	}
-	return id, nil
+	return centId, nil
+}
+
+// GetClientP2PURL returns the p2p url associated with the centID
+func GetClientP2PURL(centID CentID) (url string, err error) {
+	target, err := IDService.LookupIdentityForID(centID)
+	if err != nil {
+		return url, centerrors.Wrap(err, "error fetching receiver identity")
+	}
+
+	p2pKey, err := target.GetCurrentP2PKey()
+	if err != nil {
+		return url, centerrors.Wrap(err, "error fetching p2p key")
+	}
+
+	return fmt.Sprintf("/ipfs/%s", p2pKey), nil
+}
+
+// GetClientsP2PURLs returns p2p urls associated with each centIDs
+// will error out at first failure
+func GetClientsP2PURLs(centIDs []CentID) ([]string, error) {
+	var p2pURLs []string
+	for _, id := range centIDs {
+		url, err := GetClientP2PURL(id)
+		if err != nil {
+			return nil, err
+		}
+
+		p2pURLs = append(p2pURLs, url)
+	}
+
+	return p2pURLs, nil
+}
+
+// GetIdentityKey returns the key for provided identity
+func GetIdentityKey(identity CentID, pubKey []byte) (keyInfo Key, err error) {
+	id, err := IDService.LookupIdentityForID(identity)
+	if err != nil {
+		return keyInfo, err
+	}
+
+	key, err := id.FetchKey(pubKey)
+	if err != nil {
+		return keyInfo, err
+	}
+
+	if tools.IsEmptyByte32(key.GetKey()) {
+		return keyInfo, fmt.Errorf(fmt.Sprintf("key not found for identity: %x", identity))
+	}
+
+	return key, nil
+}
+
+// ValidateKey checks if a given key is valid for the given centrifugeID.
+func ValidateKey(centrifugeId CentID, key []byte, purpose int) error {
+	idKey, err := GetIdentityKey(centrifugeId, key)
+	if err != nil {
+		return err
+	}
+
+	if !bytes.Equal(key, tools.Byte32ToSlice(idKey.GetKey())) {
+		return fmt.Errorf(fmt.Sprintf("[Key: %x] Key doesn't match", idKey.GetKey()))
+	}
+
+	if !tools.ContainsBigIntInSlice(big.NewInt(int64(purpose)), idKey.GetPurposes()) {
+		return fmt.Errorf(fmt.Sprintf("[Key: %x] Key doesn't have purpose [%d]", idKey.GetKey(), purpose))
+	}
+
+	// TODO Check if revokation block happened before the timeframe of the document signing, for historical validations
+	if idKey.GetRevokedAt().Cmp(big.NewInt(0)) != 0 {
+		return fmt.Errorf(fmt.Sprintf("[Key: %x] Key is currently revoked since block [%d]", idKey.GetKey(), idKey.GetRevokedAt()))
+	}
+
+	return nil
 }

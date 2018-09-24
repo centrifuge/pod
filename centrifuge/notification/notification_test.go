@@ -1,4 +1,5 @@
-// build +unit
+// +build unit
+
 package notification
 
 import (
@@ -6,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/notification"
-	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
+	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/stretchr/testify/assert"
@@ -41,6 +42,6 @@ func TestWebhookConstructPayload(t *testing.T) {
 
 	assert.Equal(t, notificationMessage.Recorded, unmarshaledNotificationMessage.Recorded, "Recorder Timestamp should be equal")
 	assert.Equal(t, notificationMessage.Document, unmarshaledNotificationMessage.Document, "CoreDocument should be equal")
-	assert.Equal(t, notificationMessage.CentrifugeId, unmarshaledNotificationMessage.CentrifugeId, "CentrifugeId should be equal")
+	assert.Equal(t, notificationMessage.CentrifugeId, unmarshaledNotificationMessage.CentrifugeId, "CentrifugeID should be equal")
 	assert.Equal(t, notificationMessage.EventType, unmarshaledNotificationMessage.EventType, "EventType should be equal")
 }
