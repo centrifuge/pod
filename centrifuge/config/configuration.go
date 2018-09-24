@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/resources"
+	"github.com/centrifuge/go-centrifuge/centrifuge/resources"
 	"github.com/ethereum/go-ethereum/common"
 	logging "github.com/ipfs/go-log"
 	"github.com/spf13/viper"
