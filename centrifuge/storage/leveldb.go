@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"encoding/json"
 	"sync"
 
 	"fmt"
@@ -54,9 +55,10 @@ func CloseLevelDBStorage() {
 
 // DefaultLevelDB implements the repository
 type DefaultLevelDB struct {
-	KeyPrefix    string
-	LevelDB      *leveldb.DB
-	ValidateFunc func(proto.Message) error
+	KeyPrefix         string
+	LevelDB           *leveldb.DB
+	ValidateFunc      func(proto.Message) error
+	ValidateModelFunc func(json.Marshaler) error
 }
 
 // Exists returns if the document exists in the repository
@@ -94,7 +96,7 @@ func (repo *DefaultLevelDB) GetByID(id []byte, msg proto.Message) error {
 }
 
 // Create creates the document if not exists
-// errors out if document exist
+// errors out if document exists
 func (repo *DefaultLevelDB) Create(id []byte, msg proto.Message) error {
 	if msg == nil {
 		return fmt.Errorf("nil document provided")
@@ -137,6 +139,77 @@ func (repo *DefaultLevelDB) Update(id []byte, msg proto.Message) error {
 	}
 
 	data, err := proto.Marshal(msg)
+	if err != nil {
+		return err
+	}
+
+	return repo.LevelDB.Put(repo.GetKey(id), data, nil)
+}
+
+// GetModelByID finds the document by id and marshalls into message
+func (repo *DefaultLevelDB) GetModelByID(id []byte, msg json.Unmarshaler) error {
+	if msg == nil {
+		return fmt.Errorf("nil document provided")
+	}
+
+	data, err := repo.LevelDB.Get(repo.GetKey(id), nil)
+	if err != nil {
+		return err
+	}
+
+	err = msg.UnmarshalJSON(data)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// CreateModel creates the model if not exists
+// errors out if document exists
+func (repo *DefaultLevelDB) CreateModel(id []byte, msg json.Marshaler) error {
+	if msg == nil {
+		return fmt.Errorf("nil model provided")
+	}
+
+	if repo.Exists(id) {
+		return fmt.Errorf("document already exists")
+	}
+
+	// TODO(ved): check if we still need this once the model is built
+	if repo.ValidateModelFunc != nil {
+		err := repo.ValidateModelFunc(msg)
+		if err != nil {
+			return fmt.Errorf("validation failed: %v", err)
+		}
+	}
+
+	data, err := msg.MarshalJSON()
+	if err != nil {
+		return err
+	}
+
+	return repo.LevelDB.Put(repo.GetKey(id), data, nil)
+}
+
+// Update updates the doc with ID if exists
+func (repo *DefaultLevelDB) UpdateModel(id []byte, msg json.Marshaler) error {
+	if msg == nil {
+		return fmt.Errorf("nil document provided")
+	}
+
+	if !repo.Exists(id) {
+		return fmt.Errorf("document doesn't exists")
+	}
+
+	if repo.ValidateModelFunc != nil {
+		err := repo.ValidateModelFunc(msg)
+		if err != nil {
+			return fmt.Errorf("validation failed: %v", err)
+		}
+	}
+
+	data, err := msg.MarshalJSON()
 	if err != nil {
 		return err
 	}
