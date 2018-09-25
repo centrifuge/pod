@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
+
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/centrifuge/queue"
@@ -126,20 +128,6 @@ func (act *AnchoringConfirmationTask) ParseKwargs(kwargs map[string]interface{})
 	return nil
 }
 
-func getEvent(iter *EthereumAnchorRepositoryContractAnchorCommittedIterator) (*EthereumAnchorRepositoryContractAnchorCommitted, bool, error) {
-	defer iter.Close()
-	if iter.Next() {
-		return iter.Event, false, nil
-	}
-
-	err := iter.Error()
-	if err != nil {
-		return nil, false, err
-	}
-
-	return nil, true, fmt.Errorf("no matching events found")
-}
-
 // RunTask calls listens to events from geth related to AnchoringConfirmationTask#AnchorID and records result.
 func (act *AnchoringConfirmationTask) RunTask() (interface{}, error) {
 	log.Infof("Waiting for confirmation for the anchorID [%x]", act.AnchorID)
@@ -163,9 +151,13 @@ func (act *AnchoringConfirmationTask) RunTask() (interface{}, error) {
 			return nil, centerrors.Wrap(err, "failed to start filtering anchor event logs")
 		}
 
-		res, proceed, err := getEvent(iter)
-		if err == nil || !proceed {
-			return res, err
+		err = utils.LookForEvent(iter)
+		if err == nil {
+			return iter.Event, nil
+		}
+
+		if err != utils.EventNotFound {
+			return nil, err
 		}
 	}
 

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
+
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/ethereum"
@@ -316,20 +318,6 @@ func setUpRegistrationEventListener(identityToBeCreated Identity, blockHeight ui
 	return confirmations, nil
 }
 
-func getKeyAddEvent(iter *EthereumIdentityContractKeyAddedIterator) (bool, error) {
-	defer iter.Close()
-	if iter.Next() {
-		return false, nil
-	}
-
-	err := iter.Error()
-	if err != nil {
-		return false, err
-	}
-
-	return true, fmt.Errorf("no matching events found")
-}
-
 // waitAndRouteKeyRegistrationEvent notifies the confirmations channel whenever the key has been added to the identity and has been noted as Ethereum event
 func waitAndRouteKeyRegistrationEvent(ctx context.Context, filterer KeyAddFilterer, confirmations chan<- *WatchIdentity, pushThisIdentity Identity, key [32]byte, keyPurpose *big.Int, blockHeight uint64) {
 	opts := &bind.FilterOpts{Context: ctx, Start: blockHeight}
@@ -345,13 +333,13 @@ func waitAndRouteKeyRegistrationEvent(ctx context.Context, filterer KeyAddFilter
 			return
 		}
 
-		proceed, err := getKeyAddEvent(iter)
+		err = utils.LookForEvent(iter)
 		if err == nil {
 			confirmations <- &WatchIdentity{Identity: pushThisIdentity}
 			return
 		}
 
-		if !proceed {
+		if err != utils.EventNotFound {
 			confirmations <- &WatchIdentity{Error: err}
 			return
 		}

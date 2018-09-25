@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
+
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/queue"
 	"github.com/centrifuge/gocelery"
@@ -76,20 +78,6 @@ func (rct *IdRegistrationConfirmationTask) ParseKwargs(kwargs map[string]interfa
 	return nil
 }
 
-func getEvent(iter *EthereumIdentityFactoryContractIdentityCreatedIterator) (*EthereumIdentityFactoryContractIdentityCreated, bool, error) {
-	defer iter.Close()
-	if iter.Next() {
-		return iter.Event, false, nil
-	}
-
-	err := iter.Error()
-	if err != nil {
-		return nil, false, err
-	}
-
-	return nil, true, fmt.Errorf("no matching events found")
-}
-
 // RunTask calls listens to events from geth related to IdRegistrationConfirmationTask#CentID and records result.
 func (rct *IdRegistrationConfirmationTask) RunTask() (interface{}, error) {
 	log.Infof("Waiting for confirmation for the ID [%x]", rct.CentID.ByteArray())
@@ -111,9 +99,13 @@ func (rct *IdRegistrationConfirmationTask) RunTask() (interface{}, error) {
 			return nil, centerrors.Wrap(err, "failed to start filtering identity event logs")
 		}
 
-		res, proceed, err := getEvent(iter)
-		if err == nil || !proceed {
-			return res, err
+		err = utils.LookForEvent(iter)
+		if err == nil {
+			return iter.Event, nil
+		}
+
+		if err != utils.EventNotFound {
+			return nil, err
 		}
 	}
 
