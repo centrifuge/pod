@@ -3,11 +3,7 @@ package cmd
 import (
 	"io/ioutil"
 
-	"github.com/centrifuge/go-centrifuge/centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519"
-	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/secp256k1"
 	"github.com/spf13/cobra"
 )
 
@@ -60,49 +56,25 @@ var addKeyCmd = &cobra.Command{
 		readConfigFile()
 
 		defaultBootstrap()
-		identityService := identity.EthereumIdentityService{}
 
-		var identityConfig *config.IdentityConfig
 		var purposeInt int
-		var err error
 
 		switch purpose {
 		case "p2p":
-			identityConfig, err = ed25519.GetIDConfig()
 			purposeInt = identity.KeyPurposeP2p
 		case "sign":
-			identityConfig, err = ed25519.GetIDConfig()
 			purposeInt = identity.KeyPurposeSigning
 		case "ethauth":
-			identityConfig, err = secp256k1.GetIDConfig()
 			purposeInt = identity.KeyPurposeEthMsgAuth
 		default:
 			panic("Option not supported")
 		}
 
-		centId, err := identity.NewCentID(identityConfig.ID)
-		if err != nil {
-			panic(err)
-		}
-		id, err := identityService.LookupIdentityForID(centId)
-
+		err := identity.AddKeyFromConfig(purposeInt)
 		if err != nil {
 			panic(err)
 		}
 
-		ctx, cancel := ethereum.DefaultWaitForTransactionMiningContext()
-		defer cancel()
-		confirmations, err := id.AddKeyToIdentity(ctx, purposeInt, identityConfig.PublicKey)
-		if err != nil {
-			panic(err)
-		}
-		watchAddedToIdentity := <-confirmations
-
-		lastKey, errLocal := watchAddedToIdentity.Identity.GetLastKeyForPurpose(purposeInt)
-		if errLocal != nil {
-			panic(err)
-		}
-		log.Infof("Key [%v] with type [$s] Added to Identity [%s]", lastKey, purpose, watchAddedToIdentity.Identity)
 		return
 	},
 }
