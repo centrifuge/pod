@@ -23,5 +23,5 @@ type Model interface {
 	JSON() ([]byte, error)
 
 	// InitWithJSON initialize the model with a json
-	InitWithJSON(json []byte)
+	InitWithJSON(json []byte) error
 }
