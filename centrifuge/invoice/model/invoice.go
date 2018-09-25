@@ -51,7 +51,7 @@ type Invoice struct {
 	DateCreated *timestamp.Timestamp
 	ExtraData   []byte
 
-	invoiceSalts *invoicepb.InvoiceDataSalts
+	InvoiceSalts *invoicepb.InvoiceDataSalts
 }
 
 func (i *Invoice) createInvoiceData() *invoicepb.InvoiceData {
@@ -137,13 +137,13 @@ func (i *Invoice) initInvoice(invoiceData *invoicepb.InvoiceData) error {
 }
 
 func (i *Invoice) getInvoiceSalts(invoiceData *invoicepb.InvoiceData) *invoicepb.InvoiceDataSalts {
-	if i.invoiceSalts == nil {
+	if i.InvoiceSalts == nil {
 		invoiceSalts := &invoicepb.InvoiceDataSalts{}
 		proofs.FillSalts(invoiceData, invoiceSalts)
-		i.invoiceSalts = invoiceSalts
+		i.InvoiceSalts = invoiceSalts
 
 	}
-	return i.invoiceSalts
+	return i.InvoiceSalts
 }
 
 func (i *Invoice) CoreDocument() (*coredocumentpb.CoreDocument, error) {
@@ -201,16 +201,16 @@ func (i *Invoice) InitWithCoreDocument(coreDocument *coredocumentpb.CoreDocument
 	}
 
 	err = i.initInvoice(invoiceData)
-	i.invoiceSalts = invoiceSalts
+	i.InvoiceSalts = invoiceSalts
 
 	return err
 }
 
-func (i *Invoice) MarshalJSON() ([]byte, error) {
-	return json.Marshal(i)
+func (i *Invoice) JSON() ([]byte, error) {
+	return json.Marshal(*i)
 }
 
-func (i *Invoice) UnmarshalJSON(jsonData []byte) error {
+func (i *Invoice) FromJSON(jsonData []byte) error {
 
 	if err := json.Unmarshal(jsonData, i); err != nil {
 		return err

@@ -1,4 +1,4 @@
-package model
+package storage
 
 import (
 	"reflect"
@@ -19,9 +19,10 @@ type Model interface {
 	// InitWithCoreDocument sets fields from given CoreDocument into the model
 	InitWithCoreDocument(cd *coredocumentpb.CoreDocument) error
 
-	// MarshalJSON return the json representation of the model
-	MarshalJSON() ([]byte, error)
+	// JSON return the json representation of the model
+	JSON() ([]byte, error)
 
-	// UnmarshalJSON initialize the model with a json
-	UnmarshalJSON(json []byte) error
+	// FromJSON initialize the model with a json
+	FromJSON(json []byte) error
+
 }
