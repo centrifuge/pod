@@ -5,14 +5,13 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
-
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519"
 	"github.com/centrifuge/go-centrifuge/centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
