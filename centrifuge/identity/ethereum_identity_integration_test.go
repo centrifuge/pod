@@ -87,6 +87,38 @@ func TestCreateAndLookupIdentity_Integration(t *testing.T) {
 
 }
 
+func TestAddKeyFromConfig(t *testing.T) {
+	centrifugeId, _ := identity.NewCentID(tools.RandomSlice(identity.CentIDByteLength))
+	defaultCentrifugeId := config.Config.V.GetString("identityId")
+	config.Config.V.Set("identityId", centrifugeId.String())
+	config.Config.V.Set("keys.ethauth.publicKey", "../../example/resources/ethauth.pub.pem")
+	config.Config.V.Set("keys.ethauth.privateKey", "../../example/resources/ethauth.key.pem")
+	_, confirmations, err := identityService.CreateIdentity(centrifugeId)
+	assert.Nil(t, err, "should not error out when creating identity")
+
+	watchRegisteredIdentity := <-confirmations
+	assert.Nil(t, watchRegisteredIdentity.Error, "No error thrown by context")
+	assert.Equal(t, centrifugeId, watchRegisteredIdentity.Identity.GetCentrifugeID(), "Resulting Identity should have the same ID as the input")
+
+	err = identity.AddKeyFromConfig(identity.KeyPurposeEthMsgAuth)
+	assert.Nil(t, err, "should not error out")
+
+	config.Config.V.Set("identityId", defaultCentrifugeId)
+}
+
+func TestAddKeyFromConfig_IdentityDoesNotExist(t *testing.T) {
+	centrifugeId, _ := identity.NewCentID(tools.RandomSlice(identity.CentIDByteLength))
+	defaultCentrifugeId := config.Config.V.GetString("identityId")
+	config.Config.V.Set("identityId", centrifugeId.String())
+	config.Config.V.Set("keys.ethauth.publicKey", "../../example/resources/ethauth.pub.pem")
+	config.Config.V.Set("keys.ethauth.privateKey", "../../example/resources/ethauth.key.pem")
+
+	err := identity.AddKeyFromConfig(identity.KeyPurposeEthMsgAuth)
+	assert.NotNil(t, err, "should error out")
+
+	config.Config.V.Set("identityId", defaultCentrifugeId)
+}
+
 func TestCreateAndLookupIdentity_Integration_Concurrent(t *testing.T) {
 	var centIds [5]identity.CentID
 	var identityConfirmations [5]<-chan *identity.WatchIdentity
