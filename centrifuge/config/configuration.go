@@ -14,7 +14,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/resources"
+	"io/ioutil"
+
+	"github.com/centrifuge/go-centrifuge/centrifuge/resources"
 	"github.com/ethereum/go-ethereum/common"
 	logging "github.com/ipfs/go-log"
 	"github.com/spf13/viper"
@@ -239,4 +241,66 @@ func (c *Configuration) InitializeViper() {
 func Bootstrap(configFile string) {
 	Config = NewConfiguration(configFile)
 	Config.InitializeViper()
+}
+
+// CreateConfigFile creates minimum config file with arguments
+func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
+	targetDataDir := args["targetDataDir"].(string)
+	accountKeyPath := args["accountKeyPath"].(string)
+	accountPassword := args["accountPassword"].(string)
+	network := args["network"].(string)
+	ethNodeUrl := args["ethNodeUrl"].(string)
+	bootstraps := args["bootstraps"].([]string)
+	apiPort := args["apiPort"].(int64)
+	p2pPort := args["p2pPort"].(int64)
+
+	if targetDataDir == "" {
+		return nil, errors.New("targetDataDir not provided")
+	}
+	if _, err := os.Stat(targetDataDir); os.IsNotExist(err) {
+		os.Mkdir(targetDataDir, os.ModePerm)
+	}
+
+	if _, err := os.Stat(accountKeyPath); os.IsNotExist(err) {
+		return nil, errors.New("Account Key Path does not exist")
+	}
+
+	bfile, err := ioutil.ReadFile(accountKeyPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if accountPassword == "" {
+		return nil, errors.New("Account Password not provided")
+	}
+
+	v := viper.New()
+	v.SetConfigType("yaml")
+	v.Set("storage.path", targetDataDir+"/db/centrifuge_data.leveldb")
+	v.Set("identityId", "")
+	v.Set("nodeHostname", "0.0.0.0")
+	v.Set("nodePort", apiPort)
+	v.Set("p2p.port", p2pPort)
+	v.Set("ethereum.nodeURL", ethNodeUrl)
+	v.Set("ethereum.accounts.main.key", string(bfile))
+	v.Set("ethereum.accounts.main.password", accountPassword)
+	v.Set("keys.p2p.privateKey", targetDataDir+"/p2p.key.pem")
+	v.Set("keys.p2p.publicKey", targetDataDir+"/p2p.pub.pem")
+	v.Set("keys.ethauth.privateKey", targetDataDir+"/ethauth.key.pem")
+	v.Set("keys.ethauth.publicKey", targetDataDir+"/ethauth.pub.pem")
+	v.Set("keys.signing.privateKey", targetDataDir+"/signing.key.pem")
+	v.Set("keys.signing.publicKey", targetDataDir+"/signing.pub.pem")
+
+	if bootstraps != nil {
+		v.Set("networks."+network+".bootstrapPeers", bootstraps)
+	}
+
+	v.SetConfigFile(targetDataDir + "/config.yaml")
+
+	err = v.WriteConfig()
+	if err != nil {
+		log.Fatalf("error: %v", err)
+	}
+
+	return v, nil
 }

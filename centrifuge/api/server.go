@@ -7,17 +7,18 @@ package api
 import (
 	"crypto/tls"
 	"crypto/x509"
-		"net/http"
+	"net/http"
 	"strings"
+
+	"net"
+	"sync"
+	"time"
 
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	logging "github.com/ipfs/go-log"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-	"net"
-	"time"
-	"sync"
 )
 
 var log = logging.Logger("server")
@@ -30,18 +31,18 @@ type CentAPIServer struct {
 }
 
 func NewCentAPIServer(
-	Address     string,
-	Port        int,
+	Address string,
+	Port int,
 	CentNetwork string,
-	) *CentAPIServer {
+) *CentAPIServer {
 	return &CentAPIServer{
-		Address: Address,
-		Port:Port,
-		CentNetwork:CentNetwork,
+		Address:     Address,
+		Port:        Port,
+		CentNetwork: CentNetwork,
 	}
 }
 
-func (*CentAPIServer) Name() string  {
+func (*CentAPIServer) Name() string {
 	return "CentAPIServer"
 }
 
@@ -117,7 +118,7 @@ func (c *CentAPIServer) Start(ctx context.Context, wg *sync.WaitGroup, startupEr
 			log.Info(err)
 			return
 		case <-ctx.Done():
-			ctxn, _ := context.WithTimeout(ctx, 1 * time.Second)
+			ctxn, _ := context.WithTimeout(ctx, 1*time.Second)
 			// graceful shutdown
 			// gracefully shutdown the server
 			// we can only do this because srv is thread safe

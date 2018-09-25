@@ -4,12 +4,12 @@ import (
 	"context"
 	"math/big"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/queue"
+	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/centrifuge/queue"
 	"github.com/centrifuge/gocelery"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
+	"github.com/centrifuge/go-centrifuge/centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/centrifuge/ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -17,11 +17,9 @@ import (
 	"github.com/go-errors/errors"
 )
 
-type EthereumAnchorRepository struct {
-}
+type EthereumAnchorRepository struct{}
 
 type AnchorRepositoryContract interface {
-
 	//transactions
 	PreCommit(opts *bind.TransactOpts, anchorID *big.Int, signingRoot [32]byte, centrifugeId *big.Int, signature []byte, expirationBlock *big.Int) (*types.Transaction, error)
 	Commit(opts *bind.TransactOpts, _anchorID *big.Int, _documentRoot [32]byte, _centrifugeId *big.Int, _documentProofs [][32]byte, _signature []byte) (*types.Transaction, error)
@@ -109,26 +107,32 @@ func sendCommitTransaction(contract AnchorRepositoryContract, opts *bind.Transac
 //CommitAnchor will call the transaction Commit on the smart contract
 func (ethRepository *EthereumAnchorRepository) CommitAnchor(anchorID AnchorID, documentRoot DocRoot, centrifugeId identity.CentID, documentProofs [][32]byte, signature []byte) (confirmations <-chan *WatchCommit, err error) {
 	ethRepositoryContract, _ := getRepositoryContract()
-	opts, err := ethereum.GetConnection().GetTxOpts(config.Config.GetEthereumDefaultAccountName())
+	conn := ethereum.GetConnection()
+	opts, err := conn.GetTxOpts(config.Config.GetEthereumDefaultAccountName())
 	if err != nil {
-		return
+		return nil, err
 	}
 
-	commitData := NewCommitData(anchorID, documentRoot, centrifugeId, documentProofs, signature)
-	confirmations, err = setUpCommitEventListener(opts.From, commitData)
+	h, err := conn.GetClient().HeaderByNumber(context.Background(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	cd := NewCommitData(h.Number.Uint64(), anchorID, documentRoot, centrifugeId, documentProofs, signature)
+	log.Debug("anchor height", cd.BlockHeight)
+	confirmations, err = setUpCommitEventListener(opts.From, cd)
 	if err != nil {
 		wError := errors.Wrap(err, 1)
 		log.Errorf("Failed to set up event listener for commit transaction [id: %x, hash: %x]: %v",
-			commitData.AnchorID, commitData.DocumentRoot, wError)
+			cd.AnchorID, cd.DocumentRoot, wError)
 		return
 	}
 
-	err = sendCommitTransaction(ethRepositoryContract, opts, commitData)
-
+	err = sendCommitTransaction(ethRepositoryContract, opts, cd)
 	if err != nil {
 		wError := errors.Wrap(err, 1)
 		log.Errorf("Failed to send Ethereum commit transaction[id: %x, hash: %x, SchemaVersion:%v]: %v",
-			commitData.AnchorID, commitData.DocumentRoot, commitData.SchemaVersion, wError)
+			cd.AnchorID, cd.DocumentRoot, cd.SchemaVersion, wError)
 		return
 	}
 	return confirmations, err
@@ -176,10 +180,12 @@ func setUpCommitEventListener(from common.Address, commitData *CommitData) (conf
 		AnchorIDParam:     commitData.AnchorID,
 		AddressParam:      from,
 		CentrifugeIDParam: commitData.CentrifugeID,
+		BlockHeight:       commitData.BlockHeight,
 	})
 	if err != nil {
 		return nil, err
 	}
+
 	go waitAndRouteCommitEvent(asyncRes, confirmations, commitData)
 	return confirmations, nil
 }

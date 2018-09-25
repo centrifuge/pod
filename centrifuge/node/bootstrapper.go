@@ -1,15 +1,16 @@
 package node
 
 import (
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/bootstrap"
-	"errors"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/api"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/p2p"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519keys"
 	"context"
+	"errors"
 	"os"
 	"os/signal"
+
+	"github.com/centrifuge/go-centrifuge/centrifuge/api"
+	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
+	"github.com/centrifuge/go-centrifuge/centrifuge/p2p"
 )
 
 type Bootstrapper struct {

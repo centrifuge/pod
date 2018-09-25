@@ -6,10 +6,10 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/anchors"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/secp256k1"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/go-centrifuge/centrifuge/anchors"
+	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/secp256k1"
+	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -96,7 +96,7 @@ func TestGenerateAnchor(t *testing.T) {
 	var documentRoot32Bytes [32]byte
 	copy(documentRoot32Bytes[:], currentDocumentRoot[:32])
 
-	commitData := anchors.NewCommitData(currentAnchorID, documentRoot32Bytes, centIdTyped, documentProofs, signature)
+	commitData := anchors.NewCommitData(0, currentAnchorID, documentRoot32Bytes, centIdTyped, documentProofs, signature)
 
 	anchorID, _ := anchors.NewAnchorID(currentAnchorID[:])
 	docRoot, _ := anchors.NewDocRoot(documentRoot32Bytes[:])

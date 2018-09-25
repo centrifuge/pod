@@ -1,10 +1,11 @@
 package api
 
 import (
-	"testing"
 	"context"
-		"github.com/stretchr/testify/assert"
 	"sync"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestCentAPIServer_StartHappy(t *testing.T) {

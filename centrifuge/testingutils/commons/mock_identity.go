@@ -4,7 +4,9 @@ The reason for this package is to avoid any kind of cyclic dependencies but shar
 package testingcommons
 
 import (
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
+	"context"
+
+	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -59,8 +61,8 @@ func (i *MockID) GetLastKeyForPurpose(keyPurpose int) (key []byte, err error) {
 	return args.Get(0).([]byte), args.Error(1)
 }
 
-func (i *MockID) AddKeyToIdentity(keyPurpose int, key []byte) (confirmations chan *identity.WatchIdentity, err error) {
-	args := i.Called(keyPurpose, key)
+func (i *MockID) AddKeyToIdentity(ctx context.Context, keyPurpose int, key []byte) (confirmations chan *identity.WatchIdentity, err error) {
+	args := i.Called(ctx, keyPurpose, key)
 	return args.Get(0).(chan *identity.WatchIdentity), args.Error(1)
 }
 

@@ -39,7 +39,7 @@ do
 done
 
 TARGETDIR=${TARGETDIR:-${PARENT_DIR}/centrifuge}
-DEFAULT_REPO="${GOPATH}/src/github.com/CentrifugeInc/centrifuge-ethereum-contracts"
+DEFAULT_REPO="${PARENT_DIR}/vendor/github.com/centrifuge/centrifuge-ethereum-contracts"
 TEMP_DIR=$DEFAULT_REPO
 BRANCH=${BRANCH:-master}
 

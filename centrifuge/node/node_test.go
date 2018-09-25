@@ -3,16 +3,17 @@ package node
 import (
 	"context"
 	"errors"
-	"time"
-	"testing"
-	"github.com/stretchr/testify/assert"
 	"sync"
-	)
+	"testing"
+	"time"
 
-type MockService struct{
+	"github.com/stretchr/testify/assert"
+)
+
+type MockService struct {
 	mustReturnStartErr bool
-	receivedCTXDone bool
-	lock sync.RWMutex
+	receivedCTXDone    bool
+	lock               sync.RWMutex
 }
 
 func (s *MockService) ReceivedCTXDone() bool {
@@ -64,7 +65,7 @@ func TestNode_StartContextCancel(t *testing.T) {
 	services := []Server{&MockService{mustReturnStartErr: false}, &MockService{mustReturnStartErr: false}}
 	n := NewNode(services)
 	errChan := make(chan error)
-	ctx, canc  := context.WithCancel(context.TODO())
+	ctx, canc := context.WithCancel(context.TODO())
 	go n.Start(ctx, errChan)
 	// wait for startup
 	time.Sleep(500 * time.Millisecond)
@@ -81,7 +82,7 @@ func TestNode_StartChildError(t *testing.T) {
 	services := []Server{&MockService{mustReturnStartErr: true}, &MockService{mustReturnStartErr: false}}
 	n := NewNode(services)
 	errChan := make(chan error)
-	ctx, canc  := context.WithCancel(context.TODO())
+	ctx, canc := context.WithCancel(context.TODO())
 	go n.Start(ctx, errChan)
 	// wait for startup
 	time.Sleep(500 * time.Millisecond)

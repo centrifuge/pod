@@ -6,6 +6,12 @@ import (
 	"fmt"
 	"time"
 
+	"errors"
+	"sync"
+
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	"github.com/centrifuge/go-centrifuge/centrifuge/notification"
+	"github.com/centrifuge/go-centrifuge/centrifuge/p2p/p2phandler"
 	"github.com/ipfs/go-cid"
 	ds "github.com/ipfs/go-datastore"
 	"github.com/ipfs/go-ipfs-addr"
@@ -19,12 +25,7 @@ import (
 	ma "github.com/multiformats/go-multiaddr"
 	mh "github.com/multiformats/go-multihash"
 	"github.com/paralin/go-libp2p-grpc"
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/p2p"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/p2p/p2phandler"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/notification"
 	"golang.org/x/crypto/ed25519"
-	"sync"
-	"errors"
 )
 
 var log = logging.Logger("p2p")
@@ -32,10 +33,10 @@ var HostInstance host.Host
 var GRPCProtoInstance p2pgrpc.GRPCProtocol
 
 type CentP2PServer struct {
-	Port int
+	Port           int
 	BootstrapPeers []string
-	PublicKey ed25519.PublicKey
-	PrivateKey ed25519.PrivateKey
+	PublicKey      ed25519.PublicKey
+	PrivateKey     ed25519.PrivateKey
 }
 
 func NewCentP2PServer(
@@ -43,16 +44,16 @@ func NewCentP2PServer(
 	BootstrapPeers []string,
 	PublicKey ed25519.PublicKey,
 	PrivateKey ed25519.PrivateKey,
-	) *CentP2PServer {
+) *CentP2PServer {
 	return &CentP2PServer{
-		Port: Port,
+		Port:           Port,
 		BootstrapPeers: BootstrapPeers,
-		PublicKey: PublicKey,
-		PrivateKey: PrivateKey,
+		PublicKey:      PublicKey,
+		PrivateKey:     PrivateKey,
 	}
 }
 
-func (*CentP2PServer) Name() string  {
+func (*CentP2PServer) Name() string {
 	return "CentP2PServer"
 }
 
@@ -84,7 +85,7 @@ func (c *CentP2PServer) Start(ctx context.Context, wg *sync.WaitGroup, startupEr
 
 	for {
 		select {
-		case <- ctx.Done():
+		case <-ctx.Done():
 			log.Info("Shutting down GRPC server")
 			grpcProto.GetGRPCServer().Stop()
 			return
@@ -139,7 +140,7 @@ func (c *CentP2PServer) runDHT(ctx context.Context, h host.Host) error {
 			// No sense connecting to ourselves
 			continue
 		}
-		tctx, _ := context.WithTimeout(ctx, time.Second * 5)
+		tctx, _ := context.WithTimeout(ctx, time.Second*5)
 		if err := h.Connect(tctx, pe); err != nil {
 			log.Info("Failed to connect to peer: ", err)
 		}
@@ -202,7 +203,7 @@ func (c *CentP2PServer) makeBasicHost(listenPort int) (host.Host, error) {
 	return bhost, nil
 }
 
-func (c *CentP2PServer) createSigningKey() (priv crypto.PrivKey, pub crypto.PubKey, err error){
+func (c *CentP2PServer) createSigningKey() (priv crypto.PrivKey, pub crypto.PubKey, err error) {
 	// Create the signing key for the host
 	var key []byte
 	key = append(key, c.PrivateKey...)

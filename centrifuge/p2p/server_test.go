@@ -1,13 +1,14 @@
 package p2p
 
 import (
-	"testing"
-	"sync"
-	"github.com/stretchr/testify/assert"
 	"context"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519keys"
-	"golang.org/x/crypto/ed25519"
+	"sync"
+	"testing"
 	"time"
+
+	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
+	"github.com/stretchr/testify/assert"
+	"golang.org/x/crypto/ed25519"
 )
 
 func TestCentP2PServer_Start(t *testing.T) {
@@ -47,5 +48,5 @@ func TestCentP2PServer_StartListenError(t *testing.T) {
 
 func getKeys() (ed25519.PrivateKey, ed25519.PublicKey) {
 	return ed25519keys.GetPrivateSigningKey("../../example/resources/signingKey.key.pem"),
-	ed25519keys.GetPublicSigningKey("../../example/resources/signingKey.pub.pem")
+		ed25519keys.GetPublicSigningKey("../../example/resources/signingKey.pub.pem")
 }

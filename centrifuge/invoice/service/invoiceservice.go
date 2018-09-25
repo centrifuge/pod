@@ -3,16 +3,16 @@ package invoiceservice
 import (
 	"fmt"
 
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/centerrors"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/code"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/processor"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
-	clientinvoicepb "github.com/CentrifugeInc/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
+	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
+	"github.com/centrifuge/go-centrifuge/centrifuge/code"
+	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/processor"
+	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
+	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/centrifuge/invoice"
+	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
+	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
 	"github.com/golang/protobuf/ptypes/empty"
 	logging "github.com/ipfs/go-log"
 	"golang.org/x/net/context"
@@ -124,8 +124,16 @@ func (s *InvoiceDocumentService) HandleSendInvoiceDocument(ctx context.Context, 
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("error saving document: %v", err))
 	}
 
+	// Load the CoreDocument stored in DB before sending to Collaborators
+	// So it contains the whole CoreDocument Data
+	coreDoc := new(coredocumentpb.CoreDocument)
+	err = coredocumentrepository.GetRepository().GetByID(doc.CoreDocument.DocumentIdentifier, coreDoc)
+	if err != nil {
+		return nil, centerrors.New(code.DocumentNotFound, err.Error())
+	}
+
 	for _, recipient := range recipientIDs {
-		err = s.CoreDocumentProcessor.Send(ctx, doc.CoreDocument, recipient)
+		err = s.CoreDocumentProcessor.Send(ctx, coreDoc, recipient)
 		if err != nil {
 			errs = append(errs, err)
 		}
