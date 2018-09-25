@@ -75,8 +75,11 @@ func (rct *IdRegistrationConfirmationTask) ParseKwargs(kwargs map[string]interfa
 
 	rct.CentID = centIdTyped
 
-	if bh, ok := kwargs[BlockHeight]; ok {
-		rct.BlockHeight = uint64(bh.(float64))
+	if bhi, ok := kwargs[BlockHeight]; ok {
+		bhf, ok := bhi.(float64)
+		if ok {
+			rct.BlockHeight = uint64(bhf)
+		}
 	}
 	return nil
 }

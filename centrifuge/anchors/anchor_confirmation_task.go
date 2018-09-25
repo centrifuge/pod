@@ -119,8 +119,11 @@ func (act *AnchoringConfirmationTask) ParseKwargs(kwargs map[string]interface{})
 		return fmt.Errorf("malformed kwarg [%s] because [%s]", AddressParam, err.Error())
 	}
 
-	if bh, ok := kwargs[BlockHeight]; ok {
-		act.BlockHeight = uint64(bh.(float64))
+	if bhi, ok := kwargs[BlockHeight]; ok {
+		bhf, ok := bhi.(float64)
+		if ok {
+			act.BlockHeight = uint64(bhf)
+		}
 	}
 
 	act.From = addressTyped
