@@ -1,6 +1,8 @@
 package model
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
@@ -46,6 +48,9 @@ type Invoice struct {
 	DueDate              *timestamp.Timestamp
 	DateCreated          *timestamp.Timestamp
 	ExtraData            []byte
+
+	invoiceSalts *invoicepb.InvoiceDataSalts
+
 }
 
 
@@ -78,10 +83,42 @@ func (i *Invoice) createInvoiceData() *invoicepb.InvoiceData {
 	return invoiceData
 }
 
-func generateInvoiceSalts(invoiceData *invoicepb.InvoiceData) *invoicepb.InvoiceDataSalts{
-	invoiceSalts := &invoicepb.InvoiceDataSalts{}
-	proofs.FillSalts(invoiceData, invoiceSalts)
-	return invoiceSalts
+func (i *Invoice) initInvoice(invoiceData *invoicepb.InvoiceData) {
+
+	i.InvoiceNumber = invoiceData.InvoiceNumber
+	i.SenderName = invoiceData.SenderName
+	i.SenderStreet = invoiceData.SenderStreet
+	i.SenderCity = invoiceData.SenderCity
+	i.SenderZipcode = invoiceData.SenderZipcode
+	i.SenderCountry = invoiceData.SenderCountry
+	i.RecipientName = invoiceData.RecipientName
+	i.RecipientStreet = invoiceData.RecipientStreet
+	i.RecipientCity = invoiceData.RecipientCity
+	i.RecipientZipcode = invoiceData.RecipientZipcode
+	i.RecipientCountry = invoiceData.RecipientCountry
+	i.Currency = invoiceData.Currency
+	i.GrossAmount = invoiceData.GrossAmount
+	i.NetAmount = invoiceData.NetAmount
+	i.TaxAmount = invoiceData.TaxAmount
+	i.TaxRate = invoiceData.TaxRate
+	i.Recipient = invoiceData.Recipient
+	i.Sender = invoiceData.Sender
+	i.Payee = invoiceData.Payee
+	i.Comment = invoiceData.Comment
+	i.DueDate = invoiceData.DueDate
+	i.DateCreated = invoiceData.DateCreated
+	i.ExtraData = invoiceData.ExtraData
+
+}
+
+func (i *Invoice) getInvoiceSalts(invoiceData *invoicepb.InvoiceData) *invoicepb.InvoiceDataSalts{
+	if i.invoiceSalts == nil {
+		invoiceSalts := &invoicepb.InvoiceDataSalts{}
+		proofs.FillSalts(invoiceData, invoiceSalts)
+		i.invoiceSalts = invoiceSalts
+
+	}
+	return i.invoiceSalts
 }
 
 
@@ -99,7 +136,7 @@ func (i *Invoice) CoreDocument() (*coredocumentpb.CoreDocument, error) {
 		Value:   serializedInvoice,
 	}
 
-	invoiceSalt := generateInvoiceSalts(invoiceData)
+	invoiceSalt := i.getInvoiceSalts(invoiceData)
 
 	serializedSalts, err := proto.Marshal(invoiceSalt)
 	if err != nil {
@@ -116,12 +153,29 @@ func (i *Invoice) CoreDocument() (*coredocumentpb.CoreDocument, error) {
 	return coreDocument, err
 }
 
-func (i *Invoice) SetCoreDocument(cd *coredocumentpb.CoreDocument) error {
-	panic("implement me")
+func (i *Invoice) SetCoreDocument(coreDocument *coredocumentpb.CoreDocument) error {
+	if coreDocument == nil {
+		return centerrors.NilError(coreDocument)
+	}
+	if coreDocument.EmbeddedData.TypeUrl != documenttypes.InvoiceDataTypeUrl ||
+		coreDocument.EmbeddedDataSalts.TypeUrl != documenttypes.InvoiceSaltsTypeUrl {
+		return fmt.Errorf("trying to convert document with incorrect schema")
+	}
+
+	invoiceData := &invoicepb.InvoiceData{}
+	proto.Unmarshal(coreDocument.EmbeddedData.Value, invoiceData)
+
+	invoiceSalts := &invoicepb.InvoiceDataSalts{}
+	proto.Unmarshal(coreDocument.EmbeddedDataSalts.Value, invoiceSalts)
+
+	i.initInvoice(invoiceData)
+	i.invoiceSalts = invoiceSalts
+
+	return nil
 }
 
 func (i *Invoice) JSON() ([]byte, error) {
-	panic("implement me")
+	return json.Marshal(i)
 }
 
 func (i *Invoice) Type() reflect.Type {
