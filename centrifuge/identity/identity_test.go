@@ -367,3 +367,8 @@ func TestValidateKey_success(t *testing.T) {
 	id.AssertExpectations(t)
 	assert.Nil(t, err, "must be nil")
 }
+
+func TestAddKeyFromConfig_OptionNotSupported(t *testing.T) {
+	err := AddKeyFromConfig(4)
+	assert.NotNil(t, err, "it should error out")
+}

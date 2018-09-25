@@ -206,8 +206,6 @@ func ValidateKey(centrifugeId CentID, key []byte, purpose int) error {
 
 // AddKeyFromConfig adds a key previously generated and indexed in the configuration file to the identity specified in such config file
 func AddKeyFromConfig(purpose int) error {
-	identityService := EthereumIdentityService{}
-
 	var identityConfig *config.IdentityConfig
 	var err error
 
@@ -230,7 +228,8 @@ func AddKeyFromConfig(purpose int) error {
 	if err != nil {
 		return err
 	}
-	id, err := identityService.LookupIdentityForID(centId)
+
+	id, err := IDService.LookupIdentityForID(centId)
 	if err != nil {
 		return err
 	}
