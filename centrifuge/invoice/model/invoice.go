@@ -122,7 +122,7 @@ func (i *Invoice) getInvoiceSalts(invoiceData *invoicepb.InvoiceData) *invoicepb
 
 func (i *Invoice) CoreDocument() (*coredocumentpb.CoreDocument, error) {
 	coreDocument := new(coredocumentpb.CoreDocument)
-	//proto.Merge(coreDocument, inv.Document.CoreDocument)
+
 	invoiceData := i.createInvoiceData()
 	serializedInvoice, err := proto.Marshal(invoiceData)
 	if err != nil {
@@ -151,7 +151,7 @@ func (i *Invoice) CoreDocument() (*coredocumentpb.CoreDocument, error) {
 	return coreDocument, err
 }
 
-func (i *Invoice) SetCoreDocument(coreDocument *coredocumentpb.CoreDocument) error {
+func (i *Invoice) InitWithCoreDocument(coreDocument *coredocumentpb.CoreDocument) error {
 	if coreDocument == nil {
 		return centerrors.NilError(coreDocument)
 	}
@@ -174,6 +174,15 @@ func (i *Invoice) SetCoreDocument(coreDocument *coredocumentpb.CoreDocument) err
 
 func (i *Invoice) JSON() ([]byte, error) {
 	return json.Marshal(i)
+}
+
+func (i *Invoice) InitWithJSON(jsonData []byte) error {
+
+	if err := json.Unmarshal(jsonData, i); err != nil {
+		return err
+	}
+	return nil
+
 }
 
 func (i *Invoice) Type() reflect.Type {
