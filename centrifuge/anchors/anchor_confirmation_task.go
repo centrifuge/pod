@@ -126,15 +126,10 @@ func (act *AnchoringConfirmationTask) ParseKwargs(kwargs map[string]interface{})
 	return nil
 }
 
-func startWatching(ctx context.Context, iter *EthereumAnchorRepositoryContractAnchorCommittedIterator) (*EthereumAnchorRepositoryContractAnchorCommitted, bool, error) {
+func getEvent(iter *EthereumAnchorRepositoryContractAnchorCommittedIterator) (*EthereumAnchorRepositoryContractAnchorCommitted, bool, error) {
 	defer iter.Close()
-	for iter.Next() {
-		select {
-		case <-ctx.Done():
-			return nil, false, ctx.Err()
-		default:
-			return iter.Event, false, nil
-		}
+	if iter.Next() {
+		return iter.Event, false, nil
 	}
 
 	err := iter.Error()
@@ -168,7 +163,7 @@ func (act *AnchoringConfirmationTask) RunTask() (interface{}, error) {
 			return nil, centerrors.Wrap(err, "failed to start filtering anchor event logs")
 		}
 
-		res, proceed, err := startWatching(act.EthContext, iter)
+		res, proceed, err := getEvent(iter)
 		if err == nil || !proceed {
 			return res, err
 		}

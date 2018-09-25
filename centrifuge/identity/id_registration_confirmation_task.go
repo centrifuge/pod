@@ -76,16 +76,10 @@ func (rct *IdRegistrationConfirmationTask) ParseKwargs(kwargs map[string]interfa
 	return nil
 }
 
-func startWatching(ctx context.Context, iter *EthereumIdentityFactoryContractIdentityCreatedIterator) (*EthereumIdentityFactoryContractIdentityCreated, bool, error) {
+func getEvent(iter *EthereumIdentityFactoryContractIdentityCreatedIterator) (*EthereumIdentityFactoryContractIdentityCreated, bool, error) {
 	defer iter.Close()
-
-	for iter.Next() {
-		select {
-		case <-ctx.Done():
-			return nil, false, ctx.Err()
-		default:
-			return iter.Event, false, nil
-		}
+	if iter.Next() {
+		return iter.Event, false, nil
 	}
 
 	err := iter.Error()
@@ -117,7 +111,7 @@ func (rct *IdRegistrationConfirmationTask) RunTask() (interface{}, error) {
 			return nil, centerrors.Wrap(err, "failed to start filtering identity event logs")
 		}
 
-		res, proceed, err := startWatching(rct.EthContext, iter)
+		res, proceed, err := getEvent(iter)
 		if err == nil || !proceed {
 			return res, err
 		}

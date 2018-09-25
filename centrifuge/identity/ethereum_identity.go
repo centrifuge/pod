@@ -316,16 +316,10 @@ func setUpRegistrationEventListener(identityToBeCreated Identity, blockHeight ui
 	return confirmations, nil
 }
 
-func startKeyAddWatch(ctx context.Context, iter *EthereumIdentityContractKeyAddedIterator) (bool, error) {
+func getKeyAddEvent(iter *EthereumIdentityContractKeyAddedIterator) (bool, error) {
 	defer iter.Close()
-
-	for iter.Next() {
-		select {
-		case <-ctx.Done():
-			return false, ctx.Err()
-		default:
-			return false, nil
-		}
+	if iter.Next() {
+		return false, nil
 	}
 
 	err := iter.Error()
@@ -351,9 +345,14 @@ func waitAndRouteKeyRegistrationEvent(ctx context.Context, filterer KeyAddFilter
 			return
 		}
 
-		proceed, err := startKeyAddWatch(ctx, iter)
-		if err == nil || !proceed {
+		proceed, err := getKeyAddEvent(iter)
+		if err == nil {
 			confirmations <- &WatchIdentity{Identity: pushThisIdentity}
+			return
+		}
+
+		if !proceed {
+			confirmations <- &WatchIdentity{Error: err}
 			return
 		}
 	}
