@@ -3,6 +3,7 @@ package model
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"reflect"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
@@ -42,9 +43,9 @@ type Invoice struct {
 	NetAmount   int64
 	TaxAmount   int64
 	TaxRate     int64
-	Recipient   []byte
-	Sender      []byte
-	Payee       []byte
+	Recipient   identity.CentID
+	Sender      identity.CentID
+	Payee       identity.CentID
 	Comment     string
 	DueDate     *timestamp.Timestamp
 	DateCreated *timestamp.Timestamp
@@ -54,6 +55,11 @@ type Invoice struct {
 }
 
 func (i *Invoice) createInvoiceData() *invoicepb.InvoiceData {
+
+	recipient, _:= i.Recipient.MarshalBinary()
+	sender, _ := i.Sender.MarshalBinary()
+	payee, _ := i.Payee.MarshalBinary()
+
 	invoiceData := &invoicepb.InvoiceData{
 		InvoiceNumber:    i.InvoiceNumber,
 		SenderName:       i.SenderName,
@@ -71,9 +77,9 @@ func (i *Invoice) createInvoiceData() *invoicepb.InvoiceData {
 		NetAmount:        i.NetAmount,
 		TaxAmount:        i.TaxAmount,
 		TaxRate:          i.TaxRate,
-		Recipient:        i.Recipient,
-		Sender:           i.Sender,
-		Payee:            i.Payee,
+		Recipient:        recipient,
+		Sender:           sender,
+		Payee:            payee,
 		Comment:          i.Comment,
 		DueDate:          i.DueDate,
 		DateCreated:      i.DateCreated,
@@ -82,7 +88,7 @@ func (i *Invoice) createInvoiceData() *invoicepb.InvoiceData {
 	return invoiceData
 }
 
-func (i *Invoice) initInvoice(invoiceData *invoicepb.InvoiceData) {
+func (i *Invoice) initInvoice(invoiceData *invoicepb.InvoiceData) error {
 
 	i.InvoiceNumber = invoiceData.InvoiceNumber
 	i.SenderName = invoiceData.SenderName
@@ -100,13 +106,33 @@ func (i *Invoice) initInvoice(invoiceData *invoicepb.InvoiceData) {
 	i.NetAmount = invoiceData.NetAmount
 	i.TaxAmount = invoiceData.TaxAmount
 	i.TaxRate = invoiceData.TaxRate
-	i.Recipient = invoiceData.Recipient
-	i.Sender = invoiceData.Sender
-	i.Payee = invoiceData.Payee
+
+	recipientCentID, err := identity.NewCentID(invoiceData.Recipient)
+	if err != nil {
+		return err
+	}
+	i.Recipient = recipientCentID
+
+	senderCentID, err := identity.NewCentID(invoiceData.Sender)
+	if err != nil {
+		return err
+	}
+	i.Sender = senderCentID
+
+
+	payeeCentID, err := identity.NewCentID(invoiceData.Payee)
+	if err != nil {
+		return err
+	}
+	i.Payee = payeeCentID
+
+
 	i.Comment = invoiceData.Comment
 	i.DueDate = invoiceData.DueDate
 	i.DateCreated = invoiceData.DateCreated
 	i.ExtraData = invoiceData.ExtraData
+
+	return nil
 
 }
 
@@ -155,28 +181,36 @@ func (i *Invoice) InitWithCoreDocument(coreDocument *coredocumentpb.CoreDocument
 	if coreDocument == nil {
 		return centerrors.NilError(coreDocument)
 	}
-	if coreDocument.EmbeddedData.TypeUrl != documenttypes.InvoiceDataTypeUrl ||
+	if coreDocument.EmbeddedData == nil || coreDocument.EmbeddedData.TypeUrl != documenttypes.InvoiceDataTypeUrl ||
 		coreDocument.EmbeddedDataSalts.TypeUrl != documenttypes.InvoiceSaltsTypeUrl {
 		return fmt.Errorf("trying to convert document with incorrect schema")
 	}
 
 	invoiceData := &invoicepb.InvoiceData{}
-	proto.Unmarshal(coreDocument.EmbeddedData.Value, invoiceData)
+	err := proto.Unmarshal(coreDocument.EmbeddedData.Value, invoiceData)
+
+	if err != nil {
+		return err
+	}
 
 	invoiceSalts := &invoicepb.InvoiceDataSalts{}
-	proto.Unmarshal(coreDocument.EmbeddedDataSalts.Value, invoiceSalts)
+	err = proto.Unmarshal(coreDocument.EmbeddedDataSalts.Value, invoiceSalts)
 
-	i.initInvoice(invoiceData)
+	if err != nil {
+		return err
+	}
+
+	err = i.initInvoice(invoiceData)
 	i.invoiceSalts = invoiceSalts
 
-	return nil
+	return err
 }
 
-func (i *Invoice) JSON() ([]byte, error) {
+func (i *Invoice) MarshalJSON() ([]byte, error) {
 	return json.Marshal(i)
 }
 
-func (i *Invoice) InitWithJSON(jsonData []byte) error {
+func (i *Invoice) UnmarshalJSON(jsonData []byte) error {
 
 	if err := json.Unmarshal(jsonData, i); err != nil {
 		return err

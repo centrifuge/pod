@@ -19,9 +19,9 @@ type Model interface {
 	// InitWithCoreDocument sets fields from given CoreDocument into the model
 	InitWithCoreDocument(cd *coredocumentpb.CoreDocument) error
 
-	// return the json representation of the model
-	JSON() ([]byte, error)
+	// MarshalJSON return the json representation of the model
+	MarshalJSON() ([]byte, error)
 
-	// InitWithJSON initialize the model with a json
-	InitWithJSON(json []byte) error
+	// UnmarshalJSON initialize the model with a json
+	UnmarshalJSON(json []byte) error
 }
