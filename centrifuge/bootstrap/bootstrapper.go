@@ -1,4 +1,4 @@
-package bootstrapper
+package bootstrap
 
 // DO NOT PUT any app logic in this package to avoid any dependency cycles
 

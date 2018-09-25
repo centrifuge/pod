@@ -1,4 +1,4 @@
-package ed25519
+package ed25519keys
 
 import (
 	"encoding/base64"

@@ -18,7 +18,7 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
-	cented25519 "github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
+	cented25519 "github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519keys"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/notification"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/signatures"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"

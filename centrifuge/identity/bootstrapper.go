@@ -3,7 +3,7 @@ package identity
 import (
 	"errors"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/bootstrapper"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/bootstrap"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/queue"
 )
@@ -15,7 +15,7 @@ type Bootstrapper struct {
 // the IdRegistrationConfirmationTask is added to be registered on the Queue at queue.Bootstrapper
 func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	IDService = NewEthereumIdentityService()
-	if _, ok := context[bootstrapper.BootstrappedConfig]; !ok {
+	if _, ok := context[bootstrap.BootstrappedConfig]; !ok {
 		return errors.New("config hasn't been initialized")
 	}
 	identityContract, err := getIdentityFactoryContract()

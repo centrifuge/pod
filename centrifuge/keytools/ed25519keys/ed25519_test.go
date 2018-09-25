@@ -1,6 +1,6 @@
 // +build unit
 
-package ed25519
+package ed25519keys
 
 import (
 	"testing"

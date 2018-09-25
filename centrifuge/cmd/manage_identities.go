@@ -3,7 +3,7 @@ package cmd
 import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519keys"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/secp256k1"
 	"github.com/spf13/cobra"
 )
@@ -52,10 +52,10 @@ var addKeyCmd = &cobra.Command{
 
 		switch purpose {
 		case "p2p":
-			identityConfig, err = ed25519.GetIDConfig()
+			identityConfig, err = ed25519keys.GetIDConfig()
 			purposeInt = identity.KeyPurposeP2p
 		case "sign":
-			identityConfig, err = ed25519.GetIDConfig()
+			identityConfig, err = ed25519keys.GetIDConfig()
 			purposeInt = identity.KeyPurposeSigning
 		case "ethauth":
 			identityConfig, err = secp256k1.GetIDConfig()

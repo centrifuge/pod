@@ -12,7 +12,7 @@ import (
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
+	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519keys"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/secp256k1"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/p2p"
 	"github.com/CentrifugeInc/go-centrifuge/centrifuge/signatures"
@@ -133,7 +133,7 @@ func (dp *defaultProcessor) Anchor(ctx context.Context, document *coredocumentpb
 	}
 
 	// sign document with own key and append it to signatures
-	idConfig, err := ed25519.GetIDConfig()
+	idConfig, err := ed25519keys.GetIDConfig()
 	if err != nil {
 		log.Error(err)
 		return centerrors.Wrap(err, "anchoring error")
