@@ -3,8 +3,9 @@ package model
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"reflect"
+
+	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -56,7 +57,7 @@ type Invoice struct {
 
 func (i *Invoice) createInvoiceData() *invoicepb.InvoiceData {
 
-	recipient, _:= i.Recipient.MarshalBinary()
+	recipient, _ := i.Recipient.MarshalBinary()
 	sender, _ := i.Sender.MarshalBinary()
 	payee, _ := i.Payee.MarshalBinary()
 
@@ -119,13 +120,11 @@ func (i *Invoice) initInvoice(invoiceData *invoicepb.InvoiceData) error {
 	}
 	i.Sender = senderCentID
 
-
 	payeeCentID, err := identity.NewCentID(invoiceData.Payee)
 	if err != nil {
 		return err
 	}
 	i.Payee = payeeCentID
-
 
 	i.Comment = invoiceData.Comment
 	i.DueDate = invoiceData.DueDate

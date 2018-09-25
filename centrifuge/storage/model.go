@@ -24,5 +24,4 @@ type Model interface {
 
 	// FromJSON initialize the model with a json
 	FromJSON(json []byte) error
-
 }
