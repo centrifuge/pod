@@ -3,6 +3,8 @@ package model
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
+
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
@@ -11,7 +13,6 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/golang/protobuf/ptypes/timestamp"
-	"reflect"
 )
 
 // example of an implementation
@@ -38,47 +39,45 @@ type Invoice struct {
 	// invoice amount including tax
 	GrossAmount int64
 	// invoice amount excluding tax
-	NetAmount            int64
-	TaxAmount            int64
-	TaxRate              int64
-	Recipient            []byte
-	Sender               []byte
-	Payee                []byte
-	Comment              string
-	DueDate              *timestamp.Timestamp
-	DateCreated          *timestamp.Timestamp
-	ExtraData            []byte
+	NetAmount   int64
+	TaxAmount   int64
+	TaxRate     int64
+	Recipient   []byte
+	Sender      []byte
+	Payee       []byte
+	Comment     string
+	DueDate     *timestamp.Timestamp
+	DateCreated *timestamp.Timestamp
+	ExtraData   []byte
 
 	invoiceSalts *invoicepb.InvoiceDataSalts
-
 }
-
 
 func (i *Invoice) createInvoiceData() *invoicepb.InvoiceData {
 	invoiceData := &invoicepb.InvoiceData{
-		InvoiceNumber:i.InvoiceNumber,
-		SenderName:i.SenderName,
-		SenderStreet:i.SenderStreet,
-		SenderCity:i.SenderCity,
-		SenderZipcode:i.SenderZipcode,
-		SenderCountry:i.SenderCountry,
-		RecipientName:i.RecipientName,
-		RecipientStreet:i.RecipientStreet,
-		RecipientCity:i.RecipientCity,
-		RecipientZipcode:i.RecipientZipcode,
-		RecipientCountry:i.RecipientCountry,
-		Currency:i.Currency,
-		GrossAmount:i.GrossAmount,
-		NetAmount:i.NetAmount,
-		TaxAmount:i.TaxAmount,
-		TaxRate:i.TaxRate,
-		Recipient:i.Recipient,
-		Sender:i.Sender,
-		Payee:i.Payee,
-		Comment:i.Comment,
-		DueDate:i.DueDate,
-		DateCreated:i.DateCreated,
-		ExtraData:i.ExtraData,
+		InvoiceNumber:    i.InvoiceNumber,
+		SenderName:       i.SenderName,
+		SenderStreet:     i.SenderStreet,
+		SenderCity:       i.SenderCity,
+		SenderZipcode:    i.SenderZipcode,
+		SenderCountry:    i.SenderCountry,
+		RecipientName:    i.RecipientName,
+		RecipientStreet:  i.RecipientStreet,
+		RecipientCity:    i.RecipientCity,
+		RecipientZipcode: i.RecipientZipcode,
+		RecipientCountry: i.RecipientCountry,
+		Currency:         i.Currency,
+		GrossAmount:      i.GrossAmount,
+		NetAmount:        i.NetAmount,
+		TaxAmount:        i.TaxAmount,
+		TaxRate:          i.TaxRate,
+		Recipient:        i.Recipient,
+		Sender:           i.Sender,
+		Payee:            i.Payee,
+		Comment:          i.Comment,
+		DueDate:          i.DueDate,
+		DateCreated:      i.DateCreated,
+		ExtraData:        i.ExtraData,
 	}
 	return invoiceData
 }
@@ -111,7 +110,7 @@ func (i *Invoice) initInvoice(invoiceData *invoicepb.InvoiceData) {
 
 }
 
-func (i *Invoice) getInvoiceSalts(invoiceData *invoicepb.InvoiceData) *invoicepb.InvoiceDataSalts{
+func (i *Invoice) getInvoiceSalts(invoiceData *invoicepb.InvoiceData) *invoicepb.InvoiceDataSalts {
 	if i.invoiceSalts == nil {
 		invoiceSalts := &invoicepb.InvoiceDataSalts{}
 		proofs.FillSalts(invoiceData, invoiceSalts)
@@ -120,7 +119,6 @@ func (i *Invoice) getInvoiceSalts(invoiceData *invoicepb.InvoiceData) *invoicepb
 	}
 	return i.invoiceSalts
 }
-
 
 func (i *Invoice) CoreDocument() (*coredocumentpb.CoreDocument, error) {
 	coreDocument := new(coredocumentpb.CoreDocument)

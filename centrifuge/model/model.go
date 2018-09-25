@@ -1,8 +1,9 @@
 package model
 
 import (
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"reflect"
+
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 )
 
 // Model is an interface to abstract away model specificness like invoice or purchaseOrder
@@ -20,8 +21,4 @@ type Model interface {
 
 	// return the json representation of the model
 	JSON() ([]byte, error)
-
-
-
 }
-
