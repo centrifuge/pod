@@ -6,6 +6,7 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/secp256k1"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
@@ -46,9 +47,11 @@ func GenerateP2PRecipientsOnEthereum(quantity int) [][]byte {
 		ID := identity.NewRandomCentID()
 		_, confirmations, _ := idService.CreateIdentity(ID)
 		<-confirmations
+		ctx, cancel := ethereum.DefaultWaitForTransactionMiningContext()
 		id, _ := idService.LookupIdentityForID(ID)
-		confirmations, _ = id.AddKeyToIdentity(identity.KeyPurposeP2p, tools.RandomSlice(32))
+		confirmations, _ = id.AddKeyToIdentity(ctx, identity.KeyPurposeP2p, tools.RandomSlice(32))
 		<-confirmations
+		cancel()
 		recipients[i] = ID[:]
 	}
 	return recipients
@@ -112,8 +115,10 @@ func CreateIdentityWithKeys() identity.CentID {
 
 	// only add key if it doesn't exist
 	_, err = id.GetLastKeyForPurpose(identity.KeyPurposeEthMsgAuth)
+	ctx, cancel := ethereum.DefaultWaitForTransactionMiningContext()
+	defer cancel()
 	if err != nil {
-		confirmations, _ := id.AddKeyToIdentity(identity.KeyPurposeEthMsgAuth, idConfig.PublicKey)
+		confirmations, _ := id.AddKeyToIdentity(ctx, identity.KeyPurposeEthMsgAuth, idConfig.PublicKey)
 		<-confirmations
 	}
 	return centIdTyped

@@ -8,7 +8,7 @@ ethereum:
 identityId: AQEBAQEB
 
 queue:
-  numWorkers: 5
+  numWorkers: 2
   workerWaitTimeMS: 1
 
 keys:

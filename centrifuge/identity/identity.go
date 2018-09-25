@@ -2,10 +2,13 @@ package identity
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
 	"math/big"
+
+	"github.com/centrifuge/go-centrifuge/centrifuge/ethereum"
 
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
@@ -90,7 +93,7 @@ type Identity interface {
 	CentrifugeID(cenId CentID)
 	GetCurrentP2PKey() (ret string, err error)
 	GetLastKeyForPurpose(keyPurpose int) (key []byte, err error)
-	AddKeyToIdentity(keyPurpose int, key []byte) (confirmations chan *WatchIdentity, err error)
+	AddKeyToIdentity(ctx context.Context, keyPurpose int, key []byte) (confirmations chan *WatchIdentity, err error)
 	CheckIdentityExists() (exists bool, err error)
 	FetchKey(key []byte) (Key, error)
 }
@@ -232,7 +235,9 @@ func AddKeyFromConfig(purpose int) error {
 		return err
 	}
 
-	confirmations, err := id.AddKeyToIdentity(purpose, identityConfig.PublicKey)
+	ctx, cancel := ethereum.DefaultWaitForTransactionMiningContext()
+	defer cancel()
+	confirmations, err := id.AddKeyToIdentity(ctx, purpose, identityConfig.PublicKey)
 	if err != nil {
 		return err
 	}
