@@ -1,7 +1,13 @@
 package model
 
 import (
+	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
+	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
+	"github.com/centrifuge/precise-proofs/proofs"
+	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes/any"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"reflect"
 )
@@ -9,42 +15,105 @@ import (
 // example of an implementation
 type Invoice struct {
 	// invoice number or reference number
-	InvoiceNumber string `protobuf:"bytes,1,opt,name=invoice_number,json=invoiceNumber" json:"invoice_number,omitempty"`
+	InvoiceNumber string
 	// name of the sender company
-	SenderName string `protobuf:"bytes,3,opt,name=sender_name,json=senderName" json:"sender_name,omitempty"`
+	SenderName string
 	// street and address details of the sender company
-	SenderStreet  string `protobuf:"bytes,4,opt,name=sender_street,json=senderStreet" json:"sender_street,omitempty"`
-	SenderCity    string `protobuf:"bytes,5,opt,name=sender_city,json=senderCity" json:"sender_city,omitempty"`
-	SenderZipcode string `protobuf:"bytes,6,opt,name=sender_zipcode,json=senderZipcode" json:"sender_zipcode,omitempty"`
+	SenderStreet  string
+	SenderCity    string
+	SenderZipcode string
 	// country ISO code of the sender of this invoice
-	SenderCountry string `protobuf:"bytes,7,opt,name=sender_country,json=senderCountry" json:"sender_country,omitempty"`
+	SenderCountry string
 	// name of the recipient company
-	RecipientName    string `protobuf:"bytes,8,opt,name=recipient_name,json=recipientName" json:"recipient_name,omitempty"`
-	RecipientStreet  string `protobuf:"bytes,9,opt,name=recipient_street,json=recipientStreet" json:"recipient_street,omitempty"`
-	RecipientCity    string `protobuf:"bytes,10,opt,name=recipient_city,json=recipientCity" json:"recipient_city,omitempty"`
-	RecipientZipcode string `protobuf:"bytes,11,opt,name=recipient_zipcode,json=recipientZipcode" json:"recipient_zipcode,omitempty"`
+	RecipientName    string
+	RecipientStreet  string
+	RecipientCity    string
+	RecipientZipcode string
 	// country ISO code of the receipient of this invoice
-	RecipientCountry string `protobuf:"bytes,12,opt,name=recipient_country,json=recipientCountry" json:"recipient_country,omitempty"`
+	RecipientCountry string
 	// ISO currency code
-	Currency string `protobuf:"bytes,13,opt,name=currency" json:"currency,omitempty"`
+	Currency string
 	// invoice amount including tax
-	GrossAmount int64 `protobuf:"varint,14,opt,name=gross_amount,json=grossAmount" json:"gross_amount,omitempty"`
+	GrossAmount int64
 	// invoice amount excluding tax
-	NetAmount            int64                `protobuf:"varint,15,opt,name=net_amount,json=netAmount" json:"net_amount,omitempty"`
-	TaxAmount            int64                `protobuf:"varint,16,opt,name=tax_amount,json=taxAmount" json:"tax_amount,omitempty"`
-	TaxRate              int64                `protobuf:"varint,17,opt,name=tax_rate,json=taxRate" json:"tax_rate,omitempty"`
-	Recipient            []byte               `protobuf:"bytes,18,opt,name=recipient,proto3" json:"recipient,omitempty"`
-	Sender               []byte               `protobuf:"bytes,19,opt,name=sender,proto3" json:"sender,omitempty"`
-	Payee                []byte               `protobuf:"bytes,20,opt,name=payee,proto3" json:"payee,omitempty"`
-	Comment              string               `protobuf:"bytes,21,opt,name=comment" json:"comment,omitempty"`
-	DueDate              *timestamp.Timestamp `protobuf:"bytes,22,opt,name=due_date,json=dueDate" json:"due_date,omitempty"`
-	DateCreated          *timestamp.Timestamp `protobuf:"bytes,23,opt,name=date_created,json=dateCreated" json:"date_created,omitempty"`
-	ExtraData            []byte               `protobuf:"bytes,24,opt,name=extra_data,json=extraData,proto3" json:"extra_data,omitempty"`
+	NetAmount            int64
+	TaxAmount            int64
+	TaxRate              int64
+	Recipient            []byte
+	Sender               []byte
+	Payee                []byte
+	Comment              string
+	DueDate              *timestamp.Timestamp
+	DateCreated          *timestamp.Timestamp
+	ExtraData            []byte
 }
 
 
-func (i *Invoice) CoreDocument() *coredocumentpb.CoreDocument {
-	panic("implement me")
+func (i *Invoice) createInvoiceData() *invoicepb.InvoiceData {
+	invoiceData := &invoicepb.InvoiceData{
+		InvoiceNumber:i.InvoiceNumber,
+		SenderName:i.SenderName,
+		SenderStreet:i.SenderStreet,
+		SenderCity:i.SenderCity,
+		SenderZipcode:i.SenderZipcode,
+		SenderCountry:i.SenderCountry,
+		RecipientName:i.RecipientName,
+		RecipientStreet:i.RecipientStreet,
+		RecipientCity:i.RecipientCity,
+		RecipientZipcode:i.RecipientZipcode,
+		RecipientCountry:i.RecipientCountry,
+		Currency:i.Currency,
+		GrossAmount:i.GrossAmount,
+		NetAmount:i.NetAmount,
+		TaxAmount:i.TaxAmount,
+		TaxRate:i.TaxRate,
+		Recipient:i.Recipient,
+		Sender:i.Sender,
+		Payee:i.Payee,
+		Comment:i.Comment,
+		DueDate:i.DueDate,
+		DateCreated:i.DateCreated,
+		ExtraData:i.ExtraData,
+	}
+	return invoiceData
+}
+
+func generateInvoiceSalts(invoiceData *invoicepb.InvoiceData) *invoicepb.InvoiceDataSalts{
+	invoiceSalts := &invoicepb.InvoiceDataSalts{}
+	proofs.FillSalts(invoiceData, invoiceSalts)
+	return invoiceSalts
+}
+
+
+func (i *Invoice) CoreDocument() (*coredocumentpb.CoreDocument, error) {
+	coreDocument := new(coredocumentpb.CoreDocument)
+	//proto.Merge(coreDocument, inv.Document.CoreDocument)
+	invoiceData := i.createInvoiceData()
+	serializedInvoice, err := proto.Marshal(invoiceData)
+	if err != nil {
+		return nil, centerrors.Wrap(err, "couldn't serialise InvoiceData")
+	}
+
+	invoiceAny := any.Any{
+		TypeUrl: documenttypes.InvoiceDataTypeUrl,
+		Value:   serializedInvoice,
+	}
+
+	invoiceSalt := generateInvoiceSalts(invoiceData)
+
+	serializedSalts, err := proto.Marshal(invoiceSalt)
+	if err != nil {
+		return nil, centerrors.Wrap(err, "couldn't serialise InvoiceSalts")
+	}
+
+	invoiceSaltsAny := any.Any{
+		TypeUrl: documenttypes.InvoiceSaltsTypeUrl,
+		Value:   serializedSalts,
+	}
+
+	coreDocument.EmbeddedData = &invoiceAny
+	coreDocument.EmbeddedDataSalts = &invoiceSaltsAny
+	return coreDocument, err
 }
 
 func (i *Invoice) SetCoreDocument(cd *coredocumentpb.CoreDocument) error {

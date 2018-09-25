@@ -13,13 +13,15 @@ type Model interface {
 	Type() reflect.Type
 
 	// Convert the model into a core document to be transported. It embeds the business object specific fields into the `EmbeddedData` field.
-	CoreDocument() *coredocumentpb.CoreDocument
+	CoreDocument() (*coredocumentpb.CoreDocument, error)
 
 	// SetCoreDocument sets fields from given CoreDocument into the model
 	SetCoreDocument(cd *coredocumentpb.CoreDocument) error
 
 	// return the json representation of the model
 	JSON() ([]byte, error)
+
+
 
 }
 
