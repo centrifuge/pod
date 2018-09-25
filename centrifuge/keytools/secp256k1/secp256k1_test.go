@@ -8,7 +8,6 @@ import (
 
 	"os"
 
-	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 )
@@ -16,7 +15,6 @@ import (
 const MaxMsgLen = 32
 
 func TestMain(m *testing.M) {
-	cc.InitTestConfig()
 	result := m.Run()
 	os.Exit(result)
 }
@@ -195,20 +193,4 @@ func TestGetAddress(t *testing.T) {
 
 	address := GetAddress(publicKey)
 	assert.Equal(t, address, correctAddress, "address is not correctly calculated from public key")
-}
-
-func TestGetIDConfig(t *testing.T) {
-	idconfig, err := GetIDConfig()
-	assert.Nil(t, err)
-
-	testMsgBytes := make([]byte, 32)
-	copy(testMsgBytes, "Centrifuge likes Ethereum")
-	signature, err := SignEthereum(testMsgBytes, idconfig.PrivateKey)
-	assert.Nil(t, err)
-	assert.NotNil(t, signature)
-
-	sigHex := hexutil.Encode(signature)
-	correct := VerifySignatureWithAddress(hexutil.Encode(idconfig.PublicKey), sigHex, testMsgBytes)
-	assert.Equal(t, correct, true, "generating ethereum signature for msg doesn't work correctly")
-
 }
