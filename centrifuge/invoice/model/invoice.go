@@ -1,4 +1,4 @@
-package invoicemodel
+package invoice
 
 import (
 	"encoding/json"
@@ -18,7 +18,7 @@ import (
 )
 
 // example of an implementation
-type Invoice struct {
+type InvoiceModel struct {
 	// invoice number or reference number
 	InvoiceNumber string
 	// name of the sender company
@@ -55,7 +55,7 @@ type Invoice struct {
 	InvoiceSalts *invoicepb.InvoiceDataSalts
 }
 
-func (i *Invoice) createInvoiceData() (*invoicepb.InvoiceData, error) {
+func (i *InvoiceModel) createInvoiceData() (*invoicepb.InvoiceData, error) {
 
 	recipient, err := i.Recipient.MarshalBinary()
 	if err != nil {
@@ -99,7 +99,7 @@ func (i *Invoice) createInvoiceData() (*invoicepb.InvoiceData, error) {
 
 }
 
-func (i *Invoice) initInvoice(invoiceData *invoicepb.InvoiceData) error {
+func (i *InvoiceModel) initInvoice(invoiceData *invoicepb.InvoiceData) error {
 
 	i.InvoiceNumber = invoiceData.InvoiceNumber
 	i.SenderName = invoiceData.SenderName
@@ -145,7 +145,7 @@ func (i *Invoice) initInvoice(invoiceData *invoicepb.InvoiceData) error {
 
 }
 
-func (i *Invoice) getInvoiceSalts(invoiceData *invoicepb.InvoiceData) *invoicepb.InvoiceDataSalts {
+func (i *InvoiceModel) getInvoiceSalts(invoiceData *invoicepb.InvoiceData) *invoicepb.InvoiceDataSalts {
 	if i.InvoiceSalts == nil {
 		invoiceSalts := &invoicepb.InvoiceDataSalts{}
 		proofs.FillSalts(invoiceData, invoiceSalts)
@@ -156,7 +156,7 @@ func (i *Invoice) getInvoiceSalts(invoiceData *invoicepb.InvoiceData) *invoicepb
 }
 
 //CoreDocument returns a CoreDocument with an embedded invoice
-func (i *Invoice) CoreDocument() (*coredocumentpb.CoreDocument, error) {
+func (i *InvoiceModel) CoreDocument() (*coredocumentpb.CoreDocument, error) {
 	coreDocument := new(coredocumentpb.CoreDocument)
 
 	invoiceData, err := i.createInvoiceData()
@@ -191,7 +191,7 @@ func (i *Invoice) CoreDocument() (*coredocumentpb.CoreDocument, error) {
 }
 
 //InitWithCoreDocument initials the invoice model with a core document which embeds an invoice
-func (i *Invoice) InitWithCoreDocument(coreDocument *coredocumentpb.CoreDocument) error {
+func (i *InvoiceModel) InitWithCoreDocument(coreDocument *coredocumentpb.CoreDocument) error {
 	if coreDocument == nil {
 		return centerrors.NilError(coreDocument)
 	}
@@ -220,11 +220,11 @@ func (i *Invoice) InitWithCoreDocument(coreDocument *coredocumentpb.CoreDocument
 	return err
 }
 
-func (i *Invoice) JSON() ([]byte, error) {
+func (i *InvoiceModel) JSON() ([]byte, error) {
 	return json.Marshal(i)
 }
 
-func (i *Invoice) InitWithJSON(jsonData []byte) error {
+func (i *InvoiceModel) InitWithJSON(jsonData []byte) error {
 
 	if err := json.Unmarshal(jsonData, i); err != nil {
 		return err
@@ -233,6 +233,6 @@ func (i *Invoice) InitWithJSON(jsonData []byte) error {
 
 }
 
-func (i *Invoice) Type() reflect.Type {
+func (i *InvoiceModel) Type() reflect.Type {
 	return reflect.TypeOf(i)
 }

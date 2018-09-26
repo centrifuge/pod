@@ -1,6 +1,6 @@
 // +build unit
 
-package invoicemodel
+package invoice
 
 import (
 	"encoding/json"
@@ -64,7 +64,7 @@ func createCDWithEmbeddedInvoice(t *testing.T, invoiceData invoicepb.InvoiceData
 
 func TestInvoice_InitWithCoreDocuments_invalidParameter(t *testing.T) {
 
-	invoiceModel := &Invoice{}
+	invoiceModel := &InvoiceModel{}
 
 	emptyCoreDocument := &coredocumentpb.CoreDocument{}
 	err := invoiceModel.InitWithCoreDocument(emptyCoreDocument)
@@ -82,7 +82,7 @@ func TestInvoice_InitWithCoreDocuments_invalidParameter(t *testing.T) {
 
 func TestInvoice_InitCoreDocument_successful(t *testing.T) {
 
-	invoiceModel := &Invoice{}
+	invoiceModel := &InvoiceModel{}
 
 	coreDocument := createCDWithEmbeddedInvoice(t, createInvoiceData())
 	err := invoiceModel.InitWithCoreDocument(coreDocument)
@@ -91,7 +91,7 @@ func TestInvoice_InitCoreDocument_successful(t *testing.T) {
 
 func TestInvoice_tInitCoreDocument_invalidCentId(t *testing.T) {
 
-	invoiceModel := &Invoice{}
+	invoiceModel := &InvoiceModel{}
 
 	coreDocument := createCDWithEmbeddedInvoice(t, invoicepb.InvoiceData{
 		Recipient:   tools.RandomSlice(identity.CentIDByteLength + 1),
@@ -106,7 +106,7 @@ func TestInvoice_tInitCoreDocument_invalidCentId(t *testing.T) {
 
 func TestInvoice_CoreDocument_successful(t *testing.T) {
 
-	invoiceModel := &Invoice{}
+	invoiceModel := &InvoiceModel{}
 
 	//init model with a coreDocument
 	coreDocument := createCDWithEmbeddedInvoice(t, createInvoiceData())
@@ -122,7 +122,7 @@ func TestInvoice_CoreDocument_successful(t *testing.T) {
 
 func TestInvoice_ModelInterface(t *testing.T) {
 
-	var i interface{} = &Invoice{}
+	var i interface{} = &InvoiceModel{}
 	_, ok := i.(models.Model)
 	assert.True(t, ok, "model interface not implemented correctly for invoiceModel")
 }
@@ -130,14 +130,14 @@ func TestInvoice_ModelInterface(t *testing.T) {
 func TestInvoice_Type(t *testing.T) {
 
 	var model models.Model
-	model = &Invoice{}
+	model = &InvoiceModel{}
 
-	assert.Equal(t, model.Type(), reflect.TypeOf(&Invoice{}), "InvoiceType not correct")
+	assert.Equal(t, model.Type(), reflect.TypeOf(&InvoiceModel{}), "InvoiceType not correct")
 
 }
 
 func TestInvoice_JSON(t *testing.T) {
-	invoiceModel := &Invoice{}
+	invoiceModel := &InvoiceModel{}
 
 	//init model with a coreDocument
 	coreDocument := createCDWithEmbeddedInvoice(t, createInvoiceData())
