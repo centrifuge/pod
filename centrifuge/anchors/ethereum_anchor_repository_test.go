@@ -96,7 +96,7 @@ func TestGenerateAnchor(t *testing.T) {
 	var documentRoot32Bytes [32]byte
 	copy(documentRoot32Bytes[:], currentDocumentRoot[:32])
 
-	commitData := anchors.NewCommitData(currentAnchorID, documentRoot32Bytes, centIdTyped, documentProofs, signature)
+	commitData := anchors.NewCommitData(0, currentAnchorID, documentRoot32Bytes, centIdTyped, documentProofs, signature)
 
 	anchorID, _ := anchors.NewAnchorID(currentAnchorID[:])
 	docRoot, _ := anchors.NewDocRoot(documentRoot32Bytes[:])

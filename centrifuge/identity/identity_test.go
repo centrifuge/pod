@@ -3,6 +3,7 @@
 package identity
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"testing"
@@ -41,8 +42,8 @@ func (i *mockID) GetLastKeyForPurpose(keyPurpose int) (key []byte, err error) {
 	return args.Get(0).([]byte), args.Error(1)
 }
 
-func (i *mockID) AddKeyToIdentity(keyPurpose int, key []byte) (confirmations chan *WatchIdentity, err error) {
-	args := i.Called(keyPurpose, key)
+func (i *mockID) AddKeyToIdentity(ctx context.Context, keyPurpose int, key []byte) (confirmations chan *WatchIdentity, err error) {
+	args := i.Called(ctx, keyPurpose, key)
 	return args.Get(0).(chan *WatchIdentity), args.Error(1)
 }
 
@@ -365,4 +366,9 @@ func TestValidateKey_success(t *testing.T) {
 	srv.AssertExpectations(t)
 	id.AssertExpectations(t)
 	assert.Nil(t, err, "must be nil")
+}
+
+func TestAddKeyFromConfig_OptionNotSupported(t *testing.T) {
+	err := AddKeyFromConfig(4)
+	assert.NotNil(t, err, "it should error out")
 }

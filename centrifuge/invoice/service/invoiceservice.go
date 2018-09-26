@@ -3,6 +3,8 @@ package invoiceservice
 import (
 	"fmt"
 
+	"github.com/centrifuge/go-centrifuge/centrifuge/invoice"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"

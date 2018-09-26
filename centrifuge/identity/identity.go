@@ -2,12 +2,18 @@ package identity
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
 	"math/big"
 
+	"github.com/centrifuge/go-centrifuge/centrifuge/ethereum"
+
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
+	"github.com/centrifuge/go-centrifuge/centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519"
+	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/secp256k1"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 )
 
@@ -87,7 +93,7 @@ type Identity interface {
 	CentrifugeID(cenId CentID)
 	GetCurrentP2PKey() (ret string, err error)
 	GetLastKeyForPurpose(keyPurpose int) (key []byte, err error)
-	AddKeyToIdentity(keyPurpose int, key []byte) (confirmations chan *WatchIdentity, err error)
+	AddKeyToIdentity(ctx context.Context, keyPurpose int, key []byte) (confirmations chan *WatchIdentity, err error)
 	CheckIdentityExists() (exists bool, err error)
 	FetchKey(key []byte) (Key, error)
 }
@@ -194,6 +200,54 @@ func ValidateKey(centrifugeId CentID, key []byte, purpose int) error {
 	if idKey.GetRevokedAt().Cmp(big.NewInt(0)) != 0 {
 		return fmt.Errorf(fmt.Sprintf("[Key: %x] Key is currently revoked since block [%d]", idKey.GetKey(), idKey.GetRevokedAt()))
 	}
+
+	return nil
+}
+
+// AddKeyFromConfig adds a key previously generated and indexed in the configuration file to the identity specified in such config file
+func AddKeyFromConfig(purpose int) error {
+	var identityConfig *config.IdentityConfig
+	var err error
+
+	switch purpose {
+	case KeyPurposeP2p:
+		identityConfig, err = ed25519.GetIDConfig()
+	case KeyPurposeSigning:
+		identityConfig, err = ed25519.GetIDConfig()
+	case KeyPurposeEthMsgAuth:
+		identityConfig, err = secp256k1.GetIDConfig()
+	default:
+		err = errors.New("Option not supported")
+	}
+
+	if err != nil {
+		return err
+	}
+
+	centId, err := NewCentID(identityConfig.ID)
+	if err != nil {
+		return err
+	}
+
+	id, err := IDService.LookupIdentityForID(centId)
+	if err != nil {
+		return err
+	}
+
+	ctx, cancel := ethereum.DefaultWaitForTransactionMiningContext()
+	defer cancel()
+	confirmations, err := id.AddKeyToIdentity(ctx, purpose, identityConfig.PublicKey)
+	if err != nil {
+		return err
+	}
+	watchAddedToIdentity := <-confirmations
+
+	lastKey, errLocal := watchAddedToIdentity.Identity.GetLastKeyForPurpose(purpose)
+	if errLocal != nil {
+		return err
+	}
+
+	log.Infof("Key [%v] with type [$s] Added to Identity [%s]", lastKey, purpose, watchAddedToIdentity.Identity)
 
 	return nil
 }

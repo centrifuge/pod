@@ -3,11 +3,13 @@
 package anchors_test
 
 import (
+	"context"
 	"os"
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/centrifuge/anchors"
 	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
+	"github.com/centrifuge/go-centrifuge/centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/secp256k1"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
@@ -22,7 +24,6 @@ var testAddress string
 var testPrivateKey string
 
 func TestMain(m *testing.M) {
-
 	identityService = &identity.EthereumIdentityService{}
 	cc.TestFunctionalEthereumBootstrap()
 	result := m.Run()
@@ -46,7 +47,7 @@ func createIdentityWithKeys(t *testing.T, centrifugeId []byte) []byte {
 	testPrivateKey = "0x17e063fa17dd8274b09c14b253697d9a20afff74ace3c04fdb1b9c814ce0ada5"
 	pubKey, _ := hexutil.Decode("0xc8dd3d66e112fae5c88fe6a677be24013e53c33e")
 
-	confirmations, err = id.AddKeyToIdentity(identity.KeyPurposeEthMsgAuth, pubKey)
+	confirmations, err = id.AddKeyToIdentity(context.Background(), identity.KeyPurposeEthMsgAuth, pubKey)
 	assert.Nil(t, err, "should not error out when adding keys")
 	assert.NotNil(t, confirmations, "confirmations channel should not be nil")
 	watchRegisteredIdentityKey := <-confirmations
@@ -82,7 +83,6 @@ func commitAnchor(t *testing.T, anchorID, centrifugeId, documentRoot, signature 
 	centIdFixed, _ := identity.NewCentID(centrifugeId)
 
 	confirmations, err := anchors.CommitAnchor(anchorIDTyped, docRootTyped, centIdFixed, documentProofs, signature)
-
 	if err != nil {
 		t.Fatalf("Error commit Anchor %v", err)
 	}
@@ -96,7 +96,6 @@ func commitAnchor(t *testing.T, anchorID, centrifugeId, documentRoot, signature 
 func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
 	var commitDataList [5]*anchors.CommitData
 	var confirmationList [5]<-chan *anchors.WatchCommit
-	var err error
 	testPrivateKey, _ := hexutil.Decode("0x17e063fa17dd8274b09c14b253697d9a20afff74ace3c04fdb1b9c814ce0ada5")
 
 	centrifugeId := tools.RandomSlice(identity.CentIDByteLength)
@@ -110,8 +109,9 @@ func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
 		messageToSign := anchors.GenerateCommitHash(currentAnchorId, centIdFixed, currentDocumentRoot)
 		signature, _ := secp256k1.SignEthereum(messageToSign, testPrivateKey)
 		documentProofs := [][anchors.DocumentProofLength]byte{tools.RandomByte32()}
-
-		commitDataList[ix] = anchors.NewCommitData(currentAnchorId, currentDocumentRoot, centIdFixed, documentProofs, signature)
+		h, err := ethereum.GetConnection().GetClient().HeaderByNumber(context.Background(), nil)
+		assert.Nil(t, err, " error must be nil")
+		commitDataList[ix] = anchors.NewCommitData(h.Number.Uint64(), currentAnchorId, currentDocumentRoot, centIdFixed, documentProofs, signature)
 
 		confirmationList[ix], err = anchors.CommitAnchor(currentAnchorId, currentDocumentRoot, centIdFixed, documentProofs, signature)
 
