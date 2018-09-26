@@ -47,7 +47,7 @@
   source = "git@github.com:centrifuge/centrifuge-ethereum-contracts"
 
 [[projects]]
-  digest = "1:37e923c472fc00132d34ceec524f94b76c252daac00cf72d5ad107765f4ab3d1"
+  digest = "1:7abfa5392df53c183c4d7464c7c73407dda0c8e486d5af8d5df7db7f2190b4d9"
   name = "github.com/centrifuge/centrifuge-protobufs"
   packages = [
     "documenttypes",
@@ -59,7 +59,7 @@
     "gen/go/purchaseorder",
   ]
   pruneopts = "T"
-  revision = "a4bb427fc0d50caae4cd2eb23f59f896cc5b69f5"
+  revision = "886299add3cee8873b01dcd11add80ae31ad4205"
   source = "git@github.com:centrifuge/centrifuge-protobufs"
 
 [[projects]]
