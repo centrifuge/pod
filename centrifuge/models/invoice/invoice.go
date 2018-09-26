@@ -1,4 +1,4 @@
-package model
+package invoice
 
 import (
 	"encoding/json"
@@ -55,13 +55,23 @@ type Invoice struct {
 	InvoiceSalts *invoicepb.InvoiceDataSalts
 }
 
-func (i *Invoice) createInvoiceData() *invoicepb.InvoiceData {
+func (i *Invoice) createInvoiceData() (*invoicepb.InvoiceData, error) {
 
-	recipient, _ := i.Recipient.MarshalBinary()
-	sender, _ := i.Sender.MarshalBinary()
-	payee, _ := i.Payee.MarshalBinary()
+	recipient, err := i.Recipient.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
 
-	invoiceData := &invoicepb.InvoiceData{
+	sender, err := i.Sender.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+	payee, err := i.Payee.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+
+	return &invoicepb.InvoiceData{
 		InvoiceNumber:    i.InvoiceNumber,
 		SenderName:       i.SenderName,
 		SenderStreet:     i.SenderStreet,
@@ -85,8 +95,8 @@ func (i *Invoice) createInvoiceData() *invoicepb.InvoiceData {
 		DueDate:          i.DueDate,
 		DateCreated:      i.DateCreated,
 		ExtraData:        i.ExtraData,
-	}
-	return invoiceData
+	}, nil
+
 }
 
 func (i *Invoice) initInvoice(invoiceData *invoicepb.InvoiceData) error {
@@ -145,10 +155,14 @@ func (i *Invoice) getInvoiceSalts(invoiceData *invoicepb.InvoiceData) *invoicepb
 	return i.InvoiceSalts
 }
 
+//CoreDocument returns a CoreDocument with an embedded invoice
 func (i *Invoice) CoreDocument() (*coredocumentpb.CoreDocument, error) {
 	coreDocument := new(coredocumentpb.CoreDocument)
 
-	invoiceData := i.createInvoiceData()
+	invoiceData, err := i.createInvoiceData()
+	if err != nil {
+		return nil, err
+	}
 	serializedInvoice, err := proto.Marshal(invoiceData)
 	if err != nil {
 		return nil, centerrors.Wrap(err, "couldn't serialise InvoiceData")
@@ -176,7 +190,8 @@ func (i *Invoice) CoreDocument() (*coredocumentpb.CoreDocument, error) {
 	return coreDocument, err
 }
 
-func (i *Invoice) InitWithCoreDocument(coreDocument *coredocumentpb.CoreDocument) error {
+//InitWithCoreDocument initials the invoice model with a core document which embeds an invoice
+func (i*Invoice) InitWithCoreDocument(coreDocument *coredocumentpb.CoreDocument) error {
 	if coreDocument == nil {
 		return centerrors.NilError(coreDocument)
 	}
@@ -206,10 +221,10 @@ func (i *Invoice) InitWithCoreDocument(coreDocument *coredocumentpb.CoreDocument
 }
 
 func (i *Invoice) JSON() ([]byte, error) {
-	return json.Marshal(*i)
+	return json.Marshal(i)
 }
 
-func (i *Invoice) FromJSON(jsonData []byte) error {
+func (i *Invoice) InitWithJSON(jsonData []byte) error {
 
 	if err := json.Unmarshal(jsonData, i); err != nil {
 		return err

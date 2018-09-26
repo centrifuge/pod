@@ -1,9 +1,11 @@
-// +build unit
 
-package model
+
+package invoice
 
 import (
 	"encoding/json"
+	"github.com/centrifuge/go-centrifuge/centrifuge/models"
+	"os"
 	"reflect"
 	"testing"
 
@@ -11,12 +13,19 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestMain(m *testing.M) {
+	cc.InitTestConfig()
+	result := m.Run()
+	os.Exit(result)
+}
+
 
 func createInvoiceData() invoicepb.InvoiceData {
 	return invoicepb.InvoiceData{
@@ -114,13 +123,13 @@ func TestInvoice_CoreDocument_successful(t *testing.T) {
 func TestInvoice_ModelInterface(t *testing.T) {
 
 	var i interface{} = &Invoice{}
-	_, ok := i.(storage.Model)
+	_, ok := i.(models.Model)
 	assert.True(t, ok, "model interface not implemented correctly for invoiceModel")
 }
 
 func TestInvoice_Type(t *testing.T) {
 
-	var model storage.Model
+	var model models.Model
 	model = &Invoice{}
 
 	assert.Equal(t, model.Type(), reflect.TypeOf(&Invoice{}), "InvoiceType not correct")
@@ -140,7 +149,7 @@ func TestInvoice_JSON(t *testing.T) {
 
 	assert.True(t, json.Valid(jsonBytes), "json format not correct")
 
-	err = invoiceModel.FromJSON(jsonBytes)
+	err = invoiceModel.InitWithJSON(jsonBytes)
 	assert.Nil(t, err, "unmarshal JSON didn't work correctly")
 
 	recievedCoreDocument, err := invoiceModel.CoreDocument()

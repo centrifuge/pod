@@ -1,4 +1,4 @@
-package storage
+package models
 
 import (
 	"reflect"
@@ -22,6 +22,6 @@ type Model interface {
 	// JSON return the json representation of the model
 	JSON() ([]byte, error)
 
-	// FromJSON initialize the model with a json
-	FromJSON(json []byte) error
+	// InitWithJSON initialize the model with a json
+	InitWithJSON(json []byte) error
 }
