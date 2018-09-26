@@ -195,6 +195,14 @@
         "coredocument_salts": {
           "$ref": "#/definitions/coredocumentCoreDocumentSalts",
           "title": "CoreDocumentSalts is inlined"
+        },
+        "collaborators": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "byte"
+          },
+          "title": "Collaborators are Centrifuge Identities who are participating in a given document consensus"
         }
       },
       "description": "* Merkle Roots for the document data\n* Signatures on document data\n* Access Control",
