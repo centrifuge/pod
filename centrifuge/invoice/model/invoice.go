@@ -190,8 +190,8 @@ func (i *InvoiceModel) CoreDocument() (*coredocumentpb.CoreDocument, error) {
 	return coreDocument, err
 }
 
-//InitWithCoreDocument initials the invoice model with a core document which embeds an invoice
-func (i *InvoiceModel) InitWithCoreDocument(coreDocument *coredocumentpb.CoreDocument) error {
+//FromCoreDocument initials the invoice model with a core document which embeds an invoice
+func (i *InvoiceModel) FromCoreDocument(coreDocument *coredocumentpb.CoreDocument) error {
 	if coreDocument == nil {
 		return centerrors.NilError(coreDocument)
 	}
@@ -224,7 +224,7 @@ func (i *InvoiceModel) JSON() ([]byte, error) {
 	return json.Marshal(i)
 }
 
-func (i *InvoiceModel) InitWithJSON(jsonData []byte) error {
+func (i *InvoiceModel) FromJSON(jsonData []byte) error {
 
 	if err := json.Unmarshal(jsonData, i); err != nil {
 		return err

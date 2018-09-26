@@ -62,20 +62,20 @@ func createCDWithEmbeddedInvoice(t *testing.T, invoiceData invoicepb.InvoiceData
 	return coreDocument
 }
 
-func TestInvoice_InitWithCoreDocuments_invalidParameter(t *testing.T) {
+func TestInvoice_FromCoreDocuments_invalidParameter(t *testing.T) {
 
 	invoiceModel := &InvoiceModel{}
 
 	emptyCoreDocument := &coredocumentpb.CoreDocument{}
-	err := invoiceModel.InitWithCoreDocument(emptyCoreDocument)
+	err := invoiceModel.FromCoreDocument(emptyCoreDocument)
 	assert.Error(t, err, "it should not be possible to init a empty core document")
 
-	err = invoiceModel.InitWithCoreDocument(nil)
+	err = invoiceModel.FromCoreDocument(nil)
 	assert.Error(t, err, "it should not be possible to init a empty core document")
 
 	invalidEmbeddedData := &any.Any{TypeUrl: "invalid"}
 	coreDocument := &coredocumentpb.CoreDocument{EmbeddedData: invalidEmbeddedData}
-	err = invoiceModel.InitWithCoreDocument(coreDocument)
+	err = invoiceModel.FromCoreDocument(coreDocument)
 	assert.Error(t, err, "it should not be possible to init invalid typeUrl")
 
 }
@@ -85,7 +85,7 @@ func TestInvoice_InitCoreDocument_successful(t *testing.T) {
 	invoiceModel := &InvoiceModel{}
 
 	coreDocument := createCDWithEmbeddedInvoice(t, createInvoiceData())
-	err := invoiceModel.InitWithCoreDocument(coreDocument)
+	err := invoiceModel.FromCoreDocument(coreDocument)
 	assert.Nil(t, err, "valid coredocument shouldn't produce an error")
 }
 
@@ -99,7 +99,7 @@ func TestInvoice_tInitCoreDocument_invalidCentId(t *testing.T) {
 		Payee:       tools.RandomSlice(identity.CentIDByteLength),
 		GrossAmount: 42,
 	})
-	err := invoiceModel.InitWithCoreDocument(coreDocument)
+	err := invoiceModel.FromCoreDocument(coreDocument)
 	assert.Error(t, err, "invalid centID should produce an error")
 
 }
@@ -110,7 +110,7 @@ func TestInvoice_CoreDocument_successful(t *testing.T) {
 
 	//init model with a coreDocument
 	coreDocument := createCDWithEmbeddedInvoice(t, createInvoiceData())
-	invoiceModel.InitWithCoreDocument(coreDocument)
+	invoiceModel.FromCoreDocument(coreDocument)
 
 	returnedCoreDocument, err := invoiceModel.CoreDocument()
 	assert.Nil(t, err, "transformation from invoice to coreDocument failed")
@@ -141,7 +141,7 @@ func TestInvoice_JSON(t *testing.T) {
 
 	//init model with a coreDocument
 	coreDocument := createCDWithEmbeddedInvoice(t, createInvoiceData())
-	invoiceModel.InitWithCoreDocument(coreDocument)
+	invoiceModel.FromCoreDocument(coreDocument)
 
 	jsonBytes, err := invoiceModel.JSON()
 
@@ -149,7 +149,7 @@ func TestInvoice_JSON(t *testing.T) {
 
 	assert.True(t, json.Valid(jsonBytes), "json format not correct")
 
-	err = invoiceModel.InitWithJSON(jsonBytes)
+	err = invoiceModel.FromJSON(jsonBytes)
 	assert.Nil(t, err, "unmarshal JSON didn't work correctly")
 
 	recievedCoreDocument, err := invoiceModel.CoreDocument()
