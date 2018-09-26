@@ -1,20 +1,21 @@
-
+// +build unit
 
 package invoice
 
 import (
 	"encoding/json"
-	"github.com/centrifuge/go-centrifuge/centrifuge/models"
 	"os"
 	"reflect"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/centrifuge/models"
+
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
+	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
-	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
@@ -25,7 +26,6 @@ func TestMain(m *testing.M) {
 	result := m.Run()
 	os.Exit(result)
 }
-
 
 func createInvoiceData() invoicepb.InvoiceData {
 	return invoicepb.InvoiceData{

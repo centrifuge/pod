@@ -191,7 +191,7 @@ func (i *Invoice) CoreDocument() (*coredocumentpb.CoreDocument, error) {
 }
 
 //InitWithCoreDocument initials the invoice model with a core document which embeds an invoice
-func (i*Invoice) InitWithCoreDocument(coreDocument *coredocumentpb.CoreDocument) error {
+func (i *Invoice) InitWithCoreDocument(coreDocument *coredocumentpb.CoreDocument) error {
 	if coreDocument == nil {
 		return centerrors.NilError(coreDocument)
 	}
