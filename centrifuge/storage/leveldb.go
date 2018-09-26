@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"encoding/json"
 	"sync"
 
 	"fmt"
@@ -58,7 +57,7 @@ type DefaultLevelDB struct {
 	KeyPrefix         string
 	LevelDB           *leveldb.DB
 	ValidateFunc      func(proto.Message) error
-	ValidateModelFunc func(json.Marshaler) error
+	ValidateModelFunc func(interface{}) error
 }
 
 // Exists returns if the document exists in the repository
@@ -76,7 +75,7 @@ func (repo *DefaultLevelDB) GetKey(id []byte) []byte {
 	return append([]byte(repo.KeyPrefix), id...)
 }
 
-// GetByID finds the document by id and marshalls into message
+// GetByID finds the document by id and marshals into message
 func (repo *DefaultLevelDB) GetByID(id []byte, msg proto.Message) error {
 	if msg == nil {
 		return fmt.Errorf("nil document provided")
@@ -146,8 +145,8 @@ func (repo *DefaultLevelDB) Update(id []byte, msg proto.Message) error {
 	return repo.LevelDB.Put(repo.GetKey(id), data, nil)
 }
 
-// GetModelByID finds the document by id and marshalls into message
-func (repo *DefaultLevelDB) GetModelByID(id []byte, msg json.Unmarshaler) error {
+// GetModelByID finds the document by id and marshals into message
+func (repo *DefaultLevelDB) GetModelByID(id []byte, msg Unmarshaler) error {
 	if msg == nil {
 		return fmt.Errorf("nil document provided")
 	}
@@ -157,7 +156,7 @@ func (repo *DefaultLevelDB) GetModelByID(id []byte, msg json.Unmarshaler) error 
 		return err
 	}
 
-	err = msg.UnmarshalJSON(data)
+	err = msg.FromJSON(data)
 	if err != nil {
 		return err
 	}
@@ -167,7 +166,7 @@ func (repo *DefaultLevelDB) GetModelByID(id []byte, msg json.Unmarshaler) error 
 
 // CreateModel creates the model if not exists
 // errors out if document exists
-func (repo *DefaultLevelDB) CreateModel(id []byte, msg json.Marshaler) error {
+func (repo *DefaultLevelDB) CreateModel(id []byte, msg Marshaler) error {
 	if msg == nil {
 		return fmt.Errorf("nil model provided")
 	}
@@ -184,7 +183,7 @@ func (repo *DefaultLevelDB) CreateModel(id []byte, msg json.Marshaler) error {
 		}
 	}
 
-	data, err := msg.MarshalJSON()
+	data, err := msg.JSON()
 	if err != nil {
 		return err
 	}
@@ -193,7 +192,7 @@ func (repo *DefaultLevelDB) CreateModel(id []byte, msg json.Marshaler) error {
 }
 
 // Update updates the doc with ID if exists
-func (repo *DefaultLevelDB) UpdateModel(id []byte, msg json.Marshaler) error {
+func (repo *DefaultLevelDB) UpdateModel(id []byte, msg Marshaler) error {
 	if msg == nil {
 		return fmt.Errorf("nil document provided")
 	}
@@ -209,7 +208,7 @@ func (repo *DefaultLevelDB) UpdateModel(id []byte, msg json.Marshaler) error {
 		}
 	}
 
-	data, err := msg.MarshalJSON()
+	data, err := msg.JSON()
 	if err != nil {
 		return err
 	}

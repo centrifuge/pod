@@ -115,60 +115,41 @@ type model struct {
 	Data        string `json:"data"`
 }
 
-func (m model) MarshalJSON() ([]byte, error) {
+func (m model) JSON() ([]byte, error) {
 	if m.shouldError {
 		return nil, fmt.Errorf("failed to marshal")
 	}
 
-	var d struct {
-		Data string
-	}
-	d.Data = m.Data
-	return json.Marshal(d)
+	return json.Marshal(m)
 }
 
-func (m *model) UnmarshalJSON(data []byte) error {
+func (m *model) FromJSON(data []byte) error {
 	if m.shouldError {
 		return fmt.Errorf("failed to unmarshal")
 	}
 
-	var d struct {
-		Data string
-	}
-
-	err := json.Unmarshal(data, &d)
-	if err != nil {
-		return err
-	}
-
-	m.Data = d.Data
-	return nil
-}
-
-func TestDefaultLevelDB_GetModelByID_missing(t *testing.T) {
-	id := tools.RandomSlice(32)
-	m := new(model)
-	err := defaultDB.GetModelByID(id, m)
-	assert.Error(t, err, "error must be non nil")
-}
-
-func TestDefaultLevelDB_GetModelByID_nil_model(t *testing.T) {
-	id := tools.RandomSlice(32)
-	err := defaultDB.GetModelByID(id, nil)
-	assert.Error(t, err, "error must be non nil")
-}
-
-func TestDefaultLevelDB_GetModelByID_Unmarshal_fail(t *testing.T) {
-	id := tools.RandomSlice(32)
-	m := &model{shouldError: true}
-	err := defaultDB.GetModelByID(id, m)
-	assert.Error(t, err, "error must be non nil")
+	return json.Unmarshal(data, m)
 }
 
 func TestDefaultLevelDB_GetModelByID(t *testing.T) {
 	id := tools.RandomSlice(32)
-	m := &model{Data: "hello, world"}
-	err := defaultDB.CreateModel(id, m)
+
+	// missing ID
+	err := defaultDB.GetModelByID(id, new(model))
+	assert.Error(t, err, "error must be non nil")
+
+	// nil document
+	err = defaultDB.GetModelByID(id, nil)
+	assert.Error(t, err, "error must be non nil")
+
+	// Failed unmarshal
+	m := &model{shouldError: true}
+	err = defaultDB.GetModelByID(id, m)
+	assert.Error(t, err, "error must be non nil")
+
+	// success
+	m = &model{Data: "hello, world"}
+	err = defaultDB.CreateModel(id, m)
 	assert.Nil(t, err, "error should be nil")
 	nm := new(model)
 	err = defaultDB.GetModelByID(id, nm)
@@ -179,7 +160,7 @@ func TestDefaultLevelDB_GetModelByID(t *testing.T) {
 func TestDefaultLevelDB_CreateModel(t *testing.T) {
 	id := tools.RandomSlice(32)
 	d := &model{Data: "Create it"}
-	defaultDB.ValidateModelFunc = func(m json.Marshaler) error { return nil }
+	defaultDB.ValidateModelFunc = func(m interface{}) error { return nil }
 	err := defaultDB.CreateModel(id, d)
 	assert.Nil(t, err, "create must pass")
 
@@ -192,7 +173,7 @@ func TestDefaultLevelDB_CreateModel(t *testing.T) {
 	assert.Error(t, err, "create must fail")
 
 	// failed validation
-	defaultDB.ValidateModelFunc = func(m json.Marshaler) error {
+	defaultDB.ValidateModelFunc = func(m interface{}) error {
 		return fmt.Errorf("failed validation")
 	}
 	err = defaultDB.CreateModel(tools.RandomSlice(32), new(model))
@@ -216,7 +197,7 @@ func TestDefaultLevelDB_UpdateModel(t *testing.T) {
 	assert.Nil(t, err, "create must pass")
 
 	// failed validation
-	defaultDB.ValidateModelFunc = func(m json.Marshaler) error {
+	defaultDB.ValidateModelFunc = func(m interface{}) error {
 		return fmt.Errorf("failed validation")
 	}
 	err = defaultDB.CreateModel(tools.RandomSlice(32), new(model))
@@ -225,7 +206,7 @@ func TestDefaultLevelDB_UpdateModel(t *testing.T) {
 
 	// successful one
 	m.Data = "update it"
-	defaultDB.ValidateModelFunc = func(m json.Marshaler) error { return nil }
+	defaultDB.ValidateModelFunc = func(m interface{}) error { return nil }
 	err = defaultDB.UpdateModel(id, m)
 	assert.Nil(t, err, "update must pass")
 	nm := new(model)

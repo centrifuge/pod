@@ -1,8 +1,6 @@
 package storage
 
 import (
-	"encoding/json"
-
 	"github.com/golang/protobuf/proto"
 )
 
@@ -44,6 +42,16 @@ type Repository interface {
 	Updater
 }
 
+// Marshaler is an interface that is implemented by types that can marshall themselves into JSON
+type Marshaler interface {
+	JSON() ([]byte, error)
+}
+
+// Unmarshaler is an interface that is implemented by types that can unmarshal themselves from JSON data
+type Unmarshaler interface {
+	FromJSON([]byte) error
+}
+
 // CreatorModel interface can be implemented by any repository that handles model retrieval
 // TODO(ved): rename the interfaces once model storage is implemented across documents
 type GetterModel interface {
@@ -51,21 +59,21 @@ type GetterModel interface {
 	GetKey(id []byte) (key []byte)
 
 	// GetByID finds the doc with identifier and marshals it into message
-	GetModelByID(id []byte, msg json.Unmarshaler) error
+	GetModelByID(id []byte, msg Unmarshaler) error
 }
 
 // CreatorModel interface can be implemented by any repository that handles model storage
 type CreatorModel interface {
 	// Create stores the initial document
 	// If document exist, it errors out
-	CreateModel(id []byte, msg json.Marshaler) error
+	CreateModel(id []byte, msg Marshaler) error
 }
 
 // UpdaterModel interface can be implemented by any repository that handles model storage
 type UpdaterModel interface {
 	// Update updates the already stored document
 	// errors out when document is missing
-	UpdateModel(id []byte, msg json.Marshaler) error
+	UpdateModel(id []byte, msg Marshaler) error
 }
 
 // ModelRepository interface combines above interfaces
