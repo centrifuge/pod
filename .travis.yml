@@ -40,7 +40,7 @@ jobs:
       after_success:
        - bash <(curl -s https://codecov.io/bash)
     - stage: build_artifacts
-      if: (NOT type IN (pull_request)) AND ((branch = develop) OR (branch = /^hotfix-.*$/))
+      if: (NOT type IN (pull_request)) AND ((branch = develop) OR (branch = master))
       before_script:
        - openssl aes-256-cbc -K $encrypted_f84a564476a2_key -iv $encrypted_f84a564476a2_iv -in peak-vista-185616-9f70002df7eb.json.enc -out peak-vista-185616-9f70002df7eb.json -d
       script: make build-ci
