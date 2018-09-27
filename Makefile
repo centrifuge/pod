@@ -80,6 +80,3 @@ build-ci: build-linux-amd64 build-docker
 	@docker tag "${IMAGE_NAME}:${TAG}" "${IMAGE_NAME}:latest"
 	@docker push ${IMAGE_NAME}:latest
 	@docker push ${IMAGE_NAME}:${TAG}
-test:
-	@echo ${TRAVIS_BRANCH}
-
