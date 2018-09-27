@@ -8,14 +8,15 @@ import (
 	"os"
 	"testing"
 
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
-	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/invoice/service"
-	clientinvoicepb "github.com/CentrifugeInc/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
+	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
+	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
+	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
+	"github.com/centrifuge/go-centrifuge/centrifuge/invoice"
+	"github.com/centrifuge/go-centrifuge/centrifuge/invoice/service"
+	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
+	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/go-errors/errors"
 	"github.com/golang/protobuf/proto"
@@ -25,6 +26,8 @@ import (
 
 func TestMain(m *testing.M) {
 	cc.TestIntegrationBootstrap()
+	db := cc.GetLevelDBStorage()
+	coredocumentrepository.InitLevelDBRepository(db)
 	result := m.Run()
 	cc.TestIntegrationTearDown()
 	os.Exit(result)
@@ -113,7 +116,7 @@ func TestInvoiceDocumentService_AnchorFails(t *testing.T) {
 	doc, s, mockRepo, mockCDP := getTestSetupData()
 
 	mockRepo.On("Create", doc.Document.CoreDocument.DocumentIdentifier, doc.Document).Return(nil).Once()
-	mockCDP.On("Anchor", mock.Anything).Return(errors.New("error anchoring")).Once()
+	mockCDP.On("Anchor", mock.Anything).Return(errors.New("error anchors")).Once()
 
 	anchoredDoc, err := s.HandleAnchorInvoiceDocument(context.Background(), &clientinvoicepb.AnchorInvoiceEnvelope{Document: doc.Document})
 
@@ -137,6 +140,8 @@ func TestInvoiceDocumentService_Send(t *testing.T) {
 
 	recipients := testingutils.GenerateP2PRecipients(1)
 
+	coredocumentrepository.GetRepository().Create(doc.Document.CoreDocument.DocumentIdentifier, doc.Document.CoreDocument)
+
 	mockRepo.On("Create", doc.Document.CoreDocument.DocumentIdentifier, doc.Document).Return(nil).Once()
 	mockRepo.On("Update", doc.Document.CoreDocument.DocumentIdentifier, mock.Anything).Return(nil).Once()
 	mockCDP.On("Anchor", mock.Anything).Return(nil).Once()
@@ -152,6 +157,8 @@ func TestInvoiceDocumentService_Send(t *testing.T) {
 func TestInvoiceDocumentService_SendFails(t *testing.T) {
 	doc, s, mockRepo, mockCDP := getTestSetupData()
 	recipients := testingutils.GenerateP2PRecipients(2)
+
+	coredocumentrepository.GetRepository().Create(doc.Document.CoreDocument.DocumentIdentifier, doc.Document.CoreDocument)
 
 	mockRepo.On("Create", doc.Document.CoreDocument.DocumentIdentifier, doc.Document).Return(nil).Once()
 	mockRepo.On("Update", doc.Document.CoreDocument.DocumentIdentifier, mock.Anything).Return(nil).Once()
@@ -183,13 +190,13 @@ func TestInvoiceDocumentService_Send_AnchorFails(t *testing.T) {
 	recipients := testingutils.GenerateP2PRecipients(2)
 
 	mockRepo.On("Create", doc.Document.CoreDocument.DocumentIdentifier, doc.Document).Return(nil).Once()
-	mockCDP.On("Anchor", mock.Anything).Return(errors.New("error anchoring")).Once()
+	mockCDP.On("Anchor", mock.Anything).Return(errors.New("error anchors")).Once()
 
 	_, err := s.HandleSendInvoiceDocument(context.Background(), &clientinvoicepb.SendInvoiceEnvelope{Recipients: recipients, Document: doc.Document})
 
 	mockRepo.AssertExpectations(t)
 	mockCDP.AssertExpectations(t)
-	assert.Contains(t, err.Error(), "error anchoring")
+	assert.Contains(t, err.Error(), "error anchors")
 }
 
 func TestInvoiceDocumentService_HandleCreateInvoiceProof(t *testing.T) {

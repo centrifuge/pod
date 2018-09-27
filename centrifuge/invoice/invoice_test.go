@@ -6,11 +6,11 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/CentrifugeInc/centrifuge-protobufs/documenttypes"
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/invoice"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
+	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
+	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
+	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
@@ -108,7 +108,7 @@ func TestValidate(t *testing.T) {
 			inv: nil,
 			want: want{
 				valid:  false,
-				errMsg: errors.NilDocument,
+				errMsg: centerrors.NilDocument,
 			},
 		},
 
@@ -116,7 +116,7 @@ func TestValidate(t *testing.T) {
 			inv: &invoicepb.InvoiceDocument{},
 			want: want{
 				valid:  false,
-				errMsg: errors.NilDocument,
+				errMsg: centerrors.NilDocument,
 			},
 		},
 
@@ -124,31 +124,7 @@ func TestValidate(t *testing.T) {
 			inv: &invoicepb.InvoiceDocument{CoreDocument: validCoreDoc},
 			want: want{
 				valid:  false,
-				errMsg: errors.NilDocumentData,
-			},
-		},
-
-		{
-			inv: &invoicepb.InvoiceDocument{
-				CoreDocument: validCoreDoc,
-				Data: &invoicepb.InvoiceData{
-					InvoiceNumber:    "inv1234",
-					SenderName:       "Jack",
-					SenderZipcode:    "921007",
-					SenderCountry:    "AUS",
-					RecipientName:    "John",
-					RecipientZipcode: "12345",
-					Currency:         "EUR",
-				},
-			},
-			want: want{
-				valid:  false,
-				errMsg: "Invalid Invoice",
-				errs: map[string]string{
-					"inv_recipient_country": errors.RequiredField,
-					"inv_gross_amount":      errors.RequirePositiveNumber,
-					"inv_salts":             errors.RequiredField,
-				},
+				errMsg: centerrors.NilDocumentData,
 			},
 		},
 
@@ -171,7 +147,7 @@ func TestValidate(t *testing.T) {
 				valid:  false,
 				errMsg: "Invalid Invoice",
 				errs: map[string]string{
-					"inv_salts": errors.RequiredField,
+					"inv_salts": centerrors.RequiredField,
 				},
 			},
 		},

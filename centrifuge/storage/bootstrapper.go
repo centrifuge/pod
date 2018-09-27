@@ -3,8 +3,8 @@ package storage
 import (
 	"errors"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/bootstrapper"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrapper"
+	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 )
 
 type Bootstrapper struct {

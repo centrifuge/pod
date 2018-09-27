@@ -44,7 +44,8 @@ service InvoiceDocumentService {
   }
   rpc GetInvoiceDocument(GetInvoiceDocumentEnvelope) returns (InvoiceDocument) {
     option (google.api.http) = {
-      get: "/invoice/{document_identifier}"
+      post: "/invoice/get"
+      body: "*"
     };
   }
   rpc GetReceivedInvoiceDocuments(google.protobuf.Empty) returns (ReceivedInvoices) {

@@ -44,7 +44,8 @@ service PurchaseOrderDocumentService {
   }
   rpc GetPurchaseOrderDocument(GetPurchaseOrderDocumentEnvelope) returns (PurchaseOrderDocument) {
     option (google.api.http) = {
-      get: "/purchaseorder/{document_identifier}"
+      post: "/purchaseorder/get"
+      body: "*"
     };
   }
   rpc GetReceivedPurchaseOrderDocuments(google.protobuf.Empty) returns (ReceivedPurchaseOrders) {

@@ -72,22 +72,8 @@ func request_PurchaseOrderDocumentService_GetPurchaseOrderDocument_0(ctx context
 	var protoReq GetPurchaseOrderDocumentEnvelope
 	var metadata runtime.ServerMetadata
 
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["document_identifier"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "document_identifier")
-	}
-
-	protoReq.DocumentIdentifier, err = runtime.Bytes(val)
-
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "document_identifier", err)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
 	msg, err := client.GetPurchaseOrderDocument(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -114,14 +100,14 @@ func RegisterPurchaseOrderDocumentServiceHandlerFromEndpoint(ctx context.Context
 	defer func() {
 		if err != nil {
 			if cerr := conn.Close(); cerr != nil {
-				grpclog.Printf("Failed to close conn to %s: %v", endpoint, cerr)
+				grpclog.Infof("Failed to close conn to %s: %v", endpoint, cerr)
 			}
 			return
 		}
 		go func() {
 			<-ctx.Done()
 			if cerr := conn.Close(); cerr != nil {
-				grpclog.Printf("Failed to close conn to %s: %v", endpoint, cerr)
+				grpclog.Infof("Failed to close conn to %s: %v", endpoint, cerr)
 			}
 		}()
 	}()
@@ -135,8 +121,8 @@ func RegisterPurchaseOrderDocumentServiceHandler(ctx context.Context, mux *runti
 	return RegisterPurchaseOrderDocumentServiceHandlerClient(ctx, mux, NewPurchaseOrderDocumentServiceClient(conn))
 }
 
-// RegisterPurchaseOrderDocumentServiceHandler registers the http handlers for service PurchaseOrderDocumentService to "mux".
-// The handlers forward requests to the grpc endpoint over the given implementation of "PurchaseOrderDocumentServiceClient".
+// RegisterPurchaseOrderDocumentServiceHandlerClient registers the http handlers for service PurchaseOrderDocumentService
+// to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "PurchaseOrderDocumentServiceClient".
 // Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "PurchaseOrderDocumentServiceClient"
 // doesn't go through the normal gRPC flow (creating a gRPC client etc.) then it will be up to the passed in
 // "PurchaseOrderDocumentServiceClient" to call the correct interceptors.
@@ -229,7 +215,7 @@ func RegisterPurchaseOrderDocumentServiceHandlerClient(ctx context.Context, mux 
 
 	})
 
-	mux.Handle("GET", pattern_PurchaseOrderDocumentService_GetPurchaseOrderDocument_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_PurchaseOrderDocumentService_GetPurchaseOrderDocument_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		if cn, ok := w.(http.CloseNotifier); ok {
@@ -297,7 +283,7 @@ var (
 
 	pattern_PurchaseOrderDocumentService_SendPurchaseOrderDocument_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"purchaseorder", "send"}, ""))
 
-	pattern_PurchaseOrderDocumentService_GetPurchaseOrderDocument_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"purchaseorder", "document_identifier"}, ""))
+	pattern_PurchaseOrderDocumentService_GetPurchaseOrderDocument_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"purchaseorder", "get"}, ""))
 
 	pattern_PurchaseOrderDocumentService_GetReceivedPurchaseOrderDocuments_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"purchaseorder", "getReceived"}, ""))
 )

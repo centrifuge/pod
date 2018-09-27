@@ -72,22 +72,8 @@ func request_InvoiceDocumentService_GetInvoiceDocument_0(ctx context.Context, ma
 	var protoReq GetInvoiceDocumentEnvelope
 	var metadata runtime.ServerMetadata
 
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["document_identifier"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "document_identifier")
-	}
-
-	protoReq.DocumentIdentifier, err = runtime.Bytes(val)
-
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "document_identifier", err)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
 	msg, err := client.GetInvoiceDocument(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -114,14 +100,14 @@ func RegisterInvoiceDocumentServiceHandlerFromEndpoint(ctx context.Context, mux 
 	defer func() {
 		if err != nil {
 			if cerr := conn.Close(); cerr != nil {
-				grpclog.Printf("Failed to close conn to %s: %v", endpoint, cerr)
+				grpclog.Infof("Failed to close conn to %s: %v", endpoint, cerr)
 			}
 			return
 		}
 		go func() {
 			<-ctx.Done()
 			if cerr := conn.Close(); cerr != nil {
-				grpclog.Printf("Failed to close conn to %s: %v", endpoint, cerr)
+				grpclog.Infof("Failed to close conn to %s: %v", endpoint, cerr)
 			}
 		}()
 	}()
@@ -135,8 +121,8 @@ func RegisterInvoiceDocumentServiceHandler(ctx context.Context, mux *runtime.Ser
 	return RegisterInvoiceDocumentServiceHandlerClient(ctx, mux, NewInvoiceDocumentServiceClient(conn))
 }
 
-// RegisterInvoiceDocumentServiceHandler registers the http handlers for service InvoiceDocumentService to "mux".
-// The handlers forward requests to the grpc endpoint over the given implementation of "InvoiceDocumentServiceClient".
+// RegisterInvoiceDocumentServiceHandlerClient registers the http handlers for service InvoiceDocumentService
+// to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "InvoiceDocumentServiceClient".
 // Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "InvoiceDocumentServiceClient"
 // doesn't go through the normal gRPC flow (creating a gRPC client etc.) then it will be up to the passed in
 // "InvoiceDocumentServiceClient" to call the correct interceptors.
@@ -229,7 +215,7 @@ func RegisterInvoiceDocumentServiceHandlerClient(ctx context.Context, mux *runti
 
 	})
 
-	mux.Handle("GET", pattern_InvoiceDocumentService_GetInvoiceDocument_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_InvoiceDocumentService_GetInvoiceDocument_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		if cn, ok := w.(http.CloseNotifier); ok {
@@ -297,7 +283,7 @@ var (
 
 	pattern_InvoiceDocumentService_SendInvoiceDocument_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"invoice", "send"}, ""))
 
-	pattern_InvoiceDocumentService_GetInvoiceDocument_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"invoice", "document_identifier"}, ""))
+	pattern_InvoiceDocumentService_GetInvoiceDocument_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"invoice", "get"}, ""))
 
 	pattern_InvoiceDocumentService_GetReceivedInvoiceDocuments_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"invoice", "getReceived"}, ""))
 )

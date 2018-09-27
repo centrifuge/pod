@@ -1,4 +1,4 @@
-package testing
+package testingbootstrap
 
 import (
 	"fmt"
@@ -6,14 +6,14 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/anchor"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/bootstrapper"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/ethereum"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/identity"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/queue"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/storage"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/go-centrifuge/centrifuge/anchors"
+	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrapper"
+	"github.com/centrifuge/go-centrifuge/centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/centrifuge/ethereum"
+	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/centrifuge/queue"
+	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
+	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	logging "github.com/ipfs/go-log"
 	"github.com/syndtr/goleveldb/leveldb"
 	gologging "github.com/whyrusleeping/go-logging"
@@ -69,7 +69,7 @@ func bootstrapQueuing() {
 	// TODO here we would not have to put the bootstrapper.BootstrappedConfig after the TestBootstrapper refactoring
 	context := map[string]interface{}{bootstrapper.BootstrappedConfig: true}
 	for _, b := range []bootstrapper.TestBootstrapper{
-		&anchor.Bootstrapper{},
+		&anchors.Bootstrapper{},
 		&identity.Bootstrapper{},
 		&queue.Bootstrapper{},
 	} {

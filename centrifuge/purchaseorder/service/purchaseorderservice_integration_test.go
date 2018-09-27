@@ -1,4 +1,4 @@
-// +build ethereum
+// +build integration
 
 package purchaseorderservice_test
 
@@ -7,23 +7,29 @@ import (
 	"os"
 	"testing"
 
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/purchaseorder"
-	cc "github.com/CentrifugeInc/go-centrifuge/centrifuge/context/testing"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/coredocument/processor"
-	clientpurchaseorderpb "github.com/CentrifugeInc/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder/repository"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/purchaseorder/service"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/testingutils"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
+	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
+	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/processor"
+	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
+	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
+	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
+	"github.com/centrifuge/go-centrifuge/centrifuge/purchaseorder"
+	"github.com/centrifuge/go-centrifuge/centrifuge/purchaseorder/repository"
+	"github.com/centrifuge/go-centrifuge/centrifuge/purchaseorder/service"
+	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
+	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/commons"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestMain(m *testing.M) {
 	cc.TestFunctionalEthereumBootstrap()
-	purchaseorderrepository.InitLevelDBRepository(cc.GetLevelDBStorage())
-
+	db := cc.GetLevelDBStorage()
+	purchaseorderrepository.InitLevelDBRepository(db)
+	coredocumentrepository.InitLevelDBRepository(db)
+	testingutils.CreateIdentityWithKeys()
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()
 	os.Exit(result)
@@ -44,10 +50,12 @@ func generateEmptyPurchaseOrderForProcessing() (doc *purchaseorder.PurchaseOrder
 }
 
 func TestPurchaseOrderDocumentService_HandleAnchorPurchaseOrderDocument_Integration(t *testing.T) {
+	p2pClient := testingcommons.NewMockP2PWrapperClient()
 	s := purchaseorderservice.PurchaseOrderDocumentService{
 		Repository:            purchaseorderrepository.GetRepository(),
-		CoreDocumentProcessor: coredocumentprocessor.DefaultProcessor(),
+		CoreDocumentProcessor: coredocumentprocessor.DefaultProcessor(identity.NewEthereumIdentityService(), p2pClient),
 	}
+	p2pClient.On("GetSignaturesForDocument", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	doc := generateEmptyPurchaseOrderForProcessing()
 	doc.Document.Data = &purchaseorderpb.PurchaseOrderData{
 		PoNumber:         "po1234",
@@ -62,29 +70,56 @@ func TestPurchaseOrderDocumentService_HandleAnchorPurchaseOrderDocument_Integrat
 	}
 
 	anchoredDoc, err := s.HandleAnchorPurchaseOrderDocument(context.Background(), &clientpurchaseorderpb.AnchorPurchaseOrderEnvelope{Document: doc.Document})
+	assertDocument(t, err, anchoredDoc, doc, s)
+}
 
+// TODO enable this after properly mocking p2p package eg: server.go
+//func TestPurchaseOrderDocumentService_HandleSendPurchaseOrderDocument_Integration(t *testing.T) {
+//	p2pClient := testingcommons.NewMockP2PWrapperClient()
+//	s := purchaseorderservice.PurchaseOrderDocumentService{
+//		Repository:            purchaseorderrepository.GetRepository(),
+//		CoreDocumentProcessor: coredocumentprocessor.DefaultProcessor(identity.NewEthereumIdentityService(), p2pClient),
+//	}
+//	p2pClient.On("GetSignaturesForDocument", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+//	doc := generateEmptyPurchaseOrderForProcessing()
+//	doc.Document.Data = &purchaseorderpb.PurchaseOrderData{
+//		PoNumber:         "po1234",
+//		OrderName:        "Jack",
+//		OrderZipcode:     "921007",
+//		OrderCountry:     "AUS",
+//		RecipientName:    "John",
+//		RecipientZipcode: "12345",
+//		RecipientCountry: "DE",
+//		Currency:         "EUR",
+//		OrderAmount:      800,
+//	}
+//
+//	anchoredDoc, err := s.HandleSendPurchaseOrderDocument(context.Background(), &clientpurchaseorderpb.SendPurchaseOrderEnvelope{
+//		Document:   doc.Document,
+//		Recipients: testingutils.GenerateP2PRecipientsOnEthereum(2),
+//	})
+//	assertDocument(t, err, anchoredDoc, doc, s)
+//}
+
+func assertDocument(t *testing.T, err error, anchoredDoc *purchaseorderpb.PurchaseOrderDocument, doc *purchaseorder.PurchaseOrder, s purchaseorderservice.PurchaseOrderDocumentService) {
 	//Call overall worked well and receive roughly sensical data back
 	assert.Nil(t, err)
 	assert.Equal(t, anchoredDoc.CoreDocument.DocumentIdentifier, doc.Document.CoreDocument.DocumentIdentifier,
 		"DocumentIdentifier doesn't match")
-
 	//PurchaseOrder document got stored in the DB
 	loadedDoc := new(purchaseorderpb.PurchaseOrderDocument)
 	err = purchaseorderrepository.GetRepository().GetByID(doc.Document.CoreDocument.DocumentIdentifier, loadedDoc)
 	assert.Nil(t, err)
 	assert.Equal(t, "AUS", loadedDoc.Data.OrderCountry,
 		"Didn't save the purchaseorder data correctly")
-
 	// Invoice stored after anchoring has Salts populated
 	assert.NotNil(t, loadedDoc.Salts.OrderCountry)
-
 	//PO Service should error out if trying to anchor the same document ID again
 	doc.Document.Data.OrderCountry = "ES"
 	anchoredDoc2, err := s.HandleAnchorPurchaseOrderDocument(context.Background(), &clientpurchaseorderpb.AnchorPurchaseOrderEnvelope{Document: doc.Document})
 	assert.Nil(t, anchoredDoc2)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "document already exists")
-
 	loadedDoc2 := new(purchaseorderpb.PurchaseOrderDocument)
 	err = purchaseorderrepository.GetRepository().GetByID(doc.Document.CoreDocument.DocumentIdentifier, loadedDoc2)
 	assert.Nil(t, err)

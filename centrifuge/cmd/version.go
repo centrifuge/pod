@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/version"
+	"github.com/centrifuge/go-centrifuge/centrifuge/version"
 	"github.com/spf13/cobra"
 )
 
@@ -14,6 +14,7 @@ var versionCmd = &cobra.Command{
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("go-centrifuge version", version.GetVersion())
+		log.Debug("test")
 	},
 }
 

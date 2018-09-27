@@ -1,9 +1,10 @@
+GIT_BRANCH=`git rev-parse --abbrev-ref HEAD`
 GIT_COMMIT=`git rev-parse HEAD`
 GIT_SHORT_COMMIT=`git rev-parse --short HEAD`
-TIMESTAMP=`date -u +%Y%m%d`
-TAG="${TIMESTAMP}-${GIT_SHORT_COMMIT}"
+TIMESTAMP=`date -u +%Y%m%d%H%M`
+TAG="${GIT_BRANCH}-${TIMESTAMP}-${GIT_SHORT_COMMIT}"
 IMAGE_NAME?=centrifugeio/go-centrifuge
-LD_FLAGS?="-X github.com/CentrifugeInc/go-centrifuge/centrifuge/version.gitCommit=${GIT_COMMIT}"
+LD_FLAGS?="-X github.com/centrifuge/go-centrifuge/centrifuge/version.gitCommit=${GIT_COMMIT}"
 GCLOUD_SERVICE?="peak-vista-185616-9f70002df7eb.json"
 
 # GOBIN needs to be set to ensure govendor can actually be found and executed 
@@ -42,7 +43,7 @@ gen-swagger: ## generates the swagger documentation
 	npm run build_swagger
 
 vendorinstall: ## Installs all protobuf dependencies with go-vendorinstall
-	go install github.com/CentrifugeInc/go-centrifuge/vendor/github.com/roboll/go-vendorinstall
+	go install github.com/centrifuge/go-centrifuge/vendor/github.com/roboll/go-vendorinstall
 	go-vendorinstall golang.org/x/tools/cmd/goimports
 	go-vendorinstall github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
 	go-vendorinstall github.com/golang/protobuf/protoc-gen-go

@@ -3,9 +3,9 @@ package version
 import (
 	"fmt"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/code"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/errors"
 	"github.com/Masterminds/semver"
+	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
+	"github.com/centrifuge/go-centrifuge/centrifuge/code"
 	logging "github.com/ipfs/go-log"
 )
 
@@ -33,5 +33,5 @@ func CheckVersion(peerVersion string) bool {
 
 // IncompatibleVersionError for any peer with incompatible versions
 func IncompatibleVersionError(nodeVersion string) error {
-	return errors.New(code.VersionMismatch, fmt.Sprintf("Incompatible version: node version: %s, client version: %s", GetVersion(), nodeVersion))
+	return centerrors.New(code.VersionMismatch, fmt.Sprintf("Incompatible version: node version: %s, client version: %s", GetVersion(), nodeVersion))
 }

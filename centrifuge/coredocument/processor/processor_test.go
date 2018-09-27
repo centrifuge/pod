@@ -6,6 +6,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -19,11 +20,11 @@ func TestMain(m *testing.M) {
 }
 
 func TestCoreDocumentProcessor_SendNilDocument(t *testing.T) {
-	err := cdp.Send(nil, nil, []byte{})
+	err := cdp.Send(nil, nil, [identity.CentIDByteLength]byte{})
 	assert.Error(t, err, "should have thrown an error")
 }
 
 func TestCoreDocumentProcessor_AnchorNilDocument(t *testing.T) {
-	err := cdp.Anchor(nil)
+	err := cdp.Anchor(nil, nil, []identity.CentID{})
 	assert.Error(t, err, "should have thrown an error")
 }

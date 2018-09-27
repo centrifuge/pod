@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools"
+	"github.com/centrifuge/go-centrifuge/centrifuge/keytools"
 	"github.com/spf13/cobra"
 )
 

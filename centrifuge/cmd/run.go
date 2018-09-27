@@ -3,8 +3,8 @@ package cmd
 import (
 	"sync"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/p2p"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/server"
+	"github.com/centrifuge/go-centrifuge/centrifuge/p2p"
+	"github.com/centrifuge/go-centrifuge/centrifuge/server"
 	"github.com/spf13/cobra"
 )
 
@@ -14,6 +14,9 @@ var runCmd = &cobra.Command{
 	Short: "run a centrifuge node",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
+		//cmd requires a config file
+		readConfigFile()
+
 		defaultBootstrap()
 		// Below WaitGroup not the best solution to the concurrency issue. If one of the two methods return because of
 		// an error it will have to be killed manually and restarted.

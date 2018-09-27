@@ -3,9 +3,9 @@ package keytools
 import (
 	"strings"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/ed25519"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools/secp256k1"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/utils"
+	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519"
+	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/secp256k1"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
 )
 
 func GenerateSigningKeyPair(publicFileName, privateFileName, curveType string) {
@@ -19,6 +19,6 @@ func GenerateSigningKeyPair(publicFileName, privateFileName, curveType string) {
 		publicKey, privateKey = ed25519.GenerateSigningKeyPair()
 	}
 
-	utils.WriteKeyToPemFile(privateFileName, PrivateKey, privateKey)
-	utils.WriteKeyToPemFile(publicFileName, PublicKey, publicKey)
+	utils.WriteKeyToPemFile(privateFileName, utils.PrivateKey, privateKey)
+	utils.WriteKeyToPemFile(publicFileName, utils.PublicKey, publicKey)
 }

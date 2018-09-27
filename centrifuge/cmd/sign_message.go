@@ -3,8 +3,9 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/keytools"
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/utils"
+	"github.com/centrifuge/go-centrifuge/centrifuge/keytools"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/spf13/cobra"
 )
 
@@ -21,7 +22,7 @@ func init() {
 		Short: "sign a message with private key",
 		Long:  ``,
 		Run: func(cmd *cobra.Command, args []string) {
-			privateKey, err := utils.ReadKeyFromPemFile(privateKeyFileParam, keytools.PrivateKey)
+			privateKey, err := utils.ReadKeyFromPemFile(privateKeyFileParam, utils.PrivateKey)
 
 			if err != nil {
 				log.Fatal(err)
@@ -30,7 +31,7 @@ func init() {
 			if err != nil {
 				log.Fatal(err)
 			}
-			fmt.Println(utils.ByteArrayToHex(signature))
+			fmt.Println(hexutil.Encode(signature))
 
 		},
 	}

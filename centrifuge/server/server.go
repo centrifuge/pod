@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/CentrifugeInc/go-centrifuge/centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	logging "github.com/ipfs/go-log"
 	"golang.org/x/net/context"
@@ -98,7 +98,8 @@ func ServeNode() {
 		},
 	}
 
-	log.Infof("grpc on port: %d\n", config.Config.GetServerPort())
+	log.Infof("HTTP/gRpc listening on port: %d\n", config.Config.GetServerPort())
+	log.Infof("Connecting to Network: %s\n", config.Config.GetNetworkString())
 	err = srv.Serve(tls.NewListener(conn, srv.TLSConfig))
 
 	if err != nil {

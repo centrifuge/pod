@@ -9,7 +9,7 @@ import (
 )
 
 func TestPublicKeyToP2PKey(t *testing.T) {
-	expectedPeerId := "QmTQxbwkuZYYDfuzTbxEAReTNCLozyy558vQngVvPMjLYk"
+	expectedPeerId := "12D3KooWHSED5BoCN6ogf6e5Wk1H3pH63mT2Emki7wTTaAGD6bw8"
 	publicKey := GetPublicSigningKey("../../../example/resources/signingKey.pub.pem")
 
 	var bPk [32]byte

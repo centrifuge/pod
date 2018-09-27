@@ -1,0 +1,63 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "notification/service.proto",
+    "version": "version not set"
+  },
+  "schemes": [
+    "http",
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/dummy": {
+      "get": {
+        "description": "Dummy notification endpoint",
+        "operationId": "Notify",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notificationNotificationMessage"
+            }
+          }
+        },
+        "tags": [
+          "NotificationDummyService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "notificationNotificationMessage": {
+      "type": "object",
+      "properties": {
+        "event_type": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "centrifuge_id": {
+          "type": "string",
+          "format": "byte"
+        },
+        "recorded": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "document_type": {
+          "type": "string"
+        },
+        "document_identifier": {
+          "type": "string",
+          "format": "byte"
+        }
+      },
+      "title": "NotificationMessage wraps a single CoreDocument to be notified to upstream services"
+    }
+  }
+}
