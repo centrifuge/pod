@@ -99,6 +99,38 @@ func (i *InvoiceModel) createInvoiceData() (*invoicepb.InvoiceData, error) {
 
 }
 
+//initInvoiceInput initialize the model based with the received parameters from the rest api call
+//TODO change to new api client model
+func (i *InvoiceModel) initInvoiceInput(invoiceData *InvoiceInput) error {
+
+	i.InvoiceNumber = invoiceData.InvoiceNumber
+	i.SenderName = invoiceData.SenderName
+	i.SenderStreet = invoiceData.SenderStreet
+	i.SenderCity = invoiceData.SenderCity
+	i.SenderZipcode = invoiceData.SenderZipcode
+	i.SenderCountry = invoiceData.SenderCountry
+	i.RecipientName = invoiceData.RecipientName
+	i.RecipientStreet = invoiceData.RecipientStreet
+	i.RecipientCity = invoiceData.RecipientCity
+	i.RecipientZipcode = invoiceData.RecipientZipcode
+	i.RecipientCountry = invoiceData.RecipientCountry
+	i.Currency = invoiceData.Currency
+	i.GrossAmount = invoiceData.GrossAmount
+	i.NetAmount = invoiceData.NetAmount
+	i.TaxAmount = invoiceData.TaxAmount
+	i.TaxRate = invoiceData.TaxRate
+	i.Recipient = invoiceData.Recipient
+	i.Sender = invoiceData.Sender
+	i.Payee = invoiceData.Payee
+	i.Comment = invoiceData.Comment
+	i.DueDate = invoiceData.DueDate
+	i.DateCreated = invoiceData.DateCreated
+	i.ExtraData = invoiceData.ExtraData
+
+	return nil
+
+}
+
 func (i *InvoiceModel) initInvoice(invoiceData *invoicepb.InvoiceData) error {
 
 	i.InvoiceNumber = invoiceData.InvoiceNumber

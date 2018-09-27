@@ -5,5 +5,5 @@ import (
 )
 
 type ModelDeriver interface {
-	DeriveWithCoreDocument(cd *coredocumentpb.CoreDocument) (Model, error)
+	DeriveWithCoreDocument(cd *coredocumentpb.CoreDocument) (*Model, error)
 }
