@@ -4,11 +4,10 @@ package invoice
 
 import (
 	"encoding/json"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"os"
 	"reflect"
 	"testing"
-
-	"github.com/centrifuge/go-centrifuge/centrifuge/models"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -123,13 +122,13 @@ func TestInvoice_CoreDocument_successful(t *testing.T) {
 func TestInvoice_ModelInterface(t *testing.T) {
 
 	var i interface{} = &InvoiceModel{}
-	_, ok := i.(models.Model)
+	_, ok := i.(documents.Model)
 	assert.True(t, ok, "model interface not implemented correctly for invoiceModel")
 }
 
 func TestInvoice_Type(t *testing.T) {
 
-	var model models.Model
+	var model documents.Model
 	model = &InvoiceModel{}
 
 	assert.Equal(t, model.Type(), reflect.TypeOf(&InvoiceModel{}), "InvoiceType not correct")

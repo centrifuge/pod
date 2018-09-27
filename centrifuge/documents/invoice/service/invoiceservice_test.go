@@ -1,6 +1,6 @@
 // +build unit
 
-package invoiceservice_test
+package invoiceservice
 
 import (
 	"context"

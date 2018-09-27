@@ -1,6 +1,6 @@
 // +build integration
 
-package invoiceservice_test
+package invoiceservice
 
 import (
 	"context"
