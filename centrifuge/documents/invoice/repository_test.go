@@ -3,30 +3,12 @@
 package invoice
 
 import (
-	"os"
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
-	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
-	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
-	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/stretchr/testify/assert"
 )
-
-var dbFileName = "/tmp/centrifuge_testing_invoicedoc.leveldb"
-
-func TestMain(m *testing.M) {
-	cc.TestIntegrationBootstrap()
-	db := storage.NewLevelDBStorage(dbFileName)
-	coredocumentrepository.InitLevelDBRepository(db)
-	InitLevelDBRepository(db)
-	result := m.Run()
-	cc.TestIntegrationTearDown()
-	db.Close()
-	os.RemoveAll(dbFileName)
-	os.Exit(result)
-}
 
 func TestRepository(t *testing.T) {
 	repo := GetRepository()

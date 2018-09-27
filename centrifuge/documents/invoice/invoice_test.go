@@ -3,6 +3,8 @@
 package invoice
 
 import (
+	"flag"
+	"os"
 	"reflect"
 	"testing"
 
@@ -10,11 +12,24 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
+	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
+	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestMain(m *testing.M) {
+	cc.TestIntegrationBootstrap()
+	db := cc.GetLevelDBStorage()
+	InitLevelDBRepository(db)
+	coredocumentrepository.InitLevelDBRepository(db)
+	flag.Parse()
+	result := m.Run()
+	cc.TestIntegrationTearDown()
+	os.Exit(result)
+}
 
 func TestInvoiceCoreDocumentConverter(t *testing.T) {
 	identifier := []byte("1")

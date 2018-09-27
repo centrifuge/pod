@@ -67,7 +67,7 @@ func TestInvoiceDocumentService_HandleAnchorInvoiceDocument_Integration(t *testi
 		GrossAmount:      800,
 	}
 
-	anchoredDoc, err := s.HandleAnchorInvoiceDocument(context.Background(), &clientinvoicepb.AnchorInvoiceEnvelope{Document: doc.Document})
+	anchoredDoc, err := s.AnchorInvoiceDocument(context.Background(), &clientinvoicepb.AnchorInvoiceEnvelope{Document: doc.Document})
 	assertDocument(t, err, anchoredDoc, doc, s)
 }
 
@@ -113,7 +113,7 @@ func assertDocument(t *testing.T, err error, anchoredDoc *invoicepb.InvoiceDocum
 	assert.NotNil(t, loadedInvoice.Salts.SenderCountry)
 	//Invoice Service should error out if trying to anchor the same document ID again
 	doc.Document.Data.SenderCountry = "ES"
-	anchoredDoc2, err := s.HandleAnchorInvoiceDocument(context.Background(), &clientinvoicepb.AnchorInvoiceEnvelope{Document: doc.Document})
+	anchoredDoc2, err := s.AnchorInvoiceDocument(context.Background(), &clientinvoicepb.AnchorInvoiceEnvelope{Document: doc.Document})
 	assert.Nil(t, anchoredDoc2)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "document already exists")
