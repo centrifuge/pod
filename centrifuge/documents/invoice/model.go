@@ -99,7 +99,7 @@ func (i *InvoiceModel) createInvoiceData() (*invoicepb.InvoiceData, error) {
 
 }
 
-//initInvoiceInput initialize the model based with the received parameters from the rest api call
+//initInvoiceInput initialize the model based on the received parameters from the rest api call
 //TODO change to new api client model
 func (i *InvoiceModel) initInvoiceInput(invoiceData *InvoiceInput) error {
 
