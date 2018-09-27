@@ -1,20 +1,16 @@
 // +build unit
 
-package invoiceservice
+package invoice
 
 import (
 	"context"
 	"crypto/sha256"
-	"os"
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
-	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
-	"github.com/centrifuge/go-centrifuge/centrifuge/invoice"
-	"github.com/centrifuge/go-centrifuge/centrifuge/invoice/service"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/precise-proofs/proofs"
@@ -23,15 +19,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
-
-func TestMain(m *testing.M) {
-	cc.TestIntegrationBootstrap()
-	db := cc.GetLevelDBStorage()
-	coredocumentrepository.InitLevelDBRepository(db)
-	result := m.Run()
-	cc.TestIntegrationTearDown()
-	os.Exit(result)
-}
 
 // mockInvoiceRepository implements storage.Repository
 type mockInvoiceRepository struct {
@@ -67,17 +54,17 @@ func (m *mockInvoiceRepository) Update(id []byte, doc proto.Message) (err error)
 	return args.Error(0)
 }
 
-func generateMockedOutInvoiceService() (srv *invoiceservice.InvoiceDocumentService, repo *mockInvoiceRepository, coreDocumentProcessor *testingutils.MockCoreDocumentProcessor) {
+func generateMockedOutInvoiceService() (srv *GRPCHandler, repo *mockInvoiceRepository, coreDocumentProcessor *testingutils.MockCoreDocumentProcessor) {
 	repo = new(mockInvoiceRepository)
 	coreDocumentProcessor = new(testingutils.MockCoreDocumentProcessor)
-	srv = &invoiceservice.InvoiceDocumentService{
+	srv = &GRPCHandler{
 		InvoiceRepository:     repo,
 		CoreDocumentProcessor: coreDocumentProcessor,
 	}
 	return srv, repo, coreDocumentProcessor
 }
-func getTestSetupData() (doc *invoice.Invoice, srv *invoiceservice.InvoiceDocumentService, repo *mockInvoiceRepository, coreDocumentProcessor *testingutils.MockCoreDocumentProcessor) {
-	doc = &invoice.Invoice{Document: &invoicepb.InvoiceDocument{}}
+func getTestSetupData() (doc *Invoice, srv *GRPCHandler, repo *mockInvoiceRepository, coreDocumentProcessor *testingutils.MockCoreDocumentProcessor) {
+	doc = &Invoice{Document: &invoicepb.InvoiceDocument{}}
 	doc.Document.Data = &invoicepb.InvoiceData{
 		InvoiceNumber:    "inv1234",
 		SenderName:       "Jack",
@@ -201,7 +188,7 @@ func TestInvoiceDocumentService_Send_AnchorFails(t *testing.T) {
 
 func TestInvoiceDocumentService_HandleCreateInvoiceProof(t *testing.T) {
 	identifier := testingutils.Rand32Bytes()
-	inv := invoice.Empty()
+	inv := Empty()
 	inv.Document.CoreDocument = &coredocumentpb.CoreDocument{
 		DocumentIdentifier: identifier,
 		CurrentIdentifier:  identifier,
@@ -238,7 +225,7 @@ func TestInvoiceDocumentService_HandleCreateInvoiceProof(t *testing.T) {
 
 func TestInvoiceDocumentService_HandleCreateInvoiceProof_NotFilledSalts(t *testing.T) {
 	identifier := testingutils.Rand32Bytes()
-	inv := invoice.Empty()
+	inv := Empty()
 	inv.Document.CoreDocument = &coredocumentpb.CoreDocument{
 		DocumentIdentifier: identifier,
 		CurrentIdentifier:  identifier,
@@ -265,7 +252,7 @@ func TestInvoiceDocumentService_HandleCreateInvoiceProof_NotFilledSalts(t *testi
 
 func TestInvoiceDocumentService_HandleCreateInvoiceProof_NotExistingInvoice(t *testing.T) {
 	identifier := testingutils.Rand32Bytes()
-	inv := invoice.Empty()
+	inv := Empty()
 	inv.Document.CoreDocument = &coredocumentpb.CoreDocument{
 		DocumentIdentifier: identifier,
 		CurrentIdentifier:  identifier,

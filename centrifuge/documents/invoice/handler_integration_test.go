@@ -1,6 +1,6 @@
 // +build integration
 
-package invoiceservice
+package invoice_test
 
 import (
 	"context"
@@ -12,10 +12,8 @@ import (
 	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/processor"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/centrifuge/invoice"
-	"github.com/centrifuge/go-centrifuge/centrifuge/invoice/repository"
-	"github.com/centrifuge/go-centrifuge/centrifuge/invoice/service"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/commons"
@@ -27,7 +25,7 @@ import (
 func TestMain(m *testing.M) {
 	cc.TestFunctionalEthereumBootstrap()
 	db := cc.GetLevelDBStorage()
-	invoicerepository.InitLevelDBRepository(db)
+	invoice.InitLevelDBRepository(db)
 	coredocumentrepository.InitLevelDBRepository(db)
 	testingutils.CreateIdentityWithKeys()
 	result := m.Run()
@@ -51,8 +49,8 @@ func generateEmptyInvoiceForProcessing() (doc *invoice.Invoice) {
 
 func TestInvoiceDocumentService_HandleAnchorInvoiceDocument_Integration(t *testing.T) {
 	p2pClient := testingcommons.NewMockP2PWrapperClient()
-	s := invoiceservice.InvoiceDocumentService{
-		InvoiceRepository:     invoicerepository.GetRepository(),
+	s := invoice.GRPCHandler{
+		InvoiceRepository:     invoice.GetRepository(),
 		CoreDocumentProcessor: coredocumentprocessor.DefaultProcessor(identity.NewEthereumIdentityService(), p2pClient),
 	}
 	p2pClient.On("GetSignaturesForDocument", mock.Anything, mock.Anything, mock.Anything).Return(nil)
@@ -76,7 +74,7 @@ func TestInvoiceDocumentService_HandleAnchorInvoiceDocument_Integration(t *testi
 // TODO enable this after properly mocking p2p package eg: server.go
 //func TestInvoiceDocumentService_HandleSendInvoiceDocument_Integration(t *testing.T) {
 //	p2pClient := testingcommons.NewMockP2PWrapperClient()
-//	s := invoiceservice.InvoiceDocumentService{
+//	s := invoiceservice.GRPCHandler{
 //		InvoiceRepository:     invoicerepository.GetRepository(),
 //		CoreDocumentProcessor: coredocumentprocessor.DefaultProcessor(identity.NewEthereumIdentityService(), p2pClient),
 //	}
@@ -101,14 +99,14 @@ func TestInvoiceDocumentService_HandleAnchorInvoiceDocument_Integration(t *testi
 //	assertDocument(t, err, anchoredDoc, doc, s)
 //}
 
-func assertDocument(t *testing.T, err error, anchoredDoc *invoicepb.InvoiceDocument, doc *invoice.Invoice, s invoiceservice.InvoiceDocumentService) {
+func assertDocument(t *testing.T, err error, anchoredDoc *invoicepb.InvoiceDocument, doc *invoice.Invoice, s invoice.GRPCHandler) {
 	//Call overall worked well and receive roughly sensical data back
 	assert.Nil(t, err)
 	assert.Equal(t, anchoredDoc.CoreDocument.DocumentIdentifier, doc.Document.CoreDocument.DocumentIdentifier,
 		"DocumentIdentifier doesn't match")
 	//Invoice document got stored in the DB
 	loadedInvoice := new(invoicepb.InvoiceDocument)
-	err = invoicerepository.GetRepository().GetByID(doc.Document.CoreDocument.DocumentIdentifier, loadedInvoice)
+	err = invoice.GetRepository().GetByID(doc.Document.CoreDocument.DocumentIdentifier, loadedInvoice)
 	assert.Equal(t, "AUS", loadedInvoice.Data.SenderCountry,
 		"Didn't save the invoice data correctly")
 	// Invoice stored after anchoring has Salts populated
@@ -120,7 +118,7 @@ func assertDocument(t *testing.T, err error, anchoredDoc *invoicepb.InvoiceDocum
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "document already exists")
 	loadedInvoice2 := new(invoicepb.InvoiceDocument)
-	err = invoicerepository.GetRepository().GetByID(doc.Document.CoreDocument.DocumentIdentifier, loadedInvoice2)
+	err = invoice.GetRepository().GetByID(doc.Document.CoreDocument.DocumentIdentifier, loadedInvoice2)
 	assert.Equal(t, "AUS", loadedInvoice2.Data.SenderCountry,
 		"Invoice document on DB should have not not gotten overwritten after rejected anchor call")
 }

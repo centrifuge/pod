@@ -1,12 +1,14 @@
 // +build integration
 
-package invoicerepository
+package invoice
 
 import (
 	"os"
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
+	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
+	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/stretchr/testify/assert"
@@ -15,10 +17,13 @@ import (
 var dbFileName = "/tmp/centrifuge_testing_invoicedoc.leveldb"
 
 func TestMain(m *testing.M) {
-	levelDB := storage.NewLevelDBStorage(dbFileName)
-	InitLevelDBRepository(levelDB)
+	cc.TestIntegrationBootstrap()
+	db := storage.NewLevelDBStorage(dbFileName)
+	coredocumentrepository.InitLevelDBRepository(db)
+	InitLevelDBRepository(db)
 	result := m.Run()
-	levelDB.Close()
+	cc.TestIntegrationTearDown()
+	db.Close()
 	os.RemoveAll(dbFileName)
 	os.Exit(result)
 }

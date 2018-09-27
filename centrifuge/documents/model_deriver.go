@@ -6,5 +6,4 @@ import (
 
 type ModelDeriver interface {
 	DeriveWithCD(cd *coredocumentpb.CoreDocument) (Model, error)
-
 }

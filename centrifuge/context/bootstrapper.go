@@ -5,9 +5,9 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrapper"
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/centrifuge/invoice/repository"
 	"github.com/centrifuge/go-centrifuge/centrifuge/purchaseorder/repository"
 	"github.com/centrifuge/go-centrifuge/centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
@@ -27,7 +27,7 @@ func (m *MainBootstrapper) PopulateDefaultBootstrappers() {
 		&config.Bootstrapper{},
 		&storage.Bootstrapper{},
 		&coredocumentrepository.Bootstrapper{},
-		&invoicerepository.Bootstrapper{},
+		&invoice.Bootstrapper{},
 		&purchaseorderrepository.Bootstrapper{},
 		&ethereum.Bootstrapper{},
 		&anchors.Bootstrapper{},
