@@ -12,7 +12,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519"
+	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/secp256k1"
 	"github.com/centrifuge/go-centrifuge/centrifuge/p2p"
 	"github.com/centrifuge/go-centrifuge/centrifuge/signatures"
@@ -75,7 +75,7 @@ func (dp *defaultProcessor) Send(ctx context.Context, coreDocument *coredocument
 
 	log.Infof("Done opening connection against [%s]\n", lastB58Key)
 
-	idConfig, err := ed25519.GetIDConfig()
+	idConfig, err := ed25519keys.GetIDConfig()
 	if err != nil {
 		err = centerrors.Wrap(err, "failed to extract bytes")
 		log.Error(err)
@@ -126,7 +126,7 @@ func (dp *defaultProcessor) Anchor(ctx context.Context, document *coredocumentpb
 	}
 
 	// sign document with own key and append it to signatures
-	idConfig, err := ed25519.GetIDConfig()
+	idConfig, err := ed25519keys.GetIDConfig()
 	if err != nil {
 		log.Error(err)
 		return centerrors.Wrap(err, "anchoring error")

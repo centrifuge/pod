@@ -2,12 +2,13 @@ package context
 
 import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/anchors"
-	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrapper"
+	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/centrifuge/node"
 	"github.com/centrifuge/go-centrifuge/centrifuge/purchaseorder/repository"
 	"github.com/centrifuge/go-centrifuge/centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
@@ -18,11 +19,11 @@ import (
 var log = logging.Logger("context")
 
 type MainBootstrapper struct {
-	Bootstrappers []bootstrapper.Bootstrapper
+	Bootstrappers []bootstrap.Bootstrapper
 }
 
 func (m *MainBootstrapper) PopulateDefaultBootstrappers() {
-	m.Bootstrappers = []bootstrapper.Bootstrapper{
+	m.Bootstrappers = []bootstrap.Bootstrapper{
 		&version.Bootstrapper{},
 		&config.Bootstrapper{},
 		&storage.Bootstrapper{},
@@ -33,6 +34,8 @@ func (m *MainBootstrapper) PopulateDefaultBootstrappers() {
 		&anchors.Bootstrapper{},
 		&identity.Bootstrapper{},
 		&queue.Bootstrapper{},
+		// THIS MUST BE THE LAST BOOTSTRAPPER TO BE INVOKED AS IT WON'T RETURN UNTIL NODE IS SHUTDOWN
+		&node.Bootstrapper{},
 	}
 }
 

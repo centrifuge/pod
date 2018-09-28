@@ -3,7 +3,7 @@ package anchors
 import (
 	"errors"
 
-	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrapper"
+	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/centrifuge/queue"
 )
@@ -14,7 +14,7 @@ type Bootstrapper struct {
 // Bootstrap initializes the AnchorRepositoryContract as well as the AnchoringConfirmationTask that depends on it.
 // the AnchoringConfirmationTask is added to be registered on the Queue at queue.Bootstrapper
 func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
-	if _, ok := context[bootstrapper.BootstrappedConfig]; !ok {
+	if _, ok := context[bootstrap.BootstrappedConfig]; !ok {
 		return errors.New("config hasn't been initialized")
 	}
 	repositoryContract, err := getRepositoryContract()

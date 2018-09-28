@@ -1,4 +1,4 @@
-package server
+package api
 
 // The certificates have been generated with the following commands:
 // openssl genrsa -out server.key 2048

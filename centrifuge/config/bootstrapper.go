@@ -1,12 +1,12 @@
 package config
 
-import "github.com/centrifuge/go-centrifuge/centrifuge/bootstrapper"
+import "github.com/centrifuge/go-centrifuge/centrifuge/bootstrap"
 
 type Bootstrapper struct {
 }
 
 func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	Config.InitializeViper()
-	context[bootstrapper.BootstrappedConfig] = Config
+	context[bootstrap.BootstrappedConfig] = Config
 	return nil
 }
