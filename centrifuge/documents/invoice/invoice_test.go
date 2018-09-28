@@ -1,5 +1,8 @@
 // +build unit
 
+// Important
+// Note: After the migration to the new invoice model this file will not exist anymore
+
 package invoice
 
 import (
