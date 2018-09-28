@@ -10,9 +10,9 @@ import (
 	"net/http"
 	"strings"
 
+	"errors"
 	"net"
 	"sync"
-		"errors"
 
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
