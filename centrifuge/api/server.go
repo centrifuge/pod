@@ -77,7 +77,11 @@ func (c *CentAPIServer) Start(ctx context.Context, wg *sync.WaitGroup, startupEr
 	mux := http.NewServeMux()
 	gwmux := runtime.NewServeMux()
 
-	RegisterServices(ctx, grpcServer, gwmux, addr, dopts)
+	err := RegisterServices(ctx, grpcServer, gwmux, addr, dopts)
+	if err != nil {
+		startupErr <- err
+		return
+	}
 
 	mux.Handle("/", gwmux)
 	srv := &http.Server{
