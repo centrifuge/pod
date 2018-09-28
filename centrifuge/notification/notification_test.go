@@ -7,10 +7,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
 	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
+	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/stretchr/testify/assert"
@@ -24,13 +26,19 @@ func TestMain(m *testing.M) {
 }
 
 func TestWebhookConstructPayload(t *testing.T) {
-	coredoc := &coredocumentpb.CoreDocument{DocumentIdentifier: []byte("1")}
+	documentIdentifier := tools.RandomSlice(32)
+	coredoc := &coredocumentpb.CoreDocument{DocumentIdentifier: documentIdentifier}
 	cid := testingutils.Rand32Bytes()
 
 	ts, err := ptypes.TimestampProto(time.Now().UTC())
 	assert.Nil(t, err, "Should not error out")
-
-	notificationMessage := &notificationpb.NotificationMessage{Document: coredoc, CentrifugeId: cid, EventType: uint32(RECEIVED_PAYLOAD), Recorded: ts}
+	notificationMessage := &notificationpb.NotificationMessage{
+		DocumentIdentifier: coredoc.DocumentIdentifier,
+		DocumentType:       documenttypes.InvoiceDataTypeUrl,
+		CentrifugeId:       cid,
+		EventType:          uint32(RECEIVED_PAYLOAD),
+		Recorded:           ts,
+	}
 
 	whs := WebhookSender{}
 	bresult, err := whs.constructPayload(notificationMessage)
@@ -41,7 +49,8 @@ func TestWebhookConstructPayload(t *testing.T) {
 	jsonpb.UnmarshalString(string(bresult), unmarshaledNotificationMessage)
 
 	assert.Equal(t, notificationMessage.Recorded, unmarshaledNotificationMessage.Recorded, "Recorder Timestamp should be equal")
-	assert.Equal(t, notificationMessage.Document, unmarshaledNotificationMessage.Document, "CoreDocument should be equal")
+	assert.Equal(t, notificationMessage.DocumentType, unmarshaledNotificationMessage.DocumentType, "DocumentType should be equal")
+	assert.Equal(t, notificationMessage.DocumentIdentifier, unmarshaledNotificationMessage.DocumentIdentifier, "DocumentIdentifier should be equal")
 	assert.Equal(t, notificationMessage.CentrifugeId, unmarshaledNotificationMessage.CentrifugeId, "CentrifugeID should be equal")
 	assert.Equal(t, notificationMessage.EventType, unmarshaledNotificationMessage.EventType, "EventType should be equal")
 }

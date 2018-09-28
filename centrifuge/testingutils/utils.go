@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 
+	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/ethereum"
@@ -11,6 +12,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/secp256k1"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/centrifuge/precise-proofs/proofs"
+	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -66,6 +68,9 @@ func GenerateCoreDocument() *coredocumentpb.CoreDocument {
 		CurrentIdentifier:  identifier,
 		NextIdentifier:     Rand32Bytes(),
 		CoredocumentSalts:  salts,
+		EmbeddedData: &any.Any{
+			TypeUrl: documenttypes.InvoiceDataTypeUrl,
+		},
 	}
 	proofs.FillSalts(doc, salts)
 	return doc

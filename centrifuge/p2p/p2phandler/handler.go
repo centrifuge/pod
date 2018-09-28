@@ -15,7 +15,6 @@ import (
 	centED25519 "github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	"github.com/centrifuge/go-centrifuge/centrifuge/notification"
 	"github.com/centrifuge/go-centrifuge/centrifuge/signatures"
-	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/centrifuge/version"
 	"github.com/golang/protobuf/ptypes"
 )
@@ -68,10 +67,11 @@ func (srv *Handler) Post(ctx context.Context, req *p2ppb.P2PMessage) (*p2ppb.P2P
 	ts, _ := ptypes.TimestampProto(time.Now().UTC())
 
 	notificationMsg := &notificationpb.NotificationMessage{
-		EventType:    uint32(notification.RECEIVED_PAYLOAD),
-		CentrifugeId: req.SenderCentrifugeId,
-		Recorded:     ts,
-		Document:     req.Document,
+		EventType:          uint32(notification.RECEIVED_PAYLOAD),
+		CentrifugeId:       req.SenderCentrifugeId,
+		Recorded:           ts,
+		DocumentType:       req.Document.EmbeddedData.TypeUrl,
+		DocumentIdentifier: req.Document.DocumentIdentifier,
 	}
 
 	// Async until we add queuing
@@ -135,12 +135,13 @@ func (srv *Handler) SendAnchoredDocument(ctx context.Context, docReq *p2ppb.Anch
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
 
-	ts := utils.ToTimestamp(time.Now().UTC())
+	ts, _ := ptypes.TimestampProto(time.Now().UTC())
 	notificationMsg := &notificationpb.NotificationMessage{
-		EventType:    uint32(notification.RECEIVED_PAYLOAD),
-		CentrifugeId: docReq.Header.SenderCentrifugeId,
-		Recorded:     ts,
-		Document:     docReq.Document,
+		EventType:          uint32(notification.RECEIVED_PAYLOAD),
+		CentrifugeId:       docReq.Header.SenderCentrifugeId,
+		Recorded:           ts,
+		DocumentType:       docReq.Document.EmbeddedData.TypeUrl,
+		DocumentIdentifier: docReq.Document.DocumentIdentifier,
 	}
 
 	// Async until we add queuing
