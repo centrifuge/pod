@@ -68,10 +68,10 @@ func TestNode_StartContextCancel(t *testing.T) {
 	ctx, canc := context.WithCancel(context.TODO())
 	go n.Start(ctx, errChan)
 	// wait for startup
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(2 * time.Second)
 	canc()
 	// wait for shutdown
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(1 * time.Second)
 	for _, service := range services {
 		assert.True(t, service.(*MockService).ReceivedCTXDone(), "context done signal should have been received")
 	}
