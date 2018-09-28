@@ -16,7 +16,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var levelDB LevelDBRepository
+var levelDB Repository
 
 func TestMain(m *testing.M) {
 	cc.TestIntegrationBootstrap()

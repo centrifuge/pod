@@ -6,13 +6,13 @@ import (
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
-// Getter interface can be implemented by any type that handles document retrieval
-type Getter interface {
+// Loader interface can be implemented by any type that handles document retrieval
+type Loader interface {
 	// GetKey will prepare the the identifier key from ID
 	GetKey(id []byte) (key []byte)
 
 	// GetByID finds the doc with identifier and marshals it into message
-	GetModelByID(id []byte, model Model) error
+	LoadByID(id []byte, model Model) error
 }
 
 // Checker interface can be implemented by any type that handles if document exists
@@ -39,7 +39,7 @@ type Updater interface {
 // Repository should be implemented by any type that wants to store a document in key-value storage
 type Repository interface {
 	Checker
-	Getter
+	Loader
 	Creator
 	Updater
 }
@@ -51,7 +51,7 @@ type LevelDBRepository struct {
 }
 
 // Exists returns if the document exists in the repository
-func (repo *LevelDBRepository) Exists(id []byte) bool {
+func (repo LevelDBRepository) Exists(id []byte) bool {
 	_, err := repo.LevelDB.Get(repo.GetKey(id), nil)
 	if err != nil {
 		return false
@@ -61,12 +61,12 @@ func (repo *LevelDBRepository) Exists(id []byte) bool {
 }
 
 // GetKey prepends the id with prefix and returns the result
-func (repo *LevelDBRepository) GetKey(id []byte) []byte {
+func (repo LevelDBRepository) GetKey(id []byte) []byte {
 	return append([]byte(repo.KeyPrefix), id...)
 }
 
 // LoadByID finds the document by id and marshals into message
-func (repo *LevelDBRepository) LoadByID(id []byte, model Model) error {
+func (repo LevelDBRepository) LoadByID(id []byte, model Model) error {
 	if model == nil {
 		return fmt.Errorf("nil document provided")
 	}
@@ -86,7 +86,7 @@ func (repo *LevelDBRepository) LoadByID(id []byte, model Model) error {
 
 // Create creates the document if not exists
 // errors out if document exists
-func (repo *LevelDBRepository) Create(id []byte, model Model) error {
+func (repo LevelDBRepository) Create(id []byte, model Model) error {
 	if model == nil {
 		return fmt.Errorf("nil model provided")
 	}
@@ -105,7 +105,7 @@ func (repo *LevelDBRepository) Create(id []byte, model Model) error {
 
 // Update updates the doc with ID if exists
 // errors out if the document
-func (repo *LevelDBRepository) Update(id []byte, model Model) error {
+func (repo LevelDBRepository) Update(id []byte, model Model) error {
 	if model == nil {
 		return fmt.Errorf("nil document provided")
 	}
