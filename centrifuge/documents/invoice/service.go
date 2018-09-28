@@ -2,7 +2,6 @@ package invoice
 
 import (
 	"fmt"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 )
