@@ -5,13 +5,11 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	"github.com/centrifuge/go-centrifuge/centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
-	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -20,10 +18,6 @@ import (
 )
 
 var log = logging.Logger("identity")
-
-type KeyAddFilterer interface {
-	FilterKeyAdded(opts *bind.FilterOpts, key [][32]byte, purpose []*big.Int) (*EthereumIdentityContractKeyAddedIterator, error)
-}
 
 type IdentityFactory interface {
 	CreateIdentity(opts *bind.TransactOpts, _centrifugeId *big.Int) (*types.Transaction, error)
@@ -195,7 +189,10 @@ func (id *EthereumIdentity) AddKeyToIdentity(ctx context.Context, keyPurpose int
 		return confirmations, err
 	}
 
-	confirmations, err = setUpKeyRegisteredEventListener(ctx, ethIdentityContract, id, keyPurpose, key, h.Number.Uint64())
+	// TODO change this when we have a proper type for keys
+	var keyFixed [32]byte
+	copy(keyFixed[:], key)
+	confirmations, err = setUpKeyRegisteredEventListener(id, keyPurpose, keyFixed, h.Number.Uint64())
 	if err != nil {
 		wError := errors.Wrap(err, 1)
 		log.Errorf("Failed to set up event listener for identity [id: %s]: %v", id, wError)
@@ -289,15 +286,23 @@ func sendIdentityCreationTransaction(identityFactory IdentityFactory, opts *bind
 	return
 }
 
-func setUpKeyRegisteredEventListener(ctx context.Context, filterer KeyAddFilterer, identity *EthereumIdentity, keyPurpose int, key []byte, blockHeight uint64) (confirmations chan *WatchIdentity, err error) {
+func setUpKeyRegisteredEventListener(identity Identity, keyPurpose int, key [32]byte, blockHeight uint64) (confirmations chan *WatchIdentity, err error) {
 	confirmations = make(chan *WatchIdentity)
-	b32Key, err := tools.SliceToByte32(key)
+	centId := identity.GetCentrifugeID()
 	if err != nil {
 		return nil, err
 	}
-
-	keyPurposeInt := big.NewInt(int64(keyPurpose))
-	go waitAndRouteKeyRegistrationEvent(ctx, filterer, confirmations, identity, b32Key, keyPurposeInt, blockHeight)
+	asyncRes, err := queue.Queue.DelayKwargs(KeyRegistrationConfirmationTaskName,
+		map[string]interface{}{
+			CentIdParam:     centId,
+			KeyParam:        key,
+			KeyPurposeParam: keyPurpose,
+			BlockHeight:     blockHeight,
+		})
+	if err != nil {
+		return nil, err
+	}
+	go waitAndRouteKeyRegistrationEvent(asyncRes, confirmations, identity)
 	return confirmations, nil
 }
 
@@ -318,33 +323,9 @@ func setUpRegistrationEventListener(identityToBeCreated Identity, blockHeight ui
 }
 
 // waitAndRouteKeyRegistrationEvent notifies the confirmations channel whenever the key has been added to the identity and has been noted as Ethereum event
-func waitAndRouteKeyRegistrationEvent(ctx context.Context, filterer KeyAddFilterer, confirmations chan<- *WatchIdentity, pushThisIdentity Identity, key [32]byte, keyPurpose *big.Int, blockHeight uint64) {
-	opts := &bind.FilterOpts{Context: ctx, Start: blockHeight}
-	for {
-		iter, err := filterer.FilterKeyAdded(
-			opts,
-			[][32]byte{key},
-			[]*big.Int{keyPurpose},
-		)
-
-		if err != nil {
-			confirmations <- &WatchIdentity{Error: centerrors.Wrap(err, "failed to start filtering identity event logs")}
-			return
-		}
-
-		err = utils.LookForEvent(iter)
-		if err == nil {
-			confirmations <- &WatchIdentity{Identity: pushThisIdentity}
-			return
-		}
-
-		if err != utils.EventNotFound {
-			confirmations <- &WatchIdentity{Error: err}
-			return
-		}
-	}
-
-	confirmations <- &WatchIdentity{Error: fmt.Errorf("failed to filter key add events")}
+func waitAndRouteKeyRegistrationEvent(asyncRes *gocelery.AsyncResult, confirmations chan<- *WatchIdentity, pushThisIdentity Identity) {
+	_, err := asyncRes.Get(ethereum.GetDefaultContextTimeout())
+	confirmations <- &WatchIdentity{Identity: pushThisIdentity, Error: err}
 }
 
 // waitAndRouteIdentityRegistrationEvent notifies the confirmations channel whenever the identity creation is being noted as Ethereum event

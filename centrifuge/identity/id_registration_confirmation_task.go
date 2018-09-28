@@ -11,13 +11,10 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/queue"
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/go-errors/errors"
 )
 
 const (
 	IdRegistrationConfirmationTaskName string = "IdRegistrationConfirmationTaskName"
-	CentIdParam                        string = "CentID"
-	BlockHeight                        string = "BlockHeight"
 )
 
 type IdentitiesCreatedFilterer interface {
@@ -68,18 +65,15 @@ func (rct *IdRegistrationConfirmationTask) ParseKwargs(kwargs map[string]interfa
 	if !ok {
 		return fmt.Errorf("undefined kwarg " + CentIdParam)
 	}
-	centIdTyped, err := getBytes(centId)
+	centIdTyped, err := getCentID(centId)
 	if err != nil {
 		return fmt.Errorf("malformed kwarg [%s] because [%s]", CentIdParam, err.Error())
 	}
-
 	rct.CentID = centIdTyped
 
-	if bhi, ok := kwargs[BlockHeight]; ok {
-		bhf, ok := bhi.(float64)
-		if ok {
-			rct.BlockHeight = uint64(bhf)
-		}
+	rct.BlockHeight, err = parseBlockHeight(kwargs)
+	if err != nil {
+		return err
 	}
 	return nil
 }
@@ -116,18 +110,4 @@ func (rct *IdRegistrationConfirmationTask) RunTask() (interface{}, error) {
 	}
 
 	return nil, fmt.Errorf("failed to filter identity events")
-}
-
-func getBytes(key interface{}) (CentID, error) {
-	var fixed [CentIDByteLength]byte
-	b, ok := key.([]interface{})
-	if !ok {
-		return fixed, errors.New("Could not parse interface to []byte")
-	}
-	// convert and copy b byte values
-	for i, v := range b {
-		fv := v.(float64)
-		fixed[i] = byte(fv)
-	}
-	return fixed, nil
 }

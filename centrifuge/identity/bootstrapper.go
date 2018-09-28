@@ -22,7 +22,17 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	if err != nil {
 		return err
 	}
-	return queue.InstallQueuedTask(context, NewIdRegistrationConfirmationTask(&identityContract.EthereumIdentityFactoryContractFilterer, ethereum.DefaultWaitForTransactionMiningContext))
+	err = queue.InstallQueuedTask(context,
+		NewIdRegistrationConfirmationTask(&identityContract.EthereumIdentityFactoryContractFilterer, ethereum.DefaultWaitForTransactionMiningContext))
+	if err != nil {
+		return err
+	}
+	err = queue.InstallQueuedTask(context,
+		NewKeyRegistrationConfirmationTask(ethereum.DefaultWaitForTransactionMiningContext))
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (b *Bootstrapper) TestBootstrap(context map[string]interface{}) error {
