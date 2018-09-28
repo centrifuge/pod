@@ -11,7 +11,7 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
-	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
+	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/legacy/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/go-errors/errors"

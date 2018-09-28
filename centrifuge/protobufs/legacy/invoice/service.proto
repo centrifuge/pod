@@ -1,0 +1,83 @@
+syntax = "proto3";
+
+package invoice;
+
+option go_package = "invoicepb";
+option java_multiple_files = true;
+option java_outer_classname = "ServiceProto";
+option java_package = "com.invoice";
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "invoice/invoice.proto";
+import "precise-proofs/proofs/proto/proof.proto";
+import "protoc-gen-swagger/options/annotations.proto";
+
+// InvoiceDocumentService contains all common interactions for invoice documents
+service InvoiceDocumentService {
+  rpc CreateInvoiceProof(CreateInvoiceProofEnvelope) returns (InvoiceProof) {
+    option (google.api.http) = {
+      post: "/legacy/invoice/proof"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "Creates a list of precise proofs for the specified fields"
+    };
+  }
+  rpc AnchorInvoiceDocument(AnchorInvoiceEnvelope) returns (InvoiceDocument) {
+    option (google.api.http) = {
+      post: "/legacy/invoice/anchor"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "Anchor an invoice document"
+    };
+  }
+  rpc SendInvoiceDocument(SendInvoiceEnvelope) returns (InvoiceDocument) {
+    option (google.api.http) = {
+      post: "/legacy/invoice/send"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "Send an invoice document to the specified party"
+    };
+  }
+  rpc GetInvoiceDocument(GetInvoiceDocumentEnvelope) returns (InvoiceDocument) {
+    option (google.api.http) = {
+      post: "/legacy/invoice"
+    };
+  }
+  rpc GetReceivedInvoiceDocuments(google.protobuf.Empty) returns (ReceivedInvoices) {
+    option (google.api.http) = {
+      get: "/legacy/invoice/getReceived"
+    };
+  }
+}
+
+message CreateInvoiceProofEnvelope {
+  bytes document_identifier = 1;
+  repeated string fields = 2;
+}
+
+message InvoiceProof {
+  bytes document_identifier = 1;
+  repeated proofs.Proof field_proofs = 2;
+}
+
+message AnchorInvoiceEnvelope {
+  InvoiceDocument document = 1;
+}
+
+message SendInvoiceEnvelope {
+  // Centrifuge OS Entity of the recipient
+  repeated bytes recipients = 1;
+  InvoiceDocument document = 10;
+}
+
+message GetInvoiceDocumentEnvelope {
+  bytes document_identifier = 1;
+}
+
+message ReceivedInvoices {
+  repeated InvoiceDocument invoices = 1;
+}
