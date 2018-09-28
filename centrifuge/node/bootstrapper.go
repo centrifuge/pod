@@ -33,6 +33,8 @@ func (*Bootstrapper) Bootstrap(c map[string]interface{}) error {
 			case sig := <-controlC:
 				log.Info("Node shutting down because of ", sig)
 				canc()
+				<-startUpErr
+				return nil
 			}
 		}
 		return nil

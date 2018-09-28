@@ -12,9 +12,7 @@ import (
 
 	"net"
 	"sync"
-	"time"
-
-	"errors"
+		"errors"
 
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
@@ -34,14 +32,14 @@ type CentAPIServer struct {
 }
 
 func NewCentAPIServer(
-	Address string,
-	Port int,
-	CentNetwork string,
+	address string,
+	port int,
+	centNetwork string,
 ) *CentAPIServer {
 	return &CentAPIServer{
-		Address:     Address,
-		Port:        Port,
-		CentNetwork: CentNetwork,
+		Address:     address,
+		Port:        port,
+		CentNetwork: centNetwork,
 	}
 }
 
@@ -131,14 +129,15 @@ func (c *CentAPIServer) Start(ctx context.Context, wg *sync.WaitGroup, startupEr
 			log.Info(err)
 			return
 		case <-ctx.Done():
-			ctxn, _ := context.WithTimeout(ctx, 1*time.Second)
-			// graceful shutdown
+			//ctxn, _ := context.WithTimeout(context.Background(), 1*time.Second)
 			// gracefully shutdown the server
 			// we can only do this because srv is thread safe
-			err := srv.Shutdown(ctxn)
+			log.Info("Shutting down API server")
+			err := srv.Close()
 			if err != nil {
 				panic(err)
 			}
+			log.Info("API server stopped")
 			return
 		}
 	}

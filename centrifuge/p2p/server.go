@@ -40,16 +40,16 @@ type CentP2PServer struct {
 }
 
 func NewCentP2PServer(
-	Port int,
-	BootstrapPeers []string,
-	PublicKey ed25519.PublicKey,
-	PrivateKey ed25519.PrivateKey,
+	port int,
+	bootstrapPeers []string,
+	publicKey ed25519.PublicKey,
+	privateKey ed25519.PrivateKey,
 ) *CentP2PServer {
 	return &CentP2PServer{
-		Port:           Port,
-		BootstrapPeers: BootstrapPeers,
-		PublicKey:      PublicKey,
-		PrivateKey:     PrivateKey,
+		Port:           port,
+		BootstrapPeers: bootstrapPeers,
+		PublicKey:      publicKey,
+		PrivateKey:     privateKey,
 	}
 }
 
@@ -88,6 +88,7 @@ func (c *CentP2PServer) Start(ctx context.Context, wg *sync.WaitGroup, startupEr
 		case <-ctx.Done():
 			log.Info("Shutting down GRPC server")
 			grpcProto.GetGRPCServer().Stop()
+			log.Info("GRPC server stopped")
 			return
 		}
 	}

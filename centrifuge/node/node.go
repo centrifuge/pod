@@ -56,9 +56,12 @@ func (n *Node) Start(ctx context.Context, startupErr chan<- error) {
 			wg.Wait()
 			return
 		case <-ctx.Done():
-			log.Info("Node received done signal, stopping all child services")
+			log.Info("Node received context.done signal, stopping all child services")
 			// Note that in this case the children will also receive the done signal via the passed on context
 			wg.Wait()
+			log.Info("Node stopped all child services")
+			// special case to make the caller wait until servers are shutdown
+			startupErr <- nil
 			return
 		}
 	}
