@@ -71,7 +71,7 @@ func TestNode_StartContextCancel(t *testing.T) {
 	time.Sleep(2 * time.Second)
 	canc()
 	// wait for shutdown
-	time.Sleep(1 * time.Second)
+	time.Sleep(5 * time.Second)
 	for _, service := range services {
 		assert.True(t, service.(*MockService).ReceivedCTXDone(), "context done signal should have been received")
 	}
