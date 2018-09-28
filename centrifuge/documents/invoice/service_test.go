@@ -19,12 +19,15 @@ func TestService_DeriveWithCoreDocument_successful(t *testing.T) {
 
 	coreDocument := testinginvoice.CreateCDWithEmbeddedInvoice(t, testinginvoice.CreateInvoiceData())
 
-	service := &Service{}
+	service := &service{}
 
 	var model documents.Model
 	var err error
 
-	model, err = service.DeriveWithCoreDocument(coreDocument)
+	var modelDeriver ModelDeriver
+	modelDeriver = service
+
+	model, err = modelDeriver.DeriveWithCoreDocument(coreDocument)
 	assert.Nil(t, err, "valid core document with embedded invoice shouldn't produce an error")
 
 	receivedCoreDocument, err := model.CoreDocument()
@@ -37,7 +40,7 @@ func TestService_DeriveWithCoreDocument_successful(t *testing.T) {
 
 func TestService_DeriveWithCoreDocument_invalid(t *testing.T) {
 
-	service := &Service{}
+	service := &service{}
 	var err error
 
 	_, err = service.DeriveWithCoreDocument(nil)
@@ -49,12 +52,15 @@ func TestService_DeriveWithInvoiceInput_successful(t *testing.T) {
 
 	invoiceInput := createInvoiceInput()
 
-	service := &Service{}
+	var modelDeriver ModelDeriver
+	invoiceService := &service{}
+
+	modelDeriver = invoiceService
 
 	var model documents.Model
 	var err error
 
-	model, err = service.DeriveWithInvoiceInput(&invoiceInput)
+	model, err = modelDeriver.DeriveWithInvoiceInput(&invoiceInput)
 	assert.Nil(t, err, "valid invoiceData shouldn't produce an error")
 
 	receivedCoreDocument, err := model.CoreDocument()
@@ -66,7 +72,7 @@ func TestService_DeriveWithInvoiceInput_successful(t *testing.T) {
 
 func TestService_DeriveWithInvoiceInput_invalid(t *testing.T) {
 
-	service := &Service{}
+	service := &service{}
 	var err error
 
 	_, err = service.DeriveWithInvoiceInput(nil)

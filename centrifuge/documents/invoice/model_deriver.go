@@ -6,12 +6,12 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 )
 
-// InvoiceModel specific deriver
+// ModelDeriver is a interface for invoice specific functions for deriving a valid model
 type ModelDeriver interface {
 	// Embedded ModelDeriver
 	documents.ModelDeriver
 
-	DeriveWithInvoiceInput(*InvoiceInput) (*documents.Model, error)
+	DeriveWithInvoiceInput(*InvoiceInput) (documents.Model, error)
 }
 
 //InvoiceInput represents the parameter received from the rest api

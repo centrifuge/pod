@@ -53,7 +53,7 @@ type InvoiceModel struct {
 	ExtraData   []byte
 
 	InvoiceSalts *invoicepb.InvoiceDataSalts
-	CD           *coredocumentpb.CoreDocument
+	coreDocument *coredocumentpb.CoreDocument
 }
 
 func (i *InvoiceModel) createInvoiceData() (*invoicepb.InvoiceData, error) {
@@ -222,7 +222,7 @@ func (i *InvoiceModel) CoreDocument() (*coredocumentpb.CoreDocument, error) {
 	coreDocument.EmbeddedDataSalts = &invoiceSaltsAny
 
 	//the model keeps a copy of the newly created core document
-	i.CD = coreDocument
+	i.coreDocument = coreDocument
 
 	return coreDocument, err
 }
@@ -237,7 +237,7 @@ func (i *InvoiceModel) FromCoreDocument(coreDocument *coredocumentpb.CoreDocumen
 		return fmt.Errorf("trying to convert document with incorrect schema")
 	}
 
-	i.CD = coreDocument
+	i.coreDocument = coreDocument
 
 	invoiceData := &invoicepb.InvoiceData{}
 	err := proto.Unmarshal(coreDocument.EmbeddedData.Value, invoiceData)

@@ -7,11 +7,11 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 )
 
-type Service struct {
+type service struct {
 }
 
 //DeriveWithInvoiceInput can initialize the model with parameters provided from the rest-api call
-func (s *Service) DeriveWithInvoiceInput(invoiceInput *InvoiceInput) (documents.Model, error) {
+func (s *service) DeriveWithInvoiceInput(invoiceInput *InvoiceInput) (documents.Model, error) {
 
 	if invoiceInput == nil {
 		return nil, fmt.Errorf("invoiceInput should not be nil")
@@ -27,7 +27,7 @@ func (s *Service) DeriveWithInvoiceInput(invoiceInput *InvoiceInput) (documents.
 
 //DeriveWithCoreDocument can initialize the model with a coredocument received.
 //Example: received coreDocument form other p2p node could use DeriveWithCoreDocument
-func (s *Service) DeriveWithCoreDocument(cd *coredocumentpb.CoreDocument) (documents.Model, error) {
+func (s *service) DeriveWithCoreDocument(cd *coredocumentpb.CoreDocument) (documents.Model, error) {
 
 	var model documents.Model
 
