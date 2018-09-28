@@ -5,13 +5,19 @@ package invoice
 import (
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
+
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/stretchr/testify/assert"
 )
 
+func createInvoiceInput() InvoiceInput {
+	return InvoiceInput{GrossAmount: 42}
+}
+
 func TestService_DeriveWithCoreDocument_successful(t *testing.T) {
 
-	coreDocument := createCDWithEmbeddedInvoice(t, createInvoiceData())
+	coreDocument := testinginvoice.CreateCDWithEmbeddedInvoice(t, testinginvoice.CreateInvoiceData())
 
 	service := &Service{}
 

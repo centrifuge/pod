@@ -17,15 +17,11 @@ func (s *Service) DeriveWithInvoiceInput(invoiceInput *InvoiceInput) (documents.
 		return nil, fmt.Errorf("invoiceInput should not be nil")
 	}
 
-	var model documents.Model
-
 	invoiceModel := new(InvoiceModel)
 
-	invoiceModel.initInvoiceInput(invoiceInput)
+	invoiceModel.InitInvoiceInput(invoiceInput)
 
-	model = invoiceModel
-
-	return model, nil
+	return invoiceModel, nil
 
 }
 

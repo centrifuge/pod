@@ -53,6 +53,7 @@ type InvoiceModel struct {
 	ExtraData   []byte
 
 	InvoiceSalts *invoicepb.InvoiceDataSalts
+	CD           *coredocumentpb.CoreDocument
 }
 
 func (i *InvoiceModel) createInvoiceData() (*invoicepb.InvoiceData, error) {
@@ -99,9 +100,9 @@ func (i *InvoiceModel) createInvoiceData() (*invoicepb.InvoiceData, error) {
 
 }
 
-//initInvoiceInput initialize the model based on the received parameters from the rest api call
+//InitInvoiceInput initialize the model based on the received parameters from the rest api call
 //TODO change to new api client model
-func (i *InvoiceModel) initInvoiceInput(invoiceData *InvoiceInput) error {
+func (i *InvoiceModel) InitInvoiceInput(invoiceData *InvoiceInput) error {
 
 	i.InvoiceNumber = invoiceData.InvoiceNumber
 	i.SenderName = invoiceData.SenderName
@@ -219,6 +220,10 @@ func (i *InvoiceModel) CoreDocument() (*coredocumentpb.CoreDocument, error) {
 
 	coreDocument.EmbeddedData = &invoiceAny
 	coreDocument.EmbeddedDataSalts = &invoiceSaltsAny
+
+	//the model keeps a copy of the newly created core document
+	i.CD = coreDocument
+
 	return coreDocument, err
 }
 
@@ -231,6 +236,8 @@ func (i *InvoiceModel) FromCoreDocument(coreDocument *coredocumentpb.CoreDocumen
 		coreDocument.EmbeddedDataSalts.TypeUrl != documenttypes.InvoiceSaltsTypeUrl {
 		return fmt.Errorf("trying to convert document with incorrect schema")
 	}
+
+	i.CD = coreDocument
 
 	invoiceData := &invoicepb.InvoiceData{}
 	err := proto.Unmarshal(coreDocument.EmbeddedData.Value, invoiceData)

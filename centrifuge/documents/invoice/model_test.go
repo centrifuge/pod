@@ -7,6 +7,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
@@ -38,7 +40,7 @@ func TestInvoice_InitCoreDocument_successful(t *testing.T) {
 
 	invoiceModel := &InvoiceModel{}
 
-	coreDocument := createCDWithEmbeddedInvoice(t, createInvoiceData())
+	coreDocument := testinginvoice.CreateCDWithEmbeddedInvoice(t, testinginvoice.CreateInvoiceData())
 	err := invoiceModel.FromCoreDocument(coreDocument)
 	assert.Nil(t, err, "valid coredocument shouldn't produce an error")
 }
@@ -47,7 +49,7 @@ func TestInvoice_tInitCoreDocument_invalidCentId(t *testing.T) {
 
 	invoiceModel := &InvoiceModel{}
 
-	coreDocument := createCDWithEmbeddedInvoice(t, invoicepb.InvoiceData{
+	coreDocument := testinginvoice.CreateCDWithEmbeddedInvoice(t, invoicepb.InvoiceData{
 		Recipient:   tools.RandomSlice(identity.CentIDByteLength + 1),
 		Sender:      tools.RandomSlice(identity.CentIDByteLength),
 		Payee:       tools.RandomSlice(identity.CentIDByteLength),
@@ -63,7 +65,7 @@ func TestInvoice_CoreDocument_successful(t *testing.T) {
 	invoiceModel := &InvoiceModel{}
 
 	//init model with a coreDocument
-	coreDocument := createCDWithEmbeddedInvoice(t, createInvoiceData())
+	coreDocument := testinginvoice.CreateCDWithEmbeddedInvoice(t, testinginvoice.CreateInvoiceData())
 	invoiceModel.FromCoreDocument(coreDocument)
 
 	returnedCoreDocument, err := invoiceModel.CoreDocument()
@@ -94,7 +96,7 @@ func TestInvoice_JSON(t *testing.T) {
 	invoiceModel := &InvoiceModel{}
 
 	//init model with a coreDocument
-	coreDocument := createCDWithEmbeddedInvoice(t, createInvoiceData())
+	coreDocument := testinginvoice.CreateCDWithEmbeddedInvoice(t, testinginvoice.CreateInvoiceData())
 	invoiceModel.FromCoreDocument(coreDocument)
 
 	jsonBytes, err := invoiceModel.JSON()
