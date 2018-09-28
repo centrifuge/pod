@@ -17,7 +17,7 @@ import "protoc-gen-swagger/options/annotations.proto";
 service InvoiceDocumentService {
   rpc CreateInvoiceProof(CreateInvoiceProofEnvelope) returns (InvoiceProof) {
     option (google.api.http) = {
-      post: "/legacy/invoice/{document_identifier}/proof"
+      post: "/legacy/invoice/proof"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -44,7 +44,7 @@ service InvoiceDocumentService {
   }
   rpc GetInvoiceDocument(GetInvoiceDocumentEnvelope) returns (InvoiceDocument) {
     option (google.api.http) = {
-      get: "/legacy/invoice/{document_identifier}"
+      post: "/legacy/invoice/"
     };
   }
   rpc GetReceivedInvoiceDocuments(google.protobuf.Empty) returns (ReceivedInvoices) {

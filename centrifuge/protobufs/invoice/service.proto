@@ -26,7 +26,7 @@ service DocumentService {
   }
   rpc Update(InvoiceUpdatePayload) returns (InvoiceResponse) {
     option (google.api.http) = {
-      post: "/invoice/{identifier}"
+      put: "/invoice/{identifier}"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
