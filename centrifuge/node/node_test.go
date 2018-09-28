@@ -82,13 +82,10 @@ func TestNode_StartChildError(t *testing.T) {
 	services := []Server{&MockService{mustReturnStartErr: true}, &MockService{mustReturnStartErr: false}}
 	n := NewNode(services)
 	errChan := make(chan error)
-	ctx, canc := context.WithCancel(context.TODO())
+	ctx, _ := context.WithCancel(context.TODO())
 	go n.Start(ctx, errChan)
 	// wait for startup
-	time.Sleep(500 * time.Millisecond)
-	canc()
-	// wait for shutdown
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(2 * time.Second)
 
 	// the second child would not receive cancel signal
 	assert.False(t, services[0].(*MockService).ReceivedCTXDone(), "context done signal should have been received")
