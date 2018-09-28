@@ -8,7 +8,6 @@ import (
 
 	"os"
 
-	"github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/anchors"
 	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"

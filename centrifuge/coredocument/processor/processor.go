@@ -75,7 +75,7 @@ func (dp *defaultProcessor) Send(ctx context.Context, coreDocument *coredocument
 
 	log.Infof("Done opening connection against [%s]\n", lastB58Key)
 
-	idConfig, err := ed25519.GetIDConfig()
+	idConfig, err := ed25519keys.GetIDConfig()
 	if err != nil {
 		err = centerrors.Wrap(err, "failed to extract bytes")
 		log.Error(err)
