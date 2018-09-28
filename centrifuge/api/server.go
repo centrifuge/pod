@@ -14,6 +14,9 @@ import (
 	"sync"
 	"time"
 
+	"errors"
+
+	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	logging "github.com/ipfs/go-log"
 	"golang.org/x/net/context"
@@ -49,8 +52,14 @@ func (*CentAPIServer) Name() string {
 // Serve exposes the client APIs for interacting with a centrifuge node
 func (c *CentAPIServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- error) {
 	defer wg.Done()
-	certPool := loadCertPool()
-	keyPair := loadKeyPair()
+	certPool, err := loadCertPool()
+	if err != nil {
+		startupErr <- err
+	}
+	keyPair, err := loadKeyPair()
+	if err != nil {
+		startupErr <- err
+	}
 	addr := c.Address
 
 	creds := credentials.NewTLS(&tls.Config{
@@ -77,7 +86,7 @@ func (c *CentAPIServer) Start(ctx context.Context, wg *sync.WaitGroup, startupEr
 	mux := http.NewServeMux()
 	gwmux := runtime.NewServeMux()
 
-	err := RegisterServices(ctx, grpcServer, gwmux, addr, dopts)
+	err = registerServices(ctx, grpcServer, gwmux, addr, dopts)
 	if err != nil {
 		startupErr <- err
 		return
@@ -149,20 +158,19 @@ func grpcHandlerFunc(grpcServer *grpc.Server, otherHandler http.Handler) http.Ha
 	})
 }
 
-func loadCertPool() (certPool *x509.CertPool) {
+func loadCertPool() (certPool *x509.CertPool, err error) {
 	certPool = x509.NewCertPool()
 	ok := certPool.AppendCertsFromPEM([]byte(InsecureCert))
 	if !ok {
-		log.Fatalf("Bad certs")
+		return nil, centerrors.Wrap(errors.New("could not load certpool"), "")
 	}
-	return
+	return certPool, nil
 }
 
-func loadKeyPair() (keyPair tls.Certificate) {
-	var err error
+func loadKeyPair() (keyPair tls.Certificate, err error) {
 	pair, err := tls.X509KeyPair([]byte(InsecureCert), []byte(InsecureKey))
 	if err != nil {
-		log.Fatal(err)
+		return pair, err
 	}
-	return pair
+	return pair, nil
 }

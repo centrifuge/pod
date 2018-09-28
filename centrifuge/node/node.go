@@ -21,6 +21,7 @@ type Server interface {
 	Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- error)
 }
 
+// Node provides utilities to control all background services on Cent Node
 type Node struct {
 	services []Server
 }

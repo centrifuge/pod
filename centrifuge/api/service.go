@@ -12,8 +12,8 @@ import (
 	"google.golang.org/grpc"
 )
 
-// RegisterServices registers all endpoints to the grpc server
-func RegisterServices(ctx context.Context, grpcServer *grpc.Server, gwmux *runtime.ServeMux, addr string, dopts []grpc.DialOption) error {
+// registerServices registers all endpoints to the grpc server
+func registerServices(ctx context.Context, grpcServer *grpc.Server, gwmux *runtime.ServeMux, addr string, dopts []grpc.DialOption) error {
 	invoicepb.RegisterInvoiceDocumentServiceServer(grpcServer, invoice.GRPCHandler())
 	err := invoicepb.RegisterInvoiceDocumentServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
 	if err != nil {

@@ -98,8 +98,6 @@ func (c *CentP2PServer) runDHT(ctx context.Context, h host.Host) error {
 	//dhtClient := dht.NewDHTClient(ctx, h, rdStore) // Just run it as a client, will not respond to discovery requests
 	dhtClient := dht.NewDHT(ctx, h, ds.NewMapDatastore()) // Run it as a Bootstrap Node
 
-	// bootstrapPeers := config.Config.GetBootstrapPeers()
-
 	log.Infof("Bootstrapping %s\n", c.BootstrapPeers)
 	for _, addr := range c.BootstrapPeers {
 		iaddr, _ := ipfsaddr.ParseString(addr)
