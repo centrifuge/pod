@@ -2,14 +2,6 @@
 
 
 [[projects]]
-  branch = "master"
-  digest = "1:f7aa5178de4ebde319e0758af44a4e32ff8e49251b27330b1674a5ec8f883de5"
-  name = "github.com/CentrifugeInc/centrifuge-protobufs"
-  packages = ["gen/go/coredocument"]
-  pruneopts = "UT"
-  revision = "b8baf3f7bc61d41331e1a98e68902c93c8de0191"
-
-[[projects]]
   digest = "1:55388fd080150b9a072912f97b1f5891eb0b50df43401f8b75fb4273d3fec9fc"
   name = "github.com/Masterminds/semver"
   packages = ["."]
@@ -55,7 +47,6 @@
   source = "git@github.com:centrifuge/centrifuge-ethereum-contracts"
 
 [[projects]]
-  branch = "master"
   digest = "1:7abfa5392df53c183c4d7464c7c73407dda0c8e486d5af8d5df7db7f2190b4d9"
   name = "github.com/centrifuge/centrifuge-protobufs"
   packages = [
@@ -1353,7 +1344,6 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "github.com/CentrifugeInc/centrifuge-protobufs/gen/go/coredocument",
     "github.com/Masterminds/semver",
     "github.com/centrifuge/centrifuge-ethereum-contracts",
     "github.com/centrifuge/centrifuge-protobufs/documenttypes",

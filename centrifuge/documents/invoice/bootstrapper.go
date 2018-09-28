@@ -1,4 +1,4 @@
-package invoicerepository
+package invoice
 
 import (
 	"errors"
@@ -7,8 +7,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
 )
 
-type Bootstrapper struct {
-}
+type Bootstrapper struct{}
 
 func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	if _, ok := context[bootstrap.BootstrappedLevelDb]; ok {

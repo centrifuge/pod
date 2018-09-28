@@ -29,7 +29,7 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
 [[constraint]]
   name = "github.com/centrifuge/centrifuge-protobufs"
   source = "git@github.com:centrifuge/centrifuge-protobufs"
-  branch = "master"
+  revision = "886299add3cee8873b01dcd11add80ae31ad4205"
 
 [[override]]
   name = "github.com/centrifuge/centrifuge-ethereum-contracts"

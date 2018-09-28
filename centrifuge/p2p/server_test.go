@@ -34,7 +34,7 @@ func TestCentP2PServer_StartContextCancel(t *testing.T) {
 func TestCentP2PServer_StartListenError(t *testing.T) {
 	// cause an error by using an invalid port
 	priv, pub := getKeys()
-	cp2p := NewCentP2PServer(38203, []string{}, pub, priv)
+	cp2p := NewCentP2PServer(100000000, []string{}, pub, priv)
 	ctx, _ := context.WithCancel(context.Background())
 	startErr := make(chan error)
 	var wg sync.WaitGroup
@@ -43,7 +43,7 @@ func TestCentP2PServer_StartListenError(t *testing.T) {
 	err := <-startErr
 	wg.Wait()
 	assert.NotNil(t, err, "Error should be not nil")
-	assert.Equal(t, "listen tcp: address 100000000: invalid port", err.Error())
+	assert.Equal(t, "failed to parse tcp: 100000000 failed to parse port addr: greater than 65536", err.Error())
 }
 
 func getKeys() (ed25519.PrivateKey, ed25519.PublicKey) {
