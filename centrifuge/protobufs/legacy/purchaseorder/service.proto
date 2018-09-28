@@ -1,0 +1,84 @@
+syntax = "proto3";
+
+package purchaseorder;
+
+option go_package = "purchaseorderpb";
+option java_multiple_files = true;
+option java_outer_classname = "ServiceProto";
+option java_package = "com.purchaseorder";
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "precise-proofs/proofs/proto/proof.proto";
+import "protoc-gen-swagger/options/annotations.proto";
+import "purchaseorder/purchaseorder.proto";
+
+// PurchaseOrderDocumentService contains all common interactions for purchaseorder documents
+service PurchaseOrderDocumentService {
+  rpc CreatePurchaseOrderProof(CreatePurchaseOrderProofEnvelope) returns (PurchaseOrderProof) {
+    option (google.api.http) = {
+      post: "/legacy/purchaseorder/proof"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "Creates a list of precise proofs for the specified fields"
+    };
+  }
+  rpc AnchorPurchaseOrderDocument(AnchorPurchaseOrderEnvelope) returns (PurchaseOrderDocument) {
+    option (google.api.http) = {
+      post: "/legacy/purchaseorder/anchor"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "Anchor a purchaseorder document"
+    };
+  }
+  rpc SendPurchaseOrderDocument(SendPurchaseOrderEnvelope) returns (PurchaseOrderDocument) {
+    option (google.api.http) = {
+      post: "/legacy/purchaseorder/send"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "Send a purchaseorder document to the specified party"
+    };
+  }
+  rpc GetPurchaseOrderDocument(GetPurchaseOrderDocumentEnvelope) returns (PurchaseOrderDocument) {
+    option (google.api.http) = {
+      post: "/legacy/purchaseorder/get"
+      body: "*"
+    };
+  }
+  rpc GetReceivedPurchaseOrderDocuments(google.protobuf.Empty) returns (ReceivedPurchaseOrders) {
+    option (google.api.http) = {
+      get: "/legacy/purchaseorder/getReceived"
+    };
+  }
+}
+
+message CreatePurchaseOrderProofEnvelope {
+  bytes document_identifier = 1;
+  repeated string fields = 2;
+}
+
+message PurchaseOrderProof {
+  bytes document_identifier = 1;
+  repeated proofs.Proof field_proofs = 2;
+}
+
+message AnchorPurchaseOrderEnvelope {
+  PurchaseOrderDocument document = 1;
+}
+
+message SendPurchaseOrderEnvelope {
+  // Centrifuge OS Entity of the recipient
+  repeated bytes recipients = 1;
+  PurchaseOrderDocument document = 10;
+}
+
+message GetPurchaseOrderDocumentEnvelope {
+  bytes document_identifier = 1;
+}
+
+message ReceivedPurchaseOrders {
+  repeated PurchaseOrderDocument purchaseorders = 1;
+}

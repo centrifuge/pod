@@ -53,6 +53,7 @@ type InvoiceModel struct {
 	ExtraData   []byte
 
 	InvoiceSalts *invoicepb.InvoiceDataSalts
+	coreDocument *coredocumentpb.CoreDocument
 }
 
 func (i *InvoiceModel) createInvoiceData() (*invoicepb.InvoiceData, error) {
@@ -96,6 +97,38 @@ func (i *InvoiceModel) createInvoiceData() (*invoicepb.InvoiceData, error) {
 		DateCreated:      i.DateCreated,
 		ExtraData:        i.ExtraData,
 	}, nil
+
+}
+
+//InitInvoiceInput initialize the model based on the received parameters from the rest api call
+//TODO change to new api client model
+func (i *InvoiceModel) InitInvoiceInput(invoiceData *InvoiceInput) error {
+
+	i.InvoiceNumber = invoiceData.InvoiceNumber
+	i.SenderName = invoiceData.SenderName
+	i.SenderStreet = invoiceData.SenderStreet
+	i.SenderCity = invoiceData.SenderCity
+	i.SenderZipcode = invoiceData.SenderZipcode
+	i.SenderCountry = invoiceData.SenderCountry
+	i.RecipientName = invoiceData.RecipientName
+	i.RecipientStreet = invoiceData.RecipientStreet
+	i.RecipientCity = invoiceData.RecipientCity
+	i.RecipientZipcode = invoiceData.RecipientZipcode
+	i.RecipientCountry = invoiceData.RecipientCountry
+	i.Currency = invoiceData.Currency
+	i.GrossAmount = invoiceData.GrossAmount
+	i.NetAmount = invoiceData.NetAmount
+	i.TaxAmount = invoiceData.TaxAmount
+	i.TaxRate = invoiceData.TaxRate
+	i.Recipient = invoiceData.Recipient
+	i.Sender = invoiceData.Sender
+	i.Payee = invoiceData.Payee
+	i.Comment = invoiceData.Comment
+	i.DueDate = invoiceData.DueDate
+	i.DateCreated = invoiceData.DateCreated
+	i.ExtraData = invoiceData.ExtraData
+
+	return nil
 
 }
 
@@ -187,6 +220,10 @@ func (i *InvoiceModel) CoreDocument() (*coredocumentpb.CoreDocument, error) {
 
 	coreDocument.EmbeddedData = &invoiceAny
 	coreDocument.EmbeddedDataSalts = &invoiceSaltsAny
+
+	//the model keeps a copy of the newly created core document
+	i.coreDocument = coreDocument
+
 	return coreDocument, err
 }
 
@@ -199,6 +236,8 @@ func (i *InvoiceModel) FromCoreDocument(coreDocument *coredocumentpb.CoreDocumen
 		coreDocument.EmbeddedDataSalts.TypeUrl != documenttypes.InvoiceSaltsTypeUrl {
 		return fmt.Errorf("trying to convert document with incorrect schema")
 	}
+
+	i.coreDocument = coreDocument
 
 	invoiceData := &invoicepb.InvoiceData{}
 	err := proto.Unmarshal(coreDocument.EmbeddedData.Value, invoiceData)

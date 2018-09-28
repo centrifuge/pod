@@ -11,7 +11,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/centrifuge/p2p"
-	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
+	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/legacy/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
 	"github.com/golang/protobuf/ptypes/empty"
 	logging "github.com/ipfs/go-log"
