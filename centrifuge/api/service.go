@@ -4,7 +4,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/healthcheck/controller"
 	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/health"
-	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
+	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/legacy/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/purchaseorder/controller"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
