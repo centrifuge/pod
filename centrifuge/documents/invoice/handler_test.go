@@ -54,16 +54,16 @@ func (m *mockInvoiceRepository) Update(id []byte, doc proto.Message) (err error)
 	return args.Error(0)
 }
 
-func getMockedHandler() (handler *GRPCHandler, repo *mockInvoiceRepository, coreDocumentProcessor *testingutils.MockCoreDocumentProcessor) {
+func getMockedHandler() (handler *grpcHandler, repo *mockInvoiceRepository, coreDocumentProcessor *testingutils.MockCoreDocumentProcessor) {
 	repo = new(mockInvoiceRepository)
 	coreDocumentProcessor = new(testingutils.MockCoreDocumentProcessor)
-	handler = &GRPCHandler{
-		InvoiceRepository:     repo,
+	handler = &grpcHandler{
+		Repository:            repo,
 		CoreDocumentProcessor: coreDocumentProcessor,
 	}
 	return handler, repo, coreDocumentProcessor
 }
-func getTestSetupData() (doc *Invoice, srv *GRPCHandler, repo *mockInvoiceRepository, coreDocumentProcessor *testingutils.MockCoreDocumentProcessor) {
+func getTestSetupData() (doc *Invoice, srv *grpcHandler, repo *mockInvoiceRepository, coreDocumentProcessor *testingutils.MockCoreDocumentProcessor) {
 	doc = &Invoice{Document: &invoicepb.InvoiceDocument{}}
 	doc.Document.Data = &invoicepb.InvoiceData{
 		InvoiceNumber:    "inv1234",

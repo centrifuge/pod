@@ -15,6 +15,22 @@
     "application/json"
   ],
   "paths": {
+    "/legacy/invoice": {
+      "post": {
+        "operationId": "GetInvoiceDocument",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/invoiceInvoiceDocument"
+            }
+          }
+        },
+        "tags": [
+          "InvoiceDocumentService"
+        ]
+      }
+    },
     "/legacy/invoice/anchor": {
       "post": {
         "description": "Anchor an invoice document",
@@ -58,6 +74,33 @@
         ]
       }
     },
+    "/legacy/invoice/proof": {
+      "post": {
+        "description": "Creates a list of precise proofs for the specified fields",
+        "operationId": "CreateInvoiceProof",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/invoiceInvoiceProof"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/invoiceCreateInvoiceProofEnvelope"
+            }
+          }
+        ],
+        "tags": [
+          "InvoiceDocumentService"
+        ]
+      }
+    },
     "/legacy/invoice/send": {
       "post": {
         "description": "Send an invoice document to the specified party",
@@ -77,65 +120,6 @@
             "required": true,
             "schema": {
               "$ref": "#/definitions/invoiceSendInvoiceEnvelope"
-            }
-          }
-        ],
-        "tags": [
-          "InvoiceDocumentService"
-        ]
-      }
-    },
-    "/legacy/invoice/{document_identifier}": {
-      "get": {
-        "operationId": "GetInvoiceDocument",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/invoiceInvoiceDocument"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "document_identifier",
-            "in": "path",
-            "required": true,
-            "type": "string",
-            "format": "byte"
-          }
-        ],
-        "tags": [
-          "InvoiceDocumentService"
-        ]
-      }
-    },
-    "/legacy/invoice/{document_identifier}/proof": {
-      "post": {
-        "description": "Creates a list of precise proofs for the specified fields",
-        "operationId": "CreateInvoiceProof",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/invoiceInvoiceProof"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "document_identifier",
-            "in": "path",
-            "required": true,
-            "type": "string",
-            "format": "byte"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/invoiceCreateInvoiceProofEnvelope"
             }
           }
         ],
