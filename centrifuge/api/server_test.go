@@ -7,6 +7,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents/invoice"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -22,6 +23,7 @@ func TestCentAPIServer_StartHappy(t *testing.T) {
 }
 
 func TestCentAPIServer_StartContextCancel(t *testing.T) {
+	invoice.InitLevelDBRepository(nil)
 	capi := NewCentAPIServer("0.0.0.0:9000", 9000, "")
 	ctx, canc := context.WithCancel(context.Background())
 	startErr := make(chan error)
@@ -36,6 +38,7 @@ func TestCentAPIServer_StartContextCancel(t *testing.T) {
 }
 
 func TestCentAPIServer_StartListenError(t *testing.T) {
+	invoice.InitLevelDBRepository(nil)
 	// cause an error by using an invalid port
 	capi := NewCentAPIServer("0.0.0.0:100000000", 100000000, "")
 	ctx, _ := context.WithCancel(context.Background())

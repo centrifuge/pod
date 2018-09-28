@@ -5,6 +5,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/centrifuge/node"
@@ -13,7 +14,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/centrifuge/version"
 	logging "github.com/ipfs/go-log"
-	"github.com/centrifuge/go-centrifuge/centrifuge/documents/invoice"
 )
 
 var log = logging.Logger("context")
