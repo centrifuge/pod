@@ -85,6 +85,7 @@ message ResponseHeader {
 }
 
 message InvoiceData {
+  string invoice_status = 25;
   // invoice number or reference number 
   string invoice_number = 1;
   // name of the sender company 

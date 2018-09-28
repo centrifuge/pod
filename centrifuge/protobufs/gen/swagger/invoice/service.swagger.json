@@ -148,6 +148,9 @@
     "invoiceInvoiceData": {
       "type": "object",
       "properties": {
+        "invoice_status": {
+          "type": "string"
+        },
         "invoice_number": {
           "type": "string",
           "title": "invoice number or reference number"
