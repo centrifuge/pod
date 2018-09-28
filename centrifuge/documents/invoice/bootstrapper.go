@@ -2,6 +2,7 @@ package invoice
 
 import (
 	"errors"
+
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 
@@ -15,16 +16,14 @@ func (b *Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	if _, ok := context[bootstrapper.BootstrappedLevelDb]; ok {
 		InitLevelDBRepository(storage.GetLevelDBStorage())
 
-		err := 	b.registerInvoiceService()
+		err := b.registerInvoiceService()
 		return err
 	}
-
-
 
 	return errors.New("could not initialize invoice repository")
 }
 
 func (*Bootstrapper) registerInvoiceService() error {
 
-	return documents.GetRegistryInstance().Register(documenttypes.InvoiceDocumentTypeUrl, &service{})
+	return documents.GetRegistryInstance().Register(documenttypes.InvoiceDataTypeUrl, &service{})
 }

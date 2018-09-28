@@ -285,6 +285,10 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
     unused-packages = false
 
 [[prune.project]]
+    name = "github.com/matryer/resync"
+    unused-packages = false
+
+[[prune.project]]
     name = "github.com/centrifuge/centrifuge-protobufs"
     unused-packages = false
 

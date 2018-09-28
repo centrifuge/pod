@@ -2,24 +2,24 @@ package documents
 
 import (
 	"fmt"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"sync"
+	"github.com/matryer/resync"
 )
 
 type ServiceRegistry struct {
-
-	services map[string] ModelDeriver
+	services map[string]ModelDeriver
 }
 
-var instance *ServiceRegistry
-var once sync.Once
+var registryInstance *ServiceRegistry
+var registryOnce resync.Once
 
 func GetRegistryInstance() *ServiceRegistry {
-	once.Do(func() {
-		instance = &ServiceRegistry{}
-		instance.services = make(map[string] ModelDeriver)
+	registryOnce.Do(func() {
+		registryInstance = &ServiceRegistry{}
+		registryInstance.services = make(map[string]ModelDeriver)
 	})
-	return instance
+	return registryInstance
 }
 
 func (s *ServiceRegistry) Register(serviceId string, service ModelDeriver) error {
@@ -46,13 +46,17 @@ func (s *ServiceRegistry) Unregister(serviceId string) error {
 
 }
 
-
 func (s *ServiceRegistry) LocateService(coreDocument *coredocumentpb.CoreDocument) (ModelDeriver, error) {
 
-	if s.services[coreDocument.EmbeddedData.TypeUrl] != nil {
+	if s.services[coreDocument.EmbeddedData.TypeUrl] == nil {
 		return nil, fmt.Errorf("no service for core document type is registered")
 	}
 
 	return s.services[coreDocument.EmbeddedData.TypeUrl], nil
 
+}
+
+func KillRegistry() {
+	registryInstance = nil
+	registryOnce.Reset()
 }
