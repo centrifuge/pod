@@ -28,10 +28,11 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		return err
 	}
 	err = queue.InstallQueuedTask(context,
-		NewKeyRegistrationConfirmationTask(&identityContract, ethereum.DefaultWaitForTransactionMiningContext))
+		NewKeyRegistrationConfirmationTask(ethereum.DefaultWaitForTransactionMiningContext))
 	if err != nil {
 		return err
 	}
+	return nil
 }
 
 func (b *Bootstrapper) TestBootstrap(context map[string]interface{}) error {
