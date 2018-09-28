@@ -1,6 +1,6 @@
 // +build unit
 
-package invoicerepository
+package invoice
 
 import (
 	"testing"

@@ -37,7 +37,6 @@
   source = "git@github.com:centrifuge/centrifuge-ethereum-contracts"
 
 [[projects]]
-  branch = "master"
   name = "github.com/centrifuge/centrifuge-protobufs"
   packages = [
     "documenttypes",
@@ -48,7 +47,7 @@
     "gen/go/p2p",
     "gen/go/purchaseorder"
   ]
-  revision = "886299add3cee8873b01dcd11add80ae31ad4205"
+  revision = "1ce150d991123bba0fcc284fb784c361edd44553"
   source = "git@github.com:centrifuge/centrifuge-protobufs"
 
 [[projects]]
@@ -1074,6 +1073,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "2b52dffb65f45fb035b66823a6416e6915bc150f78ce358d06900545faf4d350"
+  inputs-digest = "1c51b1fa9627cf0e9c57177c7dd830ef96ae409a51111185921062bccbc366d6"
   solver-name = "gps-cdcl"
   solver-version = 1

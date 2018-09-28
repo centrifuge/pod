@@ -1,7 +1,8 @@
+TRAVIS_BRANCH?=`git rev-parse --abbrev-ref HEAD`
 GIT_COMMIT=`git rev-parse HEAD`
 GIT_SHORT_COMMIT=`git rev-parse --short HEAD`
-TIMESTAMP=`date -u +%Y%m%d`
-TAG="${TIMESTAMP}-${GIT_SHORT_COMMIT}"
+TIMESTAMP=`date -u +%Y%m%d%H`
+TAG="${TRAVIS_BRANCH}-${TIMESTAMP}-${GIT_SHORT_COMMIT}"
 IMAGE_NAME?=centrifugeio/go-centrifuge
 LD_FLAGS?="-X github.com/centrifuge/go-centrifuge/centrifuge/version.gitCommit=${GIT_COMMIT}"
 GCLOUD_SERVICE?="peak-vista-185616-9f70002df7eb.json"

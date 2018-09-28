@@ -46,7 +46,7 @@ func TestIntegrationBootstrap() {
 	InitTestStoragePath()
 	config.Config.V.WriteConfigAs("/tmp/cent_config.yaml")
 
-	log.Infof("Creating levelDb at: %s", config.Config.GetStoragePath())
+	log.Infof("Setting levelDb at: %s", config.Config.GetStoragePath())
 }
 
 func TestIntegrationTearDown() {
