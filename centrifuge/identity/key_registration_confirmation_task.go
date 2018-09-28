@@ -23,8 +23,8 @@ type KeyRegisteredFilterer interface {
 	FilterKeyAdded(opts *bind.FilterOpts, key [][32]byte, purpose []*big.Int) (*EthereumIdentityContractKeyAddedIterator, error)
 }
 
-// KeyRegistrationConfirmationTask is a queued task to watch ID registration events on Ethereum using EthereumIdentityFactoryContract.
-// To see how it gets registered see bootstrapper.go and to see how it gets used see setUpRegistrationEventListener method
+// KeyRegistrationConfirmationTask is a queued task to filter key registration events on Ethereum using EthereumIdentityContract.
+// To see how it gets registered see bootstrapper.go and to see how it gets used see setUpKeyRegisteredEventListener method
 type KeyRegistrationConfirmationTask struct {
 	CentID                CentID
 	Key                   [32]byte
@@ -63,7 +63,7 @@ func (krct *KeyRegistrationConfirmationTask) Copy() (gocelery.CeleryTask, error)
 		krct.KeyRegisteredWatcher}, nil
 }
 
-// ParseKwargs - define a method to parse CentID
+// ParseKwargs - define a method to parse params
 func (krct *KeyRegistrationConfirmationTask) ParseKwargs(kwargs map[string]interface{}) error {
 	centId, ok := kwargs[CentIdParam]
 	if !ok {
@@ -106,7 +106,7 @@ func (krct *KeyRegistrationConfirmationTask) ParseKwargs(kwargs map[string]inter
 	return nil
 }
 
-// RunTask calls listens to events from geth related to KeyRegistrationConfirmationTask#CentID and records result.
+// RunTask calls listens to events from geth related to KeyRegistrationConfirmationTask#Key and records result.
 func (krct *KeyRegistrationConfirmationTask) RunTask() (interface{}, error) {
 	log.Infof("Waiting for confirmation for the Key [%x]", krct.Key)
 	if krct.EthContext == nil {
