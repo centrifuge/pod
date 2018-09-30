@@ -26,7 +26,7 @@ func TestMain(m *testing.M) {
 	config.Config.V.Set("keys.signing.publicKey", "../../example/resources/signingKey.pub.pem")
 	config.Config.V.Set("keys.signing.privateKey", "../../example/resources/signingKey.key.pem")
 
-	identityService = &identity.EthereumIdentityService{}
+	identityService = identity.IDService
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()
 	os.Exit(result)

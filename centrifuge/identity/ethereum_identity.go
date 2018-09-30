@@ -339,7 +339,6 @@ func (ids *EthereumIdentityService) CheckIdentityExists(centrifugeID CentID) (ex
 func (ids *EthereumIdentityService) CreateIdentity(centrifugeID CentID) (id Identity, confirmations chan *WatchIdentity, err error) {
 	log.Infof("Creating Identity [%x]", centrifugeID.ByteArray())
 	id = NewEthereumIdentity(centrifugeID, ids.registryContract, ids.config)
-	id.CentrifugeID(centrifugeID)
 	conn := ethereum.GetConnection()
 	opts, err := conn.GetTxOpts(ids.config.GetEthereumDefaultAccountName())
 	if err != nil {
