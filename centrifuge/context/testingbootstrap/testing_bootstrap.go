@@ -56,19 +56,11 @@ func TestIntegrationTearDown() {
 }
 
 // ---- End Integration Testing ----
-
-func createEthereumConnection(config *config.Configuration) {
-	client, err := ethereum.NewClientConnection(config)
-	if err != nil {
-		panic(err)
-	}
-	ethereum.SetConnection(client)
-}
-
 func bootstrapQueuing() {
 	// TODO here we would not have to put the bootstrapper.BootstrappedConfig after the TestBootstrapper refactoring
 	context := map[string]interface{}{bootstrap.BootstrappedConfig: true}
 	for _, b := range []bootstrap.TestBootstrapper{
+		&ethereum.Bootstrapper{},
 		&anchors.Bootstrapper{},
 		&identity.Bootstrapper{},
 		&queue.Bootstrapper{},
