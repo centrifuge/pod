@@ -94,7 +94,6 @@ type Identity interface {
 	GetCurrentP2PKey() (ret string, err error)
 	GetLastKeyForPurpose(keyPurpose int) (key []byte, err error)
 	AddKeyToIdentity(ctx context.Context, keyPurpose int, key []byte) (confirmations chan *WatchIdentity, err error)
-	CheckIdentityExists() (exists bool, err error)
 	FetchKey(key []byte) (Key, error)
 }
 
