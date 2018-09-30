@@ -155,6 +155,7 @@ func (act *AnchoringConfirmationTask) RunTask() (interface{}, error) {
 
 		err = utils.LookForEvent(iter)
 		if err == nil {
+			log.Infof("Received filtered event Anchor Confirmation for AnchorID [%x] and CentrifugeId [%s]\n", act.AnchorID.toBigInt(), act.CentrifugeID.String())
 			return iter.Event, nil
 		}
 

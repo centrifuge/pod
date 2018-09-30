@@ -13,7 +13,7 @@ var runCmd = &cobra.Command{
 		//cmd requires a config file
 		readConfigFile()
 		// the following call will block
-		defaultBootstrap()
+		defaultRunBootstrap()
 	},
 }
 
