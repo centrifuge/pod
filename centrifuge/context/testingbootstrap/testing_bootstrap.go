@@ -26,7 +26,6 @@ var log = logging.Logger("context")
 // ---- Ethereum ----
 func TestFunctionalEthereumBootstrap() {
 	TestIntegrationBootstrap()
-	createEthereumConnection(config.Config)
 	bootstrapQueuing()
 }
 func TestFunctionalEthereumTearDown() {
