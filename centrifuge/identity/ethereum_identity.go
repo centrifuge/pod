@@ -11,7 +11,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-		"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/go-errors/errors"
 	logging "github.com/ipfs/go-log"
 )
@@ -58,6 +58,10 @@ type EthereumIdentity struct {
 	Contract         *EthereumIdentityContract
 	RegistryContract *EthereumIdentityRegistryContract
 	Config           Config
+}
+
+func NewEthereumIdentity(id CentID, registryContract *EthereumIdentityRegistryContract, config Config) *EthereumIdentity {
+	return &EthereumIdentity{CentrifugeId: id, RegistryContract: registryContract, Config: config}
 }
 
 func (id *EthereumIdentity) CentrifugeID(cenId CentID) {
@@ -317,25 +321,24 @@ func waitAndRouteIdentityRegistrationEvent(asyncRes *gocelery.AsyncResult, confi
 
 // EthereumidentityService implements `Service`
 type EthereumIdentityService struct {
-	config          Config
-	factoryContract *EthereumIdentityFactoryContract
+	config           Config
+	factoryContract  *EthereumIdentityFactoryContract
+	registryContract *EthereumIdentityRegistryContract
 }
 
-func NewEthereumIdentityService(config Config, factoryContract *EthereumIdentityFactoryContract) Service {
-	return &EthereumIdentityService{config: config, factoryContract: factoryContract}
+func NewEthereumIdentityService(config Config, factoryContract *EthereumIdentityFactoryContract, registryContract *EthereumIdentityRegistryContract) Service {
+	return &EthereumIdentityService{config: config, factoryContract: factoryContract, registryContract: registryContract}
 }
 
 func (ids *EthereumIdentityService) CheckIdentityExists(centrifugeID CentID) (exists bool, err error) {
-	id := new(EthereumIdentity)
-	id.CentrifugeId = centrifugeID
+	id := NewEthereumIdentity(centrifugeID, ids.registryContract, ids.config)
 	exists, err = id.CheckIdentityExists()
 	return
 }
 
 func (ids *EthereumIdentityService) CreateIdentity(centrifugeID CentID) (id Identity, confirmations chan *WatchIdentity, err error) {
 	log.Infof("Creating Identity [%x]", centrifugeID.ByteArray())
-
-	id = new(EthereumIdentity)
+	id = NewEthereumIdentity(centrifugeID, ids.registryContract, ids.config)
 	id.CentrifugeID(centrifugeID)
 	conn := ethereum.GetConnection()
 	opts, err := conn.GetTxOpts(ids.config.GetEthereumDefaultAccountName())
@@ -365,8 +368,7 @@ func (ids *EthereumIdentityService) CreateIdentity(centrifugeID CentID) (id Iden
 }
 
 func (ids *EthereumIdentityService) LookupIdentityForID(centrifugeID CentID) (Identity, error) {
-	id := new(EthereumIdentity)
-	id.CentrifugeID(centrifugeID)
+	id := NewEthereumIdentity(centrifugeID, ids.registryContract, ids.config)
 	exists, err := id.CheckIdentityExists()
 	if !exists {
 		return id, fmt.Errorf("identity [%s] does not exist", id.CentrifugeId)
