@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	"github.com/centrifuge/go-centrifuge/centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/go-errors/errors"
 	logging "github.com/ipfs/go-log"
@@ -25,6 +25,11 @@ type IdentityFactory interface {
 
 type IdentityContract interface {
 	AddKey(opts *bind.TransactOpts, _key [32]byte, _kPurpose *big.Int) (*types.Transaction, error)
+}
+
+type Config interface {
+	GetEthereumDefaultAccountName() string
+	GetContractAddress(contract string) (address common.Address)
 }
 
 type EthereumIdentityKey struct {
@@ -51,8 +56,10 @@ func (idk *EthereumIdentityKey) String() string {
 }
 
 type EthereumIdentity struct {
-	CentrifugeId CentID
-	Contract     *EthereumIdentityContract
+	CentrifugeId     CentID
+	Contract         *EthereumIdentityContract
+	RegistryContract *EthereumIdentityRegistryContract
+	Config           Config
 }
 
 func (id *EthereumIdentity) CentrifugeID(cenId CentID) {
@@ -125,12 +132,8 @@ func (id *EthereumIdentity) findContract() (exists bool, err error) {
 		return true, nil
 	}
 
-	ethIdentityRegistryContract, err := getIdentityRegistryContract()
-	if err != nil {
-		return false, err
-	}
 	opts := ethereum.GetGethCallOpts()
-	idAddress, err := ethIdentityRegistryContract.GetIdentityByCentrifugeId(opts, id.CentrifugeId.BigInt())
+	idAddress, err := id.RegistryContract.GetIdentityByCentrifugeId(opts, id.CentrifugeId.BigInt())
 	if err != nil {
 		return false, err
 	}
@@ -179,7 +182,7 @@ func (id *EthereumIdentity) AddKeyToIdentity(ctx context.Context, keyPurpose int
 	}
 
 	conn := ethereum.GetConnection()
-	opts, err := ethereum.GetConnection().GetTxOpts(config.Config.GetEthereumDefaultAccountName())
+	opts, err := ethereum.GetConnection().GetTxOpts(id.Config.GetEthereumDefaultAccountName())
 	if err != nil {
 		return confirmations, err
 	}
@@ -227,26 +230,6 @@ func (id *EthereumIdentity) fetchKeysByPurpose(keyPurpose int) ([]EthereumIdenti
 	}
 
 	return ids, nil
-}
-
-func getIdentityFactoryContract() (identityFactoryContract *EthereumIdentityFactoryContract, err error) {
-	client := ethereum.GetConnection()
-
-	identityFactoryContract, err = NewEthereumIdentityFactoryContract(config.Config.GetContractAddress("identityFactory"), client.GetClient())
-	if err != nil {
-		log.Infof("Failed to instantiate the identity factory contract: %v", err)
-	}
-	return
-}
-
-func getIdentityRegistryContract() (identityRegistryContract *EthereumIdentityRegistryContract, err error) {
-	client := ethereum.GetConnection()
-
-	identityRegistryContract, err = NewEthereumIdentityRegistryContract(config.Config.GetContractAddress("identityRegistry"), client.GetClient())
-	if err != nil {
-		log.Infof("Failed to instantiate the identity registry contract: %v", err)
-	}
-	return
 }
 
 // sendRegistrationTransaction sends the actual transaction to add a Key on Ethereum registry contract
@@ -334,12 +317,15 @@ func waitAndRouteIdentityRegistrationEvent(asyncRes *gocelery.AsyncResult, confi
 	confirmations <- &WatchIdentity{pushThisIdentity, err}
 }
 
-func NewEthereumIdentityService() Service {
-	return &EthereumIdentityService{}
+// EthereumidentityService implements `Service`
+type EthereumIdentityService struct {
+	config          Config
+	factoryContract *EthereumIdentityFactoryContract
 }
 
-// EthereumidentityService implements `Service`
-type EthereumIdentityService struct{}
+func NewEthereumIdentityService(config Config, factoryContract *EthereumIdentityFactoryContract) Service {
+	return &EthereumIdentityService{config: config, factoryContract: factoryContract}
+}
 
 func (ids *EthereumIdentityService) CheckIdentityExists(centrifugeID CentID) (exists bool, err error) {
 	id := new(EthereumIdentity)
@@ -353,14 +339,8 @@ func (ids *EthereumIdentityService) CreateIdentity(centrifugeID CentID) (id Iden
 
 	id = new(EthereumIdentity)
 	id.CentrifugeID(centrifugeID)
-
-	ethIdentityFactoryContract, err := getIdentityFactoryContract()
-	if err != nil {
-		return
-	}
-
 	conn := ethereum.GetConnection()
-	opts, err := conn.GetTxOpts(config.Config.GetEthereumDefaultAccountName())
+	opts, err := conn.GetTxOpts(ids.config.GetEthereumDefaultAccountName())
 	if err != nil {
 		return nil, confirmations, err
 	}
@@ -377,7 +357,7 @@ func (ids *EthereumIdentityService) CreateIdentity(centrifugeID CentID) (id Iden
 		return nil, confirmations, wError
 	}
 
-	err = sendIdentityCreationTransaction(ethIdentityFactoryContract, opts, id)
+	err = sendIdentityCreationTransaction(ids.factoryContract, opts, id)
 	if err != nil {
 		wError := errors.Wrap(err, 1)
 		log.Infof("Failed to create transaction for identity [mockID: %s]: %v", id, wError)

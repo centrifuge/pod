@@ -53,7 +53,7 @@ func TestPurchaseOrderDocumentService_HandleAnchorPurchaseOrderDocument_Integrat
 	p2pClient := testingcommons.NewMockP2PWrapperClient()
 	s := purchaseorderservice.PurchaseOrderDocumentService{
 		Repository:            purchaseorderrepository.GetRepository(),
-		CoreDocumentProcessor: coredocumentprocessor.DefaultProcessor(identity.NewEthereumIdentityService(), p2pClient),
+		CoreDocumentProcessor: coredocumentprocessor.DefaultProcessor(identity.IDService, p2pClient),
 	}
 	p2pClient.On("GetSignaturesForDocument", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	doc := generateEmptyPurchaseOrderForProcessing()

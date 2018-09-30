@@ -37,6 +37,13 @@ func DefaultWaitForTransactionMiningContext() (ctx context.Context, cancelFunc c
 	return context.WithDeadline(context.TODO(), toBeDone)
 }
 
+type Config interface {
+	GetEthereumGasPrice() *big.Int
+	GetEthereumGasLimit() uint64
+	GetEthereumNodeURL() string
+	GetEthereumAccount(accountName string) (account *config.AccountConfig, err error)
+}
+
 // Abstract the "ethereum client" out so we can more easily support other clients
 // besides Geth (e.g. quorum)
 // Also make it easier to mock tests
@@ -54,11 +61,12 @@ type GethClient struct {
 	Host       *url.URL
 	NonceMutex *sync.Mutex
 	Accounts   map[string]*bind.TransactOpts
+	config     Config
 }
 
-func (gethClient GethClient) GetTxOpts(accountName string) (*bind.TransactOpts, error) {
+func (gethClient *GethClient) GetTxOpts(accountName string) (*bind.TransactOpts, error) {
 	if acc, ok := gethClient.Accounts[accountName]; !ok {
-		txOpts, err := GetGethTxOpts(accountName)
+		txOpts, err := gethClient.getGethTxOpts(accountName)
 		if err != nil {
 			return nil, err
 		}
@@ -85,24 +93,24 @@ func (gethClient GethClient) GetNonceMutex() *sync.Mutex {
 	return gethClient.NonceMutex
 }
 
-func NewClientConnection() (GethClient, error) {
-	log.Info("Opening connection to Ethereum:", config.Config.GetEthereumNodeURL())
-	u, err := url.Parse(config.Config.GetEthereumNodeURL())
+func NewClientConnection(config Config) (*GethClient, error) {
+	log.Info("Opening connection to Ethereum:", config.GetEthereumNodeURL())
+	u, err := url.Parse(config.GetEthereumNodeURL())
 	if err != nil {
 		log.Errorf("Failed to connect to parse ethereum.gethSocket URL: %v", err)
-		return GethClient{}, err
+		return nil, err
 	}
 	c, err := rpc.Dial(u.String())
 	if err != nil {
 		log.Errorf("Failed to connect to the Ethereum client [%s]: %v", u.String(), err)
-		return GethClient{}, err
+		return nil, err
 	}
 	client := ethclient.NewClient(c)
 	if err != nil {
 		log.Errorf("Failed to connect to the Ethereum client [%s]: %v", u.String(), err)
-		return GethClient{}, err
+		return nil, err
 	}
-	return GethClient{client, c, u, &sync.Mutex{}, make(map[string]*bind.TransactOpts)}, nil
+	return &GethClient{client, c, u, &sync.Mutex{}, make(map[string]*bind.TransactOpts), config}, nil
 }
 
 // Note that this is a singleton and is the same connection for the whole application.
@@ -118,10 +126,10 @@ func GetConnection() EthereumClient {
 	return gc
 }
 
-// GetGethTxOpts retrieves the geth transaction options for the given account name. The account name influences which configuration
+// getGethTxOpts retrieves the geth transaction options for the given account name. The account name influences which configuration
 // is used.
-func GetGethTxOpts(accountName string) (*bind.TransactOpts, error) {
-	account, err := config.Config.GetEthereumAccount(accountName)
+func (gethClient *GethClient) getGethTxOpts(accountName string) (*bind.TransactOpts, error) {
+	account, err := gethClient.config.GetEthereumAccount(accountName)
 	if err != nil {
 		err = errors.Errorf("could not find configured ethereum key for account [%v]. please check your configuration.\n", accountName)
 		log.Error(err.Error())
@@ -134,8 +142,8 @@ func GetGethTxOpts(accountName string) (*bind.TransactOpts, error) {
 		log.Error(err.Error())
 		return nil, err
 	} else {
-		authedTransactionOpts.GasPrice = config.Config.GetEthereumGasPrice()
-		authedTransactionOpts.GasLimit = config.Config.GetEthereumGasLimit()
+		authedTransactionOpts.GasPrice = gethClient.config.GetEthereumGasPrice()
+		authedTransactionOpts.GasLimit = gethClient.config.GetEthereumGasLimit()
 		return authedTransactionOpts, nil
 	}
 }

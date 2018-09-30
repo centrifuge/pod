@@ -26,7 +26,7 @@ var log = logging.Logger("context")
 // ---- Ethereum ----
 func TestFunctionalEthereumBootstrap() {
 	TestIntegrationBootstrap()
-	createEthereumConnection()
+	createEthereumConnection(config.Config)
 	bootstrapQueuing()
 }
 func TestFunctionalEthereumTearDown() {
@@ -57,8 +57,8 @@ func TestIntegrationTearDown() {
 
 // ---- End Integration Testing ----
 
-func createEthereumConnection() {
-	client, err := ethereum.NewClientConnection()
+func createEthereumConnection(config *config.Configuration) {
+	client, err := ethereum.NewClientConnection(config)
 	if err != nil {
 		panic(err)
 	}

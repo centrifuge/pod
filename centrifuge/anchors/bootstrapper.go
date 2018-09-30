@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/centrifuge/queue"
 )
@@ -17,7 +18,18 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	if _, ok := context[bootstrap.BootstrappedConfig]; !ok {
 		return errors.New("config hasn't been initialized")
 	}
-	repositoryContract, err := getRepositoryContract()
+	if _, ok := context[bootstrap.BootstrappedEthereumClient]; !ok {
+		return errors.New("ethereum client hasn't been initialized")
+	}
+
+	client := ethereum.GetConnection()
+	repositoryContract, err := NewEthereumAnchorRepositoryContract(config.Config.GetContractAddress("anchorRepository"), client.GetClient())
+	if err != nil {
+		return err
+	}
+
+	anchorRepo := NewEthereumAnchorRepository(config.Config, repositoryContract)
+	setRepository(anchorRepo)
 	if err != nil {
 		return err
 	}

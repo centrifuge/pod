@@ -40,25 +40,6 @@ func GenerateP2PRecipients(quantity int) [][]byte {
 	return recipients
 }
 
-// USE WITH CARE as this will create 2 eth transactions for each identity
-func GenerateP2PRecipientsOnEthereum(quantity int) [][]byte {
-	recipients := make([][]byte, quantity)
-	idService := identity.NewEthereumIdentityService()
-
-	for i := 0; i < quantity; i++ {
-		ID := identity.NewRandomCentID()
-		_, confirmations, _ := idService.CreateIdentity(ID)
-		<-confirmations
-		ctx, cancel := ethereum.DefaultWaitForTransactionMiningContext()
-		id, _ := idService.LookupIdentityForID(ID)
-		confirmations, _ = id.AddKeyToIdentity(ctx, identity.KeyPurposeP2p, tools.RandomSlice(32))
-		<-confirmations
-		cancel()
-		recipients[i] = ID[:]
-	}
-	return recipients
-}
-
 func GenerateCoreDocument() *coredocumentpb.CoreDocument {
 	identifier := Rand32Bytes()
 	salts := &coredocumentpb.CoreDocumentSalts{}
@@ -106,16 +87,15 @@ func (m *MockSubscription) Err() <-chan error {
 func (*MockSubscription) Unsubscribe() {}
 
 func CreateIdentityWithKeys() identity.CentID {
-	idService := identity.NewEthereumIdentityService()
 	idConfig, _ := secp256k1.GetIDConfig()
 	centIdTyped, _ := identity.NewCentID(idConfig.ID)
 	// only create identity if it doesn't exist
-	id, err := idService.LookupIdentityForID(centIdTyped)
+	id, err := identity.IDService.LookupIdentityForID(centIdTyped)
 	if err != nil {
-		_, confirmations, _ := idService.CreateIdentity(centIdTyped)
+		_, confirmations, _ := identity.IDService.CreateIdentity(centIdTyped)
 		<-confirmations
 		// LookupIdentityForId
-		id, _ = idService.LookupIdentityForID(centIdTyped)
+		id, _ = identity.IDService.LookupIdentityForID(centIdTyped)
 	}
 
 	// only add key if it doesn't exist

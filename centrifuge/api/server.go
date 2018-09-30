@@ -14,6 +14,8 @@ import (
 	"net"
 	"sync"
 
+	"time"
+
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	logging "github.com/ipfs/go-log"
@@ -129,11 +131,11 @@ func (c *CentAPIServer) Start(ctx context.Context, wg *sync.WaitGroup, startupEr
 			log.Info(err)
 			return
 		case <-ctx.Done():
-			//ctxn, _ := context.WithTimeout(context.Background(), 1*time.Second)
+			ctxn, _ := context.WithTimeout(context.Background(), 1*time.Second)
 			// gracefully shutdown the server
 			// we can only do this because srv is thread safe
 			log.Info("Shutting down API server")
-			err := srv.Close()
+			err := srv.Shutdown(ctxn)
 			if err != nil {
 				panic(err)
 			}
