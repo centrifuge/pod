@@ -18,7 +18,6 @@ import (
 
 type Config interface {
 	GetEthereumDefaultAccountName() string
-	GetContractAddress(name string) common.Address
 }
 
 type AnchorRepositoryContract interface {

@@ -11,8 +11,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
+		"github.com/ethereum/go-ethereum/core/types"
 	"github.com/go-errors/errors"
 	logging "github.com/ipfs/go-log"
 )
@@ -29,7 +28,6 @@ type IdentityContract interface {
 
 type Config interface {
 	GetEthereumDefaultAccountName() string
-	GetContractAddress(contract string) (address common.Address)
 }
 
 type EthereumIdentityKey struct {
