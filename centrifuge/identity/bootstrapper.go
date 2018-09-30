@@ -21,12 +21,19 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	if _, ok := context[bootstrap.BootstrappedEthereumClient]; !ok {
 		return errors.New("ethereum client hasn't been initialized")
 	}
+
 	idFactory, err := getIdentityFactoryContract()
 	if err != nil {
 		return err
 	}
 
-	IDService = NewEthereumIdentityService(config.Config, idFactory)
+	registryContract, err := getIdentityRegistryContract()
+	if err != nil {
+		return err
+	}
+
+	IDService = NewEthereumIdentityService(config.Config, idFactory, registryContract)
+
 	identityContract, err := getIdentityFactoryContract()
 	if err != nil {
 		return err
@@ -34,11 +41,6 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 
 	err = queue.InstallQueuedTask(context,
 		NewIdRegistrationConfirmationTask(&identityContract.EthereumIdentityFactoryContractFilterer, ethereum.DefaultWaitForTransactionMiningContext))
-	if err != nil {
-		return err
-	}
-
-	registryContract, err := getIdentityRegistryContract()
 	if err != nil {
 		return err
 	}
