@@ -15,22 +15,6 @@
     "application/json"
   ],
   "paths": {
-    "/legacy/invoice": {
-      "post": {
-        "operationId": "GetInvoiceDocument",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/invoiceInvoiceDocument"
-            }
-          }
-        },
-        "tags": [
-          "InvoiceDocumentService"
-        ]
-      }
-    },
     "/legacy/invoice/anchor": {
       "post": {
         "description": "Anchor an invoice document",
@@ -50,6 +34,32 @@
             "required": true,
             "schema": {
               "$ref": "#/definitions/invoiceAnchorInvoiceEnvelope"
+            }
+          }
+        ],
+        "tags": [
+          "InvoiceDocumentService"
+        ]
+      }
+    },
+    "/legacy/invoice/get": {
+      "post": {
+        "operationId": "GetInvoiceDocument",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/invoiceInvoiceDocument"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/invoiceGetInvoiceDocumentEnvelope"
             }
           }
         ],
@@ -259,6 +269,15 @@
           "items": {
             "type": "string"
           }
+        }
+      }
+    },
+    "invoiceGetInvoiceDocumentEnvelope": {
+      "type": "object",
+      "properties": {
+        "document_identifier": {
+          "type": "string",
+          "format": "byte"
         }
       }
     },
