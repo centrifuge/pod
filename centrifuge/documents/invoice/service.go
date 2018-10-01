@@ -14,10 +14,10 @@ type Service interface {
 	documents.ModelDeriver
 
 	// DeriverFromPayload derives InvoiceModel from clientPayload
-	DeriveFromPayload(*clientinvoicepb.InvoiceCreatePayload) (*InvoiceModel, error)
+	DeriveFromPayload(*clientinvoicepb.InvoiceCreatePayload) (documents.Model, error)
 
 	// Create validates and persists invoice Model
-	Create(inv *InvoiceModel) error
+	Create(inv documents.Model) error
 }
 
 // service implements Service and handles all invoice related persistence and validations
@@ -27,7 +27,7 @@ type service struct {
 }
 
 // DeriveFromPayload initializes the model with parameters provided from the rest-api call
-func (s service) DeriveFromPayload(invoiceInput *clientinvoicepb.InvoiceCreatePayload) (*InvoiceModel, error) {
+func (s service) DeriveFromPayload(invoiceInput *clientinvoicepb.InvoiceCreatePayload) (documents.Model, error) {
 	if invoiceInput == nil {
 		return nil, centerrors.New(code.DocumentInvalid, "input is nil")
 	}
@@ -51,7 +51,7 @@ func (s service) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (docume
 }
 
 // Create takes and invoice model and does required validation checks, tries to persist to DB
-func (s service) Create(inv *InvoiceModel) error {
+func (s service) Create(inv documents.Model) error {
 	coreDoc, err := inv.CoreDocument()
 	if err != nil {
 		return centerrors.New(code.Unknown, err.Error())

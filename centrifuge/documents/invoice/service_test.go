@@ -80,8 +80,10 @@ func TestService_Create(t *testing.T) {
 	err = GetRepository().LoadByID(coredoc.CurrentIdentifier, loadInv)
 	assert.Nil(t, err, "Load must pass")
 	assert.NotNil(t, loadInv, "must be non nil")
-	assert.Equal(t, loadInv.GrossAmount, inv.GrossAmount)
-	assert.Equal(t, loadInv.CoreDoc, inv.CoreDoc)
+
+	invType := inv.(*InvoiceModel)
+	assert.Equal(t, loadInv.GrossAmount, invType.GrossAmount)
+	assert.Equal(t, loadInv.CoreDoc, invType.CoreDoc)
 
 	// failed creation
 	err = invService.Create(inv)
