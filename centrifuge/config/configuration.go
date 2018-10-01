@@ -271,13 +271,14 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	}
 
 	if accountPassword == "" {
-		return nil, errors.New("Account Password not provided")
+		log.Warningf("Account Password not provided")
 	}
 
 	v := viper.New()
 	v.SetConfigType("yaml")
 	v.Set("storage.path", targetDataDir+"/db/centrifuge_data.leveldb")
 	v.Set("identityId", "")
+	v.Set("centrifugeNetwork", network)
 	v.Set("nodeHostname", "0.0.0.0")
 	v.Set("nodePort", apiPort)
 	v.Set("p2p.port", p2pPort)

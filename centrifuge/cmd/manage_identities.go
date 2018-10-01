@@ -17,7 +17,7 @@ var createIdentityCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		//cmd requires a config file
 		readConfigFile()
-		defaultBootstrap()
+		baseBootstrap()
 		identityService := identity.EthereumIdentityService{}
 		var centrifugeId identity.CentID
 		var err error
@@ -55,7 +55,7 @@ var addKeyCmd = &cobra.Command{
 		//cmd requires a config file
 		readConfigFile()
 
-		defaultBootstrap()
+		baseBootstrap()
 
 		var purposeInt int
 

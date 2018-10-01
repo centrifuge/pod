@@ -101,6 +101,7 @@ func (rct *IdRegistrationConfirmationTask) RunTask() (interface{}, error) {
 
 		err = utils.LookForEvent(iter)
 		if err == nil {
+			log.Infof("Received filtered event Id Registration Confirmation for CentrifugeId [%s]\n", rct.CentID.String())
 			return iter.Event, nil
 		}
 
