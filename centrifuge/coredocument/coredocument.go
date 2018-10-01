@@ -253,3 +253,20 @@ func New() *coredocumentpb.CoreDocument {
 	doc.CoredocumentSalts = salts
 	return &doc
 }
+
+//GetTypeUrl returns the type of the embedded document
+func GetTypeUrl(coreDocument *coredocumentpb.CoreDocument) (string, error) {
+
+	if coreDocument == nil {
+		return "", fmt.Errorf("core document is nil")
+	}
+
+	if coreDocument.EmbeddedData == nil {
+		return "", fmt.Errorf("core document doesn't have embedded data")
+	}
+
+	if coreDocument.EmbeddedData.TypeUrl == "" {
+		return "", fmt.Errorf("typeUrl not set properly")
+	}
+	return coreDocument.EmbeddedData.TypeUrl, nil
+}
