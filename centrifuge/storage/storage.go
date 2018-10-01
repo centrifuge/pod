@@ -35,6 +35,7 @@ type Updater interface {
 }
 
 // LegacyRepository interface combines above interfaces
+// Deprecated: use documents.Repository implementations
 type LegacyRepository interface {
 	Checker
 	Getter

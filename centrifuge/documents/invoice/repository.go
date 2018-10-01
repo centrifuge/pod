@@ -69,7 +69,7 @@ type repository struct {
 
 var repo *repository
 
-// GetRepository returns the implemented documents.Repository for invoices
+// GetRepository returns the implemented documents.legacyRepo for invoices
 func GetRepository() documents.Repository {
 	if repo == nil {
 		repo = &repository{

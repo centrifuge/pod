@@ -49,7 +49,7 @@ func generateEmptyInvoiceForProcessing() (doc *invoice.Invoice) {
 
 func TestInvoiceDocumentService_HandleAnchorInvoiceDocument_Integration(t *testing.T) {
 	p2pClient := testingcommons.NewMockP2PWrapperClient()
-	s := invoice.GRPCHandler()
+	s := invoice.LegacyGRPCHandler()
 	p2pClient.On("GetSignaturesForDocument", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	doc := generateEmptyInvoiceForProcessing()
 	doc.Document.Data = &invoicepb.InvoiceData{
@@ -72,8 +72,8 @@ func TestInvoiceDocumentService_HandleAnchorInvoiceDocument_Integration(t *testi
 //func TestInvoiceDocumentService_HandleSendInvoiceDocument_Integration(t *testing.T) {
 //	p2pClient := testingcommons.NewMockP2PWrapperClient()
 //	s := invoiceservice.grpcHandler{
-//		Repository:     invoicerepository.GetLegacyRepository(),
-//		CoreDocumentProcessor: coredocumentprocessor.DefaultProcessor(identity.NewEthereumIdentityService(), p2pClient),
+//		legacyRepo:     invoicerepository.GetLegacyRepository(),
+//		coreDocProcessor: coredocumentprocessor.DefaultProcessor(identity.NewEthereumIdentityService(), p2pClient),
 //	}
 //	p2pClient.On("GetSignaturesForDocument", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 //	doc := generateEmptyInvoiceForProcessing()

@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-// mockInvoiceRepository implements storage.Repository
+// mockInvoiceRepository implements storage.legacyRepo
 type mockInvoiceRepository struct {
 	mock.Mock
 	replaceDoc *invoicepb.InvoiceDocument
@@ -58,8 +58,8 @@ func getMockedHandler() (handler *grpcHandler, repo *mockInvoiceRepository, core
 	repo = new(mockInvoiceRepository)
 	coreDocumentProcessor = new(testingutils.MockCoreDocumentProcessor)
 	handler = &grpcHandler{
-		Repository:            repo,
-		CoreDocumentProcessor: coreDocumentProcessor,
+		legacyRepo:       repo,
+		coreDocProcessor: coreDocumentProcessor,
 	}
 	return handler, repo, coreDocumentProcessor
 }
