@@ -372,3 +372,38 @@ func TestAddKeyFromConfig_OptionNotSupported(t *testing.T) {
 	err := AddKeyFromConfig(4)
 	assert.NotNil(t, err, "it should error out")
 }
+
+func TestCentIDFromString(t *testing.T) {
+	tests := []struct {
+		id     string
+		result CentID
+		err    error
+	}{
+		{
+			id:     "010203040506",
+			result: [CentIDByteLength]byte{1, 2, 3, 4, 5, 6},
+		},
+
+		{
+			id:  "01020304050607",
+			err: fmt.Errorf("invalid length byte slice provided for centId"),
+		},
+
+		{
+			id:  "some random",
+			err: fmt.Errorf("failed to decode id"),
+		},
+	}
+
+	for _, c := range tests {
+		id, err := CentIDFromString(c.id)
+		if c.err == nil {
+			assert.Nil(t, err, "must be nil")
+			assert.Equal(t, c.result, id, "id must match")
+			continue
+		}
+
+		assert.Error(t, err, "must be a non nil error")
+		assert.Contains(t, err.Error(), c.err.Error())
+	}
+}
