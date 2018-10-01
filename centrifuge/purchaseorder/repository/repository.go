@@ -15,7 +15,7 @@ import (
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
-// levelDBRepository implements storage.Repository
+// levelDBRepository implements storage.LegacyRepository
 type levelDBRepository struct {
 	storage.DefaultLevelDB
 }
@@ -41,7 +41,7 @@ func InitLevelDBRepository(db *leveldb.DB) {
 
 // GetRepository returns a repository implementation
 // Must be called only after repository initialisation
-func GetRepository() storage.Repository {
+func GetRepository() storage.LegacyRepository {
 	if levelDBRepo == nil {
 		log.Fatal("Invoice repository not initialised")
 	}

@@ -11,7 +11,7 @@ type Bootstrapper struct{}
 
 func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	if _, ok := context[bootstrap.BootstrappedLevelDb]; ok {
-		InitLevelDBRepository(storage.GetLevelDBStorage())
+		InitLegacyRepository(storage.GetLevelDBStorage())
 		return nil
 	}
 	return errors.New("could not initialize invoice repository")

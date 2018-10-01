@@ -7,26 +7,28 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/code"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
 	"github.com/golang/protobuf/proto"
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
-// levelDBRepository implements storage.Repository
-type levelDBRepository struct {
+// legacyLevelDBRepo implements storage.LegacyRepository
+// This is a legacy repository
+type legacyLevelDBRepo struct {
 	storage.DefaultLevelDB
 }
 
-// levelDBRepo is singleton instance
-var levelDBRepo *levelDBRepository
+// legacyRepo is singleton instance
+var legacyRepo *legacyLevelDBRepo
 
 // once to guard from creating multiple instances
 var once sync.Once
 
-// InitLevelDBRepository initialises new repository if not exists
-func InitLevelDBRepository(db *leveldb.DB) {
+// InitLegacyRepository initialises new repository if not exists
+func InitLegacyRepository(db *leveldb.DB) {
 	once.Do(func() {
-		levelDBRepo = &levelDBRepository{
+		legacyRepo = &legacyLevelDBRepo{
 			storage.DefaultLevelDB{
 				KeyPrefix:    "invoice",
 				LevelDB:      db,
@@ -36,14 +38,14 @@ func InitLevelDBRepository(db *leveldb.DB) {
 	})
 }
 
-// GetRepository returns a repository implementation
+// GetLegacyRepository returns a repository implementation
 // Must be called only after repository initialisation
-func GetRepository() storage.Repository {
-	if levelDBRepo == nil {
+func GetLegacyRepository() storage.LegacyRepository {
+	if legacyRepo == nil {
 		log.Fatal("Invoice repository not initialised")
 	}
 
-	return levelDBRepo
+	return legacyRepo
 }
 
 // validate typecasts and validates the coredocument
@@ -58,4 +60,25 @@ func validate(doc proto.Message) error {
 	}
 
 	return nil
+}
+
+// repository is the invoice repository
+type repository struct {
+	documents.LevelDBRepository
+}
+
+var repo *repository
+
+// GetRepository returns the implemented documents.Repository for invoices
+func GetRepository() documents.Repository {
+	if repo == nil {
+		repo = &repository{
+			documents.LevelDBRepository{
+				KeyPrefix: "invoice",
+				LevelDB:   storage.GetLevelDBStorage(),
+			},
+		}
+	}
+
+	return repo
 }

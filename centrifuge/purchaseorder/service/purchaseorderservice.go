@@ -22,7 +22,7 @@ var log = logging.Logger("rest-api")
 
 // PurchaseOrderDocumentService needed as it is used to register the grpc services attached to the grpc server
 type PurchaseOrderDocumentService struct {
-	Repository            storage.Repository
+	Repository            storage.LegacyRepository
 	CoreDocumentProcessor coredocumentprocessor.Processor
 }
 

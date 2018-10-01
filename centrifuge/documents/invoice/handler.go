@@ -23,14 +23,14 @@ var apiLog = logging.Logger("invoice-api")
 // grpcHandler handles all the invoice document related actions
 // anchoring, sending, proof generation, finding stored invoice document
 type grpcHandler struct {
-	Repository            storage.Repository
+	Repository            storage.LegacyRepository
 	CoreDocumentProcessor coredocumentprocessor.Processor
 }
 
 // GRPCHandler returns an handler that implements InvoiceDocumentServiceServer
 func GRPCHandler() clientinvoicepb.InvoiceDocumentServiceServer {
 	return &grpcHandler{
-		Repository:            GetRepository(),
+		Repository:            GetLegacyRepository(),
 		CoreDocumentProcessor: coredocumentprocessor.DefaultProcessor(identity.IDService, p2p.NewP2PClient()),
 	}
 }

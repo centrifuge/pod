@@ -26,7 +26,7 @@ import (
 func TestMain(m *testing.M) {
 	cc.TestIntegrationBootstrap()
 	db := cc.GetLevelDBStorage()
-	InitLevelDBRepository(db)
+	InitLegacyRepository(db)
 	coredocumentrepository.InitLevelDBRepository(db)
 	flag.Parse()
 	result := m.Run()

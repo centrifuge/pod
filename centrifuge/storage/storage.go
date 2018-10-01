@@ -34,8 +34,8 @@ type Updater interface {
 	Update(id []byte, msg proto.Message) error
 }
 
-// Repository interface combines above interfaces
-type Repository interface {
+// LegacyRepository interface combines above interfaces
+type LegacyRepository interface {
 	Checker
 	Getter
 	Creator

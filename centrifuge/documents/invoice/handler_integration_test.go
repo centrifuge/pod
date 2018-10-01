@@ -24,7 +24,7 @@ import (
 func TestMain(m *testing.M) {
 	cc.TestFunctionalEthereumBootstrap()
 	db := cc.GetLevelDBStorage()
-	invoice.InitLevelDBRepository(db)
+	invoice.InitLegacyRepository(db)
 	coredocumentrepository.InitLevelDBRepository(db)
 	identity.IDService = identity.NewEthereumIdentityService()
 	testingutils.CreateIdentityWithKeys()
@@ -72,7 +72,7 @@ func TestInvoiceDocumentService_HandleAnchorInvoiceDocument_Integration(t *testi
 //func TestInvoiceDocumentService_HandleSendInvoiceDocument_Integration(t *testing.T) {
 //	p2pClient := testingcommons.NewMockP2PWrapperClient()
 //	s := invoiceservice.grpcHandler{
-//		Repository:     invoicerepository.GetRepository(),
+//		Repository:     invoicerepository.GetLegacyRepository(),
 //		CoreDocumentProcessor: coredocumentprocessor.DefaultProcessor(identity.NewEthereumIdentityService(), p2pClient),
 //	}
 //	p2pClient.On("GetSignaturesForDocument", mock.Anything, mock.Anything, mock.Anything).Return(nil)
@@ -103,7 +103,7 @@ func assertDocument(t *testing.T, err error, anchoredDoc *invoicepb.InvoiceDocum
 		"DocumentIdentifier doesn't match")
 	//Invoice document got stored in the DB
 	loadedInvoice := new(invoicepb.InvoiceDocument)
-	err = invoice.GetRepository().GetByID(doc.Document.CoreDocument.DocumentIdentifier, loadedInvoice)
+	err = invoice.GetLegacyRepository().GetByID(doc.Document.CoreDocument.DocumentIdentifier, loadedInvoice)
 	assert.Equal(t, "AUS", loadedInvoice.Data.SenderCountry,
 		"Didn't save the invoice data correctly")
 	// Invoice stored after anchoring has Salts populated
@@ -115,7 +115,7 @@ func assertDocument(t *testing.T, err error, anchoredDoc *invoicepb.InvoiceDocum
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "document already exists")
 	loadedInvoice2 := new(invoicepb.InvoiceDocument)
-	err = invoice.GetRepository().GetByID(doc.Document.CoreDocument.DocumentIdentifier, loadedInvoice2)
+	err = invoice.GetLegacyRepository().GetByID(doc.Document.CoreDocument.DocumentIdentifier, loadedInvoice2)
 	assert.Equal(t, "AUS", loadedInvoice2.Data.SenderCountry,
 		"Invoice document on DB should have not not gotten overwritten after rejected anchor call")
 }
