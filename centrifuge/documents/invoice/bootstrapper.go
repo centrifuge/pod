@@ -16,14 +16,15 @@ func (b *Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	if _, ok := context[bootstrapper.BootstrappedLevelDb]; ok {
 		InitLevelDBRepository(storage.GetLevelDBStorage())
 
-		err := b.registerInvoiceService()
-		return err
+	} else {
+		return errors.New("could not initialize invoice repository")
 	}
 
-	return errors.New("could not initialize invoice repository")
+	return registerInvoiceService()
+
 }
 
-func (*Bootstrapper) registerInvoiceService() error {
+func registerInvoiceService() error {
 
 	return documents.GetRegistryInstance().Register(documenttypes.InvoiceDataTypeUrl, &service{})
 }
