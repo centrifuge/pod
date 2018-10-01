@@ -5,7 +5,7 @@ package invoice
 import (
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrapper"
+	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 
@@ -20,7 +20,7 @@ func TestBootstrapper_Bootstrap(t *testing.T) {
 func TestBootstrapper_registerInvoiceService(t *testing.T) {
 
 	context := map[string]interface{}{}
-	context[bootstrapper.BootstrappedLevelDb] = true
+	context[bootstrap.BootstrappedLevelDb] = true
 	err := (&Bootstrapper{}).Bootstrap(context)
 	assert.Nil(t, err, "Should throw because context is passed")
 
