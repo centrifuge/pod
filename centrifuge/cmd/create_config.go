@@ -87,7 +87,7 @@ func init() {
 
 			config.Bootstrap(v.ConfigFileUsed())
 			generateKeys()
-			defaultBootstrap()
+			baseBootstrap()
 			id, err := createIdentity()
 			if err != nil {
 				panic(err)

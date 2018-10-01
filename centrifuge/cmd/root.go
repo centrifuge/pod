@@ -82,9 +82,9 @@ func setCentrifugeLoggers() {
 
 }
 
-func defaultRunBootstrap() {
+func runBootstrap() {
 	mb := cc.MainBootstrapper{}
-	mb.PopulateDefaultBootstrappers()
+	mb.PopulateRunBootstrappers()
 	err := mb.Bootstrap(map[string]interface{}{})
 	if err != nil {
 		// application must not continue to run
@@ -92,12 +92,9 @@ func defaultRunBootstrap() {
 	}
 }
 
-func defaultBootstrap() {
+func baseBootstrap() {
 	mb := cc.MainBootstrapper{}
-	mb.PopulateDefaultBootstrappers()
-	// Not ideal way to initializing resources. We need to review how we do bootstrapping, as it doesn't fit the most immediate
-	// usecases for CMD and for unit/integration testing
-	mb.Bootstrappers = mb.Bootstrappers[:len(mb.Bootstrappers)-1]
+	mb.PopulateBaseBootstrappers()
 	err := mb.Bootstrap(map[string]interface{}{})
 	if err != nil {
 		// application must not continue to run

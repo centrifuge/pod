@@ -16,7 +16,7 @@ func TestMainBootstrapper_Bootstrap(t *testing.T) {
 	// set a dummy url here so that ethereum will always fail to connect
 	config.Config.V.Set("ethereum.nodeURL", "blah")
 	m := &MainBootstrapper{}
-	m.PopulateDefaultBootstrappers()
+	m.PopulateRunBootstrappers()
 	err := m.Bootstrap(map[string]interface{}{})
 	assert.Error(t, err, "Should throw an Ethereum connection error")
 }
