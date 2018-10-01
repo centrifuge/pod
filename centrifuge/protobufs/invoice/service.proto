@@ -84,7 +84,6 @@ message NFTMintRequest {
   string identifier = 1;
   // The contract address of the registry where the token should be minted
   string registry_address = 2;
-  string token_internal_name = 3;
   repeated string proof_fields = 4;
   string deposit_address = 5;
 }
