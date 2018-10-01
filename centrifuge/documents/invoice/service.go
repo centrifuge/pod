@@ -1,18 +1,35 @@
 package invoice
 
 import (
-	"fmt"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
+	"github.com/centrifuge/go-centrifuge/centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
+	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 )
 
-type service struct{}
+// Service is a interface for invoice specific functions for deriving a valid model
+type Service interface {
+	// Embedded documents.ModelDeriver
+	documents.ModelDeriver
 
-//DeriveWithInvoiceInput can initialize the model with parameters provided from the rest-api call
-func (s *service) DeriveWithInvoiceInput(invoiceInput *InvoiceInput) (documents.Model, error) {
+	// DeriverFromPayload derives InvoiceModel from clientPayload
+	DeriveFromPayload(*clientinvoicepb.InvoiceCreatePayload) (*InvoiceModel, error)
+
+	// Create validates and persists invoice Model
+	Create(inv *InvoiceModel) error
+}
+
+// service implements Service and handles all invoice related persistence and validations
+// service always returns errors of type `centerrors` with proper error code
+type service struct {
+	repo documents.Repository
+}
+
+// DeriveFromPayload initializes the model with parameters provided from the rest-api call
+func (s service) DeriveFromPayload(invoiceInput *clientinvoicepb.InvoiceCreatePayload) (*InvoiceModel, error) {
 	if invoiceInput == nil {
-		return nil, fmt.Errorf("invoiceInput should not be nil")
+		return nil, centerrors.New(code.DocumentInvalid, "input is nil")
 	}
 
 	invoiceModel := new(InvoiceModel)
@@ -20,15 +37,31 @@ func (s *service) DeriveWithInvoiceInput(invoiceInput *InvoiceInput) (documents.
 	return invoiceModel, nil
 }
 
-//DeriveWithCoreDocument can initialize the model with a coredocument received.
-//Example: received coreDocument form other p2p node could use DeriveWithCoreDocument
-func (s *service) DeriveWithCoreDocument(cd *coredocumentpb.CoreDocument) (documents.Model, error) {
+//DeriveFromCoreDocument can initialize the model with a core document received.
+//Example: received CoreDoc form other p2p node could use DeriveWithCoreDocument
+func (s service) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (documents.Model, error) {
 	var model documents.Model
 	model = new(InvoiceModel)
 	err := model.FromCoreDocument(cd)
 	if err != nil {
-		return nil, err
+		return nil, centerrors.New(code.Unknown, "")
 	}
 
 	return model, nil
+}
+
+// Create takes and invoice model and does required validation checks, tries to persist to DB
+func (s service) Create(inv *InvoiceModel) error {
+	coreDoc, err := inv.CoreDocument()
+	if err != nil {
+		return centerrors.New(code.Unknown, err.Error())
+	}
+
+	// we use currentIdentifier as the id instead of document Identifier
+	err = s.repo.Create(coreDoc.CurrentIdentifier, inv)
+	if err != nil {
+		return centerrors.New(code.Unknown, err.Error())
+	}
+
+	return nil
 }

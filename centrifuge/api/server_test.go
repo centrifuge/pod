@@ -4,12 +4,27 @@ package api
 
 import (
 	"context"
+	"flag"
+	"os"
 	"sync"
 	"testing"
 
+	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
+	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents/invoice"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestMain(m *testing.M) {
+	cc.TestIntegrationBootstrap()
+	db := cc.GetLevelDBStorage()
+	invoice.InitLegacyRepository(db)
+	coredocumentrepository.InitLevelDBRepository(db)
+	flag.Parse()
+	result := m.Run()
+	cc.TestIntegrationTearDown()
+	os.Exit(result)
+}
 
 func TestCentAPIServer_StartHappy(t *testing.T) {
 	//capi := NewCentAPIServer("0.0.0.0:9000", 9000, "")
@@ -23,7 +38,6 @@ func TestCentAPIServer_StartHappy(t *testing.T) {
 }
 
 func TestCentAPIServer_StartContextCancel(t *testing.T) {
-	invoice.InitLegacyRepository(nil)
 	capi := NewCentAPIServer("0.0.0.0:9000", 9000, "")
 	ctx, canc := context.WithCancel(context.Background())
 	startErr := make(chan error)

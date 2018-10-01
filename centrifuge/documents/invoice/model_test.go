@@ -64,12 +64,12 @@ func TestInvoice_CoreDocument_successful(t *testing.T) {
 
 	invoiceModel := &InvoiceModel{}
 
-	//init model with a coreDocument
+	//init model with a CoreDoc
 	coreDocument := testinginvoice.CreateCDWithEmbeddedInvoice(t, testinginvoice.CreateInvoiceData())
 	invoiceModel.FromCoreDocument(coreDocument)
 
 	returnedCoreDocument, err := invoiceModel.CoreDocument()
-	assert.Nil(t, err, "transformation from invoice to coreDocument failed")
+	assert.Nil(t, err, "transformation from invoice to CoreDoc failed")
 
 	assert.Equal(t, coreDocument.EmbeddedData, returnedCoreDocument.EmbeddedData, "embeddedData should be the same")
 	assert.Equal(t, coreDocument.EmbeddedDataSalts, returnedCoreDocument.EmbeddedDataSalts, "embeddedDataSalt should be the same")
@@ -95,7 +95,7 @@ func TestInvoice_Type(t *testing.T) {
 func TestInvoice_JSON(t *testing.T) {
 	invoiceModel := &InvoiceModel{}
 
-	//init model with a coreDocument
+	//init model with a CoreDoc
 	coreDocument := testinginvoice.CreateCDWithEmbeddedInvoice(t, testinginvoice.CreateInvoiceData())
 	invoiceModel.FromCoreDocument(coreDocument)
 

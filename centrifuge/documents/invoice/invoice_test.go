@@ -28,6 +28,7 @@ func TestMain(m *testing.M) {
 	db := cc.GetLevelDBStorage()
 	InitLegacyRepository(db)
 	coredocumentrepository.InitLevelDBRepository(db)
+	invService = &service{repo: GetRepository()}
 	flag.Parse()
 	result := m.Run()
 	cc.TestIntegrationTearDown()
@@ -74,7 +75,7 @@ func TestInvoiceCoreDocumentConverter(t *testing.T) {
 	assert.Nil(t, err, "Error marshaling generatedCoreDocument")
 
 	coreDocumentBytes, err := proto.Marshal(&coreDocument)
-	assert.Nil(t, err, "Error marshaling coreDocument")
+	assert.Nil(t, err, "Error marshaling CoreDoc")
 	assert.Equal(t, coreDocumentBytes, generatedCoreDocumentBytes,
 		"Generated & converted documents are not identical")
 

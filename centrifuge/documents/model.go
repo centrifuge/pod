@@ -14,6 +14,7 @@ type Model interface {
 	Type() reflect.Type
 
 	// Convert the model into a core document to be transported. It embeds the business object specific fields into the `EmbeddedData` field.
+	// If the document.Model is new, core document identifiers must be initialised as well
 	CoreDocument() (*coredocumentpb.CoreDocument, error)
 
 	// FromCoreDocument sets fields from given CoreDocument into the model

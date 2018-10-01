@@ -275,3 +275,7 @@ func TestInvoiceDocumentService_HandleCreateInvoiceProof_NotExistingInvoice(t *t
 	assert.Nil(t, invoiceProof)
 	assert.Error(t, err)
 }
+
+func TestGRPCHandler_Create(t *testing.T) {
+
+}

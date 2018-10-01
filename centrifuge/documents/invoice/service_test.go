@@ -5,26 +5,28 @@ package invoice
 import (
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
-
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
+	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
+	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
 	"github.com/stretchr/testify/assert"
 )
 
-func createInvoiceInput() InvoiceInput {
-	return InvoiceInput{GrossAmount: 42}
+var invService Service
+
+func createPayload() *clientinvoicepb.InvoiceCreatePayload {
+	return &clientinvoicepb.InvoiceCreatePayload{
+		Data: &clientinvoicepb.InvoiceData{
+			GrossAmount: 42,
+		},
+	}
 }
 
-func TestService_DeriveWithCoreDocument_successful(t *testing.T) {
+func TestService_DeriveFromCoreDocument_successful(t *testing.T) {
 	coreDocument := testinginvoice.CreateCDWithEmbeddedInvoice(t, testinginvoice.CreateInvoiceData())
-	invoiceService := &service{}
 	var model documents.Model
 	var err error
 
-	var modelDeriver ModelDeriver
-	modelDeriver = invoiceService
-
-	model, err = modelDeriver.DeriveWithCoreDocument(coreDocument)
+	model, err = invService.DeriveFromCoreDocument(coreDocument)
 	assert.Nil(t, err, "valid core document with embedded invoice shouldn't produce an error")
 
 	receivedCoreDocument, err := model.CoreDocument()
@@ -36,21 +38,17 @@ func TestService_DeriveWithCoreDocument_successful(t *testing.T) {
 }
 
 func TestService_DeriveWithCoreDocument_invalid(t *testing.T) {
-	invoiceService := &service{}
 	var err error
-
-	_, err = invoiceService.DeriveWithCoreDocument(nil)
+	_, err = invService.DeriveFromCoreDocument(nil)
 	assert.Error(t, err, "core document equals nil should produce an error")
 }
 
-func TestService_DeriveWithInvoiceInput_successful(t *testing.T) {
-	invoiceInput := createInvoiceInput()
-	var modelDeriver ModelDeriver
-	modelDeriver = &service{}
+func TestService_DeriveFromPayload_successful(t *testing.T) {
+	payload := createPayload()
 	var model documents.Model
 	var err error
 
-	model, err = modelDeriver.DeriveWithInvoiceInput(&invoiceInput)
+	model, err = invService.DeriveFromPayload(payload)
 	assert.Nil(t, err, "valid invoiceData shouldn't produce an error")
 
 	receivedCoreDocument, err := model.CoreDocument()
@@ -60,10 +58,33 @@ func TestService_DeriveWithInvoiceInput_successful(t *testing.T) {
 
 }
 
-func TestService_DeriveWithInvoiceInput_invalid(t *testing.T) {
-	invoiceService := &service{}
+func TestService_DeriveFromPayload_invalid(t *testing.T) {
 	var err error
-
-	_, err = invoiceService.DeriveWithInvoiceInput(nil)
+	_, err = invService.DeriveFromPayload(nil)
 	assert.Error(t, err, "DeriveWithInvoiceInput should produce an error if invoiceInput equals nil")
+}
+
+func TestService_Create(t *testing.T) {
+	payload := createPayload()
+	inv, err := invService.DeriveFromPayload(payload)
+	assert.Nil(t, err, "must be non nil")
+
+	// successful creation
+	err = invService.Create(inv)
+	assert.Nil(t, err, "create must pass")
+
+	coredoc, err := inv.CoreDocument()
+	assert.Nil(t, err, "must be converted to coredocument")
+
+	loadInv := new(InvoiceModel)
+	err = GetRepository().LoadByID(coredoc.CurrentIdentifier, loadInv)
+	assert.Nil(t, err, "Load must pass")
+	assert.NotNil(t, loadInv, "must be non nil")
+	assert.Equal(t, loadInv.GrossAmount, inv.GrossAmount)
+	assert.Equal(t, loadInv.CoreDoc, inv.CoreDoc)
+
+	// failed creation
+	err = invService.Create(inv)
+	assert.Error(t, err, "must fail")
+	assert.Contains(t, err.Error(), "document already exists")
 }

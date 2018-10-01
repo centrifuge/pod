@@ -1,6 +1,7 @@
 package invoice
 
 import (
+	"encoding/hex"
 	"fmt"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -9,7 +10,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/processor"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
-	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/centrifuge/p2p"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
@@ -25,9 +25,9 @@ var apiLog = logging.Logger("invoice-api")
 // grpcHandler handles all the invoice document related actions
 // anchoring, sending, proof generation, finding stored invoice document
 type grpcHandler struct {
-	repo             documents.Repository
 	legacyRepo       storage.LegacyRepository
 	coreDocProcessor coredocumentprocessor.Processor
+	service          Service
 }
 
 // LegacyGRPCHandler returns an handler that implements InvoiceDocumentServiceServer
@@ -42,8 +42,10 @@ func LegacyGRPCHandler() legacyinvoicepb.InvoiceDocumentServiceServer {
 // GRPCHandler returns an implementation of invoice.DocumentServiceServer
 func GRPCHandler() clientinvoicepb.DocumentServiceServer {
 	return &grpcHandler{
-		repo:             GetRepository(),
 		coreDocProcessor: coredocumentprocessor.DefaultProcessor(identity.IDService, p2p.NewP2PClient()),
+		service: service{
+			repo: GetRepository(),
+		},
 	}
 }
 
@@ -196,7 +198,32 @@ func (h *grpcHandler) GetReceivedInvoiceDocuments(ctx context.Context, empty *em
 
 // Create handles the creation of the invoices and anchoring the documents on chain
 func (h *grpcHandler) Create(ctx context.Context, req *clientinvoicepb.InvoiceCreatePayload) (*clientinvoicepb.InvoiceResponse, error) {
-	return nil, fmt.Errorf("not implemented yet")
+	doc, err := h.service.DeriveFromPayload(req)
+	if err != nil {
+		return nil, err
+	}
+
+	// validate and persist
+	err = h.service.Create(doc)
+	if err != nil {
+		return nil, err
+	}
+
+	coreDoc, err := doc.CoreDocument()
+	if err != nil {
+		return nil, err
+	}
+
+	header := &clientinvoicepb.ResponseHeader{
+		DocumentId:    hex.EncodeToString(coreDoc.DocumentIdentifier),
+		VersionId:     hex.EncodeToString(coreDoc.CurrentIdentifier),
+		Collaborators: req.Collaborators,
+	}
+
+	return &clientinvoicepb.InvoiceResponse{
+		Header: header,
+		Data:   req.Data,
+	}, nil
 }
 
 // Update handles the document update
