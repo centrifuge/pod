@@ -38,6 +38,9 @@
                 <a href="#operation--invoice--identifier--get"> GET /invoice/{identifier} </a>
               </li>
               <li>
+                <a href="#operation--invoice--identifier--post"> POST /invoice/{identifier} </a>
+              </li>
+              <li>
                 <a href="#operation--invoice--identifier--put"> PUT /invoice/{identifier} </a>
               </li>
               <li>
@@ -114,6 +117,7 @@
           <a href="#definition-invoiceInvoiceData"> invoiceInvoiceData </a>
           <a href="#definition-invoiceInvoiceResponse"> invoiceInvoiceResponse </a>
           <a href="#definition-invoiceInvoiceUpdatePayload"> invoiceInvoiceUpdatePayload </a>
+          <a href="#definition-invoiceNFTMintResponse"> invoiceNFTMintResponse </a>
           <a href="#definition-invoiceResponseHeader"> invoiceResponseHeader </a>
           <a href="#definition-coredocumentCoreDocument"> coredocumentCoreDocument </a>
           <a href="#definition-coredocumentCoreDocumentSalts"> coredocumentCoreDocumentSalts </a>
@@ -481,6 +485,80 @@
     <span class="hljs-attr">&quot;date_created&quot;</span>: <span class="hljs-string">&quot;string (date-time)&quot;</span>,
     <span class="hljs-attr">&quot;extra_data&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>
   }
+}
+</code></pre>
+                  <!-- </div> -->
+                </section>
+              </div>
+            </div>
+          </div>
+          <div id="operation--invoice--identifier--post" class="operation panel" data-traverse-target="operation--invoice--identifier--post">
+            <!-- <section class="operation-tags row"> -->
+            <!-- <div class="doc-copy"> -->
+            <div class="operation-tags">
+              <a class="label" href="#tag-DocumentService">DocumentService</a>
+              <!---->
+            </div>
+            <!-- </div> -->
+            <!-- </section> -->
+            <h2 class="operation-title">
+              <span class="operation-name">
+                <span class="operation-name">POST</span>
+                <span class="operation-path">/invoice/{identifier}</span>
+              </span>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <section class="swagger-operation-description">
+                  <p>Get the current invoice</p>
+                </section>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <section class="swagger-request-params">
+                  <div class="prop-row prop-group">
+                    <div class="prop-name">
+                      <div class="prop-title">identifier</div>
+                      <span class="json-property-required"></span>
+                      <div class="prop-subtitle"> in path </div>
+                      <div class="prop-subtitle">
+                        <span class="json-property-type">string</span>
+                        <span class="json-property-range" title="Value limits"></span>
+                      </div>
+                    </div>
+                    <div class="prop-value">
+                      <p>Document identifier</p>
+                    </div>
+                  </div>
+                </section>
+              </div>
+              <div class="doc-examples"></div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <section class="swagger-responses">
+                  <div class="prop-row prop-group">
+                    <div class="prop-name">
+                      <div class="prop-title">200 OK</div>
+                      <div class="prop-ref">
+                        <span class="">
+                          <a class="json-schema-ref" href="#/definitions/invoiceNFTMintResponse">invoiceNFTMintResponse</a>
+                        </span>
+                      </div>
+                      <!-- <span class="swagger-global"></span> <span class="json-schema-reference"><a href=""></a></span> -->
+                    </div>
+                    <div class="prop-value"> </div>
+                  </div>
+                </section>
+              </div>
+              <div class="doc-examples">
+                <section>
+                  <h5>Response Example
+                    <span>(200 OK)</span>
+                  </h5>
+                  <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
+  <span class="hljs-attr">&quot;token_id&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>
 }
 </code></pre>
                   <!-- </div> -->
@@ -3965,6 +4043,39 @@
     <span class="hljs-attr">&quot;date_created&quot;</span>: <span class="hljs-string">&quot;string (date-time)&quot;</span>,
     <span class="hljs-attr">&quot;extra_data&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>
   }
+}
+</code></pre>
+                  <!-- </div> -->
+                </section>
+              </div>
+            </div>
+          </div>
+          <div id="definition-invoiceNFTMintResponse" class="definition panel" data-traverse-target="definition-invoiceNFTMintResponse">
+            <h2 class="panel-title">
+              <a name="/definitions/invoiceNFTMintResponse"></a>invoiceNFTMintResponse: object
+              <!-- <span class="json-property-type"><span class="json-property-type">object</span>
+              <span class="json-property-range" title="Value limits"></span>
+              
+              
+              </span> -->
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <section class="json-schema-properties">
+                  <dl>
+                    <dt data-property-name="token_id">
+                      <span class="json-property-name">token_id:</span>
+                      <span class="json-property-type">string</span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
+                  </dl>
+                </section>
+              </div>
+              <div class="doc-examples">
+                <section>
+                  <h5>Example</h5>
+                  <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
+  <span class="hljs-attr">&quot;token_id&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>
 }
 </code></pre>
                   <!-- </div> -->
