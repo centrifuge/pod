@@ -3,7 +3,7 @@ package coredocumentrepository
 import (
 	"errors"
 
-	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrapper"
+	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
 )
 
@@ -12,7 +12,7 @@ type Bootstrapper struct{}
 
 // Bootstrap initiates the coredocument repository
 func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
-	if _, ok := context[bootstrapper.BootstrappedLevelDb]; ok {
+	if _, ok := context[bootstrap.BootstrappedLevelDb]; ok {
 		InitLevelDBRepository(storage.GetLevelDBStorage())
 		return nil
 	}

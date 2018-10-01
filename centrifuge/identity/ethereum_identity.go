@@ -7,7 +7,7 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/ethereum"
-	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519"
+	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	"github.com/centrifuge/go-centrifuge/centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/centrifuge/gocelery"
@@ -46,7 +46,7 @@ func (idk *EthereumIdentityKey) GetRevokedAt() *big.Int {
 }
 
 func (idk *EthereumIdentityKey) String() string {
-	peerID, _ := ed25519.PublicKeyToP2PKey(idk.Key)
+	peerID, _ := ed25519keys.PublicKeyToP2PKey(idk.Key)
 	return fmt.Sprintf("%s", peerID.Pretty())
 }
 
@@ -112,7 +112,7 @@ func (id *EthereumIdentity) GetCurrentP2PKey() (ret string, err error) {
 		return
 	}
 	key32, _ := tools.SliceToByte32(key)
-	p2pId, err := ed25519.PublicKeyToP2PKey(key32)
+	p2pId, err := ed25519keys.PublicKeyToP2PKey(key32)
 	if err != nil {
 		return
 	}

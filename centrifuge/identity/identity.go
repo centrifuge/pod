@@ -12,7 +12,7 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519"
+	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/secp256k1"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 )
@@ -211,9 +211,9 @@ func AddKeyFromConfig(purpose int) error {
 
 	switch purpose {
 	case KeyPurposeP2p:
-		identityConfig, err = ed25519.GetIDConfig()
+		identityConfig, err = ed25519keys.GetIDConfig()
 	case KeyPurposeSigning:
-		identityConfig, err = ed25519.GetIDConfig()
+		identityConfig, err = ed25519keys.GetIDConfig()
 	case KeyPurposeEthMsgAuth:
 		identityConfig, err = secp256k1.GetIDConfig()
 	default:

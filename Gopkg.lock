@@ -784,14 +784,6 @@
   version = "v1.8.0"
 
 [[projects]]
-  branch = "master"
-  digest = "1:896d4abe64596957dc46c8d1adceb0128651acba167852a7a3af5ed82a1ec58f"
-  name = "github.com/matryer/resync"
-  packages = ["."]
-  pruneopts = "T"
-  revision = "d39c09a11215c84aab0b65e323fc47dd6e276af1"
-
-[[projects]]
   digest = "1:c658e84ad3916da105a761660dcaeb01e63416c8ec7bc62256a9b411a05fcd67"
   name = "github.com/mattn/go-colorable"
   packages = ["."]
@@ -1398,7 +1390,6 @@
     "github.com/libp2p/go-libp2p-peer",
     "github.com/libp2p/go-libp2p-peerstore",
     "github.com/magiconair/properties/assert",
-    "github.com/matryer/resync",
     "github.com/mitchellh/go-homedir",
     "github.com/multiformats/go-multiaddr",
     "github.com/multiformats/go-multihash",

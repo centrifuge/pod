@@ -49,10 +49,10 @@
             <a href="#tag-InvoiceDocumentService">InvoiceDocumentService</a>
             <ul>
               <li>
-                <a href="#operation--legacy-invoice-post"> POST /legacy/invoice </a>
+                <a href="#operation--legacy-invoice-anchor-post"> POST /legacy/invoice/anchor </a>
               </li>
               <li>
-                <a href="#operation--legacy-invoice-anchor-post"> POST /legacy/invoice/anchor </a>
+                <a href="#operation--legacy-invoice-get-post"> POST /legacy/invoice/get </a>
               </li>
               <li>
                 <a href="#operation--legacy-invoice-getReceived-get"> GET /legacy/invoice/getReceived </a>
@@ -120,6 +120,7 @@
           <a href="#definition-coredocumentSignature"> coredocumentSignature </a>
           <a href="#definition-invoiceAnchorInvoiceEnvelope"> invoiceAnchorInvoiceEnvelope </a>
           <a href="#definition-invoiceCreateInvoiceProofEnvelope"> invoiceCreateInvoiceProofEnvelope </a>
+          <a href="#definition-invoiceGetInvoiceDocumentEnvelope"> invoiceGetInvoiceDocumentEnvelope </a>
           <a href="#definition-invoiceInvoiceDataSalts"> invoiceInvoiceDataSalts </a>
           <a href="#definition-invoiceInvoiceDocument"> invoiceInvoiceDocument </a>
           <a href="#definition-invoiceInvoiceProof"> invoiceInvoiceProof </a>
@@ -770,138 +771,6 @@
             </div>
           </div>
           <h1 id="tag-InvoiceDocumentService" class="swagger-summary-tag" data-traverse-target="tag-InvoiceDocumentService">InvoiceDocumentService</h1>
-          <div id="operation--legacy-invoice-post" class="operation panel" data-traverse-target="operation--legacy-invoice-post">
-            <!-- <section class="operation-tags row"> -->
-            <!-- <div class="doc-copy"> -->
-            <div class="operation-tags">
-              <a class="label" href="#tag-InvoiceDocumentService">InvoiceDocumentService</a>
-              <!---->
-            </div>
-            <!-- </div> -->
-            <!-- </section> -->
-            <h2 class="operation-title">
-              <span class="operation-name">
-                <span class="operation-name">POST</span>
-                <span class="operation-path">/legacy/invoice</span>
-              </span>
-            </h2>
-            <div class="doc-row">
-              <div class="doc-copy"> </div>
-              <div class="doc-examples"></div>
-            </div>
-            <div class="doc-row">
-              <div class="doc-copy">
-                <section class="swagger-responses">
-                  <div class="prop-row prop-group">
-                    <div class="prop-name">
-                      <div class="prop-title">200 OK</div>
-                      <div class="prop-ref">
-                        <span class="">
-                          <a class="json-schema-ref" href="#/definitions/invoiceInvoiceDocument">invoiceInvoiceDocument</a>
-                        </span>
-                      </div>
-                      <!-- <span class="swagger-global"></span> <span class="json-schema-reference"><a href=""></a></span> -->
-                    </div>
-                    <div class="prop-value"> </div>
-                  </div>
-                </section>
-              </div>
-              <div class="doc-examples">
-                <section>
-                  <h5>Response Example
-                    <span>(200 OK)</span>
-                  </h5>
-                  <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
-  <span class="hljs-attr">&quot;core_document&quot;</span>: {
-    <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;document_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;signing_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;signatures&quot;</span>: [
-      {
-        <span class="hljs-attr">&quot;entity_id&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-        <span class="hljs-attr">&quot;public_key&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-        <span class="hljs-attr">&quot;signature&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-        <span class="hljs-attr">&quot;timestamp&quot;</span>: <span class="hljs-string">&quot;string (date-time)&quot;</span>
-      }
-    ],
-    <span class="hljs-attr">&quot;embedded_data&quot;</span>: {
-      <span class="hljs-attr">&quot;type_url&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
-      <span class="hljs-attr">&quot;value&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
-    },
-    <span class="hljs-attr">&quot;embedded_data_salts&quot;</span>: {
-      <span class="hljs-attr">&quot;type_url&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
-      <span class="hljs-attr">&quot;value&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
-    },
-    <span class="hljs-attr">&quot;coredocument_salts&quot;</span>: {
-      <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
-    }
-  },
-  <span class="hljs-attr">&quot;data&quot;</span>: {
-    <span class="hljs-attr">&quot;invoice_status&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
-    <span class="hljs-attr">&quot;invoice_number&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
-    <span class="hljs-attr">&quot;sender_name&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
-    <span class="hljs-attr">&quot;sender_street&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
-    <span class="hljs-attr">&quot;sender_city&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
-    <span class="hljs-attr">&quot;sender_zipcode&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
-    <span class="hljs-attr">&quot;sender_country&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
-    <span class="hljs-attr">&quot;recipient_name&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
-    <span class="hljs-attr">&quot;recipient_street&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
-    <span class="hljs-attr">&quot;recipient_city&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
-    <span class="hljs-attr">&quot;recipient_zipcode&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
-    <span class="hljs-attr">&quot;recipient_country&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
-    <span class="hljs-attr">&quot;currency&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
-    <span class="hljs-attr">&quot;gross_amount&quot;</span>: <span class="hljs-string">&quot;string (int64)&quot;</span>,
-    <span class="hljs-attr">&quot;net_amount&quot;</span>: <span class="hljs-string">&quot;string (int64)&quot;</span>,
-    <span class="hljs-attr">&quot;tax_amount&quot;</span>: <span class="hljs-string">&quot;string (int64)&quot;</span>,
-    <span class="hljs-attr">&quot;tax_rate&quot;</span>: <span class="hljs-string">&quot;string (int64)&quot;</span>,
-    <span class="hljs-attr">&quot;recipient&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
-    <span class="hljs-attr">&quot;sender&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
-    <span class="hljs-attr">&quot;payee&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
-    <span class="hljs-attr">&quot;comment&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
-    <span class="hljs-attr">&quot;due_date&quot;</span>: <span class="hljs-string">&quot;string (date-time)&quot;</span>,
-    <span class="hljs-attr">&quot;date_created&quot;</span>: <span class="hljs-string">&quot;string (date-time)&quot;</span>,
-    <span class="hljs-attr">&quot;extra_data&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>
-  },
-  <span class="hljs-attr">&quot;salts&quot;</span>: {
-    <span class="hljs-attr">&quot;invoice_number&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;sender_name&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;sender_street&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;sender_city&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;sender_zipcode&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;sender_country&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;recipient_name&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;recipient_street&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;recipient_city&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;recipient_zipcode&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;recipient_country&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;currency&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;gross_amount&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;net_amount&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;tax_amount&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;tax_rate&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;recipient&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;sender&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;payee&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;comment&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;due_date&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;date_created&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;extra_data&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
-  }
-}
-</code></pre>
-                  <!-- </div> -->
-                </section>
-              </div>
-            </div>
-          </div>
           <div id="operation--legacy-invoice-anchor-post" class="operation panel" data-traverse-target="operation--legacy-invoice-anchor-post">
             <!-- <section class="operation-tags row"> -->
             <!-- <div class="doc-copy"> -->
@@ -1032,6 +901,164 @@
       <span class="hljs-attr">&quot;extra_data&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
     }
   }
+}
+</code></pre>
+                  <!-- </div> -->
+                </section>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <section class="swagger-responses">
+                  <div class="prop-row prop-group">
+                    <div class="prop-name">
+                      <div class="prop-title">200 OK</div>
+                      <div class="prop-ref">
+                        <span class="">
+                          <a class="json-schema-ref" href="#/definitions/invoiceInvoiceDocument">invoiceInvoiceDocument</a>
+                        </span>
+                      </div>
+                      <!-- <span class="swagger-global"></span> <span class="json-schema-reference"><a href=""></a></span> -->
+                    </div>
+                    <div class="prop-value"> </div>
+                  </div>
+                </section>
+              </div>
+              <div class="doc-examples">
+                <section>
+                  <h5>Response Example
+                    <span>(200 OK)</span>
+                  </h5>
+                  <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
+  <span class="hljs-attr">&quot;core_document&quot;</span>: {
+    <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;document_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;signing_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;signatures&quot;</span>: [
+      {
+        <span class="hljs-attr">&quot;entity_id&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;public_key&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;signature&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;timestamp&quot;</span>: <span class="hljs-string">&quot;string (date-time)&quot;</span>
+      }
+    ],
+    <span class="hljs-attr">&quot;embedded_data&quot;</span>: {
+      <span class="hljs-attr">&quot;type_url&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+      <span class="hljs-attr">&quot;value&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
+    },
+    <span class="hljs-attr">&quot;embedded_data_salts&quot;</span>: {
+      <span class="hljs-attr">&quot;type_url&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+      <span class="hljs-attr">&quot;value&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
+    },
+    <span class="hljs-attr">&quot;coredocument_salts&quot;</span>: {
+      <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
+    }
+  },
+  <span class="hljs-attr">&quot;data&quot;</span>: {
+    <span class="hljs-attr">&quot;invoice_status&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+    <span class="hljs-attr">&quot;invoice_number&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+    <span class="hljs-attr">&quot;sender_name&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+    <span class="hljs-attr">&quot;sender_street&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+    <span class="hljs-attr">&quot;sender_city&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+    <span class="hljs-attr">&quot;sender_zipcode&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+    <span class="hljs-attr">&quot;sender_country&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+    <span class="hljs-attr">&quot;recipient_name&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+    <span class="hljs-attr">&quot;recipient_street&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+    <span class="hljs-attr">&quot;recipient_city&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+    <span class="hljs-attr">&quot;recipient_zipcode&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+    <span class="hljs-attr">&quot;recipient_country&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+    <span class="hljs-attr">&quot;currency&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+    <span class="hljs-attr">&quot;gross_amount&quot;</span>: <span class="hljs-string">&quot;string (int64)&quot;</span>,
+    <span class="hljs-attr">&quot;net_amount&quot;</span>: <span class="hljs-string">&quot;string (int64)&quot;</span>,
+    <span class="hljs-attr">&quot;tax_amount&quot;</span>: <span class="hljs-string">&quot;string (int64)&quot;</span>,
+    <span class="hljs-attr">&quot;tax_rate&quot;</span>: <span class="hljs-string">&quot;string (int64)&quot;</span>,
+    <span class="hljs-attr">&quot;recipient&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+    <span class="hljs-attr">&quot;sender&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+    <span class="hljs-attr">&quot;payee&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+    <span class="hljs-attr">&quot;comment&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+    <span class="hljs-attr">&quot;due_date&quot;</span>: <span class="hljs-string">&quot;string (date-time)&quot;</span>,
+    <span class="hljs-attr">&quot;date_created&quot;</span>: <span class="hljs-string">&quot;string (date-time)&quot;</span>,
+    <span class="hljs-attr">&quot;extra_data&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>
+  },
+  <span class="hljs-attr">&quot;salts&quot;</span>: {
+    <span class="hljs-attr">&quot;invoice_number&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;sender_name&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;sender_street&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;sender_city&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;sender_zipcode&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;sender_country&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;recipient_name&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;recipient_street&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;recipient_city&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;recipient_zipcode&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;recipient_country&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;currency&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;gross_amount&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;net_amount&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;tax_amount&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;tax_rate&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;recipient&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;sender&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;payee&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;comment&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;due_date&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;date_created&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;extra_data&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
+  }
+}
+</code></pre>
+                  <!-- </div> -->
+                </section>
+              </div>
+            </div>
+          </div>
+          <div id="operation--legacy-invoice-get-post" class="operation panel" data-traverse-target="operation--legacy-invoice-get-post">
+            <!-- <section class="operation-tags row"> -->
+            <!-- <div class="doc-copy"> -->
+            <div class="operation-tags">
+              <a class="label" href="#tag-InvoiceDocumentService">InvoiceDocumentService</a>
+              <!---->
+            </div>
+            <!-- </div> -->
+            <!-- </section> -->
+            <h2 class="operation-title">
+              <span class="operation-name">
+                <span class="operation-name">POST</span>
+                <span class="operation-path">/legacy/invoice/get</span>
+              </span>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <section class="swagger-request-body">
+                  <div class="prop-row">
+                    <div class="prop-name">
+                      <div class="swagger-request-model">
+                        <span class="">
+                          <a class="json-schema-ref" href="#/definitions/invoiceGetInvoiceDocumentEnvelope">invoiceGetInvoiceDocumentEnvelope</a>
+                        </span>
+                      </div>
+                    </div>
+                    <div class="prop-value columns small-6">
+                      <!-- <div class="swagger-request-description"> -->
+                      <p>undefined</p>
+                      <!-- </div> -->
+                    </div>
+                  </div>
+                </section>
+              </div>
+              <div class="doc-examples">
+                <section>
+                  <h5>Request Example</h5>
+                  <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
+  <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
 }
 </code></pre>
                   <!-- </div> -->
@@ -4462,6 +4489,40 @@
   <span class="hljs-attr">&quot;fields&quot;</span>: [
     <span class="hljs-string">&quot;string&quot;</span>
   ]
+}
+</code></pre>
+                  <!-- </div> -->
+                </section>
+              </div>
+            </div>
+          </div>
+          <div id="definition-invoiceGetInvoiceDocumentEnvelope" class="definition panel" data-traverse-target="definition-invoiceGetInvoiceDocumentEnvelope">
+            <h2 class="panel-title">
+              <a name="/definitions/invoiceGetInvoiceDocumentEnvelope"></a>invoiceGetInvoiceDocumentEnvelope: object
+              <!-- <span class="json-property-type"><span class="json-property-type">object</span>
+              <span class="json-property-range" title="Value limits"></span>
+              
+              
+              </span> -->
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <section class="json-schema-properties">
+                  <dl>
+                    <dt data-property-name="document_identifier">
+                      <span class="json-property-name">document_identifier:</span>
+                      <span class="json-property-type">string</span>
+                      <span class="json-property-format">(byte)</span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
+                  </dl>
+                </section>
+              </div>
+              <div class="doc-examples">
+                <section>
+                  <h5>Example</h5>
+                  <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
+  <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
 }
 </code></pre>
                   <!-- </div> -->

@@ -1,4 +1,4 @@
-package server
+package api
 
 import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents/invoice"
@@ -12,22 +12,23 @@ import (
 	"google.golang.org/grpc"
 )
 
-// RegisterServices registers all endpoints to the grpc server
-func RegisterServices(grpcServer *grpc.Server, ctx context.Context, gwmux *runtime.ServeMux, addr string, dopts []grpc.DialOption) {
+// registerServices registers all endpoints to the grpc server
+func registerServices(ctx context.Context, grpcServer *grpc.Server, gwmux *runtime.ServeMux, addr string, dopts []grpc.DialOption) error {
 	invoicepb.RegisterInvoiceDocumentServiceServer(grpcServer, invoice.GRPCHandler())
 	err := invoicepb.RegisterInvoiceDocumentServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	purchaseorderpb.RegisterPurchaseOrderDocumentServiceServer(grpcServer, &purchaseordercontroller.PurchaseOrderDocumentController{})
 	err = purchaseorderpb.RegisterPurchaseOrderDocumentServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	healthpb.RegisterHealthCheckServiceServer(grpcServer, &healthcheckcontroller.HealthCheckController{})
 	err = healthpb.RegisterHealthCheckServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
 	if err != nil {
-		panic(err)
+		return err
 	}
+	return nil
 }
