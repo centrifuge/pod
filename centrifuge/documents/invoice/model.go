@@ -17,7 +17,7 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 )
 
-// example of an implementation
+// InvoiceModel keeps track of invoice related fields and state
 type InvoiceModel struct {
 	// invoice number or reference number
 	InvoiceNumber string
@@ -100,8 +100,8 @@ func (i *InvoiceModel) createInvoiceData() (*invoicepb.InvoiceData, error) {
 
 }
 
-//InitInvoiceInput initialize the model based on the received parameters from the rest api call
-//TODO change to new api client model
+// InitInvoiceInput initialize the model based on the received parameters from the rest api call
+// TODO change to new api client model
 func (i *InvoiceModel) InitInvoiceInput(invoiceData *InvoiceInput) error {
 
 	i.InvoiceNumber = invoiceData.InvoiceNumber
@@ -188,7 +188,7 @@ func (i *InvoiceModel) getInvoiceSalts(invoiceData *invoicepb.InvoiceData) *invo
 	return i.InvoiceSalts
 }
 
-//CoreDocument returns a CoreDocument with an embedded invoice
+// CoreDocument returns a CoreDocument with an embedded invoice
 func (i *InvoiceModel) CoreDocument() (*coredocumentpb.CoreDocument, error) {
 	coreDocument := new(coredocumentpb.CoreDocument)
 
@@ -227,7 +227,7 @@ func (i *InvoiceModel) CoreDocument() (*coredocumentpb.CoreDocument, error) {
 	return coreDocument, err
 }
 
-//FromCoreDocument initials the invoice model with a core document which embeds an invoice
+//FromCoreDocument initials the invoice model with a core document whith the embedded invoice data
 func (i *InvoiceModel) FromCoreDocument(coreDocument *coredocumentpb.CoreDocument) error {
 	if coreDocument == nil {
 		return centerrors.NilError(coreDocument)
