@@ -3,8 +3,8 @@ package invoice
 import (
 	"errors"
 
-	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrap"
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
+	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 
 	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
