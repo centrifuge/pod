@@ -19,7 +19,7 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 )
 
-// example of an implementation
+// InvoiceModel implements the documents.Model and represents an Invoice
 type InvoiceModel struct {
 	// invoice number or reference number
 	InvoiceNumber string
@@ -58,7 +58,7 @@ type InvoiceModel struct {
 	Collaborators []identity.CentID
 
 	InvoiceSalts *invoicepb.InvoiceDataSalts
-	CoreDoc      *coredocumentpb.CoreDocument
+	CoreDocument *coredocumentpb.CoreDocument
 }
 
 // createP2PData returns centrifuge protobuf specific invoiceData
@@ -106,7 +106,7 @@ func (i *InvoiceModel) createP2PData() (*invoicepb.InvoiceData, error) {
 
 }
 
-//InitInvoiceInput initialize the model based on the received parameters from the rest api call
+// InitInvoiceInput initialize the model based on the received parameters from the rest api call
 func (i *InvoiceModel) InitInvoiceInput(payload *clientinvoicepb.InvoiceCreatePayload) error {
 	data := payload.Data
 	i.InvoiceNumber = data.InvoiceNumber
@@ -208,23 +208,24 @@ func (i *InvoiceModel) loadFromP2PData(invoiceData *invoicepb.InvoiceData) error
 
 }
 
+// getInvoiceSalts returns the invoice salts. Initialises if not present
 func (i *InvoiceModel) getInvoiceSalts(invoiceData *invoicepb.InvoiceData) *invoicepb.InvoiceDataSalts {
 	if i.InvoiceSalts == nil {
 		invoiceSalts := &invoicepb.InvoiceDataSalts{}
 		proofs.FillSalts(invoiceData, invoiceSalts)
 		i.InvoiceSalts = invoiceSalts
-
 	}
 
 	return i.InvoiceSalts
 }
 
-//CoreDocument returns a CoreDocument with an embedded invoice
+// PackCoreDocument packs the InvoiceModel into a Core Document
+// If the, InvoiceModel is new, it creates a valid identifiers
 // TODO: once coredoc has collaborators, take the collaborators from the model
-func (i *InvoiceModel) CoreDocument() (*coredocumentpb.CoreDocument, error) {
-	if i.CoreDoc == nil {
+func (i *InvoiceModel) PackCoreDocument() (*coredocumentpb.CoreDocument, error) {
+	if i.CoreDocument == nil {
 		// this is the new invoice create. so create identifiers
-		i.CoreDoc = coredocument.New()
+		i.CoreDocument = coredocument.New()
 	}
 
 	invoiceData, err := i.createP2PData()
@@ -255,14 +256,14 @@ func (i *InvoiceModel) CoreDocument() (*coredocumentpb.CoreDocument, error) {
 	}
 
 	coreDoc := new(coredocumentpb.CoreDocument)
-	proto.Merge(coreDoc, i.CoreDoc)
+	proto.Merge(coreDoc, i.CoreDocument)
 	coreDoc.EmbeddedData = &invoiceAny
 	coreDoc.EmbeddedDataSalts = &invoiceSaltsAny
 	return coreDoc, err
 }
 
-//FromCoreDocument initials the invoice model with a core document which embeds an invoice
-func (i *InvoiceModel) FromCoreDocument(coreDoc *coredocumentpb.CoreDocument) error {
+// UnpackCoreDocument unpacks the core document into InvoiceModel
+func (i *InvoiceModel) UnpackCoreDocument(coreDoc *coredocumentpb.CoreDocument) error {
 	if coreDoc == nil {
 		return centerrors.NilError(coreDoc)
 	}
@@ -274,7 +275,7 @@ func (i *InvoiceModel) FromCoreDocument(coreDoc *coredocumentpb.CoreDocument) er
 		return fmt.Errorf("trying to convert document with incorrect schema")
 	}
 
-	i.CoreDoc = coreDoc
+	i.CoreDocument = coreDoc
 	invoiceData := &invoicepb.InvoiceData{}
 	err := proto.Unmarshal(coreDoc.EmbeddedData.Value, invoiceData)
 	if err != nil {
@@ -296,19 +297,17 @@ func (i *InvoiceModel) FromCoreDocument(coreDoc *coredocumentpb.CoreDocument) er
 	return err
 }
 
+// JSON marshals InvoiceModel into a json bytes
 func (i *InvoiceModel) JSON() ([]byte, error) {
 	return json.Marshal(i)
 }
 
+// FromJSON unmarshals the json bytes into InvoiceModel
 func (i *InvoiceModel) FromJSON(jsonData []byte) error {
-
-	if err := json.Unmarshal(jsonData, i); err != nil {
-		return err
-	}
-	return nil
-
+	return json.Unmarshal(jsonData, i)
 }
 
+// Type gives the InvoiceModel type
 func (i *InvoiceModel) Type() reflect.Type {
 	return reflect.TypeOf(i)
 }

@@ -40,12 +40,10 @@ func LegacyGRPCHandler() legacyinvoicepb.InvoiceDocumentServiceServer {
 }
 
 // GRPCHandler returns an implementation of invoice.DocumentServiceServer
-func GRPCHandler() clientinvoicepb.DocumentServiceServer {
+func GRPCHandler(processor coredocumentprocessor.Processor, service Service) clientinvoicepb.DocumentServiceServer {
 	return &grpcHandler{
-		coreDocProcessor: coredocumentprocessor.DefaultProcessor(identity.IDService, p2p.NewP2PClient()),
-		service: service{
-			repo: GetRepository(),
-		},
+		coreDocProcessor: processor,
+		service:          service,
 	}
 }
 
@@ -198,7 +196,7 @@ func (h *grpcHandler) GetReceivedInvoiceDocuments(ctx context.Context, empty *em
 
 // Create handles the creation of the invoices and anchoring the documents on chain
 func (h *grpcHandler) Create(ctx context.Context, req *clientinvoicepb.InvoiceCreatePayload) (*clientinvoicepb.InvoiceResponse, error) {
-	doc, err := h.service.DeriveFromPayload(req)
+	doc, err := h.service.DeriveFromCreatePayload(req)
 	if err != nil {
 		return nil, err
 	}
@@ -209,7 +207,7 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientinvoicepb.InvoiceCr
 		return nil, err
 	}
 
-	coreDoc, err := doc.CoreDocument()
+	coreDoc, err := doc.PackCoreDocument()
 	if err != nil {
 		return nil, err
 	}

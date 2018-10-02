@@ -1,8 +1,11 @@
 package api
 
 import (
+	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/processor"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/healthcheck/controller"
+	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/centrifuge/p2p"
 	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/health"
 	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	legacyInvoice "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/legacy/invoice"
@@ -15,7 +18,8 @@ import (
 
 // registerServices registers all endpoints to the grpc server
 func registerServices(ctx context.Context, grpcServer *grpc.Server, gwmux *runtime.ServeMux, addr string, dopts []grpc.DialOption) error {
-	invoicepb.RegisterDocumentServiceServer(grpcServer, invoice.GRPCHandler())
+	invoicepb.RegisterDocumentServiceServer(grpcServer, invoice.GRPCHandler(
+		coredocumentprocessor.DefaultProcessor(identity.IDService, p2p.NewP2PClient()), invoice.DefaultService(invoice.GetRepository())))
 	err := invoicepb.RegisterDocumentServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
 	if err != nil {
 		return err
