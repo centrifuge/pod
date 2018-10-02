@@ -51,14 +51,22 @@ func TestValidatorInterface(t *testing.T) {
 func TestValidatorGroup_Validate(t *testing.T) {
 
 	var testValidatorGroup = ValidatorGroup{
-		validators: []Validator{
-			MockValidator{},
-			MockValidatorWithError{},
-		},
+		MockValidator{},
+		MockValidatorWithError{},
 	}
-
 	errors := testValidatorGroup.Validate(nil, nil)
-
 	assert.Equal(t, 2, len(errors), "Validate should return 2 errors")
+
+	testValidatorGroup = ValidatorGroup{
+		MockValidator{},
+		MockValidatorWithError{},
+		MockValidatorWithError{},
+	}
+	errors = testValidatorGroup.Validate(nil, nil)
+	assert.Equal(t, 4, len(errors), "Validate should return 4 errors")
+
+	testValidatorGroup = ValidatorGroup{}
+	errors = testValidatorGroup.Validate(nil, nil)
+	assert.Equal(t, 0, len(errors), "Validate should return no errors")
 
 }

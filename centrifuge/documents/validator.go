@@ -7,14 +7,12 @@ type Validator interface {
 }
 
 // ValidatorGroup implements Validator for validating a set of validators.
-type ValidatorGroup struct {
-	validators []Validator
-}
+type ValidatorGroup []Validator
 
 //Validate will execute all group specific atomic validations
 func (group ValidatorGroup) Validate(oldState Model, newState Model) (validationErrors []error) {
 
-	for _, v := range group.validators {
+	for _, v := range group {
 		centErrors := v.Validate(oldState, newState)
 		validationErrors = append(validationErrors, centErrors...)
 	}
