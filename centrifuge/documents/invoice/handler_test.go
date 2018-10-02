@@ -296,6 +296,12 @@ func (m *mockService) Create(inv documents.Model) error {
 	return args.Error(0)
 }
 
+func (m *mockService) DeriveCreateResponse(doc documents.Model) (*clientinvoicepb.InvoiceData, error) {
+	args := m.Called(doc)
+	data, _ := args.Get(0).(*clientinvoicepb.InvoiceData)
+	return data, args.Error(1)
+}
+
 func getHandler() *grpcHandler {
 	return &grpcHandler{service: &mockService{}}
 }
@@ -354,10 +360,11 @@ func TestGrpcHandler_Create(t *testing.T) {
 	srv := h.service.(*mockService)
 	model := new(mockModel)
 	cd := coredocument.New()
+	payload := &clientinvoicepb.InvoiceCreatePayload{Data: &clientinvoicepb.InvoiceData{GrossAmount: 300}}
 	model.On("PackCoreDocument").Return(cd, nil)
 	srv.On("DeriveFromCreatePayload", mock.Anything).Return(model, nil)
+	srv.On("DeriveCreateResponse", model).Return(payload.Data, nil)
 	srv.On("Create", mock.Anything).Return(nil)
-	payload := &clientinvoicepb.InvoiceCreatePayload{Data: &clientinvoicepb.InvoiceData{GrossAmount: 300}}
 	res, err := h.Create(context.Background(), payload)
 	model.AssertExpectations(t)
 	srv.AssertExpectations(t)

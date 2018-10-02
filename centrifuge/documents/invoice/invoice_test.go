@@ -28,7 +28,7 @@ func TestMain(m *testing.M) {
 	db := cc.GetLevelDBStorage()
 	InitLegacyRepository(db)
 	coredocumentrepository.InitLevelDBRepository(db)
-	invService = &service{repo: GetRepository()}
+	invService = DefaultService(GetRepository())
 	flag.Parse()
 	result := m.Run()
 	cc.TestIntegrationTearDown()

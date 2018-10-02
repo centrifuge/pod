@@ -3,6 +3,7 @@
 package invoice
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"reflect"
 	"testing"
@@ -43,7 +44,7 @@ func TestInvoice_InitCoreDocument_successful(t *testing.T) {
 	assert.Nil(t, err, "valid coredocument shouldn't produce an error")
 }
 
-func TestInvoice_tInitCoreDocument_invalidCentId(t *testing.T) {
+func TestInvoice_InitCoreDocument_invalidCentId(t *testing.T) {
 	invoiceModel := &InvoiceModel{}
 
 	coreDocument := testinginvoice.CreateCDWithEmbeddedInvoice(t, invoicepb.InvoiceData{
@@ -124,4 +125,19 @@ func TestInvoiceModel_UnpackCoreDocument(t *testing.T) {
 
 	assert.Equal(t, coreDocument.EmbeddedData, receivedCoreDocument.EmbeddedData, "embeddedData should be the same")
 	assert.Equal(t, coreDocument.EmbeddedDataSalts, receivedCoreDocument.EmbeddedDataSalts, "embeddedDataSalt should be the same")
+}
+
+func TestInvoiceModel_getClientData(t *testing.T) {
+	invData := testinginvoice.CreateInvoiceData()
+	inv := new(InvoiceModel)
+	err := inv.loadFromP2PData(&invData)
+	assert.Nil(t, err, "must not error out")
+
+	data, err := inv.getClientData()
+	assert.Nil(t, err, "must not error out")
+	assert.NotNil(t, data, "invoice data should not be nil")
+	assert.Equal(t, data.GrossAmount, invData.GrossAmount, "gross amount must match")
+	assert.Equal(t, data.Recipient, hex.EncodeToString(inv.Recipient[:]), "recipient should match")
+	assert.Equal(t, data.Sender, hex.EncodeToString(inv.Sender[:]), "sender should match")
+	assert.Equal(t, data.Payee, hex.EncodeToString(inv.Payee[:]), "payee should match")
 }

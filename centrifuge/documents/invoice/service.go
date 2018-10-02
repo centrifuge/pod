@@ -18,6 +18,9 @@ type Service interface {
 
 	// Create validates and persists invoice Model
 	Create(inv documents.Model) error
+
+	// ClientData returns the invoice data as
+	DeriveCreateResponse(inv documents.Model) (*clientinvoicepb.InvoiceData, error)
 }
 
 // service implements Service and handles all invoice related persistence and validations
@@ -67,4 +70,19 @@ func (s service) Create(inv documents.Model) error {
 	}
 
 	return nil
+}
+
+// DeriveCreateResponse returns create response from invoice model
+func (s service) DeriveCreateResponse(doc documents.Model) (*clientinvoicepb.InvoiceData, error) {
+	inv, ok := doc.(*InvoiceModel)
+	if !ok {
+		return nil, centerrors.New(code.DocumentInvalid, "document of invalid type")
+	}
+
+	data, err := inv.getClientData()
+	if err != nil {
+		return nil, centerrors.New(code.Unknown, err.Error())
+	}
+
+	return data, nil
 }

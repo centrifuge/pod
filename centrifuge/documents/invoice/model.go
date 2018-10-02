@@ -61,6 +61,50 @@ type InvoiceModel struct {
 	CoreDocument *coredocumentpb.CoreDocument
 }
 
+// getClientData returns the client data from the invoice model
+func (i *InvoiceModel) getClientData() (*clientinvoicepb.InvoiceData, error) {
+	recipient, err := i.Recipient.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+
+	sender, err := i.Sender.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+	payee, err := i.Payee.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+
+	return &clientinvoicepb.InvoiceData{
+		InvoiceNumber:    i.InvoiceNumber,
+		SenderName:       i.SenderName,
+		SenderStreet:     i.SenderStreet,
+		SenderCity:       i.SenderCity,
+		SenderZipcode:    i.SenderZipcode,
+		SenderCountry:    i.SenderCountry,
+		RecipientName:    i.RecipientName,
+		RecipientStreet:  i.RecipientStreet,
+		RecipientCity:    i.RecipientCity,
+		RecipientZipcode: i.RecipientZipcode,
+		RecipientCountry: i.RecipientCountry,
+		Currency:         i.Currency,
+		GrossAmount:      i.GrossAmount,
+		NetAmount:        i.NetAmount,
+		TaxAmount:        i.TaxAmount,
+		TaxRate:          i.TaxRate,
+		Recipient:        hex.EncodeToString(recipient),
+		Sender:           hex.EncodeToString(sender),
+		Payee:            hex.EncodeToString(payee),
+		Comment:          i.Comment,
+		DueDate:          i.DueDate,
+		DateCreated:      i.DateCreated,
+		ExtraData:        hex.EncodeToString(i.ExtraData),
+	}, nil
+
+}
+
 // createP2PData returns centrifuge protobuf specific invoiceData
 func (i *InvoiceModel) createP2PData() (*invoicepb.InvoiceData, error) {
 

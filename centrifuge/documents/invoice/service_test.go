@@ -63,3 +63,17 @@ func TestService_Create(t *testing.T) {
 	assert.Error(t, err, "must fail")
 	assert.Contains(t, err.Error(), "document already exists")
 }
+
+func TestService_DeriveCreateResponse(t *testing.T) {
+	// some random model
+	_, err := invService.DeriveCreateResponse(&mockModel{})
+	assert.Error(t, err, "Derive must fail")
+
+	// success
+	payload := createPayload()
+	inv, err := invService.DeriveFromCreatePayload(payload)
+	assert.Nil(t, err, "must be non nil")
+	data, err := invService.DeriveCreateResponse(inv)
+	assert.Nil(t, err, "Derive must succeed")
+	assert.NotNil(t, data, "data must be non nil")
+}

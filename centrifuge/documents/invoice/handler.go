@@ -218,9 +218,14 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientinvoicepb.InvoiceCr
 		Collaborators: req.Collaborators,
 	}
 
+	data, err := h.service.DeriveCreateResponse(doc)
+	if err != nil {
+		return nil, err
+	}
+
 	return &clientinvoicepb.InvoiceResponse{
 		Header: header,
-		Data:   req.Data,
+		Data:   data,
 	}, nil
 }
 
