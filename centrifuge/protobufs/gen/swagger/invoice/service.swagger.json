@@ -66,30 +66,6 @@
           "DocumentService"
         ]
       },
-      "post": {
-        "description": "Get the current invoice",
-        "operationId": "MintNFT",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/invoiceNFTMintResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "identifier",
-            "description": "Document identifier",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "DocumentService"
-        ]
-      },
       "put": {
         "description": "Updates an invoice",
         "operationId": "Update",
@@ -286,14 +262,6 @@
         },
         "data": {
           "$ref": "#/definitions/invoiceInvoiceData"
-        }
-      }
-    },
-    "invoiceNFTMintResponse": {
-      "type": "object",
-      "properties": {
-        "token_id": {
-          "type": "string"
         }
       }
     },

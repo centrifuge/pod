@@ -49,14 +49,6 @@ service DocumentService {
       description: "Get the current invoice"
     };
   }
-  rpc MintNFT(NFTMintRequest) returns (NFTMintResponse) {
-    option (google.api.http) = {
-      post: "/invoice/{identifier}"
-    };
-    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Get the current invoice"
-    };
-  }
 }
 
 message GetRequest {
@@ -77,19 +69,6 @@ message InvoiceUpdatePayload {
   string identifier = 1;
   repeated string collaborators = 2;
   InvoiceData data = 3;
-}
-
-message NFTMintRequest {
-  // Document identifier
-  string identifier = 1;
-  // The contract address of the registry where the token should be minted
-  string registry_address = 2;
-  repeated string proof_fields = 4;
-  string deposit_address = 5;
-}
-
-message NFTMintResponse {
-  string token_id = 1;
 }
 
 message InvoiceResponse {
