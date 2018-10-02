@@ -19,7 +19,7 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 )
 
-// InvoiceModel implements the documents.Model and represents an Invoice
+// InvoiceModel implements the documents.Model keeps track of invoice related fields and state
 type InvoiceModel struct {
 	// invoice number or reference number
 	InvoiceNumber string

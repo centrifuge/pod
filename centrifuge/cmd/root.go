@@ -82,9 +82,19 @@ func setCentrifugeLoggers() {
 
 }
 
-func defaultBootstrap() {
+func runBootstrap() {
 	mb := cc.MainBootstrapper{}
-	mb.PopulateDefaultBootstrappers()
+	mb.PopulateRunBootstrappers()
+	err := mb.Bootstrap(map[string]interface{}{})
+	if err != nil {
+		// application must not continue to run
+		panic(err)
+	}
+}
+
+func baseBootstrap() {
+	mb := cc.MainBootstrapper{}
+	mb.PopulateBaseBootstrappers()
 	err := mb.Bootstrap(map[string]interface{}{})
 	if err != nil {
 		// application must not continue to run
