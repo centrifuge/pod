@@ -275,7 +275,6 @@ func (i *InvoiceModel) UnpackCoreDocument(coreDoc *coredocumentpb.CoreDocument) 
 		return fmt.Errorf("trying to convert document with incorrect schema")
 	}
 
-	i.CoreDocument = coreDoc
 	invoiceData := &invoicepb.InvoiceData{}
 	err := proto.Unmarshal(coreDoc.EmbeddedData.Value, invoiceData)
 	if err != nil {
@@ -294,6 +293,12 @@ func (i *InvoiceModel) UnpackCoreDocument(coreDoc *coredocumentpb.CoreDocument) 
 	}
 
 	i.InvoiceSalts = invoiceSalts
+	if i.CoreDocument == nil {
+		i.CoreDocument = new(coredocumentpb.CoreDocument)
+	}
+	proto.Merge(i.CoreDocument, coreDoc)
+	i.CoreDocument.EmbeddedDataSalts = nil
+	i.CoreDocument.EmbeddedData = nil
 	return err
 }
 
