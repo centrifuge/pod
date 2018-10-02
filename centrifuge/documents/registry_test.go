@@ -14,7 +14,7 @@ import (
 
 type MockService struct{}
 
-func (m *MockService) DeriveWithCoreDocument(cd *coredocumentpb.CoreDocument) (documents.Model, error) {
+func (m *MockService) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (documents.Model, error) {
 	return nil, nil
 }
 
