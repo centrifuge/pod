@@ -6,7 +6,7 @@ type Validator interface {
 	Validate(oldState Model, newState Model) []error
 }
 
-// ValidatorGroup implements Validator for validating a set of atomic validators.
+// ValidatorGroup implements Validator for validating a set of validators.
 type ValidatorGroup struct {
 	validators []Validator
 }
