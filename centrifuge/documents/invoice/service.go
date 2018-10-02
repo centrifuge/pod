@@ -19,7 +19,7 @@ type Service interface {
 	// Create validates and persists invoice Model
 	Create(inv documents.Model) error
 
-	// ClientData returns the invoice data as
+	// DeriveCreateResponse returns the invoice data as client data
 	DeriveCreateResponse(inv documents.Model) (*clientinvoicepb.InvoiceData, error)
 }
 
