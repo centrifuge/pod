@@ -1,7 +1,7 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "nfts/service.proto",
+    "title": "nft/service.proto",
     "version": "version not set"
   },
   "schemes": [
@@ -15,7 +15,7 @@
     "application/json"
   ],
   "paths": {
-    "/nfts/mint": {
+    "/tokens/mint": {
       "post": {
         "description": "Mint an NFT from a Centrifuge Document",
         "operationId": "MintNFT",
