@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrap"
+	cd "github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 
@@ -29,7 +30,10 @@ func TestBootstrapper_registerInvoiceService(t *testing.T) {
 	//coreDocument embeds a invoice
 	coreDocument := testingutils.GenerateCoreDocument()
 
-	service, err := registry.LocateService(coreDocument)
+	documentType, err := cd.GetTypeUrl(coreDocument)
+	assert.Nil(t, err, "should not throw an error because document contains a type")
+
+	service, err := registry.LocateService(documentType)
 	assert.Nil(t, err, "service should be successful registered and able to locate")
 
 	assert.NotNil(t, service, "service should be returned")

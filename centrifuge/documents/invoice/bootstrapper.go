@@ -17,7 +17,7 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		InitLevelDBRepository(storage.GetLevelDBStorage())
 
 	} else {
-		return errors.New("could not initialize invoice repository")
+		return errors.New("initializing LevelDB repository failed")
 	}
 
 	return registerInvoiceService()
