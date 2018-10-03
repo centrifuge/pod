@@ -1,0 +1,46 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "nft/service.proto",
+    "version": "version not set"
+  },
+  "schemes": [
+    "http",
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/token/mint": {
+      "post": {
+        "description": "Mint an NFT from a Centrifuge Document",
+        "operationId": "MintNFT",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/nftNFTMintResponse"
+            }
+          }
+        },
+        "tags": [
+          "NFTService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "nftNFTMintResponse": {
+      "type": "object",
+      "properties": {
+        "token_id": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
