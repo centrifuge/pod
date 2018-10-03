@@ -1,6 +1,8 @@
 package invoice
 
 import (
+	"bytes"
+	"encoding/hex"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/code"
@@ -19,8 +21,14 @@ type Service interface {
 	// Create validates and persists invoice Model
 	Create(inv documents.Model) error
 
-	// DeriveCreateResponse returns the invoice data as client data
-	DeriveCreateResponse(inv documents.Model) (*clientinvoicepb.InvoiceData, error)
+	// DeriveInvoiceData returns the invoice data as client data
+	DeriveInvoiceData(inv documents.Model) (*clientinvoicepb.InvoiceData, error)
+
+	// DeriveInvoiceResponse returns the invoice model in our standard client format
+	DeriveInvoiceResponse(inv documents.Model) (*clientinvoicepb.InvoiceResponse, error)
+
+	// GetVersion reads a document from the database
+	GetVersion([]byte, []byte) (documents.Model, error)
 }
 
 // service implements Service and handles all invoice related persistence and validations
@@ -72,8 +80,55 @@ func (s service) Create(inv documents.Model) error {
 	return nil
 }
 
-// DeriveCreateResponse returns create response from invoice model
-func (s service) DeriveCreateResponse(doc documents.Model) (*clientinvoicepb.InvoiceData, error) {
+func (s service) GetVersion(identifier []byte, version []byte) (doc documents.Model, err error) {
+	doc = new(InvoiceModel)
+	err = s.repo.LoadByID(version, doc)
+	if err != nil {
+		return nil, err
+	}
+
+	inv, ok := doc.(*InvoiceModel)
+	if !ok {
+		return nil, centerrors.New(code.DocumentInvalid, "not an invoice object")
+	}
+
+	if !bytes.Equal(inv.CoreDocument.DocumentIdentifier, identifier) {
+		return nil, centerrors.New(code.DocumentInvalid, "version is not valid for this identifier")
+	}
+	return
+}
+
+// DeriveInvoiceResponse returns create response from invoice model
+func (s service) DeriveInvoiceResponse(doc documents.Model) (*clientinvoicepb.InvoiceResponse, error) {
+	inv, ok := doc.(*InvoiceModel)
+	if !ok {
+		return nil, centerrors.New(code.DocumentInvalid, "document of invalid type")
+	}
+	collaborators := make([]string, len(inv.Collaborators))
+	for i, c := range inv.Collaborators {
+		collaborators[i] = c.String()
+	}
+
+	header := &clientinvoicepb.ResponseHeader{
+		DocumentId:    hex.EncodeToString(inv.CoreDocument.DocumentIdentifier),
+		VersionId:     hex.EncodeToString(inv.CoreDocument.CurrentIdentifier),
+		Collaborators: collaborators,
+	}
+
+	data, err := s.DeriveInvoiceData(doc)
+	if err != nil {
+		return nil, err
+	}
+
+	return &clientinvoicepb.InvoiceResponse{
+		Header: header,
+		Data:   data,
+	}, nil
+
+}
+
+// DeriveInvoiceData returns create response from invoice model
+func (s service) DeriveInvoiceData(doc documents.Model) (*clientinvoicepb.InvoiceData, error) {
 	inv, ok := doc.(*InvoiceModel)
 	if !ok {
 		return nil, centerrors.New(code.DocumentInvalid, "document of invalid type")

@@ -65,7 +65,7 @@ func (c CentID) Equal(other CentID) bool {
 }
 
 func (c CentID) String() string {
-	return base64.StdEncoding.EncodeToString(c[:])
+	return "0x" + hex.EncodeToString(c[:])
 }
 
 func (c CentID) MarshalBinary() (data []byte, err error) {

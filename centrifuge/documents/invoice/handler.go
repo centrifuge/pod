@@ -207,26 +207,8 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientinvoicepb.InvoiceCr
 		return nil, err
 	}
 
-	coreDoc, err := doc.PackCoreDocument()
-	if err != nil {
-		return nil, err
-	}
-
-	header := &clientinvoicepb.ResponseHeader{
-		DocumentId:    hex.EncodeToString(coreDoc.DocumentIdentifier),
-		VersionId:     hex.EncodeToString(coreDoc.CurrentIdentifier),
-		Collaborators: req.Collaborators,
-	}
-
-	data, err := h.service.DeriveCreateResponse(doc)
-	if err != nil {
-		return nil, err
-	}
-
-	return &clientinvoicepb.InvoiceResponse{
-		Header: header,
-		Data:   data,
-	}, nil
+	invoiceResponse, err := h.service.DeriveInvoiceResponse(doc)
+	return invoiceResponse, err
 }
 
 // Update handles the document update
@@ -235,11 +217,29 @@ func (h *grpcHandler) Update(context.Context, *clientinvoicepb.InvoiceUpdatePayl
 }
 
 // GetVersion returns the requested version of the document
-func (h *grpcHandler) GetVersion(context.Context, *clientinvoicepb.GetVersionRequest) (*clientinvoicepb.InvoiceResponse, error) {
-	return nil, fmt.Errorf("not implemented yet")
+func (h *grpcHandler) GetVersion(ctx context.Context, getVersionRequest *clientinvoicepb.GetVersionRequest) (*clientinvoicepb.InvoiceResponse, error) {
+	identifier, err := hex.DecodeString(getVersionRequest.Identifier)
+	if err != nil {
+		return nil, err
+	}
+	version, err := hex.DecodeString(getVersionRequest.Version)
+	if err != nil {
+		return nil, err
+	}
+	doc, err := h.service.GetVersion(identifier, version)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := h.service.DeriveInvoiceResponse(doc)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+
 }
 
 // Get returns the invoice the latest version of the document with given identifier
 func (h *grpcHandler) Get(context.Context, *clientinvoicepb.GetRequest) (*clientinvoicepb.InvoiceResponse, error) {
+
 	return nil, fmt.Errorf("not implemented yet")
 }
