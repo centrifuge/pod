@@ -105,8 +105,8 @@ func (i *InvoiceModel) getClientData() (*clientinvoicepb.InvoiceData, error) {
 
 }
 
-// createP2PData returns centrifuge protobuf specific invoiceData
-func (i *InvoiceModel) createP2PData() (*invoicepb.InvoiceData, error) {
+// createP2PProtobuf returns centrifuge protobuf specific invoiceData
+func (i *InvoiceModel) createP2PProtobuf() (*invoicepb.InvoiceData, error) {
 
 	recipient, err := i.Recipient.MarshalBinary()
 	if err != nil {
@@ -206,8 +206,8 @@ func (i *InvoiceModel) InitInvoiceInput(payload *clientinvoicepb.InvoiceCreatePa
 	return nil
 }
 
-// loadFromP2PData  loads the invoice from centrifuge protobuf invoice data
-func (i *InvoiceModel) loadFromP2PData(invoiceData *invoicepb.InvoiceData) error {
+// loadFromP2PProtobuf  loads the invoice from centrifuge protobuf invoice data
+func (i *InvoiceModel) loadFromP2PProtobuf(invoiceData *invoicepb.InvoiceData) error {
 	i.InvoiceNumber = invoiceData.InvoiceNumber
 	i.SenderName = invoiceData.SenderName
 	i.SenderStreet = invoiceData.SenderStreet
@@ -272,7 +272,7 @@ func (i *InvoiceModel) PackCoreDocument() (*coredocumentpb.CoreDocument, error) 
 		i.CoreDocument = coredocument.New()
 	}
 
-	invoiceData, err := i.createP2PData()
+	invoiceData, err := i.createP2PProtobuf()
 	if err != nil {
 		return nil, err
 	}
@@ -325,7 +325,7 @@ func (i *InvoiceModel) UnpackCoreDocument(coreDoc *coredocumentpb.CoreDocument) 
 		return err
 	}
 
-	err = i.loadFromP2PData(invoiceData)
+	err = i.loadFromP2PProtobuf(invoiceData)
 	if err != nil {
 		return err
 	}

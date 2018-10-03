@@ -130,7 +130,7 @@ func TestInvoiceModel_UnpackCoreDocument(t *testing.T) {
 func TestInvoiceModel_getClientData(t *testing.T) {
 	invData := testinginvoice.CreateInvoiceData()
 	inv := new(InvoiceModel)
-	err := inv.loadFromP2PData(&invData)
+	err := inv.loadFromP2PProtobuf(&invData)
 	assert.Nil(t, err, "must not error out")
 
 	data, err := inv.getClientData()
