@@ -8,8 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"sync"
-
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/ethereum"
@@ -57,17 +55,17 @@ func (transactionRequest *MockTransactionRequest) RegisterTransaction(opts *bind
 func TestInitTransactionWithRetries(t *testing.T) {
 	mockRequest := &MockTransactionRequest{}
 
-	gc := ethereum.GethClient{nil, nil, nil, &sync.Mutex{}, make(map[string]*bind.TransactOpts)}
+	gc := ethereum.NewGethClient()
 	ethereum.SetConnection(gc)
 
 	// Success at first
-	tx, err := ethereum.SubmitTransactionWithRetries(mockRequest.RegisterTransaction, &bind.TransactOpts{}, "var1", "var2")
+	tx, err := ethereum.GetConnection().SubmitTransactionWithRetries(mockRequest.RegisterTransaction, &bind.TransactOpts{}, "var1", "var2")
 	assert.Nil(t, err, "Should not error out")
 	assert.EqualValues(t, 1, tx.Nonce(), "Nonce should equal to the one provided")
 	assert.EqualValues(t, 1, mockRequest.count, "Transaction Run flag should be true")
 
 	// Failure with non-locking error
-	tx, err = ethereum.SubmitTransactionWithRetries(mockRequest.RegisterTransaction, &bind.TransactOpts{}, "otherError", "var2")
+	tx, err = ethereum.GetConnection().SubmitTransactionWithRetries(mockRequest.RegisterTransaction, &bind.TransactOpts{}, "otherError", "var2")
 	assert.EqualError(t, err, "Some other error", "Should error out")
 
 	mockRetries := testingutils.MockConfigOption("ethereum.maxRetries", 10)
@@ -75,13 +73,13 @@ func TestInitTransactionWithRetries(t *testing.T) {
 
 	mockRequest.count = 0
 	// Failure and timeout with locking error
-	tx, err = ethereum.SubmitTransactionWithRetries(mockRequest.RegisterTransaction, &bind.TransactOpts{}, "optimisticLockingTimeout", "var2")
+	tx, err = ethereum.GetConnection().SubmitTransactionWithRetries(mockRequest.RegisterTransaction, &bind.TransactOpts{}, "optimisticLockingTimeout", "var2")
 	assert.EqualError(t, err, ethereum.TransactionUnderpriced, "Should error out")
 	assert.EqualValues(t, 10, mockRequest.count, "Retries should be equal")
 
 	mockRequest.count = 0
 	// Success after locking race condition overcome
-	tx, err = ethereum.SubmitTransactionWithRetries(mockRequest.RegisterTransaction, &bind.TransactOpts{}, "optimisticLockingEventualSuccess", "var2")
+	tx, err = ethereum.GetConnection().SubmitTransactionWithRetries(mockRequest.RegisterTransaction, &bind.TransactOpts{}, "optimisticLockingEventualSuccess", "var2")
 	assert.Nil(t, err, "Should not error out")
 	assert.EqualValues(t, 3, mockRequest.count, "Retries should be equal")
 }
