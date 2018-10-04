@@ -58,28 +58,30 @@ func NewWithErrors(c code.Code, message string, errors map[string]string) error 
 }
 
 // P2PError represents p2p error type
-type P2PError struct {
+type Error struct {
 	err *errorspb.Error
 }
 
 // FromError constructs and returns errorspb.Error
-// if bool true, conversion to P2PError successful
-// else failed and returns unknown P2PError
-func FromError(err error) (*P2PError, bool) {
+// if bool true, conversion to Error successful
+// else failed and returns unknown Error
+func FromError(err error) (*Error, bool) {
 	if err == nil {
-		return &P2PError{err: &errorspb.Error{Code: int32(code.Ok)}}, true
+		return &Error{err: &errorspb.Error{Code: int32(code.Ok)}}, true
 	}
 
 	errpb, ok := err.(*errpb)
 	if !ok {
-		return &P2PError{err: &errorspb.Error{Code: int32(code.Unknown), Message: err.Error()}}, false
+		errors := make(map[string]string)
+		errors["unkownError"] = err.Error()
+		return &Error{err: &errorspb.Error{Code: int32(code.Unknown), Message: err.Error(), Errors: errors}}, false
 	}
 
-	return &P2PError{err: (*errorspb.Error)(errpb)}, true
+	return &Error{err: (*errorspb.Error)(errpb)}, true
 }
 
 // Code returns the error code
-func (p2pErr *P2PError) Code() code.Code {
+func (p2pErr *Error) Code() code.Code {
 	if p2pErr == nil || p2pErr.err == nil {
 		return code.Ok
 	}
@@ -88,7 +90,7 @@ func (p2pErr *P2PError) Code() code.Code {
 }
 
 // Message returns error message
-func (p2pErr *P2PError) Message() string {
+func (p2pErr *Error) Message() string {
 	if p2pErr == nil || p2pErr.err == nil {
 		return ""
 	}
@@ -97,7 +99,7 @@ func (p2pErr *P2PError) Message() string {
 }
 
 // Errors returns map errors passed
-func (p2pErr *P2PError) Errors() map[string]string {
+func (p2pErr *Error) Errors() map[string]string {
 	if p2pErr == nil || p2pErr.err == nil {
 		return nil
 	}
@@ -124,4 +126,58 @@ func Wrap(err error, msg string) error {
 
 	errpb.Message = fmt.Sprintf("%s: %v", msg, errpb.Message)
 	return errpb
+}
+
+//getNextErrorId returns a new unique key for an error
+//For example two error having the same key called 'errorX'
+// the second key would use 'errorX_2' instead of 'errorX'
+func getNextErrorId(errors map[string]string, key string) string {
+	counter := 2
+	isUnique := false
+	for isUnique != true {
+
+		uniqueKey := fmt.Sprintf("%s_%v", key, counter)
+		if errors[uniqueKey] == "" {
+			return uniqueKey
+		}
+		counter++
+
+	}
+	return ""
+}
+
+func WrapErrors(errDst error, errSrc error) error {
+
+	if errDst == nil {
+		return errSrc
+	}
+
+	if errSrc == nil {
+		return errDst
+	}
+
+	errorSrc, okSrc := FromError(errSrc)
+
+	errorDst, okDst := FromError(errDst)
+
+	if !okDst && okSrc || errorDst.Code() == code.Unknown {
+		// unknown error in dst prefers src error code and message
+		errorDst.err.Code = errorSrc.err.Code
+		errorDst.err.Message = errorSrc.err.Message
+	}
+
+	for errorKey, errorValue := range errorSrc.err.Errors {
+		if errorDst.err.Errors[errorKey] != "" {
+
+			uniqueKey := getNextErrorId(errorDst.err.Errors, errorKey)
+			errorDst.err.Errors[uniqueKey] = errorValue
+
+		} else {
+			errorDst.err.Errors[errorKey] = errorValue
+		}
+
+	}
+
+	return NewWithErrors(errorDst.Code(), errorDst.Message(), errorDst.Errors())
+
 }

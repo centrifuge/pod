@@ -7,8 +7,9 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/centrifuge/go-centrifuge/centrifuge/code"
-	"github.com/magiconair/properties/assert"
 )
 
 func TestP2PError(t *testing.T) {
@@ -60,18 +61,32 @@ func TestP2PError(t *testing.T) {
 	}
 }
 
-func TestWrap(t *testing.T) {
-	// simple error
-	err := fmt.Errorf("simple-error")
-	err = Wrap(err, "wrapped error")
-	assert.Equal(t, err.Error(), "wrapped error: simple-error")
+func TestWrapErrors(t *testing.T) {
 
-	// p2p error
-	err = New(code.Unknown, "p2p-error")
-	err = Wrap(err, "wrapped error")
-	assert.Equal(t, err.Error(), "[1]wrapped error: p2p-error")
+	simpleErr := fmt.Errorf("simple-error 1")
+	simpleErr2 := fmt.Errorf("simple-error 2")
 
-	// nil error
-	err = Wrap(nil, "nil error")
-	assert.Equal(t, err.Error(), "nil error")
+	errors := WrapErrors(simpleErr, simpleErr2)
+	centError, ok := FromError(errors)
+	assert.True(t, ok, "transformation to Error should work")
+	assert.Equal(t, 2, len(centError.Errors()), "error map should contain two errors")
+	assert.Equal(t, code.Unknown, centError.Code(), "code should be from type unkown")
+
+	simpleErr3 := fmt.Errorf("simple-error 3")
+	errors = WrapErrors(errors, simpleErr3)
+	centError, ok = FromError(errors)
+	assert.True(t, ok, "transformation to Error should work")
+	assert.Equal(t, 3, len(centError.Errors()), "error map should contain two errors")
+
+	errorMap := make(map[string]string)
+	errorMap["invalidInvoice"] = "test invalid invoice"
+	errorMap["test"] = "another test error"
+
+	errors = WrapErrors(errors, NewWithErrors(code.DocumentInvalid, "invalid document", errorMap))
+	centError, ok = FromError(errors)
+
+	assert.True(t, ok, "transformation to Error should work")
+	assert.Equal(t, 5, len(centError.Errors()), "error map should contain two errors")
+	assert.Equal(t, code.DocumentInvalid, centError.Code(), "code should be from type unkown")
+
 }
