@@ -1,5 +1,9 @@
 package documents
 
+import (
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
+)
+
 // Validator is an interface every Validator (atomic or group) should implement
 type Validator interface {
 	// Validate validates the updates to the model in newState.
@@ -17,4 +21,9 @@ func (group ValidatorGroup) Validate(oldState Model, newState Model) (validation
 		validationErrors = append(validationErrors, centErrors...)
 	}
 	return validationErrors
+}
+
+// IsCurrencyValid checks if the currency is of length 3
+func IsCurrencyValid(cur string) bool {
+	return utils.StringLengthEqual(cur, 3)
 }

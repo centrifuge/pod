@@ -20,6 +20,7 @@ func createPayload() *clientinvoicepb.InvoiceCreatePayload {
 			Recipient:   "010203040506",
 			Payee:       "010203020406",
 			GrossAmount: 42,
+			Currency:    "EUR",
 		},
 	}
 }
@@ -66,6 +67,13 @@ func TestService_DeriveFromPayload(t *testing.T) {
 }
 
 func TestService_Create(t *testing.T) {
+	// fail Validations
+	err := invService.Create(&InvoiceModel{
+		Currency: "EUR",
+	})
+	assert.Error(t, err, "must be non nil")
+	assert.Contains(t, err.Error(), "Invoice invalid")
+
 	payload := createPayload()
 	inv, err := invService.DeriveFromCreatePayload(payload)
 	assert.Nil(t, err, "must be non nil")

@@ -407,3 +407,25 @@ func TestCentIDFromString(t *testing.T) {
 		assert.Contains(t, err.Error(), c.err.Error())
 	}
 }
+
+func TestIsCentIDValid(t *testing.T) {
+	tests := []struct {
+		id    CentID
+		valid bool
+	}{
+		{
+			id:    NewRandomCentID(),
+			valid: true,
+		},
+
+		{
+			id:    CentID([CentIDByteLength]byte{0, 0, 0, 0, 0, 0}),
+			valid: false,
+		},
+	}
+
+	for _, c := range tests {
+		got := IsCentIDValid(c.id)
+		assert.Equal(t, c.valid, got, "result must match")
+	}
+}

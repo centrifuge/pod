@@ -212,6 +212,8 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientinvoicepb.InvoiceCr
 		return nil, err
 	}
 
+	// TODO: anchor the document
+
 	header := &clientinvoicepb.ResponseHeader{
 		DocumentId:    hex.EncodeToString(coreDoc.DocumentIdentifier),
 		VersionId:     hex.EncodeToString(coreDoc.CurrentIdentifier),

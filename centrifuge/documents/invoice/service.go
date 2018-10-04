@@ -63,6 +63,14 @@ func (s service) Create(inv documents.Model) error {
 		return centerrors.New(code.Unknown, err.Error())
 	}
 
+	// Validate the model here
+	fv := fieldValidator()
+	errs := fv.Validate(nil, inv)
+	if len(errs) != 0 {
+		// TODO use errs when the @manuel's changes are in
+		return centerrors.New(code.DocumentInvalid, "Invoice invalid")
+	}
+
 	// we use currentIdentifier as the id since that will be unique across multiple versions of the same document
 	err = s.repo.Create(coreDoc.CurrentIdentifier, inv)
 	if err != nil {

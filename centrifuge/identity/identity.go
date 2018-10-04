@@ -54,6 +54,11 @@ func NewRandomCentID() CentID {
 	return ID
 }
 
+// IsCentIDValid returns false if id is empty
+func IsCentIDValid(id CentID) bool {
+	return !tools.IsEmptyByteSlice(id[:])
+}
+
 func (c CentID) Equal(other CentID) bool {
 	for i := range c {
 		if c[i] != other[i] {
