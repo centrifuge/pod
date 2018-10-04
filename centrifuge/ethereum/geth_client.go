@@ -65,6 +65,7 @@ func (gethClient GethClient) GetTxOpts(accountName string) (*bind.TransactOpts, 
 		gethClient.Accounts[accountName] = txOpts
 		return txOpts, nil
 	} else {
+		acc.Nonce = nil // Important to nil the nonce on the cached txopts, otherwise with high concurrency will be outdated
 		return acc, nil
 	}
 }
@@ -136,6 +137,7 @@ func GetGethTxOpts(accountName string) (*bind.TransactOpts, error) {
 	} else {
 		authedTransactionOpts.GasPrice = config.Config.GetEthereumGasPrice()
 		authedTransactionOpts.GasLimit = config.Config.GetEthereumGasLimit()
+		authedTransactionOpts.Context = context.Background()
 		return authedTransactionOpts, nil
 	}
 }
@@ -155,6 +157,10 @@ func SubmitTransactionWithRetries(contractMethod interface{}, opts *bind.Transac
 	var in []reflect.Value
 	var result []reflect.Value
 	f = reflect.ValueOf(contractMethod)
+
+	gc.GetNonceMutex().Lock()
+	defer gc.GetNonceMutex().Unlock()
+
 	for !done {
 		if current >= maxTries {
 			log.Error("Max Concurrent transaction tries reached")
@@ -199,9 +205,6 @@ func IncrementNonce(opts *bind.TransactOpts) (err error) {
 		log.Warningf("Ethereum Client doesn't support txpool API, may cause concurrency issues.")
 		return
 	}
-
-	gc.GetNonceMutex().Lock()
-	defer gc.GetNonceMutex().Unlock()
 
 	var res map[string]map[string]map[string][]string
 	// Important to not create a DeadLock if network latency

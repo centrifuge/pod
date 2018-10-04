@@ -17,12 +17,14 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/go-errors/errors"
 	"github.com/stretchr/testify/assert"
+	"sync"
 )
 
 func TestMain(m *testing.M) {
 	cc.TestIntegrationBootstrap()
 	config.Config.V.Set("ethereum.txPoolAccessEnabled", false)
 	config.Config.V.Set("ethereum.intervalRetry", time.Millisecond*100)
+
 	result := m.Run()
 	cc.TestIntegrationTearDown()
 	os.Exit(result)
@@ -53,6 +55,9 @@ func (transactionRequest *MockTransactionRequest) RegisterTransaction(opts *bind
 
 func TestInitTransactionWithRetries(t *testing.T) {
 	mockRequest := &MockTransactionRequest{}
+
+	gc := ethereum.GethClient{nil, nil, nil, &sync.Mutex{}, make(map[string]*bind.TransactOpts)}
+	ethereum.SetConnection(gc)
 
 	// Success at first
 	tx, err := ethereum.SubmitTransactionWithRetries(mockRequest.RegisterTransaction, &bind.TransactOpts{}, "var1", "var2")
