@@ -53,11 +53,11 @@ func CloseLevelDBStorage() {
 }
 
 // DefaultLevelDB implements the repository
+// Deprecated: use documents.LevelDBRepository
 type DefaultLevelDB struct {
-	KeyPrefix         string
-	LevelDB           *leveldb.DB
-	ValidateFunc      func(proto.Message) error
-	ValidateModelFunc func(interface{}) error
+	KeyPrefix    string
+	LevelDB      *leveldb.DB
+	ValidateFunc func(proto.Message) error
 }
 
 // Exists returns if the document exists in the repository

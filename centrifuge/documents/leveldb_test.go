@@ -32,9 +32,9 @@ type model struct {
 	Data        string `json:"data"`
 }
 
-func (m *model) Type() reflect.Type                                     { return reflect.TypeOf(m) }
-func (m *model) CoreDocument() (*coredocumentpb.CoreDocument, error)    { return nil, nil }
-func (m *model) FromCoreDocument(cd *coredocumentpb.CoreDocument) error { return nil }
+func (m *model) Type() reflect.Type                                       { return reflect.TypeOf(m) }
+func (m *model) PackCoreDocument() (*coredocumentpb.CoreDocument, error)  { return nil, nil }
+func (m *model) UnpackCoreDocument(cd *coredocumentpb.CoreDocument) error { return nil }
 
 func (m *model) JSON() ([]byte, error) {
 	if m.shouldError {

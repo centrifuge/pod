@@ -1,23 +1,25 @@
 package invoice
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"reflect"
-
-	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
+	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
+	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
+	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/golang/protobuf/ptypes/timestamp"
 )
 
-// InvoiceModel keeps track of invoice related fields and state
+// InvoiceModel implements the documents.Model keeps track of invoice related fields and state
 type InvoiceModel struct {
 	// invoice number or reference number
 	InvoiceNumber string
@@ -52,11 +54,59 @@ type InvoiceModel struct {
 	DateCreated *timestamp.Timestamp
 	ExtraData   []byte
 
+	// This will move to core document once its implemented
+	Collaborators []identity.CentID
+
 	InvoiceSalts *invoicepb.InvoiceDataSalts
-	coreDocument *coredocumentpb.CoreDocument
+	CoreDocument *coredocumentpb.CoreDocument
 }
 
-func (i *InvoiceModel) createInvoiceData() (*invoicepb.InvoiceData, error) {
+// getClientData returns the client data from the invoice model
+func (i *InvoiceModel) getClientData() (*clientinvoicepb.InvoiceData, error) {
+	recipient, err := i.Recipient.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+
+	sender, err := i.Sender.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+	payee, err := i.Payee.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+
+	return &clientinvoicepb.InvoiceData{
+		InvoiceNumber:    i.InvoiceNumber,
+		SenderName:       i.SenderName,
+		SenderStreet:     i.SenderStreet,
+		SenderCity:       i.SenderCity,
+		SenderZipcode:    i.SenderZipcode,
+		SenderCountry:    i.SenderCountry,
+		RecipientName:    i.RecipientName,
+		RecipientStreet:  i.RecipientStreet,
+		RecipientCity:    i.RecipientCity,
+		RecipientZipcode: i.RecipientZipcode,
+		RecipientCountry: i.RecipientCountry,
+		Currency:         i.Currency,
+		GrossAmount:      i.GrossAmount,
+		NetAmount:        i.NetAmount,
+		TaxAmount:        i.TaxAmount,
+		TaxRate:          i.TaxRate,
+		Recipient:        hex.EncodeToString(recipient),
+		Sender:           hex.EncodeToString(sender),
+		Payee:            hex.EncodeToString(payee),
+		Comment:          i.Comment,
+		DueDate:          i.DueDate,
+		DateCreated:      i.DateCreated,
+		ExtraData:        hex.EncodeToString(i.ExtraData),
+	}, nil
+
+}
+
+// createP2PProtobuf returns centrifuge protobuf specific invoiceData
+func (i *InvoiceModel) createP2PProtobuf() (*invoicepb.InvoiceData, error) {
 
 	recipient, err := i.Recipient.MarshalBinary()
 	if err != nil {
@@ -101,39 +151,63 @@ func (i *InvoiceModel) createInvoiceData() (*invoicepb.InvoiceData, error) {
 }
 
 // InitInvoiceInput initialize the model based on the received parameters from the rest api call
-// TODO change to new api client model
-func (i *InvoiceModel) InitInvoiceInput(invoiceData *InvoiceInput) error {
+func (i *InvoiceModel) InitInvoiceInput(payload *clientinvoicepb.InvoiceCreatePayload) error {
+	data := payload.Data
+	i.InvoiceNumber = data.InvoiceNumber
+	i.SenderName = data.SenderName
+	i.SenderStreet = data.SenderStreet
+	i.SenderCity = data.SenderCity
+	i.SenderZipcode = data.SenderZipcode
+	i.SenderCountry = data.SenderCountry
+	i.RecipientName = data.RecipientName
+	i.RecipientStreet = data.RecipientStreet
+	i.RecipientCity = data.RecipientCity
+	i.RecipientZipcode = data.RecipientZipcode
+	i.RecipientCountry = data.RecipientCountry
+	i.Currency = data.Currency
+	i.GrossAmount = data.GrossAmount
+	i.NetAmount = data.NetAmount
+	i.TaxAmount = data.TaxAmount
+	i.TaxRate = data.TaxRate
+	i.Comment = data.Comment
+	i.DueDate = data.DueDate
+	i.DateCreated = data.DateCreated
 
-	i.InvoiceNumber = invoiceData.InvoiceNumber
-	i.SenderName = invoiceData.SenderName
-	i.SenderStreet = invoiceData.SenderStreet
-	i.SenderCity = invoiceData.SenderCity
-	i.SenderZipcode = invoiceData.SenderZipcode
-	i.SenderCountry = invoiceData.SenderCountry
-	i.RecipientName = invoiceData.RecipientName
-	i.RecipientStreet = invoiceData.RecipientStreet
-	i.RecipientCity = invoiceData.RecipientCity
-	i.RecipientZipcode = invoiceData.RecipientZipcode
-	i.RecipientCountry = invoiceData.RecipientCountry
-	i.Currency = invoiceData.Currency
-	i.GrossAmount = invoiceData.GrossAmount
-	i.NetAmount = invoiceData.NetAmount
-	i.TaxAmount = invoiceData.TaxAmount
-	i.TaxRate = invoiceData.TaxRate
-	i.Recipient = invoiceData.Recipient
-	i.Sender = invoiceData.Sender
-	i.Payee = invoiceData.Payee
-	i.Comment = invoiceData.Comment
-	i.DueDate = invoiceData.DueDate
-	i.DateCreated = invoiceData.DateCreated
-	i.ExtraData = invoiceData.ExtraData
+	var err error
+	i.Recipient, err = identity.CentIDFromString(data.Recipient)
+	if err != nil {
+		return centerrors.Wrap(err, "failed to decode recipient")
+	}
+
+	i.Sender, err = identity.CentIDFromString(data.Sender)
+	if err != nil {
+		return centerrors.Wrap(err, "failed to decode sender")
+	}
+
+	i.Payee, err = identity.CentIDFromString(data.Payee)
+	if err != nil {
+		return centerrors.Wrap(err, "failed to decode payee")
+	}
+
+	i.ExtraData, err = hex.DecodeString(data.ExtraData)
+	if err != nil {
+		return centerrors.Wrap(err, "failed to decode extra data")
+	}
+
+	for _, id := range payload.Collaborators {
+		cid, err := identity.CentIDFromString(id)
+		if err != nil {
+			return centerrors.Wrap(err, "failed to decode collaborator")
+		}
+
+		i.Collaborators = append(i.Collaborators, cid)
+	}
 
 	return nil
-
 }
 
-func (i *InvoiceModel) initInvoice(invoiceData *invoicepb.InvoiceData) error {
-
+// loadFromP2PProtobuf  loads the invoice from centrifuge protobuf invoice data
+func (i *InvoiceModel) loadFromP2PProtobuf(invoiceData *invoicepb.InvoiceData) error {
 	i.InvoiceNumber = invoiceData.InvoiceNumber
 	i.SenderName = invoiceData.SenderName
 	i.SenderStreet = invoiceData.SenderStreet
@@ -178,24 +252,31 @@ func (i *InvoiceModel) initInvoice(invoiceData *invoicepb.InvoiceData) error {
 
 }
 
+// getInvoiceSalts returns the invoice salts. Initialises if not present
 func (i *InvoiceModel) getInvoiceSalts(invoiceData *invoicepb.InvoiceData) *invoicepb.InvoiceDataSalts {
 	if i.InvoiceSalts == nil {
 		invoiceSalts := &invoicepb.InvoiceDataSalts{}
 		proofs.FillSalts(invoiceData, invoiceSalts)
 		i.InvoiceSalts = invoiceSalts
-
 	}
+
 	return i.InvoiceSalts
 }
 
-// CoreDocument returns a CoreDocument with an embedded invoice
-func (i *InvoiceModel) CoreDocument() (*coredocumentpb.CoreDocument, error) {
-	coreDocument := new(coredocumentpb.CoreDocument)
+// PackCoreDocument packs the InvoiceModel into a Core Document
+// If the, InvoiceModel is new, it creates a valid identifiers
+// TODO: once coredoc has collaborators, take the collaborators from the model
+func (i *InvoiceModel) PackCoreDocument() (*coredocumentpb.CoreDocument, error) {
+	if i.CoreDocument == nil {
+		// this is the new invoice create. so create identifiers
+		i.CoreDocument = coredocument.New()
+	}
 
-	invoiceData, err := i.createInvoiceData()
+	invoiceData, err := i.createP2PProtobuf()
 	if err != nil {
 		return nil, err
 	}
+
 	serializedInvoice, err := proto.Marshal(invoiceData)
 	if err != nil {
 		return nil, centerrors.Wrap(err, "couldn't serialise InvoiceData")
@@ -218,60 +299,64 @@ func (i *InvoiceModel) CoreDocument() (*coredocumentpb.CoreDocument, error) {
 		Value:   serializedSalts,
 	}
 
-	coreDocument.EmbeddedData = &invoiceAny
-	coreDocument.EmbeddedDataSalts = &invoiceSaltsAny
-
-	//the model keeps a copy of the newly created core document
-	i.coreDocument = coreDocument
-
-	return coreDocument, err
+	coreDoc := new(coredocumentpb.CoreDocument)
+	proto.Merge(coreDoc, i.CoreDocument)
+	coreDoc.EmbeddedData = &invoiceAny
+	coreDoc.EmbeddedDataSalts = &invoiceSaltsAny
+	return coreDoc, err
 }
 
-//FromCoreDocument initials the invoice model with a core document whith the embedded invoice data
-func (i *InvoiceModel) FromCoreDocument(coreDocument *coredocumentpb.CoreDocument) error {
-	if coreDocument == nil {
-		return centerrors.NilError(coreDocument)
+// UnpackCoreDocument unpacks the core document into InvoiceModel
+func (i *InvoiceModel) UnpackCoreDocument(coreDoc *coredocumentpb.CoreDocument) error {
+	if coreDoc == nil {
+		return centerrors.NilError(coreDoc)
 	}
-	if coreDocument.EmbeddedData == nil || coreDocument.EmbeddedData.TypeUrl != documenttypes.InvoiceDataTypeUrl ||
-		coreDocument.EmbeddedDataSalts.TypeUrl != documenttypes.InvoiceSaltsTypeUrl {
+
+	if coreDoc.EmbeddedData == nil ||
+		coreDoc.EmbeddedData.TypeUrl != documenttypes.InvoiceDataTypeUrl ||
+		coreDoc.EmbeddedDataSalts == nil ||
+		coreDoc.EmbeddedDataSalts.TypeUrl != documenttypes.InvoiceSaltsTypeUrl {
 		return fmt.Errorf("trying to convert document with incorrect schema")
 	}
 
-	i.coreDocument = coreDocument
-
 	invoiceData := &invoicepb.InvoiceData{}
-	err := proto.Unmarshal(coreDocument.EmbeddedData.Value, invoiceData)
+	err := proto.Unmarshal(coreDoc.EmbeddedData.Value, invoiceData)
+	if err != nil {
+		return err
+	}
 
+	err = i.loadFromP2PProtobuf(invoiceData)
 	if err != nil {
 		return err
 	}
 
 	invoiceSalts := &invoicepb.InvoiceDataSalts{}
-	err = proto.Unmarshal(coreDocument.EmbeddedDataSalts.Value, invoiceSalts)
-
+	err = proto.Unmarshal(coreDoc.EmbeddedDataSalts.Value, invoiceSalts)
 	if err != nil {
 		return err
 	}
 
-	err = i.initInvoice(invoiceData)
 	i.InvoiceSalts = invoiceSalts
-
+	if i.CoreDocument == nil {
+		i.CoreDocument = new(coredocumentpb.CoreDocument)
+	}
+	proto.Merge(i.CoreDocument, coreDoc)
+	i.CoreDocument.EmbeddedDataSalts = nil
+	i.CoreDocument.EmbeddedData = nil
 	return err
 }
 
+// JSON marshals InvoiceModel into a json bytes
 func (i *InvoiceModel) JSON() ([]byte, error) {
 	return json.Marshal(i)
 }
 
+// FromJSON unmarshals the json bytes into InvoiceModel
 func (i *InvoiceModel) FromJSON(jsonData []byte) error {
-
-	if err := json.Unmarshal(jsonData, i); err != nil {
-		return err
-	}
-	return nil
-
+	return json.Unmarshal(jsonData, i)
 }
 
+// Type gives the InvoiceModel type
 func (i *InvoiceModel) Type() reflect.Type {
 	return reflect.TypeOf(i)
 }
