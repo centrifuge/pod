@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/big"
@@ -28,6 +29,7 @@ const (
 
 type CentID [CentIDByteLength]byte
 
+// NewCentID takes bytes and return CentID
 func NewCentID(centIDBytes []byte) (CentID, error) {
 	var centBytes [CentIDByteLength]byte
 	if !tools.IsValidByteSliceForLength(centIDBytes, CentIDByteLength) {
@@ -35,6 +37,16 @@ func NewCentID(centIDBytes []byte) (CentID, error) {
 	}
 	copy(centBytes[:], centIDBytes[:CentIDByteLength])
 	return centBytes, nil
+}
+
+// CentIDFromString takes an hex string and returns a CentID
+func CentIDFromString(id string) (centID CentID, err error) {
+	decID, err := hex.DecodeString(id)
+	if err != nil {
+		return centID, centerrors.Wrap(err, "failed to decode id")
+	}
+
+	return NewCentID(decID)
 }
 
 func NewRandomCentID() CentID {
