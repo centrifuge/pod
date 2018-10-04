@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"sync"
+
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/ethereum"
@@ -17,7 +19,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/go-errors/errors"
 	"github.com/stretchr/testify/assert"
-	"sync"
 )
 
 func TestMain(m *testing.M) {
