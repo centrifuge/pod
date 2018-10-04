@@ -7,6 +7,7 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
+	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -18,6 +19,30 @@ func createPayload() *clientinvoicepb.InvoiceCreatePayload {
 			GrossAmount: 42,
 		},
 	}
+}
+
+func TestDefaultService(t *testing.T) {
+	srv := DefaultService(GetRepository())
+	assert.NotNil(t, srv, "must be non-nil")
+}
+
+func TestService_DeriveFromCoreDocument(t *testing.T) {
+	// nil doc
+	_, err := invService.DeriveFromCoreDocument(nil)
+	assert.Error(t, err, "must fail to derive")
+
+	// successful
+	data := testinginvoice.CreateInvoiceData()
+	coreDoc := testinginvoice.CreateCDWithEmbeddedInvoice(t, data)
+	model, err := invService.DeriveFromCoreDocument(coreDoc)
+	assert.Nil(t, err, "must return model")
+	assert.NotNil(t, model, "model must be non-nil")
+	inv, ok := model.(*InvoiceModel)
+	assert.True(t, ok, "must be true")
+	assert.Equal(t, inv.Payee[:], data.Payee)
+	assert.Equal(t, inv.Sender[:], data.Sender)
+	assert.Equal(t, inv.Recipient[:], data.Recipient)
+	assert.Equal(t, inv.GrossAmount, data.GrossAmount)
 }
 
 func TestService_DeriveFromPayload(t *testing.T) {

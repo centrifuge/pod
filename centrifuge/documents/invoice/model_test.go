@@ -8,12 +8,12 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
+	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
+	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
@@ -140,4 +140,44 @@ func TestInvoiceModel_getClientData(t *testing.T) {
 	assert.Equal(t, data.Recipient, hex.EncodeToString(inv.Recipient[:]), "recipient should match")
 	assert.Equal(t, data.Sender, hex.EncodeToString(inv.Sender[:]), "sender should match")
 	assert.Equal(t, data.Payee, hex.EncodeToString(inv.Payee[:]), "payee should match")
+}
+
+func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
+	// fail recipient
+	data := &clientinvoicepb.InvoiceData{
+		Sender:    "some number",
+		Payee:     "some payee",
+		Recipient: "some recipient",
+		ExtraData: "some data",
+	}
+	inv := new(InvoiceModel)
+	err := inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data})
+	assert.Error(t, err, "must return err")
+	assert.Contains(t, err.Error(), "failed to decode recipient")
+
+	data.Recipient = "010203040506"
+	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data})
+	assert.Contains(t, err.Error(), "failed to decode sender")
+
+	data.Sender = "010203060506"
+	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data})
+	assert.Contains(t, err.Error(), "failed to decode payee")
+
+	data.Payee = "010203030405"
+	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data})
+	assert.Contains(t, err.Error(), "failed to decode extra data")
+
+	data.ExtraData = "010203020301"
+	collabs := []string{"010102040506", "some id"}
+	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data, Collaborators: collabs})
+	assert.Contains(t, err.Error(), "failed to decode collaborator")
+
+	collabs = []string{"010102040506", "010203020302"}
+	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data, Collaborators: collabs})
+	assert.Nil(t, err, "must be nil")
+	assert.Equal(t, inv.Sender[:], []byte{1, 2, 3, 6, 5, 6})
+	assert.Equal(t, inv.Payee[:], []byte{1, 2, 3, 3, 4, 5})
+	assert.Equal(t, inv.Recipient[:], []byte{1, 2, 3, 4, 5, 6})
+	assert.Equal(t, inv.ExtraData[:], []byte{1, 2, 3, 2, 3, 1})
+	assert.Equal(t, inv.Collaborators, []identity.CentID{{1, 1, 2, 4, 5, 6}, {1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}})
 }
