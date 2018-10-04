@@ -101,4 +101,5 @@ func TestService_DeriveCreateResponse(t *testing.T) {
 	data, err := invService.DeriveCreateResponse(inv)
 	assert.Nil(t, err, "Derive must succeed")
 	assert.NotNil(t, data, "data must be non nil")
+	assert.Equal(t, data, payload.Data, "data mismatch")
 }
