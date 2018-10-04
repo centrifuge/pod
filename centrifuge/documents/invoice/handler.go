@@ -220,15 +220,15 @@ func (h *grpcHandler) Update(context.Context, *clientinvoicepb.InvoiceUpdatePayl
 func (h *grpcHandler) GetVersion(ctx context.Context, getVersionRequest *clientinvoicepb.GetVersionRequest) (*clientinvoicepb.InvoiceResponse, error) {
 	identifier, err := hex.DecodeString(getVersionRequest.Identifier)
 	if err != nil {
-		return nil, err
+		return nil, centerrors.Wrap(err, "identifier is an invalid hex string")
 	}
 	version, err := hex.DecodeString(getVersionRequest.Version)
 	if err != nil {
-		return nil, err
+		return nil, centerrors.Wrap(err, "version is an in invalid hex string")
 	}
 	doc, err := h.service.GetVersion(identifier, version)
 	if err != nil {
-		return nil, err
+		return nil, centerrors.Wrap(err, "document not found")
 	}
 	resp, err := h.service.DeriveInvoiceResponse(doc)
 	if err != nil {
