@@ -128,22 +128,23 @@ func Wrap(err error, msg string) error {
 	return errpb
 }
 
-//getNextErrorId returns a new unique key for an error
-//For example two error having the same key called 'errorX'
+// getNextErrorId returns a new unique key for an error
+// For example two error having the same key called 'errorX'
 // the second key would use 'errorX_2' instead of 'errorX'
 func getNextErrorId(errors map[string]string, key string) string {
 	counter := 2
 	isUnique := false
+	uniqueKey := ""
 	for isUnique != true {
 
-		uniqueKey := fmt.Sprintf("%s_%v", key, counter)
+		uniqueKey = fmt.Sprintf("%s_%v", key, counter)
 		if errors[uniqueKey] == "" {
-			return uniqueKey
+			isUnique = true
 		}
 		counter++
 
 	}
-	return ""
+	return uniqueKey
 }
 
 func WrapErrors(errDst error, errSrc error) error {
