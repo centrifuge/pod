@@ -16,6 +16,9 @@ var invService Service
 func createPayload() *clientinvoicepb.InvoiceCreatePayload {
 	return &clientinvoicepb.InvoiceCreatePayload{
 		Data: &clientinvoicepb.InvoiceData{
+			Sender:      "010101010101",
+			Recipient:   "010203040506",
+			Payee:       "010203020406",
 			GrossAmount: 42,
 		},
 	}
