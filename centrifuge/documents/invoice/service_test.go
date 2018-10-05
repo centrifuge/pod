@@ -68,6 +68,47 @@ func TestService_DeriveFromPayload(t *testing.T) {
 	assert.NotNil(t, receivedCoreDocument.EmbeddedData, "embeddedData should be field")
 }
 
+func TestService_GetLastVersion(t *testing.T) {
+	documentIdentifier := tools.RandomSlice(32)
+	nextIdentifier := tools.RandomSlice(32)
+	thirdIdentifier := tools.RandomSlice(32)
+	inv1 := &InvoiceModel{
+		GrossAmount: 60,
+		CoreDocument: &coredocumentpb.CoreDocument{
+			DocumentIdentifier: documentIdentifier,
+			CurrentIdentifier:  documentIdentifier,
+			NextIdentifier:     nextIdentifier,
+		},
+	}
+	err := GetRepository().Create(documentIdentifier, inv1)
+	assert.Nil(t, err)
+
+	mod1, err := invService.GetLastVersion(documentIdentifier)
+	assert.Nil(t, err)
+
+	invLoad1, _ := mod1.(*InvoiceModel)
+	assert.Equal(t, invLoad1.CoreDocument.CurrentIdentifier, documentIdentifier)
+
+	inv2 := &InvoiceModel{
+		GrossAmount: 60,
+		CoreDocument: &coredocumentpb.CoreDocument{
+			DocumentIdentifier: documentIdentifier,
+			CurrentIdentifier:  nextIdentifier,
+			NextIdentifier:     thirdIdentifier,
+		},
+	}
+
+	err = GetRepository().Create(nextIdentifier, inv2)
+	assert.Nil(t, err)
+
+	mod2, err := invService.GetLastVersion(documentIdentifier)
+	assert.Nil(t, err)
+
+	invLoad2, _ := mod2.(*InvoiceModel)
+	assert.Equal(t, invLoad2.CoreDocument.CurrentIdentifier, nextIdentifier)
+	assert.Equal(t, invLoad2.CoreDocument.NextIdentifier, thirdIdentifier)
+}
+
 func TestService_GetVersion(t *testing.T) {
 	documentIdentifier := tools.RandomSlice(32)
 	currentIdentifier := tools.RandomSlice(32)
@@ -82,18 +123,14 @@ func TestService_GetVersion(t *testing.T) {
 	err := GetRepository().Create(currentIdentifier, inv)
 	assert.Nil(t, err)
 
-	loadInv := new(InvoiceModel)
-	err = GetRepository().LoadByID(currentIdentifier, loadInv)
-	assert.Nil(t, err, "Load must pass")
-	assert.NotNil(t, loadInv, "must be non nil")
+	mod, err := invService.GetVersion(documentIdentifier, currentIdentifier)
+	assert.Nil(t, err)
+	loadInv, _ := mod.(*InvoiceModel)
+	assert.Equal(t, loadInv.CoreDocument.CurrentIdentifier, currentIdentifier)
+	assert.Equal(t, loadInv.CoreDocument.DocumentIdentifier, documentIdentifier)
 
-	assert.Equal(t, loadInv.GrossAmount, inv.GrossAmount)
-	assert.Equal(t, loadInv.CoreDocument, inv.CoreDocument)
-
-	// failed creation
-	err = invService.Create(inv)
-	assert.Error(t, err, "must fail")
-	assert.Contains(t, err.Error(), "document already exists")
+	mod, err = invService.GetVersion(documentIdentifier, []byte{})
+	assert.Error(t, err)
 }
 
 func TestService_Create(t *testing.T) {
