@@ -2,12 +2,12 @@ package invoice
 
 import (
 	"bytes"
-	"encoding/hex"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 // Service defines specific functions for invoice
@@ -26,6 +26,9 @@ type Service interface {
 
 	// DeriveInvoiceResponse returns the invoice model in our standard client format
 	DeriveInvoiceResponse(inv documents.Model) (*clientinvoicepb.InvoiceResponse, error)
+
+	// GetLastVersion reads a document from the database
+	GetLastVersion([]byte) (documents.Model, error)
 
 	// GetVersion reads a document from the database
 	GetVersion([]byte, []byte) (documents.Model, error)
@@ -98,6 +101,25 @@ func (s service) GetVersion(identifier []byte, version []byte) (doc documents.Mo
 	return
 }
 
+func (s service) GetLastVersion(identifier []byte) (doc documents.Model, err error) {
+	doc, err = s.GetVersion(identifier, identifier)
+	if err != nil {
+		return nil, centerrors.Wrap(err, "document not found")
+	}
+	inv, _ := doc.(*InvoiceModel)
+	next_version := inv.CoreDocument.NextIdentifier
+	for next_version != nil {
+		doc, err = s.GetVersion(identifier, next_version)
+		if err != nil {
+			next_version = nil
+		} else {
+			inv, _ = doc.(*InvoiceModel)
+			next_version = inv.CoreDocument.NextIdentifier
+		}
+	}
+	return inv, nil
+}
+
 // DeriveInvoiceResponse returns create response from invoice model
 func (s service) DeriveInvoiceResponse(doc documents.Model) (*clientinvoicepb.InvoiceResponse, error) {
 	inv, ok := doc.(*InvoiceModel)
@@ -110,8 +132,8 @@ func (s service) DeriveInvoiceResponse(doc documents.Model) (*clientinvoicepb.In
 	}
 
 	header := &clientinvoicepb.ResponseHeader{
-		DocumentId:    hex.EncodeToString(inv.CoreDocument.DocumentIdentifier),
-		VersionId:     hex.EncodeToString(inv.CoreDocument.CurrentIdentifier),
+		DocumentId:    hexutil.Encode(inv.CoreDocument.DocumentIdentifier),
+		VersionId:     hexutil.Encode(inv.CoreDocument.CurrentIdentifier),
 		Collaborators: collaborators,
 	}
 

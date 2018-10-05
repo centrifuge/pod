@@ -6,8 +6,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"fmt"
-	"testing"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
@@ -17,10 +15,12 @@ import (
 	legacyinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/legacy/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/precise-proofs/proofs"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-errors/errors"
 	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"testing"
 )
 
 // mockInvoiceRepository implements storage.legacyRepo
@@ -295,6 +295,18 @@ func (m *mockService) Create(inv documents.Model) error {
 	return args.Error(0)
 }
 
+func (m *mockService) GetLastVersion(identifier []byte) (documents.Model, error) {
+	args := m.Called(identifier)
+	data, _ := args.Get(0).(documents.Model)
+	return data, args.Error(1)
+}
+
+func (m *mockService) GetVersion(identifier []byte, version []byte) (documents.Model, error) {
+	args := m.Called(identifier, version)
+	data, _ := args.Get(0).(documents.Model)
+	return data, args.Error(1)
+}
+
 func (m *mockService) DeriveInvoiceData(doc documents.Model) (*clientinvoicepb.InvoiceData, error) {
 	args := m.Called(doc)
 	data, _ := args.Get(0).(*clientinvoicepb.InvoiceData)
@@ -373,6 +385,39 @@ func TestGrpcHandler_Create(t *testing.T) {
 	srv.On("DeriveInvoiceResponse", model).Return(response, nil)
 	srv.On("Create", mock.Anything).Return(nil)
 	res, err := h.Create(context.Background(), payload)
+	model.AssertExpectations(t)
+	srv.AssertExpectations(t)
+	assert.Nil(t, err, "must be nil")
+	assert.NotNil(t, res, "must be non nil")
+	assert.Equal(t, res, response)
+}
+
+func TestGrpcHandler_Get(t *testing.T) {
+	identifier := "0x01010101"
+	identifierBytes, _ := hexutil.Decode(identifier)
+	h := getHandler()
+	srv := h.service.(*mockService)
+	model := new(mockModel)
+	payload := &clientinvoicepb.GetRequest{Identifier: identifier}
+	response := &clientinvoicepb.InvoiceResponse{}
+	srv.On("GetLastVersion", identifierBytes).Return(model, nil)
+	srv.On("DeriveInvoiceResponse", model).Return(response, nil)
+	res, err := h.Get(context.Background(), payload)
+	model.AssertExpectations(t)
+	srv.AssertExpectations(t)
+	assert.Nil(t, err, "must be nil")
+	assert.NotNil(t, res, "must be non nil")
+	assert.Equal(t, res, response)
+}
+func TestGrpcHandler_GetVersion(t *testing.T) {
+	h := getHandler()
+	srv := h.service.(*mockService)
+	model := new(mockModel)
+	payload := &clientinvoicepb.GetVersionRequest{Identifier: "0x01", Version: "0x00"}
+	response := &clientinvoicepb.InvoiceResponse{}
+	srv.On("GetVersion", []byte{0x01}, []byte{0x00}).Return(model, nil)
+	srv.On("DeriveInvoiceResponse", model).Return(response, nil)
+	res, err := h.GetVersion(context.Background(), payload)
 	model.AssertExpectations(t)
 	srv.AssertExpectations(t)
 	assert.Nil(t, err, "must be nil")

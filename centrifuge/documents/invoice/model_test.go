@@ -3,11 +3,7 @@
 package invoice
 
 import (
-	"encoding/hex"
 	"encoding/json"
-	"reflect"
-	"testing"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
@@ -15,8 +11,11 @@ import (
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
+	"reflect"
+	"testing"
 )
 
 func TestInvoice_FromCoreDocuments_invalidParameter(t *testing.T) {
@@ -137,9 +136,9 @@ func TestInvoiceModel_getClientData(t *testing.T) {
 	assert.Nil(t, err, "must not error out")
 	assert.NotNil(t, data, "invoice data should not be nil")
 	assert.Equal(t, data.GrossAmount, invData.GrossAmount, "gross amount must match")
-	assert.Equal(t, data.Recipient, hex.EncodeToString(inv.Recipient[:]), "recipient should match")
-	assert.Equal(t, data.Sender, hex.EncodeToString(inv.Sender[:]), "sender should match")
-	assert.Equal(t, data.Payee, hex.EncodeToString(inv.Payee[:]), "payee should match")
+	assert.Equal(t, data.Recipient, hexutil.Encode(inv.Recipient[:]), "recipient should match")
+	assert.Equal(t, data.Sender, hexutil.Encode(inv.Sender[:]), "sender should match")
+	assert.Equal(t, data.Payee, hexutil.Encode(inv.Payee[:]), "payee should match")
 }
 
 func TestInvoiceModel_InitInvoiceInput(t *testing.T) {

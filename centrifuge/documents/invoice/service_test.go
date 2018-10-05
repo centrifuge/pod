@@ -155,8 +155,8 @@ func TestService_DeriveInvoiceResponse(t *testing.T) {
 	inv.CoreDocument = &coredocumentpb.CoreDocument{
 		DocumentIdentifier: []byte{},
 	}
-	data, err := invService.DeriveInvoiceResponse(inv)
+	resp, err := invService.DeriveInvoiceResponse(inv)
 	assert.Nil(t, err, "Derive must succeed")
-	assert.NotNil(t, data, "data must be non nil")
-	assert.Equal(t, data, payload.Data, "data mismatch")
+	assert.NotNil(t, resp, "data must be non nil")
+	assert.Equal(t, resp.Data, payload.Data, "data mismatch")
 }

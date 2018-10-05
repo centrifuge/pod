@@ -1,7 +1,6 @@
 package invoice
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"reflect"
@@ -14,6 +13,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/precise-proofs/proofs"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/golang/protobuf/ptypes/timestamp"
@@ -94,13 +94,13 @@ func (i *InvoiceModel) getClientData() (*clientinvoicepb.InvoiceData, error) {
 		NetAmount:        i.NetAmount,
 		TaxAmount:        i.TaxAmount,
 		TaxRate:          i.TaxRate,
-		Recipient:        hex.EncodeToString(recipient),
-		Sender:           hex.EncodeToString(sender),
-		Payee:            hex.EncodeToString(payee),
+		Recipient:        hexutil.Encode(recipient),
+		Sender:           hexutil.Encode(sender),
+		Payee:            hexutil.Encode(payee),
 		Comment:          i.Comment,
 		DueDate:          i.DueDate,
 		DateCreated:      i.DateCreated,
-		ExtraData:        hex.EncodeToString(i.ExtraData),
+		ExtraData:        hexutil.Encode(i.ExtraData),
 	}, nil
 
 }
@@ -189,7 +189,7 @@ func (i *InvoiceModel) InitInvoiceInput(payload *clientinvoicepb.InvoiceCreatePa
 		return centerrors.Wrap(err, "failed to decode payee")
 	}
 
-	i.ExtraData, err = hex.DecodeString(data.ExtraData)
+	i.ExtraData, err = hexutil.Decode(data.ExtraData)
 	if err != nil {
 		return centerrors.Wrap(err, "failed to decode extra data")
 	}

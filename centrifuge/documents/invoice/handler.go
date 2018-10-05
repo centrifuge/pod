@@ -1,7 +1,6 @@
 package invoice
 
 import (
-	"encoding/hex"
 	"fmt"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -15,6 +14,7 @@ import (
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	legacyinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/legacy/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/empty"
 	logging "github.com/ipfs/go-log"
 	"golang.org/x/net/context"
@@ -218,11 +218,11 @@ func (h *grpcHandler) Update(context.Context, *clientinvoicepb.InvoiceUpdatePayl
 
 // GetVersion returns the requested version of the document
 func (h *grpcHandler) GetVersion(ctx context.Context, getVersionRequest *clientinvoicepb.GetVersionRequest) (*clientinvoicepb.InvoiceResponse, error) {
-	identifier, err := hex.DecodeString(getVersionRequest.Identifier)
+	identifier, err := hexutil.Decode(getVersionRequest.Identifier)
 	if err != nil {
 		return nil, centerrors.Wrap(err, "identifier is an invalid hex string")
 	}
-	version, err := hex.DecodeString(getVersionRequest.Version)
+	version, err := hexutil.Decode(getVersionRequest.Version)
 	if err != nil {
 		return nil, centerrors.Wrap(err, "version is an in invalid hex string")
 	}
@@ -235,11 +235,21 @@ func (h *grpcHandler) GetVersion(ctx context.Context, getVersionRequest *clienti
 		return nil, err
 	}
 	return resp, nil
-
 }
 
 // Get returns the invoice the latest version of the document with given identifier
-func (h *grpcHandler) Get(context.Context, *clientinvoicepb.GetRequest) (*clientinvoicepb.InvoiceResponse, error) {
-
-	return nil, fmt.Errorf("not implemented yet")
+func (h *grpcHandler) Get(ctx context.Context, getRequest *clientinvoicepb.GetRequest) (*clientinvoicepb.InvoiceResponse, error) {
+	identifier, err := hexutil.Decode(getRequest.Identifier)
+	if err != nil {
+		return nil, centerrors.Wrap(err, "identifier is an invalid hex string")
+	}
+	doc, err := h.service.GetLastVersion(identifier)
+	if err != nil {
+		return nil, centerrors.Wrap(err, "document not found")
+	}
+	resp, err := h.service.DeriveInvoiceResponse(doc)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
 }

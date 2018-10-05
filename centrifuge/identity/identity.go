@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/big"
@@ -16,6 +15,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/secp256k1"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 const (
@@ -41,11 +41,10 @@ func NewCentID(centIDBytes []byte) (CentID, error) {
 
 // CentIDFromString takes an hex string and returns a CentID
 func CentIDFromString(id string) (centID CentID, err error) {
-	decID, err := hex.DecodeString(id)
+	decID, err := hexutil.Decode(id)
 	if err != nil {
-		return centID, centerrors.Wrap(err, "failed to decode id")
+		return centID, centerrors.Wrap(err, "failed to decide id")
 	}
-
 	return NewCentID(decID)
 }
 
@@ -65,7 +64,7 @@ func (c CentID) Equal(other CentID) bool {
 }
 
 func (c CentID) String() string {
-	return "0x" + hex.EncodeToString(c[:])
+	return hexutil.Encode(c[:])
 }
 
 func (c CentID) MarshalBinary() (data []byte, err error) {
