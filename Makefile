@@ -42,12 +42,16 @@ proto-all: ## runs prototool all
 gen-swagger: ## generates the swagger documentation
 	npm run build_swagger
 
+generate: ## autogenerate go files for config
+	go generate ./centrifuge/config/configuration.go
+
 vendorinstall: ## Installs all protobuf dependencies with go-vendorinstall
 	go install github.com/centrifuge/go-centrifuge/vendor/github.com/roboll/go-vendorinstall
 	go-vendorinstall golang.org/x/tools/cmd/goimports
 	go-vendorinstall github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
 	go-vendorinstall github.com/golang/protobuf/protoc-gen-go
 	go-vendorinstall github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
+	go-vendorinstall github.com/jteeuwen/go-bindata
 
 install: ## Builds and Install binary for development
 install: install-deps vendorinstall
