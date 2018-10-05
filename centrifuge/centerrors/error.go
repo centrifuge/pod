@@ -57,7 +57,7 @@ func NewWithErrors(c code.Code, message string, errors map[string]string) error 
 	}
 }
 
-// P2PError represents p2p error type
+// Error represents cent error type
 type Error struct {
 	err *errorspb.Error
 }
@@ -72,39 +72,37 @@ func FromError(err error) (*Error, bool) {
 
 	errpb, ok := err.(*errpb)
 	if !ok {
-		errors := make(map[string]string)
-		errors["unkownError"] = err.Error()
-		return &Error{err: &errorspb.Error{Code: int32(code.Unknown), Message: err.Error(), Errors: errors}}, false
+		return &Error{err: &errorspb.Error{Code: int32(code.Unknown), Message: err.Error()}}, false
 	}
 
 	return &Error{err: (*errorspb.Error)(errpb)}, true
 }
 
 // Code returns the error code
-func (p2pErr *Error) Code() code.Code {
-	if p2pErr == nil || p2pErr.err == nil {
+func (centErr *Error) Code() code.Code {
+	if centErr == nil || centErr.err == nil {
 		return code.Ok
 	}
 
-	return code.To(p2pErr.err.Code)
+	return code.To(centErr.err.Code)
 }
 
 // Message returns error message
-func (p2pErr *Error) Message() string {
-	if p2pErr == nil || p2pErr.err == nil {
+func (centErr *Error) Message() string {
+	if centErr == nil || centErr.err == nil {
 		return ""
 	}
 
-	return p2pErr.err.Message
+	return centErr.err.Message
 }
 
 // Errors returns map errors passed
-func (p2pErr *Error) Errors() map[string]string {
-	if p2pErr == nil || p2pErr.err == nil {
+func (centErr *Error) Errors() map[string]string {
+	if centErr == nil || centErr.err == nil {
 		return nil
 	}
 
-	return p2pErr.err.Errors
+	return centErr.err.Errors
 }
 
 // NilError returns error with Type added to message
@@ -147,6 +145,32 @@ func getNextErrorId(errors map[string]string, key string) string {
 	return uniqueKey
 }
 
+
+func wrapErrorMaps(errorDst, errorSrc map[string]string) map[string]string {
+
+	if errorDst == nil {
+		return errorSrc
+	}
+
+	if errorSrc == nil {
+		return errorDst
+	}
+
+	for errorKey, errorValue := range errorSrc {
+		if errorDst[errorKey] != "" {
+
+			uniqueKey := getNextErrorId(errorDst, errorKey)
+			errorDst[uniqueKey] = errorValue
+
+		} else {
+			errorDst[errorKey] = errorValue
+		}
+	}
+
+	return errorDst
+
+}
+
 func WrapErrors(errDst error, errSrc error) error {
 
 	if errDst == nil {
@@ -157,28 +181,42 @@ func WrapErrors(errDst error, errSrc error) error {
 		return errDst
 	}
 
-	errorSrc, okSrc := FromError(errSrc)
+	errorDst, dstIsCentError := errDst.(*errpb)
+	errorSrc, srcIsCentError := errSrc.(*errpb)
 
-	errorDst, okDst := FromError(errDst)
-
-	if !okDst && okSrc || errorDst.Code() == code.Unknown {
-		// unknown error in dst prefers src error code and message
-		errorDst.err.Code = errorSrc.err.Code
-		errorDst.err.Message = errorSrc.err.Message
+	// if no centerror is used a standard error will be returned
+	if !dstIsCentError && !srcIsCentError {
+		return fmt.Errorf("%v: %v", errDst, errSrc)
 	}
 
-	for errorKey, errorValue := range errorSrc.err.Errors {
-		if errorDst.err.Errors[errorKey] != "" {
+	// if one of the two errors is a centerror the standard error will be appended to Error.Message
+	if dstIsCentError && !srcIsCentError {
+		errorDst.Message = fmt.Sprintf("%s: %v", errorDst.Message, errSrc)
+		return errorDst
 
-			uniqueKey := getNextErrorId(errorDst.err.Errors, errorKey)
-			errorDst.err.Errors[uniqueKey] = errorValue
+	}
+	if !dstIsCentError && srcIsCentError {
+		errorSrc.Message = fmt.Sprintf("%v: %s", errDst, errorSrc.Message)
+		return errorSrc
 
-		} else {
-			errorDst.err.Errors[errorKey] = errorValue
+	}
+
+	if dstIsCentError && srcIsCentError {
+
+		if errorDst.Code == int32(code.Unknown) {
+
+			errorDst.Code = errorSrc.Code
 		}
 
+		errorDst.Message = fmt.Sprintf("%v: %v", errorDst.Message, errorSrc.Message)
+
+		errorDst.Errors = wrapErrorMaps(errorDst.Errors, errorSrc.Errors)
+
+		return errorDst
+
+
 	}
 
-	return NewWithErrors(errorDst.Code(), errorDst.Message(), errorDst.Errors())
+	return fmt.Errorf("a error occured while wrapping other error messages")
 
 }

@@ -12,7 +12,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/code"
 )
 
-func TestP2PError(t *testing.T) {
+func TestError(t *testing.T) {
 	tests := []struct {
 		code   code.Code
 		msg    string
@@ -66,27 +66,72 @@ func TestWrapErrors(t *testing.T) {
 	simpleErr := fmt.Errorf("simple-error 1")
 	simpleErr2 := fmt.Errorf("simple-error 2")
 
+	//case: error & error
 	errors := WrapErrors(simpleErr, simpleErr2)
 	centError, ok := FromError(errors)
-	assert.True(t, ok, "transformation to Error should work")
-	assert.Equal(t, 2, len(centError.Errors()), "error map should contain two errors")
+	assert.False(t, ok, "error is not a cent error msg")
+
+	assert.True(t, len(centError.Message()) >= len(simpleErr.Error())+len(simpleErr2.Error()) ,"error msg should contain both error msg's")
+	assert.Equal(t, 0, len(centError.Errors()), "error map should be empty")
 	assert.Equal(t, code.Unknown, centError.Code(), "code should be from type unkown")
 
-	simpleErr3 := fmt.Errorf("simple-error 3")
-	errors = WrapErrors(errors, simpleErr3)
+
+	//case: error & centerror
+	error3 := New(code.DocumentInvalid,"test document invalid")
+	errors = WrapErrors(errors, error3)
 	centError, ok = FromError(errors)
 	assert.True(t, ok, "transformation to Error should work")
-	assert.Equal(t, 3, len(centError.Errors()), "error map should contain two errors")
+	assert.Equal(t, centError.Code(), code.DocumentInvalid,"code should be copied from srcError ")
 
+
+	//case: centerror & error
+	errors = WrapErrors(errors, fmt.Errorf("simple-error 4"))
+	centError, ok = FromError(errors)
+	assert.True(t, ok, "transformation to Error should work")
+	assert.Equal(t, centError.Code(), code.DocumentInvalid,"code should be copied from srcError ")
+
+
+	//case: centerror (no map) & centerror (no map)
+	error5 := New(code.AuthenticationFailed,"test auth failed")
+	errors = WrapErrors(errors, error5)
+	centError, ok = FromError(errors)
+	assert.True(t, ok, "transformation to Error should work")
+	assert.Equal(t, centError.Code(), code.DocumentInvalid,"code should not be changed ")
+
+}
+
+func TestWrapErrorWithMap(t *testing.T) {
+
+	//case: no map & map
+	errorDst := New(code.DocumentInvalid,"test document invalid")
 	errorMap := make(map[string]string)
-	errorMap["invalidInvoice"] = "test invalid invoice"
-	errorMap["test"] = "another test error"
+	errorMap["error1"] = "first error"
+	errorMap["error2"] = "second error"
 
-	errors = WrapErrors(errors, NewWithErrors(code.DocumentInvalid, "invalid document", errorMap))
-	centError, ok = FromError(errors)
-
+	errorSrc := NewWithErrors(code.DocumentInvalid, "test msg",errorMap)
+	errorDst = WrapErrors(errorDst,errorSrc)
+	centError, ok := FromError(errorDst)
 	assert.True(t, ok, "transformation to Error should work")
-	assert.Equal(t, 5, len(centError.Errors()), "error map should contain two errors")
-	assert.Equal(t, code.DocumentInvalid, centError.Code(), "code should be from type unkown")
+	assert.Equal(t,2,len(centError.Errors()), "map should contain 2 entries")
+
+
+	//case: map & no map
+	error2 := New(code.AuthenticationFailed,"test auth failed")
+	errorDst = WrapErrors(errorDst, error2)
+	centError, ok = FromError(errorDst)
+	assert.True(t, ok, "transformation to Error should work")
+	assert.Equal(t,2,len(centError.Errors()), "map should contain 2 entries")
+
+
+	//case: map & map
+	errorMap2 := make(map[string]string)
+	errorMap2["error1"] = "third error" //same id
+	errorMap2["error4"] = "fourth error"
+	errorSrc = NewWithErrors(code.DocumentInvalid, "test msg",errorMap2)
+	errorDst = WrapErrors(errorDst,errorSrc)
+	centError, ok = FromError(errorDst)
+	assert.True(t, ok, "transformation to Error should work")
+	assert.Equal(t,4,len(centError.Errors()), "map should contain 4 entries")
+
 
 }
