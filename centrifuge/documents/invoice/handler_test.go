@@ -303,7 +303,7 @@ func (m *mockService) DeriveCreateResponse(doc documents.Model) (*clientinvoicep
 }
 
 func getHandler() *grpcHandler {
-	return &grpcHandler{service: &mockService{}}
+	return &grpcHandler{service: &mockService{}, coreDocProcessor: &testingutils.MockCoreDocumentProcessor{}}
 }
 
 func TestGRPCHandler_Create_derive_fail(t *testing.T) {
@@ -327,6 +327,18 @@ func TestGrpcHandler_Create_create_fail(t *testing.T) {
 	srv.AssertExpectations(t)
 	assert.Error(t, err, "must be non nil")
 	assert.Contains(t, err.Error(), "create failed")
+}
+
+func TestGRPCHandler_Create_centIDs_fail(t *testing.T) {
+	h := getHandler()
+	srv := h.service.(*mockService)
+	srv.On("DeriveFromCreatePayload", mock.Anything).Return(new(InvoiceModel), nil).Once()
+	srv.On("Create", mock.Anything).Return(nil).Once()
+	payload := &clientinvoicepb.InvoiceCreatePayload{Data: &clientinvoicepb.InvoiceData{GrossAmount: 300}, Collaborators: []string{"some id"}}
+	_, err := h.Create(context.Background(), payload)
+	srv.AssertExpectations(t)
+	assert.Error(t, err, "must be non nil")
+	assert.Contains(t, err.Error(), "failed to decode id")
 }
 
 type mockModel struct {
@@ -355,16 +367,38 @@ func TestGrpcHandler_Create_coredocument_fail(t *testing.T) {
 	assert.Contains(t, err.Error(), "core document failed")
 }
 
+func TestGrpcHandler_Create_anchor_fail(t *testing.T) {
+	h := getHandler()
+	srv := h.service.(*mockService)
+	model := new(mockModel)
+	cd := coredocument.New()
+	model.On("PackCoreDocument").Return(cd, nil)
+	srv.On("DeriveFromCreatePayload", mock.Anything).Return(model, nil)
+	srv.On("Create", mock.Anything).Return(nil)
+	proc := h.coreDocProcessor.(*testingutils.MockCoreDocumentProcessor)
+	proc.On("Anchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(fmt.Errorf("failed to anchor document"))
+	payload := &clientinvoicepb.InvoiceCreatePayload{Data: &clientinvoicepb.InvoiceData{GrossAmount: 300}}
+	_, err := h.Create(context.Background(), payload)
+	model.AssertExpectations(t)
+	srv.AssertExpectations(t)
+	proc.AssertExpectations(t)
+	assert.Error(t, err, "must be non nil")
+	assert.Contains(t, err.Error(), "failed to anchor document")
+}
+
 func TestGrpcHandler_Create(t *testing.T) {
 	h := getHandler()
 	srv := h.service.(*mockService)
 	model := new(mockModel)
 	cd := coredocument.New()
-	payload := &clientinvoicepb.InvoiceCreatePayload{Data: &clientinvoicepb.InvoiceData{GrossAmount: 300}}
+	payload := &clientinvoicepb.InvoiceCreatePayload{Data: &clientinvoicepb.InvoiceData{GrossAmount: 300}, Collaborators: []string{"010203040506"}}
 	model.On("PackCoreDocument").Return(cd, nil)
 	srv.On("DeriveFromCreatePayload", mock.Anything).Return(model, nil)
 	srv.On("DeriveCreateResponse", model).Return(payload.Data, nil)
 	srv.On("Create", mock.Anything).Return(nil)
+	proc := h.coreDocProcessor.(*testingutils.MockCoreDocumentProcessor)
+	proc.On("Anchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	proc.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	res, err := h.Create(context.Background(), payload)
 	model.AssertExpectations(t)
 	srv.AssertExpectations(t)

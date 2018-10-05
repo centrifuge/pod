@@ -429,3 +429,17 @@ func TestIsCentIDValid(t *testing.T) {
 		assert.Equal(t, c.valid, got, "result must match")
 	}
 }
+
+func TestCentIDsFromStrings(t *testing.T) {
+	// fail due to error
+	ids := []string{"010203040506", "some id"}
+	cids, err := CentIDsFromStrings(ids)
+	assert.Error(t, err)
+	assert.Nil(t, cids)
+
+	ids = []string{"010203040506", "020301020304"}
+	cids, err = CentIDsFromStrings(ids)
+	assert.Nil(t, err)
+	assert.NotNil(t, cids)
+	assert.Equal(t, cids, []CentID{{1, 2, 3, 4, 5, 6}, {2, 3, 1, 2, 3, 4}})
+}

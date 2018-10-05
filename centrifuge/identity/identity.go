@@ -49,6 +49,21 @@ func CentIDFromString(id string) (centID CentID, err error) {
 	return NewCentID(decID)
 }
 
+// CentIDsFromStrings converts hex ids to centIDs
+func CentIDsFromStrings(ids []string) ([]CentID, error) {
+	var cids []CentID
+	for _, id := range ids {
+		cid, err := CentIDFromString(id)
+		if err != nil {
+			return nil, err
+		}
+
+		cids = append(cids, cid)
+	}
+
+	return cids, nil
+}
+
 func NewRandomCentID() CentID {
 	ID, _ := NewCentID(tools.RandomSlice(CentIDByteLength))
 	return ID
