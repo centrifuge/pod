@@ -35,7 +35,9 @@ type MockValidatorWithOneError struct {
 
 func (m MockValidatorWithOneError) Validate(oldState Model, newState Model) error {
 
-	return fmt.Errorf("one error")
+	err := fmt.Errorf("one error")
+	centerrors.Wrap(err, "second error")
+	return err
 }
 
 func TestValidatorInterface(t *testing.T) {

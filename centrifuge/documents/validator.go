@@ -16,7 +16,7 @@ func (group ValidatorGroup) Validate(oldState Model, newState Model) (validation
 
 	for _, v := range group {
 		errors := v.Validate(oldState, newState)
-		validationErrors = centerrors.WrapErrors(validationErrors, errors)
+		validationErrors = centerrors.Wrap(validationErrors, errors)
 	}
 	return validationErrors
 }

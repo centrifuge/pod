@@ -110,9 +110,9 @@ func NilError(param interface{}) error {
 	return errors.Errorf("NIL %v provided", reflect.TypeOf(param))
 }
 
-// Wrap appends msg to errpb.Message if it is of type *errpb
+// wrapMsg appends msg to errpb.Message if it is of type *errpb
 // else appends the msg to error through fmt.Errorf
-func Wrap(err error, msg string) error {
+func wrapMsg(err error, msg string) error {
 	if err == nil {
 		return fmt.Errorf(msg)
 	}
@@ -170,15 +170,22 @@ func wrapErrorMaps(errorDst, errorSrc map[string]string) map[string]string {
 
 }
 
-func WrapErrors(errDst error, errSrc error) error {
+func wrapErrors(errorDst *errpb, errorSrc *errpb) error {
 
-	if errDst == nil {
-		return errSrc
+	if errorDst.Code == int32(code.Unknown) {
+
+		errorDst.Code = errorSrc.Code
 	}
 
-	if errSrc == nil {
-		return errDst
-	}
+	errorDst.Message = fmt.Sprintf("%v: %v", errorDst.Message, errorSrc.Message)
+
+	errorDst.Errors = wrapErrorMaps(errorDst.Errors, errorSrc.Errors)
+
+	return errorDst
+
+}
+
+func handleErrorWrapCases(errDst, errSrc error) error {
 
 	errorDst, dstIsCentError := errDst.(*errpb)
 	errorSrc, srcIsCentError := errSrc.(*errpb)
@@ -200,21 +207,39 @@ func WrapErrors(errDst error, errSrc error) error {
 
 	}
 
+	// case: centError & centError
 	if dstIsCentError && srcIsCentError {
-
-		if errorDst.Code == int32(code.Unknown) {
-
-			errorDst.Code = errorSrc.Code
-		}
-
-		errorDst.Message = fmt.Sprintf("%v: %v", errorDst.Message, errorSrc.Message)
-
-		errorDst.Errors = wrapErrorMaps(errorDst.Errors, errorSrc.Errors)
-
-		return errorDst
+		return wrapErrors(errorDst, errorSrc)
 
 	}
 
 	return fmt.Errorf("a error occured while wrapping other error messages")
+
+}
+
+// Wrap can wrap an error into an other.
+// src can be a string message, a implementation of the error interface or from type centerrors.Error
+func Wrap(errDst error, src interface{}) error {
+
+	errMsg, isStringSrc := src.(string)
+	if isStringSrc {
+
+		return wrapMsg(errDst, errMsg)
+	}
+
+	errSrc, ok := src.(error)
+	if !ok {
+		return fmt.Errorf("wrap error needs a string or an error as source")
+	}
+
+	if errDst == nil {
+		return errSrc
+	}
+
+	if errSrc == nil {
+		return errDst
+	}
+
+	return handleErrorWrapCases(errDst, errSrc)
 
 }

@@ -61,13 +61,13 @@ func TestError(t *testing.T) {
 	}
 }
 
-func TestWrapErrors(t *testing.T) {
+func TestWrap(t *testing.T) {
 
 	simpleErr := fmt.Errorf("simple-error 1")
 	simpleErr2 := fmt.Errorf("simple-error 2")
 
 	//case: error & error
-	errors := WrapErrors(simpleErr, simpleErr2)
+	errors := Wrap(simpleErr, simpleErr2)
 	centError, ok := FromError(errors)
 	assert.False(t, ok, "error is not a cent error msg")
 
@@ -77,20 +77,20 @@ func TestWrapErrors(t *testing.T) {
 
 	//case: error & centerror
 	error3 := New(code.DocumentInvalid, "test document invalid")
-	errors = WrapErrors(errors, error3)
+	errors = Wrap(errors, error3)
 	centError, ok = FromError(errors)
 	assert.True(t, ok, "transformation to Error should work")
 	assert.Equal(t, centError.Code(), code.DocumentInvalid, "code should be copied from srcError ")
 
 	//case: centerror & error
-	errors = WrapErrors(errors, fmt.Errorf("simple-error 4"))
+	errors = Wrap(errors, fmt.Errorf("simple-error 4"))
 	centError, ok = FromError(errors)
 	assert.True(t, ok, "transformation to Error should work")
 	assert.Equal(t, centError.Code(), code.DocumentInvalid, "code should be copied from srcError ")
 
 	//case: centerror (no map) & centerror (no map)
 	error5 := New(code.AuthenticationFailed, "test auth failed")
-	errors = WrapErrors(errors, error5)
+	errors = Wrap(errors, error5)
 	centError, ok = FromError(errors)
 	assert.True(t, ok, "transformation to Error should work")
 	assert.Equal(t, centError.Code(), code.DocumentInvalid, "code should not be changed ")
@@ -106,14 +106,14 @@ func TestWrapErrorWithMap(t *testing.T) {
 	errorMap["error2"] = "second error"
 
 	errorSrc := NewWithErrors(code.DocumentInvalid, "test msg", errorMap)
-	errorDst = WrapErrors(errorDst, errorSrc)
+	errorDst = Wrap(errorDst, errorSrc)
 	centError, ok := FromError(errorDst)
 	assert.True(t, ok, "transformation to Error should work")
 	assert.Equal(t, 2, len(centError.Errors()), "map should contain 2 entries")
 
 	//case: map & no map
 	error2 := New(code.AuthenticationFailed, "test auth failed")
-	errorDst = WrapErrors(errorDst, error2)
+	errorDst = Wrap(errorDst, error2)
 	centError, ok = FromError(errorDst)
 	assert.True(t, ok, "transformation to Error should work")
 	assert.Equal(t, 2, len(centError.Errors()), "map should contain 2 entries")
@@ -123,9 +123,26 @@ func TestWrapErrorWithMap(t *testing.T) {
 	errorMap2["error1"] = "third error" //same id
 	errorMap2["error4"] = "fourth error"
 	errorSrc = NewWithErrors(code.DocumentInvalid, "test msg", errorMap2)
-	errorDst = WrapErrors(errorDst, errorSrc)
+	errorDst = Wrap(errorDst, errorSrc)
 	centError, ok = FromError(errorDst)
 	assert.True(t, ok, "transformation to Error should work")
 	assert.Equal(t, 4, len(centError.Errors()), "map should contain 4 entries")
+
+}
+
+func TestWrapErrorWithMsg(t *testing.T) {
+
+	errorMsg1 := "test msg error 1"
+	errorMsg2 := "test msg error 2"
+
+	err := fmt.Errorf(errorMsg1)
+	err = Wrap(err, errorMsg2)
+
+	assert.Error(t, err, "wrap should return an error")
+	assert.True(t, len(err.Error()) >= (len(errorMsg1)+len(errorMsg2)), "wrap should append the src error msg")
+
+	err = Wrap(nil, errorMsg1)
+	assert.Error(t, err, "should return an error")
+	assert.Equal(t, errorMsg1, err.Error(), "error should include error msg")
 
 }
