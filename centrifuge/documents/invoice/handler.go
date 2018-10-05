@@ -68,7 +68,7 @@ func (h *grpcHandler) anchorInvoiceDocument(ctx context.Context, doc *invoicepb.
 		return nil, err
 	}
 
-	err = h.coreDocProcessor.Anchor(ctx, coreDoc, collaborators)
+	err = h.coreDocProcessor.Anchor(ctx, coreDoc, collaborators, nil)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, err

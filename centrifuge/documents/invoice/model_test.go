@@ -181,3 +181,17 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 	assert.Equal(t, inv.ExtraData[:], []byte{1, 2, 3, 2, 3, 1})
 	assert.Equal(t, inv.Collaborators, []identity.CentID{{1, 1, 2, 4, 5, 6}, {1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}})
 }
+
+func TestInvoiceModel_calculateDataRoot(t *testing.T) {
+	m := new(InvoiceModel)
+	err := m.InitInvoiceInput(createPayload())
+	assert.Nil(t, err, "Init must pass")
+	assert.Nil(t, m.CoreDocument, "core doc must be nil")
+	assert.Nil(t, m.InvoiceSalts, "salts must be nil")
+
+	err = m.calculateDataRoot()
+	assert.Nil(t, err, "calculate must pass")
+	assert.NotNil(t, m.CoreDocument, "coredoc must be created")
+	assert.NotNil(t, m.InvoiceSalts, "salts must be created")
+	assert.NotNil(t, m.CoreDocument.DataRoot, "data root must be filled")
+}

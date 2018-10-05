@@ -21,6 +21,9 @@ type Service interface {
 
 	// DeriveCreateResponse returns the invoice data as client data
 	DeriveCreateResponse(inv documents.Model) (*clientinvoicepb.InvoiceData, error)
+
+	// SaveState updates the model in DB
+	SaveState(inv documents.Model) error
 }
 
 // service implements Service and handles all invoice related persistence and validations
@@ -57,22 +60,24 @@ func (s service) DeriveFromCreatePayload(invoiceInput *clientinvoicepb.InvoiceCr
 }
 
 // Create takes and invoice model and does required validation checks, tries to persist to DB
-func (s service) Create(inv documents.Model) error {
-	coreDoc, err := inv.PackCoreDocument()
-	if err != nil {
-		return centerrors.New(code.Unknown, err.Error())
-	}
-
-	// Validate the model here
+func (s service) Create(model documents.Model) error {
+	// Validate the model
 	fv := fieldValidator()
-	errs := fv.Validate(nil, inv)
+	errs := fv.Validate(nil, model)
 	if len(errs) != 0 {
 		// TODO use errs when the @manuel's changes are in
 		return centerrors.New(code.DocumentInvalid, "Invoice invalid")
 	}
 
+	// create data root
+	inv := model.(*InvoiceModel)
+	err := inv.calculateDataRoot()
+	if err != nil {
+		return centerrors.New(code.DocumentInvalid, err.Error())
+	}
+
 	// we use currentIdentifier as the id since that will be unique across multiple versions of the same document
-	err = s.repo.Create(coreDoc.CurrentIdentifier, inv)
+	err = s.repo.Create(inv.CoreDocument.CurrentIdentifier, model)
 	if err != nil {
 		return centerrors.New(code.Unknown, err.Error())
 	}
@@ -93,4 +98,24 @@ func (s service) DeriveCreateResponse(doc documents.Model) (*clientinvoicepb.Inv
 	}
 
 	return data, nil
+}
+
+// SaveState updates the model on DB
+// This will disappear once we have common DB for every document
+func (s service) SaveState(doc documents.Model) error {
+	inv, ok := doc.(*InvoiceModel)
+	if !ok {
+		return centerrors.New(code.DocumentInvalid, "document of invalid type")
+	}
+
+	if inv.CoreDocument == nil {
+		return centerrors.New(code.DocumentInvalid, "core document missing")
+	}
+
+	err := s.repo.Update(inv.CoreDocument.CurrentIdentifier, inv)
+	if err != nil {
+		return centerrors.New(code.Unknown, err.Error())
+	}
+
+	return nil
 }

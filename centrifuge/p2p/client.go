@@ -130,10 +130,6 @@ func getSignatureAsync(ctx context.Context, doc coredocumentpb.CoreDocument, cli
 
 // GetSignaturesForDocument requests peer nodes for the signature and verifies them
 func (d *defaultClient) GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocument, collaborators []identity.CentID) error {
-	if doc == nil {
-		return centerrors.NilError(doc)
-	}
-
 	in := make(chan signatureResponseWrap)
 	defer close(in)
 

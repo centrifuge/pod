@@ -1,6 +1,7 @@
 package invoice
 
 import (
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -359,4 +360,28 @@ func (i *InvoiceModel) FromJSON(jsonData []byte) error {
 // Type gives the InvoiceModel type
 func (i *InvoiceModel) Type() reflect.Type {
 	return reflect.TypeOf(i)
+}
+
+// calculateDataRoot calculates the data root and sets the root to core document
+func (i *InvoiceModel) calculateDataRoot() error {
+	pb, err := i.createP2PProtobuf()
+	if err != nil {
+		return fmt.Errorf("failed to create protobuf: %v", err)
+	}
+
+	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: sha256.New()})
+	if err = t.AddLeavesFromDocument(pb, i.getInvoiceSalts(pb)); err != nil {
+		return fmt.Errorf("failed to add leaves from invoice: %v", err)
+	}
+
+	if err = t.Generate(); err != nil {
+		return fmt.Errorf("failed to generate merkle root: %v", err)
+	}
+
+	if i.CoreDocument == nil {
+		i.CoreDocument = coredocument.New()
+	}
+
+	i.CoreDocument.DataRoot = t.RootHash()
+	return nil
 }

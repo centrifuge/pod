@@ -8,6 +8,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
+	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -113,4 +114,45 @@ func TestService_DeriveCreateResponse(t *testing.T) {
 	assert.Nil(t, err, "Derive must succeed")
 	assert.NotNil(t, data, "data must be non nil")
 	assert.Equal(t, data, payload.Data, "data mismatch")
+}
+
+func TestService_SaveState(t *testing.T) {
+	// unknown type
+	err := invService.SaveState(&mockModel{})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "document of invalid type")
+
+	inv := new(InvoiceModel)
+	err = inv.InitInvoiceInput(createPayload())
+	assert.Nil(t, err)
+
+	// save state must fail missing core document
+	err = invService.SaveState(inv)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "core document missing")
+
+	// update fail
+	coreDoc, err := inv.PackCoreDocument()
+	assert.Nil(t, err)
+	assert.NotNil(t, coreDoc)
+	err = invService.SaveState(inv)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "document doesn't exists")
+
+	// successful
+	err = GetRepository().Create(coreDoc.CurrentIdentifier, inv)
+	assert.Nil(t, err)
+	assert.Equal(t, inv.Currency, "EUR")
+	assert.Nil(t, inv.CoreDocument.DataRoot)
+
+	inv.Currency = "INR"
+	inv.CoreDocument.DataRoot = tools.RandomSlice(32)
+	err = invService.SaveState(inv)
+	assert.Nil(t, err)
+
+	loadInv := new(InvoiceModel)
+	err = GetRepository().LoadByID(coreDoc.CurrentIdentifier, loadInv)
+	assert.Nil(t, err)
+	assert.Equal(t, loadInv.Currency, inv.Currency)
+	assert.Equal(t, loadInv.CoreDocument.DataRoot, inv.CoreDocument.DataRoot)
 }
