@@ -51,7 +51,7 @@ vendorinstall: ## Installs all protobuf dependencies with go-vendorinstall
 	go-vendorinstall github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
 	go-vendorinstall github.com/golang/protobuf/protoc-gen-go
 	go-vendorinstall github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
-	go-vendorinstall github.com/jteeuwen/go-bindata
+	go get -u github.com/jteeuwen/go-bindata/...
 
 install: ## Builds and Install binary for development
 install: install-deps vendorinstall

@@ -374,12 +374,6 @@
   revision = "b497e2f366b8624394fb2e89c10ab607bebdde0b"
 
 [[projects]]
-  name = "github.com/jteeuwen/go-bindata"
-  packages = ["."]
-  revision = "bbd0c6e271208dce66d8fda4bc536453cd27fc4a"
-  version = "v3.0.7"
-
-[[projects]]
   name = "github.com/libp2p/go-addr-util"
   packages = ["."]
   revision = "26ae616f0dac754fff557513e984f930fbd88a92"
@@ -1079,6 +1073,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "15a671ef159e985224fc317fac1d148bf6695bed851d4c5143d29eca6e71fe86"
+  inputs-digest = "1c51b1fa9627cf0e9c57177c7dd830ef96ae409a51111185921062bccbc366d6"
   solver-name = "gps-cdcl"
   solver-version = 1
