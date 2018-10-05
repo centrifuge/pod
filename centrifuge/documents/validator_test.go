@@ -53,7 +53,8 @@ func TestValidatorInterface(t *testing.T) {
 	assert.Error(t, errors, "error should be returned")
 	centErrors, ok := centerrors.FromError(errors)
 	assert.False(t, ok, "should contain an unkown error")
-	assert.Equal(t, 1, len(centErrors.Errors()), "should contain one error")
+	assert.Equal(t, code.Unknown, centErrors.Code(), "code should be unkown")
+	assert.Equal(t, 0, len(centErrors.Errors()), "map should be empty")
 
 	// more than one error
 	validator = MockValidatorWithErrors{}
@@ -63,7 +64,7 @@ func TestValidatorInterface(t *testing.T) {
 	centErrors, ok = centerrors.FromError(errors)
 	assert.True(t, ok, "errors should contain centerrors")
 
-	assert.Equal(t, 2, len(centErrors.Errors()), "Validate should return 2 errors")
+	assert.Equal(t, 2, len(centErrors.Errors()), "Validate should return two entries in error map")
 	assert.Equal(t, code.DocumentInvalid, centErrors.Code(), "error code should be DocumentInvalid")
 
 }
@@ -77,7 +78,7 @@ func TestValidatorGroup_Validate(t *testing.T) {
 	}
 	errors := testValidatorGroup.Validate(nil, nil)
 	centErrors, _ := centerrors.FromError(errors)
-	assert.Equal(t, 3, len(centErrors.Errors()), "Validate should return 2 errors")
+	assert.Equal(t, 2, len(centErrors.Errors()), "Validate should return 2 errors")
 
 	testValidatorGroup = ValidatorGroup{
 		MockValidator{},
@@ -88,6 +89,7 @@ func TestValidatorGroup_Validate(t *testing.T) {
 	centErrors, _ = centerrors.FromError(errors)
 	assert.Equal(t, 4, len(centErrors.Errors()), "Validate should return 4 errors")
 
+	// empty group
 	testValidatorGroup = ValidatorGroup{}
 	errors = testValidatorGroup.Validate(nil, nil)
 

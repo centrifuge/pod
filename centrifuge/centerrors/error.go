@@ -145,7 +145,6 @@ func getNextErrorId(errors map[string]string, key string) string {
 	return uniqueKey
 }
 
-
 func wrapErrorMaps(errorDst, errorSrc map[string]string) map[string]string {
 
 	if errorDst == nil {
@@ -213,7 +212,6 @@ func WrapErrors(errDst error, errSrc error) error {
 		errorDst.Errors = wrapErrorMaps(errorDst.Errors, errorSrc.Errors)
 
 		return errorDst
-
 
 	}
 
