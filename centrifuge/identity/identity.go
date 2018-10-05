@@ -3,7 +3,6 @@ package identity
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"math/big"
@@ -126,20 +125,6 @@ type Service interface {
 	LookupIdentityForID(centrifugeID CentID) (id Identity, err error)
 	CreateIdentity(centrifugeID CentID) (id Identity, confirmations chan *WatchIdentity, err error)
 	CheckIdentityExists(centrifugeID CentID) (exists bool, err error)
-}
-
-// CentrifugeIdStringToSlice takes a string and decodes it using base64 to convert it into a slice
-// of length 32.
-func CentrifugeIdStringToSlice(s string) (id CentID, err error) {
-	centBytes, err := base64.StdEncoding.DecodeString(s)
-	if err != nil {
-		return [CentIDByteLength]byte{}, err
-	}
-	centId, err := NewCentID(centBytes)
-	if err != nil {
-		return [CentIDByteLength]byte{}, err
-	}
-	return centId, nil
 }
 
 // GetClientP2PURL returns the p2p url associated with the centID

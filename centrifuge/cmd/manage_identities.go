@@ -24,7 +24,7 @@ var createIdentityCmd = &cobra.Command{
 		if centrifugeIdString == "" {
 			centrifugeId = identity.NewRandomCentID()
 		} else {
-			centrifugeId, err = identity.CentrifugeIdStringToSlice(centrifugeIdString)
+			centrifugeId, err = identity.CentIDFromString(centrifugeIdString)
 			if err != nil {
 				panic(err)
 			}
