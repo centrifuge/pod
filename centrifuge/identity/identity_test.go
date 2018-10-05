@@ -380,18 +380,23 @@ func TestCentIDFromString(t *testing.T) {
 		err    error
 	}{
 		{
-			id:     "010203040506",
+			id:     "0x010203040506",
 			result: [CentIDByteLength]byte{1, 2, 3, 4, 5, 6},
 		},
 
 		{
-			id:  "01020304050607",
+			id:  "0x01020304050607",
 			err: fmt.Errorf("invalid length byte slice provided for centId"),
 		},
 
 		{
-			id:  "some random",
+			id:  "0xsome random",
 			err: fmt.Errorf("failed to decode id"),
+		},
+
+		{
+			id:  "some random",
+			err: fmt.Errorf("hex string without 0x"),
 		},
 	}
 

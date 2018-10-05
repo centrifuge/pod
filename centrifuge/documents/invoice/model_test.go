@@ -154,24 +154,24 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 	assert.Error(t, err, "must return err")
 	assert.Contains(t, err.Error(), "failed to decode recipient")
 
-	data.Recipient = "010203040506"
+	data.Recipient = "0x010203040506"
 	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data})
 	assert.Contains(t, err.Error(), "failed to decode sender")
 
-	data.Sender = "010203060506"
+	data.Sender = "0x010203060506"
 	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data})
 	assert.Contains(t, err.Error(), "failed to decode payee")
 
-	data.Payee = "010203030405"
+	data.Payee = "0x010203030405"
 	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data})
 	assert.Contains(t, err.Error(), "failed to decode extra data")
 
-	data.ExtraData = "010203020301"
-	collabs := []string{"010102040506", "some id"}
+	data.ExtraData = "0x010203020301"
+	collabs := []string{"0x010102040506", "some id"}
 	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data, Collaborators: collabs})
 	assert.Contains(t, err.Error(), "failed to decode collaborator")
 
-	collabs = []string{"010102040506", "010203020302"}
+	collabs = []string{"0x010102040506", "0x010203020302"}
 	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data, Collaborators: collabs})
 	assert.Nil(t, err, "must be nil")
 	assert.Equal(t, inv.Sender[:], []byte{1, 2, 3, 6, 5, 6})

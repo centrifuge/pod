@@ -43,7 +43,7 @@ func NewCentID(centIDBytes []byte) (CentID, error) {
 func CentIDFromString(id string) (centID CentID, err error) {
 	decID, err := hexutil.Decode(id)
 	if err != nil {
-		return centID, centerrors.Wrap(err, "failed to decide id")
+		return centID, centerrors.Wrap(err, "failed to decode id")
 	}
 	return NewCentID(decID)
 }
