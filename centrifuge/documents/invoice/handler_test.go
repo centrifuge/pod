@@ -302,6 +302,11 @@ func (m *mockService) DeriveCreateResponse(doc documents.Model) (*clientinvoicep
 	return data, args.Error(1)
 }
 
+func (m *mockService) SaveState(doc documents.Model) error {
+	args := m.Called(doc)
+	return args.Error(0)
+}
+
 func getHandler() *grpcHandler {
 	return &grpcHandler{service: &mockService{}, coreDocProcessor: &testingutils.MockCoreDocumentProcessor{}}
 }
@@ -352,6 +357,11 @@ func (m *mockModel) PackCoreDocument() (*coredocumentpb.CoreDocument, error) {
 	return cd, args.Error(1)
 }
 
+func (m *mockModel) UnpackCoreDocument(cd *coredocumentpb.CoreDocument) error {
+	args := m.Called(cd)
+	return args.Error(0)
+}
+
 func TestGrpcHandler_Create_coredocument_fail(t *testing.T) {
 	h := getHandler()
 	srv := h.service.(*mockService)
@@ -373,8 +383,10 @@ func TestGrpcHandler_Create_anchor_fail(t *testing.T) {
 	model := new(mockModel)
 	cd := coredocument.New()
 	model.On("PackCoreDocument").Return(cd, nil)
+	model.On("UnpackCoreDocument", mock.Anything).Return(nil)
 	srv.On("DeriveFromCreatePayload", mock.Anything).Return(model, nil)
 	srv.On("Create", mock.Anything).Return(nil)
+	srv.On("SaveState", mock.Anything).Return(nil)
 	proc := h.coreDocProcessor.(*testingutils.MockCoreDocumentProcessor)
 	proc.On("Anchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(fmt.Errorf("failed to anchor document"))
 	payload := &clientinvoicepb.InvoiceCreatePayload{Data: &clientinvoicepb.InvoiceData{GrossAmount: 300}}
@@ -386,6 +398,47 @@ func TestGrpcHandler_Create_anchor_fail(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to anchor document")
 }
 
+func TestGrpcHandler_Create_unpack_fail(t *testing.T) {
+	h := getHandler()
+	srv := h.service.(*mockService)
+	model := new(mockModel)
+	cd := coredocument.New()
+	model.On("PackCoreDocument").Return(cd, nil)
+	model.On("UnpackCoreDocument", mock.Anything).Return(fmt.Errorf("unpack core document failed"))
+	srv.On("DeriveFromCreatePayload", mock.Anything).Return(model, nil)
+	srv.On("Create", mock.Anything).Return(nil)
+	proc := h.coreDocProcessor.(*testingutils.MockCoreDocumentProcessor)
+	proc.On("Anchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	payload := &clientinvoicepb.InvoiceCreatePayload{Data: &clientinvoicepb.InvoiceData{GrossAmount: 300}}
+	_, err := h.Create(context.Background(), payload)
+	model.AssertExpectations(t)
+	srv.AssertExpectations(t)
+	proc.AssertExpectations(t)
+	assert.Error(t, err, "must be non nil")
+	assert.Contains(t, err.Error(), "unpack core document failed")
+}
+
+func TestGrpcHandler_Create_saveState_fail(t *testing.T) {
+	h := getHandler()
+	srv := h.service.(*mockService)
+	model := new(mockModel)
+	cd := coredocument.New()
+	model.On("PackCoreDocument").Return(cd, nil)
+	model.On("UnpackCoreDocument", mock.Anything).Return(nil)
+	srv.On("DeriveFromCreatePayload", mock.Anything).Return(model, nil)
+	srv.On("Create", mock.Anything).Return(nil)
+	srv.On("SaveState", mock.Anything).Return(fmt.Errorf("save state failed"))
+	proc := h.coreDocProcessor.(*testingutils.MockCoreDocumentProcessor)
+	proc.On("Anchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	payload := &clientinvoicepb.InvoiceCreatePayload{Data: &clientinvoicepb.InvoiceData{GrossAmount: 300}}
+	_, err := h.Create(context.Background(), payload)
+	model.AssertExpectations(t)
+	srv.AssertExpectations(t)
+	proc.AssertExpectations(t)
+	assert.Error(t, err, "must be non nil")
+	assert.Contains(t, err.Error(), "save state failed")
+}
+
 func TestGrpcHandler_Create(t *testing.T) {
 	h := getHandler()
 	srv := h.service.(*mockService)
@@ -393,9 +446,11 @@ func TestGrpcHandler_Create(t *testing.T) {
 	cd := coredocument.New()
 	payload := &clientinvoicepb.InvoiceCreatePayload{Data: &clientinvoicepb.InvoiceData{GrossAmount: 300}, Collaborators: []string{"010203040506"}}
 	model.On("PackCoreDocument").Return(cd, nil)
+	model.On("UnpackCoreDocument", mock.Anything).Return(nil)
 	srv.On("DeriveFromCreatePayload", mock.Anything).Return(model, nil)
 	srv.On("DeriveCreateResponse", model).Return(payload.Data, nil)
 	srv.On("Create", mock.Anything).Return(nil)
+	srv.On("SaveState", mock.Anything).Return(nil)
 	proc := h.coreDocProcessor.(*testingutils.MockCoreDocumentProcessor)
 	proc.On("Anchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	proc.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(nil)

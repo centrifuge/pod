@@ -3,6 +3,7 @@ package testingutils
 import (
 	"context"
 	"crypto/rand"
+	"fmt"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -91,6 +92,13 @@ func (m *MockCoreDocumentProcessor) Anchor(
 	collaborators []identity.CentID,
 	saveState func(*coredocumentpb.CoreDocument) error) (err error) {
 	args := m.Called(coreDocument)
+	if saveState != nil {
+		fmt.Println(saveState)
+		err := saveState(coreDocument)
+		if err != nil {
+			return err
+		}
+	}
 	return args.Error(0)
 }
 
