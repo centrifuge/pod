@@ -214,7 +214,7 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientinvoicepb.InvoiceCr
 
 	header := &clientinvoicepb.ResponseHeader{
 		DocumentId:    hex.EncodeToString(coreDoc.DocumentIdentifier),
-		VersionId:     hex.EncodeToString(coreDoc.CurrentIdentifier),
+		VersionId:     hex.EncodeToString(coreDoc.CurrentVersion),
 		Collaborators: req.Collaborators,
 	}
 

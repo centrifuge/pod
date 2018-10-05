@@ -195,8 +195,8 @@ func TestInvoiceDocumentService_HandleCreateInvoiceProof(t *testing.T) {
 	inv := Empty()
 	inv.Document.CoreDocument = &coredocumentpb.CoreDocument{
 		DocumentIdentifier: identifier,
-		CurrentIdentifier:  identifier,
-		NextIdentifier:     testingutils.Rand32Bytes(),
+		CurrentVersion:     identifier,
+		NextVersion:        testingutils.Rand32Bytes(),
 	}
 	cdSalts := &coredocumentpb.CoreDocumentSalts{}
 	proofs.FillSalts(inv.Document.CoreDocument, cdSalts)
@@ -232,8 +232,8 @@ func TestInvoiceDocumentService_HandleCreateInvoiceProof_NotFilledSalts(t *testi
 	inv := Empty()
 	inv.Document.CoreDocument = &coredocumentpb.CoreDocument{
 		DocumentIdentifier: identifier,
-		CurrentIdentifier:  identifier,
-		NextIdentifier:     testingutils.Rand32Bytes(),
+		CurrentVersion:     identifier,
+		NextVersion:        testingutils.Rand32Bytes(),
 		CoredocumentSalts:  &coredocumentpb.CoreDocumentSalts{},
 	}
 	inv.Document.Salts = &invoicepb.InvoiceDataSalts{}
@@ -259,8 +259,8 @@ func TestInvoiceDocumentService_HandleCreateInvoiceProof_NotExistingInvoice(t *t
 	inv := Empty()
 	inv.Document.CoreDocument = &coredocumentpb.CoreDocument{
 		DocumentIdentifier: identifier,
-		CurrentIdentifier:  identifier,
-		NextIdentifier:     testingutils.Rand32Bytes(),
+		CurrentVersion:     identifier,
+		NextVersion:        testingutils.Rand32Bytes(),
 	}
 	inv.CalculateMerkleRoot()
 
@@ -371,6 +371,6 @@ func TestGrpcHandler_Create(t *testing.T) {
 	assert.Nil(t, err, "must be nil")
 	assert.NotNil(t, res, "must be non nil")
 	assert.Equal(t, res.Header.DocumentId, hex.EncodeToString(cd.DocumentIdentifier), "identifier must match")
-	assert.Equal(t, res.Header.VersionId, hex.EncodeToString(cd.CurrentIdentifier), "identifiers must match")
+	assert.Equal(t, res.Header.VersionId, hex.EncodeToString(cd.CurrentVersion), "identifiers must match")
 	assert.Equal(t, res.Data, payload.Data, "data must match")
 }

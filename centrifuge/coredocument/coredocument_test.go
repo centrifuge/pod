@@ -35,12 +35,13 @@ var (
 
 func TestGetDataProofHashes(t *testing.T) {
 	cd := coredocumentpb.CoreDocument{
-		DataRoot: tools.RandomSlice(32),
+		DataRoot:      tools.RandomSlice(32),
 	}
 	cd, err := FillIdentifiers(cd)
 	assert.Nil(t, err)
 	cds := &coredocumentpb.CoreDocumentSalts{}
-	proofs.FillSalts(&cd, cds)
+	err = proofs.FillSalts(&cd, cds)
+	assert.Nil(t, err)
 
 	cd.CoredocumentSalts = cds
 
@@ -98,8 +99,8 @@ func TestValidate(t *testing.T) {
 			doc: &coredocumentpb.CoreDocument{
 				DocumentRoot:       id1,
 				DocumentIdentifier: id2,
-				CurrentIdentifier:  id3,
-				NextIdentifier:     id4,
+				CurrentVersion:     id3,
+				NextVersion:        id4,
 				DataRoot:           id5,
 			},
 			want: want{
@@ -116,13 +117,13 @@ func TestValidate(t *testing.T) {
 			doc: &coredocumentpb.CoreDocument{
 				DocumentRoot:       id1,
 				DocumentIdentifier: id2,
-				CurrentIdentifier:  id3,
-				NextIdentifier:     id4,
+				CurrentVersion:     id3,
+				NextVersion:        id4,
 				DataRoot:           id5,
 				CoredocumentSalts: &coredocumentpb.CoreDocumentSalts{
 					DocumentIdentifier: id1,
-					CurrentIdentifier:  id2,
-					NextIdentifier:     id3,
+					CurrentVersion:     id2,
+					NextVersion:        id3,
 					DataRoot:           id4,
 				},
 			},
@@ -140,12 +141,12 @@ func TestValidate(t *testing.T) {
 			doc: &coredocumentpb.CoreDocument{
 				DocumentRoot:       id1,
 				DocumentIdentifier: id2,
-				CurrentIdentifier:  id3,
-				NextIdentifier:     id4,
+				CurrentVersion:     id3,
+				NextVersion:        id4,
 				CoredocumentSalts: &coredocumentpb.CoreDocumentSalts{
 					DocumentIdentifier: id1,
-					CurrentIdentifier:  id2,
-					NextIdentifier:     id3,
+					CurrentVersion:     id2,
+					NextVersion:        id3,
 					DataRoot:           id4,
 					PreviousRoot:       id5,
 				},
@@ -164,12 +165,12 @@ func TestValidate(t *testing.T) {
 			doc: &coredocumentpb.CoreDocument{
 				DocumentRoot:       id1,
 				DocumentIdentifier: id2,
-				CurrentIdentifier:  id3,
-				NextIdentifier:     id4,
+				CurrentVersion:     id3,
+				NextVersion:        id4,
 				CoredocumentSalts: &coredocumentpb.CoreDocumentSalts{
 					DocumentIdentifier: id1,
-					CurrentIdentifier:  id2,
-					NextIdentifier:     id3,
+					CurrentVersion:     id2,
+					NextVersion:        id3,
 					DataRoot:           id4,
 				},
 			},
@@ -188,13 +189,13 @@ func TestValidate(t *testing.T) {
 			doc: &coredocumentpb.CoreDocument{
 				DocumentRoot:       id1,
 				DocumentIdentifier: id2,
-				CurrentIdentifier:  id3,
-				NextIdentifier:     id3,
+				CurrentVersion:     id3,
+				NextVersion:        id3,
 				DataRoot:           id5,
 				CoredocumentSalts: &coredocumentpb.CoreDocumentSalts{
 					DocumentIdentifier: id1,
-					CurrentIdentifier:  id2,
-					NextIdentifier:     id3,
+					CurrentVersion:     id2,
+					NextVersion:        id3,
 					DataRoot:           id4,
 					PreviousRoot:       id5,
 				},
@@ -213,13 +214,13 @@ func TestValidate(t *testing.T) {
 			doc: &coredocumentpb.CoreDocument{
 				DocumentRoot:       id1,
 				DocumentIdentifier: id2,
-				CurrentIdentifier:  id3,
-				NextIdentifier:     id2,
+				CurrentVersion:     id3,
+				NextVersion:        id2,
 				DataRoot:           id5,
 				CoredocumentSalts: &coredocumentpb.CoreDocumentSalts{
 					DocumentIdentifier: id1,
-					CurrentIdentifier:  id2,
-					NextIdentifier:     id3,
+					CurrentVersion:     id2,
+					NextVersion:        id3,
 					DataRoot:           id4,
 					PreviousRoot:       id5,
 				},
@@ -238,13 +239,13 @@ func TestValidate(t *testing.T) {
 			doc: &coredocumentpb.CoreDocument{
 				DocumentRoot:       id1,
 				DocumentIdentifier: id2,
-				CurrentIdentifier:  id3,
-				NextIdentifier:     id4,
+				CurrentVersion:     id3,
+				NextVersion:        id4,
 				DataRoot:           id5,
 				CoredocumentSalts: &coredocumentpb.CoreDocumentSalts{
 					DocumentIdentifier: id1,
-					CurrentIdentifier:  id2,
-					NextIdentifier:     id3,
+					CurrentVersion:     id2,
+					NextVersion:        id3,
 					DataRoot:           id4,
 					PreviousRoot:       id5,
 				},
@@ -266,28 +267,28 @@ func TestValidate(t *testing.T) {
 
 func TestFillIdentifiers(t *testing.T) {
 	tests := []struct {
-		DocIdentifier     []byte
-		CurrentIdentifier []byte
-		NextIdentifier    []byte
-		err               error
+		DocIdentifier  []byte
+		CurrentVersion []byte
+		NextVersion    []byte
+		err            error
 	}{
 		// all three identifiers are filled
 		{
-			DocIdentifier:     id1,
-			CurrentIdentifier: id2,
-			NextIdentifier:    id3,
+			DocIdentifier:  id1,
+			CurrentVersion: id2,
+			NextVersion:    id3,
 		},
 
 		// Doc and current identifiers are filled, missing next identifier
 		{
-			DocIdentifier:     id1,
-			CurrentIdentifier: id2,
+			DocIdentifier:  id1,
+			CurrentVersion: id2,
 		},
 
 		// Doc and next identifiers are filled, missing current identifier
 		{
-			DocIdentifier:  id1,
-			NextIdentifier: id3,
+			DocIdentifier: id1,
+			NextVersion:   id3,
 		},
 
 		// missing current and next identifier
@@ -297,14 +298,14 @@ func TestFillIdentifiers(t *testing.T) {
 
 		// missing doc identifier and filled up current identifier
 		{
-			CurrentIdentifier: id2,
-			err:               fmt.Errorf("no DocumentIdentifier but has CurrentIdentifier"),
+			CurrentVersion: id2,
+			err:            fmt.Errorf("no DocumentIdentifier but has CurrentVersion"),
 		},
 
 		// missing doc identifier and filled up next identifier
 		{
-			NextIdentifier: id3,
-			err:            fmt.Errorf("no CurrentIdentifier but has NextIdentifier"),
+			NextVersion: id3,
+			err:         fmt.Errorf("no CurrentVersion but has NextVersion"),
 		},
 
 		// missing all identifiers
@@ -314,8 +315,8 @@ func TestFillIdentifiers(t *testing.T) {
 	for _, c := range tests {
 		doc := coredocumentpb.CoreDocument{
 			DocumentIdentifier: c.DocIdentifier,
-			CurrentIdentifier:  c.CurrentIdentifier,
-			NextIdentifier:     c.NextIdentifier,
+			CurrentVersion:     c.CurrentVersion,
+			NextVersion:        c.NextVersion,
 		}
 
 		var err error
@@ -330,8 +331,8 @@ func TestFillIdentifiers(t *testing.T) {
 		}
 
 		assert.NotNil(t, doc.DocumentIdentifier)
-		assert.NotNil(t, doc.CurrentIdentifier)
-		assert.NotNil(t, doc.NextIdentifier)
+		assert.NotNil(t, doc.CurrentVersion)
+		assert.NotNil(t, doc.NextVersion)
 	}
 }
 
@@ -339,8 +340,8 @@ func TestValidateWithSignature_fail_basic_check(t *testing.T) {
 	doc := &coredocumentpb.CoreDocument{
 		DocumentRoot:       id1,
 		DocumentIdentifier: id2,
-		CurrentIdentifier:  id3,
-		NextIdentifier:     id4,
+		CurrentVersion:     id3,
+		NextVersion:        id4,
 		DataRoot:           id5,
 	}
 

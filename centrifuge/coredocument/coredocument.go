@@ -132,11 +132,11 @@ func Validate(document *coredocumentpb.CoreDocument) (valid bool, errMsg string,
 		errs["cd_identifier"] = centerrors.RequiredField
 	}
 
-	if tools.IsEmptyByteSlice(document.CurrentIdentifier) {
+	if tools.IsEmptyByteSlice(document.CurrentVersion) {
 		errs["cd_current_identifier"] = centerrors.RequiredField
 	}
 
-	if tools.IsEmptyByteSlice(document.NextIdentifier) {
+	if tools.IsEmptyByteSlice(document.NextVersion) {
 		errs["cd_next_identifier"] = centerrors.RequiredField
 	}
 
@@ -147,9 +147,9 @@ func Validate(document *coredocumentpb.CoreDocument) (valid bool, errMsg string,
 	// double check the identifiers
 	isSameBytes := tools.IsSameByteSlice
 
-	// Problem (re-using an old identifier for NextIdentifier): CurrentIdentifier or DocumentIdentifier same as NextIdentifier
-	if isSameBytes(document.NextIdentifier, document.DocumentIdentifier) ||
-		isSameBytes(document.NextIdentifier, document.CurrentIdentifier) {
+	// Problem (re-using an old identifier for NextVersion): CurrentVersion or DocumentIdentifier same as NextVersion
+	if isSameBytes(document.NextVersion, document.DocumentIdentifier) ||
+		isSameBytes(document.NextVersion, document.CurrentVersion) {
 		errs["cd_overall"] = centerrors.IdentifierReUsed
 	}
 
@@ -158,8 +158,8 @@ func Validate(document *coredocumentpb.CoreDocument) (valid bool, errMsg string,
 	salts := document.CoredocumentSalts
 	if salts == nil ||
 		!tools.CheckMultiple32BytesFilled(
-			salts.CurrentIdentifier,
-			salts.NextIdentifier,
+			salts.CurrentVersion,
+			salts.NextVersion,
 			salts.DocumentIdentifier,
 			salts.PreviousRoot) {
 		errs["cd_salts"] = centerrors.RequiredField
@@ -217,31 +217,31 @@ func FillIdentifiers(document coredocumentpb.CoreDocument) (coredocumentpb.CoreD
 	// check if the document identifier is empty
 	if !isEmptyId(document.DocumentIdentifier) {
 		// check and fill current and next identifiers
-		if isEmptyId(document.CurrentIdentifier) {
-			document.CurrentIdentifier = document.DocumentIdentifier
+		if isEmptyId(document.CurrentVersion) {
+			document.CurrentVersion = document.DocumentIdentifier
 		}
 
-		if isEmptyId(document.NextIdentifier) {
-			document.NextIdentifier = tools.RandomSlice(32)
+		if isEmptyId(document.NextVersion) {
+			document.NextVersion = tools.RandomSlice(32)
 		}
 
 		return document, nil
 	}
 
 	// check if current and next identifier are empty
-	if !isEmptyId(document.CurrentIdentifier) {
-		return document, fmt.Errorf("no DocumentIdentifier but has CurrentIdentifier")
+	if !isEmptyId(document.CurrentVersion) {
+		return document, fmt.Errorf("no DocumentIdentifier but has CurrentVersion")
 	}
 
 	// check if the next identifier is empty
-	if !isEmptyId(document.NextIdentifier) {
-		return document, fmt.Errorf("no CurrentIdentifier but has NextIdentifier")
+	if !isEmptyId(document.NextVersion) {
+		return document, fmt.Errorf("no CurrentVersion but has NextVersion")
 	}
 
 	// fill the identifiers
 	document.DocumentIdentifier = tools.RandomSlice(32)
-	document.CurrentIdentifier = document.DocumentIdentifier
-	document.NextIdentifier = tools.RandomSlice(32)
+	document.CurrentVersion = document.DocumentIdentifier
+	document.NextVersion = tools.RandomSlice(32)
 	return document, nil
 }
 

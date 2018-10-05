@@ -65,8 +65,8 @@ func GenerateCoreDocument() *coredocumentpb.CoreDocument {
 	doc := &coredocumentpb.CoreDocument{
 		DataRoot:           tools.RandomSlice(32),
 		DocumentIdentifier: identifier,
-		CurrentIdentifier:  identifier,
-		NextIdentifier:     Rand32Bytes(),
+		CurrentVersion:     identifier,
+		NextVersion:        Rand32Bytes(),
 		CoredocumentSalts:  salts,
 		EmbeddedData: &any.Any{
 			TypeUrl: documenttypes.InvoiceDataTypeUrl,

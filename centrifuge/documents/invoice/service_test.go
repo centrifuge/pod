@@ -21,6 +21,7 @@ func createPayload() *clientinvoicepb.InvoiceCreatePayload {
 			Payee:       "010203020406",
 			GrossAmount: 42,
 		},
+		Collaborators: []string{"010101010101"},
 	}
 }
 
@@ -78,7 +79,7 @@ func TestService_Create(t *testing.T) {
 	assert.Nil(t, err, "must be converted to coredocument")
 
 	loadInv := new(InvoiceModel)
-	err = GetRepository().LoadByID(coredoc.CurrentIdentifier, loadInv)
+	err = GetRepository().LoadByID(coredoc.CurrentVersion, loadInv)
 	assert.Nil(t, err, "Load must pass")
 	assert.NotNil(t, loadInv, "must be non nil")
 

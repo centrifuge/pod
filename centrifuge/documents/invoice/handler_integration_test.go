@@ -40,8 +40,8 @@ func generateEmptyInvoiceForProcessing() (doc *invoice.Invoice) {
 	proofs.FillSalts(doc.Document.Data, salts)
 	doc.Document.CoreDocument = &coredocumentpb.CoreDocument{
 		DocumentIdentifier: identifier,
-		CurrentIdentifier:  identifier,
-		NextIdentifier:     testingutils.Rand32Bytes(),
+		CurrentVersion:     identifier,
+		NextVersion:        testingutils.Rand32Bytes(),
 		CoredocumentSalts:  salts,
 	}
 	return

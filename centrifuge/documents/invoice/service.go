@@ -63,8 +63,8 @@ func (s service) Create(inv documents.Model) error {
 		return centerrors.New(code.Unknown, err.Error())
 	}
 
-	// we use currentIdentifier as the id since that will be unique across multiple versions of the same document
-	err = s.repo.Create(coreDoc.CurrentIdentifier, inv)
+	// we use CurrentVersion as the id since that will be unique across multiple versions of the same document
+	err = s.repo.Create(coreDoc.CurrentVersion, inv)
 	if err != nil {
 		return centerrors.New(code.Unknown, err.Error())
 	}
