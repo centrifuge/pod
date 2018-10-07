@@ -245,6 +245,18 @@ func FillIdentifiers(document coredocumentpb.CoreDocument) (coredocumentpb.CoreD
 	return document, nil
 }
 
+// PrepareNewVersion returns a new CoreDocument instance of the version fields prepared for a document update
+func PrepareNewVersion(document *coredocumentpb.CoreDocument) (*coredocumentpb.CoreDocument) {
+	newDocument := New()
+	newDocument.DocumentIdentifier = document.DocumentIdentifier
+	newDocument.PreviousVersion = document.CurrentVersion
+	newDocument.CurrentVersion = document.NextVersion
+	newDocument.NextVersion = tools.RandomSlice(32)
+	newDocument.PreviousRoot = document.DocumentRoot
+
+	return newDocument
+}
+
 // New returns a new core document from the proto message
 func New() *coredocumentpb.CoreDocument {
 	doc, _ := FillIdentifiers(coredocumentpb.CoreDocument{})

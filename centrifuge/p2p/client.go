@@ -21,7 +21,7 @@ import (
 
 type Client interface {
 	OpenClient(target string) (p2ppb.P2PServiceClient, error)
-	GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocument, collaborators []identity.CentID) error
+	GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocument) error
 }
 
 func NewP2PClient() Client {
@@ -129,7 +129,7 @@ func getSignatureAsync(ctx context.Context, doc coredocumentpb.CoreDocument, cli
 }
 
 // GetSignaturesForDocument requests peer nodes for the signature and verifies them
-func (d *defaultClient) GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocument, collaborators []identity.CentID) error {
+func (d *defaultClient) GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocument) error {
 	if doc == nil {
 		return centerrors.NilError(doc)
 	}
@@ -138,8 +138,12 @@ func (d *defaultClient) GetSignaturesForDocument(ctx context.Context, doc *cored
 	defer close(in)
 
 	var count int
-	for _, collaborator := range collaborators {
-		target, err := identity.GetClientP2PURL(collaborator)
+	for _, collaborator := range doc.Collaborators {
+		collaboratorID, err := identity.NewCentID(collaborator)
+		if err != nil {
+			return centerrors.Wrap(err, "failed to convert to CentID")
+		}
+		target, err := identity.GetClientP2PURL(collaboratorID)
 
 		if err != nil {
 			return centerrors.Wrap(err, "failed to get P2P url")
@@ -154,7 +158,7 @@ func (d *defaultClient) GetSignaturesForDocument(ctx context.Context, doc *cored
 		// for now going with context.background, once we have a timeout for request
 		// we can use context.Timeout for that
 		count++
-		go getSignatureAsync(ctx, *doc, client, collaborator, in)
+		go getSignatureAsync(ctx, *doc, client, collaboratorID, in)
 	}
 
 	var responses []signatureResponseWrap

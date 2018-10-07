@@ -48,7 +48,7 @@ func GRPCHandler(processor coredocumentprocessor.Processor, service Service) cli
 }
 
 // anchorInvoiceDocument anchors the given invoice document and returns the anchored document
-func (h *grpcHandler) anchorInvoiceDocument(ctx context.Context, doc *invoicepb.InvoiceDocument, collaborators []identity.CentID) (*invoicepb.InvoiceDocument, error) {
+func (h *grpcHandler) anchorInvoiceDocument(ctx context.Context, doc *invoicepb.InvoiceDocument, collaborators [][]byte) (*invoicepb.InvoiceDocument, error) {
 	inv, err := New(doc)
 	if err != nil {
 		apiLog.Error(err)
@@ -67,8 +67,8 @@ func (h *grpcHandler) anchorInvoiceDocument(ctx context.Context, doc *invoicepb.
 		apiLog.Error(err)
 		return nil, err
 	}
-
-	err = h.coreDocProcessor.Anchor(ctx, coreDoc, collaborators)
+	coreDoc.Collaborators = collaborators
+	err = h.coreDocProcessor.Anchor(ctx, coreDoc)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, err
@@ -129,11 +129,8 @@ func (h *grpcHandler) AnchorInvoiceDocument(ctx context.Context, anchorInvoiceEn
 
 // SendInvoiceDocument anchors and sends an invoice to the recipient
 func (h *grpcHandler) SendInvoiceDocument(ctx context.Context, sendInvoiceEnvelope *legacyinvoicepb.SendInvoiceEnvelope) (*invoicepb.InvoiceDocument, error) {
-	errs, recipientIDs := identity.ParseCentIDs(sendInvoiceEnvelope.Recipients)
-	if len(errs) != 0 {
-		return nil, centerrors.New(code.Unknown, fmt.Sprintf("%v", errs))
-	}
-	doc, err := h.anchorInvoiceDocument(ctx, sendInvoiceEnvelope.Document, recipientIDs)
+	errs := []error{}
+	doc, err := h.anchorInvoiceDocument(ctx, sendInvoiceEnvelope.Document, sendInvoiceEnvelope.Recipients)
 	if err != nil {
 		return nil, centerrors.Wrap(err, "error when anchoring document")
 	}
@@ -152,8 +149,13 @@ func (h *grpcHandler) SendInvoiceDocument(ctx context.Context, sendInvoiceEnvelo
 		return nil, centerrors.New(code.DocumentNotFound, err.Error())
 	}
 
-	for _, recipient := range recipientIDs {
-		err = h.coreDocProcessor.Send(ctx, coreDoc, recipient)
+	for _, recipient := range sendInvoiceEnvelope.Recipients {
+		recipientID, err := identity.NewCentID(recipient)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		err = h.coreDocProcessor.Send(ctx, coreDoc, recipientID)
 		if err != nil {
 			errs = append(errs, err)
 		}

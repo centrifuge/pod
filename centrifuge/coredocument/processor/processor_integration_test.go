@@ -36,12 +36,9 @@ func TestDefaultProcessor_Anchor(t *testing.T) {
 	p2pClient := &testingcommons.MockP2PWrapperClient{}
 	dp := DefaultProcessor(identity.NewEthereumIdentityService(), p2pClient)
 	doc := createDummyCD()
-	collaborators := []identity.CentID{
-		identity.NewRandomCentID(),
-		identity.NewRandomCentID(),
-	}
-	p2pClient.On("GetSignaturesForDocument", ctx, doc, collaborators).Return(nil)
-	err := dp.Anchor(ctx, doc, collaborators)
+
+	p2pClient.On("GetSignaturesForDocument", ctx, doc).Return(nil)
+	err := dp.Anchor(ctx, doc)
 	assert.Nil(t, err, "Document should be anchored correctly")
 	p2pClient.AssertExpectations(t)
 }
@@ -51,6 +48,10 @@ func createDummyCD() *coredocumentpb.CoreDocument {
 	cd, _ = coredocument.FillIdentifiers(cd)
 	randomRoot := anchors.NewRandomDocRoot()
 	cd.DataRoot = randomRoot[:]
+	cd.Collaborators = [][]byte{
+		tools.RandomSlice(identity.CentIDByteLength),
+		tools.RandomSlice(identity.CentIDByteLength),
+	}
 	cds := &coredocumentpb.CoreDocumentSalts{}
 	proofs.FillSalts(&cd, cds)
 	cd.CoredocumentSalts = cds

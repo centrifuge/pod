@@ -38,14 +38,14 @@ func TestMain(m *testing.M) {
 func generateEmptyPurchaseOrderForProcessing() (doc *purchaseorder.PurchaseOrder) {
 	identifier := testingutils.Rand32Bytes()
 	doc = purchaseorder.Empty()
-	salts := &coredocumentpb.CoreDocumentSalts{}
-	proofs.FillSalts(doc.Document.Data, salts)
 	doc.Document.CoreDocument = &coredocumentpb.CoreDocument{
 		DocumentIdentifier: identifier,
 		CurrentVersion:     identifier,
 		NextVersion:        testingutils.Rand32Bytes(),
-		CoredocumentSalts:  salts,
 	}
+	salts := &coredocumentpb.CoreDocumentSalts{}
+	proofs.FillSalts(doc.Document.CoreDocument, salts)
+	doc.Document.CoreDocument.CoredocumentSalts = salts
 	return
 }
 

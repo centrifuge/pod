@@ -25,6 +25,6 @@ func TestCoreDocumentProcessor_SendNilDocument(t *testing.T) {
 }
 
 func TestCoreDocumentProcessor_AnchorNilDocument(t *testing.T) {
-	err := cdp.Anchor(nil, nil, []identity.CentID{})
+	err := cdp.Anchor(nil, nil)
 	assert.Error(t, err, "should have thrown an error")
 }

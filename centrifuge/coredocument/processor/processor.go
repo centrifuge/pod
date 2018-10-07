@@ -27,9 +27,7 @@ var log = logging.Logger("coredocument")
 // E.g. send, anchor, etc.
 type Processor interface {
 	Send(ctx context.Context, coreDocument *coredocumentpb.CoreDocument, recipient identity.CentID) (err error)
-	Anchor(ctx context.Context, document *coredocumentpb.CoreDocument,
-		/* TODO remove collaborators once we have them in the document it self */
-		collaborators []identity.CentID) (err error)
+	Anchor(ctx context.Context, document *coredocumentpb.CoreDocument) (err error)
 }
 
 // defaultProcessor implements Processor interface
@@ -107,7 +105,7 @@ func (dp *defaultProcessor) Send(ctx context.Context, coreDocument *coredocument
 // - store doc in db
 // - anchor the document
 // - send anchored document to collaborators [NOT NEEDED since we do this in the current flow already because HandleSend****Document does it after anchoring]
-func (dp *defaultProcessor) Anchor(ctx context.Context, document *coredocumentpb.CoreDocument, collaborators []identity.CentID) error {
+func (dp *defaultProcessor) Anchor(ctx context.Context, document *coredocumentpb.CoreDocument) error {
 	if document == nil {
 		return centerrors.NilError(document)
 	}
@@ -136,7 +134,7 @@ func (dp *defaultProcessor) Anchor(ctx context.Context, document *coredocumentpb
 
 	// collect signatures (incl. validate)
 	// store signatures on coredocument
-	err = dp.P2PClient.GetSignaturesForDocument(ctx, document, collaborators)
+	err = dp.P2PClient.GetSignaturesForDocument(ctx, document)
 	if err != nil {
 		log.Error(err)
 		return centerrors.Wrap(err, "anchoring error")

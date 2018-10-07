@@ -85,7 +85,7 @@ func (m *MockCoreDocumentProcessor) Send(ctx context.Context, coreDocument *core
 	return args.Error(0)
 }
 
-func (m *MockCoreDocumentProcessor) Anchor(ctx context.Context, coreDocument *coredocumentpb.CoreDocument, collaborators []identity.CentID) (err error) {
+func (m *MockCoreDocumentProcessor) Anchor(ctx context.Context, coreDocument *coredocumentpb.CoreDocument) (err error) {
 	args := m.Called(coreDocument)
 	return args.Error(0)
 }
