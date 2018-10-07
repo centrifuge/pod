@@ -28,10 +28,10 @@ type Service interface {
 	DeriveInvoiceResponse(inv documents.Model) (*clientinvoicepb.InvoiceResponse, error)
 
 	// GetLastVersion reads a document from the database
-	GetLastVersion([]byte) (documents.Model, error)
+	GetLastVersion(identifier []byte) (documents.Model, error)
 
 	// GetVersion reads a document from the database
-	GetVersion([]byte, []byte) (documents.Model, error)
+	GetVersion(identifier []byte, version []byte) (documents.Model, error)
 }
 
 // service implements Service and handles all invoice related persistence and validations
@@ -83,6 +83,7 @@ func (s service) Create(inv documents.Model) error {
 	return nil
 }
 
+// GetVersion returns an invoice for a given version
 func (s service) GetVersion(identifier []byte, version []byte) (doc documents.Model, err error) {
 	doc = new(InvoiceModel)
 	err = s.repo.LoadByID(version, doc)
@@ -101,20 +102,21 @@ func (s service) GetVersion(identifier []byte, version []byte) (doc documents.Mo
 	return
 }
 
+// GetLastVersion returns the last known version of an invoice
 func (s service) GetLastVersion(identifier []byte) (doc documents.Model, err error) {
 	doc, err = s.GetVersion(identifier, identifier)
 	if err != nil {
 		return nil, centerrors.Wrap(err, "document not found")
 	}
-	inv, _ := doc.(*InvoiceModel)
-	next_version := inv.CoreDocument.NextIdentifier
-	for next_version != nil {
-		doc, err = s.GetVersion(identifier, next_version)
+	inv := doc.(*InvoiceModel)
+	nextVersion := inv.CoreDocument.NextIdentifier
+	for nextVersion != nil {
+		doc, err = s.GetVersion(identifier, nextVersion)
 		if err != nil {
-			next_version = nil
+			return doc.(*InvoiceModel), nil
 		} else {
-			inv, _ = doc.(*InvoiceModel)
-			next_version = inv.CoreDocument.NextIdentifier
+			inv = doc.(*InvoiceModel)
+			nextVersion = inv.CoreDocument.NextIdentifier
 		}
 	}
 	return inv, nil

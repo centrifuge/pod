@@ -6,6 +6,8 @@ import (
 	"context"
 	"crypto/sha256"
 	"fmt"
+	"testing"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
@@ -20,7 +22,6 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"testing"
 )
 
 // mockInvoiceRepository implements storage.legacyRepo
