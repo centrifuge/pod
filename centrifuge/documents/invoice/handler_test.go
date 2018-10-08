@@ -398,26 +398,20 @@ func TestGRPCHandler_Create_DeriveCreateResponse_fail(t *testing.T) {
 func TestGrpcHandler_Create(t *testing.T) {
 	h := getHandler()
 	srv := h.service.(*mockService)
-<<<<<<< HEAD
-	model := new(mockModel)
-	payload := &clientinvoicepb.InvoiceCreatePayload{Data: &clientinvoicepb.InvoiceData{GrossAmount: 300}}
-	response := &clientinvoicepb.InvoiceResponse{}
-	srv.On("DeriveFromCreatePayload", mock.Anything).Return(model, nil)
-	srv.On("DeriveInvoiceResponse", model).Return(response, nil)
-	srv.On("Create", mock.Anything).Return(nil)
-=======
 	model := new(InvoiceModel)
 	payload := &clientinvoicepb.InvoiceCreatePayload{Data: &clientinvoicepb.InvoiceData{GrossAmount: 300}, Collaborators: []string{"0x010203040506"}}
 	srv.On("DeriveFromCreatePayload", mock.Anything).Return(model, nil).Once()
 	srv.On("Create", mock.Anything, mock.Anything).Return(model, nil).Once()
-	srv.On("DeriveCreateResponse", mock.Anything).Return(payload.Data, nil)
->>>>>>> 55814adc129a4ae327ca901bfc2bf2db14af8b0e
+	srv.On("DeriveInvoiceResponse", model).Return(response, nil)
 	res, err := h.Create(context.Background(), payload)
 	srv.AssertExpectations(t)
 	assert.Nil(t, err, "must be nil")
 	assert.NotNil(t, res, "must be non nil")
-<<<<<<< HEAD
 	assert.Equal(t, res, response)
+	assert.NotNil(t, res.Header.DocumentId)
+	assert.NotNil(t, res.Header.VersionId)
+	assert.Equal(t, res.Data, payload.Data, "data must match")
+
 }
 
 func TestGrpcHandler_Get(t *testing.T) {
@@ -451,9 +445,4 @@ func TestGrpcHandler_GetVersion(t *testing.T) {
 	assert.Nil(t, err, "must be nil")
 	assert.NotNil(t, res, "must be non nil")
 	assert.Equal(t, res, response)
-=======
-	assert.NotNil(t, res.Header.DocumentId)
-	assert.NotNil(t, res.Header.VersionId)
-	assert.Equal(t, res.Data, payload.Data, "data must match")
->>>>>>> 55814adc129a4ae327ca901bfc2bf2db14af8b0e
 }
