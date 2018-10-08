@@ -3,7 +3,15 @@
 package invoice
 
 import (
+	"context"
+	"fmt"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
+
+	"github.com/stretchr/testify/mock"
+
+	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
@@ -27,7 +35,7 @@ func createPayload() *clientinvoicepb.InvoiceCreatePayload {
 }
 
 func TestDefaultService(t *testing.T) {
-	srv := DefaultService(GetRepository())
+	srv := DefaultService(GetRepository(), &testingutils.MockCoreDocumentProcessor{})
 	assert.NotNil(t, srv, "must be non-nil")
 }
 
@@ -67,36 +75,87 @@ func TestService_DeriveFromPayload(t *testing.T) {
 	assert.NotNil(t, receivedCoreDocument.EmbeddedData, "embeddedData should be field")
 }
 
-func TestService_Create(t *testing.T) {
+func TestService_Create_validation_fail(t *testing.T) {
 	// fail Validations
-	err := invService.Create(&InvoiceModel{})
+	ctx := context.Background()
+	_, err := invService.Create(ctx, &InvoiceModel{})
 	assert.Error(t, err, "must be non nil")
 	assert.Contains(t, err.Error(), "currency is invalid")
+}
+
+func TestService_Create_db_fail(t *testing.T) {
+	ctx := context.Background()
+	model := &mockModel{}
+	cd := coredocument.New()
+	model.On("JSON").Return([]byte{1, 2, 3}, nil).Once()
+	err := GetRepository().Create(cd.CurrentIdentifier, model)
+	model.AssertExpectations(t)
 
 	payload := createPayload()
 	inv, err := invService.DeriveFromCreatePayload(payload)
 	assert.Nil(t, err, "must be non nil")
+	assert.NotNil(t, inv)
+	inv.(*InvoiceModel).CoreDocument = cd
 
 	// successful creation
-	err = invService.Create(inv)
-	assert.Nil(t, err, "create must pass")
-
-	coredoc, err := inv.PackCoreDocument()
-	assert.Nil(t, err, "must be converted to coredocument")
-
-	loadInv := new(InvoiceModel)
-	err = GetRepository().LoadByID(coredoc.CurrentIdentifier, loadInv)
-	assert.Nil(t, err, "Load must pass")
-	assert.NotNil(t, loadInv, "must be non nil")
-
-	invType := inv.(*InvoiceModel)
-	assert.Equal(t, loadInv.GrossAmount, invType.GrossAmount)
-	assert.Equal(t, loadInv.CoreDocument, invType.CoreDocument)
-
-	// failed creation
-	err = invService.Create(inv)
-	assert.Error(t, err, "must fail")
+	_, err = invService.Create(ctx, inv)
+	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "document already exists")
+}
+
+func TestService_Create_anchor_fail(t *testing.T) {
+	srv := invService.(*service)
+	proc := &testingutils.MockCoreDocumentProcessor{}
+	proc.On("Anchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(fmt.Errorf("failed to anchor document"))
+	srv.coreDocProcessor = proc
+	payload := createPayload()
+	inv, err := invService.DeriveFromCreatePayload(payload)
+	_, err = srv.Create(context.Background(), inv)
+	proc.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to anchor document")
+}
+
+func TestService_Create_send_fail(t *testing.T) {
+	srv := invService.(*service)
+	proc := &testingutils.MockCoreDocumentProcessor{}
+	proc.On("Anchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	proc.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(fmt.Errorf("failed to send"))
+	srv.coreDocProcessor = proc
+	payload := createPayload()
+	payload.Collaborators = []string{"0x010203040506"}
+	inv, err := invService.DeriveFromCreatePayload(payload)
+	_, err = srv.Create(context.Background(), inv)
+	proc.AssertExpectations(t)
+	assert.Nil(t, err)
+}
+
+func TestService_Create_saveState_fail(t *testing.T) {
+	srv := invService.(*service)
+	proc := &testingutils.MockCoreDocumentProcessor{}
+	proc.On("Anchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	proc.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(fmt.Errorf("failed to send"))
+	srv.coreDocProcessor = proc
+	payload := createPayload()
+	payload.Collaborators = []string{"0x010203040506"}
+	inv, err := invService.DeriveFromCreatePayload(payload)
+	_, err = srv.Create(context.Background(), inv)
+	proc.AssertExpectations(t)
+	assert.Nil(t, err)
+}
+
+func TestService_Create(t *testing.T) {
+	srv := invService.(*service)
+	proc := &testingutils.MockCoreDocumentProcessor{}
+	proc.On("Anchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	proc.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	srv.coreDocProcessor = proc
+	payload := createPayload()
+	payload.Collaborators = []string{"0x010203040506"}
+	inv, err := invService.DeriveFromCreatePayload(payload)
+	_, err = srv.Create(context.Background(), inv)
+	proc.AssertExpectations(t)
+	assert.Nil(t, err)
 }
 
 func TestService_DeriveCreateResponse(t *testing.T) {
