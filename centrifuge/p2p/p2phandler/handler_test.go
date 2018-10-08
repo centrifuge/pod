@@ -128,7 +128,8 @@ func TestHandler_RequestDocumentSignature_verification_fail(t *testing.T) {
 }
 
 func TestHandler_RequestDocumentSignature(t *testing.T) {
-	idConfig, _ := cented25519.GetIDConfig()
+	idConfig, err := cented25519.GetIDConfig()
+	assert.Nil(t, err)
 	sig := &coredocumentpb.Signature{
 		EntityId:  idConfig.ID,
 		PublicKey: key1Pub[:],
