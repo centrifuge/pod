@@ -164,7 +164,7 @@ func (s service) GetLastVersion(identifier []byte) (doc documents.Model, err err
 	for nextVersion != nil {
 		doc, err = s.GetVersion(identifier, nextVersion)
 		if err != nil {
-			return doc.(*InvoiceModel), nil
+			return inv, nil
 		} else {
 			inv = doc.(*InvoiceModel)
 			nextVersion = inv.CoreDocument.NextIdentifier

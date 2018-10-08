@@ -366,28 +366,13 @@ func (m *mockModel) JSON() ([]byte, error) {
 	return data, args.Error(1)
 }
 
-func TestGRPCHandler_Create_packcoredoc_fail(t *testing.T) {
-	h := getHandler()
-	srv := h.service.(*mockService)
-	model := &mockModel{}
-	srv.On("DeriveFromCreatePayload", mock.Anything).Return(model, nil).Once()
-	srv.On("Create", mock.Anything, mock.Anything).Return(model, nil).Once()
-	model.On("PackCoreDocument").Return(nil, fmt.Errorf("pack core document failed"))
-	payload := &clientinvoicepb.InvoiceCreatePayload{Data: &clientinvoicepb.InvoiceData{Currency: "EUR"}}
-	_, err := h.Create(context.Background(), payload)
-	srv.AssertExpectations(t)
-	model.AssertExpectations(t)
-	assert.Error(t, err, "must be non nil")
-	assert.Contains(t, err.Error(), "pack core document failed")
-}
-
-func TestGRPCHandler_Create_DeriveCreateResponse_fail(t *testing.T) {
+func TestGRPCHandler_Create_DeriveInvoiceResponse_fail(t *testing.T) {
 	h := getHandler()
 	srv := h.service.(*mockService)
 	model := new(InvoiceModel)
 	srv.On("DeriveFromCreatePayload", mock.Anything).Return(model, nil).Once()
 	srv.On("Create", mock.Anything, mock.Anything).Return(model, nil).Once()
-	srv.On("DeriveCreateResponse", mock.Anything).Return(nil, fmt.Errorf("derive response failed"))
+	srv.On("DeriveInvoiceResponse", mock.Anything).Return(nil, fmt.Errorf("derive response failed"))
 	payload := &clientinvoicepb.InvoiceCreatePayload{Data: &clientinvoicepb.InvoiceData{Currency: "EUR"}}
 	_, err := h.Create(context.Background(), payload)
 	srv.AssertExpectations(t)
@@ -400,6 +385,7 @@ func TestGrpcHandler_Create(t *testing.T) {
 	srv := h.service.(*mockService)
 	model := new(InvoiceModel)
 	payload := &clientinvoicepb.InvoiceCreatePayload{Data: &clientinvoicepb.InvoiceData{GrossAmount: 300}, Collaborators: []string{"0x010203040506"}}
+	response := &clientinvoicepb.InvoiceResponse{}
 	srv.On("DeriveFromCreatePayload", mock.Anything).Return(model, nil).Once()
 	srv.On("Create", mock.Anything, mock.Anything).Return(model, nil).Once()
 	srv.On("DeriveInvoiceResponse", model).Return(response, nil)
@@ -408,12 +394,7 @@ func TestGrpcHandler_Create(t *testing.T) {
 	assert.Nil(t, err, "must be nil")
 	assert.NotNil(t, res, "must be non nil")
 	assert.Equal(t, res, response)
-	assert.NotNil(t, res.Header.DocumentId)
-	assert.NotNil(t, res.Header.VersionId)
-	assert.Equal(t, res.Data, payload.Data, "data must match")
-
 }
-
 func TestGrpcHandler_Get(t *testing.T) {
 	identifier := "0x01010101"
 	identifierBytes, _ := hexutil.Decode(identifier)
