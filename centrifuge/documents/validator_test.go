@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/centrifuge/documenterror"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -22,8 +21,8 @@ type MockValidatorWithErrors struct {
 
 func (m MockValidatorWithErrors) Validate(oldState Model, newState Model) error {
 
-	err := documenterror.New("error 1")
-	err = documenterror.Append(err, documenterror.New("error 2"))
+	err := NewError("error 1")
+	err = AppendError(err, NewError("error 2"))
 
 	return err
 }
@@ -49,15 +48,15 @@ func TestValidatorInterface(t *testing.T) {
 	validator = MockValidatorWithOneError{}
 	errors = validator.Validate(nil, nil)
 	assert.Error(t, errors, "error should be returned")
-	assert.Equal(t, 1, documenterror.Len(errors), "errors should include one error")
+	assert.Equal(t, 1, LenError(errors), "errors should include one error")
 
 	// more than one error
 	validator = MockValidatorWithErrors{}
 	errors = validator.Validate(nil, nil)
 	assert.Error(t, errors, "error should be returned")
-	assert.Equal(t, 2, documenterror.Len(errors), "errors should include two error")
+	assert.Equal(t, 2, LenError(errors), "errors should include two error")
 
-	errorArray := documenterror.Errors(errors)
+	errorArray := Errors(errors)
 	assert.Equal(t, 2, len(errorArray), "error array should include two error")
 
 }
@@ -70,7 +69,7 @@ func TestValidatorGroup_Validate(t *testing.T) {
 		MockValidatorWithErrors{},
 	}
 	errors := testValidatorGroup.Validate(nil, nil)
-	assert.Equal(t, 3, len(documenterror.Errors(errors)), "Validate should return 2 errors")
+	assert.Equal(t, 3, len(Errors(errors)), "Validate should return 2 errors")
 
 	testValidatorGroup = ValidatorGroup{
 		MockValidator{},
@@ -78,12 +77,12 @@ func TestValidatorGroup_Validate(t *testing.T) {
 		MockValidatorWithErrors{},
 	}
 	errors = testValidatorGroup.Validate(nil, nil)
-	assert.Equal(t, 4, len(documenterror.Errors(errors)), "Validate should return 4 errors")
+	assert.Equal(t, 4, len(Errors(errors)), "Validate should return 4 errors")
 
 	// empty group
 	testValidatorGroup = ValidatorGroup{}
 	errors = testValidatorGroup.Validate(nil, nil)
-	assert.Equal(t, 0, len(documenterror.Errors(errors)), "Validate should return no error")
+	assert.Equal(t, 0, len(Errors(errors)), "Validate should return no error")
 
 	// group with no errors at all
 	testValidatorGroup = ValidatorGroup{
@@ -92,6 +91,6 @@ func TestValidatorGroup_Validate(t *testing.T) {
 		MockValidator{},
 	}
 	errors = testValidatorGroup.Validate(nil, nil)
-	assert.Equal(t, 0, len(documenterror.Errors(errors)), "Validate should return no error")
+	assert.Equal(t, 0, len(Errors(errors)), "Validate should return no error")
 
 }
