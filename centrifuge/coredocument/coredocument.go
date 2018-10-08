@@ -245,16 +245,27 @@ func FillIdentifiers(document coredocumentpb.CoreDocument) (coredocumentpb.CoreD
 	return document, nil
 }
 
-// PrepareNewVersion returns a new CoreDocument instance of the version fields prepared for a document update
-func PrepareNewVersion(document *coredocumentpb.CoreDocument) (*coredocumentpb.CoreDocument) {
-	newDocument := New()
-	newDocument.DocumentIdentifier = document.DocumentIdentifier
-	newDocument.PreviousVersion = document.CurrentVersion
-	newDocument.CurrentVersion = document.NextVersion
-	newDocument.NextVersion = tools.RandomSlice(32)
-	newDocument.PreviousRoot = document.DocumentRoot
+// PrepareNewVersion updates CoreDocument instance with the version fields prepared for a document update
+// It assumes that parent process will abort when error and not store state after this function is called
+func PrepareNewVersion(document *coredocumentpb.CoreDocument) (error) {
+	if document == nil {
+		return fmt.Errorf("coredocument is nil")
+	}
+	if document.CurrentVersion == nil {
+		return fmt.Errorf("coredocument.CurrentVersion is nil")
+	}
+	document.PreviousVersion = document.CurrentVersion
+	if document.NextVersion == nil {
+		return fmt.Errorf("coredocument.NextVersion is nil")
+	}
+	document.CurrentVersion = document.NextVersion
+	document.NextVersion = tools.RandomSlice(32)
+	if document.DocumentRoot == nil {
+		return fmt.Errorf("coredocument.DocumentRoot is nil")
+	}
+	document.PreviousRoot = document.DocumentRoot
 
-	return newDocument
+	return nil
 }
 
 // New returns a new core document from the proto message

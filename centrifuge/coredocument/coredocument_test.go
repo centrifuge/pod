@@ -429,3 +429,37 @@ func TestGetTypeUrl(t *testing.T) {
 	_, err = GetTypeUrl(nil)
 	assert.Error(t, err, "should throw an error because typeUrl is not set")
 }
+
+func TestPrepareNewVersion(t *testing.T) {
+	var doc *coredocumentpb.CoreDocument
+	cv := tools.RandomSlice(32)
+	nv := tools.RandomSlice(32)
+	dr := tools.RandomSlice(32)
+
+	err := PrepareNewVersion(doc)
+	assert.NotNil(t, err)
+
+	doc = &coredocumentpb.CoreDocument{}
+	err = PrepareNewVersion(doc)
+	assert.NotNil(t, err)
+
+	doc.CurrentVersion = cv
+	err = PrepareNewVersion(doc)
+	assert.NotNil(t, err)
+
+	doc.NextVersion = nv
+	err = PrepareNewVersion(doc)
+	assert.NotNil(t, err)
+
+	doc = &coredocumentpb.CoreDocument{}
+	doc.CurrentVersion = cv
+	doc.NextVersion = nv
+	doc.DocumentRoot = dr
+
+	err = PrepareNewVersion(doc)
+	assert.Nil(t, err)
+
+	assert.Equal(t, cv, doc.PreviousVersion)
+	assert.Equal(t, nv, doc.CurrentVersion)
+	assert.Equal(t, dr, doc.PreviousRoot)
+}
