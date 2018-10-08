@@ -59,8 +59,8 @@
     "gen/go/purchaseorder",
   ]
   pruneopts = "T"
-  revision = "74152499e40d58326418adb0214c616c7079944a"
-  source = "git@github.com:mikiquantum/centrifuge-protobufs"
+  revision = "72fd0142cc3fcffe0c58d3cc08514b79911307f2"
+  source = "git@github.com:centrifuge/centrifuge-protobufs"
 
 [[projects]]
   digest = "1:c925cd40d25fe72f5916e010b79b5d9f6e0e97ec9b190fa658c6c67b913229ea"
