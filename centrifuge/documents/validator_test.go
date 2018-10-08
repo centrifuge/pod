@@ -6,8 +6,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
-	"github.com/centrifuge/go-centrifuge/centrifuge/code"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documenterror"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -23,11 +22,10 @@ type MockValidatorWithErrors struct {
 
 func (m MockValidatorWithErrors) Validate(oldState Model, newState Model) error {
 
-	errors := make(map[string]string)
-	errors["error1"] = "first error"
-	errors["error2"] = "second error"
+	err := documenterror.New("error 1")
+	err = documenterror.Append(err, documenterror.New("error 2"))
 
-	return centerrors.NewWithErrors(code.DocumentInvalid, "document is invalid", errors)
+	return err
 }
 
 type MockValidatorWithOneError struct {
@@ -35,9 +33,7 @@ type MockValidatorWithOneError struct {
 
 func (m MockValidatorWithOneError) Validate(oldState Model, newState Model) error {
 
-	err := fmt.Errorf("one error")
-	centerrors.Wrap(err, "second error")
-	return err
+	return fmt.Errorf("one error")
 }
 
 func TestValidatorInterface(t *testing.T) {
@@ -53,21 +49,16 @@ func TestValidatorInterface(t *testing.T) {
 	validator = MockValidatorWithOneError{}
 	errors = validator.Validate(nil, nil)
 	assert.Error(t, errors, "error should be returned")
-	centErrors, ok := centerrors.FromError(errors)
-	assert.False(t, ok, "should contain an unkown error")
-	assert.Equal(t, code.Unknown, centErrors.Code(), "code should be unkown")
-	assert.Equal(t, 0, len(centErrors.Errors()), "map should be empty")
+	assert.Equal(t, 1, documenterror.Len(errors), "errors should include one error")
 
 	// more than one error
 	validator = MockValidatorWithErrors{}
 	errors = validator.Validate(nil, nil)
-	assert.NotNil(t, errors, "should return some errors")
+	assert.Error(t, errors, "error should be returned")
+	assert.Equal(t, 2, documenterror.Len(errors), "errors should include two error")
 
-	centErrors, ok = centerrors.FromError(errors)
-	assert.True(t, ok, "errors should contain centerrors")
-
-	assert.Equal(t, 2, len(centErrors.Errors()), "Validate should return two entries in error map")
-	assert.Equal(t, code.DocumentInvalid, centErrors.Code(), "error code should be DocumentInvalid")
+	errorArray := documenterror.Errors(errors)
+	assert.Equal(t, 2, len(errorArray), "error array should include two error")
 
 }
 
@@ -79,8 +70,7 @@ func TestValidatorGroup_Validate(t *testing.T) {
 		MockValidatorWithErrors{},
 	}
 	errors := testValidatorGroup.Validate(nil, nil)
-	centErrors, _ := centerrors.FromError(errors)
-	assert.Equal(t, 2, len(centErrors.Errors()), "Validate should return 2 errors")
+	assert.Equal(t, 3, len(documenterror.Errors(errors)), "Validate should return 2 errors")
 
 	testValidatorGroup = ValidatorGroup{
 		MockValidator{},
@@ -88,15 +78,12 @@ func TestValidatorGroup_Validate(t *testing.T) {
 		MockValidatorWithErrors{},
 	}
 	errors = testValidatorGroup.Validate(nil, nil)
-	centErrors, _ = centerrors.FromError(errors)
-	assert.Equal(t, 4, len(centErrors.Errors()), "Validate should return 4 errors")
+	assert.Equal(t, 4, len(documenterror.Errors(errors)), "Validate should return 4 errors")
 
 	// empty group
 	testValidatorGroup = ValidatorGroup{}
 	errors = testValidatorGroup.Validate(nil, nil)
-
-	centErrors, _ = centerrors.FromError(errors)
-	assert.Equal(t, 0, len(centErrors.Errors()), "Validate should return no errors")
+	assert.Equal(t, 0, len(documenterror.Errors(errors)), "Validate should return no error")
 
 	// group with no errors at all
 	testValidatorGroup = ValidatorGroup{
@@ -104,9 +91,7 @@ func TestValidatorGroup_Validate(t *testing.T) {
 		MockValidator{},
 		MockValidator{},
 	}
-
 	errors = testValidatorGroup.Validate(nil, nil)
-	centErrors, _ = centerrors.FromError(errors)
-	assert.Equal(t, 0, len(centErrors.Errors()), "Validate should return no errors")
+	assert.Equal(t, 0, len(documenterror.Errors(errors)), "Validate should return no error")
 
 }

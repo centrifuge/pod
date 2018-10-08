@@ -1,6 +1,6 @@
 package documents
 
-import "github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
+import "github.com/centrifuge/go-centrifuge/centrifuge/documenterror"
 
 // Validator is an interface every Validator (atomic or group) should implement
 type Validator interface {
@@ -16,7 +16,7 @@ func (group ValidatorGroup) Validate(oldState Model, newState Model) (validation
 
 	for _, v := range group {
 		errors := v.Validate(oldState, newState)
-		validationErrors = centerrors.Wrap(validationErrors, errors)
+		validationErrors = documenterror.Append(validationErrors, errors)
 	}
 	return validationErrors
 }
