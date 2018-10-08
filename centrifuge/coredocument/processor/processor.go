@@ -189,7 +189,7 @@ func (dp *defaultProcessor) Anchor(
 		return centerrors.Wrap(err, "anchoring error")
 	}
 
-	myCentID, err := identity.NewCentID(idConfig.ID)
+	myCentID, err := identity.ToCentID(idConfig.ID)
 	if err != nil {
 		log.Error(err)
 		return centerrors.Wrap(err, "anchoring error")

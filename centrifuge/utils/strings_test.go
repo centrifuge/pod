@@ -34,7 +34,7 @@ func TestStringLengthEqual(t *testing.T) {
 	}
 
 	for _, c := range tests {
-		got := StringLengthEqual(c.msg, c.len)
+		got := IsStringOfLength(c.msg, c.len)
 		assert.Equal(t, c.result, got, "result must match")
 	}
 }
@@ -55,7 +55,7 @@ func TestStringEmpty(t *testing.T) {
 	}
 
 	for _, c := range tests {
-		got := StringEmpty(c.msg)
+		got := IsStringEmpty(c.msg)
 		assert.Equal(t, c.result, got, "result must match")
 	}
 }

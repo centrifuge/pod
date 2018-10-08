@@ -444,7 +444,7 @@ func TestGrpcHandler_Create(t *testing.T) {
 	srv := h.service.(*mockService)
 	model := new(mockModel)
 	cd := coredocument.New()
-	payload := &clientinvoicepb.InvoiceCreatePayload{Data: &clientinvoicepb.InvoiceData{GrossAmount: 300}, Collaborators: []string{"010203040506"}}
+	payload := &clientinvoicepb.InvoiceCreatePayload{Data: &clientinvoicepb.InvoiceData{GrossAmount: 300}, Collaborators: []string{"0x010203040506"}}
 	model.On("PackCoreDocument").Return(cd, nil)
 	model.On("UnpackCoreDocument", mock.Anything).Return(nil)
 	srv.On("DeriveFromCreatePayload", mock.Anything).Return(model, nil)

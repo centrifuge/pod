@@ -1,7 +1,7 @@
 package utils
 
-// StringLengthEqual returns true if length of the string == n
-func StringLengthEqual(msg string, n int) bool {
+// IsStringOfLength returns true if length of the string == n
+func IsStringOfLength(msg string, n int) bool {
 	if len(msg) != n {
 		return false
 	}
@@ -9,7 +9,7 @@ func StringLengthEqual(msg string, n int) bool {
 	return true
 }
 
-// StringEmpty returns true if the string is empty
-func StringEmpty(msg string) bool {
-	return StringLengthEqual(msg, 0)
+// IsStringEmpty returns true if the string is empty
+func IsStringEmpty(msg string) bool {
+	return IsStringOfLength(msg, 0)
 }

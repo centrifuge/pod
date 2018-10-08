@@ -216,7 +216,7 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientinvoicepb.InvoiceCr
 		return h.service.SaveState(doc)
 	}
 
-	// temporary until core document has collaborators
+	// TODO: temporary until core document has collaborators
 	cids, err := identity.CentIDsFromStrings(req.Collaborators)
 	if err != nil {
 		return nil, err

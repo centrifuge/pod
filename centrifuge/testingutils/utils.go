@@ -118,7 +118,7 @@ func (*MockSubscription) Unsubscribe() {}
 func CreateIdentityWithKeys() identity.CentID {
 	idService := identity.NewEthereumIdentityService()
 	idConfig, _ := secp256k1.GetIDConfig()
-	centIdTyped, _ := identity.NewCentID(idConfig.ID)
+	centIdTyped, _ := identity.ToCentID(idConfig.ID)
 	// only create identity if it doesn't exist
 	id, err := idService.LookupIdentityForID(centIdTyped)
 	if err != nil {

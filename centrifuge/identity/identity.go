@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/big"
+
+	"github.com/ethereum/go-ethereum/common/hexutil"
 
 	"github.com/centrifuge/go-centrifuge/centrifuge/ethereum"
 
@@ -19,7 +20,7 @@ import (
 )
 
 const (
-	CentIDByteLength     = 6
+	CentIDLength         = 6
 	ActionCreate         = "create"
 	ActionAddKey         = "addkey"
 	KeyPurposeP2p        = 1
@@ -27,26 +28,31 @@ const (
 	KeyPurposeEthMsgAuth = 3
 )
 
-type CentID [CentIDByteLength]byte
+type CentID [CentIDLength]byte
 
-// NewCentID takes bytes and return CentID
-func NewCentID(centIDBytes []byte) (CentID, error) {
-	var centBytes [CentIDByteLength]byte
-	if !tools.IsValidByteSliceForLength(centIDBytes, CentIDByteLength) {
-		return centBytes, errors.New("invalid length byte slice provided for centId")
+// ToCentID takes bytes and return CentID
+// errors out if bytes are empty, nil, or len(bytes) > CentIDLength
+func ToCentID(bytes []byte) (centID CentID, err error) {
+	if tools.IsEmptyByteSlice(bytes) {
+		return centID, fmt.Errorf("empty bytes provided")
 	}
-	copy(centBytes[:], centIDBytes[:CentIDByteLength])
-	return centBytes, nil
+
+	if !tools.IsValidByteSliceForLength(bytes, CentIDLength) {
+		return centID, errors.New("invalid length byte slice provided for centID")
+	}
+
+	copy(centID[:], bytes[:CentIDLength])
+	return centID, nil
 }
 
 // CentIDFromString takes an hex string and returns a CentID
 func CentIDFromString(id string) (centID CentID, err error) {
-	decID, err := hex.DecodeString(id)
+	decID, err := hexutil.Decode(id)
 	if err != nil {
 		return centID, centerrors.Wrap(err, "failed to decode id")
 	}
 
-	return NewCentID(decID)
+	return ToCentID(decID)
 }
 
 // CentIDsFromStrings converts hex ids to centIDs
@@ -65,13 +71,8 @@ func CentIDsFromStrings(ids []string) ([]CentID, error) {
 }
 
 func NewRandomCentID() CentID {
-	ID, _ := NewCentID(tools.RandomSlice(CentIDByteLength))
+	ID, _ := ToCentID(tools.RandomSlice(CentIDLength))
 	return ID
-}
-
-// IsCentIDValid returns false if id is empty
-func IsCentIDValid(id CentID) bool {
-	return !tools.IsEmptyByteSlice(id[:])
 }
 
 func (c CentID) Equal(other CentID) bool {
@@ -96,15 +97,15 @@ func (c CentID) BigInt() *big.Int {
 	return tools.ByteSliceToBigInt(c[:])
 }
 
-func (c CentID) ByteArray() [CentIDByteLength]byte {
-	var idBytes [CentIDByteLength]byte
-	copy(idBytes[:], c[:CentIDByteLength])
+func (c CentID) ByteArray() [CentIDLength]byte {
+	var idBytes [CentIDLength]byte
+	copy(idBytes[:], c[:CentIDLength])
 	return idBytes
 }
 
 func ParseCentIDs(centIDByteArray [][]byte) (errs []error, centIDs []CentID) {
 	for _, element := range centIDByteArray {
-		centID, err := NewCentID(element)
+		centID, err := ToCentID(element)
 		if err != nil {
 			err = centerrors.Wrap(err, "error parsing receiver centId")
 			errs = append(errs, err)
@@ -154,11 +155,11 @@ type Service interface {
 func CentrifugeIdStringToSlice(s string) (id CentID, err error) {
 	centBytes, err := base64.StdEncoding.DecodeString(s)
 	if err != nil {
-		return [CentIDByteLength]byte{}, err
+		return [CentIDLength]byte{}, err
 	}
-	centId, err := NewCentID(centBytes)
+	centId, err := ToCentID(centBytes)
 	if err != nil {
-		return [CentIDByteLength]byte{}, err
+		return [CentIDLength]byte{}, err
 	}
 	return centId, nil
 }
@@ -256,7 +257,7 @@ func AddKeyFromConfig(purpose int) error {
 		return err
 	}
 
-	centId, err := NewCentID(identityConfig.ID)
+	centId, err := ToCentID(identityConfig.ID)
 	if err != nil {
 		return err
 	}

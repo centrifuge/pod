@@ -17,9 +17,9 @@ var invService Service
 func createPayload() *clientinvoicepb.InvoiceCreatePayload {
 	return &clientinvoicepb.InvoiceCreatePayload{
 		Data: &clientinvoicepb.InvoiceData{
-			Sender:      "010101010101",
-			Recipient:   "010203040506",
-			Payee:       "010203020406",
+			Sender:      "0x010101010101",
+			Recipient:   "0x010203040506",
+			Payee:       "0x010203020406",
 			GrossAmount: 42,
 			Currency:    "EUR",
 		},
@@ -69,9 +69,7 @@ func TestService_DeriveFromPayload(t *testing.T) {
 
 func TestService_Create(t *testing.T) {
 	// fail Validations
-	err := invService.Create(&InvoiceModel{
-		Currency: "EUR",
-	})
+	err := invService.Create(&InvoiceModel{})
 	assert.Error(t, err, "must be non nil")
 	assert.Contains(t, err.Error(), "Invoice invalid")
 

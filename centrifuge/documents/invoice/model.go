@@ -2,10 +2,11 @@ package invoice
 
 import (
 	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"reflect"
+
+	"github.com/ethereum/go-ethereum/common/hexutil"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -47,9 +48,9 @@ type InvoiceModel struct {
 	NetAmount   int64
 	TaxAmount   int64
 	TaxRate     int64
-	Recipient   identity.CentID
-	Sender      identity.CentID
-	Payee       identity.CentID
+	Recipient   *identity.CentID
+	Sender      *identity.CentID
+	Payee       *identity.CentID
 	Comment     string
 	DueDate     *timestamp.Timestamp
 	DateCreated *timestamp.Timestamp
@@ -64,18 +65,24 @@ type InvoiceModel struct {
 
 // getClientData returns the client data from the invoice model
 func (i *InvoiceModel) getClientData() (*clientinvoicepb.InvoiceData, error) {
-	recipient, err := i.Recipient.MarshalBinary()
-	if err != nil {
-		return nil, err
+	var recipient string
+	if i.Recipient != nil {
+		recipient = hexutil.Encode(i.Recipient[:])
 	}
 
-	sender, err := i.Sender.MarshalBinary()
-	if err != nil {
-		return nil, err
+	var sender string
+	if i.Sender != nil {
+		sender = hexutil.Encode(i.Sender[:])
 	}
-	payee, err := i.Payee.MarshalBinary()
-	if err != nil {
-		return nil, err
+
+	var payee string
+	if i.Payee != nil {
+		payee = hexutil.Encode(i.Payee[:])
+	}
+
+	var extraData string
+	if i.ExtraData != nil {
+		extraData = hexutil.Encode(i.ExtraData)
 	}
 
 	return &clientinvoicepb.InvoiceData{
@@ -95,13 +102,13 @@ func (i *InvoiceModel) getClientData() (*clientinvoicepb.InvoiceData, error) {
 		NetAmount:        i.NetAmount,
 		TaxAmount:        i.TaxAmount,
 		TaxRate:          i.TaxRate,
-		Recipient:        hex.EncodeToString(recipient),
-		Sender:           hex.EncodeToString(sender),
-		Payee:            hex.EncodeToString(payee),
+		Recipient:        recipient,
+		Sender:           sender,
+		Payee:            payee,
 		Comment:          i.Comment,
 		DueDate:          i.DueDate,
 		DateCreated:      i.DateCreated,
-		ExtraData:        hex.EncodeToString(i.ExtraData),
+		ExtraData:        extraData,
 	}, nil
 
 }
@@ -109,18 +116,17 @@ func (i *InvoiceModel) getClientData() (*clientinvoicepb.InvoiceData, error) {
 // createP2PProtobuf returns centrifuge protobuf specific invoiceData
 func (i *InvoiceModel) createP2PProtobuf() (*invoicepb.InvoiceData, error) {
 
-	recipient, err := i.Recipient.MarshalBinary()
-	if err != nil {
-		return nil, err
+	var recipient, sender, payee []byte
+	if i.Recipient != nil {
+		recipient = i.Recipient[:]
 	}
 
-	sender, err := i.Sender.MarshalBinary()
-	if err != nil {
-		return nil, err
+	if i.Sender != nil {
+		sender = i.Sender[:]
 	}
-	payee, err := i.Payee.MarshalBinary()
-	if err != nil {
-		return nil, err
+
+	if i.Payee != nil {
+		payee = i.Payee[:]
 	}
 
 	return &invoicepb.InvoiceData{
@@ -174,25 +180,25 @@ func (i *InvoiceModel) InitInvoiceInput(payload *clientinvoicepb.InvoiceCreatePa
 	i.DueDate = data.DueDate
 	i.DateCreated = data.DateCreated
 
-	var err error
-	i.Recipient, err = identity.CentIDFromString(data.Recipient)
-	if err != nil {
-		return centerrors.Wrap(err, "failed to decode recipient")
+	if recipient, err := identity.CentIDFromString(data.Recipient); err == nil {
+		i.Recipient = &recipient
 	}
 
-	i.Sender, err = identity.CentIDFromString(data.Sender)
-	if err != nil {
-		return centerrors.Wrap(err, "failed to decode sender")
+	if sender, err := identity.CentIDFromString(data.Sender); err == nil {
+		i.Sender = &sender
 	}
 
-	i.Payee, err = identity.CentIDFromString(data.Payee)
-	if err != nil {
-		return centerrors.Wrap(err, "failed to decode payee")
+	if payee, err := identity.CentIDFromString(data.Payee); err == nil {
+		i.Payee = &payee
 	}
 
-	i.ExtraData, err = hex.DecodeString(data.ExtraData)
-	if err != nil {
-		return centerrors.Wrap(err, "failed to decode extra data")
+	if data.ExtraData != "" {
+		ed, err := hexutil.Decode(data.ExtraData)
+		if err != nil {
+			return centerrors.Wrap(err, "failed to decode extra data")
+		}
+
+		i.ExtraData = ed
 	}
 
 	for _, id := range payload.Collaborators {
@@ -226,31 +232,23 @@ func (i *InvoiceModel) loadFromP2PProtobuf(invoiceData *invoicepb.InvoiceData) e
 	i.TaxAmount = invoiceData.TaxAmount
 	i.TaxRate = invoiceData.TaxRate
 
-	recipientCentID, err := identity.NewCentID(invoiceData.Recipient)
-	if err != nil {
-		return err
+	if recipient, err := identity.ToCentID(invoiceData.Recipient); err == nil {
+		i.Recipient = &recipient
 	}
-	i.Recipient = recipientCentID
 
-	senderCentID, err := identity.NewCentID(invoiceData.Sender)
-	if err != nil {
-		return err
+	if sender, err := identity.ToCentID(invoiceData.Sender); err == nil {
+		i.Sender = &sender
 	}
-	i.Sender = senderCentID
 
-	payeeCentID, err := identity.NewCentID(invoiceData.Payee)
-	if err != nil {
-		return err
+	if payee, err := identity.ToCentID(invoiceData.Payee); err == nil {
+		i.Payee = &payee
 	}
-	i.Payee = payeeCentID
 
 	i.Comment = invoiceData.Comment
 	i.DueDate = invoiceData.DueDate
 	i.DateCreated = invoiceData.DateCreated
 	i.ExtraData = invoiceData.ExtraData
-
 	return nil
-
 }
 
 // getInvoiceSalts returns the invoice salts. Initialises if not present
