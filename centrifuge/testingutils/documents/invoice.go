@@ -15,9 +15,9 @@ import (
 
 func CreateInvoiceData() invoicepb.InvoiceData {
 	return invoicepb.InvoiceData{
-		Recipient:   tools.RandomSlice(identity.CentIDByteLength),
-		Sender:      tools.RandomSlice(identity.CentIDByteLength),
-		Payee:       tools.RandomSlice(identity.CentIDByteLength),
+		Recipient:   tools.RandomSlice(identity.CentIDLength),
+		Sender:      tools.RandomSlice(identity.CentIDLength),
+		Payee:       tools.RandomSlice(identity.CentIDLength),
 		GrossAmount: 42,
 	}
 }

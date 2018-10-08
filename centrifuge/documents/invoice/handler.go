@@ -68,7 +68,7 @@ func (h *grpcHandler) anchorInvoiceDocument(ctx context.Context, doc *invoicepb.
 		return nil, err
 	}
 
-	err = h.coreDocProcessor.Anchor(ctx, coreDoc, collaborators)
+	err = h.coreDocProcessor.Anchor(ctx, coreDoc, collaborators, nil)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, err
@@ -207,9 +207,41 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientinvoicepb.InvoiceCr
 		return nil, err
 	}
 
+	saveState := func(coreDoc *coredocumentpb.CoreDocument) error {
+		err := doc.UnpackCoreDocument(coreDoc)
+		if err != nil {
+			return err
+		}
+
+		return h.service.SaveState(doc)
+	}
+
+	// TODO: temporary until core document has collaborators
+	cids, err := identity.CentIDsFromStrings(req.Collaborators)
+	if err != nil {
+		return nil, err
+	}
+
 	coreDoc, err := doc.PackCoreDocument()
 	if err != nil {
 		return nil, err
+	}
+
+	err = h.coreDocProcessor.Anchor(ctx, coreDoc, cids, saveState)
+	if err != nil {
+		return nil, err
+	}
+
+	coreDoc, err = doc.PackCoreDocument()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, id := range cids {
+		err := h.coreDocProcessor.Send(ctx, coreDoc, id)
+		if err != nil {
+			log.Infof("failed to send anchored document: %v\n", err)
+		}
 	}
 
 	header := &clientinvoicepb.ResponseHeader{

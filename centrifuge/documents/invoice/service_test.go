@@ -8,6 +8,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
+	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,10 +17,11 @@ var invService Service
 func createPayload() *clientinvoicepb.InvoiceCreatePayload {
 	return &clientinvoicepb.InvoiceCreatePayload{
 		Data: &clientinvoicepb.InvoiceData{
-			Sender:      "010101010101",
-			Recipient:   "010203040506",
-			Payee:       "010203020406",
+			Sender:      "0x010101010101",
+			Recipient:   "0x010203040506",
+			Payee:       "0x010203020406",
 			GrossAmount: 42,
+			Currency:    "EUR",
 		},
 	}
 }
@@ -66,6 +68,11 @@ func TestService_DeriveFromPayload(t *testing.T) {
 }
 
 func TestService_Create(t *testing.T) {
+	// fail Validations
+	err := invService.Create(&InvoiceModel{})
+	assert.Error(t, err, "must be non nil")
+	assert.Contains(t, err.Error(), "currency is invalid")
+
 	payload := createPayload()
 	inv, err := invService.DeriveFromCreatePayload(payload)
 	assert.Nil(t, err, "must be non nil")
@@ -105,4 +112,45 @@ func TestService_DeriveCreateResponse(t *testing.T) {
 	assert.Nil(t, err, "Derive must succeed")
 	assert.NotNil(t, data, "data must be non nil")
 	assert.Equal(t, data, payload.Data, "data mismatch")
+}
+
+func TestService_SaveState(t *testing.T) {
+	// unknown type
+	err := invService.SaveState(&mockModel{})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "document of invalid type")
+
+	inv := new(InvoiceModel)
+	err = inv.InitInvoiceInput(createPayload())
+	assert.Nil(t, err)
+
+	// save state must fail missing core document
+	err = invService.SaveState(inv)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "core document missing")
+
+	// update fail
+	coreDoc, err := inv.PackCoreDocument()
+	assert.Nil(t, err)
+	assert.NotNil(t, coreDoc)
+	err = invService.SaveState(inv)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "document doesn't exists")
+
+	// successful
+	err = GetRepository().Create(coreDoc.CurrentIdentifier, inv)
+	assert.Nil(t, err)
+	assert.Equal(t, inv.Currency, "EUR")
+	assert.Nil(t, inv.CoreDocument.DataRoot)
+
+	inv.Currency = "INR"
+	inv.CoreDocument.DataRoot = tools.RandomSlice(32)
+	err = invService.SaveState(inv)
+	assert.Nil(t, err)
+
+	loadInv := new(InvoiceModel)
+	err = GetRepository().LoadByID(coreDoc.CurrentIdentifier, loadInv)
+	assert.Nil(t, err)
+	assert.Equal(t, loadInv.Currency, inv.Currency)
+	assert.Equal(t, loadInv.CoreDocument.DataRoot, inv.CoreDocument.DataRoot)
 }

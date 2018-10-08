@@ -22,7 +22,7 @@ func getBytes32(key interface{}) ([32]byte, error) {
 }
 
 func getCentID(key interface{}) (CentID, error) {
-	var fixed [CentIDByteLength]byte
+	var fixed [CentIDLength]byte
 	b, ok := key.([]interface{})
 	if !ok {
 		return fixed, errors.New("Could not parse interface to []byte")
