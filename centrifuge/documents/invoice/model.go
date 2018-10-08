@@ -191,7 +191,8 @@ func (i *InvoiceModel) InitInvoiceInput(payload *clientinvoicepb.InvoiceCreatePa
 		return centerrors.Wrap(err, "failed to decode extra data")
 	}
 
-	i.CoreDocument = &coredocumentpb.CoreDocument{Collaborators: [][]byte{}}
+	i.CoreDocument = coredocument.New()
+	i.CoreDocument.Collaborators = [][]byte{}
 
 	for _, id := range payload.Collaborators {
 		cid, err := identity.CentIDFromString(id)

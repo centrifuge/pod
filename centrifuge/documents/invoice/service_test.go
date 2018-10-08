@@ -85,7 +85,7 @@ func TestService_Create(t *testing.T) {
 
 	invType := inv.(*InvoiceModel)
 	assert.Equal(t, loadInv.GrossAmount, invType.GrossAmount)
-	assert.Equal(t, loadInv.CoreDocument, invType.CoreDocument)
+	assert.Equal(t, loadInv.CoreDocument.DocumentIdentifier, invType.CoreDocument.DocumentIdentifier)
 
 	// failed creation
 	err = invService.Create(inv)
