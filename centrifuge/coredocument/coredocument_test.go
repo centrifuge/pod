@@ -35,7 +35,7 @@ var (
 
 func TestGetDataProofHashes(t *testing.T) {
 	cd := coredocumentpb.CoreDocument{
-		DataRoot:      tools.RandomSlice(32),
+		DataRoot: tools.RandomSlice(32),
 	}
 	cd, err := FillIdentifiers(cd)
 	assert.Nil(t, err)

@@ -247,7 +247,7 @@ func FillIdentifiers(document coredocumentpb.CoreDocument) (coredocumentpb.CoreD
 
 // PrepareNewVersion updates CoreDocument instance with the version fields prepared for a document update
 // It assumes that parent process will abort when error and not store state after this function is called
-func PrepareNewVersion(document *coredocumentpb.CoreDocument) (error) {
+func PrepareNewVersion(document *coredocumentpb.CoreDocument) error {
 	if document == nil {
 		return fmt.Errorf("coredocument is nil")
 	}

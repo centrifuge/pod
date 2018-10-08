@@ -246,6 +246,10 @@
             "type": "string",
             "format": "byte"
           }
+        },
+        "collaborators_length": {
+          "type": "string",
+          "format": "byte"
         }
       }
     },
