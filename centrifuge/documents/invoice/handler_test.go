@@ -5,7 +5,6 @@ package invoice
 import (
 	"context"
 	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"testing"
 
@@ -291,20 +290,16 @@ func (m *mockService) DeriveFromCreatePayload(payload *clientinvoicepb.InvoiceCr
 	return model, args.Error(1)
 }
 
-func (m *mockService) Create(inv documents.Model) error {
-	args := m.Called(inv)
-	return args.Error(0)
+func (m *mockService) Create(ctx context.Context, inv documents.Model) (documents.Model, error) {
+	args := m.Called(ctx, inv)
+	model, _ := args.Get(0).(documents.Model)
+	return model, args.Error(1)
 }
 
 func (m *mockService) DeriveCreateResponse(doc documents.Model) (*clientinvoicepb.InvoiceData, error) {
 	args := m.Called(doc)
 	data, _ := args.Get(0).(*clientinvoicepb.InvoiceData)
 	return data, args.Error(1)
-}
-
-func (m *mockService) SaveState(doc documents.Model) error {
-	args := m.Called(doc)
-	return args.Error(0)
 }
 
 func getHandler() *grpcHandler {
@@ -322,28 +317,16 @@ func TestGRPCHandler_Create_derive_fail(t *testing.T) {
 	assert.Contains(t, err.Error(), "derive failed")
 }
 
-func TestGrpcHandler_Create_create_fail(t *testing.T) {
+func TestGRPCHandler_Create_create_fail(t *testing.T) {
 	h := getHandler()
 	srv := h.service.(*mockService)
 	srv.On("DeriveFromCreatePayload", mock.Anything).Return(new(InvoiceModel), nil).Once()
-	srv.On("Create", mock.Anything).Return(fmt.Errorf("create failed")).Once()
+	srv.On("Create", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("create failed")).Once()
 	payload := &clientinvoicepb.InvoiceCreatePayload{Data: &clientinvoicepb.InvoiceData{GrossAmount: 300}}
 	_, err := h.Create(context.Background(), payload)
 	srv.AssertExpectations(t)
 	assert.Error(t, err, "must be non nil")
 	assert.Contains(t, err.Error(), "create failed")
-}
-
-func TestGRPCHandler_Create_centIDs_fail(t *testing.T) {
-	h := getHandler()
-	srv := h.service.(*mockService)
-	srv.On("DeriveFromCreatePayload", mock.Anything).Return(new(InvoiceModel), nil).Once()
-	srv.On("Create", mock.Anything).Return(nil).Once()
-	payload := &clientinvoicepb.InvoiceCreatePayload{Data: &clientinvoicepb.InvoiceData{GrossAmount: 300}, Collaborators: []string{"some id"}}
-	_, err := h.Create(context.Background(), payload)
-	srv.AssertExpectations(t)
-	assert.Error(t, err, "must be non nil")
-	assert.Contains(t, err.Error(), "failed to decode id")
 }
 
 type mockModel struct {
@@ -357,109 +340,54 @@ func (m *mockModel) PackCoreDocument() (*coredocumentpb.CoreDocument, error) {
 	return cd, args.Error(1)
 }
 
-func (m *mockModel) UnpackCoreDocument(cd *coredocumentpb.CoreDocument) error {
-	args := m.Called(cd)
-	return args.Error(0)
+func (m *mockModel) JSON() ([]byte, error) {
+	args := m.Called()
+	data, _ := args.Get(0).([]byte)
+	return data, args.Error(1)
 }
 
-func TestGrpcHandler_Create_coredocument_fail(t *testing.T) {
+func TestGRPCHandler_Create_packcoredoc_fail(t *testing.T) {
 	h := getHandler()
 	srv := h.service.(*mockService)
-	model := new(mockModel)
-	model.On("PackCoreDocument").Return(nil, fmt.Errorf("core document failed"))
-	srv.On("DeriveFromCreatePayload", mock.Anything).Return(model, nil)
-	srv.On("Create", mock.Anything).Return(nil)
-	payload := &clientinvoicepb.InvoiceCreatePayload{Data: &clientinvoicepb.InvoiceData{GrossAmount: 300}}
+	model := &mockModel{}
+	srv.On("DeriveFromCreatePayload", mock.Anything).Return(model, nil).Once()
+	srv.On("Create", mock.Anything, mock.Anything).Return(model, nil).Once()
+	model.On("PackCoreDocument").Return(nil, fmt.Errorf("pack core document failed"))
+	payload := &clientinvoicepb.InvoiceCreatePayload{Data: &clientinvoicepb.InvoiceData{Currency: "EUR"}}
 	_, err := h.Create(context.Background(), payload)
-	model.AssertExpectations(t)
 	srv.AssertExpectations(t)
+	model.AssertExpectations(t)
 	assert.Error(t, err, "must be non nil")
-	assert.Contains(t, err.Error(), "core document failed")
+	assert.Contains(t, err.Error(), "pack core document failed")
 }
 
-func TestGrpcHandler_Create_anchor_fail(t *testing.T) {
+func TestGRPCHandler_Create_DeriveCreateResponse_fail(t *testing.T) {
 	h := getHandler()
 	srv := h.service.(*mockService)
-	model := new(mockModel)
-	cd := coredocument.New()
-	model.On("PackCoreDocument").Return(cd, nil)
-	model.On("UnpackCoreDocument", mock.Anything).Return(nil)
-	srv.On("DeriveFromCreatePayload", mock.Anything).Return(model, nil)
-	srv.On("Create", mock.Anything).Return(nil)
-	srv.On("SaveState", mock.Anything).Return(nil)
-	proc := h.coreDocProcessor.(*testingutils.MockCoreDocumentProcessor)
-	proc.On("Anchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(fmt.Errorf("failed to anchor document"))
-	payload := &clientinvoicepb.InvoiceCreatePayload{Data: &clientinvoicepb.InvoiceData{GrossAmount: 300}}
+	model := new(InvoiceModel)
+	srv.On("DeriveFromCreatePayload", mock.Anything).Return(model, nil).Once()
+	srv.On("Create", mock.Anything, mock.Anything).Return(model, nil).Once()
+	srv.On("DeriveCreateResponse", mock.Anything).Return(nil, fmt.Errorf("derive response failed"))
+	payload := &clientinvoicepb.InvoiceCreatePayload{Data: &clientinvoicepb.InvoiceData{Currency: "EUR"}}
 	_, err := h.Create(context.Background(), payload)
-	model.AssertExpectations(t)
 	srv.AssertExpectations(t)
-	proc.AssertExpectations(t)
 	assert.Error(t, err, "must be non nil")
-	assert.Contains(t, err.Error(), "failed to anchor document")
-}
-
-func TestGrpcHandler_Create_unpack_fail(t *testing.T) {
-	h := getHandler()
-	srv := h.service.(*mockService)
-	model := new(mockModel)
-	cd := coredocument.New()
-	model.On("PackCoreDocument").Return(cd, nil)
-	model.On("UnpackCoreDocument", mock.Anything).Return(fmt.Errorf("unpack core document failed"))
-	srv.On("DeriveFromCreatePayload", mock.Anything).Return(model, nil)
-	srv.On("Create", mock.Anything).Return(nil)
-	proc := h.coreDocProcessor.(*testingutils.MockCoreDocumentProcessor)
-	proc.On("Anchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
-	payload := &clientinvoicepb.InvoiceCreatePayload{Data: &clientinvoicepb.InvoiceData{GrossAmount: 300}}
-	_, err := h.Create(context.Background(), payload)
-	model.AssertExpectations(t)
-	srv.AssertExpectations(t)
-	proc.AssertExpectations(t)
-	assert.Error(t, err, "must be non nil")
-	assert.Contains(t, err.Error(), "unpack core document failed")
-}
-
-func TestGrpcHandler_Create_saveState_fail(t *testing.T) {
-	h := getHandler()
-	srv := h.service.(*mockService)
-	model := new(mockModel)
-	cd := coredocument.New()
-	model.On("PackCoreDocument").Return(cd, nil)
-	model.On("UnpackCoreDocument", mock.Anything).Return(nil)
-	srv.On("DeriveFromCreatePayload", mock.Anything).Return(model, nil)
-	srv.On("Create", mock.Anything).Return(nil)
-	srv.On("SaveState", mock.Anything).Return(fmt.Errorf("save state failed"))
-	proc := h.coreDocProcessor.(*testingutils.MockCoreDocumentProcessor)
-	proc.On("Anchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
-	payload := &clientinvoicepb.InvoiceCreatePayload{Data: &clientinvoicepb.InvoiceData{GrossAmount: 300}}
-	_, err := h.Create(context.Background(), payload)
-	model.AssertExpectations(t)
-	srv.AssertExpectations(t)
-	proc.AssertExpectations(t)
-	assert.Error(t, err, "must be non nil")
-	assert.Contains(t, err.Error(), "save state failed")
+	assert.Contains(t, err.Error(), "derive response failed")
 }
 
 func TestGrpcHandler_Create(t *testing.T) {
 	h := getHandler()
 	srv := h.service.(*mockService)
-	model := new(mockModel)
-	cd := coredocument.New()
+	model := new(InvoiceModel)
 	payload := &clientinvoicepb.InvoiceCreatePayload{Data: &clientinvoicepb.InvoiceData{GrossAmount: 300}, Collaborators: []string{"0x010203040506"}}
-	model.On("PackCoreDocument").Return(cd, nil)
-	model.On("UnpackCoreDocument", mock.Anything).Return(nil)
-	srv.On("DeriveFromCreatePayload", mock.Anything).Return(model, nil)
-	srv.On("DeriveCreateResponse", model).Return(payload.Data, nil)
-	srv.On("Create", mock.Anything).Return(nil)
-	srv.On("SaveState", mock.Anything).Return(nil)
-	proc := h.coreDocProcessor.(*testingutils.MockCoreDocumentProcessor)
-	proc.On("Anchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
-	proc.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	srv.On("DeriveFromCreatePayload", mock.Anything).Return(model, nil).Once()
+	srv.On("Create", mock.Anything, mock.Anything).Return(model, nil).Once()
+	srv.On("DeriveCreateResponse", mock.Anything).Return(payload.Data, nil)
 	res, err := h.Create(context.Background(), payload)
-	model.AssertExpectations(t)
 	srv.AssertExpectations(t)
 	assert.Nil(t, err, "must be nil")
 	assert.NotNil(t, res, "must be non nil")
-	assert.Equal(t, res.Header.DocumentId, hex.EncodeToString(cd.DocumentIdentifier), "identifier must match")
-	assert.Equal(t, res.Header.VersionId, hex.EncodeToString(cd.CurrentIdentifier), "identifiers must match")
+	assert.NotNil(t, res.Header.DocumentId)
+	assert.NotNil(t, res.Header.VersionId)
 	assert.Equal(t, res.Data, payload.Data, "data must match")
 }

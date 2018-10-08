@@ -63,7 +63,7 @@ type InvoiceModel struct {
 }
 
 // getClientData returns the client data from the invoice model
-func (i *InvoiceModel) getClientData() (*clientinvoicepb.InvoiceData, error) {
+func (i *InvoiceModel) getClientData() *clientinvoicepb.InvoiceData {
 	var recipient string
 	if i.Recipient != nil {
 		recipient = hexutil.Encode(i.Recipient[:])
@@ -108,12 +108,12 @@ func (i *InvoiceModel) getClientData() (*clientinvoicepb.InvoiceData, error) {
 		DueDate:          i.DueDate,
 		DateCreated:      i.DateCreated,
 		ExtraData:        extraData,
-	}, nil
+	}
 
 }
 
 // createP2PProtobuf returns centrifuge protobuf specific invoiceData
-func (i *InvoiceModel) createP2PProtobuf() (*invoicepb.InvoiceData, error) {
+func (i *InvoiceModel) createP2PProtobuf() *invoicepb.InvoiceData {
 
 	var recipient, sender, payee []byte
 	if i.Recipient != nil {
@@ -152,7 +152,7 @@ func (i *InvoiceModel) createP2PProtobuf() (*invoicepb.InvoiceData, error) {
 		DueDate:          i.DueDate,
 		DateCreated:      i.DateCreated,
 		ExtraData:        i.ExtraData,
-	}, nil
+	}
 
 }
 
@@ -200,20 +200,17 @@ func (i *InvoiceModel) InitInvoiceInput(payload *clientinvoicepb.InvoiceCreatePa
 		i.ExtraData = ed
 	}
 
-	for _, id := range payload.Collaborators {
-		cid, err := identity.CentIDFromString(id)
-		if err != nil {
-			return centerrors.Wrap(err, "failed to decode collaborator")
-		}
-
-		i.Collaborators = append(i.Collaborators, cid)
+	var err error
+	i.Collaborators, err = identity.CentIDsFromStrings(payload.Collaborators)
+	if err != nil {
+		return fmt.Errorf("failed to decode collaborators: %v", err)
 	}
 
 	return nil
 }
 
 // loadFromP2PProtobuf  loads the invoice from centrifuge protobuf invoice data
-func (i *InvoiceModel) loadFromP2PProtobuf(invoiceData *invoicepb.InvoiceData) error {
+func (i *InvoiceModel) loadFromP2PProtobuf(invoiceData *invoicepb.InvoiceData) {
 	i.InvoiceNumber = invoiceData.InvoiceNumber
 	i.SenderName = invoiceData.SenderName
 	i.SenderStreet = invoiceData.SenderStreet
@@ -247,7 +244,6 @@ func (i *InvoiceModel) loadFromP2PProtobuf(invoiceData *invoicepb.InvoiceData) e
 	i.DueDate = invoiceData.DueDate
 	i.DateCreated = invoiceData.DateCreated
 	i.ExtraData = invoiceData.ExtraData
-	return nil
 }
 
 // getInvoiceSalts returns the invoice salts. Initialises if not present
@@ -270,11 +266,7 @@ func (i *InvoiceModel) PackCoreDocument() (*coredocumentpb.CoreDocument, error) 
 		i.CoreDocument = coredocument.New()
 	}
 
-	invoiceData, err := i.createP2PProtobuf()
-	if err != nil {
-		return nil, err
-	}
-
+	invoiceData := i.createP2PProtobuf()
 	serializedInvoice, err := proto.Marshal(invoiceData)
 	if err != nil {
 		return nil, centerrors.Wrap(err, "couldn't serialise InvoiceData")
@@ -323,11 +315,7 @@ func (i *InvoiceModel) UnpackCoreDocument(coreDoc *coredocumentpb.CoreDocument) 
 		return err
 	}
 
-	err = i.loadFromP2PProtobuf(invoiceData)
-	if err != nil {
-		return err
-	}
-
+	i.loadFromP2PProtobuf(invoiceData)
 	invoiceSalts := &invoicepb.InvoiceDataSalts{}
 	err = proto.Unmarshal(coreDoc.EmbeddedDataSalts.Value, invoiceSalts)
 	if err != nil {
@@ -361,17 +349,13 @@ func (i *InvoiceModel) Type() reflect.Type {
 
 // calculateDataRoot calculates the data root and sets the root to core document
 func (i *InvoiceModel) calculateDataRoot() error {
-	pb, err := i.createP2PProtobuf()
-	if err != nil {
-		return fmt.Errorf("failed to create protobuf: %v", err)
-	}
-
+	pb := i.createP2PProtobuf()
 	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: sha256.New()})
-	if err = t.AddLeavesFromDocument(pb, i.getInvoiceSalts(pb)); err != nil {
+	if err := t.AddLeavesFromDocument(pb, i.getInvoiceSalts(pb)); err != nil {
 		return fmt.Errorf("failed to add leaves from invoice: %v", err)
 	}
 
-	if err = t.Generate(); err != nil {
+	if err := t.Generate(); err != nil {
 		return fmt.Errorf("failed to generate merkle root: %v", err)
 	}
 

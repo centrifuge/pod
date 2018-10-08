@@ -132,11 +132,9 @@ func TestInvoiceModel_UnpackCoreDocument(t *testing.T) {
 func TestInvoiceModel_getClientData(t *testing.T) {
 	invData := testinginvoice.CreateInvoiceData()
 	inv := new(InvoiceModel)
-	err := inv.loadFromP2PProtobuf(&invData)
-	assert.Nil(t, err, "must not error out")
+	inv.loadFromP2PProtobuf(&invData)
 
-	data, err := inv.getClientData()
-	assert.Nil(t, err, "must not error out")
+	data := inv.getClientData()
 	assert.NotNil(t, data, "invoice data should not be nil")
 	assert.Equal(t, invData.GrossAmount, data.GrossAmount, "gross amount must match")
 	assert.Equal(t, hexutil.Encode(inv.Recipient[:]), data.Recipient, "recipient should match")
@@ -197,7 +195,7 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 	assert.Equal(t, inv.Payee[:], []byte{1, 2, 3, 3, 4, 5})
 	assert.Equal(t, inv.Recipient[:], []byte{1, 2, 3, 4, 5, 6})
 	assert.Equal(t, inv.ExtraData[:], []byte{1, 2, 3, 2, 3, 1})
-	assert.Equal(t, inv.Collaborators, []identity.CentID{{1, 1, 2, 4, 5, 6}, {1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}})
+	assert.Equal(t, inv.Collaborators, []identity.CentID{{1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}})
 }
 
 func TestInvoiceModel_calculateDataRoot(t *testing.T) {
