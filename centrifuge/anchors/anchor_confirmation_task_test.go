@@ -36,7 +36,7 @@ func TestAnchoringConfirmationTask_ParseKwargsHappy(t *testing.T) {
 	anchorID, _ := NewAnchorID(tools.RandomSlice(AnchorIDLength))
 	address := common.BytesToAddress([]byte{1, 2, 3, 4})
 
-	centId, _ := identity.NewCentID(tools.RandomSlice(identity.CentIDByteLength))
+	centId, _ := identity.ToCentID(tools.RandomSlice(identity.CentIDLength))
 
 	kwargs, _ := tools.SimulateJsonDecodeForGocelery(map[string]interface{}{
 		AnchorIDParam:     anchorID,
@@ -106,8 +106,8 @@ func TestAnchoringConfirmationTask_RunTaskIterError(t *testing.T) {
 	anchorID := [32]byte{1, 2, 3}
 	address := common.BytesToAddress([]byte{1, 2, 3, 4})
 	act := AnchoringConfirmationTask{
-		AnchorID: anchorID,
-		From:     address,
+		AnchorID:                anchorID,
+		From:                    address,
 		AnchorCommittedFilterer: &MockAnchorCommittedFilter{err: fmt.Errorf("failed iterator")},
 		EthContext:              context.Background(),
 	}

@@ -24,7 +24,7 @@ func createIdentity() (identity.CentID, error) {
 	identityService := identity.EthereumIdentityService{}
 	_, confirmations, err := identityService.CreateIdentity(centrifugeId)
 	if err != nil {
-		return [identity.CentIDByteLength]byte{}, err
+		return [identity.CentIDLength]byte{}, err
 	}
 	_ = <-confirmations
 

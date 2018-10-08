@@ -40,10 +40,9 @@ func LegacyGRPCHandler() legacyinvoicepb.InvoiceDocumentServiceServer {
 }
 
 // GRPCHandler returns an implementation of invoice.DocumentServiceServer
-func GRPCHandler(processor coredocumentprocessor.Processor, service Service) clientinvoicepb.DocumentServiceServer {
+func GRPCHandler(service Service) clientinvoicepb.DocumentServiceServer {
 	return &grpcHandler{
-		coreDocProcessor: processor,
-		service:          service,
+		service: service,
 	}
 }
 
@@ -68,7 +67,7 @@ func (h *grpcHandler) anchorInvoiceDocument(ctx context.Context, doc *invoicepb.
 		return nil, err
 	}
 
-	err = h.coreDocProcessor.Anchor(ctx, coreDoc, collaborators)
+	err = h.coreDocProcessor.Anchor(ctx, coreDoc, collaborators, nil)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, err
@@ -85,6 +84,7 @@ func (h *grpcHandler) anchorInvoiceDocument(ctx context.Context, doc *invoicepb.
 }
 
 // CreateInvoiceProof creates proofs for a list of fields
+// Deprecated
 func (h *grpcHandler) CreateInvoiceProof(ctx context.Context, createInvoiceProofEnvelope *legacyinvoicepb.CreateInvoiceProofEnvelope) (*legacyinvoicepb.InvoiceProof, error) {
 	invDoc := new(invoicepb.InvoiceDocument)
 	err := h.legacyRepo.GetByID(createInvoiceProofEnvelope.DocumentIdentifier, invDoc)
@@ -109,6 +109,7 @@ func (h *grpcHandler) CreateInvoiceProof(ctx context.Context, createInvoiceProof
 }
 
 // AnchorInvoiceDocument anchors the given invoice document and returns the anchor details
+// Deprecated
 func (h *grpcHandler) AnchorInvoiceDocument(ctx context.Context, anchorInvoiceEnvelope *legacyinvoicepb.AnchorInvoiceEnvelope) (*invoicepb.InvoiceDocument, error) {
 	anchoredInvDoc, err := h.anchorInvoiceDocument(ctx, anchorInvoiceEnvelope.Document, nil)
 	if err != nil {
@@ -128,6 +129,7 @@ func (h *grpcHandler) AnchorInvoiceDocument(ctx context.Context, anchorInvoiceEn
 }
 
 // SendInvoiceDocument anchors and sends an invoice to the recipient
+// Deprecated
 func (h *grpcHandler) SendInvoiceDocument(ctx context.Context, sendInvoiceEnvelope *legacyinvoicepb.SendInvoiceEnvelope) (*invoicepb.InvoiceDocument, error) {
 	errs, recipientIDs := identity.ParseCentIDs(sendInvoiceEnvelope.Recipients)
 	if len(errs) != 0 {
@@ -168,6 +170,7 @@ func (h *grpcHandler) SendInvoiceDocument(ctx context.Context, sendInvoiceEnvelo
 }
 
 // GetInvoiceDocument returns already stored invoice document
+// Deprecated
 func (h *grpcHandler) GetInvoiceDocument(ctx context.Context, getInvoiceDocumentEnvelope *legacyinvoicepb.GetInvoiceDocumentEnvelope) (*invoicepb.InvoiceDocument, error) {
 	doc := new(invoicepb.InvoiceDocument)
 	err := h.legacyRepo.GetByID(getInvoiceDocumentEnvelope.DocumentIdentifier, doc)
@@ -190,6 +193,7 @@ func (h *grpcHandler) GetInvoiceDocument(ctx context.Context, getInvoiceDocument
 }
 
 // GetReceivedInvoiceDocuments returns all the received invoice documents
+// Deprecated
 func (h *grpcHandler) GetReceivedInvoiceDocuments(ctx context.Context, empty *empty.Empty) (*legacyinvoicepb.ReceivedInvoices, error) {
 	return nil, nil
 }
@@ -202,7 +206,7 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientinvoicepb.InvoiceCr
 	}
 
 	// validate and persist
-	err = h.service.Create(doc)
+	doc, err = h.service.Create(ctx, doc)
 	if err != nil {
 		return nil, err
 	}

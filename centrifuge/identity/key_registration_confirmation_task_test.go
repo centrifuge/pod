@@ -12,13 +12,13 @@ import (
 
 func TestKeyRegistrationConfirmationTask_ParseKwargsHappyPath(t *testing.T) {
 	rct := identity.KeyRegistrationConfirmationTask{}
-	id := tools.RandomSlice(identity.CentIDByteLength)
+	id := tools.RandomSlice(identity.CentIDLength)
 	key := tools.RandomSlice(32)
 	var keyFixed [32]byte
 	copy(keyFixed[:], key)
 	keyPurpose := identity.KeyPurposeSigning
 	blockHeight := uint64(12)
-	idBytes, _ := identity.NewCentID(id)
+	idBytes, _ := identity.ToCentID(id)
 	kwargs := map[string]interface{}{
 		identity.CentIdParam:     idBytes,
 		identity.KeyParam:        keyFixed,
@@ -38,14 +38,14 @@ func TestKeyRegistrationConfirmationTask_ParseKwargsHappyPath(t *testing.T) {
 
 func TestKeyRegistrationConfirmationTask_ParseKwargsDoesNotExist(t *testing.T) {
 	rct := identity.KeyRegistrationConfirmationTask{}
-	id := tools.RandomSlice(identity.CentIDByteLength)
+	id := tools.RandomSlice(identity.CentIDLength)
 	err := rct.ParseKwargs(map[string]interface{}{"notId": id})
 	assert.NotNil(t, err, "Should not allow parsing without centId")
 }
 
 func TestKeyRegistrationConfirmationTask_ParseKwargsInvalidType(t *testing.T) {
 	rct := identity.KeyRegistrationConfirmationTask{}
-	id := tools.RandomSlice(identity.CentIDByteLength)
+	id := tools.RandomSlice(identity.CentIDLength)
 	err := rct.ParseKwargs(map[string]interface{}{identity.CentIdParam: id})
 	assert.NotNil(t, err, "Should not parse without the correct type of centId")
 }

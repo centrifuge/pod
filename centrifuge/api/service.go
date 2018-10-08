@@ -18,8 +18,9 @@ import (
 
 // registerServices registers all endpoints to the grpc server
 func registerServices(ctx context.Context, grpcServer *grpc.Server, gwmux *runtime.ServeMux, addr string, dopts []grpc.DialOption) error {
-	invoicepb.RegisterDocumentServiceServer(grpcServer, invoice.GRPCHandler(
-		coredocumentprocessor.DefaultProcessor(identity.IDService, p2p.NewP2PClient()), invoice.DefaultService(invoice.GetRepository())))
+	invoicepb.RegisterDocumentServiceServer(grpcServer, invoice.GRPCHandler(invoice.DefaultService(
+		invoice.GetRepository(),
+		coredocumentprocessor.DefaultProcessor(identity.IDService, p2p.NewP2PClient()))))
 	err := invoicepb.RegisterDocumentServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
 	if err != nil {
 		return err

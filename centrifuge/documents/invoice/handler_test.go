@@ -291,9 +291,10 @@ func (m *mockService) DeriveFromCreatePayload(payload *clientinvoicepb.InvoiceCr
 	return model, args.Error(1)
 }
 
-func (m *mockService) Create(inv documents.Model) error {
-	args := m.Called(inv)
-	return args.Error(0)
+func (m *mockService) Create(ctx context.Context, inv documents.Model) (documents.Model, error) {
+	args := m.Called(ctx, inv)
+	model, _ := args.Get(0).(documents.Model)
+	return model, args.Error(1)
 }
 
 func (m *mockService) GetLastVersion(identifier []byte) (documents.Model, error) {
@@ -321,7 +322,7 @@ func (m *mockService) DeriveInvoiceResponse(doc documents.Model) (*clientinvoice
 }
 
 func getHandler() *grpcHandler {
-	return &grpcHandler{service: &mockService{}}
+	return &grpcHandler{service: &mockService{}, coreDocProcessor: &testingutils.MockCoreDocumentProcessor{}}
 }
 
 func TestGRPCHandler_Create_derive_fail(t *testing.T) {
@@ -335,11 +336,11 @@ func TestGRPCHandler_Create_derive_fail(t *testing.T) {
 	assert.Contains(t, err.Error(), "derive failed")
 }
 
-func TestGrpcHandler_Create_create_fail(t *testing.T) {
+func TestGRPCHandler_Create_create_fail(t *testing.T) {
 	h := getHandler()
 	srv := h.service.(*mockService)
 	srv.On("DeriveFromCreatePayload", mock.Anything).Return(new(InvoiceModel), nil).Once()
-	srv.On("Create", mock.Anything).Return(fmt.Errorf("create failed")).Once()
+	srv.On("Create", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("create failed")).Once()
 	payload := &clientinvoicepb.InvoiceCreatePayload{Data: &clientinvoicepb.InvoiceData{GrossAmount: 300}}
 	_, err := h.Create(context.Background(), payload)
 	srv.AssertExpectations(t)
@@ -359,37 +360,63 @@ func (m *mockModel) PackCoreDocument() (*coredocumentpb.CoreDocument, error) {
 	return cd, args.Error(1)
 }
 
-func TestGrpcHandler_Create_coredocument_fail(t *testing.T) {
-	return
-	// TODO: Don't think it makes sense to test this. This logic will be tested in DeriveInvoiceResponse
+func (m *mockModel) JSON() ([]byte, error) {
+	args := m.Called()
+	data, _ := args.Get(0).([]byte)
+	return data, args.Error(1)
+}
+
+func TestGRPCHandler_Create_packcoredoc_fail(t *testing.T) {
 	h := getHandler()
 	srv := h.service.(*mockService)
-	model := new(mockModel)
-	model.On("PackCoreDocument").Return(nil, fmt.Errorf("core document failed"))
-	srv.On("DeriveFromCreatePayload", mock.Anything).Return(model, nil)
-	srv.On("Create", mock.Anything).Return(nil)
-	payload := &clientinvoicepb.InvoiceCreatePayload{Data: &clientinvoicepb.InvoiceData{GrossAmount: 300}}
+	model := &mockModel{}
+	srv.On("DeriveFromCreatePayload", mock.Anything).Return(model, nil).Once()
+	srv.On("Create", mock.Anything, mock.Anything).Return(model, nil).Once()
+	model.On("PackCoreDocument").Return(nil, fmt.Errorf("pack core document failed"))
+	payload := &clientinvoicepb.InvoiceCreatePayload{Data: &clientinvoicepb.InvoiceData{Currency: "EUR"}}
 	_, err := h.Create(context.Background(), payload)
+	srv.AssertExpectations(t)
 	model.AssertExpectations(t)
+	assert.Error(t, err, "must be non nil")
+	assert.Contains(t, err.Error(), "pack core document failed")
+}
+
+func TestGRPCHandler_Create_DeriveCreateResponse_fail(t *testing.T) {
+	h := getHandler()
+	srv := h.service.(*mockService)
+	model := new(InvoiceModel)
+	srv.On("DeriveFromCreatePayload", mock.Anything).Return(model, nil).Once()
+	srv.On("Create", mock.Anything, mock.Anything).Return(model, nil).Once()
+	srv.On("DeriveCreateResponse", mock.Anything).Return(nil, fmt.Errorf("derive response failed"))
+	payload := &clientinvoicepb.InvoiceCreatePayload{Data: &clientinvoicepb.InvoiceData{Currency: "EUR"}}
+	_, err := h.Create(context.Background(), payload)
 	srv.AssertExpectations(t)
 	assert.Error(t, err, "must be non nil")
-	assert.Contains(t, err.Error(), "core document failed")
+	assert.Contains(t, err.Error(), "derive response failed")
 }
 
 func TestGrpcHandler_Create(t *testing.T) {
 	h := getHandler()
 	srv := h.service.(*mockService)
+<<<<<<< HEAD
 	model := new(mockModel)
 	payload := &clientinvoicepb.InvoiceCreatePayload{Data: &clientinvoicepb.InvoiceData{GrossAmount: 300}}
 	response := &clientinvoicepb.InvoiceResponse{}
 	srv.On("DeriveFromCreatePayload", mock.Anything).Return(model, nil)
 	srv.On("DeriveInvoiceResponse", model).Return(response, nil)
 	srv.On("Create", mock.Anything).Return(nil)
+=======
+	model := new(InvoiceModel)
+	payload := &clientinvoicepb.InvoiceCreatePayload{Data: &clientinvoicepb.InvoiceData{GrossAmount: 300}, Collaborators: []string{"0x010203040506"}}
+	srv.On("DeriveFromCreatePayload", mock.Anything).Return(model, nil).Once()
+	srv.On("Create", mock.Anything, mock.Anything).Return(model, nil).Once()
+	srv.On("DeriveCreateResponse", mock.Anything).Return(payload.Data, nil)
+>>>>>>> 55814adc129a4ae327ca901bfc2bf2db14af8b0e
 	res, err := h.Create(context.Background(), payload)
-	model.AssertExpectations(t)
 	srv.AssertExpectations(t)
 	assert.Nil(t, err, "must be nil")
 	assert.NotNil(t, res, "must be non nil")
+<<<<<<< HEAD
 	assert.Equal(t, res, response)
 }
 
@@ -424,4 +451,9 @@ func TestGrpcHandler_GetVersion(t *testing.T) {
 	assert.Nil(t, err, "must be nil")
 	assert.NotNil(t, res, "must be non nil")
 	assert.Equal(t, res, response)
+=======
+	assert.NotNil(t, res.Header.DocumentId)
+	assert.NotNil(t, res.Header.VersionId)
+	assert.Equal(t, res.Data, payload.Data, "data must match")
+>>>>>>> 55814adc129a4ae327ca901bfc2bf2db14af8b0e
 }

@@ -134,7 +134,7 @@ func TestHandler_RequestDocumentSignature(t *testing.T) {
 		EntityId:  idConfig.ID,
 		PublicKey: key1Pub[:],
 	}
-	centID, _ := identity.NewCentID(sig.EntityId)
+	centID, _ := identity.ToCentID(sig.EntityId)
 	idkey := &identity.EthereumIdentityKey{
 		Key:       key1Pub,
 		Purposes:  []*big.Int{big.NewInt(identity.KeyPurposeSigning)},
