@@ -16,7 +16,7 @@ func (e Error) Error() string {
 	return e.err.Error()
 }
 
-// New creates a new error from a string message
+// New creates a new error from a key and a msg
 func NewError(key, msg string) error {
 	err := fmt.Errorf(msg)
 	return Error{key: key, err: err}
