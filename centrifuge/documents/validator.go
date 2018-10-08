@@ -12,11 +12,11 @@ type Validator interface {
 type ValidatorGroup []Validator
 
 //Validate will execute all group specific atomic validations
-func (group ValidatorGroup) Validate(oldState Model, newState Model) (validationErrors error) {
+func (group ValidatorGroup) Validate(oldState Model, newState Model) (errors error) {
 
 	for _, v := range group {
-		errors := v.Validate(oldState, newState)
-		validationErrors = documenterror.Append(validationErrors, errors)
+		err := v.Validate(oldState, newState)
+		errors = documenterror.Append(errors, err)
 	}
-	return validationErrors
+	return errors
 }
