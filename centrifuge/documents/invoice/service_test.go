@@ -71,7 +71,7 @@ func TestService_Create(t *testing.T) {
 	// fail Validations
 	err := invService.Create(&InvoiceModel{})
 	assert.Error(t, err, "must be non nil")
-	assert.Contains(t, err.Error(), "Invoice invalid")
+	assert.Contains(t, err.Error(), "currency is invalid")
 
 	payload := createPayload()
 	inv, err := invService.DeriveFromCreatePayload(payload)

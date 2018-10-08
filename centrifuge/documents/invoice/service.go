@@ -63,15 +63,14 @@ func (s service) DeriveFromCreatePayload(invoiceInput *clientinvoicepb.InvoiceCr
 func (s service) Create(model documents.Model) error {
 	// Validate the model
 	fv := fieldValidator()
-	errs := fv.Validate(nil, model)
-	if len(errs) != 0 {
-		// TODO use errs when the @manuel's changes are in
-		return centerrors.New(code.DocumentInvalid, "Invoice invalid")
+	err := fv.Validate(nil, model)
+	if err != nil {
+		return centerrors.New(code.DocumentInvalid, err.Error())
 	}
 
 	// create data root
 	inv := model.(*InvoiceModel)
-	err := inv.calculateDataRoot()
+	err = inv.calculateDataRoot()
 	if err != nil {
 		return centerrors.New(code.DocumentInvalid, err.Error())
 	}
