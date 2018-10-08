@@ -8,16 +8,13 @@ import (
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
-
-	"github.com/stretchr/testify/mock"
-
-	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
-
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
+	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 var invService Service
