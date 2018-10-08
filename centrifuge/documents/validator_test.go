@@ -21,8 +21,8 @@ type MockValidatorWithErrors struct {
 
 func (m MockValidatorWithErrors) Validate(oldState Model, newState Model) error {
 
-	err := NewError("error 1")
-	err = AppendError(err, NewError("error 2"))
+	err := NewError("error_test", "error msg 1")
+	err = AppendError(err, NewError("error_test2", "error msg 2"))
 
 	return err
 }

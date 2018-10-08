@@ -7,9 +7,19 @@ import (
 	"github.com/hashicorp/go-multierror"
 )
 
+type Error struct {
+	key string
+	err error
+}
+
+func (e Error) Error() string {
+	return e.err.Error()
+}
+
 // New creates a new error from a string message
-func NewError(msg string) error {
-	return fmt.Errorf(msg)
+func NewError(key, msg string) error {
+	err := fmt.Errorf(msg)
+	return Error{key: key, err: err}
 }
 
 // Append function is used to create a list of errors.
@@ -70,5 +80,41 @@ func LenError(err error) int {
 		return multiErr.Len()
 	}
 	return 1
+
+}
+
+func addToMap(errorMap map[string]string, key, msg string) map[string]string {
+	if errorMap[key] != "" {
+		errorMap[key] = fmt.Sprintf("%s\n%s", errorMap[key], msg)
+
+	} else {
+		errorMap[key] = msg
+
+	}
+	return errorMap
+}
+
+func ConvertToMap(err error) map[string]string {
+
+	errorMap := make(map[string]string)
+	var key string
+	var standardErrorCounter int
+
+	errors := Errors(err)
+
+	for _, err := range errors {
+		if err, ok := err.(Error); ok {
+			key = err.key
+
+		} else {
+			standardErrorCounter++
+			key = fmt.Sprintf("error_%v", standardErrorCounter)
+
+		}
+
+		addToMap(errorMap, key, err.Error())
+
+	}
+	return errorMap
 
 }
