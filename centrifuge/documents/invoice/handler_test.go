@@ -303,7 +303,7 @@ func (m *mockService) DeriveCreateResponse(doc documents.Model) (*clientinvoicep
 }
 
 func getHandler() *grpcHandler {
-	return &grpcHandler{service: &mockService{}}
+	return &grpcHandler{service: &mockService{}, coreDocProcessor: &testingutils.MockCoreDocumentProcessor{}}
 }
 
 func TestGRPCHandler_Create_derive_fail(t *testing.T) {
