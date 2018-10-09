@@ -14,7 +14,7 @@ import (
 )
 
 func ValidateCentrifugeID(signature *coredocumentpb.Signature, centrifugeId identity.CentID) error {
-	centIDSignature, err := identity.NewCentID(signature.EntityId)
+	centIDSignature, err := identity.ToCentID(signature.EntityId)
 	if err != nil {
 		return err
 	}
@@ -29,7 +29,7 @@ func ValidateCentrifugeID(signature *coredocumentpb.Signature, centrifugeId iden
 
 // ValidateSignature verifies the signature on the document
 func ValidateSignature(signature *coredocumentpb.Signature, message []byte) error {
-	centID, err := identity.NewCentID(signature.EntityId)
+	centID, err := identity.ToCentID(signature.EntityId)
 	if err != nil {
 		return err
 	}

@@ -10,7 +10,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/centrifuge/precise-proofs/proofs"
-	"github.com/golang/protobuf/proto"
 )
 
 // GetDataProofHashes returns the hashes needed to create a proof from DataRoot to SigningRoot. This method is used
@@ -209,10 +208,10 @@ func ValidateWithSignature(doc *coredocumentpb.CoreDocument) error {
 	return nil
 }
 
-// FillIdentifiers fills in missing identifiers for the given CoreDocument.
+// InitIdentifiers fills in missing identifiers for the given CoreDocument.
 // It does checks on document consistency (e.g. re-using an old identifier).
 // In the case of an error, it returns the error and an empty CoreDocument.
-func FillIdentifiers(document coredocumentpb.CoreDocument) (coredocumentpb.CoreDocument, error) {
+func InitIdentifiers(document coredocumentpb.CoreDocument) (coredocumentpb.CoreDocument, error) {
 	isEmptyId := tools.IsEmptyByteSlice
 
 	// check if the document identifier is empty
@@ -248,8 +247,8 @@ func FillIdentifiers(document coredocumentpb.CoreDocument) (coredocumentpb.CoreD
 
 // PrepareNewVersion creates a copy of the passed coreDocument with the version fields updated
 func PrepareNewVersion(document coredocumentpb.CoreDocument) (*coredocumentpb.CoreDocument, error) {
-	newDocument := New()
-	proto.Merge(newDocument, &document)
+	newDocument := &coredocumentpb.CoreDocument{}
+	fillSalts(newDocument)
 	if document.CurrentVersion == nil {
 		return nil, fmt.Errorf("coredocument.CurrentVersion is nil")
 	}
@@ -263,22 +262,22 @@ func PrepareNewVersion(document coredocumentpb.CoreDocument) (*coredocumentpb.Co
 		return nil, fmt.Errorf("coredocument.DocumentRoot is nil")
 	}
 	newDocument.PreviousRoot = document.DocumentRoot
-	newDocument.SigningRoot = nil
-	newDocument.DocumentRoot = nil
-	newDocument.SigningRoot = nil
-	newDocument.DataRoot = nil
-	newDocument.Signatures = nil
 
 	return newDocument, nil
 }
 
 // New returns a new core document from the proto message
 func New() *coredocumentpb.CoreDocument {
-	doc, _ := FillIdentifiers(coredocumentpb.CoreDocument{})
-	salts := &coredocumentpb.CoreDocumentSalts{}
-	proofs.FillSalts(&doc, salts)
-	doc.CoredocumentSalts = salts
+	doc, _ := InitIdentifiers(coredocumentpb.CoreDocument{})
+	fillSalts(&doc)
 	return &doc
+}
+
+func fillSalts(doc *coredocumentpb.CoreDocument) {
+	salts := &coredocumentpb.CoreDocumentSalts{}
+	proofs.FillSalts(doc, salts)
+	doc.CoredocumentSalts = salts
+	return
 }
 
 //GetTypeUrl returns the type of the embedded document

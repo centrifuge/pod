@@ -28,7 +28,7 @@ var (
 	id4 = tools.RandomSlice(32)
 	id5 = tools.RandomSlice(32)
 
-	centID  = tools.RandomSlice(identity.CentIDByteLength)
+	centID  = tools.RandomSlice(identity.CentIDLength)
 	key1Pub = [...]byte{230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
 	key1    = []byte{102, 109, 71, 239, 130, 229, 128, 189, 37, 96, 223, 5, 189, 91, 210, 47, 89, 4, 165, 6, 188, 53, 49, 250, 109, 151, 234, 139, 57, 205, 231, 253, 230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
 )
@@ -37,7 +37,7 @@ func TestGetDataProofHashes(t *testing.T) {
 	cd := coredocumentpb.CoreDocument{
 		DataRoot: tools.RandomSlice(32),
 	}
-	cd, err := FillIdentifiers(cd)
+	cd, err := InitIdentifiers(cd)
 	assert.Nil(t, err)
 	cds := &coredocumentpb.CoreDocumentSalts{}
 	err = proofs.FillSalts(&cd, cds)
@@ -62,7 +62,7 @@ func TestGetDataProofHashes(t *testing.T) {
 
 func TestGetDocumentSigningTree(t *testing.T) {
 	cd := coredocumentpb.CoreDocument{DocumentIdentifier: tools.RandomSlice(32)}
-	cd, _ = FillIdentifiers(cd)
+	cd, _ = InitIdentifiers(cd)
 	cds := &coredocumentpb.CoreDocumentSalts{}
 	proofs.FillSalts(&cd, cds)
 	cd.CoredocumentSalts = cds
@@ -320,7 +320,7 @@ func TestFillIdentifiers(t *testing.T) {
 		}
 
 		var err error
-		doc, err = FillIdentifiers(doc)
+		doc, err = InitIdentifiers(doc)
 		if err != nil {
 			if c.err == nil {
 				t.Fatalf("unexpected error: %v", err)
@@ -371,7 +371,7 @@ func TestValidateWithSignature_failed_signature_verification(t *testing.T) {
 		PublicKey: key1Pub[:],
 		Signature: tools.RandomSlice(32)}
 	srv := &testingcommons.MockIDService{}
-	centID, _ := identity.NewCentID(sig.EntityId)
+	centID, _ := identity.ToCentID(sig.EntityId)
 	srv.On("LookupIdentityForID", centID).Return(nil, fmt.Errorf("failed GetIdentity")).Once()
 	identity.IDService = srv
 	doc := testingutils.GenerateCoreDocument()
@@ -389,7 +389,7 @@ func TestValidateWithSignature_successful_verification(t *testing.T) {
 		EntityId:  centID,
 		PublicKey: key1Pub[:],
 	}
-	centID, _ := identity.NewCentID(sig.EntityId)
+	centID, _ := identity.ToCentID(sig.EntityId)
 	idkey := &identity.EthereumIdentityKey{
 		Key:       key1Pub,
 		Purposes:  []*big.Int{big.NewInt(identity.KeyPurposeSigning)},

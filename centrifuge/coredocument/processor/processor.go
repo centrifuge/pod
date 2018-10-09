@@ -27,7 +27,8 @@ var log = logging.Logger("coredocument")
 // E.g. send, anchor, etc.
 type Processor interface {
 	Send(ctx context.Context, coreDocument *coredocumentpb.CoreDocument, recipient identity.CentID) (err error)
-	Anchor(ctx context.Context, document *coredocumentpb.CoreDocument) (err error)
+	Anchor(ctx context.Context, document *coredocumentpb.CoreDocument,
+		saveState func(coreDoc *coredocumentpb.CoreDocument) error) (err error)
 }
 
 // defaultProcessor implements Processor interface
@@ -105,7 +106,11 @@ func (dp *defaultProcessor) Send(ctx context.Context, coreDocument *coredocument
 // - store doc in db
 // - anchor the document
 // - send anchored document to collaborators [NOT NEEDED since we do this in the current flow already because HandleSend****Document does it after anchoring]
-func (dp *defaultProcessor) Anchor(ctx context.Context, document *coredocumentpb.CoreDocument) error {
+func (dp *defaultProcessor) Anchor(
+	ctx context.Context,
+	document *coredocumentpb.CoreDocument,
+	saveState func(coreDoc *coredocumentpb.CoreDocument) error) error {
+
 	if document == nil {
 		return centerrors.NilError(document)
 	}
@@ -132,12 +137,26 @@ func (dp *defaultProcessor) Anchor(ctx context.Context, document *coredocumentpb
 	sig := signatures.Sign(idConfig, document.SigningRoot)
 	document.Signatures = append(document.Signatures, sig)
 
+	if saveState != nil {
+		err = saveState(document)
+		if err != nil {
+			return centerrors.Wrap(err, "failed to save state")
+		}
+	}
+
 	// collect signatures (incl. validate)
 	// store signatures on coredocument
 	err = dp.P2PClient.GetSignaturesForDocument(ctx, document)
 	if err != nil {
 		log.Error(err)
-		return centerrors.Wrap(err, "anchoring error")
+		return centerrors.Wrap(err, "failed to collect signatures")
+	}
+
+	if saveState != nil {
+		err = saveState(document)
+		if err != nil {
+			return centerrors.Wrap(err, "failed to save state")
+		}
 	}
 
 	// calculate DocumentRoot
@@ -145,6 +164,13 @@ func (dp *defaultProcessor) Anchor(ctx context.Context, document *coredocumentpb
 	if err != nil {
 		log.Error(err)
 		return centerrors.Wrap(err, "anchoring error")
+	}
+
+	if saveState != nil {
+		err = saveState(document)
+		if err != nil {
+			return centerrors.Wrap(err, "failed to save state")
+		}
 	}
 
 	// store doc in db
@@ -160,7 +186,7 @@ func (dp *defaultProcessor) Anchor(ctx context.Context, document *coredocumentpb
 		return centerrors.Wrap(err, "anchoring error")
 	}
 
-	myCentID, err := identity.NewCentID(idConfig.ID)
+	myCentID, err := identity.ToCentID(idConfig.ID)
 	if err != nil {
 		log.Error(err)
 		return centerrors.Wrap(err, "anchoring error")
@@ -183,5 +209,6 @@ func (dp *defaultProcessor) Anchor(ctx context.Context, document *coredocumentpb
 		return centerrors.Wrap(err, "anchoring error")
 	}
 	<-confirmations
+	log.Infof("Anchored document with identifiers: [document: %#x, current: %#x, next: %#x], rootHash: %#x", document.DocumentIdentifier, document.CurrentVersion, document.NextVersion, document.DocumentRoot)
 	return nil
 }

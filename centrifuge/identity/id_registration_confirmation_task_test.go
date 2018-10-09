@@ -12,9 +12,9 @@ import (
 
 func TestRegistrationConfirmationTask_ParseKwargsHappyPath(t *testing.T) {
 	rct := identity.IdRegistrationConfirmationTask{}
-	id := tools.RandomSlice(identity.CentIDByteLength)
+	id := tools.RandomSlice(identity.CentIDLength)
 	blockHeight := uint64(3132)
-	idBytes, _ := identity.NewCentID(id)
+	idBytes, _ := identity.ToCentID(id)
 	kwargs := map[string]interface{}{
 		identity.CentIdParam: idBytes,
 		identity.BlockHeight: blockHeight,
@@ -30,14 +30,14 @@ func TestRegistrationConfirmationTask_ParseKwargsHappyPath(t *testing.T) {
 
 func TestRegistrationConfirmationTask_ParseKwargsDoesNotExist(t *testing.T) {
 	rct := identity.IdRegistrationConfirmationTask{}
-	id := tools.RandomSlice(identity.CentIDByteLength)
+	id := tools.RandomSlice(identity.CentIDLength)
 	err := rct.ParseKwargs(map[string]interface{}{"notId": id})
 	assert.NotNil(t, err, "Should not allow parsing without centId")
 }
 
 func TestRegistrationConfirmationTask_ParseKwargsInvalidType(t *testing.T) {
 	rct := identity.IdRegistrationConfirmationTask{}
-	id := tools.RandomSlice(identity.CentIDByteLength)
+	id := tools.RandomSlice(identity.CentIDLength)
 	err := rct.ParseKwargs(map[string]interface{}{identity.CentIdParam: id})
 	assert.NotNil(t, err, "Should not parse without the correct type of centId")
 }

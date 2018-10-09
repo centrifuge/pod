@@ -77,10 +77,15 @@ func (d *defaultClient) OpenClient(target string) (p2ppb.P2PServiceClient, error
 
 // getSignatureForDocument requests the target node to sign the document
 func getSignatureForDocument(ctx context.Context, doc coredocumentpb.CoreDocument, client p2ppb.P2PServiceClient, receiverCentId identity.CentID) (*p2ppb.SignatureResponse, error) {
+	senderId, err := config.Config.GetIdentityId()
+	if err != nil {
+		return nil, err
+	}
+
 	header := p2ppb.CentrifugeHeader{
 		NetworkIdentifier:  config.Config.GetNetworkID(),
 		CentNodeVersion:    version.GetVersion().String(),
-		SenderCentrifugeId: config.Config.GetIdentityId(),
+		SenderCentrifugeId: senderId,
 	}
 
 	req := &p2ppb.SignatureRequest{
@@ -130,16 +135,12 @@ func getSignatureAsync(ctx context.Context, doc coredocumentpb.CoreDocument, cli
 
 // GetSignaturesForDocument requests peer nodes for the signature and verifies them
 func (d *defaultClient) GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocument) error {
-	if doc == nil {
-		return centerrors.NilError(doc)
-	}
-
 	in := make(chan signatureResponseWrap)
 	defer close(in)
 
 	var count int
 	for _, collaborator := range doc.Collaborators {
-		collaboratorID, err := identity.NewCentID(collaborator)
+		collaboratorID, err := identity.ToCentID(collaborator)
 		if err != nil {
 			return centerrors.Wrap(err, "failed to convert to CentID")
 		}

@@ -5,7 +5,6 @@ package invoice
 import (
 	"context"
 	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"testing"
 
@@ -18,6 +17,7 @@ import (
 	legacyinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/legacy/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/precise-proofs/proofs"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-errors/errors"
 	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
@@ -291,19 +291,38 @@ func (m *mockService) DeriveFromCreatePayload(payload *clientinvoicepb.InvoiceCr
 	return model, args.Error(1)
 }
 
-func (m *mockService) Create(inv documents.Model) error {
-	args := m.Called(inv)
-	return args.Error(0)
+func (m *mockService) Create(ctx context.Context, inv documents.Model) (documents.Model, error) {
+	args := m.Called(ctx, inv)
+	model, _ := args.Get(0).(documents.Model)
+	return model, args.Error(1)
 }
 
-func (m *mockService) DeriveCreateResponse(doc documents.Model) (*clientinvoicepb.InvoiceData, error) {
+func (m *mockService) GetLastVersion(identifier []byte) (documents.Model, error) {
+	args := m.Called(identifier)
+	data, _ := args.Get(0).(documents.Model)
+	return data, args.Error(1)
+}
+
+func (m *mockService) GetVersion(identifier []byte, version []byte) (documents.Model, error) {
+	args := m.Called(identifier, version)
+	data, _ := args.Get(0).(documents.Model)
+	return data, args.Error(1)
+}
+
+func (m *mockService) DeriveInvoiceData(doc documents.Model) (*clientinvoicepb.InvoiceData, error) {
 	args := m.Called(doc)
 	data, _ := args.Get(0).(*clientinvoicepb.InvoiceData)
 	return data, args.Error(1)
 }
 
+func (m *mockService) DeriveInvoiceResponse(doc documents.Model) (*clientinvoicepb.InvoiceResponse, error) {
+	args := m.Called(doc)
+	data, _ := args.Get(0).(*clientinvoicepb.InvoiceResponse)
+	return data, args.Error(1)
+}
+
 func getHandler() *grpcHandler {
-	return &grpcHandler{service: &mockService{}}
+	return &grpcHandler{service: &mockService{}, coreDocProcessor: &testingutils.MockCoreDocumentProcessor{}}
 }
 
 func TestGRPCHandler_Create_derive_fail(t *testing.T) {
@@ -317,11 +336,11 @@ func TestGRPCHandler_Create_derive_fail(t *testing.T) {
 	assert.Contains(t, err.Error(), "derive failed")
 }
 
-func TestGrpcHandler_Create_create_fail(t *testing.T) {
+func TestGRPCHandler_Create_create_fail(t *testing.T) {
 	h := getHandler()
 	srv := h.service.(*mockService)
 	srv.On("DeriveFromCreatePayload", mock.Anything).Return(new(InvoiceModel), nil).Once()
-	srv.On("Create", mock.Anything).Return(fmt.Errorf("create failed")).Once()
+	srv.On("Create", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("create failed")).Once()
 	payload := &clientinvoicepb.InvoiceCreatePayload{Data: &clientinvoicepb.InvoiceData{GrossAmount: 300}}
 	_, err := h.Create(context.Background(), payload)
 	srv.AssertExpectations(t)
@@ -332,6 +351,7 @@ func TestGrpcHandler_Create_create_fail(t *testing.T) {
 type mockModel struct {
 	documents.Model
 	mock.Mock
+	CoreDocument *coredocumentpb.CoreDocument
 }
 
 func (m *mockModel) PackCoreDocument() (*coredocumentpb.CoreDocument, error) {
@@ -340,37 +360,114 @@ func (m *mockModel) PackCoreDocument() (*coredocumentpb.CoreDocument, error) {
 	return cd, args.Error(1)
 }
 
-func TestGrpcHandler_Create_coredocument_fail(t *testing.T) {
+func (m *mockModel) JSON() ([]byte, error) {
+	args := m.Called()
+	data, _ := args.Get(0).([]byte)
+	return data, args.Error(1)
+}
+
+func TestGRPCHandler_Create_DeriveInvoiceResponse_fail(t *testing.T) {
 	h := getHandler()
 	srv := h.service.(*mockService)
-	model := new(mockModel)
-	model.On("PackCoreDocument").Return(nil, fmt.Errorf("core document failed"))
-	srv.On("DeriveFromCreatePayload", mock.Anything).Return(model, nil)
-	srv.On("Create", mock.Anything).Return(nil)
-	payload := &clientinvoicepb.InvoiceCreatePayload{Data: &clientinvoicepb.InvoiceData{GrossAmount: 300}}
+	model := new(InvoiceModel)
+	srv.On("DeriveFromCreatePayload", mock.Anything).Return(model, nil).Once()
+	srv.On("Create", mock.Anything, mock.Anything).Return(model, nil).Once()
+	srv.On("DeriveInvoiceResponse", mock.Anything).Return(nil, fmt.Errorf("derive response failed"))
+	payload := &clientinvoicepb.InvoiceCreatePayload{Data: &clientinvoicepb.InvoiceData{Currency: "EUR"}}
 	_, err := h.Create(context.Background(), payload)
-	model.AssertExpectations(t)
 	srv.AssertExpectations(t)
 	assert.Error(t, err, "must be non nil")
-	assert.Contains(t, err.Error(), "core document failed")
+	assert.Contains(t, err.Error(), "derive response failed")
 }
 
 func TestGrpcHandler_Create(t *testing.T) {
 	h := getHandler()
 	srv := h.service.(*mockService)
-	model := new(mockModel)
-	cd := coredocument.New()
-	payload := &clientinvoicepb.InvoiceCreatePayload{Data: &clientinvoicepb.InvoiceData{GrossAmount: 300}}
-	model.On("PackCoreDocument").Return(cd, nil)
-	srv.On("DeriveFromCreatePayload", mock.Anything).Return(model, nil)
-	srv.On("DeriveCreateResponse", model).Return(payload.Data, nil)
-	srv.On("Create", mock.Anything).Return(nil)
+	model := new(InvoiceModel)
+	payload := &clientinvoicepb.InvoiceCreatePayload{Data: &clientinvoicepb.InvoiceData{GrossAmount: 300}, Collaborators: []string{"0x010203040506"}}
+	response := &clientinvoicepb.InvoiceResponse{}
+	srv.On("DeriveFromCreatePayload", mock.Anything).Return(model, nil).Once()
+	srv.On("Create", mock.Anything, mock.Anything).Return(model, nil).Once()
+	srv.On("DeriveInvoiceResponse", model).Return(response, nil)
 	res, err := h.Create(context.Background(), payload)
+	srv.AssertExpectations(t)
+	assert.Nil(t, err, "must be nil")
+	assert.NotNil(t, res, "must be non nil")
+	assert.Equal(t, res, response)
+}
+
+func TestGrpcHandler_Get_invalid_input(t *testing.T) {
+	identifier := "0x01010101"
+	identifierBytes, _ := hexutil.Decode(identifier)
+	h := getHandler()
+	srv := h.service.(*mockService)
+	payload := &clientinvoicepb.GetRequest{Identifier: "invalid"}
+
+	res, err := h.Get(context.Background(), payload)
+	assert.Nil(t, res)
+	assert.EqualError(t, err, "identifier is an invalid hex string: hex string without 0x prefix")
+
+	payload.Identifier = identifier
+	srv.On("GetLastVersion", identifierBytes).Return(nil, fmt.Errorf("not found"))
+	res, err = h.Get(context.Background(), payload)
+	srv.AssertExpectations(t)
+	assert.Nil(t, res)
+	assert.EqualError(t, err, "document not found: not found")
+}
+
+func TestGrpcHandler_Get(t *testing.T) {
+	identifier := "0x01010101"
+	identifierBytes, _ := hexutil.Decode(identifier)
+	h := getHandler()
+	srv := h.service.(*mockService)
+	model := new(mockModel)
+	payload := &clientinvoicepb.GetRequest{Identifier: identifier}
+	response := &clientinvoicepb.InvoiceResponse{}
+	srv.On("GetLastVersion", identifierBytes).Return(model, nil)
+	srv.On("DeriveInvoiceResponse", model).Return(response, nil)
+	res, err := h.Get(context.Background(), payload)
 	model.AssertExpectations(t)
 	srv.AssertExpectations(t)
 	assert.Nil(t, err, "must be nil")
 	assert.NotNil(t, res, "must be non nil")
-	assert.Equal(t, res.Header.DocumentId, hex.EncodeToString(cd.DocumentIdentifier), "identifier must match")
-	assert.Equal(t, res.Header.VersionId, hex.EncodeToString(cd.CurrentVersion), "identifiers must match")
-	assert.Equal(t, res.Data, payload.Data, "data must match")
+	assert.Equal(t, res, response)
+}
+
+func TestGrpcHandler_GetVersion_invalid_input(t *testing.T) {
+	h := getHandler()
+	srv := h.service.(*mockService)
+	payload := &clientinvoicepb.GetVersionRequest{Identifier: "0x0x", Version: "0x00"}
+	res, err := h.GetVersion(context.Background(), payload)
+	assert.EqualError(t, err, "identifier is invalid: invalid hex string")
+	payload.Version = "0x0x"
+	payload.Identifier = "0x01"
+
+	res, err = h.GetVersion(context.Background(), payload)
+	assert.EqualError(t, err, "version is invalid: invalid hex string")
+	payload.Version = "0x00"
+	payload.Identifier = "0x01"
+
+	mockErr := fmt.Errorf("not found")
+	srv.On("GetVersion", []byte{0x01}, []byte{0x00}).Return(nil, mockErr)
+	res, err = h.GetVersion(context.Background(), payload)
+	srv.AssertExpectations(t)
+	assert.EqualError(t, err, "document not found: not found")
+	assert.Nil(t, res)
+}
+
+func TestGrpcHandler_GetVersion(t *testing.T) {
+	h := getHandler()
+	srv := h.service.(*mockService)
+	model := new(mockModel)
+	payload := &clientinvoicepb.GetVersionRequest{Identifier: "0x01", Version: "0x00"}
+
+	response := &clientinvoicepb.InvoiceResponse{}
+	srv.On("GetVersion", []byte{0x01}, []byte{0x00}).Return(model, nil)
+	srv.On("DeriveInvoiceResponse", model).Return(response, nil)
+	res, err := h.GetVersion(context.Background(), payload)
+	model.AssertExpectations(t)
+	srv.AssertExpectations(t)
+	assert.Nil(t, err)
+	assert.NotNil(t, res)
+	assert.Equal(t, res, response)
 }

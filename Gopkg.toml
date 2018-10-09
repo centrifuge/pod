@@ -292,6 +292,10 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
     name = "github.com/grpc-ecosystem/grpc-gateway"
     unused-packages = false
 
+[[prune.project]]
+    name = "github.com/hashicorp/go-multierror"
+    unused-packages = false
+
 [prune]
   go-tests = true
   unused-packages = true

@@ -182,7 +182,7 @@ func getBytesAnchorID(key interface{}) (AnchorID, error) {
 }
 
 func getBytesCentrifugeID(key interface{}) (identity.CentID, error) {
-	var fixed [identity.CentIDByteLength]byte
+	var fixed [identity.CentIDLength]byte
 	b, ok := key.([]interface{})
 	if !ok {
 		return fixed, errors.New("Could not parse interface to []byte")

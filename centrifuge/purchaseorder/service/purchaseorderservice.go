@@ -47,7 +47,7 @@ func (s *PurchaseOrderDocumentService) anchorPurchaseOrderDocument(ctx context.C
 		return nil, err
 	}
 	coreDoc.Collaborators = collaborators
-	err = s.CoreDocumentProcessor.Anchor(ctx, coreDoc)
+	err = s.CoreDocumentProcessor.Anchor(ctx, coreDoc, nil)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -127,7 +127,7 @@ func (s *PurchaseOrderDocumentService) HandleSendPurchaseOrderDocument(ctx conte
 	}
 
 	for _, recipient := range sendPurchaseOrderEnvelope.Recipients {
-		recipientID, err := identity.NewCentID(recipient)
+		recipientID, err := identity.ToCentID(recipient)
 		if err != nil {
 			errs = append(errs, err)
 			continue
