@@ -95,3 +95,8 @@ func TestDataRootValidation_Validate(t *testing.T) {
 	err = drv.Validate(nil, inv)
 	assert.Nil(t, err)
 }
+
+func TestCreateValidator(t *testing.T) {
+	cv := CreateValidator()
+	assert.Len(t, cv, 2)
+}

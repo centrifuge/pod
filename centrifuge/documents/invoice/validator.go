@@ -66,3 +66,11 @@ func dataRootValidator() documents.Validator {
 		return nil
 	})
 }
+
+// CreateValidator is a validator group that should be run before creating the invoice and persisting it to DB
+func CreateValidator() documents.ValidatorGroup {
+	return documents.ValidatorGroup{
+		fieldValidator(),
+		dataRootValidator(),
+	}
+}

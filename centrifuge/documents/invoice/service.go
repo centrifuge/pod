@@ -3,6 +3,7 @@ package invoice
 import (
 	"bytes"
 	"context"
+	"fmt"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
@@ -80,16 +81,20 @@ func (s service) DeriveFromCreatePayload(invoiceInput *clientinvoicepb.InvoiceCr
 
 // Create takes and invoice model and does required validation checks, tries to persist to DB
 func (s service) Create(ctx context.Context, model documents.Model) (documents.Model, error) {
-	// Validate the model
-	fv := fieldValidator()
-	err := fv.Validate(nil, model)
+	// create data root
+	inv, ok := model.(*InvoiceModel)
+	if !ok {
+		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("unknown document type: %T", model))
+	}
+
+	err := inv.calculateDataRoot()
 	if err != nil {
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
 	}
 
-	// create data root
-	inv := model.(*InvoiceModel)
-	err = inv.calculateDataRoot()
+	// validate the invoice
+	cv := CreateValidator()
+	err = cv.Validate(nil, inv)
 	if err != nil {
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
 	}
