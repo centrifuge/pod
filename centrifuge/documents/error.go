@@ -7,11 +7,13 @@ import (
 	"github.com/hashicorp/go-multierror"
 )
 
+// Error wraps an error with specific key
 type Error struct {
 	key string
 	err error
 }
 
+// Error returns the underlying error message
 func (e Error) Error() string {
 	return e.err.Error()
 }
@@ -25,9 +27,7 @@ func NewError(key, msg string) error {
 // Append function is used to create a list of errors.
 // First argument can be nil, a multierror.Error, or any other error
 func AppendError(dstErr, srcErr error) error {
-
 	_, ok := dstErr.(*multierror.Error)
-
 	result := multierror.Append(dstErr, srcErr)
 
 	// if dstErr is not a multierror.Error newly created multierror.Error result needs formatting
@@ -39,7 +39,6 @@ func AppendError(dstErr, srcErr error) error {
 
 func format(err *multierror.Error) error {
 	err.ErrorFormat = func(errorList []error) string {
-
 		var buffer bytes.Buffer
 		for i, err := range errorList {
 			buffer.WriteString(fmt.Sprintf("Error %v : %s\n", i+1, err.Error()))
@@ -54,18 +53,15 @@ func format(err *multierror.Error) error {
 
 // Errors returns an array of errors
 func Errors(err error) []error {
-
 	if err == nil {
 		return nil
 	}
 
 	if multiErr, ok := err.(*multierror.Error); ok {
-
 		return multiErr.Errors
 	}
 
 	return []error{err}
-
 }
 
 // Len returns the amount of embedded errors

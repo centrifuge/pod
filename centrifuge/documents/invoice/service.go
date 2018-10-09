@@ -96,7 +96,7 @@ func (s service) Create(ctx context.Context, model documents.Model) (documents.M
 	cv := CreateValidator()
 	err = cv.Validate(nil, inv)
 	if err != nil {
-		return nil, centerrors.New(code.DocumentInvalid, err.Error())
+		return nil, centerrors.NewWithErrors(code.DocumentInvalid, "validations failed", documents.ConvertToMap(err))
 	}
 
 	// we use currentIdentifier as the id since that will be unique across multiple versions of the same document
