@@ -1,0 +1,128 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "documents/service.proto",
+    "version": "version not set"
+  },
+  "schemes": [
+    "http",
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/document/proof": {
+      "post": {
+        "description": "Creates a list of precise proofs for the specified fields",
+        "operationId": "CreateDocumentProof",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/documentDocumentProof"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/documentCreateDocumentProofEnvelope"
+            }
+          }
+        ],
+        "tags": [
+          "DocumentService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "documentCreateDocumentProofEnvelope": {
+      "type": "object",
+      "properties": {
+        "document_identifier": {
+          "type": "string",
+          "format": "byte"
+        },
+        "type": {
+          "type": "string"
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "documentDocumentProof": {
+      "type": "object",
+      "properties": {
+        "document_identifier": {
+          "type": "string",
+          "format": "byte"
+        },
+        "field_proofs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/proofsProof"
+          }
+        }
+      }
+    },
+    "proofsMerkleHash": {
+      "type": "object",
+      "properties": {
+        "left": {
+          "type": "string",
+          "format": "byte"
+        },
+        "right": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "proofsProof": {
+      "type": "object",
+      "properties": {
+        "property": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "salt": {
+          "type": "string",
+          "format": "byte"
+        },
+        "hash": {
+          "type": "string",
+          "format": "byte",
+          "title": "hash is filled if value \u0026 salt are not available"
+        },
+        "hashes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/proofsMerkleHash"
+          },
+          "title": "Fills either 'hashes' for standard Merkle trees or 'sortedHashes' for a lexicograhical ordered of a node hash\nnot both"
+        },
+        "sortedHashes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "byte"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package document;
+
+option go_package = "documentpb";
+option java_multiple_files = true;
+option java_outer_classname = "ServiceProto";
+option java_package = "com.document";
+
+import "google/api/annotations.proto";
+import "precise-proofs/proofs/proto/proof.proto";
+import "protoc-gen-swagger/options/annotations.proto";
+
+// DocumentService contains all common interactions for documents
+service DocumentService {
+  rpc CreateDocumentProof(CreateDocumentProofEnvelope) returns (DocumentProof) {
+    option (google.api.http) = {
+      post: "/document/proof"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "Creates a list of precise proofs for the specified fields"
+    };
+  }
+}
+
+message CreateDocumentProofEnvelope {
+  bytes document_identifier = 1;
+  string type = 2;
+  repeated string fields = 3;
+}
+
+message DocumentProof {
+  bytes document_identifier = 1;
+  repeated proofs.Proof field_proofs = 2;
+}
