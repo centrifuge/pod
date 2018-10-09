@@ -65,8 +65,8 @@ func GenerateCoreDocument() *coredocumentpb.CoreDocument {
 	doc := &coredocumentpb.CoreDocument{
 		DataRoot:           tools.RandomSlice(32),
 		DocumentIdentifier: identifier,
-		CurrentIdentifier:  identifier,
-		NextIdentifier:     Rand32Bytes(),
+		CurrentVersion:     identifier,
+		NextVersion:        Rand32Bytes(),
 		CoredocumentSalts:  salts,
 		EmbeddedData: &any.Any{
 			TypeUrl: documenttypes.InvoiceDataTypeUrl,
@@ -88,7 +88,6 @@ func (m *MockCoreDocumentProcessor) Send(ctx context.Context, coreDocument *core
 func (m *MockCoreDocumentProcessor) Anchor(
 	ctx context.Context,
 	coreDocument *coredocumentpb.CoreDocument,
-	collaborators []identity.CentID,
 	saveState func(*coredocumentpb.CoreDocument) error) (err error) {
 	args := m.Called(coreDocument)
 	if saveState != nil {
