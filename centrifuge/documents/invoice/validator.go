@@ -28,7 +28,7 @@ func fieldValidator() documents.Validator {
 	})
 }
 
-// dataRootValidator calculates the data root and checks if it matches with
+// dataRootValidator calculates the data root and checks if it matches with the one on core document
 func dataRootValidator() documents.Validator {
 	return documents.ValidatorFunc(func(_, model documents.Model) (err error) {
 		defer func() {
