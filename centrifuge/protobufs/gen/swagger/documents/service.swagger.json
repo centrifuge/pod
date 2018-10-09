@@ -15,7 +15,7 @@
     "application/json"
   ],
   "paths": {
-    "/document/proof": {
+    "/document/{identifier}/proof": {
       "post": {
         "description": "Creates a list of precise proofs for the specified fields",
         "operationId": "CreateDocumentProof",
@@ -29,11 +29,18 @@
         },
         "parameters": [
           {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "byte"
+          },
+          {
             "name": "body",
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/documentCreateDocumentProofEnvelope"
+              "$ref": "#/definitions/documentCreateDocumentProofRequest"
             }
           }
         ],
@@ -44,10 +51,10 @@
     }
   },
   "definitions": {
-    "documentCreateDocumentProofEnvelope": {
+    "documentCreateDocumentProofRequest": {
       "type": "object",
       "properties": {
-        "document_identifier": {
+        "identifier": {
           "type": "string",
           "format": "byte"
         },
@@ -65,7 +72,7 @@
     "documentDocumentProof": {
       "type": "object",
       "properties": {
-        "document_identifier": {
+        "identifier": {
           "type": "string",
           "format": "byte"
         },

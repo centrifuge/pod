@@ -36,7 +36,7 @@
                 <a href="#operation--invoice--identifier---version--get"> GET /invoice/{identifier}/{version} </a>
               </li>
               <li>
-                <a href="#operation--document-proof-post"> POST /document/proof </a>
+                <a href="#operation--document--identifier--proof-post"> POST /document/{identifier}/proof </a>
               </li>
             </ul>
           </section>
@@ -125,7 +125,7 @@
           <a href="#definition-invoiceInvoiceResponse"> invoiceInvoiceResponse </a>
           <a href="#definition-invoiceInvoiceUpdatePayload"> invoiceInvoiceUpdatePayload </a>
           <a href="#definition-invoiceResponseHeader"> invoiceResponseHeader </a>
-          <a href="#definition-documentCreateDocumentProofEnvelope"> documentCreateDocumentProofEnvelope </a>
+          <a href="#definition-documentCreateDocumentProofRequest"> documentCreateDocumentProofRequest </a>
           <a href="#definition-documentDocumentProof"> documentDocumentProof </a>
           <a href="#definition-proofsMerkleHash"> proofsMerkleHash </a>
           <a href="#definition-proofsProof"> proofsProof </a>
@@ -725,7 +725,7 @@
               </div>
             </div>
           </div>
-          <div id="operation--document-proof-post" class="operation panel" data-traverse-target="operation--document-proof-post">
+          <div id="operation--document--identifier--proof-post" class="operation panel" data-traverse-target="operation--document--identifier--proof-post">
             <!-- <section class="operation-tags row"> -->
             <!-- <div class="doc-copy"> -->
             <div class="operation-tags">
@@ -737,7 +737,7 @@
             <h2 class="operation-title">
               <span class="operation-name">
                 <span class="operation-name">POST</span>
-                <span class="operation-path">/document/proof</span>
+                <span class="operation-path">/document/{identifier}/proof</span>
               </span>
             </h2>
             <div class="doc-row">
@@ -754,7 +754,7 @@
                     <div class="prop-name">
                       <div class="swagger-request-model">
                         <span class="">
-                          <a class="json-schema-ref" href="#/definitions/documentCreateDocumentProofEnvelope">documentCreateDocumentProofEnvelope</a>
+                          <a class="json-schema-ref" href="#/definitions/documentCreateDocumentProofRequest">documentCreateDocumentProofRequest</a>
                         </span>
                       </div>
                     </div>
@@ -765,12 +765,29 @@
                     </div>
                   </div>
                 </section>
+                <section class="swagger-request-params">
+                  <div class="prop-row prop-group">
+                    <div class="prop-name">
+                      <div class="prop-title">identifier</div>
+                      <span class="json-property-required"></span>
+                      <div class="prop-subtitle"> in path </div>
+                      <div class="prop-subtitle">
+                        <span class="json-property-type">string</span>
+                        <span class="json-property-format">(byte)</span>
+                        <span class="json-property-range" title="Value limits"></span>
+                      </div>
+                    </div>
+                    <div class="prop-value">
+                      <p class="no-description">(no description)</p>
+                    </div>
+                  </div>
+                </section>
               </div>
               <div class="doc-examples">
                 <section>
                   <h5>Request Example</h5>
                   <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
-  <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+  <span class="hljs-attr">&quot;identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
   <span class="hljs-attr">&quot;type&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
   <span class="hljs-attr">&quot;fields&quot;</span>: [
     <span class="hljs-string">&quot;string&quot;</span>
@@ -804,7 +821,7 @@
                     <span>(200 OK)</span>
                   </h5>
                   <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
-  <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+  <span class="hljs-attr">&quot;identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
   <span class="hljs-attr">&quot;field_proofs&quot;</span>: [
     {
       <span class="hljs-attr">&quot;property&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
@@ -4169,9 +4186,9 @@
               </div>
             </div>
           </div>
-          <div id="definition-documentCreateDocumentProofEnvelope" class="definition panel" data-traverse-target="definition-documentCreateDocumentProofEnvelope">
+          <div id="definition-documentCreateDocumentProofRequest" class="definition panel" data-traverse-target="definition-documentCreateDocumentProofRequest">
             <h2 class="panel-title">
-              <a name="/definitions/documentCreateDocumentProofEnvelope"></a>documentCreateDocumentProofEnvelope: object
+              <a name="/definitions/documentCreateDocumentProofRequest"></a>documentCreateDocumentProofRequest: object
               <!-- <span class="json-property-type"><span class="json-property-type">object</span>
               <span class="json-property-range" title="Value limits"></span>
               
@@ -4182,8 +4199,8 @@
               <div class="doc-copy">
                 <section class="json-schema-properties">
                   <dl>
-                    <dt data-property-name="document_identifier">
-                      <span class="json-property-name">document_identifier:</span>
+                    <dt data-property-name="identifier">
+                      <span class="json-property-name">identifier:</span>
                       <span class="json-property-type">string</span>
                       <span class="json-property-format">(byte)</span>
                       <span class="json-property-range" title="Value limits"></span>
@@ -4212,7 +4229,7 @@
                 <section>
                   <h5>Example</h5>
                   <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
-  <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+  <span class="hljs-attr">&quot;identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
   <span class="hljs-attr">&quot;type&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
   <span class="hljs-attr">&quot;fields&quot;</span>: [
     <span class="hljs-string">&quot;string&quot;</span>
@@ -4237,8 +4254,8 @@
               <div class="doc-copy">
                 <section class="json-schema-properties">
                   <dl>
-                    <dt data-property-name="document_identifier">
-                      <span class="json-property-name">document_identifier:</span>
+                    <dt data-property-name="identifier">
+                      <span class="json-property-name">identifier:</span>
                       <span class="json-property-type">string</span>
                       <span class="json-property-format">(byte)</span>
                       <span class="json-property-range" title="Value limits"></span>
@@ -4270,7 +4287,7 @@
                 <section>
                   <h5>Example</h5>
                   <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
-  <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+  <span class="hljs-attr">&quot;identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
   <span class="hljs-attr">&quot;field_proofs&quot;</span>: [
     {
       <span class="hljs-attr">&quot;property&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
