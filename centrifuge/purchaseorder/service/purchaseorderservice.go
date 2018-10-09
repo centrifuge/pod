@@ -28,7 +28,7 @@ type PurchaseOrderDocumentService struct {
 
 // anchorPurchaseOrderDocument anchors the given purchaseorder document and returns the anchor details
 func (s *PurchaseOrderDocumentService) anchorPurchaseOrderDocument(ctx context.Context, doc *purchaseorderpb.PurchaseOrderDocument, collaborators [][]byte) (*purchaseorderpb.PurchaseOrderDocument, error) {
-	orderDoc, err := purchaseorder.New(doc)
+	orderDoc, err := purchaseorder.New(doc, collaborators)
 	if err != nil {
 		log.Error(err)
 		return nil, err

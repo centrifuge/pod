@@ -248,7 +248,7 @@ func InitIdentifiers(document coredocumentpb.CoreDocument) (coredocumentpb.CoreD
 // PrepareNewVersion creates a copy of the passed coreDocument with the version fields updated
 func PrepareNewVersion(document coredocumentpb.CoreDocument) (*coredocumentpb.CoreDocument, error) {
 	newDocument := &coredocumentpb.CoreDocument{}
-	fillSalts(newDocument)
+	FillSalts(newDocument)
 	if document.CurrentVersion == nil {
 		return nil, fmt.Errorf("coredocument.CurrentVersion is nil")
 	}
@@ -269,11 +269,10 @@ func PrepareNewVersion(document coredocumentpb.CoreDocument) (*coredocumentpb.Co
 // New returns a new core document from the proto message
 func New() *coredocumentpb.CoreDocument {
 	doc, _ := InitIdentifiers(coredocumentpb.CoreDocument{})
-	fillSalts(&doc)
 	return &doc
 }
 
-func fillSalts(doc *coredocumentpb.CoreDocument) {
+func FillSalts(doc *coredocumentpb.CoreDocument) {
 	salts := &coredocumentpb.CoreDocumentSalts{}
 	proofs.FillSalts(doc, salts)
 	doc.CoredocumentSalts = salts

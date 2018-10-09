@@ -31,7 +31,7 @@ func Wrap(poDoc *purchaseorderpb.PurchaseOrderDocument) (*PurchaseOrder, error) 
 }
 
 // New generates a new purchase order and generate salts, merkle root and coredocument
-func New(poDoc *purchaseorderpb.PurchaseOrderDocument) (*PurchaseOrder, error) {
+func New(poDoc *purchaseorderpb.PurchaseOrderDocument, collaborators [][]byte) (*PurchaseOrder, error) {
 	po, err := Wrap(poDoc)
 	if err != nil {
 		return nil, err
@@ -47,6 +47,8 @@ func New(poDoc *purchaseorderpb.PurchaseOrderDocument) (*PurchaseOrder, error) {
 	if po.Document.CoreDocument == nil {
 		po.Document.CoreDocument = coredocument.New()
 	}
+	po.Document.CoreDocument.Collaborators = collaborators
+	coredocument.FillSalts(po.Document.CoreDocument)
 
 	err = po.CalculateMerkleRoot()
 	if err != nil {

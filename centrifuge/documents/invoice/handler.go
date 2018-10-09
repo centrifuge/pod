@@ -48,7 +48,7 @@ func GRPCHandler(service Service) clientinvoicepb.DocumentServiceServer {
 
 // anchorInvoiceDocument anchors the given invoice document and returns the anchored document
 func (h *grpcHandler) anchorInvoiceDocument(ctx context.Context, doc *invoicepb.InvoiceDocument, collaborators [][]byte) (*invoicepb.InvoiceDocument, error) {
-	inv, err := New(doc)
+	inv, err := New(doc, collaborators)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, err
@@ -67,7 +67,6 @@ func (h *grpcHandler) anchorInvoiceDocument(ctx context.Context, doc *invoicepb.
 		return nil, err
 	}
 
-	coreDoc.Collaborators = collaborators
 	err = h.coreDocProcessor.Anchor(ctx, coreDoc, nil)
 	if err != nil {
 		apiLog.Error(err)
