@@ -10,6 +10,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/centrifuge/precise-proofs/proofs"
+	"github.com/golang/protobuf/proto"
 )
 
 // GetDataProofHashes returns the hashes needed to create a proof from DataRoot to SigningRoot. This method is used
@@ -245,27 +246,30 @@ func FillIdentifiers(document coredocumentpb.CoreDocument) (coredocumentpb.CoreD
 	return document, nil
 }
 
-// PrepareNewVersion updates CoreDocument instance with the version fields prepared for a document update
-// It assumes that parent process will abort when error and not store state after this function is called
-func PrepareNewVersion(document *coredocumentpb.CoreDocument) error {
-	if document == nil {
-		return fmt.Errorf("coredocument is nil")
-	}
+// PrepareNewVersion creates a copy of the passed coreDocument with the version fields updated
+func PrepareNewVersion(document coredocumentpb.CoreDocument) (*coredocumentpb.CoreDocument, error) {
+	newDocument := New()
+	proto.Merge(newDocument, &document)
 	if document.CurrentVersion == nil {
-		return fmt.Errorf("coredocument.CurrentVersion is nil")
+		return nil, fmt.Errorf("coredocument.CurrentVersion is nil")
 	}
-	document.PreviousVersion = document.CurrentVersion
+	newDocument.PreviousVersion = document.CurrentVersion
 	if document.NextVersion == nil {
-		return fmt.Errorf("coredocument.NextVersion is nil")
+		return nil, fmt.Errorf("coredocument.NextVersion is nil")
 	}
-	document.CurrentVersion = document.NextVersion
-	document.NextVersion = tools.RandomSlice(32)
+	newDocument.CurrentVersion = document.NextVersion
+	newDocument.NextVersion = tools.RandomSlice(32)
 	if document.DocumentRoot == nil {
-		return fmt.Errorf("coredocument.DocumentRoot is nil")
+		return nil, fmt.Errorf("coredocument.DocumentRoot is nil")
 	}
-	document.PreviousRoot = document.DocumentRoot
+	newDocument.PreviousRoot = document.DocumentRoot
+	newDocument.SigningRoot = nil
+	newDocument.DocumentRoot = nil
+	newDocument.SigningRoot = nil
+	newDocument.DataRoot = nil
+	newDocument.Signatures = nil
 
-	return nil
+	return newDocument, nil
 }
 
 // New returns a new core document from the proto message
