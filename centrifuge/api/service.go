@@ -5,10 +5,12 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/healthcheck/controller"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/centrifuge/p2p"
 	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/health"
 	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	legacyInvoice "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/legacy/invoice"
+	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/nft"
 	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/purchaseorder/controller"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
@@ -41,5 +43,13 @@ func registerServices(ctx context.Context, grpcServer *grpc.Server, gwmux *runti
 	if err != nil {
 		return err
 	}
+
+	nftpb.RegisterNFTServiceServer(grpcServer, nft.GRPCHandler())
+	err = nftpb.RegisterNFTServiceHandlerFromEndpoint(ctx, gwmux , addr, dopts)
+
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
