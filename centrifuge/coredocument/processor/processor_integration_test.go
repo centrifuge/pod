@@ -41,7 +41,7 @@ func TestDefaultProcessor_Anchor(t *testing.T) {
 		identity.NewRandomCentID(),
 	}
 	p2pClient.On("GetSignaturesForDocument", ctx, doc, collaborators).Return(nil)
-	err := dp.Anchor(ctx, doc, collaborators)
+	err := dp.Anchor(ctx, doc, collaborators, nil)
 	assert.Nil(t, err, "Document should be anchored correctly")
 	p2pClient.AssertExpectations(t)
 }

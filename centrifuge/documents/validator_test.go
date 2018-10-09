@@ -9,15 +9,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type MockValidator struct {
-}
+type MockValidator struct{}
 
 func (m MockValidator) Validate(oldState Model, newState Model) error {
 	return nil
 }
 
-type MockValidatorWithErrors struct {
-}
+type MockValidatorWithErrors struct{}
 
 func (m MockValidatorWithErrors) Validate(oldState Model, newState Model) error {
 
@@ -27,16 +25,13 @@ func (m MockValidatorWithErrors) Validate(oldState Model, newState Model) error 
 	return err
 }
 
-type MockValidatorWithOneError struct {
-}
+type MockValidatorWithOneError struct{}
 
 func (m MockValidatorWithOneError) Validate(oldState Model, newState Model) error {
-
 	return fmt.Errorf("one error")
 }
 
 func TestValidatorInterface(t *testing.T) {
-
 	var validator Validator
 
 	// no error
@@ -58,7 +53,6 @@ func TestValidatorInterface(t *testing.T) {
 
 	errorArray := Errors(errors)
 	assert.Equal(t, 2, len(errorArray), "error array should include two error")
-
 }
 
 func TestValidatorGroup_Validate(t *testing.T) {
@@ -92,5 +86,31 @@ func TestValidatorGroup_Validate(t *testing.T) {
 	}
 	errors = testValidatorGroup.Validate(nil, nil)
 	assert.Equal(t, 0, len(Errors(errors)), "Validate should return no error")
+}
 
+func TestIsCurrencyValid(t *testing.T) {
+	tests := []struct {
+		cur   string
+		valid bool
+	}{
+		{
+			cur:   "EUR",
+			valid: true,
+		},
+
+		{
+			cur:   "INR",
+			valid: true,
+		},
+
+		{
+			cur:   "some currency",
+			valid: false,
+		},
+	}
+
+	for _, c := range tests {
+		got := IsCurrencyValid(c.cur)
+		assert.Equal(t, c.valid, got, "result must match")
+	}
 }

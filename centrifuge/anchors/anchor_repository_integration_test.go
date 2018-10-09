@@ -33,7 +33,7 @@ func TestMain(m *testing.M) {
 
 func createIdentityWithKeys(t *testing.T, centrifugeId []byte) []byte {
 
-	centIdTyped, _ := identity.NewCentID(centrifugeId)
+	centIdTyped, _ := identity.ToCentID(centrifugeId)
 	id, confirmations, err := identityService.CreateIdentity(centIdTyped)
 	assert.Nil(t, err, "should not error out when creating identity")
 
@@ -59,14 +59,14 @@ func createIdentityWithKeys(t *testing.T, centrifugeId []byte) []byte {
 func TestCommitAnchor_Integration(t *testing.T) {
 	anchorID, _ := hexutil.Decode("0x154cc26833dec2f4ad7ead9d65f9ec968a1aa5efbf6fe762f8f2a67d18a2d9b1")
 	documentRoot, _ := hexutil.Decode("0x65a35574f70281ae4d1f6c9f3adccd5378743f858c67a802a49a08ce185bc975")
-	centrifugeId := tools.RandomSlice(identity.CentIDByteLength)
+	centrifugeId := tools.RandomSlice(identity.CentIDLength)
 
 	createIdentityWithKeys(t, centrifugeId)
 
 	testPrivateKey, _ := hexutil.Decode("0x17e063fa17dd8274b09c14b253697d9a20afff74ace3c04fdb1b9c814ce0ada5")
 
 	anchorIDTyped, _ := anchors.NewAnchorID(anchorID)
-	centIdTyped, _ := identity.NewCentID(centrifugeId)
+	centIdTyped, _ := identity.ToCentID(centrifugeId)
 	docRootTyped, _ := anchors.NewDocRoot(documentRoot)
 
 	messageToSign := anchors.GenerateCommitHash(anchorIDTyped, centIdTyped, docRootTyped)
@@ -80,7 +80,7 @@ func TestCommitAnchor_Integration(t *testing.T) {
 func commitAnchor(t *testing.T, anchorID, centrifugeId, documentRoot, signature []byte, documentProofs [][32]byte) {
 	anchorIDTyped, _ := anchors.NewAnchorID(anchorID)
 	docRootTyped, _ := anchors.NewDocRoot(documentRoot)
-	centIdFixed, _ := identity.NewCentID(centrifugeId)
+	centIdFixed, _ := identity.ToCentID(centrifugeId)
 
 	confirmations, err := anchors.CommitAnchor(anchorIDTyped, docRootTyped, centIdFixed, documentProofs, signature)
 	if err != nil {
@@ -98,14 +98,14 @@ func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
 	var confirmationList [5]<-chan *anchors.WatchCommit
 	testPrivateKey, _ := hexutil.Decode("0x17e063fa17dd8274b09c14b253697d9a20afff74ace3c04fdb1b9c814ce0ada5")
 
-	centrifugeId := tools.RandomSlice(identity.CentIDByteLength)
+	centrifugeId := tools.RandomSlice(identity.CentIDLength)
 
 	createIdentityWithKeys(t, centrifugeId)
 
 	for ix := 0; ix < 5; ix++ {
 		currentAnchorId := tools.RandomByte32()
 		currentDocumentRoot := tools.RandomByte32()
-		centIdFixed, _ := identity.NewCentID(centrifugeId)
+		centIdFixed, _ := identity.ToCentID(centrifugeId)
 		messageToSign := anchors.GenerateCommitHash(currentAnchorId, centIdFixed, currentDocumentRoot)
 		signature, _ := secp256k1.SignEthereum(messageToSign, testPrivateKey)
 		documentProofs := [][anchors.DocumentProofLength]byte{tools.RandomByte32()}

@@ -3,7 +3,6 @@
 package invoice
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"reflect"
 	"testing"
@@ -15,6 +14,7 @@ import (
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 )
@@ -48,14 +48,16 @@ func TestInvoice_InitCoreDocument_invalidCentId(t *testing.T) {
 	invoiceModel := &InvoiceModel{}
 
 	coreDocument := testinginvoice.CreateCDWithEmbeddedInvoice(t, invoicepb.InvoiceData{
-		Recipient:   tools.RandomSlice(identity.CentIDByteLength + 1),
-		Sender:      tools.RandomSlice(identity.CentIDByteLength),
-		Payee:       tools.RandomSlice(identity.CentIDByteLength),
+		Recipient:   tools.RandomSlice(identity.CentIDLength + 1),
+		Sender:      tools.RandomSlice(identity.CentIDLength),
+		Payee:       tools.RandomSlice(identity.CentIDLength),
 		GrossAmount: 42,
 	})
 	err := invoiceModel.UnpackCoreDocument(coreDocument)
-	assert.Error(t, err, "invalid centID should produce an error")
-
+	assert.Nil(t, err)
+	assert.NotNil(t, invoiceModel.Sender)
+	assert.NotNil(t, invoiceModel.Payee)
+	assert.Nil(t, invoiceModel.Recipient)
 }
 
 func TestInvoice_CoreDocument_successful(t *testing.T) {
@@ -130,16 +132,14 @@ func TestInvoiceModel_UnpackCoreDocument(t *testing.T) {
 func TestInvoiceModel_getClientData(t *testing.T) {
 	invData := testinginvoice.CreateInvoiceData()
 	inv := new(InvoiceModel)
-	err := inv.loadFromP2PProtobuf(&invData)
-	assert.Nil(t, err, "must not error out")
+	inv.loadFromP2PProtobuf(&invData)
 
-	data, err := inv.getClientData()
-	assert.Nil(t, err, "must not error out")
+	data := inv.getClientData()
 	assert.NotNil(t, data, "invoice data should not be nil")
-	assert.Equal(t, data.GrossAmount, invData.GrossAmount, "gross amount must match")
-	assert.Equal(t, data.Recipient, hex.EncodeToString(inv.Recipient[:]), "recipient should match")
-	assert.Equal(t, data.Sender, hex.EncodeToString(inv.Sender[:]), "sender should match")
-	assert.Equal(t, data.Payee, hex.EncodeToString(inv.Payee[:]), "payee should match")
+	assert.Equal(t, data.GrossAmount, data.GrossAmount, "gross amount must match")
+	assert.Equal(t, data.Recipient, hexutil.Encode(inv.Recipient[:]), "recipient should match")
+	assert.Equal(t, data.Sender, hexutil.Encode(inv.Sender[:]), "sender should match")
+	assert.Equal(t, data.Payee, hexutil.Encode(inv.Payee[:]), "payee should match")
 }
 
 func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
@@ -153,31 +153,62 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 	inv := new(InvoiceModel)
 	err := inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data})
 	assert.Error(t, err, "must return err")
-	assert.Contains(t, err.Error(), "failed to decode recipient")
-
-	data.Recipient = "010203040506"
-	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data})
-	assert.Contains(t, err.Error(), "failed to decode sender")
-
-	data.Sender = "010203060506"
-	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data})
-	assert.Contains(t, err.Error(), "failed to decode payee")
-
-	data.Payee = "010203030405"
-	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data})
 	assert.Contains(t, err.Error(), "failed to decode extra data")
+	assert.Nil(t, inv.Recipient)
+	assert.Nil(t, inv.Sender)
+	assert.Nil(t, inv.Payee)
+	assert.Nil(t, inv.ExtraData)
 
-	data.ExtraData = "010203020301"
-	collabs := []string{"010102040506", "some id"}
+	data.ExtraData = "0x010203020301"
+	data.Recipient = "0x010203040506"
+	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data})
+	assert.Nil(t, err)
+	assert.NotNil(t, inv.ExtraData)
+	assert.NotNil(t, inv.Recipient)
+	assert.Nil(t, inv.Sender)
+	assert.Nil(t, inv.Payee)
+
+	data.Sender = "0x010203060506"
+	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data})
+	assert.Nil(t, err)
+	assert.NotNil(t, inv.ExtraData)
+	assert.NotNil(t, inv.Recipient)
+	assert.NotNil(t, inv.Sender)
+	assert.Nil(t, inv.Payee)
+
+	data.Payee = "0x010203030405"
+	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data})
+	assert.Nil(t, err)
+	assert.NotNil(t, inv.ExtraData)
+	assert.NotNil(t, inv.Recipient)
+	assert.NotNil(t, inv.Sender)
+	assert.NotNil(t, inv.Payee)
+
+	data.ExtraData = "0x010203020301"
+	collabs := []string{"0x010102040506", "some id"}
 	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data, Collaborators: collabs})
 	assert.Contains(t, err.Error(), "failed to decode collaborator")
 
-	collabs = []string{"010102040506", "010203020302"}
+	collabs = []string{"0x010102040506", "0x010203020302"}
 	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data, Collaborators: collabs})
 	assert.Nil(t, err, "must be nil")
 	assert.Equal(t, inv.Sender[:], []byte{1, 2, 3, 6, 5, 6})
 	assert.Equal(t, inv.Payee[:], []byte{1, 2, 3, 3, 4, 5})
 	assert.Equal(t, inv.Recipient[:], []byte{1, 2, 3, 4, 5, 6})
 	assert.Equal(t, inv.ExtraData[:], []byte{1, 2, 3, 2, 3, 1})
-	assert.Equal(t, inv.Collaborators, []identity.CentID{{1, 1, 2, 4, 5, 6}, {1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}})
+	assert.Equal(t, inv.Collaborators, []identity.CentID{{1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}})
+}
+
+func TestInvoiceModel_calculateDataRoot(t *testing.T) {
+	m := new(InvoiceModel)
+	err := m.InitInvoiceInput(createPayload())
+	assert.Nil(t, err, "Init must pass")
+	assert.Nil(t, m.CoreDocument, "core doc must be nil")
+	assert.Nil(t, m.InvoiceSalts, "salts must be nil")
+
+	err = m.calculateDataRoot()
+	assert.Nil(t, err, "calculate must pass")
+	assert.NotNil(t, m.CoreDocument, "coredoc must be created")
+	assert.NotNil(t, m.InvoiceSalts, "salts must be created")
+	assert.NotNil(t, m.CoreDocument.DataRoot, "data root must be filled")
 }
