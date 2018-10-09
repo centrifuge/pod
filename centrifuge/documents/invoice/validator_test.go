@@ -3,9 +3,12 @@
 package invoice
 
 import (
+	"fmt"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -37,5 +40,58 @@ func TestFieldValidator_Validate(t *testing.T) {
 	err = fv.Validate(nil, &InvoiceModel{
 		Currency: "EUR",
 	})
+	assert.Nil(t, err)
+}
+
+func TestDataRootValidation_Validate(t *testing.T) {
+	drv := dataRootValidator()
+
+	// nil error
+	err := drv.Validate(nil, nil)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "nil document")
+
+	// pack coredoc failed
+	model := &mockModel{}
+	model.On("PackCoreDocument").Return(nil, fmt.Errorf("error")).Once()
+	err = drv.Validate(nil, model)
+	model.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to pack coredocument")
+
+	// missing data root
+	model = &mockModel{}
+	model.On("PackCoreDocument").Return(coredocument.New(), nil).Once()
+	err = drv.Validate(nil, model)
+	model.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "data root missing")
+
+	// unknown doc type
+	cd := coredocument.New()
+	cd.DataRoot = tools.RandomSlice(32)
+	model = &mockModel{}
+	model.On("PackCoreDocument").Return(cd, nil).Once()
+	err = drv.Validate(nil, model)
+	model.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "unknown document type")
+
+	// mismatch
+	inv := new(InvoiceModel)
+	err = inv.InitInvoiceInput(createPayload())
+	assert.Nil(t, err)
+	inv.CoreDocument = cd
+	err = drv.Validate(nil, inv)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "mismatched data root")
+
+	// success
+	inv = new(InvoiceModel)
+	err = inv.InitInvoiceInput(createPayload())
+	assert.Nil(t, err)
+	err = inv.calculateDataRoot()
+	assert.Nil(t, err)
+	err = drv.Validate(nil, inv)
 	assert.Nil(t, err)
 }
