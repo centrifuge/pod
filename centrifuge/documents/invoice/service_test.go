@@ -83,8 +83,8 @@ func TestService_GetLastVersion(t *testing.T) {
 		GrossAmount: 60,
 		CoreDocument: &coredocumentpb.CoreDocument{
 			DocumentIdentifier: documentIdentifier,
-			CurrentVersion:  documentIdentifier,
-			NextVersion:     nextIdentifier,
+			CurrentVersion:     documentIdentifier,
+			NextVersion:        nextIdentifier,
 		},
 	}
 	err := GetRepository().Create(documentIdentifier, inv1)
@@ -100,8 +100,8 @@ func TestService_GetLastVersion(t *testing.T) {
 		GrossAmount: 60,
 		CoreDocument: &coredocumentpb.CoreDocument{
 			DocumentIdentifier: documentIdentifier,
-			CurrentVersion:  nextIdentifier,
-			NextVersion:     thirdIdentifier,
+			CurrentVersion:     nextIdentifier,
+			NextVersion:        thirdIdentifier,
 		},
 	}
 
@@ -123,7 +123,7 @@ func TestService_GetVersion_invalid_version(t *testing.T) {
 		GrossAmount: 60,
 		CoreDocument: &coredocumentpb.CoreDocument{
 			DocumentIdentifier: tools.RandomSlice(32),
-			CurrentVersion:  currentVersion,
+			CurrentVersion:     currentVersion,
 		},
 	}
 	err := GetRepository().Create(currentVersion, inv)
@@ -142,7 +142,7 @@ func TestService_GetVersion(t *testing.T) {
 		GrossAmount: 60,
 		CoreDocument: &coredocumentpb.CoreDocument{
 			DocumentIdentifier: documentIdentifier,
-			CurrentVersion:  currentVersion,
+			CurrentVersion:     currentVersion,
 		},
 	}
 	err := GetRepository().Create(currentVersion, inv)
