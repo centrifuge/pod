@@ -19,7 +19,12 @@ func GRPCHandler() documentpb.DocumentServiceServer {
 
 // CreateDocumentProof creates precise proofs for the given fields
 func (grpcHandler) CreateDocumentProof(ctx context.Context, createDocumentProofEnvelope *documentpb.CreateDocumentProofRequest) (*documentpb.DocumentProof, error) {
-	panic("implement me")
+	service, err := GetRegistryInstance().LocateService(createDocumentProofEnvelope.Type)
+	if err != nil {
+		return &documentpb.DocumentProof{}, err
+	}
+
+	return service.CreateProofs(createDocumentProofEnvelope.Identifier, createDocumentProofEnvelope.Fields)
 }
 
 // CreateDocumentProof creates precise proofs for the given fields for the given version of the document

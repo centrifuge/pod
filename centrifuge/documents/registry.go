@@ -7,7 +7,7 @@ import (
 
 //ServiceRegistry matches for a provided coreDocument the corresponding service
 type ServiceRegistry struct {
-	services map[string]ModelDeriver
+	services map[string]Service
 	mutex    sync.RWMutex
 }
 
@@ -18,14 +18,14 @@ var registryOnce sync.Once
 func GetRegistryInstance() *ServiceRegistry {
 	registryOnce.Do(func() {
 		registryInstance = &ServiceRegistry{}
-		registryInstance.services = make(map[string]ModelDeriver)
+		registryInstance.services = make(map[string]Service)
 		registryInstance.mutex = sync.RWMutex{}
 	})
 	return registryInstance
 }
 
 // Register can register a service which implements the ModelDeriver interface
-func (s *ServiceRegistry) Register(serviceID string, service ModelDeriver) error {
+func (s *ServiceRegistry) Register(serviceID string, service Service) error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	if _, ok := s.services[serviceID]; ok {
@@ -37,7 +37,7 @@ func (s *ServiceRegistry) Register(serviceID string, service ModelDeriver) error
 }
 
 // LocateService will return the registered service for the embedded document type
-func (s *ServiceRegistry) LocateService(serviceID string) (ModelDeriver, error) {
+func (s *ServiceRegistry) LocateService(serviceID string) (Service, error) {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
 	if s.services[serviceID] == nil {
