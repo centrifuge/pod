@@ -43,7 +43,7 @@ type Service interface {
 	// SaveState updates the model in DB
 	SaveState(inv documents.Model) error
 
-	// CreateProofs creates the pr
+	// CreateProofs creates proof for given fields
 	CreateProofs(fields []string, model documents.Model) (proofs []*proofspb.Proof, err error)
 }
 
