@@ -115,6 +115,24 @@ func TestService_GetLastVersion(t *testing.T) {
 	assert.Equal(t, invLoad2.CoreDocument.NextIdentifier, thirdIdentifier)
 }
 
+func TestService_GetVersion_invalid_version(t *testing.T) {
+	currentIdentifier := tools.RandomSlice(32)
+
+	inv := &InvoiceModel{
+		GrossAmount: 60,
+		CoreDocument: &coredocumentpb.CoreDocument{
+			DocumentIdentifier: tools.RandomSlice(32),
+			CurrentIdentifier:  currentIdentifier,
+		},
+	}
+	err := GetRepository().Create(currentIdentifier, inv)
+	assert.Nil(t, err)
+
+	mod, err := invService.GetVersion(tools.RandomSlice(32), currentIdentifier)
+	assert.EqualError(t, err, "[4]version is not valid for this identifier")
+	assert.Nil(t, mod)
+}
+
 func TestService_GetVersion(t *testing.T) {
 	documentIdentifier := tools.RandomSlice(32)
 	currentIdentifier := tools.RandomSlice(32)
