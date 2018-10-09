@@ -24,7 +24,7 @@ func TestBootstrapper_registerInvoiceService(t *testing.T) {
 	err := (&Bootstrapper{}).Bootstrap(context)
 	assert.Nil(t, err, "Should throw because context is passed")
 
-	//coreDocument embeds a invoice
+	//coreDocument embeds an invoice
 	coreDocument := testingutils.GenerateCoreDocument()
 	registry := documents.GetRegistryInstance()
 
