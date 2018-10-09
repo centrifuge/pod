@@ -22,6 +22,7 @@ func (grpcHandler) CreateDocumentProof(ctx context.Context, createDocumentProofE
 	panic("implement me")
 }
 
+// CreateDocumentProof creates precise proofs for the given fields for the given version of the document
 func (grpcHandler) CreateDocumentProofForVersion(context.Context, *documentpb.CreateDocumentProofForVersionRequest) (*documentpb.DocumentProof, error) {
 	panic("implement me")
 }
