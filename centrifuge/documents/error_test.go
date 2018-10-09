@@ -11,7 +11,7 @@ import (
 
 func TestNewError(t *testing.T) {
 
-	err := NewError("test err msg")
+	err := NewError("test_error", "error msg")
 	assert.Error(t, err, "New should return an error")
 }
 
@@ -51,5 +51,29 @@ func TestErrors(t *testing.T) {
 
 	errArray = Errors(nil)
 	assert.Equal(t, 0, len(errArray), "array should be nil")
+
+}
+
+func TestConvertToMap(t *testing.T) {
+
+	err := NewError("test1", "error msg")
+
+	err = AppendError(err, NewError("test2", "error msg2"))
+
+	errMap := ConvertToMap(err)
+	assert.Equal(t, 2, len(errMap), "map should have two entries")
+
+	err = AppendError(err, fmt.Errorf("standard error"))
+	err = AppendError(err, fmt.Errorf("standard error2"))
+	errMap = ConvertToMap(err)
+	assert.Equal(t, 4, len(errMap), "map should have 4 entries")
+
+	assert.NotEqual(t, "", errMap["error_1"], "first standard error should have id 'error_1'")
+	assert.Equal(t, "", errMap["error_3"], "no standard error with id 'error_3'")
+
+	errMap = ConvertToMap(nil)
+	assert.Equal(t, 0, len(errMap), "map should be empty")
+
+	fmt.Print(errMap)
 
 }
