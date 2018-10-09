@@ -23,7 +23,7 @@ import (
 var apiLog = logging.Logger("invoice-api")
 
 // grpcHandler handles all the invoice document related actions
-// anchoring, sending, proof generation, finding stored invoice document
+// anchoring, sending, finding stored invoice document
 type grpcHandler struct {
 	legacyRepo       storage.LegacyRepository
 	coreDocProcessor coredocumentprocessor.Processor

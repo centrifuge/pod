@@ -17,7 +17,7 @@
   "paths": {
     "/document/{identifier}/proof": {
       "post": {
-        "description": "Creates a list of precise proofs for the specified fields",
+        "description": "Creates a list of precise proofs for the specified fields of the document given by ID",
         "operationId": "CreateDocumentProof",
         "responses": {
           "200": {
@@ -32,8 +32,7 @@
             "name": "identifier",
             "in": "path",
             "required": true,
-            "type": "string",
-            "format": "byte"
+            "type": "string"
           },
           {
             "name": "body",
@@ -48,15 +47,73 @@
           "DocumentService"
         ]
       }
+    },
+    "/document/{identifier}/{version}/proof": {
+      "post": {
+        "description": "Creates a list of precise proofs for the specified fields of the given version of the document given by ID",
+        "operationId": "CreateDocumentProofForVersion",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/documentDocumentProof"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/documentCreateDocumentProofForVersionRequest"
+            }
+          }
+        ],
+        "tags": [
+          "DocumentService"
+        ]
+      }
     }
   },
   "definitions": {
+    "documentCreateDocumentProofForVersionRequest": {
+      "type": "object",
+      "properties": {
+        "identifier": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
     "documentCreateDocumentProofRequest": {
       "type": "object",
       "properties": {
         "identifier": {
-          "type": "string",
-          "format": "byte"
+          "type": "string"
         },
         "type": {
           "type": "string"
@@ -72,9 +129,8 @@
     "documentDocumentProof": {
       "type": "object",
       "properties": {
-        "identifier": {
-          "type": "string",
-          "format": "byte"
+        "header": {
+          "$ref": "#/definitions/documentResponseHeader"
         },
         "field_proofs": {
           "type": "array",
@@ -83,6 +139,21 @@
           }
         }
       }
+    },
+    "documentResponseHeader": {
+      "type": "object",
+      "properties": {
+        "document_id": {
+          "type": "string"
+        },
+        "version_id": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        }
+      },
+      "title": "ResponseHeader contains a set of common fields for most documents"
     },
     "proofsMerkleHash": {
       "type": "object",
