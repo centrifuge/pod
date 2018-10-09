@@ -35,6 +35,7 @@ func Wrap(invDoc *invoicepb.InvoiceDocument) (*Invoice, error) {
 }
 
 // New returns a new Invoice with salts, merkle root, and coredocument generated
+// TODO Deprecated
 func New(invDoc *invoicepb.InvoiceDocument, collaborators [][]byte) (*Invoice, error) {
 	inv, err := Wrap(invDoc)
 	if err != nil {

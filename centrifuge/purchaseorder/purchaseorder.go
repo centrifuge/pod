@@ -31,6 +31,7 @@ func Wrap(poDoc *purchaseorderpb.PurchaseOrderDocument) (*PurchaseOrder, error) 
 }
 
 // New generates a new purchase order and generate salts, merkle root and coredocument
+// TODO deprecated
 func New(poDoc *purchaseorderpb.PurchaseOrderDocument, collaborators [][]byte) (*PurchaseOrder, error) {
 	po, err := Wrap(poDoc)
 	if err != nil {
