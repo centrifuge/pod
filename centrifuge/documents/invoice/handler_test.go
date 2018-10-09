@@ -395,6 +395,26 @@ func TestGrpcHandler_Create(t *testing.T) {
 	assert.NotNil(t, res, "must be non nil")
 	assert.Equal(t, res, response)
 }
+
+func TestGrpcHandler_Get_invalid_input(t *testing.T) {
+	identifier := "0x01010101"
+	identifierBytes, _ := hexutil.Decode(identifier)
+	h := getHandler()
+	srv := h.service.(*mockService)
+	payload := &clientinvoicepb.GetRequest{Identifier: "invalid"}
+
+	res, err := h.Get(context.Background(), payload)
+	assert.Nil(t, res)
+	assert.EqualError(t, err, "identifier is an invalid hex string: hex string without 0x prefix")
+
+	payload.Identifier = identifier
+	srv.On("GetLastVersion", identifierBytes).Return(nil, fmt.Errorf("not found"))
+	res, err = h.Get(context.Background(), payload)
+	srv.AssertExpectations(t)
+	assert.Nil(t, res)
+	assert.EqualError(t, err, "document not found: not found")
+}
+
 func TestGrpcHandler_Get(t *testing.T) {
 	identifier := "0x01010101"
 	identifierBytes, _ := hexutil.Decode(identifier)
@@ -412,18 +432,42 @@ func TestGrpcHandler_Get(t *testing.T) {
 	assert.NotNil(t, res, "must be non nil")
 	assert.Equal(t, res, response)
 }
+
+func TestGrpcHandler_GetVersion_invalid_input(t *testing.T) {
+	h := getHandler()
+	srv := h.service.(*mockService)
+	payload := &clientinvoicepb.GetVersionRequest{Identifier: "0x0x", Version: "0x00"}
+	res, err := h.GetVersion(context.Background(), payload)
+	assert.EqualError(t, err, "identifier is invalid: invalid hex string")
+	payload.Version = "0x0x"
+	payload.Identifier = "0x01"
+
+	res, err = h.GetVersion(context.Background(), payload)
+	assert.EqualError(t, err, "version is invalid: invalid hex string")
+	payload.Version = "0x00"
+	payload.Identifier = "0x01"
+
+	mockErr := fmt.Errorf("not found")
+	srv.On("GetVersion", []byte{0x01}, []byte{0x00}).Return(nil, mockErr)
+	res, err = h.GetVersion(context.Background(), payload)
+	srv.AssertExpectations(t)
+	assert.EqualError(t, err, "document not found: not found")
+	assert.Nil(t, res)
+}
+
 func TestGrpcHandler_GetVersion(t *testing.T) {
 	h := getHandler()
 	srv := h.service.(*mockService)
 	model := new(mockModel)
 	payload := &clientinvoicepb.GetVersionRequest{Identifier: "0x01", Version: "0x00"}
+
 	response := &clientinvoicepb.InvoiceResponse{}
 	srv.On("GetVersion", []byte{0x01}, []byte{0x00}).Return(model, nil)
 	srv.On("DeriveInvoiceResponse", model).Return(response, nil)
 	res, err := h.GetVersion(context.Background(), payload)
 	model.AssertExpectations(t)
 	srv.AssertExpectations(t)
-	assert.Nil(t, err, "must be nil")
-	assert.NotNil(t, res, "must be non nil")
+	assert.Nil(t, err)
+	assert.NotNil(t, res)
 	assert.Equal(t, res, response)
 }

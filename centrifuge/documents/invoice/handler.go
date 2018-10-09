@@ -224,11 +224,11 @@ func (h *grpcHandler) Update(context.Context, *clientinvoicepb.InvoiceUpdatePayl
 func (h *grpcHandler) GetVersion(ctx context.Context, getVersionRequest *clientinvoicepb.GetVersionRequest) (*clientinvoicepb.InvoiceResponse, error) {
 	identifier, err := hexutil.Decode(getVersionRequest.Identifier)
 	if err != nil {
-		return nil, centerrors.Wrap(err, "identifier is an invalid hex string")
+		return nil, centerrors.Wrap(err, "identifier is invalid")
 	}
 	version, err := hexutil.Decode(getVersionRequest.Version)
 	if err != nil {
-		return nil, centerrors.Wrap(err, "version is an in invalid hex string")
+		return nil, centerrors.Wrap(err, "version is invalid")
 	}
 	doc, err := h.service.GetVersion(identifier, version)
 	if err != nil {
