@@ -385,8 +385,13 @@ func TestCentIDFromString(t *testing.T) {
 		},
 
 		{
-			id:  "some random",
+			id:  "0xsome random",
 			err: fmt.Errorf("failed to decode id"),
+		},
+
+		{
+			id:  "some random",
+			err: fmt.Errorf("hex string without 0x"),
 		},
 	}
 

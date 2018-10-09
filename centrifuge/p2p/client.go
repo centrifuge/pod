@@ -77,10 +77,15 @@ func (d *defaultClient) OpenClient(target string) (p2ppb.P2PServiceClient, error
 
 // getSignatureForDocument requests the target node to sign the document
 func getSignatureForDocument(ctx context.Context, doc coredocumentpb.CoreDocument, client p2ppb.P2PServiceClient, receiverCentId identity.CentID) (*p2ppb.SignatureResponse, error) {
+	senderId, err := config.Config.GetIdentityId()
+	if err != nil {
+		return nil, err
+	}
+
 	header := p2ppb.CentrifugeHeader{
 		NetworkIdentifier:  config.Config.GetNetworkID(),
 		CentNodeVersion:    version.GetVersion().String(),
-		SenderCentrifugeId: config.Config.GetIdentityId(),
+		SenderCentrifugeId: senderId,
 	}
 
 	req := &p2ppb.SignatureRequest{

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
@@ -26,6 +27,7 @@ func createPayload() *clientinvoicepb.InvoiceCreatePayload {
 			Recipient:   "0x010203040506",
 			Payee:       "0x010203020406",
 			GrossAmount: 42,
+			ExtraData:   "0x",
 			Currency:    "EUR",
 		},
 	}
@@ -72,6 +74,89 @@ func TestService_DeriveFromPayload(t *testing.T) {
 	assert.NotNil(t, receivedCoreDocument.EmbeddedData, "embeddedData should be field")
 }
 
+func TestService_GetLastVersion(t *testing.T) {
+	documentIdentifier := tools.RandomSlice(32)
+	nextIdentifier := tools.RandomSlice(32)
+	thirdIdentifier := tools.RandomSlice(32)
+	inv1 := &InvoiceModel{
+		GrossAmount: 60,
+		CoreDocument: &coredocumentpb.CoreDocument{
+			DocumentIdentifier: documentIdentifier,
+			CurrentIdentifier:  documentIdentifier,
+			NextIdentifier:     nextIdentifier,
+		},
+	}
+	err := GetRepository().Create(documentIdentifier, inv1)
+	assert.Nil(t, err)
+
+	mod1, err := invService.GetLastVersion(documentIdentifier)
+	assert.Nil(t, err)
+
+	invLoad1, _ := mod1.(*InvoiceModel)
+	assert.Equal(t, invLoad1.CoreDocument.CurrentIdentifier, documentIdentifier)
+
+	inv2 := &InvoiceModel{
+		GrossAmount: 60,
+		CoreDocument: &coredocumentpb.CoreDocument{
+			DocumentIdentifier: documentIdentifier,
+			CurrentIdentifier:  nextIdentifier,
+			NextIdentifier:     thirdIdentifier,
+		},
+	}
+
+	err = GetRepository().Create(nextIdentifier, inv2)
+	assert.Nil(t, err)
+
+	mod2, err := invService.GetLastVersion(documentIdentifier)
+	assert.Nil(t, err)
+
+	invLoad2, _ := mod2.(*InvoiceModel)
+	assert.Equal(t, invLoad2.CoreDocument.CurrentIdentifier, nextIdentifier)
+	assert.Equal(t, invLoad2.CoreDocument.NextIdentifier, thirdIdentifier)
+}
+
+func TestService_GetVersion_invalid_version(t *testing.T) {
+	currentIdentifier := tools.RandomSlice(32)
+
+	inv := &InvoiceModel{
+		GrossAmount: 60,
+		CoreDocument: &coredocumentpb.CoreDocument{
+			DocumentIdentifier: tools.RandomSlice(32),
+			CurrentIdentifier:  currentIdentifier,
+		},
+	}
+	err := GetRepository().Create(currentIdentifier, inv)
+	assert.Nil(t, err)
+
+	mod, err := invService.GetVersion(tools.RandomSlice(32), currentIdentifier)
+	assert.EqualError(t, err, "[4]version is not valid for this identifier")
+	assert.Nil(t, mod)
+}
+
+func TestService_GetVersion(t *testing.T) {
+	documentIdentifier := tools.RandomSlice(32)
+	currentIdentifier := tools.RandomSlice(32)
+
+	inv := &InvoiceModel{
+		GrossAmount: 60,
+		CoreDocument: &coredocumentpb.CoreDocument{
+			DocumentIdentifier: documentIdentifier,
+			CurrentIdentifier:  currentIdentifier,
+		},
+	}
+	err := GetRepository().Create(currentIdentifier, inv)
+	assert.Nil(t, err)
+
+	mod, err := invService.GetVersion(documentIdentifier, currentIdentifier)
+	assert.Nil(t, err)
+	loadInv, _ := mod.(*InvoiceModel)
+	assert.Equal(t, loadInv.CoreDocument.CurrentIdentifier, currentIdentifier)
+	assert.Equal(t, loadInv.CoreDocument.DocumentIdentifier, documentIdentifier)
+
+	mod, err = invService.GetVersion(documentIdentifier, []byte{})
+	assert.Error(t, err)
+}
+
 func TestService_Create_validation_fail(t *testing.T) {
 	// fail Validations
 	ctx := context.Background()
@@ -94,7 +179,6 @@ func TestService_Create_db_fail(t *testing.T) {
 	assert.NotNil(t, inv)
 	inv.(*InvoiceModel).CoreDocument = cd
 
-	// successful creation
 	_, err = invService.Create(ctx, inv)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "document already exists")
@@ -155,19 +239,43 @@ func TestService_Create(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestService_DeriveCreateResponse(t *testing.T) {
+func TestService_DeriveInvoiceData(t *testing.T) {
 	// some random model
-	_, err := invService.DeriveCreateResponse(&mockModel{})
+	_, err := invService.DeriveInvoiceData(&mockModel{})
 	assert.Error(t, err, "Derive must fail")
 
 	// success
 	payload := createPayload()
 	inv, err := invService.DeriveFromCreatePayload(payload)
 	assert.Nil(t, err, "must be non nil")
-	data, err := invService.DeriveCreateResponse(inv)
+	data, err := invService.DeriveInvoiceData(inv)
 	assert.Nil(t, err, "Derive must succeed")
 	assert.NotNil(t, data, "data must be non nil")
-	assert.Equal(t, data, payload.Data, "data mismatch")
+}
+
+func TestService_DeriveInvoiceResponse(t *testing.T) {
+	model := &mockModel{
+		CoreDocument: &coredocumentpb.CoreDocument{
+			DocumentIdentifier: []byte{},
+		},
+	}
+	// some random model
+	_, err := invService.DeriveInvoiceResponse(model)
+	assert.Error(t, err, "Derive must fail")
+
+	// success
+	payload := createPayload()
+	inv1, err := invService.DeriveFromCreatePayload(payload)
+	assert.Nil(t, err, "must be non nil")
+	inv, ok := inv1.(*InvoiceModel)
+	assert.True(t, ok)
+	inv.CoreDocument = &coredocumentpb.CoreDocument{
+		DocumentIdentifier: []byte{},
+	}
+	resp, err := invService.DeriveInvoiceResponse(inv)
+	assert.Nil(t, err, "Derive must succeed")
+	assert.NotNil(t, resp, "data must be non nil")
+	assert.Equal(t, resp.Data, payload.Data, "data mismatch")
 }
 
 func TestService_SaveState(t *testing.T) {

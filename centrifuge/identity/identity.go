@@ -3,7 +3,6 @@ package identity
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"math/big"
@@ -84,7 +83,7 @@ func (c CentID) Equal(other CentID) bool {
 }
 
 func (c CentID) String() string {
-	return base64.StdEncoding.EncodeToString(c[:])
+	return hexutil.Encode(c[:])
 }
 
 func (c CentID) MarshalBinary() (data []byte, err error) {
@@ -146,20 +145,6 @@ type Service interface {
 	LookupIdentityForID(centrifugeID CentID) (id Identity, err error)
 	CreateIdentity(centrifugeID CentID) (id Identity, confirmations chan *WatchIdentity, err error)
 	CheckIdentityExists(centrifugeID CentID) (exists bool, err error)
-}
-
-// CentrifugeIdStringToSlice takes a string and decodes it using base64 to convert it into a slice
-// of length 32.
-func CentrifugeIdStringToSlice(s string) (id CentID, err error) {
-	centBytes, err := base64.StdEncoding.DecodeString(s)
-	if err != nil {
-		return [CentIDLength]byte{}, err
-	}
-	centId, err := ToCentID(centBytes)
-	if err != nil {
-		return [CentIDLength]byte{}, err
-	}
-	return centId, nil
 }
 
 // GetClientP2PURL returns the p2p url associated with the centID

@@ -211,26 +211,8 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientinvoicepb.InvoiceCr
 		return nil, err
 	}
 
-	coreDoc, err := doc.PackCoreDocument()
-	if err != nil {
-		return nil, centerrors.New(code.Unknown, err.Error())
-	}
-
-	header := &clientinvoicepb.ResponseHeader{
-		DocumentId:    hexutil.Encode(coreDoc.DocumentIdentifier),
-		VersionId:     hexutil.Encode(coreDoc.CurrentIdentifier),
-		Collaborators: req.Collaborators,
-	}
-
-	data, err := h.service.DeriveCreateResponse(doc)
-	if err != nil {
-		return nil, err
-	}
-
-	return &clientinvoicepb.InvoiceResponse{
-		Header: header,
-		Data:   data,
-	}, nil
+	invoiceResponse, err := h.service.DeriveInvoiceResponse(doc)
+	return invoiceResponse, err
 }
 
 // Update handles the document update
@@ -239,11 +221,39 @@ func (h *grpcHandler) Update(context.Context, *clientinvoicepb.InvoiceUpdatePayl
 }
 
 // GetVersion returns the requested version of the document
-func (h *grpcHandler) GetVersion(context.Context, *clientinvoicepb.GetVersionRequest) (*clientinvoicepb.InvoiceResponse, error) {
-	return nil, fmt.Errorf("not implemented yet")
+func (h *grpcHandler) GetVersion(ctx context.Context, getVersionRequest *clientinvoicepb.GetVersionRequest) (*clientinvoicepb.InvoiceResponse, error) {
+	identifier, err := hexutil.Decode(getVersionRequest.Identifier)
+	if err != nil {
+		return nil, centerrors.Wrap(err, "identifier is invalid")
+	}
+	version, err := hexutil.Decode(getVersionRequest.Version)
+	if err != nil {
+		return nil, centerrors.Wrap(err, "version is invalid")
+	}
+	doc, err := h.service.GetVersion(identifier, version)
+	if err != nil {
+		return nil, centerrors.Wrap(err, "document not found")
+	}
+	resp, err := h.service.DeriveInvoiceResponse(doc)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
 }
 
 // Get returns the invoice the latest version of the document with given identifier
-func (h *grpcHandler) Get(context.Context, *clientinvoicepb.GetRequest) (*clientinvoicepb.InvoiceResponse, error) {
-	return nil, fmt.Errorf("not implemented yet")
+func (h *grpcHandler) Get(ctx context.Context, getRequest *clientinvoicepb.GetRequest) (*clientinvoicepb.InvoiceResponse, error) {
+	identifier, err := hexutil.Decode(getRequest.Identifier)
+	if err != nil {
+		return nil, centerrors.Wrap(err, "identifier is an invalid hex string")
+	}
+	doc, err := h.service.GetLastVersion(identifier)
+	if err != nil {
+		return nil, centerrors.Wrap(err, "document not found")
+	}
+	resp, err := h.service.DeriveInvoiceResponse(doc)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
 }

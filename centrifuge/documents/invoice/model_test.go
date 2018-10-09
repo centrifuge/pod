@@ -136,10 +136,10 @@ func TestInvoiceModel_getClientData(t *testing.T) {
 
 	data := inv.getClientData()
 	assert.NotNil(t, data, "invoice data should not be nil")
-	assert.Equal(t, invData.GrossAmount, data.GrossAmount, "gross amount must match")
-	assert.Equal(t, hexutil.Encode(inv.Recipient[:]), data.Recipient, "recipient should match")
-	assert.Equal(t, hexutil.Encode(inv.Sender[:]), data.Sender, "sender should match")
-	assert.Equal(t, hexutil.Encode(inv.Payee[:]), data.Payee, "payee should match")
+	assert.Equal(t, data.GrossAmount, data.GrossAmount, "gross amount must match")
+	assert.Equal(t, data.Recipient, hexutil.Encode(inv.Recipient[:]), "recipient should match")
+	assert.Equal(t, data.Sender, hexutil.Encode(inv.Sender[:]), "sender should match")
+	assert.Equal(t, data.Payee, hexutil.Encode(inv.Payee[:]), "payee should match")
 }
 
 func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
@@ -184,6 +184,7 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 	assert.NotNil(t, inv.Sender)
 	assert.NotNil(t, inv.Payee)
 
+	data.ExtraData = "0x010203020301"
 	collabs := []string{"0x010102040506", "some id"}
 	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data, Collaborators: collabs})
 	assert.Contains(t, err.Error(), "failed to decode collaborator")

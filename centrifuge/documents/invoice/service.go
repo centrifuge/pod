@@ -1,6 +1,7 @@
 package invoice
 
 import (
+	"bytes"
 	"context"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -9,6 +10,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/processor"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 // Service defines specific functions for invoice
@@ -22,8 +24,17 @@ type Service interface {
 	// Create validates and persists invoice Model and returns a Updated model
 	Create(ctx context.Context, inv documents.Model) (documents.Model, error)
 
-	// DeriveCreateResponse returns the invoice data as client data
-	DeriveCreateResponse(inv documents.Model) (*clientinvoicepb.InvoiceData, error)
+	// DeriveInvoiceData returns the invoice data as client data
+	DeriveInvoiceData(inv documents.Model) (*clientinvoicepb.InvoiceData, error)
+
+	// DeriveInvoiceResponse returns the invoice model in our standard client format
+	DeriveInvoiceResponse(inv documents.Model) (*clientinvoicepb.InvoiceResponse, error)
+
+	// GetLastVersion reads a document from the database
+	GetLastVersion(identifier []byte) (documents.Model, error)
+
+	// GetVersion reads a document from the database
+	GetVersion(identifier []byte, version []byte) (documents.Model, error)
 
 	// SaveState updates the model in DB
 	SaveState(inv documents.Model) error
@@ -123,8 +134,76 @@ func (s service) Create(ctx context.Context, model documents.Model) (documents.M
 	return inv, nil
 }
 
-// DeriveCreateResponse returns create response from invoice model
-func (s service) DeriveCreateResponse(doc documents.Model) (*clientinvoicepb.InvoiceData, error) {
+// GetVersion returns an invoice for a given version
+func (s service) GetVersion(identifier []byte, version []byte) (doc documents.Model, err error) {
+	doc = new(InvoiceModel)
+	err = s.repo.LoadByID(version, doc)
+	if err != nil {
+		return nil, err
+	}
+
+	inv, ok := doc.(*InvoiceModel)
+	if !ok {
+		return nil, centerrors.New(code.DocumentInvalid, "not an invoice object")
+	}
+
+	if !bytes.Equal(inv.CoreDocument.DocumentIdentifier, identifier) {
+		return nil, centerrors.New(code.DocumentInvalid, "version is not valid for this identifier")
+	}
+	return
+}
+
+// GetLastVersion returns the last known version of an invoice
+func (s service) GetLastVersion(identifier []byte) (doc documents.Model, err error) {
+	doc, err = s.GetVersion(identifier, identifier)
+	if err != nil {
+		return nil, centerrors.Wrap(err, "document not found")
+	}
+	inv := doc.(*InvoiceModel)
+	nextVersion := inv.CoreDocument.NextIdentifier
+	for nextVersion != nil {
+		doc, err = s.GetVersion(identifier, nextVersion)
+		if err != nil {
+			return inv, nil
+		} else {
+			inv = doc.(*InvoiceModel)
+			nextVersion = inv.CoreDocument.NextIdentifier
+		}
+	}
+	return inv, nil
+}
+
+// DeriveInvoiceResponse returns create response from invoice model
+func (s service) DeriveInvoiceResponse(doc documents.Model) (*clientinvoicepb.InvoiceResponse, error) {
+	inv, ok := doc.(*InvoiceModel)
+	if !ok {
+		return nil, centerrors.New(code.DocumentInvalid, "document of invalid type")
+	}
+	collaborators := make([]string, len(inv.Collaborators))
+	for i, c := range inv.Collaborators {
+		collaborators[i] = c.String()
+	}
+
+	header := &clientinvoicepb.ResponseHeader{
+		DocumentId:    hexutil.Encode(inv.CoreDocument.DocumentIdentifier),
+		VersionId:     hexutil.Encode(inv.CoreDocument.CurrentIdentifier),
+		Collaborators: collaborators,
+	}
+
+	data, err := s.DeriveInvoiceData(doc)
+	if err != nil {
+		return nil, err
+	}
+
+	return &clientinvoicepb.InvoiceResponse{
+		Header: header,
+		Data:   data,
+	}, nil
+
+}
+
+// DeriveInvoiceData returns create response from invoice model
+func (s service) DeriveInvoiceData(doc documents.Model) (*clientinvoicepb.InvoiceData, error) {
 	inv, ok := doc.(*InvoiceModel)
 	if !ok {
 		return nil, centerrors.New(code.DocumentInvalid, "document of invalid type")
