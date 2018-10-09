@@ -47,7 +47,7 @@ func (s *PurchaseOrderDocumentService) anchorPurchaseOrderDocument(ctx context.C
 		return nil, err
 	}
 
-	err = s.CoreDocumentProcessor.Anchor(ctx, coreDoc, collaborators)
+	err = s.CoreDocumentProcessor.Anchor(ctx, coreDoc, collaborators, nil)
 	if err != nil {
 		log.Error(err)
 		return nil, err

@@ -60,8 +60,8 @@ func (id *EthereumIdentity) CentrifugeID(cenId CentID) {
 }
 
 func (id *EthereumIdentity) CentrifugeIDBytes() CentID {
-	var idBytes [CentIDByteLength]byte
-	copy(idBytes[:], id.CentrifugeId[:CentIDByteLength])
+	var idBytes [CentIDLength]byte
+	copy(idBytes[:], id.CentrifugeId[:CentIDLength])
 	return idBytes
 }
 
