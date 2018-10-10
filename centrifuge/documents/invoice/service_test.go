@@ -168,7 +168,7 @@ func TestService_Create_unknown_type_fail(t *testing.T) {
 func TestService_Create_validation_fail(t *testing.T) {
 	// fail Validations
 	ctx := context.Background()
-	_, err := invService.Create(ctx, &InvoiceModel{})
+	_, err := invService.Create(ctx, &InvoiceModel{CoreDocument: &coredocumentpb.CoreDocument{}})
 	assert.Error(t, err, "must be non nil")
 	assert.Contains(t, err.Error(), "currency is invalid")
 }

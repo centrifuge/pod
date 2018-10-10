@@ -27,8 +27,9 @@ type PurchaseOrderDocumentService struct {
 }
 
 // anchorPurchaseOrderDocument anchors the given purchaseorder document and returns the anchor details
+// TODO deprecated
 func (s *PurchaseOrderDocumentService) anchorPurchaseOrderDocument(ctx context.Context, doc *purchaseorderpb.PurchaseOrderDocument, collaborators [][]byte) (*purchaseorderpb.PurchaseOrderDocument, error) {
-	orderDoc, err := purchaseorder.New(doc)
+	orderDoc, err := purchaseorder.New(doc, collaborators)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -46,7 +47,7 @@ func (s *PurchaseOrderDocumentService) anchorPurchaseOrderDocument(ctx context.C
 		log.Error(err)
 		return nil, err
 	}
-	coreDoc.Collaborators = collaborators
+
 	err = s.CoreDocumentProcessor.Anchor(ctx, coreDoc, nil)
 	if err != nil {
 		log.Error(err)
