@@ -36,6 +36,7 @@ func GetDataProofHashes(document *coredocumentpb.CoreDocument) (hashes [][]byte,
 	return append(signingProof.SortedHashes, rootProof.SortedHashes...), err
 }
 
+// CalculateSigningRoot calculates the signing root of the core document
 func CalculateSigningRoot(document *coredocumentpb.CoreDocument) error {
 	valid, errMsg, errs := Validate(document) // TODO: Validation
 	if !valid {
@@ -46,18 +47,22 @@ func CalculateSigningRoot(document *coredocumentpb.CoreDocument) error {
 	if err != nil {
 		return err
 	}
+
 	document.SigningRoot = tree.RootHash()
 	return nil
 }
 
+// CalculateDocumentRoot calculates the document root of the core document
 func CalculateDocumentRoot(document *coredocumentpb.CoreDocument) error {
 	if len(document.SigningRoot) != 32 {
 		return centerrors.New(code.DocumentInvalid, "signing root invalid")
 	}
+
 	tree, err := GetDocumentRootTree(document)
 	if err != nil {
 		return err
 	}
+
 	document.DocumentRoot = tree.RootHash()
 	return nil
 }
@@ -248,7 +253,7 @@ func InitIdentifiers(document coredocumentpb.CoreDocument) (coredocumentpb.CoreD
 // PrepareNewVersion creates a copy of the passed coreDocument with the version fields updated
 func PrepareNewVersion(document coredocumentpb.CoreDocument) (*coredocumentpb.CoreDocument, error) {
 	newDocument := &coredocumentpb.CoreDocument{}
-	fillSalts(newDocument)
+	FillSalts(newDocument)
 	if document.CurrentVersion == nil {
 		return nil, fmt.Errorf("coredocument.CurrentVersion is nil")
 	}
@@ -269,11 +274,11 @@ func PrepareNewVersion(document coredocumentpb.CoreDocument) (*coredocumentpb.Co
 // New returns a new core document from the proto message
 func New() *coredocumentpb.CoreDocument {
 	doc, _ := InitIdentifiers(coredocumentpb.CoreDocument{})
-	fillSalts(&doc)
 	return &doc
 }
 
-func fillSalts(doc *coredocumentpb.CoreDocument) {
+// FillSalts of coredocument current state for proof tree creation
+func FillSalts(doc *coredocumentpb.CoreDocument) {
 	salts := &coredocumentpb.CoreDocumentSalts{}
 	proofs.FillSalts(doc, salts)
 	doc.CoredocumentSalts = salts

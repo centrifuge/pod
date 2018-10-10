@@ -211,6 +211,8 @@ func (i *InvoiceModel) InitInvoiceInput(payload *clientinvoicepb.InvoiceCreatePa
 		i.CoreDocument.Collaborators = append(i.CoreDocument.Collaborators, cidb[:])
 	}
 
+	coredocument.FillSalts(i.CoreDocument)
+
 	return nil
 }
 
@@ -265,11 +267,6 @@ func (i *InvoiceModel) getInvoiceSalts(invoiceData *invoicepb.InvoiceData) *invo
 // PackCoreDocument packs the InvoiceModel into a Core Document
 // If the, InvoiceModel is new, it creates a valid identifiers
 func (i *InvoiceModel) PackCoreDocument() (*coredocumentpb.CoreDocument, error) {
-	if i.CoreDocument == nil {
-		// this is the new invoice create. so create identifiers
-		i.CoreDocument = coredocument.New()
-	}
-
 	invoiceData := i.createP2PProtobuf()
 	serializedInvoice, err := proto.Marshal(invoiceData)
 	if err != nil {

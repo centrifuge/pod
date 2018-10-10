@@ -28,7 +28,7 @@ func createPayload() *clientinvoicepb.InvoiceCreatePayload {
 			Recipient:   "0x010203040506",
 			Payee:       "0x010203020406",
 			GrossAmount: 42,
-			ExtraData:   "0x",
+			ExtraData:   "0x01020302010203",
 			Currency:    "EUR",
 		},
 		Collaborators: []string{"0x010101010101"},
@@ -149,10 +149,17 @@ func TestService_GetVersion(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestService_Create_unknown_type_fail(t *testing.T) {
+	ctx := context.Background()
+	_, err := invService.Create(ctx, &mockModel{})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "unknown document type")
+}
+
 func TestService_Create_validation_fail(t *testing.T) {
 	// fail Validations
 	ctx := context.Background()
-	_, err := invService.Create(ctx, &InvoiceModel{})
+	_, err := invService.Create(ctx, &InvoiceModel{CoreDocument: &coredocumentpb.CoreDocument{}})
 	assert.Error(t, err, "must be non nil")
 	assert.Contains(t, err.Error(), "currency is invalid")
 }

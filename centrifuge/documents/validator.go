@@ -17,8 +17,9 @@ type ValidatorGroup []Validator
 func (group ValidatorGroup) Validate(oldState Model, newState Model) (errors error) {
 
 	for _, v := range group {
-		err := v.Validate(oldState, newState)
-		errors = AppendError(errors, err)
+		if err := v.Validate(oldState, newState); err != nil {
+			errors = AppendError(errors, err)
+		}
 	}
 	return errors
 }

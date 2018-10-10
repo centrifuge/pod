@@ -36,7 +36,8 @@ func Wrap(invDoc *invoicepb.InvoiceDocument) (*Invoice, error) {
 }
 
 // New returns a new Invoice with salts, merkle root, and coredocument generated
-func New(invDoc *invoicepb.InvoiceDocument) (*Invoice, error) {
+// Deprecated
+func New(invDoc *invoicepb.InvoiceDocument, collaborators [][]byte) (*Invoice, error) {
 	inv, err := Wrap(invDoc)
 	if err != nil {
 		return nil, err
@@ -51,6 +52,8 @@ func New(invDoc *invoicepb.InvoiceDocument) (*Invoice, error) {
 	if inv.Document.CoreDocument == nil {
 		inv.Document.CoreDocument = coredocument.New()
 	}
+	inv.Document.CoreDocument.Collaborators = collaborators
+	coredocument.FillSalts(inv.Document.CoreDocument)
 
 	err = inv.CalculateMerkleRoot()
 	if err != nil {

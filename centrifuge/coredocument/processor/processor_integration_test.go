@@ -17,7 +17,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
-	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -44,16 +43,13 @@ func TestDefaultProcessor_Anchor(t *testing.T) {
 }
 
 func createDummyCD() *coredocumentpb.CoreDocument {
-	cd := coredocumentpb.CoreDocument{DocumentIdentifier: tools.RandomSlice(32)}
-	cd, _ = coredocument.InitIdentifiers(cd)
+	cd := coredocument.New()
 	randomRoot := anchors.NewRandomDocRoot()
 	cd.DataRoot = randomRoot[:]
 	cd.Collaborators = [][]byte{
 		tools.RandomSlice(identity.CentIDLength),
 		tools.RandomSlice(identity.CentIDLength),
 	}
-	cds := &coredocumentpb.CoreDocumentSalts{}
-	proofs.FillSalts(&cd, cds)
-	cd.CoredocumentSalts = cds
-	return &cd
+	coredocument.FillSalts(cd)
+	return cd
 }
