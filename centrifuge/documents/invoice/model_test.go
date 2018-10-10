@@ -17,7 +17,8 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
-)
+	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
+	)
 
 func TestInvoice_FromCoreDocuments_invalidParameter(t *testing.T) {
 	invoiceModel := &InvoiceModel{}
@@ -210,4 +211,31 @@ func TestInvoiceModel_calculateDataRoot(t *testing.T) {
 	assert.NotNil(t, m.CoreDocument, "coredoc must be created")
 	assert.NotNil(t, m.InvoiceSalts, "salts must be created")
 	assert.NotNil(t, m.CoreDocument.DataRoot, "data root must be filled")
+}
+
+func TestInvoiceModel_createProofs(t *testing.T) {
+	i := InvoiceModel{InvoiceNumber: "3213121", NetAmount: 2, GrossAmount: 2}
+	i.calculateDataRoot()
+	// get the coreDoc for the invoice
+	corDoc, err := i.PackCoreDocument()
+	coredocument.CalculateSigningRoot(corDoc)
+	coredocument.CalculateDocumentRoot(corDoc)
+
+	i.UnpackCoreDocument(corDoc)
+	corDoc, proof, err := i.createProofs([]string{"invoice_number"})
+	assert.Nil(t, err)
+	assert.NotNil(t, proof)
+	assert.NotNil(t, corDoc)
+	tree, _ := coredocument.GetDocumentRootTree(corDoc)
+	valid, err := tree.ValidateProof(proof[0])
+	assert.Nil(t, err)
+	assert.True(t, valid)
+}
+
+func TestInvoiceModel_getDocumentDataTree(t *testing.T) {
+	i := InvoiceModel{InvoiceNumber: "3213121", NetAmount: 2, GrossAmount: 2}
+	tree, err := i.getDocumentDataTree()
+	assert.Nil(t, err, "tree should be generated without error")
+	_, leaf :=  tree.GetLeafByProperty("invoice_number")
+	assert.Equal(t, "invoice_number", leaf.Property)
 }

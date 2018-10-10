@@ -124,7 +124,7 @@ func (s service) Create(ctx context.Context, model documents.Model) (documents.M
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
 	}
 
-	// create data root
+	// create data root, has to be done at the model level to access fields
 	inv := model.(*InvoiceModel)
 	err = inv.calculateDataRoot()
 	if err != nil {

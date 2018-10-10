@@ -353,16 +353,10 @@ func (i *InvoiceModel) Type() reflect.Type {
 
 // calculateDataRoot calculates the data root and sets the root to core document
 func (i *InvoiceModel) calculateDataRoot() error {
-	pb := i.createP2PProtobuf()
-	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: sha256.New()})
-	if err := t.AddLeavesFromDocument(pb, i.getInvoiceSalts(pb)); err != nil {
-		return fmt.Errorf("failed to add leaves from invoice: %v", err)
+	t, err := i.getDocumentDataTree()
+	if err != nil {
+		return fmt.Errorf("calculateDataRoot error %v",  err)
 	}
-
-	if err := t.Generate(); err != nil {
-		return fmt.Errorf("failed to generate merkle root: %v", err)
-	}
-
 	if i.CoreDocument == nil {
 		i.CoreDocument = coredocument.New()
 	}
@@ -377,13 +371,11 @@ func (i *InvoiceModel) getDocumentDataTree() (tree *proofs.DocumentTree, err err
 	invoiceData := i.createP2PProtobuf()
 	err = t.AddLeavesFromDocument(invoiceData, i.getInvoiceSalts(invoiceData))
 	if err != nil {
-		log.Error("getDocumentDataTree:", err)
-		return nil, err
+		return nil, fmt.Errorf("getDocumentDataTree error %v",  err)
 	}
 	err = t.Generate()
 	if err != nil {
-		log.Error("getDocumentDataTree:", err)
-		return nil, err
+		return nil, fmt.Errorf("getDocumentDataTree error %v",  err)
 	}
 	return &t, nil
 }
@@ -392,25 +384,21 @@ func (i *InvoiceModel) getDocumentDataTree() (tree *proofs.DocumentTree, err err
 func (i *InvoiceModel) createProofs(fields []string) (coreDoc *coredocumentpb.CoreDocument, proofs []*proofspb.Proof, err error) {
 	coreDoc, err = i.PackCoreDocument()
 	if err != nil {
-		log.Error(err)
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("createProofs error %v",  err)
 	}
 	dataRootHashes, err := coredocument.GetDataProofHashes(coreDoc)
 	if err != nil {
-		log.Error(err)
-		return coreDoc, nil, err
+		return coreDoc, nil, fmt.Errorf("createProofs error %v",  err)
 	}
 
 	tree, err := i.getDocumentDataTree()
 	if err != nil {
-		log.Error(err)
-		return coreDoc, nil, err
+		return coreDoc, nil, fmt.Errorf("createProofs error %v",  err)
 	}
 	for _, field := range fields {
 		proof, err := tree.CreateProof(field)
 		if err != nil {
-			log.Error(err)
-			return coreDoc, nil, err
+			return coreDoc, nil, fmt.Errorf("createProofs error %v",  err)
 		}
 		proofs = append(proofs, &proof)
 	}
