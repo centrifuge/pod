@@ -14,11 +14,11 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/precise-proofs/proofs"
+	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/golang/protobuf/ptypes/timestamp"
-	"github.com/centrifuge/precise-proofs/proofs/proto"
 )
 
 // InvoiceModel implements the documents.Model keeps track of invoice related fields and state

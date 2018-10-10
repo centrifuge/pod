@@ -1,6 +1,8 @@
 package documents
 
 import (
+	"fmt"
+
 	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/documents"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	logging "github.com/ipfs/go-log"
@@ -26,7 +28,7 @@ func (grpcHandler) CreateDocumentProof(ctx context.Context, createDocumentProofE
 	}
 	identifier, err := hexutil.Decode(createDocumentProofEnvelope.Identifier)
 	if err != nil {
-		return &documentpb.DocumentProof{}, err
+		return &documentpb.DocumentProof{}, fmt.Errorf("identifier invalid %v ", err)
 	}
 	return service.CreateProofs(identifier, createDocumentProofEnvelope.Fields)
 }
@@ -39,11 +41,11 @@ func (grpcHandler) CreateDocumentProofForVersion(ctx context.Context, createDocu
 	}
 	identifier, err := hexutil.Decode(createDocumentProofForVersionEnvelope.Identifier)
 	if err != nil {
-		return &documentpb.DocumentProof{}, err
+		return &documentpb.DocumentProof{}, fmt.Errorf("identifier invalid %v ", err)
 	}
 	version, err := hexutil.Decode(createDocumentProofForVersionEnvelope.Version)
 	if err != nil {
-		return &documentpb.DocumentProof{}, err
+		return &documentpb.DocumentProof{}, fmt.Errorf("version invalid %v ", err)
 	}
 	return service.CreateProofsForVersion(identifier, version, createDocumentProofForVersionEnvelope.Fields)
 }

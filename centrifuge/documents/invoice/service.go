@@ -13,7 +13,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/documents"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	)
+)
 
 // Service defines specific functions for invoice
 type Service interface {
@@ -84,7 +84,7 @@ func (s service) invoiceProof(doc documents.Model, fields []string) (*documentpb
 	return &documentpb.DocumentProof{
 		Header: &documentpb.ResponseHeader{
 			DocumentId: hexutil.Encode(coreDoc.DocumentIdentifier),
-			VersionId: hexutil.Encode(coreDoc.CurrentVersion),
+			VersionId:  hexutil.Encode(coreDoc.CurrentVersion),
 		},
 		FieldProofs: proofs}, nil
 }
