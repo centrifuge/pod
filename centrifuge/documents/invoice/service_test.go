@@ -14,6 +14,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -76,18 +77,8 @@ func TestService_DeriveFromPayload(t *testing.T) {
 }
 
 func TestService_GetLastVersion(t *testing.T) {
-	documentIdentifier := tools.RandomSlice(32)
-	nextIdentifier := tools.RandomSlice(32)
 	thirdIdentifier := tools.RandomSlice(32)
-	inv1 := &InvoiceModel{
-		GrossAmount: 60,
-		CoreDocument: &coredocumentpb.CoreDocument{
-			DocumentIdentifier: documentIdentifier,
-			CurrentVersion:     documentIdentifier,
-			NextVersion:        nextIdentifier,
-		},
-	}
-	err := GetRepository().Create(documentIdentifier, inv1)
+	documentIdentifier, nextIdentifier, err := createMockDocument()
 	assert.Nil(t, err)
 
 	mod1, err := invService.GetLastVersion(documentIdentifier)
@@ -319,4 +310,102 @@ func TestService_SaveState(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, loadInv.Currency, inv.Currency)
 	assert.Equal(t, loadInv.CoreDocument.DataRoot, inv.CoreDocument.DataRoot)
+}
+
+func TestService_CreateProofs(t *testing.T) {
+	i, _ := createAnchoredMockDocument(t)
+	proof, err := invService.CreateProofs(i.CoreDocument.DocumentIdentifier, []string{"invoice_number"})
+	assert.Nil(t, err)
+	assert.Equal(t, proof.Header.DocumentId, hexutil.Encode(i.CoreDocument.DocumentIdentifier))
+	assert.Equal(t, proof.Header.VersionId, hexutil.Encode(i.CoreDocument.DocumentIdentifier))
+	assert.Equal(t, len(proof.FieldProofs), 1)
+	assert.Equal(t, proof.FieldProofs[0].GetProperty(), "invoice_number")
+}
+
+func TestService_CreateProofsInvalidField(t *testing.T) {
+	i, _ := createAnchoredMockDocument(t)
+	_, err := invService.CreateProofs(i.CoreDocument.DocumentIdentifier, []string{"invalid_field"})
+	assert.Error(t, err)
+	assert.Equal(t, "createProofs error No such field: invalid_field in obj", err.Error())
+}
+
+func TestService_CreateProofsDocumentDoesntExist(t *testing.T) {
+	_, err := invService.CreateProofs(tools.RandomSlice(32), []string{"invoice_number"})
+	assert.Error(t, err)
+	assert.Equal(t, "document not found: leveldb: not found", err.Error())
+}
+
+func TestService_CreateProofsForVersion(t *testing.T) {
+	i, _ := createAnchoredMockDocument(t)
+	olderVersion := i.CoreDocument.CurrentVersion
+	i, _ = updatedAnchoredMockDocument(t, i)
+	proof, err := invService.CreateProofsForVersion(i.CoreDocument.DocumentIdentifier, olderVersion, []string{"invoice_number"})
+	assert.Nil(t, err)
+	assert.Equal(t, proof.Header.DocumentId, hexutil.Encode(i.CoreDocument.DocumentIdentifier))
+	assert.Equal(t, proof.Header.VersionId, hexutil.Encode(olderVersion))
+	assert.Equal(t, len(proof.FieldProofs), 1)
+	assert.Equal(t, proof.FieldProofs[0].GetProperty(), "invoice_number")
+}
+
+func TestService_CreateProofsForVersionDocumentDoesntExist(t *testing.T) {
+	i, _ := createAnchoredMockDocument(t)
+	_, err := invService.CreateProofsForVersion(i.CoreDocument.DocumentIdentifier, tools.RandomSlice(32), []string{"invoice_number"})
+	assert.Error(t, err)
+	assert.Equal(t, "document not found for the given version: leveldb: not found", err.Error())
+}
+
+func createAnchoredMockDocument(t *testing.T) (*InvoiceModel, error) {
+	i := &InvoiceModel{
+		InvoiceNumber: "test_invoice",
+		GrossAmount:   60,
+	}
+	err := i.calculateDataRoot()
+	assert.Nil(t, err)
+	// get the coreDoc for the invoice
+	corDoc, err := i.PackCoreDocument()
+	assert.Nil(t, err)
+	err = coredocument.CalculateSigningRoot(corDoc)
+	assert.Nil(t, err)
+	err = coredocument.CalculateDocumentRoot(corDoc)
+	assert.Nil(t, err)
+	err = i.UnpackCoreDocument(corDoc)
+	assert.Nil(t, err)
+	err = GetRepository().Create(i.CoreDocument.CurrentVersion, i)
+	return i, err
+}
+
+func updatedAnchoredMockDocument(t *testing.T, i *InvoiceModel) (*InvoiceModel, error) {
+	i.GrossAmount = 50
+	err := i.calculateDataRoot()
+	assert.Nil(t, err)
+	// get the coreDoc for the invoice
+	corDoc, err := i.PackCoreDocument()
+	// hacky update to version
+	corDoc.CurrentVersion = corDoc.NextVersion
+	corDoc.NextVersion = tools.RandomSlice(32)
+	assert.Nil(t, err)
+	err = coredocument.CalculateSigningRoot(corDoc)
+	assert.Nil(t, err)
+	err = coredocument.CalculateDocumentRoot(corDoc)
+	assert.Nil(t, err)
+	err = i.UnpackCoreDocument(corDoc)
+	assert.Nil(t, err)
+	err = GetRepository().Update(i.CoreDocument.CurrentVersion, i)
+	return i, err
+}
+
+func createMockDocument() ([]byte, []byte, error) {
+	documentIdentifier := tools.RandomSlice(32)
+	nextIdentifier := tools.RandomSlice(32)
+	inv1 := &InvoiceModel{
+		InvoiceNumber: "test_invoice",
+		GrossAmount:   60,
+		CoreDocument: &coredocumentpb.CoreDocument{
+			DocumentIdentifier: documentIdentifier,
+			CurrentVersion:     documentIdentifier,
+			NextVersion:        nextIdentifier,
+		},
+	}
+	err := GetRepository().Create(documentIdentifier, inv1)
+	return documentIdentifier, nextIdentifier, err
 }

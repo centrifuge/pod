@@ -232,6 +232,19 @@ func TestInvoiceModel_createProofs(t *testing.T) {
 	assert.True(t, valid)
 }
 
+func TestInvoiceModel_createProofsFieldDoesNotExist(t *testing.T) {
+	i := InvoiceModel{InvoiceNumber: "3213121", NetAmount: 2, GrossAmount: 2}
+	i.calculateDataRoot()
+	// get the coreDoc for the invoice
+	corDoc, err := i.PackCoreDocument()
+	coredocument.CalculateSigningRoot(corDoc)
+	coredocument.CalculateDocumentRoot(corDoc)
+
+	i.UnpackCoreDocument(corDoc)
+	_, _, err = i.createProofs([]string{"nonexisting"})
+	assert.NotNil(t, err)
+}
+
 func TestInvoiceModel_getDocumentDataTree(t *testing.T) {
 	i := InvoiceModel{InvoiceNumber: "3213121", NetAmount: 2, GrossAmount: 2}
 	tree, err := i.getDocumentDataTree()

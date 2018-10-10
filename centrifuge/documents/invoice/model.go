@@ -382,6 +382,8 @@ func (i *InvoiceModel) getDocumentDataTree() (tree *proofs.DocumentTree, err err
 
 // CreateProofs generates proofs for given fields
 func (i *InvoiceModel) createProofs(fields []string) (coreDoc *coredocumentpb.CoreDocument, proofs []*proofspb.Proof, err error) {
+	// There can be failure scenarios where the core doc for the particular document
+	// is still not saved with roots in db due to failures during getting signatures.
 	coreDoc, err = i.PackCoreDocument()
 	if err != nil {
 		return nil, nil, fmt.Errorf("createProofs error %v", err)

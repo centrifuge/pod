@@ -180,7 +180,7 @@ func (s service) GetVersion(documentID []byte, version []byte) (doc documents.Mo
 	doc = new(InvoiceModel)
 	err = s.repo.LoadByID(version, doc)
 	if err != nil {
-		return nil, err
+		return nil, centerrors.Wrap(err, "document not found for the given version")
 	}
 
 	inv, ok := doc.(*InvoiceModel)
