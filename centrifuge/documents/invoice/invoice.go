@@ -188,30 +188,24 @@ func (inv *Invoice) ConvertToCoreDocument() (coredocpb *coredocumentpb.CoreDocum
 }
 
 // Validate validates the invoice document
-func Validate(doc *invoicepb.InvoiceDocument) (valid bool, errMsg string, errs map[string]string) {
+func Validate(doc *invoicepb.InvoiceDocument) error {
 	if doc == nil {
-		return false, centerrors.NilDocument, nil
+		return fmt.Errorf("nil document")
 	}
 
-	if valid, errMsg, errs = coredocument.Validate(doc.CoreDocument); !valid {
-		return valid, errMsg, errs
+	if err := coredocument.Validate(doc.CoreDocument); err != nil {
+		return err
 	}
 
 	if doc.Data == nil {
-		return false, centerrors.NilDocumentData, nil
+		return fmt.Errorf("missing invoice data")
 	}
-
-	errs = make(map[string]string)
 
 	// checking for nil salts should be okay for now
 	// once the converters are in, salts will be filled during conversion
 	if doc.Salts == nil {
-		errs["inv_salts"] = centerrors.RequiredField
+		return fmt.Errorf("missing invoice salts")
 	}
 
-	if len(errs) < 1 {
-		return true, "", nil
-	}
-
-	return false, "Invalid Invoice", errs
+	return nil
 }

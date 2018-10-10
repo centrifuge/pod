@@ -186,30 +186,24 @@ func (order *PurchaseOrder) ConvertToCoreDocument() (coredocpb *coredocumentpb.C
 }
 
 // Validate validates the purchase order document
-func Validate(doc *purchaseorderpb.PurchaseOrderDocument) (valid bool, errMsg string, errs map[string]string) {
+func Validate(doc *purchaseorderpb.PurchaseOrderDocument) error {
 	if doc == nil {
-		return false, centerrors.NilDocument, nil
+		return fmt.Errorf("nil document")
 	}
 
-	if valid, errMsg, errs = coredocument.Validate(doc.CoreDocument); !valid {
-		return valid, errMsg, errs
+	if err := coredocument.Validate(doc.CoreDocument); err != nil {
+		return err
 	}
 
 	if doc.Data == nil {
-		return false, centerrors.NilDocumentData, nil
+		return fmt.Errorf("missing purchase order data")
 	}
-
-	errs = make(map[string]string)
 
 	// checking for nil salts should be okay for now
 	// once the converters are in, salts will be filled during conversion
 	if doc.Salts == nil {
-		errs["po_salts"] = centerrors.RequiredField
+		return fmt.Errorf("missing purchase order salts")
 	}
 
-	if len(errs) < 1 {
-		return true, "", nil
-	}
-
-	return false, "Invalid Purchase Order", errs
+	return nil
 }

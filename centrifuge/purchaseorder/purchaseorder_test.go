@@ -3,13 +3,11 @@
 package purchaseorder
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
-	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
@@ -93,12 +91,6 @@ func TestNewInvoice_NilDocument(t *testing.T) {
 }
 
 func TestValidate(t *testing.T) {
-	type want struct {
-		valid  bool
-		errMsg string
-		errs   map[string]string
-	}
-
 	var (
 		id1 = tools.RandomSlice(32)
 		id2 = tools.RandomSlice(32)
@@ -123,31 +115,22 @@ func TestValidate(t *testing.T) {
 	}
 
 	tests := []struct {
-		po   *purchaseorderpb.PurchaseOrderDocument
-		want want
+		po  *purchaseorderpb.PurchaseOrderDocument
+		msg string
 	}{
 		{
-			po: nil,
-			want: want{
-				valid:  false,
-				errMsg: centerrors.NilDocument,
-			},
+			po:  nil,
+			msg: "nil document",
 		},
 
 		{
-			po: &purchaseorderpb.PurchaseOrderDocument{},
-			want: want{
-				valid:  false,
-				errMsg: centerrors.NilDocument,
-			},
+			po:  &purchaseorderpb.PurchaseOrderDocument{},
+			msg: "nil document",
 		},
 
 		{
-			po: &purchaseorderpb.PurchaseOrderDocument{CoreDocument: validCoreDoc},
-			want: want{
-				valid:  false,
-				errMsg: centerrors.NilDocumentData,
-			},
+			po:  &purchaseorderpb.PurchaseOrderDocument{CoreDocument: validCoreDoc},
+			msg: "missing purchase order data",
 		},
 
 		{
@@ -165,13 +148,7 @@ func TestValidate(t *testing.T) {
 					OrderAmount:      800,
 				},
 			},
-			want: want{
-				valid:  false,
-				errMsg: "Invalid Purchase Order",
-				errs: map[string]string{
-					"po_salts": centerrors.RequiredField,
-				},
-			},
+			msg: "missing purchase order salts",
 		},
 
 		{
@@ -190,15 +167,16 @@ func TestValidate(t *testing.T) {
 				},
 				Salts: &purchaseorderpb.PurchaseOrderDataSalts{},
 			},
-			want: want{valid: true},
 		},
 	}
 
 	for _, c := range tests {
-		got := want{}
-		got.valid, got.errMsg, got.errs = Validate(c.po)
-		if !reflect.DeepEqual(c.want, got) {
-			t.Fatalf("%v != %v", c.want, got)
+		err := Validate(c.po)
+		if c.msg == "" {
+			assert.Nil(t, err)
+			continue
 		}
+
+		assert.Contains(t, err.Error(), c.msg)
 	}
 }

@@ -6,8 +6,6 @@ import (
 	"sync"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
-	"github.com/centrifuge/go-centrifuge/centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
 	"github.com/golang/protobuf/proto"
@@ -52,11 +50,11 @@ func GetRepository() storage.LegacyRepository {
 func validate(doc proto.Message) error {
 	coreDoc, ok := doc.(*coredocumentpb.CoreDocument)
 	if !ok {
-		return centerrors.New(code.DocumentInvalid, fmt.Sprintf("invalid document of type: %T", doc))
+		return fmt.Errorf("invalid document type: %T", doc)
 	}
 
-	if valid, msg, errs := coredocument.Validate(coreDoc); !valid {
-		return centerrors.NewWithErrors(code.DocumentInvalid, msg, errs)
+	if err := coredocument.Validate(coreDoc); err != nil {
+		return err
 	}
 
 	return nil
