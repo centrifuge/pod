@@ -13,10 +13,9 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/documents"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-)
+	)
 
 // Service defines specific functions for invoice
-// TODO(ved): see if this interface can be used across the documents
 type Service interface {
 	documents.Service
 
@@ -54,8 +53,40 @@ func DefaultService(repo documents.Repository, processor coredocumentprocessor.P
 	return &service{repo: repo, coreDocProcessor: processor}
 }
 
-func (s service) CreateProofs(documentID string, fields []string) (*documentpb.DocumentProof, error) {
-	panic("implement me")
+// CreateProofs creates proofs for the latest version document given the fields
+func (s service) CreateProofs(documentID []byte, fields []string) (*documentpb.DocumentProof, error) {
+	doc, err := s.GetLastVersion(documentID)
+	if err != nil {
+		return nil, err
+	}
+	return s.invoiceProof(doc, fields)
+}
+
+// CreateProofsForVersion creates proofs for a particular version of the document given the fields
+func (s service) CreateProofsForVersion(documentID, version []byte, fields []string) (*documentpb.DocumentProof, error) {
+	doc, err := s.GetVersion(documentID, version)
+	if err != nil {
+		return nil, err
+	}
+	return s.invoiceProof(doc, fields)
+}
+
+// invoiceProof creates proofs for invoice model fields
+func (s service) invoiceProof(doc documents.Model, fields []string) (*documentpb.DocumentProof, error) {
+	inv, ok := doc.(*InvoiceModel)
+	if !ok {
+		return nil, centerrors.New(code.DocumentInvalid, "document of invalid type")
+	}
+	coreDoc, proofs, err := inv.createProofs(fields)
+	if err != nil {
+		return nil, err
+	}
+	return &documentpb.DocumentProof{
+		Header: &documentpb.ResponseHeader{
+			DocumentId: hexutil.Encode(coreDoc.DocumentIdentifier),
+			VersionId: hexutil.Encode(coreDoc.CurrentVersion),
+		},
+		FieldProofs: proofs}, nil
 }
 
 // DeriveFromCoreDocument unpacks the core document into a model

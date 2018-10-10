@@ -18,6 +18,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/golang/protobuf/ptypes/timestamp"
+	"github.com/centrifuge/precise-proofs/proofs/proto"
 )
 
 // InvoiceModel implements the documents.Model keeps track of invoice related fields and state
@@ -368,4 +369,55 @@ func (i *InvoiceModel) calculateDataRoot() error {
 
 	i.CoreDocument.DataRoot = t.RootHash()
 	return nil
+}
+
+// getDocumentDataTree creates precise-proofs data tree for the model
+func (i *InvoiceModel) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
+	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: sha256.New()})
+	invoiceData := i.createP2PProtobuf()
+	err = t.AddLeavesFromDocument(invoiceData, i.getInvoiceSalts(invoiceData))
+	if err != nil {
+		log.Error("getDocumentDataTree:", err)
+		return nil, err
+	}
+	err = t.Generate()
+	if err != nil {
+		log.Error("getDocumentDataTree:", err)
+		return nil, err
+	}
+	return &t, nil
+}
+
+// CreateProofs generates proofs for given fields
+func (i *InvoiceModel) createProofs(fields []string) (coreDoc *coredocumentpb.CoreDocument, proofs []*proofspb.Proof, err error) {
+	coreDoc, err = i.PackCoreDocument()
+	if err != nil {
+		log.Error(err)
+		return nil, nil, err
+	}
+	dataRootHashes, err := coredocument.GetDataProofHashes(coreDoc)
+	if err != nil {
+		log.Error(err)
+		return coreDoc, nil, err
+	}
+
+	tree, err := i.getDocumentDataTree()
+	if err != nil {
+		log.Error(err)
+		return coreDoc, nil, err
+	}
+	for _, field := range fields {
+		proof, err := tree.CreateProof(field)
+		if err != nil {
+			log.Error(err)
+			return coreDoc, nil, err
+		}
+		proofs = append(proofs, &proof)
+	}
+
+	for _, proof := range proofs {
+		proof.SortedHashes = append(proof.SortedHashes, dataRootHashes...)
+	}
+
+	return
 }
