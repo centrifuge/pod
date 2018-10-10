@@ -55,7 +55,7 @@ func TestRepository(t *testing.T) {
 
 	// failed get
 	getDoc := new(purchaseorderpb.PurchaseOrderDocument)
-	err = repo.GetByID(doc.CoreDocument.NextIdentifier, getDoc)
+	err = repo.GetByID(doc.CoreDocument.NextVersion, getDoc)
 	assert.Error(t, err, "get must fail")
 
 	// successful get

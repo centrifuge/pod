@@ -132,11 +132,11 @@ func Validate(document *coredocumentpb.CoreDocument) (valid bool, errMsg string,
 		errs["cd_identifier"] = centerrors.RequiredField
 	}
 
-	if tools.IsEmptyByteSlice(document.CurrentIdentifier) {
+	if tools.IsEmptyByteSlice(document.CurrentVersion) {
 		errs["cd_current_identifier"] = centerrors.RequiredField
 	}
 
-	if tools.IsEmptyByteSlice(document.NextIdentifier) {
+	if tools.IsEmptyByteSlice(document.NextVersion) {
 		errs["cd_next_identifier"] = centerrors.RequiredField
 	}
 
@@ -147,9 +147,9 @@ func Validate(document *coredocumentpb.CoreDocument) (valid bool, errMsg string,
 	// double check the identifiers
 	isSameBytes := tools.IsSameByteSlice
 
-	// Problem (re-using an old identifier for NextIdentifier): CurrentIdentifier or DocumentIdentifier same as NextIdentifier
-	if isSameBytes(document.NextIdentifier, document.DocumentIdentifier) ||
-		isSameBytes(document.NextIdentifier, document.CurrentIdentifier) {
+	// Problem (re-using an old identifier for NextVersion): CurrentVersion or DocumentIdentifier same as NextVersion
+	if isSameBytes(document.NextVersion, document.DocumentIdentifier) ||
+		isSameBytes(document.NextVersion, document.CurrentVersion) {
 		errs["cd_overall"] = centerrors.IdentifierReUsed
 	}
 
@@ -158,8 +158,8 @@ func Validate(document *coredocumentpb.CoreDocument) (valid bool, errMsg string,
 	salts := document.CoredocumentSalts
 	if salts == nil ||
 		!tools.CheckMultiple32BytesFilled(
-			salts.CurrentIdentifier,
-			salts.NextIdentifier,
+			salts.CurrentVersion,
+			salts.NextVersion,
 			salts.DocumentIdentifier,
 			salts.PreviousRoot) {
 		errs["cd_salts"] = centerrors.RequiredField
@@ -208,50 +208,76 @@ func ValidateWithSignature(doc *coredocumentpb.CoreDocument) error {
 	return nil
 }
 
-// FillIdentifiers fills in missing identifiers for the given CoreDocument.
+// InitIdentifiers fills in missing identifiers for the given CoreDocument.
 // It does checks on document consistency (e.g. re-using an old identifier).
 // In the case of an error, it returns the error and an empty CoreDocument.
-func FillIdentifiers(document coredocumentpb.CoreDocument) (coredocumentpb.CoreDocument, error) {
+func InitIdentifiers(document coredocumentpb.CoreDocument) (coredocumentpb.CoreDocument, error) {
 	isEmptyId := tools.IsEmptyByteSlice
 
 	// check if the document identifier is empty
 	if !isEmptyId(document.DocumentIdentifier) {
 		// check and fill current and next identifiers
-		if isEmptyId(document.CurrentIdentifier) {
-			document.CurrentIdentifier = document.DocumentIdentifier
+		if isEmptyId(document.CurrentVersion) {
+			document.CurrentVersion = document.DocumentIdentifier
 		}
 
-		if isEmptyId(document.NextIdentifier) {
-			document.NextIdentifier = tools.RandomSlice(32)
+		if isEmptyId(document.NextVersion) {
+			document.NextVersion = tools.RandomSlice(32)
 		}
 
 		return document, nil
 	}
 
 	// check if current and next identifier are empty
-	if !isEmptyId(document.CurrentIdentifier) {
-		return document, fmt.Errorf("no DocumentIdentifier but has CurrentIdentifier")
+	if !isEmptyId(document.CurrentVersion) {
+		return document, fmt.Errorf("no DocumentIdentifier but has CurrentVersion")
 	}
 
 	// check if the next identifier is empty
-	if !isEmptyId(document.NextIdentifier) {
-		return document, fmt.Errorf("no CurrentIdentifier but has NextIdentifier")
+	if !isEmptyId(document.NextVersion) {
+		return document, fmt.Errorf("no CurrentVersion but has NextVersion")
 	}
 
 	// fill the identifiers
 	document.DocumentIdentifier = tools.RandomSlice(32)
-	document.CurrentIdentifier = document.DocumentIdentifier
-	document.NextIdentifier = tools.RandomSlice(32)
+	document.CurrentVersion = document.DocumentIdentifier
+	document.NextVersion = tools.RandomSlice(32)
 	return document, nil
+}
+
+// PrepareNewVersion creates a copy of the passed coreDocument with the version fields updated
+func PrepareNewVersion(document coredocumentpb.CoreDocument) (*coredocumentpb.CoreDocument, error) {
+	newDocument := &coredocumentpb.CoreDocument{}
+	fillSalts(newDocument)
+	if document.CurrentVersion == nil {
+		return nil, fmt.Errorf("coredocument.CurrentVersion is nil")
+	}
+	newDocument.PreviousVersion = document.CurrentVersion
+	if document.NextVersion == nil {
+		return nil, fmt.Errorf("coredocument.NextVersion is nil")
+	}
+	newDocument.CurrentVersion = document.NextVersion
+	newDocument.NextVersion = tools.RandomSlice(32)
+	if document.DocumentRoot == nil {
+		return nil, fmt.Errorf("coredocument.DocumentRoot is nil")
+	}
+	newDocument.PreviousRoot = document.DocumentRoot
+
+	return newDocument, nil
 }
 
 // New returns a new core document from the proto message
 func New() *coredocumentpb.CoreDocument {
-	doc, _ := FillIdentifiers(coredocumentpb.CoreDocument{})
-	salts := &coredocumentpb.CoreDocumentSalts{}
-	proofs.FillSalts(&doc, salts)
-	doc.CoredocumentSalts = salts
+	doc, _ := InitIdentifiers(coredocumentpb.CoreDocument{})
+	fillSalts(&doc)
 	return &doc
+}
+
+func fillSalts(doc *coredocumentpb.CoreDocument) {
+	salts := &coredocumentpb.CoreDocumentSalts{}
+	proofs.FillSalts(doc, salts)
+	doc.CoredocumentSalts = salts
+	return
 }
 
 //GetTypeUrl returns the type of the embedded document

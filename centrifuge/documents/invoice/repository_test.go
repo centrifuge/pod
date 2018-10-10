@@ -41,7 +41,7 @@ func TestLegacyRepository(t *testing.T) {
 
 	// failed get
 	getDoc := new(invoicepb.InvoiceDocument)
-	err = repo.GetByID(doc.CoreDocument.NextIdentifier, getDoc)
+	err = repo.GetByID(doc.CoreDocument.NextVersion, getDoc)
 	assert.Error(t, err, "get must fail")
 
 	// successful get
