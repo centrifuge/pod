@@ -75,7 +75,7 @@ func NewGethClient(config Config) *GethClient {
 
 func (gethClient *GethClient) GetTxOpts(accountName string) (*bind.TransactOpts, error) {
 	if _, ok := gethClient.Accounts[accountName]; !ok {
-		txOpts, err := gethClient.GetTxOpts(accountName)
+		txOpts, err := gethClient.getGethTxOpts(accountName)
 		if err != nil {
 			return nil, err
 		}
