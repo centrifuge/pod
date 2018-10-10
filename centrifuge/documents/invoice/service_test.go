@@ -30,6 +30,7 @@ func createPayload() *clientinvoicepb.InvoiceCreatePayload {
 			ExtraData:   "0x",
 			Currency:    "EUR",
 		},
+		Collaborators: []string{"0x010101010101"},
 	}
 }
 
@@ -82,8 +83,8 @@ func TestService_GetLastVersion(t *testing.T) {
 		GrossAmount: 60,
 		CoreDocument: &coredocumentpb.CoreDocument{
 			DocumentIdentifier: documentIdentifier,
-			CurrentIdentifier:  documentIdentifier,
-			NextIdentifier:     nextIdentifier,
+			CurrentVersion:     documentIdentifier,
+			NextVersion:        nextIdentifier,
 		},
 	}
 	err := GetRepository().Create(documentIdentifier, inv1)
@@ -93,14 +94,14 @@ func TestService_GetLastVersion(t *testing.T) {
 	assert.Nil(t, err)
 
 	invLoad1, _ := mod1.(*InvoiceModel)
-	assert.Equal(t, invLoad1.CoreDocument.CurrentIdentifier, documentIdentifier)
+	assert.Equal(t, invLoad1.CoreDocument.CurrentVersion, documentIdentifier)
 
 	inv2 := &InvoiceModel{
 		GrossAmount: 60,
 		CoreDocument: &coredocumentpb.CoreDocument{
 			DocumentIdentifier: documentIdentifier,
-			CurrentIdentifier:  nextIdentifier,
-			NextIdentifier:     thirdIdentifier,
+			CurrentVersion:     nextIdentifier,
+			NextVersion:        thirdIdentifier,
 		},
 	}
 
@@ -111,46 +112,46 @@ func TestService_GetLastVersion(t *testing.T) {
 	assert.Nil(t, err)
 
 	invLoad2, _ := mod2.(*InvoiceModel)
-	assert.Equal(t, invLoad2.CoreDocument.CurrentIdentifier, nextIdentifier)
-	assert.Equal(t, invLoad2.CoreDocument.NextIdentifier, thirdIdentifier)
+	assert.Equal(t, invLoad2.CoreDocument.CurrentVersion, nextIdentifier)
+	assert.Equal(t, invLoad2.CoreDocument.NextVersion, thirdIdentifier)
 }
 
 func TestService_GetVersion_invalid_version(t *testing.T) {
-	currentIdentifier := tools.RandomSlice(32)
+	currentVersion := tools.RandomSlice(32)
 
 	inv := &InvoiceModel{
 		GrossAmount: 60,
 		CoreDocument: &coredocumentpb.CoreDocument{
 			DocumentIdentifier: tools.RandomSlice(32),
-			CurrentIdentifier:  currentIdentifier,
+			CurrentVersion:     currentVersion,
 		},
 	}
-	err := GetRepository().Create(currentIdentifier, inv)
+	err := GetRepository().Create(currentVersion, inv)
 	assert.Nil(t, err)
 
-	mod, err := invService.GetVersion(tools.RandomSlice(32), currentIdentifier)
+	mod, err := invService.GetVersion(tools.RandomSlice(32), currentVersion)
 	assert.EqualError(t, err, "[4]version is not valid for this identifier")
 	assert.Nil(t, mod)
 }
 
 func TestService_GetVersion(t *testing.T) {
 	documentIdentifier := tools.RandomSlice(32)
-	currentIdentifier := tools.RandomSlice(32)
+	currentVersion := tools.RandomSlice(32)
 
 	inv := &InvoiceModel{
 		GrossAmount: 60,
 		CoreDocument: &coredocumentpb.CoreDocument{
 			DocumentIdentifier: documentIdentifier,
-			CurrentIdentifier:  currentIdentifier,
+			CurrentVersion:     currentVersion,
 		},
 	}
-	err := GetRepository().Create(currentIdentifier, inv)
+	err := GetRepository().Create(currentVersion, inv)
 	assert.Nil(t, err)
 
-	mod, err := invService.GetVersion(documentIdentifier, currentIdentifier)
+	mod, err := invService.GetVersion(documentIdentifier, currentVersion)
 	assert.Nil(t, err)
 	loadInv, _ := mod.(*InvoiceModel)
-	assert.Equal(t, loadInv.CoreDocument.CurrentIdentifier, currentIdentifier)
+	assert.Equal(t, loadInv.CoreDocument.CurrentVersion, currentVersion)
 	assert.Equal(t, loadInv.CoreDocument.DocumentIdentifier, documentIdentifier)
 
 	mod, err = invService.GetVersion(documentIdentifier, []byte{})
@@ -170,7 +171,7 @@ func TestService_Create_db_fail(t *testing.T) {
 	model := &mockModel{}
 	cd := coredocument.New()
 	model.On("JSON").Return([]byte{1, 2, 3}, nil).Once()
-	err := GetRepository().Create(cd.CurrentIdentifier, model)
+	err := GetRepository().Create(cd.CurrentVersion, model)
 	model.AssertExpectations(t)
 
 	payload := createPayload()
@@ -289,7 +290,8 @@ func TestService_SaveState(t *testing.T) {
 	assert.Nil(t, err)
 
 	// save state must fail missing core document
-	err = invService.SaveState(inv)
+	invEmpty := new(InvoiceModel)
+	err = invService.SaveState(invEmpty)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "core document missing")
 
@@ -302,7 +304,7 @@ func TestService_SaveState(t *testing.T) {
 	assert.Contains(t, err.Error(), "document doesn't exists")
 
 	// successful
-	err = GetRepository().Create(coreDoc.CurrentIdentifier, inv)
+	err = GetRepository().Create(coreDoc.CurrentVersion, inv)
 	assert.Nil(t, err)
 	assert.Equal(t, inv.Currency, "EUR")
 	assert.Nil(t, inv.CoreDocument.DataRoot)
@@ -313,7 +315,7 @@ func TestService_SaveState(t *testing.T) {
 	assert.Nil(t, err)
 
 	loadInv := new(InvoiceModel)
-	err = GetRepository().LoadByID(coreDoc.CurrentIdentifier, loadInv)
+	err = GetRepository().LoadByID(coreDoc.CurrentVersion, loadInv)
 	assert.Nil(t, err)
 	assert.Equal(t, loadInv.Currency, inv.Currency)
 	assert.Equal(t, loadInv.CoreDocument.DataRoot, inv.CoreDocument.DataRoot)

@@ -2,6 +2,7 @@ package documents
 
 import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/documents"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	logging "github.com/ipfs/go-log"
 	"golang.org/x/net/context"
 )
@@ -23,11 +24,26 @@ func (grpcHandler) CreateDocumentProof(ctx context.Context, createDocumentProofE
 	if err != nil {
 		return &documentpb.DocumentProof{}, err
 	}
-
-	return service.CreateProofs(createDocumentProofEnvelope.Identifier, createDocumentProofEnvelope.Fields)
+	identifier, err := hexutil.Decode(createDocumentProofEnvelope.Identifier)
+	if err != nil {
+		return &documentpb.DocumentProof{}, err
+	}
+	return service.CreateProofs(identifier, createDocumentProofEnvelope.Fields)
 }
 
-// CreateDocumentProof creates precise proofs for the given fields for the given version of the document
-func (grpcHandler) CreateDocumentProofForVersion(context.Context, *documentpb.CreateDocumentProofForVersionRequest) (*documentpb.DocumentProof, error) {
-	panic("implement me")
+// CreateDocumentProofForVersion creates precise proofs for the given fields for the given version of the document
+func (grpcHandler) CreateDocumentProofForVersion(ctx context.Context, createDocumentProofForVersionEnvelope *documentpb.CreateDocumentProofForVersionRequest) (*documentpb.DocumentProof, error) {
+	service, err := GetRegistryInstance().LocateService(createDocumentProofForVersionEnvelope.Type)
+	if err != nil {
+		return &documentpb.DocumentProof{}, err
+	}
+	identifier, err := hexutil.Decode(createDocumentProofForVersionEnvelope.Identifier)
+	if err != nil {
+		return &documentpb.DocumentProof{}, err
+	}
+	version, err := hexutil.Decode(createDocumentProofForVersionEnvelope.Version)
+	if err != nil {
+		return &documentpb.DocumentProof{}, err
+	}
+	return service.CreateProofsForVersion(identifier, version, createDocumentProofForVersionEnvelope.Fields)
 }

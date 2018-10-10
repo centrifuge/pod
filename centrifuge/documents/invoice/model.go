@@ -55,9 +55,6 @@ type InvoiceModel struct {
 	DateCreated *timestamp.Timestamp
 	ExtraData   []byte
 
-	// This will move to core document once its implemented
-	Collaborators []identity.CentID
-
 	InvoiceSalts *invoicepb.InvoiceDataSalts
 	CoreDocument *coredocumentpb.CoreDocument
 }
@@ -200,10 +197,17 @@ func (i *InvoiceModel) InitInvoiceInput(payload *clientinvoicepb.InvoiceCreatePa
 		i.ExtraData = ed
 	}
 
-	var err error
-	i.Collaborators, err = identity.CentIDsFromStrings(payload.Collaborators)
-	if err != nil {
-		return fmt.Errorf("failed to decode collaborators: %v", err)
+	i.CoreDocument = coredocument.New()
+	i.CoreDocument.Collaborators = [][]byte{}
+
+	for _, id := range payload.Collaborators {
+		cid, err := identity.CentIDFromString(id)
+		if err != nil {
+			return centerrors.Wrap(err, "failed to decode collaborator")
+		}
+
+		cidb := cid.ByteArray()
+		i.CoreDocument.Collaborators = append(i.CoreDocument.Collaborators, cidb[:])
 	}
 
 	return nil
@@ -259,7 +263,6 @@ func (i *InvoiceModel) getInvoiceSalts(invoiceData *invoicepb.InvoiceData) *invo
 
 // PackCoreDocument packs the InvoiceModel into a Core Document
 // If the, InvoiceModel is new, it creates a valid identifiers
-// TODO: once coredoc has collaborators, take the collaborators from the model
 func (i *InvoiceModel) PackCoreDocument() (*coredocumentpb.CoreDocument, error) {
 	if i.CoreDocument == nil {
 		// this is the new invoice create. so create identifiers

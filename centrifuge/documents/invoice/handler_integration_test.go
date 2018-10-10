@@ -36,14 +36,14 @@ func TestMain(m *testing.M) {
 func generateEmptyInvoiceForProcessing() (doc *invoice.Invoice) {
 	identifier := testingutils.Rand32Bytes()
 	doc = invoice.Empty()
-	salts := &coredocumentpb.CoreDocumentSalts{}
-	proofs.FillSalts(doc.Document.Data, salts)
 	doc.Document.CoreDocument = &coredocumentpb.CoreDocument{
 		DocumentIdentifier: identifier,
-		CurrentIdentifier:  identifier,
-		NextIdentifier:     testingutils.Rand32Bytes(),
-		CoredocumentSalts:  salts,
+		CurrentVersion:     identifier,
+		NextVersion:        testingutils.Rand32Bytes(),
 	}
+	salts := &coredocumentpb.CoreDocumentSalts{}
+	proofs.FillSalts(doc.Document.CoreDocument, salts)
+	doc.Document.CoreDocument.CoredocumentSalts = salts
 	return
 }
 

@@ -195,8 +195,8 @@ func TestInvoiceDocumentService_HandleCreateInvoiceProof(t *testing.T) {
 	inv := Empty()
 	inv.Document.CoreDocument = &coredocumentpb.CoreDocument{
 		DocumentIdentifier: identifier,
-		CurrentIdentifier:  identifier,
-		NextIdentifier:     testingutils.Rand32Bytes(),
+		CurrentVersion:     identifier,
+		NextVersion:        testingutils.Rand32Bytes(),
 	}
 	cdSalts := &coredocumentpb.CoreDocumentSalts{}
 	proofs.FillSalts(inv.Document.CoreDocument, cdSalts)
@@ -232,8 +232,8 @@ func TestInvoiceDocumentService_HandleCreateInvoiceProof_NotFilledSalts(t *testi
 	inv := Empty()
 	inv.Document.CoreDocument = &coredocumentpb.CoreDocument{
 		DocumentIdentifier: identifier,
-		CurrentIdentifier:  identifier,
-		NextIdentifier:     testingutils.Rand32Bytes(),
+		CurrentVersion:     identifier,
+		NextVersion:        testingutils.Rand32Bytes(),
 		CoredocumentSalts:  &coredocumentpb.CoreDocumentSalts{},
 	}
 	inv.Document.Salts = &invoicepb.InvoiceDataSalts{}
@@ -259,8 +259,8 @@ func TestInvoiceDocumentService_HandleCreateInvoiceProof_NotExistingInvoice(t *t
 	inv := Empty()
 	inv.Document.CoreDocument = &coredocumentpb.CoreDocument{
 		DocumentIdentifier: identifier,
-		CurrentIdentifier:  identifier,
-		NextIdentifier:     testingutils.Rand32Bytes(),
+		CurrentVersion:     identifier,
+		NextVersion:        testingutils.Rand32Bytes(),
 	}
 	inv.CalculateMerkleRoot()
 

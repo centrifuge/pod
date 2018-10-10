@@ -9,9 +9,10 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/processor"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/documents"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/documents"
 )
 
 // Service defines specific functions for invoice
@@ -99,8 +100,8 @@ func (s service) Create(ctx context.Context, model documents.Model) (documents.M
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
 	}
 
-	// we use currentIdentifier as the id since that will be unique across multiple versions of the same document
-	err = s.repo.Create(inv.CoreDocument.CurrentIdentifier, inv)
+	// we use CurrentVersion as the id since that will be unique across multiple versions of the same document
+	err = s.repo.Create(inv.CoreDocument.CurrentVersion, inv)
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
@@ -119,7 +120,7 @@ func (s service) Create(ctx context.Context, model documents.Model) (documents.M
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
 
-	err = s.coreDocProcessor.Anchor(ctx, coreDoc, inv.Collaborators, saveState)
+	err = s.coreDocProcessor.Anchor(ctx, coreDoc, saveState)
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
@@ -129,8 +130,12 @@ func (s service) Create(ctx context.Context, model documents.Model) (documents.M
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
 
-	for _, id := range inv.Collaborators {
-		err := s.coreDocProcessor.Send(ctx, coreDoc, id)
+	for _, id := range coreDoc.Collaborators {
+		cid, err := identity.ToCentID(id)
+		if err != nil {
+			return nil, centerrors.New(code.Unknown, err.Error())
+		}
+		err = s.coreDocProcessor.Send(ctx, coreDoc, cid)
 		if err != nil {
 			log.Infof("failed to send anchored document: %v\n", err)
 		}
@@ -165,14 +170,14 @@ func (s service) GetLastVersion(documentID []byte) (doc documents.Model, err err
 		return nil, centerrors.Wrap(err, "document not found")
 	}
 	inv := doc.(*InvoiceModel)
-	nextVersion := inv.CoreDocument.NextIdentifier
+	nextVersion := inv.CoreDocument.NextVersion
 	for nextVersion != nil {
 		doc, err = s.GetVersion(documentID, nextVersion)
 		if err != nil {
 			return inv, nil
 		} else {
 			inv = doc.(*InvoiceModel)
-			nextVersion = inv.CoreDocument.NextIdentifier
+			nextVersion = inv.CoreDocument.NextVersion
 		}
 	}
 	return inv, nil
@@ -184,14 +189,23 @@ func (s service) DeriveInvoiceResponse(doc documents.Model) (*clientinvoicepb.In
 	if !ok {
 		return nil, centerrors.New(code.DocumentInvalid, "document of invalid type")
 	}
-	collaborators := make([]string, len(inv.Collaborators))
-	for i, c := range inv.Collaborators {
-		collaborators[i] = c.String()
+
+	cd, err := doc.PackCoreDocument()
+	if err != nil {
+		return nil, centerrors.New(code.DocumentInvalid, err.Error())
+	}
+	collaborators := make([]string, len(cd.Collaborators))
+	for i, c := range cd.Collaborators {
+		cid, err := identity.ToCentID(c)
+		if err != nil {
+			return nil, centerrors.New(code.Unknown, err.Error())
+		}
+		collaborators[i] = cid.String()
 	}
 
 	header := &clientinvoicepb.ResponseHeader{
 		DocumentId:    hexutil.Encode(inv.CoreDocument.DocumentIdentifier),
-		VersionId:     hexutil.Encode(inv.CoreDocument.CurrentIdentifier),
+		VersionId:     hexutil.Encode(inv.CoreDocument.CurrentVersion),
 		Collaborators: collaborators,
 	}
 
@@ -230,7 +244,7 @@ func (s service) SaveState(doc documents.Model) error {
 		return centerrors.New(code.DocumentInvalid, "core document missing")
 	}
 
-	err := s.repo.Update(inv.CoreDocument.CurrentIdentifier, inv)
+	err := s.repo.Update(inv.CoreDocument.CurrentVersion, inv)
 	if err != nil {
 		return centerrors.New(code.Unknown, err.Error())
 	}

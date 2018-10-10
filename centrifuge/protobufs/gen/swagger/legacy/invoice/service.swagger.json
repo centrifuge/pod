@@ -146,17 +146,22 @@
         "document_identifier": {
           "type": "string",
           "format": "byte",
-          "description": "# Identifiers\nCoreDocument has two kinds of identifiers, the `document_identifier` is assigned \nonce per document and stays the same for the lifetime of the document.\ndocument_identifier is the first ID ever used to anchor the document on chain and \nis used internally to store all future versions. The `current_identifier` and the \n`next_identifier` refer only to this particular version.\n\n32 byte value"
+          "description": "# Identifiers\nCoreDocument has two kinds of identifiers, the `document_identifier` is assigned \nonce per document and stays the same for the lifetime of the document.\ndocument_identifier is the first ID ever used to anchor the document on chain and \nis used internally to store all future versions. The `previous_version`, `current_version`, and the\n`next_version` refer only to a particular version.\n\n32 byte value"
         },
-        "current_identifier": {
+        "previous_version": {
           "type": "string",
           "format": "byte",
-          "description": "current_identifier is the identifier used to refer to the current state of the document.\n\n32 byte value"
+          "title": "previous_version refers to the previous state of the document.\n32 byte value"
         },
-        "next_identifier": {
+        "current_version": {
           "type": "string",
           "format": "byte",
-          "description": "next_identifier is the identifier that is going to be used for the next version if any \nparty wants to update the state."
+          "title": "current_version is the version used to refer to the current state of the document.\n32 byte value"
+        },
+        "next_version": {
+          "type": "string",
+          "format": "byte",
+          "description": "next_version is the version that is going to be used for the next version if any\nparty wants to update the state."
         },
         "document_root": {
           "type": "string",
@@ -195,6 +200,14 @@
         "coredocument_salts": {
           "$ref": "#/definitions/coredocumentCoreDocumentSalts",
           "title": "CoreDocumentSalts is inlined"
+        },
+        "collaborators": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "byte"
+          },
+          "title": "Collaborators involved in the document consensus"
         }
       },
       "description": "* Merkle Roots for the document data\n* Signatures on document data\n* Access Control",
@@ -207,11 +220,15 @@
           "type": "string",
           "format": "byte"
         },
-        "current_identifier": {
+        "previous_version": {
           "type": "string",
           "format": "byte"
         },
-        "next_identifier": {
+        "current_version": {
+          "type": "string",
+          "format": "byte"
+        },
+        "next_version": {
           "type": "string",
           "format": "byte"
         },
@@ -220,6 +237,17 @@
           "format": "byte"
         },
         "data_root": {
+          "type": "string",
+          "format": "byte"
+        },
+        "collaborators": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "byte"
+          }
+        },
+        "collaborators_length": {
           "type": "string",
           "format": "byte"
         }

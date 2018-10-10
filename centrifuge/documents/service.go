@@ -6,8 +6,9 @@ import (
 )
 
 type Service interface {
-
 	DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (Model, error)
 
-	CreateProofs(documentID string, fields []string) (*documentpb.DocumentProof, error)
+	CreateProofs(documentID []byte, fields []string) (*documentpb.DocumentProof, error)
+
+	CreateProofsForVersion(documentID, version []byte, fields []string) (*documentpb.DocumentProof, error)
 }
