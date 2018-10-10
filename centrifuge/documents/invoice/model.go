@@ -355,7 +355,7 @@ func (i *InvoiceModel) Type() reflect.Type {
 func (i *InvoiceModel) calculateDataRoot() error {
 	t, err := i.getDocumentDataTree()
 	if err != nil {
-		return fmt.Errorf("calculateDataRoot error %v",  err)
+		return fmt.Errorf("calculateDataRoot error %v", err)
 	}
 	if i.CoreDocument == nil {
 		i.CoreDocument = coredocument.New()
@@ -371,11 +371,11 @@ func (i *InvoiceModel) getDocumentDataTree() (tree *proofs.DocumentTree, err err
 	invoiceData := i.createP2PProtobuf()
 	err = t.AddLeavesFromDocument(invoiceData, i.getInvoiceSalts(invoiceData))
 	if err != nil {
-		return nil, fmt.Errorf("getDocumentDataTree error %v",  err)
+		return nil, fmt.Errorf("getDocumentDataTree error %v", err)
 	}
 	err = t.Generate()
 	if err != nil {
-		return nil, fmt.Errorf("getDocumentDataTree error %v",  err)
+		return nil, fmt.Errorf("getDocumentDataTree error %v", err)
 	}
 	return &t, nil
 }
@@ -384,21 +384,21 @@ func (i *InvoiceModel) getDocumentDataTree() (tree *proofs.DocumentTree, err err
 func (i *InvoiceModel) createProofs(fields []string) (coreDoc *coredocumentpb.CoreDocument, proofs []*proofspb.Proof, err error) {
 	coreDoc, err = i.PackCoreDocument()
 	if err != nil {
-		return nil, nil, fmt.Errorf("createProofs error %v",  err)
+		return nil, nil, fmt.Errorf("createProofs error %v", err)
 	}
 	dataRootHashes, err := coredocument.GetDataProofHashes(coreDoc)
 	if err != nil {
-		return coreDoc, nil, fmt.Errorf("createProofs error %v",  err)
+		return coreDoc, nil, fmt.Errorf("createProofs error %v", err)
 	}
 
 	tree, err := i.getDocumentDataTree()
 	if err != nil {
-		return coreDoc, nil, fmt.Errorf("createProofs error %v",  err)
+		return coreDoc, nil, fmt.Errorf("createProofs error %v", err)
 	}
 	for _, field := range fields {
 		proof, err := tree.CreateProof(field)
 		if err != nil {
-			return coreDoc, nil, fmt.Errorf("createProofs error %v",  err)
+			return coreDoc, nil, fmt.Errorf("createProofs error %v", err)
 		}
 		proofs = append(proofs, &proof)
 	}

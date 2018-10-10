@@ -9,6 +9,7 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
+	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
@@ -17,8 +18,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
-	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
-	)
+)
 
 func TestInvoice_FromCoreDocuments_invalidParameter(t *testing.T) {
 	invoiceModel := &InvoiceModel{}
@@ -236,6 +236,6 @@ func TestInvoiceModel_getDocumentDataTree(t *testing.T) {
 	i := InvoiceModel{InvoiceNumber: "3213121", NetAmount: 2, GrossAmount: 2}
 	tree, err := i.getDocumentDataTree()
 	assert.Nil(t, err, "tree should be generated without error")
-	_, leaf :=  tree.GetLeafByProperty("invoice_number")
+	_, leaf := tree.GetLeafByProperty("invoice_number")
 	assert.Equal(t, "invoice_number", leaf.Property)
 }
