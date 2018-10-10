@@ -7,8 +7,6 @@ import (
 
 	"fmt"
 
-	"encoding/base64"
-
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
@@ -121,7 +119,7 @@ func VerifySignature(publicKey, message, signature []byte) bool {
 // GetIDConfig reads the keys and ID from the config and returns a the Identity config
 func GetIDConfig() (identityConfig *config.IdentityConfig, err error) {
 	pub, pvk := GetEthAuthKeyFromConfig()
-	decodedId, err := base64.StdEncoding.DecodeString(string(config.Config.GetIdentityId()))
+	centId, err := config.Config.GetIdentityId()
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +129,7 @@ func GetIDConfig() (identityConfig *config.IdentityConfig, err error) {
 		return nil, err
 	}
 	identityConfig = &config.IdentityConfig{
-		ID:         decodedId,
+		ID:         centId,
 		PublicKey:  pubKey,
 		PrivateKey: pvk,
 	}

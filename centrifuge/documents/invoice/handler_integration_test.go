@@ -23,7 +23,7 @@ import (
 func TestMain(m *testing.M) {
 	cc.TestFunctionalEthereumBootstrap()
 	db := cc.GetLevelDBStorage()
-	invoice.InitLevelDBRepository(db)
+	invoice.InitLegacyRepository(db)
 	coredocumentrepository.InitLevelDBRepository(db)
 	testingutils.CreateIdentityWithKeys()
 	result := m.Run()
@@ -34,20 +34,20 @@ func TestMain(m *testing.M) {
 func generateEmptyInvoiceForProcessing() (doc *invoice.Invoice) {
 	identifier := testingutils.Rand32Bytes()
 	doc = invoice.Empty()
-	salts := &coredocumentpb.CoreDocumentSalts{}
-	proofs.FillSalts(doc.Document.Data, salts)
 	doc.Document.CoreDocument = &coredocumentpb.CoreDocument{
 		DocumentIdentifier: identifier,
-		CurrentIdentifier:  identifier,
-		NextIdentifier:     testingutils.Rand32Bytes(),
-		CoredocumentSalts:  salts,
+		CurrentVersion:     identifier,
+		NextVersion:        testingutils.Rand32Bytes(),
 	}
+	salts := &coredocumentpb.CoreDocumentSalts{}
+	proofs.FillSalts(doc.Document.CoreDocument, salts)
+	doc.Document.CoreDocument.CoredocumentSalts = salts
 	return
 }
 
 func TestInvoiceDocumentService_HandleAnchorInvoiceDocument_Integration(t *testing.T) {
 	p2pClient := testingcommons.NewMockP2PWrapperClient()
-	s := invoice.GRPCHandler()
+	s := invoice.LegacyGRPCHandler()
 	p2pClient.On("GetSignaturesForDocument", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	doc := generateEmptyInvoiceForProcessing()
 	doc.Document.Data = &invoicepb.InvoiceData{
@@ -70,8 +70,8 @@ func TestInvoiceDocumentService_HandleAnchorInvoiceDocument_Integration(t *testi
 //func TestInvoiceDocumentService_HandleSendInvoiceDocument_Integration(t *testing.T) {
 //	p2pClient := testingcommons.NewMockP2PWrapperClient()
 //	s := invoiceservice.grpcHandler{
-//		Repository:     invoicerepository.GetRepository(),
-//		CoreDocumentProcessor: coredocumentprocessor.DefaultProcessor(identity.NewEthereumIdentityService(), p2pClient),
+//		legacyRepo:     invoicerepository.GetLegacyRepository(),
+//		coreDocProcessor: coredocumentprocessor.DefaultProcessor(identity.NewEthereumIdentityService(), p2pClient),
 //	}
 //	p2pClient.On("GetSignaturesForDocument", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 //	doc := generateEmptyInvoiceForProcessing()
@@ -101,7 +101,7 @@ func assertDocument(t *testing.T, err error, anchoredDoc *invoicepb.InvoiceDocum
 		"DocumentIdentifier doesn't match")
 	//Invoice document got stored in the DB
 	loadedInvoice := new(invoicepb.InvoiceDocument)
-	err = invoice.GetRepository().GetByID(doc.Document.CoreDocument.DocumentIdentifier, loadedInvoice)
+	err = invoice.GetLegacyRepository().GetByID(doc.Document.CoreDocument.DocumentIdentifier, loadedInvoice)
 	assert.Equal(t, "AUS", loadedInvoice.Data.SenderCountry,
 		"Didn't save the invoice data correctly")
 	// Invoice stored after anchoring has Salts populated
@@ -113,7 +113,7 @@ func assertDocument(t *testing.T, err error, anchoredDoc *invoicepb.InvoiceDocum
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "document already exists")
 	loadedInvoice2 := new(invoicepb.InvoiceDocument)
-	err = invoice.GetRepository().GetByID(doc.Document.CoreDocument.DocumentIdentifier, loadedInvoice2)
+	err = invoice.GetLegacyRepository().GetByID(doc.Document.CoreDocument.DocumentIdentifier, loadedInvoice2)
 	assert.Equal(t, "AUS", loadedInvoice2.Data.SenderCountry,
 		"Invoice document on DB should have not not gotten overwritten after rejected anchor call")
 }

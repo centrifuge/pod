@@ -202,8 +202,8 @@ func TestPurchaseOrderDocumentService_HandleCreatePurchaseOrderProof(t *testing.
 	order := purchaseorder.Empty()
 	order.Document.CoreDocument = &coredocumentpb.CoreDocument{
 		DocumentIdentifier: identifier,
-		CurrentIdentifier:  identifier,
-		NextIdentifier:     testingutils.Rand32Bytes(),
+		CurrentVersion:     identifier,
+		NextVersion:        testingutils.Rand32Bytes(),
 	}
 	cdSalts := &coredocumentpb.CoreDocumentSalts{}
 	proofs.FillSalts(order.Document.CoreDocument, cdSalts)
@@ -239,8 +239,8 @@ func TestPurchaseOrderDocumentService_HandleCreatePurchaseOrderProof_NotFilledSa
 	order := purchaseorder.Empty()
 	order.Document.CoreDocument = &coredocumentpb.CoreDocument{
 		DocumentIdentifier: identifier,
-		CurrentIdentifier:  identifier,
-		NextIdentifier:     testingutils.Rand32Bytes(),
+		CurrentVersion:     identifier,
+		NextVersion:        testingutils.Rand32Bytes(),
 		CoredocumentSalts:  &coredocumentpb.CoreDocumentSalts{},
 	}
 	order.Document.Salts = &purchaseorderpb.PurchaseOrderDataSalts{}
@@ -266,8 +266,8 @@ func TestPurchaseOrderDocumentService_HandleCreatePurchaseOrderProof_NotExisting
 	order := purchaseorder.Empty()
 	order.Document.CoreDocument = &coredocumentpb.CoreDocument{
 		DocumentIdentifier: identifier,
-		CurrentIdentifier:  identifier,
-		NextIdentifier:     testingutils.Rand32Bytes(),
+		CurrentVersion:     identifier,
+		NextVersion:        testingutils.Rand32Bytes(),
 	}
 	order.CalculateMerkleRoot()
 

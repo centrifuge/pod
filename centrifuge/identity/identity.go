@@ -3,22 +3,21 @@ package identity
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"math/big"
 
-	"github.com/centrifuge/go-centrifuge/centrifuge/ethereum"
-
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/secp256k1"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 const (
-	CentIDByteLength     = 6
+	CentIDLength         = 6
 	ActionCreate         = "create"
 	ActionAddKey         = "addkey"
 	KeyPurposeP2p        = 1
@@ -26,19 +25,50 @@ const (
 	KeyPurposeEthMsgAuth = 3
 )
 
-type CentID [CentIDByteLength]byte
+type CentID [CentIDLength]byte
 
-func NewCentID(centIDBytes []byte) (CentID, error) {
-	var centBytes [CentIDByteLength]byte
-	if !tools.IsValidByteSliceForLength(centIDBytes, CentIDByteLength) {
-		return centBytes, errors.New("invalid length byte slice provided for centId")
+// ToCentID takes bytes and return CentID
+// errors out if bytes are empty, nil, or len(bytes) > CentIDLength
+func ToCentID(bytes []byte) (centID CentID, err error) {
+	if tools.IsEmptyByteSlice(bytes) {
+		return centID, fmt.Errorf("empty bytes provided")
 	}
-	copy(centBytes[:], centIDBytes[:CentIDByteLength])
-	return centBytes, nil
+
+	if !tools.IsValidByteSliceForLength(bytes, CentIDLength) {
+		return centID, errors.New("invalid length byte slice provided for centID")
+	}
+
+	copy(centID[:], bytes[:CentIDLength])
+	return centID, nil
+}
+
+// CentIDFromString takes an hex string and returns a CentID
+func CentIDFromString(id string) (centID CentID, err error) {
+	decID, err := hexutil.Decode(id)
+	if err != nil {
+		return centID, centerrors.Wrap(err, "failed to decode id")
+	}
+
+	return ToCentID(decID)
+}
+
+// CentIDsFromStrings converts hex ids to centIDs
+func CentIDsFromStrings(ids []string) ([]CentID, error) {
+	var cids []CentID
+	for _, id := range ids {
+		cid, err := CentIDFromString(id)
+		if err != nil {
+			return nil, err
+		}
+
+		cids = append(cids, cid)
+	}
+
+	return cids, nil
 }
 
 func NewRandomCentID() CentID {
-	ID, _ := NewCentID(tools.RandomSlice(CentIDByteLength))
+	ID, _ := ToCentID(tools.RandomSlice(CentIDLength))
 	return ID
 }
 
@@ -53,7 +83,7 @@ func (c CentID) Equal(other CentID) bool {
 }
 
 func (c CentID) String() string {
-	return base64.StdEncoding.EncodeToString(c[:])
+	return hexutil.Encode(c[:])
 }
 
 func (c CentID) MarshalBinary() (data []byte, err error) {
@@ -64,15 +94,15 @@ func (c CentID) BigInt() *big.Int {
 	return tools.ByteSliceToBigInt(c[:])
 }
 
-func (c CentID) ByteArray() [CentIDByteLength]byte {
-	var idBytes [CentIDByteLength]byte
-	copy(idBytes[:], c[:CentIDByteLength])
+func (c CentID) ByteArray() [CentIDLength]byte {
+	var idBytes [CentIDLength]byte
+	copy(idBytes[:], c[:CentIDLength])
 	return idBytes
 }
 
 func ParseCentIDs(centIDByteArray [][]byte) (errs []error, centIDs []CentID) {
 	for _, element := range centIDByteArray {
-		centID, err := NewCentID(element)
+		centID, err := ToCentID(element)
 		if err != nil {
 			err = centerrors.Wrap(err, "error parsing receiver centId")
 			errs = append(errs, err)
@@ -114,20 +144,6 @@ type Service interface {
 	LookupIdentityForID(centrifugeID CentID) (id Identity, err error)
 	CreateIdentity(centrifugeID CentID) (id Identity, confirmations chan *WatchIdentity, err error)
 	CheckIdentityExists(centrifugeID CentID) (exists bool, err error)
-}
-
-// CentrifugeIdStringToSlice takes a string and decodes it using base64 to convert it into a slice
-// of length 32.
-func CentrifugeIdStringToSlice(s string) (id CentID, err error) {
-	centBytes, err := base64.StdEncoding.DecodeString(s)
-	if err != nil {
-		return [CentIDByteLength]byte{}, err
-	}
-	centId, err := NewCentID(centBytes)
-	if err != nil {
-		return [CentIDByteLength]byte{}, err
-	}
-	return centId, nil
 }
 
 // GetClientP2PURL returns the p2p url associated with the centID
@@ -223,7 +239,7 @@ func AddKeyFromConfig(purpose int) error {
 		return err
 	}
 
-	centId, err := NewCentID(identityConfig.ID)
+	centId, err := ToCentID(identityConfig.ID)
 	if err != nil {
 		return err
 	}

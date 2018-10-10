@@ -20,11 +20,11 @@ func TestMain(m *testing.M) {
 }
 
 func TestCoreDocumentProcessor_SendNilDocument(t *testing.T) {
-	err := cdp.Send(nil, nil, [identity.CentIDByteLength]byte{})
+	err := cdp.Send(nil, nil, [identity.CentIDLength]byte{})
 	assert.Error(t, err, "should have thrown an error")
 }
 
 func TestCoreDocumentProcessor_AnchorNilDocument(t *testing.T) {
-	err := cdp.Anchor(nil, nil, []identity.CentID{})
+	err := cdp.Anchor(nil, nil, nil)
 	assert.Error(t, err, "should have thrown an error")
 }

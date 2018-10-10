@@ -17,14 +17,14 @@ var createIdentityCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		//cmd requires a config file
 		readConfigFile()
-		defaultBootstrap()
+		baseBootstrap()
 		identityService := identity.EthereumIdentityService{}
 		var centrifugeId identity.CentID
 		var err error
 		if centrifugeIdString == "" {
 			centrifugeId = identity.NewRandomCentID()
 		} else {
-			centrifugeId, err = identity.CentrifugeIdStringToSlice(centrifugeIdString)
+			centrifugeId, err = identity.CentIDFromString(centrifugeIdString)
 			if err != nil {
 				panic(err)
 			}
@@ -55,7 +55,7 @@ var addKeyCmd = &cobra.Command{
 		//cmd requires a config file
 		readConfigFile()
 
-		defaultBootstrap()
+		baseBootstrap()
 
 		var purposeInt int
 

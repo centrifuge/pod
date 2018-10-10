@@ -42,9 +42,9 @@ func TestSign(t *testing.T) {
 }
 
 func TestValidateSignature_invalid_key(t *testing.T) {
-	sig := &coredocumentpb.Signature{EntityId: tools.RandomSlice(identity.CentIDByteLength)}
+	sig := &coredocumentpb.Signature{EntityId: tools.RandomSlice(identity.CentIDLength)}
 	srv := &testingcommons.MockIDService{}
-	centId, _ := identity.NewCentID(sig.EntityId)
+	centId, _ := identity.ToCentID(sig.EntityId)
 	srv.On("LookupIdentityForID", centId).Return(nil, fmt.Errorf("failed GetIdentity")).Once()
 	identity.IDService = srv
 	err := ValidateSignature(sig, key1Pub)
@@ -71,9 +71,9 @@ func TestValidateSignature_success(t *testing.T) {
 
 func TestValidateCentrifugeId(t *testing.T) {
 
-	randomBytes := tools.RandomSlice(identity.CentIDByteLength)
+	randomBytes := tools.RandomSlice(identity.CentIDLength)
 
-	centrifugeId, err := identity.NewCentID(randomBytes)
+	centrifugeId, err := identity.ToCentID(randomBytes)
 
 	assert.Nil(t, err, "centrifugeId not initialized correctly ")
 
@@ -82,8 +82,8 @@ func TestValidateCentrifugeId(t *testing.T) {
 	err = ValidateCentrifugeID(sig, centrifugeId)
 	assert.Nil(t, err, "Validate centrifuge id didn't work correctly")
 
-	randomBytes = tools.RandomSlice(identity.CentIDByteLength)
-	centrifugeId, err = identity.NewCentID(randomBytes)
+	randomBytes = tools.RandomSlice(identity.CentIDLength)
+	centrifugeId, err = identity.ToCentID(randomBytes)
 
 	err = ValidateCentrifugeID(sig, centrifugeId)
 	assert.NotNil(t, err, "Validate centrifuge id didn't work correctly")

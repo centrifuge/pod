@@ -33,13 +33,13 @@ func TestMain(m *testing.M) {
 }
 
 func TestCreateAndLookupIdentity_Integration(t *testing.T) {
-	centrifugeId, _ := identity.NewCentID(tools.RandomSlice(identity.CentIDByteLength))
-	wrongCentrifugeId := tools.RandomSlice(identity.CentIDByteLength)
+	centrifugeId, _ := identity.ToCentID(tools.RandomSlice(identity.CentIDLength))
+	wrongCentrifugeId := tools.RandomSlice(identity.CentIDLength)
 	wrongCentrifugeId[0] = 0x0
 	wrongCentrifugeId[1] = 0x0
 	wrongCentrifugeId[2] = 0x0
 	wrongCentrifugeId[3] = 0x0
-	wrongCentrifugeIdTyped, _ := identity.NewCentID(wrongCentrifugeId)
+	wrongCentrifugeIdTyped, _ := identity.ToCentID(wrongCentrifugeId)
 
 	id, confirmations, err := identityService.CreateIdentity(centrifugeId)
 	assert.Nil(t, err, "should not error out when creating identity")
@@ -78,7 +78,7 @@ func TestCreateAndLookupIdentity_Integration(t *testing.T) {
 }
 
 func TestAddKeyFromConfig(t *testing.T) {
-	centrifugeId, _ := identity.NewCentID(tools.RandomSlice(identity.CentIDByteLength))
+	centrifugeId, _ := identity.ToCentID(tools.RandomSlice(identity.CentIDLength))
 	defaultCentrifugeId := config.Config.V.GetString("identityId")
 	config.Config.V.Set("identityId", centrifugeId.String())
 	config.Config.V.Set("keys.ethauth.publicKey", "../../example/resources/ethauth.pub.pem")
@@ -97,7 +97,7 @@ func TestAddKeyFromConfig(t *testing.T) {
 }
 
 func TestAddKeyFromConfig_IdentityDoesNotExist(t *testing.T) {
-	centrifugeId, _ := identity.NewCentID(tools.RandomSlice(identity.CentIDByteLength))
+	centrifugeId, _ := identity.ToCentID(tools.RandomSlice(identity.CentIDLength))
 	defaultCentrifugeId := config.Config.V.GetString("identityId")
 	config.Config.V.Set("identityId", centrifugeId.String())
 	config.Config.V.Set("keys.ethauth.publicKey", "../../example/resources/ethauth.pub.pem")
@@ -114,7 +114,7 @@ func TestCreateAndLookupIdentity_Integration_Concurrent(t *testing.T) {
 	var identityConfirmations [5]<-chan *identity.WatchIdentity
 	var err error
 	for ix := 0; ix < 5; ix++ {
-		centId, _ := identity.NewCentID(tools.RandomSlice(identity.CentIDByteLength))
+		centId, _ := identity.ToCentID(tools.RandomSlice(identity.CentIDLength))
 		centIds[ix] = centId
 		_, identityConfirmations[ix], err = identityService.CreateIdentity(centId)
 		assert.Nil(t, err, "should not error out upon identity creation")

@@ -69,8 +69,8 @@ func (id *EthereumIdentity) CentrifugeID(cenId CentID) {
 }
 
 func (id *EthereumIdentity) CentrifugeIDBytes() CentID {
-	var idBytes [CentIDByteLength]byte
-	copy(idBytes[:], id.CentrifugeId[:CentIDByteLength])
+	var idBytes [CentIDLength]byte
+	copy(idBytes[:], id.CentrifugeId[:CentIDLength])
 	return idBytes
 }
 
@@ -244,7 +244,7 @@ func sendKeyRegistrationTransaction(identityContract IdentityContract, opts *bin
 		return err
 	}
 
-	tx, err := ethereum.SubmitTransactionWithRetries(identityContract.AddKey, opts, bKey, bigInt)
+	tx, err := ethereum.GetConnection().SubmitTransactionWithRetries(identityContract.AddKey, opts, bKey, bigInt)
 	if err != nil {
 		log.Infof("Failed to send key [%v:%x] to add to CentrifugeID [%x]: %v", keyPurpose, bKey, identity.CentrifugeId, err)
 		return err
@@ -257,7 +257,7 @@ func sendKeyRegistrationTransaction(identityContract IdentityContract, opts *bin
 // sendIdentityCreationTransaction sends the actual transaction to create identity on Ethereum registry contract
 func sendIdentityCreationTransaction(identityFactory IdentityFactory, opts *bind.TransactOpts, identityToBeCreated Identity) (err error) {
 	//preparation of data in specific types for the call to Ethereum
-	tx, err := ethereum.SubmitTransactionWithRetries(identityFactory.CreateIdentity, opts, identityToBeCreated.GetCentrifugeID().BigInt())
+	tx, err := ethereum.GetConnection().SubmitTransactionWithRetries(identityFactory.CreateIdentity, opts, identityToBeCreated.GetCentrifugeID().BigInt())
 
 	if err != nil {
 		log.Infof("Failed to send identity for creation [CentrifugeID: %s] : %v", identityToBeCreated, err)

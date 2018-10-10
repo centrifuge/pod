@@ -46,8 +46,8 @@ func GenerateCoreDocument() *coredocumentpb.CoreDocument {
 	doc := &coredocumentpb.CoreDocument{
 		DataRoot:           tools.RandomSlice(32),
 		DocumentIdentifier: identifier,
-		CurrentIdentifier:  identifier,
-		NextIdentifier:     Rand32Bytes(),
+		CurrentVersion:     identifier,
+		NextVersion:        Rand32Bytes(),
 		CoredocumentSalts:  salts,
 		EmbeddedData: &any.Any{
 			TypeUrl: documenttypes.InvoiceDataTypeUrl,
@@ -66,8 +66,17 @@ func (m *MockCoreDocumentProcessor) Send(ctx context.Context, coreDocument *core
 	return args.Error(0)
 }
 
-func (m *MockCoreDocumentProcessor) Anchor(ctx context.Context, coreDocument *coredocumentpb.CoreDocument, collaborators []identity.CentID) (err error) {
+func (m *MockCoreDocumentProcessor) Anchor(
+	ctx context.Context,
+	coreDocument *coredocumentpb.CoreDocument,
+	saveState func(*coredocumentpb.CoreDocument) error) (err error) {
 	args := m.Called(coreDocument)
+	if saveState != nil {
+		err := saveState(coreDocument)
+		if err != nil {
+			return err
+		}
+	}
 	return args.Error(0)
 }
 
@@ -88,7 +97,7 @@ func (*MockSubscription) Unsubscribe() {}
 
 func CreateIdentityWithKeys() identity.CentID {
 	idConfig, _ := secp256k1.GetIDConfig()
-	centIdTyped, _ := identity.NewCentID(idConfig.ID)
+	centIdTyped, _ := identity.ToCentID(idConfig.ID)
 	// only create identity if it doesn't exist
 	id, err := identity.IDService.LookupIdentityForID(centIdTyped)
 	if err != nil {

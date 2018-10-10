@@ -22,7 +22,7 @@ type MainBootstrapper struct {
 	Bootstrappers []bootstrap.Bootstrapper
 }
 
-func (m *MainBootstrapper) PopulateDefaultBootstrappers() {
+func (m *MainBootstrapper) PopulateBaseBootstrappers() {
 	m.Bootstrappers = []bootstrap.Bootstrapper{
 		&version.Bootstrapper{},
 		&config.Bootstrapper{},
@@ -34,9 +34,13 @@ func (m *MainBootstrapper) PopulateDefaultBootstrappers() {
 		&anchors.Bootstrapper{},
 		&identity.Bootstrapper{},
 		&queue.Bootstrapper{},
-		// THIS MUST BE THE LAST BOOTSTRAPPER TO BE INVOKED AS IT WON'T RETURN UNTIL NODE IS SHUTDOWN
-		&node.Bootstrapper{},
 	}
+}
+
+func (m *MainBootstrapper) PopulateRunBootstrappers() {
+	m.PopulateBaseBootstrappers()
+	// NODE BOOTSTRAPPER MUST BE THE LAST BOOTSTRAPPER TO BE INVOKED AS IT WON'T RETURN UNTIL NODE IS SHUTDOWN
+	m.Bootstrappers = append(m.Bootstrappers, &node.Bootstrapper{})
 }
 
 func (m *MainBootstrapper) Bootstrap(context map[string]interface{}) error {

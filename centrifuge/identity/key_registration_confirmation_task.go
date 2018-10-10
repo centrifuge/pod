@@ -145,6 +145,7 @@ func (krct *KeyRegistrationConfirmationTask) RunTask() (interface{}, error) {
 
 		err = utils.LookForEvent(iter)
 		if err == nil {
+			log.Infof("Received filtered event Key Registration Confirmation for CentrifugeId [%s] and key [%x] with purpose [%d]\n", krct.CentID.String(), krct.Key, krct.KeyPurpose)
 			return iter.Event, nil
 		}
 

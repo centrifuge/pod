@@ -32,7 +32,7 @@ func TestGetSignatureForDocument_fail_connect(t *testing.T) {
 	coreDoc := testingutils.GenerateCoreDocument()
 	ctx := context.Background()
 
-	centrifugeId, err := identity.NewCentID(tools.RandomSlice(identity.CentIDByteLength))
+	centrifugeId, err := identity.ToCentID(tools.RandomSlice(identity.CentIDLength))
 	assert.Nil(t, err, "centrifugeId not initialized correctly ")
 	client.On("RequestDocumentSignature", ctx, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("signature failed")).Once()
 	resp, err := getSignatureForDocument(ctx, *coreDoc, client, centrifugeId)
@@ -47,7 +47,7 @@ func TestGetSignatureForDocument_fail_version_check(t *testing.T) {
 	ctx := context.Background()
 	resp := &p2ppb.SignatureResponse{CentNodeVersion: "1.0.0"}
 
-	centrifugeId, err := identity.NewCentID(tools.RandomSlice(identity.CentIDByteLength))
+	centrifugeId, err := identity.ToCentID(tools.RandomSlice(identity.CentIDLength))
 	assert.Nil(t, err, "centrifugeId not initialized correctly ")
 
 	client.On("RequestDocumentSignature", ctx, mock.Anything, mock.Anything).Return(resp, nil).Once()
@@ -64,10 +64,10 @@ func TestGetSignatureForDocument_fail_centrifugeId(t *testing.T) {
 	coreDoc := testingutils.GenerateCoreDocument()
 	ctx := context.Background()
 
-	centrifugeId, err := identity.NewCentID(tools.RandomSlice(identity.CentIDByteLength))
+	centrifugeId, err := identity.ToCentID(tools.RandomSlice(identity.CentIDLength))
 	assert.Nil(t, err, "centrifugeId not initialized correctly ")
 
-	randomBytes := tools.RandomSlice(identity.CentIDByteLength)
+	randomBytes := tools.RandomSlice(identity.CentIDLength)
 
 	signature := &coredocumentpb.Signature{EntityId: randomBytes, PublicKey: tools.RandomSlice(32)}
 	sigResp := &p2ppb.SignatureResponse{

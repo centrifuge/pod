@@ -11,8 +11,10 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/centrifuge/p2p"
-	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/legacy/invoice"
+	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
+	legacyinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/legacy/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/empty"
 	logging "github.com/ipfs/go-log"
 	"golang.org/x/net/context"
@@ -21,22 +23,31 @@ import (
 var apiLog = logging.Logger("invoice-api")
 
 // grpcHandler handles all the invoice document related actions
-// anchoring, sending, proof generation, finding stored invoice document
+// anchoring, sending, finding stored invoice document
 type grpcHandler struct {
-	Repository            storage.Repository
-	CoreDocumentProcessor coredocumentprocessor.Processor
+	legacyRepo       storage.LegacyRepository
+	coreDocProcessor coredocumentprocessor.Processor
+	service          Service
 }
 
-// GRPCHandler returns an handler that implements InvoiceDocumentServiceServer
-func GRPCHandler() clientinvoicepb.InvoiceDocumentServiceServer {
+// LegacyGRPCHandler returns an handler that implements InvoiceDocumentServiceServer
+// Deprecated: use GRPCHandler()
+func LegacyGRPCHandler() legacyinvoicepb.InvoiceDocumentServiceServer {
 	return &grpcHandler{
-		Repository:            GetRepository(),
-		CoreDocumentProcessor: coredocumentprocessor.DefaultProcessor(identity.IDService, p2p.NewP2PClient()),
+		legacyRepo:       GetLegacyRepository(),
+		coreDocProcessor: coredocumentprocessor.DefaultProcessor(identity.IDService, p2p.NewP2PClient()),
+	}
+}
+
+// GRPCHandler returns an implementation of invoice.DocumentServiceServer
+func GRPCHandler(service Service) clientinvoicepb.DocumentServiceServer {
+	return &grpcHandler{
+		service: service,
 	}
 }
 
 // anchorInvoiceDocument anchors the given invoice document and returns the anchored document
-func (h *grpcHandler) anchorInvoiceDocument(ctx context.Context, doc *invoicepb.InvoiceDocument, collaborators []identity.CentID) (*invoicepb.InvoiceDocument, error) {
+func (h *grpcHandler) anchorInvoiceDocument(ctx context.Context, doc *invoicepb.InvoiceDocument, collaborators [][]byte) (*invoicepb.InvoiceDocument, error) {
 	inv, err := New(doc)
 	if err != nil {
 		apiLog.Error(err)
@@ -44,7 +55,7 @@ func (h *grpcHandler) anchorInvoiceDocument(ctx context.Context, doc *invoicepb.
 	}
 
 	// TODO review this create, do we need to refactor this because Send method also calls this?
-	err = h.Repository.Create(inv.Document.CoreDocument.DocumentIdentifier, inv.Document)
+	err = h.legacyRepo.Create(inv.Document.CoreDocument.DocumentIdentifier, inv.Document)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("error saving invoice: %v", err))
@@ -56,7 +67,8 @@ func (h *grpcHandler) anchorInvoiceDocument(ctx context.Context, doc *invoicepb.
 		return nil, err
 	}
 
-	err = h.CoreDocumentProcessor.Anchor(ctx, coreDoc, collaborators)
+	coreDoc.Collaborators = collaborators
+	err = h.coreDocProcessor.Anchor(ctx, coreDoc, nil)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, err
@@ -73,9 +85,10 @@ func (h *grpcHandler) anchorInvoiceDocument(ctx context.Context, doc *invoicepb.
 }
 
 // CreateInvoiceProof creates proofs for a list of fields
-func (h *grpcHandler) CreateInvoiceProof(ctx context.Context, createInvoiceProofEnvelope *clientinvoicepb.CreateInvoiceProofEnvelope) (*clientinvoicepb.InvoiceProof, error) {
+// Deprecated
+func (h *grpcHandler) CreateInvoiceProof(ctx context.Context, createInvoiceProofEnvelope *legacyinvoicepb.CreateInvoiceProofEnvelope) (*legacyinvoicepb.InvoiceProof, error) {
 	invDoc := new(invoicepb.InvoiceDocument)
-	err := h.Repository.GetByID(createInvoiceProofEnvelope.DocumentIdentifier, invDoc)
+	err := h.legacyRepo.GetByID(createInvoiceProofEnvelope.DocumentIdentifier, invDoc)
 	if err != nil {
 		return nil, err
 	}
@@ -92,12 +105,13 @@ func (h *grpcHandler) CreateInvoiceProof(ctx context.Context, createInvoiceProof
 		return nil, err
 	}
 
-	return &clientinvoicepb.InvoiceProof{FieldProofs: proofs, DocumentIdentifier: inv.Document.CoreDocument.DocumentIdentifier}, nil
+	return &legacyinvoicepb.InvoiceProof{FieldProofs: proofs, DocumentIdentifier: inv.Document.CoreDocument.DocumentIdentifier}, nil
 
 }
 
 // AnchorInvoiceDocument anchors the given invoice document and returns the anchor details
-func (h *grpcHandler) AnchorInvoiceDocument(ctx context.Context, anchorInvoiceEnvelope *clientinvoicepb.AnchorInvoiceEnvelope) (*invoicepb.InvoiceDocument, error) {
+// Deprecated
+func (h *grpcHandler) AnchorInvoiceDocument(ctx context.Context, anchorInvoiceEnvelope *legacyinvoicepb.AnchorInvoiceEnvelope) (*invoicepb.InvoiceDocument, error) {
 	anchoredInvDoc, err := h.anchorInvoiceDocument(ctx, anchorInvoiceEnvelope.Document, nil)
 	if err != nil {
 		apiLog.Error(err)
@@ -105,7 +119,7 @@ func (h *grpcHandler) AnchorInvoiceDocument(ctx context.Context, anchorInvoiceEn
 	}
 
 	// Updating invoice with autogenerated fields after anchoring
-	err = h.Repository.Update(anchoredInvDoc.CoreDocument.DocumentIdentifier, anchoredInvDoc)
+	err = h.legacyRepo.Update(anchoredInvDoc.CoreDocument.DocumentIdentifier, anchoredInvDoc)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("error saving document: %v", err))
@@ -116,17 +130,15 @@ func (h *grpcHandler) AnchorInvoiceDocument(ctx context.Context, anchorInvoiceEn
 }
 
 // SendInvoiceDocument anchors and sends an invoice to the recipient
-func (h *grpcHandler) SendInvoiceDocument(ctx context.Context, sendInvoiceEnvelope *clientinvoicepb.SendInvoiceEnvelope) (*invoicepb.InvoiceDocument, error) {
-	errs, recipientIDs := identity.ParseCentIDs(sendInvoiceEnvelope.Recipients)
-	if len(errs) != 0 {
-		return nil, centerrors.New(code.Unknown, fmt.Sprintf("%v", errs))
-	}
-	doc, err := h.anchorInvoiceDocument(ctx, sendInvoiceEnvelope.Document, recipientIDs)
+// Deprecated
+func (h *grpcHandler) SendInvoiceDocument(ctx context.Context, sendInvoiceEnvelope *legacyinvoicepb.SendInvoiceEnvelope) (*invoicepb.InvoiceDocument, error) {
+	errs := []error{}
+	doc, err := h.anchorInvoiceDocument(ctx, sendInvoiceEnvelope.Document, sendInvoiceEnvelope.Recipients)
 	if err != nil {
 		return nil, centerrors.Wrap(err, "error when anchoring document")
 	}
 	// Updating invoice with autogenerated fields after anchoring
-	err = h.Repository.Update(doc.CoreDocument.DocumentIdentifier, doc)
+	err = h.legacyRepo.Update(doc.CoreDocument.DocumentIdentifier, doc)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("error saving document: %v", err))
@@ -140,8 +152,13 @@ func (h *grpcHandler) SendInvoiceDocument(ctx context.Context, sendInvoiceEnvelo
 		return nil, centerrors.New(code.DocumentNotFound, err.Error())
 	}
 
-	for _, recipient := range recipientIDs {
-		err = h.CoreDocumentProcessor.Send(ctx, coreDoc, recipient)
+	for _, recipient := range sendInvoiceEnvelope.Recipients {
+		recipientID, err := identity.ToCentID(recipient)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		err = h.coreDocProcessor.Send(ctx, coreDoc, recipientID)
 		if err != nil {
 			errs = append(errs, err)
 		}
@@ -156,9 +173,10 @@ func (h *grpcHandler) SendInvoiceDocument(ctx context.Context, sendInvoiceEnvelo
 }
 
 // GetInvoiceDocument returns already stored invoice document
-func (h *grpcHandler) GetInvoiceDocument(ctx context.Context, getInvoiceDocumentEnvelope *clientinvoicepb.GetInvoiceDocumentEnvelope) (*invoicepb.InvoiceDocument, error) {
+// Deprecated
+func (h *grpcHandler) GetInvoiceDocument(ctx context.Context, getInvoiceDocumentEnvelope *legacyinvoicepb.GetInvoiceDocumentEnvelope) (*invoicepb.InvoiceDocument, error) {
 	doc := new(invoicepb.InvoiceDocument)
-	err := h.Repository.GetByID(getInvoiceDocumentEnvelope.DocumentIdentifier, doc)
+	err := h.legacyRepo.GetByID(getInvoiceDocumentEnvelope.DocumentIdentifier, doc)
 	if err == nil {
 		return doc, nil
 	}
@@ -178,6 +196,67 @@ func (h *grpcHandler) GetInvoiceDocument(ctx context.Context, getInvoiceDocument
 }
 
 // GetReceivedInvoiceDocuments returns all the received invoice documents
-func (h *grpcHandler) GetReceivedInvoiceDocuments(ctx context.Context, empty *empty.Empty) (*clientinvoicepb.ReceivedInvoices, error) {
+// Deprecated
+func (h *grpcHandler) GetReceivedInvoiceDocuments(ctx context.Context, empty *empty.Empty) (*legacyinvoicepb.ReceivedInvoices, error) {
 	return nil, nil
+}
+
+// Create handles the creation of the invoices and anchoring the documents on chain
+func (h *grpcHandler) Create(ctx context.Context, req *clientinvoicepb.InvoiceCreatePayload) (*clientinvoicepb.InvoiceResponse, error) {
+	doc, err := h.service.DeriveFromCreatePayload(req)
+	if err != nil {
+		return nil, err
+	}
+
+	// validate and persist
+	doc, err = h.service.Create(ctx, doc)
+	if err != nil {
+		return nil, err
+	}
+
+	invoiceResponse, err := h.service.DeriveInvoiceResponse(doc)
+	return invoiceResponse, err
+}
+
+// Update handles the document update
+func (h *grpcHandler) Update(context.Context, *clientinvoicepb.InvoiceUpdatePayload) (*clientinvoicepb.InvoiceResponse, error) {
+	return nil, fmt.Errorf("not implemented yet")
+}
+
+// GetVersion returns the requested version of the document
+func (h *grpcHandler) GetVersion(ctx context.Context, getVersionRequest *clientinvoicepb.GetVersionRequest) (*clientinvoicepb.InvoiceResponse, error) {
+	identifier, err := hexutil.Decode(getVersionRequest.Identifier)
+	if err != nil {
+		return nil, centerrors.Wrap(err, "identifier is invalid")
+	}
+	version, err := hexutil.Decode(getVersionRequest.Version)
+	if err != nil {
+		return nil, centerrors.Wrap(err, "version is invalid")
+	}
+	doc, err := h.service.GetVersion(identifier, version)
+	if err != nil {
+		return nil, centerrors.Wrap(err, "document not found")
+	}
+	resp, err := h.service.DeriveInvoiceResponse(doc)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// Get returns the invoice the latest version of the document with given identifier
+func (h *grpcHandler) Get(ctx context.Context, getRequest *clientinvoicepb.GetRequest) (*clientinvoicepb.InvoiceResponse, error) {
+	identifier, err := hexutil.Decode(getRequest.Identifier)
+	if err != nil {
+		return nil, centerrors.Wrap(err, "identifier is an invalid hex string")
+	}
+	doc, err := h.service.GetLastVersion(identifier)
+	if err != nil {
+		return nil, centerrors.Wrap(err, "document not found")
+	}
+	resp, err := h.service.DeriveInvoiceResponse(doc)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
 }

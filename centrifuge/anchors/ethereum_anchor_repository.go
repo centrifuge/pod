@@ -116,7 +116,7 @@ func sendPreCommitTransaction(contract AnchorRepositoryContract, opts *bind.Tran
 	//preparation of data in specific types for the call to Ethereum
 	schemaVersion := big.NewInt(int64(preCommitData.SchemaVersion))
 
-	tx, err := ethereum.SubmitTransactionWithRetries(contract.PreCommit, opts, preCommitData.AnchorID, preCommitData.SigningRoot,
+	tx, err := ethereum.GetConnection().SubmitTransactionWithRetries(contract.PreCommit, opts, preCommitData.AnchorID, preCommitData.SigningRoot,
 		preCommitData.CentrifugeID, preCommitData.Signature, preCommitData.ExpirationBlock, schemaVersion)
 
 	if err != nil {
@@ -132,7 +132,7 @@ func sendPreCommitTransaction(contract AnchorRepositoryContract, opts *bind.Tran
 
 // sendCommitTransaction sends the actual transaction to register the Anchor on Ethereum registry contract
 func sendCommitTransaction(contract AnchorRepositoryContract, opts *bind.TransactOpts, commitData *CommitData) (err error) {
-	tx, err := ethereum.SubmitTransactionWithRetries(contract.Commit, opts, commitData.AnchorID.toBigInt(), commitData.DocumentRoot,
+	tx, err := ethereum.GetConnection().SubmitTransactionWithRetries(contract.Commit, opts, commitData.AnchorID.toBigInt(), commitData.DocumentRoot,
 		commitData.CentrifugeID.BigInt(), commitData.DocumentProofs, commitData.Signature)
 
 	if err != nil {

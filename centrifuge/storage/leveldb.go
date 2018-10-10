@@ -53,11 +53,11 @@ func CloseLevelDBStorage() {
 }
 
 // DefaultLevelDB implements the repository
+// Deprecated: use documents.LevelDBRepository
 type DefaultLevelDB struct {
-	KeyPrefix         string
-	LevelDB           *leveldb.DB
-	ValidateFunc      func(proto.Message) error
-	ValidateModelFunc func(interface{}) error
+	KeyPrefix    string
+	LevelDB      *leveldb.DB
+	ValidateFunc func(proto.Message) error
 }
 
 // Exists returns if the document exists in the repository
@@ -138,77 +138,6 @@ func (repo *DefaultLevelDB) Update(id []byte, msg proto.Message) error {
 	}
 
 	data, err := proto.Marshal(msg)
-	if err != nil {
-		return err
-	}
-
-	return repo.LevelDB.Put(repo.GetKey(id), data, nil)
-}
-
-// GetModelByID finds the document by id and marshals into message
-func (repo *DefaultLevelDB) GetModelByID(id []byte, msg Unmarshaler) error {
-	if msg == nil {
-		return fmt.Errorf("nil document provided")
-	}
-
-	data, err := repo.LevelDB.Get(repo.GetKey(id), nil)
-	if err != nil {
-		return err
-	}
-
-	err = msg.FromJSON(data)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// CreateModel creates the model if not exists
-// errors out if document exists
-func (repo *DefaultLevelDB) CreateModel(id []byte, msg Marshaler) error {
-	if msg == nil {
-		return fmt.Errorf("nil model provided")
-	}
-
-	if repo.Exists(id) {
-		return fmt.Errorf("document already exists")
-	}
-
-	// TODO(ved): check if we still need this once the model is built
-	if repo.ValidateModelFunc != nil {
-		err := repo.ValidateModelFunc(msg)
-		if err != nil {
-			return fmt.Errorf("validation failed: %v", err)
-		}
-	}
-
-	data, err := msg.JSON()
-	if err != nil {
-		return err
-	}
-
-	return repo.LevelDB.Put(repo.GetKey(id), data, nil)
-}
-
-// Update updates the doc with ID if exists
-func (repo *DefaultLevelDB) UpdateModel(id []byte, msg Marshaler) error {
-	if msg == nil {
-		return fmt.Errorf("nil document provided")
-	}
-
-	if !repo.Exists(id) {
-		return fmt.Errorf("document doesn't exists")
-	}
-
-	if repo.ValidateModelFunc != nil {
-		err := repo.ValidateModelFunc(msg)
-		if err != nil {
-			return fmt.Errorf("validation failed: %v", err)
-		}
-	}
-
-	data, err := msg.JSON()
 	if err != nil {
 		return err
 	}

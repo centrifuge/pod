@@ -9,15 +9,16 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"math/big"
 	"os"
 	"strings"
 	"time"
 
-	"io/ioutil"
-
+	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/resources"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	logging "github.com/ipfs/go-log"
 	"github.com/spf13/viper"
 )
@@ -38,6 +39,7 @@ type AccountConfig struct {
 
 // IdentityConfig holds ID, public and private key of a single entity
 type IdentityConfig struct {
+	// TODO: below ID should use a CentID type
 	ID         []byte
 	PublicKey  []byte
 	PrivateKey []byte
@@ -171,8 +173,12 @@ func (c *Configuration) GetNetworkID() uint32 {
 }
 
 // Identity:
-func (c *Configuration) GetIdentityId() []byte {
-	return []byte(c.V.GetString("identityId"))
+func (c *Configuration) GetIdentityId() ([]byte, error) {
+	id, err := hexutil.Decode(c.V.GetString("identityId"))
+	if err != nil {
+		return nil, centerrors.Wrap(err, "can't read identityId from config")
+	}
+	return id, err
 }
 
 func (c *Configuration) GetSigningKeyPair() (pub, priv string) {
@@ -222,7 +228,6 @@ func (c *Configuration) InitializeViper() {
 	if err != nil {
 		log.Panicf("Error reading from default configuration (resources/default_config.yaml): %s", err)
 	}
-
 	// Load user specified config
 	if c.configFile != "" {
 		log.Infof("Loading user specified config from %s", c.configFile)
@@ -271,13 +276,14 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	}
 
 	if accountPassword == "" {
-		return nil, errors.New("Account Password not provided")
+		log.Warningf("Account Password not provided")
 	}
 
 	v := viper.New()
 	v.SetConfigType("yaml")
 	v.Set("storage.path", targetDataDir+"/db/centrifuge_data.leveldb")
 	v.Set("identityId", "")
+	v.Set("centrifugeNetwork", network)
 	v.Set("nodeHostname", "0.0.0.0")
 	v.Set("nodePort", apiPort)
 	v.Set("p2p.port", p2pPort)
