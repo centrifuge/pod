@@ -25,7 +25,7 @@ func (grpcHandler) CreateDocumentProof(ctx context.Context, createDocumentProofE
 	return nil, centerrors.New(code.Unknown, "implement me")
 }
 
-// CreateDocumentProof creates precise proofs for the given fields for the given version of the document
+// CreateDocumentProofForVersion creates precise proofs for the given fields for the given version of the document
 func (grpcHandler) CreateDocumentProofForVersion(context.Context, *documentpb.CreateDocumentProofForVersionRequest) (*documentpb.DocumentProof, error) {
 	apiLog.Error("implement me")
 	return nil, centerrors.New(code.Unknown, "implement me")
