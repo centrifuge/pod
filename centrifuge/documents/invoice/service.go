@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
+	"github.com/golang/protobuf/proto"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
@@ -101,8 +103,13 @@ func (s service) Create(ctx context.Context, model documents.Model) (documents.M
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
 	}
 
+	coreDoc, err := inv.PackCoreDocument()
+	if err != nil {
+		return nil, centerrors.New(code.Unknown, err.Error())
+	}
+
 	// we use currentIdentifier as the id since that will be unique across multiple versions of the same document
-	err = s.repo.Create(inv.CoreDocument.CurrentIdentifier, inv)
+	err = s.repo.Create(coreDoc.CurrentIdentifier, inv)
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
@@ -114,11 +121,6 @@ func (s service) Create(ctx context.Context, model documents.Model) (documents.M
 		}
 
 		return s.SaveState(inv)
-	}
-
-	coreDoc, err := inv.PackCoreDocument()
-	if err != nil {
-		return nil, centerrors.New(code.Unknown, err.Error())
 	}
 
 	err = s.coreDocProcessor.Anchor(ctx, coreDoc, inv.Collaborators, saveState)
@@ -145,8 +147,21 @@ func (s service) getDocumentDataTree(document coredocumentpb.CoreDocument) (tree
 	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: sha256.New()})
 
 
-	// todo check passed parameters
-	err = t.AddLeavesFromDocument(document.EmbeddedData, document.EmbeddedDataSalts)
+	// todo make get InvoiceData data public in model and replace
+	invoiceData := &invoicepb.InvoiceData{}
+	err = proto.Unmarshal(document.EmbeddedData.Value, invoiceData)
+	if err != nil {
+		return nil, err
+	}
+
+	invoiceDataSalts := &invoicepb.InvoiceDataSalts{}
+	err = proto.Unmarshal(document.EmbeddedDataSalts.Value, invoiceDataSalts)
+	if err != nil {
+		return nil, err
+	}
+
+
+	err = t.AddLeavesFromDocument(invoiceData, invoiceDataSalts)
 	if err != nil {
 		log.Error("getDocumentDataTree:", err)
 		return nil, err
