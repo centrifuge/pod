@@ -1,6 +1,8 @@
 package documents
 
 import (
+	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
+	"github.com/centrifuge/go-centrifuge/centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/documents"
 	logging "github.com/ipfs/go-log"
 	"golang.org/x/net/context"
@@ -19,10 +21,12 @@ func GRPCHandler() documentpb.DocumentServiceServer {
 
 // CreateDocumentProof creates precise proofs for the given fields
 func (grpcHandler) CreateDocumentProof(ctx context.Context, createDocumentProofEnvelope *documentpb.CreateDocumentProofRequest) (*documentpb.DocumentProof, error) {
-	panic("implement me")
+	apiLog.Error("implement me")
+	return nil, centerrors.New(code.Unknown, "implement me")
 }
 
 // CreateDocumentProof creates precise proofs for the given fields for the given version of the document
 func (grpcHandler) CreateDocumentProofForVersion(context.Context, *documentpb.CreateDocumentProofForVersionRequest) (*documentpb.DocumentProof, error) {
-	panic("implement me")
+	apiLog.Error("implement me")
+	return nil, centerrors.New(code.Unknown, "implement me")
 }
