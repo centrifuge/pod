@@ -272,6 +272,7 @@ func New() *coredocumentpb.CoreDocument {
 	return &doc
 }
 
+// FillSalts of coredocument current state for proof tree creation
 func FillSalts(doc *coredocumentpb.CoreDocument) {
 	salts := &coredocumentpb.CoreDocumentSalts{}
 	proofs.FillSalts(doc, salts)

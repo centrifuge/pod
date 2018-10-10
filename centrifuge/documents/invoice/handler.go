@@ -47,7 +47,7 @@ func GRPCHandler(service Service) clientinvoicepb.DocumentServiceServer {
 }
 
 // anchorInvoiceDocument anchors the given invoice document and returns the anchored document
-// TODO Deprecated
+// Deprecated
 func (h *grpcHandler) anchorInvoiceDocument(ctx context.Context, doc *invoicepb.InvoiceDocument, collaborators [][]byte) (*invoicepb.InvoiceDocument, error) {
 	inv, err := New(doc, collaborators)
 	if err != nil {
