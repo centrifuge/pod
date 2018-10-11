@@ -9,8 +9,10 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents/invoice"
 	"github.com/stretchr/testify/assert"
 )
@@ -38,6 +40,7 @@ func TestCentAPIServer_StartHappy(t *testing.T) {
 }
 
 func TestCentAPIServer_StartContextCancel(t *testing.T) {
+	documents.GetRegistryInstance().Register(documenttypes.InvoiceDataTypeUrl, invoice.DefaultService(nil, nil))
 	capi := NewCentAPIServer("0.0.0.0:9000", 9000, "")
 	ctx, canc := context.WithCancel(context.Background())
 	startErr := make(chan error)
