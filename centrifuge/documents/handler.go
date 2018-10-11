@@ -1,9 +1,10 @@
 package documents
 
 import (
-	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
-	"github.com/centrifuge/go-centrifuge/centrifuge/code"
+	"fmt"
+
 	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/documents"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	logging "github.com/ipfs/go-log"
 	"golang.org/x/net/context"
 )
@@ -21,12 +22,30 @@ func GRPCHandler() documentpb.DocumentServiceServer {
 
 // CreateDocumentProof creates precise proofs for the given fields
 func (grpcHandler) CreateDocumentProof(ctx context.Context, createDocumentProofEnvelope *documentpb.CreateDocumentProofRequest) (*documentpb.DocumentProof, error) {
-	apiLog.Error("implement me")
-	return nil, centerrors.New(code.Unknown, "implement me")
+	service, err := GetRegistryInstance().LocateService(createDocumentProofEnvelope.Type)
+	if err != nil {
+		return &documentpb.DocumentProof{}, err
+	}
+	identifier, err := hexutil.Decode(createDocumentProofEnvelope.Identifier)
+	if err != nil {
+		return &documentpb.DocumentProof{}, fmt.Errorf("identifier invalid %v ", err)
+	}
+	return service.CreateProofs(identifier, createDocumentProofEnvelope.Fields)
 }
 
 // CreateDocumentProofForVersion creates precise proofs for the given fields for the given version of the document
-func (grpcHandler) CreateDocumentProofForVersion(context.Context, *documentpb.CreateDocumentProofForVersionRequest) (*documentpb.DocumentProof, error) {
-	apiLog.Error("implement me")
-	return nil, centerrors.New(code.Unknown, "implement me")
+func (grpcHandler) CreateDocumentProofForVersion(ctx context.Context, createDocumentProofForVersionEnvelope *documentpb.CreateDocumentProofForVersionRequest) (*documentpb.DocumentProof, error) {
+	service, err := GetRegistryInstance().LocateService(createDocumentProofForVersionEnvelope.Type)
+	if err != nil {
+		return &documentpb.DocumentProof{}, err
+	}
+	identifier, err := hexutil.Decode(createDocumentProofForVersionEnvelope.Identifier)
+	if err != nil {
+		return &documentpb.DocumentProof{}, fmt.Errorf("identifier invalid %v ", err)
+	}
+	version, err := hexutil.Decode(createDocumentProofForVersionEnvelope.Version)
+	if err != nil {
+		return &documentpb.DocumentProof{}, fmt.Errorf("version invalid %v ", err)
+	}
+	return service.CreateProofsForVersion(identifier, version, createDocumentProofForVersionEnvelope.Fields)
 }

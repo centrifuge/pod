@@ -279,6 +279,7 @@ func New() *coredocumentpb.CoreDocument {
 
 // FillSalts of coredocument current state for proof tree creation
 func FillSalts(doc *coredocumentpb.CoreDocument) {
+	// TODO return error here
 	salts := &coredocumentpb.CoreDocumentSalts{}
 	proofs.FillSalts(doc, salts)
 	doc.CoredocumentSalts = salts

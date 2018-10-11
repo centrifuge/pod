@@ -5,18 +5,11 @@ package documents_test
 import (
 	"testing"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	cd "github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/stretchr/testify/assert"
 )
-
-type MockService struct{}
-
-func (m *MockService) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (documents.Model, error) {
-	return nil, nil
-}
 
 func TestRegistry_GetRegistryInstance(t *testing.T) {
 
