@@ -3,6 +3,10 @@ package nft
 import (
 	"context"
 	"flag"
+	"math/big"
+	"os"
+	"testing"
+
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
@@ -14,15 +18,11 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"math/big"
-	"os"
-	"testing"
 )
 
 var invService invoice.Service
 
-
-func registerInvoiceService(){
+func registerInvoiceService() {
 
 	proc := &testingutils.MockCoreDocumentProcessor{}
 	proc.On("Anchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
@@ -48,28 +48,26 @@ func TestMain(m *testing.M) {
 
 }
 
-
-func getTestSetupData() *nftpb.NFTMintRequest{
+func getTestSetupData() *nftpb.NFTMintRequest {
 
 	nftMintRequest := &nftpb.NFTMintRequest{
-		Identifier:"inv1234",
-		RegistryAddress:"0xf72855759a39fb75fc7341139f5d7a3974d4da08",
-		ProofFields:  []string{"gross_amount", "due_date", "currency"},
-		DepositAddress:"0xf72855759a39fb75fc7341139f5d7a3974d4da08"}
+		Identifier:      "inv1234",
+		RegistryAddress: "0xf72855759a39fb75fc7341139f5d7a3974d4da08",
+		ProofFields:     []string{"gross_amount", "due_date", "currency"},
+		DepositAddress:  "0xf72855759a39fb75fc7341139f5d7a3974d4da08"}
 
 	return nftMintRequest
 }
 
-type MockPaymentObligation struct {}
+type MockPaymentObligation struct{}
 
 func (MockPaymentObligation) Mint(to common.Address, tokenId *big.Int, tokenURI string, anchorId *big.Int, merkleRoot [32]byte,
 	values [3]string, salts [3][32]byte, proofs [3][][32]byte) (<-chan *WatchMint, error) {
 
-	 return nil, nil
+	return nil, nil
 }
 
-
-type MockIdentityService struct {}
+type MockIdentityService struct{}
 
 func (MockIdentityService) getIdentityAddress() (*common.Address, error) {
 
@@ -78,9 +76,8 @@ func (MockIdentityService) getIdentityAddress() (*common.Address, error) {
 	return &address, nil
 }
 
-
-func getServiceWithMockedPaymentObligation()*Service{
-	return &Service{PaymentObligation:MockPaymentObligation{},IdentityService:MockIdentityService{}}
+func getServiceWithMockedPaymentObligation() *Service {
+	return &Service{PaymentObligation: MockPaymentObligation{}, IdentityService: MockIdentityService{}}
 
 }
 
@@ -98,7 +95,6 @@ func createInvoiceInDB(t *testing.T) []byte {
 
 	inv, err := invService.DeriveFromCreatePayload(payload)
 	_, err = invService.Create(context.Background(), inv)
-
 
 	corDoc, err := inv.PackCoreDocument()
 	assert.Nil(t, err, "model should return a valid core document")
@@ -118,8 +114,8 @@ func TestNFTMint_success(t *testing.T) {
 
 	nftMintResponse, err := handler.MintNFT(context.Background(), nftMintRequest)
 
-	assert.Nil(t, err,"mint nft should be successful")
-	assert.NotEqual(t,"",nftMintResponse.TokenId,"tokenId should have a dummy value")
+	assert.Nil(t, err, "mint nft should be successful")
+	assert.NotEqual(t, "", nftMintResponse.TokenId, "tokenId should have a dummy value")
 
 }
 
@@ -131,8 +127,8 @@ func TestNFTMint_InvalidIdentifier(t *testing.T) {
 
 	nftMintResponse, err := handler.MintNFT(context.Background(), nftMintRequest)
 
-	assert.Error(t, err,"invalid identifier should throw an error")
-	assert.Nil(t,nftMintResponse,"nftMintResponse should be nil")
+	assert.Error(t, err, "invalid identifier should throw an error")
+	assert.Nil(t, nftMintResponse, "nftMintResponse should be nil")
 
 }
 
@@ -142,7 +138,7 @@ func TestNFTMint_InvalidMintRequest(t *testing.T) {
 
 	nftMintResponse, err := handler.MintNFT(context.Background(), nil)
 
-	assert.Error(t, err,"empty request should throw an error")
-	assert.Nil(t,nftMintResponse,"nftMintResponse should be nil")
+	assert.Error(t, err, "empty request should throw an error")
+	assert.Nil(t, nftMintResponse, "nftMintResponse should be nil")
 
 }

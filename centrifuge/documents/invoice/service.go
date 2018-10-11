@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"fmt"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/golang/protobuf/proto"
-	"fmt"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
@@ -160,7 +161,6 @@ func (s service) Create(ctx context.Context, model documents.Model) (documents.M
 func (s service) getDocumentDataTree(document coredocumentpb.CoreDocument) (tree *proofs.DocumentTree, err error) {
 	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: sha256.New()})
 
-
 	// todo make get InvoiceData data public in model and replace
 	invoiceData := &invoicepb.InvoiceData{}
 	err = proto.Unmarshal(document.EmbeddedData.Value, invoiceData)
@@ -173,7 +173,6 @@ func (s service) getDocumentDataTree(document coredocumentpb.CoreDocument) (tree
 	if err != nil {
 		return nil, err
 	}
-
 
 	err = t.AddLeavesFromDocument(invoiceData, invoiceDataSalts)
 	if err != nil {

@@ -58,7 +58,7 @@ func registerServices(ctx context.Context, grpcServer *grpc.Server, gwmux *runti
 	}
 
 	nftpb.RegisterNFTServiceServer(grpcServer, nft.GRPCHandler(nft.DefaultService()))
-	err = nftpb.RegisterNFTServiceHandlerFromEndpoint(ctx, gwmux , addr, dopts)
+	err = nftpb.RegisterNFTServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
 
 	if err != nil {
 		return err

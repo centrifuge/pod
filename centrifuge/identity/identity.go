@@ -5,8 +5,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common"
 	"math/big"
+
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
@@ -127,7 +128,7 @@ type Identity interface {
 	AddKeyToIdentity(ctx context.Context, keyPurpose int, key []byte) (confirmations chan *WatchIdentity, err error)
 	CheckIdentityExists() (exists bool, err error)
 	FetchKey(key []byte) (Key, error)
-	GetIdentityAddress() (*common.Address,error)
+	GetIdentityAddress() (*common.Address, error)
 }
 
 // Key defines a single ERC725 identity key

@@ -8,8 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-
-type IdentityServiceImpl struct {}
+type IdentityServiceImpl struct{}
 
 func (IdentityServiceImpl) getIdentityAddress() (*common.Address, error) {
 	centIDBytes, err := config.Config.GetIdentityId()
@@ -38,16 +37,14 @@ type IdentityService interface {
 	getIdentityAddress() (*common.Address, error)
 }
 
-
 type Service struct {
 	PaymentObligation PaymentObligation
-	IdentityService IdentityService
+	IdentityService   IdentityService
 }
 
 func DefaultService() *Service {
-	return &Service{PaymentObligation:getConfiguredPaymentObligation(),IdentityService:IdentityServiceImpl{}}
+	return &Service{PaymentObligation: getConfiguredPaymentObligation(), IdentityService: IdentityServiceImpl{}}
 }
-
 
 func (s Service) mintNFT(model documents.Model, documentService invoice.Service, registryAddress, depositAddress string, proofFields []string) (string, error) {
 
@@ -65,16 +62,14 @@ func (s Service) mintNFT(model documents.Model, documentService invoice.Service,
 		return "", nil
 	}
 
-	requestData, err := NewMintRequestData(toAddress,corDoc.CurrentVersion,proofs,corDoc.DocumentRoot)
+	requestData, err := NewMintRequestData(toAddress, corDoc.CurrentVersion, proofs, corDoc.DocumentRoot)
 
 	if err != nil {
-		return "" ,err
+		return "", err
 	}
 
-	_, err = s.PaymentObligation.Mint(requestData.To,requestData.TokenId,requestData.TokenURI,requestData.AnchorId,
-		requestData.MerkleRoot,requestData.Values,requestData.Salts,requestData.Proofs)
-
-
+	_, err = s.PaymentObligation.Mint(requestData.To, requestData.TokenId, requestData.TokenURI, requestData.AnchorId,
+		requestData.MerkleRoot, requestData.Values, requestData.Salts, requestData.Proofs)
 
 	if err != nil {
 		return "", err
