@@ -9,15 +9,14 @@ import (
 	"os"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/commons"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	"github.com/centrifuge/go-centrifuge/centrifuge/signatures"
+	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -223,8 +222,8 @@ func TestValidator_selfSignatureValidator(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestValidator_senderSignatureValidator(t *testing.T) {
-	ssv := senderSignatureValidator()
+func TestValidator_signatureValidator(t *testing.T) {
+	ssv := signaturesValidator()
 
 	// fail getCoreDoc
 	model := mockModel{}
@@ -241,7 +240,7 @@ func TestValidator_senderSignatureValidator(t *testing.T) {
 	err = ssv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "expecting only one signature")
+	assert.Contains(t, err.Error(), "atleast one signature expected")
 
 	// failed validation
 	model = mockModel{}
@@ -251,7 +250,7 @@ func TestValidator_senderSignatureValidator(t *testing.T) {
 	err = ssv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to verify signature")
+	assert.Contains(t, err.Error(), "signature verification failed")
 
 	// success
 	model = mockModel{}

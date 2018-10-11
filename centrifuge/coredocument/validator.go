@@ -8,6 +8,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	"github.com/centrifuge/go-centrifuge/centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 // getCoreDocument takes an model and returns the core document of the model
@@ -130,23 +131,29 @@ func selfSignatureValidator() documents.Validator {
 	})
 }
 
-// senderSignatureValidator validates the sender's signature on the document
-// assumes that signing root is verified
-func senderSignatureValidator() documents.Validator {
+// signaturesValidator validates all the signatures in the core document
+// assumes signing root is verified
+// Note: can be used when during the signature request on collaborator side and post signature collection on sender side
+// Note: this will break the current flow where we proceed to anchor even signatures verification fails
+func signaturesValidator() documents.Validator {
 	return documents.ValidatorFunc(func(_, model documents.Model) error {
 		cd, err := getCoreDocument(model)
 		if err != nil {
 			return err
 		}
 
-		if len(cd.Signatures) != 1 {
-			return fmt.Errorf("expecting only one signature")
+		if len(cd.Signatures) < 1 {
+			return fmt.Errorf("atleast one signature expected")
 		}
 
-		if err := signatures.ValidateSignature(cd.Signatures[0], cd.SigningRoot); err != nil {
-			return fmt.Errorf("failed to verify signature: %v", err)
+		for _, sig := range cd.Signatures {
+			if errI := signatures.ValidateSignature(sig, cd.SigningRoot); errI != nil {
+				err = documents.AppendError(
+					err,
+					documents.NewError(fmt.Sprintf("signature_%s", hexutil.Encode(sig.EntityId)), "signature verification failed"))
+			}
 		}
 
-		return nil
+		return err
 	})
 }
