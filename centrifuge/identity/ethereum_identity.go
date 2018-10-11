@@ -3,6 +3,7 @@ package identity
 import (
 	"context"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
@@ -162,6 +163,24 @@ func (id *EthereumIdentity) getContract() (contract *EthereumIdentityContract, e
 	return id.Contract, nil
 }
 
+func (id *EthereumIdentity) GetIdentityAddress() (*common.Address,error) {
+
+	ethIdentityRegistryContract, err := getIdentityRegistryContract()
+	if err != nil {
+		return nil, err
+	}
+	opts := ethereum.GetGethCallOpts()
+
+	address, err := ethIdentityRegistryContract.GetIdentityByCentrifugeId(opts, id.CentrifugeId.BigInt())
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &address, nil
+
+}
+
 func (id *EthereumIdentity) CheckIdentityExists() (exists bool, err error) {
 	return id.findContract()
 }
@@ -209,7 +228,7 @@ func (id *EthereumIdentity) AddKeyToIdentity(ctx context.Context, keyPurpose int
 }
 
 func (id *EthereumIdentity) fetchKeysByPurpose(keyPurpose int) ([]EthereumIdentityKey, error) {
-	contract, err := id.getContract()
+	contract, err := id.GetContract()
 	if err != nil {
 		return nil, err
 	}

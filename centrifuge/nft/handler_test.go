@@ -11,8 +11,10 @@ import (
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/nft"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"math/big"
 	"os"
 	"testing"
 )
@@ -58,6 +60,20 @@ func getTestSetupData() *nftpb.NFTMintRequest{
 	return nftMintRequest
 }
 
+type MockPaymentObligation struct {}
+
+func (MockPaymentObligation) Mint(to common.Address, tokenId *big.Int, tokenURI string, anchorId *big.Int, merkleRoot [32]byte,
+	values [3]string, salts [3][32]byte, proofs [3][][32]byte) (<-chan *WatchMint, error) {
+
+		return nil,nil
+}
+
+
+func getServiceWithMockedPaymentObligation()*Service{
+	return &Service{PaymentObligation:MockPaymentObligation{}}
+
+}
+
 func TestNFTMint(t *testing.T) {
 
 	payload := &clientinvoicepb.InvoiceCreatePayload{
@@ -95,7 +111,8 @@ func TestNFTMint(t *testing.T) {
 	nftMintRequest := getTestSetupData()
 
 	nftMintRequest.Identifier = string(corDoc.CurrentIdentifier)
-	handler := GRPCHandler()
+	handler := GRPCHandler(getServiceWithMockedPaymentObligation())
+
 
 	nftMintResponse, err := handler.MintNFT(context.Background(), nftMintRequest)
 

@@ -7,11 +7,16 @@ import (
 )
 
 type Service struct {
+	PaymentObligation PaymentObligation
+}
 
+func DefaultService() *Service {
+
+	return &Service{PaymentObligation:getConfiguredPaymentObligation()}
 }
 
 
-func (Service) mintNFT(model documents.Model, documentService invoice.Service, registryAddress, depositAddress string, proofFields []string) (string, error) {
+func (s Service) mintNFT(model documents.Model, documentService invoice.Service, registryAddress, depositAddress string, proofFields []string) (string, error) {
 
 	proofs, err := documentService.CreateProofs(proofFields, model)
 
@@ -21,6 +26,9 @@ func (Service) mintNFT(model documents.Model, documentService invoice.Service, r
 
 	//TODO implement ethereum interaction here
 	fmt.Println(proofs)
+
+
+	//s.PaymentObligation.Mint()
 
 
 	return "fakeTokenId", nil

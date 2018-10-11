@@ -11,12 +11,19 @@ import (
 
 )
 
-type grpcHandler struct {}
+type grpcHandler struct {
+	Service *Service
+}
 
 
 // GRPCHandler returns an implementation of invoice.DocumentServiceServer
-func GRPCHandler() nftpb.NFTServiceServer {
-	return &grpcHandler{}
+func GRPCHandler(service *Service) (nftpb.NFTServiceServer) {
+
+	if service == nil {
+		service = DefaultService()
+	}
+
+	return &grpcHandler{Service:service}
 }
 
 
