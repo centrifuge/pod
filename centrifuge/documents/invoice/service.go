@@ -3,14 +3,7 @@ package invoice
 import (
 	"bytes"
 	"context"
-	"crypto/sha256"
 	"fmt"
-
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
-	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
-	"github.com/centrifuge/precise-proofs/proofs"
-	"github.com/centrifuge/precise-proofs/proofs/proto"
-	"github.com/golang/protobuf/proto"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
@@ -48,8 +41,7 @@ type Service interface {
 	// SaveState updates the model in DB
 	SaveState(inv documents.Model) error
 
-	// CreateProofs creates proof for given fields
-	CreateProofs(fields []string, model documents.Model) (proofs []*proofspb.Proof, err error)
+
 }
 
 // service implements Service and handles all invoice related persistence and validations
@@ -197,70 +189,6 @@ func (s service) Create(ctx context.Context, model documents.Model) (documents.M
 	}
 
 	return inv, nil
-}
-
-func (s service) getDocumentDataTree(document coredocumentpb.CoreDocument) (tree *proofs.DocumentTree, err error) {
-	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: sha256.New()})
-
-	// todo make get InvoiceData data public in model and replace
-	invoiceData := &invoicepb.InvoiceData{}
-	err = proto.Unmarshal(document.EmbeddedData.Value, invoiceData)
-	if err != nil {
-		return nil, err
-	}
-
-	invoiceDataSalts := &invoicepb.InvoiceDataSalts{}
-	err = proto.Unmarshal(document.EmbeddedDataSalts.Value, invoiceDataSalts)
-	if err != nil {
-		return nil, err
-	}
-
-	err = t.AddLeavesFromDocument(invoiceData, invoiceDataSalts)
-	if err != nil {
-		log.Error("getDocumentDataTree:", err)
-		return nil, err
-	}
-	err = t.Generate()
-	if err != nil {
-		log.Error("getDocumentDataTree:", err)
-		return nil, err
-	}
-	return &t, nil
-}
-
-// CreateProofs generates proofs for given fields
-func (s service) CreateProofs(fields []string, model documents.Model) (proofs []*proofspb.Proof, err error) {
-
-	coreDocument, err := model.PackCoreDocument()
-	if err != nil {
-		return nil, err
-	}
-
-	dataRootHashes, err := coredocument.GetDataProofHashes(coreDocument)
-	if err != nil {
-		log.Error(err)
-		return nil, err
-	}
-
-	tree, err := s.getDocumentDataTree(*coreDocument)
-	if err != nil {
-		log.Error(err)
-		return nil, err
-	}
-	for _, field := range fields {
-		proof, err := tree.CreateProof(field)
-		if err != nil {
-			log.Error(err)
-			return nil, err
-		}
-		proofs = append(proofs, &proof)
-	}
-
-	for _, proof := range proofs {
-		proof.SortedHashes = append(proof.SortedHashes, dataRootHashes...)
-	}
-
-	return
 }
 
 // GetVersion returns an invoice for a given version

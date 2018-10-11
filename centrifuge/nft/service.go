@@ -48,13 +48,15 @@ func DefaultService() *Service {
 
 func (s Service) mintNFT(model documents.Model, documentService invoice.Service, registryAddress, depositAddress string, proofFields []string) (string, error) {
 
-	proofs, err := documentService.CreateProofs(proofFields, model)
+	corDoc, err := model.PackCoreDocument()
+	if err != nil {
+		return "", err
+	}
+	proofs, err := documentService.CreateProofs(corDoc.DocumentIdentifier,proofFields)
 
 	if err != nil {
 		return "", err
 	}
-
-	corDoc, err := model.PackCoreDocument()
 
 	toAddress, err := s.IdentityService.getIdentityAddress()
 
@@ -62,7 +64,7 @@ func (s Service) mintNFT(model documents.Model, documentService invoice.Service,
 		return "", nil
 	}
 
-	requestData, err := NewMintRequestData(toAddress, corDoc.CurrentVersion, proofs, corDoc.DocumentRoot)
+	requestData, err := NewMintRequestData(toAddress, corDoc.CurrentVersion, proofs.FieldProofs, corDoc.DocumentRoot)
 
 	if err != nil {
 		return "", err
