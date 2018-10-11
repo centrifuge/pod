@@ -3,15 +3,31 @@
 package coredocument
 
 import (
+	"flag"
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/centrifuge/config"
+	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
+	"github.com/centrifuge/go-centrifuge/centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
+
+func TestMain(m *testing.M) {
+	cc.TestIntegrationBootstrap()
+	flag.Parse()
+	config.Config.V.Set("keys.signing.publicKey", "../../example/resources/signature1.pub.pem")
+	config.Config.V.Set("keys.signing.privateKey", "../../example/resources/signature1.key.pem")
+	result := m.Run()
+	cc.TestIntegrationTearDown()
+	os.Exit(result)
+}
 
 type mockModel struct {
 	mock.Mock
@@ -151,6 +167,54 @@ func TestValidator_documentRootValidator(t *testing.T) {
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
 	err = dv.Validate(nil, model)
+	model.AssertExpectations(t)
+	assert.Nil(t, err)
+}
+
+func TestValidator_preSignatureRequestValidator(t *testing.T) {
+	psv := preSignatureRequestValidator()
+
+	// fail getCoreDoc
+	model := mockModel{}
+	model.On("PackCoreDocument").Return(nil, fmt.Errorf("err")).Once()
+	err := psv.Validate(nil, model)
+	model.AssertExpectations(t)
+	assert.Error(t, err)
+
+	// signature length mismatch
+	cd := New()
+	FillSalts(cd)
+	model = mockModel{}
+	model.On("PackCoreDocument").Return(cd, nil).Once()
+	err = psv.Validate(nil, model)
+	model.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "expecting only single signature")
+
+	// mismatch
+	cd.SigningRoot = tools.RandomSlice(32)
+	s := &coredocumentpb.Signature{
+		Signature: tools.RandomSlice(32),
+		EntityId:  tools.RandomSlice(6),
+		PublicKey: tools.RandomSlice(32),
+	}
+	cd.Signatures = append(cd.Signatures, s)
+	model = mockModel{}
+	model.On("PackCoreDocument").Return(cd, nil).Once()
+	err = psv.Validate(nil, model)
+	model.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Len(t, documents.ConvertToMap(err), 3)
+
+	// success
+	cd.SigningRoot = tools.RandomSlice(32)
+	c, err := ed25519keys.GetIDConfig()
+	assert.Nil(t, err)
+	s = signatures.Sign(c, cd.SigningRoot)
+	cd.Signatures = []*coredocumentpb.Signature{s}
+	model = mockModel{}
+	model.On("PackCoreDocument").Return(cd, nil).Once()
+	err = psv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Nil(t, err)
 }

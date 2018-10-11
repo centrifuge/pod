@@ -55,11 +55,10 @@ func verifySignature(pubKey, message, signature []byte) error {
 // Sign the document with the private key and return the signature along with the public key for the verification
 // assumes that signing root for the document is generated
 func Sign(idConfig *config.IdentityConfig, payload []byte) *coredocumentpb.Signature {
-	signature := ed25519.Sign(idConfig.PrivateKey, payload)
 	return &coredocumentpb.Signature{
 		EntityId:  idConfig.ID,
 		PublicKey: idConfig.PublicKey,
-		Signature: signature,
+		Signature: ed25519.Sign(idConfig.PrivateKey, payload),
 		Timestamp: utils.ToTimestamp(time.Now().UTC()),
 	}
 }

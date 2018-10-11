@@ -5,6 +5,8 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
+	"github.com/centrifuge/go-centrifuge/centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 )
 
@@ -87,5 +89,43 @@ func documentRootValidator() documents.Validator {
 		}
 
 		return nil
+	})
+}
+
+// preSignatureRequestValidator if the signature exists
+// re-calculates the signature and compares with existing one
+// assumes signing_root is already generated and verified
+// Note: this needs to used only before document is sent for signatures from the collaborators
+func preSignatureRequestValidator() documents.Validator {
+	return documents.ValidatorFunc(func(_, model documents.Model) error {
+		cd, err := getCoreDocument(model)
+		if err != nil {
+			return err
+		}
+
+		if len(cd.Signatures) != 1 {
+			return fmt.Errorf("expecting only single signature")
+		}
+
+		c, err := ed25519keys.GetIDConfig()
+		if err != nil {
+			return fmt.Errorf("failed to get keys for signature calculation: %v", err)
+		}
+
+		s := signatures.Sign(c, cd.SigningRoot)
+		sh := cd.Signatures[0]
+		if !tools.IsSameByteSlice(s.EntityId, sh.EntityId) {
+			err = documents.AppendError(err, documents.NewError("cd_entity_id", "entity ID mismatch"))
+		}
+
+		if !tools.IsSameByteSlice(s.PublicKey, sh.PublicKey) {
+			err = documents.AppendError(err, documents.NewError("cd_public_key", "public key mismatch"))
+		}
+
+		if !tools.IsSameByteSlice(s.Signature, sh.Signature) {
+			err = documents.AppendError(err, documents.NewError("cd_signature", "signature mismatch"))
+		}
+
+		return err
 	})
 }
