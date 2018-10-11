@@ -24,6 +24,8 @@ import (
 var log = logging.Logger("invoice")
 
 // Invoice is a wrapper for invoice protobuf
+// Deprecated: in favour of implementation of documents.Model interface (InvoiceModel).
+// TODO remove
 type Invoice struct {
 	Document *invoicepb.InvoiceDocument
 }
