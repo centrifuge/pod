@@ -1,10 +1,8 @@
 package nft
 
 import (
-	"github.com/centrifuge/go-centrifuge/centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common"
 	"math/big"
@@ -81,6 +79,7 @@ func NewMintRequestData(anchorId []byte,proofs []*proofspb.Proof) (*MintRequestD
 
 */
 
+return nil, nil
 }
 
 

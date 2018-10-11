@@ -228,7 +228,7 @@ func (id *EthereumIdentity) AddKeyToIdentity(ctx context.Context, keyPurpose int
 }
 
 func (id *EthereumIdentity) fetchKeysByPurpose(keyPurpose int) ([]EthereumIdentityKey, error) {
-	contract, err := id.GetContract()
+	contract, err := id.getContract()
 	if err != nil {
 		return nil, err
 	}

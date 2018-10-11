@@ -9,12 +9,14 @@ import (
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/golang/protobuf/proto"
+	"fmt"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/processor"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
@@ -89,27 +91,33 @@ func (s service) DeriveFromCreatePayload(invoiceInput *clientinvoicepb.InvoiceCr
 
 // Create takes and invoice model and does required validation checks, tries to persist to DB
 func (s service) Create(ctx context.Context, model documents.Model) (documents.Model, error) {
-	// Validate the model
-	fv := fieldValidator()
-	err := fv.Validate(nil, model)
-	if err != nil {
-		return nil, centerrors.New(code.DocumentInvalid, err.Error())
-	}
-
 	// create data root
-	inv := model.(*InvoiceModel)
-	err = inv.calculateDataRoot()
+	inv, ok := model.(*InvoiceModel)
+	if !ok {
+		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("unknown document type: %T", model))
+	}
+
+	err := inv.calculateDataRoot()
 	if err != nil {
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
 	}
 
+	// validate the invoice
+	cv := CreateValidator()
+	err = cv.Validate(nil, inv)
+	if err != nil {
+		return nil, centerrors.NewWithErrors(code.DocumentInvalid, "validations failed", documents.ConvertToMap(err))
+	}
+
+	// we use CurrentVersion as the id since that will be unique across multiple versions of the same document
+	err = s.repo.Create(inv.CoreDocument.CurrentVersion, inv)
 	coreDoc, err := inv.PackCoreDocument()
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
 
 	// we use currentIdentifier as the id since that will be unique across multiple versions of the same document
-	err = s.repo.Create(coreDoc.CurrentIdentifier, inv)
+	err = s.repo.Create(coreDoc.CurrentVersion, inv)
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
@@ -123,7 +131,9 @@ func (s service) Create(ctx context.Context, model documents.Model) (documents.M
 		return s.SaveState(inv)
 	}
 
-	err = s.coreDocProcessor.Anchor(ctx, coreDoc, inv.Collaborators, saveState)
+	err = s.coreDocProcessor.Anchor(ctx, coreDoc, saveState)
+
+	err = s.coreDocProcessor.Anchor(ctx, coreDoc, saveState)
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
@@ -133,8 +143,12 @@ func (s service) Create(ctx context.Context, model documents.Model) (documents.M
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
 
-	for _, id := range inv.Collaborators {
-		err := s.coreDocProcessor.Send(ctx, coreDoc, id)
+	for _, id := range coreDoc.Collaborators {
+		cid, err := identity.ToCentID(id)
+		if err != nil {
+			return nil, centerrors.New(code.Unknown, err.Error())
+		}
+		err = s.coreDocProcessor.Send(ctx, coreDoc, cid)
 		if err != nil {
 			log.Infof("failed to send anchored document: %v\n", err)
 		}
@@ -235,14 +249,14 @@ func (s service) GetLastVersion(identifier []byte) (doc documents.Model, err err
 		return nil, centerrors.Wrap(err, "document not found")
 	}
 	inv := doc.(*InvoiceModel)
-	nextVersion := inv.CoreDocument.NextIdentifier
+	nextVersion := inv.CoreDocument.NextVersion
 	for nextVersion != nil {
 		doc, err = s.GetVersion(identifier, nextVersion)
 		if err != nil {
 			return inv, nil
 		} else {
 			inv = doc.(*InvoiceModel)
-			nextVersion = inv.CoreDocument.NextIdentifier
+			nextVersion = inv.CoreDocument.NextVersion
 		}
 	}
 	return inv, nil
@@ -254,14 +268,23 @@ func (s service) DeriveInvoiceResponse(doc documents.Model) (*clientinvoicepb.In
 	if !ok {
 		return nil, centerrors.New(code.DocumentInvalid, "document of invalid type")
 	}
-	collaborators := make([]string, len(inv.Collaborators))
-	for i, c := range inv.Collaborators {
-		collaborators[i] = c.String()
+
+	cd, err := doc.PackCoreDocument()
+	if err != nil {
+		return nil, centerrors.New(code.DocumentInvalid, err.Error())
+	}
+	collaborators := make([]string, len(cd.Collaborators))
+	for i, c := range cd.Collaborators {
+		cid, err := identity.ToCentID(c)
+		if err != nil {
+			return nil, centerrors.New(code.Unknown, err.Error())
+		}
+		collaborators[i] = cid.String()
 	}
 
 	header := &clientinvoicepb.ResponseHeader{
 		DocumentId:    hexutil.Encode(inv.CoreDocument.DocumentIdentifier),
-		VersionId:     hexutil.Encode(inv.CoreDocument.CurrentIdentifier),
+		VersionId:     hexutil.Encode(inv.CoreDocument.CurrentVersion),
 		Collaborators: collaborators,
 	}
 
@@ -300,7 +323,7 @@ func (s service) SaveState(doc documents.Model) error {
 		return centerrors.New(code.DocumentInvalid, "core document missing")
 	}
 
-	err := s.repo.Update(inv.CoreDocument.CurrentIdentifier, inv)
+	err := s.repo.Update(inv.CoreDocument.CurrentVersion, inv)
 	if err != nil {
 		return centerrors.New(code.Unknown, err.Error())
 	}

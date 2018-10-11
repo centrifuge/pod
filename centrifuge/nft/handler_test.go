@@ -110,7 +110,7 @@ func TestNFTMint(t *testing.T) {
 
 	nftMintRequest := getTestSetupData()
 
-	nftMintRequest.Identifier = string(corDoc.CurrentIdentifier)
+	nftMintRequest.Identifier = string(corDoc.DocumentIdentifier)
 	handler := GRPCHandler(getServiceWithMockedPaymentObligation())
 
 
