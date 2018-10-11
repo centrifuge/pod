@@ -53,6 +53,7 @@ func New(invDoc *invoicepb.InvoiceDocument, collaborators [][]byte) (*Invoice, e
 
 	if inv.Document.CoreDocument == nil {
 		inv.Document.CoreDocument = coredocument.New()
+		inv.Document.CoreDocument.EmbeddedData = &any.Any{TypeUrl: documenttypes.InvoiceDataTypeUrl, Value: []byte{}}
 	}
 	inv.Document.CoreDocument.Collaborators = collaborators
 	coredocument.FillSalts(inv.Document.CoreDocument)
