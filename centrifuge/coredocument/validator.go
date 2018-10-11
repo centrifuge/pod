@@ -92,11 +92,11 @@ func documentRootValidator() documents.Validator {
 	})
 }
 
-// preSignatureRequestValidator if the signature exists
+// selfSignatureValidator validates self signature
 // re-calculates the signature and compares with existing one
 // assumes signing_root is already generated and verified
 // Note: this needs to used only before document is sent for signatures from the collaborators
-func preSignatureRequestValidator() documents.Validator {
+func selfSignatureValidator() documents.Validator {
 	return documents.ValidatorFunc(func(_, model documents.Model) error {
 		cd, err := getCoreDocument(model)
 		if err != nil {
@@ -104,7 +104,7 @@ func preSignatureRequestValidator() documents.Validator {
 		}
 
 		if len(cd.Signatures) != 1 {
-			return fmt.Errorf("expecting only single signature")
+			return fmt.Errorf("expecting only one signature")
 		}
 
 		c, err := ed25519keys.GetIDConfig()
@@ -127,5 +127,26 @@ func preSignatureRequestValidator() documents.Validator {
 		}
 
 		return err
+	})
+}
+
+// senderSignatureValidator validates the sender's signature on the document
+// assumes that signing root is verified
+func senderSignatureValidator() documents.Validator {
+	return documents.ValidatorFunc(func(_, model documents.Model) error {
+		cd, err := getCoreDocument(model)
+		if err != nil {
+			return err
+		}
+
+		if len(cd.Signatures) != 1 {
+			return fmt.Errorf("expecting only one signature")
+		}
+
+		if err := signatures.ValidateSignature(cd.Signatures[0], cd.SigningRoot); err != nil {
+			return fmt.Errorf("failed to verify signature: %v", err)
+		}
+
+		return nil
 	})
 }

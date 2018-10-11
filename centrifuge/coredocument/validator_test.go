@@ -5,8 +5,12 @@ package coredocument
 import (
 	"flag"
 	"fmt"
+	"math/big"
 	"os"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/commons"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
@@ -171,13 +175,13 @@ func TestValidator_documentRootValidator(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestValidator_preSignatureRequestValidator(t *testing.T) {
-	psv := preSignatureRequestValidator()
+func TestValidator_selfSignatureValidator(t *testing.T) {
+	ssv := selfSignatureValidator()
 
 	// fail getCoreDoc
 	model := mockModel{}
 	model.On("PackCoreDocument").Return(nil, fmt.Errorf("err")).Once()
-	err := psv.Validate(nil, model)
+	err := ssv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
 
@@ -186,10 +190,10 @@ func TestValidator_preSignatureRequestValidator(t *testing.T) {
 	FillSalts(cd)
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
-	err = psv.Validate(nil, model)
+	err = ssv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "expecting only single signature")
+	assert.Contains(t, err.Error(), "expecting only one signature")
 
 	// mismatch
 	cd.SigningRoot = tools.RandomSlice(32)
@@ -201,7 +205,7 @@ func TestValidator_preSignatureRequestValidator(t *testing.T) {
 	cd.Signatures = append(cd.Signatures, s)
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
-	err = psv.Validate(nil, model)
+	err = ssv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Len(t, documents.ConvertToMap(err), 3)
@@ -214,7 +218,66 @@ func TestValidator_preSignatureRequestValidator(t *testing.T) {
 	cd.Signatures = []*coredocumentpb.Signature{s}
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
-	err = psv.Validate(nil, model)
+	err = ssv.Validate(nil, model)
 	model.AssertExpectations(t)
+	assert.Nil(t, err)
+}
+
+func TestValidator_senderSignatureValidator(t *testing.T) {
+	ssv := senderSignatureValidator()
+
+	// fail getCoreDoc
+	model := mockModel{}
+	model.On("PackCoreDocument").Return(nil, fmt.Errorf("err")).Once()
+	err := ssv.Validate(nil, model)
+	model.AssertExpectations(t)
+	assert.Error(t, err)
+
+	// signature length mismatch
+	cd := New()
+	FillSalts(cd)
+	model = mockModel{}
+	model.On("PackCoreDocument").Return(cd, nil).Once()
+	err = ssv.Validate(nil, model)
+	model.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "expecting only one signature")
+
+	// failed validation
+	model = mockModel{}
+	model.On("PackCoreDocument").Return(cd, nil).Once()
+	s := &coredocumentpb.Signature{EntityId: tools.RandomSlice(7)}
+	cd.Signatures = append(cd.Signatures, s)
+	err = ssv.Validate(nil, model)
+	model.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to verify signature")
+
+	// success
+	model = mockModel{}
+	model.On("PackCoreDocument").Return(cd, nil).Once()
+	cd.SigningRoot = tools.RandomSlice(32)
+	c, err := ed25519keys.GetIDConfig()
+	assert.Nil(t, err)
+	s = signatures.Sign(c, cd.SigningRoot)
+	cd.Signatures = []*coredocumentpb.Signature{s}
+	pubkey, err := tools.SliceToByte32(c.PublicKey)
+	assert.Nil(t, err)
+	idkey := &identity.EthereumIdentityKey{
+		Key:       pubkey,
+		Purposes:  []*big.Int{big.NewInt(identity.KeyPurposeSigning)},
+		RevokedAt: big.NewInt(0),
+	}
+	id := &testingcommons.MockID{}
+	srv := &testingcommons.MockIDService{}
+	centID, err := identity.ToCentID(c.ID)
+	assert.Nil(t, err)
+	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
+	id.On("FetchKey", pubkey[:]).Return(idkey, nil).Once()
+	identity.IDService = srv
+	err = ssv.Validate(nil, model)
+	model.AssertExpectations(t)
+	id.AssertExpectations(t)
+	srv.AssertExpectations(t)
 	assert.Nil(t, err)
 }
