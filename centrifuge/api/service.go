@@ -26,7 +26,7 @@ func registerServices(ctx context.Context, grpcServer *grpc.Server, gwmux *runti
 	}
 
 	// invoice
-	// get the invoice service from the registry, it has to be registered already
+	// get the invoice service from the registry, it has been registered already(do NOT do it here)
 	invoiceService, err := documents.GetRegistryInstance().LocateService(documenttypes.InvoiceDataTypeUrl)
 	invoicepb.RegisterDocumentServiceServer(grpcServer, invoice.GRPCHandler(invoiceService.(invoice.Service)))
 	err = invoicepb.RegisterDocumentServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
