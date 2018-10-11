@@ -9,6 +9,7 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
+	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
@@ -210,4 +211,69 @@ func TestInvoiceModel_calculateDataRoot(t *testing.T) {
 	assert.NotNil(t, m.CoreDocument, "coredoc must be created")
 	assert.NotNil(t, m.InvoiceSalts, "salts must be created")
 	assert.NotNil(t, m.CoreDocument.DataRoot, "data root must be filled")
+}
+
+func TestInvoiceModel_createProofs(t *testing.T) {
+	i, corDoc, err := createMockInvoice(t)
+	assert.Nil(t, err)
+	corDoc, proof, err := i.createProofs([]string{"invoice_number", "collaborators[0]", "document_type"})
+	assert.Nil(t, err)
+	assert.NotNil(t, proof)
+	assert.NotNil(t, corDoc)
+	tree, _ := coredocument.GetDocumentRootTree(corDoc)
+
+	// Validate invoice_number
+	valid, err := tree.ValidateProof(proof[0])
+	assert.Nil(t, err)
+	assert.True(t, valid)
+
+	// Validate collaborators[0]
+	valid, err = tree.ValidateProof(proof[1])
+	assert.Nil(t, err)
+	assert.True(t, valid)
+
+	// Validate document_type
+	valid, err = tree.ValidateProof(proof[2])
+	assert.Nil(t, err)
+	assert.True(t, valid)
+}
+
+func TestInvoiceModel_createProofsFieldDoesNotExist(t *testing.T) {
+	i, _, err := createMockInvoice(t)
+	assert.Nil(t, err)
+	_, _, err = i.createProofs([]string{"nonexisting"})
+	assert.NotNil(t, err)
+}
+
+func TestInvoiceModel_getDocumentDataTree(t *testing.T) {
+	i := InvoiceModel{InvoiceNumber: "3213121", NetAmount: 2, GrossAmount: 2}
+	tree, err := i.getDocumentDataTree()
+	assert.Nil(t, err, "tree should be generated without error")
+	_, leaf := tree.GetLeafByProperty("invoice_number")
+	assert.Equal(t, "invoice_number", leaf.Property)
+}
+
+func createMockInvoice(t *testing.T) (*InvoiceModel, *coredocumentpb.CoreDocument, error) {
+	i := &InvoiceModel{InvoiceNumber: "3213121", NetAmount: 2, GrossAmount: 2, Currency: "USD", CoreDocument: coredocument.New()}
+	i.CoreDocument.Collaborators = [][]byte{{1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}}
+	err := i.calculateDataRoot()
+	if err != nil {
+		return nil, nil, err
+	}
+	// get the coreDoc for the invoice
+	corDoc, err := i.PackCoreDocument()
+	if err != nil {
+		return nil, nil, err
+	}
+	coredocument.FillSalts(corDoc)
+	err = coredocument.CalculateSigningRoot(corDoc)
+	if err != nil {
+		return nil, nil, err
+	}
+	err = coredocument.CalculateDocumentRoot(corDoc)
+	if err != nil {
+		return nil, nil, err
+	}
+	i.UnpackCoreDocument(corDoc)
+	return i, corDoc, nil
 }

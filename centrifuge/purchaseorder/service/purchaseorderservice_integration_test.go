@@ -7,6 +7,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
 	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
@@ -20,6 +21,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/commons"
 	"github.com/centrifuge/precise-proofs/proofs"
+	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -38,10 +40,15 @@ func TestMain(m *testing.M) {
 func generateEmptyPurchaseOrderForProcessing() (doc *purchaseorder.PurchaseOrder) {
 	identifier := testingutils.Rand32Bytes()
 	doc = purchaseorder.Empty()
+	orderAny := &any.Any{
+		TypeUrl: documenttypes.PurchaseOrderDataTypeUrl,
+		Value:   []byte{},
+	}
 	doc.Document.CoreDocument = &coredocumentpb.CoreDocument{
 		DocumentIdentifier: identifier,
 		CurrentVersion:     identifier,
 		NextVersion:        testingutils.Rand32Bytes(),
+		EmbeddedData:       orderAny,
 	}
 	salts := &coredocumentpb.CoreDocumentSalts{}
 	proofs.FillSalts(doc.Document.CoreDocument, salts)

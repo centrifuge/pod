@@ -25,7 +25,18 @@ func GetDataProofHashes(document *coredocumentpb.CoreDocument) (hashes [][]byte,
 		return
 	}
 
-	tree, err = GetDocumentRootTree(document)
+	rootProofHashes, err := GetSigningProofHashes(document)
+	if err != nil {
+		return
+	}
+
+	return append(signingProof.SortedHashes, rootProofHashes...), err
+}
+
+// GetSigningProofHashes returns the hashes needed to create a proof for fields from SigningRoot to DataRoot. This method is used
+// to create field proofs
+func GetSigningProofHashes(document *coredocumentpb.CoreDocument) (hashes [][]byte, err error) {
+	tree, err := GetDocumentRootTree(document)
 	if err != nil {
 		return
 	}
@@ -33,7 +44,7 @@ func GetDataProofHashes(document *coredocumentpb.CoreDocument) (hashes [][]byte,
 	if err != nil {
 		return
 	}
-	return append(signingProof.SortedHashes, rootProof.SortedHashes...), err
+	return rootProof.SortedHashes, err
 }
 
 // CalculateSigningRoot calculates the signing root of the core document
@@ -111,12 +122,29 @@ func GetDocumentRootTree(document *coredocumentpb.CoreDocument) (tree *proofs.Do
 
 // GetDocumentSigningTree returns the merkle tree for the signing root
 func GetDocumentSigningTree(document *coredocumentpb.CoreDocument) (tree *proofs.DocumentTree, err error) {
-	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: sha256.New()})
+	h := sha256.New()
+	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: h})
 	tree = &t
 	err = tree.AddLeavesFromDocument(document, document.CoredocumentSalts)
 	if err != nil {
 		return nil, err
 	}
+
+	if document.EmbeddedData == nil {
+		return nil, fmt.Errorf("EmbeddedData cannot be nil when generating signing tree")
+	}
+	// Adding document type as it is an excluded field in the tree
+	documentTypeNode := proofs.LeafNode{
+		Property: "document_type",
+		Salt:     make([]byte, 32),
+		Value:    document.EmbeddedData.TypeUrl,
+	}
+	documentTypeNode.HashNode(h)
+	err = tree.AddLeaf(documentTypeNode)
+	if err != nil {
+		return nil, err
+	}
+
 	err = tree.Generate()
 	if err != nil {
 		return nil, err
@@ -253,7 +281,7 @@ func InitIdentifiers(document coredocumentpb.CoreDocument) (coredocumentpb.CoreD
 // PrepareNewVersion creates a copy of the passed coreDocument with the version fields updated
 func PrepareNewVersion(document coredocumentpb.CoreDocument) (*coredocumentpb.CoreDocument, error) {
 	newDocument := &coredocumentpb.CoreDocument{}
-	fillSalts(newDocument)
+	FillSalts(newDocument)
 	if document.CurrentVersion == nil {
 		return nil, fmt.Errorf("coredocument.CurrentVersion is nil")
 	}
@@ -274,11 +302,12 @@ func PrepareNewVersion(document coredocumentpb.CoreDocument) (*coredocumentpb.Co
 // New returns a new core document from the proto message
 func New() *coredocumentpb.CoreDocument {
 	doc, _ := InitIdentifiers(coredocumentpb.CoreDocument{})
-	fillSalts(&doc)
 	return &doc
 }
 
-func fillSalts(doc *coredocumentpb.CoreDocument) {
+// FillSalts of coredocument current state for proof tree creation
+func FillSalts(doc *coredocumentpb.CoreDocument) {
+	// TODO return error here
 	salts := &coredocumentpb.CoreDocumentSalts{}
 	proofs.FillSalts(doc, salts)
 	doc.CoredocumentSalts = salts

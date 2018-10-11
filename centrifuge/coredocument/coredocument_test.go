@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
@@ -18,6 +19,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/centrifuge/precise-proofs/proofs"
+	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -33,9 +35,46 @@ var (
 	key1    = []byte{102, 109, 71, 239, 130, 229, 128, 189, 37, 96, 223, 5, 189, 91, 210, 47, 89, 4, 165, 6, 188, 53, 49, 250, 109, 151, 234, 139, 57, 205, 231, 253, 230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
 )
 
-func TestGetDataProofHashes(t *testing.T) {
+func TestGetSigningProofHashes(t *testing.T) {
+	docAny := &any.Any{
+		TypeUrl: documenttypes.InvoiceDataTypeUrl,
+		Value:   []byte{},
+	}
 	cd := coredocumentpb.CoreDocument{
-		DataRoot: tools.RandomSlice(32),
+		DataRoot:     tools.RandomSlice(32),
+		EmbeddedData: docAny,
+	}
+	cd, err := InitIdentifiers(cd)
+	assert.Nil(t, err)
+	cds := &coredocumentpb.CoreDocumentSalts{}
+	err = proofs.FillSalts(&cd, cds)
+	assert.Nil(t, err)
+
+	cd.CoredocumentSalts = cds
+
+	err = CalculateSigningRoot(&cd)
+	assert.Nil(t, err)
+
+	err = CalculateDocumentRoot(&cd)
+	assert.Nil(t, err)
+
+	hashes, err := GetSigningProofHashes(&cd)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(hashes))
+
+	valid, err := proofs.ValidateProofSortedHashes(cd.SigningRoot, hashes, cd.DocumentRoot, sha256.New())
+	assert.True(t, valid)
+	assert.Nil(t, err)
+}
+
+func TestGetDataProofHashes(t *testing.T) {
+	docAny := &any.Any{
+		TypeUrl: documenttypes.InvoiceDataTypeUrl,
+		Value:   []byte{},
+	}
+	cd := coredocumentpb.CoreDocument{
+		DataRoot:     tools.RandomSlice(32),
+		EmbeddedData: docAny,
 	}
 	cd, err := InitIdentifiers(cd)
 	assert.Nil(t, err)
@@ -61,7 +100,11 @@ func TestGetDataProofHashes(t *testing.T) {
 }
 
 func TestGetDocumentSigningTree(t *testing.T) {
-	cd := coredocumentpb.CoreDocument{DocumentIdentifier: tools.RandomSlice(32)}
+	docAny := &any.Any{
+		TypeUrl: documenttypes.InvoiceDataTypeUrl,
+		Value:   []byte{},
+	}
+	cd := coredocumentpb.CoreDocument{DocumentIdentifier: tools.RandomSlice(32), EmbeddedData: docAny}
 	cd, _ = InitIdentifiers(cd)
 	cds := &coredocumentpb.CoreDocumentSalts{}
 	proofs.FillSalts(&cd, cds)
@@ -69,6 +112,20 @@ func TestGetDocumentSigningTree(t *testing.T) {
 	tree, err := GetDocumentSigningTree(&cd)
 	assert.Nil(t, err)
 	assert.NotNil(t, tree)
+
+	_, leaf := tree.GetLeafByProperty("document_type")
+	assert.NotNil(t, leaf)
+}
+
+func TestGetDocumentSigningTree_EmptyEmbeddedData(t *testing.T) {
+	cd := coredocumentpb.CoreDocument{DocumentIdentifier: tools.RandomSlice(32)}
+	cd, _ = InitIdentifiers(cd)
+	cds := &coredocumentpb.CoreDocumentSalts{}
+	proofs.FillSalts(&cd, cds)
+	cd.CoredocumentSalts = cds
+	tree, err := GetDocumentSigningTree(&cd)
+	assert.NotNil(t, err)
+	assert.Nil(t, tree)
 }
 
 // TestGetDocumentRootTree tests that the documentroottree is properly calculated

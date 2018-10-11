@@ -9,6 +9,7 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/golang/protobuf/proto"
@@ -31,7 +32,8 @@ func Wrap(poDoc *purchaseorderpb.PurchaseOrderDocument) (*PurchaseOrder, error) 
 }
 
 // New generates a new purchase order and generate salts, merkle root and coredocument
-func New(poDoc *purchaseorderpb.PurchaseOrderDocument) (*PurchaseOrder, error) {
+// Deprecated
+func New(poDoc *purchaseorderpb.PurchaseOrderDocument, collaborators [][]byte) (*PurchaseOrder, error) {
 	po, err := Wrap(poDoc)
 	if err != nil {
 		return nil, err
@@ -46,7 +48,10 @@ func New(poDoc *purchaseorderpb.PurchaseOrderDocument) (*PurchaseOrder, error) {
 
 	if po.Document.CoreDocument == nil {
 		po.Document.CoreDocument = coredocument.New()
+		po.Document.CoreDocument.EmbeddedData = &any.Any{TypeUrl: documenttypes.PurchaseOrderDataTypeUrl, Value: []byte{}}
 	}
+	po.Document.CoreDocument.Collaborators = collaborators
+	coredocument.FillSalts(po.Document.CoreDocument)
 
 	err = po.CalculateMerkleRoot()
 	if err != nil {
@@ -125,32 +130,13 @@ func (order *PurchaseOrder) CalculateMerkleRoot() error {
 
 // CreateProofs generates proofs for given fields
 func (order *PurchaseOrder) CreateProofs(fields []string) (proofs []*proofspb.Proof, err error) {
-	dataRootHashes, err := coredocument.GetDataProofHashes(order.Document.CoreDocument)
-	if err != nil {
-		log.Error(err)
-		return nil, err
-	}
-
 	tree, err := order.getDocumentDataTree()
 	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
 
-	for _, field := range fields {
-		proof, err := tree.CreateProof(field)
-		if err != nil {
-			log.Error(err)
-			return nil, err
-		}
-		proofs = append(proofs, &proof)
-	}
-
-	for _, proof := range proofs {
-		proof.SortedHashes = append(proof.SortedHashes, dataRootHashes...)
-	}
-
-	return proofs, nil
+	return documents.CreateProofs(tree, order.Document.CoreDocument, fields)
 }
 
 // ConvertToCoreDocument converts purchaseOrder to a core document

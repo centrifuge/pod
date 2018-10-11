@@ -86,7 +86,7 @@ func TestNewInvoiceFromCoreDocument_NilDocument(t *testing.T) {
 }
 
 func TestNewInvoice_NilDocument(t *testing.T) {
-	po, err := New(nil)
+	po, err := New(nil, nil)
 
 	assert.Error(t, err, "should have thrown an error")
 	assert.Nil(t, po, "document should be nil")

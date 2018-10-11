@@ -11,14 +11,14 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/processor"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/documents"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 // Service defines specific functions for invoice
-// TODO(ved): see if this interface can be used across the documents
 type Service interface {
-	documents.ModelDeriver
+	documents.Service
 
 	// DeriverFromPayload derives InvoiceModel from clientPayload
 	DeriveFromCreatePayload(*clientinvoicepb.InvoiceCreatePayload) (documents.Model, error)
@@ -33,10 +33,10 @@ type Service interface {
 	DeriveInvoiceResponse(inv documents.Model) (*clientinvoicepb.InvoiceResponse, error)
 
 	// GetLastVersion reads a document from the database
-	GetLastVersion(identifier []byte) (documents.Model, error)
+	GetLastVersion(documentID []byte) (documents.Model, error)
 
 	// GetVersion reads a document from the database
-	GetVersion(identifier []byte, version []byte) (documents.Model, error)
+	GetVersion(documentID []byte, version []byte) (documents.Model, error)
 
 	// SaveState updates the model in DB
 	SaveState(inv documents.Model) error
@@ -52,6 +52,46 @@ type service struct {
 // DefaultService returns the default implementation of the service
 func DefaultService(repo documents.Repository, processor coredocumentprocessor.Processor) Service {
 	return &service{repo: repo, coreDocProcessor: processor}
+}
+
+// CreateProofs creates proofs for the latest version document given the fields
+func (s service) CreateProofs(documentID []byte, fields []string) (*documentpb.DocumentProof, error) {
+	doc, err := s.GetLastVersion(documentID)
+	if err != nil {
+		return nil, err
+	}
+	inv, ok := doc.(*InvoiceModel)
+	if !ok {
+		return nil, centerrors.New(code.DocumentInvalid, "document of invalid type")
+	}
+	return s.invoiceProof(inv, fields)
+}
+
+// CreateProofsForVersion creates proofs for a particular version of the document given the fields
+func (s service) CreateProofsForVersion(documentID, version []byte, fields []string) (*documentpb.DocumentProof, error) {
+	doc, err := s.GetVersion(documentID, version)
+	if err != nil {
+		return nil, err
+	}
+	inv, ok := doc.(*InvoiceModel)
+	if !ok {
+		return nil, centerrors.New(code.DocumentInvalid, "document of invalid type")
+	}
+	return s.invoiceProof(inv, fields)
+}
+
+// invoiceProof creates proofs for invoice model fields
+func (s service) invoiceProof(inv *InvoiceModel, fields []string) (*documentpb.DocumentProof, error) {
+	coreDoc, proofs, err := inv.createProofs(fields)
+	if err != nil {
+		return nil, err
+	}
+	return &documentpb.DocumentProof{
+		Header: &documentpb.ResponseHeader{
+			DocumentId: hexutil.Encode(coreDoc.DocumentIdentifier),
+			VersionId:  hexutil.Encode(coreDoc.CurrentVersion),
+		},
+		FieldProofs: proofs}, nil
 }
 
 // DeriveFromCoreDocument unpacks the core document into a model
@@ -88,6 +128,7 @@ func (s service) Create(ctx context.Context, model documents.Model) (documents.M
 		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("unknown document type: %T", model))
 	}
 
+	// create data root, has to be done at the model level to access fields
 	err := inv.calculateDataRoot()
 	if err != nil {
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
@@ -145,40 +186,46 @@ func (s service) Create(ctx context.Context, model documents.Model) (documents.M
 }
 
 // GetVersion returns an invoice for a given version
-func (s service) GetVersion(identifier []byte, version []byte) (doc documents.Model, err error) {
-	doc = new(InvoiceModel)
+func (s service) GetVersion(documentID []byte, version []byte) (doc documents.Model, err error) {
+	inv, err := s.getInvoiceVersion(documentID, version)
+	if err != nil {
+		return nil, centerrors.Wrap(err, "document not found for the given version")
+	}
+	return inv, nil
+}
+
+// GetLastVersion returns the last known version of an invoice
+func (s service) GetLastVersion(documentID []byte) (doc documents.Model, err error) {
+	inv, err := s.getInvoiceVersion(documentID, documentID)
+	if err != nil {
+		return nil, centerrors.Wrap(err, "document not found")
+	}
+	nextVersion := inv.CoreDocument.NextVersion
+	for nextVersion != nil {
+		temp, err := s.getInvoiceVersion(documentID, nextVersion)
+		if err != nil {
+			return inv, nil
+		} else {
+			inv = temp
+			nextVersion = inv.CoreDocument.NextVersion
+		}
+	}
+	return inv, nil
+}
+
+func (s service) getInvoiceVersion(documentID, version []byte) (inv *InvoiceModel, err error) {
+	var doc documents.Model = new(InvoiceModel)
 	err = s.repo.LoadByID(version, doc)
 	if err != nil {
 		return nil, err
 	}
-
 	inv, ok := doc.(*InvoiceModel)
 	if !ok {
-		return nil, centerrors.New(code.DocumentInvalid, "not an invoice object")
+		return nil, err
 	}
 
-	if !bytes.Equal(inv.CoreDocument.DocumentIdentifier, identifier) {
+	if !bytes.Equal(inv.CoreDocument.DocumentIdentifier, documentID) {
 		return nil, centerrors.New(code.DocumentInvalid, "version is not valid for this identifier")
-	}
-	return
-}
-
-// GetLastVersion returns the last known version of an invoice
-func (s service) GetLastVersion(identifier []byte) (doc documents.Model, err error) {
-	doc, err = s.GetVersion(identifier, identifier)
-	if err != nil {
-		return nil, centerrors.Wrap(err, "document not found")
-	}
-	inv := doc.(*InvoiceModel)
-	nextVersion := inv.CoreDocument.NextVersion
-	for nextVersion != nil {
-		doc, err = s.GetVersion(identifier, nextVersion)
-		if err != nil {
-			return inv, nil
-		} else {
-			inv = doc.(*InvoiceModel)
-			nextVersion = inv.CoreDocument.NextVersion
-		}
 	}
 	return inv, nil
 }
