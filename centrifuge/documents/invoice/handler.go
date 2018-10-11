@@ -3,6 +3,7 @@ package invoice
 import (
 	"fmt"
 
+	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
@@ -15,6 +16,7 @@ import (
 	legacyinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/legacy/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/golang/protobuf/ptypes/any"
 	"github.com/golang/protobuf/ptypes/empty"
 	logging "github.com/ipfs/go-log"
 	"golang.org/x/net/context"
@@ -98,6 +100,9 @@ func (h *grpcHandler) CreateInvoiceProof(ctx context.Context, createInvoiceProof
 		apiLog.Error(err)
 		return nil, err
 	}
+
+	// Set EmbeddedData
+	inv.Document.CoreDocument.EmbeddedData = &any.Any{TypeUrl: documenttypes.InvoiceDataTypeUrl, Value: []byte{}}
 
 	proofs, err := inv.CreateProofs(createInvoiceProofEnvelope.Fields)
 	if err != nil {

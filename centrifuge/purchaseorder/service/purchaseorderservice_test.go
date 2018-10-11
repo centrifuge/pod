@@ -8,6 +8,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
 	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
@@ -19,6 +20,7 @@ import (
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/go-errors/errors"
 	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -200,10 +202,16 @@ func TestPurchaseOrderDocumentService_SendFails(t *testing.T) {
 func TestPurchaseOrderDocumentService_HandleCreatePurchaseOrderProof(t *testing.T) {
 	identifier := testingutils.Rand32Bytes()
 	order := purchaseorder.Empty()
+	orderAny := &any.Any{
+		TypeUrl: documenttypes.PurchaseOrderDataTypeUrl,
+		Value:   []byte{},
+	}
 	order.Document.CoreDocument = &coredocumentpb.CoreDocument{
 		DocumentIdentifier: identifier,
 		CurrentVersion:     identifier,
 		NextVersion:        testingutils.Rand32Bytes(),
+		Collaborators:      [][]byte{{1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}},
+		EmbeddedData:       orderAny,
 	}
 	cdSalts := &coredocumentpb.CoreDocumentSalts{}
 	proofs.FillSalts(order.Document.CoreDocument, cdSalts)
@@ -215,7 +223,7 @@ func TestPurchaseOrderDocumentService_HandleCreatePurchaseOrderProof(t *testing.
 
 	proofRequest := &clientpurchaseorderpb.CreatePurchaseOrderProofEnvelope{
 		DocumentIdentifier: identifier,
-		Fields:             []string{"currency", "order_country", "net_amount"},
+		Fields:             []string{"currency", "order_country", "net_amount", "collaborators[0]", "document_type"},
 	}
 	mockRepo.On("GetByID", proofRequest.DocumentIdentifier, new(purchaseorderpb.PurchaseOrderDocument)).Return(nil).Once()
 	mockRepo.replaceDoc = order.Document
@@ -230,6 +238,20 @@ func TestPurchaseOrderDocumentService_HandleCreatePurchaseOrderProof(t *testing.
 	fieldHash, err := proofs.CalculateHashForProofField(purchaseOrderProof.FieldProofs[0], sha256Hash)
 
 	valid, err := proofs.ValidateProofSortedHashes(fieldHash, purchaseOrderProof.FieldProofs[0].SortedHashes, order.Document.CoreDocument.DocumentRoot, sha256Hash)
+	assert.True(t, valid)
+	assert.Nil(t, err)
+
+	// Collaborators[0] proof
+	fieldHash, err = proofs.CalculateHashForProofField(purchaseOrderProof.FieldProofs[3], sha256Hash)
+	assert.Nil(t, err)
+	valid, err = proofs.ValidateProofSortedHashes(fieldHash, purchaseOrderProof.FieldProofs[3].SortedHashes, order.Document.CoreDocument.DocumentRoot, sha256Hash)
+	assert.True(t, valid)
+	assert.Nil(t, err)
+
+	// Document Type Proof
+	fieldHash, err = proofs.CalculateHashForProofField(purchaseOrderProof.FieldProofs[4], sha256Hash)
+	assert.Nil(t, err)
+	valid, err = proofs.ValidateProofSortedHashes(fieldHash, purchaseOrderProof.FieldProofs[4].SortedHashes, order.Document.CoreDocument.DocumentRoot, sha256Hash)
 	assert.True(t, valid)
 	assert.Nil(t, err)
 }

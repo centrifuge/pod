@@ -11,6 +11,7 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/precise-proofs/proofs"
@@ -324,9 +325,8 @@ func (i *InvoiceModel) UnpackCoreDocument(coreDoc *coredocumentpb.CoreDocument) 
 	}
 
 	i.InvoiceSalts = invoiceSalts
-	if i.CoreDocument == nil {
-		i.CoreDocument = new(coredocumentpb.CoreDocument)
-	}
+
+	i.CoreDocument = new(coredocumentpb.CoreDocument)
 	proto.Merge(i.CoreDocument, coreDoc)
 	i.CoreDocument.EmbeddedDataSalts = nil
 	i.CoreDocument.EmbeddedData = nil
@@ -381,26 +381,12 @@ func (i *InvoiceModel) createProofs(fields []string) (coreDoc *coredocumentpb.Co
 	if err != nil {
 		return nil, nil, fmt.Errorf("createProofs error %v", err)
 	}
-	dataRootHashes, err := coredocument.GetDataProofHashes(coreDoc)
-	if err != nil {
-		return coreDoc, nil, fmt.Errorf("createProofs error %v", err)
-	}
 
 	tree, err := i.getDocumentDataTree()
 	if err != nil {
 		return coreDoc, nil, fmt.Errorf("createProofs error %v", err)
 	}
-	for _, field := range fields {
-		proof, err := tree.CreateProof(field)
-		if err != nil {
-			return coreDoc, nil, fmt.Errorf("createProofs error %v", err)
-		}
-		proofs = append(proofs, &proof)
-	}
 
-	for _, proof := range proofs {
-		proof.SortedHashes = append(proof.SortedHashes, dataRootHashes...)
-	}
-
+	proofs, err = documents.CreateProofs(tree, coreDoc, fields)
 	return
 }

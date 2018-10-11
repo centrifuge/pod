@@ -52,7 +52,7 @@ func (s Service) mintNFT(model documents.Model, documentService invoice.Service,
 	if err != nil {
 		return "", err
 	}
-	proofs, err := documentService.CreateProofs(corDoc.DocumentIdentifier,proofFields)
+	proofs, err := documentService.CreateProofs(corDoc.DocumentIdentifier, proofFields)
 
 	if err != nil {
 		return "", err

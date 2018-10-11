@@ -22,7 +22,7 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
-var log = logging.Logger("server")
+var log = logging.Logger("cent-api-server")
 
 // CentAPIServer is an implementation of node.Server interface for serving HTTP based Centrifuge API
 type CentAPIServer struct {
@@ -68,10 +68,8 @@ func (c *CentAPIServer) Start(ctx context.Context, wg *sync.WaitGroup, startupEr
 	})
 
 	opts := []grpc.ServerOption{grpc.Creds(creds)}
-	log.Info(opts)
 
 	grpcServer := grpc.NewServer(opts...)
-	log.Info(grpcServer)
 
 	dcreds := credentials.NewTLS(&tls.Config{
 		ServerName:         addr,
@@ -79,7 +77,6 @@ func (c *CentAPIServer) Start(ctx context.Context, wg *sync.WaitGroup, startupEr
 		InsecureSkipVerify: true,
 	})
 	dopts := []grpc.DialOption{grpc.WithTransportCredentials(dcreds)}
-	log.Info(dopts)
 
 	mux := http.NewServeMux()
 	gwmux := runtime.NewServeMux()

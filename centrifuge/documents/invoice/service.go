@@ -40,8 +40,6 @@ type Service interface {
 
 	// SaveState updates the model in DB
 	SaveState(inv documents.Model) error
-
-
 }
 
 // service implements Service and handles all invoice related persistence and validations
