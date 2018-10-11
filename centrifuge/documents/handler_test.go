@@ -17,7 +17,7 @@ func TestGrpcHandler_CreateDocumentProof(t *testing.T) {
 	service := &MockService{}
 	registry.Register(serviceName, service)
 	req := &documentpb.CreateDocumentProofRequest{
-		Identifier: "0x11111111111111",
+		Identifier: "0xc32b1400b8c66e54448bec863233682d19c770b94ea8d90e1cf02f3bb8ca7da4",
 		Type:       serviceName,
 		Fields:     []string{"field1"},
 	}
