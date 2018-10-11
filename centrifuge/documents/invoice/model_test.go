@@ -214,14 +214,8 @@ func TestInvoiceModel_calculateDataRoot(t *testing.T) {
 }
 
 func TestInvoiceModel_createProofs(t *testing.T) {
-	i := InvoiceModel{InvoiceNumber: "3213121", NetAmount: 2, GrossAmount: 2}
-	i.calculateDataRoot()
-	// get the coreDoc for the invoice
-	corDoc, err := i.PackCoreDocument()
-	coredocument.CalculateSigningRoot(corDoc)
-	coredocument.CalculateDocumentRoot(corDoc)
-
-	i.UnpackCoreDocument(corDoc)
+	i, corDoc, err := createMockInvoice(t)
+	assert.Nil(t, err)
 	corDoc, proof, err := i.createProofs([]string{"invoice_number"})
 	assert.Nil(t, err)
 	assert.NotNil(t, proof)
@@ -233,14 +227,8 @@ func TestInvoiceModel_createProofs(t *testing.T) {
 }
 
 func TestInvoiceModel_createProofsFieldDoesNotExist(t *testing.T) {
-	i := InvoiceModel{InvoiceNumber: "3213121", NetAmount: 2, GrossAmount: 2}
-	i.calculateDataRoot()
-	// get the coreDoc for the invoice
-	corDoc, err := i.PackCoreDocument()
-	coredocument.CalculateSigningRoot(corDoc)
-	coredocument.CalculateDocumentRoot(corDoc)
-
-	i.UnpackCoreDocument(corDoc)
+	i, _, err := createMockInvoice(t)
+	assert.Nil(t, err)
 	_, _, err = i.createProofs([]string{"nonexisting"})
 	assert.NotNil(t, err)
 }
@@ -251,4 +239,28 @@ func TestInvoiceModel_getDocumentDataTree(t *testing.T) {
 	assert.Nil(t, err, "tree should be generated without error")
 	_, leaf := tree.GetLeafByProperty("invoice_number")
 	assert.Equal(t, "invoice_number", leaf.Property)
+}
+
+func createMockInvoice(t *testing.T) (*InvoiceModel, *coredocumentpb.CoreDocument, error) {
+	i := &InvoiceModel{InvoiceNumber: "3213121", NetAmount: 2, GrossAmount: 2, CoreDocument: coredocument.New()}
+	err := i.calculateDataRoot()
+	if err != nil {
+		return nil, nil, err
+	}
+	// get the coreDoc for the invoice
+	corDoc, err := i.PackCoreDocument()
+	if err != nil {
+		return nil, nil, err
+	}
+	coredocument.FillSalts(corDoc)
+	err = coredocument.CalculateSigningRoot(corDoc)
+	if err != nil {
+		return nil, nil, err
+	}
+	err = coredocument.CalculateDocumentRoot(corDoc)
+	if err != nil {
+		return nil, nil, err
+	}
+	i.UnpackCoreDocument(corDoc)
+	return i, corDoc, nil
 }
