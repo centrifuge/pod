@@ -5,7 +5,6 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
-	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/stretchr/testify/mock"
 	"google.golang.org/grpc"
 )
@@ -49,7 +48,7 @@ func (m *MockP2PWrapperClient) OpenClient(target string) (p2ppb.P2PServiceClient
 	return m.P2PMockClient, nil
 }
 
-func (m *MockP2PWrapperClient) GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocument, collaborators []identity.CentID) error {
-	m.Called(ctx, doc, collaborators)
+func (m *MockP2PWrapperClient) GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocument) error {
+	m.Called(ctx, doc)
 	return nil
 }

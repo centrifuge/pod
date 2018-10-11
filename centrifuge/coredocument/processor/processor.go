@@ -28,8 +28,6 @@ var log = logging.Logger("coredocument")
 type Processor interface {
 	Send(ctx context.Context, coreDocument *coredocumentpb.CoreDocument, recipient identity.CentID) (err error)
 	Anchor(ctx context.Context, document *coredocumentpb.CoreDocument,
-		/* TODO remove collaborators once we have them in the document it self */
-		collaborators []identity.CentID,
 		saveState func(coreDoc *coredocumentpb.CoreDocument) error) (err error)
 }
 
@@ -111,14 +109,13 @@ func (dp *defaultProcessor) Send(ctx context.Context, coreDocument *coredocument
 func (dp *defaultProcessor) Anchor(
 	ctx context.Context,
 	document *coredocumentpb.CoreDocument,
-	collaborators []identity.CentID,
 	saveState func(coreDoc *coredocumentpb.CoreDocument) error) error {
 
 	if document == nil {
 		return centerrors.NilError(document)
 	}
 
-	anchorID, err := anchors.NewAnchorID(document.CurrentIdentifier)
+	anchorID, err := anchors.NewAnchorID(document.CurrentVersion)
 	if err != nil {
 		log.Error(err)
 		return centerrors.Wrap(err, "anchoring error")
@@ -149,7 +146,7 @@ func (dp *defaultProcessor) Anchor(
 
 	// collect signatures (incl. validate)
 	// store signatures on coredocument
-	err = dp.P2PClient.GetSignaturesForDocument(ctx, document, collaborators)
+	err = dp.P2PClient.GetSignaturesForDocument(ctx, document)
 	if err != nil {
 		log.Error(err)
 		return centerrors.Wrap(err, "failed to collect signatures")
@@ -177,7 +174,7 @@ func (dp *defaultProcessor) Anchor(
 	}
 
 	// store doc in db
-	err = coredocumentrepository.GetRepository().Create(document.CurrentIdentifier, document)
+	err = coredocumentrepository.GetRepository().Create(document.CurrentVersion, document)
 	if err != nil {
 		log.Error(err)
 		return centerrors.Wrap(err, "anchoring error")
@@ -203,7 +200,7 @@ func (dp *defaultProcessor) Anchor(
 		return centerrors.Wrap(err, "anchoring error")
 	}
 
-	log.Infof("Anchoring document with identifiers: [document: %#x, current: %#x, next: %#x], rootHash: %#x", document.DocumentIdentifier, document.CurrentIdentifier, document.NextIdentifier, document.DocumentRoot)
+	log.Infof("Anchoring document with identifiers: [document: %#x, current: %#x, next: %#x], rootHash: %#x", document.DocumentIdentifier, document.CurrentVersion, document.NextVersion, document.DocumentRoot)
 	log.Debugf("Anchoring document with details %v", document)
 	// TODO documentProofs has to be included when we develop precommit flow
 	confirmations, err := anchors.CommitAnchor(anchorID, rootHash, myCentID, [][anchors.DocumentProofLength]byte{tools.RandomByte32()}, mac)
@@ -212,6 +209,6 @@ func (dp *defaultProcessor) Anchor(
 		return centerrors.Wrap(err, "anchoring error")
 	}
 	<-confirmations
-	log.Infof("Anchored document with identifiers: [document: %#x, current: %#x, next: %#x], rootHash: %#x", document.DocumentIdentifier, document.CurrentIdentifier, document.NextIdentifier, document.DocumentRoot)
+	log.Infof("Anchored document with identifiers: [document: %#x, current: %#x, next: %#x], rootHash: %#x", document.DocumentIdentifier, document.CurrentVersion, document.NextVersion, document.DocumentRoot)
 	return nil
 }

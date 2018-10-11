@@ -86,7 +86,7 @@ func TestNewInvoiceFromCoreDocument_NilDocument(t *testing.T) {
 }
 
 func TestNewInvoice_NilDocument(t *testing.T) {
-	po, err := New(nil)
+	po, err := New(nil, nil)
 
 	assert.Error(t, err, "should have thrown an error")
 	assert.Nil(t, po, "document should be nil")
@@ -110,13 +110,13 @@ func TestValidate(t *testing.T) {
 	validCoreDoc := &coredocumentpb.CoreDocument{
 		DocumentRoot:       id1,
 		DocumentIdentifier: id2,
-		CurrentIdentifier:  id3,
-		NextIdentifier:     id4,
+		CurrentVersion:     id3,
+		NextVersion:        id4,
 		DataRoot:           id5,
 		CoredocumentSalts: &coredocumentpb.CoreDocumentSalts{
 			DocumentIdentifier: id1,
-			CurrentIdentifier:  id2,
-			NextIdentifier:     id3,
+			CurrentVersion:     id2,
+			NextVersion:        id3,
 			DataRoot:           id4,
 			PreviousRoot:       id5,
 		},

@@ -27,8 +27,9 @@ type PurchaseOrderDocumentService struct {
 }
 
 // anchorPurchaseOrderDocument anchors the given purchaseorder document and returns the anchor details
-func (s *PurchaseOrderDocumentService) anchorPurchaseOrderDocument(ctx context.Context, doc *purchaseorderpb.PurchaseOrderDocument, collaborators []identity.CentID) (*purchaseorderpb.PurchaseOrderDocument, error) {
-	orderDoc, err := purchaseorder.New(doc)
+// TODO deprecated
+func (s *PurchaseOrderDocumentService) anchorPurchaseOrderDocument(ctx context.Context, doc *purchaseorderpb.PurchaseOrderDocument, collaborators [][]byte) (*purchaseorderpb.PurchaseOrderDocument, error) {
+	orderDoc, err := purchaseorder.New(doc, collaborators)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -47,7 +48,7 @@ func (s *PurchaseOrderDocumentService) anchorPurchaseOrderDocument(ctx context.C
 		return nil, err
 	}
 
-	err = s.CoreDocumentProcessor.Anchor(ctx, coreDoc, collaborators, nil)
+	err = s.CoreDocumentProcessor.Anchor(ctx, coreDoc, nil)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -106,11 +107,8 @@ func (s *PurchaseOrderDocumentService) HandleAnchorPurchaseOrderDocument(ctx con
 
 // HandleSendPurchaseOrderDocument anchors and sends an purchaseorder to the recipient
 func (s *PurchaseOrderDocumentService) HandleSendPurchaseOrderDocument(ctx context.Context, sendPurchaseOrderEnvelope *clientpurchaseorderpb.SendPurchaseOrderEnvelope) (*purchaseorderpb.PurchaseOrderDocument, error) {
-	errs, recipientIDs := identity.ParseCentIDs(sendPurchaseOrderEnvelope.Recipients)
-	if len(errs) != 0 {
-		return nil, centerrors.New(code.Unknown, fmt.Sprintf("%v", errs))
-	}
-	doc, err := s.anchorPurchaseOrderDocument(ctx, sendPurchaseOrderEnvelope.Document, recipientIDs)
+	errs := []error{}
+	doc, err := s.anchorPurchaseOrderDocument(ctx, sendPurchaseOrderEnvelope.Document, sendPurchaseOrderEnvelope.Recipients)
 	if err != nil {
 		return nil, err
 	}
@@ -129,8 +127,13 @@ func (s *PurchaseOrderDocumentService) HandleSendPurchaseOrderDocument(ctx conte
 		return nil, centerrors.New(code.DocumentNotFound, err.Error())
 	}
 
-	for _, recipient := range recipientIDs {
-		err = s.CoreDocumentProcessor.Send(ctx, coreDoc, recipient)
+	for _, recipient := range sendPurchaseOrderEnvelope.Recipients {
+		recipientID, err := identity.ToCentID(recipient)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		err = s.CoreDocumentProcessor.Send(ctx, coreDoc, recipientID)
 		if err != nil {
 			errs = append(errs, err)
 		}

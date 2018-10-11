@@ -17,7 +17,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
-	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -36,23 +35,21 @@ func TestDefaultProcessor_Anchor(t *testing.T) {
 	p2pClient := &testingcommons.MockP2PWrapperClient{}
 	dp := DefaultProcessor(identity.NewEthereumIdentityService(), p2pClient)
 	doc := createDummyCD()
-	collaborators := []identity.CentID{
-		identity.NewRandomCentID(),
-		identity.NewRandomCentID(),
-	}
-	p2pClient.On("GetSignaturesForDocument", ctx, doc, collaborators).Return(nil)
-	err := dp.Anchor(ctx, doc, collaborators, nil)
+
+	p2pClient.On("GetSignaturesForDocument", ctx, doc).Return(nil)
+	err := dp.Anchor(ctx, doc, nil)
 	assert.Nil(t, err, "Document should be anchored correctly")
 	p2pClient.AssertExpectations(t)
 }
 
 func createDummyCD() *coredocumentpb.CoreDocument {
-	cd := coredocumentpb.CoreDocument{DocumentIdentifier: tools.RandomSlice(32)}
-	cd, _ = coredocument.FillIdentifiers(cd)
+	cd := coredocument.New()
 	randomRoot := anchors.NewRandomDocRoot()
 	cd.DataRoot = randomRoot[:]
-	cds := &coredocumentpb.CoreDocumentSalts{}
-	proofs.FillSalts(&cd, cds)
-	cd.CoredocumentSalts = cds
-	return &cd
+	cd.Collaborators = [][]byte{
+		tools.RandomSlice(identity.CentIDLength),
+		tools.RandomSlice(identity.CentIDLength),
+	}
+	coredocument.FillSalts(cd)
+	return cd
 }

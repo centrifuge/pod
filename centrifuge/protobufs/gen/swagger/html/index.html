@@ -21,14 +21,6 @@
           <a href="#introduction">Introduction</a>
           <h5>Operations</h5>
           <section>
-            <a href="#tag-HealthCheckService">HealthCheckService</a>
-            <ul>
-              <li>
-                <a href="#operation--ping-get"> GET /ping </a>
-              </li>
-            </ul>
-          </section>
-          <section>
             <a href="#tag-DocumentService">DocumentService</a>
             <ul>
               <li>
@@ -42,6 +34,20 @@
               </li>
               <li>
                 <a href="#operation--invoice--identifier---version--get"> GET /invoice/{identifier}/{version} </a>
+              </li>
+              <li>
+                <a href="#operation--document--identifier--proof-post"> POST /document/{identifier}/proof </a>
+              </li>
+              <li>
+                <a href="#operation--document--identifier---version--proof-post"> POST /document/{identifier}/{version}/proof </a>
+              </li>
+            </ul>
+          </section>
+          <section>
+            <a href="#tag-HealthCheckService">HealthCheckService</a>
+            <ul>
+              <li>
+                <a href="#operation--ping-get"> GET /ping </a>
               </li>
             </ul>
           </section>
@@ -117,12 +123,18 @@
             </ul>
           </section>
           <h5>Schema Definitions</h5>
-          <a href="#definition-healthPong"> healthPong </a>
           <a href="#definition-invoiceInvoiceCreatePayload"> invoiceInvoiceCreatePayload </a>
           <a href="#definition-invoiceInvoiceData"> invoiceInvoiceData </a>
           <a href="#definition-invoiceInvoiceResponse"> invoiceInvoiceResponse </a>
           <a href="#definition-invoiceInvoiceUpdatePayload"> invoiceInvoiceUpdatePayload </a>
           <a href="#definition-invoiceResponseHeader"> invoiceResponseHeader </a>
+          <a href="#definition-documentCreateDocumentProofForVersionRequest"> documentCreateDocumentProofForVersionRequest </a>
+          <a href="#definition-documentCreateDocumentProofRequest"> documentCreateDocumentProofRequest </a>
+          <a href="#definition-documentDocumentProof"> documentDocumentProof </a>
+          <a href="#definition-documentResponseHeader"> documentResponseHeader </a>
+          <a href="#definition-proofsMerkleHash"> proofsMerkleHash </a>
+          <a href="#definition-proofsProof"> proofsProof </a>
+          <a href="#definition-healthPong"> healthPong </a>
           <a href="#definition-coredocumentCoreDocument"> coredocumentCoreDocument </a>
           <a href="#definition-coredocumentCoreDocumentSalts"> coredocumentCoreDocumentSalts </a>
           <a href="#definition-coredocumentSignature"> coredocumentSignature </a>
@@ -134,8 +146,6 @@
           <a href="#definition-invoiceInvoiceProof"> invoiceInvoiceProof </a>
           <a href="#definition-invoiceReceivedInvoices"> invoiceReceivedInvoices </a>
           <a href="#definition-invoiceSendInvoiceEnvelope"> invoiceSendInvoiceEnvelope </a>
-          <a href="#definition-proofsMerkleHash"> proofsMerkleHash </a>
-          <a href="#definition-proofsProof"> proofsProof </a>
           <a href="#definition-protobufAny"> protobufAny </a>
           <a href="#definition-purchaseorderAnchorPurchaseOrderEnvelope"> purchaseorderAnchorPurchaseOrderEnvelope </a>
           <a href="#definition-purchaseorderCreatePurchaseOrderProofEnvelope"> purchaseorderCreatePurchaseOrderProofEnvelope </a>
@@ -182,65 +192,6 @@
                   <h5>Version:
                     <span>0.0.2</span>
                   </h5>
-                </section>
-              </div>
-            </div>
-          </div>
-          <h1 id="tag-HealthCheckService" class="swagger-summary-tag" data-traverse-target="tag-HealthCheckService">HealthCheckService</h1>
-          <div id="operation--ping-get" class="operation panel" data-traverse-target="operation--ping-get">
-            <!-- <section class="operation-tags row"> -->
-            <!-- <div class="doc-copy"> -->
-            <div class="operation-tags">
-              <a class="label" href="#tag-HealthCheckService">HealthCheckService</a>
-              <!---->
-            </div>
-            <!-- </div> -->
-            <!-- </section> -->
-            <h2 class="operation-title">
-              <span class="operation-name">
-                <span class="operation-name">GET</span>
-                <span class="operation-path">/ping</span>
-              </span>
-            </h2>
-            <div class="doc-row">
-              <div class="doc-copy">
-                <section class="swagger-operation-description">
-                  <p>Health check for the Node</p>
-                </section>
-              </div>
-            </div>
-            <div class="doc-row">
-              <div class="doc-copy"> </div>
-              <div class="doc-examples"></div>
-            </div>
-            <div class="doc-row">
-              <div class="doc-copy">
-                <section class="swagger-responses">
-                  <div class="prop-row prop-group">
-                    <div class="prop-name">
-                      <div class="prop-title">200 OK</div>
-                      <div class="prop-ref">
-                        <span class="">
-                          <a class="json-schema-ref" href="#/definitions/healthPong">healthPong</a>
-                        </span>
-                      </div>
-                      <!-- <span class="swagger-global"></span> <span class="json-schema-reference"><a href=""></a></span> -->
-                    </div>
-                    <div class="prop-value"> </div>
-                  </div>
-                </section>
-              </div>
-              <div class="doc-examples">
-                <section>
-                  <h5>Response Example
-                    <span>(200 OK)</span>
-                  </h5>
-                  <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
-  <span class="hljs-attr">&quot;version&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
-  <span class="hljs-attr">&quot;network&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>
-}
-</code></pre>
-                  <!-- </div> -->
                 </section>
               </div>
             </div>
@@ -779,6 +730,328 @@
               </div>
             </div>
           </div>
+          <div id="operation--document--identifier--proof-post" class="operation panel" data-traverse-target="operation--document--identifier--proof-post">
+            <!-- <section class="operation-tags row"> -->
+            <!-- <div class="doc-copy"> -->
+            <div class="operation-tags">
+              <a class="label" href="#tag-DocumentService">DocumentService</a>
+              <!---->
+            </div>
+            <!-- </div> -->
+            <!-- </section> -->
+            <h2 class="operation-title">
+              <span class="operation-name">
+                <span class="operation-name">POST</span>
+                <span class="operation-path">/document/{identifier}/proof</span>
+              </span>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <section class="swagger-operation-description">
+                  <p>Creates a list of precise proofs for the specified fields of the document given by ID</p>
+                </section>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <section class="swagger-request-body">
+                  <div class="prop-row">
+                    <div class="prop-name">
+                      <div class="swagger-request-model">
+                        <span class="">
+                          <a class="json-schema-ref" href="#/definitions/documentCreateDocumentProofRequest">documentCreateDocumentProofRequest</a>
+                        </span>
+                      </div>
+                    </div>
+                    <div class="prop-value columns small-6">
+                      <!-- <div class="swagger-request-description"> -->
+                      <p>undefined</p>
+                      <!-- </div> -->
+                    </div>
+                  </div>
+                </section>
+                <section class="swagger-request-params">
+                  <div class="prop-row prop-group">
+                    <div class="prop-name">
+                      <div class="prop-title">identifier</div>
+                      <span class="json-property-required"></span>
+                      <div class="prop-subtitle"> in path </div>
+                      <div class="prop-subtitle">
+                        <span class="json-property-type">string</span>
+                        <span class="json-property-range" title="Value limits"></span>
+                      </div>
+                    </div>
+                    <div class="prop-value">
+                      <p class="no-description">(no description)</p>
+                    </div>
+                  </div>
+                </section>
+              </div>
+              <div class="doc-examples">
+                <section>
+                  <h5>Request Example</h5>
+                  <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
+  <span class="hljs-attr">&quot;identifier&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+  <span class="hljs-attr">&quot;type&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+  <span class="hljs-attr">&quot;fields&quot;</span>: [
+    <span class="hljs-string">&quot;string&quot;</span>
+  ]
+}
+</code></pre>
+                  <!-- </div> -->
+                </section>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <section class="swagger-responses">
+                  <div class="prop-row prop-group">
+                    <div class="prop-name">
+                      <div class="prop-title">200 OK</div>
+                      <div class="prop-ref">
+                        <span class="">
+                          <a class="json-schema-ref" href="#/definitions/documentDocumentProof">documentDocumentProof</a>
+                        </span>
+                      </div>
+                      <!-- <span class="swagger-global"></span> <span class="json-schema-reference"><a href=""></a></span> -->
+                    </div>
+                    <div class="prop-value"> </div>
+                  </div>
+                </section>
+              </div>
+              <div class="doc-examples">
+                <section>
+                  <h5>Response Example
+                    <span>(200 OK)</span>
+                  </h5>
+                  <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
+  <span class="hljs-attr">&quot;header&quot;</span>: {
+    <span class="hljs-attr">&quot;document_id&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+    <span class="hljs-attr">&quot;version_id&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+    <span class="hljs-attr">&quot;state&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>
+  },
+  <span class="hljs-attr">&quot;field_proofs&quot;</span>: [
+    {
+      <span class="hljs-attr">&quot;property&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+      <span class="hljs-attr">&quot;value&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+      <span class="hljs-attr">&quot;salt&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;hash&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;hashes&quot;</span>: [
+        {
+          <span class="hljs-attr">&quot;left&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+          <span class="hljs-attr">&quot;right&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
+        }
+      ],
+      <span class="hljs-attr">&quot;sortedHashes&quot;</span>: [
+        <span class="hljs-string">&quot;string (byte)&quot;</span>
+      ]
+    }
+  ]
+}
+</code></pre>
+                  <!-- </div> -->
+                </section>
+              </div>
+            </div>
+          </div>
+          <div id="operation--document--identifier---version--proof-post" class="operation panel" data-traverse-target="operation--document--identifier---version--proof-post">
+            <!-- <section class="operation-tags row"> -->
+            <!-- <div class="doc-copy"> -->
+            <div class="operation-tags">
+              <a class="label" href="#tag-DocumentService">DocumentService</a>
+              <!---->
+            </div>
+            <!-- </div> -->
+            <!-- </section> -->
+            <h2 class="operation-title">
+              <span class="operation-name">
+                <span class="operation-name">POST</span>
+                <span class="operation-path">/document/{identifier}/{version}/proof</span>
+              </span>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <section class="swagger-operation-description">
+                  <p>Creates a list of precise proofs for the specified fields of the given version of the document given by ID</p>
+                </section>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <section class="swagger-request-body">
+                  <div class="prop-row">
+                    <div class="prop-name">
+                      <div class="swagger-request-model">
+                        <span class="">
+                          <a class="json-schema-ref" href="#/definitions/documentCreateDocumentProofForVersionRequest">documentCreateDocumentProofForVersionRequest</a>
+                        </span>
+                      </div>
+                    </div>
+                    <div class="prop-value columns small-6">
+                      <!-- <div class="swagger-request-description"> -->
+                      <p>undefined</p>
+                      <!-- </div> -->
+                    </div>
+                  </div>
+                </section>
+                <section class="swagger-request-params">
+                  <div class="prop-row prop-group">
+                    <div class="prop-name">
+                      <div class="prop-title">identifier</div>
+                      <span class="json-property-required"></span>
+                      <div class="prop-subtitle"> in path </div>
+                      <div class="prop-subtitle">
+                        <span class="json-property-type">string</span>
+                        <span class="json-property-range" title="Value limits"></span>
+                      </div>
+                    </div>
+                    <div class="prop-value">
+                      <p class="no-description">(no description)</p>
+                    </div>
+                  </div>
+                  <div class="prop-row prop-group">
+                    <div class="prop-name">
+                      <div class="prop-title">version</div>
+                      <span class="json-property-required"></span>
+                      <div class="prop-subtitle"> in path </div>
+                      <div class="prop-subtitle">
+                        <span class="json-property-type">string</span>
+                        <span class="json-property-range" title="Value limits"></span>
+                      </div>
+                    </div>
+                    <div class="prop-value">
+                      <p class="no-description">(no description)</p>
+                    </div>
+                  </div>
+                </section>
+              </div>
+              <div class="doc-examples">
+                <section>
+                  <h5>Request Example</h5>
+                  <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
+  <span class="hljs-attr">&quot;identifier&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+  <span class="hljs-attr">&quot;type&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+  <span class="hljs-attr">&quot;version&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+  <span class="hljs-attr">&quot;fields&quot;</span>: [
+    <span class="hljs-string">&quot;string&quot;</span>
+  ]
+}
+</code></pre>
+                  <!-- </div> -->
+                </section>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <section class="swagger-responses">
+                  <div class="prop-row prop-group">
+                    <div class="prop-name">
+                      <div class="prop-title">200 OK</div>
+                      <div class="prop-ref">
+                        <span class="">
+                          <a class="json-schema-ref" href="#/definitions/documentDocumentProof">documentDocumentProof</a>
+                        </span>
+                      </div>
+                      <!-- <span class="swagger-global"></span> <span class="json-schema-reference"><a href=""></a></span> -->
+                    </div>
+                    <div class="prop-value"> </div>
+                  </div>
+                </section>
+              </div>
+              <div class="doc-examples">
+                <section>
+                  <h5>Response Example
+                    <span>(200 OK)</span>
+                  </h5>
+                  <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
+  <span class="hljs-attr">&quot;header&quot;</span>: {
+    <span class="hljs-attr">&quot;document_id&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+    <span class="hljs-attr">&quot;version_id&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+    <span class="hljs-attr">&quot;state&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>
+  },
+  <span class="hljs-attr">&quot;field_proofs&quot;</span>: [
+    {
+      <span class="hljs-attr">&quot;property&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+      <span class="hljs-attr">&quot;value&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+      <span class="hljs-attr">&quot;salt&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;hash&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;hashes&quot;</span>: [
+        {
+          <span class="hljs-attr">&quot;left&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+          <span class="hljs-attr">&quot;right&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
+        }
+      ],
+      <span class="hljs-attr">&quot;sortedHashes&quot;</span>: [
+        <span class="hljs-string">&quot;string (byte)&quot;</span>
+      ]
+    }
+  ]
+}
+</code></pre>
+                  <!-- </div> -->
+                </section>
+              </div>
+            </div>
+          </div>
+          <h1 id="tag-HealthCheckService" class="swagger-summary-tag" data-traverse-target="tag-HealthCheckService">HealthCheckService</h1>
+          <div id="operation--ping-get" class="operation panel" data-traverse-target="operation--ping-get">
+            <!-- <section class="operation-tags row"> -->
+            <!-- <div class="doc-copy"> -->
+            <div class="operation-tags">
+              <a class="label" href="#tag-HealthCheckService">HealthCheckService</a>
+              <!---->
+            </div>
+            <!-- </div> -->
+            <!-- </section> -->
+            <h2 class="operation-title">
+              <span class="operation-name">
+                <span class="operation-name">GET</span>
+                <span class="operation-path">/ping</span>
+              </span>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <section class="swagger-operation-description">
+                  <p>Health check for the Node</p>
+                </section>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy"> </div>
+              <div class="doc-examples"></div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <section class="swagger-responses">
+                  <div class="prop-row prop-group">
+                    <div class="prop-name">
+                      <div class="prop-title">200 OK</div>
+                      <div class="prop-ref">
+                        <span class="">
+                          <a class="json-schema-ref" href="#/definitions/healthPong">healthPong</a>
+                        </span>
+                      </div>
+                      <!-- <span class="swagger-global"></span> <span class="json-schema-reference"><a href=""></a></span> -->
+                    </div>
+                    <div class="prop-value"> </div>
+                  </div>
+                </section>
+              </div>
+              <div class="doc-examples">
+                <section>
+                  <h5>Response Example
+                    <span>(200 OK)</span>
+                  </h5>
+                  <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
+  <span class="hljs-attr">&quot;version&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+  <span class="hljs-attr">&quot;network&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>
+}
+</code></pre>
+                  <!-- </div> -->
+                </section>
+              </div>
+            </div>
+          </div>
           <h1 id="tag-InvoiceDocumentService" class="swagger-summary-tag" data-traverse-target="tag-InvoiceDocumentService">InvoiceDocumentService</h1>
           <div id="operation--legacy-invoice-anchor-post" class="operation panel" data-traverse-target="operation--legacy-invoice-anchor-post">
             <!-- <section class="operation-tags row"> -->
@@ -828,8 +1101,9 @@
   <span class="hljs-attr">&quot;document&quot;</span>: {
     <span class="hljs-attr">&quot;core_document&quot;</span>: {
       <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
       <span class="hljs-attr">&quot;document_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
       <span class="hljs-attr">&quot;signing_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
       <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
@@ -852,11 +1126,19 @@
       },
       <span class="hljs-attr">&quot;coredocument_salts&quot;</span>: {
         <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-        <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-        <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
         <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-        <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
-      }
+        <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+          <span class="hljs-string">&quot;string (byte)&quot;</span>
+        ],
+        <span class="hljs-attr">&quot;collaborators_length&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
+      },
+      <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+        <span class="hljs-string">&quot;string (byte)&quot;</span>
+      ]
     },
     <span class="hljs-attr">&quot;data&quot;</span>: {
       <span class="hljs-attr">&quot;invoice_status&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
@@ -941,8 +1223,9 @@
                   <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
   <span class="hljs-attr">&quot;core_document&quot;</span>: {
     <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
     <span class="hljs-attr">&quot;document_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
     <span class="hljs-attr">&quot;signing_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
     <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
@@ -965,11 +1248,19 @@
     },
     <span class="hljs-attr">&quot;coredocument_salts&quot;</span>: {
       <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
       <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
-    }
+      <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+        <span class="hljs-string">&quot;string (byte)&quot;</span>
+      ],
+      <span class="hljs-attr">&quot;collaborators_length&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
+    },
+    <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+      <span class="hljs-string">&quot;string (byte)&quot;</span>
+    ]
   },
   <span class="hljs-attr">&quot;data&quot;</span>: {
     <span class="hljs-attr">&quot;invoice_status&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
@@ -1099,8 +1390,9 @@
                   <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
   <span class="hljs-attr">&quot;core_document&quot;</span>: {
     <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
     <span class="hljs-attr">&quot;document_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
     <span class="hljs-attr">&quot;signing_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
     <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
@@ -1123,11 +1415,19 @@
     },
     <span class="hljs-attr">&quot;coredocument_salts&quot;</span>: {
       <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
       <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
-    }
+      <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+        <span class="hljs-string">&quot;string (byte)&quot;</span>
+      ],
+      <span class="hljs-attr">&quot;collaborators_length&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
+    },
+    <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+      <span class="hljs-string">&quot;string (byte)&quot;</span>
+    ]
   },
   <span class="hljs-attr">&quot;data&quot;</span>: {
     <span class="hljs-attr">&quot;invoice_status&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
@@ -1233,8 +1533,9 @@
     {
       <span class="hljs-attr">&quot;core_document&quot;</span>: {
         <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-        <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-        <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
         <span class="hljs-attr">&quot;document_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
         <span class="hljs-attr">&quot;signing_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
         <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
@@ -1257,11 +1558,19 @@
         },
         <span class="hljs-attr">&quot;coredocument_salts&quot;</span>: {
           <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-          <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-          <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+          <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+          <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+          <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
           <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-          <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
-        }
+          <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+          <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+            <span class="hljs-string">&quot;string (byte)&quot;</span>
+          ],
+          <span class="hljs-attr">&quot;collaborators_length&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
+        },
+        <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+          <span class="hljs-string">&quot;string (byte)&quot;</span>
+        ]
       },
       <span class="hljs-attr">&quot;data&quot;</span>: {
         <span class="hljs-attr">&quot;invoice_status&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
@@ -1477,8 +1786,9 @@
   <span class="hljs-attr">&quot;document&quot;</span>: {
     <span class="hljs-attr">&quot;core_document&quot;</span>: {
       <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
       <span class="hljs-attr">&quot;document_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
       <span class="hljs-attr">&quot;signing_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
       <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
@@ -1501,11 +1811,19 @@
       },
       <span class="hljs-attr">&quot;coredocument_salts&quot;</span>: {
         <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-        <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-        <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
         <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-        <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
-      }
+        <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+          <span class="hljs-string">&quot;string (byte)&quot;</span>
+        ],
+        <span class="hljs-attr">&quot;collaborators_length&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
+      },
+      <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+        <span class="hljs-string">&quot;string (byte)&quot;</span>
+      ]
     },
     <span class="hljs-attr">&quot;data&quot;</span>: {
       <span class="hljs-attr">&quot;invoice_status&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
@@ -1590,8 +1908,9 @@
                   <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
   <span class="hljs-attr">&quot;core_document&quot;</span>: {
     <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
     <span class="hljs-attr">&quot;document_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
     <span class="hljs-attr">&quot;signing_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
     <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
@@ -1614,11 +1933,19 @@
     },
     <span class="hljs-attr">&quot;coredocument_salts&quot;</span>: {
       <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
       <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
-    }
+      <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+        <span class="hljs-string">&quot;string (byte)&quot;</span>
+      ],
+      <span class="hljs-attr">&quot;collaborators_length&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
+    },
+    <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+      <span class="hljs-string">&quot;string (byte)&quot;</span>
+    ]
   },
   <span class="hljs-attr">&quot;data&quot;</span>: {
     <span class="hljs-attr">&quot;invoice_status&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
@@ -1727,8 +2054,9 @@
   <span class="hljs-attr">&quot;document&quot;</span>: {
     <span class="hljs-attr">&quot;core_document&quot;</span>: {
       <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
       <span class="hljs-attr">&quot;document_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
       <span class="hljs-attr">&quot;signing_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
       <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
@@ -1751,11 +2079,19 @@
       },
       <span class="hljs-attr">&quot;coredocument_salts&quot;</span>: {
         <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-        <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-        <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
         <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-        <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
-      }
+        <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+          <span class="hljs-string">&quot;string (byte)&quot;</span>
+        ],
+        <span class="hljs-attr">&quot;collaborators_length&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
+      },
+      <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+        <span class="hljs-string">&quot;string (byte)&quot;</span>
+      ]
     },
     <span class="hljs-attr">&quot;data&quot;</span>: {
       <span class="hljs-attr">&quot;po_number&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
@@ -1839,8 +2175,9 @@
                   <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
   <span class="hljs-attr">&quot;core_document&quot;</span>: {
     <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
     <span class="hljs-attr">&quot;document_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
     <span class="hljs-attr">&quot;signing_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
     <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
@@ -1863,11 +2200,19 @@
     },
     <span class="hljs-attr">&quot;coredocument_salts&quot;</span>: {
       <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
       <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
-    }
+      <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+        <span class="hljs-string">&quot;string (byte)&quot;</span>
+      ],
+      <span class="hljs-attr">&quot;collaborators_length&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
+    },
+    <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+      <span class="hljs-string">&quot;string (byte)&quot;</span>
+    ]
   },
   <span class="hljs-attr">&quot;data&quot;</span>: {
     <span class="hljs-attr">&quot;po_number&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
@@ -1996,8 +2341,9 @@
                   <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
   <span class="hljs-attr">&quot;core_document&quot;</span>: {
     <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
     <span class="hljs-attr">&quot;document_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
     <span class="hljs-attr">&quot;signing_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
     <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
@@ -2020,11 +2366,19 @@
     },
     <span class="hljs-attr">&quot;coredocument_salts&quot;</span>: {
       <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
       <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
-    }
+      <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+        <span class="hljs-string">&quot;string (byte)&quot;</span>
+      ],
+      <span class="hljs-attr">&quot;collaborators_length&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
+    },
+    <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+      <span class="hljs-string">&quot;string (byte)&quot;</span>
+    ]
   },
   <span class="hljs-attr">&quot;data&quot;</span>: {
     <span class="hljs-attr">&quot;po_number&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
@@ -2129,8 +2483,9 @@
     {
       <span class="hljs-attr">&quot;core_document&quot;</span>: {
         <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-        <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-        <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
         <span class="hljs-attr">&quot;document_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
         <span class="hljs-attr">&quot;signing_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
         <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
@@ -2153,11 +2508,19 @@
         },
         <span class="hljs-attr">&quot;coredocument_salts&quot;</span>: {
           <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-          <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-          <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+          <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+          <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+          <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
           <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-          <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
-        }
+          <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+          <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+            <span class="hljs-string">&quot;string (byte)&quot;</span>
+          ],
+          <span class="hljs-attr">&quot;collaborators_length&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
+        },
+        <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+          <span class="hljs-string">&quot;string (byte)&quot;</span>
+        ]
       },
       <span class="hljs-attr">&quot;data&quot;</span>: {
         <span class="hljs-attr">&quot;po_number&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
@@ -2372,8 +2735,9 @@
   <span class="hljs-attr">&quot;document&quot;</span>: {
     <span class="hljs-attr">&quot;core_document&quot;</span>: {
       <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
       <span class="hljs-attr">&quot;document_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
       <span class="hljs-attr">&quot;signing_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
       <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
@@ -2396,11 +2760,19 @@
       },
       <span class="hljs-attr">&quot;coredocument_salts&quot;</span>: {
         <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-        <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-        <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
         <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-        <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
-      }
+        <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+          <span class="hljs-string">&quot;string (byte)&quot;</span>
+        ],
+        <span class="hljs-attr">&quot;collaborators_length&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
+      },
+      <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+        <span class="hljs-string">&quot;string (byte)&quot;</span>
+      ]
     },
     <span class="hljs-attr">&quot;data&quot;</span>: {
       <span class="hljs-attr">&quot;po_number&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
@@ -2484,8 +2856,9 @@
                   <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
   <span class="hljs-attr">&quot;core_document&quot;</span>: {
     <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
     <span class="hljs-attr">&quot;document_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
     <span class="hljs-attr">&quot;signing_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
     <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
@@ -2508,11 +2881,19 @@
     },
     <span class="hljs-attr">&quot;coredocument_salts&quot;</span>: {
       <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
       <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
-    }
+      <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+        <span class="hljs-string">&quot;string (byte)&quot;</span>
+      ],
+      <span class="hljs-attr">&quot;collaborators_length&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
+    },
+    <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+      <span class="hljs-string">&quot;string (byte)&quot;</span>
+    ]
   },
   <span class="hljs-attr">&quot;data&quot;</span>: {
     <span class="hljs-attr">&quot;po_number&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
@@ -2619,8 +3000,9 @@
   <span class="hljs-attr">&quot;document&quot;</span>: {
     <span class="hljs-attr">&quot;core_document&quot;</span>: {
       <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
       <span class="hljs-attr">&quot;document_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
       <span class="hljs-attr">&quot;signing_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
       <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
@@ -2643,11 +3025,19 @@
       },
       <span class="hljs-attr">&quot;coredocument_salts&quot;</span>: {
         <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-        <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-        <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
         <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-        <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
-      }
+        <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+          <span class="hljs-string">&quot;string (byte)&quot;</span>
+        ],
+        <span class="hljs-attr">&quot;collaborators_length&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
+      },
+      <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+        <span class="hljs-string">&quot;string (byte)&quot;</span>
+      ]
     },
     <span class="hljs-attr">&quot;data&quot;</span>: {
       <span class="hljs-attr">&quot;po_number&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
@@ -2731,8 +3121,9 @@
                   <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
   <span class="hljs-attr">&quot;core_document&quot;</span>: {
     <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
     <span class="hljs-attr">&quot;document_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
     <span class="hljs-attr">&quot;signing_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
     <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
@@ -2755,11 +3146,19 @@
     },
     <span class="hljs-attr">&quot;coredocument_salts&quot;</span>: {
       <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
       <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
-    }
+      <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+        <span class="hljs-string">&quot;string (byte)&quot;</span>
+      ],
+      <span class="hljs-attr">&quot;collaborators_length&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
+    },
+    <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+      <span class="hljs-string">&quot;string (byte)&quot;</span>
+    ]
   },
   <span class="hljs-attr">&quot;data&quot;</span>: {
     <span class="hljs-attr">&quot;po_number&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
@@ -2888,8 +3287,9 @@
                   <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
   <span class="hljs-attr">&quot;core_document&quot;</span>: {
     <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
     <span class="hljs-attr">&quot;document_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
     <span class="hljs-attr">&quot;signing_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
     <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
@@ -2912,11 +3312,19 @@
     },
     <span class="hljs-attr">&quot;coredocument_salts&quot;</span>: {
       <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
       <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
-    }
+      <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+        <span class="hljs-string">&quot;string (byte)&quot;</span>
+      ],
+      <span class="hljs-attr">&quot;collaborators_length&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
+    },
+    <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+      <span class="hljs-string">&quot;string (byte)&quot;</span>
+    ]
   },
   <span class="hljs-attr">&quot;data&quot;</span>: {
     <span class="hljs-attr">&quot;po_number&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
@@ -3021,8 +3429,9 @@
     {
       <span class="hljs-attr">&quot;core_document&quot;</span>: {
         <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-        <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-        <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
         <span class="hljs-attr">&quot;document_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
         <span class="hljs-attr">&quot;signing_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
         <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
@@ -3045,11 +3454,19 @@
         },
         <span class="hljs-attr">&quot;coredocument_salts&quot;</span>: {
           <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-          <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-          <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+          <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+          <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+          <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
           <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-          <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
-        }
+          <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+          <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+            <span class="hljs-string">&quot;string (byte)&quot;</span>
+          ],
+          <span class="hljs-attr">&quot;collaborators_length&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
+        },
+        <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+          <span class="hljs-string">&quot;string (byte)&quot;</span>
+        ]
       },
       <span class="hljs-attr">&quot;data&quot;</span>: {
         <span class="hljs-attr">&quot;po_number&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
@@ -3264,8 +3681,9 @@
   <span class="hljs-attr">&quot;document&quot;</span>: {
     <span class="hljs-attr">&quot;core_document&quot;</span>: {
       <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
       <span class="hljs-attr">&quot;document_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
       <span class="hljs-attr">&quot;signing_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
       <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
@@ -3288,11 +3706,19 @@
       },
       <span class="hljs-attr">&quot;coredocument_salts&quot;</span>: {
         <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-        <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-        <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
         <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-        <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
-      }
+        <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+          <span class="hljs-string">&quot;string (byte)&quot;</span>
+        ],
+        <span class="hljs-attr">&quot;collaborators_length&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
+      },
+      <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+        <span class="hljs-string">&quot;string (byte)&quot;</span>
+      ]
     },
     <span class="hljs-attr">&quot;data&quot;</span>: {
       <span class="hljs-attr">&quot;po_number&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
@@ -3376,8 +3802,9 @@
                   <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
   <span class="hljs-attr">&quot;core_document&quot;</span>: {
     <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
     <span class="hljs-attr">&quot;document_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
     <span class="hljs-attr">&quot;signing_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
     <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
@@ -3400,11 +3827,19 @@
     },
     <span class="hljs-attr">&quot;coredocument_salts&quot;</span>: {
       <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
       <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
-    }
+      <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+        <span class="hljs-string">&quot;string (byte)&quot;</span>
+      ],
+      <span class="hljs-attr">&quot;collaborators_length&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
+    },
+    <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+      <span class="hljs-string">&quot;string (byte)&quot;</span>
+    ]
   },
   <span class="hljs-attr">&quot;data&quot;</span>: {
     <span class="hljs-attr">&quot;po_number&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
@@ -3584,45 +4019,6 @@
             </div>
           </div>
           <h1>Schema Definitions</h1>
-          <div id="definition-healthPong" class="definition panel" data-traverse-target="definition-healthPong">
-            <h2 class="panel-title">
-              <a name="/definitions/healthPong"></a>healthPong: object
-              <!-- <span class="json-property-type"><span class="json-property-type">object</span>
-              <span class="json-property-range" title="Value limits"></span>
-              
-              
-              </span> -->
-            </h2>
-            <div class="doc-row">
-              <div class="doc-copy">
-                <section class="json-schema-properties">
-                  <dl>
-                    <dt data-property-name="version">
-                      <span class="json-property-name">version:</span>
-                      <span class="json-property-type">string</span>
-                      <span class="json-property-range" title="Value limits"></span>
-                    </dt>
-                    <dt data-property-name="network">
-                      <span class="json-property-name">network:</span>
-                      <span class="json-property-type">string</span>
-                      <span class="json-property-range" title="Value limits"></span>
-                    </dt>
-                  </dl>
-                </section>
-              </div>
-              <div class="doc-examples">
-                <section>
-                  <h5>Example</h5>
-                  <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
-  <span class="hljs-attr">&quot;version&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
-  <span class="hljs-attr">&quot;network&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>
-}
-</code></pre>
-                  <!-- </div> -->
-                </section>
-              </div>
-            </div>
-          </div>
           <div id="definition-invoiceInvoiceCreatePayload" class="definition panel" data-traverse-target="definition-invoiceInvoiceCreatePayload">
             <h2 class="panel-title">
               <a name="/definitions/invoiceInvoiceCreatePayload"></a>invoiceInvoiceCreatePayload: object
@@ -4099,6 +4495,418 @@
               </div>
             </div>
           </div>
+          <div id="definition-documentCreateDocumentProofForVersionRequest" class="definition panel" data-traverse-target="definition-documentCreateDocumentProofForVersionRequest">
+            <h2 class="panel-title">
+              <a name="/definitions/documentCreateDocumentProofForVersionRequest"></a>documentCreateDocumentProofForVersionRequest: object
+              <!-- <span class="json-property-type"><span class="json-property-type">object</span>
+              <span class="json-property-range" title="Value limits"></span>
+              
+              
+              </span> -->
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <section class="json-schema-properties">
+                  <dl>
+                    <dt data-property-name="identifier">
+                      <span class="json-property-name">identifier:</span>
+                      <span class="json-property-type">string</span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
+                    <dt data-property-name="type">
+                      <span class="json-property-name">type:</span>
+                      <span class="json-property-type">string</span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
+                    <dt data-property-name="version">
+                      <span class="json-property-name">version:</span>
+                      <span class="json-property-type">string</span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
+                    <dt data-property-name="fields">
+                      <span class="json-property-name">fields:</span>
+                      <span class="json-property-type">string[]</span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
+                    <dt class="json-inner-schema">
+                      <section class="json-schema-array-items">
+                        <span class="json-property-type">string</span>
+                        <span class="json-property-range" title="Value limits"></span>
+                        <div class="json-inner-schema"> </div>
+                      </section>
+                    </dt>
+                  </dl>
+                </section>
+              </div>
+              <div class="doc-examples">
+                <section>
+                  <h5>Example</h5>
+                  <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
+  <span class="hljs-attr">&quot;identifier&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+  <span class="hljs-attr">&quot;type&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+  <span class="hljs-attr">&quot;version&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+  <span class="hljs-attr">&quot;fields&quot;</span>: [
+    <span class="hljs-string">&quot;string&quot;</span>
+  ]
+}
+</code></pre>
+                  <!-- </div> -->
+                </section>
+              </div>
+            </div>
+          </div>
+          <div id="definition-documentCreateDocumentProofRequest" class="definition panel" data-traverse-target="definition-documentCreateDocumentProofRequest">
+            <h2 class="panel-title">
+              <a name="/definitions/documentCreateDocumentProofRequest"></a>documentCreateDocumentProofRequest: object
+              <!-- <span class="json-property-type"><span class="json-property-type">object</span>
+              <span class="json-property-range" title="Value limits"></span>
+              
+              
+              </span> -->
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <section class="json-schema-properties">
+                  <dl>
+                    <dt data-property-name="identifier">
+                      <span class="json-property-name">identifier:</span>
+                      <span class="json-property-type">string</span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
+                    <dt data-property-name="type">
+                      <span class="json-property-name">type:</span>
+                      <span class="json-property-type">string</span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
+                    <dt data-property-name="fields">
+                      <span class="json-property-name">fields:</span>
+                      <span class="json-property-type">string[]</span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
+                    <dt class="json-inner-schema">
+                      <section class="json-schema-array-items">
+                        <span class="json-property-type">string</span>
+                        <span class="json-property-range" title="Value limits"></span>
+                        <div class="json-inner-schema"> </div>
+                      </section>
+                    </dt>
+                  </dl>
+                </section>
+              </div>
+              <div class="doc-examples">
+                <section>
+                  <h5>Example</h5>
+                  <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
+  <span class="hljs-attr">&quot;identifier&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+  <span class="hljs-attr">&quot;type&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+  <span class="hljs-attr">&quot;fields&quot;</span>: [
+    <span class="hljs-string">&quot;string&quot;</span>
+  ]
+}
+</code></pre>
+                  <!-- </div> -->
+                </section>
+              </div>
+            </div>
+          </div>
+          <div id="definition-documentDocumentProof" class="definition panel" data-traverse-target="definition-documentDocumentProof">
+            <h2 class="panel-title">
+              <a name="/definitions/documentDocumentProof"></a>documentDocumentProof: object
+              <!-- <span class="json-property-type"><span class="json-property-type">object</span>
+              <span class="json-property-range" title="Value limits"></span>
+              
+              
+              </span> -->
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <section class="json-schema-properties">
+                  <dl>
+                    <dt data-property-name="header">
+                      <span class="json-property-name">header:</span>
+                      <span class="json-property-type">
+                        <span class="">
+                          <a class="json-schema-ref" href="#/definitions/documentResponseHeader">documentResponseHeader</a>
+                        </span>
+                      </span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
+                    <dt data-property-name="field_proofs">
+                      <span class="json-property-name">field_proofs:</span>
+                      <span class="json-property-type">
+                        <span class="json-schema-ref-array">
+                          <a class="json-schema-ref" href="#/definitions/proofsProof">proofsProof</a>
+                        </span>
+                      </span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
+                    <dt class="json-inner-schema">
+                      <section class="json-schema-array-items">
+                        <span class="json-property-type">
+                          <span class="">
+                            <a class="json-schema-ref" href="#/definitions/proofsProof">proofsProof</a>
+                          </span>
+                        </span>
+                        <span class="json-property-range" title="Value limits"></span>
+                        <div class="json-inner-schema"> </div>
+                      </section>
+                    </dt>
+                  </dl>
+                </section>
+              </div>
+              <div class="doc-examples">
+                <section>
+                  <h5>Example</h5>
+                  <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
+  <span class="hljs-attr">&quot;header&quot;</span>: {
+    <span class="hljs-attr">&quot;document_id&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+    <span class="hljs-attr">&quot;version_id&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+    <span class="hljs-attr">&quot;state&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>
+  },
+  <span class="hljs-attr">&quot;field_proofs&quot;</span>: [
+    {
+      <span class="hljs-attr">&quot;property&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+      <span class="hljs-attr">&quot;value&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+      <span class="hljs-attr">&quot;salt&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;hash&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;hashes&quot;</span>: [
+        {
+          <span class="hljs-attr">&quot;left&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+          <span class="hljs-attr">&quot;right&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
+        }
+      ],
+      <span class="hljs-attr">&quot;sortedHashes&quot;</span>: [
+        <span class="hljs-string">&quot;string (byte)&quot;</span>
+      ]
+    }
+  ]
+}
+</code></pre>
+                  <!-- </div> -->
+                </section>
+              </div>
+            </div>
+          </div>
+          <div id="definition-documentResponseHeader" class="definition panel" data-traverse-target="definition-documentResponseHeader">
+            <h2 class="panel-title">
+              <a name="/definitions/documentResponseHeader"></a>documentResponseHeader: object
+              <!-- <span class="json-property-type"><span class="json-property-type">object</span>
+              <span class="json-property-range" title="Value limits"></span>
+              
+              
+              </span> -->
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <section class="json-schema-properties">
+                  <dl>
+                    <dt data-property-name="document_id">
+                      <span class="json-property-name">document_id:</span>
+                      <span class="json-property-type">string</span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
+                    <dt data-property-name="version_id">
+                      <span class="json-property-name">version_id:</span>
+                      <span class="json-property-type">string</span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
+                    <dt data-property-name="state">
+                      <span class="json-property-name">state:</span>
+                      <span class="json-property-type">string</span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
+                  </dl>
+                </section>
+              </div>
+              <div class="doc-examples">
+                <section>
+                  <h5>Example</h5>
+                  <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
+  <span class="hljs-attr">&quot;document_id&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+  <span class="hljs-attr">&quot;version_id&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+  <span class="hljs-attr">&quot;state&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>
+}
+</code></pre>
+                  <!-- </div> -->
+                </section>
+              </div>
+            </div>
+          </div>
+          <div id="definition-proofsMerkleHash" class="definition panel" data-traverse-target="definition-proofsMerkleHash">
+            <h2 class="panel-title">
+              <a name="/definitions/proofsMerkleHash"></a>proofsMerkleHash: object
+              <!-- <span class="json-property-type"><span class="json-property-type">object</span>
+              <span class="json-property-range" title="Value limits"></span>
+              
+              
+              </span> -->
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <section class="json-schema-properties">
+                  <dl>
+                    <dt data-property-name="left">
+                      <span class="json-property-name">left:</span>
+                      <span class="json-property-type">string</span>
+                      <span class="json-property-format">(byte)</span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
+                    <dt data-property-name="right">
+                      <span class="json-property-name">right:</span>
+                      <span class="json-property-type">string</span>
+                      <span class="json-property-format">(byte)</span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
+                  </dl>
+                </section>
+              </div>
+              <div class="doc-examples">
+                <section>
+                  <h5>Example</h5>
+                  <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
+  <span class="hljs-attr">&quot;left&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+  <span class="hljs-attr">&quot;right&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
+}
+</code></pre>
+                  <!-- </div> -->
+                </section>
+              </div>
+            </div>
+          </div>
+          <div id="definition-proofsProof" class="definition panel" data-traverse-target="definition-proofsProof">
+            <h2 class="panel-title">
+              <a name="/definitions/proofsProof"></a>proofsProof: object
+              <!-- <span class="json-property-type"><span class="json-property-type">object</span>
+              <span class="json-property-range" title="Value limits"></span>
+              
+              
+              </span> -->
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <section class="json-schema-properties">
+                  <dl>
+                    <dt data-property-name="property">
+                      <span class="json-property-name">property:</span>
+                      <span class="json-property-type">string</span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
+                    <dt data-property-name="value">
+                      <span class="json-property-name">value:</span>
+                      <span class="json-property-type">string</span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
+                    <dt data-property-name="salt">
+                      <span class="json-property-name">salt:</span>
+                      <span class="json-property-type">string</span>
+                      <span class="json-property-format">(byte)</span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
+                    <dt data-property-name="hash">
+                      <span class="json-property-name">hash:</span>
+                      <span class="json-property-type">string</span>
+                      <span class="json-property-format">(byte)</span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
+                    <dt data-property-name="hashes">
+                      <span class="json-property-name">hashes:</span>
+                      <span class="json-property-type">
+                        <span class="json-schema-ref-array">
+                          <a class="json-schema-ref" href="#/definitions/proofsMerkleHash">proofsMerkleHash</a>
+                        </span>
+                      </span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
+                    <dt class="json-inner-schema">
+                      <section class="json-schema-array-items">
+                        <span class="json-property-type">
+                          <span class="">
+                            <a class="json-schema-ref" href="#/definitions/proofsMerkleHash">proofsMerkleHash</a>
+                          </span>
+                        </span>
+                        <span class="json-property-range" title="Value limits"></span>
+                        <div class="json-inner-schema"> </div>
+                      </section>
+                    </dt>
+                    <dt data-property-name="sortedHashes">
+                      <span class="json-property-name">sortedHashes:</span>
+                      <span class="json-property-type">string[]</span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
+                    <dt class="json-inner-schema">
+                      <section class="json-schema-array-items">
+                        <span class="json-property-type">string</span>
+                        <span class="json-property-format">(byte)</span>
+                        <span class="json-property-range" title="Value limits"></span>
+                        <div class="json-inner-schema"> </div>
+                      </section>
+                    </dt>
+                  </dl>
+                </section>
+              </div>
+              <div class="doc-examples">
+                <section>
+                  <h5>Example</h5>
+                  <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
+  <span class="hljs-attr">&quot;property&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+  <span class="hljs-attr">&quot;value&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+  <span class="hljs-attr">&quot;salt&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+  <span class="hljs-attr">&quot;hash&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+  <span class="hljs-attr">&quot;hashes&quot;</span>: [
+    {
+      <span class="hljs-attr">&quot;left&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;right&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
+    }
+  ],
+  <span class="hljs-attr">&quot;sortedHashes&quot;</span>: [
+    <span class="hljs-string">&quot;string (byte)&quot;</span>
+  ]
+}
+</code></pre>
+                  <!-- </div> -->
+                </section>
+              </div>
+            </div>
+          </div>
+          <div id="definition-healthPong" class="definition panel" data-traverse-target="definition-healthPong">
+            <h2 class="panel-title">
+              <a name="/definitions/healthPong"></a>healthPong: object
+              <!-- <span class="json-property-type"><span class="json-property-type">object</span>
+              <span class="json-property-range" title="Value limits"></span>
+              
+              
+              </span> -->
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <section class="json-schema-properties">
+                  <dl>
+                    <dt data-property-name="version">
+                      <span class="json-property-name">version:</span>
+                      <span class="json-property-type">string</span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
+                    <dt data-property-name="network">
+                      <span class="json-property-name">network:</span>
+                      <span class="json-property-type">string</span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
+                  </dl>
+                </section>
+              </div>
+              <div class="doc-examples">
+                <section>
+                  <h5>Example</h5>
+                  <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
+  <span class="hljs-attr">&quot;version&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+  <span class="hljs-attr">&quot;network&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>
+}
+</code></pre>
+                  <!-- </div> -->
+                </section>
+              </div>
+            </div>
+          </div>
           <div id="definition-coredocumentCoreDocument" class="definition panel" data-traverse-target="definition-coredocumentCoreDocument">
             <h2 class="panel-title">
               <a name="/definitions/coredocumentCoreDocument"></a>coredocumentCoreDocument: object
@@ -4127,27 +4935,29 @@
                     </dt>
                     <dd>
                       <h1 id="identifiers">Identifiers</h1>
-                      <p>CoreDocument has two kinds of identifiers, the <code>document_identifier</code> is assigned once per document and stays the same for the lifetime of the document. document_identifier is the first ID ever used to anchor the document on chain and is used internally to store all future versions. The <code>current_identifier</code> and the <code>next_identifier</code> refer only to this particular version.</p>
+                      <p>CoreDocument has two kinds of identifiers, the <code>document_identifier</code> is assigned once per document and stays the same for the lifetime of the document. document_identifier is the first ID ever used to anchor the document on chain and is used internally to store all future versions. The <code>previous_version</code>, <code>current_version</code>, and the <code>next_version</code> refer only to a particular version.</p>
                       <p>32 byte value</p>
                     </dd>
-                    <dt data-property-name="current_identifier" class="has-description">
-                      <span class="json-property-name">current_identifier:</span>
+                    <dt data-property-name="previous_version">
+                      <span class="json-property-name">previous_version:</span>
+                      <span class="json-property-type">string</span>
+                      <span class="json-property-format">(byte)</span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
+                    <dt data-property-name="current_version">
+                      <span class="json-property-name">current_version:</span>
+                      <span class="json-property-type">string</span>
+                      <span class="json-property-format">(byte)</span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
+                    <dt data-property-name="next_version" class="has-description">
+                      <span class="json-property-name">next_version:</span>
                       <span class="json-property-type">string</span>
                       <span class="json-property-format">(byte)</span>
                       <span class="json-property-range" title="Value limits"></span>
                     </dt>
                     <dd>
-                      <p>current_identifier is the identifier used to refer to the current state of the document.</p>
-                      <p>32 byte value</p>
-                    </dd>
-                    <dt data-property-name="next_identifier" class="has-description">
-                      <span class="json-property-name">next_identifier:</span>
-                      <span class="json-property-type">string</span>
-                      <span class="json-property-format">(byte)</span>
-                      <span class="json-property-range" title="Value limits"></span>
-                    </dt>
-                    <dd>
-                      <p>next_identifier is the identifier that is going to be used for the next version if any party wants to update the state.</p>
+                      <p>next_version is the version that is going to be used for the next version if any party wants to update the state.</p>
                     </dd>
                     <dt data-property-name="document_root">
                       <span class="json-property-name">document_root:</span>
@@ -4229,6 +5039,19 @@
                       </span>
                       <span class="json-property-range" title="Value limits"></span>
                     </dt>
+                    <dt data-property-name="collaborators">
+                      <span class="json-property-name">collaborators:</span>
+                      <span class="json-property-type">string[]</span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
+                    <dt class="json-inner-schema">
+                      <section class="json-schema-array-items">
+                        <span class="json-property-type">string</span>
+                        <span class="json-property-format">(byte)</span>
+                        <span class="json-property-range" title="Value limits"></span>
+                        <div class="json-inner-schema"> </div>
+                      </section>
+                    </dt>
                   </dl>
                 </section>
               </div>
@@ -4237,8 +5060,9 @@
                   <h5>Example</h5>
                   <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
   <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-  <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-  <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+  <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+  <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+  <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
   <span class="hljs-attr">&quot;document_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
   <span class="hljs-attr">&quot;signing_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
   <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
@@ -4261,11 +5085,19 @@
   },
   <span class="hljs-attr">&quot;coredocument_salts&quot;</span>: {
     <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
     <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
-  }
+    <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+      <span class="hljs-string">&quot;string (byte)&quot;</span>
+    ],
+    <span class="hljs-attr">&quot;collaborators_length&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
+  },
+  <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+    <span class="hljs-string">&quot;string (byte)&quot;</span>
+  ]
 }
 </code></pre>
                   <!-- </div> -->
@@ -4292,14 +5124,20 @@
                       <span class="json-property-format">(byte)</span>
                       <span class="json-property-range" title="Value limits"></span>
                     </dt>
-                    <dt data-property-name="current_identifier">
-                      <span class="json-property-name">current_identifier:</span>
+                    <dt data-property-name="previous_version">
+                      <span class="json-property-name">previous_version:</span>
                       <span class="json-property-type">string</span>
                       <span class="json-property-format">(byte)</span>
                       <span class="json-property-range" title="Value limits"></span>
                     </dt>
-                    <dt data-property-name="next_identifier">
-                      <span class="json-property-name">next_identifier:</span>
+                    <dt data-property-name="current_version">
+                      <span class="json-property-name">current_version:</span>
+                      <span class="json-property-type">string</span>
+                      <span class="json-property-format">(byte)</span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
+                    <dt data-property-name="next_version">
+                      <span class="json-property-name">next_version:</span>
                       <span class="json-property-type">string</span>
                       <span class="json-property-format">(byte)</span>
                       <span class="json-property-range" title="Value limits"></span>
@@ -4316,6 +5154,25 @@
                       <span class="json-property-format">(byte)</span>
                       <span class="json-property-range" title="Value limits"></span>
                     </dt>
+                    <dt data-property-name="collaborators">
+                      <span class="json-property-name">collaborators:</span>
+                      <span class="json-property-type">string[]</span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
+                    <dt class="json-inner-schema">
+                      <section class="json-schema-array-items">
+                        <span class="json-property-type">string</span>
+                        <span class="json-property-format">(byte)</span>
+                        <span class="json-property-range" title="Value limits"></span>
+                        <div class="json-inner-schema"> </div>
+                      </section>
+                    </dt>
+                    <dt data-property-name="collaborators_length">
+                      <span class="json-property-name">collaborators_length:</span>
+                      <span class="json-property-type">string</span>
+                      <span class="json-property-format">(byte)</span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
                   </dl>
                 </section>
               </div>
@@ -4324,10 +5181,15 @@
                   <h5>Example</h5>
                   <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
   <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-  <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-  <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+  <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+  <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+  <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
   <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-  <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
+  <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+  <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+    <span class="hljs-string">&quot;string (byte)&quot;</span>
+  ],
+  <span class="hljs-attr">&quot;collaborators_length&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
 }
 </code></pre>
                   <!-- </div> -->
@@ -4425,8 +5287,9 @@
   <span class="hljs-attr">&quot;document&quot;</span>: {
     <span class="hljs-attr">&quot;core_document&quot;</span>: {
       <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
       <span class="hljs-attr">&quot;document_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
       <span class="hljs-attr">&quot;signing_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
       <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
@@ -4449,11 +5312,19 @@
       },
       <span class="hljs-attr">&quot;coredocument_salts&quot;</span>: {
         <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-        <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-        <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
         <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-        <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
-      }
+        <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+          <span class="hljs-string">&quot;string (byte)&quot;</span>
+        ],
+        <span class="hljs-attr">&quot;collaborators_length&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
+      },
+      <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+        <span class="hljs-string">&quot;string (byte)&quot;</span>
+      ]
     },
     <span class="hljs-attr">&quot;data&quot;</span>: {
       <span class="hljs-attr">&quot;invoice_status&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
@@ -4837,8 +5708,9 @@
                   <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
   <span class="hljs-attr">&quot;core_document&quot;</span>: {
     <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
     <span class="hljs-attr">&quot;document_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
     <span class="hljs-attr">&quot;signing_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
     <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
@@ -4861,11 +5733,19 @@
     },
     <span class="hljs-attr">&quot;coredocument_salts&quot;</span>: {
       <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
       <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
-    }
+      <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+        <span class="hljs-string">&quot;string (byte)&quot;</span>
+      ],
+      <span class="hljs-attr">&quot;collaborators_length&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
+    },
+    <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+      <span class="hljs-string">&quot;string (byte)&quot;</span>
+    ]
   },
   <span class="hljs-attr">&quot;data&quot;</span>: {
     <span class="hljs-attr">&quot;invoice_status&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
@@ -5040,8 +5920,9 @@
     {
       <span class="hljs-attr">&quot;core_document&quot;</span>: {
         <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-        <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-        <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
         <span class="hljs-attr">&quot;document_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
         <span class="hljs-attr">&quot;signing_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
         <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
@@ -5064,11 +5945,19 @@
         },
         <span class="hljs-attr">&quot;coredocument_salts&quot;</span>: {
           <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-          <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-          <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+          <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+          <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+          <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
           <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-          <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
-        }
+          <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+          <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+            <span class="hljs-string">&quot;string (byte)&quot;</span>
+          ],
+          <span class="hljs-attr">&quot;collaborators_length&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
+        },
+        <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+          <span class="hljs-string">&quot;string (byte)&quot;</span>
+        ]
       },
       <span class="hljs-attr">&quot;data&quot;</span>: {
         <span class="hljs-attr">&quot;invoice_status&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
@@ -5178,8 +6067,9 @@
   <span class="hljs-attr">&quot;document&quot;</span>: {
     <span class="hljs-attr">&quot;core_document&quot;</span>: {
       <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
       <span class="hljs-attr">&quot;document_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
       <span class="hljs-attr">&quot;signing_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
       <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
@@ -5202,11 +6092,19 @@
       },
       <span class="hljs-attr">&quot;coredocument_salts&quot;</span>: {
         <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-        <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-        <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
         <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-        <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
-      }
+        <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+          <span class="hljs-string">&quot;string (byte)&quot;</span>
+        ],
+        <span class="hljs-attr">&quot;collaborators_length&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
+      },
+      <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+        <span class="hljs-string">&quot;string (byte)&quot;</span>
+      ]
     },
     <span class="hljs-attr">&quot;data&quot;</span>: {
       <span class="hljs-attr">&quot;invoice_status&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
@@ -5260,142 +6158,6 @@
       <span class="hljs-attr">&quot;extra_data&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
     }
   }
-}
-</code></pre>
-                  <!-- </div> -->
-                </section>
-              </div>
-            </div>
-          </div>
-          <div id="definition-proofsMerkleHash" class="definition panel" data-traverse-target="definition-proofsMerkleHash">
-            <h2 class="panel-title">
-              <a name="/definitions/proofsMerkleHash"></a>proofsMerkleHash: object
-              <!-- <span class="json-property-type"><span class="json-property-type">object</span>
-              <span class="json-property-range" title="Value limits"></span>
-              
-              
-              </span> -->
-            </h2>
-            <div class="doc-row">
-              <div class="doc-copy">
-                <section class="json-schema-properties">
-                  <dl>
-                    <dt data-property-name="left">
-                      <span class="json-property-name">left:</span>
-                      <span class="json-property-type">string</span>
-                      <span class="json-property-format">(byte)</span>
-                      <span class="json-property-range" title="Value limits"></span>
-                    </dt>
-                    <dt data-property-name="right">
-                      <span class="json-property-name">right:</span>
-                      <span class="json-property-type">string</span>
-                      <span class="json-property-format">(byte)</span>
-                      <span class="json-property-range" title="Value limits"></span>
-                    </dt>
-                  </dl>
-                </section>
-              </div>
-              <div class="doc-examples">
-                <section>
-                  <h5>Example</h5>
-                  <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
-  <span class="hljs-attr">&quot;left&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-  <span class="hljs-attr">&quot;right&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
-}
-</code></pre>
-                  <!-- </div> -->
-                </section>
-              </div>
-            </div>
-          </div>
-          <div id="definition-proofsProof" class="definition panel" data-traverse-target="definition-proofsProof">
-            <h2 class="panel-title">
-              <a name="/definitions/proofsProof"></a>proofsProof: object
-              <!-- <span class="json-property-type"><span class="json-property-type">object</span>
-              <span class="json-property-range" title="Value limits"></span>
-              
-              
-              </span> -->
-            </h2>
-            <div class="doc-row">
-              <div class="doc-copy">
-                <section class="json-schema-properties">
-                  <dl>
-                    <dt data-property-name="property">
-                      <span class="json-property-name">property:</span>
-                      <span class="json-property-type">string</span>
-                      <span class="json-property-range" title="Value limits"></span>
-                    </dt>
-                    <dt data-property-name="value">
-                      <span class="json-property-name">value:</span>
-                      <span class="json-property-type">string</span>
-                      <span class="json-property-range" title="Value limits"></span>
-                    </dt>
-                    <dt data-property-name="salt">
-                      <span class="json-property-name">salt:</span>
-                      <span class="json-property-type">string</span>
-                      <span class="json-property-format">(byte)</span>
-                      <span class="json-property-range" title="Value limits"></span>
-                    </dt>
-                    <dt data-property-name="hash">
-                      <span class="json-property-name">hash:</span>
-                      <span class="json-property-type">string</span>
-                      <span class="json-property-format">(byte)</span>
-                      <span class="json-property-range" title="Value limits"></span>
-                    </dt>
-                    <dt data-property-name="hashes">
-                      <span class="json-property-name">hashes:</span>
-                      <span class="json-property-type">
-                        <span class="json-schema-ref-array">
-                          <a class="json-schema-ref" href="#/definitions/proofsMerkleHash">proofsMerkleHash</a>
-                        </span>
-                      </span>
-                      <span class="json-property-range" title="Value limits"></span>
-                    </dt>
-                    <dt class="json-inner-schema">
-                      <section class="json-schema-array-items">
-                        <span class="json-property-type">
-                          <span class="">
-                            <a class="json-schema-ref" href="#/definitions/proofsMerkleHash">proofsMerkleHash</a>
-                          </span>
-                        </span>
-                        <span class="json-property-range" title="Value limits"></span>
-                        <div class="json-inner-schema"> </div>
-                      </section>
-                    </dt>
-                    <dt data-property-name="sortedHashes">
-                      <span class="json-property-name">sortedHashes:</span>
-                      <span class="json-property-type">string[]</span>
-                      <span class="json-property-range" title="Value limits"></span>
-                    </dt>
-                    <dt class="json-inner-schema">
-                      <section class="json-schema-array-items">
-                        <span class="json-property-type">string</span>
-                        <span class="json-property-format">(byte)</span>
-                        <span class="json-property-range" title="Value limits"></span>
-                        <div class="json-inner-schema"> </div>
-                      </section>
-                    </dt>
-                  </dl>
-                </section>
-              </div>
-              <div class="doc-examples">
-                <section>
-                  <h5>Example</h5>
-                  <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
-  <span class="hljs-attr">&quot;property&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
-  <span class="hljs-attr">&quot;value&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
-  <span class="hljs-attr">&quot;salt&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-  <span class="hljs-attr">&quot;hash&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-  <span class="hljs-attr">&quot;hashes&quot;</span>: [
-    {
-      <span class="hljs-attr">&quot;left&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;right&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
-    }
-  ],
-  <span class="hljs-attr">&quot;sortedHashes&quot;</span>: [
-    <span class="hljs-string">&quot;string (byte)&quot;</span>
-  ]
 }
 </code></pre>
                   <!-- </div> -->
@@ -5542,8 +6304,9 @@
   <span class="hljs-attr">&quot;document&quot;</span>: {
     <span class="hljs-attr">&quot;core_document&quot;</span>: {
       <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
       <span class="hljs-attr">&quot;document_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
       <span class="hljs-attr">&quot;signing_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
       <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
@@ -5566,11 +6329,19 @@
       },
       <span class="hljs-attr">&quot;coredocument_salts&quot;</span>: {
         <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-        <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-        <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
         <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-        <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
-      }
+        <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+          <span class="hljs-string">&quot;string (byte)&quot;</span>
+        ],
+        <span class="hljs-attr">&quot;collaborators_length&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
+      },
+      <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+        <span class="hljs-string">&quot;string (byte)&quot;</span>
+      ]
     },
     <span class="hljs-attr">&quot;data&quot;</span>: {
       <span class="hljs-attr">&quot;po_number&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
@@ -6130,8 +6901,9 @@
                   <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
   <span class="hljs-attr">&quot;core_document&quot;</span>: {
     <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-    <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+    <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
     <span class="hljs-attr">&quot;document_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
     <span class="hljs-attr">&quot;signing_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
     <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
@@ -6154,11 +6926,19 @@
     },
     <span class="hljs-attr">&quot;coredocument_salts&quot;</span>: {
       <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
       <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
-    }
+      <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+        <span class="hljs-string">&quot;string (byte)&quot;</span>
+      ],
+      <span class="hljs-attr">&quot;collaborators_length&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
+    },
+    <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+      <span class="hljs-string">&quot;string (byte)&quot;</span>
+    ]
   },
   <span class="hljs-attr">&quot;data&quot;</span>: {
     <span class="hljs-attr">&quot;po_number&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
@@ -6332,8 +7112,9 @@
     {
       <span class="hljs-attr">&quot;core_document&quot;</span>: {
         <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-        <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-        <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
         <span class="hljs-attr">&quot;document_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
         <span class="hljs-attr">&quot;signing_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
         <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
@@ -6356,11 +7137,19 @@
         },
         <span class="hljs-attr">&quot;coredocument_salts&quot;</span>: {
           <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-          <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-          <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+          <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+          <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+          <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
           <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-          <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
-        }
+          <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+          <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+            <span class="hljs-string">&quot;string (byte)&quot;</span>
+          ],
+          <span class="hljs-attr">&quot;collaborators_length&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
+        },
+        <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+          <span class="hljs-string">&quot;string (byte)&quot;</span>
+        ]
       },
       <span class="hljs-attr">&quot;data&quot;</span>: {
         <span class="hljs-attr">&quot;po_number&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
@@ -6469,8 +7258,9 @@
   <span class="hljs-attr">&quot;document&quot;</span>: {
     <span class="hljs-attr">&quot;core_document&quot;</span>: {
       <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
       <span class="hljs-attr">&quot;document_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
       <span class="hljs-attr">&quot;signing_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
       <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
@@ -6493,11 +7283,19 @@
       },
       <span class="hljs-attr">&quot;coredocument_salts&quot;</span>: {
         <span class="hljs-attr">&quot;document_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-        <span class="hljs-attr">&quot;current_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-        <span class="hljs-attr">&quot;next_identifier&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;previous_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;current_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;next_version&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
         <span class="hljs-attr">&quot;previous_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-        <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
-      }
+        <span class="hljs-attr">&quot;data_root&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+        <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+          <span class="hljs-string">&quot;string (byte)&quot;</span>
+        ],
+        <span class="hljs-attr">&quot;collaborators_length&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
+      },
+      <span class="hljs-attr">&quot;collaborators&quot;</span>: [
+        <span class="hljs-string">&quot;string (byte)&quot;</span>
+      ]
     },
     <span class="hljs-attr">&quot;data&quot;</span>: {
       <span class="hljs-attr">&quot;po_number&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,

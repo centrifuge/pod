@@ -38,7 +38,7 @@ func TestRepository(t *testing.T) {
 	doc := &coredocumentpb.CoreDocument{
 		DocumentRoot:       id1,
 		DocumentIdentifier: id2,
-		CurrentIdentifier:  id3,
+		CurrentVersion:     id3,
 		DataRoot:           id5,
 	}
 
@@ -46,11 +46,11 @@ func TestRepository(t *testing.T) {
 	assert.Error(t, err, "create must fail")
 
 	// successful creation
-	doc.NextIdentifier = id4
+	doc.NextVersion = id4
 	doc.CoredocumentSalts = &coredocumentpb.CoreDocumentSalts{
 		DocumentIdentifier: id1,
-		CurrentIdentifier:  id2,
-		NextIdentifier:     id3,
+		CurrentVersion:     id2,
+		NextVersion:        id3,
 		DataRoot:           id4,
 		PreviousRoot:       id5,
 	}
@@ -59,7 +59,7 @@ func TestRepository(t *testing.T) {
 
 	// failed get
 	getDoc := new(coredocumentpb.CoreDocument)
-	err = repo.GetByID(doc.NextIdentifier, getDoc)
+	err = repo.GetByID(doc.NextVersion, getDoc)
 	assert.Error(t, err, "get must fail")
 
 	// successful get
@@ -68,17 +68,17 @@ func TestRepository(t *testing.T) {
 	assert.Equal(t, doc.DocumentIdentifier, getDoc.DocumentIdentifier, "identifiers mismatch")
 
 	// failed update
-	doc.NextIdentifier = doc.CurrentIdentifier
+	doc.NextVersion = doc.CurrentVersion
 	err = repo.Update(doc.DocumentIdentifier, doc)
 	assert.Error(t, err, "update must fail")
 
 	// successful update
 	id6 := tools.RandomSlice(32)
-	doc.NextIdentifier = id6
+	doc.NextVersion = id6
 	err = repo.Update(doc.DocumentIdentifier, doc)
 	assert.Nil(t, err, "update must pass")
 	err = repo.GetByID(doc.DocumentIdentifier, getDoc)
 	assert.Nil(t, err, "get  must pass")
 	assert.Equal(t, doc.DocumentIdentifier, getDoc.DocumentIdentifier, "identifier mismatch")
-	assert.Equal(t, id6, getDoc.NextIdentifier, "identifier mismatch")
+	assert.Equal(t, id6, getDoc.NextVersion, "identifier mismatch")
 }
