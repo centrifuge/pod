@@ -35,6 +35,7 @@ func CommitAnchor(anchorID AnchorID, documentRoot DocRoot, centrifugeID identity
 	return confirmations, err
 }
 
+// anchorRepository is a singleton to keep track of the anchorRepository
 var anchorRepository AnchorRepository
 
 func setRepository(ar AnchorRepository) {

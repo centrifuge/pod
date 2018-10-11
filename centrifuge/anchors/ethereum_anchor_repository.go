@@ -77,7 +77,7 @@ func (ethRepository *EthereumAnchorRepository) PreCommitAnchor(anchorID AnchorID
 	return confirmations, err
 }
 
-//CommitAnchor will call the transaction Commit on the smart contract
+// CommitAnchor will send a commit transaction to ethereum
 func (ethRepository *EthereumAnchorRepository) CommitAnchor(anchorID AnchorID, documentRoot DocRoot, centrifugeId identity.CentID, documentProofs [][32]byte, signature []byte) (confirmations <-chan *WatchCommit, err error) {
 	conn := ethereum.GetConnection()
 	opts, err := conn.GetTxOpts(ethRepository.config.GetEthereumDefaultAccountName())
@@ -91,7 +91,6 @@ func (ethRepository *EthereumAnchorRepository) CommitAnchor(anchorID AnchorID, d
 	}
 
 	cd := NewCommitData(h.Number.Uint64(), anchorID, documentRoot, centrifugeId, documentProofs, signature)
-	log.Debug("anchor height", cd.BlockHeight)
 	confirmations, err = setUpCommitEventListener(opts.From, cd)
 	if err != nil {
 		wError := errors.Wrap(err, 1)

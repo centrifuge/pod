@@ -167,6 +167,7 @@ func (id *EthereumIdentity) getContract() (contract *EthereumIdentityContract, e
 	return id.Contract, nil
 }
 
+// CheckIdentityExists checks if the identity represented by id actually exists on ethereum
 func (id *EthereumIdentity) CheckIdentityExists() (exists bool, err error) {
 	return id.findContract()
 }
@@ -320,22 +321,26 @@ func waitAndRouteIdentityRegistrationEvent(asyncRes *gocelery.AsyncResult, confi
 }
 
 // EthereumidentityService implements `Service`
+// TODO check if this can be non-exported
 type EthereumIdentityService struct {
 	config           Config
 	factoryContract  *EthereumIdentityFactoryContract
 	registryContract *EthereumIdentityRegistryContract
 }
 
+// NewEthereumIdentityService creates a new NewEthereumIdentityService given the config and the smart contracts
 func NewEthereumIdentityService(config Config, factoryContract *EthereumIdentityFactoryContract, registryContract *EthereumIdentityRegistryContract) Service {
 	return &EthereumIdentityService{config: config, factoryContract: factoryContract, registryContract: registryContract}
 }
 
+// CheckIdentityExists checks if the identity represented by id actually exists on ethereum
 func (ids *EthereumIdentityService) CheckIdentityExists(centrifugeID CentID) (exists bool, err error) {
 	id := NewEthereumIdentity(centrifugeID, ids.registryContract, ids.config)
 	exists, err = id.CheckIdentityExists()
 	return
 }
 
+// CreateIdentity creates an identity representing the id on ethereum
 func (ids *EthereumIdentityService) CreateIdentity(centrifugeID CentID) (id Identity, confirmations chan *WatchIdentity, err error) {
 	log.Infof("Creating Identity [%x]", centrifugeID.ByteArray())
 	id = NewEthereumIdentity(centrifugeID, ids.registryContract, ids.config)
@@ -366,6 +371,7 @@ func (ids *EthereumIdentityService) CreateIdentity(centrifugeID CentID) (id Iden
 	return id, confirmations, nil
 }
 
+// LookupIdentityForID looks up if the identity for given CentID exists on ethereum
 func (ids *EthereumIdentityService) LookupIdentityForID(centrifugeID CentID) (Identity, error) {
 	id := NewEthereumIdentity(centrifugeID, ids.registryContract, ids.config)
 	exists, err := id.CheckIdentityExists()
