@@ -74,3 +74,43 @@ func TestValidator_fieldValidator(t *testing.T) {
 	err = fv.Validate(nil, model)
 	assert.Nil(t, err)
 }
+
+func TestValidator_signingRootValidator(t *testing.T) {
+	sv := signingRootValidator()
+
+	// fail getCoreDoc
+	model := mockModel{}
+	model.On("PackCoreDocument").Return(nil, fmt.Errorf("err")).Once()
+	err := sv.Validate(nil, model)
+	model.AssertExpectations(t)
+	assert.Error(t, err)
+
+	// missing signing_root
+	cd := New()
+	FillSalts(cd)
+	model = mockModel{}
+	model.On("PackCoreDocument").Return(cd, nil).Once()
+	err = sv.Validate(nil, model)
+	model.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "signing root missing")
+
+	// mismatch signing roots
+	cd.SigningRoot = tools.RandomSlice(32)
+	model = mockModel{}
+	model.On("PackCoreDocument").Return(cd, nil).Once()
+	err = sv.Validate(nil, model)
+	model.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "signing root mismatch")
+
+	// success
+	tree, err := GetDocumentSigningTree(cd)
+	assert.Nil(t, err)
+	cd.SigningRoot = tree.RootHash()
+	model = mockModel{}
+	model.On("PackCoreDocument").Return(cd, nil).Once()
+	err = sv.Validate(nil, model)
+	model.AssertExpectations(t)
+	assert.Nil(t, err)
+}
