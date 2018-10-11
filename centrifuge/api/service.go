@@ -1,12 +1,10 @@
 package api
 
 import (
-	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/processor"
+	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/healthcheck/controller"
-	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/centrifuge/p2p"
 	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/health"
 	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
@@ -28,9 +26,9 @@ func registerServices(ctx context.Context, grpcServer *grpc.Server, gwmux *runti
 	}
 
 	// invoice
-	invoicepb.RegisterDocumentServiceServer(grpcServer, invoice.GRPCHandler(invoice.DefaultService(
-		invoice.GetRepository(),
-		coredocumentprocessor.DefaultProcessor(identity.IDService, p2p.NewP2PClient()))))
+	// get the invoice service from the registry, it has to be registered already
+	invoiceService, err := documents.GetRegistryInstance().LocateService(documenttypes.InvoiceDataTypeUrl)
+	invoicepb.RegisterDocumentServiceServer(grpcServer, invoice.GRPCHandler(invoiceService.(invoice.Service)))
 	err = invoicepb.RegisterDocumentServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
 	if err != nil {
 		return err
