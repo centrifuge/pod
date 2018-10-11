@@ -22,7 +22,7 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
-var log = logging.Logger("CentAPIServer")
+var log = logging.Logger("cent-api-server")
 
 // CentAPIServer is an implementation of node.Server interface for serving HTTP based Centrifuge API
 type CentAPIServer struct {
