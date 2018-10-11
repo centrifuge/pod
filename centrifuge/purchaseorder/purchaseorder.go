@@ -9,6 +9,7 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/golang/protobuf/proto"
@@ -128,32 +129,13 @@ func (order *PurchaseOrder) CalculateMerkleRoot() error {
 
 // CreateProofs generates proofs for given fields
 func (order *PurchaseOrder) CreateProofs(fields []string) (proofs []*proofspb.Proof, err error) {
-	dataRootHashes, err := coredocument.GetDataProofHashes(order.Document.CoreDocument)
-	if err != nil {
-		log.Error(err)
-		return nil, err
-	}
-
 	tree, err := order.getDocumentDataTree()
 	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
 
-	for _, field := range fields {
-		proof, err := tree.CreateProof(field)
-		if err != nil {
-			log.Error(err)
-			return nil, err
-		}
-		proofs = append(proofs, &proof)
-	}
-
-	for _, proof := range proofs {
-		proof.SortedHashes = append(proof.SortedHashes, dataRootHashes...)
-	}
-
-	return proofs, nil
+	return documents.CreateProofs(tree, order.Document.CoreDocument, fields)
 }
 
 // ConvertToCoreDocument converts purchaseOrder to a core document

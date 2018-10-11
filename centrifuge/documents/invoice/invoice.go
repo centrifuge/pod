@@ -12,6 +12,7 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/golang/protobuf/proto"
@@ -133,31 +134,13 @@ func (inv *Invoice) CalculateMerkleRoot() error {
 
 // CreateProofs generates proofs for given fields
 func (inv *Invoice) CreateProofs(fields []string) (proofs []*proofspb.Proof, err error) {
-	dataRootHashes, err := coredocument.GetDataProofHashes(inv.Document.CoreDocument)
-	if err != nil {
-		log.Error(err)
-		return nil, err
-	}
-
 	tree, err := inv.getDocumentDataTree()
 	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
-	for _, field := range fields {
-		proof, err := tree.CreateProof(field)
-		if err != nil {
-			log.Error(err)
-			return nil, err
-		}
-		proofs = append(proofs, &proof)
-	}
 
-	for _, proof := range proofs {
-		proof.SortedHashes = append(proof.SortedHashes, dataRootHashes...)
-	}
-
-	return
+	return documents.CreateProofs(tree, inv.Document.CoreDocument, fields)
 }
 
 // ConvertToCoreDocument converts invoice document to coredocument
