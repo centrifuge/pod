@@ -9,12 +9,12 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents/invoice"
 	"github.com/stretchr/testify/assert"
-	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
-	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 )
 
 func TestMain(m *testing.M) {
