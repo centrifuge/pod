@@ -28,7 +28,7 @@ import (
 	"golang.org/x/crypto/ed25519"
 )
 
-var log = logging.Logger("p2p")
+var log = logging.Logger("CentP2PServer")
 var HostInstance host.Host
 var GRPCProtoInstance p2pgrpc.GRPCProtocol
 
