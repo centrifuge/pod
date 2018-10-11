@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"reflect"
 
+	"strings"
+
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
@@ -324,9 +326,8 @@ func (i *InvoiceModel) UnpackCoreDocument(coreDoc *coredocumentpb.CoreDocument) 
 	}
 
 	i.InvoiceSalts = invoiceSalts
-	if i.CoreDocument == nil {
-		i.CoreDocument = new(coredocumentpb.CoreDocument)
-	}
+
+	i.CoreDocument = new(coredocumentpb.CoreDocument)
 	proto.Merge(i.CoreDocument, coreDoc)
 	i.CoreDocument.EmbeddedDataSalts = nil
 	i.CoreDocument.EmbeddedData = nil
@@ -390,16 +391,37 @@ func (i *InvoiceModel) createProofs(fields []string) (coreDoc *coredocumentpb.Co
 	if err != nil {
 		return coreDoc, nil, fmt.Errorf("createProofs error %v", err)
 	}
-	for _, field := range fields {
-		proof, err := tree.CreateProof(field)
-		if err != nil {
-			return coreDoc, nil, fmt.Errorf("createProofs error %v", err)
-		}
-		proofs = append(proofs, &proof)
+
+	signingRootHashes, err := coredocument.GetSigningProofHashes(coreDoc)
+	if err != nil {
+		log.Error(err)
+		return coreDoc, nil, fmt.Errorf("createProofs error %v", err)
 	}
 
-	for _, proof := range proofs {
-		proof.SortedHashes = append(proof.SortedHashes, dataRootHashes...)
+	cdtree, err := coredocument.GetDocumentSigningTree(coreDoc)
+	if err != nil {
+		log.Error(err)
+		return coreDoc, nil, fmt.Errorf("createProofs error %v", err)
+	}
+
+	for _, field := range fields {
+		rootHashes := dataRootHashes
+		proof, err := tree.CreateProof(field)
+		if err != nil {
+			if strings.Contains(err.Error(), "No such field") {
+				proof, err = cdtree.CreateProof(field)
+				if err != nil {
+					log.Error(err)
+					return coreDoc, nil, fmt.Errorf("createProofs error %v", err)
+				}
+				rootHashes = signingRootHashes
+			} else {
+				log.Error(err)
+				return coreDoc, nil, fmt.Errorf("createProofs error %v", err)
+			}
+		}
+		proof.SortedHashes = append(proof.SortedHashes, rootHashes...)
+		proofs = append(proofs, &proof)
 	}
 
 	return

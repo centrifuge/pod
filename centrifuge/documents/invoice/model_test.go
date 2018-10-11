@@ -216,12 +216,24 @@ func TestInvoiceModel_calculateDataRoot(t *testing.T) {
 func TestInvoiceModel_createProofs(t *testing.T) {
 	i, corDoc, err := createMockInvoice(t)
 	assert.Nil(t, err)
-	corDoc, proof, err := i.createProofs([]string{"invoice_number"})
+	corDoc, proof, err := i.createProofs([]string{"invoice_number", "collaborators[0]", "document_type"})
 	assert.Nil(t, err)
 	assert.NotNil(t, proof)
 	assert.NotNil(t, corDoc)
 	tree, _ := coredocument.GetDocumentRootTree(corDoc)
+
+	// Validate invoice_number
 	valid, err := tree.ValidateProof(proof[0])
+	assert.Nil(t, err)
+	assert.True(t, valid)
+
+	// Validate collaborators[0]
+	valid, err = tree.ValidateProof(proof[1])
+	assert.Nil(t, err)
+	assert.True(t, valid)
+
+	// Validate document_type
+	valid, err = tree.ValidateProof(proof[2])
 	assert.Nil(t, err)
 	assert.True(t, valid)
 }
@@ -242,7 +254,8 @@ func TestInvoiceModel_getDocumentDataTree(t *testing.T) {
 }
 
 func createMockInvoice(t *testing.T) (*InvoiceModel, *coredocumentpb.CoreDocument, error) {
-	i := &InvoiceModel{InvoiceNumber: "3213121", NetAmount: 2, GrossAmount: 2, CoreDocument: coredocument.New()}
+	i := &InvoiceModel{InvoiceNumber: "3213121", NetAmount: 2, GrossAmount: 2, Currency: "USD", CoreDocument: coredocument.New()}
+	i.CoreDocument.Collaborators = [][]byte{{1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}}
 	err := i.calculateDataRoot()
 	if err != nil {
 		return nil, nil, err
