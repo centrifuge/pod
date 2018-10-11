@@ -6,13 +6,12 @@ import (
 	"fmt"
 	"reflect"
 
-	"strings"
-
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/precise-proofs/proofs"
@@ -382,47 +381,12 @@ func (i *InvoiceModel) createProofs(fields []string) (coreDoc *coredocumentpb.Co
 	if err != nil {
 		return nil, nil, fmt.Errorf("createProofs error %v", err)
 	}
-	dataRootHashes, err := coredocument.GetDataProofHashes(coreDoc)
-	if err != nil {
-		return coreDoc, nil, fmt.Errorf("createProofs error %v", err)
-	}
 
 	tree, err := i.getDocumentDataTree()
 	if err != nil {
 		return coreDoc, nil, fmt.Errorf("createProofs error %v", err)
 	}
 
-	signingRootHashes, err := coredocument.GetSigningProofHashes(coreDoc)
-	if err != nil {
-		log.Error(err)
-		return coreDoc, nil, fmt.Errorf("createProofs error %v", err)
-	}
-
-	cdtree, err := coredocument.GetDocumentSigningTree(coreDoc)
-	if err != nil {
-		log.Error(err)
-		return coreDoc, nil, fmt.Errorf("createProofs error %v", err)
-	}
-
-	for _, field := range fields {
-		rootHashes := dataRootHashes
-		proof, err := tree.CreateProof(field)
-		if err != nil {
-			if strings.Contains(err.Error(), "No such field") {
-				proof, err = cdtree.CreateProof(field)
-				if err != nil {
-					log.Error(err)
-					return coreDoc, nil, fmt.Errorf("createProofs error %v", err)
-				}
-				rootHashes = signingRootHashes
-			} else {
-				log.Error(err)
-				return coreDoc, nil, fmt.Errorf("createProofs error %v", err)
-			}
-		}
-		proof.SortedHashes = append(proof.SortedHashes, rootHashes...)
-		proofs = append(proofs, &proof)
-	}
-
+	proofs, err = documents.CreateProofs(tree, coreDoc, fields)
 	return
 }

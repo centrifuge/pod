@@ -153,6 +153,8 @@ func (order *PurchaseOrder) CreateProofs(fields []string) (proofs []*proofspb.Pr
 		return nil, err
 	}
 
+	// We support fields that belong to different document trees, as we do not prepend a tree prefix to the field, the approach
+	// is to try in both trees to find the field and create the proof accordingly
 	for _, field := range fields {
 		rootHashes := dataRootHashes
 		proof, err := tree.CreateProof(field)
