@@ -37,6 +37,16 @@ func DefaultWaitForTransactionMiningContext() (ctx context.Context, cancelFunc c
 	return context.WithDeadline(context.TODO(), toBeDone)
 }
 
+type Config interface {
+	GetEthereumGasPrice() *big.Int
+	GetEthereumGasLimit() uint64
+	GetEthereumNodeURL() string
+	GetEthereumAccount(accountName string) (account *config.AccountConfig, err error)
+	GetEthereumIntervalRetry() time.Duration
+	GetEthereumMaxRetries() int
+	GetTxPoolAccessEnabled() bool
+}
+
 // Abstract the "ethereum client" out so we can more easily support other clients
 // besides Geth (e.g. quorum)
 // Also make it easier to mock tests
@@ -54,17 +64,18 @@ type GethClient struct {
 	Host       *url.URL
 	Accounts   map[string]*bind.TransactOpts
 	nonceMutex sync.Mutex
+	config     Config
 }
 
-func NewGethClient() *GethClient {
+func NewGethClient(config Config) *GethClient {
 	return &GethClient{
-		nil, nil, nil, make(map[string]*bind.TransactOpts), sync.Mutex{},
+		nil, nil, nil, make(map[string]*bind.TransactOpts), sync.Mutex{}, config,
 	}
 }
 
 func (gethClient *GethClient) GetTxOpts(accountName string) (*bind.TransactOpts, error) {
 	if _, ok := gethClient.Accounts[accountName]; !ok {
-		txOpts, err := GetGethTxOpts(accountName)
+		txOpts, err := gethClient.getGethTxOpts(accountName)
 		if err != nil {
 			return nil, err
 		}
@@ -86,9 +97,9 @@ func (gethClient *GethClient) GetHost() *url.URL {
 	return gethClient.Host
 }
 
-func NewClientConnection() (*GethClient, error) {
-	log.Info("Opening connection to Ethereum:", config.Config.GetEthereumNodeURL())
-	u, err := url.Parse(config.Config.GetEthereumNodeURL())
+func NewClientConnection(config Config) (*GethClient, error) {
+	log.Info("Opening connection to Ethereum:", config.GetEthereumNodeURL())
+	u, err := url.Parse(config.GetEthereumNodeURL())
 	if err != nil {
 		log.Errorf("Failed to connect to parse ethereum.gethSocket URL: %v", err)
 		return &GethClient{}, err
@@ -104,7 +115,7 @@ func NewClientConnection() (*GethClient, error) {
 		return &GethClient{}, err
 	}
 
-	gethClient := NewGethClient()
+	gethClient := NewGethClient(config)
 	gethClient.Client = client
 	gethClient.RpcClient = c
 	gethClient.Host = u
@@ -125,10 +136,10 @@ func GetConnection() EthereumClient {
 	return gc
 }
 
-// GetGethTxOpts retrieves the geth transaction options for the given account name. The account name influences which configuration
+// getGethTxOpts retrieves the geth transaction options for the given account name. The account name influences which configuration
 // is used.
-func GetGethTxOpts(accountName string) (*bind.TransactOpts, error) {
-	account, err := config.Config.GetEthereumAccount(accountName)
+func (gethClient *GethClient) getGethTxOpts(accountName string) (*bind.TransactOpts, error) {
+	account, err := gethClient.config.GetEthereumAccount(accountName)
 	if err != nil {
 		err = errors.Errorf("could not find configured ethereum key for account [%v]. please check your configuration.\n", accountName)
 		log.Error(err.Error())
@@ -141,8 +152,8 @@ func GetGethTxOpts(accountName string) (*bind.TransactOpts, error) {
 		log.Error(err.Error())
 		return nil, err
 	} else {
-		authedTransactionOpts.GasPrice = config.Config.GetEthereumGasPrice()
-		authedTransactionOpts.GasLimit = config.Config.GetEthereumGasLimit()
+		authedTransactionOpts.GasPrice = gethClient.config.GetEthereumGasPrice()
+		authedTransactionOpts.GasLimit = gethClient.config.GetEthereumGasLimit()
 		authedTransactionOpts.Context = context.Background()
 		return authedTransactionOpts, nil
 	}
@@ -157,7 +168,7 @@ gas prices that means that a concurrent transaction race condition event has hap
 */
 func (gethClient *GethClient) SubmitTransactionWithRetries(contractMethod interface{}, opts *bind.TransactOpts, params ...interface{}) (tx *types.Transaction, err error) {
 	done := false
-	maxTries := config.Config.GetEthereumMaxRetries()
+	maxTries := gethClient.config.GetEthereumMaxRetries()
 	current := 0
 	var f reflect.Value
 	var in []reflect.Value
@@ -174,7 +185,7 @@ func (gethClient *GethClient) SubmitTransactionWithRetries(contractMethod interf
 		}
 		current += 1
 
-		err = IncrementNonce(opts)
+		err = gethClient.incrementNonce(opts)
 		if err != nil {
 			return
 		}
@@ -194,7 +205,7 @@ func (gethClient *GethClient) SubmitTransactionWithRetries(contractMethod interf
 		if err != nil {
 			if (err.Error() == TransactionUnderpriced) || (err.Error() == NonceTooLow) {
 				log.Warningf("Concurrent transaction identified, trying again [%d/%d]\n", current, maxTries)
-				time.Sleep(config.Config.GetEthereumIntervalRetry())
+				time.Sleep(gethClient.config.GetEthereumIntervalRetry())
 			} else {
 				done = true
 			}
@@ -206,8 +217,8 @@ func (gethClient *GethClient) SubmitTransactionWithRetries(contractMethod interf
 	return
 }
 
-func IncrementNonce(opts *bind.TransactOpts) (err error) {
-	if !config.Config.GetTxPoolAccessEnabled() {
+func (gethClient *GethClient) incrementNonce(opts *bind.TransactOpts) (err error) {
+	if !gethClient.config.GetTxPoolAccessEnabled() {
 		log.Warningf("Ethereum Client doesn't support txpool API, may cause concurrency issues.")
 		return
 	}

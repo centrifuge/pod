@@ -33,13 +33,19 @@ type KeyRegistrationConfirmationTask struct {
 	EthContextInitializer func() (ctx context.Context, cancelFunc context.CancelFunc)
 	EthContext            context.Context
 	KeyRegisteredWatcher  KeyRegisteredFilterer
+	RegistryContract      *EthereumIdentityRegistryContract
+	Config                Config
 }
 
 func NewKeyRegistrationConfirmationTask(
 	ethContextInitializer func() (ctx context.Context, cancelFunc context.CancelFunc),
+	registryContract *EthereumIdentityRegistryContract,
+	config Config,
 ) *KeyRegistrationConfirmationTask {
 	return &KeyRegistrationConfirmationTask{
 		EthContextInitializer: ethContextInitializer,
+		RegistryContract:      registryContract,
+		Config:                config,
 	}
 }
 
@@ -60,7 +66,9 @@ func (krct *KeyRegistrationConfirmationTask) Copy() (gocelery.CeleryTask, error)
 		krct.BlockHeight,
 		krct.EthContextInitializer,
 		krct.EthContext,
-		krct.KeyRegisteredWatcher}, nil
+		krct.KeyRegisteredWatcher,
+		krct.RegistryContract,
+		krct.Config}, nil
 }
 
 // ParseKwargs - define a method to parse params
@@ -113,7 +121,7 @@ func (krct *KeyRegistrationConfirmationTask) RunTask() (interface{}, error) {
 		krct.EthContext, _ = krct.EthContextInitializer()
 	}
 
-	id := EthereumIdentity{CentrifugeId: krct.CentID}
+	id := EthereumIdentity{CentrifugeId: krct.CentID, RegistryContract: krct.RegistryContract, Config: krct.Config}
 	contract, err := id.getContract()
 	if err != nil {
 		return nil, err

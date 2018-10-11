@@ -26,7 +26,6 @@ var log = logging.Logger("context")
 // ---- Ethereum ----
 func TestFunctionalEthereumBootstrap() {
 	TestIntegrationBootstrap()
-	createEthereumConnection()
 	bootstrapQueuing()
 }
 func TestFunctionalEthereumTearDown() {
@@ -54,19 +53,11 @@ func TestIntegrationTearDown() {
 }
 
 // ---- End Integration Testing ----
-
-func createEthereumConnection() {
-	client, err := ethereum.NewClientConnection()
-	if err != nil {
-		panic(err)
-	}
-	ethereum.SetConnection(client)
-}
-
 func bootstrapQueuing() {
 	// TODO here we would not have to put the bootstrapper.BootstrappedConfig after the TestBootstrapper refactoring
 	context := map[string]interface{}{bootstrap.BootstrappedConfig: true}
 	for _, b := range []bootstrap.TestBootstrapper{
+		&ethereum.Bootstrapper{},
 		&anchors.Bootstrapper{},
 		&identity.Bootstrapper{},
 		&queue.Bootstrapper{},
