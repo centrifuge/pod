@@ -4,13 +4,12 @@ import (
 	"crypto/sha256"
 	"fmt"
 
-	"strings"
-
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/golang/protobuf/proto"
@@ -130,52 +129,13 @@ func (order *PurchaseOrder) CalculateMerkleRoot() error {
 
 // CreateProofs generates proofs for given fields
 func (order *PurchaseOrder) CreateProofs(fields []string) (proofs []*proofspb.Proof, err error) {
-	dataRootHashes, err := coredocument.GetDataProofHashes(order.Document.CoreDocument)
-	if err != nil {
-		log.Error(err)
-		return nil, err
-	}
-
 	tree, err := order.getDocumentDataTree()
 	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
 
-	cdstree, err := coredocument.GetDocumentSigningTree(order.Document.CoreDocument)
-	if err != nil {
-		log.Error(err)
-		return nil, err
-	}
-	signingRootHashes, err := coredocument.GetSigningProofHashes(order.Document.CoreDocument)
-	if err != nil {
-		log.Error(err)
-		return nil, err
-	}
-
-	// We support fields that belong to different document trees, as we do not prepend a tree prefix to the field, the approach
-	// is to try in both trees to find the field and create the proof accordingly
-	for _, field := range fields {
-		rootHashes := dataRootHashes
-		proof, err := tree.CreateProof(field)
-		if err != nil {
-			if strings.Contains(err.Error(), "No such field") {
-				proof, err = cdstree.CreateProof(field)
-				if err != nil {
-					log.Error(err)
-					return nil, err
-				}
-				rootHashes = signingRootHashes
-			} else {
-				log.Error(err)
-				return nil, err
-			}
-		}
-		proof.SortedHashes = append(proof.SortedHashes, rootHashes...)
-		proofs = append(proofs, &proof)
-	}
-
-	return proofs, nil
+	return documents.CreateProofs(tree, order.Document.CoreDocument, fields)
 }
 
 // ConvertToCoreDocument converts purchaseOrder to a core document

@@ -7,13 +7,12 @@ import (
 	"crypto/sha256"
 	"fmt"
 
-	"strings"
-
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/golang/protobuf/proto"
@@ -135,50 +134,13 @@ func (inv *Invoice) CalculateMerkleRoot() error {
 
 // CreateProofs generates proofs for given fields
 func (inv *Invoice) CreateProofs(fields []string) (proofs []*proofspb.Proof, err error) {
-	dataRootHashes, err := coredocument.GetDataProofHashes(inv.Document.CoreDocument)
-	if err != nil {
-		log.Error(err)
-		return nil, err
-	}
-
 	tree, err := inv.getDocumentDataTree()
 	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
 
-	cdstree, err := coredocument.GetDocumentSigningTree(inv.Document.CoreDocument)
-	if err != nil {
-		log.Error(err)
-		return nil, err
-	}
-	signingRootHashes, err := coredocument.GetSigningProofHashes(inv.Document.CoreDocument)
-	if err != nil {
-		log.Error(err)
-		return nil, err
-	}
-
-	for _, field := range fields {
-		rootHashes := dataRootHashes
-		proof, err := tree.CreateProof(field)
-		if err != nil {
-			if strings.Contains(err.Error(), "No such field") {
-				proof, err = cdstree.CreateProof(field)
-				if err != nil {
-					log.Error(err)
-					return nil, err
-				}
-				rootHashes = signingRootHashes
-			} else {
-				log.Error(err)
-				return nil, err
-			}
-		}
-		proof.SortedHashes = append(proof.SortedHashes, rootHashes...)
-		proofs = append(proofs, &proof)
-	}
-
-	return
+	return documents.CreateProofs(tree, inv.Document.CoreDocument, fields)
 }
 
 // ConvertToCoreDocument converts invoice document to coredocument
