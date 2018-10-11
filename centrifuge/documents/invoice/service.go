@@ -60,7 +60,11 @@ func (s service) CreateProofs(documentID []byte, fields []string) (*documentpb.D
 	if err != nil {
 		return nil, err
 	}
-	return s.invoiceProof(doc, fields)
+	inv, ok := doc.(*InvoiceModel)
+	if !ok {
+		return nil, centerrors.New(code.DocumentInvalid, "document of invalid type")
+	}
+	return s.invoiceProof(inv, fields)
 }
 
 // CreateProofsForVersion creates proofs for a particular version of the document given the fields
@@ -69,15 +73,15 @@ func (s service) CreateProofsForVersion(documentID, version []byte, fields []str
 	if err != nil {
 		return nil, err
 	}
-	return s.invoiceProof(doc, fields)
-}
-
-// invoiceProof creates proofs for invoice model fields
-func (s service) invoiceProof(doc documents.Model, fields []string) (*documentpb.DocumentProof, error) {
 	inv, ok := doc.(*InvoiceModel)
 	if !ok {
 		return nil, centerrors.New(code.DocumentInvalid, "document of invalid type")
 	}
+	return s.invoiceProof(inv, fields)
+}
+
+// invoiceProof creates proofs for invoice model fields
+func (s service) invoiceProof(inv *InvoiceModel, fields []string) (*documentpb.DocumentProof, error) {
 	coreDoc, proofs, err := inv.createProofs(fields)
 	if err != nil {
 		return nil, err
@@ -183,39 +187,45 @@ func (s service) Create(ctx context.Context, model documents.Model) (documents.M
 
 // GetVersion returns an invoice for a given version
 func (s service) GetVersion(documentID []byte, version []byte) (doc documents.Model, err error) {
-	doc = new(InvoiceModel)
-	err = s.repo.LoadByID(version, doc)
+	inv, err := s.getInvoiceVersion(documentID, version)
 	if err != nil {
 		return nil, centerrors.Wrap(err, "document not found for the given version")
 	}
-
-	inv, ok := doc.(*InvoiceModel)
-	if !ok {
-		return nil, centerrors.New(code.DocumentInvalid, "not an invoice object")
-	}
-
-	if !bytes.Equal(inv.CoreDocument.DocumentIdentifier, documentID) {
-		return nil, centerrors.New(code.DocumentInvalid, "version is not valid for this identifier")
-	}
-	return
+	return inv, nil
 }
 
 // GetLastVersion returns the last known version of an invoice
 func (s service) GetLastVersion(documentID []byte) (doc documents.Model, err error) {
-	doc, err = s.GetVersion(documentID, documentID)
+	inv, err := s.getInvoiceVersion(documentID, documentID)
 	if err != nil {
 		return nil, centerrors.Wrap(err, "document not found")
 	}
-	inv := doc.(*InvoiceModel)
 	nextVersion := inv.CoreDocument.NextVersion
 	for nextVersion != nil {
-		doc, err = s.GetVersion(documentID, nextVersion)
+		temp, err := s.getInvoiceVersion(documentID, nextVersion)
 		if err != nil {
 			return inv, nil
 		} else {
-			inv = doc.(*InvoiceModel)
+			inv = temp
 			nextVersion = inv.CoreDocument.NextVersion
 		}
+	}
+	return inv, nil
+}
+
+func (s service) getInvoiceVersion(documentID, version []byte) (inv *InvoiceModel, err error) {
+	var doc documents.Model = new(InvoiceModel)
+	err = s.repo.LoadByID(version, doc)
+	if err != nil {
+		return nil, err
+	}
+	inv, ok := doc.(*InvoiceModel)
+	if !ok {
+		return nil, err
+	}
+
+	if !bytes.Equal(inv.CoreDocument.DocumentIdentifier, documentID) {
+		return nil, centerrors.New(code.DocumentInvalid, "version is not valid for this identifier")
 	}
 	return inv, nil
 }

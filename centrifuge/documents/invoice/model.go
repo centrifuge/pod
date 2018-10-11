@@ -354,10 +354,6 @@ func (i *InvoiceModel) calculateDataRoot() error {
 	if err != nil {
 		return fmt.Errorf("calculateDataRoot error %v", err)
 	}
-	if i.CoreDocument == nil {
-		i.CoreDocument = coredocument.New()
-	}
-
 	i.CoreDocument.DataRoot = t.RootHash()
 	return nil
 }
