@@ -79,7 +79,7 @@ func documentRootValidator() documents.Validator {
 
 		tree, err := GetDocumentRootTree(cd)
 		if err != nil {
-			return fmt.Errorf("failed to generate docuemnt root: %v", err)
+			return fmt.Errorf("failed to calculate document root: %v", err)
 		}
 
 		if !tools.IsSameByteSlice(cd.DocumentRoot, tree.RootHash()) {

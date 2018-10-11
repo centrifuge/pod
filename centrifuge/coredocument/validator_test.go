@@ -114,3 +114,43 @@ func TestValidator_signingRootValidator(t *testing.T) {
 	model.AssertExpectations(t)
 	assert.Nil(t, err)
 }
+
+func TestValidator_documentRootValidator(t *testing.T) {
+	dv := documentRootValidator()
+
+	// fail getCoreDoc
+	model := mockModel{}
+	model.On("PackCoreDocument").Return(nil, fmt.Errorf("err")).Once()
+	err := dv.Validate(nil, model)
+	model.AssertExpectations(t)
+	assert.Error(t, err)
+
+	// missing document root
+	cd := New()
+	FillSalts(cd)
+	model = mockModel{}
+	model.On("PackCoreDocument").Return(cd, nil).Once()
+	err = dv.Validate(nil, model)
+	model.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "document root missing")
+
+	// mismatch signing roots
+	cd.DocumentRoot = tools.RandomSlice(32)
+	model = mockModel{}
+	model.On("PackCoreDocument").Return(cd, nil).Once()
+	err = dv.Validate(nil, model)
+	model.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "document root mismatch")
+
+	// success
+	tree, err := GetDocumentRootTree(cd)
+	assert.Nil(t, err)
+	cd.DocumentRoot = tree.RootHash()
+	model = mockModel{}
+	model.On("PackCoreDocument").Return(cd, nil).Once()
+	err = dv.Validate(nil, model)
+	model.AssertExpectations(t)
+	assert.Nil(t, err)
+}
