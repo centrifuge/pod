@@ -11,7 +11,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/processor"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
-	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
+	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/legacy/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
 	"github.com/golang/protobuf/ptypes/any"

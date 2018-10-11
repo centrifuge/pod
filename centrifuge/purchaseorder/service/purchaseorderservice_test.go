@@ -14,7 +14,7 @@ import (
 	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
-	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
+	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/legacy/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/precise-proofs/proofs"
