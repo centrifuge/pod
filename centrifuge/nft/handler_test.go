@@ -65,17 +65,26 @@ type MockPaymentObligation struct {}
 func (MockPaymentObligation) Mint(to common.Address, tokenId *big.Int, tokenURI string, anchorId *big.Int, merkleRoot [32]byte,
 	values [3]string, salts [3][32]byte, proofs [3][][32]byte) (<-chan *WatchMint, error) {
 
-		return nil,nil
+	 return nil, nil
+}
+
+
+type MockIdentityService struct {}
+
+func (MockIdentityService) getIdentityAddress() (*common.Address, error) {
+
+	address := common.BytesToAddress([]byte("0x"))
+
+	return &address, nil
 }
 
 
 func getServiceWithMockedPaymentObligation()*Service{
-	return &Service{PaymentObligation:MockPaymentObligation{}}
+	return &Service{PaymentObligation:MockPaymentObligation{},IdentityService:MockIdentityService{}}
 
 }
 
-func TestNFTMint(t *testing.T) {
-
+func createInvoiceInDB(t *testing.T) []byte {
 	payload := &clientinvoicepb.InvoiceCreatePayload{
 		Data: &clientinvoicepb.InvoiceData{
 			Sender:      "0x010101010101",
@@ -94,26 +103,46 @@ func TestNFTMint(t *testing.T) {
 	corDoc, err := inv.PackCoreDocument()
 	assert.Nil(t, err, "model should return a valid core document")
 
-	assert.Nil(t,err,"failed to create an invoice")
+	return corDoc.DocumentIdentifier
 
+}
 
-	assert.Nil(t,err,"failed to get invoice Service")
+func TestNFTMint_success(t *testing.T) {
 
-
-	assert.Nil(t,err,"creating document should produce an error")
-
+	documentIdentifier := createInvoiceInDB(t)
 
 	nftMintRequest := getTestSetupData()
 
-	nftMintRequest.Identifier = string(corDoc.DocumentIdentifier)
+	nftMintRequest.Identifier = string(documentIdentifier)
 	handler := GRPCHandler(getServiceWithMockedPaymentObligation())
-
 
 	nftMintResponse, err := handler.MintNFT(context.Background(), nftMintRequest)
 
 	assert.Nil(t, err,"mint nft should be successful")
 	assert.NotEqual(t,"",nftMintResponse.TokenId,"tokenId should have a dummy value")
 
+}
 
+func TestNFTMint_InvalidIdentifier(t *testing.T) {
+
+	nftMintRequest := getTestSetupData()
+
+	handler := GRPCHandler(getServiceWithMockedPaymentObligation())
+
+	nftMintResponse, err := handler.MintNFT(context.Background(), nftMintRequest)
+
+	assert.Error(t, err,"invalid identifier should throw an error")
+	assert.Nil(t,nftMintResponse,"nftMintResponse should be nil")
+
+}
+
+func TestNFTMint_InvalidMintRequest(t *testing.T) {
+
+	handler := GRPCHandler(getServiceWithMockedPaymentObligation())
+
+	nftMintResponse, err := handler.MintNFT(context.Background(), nil)
+
+	assert.Error(t, err,"empty request should throw an error")
+	assert.Nil(t,nftMintResponse,"nftMintResponse should be nil")
 
 }

@@ -46,7 +46,12 @@ func getDocumentService(documentIdentifier string) (invoice.Service, error){
 
 }
 
+// MintNFT will be called from the client API to mint a NFT
 func (g grpcHandler)MintNFT(context context.Context,request *nftpb.NFTMintRequest) (*nftpb.NFTMintResponse, error) {
+
+	if request == nil {
+		return nil, fmt.Errorf("NFTMintRequest is nil")
+	}
 
 	documentService, err := getDocumentService(request.Identifier)
 

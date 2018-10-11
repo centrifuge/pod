@@ -1,8 +1,6 @@
 package nft
 
 import (
-	"github.com/centrifuge/go-centrifuge/centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common"
@@ -38,28 +36,6 @@ type MintRequestData struct {
 	Values [3]string
 	Salts [3][32]byte
 	Proofs [3][][32]byte
-
-}
-
-func getIdentityAddress() (*common.Address, error) {
-	centIDBytes, err := config.Config.GetIdentityId()
-	if err != nil {
-		return nil, err
-	}
-
-	centID, err := identity.ToCentID(centIDBytes)
-
-	if err != nil {
-		return nil, err
-	}
-
-	ethereumIdentity, err := identity.IDService.LookupIdentityForID(centID)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return ethereumIdentity.GetIdentityAddress()
 
 }
 
@@ -116,18 +92,8 @@ func fillProofs(proofspb []*proofspb.Proof) (*proofData, error){
 	return &proofData{Values:values,Salts:salts,Proofs:proofs}, nil
 }
 
-
-func NewMintRequestData(anchorId []byte, proofs []*proofspb.Proof, rootHash []byte) (*MintRequestData ,error) {
-
-
-	//dummy address for testing
-	to  := common.BytesToAddress([]byte("0x"))
-
-	/*to, err :=  getIdentityAddress()
-
-	if err != nil {
-		return nil, err
-	}*/
+// NewMintRequestData converts the parameters and returns a struct with needed parameter for minting
+func NewMintRequestData(to *common.Address,anchorId []byte, proofs []*proofspb.Proof, rootHash []byte) (*MintRequestData ,error) {
 
 	tokenId := tools.ByteSliceToBigInt(tools.RandomSlice(256))
 	tokenURI := "http:=//www.centrifuge.io/DUMMY_URI_SERVICE"
@@ -146,7 +112,7 @@ func NewMintRequestData(anchorId []byte, proofs []*proofspb.Proof, rootHash []by
 		return nil, err
 	}
 
-	return &MintRequestData{To:to,
+	return &MintRequestData{To:*to,
 	   TokenId:tokenId,
 		TokenURI: tokenURI,
 		AnchorId: anchorID,
