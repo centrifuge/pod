@@ -60,9 +60,8 @@ func (g grpcHandler)MintNFT(context context.Context,request *nftpb.NFTMintReques
 		return nil, err
 	}
 
-	nftService := &Service{}
 
-	tokenID, err := nftService.mintNFT(model,documentService,request.RegistryAddress,request.DepositAddress,request.ProofFields)
+	tokenID, err := g.Service.mintNFT(model,documentService,request.RegistryAddress,request.DepositAddress,request.ProofFields)
 
 	return &nftpb.NFTMintResponse{TokenId:tokenID}, err
 

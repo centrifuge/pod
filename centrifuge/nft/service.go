@@ -24,13 +24,27 @@ func (s Service) mintNFT(model documents.Model, documentService invoice.Service,
 		return "", err
 	}
 
-	//TODO implement ethereum interaction here
 	fmt.Println(proofs)
 
+	corDoc, err := model.PackCoreDocument()
 
-	//s.PaymentObligation.Mint()
+
+	requestData, err := NewMintRequestData(corDoc.CurrentVersion,proofs,corDoc.DocumentRoot)
+
+	if err != nil {
+		return "" ,err
+	}
+
+	fmt.Println(requestData)
+
+	_, err = s.PaymentObligation.Mint(requestData.To,requestData.TokenId,requestData.TokenURI,requestData.AnchorId,
+		requestData.MerkleRoot,requestData.Values,requestData.Salts,requestData.Proofs)
 
 
-	return "fakeTokenId", nil
+	if err != nil {
+		return "", err
+	}
+
+	return requestData.TokenId.String(), nil
 
 }

@@ -3,6 +3,7 @@ package nft
 import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common"
 	"math/big"
@@ -63,23 +64,97 @@ func getIdentityAddress() (*common.Address, error) {
 }
 
 
-func NewMintRequestData(anchorId []byte,proofs []*proofspb.Proof) (*MintRequestData ,error) {
+func convertProofProperty(sortedHashes [][]byte) ([][32]byte, error){
+	var property [][32]byte
 
-	/*
-	to, err :=  getIdentityAddress()
+	for _, hash := range sortedHashes {
+
+		hash32, err := tools.SliceToByte32(hash)
+		if err != nil  {
+			return nil, err
+		}
+		property = append(property,hash32)
+
+	}
+
+	return property, nil
+
+}
+
+
+type proofData struct {
+	Values [3]string
+	Salts [3][32]byte
+	Proofs [3][][32]byte
+}
+
+
+func fillProofs(proofspb []*proofspb.Proof) (*proofData, error){
+
+	var values [3]string
+	var salts [3][32]byte
+	var proofs [3][][32]byte
+
+
+	for i, p := range proofspb {
+		values[i] = p.Value
+		salt32, err := tools.SliceToByte32(p.Salt)
+		if err != nil {
+			return nil, err
+		}
+
+		salts[i] = salt32
+
+		property, err := convertProofProperty(p.SortedHashes)
+
+		if err != nil {
+			return nil, err
+		}
+		proofs[i] = property
+	}
+
+	return &proofData{Values:values,Salts:salts,Proofs:proofs}, nil
+}
+
+
+func NewMintRequestData(anchorId []byte, proofs []*proofspb.Proof, rootHash []byte) (*MintRequestData ,error) {
+
+
+	//dummy address for testing
+	to  := common.BytesToAddress([]byte("0x"))
+
+	/*to, err :=  getIdentityAddress()
 
 	if err != nil {
 		return nil, err
-	}
+	}*/
 
 	tokenId := tools.ByteSliceToBigInt(tools.RandomSlice(256))
 	tokenURI := "http:=//www.centrifuge.io/DUMMY_URI_SERVICE"
 
-	//anchorID, err := anchors.NewAnchorID(document.CurrentIdentifier)
+	anchorID:= tools.ByteSliceToBigInt(anchorId)
 
-*/
+	merkleRoot, err := tools.SliceToByte32(rootHash)
 
-return nil, nil
+	if err != nil{
+		return nil, err
+	}
+
+	proofData, err := fillProofs(proofs)
+
+	if err != nil{
+		return nil, err
+	}
+
+	return &MintRequestData{To:to,
+	   TokenId:tokenId,
+		TokenURI: tokenURI,
+		AnchorId: anchorID,
+		MerkleRoot: merkleRoot,
+		Values: proofData.Values,
+		Salts: proofData.Salts,
+		Proofs: proofData.Proofs,} , nil
+
 }
 
 

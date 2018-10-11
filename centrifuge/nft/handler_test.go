@@ -87,9 +87,6 @@ func TestNFTMint(t *testing.T) {
 		},
 	}
 
-	payload.Collaborators = []string{"0x010203040506"}
-
-
 	inv, err := invService.DeriveFromCreatePayload(payload)
 	_, err = invService.Create(context.Background(), inv)
 
@@ -104,8 +101,6 @@ func TestNFTMint(t *testing.T) {
 
 
 	assert.Nil(t,err,"creating document should produce an error")
-
-
 
 
 	nftMintRequest := getTestSetupData()
