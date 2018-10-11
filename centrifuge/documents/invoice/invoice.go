@@ -7,6 +7,8 @@ import (
 	"crypto/sha256"
 	"fmt"
 
+	"strings"
+
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
@@ -142,17 +144,36 @@ func (inv *Invoice) CreateProofs(fields []string) (proofs []*proofspb.Proof, err
 		log.Error(err)
 		return nil, err
 	}
-	for _, field := range fields {
-		proof, err := tree.CreateProof(field)
-		if err != nil {
-			log.Error(err)
-			return nil, err
-		}
-		proofs = append(proofs, &proof)
+
+	cdstree, err := coredocument.GetDocumentSigningTree(inv.Document.CoreDocument)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+	signingRootHashes, err := coredocument.GetSigningProofHashes(inv.Document.CoreDocument)
+	if err != nil {
+		log.Error(err)
+		return nil, err
 	}
 
-	for _, proof := range proofs {
-		proof.SortedHashes = append(proof.SortedHashes, dataRootHashes...)
+	for _, field := range fields {
+		rootHashes := dataRootHashes
+		proof, err := tree.CreateProof(field)
+		if err != nil {
+			if strings.Contains(err.Error(), "No such field") {
+				proof, err = cdstree.CreateProof(field)
+				if err != nil {
+					log.Error(err)
+					return nil, err
+				}
+				rootHashes = signingRootHashes
+			} else {
+				log.Error(err)
+				return nil, err
+			}
+		}
+		proof.SortedHashes = append(proof.SortedHashes, rootHashes...)
+		proofs = append(proofs, &proof)
 	}
 
 	return

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
@@ -20,6 +21,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-errors/errors"
 	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -193,10 +195,16 @@ func TestInvoiceDocumentService_Send_AnchorFails(t *testing.T) {
 func TestInvoiceDocumentService_HandleCreateInvoiceProof(t *testing.T) {
 	identifier := testingutils.Rand32Bytes()
 	inv := Empty()
+	invAny := &any.Any{
+		TypeUrl: documenttypes.InvoiceDataTypeUrl,
+		Value:   []byte{},
+	}
 	inv.Document.CoreDocument = &coredocumentpb.CoreDocument{
 		DocumentIdentifier: identifier,
 		CurrentVersion:     identifier,
 		NextVersion:        testingutils.Rand32Bytes(),
+		Collaborators:      [][]byte{{1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}},
+		EmbeddedData:       invAny,
 	}
 	cdSalts := &coredocumentpb.CoreDocumentSalts{}
 	proofs.FillSalts(inv.Document.CoreDocument, cdSalts)
@@ -208,7 +216,7 @@ func TestInvoiceDocumentService_HandleCreateInvoiceProof(t *testing.T) {
 
 	proofRequest := &legacyinvoicepb.CreateInvoiceProofEnvelope{
 		DocumentIdentifier: identifier,
-		Fields:             []string{"currency", "sender_country", "gross_amount"},
+		Fields:             []string{"currency", "sender_country", "gross_amount", "collaborators[0]", "document_type"},
 	}
 	mockRepo.On("GetByID", proofRequest.DocumentIdentifier, new(invoicepb.InvoiceDocument)).Return(nil).Once()
 	mockRepo.replaceDoc = inv.Document
@@ -219,10 +227,24 @@ func TestInvoiceDocumentService_HandleCreateInvoiceProof(t *testing.T) {
 	assert.Equal(t, identifier, invoiceProof.DocumentIdentifier)
 	assert.Equal(t, len(proofRequest.Fields), len(invoiceProof.FieldProofs))
 	assert.Equal(t, proofRequest.Fields[0], invoiceProof.FieldProofs[0].Property)
+	assert.Equal(t, proofRequest.Fields[3], invoiceProof.FieldProofs[3].Property)
 	sha256Hash := sha256.New()
 	fieldHash, err := proofs.CalculateHashForProofField(invoiceProof.FieldProofs[0], sha256Hash)
-
 	valid, err := proofs.ValidateProofSortedHashes(fieldHash, invoiceProof.FieldProofs[0].SortedHashes, inv.Document.CoreDocument.DocumentRoot, sha256Hash)
+	assert.True(t, valid)
+	assert.Nil(t, err)
+
+	// Collaborators[0] proof
+	fieldHash, err = proofs.CalculateHashForProofField(invoiceProof.FieldProofs[3], sha256Hash)
+	assert.Nil(t, err)
+	valid, err = proofs.ValidateProofSortedHashes(fieldHash, invoiceProof.FieldProofs[3].SortedHashes, inv.Document.CoreDocument.DocumentRoot, sha256Hash)
+	assert.True(t, valid)
+	assert.Nil(t, err)
+
+	// Document Type Proof
+	fieldHash, err = proofs.CalculateHashForProofField(invoiceProof.FieldProofs[4], sha256Hash)
+	assert.Nil(t, err)
+	valid, err = proofs.ValidateProofSortedHashes(fieldHash, invoiceProof.FieldProofs[4].SortedHashes, inv.Document.CoreDocument.DocumentRoot, sha256Hash)
 	assert.True(t, valid)
 	assert.Nil(t, err)
 }
