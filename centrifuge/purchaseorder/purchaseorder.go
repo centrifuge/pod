@@ -48,6 +48,7 @@ func New(poDoc *purchaseorderpb.PurchaseOrderDocument, collaborators [][]byte) (
 
 	if po.Document.CoreDocument == nil {
 		po.Document.CoreDocument = coredocument.New()
+		po.Document.CoreDocument.EmbeddedData = &any.Any{TypeUrl: documenttypes.PurchaseOrderDataTypeUrl, Value: []byte{}}
 	}
 	po.Document.CoreDocument.Collaborators = collaborators
 	coredocument.FillSalts(po.Document.CoreDocument)
