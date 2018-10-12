@@ -25,8 +25,8 @@ func getCoreDocument(model documents.Model) (*coredocumentpb.CoreDocument, error
 	return cd, nil
 }
 
-// fieldValidator validates the core document basic fields like identifier, versions, and salts
-func fieldValidator() documents.Validator {
+// baseValidator validates the core document basic fields like identifier, versions, and salts
+func baseValidator() documents.Validator {
 	return documents.ValidatorFunc(func(_, model documents.Model) error {
 		cd, err := getCoreDocument(model)
 		if err != nil {

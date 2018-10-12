@@ -67,13 +67,13 @@ func Test_getCoreDocument(t *testing.T) {
 	assert.Equal(t, cd, got)
 }
 
-func TestValidator_fieldValidator(t *testing.T) {
-	fv := fieldValidator()
+func TestValidator_baseValidator(t *testing.T) {
+	bv := baseValidator()
 
 	// fail getCoreDocument
 	model := mockModel{}
 	model.On("PackCoreDocument").Return(nil, fmt.Errorf("err")).Once()
-	err := fv.Validate(nil, model)
+	err := bv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
 
@@ -81,7 +81,7 @@ func TestValidator_fieldValidator(t *testing.T) {
 	model = mockModel{}
 	cd := New()
 	model.On("PackCoreDocument").Return(cd, nil).Once()
-	err = fv.Validate(nil, model)
+	err = bv.Validate(nil, model)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "cd_salts : Required field")
 
@@ -90,7 +90,7 @@ func TestValidator_fieldValidator(t *testing.T) {
 	cd.DataRoot = tools.RandomSlice(32)
 	FillSalts(cd)
 	model.On("PackCoreDocument").Return(cd, nil).Once()
-	err = fv.Validate(nil, model)
+	err = bv.Validate(nil, model)
 	assert.Nil(t, err)
 }
 
