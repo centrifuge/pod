@@ -11,9 +11,11 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/precise-proofs/proofs"
+	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
@@ -323,9 +325,8 @@ func (i *InvoiceModel) UnpackCoreDocument(coreDoc *coredocumentpb.CoreDocument) 
 	}
 
 	i.InvoiceSalts = invoiceSalts
-	if i.CoreDocument == nil {
-		i.CoreDocument = new(coredocumentpb.CoreDocument)
-	}
+
+	i.CoreDocument = new(coredocumentpb.CoreDocument)
 	proto.Merge(i.CoreDocument, coreDoc)
 	i.CoreDocument.EmbeddedDataSalts = nil
 	i.CoreDocument.EmbeddedData = nil
@@ -349,16 +350,43 @@ func (i *InvoiceModel) Type() reflect.Type {
 
 // calculateDataRoot calculates the data root and sets the root to core document
 func (i *InvoiceModel) calculateDataRoot() error {
-	pb := i.createP2PProtobuf()
-	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: sha256.New()})
-	if err := t.AddLeavesFromDocument(pb, i.getInvoiceSalts(pb)); err != nil {
-		return fmt.Errorf("failed to add leaves from invoice: %v", err)
+	t, err := i.getDocumentDataTree()
+	if err != nil {
+		return fmt.Errorf("calculateDataRoot error %v", err)
 	}
-
-	if err := t.Generate(); err != nil {
-		return fmt.Errorf("failed to generate merkle root: %v", err)
-	}
-
 	i.CoreDocument.DataRoot = t.RootHash()
 	return nil
+}
+
+// getDocumentDataTree creates precise-proofs data tree for the model
+func (i *InvoiceModel) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
+	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: sha256.New()})
+	invoiceData := i.createP2PProtobuf()
+	err = t.AddLeavesFromDocument(invoiceData, i.getInvoiceSalts(invoiceData))
+	if err != nil {
+		return nil, fmt.Errorf("getDocumentDataTree error %v", err)
+	}
+	err = t.Generate()
+	if err != nil {
+		return nil, fmt.Errorf("getDocumentDataTree error %v", err)
+	}
+	return &t, nil
+}
+
+// CreateProofs generates proofs for given fields
+func (i *InvoiceModel) createProofs(fields []string) (coreDoc *coredocumentpb.CoreDocument, proofs []*proofspb.Proof, err error) {
+	// There can be failure scenarios where the core doc for the particular document
+	// is still not saved with roots in db due to failures during getting signatures.
+	coreDoc, err = i.PackCoreDocument()
+	if err != nil {
+		return nil, nil, fmt.Errorf("createProofs error %v", err)
+	}
+
+	tree, err := i.getDocumentDataTree()
+	if err != nil {
+		return coreDoc, nil, fmt.Errorf("createProofs error %v", err)
+	}
+
+	proofs, err = documents.CreateProofs(tree, coreDoc, fields)
+	return
 }

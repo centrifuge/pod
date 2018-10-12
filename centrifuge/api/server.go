@@ -14,6 +14,8 @@ import (
 	"net"
 	"sync"
 
+	"time"
+
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	logging "github.com/ipfs/go-log"
@@ -22,7 +24,7 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
-var log = logging.Logger("server")
+var log = logging.Logger("cent-api-server")
 
 // CentAPIServer is an implementation of node.Server interface for serving HTTP based Centrifuge API
 type CentAPIServer struct {
@@ -68,10 +70,8 @@ func (c *CentAPIServer) Start(ctx context.Context, wg *sync.WaitGroup, startupEr
 	})
 
 	opts := []grpc.ServerOption{grpc.Creds(creds)}
-	log.Info(opts)
 
 	grpcServer := grpc.NewServer(opts...)
-	log.Info(grpcServer)
 
 	dcreds := credentials.NewTLS(&tls.Config{
 		ServerName:         addr,
@@ -79,7 +79,6 @@ func (c *CentAPIServer) Start(ctx context.Context, wg *sync.WaitGroup, startupEr
 		InsecureSkipVerify: true,
 	})
 	dopts := []grpc.DialOption{grpc.WithTransportCredentials(dcreds)}
-	log.Info(dopts)
 
 	mux := http.NewServeMux()
 	gwmux := runtime.NewServeMux()
@@ -129,11 +128,11 @@ func (c *CentAPIServer) Start(ctx context.Context, wg *sync.WaitGroup, startupEr
 			log.Info(err)
 			return
 		case <-ctx.Done():
-			//ctxn, _ := context.WithTimeout(context.Background(), 1*time.Second)
+			ctxn, _ := context.WithTimeout(context.Background(), 1*time.Second)
 			// gracefully shutdown the server
 			// we can only do this because srv is thread safe
 			log.Info("Shutting down API server")
-			err := srv.Close()
+			err := srv.Shutdown(ctxn)
 			if err != nil {
 				panic(err)
 			}

@@ -12,6 +12,7 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/golang/protobuf/proto"
@@ -22,6 +23,8 @@ import (
 var log = logging.Logger("invoice")
 
 // Invoice is a wrapper for invoice protobuf
+// Deprecated: in favour of implementation of documents.Model interface (InvoiceModel).
+// TODO remove
 type Invoice struct {
 	Document *invoicepb.InvoiceDocument
 }
@@ -50,6 +53,7 @@ func New(invDoc *invoicepb.InvoiceDocument, collaborators [][]byte) (*Invoice, e
 
 	if inv.Document.CoreDocument == nil {
 		inv.Document.CoreDocument = coredocument.New()
+		inv.Document.CoreDocument.EmbeddedData = &any.Any{TypeUrl: documenttypes.InvoiceDataTypeUrl, Value: []byte{}}
 	}
 	inv.Document.CoreDocument.Collaborators = collaborators
 	coredocument.FillSalts(inv.Document.CoreDocument)
@@ -131,31 +135,13 @@ func (inv *Invoice) CalculateMerkleRoot() error {
 
 // CreateProofs generates proofs for given fields
 func (inv *Invoice) CreateProofs(fields []string) (proofs []*proofspb.Proof, err error) {
-	dataRootHashes, err := coredocument.GetDataProofHashes(inv.Document.CoreDocument)
-	if err != nil {
-		log.Error(err)
-		return nil, err
-	}
-
 	tree, err := inv.getDocumentDataTree()
 	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
-	for _, field := range fields {
-		proof, err := tree.CreateProof(field)
-		if err != nil {
-			log.Error(err)
-			return nil, err
-		}
-		proofs = append(proofs, &proof)
-	}
 
-	for _, proof := range proofs {
-		proof.SortedHashes = append(proof.SortedHashes, dataRootHashes...)
-	}
-
-	return
+	return documents.CreateProofs(tree, inv.Document.CoreDocument, fields)
 }
 
 // ConvertToCoreDocument converts invoice document to coredocument

@@ -3,6 +3,7 @@ package purchaseorderservice
 import (
 	"fmt"
 
+	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
@@ -10,9 +11,10 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/processor"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
-	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
+	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/legacy/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
+	"github.com/golang/protobuf/ptypes/any"
 	googleprotobuf2 "github.com/golang/protobuf/ptypes/empty"
 	logging "github.com/ipfs/go-log"
 	"golang.org/x/net/context"
@@ -77,6 +79,9 @@ func (s *PurchaseOrderDocumentService) HandleCreatePurchaseOrderProof(ctx contex
 		log.Error(err)
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
+
+	// Set EmbeddedData
+	order.Document.CoreDocument.EmbeddedData = &any.Any{TypeUrl: documenttypes.PurchaseOrderDataTypeUrl, Value: []byte{}}
 
 	proofs, err := order.CreateProofs(createPurchaseOrderProofEnvelope.Fields)
 	if err != nil {

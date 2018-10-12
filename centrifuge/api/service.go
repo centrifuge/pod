@@ -1,16 +1,16 @@
 package api
 
 import (
-	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/processor"
+	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents/invoice"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/healthcheck/controller"
-	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/centrifuge/p2p"
 	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/health"
 	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	legacyInvoice "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/legacy/invoice"
+	legacyPurchaseOrder "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/legacy/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/purchaseorder/controller"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
@@ -28,9 +28,9 @@ func registerServices(ctx context.Context, grpcServer *grpc.Server, gwmux *runti
 	}
 
 	// invoice
-	invoicepb.RegisterDocumentServiceServer(grpcServer, invoice.GRPCHandler(invoice.DefaultService(
-		invoice.GetRepository(),
-		coredocumentprocessor.DefaultProcessor(identity.IDService, p2p.NewP2PClient()))))
+	// get the invoice service from the registry, it has been registered already(do NOT do it here)
+	invoiceService, err := documents.GetRegistryInstance().LocateService(documenttypes.InvoiceDataTypeUrl)
+	invoicepb.RegisterDocumentServiceServer(grpcServer, invoice.GRPCHandler(invoiceService.(invoice.Service)))
 	err = invoicepb.RegisterDocumentServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
 	if err != nil {
 		return err
@@ -42,8 +42,13 @@ func registerServices(ctx context.Context, grpcServer *grpc.Server, gwmux *runti
 	}
 
 	// purchase orders
-	purchaseorderpb.RegisterPurchaseOrderDocumentServiceServer(grpcServer, &purchaseordercontroller.PurchaseOrderDocumentController{})
-	err = purchaseorderpb.RegisterPurchaseOrderDocumentServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
+	purchaseorderpb.RegisterDocumentServiceServer(grpcServer, purchaseorder.GRPCHandler())
+	err = purchaseorderpb.RegisterDocumentServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
+	if err != nil {
+		return err
+	}
+	legacyPurchaseOrder.RegisterPurchaseOrderDocumentServiceServer(grpcServer, &purchaseordercontroller.PurchaseOrderDocumentController{})
+	err = legacyPurchaseOrder.RegisterPurchaseOrderDocumentServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
 	if err != nil {
 		return err
 	}

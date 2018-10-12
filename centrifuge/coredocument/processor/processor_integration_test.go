@@ -8,6 +8,7 @@ import (
 
 	"os"
 
+	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/anchors"
 	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
@@ -17,6 +18,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -33,7 +35,7 @@ func TestMain(m *testing.M) {
 func TestDefaultProcessor_Anchor(t *testing.T) {
 	ctx := context.Background()
 	p2pClient := &testingcommons.MockP2PWrapperClient{}
-	dp := DefaultProcessor(identity.NewEthereumIdentityService(), p2pClient)
+	dp := DefaultProcessor(identity.IDService, p2pClient)
 	doc := createDummyCD()
 
 	p2pClient.On("GetSignaturesForDocument", ctx, doc).Return(nil)
@@ -50,6 +52,11 @@ func createDummyCD() *coredocumentpb.CoreDocument {
 		tools.RandomSlice(identity.CentIDLength),
 		tools.RandomSlice(identity.CentIDLength),
 	}
+	docAny := &any.Any{
+		TypeUrl: documenttypes.InvoiceDataTypeUrl,
+		Value:   []byte{},
+	}
+	cd.EmbeddedData = docAny
 	coredocument.FillSalts(cd)
 	return cd
 }

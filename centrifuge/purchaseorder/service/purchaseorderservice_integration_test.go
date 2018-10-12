@@ -7,19 +7,21 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
 	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/processor"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
-	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
+	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/legacy/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/purchaseorder/repository"
 	"github.com/centrifuge/go-centrifuge/centrifuge/purchaseorder/service"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/commons"
 	"github.com/centrifuge/precise-proofs/proofs"
+	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -38,10 +40,15 @@ func TestMain(m *testing.M) {
 func generateEmptyPurchaseOrderForProcessing() (doc *purchaseorder.PurchaseOrder) {
 	identifier := testingutils.Rand32Bytes()
 	doc = purchaseorder.Empty()
+	orderAny := &any.Any{
+		TypeUrl: documenttypes.PurchaseOrderDataTypeUrl,
+		Value:   []byte{},
+	}
 	doc.Document.CoreDocument = &coredocumentpb.CoreDocument{
 		DocumentIdentifier: identifier,
 		CurrentVersion:     identifier,
 		NextVersion:        testingutils.Rand32Bytes(),
+		EmbeddedData:       orderAny,
 	}
 	salts := &coredocumentpb.CoreDocumentSalts{}
 	proofs.FillSalts(doc.Document.CoreDocument, salts)
@@ -53,7 +60,7 @@ func TestPurchaseOrderDocumentService_HandleAnchorPurchaseOrderDocument_Integrat
 	p2pClient := testingcommons.NewMockP2PWrapperClient()
 	s := purchaseorderservice.PurchaseOrderDocumentService{
 		Repository:            purchaseorderrepository.GetRepository(),
-		CoreDocumentProcessor: coredocumentprocessor.DefaultProcessor(identity.NewEthereumIdentityService(), p2pClient),
+		CoreDocumentProcessor: coredocumentprocessor.DefaultProcessor(identity.IDService, p2pClient),
 	}
 	p2pClient.On("GetSignaturesForDocument", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	doc := generateEmptyPurchaseOrderForProcessing()
