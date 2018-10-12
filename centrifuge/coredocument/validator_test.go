@@ -9,6 +9,9 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
+	"github.com/golang/protobuf/ptypes/any"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
@@ -116,6 +119,10 @@ func TestValidator_signingRootValidator(t *testing.T) {
 
 	// mismatch signing roots
 	cd.SigningRoot = tools.RandomSlice(32)
+	cd.EmbeddedData = &any.Any{
+		TypeUrl: documenttypes.InvoiceDataTypeUrl,
+		Value:   []byte{},
+	}
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
 	err = sv.Validate(nil, model)
