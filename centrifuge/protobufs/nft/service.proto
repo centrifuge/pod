@@ -25,10 +25,12 @@ service NFTService {
 message NFTMintRequest {
   // Document identifier
   string identifier = 1;
+  // Document type
+  string type = 2;
   // The contract address of the registry where the token should be minted
-  string registry_address = 2;
-  repeated string proof_fields = 4;
-  string deposit_address = 5;
+  string registry_address = 3;
+  string deposit_address = 4;
+  repeated string proof_fields = 5;
 }
 
 message NFTMintResponse {
