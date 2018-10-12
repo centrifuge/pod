@@ -182,12 +182,12 @@ func TestValidator_documentRootValidator(t *testing.T) {
 }
 
 func TestValidator_selfSignatureValidator(t *testing.T) {
-	ssv := selfSignatureValidator()
+	rfsv := readyForSignaturesValidator()
 
 	// fail getCoreDoc
 	model := mockModel{}
 	model.On("PackCoreDocument").Return(nil, fmt.Errorf("err")).Once()
-	err := ssv.Validate(nil, model)
+	err := rfsv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
 
@@ -196,7 +196,7 @@ func TestValidator_selfSignatureValidator(t *testing.T) {
 	FillSalts(cd)
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
-	err = ssv.Validate(nil, model)
+	err = rfsv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "expecting only one signature")
@@ -211,7 +211,7 @@ func TestValidator_selfSignatureValidator(t *testing.T) {
 	cd.Signatures = append(cd.Signatures, s)
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
-	err = ssv.Validate(nil, model)
+	err = rfsv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Len(t, documents.ConvertToMap(err), 3)
@@ -224,7 +224,7 @@ func TestValidator_selfSignatureValidator(t *testing.T) {
 	cd.Signatures = []*coredocumentpb.Signature{s}
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
-	err = ssv.Validate(nil, model)
+	err = rfsv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Nil(t, err)
 }

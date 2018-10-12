@@ -93,11 +93,11 @@ func documentRootValidator() documents.Validator {
 	})
 }
 
-// selfSignatureValidator validates self signature
+// readyForSignaturesValidator validates self signature
 // re-calculates the signature and compares with existing one
 // assumes signing_root is already generated and verified
 // Note: this needs to used only before document is sent for signatures from the collaborators
-func selfSignatureValidator() documents.Validator {
+func readyForSignaturesValidator() documents.Validator {
 	return documents.ValidatorFunc(func(_, model documents.Model) error {
 		cd, err := getCoreDocument(model)
 		if err != nil {
