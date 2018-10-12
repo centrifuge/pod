@@ -242,43 +242,6 @@ func ValidateWithSignature(doc *coredocumentpb.CoreDocument) error {
 	return nil
 }
 
-// InitIdentifiers fills in missing identifiers for the given CoreDocument.
-// It does checks on document consistency (e.g. re-using an old identifier).
-// In the case of an error, it returns the error and an empty CoreDocument.
-func InitIdentifiers(document coredocumentpb.CoreDocument) (coredocumentpb.CoreDocument, error) {
-	isEmptyId := tools.IsEmptyByteSlice
-
-	// check if the document identifier is empty
-	if !isEmptyId(document.DocumentIdentifier) {
-		// check and fill current and next identifiers
-		if isEmptyId(document.CurrentVersion) {
-			document.CurrentVersion = document.DocumentIdentifier
-		}
-
-		if isEmptyId(document.NextVersion) {
-			document.NextVersion = tools.RandomSlice(32)
-		}
-
-		return document, nil
-	}
-
-	// check if current and next identifier are empty
-	if !isEmptyId(document.CurrentVersion) {
-		return document, fmt.Errorf("no DocumentIdentifier but has CurrentVersion")
-	}
-
-	// check if the next identifier is empty
-	if !isEmptyId(document.NextVersion) {
-		return document, fmt.Errorf("no CurrentVersion but has NextVersion")
-	}
-
-	// fill the identifiers
-	document.DocumentIdentifier = tools.RandomSlice(32)
-	document.CurrentVersion = document.DocumentIdentifier
-	document.NextVersion = tools.RandomSlice(32)
-	return document, nil
-}
-
 // PrepareNewVersion creates a copy of the passed coreDocument with the version fields updated
 // Adds collaborators and fills salts
 func PrepareNewVersion(oldCD coredocumentpb.CoreDocument, collaborators []string) (*coredocumentpb.CoreDocument, error) {
@@ -306,8 +269,12 @@ func PrepareNewVersion(oldCD coredocumentpb.CoreDocument, collaborators []string
 
 // New returns a new core document from the proto message
 func New() *coredocumentpb.CoreDocument {
-	doc, _ := InitIdentifiers(coredocumentpb.CoreDocument{})
-	return &doc
+	id := tools.RandomSlice(32)
+	return &coredocumentpb.CoreDocument{
+		DocumentIdentifier: id,
+		CurrentVersion:     id,
+		NextVersion:        tools.RandomSlice(32),
+	}
 }
 
 // NewWithCollaborators generate identifiers and loads the collaborators and fills salts
@@ -318,8 +285,8 @@ func NewWithCollaborators(collaborators []string) (*coredocumentpb.CoreDocument,
 		return nil, fmt.Errorf("failed to decode collaborator: %v", err)
 	}
 
-	for _, id := range ids {
-		cd.Collaborators = append(cd.Collaborators, id[:])
+	for i := range ids {
+		cd.Collaborators = append(cd.Collaborators, ids[i][:])
 	}
 
 	FillSalts(cd)
