@@ -6,23 +6,35 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 )
+
+// TODO remove this when we have a proper dependancy injection mechanism
+var service Service
+
+func setService(s Service) {
+	service = s
+}
+
+func getService() *Service {
+	return &service
+}
 
 type Config interface {
 	GetIdentityId() ([]byte, error)
 }
 
 type Service struct {
-	PaymentObligation PaymentObligation
+	paymentObligation PaymentObligation
 	identityService   identity.Service
 	config            Config
 }
 
-//func DefaultService() *Service {
-//	return &Service{PaymentObligation: getConfiguredPaymentObligation(), IdentityService: IdentityServiceImpl{}}
-//}
+func NewService(paymentObligation PaymentObligation, identityService identity.Service, config Config) *Service {
+	return &Service{paymentObligation: paymentObligation, identityService: identityService, config: config}
+}
 
-func (s Service) mintNFT(documentID []byte, docType, registryAddress, depositAddress string, proofFields []string) (string, error) {
+func (s *Service) mintNFT(documentID []byte, docType, registryAddress, depositAddress string, proofFields []string) (string, error) {
 	documentService, err := getDocumentService(docType)
 	if err != nil {
 		return "", err
@@ -53,7 +65,7 @@ func (s Service) mintNFT(documentID []byte, docType, registryAddress, depositAdd
 		return "", err
 	}
 
-	_, err = s.PaymentObligation.Mint(requestData.To, requestData.TokenId, requestData.TokenURI, requestData.AnchorId,
+	_, err = s.paymentObligation.Mint(&bind.TransactOpts{}, requestData.To, requestData.TokenId, requestData.TokenURI, requestData.AnchorId,
 		requestData.MerkleRoot, requestData.Values, requestData.Salts, requestData.Proofs)
 	if err != nil {
 		return "", err

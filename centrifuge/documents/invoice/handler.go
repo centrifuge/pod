@@ -20,6 +20,7 @@ import (
 	"github.com/golang/protobuf/ptypes/empty"
 	logging "github.com/ipfs/go-log"
 	"golang.org/x/net/context"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 )
 
 var apiLog = logging.Logger("invoice-api")
@@ -42,10 +43,14 @@ func LegacyGRPCHandler() legacyinvoicepb.InvoiceDocumentServiceServer {
 }
 
 // GRPCHandler returns an implementation of invoice.DocumentServiceServer
-func GRPCHandler(service Service) clientinvoicepb.DocumentServiceServer {
-	return &grpcHandler{
-		service: service,
+func GRPCHandler() (clientinvoicepb.DocumentServiceServer, error) {
+	invoiceService, err := documents.GetRegistryInstance().LocateService(documenttypes.InvoiceDataTypeUrl)
+	if err != nil {
+		return nil, err
 	}
+	return &grpcHandler{
+		service: invoiceService.(Service),
+	}, nil
 }
 
 // anchorInvoiceDocument anchors the given invoice document and returns the anchored document

@@ -3,7 +3,6 @@ package nft
 import (
 	"context"
 
-	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/nft"
@@ -18,23 +17,19 @@ type grpcHandler struct {
 }
 
 // GRPCHandler returns an implementation of invoice.DocumentServiceServer
-func GRPCHandler(service *Service) nftpb.NFTServiceServer {
-	//if service == nil {
-	//	service = DefaultService()
-	//}
-	return &grpcHandler{Service: service}
+func GRPCHandler() nftpb.NFTServiceServer {
+	return &grpcHandler{Service: getService()}
 }
 
-// MintNFT will be called from the client API to mint a NFT
+// MintNFT will be called from the client API to mint an NFT
 func (g grpcHandler) MintNFT(context context.Context, request *nftpb.NFTMintRequest) (*nftpb.NFTMintResponse, error) {
-	apiLog.Infof("Received request to Mint and NFT", request)
+	apiLog.Infof("Received request to Mint an NFT", request)
 	identifier, err := hexutil.Decode(request.Identifier)
 	if err != nil {
 		return &nftpb.NFTMintResponse{}, centerrors.New(code.Unknown, err.Error())
 	}
 
-	// TODO concrete service should be returned based on a documentType parameter from the request, for now this is invoice specific
-	tokenID, err := g.Service.mintNFT(identifier, documenttypes.InvoiceDataTypeUrl, request.RegistryAddress, request.DepositAddress, request.ProofFields)
+	tokenID, err := g.Service.mintNFT(identifier, request.Type, request.RegistryAddress, request.DepositAddress, request.ProofFields)
 	if err != nil {
 		return &nftpb.NFTMintResponse{}, centerrors.New(code.Unknown, err.Error())
 	}

@@ -1,7 +1,6 @@
 package api
 
 import (
-	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents/purchaseorder"
@@ -30,9 +29,11 @@ func registerServices(ctx context.Context, grpcServer *grpc.Server, gwmux *runti
 	}
 
 	// invoice
-	// get the invoice service from the registry, it has been registered already(do NOT do it here)
-	invoiceService, err := documents.GetRegistryInstance().LocateService(documenttypes.InvoiceDataTypeUrl)
-	invoicepb.RegisterDocumentServiceServer(grpcServer, invoice.GRPCHandler(invoiceService.(invoice.Service)))
+	handler, err := invoice.GRPCHandler()
+	if err != nil {
+		return err
+	}
+	invoicepb.RegisterDocumentServiceServer(grpcServer, handler)
 	err = invoicepb.RegisterDocumentServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
 	if err != nil {
 		return err
@@ -62,7 +63,7 @@ func registerServices(ctx context.Context, grpcServer *grpc.Server, gwmux *runti
 		return err
 	}
 
-	nftpb.RegisterNFTServiceServer(grpcServer, nft.GRPCHandler(nft.DefaultService()))
+	nftpb.RegisterNFTServiceServer(grpcServer, nft.GRPCHandler())
 	err = nftpb.RegisterNFTServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
 	if err != nil {
 		return err
