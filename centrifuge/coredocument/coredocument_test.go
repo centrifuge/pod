@@ -492,19 +492,26 @@ func TestPrepareNewVersion(t *testing.T) {
 	cv := tools.RandomSlice(32)
 	nv := tools.RandomSlice(32)
 	dr := tools.RandomSlice(32)
-
 	doc = coredocumentpb.CoreDocument{}
-	newDoc, err := PrepareNewVersion(doc)
+
+	// failed new with collaborators
+	collabs := []string{"some ID"}
+	newDoc, err := PrepareNewVersion(doc, collabs)
+	assert.Error(t, err)
+	assert.Nil(t, newDoc)
+
+	collabs = []string{"0x010203040506"}
+	newDoc, err = PrepareNewVersion(doc, collabs)
 	assert.NotNil(t, err)
 	assert.Nil(t, newDoc)
 
 	doc.CurrentVersion = cv
-	newDoc, err = PrepareNewVersion(doc)
+	newDoc, err = PrepareNewVersion(doc, collabs)
 	assert.NotNil(t, err)
 	assert.Nil(t, newDoc)
 
 	doc.NextVersion = nv
-	newDoc, err = PrepareNewVersion(doc)
+	newDoc, err = PrepareNewVersion(doc, collabs)
 	assert.NotNil(t, err)
 	assert.Nil(t, newDoc)
 
@@ -512,7 +519,7 @@ func TestPrepareNewVersion(t *testing.T) {
 	doc.NextVersion = nv
 	doc.DocumentRoot = dr
 
-	newDoc, err = PrepareNewVersion(doc)
+	newDoc, err = PrepareNewVersion(doc, collabs)
 	assert.Nil(t, err)
 
 	// original document hasn't changed

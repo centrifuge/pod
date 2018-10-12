@@ -280,24 +280,28 @@ func InitIdentifiers(document coredocumentpb.CoreDocument) (coredocumentpb.CoreD
 }
 
 // PrepareNewVersion creates a copy of the passed coreDocument with the version fields updated
-//
-func PrepareNewVersion(document coredocumentpb.CoreDocument) (*coredocumentpb.CoreDocument, error) {
-	newDocument := &coredocumentpb.CoreDocument{}
-	if document.CurrentVersion == nil {
+// Adds collaborators and fills salts
+func PrepareNewVersion(oldCD coredocumentpb.CoreDocument, collaborators []string) (*coredocumentpb.CoreDocument, error) {
+	newCD, err := NewWithCollaborators(collaborators)
+	if err != nil {
+		return nil, err
+	}
+
+	if oldCD.CurrentVersion == nil {
 		return nil, fmt.Errorf("coredocument.CurrentVersion is nil")
 	}
-	newDocument.PreviousVersion = document.CurrentVersion
-	if document.NextVersion == nil {
+	newCD.PreviousVersion = oldCD.CurrentVersion
+
+	if oldCD.NextVersion == nil {
 		return nil, fmt.Errorf("coredocument.NextVersion is nil")
 	}
-	newDocument.CurrentVersion = document.NextVersion
-	newDocument.NextVersion = tools.RandomSlice(32)
-	if document.DocumentRoot == nil {
+	newCD.CurrentVersion = oldCD.NextVersion
+	newCD.NextVersion = tools.RandomSlice(32)
+	if oldCD.DocumentRoot == nil {
 		return nil, fmt.Errorf("coredocument.DocumentRoot is nil")
 	}
-	newDocument.PreviousRoot = document.DocumentRoot
-
-	return newDocument, nil
+	newCD.PreviousRoot = oldCD.DocumentRoot
+	return newCD, nil
 }
 
 // New returns a new core document from the proto message
