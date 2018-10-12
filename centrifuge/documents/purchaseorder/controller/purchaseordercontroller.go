@@ -5,11 +5,11 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/processor"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents/purchaseorder/repository"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents/purchaseorder/service"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/centrifuge/p2p"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/legacy/purchaseorder"
-	"github.com/centrifuge/go-centrifuge/centrifuge/purchaseorder/repository"
-	"github.com/centrifuge/go-centrifuge/centrifuge/purchaseorder/service"
 	googleprotobuf2 "github.com/golang/protobuf/ptypes/empty"
 )
 
