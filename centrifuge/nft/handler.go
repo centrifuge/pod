@@ -3,6 +3,7 @@ package nft
 import (
 	"context"
 
+	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/nft"
@@ -18,9 +19,9 @@ type grpcHandler struct {
 
 // GRPCHandler returns an implementation of invoice.DocumentServiceServer
 func GRPCHandler(service *Service) nftpb.NFTServiceServer {
-	if service == nil {
-		service = DefaultService()
-	}
+	//if service == nil {
+	//	service = DefaultService()
+	//}
 	return &grpcHandler{Service: service}
 }
 
@@ -32,7 +33,8 @@ func (g grpcHandler) MintNFT(context context.Context, request *nftpb.NFTMintRequ
 		return &nftpb.NFTMintResponse{}, centerrors.New(code.Unknown, err.Error())
 	}
 
-	tokenID, err := g.Service.mintNFT(identifier, request.RegistryAddress, request.DepositAddress, request.ProofFields)
+	// TODO concrete service should be returned based on a documentType parameter from the request, for now this is invoice specific
+	tokenID, err := g.Service.mintNFT(identifier, documenttypes.InvoiceDataTypeUrl, request.RegistryAddress, request.DepositAddress, request.ProofFields)
 	if err != nil {
 		return &nftpb.NFTMintResponse{}, centerrors.New(code.Unknown, err.Error())
 	}

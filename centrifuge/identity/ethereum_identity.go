@@ -168,24 +168,6 @@ func (id *EthereumIdentity) getContract() (contract *EthereumIdentityContract, e
 	return id.Contract, nil
 }
 
-func (id *EthereumIdentity) GetIdentityAddress() (*common.Address, error) {
-
-	ethIdentityRegistryContract, err := getIdentityRegistryContract()
-	if err != nil {
-		return nil, err
-	}
-	opts := ethereum.GetGethCallOpts()
-
-	address, err := ethIdentityRegistryContract.GetIdentityByCentrifugeId(opts, id.CentrifugeId.BigInt())
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &address, nil
-
-}
-
 // CheckIdentityExists checks if the identity represented by id actually exists on ethereum
 func (id *EthereumIdentity) CheckIdentityExists() (exists bool, err error) {
 	return id.findContract()
@@ -388,6 +370,16 @@ func (ids *EthereumIdentityService) CreateIdentity(centrifugeID CentID) (id Iden
 		return nil, confirmations, wError
 	}
 	return id, confirmations, nil
+}
+
+// GetIdentityAddress gets the address of the ethereum identity contract for the given CentID
+func (ids *EthereumIdentityService) GetIdentityAddress(centID CentID) (common.Address, error) {
+	opts := ethereum.GetGethCallOpts()
+	address, err := ids.registryContract.GetIdentityByCentrifugeId(opts, centID.BigInt())
+	if err != nil {
+		return common.Address{}, err
+	}
+	return address, nil
 }
 
 // LookupIdentityForID looks up if the identity for given CentID exists on ethereum

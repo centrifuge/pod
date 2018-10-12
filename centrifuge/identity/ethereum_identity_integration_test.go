@@ -12,6 +12,7 @@ import (
 	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -126,4 +127,20 @@ func TestCreateAndLookupIdentity_Integration_Concurrent(t *testing.T) {
 		assert.Nil(t, err, "should not error out upon identity resolution")
 		assert.Equal(t, centIds[ix], id.GetCentrifugeID(), "Should have the ID that was passed into create function [%v]", id.GetCentrifugeID())
 	}
+}
+
+func TestEthereumIdentityService_GetIdentityAddress(t *testing.T) {
+	centrifugeId, _ := identity.ToCentID(tools.RandomSlice(identity.CentIDLength))
+	_, confirmations, err := identityService.CreateIdentity(centrifugeId)
+	assert.Nil(t, err, "should not error out when creating identity")
+	<-confirmations
+	addr, err := identityService.GetIdentityAddress(centrifugeId)
+	assert.Nil(t, err)
+	assert.True(t, len(addr) == common.AddressLength)
+}
+
+func TestEthereumIdentityService_GetIdentityAddressNonExistingID(t *testing.T) {
+	addr, err := identityService.GetIdentityAddress(identity.NewRandomCentID())
+	assert.NotNil(t, err)
+	assert.True(t, len(addr) == 0)
 }

@@ -8,6 +8,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
+type PaymentObligation interface {
+	Mint(to common.Address, tokenId *big.Int, tokenURI string, anchorId *big.Int, merkleRoot [32]byte, values [3]string, salts [3][32]byte, proofs [3][][32]byte) (<-chan *WatchMint, error)
+}
+
 type WatchMint struct {
 	MintRequestData *MintRequest
 	Error           error
@@ -88,7 +92,7 @@ func fillProofs(proofspb []*proofspb.Proof) (*proofData, error) {
 }
 
 // NewMintRequest converts the parameters and returns a struct with needed parameter for minting
-func NewMintRequest(to *common.Address, anchorId []byte, proofs []*proofspb.Proof, rootHash []byte) (*MintRequest, error) {
+func NewMintRequest(to common.Address, anchorId []byte, proofs []*proofspb.Proof, rootHash []byte) (*MintRequest, error) {
 	tokenId := tools.ByteSliceToBigInt(tools.RandomSlice(256))
 	tokenURI := "http:=//www.centrifuge.io/DUMMY_URI_SERVICE"
 	anchorID := tools.ByteSliceToBigInt(anchorId)
@@ -103,7 +107,7 @@ func NewMintRequest(to *common.Address, anchorId []byte, proofs []*proofspb.Proo
 	}
 
 	return &MintRequest{
-		To:         *to,
+		To:         to,
 		TokenId:    tokenId,
 		TokenURI:   tokenURI,
 		AnchorId:   anchorID,
@@ -111,10 +115,6 @@ func NewMintRequest(to *common.Address, anchorId []byte, proofs []*proofspb.Proo
 		Values:     proofData.Values,
 		Salts:      proofData.Salts,
 		Proofs:     proofData.Proofs}, nil
-}
-
-type PaymentObligation interface {
-	Mint(to common.Address, tokenId *big.Int, tokenURI string, anchorId *big.Int, merkleRoot [32]byte, values [3]string, salts [3][32]byte, proofs [3][][32]byte) (<-chan *WatchMint, error)
 }
 
 func getConfiguredPaymentObligation() PaymentObligation {

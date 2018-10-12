@@ -15,6 +15,7 @@ import (
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/nft"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
+	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/commons"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -67,18 +68,8 @@ func (MockPaymentObligation) Mint(to common.Address, tokenId *big.Int, tokenURI 
 	return nil, nil
 }
 
-type MockIdentityService struct{}
-
-func (MockIdentityService) getIdentityAddress() (*common.Address, error) {
-
-	address := common.BytesToAddress([]byte("0x"))
-
-	return &address, nil
-}
-
 func getServiceWithMockedPaymentObligation() *Service {
-	return &Service{PaymentObligation: MockPaymentObligation{}, IdentityService: MockIdentityService{}}
-
+	return &Service{PaymentObligation: MockPaymentObligation{}, identityService: &testingcommons.MockIDService{}}
 }
 
 func createInvoiceInDB(t *testing.T) []byte {

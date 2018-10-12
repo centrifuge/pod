@@ -3,55 +3,27 @@ package nft
 import (
 	"fmt"
 
-	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
-	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/ethereum/go-ethereum/common"
 )
 
-type IdentityServiceImpl struct{}
-
-func (IdentityServiceImpl) getIdentityAddress() (*common.Address, error) {
-	centIDBytes, err := config.Config.GetIdentityId()
-	if err != nil {
-		return nil, err
-	}
-
-	centID, err := identity.ToCentID(centIDBytes)
-
-	if err != nil {
-		return nil, err
-	}
-
-	ethereumIdentity, err := identity.IDService.LookupIdentityForID(centID)
-
-	if err != nil {
-		return nil, err
-	}
-
-	address, err := ethereumIdentity.GetIdentityAddress()
-	return address, nil
-
-}
-
-type IdentityService interface {
-	getIdentityAddress() (*common.Address, error)
+type Config interface {
+	GetIdentityId() ([]byte, error)
 }
 
 type Service struct {
 	PaymentObligation PaymentObligation
-	IdentityService   IdentityService
+	identityService   identity.Service
+	config            Config
 }
 
-func DefaultService() *Service {
-	return &Service{PaymentObligation: getConfiguredPaymentObligation(), IdentityService: IdentityServiceImpl{}}
-}
+//func DefaultService() *Service {
+//	return &Service{PaymentObligation: getConfiguredPaymentObligation(), IdentityService: IdentityServiceImpl{}}
+//}
 
-func (s Service) mintNFT(documentID []byte, registryAddress, depositAddress string, proofFields []string) (string, error) {
-	// TODO concrete service should be returned based on a document type parameter from the request, for now this is invoice specific
-	documentService, err := getDocumentService(documenttypes.InvoiceDataTypeUrl)
+func (s Service) mintNFT(documentID []byte, docType, registryAddress, depositAddress string, proofFields []string) (string, error) {
+	documentService, err := getDocumentService(docType)
 	if err != nil {
 		return "", err
 	}
@@ -71,7 +43,7 @@ func (s Service) mintNFT(documentID []byte, registryAddress, depositAddress stri
 		return "", err
 	}
 
-	toAddress, err := s.IdentityService.getIdentityAddress()
+	toAddress, err := s.getIdentityAddress()
 	if err != nil {
 		return "", nil
 	}
@@ -90,13 +62,31 @@ func (s Service) mintNFT(documentID []byte, registryAddress, depositAddress stri
 	return requestData.TokenId.String(), nil
 }
 
-func getDocumentService(documentType string) (invoice.Service, error) {
+func (s *Service) getIdentityAddress() (common.Address, error) {
+	centIDBytes, err := s.config.GetIdentityId()
+	if err != nil {
+		return common.Address{}, err
+	}
+
+	centID, err := identity.ToCentID(centIDBytes)
+	if err != nil {
+		return common.Address{}, err
+	}
+
+	address, err := s.identityService.GetIdentityAddress(centID)
+	if err != nil {
+		return common.Address{}, err
+	}
+	return address, nil
+}
+
+func getDocumentService(documentType string) (documents.Service, error) {
 	docService, err := documents.GetRegistryInstance().LocateService(documentType)
 	if err != nil {
 		return nil, err
 	}
 
-	service, ok := docService.(invoice.Service)
+	service, ok := docService.(documents.Service)
 	if !ok {
 		return nil, fmt.Errorf("couldn't find service for needed document type")
 

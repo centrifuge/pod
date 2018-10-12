@@ -11,6 +11,16 @@ type MockService struct {
 	mock.Mock
 }
 
+func (m *MockService) GetLastVersion(documentID []byte) (documents.Model, error) {
+	args := m.Called(documentID)
+	return args.Get(0).(documents.Model), args.Get(1).(error)
+}
+
+func (m *MockService) GetVersion(documentID []byte, version []byte) (documents.Model, error) {
+	args := m.Called(documentID, version)
+	return args.Get(0).(documents.Model), args.Get(1).(error)
+}
+
 func (m *MockService) CreateProofs(documentID []byte, fields []string) (*documentpb.DocumentProof, error) {
 	args := m.Called(documentID, fields)
 	return args.Get(0).(*documentpb.DocumentProof), args.Get(1).(error)

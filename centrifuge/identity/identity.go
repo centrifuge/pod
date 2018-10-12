@@ -27,6 +27,10 @@ const (
 	KeyPurposeEthMsgAuth = 3
 )
 
+// IDService is a default implementation of the Service
+// TODO remove, kill and bury this(or any other globals)
+var IDService Service
+
 type CentID [CentIDLength]byte
 
 // ToCentID takes bytes and return CentID
@@ -115,9 +119,6 @@ func ParseCentIDs(centIDByteArray [][]byte) (errs []error, centIDs []CentID) {
 	return errs, centIDs
 }
 
-// IDService is a default implementation of the Service
-var IDService Service
-
 // Identity defines an Identity on chain
 type Identity interface {
 	fmt.Stringer
@@ -127,7 +128,6 @@ type Identity interface {
 	GetLastKeyForPurpose(keyPurpose int) (key []byte, err error)
 	AddKeyToIdentity(ctx context.Context, keyPurpose int, key []byte) (confirmations chan *WatchIdentity, err error)
 	FetchKey(key []byte) (Key, error)
-	GetIdentityAddress() (*common.Address, error)
 }
 
 // Key defines a single ERC725 identity key
@@ -153,9 +153,13 @@ type Service interface {
 
 	// CheckIdentityExists checks if the identity represented by id actually exists on ethereum
 	CheckIdentityExists(centrifugeID CentID) (exists bool, err error)
+
+	// GetIdentityAddress gets the address of the ethereum identity contract for the given CentID
+	GetIdentityAddress(centID CentID) (common.Address, error)
 }
 
 // GetClientP2PURL returns the p2p url associated with the centID
+// TODO make this part of the Service interface (usage of globals should be removed)
 func GetClientP2PURL(centID CentID) (url string, err error) {
 	target, err := IDService.LookupIdentityForID(centID)
 	if err != nil {
@@ -172,6 +176,7 @@ func GetClientP2PURL(centID CentID) (url string, err error) {
 
 // GetClientsP2PURLs returns p2p urls associated with each centIDs
 // will error out at first failure
+// TODO make this part of the Service interface
 func GetClientsP2PURLs(centIDs []CentID) ([]string, error) {
 	var p2pURLs []string
 	for _, id := range centIDs {
@@ -187,6 +192,7 @@ func GetClientsP2PURLs(centIDs []CentID) ([]string, error) {
 }
 
 // GetIdentityKey returns the key for provided identity
+// TODO make this part of the Service interface
 func GetIdentityKey(identity CentID, pubKey []byte) (keyInfo Key, err error) {
 	id, err := IDService.LookupIdentityForID(identity)
 	if err != nil {
@@ -206,6 +212,7 @@ func GetIdentityKey(identity CentID, pubKey []byte) (keyInfo Key, err error) {
 }
 
 // ValidateKey checks if a given key is valid for the given centrifugeID.
+// TODO make this part of the Service interface
 func ValidateKey(centrifugeId CentID, key []byte, purpose int) error {
 	idKey, err := GetIdentityKey(centrifugeId, key)
 	if err != nil {
@@ -229,6 +236,7 @@ func ValidateKey(centrifugeId CentID, key []byte, purpose int) error {
 }
 
 // AddKeyFromConfig adds a key previously generated and indexed in the configuration file to the identity specified in such config file
+// TODO make this part of the Service interface
 func AddKeyFromConfig(purpose int) error {
 	var identityConfig *config.IdentityConfig
 	var err error
