@@ -29,6 +29,9 @@ func TestAppendError(t *testing.T) {
 	err = AppendError(fmt.Errorf("err 1"), fmt.Errorf("err 2"))
 	assert.Equal(t, 2, LenError(err), "err should include two errors")
 
+	err = AppendError(err, NewError("test", "error"))
+	assert.Len(t, Errors(err), 3)
+	assert.Contains(t, err.Error(), "test : error")
 }
 
 func TestLenError(t *testing.T) {

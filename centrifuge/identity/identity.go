@@ -238,7 +238,7 @@ func AddKeyFromConfig(purpose int) error {
 	case KeyPurposeEthMsgAuth:
 		identityConfig, err = secp256k1.GetIDConfig()
 	default:
-		err = errors.New("Option not supported")
+		err = errors.New("option not supported")
 	}
 
 	if err != nil {
