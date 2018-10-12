@@ -29,6 +29,9 @@ func UpdateVersionValidator() documents.Validator {
 			return fmt.Errorf("failed to fetch new core document: %v", err)
 		}
 
+		fmt.Println(oldCD)
+		fmt.Println("====")
+		fmt.Println(newCD)
 		checks := []struct {
 			name string
 			a, b []byte
@@ -73,7 +76,7 @@ func UpdateVersionValidator() documents.Validator {
 			err = documents.AppendError(err, documents.NewError("cd_next_version", centerrors.RequiredField))
 		}
 
-		return nil
+		return err
 	})
 }
 
