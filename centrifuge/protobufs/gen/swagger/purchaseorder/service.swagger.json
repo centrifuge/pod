@@ -15,15 +15,15 @@
     "application/json"
   ],
   "paths": {
-    "/purchaseorder/anchor": {
+    "/purchaseorder": {
       "post": {
-        "description": "Anchor a purchaseorder document",
-        "operationId": "AnchorPurchaseOrderDocument",
+        "description": "Creates a purchase order",
+        "operationId": "Create",
         "responses": {
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/purchaseorderPurchaseOrderDocument"
+              "$ref": "#/definitions/purchaseorderPurchaseOrderResponse"
             }
           }
         },
@@ -33,347 +33,124 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/purchaseorderAnchorPurchaseOrderEnvelope"
+              "$ref": "#/definitions/purchaseorderPurchaseOrderCreatePayload"
             }
           }
         ],
         "tags": [
-          "PurchaseOrderDocumentService"
+          "DocumentService"
         ]
       }
     },
-    "/purchaseorder/get": {
-      "post": {
-        "operationId": "GetPurchaseOrderDocument",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/purchaseorderPurchaseOrderDocument"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/purchaseorderGetPurchaseOrderDocumentEnvelope"
-            }
-          }
-        ],
-        "tags": [
-          "PurchaseOrderDocumentService"
-        ]
-      }
-    },
-    "/purchaseorder/getReceived": {
+    "/purchaseorder/{identifier}": {
       "get": {
-        "operationId": "GetReceivedPurchaseOrderDocuments",
+        "description": "Get the current version of a purchase order",
+        "operationId": "Get",
         "responses": {
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/purchaseorderReceivedPurchaseOrders"
-            }
-          }
-        },
-        "tags": [
-          "PurchaseOrderDocumentService"
-        ]
-      }
-    },
-    "/purchaseorder/proof": {
-      "post": {
-        "description": "Creates a list of precise proofs for the specified fields",
-        "operationId": "CreatePurchaseOrderProof",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/purchaseorderPurchaseOrderProof"
+              "$ref": "#/definitions/purchaseorderPurchaseOrderResponse"
             }
           }
         },
         "parameters": [
           {
-            "name": "body",
-            "in": "body",
+            "name": "identifier",
+            "in": "path",
             "required": true,
-            "schema": {
-              "$ref": "#/definitions/purchaseorderCreatePurchaseOrderProofEnvelope"
-            }
+            "type": "string"
           }
         ],
         "tags": [
-          "PurchaseOrderDocumentService"
+          "DocumentService"
         ]
-      }
-    },
-    "/purchaseorder/send": {
-      "post": {
-        "description": "Send a purchaseorder document to the specified party",
-        "operationId": "SendPurchaseOrderDocument",
+      },
+      "put": {
+        "description": "Updates a purchase order",
+        "operationId": "Update",
         "responses": {
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/purchaseorderPurchaseOrderDocument"
+              "$ref": "#/definitions/purchaseorderPurchaseOrderResponse"
             }
           }
         },
         "parameters": [
           {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
             "name": "body",
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/purchaseorderSendPurchaseOrderEnvelope"
+              "$ref": "#/definitions/purchaseorderPurchaseOrderUpdatePayload"
             }
           }
         ],
         "tags": [
-          "PurchaseOrderDocumentService"
+          "DocumentService"
+        ]
+      }
+    },
+    "/purchaseorder/{identifier}/{version}": {
+      "get": {
+        "description": "Get a specific version of a purchase order",
+        "operationId": "GetVersion",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/purchaseorderPurchaseOrderResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "DocumentService"
         ]
       }
     }
   },
   "definitions": {
-    "coredocumentCoreDocument": {
+    "purchaseorderPurchaseOrderCreatePayload": {
       "type": "object",
       "properties": {
-        "document_identifier": {
-          "type": "string",
-          "format": "byte",
-          "description": "# Identifiers\nCoreDocument has two kinds of identifiers, the `document_identifier` is assigned \nonce per document and stays the same for the lifetime of the document.\ndocument_identifier is the first ID ever used to anchor the document on chain and \nis used internally to store all future versions. The `previous_version`, `current_version`, and the\n`next_version` refer only to a particular version.\n\n32 byte value"
-        },
-        "previous_version": {
-          "type": "string",
-          "format": "byte",
-          "title": "previous_version refers to the previous state of the document.\n32 byte value"
-        },
-        "current_version": {
-          "type": "string",
-          "format": "byte",
-          "title": "current_version is the version used to refer to the current state of the document.\n32 byte value"
-        },
-        "next_version": {
-          "type": "string",
-          "format": "byte",
-          "description": "next_version is the version that is going to be used for the next version if any\nparty wants to update the state."
-        },
-        "document_root": {
-          "type": "string",
-          "format": "byte",
-          "title": "# Merkle roots\ndocument_root the root of all roots. It's signature_root along with a list of all signatures"
-        },
-        "signing_root": {
-          "type": "string",
-          "format": "byte",
-          "description": "signing_root is the Merkle root calculated from all fields on the document that need \nto be signed. This is all fields except for the signatures themselves and the `document_root`."
-        },
-        "previous_root": {
-          "type": "string",
-          "format": "byte",
-          "title": "previous_root is the `document_root` of the previous version of the document"
-        },
-        "data_root": {
-          "type": "string",
-          "format": "byte",
-          "description": "data_root is the Merkle root calculated for the `embedded_data` \u0026 `embedded_salts` document (such as an invoice)."
-        },
-        "signatures": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/coredocumentSignature"
-          },
-          "description": "Signatures\nSignatures of the signature_root by centrifuge identities. This array should be sorted by the Centrifuge ID."
-        },
-        "embedded_data": {
-          "$ref": "#/definitions/protobufAny",
-          "title": "Document a serialized document"
-        },
-        "embedded_data_salts": {
-          "$ref": "#/definitions/protobufAny"
-        },
-        "coredocument_salts": {
-          "$ref": "#/definitions/coredocumentCoreDocumentSalts",
-          "title": "CoreDocumentSalts is inlined"
-        },
         "collaborators": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "format": "byte"
-          },
-          "title": "Collaborators involved in the document consensus"
-        }
-      },
-      "description": "* Merkle Roots for the document data\n* Signatures on document data\n* Access Control",
-      "title": "`CoreDocument` is a document that can be sent to different nodes and anchored \non chain. It handles all the generic features native Centrifuge Documents support:"
-    },
-    "coredocumentCoreDocumentSalts": {
-      "type": "object",
-      "properties": {
-        "document_identifier": {
-          "type": "string",
-          "format": "byte"
-        },
-        "previous_version": {
-          "type": "string",
-          "format": "byte"
-        },
-        "current_version": {
-          "type": "string",
-          "format": "byte"
-        },
-        "next_version": {
-          "type": "string",
-          "format": "byte"
-        },
-        "previous_root": {
-          "type": "string",
-          "format": "byte"
-        },
-        "data_root": {
-          "type": "string",
-          "format": "byte"
-        },
-        "collaborators": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "format": "byte"
-          }
-        },
-        "collaborators_length": {
-          "type": "string",
-          "format": "byte"
-        }
-      }
-    },
-    "coredocumentSignature": {
-      "type": "object",
-      "properties": {
-        "entity_id": {
-          "type": "string",
-          "format": "byte",
-          "description": "`entity_id` is the CentrifugeID of the entity signing the document."
-        },
-        "public_key": {
-          "type": "string",
-          "format": "byte",
-          "title": "`public_key` is the public key of the `entity` used for signing the `CoreDocument`"
-        },
-        "signature": {
-          "type": "string",
-          "format": "byte"
-        },
-        "timestamp": {
-          "type": "string",
-          "format": "date-time"
-        }
-      },
-      "title": "Signature contains the entity ID, public key used and signature)"
-    },
-    "proofsMerkleHash": {
-      "type": "object",
-      "properties": {
-        "left": {
-          "type": "string",
-          "format": "byte"
-        },
-        "right": {
-          "type": "string",
-          "format": "byte"
-        }
-      }
-    },
-    "proofsProof": {
-      "type": "object",
-      "properties": {
-        "property": {
-          "type": "string"
-        },
-        "value": {
-          "type": "string"
-        },
-        "salt": {
-          "type": "string",
-          "format": "byte"
-        },
-        "hash": {
-          "type": "string",
-          "format": "byte",
-          "title": "hash is filled if value \u0026 salt are not available"
-        },
-        "hashes": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/proofsMerkleHash"
-          },
-          "title": "Fills either 'hashes' for standard Merkle trees or 'sortedHashes' for a lexicograhical ordered of a node hash\nnot both"
-        },
-        "sortedHashes": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "format": "byte"
-          }
-        }
-      }
-    },
-    "protobufAny": {
-      "type": "object",
-      "properties": {
-        "type_url": {
-          "type": "string",
-          "description": "A URL/resource name whose content describes the type of the\nserialized protocol buffer message.\n\nFor URLs which use the scheme `http`, `https`, or no scheme, the\nfollowing restrictions and interpretations apply:\n\n* If no scheme is provided, `https` is assumed.\n* The last segment of the URL's path must represent the fully\n  qualified name of the type (as in `path/google.protobuf.Duration`).\n  The name should be in a canonical form (e.g., leading \".\" is\n  not accepted).\n* An HTTP GET on the URL must yield a [google.protobuf.Type][]\n  value in binary format, or produce an error.\n* Applications are allowed to cache lookup results based on the\n  URL, or have them precompiled into a binary to avoid any\n  lookup. Therefore, binary compatibility needs to be preserved\n  on changes to types. (Use versioned type names to manage\n  breaking changes.)\n\nSchemes other than `http`, `https` (or the empty scheme) might be\nused with implementation specific semantics."
-        },
-        "value": {
-          "type": "string",
-          "format": "byte",
-          "description": "Must be a valid serialized protocol buffer of the above specified type."
-        }
-      },
-      "description": "`Any` contains an arbitrary serialized protocol buffer message along with a\nURL that describes the type of the serialized message.\n\nProtobuf library provides support to pack/unpack Any values in the form\nof utility functions or additional generated methods of the Any type.\n\nExample 1: Pack and unpack a message in C++.\n\n    Foo foo = ...;\n    Any any;\n    any.PackFrom(foo);\n    ...\n    if (any.UnpackTo(\u0026foo)) {\n      ...\n    }\n\nExample 2: Pack and unpack a message in Java.\n\n    Foo foo = ...;\n    Any any = Any.pack(foo);\n    ...\n    if (any.is(Foo.class)) {\n      foo = any.unpack(Foo.class);\n    }\n\n Example 3: Pack and unpack a message in Python.\n\n    foo = Foo(...)\n    any = Any()\n    any.Pack(foo)\n    ...\n    if any.Is(Foo.DESCRIPTOR):\n      any.Unpack(foo)\n      ...\n\n Example 4: Pack and unpack a message in Go\n\n     foo := \u0026pb.Foo{...}\n     any, err := ptypes.MarshalAny(foo)\n     ...\n     foo := \u0026pb.Foo{}\n     if err := ptypes.UnmarshalAny(any, foo); err != nil {\n       ...\n     }\n\nThe pack methods provided by protobuf library will by default use\n'type.googleapis.com/full.type.name' as the type URL and the unpack\nmethods only use the fully qualified type name after the last '/'\nin the type URL, for example \"foo.bar.com/x/y.z\" will yield type\nname \"y.z\".\n\n\nJSON\n====\nThe JSON representation of an `Any` value uses the regular\nrepresentation of the deserialized, embedded message, with an\nadditional field `@type` which contains the type URL. Example:\n\n    package google.profile;\n    message Person {\n      string first_name = 1;\n      string last_name = 2;\n    }\n\n    {\n      \"@type\": \"type.googleapis.com/google.profile.Person\",\n      \"firstName\": \u003cstring\u003e,\n      \"lastName\": \u003cstring\u003e\n    }\n\nIf the embedded message type is well-known and has a custom JSON\nrepresentation, that representation will be embedded adding a field\n`value` which holds the custom JSON in addition to the `@type`\nfield. Example (for message [google.protobuf.Duration][]):\n\n    {\n      \"@type\": \"type.googleapis.com/google.protobuf.Duration\",\n      \"value\": \"1.212s\"\n    }"
-    },
-    "purchaseorderAnchorPurchaseOrderEnvelope": {
-      "type": "object",
-      "properties": {
-        "document": {
-          "$ref": "#/definitions/purchaseorderPurchaseOrderDocument"
-        }
-      }
-    },
-    "purchaseorderCreatePurchaseOrderProofEnvelope": {
-      "type": "object",
-      "properties": {
-        "document_identifier": {
-          "type": "string",
-          "format": "byte"
-        },
-        "fields": {
           "type": "array",
           "items": {
             "type": "string"
           }
-        }
-      }
-    },
-    "purchaseorderGetPurchaseOrderDocumentEnvelope": {
-      "type": "object",
-      "properties": {
-        "document_identifier": {
-          "type": "string",
-          "format": "byte"
+        },
+        "data": {
+          "$ref": "#/definitions/purchaseorderPurchaseOrderData"
         }
       }
     },
     "purchaseorderPurchaseOrderData": {
       "type": "object",
       "properties": {
+        "po_status": {
+          "type": "string"
+        },
         "po_number": {
           "type": "string",
           "title": "purchase order number or reference number"
@@ -464,163 +241,56 @@
           "type": "string",
           "format": "byte"
         }
-      },
-      "title": "PurchaseOrderData is the default schema for a purchase order"
+      }
     },
-    "purchaseorderPurchaseOrderDataSalts": {
+    "purchaseorderPurchaseOrderResponse": {
       "type": "object",
       "properties": {
-        "po_number": {
-          "type": "string",
-          "format": "byte"
-        },
-        "order_name": {
-          "type": "string",
-          "format": "byte"
-        },
-        "order_street": {
-          "type": "string",
-          "format": "byte"
-        },
-        "order_city": {
-          "type": "string",
-          "format": "byte"
-        },
-        "order_zipcode": {
-          "type": "string",
-          "format": "byte"
-        },
-        "order_country": {
-          "type": "string",
-          "format": "byte"
-        },
-        "recipient_name": {
-          "type": "string",
-          "format": "byte"
-        },
-        "recipient_street": {
-          "type": "string",
-          "format": "byte"
-        },
-        "recipient_city": {
-          "type": "string",
-          "format": "byte"
-        },
-        "recipient_zipcode": {
-          "type": "string",
-          "format": "byte"
-        },
-        "recipient_country": {
-          "type": "string",
-          "format": "byte"
-        },
-        "currency": {
-          "type": "string",
-          "format": "byte"
-        },
-        "order_amount": {
-          "type": "string",
-          "format": "byte"
-        },
-        "net_amount": {
-          "type": "string",
-          "format": "byte"
-        },
-        "tax_amount": {
-          "type": "string",
-          "format": "byte"
-        },
-        "tax_rate": {
-          "type": "string",
-          "format": "byte"
-        },
-        "recipient": {
-          "type": "string",
-          "format": "byte"
-        },
-        "order": {
-          "type": "string",
-          "format": "byte"
-        },
-        "order_contact": {
-          "type": "string",
-          "format": "byte"
-        },
-        "comment": {
-          "type": "string",
-          "format": "byte"
-        },
-        "delivery_date": {
-          "type": "string",
-          "format": "byte"
-        },
-        "date_created": {
-          "type": "string",
-          "format": "byte"
-        },
-        "extra_data": {
-          "type": "string",
-          "format": "byte"
-        }
-      },
-      "description": "PurhcaseOrderDataSalts keeps track of the salts used for each PurchaseOrderData field."
-    },
-    "purchaseorderPurchaseOrderDocument": {
-      "type": "object",
-      "properties": {
-        "core_document": {
-          "$ref": "#/definitions/coredocumentCoreDocument"
+        "header": {
+          "$ref": "#/definitions/purchaseorderResponseHeader"
         },
         "data": {
           "$ref": "#/definitions/purchaseorderPurchaseOrderData"
+        }
+      }
+    },
+    "purchaseorderPurchaseOrderUpdatePayload": {
+      "type": "object",
+      "properties": {
+        "identifier": {
+          "type": "string"
         },
-        "salts": {
-          "$ref": "#/definitions/purchaseorderPurchaseOrderDataSalts"
+        "collaborators": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "data": {
+          "$ref": "#/definitions/purchaseorderPurchaseOrderData"
+        }
+      }
+    },
+    "purchaseorderResponseHeader": {
+      "type": "object",
+      "properties": {
+        "document_id": {
+          "type": "string"
+        },
+        "version_id": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "collaborators": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       },
-      "description": "PurchaseOrderDocument combines the salts, data \u0026 coredocument for a purchase order."
-    },
-    "purchaseorderPurchaseOrderProof": {
-      "type": "object",
-      "properties": {
-        "document_identifier": {
-          "type": "string",
-          "format": "byte"
-        },
-        "field_proofs": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/proofsProof"
-          }
-        }
-      }
-    },
-    "purchaseorderReceivedPurchaseOrders": {
-      "type": "object",
-      "properties": {
-        "purchaseorders": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/purchaseorderPurchaseOrderDocument"
-          }
-        }
-      }
-    },
-    "purchaseorderSendPurchaseOrderEnvelope": {
-      "type": "object",
-      "properties": {
-        "recipients": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "format": "byte"
-          },
-          "title": "Centrifuge OS Entity of the recipient"
-        },
-        "document": {
-          "$ref": "#/definitions/purchaseorderPurchaseOrderDocument"
-        }
-      }
+      "title": "ResponseHeader contains a set of common fields for most documents"
     }
   }
 }

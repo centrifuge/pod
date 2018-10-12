@@ -29,6 +29,10 @@ type IdentityContract interface {
 	AddKey(opts *bind.TransactOpts, _key [32]byte, _kPurpose *big.Int) (*types.Transaction, error)
 }
 
+type Config interface {
+	GetEthereumDefaultAccountName() string
+}
+
 type EthereumIdentityKey struct {
 	Key       [32]byte
 	Purposes  []*big.Int
@@ -53,8 +57,14 @@ func (idk *EthereumIdentityKey) String() string {
 }
 
 type EthereumIdentity struct {
-	CentrifugeId CentID
-	Contract     *EthereumIdentityContract
+	CentrifugeId     CentID
+	Contract         *EthereumIdentityContract
+	RegistryContract *EthereumIdentityRegistryContract
+	Config           Config
+}
+
+func NewEthereumIdentity(id CentID, registryContract *EthereumIdentityRegistryContract, config Config) *EthereumIdentity {
+	return &EthereumIdentity{CentrifugeId: id, RegistryContract: registryContract, Config: config}
 }
 
 func (id *EthereumIdentity) CentrifugeID(cenId CentID) {
@@ -127,12 +137,8 @@ func (id *EthereumIdentity) findContract() (exists bool, err error) {
 		return true, nil
 	}
 
-	ethIdentityRegistryContract, err := getIdentityRegistryContract()
-	if err != nil {
-		return false, err
-	}
 	opts := ethereum.GetGethCallOpts()
-	idAddress, err := ethIdentityRegistryContract.GetIdentityByCentrifugeId(opts, id.CentrifugeId.BigInt())
+	idAddress, err := id.RegistryContract.GetIdentityByCentrifugeId(opts, id.CentrifugeId.BigInt())
 	if err != nil {
 		return false, err
 	}
@@ -182,6 +188,7 @@ func (id *EthereumIdentity) GetIdentityAddress() (*common.Address, error) {
 
 }
 
+// CheckIdentityExists checks if the identity represented by id actually exists on ethereum
 func (id *EthereumIdentity) CheckIdentityExists() (exists bool, err error) {
 	return id.findContract()
 }
@@ -199,7 +206,7 @@ func (id *EthereumIdentity) AddKeyToIdentity(ctx context.Context, keyPurpose int
 	}
 
 	conn := ethereum.GetConnection()
-	opts, err := ethereum.GetConnection().GetTxOpts(config.Config.GetEthereumDefaultAccountName())
+	opts, err := ethereum.GetConnection().GetTxOpts(id.Config.GetEthereumDefaultAccountName())
 	if err != nil {
 		return confirmations, err
 	}
@@ -247,26 +254,6 @@ func (id *EthereumIdentity) fetchKeysByPurpose(keyPurpose int) ([]EthereumIdenti
 	}
 
 	return ids, nil
-}
-
-func getIdentityFactoryContract() (identityFactoryContract *EthereumIdentityFactoryContract, err error) {
-	client := ethereum.GetConnection()
-
-	identityFactoryContract, err = NewEthereumIdentityFactoryContract(config.Config.GetContractAddress("identityFactory"), client.GetClient())
-	if err != nil {
-		log.Infof("Failed to instantiate the identity factory contract: %v", err)
-	}
-	return
-}
-
-func getIdentityRegistryContract() (identityRegistryContract *EthereumIdentityRegistryContract, err error) {
-	client := ethereum.GetConnection()
-
-	identityRegistryContract, err = NewEthereumIdentityRegistryContract(config.Config.GetContractAddress("identityRegistry"), client.GetClient())
-	if err != nil {
-		log.Infof("Failed to instantiate the identity registry contract: %v", err)
-	}
-	return
 }
 
 // sendRegistrationTransaction sends the actual transaction to add a Key on Ethereum registry contract
@@ -354,33 +341,32 @@ func waitAndRouteIdentityRegistrationEvent(asyncRes *gocelery.AsyncResult, confi
 	confirmations <- &WatchIdentity{pushThisIdentity, err}
 }
 
-func NewEthereumIdentityService() Service {
-	return &EthereumIdentityService{}
+// EthereumidentityService implements `Service`
+// TODO check if this can be non-exported
+type EthereumIdentityService struct {
+	config           Config
+	factoryContract  *EthereumIdentityFactoryContract
+	registryContract *EthereumIdentityRegistryContract
 }
 
-// EthereumidentityService implements `Service`
-type EthereumIdentityService struct{}
+// NewEthereumIdentityService creates a new NewEthereumIdentityService given the config and the smart contracts
+func NewEthereumIdentityService(config Config, factoryContract *EthereumIdentityFactoryContract, registryContract *EthereumIdentityRegistryContract) Service {
+	return &EthereumIdentityService{config: config, factoryContract: factoryContract, registryContract: registryContract}
+}
 
+// CheckIdentityExists checks if the identity represented by id actually exists on ethereum
 func (ids *EthereumIdentityService) CheckIdentityExists(centrifugeID CentID) (exists bool, err error) {
-	id := new(EthereumIdentity)
-	id.CentrifugeId = centrifugeID
+	id := NewEthereumIdentity(centrifugeID, ids.registryContract, ids.config)
 	exists, err = id.CheckIdentityExists()
 	return
 }
 
+// CreateIdentity creates an identity representing the id on ethereum
 func (ids *EthereumIdentityService) CreateIdentity(centrifugeID CentID) (id Identity, confirmations chan *WatchIdentity, err error) {
 	log.Infof("Creating Identity [%x]", centrifugeID.ByteArray())
-
-	id = new(EthereumIdentity)
-	id.CentrifugeID(centrifugeID)
-
-	ethIdentityFactoryContract, err := getIdentityFactoryContract()
-	if err != nil {
-		return
-	}
-
+	id = NewEthereumIdentity(centrifugeID, ids.registryContract, ids.config)
 	conn := ethereum.GetConnection()
-	opts, err := conn.GetTxOpts(config.Config.GetEthereumDefaultAccountName())
+	opts, err := conn.GetTxOpts(ids.config.GetEthereumDefaultAccountName())
 	if err != nil {
 		return nil, confirmations, err
 	}
@@ -397,7 +383,7 @@ func (ids *EthereumIdentityService) CreateIdentity(centrifugeID CentID) (id Iden
 		return nil, confirmations, wError
 	}
 
-	err = sendIdentityCreationTransaction(ethIdentityFactoryContract, opts, id)
+	err = sendIdentityCreationTransaction(ids.factoryContract, opts, id)
 	if err != nil {
 		wError := errors.Wrap(err, 1)
 		log.Infof("Failed to create transaction for identity [mockID: %s]: %v", id, wError)
@@ -406,9 +392,9 @@ func (ids *EthereumIdentityService) CreateIdentity(centrifugeID CentID) (id Iden
 	return id, confirmations, nil
 }
 
+// LookupIdentityForID looks up if the identity for given CentID exists on ethereum
 func (ids *EthereumIdentityService) LookupIdentityForID(centrifugeID CentID) (Identity, error) {
-	id := new(EthereumIdentity)
-	id.CentrifugeID(centrifugeID)
+	id := NewEthereumIdentity(centrifugeID, ids.registryContract, ids.config)
 	exists, err := id.CheckIdentityExists()
 	if !exists {
 		return id, fmt.Errorf("identity [%s] does not exist", id.CentrifugeId)

@@ -35,8 +35,15 @@ func CommitAnchor(anchorID AnchorID, documentRoot DocRoot, centrifugeID identity
 	return confirmations, err
 }
 
+// anchorRepository is a singleton to keep track of the anchorRepository
+var anchorRepository AnchorRepository
+
+func setRepository(ar AnchorRepository) {
+	anchorRepository = ar
+}
+
 // getConfiguredRepository will later pull a configured repository (if not only using Ethereum as the anchor repository)
 // For now hard-coded to the Ethereum setup
 func getConfiguredRepository() (AnchorRepository, error) {
-	return &EthereumAnchorRepository{}, nil
+	return anchorRepository, nil
 }

@@ -20,21 +20,21 @@ func (*Bootstrapper) Bootstrap(c map[string]interface{}) error {
 	if _, ok := c[bootstrap.BootstrappedConfig]; ok {
 		services := defaultServerList()
 		n := NewNode(services)
-		startUpErr := make(chan error)
+		feedback := make(chan error)
 		// may be we can pass a context that exists in c here
 		ctx, canc := context.WithCancel(context.Background())
-		go n.Start(ctx, startUpErr)
+		go n.Start(ctx, feedback)
 		controlC := make(chan os.Signal, 1)
 		signal.Notify(controlC, os.Interrupt)
 		for {
 			select {
-			case err := <-startUpErr:
+			case err := <-feedback:
 				panic(err)
 			case sig := <-controlC:
 				log.Info("Node shutting down because of ", sig)
 				canc()
-				<-startUpErr
-				return nil
+				err := <-feedback
+				return err
 			}
 		}
 		return nil

@@ -35,7 +35,7 @@ func TestMain(m *testing.M) {
 func TestDefaultProcessor_Anchor(t *testing.T) {
 	ctx := context.Background()
 	p2pClient := &testingcommons.MockP2PWrapperClient{}
-	dp := DefaultProcessor(identity.NewEthereumIdentityService(), p2pClient)
+	dp := DefaultProcessor(identity.IDService, p2pClient)
 	doc := createDummyCD()
 
 	p2pClient.On("GetSignaturesForDocument", ctx, doc).Return(nil)

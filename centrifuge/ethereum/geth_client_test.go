@@ -55,7 +55,7 @@ func (transactionRequest *MockTransactionRequest) RegisterTransaction(opts *bind
 func TestInitTransactionWithRetries(t *testing.T) {
 	mockRequest := &MockTransactionRequest{}
 
-	gc := ethereum.NewGethClient()
+	gc := ethereum.NewGethClient(config.Config)
 	ethereum.SetConnection(gc)
 
 	// Success at first

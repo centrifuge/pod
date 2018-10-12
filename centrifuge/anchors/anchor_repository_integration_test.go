@@ -24,8 +24,8 @@ var testAddress string
 var testPrivateKey string
 
 func TestMain(m *testing.M) {
-	identityService = &identity.EthereumIdentityService{}
 	cc.TestFunctionalEthereumBootstrap()
+	identityService = identity.IDService
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()
 	os.Exit(result)

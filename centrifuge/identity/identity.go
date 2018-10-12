@@ -126,7 +126,6 @@ type Identity interface {
 	GetCurrentP2PKey() (ret string, err error)
 	GetLastKeyForPurpose(keyPurpose int) (key []byte, err error)
 	AddKeyToIdentity(ctx context.Context, keyPurpose int, key []byte) (confirmations chan *WatchIdentity, err error)
-	CheckIdentityExists() (exists bool, err error)
 	FetchKey(key []byte) (Key, error)
 	GetIdentityAddress() (*common.Address, error)
 }
@@ -145,8 +144,14 @@ type WatchIdentity struct {
 
 // Service is used to fetch identities
 type Service interface {
+
+	// LookupIdentityForID looks up if the identity for given CentID exists on ethereum
 	LookupIdentityForID(centrifugeID CentID) (id Identity, err error)
+
+	// CreateIdentity creates an identity representing the id on ethereum
 	CreateIdentity(centrifugeID CentID) (id Identity, confirmations chan *WatchIdentity, err error)
+
+	// CheckIdentityExists checks if the identity represented by id actually exists on ethereum
 	CheckIdentityExists(centrifugeID CentID) (exists bool, err error)
 }
 

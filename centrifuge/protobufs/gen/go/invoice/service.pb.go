@@ -37,7 +37,7 @@ func (m *GetRequest) Reset()         { *m = GetRequest{} }
 func (m *GetRequest) String() string { return proto.CompactTextString(m) }
 func (*GetRequest) ProtoMessage()    {}
 func (*GetRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_b0696b191ac684f2, []int{0}
+	return fileDescriptor_service_1b382e1e9695134b, []int{0}
 }
 func (m *GetRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetRequest.Unmarshal(m, b)
@@ -76,7 +76,7 @@ func (m *GetVersionRequest) Reset()         { *m = GetVersionRequest{} }
 func (m *GetVersionRequest) String() string { return proto.CompactTextString(m) }
 func (*GetVersionRequest) ProtoMessage()    {}
 func (*GetVersionRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_b0696b191ac684f2, []int{1}
+	return fileDescriptor_service_1b382e1e9695134b, []int{1}
 }
 func (m *GetVersionRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetVersionRequest.Unmarshal(m, b)
@@ -122,7 +122,7 @@ func (m *InvoiceCreatePayload) Reset()         { *m = InvoiceCreatePayload{} }
 func (m *InvoiceCreatePayload) String() string { return proto.CompactTextString(m) }
 func (*InvoiceCreatePayload) ProtoMessage()    {}
 func (*InvoiceCreatePayload) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_b0696b191ac684f2, []int{2}
+	return fileDescriptor_service_1b382e1e9695134b, []int{2}
 }
 func (m *InvoiceCreatePayload) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_InvoiceCreatePayload.Unmarshal(m, b)
@@ -169,7 +169,7 @@ func (m *InvoiceUpdatePayload) Reset()         { *m = InvoiceUpdatePayload{} }
 func (m *InvoiceUpdatePayload) String() string { return proto.CompactTextString(m) }
 func (*InvoiceUpdatePayload) ProtoMessage()    {}
 func (*InvoiceUpdatePayload) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_b0696b191ac684f2, []int{3}
+	return fileDescriptor_service_1b382e1e9695134b, []int{3}
 }
 func (m *InvoiceUpdatePayload) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_InvoiceUpdatePayload.Unmarshal(m, b)
@@ -222,7 +222,7 @@ func (m *InvoiceResponse) Reset()         { *m = InvoiceResponse{} }
 func (m *InvoiceResponse) String() string { return proto.CompactTextString(m) }
 func (*InvoiceResponse) ProtoMessage()    {}
 func (*InvoiceResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_b0696b191ac684f2, []int{4}
+	return fileDescriptor_service_1b382e1e9695134b, []int{4}
 }
 func (m *InvoiceResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_InvoiceResponse.Unmarshal(m, b)
@@ -271,7 +271,7 @@ func (m *ResponseHeader) Reset()         { *m = ResponseHeader{} }
 func (m *ResponseHeader) String() string { return proto.CompactTextString(m) }
 func (*ResponseHeader) ProtoMessage()    {}
 func (*ResponseHeader) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_b0696b191ac684f2, []int{5}
+	return fileDescriptor_service_1b382e1e9695134b, []int{5}
 }
 func (m *ResponseHeader) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ResponseHeader.Unmarshal(m, b)
@@ -362,7 +362,7 @@ func (m *InvoiceData) Reset()         { *m = InvoiceData{} }
 func (m *InvoiceData) String() string { return proto.CompactTextString(m) }
 func (*InvoiceData) ProtoMessage()    {}
 func (*InvoiceData) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_b0696b191ac684f2, []int{6}
+	return fileDescriptor_service_1b382e1e9695134b, []int{6}
 }
 func (m *InvoiceData) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_InvoiceData.Unmarshal(m, b)
@@ -731,9 +731,9 @@ var _DocumentService_serviceDesc = grpc.ServiceDesc{
 	Metadata: "invoice/service.proto",
 }
 
-func init() { proto.RegisterFile("invoice/service.proto", fileDescriptor_service_b0696b191ac684f2) }
+func init() { proto.RegisterFile("invoice/service.proto", fileDescriptor_service_1b382e1e9695134b) }
 
-var fileDescriptor_service_b0696b191ac684f2 = []byte{
+var fileDescriptor_service_1b382e1e9695134b = []byte{
 	// 925 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x55, 0x4f, 0x6f, 0xdb, 0xc6,
 	0x13, 0x85, 0x6c, 0x47, 0x7f, 0x46, 0x92, 0x1d, 0x6f, 0xe4, 0x78, 0x4d, 0x24, 0x3f, 0x33, 0xfa,
