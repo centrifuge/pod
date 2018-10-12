@@ -127,12 +127,10 @@ func (s service) DeriveFromCreatePayload(invoiceInput *clientinvoicepb.InvoiceCr
 	return invoiceModel, nil
 }
 
-// Create takes and invoice model and does required validation checks, tries to persist to DB
-func (s service) Create(ctx context.Context, model documents.Model) (documents.Model, error) {
-	// create data root
-	inv, ok := model.(*InvoiceModel)
+func (s service) validateAndPersist(ctx context.Context, old, new documents.Model, validator documents.ValidatorGroup) (documents.Model, error) {
+	inv, ok := new.(*InvoiceModel)
 	if !ok {
-		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("unknown document type: %T", model))
+		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("unknown document type: %T", new))
 	}
 
 	// create data root, has to be done at the model level to access fields
@@ -142,8 +140,7 @@ func (s service) Create(ctx context.Context, model documents.Model) (documents.M
 	}
 
 	// validate the invoice
-	cv := CreateValidator()
-	err = cv.Validate(nil, inv)
+	err = validator.Validate(old, inv)
 	if err != nil {
 		return nil, centerrors.NewWithErrors(code.DocumentInvalid, "validations failed", documents.ConvertToMap(err))
 	}
@@ -190,6 +187,26 @@ func (s service) Create(ctx context.Context, model documents.Model) (documents.M
 	}
 
 	return inv, nil
+}
+
+// Create takes and invoice model and does required validation checks, tries to persist to DB
+func (s service) Create(ctx context.Context, model documents.Model) (documents.Model, error) {
+	return s.validateAndPersist(ctx, nil, model, CreateValidator())
+}
+
+// Update finds the old document, validates the new version and persists the updated document
+func (s service) Update(ctx context.Context, model documents.Model) (documents.Model, error) {
+	cd, err := model.PackCoreDocument()
+	if err != nil {
+		return nil, centerrors.New(code.Unknown, err.Error())
+	}
+
+	old, err := s.GetLastVersion(cd.DocumentIdentifier)
+	if err != nil {
+		return nil, centerrors.New(code.DocumentNotFound, err.Error())
+	}
+
+	return s.validateAndPersist(ctx, old, model, UpdateValidator())
 }
 
 // GetVersion returns an invoice for a given version
@@ -304,11 +321,6 @@ func (s service) SaveState(doc documents.Model) error {
 	}
 
 	return nil
-}
-
-// Update finds the old document, validates the new version and persists the updated document
-func (s service) Update(ctx context.Context, inv documents.Model) (documents.Model, error) {
-	return nil, nil
 }
 
 // DeriveFromUpdatePayload returns a new version of the old invoice identified by identifier in payload
