@@ -9,7 +9,6 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
-	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/golang/protobuf/proto"
@@ -136,7 +135,7 @@ func (order *PurchaseOrder) CreateProofs(fields []string) (proofs []*proofspb.Pr
 		return nil, err
 	}
 
-	return documents.CreateProofs(tree, order.Document.CoreDocument, fields)
+	return coredocument.CreateProofs(tree, order.Document.CoreDocument, fields)
 }
 
 // ConvertToCoreDocument converts purchaseOrder to a core document

@@ -12,7 +12,6 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
-	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/golang/protobuf/proto"
@@ -141,7 +140,7 @@ func (inv *Invoice) CreateProofs(fields []string) (proofs []*proofspb.Proof, err
 		return nil, err
 	}
 
-	return documents.CreateProofs(tree, inv.Document.CoreDocument, fields)
+	return coredocument.CreateProofs(tree, inv.Document.CoreDocument, fields)
 }
 
 // ConvertToCoreDocument converts invoice document to coredocument
