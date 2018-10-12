@@ -311,6 +311,7 @@ func (s service) Update(ctx context.Context, inv documents.Model) (documents.Mod
 	return nil, nil
 }
 
+// DeriveFromUpdatePayload returns a new version of the old invoice identified by identifier in payload
 func (s service) DeriveFromUpdatePayload(payload *clientinvoicepb.InvoiceUpdatePayload) (documents.Model, error) {
 	if payload == nil {
 		return nil, centerrors.New(code.DocumentInvalid, "invalid payload")

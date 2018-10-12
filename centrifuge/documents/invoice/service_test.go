@@ -518,7 +518,9 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	oldCD, err := old.PackCoreDocument()
 	assert.Nil(t, err)
 	assert.Equal(t, oldCD.DocumentIdentifier, cd.DocumentIdentifier)
+	assert.Equal(t, payload.Identifier, hexutil.Encode(cd.DocumentIdentifier))
 	assert.Equal(t, oldCD.CurrentVersion, cd.PreviousVersion)
 	assert.Equal(t, oldCD.NextVersion, cd.CurrentVersion)
 	assert.NotNil(t, cd.NextVersion)
+	assert.Equal(t, payload.Data, doc.(*InvoiceModel).getClientData())
 }
