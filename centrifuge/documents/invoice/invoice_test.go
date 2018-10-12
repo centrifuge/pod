@@ -8,13 +8,11 @@ package invoice
 import (
 	"flag"
 	"os"
-	"reflect"
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
-	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
@@ -112,39 +110,24 @@ func TestNewInvoice_NilDocument(t *testing.T) {
 }
 
 func TestValidate(t *testing.T) {
-	type want struct {
-		valid  bool
-		errMsg string
-		errs   map[string]string
-	}
-
 	validCoreDoc := testingutils.GenerateCoreDocument()
 	tests := []struct {
-		inv  *invoicepb.InvoiceDocument
-		want want
+		inv *invoicepb.InvoiceDocument
+		msg string
 	}{
 		{
 			inv: nil,
-			want: want{
-				valid:  false,
-				errMsg: centerrors.NilDocument,
-			},
+			msg: "nil document",
 		},
 
 		{
 			inv: &invoicepb.InvoiceDocument{},
-			want: want{
-				valid:  false,
-				errMsg: centerrors.NilDocument,
-			},
+			msg: "nil document",
 		},
 
 		{
 			inv: &invoicepb.InvoiceDocument{CoreDocument: validCoreDoc},
-			want: want{
-				valid:  false,
-				errMsg: centerrors.NilDocumentData,
-			},
+			msg: "missing invoice data",
 		},
 
 		{
@@ -162,13 +145,7 @@ func TestValidate(t *testing.T) {
 					GrossAmount:      800,
 				},
 			},
-			want: want{
-				valid:  false,
-				errMsg: "Invalid Invoice",
-				errs: map[string]string{
-					"inv_salts": centerrors.RequiredField,
-				},
-			},
+			msg: "missing invoice salts",
 		},
 
 		{
@@ -187,15 +164,16 @@ func TestValidate(t *testing.T) {
 				},
 				Salts: &invoicepb.InvoiceDataSalts{},
 			},
-			want: want{valid: true},
 		},
 	}
 
 	for _, c := range tests {
-		got := want{}
-		got.valid, got.errMsg, got.errs = Validate(c.inv)
-		if !reflect.DeepEqual(c.want, got) {
-			t.Fatalf("%v != %v", c.want, got)
+		err := Validate(c.inv)
+		if c.msg == "" {
+			assert.Nil(t, err)
+			continue
 		}
+
+		assert.Contains(t, err.Error(), c.msg)
 	}
 }

@@ -11,7 +11,6 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
-	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/precise-proofs/proofs"
@@ -387,6 +386,6 @@ func (i *InvoiceModel) createProofs(fields []string) (coreDoc *coredocumentpb.Co
 		return coreDoc, nil, fmt.Errorf("createProofs error %v", err)
 	}
 
-	proofs, err = documents.CreateProofs(tree, coreDoc, fields)
+	proofs, err = coredocument.CreateProofs(tree, coreDoc, fields)
 	return
 }

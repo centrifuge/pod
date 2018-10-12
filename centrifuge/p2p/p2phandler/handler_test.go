@@ -124,7 +124,7 @@ func TestHandler_RequestDocumentSignature_verification_fail(t *testing.T) {
 	resp, err := handler.RequestDocumentSignature(context.Background(), req)
 	assert.NotNil(t, err, "must be non nil")
 	assert.Nil(t, resp, "must be nil")
-	assert.Contains(t, err.Error(), "signing_root is missing")
+	assert.Contains(t, err.Error(), "signing root missing")
 }
 
 func TestHandler_RequestDocumentSignature(t *testing.T) {

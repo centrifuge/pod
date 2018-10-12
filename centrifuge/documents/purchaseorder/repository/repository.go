@@ -1,14 +1,11 @@
 package purchaseorderrepository
 
 import (
+	"fmt"
 	"log"
 	"sync"
 
-	"fmt"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
-	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
-	"github.com/centrifuge/go-centrifuge/centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
 	"github.com/golang/protobuf/proto"
@@ -52,11 +49,11 @@ func GetRepository() storage.LegacyRepository {
 func validate(doc proto.Message) error {
 	poDoc, ok := doc.(*purchaseorderpb.PurchaseOrderDocument)
 	if !ok {
-		return centerrors.New(code.DocumentInvalid, fmt.Sprintf("invalid document of type: %T", doc))
+		return fmt.Errorf("invalid document of type: %T", doc)
 	}
 
-	if valid, msg, errs := purchaseorder.Validate(poDoc); !valid {
-		return centerrors.NewWithErrors(code.DocumentInvalid, msg, errs)
+	if err := purchaseorder.Validate(poDoc); err != nil {
+		return err
 	}
 
 	return nil

@@ -6,12 +6,10 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"math/big"
-	"reflect"
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/centrifuge/signatures"
@@ -141,15 +139,9 @@ func TestGetDocumentRootTree(t *testing.T) {
 }
 
 func TestValidate(t *testing.T) {
-	type want struct {
-		valid  bool
-		errMsg string
-		errs   map[string]string
-	}
-
 	tests := []struct {
-		doc  *coredocumentpb.CoreDocument
-		want want
+		doc *coredocumentpb.CoreDocument
+		key string
 	}{
 		// empty salts in document
 		{
@@ -160,13 +152,7 @@ func TestValidate(t *testing.T) {
 				NextVersion:        id4,
 				DataRoot:           id5,
 			},
-			want: want{
-				valid:  false,
-				errMsg: "Invalid CoreDocument",
-				errs: map[string]string{
-					"cd_salts": centerrors.RequiredField,
-				},
-			},
+			key: "cd_salts",
 		},
 
 		// salts missing previous root
@@ -184,13 +170,7 @@ func TestValidate(t *testing.T) {
 					DataRoot:           id4,
 				},
 			},
-			want: want{
-				valid:  false,
-				errMsg: "Invalid CoreDocument",
-				errs: map[string]string{
-					"cd_salts": centerrors.RequiredField,
-				},
-			},
+			key: "cd_salts",
 		},
 
 		// missing identifiers in core document
@@ -208,13 +188,7 @@ func TestValidate(t *testing.T) {
 					PreviousRoot:       id5,
 				},
 			},
-			want: want{
-				valid:  false,
-				errMsg: "Invalid CoreDocument",
-				errs: map[string]string{
-					"cd_data_root": centerrors.RequiredField,
-				},
-			},
+			key: "cd_data_root",
 		},
 
 		// missing identifiers in core document and salts
@@ -231,14 +205,7 @@ func TestValidate(t *testing.T) {
 					DataRoot:           id4,
 				},
 			},
-			want: want{
-				valid:  false,
-				errMsg: "Invalid CoreDocument",
-				errs: map[string]string{
-					"cd_data_root": centerrors.RequiredField,
-					"cd_salts":     centerrors.RequiredField,
-				},
-			},
+			key: "cd_data_root",
 		},
 
 		// repeated identifiers
@@ -257,13 +224,7 @@ func TestValidate(t *testing.T) {
 					PreviousRoot:       id5,
 				},
 			},
-			want: want{
-				valid:  false,
-				errMsg: "Invalid CoreDocument",
-				errs: map[string]string{
-					"cd_overall": centerrors.IdentifierReUsed,
-				},
-			},
+			key: "cd_overall",
 		},
 
 		// repeated identifiers
@@ -282,13 +243,7 @@ func TestValidate(t *testing.T) {
 					PreviousRoot:       id5,
 				},
 			},
-			want: want{
-				valid:  false,
-				errMsg: "Invalid CoreDocument",
-				errs: map[string]string{
-					"cd_overall": centerrors.IdentifierReUsed,
-				},
-			},
+			key: "cd_overall",
 		},
 
 		// All okay
@@ -307,18 +262,17 @@ func TestValidate(t *testing.T) {
 					PreviousRoot:       id5,
 				},
 			},
-			want: want{
-				valid: true,
-			},
 		},
 	}
 
 	for _, c := range tests {
-		valid, err, errs := Validate(c.doc)
-		got := want{valid, err, errs}
-		if !reflect.DeepEqual(c.want, got) {
-			t.Fatalf("Mismatch: %v != %v", c.want, got)
+		err := Validate(c.doc)
+		if c.key == "" {
+			assert.Nil(t, err)
+			continue
 		}
+
+		assert.Contains(t, err.Error(), c.key)
 	}
 }
 
@@ -404,14 +358,14 @@ func TestValidateWithSignature_fail_basic_check(t *testing.T) {
 
 	err := ValidateWithSignature(doc)
 	assert.NotNil(t, err, "must be not nil")
-	assert.Contains(t, err.Error(), "Invalid CoreDocument")
+	assert.Contains(t, err.Error(), "cd_salts : Required field")
 }
 
 func TestValidateWithSignature_fail_missing_signing_root(t *testing.T) {
 	doc := testingutils.GenerateCoreDocument()
 	err := ValidateWithSignature(doc)
 	assert.Error(t, err, "must be a non nil error")
-	assert.Contains(t, err.Error(), "signing_root is missing")
+	assert.Contains(t, err.Error(), "signing root missing")
 }
 
 func TestValidateWithSignature_fail_mismatch_signing_root(t *testing.T) {
@@ -419,7 +373,7 @@ func TestValidateWithSignature_fail_mismatch_signing_root(t *testing.T) {
 	doc.SigningRoot = tools.RandomSlice(32)
 	err := ValidateWithSignature(doc)
 	assert.Error(t, err, "signing root must mismatch")
-	assert.Contains(t, err.Error(), "signing_root mismatch")
+	assert.Contains(t, err.Error(), "signing root mismatch")
 }
 
 func TestValidateWithSignature_failed_signature_verification(t *testing.T) {
