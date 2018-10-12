@@ -1,13 +1,12 @@
 package purchaseorderrepository
 
 import (
+	"fmt"
 	"log"
 	"sync"
 
-	"fmt"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
-	"github.com/centrifuge/go-centrifuge/centrifuge/purchaseorder"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
 	"github.com/golang/protobuf/proto"
 	"github.com/syndtr/goleveldb/leveldb"

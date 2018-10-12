@@ -10,14 +10,15 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
+	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/processor"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents/purchaseorder"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents/purchaseorder/repository"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents/purchaseorder/service"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/legacy/purchaseorder"
-	"github.com/centrifuge/go-centrifuge/centrifuge/purchaseorder"
-	"github.com/centrifuge/go-centrifuge/centrifuge/purchaseorder/repository"
-	"github.com/centrifuge/go-centrifuge/centrifuge/purchaseorder/service"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/commons"
 	"github.com/centrifuge/precise-proofs/proofs"
@@ -31,6 +32,11 @@ func TestMain(m *testing.M) {
 	db := cc.GetLevelDBStorage()
 	purchaseorderrepository.InitLevelDBRepository(db)
 	coredocumentrepository.InitLevelDBRepository(db)
+	// TODO Once we move these tests to new model locations we can get rid of these configs
+	config.Config.V.Set("keys.signing.publicKey", "../../../../example/resources/signature1.pub.pem")
+	config.Config.V.Set("keys.signing.privateKey", "../../../../example/resources/signature1.key.pem")
+	config.Config.V.Set("keys.ethauth.publicKey", "../../../../example/resources/ethauth.pub.pem")
+	config.Config.V.Set("keys.ethauth.privateKey", "../../../../example/resources/ethauth.key.pem")
 	testingutils.CreateIdentityWithKeys()
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()
