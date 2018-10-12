@@ -1,8 +1,12 @@
 package nft
 
 import (
+	"fmt"
+
+	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -45,7 +49,13 @@ func DefaultService() *Service {
 	return &Service{PaymentObligation: getConfiguredPaymentObligation(), IdentityService: IdentityServiceImpl{}}
 }
 
-func (s Service) mintNFT(documentID []byte, documentService documents.Service, registryAddress, depositAddress string, proofFields []string) (string, error) {
+func (s Service) mintNFT(documentID []byte, registryAddress, depositAddress string, proofFields []string) (string, error) {
+	// TODO concrete service should be returned based on a document type parameter from the request, for now this is invoice specific
+	documentService, err := getDocumentService(documenttypes.InvoiceDataTypeUrl)
+	if err != nil {
+		return "", err
+	}
+
 	model, err := documentService.GetLastVersion([]byte(documentID))
 	if err != nil {
 		return "", err
@@ -78,4 +88,18 @@ func (s Service) mintNFT(documentID []byte, documentService documents.Service, r
 	}
 
 	return requestData.TokenId.String(), nil
+}
+
+func getDocumentService(documentType string) (invoice.Service, error) {
+	docService, err := documents.GetRegistryInstance().LocateService(documentType)
+	if err != nil {
+		return nil, err
+	}
+
+	service, ok := docService.(invoice.Service)
+	if !ok {
+		return nil, fmt.Errorf("couldn't find service for needed document type")
+
+	}
+	return service, nil
 }
