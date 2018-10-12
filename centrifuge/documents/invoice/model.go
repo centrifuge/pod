@@ -157,7 +157,16 @@ func (i *InvoiceModel) createP2PProtobuf() *invoicepb.InvoiceData {
 
 // InitInvoiceInput initialize the model based on the received parameters from the rest api call
 func (i *InvoiceModel) InitInvoiceInput(payload *clientinvoicepb.InvoiceCreatePayload) error {
-	data := payload.Data
+	err := i.initInvoiceFromData(payload.Data)
+	if err != nil {
+		return err
+	}
+
+	return i.initCoreDocument(payload.Collaborators)
+}
+
+// initInvoiceFromData initialises invoice from invoiceData
+func (i *InvoiceModel) initInvoiceFromData(data *clientinvoicepb.InvoiceData) error {
 	i.InvoiceNumber = data.InvoiceNumber
 	i.SenderName = data.SenderName
 	i.SenderStreet = data.SenderStreet
@@ -199,21 +208,24 @@ func (i *InvoiceModel) InitInvoiceInput(payload *clientinvoicepb.InvoiceCreatePa
 		i.ExtraData = ed
 	}
 
+	return nil
+}
+
+// initCoreDocument initialises the core document
+func (i *InvoiceModel) initCoreDocument(collaborators []string) error {
 	i.CoreDocument = coredocument.New()
 	i.CoreDocument.Collaborators = [][]byte{}
 
-	for _, id := range payload.Collaborators {
-		cid, err := identity.CentIDFromString(id)
-		if err != nil {
-			return centerrors.Wrap(err, "failed to decode collaborator")
-		}
+	ids, err := identity.CentIDsFromStrings(collaborators)
+	if err != nil {
+		return fmt.Errorf("failed to decode collaborator: %v", err)
+	}
 
-		cidb := cid.ByteArray()
-		i.CoreDocument.Collaborators = append(i.CoreDocument.Collaborators, cidb[:])
+	for _, id := range ids {
+		i.CoreDocument.Collaborators = append(i.CoreDocument.Collaborators, id[:])
 	}
 
 	coredocument.FillSalts(i.CoreDocument)
-
 	return nil
 }
 
