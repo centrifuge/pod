@@ -23,8 +23,14 @@ type Service interface {
 	// DeriverFromPayload derives InvoiceModel from clientPayload
 	DeriveFromCreatePayload(*clientinvoicepb.InvoiceCreatePayload) (documents.Model, error)
 
+	// DeriveFromUpdatePayload derives invoice model from update payload
+	DeriveFromUpdatePayload(*clientinvoicepb.InvoiceUpdatePayload) (documents.Model, error)
+
 	// Create validates and persists invoice Model and returns a Updated model
 	Create(ctx context.Context, inv documents.Model) (documents.Model, error)
+
+	// Update validates and updates the invoice model and return the updated model
+	Update(ctx context.Context, inv documents.Model) (documents.Model, error)
 
 	// DeriveInvoiceData returns the invoice data as client data
 	DeriveInvoiceData(inv documents.Model) (*clientinvoicepb.InvoiceData, error)
@@ -297,4 +303,13 @@ func (s service) SaveState(doc documents.Model) error {
 	}
 
 	return nil
+}
+
+// Update finds the old document, validates the new version and persists the updated document
+func (s service) Update(ctx context.Context, inv documents.Model) (documents.Model, error) {
+	return nil, nil
+}
+
+func (s service) DeriveFromUpdatePayload(payload *clientinvoicepb.InvoiceUpdatePayload) (documents.Model, error) {
+	return nil, nil
 }
