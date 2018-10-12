@@ -412,7 +412,8 @@ func TestGetTypeUrl(t *testing.T) {
 
 func TestPrepareNewVersion(t *testing.T) {
 	var doc coredocumentpb.CoreDocument
-	cv := tools.RandomSlice(32)
+	id := tools.RandomSlice(32)
+	cv := id
 	nv := tools.RandomSlice(32)
 	dr := tools.RandomSlice(32)
 	doc = coredocumentpb.CoreDocument{}
@@ -423,7 +424,14 @@ func TestPrepareNewVersion(t *testing.T) {
 	assert.Error(t, err)
 	assert.Nil(t, newDoc)
 
+	// missing doc identifier
 	collabs = []string{"0x010203040506"}
+	newDoc, err = PrepareNewVersion(doc, collabs)
+	assert.NotNil(t, err)
+	assert.Nil(t, newDoc)
+
+	//missing current version
+	doc.DocumentIdentifier = id
 	newDoc, err = PrepareNewVersion(doc, collabs)
 	assert.NotNil(t, err)
 	assert.Nil(t, newDoc)
@@ -449,6 +457,7 @@ func TestPrepareNewVersion(t *testing.T) {
 	assert.Equal(t, cv, doc.CurrentVersion)
 
 	// new document has changed
+	assert.Equal(t, id, newDoc.DocumentIdentifier)
 	assert.Equal(t, cv, newDoc.PreviousVersion)
 	assert.Equal(t, nv, newDoc.CurrentVersion)
 	assert.Equal(t, dr, newDoc.PreviousRoot)

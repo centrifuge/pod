@@ -250,6 +250,11 @@ func PrepareNewVersion(oldCD coredocumentpb.CoreDocument, collaborators []string
 		return nil, err
 	}
 
+	if oldCD.DocumentIdentifier == nil {
+		return nil, fmt.Errorf("coredocument.DocumentIdentifier is nil")
+	}
+	newCD.DocumentIdentifier = oldCD.DocumentIdentifier
+
 	if oldCD.CurrentVersion == nil {
 		return nil, fmt.Errorf("coredocument.CurrentVersion is nil")
 	}

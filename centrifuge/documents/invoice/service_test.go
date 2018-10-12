@@ -452,3 +452,73 @@ func createMockDocument() (*InvoiceModel, error) {
 	err := GetRepository().Create(documentIdentifier, inv1)
 	return inv1, err
 }
+
+func TestService_DeriveFromUpdatePayload(t *testing.T) {
+	// nil payload
+	doc, err := invService.DeriveFromUpdatePayload(nil)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid payload")
+	assert.Nil(t, doc)
+
+	// messed up identifier
+	payload := &clientinvoicepb.InvoiceUpdatePayload{Identifier: "some identifier"}
+	doc, err = invService.DeriveFromUpdatePayload(payload)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to decode identifier")
+	assert.Nil(t, doc)
+
+	// missing last version
+	id := tools.RandomSlice(32)
+	payload.Identifier = hexutil.Encode(id)
+	doc, err = invService.DeriveFromUpdatePayload(payload)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to fetch old version")
+	assert.Nil(t, doc)
+
+	// failed to load from data
+	old := new(InvoiceModel)
+	err = old.InitInvoiceInput(createPayload())
+	assert.Nil(t, err)
+	old.CoreDocument.DocumentIdentifier = id
+	old.CoreDocument.CurrentVersion = id
+	old.CoreDocument.DocumentRoot = tools.RandomSlice(32)
+	err = GetRepository().Create(id, old)
+	assert.Nil(t, err)
+	payload.Data = &clientinvoicepb.InvoiceData{
+		Sender:      "0x010101010101",
+		Recipient:   "0x010203040506",
+		Payee:       "0x010203020406",
+		GrossAmount: 42,
+		ExtraData:   "some data",
+		Currency:    "EUR",
+	}
+	doc, err = invService.DeriveFromUpdatePayload(payload)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to load invoice from data")
+	assert.Nil(t, doc)
+
+	// failed core document new version
+	payload.Data.ExtraData = hexutil.Encode(tools.RandomSlice(32))
+	payload.Collaborators = []string{"some wrong ID"}
+	doc, err = invService.DeriveFromUpdatePayload(payload)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to prepare new version")
+	assert.Nil(t, doc)
+
+	// success
+	wantCollab := tools.RandomSlice(6)
+	payload.Collaborators = []string{hexutil.Encode(wantCollab)}
+	doc, err = invService.DeriveFromUpdatePayload(payload)
+	assert.Nil(t, err)
+	assert.NotNil(t, doc)
+	cd, err := doc.PackCoreDocument()
+	assert.Nil(t, err)
+	assert.Equal(t, wantCollab, cd.Collaborators[0])
+	assert.Len(t, cd.Collaborators, 1)
+	oldCD, err := old.PackCoreDocument()
+	assert.Nil(t, err)
+	assert.Equal(t, oldCD.DocumentIdentifier, cd.DocumentIdentifier)
+	assert.Equal(t, oldCD.CurrentVersion, cd.PreviousVersion)
+	assert.Equal(t, oldCD.NextVersion, cd.CurrentVersion)
+	assert.NotNil(t, cd.NextVersion)
+}

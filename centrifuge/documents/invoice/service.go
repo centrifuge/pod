@@ -8,6 +8,7 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/code"
+	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/processor"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
@@ -311,5 +312,38 @@ func (s service) Update(ctx context.Context, inv documents.Model) (documents.Mod
 }
 
 func (s service) DeriveFromUpdatePayload(payload *clientinvoicepb.InvoiceUpdatePayload) (documents.Model, error) {
-	return nil, nil
+	if payload == nil {
+		return nil, centerrors.New(code.DocumentInvalid, "invalid payload")
+	}
+
+	// get latest old version of the document
+	id, err := hexutil.Decode(payload.Identifier)
+	if err != nil {
+		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("failed to decode identifier: %v", err))
+	}
+
+	old, err := s.GetLastVersion(id)
+	if err != nil {
+		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("failed to fetch old version: %v", err))
+	}
+
+	// load invoice data
+	inv := new(InvoiceModel)
+	err = inv.initInvoiceFromData(payload.Data)
+	if err != nil {
+		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("failed to load invoice from data: %v", err))
+	}
+
+	// update core document
+	oldCD, err := old.PackCoreDocument()
+	if err != nil {
+		return nil, centerrors.New(code.Unknown, err.Error())
+	}
+
+	inv.CoreDocument, err = coredocument.PrepareNewVersion(*oldCD, payload.Collaborators)
+	if err != nil {
+		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("failed to prepare new version: %v", err))
+	}
+
+	return inv, nil
 }
