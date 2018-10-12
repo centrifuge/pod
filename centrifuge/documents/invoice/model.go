@@ -162,7 +162,12 @@ func (i *InvoiceModel) InitInvoiceInput(payload *clientinvoicepb.InvoiceCreatePa
 		return err
 	}
 
-	return i.initCoreDocument(payload.Collaborators)
+	i.CoreDocument, err = coredocument.NewWithCollaborators(payload.Collaborators)
+	if err != nil {
+		return fmt.Errorf("failed to init core document: %v", err)
+	}
+
+	return nil
 }
 
 // initInvoiceFromData initialises invoice from invoiceData
@@ -208,24 +213,6 @@ func (i *InvoiceModel) initInvoiceFromData(data *clientinvoicepb.InvoiceData) er
 		i.ExtraData = ed
 	}
 
-	return nil
-}
-
-// initCoreDocument initialises the core document
-func (i *InvoiceModel) initCoreDocument(collaborators []string) error {
-	i.CoreDocument = coredocument.New()
-	i.CoreDocument.Collaborators = [][]byte{}
-
-	ids, err := identity.CentIDsFromStrings(collaborators)
-	if err != nil {
-		return fmt.Errorf("failed to decode collaborator: %v", err)
-	}
-
-	for _, id := range ids {
-		i.CoreDocument.Collaborators = append(i.CoreDocument.Collaborators, id[:])
-	}
-
-	coredocument.FillSalts(i.CoreDocument)
 	return nil
 }
 

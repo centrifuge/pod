@@ -7,6 +7,7 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/code"
+	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/centrifuge/precise-proofs/proofs"
@@ -279,9 +280,9 @@ func InitIdentifiers(document coredocumentpb.CoreDocument) (coredocumentpb.CoreD
 }
 
 // PrepareNewVersion creates a copy of the passed coreDocument with the version fields updated
+//
 func PrepareNewVersion(document coredocumentpb.CoreDocument) (*coredocumentpb.CoreDocument, error) {
 	newDocument := &coredocumentpb.CoreDocument{}
-	FillSalts(newDocument)
 	if document.CurrentVersion == nil {
 		return nil, fmt.Errorf("coredocument.CurrentVersion is nil")
 	}
@@ -303,6 +304,22 @@ func PrepareNewVersion(document coredocumentpb.CoreDocument) (*coredocumentpb.Co
 func New() *coredocumentpb.CoreDocument {
 	doc, _ := InitIdentifiers(coredocumentpb.CoreDocument{})
 	return &doc
+}
+
+// NewWithCollaborators generate identifiers and loads the collaborators and fills salts
+func NewWithCollaborators(collaborators []string) (*coredocumentpb.CoreDocument, error) {
+	cd := New()
+	ids, err := identity.CentIDsFromStrings(collaborators)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode collaborator: %v", err)
+	}
+
+	for _, id := range ids {
+		cd.Collaborators = append(cd.Collaborators, id[:])
+	}
+
+	FillSalts(cd)
+	return cd, nil
 }
 
 // FillSalts of coredocument current state for proof tree creation
