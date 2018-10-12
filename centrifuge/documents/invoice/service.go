@@ -32,12 +32,6 @@ type Service interface {
 	// DeriveInvoiceResponse returns the invoice model in our standard client format
 	DeriveInvoiceResponse(inv documents.Model) (*clientinvoicepb.InvoiceResponse, error)
 
-	// GetLastVersion reads a document from the database
-	GetLastVersion(documentID []byte) (documents.Model, error)
-
-	// GetVersion reads a document from the database
-	GetVersion(documentID []byte, version []byte) (documents.Model, error)
-
 	// SaveState updates the model in DB
 	SaveState(inv documents.Model) error
 }
@@ -143,13 +137,11 @@ func (s service) Create(ctx context.Context, model documents.Model) (documents.M
 
 	// we use CurrentVersion as the id since that will be unique across multiple versions of the same document
 	err = s.repo.Create(inv.CoreDocument.CurrentVersion, inv)
-	coreDoc, err := inv.PackCoreDocument()
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
 
-	// we use currentIdentifier as the id since that will be unique across multiple versions of the same document
-	err = s.repo.Create(coreDoc.CurrentVersion, inv)
+	coreDoc, err := inv.PackCoreDocument()
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}

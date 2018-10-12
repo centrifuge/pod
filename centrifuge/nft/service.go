@@ -3,7 +3,6 @@ package nft
 import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -46,37 +45,37 @@ func DefaultService() *Service {
 	return &Service{PaymentObligation: getConfiguredPaymentObligation(), IdentityService: IdentityServiceImpl{}}
 }
 
-func (s Service) mintNFT(model documents.Model, documentService invoice.Service, registryAddress, depositAddress string, proofFields []string) (string, error) {
+func (s Service) mintNFT(documentID []byte, documentService documents.Service, registryAddress, depositAddress string, proofFields []string) (string, error) {
+	model, err := documentService.GetLastVersion([]byte(documentID))
+	if err != nil {
+		return "", err
+	}
 
 	corDoc, err := model.PackCoreDocument()
 	if err != nil {
 		return "", err
 	}
-	proofs, err := documentService.CreateProofs(corDoc.DocumentIdentifier, proofFields)
 
+	proofs, err := documentService.CreateProofs(documentID, proofFields)
 	if err != nil {
 		return "", err
 	}
 
 	toAddress, err := s.IdentityService.getIdentityAddress()
-
 	if err != nil {
 		return "", nil
 	}
 
-	requestData, err := NewMintRequestData(toAddress, corDoc.CurrentVersion, proofs.FieldProofs, corDoc.DocumentRoot)
-
+	requestData, err := NewMintRequest(toAddress, corDoc.CurrentVersion, proofs.FieldProofs, corDoc.DocumentRoot)
 	if err != nil {
 		return "", err
 	}
 
 	_, err = s.PaymentObligation.Mint(requestData.To, requestData.TokenId, requestData.TokenURI, requestData.AnchorId,
 		requestData.MerkleRoot, requestData.Values, requestData.Salts, requestData.Proofs)
-
 	if err != nil {
 		return "", err
 	}
 
 	return requestData.TokenId.String(), nil
-
 }
