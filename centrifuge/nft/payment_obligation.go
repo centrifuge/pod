@@ -156,7 +156,7 @@ func NewMintRequest(to common.Address, anchorID anchors.AnchorID, proofs []*proo
 	tokenId := tools.ByteSliceToBigInt(tools.RandomSlice(256))
 	// TODO move this to config
 	tokenURI := "http:=//www.centrifuge.io/DUMMY_URI_SERVICE"
-	proofData, err := fillProofs(proofs)
+	proofData, err := createProofData(proofs)
 	if err != nil {
 		return nil, err
 	}
@@ -178,7 +178,7 @@ type proofData struct {
 	Proofs [3][][32]byte
 }
 
-func fillProofs(proofspb []*proofspb.Proof) (*proofData, error) {
+func createProofData(proofspb []*proofspb.Proof) (*proofData, error) {
 	var values [3]string
 	var salts [3][32]byte
 	var proofs [3][][32]byte

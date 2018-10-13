@@ -9,12 +9,13 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-errors/errors"
 	"github.com/stretchr/testify/assert"
+	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/commons"
 )
 
 func TestGrpcHandler_CreateDocumentProof(t *testing.T) {
 	registry := documents.GetRegistryInstance()
 	serviceName := "CreateDocumentProof"
-	service := &MockService{}
+	service := &testingcommons.MockService{}
 	registry.Register(serviceName, service)
 	req := &documentpb.CreateDocumentProofRequest{
 		Identifier: "0xc32b1400b8c66e54448bec863233682d19c770b94ea8d90e1cf02f3bb8ca7da4",
@@ -33,7 +34,7 @@ func TestGrpcHandler_CreateDocumentProof(t *testing.T) {
 func TestGrpcHandler_CreateDocumentProofUnableToLocateService(t *testing.T) {
 	registry := documents.GetRegistryInstance()
 	serviceName := "CreateDocumentProofUnableToLocateService"
-	service := &MockService{}
+	service := &testingcommons.MockService{}
 	registry.Register(serviceName, service)
 	req := &documentpb.CreateDocumentProofRequest{
 		Identifier: "0x11111111111111", // invalid
@@ -49,7 +50,7 @@ func TestGrpcHandler_CreateDocumentProofUnableToLocateService(t *testing.T) {
 func TestGrpcHandler_CreateDocumentProofInvalidHex(t *testing.T) {
 	registry := documents.GetRegistryInstance()
 	serviceName := "CreateDocumentProofInvalidHex"
-	service := &MockService{}
+	service := &testingcommons.MockService{}
 	registry.Register(serviceName, service)
 	req := &documentpb.CreateDocumentProofRequest{
 		Identifier: "0x1111111111111", // invalid
@@ -65,7 +66,7 @@ func TestGrpcHandler_CreateDocumentProofInvalidHex(t *testing.T) {
 func TestGrpcHandler_CreateDocumentProofForVersion(t *testing.T) {
 	registry := documents.GetRegistryInstance()
 	serviceName := "CreateDocumentProofForVersion"
-	service := &MockService{}
+	service := &testingcommons.MockService{}
 	registry.Register(serviceName, service)
 	req := &documentpb.CreateDocumentProofForVersionRequest{
 		Identifier: "0x11111111111111",
@@ -86,7 +87,7 @@ func TestGrpcHandler_CreateDocumentProofForVersion(t *testing.T) {
 func TestGrpcHandler_CreateDocumentProofForVersionUnableToLocateService(t *testing.T) {
 	registry := documents.GetRegistryInstance()
 	serviceName := "CreateDocumentProofForVersionUnableToLocateService"
-	service := &MockService{}
+	service := &testingcommons.MockService{}
 	registry.Register(serviceName, service)
 	req := &documentpb.CreateDocumentProofForVersionRequest{
 		Identifier: "0x11111111111111",
@@ -103,7 +104,7 @@ func TestGrpcHandler_CreateDocumentProofForVersionUnableToLocateService(t *testi
 func TestGrpcHandler_CreateDocumentProofForVersionInvalidHexForId(t *testing.T) {
 	registry := documents.GetRegistryInstance()
 	serviceName := "CreateDocumentProofForVersionInvalidHexForId"
-	service := &MockService{}
+	service := &testingcommons.MockService{}
 	registry.Register(serviceName, service)
 	req := &documentpb.CreateDocumentProofForVersionRequest{
 		Identifier: "0x111111111111111",
@@ -120,7 +121,7 @@ func TestGrpcHandler_CreateDocumentProofForVersionInvalidHexForId(t *testing.T) 
 func TestGrpcHandler_CreateDocumentProofForVersionInvalidHexForVersion(t *testing.T) {
 	registry := documents.GetRegistryInstance()
 	serviceName := "CreateDocumentProofForVersionInvalidHexForVersion"
-	service := &MockService{}
+	service := &testingcommons.MockService{}
 	registry.Register(serviceName, service)
 	req := &documentpb.CreateDocumentProofForVersionRequest{
 		Identifier: "0x11111111111111",
