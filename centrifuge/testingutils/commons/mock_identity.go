@@ -9,7 +9,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/mock"
-)
+	)
 
 // MockIDService implements Service
 type MockIDService struct {
@@ -24,8 +24,10 @@ func (srv *MockIDService) GetIdentityAddress(centID identity.CentID) (common.Add
 
 func (srv *MockIDService) LookupIdentityForID(centID identity.CentID) (identity.Identity, error) {
 	args := srv.Called(centID)
-	id := args.Get(0).(identity.Identity)
-	return id, args.Error(1)
+	if id, ok := args.Get(0).(identity.Identity); ok {
+		return id, args.Error(1)
+	}
+	return nil, args.Error(1)
 }
 
 func (srv *MockIDService) CreateIdentity(centID identity.CentID) (identity.Identity, chan *identity.WatchIdentity, error) {

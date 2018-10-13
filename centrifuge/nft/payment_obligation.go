@@ -1,22 +1,125 @@
 package nft
 
 import (
-	"math/big"
+	"fmt"
 
-	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
-	"github.com/centrifuge/precise-proofs/proofs/proto"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/centrifuge/precise-proofs/proofs/proto"
+	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"math/big"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/centrifuge/go-centrifuge/centrifuge/ethereum"
+	"github.com/centrifuge/go-centrifuge/centrifuge/anchors"
 )
 
+// TODO remove this when we have a proper dependancy injection mechanism
+var paymentObligationService *PaymentObligationService
+
+func setPaymentObligationService(s *PaymentObligationService) {
+	paymentObligationService = s
+}
+
+func getPaymentObligationService() *PaymentObligationService {
+	return paymentObligationService
+}
+
+// PaymentObligation is an interface to abstract away payment obligation smart contract
 type PaymentObligation interface {
 	Mint(opts *bind.TransactOpts, _to common.Address, _tokenId *big.Int, _tokenURI string, _anchorId *big.Int, _merkleRoot [32]byte, _values [3]string, _salts [3][32]byte, _proofs [3][][32]byte) (*types.Transaction, error)
 }
 
-type WatchMint struct {
-	MintRequestData *MintRequest
-	Error           error
+// Config is an interface to configurations required by nft package
+type Config interface {
+	GetIdentityId() ([]byte, error)
+	GetEthereumDefaultAccountName() string
+}
+
+// PaymentObligationService handles all interactions related to minting of NFTs for payment obligations
+type PaymentObligationService struct {
+	paymentObligation PaymentObligation
+	identityService   identity.Service
+	config            Config
+}
+
+// NewPaymentObligationService creates PaymentObligationService given the parameters
+func NewPaymentObligationService(paymentObligation PaymentObligation, identityService identity.Service, config Config) *PaymentObligationService {
+	return &PaymentObligationService{paymentObligation: paymentObligation, identityService: identityService, config: config}
+}
+
+func (s *PaymentObligationService) mintNFT(documentID []byte, docType, registryAddress, depositAddress string, proofFields []string) (string, error) {
+	documentService, err := getDocumentService(docType)
+	if err != nil {
+		return "", err
+	}
+
+	model, err := documentService.GetLastVersion([]byte(documentID))
+	if err != nil {
+		return "", err
+	}
+
+	corDoc, err := model.PackCoreDocument()
+	if err != nil {
+		return "", err
+	}
+
+	proofs, err := documentService.CreateProofs(documentID, proofFields)
+	if err != nil {
+		return "", err
+	}
+
+	toAddress, err := s.getIdentityAddress()
+	if err != nil {
+		return "", nil
+	}
+
+	anchorID, err := anchors.NewAnchorID(corDoc.CurrentVersion)
+	if err != nil {
+		return "", nil
+	}
+
+	rootHash, err := anchors.NewDocRoot(corDoc.DocumentRoot)
+	if err != nil {
+		return "", nil
+	}
+
+	requestData, err := NewMintRequest(toAddress, anchorID, proofs.FieldProofs, rootHash)
+	if err != nil {
+		return "", err
+	}
+
+	opts, err := ethereum.GetConnection().GetTxOpts(s.config.GetEthereumDefaultAccountName())
+	if err != nil {
+		return "", err
+	}
+
+	_, err = s.paymentObligation.Mint(opts, requestData.To, requestData.TokenId, requestData.TokenURI, requestData.AnchorId,
+		requestData.MerkleRoot, requestData.Values, requestData.Salts, requestData.Proofs)
+	if err != nil {
+		return "", err
+	}
+
+	return requestData.TokenId.String(), nil
+}
+
+func (s *PaymentObligationService) getIdentityAddress() (common.Address, error) {
+	centIDBytes, err := s.config.GetIdentityId()
+	if err != nil {
+		return common.Address{}, err
+	}
+
+	centID, err := identity.ToCentID(centIDBytes)
+	if err != nil {
+		return common.Address{}, err
+	}
+
+	address, err := s.identityService.GetIdentityAddress(centID)
+	if err != nil {
+		return common.Address{}, err
+	}
+	return address, nil
 }
 
 // MintRequest holds the data needed to mint and NFT from a Centrifuge document
@@ -47,18 +150,25 @@ type MintRequest struct {
 	Proofs [3][][32]byte
 }
 
-func convertProofProperty(sortedHashes [][]byte) ([][32]byte, error) {
-	var property [][32]byte
-	for _, hash := range sortedHashes {
-		hash32, err := tools.SliceToByte32(hash)
-		if err != nil {
-			return nil, err
-		}
-		property = append(property, hash32)
-
+// NewMintRequest converts the parameters and returns a struct with needed parameter for minting
+func NewMintRequest(to common.Address, anchorID anchors.AnchorID, proofs []*proofspb.Proof, rootHash anchors.DocRoot) (*MintRequest, error) {
+	tokenId := tools.ByteSliceToBigInt(tools.RandomSlice(256))
+	// TODO move this to config
+	tokenURI := "http:=//www.centrifuge.io/DUMMY_URI_SERVICE"
+	proofData, err := fillProofs(proofs)
+	if err != nil {
+		return nil, err
 	}
 
-	return property, nil
+	return &MintRequest{
+		To:         to,
+		TokenId:    tokenId,
+		TokenURI:   tokenURI,
+		AnchorId:   anchorID.BigInt(),
+		MerkleRoot: rootHash,
+		Values:     proofData.Values,
+		Salts:      proofData.Salts,
+		Proofs:     proofData.Proofs}, nil
 }
 
 type proofData struct {
@@ -68,7 +178,6 @@ type proofData struct {
 }
 
 func fillProofs(proofspb []*proofspb.Proof) (*proofData, error) {
-
 	var values [3]string
 	var salts [3][32]byte
 	var proofs [3][][32]byte
@@ -81,9 +190,7 @@ func fillProofs(proofspb []*proofspb.Proof) (*proofData, error) {
 		}
 
 		salts[i] = salt32
-
 		property, err := convertProofProperty(p.SortedHashes)
-
 		if err != nil {
 			return nil, err
 		}
@@ -93,33 +200,29 @@ func fillProofs(proofspb []*proofspb.Proof) (*proofData, error) {
 	return &proofData{Values: values, Salts: salts, Proofs: proofs}, nil
 }
 
-// NewMintRequest converts the parameters and returns a struct with needed parameter for minting
-func NewMintRequest(to common.Address, anchorId []byte, proofs []*proofspb.Proof, rootHash []byte) (*MintRequest, error) {
-	tokenId := tools.ByteSliceToBigInt(tools.RandomSlice(256))
-	tokenURI := "http:=//www.centrifuge.io/DUMMY_URI_SERVICE"
-	anchorID := tools.ByteSliceToBigInt(anchorId)
-	merkleRoot, err := tools.SliceToByte32(rootHash)
-	if err != nil {
-		return nil, err
+func convertProofProperty(sortedHashes [][]byte) ([][32]byte, error) {
+	var property [][32]byte
+	for _, hash := range sortedHashes {
+		hash32, err := tools.SliceToByte32(hash)
+		if err != nil {
+			return nil, err
+		}
+		property = append(property, hash32)
 	}
 
-	proofData, err := fillProofs(proofs)
-	if err != nil {
-		return nil, err
-	}
-
-	return &MintRequest{
-		To:         to,
-		TokenId:    tokenId,
-		TokenURI:   tokenURI,
-		AnchorId:   anchorID,
-		MerkleRoot: merkleRoot,
-		Values:     proofData.Values,
-		Salts:      proofData.Salts,
-		Proofs:     proofData.Proofs}, nil
+	return property, nil
 }
 
-func getConfiguredPaymentObligation() PaymentObligation {
-	//todo not implemented yet, should return Ethereum PaymentObligation
-	return nil
+func getDocumentService(documentType string) (documents.Service, error) {
+	docService, err := documents.GetRegistryInstance().LocateService(documentType)
+	if err != nil {
+		return nil, err
+	}
+
+	service, ok := docService.(documents.Service)
+	if !ok {
+		return nil, fmt.Errorf("couldn't find service for needed document type")
+
+	}
+	return service, nil
 }

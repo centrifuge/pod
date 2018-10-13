@@ -131,7 +131,7 @@ func sendPreCommitTransaction(contract AnchorRepositoryContract, opts *bind.Tran
 
 // sendCommitTransaction sends the actual transaction to register the Anchor on Ethereum registry contract
 func sendCommitTransaction(contract AnchorRepositoryContract, opts *bind.TransactOpts, commitData *CommitData) (err error) {
-	tx, err := ethereum.GetConnection().SubmitTransactionWithRetries(contract.Commit, opts, commitData.AnchorID.toBigInt(), commitData.DocumentRoot,
+	tx, err := ethereum.GetConnection().SubmitTransactionWithRetries(contract.Commit, opts, commitData.AnchorID.BigInt(), commitData.DocumentRoot,
 		commitData.CentrifugeID.BigInt(), commitData.DocumentProofs, commitData.Signature)
 
 	if err != nil {
@@ -168,7 +168,7 @@ func setUpPreCommitEventListener(contractEvent WatchAnchorPreCommitted, from com
 	//TODO do something with the returned Subscription that is currently simply discarded
 	// Somehow there are some possible resource leakage situations with this handling but I have to understand
 	// Subscriptions a bit better before writing this code.
-	_, err = contractEvent.WatchAnchorPreCommitted(watchOpts, anchorPreCommittedEvents, []common.Address{from}, []*big.Int{preCommitData.AnchorID.toBigInt()})
+	_, err = contractEvent.WatchAnchorPreCommitted(watchOpts, anchorPreCommittedEvents, []common.Address{from}, []*big.Int{preCommitData.AnchorID.BigInt()})
 	if err != nil {
 		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for anchor registration", 1)
 		log.Errorf("Failed to watch anchor registered event: %v", wError.Error())

@@ -27,7 +27,7 @@ func NewAnchorID(anchorBytes []byte) (AnchorID, error) {
 	return anchorBytesFixed, nil
 }
 
-func (a *AnchorID) toBigInt() *big.Int {
+func (a *AnchorID) BigInt() *big.Int {
 	return tools.ByteSliceToBigInt(a[:])
 }
 

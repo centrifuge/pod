@@ -70,8 +70,8 @@ func (MockPaymentObligation) Mint(opts *bind.TransactOpts, _to common.Address, _
 	return nil, nil
 }
 
-func getServiceWithMockedPaymentObligation() *Service {
-	return &Service{paymentObligation: MockPaymentObligation{}, identityService: &testingcommons.MockIDService{}}
+func getServiceWithMockedPaymentObligation() *PaymentObligationService {
+	return &PaymentObligationService{paymentObligation: MockPaymentObligation{}, identityService: &testingcommons.MockIDService{}}
 }
 
 func createInvoiceInDB(t *testing.T) []byte {
@@ -119,7 +119,7 @@ func TestNFTMint_InvalidIdentifier(t *testing.T) {
 
 func TestNFTMint_InvalidMintRequest(t *testing.T) {
 	handler := grpcHandler{getServiceWithMockedPaymentObligation()}
-	nftMintResponse, err := handler.MintNFT(context.Background(), nil)
+	nftMintResponse, err := handler.MintNFT(context.Background(), &nftpb.NFTMintRequest{})
 
 	assert.Error(t, err, "empty request should throw an error")
 	assert.Nil(t, nftMintResponse, "nftMintResponse should be nil")
