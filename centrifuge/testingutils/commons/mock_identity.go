@@ -9,7 +9,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/mock"
-	)
+)
 
 // MockIDService implements Service
 type MockIDService struct {

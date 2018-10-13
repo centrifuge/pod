@@ -3,27 +3,28 @@ package nft
 import (
 	"fmt"
 
-	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/centrifuge/precise-proofs/proofs/proto"
-	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"math/big"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/centrifuge/go-centrifuge/centrifuge/ethereum"
+
 	"github.com/centrifuge/go-centrifuge/centrifuge/anchors"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/centrifuge/ethereum"
+	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/precise-proofs/proofs/proto"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 )
 
 // TODO remove this when we have a proper dependancy injection mechanism
-var paymentObligationService *PaymentObligationService
+var poService *paymentObligationService
 
-func setPaymentObligationService(s *PaymentObligationService) {
-	paymentObligationService = s
+func setPaymentObligationService(s *paymentObligationService) {
+	poService = s
 }
 
-func getPaymentObligationService() *PaymentObligationService {
-	return paymentObligationService
+func getPaymentObligationService() *paymentObligationService {
+	return poService
 }
 
 // PaymentObligation is an interface to abstract away payment obligation smart contract
@@ -37,19 +38,19 @@ type Config interface {
 	GetEthereumDefaultAccountName() string
 }
 
-// PaymentObligationService handles all interactions related to minting of NFTs for payment obligations
-type PaymentObligationService struct {
+// paymentObligationService handles all interactions related to minting of NFTs for payment obligations
+type paymentObligationService struct {
 	paymentObligation PaymentObligation
 	identityService   identity.Service
 	config            Config
 }
 
-// NewPaymentObligationService creates PaymentObligationService given the parameters
-func NewPaymentObligationService(paymentObligation PaymentObligation, identityService identity.Service, config Config) *PaymentObligationService {
-	return &PaymentObligationService{paymentObligation: paymentObligation, identityService: identityService, config: config}
+// NewPaymentObligationService creates paymentObligationService given the parameters
+func NewPaymentObligationService(paymentObligation PaymentObligation, identityService identity.Service, config Config) *paymentObligationService {
+	return &paymentObligationService{paymentObligation: paymentObligation, identityService: identityService, config: config}
 }
 
-func (s *PaymentObligationService) mintNFT(documentID []byte, docType, registryAddress, depositAddress string, proofFields []string) (string, error) {
+func (s *paymentObligationService) mintNFT(documentID []byte, docType, registryAddress, depositAddress string, proofFields []string) (string, error) {
 	documentService, err := getDocumentService(docType)
 	if err != nil {
 		return "", err
@@ -104,7 +105,7 @@ func (s *PaymentObligationService) mintNFT(documentID []byte, docType, registryA
 	return requestData.TokenId.String(), nil
 }
 
-func (s *PaymentObligationService) getIdentityAddress() (common.Address, error) {
+func (s *paymentObligationService) getIdentityAddress() (common.Address, error) {
 	centIDBytes, err := s.config.GetIdentityId()
 	if err != nil {
 		return common.Address{}, err

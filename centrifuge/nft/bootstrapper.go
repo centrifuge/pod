@@ -1,10 +1,11 @@
 package nft
 
 import (
+	"errors"
+
 	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrap"
-		"errors"
-	"github.com/centrifuge/go-centrifuge/centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 )
 
