@@ -25,7 +25,7 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	if err != nil {
 		return err
 	}
-	setPaymentObligationService(NewPaymentObligationService(contract, identity.IDService, config.Config))
+	setPaymentObligationService(NewPaymentObligationService(contract, identity.IDService, ethereum.GetConnection(), config.Config))
 	return nil
 }
 

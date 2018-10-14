@@ -42,12 +42,13 @@ type Config interface {
 type paymentObligationService struct {
 	paymentObligation PaymentObligation
 	identityService   identity.Service
+	ethClient 		  ethereum.EthereumClient
 	config            Config
 }
 
 // NewPaymentObligationService creates paymentObligationService given the parameters
-func NewPaymentObligationService(paymentObligation PaymentObligation, identityService identity.Service, config Config) *paymentObligationService {
-	return &paymentObligationService{paymentObligation: paymentObligation, identityService: identityService, config: config}
+func NewPaymentObligationService(paymentObligation PaymentObligation, identityService identity.Service, ethClient ethereum.EthereumClient, config Config) *paymentObligationService {
+	return &paymentObligationService{paymentObligation: paymentObligation, identityService: identityService, ethClient: ethClient, config: config}
 }
 
 func (s *paymentObligationService) mintNFT(documentID []byte, docType, registryAddress, depositAddress string, proofFields []string) (string, error) {
@@ -91,7 +92,7 @@ func (s *paymentObligationService) mintNFT(documentID []byte, docType, registryA
 		return "", err
 	}
 
-	opts, err := ethereum.GetConnection().GetTxOpts(s.config.GetEthereumDefaultAccountName())
+	opts, err := s.ethClient.GetTxOpts(s.config.GetEthereumDefaultAccountName())
 	if err != nil {
 		return "", err
 	}

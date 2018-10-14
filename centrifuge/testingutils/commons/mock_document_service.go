@@ -7,31 +7,31 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-type MockService struct {
+type MockDocService struct {
 	mock.Mock
 }
 
-func (m *MockService) GetLastVersion(documentID []byte) (documents.Model, error) {
+func (m *MockDocService) GetLastVersion(documentID []byte) (documents.Model, error) {
 	args := m.Called(documentID)
 	return args.Get(0).(documents.Model), args.Error(1)
 }
 
-func (m *MockService) GetVersion(documentID []byte, version []byte) (documents.Model, error) {
+func (m *MockDocService) GetVersion(documentID []byte, version []byte) (documents.Model, error) {
 	args := m.Called(documentID, version)
 	return args.Get(0).(documents.Model), args.Error(1)
 }
 
-func (m *MockService) CreateProofs(documentID []byte, fields []string) (*documentpb.DocumentProof, error) {
+func (m *MockDocService) CreateProofs(documentID []byte, fields []string) (*documentpb.DocumentProof, error) {
 	args := m.Called(documentID, fields)
 	return args.Get(0).(*documentpb.DocumentProof), args.Error(1)
 }
 
-func (m *MockService) CreateProofsForVersion(documentID, version []byte, fields []string) (*documentpb.DocumentProof, error) {
+func (m *MockDocService) CreateProofsForVersion(documentID, version []byte, fields []string) (*documentpb.DocumentProof, error) {
 	args := m.Called(documentID, version, fields)
 	return args.Get(0).(*documentpb.DocumentProof), args.Error(1)
 }
 
-func (m *MockService) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (documents.Model, error) {
+func (m *MockDocService) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (documents.Model, error) {
 	args := m.Called(cd)
 	return args.Get(0).(documents.Model), args.Error(1)
 }

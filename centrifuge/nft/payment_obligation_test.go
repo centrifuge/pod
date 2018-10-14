@@ -11,9 +11,11 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
-	"github.com/stretchr/testify/mock"
-	)
+		"github.com/stretchr/testify/mock"
+	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/nft"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/commons"
+)
 
 func TestCreateProofData(t *testing.T) {
 	sortedHashes := [][]byte{tools.RandomSlice(32), tools.RandomSlice(32)}
@@ -119,19 +121,63 @@ func (m *MockPaymentObligation) Mint(opts *bind.TransactOpts, _to common.Address
 	return args.Get(0).(*types.Transaction), args.Error(1)
 }
 
+type MockConfig struct {
+	mock.Mock
+}
+
+func (*MockConfig) GetIdentityId() ([]byte, error) {
+	panic("implement me")
+}
+
+func (*MockConfig) GetEthereumDefaultAccountName() string {
+	panic("implement me")
+}
+
 func TestPaymentObligationService(t *testing.T) {
+
 	tests := []struct {
 		name string
-		documentService documents.Service
-		paymentObligation PaymentObligation
-		idService identity.Service
-		config Config
+		mocker func () (testingcommons.MockDocService, MockPaymentObligation, testingcommons.MockIDService, testingcommons.MockEthClient, MockConfig)
+		request *nftpb.NFTMintRequest
+		err error
+		result string
 	}{
-		// TODO: test cases
+		{
+			"happypath",
+			func() (testingcommons.MockDocService, MockPaymentObligation, testingcommons.MockIDService, testingcommons.MockEthClient, MockConfig) {
+				docServiceMock := testingcommons.MockDocService{}
+				docServiceMock.On("GetLastVersion", decodeHex("0x1212")).Return()
+				paymentObligationMock := MockPaymentObligation{}
+				idServiceMock := testingcommons.MockIDService{}
+				ethClientMock := testingcommons.MockEthClient{}
+				configMock := MockConfig{}
+				return docServiceMock, paymentObligationMock, idServiceMock, ethClientMock, configMock
+			},
+			&nftpb.NFTMintRequest{Identifier: "0x1212", Type: "happypath"},
+			nil,
+			"",
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-
+			// mocks
+			docService, paymentOb, idService, ethClient, config := test.mocker()
+			// with below config the documentType has to be test.name to avoid conflicts since registry is a singleton
+			documents.GetRegistryInstance().Register(test.name, &docService)
+			service := NewPaymentObligationService(&paymentOb, &idService, &ethClient, &config)
+			tokenID, err := service.mintNFT(decodeHex(test.request.Identifier), test.request.Type, test.request.RegistryAddress, test.request.DepositAddress, test.request.ProofFields)
+			if test.err != nil {
+				assert.Equal(t, test.err.Error(), err.Error())
+			} else if err != nil {
+				panic(err)
+			} else {
+				docService.AssertExpectations(t)
+				paymentOb.AssertExpectations(t)
+				idService.AssertExpectations(t)
+				ethClient.AssertExpectations(t)
+				config.AssertExpectations(t)
+				assert.Equal(t, test.result, tokenID)
+			}
 		})
 	}
 }
@@ -139,4 +185,9 @@ func TestPaymentObligationService(t *testing.T) {
 func byteSliceToByteArray32(input []byte) (out [32]byte) {
 	out, _ = tools.SliceToByte32(input)
 	return out
+}
+
+func decodeHex(hex string) []byte {
+	h, _ := hexutil.Decode(hex)
+	return h
 }

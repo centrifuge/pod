@@ -24,7 +24,7 @@ func TestRegistry_Register_LocateService_successful(t *testing.T) {
 
 	registry := documents.GetRegistryInstance()
 
-	a := &testingcommons.MockService{}
+	a := &testingcommons.MockDocService{}
 
 	coreDocument := testingutils.GenerateCoreDocument()
 	documentType, err := cd.GetTypeUrl(coreDocument)
@@ -45,7 +45,7 @@ func TestRegistry_Register_invalidId(t *testing.T) {
 
 	registry := documents.GetRegistryInstance()
 
-	a := &testingcommons.MockService{}
+	a := &testingcommons.MockDocService{}
 
 	coreDocument := testingutils.GenerateCoreDocument()
 	coreDocument.EmbeddedData.TypeUrl = "testID_1"
