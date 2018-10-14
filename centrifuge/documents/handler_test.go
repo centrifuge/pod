@@ -6,10 +6,10 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/documents"
+	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/commons"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-errors/errors"
 	"github.com/stretchr/testify/assert"
-	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/commons"
 )
 
 func TestGrpcHandler_CreateDocumentProof(t *testing.T) {

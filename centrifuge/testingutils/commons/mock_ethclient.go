@@ -1,15 +1,16 @@
 package testingcommons
 
 import (
-	"github.com/ethereum/go-ethereum/ethclient"
 	"net/url"
+
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/stretchr/testify/mock"
-	)
+)
 
-type MockEthClient struct{
+type MockEthClient struct {
 	mock.Mock
 }
 
@@ -37,4 +38,3 @@ func (m *MockEthClient) SubmitTransactionWithRetries(contractMethod interface{},
 	args := m.Called(contractMethod, opts, params)
 	return args.Get(0).(*types.Transaction), args.Error(1)
 }
-

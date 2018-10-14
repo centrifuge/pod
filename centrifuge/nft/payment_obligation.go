@@ -42,7 +42,7 @@ type Config interface {
 type paymentObligationService struct {
 	paymentObligation PaymentObligation
 	identityService   identity.Service
-	ethClient 		  ethereum.EthereumClient
+	ethClient         ethereum.EthereumClient
 	config            Config
 }
 

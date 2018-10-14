@@ -5,8 +5,8 @@ package nft_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/centrifuge/go-centrifuge/centrifuge/nft"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestBootstrapper_Bootstrap(t *testing.T) {

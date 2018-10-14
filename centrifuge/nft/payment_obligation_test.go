@@ -1,51 +1,52 @@
 package nft
 
 import (
-	"testing"
-	"github.com/centrifuge/precise-proofs/proofs/proto"
-	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
-	"github.com/stretchr/testify/assert"
 	"errors"
+	"math/big"
+	"testing"
+
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/nft"
+	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"math/big"
-	"github.com/ethereum/go-ethereum/core/types"
-		"github.com/stretchr/testify/mock"
-	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/nft"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/commons"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestCreateProofData(t *testing.T) {
 	sortedHashes := [][]byte{tools.RandomSlice(32), tools.RandomSlice(32)}
 	salt := tools.RandomSlice(32)
 	tests := []struct {
-		name string
+		name   string
 		proofs []*proofspb.Proof
 		result proofData
-		err error
+		err    error
 	}{
 		{
 			"happypath",
 			[]*proofspb.Proof{
 				{
-					Property: "prop1",
-					Value: "value1",
-					Salt: salt,
+					Property:     "prop1",
+					Value:        "value1",
+					Salt:         salt,
 					SortedHashes: sortedHashes,
 				},
 				{
-					Property: "prop2",
-					Value: "value2",
-					Salt: salt,
+					Property:     "prop2",
+					Value:        "value2",
+					Salt:         salt,
 					SortedHashes: sortedHashes,
 				},
 			},
 			proofData{
 				Values: [3]string{"value1", "value2"},
 				Proofs: [3][][32]byte{{byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}, {byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}},
-				Salts: [3][32]byte{byteSliceToByteArray32(salt), byteSliceToByteArray32(salt)},
+				Salts:  [3][32]byte{byteSliceToByteArray32(salt), byteSliceToByteArray32(salt)},
 			},
 			nil,
 		},
@@ -53,22 +54,22 @@ func TestCreateProofData(t *testing.T) {
 			"invalid hashes",
 			[]*proofspb.Proof{
 				{
-					Property: "prop1",
-					Value: "value1",
-					Salt: salt,
+					Property:     "prop1",
+					Value:        "value1",
+					Salt:         salt,
 					SortedHashes: [][]byte{tools.RandomSlice(33), tools.RandomSlice(31)},
 				},
 				{
-					Property: "prop2",
-					Value: "value2",
-					Salt: salt,
+					Property:     "prop2",
+					Value:        "value2",
+					Salt:         salt,
 					SortedHashes: [][]byte{tools.RandomSlice(33), tools.RandomSlice(31)},
 				},
 			},
 			proofData{
 				Values: [3]string{"value1", "value2"},
 				Proofs: [3][][32]byte{{byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}, {byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}},
-				Salts: [3][32]byte{byteSliceToByteArray32(salt), byteSliceToByteArray32(salt)},
+				Salts:  [3][32]byte{byteSliceToByteArray32(salt), byteSliceToByteArray32(salt)},
 			},
 			errors.New("input exceeds length of 32"),
 		},
@@ -76,22 +77,22 @@ func TestCreateProofData(t *testing.T) {
 			"invalid salts",
 			[]*proofspb.Proof{
 				{
-					Property: "prop1",
-					Value: "value1",
-					Salt: tools.RandomSlice(33),
+					Property:     "prop1",
+					Value:        "value1",
+					Salt:         tools.RandomSlice(33),
 					SortedHashes: sortedHashes,
 				},
 				{
-					Property: "prop2",
-					Value: "value2",
-					Salt: tools.RandomSlice(32),
+					Property:     "prop2",
+					Value:        "value2",
+					Salt:         tools.RandomSlice(32),
 					SortedHashes: sortedHashes,
 				},
 			},
 			proofData{
 				Values: [3]string{"value1", "value2"},
 				Proofs: [3][][32]byte{{byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}, {byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}},
-				Salts: [3][32]byte{byteSliceToByteArray32(salt), byteSliceToByteArray32(salt)},
+				Salts:  [3][32]byte{byteSliceToByteArray32(salt), byteSliceToByteArray32(salt)},
 			},
 			errors.New("input exceeds length of 32"),
 		},
@@ -112,7 +113,7 @@ func TestCreateProofData(t *testing.T) {
 	}
 }
 
-type MockPaymentObligation struct{
+type MockPaymentObligation struct {
 	mock.Mock
 }
 
@@ -136,11 +137,11 @@ func (*MockConfig) GetEthereumDefaultAccountName() string {
 func TestPaymentObligationService(t *testing.T) {
 
 	tests := []struct {
-		name string
-		mocker func () (testingcommons.MockDocService, MockPaymentObligation, testingcommons.MockIDService, testingcommons.MockEthClient, MockConfig)
+		name    string
+		mocker  func() (testingcommons.MockDocService, MockPaymentObligation, testingcommons.MockIDService, testingcommons.MockEthClient, MockConfig)
 		request *nftpb.NFTMintRequest
-		err error
-		result string
+		err     error
+		result  string
 	}{
 		{
 			"happypath",
