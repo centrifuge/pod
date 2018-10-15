@@ -1,8 +1,9 @@
 package testlogging
 
 import (
-	logging "github.com/ipfs/go-log"
 	"os"
+
+	logging "github.com/ipfs/go-log"
 	gologging "github.com/whyrusleeping/go-logging"
 )
 

@@ -11,9 +11,9 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
-		"github.com/centrifuge/go-centrifuge/centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents/invoice"
-		"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMain(m *testing.M) {

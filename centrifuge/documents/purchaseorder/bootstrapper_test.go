@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
-		"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMain(m *testing.M) {
