@@ -14,9 +14,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
-	centED25519 "github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	"github.com/centrifuge/go-centrifuge/centrifuge/notification"
-	"github.com/centrifuge/go-centrifuge/centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/centrifuge/version"
 	"github.com/golang/protobuf/ptypes"
 )
@@ -39,9 +37,11 @@ func basicChecks(nodeVersion string, networkID uint32) error {
 	return nil
 }
 
-// getModelAndRepo looks up the specific registry, derives model from core document
-// returns the model and corresponding repository
-func getModelAndRepo(cd *coredocumentpb.CoreDocument) (documents.Model, documents.Repository, error) {
+// getService looks up the specific registry, derives service from core document
+func getServiceAndModel(cd *coredocumentpb.CoreDocument) (documents.Service, documents.Model, error) {
+	if cd == nil {
+		return nil, nil, fmt.Errorf("nil core document")
+	}
 	docType, err := coredocument.GetTypeURL(cd)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get type of the document: %v", err)
@@ -57,7 +57,7 @@ func getModelAndRepo(cd *coredocumentpb.CoreDocument) (documents.Model, document
 		return nil, nil, fmt.Errorf("failed to derive model from core document: %v", err)
 	}
 
-	return model, srv.Repository(), nil
+	return srv, model, nil
 }
 
 // Handler implements the grpc interface
@@ -117,30 +117,24 @@ func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.
 		return nil, err
 	}
 
-	doc := sigReq.Document
-	if doc == nil {
-		return nil, centerrors.New(code.DocumentInvalid, centerrors.NilError(sigReq.Document).Error())
-	}
-
-	if err := coredocument.ValidateWithSignature(doc); err != nil {
+	svc, model, err := getServiceAndModel(sigReq.Document)
+	if err != nil {
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
 	}
 
-	idConfig, err := centED25519.GetIDConfig()
+	err = svc.RequestDocumentSignature(model)
 	if err != nil {
-		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get ID Config: %v", err))
+		return nil, centerrors.New(code.Unknown, err.Error())
 	}
 
-	sig := signatures.Sign(idConfig, doc.SigningRoot)
-	doc.Signatures = append(doc.Signatures, sig)
-	err = coredocumentrepository.GetRepository().Create(doc.DocumentIdentifier, doc)
+	doc, err := model.PackCoreDocument()
 	if err != nil {
-		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to store document: %v", err))
+		return nil, centerrors.New(code.DocumentInvalid, err.Error())
 	}
 
 	return &p2ppb.SignatureResponse{
 		CentNodeVersion: version.GetVersion().String(),
-		Signature:       sig,
+		Signature:       doc.Signatures[len(doc.Signatures)-1],
 	}, nil
 }
 
@@ -155,28 +149,15 @@ func (srv *Handler) SendAnchoredDocument(ctx context.Context, docReq *p2ppb.Anch
 		return nil, centerrors.New(code.DocumentInvalid, centerrors.NilError(docReq.Document).Error())
 	}
 
-	// TODO(ved): post anchoring validations should be done before deriving model
-	model, repo, err := getModelAndRepo(docReq.Document)
+	svc, model, err := getServiceAndModel(docReq.Document)
 	if err != nil {
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
 	}
 
-	err = repo.Update(docReq.Document.CurrentVersion, model)
+	err = svc.ReceiveAnchoredDocument(model, docReq.Header)
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
-
-	ts, _ := ptypes.TimestampProto(time.Now().UTC())
-	notificationMsg := &notificationpb.NotificationMessage{
-		EventType:          uint32(notification.RECEIVED_PAYLOAD),
-		CentrifugeId:       docReq.Header.SenderCentrifugeId,
-		Recorded:           ts,
-		DocumentType:       docReq.Document.EmbeddedData.TypeUrl,
-		DocumentIdentifier: docReq.Document.DocumentIdentifier,
-	}
-
-	// Async until we add queuing
-	go srv.Notifier.Send(notificationMsg)
 
 	return &p2ppb.AnchDocumentResponse{
 		CentNodeVersion: version.GetVersion().String(),

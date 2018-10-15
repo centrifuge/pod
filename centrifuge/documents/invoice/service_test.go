@@ -366,6 +366,13 @@ func TestService_CreateProofsForVersionDocumentDoesntExist(t *testing.T) {
 	assert.Equal(t, "document not found for the given version: leveldb: not found", err.Error())
 }
 
+func TestService_RequestDocumentSignature(t *testing.T) {
+	i, err := createAnchoredMockDocument(t)
+	assert.Nil(t, err)
+	err = invService.RequestDocumentSignature(i)
+	assert.Nil(t, err)
+}
+
 func createAnchoredMockDocument(t *testing.T) (*InvoiceModel, error) {
 	i := &InvoiceModel{
 		InvoiceNumber: "test_invoice",
@@ -451,9 +458,4 @@ func createMockDocument() (*InvoiceModel, error) {
 	}
 	err := getRepository().Create(documentIdentifier, inv1)
 	return inv1, err
-}
-
-func TestService_Repository(t *testing.T) {
-	repo := invService.Repository()
-	assert.NotNil(t, repo)
 }

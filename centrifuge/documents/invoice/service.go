@@ -5,15 +5,24 @@ import (
 	"context"
 	"fmt"
 
+	"time"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/code"
+	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/processor"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
+	centED25519 "github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
+	"github.com/centrifuge/go-centrifuge/centrifuge/notification"
 	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/documents"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
+	"github.com/centrifuge/go-centrifuge/centrifuge/signatures"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/golang/protobuf/ptypes"
 )
 
 // Service defines specific functions for invoice
@@ -47,11 +56,12 @@ type Service interface {
 type service struct {
 	repo             documents.Repository
 	coreDocProcessor coredocumentprocessor.Processor
+	notifier         notification.Sender
 }
 
 // DefaultService returns the default implementation of the service
 func DefaultService(repo documents.Repository, processor coredocumentprocessor.Processor) Service {
-	return &service{repo: repo, coreDocProcessor: processor}
+	return &service{repo: repo, coreDocProcessor: processor, notifier: &notification.WebhookSender{}}
 }
 
 // CreateProofs creates proofs for the latest version document given the fields
@@ -295,6 +305,65 @@ func (s service) SaveState(doc documents.Model) error {
 	if err != nil {
 		return centerrors.New(code.Unknown, err.Error())
 	}
+
+	return nil
+}
+
+// RequestDocumentSignature Validates and Signs document received over the p2p layer
+func (s service) RequestDocumentSignature(model documents.Model) error {
+	doc, err := model.PackCoreDocument()
+	if err != nil {
+		return centerrors.New(code.DocumentInvalid, err.Error())
+	}
+
+	// TODO(mig) Invoke validation as part of service call
+	if err := coredocument.ValidateWithSignature(doc); err != nil {
+		return centerrors.New(code.DocumentInvalid, err.Error())
+	}
+
+	idConfig, err := centED25519.GetIDConfig()
+	if err != nil {
+		return centerrors.New(code.Unknown, fmt.Sprintf("failed to get ID Config: %v", err))
+	}
+
+	sig := signatures.Sign(idConfig, doc.SigningRoot)
+	doc.Signatures = append(doc.Signatures, sig)
+	err = model.UnpackCoreDocument(doc)
+	if err != nil {
+		return centerrors.New(code.Unknown, fmt.Sprintf("failed to Unpack CoreDocument: %v", err))
+	}
+
+	err = repo.Create(doc.DocumentIdentifier, model)
+	if err != nil {
+		return centerrors.New(code.Unknown, fmt.Sprintf("failed to store document: %v", err))
+	}
+	return nil
+}
+
+// ReceiveAnchoredDocument receives a new anchored document, validates and updates the document in DB
+func (s service) ReceiveAnchoredDocument(model documents.Model, headers *p2ppb.CentrifugeHeader) error {
+	doc, err := model.PackCoreDocument()
+	if err != nil {
+		return centerrors.New(code.DocumentInvalid, err.Error())
+	}
+
+	// TODO(ved): post anchoring validations should be done before deriving model
+	err = repo.Update(doc.CurrentVersion, model)
+	if err != nil {
+		return centerrors.New(code.Unknown, err.Error())
+	}
+
+	ts, _ := ptypes.TimestampProto(time.Now().UTC())
+	notificationMsg := &notificationpb.NotificationMessage{
+		EventType:          uint32(notification.RECEIVED_PAYLOAD),
+		CentrifugeId:       headers.SenderCentrifugeId,
+		Recorded:           ts,
+		DocumentType:       doc.EmbeddedData.TypeUrl,
+		DocumentIdentifier: doc.DocumentIdentifier,
+	}
+
+	// Async until we add queuing
+	go s.notifier.Send(notificationMsg)
 
 	return nil
 }
