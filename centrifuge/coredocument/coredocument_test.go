@@ -429,15 +429,15 @@ func TestValidateWithSignature_successful_verification(t *testing.T) {
 func TestGetTypeUrl(t *testing.T) {
 	coreDocument := testingutils.GenerateCoreDocument()
 
-	documentType, err := GetTypeUrl(coreDocument)
+	documentType, err := GetTypeURL(coreDocument)
 	assert.Nil(t, err, "should not throw an error because coreDocument has a type")
 	assert.NotEqual(t, documentType, "", "document type shouldn't be empty")
 
-	_, err = GetTypeUrl(nil)
+	_, err = GetTypeURL(nil)
 	assert.Error(t, err, "nil should throw an error")
 
 	coreDocument.EmbeddedData.TypeUrl = ""
-	_, err = GetTypeUrl(nil)
+	_, err = GetTypeURL(nil)
 	assert.Error(t, err, "should throw an error because typeUrl is not set")
 }
 

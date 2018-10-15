@@ -4,6 +4,7 @@ package p2phandler
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"os"
 	"testing"
@@ -17,6 +18,7 @@ import (
 	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	cented25519 "github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	"github.com/centrifuge/go-centrifuge/centrifuge/notification"
@@ -24,7 +26,9 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/centrifuge/version"
+	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"golang.org/x/crypto/ed25519"
 )
 
@@ -166,21 +170,6 @@ func TestHandler_RequestDocumentSignature(t *testing.T) {
 	assert.True(t, ed25519.Verify(sig.PublicKey, doc.SigningRoot, sig.Signature), "signature must be valid")
 }
 
-func TestSendAnchoredDocument(t *testing.T) {
-	header := &p2ppb.CentrifugeHeader{
-		CentNodeVersion:   version.GetVersion().String(),
-		NetworkIdentifier: config.Config.GetNetworkID(),
-	}
-	req := p2ppb.AnchDocumentRequest{Document: coreDoc, Header: header}
-	res, err := handler.SendAnchoredDocument(context.Background(), &req)
-	assert.Nil(t, err, "Received error")
-	assert.True(t, res.Accepted, "Document not accepted")
-
-	doc := new(coredocumentpb.CoreDocument)
-	err = coredocumentrepository.GetRepository().GetByID(coreDoc.DocumentIdentifier, doc)
-	assert.Equal(t, doc.DocumentIdentifier, coreDoc.DocumentIdentifier, "Document Identifier doesn't match")
-}
-
 func TestSendAnchoredDocument_IncompatibleRequest(t *testing.T) {
 	// Test invalid version
 	header := &p2ppb.CentrifugeHeader{
@@ -214,6 +203,82 @@ func TestSendAnchoredDocument_NilDocument(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.Nil(t, res)
+}
+
+func TestHandler_SendAnchoredDocument_getModelAndRepo_fail(t *testing.T) {
+	req := &p2ppb.AnchDocumentRequest{
+		Header: &p2ppb.CentrifugeHeader{
+			CentNodeVersion:   version.GetVersion().String(),
+			NetworkIdentifier: config.Config.GetNetworkID(),
+		},
+		Document: coredocument.New(),
+	}
+
+	res, err := handler.SendAnchoredDocument(context.Background(), req)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to get type of the document")
+	assert.Nil(t, res)
+}
+
+func TestHandler_SendAnchoredDocument_update_fail(t *testing.T) {
+	req := &p2ppb.AnchDocumentRequest{
+		Header: &p2ppb.CentrifugeHeader{
+			CentNodeVersion:   version.GetVersion().String(),
+			NetworkIdentifier: config.Config.GetNetworkID(),
+		},
+	}
+
+	cd := coredocument.New()
+	cd.EmbeddedData = &any.Any{
+		TypeUrl: "update_fail_type",
+		Value:   []byte("some data"),
+	}
+	req.Document = cd
+	model := mockModel{}
+	srv := mockService{}
+	repo := mockRepo{}
+	repo.On("Update", cd.CurrentVersion, model).Return(fmt.Errorf("update failed")).Once()
+	srv.On("DeriveFromCoreDocument", cd).Return(model, nil).Once()
+	srv.On("Repository").Return(repo).Once()
+	err := documents.GetRegistryInstance().Register(cd.EmbeddedData.TypeUrl, srv)
+	assert.Nil(t, err)
+	res, err := handler.SendAnchoredDocument(context.Background(), req)
+	repo.AssertExpectations(t)
+	srv.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "update failed")
+	assert.Nil(t, res)
+}
+
+func TestHandler_SendAnchoredDocument(t *testing.T) {
+	req := &p2ppb.AnchDocumentRequest{
+		Header: &p2ppb.CentrifugeHeader{
+			CentNodeVersion:   version.GetVersion().String(),
+			NetworkIdentifier: config.Config.GetNetworkID(),
+		},
+	}
+
+	cd := coredocument.New()
+	cd.EmbeddedData = &any.Any{
+		TypeUrl: "send_doc_type",
+		Value:   []byte("some data"),
+	}
+	req.Document = cd
+
+	model := mockModel{}
+	srv := mockService{}
+	repo := mockRepo{}
+	repo.On("Update", cd.CurrentVersion, model).Return(nil).Once()
+	srv.On("DeriveFromCoreDocument", cd).Return(model, nil).Once()
+	srv.On("Repository").Return(repo).Once()
+	err := documents.GetRegistryInstance().Register(cd.EmbeddedData.TypeUrl, srv)
+	assert.Nil(t, err)
+	res, err := handler.SendAnchoredDocument(context.Background(), req)
+	repo.AssertExpectations(t)
+	srv.AssertExpectations(t)
+	assert.Nil(t, err)
+	assert.NotNil(t, res)
+	assert.True(t, res.Accepted)
 }
 
 func TestP2PService_basicChecks(t *testing.T) {
@@ -251,4 +316,85 @@ func TestP2PService_basicChecks(t *testing.T) {
 		}
 	}
 
+}
+
+type mockRepo struct {
+	mock.Mock
+	documents.Repository
+}
+
+func (r mockRepo) Update(id []byte, m documents.Model) error {
+	args := r.Called(id, m)
+	return args.Error(0)
+}
+
+type mockModel struct {
+	mock.Mock
+	documents.Model
+}
+
+type mockService struct {
+	mock.Mock
+	documents.Service
+}
+
+func (s mockService) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (documents.Model, error) {
+	args := s.Called(cd)
+	m, _ := args.Get(0).(documents.Model)
+	return m, args.Error(1)
+}
+
+func (s mockService) Repository() documents.Repository {
+	args := s.Called()
+	return args.Get(0).(documents.Repository)
+}
+
+func Test_getModelAndRepo(t *testing.T) {
+	// docType fetch fail
+	cd := coredocument.New()
+	m, r, err := getModelAndRepo(cd)
+	assert.Error(t, err)
+	assert.Nil(t, m)
+	assert.Nil(t, r)
+	assert.Contains(t, err.Error(), "failed to get type of the document")
+
+	// missing service
+	cd.EmbeddedData = &any.Any{
+		TypeUrl: "model_type_fail",
+		Value:   []byte("some data"),
+	}
+	m, r, err = getModelAndRepo(cd)
+	assert.Error(t, err)
+	assert.Nil(t, m)
+	assert.Nil(t, r)
+	assert.Contains(t, err.Error(), "failed to locate the service")
+
+	// derive fails
+	reg := documents.GetRegistryInstance()
+	srv := mockService{}
+	srv.On("DeriveFromCoreDocument", cd).Return(nil, fmt.Errorf("error")).Once()
+	err = reg.Register(cd.EmbeddedData.TypeUrl, srv)
+	assert.Nil(t, err)
+	m, r, err = getModelAndRepo(cd)
+	srv.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Nil(t, m)
+	assert.Nil(t, r)
+	assert.Contains(t, err.Error(), "failed to derive model from core document")
+
+	// success
+	model := &mockModel{}
+	cd.EmbeddedData.TypeUrl = "get_model_type"
+	srv = mockService{}
+	repo := mockRepo{}
+	srv.On("DeriveFromCoreDocument", cd).Return(model, nil).Once()
+	srv.On("Repository").Return(repo).Once()
+	err = reg.Register(cd.EmbeddedData.TypeUrl, srv)
+	assert.Nil(t, err)
+	m, r, err = getModelAndRepo(cd)
+	srv.AssertExpectations(t)
+	assert.Nil(t, err)
+	assert.NotNil(t, r)
+	assert.NotNil(t, m)
+	assert.Equal(t, model, m)
 }

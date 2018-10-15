@@ -36,7 +36,7 @@ func createPayload() *clientinvoicepb.InvoiceCreatePayload {
 }
 
 func TestDefaultService(t *testing.T) {
-	srv := DefaultService(GetRepository(), &testingutils.MockCoreDocumentProcessor{})
+	srv := DefaultService(getRepository(), &testingutils.MockCoreDocumentProcessor{})
 	assert.NotNil(t, srv, "must be non-nil")
 }
 
@@ -96,7 +96,7 @@ func TestService_GetLastVersion(t *testing.T) {
 		},
 	}
 
-	err = GetRepository().Create(doc.CoreDocument.NextVersion, inv2)
+	err = getRepository().Create(doc.CoreDocument.NextVersion, inv2)
 	assert.Nil(t, err)
 
 	mod2, err := invService.GetLastVersion(doc.CoreDocument.DocumentIdentifier)
@@ -117,7 +117,7 @@ func TestService_GetVersion_invalid_version(t *testing.T) {
 			CurrentVersion:     currentVersion,
 		},
 	}
-	err := GetRepository().Create(currentVersion, inv)
+	err := getRepository().Create(currentVersion, inv)
 	assert.Nil(t, err)
 
 	mod, err := invService.GetVersion(tools.RandomSlice(32), currentVersion)
@@ -136,7 +136,7 @@ func TestService_GetVersion(t *testing.T) {
 			CurrentVersion:     currentVersion,
 		},
 	}
-	err := GetRepository().Create(currentVersion, inv)
+	err := getRepository().Create(currentVersion, inv)
 	assert.Nil(t, err)
 
 	mod, err := invService.GetVersion(documentIdentifier, currentVersion)
@@ -169,7 +169,7 @@ func TestService_Create_db_fail(t *testing.T) {
 	model := &mockModel{}
 	cd := coredocument.New()
 	model.On("JSON").Return([]byte{1, 2, 3}, nil).Once()
-	err := GetRepository().Create(cd.CurrentVersion, model)
+	err := getRepository().Create(cd.CurrentVersion, model)
 	model.AssertExpectations(t)
 
 	payload := createPayload()
@@ -302,7 +302,7 @@ func TestService_SaveState(t *testing.T) {
 	assert.Contains(t, err.Error(), "document doesn't exists")
 
 	// successful
-	err = GetRepository().Create(coreDoc.CurrentVersion, inv)
+	err = getRepository().Create(coreDoc.CurrentVersion, inv)
 	assert.Nil(t, err)
 	assert.Equal(t, inv.Currency, "EUR")
 	assert.Nil(t, inv.CoreDocument.DataRoot)
@@ -313,7 +313,7 @@ func TestService_SaveState(t *testing.T) {
 	assert.Nil(t, err)
 
 	loadInv := new(InvoiceModel)
-	err = GetRepository().LoadByID(coreDoc.CurrentVersion, loadInv)
+	err = getRepository().LoadByID(coreDoc.CurrentVersion, loadInv)
 	assert.Nil(t, err)
 	assert.Equal(t, loadInv.Currency, inv.Currency)
 	assert.Equal(t, loadInv.CoreDocument.DataRoot, inv.CoreDocument.DataRoot)
@@ -394,7 +394,7 @@ func createAnchoredMockDocument(t *testing.T) (*InvoiceModel, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = GetRepository().Create(i.CoreDocument.CurrentVersion, i)
+	err = getRepository().Create(i.CoreDocument.CurrentVersion, i)
 	if err != nil {
 		return nil, err
 	}
@@ -430,7 +430,7 @@ func updatedAnchoredMockDocument(t *testing.T, i *InvoiceModel) (*InvoiceModel, 
 	if err != nil {
 		return nil, err
 	}
-	err = GetRepository().Create(i.CoreDocument.CurrentVersion, i)
+	err = getRepository().Create(i.CoreDocument.CurrentVersion, i)
 	if err != nil {
 		return nil, err
 	}
@@ -449,6 +449,11 @@ func createMockDocument() (*InvoiceModel, error) {
 			NextVersion:        nextIdentifier,
 		},
 	}
-	err := GetRepository().Create(documentIdentifier, inv1)
+	err := getRepository().Create(documentIdentifier, inv1)
 	return inv1, err
+}
+
+func TestService_Repository(t *testing.T) {
+	repo := invService.Repository()
+	assert.NotNil(t, repo)
 }

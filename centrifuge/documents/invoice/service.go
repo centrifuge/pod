@@ -298,3 +298,8 @@ func (s service) SaveState(doc documents.Model) error {
 
 	return nil
 }
+
+// Repository returns invoice repository
+func (s service) Repository() documents.Repository {
+	return getRepository()
+}

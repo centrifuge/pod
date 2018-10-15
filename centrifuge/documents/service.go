@@ -16,4 +16,7 @@ type Service interface {
 
 	// CreateProofsForVersion creates proofs for a particular version of the document given the fields
 	CreateProofsForVersion(documentID, version []byte, fields []string) (*documentpb.DocumentProof, error)
+
+	// Repository returns the repository of the specific service implementation
+	Repository() Repository
 }

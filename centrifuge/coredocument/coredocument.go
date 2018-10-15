@@ -306,8 +306,8 @@ func FillSalts(doc *coredocumentpb.CoreDocument) {
 	return
 }
 
-//GetTypeUrl returns the type of the embedded document
-func GetTypeUrl(coreDocument *coredocumentpb.CoreDocument) (string, error) {
+// GetTypeURL returns the type of the embedded document
+func GetTypeURL(coreDocument *coredocumentpb.CoreDocument) (string, error) {
 
 	if coreDocument == nil {
 		return "", fmt.Errorf("core document is nil")

@@ -26,7 +26,7 @@ func TestMain(m *testing.M) {
 	db := cc.GetLevelDBStorage()
 	InitLegacyRepository(db)
 	coredocumentrepository.InitLevelDBRepository(db)
-	invService = DefaultService(GetRepository(), &testingutils.MockCoreDocumentProcessor{})
+	invService = DefaultService(getRepository(), &testingutils.MockCoreDocumentProcessor{})
 	flag.Parse()
 	result := m.Run()
 	cc.TestIntegrationTearDown()

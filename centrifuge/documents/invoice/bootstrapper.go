@@ -27,7 +27,7 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 func registerInvoiceService() error {
 	// TODO coredocument processor and IDService usage here looks shitty(unnecessary dependency), needs to change soon
 	invoiceService := DefaultService(
-		GetRepository(),
+		getRepository(),
 		coredocumentprocessor.DefaultProcessor(identity.IDService, p2p.NewP2PClient()))
 	return documents.GetRegistryInstance().Register(documenttypes.InvoiceDataTypeUrl, invoiceService)
 }

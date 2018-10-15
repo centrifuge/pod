@@ -28,7 +28,7 @@ func TestBootstrapper_registerInvoiceService(t *testing.T) {
 	coreDocument := testingutils.GenerateCoreDocument()
 	registry := documents.GetRegistryInstance()
 
-	documentType, err := cd.GetTypeUrl(coreDocument)
+	documentType, err := cd.GetTypeURL(coreDocument)
 	assert.Nil(t, err, "should not throw an error because document contains a type")
 
 	service, err := registry.LocateService(documentType)

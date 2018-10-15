@@ -25,3 +25,8 @@ func (m *MockService) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (d
 	args := m.Called(cd)
 	return args.Get(0).(documents.Model), args.Get(1).(error)
 }
+
+func (m *MockService) Repository() documents.Repository {
+	args := m.Called()
+	return args.Get(0).(documents.Repository)
+}

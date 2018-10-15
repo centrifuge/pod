@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
@@ -12,6 +13,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	centED25519 "github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	"github.com/centrifuge/go-centrifuge/centrifuge/notification"
 	"github.com/centrifuge/go-centrifuge/centrifuge/signatures"
@@ -35,6 +37,27 @@ func basicChecks(nodeVersion string, networkID uint32) error {
 	}
 
 	return nil
+}
+
+// getModelAndRepo looks up the specific registry, derives model from core document
+// returns the model and corresponding repository
+func getModelAndRepo(cd *coredocumentpb.CoreDocument) (documents.Model, documents.Repository, error) {
+	docType, err := coredocument.GetTypeURL(cd)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get type of the document: %v", err)
+	}
+
+	srv, err := documents.GetRegistryInstance().LocateService(docType)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to locate the service: %v", err)
+	}
+
+	model, err := srv.DeriveFromCoreDocument(cd)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to derive model from core document: %v", err)
+	}
+
+	return model, srv.Repository(), nil
 }
 
 // Handler implements the grpc interface
@@ -120,6 +143,7 @@ func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.
 	}, nil
 }
 
+// SendAnchoredDocument receives a new anchored document, validates and updates the document in DB
 func (srv *Handler) SendAnchoredDocument(ctx context.Context, docReq *p2ppb.AnchDocumentRequest) (*p2ppb.AnchDocumentResponse, error) {
 	err := basicChecks(docReq.Header.CentNodeVersion, docReq.Header.NetworkIdentifier)
 	if err != nil {
@@ -130,7 +154,13 @@ func (srv *Handler) SendAnchoredDocument(ctx context.Context, docReq *p2ppb.Anch
 		return nil, centerrors.New(code.DocumentInvalid, centerrors.NilError(docReq.Document).Error())
 	}
 
-	err = coredocumentrepository.GetRepository().Update(docReq.Document.DocumentIdentifier, docReq.Document)
+	// TODO(ved): post anchoring validations should be done before deriving model
+	model, repo, err := getModelAndRepo(docReq.Document)
+	if err != nil {
+		return nil, centerrors.New(code.DocumentInvalid, err.Error())
+	}
+
+	err = repo.Update(docReq.Document.CurrentVersion, model)
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
