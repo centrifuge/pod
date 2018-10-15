@@ -17,48 +17,6 @@ import (
 
 var log = logging.Logger("context")
 
-// ---- Ethereum ----
-func TestFunctionalEthereumBootstrap() {
-	bootstrapQueuing()
-}
-func TestFunctionalEthereumTearDown() {
-	tearDownQueuing()
-}
-
-// ---- END Ethereum ----
-
-// ---- Integration Testing ----
-
-var ibootstappers = []bootstrap.TestBootstrapper{
-	&testlogging.TestLoggingBootstrapper{},
-	&config.Bootstrapper{},
-	&storage.Bootstrapper{},
-	&coredocumentrepository.Bootstrapper{},
-	&invoice.Bootstrapper{},
-	&purchaseorder.Bootstrapper{},
-}
-
-func TestIntegrationBootstrap() {
-	contextval := map[string]interface{}{}
-	for _, b := range ibootstappers {
-		err := b.TestBootstrap(contextval)
-		if err != nil {
-			log.Error("Error encountered while bootstrapping", err)
-			panic(err)
-		}
-	}
-}
-
-func TestIntegrationTearDown() {
-	for _, b := range ibootstappers {
-		err := b.TestTearDown()
-		if err != nil {
-			log.Error("Error encountered while bootstrapping", err)
-			panic(err)
-		}
-	}
-}
-
 var bootstappers = []bootstrap.TestBootstrapper{
 	&testlogging.TestLoggingBootstrapper{},
 	&config.Bootstrapper{},
@@ -72,9 +30,8 @@ var bootstappers = []bootstrap.TestBootstrapper{
 	&queue.Bootstrapper{},
 }
 
-// ---- End Integration Testing ----
-func bootstrapQueuing() {
-	// TODO here we would not have to put the bootstrapper.BootstrappedConfig after the TestBootstrapper refactoring
+// ---- Ethereum ----
+func TestFunctionalEthereumBootstrap() {
 	contextval := map[string]interface{}{}
 	for _, b := range bootstappers {
 		err := b.TestBootstrap(contextval)
@@ -84,8 +41,7 @@ func bootstrapQueuing() {
 		}
 	}
 }
-
-func tearDownQueuing() {
+func TestFunctionalEthereumTearDown() {
 	for _, b := range bootstappers {
 		err := b.TestTearDown()
 		if err != nil {
@@ -94,3 +50,5 @@ func tearDownQueuing() {
 		}
 	}
 }
+
+// ---- END Ethereum ----

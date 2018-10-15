@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	"fmt"
-	"os"
 
 	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
@@ -37,7 +36,9 @@ func (*Bootstrapper) TestBootstrap(context map[string]interface{}) error {
 
 func (*Bootstrapper) TestTearDown() error {
 	CloseLevelDBStorage()
-	return os.RemoveAll(config.Config.GetStoragePath())
+	// TODO check the nil pointer when enabled
+	// os.RemoveAll(config.Config.GetStoragePath())
+	return nil
 }
 
 func getRandomTestStoragePath() string {

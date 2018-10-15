@@ -11,16 +11,25 @@ import (
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
+	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/centrifuge/context/testlogging"
+	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestMain(m *testing.M) {
-	cc.TestIntegrationBootstrap()
+	ibootstappers := []bootstrap.TestBootstrapper{
+		&testlogging.TestLoggingBootstrapper{},
+		&config.Bootstrapper{},
+		&storage.Bootstrapper{},
+		&Bootstrapper{},
+	}
+	bootstrap.RunTestBootstrappers(ibootstappers)
 	flag.Parse()
 	result := m.Run()
-	cc.TestIntegrationTearDown()
+	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)
 }
 

@@ -13,12 +13,15 @@ import (
 	"github.com/golang/protobuf/ptypes/any"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
-	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
+	"github.com/centrifuge/go-centrifuge/centrifuge/context/testlogging"
+	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	"github.com/centrifuge/go-centrifuge/centrifuge/signatures"
+	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/stretchr/testify/assert"
@@ -26,12 +29,18 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	cc.TestIntegrationBootstrap()
+	ibootstappers := []bootstrap.TestBootstrapper{
+		&testlogging.TestLoggingBootstrapper{},
+		&config.Bootstrapper{},
+		&storage.Bootstrapper{},
+		&coredocumentrepository.Bootstrapper{},
+	}
+	bootstrap.RunTestBootstrappers(ibootstappers)
 	flag.Parse()
 	config.Config.V.Set("keys.signing.publicKey", "../../example/resources/signature1.pub.pem")
 	config.Config.V.Set("keys.signing.privateKey", "../../example/resources/signature1.key.pem")
 	result := m.Run()
-	cc.TestIntegrationTearDown()
+	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)
 }
 
