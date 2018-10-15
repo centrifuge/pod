@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
-	"github.com/centrifuge/go-centrifuge/centrifuge/anchors"
 	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents/invoice"
@@ -95,20 +94,4 @@ func createIdentityWithKeys(t *testing.T, centrifugeId []byte) []byte {
 	assert.Nil(t, watchRegisteredIdentityKey.Error, "No error thrown by context")
 
 	return centrifugeId
-}
-
-func commitAnchor(t *testing.T, anchorID, centrifugeId, documentRoot, signature []byte, documentProofs [][32]byte) {
-	anchorIDTyped, _ := anchors.NewAnchorID(anchorID)
-	docRootTyped, _ := anchors.NewDocRoot(documentRoot)
-	centIdFixed, _ := identity.ToCentID(centrifugeId)
-
-	confirmations, err := anchors.CommitAnchor(anchorIDTyped, docRootTyped, centIdFixed, documentProofs, signature)
-	if err != nil {
-		t.Fatalf("Error commit Anchor %v", err)
-	}
-
-	watchCommittedAnchor := <-confirmations
-	assert.Nil(t, watchCommittedAnchor.Error, "No error should be thrown by context")
-	assert.Equal(t, watchCommittedAnchor.CommitData.AnchorID, anchorIDTyped, "Resulting anchor should have the same ID as the input")
-	assert.Equal(t, watchCommittedAnchor.CommitData.DocumentRoot, docRootTyped, "Resulting anchor should have the same document hash as the input")
 }
