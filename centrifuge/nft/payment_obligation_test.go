@@ -128,12 +128,14 @@ type MockConfig struct {
 	mock.Mock
 }
 
-func (*MockConfig) GetIdentityId() ([]byte, error) {
-	panic("implement me")
+func (m *MockConfig) GetIdentityId() ([]byte, error) {
+	args := m.Called()
+	return args.Get(0).([]byte), args.Error(1)
 }
 
-func (*MockConfig) GetEthereumDefaultAccountName() string {
-	panic("implement me")
+func (m *MockConfig) GetEthereumDefaultAccountName() string {
+	args := m.Called()
+	return args.Get(0).(string)
 }
 
 func TestPaymentObligationService(t *testing.T) {

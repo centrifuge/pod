@@ -3,7 +3,7 @@
 // Important
 // Note: After the migration to the new invoice model this file will not exist anymore
 
-package invoice
+package invoice_test
 
 import (
 	"flag"
@@ -21,14 +21,17 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents/invoice"
 )
+
+var invService Service
 
 func TestMain(m *testing.M) {
 	cc.TestIntegrationBootstrap()
 	db := cc.GetLevelDBStorage()
-	InitLegacyRepository(db)
+	invoice.InitLegacyRepository(db)
 	coredocumentrepository.InitLevelDBRepository(db)
-	invService = DefaultService(GetRepository(), &testingutils.MockCoreDocumentProcessor{})
+	invService = invoice.DefaultService(invoice.GetRepository(), &testingutils.MockCoreDocumentProcessor{})
 	flag.Parse()
 	result := m.Run()
 	cc.TestIntegrationTearDown()
@@ -42,7 +45,7 @@ func TestInvoiceCoreDocumentConverter(t *testing.T) {
 	}
 	invoiceSalts := invoicepb.InvoiceDataSalts{}
 
-	invoiceDoc := Empty()
+	invoiceDoc := invoice.Empty()
 	invoiceDoc.Document.CoreDocument = &coredocumentpb.CoreDocument{
 		DocumentIdentifier: identifier,
 	}
@@ -79,8 +82,8 @@ func TestInvoiceCoreDocumentConverter(t *testing.T) {
 	assert.Equal(t, coreDocumentBytes, generatedCoreDocumentBytes,
 		"Generated & converted documents are not identical")
 
-	convertedInvoiceDoc, err := NewFromCoreDocument(generatedCoreDocument)
-	convertedGeneratedInvoiceDoc, err := NewFromCoreDocument(generatedCoreDocument)
+	convertedInvoiceDoc, err := invoice.NewFromCoreDocument(generatedCoreDocument)
+	convertedGeneratedInvoiceDoc, err := invoice.NewFromCoreDocument(generatedCoreDocument)
 	invoiceBytes, err := proto.Marshal(invoiceDoc.Document)
 	assert.Nil(t, err, "Error marshaling invoiceDoc")
 
@@ -98,14 +101,14 @@ func TestInvoiceCoreDocumentConverter(t *testing.T) {
 }
 
 func TestNewInvoiceFromCoreDocument_NilDocument(t *testing.T) {
-	inv, err := NewFromCoreDocument(nil)
+	inv, err := invoice.NewFromCoreDocument(nil)
 
 	assert.Error(t, err, "should have thrown an error")
 	assert.Nil(t, inv, "document should be nil")
 }
 
 func TestNewInvoice_NilDocument(t *testing.T) {
-	inv, err := New(nil, nil)
+	inv, err := invoice.New(nil, nil)
 
 	assert.Error(t, err, "should have thrown an error")
 	assert.Nil(t, inv, "document should be nil")
@@ -193,7 +196,7 @@ func TestValidate(t *testing.T) {
 
 	for _, c := range tests {
 		got := want{}
-		got.valid, got.errMsg, got.errs = Validate(c.inv)
+		got.valid, got.errMsg, got.errs = invoice.Validate(c.inv)
 		if !reflect.DeepEqual(c.want, got) {
 			t.Fatalf("%v != %v", c.want, got)
 		}

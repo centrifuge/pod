@@ -2,7 +2,7 @@
 
 # Get latest Anchor and Identity Registry Addresses from contract json
 export TEST_TIMEOUT=${TEST_TIMEOUT:-600s}
-export TEST_TARGET_ENVIRONMENT=${TEST_TARGET_ENVIRONMENT:-'local'}
+export TEST_TARGET_ENVIRONMENT=${TEST_TARGET_ENVIRONMENT:-'localgeth'}
 export CENT_CENTRIFUGENETWORK=${CENT_CENTRIFUGENETWORK:-'testing'}
 
 ## Making Env Var Name dynamic
