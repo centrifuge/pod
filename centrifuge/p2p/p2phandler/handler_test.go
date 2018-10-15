@@ -43,7 +43,6 @@ func (wh *MockWebhookSender) Send(notification *notificationpb.NotificationMessa
 
 func TestMain(m *testing.M) {
 	cc.TestIntegrationBootstrap()
-	coredocumentrepository.InitLevelDBRepository(cc.GetLevelDBStorage())
 	result := m.Run()
 	cc.TestIntegrationTearDown()
 	os.Exit(result)

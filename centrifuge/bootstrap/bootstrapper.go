@@ -14,7 +14,11 @@ type Bootstrapper interface {
 }
 
 // TestBootstrapper must be implemented by all packages that needs bootstrapping at the start of testing suite
-// TODO Vimukthi make integration tests init through this interface
 type TestBootstrapper interface {
+
+	// TestBootstrap initializes a module for testing
 	TestBootstrap(context map[string]interface{}) error
+
+	// TestTearDown tears down a module after testing
+	TestTearDown() error
 }

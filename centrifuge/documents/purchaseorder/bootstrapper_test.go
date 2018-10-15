@@ -7,15 +7,11 @@ import (
 	"testing"
 
 	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
-	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
-	"github.com/stretchr/testify/assert"
+		"github.com/stretchr/testify/assert"
 )
 
 func TestMain(m *testing.M) {
 	cc.TestIntegrationBootstrap()
-	levelDB := cc.GetLevelDBStorage()
-	coredocumentrepository.InitLevelDBRepository(levelDB)
-	InitLevelDBRepository(levelDB)
 	result := m.Run()
 	cc.TestIntegrationTearDown()
 	os.Exit(result)

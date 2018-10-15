@@ -11,19 +11,13 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
-	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
-	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
+		"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents/invoice"
-	"github.com/centrifuge/go-centrifuge/centrifuge/documents/purchaseorder"
-	"github.com/stretchr/testify/assert"
+		"github.com/stretchr/testify/assert"
 )
 
 func TestMain(m *testing.M) {
 	cc.TestIntegrationBootstrap()
-	db := cc.GetLevelDBStorage()
-	invoice.InitLegacyRepository(db)
-	purchaseorder.InitLevelDBRepository(db)
-	coredocumentrepository.InitLevelDBRepository(db)
 	flag.Parse()
 	result := m.Run()
 	cc.TestIntegrationTearDown()

@@ -31,3 +31,11 @@ func registerInvoiceService() error {
 		coredocumentprocessor.DefaultProcessor(identity.IDService, p2p.NewP2PClient()))
 	return documents.GetRegistryInstance().Register(documenttypes.InvoiceDataTypeUrl, invoiceService)
 }
+
+func (b *Bootstrapper) TestBootstrap(context map[string]interface{}) error {
+	return b.Bootstrap(context)
+}
+
+func (*Bootstrapper) TestTearDown() error {
+	return nil
+}

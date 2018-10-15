@@ -16,11 +16,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var levelDB Repository
-
 func TestMain(m *testing.M) {
 	cc.TestIntegrationBootstrap()
-	levelDB = LevelDBRepository{LevelDB: cc.GetLevelDBStorage()}
 	flag.Parse()
 	result := m.Run()
 	cc.TestIntegrationTearDown()
@@ -56,24 +53,24 @@ func TestDefaultLevelDB_LoadByID(t *testing.T) {
 	id := tools.RandomSlice(32)
 
 	// missing ID
-	err := levelDB.LoadByID(id, new(model))
+	err := testLevelDB.LoadByID(id, new(model))
 	assert.Error(t, err, "error must be non nil")
 
 	// nil document
-	err = levelDB.LoadByID(id, nil)
+	err = testLevelDB.LoadByID(id, nil)
 	assert.Error(t, err, "error must be non nil")
 
 	// Failed unmarshal
 	m := &model{shouldError: true}
-	err = levelDB.LoadByID(id, m)
+	err = testLevelDB.LoadByID(id, m)
 	assert.Error(t, err, "error must be non nil")
 
 	// success
 	m = &model{Data: "hello, world"}
-	err = levelDB.Create(id, m)
+	err = testLevelDB.Create(id, m)
 	assert.Nil(t, err, "error should be nil")
 	nm := new(model)
-	err = levelDB.LoadByID(id, nm)
+	err = testLevelDB.LoadByID(id, nm)
 	assert.Nil(t, err, "error should be nil")
 	assert.Equal(t, m, nm, "models must match")
 }
@@ -81,15 +78,15 @@ func TestDefaultLevelDB_LoadByID(t *testing.T) {
 func TestDefaultLevelDB_Create(t *testing.T) {
 	id := tools.RandomSlice(32)
 	d := &model{Data: "Create it"}
-	err := levelDB.Create(id, d)
+	err := testLevelDB.Create(id, d)
 	assert.Nil(t, err, "create must pass")
 
 	// same id
-	err = levelDB.Create(id, new(model))
+	err = testLevelDB.Create(id, new(model))
 	assert.Error(t, err, "create must fail")
 
 	// nil model
-	err = levelDB.Create(id, nil)
+	err = testLevelDB.Create(id, nil)
 	assert.Error(t, err, "create must fail")
 }
 
@@ -97,23 +94,23 @@ func TestDefaultLevelDB_UpdateModel(t *testing.T) {
 	id := tools.RandomSlice(32)
 
 	// missing Id
-	err := levelDB.Update(id, new(model))
+	err := testLevelDB.Update(id, new(model))
 	assert.Error(t, err, "update must fail")
 
 	// nil model
-	err = levelDB.Update(id, nil)
+	err = testLevelDB.Update(id, nil)
 	assert.Error(t, err, "update must fail")
 
 	m := &model{Data: "create it"}
-	err = levelDB.Create(id, m)
+	err = testLevelDB.Create(id, m)
 	assert.Nil(t, err, "create must pass")
 
 	// successful one
 	m.Data = "update it"
-	err = levelDB.Update(id, m)
+	err = testLevelDB.Update(id, m)
 	assert.Nil(t, err, "update must pass")
 	nm := new(model)
-	err = levelDB.LoadByID(id, nm)
+	err = testLevelDB.LoadByID(id, nm)
 	assert.Nil(t, err, "get mode must pass")
 	assert.Equal(t, m, nm)
 }

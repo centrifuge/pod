@@ -14,8 +14,7 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
-	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
-	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
+		"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
@@ -23,9 +22,6 @@ import (
 
 func TestMain(m *testing.M) {
 	cc.TestIntegrationBootstrap()
-	db := cc.GetLevelDBStorage()
-	InitLegacyRepository(db)
-	coredocumentrepository.InitLevelDBRepository(db)
 	invService = DefaultService(GetRepository(), &testingutils.MockCoreDocumentProcessor{})
 	flag.Parse()
 	result := m.Run()

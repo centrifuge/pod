@@ -57,6 +57,10 @@ func (b *Bootstrapper) TestBootstrap(context map[string]interface{}) error {
 	return b.Bootstrap(context)
 }
 
+func (b *Bootstrapper) TestTearDown() error {
+	return nil
+}
+
 func getIdentityFactoryContract() (identityFactoryContract *EthereumIdentityFactoryContract, err error) {
 	client := ethereum.GetConnection()
 	return NewEthereumIdentityFactoryContract(config.Config.GetContractAddress("identityFactory"), client.GetClient())

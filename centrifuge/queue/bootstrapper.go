@@ -22,6 +22,11 @@ func (b *Bootstrapper) TestBootstrap(context map[string]interface{}) error {
 	return b.Bootstrap(context)
 }
 
+func (b *Bootstrapper) TestTearDown() error {
+	StopQueue()
+	return nil
+}
+
 // InstallQueuedTask adds a queued task to the context so that when the queue initializes it can update it self
 // with different tasks types queued in the node
 func InstallQueuedTask(context map[string]interface{}, queuedTask QueuedTask) error {

@@ -1,7 +1,7 @@
 package context
 
 import (
-	"github.com/centrifuge/go-centrifuge/centrifuge/anchors"
+		"github.com/centrifuge/go-centrifuge/centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
@@ -14,7 +14,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/centrifuge/version"
 	logging "github.com/ipfs/go-log"
-)
+	)
 
 var log = logging.Logger("context")
 
