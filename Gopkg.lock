@@ -39,11 +39,11 @@
 
 [[projects]]
   branch = "develop"
-  digest = "1:8020ee818922cb8d75705d732dea7f524bc96ddfa25275aef9758701a8b90858"
+  digest = "1:8129621f78bc21b982d27111dc1479147da1667f94422f5270cdf1947985d566"
   name = "github.com/centrifuge/centrifuge-ethereum-contracts"
   packages = ["."]
   pruneopts = "T"
-  revision = "ec2109aca5959ddcc2a28d15d44f2acf991c8870"
+  revision = "a2f58ff50129525da61b96f080b2e134083df68f"
   source = "git@github.com:centrifuge/centrifuge-ethereum-contracts"
 
 [[projects]]
