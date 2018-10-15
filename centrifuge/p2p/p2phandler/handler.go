@@ -71,6 +71,7 @@ type Handler struct {
 // The handshake is currently quite primitive as it only allows the request-server
 // to recipient to determine if two versions are compatible. A newer node making a
 // request could not decide for itself if the request handshake should succeed or not.
+// Deprecated
 func (srv *Handler) Post(ctx context.Context, req *p2ppb.P2PMessage) (*p2ppb.P2PReply, error) {
 	err := basicChecks(req.CentNodeVersion, req.NetworkIdentifier)
 	if err != nil {
