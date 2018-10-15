@@ -3,22 +3,23 @@
 package nft_test
 
 import (
-		"os"
+	"os"
 	"testing"
 
-		cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
-		"github.com/centrifuge/go-centrifuge/centrifuge/identity"
-	"github.com/stretchr/testify/assert"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"context"
-	"github.com/centrifuge/go-centrifuge/centrifuge/anchors"
-	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
+	"time"
+
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
+	"github.com/centrifuge/go-centrifuge/centrifuge/anchors"
+	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents/invoice"
-	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
-		"time"
-	"github.com/golang/protobuf/ptypes/timestamp"
+	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/centrifuge/nft"
+	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/golang/protobuf/ptypes/timestamp"
+	"github.com/stretchr/testify/assert"
 )
 
 var identityService identity.Service
@@ -47,10 +48,10 @@ func TestPaymentObligationService_mint(t *testing.T) {
 			Collaborators: []string{},
 			Data: &invoicepb.InvoiceData{
 				InvoiceNumber: "2132131",
-				GrossAmount: 123,
-				NetAmount: 123,
-				Currency: "EUR",
-				DueDate: &timestamp.Timestamp{Seconds: dueDate.Unix()},
+				GrossAmount:   123,
+				NetAmount:     123,
+				Currency:      "EUR",
+				DueDate:       &timestamp.Timestamp{Seconds: dueDate.Unix()},
 			},
 		})
 	assert.Nil(t, err, "should not error out when creating invoice model")
@@ -63,11 +64,11 @@ func TestPaymentObligationService_mint(t *testing.T) {
 	// assert no error
 	// TODO setup the payob contract during integration test init
 	_, err = nft.GetPaymentObligationService().MintNFT(
-			ID,
-			documenttypes.InvoiceDataTypeUrl,
-			"doesntmatter",
-			"doesntmatter",
-			[]string{"gross_amount", "currency", "due_date"},
+		ID,
+		documenttypes.InvoiceDataTypeUrl,
+		"doesntmatter",
+		"doesntmatter",
+		[]string{"gross_amount", "currency", "due_date"},
 	)
 	assert.Nil(t, err, "should not error out when minting and invoice")
 }
@@ -111,7 +112,3 @@ func commitAnchor(t *testing.T, anchorID, centrifugeId, documentRoot, signature 
 	assert.Equal(t, watchCommittedAnchor.CommitData.AnchorID, anchorIDTyped, "Resulting anchor should have the same ID as the input")
 	assert.Equal(t, watchCommittedAnchor.CommitData.DocumentRoot, docRootTyped, "Resulting anchor should have the same document hash as the input")
 }
-
-
-
-
