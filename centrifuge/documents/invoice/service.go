@@ -301,5 +301,5 @@ func (s service) SaveState(doc documents.Model) error {
 
 // Repository returns invoice repository
 func (s service) Repository() documents.Repository {
-	return getRepository()
+	return s.repo
 }
