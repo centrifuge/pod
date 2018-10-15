@@ -245,6 +245,13 @@ func TestInvoiceModel_createProofsFieldDoesNotExist(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
+func TestInvoiceModel_GetDocumentID(t *testing.T) {
+	i, corDoc, err := createMockInvoice(t)
+	assert.Nil(t, err)
+	ID, err := i.GetDocumentID()
+	assert.Equal(t, corDoc.DocumentIdentifier, ID)
+}
+
 func TestInvoiceModel_getDocumentDataTree(t *testing.T) {
 	i := InvoiceModel{InvoiceNumber: "3213121", NetAmount: 2, GrossAmount: 2}
 	tree, err := i.getDocumentDataTree()

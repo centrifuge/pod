@@ -69,7 +69,7 @@ func TestPaymentObligationService_mint(t *testing.T) {
 		"doesntmatter",
 		[]string{"gross_amount", "currency", "due_date"},
 	)
-	assert.Nil(t, err, "should not error out when minting and invoice")
+	assert.Nil(t, err, "should not error out when minting an invoice")
 }
 
 func createIdentityWithKeys(t *testing.T, centrifugeId []byte) []byte {
