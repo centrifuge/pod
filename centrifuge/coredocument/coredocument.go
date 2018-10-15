@@ -263,7 +263,8 @@ func PrepareNewVersion(oldCD coredocumentpb.CoreDocument, collaborators []string
 	return newCD, nil
 }
 
-// New returns a new core document from the proto message
+// New returns a new core document
+// Note: collaborators and salts are to be filled by the caller
 func New() *coredocumentpb.CoreDocument {
 	id := tools.RandomSlice(32)
 	return &coredocumentpb.CoreDocument{
@@ -273,7 +274,7 @@ func New() *coredocumentpb.CoreDocument {
 	}
 }
 
-// NewWithCollaborators generate identifiers and loads the collaborators and fills salts
+// NewWithCollaborators generates new core document, adds collaborators, and fills salts
 func NewWithCollaborators(collaborators []string) (*coredocumentpb.CoreDocument, error) {
 	cd := New()
 	ids, err := identity.CentIDsFromStrings(collaborators)
