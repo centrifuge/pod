@@ -57,7 +57,7 @@ func (m mockModel) PackCoreDocument() (*coredocumentpb.CoreDocument, error) {
 }
 
 func TestUpdateVersionValidator(t *testing.T) {
-	uvv := UpdateVersionValidator()
+	uvv := coredocument.UpdateVersionValidator()
 
 	// nil models
 	err := uvv.Validate(nil, nil)
@@ -74,7 +74,7 @@ func TestUpdateVersionValidator(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to fetch old core document")
 
 	// new model pack core doc fail
-	oldCD := New()
+	oldCD := coredocument.New()
 	oldCD.DocumentRoot = tools.RandomSlice(32)
 	old.On("PackCoreDocument").Return(oldCD, nil).Once()
 	new.On("PackCoreDocument").Return(nil, fmt.Errorf("error")).Once()
@@ -85,7 +85,7 @@ func TestUpdateVersionValidator(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to fetch new core document")
 
 	// mismatched identifiers
-	newCD := New()
+	newCD := coredocument.New()
 	newCD.NextVersion = nil
 	old.On("PackCoreDocument").Return(oldCD, nil).Once()
 	new.On("PackCoreDocument").Return(newCD, nil).Once()
@@ -96,7 +96,7 @@ func TestUpdateVersionValidator(t *testing.T) {
 	assert.Len(t, documents.ConvertToMap(err), 4)
 
 	// success
-	newCD, err = PrepareNewVersion(*oldCD, nil)
+	newCD, err = coredocument.PrepareNewVersion(*oldCD, nil)
 	assert.Nil(t, err)
 	old.On("PackCoreDocument").Return(oldCD, nil).Once()
 	new.On("PackCoreDocument").Return(newCD, nil).Once()
