@@ -1,6 +1,6 @@
 // +build unit
 
-package coredocument
+package coredocument_test
 
 import (
 	"flag"
@@ -23,6 +23,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 )
 
 func TestMain(m *testing.M) {
@@ -48,7 +49,7 @@ func (m mockModel) PackCoreDocument() (*coredocumentpb.CoreDocument, error) {
 
 func Test_getCoreDocument(t *testing.T) {
 	// nil document
-	cd, err := getCoreDocument(nil)
+	cd, err := coredocument.getCoreDocument(nil)
 	assert.Error(t, err)
 	assert.Nil(t, cd)
 

@@ -1,22 +1,18 @@
 // +build unit
 
-package purchaseorderservice_test
+package purchaseorder
 
 import (
 	"context"
 	"crypto/sha256"
-	"os"
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
-	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
-	"github.com/centrifuge/go-centrifuge/centrifuge/documents/purchaseorder"
-	"github.com/centrifuge/go-centrifuge/centrifuge/documents/purchaseorder/service"
-	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/legacy/purchaseorder"
+	legacy "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/legacy/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/go-errors/errors"
@@ -25,15 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
-
-func TestMain(m *testing.M) {
-	cc.TestIntegrationBootstrap()
-	db := cc.GetLevelDBStorage()
-	coredocumentrepository.InitLevelDBRepository(db)
-	result := m.Run()
-	cc.TestIntegrationTearDown()
-	os.Exit(result)
-}
 
 type mockPurchaseOrderRepository struct {
 	mock.Mock
@@ -68,18 +55,15 @@ func (m *mockPurchaseOrderRepository) Update(id []byte, doc proto.Message) (err 
 	return args.Error(0)
 }
 
-func generateMockedOutPurchaseOrderService() (srv *purchaseorderservice.PurchaseOrderDocumentService, repo *mockPurchaseOrderRepository, coreDocumentProcessor *testingutils.MockCoreDocumentProcessor) {
+func generateMockedOutPurchaseOrderService() (srv legacy.PurchaseOrderDocumentServiceServer, repo *mockPurchaseOrderRepository, coreDocumentProcessor *testingutils.MockCoreDocumentProcessor) {
 	repo = new(mockPurchaseOrderRepository)
 	coreDocumentProcessor = new(testingutils.MockCoreDocumentProcessor)
-	srv = &purchaseorderservice.PurchaseOrderDocumentService{
-		Repository:            repo,
-		CoreDocumentProcessor: coreDocumentProcessor,
-	}
+	srv = LegacyGRPCHandler(repo, coreDocumentProcessor)
 	return srv, repo, coreDocumentProcessor
 }
 
-func getTestSetupData() (po *purchaseorder.PurchaseOrder, srv *purchaseorderservice.PurchaseOrderDocumentService, repo *mockPurchaseOrderRepository, mockCoreDocumentProcessor *testingutils.MockCoreDocumentProcessor) {
-	po = &purchaseorder.PurchaseOrder{Document: &purchaseorderpb.PurchaseOrderDocument{}}
+func getTestSetupData() (po *PurchaseOrder, srv legacy.PurchaseOrderDocumentServiceServer, repo *mockPurchaseOrderRepository, mockCoreDocumentProcessor *testingutils.MockCoreDocumentProcessor) {
+	po = &PurchaseOrder{Document: &purchaseorderpb.PurchaseOrderDocument{}}
 	po.Document.Data = &purchaseorderpb.PurchaseOrderData{
 		PoNumber:         "po1234",
 		OrderName:        "Jack",
@@ -106,7 +90,7 @@ func TestPurchaseOrderDocumentService_Anchor(t *testing.T) {
 	mockRepo.On("Update", mock.Anything, mock.Anything).Return(nil).Once()
 	mockCDP.On("Anchor", mock.Anything).Return(nil).Once()
 
-	anchoredDoc, err := s.HandleAnchorPurchaseOrderDocument(context.Background(), &clientpurchaseorderpb.AnchorPurchaseOrderEnvelope{Document: doc.Document})
+	anchoredDoc, err := s.AnchorPurchaseOrderDocument(context.Background(), &legacy.AnchorPurchaseOrderEnvelope{Document: doc.Document})
 
 	mockRepo.AssertExpectations(t)
 	mockCDP.AssertExpectations(t)
@@ -120,7 +104,7 @@ func TestPurchaseOrderDocumentService_AnchorFails(t *testing.T) {
 	mockRepo.On("Create", doc.Document.CoreDocument.DocumentIdentifier, doc.Document).Return(nil).Once()
 	mockCDP.On("Anchor", mock.Anything).Return(errors.New("error anchoring")).Once()
 
-	anchoredDoc, err := s.HandleAnchorPurchaseOrderDocument(context.Background(), &clientpurchaseorderpb.AnchorPurchaseOrderEnvelope{Document: doc.Document})
+	anchoredDoc, err := s.AnchorPurchaseOrderDocument(context.Background(), &legacy.AnchorPurchaseOrderEnvelope{Document: doc.Document})
 
 	mockRepo.AssertExpectations(t)
 	mockCDP.AssertExpectations(t)
@@ -131,7 +115,7 @@ func TestPurchaseOrderDocumentService_AnchorFails(t *testing.T) {
 func TestPurchaseOrderDocumentService_AnchorFailsWithNilDocument(t *testing.T) {
 	_, s, _, _ := getTestSetupData()
 
-	anchoredDoc, err := s.HandleAnchorPurchaseOrderDocument(context.Background(), &clientpurchaseorderpb.AnchorPurchaseOrderEnvelope{})
+	anchoredDoc, err := s.AnchorPurchaseOrderDocument(context.Background(), &legacy.AnchorPurchaseOrderEnvelope{})
 
 	assert.Error(t, err)
 	assert.Nil(t, anchoredDoc)
@@ -149,7 +133,7 @@ func TestPurchaseOrderDocumentService_Send(t *testing.T) {
 	mockCDP.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 	mockCDP.On("Anchor", mock.Anything).Return(nil).Once()
 
-	_, err := s.HandleSendPurchaseOrderDocument(context.Background(), &clientpurchaseorderpb.SendPurchaseOrderEnvelope{Recipients: recipients, Document: doc.Document})
+	_, err := s.SendPurchaseOrderDocument(context.Background(), &legacy.SendPurchaseOrderEnvelope{Recipients: recipients, Document: doc.Document})
 
 	mockRepo.AssertExpectations(t)
 	mockCDP.AssertExpectations(t)
@@ -162,7 +146,7 @@ func TestPurchaseOrderDocumentService_Send_StoreFails(t *testing.T) {
 
 	mockRepo.On("Create", doc.Document.CoreDocument.DocumentIdentifier, doc.Document).Return(errors.New("error storing")).Once()
 
-	_, err := s.HandleSendPurchaseOrderDocument(context.Background(), &clientpurchaseorderpb.SendPurchaseOrderEnvelope{Recipients: recipients, Document: doc.Document})
+	_, err := s.SendPurchaseOrderDocument(context.Background(), &legacy.SendPurchaseOrderEnvelope{Recipients: recipients, Document: doc.Document})
 
 	mockRepo.AssertExpectations(t)
 	assert.Contains(t, err.Error(), "error storing")
@@ -175,7 +159,7 @@ func TestPurchaseOrderDocumentService_Send_AnchorFails(t *testing.T) {
 	mockRepo.On("Create", doc.Document.CoreDocument.DocumentIdentifier, doc.Document).Return(nil).Once()
 	mockCDP.On("Anchor", mock.Anything).Return(errors.New("error anchoring")).Once()
 
-	_, err := s.HandleSendPurchaseOrderDocument(context.Background(), &clientpurchaseorderpb.SendPurchaseOrderEnvelope{Recipients: recipients, Document: doc.Document})
+	_, err := s.SendPurchaseOrderDocument(context.Background(), &legacy.SendPurchaseOrderEnvelope{Recipients: recipients, Document: doc.Document})
 
 	mockRepo.AssertExpectations(t)
 	mockCDP.AssertExpectations(t)
@@ -193,7 +177,7 @@ func TestPurchaseOrderDocumentService_SendFails(t *testing.T) {
 	mockCDP.On("Anchor", mock.Anything).Return(nil).Once()
 	mockCDP.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(errors.New("error sending")).Twice()
 
-	_, err := s.HandleSendPurchaseOrderDocument(context.Background(), &clientpurchaseorderpb.SendPurchaseOrderEnvelope{Recipients: recipients, Document: doc.Document})
+	_, err := s.SendPurchaseOrderDocument(context.Background(), &legacy.SendPurchaseOrderEnvelope{Recipients: recipients, Document: doc.Document})
 
 	mockRepo.AssertExpectations(t)
 	mockCDP.AssertExpectations(t)
@@ -202,7 +186,7 @@ func TestPurchaseOrderDocumentService_SendFails(t *testing.T) {
 
 func TestPurchaseOrderDocumentService_HandleCreatePurchaseOrderProof(t *testing.T) {
 	identifier := testingutils.Rand32Bytes()
-	order := purchaseorder.Empty()
+	order := Empty()
 	orderAny := &any.Any{
 		TypeUrl: documenttypes.PurchaseOrderDataTypeUrl,
 		Value:   []byte{},
@@ -222,13 +206,13 @@ func TestPurchaseOrderDocumentService_HandleCreatePurchaseOrderProof(t *testing.
 	coredocument.CalculateDocumentRoot(order.Document.CoreDocument)
 	s, mockRepo, _ := generateMockedOutPurchaseOrderService()
 
-	proofRequest := &clientpurchaseorderpb.CreatePurchaseOrderProofEnvelope{
+	proofRequest := &legacy.CreatePurchaseOrderProofEnvelope{
 		DocumentIdentifier: identifier,
 		Fields:             []string{"currency", "order_country", "net_amount", "collaborators[0]", "document_type"},
 	}
 	mockRepo.On("GetByID", proofRequest.DocumentIdentifier, new(purchaseorderpb.PurchaseOrderDocument)).Return(nil).Once()
 	mockRepo.replaceDoc = order.Document
-	purchaseOrderProof, err := s.HandleCreatePurchaseOrderProof(context.Background(), proofRequest)
+	purchaseOrderProof, err := s.CreatePurchaseOrderProof(context.Background(), proofRequest)
 	mockRepo.AssertExpectations(t)
 
 	assert.Nil(t, err)
@@ -259,7 +243,7 @@ func TestPurchaseOrderDocumentService_HandleCreatePurchaseOrderProof(t *testing.
 
 func TestPurchaseOrderDocumentService_HandleCreatePurchaseOrderProof_NotFilledSalts(t *testing.T) {
 	identifier := testingutils.Rand32Bytes()
-	order := purchaseorder.Empty()
+	order := Empty()
 	order.Document.CoreDocument = &coredocumentpb.CoreDocument{
 		DocumentIdentifier: identifier,
 		CurrentVersion:     identifier,
@@ -269,7 +253,7 @@ func TestPurchaseOrderDocumentService_HandleCreatePurchaseOrderProof_NotFilledSa
 	order.Document.Salts = &purchaseorderpb.PurchaseOrderDataSalts{}
 	s, mockRepo, mockProcessor := generateMockedOutPurchaseOrderService()
 
-	proofRequest := &clientpurchaseorderpb.CreatePurchaseOrderProofEnvelope{
+	proofRequest := &legacy.CreatePurchaseOrderProofEnvelope{
 		DocumentIdentifier: identifier,
 		Fields:             []string{"currency", "order_country", "net_amount"},
 	}
@@ -278,7 +262,7 @@ func TestPurchaseOrderDocumentService_HandleCreatePurchaseOrderProof_NotFilledSa
 	mockRepo.On("GetByID", proofRequest.DocumentIdentifier, new(purchaseorderpb.PurchaseOrderDocument)).Return(nil).Once()
 	mockRepo.replaceDoc = order.Document
 
-	purchaseOrderProof, err := s.HandleCreatePurchaseOrderProof(context.Background(), proofRequest)
+	purchaseOrderProof, err := s.CreatePurchaseOrderProof(context.Background(), proofRequest)
 	mockRepo.AssertExpectations(t)
 	assert.NotNil(t, err)
 	assert.Nil(t, purchaseOrderProof)
@@ -286,7 +270,7 @@ func TestPurchaseOrderDocumentService_HandleCreatePurchaseOrderProof_NotFilledSa
 
 func TestPurchaseOrderDocumentService_HandleCreatePurchaseOrderProof_NotExistingPurchaseOrder(t *testing.T) {
 	identifier := testingutils.Rand32Bytes()
-	order := purchaseorder.Empty()
+	order := Empty()
 	order.Document.CoreDocument = &coredocumentpb.CoreDocument{
 		DocumentIdentifier: identifier,
 		CurrentVersion:     identifier,
@@ -296,14 +280,14 @@ func TestPurchaseOrderDocumentService_HandleCreatePurchaseOrderProof_NotExisting
 
 	s, mockRepo, _ := generateMockedOutPurchaseOrderService()
 
-	proofRequest := &clientpurchaseorderpb.CreatePurchaseOrderProofEnvelope{
+	proofRequest := &legacy.CreatePurchaseOrderProofEnvelope{
 		DocumentIdentifier: identifier,
 		Fields:             []string{"currency", "order_country", "net_amount"},
 	}
 	//return an "empty" invoice as mock can't return nil
 	mockRepo.On("GetByID", proofRequest.DocumentIdentifier, new(purchaseorderpb.PurchaseOrderDocument)).Return(errors.New("couldn't find invoice")).Once()
 	mockRepo.replaceDoc = order.Document
-	purchaseOrderProof, err := s.HandleCreatePurchaseOrderProof(context.Background(), proofRequest)
+	purchaseOrderProof, err := s.CreatePurchaseOrderProof(context.Background(), proofRequest)
 	mockRepo.AssertExpectations(t)
 
 	assert.Nil(t, purchaseOrderProof)

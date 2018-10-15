@@ -1,12 +1,10 @@
-package purchaseorderrepository
+package purchaseorder
 
 import (
 	"fmt"
-	"log"
 	"sync"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
-	"github.com/centrifuge/go-centrifuge/centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
 	"github.com/golang/protobuf/proto"
 	"github.com/syndtr/goleveldb/leveldb"
@@ -52,7 +50,7 @@ func validate(doc proto.Message) error {
 		return fmt.Errorf("invalid document of type: %T", doc)
 	}
 
-	if err := purchaseorder.Validate(poDoc); err != nil {
+	if err := Validate(poDoc); err != nil {
 		return err
 	}
 

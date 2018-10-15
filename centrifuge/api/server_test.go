@@ -1,6 +1,6 @@
 // +build unit
 
-package api
+package api_test
 
 import (
 	"context"
@@ -14,13 +14,16 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents/invoice"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents/purchaseorder"
 	"github.com/stretchr/testify/assert"
+	"github.com/centrifuge/go-centrifuge/centrifuge/api"
 )
 
 func TestMain(m *testing.M) {
 	cc.TestIntegrationBootstrap()
 	db := cc.GetLevelDBStorage()
 	invoice.InitLegacyRepository(db)
+	purchaseorder.InitLevelDBRepository(db)
 	coredocumentrepository.InitLevelDBRepository(db)
 	flag.Parse()
 	result := m.Run()
@@ -41,7 +44,7 @@ func TestCentAPIServer_StartHappy(t *testing.T) {
 
 func TestCentAPIServer_StartContextCancel(t *testing.T) {
 	documents.GetRegistryInstance().Register(documenttypes.InvoiceDataTypeUrl, invoice.DefaultService(nil, nil))
-	capi := NewCentAPIServer("0.0.0.0:9000", 9000, "")
+	capi := api.NewCentAPIServer("0.0.0.0:9000", 9000, "")
 	ctx, canc := context.WithCancel(context.Background())
 	startErr := make(chan error)
 	var wg sync.WaitGroup
@@ -57,7 +60,7 @@ func TestCentAPIServer_StartContextCancel(t *testing.T) {
 func TestCentAPIServer_StartListenError(t *testing.T) {
 	invoice.InitLegacyRepository(nil)
 	// cause an error by using an invalid port
-	capi := NewCentAPIServer("0.0.0.0:100000000", 100000000, "")
+	capi := api.NewCentAPIServer("0.0.0.0:100000000", 100000000, "")
 	ctx, _ := context.WithCancel(context.Background())
 	startErr := make(chan error)
 	var wg sync.WaitGroup

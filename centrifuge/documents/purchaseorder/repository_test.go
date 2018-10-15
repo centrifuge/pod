@@ -1,29 +1,14 @@
-// +build integration
+// +build unit
 
-package purchaseorderrepository
+package purchaseorder
 
 import (
-	"os"
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
-	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
-	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/stretchr/testify/assert"
 )
-
-var dbFileName = "/tmp/centrifuge_testing_podoc.leveldb"
-
-func TestMain(m *testing.M) {
-	levelDB := storage.NewLevelDBStorage(dbFileName)
-	coredocumentrepository.InitLevelDBRepository(levelDB)
-	InitLevelDBRepository(levelDB)
-	result := m.Run()
-	levelDB.Close()
-	os.RemoveAll(dbFileName)
-	os.Exit(result)
-}
 
 func TestRepository(t *testing.T) {
 	repo := GetRepository()
