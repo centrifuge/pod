@@ -1,6 +1,6 @@
 // +build unit
 
-package notification
+package notification_test
 
 import (
 	"os"
@@ -11,6 +11,7 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
 	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
+	"github.com/centrifuge/go-centrifuge/centrifuge/notification"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/golang/protobuf/jsonpb"
@@ -36,11 +37,11 @@ func TestWebhookConstructPayload(t *testing.T) {
 		DocumentIdentifier: coredoc.DocumentIdentifier,
 		DocumentType:       documenttypes.InvoiceDataTypeUrl,
 		CentrifugeId:       cid,
-		EventType:          uint32(RECEIVED_PAYLOAD),
+		EventType:          uint32(notification.RECEIVED_PAYLOAD),
 		Recorded:           ts,
 	}
 
-	whs := WebhookSender{}
+	whs := notification.WebhookSender{}
 	bresult, err := whs.constructPayload(notificationMessage)
 	assert.Nil(t, err, "Should not error out")
 

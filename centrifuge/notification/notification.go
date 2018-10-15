@@ -36,7 +36,7 @@ func (wh *WebhookSender) Send(notification *notificationpb.NotificationMessage) 
 		return SUCCESS, nil
 	}
 
-	payload, err := wh.constructPayload(notification)
+	payload, err := wh.ConstructPayload(notification)
 	if err != nil {
 		log.Error(err)
 		return FAILURE, err
@@ -50,7 +50,7 @@ func (wh *WebhookSender) Send(notification *notificationpb.NotificationMessage) 
 	return SUCCESS, nil
 }
 
-func (wh *WebhookSender) constructPayload(notification *notificationpb.NotificationMessage) ([]byte, error) {
+func (wh *WebhookSender) ConstructPayload(notification *notificationpb.NotificationMessage) ([]byte, error) {
 	marshaler := jsonpb.Marshaler{}
 	payload, err := marshaler.MarshalToString(notification)
 	if err != nil {

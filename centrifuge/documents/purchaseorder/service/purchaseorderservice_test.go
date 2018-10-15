@@ -1,6 +1,6 @@
 // +build unit
 
-package purchaseorderservice
+package purchaseorderservice_test
 
 import (
 	"context"
@@ -15,6 +15,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents/purchaseorder"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents/purchaseorder/service"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/legacy/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/precise-proofs/proofs"
@@ -67,17 +68,17 @@ func (m *mockPurchaseOrderRepository) Update(id []byte, doc proto.Message) (err 
 	return args.Error(0)
 }
 
-func generateMockedOutPurchaseOrderService() (srv *PurchaseOrderDocumentService, repo *mockPurchaseOrderRepository, coreDocumentProcessor *testingutils.MockCoreDocumentProcessor) {
+func generateMockedOutPurchaseOrderService() (srv *purchaseorderservice.PurchaseOrderDocumentService, repo *mockPurchaseOrderRepository, coreDocumentProcessor *testingutils.MockCoreDocumentProcessor) {
 	repo = new(mockPurchaseOrderRepository)
 	coreDocumentProcessor = new(testingutils.MockCoreDocumentProcessor)
-	srv = &PurchaseOrderDocumentService{
+	srv = &purchaseorderservice.PurchaseOrderDocumentService{
 		Repository:            repo,
 		CoreDocumentProcessor: coreDocumentProcessor,
 	}
 	return srv, repo, coreDocumentProcessor
 }
 
-func getTestSetupData() (po *purchaseorder.PurchaseOrder, srv *PurchaseOrderDocumentService, repo *mockPurchaseOrderRepository, mockCoreDocumentProcessor *testingutils.MockCoreDocumentProcessor) {
+func getTestSetupData() (po *purchaseorder.PurchaseOrder, srv *purchaseorderservice.PurchaseOrderDocumentService, repo *mockPurchaseOrderRepository, mockCoreDocumentProcessor *testingutils.MockCoreDocumentProcessor) {
 	po = &purchaseorder.PurchaseOrder{Document: &purchaseorderpb.PurchaseOrderDocument{}}
 	po.Document.Data = &purchaseorderpb.PurchaseOrderData{
 		PoNumber:         "po1234",

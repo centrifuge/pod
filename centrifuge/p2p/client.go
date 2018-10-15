@@ -75,8 +75,8 @@ func (d *defaultClient) OpenClient(target string) (p2ppb.P2PServiceClient, error
 	return p2ppb.NewP2PServiceClient(g), nil
 }
 
-// getSignatureForDocument requests the target node to sign the document
-func getSignatureForDocument(ctx context.Context, doc coredocumentpb.CoreDocument, client p2ppb.P2PServiceClient, receiverCentId identity.CentID) (*p2ppb.SignatureResponse, error) {
+// GetSignatureForDocument requests the target node to sign the document
+func GetSignatureForDocument(ctx context.Context, doc coredocumentpb.CoreDocument, client p2ppb.P2PServiceClient, receiverCentId identity.CentID) (*p2ppb.SignatureResponse, error) {
 	senderId, err := config.Config.GetIdentityId()
 	if err != nil {
 		return nil, err
@@ -126,7 +126,7 @@ type signatureResponseWrap struct {
 }
 
 func getSignatureAsync(ctx context.Context, doc coredocumentpb.CoreDocument, client p2ppb.P2PServiceClient, receiverCentId identity.CentID, out chan<- signatureResponseWrap) {
-	resp, err := getSignatureForDocument(ctx, doc, client, receiverCentId)
+	resp, err := GetSignatureForDocument(ctx, doc, client, receiverCentId)
 	out <- signatureResponseWrap{
 		resp: resp,
 		err:  err,

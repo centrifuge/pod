@@ -1,6 +1,6 @@
 // +build unit
 
-package p2p
+package p2p_test
 
 import (
 	"context"
@@ -12,6 +12,7 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/centrifuge/p2p"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
@@ -35,7 +36,7 @@ func TestGetSignatureForDocument_fail_connect(t *testing.T) {
 	centrifugeId, err := identity.ToCentID(tools.RandomSlice(identity.CentIDLength))
 	assert.Nil(t, err, "centrifugeId not initialized correctly ")
 	client.On("RequestDocumentSignature", ctx, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("signature failed")).Once()
-	resp, err := getSignatureForDocument(ctx, *coreDoc, client, centrifugeId)
+	resp, err := p2p.GetSignatureForDocument(ctx, *coreDoc, client, centrifugeId)
 	client.AssertExpectations(t)
 	assert.Error(t, err, "must fail")
 	assert.Nil(t, resp, "must be nil")
@@ -51,7 +52,7 @@ func TestGetSignatureForDocument_fail_version_check(t *testing.T) {
 	assert.Nil(t, err, "centrifugeId not initialized correctly ")
 
 	client.On("RequestDocumentSignature", ctx, mock.Anything, mock.Anything).Return(resp, nil).Once()
-	resp, err = getSignatureForDocument(ctx, *coreDoc, client, centrifugeId)
+	resp, err = p2p.GetSignatureForDocument(ctx, *coreDoc, client, centrifugeId)
 	client.AssertExpectations(t)
 	assert.Error(t, err, "must fail")
 	assert.Contains(t, err.Error(), "Incompatible version")
@@ -76,7 +77,7 @@ func TestGetSignatureForDocument_fail_centrifugeId(t *testing.T) {
 	}
 
 	client.On("RequestDocumentSignature", ctx, mock.Anything, mock.Anything).Return(sigResp, nil).Once()
-	resp, err := getSignatureForDocument(ctx, *coreDoc, client, centrifugeId)
+	resp, err := p2p.GetSignatureForDocument(ctx, *coreDoc, client, centrifugeId)
 
 	client.AssertExpectations(t)
 	assert.Nil(t, resp, "must be nil")
