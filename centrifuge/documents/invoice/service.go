@@ -127,6 +127,7 @@ func (s service) DeriveFromCreatePayload(invoiceInput *clientinvoicepb.InvoiceCr
 	return invoiceModel, nil
 }
 
+// validateAndPersist validate models, persist the new model and anchors the document
 func (s service) validateAndPersist(ctx context.Context, old, new documents.Model, validator documents.ValidatorGroup) (documents.Model, error) {
 	inv, ok := new.(*InvoiceModel)
 	if !ok {

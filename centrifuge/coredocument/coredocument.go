@@ -235,6 +235,7 @@ func ValidateWithSignature(doc *coredocumentpb.CoreDocument) error {
 
 // PrepareNewVersion creates a copy of the passed coreDocument with the version fields updated
 // Adds collaborators and fills salts
+// Note: ignores any collaborators in the oldCD
 func PrepareNewVersion(oldCD coredocumentpb.CoreDocument, collaborators []string) (*coredocumentpb.CoreDocument, error) {
 	newCD, err := NewWithCollaborators(collaborators)
 	if err != nil {
