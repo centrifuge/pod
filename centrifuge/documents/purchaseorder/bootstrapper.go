@@ -1,4 +1,4 @@
-package purchaseorderrepository
+package purchaseorder
 
 import (
 	"errors"
