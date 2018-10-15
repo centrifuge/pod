@@ -24,6 +24,7 @@ type AnchorRepositoryContract interface {
 	//transactions
 	PreCommit(opts *bind.TransactOpts, anchorID *big.Int, signingRoot [32]byte, centrifugeId *big.Int, signature []byte, expirationBlock *big.Int) (*types.Transaction, error)
 	Commit(opts *bind.TransactOpts, _anchorID *big.Int, _documentRoot [32]byte, _centrifugeId *big.Int, _documentProofs [][32]byte, _signature []byte) (*types.Transaction, error)
+	Commits(opts *bind.CallOpts, anchorID *big.Int) (docRoot [32]byte, err error)
 }
 type WatchAnchorPreCommitted interface {
 	//event name: AnchorPreCommitted
@@ -44,6 +45,11 @@ type EthereumAnchorRepository struct {
 
 func NewEthereumAnchorRepository(config Config, anchorRepositoryContract AnchorRepositoryContract) *EthereumAnchorRepository {
 	return &EthereumAnchorRepository{config: config, anchorRepositoryContract: anchorRepositoryContract}
+}
+
+// Commits takes an anchorID and returns the corresponding documentRoot from the chain
+func (ethRepository *EthereumAnchorRepository) GetDocumentRootOf(anchorID AnchorID) (docRoot DocRoot, err error) {
+	return ethRepository.anchorRepositoryContract.Commits(ethereum.GetGethCallOpts(), anchorID.toBigInt())
 }
 
 //PreCommitAnchor will call the transaction PreCommit on the smart contract

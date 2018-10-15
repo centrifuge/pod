@@ -287,3 +287,8 @@ func TestValidator_signatureValidator(t *testing.T) {
 	srv.AssertExpectations(t)
 	assert.Nil(t, err)
 }
+
+func TestPreAnchorValidator(t *testing.T) {
+	pav := PreAnchorValidator()
+	assert.Len(t, pav, 4)
+}

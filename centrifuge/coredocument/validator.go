@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	"github.com/centrifuge/go-centrifuge/centrifuge/signatures"
@@ -156,4 +157,51 @@ func signaturesValidator() documents.Validator {
 
 		return err
 	})
+}
+
+// anchoredValidator checks if the document root matches the one on chain with specific anchorID
+// assumes document root is generated and verified
+func anchoredValidator() documents.Validator {
+	return documents.ValidatorFunc(func(_, new documents.Model) error {
+		cd, err := getCoreDocument(new)
+		if err != nil {
+			return err
+		}
+
+		anchorID, err := anchors.NewAnchorID(cd.CurrentVersion)
+		if err != nil {
+			return err
+		}
+
+		docRoot, err := anchors.NewDocRoot(cd.DocumentRoot)
+		if err != nil {
+			return err
+		}
+
+		gotRoot, err := anchors.GetDocumentRootOf(anchorID)
+		if err != nil {
+			return fmt.Errorf("failed to get document root from chain: %v", err)
+		}
+
+		if !tools.IsSameByteSlice(docRoot[:], gotRoot[:]) {
+			return fmt.Errorf("mismatched document root")
+		}
+
+		return nil
+	})
+}
+
+// PreAnchorValidator is a validator group with following validators
+// base validator
+// signing root validator
+// document root validator
+// signatures validator
+// should be called before pre anchoring
+func PreAnchorValidator() documents.ValidatorGroup {
+	return documents.ValidatorGroup{
+		baseValidator(),
+		signingRootValidator(),
+		documentRootValidator(),
+		signaturesValidator(),
+	}
 }

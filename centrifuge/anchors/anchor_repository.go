@@ -13,6 +13,7 @@ var log = logging.Logger("anchorRepository")
 type AnchorRepository interface {
 	PreCommitAnchor(anchorID AnchorID, signingRoot DocRoot, centrifugeID identity.CentID, signature []byte, expirationBlock *big.Int) (<-chan *WatchPreCommit, error)
 	CommitAnchor(anchorID AnchorID, documentRoot DocRoot, centrifugeId identity.CentID, documentProofs [][32]byte, signature []byte) (<-chan *WatchCommit, error)
+	GetDocumentRootOf(anchorID AnchorID) (DocRoot, error)
 }
 
 func PreCommitAnchor(anchorID AnchorID, signingRoot DocRoot, centrifugeId identity.CentID, signature []byte, expirationBlock *big.Int) (<-chan *WatchPreCommit, error) {
@@ -33,6 +34,12 @@ func CommitAnchor(anchorID AnchorID, documentRoot DocRoot, centrifugeID identity
 		log.Errorf("Failed to commit the anchor [id:%x, hash:%x ]: %v", anchorID, documentRoot, err)
 	}
 	return confirmations, err
+}
+
+// GetDocumentRootOf returns document root mapped to the anchorID
+func GetDocumentRootOf(anchorID AnchorID) (DocRoot, error) {
+	anchorRepository, _ := getConfiguredRepository()
+	return anchorRepository.GetDocumentRootOf(anchorID)
 }
 
 // anchorRepository is a singleton to keep track of the anchorRepository
