@@ -524,3 +524,86 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.NotNil(t, cd.NextVersion)
 	assert.Equal(t, payload.Data, doc.(*InvoiceModel).getClientData())
 }
+
+func TestService_Update_packCoreDocument_fail(t *testing.T) {
+	model := &mockModel{}
+	model.On("PackCoreDocument").Return(nil, fmt.Errorf("pack error")).Once()
+	_, err := invService.Update(context.Background(), model)
+	model.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "pack error")
+}
+
+func TestService_Update_Missing_last_version(t *testing.T) {
+	model := &mockModel{}
+	cd := coredocument.New()
+	model.On("PackCoreDocument").Return(cd, nil).Once()
+	_, err := invService.Update(context.Background(), model)
+	model.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "document not found")
+}
+
+func TestService_Update_unknown_type(t *testing.T) {
+	model, err := invService.DeriveFromCreatePayload(createPayload())
+	assert.Nil(t, err)
+	cd, err := model.PackCoreDocument()
+	assert.Nil(t, err)
+	GetRepository().Create(cd.DocumentIdentifier, model)
+
+	newModel := &mockModel{}
+	newModel.On("PackCoreDocument").Return(cd, nil).Once()
+	_, err = invService.Update(context.Background(), newModel)
+	newModel.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "unknown document type")
+}
+
+func TestService_Update(t *testing.T) {
+	srv := invService.(*service)
+	proc := &testingutils.MockCoreDocumentProcessor{}
+	proc.On("Anchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
+	proc.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
+	srv.coreDocProcessor = proc
+	payload := createPayload()
+	payload.Collaborators = []string{"0x010203040506"}
+	inv, err := invService.DeriveFromCreatePayload(payload)
+	assert.Nil(t, err)
+	cd, err := inv.PackCoreDocument()
+	assert.Nil(t, err)
+	cd.DocumentRoot = tools.RandomSlice(32)
+	err = inv.UnpackCoreDocument(cd)
+	assert.Nil(t, err)
+	GetRepository().Create(cd.DocumentIdentifier, inv)
+
+	data, err := invService.DeriveInvoiceData(inv)
+	assert.Nil(t, err)
+	data.GrossAmount = 100
+	data.ExtraData = hexutil.Encode(tools.RandomSlice(32))
+	collab := hexutil.Encode(tools.RandomSlice(6))
+
+	newInv, err := invService.DeriveFromUpdatePayload(&clientinvoicepb.InvoiceUpdatePayload{
+		Identifier:    hexutil.Encode(cd.DocumentIdentifier),
+		Collaborators: []string{collab},
+		Data:          data,
+	})
+	assert.Nil(t, err)
+	newData, err := invService.DeriveInvoiceData(newInv)
+	assert.Nil(t, err)
+	assert.Equal(t, data, newData)
+
+	model, err := invService.Update(context.Background(), newInv)
+	proc.AssertExpectations(t)
+	assert.Nil(t, err)
+	assert.Equal(t, newInv, model.(*InvoiceModel))
+
+	newCD, err := model.PackCoreDocument()
+	assert.Nil(t, err)
+	assert.True(t, GetRepository().Exists(newCD.DocumentIdentifier))
+	assert.True(t, GetRepository().Exists(newCD.CurrentVersion))
+	assert.True(t, GetRepository().Exists(newCD.PreviousVersion))
+
+	newData, err = invService.DeriveInvoiceData(model)
+	assert.Nil(t, err)
+	assert.Equal(t, data, newData)
+}
