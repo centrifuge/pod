@@ -18,6 +18,8 @@ import (
 	"github.com/syndtr/goleveldb/leveldb"
 	gologging "github.com/whyrusleeping/go-logging"
 	"github.com/centrifuge/go-centrifuge/centrifuge/nft"
+	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents/invoice"
 )
 
 const testStoragePath = "/tmp/centrifuge_data.leveldb_TESTING"
@@ -58,6 +60,9 @@ func bootstrapQueuing() {
 	// TODO here we would not have to put the bootstrapper.BootstrappedConfig after the TestBootstrapper refactoring
 	context := map[string]interface{}{bootstrap.BootstrappedConfig: true}
 	for _, b := range []bootstrap.TestBootstrapper{
+		&storage.Bootstrapper{},
+		&coredocumentrepository.Bootstrapper{},
+		&invoice.Bootstrapper{},
 		&ethereum.Bootstrapper{},
 		&anchors.Bootstrapper{},
 		&identity.Bootstrapper{},

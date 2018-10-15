@@ -18,3 +18,7 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	}
 	return errors.New("could not initialize levelDB")
 }
+
+func (b *Bootstrapper) TestBootstrap(context map[string]interface{}) error {
+	return b.Bootstrap(context)
+}
