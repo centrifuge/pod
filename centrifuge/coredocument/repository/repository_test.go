@@ -1,4 +1,4 @@
-// +build integration
+// +build unit
 
 package coredocumentrepository
 
@@ -7,19 +7,15 @@ import (
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
+	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/stretchr/testify/assert"
 )
 
-var dbFileName = "/tmp/centrifuge_testing_coredoc.leveldb"
-
 func TestMain(m *testing.M) {
-	levelDB := storage.NewLevelDBStorage(dbFileName)
-	InitLevelDBRepository(levelDB)
+	cc.TestIntegrationBootstrap()
+	InitLevelDBRepository(cc.GetLevelDBStorage())
 	result := m.Run()
-	levelDB.Close()
-	os.RemoveAll(dbFileName)
 	os.Exit(result)
 }
 

@@ -41,6 +41,11 @@ func format(err *multierror.Error) error {
 	err.ErrorFormat = func(errorList []error) string {
 		var buffer bytes.Buffer
 		for i, err := range errorList {
+			if errt, ok := err.(Error); ok {
+				buffer.WriteString(fmt.Sprintf("%s : %s\n", errt.key, errt.err.Error()))
+				continue
+			}
+
 			buffer.WriteString(fmt.Sprintf("Error %v : %s\n", i+1, err.Error()))
 		}
 

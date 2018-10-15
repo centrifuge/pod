@@ -3,10 +3,13 @@ package coredocument
 import (
 	"crypto/sha256"
 	"fmt"
+	"strings"
+
+	"github.com/centrifuge/precise-proofs/proofs/proto"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
-	"github.com/centrifuge/go-centrifuge/centrifuge/code"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/centrifuge/precise-proofs/proofs"
@@ -48,25 +51,24 @@ func GetSigningProofHashes(document *coredocumentpb.CoreDocument) (hashes [][]by
 }
 
 // CalculateSigningRoot calculates the signing root of the core document
-func CalculateSigningRoot(document *coredocumentpb.CoreDocument) error {
-	valid, errMsg, errs := Validate(document) // TODO: Validation
-	if !valid {
-		return centerrors.NewWithErrors(code.DocumentInvalid, errMsg, errs)
+func CalculateSigningRoot(doc *coredocumentpb.CoreDocument) error {
+	if err := Validate(doc); err != nil { // TODO: Validation
+		return err
 	}
 
-	tree, err := GetDocumentSigningTree(document)
+	tree, err := GetDocumentSigningTree(doc)
 	if err != nil {
 		return err
 	}
 
-	document.SigningRoot = tree.RootHash()
+	doc.SigningRoot = tree.RootHash()
 	return nil
 }
 
 // CalculateDocumentRoot calculates the document root of the core document
 func CalculateDocumentRoot(document *coredocumentpb.CoreDocument) error {
 	if len(document.SigningRoot) != 32 {
-		return centerrors.New(code.DocumentInvalid, "signing root invalid")
+		return fmt.Errorf("signing root invalid")
 	}
 
 	tree, err := GetDocumentRootTree(document)
@@ -154,27 +156,26 @@ func GetDocumentSigningTree(document *coredocumentpb.CoreDocument) (tree *proofs
 
 // Validate checks the basic requirements for Core document
 // checks Identifiers and data_root to be preset
-func Validate(document *coredocumentpb.CoreDocument) (valid bool, errMsg string, errs map[string]string) {
+func Validate(document *coredocumentpb.CoreDocument) error {
 	if document == nil {
-		return false, centerrors.NilDocument, nil
+		return fmt.Errorf("nil document")
 	}
 
-	errs = make(map[string]string)
-
+	var err error
 	if tools.IsEmptyByteSlice(document.DocumentIdentifier) {
-		errs["cd_identifier"] = centerrors.RequiredField
+		err = documents.AppendError(err, documents.NewError("cd_identifier", centerrors.RequiredField))
 	}
 
 	if tools.IsEmptyByteSlice(document.CurrentVersion) {
-		errs["cd_current_identifier"] = centerrors.RequiredField
+		err = documents.AppendError(err, documents.NewError("cd_current_version", centerrors.RequiredField))
 	}
 
 	if tools.IsEmptyByteSlice(document.NextVersion) {
-		errs["cd_next_identifier"] = centerrors.RequiredField
+		err = documents.AppendError(err, documents.NewError("cd_next_version", centerrors.RequiredField))
 	}
 
 	if tools.IsEmptyByteSlice(document.DataRoot) {
-		errs["cd_data_root"] = centerrors.RequiredField
+		err = documents.AppendError(err, documents.NewError("cd_data_root", centerrors.RequiredField))
 	}
 
 	// double check the identifiers
@@ -183,7 +184,7 @@ func Validate(document *coredocumentpb.CoreDocument) (valid bool, errMsg string,
 	// Problem (re-using an old identifier for NextVersion): CurrentVersion or DocumentIdentifier same as NextVersion
 	if isSameBytes(document.NextVersion, document.DocumentIdentifier) ||
 		isSameBytes(document.NextVersion, document.CurrentVersion) {
-		errs["cd_overall"] = centerrors.IdentifierReUsed
+		err = documents.AppendError(err, documents.NewError("cd_overall", centerrors.IdentifierReUsed))
 	}
 
 	// lets not do verbose check like earlier since these will be
@@ -195,50 +196,41 @@ func Validate(document *coredocumentpb.CoreDocument) (valid bool, errMsg string,
 			salts.NextVersion,
 			salts.DocumentIdentifier,
 			salts.PreviousRoot) {
-		errs["cd_salts"] = centerrors.RequiredField
+		err = documents.AppendError(err, documents.NewError("cd_salts", centerrors.RequiredField))
 	}
 
-	if len(errs) < 1 {
-		return true, "", nil
-	}
-
-	return false, "Invalid CoreDocument", errs
+	return err
 }
 
 // ValidateWithSignature does a basic validations and signature validations
 // signing_root is recalculated and verified
 // signatures are validated
 func ValidateWithSignature(doc *coredocumentpb.CoreDocument) error {
-	if valid, errMsg, errs := Validate(doc); !valid {
-		return centerrors.NewWithErrors(code.DocumentInvalid, errMsg, errs)
+	if err := Validate(doc); err != nil {
+		return err
 	}
 
 	if tools.IsEmptyByteSlice(doc.SigningRoot) {
-		return centerrors.New(code.DocumentInvalid, "signing_root is missing")
+		return fmt.Errorf("signing root missing")
 	}
 
 	t, err := GetDocumentSigningTree(doc)
 	if err != nil {
-		return centerrors.New(code.Unknown, err.Error())
+		return fmt.Errorf("failed to generate signing root")
 	}
 
 	if !tools.IsSameByteSlice(t.RootHash(), doc.SigningRoot) {
-		return centerrors.New(code.DocumentInvalid, fmt.Sprintf("signing_root mismatch %v != %v", t.RootHash(), doc.SigningRoot))
+		return fmt.Errorf("signing root mismatch")
 	}
 
-	var errs []error
 	for _, sig := range doc.Signatures {
-		err := signatures.ValidateSignature(sig, doc.SigningRoot)
-		if err != nil {
-			errs = append(errs, err)
+		erri := signatures.ValidateSignature(sig, doc.SigningRoot)
+		if erri != nil {
+			err = documents.AppendError(err, erri)
 		}
 	}
 
-	if len(errs) > 0 {
-		return fmt.Errorf("signature verification failed: %v", errs)
-	}
-
-	return nil
+	return err
 }
 
 // InitIdentifiers fills in missing identifiers for the given CoreDocument.
@@ -329,4 +321,43 @@ func GetTypeUrl(coreDocument *coredocumentpb.CoreDocument) (string, error) {
 		return "", fmt.Errorf("typeUrl not set properly")
 	}
 	return coreDocument.EmbeddedData.TypeUrl, nil
+}
+
+// CreateProofs util function that takes document data tree, coreDocument and a list fo fields and generates proofs
+func CreateProofs(dataTree *proofs.DocumentTree, coreDoc *coredocumentpb.CoreDocument, fields []string) (proofs []*proofspb.Proof, err error) {
+	dataRootHashes, err := GetDataProofHashes(coreDoc)
+	if err != nil {
+		return nil, fmt.Errorf("createProofs error %v", err)
+	}
+
+	signingRootHashes, err := GetSigningProofHashes(coreDoc)
+	if err != nil {
+		return nil, fmt.Errorf("createProofs error %v", err)
+	}
+
+	cdtree, err := GetDocumentSigningTree(coreDoc)
+	if err != nil {
+		return nil, fmt.Errorf("createProofs error %v", err)
+	}
+
+	// We support fields that belong to different document trees, as we do not prepend a tree prefix to the field, the approach
+	// is to try in both trees to find the field and create the proof accordingly
+	for _, field := range fields {
+		rootHashes := dataRootHashes
+		proof, err := dataTree.CreateProof(field)
+		if err != nil {
+			if strings.Contains(err.Error(), "No such field") {
+				proof, err = cdtree.CreateProof(field)
+				if err != nil {
+					return nil, fmt.Errorf("createProofs error %v", err)
+				}
+				rootHashes = signingRootHashes
+			} else {
+				return nil, fmt.Errorf("createProofs error %v", err)
+			}
+		}
+		proof.SortedHashes = append(proof.SortedHashes, rootHashes...)
+		proofs = append(proofs, &proof)
+	}
+	return
 }
