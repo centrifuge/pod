@@ -17,7 +17,7 @@ type MockPaymentObligationService struct {
 	mock.Mock
 }
 
-func (m *MockPaymentObligationService) mintNFT(documentID []byte, docType, registryAddress, depositAddress string, proofFields []string) (string, error) {
+func (m *MockPaymentObligationService) MintNFT(documentID []byte, docType, registryAddress, depositAddress string, proofFields []string) (string, error) {
 	args := m.Called(documentID, docType, registryAddress, depositAddress, proofFields)
 	return args.Get(0).(string), args.Error(1)
 }
@@ -27,7 +27,7 @@ func TestNFTMint_success(t *testing.T) {
 	mockService := &MockPaymentObligationService{}
 	docID, _ := hexutil.Decode(nftMintRequest.Identifier)
 	mockService.
-		On("mintNFT", docID, nftMintRequest.Type, nftMintRequest.RegistryAddress, nftMintRequest.DepositAddress, nftMintRequest.ProofFields).
+		On("MintNFT", docID, nftMintRequest.Type, nftMintRequest.RegistryAddress, nftMintRequest.DepositAddress, nftMintRequest.ProofFields).
 		Return("tokenID", nil)
 
 	handler := grpcHandler{mockService}
@@ -51,7 +51,7 @@ func TestNFTMint_ServiceError(t *testing.T) {
 	mockService := &MockPaymentObligationService{}
 	docID, _ := hexutil.Decode(nftMintRequest.Identifier)
 	mockService.
-		On("mintNFT", docID, nftMintRequest.Type, nftMintRequest.RegistryAddress, nftMintRequest.DepositAddress, nftMintRequest.ProofFields).
+		On("MintNFT", docID, nftMintRequest.Type, nftMintRequest.RegistryAddress, nftMintRequest.DepositAddress, nftMintRequest.ProofFields).
 		Return("", errors.New("service error"))
 
 	handler := grpcHandler{mockService}

@@ -1,3 +1,5 @@
+// +build unit
+
 package nft
 
 import (
@@ -161,12 +163,12 @@ func TestPaymentObligationService(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			// mocks
+			// get mocks
 			docService, paymentOb, idService, ethClient, config := test.mocker()
 			// with below config the documentType has to be test.name to avoid conflicts since registry is a singleton
 			documents.GetRegistryInstance().Register(test.name, &docService)
 			service := NewPaymentObligationService(&paymentOb, &idService, &ethClient, &config)
-			tokenID, err := service.mintNFT(decodeHex(test.request.Identifier), test.request.Type, test.request.RegistryAddress, test.request.DepositAddress, test.request.ProofFields)
+			tokenID, err := service.MintNFT(decodeHex(test.request.Identifier), test.request.Type, test.request.RegistryAddress, test.request.DepositAddress, test.request.ProofFields)
 			if test.err != nil {
 				assert.Equal(t, test.err.Error(), err.Error())
 			} else if err != nil {

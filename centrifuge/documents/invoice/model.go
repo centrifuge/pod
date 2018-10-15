@@ -20,7 +20,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/golang/protobuf/ptypes/timestamp"
-)
+	)
 
 // InvoiceModel implements the documents.Model keeps track of invoice related fields and state
 type InvoiceModel struct {
@@ -263,6 +263,14 @@ func (i *InvoiceModel) getInvoiceSalts(invoiceData *invoicepb.InvoiceData) *invo
 	}
 
 	return i.InvoiceSalts
+}
+
+func (i *InvoiceModel) GetDocumentID() ([]byte, error) {
+	coreDoc, err := i.PackCoreDocument()
+	if err != nil {
+		return []byte{}, err
+	}
+	return coreDoc.DocumentIdentifier, nil
 }
 
 // PackCoreDocument packs the InvoiceModel into a Core Document

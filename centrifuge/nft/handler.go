@@ -13,7 +13,7 @@ import (
 var apiLog = logging.Logger("nft-api")
 
 type PaymentObligationService interface {
-	mintNFT(documentID []byte, docType, registryAddress, depositAddress string, proofFields []string) (string, error)
+	MintNFT(documentID []byte, docType, registryAddress, depositAddress string, proofFields []string) (string, error)
 }
 
 type grpcHandler struct {
@@ -22,7 +22,7 @@ type grpcHandler struct {
 
 // GRPCHandler returns an implementation of invoice.DocumentServiceServer
 func GRPCHandler() nftpb.NFTServiceServer {
-	return &grpcHandler{service: getPaymentObligationService()}
+	return &grpcHandler{service: GetPaymentObligationService()}
 }
 
 // MintNFT will be called from the client API to mint an NFT
@@ -33,7 +33,7 @@ func (g grpcHandler) MintNFT(context context.Context, request *nftpb.NFTMintRequ
 		return &nftpb.NFTMintResponse{}, centerrors.New(code.Unknown, err.Error())
 	}
 
-	tokenID, err := g.service.mintNFT(identifier, request.Type, request.RegistryAddress, request.DepositAddress, request.ProofFields)
+	tokenID, err := g.service.MintNFT(identifier, request.Type, request.RegistryAddress, request.DepositAddress, request.ProofFields)
 	if err != nil {
 		return &nftpb.NFTMintResponse{}, centerrors.New(code.Unknown, err.Error())
 	}

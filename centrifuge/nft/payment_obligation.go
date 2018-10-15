@@ -14,7 +14,10 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	logging "github.com/ipfs/go-log"
 )
+
+var log = logging.Logger("nft")
 
 // TODO remove this when we have a proper dependancy injection mechanism
 var poService *paymentObligationService
@@ -23,7 +26,7 @@ func setPaymentObligationService(s *paymentObligationService) {
 	poService = s
 }
 
-func getPaymentObligationService() *paymentObligationService {
+func GetPaymentObligationService() *paymentObligationService {
 	return poService
 }
 
@@ -51,7 +54,7 @@ func NewPaymentObligationService(paymentObligation PaymentObligation, identitySe
 	return &paymentObligationService{paymentObligation: paymentObligation, identityService: identityService, ethClient: ethClient, config: config}
 }
 
-func (s *paymentObligationService) mintNFT(documentID []byte, docType, registryAddress, depositAddress string, proofFields []string) (string, error) {
+func (s *paymentObligationService) MintNFT(documentID []byte, docType, registryAddress, depositAddress string, proofFields []string) (string, error) {
 	documentService, err := getDocumentService(docType)
 	if err != nil {
 		return "", err
@@ -97,13 +100,27 @@ func (s *paymentObligationService) mintNFT(documentID []byte, docType, registryA
 		return "", err
 	}
 
-	_, err = s.paymentObligation.Mint(opts, requestData.To, requestData.TokenId, requestData.TokenURI, requestData.AnchorId,
-		requestData.MerkleRoot, requestData.Values, requestData.Salts, requestData.Proofs)
+	// TODO setup worker to watch for events and enqueue a message to watch here
+
+	err = s.sendTransaction(s.paymentObligation, opts, requestData)
 	if err != nil {
 		return "", err
 	}
 
 	return requestData.TokenId.String(), nil
+}
+
+// sendTransaction sends the actual transaction to mint the NFT
+func (s *paymentObligationService) sendTransaction(contract PaymentObligation, opts *bind.TransactOpts, requestData *MintRequest) (err error) {
+	tx, err := s.ethClient.SubmitTransactionWithRetries(contract.Mint, opts, requestData.To, requestData.TokenId, requestData.TokenURI, requestData.AnchorId,
+		requestData.MerkleRoot, requestData.Values, requestData.Salts, requestData.Proofs)
+	if err != nil {
+		return err
+	}
+	log.Infof("Sent off tx to mint [tokenID: %x, anchor: %x, registry: %x] to payment obligation contract. Ethereum transaction hash [%x] and Nonce [%v] and Check [%v]",
+		requestData.TokenId, requestData.AnchorId, requestData.To, tx.Hash(), tx.Nonce(), tx.CheckNonce())
+	log.Infof("Transfer pending: 0x%x\n", tx.Hash())
+	return
 }
 
 func (s *paymentObligationService) getIdentityAddress() (common.Address, error) {
