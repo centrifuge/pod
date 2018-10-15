@@ -115,7 +115,6 @@ func TestCreateProofData(t *testing.T) {
 	}
 }
 
-// TODO use backends.NewSimulatedBackend on go-ethereum
 type MockPaymentObligation struct {
 	mock.Mock
 }

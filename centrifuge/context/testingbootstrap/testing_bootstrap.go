@@ -17,6 +17,7 @@ import (
 	logging "github.com/ipfs/go-log"
 	"github.com/syndtr/goleveldb/leveldb"
 	gologging "github.com/whyrusleeping/go-logging"
+	"github.com/centrifuge/go-centrifuge/centrifuge/nft"
 )
 
 const testStoragePath = "/tmp/centrifuge_data.leveldb_TESTING"
@@ -60,6 +61,7 @@ func bootstrapQueuing() {
 		&ethereum.Bootstrapper{},
 		&anchors.Bootstrapper{},
 		&identity.Bootstrapper{},
+		&nft.Bootstrapper{},
 		&queue.Bootstrapper{},
 	} {
 		err := b.TestBootstrap(context)

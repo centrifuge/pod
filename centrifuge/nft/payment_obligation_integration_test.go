@@ -61,7 +61,6 @@ func TestPaymentObligationService_mint(t *testing.T) {
 	assert.Nil(t, err, "should not error out when getting invoice ID")
 	// call mint
 	// assert no error
-	// TODO setup the payob contract during integration test init
 	_, err = nft.GetPaymentObligationService().MintNFT(
 		ID,
 		documenttypes.InvoiceDataTypeUrl,

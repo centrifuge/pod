@@ -14,6 +14,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/centrifuge/version"
 	logging "github.com/ipfs/go-log"
+	"github.com/centrifuge/go-centrifuge/centrifuge/nft"
 )
 
 var log = logging.Logger("context")
@@ -33,6 +34,7 @@ func (m *MainBootstrapper) PopulateBaseBootstrappers() {
 		&ethereum.Bootstrapper{},
 		&anchors.Bootstrapper{},
 		&identity.Bootstrapper{},
+		&nft.Bootstrapper{},
 		&queue.Bootstrapper{},
 	}
 }
