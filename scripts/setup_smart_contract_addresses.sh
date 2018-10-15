@@ -38,7 +38,7 @@ echo "IDENTITY FACTORY ADDRESS: ${vtempIdentityFactory}"
 echo "PAYMENT OBLIGATION ADDRESS: ${vtempPaymentObligation}"
 
 
-if [ -z $vtempAnchorRegistry ] || [ -z $vtempIdentityFactory ] || [ -z $vtempIdentityRegistry ] || [ -z $vtempIdentityRepository ]; then
+if [ -z $vtempAnchorRegistry ] || [ -z $vtempIdentityFactory ] || [ -z $vtempIdentityRegistry ] || [ -z $vtempIdentityRepository ] || [ -z $vtempPaymentObligation ]; then
     echo "One of the required contract addresses is not set. Aborting."
     exit -1
 fi

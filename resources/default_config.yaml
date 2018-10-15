@@ -12,6 +12,7 @@ networks:
       identityRegistry: ""
       anchorRegistry: ""
       anchorRepository: ""
+      paymentObligation: ""
 
   centrifugeRussianhillEthIntegration:
     id: 101
@@ -23,6 +24,7 @@ networks:
       identityFactory: "0x73231b49306acb6ab074a07378f376fc9bdb2716"
       identityRegistry: "0xd68c607bbc2080006893140916a6821fd713b292"
       anchorRegistry: "0xb571fe40de2d61e954df9ca4e961f69488f135a0"
+      paymentObligation: ""
 
   centrifugeRussianhillEthRinkeby:
     id: 51
@@ -36,6 +38,7 @@ networks:
       identityRegistry: "0x9660c039d311453af0d58c5666723d9c2fa7d6ec"
       anchorRegistry: "0x342a74b382d19da64988b376d0e4a656b7bfa5dd"
       anchorRepository: "0x7f854dfa98012d7fa55c803bba2260bcdee4b5ed"
+      paymentObligation: ""
 
 queue:
   numWorkers: 2
