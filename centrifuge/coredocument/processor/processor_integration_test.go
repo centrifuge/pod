@@ -1,6 +1,6 @@
 // +build integration
 
-package coredocumentprocessor
+package coredocumentprocessor_test
 
 import (
 	"context"
@@ -20,6 +20,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
+	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/processor"
 )
 
 func TestMain(m *testing.M) {
@@ -35,7 +36,7 @@ func TestMain(m *testing.M) {
 func TestDefaultProcessor_Anchor(t *testing.T) {
 	ctx := context.Background()
 	p2pClient := &testingcommons.MockP2PWrapperClient{}
-	dp := DefaultProcessor(identity.IDService, p2pClient)
+	dp := coredocumentprocessor.DefaultProcessor(identity.IDService, p2pClient)
 	doc := createDummyCD()
 
 	p2pClient.On("GetSignaturesForDocument", ctx, doc).Return(nil)

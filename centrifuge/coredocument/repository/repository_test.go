@@ -1,6 +1,6 @@
 // +build unit
 
-package coredocumentrepository
+package coredocumentrepository_test
 
 import (
 	"os"
@@ -10,11 +10,12 @@ import (
 	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/stretchr/testify/assert"
+	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
 )
 
 func TestMain(m *testing.M) {
 	cc.TestIntegrationBootstrap()
-	InitLevelDBRepository(cc.GetLevelDBStorage())
+	coredocumentrepository.InitLevelDBRepository(cc.GetLevelDBStorage())
 	result := m.Run()
 	os.Exit(result)
 }
@@ -28,7 +29,7 @@ var (
 )
 
 func TestRepository(t *testing.T) {
-	repo := GetRepository()
+	repo := coredocumentrepository.GetRepository()
 
 	// failed validation for create
 	doc := &coredocumentpb.CoreDocument{
