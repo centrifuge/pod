@@ -1,6 +1,6 @@
 // +build unit
 
-package documents
+package documents_test
 
 import (
 	"encoding/json"
@@ -12,15 +12,16 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/stretchr/testify/assert"
 )
 
-var levelDB Repository
+var levelDB documents.Repository
 
 func TestMain(m *testing.M) {
 	cc.TestIntegrationBootstrap()
-	levelDB = LevelDBRepository{LevelDB: cc.GetLevelDBStorage()}
+	levelDB = documents.LevelDBRepository{LevelDB: cc.GetLevelDBStorage()}
 	flag.Parse()
 	result := m.Run()
 	cc.TestIntegrationTearDown()
@@ -32,6 +33,7 @@ type model struct {
 	Data        string `json:"data"`
 }
 
+func (m *model) GetDocumentID() ([]byte, error)                           { panic("implement me") }
 func (m *model) Type() reflect.Type                                       { return reflect.TypeOf(m) }
 func (m *model) PackCoreDocument() (*coredocumentpb.CoreDocument, error)  { return nil, nil }
 func (m *model) UnpackCoreDocument(cd *coredocumentpb.CoreDocument) error { return nil }
