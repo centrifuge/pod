@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/centrifuge/precise-proofs/proofs/proto"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/centrifuge/precise-proofs/proofs"
+	"github.com/centrifuge/precise-proofs/proofs/proto"
 )
 
 // GetDataProofHashes returns the hashes needed to create a proof from DataRoot to SigningRoot. This method is used
@@ -233,68 +233,62 @@ func ValidateWithSignature(doc *coredocumentpb.CoreDocument) error {
 	return err
 }
 
-// InitIdentifiers fills in missing identifiers for the given CoreDocument.
-// It does checks on document consistency (e.g. re-using an old identifier).
-// In the case of an error, it returns the error and an empty CoreDocument.
-func InitIdentifiers(document coredocumentpb.CoreDocument) (coredocumentpb.CoreDocument, error) {
-	isEmptyId := tools.IsEmptyByteSlice
-
-	// check if the document identifier is empty
-	if !isEmptyId(document.DocumentIdentifier) {
-		// check and fill current and next identifiers
-		if isEmptyId(document.CurrentVersion) {
-			document.CurrentVersion = document.DocumentIdentifier
-		}
-
-		if isEmptyId(document.NextVersion) {
-			document.NextVersion = tools.RandomSlice(32)
-		}
-
-		return document, nil
-	}
-
-	// check if current and next identifier are empty
-	if !isEmptyId(document.CurrentVersion) {
-		return document, fmt.Errorf("no DocumentIdentifier but has CurrentVersion")
-	}
-
-	// check if the next identifier is empty
-	if !isEmptyId(document.NextVersion) {
-		return document, fmt.Errorf("no CurrentVersion but has NextVersion")
-	}
-
-	// fill the identifiers
-	document.DocumentIdentifier = tools.RandomSlice(32)
-	document.CurrentVersion = document.DocumentIdentifier
-	document.NextVersion = tools.RandomSlice(32)
-	return document, nil
-}
-
 // PrepareNewVersion creates a copy of the passed coreDocument with the version fields updated
-func PrepareNewVersion(document coredocumentpb.CoreDocument) (*coredocumentpb.CoreDocument, error) {
-	newDocument := &coredocumentpb.CoreDocument{}
-	FillSalts(newDocument)
-	if document.CurrentVersion == nil {
+// Adds collaborators and fills salts
+// Note: ignores any collaborators in the oldCD
+func PrepareNewVersion(oldCD coredocumentpb.CoreDocument, collaborators []string) (*coredocumentpb.CoreDocument, error) {
+	newCD, err := NewWithCollaborators(collaborators)
+	if err != nil {
+		return nil, err
+	}
+
+	if oldCD.DocumentIdentifier == nil {
+		return nil, fmt.Errorf("coredocument.DocumentIdentifier is nil")
+	}
+	newCD.DocumentIdentifier = oldCD.DocumentIdentifier
+
+	if oldCD.CurrentVersion == nil {
 		return nil, fmt.Errorf("coredocument.CurrentVersion is nil")
 	}
-	newDocument.PreviousVersion = document.CurrentVersion
-	if document.NextVersion == nil {
+	newCD.PreviousVersion = oldCD.CurrentVersion
+
+	if oldCD.NextVersion == nil {
 		return nil, fmt.Errorf("coredocument.NextVersion is nil")
 	}
-	newDocument.CurrentVersion = document.NextVersion
-	newDocument.NextVersion = tools.RandomSlice(32)
-	if document.DocumentRoot == nil {
+	newCD.CurrentVersion = oldCD.NextVersion
+	newCD.NextVersion = tools.RandomSlice(32)
+	if oldCD.DocumentRoot == nil {
 		return nil, fmt.Errorf("coredocument.DocumentRoot is nil")
 	}
-	newDocument.PreviousRoot = document.DocumentRoot
-
-	return newDocument, nil
+	newCD.PreviousRoot = oldCD.DocumentRoot
+	return newCD, nil
 }
 
-// New returns a new core document from the proto message
+// New returns a new core document
+// Note: collaborators and salts are to be filled by the caller
 func New() *coredocumentpb.CoreDocument {
-	doc, _ := InitIdentifiers(coredocumentpb.CoreDocument{})
-	return &doc
+	id := tools.RandomSlice(32)
+	return &coredocumentpb.CoreDocument{
+		DocumentIdentifier: id,
+		CurrentVersion:     id,
+		NextVersion:        tools.RandomSlice(32),
+	}
+}
+
+// NewWithCollaborators generates new core document, adds collaborators, and fills salts
+func NewWithCollaborators(collaborators []string) (*coredocumentpb.CoreDocument, error) {
+	cd := New()
+	ids, err := identity.CentIDsFromStrings(collaborators)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode collaborator: %v", err)
+	}
+
+	for i := range ids {
+		cd.Collaborators = append(cd.Collaborators, ids[i][:])
+	}
+
+	FillSalts(cd)
+	return cd, nil
 }
 
 // FillSalts of coredocument current state for proof tree creation

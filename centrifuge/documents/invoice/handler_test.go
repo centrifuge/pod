@@ -343,6 +343,18 @@ func (m *mockService) DeriveInvoiceResponse(doc documents.Model) (*clientinvoice
 	return data, args.Error(1)
 }
 
+func (m *mockService) Update(ctx context.Context, doc documents.Model) (documents.Model, error) {
+	args := m.Called(ctx, doc)
+	doc1, _ := args.Get(0).(documents.Model)
+	return doc1, args.Error(1)
+}
+
+func (m *mockService) DeriveFromUpdatePayload(payload *clientinvoicepb.InvoiceUpdatePayload) (documents.Model, error) {
+	args := m.Called(payload)
+	doc, _ := args.Get(0).(documents.Model)
+	return doc, args.Error(1)
+}
+
 func getHandler() *grpcHandler {
 	return &grpcHandler{service: &mockService{}, coreDocProcessor: &testingutils.MockCoreDocumentProcessor{}}
 }
@@ -492,4 +504,63 @@ func TestGrpcHandler_GetVersion(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
 	assert.Equal(t, res, response)
+}
+
+func TestGrpcHandler_Update_derive_fail(t *testing.T) {
+	h := getHandler()
+	srv := h.service.(*mockService)
+	payload := &clientinvoicepb.InvoiceUpdatePayload{Identifier: "0x010201"}
+	srv.On("DeriveFromUpdatePayload", payload).Return(nil, fmt.Errorf("derive error")).Once()
+	res, err := h.Update(context.Background(), payload)
+	srv.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "derive error")
+	assert.Nil(t, res)
+}
+
+func TestGrpcHandler_Update_update_fail(t *testing.T) {
+	h := getHandler()
+	srv := h.service.(*mockService)
+	model := &mockModel{}
+	ctx := context.Background()
+	payload := &clientinvoicepb.InvoiceUpdatePayload{Identifier: "0x010201"}
+	srv.On("DeriveFromUpdatePayload", payload).Return(model, nil).Once()
+	srv.On("Update", ctx, model).Return(nil, fmt.Errorf("update error")).Once()
+	res, err := h.Update(ctx, payload)
+	srv.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "update error")
+	assert.Nil(t, res)
+}
+
+func TestGrpcHandler_Update_derive_response_fail(t *testing.T) {
+	h := getHandler()
+	srv := h.service.(*mockService)
+	model := &mockModel{}
+	ctx := context.Background()
+	payload := &clientinvoicepb.InvoiceUpdatePayload{Identifier: "0x010201"}
+	srv.On("DeriveFromUpdatePayload", payload).Return(model, nil).Once()
+	srv.On("Update", ctx, model).Return(model, nil).Once()
+	srv.On("DeriveInvoiceResponse", model).Return(nil, fmt.Errorf("derive response error")).Once()
+	res, err := h.Update(ctx, payload)
+	srv.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "derive response error")
+	assert.Nil(t, res)
+}
+
+func TestGrpcHandler_Update(t *testing.T) {
+	h := getHandler()
+	srv := h.service.(*mockService)
+	model := &mockModel{}
+	ctx := context.Background()
+	payload := &clientinvoicepb.InvoiceUpdatePayload{Identifier: "0x010201"}
+	resp := &clientinvoicepb.InvoiceResponse{}
+	srv.On("DeriveFromUpdatePayload", payload).Return(model, nil).Once()
+	srv.On("Update", ctx, model).Return(model, nil).Once()
+	srv.On("DeriveInvoiceResponse", model).Return(resp, nil).Once()
+	res, err := h.Update(ctx, payload)
+	srv.AssertExpectations(t)
+	assert.Nil(t, err)
+	assert.Equal(t, resp, res)
 }

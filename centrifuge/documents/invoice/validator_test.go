@@ -100,3 +100,8 @@ func TestCreateValidator(t *testing.T) {
 	cv := CreateValidator()
 	assert.Len(t, cv, 2)
 }
+
+func TestUpdateValidator(t *testing.T) {
+	uv := UpdateValidator()
+	assert.Len(t, uv, 3)
+}
