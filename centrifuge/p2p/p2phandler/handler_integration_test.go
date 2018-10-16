@@ -66,6 +66,14 @@ func TestHandler_SendAnchoredDocument_update_fail(t *testing.T) {
 	assert.Nil(t, resp)
 }
 
+func TestHandler_SendAnchoredDocument_EmptyDocument(t *testing.T) {
+	req := getAnchoredRequest()
+	req.Document = nil
+	resp, err := handler.SendAnchoredDocument(context.Background(), req)
+	assert.NotNil(t, err)
+	assert.Nil(t, resp, "must be nil")
+}
+
 func TestHandler_SendAnchoredDocument(t *testing.T) {
 	doc := requestDocumentSignature(t)
 	req := getAnchoredRequest()
@@ -73,6 +81,8 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 	resp, err := handler.SendAnchoredDocument(context.Background(), req)
 	assert.Nil(t, err)
 	assert.NotNil(t, resp, "must be non nil")
+	assert.True(t, resp.Accepted)
+	assert.Equal(t, resp.CentNodeVersion, req.Header.CentNodeVersion)
 }
 
 func requestDocumentSignature(t *testing.T) *coredocumentpb.CoreDocument {
