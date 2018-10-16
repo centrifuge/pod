@@ -227,7 +227,7 @@ func signaturesValidator() documents.Validator {
 
 // anchoredValidator checks if the document root matches the one on chain with specific anchorID
 // assumes document root is generated and verified
-func anchoredValidator() documents.Validator {
+func anchoredValidator(repo anchors.AnchorRepository) documents.Validator {
 	return documents.ValidatorFunc(func(_, new documents.Model) error {
 		cd, err := getCoreDocument(new)
 		if err != nil {
@@ -244,7 +244,7 @@ func anchoredValidator() documents.Validator {
 			return fmt.Errorf("failed to get document root: %v", err)
 		}
 
-		gotRoot, err := anchors.GetDocumentRootOf(anchorID)
+		gotRoot, err := repo.GetDocumentRootOf(anchorID)
 		if err != nil {
 			return fmt.Errorf("failed to get document root from chain: %v", err)
 		}
@@ -279,6 +279,6 @@ func PreAnchorValidator() documents.ValidatorGroup {
 func PostAnchoredValidator() documents.ValidatorGroup {
 	return documents.ValidatorGroup{
 		PreAnchorValidator(),
-		anchoredValidator(),
+		anchoredValidator(anchors.GetAnchorRepository()),
 	}
 }

@@ -41,18 +41,17 @@ func CommitAnchor(anchorID AnchorID, documentRoot DocRoot, centrifugeID identity
 	return confirmations, err
 }
 
-// GetDocumentRootOf returns document root mapped to the anchorID
-func GetDocumentRootOf(anchorID AnchorID) (DocRoot, error) {
-	anchorRepository, _ := getConfiguredRepository()
-	return anchorRepository.GetDocumentRootOf(anchorID)
-}
-
 // anchorRepository is a singleton to keep track of the anchorRepository
 var anchorRepository AnchorRepository
 
-// SetAnchorRepository sets the passed in repository as default one
-func SetAnchorRepository(ar AnchorRepository) {
+// setAnchorRepository sets the passed in repository as default one
+func setAnchorRepository(ar AnchorRepository) {
 	anchorRepository = ar
+}
+
+// GetAnchorRepository returns default anchor repository
+func GetAnchorRepository() AnchorRepository {
+	return anchorRepository
 }
 
 // getConfiguredRepository will later pull a configured repository (if not only using Ethereum as the anchor repository)

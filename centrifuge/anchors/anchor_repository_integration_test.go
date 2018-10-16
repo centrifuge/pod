@@ -68,7 +68,7 @@ func TestCommitAnchor_Integration(t *testing.T) {
 	messageToSign := anchors.GenerateCommitHash(anchorIDTyped, centIdTyped, docRootTyped)
 	signature, _ := secp256k1.SignEthereum(messageToSign, testPrivateKey)
 	commitAnchor(t, anchorID, centrifugeId, documentRoot, signature, [][anchors.DocumentProofLength]byte{tools.RandomByte32()})
-	gotDocRoot, err := anchors.GetDocumentRootOf(anchorIDTyped)
+	gotDocRoot, err := anchors.GetAnchorRepository().GetDocumentRootOf(anchorIDTyped)
 	assert.Nil(t, err)
 	assert.Equal(t, docRootTyped, gotDocRoot)
 }
@@ -120,7 +120,7 @@ func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
 		assert.Equal(t, commitDataList[ix].DocumentRoot, watchSingleAnchor.CommitData.DocumentRoot, "Should have the document root that was passed into create function [%v]", watchSingleAnchor.CommitData.DocumentRoot)
 		anchorID := commitDataList[ix].AnchorID
 		docRoot := commitDataList[ix].DocumentRoot
-		gotDocRoot, err := anchors.GetDocumentRootOf(anchorID)
+		gotDocRoot, err := anchors.GetAnchorRepository().GetDocumentRootOf(anchorID)
 		assert.Nil(t, err)
 		assert.Equal(t, docRoot, gotDocRoot)
 	}
