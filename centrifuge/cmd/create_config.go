@@ -21,8 +21,7 @@ var bootstraps []string
 
 func createIdentity() (identity.CentID, error) {
 	centrifugeId := identity.NewRandomCentID()
-	identityService := identity.EthereumIdentityService{}
-	_, confirmations, err := identityService.CreateIdentity(centrifugeId)
+	_, confirmations, err := identity.IDService.CreateIdentity(centrifugeId)
 	if err != nil {
 		return [identity.CentIDLength]byte{}, err
 	}

@@ -14,6 +14,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/processor"
+	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	centED25519 "github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
@@ -395,6 +396,12 @@ func (s service) RequestDocumentSignature(model documents.Model) (*coredocumentp
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to Unpack CoreDocument: %v", err))
 	}
 
+	// TODO temporary until we deprecate old document version
+	err = coredocumentrepository.GetRepository().Create(doc.DocumentIdentifier, doc)
+	if err != nil {
+		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to Create legacy CoreDocument: %v", err))
+	}
+
 	err = repo.Create(doc.DocumentIdentifier, model)
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to store document: %v", err))
@@ -407,6 +414,12 @@ func (s service) ReceiveAnchoredDocument(model documents.Model, headers *p2ppb.C
 	doc, err := model.PackCoreDocument()
 	if err != nil {
 		return centerrors.New(code.DocumentInvalid, err.Error())
+	}
+
+	// TODO temporary until we deprecate old document version
+	err = coredocumentrepository.GetRepository().Update(doc.DocumentIdentifier, doc)
+	if err != nil {
+		return centerrors.New(code.Unknown, fmt.Sprintf("failed to Create legacy CoreDocument: %v", err))
 	}
 
 	// TODO(ved): post anchoring validations should be done before deriving model
