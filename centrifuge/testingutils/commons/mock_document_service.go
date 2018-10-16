@@ -2,10 +2,10 @@ package testingcommons
 
 import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/documents"
 	"github.com/stretchr/testify/mock"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 )
 
 type MockDocService struct {
@@ -46,4 +46,3 @@ func (m *MockDocService) ReceiveAnchoredDocument(model documents.Model, headers 
 	args := m.Called()
 	return args.Get(0).(error)
 }
-
