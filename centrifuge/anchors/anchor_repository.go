@@ -9,13 +9,16 @@ import (
 
 var log = logging.Logger("anchorRepository")
 
-// wrapper for the Ethereum implementation
+// AnchorRepository defines a set of functions that can be
+// implemented by any type that stores and retrieves the anchoring, and pre anchoring details
 type AnchorRepository interface {
 	PreCommitAnchor(anchorID AnchorID, signingRoot DocRoot, centrifugeID identity.CentID, signature []byte, expirationBlock *big.Int) (<-chan *WatchPreCommit, error)
 	CommitAnchor(anchorID AnchorID, documentRoot DocRoot, centrifugeId identity.CentID, documentProofs [][32]byte, signature []byte) (<-chan *WatchCommit, error)
 	GetDocumentRootOf(anchorID AnchorID) (DocRoot, error)
 }
 
+// PreCommitAnchor initiates the PreCommit call on the smart contract
+// with passed in variables and returns a channel for transaction confirmation
 func PreCommitAnchor(anchorID AnchorID, signingRoot DocRoot, centrifugeId identity.CentID, signature []byte, expirationBlock *big.Int) (<-chan *WatchPreCommit, error) {
 	anchorRepository, _ := getConfiguredRepository()
 
@@ -26,6 +29,8 @@ func PreCommitAnchor(anchorID AnchorID, signingRoot DocRoot, centrifugeId identi
 	return confirmations, err
 }
 
+// CommitAnchor initiates the Commit call on smart contract
+// with passed in variables and returns a channel for transaction confirmation
 func CommitAnchor(anchorID AnchorID, documentRoot DocRoot, centrifugeID identity.CentID, documentProofs [][32]byte, signature []byte) (<-chan *WatchCommit, error) {
 	anchorRepository, _ := getConfiguredRepository()
 
