@@ -12,8 +12,8 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
-// updateVersionValidator validates if the new core document is properly derived from old one
-func updateVersionValidator() documents.Validator {
+// UpdateVersionValidator validates if the new core document is properly derived from old one
+func UpdateVersionValidator() documents.Validator {
 	return documents.ValidatorFunc(func(old, new documents.Model) error {
 		if old == nil || new == nil {
 			return fmt.Errorf("need both the old and new model")

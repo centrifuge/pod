@@ -50,7 +50,7 @@ func (m mockModel) PackCoreDocument() (*coredocumentpb.CoreDocument, error) {
 }
 
 func TestUpdateVersionValidator(t *testing.T) {
-	uvv := updateVersionValidator()
+	uvv := UpdateVersionValidator()
 
 	// nil models
 	err := uvv.Validate(nil, nil)

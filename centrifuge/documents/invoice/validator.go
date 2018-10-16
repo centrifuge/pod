@@ -81,6 +81,6 @@ func UpdateValidator() documents.ValidatorGroup {
 	return documents.ValidatorGroup{
 		fieldValidator(),
 		dataRootValidator(),
-		coredocument.updateVersionValidator(),
+		coredocument.UpdateVersionValidator(),
 	}
 }
