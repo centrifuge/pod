@@ -32,8 +32,14 @@ type Service interface {
 	// DeriverFromPayload derives InvoiceModel from clientPayload
 	DeriveFromCreatePayload(*clientinvoicepb.InvoiceCreatePayload) (documents.Model, error)
 
+	// DeriveFromUpdatePayload derives invoice model from update payload
+	DeriveFromUpdatePayload(*clientinvoicepb.InvoiceUpdatePayload) (documents.Model, error)
+
 	// Create validates and persists invoice Model and returns a Updated model
 	Create(ctx context.Context, inv documents.Model) (documents.Model, error)
+
+	// Update validates and updates the invoice model and return the updated model
+	Update(ctx context.Context, inv documents.Model) (documents.Model, error)
 
 	// DeriveInvoiceData returns the invoice data as client data
 	DeriveInvoiceData(inv documents.Model) (*clientinvoicepb.InvoiceData, error)
@@ -130,12 +136,11 @@ func (s service) DeriveFromCreatePayload(invoiceInput *clientinvoicepb.InvoiceCr
 	return invoiceModel, nil
 }
 
-// Create takes and invoice model and does required validation checks, tries to persist to DB
-func (s service) Create(ctx context.Context, model documents.Model) (documents.Model, error) {
-	// create data root
-	inv, ok := model.(*InvoiceModel)
+// validateAndPersist validate models, persist the new model and anchors the document
+func (s service) validateAndPersist(ctx context.Context, old, new documents.Model, validator documents.ValidatorGroup) (documents.Model, error) {
+	inv, ok := new.(*InvoiceModel)
 	if !ok {
-		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("unknown document type: %T", model))
+		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("unknown document type: %T", new))
 	}
 
 	// create data root, has to be done at the model level to access fields
@@ -145,8 +150,7 @@ func (s service) Create(ctx context.Context, model documents.Model) (documents.M
 	}
 
 	// validate the invoice
-	cv := CreateValidator()
-	err = cv.Validate(nil, inv)
+	err = validator.Validate(old, inv)
 	if err != nil {
 		return nil, centerrors.NewWithErrors(code.DocumentInvalid, "validations failed", documents.ConvertToMap(err))
 	}
@@ -193,6 +197,26 @@ func (s service) Create(ctx context.Context, model documents.Model) (documents.M
 	}
 
 	return inv, nil
+}
+
+// Create takes and invoice model and does required validation checks, tries to persist to DB
+func (s service) Create(ctx context.Context, model documents.Model) (documents.Model, error) {
+	return s.validateAndPersist(ctx, nil, model, CreateValidator())
+}
+
+// Update finds the old document, validates the new version and persists the updated document
+func (s service) Update(ctx context.Context, model documents.Model) (documents.Model, error) {
+	cd, err := model.PackCoreDocument()
+	if err != nil {
+		return nil, centerrors.New(code.Unknown, err.Error())
+	}
+
+	old, err := s.GetLastVersion(cd.DocumentIdentifier)
+	if err != nil {
+		return nil, centerrors.New(code.DocumentNotFound, err.Error())
+	}
+
+	return s.validateAndPersist(ctx, old, model, UpdateValidator())
 }
 
 // GetVersion returns an invoice for a given version
@@ -307,6 +331,44 @@ func (s service) SaveState(doc documents.Model) error {
 	}
 
 	return nil
+}
+
+// DeriveFromUpdatePayload returns a new version of the old invoice identified by identifier in payload
+func (s service) DeriveFromUpdatePayload(payload *clientinvoicepb.InvoiceUpdatePayload) (documents.Model, error) {
+	if payload == nil {
+		return nil, centerrors.New(code.DocumentInvalid, "invalid payload")
+	}
+
+	// get latest old version of the document
+	id, err := hexutil.Decode(payload.Identifier)
+	if err != nil {
+		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("failed to decode identifier: %v", err))
+	}
+
+	old, err := s.GetLastVersion(id)
+	if err != nil {
+		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("failed to fetch old version: %v", err))
+	}
+
+	// load invoice data
+	inv := new(InvoiceModel)
+	err = inv.initInvoiceFromData(payload.Data)
+	if err != nil {
+		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("failed to load invoice from data: %v", err))
+	}
+
+	// update core document
+	oldCD, err := old.PackCoreDocument()
+	if err != nil {
+		return nil, centerrors.New(code.Unknown, err.Error())
+	}
+
+	inv.CoreDocument, err = coredocument.PrepareNewVersion(*oldCD, payload.Collaborators)
+	if err != nil {
+		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("failed to prepare new version: %v", err))
+	}
+
+	return inv, nil
 }
 
 // RequestDocumentSignature Validates, Signs document received over the p2p layer and returs Signature

@@ -17,6 +17,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/centrifuge/precise-proofs/proofs"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 )
@@ -38,25 +39,21 @@ func TestGetSigningProofHashes(t *testing.T) {
 		TypeUrl: documenttypes.InvoiceDataTypeUrl,
 		Value:   []byte{},
 	}
-	cd := coredocumentpb.CoreDocument{
-		DataRoot:     tools.RandomSlice(32),
-		EmbeddedData: docAny,
-	}
-	cd, err := InitIdentifiers(cd)
-	assert.Nil(t, err)
+	cd := New()
+	cd.EmbeddedData = docAny
+	cd.DataRoot = tools.RandomSlice(32)
 	cds := &coredocumentpb.CoreDocumentSalts{}
-	err = proofs.FillSalts(&cd, cds)
+	err := proofs.FillSalts(cd, cds)
 	assert.Nil(t, err)
 
 	cd.CoredocumentSalts = cds
-
-	err = CalculateSigningRoot(&cd)
+	err = CalculateSigningRoot(cd)
 	assert.Nil(t, err)
 
-	err = CalculateDocumentRoot(&cd)
+	err = CalculateDocumentRoot(cd)
 	assert.Nil(t, err)
 
-	hashes, err := GetSigningProofHashes(&cd)
+	hashes, err := GetSigningProofHashes(cd)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(hashes))
 
@@ -70,25 +67,22 @@ func TestGetDataProofHashes(t *testing.T) {
 		TypeUrl: documenttypes.InvoiceDataTypeUrl,
 		Value:   []byte{},
 	}
-	cd := coredocumentpb.CoreDocument{
-		DataRoot:     tools.RandomSlice(32),
-		EmbeddedData: docAny,
-	}
-	cd, err := InitIdentifiers(cd)
-	assert.Nil(t, err)
+	cd := New()
+	cd.EmbeddedData = docAny
+	cd.DataRoot = tools.RandomSlice(32)
 	cds := &coredocumentpb.CoreDocumentSalts{}
-	err = proofs.FillSalts(&cd, cds)
+	err := proofs.FillSalts(cd, cds)
 	assert.Nil(t, err)
 
 	cd.CoredocumentSalts = cds
 
-	err = CalculateSigningRoot(&cd)
+	err = CalculateSigningRoot(cd)
 	assert.Nil(t, err)
 
-	err = CalculateDocumentRoot(&cd)
+	err = CalculateDocumentRoot(cd)
 	assert.Nil(t, err)
 
-	hashes, err := GetDataProofHashes(&cd)
+	hashes, err := GetDataProofHashes(cd)
 	assert.Nil(t, err)
 	assert.Equal(t, 4, len(hashes))
 
@@ -102,12 +96,12 @@ func TestGetDocumentSigningTree(t *testing.T) {
 		TypeUrl: documenttypes.InvoiceDataTypeUrl,
 		Value:   []byte{},
 	}
-	cd := coredocumentpb.CoreDocument{DocumentIdentifier: tools.RandomSlice(32), EmbeddedData: docAny}
-	cd, _ = InitIdentifiers(cd)
+	cd := New()
+	cd.EmbeddedData = docAny
 	cds := &coredocumentpb.CoreDocumentSalts{}
-	proofs.FillSalts(&cd, cds)
+	proofs.FillSalts(cd, cds)
 	cd.CoredocumentSalts = cds
-	tree, err := GetDocumentSigningTree(&cd)
+	tree, err := GetDocumentSigningTree(cd)
 	assert.Nil(t, err)
 	assert.NotNil(t, tree)
 
@@ -116,12 +110,11 @@ func TestGetDocumentSigningTree(t *testing.T) {
 }
 
 func TestGetDocumentSigningTree_EmptyEmbeddedData(t *testing.T) {
-	cd := coredocumentpb.CoreDocument{DocumentIdentifier: tools.RandomSlice(32)}
-	cd, _ = InitIdentifiers(cd)
+	cd := New()
 	cds := &coredocumentpb.CoreDocumentSalts{}
-	proofs.FillSalts(&cd, cds)
+	proofs.FillSalts(cd, cds)
 	cd.CoredocumentSalts = cds
-	tree, err := GetDocumentSigningTree(&cd)
+	tree, err := GetDocumentSigningTree(cd)
 	assert.NotNil(t, err)
 	assert.Nil(t, tree)
 }
@@ -276,77 +269,6 @@ func TestValidate(t *testing.T) {
 	}
 }
 
-func TestFillIdentifiers(t *testing.T) {
-	tests := []struct {
-		DocIdentifier  []byte
-		CurrentVersion []byte
-		NextVersion    []byte
-		err            error
-	}{
-		// all three identifiers are filled
-		{
-			DocIdentifier:  id1,
-			CurrentVersion: id2,
-			NextVersion:    id3,
-		},
-
-		// Doc and current identifiers are filled, missing next identifier
-		{
-			DocIdentifier:  id1,
-			CurrentVersion: id2,
-		},
-
-		// Doc and next identifiers are filled, missing current identifier
-		{
-			DocIdentifier: id1,
-			NextVersion:   id3,
-		},
-
-		// missing current and next identifier
-		{
-			DocIdentifier: id1,
-		},
-
-		// missing doc identifier and filled up current identifier
-		{
-			CurrentVersion: id2,
-			err:            fmt.Errorf("no DocumentIdentifier but has CurrentVersion"),
-		},
-
-		// missing doc identifier and filled up next identifier
-		{
-			NextVersion: id3,
-			err:         fmt.Errorf("no CurrentVersion but has NextVersion"),
-		},
-
-		// missing all identifiers
-		{},
-	}
-
-	for _, c := range tests {
-		doc := coredocumentpb.CoreDocument{
-			DocumentIdentifier: c.DocIdentifier,
-			CurrentVersion:     c.CurrentVersion,
-			NextVersion:        c.NextVersion,
-		}
-
-		var err error
-		doc, err = InitIdentifiers(doc)
-		if err != nil {
-			if c.err == nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-
-			assert.EqualError(t, err, c.err.Error())
-			continue
-		}
-
-		assert.NotNil(t, doc.DocumentIdentifier)
-		assert.NotNil(t, doc.CurrentVersion)
-		assert.NotNil(t, doc.NextVersion)
-	}
-}
-
 func TestValidateWithSignature_fail_basic_check(t *testing.T) {
 	doc := &coredocumentpb.CoreDocument{
 		DocumentRoot:       id1,
@@ -443,22 +365,37 @@ func TestGetTypeUrl(t *testing.T) {
 
 func TestPrepareNewVersion(t *testing.T) {
 	var doc coredocumentpb.CoreDocument
-	cv := tools.RandomSlice(32)
+	id := tools.RandomSlice(32)
+	cv := id
 	nv := tools.RandomSlice(32)
 	dr := tools.RandomSlice(32)
-
 	doc = coredocumentpb.CoreDocument{}
-	newDoc, err := PrepareNewVersion(doc)
+
+	// failed new with collaborators
+	collabs := []string{"some ID"}
+	newDoc, err := PrepareNewVersion(doc, collabs)
+	assert.Error(t, err)
+	assert.Nil(t, newDoc)
+
+	// missing doc identifier
+	collabs = []string{"0x010203040506"}
+	newDoc, err = PrepareNewVersion(doc, collabs)
+	assert.NotNil(t, err)
+	assert.Nil(t, newDoc)
+
+	//missing current version
+	doc.DocumentIdentifier = id
+	newDoc, err = PrepareNewVersion(doc, collabs)
 	assert.NotNil(t, err)
 	assert.Nil(t, newDoc)
 
 	doc.CurrentVersion = cv
-	newDoc, err = PrepareNewVersion(doc)
+	newDoc, err = PrepareNewVersion(doc, collabs)
 	assert.NotNil(t, err)
 	assert.Nil(t, newDoc)
 
 	doc.NextVersion = nv
-	newDoc, err = PrepareNewVersion(doc)
+	newDoc, err = PrepareNewVersion(doc, collabs)
 	assert.NotNil(t, err)
 	assert.Nil(t, newDoc)
 
@@ -466,15 +403,39 @@ func TestPrepareNewVersion(t *testing.T) {
 	doc.NextVersion = nv
 	doc.DocumentRoot = dr
 
-	newDoc, err = PrepareNewVersion(doc)
+	newDoc, err = PrepareNewVersion(doc, collabs)
 	assert.Nil(t, err)
 
 	// original document hasn't changed
 	assert.Equal(t, cv, doc.CurrentVersion)
 
 	// new document has changed
+	assert.Equal(t, id, newDoc.DocumentIdentifier)
 	assert.Equal(t, cv, newDoc.PreviousVersion)
 	assert.Equal(t, nv, newDoc.CurrentVersion)
 	assert.Equal(t, dr, newDoc.PreviousRoot)
 	assert.Nil(t, newDoc.DocumentRoot)
+}
+
+func TestNewWithCollaborators(t *testing.T) {
+	// messed up collaborators
+	c := []string{"some id"}
+	cd, err := NewWithCollaborators(c)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to decode collaborator")
+	assert.Nil(t, cd)
+
+	// success
+	c1 := tools.RandomSlice(6)
+	c2 := tools.RandomSlice(6)
+	c = []string{hexutil.Encode(c1), hexutil.Encode(c2)}
+	cd, err = NewWithCollaborators(c)
+	assert.Nil(t, err)
+	assert.NotNil(t, cd)
+	assert.NotNil(t, cd.DocumentIdentifier)
+	assert.NotNil(t, cd.CurrentVersion)
+	assert.NotNil(t, cd.NextVersion)
+	assert.NotNil(t, cd.Collaborators)
+	assert.NotNil(t, cd.CoredocumentSalts)
+	assert.Equal(t, [][]byte{c1, c2}, cd.Collaborators)
 }

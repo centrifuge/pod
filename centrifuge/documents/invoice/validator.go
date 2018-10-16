@@ -3,6 +3,7 @@ package invoice
 import (
 	"fmt"
 
+	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 )
@@ -67,10 +68,19 @@ func dataRootValidator() documents.Validator {
 	})
 }
 
-// CreateValidator is a validator group that should be run before creating the invoice and persisting it to DB
+// CreateValidator returns a validator group that should be run before creating the invoice and persisting it to DB
 func CreateValidator() documents.ValidatorGroup {
 	return documents.ValidatorGroup{
 		fieldValidator(),
 		dataRootValidator(),
+	}
+}
+
+// UpdateValidator returns a validator group that should be run before updating the invoice
+func UpdateValidator() documents.ValidatorGroup {
+	return documents.ValidatorGroup{
+		fieldValidator(),
+		dataRootValidator(),
+		coredocument.UpdateVersionValidator(),
 	}
 }
