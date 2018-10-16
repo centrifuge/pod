@@ -186,16 +186,11 @@ func (h *grpcHandler) GetInvoiceDocument(ctx context.Context, getInvoiceDocument
 		return doc, nil
 	}
 
-	fmt.Printf("Err: %#v\n", err)
-	fmt.Printf("Id2: %#v\n", doc)
-
 	coreDoc := new(coredocumentpb.CoreDocument)
 	err = coredocumentrepository.GetRepository().GetByID(getInvoiceDocumentEnvelope.DocumentIdentifier, coreDoc)
 	if err != nil {
 		return nil, centerrors.New(code.DocumentNotFound, err.Error())
 	}
-
-	fmt.Printf("Id2: %v\n", coreDoc)
 
 	inv, err := NewFromCoreDocument(coreDoc)
 	if err != nil {
