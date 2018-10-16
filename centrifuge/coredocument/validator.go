@@ -271,3 +271,14 @@ func PreAnchorValidator() documents.ValidatorGroup {
 		signaturesValidator(),
 	}
 }
+
+// PostAnchoredValidator is a validator group with following validators
+// PreAnchorValidator
+// anchoredValidator
+// should be called after anchoring the document/when received anchored document
+func PostAnchoredValidator() documents.ValidatorGroup {
+	return documents.ValidatorGroup{
+		PreAnchorValidator(),
+		anchoredValidator(),
+	}
+}

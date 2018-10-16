@@ -422,3 +422,8 @@ func TestValidator_anchoredValidator(t *testing.T) {
 	r.AssertExpectations(t)
 	assert.Nil(t, err)
 }
+
+func TestPostAnchoredValidator(t *testing.T) {
+	pav := PostAnchoredValidator()
+	assert.Len(t, pav, 2)
+}
