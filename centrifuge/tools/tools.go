@@ -36,7 +36,8 @@ func Byte32ToSlice(in [32]byte) []byte {
 }
 
 // Check32BytesFilled takes multiple []byte slices and ensures they are all of length 32 and don't contain all 0x0 bytes.
-func CheckMultiple32BytesFilled(bs ...[]byte) bool {
+func CheckMultiple32BytesFilled(b []byte, bs ...[]byte) bool {
+	bs = append(bs, b)
 	for _, v := range bs {
 		if IsEmptyByteSlice(v) || len(v) != 32 {
 			return false
