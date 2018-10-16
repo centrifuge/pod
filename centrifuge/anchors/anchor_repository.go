@@ -50,7 +50,8 @@ func GetDocumentRootOf(anchorID AnchorID) (DocRoot, error) {
 // anchorRepository is a singleton to keep track of the anchorRepository
 var anchorRepository AnchorRepository
 
-func setRepository(ar AnchorRepository) {
+// SetAnchorRepository sets the passed in repository as default one
+func SetAnchorRepository(ar AnchorRepository) {
 	anchorRepository = ar
 }
 

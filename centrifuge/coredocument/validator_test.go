@@ -10,9 +10,8 @@ import (
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
-	"github.com/golang/protobuf/ptypes/any"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
@@ -21,6 +20,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -341,4 +341,84 @@ func TestValidator_signatureValidator(t *testing.T) {
 func TestPreAnchorValidator(t *testing.T) {
 	pav := PreAnchorValidator()
 	assert.Len(t, pav, 4)
+}
+
+type repo struct {
+	mock.Mock
+	anchors.AnchorRepository
+}
+
+func (r *repo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.DocRoot, error) {
+	args := r.Called(anchorID)
+	docRoot, _ := args.Get(0).(anchors.DocRoot)
+	return docRoot, args.Error(1)
+}
+
+func TestValidator_anchoredValidator(t *testing.T) {
+	av := anchoredValidator()
+
+	// fail get core document
+	err := av.Validate(nil, nil)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to get core document")
+
+	// failed anchorID
+	model := &mockModel{}
+	cd := &coredocumentpb.CoreDocument{}
+	model.On("PackCoreDocument").Return(cd, nil).Once()
+	err = av.Validate(nil, model)
+	model.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to get anchorID")
+
+	// failed docRoot
+	model = &mockModel{}
+	cd.CurrentVersion = tools.RandomSlice(32)
+	model.On("PackCoreDocument").Return(cd, nil).Once()
+	err = av.Validate(nil, model)
+	model.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to get document root")
+
+	// failed to get docRoot from chain
+	anchorID, err := anchors.NewAnchorID(tools.RandomSlice(32))
+	assert.Nil(t, err)
+	r := &repo{}
+	anchors.SetAnchorRepository(r)
+	cd.CurrentVersion = anchorID[:]
+	r.On("GetDocumentRootOf", anchorID).Return(nil, fmt.Errorf("error")).Once()
+	cd.DocumentRoot = tools.RandomSlice(32)
+	model = &mockModel{}
+	model.On("PackCoreDocument").Return(cd, nil).Once()
+	err = av.Validate(nil, model)
+	model.AssertExpectations(t)
+	r.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to get document root from chain")
+
+	// mismatched doc roots
+	docRoot := anchors.NewRandomDocRoot()
+	r = &repo{}
+	anchors.SetAnchorRepository(r)
+	r.On("GetDocumentRootOf", anchorID).Return(docRoot, nil).Once()
+	cd.DocumentRoot = tools.RandomSlice(32)
+	model = &mockModel{}
+	model.On("PackCoreDocument").Return(cd, nil).Once()
+	err = av.Validate(nil, model)
+	model.AssertExpectations(t)
+	r.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "mismatched document roots")
+
+	// success
+	r = &repo{}
+	anchors.SetAnchorRepository(r)
+	r.On("GetDocumentRootOf", anchorID).Return(docRoot, nil).Once()
+	cd.DocumentRoot = docRoot[:]
+	model = &mockModel{}
+	model.On("PackCoreDocument").Return(cd, nil).Once()
+	err = av.Validate(nil, model)
+	model.AssertExpectations(t)
+	r.AssertExpectations(t)
+	assert.Nil(t, err)
 }

@@ -86,7 +86,7 @@ func getCoreDocument(model documents.Model) (*coredocumentpb.CoreDocument, error
 
 	cd, err := model.PackCoreDocument()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get core document: %v", err)
+		return nil, fmt.Errorf("failed to pack core document: %v", err)
 	}
 
 	return cd, nil
@@ -231,17 +231,17 @@ func anchoredValidator() documents.Validator {
 	return documents.ValidatorFunc(func(_, new documents.Model) error {
 		cd, err := getCoreDocument(new)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to get core document: %v", err)
 		}
 
 		anchorID, err := anchors.NewAnchorID(cd.CurrentVersion)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to get anchorID: %v", err)
 		}
 
 		docRoot, err := anchors.NewDocRoot(cd.DocumentRoot)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to get document root: %v", err)
 		}
 
 		gotRoot, err := anchors.GetDocumentRootOf(anchorID)
@@ -250,7 +250,7 @@ func anchoredValidator() documents.Validator {
 		}
 
 		if !tools.IsSameByteSlice(docRoot[:], gotRoot[:]) {
-			return fmt.Errorf("mismatched document root")
+			return fmt.Errorf("mismatched document roots")
 		}
 
 		return nil
