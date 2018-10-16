@@ -156,7 +156,21 @@ func (i *InvoiceModel) createP2PProtobuf() *invoicepb.InvoiceData {
 
 // InitInvoiceInput initialize the model based on the received parameters from the rest api call
 func (i *InvoiceModel) InitInvoiceInput(payload *clientinvoicepb.InvoiceCreatePayload) error {
-	data := payload.Data
+	err := i.initInvoiceFromData(payload.Data)
+	if err != nil {
+		return err
+	}
+
+	i.CoreDocument, err = coredocument.NewWithCollaborators(payload.Collaborators)
+	if err != nil {
+		return fmt.Errorf("failed to init core document: %v", err)
+	}
+
+	return nil
+}
+
+// initInvoiceFromData initialises invoice from invoiceData
+func (i *InvoiceModel) initInvoiceFromData(data *clientinvoicepb.InvoiceData) error {
 	i.InvoiceNumber = data.InvoiceNumber
 	i.SenderName = data.SenderName
 	i.SenderStreet = data.SenderStreet
@@ -197,21 +211,6 @@ func (i *InvoiceModel) InitInvoiceInput(payload *clientinvoicepb.InvoiceCreatePa
 
 		i.ExtraData = ed
 	}
-
-	i.CoreDocument = coredocument.New()
-	i.CoreDocument.Collaborators = [][]byte{}
-
-	for _, id := range payload.Collaborators {
-		cid, err := identity.CentIDFromString(id)
-		if err != nil {
-			return centerrors.Wrap(err, "failed to decode collaborator")
-		}
-
-		cidb := cid.ByteArray()
-		i.CoreDocument.Collaborators = append(i.CoreDocument.Collaborators, cidb[:])
-	}
-
-	coredocument.FillSalts(i.CoreDocument)
 
 	return nil
 }

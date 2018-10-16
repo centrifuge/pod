@@ -1,22 +1,30 @@
 // +build unit
 
-package coredocumentrepository_test
+package coredocumentrepository
 
 import (
 	"os"
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
-	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
+	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/centrifuge/context/testlogging"
+	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestMain(m *testing.M) {
-	cc.TestIntegrationBootstrap()
-	coredocumentrepository.InitLevelDBRepository(cc.GetLevelDBStorage())
+	ibootstappers := []bootstrap.TestBootstrapper{
+		&testlogging.TestLoggingBootstrapper{},
+		&config.Bootstrapper{},
+		&storage.Bootstrapper{},
+		&Bootstrapper{},
+	}
+	bootstrap.RunTestBootstrappers(ibootstappers)
 	result := m.Run()
+	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)
 }
 
@@ -29,7 +37,7 @@ var (
 )
 
 func TestRepository(t *testing.T) {
-	repo := coredocumentrepository.GetRepository()
+	repo := GetRepository()
 
 	// failed validation for create
 	doc := &coredocumentpb.CoreDocument{

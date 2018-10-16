@@ -1,6 +1,6 @@
 // +build unit
 
-package api_test
+package api
 
 import (
 	"context"
@@ -10,24 +10,30 @@ import (
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
-	"github.com/centrifuge/go-centrifuge/centrifuge/api"
-	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
+	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/centrifuge/context/testlogging"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents/purchaseorder"
+	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestMain(m *testing.M) {
-	cc.TestIntegrationBootstrap()
-	db := cc.GetLevelDBStorage()
-	invoice.InitLegacyRepository(db)
-	purchaseorder.InitLevelDBRepository(db)
-	coredocumentrepository.InitLevelDBRepository(db)
+	ibootstappers := []bootstrap.TestBootstrapper{
+		&testlogging.TestLoggingBootstrapper{},
+		&config.Bootstrapper{},
+		&storage.Bootstrapper{},
+		&coredocumentrepository.Bootstrapper{},
+		&invoice.Bootstrapper{},
+		&purchaseorder.Bootstrapper{},
+	}
+	bootstrap.RunTestBootstrappers(ibootstappers)
 	flag.Parse()
 	result := m.Run()
-	cc.TestIntegrationTearDown()
+	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)
 }
 
@@ -44,7 +50,7 @@ func TestCentAPIServer_StartHappy(t *testing.T) {
 
 func TestCentAPIServer_StartContextCancel(t *testing.T) {
 	documents.GetRegistryInstance().Register(documenttypes.InvoiceDataTypeUrl, invoice.DefaultService(nil, nil))
-	capi := api.NewCentAPIServer("0.0.0.0:9000", 9000, "")
+	capi := NewCentAPIServer("0.0.0.0:9000", 9000, "")
 	ctx, canc := context.WithCancel(context.Background())
 	startErr := make(chan error)
 	var wg sync.WaitGroup
@@ -60,7 +66,7 @@ func TestCentAPIServer_StartContextCancel(t *testing.T) {
 func TestCentAPIServer_StartListenError(t *testing.T) {
 	invoice.InitLegacyRepository(nil)
 	// cause an error by using an invalid port
-	capi := api.NewCentAPIServer("0.0.0.0:100000000", 100000000, "")
+	capi := NewCentAPIServer("0.0.0.0:100000000", 100000000, "")
 	ctx, _ := context.WithCancel(context.Background())
 	startErr := make(chan error)
 	var wg sync.WaitGroup

@@ -224,13 +224,22 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientinvoicepb.InvoiceCr
 		return nil, err
 	}
 
-	invoiceResponse, err := h.service.DeriveInvoiceResponse(doc)
-	return invoiceResponse, err
+	return h.service.DeriveInvoiceResponse(doc)
 }
 
-// Update handles the document update
-func (h *grpcHandler) Update(context.Context, *clientinvoicepb.InvoiceUpdatePayload) (*clientinvoicepb.InvoiceResponse, error) {
-	return nil, fmt.Errorf("not implemented yet")
+// Update handles the document update and anchoring
+func (h *grpcHandler) Update(ctx context.Context, payload *clientinvoicepb.InvoiceUpdatePayload) (*clientinvoicepb.InvoiceResponse, error) {
+	doc, err := h.service.DeriveFromUpdatePayload(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	doc, err = h.service.Update(ctx, doc)
+	if err != nil {
+		return nil, err
+	}
+
+	return h.service.DeriveInvoiceResponse(doc)
 }
 
 // GetVersion returns the requested version of the document

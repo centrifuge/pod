@@ -14,7 +14,6 @@ import (
 	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/processor"
-	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/commons"
@@ -24,9 +23,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	cc.TestFunctionalEthereumBootstrap()
-	db := cc.GetLevelDBStorage()
-	coredocumentrepository.InitLevelDBRepository(db)
+	cc.DONT_USE_FOR_UNIT_TESTS_TestFunctionalEthereumBootstrap()
 	testingutils.CreateIdentityWithKeys()
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()

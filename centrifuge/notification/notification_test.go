@@ -1,6 +1,6 @@
 // +build unit
 
-package notification_test
+package notification
 
 import (
 	"os"
@@ -10,8 +10,10 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
-	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
-	"github.com/centrifuge/go-centrifuge/centrifuge/notification"
+	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/centrifuge/context/testlogging"
+	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/golang/protobuf/jsonpb"
@@ -20,9 +22,14 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	cc.TestIntegrationBootstrap()
+	ibootstappers := []bootstrap.TestBootstrapper{
+		&testlogging.TestLoggingBootstrapper{},
+		&config.Bootstrapper{},
+		&storage.Bootstrapper{},
+	}
+	bootstrap.RunTestBootstrappers(ibootstappers)
 	result := m.Run()
-	cc.TestIntegrationTearDown()
+	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)
 }
 
@@ -37,11 +44,11 @@ func TestWebhookConstructPayload(t *testing.T) {
 		DocumentIdentifier: coredoc.DocumentIdentifier,
 		DocumentType:       documenttypes.InvoiceDataTypeUrl,
 		CentrifugeId:       cid,
-		EventType:          uint32(notification.RECEIVED_PAYLOAD),
+		EventType:          uint32(RECEIVED_PAYLOAD),
 		Recorded:           ts,
 	}
 
-	whs := notification.WebhookSender{}
+	whs := WebhookSender{}
 	bresult, err := whs.constructPayload(notificationMessage)
 	assert.Nil(t, err, "Should not error out")
 
