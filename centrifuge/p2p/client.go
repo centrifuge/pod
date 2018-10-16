@@ -93,7 +93,7 @@ func getSignatureForDocument(ctx context.Context, doc coredocumentpb.CoreDocumen
 		Document: &doc,
 	}
 
-	log.Infof("Reguesting signature from %s\n", receiverCentId)
+	log.Infof("Requesting signature from %s\n", receiverCentId)
 
 	resp, err := client.RequestDocumentSignature(ctx, req)
 	if err != nil {

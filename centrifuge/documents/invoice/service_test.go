@@ -14,6 +14,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
+	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
@@ -402,6 +403,10 @@ func TestService_RequestDocumentSignature_SigningRootNil(t *testing.T) {
 
 func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	i, err := createAnchoredMockDocument(t, false)
+	assert.Nil(t, err)
+
+	//TODO Remove when we deprecate old document version
+	err = coredocumentrepository.GetRepository().Create(i.CoreDocument.DocumentIdentifier, i.CoreDocument)
 	assert.Nil(t, err)
 
 	header := &p2ppb.CentrifugeHeader{
