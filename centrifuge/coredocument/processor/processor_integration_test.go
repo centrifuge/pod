@@ -1,6 +1,6 @@
 // +build integration
 
-package coredocumentprocessor
+package coredocumentprocessor_test
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/anchors"
 	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
-	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
+	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/processor"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/commons"
@@ -23,9 +23,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	cc.TestFunctionalEthereumBootstrap()
-	db := cc.GetLevelDBStorage()
-	coredocumentrepository.InitLevelDBRepository(db)
+	cc.DONT_USE_FOR_UNIT_TESTS_TestFunctionalEthereumBootstrap()
 	testingutils.CreateIdentityWithKeys()
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()
@@ -35,7 +33,7 @@ func TestMain(m *testing.M) {
 func TestDefaultProcessor_Anchor(t *testing.T) {
 	ctx := context.Background()
 	p2pClient := &testingcommons.MockP2PWrapperClient{}
-	dp := DefaultProcessor(identity.IDService, p2pClient)
+	dp := coredocumentprocessor.DefaultProcessor(identity.IDService, p2pClient)
 	doc := createDummyCD()
 
 	p2pClient.On("GetSignaturesForDocument", ctx, doc).Return(nil)
