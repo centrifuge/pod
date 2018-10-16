@@ -21,6 +21,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/documents"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/signatures"
+	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes"
 )
@@ -107,7 +109,7 @@ func (s service) invoiceProof(inv *InvoiceModel, fields []string) (*documentpb.D
 			DocumentId: hexutil.Encode(coreDoc.DocumentIdentifier),
 			VersionId:  hexutil.Encode(coreDoc.CurrentVersion),
 		},
-		FieldProofs: proofs}, nil
+		FieldProofs: convertProofsToClientFormat(proofs)}, nil
 }
 
 // DeriveFromCoreDocument unpacks the core document into a model
@@ -428,4 +430,24 @@ func (s service) ReceiveAnchoredDocument(model documents.Model, headers *p2ppb.C
 	go s.notifier.Send(notificationMsg)
 
 	return nil
+}
+
+// convertProofsToClientFormat converts a proof protobuf from precise proofs into a client protobuf proof format
+func convertProofsToClientFormat(proofs []*proofspb.Proof) []*documentpb.Proof {
+	converted := make([]*documentpb.Proof, len(proofs))
+	for i, proof := range proofs {
+		converted[i] = convertProofToClientFormat(proof)
+	}
+	return converted
+}
+
+// convertProofToClientFormat converts a proof in precise proof format in to a client protobuf proof
+func convertProofToClientFormat(proof *proofspb.Proof) *documentpb.Proof {
+	return &documentpb.Proof{
+		Property:     proof.Property,
+		Value:        proof.Value,
+		Salt:         hexutil.Encode(proof.Salt),
+		Hash:         hexutil.Encode(proof.Hash),
+		SortedHashes: tools.SliceOfByteSlicesToHexStringSlice(proof.SortedHashes),
+	}
 }
