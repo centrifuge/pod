@@ -24,7 +24,7 @@ import (
 var identityService identity.Service
 
 func TestMain(m *testing.M) {
-	cc.TestFunctionalEthereumBootstrap()
+	cc.DONT_USE_FOR_UNIT_TESTS_TestFunctionalEthereumBootstrap()
 	identityService = identity.IDService
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()
