@@ -25,7 +25,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	cc.TestFunctionalEthereumBootstrap()
+	cc.DONT_USE_FOR_UNIT_TESTS_TestFunctionalEthereumBootstrap()
 	// TODO Once we move these tests to new model locations we can get rid of these configs
 	config.Config.V.Set("keys.signing.publicKey", "../../../example/resources/signature1.pub.pem")
 	config.Config.V.Set("keys.signing.privateKey", "../../../example/resources/signature1.key.pem")

@@ -30,8 +30,7 @@ var bootstappers = []bootstrap.TestBootstrapper{
 	&queue.Bootstrapper{},
 }
 
-// ---- Ethereum ----
-func TestFunctionalEthereumBootstrap() {
+func DONT_USE_FOR_UNIT_TESTS_TestFunctionalEthereumBootstrap() {
 	contextval := map[string]interface{}{}
 	for _, b := range bootstappers {
 		err := b.TestBootstrap(contextval)
@@ -50,5 +49,3 @@ func TestFunctionalEthereumTearDown() {
 		}
 	}
 }
-
-// ---- END Ethereum ----

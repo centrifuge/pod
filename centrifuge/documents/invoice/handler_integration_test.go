@@ -22,7 +22,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	cc.TestFunctionalEthereumBootstrap()
+	cc.DONT_USE_FOR_UNIT_TESTS_TestFunctionalEthereumBootstrap()
 	testingutils.CreateIdentityWithKeys()
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()
