@@ -22,7 +22,7 @@ func TestMain(m *testing.M) {
 	// TODO: look for other sleep statements in tests and fix the underlying issues
 	time.Sleep(time.Second + 2)
 
-	cc.TestFunctionalEthereumBootstrap()
+	cc.DONT_USE_FOR_UNIT_TESTS_TestFunctionalEthereumBootstrap()
 	config.Config.V.Set("keys.signing.publicKey", "../../example/resources/signingKey.pub.pem")
 	config.Config.V.Set("keys.signing.privateKey", "../../example/resources/signingKey.key.pem")
 

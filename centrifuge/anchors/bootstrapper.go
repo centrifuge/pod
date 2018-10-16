@@ -35,7 +35,3 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	}
 	return queue.InstallQueuedTask(context, NewAnchoringConfirmationTask(&repositoryContract.EthereumAnchorRepositoryContractFilterer, ethereum.DefaultWaitForTransactionMiningContext))
 }
-
-func (b *Bootstrapper) TestBootstrap(context map[string]interface{}) error {
-	return b.Bootstrap(context)
-}

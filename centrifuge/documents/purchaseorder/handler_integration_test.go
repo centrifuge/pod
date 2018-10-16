@@ -13,7 +13,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/processor"
-	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	legacy "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/legacy/purchaseorder"
@@ -26,10 +25,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	cc.TestFunctionalEthereumBootstrap()
-	db := cc.GetLevelDBStorage()
-	purchaseorder.InitLevelDBRepository(db)
-	coredocumentrepository.InitLevelDBRepository(db)
+	cc.DONT_USE_FOR_UNIT_TESTS_TestFunctionalEthereumBootstrap()
 	// TODO Once we move these tests to new model locations we can get rid of these configs
 	config.Config.V.Set("keys.signing.publicKey", "../../../example/resources/signature1.pub.pem")
 	config.Config.V.Set("keys.signing.privateKey", "../../../example/resources/signature1.key.pem")
