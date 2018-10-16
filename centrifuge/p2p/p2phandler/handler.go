@@ -19,19 +19,19 @@ import (
 	"github.com/golang/protobuf/ptypes"
 )
 
-func IncompatibleNetworkError(nodeNetwork uint32) error {
+func incompatibleNetworkError(nodeNetwork uint32) error {
 	return centerrors.New(code.NetworkMismatch, fmt.Sprintf("Incompatible network id: node network: %d, client network: %d", config.Config.GetNetworkID(), nodeNetwork))
 }
 
-// BasicChecks does a network and version check for any incompatibility
-func BasicChecks(nodeVersion string, networkID uint32) error {
+// basicChecks does a network and version check for any incompatibility
+func basicChecks(nodeVersion string, networkID uint32) error {
 	compatible := version.CheckVersion(nodeVersion)
 	if !compatible {
 		return version.IncompatibleVersionError(nodeVersion)
 	}
 
 	if config.Config.GetNetworkID() != networkID {
-		return IncompatibleNetworkError(networkID)
+		return incompatibleNetworkError(networkID)
 	}
 
 	return nil
@@ -49,7 +49,7 @@ type Handler struct {
 // to recipient to determine if two versions are compatible. A newer node making a
 // request could not decide for itself if the request handshake should succeed or not.
 func (srv *Handler) Post(ctx context.Context, req *p2ppb.P2PMessage) (*p2ppb.P2PReply, error) {
-	err := BasicChecks(req.CentNodeVersion, req.NetworkIdentifier)
+	err := basicChecks(req.CentNodeVersion, req.NetworkIdentifier)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +88,7 @@ func (srv *Handler) Post(ctx context.Context, req *p2ppb.P2PMessage) (*p2ppb.P2P
 // Existing signatures on the document will be verified
 // Document will be stored to the repository for state management
 func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.SignatureRequest) (*p2ppb.SignatureResponse, error) {
-	err := BasicChecks(sigReq.Header.CentNodeVersion, sigReq.Header.NetworkIdentifier)
+	err := basicChecks(sigReq.Header.CentNodeVersion, sigReq.Header.NetworkIdentifier)
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +121,7 @@ func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.
 }
 
 func (srv *Handler) SendAnchoredDocument(ctx context.Context, docReq *p2ppb.AnchDocumentRequest) (*p2ppb.AnchDocumentResponse, error) {
-	err := BasicChecks(docReq.Header.CentNodeVersion, docReq.Header.NetworkIdentifier)
+	err := basicChecks(docReq.Header.CentNodeVersion, docReq.Header.NetworkIdentifier)
 	if err != nil {
 		return nil, err
 	}

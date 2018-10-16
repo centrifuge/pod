@@ -24,10 +24,6 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	return registerInvoiceService()
 }
 
-func (b *Bootstrapper) TestBootstrap(context map[string]interface{}) error {
-	return b.Bootstrap(context)
-}
-
 func registerInvoiceService() error {
 	// TODO coredocument processor and IDService usage here looks shitty(unnecessary dependency), needs to change soon
 	invoiceService := DefaultService(

@@ -29,10 +29,6 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	return nil
 }
 
-func (b *Bootstrapper) TestBootstrap(context map[string]interface{}) error {
-	return b.Bootstrap(context)
-}
-
 func getPaymentObligationContract() (*EthereumPaymentObligationContract, error) {
 	client := ethereum.GetConnection()
 	return NewEthereumPaymentObligationContract(config.Config.GetContractAddress("paymentObligation"), client.GetClient())
