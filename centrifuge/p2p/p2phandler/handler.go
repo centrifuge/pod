@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
@@ -12,9 +13,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
-	centED25519 "github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/notification"
-	"github.com/centrifuge/go-centrifuge/centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/centrifuge/version"
 	"github.com/golang/protobuf/ptypes"
 )
@@ -37,6 +37,29 @@ func basicChecks(nodeVersion string, networkID uint32) error {
 	return nil
 }
 
+// getService looks up the specific registry, derives service from core document
+func getServiceAndModel(cd *coredocumentpb.CoreDocument) (documents.Service, documents.Model, error) {
+	if cd == nil {
+		return nil, nil, fmt.Errorf("nil core document")
+	}
+	docType, err := coredocument.GetTypeURL(cd)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get type of the document: %v", err)
+	}
+
+	srv, err := documents.GetRegistryInstance().LocateService(docType)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to locate the service: %v", err)
+	}
+
+	model, err := srv.DeriveFromCoreDocument(cd)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to derive model from core document: %v", err)
+	}
+
+	return srv, model, nil
+}
+
 // Handler implements the grpc interface
 type Handler struct {
 	Notifier notification.Sender
@@ -48,6 +71,7 @@ type Handler struct {
 // The handshake is currently quite primitive as it only allows the request-server
 // to recipient to determine if two versions are compatible. A newer node making a
 // request could not decide for itself if the request handshake should succeed or not.
+// Deprecated
 func (srv *Handler) Post(ctx context.Context, req *p2ppb.P2PMessage) (*p2ppb.P2PReply, error) {
 	err := basicChecks(req.CentNodeVersion, req.NetworkIdentifier)
 	if err != nil {
@@ -93,33 +117,23 @@ func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.
 		return nil, err
 	}
 
-	doc := sigReq.Document
-	if doc == nil {
-		return nil, centerrors.New(code.DocumentInvalid, centerrors.NilError(sigReq.Document).Error())
-	}
-
-	if err := coredocument.ValidateWithSignature(doc); err != nil {
+	svc, model, err := getServiceAndModel(sigReq.Document)
+	if err != nil {
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
 	}
 
-	idConfig, err := centED25519.GetIDConfig()
+	signature, err := svc.RequestDocumentSignature(model)
 	if err != nil {
-		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get ID Config: %v", err))
-	}
-
-	sig := signatures.Sign(idConfig, doc.SigningRoot)
-	doc.Signatures = append(doc.Signatures, sig)
-	err = coredocumentrepository.GetRepository().Create(doc.DocumentIdentifier, doc)
-	if err != nil {
-		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to store document: %v", err))
+		return nil, centerrors.New(code.Unknown, err.Error())
 	}
 
 	return &p2ppb.SignatureResponse{
 		CentNodeVersion: version.GetVersion().String(),
-		Signature:       sig,
+		Signature:       signature,
 	}, nil
 }
 
+// SendAnchoredDocument receives a new anchored document, validates and updates the document in DB
 func (srv *Handler) SendAnchoredDocument(ctx context.Context, docReq *p2ppb.AnchDocumentRequest) (*p2ppb.AnchDocumentResponse, error) {
 	err := basicChecks(docReq.Header.CentNodeVersion, docReq.Header.NetworkIdentifier)
 	if err != nil {
@@ -130,22 +144,15 @@ func (srv *Handler) SendAnchoredDocument(ctx context.Context, docReq *p2ppb.Anch
 		return nil, centerrors.New(code.DocumentInvalid, centerrors.NilError(docReq.Document).Error())
 	}
 
-	err = coredocumentrepository.GetRepository().Update(docReq.Document.DocumentIdentifier, docReq.Document)
+	svc, model, err := getServiceAndModel(docReq.Document)
+	if err != nil {
+		return nil, centerrors.New(code.DocumentInvalid, err.Error())
+	}
+
+	err = svc.ReceiveAnchoredDocument(model, docReq.Header)
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
-
-	ts, _ := ptypes.TimestampProto(time.Now().UTC())
-	notificationMsg := &notificationpb.NotificationMessage{
-		EventType:          uint32(notification.RECEIVED_PAYLOAD),
-		CentrifugeId:       docReq.Header.SenderCentrifugeId,
-		Recorded:           ts,
-		DocumentType:       docReq.Document.EmbeddedData.TypeUrl,
-		DocumentIdentifier: docReq.Document.DocumentIdentifier,
-	}
-
-	// Async until we add queuing
-	go srv.Notifier.Send(notificationMsg)
 
 	return &p2ppb.AnchDocumentResponse{
 		CentNodeVersion: version.GetVersion().String(),

@@ -33,7 +33,7 @@ func TestMain(m *testing.M) {
 		&Bootstrapper{},
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers)
-	invService = DefaultService(GetRepository(), &testingutils.MockCoreDocumentProcessor{})
+	invService = DefaultService(getRepository(), &testingutils.MockCoreDocumentProcessor{})
 	flag.Parse()
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)

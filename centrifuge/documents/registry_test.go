@@ -27,7 +27,7 @@ func TestRegistry_Register_LocateService_successful(t *testing.T) {
 	a := &testingcommons.MockDocService{}
 
 	coreDocument := testingutils.GenerateCoreDocument()
-	documentType, err := cd.GetTypeUrl(coreDocument)
+	documentType, err := cd.GetTypeURL(coreDocument)
 	assert.Nil(t, err, "should not throw an error because core document contains a type")
 
 	err = registry.Register(documentType, a)
@@ -66,7 +66,7 @@ func TestRegistry_LocateService_invalid(t *testing.T) {
 	registry := documents.GetRegistryInstance()
 	coreDocument := testingutils.GenerateCoreDocument()
 	coreDocument.EmbeddedData.TypeUrl = "testID_2"
-	documentType, err := cd.GetTypeUrl(coreDocument)
+	documentType, err := cd.GetTypeURL(coreDocument)
 	assert.Nil(t, err, "should not throw an error because core document contains a type")
 
 	_, err = registry.LocateService(documentType)

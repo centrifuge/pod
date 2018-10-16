@@ -58,7 +58,7 @@ func TestLegacyRepository(t *testing.T) {
 }
 
 func TestRepository(t *testing.T) {
-	repo := GetRepository()
+	repo := getRepository()
 	invRepo := repo.(*repository)
 	assert.Equal(t, invRepo.KeyPrefix, "invoice")
 	assert.NotNil(t, invRepo.LevelDB, "missing leveldb instance")

@@ -52,6 +52,9 @@ func GenerateCoreDocument() *coredocumentpb.CoreDocument {
 		EmbeddedData: &any.Any{
 			TypeUrl: documenttypes.InvoiceDataTypeUrl,
 		},
+		EmbeddedDataSalts: &any.Any{
+			TypeUrl: documenttypes.InvoiceSaltsTypeUrl,
+		},
 	}
 	proofs.FillSalts(doc, salts)
 	return doc
@@ -70,7 +73,7 @@ func (m *MockCoreDocumentProcessor) Anchor(
 	ctx context.Context,
 	coreDocument *coredocumentpb.CoreDocument,
 	saveState func(*coredocumentpb.CoreDocument) error) (err error) {
-	args := m.Called(coreDocument)
+	args := m.Called(ctx, coreDocument, saveState)
 	if saveState != nil {
 		err := saveState(coreDocument)
 		if err != nil {
