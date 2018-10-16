@@ -12,8 +12,8 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
-// UpdateVersionValidator validates if the new core document is properly derived from old one
-func UpdateVersionValidator() documents.Validator {
+// updateVersionValidator validates if the new core document is properly derived from old one
+func updateVersionValidator() documents.Validator {
 	return documents.ValidatorFunc(func(old, new documents.Model) error {
 		if old == nil || new == nil {
 			return fmt.Errorf("need both the old and new model")
@@ -77,8 +77,8 @@ func UpdateVersionValidator() documents.Validator {
 	})
 }
 
-// GetCoreDocument takes an model and returns the core document of the model
-func GetCoreDocument(model documents.Model) (*coredocumentpb.CoreDocument, error) {
+// getCoreDocument takes an model and returns the core document of the model
+func getCoreDocument(model documents.Model) (*coredocumentpb.CoreDocument, error) {
 	if model == nil {
 		return nil, fmt.Errorf("nil model")
 	}
@@ -91,10 +91,10 @@ func GetCoreDocument(model documents.Model) (*coredocumentpb.CoreDocument, error
 	return cd, nil
 }
 
-// BaseValidator validates the core document basic fields like identifier, versions, and salts
-func BaseValidator() documents.Validator {
+// baseValidator validates the core document basic fields like identifier, versions, and salts
+func baseValidator() documents.Validator {
 	return documents.ValidatorFunc(func(_, model documents.Model) error {
-		cd, err := GetCoreDocument(model)
+		cd, err := getCoreDocument(model)
 		if err != nil {
 			return err
 		}
@@ -107,11 +107,11 @@ func BaseValidator() documents.Validator {
 	})
 }
 
-// SigningRootValidator checks the existence of signing root
+// signingRootValidator checks the existence of signing root
 // recalculates the signing root and compares with existing one
-func SigningRootValidator() documents.Validator {
+func signingRootValidator() documents.Validator {
 	return documents.ValidatorFunc(func(_, model documents.Model) error {
-		cd, err := GetCoreDocument(model)
+		cd, err := getCoreDocument(model)
 		if err != nil {
 			return err
 		}
@@ -133,11 +133,11 @@ func SigningRootValidator() documents.Validator {
 	})
 }
 
-// DocumentRootValidator checks the existence of document root
+// documentRootValidator checks the existence of document root
 // recalculates the document root and compares with existing one
-func DocumentRootValidator() documents.Validator {
+func documentRootValidator() documents.Validator {
 	return documents.ValidatorFunc(func(_, model documents.Model) error {
-		cd, err := GetCoreDocument(model)
+		cd, err := getCoreDocument(model)
 		if err != nil {
 			return err
 		}
@@ -159,13 +159,13 @@ func DocumentRootValidator() documents.Validator {
 	})
 }
 
-// ReadyForSignaturesValidator validates self signature
+// readyForSignaturesValidator validates self signature
 // re-calculates the signature and compares with existing one
 // assumes signing_root is already generated and verified
 // Note: this needs to used only before document is sent for signatures from the collaborators
-func ReadyForSignaturesValidator() documents.Validator {
+func readyForSignaturesValidator() documents.Validator {
 	return documents.ValidatorFunc(func(_, model documents.Model) error {
-		cd, err := GetCoreDocument(model)
+		cd, err := getCoreDocument(model)
 		if err != nil {
 			return err
 		}
@@ -197,13 +197,13 @@ func ReadyForSignaturesValidator() documents.Validator {
 	})
 }
 
-// SignaturesValidator validates all the signatures in the core document
+// signaturesValidator validates all the signatures in the core document
 // assumes signing root is verified
 // Note: can be used when during the signature request on collaborator side and post signature collection on sender side
 // Note: this will break the current flow where we proceed to anchor even signatures verification fails
-func SignaturesValidator() documents.Validator {
+func signaturesValidator() documents.Validator {
 	return documents.ValidatorFunc(func(_, model documents.Model) error {
-		cd, err := GetCoreDocument(model)
+		cd, err := getCoreDocument(model)
 		if err != nil {
 			return err
 		}
