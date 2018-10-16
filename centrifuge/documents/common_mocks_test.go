@@ -27,9 +27,9 @@ func (m *MockService) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (d
 	return args.Get(0).(documents.Model), args.Get(1).(error)
 }
 
-func (m *MockService) RequestDocumentSignature(model documents.Model) error {
+func (m *MockService) RequestDocumentSignature(model documents.Model) (*coredocumentpb.Signature, error) {
 	args := m.Called()
-	return args.Get(0).(error)
+	return args.Get(0).(*coredocumentpb.Signature), args.Get(1).(error)
 }
 
 func (m *MockService) ReceiveAnchoredDocument(model documents.Model, headers *p2ppb.CentrifugeHeader) error {

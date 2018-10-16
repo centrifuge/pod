@@ -309,35 +309,35 @@ func (s service) SaveState(doc documents.Model) error {
 	return nil
 }
 
-// RequestDocumentSignature Validates and Signs document received over the p2p layer
-func (s service) RequestDocumentSignature(model documents.Model) error {
+// RequestDocumentSignature Validates, Signs document received over the p2p layer and returs Signature
+func (s service) RequestDocumentSignature(model documents.Model) (*coredocumentpb.Signature, error) {
 	doc, err := model.PackCoreDocument()
 	if err != nil {
-		return centerrors.New(code.DocumentInvalid, err.Error())
+		return nil, centerrors.New(code.DocumentInvalid, err.Error())
 	}
 
 	// TODO(mig) Invoke validation as part of service call
 	if err := coredocument.ValidateWithSignature(doc); err != nil {
-		return centerrors.New(code.DocumentInvalid, err.Error())
+		return nil, centerrors.New(code.DocumentInvalid, err.Error())
 	}
 
 	idConfig, err := centED25519.GetIDConfig()
 	if err != nil {
-		return centerrors.New(code.Unknown, fmt.Sprintf("failed to get ID Config: %v", err))
+		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get ID Config: %v", err))
 	}
 
 	sig := signatures.Sign(idConfig, doc.SigningRoot)
 	doc.Signatures = append(doc.Signatures, sig)
 	err = model.UnpackCoreDocument(doc)
 	if err != nil {
-		return centerrors.New(code.Unknown, fmt.Sprintf("failed to Unpack CoreDocument: %v", err))
+		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to Unpack CoreDocument: %v", err))
 	}
 
 	err = repo.Create(doc.DocumentIdentifier, model)
 	if err != nil {
-		return centerrors.New(code.Unknown, fmt.Sprintf("failed to store document: %v", err))
+		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to store document: %v", err))
 	}
-	return nil
+	return sig, nil
 }
 
 // ReceiveAnchoredDocument receives a new anchored document, validates and updates the document in DB
@@ -366,9 +366,4 @@ func (s service) ReceiveAnchoredDocument(model documents.Model, headers *p2ppb.C
 	go s.notifier.Send(notificationMsg)
 
 	return nil
-}
-
-// Repository returns invoice repository
-func (s service) Repository() documents.Repository {
-	return s.repo
 }

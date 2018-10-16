@@ -122,19 +122,14 @@ func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
 	}
 
-	err = svc.RequestDocumentSignature(model)
+	signature, err := svc.RequestDocumentSignature(model)
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
 
-	doc, err := model.PackCoreDocument()
-	if err != nil {
-		return nil, centerrors.New(code.DocumentInvalid, err.Error())
-	}
-
 	return &p2ppb.SignatureResponse{
 		CentNodeVersion: version.GetVersion().String(),
-		Signature:       doc.Signatures[len(doc.Signatures)-1],
+		Signature:       signature,
 	}, nil
 }
 

@@ -7,13 +7,19 @@ import (
 	"fmt"
 	"testing"
 
+	"strconv"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	"github.com/centrifuge/go-centrifuge/centrifuge/code"
+	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/go-centrifuge/centrifuge/version"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -320,7 +326,7 @@ func TestService_SaveState(t *testing.T) {
 }
 
 func TestService_CreateProofs(t *testing.T) {
-	i, err := createAnchoredMockDocument(t)
+	i, err := createAnchoredMockDocument(t, false)
 	assert.Nil(t, err)
 	proof, err := invService.CreateProofs(i.CoreDocument.DocumentIdentifier, []string{"invoice_number"})
 	assert.Nil(t, err)
@@ -331,7 +337,7 @@ func TestService_CreateProofs(t *testing.T) {
 }
 
 func TestService_CreateProofsInvalidField(t *testing.T) {
-	i, err := createAnchoredMockDocument(t)
+	i, err := createAnchoredMockDocument(t, false)
 	assert.Nil(t, err)
 	_, err = invService.CreateProofs(i.CoreDocument.DocumentIdentifier, []string{"invalid_field"})
 	assert.Error(t, err)
@@ -345,7 +351,7 @@ func TestService_CreateProofsDocumentDoesntExist(t *testing.T) {
 }
 
 func TestService_CreateProofsForVersion(t *testing.T) {
-	i, err := createAnchoredMockDocument(t)
+	i, err := createAnchoredMockDocument(t, false)
 	assert.Nil(t, err)
 	olderVersion := i.CoreDocument.CurrentVersion
 	i, err = updatedAnchoredMockDocument(t, i)
@@ -359,7 +365,7 @@ func TestService_CreateProofsForVersion(t *testing.T) {
 }
 
 func TestService_CreateProofsForVersionDocumentDoesntExist(t *testing.T) {
-	i, err := createAnchoredMockDocument(t)
+	i, err := createAnchoredMockDocument(t, false)
 	assert.Nil(t, err)
 	_, err = invService.CreateProofsForVersion(i.CoreDocument.DocumentIdentifier, tools.RandomSlice(32), []string{"invoice_number"})
 	assert.Error(t, err)
@@ -367,13 +373,61 @@ func TestService_CreateProofsForVersionDocumentDoesntExist(t *testing.T) {
 }
 
 func TestService_RequestDocumentSignature(t *testing.T) {
-	i, err := createAnchoredMockDocument(t)
+	i, err := createAnchoredMockDocument(t, true)
 	assert.Nil(t, err)
-	err = invService.RequestDocumentSignature(i)
+	signature, err := invService.RequestDocumentSignature(i)
+	assert.Nil(t, err)
+	assert.NotNil(t, signature)
+}
+
+func TestService_RequestDocumentSignature_AlreadyExists(t *testing.T) {
+	i, err := createAnchoredMockDocument(t, false)
+	assert.Nil(t, err)
+	signature, err := invService.RequestDocumentSignature(i)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "document already exists")
+	assert.Nil(t, signature)
+}
+
+func TestService_RequestDocumentSignature_SigningRootNil(t *testing.T) {
+	i, err := createAnchoredMockDocument(t, true)
+	assert.Nil(t, err)
+	i.CoreDocument.SigningRoot = nil
+	signature, err := invService.RequestDocumentSignature(i)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), strconv.Itoa(int(code.DocumentInvalid)))
+	assert.Contains(t, err.Error(), "signing root missing")
+	assert.Nil(t, signature)
+}
+
+func TestService_ReceiveAnchoredDocument(t *testing.T) {
+	i, err := createAnchoredMockDocument(t, false)
+	assert.Nil(t, err)
+
+	header := &p2ppb.CentrifugeHeader{
+		CentNodeVersion:   version.GetVersion().String(),
+		NetworkIdentifier: config.Config.GetNetworkID(),
+	}
+
+	err = invService.ReceiveAnchoredDocument(i, header)
 	assert.Nil(t, err)
 }
 
-func createAnchoredMockDocument(t *testing.T) (*InvoiceModel, error) {
+func TestService_ReceiveAnchoredDocument_DocumentNotExist(t *testing.T) {
+	i, err := createAnchoredMockDocument(t, true)
+	assert.Nil(t, err)
+
+	header := &p2ppb.CentrifugeHeader{
+		CentNodeVersion:   version.GetVersion().String(),
+		NetworkIdentifier: config.Config.GetNetworkID(),
+	}
+
+	err = invService.ReceiveAnchoredDocument(i, header)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "document doesn't exists")
+}
+
+func createAnchoredMockDocument(t *testing.T, skipSave bool) (*InvoiceModel, error) {
 	i := &InvoiceModel{
 		InvoiceNumber: "test_invoice",
 		GrossAmount:   60,
@@ -401,10 +455,14 @@ func createAnchoredMockDocument(t *testing.T) (*InvoiceModel, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = getRepository().Create(i.CoreDocument.CurrentVersion, i)
-	if err != nil {
-		return nil, err
+
+	if !skipSave {
+		err = getRepository().Create(i.CoreDocument.CurrentVersion, i)
+		if err != nil {
+			return nil, err
+		}
 	}
+
 	return i, nil
 }
 
