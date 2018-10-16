@@ -5,17 +5,15 @@ package p2phandler_test
 import (
 	"context"
 	"math/big"
-	"os"
 	"testing"
+
+	"os"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
-	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
-	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
-	"github.com/centrifuge/go-centrifuge/centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	cented25519 "github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	"github.com/centrifuge/go-centrifuge/centrifuge/notification"
@@ -35,13 +33,9 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	cc.TestIntegrationBootstrap()
-	coredocumentrepository.InitLevelDBRepository(cc.GetLevelDBStorage())
-	bContext := map[string]interface{}{}
-	bContext[bootstrap.BootstrappedLevelDb] = true
-	(&invoice.Bootstrapper{}).Bootstrap(bContext)
+	cc.DONT_USE_FOR_UNIT_TESTS_TestFunctionalEthereumBootstrap()
 	result := m.Run()
-	cc.TestIntegrationTearDown()
+	cc.TestFunctionalEthereumTearDown()
 	os.Exit(result)
 }
 
