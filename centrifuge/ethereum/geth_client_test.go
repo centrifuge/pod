@@ -8,9 +8,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
-	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
+	"github.com/centrifuge/go-centrifuge/centrifuge/context/testlogging"
+	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents/invoice"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/ethereum"
+	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -20,12 +25,19 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	cc.TestIntegrationBootstrap()
+	ibootstappers := []bootstrap.TestBootstrapper{
+		&testlogging.TestLoggingBootstrapper{},
+		&config.Bootstrapper{},
+		&storage.Bootstrapper{},
+		&coredocumentrepository.Bootstrapper{},
+		&invoice.Bootstrapper{},
+		&purchaseorder.Bootstrapper{},
+	}
+	bootstrap.RunTestBootstrappers(ibootstappers)
 	config.Config.V.Set("ethereum.txPoolAccessEnabled", false)
 	config.Config.V.Set("ethereum.intervalRetry", time.Millisecond*100)
-
 	result := m.Run()
-	cc.TestIntegrationTearDown()
+	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)
 }
 

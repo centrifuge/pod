@@ -18,10 +18,6 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	return errors.New("could not find the list of " + BootstrappedQueuedTasks)
 }
 
-func (b *Bootstrapper) TestBootstrap(context map[string]interface{}) error {
-	return b.Bootstrap(context)
-}
-
 // InstallQueuedTask adds a queued task to the context so that when the queue initializes it can update it self
 // with different tasks types queued in the node
 func InstallQueuedTask(context map[string]interface{}, queuedTask QueuedTask) error {
