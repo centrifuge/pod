@@ -8,6 +8,7 @@ import (
 	"encoding/binary"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 func TestRandomByte32(t *testing.T) {
@@ -200,3 +201,33 @@ func TestIsValidByteSliceForLength(t *testing.T) {
 		})
 	}
 }
+
+func TestSliceOfByteSlicesToHexStringSlice(t *testing.T) {
+	tests := []struct {
+		name string
+		input [][]byte
+	}{
+		{
+			name: "happy",
+			input: [][]byte{RandomSlice(32)},
+		},
+		{
+			name: "empty",
+			input: [][]byte{},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			out := SliceOfByteSlicesToHexStringSlice(test.input)
+			for _, s := range out {
+				verifyHex(t, s)
+			}
+		})
+	}
+}
+
+func verifyHex(t *testing.T, val string) {
+	_, err := hexutil.Decode(val)
+	assert.Nil(t, err)
+}
+
