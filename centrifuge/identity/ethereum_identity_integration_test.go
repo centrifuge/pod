@@ -84,8 +84,8 @@ func TestAddKeyFromConfig(t *testing.T) {
 	centrifugeId, _ := identity.ToCentID(tools.RandomSlice(identity.CentIDLength))
 	defaultCentrifugeId := config.Config.V.GetString("identityId")
 	config.Config.V.Set("identityId", centrifugeId.String())
-	config.Config.V.Set("keys.ethauth.publicKey", "../../example/resources/ethauth.pub.pem")
-	config.Config.V.Set("keys.ethauth.privateKey", "../../example/resources/ethauth.key.pem")
+	//config.Config.V.Set("keys.ethauth.publicKey", "../../example/resources/ethauth.pub.pem")
+	//config.Config.V.Set("keys.ethauth.privateKey", "../../example/resources/ethauth.key.pem")
 	_, confirmations, err := identityService.CreateIdentity(centrifugeId)
 	assert.Nil(t, err, "should not error out when creating identity")
 
@@ -143,7 +143,7 @@ func TestEthereumIdentityService_GetIdentityAddress(t *testing.T) {
 
 func TestEthereumIdentityService_GetIdentityAddressNonExistingID(t *testing.T) {
 	addr, err := identityService.GetIdentityAddress(identity.NewRandomCentID())
-	log.Printf("TestEthereumIdentityService_GetIdentityAddressNonExistingID address %x , err %v")
+	log.Printf("TestEthereumIdentityService_GetIdentityAddressNonExistingID address %x , err %v", addr, err)
 	assert.NotNil(t, err)
 	assert.True(t, len(addr) == 0)
 }
