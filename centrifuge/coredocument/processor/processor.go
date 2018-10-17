@@ -47,6 +47,7 @@ func DefaultProcessor(idService identity.Service, p2pClient p2p.Client) Processo
 
 // Send sends the given defaultProcessor to the given recipient on the P2P layer
 func (dp *defaultProcessor) Send(ctx context.Context, coreDocument *coredocumentpb.CoreDocument, recipient identity.CentID) (err error) {
+	log.Infof("sending coredocument %x to recipient %x", coreDocument.DocumentIdentifier, recipient)
 	if coreDocument == nil {
 		return centerrors.NilError(coreDocument)
 	}
