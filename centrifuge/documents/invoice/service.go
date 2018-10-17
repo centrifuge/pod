@@ -14,11 +14,12 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/processor"
+	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents/common"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	centED25519 "github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	"github.com/centrifuge/go-centrifuge/centrifuge/notification"
-	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/documents"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/signatures"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -65,42 +66,40 @@ func DefaultService(repo documents.Repository, processor coredocumentprocessor.P
 }
 
 // CreateProofs creates proofs for the latest version document given the fields
-func (s service) CreateProofs(documentID []byte, fields []string) (*documentpb.DocumentProof, error) {
+func (s service) CreateProofs(documentID []byte, fields []string) (common.DocumentProof, error) {
 	doc, err := s.GetLastVersion(documentID)
 	if err != nil {
-		return nil, err
+		return common.DocumentProof{}, err
 	}
 	inv, ok := doc.(*InvoiceModel)
 	if !ok {
-		return nil, centerrors.New(code.DocumentInvalid, "document of invalid type")
+		return common.DocumentProof{}, centerrors.New(code.DocumentInvalid, "document of invalid type")
 	}
 	return s.invoiceProof(inv, fields)
 }
 
 // CreateProofsForVersion creates proofs for a particular version of the document given the fields
-func (s service) CreateProofsForVersion(documentID, version []byte, fields []string) (*documentpb.DocumentProof, error) {
+func (s service) CreateProofsForVersion(documentID, version []byte, fields []string) (common.DocumentProof, error) {
 	doc, err := s.GetVersion(documentID, version)
 	if err != nil {
-		return nil, err
+		return common.DocumentProof{}, err
 	}
 	inv, ok := doc.(*InvoiceModel)
 	if !ok {
-		return nil, centerrors.New(code.DocumentInvalid, "document of invalid type")
+		return common.DocumentProof{}, centerrors.New(code.DocumentInvalid, "document of invalid type")
 	}
 	return s.invoiceProof(inv, fields)
 }
 
 // invoiceProof creates proofs for invoice model fields
-func (s service) invoiceProof(inv *InvoiceModel, fields []string) (*documentpb.DocumentProof, error) {
+func (s service) invoiceProof(inv *InvoiceModel, fields []string) (common.DocumentProof, error) {
 	coreDoc, proofs, err := inv.createProofs(fields)
 	if err != nil {
-		return nil, err
+		return common.DocumentProof{}, err
 	}
-	return &documentpb.DocumentProof{
-		Header: &documentpb.ResponseHeader{
-			DocumentId: hexutil.Encode(coreDoc.DocumentIdentifier),
-			VersionId:  hexutil.Encode(coreDoc.CurrentVersion),
-		},
+	return common.DocumentProof{
+		DocumentId:  coreDoc.DocumentIdentifier,
+		VersionId:   coreDoc.CurrentVersion,
 		FieldProofs: proofs}, nil
 }
 
@@ -389,6 +388,12 @@ func (s service) RequestDocumentSignature(model documents.Model) (*coredocumentp
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to Unpack CoreDocument: %v", err))
 	}
 
+	// TODO temporary until we deprecate old document version
+	err = coredocumentrepository.GetRepository().Create(doc.DocumentIdentifier, doc)
+	if err != nil {
+		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to Create legacy CoreDocument: %v", err))
+	}
+
 	err = repo.Create(doc.DocumentIdentifier, model)
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to store document: %v", err))
@@ -401,6 +406,12 @@ func (s service) ReceiveAnchoredDocument(model documents.Model, headers *p2ppb.C
 	doc, err := model.PackCoreDocument()
 	if err != nil {
 		return centerrors.New(code.DocumentInvalid, err.Error())
+	}
+
+	// TODO temporary until we deprecate old document version
+	err = coredocumentrepository.GetRepository().Update(doc.DocumentIdentifier, doc)
+	if err != nil {
+		return centerrors.New(code.Unknown, fmt.Sprintf("failed to Create legacy CoreDocument: %v", err))
 	}
 
 	// TODO(ved): post anchoring validations should be done before deriving model

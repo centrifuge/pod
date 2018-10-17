@@ -14,6 +14,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
+	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
@@ -330,8 +331,8 @@ func TestService_CreateProofs(t *testing.T) {
 	assert.Nil(t, err)
 	proof, err := invService.CreateProofs(i.CoreDocument.DocumentIdentifier, []string{"invoice_number"})
 	assert.Nil(t, err)
-	assert.Equal(t, proof.Header.DocumentId, hexutil.Encode(i.CoreDocument.DocumentIdentifier))
-	assert.Equal(t, proof.Header.VersionId, hexutil.Encode(i.CoreDocument.DocumentIdentifier))
+	assert.Equal(t, i.CoreDocument.DocumentIdentifier, proof.DocumentId)
+	assert.Equal(t, i.CoreDocument.DocumentIdentifier, proof.VersionId)
 	assert.Equal(t, len(proof.FieldProofs), 1)
 	assert.Equal(t, proof.FieldProofs[0].GetProperty(), "invoice_number")
 }
@@ -358,8 +359,8 @@ func TestService_CreateProofsForVersion(t *testing.T) {
 	assert.Nil(t, err)
 	proof, err := invService.CreateProofsForVersion(i.CoreDocument.DocumentIdentifier, olderVersion, []string{"invoice_number"})
 	assert.Nil(t, err)
-	assert.Equal(t, proof.Header.DocumentId, hexutil.Encode(i.CoreDocument.DocumentIdentifier))
-	assert.Equal(t, proof.Header.VersionId, hexutil.Encode(olderVersion))
+	assert.Equal(t, i.CoreDocument.DocumentIdentifier, proof.DocumentId)
+	assert.Equal(t, olderVersion, proof.VersionId)
 	assert.Equal(t, len(proof.FieldProofs), 1)
 	assert.Equal(t, proof.FieldProofs[0].GetProperty(), "invoice_number")
 }
@@ -402,6 +403,10 @@ func TestService_RequestDocumentSignature_SigningRootNil(t *testing.T) {
 
 func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	i, err := createAnchoredMockDocument(t, false)
+	assert.Nil(t, err)
+
+	//TODO Remove when we deprecate old document version
+	err = coredocumentrepository.GetRepository().Create(i.CoreDocument.DocumentIdentifier, i.CoreDocument)
 	assert.Nil(t, err)
 
 	header := &p2ppb.CentrifugeHeader{

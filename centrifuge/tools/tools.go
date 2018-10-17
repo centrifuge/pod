@@ -6,6 +6,7 @@ import (
 	"math/big"
 
 	"github.com/centrifuge/gocelery"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 func ContainsBigIntInSlice(value *big.Int, list []*big.Int) bool {
@@ -24,6 +25,15 @@ func SliceToByte32(in []byte) (out [32]byte, err error) {
 	}
 	copy(out[:], in)
 	return
+}
+
+// SliceOfByteSlicesToHexStringSlice converts the given slice of byte slices to a hex encoded string array with 0x prefix
+func SliceOfByteSlicesToHexStringSlice(byteSlices [][]byte) []string {
+	hexArr := make([]string, len(byteSlices))
+	for i, b := range byteSlices {
+		hexArr[i] = hexutil.Encode(b)
+	}
+	return hexArr
 }
 
 // Byte32ToSlice converts a [32]bytes to an unbounded byte array

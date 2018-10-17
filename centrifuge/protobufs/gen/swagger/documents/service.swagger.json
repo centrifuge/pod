@@ -135,7 +135,31 @@
         "field_proofs": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/proofsProof"
+            "$ref": "#/definitions/documentProof"
+          }
+        }
+      }
+    },
+    "documentProof": {
+      "type": "object",
+      "properties": {
+        "property": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "salt": {
+          "type": "string"
+        },
+        "hash": {
+          "type": "string",
+          "title": "hash is filled if value \u0026 salt are not available"
+        },
+        "sorted_hashes": {
+          "type": "array",
+          "items": {
+            "type": "string"
           }
         }
       }
@@ -154,53 +178,6 @@
         }
       },
       "title": "ResponseHeader contains a set of common fields for most documents"
-    },
-    "proofsMerkleHash": {
-      "type": "object",
-      "properties": {
-        "left": {
-          "type": "string",
-          "format": "byte"
-        },
-        "right": {
-          "type": "string",
-          "format": "byte"
-        }
-      }
-    },
-    "proofsProof": {
-      "type": "object",
-      "properties": {
-        "property": {
-          "type": "string"
-        },
-        "value": {
-          "type": "string"
-        },
-        "salt": {
-          "type": "string",
-          "format": "byte"
-        },
-        "hash": {
-          "type": "string",
-          "format": "byte",
-          "title": "hash is filled if value \u0026 salt are not available"
-        },
-        "hashes": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/proofsMerkleHash"
-          },
-          "title": "Fills either 'hashes' for standard Merkle trees or 'sortedHashes' for a lexicograhical ordered of a node hash\nnot both"
-        },
-        "sortedHashes": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "format": "byte"
-          }
-        }
-      }
     }
   }
 }
