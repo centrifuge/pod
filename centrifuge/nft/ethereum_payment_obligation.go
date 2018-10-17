@@ -54,7 +54,7 @@ func (s *ethereumPaymentObligation) MintNFT(documentID []byte, docType, registry
 		return "", err
 	}
 
-	model, err := documentService.GetLastVersion([]byte(documentID))
+	model, err := documentService.GetCurrentVersion([]byte(documentID))
 	if err != nil {
 		return "", err
 	}

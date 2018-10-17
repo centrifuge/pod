@@ -17,6 +17,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 )
 
 func TestCreateProofData(t *testing.T) {
@@ -141,15 +142,15 @@ func TestPaymentObligationService(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		mocker  func() (testingcommons.MockDocService, MockPaymentObligation, testingcommons.MockIDService, testingcommons.MockEthClient, MockConfig)
+		mocker  func() (documents.MockService, MockPaymentObligation, testingcommons.MockIDService, testingcommons.MockEthClient, MockConfig)
 		request *nftpb.NFTMintRequest
 		err     error
 		result  string
 	}{
 		{
 			"happypath",
-			func() (testingcommons.MockDocService, MockPaymentObligation, testingcommons.MockIDService, testingcommons.MockEthClient, MockConfig) {
-				docServiceMock := testingcommons.MockDocService{}
+			func() (documents.MockService, MockPaymentObligation, testingcommons.MockIDService, testingcommons.MockEthClient, MockConfig) {
+				docServiceMock := documents.MockService{}
 				docServiceMock.On("GetLastVersion", decodeHex("0x1212")).Return()
 				paymentObligationMock := MockPaymentObligation{}
 				idServiceMock := testingcommons.MockIDService{}
