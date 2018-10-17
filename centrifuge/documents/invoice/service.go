@@ -48,12 +48,6 @@ type Service interface {
 	// DeriveInvoiceResponse returns the invoice model in our standard client format
 	DeriveInvoiceResponse(inv documents.Model) (*clientinvoicepb.InvoiceResponse, error)
 
-	// GetLastVersion reads a document from the database
-	GetLastVersion(documentID []byte) (documents.Model, error)
-
-	// GetVersion reads a document from the database
-	GetVersion(documentID []byte, version []byte) (documents.Model, error)
-
 	// SaveState updates the model in DB
 	SaveState(inv documents.Model) error
 }
