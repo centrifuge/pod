@@ -10,7 +10,6 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/code"
-	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
@@ -18,24 +17,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/version"
 	"github.com/golang/protobuf/ptypes"
 )
-
-func incompatibleNetworkError(nodeNetwork uint32) error {
-	return centerrors.New(code.NetworkMismatch, fmt.Sprintf("Incompatible network id: node network: %d, client network: %d", config.Config.GetNetworkID(), nodeNetwork))
-}
-
-// basicChecks does a network and version check for any incompatibility
-func basicChecks(nodeVersion string, networkID uint32) error {
-	compatible := version.CheckVersion(nodeVersion)
-	if !compatible {
-		return version.IncompatibleVersionError(nodeVersion)
-	}
-
-	if config.Config.GetNetworkID() != networkID {
-		return incompatibleNetworkError(networkID)
-	}
-
-	return nil
-}
 
 // getService looks up the specific registry, derives service from core document
 func getServiceAndModel(cd *coredocumentpb.CoreDocument) (documents.Service, documents.Model, error) {
@@ -73,7 +54,7 @@ type Handler struct {
 // request could not decide for itself if the request handshake should succeed or not.
 // Deprecated
 func (srv *Handler) Post(ctx context.Context, req *p2ppb.P2PMessage) (*p2ppb.P2PReply, error) {
-	err := basicChecks(req.CentNodeVersion, req.NetworkIdentifier)
+	err := handshakeValidator().Validate([]interface{}{req.CentNodeVersion, req.NetworkIdentifier})
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +93,7 @@ func (srv *Handler) Post(ctx context.Context, req *p2ppb.P2PMessage) (*p2ppb.P2P
 // Existing signatures on the document will be verified
 // Document will be stored to the repository for state management
 func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.SignatureRequest) (*p2ppb.SignatureResponse, error) {
-	err := basicChecks(sigReq.Header.CentNodeVersion, sigReq.Header.NetworkIdentifier)
+	err := handshakeValidator().Validate([]interface{}{sigReq.Header.CentNodeVersion, sigReq.Header.NetworkIdentifier})
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +116,7 @@ func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.
 
 // SendAnchoredDocument receives a new anchored document, validates and updates the document in DB
 func (srv *Handler) SendAnchoredDocument(ctx context.Context, docReq *p2ppb.AnchDocumentRequest) (*p2ppb.AnchDocumentResponse, error) {
-	err := basicChecks(docReq.Header.CentNodeVersion, docReq.Header.NetworkIdentifier)
+	err := handshakeValidator().Validate([]interface{}{docReq.Header.CentNodeVersion, docReq.Header.NetworkIdentifier})
 	if err != nil {
 		return nil, err
 	}

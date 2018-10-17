@@ -379,7 +379,7 @@ func (s service) RequestDocumentSignature(model documents.Model) (*coredocumentp
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
 	}
 
-	// TODO(mig) Invoke validation as part of service call
+	// TODO(ved): pre anchoring validations should be done here
 	if err := coredocument.ValidateWithSignature(doc); err != nil {
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
 	}
