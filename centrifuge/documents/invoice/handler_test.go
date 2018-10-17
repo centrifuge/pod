@@ -319,7 +319,7 @@ func (m *mockService) Create(ctx context.Context, inv documents.Model) (document
 	return model, args.Error(1)
 }
 
-func (m *mockService) GetLastVersion(identifier []byte) (documents.Model, error) {
+func (m *mockService) GetCurrentVersion(identifier []byte) (documents.Model, error) {
 	args := m.Called(identifier)
 	data, _ := args.Get(0).(documents.Model)
 	return data, args.Error(1)
