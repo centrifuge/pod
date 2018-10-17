@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
@@ -85,7 +86,7 @@ func getCoreDocument(model documents.Model) (*coredocumentpb.CoreDocument, error
 
 	cd, err := model.PackCoreDocument()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get core document: %v", err)
+		return nil, fmt.Errorf("failed to pack core document: %v", err)
 	}
 
 	return cd, nil
@@ -222,4 +223,62 @@ func signaturesValidator() documents.Validator {
 
 		return err
 	})
+}
+
+// anchoredValidator checks if the document root matches the one on chain with specific anchorID
+// assumes document root is generated and verified
+func anchoredValidator(repo anchors.AnchorRepository) documents.Validator {
+	return documents.ValidatorFunc(func(_, new documents.Model) error {
+		cd, err := getCoreDocument(new)
+		if err != nil {
+			return fmt.Errorf("failed to get core document: %v", err)
+		}
+
+		anchorID, err := anchors.NewAnchorID(cd.CurrentVersion)
+		if err != nil {
+			return fmt.Errorf("failed to get anchorID: %v", err)
+		}
+
+		docRoot, err := anchors.NewDocRoot(cd.DocumentRoot)
+		if err != nil {
+			return fmt.Errorf("failed to get document root: %v", err)
+		}
+
+		gotRoot, err := repo.GetDocumentRootOf(anchorID)
+		if err != nil {
+			return fmt.Errorf("failed to get document root from chain: %v", err)
+		}
+
+		if !tools.IsSameByteSlice(docRoot[:], gotRoot[:]) {
+			return fmt.Errorf("mismatched document roots")
+		}
+
+		return nil
+	})
+}
+
+// PreAnchorValidator is a validator group with following validators
+// base validator
+// signing root validator
+// document root validator
+// signatures validator
+// should be called before pre anchoring
+func PreAnchorValidator() documents.ValidatorGroup {
+	return documents.ValidatorGroup{
+		baseValidator(),
+		signingRootValidator(),
+		documentRootValidator(),
+		signaturesValidator(),
+	}
+}
+
+// PostAnchoredValidator is a validator group with following validators
+// PreAnchorValidator
+// anchoredValidator
+// should be called after anchoring the document/when received anchored document
+func PostAnchoredValidator() documents.ValidatorGroup {
+	return documents.ValidatorGroup{
+		PreAnchorValidator(),
+		anchoredValidator(anchors.GetAnchorRepository()),
+	}
 }

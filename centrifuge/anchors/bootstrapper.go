@@ -29,7 +29,7 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	}
 
 	anchorRepo := NewEthereumAnchorRepository(config.Config, repositoryContract)
-	setRepository(anchorRepo)
+	setAnchorRepository(anchorRepo)
 	if err != nil {
 		return err
 	}
