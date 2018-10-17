@@ -51,6 +51,8 @@ func (dp *defaultProcessor) Send(ctx context.Context, coreDocument *coredocument
 		return centerrors.NilError(coreDocument)
 	}
 
+	log.Infof("sending coredocument %x to recipient %x", coreDocument.DocumentIdentifier, recipient)
+
 	id, err := dp.IdentityService.LookupIdentityForID(recipient)
 	if err != nil {
 		err = centerrors.Wrap(err, "error fetching receiver identity")
