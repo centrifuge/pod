@@ -54,6 +54,9 @@ func GenerateCoreDocument() *coredocumentpb.CoreDocument {
 		EmbeddedData: &any.Any{
 			TypeUrl: documenttypes.InvoiceDataTypeUrl,
 		},
+		EmbeddedDataSalts: &any.Any{
+			TypeUrl: documenttypes.InvoiceSaltsTypeUrl,
+		},
 	}
 	proofs.FillSalts(doc, salts)
 	return doc
