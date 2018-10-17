@@ -13,7 +13,7 @@ type MockService struct {
 	mock.Mock
 }
 
-func (m *MockService) GetLastVersion(documentID []byte) (Model, error) {
+func (m *MockService) GetCurrentVersion(documentID []byte) (Model, error) {
 	args := m.Called(documentID)
 	return args.Get(0).(Model), args.Error(1)
 }

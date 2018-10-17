@@ -9,8 +9,8 @@ import (
 // Service provides an interface for functions common to all document types
 type Service interface {
 
-	// GetLastVersion reads a document from the database
-	GetLastVersion(documentID []byte) (Model, error)
+	// GetCurrentVersion reads a document from the database
+	GetCurrentVersion(documentID []byte) (Model, error)
 
 	// GetVersion reads a document from the database
 	GetVersion(documentID []byte, version []byte) (Model, error)
