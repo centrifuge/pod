@@ -377,6 +377,8 @@ func (s service) RequestDocumentSignature(model documents.Model) (*coredocumentp
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
 	}
 
+	log.Infof("coredoc received %x with signing root %x", doc.DocumentIdentifier, doc.SigningRoot)
+
 	// TODO(mig) Invoke validation as part of service call
 	if err := coredocument.ValidateWithSignature(doc); err != nil {
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
@@ -404,6 +406,7 @@ func (s service) RequestDocumentSignature(model documents.Model) (*coredocumentp
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to store document: %v", err))
 	}
+	log.Infof("signed coredoc %x", doc.DocumentIdentifier)
 	return sig, nil
 }
 
