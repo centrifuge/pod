@@ -119,7 +119,7 @@ func VerifySignature(publicKey, message, signature []byte) bool {
 // GetIDConfig reads the keys and ID from the config and returns a the Identity config
 func GetIDConfig() (identityConfig *config.IdentityConfig, err error) {
 	pub, pvk := GetEthAuthKeyFromConfig()
-	centId, err := config.Config.GetIdentityId()
+	centId, err := config.Config.GetIdentityID()
 	if err != nil {
 		return nil, err
 	}

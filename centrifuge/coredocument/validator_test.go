@@ -343,7 +343,7 @@ func TestValidator_signatureValidator(t *testing.T) {
 
 func TestPreAnchorValidator(t *testing.T) {
 	pav := PreAnchorValidator()
-	assert.Len(t, pav, 4)
+	assert.Len(t, pav, 2)
 }
 
 type repo struct {
@@ -427,6 +427,16 @@ func TestValidator_anchoredValidator(t *testing.T) {
 }
 
 func TestPostAnchoredValidator(t *testing.T) {
-	pav := PostAnchoredValidator()
+	pav := PostAnchoredValidator(nil)
 	assert.Len(t, pav, 2)
+}
+
+func TestPreSignatureRequestValidator(t *testing.T) {
+	psv := PreSignatureRequestValidator()
+	assert.Len(t, psv, 3)
+}
+
+func TestPostSignatureRequestValidator(t *testing.T) {
+	psv := PostSignatureRequestValidator()
+	assert.Len(t, psv, 3)
 }

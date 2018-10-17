@@ -4,6 +4,8 @@ import (
 	"context"
 	"crypto/rand"
 
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
+
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
@@ -77,6 +79,31 @@ func (m *MockCoreDocumentProcessor) Anchor(
 			return err
 		}
 	}
+	return args.Error(0)
+}
+
+func (m *MockCoreDocumentProcessor) PrepareForSignatureRequests(model documents.Model) error {
+	args := m.Called(model)
+	return args.Error(0)
+}
+
+func (m *MockCoreDocumentProcessor) RequestSignatures(ctx context.Context, model documents.Model) error {
+	args := m.Called(ctx, model)
+	return args.Error(0)
+}
+
+func (m *MockCoreDocumentProcessor) PrepareForAnchoring(model documents.Model) error {
+	args := m.Called(model)
+	return args.Error(0)
+}
+
+func (m *MockCoreDocumentProcessor) AnchorDocument(model documents.Model) error {
+	args := m.Called(model)
+	return args.Error(0)
+}
+
+func (m *MockCoreDocumentProcessor) SendDocument(ctx context.Context, model documents.Model) error {
+	args := m.Called(ctx, model)
 	return args.Error(0)
 }
 

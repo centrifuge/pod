@@ -11,6 +11,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/secp256k1"
@@ -29,6 +30,11 @@ type Processor interface {
 	Send(ctx context.Context, coreDocument *coredocumentpb.CoreDocument, recipient identity.CentID) (err error)
 	Anchor(ctx context.Context, document *coredocumentpb.CoreDocument,
 		saveState func(coreDoc *coredocumentpb.CoreDocument) error) (err error)
+	PrepareForSignatureRequests(model documents.Model) error
+	RequestSignatures(ctx context.Context, model documents.Model) error
+	PrepareForAnchoring(model documents.Model) error
+	AnchorDocument(model documents.Model) error
+	SendDocument(ctx context.Context, model documents.Model) error
 }
 
 // defaultProcessor implements Processor interface
@@ -39,14 +45,14 @@ type defaultProcessor struct {
 
 // DefaultProcessor returns the default implementation of CoreDocument Processor
 func DefaultProcessor(idService identity.Service, p2pClient p2p.Client) Processor {
-	return &defaultProcessor{
+	return defaultProcessor{
 		IdentityService: idService,
 		P2PClient:       p2pClient,
 	}
 }
 
 // Send sends the given defaultProcessor to the given recipient on the P2P layer
-func (dp *defaultProcessor) Send(ctx context.Context, coreDocument *coredocumentpb.CoreDocument, recipient identity.CentID) (err error) {
+func (dp defaultProcessor) Send(ctx context.Context, coreDocument *coredocumentpb.CoreDocument, recipient identity.CentID) (err error) {
 	if coreDocument == nil {
 		return centerrors.NilError(coreDocument)
 	}
@@ -106,7 +112,8 @@ func (dp *defaultProcessor) Send(ctx context.Context, coreDocument *coredocument
 // - store doc in db
 // - anchor the document
 // - send anchored document to collaborators [NOT NEEDED since we do this in the current flow already because HandleSend****Document does it after anchoring]
-func (dp *defaultProcessor) Anchor(
+// Deprecated: use individual flows instead
+func (dp defaultProcessor) Anchor(
 	ctx context.Context,
 	document *coredocumentpb.CoreDocument,
 	saveState func(coreDoc *coredocumentpb.CoreDocument) error) error {
@@ -211,4 +218,167 @@ func (dp *defaultProcessor) Anchor(
 	<-confirmations
 	log.Infof("Anchored document with identifiers: [document: %#x, current: %#x, next: %#x], rootHash: %#x", document.DocumentIdentifier, document.CurrentVersion, document.NextVersion, document.DocumentRoot)
 	return nil
+}
+
+// PrepareForSignatureRequests gets the core document from the model, and add the signature
+func (dp defaultProcessor) PrepareForSignatureRequests(model documents.Model) error {
+	cd, err := model.PackCoreDocument()
+	if err != nil {
+		return fmt.Errorf("failed to pack coredocument: %v", err)
+	}
+
+	// calculate the signing root
+	err = coredocument.CalculateSigningRoot(cd)
+	if err != nil {
+		return fmt.Errorf("failed to calculate signing root: %v", err)
+	}
+
+	// sign document with own key and append it to signatures
+	idConfig, err := ed25519keys.GetIDConfig()
+	if err != nil {
+		return fmt.Errorf("failed to get keys for signing: %v", err)
+	}
+	sig := signatures.Sign(idConfig, cd.SigningRoot)
+	cd.Signatures = append(cd.Signatures, sig)
+
+	err = model.UnpackCoreDocument(cd)
+	if err != nil {
+		return fmt.Errorf("failed to unpack the core document: %v", err)
+	}
+
+	return nil
+}
+
+// RequestSignatures gets the core document from the model, validates pre signature requirements,
+// collects signatures, and validates the signatures,
+func (dp defaultProcessor) RequestSignatures(ctx context.Context, model documents.Model) error {
+	cd, err := model.PackCoreDocument()
+	if err != nil {
+		return fmt.Errorf("failed to pack coredocument: %v", err)
+	}
+
+	psv := coredocument.PreSignatureRequestValidator()
+	err = psv.Validate(nil, model)
+	if err != nil {
+		return fmt.Errorf("failed to validate model for signature request: %v", err)
+	}
+
+	err = dp.P2PClient.GetSignaturesForDocument(ctx, cd)
+	if err != nil {
+		return fmt.Errorf("failed to collect signatures from the collaborators: %v", err)
+	}
+
+	err = model.UnpackCoreDocument(cd)
+	if err != nil {
+		return fmt.Errorf("failed to unpack core document: %v", err)
+	}
+
+	return nil
+}
+
+// PrepareForAnchoring validates the signatures and generates the document root
+func (dp defaultProcessor) PrepareForAnchoring(model documents.Model) error {
+	psv := coredocument.PostSignatureRequestValidator()
+	err := psv.Validate(nil, model)
+	if err != nil {
+		return fmt.Errorf("failed to validate singatures: %v", err)
+	}
+
+	cd, err := model.PackCoreDocument()
+	if err != nil {
+		return fmt.Errorf("failed to pack coredocument: %v", err)
+	}
+
+	err = coredocument.CalculateDocumentRoot(cd)
+	if err != nil {
+		return fmt.Errorf("failed to generate document root: %v", err)
+	}
+
+	err = model.UnpackCoreDocument(cd)
+	if err != nil {
+		return fmt.Errorf("failed to unpack core document: %v", err)
+	}
+
+	return nil
+}
+
+// AnchorDocument validates the model, and anchors the document
+func (dp defaultProcessor) AnchorDocument(model documents.Model) error {
+	pav := coredocument.PreAnchorValidator()
+	err := pav.Validate(nil, model)
+	if err != nil {
+		return fmt.Errorf("pre anchor validation failed: %v", err)
+	}
+
+	cd, err := model.PackCoreDocument()
+	if err != nil {
+		return fmt.Errorf("failed to pack core docuemnt: %v", err)
+	}
+
+	rootHash, err := anchors.NewDocRoot(cd.DocumentRoot)
+	if err != nil {
+		return fmt.Errorf("document root invalid: %v", err)
+	}
+
+	id, err := config.Config.GetIdentityID()
+	if err != nil {
+		return fmt.Errorf("failed to get self cent ID: %v", err)
+	}
+
+	centID, err := identity.ToCentID(id)
+	if err != nil {
+		return fmt.Errorf("centID invalid: %v", err)
+	}
+
+	anchorID, err := anchors.NewAnchorID(cd.CurrentVersion)
+	if err != nil {
+		return fmt.Errorf("anchorID invalid: %v", err)
+	}
+
+	// generate message authentication code for the anchor call
+	secpIDConfig, err := secp256k1.GetIDConfig()
+	mac, err := secp256k1.SignEthereum(anchors.GenerateCommitHash(anchorID, centID, rootHash), secpIDConfig.PrivateKey)
+	if err != nil {
+		return fmt.Errorf("failed to generate ethereum MAC: %v", err)
+	}
+
+	log.Infof("Anchoring document with identifiers: [document: %#x, current: %#x, next: %#x], rootHash: %#x", cd.DocumentIdentifier, cd.CurrentVersion, cd.NextVersion, cd.DocumentRoot)
+	// TODO documentProofs has to be included when we develop precommit flow
+	confirmations, err := anchors.CommitAnchor(anchorID, rootHash, centID, [][anchors.DocumentProofLength]byte{tools.RandomByte32()}, mac)
+	if err != nil {
+		return fmt.Errorf("failed to commit anchor: %v", err)
+	}
+
+	<-confirmations
+	log.Infof("Anchored document with identifiers: [document: %#x, current: %#x, next: %#x], rootHash: %#x", cd.DocumentIdentifier, cd.CurrentVersion, cd.NextVersion, cd.DocumentRoot)
+	return nil
+}
+
+// SendDocument does post anchor validations and sends the document to collaborators
+func (dp defaultProcessor) SendDocument(ctx context.Context, model documents.Model) error {
+	av := coredocument.PostAnchoredValidator(anchors.GetAnchorRepository())
+	err := av.Validate(nil, model)
+	if err != nil {
+		return fmt.Errorf("post anchor validations failed: %v", err)
+	}
+
+	cd, err := model.PackCoreDocument()
+	if err != nil {
+		return fmt.Errorf("failed to pack core document: %v", err)
+	}
+
+	for _, c := range cd.Collaborators {
+		cID, erri := identity.ToCentID(c)
+		if erri != nil {
+			err = documents.AppendError(err, err)
+			continue
+		}
+
+		erri = dp.Send(ctx, cd, cID)
+		if erri != nil {
+			err = documents.AppendError(err, erri)
+		}
+	}
+
+	return err
 }
