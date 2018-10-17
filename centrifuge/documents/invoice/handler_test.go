@@ -319,7 +319,7 @@ func (m *mockService) Create(ctx context.Context, inv documents.Model) (document
 	return model, args.Error(1)
 }
 
-func (m *mockService) GetLastVersion(identifier []byte) (documents.Model, error) {
+func (m *mockService) GetCurrentVersion(identifier []byte) (documents.Model, error) {
 	args := m.Called(identifier)
 	data, _ := args.Get(0).(documents.Model)
 	return data, args.Error(1)
@@ -442,7 +442,7 @@ func TestGrpcHandler_Get_invalid_input(t *testing.T) {
 	assert.EqualError(t, err, "identifier is an invalid hex string: hex string without 0x prefix")
 
 	payload.Identifier = identifier
-	srv.On("GetLastVersion", identifierBytes).Return(nil, fmt.Errorf("not found"))
+	srv.On("GetCurrentVersion", identifierBytes).Return(nil, fmt.Errorf("not found"))
 	res, err = h.Get(context.Background(), payload)
 	srv.AssertExpectations(t)
 	assert.Nil(t, res)
@@ -457,7 +457,7 @@ func TestGrpcHandler_Get(t *testing.T) {
 	model := new(mockModel)
 	payload := &clientinvoicepb.GetRequest{Identifier: identifier}
 	response := &clientinvoicepb.InvoiceResponse{}
-	srv.On("GetLastVersion", identifierBytes).Return(model, nil)
+	srv.On("GetCurrentVersion", identifierBytes).Return(model, nil)
 	srv.On("DeriveInvoiceResponse", model).Return(response, nil)
 	res, err := h.Get(context.Background(), payload)
 	model.AssertExpectations(t)

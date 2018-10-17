@@ -27,12 +27,12 @@ func (m *MainBootstrapper) PopulateBaseBootstrappers() {
 		&version.Bootstrapper{},
 		&config.Bootstrapper{},
 		&storage.Bootstrapper{},
-		&coredocumentrepository.Bootstrapper{},
-		&invoice.Bootstrapper{},
-		&purchaseorder.Bootstrapper{},
 		&ethereum.Bootstrapper{},
 		&anchors.Bootstrapper{},
 		&identity.Bootstrapper{},
+		&coredocumentrepository.Bootstrapper{},
+		&invoice.Bootstrapper{},
+		&purchaseorder.Bootstrapper{},
 		&queue.Bootstrapper{},
 	}
 }

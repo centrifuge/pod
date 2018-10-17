@@ -48,7 +48,16 @@ message ResponseHeader {
 
 message DocumentProof {
   ResponseHeader header = 1;
-  repeated proofs.Proof field_proofs = 2;
+  repeated Proof field_proofs = 2;
+}
+
+message Proof {
+  string property = 1;
+  string value = 2;
+  string salt = 3;
+  // hash is filled if value & salt are not available
+  string hash = 4;
+  repeated string sorted_hashes = 5;
 }
 
 message CreateDocumentProofForVersionRequest {

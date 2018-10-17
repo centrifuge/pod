@@ -84,7 +84,7 @@ func TestService_GetLastVersion(t *testing.T) {
 	doc, err := createMockDocument()
 	assert.Nil(t, err)
 
-	mod1, err := invService.GetLastVersion(doc.CoreDocument.DocumentIdentifier)
+	mod1, err := invService.GetCurrentVersion(doc.CoreDocument.DocumentIdentifier)
 	assert.Nil(t, err)
 
 	invLoad1, _ := mod1.(*InvoiceModel)
@@ -102,7 +102,7 @@ func TestService_GetLastVersion(t *testing.T) {
 	err = getRepository().Create(doc.CoreDocument.NextVersion, inv2)
 	assert.Nil(t, err)
 
-	mod2, err := invService.GetLastVersion(doc.CoreDocument.DocumentIdentifier)
+	mod2, err := invService.GetCurrentVersion(doc.CoreDocument.DocumentIdentifier)
 	assert.Nil(t, err)
 
 	invLoad2, _ := mod2.(*InvoiceModel)
@@ -327,8 +327,8 @@ func TestService_CreateProofs(t *testing.T) {
 	assert.Nil(t, err)
 	proof, err := invService.CreateProofs(i.CoreDocument.DocumentIdentifier, []string{"invoice_number"})
 	assert.Nil(t, err)
-	assert.Equal(t, proof.Header.DocumentId, hexutil.Encode(i.CoreDocument.DocumentIdentifier))
-	assert.Equal(t, proof.Header.VersionId, hexutil.Encode(i.CoreDocument.DocumentIdentifier))
+	assert.Equal(t, i.CoreDocument.DocumentIdentifier, proof.DocumentId)
+	assert.Equal(t, i.CoreDocument.DocumentIdentifier, proof.VersionId)
 	assert.Equal(t, len(proof.FieldProofs), 1)
 	assert.Equal(t, proof.FieldProofs[0].GetProperty(), "invoice_number")
 }
@@ -355,8 +355,8 @@ func TestService_CreateProofsForVersion(t *testing.T) {
 	assert.Nil(t, err)
 	proof, err := invService.CreateProofsForVersion(i.CoreDocument.DocumentIdentifier, olderVersion, []string{"invoice_number"})
 	assert.Nil(t, err)
-	assert.Equal(t, proof.Header.DocumentId, hexutil.Encode(i.CoreDocument.DocumentIdentifier))
-	assert.Equal(t, proof.Header.VersionId, hexutil.Encode(olderVersion))
+	assert.Equal(t, i.CoreDocument.DocumentIdentifier, proof.DocumentId)
+	assert.Equal(t, olderVersion, proof.VersionId)
 	assert.Equal(t, len(proof.FieldProofs), 1)
 	assert.Equal(t, proof.FieldProofs[0].GetProperty(), "invoice_number")
 }

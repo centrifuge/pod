@@ -16,10 +16,10 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/processor"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents/common"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	centED25519 "github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	"github.com/centrifuge/go-centrifuge/centrifuge/notification"
-	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/documents"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/signatures"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -48,12 +48,6 @@ type Service interface {
 	// DeriveInvoiceResponse returns the invoice model in our standard client format
 	DeriveInvoiceResponse(inv documents.Model) (*clientinvoicepb.InvoiceResponse, error)
 
-	// GetLastVersion reads a document from the database
-	GetLastVersion(documentID []byte) (documents.Model, error)
-
-	// GetVersion reads a document from the database
-	GetVersion(documentID []byte, version []byte) (documents.Model, error)
-
 	// SaveState updates the model in DB
 	SaveState(inv documents.Model) error
 }
@@ -72,42 +66,40 @@ func DefaultService(repo documents.Repository, processor coredocumentprocessor.P
 }
 
 // CreateProofs creates proofs for the latest version document given the fields
-func (s service) CreateProofs(documentID []byte, fields []string) (*documentpb.DocumentProof, error) {
-	doc, err := s.GetLastVersion(documentID)
+func (s service) CreateProofs(documentID []byte, fields []string) (common.DocumentProof, error) {
+	doc, err := s.GetCurrentVersion(documentID)
 	if err != nil {
-		return nil, err
+		return common.DocumentProof{}, err
 	}
 	inv, ok := doc.(*InvoiceModel)
 	if !ok {
-		return nil, centerrors.New(code.DocumentInvalid, "document of invalid type")
+		return common.DocumentProof{}, centerrors.New(code.DocumentInvalid, "document of invalid type")
 	}
 	return s.invoiceProof(inv, fields)
 }
 
 // CreateProofsForVersion creates proofs for a particular version of the document given the fields
-func (s service) CreateProofsForVersion(documentID, version []byte, fields []string) (*documentpb.DocumentProof, error) {
+func (s service) CreateProofsForVersion(documentID, version []byte, fields []string) (common.DocumentProof, error) {
 	doc, err := s.GetVersion(documentID, version)
 	if err != nil {
-		return nil, err
+		return common.DocumentProof{}, err
 	}
 	inv, ok := doc.(*InvoiceModel)
 	if !ok {
-		return nil, centerrors.New(code.DocumentInvalid, "document of invalid type")
+		return common.DocumentProof{}, centerrors.New(code.DocumentInvalid, "document of invalid type")
 	}
 	return s.invoiceProof(inv, fields)
 }
 
 // invoiceProof creates proofs for invoice model fields
-func (s service) invoiceProof(inv *InvoiceModel, fields []string) (*documentpb.DocumentProof, error) {
+func (s service) invoiceProof(inv *InvoiceModel, fields []string) (common.DocumentProof, error) {
 	coreDoc, proofs, err := inv.createProofs(fields)
 	if err != nil {
-		return nil, err
+		return common.DocumentProof{}, err
 	}
-	return &documentpb.DocumentProof{
-		Header: &documentpb.ResponseHeader{
-			DocumentId: hexutil.Encode(coreDoc.DocumentIdentifier),
-			VersionId:  hexutil.Encode(coreDoc.CurrentVersion),
-		},
+	return common.DocumentProof{
+		DocumentId:  coreDoc.DocumentIdentifier,
+		VersionId:   coreDoc.CurrentVersion,
 		FieldProofs: proofs}, nil
 }
 
@@ -212,7 +204,7 @@ func (s service) Update(ctx context.Context, model documents.Model) (documents.M
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
 
-	old, err := s.GetLastVersion(cd.DocumentIdentifier)
+	old, err := s.GetCurrentVersion(cd.DocumentIdentifier)
 	if err != nil {
 		return nil, centerrors.New(code.DocumentNotFound, err.Error())
 	}
@@ -229,8 +221,8 @@ func (s service) GetVersion(documentID []byte, version []byte) (doc documents.Mo
 	return inv, nil
 }
 
-// GetLastVersion returns the last known version of an invoice
-func (s service) GetLastVersion(documentID []byte) (doc documents.Model, err error) {
+// GetCurrentVersion returns the last known version of an invoice
+func (s service) GetCurrentVersion(documentID []byte) (doc documents.Model, err error) {
 	inv, err := s.getInvoiceVersion(documentID, documentID)
 	if err != nil {
 		return nil, centerrors.Wrap(err, "document not found")
@@ -346,7 +338,7 @@ func (s service) DeriveFromUpdatePayload(payload *clientinvoicepb.InvoiceUpdateP
 		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("failed to decode identifier: %v", err))
 	}
 
-	old, err := s.GetLastVersion(id)
+	old, err := s.GetCurrentVersion(id)
 	if err != nil {
 		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("failed to fetch old version: %v", err))
 	}
@@ -383,6 +375,8 @@ func (s service) RequestDocumentSignature(model documents.Model) (*coredocumentp
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
 	}
 
+	log.Infof("coredoc received %x with signing root %x", doc.DocumentIdentifier, doc.SigningRoot)
+
 	idConfig, err := centED25519.GetIDConfig()
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get ID Config: %v", err))
@@ -401,10 +395,11 @@ func (s service) RequestDocumentSignature(model documents.Model) (*coredocumentp
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to Create legacy CoreDocument: %v", err))
 	}
 
-	err = repo.Create(doc.DocumentIdentifier, model)
+	err = s.repo.Create(doc.DocumentIdentifier, model)
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to store document: %v", err))
 	}
+	log.Infof("signed coredoc %x", doc.DocumentIdentifier)
 	return sig, nil
 }
 
