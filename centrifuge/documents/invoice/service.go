@@ -400,7 +400,7 @@ func (s service) RequestDocumentSignature(model documents.Model) (*coredocumentp
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to Create legacy CoreDocument: %v", err))
 	}
 
-	err = repo.Create(doc.DocumentIdentifier, model)
+	err = s.repo.Create(doc.DocumentIdentifier, model)
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to store document: %v", err))
 	}
