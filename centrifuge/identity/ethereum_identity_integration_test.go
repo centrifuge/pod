@@ -14,6 +14,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
+	"log"
 )
 
 var identityService identity.Service
@@ -141,6 +142,7 @@ func TestEthereumIdentityService_GetIdentityAddress(t *testing.T) {
 
 func TestEthereumIdentityService_GetIdentityAddressNonExistingID(t *testing.T) {
 	addr, err := identityService.GetIdentityAddress(identity.NewRandomCentID())
+	log.Printf("TestEthereumIdentityService_GetIdentityAddressNonExistingID address %x , err %v")
 	assert.NotNil(t, err)
 	assert.True(t, len(addr) == 0)
 }
