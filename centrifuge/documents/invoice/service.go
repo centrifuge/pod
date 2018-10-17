@@ -67,7 +67,7 @@ func DefaultService(repo documents.Repository, processor coredocumentprocessor.P
 
 // CreateProofs creates proofs for the latest version document given the fields
 func (s service) CreateProofs(documentID []byte, fields []string) (common.DocumentProof, error) {
-	doc, err := s.GetLastVersion(documentID)
+	doc, err := s.GetCurrentVersion(documentID)
 	if err != nil {
 		return common.DocumentProof{}, err
 	}
@@ -204,7 +204,7 @@ func (s service) Update(ctx context.Context, model documents.Model) (documents.M
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
 
-	old, err := s.GetLastVersion(cd.DocumentIdentifier)
+	old, err := s.GetCurrentVersion(cd.DocumentIdentifier)
 	if err != nil {
 		return nil, centerrors.New(code.DocumentNotFound, err.Error())
 	}
@@ -221,8 +221,8 @@ func (s service) GetVersion(documentID []byte, version []byte) (doc documents.Mo
 	return inv, nil
 }
 
-// GetLastVersion returns the last known version of an invoice
-func (s service) GetLastVersion(documentID []byte) (doc documents.Model, err error) {
+// GetCurrentVersion returns the last known version of an invoice
+func (s service) GetCurrentVersion(documentID []byte) (doc documents.Model, err error) {
 	inv, err := s.getInvoiceVersion(documentID, documentID)
 	if err != nil {
 		return nil, centerrors.Wrap(err, "document not found")
@@ -338,7 +338,7 @@ func (s service) DeriveFromUpdatePayload(payload *clientinvoicepb.InvoiceUpdateP
 		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("failed to decode identifier: %v", err))
 	}
 
-	old, err := s.GetLastVersion(id)
+	old, err := s.GetCurrentVersion(id)
 	if err != nil {
 		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("failed to fetch old version: %v", err))
 	}
@@ -371,6 +371,8 @@ func (s service) RequestDocumentSignature(model documents.Model) (*coredocumentp
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
 	}
 
+	log.Infof("coredoc received %x with signing root %x", doc.DocumentIdentifier, doc.SigningRoot)
+
 	// TODO(mig) Invoke validation as part of service call
 	if err := coredocument.ValidateWithSignature(doc); err != nil {
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
@@ -394,10 +396,11 @@ func (s service) RequestDocumentSignature(model documents.Model) (*coredocumentp
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to Create legacy CoreDocument: %v", err))
 	}
 
-	err = repo.Create(doc.DocumentIdentifier, model)
+	err = s.repo.Create(doc.DocumentIdentifier, model)
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to store document: %v", err))
 	}
+	log.Infof("signed coredoc %x", doc.DocumentIdentifier)
 	return sig, nil
 }
 
