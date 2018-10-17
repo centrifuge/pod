@@ -168,7 +168,7 @@ func TestPaymentObligationService(t *testing.T) {
 			//docService, paymentOb, idService, ethClient, config := test.mocker()
 			//// with below config the documentType has to be test.name to avoid conflicts since registry is a singleton
 			//documents.GetRegistryInstance().Register(test.name, &docService)
-			//service := NewPaymentObligationService(&paymentOb, &idService, &ethClient, &config)
+			//service := NewEthereumPaymentObligation(&paymentOb, &idService, &ethClient, &config)
 			//tokenID, err := service.MintNFT(decodeHex(test.request.Identifier), test.request.Type, test.request.RegistryAddress, test.request.DepositAddress, test.request.ProofFields)
 			//if test.err != nil {
 			//	assert.Equal(t, test.err.Error(), err.Error())
