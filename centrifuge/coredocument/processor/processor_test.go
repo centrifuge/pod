@@ -9,6 +9,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/centrifuge/anchors"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
@@ -71,7 +73,7 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 	err := dp.PrepareForSignatureRequests(model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to pack coredocument")
+	assert.Contains(t, err.Error(), "failed to pack core document")
 
 	// signing root failed
 	cd := new(coredocumentpb.CoreDocument)
@@ -143,7 +145,7 @@ func TestDefaultProcessor_RequestSignatures(t *testing.T) {
 	err := dp.RequestSignatures(ctx, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to pack coredocument")
+	assert.Contains(t, err.Error(), "failed to pack core document")
 
 	// validations failed
 	cd := new(coredocumentpb.CoreDocument)
@@ -212,7 +214,7 @@ func TestDefaultProcessor_PrepareForAnchoring(t *testing.T) {
 	err := dp.PrepareForAnchoring(model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to pack coredocument")
+	assert.Contains(t, err.Error(), "failed to pack core document")
 
 	// failed validations
 	cd := new(coredocumentpb.CoreDocument)
@@ -232,6 +234,7 @@ func TestDefaultProcessor_PrepareForAnchoring(t *testing.T) {
 	}
 	coredocument.FillSalts(cd)
 	err = coredocument.CalculateSigningRoot(cd)
+	assert.Nil(t, err)
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Times(4)
 	model.On("UnpackCoreDocument", cd).Return(fmt.Errorf("error")).Once()
@@ -277,4 +280,139 @@ func TestDefaultProcessor_PrepareForAnchoring(t *testing.T) {
 	id.AssertExpectations(t)
 	assert.Nil(t, err)
 	assert.NotNil(t, cd.DocumentRoot)
+}
+
+type mockRepo struct {
+	mock.Mock
+	anchors.AnchorRepository
+}
+
+func (m mockRepo) CommitAnchor(anchorID anchors.AnchorID, documentRoot anchors.DocRoot, centrifugeID identity.CentID, documentProofs [][32]byte, signature []byte) (<-chan *anchors.WatchCommit, error) {
+	args := m.Called(anchorID, documentRoot, centrifugeID, documentProofs, signature)
+	c, _ := args.Get(0).(chan *anchors.WatchCommit)
+	return c, args.Error(1)
+}
+
+func TestDefaultProcessor_AnchorDocument(t *testing.T) {
+	// pack failed
+	model := mockModel{}
+	model.On("PackCoreDocument").Return(nil, fmt.Errorf("error")).Once()
+	err := dp.AnchorDocument(model)
+	model.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to pack core document")
+
+	// validations failed
+	model = mockModel{}
+	cd := new(coredocumentpb.CoreDocument)
+	model.On("PackCoreDocument").Return(cd, nil).Times(5)
+	err = dp.AnchorDocument(model)
+	model.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "pre anchor validation failed")
+
+	// get ID failed
+	cd = coredocument.New()
+	cd.DataRoot = tools.RandomSlice(32)
+	cd.EmbeddedData = &any.Any{
+		TypeUrl: "some type",
+		Value:   []byte("some data"),
+	}
+	coredocument.FillSalts(cd)
+	assert.Nil(t, coredocument.CalculateSigningRoot(cd))
+	model = mockModel{}
+	model.On("PackCoreDocument").Return(cd, nil).Times(5)
+	c, err := ed25519keys.GetIDConfig()
+	assert.Nil(t, err)
+	s := signatures.Sign(c, cd.SigningRoot)
+	cd.Signatures = []*coredocumentpb.Signature{s}
+	assert.Nil(t, coredocument.CalculateDocumentRoot(cd))
+	pubkey, err := tools.SliceToByte32(c.PublicKey)
+	assert.Nil(t, err)
+	idkey := &identity.EthereumIdentityKey{
+		Key:       pubkey,
+		Purposes:  []*big.Int{big.NewInt(identity.KeyPurposeSigning)},
+		RevokedAt: big.NewInt(0),
+	}
+	id := &testingcommons.MockID{}
+	srv := &testingcommons.MockIDService{}
+	centID, err := identity.ToCentID(c.ID)
+	assert.Nil(t, err)
+	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
+	id.On("FetchKey", pubkey[:]).Return(idkey, nil).Once()
+	identity.IDService = srv
+	oldID := config.Config.V.GetString("identityId")
+	config.Config.V.Set("identityId", "wrong id")
+	err = dp.AnchorDocument(model)
+	model.AssertExpectations(t)
+	srv.AssertExpectations(t)
+	id.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to get self cent ID")
+	config.Config.V.Set("identityId", "0x0102030405060708")
+
+	// wrong ID
+	model = mockModel{}
+	model.On("PackCoreDocument").Return(cd, nil).Times(5)
+	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
+	id.On("FetchKey", pubkey[:]).Return(idkey, nil).Once()
+	identity.IDService = srv
+	err = dp.AnchorDocument(model)
+	model.AssertExpectations(t)
+	srv.AssertExpectations(t)
+	id.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "centID invalid")
+	config.Config.V.Set("identityId", oldID)
+
+	// missing eth keys
+	oldPth := config.Config.V.Get("keys.ethauth.publicKey")
+	config.Config.V.Set("keys.ethauth.publicKey", "wrong path")
+	model = mockModel{}
+	model.On("PackCoreDocument").Return(cd, nil).Times(5)
+	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
+	id.On("FetchKey", pubkey[:]).Return(idkey, nil).Once()
+	identity.IDService = srv
+	err = dp.AnchorDocument(model)
+	model.AssertExpectations(t)
+	srv.AssertExpectations(t)
+	id.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to get eth keys")
+	config.Config.V.Set("keys.ethauth.publicKey", oldPth)
+
+	// failed anchor commit
+	model = mockModel{}
+	model.On("PackCoreDocument").Return(cd, nil).Times(5)
+	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
+	id.On("FetchKey", pubkey[:]).Return(idkey, nil).Once()
+	identity.IDService = srv
+	repo := mockRepo{}
+	repo.On("CommitAnchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("error")).Once()
+	dp.AnchorRepository = repo
+	err = dp.AnchorDocument(model)
+	model.AssertExpectations(t)
+	srv.AssertExpectations(t)
+	id.AssertExpectations(t)
+	repo.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to commit anchor")
+
+	// success
+	model = mockModel{}
+	model.On("PackCoreDocument").Return(cd, nil).Times(5)
+	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
+	id.On("FetchKey", pubkey[:]).Return(idkey, nil).Once()
+	identity.IDService = srv
+	repo = mockRepo{}
+	ch := make(chan *anchors.WatchCommit, 1)
+	ch <- new(anchors.WatchCommit)
+	repo.On("CommitAnchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(ch, nil).Once()
+	dp.AnchorRepository = repo
+	err = dp.AnchorDocument(model)
+	model.AssertExpectations(t)
+	srv.AssertExpectations(t)
+	id.AssertExpectations(t)
+	repo.AssertExpectations(t)
+	assert.Nil(t, err)
 }

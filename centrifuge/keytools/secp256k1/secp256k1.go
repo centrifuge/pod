@@ -118,7 +118,11 @@ func VerifySignature(publicKey, message, signature []byte) bool {
 
 // GetIDConfig reads the keys and ID from the config and returns a the Identity config
 func GetIDConfig() (identityConfig *config.IdentityConfig, err error) {
-	pub, pvk := GetEthAuthKeyFromConfig()
+	pub, pvk, err := GetEthAuthKeyFromConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get eth keys: %v", err)
+	}
+
 	centId, err := config.Config.GetIdentityID()
 	if err != nil {
 		return nil, err
@@ -133,23 +137,22 @@ func GetIDConfig() (identityConfig *config.IdentityConfig, err error) {
 		PublicKey:  pubKey,
 		PrivateKey: pvk,
 	}
+
 	return
 }
 
 // GetEthAuthKeyFromConfig returns the public and private keys as byte array
-func GetEthAuthKeyFromConfig() (public, private []byte) {
+func GetEthAuthKeyFromConfig() (public, private []byte, err error) {
 	pub, priv := config.Config.GetEthAuthKeyPair()
 	privateKey, err := GetPrivateEthAuthKey(priv)
 	if err != nil {
-		log.Error(err)
-		return nil, nil
+		return nil, nil, fmt.Errorf("failed to get private key: %v", err)
 	}
 	publicKey, err := GetPublicEthAuthKey(pub)
 	if err != nil {
-		log.Error(err)
-		return nil, nil
+		return nil, nil, fmt.Errorf("failed to get public key: %v", err)
 	}
-	return publicKey, privateKey
+	return publicKey, privateKey, nil
 }
 
 // GetPrivateEthAuthKey returns the private key from the file
