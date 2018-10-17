@@ -15,13 +15,11 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/documents"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/centrifuge/go-centrifuge/centrifuge/version"
-	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -332,8 +330,8 @@ func TestService_CreateProofs(t *testing.T) {
 	assert.Nil(t, err)
 	proof, err := invService.CreateProofs(i.CoreDocument.DocumentIdentifier, []string{"invoice_number"})
 	assert.Nil(t, err)
-	assert.Equal(t, proof.Header.DocumentId, hexutil.Encode(i.CoreDocument.DocumentIdentifier))
-	assert.Equal(t, proof.Header.VersionId, hexutil.Encode(i.CoreDocument.DocumentIdentifier))
+	assert.Equal(t, i.CoreDocument.DocumentIdentifier, proof.DocumentId)
+	assert.Equal(t, i.CoreDocument.DocumentIdentifier, proof.VersionId)
 	assert.Equal(t, len(proof.FieldProofs), 1)
 	assert.Equal(t, proof.FieldProofs[0].GetProperty(), "invoice_number")
 }
@@ -360,11 +358,10 @@ func TestService_CreateProofsForVersion(t *testing.T) {
 	assert.Nil(t, err)
 	proof, err := invService.CreateProofsForVersion(i.CoreDocument.DocumentIdentifier, olderVersion, []string{"invoice_number"})
 	assert.Nil(t, err)
-	assert.Equal(t, proof.Header.DocumentId, hexutil.Encode(i.CoreDocument.DocumentIdentifier))
-	assert.Equal(t, proof.Header.VersionId, hexutil.Encode(olderVersion))
+	assert.Equal(t, i.CoreDocument.DocumentIdentifier, proof.DocumentId)
+	assert.Equal(t, olderVersion, proof.VersionId)
 	assert.Equal(t, len(proof.FieldProofs), 1)
 	assert.Equal(t, proof.FieldProofs[0].GetProperty(), "invoice_number")
-	verifyConverted(t, proof.FieldProofs[0])
 }
 
 func TestService_CreateProofsForVersionDocumentDoesntExist(t *testing.T) {
@@ -674,45 +671,4 @@ func TestService_Update(t *testing.T) {
 	newData, err = invService.DeriveInvoiceData(model)
 	assert.Nil(t, err)
 	assert.Equal(t, data, newData)
-}
-
-func TestConvertProofsToClientFormat(t *testing.T) {
-	clientFormat := convertProofsToClientFormat([]*proofspb.Proof{
-		&proofspb.Proof{
-			Property: "prop1",
-			Value:    "val1",
-			Salt:     tools.RandomSlice(32),
-			Hash:     tools.RandomSlice(32),
-			SortedHashes: [][]byte{
-				tools.RandomSlice(32),
-				tools.RandomSlice(32),
-				tools.RandomSlice(32),
-			},
-		},
-		&proofspb.Proof{
-			Property: "prop2",
-			Value:    "val2",
-			Salt:     tools.RandomSlice(32),
-			Hash:     tools.RandomSlice(32),
-			SortedHashes: [][]byte{
-				tools.RandomSlice(32),
-				tools.RandomSlice(32),
-			},
-		},
-	})
-	for _, converted := range clientFormat {
-		verifyConverted(t, converted)
-	}
-}
-func verifyConverted(t *testing.T, proof *documentpb.Proof) {
-	verifyHex(t, proof.Salt)
-	verifyHex(t, proof.Hash)
-	for _, h := range proof.SortedHashes {
-		verifyHex(t, h)
-	}
-}
-
-func verifyHex(t *testing.T, val string) {
-	_, err := hexutil.Decode(val)
-	assert.Nil(t, err)
 }

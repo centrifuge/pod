@@ -1,3 +1,5 @@
+// +build unit integration
+
 /*
 The reason for this package is to avoid any kind of cyclic dependencies but share common mocking interfaces from identity packages across other packages
 */

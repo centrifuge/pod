@@ -15,14 +15,12 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/processor"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents/common"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	centED25519 "github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	"github.com/centrifuge/go-centrifuge/centrifuge/notification"
-	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/documents"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/signatures"
-	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
-	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes"
 )
@@ -73,43 +71,41 @@ func DefaultService(repo documents.Repository, processor coredocumentprocessor.P
 }
 
 // CreateProofs creates proofs for the latest version document given the fields
-func (s service) CreateProofs(documentID []byte, fields []string) (*documentpb.DocumentProof, error) {
+func (s service) CreateProofs(documentID []byte, fields []string) (common.DocumentProof, error) {
 	doc, err := s.GetLastVersion(documentID)
 	if err != nil {
-		return nil, err
+		return common.DocumentProof{}, err
 	}
 	inv, ok := doc.(*InvoiceModel)
 	if !ok {
-		return nil, centerrors.New(code.DocumentInvalid, "document of invalid type")
+		return common.DocumentProof{}, centerrors.New(code.DocumentInvalid, "document of invalid type")
 	}
 	return s.invoiceProof(inv, fields)
 }
 
 // CreateProofsForVersion creates proofs for a particular version of the document given the fields
-func (s service) CreateProofsForVersion(documentID, version []byte, fields []string) (*documentpb.DocumentProof, error) {
+func (s service) CreateProofsForVersion(documentID, version []byte, fields []string) (common.DocumentProof, error) {
 	doc, err := s.GetVersion(documentID, version)
 	if err != nil {
-		return nil, err
+		return common.DocumentProof{}, err
 	}
 	inv, ok := doc.(*InvoiceModel)
 	if !ok {
-		return nil, centerrors.New(code.DocumentInvalid, "document of invalid type")
+		return common.DocumentProof{}, centerrors.New(code.DocumentInvalid, "document of invalid type")
 	}
 	return s.invoiceProof(inv, fields)
 }
 
 // invoiceProof creates proofs for invoice model fields
-func (s service) invoiceProof(inv *InvoiceModel, fields []string) (*documentpb.DocumentProof, error) {
+func (s service) invoiceProof(inv *InvoiceModel, fields []string) (common.DocumentProof, error) {
 	coreDoc, proofs, err := inv.createProofs(fields)
 	if err != nil {
-		return nil, err
+		return common.DocumentProof{}, err
 	}
-	return &documentpb.DocumentProof{
-		Header: &documentpb.ResponseHeader{
-			DocumentId: hexutil.Encode(coreDoc.DocumentIdentifier),
-			VersionId:  hexutil.Encode(coreDoc.CurrentVersion),
-		},
-		FieldProofs: convertProofsToClientFormat(proofs)}, nil
+	return common.DocumentProof{
+		DocumentId:  coreDoc.DocumentIdentifier,
+		VersionId:   coreDoc.CurrentVersion,
+		FieldProofs: proofs}, nil
 }
 
 // DeriveFromCoreDocument unpacks the core document into a model
@@ -430,24 +426,4 @@ func (s service) ReceiveAnchoredDocument(model documents.Model, headers *p2ppb.C
 	go s.notifier.Send(notificationMsg)
 
 	return nil
-}
-
-// convertProofsToClientFormat converts a proof protobuf from precise proofs into a client protobuf proof format
-func convertProofsToClientFormat(proofs []*proofspb.Proof) []*documentpb.Proof {
-	converted := make([]*documentpb.Proof, len(proofs))
-	for i, proof := range proofs {
-		converted[i] = convertProofToClientFormat(proof)
-	}
-	return converted
-}
-
-// convertProofToClientFormat converts a proof in precise proof format in to a client protobuf proof
-func convertProofToClientFormat(proof *proofspb.Proof) *documentpb.Proof {
-	return &documentpb.Proof{
-		Property:     proof.Property,
-		Value:        proof.Value,
-		Salt:         hexutil.Encode(proof.Salt),
-		Hash:         hexutil.Encode(proof.Hash),
-		SortedHashes: tools.SliceOfByteSlicesToHexStringSlice(proof.SortedHashes),
-	}
 }
