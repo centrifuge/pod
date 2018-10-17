@@ -8,8 +8,8 @@ import (
 	cd "github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
-	"github.com/stretchr/testify/assert"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/commons"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestRegistry_GetRegistryInstance(t *testing.T) {

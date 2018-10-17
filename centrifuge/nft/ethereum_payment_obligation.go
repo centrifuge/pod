@@ -13,7 +13,7 @@ import (
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-		logging "github.com/ipfs/go-log"
+	logging "github.com/ipfs/go-log"
 )
 
 var log = logging.Logger("nft")

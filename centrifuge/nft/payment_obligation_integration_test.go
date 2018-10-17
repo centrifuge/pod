@@ -16,9 +16,9 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
-		"github.com/golang/protobuf/ptypes/timestamp"
-	"github.com/stretchr/testify/assert"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
+	"github.com/golang/protobuf/ptypes/timestamp"
+	"github.com/stretchr/testify/assert"
 )
 
 var identityService identity.Service
