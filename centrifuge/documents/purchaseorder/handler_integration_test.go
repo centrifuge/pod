@@ -10,7 +10,7 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
-		cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
+	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/processor"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
