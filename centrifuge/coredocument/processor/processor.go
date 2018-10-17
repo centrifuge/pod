@@ -370,7 +370,7 @@ func (dp defaultProcessor) SendDocument(ctx context.Context, model documents.Mod
 	for _, c := range cd.Collaborators {
 		cID, erri := identity.ToCentID(c)
 		if erri != nil {
-			err = documents.AppendError(err, err)
+			err = documents.AppendError(err, erri)
 			continue
 		}
 

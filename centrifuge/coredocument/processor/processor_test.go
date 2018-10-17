@@ -9,9 +9,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/centrifuge/anchors"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
@@ -293,6 +292,12 @@ func (m mockRepo) CommitAnchor(anchorID anchors.AnchorID, documentRoot anchors.D
 	return c, args.Error(1)
 }
 
+func (m mockRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.DocRoot, error) {
+	args := m.Called(anchorID)
+	docRoot, _ := args.Get(0).(anchors.DocRoot)
+	return docRoot, args.Error(1)
+}
+
 func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	// pack failed
 	model := mockModel{}
@@ -415,4 +420,69 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	id.AssertExpectations(t)
 	repo.AssertExpectations(t)
 	assert.Nil(t, err)
+}
+
+func TestDefaultProcessor_SendDocument(t *testing.T) {
+	ctx := context.Background()
+
+	// pack failed
+	model := mockModel{}
+	model.On("PackCoreDocument").Return(nil, fmt.Errorf("error")).Once()
+	err := dp.SendDocument(ctx, model)
+	model.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to pack core document")
+
+	// failed validations
+	model = mockModel{}
+	cd := new(coredocumentpb.CoreDocument)
+	model.On("PackCoreDocument").Return(cd, nil).Times(6)
+	err = dp.SendDocument(ctx, model)
+	model.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "post anchor validations failed")
+
+	// failed send
+	cd = coredocument.New()
+	cd.DataRoot = tools.RandomSlice(32)
+	cd.EmbeddedData = &any.Any{
+		TypeUrl: "some type",
+		Value:   []byte("some data"),
+	}
+	cd.Collaborators = [][]byte{[]byte("some id")}
+	coredocument.FillSalts(cd)
+	assert.Nil(t, coredocument.CalculateSigningRoot(cd))
+	model = mockModel{}
+	model.On("PackCoreDocument").Return(cd, nil).Times(6)
+	c, err := ed25519keys.GetIDConfig()
+	assert.Nil(t, err)
+	s := signatures.Sign(c, cd.SigningRoot)
+	cd.Signatures = []*coredocumentpb.Signature{s}
+	assert.Nil(t, coredocument.CalculateDocumentRoot(cd))
+	pubkey, err := tools.SliceToByte32(c.PublicKey)
+	assert.Nil(t, err)
+	idkey := &identity.EthereumIdentityKey{
+		Key:       pubkey,
+		Purposes:  []*big.Int{big.NewInt(identity.KeyPurposeSigning)},
+		RevokedAt: big.NewInt(0),
+	}
+	id := &testingcommons.MockID{}
+	srv := &testingcommons.MockIDService{}
+	centID, err := identity.ToCentID(c.ID)
+	assert.Nil(t, err)
+	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
+	id.On("FetchKey", pubkey[:]).Return(idkey, nil).Once()
+	identity.IDService = srv
+	docRoot, err := anchors.NewDocRoot(cd.DocumentRoot)
+	assert.Nil(t, err)
+	repo := mockRepo{}
+	repo.On("GetDocumentRootOf", mock.Anything).Return(docRoot, nil).Once()
+	dp.AnchorRepository = repo
+	err = dp.SendDocument(ctx, model)
+	model.AssertExpectations(t)
+	srv.AssertExpectations(t)
+	id.AssertExpectations(t)
+	repo.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid length byte slice provided for centID")
 }
