@@ -76,7 +76,7 @@ func PublicKeyToP2PKey(publicKey [32]byte) (p2pId peer.ID, err error) {
 func GetIDConfig() (identityConfig *config.IdentityConfig, err error) {
 	pk, pvk, err := GetSigningKeyPairFromConfig()
 	if err != nil {
-		return nil, fmt.Errorf("failed to read keys: %v", err)
+		return nil, fmt.Errorf("failed to get signing keys: %v", err)
 	}
 
 	centID, err := config.Config.GetIdentityID()

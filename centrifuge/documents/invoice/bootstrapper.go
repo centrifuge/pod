@@ -3,9 +3,8 @@ package invoice
 import (
 	"errors"
 
-	"github.com/centrifuge/go-centrifuge/centrifuge/anchors"
-
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
+	"github.com/centrifuge/go-centrifuge/centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/processor"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"

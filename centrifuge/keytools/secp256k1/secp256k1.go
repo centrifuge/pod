@@ -146,11 +146,12 @@ func GetEthAuthKeyFromConfig() (public, private []byte, err error) {
 	pub, priv := config.Config.GetEthAuthKeyPair()
 	privateKey, err := GetPrivateEthAuthKey(priv)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get private key: %v", err)
+		return nil, nil, fmt.Errorf("failed to read private key: %v", err)
 	}
+
 	publicKey, err := GetPublicEthAuthKey(pub)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get public key: %v", err)
+		return nil, nil, fmt.Errorf("failed to read public key: %v", err)
 	}
 	return publicKey, privateKey, nil
 }
