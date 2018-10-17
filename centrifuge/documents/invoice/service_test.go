@@ -88,7 +88,7 @@ func TestService_GetLastVersion(t *testing.T) {
 	doc, err := createMockDocument()
 	assert.Nil(t, err)
 
-	mod1, err := invService.GetLastVersion(doc.CoreDocument.DocumentIdentifier)
+	mod1, err := invService.GetCurrentVersion(doc.CoreDocument.DocumentIdentifier)
 	assert.Nil(t, err)
 
 	invLoad1, _ := mod1.(*InvoiceModel)
@@ -106,7 +106,7 @@ func TestService_GetLastVersion(t *testing.T) {
 	err = getRepository().Create(doc.CoreDocument.NextVersion, inv2)
 	assert.Nil(t, err)
 
-	mod2, err := invService.GetLastVersion(doc.CoreDocument.DocumentIdentifier)
+	mod2, err := invService.GetCurrentVersion(doc.CoreDocument.DocumentIdentifier)
 	assert.Nil(t, err)
 
 	invLoad2, _ := mod2.(*InvoiceModel)

@@ -264,7 +264,7 @@ func (h *grpcHandler) Get(ctx context.Context, getRequest *clientinvoicepb.GetRe
 	if err != nil {
 		return nil, centerrors.Wrap(err, "identifier is an invalid hex string")
 	}
-	doc, err := h.service.GetLastVersion(identifier)
+	doc, err := h.service.GetCurrentVersion(identifier)
 	if err != nil {
 		return nil, centerrors.Wrap(err, "document not found")
 	}

@@ -48,12 +48,6 @@ type Service interface {
 	// DeriveInvoiceResponse returns the invoice model in our standard client format
 	DeriveInvoiceResponse(inv documents.Model) (*clientinvoicepb.InvoiceResponse, error)
 
-	// GetLastVersion reads a document from the database
-	GetLastVersion(documentID []byte) (documents.Model, error)
-
-	// GetVersion reads a document from the database
-	GetVersion(documentID []byte, version []byte) (documents.Model, error)
-
 	// SaveState updates the model in DB
 	SaveState(inv documents.Model) error
 }
@@ -73,7 +67,7 @@ func DefaultService(repo documents.Repository, processor coredocumentprocessor.P
 
 // CreateProofs creates proofs for the latest version document given the fields
 func (s service) CreateProofs(documentID []byte, fields []string) (common.DocumentProof, error) {
-	doc, err := s.GetLastVersion(documentID)
+	doc, err := s.GetCurrentVersion(documentID)
 	if err != nil {
 		return common.DocumentProof{}, err
 	}
@@ -210,7 +204,7 @@ func (s service) Update(ctx context.Context, model documents.Model) (documents.M
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
 
-	old, err := s.GetLastVersion(cd.DocumentIdentifier)
+	old, err := s.GetCurrentVersion(cd.DocumentIdentifier)
 	if err != nil {
 		return nil, centerrors.New(code.DocumentNotFound, err.Error())
 	}
@@ -227,8 +221,8 @@ func (s service) GetVersion(documentID []byte, version []byte) (doc documents.Mo
 	return inv, nil
 }
 
-// GetLastVersion returns the last known version of an invoice
-func (s service) GetLastVersion(documentID []byte) (doc documents.Model, err error) {
+// GetCurrentVersion returns the last known version of an invoice
+func (s service) GetCurrentVersion(documentID []byte) (doc documents.Model, err error) {
 	inv, err := s.getInvoiceVersion(documentID, documentID)
 	if err != nil {
 		return nil, centerrors.Wrap(err, "document not found")
@@ -344,7 +338,7 @@ func (s service) DeriveFromUpdatePayload(payload *clientinvoicepb.InvoiceUpdateP
 		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("failed to decode identifier: %v", err))
 	}
 
-	old, err := s.GetLastVersion(id)
+	old, err := s.GetCurrentVersion(id)
 	if err != nil {
 		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("failed to fetch old version: %v", err))
 	}
