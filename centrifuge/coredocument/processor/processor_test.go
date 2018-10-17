@@ -3,6 +3,7 @@
 package coredocumentprocessor
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"testing"
@@ -14,6 +15,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
+	"github.com/centrifuge/go-centrifuge/centrifuge/p2p"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
@@ -118,4 +120,84 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 	id, err := ed25519keys.GetIDConfig()
 	assert.Nil(t, err)
 	assert.True(t, ed25519.Verify(id.PublicKey, cd.SigningRoot, sig.Signature))
+}
+
+type p2pClient struct {
+	mock.Mock
+	p2p.Client
+}
+
+func (p p2pClient) GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocument) error {
+	args := p.Called(ctx, doc)
+	return args.Error(0)
+}
+
+func TestDefaultProcessor_RequestSignatures(t *testing.T) {
+	// pack failed
+	ctx := context.Background()
+	model := mockModel{}
+	model.On("PackCoreDocument").Return(nil, fmt.Errorf("error")).Once()
+	err := dp.RequestSignatures(ctx, model)
+	model.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to pack coredocument")
+
+	// validations failed
+	cd := new(coredocumentpb.CoreDocument)
+	model = mockModel{}
+	model.On("PackCoreDocument").Return(cd, nil).Times(4)
+	err = dp.RequestSignatures(ctx, model)
+	model.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to validate model for signature request")
+
+	// failed signature collection
+	cd = coredocument.New()
+	cd.DataRoot = tools.RandomSlice(32)
+	cd.EmbeddedData = &any.Any{
+		TypeUrl: "some type",
+		Value:   []byte("some data"),
+	}
+	coredocument.FillSalts(cd)
+	model = mockModel{}
+	model.On("PackCoreDocument").Return(cd, nil).Once()
+	model.On("UnpackCoreDocument", cd).Return(nil).Once()
+	err = dp.PrepareForSignatureRequests(model)
+	assert.Nil(t, err)
+	model.AssertExpectations(t)
+	c := p2pClient{}
+	c.On("GetSignaturesForDocument", ctx, cd).Return(fmt.Errorf("error")).Once()
+	dp.P2PClient = c
+	model = mockModel{}
+	model.On("PackCoreDocument").Return(cd, nil).Times(4)
+	err = dp.RequestSignatures(ctx, model)
+	model.AssertExpectations(t)
+	c.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to collect signatures from the collaborators")
+
+	// unpack fail
+	c = p2pClient{}
+	c.On("GetSignaturesForDocument", ctx, cd).Return(nil).Once()
+	dp.P2PClient = c
+	model = mockModel{}
+	model.On("PackCoreDocument").Return(cd, nil).Times(4)
+	model.On("UnpackCoreDocument", cd).Return(fmt.Errorf("error")).Once()
+	err = dp.RequestSignatures(ctx, model)
+	model.AssertExpectations(t)
+	c.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to unpack core document")
+
+	// success
+	c = p2pClient{}
+	c.On("GetSignaturesForDocument", ctx, cd).Return(nil).Once()
+	dp.P2PClient = c
+	model = mockModel{}
+	model.On("PackCoreDocument").Return(cd, nil).Times(4)
+	model.On("UnpackCoreDocument", cd).Return(nil).Once()
+	err = dp.RequestSignatures(ctx, model)
+	model.AssertExpectations(t)
+	c.AssertExpectations(t)
+	assert.Nil(t, err)
 }
