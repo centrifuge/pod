@@ -3,28 +3,119 @@
 package coredocumentprocessor
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
+	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"golang.org/x/crypto/ed25519"
 )
 
-// TODO(ved): more tests required for processor
-var cdp defaultProcessor
+var dp defaultProcessor
 
 func TestMain(m *testing.M) {
-	cdp = defaultProcessor{}
+	dp = defaultProcessor{}
+	ibootstappers := []bootstrap.TestBootstrapper{
+		&config.Bootstrapper{},
+	}
+	bootstrap.RunTestBootstrappers(ibootstappers)
 	result := m.Run()
 	os.Exit(result)
 }
 
 func TestCoreDocumentProcessor_SendNilDocument(t *testing.T) {
-	err := cdp.Send(nil, nil, [identity.CentIDLength]byte{})
+	err := dp.Send(nil, nil, [identity.CentIDLength]byte{})
 	assert.Error(t, err, "should have thrown an error")
 }
 
 func TestCoreDocumentProcessor_AnchorNilDocument(t *testing.T) {
-	err := cdp.Anchor(nil, nil, nil)
+	err := dp.Anchor(nil, nil, nil)
 	assert.Error(t, err, "should have thrown an error")
+}
+
+type mockModel struct {
+	mock.Mock
+	documents.Model
+}
+
+func (m mockModel) PackCoreDocument() (*coredocumentpb.CoreDocument, error) {
+	args := m.Called()
+	cd, _ := args.Get(0).(*coredocumentpb.CoreDocument)
+	return cd, args.Error(1)
+}
+
+func (m mockModel) UnpackCoreDocument(cd *coredocumentpb.CoreDocument) error {
+	args := m.Called(cd)
+	return args.Error(0)
+}
+
+func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
+	// pack failed
+	model := mockModel{}
+	model.On("PackCoreDocument").Return(nil, fmt.Errorf("error")).Once()
+	err := dp.PrepareForSignatureRequests(model)
+	model.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to pack coredocument")
+
+	// signing root failed
+	cd := new(coredocumentpb.CoreDocument)
+	model = mockModel{}
+	model.On("PackCoreDocument").Return(cd, nil).Once()
+	err = dp.PrepareForSignatureRequests(model)
+	model.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to calculate signing root")
+
+	// failed to get id
+	pub, _ := config.Config.GetSigningKeyPair()
+	config.Config.V.Set("keys.signing.publicKey", "wrong path")
+	cd = coredocument.New()
+	cd.DataRoot = tools.RandomSlice(32)
+	cd.EmbeddedData = &any.Any{
+		TypeUrl: "some type",
+		Value:   []byte("some data"),
+	}
+	coredocument.FillSalts(cd)
+	model = mockModel{}
+	model.On("PackCoreDocument").Return(cd, nil).Once()
+	err = dp.PrepareForSignatureRequests(model)
+	model.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to get keys for signing")
+	config.Config.V.Set("keys.signing.publicKey", pub)
+
+	// failed unpack
+	model = mockModel{}
+	model.On("PackCoreDocument").Return(cd, nil).Once()
+	model.On("UnpackCoreDocument", cd).Return(fmt.Errorf("error")).Once()
+	err = dp.PrepareForSignatureRequests(model)
+	model.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to unpack the core document")
+
+	// success
+	cd.Signatures = nil
+	model = mockModel{}
+	model.On("PackCoreDocument").Return(cd, nil).Once()
+	model.On("UnpackCoreDocument", cd).Return(nil).Once()
+	err = dp.PrepareForSignatureRequests(model)
+	model.AssertExpectations(t)
+	assert.Nil(t, err)
+	assert.NotNil(t, cd.Signatures)
+	assert.Len(t, cd.Signatures, 1)
+	sig := cd.Signatures[0]
+	id, err := ed25519keys.GetIDConfig()
+	assert.Nil(t, err)
+	assert.True(t, ed25519.Verify(id.PublicKey, cd.SigningRoot, sig.Signature))
 }
