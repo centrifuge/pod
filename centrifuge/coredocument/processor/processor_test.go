@@ -5,6 +5,7 @@ package coredocumentprocessor
 import (
 	"context"
 	"fmt"
+	"math/big"
 	"os"
 	"testing"
 
@@ -16,6 +17,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	"github.com/centrifuge/go-centrifuge/centrifuge/p2p"
+	"github.com/centrifuge/go-centrifuge/centrifuge/signatures"
+	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
@@ -200,4 +203,78 @@ func TestDefaultProcessor_RequestSignatures(t *testing.T) {
 	model.AssertExpectations(t)
 	c.AssertExpectations(t)
 	assert.Nil(t, err)
+}
+
+func TestDefaultProcessor_PrepareForAnchoring(t *testing.T) {
+	// pack failed
+	model := mockModel{}
+	model.On("PackCoreDocument").Return(nil, fmt.Errorf("error")).Once()
+	err := dp.PrepareForAnchoring(model)
+	model.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to pack coredocument")
+
+	// failed validations
+	cd := new(coredocumentpb.CoreDocument)
+	model = mockModel{}
+	model.On("PackCoreDocument").Return(cd, nil).Times(4)
+	err = dp.PrepareForAnchoring(model)
+	model.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to validate signatures")
+
+	// failed unpack
+	cd = coredocument.New()
+	cd.DataRoot = tools.RandomSlice(32)
+	cd.EmbeddedData = &any.Any{
+		TypeUrl: "some type",
+		Value:   []byte("some data"),
+	}
+	coredocument.FillSalts(cd)
+	err = coredocument.CalculateSigningRoot(cd)
+	model = mockModel{}
+	model.On("PackCoreDocument").Return(cd, nil).Times(4)
+	model.On("UnpackCoreDocument", cd).Return(fmt.Errorf("error")).Once()
+	c, err := ed25519keys.GetIDConfig()
+	assert.Nil(t, err)
+	s := signatures.Sign(c, cd.SigningRoot)
+	cd.Signatures = []*coredocumentpb.Signature{s}
+	pubkey, err := tools.SliceToByte32(c.PublicKey)
+	assert.Nil(t, err)
+	idkey := &identity.EthereumIdentityKey{
+		Key:       pubkey,
+		Purposes:  []*big.Int{big.NewInt(identity.KeyPurposeSigning)},
+		RevokedAt: big.NewInt(0),
+	}
+	id := &testingcommons.MockID{}
+	srv := &testingcommons.MockIDService{}
+	centID, err := identity.ToCentID(c.ID)
+	assert.Nil(t, err)
+	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
+	id.On("FetchKey", pubkey[:]).Return(idkey, nil).Once()
+	identity.IDService = srv
+	err = dp.PrepareForAnchoring(model)
+	model.AssertExpectations(t)
+	srv.AssertExpectations(t)
+	id.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to unpack core document")
+
+	// success
+	model = mockModel{}
+	model.On("PackCoreDocument").Return(cd, nil).Times(4)
+	model.On("UnpackCoreDocument", cd).Return(nil).Once()
+	id = &testingcommons.MockID{}
+	srv = &testingcommons.MockIDService{}
+	centID, err = identity.ToCentID(c.ID)
+	assert.Nil(t, err)
+	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
+	id.On("FetchKey", pubkey[:]).Return(idkey, nil).Once()
+	identity.IDService = srv
+	err = dp.PrepareForAnchoring(model)
+	model.AssertExpectations(t)
+	srv.AssertExpectations(t)
+	id.AssertExpectations(t)
+	assert.Nil(t, err)
+	assert.NotNil(t, cd.DocumentRoot)
 }

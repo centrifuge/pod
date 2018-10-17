@@ -278,15 +278,15 @@ func (dp defaultProcessor) RequestSignatures(ctx context.Context, model document
 
 // PrepareForAnchoring validates the signatures and generates the document root
 func (dp defaultProcessor) PrepareForAnchoring(model documents.Model) error {
-	psv := coredocument.PostSignatureRequestValidator()
-	err := psv.Validate(nil, model)
-	if err != nil {
-		return fmt.Errorf("failed to validate singatures: %v", err)
-	}
-
 	cd, err := model.PackCoreDocument()
 	if err != nil {
 		return fmt.Errorf("failed to pack coredocument: %v", err)
+	}
+
+	psv := coredocument.PostSignatureRequestValidator()
+	err = psv.Validate(nil, model)
+	if err != nil {
+		return fmt.Errorf("failed to validate signatures: %v", err)
 	}
 
 	err = coredocument.CalculateDocumentRoot(cd)
