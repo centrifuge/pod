@@ -8,8 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"log"
-
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
@@ -143,7 +141,6 @@ func TestEthereumIdentityService_GetIdentityAddress(t *testing.T) {
 
 func TestEthereumIdentityService_GetIdentityAddressNonExistingID(t *testing.T) {
 	addr, err := identityService.GetIdentityAddress(identity.NewRandomCentID())
-	log.Printf("TestEthereumIdentityService_GetIdentityAddressNonExistingID address %x , err %v", addr, err)
-	assert.NotNil(t, err)
-	assert.True(t, len(addr) == 0)
+	assert.Nil(t, err)
+	assert.Equal(t, 0000000000000000000000000000000000000000, addr)
 }
