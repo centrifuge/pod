@@ -4,6 +4,7 @@ package invoice
 
 import (
 	"fmt"
+	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
@@ -79,7 +80,7 @@ func TestDataRootValidation_Validate(t *testing.T) {
 
 	// mismatch
 	inv := new(InvoiceModel)
-	err = inv.InitInvoiceInput(createPayload())
+	err = inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload())
 	assert.Nil(t, err)
 	inv.CoreDocument = cd
 	err = drv.Validate(nil, inv)
@@ -88,7 +89,7 @@ func TestDataRootValidation_Validate(t *testing.T) {
 
 	// success
 	inv = new(InvoiceModel)
-	err = inv.InitInvoiceInput(createPayload())
+	err = inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload())
 	assert.Nil(t, err)
 	err = inv.calculateDataRoot()
 	assert.Nil(t, err)

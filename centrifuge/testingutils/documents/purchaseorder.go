@@ -6,6 +6,7 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
+	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/golang/protobuf/proto"
@@ -44,4 +45,16 @@ func CreateCDWithEmbeddedPO(t *testing.T, poData purchaseorderpb.PurchaseOrderDa
 		EmbeddedDataSalts:  &poAnySalt,
 	}
 	return coreDocument
+}
+
+func CreatePOPayload() *clientpurchaseorderpb.PurchaseOrderCreatePayload {
+	return &clientpurchaseorderpb.PurchaseOrderCreatePayload{
+		Data: &clientpurchaseorderpb.PurchaseOrderData{
+			Recipient:   "0x010203040506",
+			OrderAmount: 42,
+			ExtraData:   "0x01020302010203",
+			Currency:    "EUR",
+		},
+		Collaborators: []string{"0x010101010101"},
+	}
 }

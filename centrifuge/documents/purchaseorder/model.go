@@ -14,7 +14,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
-	clientpurchaseordeepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
+	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/golang/protobuf/proto"
@@ -66,7 +66,7 @@ type PurchaseOrderModel struct {
 }
 
 // getClientData returns the client data from the purchaseOrder model
-func (p *PurchaseOrderModel) getClientData() *clientpurchaseordeepb.PurchaseOrderData {
+func (p *PurchaseOrderModel) getClientData() *clientpurchaseorderpb.PurchaseOrderData {
 
 	var recipient string
 	if p.Recipient != nil {
@@ -83,7 +83,7 @@ func (p *PurchaseOrderModel) getClientData() *clientpurchaseordeepb.PurchaseOrde
 		extraData = hexutil.Encode(p.ExtraData)
 	}
 
-	return &clientpurchaseordeepb.PurchaseOrderData{
+	return &clientpurchaseorderpb.PurchaseOrderData{
 		PoNumber:         p.PoNumber,
 		OrderName:        p.OrderName,
 		OrderStreet:      p.OrderStreet,
@@ -147,7 +147,7 @@ func (p *PurchaseOrderModel) createP2PProtobuf() *purchaseorderpb.PurchaseOrderD
 }
 
 // InitPurchaseOrderInput initialize the model based on the received parameters from the rest api call
-func (p *PurchaseOrderModel) InitPurchaseOrderInput(payload *clientpurchaseordeepb.PurchaseOrderCreatePayload) error {
+func (p *PurchaseOrderModel) InitPurchaseOrderInput(payload *clientpurchaseorderpb.PurchaseOrderCreatePayload) error {
 	err := p.initPurchaseOrderFromData(payload.Data)
 	if err != nil {
 		return err
@@ -162,7 +162,7 @@ func (p *PurchaseOrderModel) InitPurchaseOrderInput(payload *clientpurchaseordee
 }
 
 // initPurchaseOrderFromData initialises purchase order from purchaseOrderData
-func (p *PurchaseOrderModel) initPurchaseOrderFromData(data *clientpurchaseordeepb.PurchaseOrderData) error {
+func (p *PurchaseOrderModel) initPurchaseOrderFromData(data *clientpurchaseorderpb.PurchaseOrderData) error {
 	p.PoNumber = data.PoNumber
 	p.OrderName = data.OrderName
 	p.OrderStreet = data.OrderStreet

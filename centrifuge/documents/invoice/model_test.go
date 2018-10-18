@@ -202,7 +202,7 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 
 func TestInvoiceModel_calculateDataRoot(t *testing.T) {
 	m := new(InvoiceModel)
-	err := m.InitInvoiceInput(createPayload())
+	err := m.InitInvoiceInput(testingdocuments.CreateInvoicePayload())
 	assert.Nil(t, err, "Init must pass")
 	assert.Nil(t, m.InvoiceSalts, "salts must be nil")
 

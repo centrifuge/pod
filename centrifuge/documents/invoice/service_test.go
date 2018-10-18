@@ -28,19 +28,7 @@ import (
 
 var invService Service
 
-func createPayload() *clientinvoicepb.InvoiceCreatePayload {
-	return &clientinvoicepb.InvoiceCreatePayload{
-		Data: &clientinvoicepb.InvoiceData{
-			Sender:      "0x010101010101",
-			Recipient:   "0x010203040506",
-			Payee:       "0x010203020406",
-			GrossAmount: 42,
-			ExtraData:   "0x01020302010203",
-			Currency:    "EUR",
-		},
-		Collaborators: []string{"0x010101010101"},
-	}
-}
+
 
 func TestDefaultService(t *testing.T) {
 	srv := DefaultService(getRepository(), &testingutils.MockCoreDocumentProcessor{})
@@ -67,7 +55,7 @@ func TestService_DeriveFromCoreDocument(t *testing.T) {
 }
 
 func TestService_DeriveFromPayload(t *testing.T) {
-	payload := createPayload()
+	payload := testingdocuments.CreateInvoicePayload()
 	var model documents.Model
 	var err error
 
@@ -179,7 +167,7 @@ func TestService_Create_db_fail(t *testing.T) {
 	err := getRepository().Create(cd.CurrentVersion, model)
 	model.AssertExpectations(t)
 
-	payload := createPayload()
+	payload := testingdocuments.CreateInvoicePayload()
 	inv, err := invService.DeriveFromCreatePayload(payload)
 	assert.Nil(t, err, "must be non nil")
 	assert.NotNil(t, inv)
@@ -195,7 +183,7 @@ func TestService_Create_anchor_fail(t *testing.T) {
 	proc := &testingutils.MockCoreDocumentProcessor{}
 	proc.On("Anchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(fmt.Errorf("failed to anchor document"))
 	srv.coreDocProcessor = proc
-	payload := createPayload()
+	payload := testingdocuments.CreateInvoicePayload()
 	inv, err := invService.DeriveFromCreatePayload(payload)
 	_, err = srv.Create(context.Background(), inv)
 	proc.AssertExpectations(t)
@@ -209,7 +197,7 @@ func TestService_Create_send_fail(t *testing.T) {
 	proc.On("Anchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	proc.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(fmt.Errorf("failed to send"))
 	srv.coreDocProcessor = proc
-	payload := createPayload()
+	payload := testingdocuments.CreateInvoicePayload()
 	payload.Collaborators = []string{"0x010203040506"}
 	inv, err := invService.DeriveFromCreatePayload(payload)
 	_, err = srv.Create(context.Background(), inv)
@@ -223,7 +211,7 @@ func TestService_Create_saveState_fail(t *testing.T) {
 	proc.On("Anchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	proc.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(fmt.Errorf("failed to send"))
 	srv.coreDocProcessor = proc
-	payload := createPayload()
+	payload := testingdocuments.CreateInvoicePayload()
 	payload.Collaborators = []string{"0x010203040506"}
 	inv, err := invService.DeriveFromCreatePayload(payload)
 	_, err = srv.Create(context.Background(), inv)
@@ -237,7 +225,7 @@ func TestService_Create(t *testing.T) {
 	proc.On("Anchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	proc.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	srv.coreDocProcessor = proc
-	payload := createPayload()
+	payload := testingdocuments.CreateInvoicePayload()
 	payload.Collaborators = []string{"0x010203040506"}
 	inv, err := invService.DeriveFromCreatePayload(payload)
 	_, err = srv.Create(context.Background(), inv)
@@ -251,7 +239,7 @@ func TestService_DeriveInvoiceData(t *testing.T) {
 	assert.Error(t, err, "Derive must fail")
 
 	// success
-	payload := createPayload()
+	payload := testingdocuments.CreateInvoicePayload()
 	inv, err := invService.DeriveFromCreatePayload(payload)
 	assert.Nil(t, err, "must be non nil")
 	data, err := invService.DeriveInvoiceData(inv)
@@ -270,7 +258,7 @@ func TestService_DeriveInvoiceResponse(t *testing.T) {
 	assert.Error(t, err, "Derive must fail")
 
 	// success
-	payload := createPayload()
+	payload := testingdocuments.CreateInvoicePayload()
 	inv1, err := invService.DeriveFromCreatePayload(payload)
 	assert.Nil(t, err, "must be non nil")
 	inv, ok := inv1.(*InvoiceModel)
@@ -291,7 +279,7 @@ func TestService_SaveState(t *testing.T) {
 	assert.Contains(t, err.Error(), "document of invalid type")
 
 	inv := new(InvoiceModel)
-	err = inv.InitInvoiceInput(createPayload())
+	err = inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload())
 	assert.Nil(t, err)
 
 	// save state must fail missing core document
@@ -547,7 +535,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 	// failed to load from data
 	old := new(InvoiceModel)
-	err = old.InitInvoiceInput(createPayload())
+	err = old.InitInvoiceInput(testingdocuments.CreateInvoicePayload())
 	assert.Nil(t, err)
 	old.CoreDocument.DocumentIdentifier = id
 	old.CoreDocument.CurrentVersion = id
@@ -615,7 +603,7 @@ func TestService_Update_Missing_last_version(t *testing.T) {
 }
 
 func TestService_Update_unknown_type(t *testing.T) {
-	model, err := invService.DeriveFromCreatePayload(createPayload())
+	model, err := invService.DeriveFromCreatePayload(testingdocuments.CreateInvoicePayload())
 	assert.Nil(t, err)
 	cd, err := model.PackCoreDocument()
 	assert.Nil(t, err)
@@ -635,7 +623,7 @@ func TestService_Update(t *testing.T) {
 	proc.On("Anchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 	proc.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 	srv.coreDocProcessor = proc
-	payload := createPayload()
+	payload := testingdocuments.CreateInvoicePayload()
 	payload.Collaborators = []string{"0x010203040506"}
 	inv, err := invService.DeriveFromCreatePayload(payload)
 	assert.Nil(t, err)

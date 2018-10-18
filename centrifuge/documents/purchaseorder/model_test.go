@@ -2,6 +2,7 @@ package purchaseorder
 
 import (
 	"encoding/json"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"reflect"
 	"testing"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
 
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
 
@@ -98,10 +100,10 @@ func TestPurchaseOrder_JSON(t *testing.T) {
 
 	receivedCoreDocument, err := poModel.PackCoreDocument()
 	assert.Nil(t, err, "JSON unmarshal damaged purchase order variables")
-	assert.Equal(t, receivedCoreDocument.EmbeddedData, coreDocument.EmbeddedData, "JSON unmarshal damaged invoice variables")
+	assert.Equal(t, receivedCoreDocument.EmbeddedData, coreDocument.EmbeddedData, "JSON unmarshal damaged purchase order variables")
 }
 
-func TestInvoiceModel_UnpackCoreDocument(t *testing.T) {
+func TestPurchaseOrderModel_UnpackCoreDocument(t *testing.T) {
 	var model documents.Model = new(PurchaseOrderModel)
 	var err error
 
@@ -123,4 +125,64 @@ func TestInvoiceModel_UnpackCoreDocument(t *testing.T) {
 
 	assert.Equal(t, coreDocument.EmbeddedData, receivedCoreDocument.EmbeddedData, "embeddedData should be the same")
 	assert.Equal(t, coreDocument.EmbeddedDataSalts, receivedCoreDocument.EmbeddedDataSalts, "embeddedDataSalt should be the same")
+}
+
+func TestPurchaseOrderModel_getClientData(t *testing.T) {
+	poData := testingdocuments.CreatePOData()
+	po := new(PurchaseOrderModel)
+	po.loadFromP2PProtobuf(&poData)
+
+	data := po.getClientData()
+	assert.NotNil(t, data, "purchase order data should not be nil")
+	assert.Equal(t, data.OrderAmount, data.OrderAmount, "gross amount must match")
+	assert.Equal(t, data.Recipient, hexutil.Encode(po.Recipient[:]), "recipient should match")
+}
+
+func TestPurchaseOrderModel_InitPOInput(t *testing.T) {
+	// fail recipient
+	data := &clientpurchaseorderpb.PurchaseOrderData{
+		Recipient: "some recipient",
+		ExtraData: "some data",
+	}
+	poModel := new(PurchaseOrderModel)
+	err := poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data})
+	assert.Error(t, err, "must return err")
+	assert.Contains(t, err.Error(), "failed to decode extra data")
+	assert.Nil(t, poModel.Recipient)
+	assert.Nil(t, poModel.ExtraData)
+
+	data.ExtraData = "0x010203020301"
+	data.Recipient = "0x010203040506"
+
+	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data})
+	assert.Nil(t, err)
+	assert.NotNil(t, poModel.ExtraData)
+	assert.NotNil(t, poModel.Recipient)
+
+
+	data.ExtraData = "0x010203020301"
+	collabs := []string{"0x010102040506", "some id"}
+	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data, Collaborators: collabs})
+	assert.Contains(t, err.Error(), "failed to decode collaborator")
+
+	collabs = []string{"0x010102040506", "0x010203020302"}
+	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data, Collaborators: collabs})
+	assert.Nil(t, err, "must be nil")
+
+	assert.Equal(t, poModel.Recipient[:], []byte{1, 2, 3, 4, 5, 6})
+	assert.Equal(t, poModel.ExtraData[:], []byte{1, 2, 3, 2, 3, 1})
+	assert.Equal(t, poModel.CoreDocument.Collaborators, [][]byte{{1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}})
+}
+
+func TestPurchaseOrderModel_calculateDataRoot(t *testing.T) {
+	poModel := new(PurchaseOrderModel)
+	err := poModel.InitPurchaseOrderInput(testingdocuments.CreatePOPayload())
+	assert.Nil(t, err, "Init must pass")
+	assert.Nil(t, poModel.PurchaseOrderSalt, "salts must be nil")
+
+	err = poModel.calculateDataRoot()
+	assert.Nil(t, err, "calculate must pass")
+	assert.NotNil(t, poModel.CoreDocument, "coredoc must be created")
+	assert.NotNil(t, poModel.PurchaseOrderSalt, "salts must be created")
+	assert.NotNil(t, poModel.CoreDocument.DataRoot, "data root must be filled")
 }
