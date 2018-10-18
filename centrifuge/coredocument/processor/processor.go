@@ -319,8 +319,11 @@ func (dp defaultProcessor) AnchorDocument(model documents.Model) error {
 		return fmt.Errorf("pre anchor validation failed: %v", err)
 	}
 
-	// ignoring the error since the validation for doc root is done above
-	rootHash, _ := anchors.NewDocRoot(cd.DocumentRoot)
+	rootHash, err := anchors.NewDocRoot(cd.DocumentRoot)
+	if err != nil {
+		return fmt.Errorf("failed to get document root: %v", err)
+	}
+
 	id, err := config.Config.GetIdentityID()
 	if err != nil {
 		return fmt.Errorf("failed to get self cent ID: %v", err)
@@ -337,8 +340,11 @@ func (dp defaultProcessor) AnchorDocument(model documents.Model) error {
 		return fmt.Errorf("failed to get eth keys: %v", err)
 	}
 
-	// ignoring error since the validations should have caught this
-	anchorID, _ := anchors.NewAnchorID(cd.CurrentVersion)
+	anchorID, err := anchors.NewAnchorID(cd.CurrentVersion)
+	if err != nil {
+		return fmt.Errorf("failed to get anchor ID: %v", err)
+	}
+
 	mac, err := secp256k1.SignEthereum(anchors.GenerateCommitHash(anchorID, centID, rootHash), secpIDConfig.PrivateKey)
 	if err != nil {
 		return fmt.Errorf("failed to generate ethereum MAC: %v", err)
