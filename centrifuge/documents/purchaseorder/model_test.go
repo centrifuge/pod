@@ -1,6 +1,7 @@
 package purchaseorder
 
 import (
+	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -23,4 +24,14 @@ func TestPO_FromCoreDocuments_invalidParameter(t *testing.T) {
 	err = poModel.UnpackCoreDocument(coreDocument)
 	assert.Error(t, err, "it should not be possible to init invalid typeUrl")
 
+}
+
+func TestPO_InitCoreDocument_successful(t *testing.T) {
+	poModel := &PurchaseOrderModel{}
+
+	poData := testingdocuments.CreatePOData()
+
+	coreDocument := testingdocuments.CreateCDWithEmbeddedPO(t, poData)
+	err := poModel.UnpackCoreDocument(coreDocument)
+	assert.Nil(t, err, "valid coredocument shouldn't produce an error")
 }

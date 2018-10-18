@@ -292,7 +292,7 @@ func (p *PurchaseOrderModel) UnpackCoreDocument(coreDoc *coredocumentpb.CoreDocu
 	if coreDoc.EmbeddedData == nil ||
 		coreDoc.EmbeddedData.TypeUrl != documenttypes.PurchaseOrderDataTypeUrl ||
 		coreDoc.EmbeddedDataSalts == nil ||
-		coreDoc.EmbeddedDataSalts.TypeUrl != documenttypes.PurchaseOrderDataTypeUrl {
+		coreDoc.EmbeddedDataSalts.TypeUrl != documenttypes.PurchaseOrderSaltsTypeUrl {
 		return fmt.Errorf("trying to convert document with incorrect schema")
 	}
 

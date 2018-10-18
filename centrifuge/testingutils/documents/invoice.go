@@ -1,4 +1,4 @@
-package testinginvoice
+package testingdocuments
 
 import (
 	"testing"

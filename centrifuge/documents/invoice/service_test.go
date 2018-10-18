@@ -53,8 +53,8 @@ func TestService_DeriveFromCoreDocument(t *testing.T) {
 	assert.Error(t, err, "must fail to derive")
 
 	// successful
-	data := testinginvoice.CreateInvoiceData()
-	coreDoc := testinginvoice.CreateCDWithEmbeddedInvoice(t, data)
+	data := testingdocuments.CreateInvoiceData()
+	coreDoc := testingdocuments.CreateCDWithEmbeddedInvoice(t, data)
 	model, err := invService.DeriveFromCoreDocument(coreDoc)
 	assert.Nil(t, err, "must return model")
 	assert.NotNil(t, model, "model must be non-nil")
