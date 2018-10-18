@@ -1,6 +1,8 @@
 package api
 
 import (
+	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
+	"github.com/centrifuge/go-centrifuge/centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/processor"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents/invoice"
@@ -54,7 +56,7 @@ func registerServices(ctx context.Context, grpcServer *grpc.Server, gwmux *runti
 	}
 	legacyPurchaseOrder.RegisterPurchaseOrderDocumentServiceServer(grpcServer, purchaseorder.LegacyGRPCHandler(
 		purchaseorder.GetRepository(),
-		coredocumentprocessor.DefaultProcessor(identity.IDService, p2p.NewP2PClient())))
+		coredocumentprocessor.DefaultProcessor(identity.IDService, p2p.NewP2PClient(), anchors.GetAnchorRepository())))
 	err = legacyPurchaseOrder.RegisterPurchaseOrderDocumentServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
 	if err != nil {
 		return err
