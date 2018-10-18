@@ -15,6 +15,7 @@ service NFTService {
   rpc MintNFT(NFTMintRequest) returns (NFTMintResponse) {
     option (google.api.http) = {
       post: "/token/mint"
+      body: "*"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
       description: "Mint an NFT from a Centrifuge Document"

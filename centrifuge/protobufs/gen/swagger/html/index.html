@@ -154,6 +154,7 @@
           <a href="#definition-purchaseorderPurchaseOrderProof"> purchaseorderPurchaseOrderProof </a>
           <a href="#definition-purchaseorderReceivedPurchaseOrders"> purchaseorderReceivedPurchaseOrders </a>
           <a href="#definition-purchaseorderSendPurchaseOrderEnvelope"> purchaseorderSendPurchaseOrderEnvelope </a>
+          <a href="#definition-nftNFTMintRequest"> nftNFTMintRequest </a>
           <a href="#definition-nftNFTMintResponse"> nftNFTMintResponse </a>
           <a href="#definition-notificationNotificationMessage"> notificationNotificationMessage </a>
           <a href="#definition-purchaseorderPurchaseOrderCreatePayload"> purchaseorderPurchaseOrderCreatePayload </a>
@@ -3493,8 +3494,40 @@
               </div>
             </div>
             <div class="doc-row">
-              <div class="doc-copy"> </div>
-              <div class="doc-examples"></div>
+              <div class="doc-copy">
+                <section class="swagger-request-body">
+                  <div class="prop-row">
+                    <div class="prop-name">
+                      <div class="swagger-request-model">
+                        <span class="">
+                          <a class="json-schema-ref" href="#/definitions/nftNFTMintRequest">nftNFTMintRequest</a>
+                        </span>
+                      </div>
+                    </div>
+                    <div class="prop-value columns small-6">
+                      <!-- <div class="swagger-request-description"> -->
+                      <p>undefined</p>
+                      <!-- </div> -->
+                    </div>
+                  </div>
+                </section>
+              </div>
+              <div class="doc-examples">
+                <section>
+                  <h5>Request Example</h5>
+                  <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
+  <span class="hljs-attr">&quot;identifier&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+  <span class="hljs-attr">&quot;type&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+  <span class="hljs-attr">&quot;registry_address&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+  <span class="hljs-attr">&quot;deposit_address&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+  <span class="hljs-attr">&quot;proof_fields&quot;</span>: [
+    <span class="hljs-string">&quot;string&quot;</span>
+  ]
+}
+</code></pre>
+                  <!-- </div> -->
+                </section>
+              </div>
             </div>
             <div class="doc-row">
               <div class="doc-copy">
@@ -6979,6 +7012,72 @@
       <span class="hljs-attr">&quot;extra_data&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
     }
   }
+}
+</code></pre>
+                  <!-- </div> -->
+                </section>
+              </div>
+            </div>
+          </div>
+          <div id="definition-nftNFTMintRequest" class="definition panel" data-traverse-target="definition-nftNFTMintRequest">
+            <h2 class="panel-title">
+              <a name="/definitions/nftNFTMintRequest"></a>nftNFTMintRequest: object
+              <!-- <span class="json-property-type"><span class="json-property-type">object</span>
+              <span class="json-property-range" title="Value limits"></span>
+              
+              
+              </span> -->
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <section class="json-schema-properties">
+                  <dl>
+                    <dt data-property-name="identifier">
+                      <span class="json-property-name">identifier:</span>
+                      <span class="json-property-type">string</span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
+                    <dt data-property-name="type">
+                      <span class="json-property-name">type:</span>
+                      <span class="json-property-type">string</span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
+                    <dt data-property-name="registry_address">
+                      <span class="json-property-name">registry_address:</span>
+                      <span class="json-property-type">string</span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
+                    <dt data-property-name="deposit_address">
+                      <span class="json-property-name">deposit_address:</span>
+                      <span class="json-property-type">string</span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
+                    <dt data-property-name="proof_fields">
+                      <span class="json-property-name">proof_fields:</span>
+                      <span class="json-property-type">string[]</span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
+                    <dt class="json-inner-schema">
+                      <section class="json-schema-array-items">
+                        <span class="json-property-type">string</span>
+                        <span class="json-property-range" title="Value limits"></span>
+                        <div class="json-inner-schema"> </div>
+                      </section>
+                    </dt>
+                  </dl>
+                </section>
+              </div>
+              <div class="doc-examples">
+                <section>
+                  <h5>Example</h5>
+                  <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
+  <span class="hljs-attr">&quot;identifier&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+  <span class="hljs-attr">&quot;type&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+  <span class="hljs-attr">&quot;registry_address&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+  <span class="hljs-attr">&quot;deposit_address&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+  <span class="hljs-attr">&quot;proof_fields&quot;</span>: [
+    <span class="hljs-string">&quot;string&quot;</span>
+  ]
 }
 </code></pre>
                   <!-- </div> -->
