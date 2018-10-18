@@ -67,9 +67,19 @@ type PurchaseOrderModel struct {
 // getClientData returns the client data from the purchaseOrder model
 func (p *PurchaseOrderModel) getClientData() *clientpurchaseordeepb.PurchaseOrderData {
 
-	var recipient []byte
+	var recipient string
 	if p.Recipient != nil {
-		recipient = p.Recipient[:]
+		recipient = hexutil.Encode(p.Recipient[:])
+	}
+
+	var order string
+	if p.Order != nil {
+		order = hexutil.Encode(p.Order[:])
+	}
+
+	var extraData string
+	if p.ExtraData != nil {
+		extraData = hexutil.Encode(p.ExtraData)
 	}
 
 	return &clientpurchaseordeepb.PurchaseOrderData{
@@ -90,12 +100,12 @@ func (p *PurchaseOrderModel) getClientData() *clientpurchaseordeepb.PurchaseOrde
 		TaxAmount:        p.TaxAmount,
 		TaxRate:          p.TaxRate,
 		Recipient:        recipient,
-		Order:            p.Order,
+		Order:            order,
 		OrderContact:     p.OrderContact,
 		Comment:          p.Comment,
 		DeliveryDate:     p.DeliveryDate,
 		DateCreated:      p.DateCreated,
-		ExtraData:        p.ExtraData,
+		ExtraData:        extraData,
 	}
 
 }
