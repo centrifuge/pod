@@ -133,7 +133,7 @@ type MockConfig struct {
 	mock.Mock
 }
 
-func (m *MockConfig) GetIdentityId() ([]byte, error) {
+func (m *MockConfig) GetIdentityID() ([]byte, error) {
 	args := m.Called()
 	return args.Get(0).([]byte), args.Error(1)
 }
@@ -175,7 +175,7 @@ func TestPaymentObligationService(t *testing.T) {
 				).Return(&types.Transaction{}, nil)
 				configMock := MockConfig{}
 				configMock.On("GetEthereumDefaultAccountName").Return("ethacc")
-				configMock.On("GetIdentityId").Return(centIDByte, nil)
+				configMock.On("GetIdentityID").Return(centIDByte, nil)
 				return docServiceMock, paymentObligationMock, idServiceMock, ethClientMock, configMock
 			},
 			&nftpb.NFTMintRequest{Identifier: "0x1212", Type: "happypath", ProofFields: []string{"somefield"}},

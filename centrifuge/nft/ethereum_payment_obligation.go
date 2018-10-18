@@ -31,7 +31,7 @@ func GetPaymentObligation() *ethereumPaymentObligation {
 
 // Config is an interface to configurations required by nft package
 type Config interface {
-	GetIdentityId() ([]byte, error)
+	GetIdentityID() ([]byte, error)
 	GetEthereumDefaultAccountName() string
 }
 
@@ -126,7 +126,7 @@ func (s *ethereumPaymentObligation) sendMintTransaction(contract ethereumPayment
 }
 
 func (s *ethereumPaymentObligation) getIdentityAddress() (common.Address, error) {
-	centIDBytes, err := s.config.GetIdentityId()
+	centIDBytes, err := s.config.GetIdentityID()
 	if err != nil {
 		return common.Address{}, err
 	}
