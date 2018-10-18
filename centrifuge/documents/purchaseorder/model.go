@@ -75,7 +75,7 @@ func (p *PurchaseOrderModel) getClientData() *clientpurchaseorderpb.PurchaseOrde
 
 	var order string
 	if p.Order != nil {
-		order = hexutil.Encode(p.Order[:])
+		order = hexutil.Encode(p.Order)
 	}
 
 	var extraData string
