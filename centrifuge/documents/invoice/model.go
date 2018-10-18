@@ -21,6 +21,7 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 )
 
+// TODO rename InvoiceModel -> Invoice
 // InvoiceModel implements the documents.Model keeps track of invoice related fields and state
 type InvoiceModel struct {
 	// invoice number or reference number

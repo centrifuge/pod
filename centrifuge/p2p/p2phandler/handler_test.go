@@ -8,6 +8,8 @@ import (
 	"os"
 	"testing"
 
+	"strconv"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
@@ -72,7 +74,7 @@ func TestP2PService_IncompatibleRequest(t *testing.T) {
 
 	assert.Error(t, err)
 	p2perr, _ := centerrors.FromError(err)
-	assert.Equal(t, p2perr.Code(), code.VersionMismatch)
+	assert.Contains(t, p2perr.Message(), strconv.Itoa(int(code.VersionMismatch)))
 	assert.Nil(t, res)
 
 	// Test invalid network
@@ -81,7 +83,7 @@ func TestP2PService_IncompatibleRequest(t *testing.T) {
 
 	assert.Error(t, err)
 	p2perr, _ = centerrors.FromError(err)
-	assert.Equal(t, p2perr.Code(), code.NetworkMismatch)
+	assert.Contains(t, p2perr.Message(), strconv.Itoa(int(code.NetworkMismatch)))
 	assert.Nil(t, res)
 }
 
@@ -124,7 +126,7 @@ func TestSendAnchoredDocument_IncompatibleRequest(t *testing.T) {
 	res, err := handler.SendAnchoredDocument(context.Background(), &req)
 	assert.Error(t, err)
 	p2perr, _ := centerrors.FromError(err)
-	assert.Equal(t, p2perr.Code(), code.VersionMismatch)
+	assert.Contains(t, p2perr.Message(), strconv.Itoa(int(code.VersionMismatch)))
 	assert.Nil(t, res)
 
 	// Test invalid network
@@ -133,7 +135,7 @@ func TestSendAnchoredDocument_IncompatibleRequest(t *testing.T) {
 	res, err = handler.SendAnchoredDocument(context.Background(), &req)
 	assert.Error(t, err)
 	p2perr, _ = centerrors.FromError(err)
-	assert.Equal(t, p2perr.Code(), code.NetworkMismatch)
+	assert.Contains(t, p2perr.Message(), strconv.Itoa(int(code.NetworkMismatch)))
 	assert.Nil(t, res)
 }
 
@@ -166,30 +168,26 @@ func TestHandler_SendAnchoredDocument_getServiceAndModel_fail(t *testing.T) {
 
 func TestP2PService_basicChecks(t *testing.T) {
 	tests := []struct {
-		version   string
-		networkID uint32
-		err       error
+		header *p2ppb.CentrifugeHeader
+		err    error
 	}{
 		{
-			version:   "someversion",
-			networkID: 12,
-			err:       version.IncompatibleVersionError("someversion"),
+			header: &p2ppb.CentrifugeHeader{CentNodeVersion: "someversion", NetworkIdentifier: 12},
+			err:    documents.AppendError(version.IncompatibleVersionError("someversion"), incompatibleNetworkError(config.Config.GetNetworkID(), 12)),
 		},
 
 		{
-			version:   "0.0.1",
-			networkID: 12,
-			err:       incompatibleNetworkError(12),
+			header: &p2ppb.CentrifugeHeader{CentNodeVersion: "0.0.1", NetworkIdentifier: 12},
+			err:    documents.AppendError(incompatibleNetworkError(config.Config.GetNetworkID(), 12), nil),
 		},
 
 		{
-			version:   version.GetVersion().String(),
-			networkID: config.Config.GetNetworkID(),
+			header: &p2ppb.CentrifugeHeader{CentNodeVersion: version.GetVersion().String(), NetworkIdentifier: config.Config.GetNetworkID()},
 		},
 	}
 
 	for _, c := range tests {
-		err := basicChecks(c.version, c.networkID)
+		err := handshakeValidator().Validate(c.header)
 		if err != nil {
 			if c.err == nil {
 				t.Fatalf("unexpected error: %v\n", err)

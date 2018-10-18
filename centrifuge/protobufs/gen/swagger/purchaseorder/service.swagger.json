@@ -213,12 +213,10 @@
           "format": "int64"
         },
         "recipient": {
-          "type": "string",
-          "format": "byte"
+          "type": "string"
         },
         "order": {
-          "type": "string",
-          "format": "byte"
+          "type": "string"
         },
         "order_contact": {
           "type": "string",
@@ -238,8 +236,7 @@
           "title": "purchase order date"
         },
         "extra_data": {
-          "type": "string",
-          "format": "byte"
+          "type": "string"
         }
       }
     },
