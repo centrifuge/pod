@@ -16,7 +16,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/processor"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/centrifuge/documents/common"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	centED25519 "github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	"github.com/centrifuge/go-centrifuge/centrifuge/notification"
@@ -68,45 +67,46 @@ type service struct {
 
 // DefaultService returns the default implementation of the service
 func DefaultService(repo documents.Repository, processor coredocumentprocessor.Processor) Service {
-	return &service{repo: repo, coreDocProcessor: processor, notifier: &notification.WebhookSender{}}
+	return service{repo: repo, coreDocProcessor: processor, notifier: &notification.WebhookSender{}}
 }
 
 // CreateProofs creates proofs for the latest version document given the fields
-func (s service) CreateProofs(documentID []byte, fields []string) (common.DocumentProof, error) {
+func (s service) CreateProofs(documentID []byte, fields []string) (*documents.DocumentProof, error) {
 	doc, err := s.GetLastVersion(documentID)
 	if err != nil {
-		return common.DocumentProof{}, err
+		return nil, err
 	}
 	inv, ok := doc.(*InvoiceModel)
 	if !ok {
-		return common.DocumentProof{}, centerrors.New(code.DocumentInvalid, "document of invalid type")
+		return nil, centerrors.New(code.DocumentInvalid, "document of invalid type")
 	}
 	return s.invoiceProof(inv, fields)
 }
 
 // CreateProofsForVersion creates proofs for a particular version of the document given the fields
-func (s service) CreateProofsForVersion(documentID, version []byte, fields []string) (common.DocumentProof, error) {
+func (s service) CreateProofsForVersion(documentID, version []byte, fields []string) (*documents.DocumentProof, error) {
 	doc, err := s.GetVersion(documentID, version)
 	if err != nil {
-		return common.DocumentProof{}, err
+		return nil, err
 	}
 	inv, ok := doc.(*InvoiceModel)
 	if !ok {
-		return common.DocumentProof{}, centerrors.New(code.DocumentInvalid, "document of invalid type")
+		return nil, centerrors.New(code.DocumentInvalid, "document of invalid type")
 	}
 	return s.invoiceProof(inv, fields)
 }
 
 // invoiceProof creates proofs for invoice model fields
-func (s service) invoiceProof(inv *InvoiceModel, fields []string) (common.DocumentProof, error) {
+func (s service) invoiceProof(inv *InvoiceModel, fields []string) (*documents.DocumentProof, error) {
 	coreDoc, proofs, err := inv.createProofs(fields)
 	if err != nil {
-		return common.DocumentProof{}, err
+		return nil, err
 	}
-	return common.DocumentProof{
+	return &documents.DocumentProof{
 		DocumentId:  coreDoc.DocumentIdentifier,
 		VersionId:   coreDoc.CurrentVersion,
-		FieldProofs: proofs}, nil
+		FieldProofs: proofs,
+	}, nil
 }
 
 // DeriveFromCoreDocument unpacks the core document into a model

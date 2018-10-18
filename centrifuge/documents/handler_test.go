@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/centrifuge/documents/common"
 	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
@@ -26,7 +25,7 @@ func TestGrpcHandler_CreateDocumentProof(t *testing.T) {
 		Fields:     []string{"field1"},
 	}
 	id, _ := hexutil.Decode(req.Identifier)
-	doc := common.DocumentProof{}
+	doc := &documents.DocumentProof{}
 	service.On("CreateProofs", id, req.Fields).Return(doc, nil)
 	grpcHandler := documents.GRPCHandler()
 	retDoc, _ := grpcHandler.CreateDocumentProof(context.TODO(), req)
@@ -80,7 +79,7 @@ func TestGrpcHandler_CreateDocumentProofForVersion(t *testing.T) {
 	}
 	id, _ := hexutil.Decode(req.Identifier)
 	version, _ := hexutil.Decode(req.Version)
-	doc := common.DocumentProof{DocumentId: tools.RandomSlice(32)}
+	doc := &documents.DocumentProof{DocumentId: tools.RandomSlice(32)}
 	service.On("CreateProofsForVersion", id, version, req.Fields).Return(doc, nil)
 	grpcHandler := documents.GRPCHandler()
 	retDoc, _ := grpcHandler.CreateDocumentProofForVersion(context.TODO(), req)
@@ -143,12 +142,12 @@ func TestGrpcHandler_CreateDocumentProofForVersionInvalidHexForVersion(t *testin
 func TestConvertDocProofToClientFormat(t *testing.T) {
 	tests := []struct {
 		name   string
-		input  common.DocumentProof
+		input  *documents.DocumentProof
 		output documentpb.DocumentProof
 	}{
 		{
 			name: "happy",
-			input: common.DocumentProof{
+			input: &documents.DocumentProof{
 				DocumentId: []byte{1, 2, 1},
 				VersionId:  []byte{1, 2, 2},
 				State:      "state",

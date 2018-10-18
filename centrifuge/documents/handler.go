@@ -3,7 +3,6 @@ package documents
 import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/code"
-	"github.com/centrifuge/go-centrifuge/centrifuge/documents/common"
 	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
@@ -71,7 +70,7 @@ func (grpcHandler) CreateDocumentProofForVersion(ctx context.Context, createDocu
 }
 
 // ConvertDocProofToClientFormat converts a DocumentProof to client api format
-func ConvertDocProofToClientFormat(proof common.DocumentProof) (*documentpb.DocumentProof, error) {
+func ConvertDocProofToClientFormat(proof *DocumentProof) (*documentpb.DocumentProof, error) {
 	return &documentpb.DocumentProof{
 		Header: &documentpb.ResponseHeader{
 			DocumentId: hexutil.Encode(proof.DocumentId),

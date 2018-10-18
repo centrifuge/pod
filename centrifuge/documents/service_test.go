@@ -5,7 +5,6 @@ package documents
 import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
-	"github.com/centrifuge/go-centrifuge/centrifuge/documents/common"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -13,14 +12,14 @@ type MockService struct {
 	mock.Mock
 }
 
-func (m *MockService) CreateProofs(documentID []byte, fields []string) (common.DocumentProof, error) {
+func (m *MockService) CreateProofs(documentID []byte, fields []string) (*DocumentProof, error) {
 	args := m.Called(documentID, fields)
-	return args.Get(0).(common.DocumentProof), args.Error(1)
+	return args.Get(0).(*DocumentProof), args.Error(1)
 }
 
-func (m *MockService) CreateProofsForVersion(documentID, version []byte, fields []string) (common.DocumentProof, error) {
+func (m *MockService) CreateProofsForVersion(documentID, version []byte, fields []string) (*DocumentProof, error) {
 	args := m.Called(documentID, version, fields)
-	return args.Get(0).(common.DocumentProof), args.Error(1)
+	return args.Get(0).(*DocumentProof), args.Error(1)
 }
 
 func (m *MockService) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (Model, error) {
