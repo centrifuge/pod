@@ -257,6 +257,15 @@ func anchoredValidator(repo anchors.AnchorRepository) documents.Validator {
 	})
 }
 
+// SignatureRequestValidator returns a validator group with following validators
+// base validator
+// signing root validator
+// signatures validator
+// should be used when node receives a document requesting for signature
+func SignatureRequestValidator() documents.ValidatorGroup {
+	return PostSignatureRequestValidator()
+}
+
 // PreAnchorValidator is a validator group with following validators
 // base validator
 // signing root validator

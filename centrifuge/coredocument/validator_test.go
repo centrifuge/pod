@@ -440,3 +440,8 @@ func TestPostSignatureRequestValidator(t *testing.T) {
 	psv := PostSignatureRequestValidator()
 	assert.Len(t, psv, 3)
 }
+
+func TestSignatureRequestValidator(t *testing.T) {
+	srv := SignatureRequestValidator()
+	assert.Len(t, srv, 3)
+}

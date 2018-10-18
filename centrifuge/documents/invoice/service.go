@@ -367,8 +367,9 @@ func (s service) DeriveFromUpdatePayload(payload *clientinvoicepb.InvoiceUpdateP
 }
 
 // RequestDocumentSignature Validates, Signs document received over the p2p layer and returs Signature
+// TODO(ved): need tests for this
 func (s service) RequestDocumentSignature(model documents.Model) (*coredocumentpb.Signature, error) {
-	if err := coredocument.PreAnchorValidator().Validate(nil, model); err != nil {
+	if err := coredocument.SignatureRequestValidator().Validate(nil, model); err != nil {
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
 	}
 
@@ -406,6 +407,7 @@ func (s service) RequestDocumentSignature(model documents.Model) (*coredocumentp
 }
 
 // ReceiveAnchoredDocument receives a new anchored document, validates and updates the document in DB
+// TODO(ved): need tests for this
 func (s service) ReceiveAnchoredDocument(model documents.Model, headers *p2ppb.CentrifugeHeader) error {
 	if err := coredocument.PostAnchoredValidator(anchors.GetAnchorRepository()).Validate(nil, model); err != nil {
 		return centerrors.New(code.DocumentInvalid, err.Error())
