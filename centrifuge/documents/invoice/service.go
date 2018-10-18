@@ -366,17 +366,16 @@ func (s service) DeriveFromUpdatePayload(payload *clientinvoicepb.InvoiceUpdateP
 
 // RequestDocumentSignature Validates, Signs document received over the p2p layer and returs Signature
 func (s service) RequestDocumentSignature(model documents.Model) (*coredocumentpb.Signature, error) {
+	if err := coredocument.PreAnchorValidator().Validate(nil, model); err != nil {
+		return nil, centerrors.New(code.DocumentInvalid, err.Error())
+	}
+
 	doc, err := model.PackCoreDocument()
 	if err != nil {
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
 	}
 
 	log.Infof("coredoc received %x with signing root %x", doc.DocumentIdentifier, doc.SigningRoot)
-
-	// TODO(mig) Invoke validation as part of service call
-	if err := coredocument.ValidateWithSignature(doc); err != nil {
-		return nil, centerrors.New(code.DocumentInvalid, err.Error())
-	}
 
 	idConfig, err := centED25519.GetIDConfig()
 	if err != nil {
@@ -406,6 +405,10 @@ func (s service) RequestDocumentSignature(model documents.Model) (*coredocumentp
 
 // ReceiveAnchoredDocument receives a new anchored document, validates and updates the document in DB
 func (s service) ReceiveAnchoredDocument(model documents.Model, headers *p2ppb.CentrifugeHeader) error {
+	if err := coredocument.PostAnchoredValidator().Validate(nil, model); err != nil {
+		return centerrors.New(code.DocumentInvalid, err.Error())
+	}
+
 	doc, err := model.PackCoreDocument()
 	if err != nil {
 		return centerrors.New(code.DocumentInvalid, err.Error())
@@ -417,7 +420,6 @@ func (s service) ReceiveAnchoredDocument(model documents.Model, headers *p2ppb.C
 		return centerrors.New(code.Unknown, fmt.Sprintf("failed to Create legacy CoreDocument: %v", err))
 	}
 
-	// TODO(ved): post anchoring validations should be done before deriving model
 	err = repo.Update(doc.CurrentVersion, model)
 	if err != nil {
 		return centerrors.New(code.Unknown, err.Error())

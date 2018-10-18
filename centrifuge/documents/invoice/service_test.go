@@ -10,17 +10,13 @@ import (
 	"strconv"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/centrifuge/code"
-	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
-	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
-	"github.com/centrifuge/go-centrifuge/centrifuge/version"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -373,23 +369,6 @@ func TestService_CreateProofsForVersionDocumentDoesntExist(t *testing.T) {
 	assert.Equal(t, "document not found for the given version: leveldb: not found", err.Error())
 }
 
-func TestService_RequestDocumentSignature(t *testing.T) {
-	i, err := createAnchoredMockDocument(t, true)
-	assert.Nil(t, err)
-	signature, err := invService.RequestDocumentSignature(i)
-	assert.Nil(t, err)
-	assert.NotNil(t, signature)
-}
-
-func TestService_RequestDocumentSignature_AlreadyExists(t *testing.T) {
-	i, err := createAnchoredMockDocument(t, false)
-	assert.Nil(t, err)
-	signature, err := invService.RequestDocumentSignature(i)
-	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "document already exists")
-	assert.Nil(t, signature)
-}
-
 func TestService_RequestDocumentSignature_SigningRootNil(t *testing.T) {
 	i, err := createAnchoredMockDocument(t, true)
 	assert.Nil(t, err)
@@ -399,37 +378,6 @@ func TestService_RequestDocumentSignature_SigningRootNil(t *testing.T) {
 	assert.Contains(t, err.Error(), strconv.Itoa(int(code.DocumentInvalid)))
 	assert.Contains(t, err.Error(), "signing root missing")
 	assert.Nil(t, signature)
-}
-
-func TestService_ReceiveAnchoredDocument(t *testing.T) {
-	i, err := createAnchoredMockDocument(t, false)
-	assert.Nil(t, err)
-
-	//TODO Remove when we deprecate old document version
-	err = coredocumentrepository.GetRepository().Create(i.CoreDocument.DocumentIdentifier, i.CoreDocument)
-	assert.Nil(t, err)
-
-	header := &p2ppb.CentrifugeHeader{
-		CentNodeVersion:   version.GetVersion().String(),
-		NetworkIdentifier: config.Config.GetNetworkID(),
-	}
-
-	err = invService.ReceiveAnchoredDocument(i, header)
-	assert.Nil(t, err)
-}
-
-func TestService_ReceiveAnchoredDocument_DocumentNotExist(t *testing.T) {
-	i, err := createAnchoredMockDocument(t, true)
-	assert.Nil(t, err)
-
-	header := &p2ppb.CentrifugeHeader{
-		CentNodeVersion:   version.GetVersion().String(),
-		NetworkIdentifier: config.Config.GetNetworkID(),
-	}
-
-	err = invService.ReceiveAnchoredDocument(i, header)
-	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "document doesn't exists")
 }
 
 func createAnchoredMockDocument(t *testing.T, skipSave bool) (*InvoiceModel, error) {
