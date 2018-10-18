@@ -3,6 +3,7 @@ package node
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"os/signal"
 
@@ -18,7 +19,11 @@ type Bootstrapper struct {
 
 func (*Bootstrapper) Bootstrap(c map[string]interface{}) error {
 	if _, ok := c[bootstrap.BootstrappedConfig]; ok {
-		services := defaultServerList()
+		services, err := defaultServerList()
+		if err != nil {
+			return fmt.Errorf("failed to get default server list: %v", err)
+		}
+
 		n := NewNode(services)
 		feedback := make(chan error)
 		// may be we can pass a context that exists in c here
@@ -42,9 +47,13 @@ func (*Bootstrapper) Bootstrap(c map[string]interface{}) error {
 	return errors.New("could not initialize node")
 }
 
-func defaultServerList() []Server {
-	publicKey, privateKey := ed25519keys.GetSigningKeyPairFromConfig()
-	services := []Server{
+func defaultServerList() ([]Server, error) {
+	publicKey, privateKey, err := ed25519keys.GetSigningKeyPairFromConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get keys: %v", err)
+	}
+
+	return []Server{
 		api.NewCentAPIServer(
 			config.Config.GetServerAddress(),
 			config.Config.GetServerPort(),
@@ -55,6 +64,5 @@ func defaultServerList() []Server {
 			config.Config.GetBootstrapPeers(),
 			publicKey, privateKey,
 		),
-	}
-	return services
+	}, nil
 }

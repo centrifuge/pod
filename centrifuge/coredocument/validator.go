@@ -257,6 +257,15 @@ func anchoredValidator(repo anchors.AnchorRepository) documents.Validator {
 	})
 }
 
+// SignatureRequestValidator returns a validator group with following validators
+// base validator
+// signing root validator
+// signatures validator
+// should be used when node receives a document requesting for signature
+func SignatureRequestValidator() documents.ValidatorGroup {
+	return PostSignatureRequestValidator()
+}
+
 // PreAnchorValidator is a validator group with following validators
 // base validator
 // signing root validator
@@ -265,10 +274,8 @@ func anchoredValidator(repo anchors.AnchorRepository) documents.Validator {
 // should be called before pre anchoring
 func PreAnchorValidator() documents.ValidatorGroup {
 	return documents.ValidatorGroup{
-		baseValidator(),
-		signingRootValidator(),
+		PostSignatureRequestValidator(),
 		documentRootValidator(),
-		signaturesValidator(),
 	}
 }
 
@@ -276,9 +283,35 @@ func PreAnchorValidator() documents.ValidatorGroup {
 // PreAnchorValidator
 // anchoredValidator
 // should be called after anchoring the document/when received anchored document
-func PostAnchoredValidator() documents.ValidatorGroup {
+func PostAnchoredValidator(repo anchors.AnchorRepository) documents.ValidatorGroup {
 	return documents.ValidatorGroup{
 		PreAnchorValidator(),
-		anchoredValidator(anchors.GetAnchorRepository()),
+		anchoredValidator(repo),
+	}
+}
+
+// PreSignatureRequestValidator is a validator group with following validators
+// baseValidator
+// signingRootValidator
+// readyForSignaturesValidator
+// should be called after sender signing the document and before requesting the document
+func PreSignatureRequestValidator() documents.ValidatorGroup {
+	return documents.ValidatorGroup{
+		baseValidator(),
+		signingRootValidator(),
+		readyForSignaturesValidator(),
+	}
+}
+
+// PostSignatureRequestValidator is a validator group with following validators
+// baseValidator
+// signingRootValidator
+// signaturesValidator
+// should be called after the signature collection/before preparing for anchoring
+func PostSignatureRequestValidator() documents.ValidatorGroup {
+	return documents.ValidatorGroup{
+		baseValidator(),
+		signingRootValidator(),
+		signaturesValidator(),
 	}
 }

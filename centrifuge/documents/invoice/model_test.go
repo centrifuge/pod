@@ -246,7 +246,7 @@ func TestInvoiceModel_createProofsFieldDoesNotExist(t *testing.T) {
 }
 
 func TestInvoiceModel_GetDocumentID(t *testing.T) {
-	i, corDoc, err := createMockInvoice(t)
+	i, corDoc, err := createMockInvoice()
 	assert.Nil(t, err)
 	ID, err := i.ID()
 	assert.Equal(t, corDoc.DocumentIdentifier, ID)
