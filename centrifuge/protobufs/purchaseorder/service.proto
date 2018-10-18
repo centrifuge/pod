@@ -109,8 +109,8 @@ message PurchaseOrderData {
   int64 net_amount = 14;
   int64 tax_amount = 15;
   int64 tax_rate = 16;
-  bytes recipient = 17;
-  bytes order = 18;
+  string recipient = 17;
+  string order = 18;
   // contact or requester or purchaser at the ordering company
   string order_contact = 19;
   string comment = 20;
@@ -118,5 +118,5 @@ message PurchaseOrderData {
   google.protobuf.Timestamp delivery_date = 21;
   // purchase order date
   google.protobuf.Timestamp date_created = 22;
-  bytes extra_data = 23;
+  string extra_data = 23;
 }

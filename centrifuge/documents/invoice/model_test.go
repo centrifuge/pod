@@ -40,7 +40,7 @@ func TestInvoice_FromCoreDocuments_invalidParameter(t *testing.T) {
 func TestInvoice_InitCoreDocument_successful(t *testing.T) {
 	invoiceModel := &InvoiceModel{}
 
-	coreDocument := testinginvoice.CreateCDWithEmbeddedInvoice(t, testinginvoice.CreateInvoiceData())
+	coreDocument := testingdocuments.CreateCDWithEmbeddedInvoice(t, testingdocuments.CreateInvoiceData())
 	err := invoiceModel.UnpackCoreDocument(coreDocument)
 	assert.Nil(t, err, "valid coredocument shouldn't produce an error")
 }
@@ -48,7 +48,7 @@ func TestInvoice_InitCoreDocument_successful(t *testing.T) {
 func TestInvoice_InitCoreDocument_invalidCentId(t *testing.T) {
 	invoiceModel := &InvoiceModel{}
 
-	coreDocument := testinginvoice.CreateCDWithEmbeddedInvoice(t, invoicepb.InvoiceData{
+	coreDocument := testingdocuments.CreateCDWithEmbeddedInvoice(t, invoicepb.InvoiceData{
 		Recipient:   tools.RandomSlice(identity.CentIDLength + 1),
 		Sender:      tools.RandomSlice(identity.CentIDLength),
 		Payee:       tools.RandomSlice(identity.CentIDLength),
@@ -65,7 +65,7 @@ func TestInvoice_CoreDocument_successful(t *testing.T) {
 	invoiceModel := &InvoiceModel{}
 
 	//init model with a CoreDoc
-	coreDocument := testinginvoice.CreateCDWithEmbeddedInvoice(t, testinginvoice.CreateInvoiceData())
+	coreDocument := testingdocuments.CreateCDWithEmbeddedInvoice(t, testingdocuments.CreateInvoiceData())
 	invoiceModel.UnpackCoreDocument(coreDocument)
 
 	returnedCoreDocument, err := invoiceModel.PackCoreDocument()
@@ -91,7 +91,7 @@ func TestInvoice_JSON(t *testing.T) {
 	invoiceModel := &InvoiceModel{}
 
 	//init model with a CoreDoc
-	coreDocument := testinginvoice.CreateCDWithEmbeddedInvoice(t, testinginvoice.CreateInvoiceData())
+	coreDocument := testingdocuments.CreateCDWithEmbeddedInvoice(t, testingdocuments.CreateInvoiceData())
 	invoiceModel.UnpackCoreDocument(coreDocument)
 
 	jsonBytes, err := invoiceModel.JSON()
@@ -119,7 +119,7 @@ func TestInvoiceModel_UnpackCoreDocument(t *testing.T) {
 	assert.Error(t, err, "unpack must fail due to missing embed data")
 
 	// successful
-	coreDocument := testinginvoice.CreateCDWithEmbeddedInvoice(t, testinginvoice.CreateInvoiceData())
+	coreDocument := testingdocuments.CreateCDWithEmbeddedInvoice(t, testingdocuments.CreateInvoiceData())
 	err = model.UnpackCoreDocument(coreDocument)
 	assert.Nil(t, err, "valid core document with embedded invoice shouldn't produce an error")
 
@@ -131,7 +131,7 @@ func TestInvoiceModel_UnpackCoreDocument(t *testing.T) {
 }
 
 func TestInvoiceModel_getClientData(t *testing.T) {
-	invData := testinginvoice.CreateInvoiceData()
+	invData := testingdocuments.CreateInvoiceData()
 	inv := new(InvoiceModel)
 	inv.loadFromP2PProtobuf(&invData)
 
@@ -202,7 +202,7 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 
 func TestInvoiceModel_calculateDataRoot(t *testing.T) {
 	m := new(InvoiceModel)
-	err := m.InitInvoiceInput(createPayload())
+	err := m.InitInvoiceInput(testingdocuments.CreateInvoicePayload())
 	assert.Nil(t, err, "Init must pass")
 	assert.Nil(t, m.InvoiceSalts, "salts must be nil")
 
@@ -214,7 +214,7 @@ func TestInvoiceModel_calculateDataRoot(t *testing.T) {
 }
 
 func TestInvoiceModel_createProofs(t *testing.T) {
-	i, corDoc, err := createMockInvoice(t)
+	i, corDoc, err := createMockInvoice()
 	assert.Nil(t, err)
 	corDoc, proof, err := i.createProofs([]string{"invoice_number", "collaborators[0]", "document_type"})
 	assert.Nil(t, err)
@@ -239,7 +239,7 @@ func TestInvoiceModel_createProofs(t *testing.T) {
 }
 
 func TestInvoiceModel_createProofsFieldDoesNotExist(t *testing.T) {
-	i, _, err := createMockInvoice(t)
+	i, _, err := createMockInvoice()
 	assert.Nil(t, err)
 	_, _, err = i.createProofs([]string{"nonexisting"})
 	assert.NotNil(t, err)
@@ -253,7 +253,7 @@ func TestInvoiceModel_getDocumentDataTree(t *testing.T) {
 	assert.Equal(t, "invoice_number", leaf.Property)
 }
 
-func createMockInvoice(t *testing.T) (*InvoiceModel, *coredocumentpb.CoreDocument, error) {
+func createMockInvoice() (*InvoiceModel, *coredocumentpb.CoreDocument, error) {
 	i := &InvoiceModel{InvoiceNumber: "3213121", NetAmount: 2, GrossAmount: 2, Currency: "USD", CoreDocument: coredocument.New()}
 	i.CoreDocument.Collaborators = [][]byte{{1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}}
 	err := i.calculateDataRoot()
