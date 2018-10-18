@@ -58,7 +58,7 @@ func generateEmptyPurchaseOrderForProcessing() (doc *purchaseorder.PurchaseOrder
 
 func TestPurchaseOrderDocumentService_HandleAnchorPurchaseOrderDocument_Integration(t *testing.T) {
 	p2pClient := testingcommons.NewMockP2PWrapperClient()
-	s := purchaseorder.LegacyGRPCHandler(purchaseorder.GetRepository(), coredocumentprocessor.DefaultProcessor(identity.IDService, p2pClient))
+	s := purchaseorder.LegacyGRPCHandler(purchaseorder.GetLegacyRepository(), coredocumentprocessor.DefaultProcessor(identity.IDService, p2pClient))
 	p2pClient.On("GetSignaturesForDocument", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	doc := generateEmptyPurchaseOrderForProcessing()
 	doc.Document.Data = &purchaseorderpb.PurchaseOrderData{
@@ -81,7 +81,7 @@ func TestPurchaseOrderDocumentService_HandleAnchorPurchaseOrderDocument_Integrat
 //func TestPurchaseOrderDocumentService_HandleSendPurchaseOrderDocument_Integration(t *testing.T) {
 //	p2pClient := testingcommons.NewMockP2PWrapperClient()
 //	s := purchaseorderservice.PurchaseOrderDocumentService{
-//		Repository:            purchaseorderrepository.GetRepository(),
+//		Repository:            purchaseorderrepository.GetLegacyRepository(),
 //		CoreDocumentProcessor: coredocumentprocessor.DefaultProcessor(identity.NewEthereumIdentityService(), p2pClient),
 //	}
 //	p2pClient.On("GetSignaturesForDocument", mock.Anything, mock.Anything, mock.Anything).Return(nil)
@@ -112,7 +112,7 @@ func assertDocument(t *testing.T, err error, anchoredDoc *purchaseorderpb.Purcha
 		"DocumentIdentifier doesn't match")
 	//PurchaseOrder document got stored in the DB
 	loadedDoc := new(purchaseorderpb.PurchaseOrderDocument)
-	err = purchaseorder.GetRepository().GetByID(doc.Document.CoreDocument.DocumentIdentifier, loadedDoc)
+	err = purchaseorder.GetLegacyRepository().GetByID(doc.Document.CoreDocument.DocumentIdentifier, loadedDoc)
 	assert.Nil(t, err)
 	assert.Equal(t, "AUS", loadedDoc.Data.OrderCountry,
 		"Didn't save the purchaseorder data correctly")
@@ -125,7 +125,7 @@ func assertDocument(t *testing.T, err error, anchoredDoc *purchaseorderpb.Purcha
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "document already exists")
 	loadedDoc2 := new(purchaseorderpb.PurchaseOrderDocument)
-	err = purchaseorder.GetRepository().GetByID(doc.Document.CoreDocument.DocumentIdentifier, loadedDoc2)
+	err = purchaseorder.GetLegacyRepository().GetByID(doc.Document.CoreDocument.DocumentIdentifier, loadedDoc2)
 	assert.Nil(t, err)
 	assert.Equal(t, "AUS", loadedDoc2.Data.OrderCountry,
 		"Document on DB should have not not gotten overwritten after rejected anchor call")

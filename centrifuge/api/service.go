@@ -50,7 +50,7 @@ func registerServices(ctx context.Context, grpcServer *grpc.Server, gwmux *runti
 		return err
 	}
 	legacyPurchaseOrder.RegisterPurchaseOrderDocumentServiceServer(grpcServer, purchaseorder.LegacyGRPCHandler(
-		purchaseorder.GetRepository(),
+		purchaseorder.GetLegacyRepository(),
 		coredocumentprocessor.DefaultProcessor(identity.IDService, p2p.NewP2PClient())))
 	err = legacyPurchaseOrder.RegisterPurchaseOrderDocumentServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
 	if err != nil {

@@ -5,25 +5,29 @@ import (
 	"sync"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
 	"github.com/golang/protobuf/proto"
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
 // levelDBRepository implements storage.LegacyRepository
+// Deprecated
 type levelDBRepository struct {
 	storage.DefaultLevelDB
 }
 
 // levelDBRepo is singleton instance
+// Deprecated
 var levelDBRepo *levelDBRepository
 
-// once to guard from creating multiple instances
-var once sync.Once
+// legacyOnce to guard from creating multiple instances
+var legacyOnce sync.Once
 
-// InitLevelDBRepository initialises new repository if not exists
-func InitLevelDBRepository(db *leveldb.DB) {
-	once.Do(func() {
+// InitLegacyLevelDBRepository initialises new repository if not exists
+// Deprecated
+func InitLegacyLevelDBRepository(db *leveldb.DB) {
+	legacyOnce.Do(func() {
 		levelDBRepo = &levelDBRepository{
 			storage.DefaultLevelDB{
 				KeyPrefix:    "purchaseorder",
@@ -34,9 +38,10 @@ func InitLevelDBRepository(db *leveldb.DB) {
 	})
 }
 
-// GetRepository returns a repository implementation
+// GetLegacyRepository returns a repository implementation
 // Must be called only after repository initialisation
-func GetRepository() storage.LegacyRepository {
+// Deprecated
+func GetLegacyRepository() storage.LegacyRepository {
 	if levelDBRepo == nil {
 		log.Fatal("Invoice repository not initialised")
 	}
@@ -55,4 +60,29 @@ func validate(doc proto.Message) error {
 	}
 
 	return nil
+}
+
+// repository is the invoice repository
+type repository struct {
+	documents.LevelDBRepository
+}
+
+// repo is a singleton instance of repository
+var repo *repository
+
+// once guards the singleton initialisation
+var once sync.Once
+
+// getRepository returns the implemented documents.legacyRepo for invoices
+func getRepository() documents.Repository {
+	once.Do(func() {
+		repo = &repository{
+			documents.LevelDBRepository{
+				KeyPrefix: "purchaseorder",
+				LevelDB:   storage.GetLevelDBStorage(),
+			},
+		}
+	})
+
+	return repo
 }
