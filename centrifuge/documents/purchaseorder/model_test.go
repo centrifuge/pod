@@ -2,15 +2,17 @@ package purchaseorder
 
 import (
 	"encoding/json"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"reflect"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
+	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
 
@@ -159,7 +161,6 @@ func TestPurchaseOrderModel_InitPOInput(t *testing.T) {
 	assert.NotNil(t, poModel.ExtraData)
 	assert.NotNil(t, poModel.Recipient)
 
-
 	data.ExtraData = "0x010203020301"
 	collabs := []string{"0x010102040506", "some id"}
 	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data, Collaborators: collabs})
@@ -185,4 +186,68 @@ func TestPurchaseOrderModel_calculateDataRoot(t *testing.T) {
 	assert.NotNil(t, poModel.CoreDocument, "coredoc must be created")
 	assert.NotNil(t, poModel.PurchaseOrderSalt, "salts must be created")
 	assert.NotNil(t, poModel.CoreDocument.DataRoot, "data root must be filled")
+}
+func TestPurchaseOrderModel_createProofs(t *testing.T) {
+	i, corDoc, err := createMockPurchaseOrder()
+	assert.Nil(t, err)
+	corDoc, proof, err := i.createProofs([]string{"po_number", "collaborators[0]", "document_type"})
+	assert.Nil(t, err)
+	assert.NotNil(t, proof)
+	assert.NotNil(t, corDoc)
+	tree, _ := coredocument.GetDocumentRootTree(corDoc)
+
+	// Validate po_number
+	valid, err := tree.ValidateProof(proof[0])
+	assert.Nil(t, err)
+	assert.True(t, valid)
+
+	// Validate collaborators[0]
+	valid, err = tree.ValidateProof(proof[1])
+	assert.Nil(t, err)
+	assert.True(t, valid)
+
+	// Validate document_type
+	valid, err = tree.ValidateProof(proof[2])
+	assert.Nil(t, err)
+	assert.True(t, valid)
+}
+
+func TestPurchaseOrderModel_createProofsFieldDoesNotExist(t *testing.T) {
+	i, _, err := createMockPurchaseOrder()
+	assert.Nil(t, err)
+	_, _, err = i.createProofs([]string{"nonexisting"})
+	assert.NotNil(t, err)
+}
+
+func TestPurchaseOrderModel_getDocumentDataTree(t *testing.T) {
+	i := PurchaseOrderModel{PoNumber: "3213121", NetAmount: 2, OrderAmount: 2}
+	tree, err := i.getDocumentDataTree()
+	assert.Nil(t, err, "tree should be generated without error")
+	_, leaf := tree.GetLeafByProperty("po_number")
+	assert.Equal(t, "po_number", leaf.Property)
+}
+
+func createMockPurchaseOrder() (*PurchaseOrderModel, *coredocumentpb.CoreDocument, error) {
+	i := &PurchaseOrderModel{PoNumber: "3213121", NetAmount: 2, OrderAmount: 2, Currency: "USD", CoreDocument: coredocument.New()}
+	i.CoreDocument.Collaborators = [][]byte{{1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}}
+	err := i.calculateDataRoot()
+	if err != nil {
+		return nil, nil, err
+	}
+	// get the coreDoc for the purchaseOrder
+	corDoc, err := i.PackCoreDocument()
+	if err != nil {
+		return nil, nil, err
+	}
+	coredocument.FillSalts(corDoc)
+	err = coredocument.CalculateSigningRoot(corDoc)
+	if err != nil {
+		return nil, nil, err
+	}
+	err = coredocument.CalculateDocumentRoot(corDoc)
+	if err != nil {
+		return nil, nil, err
+	}
+	i.UnpackCoreDocument(corDoc)
+	return i, corDoc, nil
 }

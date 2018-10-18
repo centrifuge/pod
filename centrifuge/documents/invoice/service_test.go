@@ -28,8 +28,6 @@ import (
 
 var invService Service
 
-
-
 func TestDefaultService(t *testing.T) {
 	srv := DefaultService(getRepository(), &testingutils.MockCoreDocumentProcessor{})
 	assert.NotNil(t, srv, "must be non-nil")

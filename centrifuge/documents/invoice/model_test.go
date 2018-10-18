@@ -214,7 +214,7 @@ func TestInvoiceModel_calculateDataRoot(t *testing.T) {
 }
 
 func TestInvoiceModel_createProofs(t *testing.T) {
-	i, corDoc, err := createMockInvoice(t)
+	i, corDoc, err := createMockInvoice()
 	assert.Nil(t, err)
 	corDoc, proof, err := i.createProofs([]string{"invoice_number", "collaborators[0]", "document_type"})
 	assert.Nil(t, err)
@@ -239,7 +239,7 @@ func TestInvoiceModel_createProofs(t *testing.T) {
 }
 
 func TestInvoiceModel_createProofsFieldDoesNotExist(t *testing.T) {
-	i, _, err := createMockInvoice(t)
+	i, _, err := createMockInvoice()
 	assert.Nil(t, err)
 	_, _, err = i.createProofs([]string{"nonexisting"})
 	assert.NotNil(t, err)
@@ -253,7 +253,7 @@ func TestInvoiceModel_getDocumentDataTree(t *testing.T) {
 	assert.Equal(t, "invoice_number", leaf.Property)
 }
 
-func createMockInvoice(t *testing.T) (*InvoiceModel, *coredocumentpb.CoreDocument, error) {
+func createMockInvoice() (*InvoiceModel, *coredocumentpb.CoreDocument, error) {
 	i := &InvoiceModel{InvoiceNumber: "3213121", NetAmount: 2, GrossAmount: 2, Currency: "USD", CoreDocument: coredocument.New()}
 	i.CoreDocument.Collaborators = [][]byte{{1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}}
 	err := i.calculateDataRoot()

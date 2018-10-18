@@ -4,8 +4,9 @@ package invoice
 
 import (
 	"fmt"
-	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
 
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
