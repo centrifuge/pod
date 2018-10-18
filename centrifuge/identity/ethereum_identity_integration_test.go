@@ -140,7 +140,6 @@ func TestEthereumIdentityService_GetIdentityAddress(t *testing.T) {
 }
 
 func TestEthereumIdentityService_GetIdentityAddressNonExistingID(t *testing.T) {
-	addr, err := identityService.GetIdentityAddress(identity.NewRandomCentID())
-	assert.Nil(t, err)
-	assert.Equal(t, 0000000000000000000000000000000000000000, addr)
+	_, err := identityService.GetIdentityAddress(identity.NewRandomCentID())
+	assert.NotNil(t, err)
 }

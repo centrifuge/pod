@@ -7,7 +7,12 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
+	doccommmon "github.com/centrifuge/go-centrifuge/centrifuge/documents/common"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents/invoice"
+	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/nft"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
@@ -139,51 +144,96 @@ func (m *MockConfig) GetEthereumDefaultAccountName() string {
 }
 
 func TestPaymentObligationService(t *testing.T) {
-
 	tests := []struct {
 		name    string
-		mocker  func() (documents.MockService, MockPaymentObligation, testingcommons.MockIDService, testingcommons.MockEthClient, MockConfig)
+		mocker  func() (documents.MockService, *MockPaymentObligation, testingcommons.MockIDService, testingcommons.MockEthClient, MockConfig)
 		request *nftpb.NFTMintRequest
 		err     error
 		result  string
 	}{
 		{
 			"happypath",
-			func() (documents.MockService, MockPaymentObligation, testingcommons.MockIDService, testingcommons.MockEthClient, MockConfig) {
+			func() (documents.MockService, *MockPaymentObligation, testingcommons.MockIDService, testingcommons.MockEthClient, MockConfig) {
+				centIDByte := tools.RandomSlice(6)
+				centID, _ := identity.ToCentID(centIDByte)
+				address := common.BytesToAddress(tools.RandomSlice(32))
+				coreDoc := coredocument.New()
+				coreDoc.DocumentRoot = tools.RandomSlice(32)
+				proof := getDummyProof(coreDoc)
 				docServiceMock := documents.MockService{}
-				docServiceMock.On("GetLastVersion", decodeHex("0x1212")).Return()
-				paymentObligationMock := MockPaymentObligation{}
+				docServiceMock.On("GetCurrentVersion", decodeHex("0x1212")).Return(&invoice.InvoiceModel{InvoiceNumber: "1232", CoreDocument: coreDoc}, nil)
+				docServiceMock.On("CreateProofs", decodeHex("0x1212"), []string{"somefield"}).Return(proof, nil)
+				paymentObligationMock := &MockPaymentObligation{}
 				idServiceMock := testingcommons.MockIDService{}
+				idServiceMock.On("GetIdentityAddress", centID).Return(address, nil)
 				ethClientMock := testingcommons.MockEthClient{}
+				ethClientMock.On("GetTxOpts", "ethacc").Return(&bind.TransactOpts{}, nil)
+				ethClientMock.On("SubmitTransactionWithRetries",
+					mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+					mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+					mock.Anything, mock.Anything,
+				).Return(&types.Transaction{}, nil)
 				configMock := MockConfig{}
+				configMock.On("GetEthereumDefaultAccountName").Return("ethacc")
+				configMock.On("GetIdentityId").Return(centIDByte, nil)
 				return docServiceMock, paymentObligationMock, idServiceMock, ethClientMock, configMock
 			},
-			&nftpb.NFTMintRequest{Identifier: "0x1212", Type: "happypath"},
+			&nftpb.NFTMintRequest{Identifier: "0x1212", Type: "happypath", ProofFields: []string{"somefield"}},
 			nil,
 			"",
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			//// get mocks
-			//docService, paymentOb, idService, ethClient, config := test.mocker()
-			//// with below config the documentType has to be test.name to avoid conflicts since registry is a singleton
-			//documents.GetRegistryInstance().Register(test.name, &docService)
-			//service := NewEthereumPaymentObligation(&paymentOb, &idService, &ethClient, &config)
-			//tokenID, err := service.MintNFT(decodeHex(test.request.Identifier), test.request.Type, test.request.RegistryAddress, test.request.DepositAddress, test.request.ProofFields)
-			//if test.err != nil {
-			//	assert.Equal(t, test.err.Error(), err.Error())
-			//} else if err != nil {
-			//	panic(err)
-			//} else {
-			//	docService.AssertExpectations(t)
-			//	paymentOb.AssertExpectations(t)
-			//	idService.AssertExpectations(t)
-			//	ethClient.AssertExpectations(t)
-			//	config.AssertExpectations(t)
-			//	assert.Equal(t, test.result, tokenID)
-			//}
+			// get mocks
+			docService, paymentOb, idService, ethClient, config := test.mocker()
+			// with below config the documentType has to be test.name to avoid conflicts since registry is a singleton
+			documents.GetRegistryInstance().Register(test.name, &docService)
+			service := NewEthereumPaymentObligation(paymentOb, &idService, &ethClient, &config)
+			tokenID, err := service.MintNFT(decodeHex(test.request.Identifier), test.request.Type, test.request.RegistryAddress, test.request.DepositAddress, test.request.ProofFields)
+			if test.err != nil {
+				assert.Equal(t, test.err.Error(), err.Error())
+			} else if err != nil {
+				panic(err)
+			}
+			docService.AssertExpectations(t)
+			paymentOb.AssertExpectations(t)
+			idService.AssertExpectations(t)
+			ethClient.AssertExpectations(t)
+			config.AssertExpectations(t)
+			assert.NotEmpty(t, tokenID)
 		})
+	}
+}
+
+func getDummyProof(coreDoc *coredocumentpb.CoreDocument) doccommmon.DocumentProof {
+	return doccommmon.DocumentProof{
+		DocumentId: coreDoc.DocumentIdentifier,
+		VersionId:  coreDoc.CurrentVersion,
+		State:      "state",
+		FieldProofs: []*proofspb.Proof{
+			{
+				Property: "prop1",
+				Value:    "val1",
+				Salt:     tools.RandomSlice(32),
+				Hash:     tools.RandomSlice(32),
+				SortedHashes: [][]byte{
+					tools.RandomSlice(32),
+					tools.RandomSlice(32),
+					tools.RandomSlice(32),
+				},
+			},
+			{
+				Property: "prop2",
+				Value:    "val2",
+				Salt:     tools.RandomSlice(32),
+				Hash:     tools.RandomSlice(32),
+				SortedHashes: [][]byte{
+					tools.RandomSlice(32),
+					tools.RandomSlice(32),
+				},
+			},
+		},
 	}
 }
 

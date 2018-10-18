@@ -154,11 +154,6 @@ func (s service) validateAndPersist(ctx context.Context, old, new documents.Mode
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
 
-	coreDoc, err := inv.PackCoreDocument()
-	if err != nil {
-		return nil, centerrors.New(code.Unknown, err.Error())
-	}
-
 	saveState := func(coreDoc *coredocumentpb.CoreDocument) error {
 		err := inv.UnpackCoreDocument(coreDoc)
 		if err != nil {
@@ -166,6 +161,11 @@ func (s service) validateAndPersist(ctx context.Context, old, new documents.Mode
 		}
 
 		return s.SaveState(inv)
+	}
+
+	coreDoc, err := inv.PackCoreDocument()
+	if err != nil {
+		return nil, centerrors.New(code.Unknown, err.Error())
 	}
 
 	err = s.coreDocProcessor.Anchor(ctx, coreDoc, saveState)

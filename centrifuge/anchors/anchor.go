@@ -47,6 +47,10 @@ func NewRandomDocRoot() DocRoot {
 	return root
 }
 
+func (a DocRoot) Fixed() [RootLength]byte {
+	return a
+}
+
 type PreCommitData struct {
 	AnchorID        AnchorID
 	SigningRoot     DocRoot

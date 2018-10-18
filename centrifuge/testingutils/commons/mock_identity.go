@@ -34,8 +34,9 @@ func (srv *MockIDService) LookupIdentityForID(centID identity.CentID) (identity.
 
 func (srv *MockIDService) CreateIdentity(centID identity.CentID) (identity.Identity, chan *identity.WatchIdentity, error) {
 	args := srv.Called(centID)
-	id := args.Get(0).(identity.Identity)
-	return id, args.Get(1).(chan *identity.WatchIdentity), args.Error(2)
+	id, _ := args.Get(0).(identity.Identity)
+	watch, _ := args.Get(1).(chan *identity.WatchIdentity)
+	return id, watch, args.Error(2)
 }
 
 func (srv *MockIDService) CheckIdentityExists(centID identity.CentID) (exists bool, err error) {

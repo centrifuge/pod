@@ -16,7 +16,8 @@ type MockEthClient struct {
 
 func (m *MockEthClient) GetClient() *ethclient.Client {
 	args := m.Called()
-	return args.Get(0).(*ethclient.Client)
+	c, _ := args.Get(0).(*ethclient.Client)
+	return c
 }
 
 func (m *MockEthClient) GetRpcClient() *rpc.Client {

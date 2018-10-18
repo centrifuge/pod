@@ -28,7 +28,7 @@ const (
 )
 
 // IDService is a default implementation of the Service
-// TODO remove, kill and bury this(or any other globals)
+// TODO remove, kill and bury this(and any other globals)
 var IDService Service
 
 type CentID [CentIDLength]byte

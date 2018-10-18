@@ -14,7 +14,6 @@ import (
 	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents/invoice"
-	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
@@ -22,16 +21,21 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var identityService identity.Service
-
 func TestMain(m *testing.M) {
 	cc.DONT_USE_FOR_UNIT_TESTS_TestFunctionalEthereumBootstrap()
-	identityService = identity.IDService
+	prevSignPubkey := config.Config.V.Get("keys.signing.publicKey")
+	prevSignPrivkey := config.Config.V.Get("keys.signing.privateKey")
+	prevEthPubkey := config.Config.V.Get("keys.ethauth.publicKey")
+	prevEthPrivkey := config.Config.V.Get("keys.ethauth.privateKey")
 	config.Config.V.Set("keys.signing.publicKey", "../../example/resources/signature1.pub.pem")
 	config.Config.V.Set("keys.signing.privateKey", "../../example/resources/signature1.key.pem")
 	config.Config.V.Set("keys.ethauth.publicKey", "../../example/resources/ethauth.pub.pem")
 	config.Config.V.Set("keys.ethauth.privateKey", "../../example/resources/ethauth.key.pem")
 	result := m.Run()
+	config.Config.V.Set("keys.signing.publicKey", prevSignPubkey)
+	config.Config.V.Set("keys.signing.privateKey", prevSignPrivkey)
+	config.Config.V.Set("keys.ethauth.publicKey", prevEthPubkey)
+	config.Config.V.Set("keys.ethauth.privateKey", prevEthPrivkey)
 	cc.TestFunctionalEthereumTearDown()
 	os.Exit(result)
 }
@@ -61,7 +65,7 @@ func TestPaymentObligationService_mint(t *testing.T) {
 	modelUpdated, err := invoiceService.Create(context.Background(), model)
 
 	// get ID
-	ID, err := modelUpdated.GetDocumentID()
+	ID, err := modelUpdated.ID()
 	assert.Nil(t, err, "should not error out when getting invoice ID")
 	// call mint
 	// assert no error

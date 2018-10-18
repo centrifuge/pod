@@ -263,7 +263,7 @@ func (i *InvoiceModel) getInvoiceSalts(invoiceData *invoicepb.InvoiceData) *invo
 	return i.InvoiceSalts
 }
 
-func (i *InvoiceModel) GetDocumentID() ([]byte, error) {
+func (i *InvoiceModel) ID() ([]byte, error) {
 	coreDoc, err := i.PackCoreDocument()
 	if err != nil {
 		return []byte{}, err

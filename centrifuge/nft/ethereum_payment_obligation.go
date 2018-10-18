@@ -1,8 +1,6 @@
 package nft
 
 import (
-	"fmt"
-
 	"math/big"
 
 	"github.com/centrifuge/go-centrifuge/centrifuge/anchors"
@@ -13,6 +11,8 @@ import (
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/go-errors/errors"
 	logging "github.com/ipfs/go-log"
 )
 
@@ -35,26 +35,34 @@ type Config interface {
 	GetEthereumDefaultAccountName() string
 }
 
+// ethereumPaymentObligationContract is an abstraction over the contract code to help in mocking it out
+type ethereumPaymentObligationContract interface {
+
+	// Mint method abstracts Mint method on the contract
+	Mint(opts *bind.TransactOpts, _to common.Address, _tokenId *big.Int, _tokenURI string, _anchorId *big.Int, _merkleRoot [32]byte, _values [3]string, _salts [3][32]byte, _proofs [3][][32]byte) (*types.Transaction, error)
+}
+
 // ethereumPaymentObligation handles all interactions related to minting of NFTs for payment obligations on Ethereum
 type ethereumPaymentObligation struct {
-	paymentObligation *EthereumPaymentObligationContract
+	paymentObligation ethereumPaymentObligationContract
 	identityService   identity.Service
 	ethClient         ethereum.EthereumClient
 	config            Config
 }
 
 // NewEthereumPaymentObligation creates ethereumPaymentObligation given the parameters
-func NewEthereumPaymentObligation(paymentObligation *EthereumPaymentObligationContract, identityService identity.Service, ethClient ethereum.EthereumClient, config Config) *ethereumPaymentObligation {
+func NewEthereumPaymentObligation(paymentObligation ethereumPaymentObligationContract, identityService identity.Service, ethClient ethereum.EthereumClient, config Config) *ethereumPaymentObligation {
 	return &ethereumPaymentObligation{paymentObligation: paymentObligation, identityService: identityService, ethClient: ethClient, config: config}
 }
 
+// MintNFT mints an NFT
 func (s *ethereumPaymentObligation) MintNFT(documentID []byte, docType, registryAddress, depositAddress string, proofFields []string) (string, error) {
-	documentService, err := getDocumentService(docType)
+	docService, err := getDocumentService(docType)
 	if err != nil {
 		return "", err
 	}
 
-	model, err := documentService.GetCurrentVersion([]byte(documentID))
+	model, err := docService.GetCurrentVersion(documentID)
 	if err != nil {
 		return "", err
 	}
@@ -64,7 +72,7 @@ func (s *ethereumPaymentObligation) MintNFT(documentID []byte, docType, registry
 		return "", err
 	}
 
-	proofs, err := documentService.CreateProofs(documentID, proofFields)
+	proofs, err := docService.CreateProofs(documentID, proofFields)
 	if err != nil {
 		return "", err
 	}
@@ -101,18 +109,18 @@ func (s *ethereumPaymentObligation) MintNFT(documentID []byte, docType, registry
 		return "", err
 	}
 
-	return requestData.TokenId.String(), nil
+	return requestData.TokenID.String(), nil
 }
 
 // sendMintTransaction sends the actual transaction to mint the NFT
-func (s *ethereumPaymentObligation) sendMintTransaction(contract *EthereumPaymentObligationContract, opts *bind.TransactOpts, requestData *MintRequest) (err error) {
-	tx, err := s.ethClient.SubmitTransactionWithRetries(contract.Mint, opts, requestData.To, requestData.TokenId, requestData.TokenURI, requestData.AnchorId,
+func (s *ethereumPaymentObligation) sendMintTransaction(contract ethereumPaymentObligationContract, opts *bind.TransactOpts, requestData *MintRequest) (err error) {
+	tx, err := s.ethClient.SubmitTransactionWithRetries(contract.Mint, opts, requestData.To, requestData.TokenID, requestData.TokenURI, requestData.AnchorID,
 		requestData.MerkleRoot, requestData.Values, requestData.Salts, requestData.Proofs)
 	if err != nil {
 		return err
 	}
 	log.Infof("Sent off tx to mint [tokenID: %x, anchor: %x, registry: %x] to payment obligation contract. Ethereum transaction hash [%x] and Nonce [%v] and Check [%v]",
-		requestData.TokenId, requestData.AnchorId, requestData.To, tx.Hash(), tx.Nonce(), tx.CheckNonce())
+		requestData.TokenID, requestData.AnchorID, requestData.To, tx.Hash(), tx.Nonce(), tx.CheckNonce())
 	log.Infof("Transfer pending: 0x%x\n", tx.Hash())
 	return
 }
@@ -141,14 +149,14 @@ type MintRequest struct {
 	// To is the address of the recipient of the minted token
 	To common.Address
 
-	// TokenId is the ID for the minted token
-	TokenId *big.Int
+	// TokenID is the ID for the minted token
+	TokenID *big.Int
 
 	// TokenURI is the metadata uri
 	TokenURI string
 
-	// AnchorId is the ID of the document as identified by the set up anchorRegistry.
-	AnchorId *big.Int
+	// AnchorID is the ID of the document as identified by the set up anchorRegistry.
+	AnchorID *big.Int
 
 	// MerkleRoot is the root hash of the merkle proof/doc
 	MerkleRoot [32]byte
@@ -164,8 +172,8 @@ type MintRequest struct {
 }
 
 // NewMintRequest converts the parameters and returns a struct with needed parameter for minting
-func NewMintRequest(to common.Address, anchorID anchors.AnchorID, proofs []*proofspb.Proof, rootHash anchors.DocRoot) (*MintRequest, error) {
-	tokenId := tools.ByteSliceToBigInt(tools.RandomSlice(256))
+func NewMintRequest(to common.Address, anchorID anchors.AnchorID, proofs []*proofspb.Proof, rootHash [32]byte) (*MintRequest, error) {
+	tokenID := tools.ByteSliceToBigInt(tools.RandomSlice(256))
 	// TODO move this to config
 	tokenURI := "http:=//www.centrifuge.io/DUMMY_URI_SERVICE"
 	proofData, err := createProofData(proofs)
@@ -175,9 +183,9 @@ func NewMintRequest(to common.Address, anchorID anchors.AnchorID, proofs []*proo
 
 	return &MintRequest{
 		To:         to,
-		TokenId:    tokenId,
+		TokenID:    tokenID,
 		TokenURI:   tokenURI,
-		AnchorId:   anchorID.BigInt(),
+		AnchorID:   anchorID.BigInt(),
 		MerkleRoot: rootHash,
 		Values:     proofData.Values,
 		Salts:      proofData.Salts,
@@ -191,6 +199,9 @@ type proofData struct {
 }
 
 func createProofData(proofspb []*proofspb.Proof) (*proofData, error) {
+	if len(proofspb) > 3 {
+		return nil, errors.New("no more than 3 field proofs are accepted")
+	}
 	var values [3]string
 	var salts [3][32]byte
 	var proofs [3][][32]byte
@@ -231,11 +242,5 @@ func getDocumentService(documentType string) (documents.Service, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	service, ok := docService.(documents.Service)
-	if !ok {
-		return nil, fmt.Errorf("couldn't find service for needed document type")
-
-	}
-	return service, nil
+	return docService, nil
 }

@@ -57,7 +57,9 @@ func (i *mockID) FetchKey(key []byte) (Key, error) {
 	args := i.Called(key)
 	idKey := args.Get(0)
 	if idKey != nil {
-		return idKey.(Key), args.Error(1)
+		if k, ok := idKey.(Key); ok {
+			return k, args.Error(1)
+		}
 	}
 	return nil, args.Error(1)
 }
