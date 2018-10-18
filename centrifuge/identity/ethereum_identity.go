@@ -379,9 +379,8 @@ func (ids *EthereumIdentityService) GetIdentityAddress(centID CentID) (common.Ad
 	if err != nil {
 		return common.Address{}, err
 	}
-	log.Infof("***************** address [%s]", address.Hex())
 
-	if address.Hex() == "0x0000000000000000000000000000000000000000" {
+	if tools.IsEmptyAddress(address) {
 		return common.Address{}, errors.New("No address found for centID")
 	}
 	return address, nil
