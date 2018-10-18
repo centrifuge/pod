@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/ethereum/go-ethereum/common/hexutil"
+
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
@@ -166,15 +168,32 @@ func (p *PurchaseOrderModel) initPurchaseOrderFromData(data *clientpurchaseordee
 	p.NetAmount = data.NetAmount
 	p.TaxAmount = data.TaxAmount
 	p.TaxRate = data.TaxRate
-	p.Order = data.Order
+
+	if data.Order != "" {
+		order, err := hexutil.Decode(data.Order)
+		if err != nil {
+			return centerrors.Wrap(err, "failed to decode order")
+		}
+
+		p.Order = order
+	}
+
 	p.OrderContact = data.OrderContact
 	p.Comment = data.Comment
 	p.DeliveryDate = data.DeliveryDate
 	p.DateCreated = data.DateCreated
-	p.ExtraData = data.ExtraData
 
-	if recipient, err := identity.ToCentID(data.Recipient); err == nil {
+	if recipient, err := identity.CentIDFromString(data.Recipient); err == nil {
 		p.Recipient = &recipient
+	}
+
+	if data.ExtraData != "" {
+		ed, err := hexutil.Decode(data.ExtraData)
+		if err != nil {
+			return centerrors.Wrap(err, "failed to decode extra data")
+		}
+
+		p.ExtraData = ed
 	}
 
 	return nil
