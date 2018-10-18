@@ -33,12 +33,6 @@ type Service interface {
 
 	// DerivePurchaseOrderResponse returns the purchase order in our standard client format
 	DerivePurchaseOrderResponse(po documents.Model) (*clientpopb.PurchaseOrderResponse, error)
-
-	// GetLastVersion reads a document from the database
-	GetLastVersion(documentID []byte) (documents.Model, error)
-
-	// GetVersion reads a document from the database
-	GetVersion(documentID []byte, version []byte) (documents.Model, error)
 }
 
 // service implements Service and handles all purchase order related persistence and validations
@@ -90,7 +84,7 @@ func (s service) DerivePurchaseOrderResponse(inv documents.Model) (*clientpopb.P
 }
 
 // GetLastVersion returns the latest version of the document
-func (s service) GetLastVersion(documentID []byte) (documents.Model, error) {
+func (s service) GetCurrentVersion(documentID []byte) (documents.Model, error) {
 	return nil, fmt.Errorf("implement me")
 }
 

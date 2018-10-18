@@ -63,8 +63,8 @@ func TestService_DerivePurchaseOrderResponse(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestService_GetLastVersion(t *testing.T) {
-	m, err := poSrv.GetLastVersion(nil)
+func TestService_GetCurrentVersion(t *testing.T) {
+	m, err := poSrv.GetCurrentVersion(nil)
 	assert.Nil(t, m)
 	assert.Error(t, err)
 }

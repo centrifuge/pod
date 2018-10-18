@@ -10,37 +10,19 @@ import (
 	"strconv"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/centrifuge/code"
-	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
-	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
-	"github.com/centrifuge/go-centrifuge/centrifuge/version"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
 var invService Service
-
-func createPayload() *clientinvoicepb.InvoiceCreatePayload {
-	return &clientinvoicepb.InvoiceCreatePayload{
-		Data: &clientinvoicepb.InvoiceData{
-			Sender:      "0x010101010101",
-			Recipient:   "0x010203040506",
-			Payee:       "0x010203020406",
-			GrossAmount: 42,
-			ExtraData:   "0x01020302010203",
-			Currency:    "EUR",
-		},
-		Collaborators: []string{"0x010101010101"},
-	}
-}
 
 func TestDefaultService(t *testing.T) {
 	srv := DefaultService(getRepository(), &testingutils.MockCoreDocumentProcessor{})
@@ -67,7 +49,7 @@ func TestService_DeriveFromCoreDocument(t *testing.T) {
 }
 
 func TestService_DeriveFromPayload(t *testing.T) {
-	payload := createPayload()
+	payload := testingdocuments.CreateInvoicePayload()
 	var model documents.Model
 	var err error
 
@@ -88,7 +70,7 @@ func TestService_GetLastVersion(t *testing.T) {
 	doc, err := createMockDocument()
 	assert.Nil(t, err)
 
-	mod1, err := invService.GetLastVersion(doc.CoreDocument.DocumentIdentifier)
+	mod1, err := invService.GetCurrentVersion(doc.CoreDocument.DocumentIdentifier)
 	assert.Nil(t, err)
 
 	invLoad1, _ := mod1.(*InvoiceModel)
@@ -106,7 +88,7 @@ func TestService_GetLastVersion(t *testing.T) {
 	err = getRepository().Create(doc.CoreDocument.NextVersion, inv2)
 	assert.Nil(t, err)
 
-	mod2, err := invService.GetLastVersion(doc.CoreDocument.DocumentIdentifier)
+	mod2, err := invService.GetCurrentVersion(doc.CoreDocument.DocumentIdentifier)
 	assert.Nil(t, err)
 
 	invLoad2, _ := mod2.(*InvoiceModel)
@@ -179,7 +161,7 @@ func TestService_Create_db_fail(t *testing.T) {
 	err := getRepository().Create(cd.CurrentVersion, model)
 	model.AssertExpectations(t)
 
-	payload := createPayload()
+	payload := testingdocuments.CreateInvoicePayload()
 	inv, err := invService.DeriveFromCreatePayload(payload)
 	assert.Nil(t, err, "must be non nil")
 	assert.NotNil(t, inv)
@@ -195,7 +177,7 @@ func TestService_Create_anchor_fail(t *testing.T) {
 	proc := &testingutils.MockCoreDocumentProcessor{}
 	proc.On("Anchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(fmt.Errorf("failed to anchor document"))
 	srv.coreDocProcessor = proc
-	payload := createPayload()
+	payload := testingdocuments.CreateInvoicePayload()
 	inv, err := invService.DeriveFromCreatePayload(payload)
 	_, err = srv.Create(context.Background(), inv)
 	proc.AssertExpectations(t)
@@ -209,7 +191,7 @@ func TestService_Create_send_fail(t *testing.T) {
 	proc.On("Anchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	proc.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(fmt.Errorf("failed to send"))
 	srv.coreDocProcessor = proc
-	payload := createPayload()
+	payload := testingdocuments.CreateInvoicePayload()
 	payload.Collaborators = []string{"0x010203040506"}
 	inv, err := invService.DeriveFromCreatePayload(payload)
 	_, err = srv.Create(context.Background(), inv)
@@ -223,7 +205,7 @@ func TestService_Create_saveState_fail(t *testing.T) {
 	proc.On("Anchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	proc.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(fmt.Errorf("failed to send"))
 	srv.coreDocProcessor = proc
-	payload := createPayload()
+	payload := testingdocuments.CreateInvoicePayload()
 	payload.Collaborators = []string{"0x010203040506"}
 	inv, err := invService.DeriveFromCreatePayload(payload)
 	_, err = srv.Create(context.Background(), inv)
@@ -237,7 +219,7 @@ func TestService_Create(t *testing.T) {
 	proc.On("Anchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	proc.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	srv.coreDocProcessor = proc
-	payload := createPayload()
+	payload := testingdocuments.CreateInvoicePayload()
 	payload.Collaborators = []string{"0x010203040506"}
 	inv, err := invService.DeriveFromCreatePayload(payload)
 	_, err = srv.Create(context.Background(), inv)
@@ -251,7 +233,7 @@ func TestService_DeriveInvoiceData(t *testing.T) {
 	assert.Error(t, err, "Derive must fail")
 
 	// success
-	payload := createPayload()
+	payload := testingdocuments.CreateInvoicePayload()
 	inv, err := invService.DeriveFromCreatePayload(payload)
 	assert.Nil(t, err, "must be non nil")
 	data, err := invService.DeriveInvoiceData(inv)
@@ -270,7 +252,7 @@ func TestService_DeriveInvoiceResponse(t *testing.T) {
 	assert.Error(t, err, "Derive must fail")
 
 	// success
-	payload := createPayload()
+	payload := testingdocuments.CreateInvoicePayload()
 	inv1, err := invService.DeriveFromCreatePayload(payload)
 	assert.Nil(t, err, "must be non nil")
 	inv, ok := inv1.(*InvoiceModel)
@@ -291,7 +273,7 @@ func TestService_SaveState(t *testing.T) {
 	assert.Contains(t, err.Error(), "document of invalid type")
 
 	inv := new(InvoiceModel)
-	err = inv.InitInvoiceInput(createPayload())
+	err = inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload())
 	assert.Nil(t, err)
 
 	// save state must fail missing core document
@@ -373,23 +355,6 @@ func TestService_CreateProofsForVersionDocumentDoesntExist(t *testing.T) {
 	assert.Equal(t, "document not found for the given version: leveldb: not found", err.Error())
 }
 
-func TestService_RequestDocumentSignature(t *testing.T) {
-	i, err := createAnchoredMockDocument(t, true)
-	assert.Nil(t, err)
-	signature, err := invService.RequestDocumentSignature(i)
-	assert.Nil(t, err)
-	assert.NotNil(t, signature)
-}
-
-func TestService_RequestDocumentSignature_AlreadyExists(t *testing.T) {
-	i, err := createAnchoredMockDocument(t, false)
-	assert.Nil(t, err)
-	signature, err := invService.RequestDocumentSignature(i)
-	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "document already exists")
-	assert.Nil(t, signature)
-}
-
 func TestService_RequestDocumentSignature_SigningRootNil(t *testing.T) {
 	i, err := createAnchoredMockDocument(t, true)
 	assert.Nil(t, err)
@@ -399,37 +364,6 @@ func TestService_RequestDocumentSignature_SigningRootNil(t *testing.T) {
 	assert.Contains(t, err.Error(), strconv.Itoa(int(code.DocumentInvalid)))
 	assert.Contains(t, err.Error(), "signing root missing")
 	assert.Nil(t, signature)
-}
-
-func TestService_ReceiveAnchoredDocument(t *testing.T) {
-	i, err := createAnchoredMockDocument(t, false)
-	assert.Nil(t, err)
-
-	//TODO Remove when we deprecate old document version
-	err = coredocumentrepository.GetRepository().Create(i.CoreDocument.DocumentIdentifier, i.CoreDocument)
-	assert.Nil(t, err)
-
-	header := &p2ppb.CentrifugeHeader{
-		CentNodeVersion:   version.GetVersion().String(),
-		NetworkIdentifier: config.Config.GetNetworkID(),
-	}
-
-	err = invService.ReceiveAnchoredDocument(i, header)
-	assert.Nil(t, err)
-}
-
-func TestService_ReceiveAnchoredDocument_DocumentNotExist(t *testing.T) {
-	i, err := createAnchoredMockDocument(t, true)
-	assert.Nil(t, err)
-
-	header := &p2ppb.CentrifugeHeader{
-		CentNodeVersion:   version.GetVersion().String(),
-		NetworkIdentifier: config.Config.GetNetworkID(),
-	}
-
-	err = invService.ReceiveAnchoredDocument(i, header)
-	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "document doesn't exists")
 }
 
 func createAnchoredMockDocument(t *testing.T, skipSave bool) (*InvoiceModel, error) {
@@ -547,7 +481,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 	// failed to load from data
 	old := new(InvoiceModel)
-	err = old.InitInvoiceInput(createPayload())
+	err = old.InitInvoiceInput(testingdocuments.CreateInvoicePayload())
 	assert.Nil(t, err)
 	old.CoreDocument.DocumentIdentifier = id
 	old.CoreDocument.CurrentVersion = id
@@ -615,7 +549,7 @@ func TestService_Update_Missing_last_version(t *testing.T) {
 }
 
 func TestService_Update_unknown_type(t *testing.T) {
-	model, err := invService.DeriveFromCreatePayload(createPayload())
+	model, err := invService.DeriveFromCreatePayload(testingdocuments.CreateInvoicePayload())
 	assert.Nil(t, err)
 	cd, err := model.PackCoreDocument()
 	assert.Nil(t, err)
@@ -635,7 +569,7 @@ func TestService_Update(t *testing.T) {
 	proc.On("Anchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 	proc.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 	srv.coreDocProcessor = proc
-	payload := createPayload()
+	payload := testingdocuments.CreateInvoicePayload()
 	payload.Collaborators = []string{"0x010203040506"}
 	inv, err := invService.DeriveFromCreatePayload(payload)
 	assert.Nil(t, err)
