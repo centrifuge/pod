@@ -20,6 +20,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/centrifuge/go-centrifuge/centrifuge/anchors"
 )
 
 var invService Service
@@ -325,6 +326,9 @@ func TestService_SaveState(t *testing.T) {
 func TestService_CreateProofs(t *testing.T) {
 	i, err := createAnchoredMockDocument(t, false)
 	assert.Nil(t, err)
+	anchorID, _ := anchors.NewAnchorID(i.CoreDocument.DocumentIdentifier)
+	docRoot, _ := anchors.NewDocRoot(i.CoreDocument.DocumentRoot)
+	anchorRepository.On("GetDocumentRootOf", anchorID).Return(docRoot, nil).Once()
 	proof, err := invService.CreateProofs(i.CoreDocument.DocumentIdentifier, []string{"invoice_number"})
 	assert.Nil(t, err)
 	assert.Equal(t, i.CoreDocument.DocumentIdentifier, proof.DocumentId)

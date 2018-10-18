@@ -30,7 +30,7 @@ func TestMain(m *testing.M) {
 		&invoice.Bootstrapper{},
 		&purchaseorder.Bootstrapper{},
 	}
-	bootstrap.RunTestBootstrappers(ibootstappers)
+	bootstrap.RunTestBootstrappers(ibootstappers, nil)
 	flag.Parse()
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
