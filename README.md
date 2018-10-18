@@ -4,9 +4,9 @@
 
 `go-centrifuge` is the go implementation of the Centrifuge OS interacting with the peer to peer network and our Ethereum smart contracts. 
 
-_Getting help:_ Head over to our developer documentation at [developer.centrifuge.io](http://developer.centrifuge.io) to learn how to setup a node and interact with it. 
+*Getting help:* Head over to our developer documentation at [developer.centrifuge.io](http://developer.centrifuge.io) to learn how to setup a node and interact with it. 
 
-_DISCLAIMER:_ The code released here presents a very early alpha version that should not be used in production and has not been audited. Use this at your own risk.
+*DISCLAIMER:* The code released here presents a very early alpha version that should not be used in production and has not been audited. Use this at your own risk.
 
 ## Table of Contents
 - [Installing pre-requisites](#installing-pre-requisites)
