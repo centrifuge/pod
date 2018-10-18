@@ -54,7 +54,11 @@ type Handler struct {
 // request could not decide for itself if the request handshake should succeed or not.
 // Deprecated
 func (srv *Handler) Post(ctx context.Context, req *p2ppb.P2PMessage) (*p2ppb.P2PReply, error) {
-	err := handshakeValidator().Validate([]interface{}{req.CentNodeVersion, req.NetworkIdentifier})
+	header := &p2ppb.CentrifugeHeader{
+		CentNodeVersion:   req.CentNodeVersion,
+		NetworkIdentifier: req.NetworkIdentifier,
+	}
+	err := handshakeValidator().Validate(header)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +97,7 @@ func (srv *Handler) Post(ctx context.Context, req *p2ppb.P2PMessage) (*p2ppb.P2P
 // Existing signatures on the document will be verified
 // Document will be stored to the repository for state management
 func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.SignatureRequest) (*p2ppb.SignatureResponse, error) {
-	err := handshakeValidator().Validate([]interface{}{sigReq.Header.CentNodeVersion, sigReq.Header.NetworkIdentifier})
+	err := handshakeValidator().Validate(sigReq.Header)
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +120,7 @@ func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.
 
 // SendAnchoredDocument receives a new anchored document, validates and updates the document in DB
 func (srv *Handler) SendAnchoredDocument(ctx context.Context, docReq *p2ppb.AnchDocumentRequest) (*p2ppb.AnchDocumentResponse, error) {
-	err := handshakeValidator().Validate([]interface{}{docReq.Header.CentNodeVersion, docReq.Header.NetworkIdentifier})
+	err := handshakeValidator().Validate(docReq.Header)
 	if err != nil {
 		return nil, err
 	}

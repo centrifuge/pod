@@ -168,30 +168,26 @@ func TestHandler_SendAnchoredDocument_getServiceAndModel_fail(t *testing.T) {
 
 func TestP2PService_basicChecks(t *testing.T) {
 	tests := []struct {
-		version   string
-		networkID uint32
-		err       error
+		header *p2ppb.CentrifugeHeader
+		err    error
 	}{
 		{
-			version:   "someversion",
-			networkID: 12,
-			err:       documents.AppendError(version.IncompatibleVersionError("someversion"), incompatibleNetworkError(config.Config.GetNetworkID(), 12)),
+			header: &p2ppb.CentrifugeHeader{CentNodeVersion: "someversion", NetworkIdentifier: 12},
+			err:    documents.AppendError(version.IncompatibleVersionError("someversion"), incompatibleNetworkError(config.Config.GetNetworkID(), 12)),
 		},
 
 		{
-			version:   "0.0.1",
-			networkID: 12,
-			err:       documents.AppendError(incompatibleNetworkError(config.Config.GetNetworkID(), 12), nil),
+			header: &p2ppb.CentrifugeHeader{CentNodeVersion: "0.0.1", NetworkIdentifier: 12},
+			err:    documents.AppendError(incompatibleNetworkError(config.Config.GetNetworkID(), 12), nil),
 		},
 
 		{
-			version:   version.GetVersion().String(),
-			networkID: config.Config.GetNetworkID(),
+			header: &p2ppb.CentrifugeHeader{CentNodeVersion: version.GetVersion().String(), NetworkIdentifier: config.Config.GetNetworkID()},
 		},
 	}
 
 	for _, c := range tests {
-		err := handshakeValidator().Validate([]interface{}{c.version, c.networkID})
+		err := handshakeValidator().Validate(c.header)
 		if err != nil {
 			if c.err == nil {
 				t.Fatalf("unexpected error: %v\n", err)

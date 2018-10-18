@@ -5,6 +5,7 @@ package p2phandler
 import (
 	"testing"
 
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/version"
 	"github.com/stretchr/testify/assert"
@@ -13,68 +14,78 @@ import (
 func TestValidate_versionValidator(t *testing.T) {
 	vv := versionValidator()
 
-	// Empty version
-	err := vv.Validate("")
+	// Nil header
+	err := vv.Validate(nil)
 	assert.NotNil(t, err)
 
-	// Wrong version
-	err = vv.Validate(34)
+	// Empty header
+	header := &p2ppb.CentrifugeHeader{}
+	err = vv.Validate(header)
 	assert.NotNil(t, err)
 
 	// Incompatible Major
-	err = vv.Validate("1.1.1")
+	header.CentNodeVersion = "1.1.1"
+	err = vv.Validate(header)
 	assert.NotNil(t, err)
 
 	// Compatible Minor
-	err = vv.Validate("0.1.1")
+	header.CentNodeVersion = "0.1.1"
+	err = vv.Validate(header)
 	assert.Nil(t, err)
 
 	//Same version
-	err = vv.Validate(version.GetVersion().String())
+	header.CentNodeVersion = version.GetVersion().String()
+	err = vv.Validate(header)
 	assert.Nil(t, err)
 }
 
 func TestValidate_networkValidator(t *testing.T) {
 	nv := networkValidator()
 
-	// Empty network
+	// Nil header
 	err := nv.Validate(nil)
 	assert.NotNil(t, err)
 
-	// Wrong network
-	err = nv.Validate("blabla")
+	// Empty header
+	header := &p2ppb.CentrifugeHeader{}
+	err = nv.Validate(header)
 	assert.NotNil(t, err)
 
 	// Incompatible network
-	err = nv.Validate(12)
+	header.NetworkIdentifier = 12
+	err = nv.Validate(header)
 	assert.NotNil(t, err)
 
 	// Compatible network
-	err = nv.Validate(config.Config.GetNetworkID())
+	header.NetworkIdentifier = config.Config.GetNetworkID()
+	err = nv.Validate(header)
 	assert.Nil(t, err)
 }
 
 func TestValidate_handshakeValidator(t *testing.T) {
 	hv := handshakeValidator()
 
-	// Mismatch number of parameters
-	err := hv.Validate([]interface{}{"version"})
-	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "Mismatched validator params, expected [2], actual [1]")
-
 	// Incompatible version and network
-	err = hv.Validate([]interface{}{"version", 52})
+	header := &p2ppb.CentrifugeHeader{
+		CentNodeVersion:   "version",
+		NetworkIdentifier: 52,
+	}
+	err := hv.Validate(header)
 	assert.NotNil(t, err)
 
 	// Incompatible version, correct network
-	err = hv.Validate([]interface{}{"version", config.Config.GetNetworkID()})
+	header.NetworkIdentifier = config.Config.GetNetworkID()
+	err = hv.Validate(header)
 	assert.NotNil(t, err)
 
 	// Compatible version, incorrect network
-	err = hv.Validate([]interface{}{version.GetVersion().String(), 52})
+	header.NetworkIdentifier = 52
+	header.CentNodeVersion = version.GetVersion().String()
+	err = hv.Validate(header)
 	assert.NotNil(t, err)
 
 	// Compatible version and network
-	err = hv.Validate([]interface{}{version.GetVersion().String(), config.Config.GetNetworkID()})
+	header.NetworkIdentifier = config.Config.GetNetworkID()
+	err = hv.Validate(header)
 	assert.Nil(t, err)
 }
