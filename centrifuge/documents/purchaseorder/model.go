@@ -22,6 +22,7 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 )
 
+//TODO rename PurchaseOrderModel -> PurchaseOrder
 // PurchaseOrder implements the documents.Model keeps track of purchase order related fields and state
 type PurchaseOrderModel struct {
 	// purchase order number or reference number
