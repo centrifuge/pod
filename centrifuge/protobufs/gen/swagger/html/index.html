@@ -123,9 +123,8 @@
           <a href="#definition-documentCreateDocumentProofForVersionRequest"> documentCreateDocumentProofForVersionRequest </a>
           <a href="#definition-documentCreateDocumentProofRequest"> documentCreateDocumentProofRequest </a>
           <a href="#definition-documentDocumentProof"> documentDocumentProof </a>
+          <a href="#definition-documentProof"> documentProof </a>
           <a href="#definition-documentResponseHeader"> documentResponseHeader </a>
-          <a href="#definition-proofsMerkleHash"> proofsMerkleHash </a>
-          <a href="#definition-proofsProof"> proofsProof </a>
           <a href="#definition-healthPong"> healthPong </a>
           <a href="#definition-invoiceInvoiceCreatePayload"> invoiceInvoiceCreatePayload </a>
           <a href="#definition-invoiceInvoiceData"> invoiceInvoiceData </a>
@@ -143,6 +142,8 @@
           <a href="#definition-invoiceInvoiceProof"> invoiceInvoiceProof </a>
           <a href="#definition-invoiceReceivedInvoices"> invoiceReceivedInvoices </a>
           <a href="#definition-invoiceSendInvoiceEnvelope"> invoiceSendInvoiceEnvelope </a>
+          <a href="#definition-proofsMerkleHash"> proofsMerkleHash </a>
+          <a href="#definition-proofsProof"> proofsProof </a>
           <a href="#definition-protobufAny"> protobufAny </a>
           <a href="#definition-purchaseorderAnchorPurchaseOrderEnvelope"> purchaseorderAnchorPurchaseOrderEnvelope </a>
           <a href="#definition-purchaseorderCreatePurchaseOrderProofEnvelope"> purchaseorderCreatePurchaseOrderProofEnvelope </a>
@@ -302,16 +303,10 @@
     {
       <span class="hljs-attr">&quot;property&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
       <span class="hljs-attr">&quot;value&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
-      <span class="hljs-attr">&quot;salt&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;hash&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;hashes&quot;</span>: [
-        {
-          <span class="hljs-attr">&quot;left&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-          <span class="hljs-attr">&quot;right&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
-        }
-      ],
-      <span class="hljs-attr">&quot;sortedHashes&quot;</span>: [
-        <span class="hljs-string">&quot;string (byte)&quot;</span>
+      <span class="hljs-attr">&quot;salt&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+      <span class="hljs-attr">&quot;hash&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+      <span class="hljs-attr">&quot;sorted_hashes&quot;</span>: [
+        <span class="hljs-string">&quot;string&quot;</span>
       ]
     }
   ]
@@ -441,16 +436,10 @@
     {
       <span class="hljs-attr">&quot;property&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
       <span class="hljs-attr">&quot;value&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
-      <span class="hljs-attr">&quot;salt&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;hash&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;hashes&quot;</span>: [
-        {
-          <span class="hljs-attr">&quot;left&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-          <span class="hljs-attr">&quot;right&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
-        }
-      ],
-      <span class="hljs-attr">&quot;sortedHashes&quot;</span>: [
-        <span class="hljs-string">&quot;string (byte)&quot;</span>
+      <span class="hljs-attr">&quot;salt&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+      <span class="hljs-attr">&quot;hash&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+      <span class="hljs-attr">&quot;sorted_hashes&quot;</span>: [
+        <span class="hljs-string">&quot;string&quot;</span>
       ]
     }
   ]
@@ -3741,7 +3730,7 @@
                       <span class="json-property-name">field_proofs:</span>
                       <span class="json-property-type">
                         <span class="json-schema-ref-array">
-                          <a class="json-schema-ref" href="#/definitions/proofsProof">proofsProof</a>
+                          <a class="json-schema-ref" href="#/definitions/documentProof">documentProof</a>
                         </span>
                       </span>
                       <span class="json-property-range" title="Value limits"></span>
@@ -3750,7 +3739,7 @@
                       <section class="json-schema-array-items">
                         <span class="json-property-type">
                           <span class="">
-                            <a class="json-schema-ref" href="#/definitions/proofsProof">proofsProof</a>
+                            <a class="json-schema-ref" href="#/definitions/documentProof">documentProof</a>
                           </span>
                         </span>
                         <span class="json-property-range" title="Value limits"></span>
@@ -3773,18 +3762,78 @@
     {
       <span class="hljs-attr">&quot;property&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
       <span class="hljs-attr">&quot;value&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
-      <span class="hljs-attr">&quot;salt&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;hash&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;hashes&quot;</span>: [
-        {
-          <span class="hljs-attr">&quot;left&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-          <span class="hljs-attr">&quot;right&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
-        }
-      ],
-      <span class="hljs-attr">&quot;sortedHashes&quot;</span>: [
-        <span class="hljs-string">&quot;string (byte)&quot;</span>
+      <span class="hljs-attr">&quot;salt&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+      <span class="hljs-attr">&quot;hash&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+      <span class="hljs-attr">&quot;sorted_hashes&quot;</span>: [
+        <span class="hljs-string">&quot;string&quot;</span>
       ]
     }
+  ]
+}
+</code></pre>
+                  <!-- </div> -->
+                </section>
+              </div>
+            </div>
+          </div>
+          <div id="definition-documentProof" class="definition panel" data-traverse-target="definition-documentProof">
+            <h2 class="panel-title">
+              <a name="/definitions/documentProof"></a>documentProof: object
+              <!-- <span class="json-property-type"><span class="json-property-type">object</span>
+              <span class="json-property-range" title="Value limits"></span>
+              
+              
+              </span> -->
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <section class="json-schema-properties">
+                  <dl>
+                    <dt data-property-name="property">
+                      <span class="json-property-name">property:</span>
+                      <span class="json-property-type">string</span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
+                    <dt data-property-name="value">
+                      <span class="json-property-name">value:</span>
+                      <span class="json-property-type">string</span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
+                    <dt data-property-name="salt">
+                      <span class="json-property-name">salt:</span>
+                      <span class="json-property-type">string</span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
+                    <dt data-property-name="hash">
+                      <span class="json-property-name">hash:</span>
+                      <span class="json-property-type">string</span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
+                    <dt data-property-name="sorted_hashes">
+                      <span class="json-property-name">sorted_hashes:</span>
+                      <span class="json-property-type">string[]</span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
+                    <dt class="json-inner-schema">
+                      <section class="json-schema-array-items">
+                        <span class="json-property-type">string</span>
+                        <span class="json-property-range" title="Value limits"></span>
+                        <div class="json-inner-schema"> </div>
+                      </section>
+                    </dt>
+                  </dl>
+                </section>
+              </div>
+              <div class="doc-examples">
+                <section>
+                  <h5>Example</h5>
+                  <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
+  <span class="hljs-attr">&quot;property&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+  <span class="hljs-attr">&quot;value&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+  <span class="hljs-attr">&quot;salt&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+  <span class="hljs-attr">&quot;hash&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+  <span class="hljs-attr">&quot;sorted_hashes&quot;</span>: [
+    <span class="hljs-string">&quot;string&quot;</span>
   ]
 }
 </code></pre>
@@ -3831,142 +3880,6 @@
   <span class="hljs-attr">&quot;document_id&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
   <span class="hljs-attr">&quot;version_id&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
   <span class="hljs-attr">&quot;state&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>
-}
-</code></pre>
-                  <!-- </div> -->
-                </section>
-              </div>
-            </div>
-          </div>
-          <div id="definition-proofsMerkleHash" class="definition panel" data-traverse-target="definition-proofsMerkleHash">
-            <h2 class="panel-title">
-              <a name="/definitions/proofsMerkleHash"></a>proofsMerkleHash: object
-              <!-- <span class="json-property-type"><span class="json-property-type">object</span>
-              <span class="json-property-range" title="Value limits"></span>
-              
-              
-              </span> -->
-            </h2>
-            <div class="doc-row">
-              <div class="doc-copy">
-                <section class="json-schema-properties">
-                  <dl>
-                    <dt data-property-name="left">
-                      <span class="json-property-name">left:</span>
-                      <span class="json-property-type">string</span>
-                      <span class="json-property-format">(byte)</span>
-                      <span class="json-property-range" title="Value limits"></span>
-                    </dt>
-                    <dt data-property-name="right">
-                      <span class="json-property-name">right:</span>
-                      <span class="json-property-type">string</span>
-                      <span class="json-property-format">(byte)</span>
-                      <span class="json-property-range" title="Value limits"></span>
-                    </dt>
-                  </dl>
-                </section>
-              </div>
-              <div class="doc-examples">
-                <section>
-                  <h5>Example</h5>
-                  <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
-  <span class="hljs-attr">&quot;left&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-  <span class="hljs-attr">&quot;right&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
-}
-</code></pre>
-                  <!-- </div> -->
-                </section>
-              </div>
-            </div>
-          </div>
-          <div id="definition-proofsProof" class="definition panel" data-traverse-target="definition-proofsProof">
-            <h2 class="panel-title">
-              <a name="/definitions/proofsProof"></a>proofsProof: object
-              <!-- <span class="json-property-type"><span class="json-property-type">object</span>
-              <span class="json-property-range" title="Value limits"></span>
-              
-              
-              </span> -->
-            </h2>
-            <div class="doc-row">
-              <div class="doc-copy">
-                <section class="json-schema-properties">
-                  <dl>
-                    <dt data-property-name="property">
-                      <span class="json-property-name">property:</span>
-                      <span class="json-property-type">string</span>
-                      <span class="json-property-range" title="Value limits"></span>
-                    </dt>
-                    <dt data-property-name="value">
-                      <span class="json-property-name">value:</span>
-                      <span class="json-property-type">string</span>
-                      <span class="json-property-range" title="Value limits"></span>
-                    </dt>
-                    <dt data-property-name="salt">
-                      <span class="json-property-name">salt:</span>
-                      <span class="json-property-type">string</span>
-                      <span class="json-property-format">(byte)</span>
-                      <span class="json-property-range" title="Value limits"></span>
-                    </dt>
-                    <dt data-property-name="hash">
-                      <span class="json-property-name">hash:</span>
-                      <span class="json-property-type">string</span>
-                      <span class="json-property-format">(byte)</span>
-                      <span class="json-property-range" title="Value limits"></span>
-                    </dt>
-                    <dt data-property-name="hashes">
-                      <span class="json-property-name">hashes:</span>
-                      <span class="json-property-type">
-                        <span class="json-schema-ref-array">
-                          <a class="json-schema-ref" href="#/definitions/proofsMerkleHash">proofsMerkleHash</a>
-                        </span>
-                      </span>
-                      <span class="json-property-range" title="Value limits"></span>
-                    </dt>
-                    <dt class="json-inner-schema">
-                      <section class="json-schema-array-items">
-                        <span class="json-property-type">
-                          <span class="">
-                            <a class="json-schema-ref" href="#/definitions/proofsMerkleHash">proofsMerkleHash</a>
-                          </span>
-                        </span>
-                        <span class="json-property-range" title="Value limits"></span>
-                        <div class="json-inner-schema"> </div>
-                      </section>
-                    </dt>
-                    <dt data-property-name="sortedHashes">
-                      <span class="json-property-name">sortedHashes:</span>
-                      <span class="json-property-type">string[]</span>
-                      <span class="json-property-range" title="Value limits"></span>
-                    </dt>
-                    <dt class="json-inner-schema">
-                      <section class="json-schema-array-items">
-                        <span class="json-property-type">string</span>
-                        <span class="json-property-format">(byte)</span>
-                        <span class="json-property-range" title="Value limits"></span>
-                        <div class="json-inner-schema"> </div>
-                      </section>
-                    </dt>
-                  </dl>
-                </section>
-              </div>
-              <div class="doc-examples">
-                <section>
-                  <h5>Example</h5>
-                  <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
-  <span class="hljs-attr">&quot;property&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
-  <span class="hljs-attr">&quot;value&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
-  <span class="hljs-attr">&quot;salt&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-  <span class="hljs-attr">&quot;hash&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-  <span class="hljs-attr">&quot;hashes&quot;</span>: [
-    {
-      <span class="hljs-attr">&quot;left&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
-      <span class="hljs-attr">&quot;right&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
-    }
-  ],
-  <span class="hljs-attr">&quot;sortedHashes&quot;</span>: [
-    <span class="hljs-string">&quot;string (byte)&quot;</span>
-  ]
 }
 </code></pre>
                   <!-- </div> -->
@@ -5740,6 +5653,142 @@
       <span class="hljs-attr">&quot;extra_data&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
     }
   }
+}
+</code></pre>
+                  <!-- </div> -->
+                </section>
+              </div>
+            </div>
+          </div>
+          <div id="definition-proofsMerkleHash" class="definition panel" data-traverse-target="definition-proofsMerkleHash">
+            <h2 class="panel-title">
+              <a name="/definitions/proofsMerkleHash"></a>proofsMerkleHash: object
+              <!-- <span class="json-property-type"><span class="json-property-type">object</span>
+              <span class="json-property-range" title="Value limits"></span>
+              
+              
+              </span> -->
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <section class="json-schema-properties">
+                  <dl>
+                    <dt data-property-name="left">
+                      <span class="json-property-name">left:</span>
+                      <span class="json-property-type">string</span>
+                      <span class="json-property-format">(byte)</span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
+                    <dt data-property-name="right">
+                      <span class="json-property-name">right:</span>
+                      <span class="json-property-type">string</span>
+                      <span class="json-property-format">(byte)</span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
+                  </dl>
+                </section>
+              </div>
+              <div class="doc-examples">
+                <section>
+                  <h5>Example</h5>
+                  <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
+  <span class="hljs-attr">&quot;left&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+  <span class="hljs-attr">&quot;right&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
+}
+</code></pre>
+                  <!-- </div> -->
+                </section>
+              </div>
+            </div>
+          </div>
+          <div id="definition-proofsProof" class="definition panel" data-traverse-target="definition-proofsProof">
+            <h2 class="panel-title">
+              <a name="/definitions/proofsProof"></a>proofsProof: object
+              <!-- <span class="json-property-type"><span class="json-property-type">object</span>
+              <span class="json-property-range" title="Value limits"></span>
+              
+              
+              </span> -->
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <section class="json-schema-properties">
+                  <dl>
+                    <dt data-property-name="property">
+                      <span class="json-property-name">property:</span>
+                      <span class="json-property-type">string</span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
+                    <dt data-property-name="value">
+                      <span class="json-property-name">value:</span>
+                      <span class="json-property-type">string</span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
+                    <dt data-property-name="salt">
+                      <span class="json-property-name">salt:</span>
+                      <span class="json-property-type">string</span>
+                      <span class="json-property-format">(byte)</span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
+                    <dt data-property-name="hash">
+                      <span class="json-property-name">hash:</span>
+                      <span class="json-property-type">string</span>
+                      <span class="json-property-format">(byte)</span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
+                    <dt data-property-name="hashes">
+                      <span class="json-property-name">hashes:</span>
+                      <span class="json-property-type">
+                        <span class="json-schema-ref-array">
+                          <a class="json-schema-ref" href="#/definitions/proofsMerkleHash">proofsMerkleHash</a>
+                        </span>
+                      </span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
+                    <dt class="json-inner-schema">
+                      <section class="json-schema-array-items">
+                        <span class="json-property-type">
+                          <span class="">
+                            <a class="json-schema-ref" href="#/definitions/proofsMerkleHash">proofsMerkleHash</a>
+                          </span>
+                        </span>
+                        <span class="json-property-range" title="Value limits"></span>
+                        <div class="json-inner-schema"> </div>
+                      </section>
+                    </dt>
+                    <dt data-property-name="sortedHashes">
+                      <span class="json-property-name">sortedHashes:</span>
+                      <span class="json-property-type">string[]</span>
+                      <span class="json-property-range" title="Value limits"></span>
+                    </dt>
+                    <dt class="json-inner-schema">
+                      <section class="json-schema-array-items">
+                        <span class="json-property-type">string</span>
+                        <span class="json-property-format">(byte)</span>
+                        <span class="json-property-range" title="Value limits"></span>
+                        <div class="json-inner-schema"> </div>
+                      </section>
+                    </dt>
+                  </dl>
+                </section>
+              </div>
+              <div class="doc-examples">
+                <section>
+                  <h5>Example</h5>
+                  <!-- <div class="hljs"> --><pre><code class="hljs lang-json">{
+  <span class="hljs-attr">&quot;property&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+  <span class="hljs-attr">&quot;value&quot;</span>: <span class="hljs-string">&quot;string&quot;</span>,
+  <span class="hljs-attr">&quot;salt&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+  <span class="hljs-attr">&quot;hash&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+  <span class="hljs-attr">&quot;hashes&quot;</span>: [
+    {
+      <span class="hljs-attr">&quot;left&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>,
+      <span class="hljs-attr">&quot;right&quot;</span>: <span class="hljs-string">&quot;string (byte)&quot;</span>
+    }
+  ],
+  <span class="hljs-attr">&quot;sortedHashes&quot;</span>: [
+    <span class="hljs-string">&quot;string (byte)&quot;</span>
+  ]
 }
 </code></pre>
                   <!-- </div> -->
