@@ -224,7 +224,7 @@ func (dp defaultProcessor) Anchor(
 	return nil
 }
 
-// PrepareForSignatureRequests gets the core document from the model, and add the signature
+// PrepareForSignatureRequests gets the core document from the model, and adds the node's own signature
 func (dp defaultProcessor) PrepareForSignatureRequests(model documents.Model) error {
 	cd, err := model.PackCoreDocument()
 	if err != nil {
