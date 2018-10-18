@@ -74,7 +74,7 @@ func (m *MockCoreDocumentProcessor) Anchor(
 	ctx context.Context,
 	coreDocument *coredocumentpb.CoreDocument,
 	saveState func(*coredocumentpb.CoreDocument) error) (err error) {
-	args := m.Called(coreDocument)
+	args := m.Called(ctx, coreDocument, saveState)
 	if saveState != nil {
 		err := saveState(coreDocument)
 		if err != nil {

@@ -565,7 +565,7 @@ func TestService_Update_unknown_type(t *testing.T) {
 func TestService_Update(t *testing.T) {
 	srv := invService.(*service)
 	proc := &testingutils.MockCoreDocumentProcessor{}
-	proc.On("Anchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
+	proc.On("Anchor", mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 	proc.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 	srv.coreDocProcessor = proc
 	payload := testingdocuments.CreateInvoicePayload()

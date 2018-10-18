@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -54,8 +55,13 @@ func (i *mockID) CheckIdentityExists() (exists bool, err error) {
 
 func (i *mockID) FetchKey(key []byte) (Key, error) {
 	args := i.Called(key)
-	idKey, _ := args.Get(0).(Key)
-	return idKey, args.Error(1)
+	idKey := args.Get(0)
+	if idKey != nil {
+		if k, ok := idKey.(Key); ok {
+			return k, args.Error(1)
+		}
+	}
+	return nil, args.Error(1)
 }
 
 // mockIDService implements Service
@@ -63,15 +69,25 @@ type mockIDService struct {
 	mock.Mock
 }
 
+func (srv *mockIDService) GetIdentityAddress(centID CentID) (common.Address, error) {
+	args := srv.Called(centID)
+	id := args.Get(0).(common.Address)
+	return id, args.Error(1)
+}
+
 func (srv *mockIDService) LookupIdentityForID(centID CentID) (Identity, error) {
 	args := srv.Called(centID)
-	id, _ := args.Get(0).(Identity)
-	return id, args.Error(1)
+	id := args.Get(0)
+	if id != nil {
+		return id.(Identity), args.Error(1)
+	}
+	return nil, args.Error(1)
+
 }
 
 func (srv *mockIDService) CreateIdentity(centID CentID) (Identity, chan *WatchIdentity, error) {
 	args := srv.Called(centID)
-	id, _ := args.Get(0).(Identity)
+	id := args.Get(0).(Identity)
 	return id, args.Get(1).(chan *WatchIdentity), args.Error(2)
 }
 

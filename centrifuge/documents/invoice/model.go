@@ -264,6 +264,14 @@ func (i *InvoiceModel) getInvoiceSalts(invoiceData *invoicepb.InvoiceData) *invo
 	return i.InvoiceSalts
 }
 
+func (i *InvoiceModel) ID() ([]byte, error) {
+	coreDoc, err := i.PackCoreDocument()
+	if err != nil {
+		return []byte{}, err
+	}
+	return coreDoc.DocumentIdentifier, nil
+}
+
 // PackCoreDocument packs the InvoiceModel into a Core Document
 // If the, InvoiceModel is new, it creates a valid identifiers
 func (i *InvoiceModel) PackCoreDocument() (*coredocumentpb.CoreDocument, error) {

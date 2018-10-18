@@ -178,6 +178,7 @@ func (c *Configuration) GetIdentityID() ([]byte, error) {
 	if err != nil {
 		return nil, centerrors.Wrap(err, "can't read identityId from config")
 	}
+	// TODO return the CentID type here
 	return id, err
 }
 
