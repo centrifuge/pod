@@ -77,7 +77,7 @@ func (d *defaultClient) OpenClient(target string) (p2ppb.P2PServiceClient, error
 
 // getSignatureForDocument requests the target node to sign the document
 func getSignatureForDocument(ctx context.Context, doc coredocumentpb.CoreDocument, client p2ppb.P2PServiceClient, receiverCentId identity.CentID) (*p2ppb.SignatureResponse, error) {
-	senderId, err := config.Config.GetIdentityId()
+	senderId, err := config.Config.GetIdentityID()
 	if err != nil {
 		return nil, err
 	}

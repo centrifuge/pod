@@ -5,9 +5,8 @@ package invoice
 import (
 	"context"
 	"fmt"
-	"testing"
-
 	"strconv"
+	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/code"

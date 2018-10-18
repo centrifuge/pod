@@ -18,7 +18,8 @@ func TestCentP2PServer_Start(t *testing.T) {
 }
 
 func TestCentP2PServer_StartContextCancel(t *testing.T) {
-	priv, pub := getKeys()
+	priv, pub, err := getKeys()
+	assert.Nil(t, err)
 	cp2p := NewCentP2PServer(38203, []string{}, pub, priv)
 	ctx, canc := context.WithCancel(context.Background())
 	startErr := make(chan error)
@@ -35,20 +36,23 @@ func TestCentP2PServer_StartContextCancel(t *testing.T) {
 
 func TestCentP2PServer_StartListenError(t *testing.T) {
 	// cause an error by using an invalid port
-	priv, pub := getKeys()
+	priv, pub, err := getKeys()
+	assert.Nil(t, err)
 	cp2p := NewCentP2PServer(100000000, []string{}, pub, priv)
 	ctx, _ := context.WithCancel(context.Background())
 	startErr := make(chan error)
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go cp2p.Start(ctx, &wg, startErr)
-	err := <-startErr
+	err = <-startErr
 	wg.Wait()
 	assert.NotNil(t, err, "Error should be not nil")
 	assert.Equal(t, "failed to parse tcp: 100000000 failed to parse port addr: greater than 65536", err.Error())
 }
 
-func getKeys() (ed25519.PrivateKey, ed25519.PublicKey) {
-	return ed25519keys.GetPrivateSigningKey("../../example/resources/signingKey.key.pem"),
-		ed25519keys.GetPublicSigningKey("../../example/resources/signingKey.pub.pem")
+func getKeys() (ed25519.PrivateKey, ed25519.PublicKey, error) {
+	pub, err := ed25519keys.GetPublicSigningKey("../../example/resources/signingKey.pub.pem")
+	pri, err := ed25519keys.GetPrivateSigningKey("../../example/resources/signingKey.key.pem")
+	return pri, pub, err
+
 }
