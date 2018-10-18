@@ -380,7 +380,7 @@ func (ids *EthereumIdentityService) GetIdentityAddress(centID CentID) (common.Ad
 		return common.Address{}, err
 	}
 
-	if address.String() == "0x00000000" {
+	if address.Hex() == "0x00000000" {
 		return common.Address{}, errors.New("No address found for centID")
 	}
 	return address, nil
