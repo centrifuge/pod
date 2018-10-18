@@ -1,6 +1,8 @@
 package testingdocuments
 
 import (
+	"testing"
+
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
@@ -9,7 +11,6 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func CreatePOData() purchaseorderpb.PurchaseOrderData {
@@ -19,7 +20,7 @@ func CreatePOData() purchaseorderpb.PurchaseOrderData {
 	}
 }
 
-func CreateCDWithEmbeddedPO(t *testing.T,  poData purchaseorderpb.PurchaseOrderData) *coredocumentpb.CoreDocument {
+func CreateCDWithEmbeddedPO(t *testing.T, poData purchaseorderpb.PurchaseOrderData) *coredocumentpb.CoreDocument {
 	identifier := []byte("1")
 	poSalt := purchaseorderpb.PurchaseOrderDataSalts{}
 
@@ -44,4 +45,3 @@ func CreateCDWithEmbeddedPO(t *testing.T,  poData purchaseorderpb.PurchaseOrderD
 	}
 	return coreDocument
 }
-

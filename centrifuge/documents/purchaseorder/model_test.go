@@ -1,8 +1,9 @@
 package purchaseorder
 
 import (
-	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/golang/protobuf/ptypes/any"
