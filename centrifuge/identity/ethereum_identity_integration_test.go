@@ -84,8 +84,8 @@ func TestAddKeyFromConfig(t *testing.T) {
 	centrifugeId, _ := identity.ToCentID(tools.RandomSlice(identity.CentIDLength))
 	defaultCentrifugeId := config.Config.V.GetString("identityId")
 	config.Config.V.Set("identityId", centrifugeId.String())
-	//config.Config.V.Set("keys.ethauth.publicKey", "../../example/resources/ethauth.pub.pem")
-	//config.Config.V.Set("keys.ethauth.privateKey", "../../example/resources/ethauth.key.pem")
+	config.Config.V.Set("keys.ethauth.publicKey", "../../example/resources/ethauth.pub.pem")
+	config.Config.V.Set("keys.ethauth.privateKey", "../../example/resources/ethauth.key.pem")
 	_, confirmations, err := identityService.CreateIdentity(centrifugeId)
 	assert.Nil(t, err, "should not error out when creating identity")
 

@@ -7,6 +7,7 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/nft"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
@@ -17,7 +18,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 )
 
 func TestCreateProofData(t *testing.T) {
