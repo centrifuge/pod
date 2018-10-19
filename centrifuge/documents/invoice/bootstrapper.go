@@ -2,6 +2,7 @@ package invoice
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/centrifuge/anchors"
@@ -21,14 +22,15 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		return errors.New("initializing LevelDB repository failed")
 	}
 
+	// load legacy db
 	InitLegacyRepository(storage.GetLevelDBStorage())
-	return registerInvoiceService()
-}
 
-func registerInvoiceService() error {
-	// TODO coredocument processor and IDService usage here looks shitty(unnecessary dependency), needs to change soon
-	invoiceService := DefaultService(
-		getRepository(),
-		coredocumentprocessor.DefaultProcessor(identity.IDService, p2p.NewP2PClient(), anchors.GetAnchorRepository()))
-	return documents.GetRegistryInstance().Register(documenttypes.InvoiceDataTypeUrl, invoiceService)
+	// register service
+	srv := DefaultService(getRepository(), coredocumentprocessor.DefaultProcessor(identity.IDService, p2p.NewP2PClient(), anchors.GetAnchorRepository()))
+	err := documents.GetRegistryInstance().Register(documenttypes.InvoiceDataTypeUrl, srv)
+	if err != nil {
+		return fmt.Errorf("failed to register invoice service: %v", err)
+	}
+
+	return nil
 }

@@ -92,3 +92,9 @@ func TestRepository(t *testing.T) {
 	assert.Nil(t, repo.LoadByID(id, getDoc), "get must pass")
 	assert.Equal(t, getDoc.GrossAmount, doc.GrossAmount, "amount must match")
 }
+
+func TestRepository_getRepository(t *testing.T) {
+	r := getRepository()
+	assert.NotNil(t, r)
+	assert.Equal(t, "invoice", r.(*repository).KeyPrefix)
+}

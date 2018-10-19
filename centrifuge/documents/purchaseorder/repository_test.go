@@ -11,7 +11,7 @@ import (
 )
 
 func TestRepository(t *testing.T) {
-	repo := GetRepository()
+	repo := GetLegacyRepository()
 
 	// failed validation for create
 	doc := &purchaseorderpb.PurchaseOrderDocument{
@@ -54,4 +54,10 @@ func TestRepository(t *testing.T) {
 	assert.Nil(t, err, "update must pass")
 	assert.Nil(t, repo.GetByID(docID, getDoc), "get must pass")
 	assert.Equal(t, getDoc.Data.OrderAmount, doc.Data.OrderAmount, "amount must match")
+}
+
+func TestRepository_getRepository(t *testing.T) {
+	r := getRepository()
+	assert.NotNil(t, r)
+	assert.Equal(t, "purchaseorder", r.(*repository).KeyPrefix)
 }
