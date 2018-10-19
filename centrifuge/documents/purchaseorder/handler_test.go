@@ -88,7 +88,7 @@ func TestPurchaseOrderDocumentService_Anchor(t *testing.T) {
 
 	mockRepo.On("Create", doc.Document.CoreDocument.DocumentIdentifier, doc.Document).Return(nil).Once()
 	mockRepo.On("Update", mock.Anything, mock.Anything).Return(nil).Once()
-	mockCDP.On("Anchor", mock.Anything).Return(nil).Once()
+	mockCDP.On("Anchor", mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 
 	anchoredDoc, err := s.AnchorPurchaseOrderDocument(context.Background(), &legacy.AnchorPurchaseOrderEnvelope{Document: doc.Document})
 
@@ -102,7 +102,7 @@ func TestPurchaseOrderDocumentService_AnchorFails(t *testing.T) {
 	doc, s, mockRepo, mockCDP := getTestSetupData()
 
 	mockRepo.On("Create", doc.Document.CoreDocument.DocumentIdentifier, doc.Document).Return(nil).Once()
-	mockCDP.On("Anchor", mock.Anything).Return(errors.New("error anchoring")).Once()
+	mockCDP.On("Anchor", mock.Anything, mock.Anything, mock.Anything).Return(errors.New("error anchoring")).Once()
 
 	anchoredDoc, err := s.AnchorPurchaseOrderDocument(context.Background(), &legacy.AnchorPurchaseOrderEnvelope{Document: doc.Document})
 
@@ -131,7 +131,7 @@ func TestPurchaseOrderDocumentService_Send(t *testing.T) {
 	mockRepo.On("Create", doc.Document.CoreDocument.DocumentIdentifier, doc.Document).Return(nil).Once()
 	mockRepo.On("Update", mock.Anything, mock.Anything).Return(nil).Once()
 	mockCDP.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
-	mockCDP.On("Anchor", mock.Anything).Return(nil).Once()
+	mockCDP.On("Anchor", mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 
 	_, err := s.SendPurchaseOrderDocument(context.Background(), &legacy.SendPurchaseOrderEnvelope{Recipients: recipients, Document: doc.Document})
 
@@ -157,7 +157,7 @@ func TestPurchaseOrderDocumentService_Send_AnchorFails(t *testing.T) {
 	recipients := testingutils.GenerateP2PRecipients(2)
 
 	mockRepo.On("Create", doc.Document.CoreDocument.DocumentIdentifier, doc.Document).Return(nil).Once()
-	mockCDP.On("Anchor", mock.Anything).Return(errors.New("error anchoring")).Once()
+	mockCDP.On("Anchor", mock.Anything, mock.Anything, mock.Anything).Return(errors.New("error anchoring")).Once()
 
 	_, err := s.SendPurchaseOrderDocument(context.Background(), &legacy.SendPurchaseOrderEnvelope{Recipients: recipients, Document: doc.Document})
 
@@ -174,7 +174,7 @@ func TestPurchaseOrderDocumentService_SendFails(t *testing.T) {
 
 	mockRepo.On("Create", doc.Document.CoreDocument.DocumentIdentifier, doc.Document).Return(nil).Once()
 	mockRepo.On("Update", mock.Anything, mock.Anything).Return(nil).Once()
-	mockCDP.On("Anchor", mock.Anything).Return(nil).Once()
+	mockCDP.On("Anchor", mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 	mockCDP.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(errors.New("error sending")).Twice()
 
 	_, err := s.SendPurchaseOrderDocument(context.Background(), &legacy.SendPurchaseOrderEnvelope{Recipients: recipients, Document: doc.Document})

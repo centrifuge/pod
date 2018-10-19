@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/centrifuge/go-centrifuge/centrifuge/anchors"
+
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/processor"
@@ -25,7 +27,7 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	InitLegacyLevelDBRepository(storage.GetLevelDBStorage())
 
 	// register service
-	srv := DefaultService(getRepository(), coredocumentprocessor.DefaultProcessor(identity.IDService, p2p.NewP2PClient()))
+	srv := DefaultService(getRepository(), coredocumentprocessor.DefaultProcessor(identity.IDService, p2p.NewP2PClient(), anchors.GetAnchorRepository()))
 	err := documents.GetRegistryInstance().Register(documenttypes.PurchaseOrderDataTypeUrl, srv)
 	if err != nil {
 		return fmt.Errorf("failed to register purchase order service")

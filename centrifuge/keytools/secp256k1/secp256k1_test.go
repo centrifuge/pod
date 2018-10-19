@@ -4,10 +4,11 @@ package secp256k1
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
-	"os"
-
+	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 )
@@ -15,6 +16,10 @@ import (
 const MaxMsgLen = 32
 
 func TestMain(m *testing.M) {
+	ibootstappers := []bootstrap.TestBootstrapper{
+		&config.Bootstrapper{},
+	}
+	bootstrap.RunTestBootstrappers(ibootstappers)
 	result := m.Run()
 	os.Exit(result)
 }
@@ -193,4 +198,62 @@ func TestGetAddress(t *testing.T) {
 
 	address := GetAddress(publicKey)
 	assert.Equal(t, address, correctAddress, "address is not correctly calculated from public key")
+}
+
+func TestGetEthAuthKeyFromConfig(t *testing.T) {
+	pub := config.Config.V.Get("keys.ethauth.publicKey")
+	pri := config.Config.V.Get("keys.ethauth.privateKey")
+
+	// bad public key path
+	config.Config.V.Set("keys.ethauth.publicKey", "bad path")
+	pubK, priK, err := GetEthAuthKeyFromConfig()
+	assert.Error(t, err)
+	assert.Nil(t, priK)
+	assert.Nil(t, pubK)
+	assert.Contains(t, err.Error(), "failed to read public key")
+	config.Config.V.Set("keys.ethauth.publicKey", pub)
+
+	// bad private key path
+	config.Config.V.Set("keys.ethauth.privateKey", "bad path")
+	pubK, priK, err = GetEthAuthKeyFromConfig()
+	assert.Error(t, err)
+	assert.Nil(t, priK)
+	assert.Nil(t, pubK)
+	assert.Contains(t, err.Error(), "failed to read private key")
+	config.Config.V.Set("keys.ethauth.privateKey", pri)
+
+	// success
+	pubK, priK, err = GetEthAuthKeyFromConfig()
+	assert.Nil(t, err)
+	assert.NotNil(t, pubK)
+	assert.NotNil(t, priK)
+}
+
+func TestGetIDConfig(t *testing.T) {
+	pub := config.Config.V.Get("keys.ethauth.publicKey")
+
+	// failed keys
+	config.Config.V.Set("keys.ethauth.publicKey", "bad path")
+	id, err := GetIDConfig()
+	assert.Error(t, err)
+	assert.Nil(t, id)
+	assert.Contains(t, err.Error(), "failed to get eth keys")
+	config.Config.V.Set("keys.ethauth.publicKey", pub)
+
+	// failed identity
+	gID := config.Config.V.Get("identityId")
+	config.Config.V.Set("identityId", "bad id")
+	id, err = GetIDConfig()
+	assert.Error(t, err)
+	assert.Nil(t, id)
+	assert.Contains(t, err.Error(), "can't read identityId from config")
+	config.Config.V.Set("identityId", gID)
+
+	// success
+	id, err = GetIDConfig()
+	assert.Nil(t, err)
+	assert.NotNil(t, id)
+	nID, err := config.Config.GetIdentityID()
+	assert.Nil(t, err)
+	assert.Equal(t, id.ID, nID)
 }

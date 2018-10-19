@@ -172,12 +172,13 @@ func (c *Configuration) GetNetworkID() uint32 {
 	return uint32(c.V.GetInt(c.GetNetworkKey("id")))
 }
 
-// Identity:
-func (c *Configuration) GetIdentityId() ([]byte, error) {
+// GetIdentityID returns the self centID
+func (c *Configuration) GetIdentityID() ([]byte, error) {
 	id, err := hexutil.Decode(c.V.GetString("identityId"))
 	if err != nil {
 		return nil, centerrors.Wrap(err, "can't read identityId from config")
 	}
+	// TODO return the CentID type here
 	return id, err
 }
 

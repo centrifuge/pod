@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
+	"github.com/centrifuge/go-centrifuge/centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/processor"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
@@ -28,6 +29,6 @@ func registerInvoiceService() error {
 	// TODO coredocument processor and IDService usage here looks shitty(unnecessary dependency), needs to change soon
 	invoiceService := DefaultService(
 		getRepository(),
-		coredocumentprocessor.DefaultProcessor(identity.IDService, p2p.NewP2PClient()))
+		coredocumentprocessor.DefaultProcessor(identity.IDService, p2p.NewP2PClient(), anchors.GetAnchorRepository()))
 	return documents.GetRegistryInstance().Register(documenttypes.InvoiceDataTypeUrl, invoiceService)
 }

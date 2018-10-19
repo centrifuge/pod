@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -17,16 +18,25 @@ type MockIDService struct {
 	mock.Mock
 }
 
+func (srv *MockIDService) GetIdentityAddress(centID identity.CentID) (common.Address, error) {
+	args := srv.Called(centID)
+	addr := args.Get(0).(common.Address)
+	return addr, args.Error(1)
+}
+
 func (srv *MockIDService) LookupIdentityForID(centID identity.CentID) (identity.Identity, error) {
 	args := srv.Called(centID)
-	id, _ := args.Get(0).(identity.Identity)
-	return id, args.Error(1)
+	if id, ok := args.Get(0).(identity.Identity); ok {
+		return id, args.Error(1)
+	}
+	return nil, args.Error(1)
 }
 
 func (srv *MockIDService) CreateIdentity(centID identity.CentID) (identity.Identity, chan *identity.WatchIdentity, error) {
 	args := srv.Called(centID)
 	id, _ := args.Get(0).(identity.Identity)
-	return id, args.Get(1).(chan *identity.WatchIdentity), args.Error(2)
+	watch, _ := args.Get(1).(chan *identity.WatchIdentity)
+	return id, watch, args.Error(2)
 }
 
 func (srv *MockIDService) CheckIdentityExists(centID identity.CentID) (exists bool, err error) {
