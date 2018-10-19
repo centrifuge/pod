@@ -5,6 +5,8 @@ package documents_test
 import (
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
+
 	cd "github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
@@ -23,7 +25,7 @@ func TestRegistry_Register_LocateService_successful(t *testing.T) {
 
 	registry := documents.GetRegistryInstance()
 
-	a := &documents.MockService{}
+	a := &testingdocuments.MockService{}
 
 	coreDocument := testingutils.GenerateCoreDocument()
 	documentType, err := cd.GetTypeURL(coreDocument)
@@ -44,7 +46,7 @@ func TestRegistry_Register_invalidId(t *testing.T) {
 
 	registry := documents.GetRegistryInstance()
 
-	a := &documents.MockService{}
+	a := &testingdocuments.MockService{}
 
 	coreDocument := testingutils.GenerateCoreDocument()
 	coreDocument.EmbeddedData.TypeUrl = "testID_1"

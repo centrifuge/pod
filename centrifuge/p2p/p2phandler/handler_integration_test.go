@@ -4,11 +4,9 @@ package p2phandler_test
 
 import (
 	"context"
-	"testing"
-
-	"os"
-
 	"math/big"
+	"os"
+	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
@@ -30,9 +28,7 @@ import (
 	"golang.org/x/crypto/ed25519"
 )
 
-var (
-	handler = p2phandler.Handler{Notifier: &notification.WebhookSender{}}
-)
+var handler = p2phandler.Handler{Notifier: &notification.WebhookSender{}}
 
 func TestMain(m *testing.M) {
 	cc.DONT_USE_FOR_UNIT_TESTS_TestFunctionalEthereumBootstrap()

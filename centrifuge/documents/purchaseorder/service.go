@@ -16,7 +16,7 @@ import (
 	clientpopb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
 )
 
-// Service defines specific functions for invoice
+// Service defines specific functions for purchase order
 type Service interface {
 	documents.Service
 

@@ -5,9 +5,8 @@ package invoice
 import (
 	"context"
 	"fmt"
-	"testing"
-
 	"strconv"
+	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/code"
@@ -566,7 +565,7 @@ func TestService_Update_unknown_type(t *testing.T) {
 func TestService_Update(t *testing.T) {
 	srv := invService.(service)
 	proc := &testingutils.MockCoreDocumentProcessor{}
-	proc.On("Anchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
+	proc.On("Anchor", mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 	proc.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 	srv.coreDocProcessor = proc
 	payload := testingdocuments.CreateInvoicePayload()

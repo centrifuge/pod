@@ -64,6 +64,14 @@ type PurchaseOrderModel struct {
 	CoreDocument      *coredocumentpb.CoreDocument
 }
 
+func (p *PurchaseOrderModel) ID() ([]byte, error) {
+	coreDoc, err := p.PackCoreDocument()
+	if err != nil {
+		return []byte{}, err
+	}
+	return coreDoc.DocumentIdentifier, nil
+}
+
 // getClientData returns the client data from the purchaseOrder model
 
 func (p *PurchaseOrderModel) getClientData() *clientpurchaseorderpb.PurchaseOrderData {

@@ -58,7 +58,7 @@ func generateEmptyPurchaseOrderForProcessing() (doc *purchaseorder.PurchaseOrder
 
 func TestPurchaseOrderDocumentService_HandleAnchorPurchaseOrderDocument_Integration(t *testing.T) {
 	p2pClient := testingcommons.NewMockP2PWrapperClient()
-	s := purchaseorder.LegacyGRPCHandler(purchaseorder.GetLegacyRepository(), coredocumentprocessor.DefaultProcessor(identity.IDService, p2pClient))
+	s := purchaseorder.LegacyGRPCHandler(purchaseorder.GetLegacyRepository(), coredocumentprocessor.DefaultProcessor(identity.IDService, p2pClient, nil))
 	p2pClient.On("GetSignaturesForDocument", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	doc := generateEmptyPurchaseOrderForProcessing()
 	doc.Document.Data = &purchaseorderpb.PurchaseOrderData{
@@ -81,7 +81,7 @@ func TestPurchaseOrderDocumentService_HandleAnchorPurchaseOrderDocument_Integrat
 //func TestPurchaseOrderDocumentService_HandleSendPurchaseOrderDocument_Integration(t *testing.T) {
 //	p2pClient := testingcommons.NewMockP2PWrapperClient()
 //	s := purchaseorderservice.PurchaseOrderDocumentService{
-//		Repository:            purchaseorderrepository.GetLegacyRepository(),
+//		Repository:            purchaseorderrepository.GetRepository(),
 //		CoreDocumentProcessor: coredocumentprocessor.DefaultProcessor(identity.NewEthereumIdentityService(), p2pClient),
 //	}
 //	p2pClient.On("GetSignaturesForDocument", mock.Anything, mock.Anything, mock.Anything).Return(nil)

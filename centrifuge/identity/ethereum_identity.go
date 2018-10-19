@@ -11,6 +11,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/go-errors/errors"
 	logging "github.com/ipfs/go-log"
@@ -369,6 +370,20 @@ func (ids *EthereumIdentityService) CreateIdentity(centrifugeID CentID) (id Iden
 		return nil, confirmations, wError
 	}
 	return id, confirmations, nil
+}
+
+// GetIdentityAddress gets the address of the ethereum identity contract for the given CentID
+func (ids *EthereumIdentityService) GetIdentityAddress(centID CentID) (common.Address, error) {
+	opts := ethereum.GetGethCallOpts()
+	address, err := ids.registryContract.GetIdentityByCentrifugeId(opts, centID.BigInt())
+	if err != nil {
+		return common.Address{}, err
+	}
+
+	if tools.IsEmptyAddress(address) {
+		return common.Address{}, errors.New("No address found for centID")
+	}
+	return address, nil
 }
 
 // LookupIdentityForID looks up if the identity for given CentID exists on ethereum

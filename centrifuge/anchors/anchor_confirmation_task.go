@@ -146,7 +146,7 @@ func (act *AnchoringConfirmationTask) RunTask() (interface{}, error) {
 		iter, err := act.AnchorCommittedFilterer.FilterAnchorCommitted(
 			fOpts,
 			[]common.Address{act.From},
-			[]*big.Int{act.AnchorID.toBigInt()},
+			[]*big.Int{act.AnchorID.BigInt()},
 			[]*big.Int{act.CentrifugeID.BigInt()},
 		)
 		if err != nil {
@@ -155,7 +155,7 @@ func (act *AnchoringConfirmationTask) RunTask() (interface{}, error) {
 
 		err = utils.LookForEvent(iter)
 		if err == nil {
-			log.Infof("Received filtered event Anchor Confirmation for AnchorID [%x] and CentrifugeId [%s]\n", act.AnchorID.toBigInt(), act.CentrifugeID.String())
+			log.Infof("Received filtered event Anchor Confirmation for AnchorID [%x] and CentrifugeId [%s]\n", act.AnchorID.BigInt(), act.CentrifugeID.String())
 			return iter.Event, nil
 		}
 
