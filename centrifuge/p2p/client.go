@@ -9,6 +9,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/centrifuge/version"
@@ -138,8 +139,13 @@ func (d *defaultClient) GetSignaturesForDocument(ctx context.Context, doc *cored
 	in := make(chan signatureResponseWrap)
 	defer close(in)
 
+	extCollaborators, err := coredocument.GetExternalCollaborators(doc)
+	if err != nil {
+		return centerrors.Wrap(err, "failed to get external collaborators")
+	}
+
 	var count int
-	for _, collaborator := range doc.Collaborators {
+	for _, collaborator := range extCollaborators {
 		collaboratorID, err := identity.ToCentID(collaborator)
 		if err != nil {
 			return centerrors.Wrap(err, "failed to convert to CentID")

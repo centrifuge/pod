@@ -178,7 +178,11 @@ func (s service) validateAndPersist(ctx context.Context, old, new documents.Mode
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
 
-	for _, id := range coreDoc.Collaborators {
+	extCollaborators, err := coredocument.GetExternalCollaborators(coreDoc)
+	if err != nil {
+		return nil, centerrors.New(code.Unknown, err.Error())
+	}
+	for _, id := range extCollaborators {
 		cid, err := identity.ToCentID(id)
 		if err != nil {
 			return nil, centerrors.New(code.Unknown, err.Error())
