@@ -1,6 +1,12 @@
-# Centrifuge OS Client
+# Centrifuge OS go client
 
 [![Build Status](https://travis-ci.com/centrifuge/go-centrifuge.svg?token=Sbf68xBZUZLMB3kGTKcX&branch=master)](https://travis-ci.com/centrifuge/go-centrifuge)
+
+`go-centrifuge` is the go implementation of the Centrifuge OS interacting with the peer to peer network and our Ethereum smart contracts. 
+
+**Getting help:** Head over to our developer documentation at [developer.centrifuge.io](http://developer.centrifuge.io) to learn how to setup a node and interact with it. If you have any questions, feel free to join our [slack channel](https://join.slack.com/t/centrifuge-io/shared_invite/enQtNDYwMzQ5ODA3ODc0LTU4ZjU0NDNkOTNhMmUwNjI2NmQ2MjRiNzA4MGIwYWViNTkxYzljODU2OTk4NzM4MjhlOTNjMDAwNWZkNzY2YWY) 
+
+**DISCLAIMER:** The code released here presents a very early alpha version that should not be used in production and has not been audited. Use this at your own risk.
 
 ## Table of Contents
 - [Installing pre-requisites](#installing-pre-requisites)
@@ -8,23 +14,21 @@
     - [Install Docker Compose](#install-docker-compose)
  - [Mac](#mac)
     - [Install Docker Compose](#install-docker-compose-1)
+- [Build](#build)
 - [Install](#install)
 - [Running Tests](#running-tests)
  - [Troubleshooting functional test setup](#troubleshooting-functional-test-setup)
  - [Running tests continuously while developing](#running-tests-continuously-while-developing)
-- [Build](#build)
 - [Run a Geth node locally or Rinkeby environments](#run-a-geth-node-locally-or-rinkeby-environments)
     - [Run as local node with mining enabled](#run-as-local-node-with-mining-enabled)
     - [Run local peer connected to Rinkeby](#run-local-peer-connected-to-rinkeby)
     - [Checking on your local geth node](#checking-on-your-local-geth-node)
     - [Attaching to your local geth node](#attaching-to-your-local-geth-node)
 - [Run Integration Tests against Local/Integration/Rinkeby Environments](#run-integration-tests-against-localintegrationrinkeby-environments)
- - [Configure local mining   run integration/functional tests](#configure-local-mining--run-integrationfunctional-tests)
- - [Configure node to point to integration   run integration/functional tests](#configure-node-to-point-to-integration--run-integrationfunctional-tests)
- - [Configure node to point to rinkeby   run integration/functional tests](#configure-node-to-point-to-rinkeby--run-integrationfunctional-tests)
- - [Configure node to point to infura-rinkeby   run integration/functional tests](#configure-node-to-point-to-infura-rinkeby--run-integrationfunctional-tests)
-- [Why you should test with a "real" Ethereum](#why-you-should-test-with-a-real-ethereum)
-- [Run very simple local ethscan](#run-very-simple-local-ethscan)
+ - [Configure local mining run integration/functional tests](#configure-local-mining--run-integrationfunctional-tests)
+ - [Configure node to point to integration run integration/functional tests](#configure-node-to-point-to-integration--run-integrationfunctional-tests)
+ - [Configure node to point to rinkeby run integration/functional tests](#configure-node-to-point-to-rinkeby--run-integrationfunctional-tests)
+ - [Configure node to point to infura-rinkeby run integration/functional tests](#configure-node-to-point-to-infura-rinkeby--run-integrationfunctional-tests)
 - [Ethereum Contract Bindings](#ethereum-contract-bindings)
 - [Protobufs bindings](#protobufs-bindings)
 
@@ -41,6 +45,7 @@ npm install -g truffle@4.0.4
 # install Dep
 curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
 ```
+
 #### Install Docker Compose
 ```bash
 # Run this command to download the latest version of Docker Compose
@@ -49,6 +54,7 @@ sudo curl -L https://github.com/docker/compose/releases/download/1.22.0/docker-c
 # Apply executable permissions to the binary
 sudo chmod +x /usr/local/bin/docker-compose
 ```
+
 ### Mac
 ```bash
 # install jq
@@ -64,8 +70,15 @@ curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
 Make sure you have docker-compose installed, usually comes bundled with Mac OS Docker. Otherwise: https://docs.docker.com/compose/install/
 
 
-## Install
+## Build
 
+Build & install the Centrifuge OS Node
+```bash
+cd $GOPATH/src/github.com/centrifuge/go-centrifuge
+make install
+```
+
+## Install
 ```bash
 mkdir -p $GOPATH/src/github.com/centrifuge/go-centrifuge/
 git clone git@github.com:centrifuge/go-centrifuge.git $GOPATH/src/github.com/centrifuge/go-centrifuge
@@ -84,26 +97,7 @@ docker logs geth-node -f
 ./scripts/tests/run_unit_tests.sh
 ./scripts/tests/run_integration_tests.sh
 ```
-
-To check on the DAG generation progress (will take about 30-45 minutes):
-```
-docker logs geth-node -f
-[...]
-INFO [07-27|22:03:25] Generating DAG in progress               epoch=1 percentage=50 elapsed=7m40.893s
-INFO [07-27|22:03:35] Generating DAG in progress               epoch=1 percentage=51 elapsed=7m51.045s
-[...]
-INFO [07-27|22:19:37] Generating DAG in progress               epoch=0 percentage=98 elapsed=6m35.368s
-INFO [07-27|22:19:40] Generating DAG in progress               epoch=0 percentage=99 elapsed=6m38.744s
-INFO [07-27|22:19:40] Generated ethash verification cache      epoch=0 elapsed=6m38.750s
-INFO [07-27|22:19:44] Generating ethash verification cache     epoch=1 percentage=93 elapsed=3.020s
-INFO [07-27|22:19:44] Generated ethash verification cache      epoch=1 elapsed=3.352s
-INFO [07-27|22:19:51] Generating DAG in progress               epoch=1 percentage=0  elapsed=7.177s
-INFO [07-27|22:19:58] Successfully sealed new block            number=1 hash=b5a50a…d9d2e9
-INFO [07-27|22:19:58] 🔨 mined potential block                  number=1 hash=b5a50a…d9d2e9
-INFO [07-27|22:19:58] Commit new mining work                   number=2 txs=0 uncles=0 elapsed=985.5µs
-```
-
-When you see `Commit new mining work` for the first time, then it is time to run the functional tests.
+The DAG generation progress will take up to 45 minutes. When you see `Commit new mining work` for the first time, the sync is done.
 
 ## Running Tests
 
@@ -141,7 +135,6 @@ Then run the whole test-suite with
 ./scripts/test_wrapper.sh
 ```
 
-
 ### Troubleshooting functional test setup
 
 One of the most-likely issues during your first run of the `./scripts/test_wrapper.sh` will be that your geth node has not yet synced (if run against rinkeby) or finished building the DAG (if running locally).
@@ -165,15 +158,6 @@ reflex -R '(^|/)vendor/|(^|/)\\.idea/' -- go test ./centrifuge/... -tags=unit
 Or run for specific tests only:
 ```bash
 reflex -R '(^|/)vendor/|(^|/)\\.idea/' -- go test ./centrifuge/invoice/... -tags=unit
-```
-
-
-## Build
-
-Build & install the Centrifuge OS Node
-```bash
-cd $GOPATH/src/github.com/centrifuge/go-centrifuge
-make install
 ```
 
 
@@ -268,26 +252,6 @@ geth attach ws://localhost:9546
   - Run tests:
     - To run only integration tests:
       - CENT_ETHEREUM_TXPOOLACCESSENABLED=false CENT_ETHEREUM_NODEURL='wss://rinkeby.infura.io/ws/MtCWERMbJtnqPKI8co84' CENT_CENTRIFUGENETWORK='centrifugeRussianhillEthRinkeby' TEST_TARGET_ENVIRONMENT='rinkeby' CENT_ETHEREUM_ACCOUNTS_MAIN_KEY='$JSON_KEY' CENT_ETHEREUM_ACCOUNTS_MAIN_PASSWORD="$PASS" CENT_ETHEREUM_ACCOUNTS_MAIN_ADDRESS="$ADDR" ./scripts/tests/run_integration_tests.sh
-
-
-## Why you should test with a "real" Ethereum
-
-Why you should not run `testrpc` for testing with go-ethereum clients:
-- Transaction IDs are randomly generated and you can not rely on finding your own transactions based on the .Hash() function.
-    - https://github.com/trufflesuite/ganache-cli/issues/387
-- It is not possible to send more than one transaction per testrpc start as testrpc returns the pending transaction count erroneously with leading 0s - this freaks out the hex decoding and it breaks. Essentially testrpc returns for a transaction count of 1 `0x01` whereas _real_ geth returns `0x1`
-
-Save yourself some hassle and use a local geth node or rinkeby
-
-
-## Run very simple local ethscan
-
-Follow instructions here: https://github.com/carsenk/explorer
-
-Will need to modify `scripts/test-dependencies/test-ethereum/run.sh` to add cors flag
-
-**Note that is a pretty simple version but can list blocks and transactions**
-
 
 ## Ethereum Contract Bindings
 
