@@ -65,9 +65,6 @@ type repository struct {
 	documents.LevelDBRepository
 }
 
-// repo is the singleton instance of the repository
-var repo *repository
-
 // getRepository returns the implemented documents.legacyRepo for invoices
 func getRepository() documents.Repository {
 	return &repository{
