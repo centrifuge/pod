@@ -1,4 +1,4 @@
-# Centrifuge OS go client
+# Centrifuge OS node 
 
 [![Build Status](https://travis-ci.com/centrifuge/go-centrifuge.svg?token=Sbf68xBZUZLMB3kGTKcX&branch=master)](https://travis-ci.com/centrifuge/go-centrifuge)
 
