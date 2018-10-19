@@ -58,11 +58,12 @@ type service struct {
 	repo             documents.Repository
 	coreDocProcessor coredocumentprocessor.Processor
 	notifier         notification.Sender
+	anchorRepository anchors.AnchorRepository
 }
 
 // DefaultService returns the default implementation of the service
-func DefaultService(repo documents.Repository, processor coredocumentprocessor.Processor) Service {
-	return &service{repo: repo, coreDocProcessor: processor, notifier: &notification.WebhookSender{}}
+func DefaultService(repo documents.Repository, processor coredocumentprocessor.Processor, anchorRepository anchors.AnchorRepository) Service {
+	return &service{repo: repo, coreDocProcessor: processor, notifier: &notification.WebhookSender{}, anchorRepository: anchorRepository}
 }
 
 // CreateProofs creates proofs for the latest version document given the fields
@@ -93,7 +94,7 @@ func (s service) CreateProofsForVersion(documentID, version []byte, fields []str
 
 // invoiceProof creates proofs for invoice model fields
 func (s service) invoiceProof(inv *InvoiceModel, fields []string) (common.DocumentProof, error) {
-	if err := coredocument.PostAnchoredValidator(anchors.GetAnchorRepository()).Validate(nil, inv); err != nil {
+	if err := coredocument.PostAnchoredValidator(s.anchorRepository).Validate(nil, inv); err != nil {
 		return common.DocumentProof{}, centerrors.New(code.DocumentInvalid, err.Error())
 	}
 
@@ -411,7 +412,7 @@ func (s service) RequestDocumentSignature(model documents.Model) (*coredocumentp
 // ReceiveAnchoredDocument receives a new anchored document, validates and updates the document in DB
 // TODO(ved): need tests for this
 func (s service) ReceiveAnchoredDocument(model documents.Model, headers *p2ppb.CentrifugeHeader) error {
-	if err := coredocument.PostAnchoredValidator(anchors.GetAnchorRepository()).Validate(nil, model); err != nil {
+	if err := coredocument.PostAnchoredValidator(s.anchorRepository).Validate(nil, model); err != nil {
 		return centerrors.New(code.DocumentInvalid, err.Error())
 	}
 

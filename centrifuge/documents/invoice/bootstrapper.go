@@ -29,6 +29,7 @@ func registerInvoiceService() error {
 	// TODO coredocument processor and IDService usage here looks shitty(unnecessary dependency), needs to change soon
 	invoiceService := DefaultService(
 		getRepository(),
-		coredocumentprocessor.DefaultProcessor(identity.IDService, p2p.NewP2PClient(), anchors.GetAnchorRepository()))
+		coredocumentprocessor.DefaultProcessor(identity.IDService, p2p.NewP2PClient(), anchors.GetAnchorRepository()),
+		anchors.GetAnchorRepository())
 	return documents.GetRegistryInstance().Register(documenttypes.InvoiceDataTypeUrl, invoiceService)
 }

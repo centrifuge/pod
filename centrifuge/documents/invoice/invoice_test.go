@@ -40,7 +40,7 @@ func TestMain(m *testing.M) {
 		bootstrap.BootstrappedAnchorRepository: anchorRepository,
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, context)
-	invService = DefaultService(getRepository(), &testingutils.MockCoreDocumentProcessor{})
+	invService = DefaultService(getRepository(), &testingutils.MockCoreDocumentProcessor{}, anchorRepository)
 	flag.Parse()
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)

@@ -36,7 +36,7 @@ var (
 )
 
 func TestDefaultService(t *testing.T) {
-	srv := DefaultService(getRepository(), &testingutils.MockCoreDocumentProcessor{})
+	srv := DefaultService(getRepository(), &testingutils.MockCoreDocumentProcessor{}, nil)
 	assert.NotNil(t, srv, "must be non-nil")
 }
 
