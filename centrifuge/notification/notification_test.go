@@ -27,7 +27,7 @@ func TestMain(m *testing.M) {
 		&config.Bootstrapper{},
 		&storage.Bootstrapper{},
 	}
-	bootstrap.RunTestBootstrappers(ibootstappers)
+	bootstrap.RunTestBootstrappers(ibootstappers, nil)
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)

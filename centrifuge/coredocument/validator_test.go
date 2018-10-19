@@ -29,7 +29,7 @@ func TestMain(m *testing.M) {
 	ibootstappers := []bootstrap.TestBootstrapper{
 		&config.Bootstrapper{},
 	}
-	bootstrap.RunTestBootstrappers(ibootstappers)
+	bootstrap.RunTestBootstrappers(ibootstappers, nil)
 	flag.Parse()
 	config.Config.V.Set("keys.signing.publicKey", "../../example/resources/signature1.pub.pem")
 	config.Config.V.Set("keys.signing.privateKey", "../../example/resources/signature1.key.pem")

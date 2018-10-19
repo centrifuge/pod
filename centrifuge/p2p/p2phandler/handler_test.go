@@ -48,7 +48,7 @@ func TestMain(m *testing.M) {
 		&storage.Bootstrapper{},
 		&coredocumentrepository.Bootstrapper{},
 	}
-	bootstrap.RunTestBootstrappers(ibootstappers)
+	bootstrap.RunTestBootstrappers(ibootstappers, nil)
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)

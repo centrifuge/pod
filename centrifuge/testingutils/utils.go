@@ -10,6 +10,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/secp256k1"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/centrifuge/precise-proofs/proofs"
@@ -125,8 +126,9 @@ func (m *MockSubscription) Err() <-chan error {
 func (*MockSubscription) Unsubscribe() {}
 
 func CreateIdentityWithKeys() identity.CentID {
-	idConfig, _ := secp256k1.GetIDConfig()
-	centIdTyped, _ := identity.ToCentID(idConfig.ID)
+	idConfigEth, _ := secp256k1.GetIDConfig()
+	idConfig, _ := ed25519keys.GetIDConfig()
+	centIdTyped, _ := identity.ToCentID(idConfigEth.ID)
 	// only create identity if it doesn't exist
 	id, err := identity.IDService.LookupIdentityForID(centIdTyped)
 	if err != nil {
@@ -141,8 +143,16 @@ func CreateIdentityWithKeys() identity.CentID {
 	ctx, cancel := ethereum.DefaultWaitForTransactionMiningContext()
 	defer cancel()
 	if err != nil {
-		confirmations, _ := id.AddKeyToIdentity(ctx, identity.KeyPurposeEthMsgAuth, idConfig.PublicKey)
+		confirmations, _ := id.AddKeyToIdentity(ctx, identity.KeyPurposeEthMsgAuth, idConfigEth.PublicKey)
 		<-confirmations
 	}
+	_, err = id.GetLastKeyForPurpose(identity.KeyPurposeSigning)
+	ctx, cancel = ethereum.DefaultWaitForTransactionMiningContext()
+	defer cancel()
+	if err != nil {
+		confirmations, _ := id.AddKeyToIdentity(ctx, identity.KeyPurposeSigning, idConfig.PublicKey)
+		<-confirmations
+	}
+
 	return centIdTyped
 }

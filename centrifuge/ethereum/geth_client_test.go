@@ -33,7 +33,7 @@ func TestMain(m *testing.M) {
 		&invoice.Bootstrapper{},
 		&purchaseorder.Bootstrapper{},
 	}
-	bootstrap.RunTestBootstrappers(ibootstappers)
+	bootstrap.RunTestBootstrappers(ibootstappers, nil)
 	config.Config.V.Set("ethereum.txPoolAccessEnabled", false)
 	config.Config.V.Set("ethereum.intervalRetry", time.Millisecond*100)
 	result := m.Run()
