@@ -11,6 +11,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/queue"
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"time"
 )
 
 const (
@@ -108,6 +109,7 @@ func (rct *IdRegistrationConfirmationTask) RunTask() (interface{}, error) {
 		if err != utils.EventNotFound {
 			return nil, err
 		}
+		time.Sleep(100 * time.Millisecond)
 	}
 
 	return nil, fmt.Errorf("failed to filter identity events")

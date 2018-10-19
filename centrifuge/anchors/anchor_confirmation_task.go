@@ -13,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
+	"time"
 )
 
 const (
@@ -162,6 +163,7 @@ func (act *AnchoringConfirmationTask) RunTask() (interface{}, error) {
 		if err != utils.EventNotFound {
 			return nil, err
 		}
+		time.Sleep(100 * time.Millisecond)
 	}
 
 	return nil, fmt.Errorf("failed to filter anchor events")
