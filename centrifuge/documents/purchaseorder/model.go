@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
-
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
@@ -17,13 +15,14 @@ import (
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/golang/protobuf/ptypes/timestamp"
 )
 
-//TODO rename PurchaseOrderModel -> PurchaseOrder
 // PurchaseOrder implements the documents.Model keeps track of purchase order related fields and state
+// TODO rename PurchaseOrderModel -> PurchaseOrder
 type PurchaseOrderModel struct {
 	// purchase order number or reference number
 	PoNumber string
@@ -74,8 +73,8 @@ func (p *PurchaseOrderModel) ID() ([]byte, error) {
 }
 
 // getClientData returns the client data from the purchaseOrder model
-func (p *PurchaseOrderModel) getClientData() *clientpurchaseorderpb.PurchaseOrderData {
 
+func (p *PurchaseOrderModel) getClientData() *clientpurchaseorderpb.PurchaseOrderData {
 	var recipient string
 	if p.Recipient != nil {
 		recipient = hexutil.Encode(p.Recipient[:])

@@ -20,12 +20,12 @@ type legacyLevelDBRepo struct {
 // legacyRepo is singleton instance
 var legacyRepo *legacyLevelDBRepo
 
-// once to guard from creating multiple instances
-var once sync.Once
+// legacyOnce to guard from creating multiple instances
+var legacyOnce sync.Once
 
 // InitLegacyRepository initialises new repository if not exists
 func InitLegacyRepository(db *leveldb.DB) {
-	once.Do(func() {
+	legacyOnce.Do(func() {
 		legacyRepo = &legacyLevelDBRepo{
 			storage.DefaultLevelDB{
 				KeyPrefix:    "invoice",
@@ -65,18 +65,12 @@ type repository struct {
 	documents.LevelDBRepository
 }
 
-var repo *repository
-
 // getRepository returns the implemented documents.legacyRepo for invoices
 func getRepository() documents.Repository {
-	if repo == nil {
-		repo = &repository{
-			documents.LevelDBRepository{
-				KeyPrefix: "invoice",
-				LevelDB:   storage.GetLevelDBStorage(),
-			},
-		}
+	return &repository{
+		documents.LevelDBRepository{
+			KeyPrefix: "invoice",
+			LevelDB:   storage.GetLevelDBStorage(),
+		},
 	}
-
-	return repo
 }

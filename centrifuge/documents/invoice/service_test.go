@@ -184,7 +184,7 @@ func TestService_Create_db_fail(t *testing.T) {
 }
 
 func TestService_Create_anchor_fail(t *testing.T) {
-	srv := invService.(*service)
+	srv := invService.(service)
 	proc := &testingutils.MockCoreDocumentProcessor{}
 	proc.On("Anchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(fmt.Errorf("failed to anchor document"))
 	srv.coreDocProcessor = proc
@@ -197,7 +197,7 @@ func TestService_Create_anchor_fail(t *testing.T) {
 }
 
 func TestService_Create_send_fail(t *testing.T) {
-	srv := invService.(*service)
+	srv := invService.(service)
 	proc := &testingutils.MockCoreDocumentProcessor{}
 	proc.On("Anchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	proc.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(fmt.Errorf("failed to send"))
@@ -211,7 +211,7 @@ func TestService_Create_send_fail(t *testing.T) {
 }
 
 func TestService_Create_saveState_fail(t *testing.T) {
-	srv := invService.(*service)
+	srv := invService.(service)
 	proc := &testingutils.MockCoreDocumentProcessor{}
 	proc.On("Anchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	proc.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(fmt.Errorf("failed to send"))
@@ -225,7 +225,7 @@ func TestService_Create_saveState_fail(t *testing.T) {
 }
 
 func TestService_Create(t *testing.T) {
-	srv := invService.(*service)
+	srv := invService.(service)
 	proc := &testingutils.MockCoreDocumentProcessor{}
 	proc.On("Anchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	proc.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(nil)
@@ -632,7 +632,7 @@ func TestService_Update_unknown_type(t *testing.T) {
 }
 
 func TestService_Update(t *testing.T) {
-	srv := invService.(*service)
+	srv := invService.(service)
 	proc := &testingutils.MockCoreDocumentProcessor{}
 	proc.On("Anchor", mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 	proc.On("Send", mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
@@ -664,7 +664,7 @@ func TestService_Update(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, data, newData)
 
-	model, err := invService.Update(context.Background(), newInv)
+	model, err := srv.Update(context.Background(), newInv)
 	proc.AssertExpectations(t)
 	assert.Nil(t, err)
 	assert.Equal(t, newInv, model.(*InvoiceModel))
