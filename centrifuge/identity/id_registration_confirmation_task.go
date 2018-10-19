@@ -7,11 +7,12 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
 
+	"time"
+
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/queue"
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"time"
 )
 
 const (
