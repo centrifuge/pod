@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"math/big"
 
+	"time"
+
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/centrifuge/queue"
@@ -162,6 +164,7 @@ func (act *AnchoringConfirmationTask) RunTask() (interface{}, error) {
 		if err != utils.EventNotFound {
 			return nil, err
 		}
+		time.Sleep(100 * time.Millisecond)
 	}
 
 	return nil, fmt.Errorf("failed to filter anchor events")
