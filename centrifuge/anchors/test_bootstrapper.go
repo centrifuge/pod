@@ -17,6 +17,8 @@ func (b *Bootstrapper) TestBootstrap(context map[string]interface{}) error {
 	if repo, ok := context[bootstrap.BootstrappedAnchorRepository]; ok {
 		fmt.Printf("Bootstrapped! %v\n", repo.(AnchorRepository))
 		setAnchorRepository(repo.(AnchorRepository))
+	} else {
+		b.Bootstrap(context)
 	}
 
 	return nil
