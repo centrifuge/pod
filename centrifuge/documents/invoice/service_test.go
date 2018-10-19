@@ -355,6 +355,20 @@ func TestService_CreateProofs(t *testing.T) {
 	assert.Equal(t, proof.FieldProofs[0].GetProperty(), "invoice_number")
 }
 
+func TestService_CreateProofsValidationFails(t *testing.T) {
+	defer setIdentityService(identity.IDService)
+	i, err := createAnchoredMockDocument(t, false)
+	assert.Nil(t, err)
+	i.CoreDocument.SigningRoot = nil
+	err = getRepository().Update(i.CoreDocument.CurrentVersion, i)
+	assert.Nil(t, err)
+	idService := mockSignatureCheck(i)
+	setIdentityService(idService)
+	_, err = invService.CreateProofs(i.CoreDocument.DocumentIdentifier, []string{"invoice_number"})
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "signing root missing")
+}
+
 func TestService_CreateProofsInvalidField(t *testing.T) {
 	defer setIdentityService(identity.IDService)
 	i, err := createAnchoredMockDocument(t, false)
