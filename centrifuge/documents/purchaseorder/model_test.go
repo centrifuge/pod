@@ -19,6 +19,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 )
@@ -143,13 +144,16 @@ func TestPOModel_getClientData(t *testing.T) {
 }
 
 func TestPOOrderModel_InitPOInput(t *testing.T) {
+	idConfig, err := ed25519keys.GetIDConfig()
+	assert.Nil(t, err)
+	self := idConfig.ID
 	// fail recipient
 	data := &clientpurchaseorderpb.PurchaseOrderData{
 		Recipient: "some recipient",
 		ExtraData: "some data",
 	}
 	poModel := new(PurchaseOrderModel)
-	err := poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data})
+	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data})
 	assert.Error(t, err, "must return err")
 	assert.Contains(t, err.Error(), "failed to decode extra data")
 	assert.Nil(t, poModel.Recipient)
@@ -174,7 +178,7 @@ func TestPOOrderModel_InitPOInput(t *testing.T) {
 
 	assert.Equal(t, poModel.Recipient[:], []byte{1, 2, 3, 4, 5, 6})
 	assert.Equal(t, poModel.ExtraData[:], []byte{1, 2, 3, 2, 3, 1})
-	assert.Equal(t, poModel.CoreDocument.Collaborators, [][]byte{{1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}})
+	assert.Equal(t, poModel.CoreDocument.Collaborators, [][]byte{self, {1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}})
 }
 
 func TestPOModel_calculateDataRoot(t *testing.T) {

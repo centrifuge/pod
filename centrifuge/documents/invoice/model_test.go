@@ -12,6 +12,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
@@ -144,6 +145,9 @@ func TestInvoiceModel_getClientData(t *testing.T) {
 }
 
 func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
+	idConfig, err := ed25519keys.GetIDConfig()
+	assert.Nil(t, err)
+	self := idConfig.ID
 	// fail recipient
 	data := &clientinvoicepb.InvoiceData{
 		Sender:    "some number",
@@ -152,7 +156,7 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 		ExtraData: "some data",
 	}
 	inv := new(InvoiceModel)
-	err := inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data})
+	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data})
 	assert.Error(t, err, "must return err")
 	assert.Contains(t, err.Error(), "failed to decode extra data")
 	assert.Nil(t, inv.Recipient)
@@ -197,7 +201,7 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 	assert.Equal(t, inv.Payee[:], []byte{1, 2, 3, 3, 4, 5})
 	assert.Equal(t, inv.Recipient[:], []byte{1, 2, 3, 4, 5, 6})
 	assert.Equal(t, inv.ExtraData[:], []byte{1, 2, 3, 2, 3, 1})
-	assert.Equal(t, inv.CoreDocument.Collaborators, [][]byte{{1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}})
+	assert.Equal(t, inv.CoreDocument.Collaborators, [][]byte{self, {1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}})
 }
 
 func TestInvoiceModel_calculateDataRoot(t *testing.T) {

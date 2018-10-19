@@ -312,7 +312,7 @@ func GetExternalCollaborators(doc *coredocumentpb.CoreDocument) ([][]byte, error
 		return nil, fmt.Errorf("failed to decode collaborator: %v", err)
 	}
 	for _, collab := range doc.Collaborators {
-		if tools.IsSameByteSlice(collab, idConfig.ID) {
+		if !tools.IsSameByteSlice(collab, idConfig.ID) {
 			collaborators = append(collaborators, collab)
 		}
 	}

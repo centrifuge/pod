@@ -12,6 +12,7 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	"github.com/centrifuge/go-centrifuge/centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/commons"
@@ -426,6 +427,9 @@ func TestNewWithCollaborators(t *testing.T) {
 	assert.Nil(t, cd)
 
 	// success
+	idConfig, err := ed25519keys.GetIDConfig()
+	assert.Nil(t, err)
+	c0 := idConfig.ID
 	c1 := tools.RandomSlice(6)
 	c2 := tools.RandomSlice(6)
 	c = []string{hexutil.Encode(c1), hexutil.Encode(c2)}
@@ -437,5 +441,20 @@ func TestNewWithCollaborators(t *testing.T) {
 	assert.NotNil(t, cd.NextVersion)
 	assert.NotNil(t, cd.Collaborators)
 	assert.NotNil(t, cd.CoredocumentSalts)
-	assert.Equal(t, [][]byte{c1, c2}, cd.Collaborators)
+	assert.Equal(t, [][]byte{c0, c1, c2}, cd.Collaborators)
+}
+
+func TestGetExternalCollaborators(t *testing.T) {
+	idConfig, err := ed25519keys.GetIDConfig()
+	assert.Nil(t, err)
+	c0 := idConfig.ID
+	c1 := tools.RandomSlice(6)
+	c2 := tools.RandomSlice(6)
+	c := []string{hexutil.Encode(c1), hexutil.Encode(c2)}
+	cd, err := NewWithCollaborators(c)
+	assert.Equal(t, [][]byte{c0, c1, c2}, cd.Collaborators)
+	collaborators, err := GetExternalCollaborators(cd)
+	assert.Nil(t, err)
+	assert.NotNil(t, collaborators)
+	assert.Equal(t, [][]byte{c1, c2}, collaborators)
 }
