@@ -1,7 +1,7 @@
 version: '3'
 services:
   cent-api:
-    image: "centrifugeio/go-centrifuge:20180926-6923e53"
+    image: "centrifugeio/go-centrifuge:latest"
     container_name: cent-api
     environment:
       - CENT_MODE
