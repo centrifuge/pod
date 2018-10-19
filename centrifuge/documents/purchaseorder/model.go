@@ -161,7 +161,7 @@ func (p *PurchaseOrderModel) InitPurchaseOrderInput(payload *clientpurchaseorder
 		return err
 	}
 
-	collaborators := append([]string{contextHeader.GetSelf().String()}, payload.Collaborators...)
+	collaborators := append([]string{contextHeader.Self().String()}, payload.Collaborators...)
 
 	p.CoreDocument, err = coredocument.NewWithCollaborators(collaborators)
 	if err != nil {

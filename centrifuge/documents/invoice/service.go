@@ -364,7 +364,7 @@ func (s service) DeriveFromUpdatePayload(payload *clientinvoicepb.InvoiceUpdateP
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
 
-	collaborators := append([]string{contextHeader.GetSelf().String()}, payload.Collaborators...)
+	collaborators := append([]string{contextHeader.Self().String()}, payload.Collaborators...)
 
 	inv.CoreDocument, err = coredocument.PrepareNewVersion(*oldCD, collaborators)
 	if err != nil {

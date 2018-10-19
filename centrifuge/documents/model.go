@@ -42,7 +42,7 @@ func NewContextHeader(self identity.CentID) *ContextHeader {
 	return &ContextHeader{self: self}
 }
 
-// GetSelf returns Self CentID
-func (h *ContextHeader) GetSelf() identity.CentID {
+// Self returns Self CentID
+func (h *ContextHeader) Self() identity.CentID {
 	return h.self
 }
