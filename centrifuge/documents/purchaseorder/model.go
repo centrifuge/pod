@@ -12,6 +12,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
@@ -160,7 +161,18 @@ func (p *PurchaseOrderModel) InitPurchaseOrderInput(payload *clientpurchaseorder
 		return err
 	}
 
-	p.CoreDocument, err = coredocument.NewWithCollaborators(payload.Collaborators)
+	// Adding Self as first Collaborator
+	idConfig, err := ed25519keys.GetIDConfig()
+	if err != nil {
+		return fmt.Errorf("failed to decode collaborator: %v", err)
+	}
+	centID, err := identity.ToCentID(idConfig.ID)
+	if err != nil {
+		return fmt.Errorf("failed to convert to CentID: %v", err)
+	}
+	collaborators := append([]string{centID.String()}, payload.Collaborators...)
+
+	p.CoreDocument, err = coredocument.NewWithCollaborators(collaborators)
 	if err != nil {
 		return fmt.Errorf("failed to init core document: %v", err)
 	}

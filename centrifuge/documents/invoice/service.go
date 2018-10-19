@@ -364,7 +364,18 @@ func (s service) DeriveFromUpdatePayload(payload *clientinvoicepb.InvoiceUpdateP
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
 
-	inv.CoreDocument, err = coredocument.PrepareNewVersion(*oldCD, payload.Collaborators)
+	// Adding Self as first Collaborator
+	idConfig, err := centED25519.GetIDConfig()
+	if err != nil {
+		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("failed to decode collaborator: %v", err))
+	}
+	centID, err := identity.ToCentID(idConfig.ID)
+	if err != nil {
+		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("failed to convert to centID: %v", err))
+	}
+	collaborators := append([]string{centID.String()}, payload.Collaborators...)
+
+	inv.CoreDocument, err = coredocument.PrepareNewVersion(*oldCD, collaborators)
 	if err != nil {
 		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("failed to prepare new version: %v", err))
 	}

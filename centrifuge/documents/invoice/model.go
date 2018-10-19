@@ -12,6 +12,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
@@ -162,7 +163,18 @@ func (i *InvoiceModel) InitInvoiceInput(payload *clientinvoicepb.InvoiceCreatePa
 		return err
 	}
 
-	i.CoreDocument, err = coredocument.NewWithCollaborators(payload.Collaborators)
+	// Adding Self as first Collaborator
+	idConfig, err := ed25519keys.GetIDConfig()
+	if err != nil {
+		return fmt.Errorf("failed to decode collaborator: %v", err)
+	}
+	centID, err := identity.ToCentID(idConfig.ID)
+	if err != nil {
+		return fmt.Errorf("failed to convert to CentID: %v", err)
+	}
+	collaborators := append([]string{centID.String()}, payload.Collaborators...)
+
+	i.CoreDocument, err = coredocument.NewWithCollaborators(collaborators)
 	if err != nil {
 		return fmt.Errorf("failed to init core document: %v", err)
 	}

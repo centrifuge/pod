@@ -279,18 +279,6 @@ func New() *coredocumentpb.CoreDocument {
 // NewWithCollaborators generates new core document, adds collaborators, and fills salts
 func NewWithCollaborators(collaborators []string) (*coredocumentpb.CoreDocument, error) {
 	cd := New()
-
-	// Adding Self as first Collaborator
-	idConfig, err := ed25519keys.GetIDConfig()
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode collaborator: %v", err)
-	}
-	centID, err := identity.ToCentID(idConfig.ID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to convert to CentID: %v", err)
-	}
-	collaborators = append([]string{centID.String()}, collaborators...)
-
 	ids, err := identity.CentIDsFromStrings(collaborators)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode collaborator: %v", err)
