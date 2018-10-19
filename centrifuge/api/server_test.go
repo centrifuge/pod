@@ -30,7 +30,7 @@ func TestMain(m *testing.M) {
 		&invoice.Bootstrapper{},
 		&purchaseorder.Bootstrapper{},
 	}
-	bootstrap.RunTestBootstrappers(ibootstappers)
+	bootstrap.RunTestBootstrappers(ibootstappers, nil)
 	flag.Parse()
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
@@ -49,7 +49,7 @@ func TestCentAPIServer_StartHappy(t *testing.T) {
 }
 
 func TestCentAPIServer_StartContextCancel(t *testing.T) {
-	documents.GetRegistryInstance().Register(documenttypes.InvoiceDataTypeUrl, invoice.DefaultService(nil, nil))
+	documents.GetRegistryInstance().Register(documenttypes.InvoiceDataTypeUrl, invoice.DefaultService(nil, nil, nil))
 	capi := NewCentAPIServer("0.0.0.0:9000", 9000, "")
 	ctx, canc := context.WithCancel(context.Background())
 	startErr := make(chan error)
