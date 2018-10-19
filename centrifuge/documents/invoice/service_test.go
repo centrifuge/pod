@@ -65,7 +65,7 @@ func TestService_DeriveFromPayload(t *testing.T) {
 	assert.NotNil(t, receivedCoreDocument.EmbeddedData, "embeddedData should be field")
 }
 
-func TestService_GetLastVersion(t *testing.T) {
+func TestService_GetCurrentVersion(t *testing.T) {
 	thirdIdentifier := tools.RandomSlice(32)
 	doc, err := createMockDocument()
 	assert.Nil(t, err)

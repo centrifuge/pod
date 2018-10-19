@@ -3,7 +3,16 @@
 package purchaseorder
 
 import (
+	"flag"
+	"os"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/centrifuge/context/testlogging"
+	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
+	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
+	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -13,6 +22,22 @@ import (
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestMain(m *testing.M) {
+	ibootstappers := []bootstrap.TestBootstrapper{
+		&testlogging.TestLoggingBootstrapper{},
+		&config.Bootstrapper{},
+		&storage.Bootstrapper{},
+		&coredocumentrepository.Bootstrapper{},
+		&Bootstrapper{},
+	}
+	bootstrap.RunTestBootstrappers(ibootstappers)
+	poSrv = DefaultService(getRepository(), &testingutils.MockCoreDocumentProcessor{})
+	flag.Parse()
+	result := m.Run()
+	bootstrap.RunTestTeardown(ibootstappers)
+	os.Exit(result)
+}
 
 func TestPurchaseOrderCoreDocumentConverter(t *testing.T) {
 	identifier := []byte("1")
