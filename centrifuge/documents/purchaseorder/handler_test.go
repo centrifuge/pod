@@ -7,12 +7,16 @@ import (
 	"crypto/sha256"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
 	legacy "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/legacy/purchaseorder"
+	clientpopb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/go-errors/errors"
@@ -284,7 +288,7 @@ func TestPurchaseOrderDocumentService_HandleCreatePurchaseOrderProof_NotExisting
 		DocumentIdentifier: identifier,
 		Fields:             []string{"currency", "order_country", "net_amount"},
 	}
-	//return an "empty" invoice as mock can't return nil
+	//return an "empty" purchase order as mock can't return nil
 	mockRepo.On("GetByID", proofRequest.DocumentIdentifier, new(purchaseorderpb.PurchaseOrderDocument)).Return(errors.New("couldn't find invoice")).Once()
 	mockRepo.replaceDoc = order.Document
 	purchaseOrderProof, err := s.CreatePurchaseOrderProof(context.Background(), proofRequest)
@@ -292,4 +296,87 @@ func TestPurchaseOrderDocumentService_HandleCreatePurchaseOrderProof_NotExisting
 
 	assert.Nil(t, purchaseOrderProof)
 	assert.Error(t, err)
+}
+
+// testing handler for new API
+
+type mockService struct {
+	Service
+	mock.Mock
+}
+
+func (m *mockService) DeriveFromCreatePayload(payload *clientpopb.PurchaseOrderCreatePayload) (documents.Model, error) {
+	args := m.Called(payload)
+	model, _ := args.Get(0).(documents.Model)
+	return model, args.Error(1)
+}
+
+func (m *mockService) Create(ctx context.Context, inv documents.Model) (documents.Model, error) {
+	args := m.Called(ctx, inv)
+	model, _ := args.Get(0).(documents.Model)
+	return model, args.Error(1)
+}
+
+func (m *mockService) GetCurrentVersion(identifier []byte) (documents.Model, error) {
+	args := m.Called(identifier)
+	data, _ := args.Get(0).(documents.Model)
+	return data, args.Error(1)
+}
+
+func (m *mockService) GetVersion(identifier []byte, version []byte) (documents.Model, error) {
+	args := m.Called(identifier, version)
+	data, _ := args.Get(0).(documents.Model)
+	return data, args.Error(1)
+}
+
+func (m *mockService) DerivePurchaseOrderData(po documents.Model) (*clientpopb.PurchaseOrderData, error) {
+	args := m.Called(po)
+	data, _ := args.Get(0).(*clientpopb.PurchaseOrderData)
+	return data, args.Error(1)
+}
+
+func (m *mockService) DerivePurchaseOrderResponse(po documents.Model) (*clientpopb.PurchaseOrderResponse, error) {
+	args := m.Called(po)
+	data, _ := args.Get(0).(*clientpopb.PurchaseOrderResponse)
+	return data, args.Error(1)
+}
+
+func (m *mockService) Update(ctx context.Context, doc documents.Model) (documents.Model, error) {
+	args := m.Called(ctx, doc)
+	doc1, _ := args.Get(0).(documents.Model)
+	return doc1, args.Error(1)
+}
+
+func (m *mockService) DeriveFromUpdatePayload(payload *clientpopb.PurchaseOrderUpdatePayload) (documents.Model, error) {
+	args := m.Called(payload)
+	doc, _ := args.Get(0).(documents.Model)
+	return doc, args.Error(1)
+}
+
+type mockModel struct {
+	documents.Model
+	mock.Mock
+	CoreDocument *coredocumentpb.CoreDocument
+}
+
+func getHandler() *grpcHandler {
+	return &grpcHandler{service: &mockService{}, coreDocProcessor: &testingutils.MockCoreDocumentProcessor{}}
+}
+
+func TestGrpcHandler_Get(t *testing.T) {
+	identifier := "0x01010101"
+	identifierBytes, _ := hexutil.Decode(identifier)
+	h := getHandler()
+	srv := h.service.(*mockService)
+	model := new(mockModel)
+	payload := &clientpopb.GetRequest{Identifier: identifier}
+	response := &clientpopb.PurchaseOrderResponse{}
+	srv.On("GetCurrentVersion", identifierBytes).Return(model, nil)
+	srv.On("DerivePurchaseOrderResponse", model).Return(response, nil)
+	res, err := h.Get(context.Background(), payload)
+	model.AssertExpectations(t)
+	srv.AssertExpectations(t)
+	assert.Nil(t, err, "must be nil")
+	assert.NotNil(t, res, "must be non nil")
+	assert.Equal(t, res, response)
 }

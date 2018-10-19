@@ -3,6 +3,8 @@ package purchaseorder
 import (
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/common/hexutil"
+
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
@@ -25,21 +27,22 @@ var apiLog = logging.Logger("purchaseorder-api")
 // grpcHandler handles all the purchase order document related actions
 // anchoring, sending, finding stored purchase order document
 type grpcHandler struct {
-	repo        storage.LegacyRepository
-	coreDocProc coredocumentprocessor.Processor
+	repo             storage.LegacyRepository
+	coreDocProcessor coredocumentprocessor.Processor
+	service          Service
 }
 
 // LegacyGRPCHandler handles legacy grpc requests
 func LegacyGRPCHandler(repo storage.LegacyRepository, proc coredocumentprocessor.Processor) legacy.PurchaseOrderDocumentServiceServer {
-	return grpcHandler{
-		repo:        repo,
-		coreDocProc: proc,
+	return &grpcHandler{
+		repo:             repo,
+		coreDocProcessor: proc,
 	}
 }
 
 // anchorPurchaseOrderDocument anchors the given purchaseorder document and returns the anchor details
 // Deprecated
-func (h grpcHandler) anchorPurchaseOrderDocument(ctx context.Context, doc *purchaseorderpb.PurchaseOrderDocument, collaborators [][]byte) (*purchaseorderpb.PurchaseOrderDocument, error) {
+func (h *grpcHandler) anchorPurchaseOrderDocument(ctx context.Context, doc *purchaseorderpb.PurchaseOrderDocument, collaborators [][]byte) (*purchaseorderpb.PurchaseOrderDocument, error) {
 	orderDoc, err := New(doc, collaborators)
 	if err != nil {
 		log.Error(err)
@@ -59,7 +62,7 @@ func (h grpcHandler) anchorPurchaseOrderDocument(ctx context.Context, doc *purch
 		return nil, err
 	}
 
-	err = h.coreDocProc.Anchor(ctx, coreDoc, nil)
+	err = h.coreDocProcessor.Anchor(ctx, coreDoc, nil)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -76,7 +79,7 @@ func (h grpcHandler) anchorPurchaseOrderDocument(ctx context.Context, doc *purch
 
 // HandleCreatePurchaseOrderProof creates proofs for a list of fields
 // Deprecated
-func (h grpcHandler) CreatePurchaseOrderProof(ctx context.Context, createPurchaseOrderProofEnvelope *legacy.CreatePurchaseOrderProofEnvelope) (*legacy.PurchaseOrderProof, error) {
+func (h *grpcHandler) CreatePurchaseOrderProof(ctx context.Context, createPurchaseOrderProofEnvelope *legacy.CreatePurchaseOrderProofEnvelope) (*legacy.PurchaseOrderProof, error) {
 	orderDoc := new(purchaseorderpb.PurchaseOrderDocument)
 	err := h.repo.GetByID(createPurchaseOrderProofEnvelope.DocumentIdentifier, orderDoc)
 	if err != nil {
@@ -104,7 +107,7 @@ func (h grpcHandler) CreatePurchaseOrderProof(ctx context.Context, createPurchas
 
 // HandleAnchorPurchaseOrderDocument anchors the given purchaseorder document and returns the anchor details
 // Deprecated
-func (h grpcHandler) AnchorPurchaseOrderDocument(ctx context.Context, anchorPurchaseOrderEnvelope *legacy.AnchorPurchaseOrderEnvelope) (*purchaseorderpb.PurchaseOrderDocument, error) {
+func (h *grpcHandler) AnchorPurchaseOrderDocument(ctx context.Context, anchorPurchaseOrderEnvelope *legacy.AnchorPurchaseOrderEnvelope) (*purchaseorderpb.PurchaseOrderDocument, error) {
 	anchoredPurchaseOrder, err := h.anchorPurchaseOrderDocument(ctx, anchorPurchaseOrderEnvelope.Document, nil)
 	if err != nil {
 		log.Error(err)
@@ -123,7 +126,7 @@ func (h grpcHandler) AnchorPurchaseOrderDocument(ctx context.Context, anchorPurc
 
 // HandleSendPurchaseOrderDocument anchors and sends an purchaseorder to the recipient
 // Deprecated
-func (h grpcHandler) SendPurchaseOrderDocument(ctx context.Context, sendPurchaseOrderEnvelope *legacy.SendPurchaseOrderEnvelope) (*purchaseorderpb.PurchaseOrderDocument, error) {
+func (h *grpcHandler) SendPurchaseOrderDocument(ctx context.Context, sendPurchaseOrderEnvelope *legacy.SendPurchaseOrderEnvelope) (*purchaseorderpb.PurchaseOrderDocument, error) {
 	var errs []error
 	doc, err := h.anchorPurchaseOrderDocument(ctx, sendPurchaseOrderEnvelope.Document, sendPurchaseOrderEnvelope.Recipients)
 	if err != nil {
@@ -150,7 +153,7 @@ func (h grpcHandler) SendPurchaseOrderDocument(ctx context.Context, sendPurchase
 			errs = append(errs, err)
 			continue
 		}
-		err = h.coreDocProc.Send(ctx, coreDoc, recipientID)
+		err = h.coreDocProcessor.Send(ctx, coreDoc, recipientID)
 		if err != nil {
 			errs = append(errs, err)
 		}
@@ -166,7 +169,7 @@ func (h grpcHandler) SendPurchaseOrderDocument(ctx context.Context, sendPurchase
 
 // GetPurchaseOrderDocument returns the purchase order with specific identifier provided
 // Deprecated
-func (h grpcHandler) GetPurchaseOrderDocument(ctx context.Context, getPurchaseOrderDocumentEnvelope *legacy.GetPurchaseOrderDocumentEnvelope) (*purchaseorderpb.PurchaseOrderDocument, error) {
+func (h *grpcHandler) GetPurchaseOrderDocument(ctx context.Context, getPurchaseOrderDocumentEnvelope *legacy.GetPurchaseOrderDocumentEnvelope) (*purchaseorderpb.PurchaseOrderDocument, error) {
 	doc := new(purchaseorderpb.PurchaseOrderDocument)
 	err := h.repo.GetByID(getPurchaseOrderDocumentEnvelope.DocumentIdentifier, doc)
 	if err == nil {
@@ -190,7 +193,7 @@ func (h grpcHandler) GetPurchaseOrderDocument(ctx context.Context, getPurchaseOr
 
 // GetReceivedPurchaseOrderDocuments returns received purchase order documents
 // Deprecated
-func (h grpcHandler) GetReceivedPurchaseOrderDocuments(ctx context.Context, empty *empty.Empty) (*legacy.ReceivedPurchaseOrders, error) {
+func (h *grpcHandler) GetReceivedPurchaseOrderDocuments(ctx context.Context, empty *empty.Empty) (*legacy.ReceivedPurchaseOrders, error) {
 	return nil, nil
 }
 
@@ -199,22 +202,33 @@ func GRPCHandler() clientpurchaseorderpb.DocumentServiceServer {
 	return &grpcHandler{}
 }
 
-func (grpcHandler) Create(context.Context, *clientpurchaseorderpb.PurchaseOrderCreatePayload) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
+func (h *grpcHandler) Create(context.Context, *clientpurchaseorderpb.PurchaseOrderCreatePayload) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
 	apiLog.Error("Implement me")
 	return nil, centerrors.New(code.Unknown, "Implement me")
 }
 
-func (grpcHandler) Update(context.Context, *clientpurchaseorderpb.PurchaseOrderUpdatePayload) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
+func (h *grpcHandler) Update(context.Context, *clientpurchaseorderpb.PurchaseOrderUpdatePayload) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
 	apiLog.Error("Implement me")
 	return nil, centerrors.New(code.Unknown, "Implement me")
 }
 
-func (grpcHandler) GetVersion(context.Context, *clientpurchaseorderpb.GetVersionRequest) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
+func (h *grpcHandler) GetVersion(context.Context, *clientpurchaseorderpb.GetVersionRequest) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
 	apiLog.Error("Implement me")
 	return nil, centerrors.New(code.Unknown, "Implement me")
 }
 
-func (grpcHandler) Get(context.Context, *clientpurchaseorderpb.GetRequest) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
-	apiLog.Error("Implement me")
-	return nil, centerrors.New(code.Unknown, "Implement me")
+func (h *grpcHandler) Get(ctx context.Context, getRequest *clientpurchaseorderpb.GetRequest) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
+	identifier, err := hexutil.Decode(getRequest.Identifier)
+	if err != nil {
+		return nil, centerrors.Wrap(err, "identifier is an invalid hex string")
+	}
+	doc, err := h.service.GetCurrentVersion(identifier)
+	if err != nil {
+		return nil, centerrors.Wrap(err, "document not found")
+	}
+	resp, err := h.service.DerivePurchaseOrderResponse(doc)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
 }

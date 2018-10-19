@@ -79,7 +79,7 @@ func (s service) DerivePurchaseOrderData(po documents.Model) (*clientpopb.Purcha
 }
 
 // DerivePurchaseOrderResponse returns po response from the model
-func (s service) DerivePurchaseOrderResponse(inv documents.Model) (*clientpopb.PurchaseOrderResponse, error) {
+func (s service) DerivePurchaseOrderResponse(po documents.Model) (*clientpopb.PurchaseOrderResponse, error) {
 	return nil, fmt.Errorf("implement me")
 }
 
