@@ -216,7 +216,7 @@ func (h grpcHandler) Create(ctx context.Context, req *clientpurchaseorderpb.Purc
 		return nil, err
 	}
 
-	// validate and persist
+	// validate, persist, and anchor
 	doc, err = h.service.Create(ctx, doc)
 	if err != nil {
 		return nil, err

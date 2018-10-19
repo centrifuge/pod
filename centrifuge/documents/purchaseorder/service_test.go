@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -22,9 +24,31 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 }
 
 func TestService_DeriveFromCreatePayload(t *testing.T) {
+	// nil payload
 	m, err := poSrv.DeriveFromCreatePayload(nil)
 	assert.Nil(t, m)
 	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "input is nil")
+
+	// Init fails
+	payload := &clientpurchaseorderpb.PurchaseOrderCreatePayload{
+		Data: &clientpurchaseorderpb.PurchaseOrderData{
+			ExtraData: "some data",
+		},
+	}
+
+	m, err = poSrv.DeriveFromCreatePayload(payload)
+	assert.Nil(t, m)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "purchase order init failed")
+
+	// success
+	payload.Data.ExtraData = "0x01020304050607"
+	m, err = poSrv.DeriveFromCreatePayload(payload)
+	assert.Nil(t, err)
+	assert.NotNil(t, m)
+	po := m.(*PurchaseOrderModel)
+	assert.Equal(t, hexutil.Encode(po.ExtraData), payload.Data.ExtraData)
 }
 
 func TestService_DeriveFromCoreDocument(t *testing.T) {

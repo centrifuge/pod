@@ -6,6 +6,8 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
+	"github.com/centrifuge/go-centrifuge/centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/processor"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/notification"
@@ -65,7 +67,17 @@ func (s service) Update(ctx context.Context, po documents.Model) (documents.Mode
 
 // DeriveFromCreatePayload derives purchase order from create payload
 func (s service) DeriveFromCreatePayload(payload *clientpopb.PurchaseOrderCreatePayload) (documents.Model, error) {
-	return nil, fmt.Errorf("implement me")
+	if payload == nil {
+		return nil, centerrors.New(code.DocumentInvalid, "input is nil")
+	}
+
+	po := new(PurchaseOrderModel)
+	err := po.InitPurchaseOrderInput(payload)
+	if err != nil {
+		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("purchase order init failed: %v", err))
+	}
+
+	return po, nil
 }
 
 // DeriveFromUpdatePayload derives purchase order from update payload
