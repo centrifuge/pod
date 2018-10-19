@@ -22,7 +22,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
-	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
+
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -30,7 +31,7 @@ import (
 
 var (
 	invService Service
-	centID     = tools.RandomSlice(identity.CentIDLength)
+	centID     = utils.RandomSlice(identity.CentIDLength)
 	key1Pub    = [...]byte{230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
 	key1       = []byte{102, 109, 71, 239, 130, 229, 128, 189, 37, 96, 223, 5, 189, 91, 210, 47, 89, 4, 165, 6, 188, 53, 49, 250, 109, 151, 234, 139, 57, 205, 231, 253, 230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
 )
@@ -77,7 +78,7 @@ func TestService_DeriveFromPayload(t *testing.T) {
 }
 
 func TestService_GetLastVersion(t *testing.T) {
-	thirdIdentifier := tools.RandomSlice(32)
+	thirdIdentifier := utils.RandomSlice(32)
 	doc, err := createMockDocument()
 	assert.Nil(t, err)
 
@@ -108,26 +109,26 @@ func TestService_GetLastVersion(t *testing.T) {
 }
 
 func TestService_GetVersion_invalid_version(t *testing.T) {
-	currentVersion := tools.RandomSlice(32)
+	currentVersion := utils.RandomSlice(32)
 
 	inv := &InvoiceModel{
 		GrossAmount: 60,
 		CoreDocument: &coredocumentpb.CoreDocument{
-			DocumentIdentifier: tools.RandomSlice(32),
+			DocumentIdentifier: utils.RandomSlice(32),
 			CurrentVersion:     currentVersion,
 		},
 	}
 	err := getRepository().Create(currentVersion, inv)
 	assert.Nil(t, err)
 
-	mod, err := invService.GetVersion(tools.RandomSlice(32), currentVersion)
+	mod, err := invService.GetVersion(utils.RandomSlice(32), currentVersion)
 	assert.EqualError(t, err, "[4]document not found for the given version: version is not valid for this identifier")
 	assert.Nil(t, mod)
 }
 
 func TestService_GetVersion(t *testing.T) {
-	documentIdentifier := tools.RandomSlice(32)
-	currentVersion := tools.RandomSlice(32)
+	documentIdentifier := utils.RandomSlice(32)
+	currentVersion := utils.RandomSlice(32)
 
 	inv := &InvoiceModel{
 		GrossAmount: 60,
@@ -308,7 +309,7 @@ func TestService_SaveState(t *testing.T) {
 	assert.Nil(t, inv.CoreDocument.DataRoot)
 
 	inv.Currency = "INR"
-	inv.CoreDocument.DataRoot = tools.RandomSlice(32)
+	inv.CoreDocument.DataRoot = utils.RandomSlice(32)
 	err = invService.SaveState(inv)
 	assert.Nil(t, err)
 
@@ -381,7 +382,7 @@ func TestService_CreateProofsInvalidField(t *testing.T) {
 }
 
 func TestService_CreateProofsDocumentDoesntExist(t *testing.T) {
-	_, err := invService.CreateProofs(tools.RandomSlice(32), []string{"invoice_number"})
+	_, err := invService.CreateProofs(utils.RandomSlice(32), []string{"invoice_number"})
 	assert.Error(t, err)
 	assert.Equal(t, "document not found: leveldb: not found", err.Error())
 }
@@ -406,7 +407,7 @@ func TestService_CreateProofsForVersion(t *testing.T) {
 func TestService_CreateProofsForVersionDocumentDoesntExist(t *testing.T) {
 	i, err := createAnchoredMockDocument(t, false)
 	assert.Nil(t, err)
-	_, err = invService.CreateProofsForVersion(i.CoreDocument.DocumentIdentifier, tools.RandomSlice(32), []string{"invoice_number"})
+	_, err = invService.CreateProofsForVersion(i.CoreDocument.DocumentIdentifier, utils.RandomSlice(32), []string{"invoice_number"})
 	assert.Error(t, err)
 	assert.Equal(t, "document not found for the given version: leveldb: not found", err.Error())
 }
@@ -486,7 +487,7 @@ func updatedAnchoredMockDocument(t *testing.T, i *InvoiceModel) (*InvoiceModel, 
 	}
 	// hacky update to version
 	corDoc.CurrentVersion = corDoc.NextVersion
-	corDoc.NextVersion = tools.RandomSlice(32)
+	corDoc.NextVersion = utils.RandomSlice(32)
 	if err != nil {
 		return nil, err
 	}
@@ -510,8 +511,8 @@ func updatedAnchoredMockDocument(t *testing.T, i *InvoiceModel) (*InvoiceModel, 
 }
 
 func createMockDocument() (*InvoiceModel, error) {
-	documentIdentifier := tools.RandomSlice(32)
-	nextIdentifier := tools.RandomSlice(32)
+	documentIdentifier := utils.RandomSlice(32)
+	nextIdentifier := utils.RandomSlice(32)
 	inv1 := &InvoiceModel{
 		InvoiceNumber: "test_invoice",
 		GrossAmount:   60,
@@ -540,7 +541,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.Nil(t, doc)
 
 	// missing last version
-	id := tools.RandomSlice(32)
+	id := utils.RandomSlice(32)
 	payload.Identifier = hexutil.Encode(id)
 	doc, err = invService.DeriveFromUpdatePayload(payload)
 	assert.Error(t, err)
@@ -553,7 +554,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.Nil(t, err)
 	old.CoreDocument.DocumentIdentifier = id
 	old.CoreDocument.CurrentVersion = id
-	old.CoreDocument.DocumentRoot = tools.RandomSlice(32)
+	old.CoreDocument.DocumentRoot = utils.RandomSlice(32)
 	err = getRepository().Create(id, old)
 	assert.Nil(t, err)
 	payload.Data = &clientinvoicepb.InvoiceData{
@@ -570,7 +571,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.Nil(t, doc)
 
 	// failed core document new version
-	payload.Data.ExtraData = hexutil.Encode(tools.RandomSlice(32))
+	payload.Data.ExtraData = hexutil.Encode(utils.RandomSlice(32))
 	payload.Collaborators = []string{"some wrong ID"}
 	doc, err = invService.DeriveFromUpdatePayload(payload)
 	assert.Error(t, err)
@@ -578,7 +579,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.Nil(t, doc)
 
 	// success
-	wantCollab := tools.RandomSlice(6)
+	wantCollab := utils.RandomSlice(6)
 	payload.Collaborators = []string{hexutil.Encode(wantCollab)}
 	doc, err = invService.DeriveFromUpdatePayload(payload)
 	assert.Nil(t, err)
@@ -643,7 +644,7 @@ func TestService_Update(t *testing.T) {
 	assert.Nil(t, err)
 	cd, err := inv.PackCoreDocument()
 	assert.Nil(t, err)
-	cd.DocumentRoot = tools.RandomSlice(32)
+	cd.DocumentRoot = utils.RandomSlice(32)
 	err = inv.UnpackCoreDocument(cd)
 	assert.Nil(t, err)
 	getRepository().Create(cd.DocumentIdentifier, inv)
@@ -651,8 +652,8 @@ func TestService_Update(t *testing.T) {
 	data, err := invService.DeriveInvoiceData(inv)
 	assert.Nil(t, err)
 	data.GrossAmount = 100
-	data.ExtraData = hexutil.Encode(tools.RandomSlice(32))
-	collab := hexutil.Encode(tools.RandomSlice(6))
+	data.ExtraData = hexutil.Encode(utils.RandomSlice(32))
+	collab := hexutil.Encode(utils.RandomSlice(6))
 
 	newInv, err := invService.DeriveFromUpdatePayload(&clientinvoicepb.InvoiceUpdatePayload{
 		Identifier:    hexutil.Encode(cd.DocumentIdentifier),

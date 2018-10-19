@@ -8,7 +8,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	"github.com/centrifuge/go-centrifuge/centrifuge/queue"
-	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
+
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -102,7 +103,7 @@ func (id *EthereumIdentity) FetchKey(key []byte) (Key, error) {
 		return nil, err
 	}
 	opts := ethereum.GetGethCallOpts()
-	key32, _ := tools.SliceToByte32(key)
+	key32, _ := utils.SliceToByte32(key)
 	keyInstance, err := contract.GetKey(opts, key32)
 	if err != nil {
 		return nil, err
@@ -121,7 +122,7 @@ func (id *EthereumIdentity) GetCurrentP2PKey() (ret string, err error) {
 	if err != nil {
 		return
 	}
-	key32, _ := tools.SliceToByte32(key)
+	key32, _ := utils.SliceToByte32(key)
 	p2pId, err := ed25519keys.PublicKeyToP2PKey(key32)
 	if err != nil {
 		return
@@ -140,7 +141,7 @@ func (id *EthereumIdentity) findContract() (exists bool, err error) {
 	if err != nil {
 		return false, err
 	}
-	if tools.IsEmptyByteSlice(idAddress.Bytes()) {
+	if utils.IsEmptyByteSlice(idAddress.Bytes()) {
 		return false, errors.New("Identity not found by address provided")
 	}
 
@@ -174,7 +175,7 @@ func (id *EthereumIdentity) CheckIdentityExists() (exists bool, err error) {
 }
 
 func (id *EthereumIdentity) AddKeyToIdentity(ctx context.Context, keyPurpose int, key []byte) (confirmations chan *WatchIdentity, err error) {
-	if tools.IsEmptyByteSlice(key) || len(key) > 32 {
+	if utils.IsEmptyByteSlice(key) || len(key) > 32 {
 		log.Errorf("Can't add key to identity: empty or invalid length(>32) key for [id: %s]: %x", id, key)
 		return confirmations, errors.New("Can't add key to identity: Invalid key")
 	}
@@ -241,7 +242,7 @@ func sendKeyRegistrationTransaction(identityContract IdentityContract, opts *bin
 
 	//preparation of data in specific types for the call to Ethereum
 	bigInt := big.NewInt(int64(keyPurpose))
-	bKey, err := tools.SliceToByte32(key)
+	bKey, err := utils.SliceToByte32(key)
 	if err != nil {
 		return err
 	}
@@ -380,7 +381,7 @@ func (ids *EthereumIdentityService) GetIdentityAddress(centID CentID) (common.Ad
 		return common.Address{}, err
 	}
 
-	if tools.IsEmptyAddress(address) {
+	if utils.IsEmptyAddress(address) {
 		return common.Address{}, errors.New("No address found for centID")
 	}
 	return address, nil

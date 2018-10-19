@@ -7,7 +7,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
+
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -173,7 +174,7 @@ type MintRequest struct {
 
 // NewMintRequest converts the parameters and returns a struct with needed parameter for minting
 func NewMintRequest(to common.Address, anchorID anchors.AnchorID, proofs []*proofspb.Proof, rootHash [32]byte) (*MintRequest, error) {
-	tokenID := tools.ByteSliceToBigInt(tools.RandomSlice(256))
+	tokenID := utils.ByteSliceToBigInt(utils.RandomSlice(256))
 	// TODO move this to config
 	tokenURI := "http:=//www.centrifuge.io/DUMMY_URI_SERVICE"
 	proofData, err := createProofData(proofs)
@@ -208,7 +209,7 @@ func createProofData(proofspb []*proofspb.Proof) (*proofData, error) {
 
 	for i, p := range proofspb {
 		values[i] = p.Value
-		salt32, err := tools.SliceToByte32(p.Salt)
+		salt32, err := utils.SliceToByte32(p.Salt)
 		if err != nil {
 			return nil, err
 		}
@@ -227,7 +228,7 @@ func createProofData(proofspb []*proofspb.Proof) (*proofData, error) {
 func convertProofProperty(sortedHashes [][]byte) ([][32]byte, error) {
 	var property [][32]byte
 	for _, hash := range sortedHashes {
-		hash32, err := tools.SliceToByte32(hash)
+		hash32, err := utils.SliceToByte32(hash)
 		if err != nil {
 			return nil, err
 		}

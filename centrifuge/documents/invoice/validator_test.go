@@ -7,10 +7,11 @@ import (
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
 
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -71,7 +72,7 @@ func TestDataRootValidation_Validate(t *testing.T) {
 
 	// unknown doc type
 	cd := coredocument.New()
-	cd.DataRoot = tools.RandomSlice(32)
+	cd.DataRoot = utils.RandomSlice(32)
 	model = &mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
 	err = drv.Validate(nil, model)

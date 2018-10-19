@@ -4,7 +4,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/documents"
-	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	logging "github.com/ipfs/go-log"
@@ -96,6 +96,6 @@ func ConvertProofToClientFormat(proof *proofspb.Proof) *documentpb.Proof {
 		Value:        proof.Value,
 		Salt:         hexutil.Encode(proof.Salt),
 		Hash:         hexutil.Encode(proof.Hash),
-		SortedHashes: tools.SliceOfByteSlicesToHexStringSlice(proof.SortedHashes),
+		SortedHashes: utils.SliceOfByteSlicesToHexStringSlice(proof.SortedHashes),
 	}
 }

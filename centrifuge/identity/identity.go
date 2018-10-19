@@ -14,7 +14,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/secp256k1"
-	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
+
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
@@ -36,11 +37,11 @@ type CentID [CentIDLength]byte
 // ToCentID takes bytes and return CentID
 // errors out if bytes are empty, nil, or len(bytes) > CentIDLength
 func ToCentID(bytes []byte) (centID CentID, err error) {
-	if tools.IsEmptyByteSlice(bytes) {
+	if utils.IsEmptyByteSlice(bytes) {
 		return centID, fmt.Errorf("empty bytes provided")
 	}
 
-	if !tools.IsValidByteSliceForLength(bytes, CentIDLength) {
+	if !utils.IsValidByteSliceForLength(bytes, CentIDLength) {
 		return centID, errors.New("invalid length byte slice provided for centID")
 	}
 
@@ -74,7 +75,7 @@ func CentIDsFromStrings(ids []string) ([]CentID, error) {
 }
 
 func NewRandomCentID() CentID {
-	ID, _ := ToCentID(tools.RandomSlice(CentIDLength))
+	ID, _ := ToCentID(utils.RandomSlice(CentIDLength))
 	return ID
 }
 
@@ -97,7 +98,7 @@ func (c CentID) MarshalBinary() (data []byte, err error) {
 }
 
 func (c CentID) BigInt() *big.Int {
-	return tools.ByteSliceToBigInt(c[:])
+	return utils.ByteSliceToBigInt(c[:])
 }
 
 func (c CentID) ByteArray() [CentIDLength]byte {
@@ -204,7 +205,7 @@ func GetIdentityKey(identity CentID, pubKey []byte) (keyInfo Key, err error) {
 		return keyInfo, err
 	}
 
-	if tools.IsEmptyByte32(key.GetKey()) {
+	if utils.IsEmptyByte32(key.GetKey()) {
 		return keyInfo, fmt.Errorf(fmt.Sprintf("key not found for identity: %x", identity))
 	}
 
@@ -219,11 +220,11 @@ func ValidateKey(centrifugeId CentID, key []byte, purpose int) error {
 		return err
 	}
 
-	if !bytes.Equal(key, tools.Byte32ToSlice(idKey.GetKey())) {
+	if !bytes.Equal(key, utils.Byte32ToSlice(idKey.GetKey())) {
 		return fmt.Errorf(fmt.Sprintf("[Key: %x] Key doesn't match", idKey.GetKey()))
 	}
 
-	if !tools.ContainsBigIntInSlice(big.NewInt(int64(purpose)), idKey.GetPurposes()) {
+	if !utils.ContainsBigIntInSlice(big.NewInt(int64(purpose)), idKey.GetPurposes()) {
 		return fmt.Errorf(fmt.Sprintf("[Key: %x] Key doesn't have purpose [%d]", idKey.GetKey(), purpose))
 	}
 

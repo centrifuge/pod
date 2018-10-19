@@ -10,7 +10,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/secp256k1"
-	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
+
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
@@ -46,10 +47,10 @@ func TestCorrectCommitSignatureGen(t *testing.T) {
 }
 
 func TestGenerateAnchor(t *testing.T) {
-	currentAnchorID := tools.RandomByte32()
-	currentDocumentRoot := tools.RandomByte32()
-	documentProof := tools.RandomByte32()
-	centrifugeId := tools.RandomSlice(identity.CentIDLength)
+	currentAnchorID := utils.RandomByte32()
+	currentDocumentRoot := utils.RandomByte32()
+	documentProof := utils.RandomByte32()
+	centrifugeId := utils.RandomSlice(identity.CentIDLength)
 	testPrivateKey, _ := hexutil.Decode("0x17e063fa17dd8274b09c14b253697d9a20afff74ace3c04fdb1b9c814ce0ada5")
 
 	var documentProofs [][32]byte
@@ -75,11 +76,11 @@ func TestGenerateAnchor(t *testing.T) {
 
 func TestGetDocumentRootOf(t *testing.T) {
 	repo := &mockAnchorRepo{}
-	anchorID, err := anchors.NewAnchorID(tools.RandomSlice(32))
+	anchorID, err := anchors.NewAnchorID(utils.RandomSlice(32))
 	assert.Nil(t, err)
 
 	ethRepo := anchors.NewEthereumAnchorRepository(config.Config, repo)
-	docRoot := tools.RandomByte32()
+	docRoot := utils.RandomByte32()
 	repo.On("Commits", mock.Anything, mock.Anything).Return(docRoot, nil)
 	gotRoot, err := ethRepo.GetDocumentRootOf(anchorID)
 	repo.AssertExpectations(t)

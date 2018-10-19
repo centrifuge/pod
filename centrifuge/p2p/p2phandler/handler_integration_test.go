@@ -22,7 +22,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/commons"
-	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
+
 	"github.com/centrifuge/go-centrifuge/centrifuge/version"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/crypto/ed25519"
@@ -53,7 +54,7 @@ func TestHandler_RequestDocumentSignature_AlreadyExists(t *testing.T) {
 	assert.Nil(t, err)
 	centID, _ := identity.ToCentID(idConfig.ID)
 	pubKey := idConfig.PublicKey
-	b32Key, _ := tools.SliceToByte32(pubKey)
+	b32Key, _ := utils.SliceToByte32(pubKey)
 	idkey := &identity.EthereumIdentityKey{
 		Key:       b32Key,
 		Purposes:  []*big.Int{big.NewInt(identity.KeyPurposeSigning)},
@@ -95,7 +96,7 @@ func TestHandler_RequestDocumentSignature(t *testing.T) {
 	assert.Nil(t, err)
 	centID, _ := identity.ToCentID(idConfig.ID)
 	pubKey := idConfig.PublicKey
-	b32Key, _ := tools.SliceToByte32(pubKey)
+	b32Key, _ := utils.SliceToByte32(pubKey)
 	idkey := &identity.EthereumIdentityKey{
 		Key:       b32Key,
 		Purposes:  []*big.Int{big.NewInt(identity.KeyPurposeSigning)},
@@ -132,7 +133,7 @@ func TestHandler_SendAnchoredDocument_update_fail(t *testing.T) {
 	docRootTyped, _ := anchors.NewDocRoot(doc.DocumentRoot)
 	messageToSign := anchors.GenerateCommitHash(anchorIDTyped, centrifugeId, docRootTyped)
 	signature, _ := secp256k1.SignEthereum(messageToSign, secpIDConfig.PrivateKey)
-	anchorConfirmations, err := anchors.CommitAnchor(anchorIDTyped, docRootTyped, centrifugeId, [][anchors.DocumentProofLength]byte{tools.RandomByte32()}, signature)
+	anchorConfirmations, err := anchors.CommitAnchor(anchorIDTyped, docRootTyped, centrifugeId, [][anchors.DocumentProofLength]byte{utils.RandomByte32()}, signature)
 	assert.Nil(t, err)
 
 	watchCommittedAnchor := <-anchorConfirmations
@@ -174,7 +175,7 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 	docRootTyped, _ := anchors.NewDocRoot(doc.DocumentRoot)
 	messageToSign := anchors.GenerateCommitHash(anchorIDTyped, centrifugeId, docRootTyped)
 	signature, _ := secp256k1.SignEthereum(messageToSign, secpIDConfig.PrivateKey)
-	anchorConfirmations, err := anchors.CommitAnchor(anchorIDTyped, docRootTyped, centrifugeId, [][anchors.DocumentProofLength]byte{tools.RandomByte32()}, signature)
+	anchorConfirmations, err := anchors.CommitAnchor(anchorIDTyped, docRootTyped, centrifugeId, [][anchors.DocumentProofLength]byte{utils.RandomByte32()}, signature)
 	assert.Nil(t, err)
 
 	watchCommittedAnchor := <-anchorConfirmations
@@ -190,7 +191,7 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 
 func createIdentity(t *testing.T) identity.CentID {
 	// Create Identity
-	centrifugeId, _ := identity.ToCentID(tools.RandomSlice(identity.CentIDLength))
+	centrifugeId, _ := identity.ToCentID(utils.RandomSlice(identity.CentIDLength))
 	config.Config.V.Set("identityId", centrifugeId.String())
 	id, confirmations, err := identity.IDService.CreateIdentity(centrifugeId)
 	assert.Nil(t, err, "should not error out when creating identity")
