@@ -9,6 +9,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	"github.com/centrifuge/go-centrifuge/centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/centrifuge/precise-proofs/proofs"
@@ -289,6 +290,21 @@ func NewWithCollaborators(collaborators []string) (*coredocumentpb.CoreDocument,
 
 	FillSalts(cd)
 	return cd, nil
+}
+
+func GetExternalCollaborators(doc *coredocumentpb.CoreDocument) ([][]byte, error) {
+	collaborators := [][]byte{}
+	// Get Self
+	idConfig, err := ed25519keys.GetIDConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode collaborator: %v", err)
+	}
+	for _, collab := range doc.Collaborators {
+		if !tools.IsSameByteSlice(collab, idConfig.ID) {
+			collaborators = append(collaborators, collab)
+		}
+	}
+	return collaborators, nil
 }
 
 // FillSalts of coredocument current state for proof tree creation
