@@ -8,21 +8,32 @@ import (
 	"strconv"
 	"testing"
 
+	"math/big"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/code"
+	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
+	"github.com/centrifuge/go-centrifuge/centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
+	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"github.com/centrifuge/go-centrifuge/centrifuge/anchors"
 )
 
-var invService Service
+var (
+	invService Service
+	centID     = tools.RandomSlice(identity.CentIDLength)
+	key1Pub    = [...]byte{230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
+	key1       = []byte{102, 109, 71, 239, 130, 229, 128, 189, 37, 96, 223, 5, 189, 91, 210, 47, 89, 4, 165, 6, 188, 53, 49, 250, 109, 151, 234, 139, 57, 205, 231, 253, 230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
+)
 
 func TestDefaultService(t *testing.T) {
 	srv := DefaultService(getRepository(), &testingutils.MockCoreDocumentProcessor{})
@@ -308,12 +319,34 @@ func TestService_SaveState(t *testing.T) {
 	assert.Equal(t, loadInv.CoreDocument.DataRoot, inv.CoreDocument.DataRoot)
 }
 
-func TestService_CreateProofs(t *testing.T) {
-	i, err := createAnchoredMockDocument(t, false)
-	assert.Nil(t, err)
+// Functions returns service mocks
+func mockSignatureCheck(i *InvoiceModel) identity.Service {
+	idkey := &identity.EthereumIdentityKey{
+		Key:       key1Pub,
+		Purposes:  []*big.Int{big.NewInt(identity.KeyPurposeSigning)},
+		RevokedAt: big.NewInt(0),
+	}
 	anchorID, _ := anchors.NewAnchorID(i.CoreDocument.DocumentIdentifier)
 	docRoot, _ := anchors.NewDocRoot(i.CoreDocument.DocumentRoot)
 	anchorRepository.On("GetDocumentRootOf", anchorID).Return(docRoot, nil).Once()
+	srv := &testingcommons.MockIDService{}
+	id := &testingcommons.MockID{}
+	centID, _ := identity.ToCentID(centID)
+	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
+	id.On("FetchKey", key1Pub[:]).Return(idkey, nil).Once()
+	return srv
+}
+
+func setIdentityService(idService identity.Service) {
+	identity.IDService = idService
+}
+
+func TestService_CreateProofs(t *testing.T) {
+	defer setIdentityService(identity.IDService)
+	i, err := createAnchoredMockDocument(t, false)
+	assert.Nil(t, err)
+	idService := mockSignatureCheck(i)
+	setIdentityService(idService)
 	proof, err := invService.CreateProofs(i.CoreDocument.DocumentIdentifier, []string{"invoice_number"})
 	assert.Nil(t, err)
 	assert.Equal(t, i.CoreDocument.DocumentIdentifier, proof.DocumentId)
@@ -323,8 +356,11 @@ func TestService_CreateProofs(t *testing.T) {
 }
 
 func TestService_CreateProofsInvalidField(t *testing.T) {
+	defer setIdentityService(identity.IDService)
 	i, err := createAnchoredMockDocument(t, false)
 	assert.Nil(t, err)
+	idService := mockSignatureCheck(i)
+	setIdentityService(idService)
 	_, err = invService.CreateProofs(i.CoreDocument.DocumentIdentifier, []string{"invalid_field"})
 	assert.Error(t, err)
 	assert.Equal(t, "createProofs error No such field: invalid_field in obj", err.Error())
@@ -337,8 +373,11 @@ func TestService_CreateProofsDocumentDoesntExist(t *testing.T) {
 }
 
 func TestService_CreateProofsForVersion(t *testing.T) {
+	defer setIdentityService(identity.IDService)
 	i, err := createAnchoredMockDocument(t, false)
 	assert.Nil(t, err)
+	idService := mockSignatureCheck(i)
+	setIdentityService(idService)
 	olderVersion := i.CoreDocument.CurrentVersion
 	i, err = updatedAnchoredMockDocument(t, i)
 	assert.Nil(t, err)
@@ -359,8 +398,11 @@ func TestService_CreateProofsForVersionDocumentDoesntExist(t *testing.T) {
 }
 
 func TestService_RequestDocumentSignature_SigningRootNil(t *testing.T) {
+	defer setIdentityService(identity.IDService)
 	i, err := createAnchoredMockDocument(t, true)
 	assert.Nil(t, err)
+	idService := mockSignatureCheck(i)
+	setIdentityService(idService)
 	i.CoreDocument.SigningRoot = nil
 	signature, err := invService.RequestDocumentSignature(i)
 	assert.NotNil(t, err)
@@ -389,6 +431,15 @@ func createAnchoredMockDocument(t *testing.T, skipSave bool) (*InvoiceModel, err
 	if err != nil {
 		return nil, err
 	}
+
+	sig := signatures.Sign(&config.IdentityConfig{
+		ID:         centID,
+		PublicKey:  key1Pub[:],
+		PrivateKey: key1,
+	}, corDoc.SigningRoot)
+
+	corDoc.Signatures = append(corDoc.Signatures, sig)
+
 	err = coredocument.CalculateDocumentRoot(corDoc)
 	if err != nil {
 		return nil, err

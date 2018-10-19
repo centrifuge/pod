@@ -15,7 +15,7 @@ func TestMain(m *testing.M) {
 	ibootstappers := []bootstrap.TestBootstrapper{
 		&config.Bootstrapper{},
 	}
-	bootstrap.RunTestBootstrappers(ibootstappers)
+	bootstrap.RunTestBootstrappers(ibootstappers, nil)
 	result := m.Run()
 	os.Exit(result)
 }

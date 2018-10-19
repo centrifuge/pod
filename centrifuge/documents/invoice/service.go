@@ -93,7 +93,7 @@ func (s service) CreateProofsForVersion(documentID, version []byte, fields []str
 
 // invoiceProof creates proofs for invoice model fields
 func (s service) invoiceProof(inv *InvoiceModel, fields []string) (common.DocumentProof, error) {
-	if err := coredocument.PostAnchoredValidator().Validate(nil, inv); err != nil {
+	if err := coredocument.PostAnchoredValidator(anchors.GetAnchorRepository()).Validate(nil, inv); err != nil {
 		return common.DocumentProof{}, centerrors.New(code.DocumentInvalid, err.Error())
 	}
 

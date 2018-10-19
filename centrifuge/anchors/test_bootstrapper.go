@@ -3,8 +3,10 @@
 package anchors
 
 import (
-	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrap"
 	"errors"
+	"fmt"
+
+	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrap"
 )
 
 func (b *Bootstrapper) TestBootstrap(context map[string]interface{}) error {
@@ -13,6 +15,7 @@ func (b *Bootstrapper) TestBootstrap(context map[string]interface{}) error {
 	}
 
 	if repo, ok := context[bootstrap.BootstrappedAnchorRepository]; ok {
+		fmt.Printf("Bootstrapped! %v\n", repo.(AnchorRepository))
 		setAnchorRepository(repo.(AnchorRepository))
 	}
 
