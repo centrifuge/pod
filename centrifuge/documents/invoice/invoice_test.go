@@ -13,6 +13,7 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
+	"github.com/centrifuge/go-centrifuge/centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/context/testlogging"
@@ -22,6 +23,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestMain(m *testing.M) {
@@ -30,14 +32,32 @@ func TestMain(m *testing.M) {
 		&config.Bootstrapper{},
 		&storage.Bootstrapper{},
 		&coredocumentrepository.Bootstrapper{},
+		&anchors.Bootstrapper{},
 		&Bootstrapper{},
 	}
-	bootstrap.RunTestBootstrappers(ibootstappers)
-	invService = DefaultService(getRepository(), &testingutils.MockCoreDocumentProcessor{})
+	anchorRepository = &anchorRepo{}
+	context := map[string]interface{}{
+		bootstrap.BootstrappedAnchorRepository: anchorRepository,
+	}
+	bootstrap.RunTestBootstrappers(ibootstappers, context)
+	invService = DefaultService(getRepository(), &testingutils.MockCoreDocumentProcessor{}, anchorRepository)
 	flag.Parse()
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)
+}
+
+var anchorRepository *anchorRepo
+
+type anchorRepo struct {
+	mock.Mock
+	anchors.AnchorRepository
+}
+
+func (r *anchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.DocRoot, error) {
+	args := r.Called(anchorID)
+	docRoot, _ := args.Get(0).(anchors.DocRoot)
+	return docRoot, args.Error(1)
 }
 
 func TestInvoiceCoreDocumentConverter(t *testing.T) {

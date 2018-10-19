@@ -4,6 +4,7 @@ package purchaseorder
 
 import (
 	"flag"
+	"github.com/stretchr/testify/mock"
 	"os"
 	"testing"
 
@@ -13,7 +14,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
-
+	"github.com/centrifuge/go-centrifuge/centrifuge/anchors"
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
@@ -31,12 +32,23 @@ func TestMain(m *testing.M) {
 		&coredocumentrepository.Bootstrapper{},
 		&Bootstrapper{},
 	}
-	bootstrap.RunTestBootstrappers(ibootstappers)
+	anchorRepository = &anchorRepo{}
+	context := map[string]interface{}{
+		bootstrap.BootstrappedAnchorRepository: anchorRepository,
+	}
+	bootstrap.RunTestBootstrappers(ibootstappers ,context)
 	poSrv = DefaultService(getRepository(), &testingutils.MockCoreDocumentProcessor{})
 	flag.Parse()
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)
+}
+
+var anchorRepository *anchorRepo
+
+type anchorRepo struct {
+	mock.Mock
+	anchors.AnchorRepository
 }
 
 func TestPurchaseOrderCoreDocumentConverter(t *testing.T) {

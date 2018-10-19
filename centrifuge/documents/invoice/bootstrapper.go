@@ -26,7 +26,7 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	InitLegacyRepository(storage.GetLevelDBStorage())
 
 	// register service
-	srv := DefaultService(getRepository(), coredocumentprocessor.DefaultProcessor(identity.IDService, p2p.NewP2PClient(), anchors.GetAnchorRepository()))
+	srv := DefaultService(getRepository(), coredocumentprocessor.DefaultProcessor(identity.IDService, p2p.NewP2PClient(), anchors.GetAnchorRepository()), anchors.GetAnchorRepository())
 	err := documents.GetRegistryInstance().Register(documenttypes.InvoiceDataTypeUrl, srv)
 	if err != nil {
 		return fmt.Errorf("failed to register invoice service: %v", err)
