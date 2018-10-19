@@ -5,6 +5,7 @@ package purchaseorder
 import (
 	"context"
 	"crypto/sha256"
+	"fmt"
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
@@ -12,8 +13,11 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	legacy "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/legacy/purchaseorder"
+	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
+	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/go-errors/errors"
 	"github.com/golang/protobuf/proto"
@@ -292,4 +296,88 @@ func TestPurchaseOrderDocumentService_HandleCreatePurchaseOrderProof_NotExisting
 
 	assert.Nil(t, purchaseOrderProof)
 	assert.Error(t, err)
+}
+
+type mockService struct {
+	Service
+	mock.Mock
+}
+
+func (m mockService) Create(ctx context.Context, doc documents.Model) (documents.Model, error) {
+	args := m.Called(ctx, doc)
+	model, _ := args.Get(0).(documents.Model)
+	return model, args.Error(1)
+}
+
+func (m mockService) DeriveFromCreatePayload(req *clientpurchaseorderpb.PurchaseOrderCreatePayload) (documents.Model, error) {
+	args := m.Called(req)
+	model, _ := args.Get(0).(documents.Model)
+	return model, args.Error(1)
+}
+
+func (m mockService) DerivePurchaseOrderResponse(doc documents.Model) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
+	args := m.Called(doc)
+	resp, _ := args.Get(0).(*clientpurchaseorderpb.PurchaseOrderResponse)
+	return resp, args.Error(1)
+}
+
+func createPayload() *clientpurchaseorderpb.PurchaseOrderCreatePayload {
+	return &clientpurchaseorderpb.PurchaseOrderCreatePayload{
+		Data: &clientpurchaseorderpb.PurchaseOrderData{
+			Currency: "EUR",
+		},
+	}
+}
+
+func TestGRPCHandler_Create(t *testing.T) {
+	h := grpcHandler{}
+	req := createPayload()
+	ctx := context.Background()
+	model := &testingdocuments.MockModel{}
+
+	// derive fails
+	srv := mockService{}
+	srv.On("DeriveFromCreatePayload", req).Return(nil, fmt.Errorf("derive failed")).Once()
+	h.service = srv
+	resp, err := h.Create(ctx, req)
+	srv.AssertExpectations(t)
+	assert.Nil(t, resp)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "derive failed")
+
+	// create fails
+	srv = mockService{}
+	srv.On("DeriveFromCreatePayload", req).Return(model, nil).Once()
+	srv.On("Create", ctx, model).Return(nil, fmt.Errorf("create failed")).Once()
+	h.service = srv
+	resp, err = h.Create(ctx, req)
+	srv.AssertExpectations(t)
+	assert.Nil(t, resp)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "create failed")
+
+	// derive response fails
+	srv = mockService{}
+	srv.On("DeriveFromCreatePayload", req).Return(model, nil).Once()
+	srv.On("Create", ctx, model).Return(model, nil).Once()
+	srv.On("DerivePurchaseOrderResponse", model).Return(nil, fmt.Errorf("derive response fails")).Once()
+	h.service = srv
+	resp, err = h.Create(ctx, req)
+	srv.AssertExpectations(t)
+	assert.Nil(t, resp)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "derive response fails")
+
+	// success
+	eresp := &clientpurchaseorderpb.PurchaseOrderResponse{}
+	srv = mockService{}
+	srv.On("DeriveFromCreatePayload", req).Return(model, nil).Once()
+	srv.On("Create", ctx, model).Return(model, nil).Once()
+	srv.On("DerivePurchaseOrderResponse", model).Return(eresp, nil).Once()
+	h.service = srv
+	resp, err = h.Create(ctx, req)
+	srv.AssertExpectations(t)
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+	assert.Equal(t, eresp, resp)
 }

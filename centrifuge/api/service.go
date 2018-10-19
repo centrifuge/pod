@@ -1,6 +1,8 @@
 package api
 
 import (
+	"fmt"
+
 	"github.com/centrifuge/go-centrifuge/centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/processor"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
@@ -48,7 +50,12 @@ func registerServices(ctx context.Context, grpcServer *grpc.Server, gwmux *runti
 	}
 
 	// purchase orders
-	purchaseorderpb.RegisterDocumentServiceServer(grpcServer, purchaseorder.GRPCHandler())
+	srv, err := purchaseorder.GRPCHandler()
+	if err != nil {
+		return fmt.Errorf("failed to get purchase order handler: %v", err)
+	}
+
+	purchaseorderpb.RegisterDocumentServiceServer(grpcServer, srv)
 	err = purchaseorderpb.RegisterDocumentServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
 	if err != nil {
 		return err

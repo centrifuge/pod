@@ -1,3 +1,5 @@
+// +build unit integration
+
 package testingdocuments
 
 import (
@@ -44,4 +46,22 @@ func (m *MockService) RequestDocumentSignature(model documents.Model) (*coredocu
 func (m *MockService) ReceiveAnchoredDocument(model documents.Model, headers *p2ppb.CentrifugeHeader) error {
 	args := m.Called()
 	return args.Error(0)
+}
+
+type MockModel struct {
+	documents.Model
+	mock.Mock
+	CoreDocument *coredocumentpb.CoreDocument
+}
+
+func (m *MockModel) PackCoreDocument() (*coredocumentpb.CoreDocument, error) {
+	args := m.Called()
+	cd, _ := args.Get(0).(*coredocumentpb.CoreDocument)
+	return cd, args.Error(1)
+}
+
+func (m *MockModel) JSON() ([]byte, error) {
+	args := m.Called()
+	data, _ := args.Get(0).([]byte)
+	return data, args.Error(1)
 }

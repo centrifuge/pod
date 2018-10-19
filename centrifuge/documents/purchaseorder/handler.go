@@ -10,6 +10,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/processor"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	legacy "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/legacy/purchaseorder"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
@@ -27,6 +28,7 @@ var apiLog = logging.Logger("purchaseorder-api")
 type grpcHandler struct {
 	repo        storage.LegacyRepository
 	coreDocProc coredocumentprocessor.Processor
+	service     Service
 }
 
 // LegacyGRPCHandler handles legacy grpc requests
@@ -35,6 +37,18 @@ func LegacyGRPCHandler(repo storage.LegacyRepository, proc coredocumentprocessor
 		repo:        repo,
 		coreDocProc: proc,
 	}
+}
+
+// GRPCHandler returns an implementation of the purchaseorder DocumentServiceServer
+func GRPCHandler() (clientpurchaseorderpb.DocumentServiceServer, error) {
+	srv, err := documents.GetRegistryInstance().LocateService(documenttypes.PurchaseOrderDataTypeUrl)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch purchase order service")
+	}
+
+	return grpcHandler{
+		service: srv.(Service),
+	}, nil
 }
 
 // anchorPurchaseOrderDocument anchors the given purchaseorder document and returns the anchor details
@@ -194,14 +208,21 @@ func (h grpcHandler) GetReceivedPurchaseOrderDocuments(ctx context.Context, empt
 	return nil, nil
 }
 
-// GRPCHandler returns an implementation of clientpurchaseorderpb.PurchaseOrderDocumentServiceServer
-func GRPCHandler() clientpurchaseorderpb.DocumentServiceServer {
-	return &grpcHandler{}
-}
+// Create validates the purchase order, persists it to DB, and anchors it the chain
+// ctx is used to
+func (h grpcHandler) Create(ctx context.Context, req *clientpurchaseorderpb.PurchaseOrderCreatePayload) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
+	doc, err := h.service.DeriveFromCreatePayload(req)
+	if err != nil {
+		return nil, err
+	}
 
-func (grpcHandler) Create(context.Context, *clientpurchaseorderpb.PurchaseOrderCreatePayload) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
-	apiLog.Error("Implement me")
-	return nil, centerrors.New(code.Unknown, "Implement me")
+	// validate and persist
+	doc, err = h.service.Create(ctx, doc)
+	if err != nil {
+		return nil, err
+	}
+
+	return h.service.DerivePurchaseOrderResponse(doc)
 }
 
 func (grpcHandler) Update(context.Context, *clientpurchaseorderpb.PurchaseOrderUpdatePayload) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
