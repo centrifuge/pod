@@ -422,7 +422,7 @@ func (s service) ReceiveAnchoredDocument(model documents.Model, headers *p2ppb.C
 		return centerrors.New(code.Unknown, fmt.Sprintf("failed to Create legacy CoreDocument: %v", err))
 	}
 
-	err = repo.Update(doc.CurrentVersion, model)
+	err = s.repo.Update(doc.CurrentVersion, model)
 	if err != nil {
 		return centerrors.New(code.Unknown, err.Error())
 	}

@@ -10,11 +10,11 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
-	doccommmon "github.com/centrifuge/go-centrifuge/centrifuge/documents/common"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/nft"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -146,21 +146,21 @@ func (m *MockConfig) GetEthereumDefaultAccountName() string {
 func TestPaymentObligationService(t *testing.T) {
 	tests := []struct {
 		name    string
-		mocker  func() (documents.MockService, *MockPaymentObligation, testingcommons.MockIDService, testingcommons.MockEthClient, MockConfig)
+		mocker  func() (testingdocuments.MockService, *MockPaymentObligation, testingcommons.MockIDService, testingcommons.MockEthClient, MockConfig)
 		request *nftpb.NFTMintRequest
 		err     error
 		result  string
 	}{
 		{
 			"happypath",
-			func() (documents.MockService, *MockPaymentObligation, testingcommons.MockIDService, testingcommons.MockEthClient, MockConfig) {
+			func() (testingdocuments.MockService, *MockPaymentObligation, testingcommons.MockIDService, testingcommons.MockEthClient, MockConfig) {
 				centIDByte := tools.RandomSlice(6)
 				centID, _ := identity.ToCentID(centIDByte)
 				address := common.BytesToAddress(tools.RandomSlice(32))
 				coreDoc := coredocument.New()
 				coreDoc.DocumentRoot = tools.RandomSlice(32)
 				proof := getDummyProof(coreDoc)
-				docServiceMock := documents.MockService{}
+				docServiceMock := testingdocuments.MockService{}
 				docServiceMock.On("GetCurrentVersion", decodeHex("0x1212")).Return(&invoice.InvoiceModel{InvoiceNumber: "1232", CoreDocument: coreDoc}, nil)
 				docServiceMock.On("CreateProofs", decodeHex("0x1212"), []string{"somefield"}).Return(proof, nil)
 				paymentObligationMock := &MockPaymentObligation{}
@@ -206,8 +206,8 @@ func TestPaymentObligationService(t *testing.T) {
 	}
 }
 
-func getDummyProof(coreDoc *coredocumentpb.CoreDocument) doccommmon.DocumentProof {
-	return doccommmon.DocumentProof{
+func getDummyProof(coreDoc *coredocumentpb.CoreDocument) *documents.DocumentProof {
+	return &documents.DocumentProof{
 		DocumentId: coreDoc.DocumentIdentifier,
 		VersionId:  coreDoc.CurrentVersion,
 		State:      "state",

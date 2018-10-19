@@ -65,22 +65,12 @@ type repository struct {
 	documents.LevelDBRepository
 }
 
-// repo is the singleton instance of the repository
-var repo *repository
-
-// once to guard the initialisation of the singleton repository
-var once sync.Once
-
 // getRepository returns the implemented documents.legacyRepo for invoices
 func getRepository() documents.Repository {
-	once.Do(func() {
-		repo = &repository{
-			documents.LevelDBRepository{
-				KeyPrefix: "invoice",
-				LevelDB:   storage.GetLevelDBStorage(),
-			},
-		}
-	})
-
-	return repo
+	return &repository{
+		documents.LevelDBRepository{
+			KeyPrefix: "invoice",
+			LevelDB:   storage.GetLevelDBStorage(),
+		},
+	}
 }

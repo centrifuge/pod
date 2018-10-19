@@ -43,7 +43,7 @@ func InitLegacyLevelDBRepository(db *leveldb.DB) {
 // Deprecated
 func GetLegacyRepository() storage.LegacyRepository {
 	if levelDBRepo == nil {
-		log.Fatal("Invoice repository not initialised")
+		log.Fatal("Purchase order repository not initialised")
 	}
 
 	return levelDBRepo
@@ -62,27 +62,17 @@ func validate(doc proto.Message) error {
 	return nil
 }
 
-// repository is the invoice repository
+// repository is the purchase order repository
 type repository struct {
 	documents.LevelDBRepository
 }
 
-// repo is a singleton instance of repository
-var repo *repository
-
-// once guards the singleton initialisation
-var once sync.Once
-
-// getRepository returns the implemented documents.legacyRepo for invoices
+// getRepository returns the implemented documents.legacyRepo for purchase orders
 func getRepository() documents.Repository {
-	once.Do(func() {
-		repo = &repository{
-			documents.LevelDBRepository{
-				KeyPrefix: "purchaseorder",
-				LevelDB:   storage.GetLevelDBStorage(),
-			},
-		}
-	})
-
-	return repo
+	return &repository{
+		documents.LevelDBRepository{
+			KeyPrefix: "purchaseorder",
+			LevelDB:   storage.GetLevelDBStorage(),
+		},
+	}
 }
