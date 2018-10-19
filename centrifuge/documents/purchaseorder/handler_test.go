@@ -5,6 +5,7 @@ package purchaseorder
 import (
 	"context"
 	"crypto/sha256"
+	"fmt"
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
@@ -378,5 +379,44 @@ func TestGrpcHandler_Get(t *testing.T) {
 	srv.AssertExpectations(t)
 	assert.Nil(t, err, "must be nil")
 	assert.NotNil(t, res, "must be non nil")
+	assert.Equal(t, res, response)
+}
+
+func TestGrpcHandler_GetVersion_invalid_input(t *testing.T) {
+	h := getHandler()
+	srv := h.service.(*mockService)
+	payload := &clientpopb.GetVersionRequest{Identifier: "0x0x", Version: "0x00"}
+	res, err := h.GetVersion(context.Background(), payload)
+	assert.EqualError(t, err, "identifier is invalid: invalid hex string")
+	payload.Version = "0x0x"
+	payload.Identifier = "0x01"
+
+	res, err = h.GetVersion(context.Background(), payload)
+	assert.EqualError(t, err, "version is invalid: invalid hex string")
+	payload.Version = "0x00"
+	payload.Identifier = "0x01"
+
+	mockErr := fmt.Errorf("not found")
+	srv.On("GetVersion", []byte{0x01}, []byte{0x00}).Return(nil, mockErr)
+	res, err = h.GetVersion(context.Background(), payload)
+	srv.AssertExpectations(t)
+	assert.EqualError(t, err, "document not found: not found")
+	assert.Nil(t, res)
+}
+
+func TestGrpcHandler_GetVersion(t *testing.T) {
+	h := getHandler()
+	srv := h.service.(*mockService)
+	model := new(mockModel)
+	payload := &clientpopb.GetVersionRequest{Identifier: "0x01", Version: "0x00"}
+
+	response := &clientpopb.PurchaseOrderResponse{}
+	srv.On("GetVersion", []byte{0x01}, []byte{0x00}).Return(model, nil)
+	srv.On("DerivePurchaseOrderResponse", model).Return(response, nil)
+	res, err := h.GetVersion(context.Background(), payload)
+	model.AssertExpectations(t)
+	srv.AssertExpectations(t)
+	assert.Nil(t, err)
+	assert.NotNil(t, res)
 	assert.Equal(t, res, response)
 }

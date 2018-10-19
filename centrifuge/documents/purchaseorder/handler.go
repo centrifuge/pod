@@ -212,9 +212,24 @@ func (h *grpcHandler) Update(context.Context, *clientpurchaseorderpb.PurchaseOrd
 	return nil, centerrors.New(code.Unknown, "Implement me")
 }
 
-func (h *grpcHandler) GetVersion(context.Context, *clientpurchaseorderpb.GetVersionRequest) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
-	apiLog.Error("Implement me")
-	return nil, centerrors.New(code.Unknown, "Implement me")
+func (h *grpcHandler) GetVersion(ctx context.Context, getVersionRequest *clientpurchaseorderpb.GetVersionRequest) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
+	identifier, err := hexutil.Decode(getVersionRequest.Identifier)
+	if err != nil {
+		return nil, centerrors.Wrap(err, "identifier is invalid")
+	}
+	version, err := hexutil.Decode(getVersionRequest.Version)
+	if err != nil {
+		return nil, centerrors.Wrap(err, "version is invalid")
+	}
+	model, err := h.service.GetVersion(identifier, version)
+	if err != nil {
+		return nil, centerrors.Wrap(err, "document not found")
+	}
+	resp, err := h.service.DerivePurchaseOrderResponse(model)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
 }
 
 func (h *grpcHandler) Get(ctx context.Context, getRequest *clientpurchaseorderpb.GetRequest) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
@@ -222,11 +237,11 @@ func (h *grpcHandler) Get(ctx context.Context, getRequest *clientpurchaseorderpb
 	if err != nil {
 		return nil, centerrors.Wrap(err, "identifier is an invalid hex string")
 	}
-	doc, err := h.service.GetCurrentVersion(identifier)
+	model, err := h.service.GetCurrentVersion(identifier)
 	if err != nil {
 		return nil, centerrors.Wrap(err, "document not found")
 	}
-	resp, err := h.service.DerivePurchaseOrderResponse(doc)
+	resp, err := h.service.DerivePurchaseOrderResponse(model)
 	if err != nil {
 		return nil, err
 	}
