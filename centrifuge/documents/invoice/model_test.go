@@ -147,7 +147,9 @@ func TestInvoiceModel_getClientData(t *testing.T) {
 func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 	idConfig, err := ed25519keys.GetIDConfig()
 	assert.Nil(t, err)
-	self := idConfig.ID
+	self, err := identity.ToCentID(idConfig.ID)
+	assert.Nil(t, err)
+	contextHeader := documents.NewContextHeader(self)
 	// fail recipient
 	data := &clientinvoicepb.InvoiceData{
 		Sender:    "some number",
@@ -156,7 +158,7 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 		ExtraData: "some data",
 	}
 	inv := new(InvoiceModel)
-	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data})
+	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data}, contextHeader)
 	assert.Error(t, err, "must return err")
 	assert.Contains(t, err.Error(), "failed to decode extra data")
 	assert.Nil(t, inv.Recipient)
@@ -166,7 +168,7 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 
 	data.ExtraData = "0x010203020301"
 	data.Recipient = "0x010203040506"
-	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data})
+	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data}, contextHeader)
 	assert.Nil(t, err)
 	assert.NotNil(t, inv.ExtraData)
 	assert.NotNil(t, inv.Recipient)
@@ -174,7 +176,7 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 	assert.Nil(t, inv.Payee)
 
 	data.Sender = "0x010203060506"
-	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data})
+	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data}, contextHeader)
 	assert.Nil(t, err)
 	assert.NotNil(t, inv.ExtraData)
 	assert.NotNil(t, inv.Recipient)
@@ -182,7 +184,7 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 	assert.Nil(t, inv.Payee)
 
 	data.Payee = "0x010203030405"
-	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data})
+	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data}, contextHeader)
 	assert.Nil(t, err)
 	assert.NotNil(t, inv.ExtraData)
 	assert.NotNil(t, inv.Recipient)
@@ -191,22 +193,27 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 
 	data.ExtraData = "0x010203020301"
 	collabs := []string{"0x010102040506", "some id"}
-	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data, Collaborators: collabs})
+	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data, Collaborators: collabs}, contextHeader)
 	assert.Contains(t, err.Error(), "failed to decode collaborator")
 
 	collabs = []string{"0x010102040506", "0x010203020302"}
-	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data, Collaborators: collabs})
+	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data, Collaborators: collabs}, contextHeader)
 	assert.Nil(t, err, "must be nil")
 	assert.Equal(t, inv.Sender[:], []byte{1, 2, 3, 6, 5, 6})
 	assert.Equal(t, inv.Payee[:], []byte{1, 2, 3, 3, 4, 5})
 	assert.Equal(t, inv.Recipient[:], []byte{1, 2, 3, 4, 5, 6})
 	assert.Equal(t, inv.ExtraData[:], []byte{1, 2, 3, 2, 3, 1})
-	assert.Equal(t, inv.CoreDocument.Collaborators, [][]byte{self, {1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}})
+	assert.Equal(t, inv.CoreDocument.Collaborators, [][]byte{idConfig.ID, {1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}})
 }
 
 func TestInvoiceModel_calculateDataRoot(t *testing.T) {
+	idConfig, err := ed25519keys.GetIDConfig()
+	assert.Nil(t, err)
+	self, err := identity.ToCentID(idConfig.ID)
+	assert.Nil(t, err)
+	contextHeader := documents.NewContextHeader(self)
 	m := new(InvoiceModel)
-	err := m.InitInvoiceInput(testingdocuments.CreateInvoicePayload())
+	err = m.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), contextHeader)
 	assert.Nil(t, err, "Init must pass")
 	assert.Nil(t, m.InvoiceSalts, "salts must be nil")
 

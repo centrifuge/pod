@@ -30,10 +30,10 @@ type Service interface {
 	documents.Service
 
 	// DeriverFromPayload derives InvoiceModel from clientPayload
-	DeriveFromCreatePayload(*clientinvoicepb.InvoiceCreatePayload) (documents.Model, error)
+	DeriveFromCreatePayload(*clientinvoicepb.InvoiceCreatePayload, *documents.ContextHeader) (documents.Model, error)
 
 	// DeriveFromUpdatePayload derives invoice model from update payload
-	DeriveFromUpdatePayload(*clientinvoicepb.InvoiceUpdatePayload) (documents.Model, error)
+	DeriveFromUpdatePayload(*clientinvoicepb.InvoiceUpdatePayload, *documents.ContextHeader) (documents.Model, error)
 
 	// Create validates and persists invoice Model and returns a Updated model
 	Create(ctx context.Context, inv documents.Model) (documents.Model, error)
@@ -119,13 +119,13 @@ func (s service) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (docume
 }
 
 // UnpackFromCreatePayload initializes the model with parameters provided from the rest-api call
-func (s service) DeriveFromCreatePayload(invoiceInput *clientinvoicepb.InvoiceCreatePayload) (documents.Model, error) {
+func (s service) DeriveFromCreatePayload(invoiceInput *clientinvoicepb.InvoiceCreatePayload, contextHeader *documents.ContextHeader) (documents.Model, error) {
 	if invoiceInput == nil {
 		return nil, centerrors.New(code.DocumentInvalid, "input is nil")
 	}
 
 	invoiceModel := new(InvoiceModel)
-	err := invoiceModel.InitInvoiceInput(invoiceInput)
+	err := invoiceModel.InitInvoiceInput(invoiceInput, contextHeader)
 	if err != nil {
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
 	}
@@ -335,7 +335,7 @@ func (s service) SaveState(doc documents.Model) error {
 }
 
 // DeriveFromUpdatePayload returns a new version of the old invoice identified by identifier in payload
-func (s service) DeriveFromUpdatePayload(payload *clientinvoicepb.InvoiceUpdatePayload) (documents.Model, error) {
+func (s service) DeriveFromUpdatePayload(payload *clientinvoicepb.InvoiceUpdatePayload, contextHeader *documents.ContextHeader) (documents.Model, error) {
 	if payload == nil {
 		return nil, centerrors.New(code.DocumentInvalid, "invalid payload")
 	}
@@ -364,16 +364,7 @@ func (s service) DeriveFromUpdatePayload(payload *clientinvoicepb.InvoiceUpdateP
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
 
-	// Adding Self as first Collaborator
-	idConfig, err := centED25519.GetIDConfig()
-	if err != nil {
-		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("failed to decode collaborator: %v", err))
-	}
-	centID, err := identity.ToCentID(idConfig.ID)
-	if err != nil {
-		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("failed to convert to centID: %v", err))
-	}
-	collaborators := append([]string{centID.String()}, payload.Collaborators...)
+	collaborators := append([]string{contextHeader.GetSelf().String()}, payload.Collaborators...)
 
 	inv.CoreDocument, err = coredocument.PrepareNewVersion(*oldCD, collaborators)
 	if err != nil {

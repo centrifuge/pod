@@ -11,8 +11,8 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
@@ -155,22 +155,13 @@ func (p *PurchaseOrderModel) createP2PProtobuf() *purchaseorderpb.PurchaseOrderD
 }
 
 // InitPurchaseOrderInput initialize the model based on the received parameters from the rest api call
-func (p *PurchaseOrderModel) InitPurchaseOrderInput(payload *clientpurchaseorderpb.PurchaseOrderCreatePayload) error {
+func (p *PurchaseOrderModel) InitPurchaseOrderInput(payload *clientpurchaseorderpb.PurchaseOrderCreatePayload, contextHeader *documents.ContextHeader) error {
 	err := p.initPurchaseOrderFromData(payload.Data)
 	if err != nil {
 		return err
 	}
 
-	// Adding Self as first Collaborator
-	idConfig, err := ed25519keys.GetIDConfig()
-	if err != nil {
-		return fmt.Errorf("failed to decode collaborator: %v", err)
-	}
-	centID, err := identity.ToCentID(idConfig.ID)
-	if err != nil {
-		return fmt.Errorf("failed to convert to CentID: %v", err)
-	}
-	collaborators := append([]string{centID.String()}, payload.Collaborators...)
+	collaborators := append([]string{contextHeader.GetSelf().String()}, payload.Collaborators...)
 
 	p.CoreDocument, err = coredocument.NewWithCollaborators(collaborators)
 	if err != nil {

@@ -4,6 +4,7 @@ import (
 	"reflect"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 )
 
 // Model is an interface to abstract away model specificness like invoice or purchaseOrder
@@ -29,4 +30,19 @@ type Model interface {
 
 	// FromJSON initialize the model with a json
 	FromJSON(json []byte) error
+}
+
+// Placeholder to pass custom request objects down the pipeline
+type ContextHeader struct {
+	self identity.CentID
+}
+
+// NewContextHeader creates new instance of the request headers needed
+func NewContextHeader(self identity.CentID) *ContextHeader {
+	return &ContextHeader{self: self}
+}
+
+// GetSelf returns Self CentID
+func (h *ContextHeader) GetSelf() identity.CentID {
+	return h.self
 }
