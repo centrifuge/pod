@@ -27,7 +27,7 @@ func NewAnchorID(anchorBytes []byte) (AnchorID, error) {
 	return anchorBytesFixed, nil
 }
 
-func (a *AnchorID) toBigInt() *big.Int {
+func (a *AnchorID) BigInt() *big.Int {
 	return tools.ByteSliceToBigInt(a[:])
 }
 
@@ -45,6 +45,10 @@ func NewDocRoot(docRootBytes []byte) (DocRoot, error) {
 func NewRandomDocRoot() DocRoot {
 	root, _ := NewDocRoot(tools.RandomSlice(RootLength))
 	return root
+}
+
+func (a DocRoot) Fixed() [RootLength]byte {
+	return a
 }
 
 type PreCommitData struct {

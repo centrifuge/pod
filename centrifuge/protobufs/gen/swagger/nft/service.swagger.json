@@ -27,6 +27,16 @@
             }
           }
         },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/nftNFTMintRequest"
+            }
+          }
+        ],
         "tags": [
           "NFTService"
         ]
@@ -34,6 +44,32 @@
     }
   },
   "definitions": {
+    "nftNFTMintRequest": {
+      "type": "object",
+      "properties": {
+        "identifier": {
+          "type": "string",
+          "title": "Document identifier"
+        },
+        "type": {
+          "type": "string",
+          "title": "Document type"
+        },
+        "registry_address": {
+          "type": "string",
+          "title": "The contract address of the registry where the token should be minted"
+        },
+        "deposit_address": {
+          "type": "string"
+        },
+        "proof_fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
     "nftNFTMintResponse": {
       "type": "object",
       "properties": {

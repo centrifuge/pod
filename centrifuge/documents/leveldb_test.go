@@ -38,6 +38,7 @@ type model struct {
 	Data        string `json:"data"`
 }
 
+func (m *model) ID() ([]byte, error)                                      { return []byte{}, nil }
 func (m *model) Type() reflect.Type                                       { return reflect.TypeOf(m) }
 func (m *model) PackCoreDocument() (*coredocumentpb.CoreDocument, error)  { return nil, nil }
 func (m *model) UnpackCoreDocument(cd *coredocumentpb.CoreDocument) error { return nil }

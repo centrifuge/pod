@@ -1,6 +1,8 @@
 package ed25519keys
 
 import (
+	"fmt"
+
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
 	logging "github.com/ipfs/go-log"
@@ -12,32 +14,39 @@ import (
 var log = logging.Logger("ed25519")
 
 // GetPublicSigningKey returns the public key from the file
-func GetPublicSigningKey(fileName string) (publicKey ed25519.PublicKey) {
+func GetPublicSigningKey(fileName string) (publicKey ed25519.PublicKey, err error) {
 	key, err := utils.ReadKeyFromPemFile(fileName, utils.PublicKey)
-
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("failed to read pem file: %v", err)
 	}
-	publicKey = ed25519.PublicKey(key)
-	return
+
+	return ed25519.PublicKey(key), nil
 }
 
 // GetPrivateSigningKey returns the private key from the file
-func GetPrivateSigningKey(fileName string) (privateKey ed25519.PrivateKey) {
+func GetPrivateSigningKey(fileName string) (privateKey ed25519.PrivateKey, err error) {
 	key, err := utils.ReadKeyFromPemFile(fileName, utils.PrivateKey)
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("failed to read pem file: %v", err)
 	}
-	privateKey = ed25519.PrivateKey(key)
-	return
+
+	return ed25519.PrivateKey(key), nil
 }
 
 // GetSigningKeyPairFromConfig returns the public and private key pair from the config
-func GetSigningKeyPairFromConfig() (publicKey ed25519.PublicKey, privateKey ed25519.PrivateKey) {
+func GetSigningKeyPairFromConfig() (publicKey ed25519.PublicKey, privateKey ed25519.PrivateKey, err error) {
 	pub, priv := config.Config.GetSigningKeyPair()
-	publicKey = GetPublicSigningKey(pub)
-	privateKey = GetPrivateSigningKey(priv)
-	return
+	publicKey, err = GetPublicSigningKey(pub)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to read public key: %v", err)
+	}
+
+	privateKey, err = GetPrivateSigningKey(priv)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to read private key: %v", err)
+	}
+
+	return publicKey, privateKey, nil
 }
 
 // GenerateSigningKeyPair generates ed25519 key pair
@@ -65,14 +74,18 @@ func PublicKeyToP2PKey(publicKey [32]byte) (p2pId peer.ID, err error) {
 
 // GetIDConfig reads the keys and ID from the config and returns a the Identity config
 func GetIDConfig() (identityConfig *config.IdentityConfig, err error) {
-	pk, pvk := GetSigningKeyPairFromConfig()
-	centId, err := config.Config.GetIdentityId()
+	pk, pvk, err := GetSigningKeyPairFromConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get signing keys: %v", err)
+	}
+
+	centID, err := config.Config.GetIdentityID()
 	if err != nil {
 		return nil, err
 	}
 
 	identityConfig = &config.IdentityConfig{
-		ID:         centId,
+		ID:         centID,
 		PublicKey:  pk,
 		PrivateKey: pvk,
 	}

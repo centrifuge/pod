@@ -6,10 +6,12 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
+	"github.com/centrifuge/go-centrifuge/centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/processor"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/centrifuge/p2p"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
@@ -37,15 +39,19 @@ type grpcHandler struct {
 func LegacyGRPCHandler() legacyinvoicepb.InvoiceDocumentServiceServer {
 	return &grpcHandler{
 		legacyRepo:       GetLegacyRepository(),
-		coreDocProcessor: coredocumentprocessor.DefaultProcessor(identity.IDService, p2p.NewP2PClient()),
+		coreDocProcessor: coredocumentprocessor.DefaultProcessor(identity.IDService, p2p.NewP2PClient(), anchors.GetAnchorRepository()),
 	}
 }
 
 // GRPCHandler returns an implementation of invoice.DocumentServiceServer
-func GRPCHandler(service Service) clientinvoicepb.DocumentServiceServer {
-	return &grpcHandler{
-		service: service,
+func GRPCHandler() (clientinvoicepb.DocumentServiceServer, error) {
+	invoiceService, err := documents.GetRegistryInstance().LocateService(documenttypes.InvoiceDataTypeUrl)
+	if err != nil {
+		return nil, err
 	}
+	return &grpcHandler{
+		service: invoiceService.(Service),
+	}, nil
 }
 
 // anchorInvoiceDocument anchors the given invoice document and returns the anchored document

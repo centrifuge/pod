@@ -6,6 +6,7 @@ import (
 	"math/big"
 
 	"github.com/centrifuge/gocelery"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
@@ -25,6 +26,11 @@ func SliceToByte32(in []byte) (out [32]byte, err error) {
 	}
 	copy(out[:], in)
 	return
+}
+
+//
+func IsEmptyAddress(addr common.Address) bool {
+	return addr.Hex() == "0x0000000000000000000000000000000000000000"
 }
 
 // SliceOfByteSlicesToHexStringSlice converts the given slice of byte slices to a hex encoded string array with 0x prefix

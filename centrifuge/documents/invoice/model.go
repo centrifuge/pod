@@ -21,6 +21,7 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 )
 
+// TODO rename InvoiceModel -> Invoice
 // InvoiceModel implements the documents.Model keeps track of invoice related fields and state
 type InvoiceModel struct {
 	// invoice number or reference number
@@ -261,6 +262,14 @@ func (i *InvoiceModel) getInvoiceSalts(invoiceData *invoicepb.InvoiceData) *invo
 	}
 
 	return i.InvoiceSalts
+}
+
+func (i *InvoiceModel) ID() ([]byte, error) {
+	coreDoc, err := i.PackCoreDocument()
+	if err != nil {
+		return []byte{}, err
+	}
+	return coreDoc.DocumentIdentifier, nil
 }
 
 // PackCoreDocument packs the InvoiceModel into a Core Document
