@@ -17,7 +17,6 @@ type QueuedTask interface {
 }
 
 func InitQueue(tasks []QueuedTask) {
-	// TODO do this based on config i.e. type of broker and backend, numWorkers
 	queueInit.Do(func() {
 		var err error
 		Queue, err = gocelery.NewCeleryClient(

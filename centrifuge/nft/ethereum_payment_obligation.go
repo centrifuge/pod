@@ -18,7 +18,6 @@ import (
 
 var log = logging.Logger("nft")
 
-// TODO remove this when we have a proper dependancy injection mechanism
 var po *ethereumPaymentObligation
 
 func setPaymentObligation(s *ethereumPaymentObligation) {

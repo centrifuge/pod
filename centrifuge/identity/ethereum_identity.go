@@ -196,7 +196,6 @@ func (id *EthereumIdentity) AddKeyToIdentity(ctx context.Context, keyPurpose int
 		return confirmations, err
 	}
 
-	// TODO change this when we have a proper type for keys
 	var keyFixed [32]byte
 	copy(keyFixed[:], key)
 	confirmations, err = setUpKeyRegisteredEventListener(id, keyPurpose, keyFixed, h.Number.Uint64())

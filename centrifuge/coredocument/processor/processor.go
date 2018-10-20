@@ -213,7 +213,6 @@ func (dp defaultProcessor) Anchor(
 
 	log.Infof("Anchoring document with identifiers: [document: %#x, current: %#x, next: %#x], rootHash: %#x", document.DocumentIdentifier, document.CurrentVersion, document.NextVersion, document.DocumentRoot)
 	log.Debugf("Anchoring document with details %v", document)
-	// TODO documentProofs has to be included when we develop precommit flow
 	confirmations, err := anchors.CommitAnchor(anchorID, rootHash, myCentID, [][anchors.DocumentProofLength]byte{tools.RandomByte32()}, mac)
 	if err != nil {
 		log.Error(err)
@@ -351,7 +350,6 @@ func (dp defaultProcessor) AnchorDocument(model documents.Model) error {
 	}
 
 	log.Infof("Anchoring document with identifiers: [document: %#x, current: %#x, next: %#x], rootHash: %#x", cd.DocumentIdentifier, cd.CurrentVersion, cd.NextVersion, cd.DocumentRoot)
-	// TODO documentProofs has to be included when we develop precommit flow
 	confirmations, err := dp.AnchorRepository.CommitAnchor(anchorID, rootHash, centID, [][anchors.DocumentProofLength]byte{tools.RandomByte32()}, mac)
 	if err != nil {
 		return fmt.Errorf("failed to commit anchor: %v", err)

@@ -39,7 +39,6 @@ type AccountConfig struct {
 
 // IdentityConfig holds ID, public and private key of a single entity
 type IdentityConfig struct {
-	// TODO: below ID should use a CentID type
 	ID         []byte
 	PublicKey  []byte
 	PrivateKey []byte
@@ -178,7 +177,6 @@ func (c *Configuration) GetIdentityID() ([]byte, error) {
 	if err != nil {
 		return nil, centerrors.Wrap(err, "can't read identityId from config")
 	}
-	// TODO return the CentID type here
 	return id, err
 }
 
