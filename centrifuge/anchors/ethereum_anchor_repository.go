@@ -64,15 +64,6 @@ func (ethRepository *EthereumAnchorRepository) PreCommitAnchor(anchorID AnchorID
 		return
 	}
 
-	// TODO redo when enabling pre-commit
-	//confirmations, err = setUpPreCommitEventListener(ethRepositoryContract, opts.From, preCommitData)
-	//if err != nil {
-	//	wError := errors.Wrap(err, 1)
-	//	log.Errorf("Failed to set up event listener for pre-commit transaction [id: %x, signingRoot: %x, SchemaVersion:%v]: %v",
-	//		preCommitData.AnchorID, preCommitData.SigningRoot, preCommitData.SchemaVersion, wError)
-	//	return
-	//}
-
 	err = sendPreCommitTransaction(ethRepositoryContract, opts, preCommitData)
 	if err != nil {
 		wError := errors.Wrap(err, 1)

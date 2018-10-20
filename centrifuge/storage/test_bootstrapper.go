@@ -24,7 +24,6 @@ func (*Bootstrapper) TestBootstrap(context map[string]interface{}) error {
 
 func (*Bootstrapper) TestTearDown() error {
 	CloseLevelDBStorage()
-	// TODO check the nil pointer when enabled
 	// os.RemoveAll(config.Config.GetStoragePath())
 	return nil
 }
