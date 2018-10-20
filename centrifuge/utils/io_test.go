@@ -6,13 +6,12 @@ import (
 	"os"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestWriteAndReadPemFile(t *testing.T) {
 
-	randomBytes := utils.RandomSlice(32)
+	randomBytes := RandomSlice(32)
 
 	testFileName := "test.file"
 	err := WriteKeyToPemFile(testFileName, PrivateKey, randomBytes)

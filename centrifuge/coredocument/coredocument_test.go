@@ -442,8 +442,8 @@ func TestNewWithCollaborators(t *testing.T) {
 }
 
 func TestGetExternalCollaborators(t *testing.T) {
-	c1 := tools.RandomSlice(6)
-	c2 := tools.RandomSlice(6)
+	c1 := utils.RandomSlice(6)
+	c2 := utils.RandomSlice(6)
 	c := []string{hexutil.Encode(c1), hexutil.Encode(c2)}
 	cd, err := NewWithCollaborators(c)
 	assert.Equal(t, [][]byte{c1, c2}, cd.Collaborators)
