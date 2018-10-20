@@ -15,7 +15,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
-	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
+
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
@@ -52,7 +53,7 @@ func TestPO_InitCoreDocument_invalidCentId(t *testing.T) {
 	poModel := &PurchaseOrderModel{}
 
 	coreDocument := testingdocuments.CreateCDWithEmbeddedPO(t, purchaseorderpb.PurchaseOrderData{
-		Recipient: tools.RandomSlice(identity.CentIDLength + 1)})
+		Recipient: utils.RandomSlice(identity.CentIDLength + 1)})
 
 	err := poModel.UnpackCoreDocument(coreDocument)
 	assert.Nil(t, err)

@@ -6,20 +6,21 @@ import (
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
+
 	"github.com/stretchr/testify/assert"
 )
 
 func TestRegistrationConfirmationTask_ParseKwargsHappyPath(t *testing.T) {
 	rct := identity.IdRegistrationConfirmationTask{}
-	id := tools.RandomSlice(identity.CentIDLength)
+	id := utils.RandomSlice(identity.CentIDLength)
 	blockHeight := uint64(3132)
 	idBytes, _ := identity.ToCentID(id)
 	kwargs := map[string]interface{}{
 		identity.CentIdParam: idBytes,
 		identity.BlockHeight: blockHeight,
 	}
-	decoded, err := tools.SimulateJsonDecodeForGocelery(kwargs)
+	decoded, err := utils.SimulateJsonDecodeForGocelery(kwargs)
 	err = rct.ParseKwargs(decoded)
 	if err != nil {
 		t.Errorf("Could not parse %s for [%x]", identity.CentIdParam, id)
@@ -30,14 +31,14 @@ func TestRegistrationConfirmationTask_ParseKwargsHappyPath(t *testing.T) {
 
 func TestRegistrationConfirmationTask_ParseKwargsDoesNotExist(t *testing.T) {
 	rct := identity.IdRegistrationConfirmationTask{}
-	id := tools.RandomSlice(identity.CentIDLength)
+	id := utils.RandomSlice(identity.CentIDLength)
 	err := rct.ParseKwargs(map[string]interface{}{"notId": id})
 	assert.NotNil(t, err, "Should not allow parsing without centId")
 }
 
 func TestRegistrationConfirmationTask_ParseKwargsInvalidType(t *testing.T) {
 	rct := identity.IdRegistrationConfirmationTask{}
-	id := tools.RandomSlice(identity.CentIDLength)
+	id := utils.RandomSlice(identity.CentIDLength)
 	err := rct.ParseKwargs(map[string]interface{}{identity.CentIdParam: id})
 	assert.NotNil(t, err, "Should not parse without the correct type of centId")
 }

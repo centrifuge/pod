@@ -17,7 +17,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/commons"
-	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
+
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 )
@@ -47,8 +48,8 @@ func createDummyCD() *coredocumentpb.CoreDocument {
 	randomRoot := anchors.NewRandomDocRoot()
 	cd.DataRoot = randomRoot[:]
 	cd.Collaborators = [][]byte{
-		tools.RandomSlice(identity.CentIDLength),
-		tools.RandomSlice(identity.CentIDLength),
+		utils.RandomSlice(identity.CentIDLength),
+		utils.RandomSlice(identity.CentIDLength),
 	}
 	docAny := &any.Any{
 		TypeUrl: documenttypes.InvoiceDataTypeUrl,

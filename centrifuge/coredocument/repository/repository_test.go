@@ -11,7 +11,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/context/testlogging"
 	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
-	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -29,11 +30,11 @@ func TestMain(m *testing.M) {
 }
 
 var (
-	id1 = tools.RandomSlice(32)
-	id2 = tools.RandomSlice(32)
-	id3 = tools.RandomSlice(32)
-	id4 = tools.RandomSlice(32)
-	id5 = tools.RandomSlice(32)
+	id1 = utils.RandomSlice(32)
+	id2 = utils.RandomSlice(32)
+	id3 = utils.RandomSlice(32)
+	id4 = utils.RandomSlice(32)
+	id5 = utils.RandomSlice(32)
 )
 
 func TestRepository(t *testing.T) {
@@ -78,7 +79,7 @@ func TestRepository(t *testing.T) {
 	assert.Error(t, err, "update must fail")
 
 	// successful update
-	id6 := tools.RandomSlice(32)
+	id6 := utils.RandomSlice(32)
 	doc.NextVersion = id6
 	err = repo.Update(doc.DocumentIdentifier, doc)
 	assert.Nil(t, err, "update must pass")

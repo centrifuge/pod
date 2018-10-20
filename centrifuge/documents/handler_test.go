@@ -9,7 +9,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
-	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
+
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
@@ -80,7 +81,7 @@ func TestGrpcHandler_CreateDocumentProofForVersion(t *testing.T) {
 	}
 	id, _ := hexutil.Decode(req.Identifier)
 	version, _ := hexutil.Decode(req.Version)
-	doc := &documents.DocumentProof{DocumentId: tools.RandomSlice(32)}
+	doc := &documents.DocumentProof{DocumentId: utils.RandomSlice(32)}
 	service.On("CreateProofsForVersion", id, version, req.Fields).Return(doc, nil)
 	grpcHandler := documents.GRPCHandler()
 	retDoc, _ := grpcHandler.CreateDocumentProofForVersion(context.TODO(), req)
@@ -214,22 +215,22 @@ func TestConvertProofsToClientFormat(t *testing.T) {
 		{
 			Property: "prop1",
 			Value:    "val1",
-			Salt:     tools.RandomSlice(32),
-			Hash:     tools.RandomSlice(32),
+			Salt:     utils.RandomSlice(32),
+			Hash:     utils.RandomSlice(32),
 			SortedHashes: [][]byte{
-				tools.RandomSlice(32),
-				tools.RandomSlice(32),
-				tools.RandomSlice(32),
+				utils.RandomSlice(32),
+				utils.RandomSlice(32),
+				utils.RandomSlice(32),
 			},
 		},
 		{
 			Property: "prop2",
 			Value:    "val2",
-			Salt:     tools.RandomSlice(32),
-			Hash:     tools.RandomSlice(32),
+			Salt:     utils.RandomSlice(32),
+			Hash:     utils.RandomSlice(32),
 			SortedHashes: [][]byte{
-				tools.RandomSlice(32),
-				tools.RandomSlice(32),
+				utils.RandomSlice(32),
+				utils.RandomSlice(32),
 			},
 		},
 	})

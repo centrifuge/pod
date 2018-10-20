@@ -10,7 +10,8 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
-	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
@@ -18,7 +19,7 @@ import (
 
 func CreatePOData() purchaseorderpb.PurchaseOrderData {
 	return purchaseorderpb.PurchaseOrderData{
-		Recipient:   tools.RandomSlice(identity.CentIDLength),
+		Recipient:   utils.RandomSlice(identity.CentIDLength),
 		OrderAmount: 42,
 	}
 }

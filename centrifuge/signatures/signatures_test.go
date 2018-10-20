@@ -11,7 +11,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/commons"
-	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -42,7 +43,7 @@ func TestSign(t *testing.T) {
 }
 
 func TestValidateSignature_invalid_key(t *testing.T) {
-	sig := &coredocumentpb.Signature{EntityId: tools.RandomSlice(identity.CentIDLength)}
+	sig := &coredocumentpb.Signature{EntityId: utils.RandomSlice(identity.CentIDLength)}
 	srv := &testingcommons.MockIDService{}
 	centId, _ := identity.ToCentID(sig.EntityId)
 	srv.On("LookupIdentityForID", centId).Return(nil, fmt.Errorf("failed GetIdentity")).Once()
@@ -56,7 +57,7 @@ func TestValidateSignature_invalid_key(t *testing.T) {
 func TestValidateSignature_invalid_sig(t *testing.T) {
 	pubKey := key1Pub
 	message := key1Pub
-	signature := tools.RandomSlice(32)
+	signature := utils.RandomSlice(32)
 	err := verifySignature(pubKey, message, signature)
 	assert.NotNil(t, err, "must be not nil")
 	assert.Contains(t, err.Error(), "invalid signature")
@@ -71,7 +72,7 @@ func TestValidateSignature_success(t *testing.T) {
 
 func TestValidateCentrifugeId(t *testing.T) {
 
-	randomBytes := tools.RandomSlice(identity.CentIDLength)
+	randomBytes := utils.RandomSlice(identity.CentIDLength)
 
 	centrifugeId, err := identity.ToCentID(randomBytes)
 
@@ -82,7 +83,7 @@ func TestValidateCentrifugeId(t *testing.T) {
 	err = ValidateCentrifugeID(sig, centrifugeId)
 	assert.Nil(t, err, "Validate centrifuge id didn't work correctly")
 
-	randomBytes = tools.RandomSlice(identity.CentIDLength)
+	randomBytes = utils.RandomSlice(identity.CentIDLength)
 	centrifugeId, err = identity.ToCentID(randomBytes)
 
 	err = ValidateCentrifugeID(sig, centrifugeId)
