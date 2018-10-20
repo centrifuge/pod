@@ -7,7 +7,7 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
 )
 
 const testStoragePath = "/tmp/centrifuge_data.leveldb_TESTING"
@@ -29,5 +29,5 @@ func (*Bootstrapper) TestTearDown() error {
 }
 
 func getRandomTestStoragePath() string {
-	return fmt.Sprintf("%s_%x", testStoragePath, tools.RandomByte32())
+	return fmt.Sprintf("%s_%x", testStoragePath, utils.RandomByte32())
 }

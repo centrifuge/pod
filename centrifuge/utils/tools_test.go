@@ -1,6 +1,6 @@
 // +build unit
 
-package tools
+package utils
 
 import (
 	"testing"

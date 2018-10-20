@@ -10,7 +10,8 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
-	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
@@ -18,9 +19,9 @@ import (
 
 func CreateInvoiceData() invoicepb.InvoiceData {
 	return invoicepb.InvoiceData{
-		Recipient:   tools.RandomSlice(identity.CentIDLength),
-		Sender:      tools.RandomSlice(identity.CentIDLength),
-		Payee:       tools.RandomSlice(identity.CentIDLength),
+		Recipient:   utils.RandomSlice(identity.CentIDLength),
+		Sender:      utils.RandomSlice(identity.CentIDLength),
+		Payee:       utils.RandomSlice(identity.CentIDLength),
 		GrossAmount: 42,
 	}
 }

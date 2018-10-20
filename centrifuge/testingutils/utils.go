@@ -14,7 +14,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/secp256k1"
-	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
+
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/mock"
@@ -48,7 +49,7 @@ func GenerateCoreDocument() *coredocumentpb.CoreDocument {
 	identifier := Rand32Bytes()
 	salts := &coredocumentpb.CoreDocumentSalts{}
 	doc := &coredocumentpb.CoreDocument{
-		DataRoot:           tools.RandomSlice(32),
+		DataRoot:           utils.RandomSlice(32),
 		DocumentIdentifier: identifier,
 		CurrentVersion:     identifier,
 		NextVersion:        Rand32Bytes(),

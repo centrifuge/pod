@@ -6,7 +6,8 @@ import (
 	"errors"
 
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
+
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
@@ -20,7 +21,7 @@ type AnchorID [AnchorIDLength]byte
 
 func NewAnchorID(anchorBytes []byte) (AnchorID, error) {
 	var anchorBytesFixed [AnchorIDLength]byte
-	if !tools.IsValidByteSliceForLength(anchorBytes, AnchorIDLength) {
+	if !utils.IsValidByteSliceForLength(anchorBytes, AnchorIDLength) {
 		return anchorBytesFixed, errors.New("invalid length byte slice provided for anchorID")
 	}
 	copy(anchorBytesFixed[:], anchorBytes[:AnchorIDLength])
@@ -28,14 +29,14 @@ func NewAnchorID(anchorBytes []byte) (AnchorID, error) {
 }
 
 func (a *AnchorID) BigInt() *big.Int {
-	return tools.ByteSliceToBigInt(a[:])
+	return utils.ByteSliceToBigInt(a[:])
 }
 
 type DocRoot [RootLength]byte
 
 func NewDocRoot(docRootBytes []byte) (DocRoot, error) {
 	var rootBytes [RootLength]byte
-	if !tools.IsValidByteSliceForLength(docRootBytes, RootLength) {
+	if !utils.IsValidByteSliceForLength(docRootBytes, RootLength) {
 		return rootBytes, errors.New("invalid length byte slice provided for docRoot")
 	}
 	copy(rootBytes[:], docRootBytes[:RootLength])
@@ -43,7 +44,7 @@ func NewDocRoot(docRootBytes []byte) (DocRoot, error) {
 }
 
 func NewRandomDocRoot() DocRoot {
-	root, _ := NewDocRoot(tools.RandomSlice(RootLength))
+	root, _ := NewDocRoot(utils.RandomSlice(RootLength))
 	return root
 }
 

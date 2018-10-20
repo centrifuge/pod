@@ -15,7 +15,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/commons"
-	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
+
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/any"
@@ -23,13 +24,13 @@ import (
 )
 
 var (
-	id1 = tools.RandomSlice(32)
-	id2 = tools.RandomSlice(32)
-	id3 = tools.RandomSlice(32)
-	id4 = tools.RandomSlice(32)
-	id5 = tools.RandomSlice(32)
+	id1 = utils.RandomSlice(32)
+	id2 = utils.RandomSlice(32)
+	id3 = utils.RandomSlice(32)
+	id4 = utils.RandomSlice(32)
+	id5 = utils.RandomSlice(32)
 
-	centID  = tools.RandomSlice(identity.CentIDLength)
+	centID  = utils.RandomSlice(identity.CentIDLength)
 	key1Pub = [...]byte{230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
 	key1    = []byte{102, 109, 71, 239, 130, 229, 128, 189, 37, 96, 223, 5, 189, 91, 210, 47, 89, 4, 165, 6, 188, 53, 49, 250, 109, 151, 234, 139, 57, 205, 231, 253, 230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
 )
@@ -41,7 +42,7 @@ func TestGetSigningProofHashes(t *testing.T) {
 	}
 	cd := New()
 	cd.EmbeddedData = docAny
-	cd.DataRoot = tools.RandomSlice(32)
+	cd.DataRoot = utils.RandomSlice(32)
 	cds := &coredocumentpb.CoreDocumentSalts{}
 	err := proofs.FillSalts(cd, cds)
 	assert.Nil(t, err)
@@ -69,7 +70,7 @@ func TestGetDataProofHashes(t *testing.T) {
 	}
 	cd := New()
 	cd.EmbeddedData = docAny
-	cd.DataRoot = tools.RandomSlice(32)
+	cd.DataRoot = utils.RandomSlice(32)
 	cds := &coredocumentpb.CoreDocumentSalts{}
 	err := proofs.FillSalts(cd, cds)
 	assert.Nil(t, err)
@@ -292,7 +293,7 @@ func TestValidateWithSignature_fail_missing_signing_root(t *testing.T) {
 
 func TestValidateWithSignature_fail_mismatch_signing_root(t *testing.T) {
 	doc := testingutils.GenerateCoreDocument()
-	doc.SigningRoot = tools.RandomSlice(32)
+	doc.SigningRoot = utils.RandomSlice(32)
 	err := ValidateWithSignature(doc)
 	assert.Error(t, err, "signing root must mismatch")
 	assert.Contains(t, err.Error(), "signing root mismatch")
@@ -302,7 +303,7 @@ func TestValidateWithSignature_failed_signature_verification(t *testing.T) {
 	sig := &coredocumentpb.Signature{
 		EntityId:  centID,
 		PublicKey: key1Pub[:],
-		Signature: tools.RandomSlice(32)}
+		Signature: utils.RandomSlice(32)}
 	srv := &testingcommons.MockIDService{}
 	centID, _ := identity.ToCentID(sig.EntityId)
 	srv.On("LookupIdentityForID", centID).Return(nil, fmt.Errorf("failed GetIdentity")).Once()
@@ -365,10 +366,10 @@ func TestGetTypeUrl(t *testing.T) {
 
 func TestPrepareNewVersion(t *testing.T) {
 	var doc coredocumentpb.CoreDocument
-	id := tools.RandomSlice(32)
+	id := utils.RandomSlice(32)
 	cv := id
-	nv := tools.RandomSlice(32)
-	dr := tools.RandomSlice(32)
+	nv := utils.RandomSlice(32)
+	dr := utils.RandomSlice(32)
 	doc = coredocumentpb.CoreDocument{}
 
 	// failed new with collaborators
@@ -426,8 +427,8 @@ func TestNewWithCollaborators(t *testing.T) {
 	assert.Nil(t, cd)
 
 	// success
-	c1 := tools.RandomSlice(6)
-	c2 := tools.RandomSlice(6)
+	c1 := utils.RandomSlice(6)
+	c2 := utils.RandomSlice(6)
 	c = []string{hexutil.Encode(c1), hexutil.Encode(c2)}
 	cd, err = NewWithCollaborators(c)
 	assert.Nil(t, err)
@@ -441,8 +442,8 @@ func TestNewWithCollaborators(t *testing.T) {
 }
 
 func TestGetExternalCollaborators(t *testing.T) {
-	c1 := tools.RandomSlice(6)
-	c2 := tools.RandomSlice(6)
+	c1 := utils.RandomSlice(6)
+	c2 := utils.RandomSlice(6)
 	c := []string{hexutil.Encode(c1), hexutil.Encode(c2)}
 	cd, err := NewWithCollaborators(c)
 	assert.Equal(t, [][]byte{c1, c2}, cd.Collaborators)

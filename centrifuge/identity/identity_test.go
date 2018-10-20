@@ -8,7 +8,7 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -104,12 +104,12 @@ func TestToCentId(t *testing.T) {
 	}{
 		{
 			"smallerSlice",
-			tools.RandomSlice(CentIDLength - 1),
+			utils.RandomSlice(CentIDLength - 1),
 			"invalid length byte slice provided for centID",
 		},
 		{
 			"largerSlice",
-			tools.RandomSlice(CentIDLength + 1),
+			utils.RandomSlice(CentIDLength + 1),
 			"invalid length byte slice provided for centID",
 		},
 		{
@@ -127,7 +127,7 @@ func TestToCentId(t *testing.T) {
 }
 
 func TestNewCentIdEqual(t *testing.T) {
-	randomBytes := tools.RandomSlice(CentIDLength)
+	randomBytes := utils.RandomSlice(CentIDLength)
 	centrifugeIdA, err := ToCentID(randomBytes)
 	assert.Nil(t, err, "centrifugeId not initialized correctly ")
 
@@ -135,13 +135,13 @@ func TestNewCentIdEqual(t *testing.T) {
 	assert.Nil(t, err, "centrifugeId not initialized correctly ")
 	assert.True(t, centrifugeIdA.Equal(centrifugeIdB), "centrifuge Id's should be the equal")
 
-	randomBytes = tools.RandomSlice(CentIDLength)
+	randomBytes = utils.RandomSlice(CentIDLength)
 	centrifugeIdC, _ := ToCentID(randomBytes)
 	assert.False(t, centrifugeIdA.Equal(centrifugeIdC), "centrifuge Id's should not be equal")
 }
 
 func TestGetClientP2PURL_fail_service(t *testing.T) {
-	centID, _ := ToCentID(tools.RandomSlice(CentIDLength))
+	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
 	srv := &mockIDService{}
 	srv.On("LookupIdentityForID", centID).Return(nil, fmt.Errorf("failed service")).Once()
 	IDService = srv
@@ -153,7 +153,7 @@ func TestGetClientP2PURL_fail_service(t *testing.T) {
 }
 
 func TestGetClientP2PURL_fail_identity(t *testing.T) {
-	centID, _ := ToCentID(tools.RandomSlice(CentIDLength))
+	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
 	srv := &mockIDService{}
 	id := &mockID{}
 	id.On("GetCurrentP2PKey").Return("", fmt.Errorf("error identity")).Once()
@@ -168,7 +168,7 @@ func TestGetClientP2PURL_fail_identity(t *testing.T) {
 }
 
 func TestGetClientP2PURL_Success(t *testing.T) {
-	centID, _ := ToCentID(tools.RandomSlice(CentIDLength))
+	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
 	srv := &mockIDService{}
 	id := &mockID{}
 	id.On("GetCurrentP2PKey").Return("target", nil).Once()
@@ -182,7 +182,7 @@ func TestGetClientP2PURL_Success(t *testing.T) {
 }
 
 func TestGetClientsP2PURLs_fail(t *testing.T) {
-	centID, _ := ToCentID(tools.RandomSlice(CentIDLength))
+	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
 	centIDs := []CentID{centID}
 	srv := &mockIDService{}
 	id := &mockID{}
@@ -198,7 +198,7 @@ func TestGetClientsP2PURLs_fail(t *testing.T) {
 }
 
 func TestGetClientsP2PURLs_success(t *testing.T) {
-	centID, _ := ToCentID(tools.RandomSlice(CentIDLength))
+	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
 	centIDs := []CentID{centID}
 	id := &mockID{}
 	id.On("GetCurrentP2PKey").Return("target", nil).Once()
@@ -214,11 +214,11 @@ func TestGetClientsP2PURLs_success(t *testing.T) {
 }
 
 func TestGetIdentityKey_fail_lookup(t *testing.T) {
-	centID, _ := ToCentID(tools.RandomSlice(CentIDLength))
+	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
 	srv := &mockIDService{}
 	srv.On("LookupIdentityForID", centID).Return(nil, fmt.Errorf("lookup failed")).Once()
 	IDService = srv
-	id, err := GetIdentityKey(centID, tools.RandomSlice(32))
+	id, err := GetIdentityKey(centID, utils.RandomSlice(32))
 	srv.AssertExpectations(t)
 	assert.Error(t, err, "must be not nil")
 	assert.Contains(t, err.Error(), "lookup failed")
@@ -226,8 +226,8 @@ func TestGetIdentityKey_fail_lookup(t *testing.T) {
 }
 
 func TestGetIdentityKey_fail_FetchKey(t *testing.T) {
-	centID, _ := ToCentID(tools.RandomSlice(CentIDLength))
-	pubKey := tools.RandomSlice(32)
+	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
+	pubKey := utils.RandomSlice(32)
 	id := &mockID{}
 	srv := &mockIDService{}
 	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
@@ -242,8 +242,8 @@ func TestGetIdentityKey_fail_FetchKey(t *testing.T) {
 }
 
 func TestGetIdentityKey_fail_empty(t *testing.T) {
-	centID, _ := ToCentID(tools.RandomSlice(CentIDLength))
-	pubKey := tools.RandomSlice(32)
+	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
+	pubKey := utils.RandomSlice(32)
 	var emptyKey [32]byte
 	idkey := &EthereumIdentityKey{Key: emptyKey}
 	id := &mockID{}
@@ -260,9 +260,9 @@ func TestGetIdentityKey_fail_empty(t *testing.T) {
 }
 
 func TestGetIdentityKey_Success(t *testing.T) {
-	centID, _ := ToCentID(tools.RandomSlice(CentIDLength))
-	pubKey := tools.RandomSlice(32)
-	pkey := tools.RandomByte32()
+	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
+	pubKey := utils.RandomSlice(32)
+	pkey := utils.RandomByte32()
 	idkey := &EthereumIdentityKey{Key: pkey}
 	id := &mockID{}
 	srv := &mockIDService{}
@@ -278,8 +278,8 @@ func TestGetIdentityKey_Success(t *testing.T) {
 }
 
 func TestValidateKey_fail_getId(t *testing.T) {
-	centID, _ := ToCentID(tools.RandomSlice(CentIDLength))
-	pubKey := tools.RandomSlice(32)
+	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
+	pubKey := utils.RandomSlice(32)
 	srv := &mockIDService{}
 	srv.On("LookupIdentityForID", centID).Return(nil, fmt.Errorf("failed at GetIdentity")).Once()
 	IDService = srv
@@ -290,9 +290,9 @@ func TestValidateKey_fail_getId(t *testing.T) {
 }
 
 func TestValidateKey_fail_mismatch_key(t *testing.T) {
-	centID, _ := ToCentID(tools.RandomSlice(CentIDLength))
-	pubKey := tools.RandomSlice(32)
-	idkey := &EthereumIdentityKey{Key: tools.RandomByte32()}
+	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
+	pubKey := utils.RandomSlice(32)
+	idkey := &EthereumIdentityKey{Key: utils.RandomByte32()}
 	id := &mockID{}
 	srv := &mockIDService{}
 	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
@@ -306,8 +306,8 @@ func TestValidateKey_fail_mismatch_key(t *testing.T) {
 }
 
 func TestValidateKey_fail_missing_purpose(t *testing.T) {
-	centID, _ := ToCentID(tools.RandomSlice(CentIDLength))
-	pubKey := tools.RandomByte32()
+	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
+	pubKey := utils.RandomByte32()
 	idkey := &EthereumIdentityKey{Key: pubKey}
 	id := &mockID{}
 	srv := &mockIDService{}
@@ -322,8 +322,8 @@ func TestValidateKey_fail_missing_purpose(t *testing.T) {
 }
 
 func TestValidateKey_fail_wrong_purpose(t *testing.T) {
-	centID, _ := ToCentID(tools.RandomSlice(CentIDLength))
-	pubKey := tools.RandomByte32()
+	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
+	pubKey := utils.RandomByte32()
 	idkey := &EthereumIdentityKey{
 		Key:      pubKey,
 		Purposes: []*big.Int{big.NewInt(KeyPurposeEthMsgAuth)},
@@ -341,8 +341,8 @@ func TestValidateKey_fail_wrong_purpose(t *testing.T) {
 }
 
 func TestValidateKey_fail_revocation(t *testing.T) {
-	centID, _ := ToCentID(tools.RandomSlice(CentIDLength))
-	pubKey := tools.RandomByte32()
+	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
+	pubKey := utils.RandomByte32()
 	idkey := &EthereumIdentityKey{
 		Key:       pubKey,
 		Purposes:  []*big.Int{big.NewInt(KeyPurposeSigning)},
@@ -361,8 +361,8 @@ func TestValidateKey_fail_revocation(t *testing.T) {
 }
 
 func TestValidateKey_success(t *testing.T) {
-	centID, _ := ToCentID(tools.RandomSlice(CentIDLength))
-	pubKey := tools.RandomByte32()
+	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
+	pubKey := utils.RandomByte32()
 	idkey := &EthereumIdentityKey{
 		Key:       pubKey,
 		Purposes:  []*big.Int{big.NewInt(KeyPurposeSigning)},

@@ -15,7 +15,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
-	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
+
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
@@ -50,9 +51,9 @@ func TestInvoice_InitCoreDocument_invalidCentId(t *testing.T) {
 	invoiceModel := &InvoiceModel{}
 
 	coreDocument := testingdocuments.CreateCDWithEmbeddedInvoice(t, invoicepb.InvoiceData{
-		Recipient:   tools.RandomSlice(identity.CentIDLength + 1),
-		Sender:      tools.RandomSlice(identity.CentIDLength),
-		Payee:       tools.RandomSlice(identity.CentIDLength),
+		Recipient:   utils.RandomSlice(identity.CentIDLength + 1),
+		Sender:      utils.RandomSlice(identity.CentIDLength),
+		Payee:       utils.RandomSlice(identity.CentIDLength),
 		GrossAmount: 42,
 	})
 	err := invoiceModel.UnpackCoreDocument(coreDocument)
