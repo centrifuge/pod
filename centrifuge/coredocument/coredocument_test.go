@@ -440,3 +440,15 @@ func TestNewWithCollaborators(t *testing.T) {
 	assert.NotNil(t, cd.CoredocumentSalts)
 	assert.Equal(t, [][]byte{c1, c2}, cd.Collaborators)
 }
+
+func TestGetExternalCollaborators(t *testing.T) {
+	c1 := tools.RandomSlice(6)
+	c2 := tools.RandomSlice(6)
+	c := []string{hexutil.Encode(c1), hexutil.Encode(c2)}
+	cd, err := NewWithCollaborators(c)
+	assert.Equal(t, [][]byte{c1, c2}, cd.Collaborators)
+	collaborators, err := GetExternalCollaborators(cd)
+	assert.Nil(t, err)
+	assert.NotNil(t, collaborators)
+	assert.Equal(t, [][]byte{c1, c2}, collaborators)
+}

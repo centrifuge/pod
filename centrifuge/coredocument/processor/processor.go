@@ -376,7 +376,11 @@ func (dp defaultProcessor) SendDocument(ctx context.Context, model documents.Mod
 		return fmt.Errorf("post anchor validations failed: %v", err)
 	}
 
-	for _, c := range cd.Collaborators {
+	extCollaborators, err := coredocument.GetExternalCollaborators(cd)
+	if err != nil {
+		return fmt.Errorf("get external collaborators failed: %v", err)
+	}
+	for _, c := range extCollaborators {
 		cID, erri := identity.ToCentID(c)
 		if erri != nil {
 			err = documents.AppendError(err, erri)
