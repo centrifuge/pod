@@ -6,63 +6,76 @@ import (
 	"context"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 
 	"github.com/stretchr/testify/assert"
 )
 
-var poSrv Service
+func getServiceWithMockedLayers() Service {
+	return DefaultService(getRepository(), &testingutils.MockCoreDocumentProcessor{})
+}
 
 func TestService_Update(t *testing.T) {
+	poSrv := getServiceWithMockedLayers()
 	m, err := poSrv.Update(context.Background(), nil)
 	assert.Nil(t, m)
 	assert.Error(t, err)
 }
 
 func TestService_DeriveFromUpdatePayload(t *testing.T) {
+	poSrv := getServiceWithMockedLayers()
 	m, err := poSrv.DeriveFromUpdatePayload(nil)
 	assert.Nil(t, m)
 	assert.Error(t, err)
 }
 
 func TestService_DeriveFromCreatePayload(t *testing.T) {
+	poSrv := getServiceWithMockedLayers()
 	m, err := poSrv.DeriveFromCreatePayload(nil)
 	assert.Nil(t, m)
 	assert.Error(t, err)
 }
 
 func TestService_DeriveFromCoreDocument(t *testing.T) {
+	poSrv := getServiceWithMockedLayers()
 	m, err := poSrv.DeriveFromCoreDocument(nil)
 	assert.Nil(t, m)
 	assert.Error(t, err)
 }
 
 func TestService_Create(t *testing.T) {
+	poSrv := getServiceWithMockedLayers()
 	m, err := poSrv.Create(context.Background(), nil)
 	assert.Nil(t, m)
 	assert.Error(t, err)
 }
 
 func TestService_CreateProofs(t *testing.T) {
+	poSrv := getServiceWithMockedLayers()
 	p, err := poSrv.CreateProofs(nil, nil)
 	assert.Nil(t, p)
 	assert.Error(t, err)
 }
 
 func TestService_CreateProofsForVersion(t *testing.T) {
+	poSrv := getServiceWithMockedLayers()
 	p, err := poSrv.CreateProofsForVersion(nil, nil, nil)
 	assert.Nil(t, p)
 	assert.Error(t, err)
 }
 
 func TestService_DerivePurchaseOrderData(t *testing.T) {
+	poSrv := getServiceWithMockedLayers()
 	d, err := poSrv.DerivePurchaseOrderData(nil)
 	assert.Nil(t, d)
 	assert.Error(t, err)
 }
 
 func TestService_DerivePurchaseOrderResponse(t *testing.T) {
+	poSrv := getServiceWithMockedLayers()
 	r, err := poSrv.DerivePurchaseOrderResponse(nil)
 	assert.Nil(t, r)
 	assert.Error(t, err)
@@ -86,6 +99,7 @@ func createMockDocument() (*PurchaseOrderModel, error) {
 }
 
 func TestService_GetCurrentVersion(t *testing.T) {
+	poSrv := getServiceWithMockedLayers()
 	thirdIdentifier := tools.RandomSlice(32)
 	doc, err := createMockDocument()
 	assert.Nil(t, err)
@@ -117,6 +131,7 @@ func TestService_GetCurrentVersion(t *testing.T) {
 }
 
 func TestService_GetVersion_invalid_version(t *testing.T) {
+	poSrv := getServiceWithMockedLayers()
 	currentVersion := tools.RandomSlice(32)
 
 	inv := &PurchaseOrderModel{
@@ -135,6 +150,7 @@ func TestService_GetVersion_invalid_version(t *testing.T) {
 }
 
 func TestService_GetVersion(t *testing.T) {
+	poSrv := getServiceWithMockedLayers()
 	documentIdentifier := tools.RandomSlice(32)
 	currentVersion := tools.RandomSlice(32)
 
@@ -159,11 +175,13 @@ func TestService_GetVersion(t *testing.T) {
 }
 
 func TestService_ReceiveAnchoredDocument(t *testing.T) {
+	poSrv := getServiceWithMockedLayers()
 	err := poSrv.ReceiveAnchoredDocument(nil, nil)
 	assert.Error(t, err)
 }
 
 func TestService_RequestDocumentSignature(t *testing.T) {
+	poSrv := getServiceWithMockedLayers()
 	s, err := poSrv.RequestDocumentSignature(nil)
 	assert.Nil(t, s)
 	assert.Error(t, err)

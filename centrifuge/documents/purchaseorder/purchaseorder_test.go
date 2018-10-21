@@ -18,7 +18,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/context/testlogging"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
-	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
@@ -33,21 +32,18 @@ func TestMain(m *testing.M) {
 		&coredocumentrepository.Bootstrapper{},
 		&Bootstrapper{},
 	}
-	anchorRepository = &anchorRepo{}
+	anchorRepository := &mockAnchorRepo{}
 	context := map[string]interface{}{
 		bootstrap.BootstrappedAnchorRepository: anchorRepository,
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, context)
-	poSrv = DefaultService(getRepository(), &testingutils.MockCoreDocumentProcessor{})
 	flag.Parse()
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)
 }
 
-var anchorRepository *anchorRepo
-
-type anchorRepo struct {
+type mockAnchorRepo struct {
 	mock.Mock
 	anchors.AnchorRepository
 }
