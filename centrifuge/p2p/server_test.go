@@ -26,12 +26,10 @@ func TestCentP2PServer_StartContextCancel(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go cp2p.Start(ctx, &wg, startErr)
-	// TODO make some rpc calls to make sure the peer is up
 	time.Sleep(1 * time.Second)
 	// cancel the context to shutdown the server
 	canc()
 	wg.Wait()
-	// TODO make some rpc calls to make sure the peer is down
 }
 
 func TestCentP2PServer_StartListenError(t *testing.T) {

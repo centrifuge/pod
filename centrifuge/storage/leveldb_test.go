@@ -9,7 +9,8 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
-	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/syndtr/goleveldb/leveldb"
@@ -42,7 +43,7 @@ func TestGetLevelDBStorage(t *testing.T) {
 }
 
 func TestDefaultLevelDB_Create(t *testing.T) {
-	id := tools.RandomSlice(32)
+	id := utils.RandomSlice(32)
 	order := purchaseorderpb.PurchaseOrderDocument{CoreDocument: &coredocumentpb.CoreDocument{DocumentIdentifier: id}}
 	err := defaultDB.Create(order.CoreDocument.DocumentIdentifier, &order)
 	assert.Nil(t, err, "create must pass")
@@ -54,7 +55,7 @@ func TestDefaultLevelDB_Create(t *testing.T) {
 		return fmt.Errorf("failed validation")
 	}
 
-	id2 := tools.RandomSlice(32)
+	id2 := utils.RandomSlice(32)
 	order.CoreDocument.DocumentIdentifier = id2
 	err = defaultDB.Create(id2, &order)
 	assert.Error(t, err, "create must fail")
@@ -62,8 +63,8 @@ func TestDefaultLevelDB_Create(t *testing.T) {
 }
 
 func TestDefaultLevelDB_Exists(t *testing.T) {
-	id1 := tools.RandomSlice(32)
-	id2 := tools.RandomSlice(32)
+	id1 := utils.RandomSlice(32)
+	id2 := utils.RandomSlice(32)
 	order := purchaseorderpb.PurchaseOrderDocument{CoreDocument: &coredocumentpb.CoreDocument{DocumentIdentifier: id1}}
 	err := defaultDB.Create(order.CoreDocument.DocumentIdentifier, &order)
 	assert.Nil(t, err, "create must pass")
@@ -73,12 +74,12 @@ func TestDefaultLevelDB_Exists(t *testing.T) {
 }
 
 func TestDefaultLevelDB_GetKey(t *testing.T) {
-	id := tools.RandomSlice(32)
+	id := utils.RandomSlice(32)
 	assert.Equal(t, id, defaultDB.GetKey(id))
 }
 
 func TestDefaultLevelDB_GetByID(t *testing.T) {
-	id := tools.RandomSlice(32)
+	id := utils.RandomSlice(32)
 	order := purchaseorderpb.PurchaseOrderDocument{CoreDocument: &coredocumentpb.CoreDocument{DocumentIdentifier: id}}
 	err := defaultDB.Create(order.CoreDocument.DocumentIdentifier, &order)
 	assert.Nil(t, err, "create must pass")
@@ -88,7 +89,7 @@ func TestDefaultLevelDB_GetByID(t *testing.T) {
 }
 
 func TestDefaultLevelDB_Update(t *testing.T) {
-	id := tools.RandomSlice(32)
+	id := utils.RandomSlice(32)
 	order := purchaseorderpb.PurchaseOrderDocument{CoreDocument: &coredocumentpb.CoreDocument{DocumentIdentifier: id}}
 	err := defaultDB.Update(order.CoreDocument.DocumentIdentifier, &order)
 	assert.Error(t, err, "create must fail")

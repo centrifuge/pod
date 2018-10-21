@@ -5,7 +5,7 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
 )
 
 // fieldValidateFunc validates the fields of the invoice model
@@ -47,7 +47,7 @@ func dataRootValidator() documents.Validator {
 			return fmt.Errorf("failed to pack coredocument: %v", err)
 		}
 
-		if tools.IsEmptyByteSlice(coreDoc.DataRoot) {
+		if utils.IsEmptyByteSlice(coreDoc.DataRoot) {
 			return fmt.Errorf("data root missing")
 		}
 
@@ -60,7 +60,7 @@ func dataRootValidator() documents.Validator {
 			return fmt.Errorf("failed to calculate data root: %v", err)
 		}
 
-		if !tools.IsSameByteSlice(inv.CoreDocument.DataRoot, coreDoc.DataRoot) {
+		if !utils.IsSameByteSlice(inv.CoreDocument.DataRoot, coreDoc.DataRoot) {
 			return fmt.Errorf("mismatched data root")
 		}
 

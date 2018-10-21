@@ -9,7 +9,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -82,8 +82,8 @@ func TestService_DerivePurchaseOrderResponse(t *testing.T) {
 }
 
 func createMockDocument() (*PurchaseOrderModel, error) {
-	documentIdentifier := tools.RandomSlice(32)
-	nextIdentifier := tools.RandomSlice(32)
+	documentIdentifier := utils.RandomSlice(32)
+	nextIdentifier := utils.RandomSlice(32)
 
 	model := &PurchaseOrderModel{
 		PoNumber:    "test_po",
@@ -100,7 +100,7 @@ func createMockDocument() (*PurchaseOrderModel, error) {
 
 func TestService_GetCurrentVersion(t *testing.T) {
 	poSrv := getServiceWithMockedLayers()
-	thirdIdentifier := tools.RandomSlice(32)
+	thirdIdentifier := utils.RandomSlice(32)
 	doc, err := createMockDocument()
 	assert.Nil(t, err)
 
@@ -132,27 +132,27 @@ func TestService_GetCurrentVersion(t *testing.T) {
 
 func TestService_GetVersion_invalid_version(t *testing.T) {
 	poSrv := getServiceWithMockedLayers()
-	currentVersion := tools.RandomSlice(32)
+	currentVersion := utils.RandomSlice(32)
 
 	inv := &PurchaseOrderModel{
 		OrderAmount: 42,
 		CoreDocument: &coredocumentpb.CoreDocument{
-			DocumentIdentifier: tools.RandomSlice(32),
+			DocumentIdentifier: utils.RandomSlice(32),
 			CurrentVersion:     currentVersion,
 		},
 	}
 	err := getRepository().Create(currentVersion, inv)
 	assert.Nil(t, err)
 
-	mod, err := poSrv.GetVersion(tools.RandomSlice(32), currentVersion)
+	mod, err := poSrv.GetVersion(utils.RandomSlice(32), currentVersion)
 	assert.EqualError(t, err, "[4]document not found for the given version: version is not valid for this identifier")
 	assert.Nil(t, mod)
 }
 
 func TestService_GetVersion(t *testing.T) {
 	poSrv := getServiceWithMockedLayers()
-	documentIdentifier := tools.RandomSlice(32)
-	currentVersion := tools.RandomSlice(32)
+	documentIdentifier := utils.RandomSlice(32)
+	currentVersion := utils.RandomSlice(32)
 
 	inv := &PurchaseOrderModel{
 		OrderAmount: 42,

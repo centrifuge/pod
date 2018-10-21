@@ -8,12 +8,12 @@ import (
 	"os"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestConfiguration_CreateConfigFile(t *testing.T) {
-	targetDir := fmt.Sprintf("/tmp/datadir_%x", tools.RandomByte32())
+	targetDir := fmt.Sprintf("/tmp/datadir_%x", utils.RandomByte32())
 	accountKeyPath := targetDir + "/main.key"
 	err := os.Mkdir(targetDir, os.ModePerm)
 	assert.Nil(t, err, "err should be nil")

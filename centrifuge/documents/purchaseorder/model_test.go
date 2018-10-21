@@ -12,9 +12,11 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
-	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
+
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
@@ -51,7 +53,7 @@ func TestPO_InitCoreDocument_invalidCentId(t *testing.T) {
 	poModel := &PurchaseOrderModel{}
 
 	coreDocument := testingdocuments.CreateCDWithEmbeddedPO(t, purchaseorderpb.PurchaseOrderData{
-		Recipient: tools.RandomSlice(identity.CentIDLength + 1)})
+		Recipient: utils.RandomSlice(identity.CentIDLength + 1)})
 
 	err := poModel.UnpackCoreDocument(coreDocument)
 	assert.Nil(t, err)
@@ -140,13 +142,18 @@ func TestPOModel_getClientData(t *testing.T) {
 }
 
 func TestPOOrderModel_InitPOInput(t *testing.T) {
+	idConfig, err := ed25519keys.GetIDConfig()
+	assert.Nil(t, err)
+	self, err := identity.ToCentID(idConfig.ID)
+	assert.Nil(t, err)
+	contextHeader := documents.NewContextHeader(self)
 	// fail recipient
 	data := &clientpurchaseorderpb.PurchaseOrderData{
 		Recipient: "some recipient",
 		ExtraData: "some data",
 	}
 	poModel := new(PurchaseOrderModel)
-	err := poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data})
+	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data}, contextHeader)
 	assert.Error(t, err, "must return err")
 	assert.Contains(t, err.Error(), "failed to decode extra data")
 	assert.Nil(t, poModel.Recipient)
@@ -155,28 +162,33 @@ func TestPOOrderModel_InitPOInput(t *testing.T) {
 	data.ExtraData = "0x010203020301"
 	data.Recipient = "0x010203040506"
 
-	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data})
+	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data}, contextHeader)
 	assert.Nil(t, err)
 	assert.NotNil(t, poModel.ExtraData)
 	assert.NotNil(t, poModel.Recipient)
 
 	data.ExtraData = "0x010203020301"
 	collabs := []string{"0x010102040506", "some id"}
-	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data, Collaborators: collabs})
+	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data, Collaborators: collabs}, contextHeader)
 	assert.Contains(t, err.Error(), "failed to decode collaborator")
 
 	collabs = []string{"0x010102040506", "0x010203020302"}
-	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data, Collaborators: collabs})
+	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data, Collaborators: collabs}, contextHeader)
 	assert.Nil(t, err, "must be nil")
 
 	assert.Equal(t, poModel.Recipient[:], []byte{1, 2, 3, 4, 5, 6})
 	assert.Equal(t, poModel.ExtraData[:], []byte{1, 2, 3, 2, 3, 1})
-	assert.Equal(t, poModel.CoreDocument.Collaborators, [][]byte{{1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}})
+	assert.Equal(t, poModel.CoreDocument.Collaborators, [][]byte{idConfig.ID, {1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}})
 }
 
 func TestPOModel_calculateDataRoot(t *testing.T) {
+	idConfig, err := ed25519keys.GetIDConfig()
+	assert.Nil(t, err)
+	self, err := identity.ToCentID(idConfig.ID)
+	assert.Nil(t, err)
+	contextHeader := documents.NewContextHeader(self)
 	poModel := new(PurchaseOrderModel)
-	err := poModel.InitPurchaseOrderInput(testingdocuments.CreatePOPayload())
+	err = poModel.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), contextHeader)
 	assert.Nil(t, err, "Init must pass")
 	assert.Nil(t, poModel.PurchaseOrderSalt, "salts must be nil")
 

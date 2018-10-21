@@ -15,7 +15,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/nft"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
-	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
+
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -26,8 +27,8 @@ import (
 )
 
 func TestCreateProofData(t *testing.T) {
-	sortedHashes := [][]byte{tools.RandomSlice(32), tools.RandomSlice(32)}
-	salt := tools.RandomSlice(32)
+	sortedHashes := [][]byte{utils.RandomSlice(32), utils.RandomSlice(32)}
+	salt := utils.RandomSlice(32)
 	tests := []struct {
 		name   string
 		proofs []*proofspb.Proof
@@ -64,13 +65,13 @@ func TestCreateProofData(t *testing.T) {
 					Property:     "prop1",
 					Value:        "value1",
 					Salt:         salt,
-					SortedHashes: [][]byte{tools.RandomSlice(33), tools.RandomSlice(31)},
+					SortedHashes: [][]byte{utils.RandomSlice(33), utils.RandomSlice(31)},
 				},
 				{
 					Property:     "prop2",
 					Value:        "value2",
 					Salt:         salt,
-					SortedHashes: [][]byte{tools.RandomSlice(33), tools.RandomSlice(31)},
+					SortedHashes: [][]byte{utils.RandomSlice(33), utils.RandomSlice(31)},
 				},
 			},
 			proofData{
@@ -86,13 +87,13 @@ func TestCreateProofData(t *testing.T) {
 				{
 					Property:     "prop1",
 					Value:        "value1",
-					Salt:         tools.RandomSlice(33),
+					Salt:         utils.RandomSlice(33),
 					SortedHashes: sortedHashes,
 				},
 				{
 					Property:     "prop2",
 					Value:        "value2",
-					Salt:         tools.RandomSlice(32),
+					Salt:         utils.RandomSlice(32),
 					SortedHashes: sortedHashes,
 				},
 			},
@@ -154,11 +155,11 @@ func TestPaymentObligationService(t *testing.T) {
 		{
 			"happypath",
 			func() (testingdocuments.MockService, *MockPaymentObligation, testingcommons.MockIDService, testingcommons.MockEthClient, MockConfig) {
-				centIDByte := tools.RandomSlice(6)
+				centIDByte := utils.RandomSlice(6)
 				centID, _ := identity.ToCentID(centIDByte)
-				address := common.BytesToAddress(tools.RandomSlice(32))
+				address := common.BytesToAddress(utils.RandomSlice(32))
 				coreDoc := coredocument.New()
-				coreDoc.DocumentRoot = tools.RandomSlice(32)
+				coreDoc.DocumentRoot = utils.RandomSlice(32)
 				proof := getDummyProof(coreDoc)
 				docServiceMock := testingdocuments.MockService{}
 				docServiceMock.On("GetCurrentVersion", decodeHex("0x1212")).Return(&invoice.InvoiceModel{InvoiceNumber: "1232", CoreDocument: coreDoc}, nil)
@@ -215,22 +216,22 @@ func getDummyProof(coreDoc *coredocumentpb.CoreDocument) *documents.DocumentProo
 			{
 				Property: "prop1",
 				Value:    "val1",
-				Salt:     tools.RandomSlice(32),
-				Hash:     tools.RandomSlice(32),
+				Salt:     utils.RandomSlice(32),
+				Hash:     utils.RandomSlice(32),
 				SortedHashes: [][]byte{
-					tools.RandomSlice(32),
-					tools.RandomSlice(32),
-					tools.RandomSlice(32),
+					utils.RandomSlice(32),
+					utils.RandomSlice(32),
+					utils.RandomSlice(32),
 				},
 			},
 			{
 				Property: "prop2",
 				Value:    "val2",
-				Salt:     tools.RandomSlice(32),
-				Hash:     tools.RandomSlice(32),
+				Salt:     utils.RandomSlice(32),
+				Hash:     utils.RandomSlice(32),
 				SortedHashes: [][]byte{
-					tools.RandomSlice(32),
-					tools.RandomSlice(32),
+					utils.RandomSlice(32),
+					utils.RandomSlice(32),
 				},
 			},
 		},
@@ -238,7 +239,7 @@ func getDummyProof(coreDoc *coredocumentpb.CoreDocument) *documents.DocumentProo
 }
 
 func byteSliceToByteArray32(input []byte) (out [32]byte) {
-	out, _ = tools.SliceToByte32(input)
+	out, _ = utils.SliceToByte32(input)
 	return out
 }
 

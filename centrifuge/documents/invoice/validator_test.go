@@ -7,10 +7,13 @@ import (
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
 
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+
+	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -71,7 +74,7 @@ func TestDataRootValidation_Validate(t *testing.T) {
 
 	// unknown doc type
 	cd := coredocument.New()
-	cd.DataRoot = tools.RandomSlice(32)
+	cd.DataRoot = utils.RandomSlice(32)
 	model = &mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
 	err = drv.Validate(nil, model)
@@ -80,8 +83,13 @@ func TestDataRootValidation_Validate(t *testing.T) {
 	assert.Contains(t, err.Error(), "unknown document type")
 
 	// mismatch
+	idConfig, err := ed25519keys.GetIDConfig()
+	assert.Nil(t, err)
+	self, err := identity.ToCentID(idConfig.ID)
+	assert.Nil(t, err)
+	contextHeader := documents.NewContextHeader(self)
 	inv := new(InvoiceModel)
-	err = inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload())
+	err = inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), contextHeader)
 	assert.Nil(t, err)
 	inv.CoreDocument = cd
 	err = drv.Validate(nil, inv)
@@ -90,7 +98,7 @@ func TestDataRootValidation_Validate(t *testing.T) {
 
 	// success
 	inv = new(InvoiceModel)
-	err = inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload())
+	err = inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), contextHeader)
 	assert.Nil(t, err)
 	err = inv.calculateDataRoot()
 	assert.Nil(t, err)

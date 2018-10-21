@@ -17,21 +17,23 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
-	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
+
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
 var (
-	centID  = tools.RandomSlice(identity.CentIDLength)
-	key1Pub = [...]byte{230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
-	key1    = []byte{102, 109, 71, 239, 130, 229, 128, 189, 37, 96, 223, 5, 189, 91, 210, 47, 89, 4, 165, 6, 188, 53, 49, 250, 109, 151, 234, 139, 57, 205, 231, 253, 230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
+	centID     = utils.RandomSlice(identity.CentIDLength)
+	key1Pub    = [...]byte{230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
+	key1       = []byte{102, 109, 71, 239, 130, 229, 128, 189, 37, 96, 223, 5, 189, 91, 210, 47, 89, 4, 165, 6, 188, 53, 49, 250, 109, 151, 234, 139, 57, 205, 231, 253, 230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
 )
 
 func TestDefaultService(t *testing.T) {
@@ -45,9 +47,9 @@ func getServiceWithMockedLayers() Service {
 }
 
 func TestService_DeriveFromCoreDocument(t *testing.T) {
+	// nil doc
 
 	invService := getServiceWithMockedLayers()
-	// nil doc
 	_, err := invService.DeriveFromCoreDocument(nil)
 	assert.Error(t, err, "must fail to derive")
 
@@ -72,10 +74,15 @@ func TestService_DeriveFromPayload(t *testing.T) {
 	var err error
 
 	// fail due to nil payload
-	_, err = invService.DeriveFromCreatePayload(nil)
+	_, err = invService.DeriveFromCreatePayload(nil, nil)
 	assert.Error(t, err, "DeriveWithInvoiceInput should produce an error if invoiceInput equals nil")
 
-	model, err = invService.DeriveFromCreatePayload(payload)
+	idConfig, err := ed25519keys.GetIDConfig()
+	assert.Nil(t, err)
+	self, err := identity.ToCentID(idConfig.ID)
+	assert.Nil(t, err)
+	contextHeader := documents.NewContextHeader(self)
+	model, err = invService.DeriveFromCreatePayload(payload, contextHeader)
 	assert.Nil(t, err, "valid invoiceData shouldn't produce an error")
 
 	receivedCoreDocument, err := model.PackCoreDocument()
@@ -83,9 +90,9 @@ func TestService_DeriveFromPayload(t *testing.T) {
 	assert.NotNil(t, receivedCoreDocument.EmbeddedData, "embeddedData should be field")
 }
 
-func TestService_GetCurrentVersion(t *testing.T) {
+func TestService_GetLastVersion(t *testing.T) {
 	invService := getServiceWithMockedLayers()
-	thirdIdentifier := tools.RandomSlice(32)
+	thirdIdentifier := utils.RandomSlice(32)
 	doc, err := createMockDocument()
 	assert.Nil(t, err)
 
@@ -117,27 +124,27 @@ func TestService_GetCurrentVersion(t *testing.T) {
 
 func TestService_GetVersion_invalid_version(t *testing.T) {
 	invService := getServiceWithMockedLayers()
-	currentVersion := tools.RandomSlice(32)
+	currentVersion := utils.RandomSlice(32)
 
 	inv := &InvoiceModel{
 		GrossAmount: 60,
 		CoreDocument: &coredocumentpb.CoreDocument{
-			DocumentIdentifier: tools.RandomSlice(32),
+			DocumentIdentifier: utils.RandomSlice(32),
 			CurrentVersion:     currentVersion,
 		},
 	}
 	err := getRepository().Create(currentVersion, inv)
 	assert.Nil(t, err)
 
-	mod, err := invService.GetVersion(tools.RandomSlice(32), currentVersion)
+	mod, err := invService.GetVersion(utils.RandomSlice(32), currentVersion)
 	assert.EqualError(t, err, "[4]document not found for the given version: version is not valid for this identifier")
 	assert.Nil(t, mod)
 }
 
 func TestService_GetVersion(t *testing.T) {
 	invService := getServiceWithMockedLayers()
-	documentIdentifier := tools.RandomSlice(32)
-	currentVersion := tools.RandomSlice(32)
+	documentIdentifier := utils.RandomSlice(32)
+	currentVersion := utils.RandomSlice(32)
 
 	inv := &InvoiceModel{
 		GrossAmount: 60,
@@ -185,8 +192,13 @@ func TestService_Create_db_fail(t *testing.T) {
 	err := getRepository().Create(cd.CurrentVersion, model)
 	model.AssertExpectations(t)
 
+	idConfig, err := ed25519keys.GetIDConfig()
+	assert.Nil(t, err)
+	self, err := identity.ToCentID(idConfig.ID)
+	assert.Nil(t, err)
+	contextHeader := documents.NewContextHeader(self)
 	payload := testingdocuments.CreateInvoicePayload()
-	inv, err := invService.DeriveFromCreatePayload(payload)
+	inv, err := invService.DeriveFromCreatePayload(payload, contextHeader)
 	assert.Nil(t, err, "must be non nil")
 	assert.NotNil(t, inv)
 	inv.(*InvoiceModel).CoreDocument = cd
@@ -202,8 +214,13 @@ func TestService_Create_anchor_fail(t *testing.T) {
 	proc := &testingutils.MockCoreDocumentProcessor{}
 	proc.On("Anchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(fmt.Errorf("failed to anchor document"))
 	srv.coreDocProcessor = proc
+	idConfig, err := ed25519keys.GetIDConfig()
+	assert.Nil(t, err)
+	self, err := identity.ToCentID(idConfig.ID)
+	assert.Nil(t, err)
+	contextHeader := documents.NewContextHeader(self)
 	payload := testingdocuments.CreateInvoicePayload()
-	inv, err := invService.DeriveFromCreatePayload(payload)
+	inv, err := invService.DeriveFromCreatePayload(payload, contextHeader)
 	_, err = srv.Create(context.Background(), inv)
 	proc.AssertExpectations(t)
 	assert.Error(t, err)
@@ -219,7 +236,12 @@ func TestService_Create_send_fail(t *testing.T) {
 	srv.coreDocProcessor = proc
 	payload := testingdocuments.CreateInvoicePayload()
 	payload.Collaborators = []string{"0x010203040506"}
-	inv, err := invService.DeriveFromCreatePayload(payload)
+	idConfig, err := ed25519keys.GetIDConfig()
+	assert.Nil(t, err)
+	self, err := identity.ToCentID(idConfig.ID)
+	assert.Nil(t, err)
+	contextHeader := documents.NewContextHeader(self)
+	inv, err := invService.DeriveFromCreatePayload(payload, contextHeader)
 	_, err = srv.Create(context.Background(), inv)
 	proc.AssertExpectations(t)
 	assert.Nil(t, err)
@@ -234,7 +256,12 @@ func TestService_Create_saveState_fail(t *testing.T) {
 	srv.coreDocProcessor = proc
 	payload := testingdocuments.CreateInvoicePayload()
 	payload.Collaborators = []string{"0x010203040506"}
-	inv, err := invService.DeriveFromCreatePayload(payload)
+	idConfig, err := ed25519keys.GetIDConfig()
+	assert.Nil(t, err)
+	self, err := identity.ToCentID(idConfig.ID)
+	assert.Nil(t, err)
+	contextHeader := documents.NewContextHeader(self)
+	inv, err := invService.DeriveFromCreatePayload(payload, contextHeader)
 	_, err = srv.Create(context.Background(), inv)
 	proc.AssertExpectations(t)
 	assert.Nil(t, err)
@@ -249,7 +276,12 @@ func TestService_Create(t *testing.T) {
 	srv.coreDocProcessor = proc
 	payload := testingdocuments.CreateInvoicePayload()
 	payload.Collaborators = []string{"0x010203040506"}
-	inv, err := invService.DeriveFromCreatePayload(payload)
+	idConfig, err := ed25519keys.GetIDConfig()
+	assert.Nil(t, err)
+	self, err := identity.ToCentID(idConfig.ID)
+	assert.Nil(t, err)
+	contextHeader := documents.NewContextHeader(self)
+	inv, err := invService.DeriveFromCreatePayload(payload, contextHeader)
 	_, err = srv.Create(context.Background(), inv)
 	proc.AssertExpectations(t)
 	assert.Nil(t, err)
@@ -257,13 +289,19 @@ func TestService_Create(t *testing.T) {
 
 func TestService_DeriveInvoiceData(t *testing.T) {
 	invService := getServiceWithMockedLayers()
+
 	// some random model
 	_, err := invService.DeriveInvoiceData(&mockModel{})
 	assert.Error(t, err, "Derive must fail")
 
 	// success
 	payload := testingdocuments.CreateInvoicePayload()
-	inv, err := invService.DeriveFromCreatePayload(payload)
+	idConfig, err := ed25519keys.GetIDConfig()
+	assert.Nil(t, err)
+	self, err := identity.ToCentID(idConfig.ID)
+	assert.Nil(t, err)
+	contextHeader := documents.NewContextHeader(self)
+	inv, err := invService.DeriveFromCreatePayload(payload, contextHeader)
 	assert.Nil(t, err, "must be non nil")
 	data, err := invService.DeriveInvoiceData(inv)
 	assert.Nil(t, err, "Derive must succeed")
@@ -283,7 +321,12 @@ func TestService_DeriveInvoiceResponse(t *testing.T) {
 
 	// success
 	payload := testingdocuments.CreateInvoicePayload()
-	inv1, err := invService.DeriveFromCreatePayload(payload)
+	idConfig, err := ed25519keys.GetIDConfig()
+	assert.Nil(t, err)
+	self, err := identity.ToCentID(idConfig.ID)
+	assert.Nil(t, err)
+	contextHeader := documents.NewContextHeader(self)
+	inv1, err := invService.DeriveFromCreatePayload(payload, contextHeader)
 	assert.Nil(t, err, "must be non nil")
 	inv, ok := inv1.(*InvoiceModel)
 	assert.True(t, ok)
@@ -303,8 +346,13 @@ func TestService_SaveState(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "document of invalid type")
 
+	idConfig, err := ed25519keys.GetIDConfig()
+	assert.Nil(t, err)
+	self, err := identity.ToCentID(idConfig.ID)
+	assert.Nil(t, err)
+	contextHeader := documents.NewContextHeader(self)
 	inv := new(InvoiceModel)
-	err = inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload())
+	err = inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), contextHeader)
 	assert.Nil(t, err)
 
 	// save state must fail missing core document
@@ -328,7 +376,7 @@ func TestService_SaveState(t *testing.T) {
 	assert.Nil(t, inv.CoreDocument.DataRoot)
 
 	inv.Currency = "INR"
-	inv.CoreDocument.DataRoot = tools.RandomSlice(32)
+	inv.CoreDocument.DataRoot = utils.RandomSlice(32)
 	err = invService.SaveState(inv)
 	assert.Nil(t, err)
 
@@ -341,6 +389,7 @@ func TestService_SaveState(t *testing.T) {
 
 // Functions returns service mocks
 func mockSignatureCheck(i *InvoiceModel) identity.Service {
+
 	anchorRepository := &mockAnchorRepo{}
 	idkey := &identity.EthereumIdentityKey{
 		Key:       key1Pub,
@@ -363,8 +412,8 @@ func setIdentityService(idService identity.Service) {
 }
 
 func TestService_CreateProofs(t *testing.T) {
-	invService := getServiceWithMockedLayers()
 	defer setIdentityService(identity.IDService)
+	invService := getServiceWithMockedLayers()
 	i, err := createAnchoredMockDocument(t, false)
 	assert.Nil(t, err)
 	idService := mockSignatureCheck(i)
@@ -378,8 +427,8 @@ func TestService_CreateProofs(t *testing.T) {
 }
 
 func TestService_CreateProofsValidationFails(t *testing.T) {
-	invService := getServiceWithMockedLayers()
 	defer setIdentityService(identity.IDService)
+	invService := getServiceWithMockedLayers()
 	i, err := createAnchoredMockDocument(t, false)
 	assert.Nil(t, err)
 	i.CoreDocument.SigningRoot = nil
@@ -406,7 +455,7 @@ func TestService_CreateProofsInvalidField(t *testing.T) {
 
 func TestService_CreateProofsDocumentDoesntExist(t *testing.T) {
 	invService := getServiceWithMockedLayers()
-	_, err := invService.CreateProofs(tools.RandomSlice(32), []string{"invoice_number"})
+	_, err := invService.CreateProofs(utils.RandomSlice(32), []string{"invoice_number"})
 	assert.Error(t, err)
 	assert.Equal(t, "document not found: leveldb: not found", err.Error())
 }
@@ -430,10 +479,10 @@ func TestService_CreateProofsForVersion(t *testing.T) {
 }
 
 func TestService_CreateProofsForVersionDocumentDoesntExist(t *testing.T) {
-	invService := getServiceWithMockedLayers()
 	i, err := createAnchoredMockDocument(t, false)
+	invService := getServiceWithMockedLayers()
 	assert.Nil(t, err)
-	_, err = invService.CreateProofsForVersion(i.CoreDocument.DocumentIdentifier, tools.RandomSlice(32), []string{"invoice_number"})
+	_, err = invService.CreateProofsForVersion(i.CoreDocument.DocumentIdentifier, utils.RandomSlice(32), []string{"invoice_number"})
 	assert.Error(t, err)
 	assert.Equal(t, "document not found for the given version: leveldb: not found", err.Error())
 }
@@ -514,7 +563,7 @@ func updatedAnchoredMockDocument(t *testing.T, i *InvoiceModel) (*InvoiceModel, 
 	}
 	// hacky update to version
 	corDoc.CurrentVersion = corDoc.NextVersion
-	corDoc.NextVersion = tools.RandomSlice(32)
+	corDoc.NextVersion = utils.RandomSlice(32)
 	if err != nil {
 		return nil, err
 	}
@@ -538,8 +587,8 @@ func updatedAnchoredMockDocument(t *testing.T, i *InvoiceModel) (*InvoiceModel, 
 }
 
 func createMockDocument() (*InvoiceModel, error) {
-	documentIdentifier := tools.RandomSlice(32)
-	nextIdentifier := tools.RandomSlice(32)
+	documentIdentifier := utils.RandomSlice(32)
+	nextIdentifier := utils.RandomSlice(32)
 	inv1 := &InvoiceModel{
 		InvoiceNumber: "test_invoice",
 		GrossAmount:   60,
@@ -556,33 +605,38 @@ func createMockDocument() (*InvoiceModel, error) {
 func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	invService := getServiceWithMockedLayers()
 	// nil payload
-	doc, err := invService.DeriveFromUpdatePayload(nil)
+	doc, err := invService.DeriveFromUpdatePayload(nil, nil)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid payload")
 	assert.Nil(t, doc)
 
 	// messed up identifier
+	idConfig, err := ed25519keys.GetIDConfig()
+	assert.Nil(t, err)
+	self, err := identity.ToCentID(idConfig.ID)
+	assert.Nil(t, err)
+	contextHeader := documents.NewContextHeader(self)
 	payload := &clientinvoicepb.InvoiceUpdatePayload{Identifier: "some identifier"}
-	doc, err = invService.DeriveFromUpdatePayload(payload)
+	doc, err = invService.DeriveFromUpdatePayload(payload, contextHeader)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to decode identifier")
 	assert.Nil(t, doc)
 
 	// missing last version
-	id := tools.RandomSlice(32)
+	id := utils.RandomSlice(32)
 	payload.Identifier = hexutil.Encode(id)
-	doc, err = invService.DeriveFromUpdatePayload(payload)
+	doc, err = invService.DeriveFromUpdatePayload(payload, contextHeader)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to fetch old version")
 	assert.Nil(t, doc)
 
 	// failed to load from data
 	old := new(InvoiceModel)
-	err = old.InitInvoiceInput(testingdocuments.CreateInvoicePayload())
+	err = old.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), contextHeader)
 	assert.Nil(t, err)
 	old.CoreDocument.DocumentIdentifier = id
 	old.CoreDocument.CurrentVersion = id
-	old.CoreDocument.DocumentRoot = tools.RandomSlice(32)
+	old.CoreDocument.DocumentRoot = utils.RandomSlice(32)
 	err = getRepository().Create(id, old)
 	assert.Nil(t, err)
 	payload.Data = &clientinvoicepb.InvoiceData{
@@ -593,29 +647,29 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 		ExtraData:   "some data",
 		Currency:    "EUR",
 	}
-	doc, err = invService.DeriveFromUpdatePayload(payload)
+	doc, err = invService.DeriveFromUpdatePayload(payload, contextHeader)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load invoice from data")
 	assert.Nil(t, doc)
 
 	// failed core document new version
-	payload.Data.ExtraData = hexutil.Encode(tools.RandomSlice(32))
+	payload.Data.ExtraData = hexutil.Encode(utils.RandomSlice(32))
 	payload.Collaborators = []string{"some wrong ID"}
-	doc, err = invService.DeriveFromUpdatePayload(payload)
+	doc, err = invService.DeriveFromUpdatePayload(payload, contextHeader)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to prepare new version")
 	assert.Nil(t, doc)
 
 	// success
-	wantCollab := tools.RandomSlice(6)
+	wantCollab := utils.RandomSlice(6)
 	payload.Collaborators = []string{hexutil.Encode(wantCollab)}
-	doc, err = invService.DeriveFromUpdatePayload(payload)
+	doc, err = invService.DeriveFromUpdatePayload(payload, contextHeader)
 	assert.Nil(t, err)
 	assert.NotNil(t, doc)
 	cd, err := doc.PackCoreDocument()
 	assert.Nil(t, err)
-	assert.Equal(t, wantCollab, cd.Collaborators[0])
-	assert.Len(t, cd.Collaborators, 1)
+	assert.Equal(t, wantCollab, cd.Collaborators[1])
+	assert.Len(t, cd.Collaborators, 2)
 	oldCD, err := old.PackCoreDocument()
 	assert.Nil(t, err)
 	assert.Equal(t, oldCD.DocumentIdentifier, cd.DocumentIdentifier)
@@ -649,7 +703,12 @@ func TestService_Update_Missing_last_version(t *testing.T) {
 
 func TestService_Update_unknown_type(t *testing.T) {
 	invService := getServiceWithMockedLayers()
-	model, err := invService.DeriveFromCreatePayload(testingdocuments.CreateInvoicePayload())
+	idConfig, err := ed25519keys.GetIDConfig()
+	assert.Nil(t, err)
+	self, err := identity.ToCentID(idConfig.ID)
+	assert.Nil(t, err)
+	contextHeader := documents.NewContextHeader(self)
+	model, err := invService.DeriveFromCreatePayload(testingdocuments.CreateInvoicePayload(), contextHeader)
 	assert.Nil(t, err)
 	cd, err := model.PackCoreDocument()
 	assert.Nil(t, err)
@@ -664,7 +723,6 @@ func TestService_Update_unknown_type(t *testing.T) {
 }
 
 func TestService_Update(t *testing.T) {
-
 	invService := getServiceWithMockedLayers()
 	srv := invService.(service)
 	proc := &testingutils.MockCoreDocumentProcessor{}
@@ -673,11 +731,16 @@ func TestService_Update(t *testing.T) {
 	srv.coreDocProcessor = proc
 	payload := testingdocuments.CreateInvoicePayload()
 	payload.Collaborators = []string{"0x010203040506"}
-	inv, err := invService.DeriveFromCreatePayload(payload)
+	idConfig, err := ed25519keys.GetIDConfig()
+	assert.Nil(t, err)
+	self, err := identity.ToCentID(idConfig.ID)
+	assert.Nil(t, err)
+	contextHeader := documents.NewContextHeader(self)
+	inv, err := invService.DeriveFromCreatePayload(payload, contextHeader)
 	assert.Nil(t, err)
 	cd, err := inv.PackCoreDocument()
 	assert.Nil(t, err)
-	cd.DocumentRoot = tools.RandomSlice(32)
+	cd.DocumentRoot = utils.RandomSlice(32)
 	err = inv.UnpackCoreDocument(cd)
 	assert.Nil(t, err)
 	getRepository().Create(cd.DocumentIdentifier, inv)
@@ -685,14 +748,14 @@ func TestService_Update(t *testing.T) {
 	data, err := invService.DeriveInvoiceData(inv)
 	assert.Nil(t, err)
 	data.GrossAmount = 100
-	data.ExtraData = hexutil.Encode(tools.RandomSlice(32))
-	collab := hexutil.Encode(tools.RandomSlice(6))
+	data.ExtraData = hexutil.Encode(utils.RandomSlice(32))
+	collab := hexutil.Encode(utils.RandomSlice(6))
 
 	newInv, err := invService.DeriveFromUpdatePayload(&clientinvoicepb.InvoiceUpdatePayload{
 		Identifier:    hexutil.Encode(cd.DocumentIdentifier),
 		Collaborators: []string{collab},
 		Data:          data,
-	})
+	}, contextHeader)
 	assert.Nil(t, err)
 	newData, err := invService.DeriveInvoiceData(newInv)
 	assert.Nil(t, err)

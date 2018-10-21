@@ -12,13 +12,15 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
+
 	"github.com/centrifuge/go-centrifuge/centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/context/testlogging"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
-	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
@@ -126,11 +128,11 @@ func TestNewInvoice_NilDocument(t *testing.T) {
 
 func TestValidate(t *testing.T) {
 	var (
-		id1 = tools.RandomSlice(32)
-		id2 = tools.RandomSlice(32)
-		id3 = tools.RandomSlice(32)
-		id4 = tools.RandomSlice(32)
-		id5 = tools.RandomSlice(32)
+		id1 = utils.RandomSlice(32)
+		id2 = utils.RandomSlice(32)
+		id3 = utils.RandomSlice(32)
+		id4 = utils.RandomSlice(32)
+		id5 = utils.RandomSlice(32)
 	)
 
 	validCoreDoc := &coredocumentpb.CoreDocument{

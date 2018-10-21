@@ -11,7 +11,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 )
@@ -34,8 +35,8 @@ func TestMain(m *testing.M) {
 }
 
 func TestCreateAndLookupIdentity_Integration(t *testing.T) {
-	centrifugeId, _ := identity.ToCentID(tools.RandomSlice(identity.CentIDLength))
-	wrongCentrifugeId := tools.RandomSlice(identity.CentIDLength)
+	centrifugeId, _ := identity.ToCentID(utils.RandomSlice(identity.CentIDLength))
+	wrongCentrifugeId := utils.RandomSlice(identity.CentIDLength)
 	wrongCentrifugeId[0] = 0x0
 	wrongCentrifugeId[1] = 0x0
 	wrongCentrifugeId[2] = 0x0
@@ -62,7 +63,7 @@ func TestCreateAndLookupIdentity_Integration(t *testing.T) {
 	assert.False(t, exists)
 
 	// Add Key
-	key := tools.RandomSlice(32)
+	key := utils.RandomSlice(32)
 	confirmations, err = id.AddKeyToIdentity(context.Background(), 1, key)
 	assert.Nil(t, err, "should not error out when adding key to identity")
 	assert.NotNil(t, confirmations, "confirmations channel should not be nil")
@@ -79,7 +80,7 @@ func TestCreateAndLookupIdentity_Integration(t *testing.T) {
 }
 
 func TestAddKeyFromConfig(t *testing.T) {
-	centrifugeId, _ := identity.ToCentID(tools.RandomSlice(identity.CentIDLength))
+	centrifugeId, _ := identity.ToCentID(utils.RandomSlice(identity.CentIDLength))
 	defaultCentrifugeId := config.Config.V.GetString("identityId")
 	config.Config.V.Set("identityId", centrifugeId.String())
 	config.Config.V.Set("keys.ethauth.publicKey", "../../example/resources/ethauth.pub.pem")
@@ -98,7 +99,7 @@ func TestAddKeyFromConfig(t *testing.T) {
 }
 
 func TestAddKeyFromConfig_IdentityDoesNotExist(t *testing.T) {
-	centrifugeId, _ := identity.ToCentID(tools.RandomSlice(identity.CentIDLength))
+	centrifugeId, _ := identity.ToCentID(utils.RandomSlice(identity.CentIDLength))
 	defaultCentrifugeId := config.Config.V.GetString("identityId")
 	config.Config.V.Set("identityId", centrifugeId.String())
 	config.Config.V.Set("keys.ethauth.publicKey", "../../example/resources/ethauth.pub.pem")
@@ -115,7 +116,7 @@ func TestCreateAndLookupIdentity_Integration_Concurrent(t *testing.T) {
 	var identityConfirmations [5]<-chan *identity.WatchIdentity
 	var err error
 	for ix := 0; ix < 5; ix++ {
-		centId, _ := identity.ToCentID(tools.RandomSlice(identity.CentIDLength))
+		centId, _ := identity.ToCentID(utils.RandomSlice(identity.CentIDLength))
 		centIds[ix] = centId
 		_, identityConfirmations[ix], err = identityService.CreateIdentity(centId)
 		assert.Nil(t, err, "should not error out upon identity creation")
@@ -130,7 +131,7 @@ func TestCreateAndLookupIdentity_Integration_Concurrent(t *testing.T) {
 }
 
 func TestEthereumIdentityService_GetIdentityAddress(t *testing.T) {
-	centrifugeId, _ := identity.ToCentID(tools.RandomSlice(identity.CentIDLength))
+	centrifugeId, _ := identity.ToCentID(utils.RandomSlice(identity.CentIDLength))
 	_, confirmations, err := identityService.CreateIdentity(centrifugeId)
 	assert.Nil(t, err, "should not error out when creating identity")
 	<-confirmations
