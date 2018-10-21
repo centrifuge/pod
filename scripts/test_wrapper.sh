@@ -38,14 +38,12 @@ fi
 # Assure that all the dependencies for the contracts are installed
 npm install --pwd ${CENT_ETHEREUM_CONTRACTS_DIR} --prefix=${CENT_ETHEREUM_CONTRACTS_DIR}
 
-# TODO - ideally we would avoid 'cd-ing' into another directory, but in this case
 # `truffle migrate` will fail if not executed in the sub-dir
 cd ${CENT_ETHEREUM_CONTRACTS_DIR}
 # Clear up previous build
 rm -Rf ./build
 
 
-# TODO move this out into the test dependencies folder instead of doing it here
 LOCAL_ETH_CONTRACT_ADDRESSES="${CENT_ETHEREUM_CONTRACTS_DIR}/deployments/local.json"
 if [ ! -e $LOCAL_ETH_CONTRACT_ADDRESSES ]; then
     echo "$LOCAL_ETH_CONTRACT_ADDRESSES doesn't exist. Probably no migrations run yet. Forcing migrations."

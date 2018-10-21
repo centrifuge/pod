@@ -21,7 +21,6 @@ var identityService identity.Service
 
 func TestMain(m *testing.M) {
 	// Adding delay to startup (concurrency hack)
-	// TODO: look for other sleep statements in tests and fix the underlying issues
 	time.Sleep(time.Second + 2)
 
 	cc.DONT_USE_FOR_UNIT_TESTS_TestFunctionalEthereumBootstrap()

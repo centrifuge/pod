@@ -223,7 +223,6 @@ func ValidateKey(centrifugeId CentID, key []byte, purpose int) error {
 		return fmt.Errorf(fmt.Sprintf("[Key: %x] Key doesn't have purpose [%d]", idKey.GetKey(), purpose))
 	}
 
-	// TODO Check if revokation block happened before the timeframe of the document signing, for historical validations
 	if idKey.GetRevokedAt().Cmp(big.NewInt(0)) != 0 {
 		return fmt.Errorf(fmt.Sprintf("[Key: %x] Key is currently revoked since block [%d]", idKey.GetKey(), idKey.GetRevokedAt()))
 	}

@@ -19,7 +19,6 @@ func TestMain(m *testing.M) {
 }
 
 func TestGetConnection_returnsSameConnection(t *testing.T) {
-	//TODO this will currently fail if concurrency is at play - e.g. running with 3 go-routines the test will fail
 	howMany := 5
 	confChannel := make(chan ethereum.EthereumClient, howMany)
 	for ix := 0; ix < howMany; ix++ {

@@ -23,7 +23,6 @@ var log = logging.Logger("invoice")
 
 // Invoice is a wrapper for invoice protobuf
 // Deprecated: in favour of implementation of documents.Model interface (InvoiceModel).
-// TODO remove
 type Invoice struct {
 	Document *invoicepb.InvoiceDocument
 }
@@ -121,7 +120,7 @@ func (inv *Invoice) getDocumentDataTree() (tree *proofs.DocumentTree, err error)
 }
 
 // CalculateMerkleRoot calculates the invoice merkle root
-// TODO: this method is a dangerous one. Generating the different roots shouldn't be done in one step (lucas)
+// Deprecated
 func (inv *Invoice) CalculateMerkleRoot() error {
 	tree, err := inv.getDocumentDataTree()
 	if err != nil {
