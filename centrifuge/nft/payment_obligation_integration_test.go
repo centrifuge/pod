@@ -75,7 +75,7 @@ func TestPaymentObligationService_mint(t *testing.T) {
 	assert.Nil(t, err, "should not error out when getting invoice ID")
 	// call mint
 	// assert no error
-	_, err = nft.GetPaymentObligation().MintNFT(
+	confirmations, err := nft.GetPaymentObligation().MintNFT(
 		ID,
 		documenttypes.InvoiceDataTypeUrl,
 		"doesntmatter",
@@ -83,4 +83,7 @@ func TestPaymentObligationService_mint(t *testing.T) {
 		[]string{"gross_amount", "currency", "due_date"},
 	)
 	assert.Nil(t, err, "should not error out when minting an invoice")
+	tokenConfirm := <-confirmations
+	assert.Nil(t, tokenConfirm.Err, "should not error out when minting an invoice")
+	assert.NotNil(t, tokenConfirm.TokenID, "token id should be present")
 }

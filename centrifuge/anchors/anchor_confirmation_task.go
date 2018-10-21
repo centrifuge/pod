@@ -25,7 +25,7 @@ const (
 	AddressParam                         string = "AddressParam"
 )
 
-type AnchorCommittedWatcher interface {
+type AnchorCommittedFilterer interface {
 	FilterAnchorCommitted(
 		opts *bind.FilterOpts,
 		from []common.Address,
@@ -45,11 +45,11 @@ type AnchoringConfirmationTask struct {
 	// state
 	EthContextInitializer   func() (ctx context.Context, cancelFunc context.CancelFunc)
 	EthContext              context.Context
-	AnchorCommittedFilterer AnchorCommittedWatcher
+	AnchorCommittedFilterer AnchorCommittedFilterer
 }
 
 func NewAnchoringConfirmationTask(
-	anchorCommittedWatcher AnchorCommittedWatcher,
+	anchorCommittedWatcher AnchorCommittedFilterer,
 	ethContextInitializer func() (ctx context.Context, cancelFunc context.CancelFunc),
 ) *AnchoringConfirmationTask {
 	return &AnchoringConfirmationTask{

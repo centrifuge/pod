@@ -29,9 +29,10 @@ func (g grpcHandler) MintNFT(context context.Context, request *nftpb.NFTMintRequ
 		return &nftpb.NFTMintResponse{}, centerrors.New(code.Unknown, err.Error())
 	}
 
-	tokenID, err := g.service.MintNFT(identifier, request.Type, request.RegistryAddress, request.DepositAddress, request.ProofFields)
+	confirmation, err := g.service.MintNFT(identifier, request.Type, request.RegistryAddress, request.DepositAddress, request.ProofFields)
 	if err != nil {
 		return &nftpb.NFTMintResponse{}, centerrors.New(code.Unknown, err.Error())
 	}
-	return &nftpb.NFTMintResponse{TokenId: tokenID}, nil
+	watchToken := <-confirmation
+	return &nftpb.NFTMintResponse{TokenId: watchToken.TokenID.String()}, watchToken.Err
 }

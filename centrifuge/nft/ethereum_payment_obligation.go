@@ -9,6 +9,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
 
+	"github.com/centrifuge/go-centrifuge/centrifuge/queue"
+	"github.com/centrifuge/gocelery"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -48,68 +50,93 @@ type ethereumPaymentObligation struct {
 	identityService   identity.Service
 	ethClient         ethereum.EthereumClient
 	config            Config
+	setupMintListener func(tokenID *big.Int) (confirmations chan *WatchTokenMinted, err error)
 }
 
 // NewEthereumPaymentObligation creates ethereumPaymentObligation given the parameters
-func NewEthereumPaymentObligation(paymentObligation ethereumPaymentObligationContract, identityService identity.Service, ethClient ethereum.EthereumClient, config Config) *ethereumPaymentObligation {
-	return &ethereumPaymentObligation{paymentObligation: paymentObligation, identityService: identityService, ethClient: ethClient, config: config}
+func NewEthereumPaymentObligation(paymentObligation ethereumPaymentObligationContract, identityService identity.Service, ethClient ethereum.EthereumClient, config Config, setupMintListener func(tokenID *big.Int) (confirmations chan *WatchTokenMinted, err error)) *ethereumPaymentObligation {
+	return &ethereumPaymentObligation{paymentObligation: paymentObligation, identityService: identityService, ethClient: ethClient, config: config, setupMintListener: setupMintListener}
 }
 
 // MintNFT mints an NFT
-func (s *ethereumPaymentObligation) MintNFT(documentID []byte, docType, registryAddress, depositAddress string, proofFields []string) (string, error) {
+func (s *ethereumPaymentObligation) MintNFT(documentID []byte, docType, registryAddress, depositAddress string, proofFields []string) (<-chan *WatchTokenMinted, error) {
 	docService, err := getDocumentService(docType)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	model, err := docService.GetCurrentVersion(documentID)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	corDoc, err := model.PackCoreDocument()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	proofs, err := docService.CreateProofs(documentID, proofFields)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	toAddress, err := s.getIdentityAddress()
 	if err != nil {
-		return "", nil
+		return nil, nil
 	}
 
 	anchorID, err := anchors.NewAnchorID(corDoc.CurrentVersion)
 	if err != nil {
-		return "", nil
+		return nil, nil
 	}
 
 	rootHash, err := anchors.NewDocRoot(corDoc.DocumentRoot)
 	if err != nil {
-		return "", nil
+		return nil, nil
 	}
 
 	requestData, err := NewMintRequest(toAddress, anchorID, proofs.FieldProofs, rootHash)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	opts, err := s.ethClient.GetTxOpts(s.config.GetEthereumDefaultAccountName())
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	// TODO setup worker to watch for events and enqueue a message to watch here
+	watch, err := s.setupMintListener(requestData.TokenID)
+	if err != nil {
+		return nil, err
+	}
 
 	err = s.sendMintTransaction(s.paymentObligation, opts, requestData)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return requestData.TokenID.String(), nil
+	return watch, nil
+}
+
+// setUpMintEventListener sets up the listened for the "PaymentObligationMinted" event to notify the upstream code
+// about successful minting of an NFt
+func setUpMintEventListener(tokenID *big.Int) (confirmations chan *WatchTokenMinted, err error) {
+	confirmations = make(chan *WatchTokenMinted)
+	asyncRes, err := queue.Queue.DelayKwargs(MintingConfirmationTaskName, map[string]interface{}{
+		TokenIDParam: tokenID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	go waitAndRouteNFTApprovedEvent(asyncRes, tokenID, confirmations)
+	return confirmations, nil
+}
+
+// waitAndRouteNFTApprovedEvent notifies the confirmations channel whenever the key has been added to the identity and has been noted as Ethereum event
+func waitAndRouteNFTApprovedEvent(asyncRes *gocelery.AsyncResult, tokenID *big.Int, confirmations chan<- *WatchTokenMinted) {
+	_, err := asyncRes.Get(ethereum.GetDefaultContextTimeout())
+	confirmations <- &WatchTokenMinted{tokenID, err}
 }
 
 // sendMintTransaction sends the actual transaction to mint the NFT
