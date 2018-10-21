@@ -18,7 +18,6 @@ var createIdentityCmd = &cobra.Command{
 		//cmd requires a config file
 		readConfigFile()
 		baseBootstrap()
-		identityService := identity.EthereumIdentityService{}
 		var centrifugeId identity.CentID
 		var err error
 		if centrifugeIdString == "" {
@@ -29,7 +28,7 @@ var createIdentityCmd = &cobra.Command{
 				panic(err)
 			}
 		}
-		_, confirmations, err := identityService.CreateIdentity(centrifugeId)
+		_, confirmations, err := identity.IDService.CreateIdentity(centrifugeId)
 		if err != nil {
 			panic(err)
 		}
