@@ -7,6 +7,7 @@ package invoice
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"testing"
 
@@ -27,6 +28,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
+	fmt.Println("test")
 	ibootstappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
@@ -35,19 +37,17 @@ func TestMain(m *testing.M) {
 		&anchors.Bootstrapper{},
 		&Bootstrapper{},
 	}
-	anchorRepository = &anchorRepo{}
+	anchorRepository := &anchorRepo{}
 	context := map[string]interface{}{
 		bootstrap.BootstrappedAnchorRepository: anchorRepository,
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, context)
-	invService = DefaultService(getRepository(), &testingutils.MockCoreDocumentProcessor{}, anchorRepository)
 	flag.Parse()
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)
 }
 
-var anchorRepository *anchorRepo
 
 type anchorRepo struct {
 	mock.Mock

@@ -29,7 +29,6 @@ import (
 )
 
 var (
-	invService Service
 	centID     = tools.RandomSlice(identity.CentIDLength)
 	key1Pub    = [...]byte{230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
 	key1       = []byte{102, 109, 71, 239, 130, 229, 128, 189, 37, 96, 223, 5, 189, 91, 210, 47, 89, 4, 165, 6, 188, 53, 49, 250, 109, 151, 234, 139, 57, 205, 231, 253, 230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
@@ -40,7 +39,14 @@ func TestDefaultService(t *testing.T) {
 	assert.NotNil(t, srv, "must be non-nil")
 }
 
+func getMockService() Service {
+
+	return DefaultService(getRepository(), &testingutils.MockCoreDocumentProcessor{}, &anchorRepo{})
+}
+
 func TestService_DeriveFromCoreDocument(t *testing.T) {
+
+	invService := getMockService()
 	// nil doc
 	_, err := invService.DeriveFromCoreDocument(nil)
 	assert.Error(t, err, "must fail to derive")
@@ -60,6 +66,7 @@ func TestService_DeriveFromCoreDocument(t *testing.T) {
 }
 
 func TestService_DeriveFromPayload(t *testing.T) {
+	invService := getMockService()
 	payload := testingdocuments.CreateInvoicePayload()
 	var model documents.Model
 	var err error
@@ -77,6 +84,7 @@ func TestService_DeriveFromPayload(t *testing.T) {
 }
 
 func TestService_GetCurrentVersion(t *testing.T) {
+	invService := getMockService()
 	thirdIdentifier := tools.RandomSlice(32)
 	doc, err := createMockDocument()
 	assert.Nil(t, err)
@@ -108,6 +116,7 @@ func TestService_GetCurrentVersion(t *testing.T) {
 }
 
 func TestService_GetVersion_invalid_version(t *testing.T) {
+	invService := getMockService()
 	currentVersion := tools.RandomSlice(32)
 
 	inv := &InvoiceModel{
@@ -126,6 +135,7 @@ func TestService_GetVersion_invalid_version(t *testing.T) {
 }
 
 func TestService_GetVersion(t *testing.T) {
+	invService := getMockService()
 	documentIdentifier := tools.RandomSlice(32)
 	currentVersion := tools.RandomSlice(32)
 
@@ -150,6 +160,7 @@ func TestService_GetVersion(t *testing.T) {
 }
 
 func TestService_Create_unknown_type_fail(t *testing.T) {
+	invService := getMockService()
 	ctx := context.Background()
 	_, err := invService.Create(ctx, &mockModel{})
 	assert.Error(t, err)
@@ -157,6 +168,7 @@ func TestService_Create_unknown_type_fail(t *testing.T) {
 }
 
 func TestService_Create_validation_fail(t *testing.T) {
+	invService := getMockService()
 	// fail Validations
 	ctx := context.Background()
 	_, err := invService.Create(ctx, &InvoiceModel{CoreDocument: &coredocumentpb.CoreDocument{}})
@@ -165,6 +177,7 @@ func TestService_Create_validation_fail(t *testing.T) {
 }
 
 func TestService_Create_db_fail(t *testing.T) {
+	invService := getMockService()
 	ctx := context.Background()
 	model := &mockModel{}
 	cd := coredocument.New()
@@ -184,6 +197,7 @@ func TestService_Create_db_fail(t *testing.T) {
 }
 
 func TestService_Create_anchor_fail(t *testing.T) {
+	invService := getMockService()
 	srv := invService.(service)
 	proc := &testingutils.MockCoreDocumentProcessor{}
 	proc.On("Anchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(fmt.Errorf("failed to anchor document"))
@@ -197,6 +211,7 @@ func TestService_Create_anchor_fail(t *testing.T) {
 }
 
 func TestService_Create_send_fail(t *testing.T) {
+	invService := getMockService()
 	srv := invService.(service)
 	proc := &testingutils.MockCoreDocumentProcessor{}
 	proc.On("Anchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
@@ -211,6 +226,7 @@ func TestService_Create_send_fail(t *testing.T) {
 }
 
 func TestService_Create_saveState_fail(t *testing.T) {
+	invService := getMockService()
 	srv := invService.(service)
 	proc := &testingutils.MockCoreDocumentProcessor{}
 	proc.On("Anchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
@@ -225,6 +241,7 @@ func TestService_Create_saveState_fail(t *testing.T) {
 }
 
 func TestService_Create(t *testing.T) {
+	invService := getMockService()
 	srv := invService.(service)
 	proc := &testingutils.MockCoreDocumentProcessor{}
 	proc.On("Anchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
@@ -239,6 +256,7 @@ func TestService_Create(t *testing.T) {
 }
 
 func TestService_DeriveInvoiceData(t *testing.T) {
+	invService := getMockService()
 	// some random model
 	_, err := invService.DeriveInvoiceData(&mockModel{})
 	assert.Error(t, err, "Derive must fail")
@@ -253,6 +271,7 @@ func TestService_DeriveInvoiceData(t *testing.T) {
 }
 
 func TestService_DeriveInvoiceResponse(t *testing.T) {
+	invService := getMockService()
 	model := &mockModel{
 		CoreDocument: &coredocumentpb.CoreDocument{
 			DocumentIdentifier: []byte{},
@@ -278,6 +297,7 @@ func TestService_DeriveInvoiceResponse(t *testing.T) {
 }
 
 func TestService_SaveState(t *testing.T) {
+	invService := getMockService()
 	// unknown type
 	err := invService.SaveState(&mockModel{})
 	assert.Error(t, err)
@@ -321,6 +341,7 @@ func TestService_SaveState(t *testing.T) {
 
 // Functions returns service mocks
 func mockSignatureCheck(i *InvoiceModel) identity.Service {
+	anchorRepository := &anchorRepo{}
 	idkey := &identity.EthereumIdentityKey{
 		Key:       key1Pub,
 		Purposes:  []*big.Int{big.NewInt(identity.KeyPurposeSigning)},
@@ -342,6 +363,7 @@ func setIdentityService(idService identity.Service) {
 }
 
 func TestService_CreateProofs(t *testing.T) {
+	invService := getMockService()
 	defer setIdentityService(identity.IDService)
 	i, err := createAnchoredMockDocument(t, false)
 	assert.Nil(t, err)
@@ -356,6 +378,7 @@ func TestService_CreateProofs(t *testing.T) {
 }
 
 func TestService_CreateProofsValidationFails(t *testing.T) {
+	invService := getMockService()
 	defer setIdentityService(identity.IDService)
 	i, err := createAnchoredMockDocument(t, false)
 	assert.Nil(t, err)
@@ -371,6 +394,7 @@ func TestService_CreateProofsValidationFails(t *testing.T) {
 
 func TestService_CreateProofsInvalidField(t *testing.T) {
 	defer setIdentityService(identity.IDService)
+	invService := getMockService()
 	i, err := createAnchoredMockDocument(t, false)
 	assert.Nil(t, err)
 	idService := mockSignatureCheck(i)
@@ -381,6 +405,7 @@ func TestService_CreateProofsInvalidField(t *testing.T) {
 }
 
 func TestService_CreateProofsDocumentDoesntExist(t *testing.T) {
+	invService := getMockService()
 	_, err := invService.CreateProofs(tools.RandomSlice(32), []string{"invoice_number"})
 	assert.Error(t, err)
 	assert.Equal(t, "document not found: leveldb: not found", err.Error())
@@ -388,6 +413,7 @@ func TestService_CreateProofsDocumentDoesntExist(t *testing.T) {
 
 func TestService_CreateProofsForVersion(t *testing.T) {
 	defer setIdentityService(identity.IDService)
+	invService := getMockService()
 	i, err := createAnchoredMockDocument(t, false)
 	assert.Nil(t, err)
 	idService := mockSignatureCheck(i)
@@ -404,6 +430,7 @@ func TestService_CreateProofsForVersion(t *testing.T) {
 }
 
 func TestService_CreateProofsForVersionDocumentDoesntExist(t *testing.T) {
+	invService := getMockService()
 	i, err := createAnchoredMockDocument(t, false)
 	assert.Nil(t, err)
 	_, err = invService.CreateProofsForVersion(i.CoreDocument.DocumentIdentifier, tools.RandomSlice(32), []string{"invoice_number"})
@@ -413,6 +440,7 @@ func TestService_CreateProofsForVersionDocumentDoesntExist(t *testing.T) {
 
 func TestService_RequestDocumentSignature_SigningRootNil(t *testing.T) {
 	defer setIdentityService(identity.IDService)
+	invService := getMockService()
 	i, err := createAnchoredMockDocument(t, true)
 	assert.Nil(t, err)
 	idService := mockSignatureCheck(i)
@@ -526,6 +554,7 @@ func createMockDocument() (*InvoiceModel, error) {
 }
 
 func TestService_DeriveFromUpdatePayload(t *testing.T) {
+	invService := getMockService()
 	// nil payload
 	doc, err := invService.DeriveFromUpdatePayload(nil)
 	assert.Error(t, err)
@@ -598,6 +627,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 }
 
 func TestService_Update_packCoreDocument_fail(t *testing.T) {
+	invService := getMockService()
 	model := &mockModel{}
 	model.On("PackCoreDocument").Return(nil, fmt.Errorf("pack error")).Once()
 	_, err := invService.Update(context.Background(), model)
@@ -607,6 +637,7 @@ func TestService_Update_packCoreDocument_fail(t *testing.T) {
 }
 
 func TestService_Update_Missing_last_version(t *testing.T) {
+	invService := getMockService()
 	model := &mockModel{}
 	cd := coredocument.New()
 	model.On("PackCoreDocument").Return(cd, nil).Once()
@@ -617,6 +648,7 @@ func TestService_Update_Missing_last_version(t *testing.T) {
 }
 
 func TestService_Update_unknown_type(t *testing.T) {
+	invService := getMockService()
 	model, err := invService.DeriveFromCreatePayload(testingdocuments.CreateInvoicePayload())
 	assert.Nil(t, err)
 	cd, err := model.PackCoreDocument()
@@ -632,6 +664,8 @@ func TestService_Update_unknown_type(t *testing.T) {
 }
 
 func TestService_Update(t *testing.T) {
+
+	invService := getMockService()
 	srv := invService.(service)
 	proc := &testingutils.MockCoreDocumentProcessor{}
 	proc.On("Anchor", mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
