@@ -37,9 +37,9 @@ func TestMain(m *testing.M) {
 		&anchors.Bootstrapper{},
 		&Bootstrapper{},
 	}
-	anchorRepository := &mockAnchorRepo{}
+	mockAnchorRepository = &mockAnchorRepo{}
 	context := map[string]interface{}{
-		bootstrap.BootstrappedAnchorRepository: anchorRepository,
+		bootstrap.BootstrappedAnchorRepository: mockAnchorRepository,
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, context)
 	flag.Parse()
@@ -47,6 +47,8 @@ func TestMain(m *testing.M) {
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)
 }
+
+var mockAnchorRepository *mockAnchorRepo
 
 type mockAnchorRepo struct {
 	mock.Mock

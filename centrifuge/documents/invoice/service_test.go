@@ -43,7 +43,7 @@ func TestDefaultService(t *testing.T) {
 
 func getServiceWithMockedLayers() Service {
 
-	return DefaultService(getRepository(), &testingutils.MockCoreDocumentProcessor{}, &mockAnchorRepo{})
+	return DefaultService(getRepository(), &testingutils.MockCoreDocumentProcessor{}, mockAnchorRepository)
 }
 
 func TestService_DeriveFromCoreDocument(t *testing.T) {
@@ -389,8 +389,6 @@ func TestService_SaveState(t *testing.T) {
 
 // Functions returns service mocks
 func mockSignatureCheck(i *InvoiceModel) identity.Service {
-
-	anchorRepository := &mockAnchorRepo{}
 	idkey := &identity.EthereumIdentityKey{
 		Key:       key1Pub,
 		Purposes:  []*big.Int{big.NewInt(identity.KeyPurposeSigning)},
@@ -398,7 +396,7 @@ func mockSignatureCheck(i *InvoiceModel) identity.Service {
 	}
 	anchorID, _ := anchors.NewAnchorID(i.CoreDocument.DocumentIdentifier)
 	docRoot, _ := anchors.NewDocRoot(i.CoreDocument.DocumentRoot)
-	anchorRepository.On("GetDocumentRootOf", anchorID).Return(docRoot, nil).Once()
+	mockAnchorRepository.On("GetDocumentRootOf", anchorID).Return(docRoot, nil).Once()
 	srv := &testingcommons.MockIDService{}
 	id := &testingcommons.MockID{}
 	centID, _ := identity.ToCentID(centID)
