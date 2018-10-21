@@ -7,6 +7,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/centrifuge/queue"
 )
 
 type Bootstrapper struct {
@@ -20,13 +21,13 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	if _, ok := context[bootstrap.BootstrappedEthereumClient]; !ok {
 		return errors.New("ethereum client hasn't been initialized")
 	}
-	// TODO check if identity has been initialized
 	contract, err := getPaymentObligationContract()
 	if err != nil {
 		return err
 	}
 	setPaymentObligation(NewEthereumPaymentObligation(contract, identity.IDService, ethereum.GetConnection(), config.Config, setUpMintEventListener))
-	return nil
+	return queue.InstallQueuedTask(context,
+		NewMintingConfirmationTask(contract, ethereum.DefaultWaitForTransactionMiningContext))
 }
 
 func getPaymentObligationContract() (*EthereumPaymentObligationContract, error) {

@@ -32,7 +32,6 @@ type MintingConfirmationTask struct {
 	EthContextInitializer           func() (ctx context.Context, cancelFunc context.CancelFunc)
 	EthContext                      context.Context
 	PaymentObligationMintedFilterer PaymentObligationMintedFilterer
-	Config                          Config
 }
 
 func NewMintingConfirmationTask(
