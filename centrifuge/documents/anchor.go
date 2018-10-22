@@ -70,7 +70,7 @@ func AnchorDocument(ctx context.Context, model Model, proc anchorProcessor, upda
 
 	err = proc.SendDocument(ctx, model)
 	if err != nil {
-		return nil, fmt.Errorf("failed to send anchored docuemnt: %v", err)
+		return nil, fmt.Errorf("failed to send anchored document: %v", err)
 	}
 
 	return nil, updater(id, model)
