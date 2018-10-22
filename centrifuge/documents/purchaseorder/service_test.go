@@ -1,86 +1,187 @@
+// +build unit
+
 package purchaseorder
 
 import (
 	"context"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
+
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
+
 	"github.com/stretchr/testify/assert"
 )
 
-var poSrv = service{}
+func getServiceWithMockedLayers() Service {
+	return DefaultService(getRepository(), &testingutils.MockCoreDocumentProcessor{})
+}
 
 func TestService_Update(t *testing.T) {
+	poSrv := getServiceWithMockedLayers()
 	m, err := poSrv.Update(context.Background(), nil)
 	assert.Nil(t, m)
 	assert.Error(t, err)
 }
 
 func TestService_DeriveFromUpdatePayload(t *testing.T) {
+	poSrv := getServiceWithMockedLayers()
 	m, err := poSrv.DeriveFromUpdatePayload(nil)
 	assert.Nil(t, m)
 	assert.Error(t, err)
 }
 
 func TestService_DeriveFromCreatePayload(t *testing.T) {
+	poSrv := getServiceWithMockedLayers()
 	m, err := poSrv.DeriveFromCreatePayload(nil)
 	assert.Nil(t, m)
 	assert.Error(t, err)
 }
 
 func TestService_DeriveFromCoreDocument(t *testing.T) {
+	poSrv := getServiceWithMockedLayers()
 	m, err := poSrv.DeriveFromCoreDocument(nil)
 	assert.Nil(t, m)
 	assert.Error(t, err)
 }
 
 func TestService_Create(t *testing.T) {
+	poSrv := getServiceWithMockedLayers()
 	m, err := poSrv.Create(context.Background(), nil)
 	assert.Nil(t, m)
 	assert.Error(t, err)
 }
 
 func TestService_CreateProofs(t *testing.T) {
+	poSrv := getServiceWithMockedLayers()
 	p, err := poSrv.CreateProofs(nil, nil)
 	assert.Nil(t, p)
 	assert.Error(t, err)
 }
 
 func TestService_CreateProofsForVersion(t *testing.T) {
+	poSrv := getServiceWithMockedLayers()
 	p, err := poSrv.CreateProofsForVersion(nil, nil, nil)
 	assert.Nil(t, p)
 	assert.Error(t, err)
 }
 
 func TestService_DerivePurchaseOrderData(t *testing.T) {
+	poSrv := getServiceWithMockedLayers()
 	d, err := poSrv.DerivePurchaseOrderData(nil)
 	assert.Nil(t, d)
 	assert.Error(t, err)
 }
 
 func TestService_DerivePurchaseOrderResponse(t *testing.T) {
+	poSrv := getServiceWithMockedLayers()
 	r, err := poSrv.DerivePurchaseOrderResponse(nil)
 	assert.Nil(t, r)
 	assert.Error(t, err)
 }
 
+func createMockDocument() (*PurchaseOrderModel, error) {
+	documentIdentifier := utils.RandomSlice(32)
+	nextIdentifier := utils.RandomSlice(32)
+
+	model := &PurchaseOrderModel{
+		PoNumber:    "test_po",
+		OrderAmount: 42,
+		CoreDocument: &coredocumentpb.CoreDocument{
+			DocumentIdentifier: documentIdentifier,
+			CurrentVersion:     documentIdentifier,
+			NextVersion:        nextIdentifier,
+		},
+	}
+	err := getRepository().Create(documentIdentifier, model)
+	return model, err
+}
+
 func TestService_GetCurrentVersion(t *testing.T) {
-	m, err := poSrv.GetCurrentVersion(nil)
-	assert.Nil(t, m)
-	assert.Error(t, err)
+	poSrv := getServiceWithMockedLayers()
+	thirdIdentifier := utils.RandomSlice(32)
+	doc, err := createMockDocument()
+	assert.Nil(t, err)
+
+	mod1, err := poSrv.GetCurrentVersion(doc.CoreDocument.DocumentIdentifier)
+	assert.Nil(t, err)
+
+	poLoad1, _ := mod1.(*PurchaseOrderModel)
+	assert.Equal(t, poLoad1.CoreDocument.CurrentVersion, doc.CoreDocument.DocumentIdentifier)
+
+	po2 := &PurchaseOrderModel{
+		OrderAmount: 42,
+		CoreDocument: &coredocumentpb.CoreDocument{
+			DocumentIdentifier: doc.CoreDocument.DocumentIdentifier,
+			CurrentVersion:     doc.CoreDocument.NextVersion,
+			NextVersion:        thirdIdentifier,
+		},
+	}
+
+	err = getRepository().Create(doc.CoreDocument.NextVersion, po2)
+	assert.Nil(t, err)
+
+	mod2, err := poSrv.GetCurrentVersion(doc.CoreDocument.DocumentIdentifier)
+	assert.Nil(t, err)
+
+	poLoad2, _ := mod2.(*PurchaseOrderModel)
+	assert.Equal(t, poLoad2.CoreDocument.CurrentVersion, doc.CoreDocument.NextVersion)
+	assert.Equal(t, poLoad2.CoreDocument.NextVersion, thirdIdentifier)
+}
+
+func TestService_GetVersion_invalid_version(t *testing.T) {
+	poSrv := getServiceWithMockedLayers()
+	currentVersion := utils.RandomSlice(32)
+
+	po := &PurchaseOrderModel{
+		OrderAmount: 42,
+		CoreDocument: &coredocumentpb.CoreDocument{
+			DocumentIdentifier: utils.RandomSlice(32),
+			CurrentVersion:     currentVersion,
+		},
+	}
+	err := getRepository().Create(currentVersion, po)
+	assert.Nil(t, err)
+
+	mod, err := poSrv.GetVersion(utils.RandomSlice(32), currentVersion)
+	assert.EqualError(t, err, "[4]document not found for the given version: version is not valid for this identifier")
+	assert.Nil(t, mod)
 }
 
 func TestService_GetVersion(t *testing.T) {
-	m, err := poSrv.GetVersion(nil, nil)
-	assert.Nil(t, m)
+	poSrv := getServiceWithMockedLayers()
+	documentIdentifier := utils.RandomSlice(32)
+	currentVersion := utils.RandomSlice(32)
+
+	po := &PurchaseOrderModel{
+		OrderAmount: 42,
+		CoreDocument: &coredocumentpb.CoreDocument{
+			DocumentIdentifier: documentIdentifier,
+			CurrentVersion:     currentVersion,
+		},
+	}
+	err := getRepository().Create(currentVersion, po)
+	assert.Nil(t, err)
+
+	mod, err := poSrv.GetVersion(documentIdentifier, currentVersion)
+	assert.Nil(t, err)
+	loadpo, _ := mod.(*PurchaseOrderModel)
+	assert.Equal(t, loadpo.CoreDocument.CurrentVersion, currentVersion)
+	assert.Equal(t, loadpo.CoreDocument.DocumentIdentifier, documentIdentifier)
+
+	mod, err = poSrv.GetVersion(documentIdentifier, []byte{})
 	assert.Error(t, err)
 }
 
 func TestService_ReceiveAnchoredDocument(t *testing.T) {
+	poSrv := getServiceWithMockedLayers()
 	err := poSrv.ReceiveAnchoredDocument(nil, nil)
 	assert.Error(t, err)
 }
 
 func TestService_RequestDocumentSignature(t *testing.T) {
+	poSrv := getServiceWithMockedLayers()
 	s, err := poSrv.RequestDocumentSignature(nil)
 	assert.Nil(t, s)
 	assert.Error(t, err)
