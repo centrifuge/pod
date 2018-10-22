@@ -11,6 +11,7 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/precise-proofs/proofs"
@@ -22,7 +23,6 @@ import (
 )
 
 // PurchaseOrder implements the documents.Model keeps track of purchase order related fields and state
-// TODO rename PurchaseOrderModel -> PurchaseOrder
 type PurchaseOrderModel struct {
 	// purchase order number or reference number
 	PoNumber string
@@ -153,13 +153,14 @@ func (p *PurchaseOrderModel) createP2PProtobuf() *purchaseorderpb.PurchaseOrderD
 }
 
 // InitPurchaseOrderInput initialize the model based on the received parameters from the rest api call
-func (p *PurchaseOrderModel) InitPurchaseOrderInput(payload *clientpurchaseorderpb.PurchaseOrderCreatePayload) error {
+func (p *PurchaseOrderModel) InitPurchaseOrderInput(payload *clientpurchaseorderpb.PurchaseOrderCreatePayload, contextHeader *documents.ContextHeader) error {
 	err := p.initPurchaseOrderFromData(payload.Data)
 	if err != nil {
 		return err
 	}
 
-	p.CoreDocument, err = coredocument.NewWithCollaborators(payload.Collaborators)
+	collaborators := append([]string{contextHeader.Self().String()}, payload.Collaborators...)
+	p.CoreDocument, err = coredocument.NewWithCollaborators(collaborators)
 	if err != nil {
 		return fmt.Errorf("failed to init core document: %v", err)
 	}

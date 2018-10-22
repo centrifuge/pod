@@ -7,6 +7,8 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
 
+	"time"
+
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/queue"
 	"github.com/centrifuge/gocelery"
@@ -152,6 +154,7 @@ func (krct *KeyRegistrationConfirmationTask) RunTask() (interface{}, error) {
 		if err != utils.EventNotFound {
 			return nil, err
 		}
+		time.Sleep(100 * time.Millisecond)
 	}
 
 	return nil, fmt.Errorf("failed to filter key events")

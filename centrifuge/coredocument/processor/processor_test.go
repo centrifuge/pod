@@ -20,7 +20,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/p2p"
 	"github.com/centrifuge/go-centrifuge/centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/commons"
-	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
+
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -34,7 +35,7 @@ func TestMain(m *testing.M) {
 	ibootstappers := []bootstrap.TestBootstrapper{
 		&config.Bootstrapper{},
 	}
-	bootstrap.RunTestBootstrappers(ibootstappers)
+	bootstrap.RunTestBootstrappers(ibootstappers, nil)
 	result := m.Run()
 	os.Exit(result)
 }
@@ -87,7 +88,7 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 	pub, _ := config.Config.GetSigningKeyPair()
 	config.Config.V.Set("keys.signing.publicKey", "wrong path")
 	cd = coredocument.New()
-	cd.DataRoot = tools.RandomSlice(32)
+	cd.DataRoot = utils.RandomSlice(32)
 	cd.EmbeddedData = &any.Any{
 		TypeUrl: "some type",
 		Value:   []byte("some data"),
@@ -157,7 +158,7 @@ func TestDefaultProcessor_RequestSignatures(t *testing.T) {
 
 	// failed signature collection
 	cd = coredocument.New()
-	cd.DataRoot = tools.RandomSlice(32)
+	cd.DataRoot = utils.RandomSlice(32)
 	cd.EmbeddedData = &any.Any{
 		TypeUrl: "some type",
 		Value:   []byte("some data"),
@@ -226,7 +227,7 @@ func TestDefaultProcessor_PrepareForAnchoring(t *testing.T) {
 
 	// failed unpack
 	cd = coredocument.New()
-	cd.DataRoot = tools.RandomSlice(32)
+	cd.DataRoot = utils.RandomSlice(32)
 	cd.EmbeddedData = &any.Any{
 		TypeUrl: "some type",
 		Value:   []byte("some data"),
@@ -241,7 +242,7 @@ func TestDefaultProcessor_PrepareForAnchoring(t *testing.T) {
 	assert.Nil(t, err)
 	s := signatures.Sign(c, cd.SigningRoot)
 	cd.Signatures = []*coredocumentpb.Signature{s}
-	pubkey, err := tools.SliceToByte32(c.PublicKey)
+	pubkey, err := utils.SliceToByte32(c.PublicKey)
 	assert.Nil(t, err)
 	idkey := &identity.EthereumIdentityKey{
 		Key:       pubkey,
@@ -318,7 +319,7 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 
 	// get ID failed
 	cd = coredocument.New()
-	cd.DataRoot = tools.RandomSlice(32)
+	cd.DataRoot = utils.RandomSlice(32)
 	cd.EmbeddedData = &any.Any{
 		TypeUrl: "some type",
 		Value:   []byte("some data"),
@@ -332,7 +333,7 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	s := signatures.Sign(c, cd.SigningRoot)
 	cd.Signatures = []*coredocumentpb.Signature{s}
 	assert.Nil(t, coredocument.CalculateDocumentRoot(cd))
-	pubkey, err := tools.SliceToByte32(c.PublicKey)
+	pubkey, err := utils.SliceToByte32(c.PublicKey)
 	assert.Nil(t, err)
 	idkey := &identity.EthereumIdentityKey{
 		Key:       pubkey,
@@ -444,7 +445,7 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 
 	// failed send
 	cd = coredocument.New()
-	cd.DataRoot = tools.RandomSlice(32)
+	cd.DataRoot = utils.RandomSlice(32)
 	cd.EmbeddedData = &any.Any{
 		TypeUrl: "some type",
 		Value:   []byte("some data"),
@@ -459,7 +460,7 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	s := signatures.Sign(c, cd.SigningRoot)
 	cd.Signatures = []*coredocumentpb.Signature{s}
 	assert.Nil(t, coredocument.CalculateDocumentRoot(cd))
-	pubkey, err := tools.SliceToByte32(c.PublicKey)
+	pubkey, err := utils.SliceToByte32(c.PublicKey)
 	assert.Nil(t, err)
 	idkey := &identity.EthereumIdentityKey{
 		Key:       pubkey,

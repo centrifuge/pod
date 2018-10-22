@@ -7,7 +7,8 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
-	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -63,7 +64,7 @@ func TestRepository(t *testing.T) {
 	assert.Equal(t, invRepo.KeyPrefix, "invoice")
 	assert.NotNil(t, invRepo.LevelDB, "missing leveldb instance")
 
-	id := tools.RandomSlice(32)
+	id := utils.RandomSlice(32)
 	doc := &InvoiceModel{
 		InvoiceNumber:    "inv1234",
 		SenderName:       "Jack",

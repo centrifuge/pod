@@ -30,10 +30,10 @@ type Service interface {
 	documents.Service
 
 	// DeriverFromPayload derives InvoiceModel from clientPayload
-	DeriveFromCreatePayload(*clientinvoicepb.InvoiceCreatePayload) (documents.Model, error)
+	DeriveFromCreatePayload(*clientinvoicepb.InvoiceCreatePayload, *documents.ContextHeader) (documents.Model, error)
 
 	// DeriveFromUpdatePayload derives invoice model from update payload
-	DeriveFromUpdatePayload(*clientinvoicepb.InvoiceUpdatePayload) (documents.Model, error)
+	DeriveFromUpdatePayload(*clientinvoicepb.InvoiceUpdatePayload, *documents.ContextHeader) (documents.Model, error)
 
 	// Create validates and persists invoice Model and returns a Updated model
 	Create(ctx context.Context, inv documents.Model) (documents.Model, error)
@@ -57,11 +57,12 @@ type service struct {
 	repo             documents.Repository
 	coreDocProcessor coredocumentprocessor.Processor
 	notifier         notification.Sender
+	anchorRepository anchors.AnchorRepository
 }
 
 // DefaultService returns the default implementation of the service
-func DefaultService(repo documents.Repository, processor coredocumentprocessor.Processor) Service {
-	return service{repo: repo, coreDocProcessor: processor, notifier: &notification.WebhookSender{}}
+func DefaultService(repo documents.Repository, processor coredocumentprocessor.Processor, anchorRepository anchors.AnchorRepository) Service {
+	return service{repo: repo, coreDocProcessor: processor, notifier: &notification.WebhookSender{}, anchorRepository: anchorRepository}
 }
 
 // CreateProofs creates proofs for the latest version document given the fields
@@ -92,6 +93,9 @@ func (s service) CreateProofsForVersion(documentID, version []byte, fields []str
 
 // invoiceProof creates proofs for invoice model fields
 func (s service) invoiceProof(inv *InvoiceModel, fields []string) (*documents.DocumentProof, error) {
+	if err := coredocument.PostAnchoredValidator(s.anchorRepository).Validate(nil, inv); err != nil {
+		return nil, centerrors.New(code.DocumentInvalid, err.Error())
+	}
 	coreDoc, proofs, err := inv.createProofs(fields)
 	if err != nil {
 		return nil, err
@@ -115,13 +119,13 @@ func (s service) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (docume
 }
 
 // UnpackFromCreatePayload initializes the model with parameters provided from the rest-api call
-func (s service) DeriveFromCreatePayload(invoiceInput *clientinvoicepb.InvoiceCreatePayload) (documents.Model, error) {
+func (s service) DeriveFromCreatePayload(invoiceInput *clientinvoicepb.InvoiceCreatePayload, contextHeader *documents.ContextHeader) (documents.Model, error) {
 	if invoiceInput == nil {
 		return nil, centerrors.New(code.DocumentInvalid, "input is nil")
 	}
 
 	invoiceModel := new(InvoiceModel)
-	err := invoiceModel.InitInvoiceInput(invoiceInput)
+	err := invoiceModel.InitInvoiceInput(invoiceInput, contextHeader)
 	if err != nil {
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
 	}
@@ -178,7 +182,12 @@ func (s service) validateAndPersist(ctx context.Context, old, new documents.Mode
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
 
-	for _, id := range coreDoc.Collaborators {
+	extCollaborators, err := coredocument.GetExternalCollaborators(coreDoc)
+	if err != nil {
+		return nil, centerrors.New(code.Unknown, err.Error())
+	}
+
+	for _, id := range extCollaborators {
 		cid, err := identity.ToCentID(id)
 		if err != nil {
 			return nil, centerrors.New(code.Unknown, err.Error())
@@ -323,7 +332,7 @@ func (s service) SaveState(doc documents.Model) error {
 }
 
 // DeriveFromUpdatePayload returns a new version of the old invoice identified by identifier in payload
-func (s service) DeriveFromUpdatePayload(payload *clientinvoicepb.InvoiceUpdatePayload) (documents.Model, error) {
+func (s service) DeriveFromUpdatePayload(payload *clientinvoicepb.InvoiceUpdatePayload, contextHeader *documents.ContextHeader) (documents.Model, error) {
 	if payload == nil {
 		return nil, centerrors.New(code.DocumentInvalid, "invalid payload")
 	}
@@ -352,7 +361,9 @@ func (s service) DeriveFromUpdatePayload(payload *clientinvoicepb.InvoiceUpdateP
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
 
-	inv.CoreDocument, err = coredocument.PrepareNewVersion(*oldCD, payload.Collaborators)
+	collaborators := append([]string{contextHeader.Self().String()}, payload.Collaborators...)
+
+	inv.CoreDocument, err = coredocument.PrepareNewVersion(*oldCD, collaborators)
 	if err != nil {
 		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("failed to prepare new version: %v", err))
 	}
@@ -361,7 +372,6 @@ func (s service) DeriveFromUpdatePayload(payload *clientinvoicepb.InvoiceUpdateP
 }
 
 // RequestDocumentSignature Validates, Signs document received over the p2p layer and returs Signature
-// TODO(ved): need tests for this
 func (s service) RequestDocumentSignature(model documents.Model) (*coredocumentpb.Signature, error) {
 	if err := coredocument.SignatureRequestValidator().Validate(nil, model); err != nil {
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
@@ -386,7 +396,6 @@ func (s service) RequestDocumentSignature(model documents.Model) (*coredocumentp
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to Unpack CoreDocument: %v", err))
 	}
 
-	// TODO temporary until we deprecate old document version
 	err = coredocumentrepository.GetRepository().Create(doc.DocumentIdentifier, doc)
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to Create legacy CoreDocument: %v", err))
@@ -401,9 +410,8 @@ func (s service) RequestDocumentSignature(model documents.Model) (*coredocumentp
 }
 
 // ReceiveAnchoredDocument receives a new anchored document, validates and updates the document in DB
-// TODO(ved): need tests for this
 func (s service) ReceiveAnchoredDocument(model documents.Model, headers *p2ppb.CentrifugeHeader) error {
-	if err := coredocument.PostAnchoredValidator(anchors.GetAnchorRepository()).Validate(nil, model); err != nil {
+	if err := coredocument.PostAnchoredValidator(s.anchorRepository).Validate(nil, model); err != nil {
 		return centerrors.New(code.DocumentInvalid, err.Error())
 	}
 
@@ -412,7 +420,6 @@ func (s service) ReceiveAnchoredDocument(model documents.Model, headers *p2ppb.C
 		return centerrors.New(code.DocumentInvalid, err.Error())
 	}
 
-	// TODO temporary until we deprecate old document version
 	err = coredocumentrepository.GetRepository().Update(doc.DocumentIdentifier, doc)
 	if err != nil {
 		return centerrors.New(code.Unknown, fmt.Sprintf("failed to Create legacy CoreDocument: %v", err))

@@ -1,4 +1,4 @@
-// +build unit integration
+// +build integration unit
 
 package testingdocuments
 

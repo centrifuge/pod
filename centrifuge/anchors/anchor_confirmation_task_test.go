@@ -11,7 +11,8 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
-	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
+
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
@@ -33,12 +34,12 @@ func (m *MockAnchorCommittedFilter) FilterAnchorCommitted(
 
 func TestAnchoringConfirmationTask_ParseKwargsHappy(t *testing.T) {
 	act := AnchoringConfirmationTask{}
-	anchorID, _ := NewAnchorID(tools.RandomSlice(AnchorIDLength))
+	anchorID, _ := NewAnchorID(utils.RandomSlice(AnchorIDLength))
 	address := common.BytesToAddress([]byte{1, 2, 3, 4})
 
-	centId, _ := identity.ToCentID(tools.RandomSlice(identity.CentIDLength))
+	centId, _ := identity.ToCentID(utils.RandomSlice(identity.CentIDLength))
 
-	kwargs, _ := tools.SimulateJsonDecodeForGocelery(map[string]interface{}{
+	kwargs, _ := utils.SimulateJsonDecodeForGocelery(map[string]interface{}{
 		AnchorIDParam:     anchorID,
 		AddressParam:      address,
 		CentrifugeIDParam: centId,
@@ -60,7 +61,7 @@ func TestAnchoringConfirmationTask_ParseKwargsAnchorNotPassed(t *testing.T) {
 	address := common.BytesToAddress([]byte{1, 2, 3, 4})
 	var centrifugeIdBytes [6]byte
 
-	kwargs, _ := tools.SimulateJsonDecodeForGocelery(map[string]interface{}{
+	kwargs, _ := utils.SimulateJsonDecodeForGocelery(map[string]interface{}{
 		AddressParam:      address,
 		CentrifugeIDParam: centrifugeIdBytes,
 	})
@@ -72,7 +73,7 @@ func TestAnchoringConfirmationTask_ParseKwargsInvalidAnchor(t *testing.T) {
 	act := AnchoringConfirmationTask{}
 	anchorID := 123
 	address := common.BytesToAddress([]byte{1, 2, 3, 4})
-	kwargs, _ := tools.SimulateJsonDecodeForGocelery(map[string]interface{}{
+	kwargs, _ := utils.SimulateJsonDecodeForGocelery(map[string]interface{}{
 		AnchorIDParam: anchorID,
 		AddressParam:  address,
 	})
@@ -83,7 +84,7 @@ func TestAnchoringConfirmationTask_ParseKwargsInvalidAnchor(t *testing.T) {
 func TestAnchoringConfirmationTask_ParseKwargsAddressNotPassed(t *testing.T) {
 	act := AnchoringConfirmationTask{}
 	anchorID := [32]byte{1, 2, 3}
-	kwargs, _ := tools.SimulateJsonDecodeForGocelery(map[string]interface{}{
+	kwargs, _ := utils.SimulateJsonDecodeForGocelery(map[string]interface{}{
 		AnchorIDParam: anchorID,
 	})
 	err := act.ParseKwargs(kwargs)
@@ -94,7 +95,7 @@ func TestAnchoringConfirmationTask_ParseKwargsInvalidAddress(t *testing.T) {
 	act := AnchoringConfirmationTask{}
 	anchorID := [32]byte{1, 2, 3}
 	address := 123
-	kwargs, _ := tools.SimulateJsonDecodeForGocelery(map[string]interface{}{
+	kwargs, _ := utils.SimulateJsonDecodeForGocelery(map[string]interface{}{
 		AnchorIDParam: anchorID,
 		AddressParam:  address,
 	})

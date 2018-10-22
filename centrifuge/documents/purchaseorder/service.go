@@ -112,7 +112,7 @@ func (s service) DeriveFromCreatePayload(payload *clientpopb.PurchaseOrderCreate
 	}
 
 	po := new(PurchaseOrderModel)
-	err := po.InitPurchaseOrderInput(payload)
+	err := po.InitPurchaseOrderInput(payload, nil)
 	if err != nil {
 		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("purchase order init failed: %v", err))
 	}

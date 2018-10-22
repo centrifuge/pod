@@ -19,7 +19,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	"github.com/centrifuge/go-centrifuge/centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/commons"
-	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
+
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -29,7 +30,7 @@ func TestMain(m *testing.M) {
 	ibootstappers := []bootstrap.TestBootstrapper{
 		&config.Bootstrapper{},
 	}
-	bootstrap.RunTestBootstrappers(ibootstappers)
+	bootstrap.RunTestBootstrappers(ibootstappers, nil)
 	flag.Parse()
 	config.Config.V.Set("keys.signing.publicKey", "../../example/resources/signature1.pub.pem")
 	config.Config.V.Set("keys.signing.privateKey", "../../example/resources/signature1.key.pem")
@@ -68,7 +69,7 @@ func TestUpdateVersionValidator(t *testing.T) {
 
 	// new model pack core doc fail
 	oldCD := New()
-	oldCD.DocumentRoot = tools.RandomSlice(32)
+	oldCD.DocumentRoot = utils.RandomSlice(32)
 	old.On("PackCoreDocument").Return(oldCD, nil).Once()
 	new.On("PackCoreDocument").Return(nil, fmt.Errorf("error")).Once()
 	err = uvv.Validate(old, new)
@@ -143,7 +144,7 @@ func TestValidator_baseValidator(t *testing.T) {
 
 	// success
 	model = mockModel{}
-	cd.DataRoot = tools.RandomSlice(32)
+	cd.DataRoot = utils.RandomSlice(32)
 	FillSalts(cd)
 	model.On("PackCoreDocument").Return(cd, nil).Once()
 	err = bv.Validate(nil, model)
@@ -171,7 +172,7 @@ func TestValidator_signingRootValidator(t *testing.T) {
 	assert.Contains(t, err.Error(), "signing root missing")
 
 	// mismatch signing roots
-	cd.SigningRoot = tools.RandomSlice(32)
+	cd.SigningRoot = utils.RandomSlice(32)
 	cd.EmbeddedData = &any.Any{
 		TypeUrl: documenttypes.InvoiceDataTypeUrl,
 		Value:   []byte{},
@@ -215,7 +216,7 @@ func TestValidator_documentRootValidator(t *testing.T) {
 	assert.Contains(t, err.Error(), "document root missing")
 
 	// mismatch signing roots
-	cd.DocumentRoot = tools.RandomSlice(32)
+	cd.DocumentRoot = utils.RandomSlice(32)
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
 	err = dv.Validate(nil, model)
@@ -255,11 +256,11 @@ func TestValidator_selfSignatureValidator(t *testing.T) {
 	assert.Contains(t, err.Error(), "expecting only one signature")
 
 	// mismatch
-	cd.SigningRoot = tools.RandomSlice(32)
+	cd.SigningRoot = utils.RandomSlice(32)
 	s := &coredocumentpb.Signature{
-		Signature: tools.RandomSlice(32),
-		EntityId:  tools.RandomSlice(6),
-		PublicKey: tools.RandomSlice(32),
+		Signature: utils.RandomSlice(32),
+		EntityId:  utils.RandomSlice(6),
+		PublicKey: utils.RandomSlice(32),
 	}
 	cd.Signatures = append(cd.Signatures, s)
 	model = mockModel{}
@@ -270,7 +271,7 @@ func TestValidator_selfSignatureValidator(t *testing.T) {
 	assert.Len(t, documents.ConvertToMap(err), 3)
 
 	// success
-	cd.SigningRoot = tools.RandomSlice(32)
+	cd.SigningRoot = utils.RandomSlice(32)
 	c, err := ed25519keys.GetIDConfig()
 	assert.Nil(t, err)
 	s = signatures.Sign(c, cd.SigningRoot)
@@ -305,7 +306,7 @@ func TestValidator_signatureValidator(t *testing.T) {
 	// failed validation
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
-	s := &coredocumentpb.Signature{EntityId: tools.RandomSlice(7)}
+	s := &coredocumentpb.Signature{EntityId: utils.RandomSlice(7)}
 	cd.Signatures = append(cd.Signatures, s)
 	err = ssv.Validate(nil, model)
 	model.AssertExpectations(t)
@@ -315,12 +316,12 @@ func TestValidator_signatureValidator(t *testing.T) {
 	// success
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
-	cd.SigningRoot = tools.RandomSlice(32)
+	cd.SigningRoot = utils.RandomSlice(32)
 	c, err := ed25519keys.GetIDConfig()
 	assert.Nil(t, err)
 	s = signatures.Sign(c, cd.SigningRoot)
 	cd.Signatures = []*coredocumentpb.Signature{s}
-	pubkey, err := tools.SliceToByte32(c.PublicKey)
+	pubkey, err := utils.SliceToByte32(c.PublicKey)
 	assert.Nil(t, err)
 	idkey := &identity.EthereumIdentityKey{
 		Key:       pubkey,
@@ -376,7 +377,7 @@ func TestValidator_anchoredValidator(t *testing.T) {
 
 	// failed docRoot
 	model = &mockModel{}
-	cd.CurrentVersion = tools.RandomSlice(32)
+	cd.CurrentVersion = utils.RandomSlice(32)
 	model.On("PackCoreDocument").Return(cd, nil).Once()
 	err = av.Validate(nil, model)
 	model.AssertExpectations(t)
@@ -384,13 +385,13 @@ func TestValidator_anchoredValidator(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to get document root")
 
 	// failed to get docRoot from chain
-	anchorID, err := anchors.NewAnchorID(tools.RandomSlice(32))
+	anchorID, err := anchors.NewAnchorID(utils.RandomSlice(32))
 	assert.Nil(t, err)
 	r := &repo{}
 	av = anchoredValidator(r)
 	cd.CurrentVersion = anchorID[:]
 	r.On("GetDocumentRootOf", anchorID).Return(nil, fmt.Errorf("error")).Once()
-	cd.DocumentRoot = tools.RandomSlice(32)
+	cd.DocumentRoot = utils.RandomSlice(32)
 	model = &mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
 	err = av.Validate(nil, model)
@@ -404,7 +405,7 @@ func TestValidator_anchoredValidator(t *testing.T) {
 	r = &repo{}
 	av = anchoredValidator(r)
 	r.On("GetDocumentRootOf", anchorID).Return(docRoot, nil).Once()
-	cd.DocumentRoot = tools.RandomSlice(32)
+	cd.DocumentRoot = utils.RandomSlice(32)
 	model = &mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
 	err = av.Validate(nil, model)

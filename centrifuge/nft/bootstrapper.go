@@ -20,7 +20,7 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	if _, ok := context[bootstrap.BootstrappedEthereumClient]; !ok {
 		return errors.New("ethereum client hasn't been initialized")
 	}
-	// TODO check if identity has been initialized
+
 	contract, err := getPaymentObligationContract()
 	if err != nil {
 		return err

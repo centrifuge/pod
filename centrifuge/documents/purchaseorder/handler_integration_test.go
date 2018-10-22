@@ -26,7 +26,6 @@ import (
 
 func TestMain(m *testing.M) {
 	cc.DONT_USE_FOR_UNIT_TESTS_TestFunctionalEthereumBootstrap()
-	// TODO Once we move these tests to new model locations we can get rid of these configs
 	config.Config.V.Set("keys.signing.publicKey", "../../../example/resources/signature1.pub.pem")
 	config.Config.V.Set("keys.signing.privateKey", "../../../example/resources/signature1.key.pem")
 	config.Config.V.Set("keys.ethauth.publicKey", "../../../example/resources/ethauth.pub.pem")
@@ -76,34 +75,6 @@ func TestPurchaseOrderDocumentService_HandleAnchorPurchaseOrderDocument_Integrat
 	anchoredDoc, err := s.AnchorPurchaseOrderDocument(context.Background(), &legacy.AnchorPurchaseOrderEnvelope{Document: doc.Document})
 	assertDocument(t, err, anchoredDoc, doc, s)
 }
-
-// TODO enable this after properly mocking p2p package eg: server.go
-//func TestPurchaseOrderDocumentService_HandleSendPurchaseOrderDocument_Integration(t *testing.T) {
-//	p2pClient := testingcommons.NewMockP2PWrapperClient()
-//	s := purchaseorderservice.PurchaseOrderDocumentService{
-//		Repository:            purchaseorderrepository.GetLegacyRepository(),
-//		CoreDocumentProcessor: coredocumentprocessor.DefaultProcessor(identity.NewEthereumIdentityService(), p2pClient),
-//	}
-//	p2pClient.On("GetSignaturesForDocument", mock.Anything, mock.Anything, mock.Anything).Return(nil)
-//	doc := generateEmptyPurchaseOrderForProcessing()
-//	doc.Document.Data = &purchaseorderpb.PurchaseOrderData{
-//		PoNumber:         "po1234",
-//		OrderName:        "Jack",
-//		OrderZipcode:     "921007",
-//		OrderCountry:     "AUS",
-//		RecipientName:    "John",
-//		RecipientZipcode: "12345",
-//		RecipientCountry: "DE",
-//		Currency:         "EUR",
-//		OrderAmount:      800,
-//	}
-//
-//	anchoredDoc, err := s.HandleSendPurchaseOrderDocument(context.Background(), &clientpurchaseorderpb.SendPurchaseOrderEnvelope{
-//		Document:   doc.Document,
-//		Recipients: testingutils.GenerateP2PRecipientsOnEthereum(2),
-//	})
-//	assertDocument(t, err, anchoredDoc, doc, s)
-//}
 
 func assertDocument(t *testing.T, err error, anchoredDoc *purchaseorderpb.PurchaseOrderDocument, doc *purchaseorder.PurchaseOrder, s legacy.PurchaseOrderDocumentServiceServer) {
 	//Call overall worked well and receive roughly sensical data back

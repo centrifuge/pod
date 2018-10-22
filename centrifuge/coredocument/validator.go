@@ -9,7 +9,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	"github.com/centrifuge/go-centrifuge/centrifuge/signatures"
-	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
+
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
@@ -60,17 +61,17 @@ func UpdateVersionValidator() documents.Validator {
 		}
 
 		for _, c := range checks {
-			if !tools.CheckMultiple32BytesFilled(c.a, c.b) {
+			if !utils.CheckMultiple32BytesFilled(c.a, c.b) {
 				err = documents.AppendError(err, documents.NewError(c.name, "missing identifiers"))
 				continue
 			}
 
-			if !tools.IsSameByteSlice(c.a, c.b) {
+			if !utils.IsSameByteSlice(c.a, c.b) {
 				err = documents.AppendError(err, documents.NewError(c.name, "mismatched"))
 			}
 		}
 
-		if tools.IsEmptyByteSlice(newCD.NextVersion) {
+		if utils.IsEmptyByteSlice(newCD.NextVersion) {
 			err = documents.AppendError(err, documents.NewError("cd_next_version", centerrors.RequiredField))
 		}
 
@@ -117,7 +118,7 @@ func signingRootValidator() documents.Validator {
 			return err
 		}
 
-		if tools.IsEmptyByteSlice(cd.SigningRoot) {
+		if utils.IsEmptyByteSlice(cd.SigningRoot) {
 			return fmt.Errorf("signing root missing")
 		}
 
@@ -126,7 +127,7 @@ func signingRootValidator() documents.Validator {
 			return fmt.Errorf("failed to calculate signing root: %v", err)
 		}
 
-		if !tools.IsSameByteSlice(cd.SigningRoot, tree.RootHash()) {
+		if !utils.IsSameByteSlice(cd.SigningRoot, tree.RootHash()) {
 			return fmt.Errorf("signing root mismatch")
 		}
 
@@ -143,7 +144,7 @@ func documentRootValidator() documents.Validator {
 			return err
 		}
 
-		if tools.IsEmptyByteSlice(cd.DocumentRoot) {
+		if utils.IsEmptyByteSlice(cd.DocumentRoot) {
 			return fmt.Errorf("document root missing")
 		}
 
@@ -152,7 +153,7 @@ func documentRootValidator() documents.Validator {
 			return fmt.Errorf("failed to calculate document root: %v", err)
 		}
 
-		if !tools.IsSameByteSlice(cd.DocumentRoot, tree.RootHash()) {
+		if !utils.IsSameByteSlice(cd.DocumentRoot, tree.RootHash()) {
 			return fmt.Errorf("document root mismatch")
 		}
 
@@ -182,15 +183,15 @@ func readyForSignaturesValidator() documents.Validator {
 
 		s := signatures.Sign(c, cd.SigningRoot)
 		sh := cd.Signatures[0]
-		if !tools.IsSameByteSlice(s.EntityId, sh.EntityId) {
+		if !utils.IsSameByteSlice(s.EntityId, sh.EntityId) {
 			err = documents.AppendError(err, documents.NewError("cd_entity_id", "entity ID mismatch"))
 		}
 
-		if !tools.IsSameByteSlice(s.PublicKey, sh.PublicKey) {
+		if !utils.IsSameByteSlice(s.PublicKey, sh.PublicKey) {
 			err = documents.AppendError(err, documents.NewError("cd_public_key", "public key mismatch"))
 		}
 
-		if !tools.IsSameByteSlice(s.Signature, sh.Signature) {
+		if !utils.IsSameByteSlice(s.Signature, sh.Signature) {
 			err = documents.AppendError(err, documents.NewError("cd_signature", "signature mismatch"))
 		}
 
@@ -249,7 +250,7 @@ func anchoredValidator(repo anchors.AnchorRepository) documents.Validator {
 			return fmt.Errorf("failed to get document root from chain: %v", err)
 		}
 
-		if !tools.IsSameByteSlice(docRoot[:], gotRoot[:]) {
+		if !utils.IsSameByteSlice(docRoot[:], gotRoot[:]) {
 			return fmt.Errorf("mismatched document roots")
 		}
 

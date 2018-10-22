@@ -15,7 +15,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/context/testlogging"
 	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
-	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -26,7 +27,7 @@ func TestMain(m *testing.M) {
 		&storage.Bootstrapper{},
 		&Bootstrapper{},
 	}
-	bootstrap.RunTestBootstrappers(ibootstappers)
+	bootstrap.RunTestBootstrappers(ibootstappers, nil)
 	flag.Parse()
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
@@ -60,7 +61,7 @@ func (m *model) FromJSON(data []byte) error {
 }
 
 func TestDefaultLevelDB_LoadByID(t *testing.T) {
-	id := tools.RandomSlice(32)
+	id := utils.RandomSlice(32)
 
 	// missing ID
 	err := testLevelDB.LoadByID(id, new(model))
@@ -86,7 +87,7 @@ func TestDefaultLevelDB_LoadByID(t *testing.T) {
 }
 
 func TestDefaultLevelDB_Create(t *testing.T) {
-	id := tools.RandomSlice(32)
+	id := utils.RandomSlice(32)
 	d := &model{Data: "Create it"}
 	err := testLevelDB.Create(id, d)
 	assert.Nil(t, err, "create must pass")
@@ -101,7 +102,7 @@ func TestDefaultLevelDB_Create(t *testing.T) {
 }
 
 func TestDefaultLevelDB_UpdateModel(t *testing.T) {
-	id := tools.RandomSlice(32)
+	id := utils.RandomSlice(32)
 
 	// missing Id
 	err := testLevelDB.Update(id, new(model))

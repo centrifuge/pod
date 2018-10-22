@@ -14,7 +14,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/secp256k1"
-	"github.com/centrifuge/go-centrifuge/centrifuge/tools"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
+
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
@@ -28,7 +29,6 @@ const (
 )
 
 // IDService is a default implementation of the Service
-// TODO remove, kill and bury this(and any other globals)
 var IDService Service
 
 type CentID [CentIDLength]byte
@@ -36,11 +36,11 @@ type CentID [CentIDLength]byte
 // ToCentID takes bytes and return CentID
 // errors out if bytes are empty, nil, or len(bytes) > CentIDLength
 func ToCentID(bytes []byte) (centID CentID, err error) {
-	if tools.IsEmptyByteSlice(bytes) {
+	if utils.IsEmptyByteSlice(bytes) {
 		return centID, fmt.Errorf("empty bytes provided")
 	}
 
-	if !tools.IsValidByteSliceForLength(bytes, CentIDLength) {
+	if !utils.IsValidByteSliceForLength(bytes, CentIDLength) {
 		return centID, errors.New("invalid length byte slice provided for centID")
 	}
 
@@ -74,7 +74,7 @@ func CentIDsFromStrings(ids []string) ([]CentID, error) {
 }
 
 func NewRandomCentID() CentID {
-	ID, _ := ToCentID(tools.RandomSlice(CentIDLength))
+	ID, _ := ToCentID(utils.RandomSlice(CentIDLength))
 	return ID
 }
 
@@ -97,7 +97,7 @@ func (c CentID) MarshalBinary() (data []byte, err error) {
 }
 
 func (c CentID) BigInt() *big.Int {
-	return tools.ByteSliceToBigInt(c[:])
+	return utils.ByteSliceToBigInt(c[:])
 }
 
 func (c CentID) ByteArray() [CentIDLength]byte {
@@ -159,7 +159,6 @@ type Service interface {
 }
 
 // GetClientP2PURL returns the p2p url associated with the centID
-// TODO make this part of the Service interface (usage of globals should be removed)
 func GetClientP2PURL(centID CentID) (url string, err error) {
 	target, err := IDService.LookupIdentityForID(centID)
 	if err != nil {
@@ -176,7 +175,6 @@ func GetClientP2PURL(centID CentID) (url string, err error) {
 
 // GetClientsP2PURLs returns p2p urls associated with each centIDs
 // will error out at first failure
-// TODO make this part of the Service interface
 func GetClientsP2PURLs(centIDs []CentID) ([]string, error) {
 	var p2pURLs []string
 	for _, id := range centIDs {
@@ -192,7 +190,6 @@ func GetClientsP2PURLs(centIDs []CentID) ([]string, error) {
 }
 
 // GetIdentityKey returns the key for provided identity
-// TODO make this part of the Service interface
 func GetIdentityKey(identity CentID, pubKey []byte) (keyInfo Key, err error) {
 	id, err := IDService.LookupIdentityForID(identity)
 	if err != nil {
@@ -204,7 +201,7 @@ func GetIdentityKey(identity CentID, pubKey []byte) (keyInfo Key, err error) {
 		return keyInfo, err
 	}
 
-	if tools.IsEmptyByte32(key.GetKey()) {
+	if utils.IsEmptyByte32(key.GetKey()) {
 		return keyInfo, fmt.Errorf(fmt.Sprintf("key not found for identity: %x", identity))
 	}
 
@@ -212,22 +209,20 @@ func GetIdentityKey(identity CentID, pubKey []byte) (keyInfo Key, err error) {
 }
 
 // ValidateKey checks if a given key is valid for the given centrifugeID.
-// TODO make this part of the Service interface
 func ValidateKey(centrifugeId CentID, key []byte, purpose int) error {
 	idKey, err := GetIdentityKey(centrifugeId, key)
 	if err != nil {
 		return err
 	}
 
-	if !bytes.Equal(key, tools.Byte32ToSlice(idKey.GetKey())) {
+	if !bytes.Equal(key, utils.Byte32ToSlice(idKey.GetKey())) {
 		return fmt.Errorf(fmt.Sprintf("[Key: %x] Key doesn't match", idKey.GetKey()))
 	}
 
-	if !tools.ContainsBigIntInSlice(big.NewInt(int64(purpose)), idKey.GetPurposes()) {
+	if !utils.ContainsBigIntInSlice(big.NewInt(int64(purpose)), idKey.GetPurposes()) {
 		return fmt.Errorf(fmt.Sprintf("[Key: %x] Key doesn't have purpose [%d]", idKey.GetKey(), purpose))
 	}
 
-	// TODO Check if revokation block happened before the timeframe of the document signing, for historical validations
 	if idKey.GetRevokedAt().Cmp(big.NewInt(0)) != 0 {
 		return fmt.Errorf(fmt.Sprintf("[Key: %x] Key is currently revoked since block [%d]", idKey.GetKey(), idKey.GetRevokedAt()))
 	}
@@ -236,7 +231,6 @@ func ValidateKey(centrifugeId CentID, key []byte, purpose int) error {
 }
 
 // AddKeyFromConfig adds a key previously generated and indexed in the configuration file to the identity specified in such config file
-// TODO make this part of the Service interface
 func AddKeyFromConfig(purpose int) error {
 	var identityConfig *config.IdentityConfig
 	var err error
