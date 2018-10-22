@@ -138,9 +138,6 @@ func mockSignatureCheck(i *PurchaseOrderModel) identity.Service {
 
 func TestService_CreateProofs(t *testing.T) {
 	poSrv := getServiceWithMockedLayers()
-	p, err := poSrv.CreateProofs(nil, nil)
-	assert.Nil(t, p)
-	assert.Error(t, err)
 	defer setIdentityService(identity.IDService)
 	i, err := createAnchoredMockDocument(t, false)
 	assert.Nil(t, err)
