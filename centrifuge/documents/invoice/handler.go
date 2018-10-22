@@ -64,7 +64,6 @@ func (h *grpcHandler) anchorInvoiceDocument(ctx context.Context, doc *invoicepb.
 		return nil, err
 	}
 
-	// TODO review this create, do we need to refactor this because Send method also calls this?
 	err = h.legacyRepo.Create(inv.Document.CoreDocument.DocumentIdentifier, inv.Document)
 	if err != nil {
 		apiLog.Error(err)

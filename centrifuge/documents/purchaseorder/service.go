@@ -128,11 +128,12 @@ func (s service) GetCurrentVersion(documentID []byte) (documents.Model, error) {
 
 // GetVersion returns the specific version of the document
 func (s service) GetVersion(documentID []byte, version []byte) (documents.Model, error) {
-	inv, err := s.getPurchaseOrderVersion(documentID, version)
+	po, err := s.getPurchaseOrderVersion(documentID, version)
 	if err != nil {
 		return nil, centerrors.Wrap(err, "document not found for the given version")
 	}
-	return inv, nil
+	return po, nil
+
 }
 
 // purchaseOrderProof creates proofs for purchaseOrder model fields

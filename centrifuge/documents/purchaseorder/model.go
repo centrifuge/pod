@@ -23,7 +23,6 @@ import (
 )
 
 // PurchaseOrder implements the documents.Model keeps track of purchase order related fields and state
-// TODO rename PurchaseOrderModel -> PurchaseOrder
 type PurchaseOrderModel struct {
 	// purchase order number or reference number
 	PoNumber string

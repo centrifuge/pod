@@ -6,8 +6,6 @@ import (
 	"testing"
 )
 
-// TODO disabled until invoice.go and invoice_test.go is removed
-
 func TestBootstrapper_Bootstrap(t *testing.T) {
 	//err := (&Bootstrapper{}).Bootstrap(map[string]interface{}{})
 	//assert.Error(t, err, "Should throw an error because of empty context")

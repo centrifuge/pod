@@ -54,7 +54,7 @@ func GetSigningProofHashes(document *coredocumentpb.CoreDocument) (hashes [][]by
 
 // CalculateSigningRoot calculates the signing root of the core document
 func CalculateSigningRoot(doc *coredocumentpb.CoreDocument) error {
-	if err := Validate(doc); err != nil { // TODO: Validation
+	if err := Validate(doc); err != nil {
 		return err
 	}
 
@@ -94,7 +94,6 @@ func GetDocumentRootTree(document *coredocumentpb.CoreDocument) (tree *proofs.Do
 		return nil, err
 	}
 	// For every signature we create a LeafNode
-	// TODO: we should modify this to use the proper message flattener once precise proofs is modified to support it
 	sigLeafList := make([]proofs.LeafNode, len(document.Signatures)+1)
 	sigLengthNode := proofs.LeafNode{
 		Property: "signatures.length",
@@ -310,7 +309,6 @@ func GetExternalCollaborators(doc *coredocumentpb.CoreDocument) ([][]byte, error
 
 // FillSalts of coredocument current state for proof tree creation
 func FillSalts(doc *coredocumentpb.CoreDocument) {
-	// TODO return error here
 	salts := &coredocumentpb.CoreDocumentSalts{}
 	proofs.FillSalts(doc, salts)
 	doc.CoredocumentSalts = salts

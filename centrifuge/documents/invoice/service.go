@@ -375,7 +375,6 @@ func (s service) DeriveFromUpdatePayload(payload *clientinvoicepb.InvoiceUpdateP
 }
 
 // RequestDocumentSignature Validates, Signs document received over the p2p layer and returs Signature
-// TODO(ved): need tests for this
 func (s service) RequestDocumentSignature(model documents.Model) (*coredocumentpb.Signature, error) {
 	if err := coredocument.SignatureRequestValidator().Validate(nil, model); err != nil {
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
@@ -400,7 +399,6 @@ func (s service) RequestDocumentSignature(model documents.Model) (*coredocumentp
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to Unpack CoreDocument: %v", err))
 	}
 
-	// TODO temporary until we deprecate old document version
 	err = coredocumentrepository.GetRepository().Create(doc.DocumentIdentifier, doc)
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to Create legacy CoreDocument: %v", err))
@@ -415,7 +413,6 @@ func (s service) RequestDocumentSignature(model documents.Model) (*coredocumentp
 }
 
 // ReceiveAnchoredDocument receives a new anchored document, validates and updates the document in DB
-// TODO(ved): need tests for this
 func (s service) ReceiveAnchoredDocument(model documents.Model, headers *p2ppb.CentrifugeHeader) error {
 	if err := coredocument.PostAnchoredValidator(s.anchorRepository).Validate(nil, model); err != nil {
 		return centerrors.New(code.DocumentInvalid, err.Error())
@@ -426,7 +423,6 @@ func (s service) ReceiveAnchoredDocument(model documents.Model, headers *p2ppb.C
 		return centerrors.New(code.DocumentInvalid, err.Error())
 	}
 
-	// TODO temporary until we deprecate old document version
 	err = coredocumentrepository.GetRepository().Update(doc.DocumentIdentifier, doc)
 	if err != nil {
 		return centerrors.New(code.Unknown, fmt.Sprintf("failed to Create legacy CoreDocument: %v", err))
