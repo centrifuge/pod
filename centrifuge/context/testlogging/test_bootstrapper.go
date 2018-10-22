@@ -3,8 +3,9 @@
 package testlogging
 
 import (
-	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
 	"os"
+
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
 
 	logging "github.com/ipfs/go-log"
 	gologging "github.com/whyrusleeping/go-logging"
@@ -21,7 +22,6 @@ func (TestLoggingBootstrapper) TestBootstrap(context map[string]interface{}) err
 
 	backend := gologging.NewLogBackend(os.Stdout, "", 0)
 	gologging.SetBackend(backend)
-
 
 	return nil
 }

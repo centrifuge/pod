@@ -2,8 +2,9 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
 	"os"
+
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
 
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	cc "github.com/centrifuge/go-centrifuge/centrifuge/context"

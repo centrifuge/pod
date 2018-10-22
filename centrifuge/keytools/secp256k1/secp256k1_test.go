@@ -4,9 +4,10 @@ package secp256k1
 
 import (
 	"fmt"
-	"github.com/centrifuge/go-centrifuge/centrifuge/context/testlogging"
 	"os"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/centrifuge/context/testlogging"
 
 	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
@@ -77,7 +78,7 @@ func TestVerifyFalsePublicKey(t *testing.T) {
 	_, privateKey := GenerateSigningKeyPair()
 
 	falsePublicKey, _ := GenerateSigningKeyPair()
-	
+
 	signature, err := Sign(testMsg, privateKey)
 	assert.Nil(t, err)
 	correct := VerifySignature(falsePublicKey, testMsg, signature)
