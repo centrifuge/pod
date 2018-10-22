@@ -322,7 +322,6 @@ func waitAndRouteIdentityRegistrationEvent(asyncRes *gocelery.AsyncResult, confi
 }
 
 // EthereumidentityService implements `Service`
-// TODO check if this can be non-exported
 type EthereumIdentityService struct {
 	config           Config
 	factoryContract  *EthereumIdentityFactoryContract

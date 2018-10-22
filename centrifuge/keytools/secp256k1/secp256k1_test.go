@@ -7,6 +7,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/centrifuge/context/testlogging"
+
 	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -18,6 +20,7 @@ const MaxMsgLen = 32
 func TestMain(m *testing.M) {
 	ibootstappers := []bootstrap.TestBootstrapper{
 		&config.Bootstrapper{},
+		&testlogging.TestLoggingBootstrapper{},
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, nil)
 	result := m.Run()

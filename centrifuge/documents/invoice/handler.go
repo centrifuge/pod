@@ -64,7 +64,6 @@ func (h *grpcHandler) anchorInvoiceDocument(ctx context.Context, doc *invoicepb.
 		return nil, err
 	}
 
-	// TODO review this create, do we need to refactor this because Send method also calls this?
 	err = h.legacyRepo.Create(inv.Document.CoreDocument.DocumentIdentifier, inv.Document)
 	if err != nil {
 		apiLog.Error(err)
@@ -276,11 +275,11 @@ func (h *grpcHandler) GetVersion(ctx context.Context, getVersionRequest *clienti
 	if err != nil {
 		return nil, centerrors.Wrap(err, "version is invalid")
 	}
-	doc, err := h.service.GetVersion(identifier, version)
+	model, err := h.service.GetVersion(identifier, version)
 	if err != nil {
 		return nil, centerrors.Wrap(err, "document not found")
 	}
-	resp, err := h.service.DeriveInvoiceResponse(doc)
+	resp, err := h.service.DeriveInvoiceResponse(model)
 	if err != nil {
 		return nil, err
 	}
@@ -293,11 +292,11 @@ func (h *grpcHandler) Get(ctx context.Context, getRequest *clientinvoicepb.GetRe
 	if err != nil {
 		return nil, centerrors.Wrap(err, "identifier is an invalid hex string")
 	}
-	doc, err := h.service.GetCurrentVersion(identifier)
+	model, err := h.service.GetCurrentVersion(identifier)
 	if err != nil {
 		return nil, centerrors.Wrap(err, "document not found")
 	}
-	resp, err := h.service.DeriveInvoiceResponse(doc)
+	resp, err := h.service.DeriveInvoiceResponse(model)
 	if err != nil {
 		return nil, err
 	}

@@ -14,6 +14,7 @@ import (
 	legacy "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/legacy/purchaseorder"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/golang/protobuf/ptypes/empty"
 	logging "github.com/ipfs/go-log"
@@ -25,15 +26,16 @@ var apiLog = logging.Logger("purchaseorder-api")
 // grpcHandler handles all the purchase order document related actions
 // anchoring, sending, finding stored purchase order document
 type grpcHandler struct {
-	repo        storage.LegacyRepository
-	coreDocProc coredocumentprocessor.Processor
+	repo             storage.LegacyRepository
+	coreDocProcessor coredocumentprocessor.Processor
+	service          Service
 }
 
 // LegacyGRPCHandler handles legacy grpc requests
 func LegacyGRPCHandler(repo storage.LegacyRepository, proc coredocumentprocessor.Processor) legacy.PurchaseOrderDocumentServiceServer {
-	return grpcHandler{
-		repo:        repo,
-		coreDocProc: proc,
+	return &grpcHandler{
+		repo:             repo,
+		coreDocProcessor: proc,
 	}
 }
 
@@ -46,7 +48,6 @@ func (h grpcHandler) anchorPurchaseOrderDocument(ctx context.Context, doc *purch
 		return nil, err
 	}
 
-	// TODO review this create, do we need to refactor this because Send method also calls this?
 	err = h.repo.Create(orderDoc.Document.CoreDocument.DocumentIdentifier, orderDoc.Document)
 	if err != nil {
 		log.Error(err)
@@ -59,7 +60,7 @@ func (h grpcHandler) anchorPurchaseOrderDocument(ctx context.Context, doc *purch
 		return nil, err
 	}
 
-	err = h.coreDocProc.Anchor(ctx, coreDoc, nil)
+	err = h.coreDocProcessor.Anchor(ctx, coreDoc, nil)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -150,7 +151,7 @@ func (h grpcHandler) SendPurchaseOrderDocument(ctx context.Context, sendPurchase
 			errs = append(errs, err)
 			continue
 		}
-		err = h.coreDocProc.Send(ctx, coreDoc, recipientID)
+		err = h.coreDocProcessor.Send(ctx, coreDoc, recipientID)
 		if err != nil {
 			errs = append(errs, err)
 		}
@@ -199,22 +200,50 @@ func GRPCHandler() clientpurchaseorderpb.DocumentServiceServer {
 	return &grpcHandler{}
 }
 
-func (grpcHandler) Create(context.Context, *clientpurchaseorderpb.PurchaseOrderCreatePayload) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
+func (h grpcHandler) Create(context.Context, *clientpurchaseorderpb.PurchaseOrderCreatePayload) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
 	apiLog.Error("Implement me")
 	return nil, centerrors.New(code.Unknown, "Implement me")
 }
 
-func (grpcHandler) Update(context.Context, *clientpurchaseorderpb.PurchaseOrderUpdatePayload) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
+func (h grpcHandler) Update(context.Context, *clientpurchaseorderpb.PurchaseOrderUpdatePayload) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
 	apiLog.Error("Implement me")
 	return nil, centerrors.New(code.Unknown, "Implement me")
 }
 
-func (grpcHandler) GetVersion(context.Context, *clientpurchaseorderpb.GetVersionRequest) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
-	apiLog.Error("Implement me")
-	return nil, centerrors.New(code.Unknown, "Implement me")
+// GetVersion returns the requested version of a purchase order
+func (h grpcHandler) GetVersion(ctx context.Context, req *clientpurchaseorderpb.GetVersionRequest) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
+	identifier, err := hexutil.Decode(req.Identifier)
+	if err != nil {
+		return nil, centerrors.Wrap(err, "identifier is invalid")
+	}
+	version, err := hexutil.Decode(req.Version)
+	if err != nil {
+		return nil, centerrors.Wrap(err, "version is invalid")
+	}
+	model, err := h.service.GetVersion(identifier, version)
+	if err != nil {
+		return nil, centerrors.Wrap(err, "document not found")
+	}
+	resp, err := h.service.DerivePurchaseOrderResponse(model)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
 }
 
-func (grpcHandler) Get(context.Context, *clientpurchaseorderpb.GetRequest) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
-	apiLog.Error("Implement me")
-	return nil, centerrors.New(code.Unknown, "Implement me")
+// Get returns the purchase order the latest version of the document with given identifier
+func (h grpcHandler) Get(ctx context.Context, getRequest *clientpurchaseorderpb.GetRequest) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
+	identifier, err := hexutil.Decode(getRequest.Identifier)
+	if err != nil {
+		return nil, centerrors.Wrap(err, "identifier is an invalid hex string")
+	}
+	model, err := h.service.GetCurrentVersion(identifier)
+	if err != nil {
+		return nil, centerrors.Wrap(err, "document not found")
+	}
+	resp, err := h.service.DerivePurchaseOrderResponse(model)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
 }

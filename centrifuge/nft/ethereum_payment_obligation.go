@@ -201,7 +201,6 @@ type MintRequest struct {
 // NewMintRequest converts the parameters and returns a struct with needed parameter for minting
 func NewMintRequest(to common.Address, anchorID anchors.AnchorID, proofs []*proofspb.Proof, rootHash [32]byte) (*MintRequest, error) {
 	tokenID := utils.ByteSliceToBigInt(utils.RandomSlice(256))
-	// TODO move this to config
 	tokenURI := "http:=//www.centrifuge.io/DUMMY_URI_SERVICE"
 	proofData, err := createProofData(proofs)
 	if err != nil {
