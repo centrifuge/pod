@@ -241,15 +241,6 @@ func TestService_DeriveInvoiceData(t *testing.T) {
 }
 
 func TestService_DeriveInvoiceResponse(t *testing.T) {
-	model := &mockModel{
-		CoreDocument: &coredocumentpb.CoreDocument{
-			DocumentIdentifier: []byte{},
-		},
-	}
-	// some random model
-	_, err := invService.DeriveInvoiceResponse(model)
-	assert.Error(t, err, "Derive must fail")
-
 	// success
 	payload := testingdocuments.CreateInvoicePayload()
 	inv1, err := invService.DeriveFromCreatePayload(payload)

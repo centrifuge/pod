@@ -2,9 +2,13 @@ package purchaseorder
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
+	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 )
@@ -76,15 +80,72 @@ func TestService_CreateProofsForVersion(t *testing.T) {
 }
 
 func TestService_DerivePurchaseOrderData(t *testing.T) {
-	d, err := poSrv.DerivePurchaseOrderData(nil)
+	var m documents.Model
+
+	// unknown type
+	m = &testingdocuments.MockModel{}
+	d, err := poSrv.DerivePurchaseOrderData(m)
 	assert.Nil(t, d)
 	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "document of invalid type")
+
+	// success
+	payload := &clientpurchaseorderpb.PurchaseOrderCreatePayload{
+		Data: &clientpurchaseorderpb.PurchaseOrderData{
+			Currency: "EUR",
+		},
+	}
+	m, err = poSrv.DeriveFromCreatePayload(payload)
+	assert.Nil(t, err)
+	d, err = poSrv.DerivePurchaseOrderData(m)
+	assert.Nil(t, err)
+	assert.Equal(t, d.Currency, payload.Data.Currency)
 }
 
 func TestService_DerivePurchaseOrderResponse(t *testing.T) {
-	r, err := poSrv.DerivePurchaseOrderResponse(nil)
+	// pack fails
+	m := &testingdocuments.MockModel{}
+	m.On("PackCoreDocument").Return(nil, fmt.Errorf("pack core document failed")).Once()
+	r, err := poSrv.DerivePurchaseOrderResponse(m)
+	m.AssertExpectations(t)
 	assert.Nil(t, r)
 	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "pack core document failed")
+
+	// cent id failed
+	cd := coredocument.New()
+	cd.Collaborators = [][]byte{{1, 2, 3, 4, 5, 6}, {5, 6, 7}}
+	m = &testingdocuments.MockModel{}
+	m.On("PackCoreDocument").Return(cd, nil).Once()
+	r, err = poSrv.DerivePurchaseOrderResponse(m)
+	m.AssertExpectations(t)
+	assert.Nil(t, r)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid length byte slice provided for centID")
+
+	// derive data failed
+	cd.Collaborators = [][]byte{{1, 2, 3, 4, 5, 6}}
+	m = &testingdocuments.MockModel{}
+	m.On("PackCoreDocument").Return(cd, nil).Once()
+	r, err = poSrv.DerivePurchaseOrderResponse(m)
+	m.AssertExpectations(t)
+	assert.Nil(t, r)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "document of invalid type")
+
+	// success
+	payload := &clientpurchaseorderpb.PurchaseOrderCreatePayload{
+		Data: &clientpurchaseorderpb.PurchaseOrderData{
+			Currency: "EUR",
+		},
+		Collaborators: []string{"0x010203040506"},
+	}
+	po, err := poSrv.DeriveFromCreatePayload(payload)
+	assert.Nil(t, err)
+	r, err = poSrv.DerivePurchaseOrderResponse(po)
+	assert.Nil(t, err)
+	assert.Equal(t, r.Data, payload.Data)
+	assert.Equal(t, r.Header.Collaborators, payload.Collaborators)
 }
 
 func TestService_GetCurrentVersion(t *testing.T) {

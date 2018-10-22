@@ -10,8 +10,10 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/processor"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/centrifuge/notification"
 	clientpopb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 // Service defines specific functions for purchase order
@@ -86,13 +88,46 @@ func (s service) DeriveFromUpdatePayload(payload *clientpopb.PurchaseOrderUpdate
 }
 
 // DerivePurchaseOrderData returns po data from the model
-func (s service) DerivePurchaseOrderData(po documents.Model) (*clientpopb.PurchaseOrderData, error) {
-	return nil, fmt.Errorf("implement me")
+func (s service) DerivePurchaseOrderData(doc documents.Model) (*clientpopb.PurchaseOrderData, error) {
+	po, ok := doc.(*PurchaseOrderModel)
+	if !ok {
+		return nil, centerrors.New(code.DocumentInvalid, "document of invalid type")
+	}
+
+	return po.getClientData(), nil
 }
 
 // DerivePurchaseOrderResponse returns po response from the model
-func (s service) DerivePurchaseOrderResponse(inv documents.Model) (*clientpopb.PurchaseOrderResponse, error) {
-	return nil, fmt.Errorf("implement me")
+func (s service) DerivePurchaseOrderResponse(doc documents.Model) (*clientpopb.PurchaseOrderResponse, error) {
+	cd, err := doc.PackCoreDocument()
+	if err != nil {
+		return nil, centerrors.New(code.DocumentInvalid, err.Error())
+	}
+
+	collaborators := make([]string, len(cd.Collaborators))
+	for i, c := range cd.Collaborators {
+		cid, err := identity.ToCentID(c)
+		if err != nil {
+			return nil, centerrors.New(code.Unknown, err.Error())
+		}
+		collaborators[i] = cid.String()
+	}
+
+	header := &clientpopb.ResponseHeader{
+		DocumentId:    hexutil.Encode(cd.DocumentIdentifier),
+		VersionId:     hexutil.Encode(cd.CurrentVersion),
+		Collaborators: collaborators,
+	}
+
+	data, err := s.DerivePurchaseOrderData(doc)
+	if err != nil {
+		return nil, err
+	}
+
+	return &clientpopb.PurchaseOrderResponse{
+		Header: header,
+		Data:   data,
+	}, nil
 }
 
 // GetLastVersion returns the latest version of the document

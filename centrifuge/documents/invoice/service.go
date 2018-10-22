@@ -259,15 +259,11 @@ func (s service) getInvoiceVersion(documentID, version []byte) (inv *InvoiceMode
 
 // DeriveInvoiceResponse returns create response from invoice model
 func (s service) DeriveInvoiceResponse(doc documents.Model) (*clientinvoicepb.InvoiceResponse, error) {
-	inv, ok := doc.(*InvoiceModel)
-	if !ok {
-		return nil, centerrors.New(code.DocumentInvalid, "document of invalid type")
-	}
-
 	cd, err := doc.PackCoreDocument()
 	if err != nil {
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
 	}
+
 	collaborators := make([]string, len(cd.Collaborators))
 	for i, c := range cd.Collaborators {
 		cid, err := identity.ToCentID(c)
@@ -278,8 +274,8 @@ func (s service) DeriveInvoiceResponse(doc documents.Model) (*clientinvoicepb.In
 	}
 
 	header := &clientinvoicepb.ResponseHeader{
-		DocumentId:    hexutil.Encode(inv.CoreDocument.DocumentIdentifier),
-		VersionId:     hexutil.Encode(inv.CoreDocument.CurrentVersion),
+		DocumentId:    hexutil.Encode(cd.DocumentIdentifier),
+		VersionId:     hexutil.Encode(cd.CurrentVersion),
 		Collaborators: collaborators,
 	}
 
