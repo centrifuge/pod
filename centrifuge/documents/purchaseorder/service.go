@@ -3,6 +3,10 @@ package purchaseorder
 import (
 	"context"
 	"fmt"
+	"github.com/centrifuge/go-centrifuge/centrifuge/anchors"
+	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
+	"github.com/centrifuge/go-centrifuge/centrifuge/code"
+	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
@@ -41,11 +45,12 @@ type service struct {
 	repo             documents.Repository
 	coreDocProcessor coredocumentprocessor.Processor
 	notifier         notification.Sender
+	anchorRepository anchors.AnchorRepository
 }
 
 // DefaultService returns the default implementation of the service
-func DefaultService(repo documents.Repository, processor coredocumentprocessor.Processor) Service {
-	return service{repo: repo, coreDocProcessor: processor, notifier: &notification.WebhookSender{}}
+func DefaultService(repo documents.Repository, processor coredocumentprocessor.Processor, anchorRepository anchors.AnchorRepository) Service {
+	return service{repo: repo, coreDocProcessor: processor, notifier: &notification.WebhookSender{}, anchorRepository: anchorRepository}
 }
 
 // DeriveFromCoreDocument takes a core document and returns a purchase order
@@ -93,14 +98,47 @@ func (s service) GetVersion(documentID []byte, version []byte) (documents.Model,
 	return nil, fmt.Errorf("implement me")
 }
 
+// purchaseOrderProof creates proofs for purchaseOrder model fields
+func (s service) purchaseOrderProof(po *PurchaseOrderModel, fields []string) (*documents.DocumentProof, error) {
+	if err := coredocument.PostAnchoredValidator(s.anchorRepository).Validate(nil, po); err != nil {
+		return nil, centerrors.New(code.DocumentInvalid, err.Error())
+	}
+	coreDoc, proofs, err := po.createProofs(fields)
+	if err != nil {
+		return nil, err
+	}
+	return &documents.DocumentProof{
+		DocumentId:  coreDoc.DocumentIdentifier,
+		VersionId:   coreDoc.CurrentVersion,
+		FieldProofs: proofs,
+	}, nil
+}
+
+
 // CreateProofs generates proofs for given document
 func (s service) CreateProofs(documentID []byte, fields []string) (*documents.DocumentProof, error) {
-	return nil, fmt.Errorf("implement me")
+	model, err := s.GetCurrentVersion(documentID)
+	if err != nil {
+		return nil, err
+	}
+	po, ok := model.(*PurchaseOrderModel)
+	if !ok {
+		return nil, centerrors.New(code.DocumentInvalid, "document of invalid type")
+	}
+	return s.purchaseOrderProof(po, fields)
 }
 
 // CreateProofsForVersion generates proofs for specific version of the document
 func (s service) CreateProofsForVersion(documentID, version []byte, fields []string) (*documents.DocumentProof, error) {
-	return nil, fmt.Errorf("implement me")
+	model, err := s.GetVersion(documentID, version)
+	if err != nil {
+		return nil, err
+	}
+	po, ok := model.(*PurchaseOrderModel)
+	if !ok {
+		return nil, centerrors.New(code.DocumentInvalid, "document of invalid type")
+	}
+	return s.purchaseOrderProof(po, fields)
 }
 
 // RequestDocumentSignature validates the document and returns the signature
