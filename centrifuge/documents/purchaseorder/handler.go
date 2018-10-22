@@ -46,7 +46,6 @@ func (h grpcHandler) anchorPurchaseOrderDocument(ctx context.Context, doc *purch
 		return nil, err
 	}
 
-	// TODO review this create, do we need to refactor this because Send method also calls this?
 	err = h.repo.Create(orderDoc.Document.CoreDocument.DocumentIdentifier, orderDoc.Document)
 	if err != nil {
 		log.Error(err)

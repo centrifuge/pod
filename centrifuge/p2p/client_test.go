@@ -67,7 +67,6 @@ func TestGetSignatureForDocument_fail_version_check(t *testing.T) {
 	assert.Nil(t, resp, "must be nil")
 }
 
-// TODO(ved): once keyinfo is done, add a successful test
 func TestGetSignatureForDocument_fail_centrifugeId(t *testing.T) {
 	client := &testingcommons.P2PMockClient{}
 	coreDoc := testingutils.GenerateCoreDocument()
