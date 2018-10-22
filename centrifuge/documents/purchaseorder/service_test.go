@@ -107,10 +107,10 @@ func TestService_GetCurrentVersion(t *testing.T) {
 	mod1, err := poSrv.GetCurrentVersion(doc.CoreDocument.DocumentIdentifier)
 	assert.Nil(t, err)
 
-	invLoad1, _ := mod1.(*PurchaseOrderModel)
-	assert.Equal(t, invLoad1.CoreDocument.CurrentVersion, doc.CoreDocument.DocumentIdentifier)
+	poLoad1, _ := mod1.(*PurchaseOrderModel)
+	assert.Equal(t, poLoad1.CoreDocument.CurrentVersion, doc.CoreDocument.DocumentIdentifier)
 
-	inv2 := &PurchaseOrderModel{
+	po2 := &PurchaseOrderModel{
 		OrderAmount: 42,
 		CoreDocument: &coredocumentpb.CoreDocument{
 			DocumentIdentifier: doc.CoreDocument.DocumentIdentifier,
@@ -119,29 +119,29 @@ func TestService_GetCurrentVersion(t *testing.T) {
 		},
 	}
 
-	err = getRepository().Create(doc.CoreDocument.NextVersion, inv2)
+	err = getRepository().Create(doc.CoreDocument.NextVersion, po2)
 	assert.Nil(t, err)
 
 	mod2, err := poSrv.GetCurrentVersion(doc.CoreDocument.DocumentIdentifier)
 	assert.Nil(t, err)
 
-	invLoad2, _ := mod2.(*PurchaseOrderModel)
-	assert.Equal(t, invLoad2.CoreDocument.CurrentVersion, doc.CoreDocument.NextVersion)
-	assert.Equal(t, invLoad2.CoreDocument.NextVersion, thirdIdentifier)
+	poLoad2, _ := mod2.(*PurchaseOrderModel)
+	assert.Equal(t, poLoad2.CoreDocument.CurrentVersion, doc.CoreDocument.NextVersion)
+	assert.Equal(t, poLoad2.CoreDocument.NextVersion, thirdIdentifier)
 }
 
 func TestService_GetVersion_invalid_version(t *testing.T) {
 	poSrv := getServiceWithMockedLayers()
 	currentVersion := utils.RandomSlice(32)
 
-	inv := &PurchaseOrderModel{
+	po := &PurchaseOrderModel{
 		OrderAmount: 42,
 		CoreDocument: &coredocumentpb.CoreDocument{
 			DocumentIdentifier: utils.RandomSlice(32),
 			CurrentVersion:     currentVersion,
 		},
 	}
-	err := getRepository().Create(currentVersion, inv)
+	err := getRepository().Create(currentVersion, po)
 	assert.Nil(t, err)
 
 	mod, err := poSrv.GetVersion(utils.RandomSlice(32), currentVersion)
@@ -154,21 +154,21 @@ func TestService_GetVersion(t *testing.T) {
 	documentIdentifier := utils.RandomSlice(32)
 	currentVersion := utils.RandomSlice(32)
 
-	inv := &PurchaseOrderModel{
+	po := &PurchaseOrderModel{
 		OrderAmount: 42,
 		CoreDocument: &coredocumentpb.CoreDocument{
 			DocumentIdentifier: documentIdentifier,
 			CurrentVersion:     currentVersion,
 		},
 	}
-	err := getRepository().Create(currentVersion, inv)
+	err := getRepository().Create(currentVersion, po)
 	assert.Nil(t, err)
 
 	mod, err := poSrv.GetVersion(documentIdentifier, currentVersion)
 	assert.Nil(t, err)
-	loadInv, _ := mod.(*PurchaseOrderModel)
-	assert.Equal(t, loadInv.CoreDocument.CurrentVersion, currentVersion)
-	assert.Equal(t, loadInv.CoreDocument.DocumentIdentifier, documentIdentifier)
+	loadpo, _ := mod.(*PurchaseOrderModel)
+	assert.Equal(t, loadpo.CoreDocument.CurrentVersion, currentVersion)
+	assert.Equal(t, loadpo.CoreDocument.DocumentIdentifier, documentIdentifier)
 
 	mod, err = poSrv.GetVersion(documentIdentifier, []byte{})
 	assert.Error(t, err)
