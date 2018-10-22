@@ -73,7 +73,6 @@ func (p *PurchaseOrderModel) ID() ([]byte, error) {
 }
 
 // getClientData returns the client data from the purchaseOrder model
-
 func (p *PurchaseOrderModel) getClientData() *clientpurchaseorderpb.PurchaseOrderData {
 	var recipient string
 	if p.Recipient != nil {

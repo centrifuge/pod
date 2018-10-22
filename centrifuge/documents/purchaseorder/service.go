@@ -57,9 +57,47 @@ func (s service) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (docume
 	return nil, fmt.Errorf("implement me")
 }
 
+// calculateDataRoot validates the document, calculates the data root, and persists to DB
+func (s service) calculateDataRoot(old, new documents.Model, validator documents.Validator) (documents.Model, error) {
+	po, ok := new.(*PurchaseOrderModel)
+	if !ok {
+		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("unknown document type: %T", new))
+	}
+
+	// create data root, has to be done at the model level to access fields
+	err := po.calculateDataRoot()
+	if err != nil {
+		return nil, centerrors.New(code.DocumentInvalid, err.Error())
+	}
+
+	// validate the invoice
+	err = validator.Validate(old, po)
+	if err != nil {
+		return nil, centerrors.NewWithErrors(code.DocumentInvalid, "validations failed", documents.ConvertToMap(err))
+	}
+
+	// we use CurrentVersion as the id since that will be unique across multiple versions of the same document
+	err = s.repo.Create(po.CoreDocument.CurrentVersion, po)
+	if err != nil {
+		return nil, centerrors.New(code.Unknown, err.Error())
+	}
+
+	return po, nil
+}
+
 // Create validates, persists, and anchors a purchase order
 func (s service) Create(ctx context.Context, po documents.Model) (documents.Model, error) {
-	return nil, fmt.Errorf("implement me")
+	po, err := s.calculateDataRoot(nil, po, CreateValidator())
+	if err != nil {
+		return nil, err
+	}
+
+	po, err = documents.AnchorDocument(ctx, po, s.coreDocProcessor, s.repo.Update)
+	if err != nil {
+		return nil, centerrors.New(code.Unknown, err.Error())
+	}
+
+	return po, nil
 }
 
 // Update validates, persists, and anchors a new version of purchase order

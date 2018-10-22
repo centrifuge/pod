@@ -13,21 +13,22 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var poSrv = service{}
-
 func TestService_Update(t *testing.T) {
+	poSrv := service{}
 	m, err := poSrv.Update(context.Background(), nil)
 	assert.Nil(t, m)
 	assert.Error(t, err)
 }
 
 func TestService_DeriveFromUpdatePayload(t *testing.T) {
+	poSrv := service{}
 	m, err := poSrv.DeriveFromUpdatePayload(nil)
 	assert.Nil(t, m)
 	assert.Error(t, err)
 }
 
 func TestService_DeriveFromCreatePayload(t *testing.T) {
+	poSrv := service{}
 	// nil payload
 	m, err := poSrv.DeriveFromCreatePayload(nil)
 	assert.Nil(t, m)
@@ -56,24 +57,28 @@ func TestService_DeriveFromCreatePayload(t *testing.T) {
 }
 
 func TestService_DeriveFromCoreDocument(t *testing.T) {
+	poSrv := service{}
 	m, err := poSrv.DeriveFromCoreDocument(nil)
 	assert.Nil(t, m)
 	assert.Error(t, err)
 }
 
 func TestService_Create(t *testing.T) {
+	poSrv := service{}
 	m, err := poSrv.Create(context.Background(), nil)
 	assert.Nil(t, m)
 	assert.Error(t, err)
 }
 
 func TestService_CreateProofs(t *testing.T) {
+	poSrv := service{}
 	p, err := poSrv.CreateProofs(nil, nil)
 	assert.Nil(t, p)
 	assert.Error(t, err)
 }
 
 func TestService_CreateProofsForVersion(t *testing.T) {
+	poSrv := service{}
 	p, err := poSrv.CreateProofsForVersion(nil, nil, nil)
 	assert.Nil(t, p)
 	assert.Error(t, err)
@@ -81,6 +86,7 @@ func TestService_CreateProofsForVersion(t *testing.T) {
 
 func TestService_DerivePurchaseOrderData(t *testing.T) {
 	var m documents.Model
+	poSrv := service{}
 
 	// unknown type
 	m = &testingdocuments.MockModel{}
@@ -90,11 +96,7 @@ func TestService_DerivePurchaseOrderData(t *testing.T) {
 	assert.Contains(t, err.Error(), "document of invalid type")
 
 	// success
-	payload := &clientpurchaseorderpb.PurchaseOrderCreatePayload{
-		Data: &clientpurchaseorderpb.PurchaseOrderData{
-			Currency: "EUR",
-		},
-	}
+	payload := testingdocuments.CreatePOPayload()
 	m, err = poSrv.DeriveFromCreatePayload(payload)
 	assert.Nil(t, err)
 	d, err = poSrv.DerivePurchaseOrderData(m)
@@ -103,6 +105,8 @@ func TestService_DerivePurchaseOrderData(t *testing.T) {
 }
 
 func TestService_DerivePurchaseOrderResponse(t *testing.T) {
+	poSrv := service{}
+
 	// pack fails
 	m := &testingdocuments.MockModel{}
 	m.On("PackCoreDocument").Return(nil, fmt.Errorf("pack core document failed")).Once()
@@ -134,12 +138,7 @@ func TestService_DerivePurchaseOrderResponse(t *testing.T) {
 	assert.Contains(t, err.Error(), "document of invalid type")
 
 	// success
-	payload := &clientpurchaseorderpb.PurchaseOrderCreatePayload{
-		Data: &clientpurchaseorderpb.PurchaseOrderData{
-			Currency: "EUR",
-		},
-		Collaborators: []string{"0x010203040506"},
-	}
+	payload := testingdocuments.CreatePOPayload()
 	po, err := poSrv.DeriveFromCreatePayload(payload)
 	assert.Nil(t, err)
 	r, err = poSrv.DerivePurchaseOrderResponse(po)
@@ -149,24 +148,71 @@ func TestService_DerivePurchaseOrderResponse(t *testing.T) {
 }
 
 func TestService_GetCurrentVersion(t *testing.T) {
+	poSrv := service{}
 	m, err := poSrv.GetCurrentVersion(nil)
 	assert.Nil(t, m)
 	assert.Error(t, err)
 }
 
 func TestService_GetVersion(t *testing.T) {
+	poSrv := service{}
 	m, err := poSrv.GetVersion(nil, nil)
 	assert.Nil(t, m)
 	assert.Error(t, err)
 }
 
 func TestService_ReceiveAnchoredDocument(t *testing.T) {
+	poSrv := service{}
 	err := poSrv.ReceiveAnchoredDocument(nil, nil)
 	assert.Error(t, err)
 }
 
 func TestService_RequestDocumentSignature(t *testing.T) {
+	poSrv := service{}
 	s, err := poSrv.RequestDocumentSignature(nil)
 	assert.Nil(t, s)
 	assert.Error(t, err)
+}
+
+func TestService_calculateDataRoot(t *testing.T) {
+	poSrv := service{repo: getRepository()}
+
+	// type mismatch
+	po, err := poSrv.calculateDataRoot(nil, &testingdocuments.MockModel{}, nil)
+	assert.Nil(t, po)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "unknown document type")
+
+	// failed validator
+	po, err = poSrv.DeriveFromCreatePayload(testingdocuments.CreatePOPayload())
+	assert.Nil(t, err)
+	assert.Nil(t, po.(*PurchaseOrderModel).CoreDocument.DataRoot)
+	v := documents.ValidatorFunc(func(_, _ documents.Model) error {
+		return fmt.Errorf("validations fail")
+	})
+	po, err = poSrv.calculateDataRoot(nil, po, v)
+	assert.Nil(t, po)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "validations fail")
+
+	// create failed
+	po, err = poSrv.DeriveFromCreatePayload(testingdocuments.CreatePOPayload())
+	assert.Nil(t, err)
+	assert.Nil(t, po.(*PurchaseOrderModel).CoreDocument.DataRoot)
+	err = poSrv.repo.Create(po.(*PurchaseOrderModel).CoreDocument.CurrentVersion, po)
+	assert.Nil(t, err)
+	po, err = poSrv.calculateDataRoot(nil, po, CreateValidator())
+	assert.Nil(t, po)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "document already exists")
+
+	// success
+	po, err = poSrv.DeriveFromCreatePayload(testingdocuments.CreatePOPayload())
+	assert.Nil(t, err)
+	assert.Nil(t, po.(*PurchaseOrderModel).CoreDocument.DataRoot)
+	po, err = poSrv.calculateDataRoot(nil, po, CreateValidator())
+	assert.Nil(t, err)
+	assert.NotNil(t, po)
+	assert.NotNil(t, po.(*PurchaseOrderModel).CoreDocument.DataRoot)
+
 }

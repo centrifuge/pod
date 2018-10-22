@@ -321,17 +321,9 @@ func (m mockService) DerivePurchaseOrderResponse(doc documents.Model) (*clientpu
 	return resp, args.Error(1)
 }
 
-func createPayload() *clientpurchaseorderpb.PurchaseOrderCreatePayload {
-	return &clientpurchaseorderpb.PurchaseOrderCreatePayload{
-		Data: &clientpurchaseorderpb.PurchaseOrderData{
-			Currency: "EUR",
-		},
-	}
-}
-
 func TestGRPCHandler_Create(t *testing.T) {
 	h := grpcHandler{}
-	req := createPayload()
+	req := testingdocuments.CreatePOPayload()
 	ctx := context.Background()
 	model := &testingdocuments.MockModel{}
 
