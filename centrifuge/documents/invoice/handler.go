@@ -13,7 +13,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	"github.com/centrifuge/go-centrifuge/centrifuge/p2p"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	legacyinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/legacy/invoice"
@@ -214,17 +213,12 @@ func (h *grpcHandler) GetReceivedInvoiceDocuments(ctx context.Context, empty *em
 
 // Create handles the creation of the invoices and anchoring the documents on chain
 func (h *grpcHandler) Create(ctx context.Context, req *clientinvoicepb.InvoiceCreatePayload) (*clientinvoicepb.InvoiceResponse, error) {
-	idConfig, err := ed25519keys.GetIDConfig()
+	ctxHeader, err := documents.NewContextHeader()
 	if err != nil {
-		return nil, centerrors.New(code.DocumentInvalid, err.Error())
+		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
 	}
-	selfID, err := identity.ToCentID(idConfig.ID)
-	if err != nil {
-		return nil, centerrors.New(code.DocumentInvalid, err.Error())
-	}
-	contextHeader := documents.NewContextHeader(selfID)
 
-	doc, err := h.service.DeriveFromCreatePayload(req, contextHeader)
+	doc, err := h.service.DeriveFromCreatePayload(req, ctxHeader)
 	if err != nil {
 		return nil, err
 	}
@@ -240,18 +234,12 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientinvoicepb.InvoiceCr
 
 // Update handles the document update and anchoring
 func (h *grpcHandler) Update(ctx context.Context, payload *clientinvoicepb.InvoiceUpdatePayload) (*clientinvoicepb.InvoiceResponse, error) {
-	// Placeholder that gathers context data to pass down the pipeline
-	idConfig, err := ed25519keys.GetIDConfig()
+	ctxHeader, err := documents.NewContextHeader()
 	if err != nil {
-		return nil, centerrors.New(code.DocumentInvalid, err.Error())
+		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
 	}
-	selfID, err := identity.ToCentID(idConfig.ID)
-	if err != nil {
-		return nil, centerrors.New(code.DocumentInvalid, err.Error())
-	}
-	contextHeader := documents.NewContextHeader(selfID)
 
-	doc, err := h.service.DeriveFromUpdatePayload(payload, contextHeader)
+	doc, err := h.service.DeriveFromUpdatePayload(payload, ctxHeader)
 	if err != nil {
 		return nil, err
 	}

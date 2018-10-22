@@ -21,10 +21,10 @@ type Service interface {
 	documents.Service
 
 	// DeriverFromPayload derives purchase order from clientPayload
-	DeriveFromCreatePayload(payload *clientpopb.PurchaseOrderCreatePayload) (documents.Model, error)
+	DeriveFromCreatePayload(payload *clientpopb.PurchaseOrderCreatePayload, hdr *documents.ContextHeader) (documents.Model, error)
 
 	// DeriveFromUpdatePayload derives purchase order from update payload
-	DeriveFromUpdatePayload(payload *clientpopb.PurchaseOrderUpdatePayload) (documents.Model, error)
+	DeriveFromUpdatePayload(payload *clientpopb.PurchaseOrderUpdatePayload, hdr *documents.ContextHeader) (documents.Model, error)
 
 	// Create validates and persists purchase order and returns a Updated model
 	Create(ctx context.Context, po documents.Model) (documents.Model, error)
@@ -106,13 +106,13 @@ func (s service) Update(ctx context.Context, po documents.Model) (documents.Mode
 }
 
 // DeriveFromCreatePayload derives purchase order from create payload
-func (s service) DeriveFromCreatePayload(payload *clientpopb.PurchaseOrderCreatePayload) (documents.Model, error) {
+func (s service) DeriveFromCreatePayload(payload *clientpopb.PurchaseOrderCreatePayload, ctxH *documents.ContextHeader) (documents.Model, error) {
 	if payload == nil {
 		return nil, centerrors.New(code.DocumentInvalid, "input is nil")
 	}
 
 	po := new(PurchaseOrderModel)
-	err := po.InitPurchaseOrderInput(payload, nil)
+	err := po.InitPurchaseOrderInput(payload, ctxH)
 	if err != nil {
 		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("purchase order init failed: %v", err))
 	}
@@ -121,7 +121,7 @@ func (s service) DeriveFromCreatePayload(payload *clientpopb.PurchaseOrderCreate
 }
 
 // DeriveFromUpdatePayload derives purchase order from update payload
-func (s service) DeriveFromUpdatePayload(payload *clientpopb.PurchaseOrderUpdatePayload) (documents.Model, error) {
+func (s service) DeriveFromUpdatePayload(payload *clientpopb.PurchaseOrderUpdatePayload, ctxH *documents.ContextHeader) (documents.Model, error) {
 	return nil, fmt.Errorf("implement me")
 }
 

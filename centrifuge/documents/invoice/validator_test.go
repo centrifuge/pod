@@ -6,14 +6,10 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
-	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
-
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
-
-	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
+	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -83,11 +79,8 @@ func TestDataRootValidation_Validate(t *testing.T) {
 	assert.Contains(t, err.Error(), "unknown document type")
 
 	// mismatch
-	idConfig, err := ed25519keys.GetIDConfig()
+	contextHeader, err := documents.NewContextHeader()
 	assert.Nil(t, err)
-	self, err := identity.ToCentID(idConfig.ID)
-	assert.Nil(t, err)
-	contextHeader := documents.NewContextHeader(self)
 	inv := new(InvoiceModel)
 	err = inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), contextHeader)
 	assert.Nil(t, err)

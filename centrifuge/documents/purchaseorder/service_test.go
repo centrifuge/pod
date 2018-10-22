@@ -23,15 +23,18 @@ func TestService_Update(t *testing.T) {
 
 func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	poSrv := service{}
-	m, err := poSrv.DeriveFromUpdatePayload(nil)
+	m, err := poSrv.DeriveFromUpdatePayload(nil, nil)
 	assert.Nil(t, m)
 	assert.Error(t, err)
 }
 
 func TestService_DeriveFromCreatePayload(t *testing.T) {
 	poSrv := service{}
+	ctxh, err := documents.NewContextHeader()
+	assert.Nil(t, err)
+
 	// nil payload
-	m, err := poSrv.DeriveFromCreatePayload(nil)
+	m, err := poSrv.DeriveFromCreatePayload(nil, ctxh)
 	assert.Nil(t, m)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "input is nil")
@@ -43,14 +46,14 @@ func TestService_DeriveFromCreatePayload(t *testing.T) {
 		},
 	}
 
-	m, err = poSrv.DeriveFromCreatePayload(payload)
+	m, err = poSrv.DeriveFromCreatePayload(payload, ctxh)
 	assert.Nil(t, m)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "purchase order init failed")
 
 	// success
 	payload.Data.ExtraData = "0x01020304050607"
-	m, err = poSrv.DeriveFromCreatePayload(payload)
+	m, err = poSrv.DeriveFromCreatePayload(payload, ctxh)
 	assert.Nil(t, err)
 	assert.NotNil(t, m)
 	po := m.(*PurchaseOrderModel)
@@ -65,6 +68,8 @@ func TestService_DeriveFromCoreDocument(t *testing.T) {
 }
 
 func TestService_Create(t *testing.T) {
+	ctxh, err := documents.NewContextHeader()
+	assert.Nil(t, err)
 	poSrv := service{repo: getRepository()}
 	ctx := context.Background()
 
@@ -75,7 +80,7 @@ func TestService_Create(t *testing.T) {
 	assert.Contains(t, err.Error(), "unknown document type")
 
 	// anchor fails
-	po, err := poSrv.DeriveFromCreatePayload(testingdocuments.CreatePOPayload())
+	po, err := poSrv.DeriveFromCreatePayload(testingdocuments.CreatePOPayload(), ctxh)
 	assert.Nil(t, err)
 	proc := &testingutils.MockCoreDocumentProcessor{}
 	proc.On("PrepareForSignatureRequests", po).Return(fmt.Errorf("anchoring failed")).Once()
@@ -87,7 +92,7 @@ func TestService_Create(t *testing.T) {
 	assert.Contains(t, err.Error(), "anchoring failed")
 
 	// success
-	po, err = poSrv.DeriveFromCreatePayload(testingdocuments.CreatePOPayload())
+	po, err = poSrv.DeriveFromCreatePayload(testingdocuments.CreatePOPayload(), ctxh)
 	assert.Nil(t, err)
 	proc = &testingutils.MockCoreDocumentProcessor{}
 	proc.On("PrepareForSignatureRequests", po).Return(nil).Once()
@@ -118,6 +123,8 @@ func TestService_CreateProofsForVersion(t *testing.T) {
 func TestService_DerivePurchaseOrderData(t *testing.T) {
 	var m documents.Model
 	poSrv := service{}
+	ctxh, err := documents.NewContextHeader()
+	assert.Nil(t, err)
 
 	// unknown type
 	m = &testingdocuments.MockModel{}
@@ -128,7 +135,7 @@ func TestService_DerivePurchaseOrderData(t *testing.T) {
 
 	// success
 	payload := testingdocuments.CreatePOPayload()
-	m, err = poSrv.DeriveFromCreatePayload(payload)
+	m, err = poSrv.DeriveFromCreatePayload(payload, ctxh)
 	assert.Nil(t, err)
 	d, err = poSrv.DerivePurchaseOrderData(m)
 	assert.Nil(t, err)
@@ -137,6 +144,8 @@ func TestService_DerivePurchaseOrderData(t *testing.T) {
 
 func TestService_DerivePurchaseOrderResponse(t *testing.T) {
 	poSrv := service{}
+	ctxh, err := documents.NewContextHeader()
+	assert.Nil(t, err)
 
 	// pack fails
 	m := &testingdocuments.MockModel{}
@@ -170,12 +179,12 @@ func TestService_DerivePurchaseOrderResponse(t *testing.T) {
 
 	// success
 	payload := testingdocuments.CreatePOPayload()
-	po, err := poSrv.DeriveFromCreatePayload(payload)
+	po, err := poSrv.DeriveFromCreatePayload(payload, ctxh)
 	assert.Nil(t, err)
 	r, err = poSrv.DerivePurchaseOrderResponse(po)
 	assert.Nil(t, err)
-	assert.Equal(t, r.Data, payload.Data)
-	assert.Equal(t, r.Header.Collaborators, payload.Collaborators)
+	assert.Equal(t, payload.Data, r.Data)
+	assert.Equal(t, []string{"0x010101010101", "0x010101010101"}, r.Header.Collaborators)
 }
 
 func TestService_GetCurrentVersion(t *testing.T) {
@@ -207,6 +216,8 @@ func TestService_RequestDocumentSignature(t *testing.T) {
 
 func TestService_calculateDataRoot(t *testing.T) {
 	poSrv := service{repo: getRepository()}
+	ctxh, err := documents.NewContextHeader()
+	assert.Nil(t, err)
 
 	// type mismatch
 	po, err := poSrv.calculateDataRoot(nil, &testingdocuments.MockModel{}, nil)
@@ -215,7 +226,7 @@ func TestService_calculateDataRoot(t *testing.T) {
 	assert.Contains(t, err.Error(), "unknown document type")
 
 	// failed validator
-	po, err = poSrv.DeriveFromCreatePayload(testingdocuments.CreatePOPayload())
+	po, err = poSrv.DeriveFromCreatePayload(testingdocuments.CreatePOPayload(), ctxh)
 	assert.Nil(t, err)
 	assert.Nil(t, po.(*PurchaseOrderModel).CoreDocument.DataRoot)
 	v := documents.ValidatorFunc(func(_, _ documents.Model) error {
@@ -227,7 +238,7 @@ func TestService_calculateDataRoot(t *testing.T) {
 	assert.Contains(t, err.Error(), "validations fail")
 
 	// create failed
-	po, err = poSrv.DeriveFromCreatePayload(testingdocuments.CreatePOPayload())
+	po, err = poSrv.DeriveFromCreatePayload(testingdocuments.CreatePOPayload(), ctxh)
 	assert.Nil(t, err)
 	assert.Nil(t, po.(*PurchaseOrderModel).CoreDocument.DataRoot)
 	err = poSrv.repo.Create(po.(*PurchaseOrderModel).CoreDocument.CurrentVersion, po)
@@ -238,7 +249,7 @@ func TestService_calculateDataRoot(t *testing.T) {
 	assert.Contains(t, err.Error(), "document already exists")
 
 	// success
-	po, err = poSrv.DeriveFromCreatePayload(testingdocuments.CreatePOPayload())
+	po, err = poSrv.DeriveFromCreatePayload(testingdocuments.CreatePOPayload(), ctxh)
 	assert.Nil(t, err)
 	assert.Nil(t, po.(*PurchaseOrderModel).CoreDocument.DataRoot)
 	po, err = poSrv.calculateDataRoot(nil, po, CreateValidator())

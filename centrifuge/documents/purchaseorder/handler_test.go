@@ -309,8 +309,8 @@ func (m mockService) Create(ctx context.Context, doc documents.Model) (documents
 	return model, args.Error(1)
 }
 
-func (m mockService) DeriveFromCreatePayload(req *clientpurchaseorderpb.PurchaseOrderCreatePayload) (documents.Model, error) {
-	args := m.Called(req)
+func (m mockService) DeriveFromCreatePayload(req *clientpurchaseorderpb.PurchaseOrderCreatePayload, ctxh *documents.ContextHeader) (documents.Model, error) {
+	args := m.Called(req, ctxh)
 	model, _ := args.Get(0).(documents.Model)
 	return model, args.Error(1)
 }
@@ -326,10 +326,12 @@ func TestGRPCHandler_Create(t *testing.T) {
 	req := testingdocuments.CreatePOPayload()
 	ctx := context.Background()
 	model := &testingdocuments.MockModel{}
+	ctxh, err := documents.NewContextHeader()
+	assert.Nil(t, err)
 
 	// derive fails
 	srv := mockService{}
-	srv.On("DeriveFromCreatePayload", req).Return(nil, fmt.Errorf("derive failed")).Once()
+	srv.On("DeriveFromCreatePayload", req, ctxh).Return(nil, fmt.Errorf("derive failed")).Once()
 	h.service = srv
 	resp, err := h.Create(ctx, req)
 	srv.AssertExpectations(t)
@@ -339,7 +341,7 @@ func TestGRPCHandler_Create(t *testing.T) {
 
 	// create fails
 	srv = mockService{}
-	srv.On("DeriveFromCreatePayload", req).Return(model, nil).Once()
+	srv.On("DeriveFromCreatePayload", req, ctxh).Return(model, nil).Once()
 	srv.On("Create", ctx, model).Return(nil, fmt.Errorf("create failed")).Once()
 	h.service = srv
 	resp, err = h.Create(ctx, req)
@@ -350,7 +352,7 @@ func TestGRPCHandler_Create(t *testing.T) {
 
 	// derive response fails
 	srv = mockService{}
-	srv.On("DeriveFromCreatePayload", req).Return(model, nil).Once()
+	srv.On("DeriveFromCreatePayload", req, ctxh).Return(model, nil).Once()
 	srv.On("Create", ctx, model).Return(model, nil).Once()
 	srv.On("DerivePurchaseOrderResponse", model).Return(nil, fmt.Errorf("derive response fails")).Once()
 	h.service = srv
@@ -363,7 +365,7 @@ func TestGRPCHandler_Create(t *testing.T) {
 	// success
 	eresp := &clientpurchaseorderpb.PurchaseOrderResponse{}
 	srv = mockService{}
-	srv.On("DeriveFromCreatePayload", req).Return(model, nil).Once()
+	srv.On("DeriveFromCreatePayload", req, ctxh).Return(model, nil).Once()
 	srv.On("Create", ctx, model).Return(model, nil).Once()
 	srv.On("DerivePurchaseOrderResponse", model).Return(eresp, nil).Once()
 	h.service = srv

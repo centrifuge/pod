@@ -17,7 +17,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
@@ -70,11 +69,8 @@ func TestService_DeriveFromPayload(t *testing.T) {
 	_, err = invService.DeriveFromCreatePayload(nil, nil)
 	assert.Error(t, err, "DeriveWithInvoiceInput should produce an error if invoiceInput equals nil")
 
-	idConfig, err := ed25519keys.GetIDConfig()
+	contextHeader, err := documents.NewContextHeader()
 	assert.Nil(t, err)
-	self, err := identity.ToCentID(idConfig.ID)
-	assert.Nil(t, err)
-	contextHeader := documents.NewContextHeader(self)
 	model, err = invService.DeriveFromCreatePayload(payload, contextHeader)
 	assert.Nil(t, err, "valid invoiceData shouldn't produce an error")
 
@@ -179,11 +175,8 @@ func TestService_Create_db_fail(t *testing.T) {
 	err := getRepository().Create(cd.CurrentVersion, model)
 	model.AssertExpectations(t)
 
-	idConfig, err := ed25519keys.GetIDConfig()
+	contextHeader, err := documents.NewContextHeader()
 	assert.Nil(t, err)
-	self, err := identity.ToCentID(idConfig.ID)
-	assert.Nil(t, err)
-	contextHeader := documents.NewContextHeader(self)
 	payload := testingdocuments.CreateInvoicePayload()
 	inv, err := invService.DeriveFromCreatePayload(payload, contextHeader)
 	assert.Nil(t, err, "must be non nil")
@@ -200,11 +193,8 @@ func TestService_Create_anchor_fail(t *testing.T) {
 	proc := &testingutils.MockCoreDocumentProcessor{}
 	proc.On("Anchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(fmt.Errorf("failed to anchor document"))
 	srv.coreDocProcessor = proc
-	idConfig, err := ed25519keys.GetIDConfig()
+	contextHeader, err := documents.NewContextHeader()
 	assert.Nil(t, err)
-	self, err := identity.ToCentID(idConfig.ID)
-	assert.Nil(t, err)
-	contextHeader := documents.NewContextHeader(self)
 	payload := testingdocuments.CreateInvoicePayload()
 	inv, err := invService.DeriveFromCreatePayload(payload, contextHeader)
 	_, err = srv.Create(context.Background(), inv)
@@ -221,11 +211,8 @@ func TestService_Create_send_fail(t *testing.T) {
 	srv.coreDocProcessor = proc
 	payload := testingdocuments.CreateInvoicePayload()
 	payload.Collaborators = []string{"0x010203040506"}
-	idConfig, err := ed25519keys.GetIDConfig()
+	contextHeader, err := documents.NewContextHeader()
 	assert.Nil(t, err)
-	self, err := identity.ToCentID(idConfig.ID)
-	assert.Nil(t, err)
-	contextHeader := documents.NewContextHeader(self)
 	inv, err := invService.DeriveFromCreatePayload(payload, contextHeader)
 	_, err = srv.Create(context.Background(), inv)
 	proc.AssertExpectations(t)
@@ -240,11 +227,8 @@ func TestService_Create_saveState_fail(t *testing.T) {
 	srv.coreDocProcessor = proc
 	payload := testingdocuments.CreateInvoicePayload()
 	payload.Collaborators = []string{"0x010203040506"}
-	idConfig, err := ed25519keys.GetIDConfig()
+	contextHeader, err := documents.NewContextHeader()
 	assert.Nil(t, err)
-	self, err := identity.ToCentID(idConfig.ID)
-	assert.Nil(t, err)
-	contextHeader := documents.NewContextHeader(self)
 	inv, err := invService.DeriveFromCreatePayload(payload, contextHeader)
 	_, err = srv.Create(context.Background(), inv)
 	proc.AssertExpectations(t)
@@ -259,11 +243,8 @@ func TestService_Create(t *testing.T) {
 	srv.coreDocProcessor = proc
 	payload := testingdocuments.CreateInvoicePayload()
 	payload.Collaborators = []string{"0x010203040506"}
-	idConfig, err := ed25519keys.GetIDConfig()
+	contextHeader, err := documents.NewContextHeader()
 	assert.Nil(t, err)
-	self, err := identity.ToCentID(idConfig.ID)
-	assert.Nil(t, err)
-	contextHeader := documents.NewContextHeader(self)
 	inv, err := invService.DeriveFromCreatePayload(payload, contextHeader)
 	_, err = srv.Create(context.Background(), inv)
 	proc.AssertExpectations(t)
@@ -277,11 +258,8 @@ func TestService_DeriveInvoiceData(t *testing.T) {
 
 	// success
 	payload := testingdocuments.CreateInvoicePayload()
-	idConfig, err := ed25519keys.GetIDConfig()
+	contextHeader, err := documents.NewContextHeader()
 	assert.Nil(t, err)
-	self, err := identity.ToCentID(idConfig.ID)
-	assert.Nil(t, err)
-	contextHeader := documents.NewContextHeader(self)
 	inv, err := invService.DeriveFromCreatePayload(payload, contextHeader)
 	assert.Nil(t, err, "must be non nil")
 	data, err := invService.DeriveInvoiceData(inv)
@@ -292,11 +270,8 @@ func TestService_DeriveInvoiceData(t *testing.T) {
 func TestService_DeriveInvoiceResponse(t *testing.T) {
 	// success
 	payload := testingdocuments.CreateInvoicePayload()
-	idConfig, err := ed25519keys.GetIDConfig()
+	contextHeader, err := documents.NewContextHeader()
 	assert.Nil(t, err)
-	self, err := identity.ToCentID(idConfig.ID)
-	assert.Nil(t, err)
-	contextHeader := documents.NewContextHeader(self)
 	inv1, err := invService.DeriveFromCreatePayload(payload, contextHeader)
 	assert.Nil(t, err, "must be non nil")
 	inv, ok := inv1.(*InvoiceModel)
@@ -316,11 +291,8 @@ func TestService_SaveState(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "document of invalid type")
 
-	idConfig, err := ed25519keys.GetIDConfig()
+	contextHeader, err := documents.NewContextHeader()
 	assert.Nil(t, err)
-	self, err := identity.ToCentID(idConfig.ID)
-	assert.Nil(t, err)
-	contextHeader := documents.NewContextHeader(self)
 	inv := new(InvoiceModel)
 	err = inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), contextHeader)
 	assert.Nil(t, err)
@@ -571,11 +543,8 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.Nil(t, doc)
 
 	// messed up identifier
-	idConfig, err := ed25519keys.GetIDConfig()
+	contextHeader, err := documents.NewContextHeader()
 	assert.Nil(t, err)
-	self, err := identity.ToCentID(idConfig.ID)
-	assert.Nil(t, err)
-	contextHeader := documents.NewContextHeader(self)
 	payload := &clientinvoicepb.InvoiceUpdatePayload{Identifier: "some identifier"}
 	doc, err = invService.DeriveFromUpdatePayload(payload, contextHeader)
 	assert.Error(t, err)
@@ -660,11 +629,8 @@ func TestService_Update_Missing_last_version(t *testing.T) {
 }
 
 func TestService_Update_unknown_type(t *testing.T) {
-	idConfig, err := ed25519keys.GetIDConfig()
+	contextHeader, err := documents.NewContextHeader()
 	assert.Nil(t, err)
-	self, err := identity.ToCentID(idConfig.ID)
-	assert.Nil(t, err)
-	contextHeader := documents.NewContextHeader(self)
 	model, err := invService.DeriveFromCreatePayload(testingdocuments.CreateInvoicePayload(), contextHeader)
 	assert.Nil(t, err)
 	cd, err := model.PackCoreDocument()
@@ -687,11 +653,8 @@ func TestService_Update(t *testing.T) {
 	srv.coreDocProcessor = proc
 	payload := testingdocuments.CreateInvoicePayload()
 	payload.Collaborators = []string{"0x010203040506"}
-	idConfig, err := ed25519keys.GetIDConfig()
+	contextHeader, err := documents.NewContextHeader()
 	assert.Nil(t, err)
-	self, err := identity.ToCentID(idConfig.ID)
-	assert.Nil(t, err)
-	contextHeader := documents.NewContextHeader(self)
 	inv, err := invService.DeriveFromCreatePayload(payload, contextHeader)
 	assert.Nil(t, err)
 	cd, err := inv.PackCoreDocument()

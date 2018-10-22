@@ -210,7 +210,12 @@ func (h grpcHandler) GetReceivedPurchaseOrderDocuments(ctx context.Context, empt
 // Create validates the purchase order, persists it to DB, and anchors it the chain
 // ctx is used to
 func (h grpcHandler) Create(ctx context.Context, req *clientpurchaseorderpb.PurchaseOrderCreatePayload) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
-	doc, err := h.service.DeriveFromCreatePayload(req)
+	ctxh, err := documents.NewContextHeader()
+	if err != nil {
+		return nil, centerrors.New(code.Unknown, err.Error())
+	}
+
+	doc, err := h.service.DeriveFromCreatePayload(req, ctxh)
 	if err != nil {
 		return nil, err
 	}
