@@ -23,14 +23,13 @@ import (
 
 
 var (
-	poSrv Service
 	centID     = utils.RandomSlice(identity.CentIDLength)
 	key1Pub    = [...]byte{230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
 	key1       = []byte{102, 109, 71, 239, 130, 229, 128, 189, 37, 96, 223, 5, 189, 91, 210, 47, 89, 4, 165, 6, 188, 53, 49, 250, 109, 151, 234, 139, 57, 205, 231, 253, 230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
 )
 
 func getServiceWithMockedLayers() Service {
-	return DefaultService(getRepository(), &testingutils.MockCoreDocumentProcessor{}, anchorRepository)
+	return DefaultService(getRepository(), &testingutils.MockCoreDocumentProcessor{}, mockAnchorRepository)
 }
 
 func TestService_Update(t *testing.T) {
@@ -129,7 +128,7 @@ func mockSignatureCheck(i *PurchaseOrderModel) identity.Service {
 	}
 	anchorID, _ := anchors.NewAnchorID(i.CoreDocument.DocumentIdentifier)
 	docRoot, _ := anchors.NewDocRoot(i.CoreDocument.DocumentRoot)
-	anchorRepository.On("GetDocumentRootOf", anchorID).Return(docRoot, nil).Once()
+	mockAnchorRepository.On("GetDocumentRootOf", anchorID).Return(docRoot, nil).Once()
 	srv := &testingcommons.MockIDService{}
 	id := &testingcommons.MockID{}
 	centID, _ := identity.ToCentID(centID)
@@ -164,6 +163,7 @@ func TestService_CreateProofsForVersion(t *testing.T) {
 }
 
 func TestService_DerivePurchaseOrderData(t *testing.T) {
+
 	poSrv := getServiceWithMockedLayers()
 	d, err := poSrv.DerivePurchaseOrderData(nil)
 	assert.Nil(t, d)
@@ -171,6 +171,7 @@ func TestService_DerivePurchaseOrderData(t *testing.T) {
 }
 
 func TestService_DerivePurchaseOrderResponse(t *testing.T) {
+	poSrv := getServiceWithMockedLayers()
 	r, err := poSrv.DerivePurchaseOrderResponse(nil)
 	assert.Nil(t, r)
 	assert.Error(t, err)
