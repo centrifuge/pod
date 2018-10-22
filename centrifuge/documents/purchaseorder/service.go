@@ -5,6 +5,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
@@ -123,7 +125,41 @@ func (s service) DeriveFromCreatePayload(payload *clientpopb.PurchaseOrderCreate
 
 // DeriveFromUpdatePayload derives purchase order from update payload
 func (s service) DeriveFromUpdatePayload(payload *clientpopb.PurchaseOrderUpdatePayload, ctxH *documents.ContextHeader) (documents.Model, error) {
-	return nil, fmt.Errorf("implement me")
+	if payload == nil {
+		return nil, centerrors.New(code.DocumentInvalid, "invalid payload")
+	}
+
+	// get latest old version of the document
+	id, err := hexutil.Decode(payload.Identifier)
+	if err != nil {
+		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("failed to decode identifier: %v", err))
+	}
+
+	old, err := s.GetCurrentVersion(id)
+	if err != nil {
+		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("failed to fetch old version: %v", err))
+	}
+
+	// load invoice data
+	po := new(PurchaseOrderModel)
+	err = po.initPurchaseOrderFromData(payload.Data)
+	if err != nil {
+		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("failed to load purchase order from data: %v", err))
+	}
+
+	// update core document
+	oldCD, err := old.PackCoreDocument()
+	if err != nil {
+		return nil, centerrors.New(code.Unknown, err.Error())
+	}
+
+	collaborators := append([]string{ctxH.Self().String()}, payload.Collaborators...)
+	po.CoreDocument, err = coredocument.PrepareNewVersion(*oldCD, collaborators)
+	if err != nil {
+		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("failed to prepare new version: %v", err))
+	}
+
+	return po, nil
 }
 
 // DerivePurchaseOrderData returns po data from the model

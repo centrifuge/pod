@@ -26,10 +26,77 @@ func TestService_Update(t *testing.T) {
 }
 
 func TestService_DeriveFromUpdatePayload(t *testing.T) {
-	poSrv := service{}
-	m, err := poSrv.DeriveFromUpdatePayload(nil, nil)
-	assert.Nil(t, m)
+	poSrv := service{repo: getRepository()}
+
+	// nil payload
+	doc, err := poSrv.DeriveFromUpdatePayload(nil, nil)
 	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid payload")
+	assert.Nil(t, doc)
+
+	// messed up identifier
+	contextHeader, err := documents.NewContextHeader()
+	assert.Nil(t, err)
+	payload := &clientpurchaseorderpb.PurchaseOrderUpdatePayload{Identifier: "some identifier"}
+	doc, err = poSrv.DeriveFromUpdatePayload(payload, contextHeader)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to decode identifier")
+	assert.Nil(t, doc)
+
+	// missing last version
+	id := utils.RandomSlice(32)
+	payload.Identifier = hexutil.Encode(id)
+	doc, err = poSrv.DeriveFromUpdatePayload(payload, contextHeader)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to fetch old version")
+	assert.Nil(t, doc)
+
+	// failed to load from data
+	old := new(PurchaseOrderModel)
+	err = old.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), contextHeader)
+	assert.Nil(t, err)
+	old.CoreDocument.DocumentIdentifier = id
+	old.CoreDocument.CurrentVersion = id
+	old.CoreDocument.DocumentRoot = utils.RandomSlice(32)
+	err = getRepository().Create(id, old)
+	assert.Nil(t, err)
+	payload.Data = &clientpurchaseorderpb.PurchaseOrderData{
+		Recipient: "0x010203040506",
+		ExtraData: "some data",
+		Currency:  "EUR",
+	}
+
+	doc, err = poSrv.DeriveFromUpdatePayload(payload, contextHeader)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to load purchase order from data")
+	assert.Nil(t, doc)
+
+	// failed core document new version
+	payload.Data.ExtraData = hexutil.Encode(utils.RandomSlice(32))
+	payload.Collaborators = []string{"some wrong ID"}
+	doc, err = poSrv.DeriveFromUpdatePayload(payload, contextHeader)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to prepare new version")
+	assert.Nil(t, doc)
+
+	// success
+	wantCollab := utils.RandomSlice(6)
+	payload.Collaborators = []string{hexutil.Encode(wantCollab)}
+	doc, err = poSrv.DeriveFromUpdatePayload(payload, contextHeader)
+	assert.Nil(t, err)
+	assert.NotNil(t, doc)
+	cd, err := doc.PackCoreDocument()
+	assert.Nil(t, err)
+	assert.Equal(t, wantCollab, cd.Collaborators[1])
+	assert.Len(t, cd.Collaborators, 2)
+	oldCD, err := old.PackCoreDocument()
+	assert.Nil(t, err)
+	assert.Equal(t, oldCD.DocumentIdentifier, cd.DocumentIdentifier)
+	assert.Equal(t, payload.Identifier, hexutil.Encode(cd.DocumentIdentifier))
+	assert.Equal(t, oldCD.CurrentVersion, cd.PreviousVersion)
+	assert.Equal(t, oldCD.NextVersion, cd.CurrentVersion)
+	assert.NotNil(t, cd.NextVersion)
+	assert.Equal(t, payload.Data, doc.(*PurchaseOrderModel).getClientData())
 }
 
 func TestService_DeriveFromCreatePayload(t *testing.T) {
@@ -345,5 +412,4 @@ func TestService_calculateDataRoot(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, po)
 	assert.NotNil(t, po.(*PurchaseOrderModel).CoreDocument.DataRoot)
-
 }
