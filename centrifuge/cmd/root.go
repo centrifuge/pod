@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
 	"os"
 
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
@@ -73,6 +74,9 @@ func readConfigFile() {
 
 //setCentrifugeLoggers sets the loggers.
 func setCentrifugeLoggers() {
+
+	var formatter = gologging.MustStringFormatter(utils.GetCentLogFormat())
+	gologging.SetFormatter(formatter)
 	if verbose {
 		logging.SetAllLoggers(gologging.DEBUG)
 		return

@@ -4,6 +4,7 @@ package secp256k1
 
 import (
 	"fmt"
+	"github.com/centrifuge/go-centrifuge/centrifuge/context/testlogging"
 	"os"
 	"testing"
 
@@ -18,6 +19,7 @@ const MaxMsgLen = 32
 func TestMain(m *testing.M) {
 	ibootstappers := []bootstrap.TestBootstrapper{
 		&config.Bootstrapper{},
+		&testlogging.TestLoggingBootstrapper{},
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, nil)
 	result := m.Run()
@@ -75,7 +77,7 @@ func TestVerifyFalsePublicKey(t *testing.T) {
 	_, privateKey := GenerateSigningKeyPair()
 
 	falsePublicKey, _ := GenerateSigningKeyPair()
-
+	
 	signature, err := Sign(testMsg, privateKey)
 	assert.Nil(t, err)
 	correct := VerifySignature(falsePublicKey, testMsg, signature)
