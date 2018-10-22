@@ -3,6 +3,16 @@
 package purchaseorder
 
 import (
+	"flag"
+	"github.com/centrifuge/go-centrifuge/centrifuge/anchors"
+	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/centrifuge/context/testlogging"
+	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
+	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
+	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
+	"github.com/stretchr/testify/mock"
+	"os"
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
@@ -14,6 +24,37 @@ import (
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 )
+
+
+var anchorRepository *anchorRepo
+
+type anchorRepo struct {
+	mock.Mock
+	anchors.AnchorRepository
+}
+
+
+func TestMain(m *testing.M) {
+	ibootstappers := []bootstrap.TestBootstrapper{
+		&testlogging.TestLoggingBootstrapper{},
+		&config.Bootstrapper{},
+		&storage.Bootstrapper{},
+		&coredocumentrepository.Bootstrapper{},
+		&anchors.Bootstrapper{},
+		&Bootstrapper{},
+	}
+	anchorRepository = &anchorRepo{}
+	context := map[string]interface{}{
+		bootstrap.BootstrappedAnchorRepository: anchorRepository,
+	}
+	bootstrap.RunTestBootstrappers(ibootstappers, context)
+	poSrv = DefaultService(getRepository(), &testingutils.MockCoreDocumentProcessor{}, anchorRepository)
+	flag.Parse()
+	result := m.Run()
+	bootstrap.RunTestTeardown(ibootstappers)
+	os.Exit(result)
+}
+
 
 func TestPurchaseOrderCoreDocumentConverter(t *testing.T) {
 	identifier := []byte("1")

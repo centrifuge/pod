@@ -52,7 +52,6 @@ type service struct {
 func DefaultService(repo documents.Repository, processor coredocumentprocessor.Processor, anchorRepository anchors.AnchorRepository) Service {
 	return service{repo: repo, coreDocProcessor: processor, notifier: &notification.WebhookSender{}, anchorRepository: anchorRepository}
 }
-
 // DeriveFromCoreDocument takes a core document and returns a purchase order
 func (s service) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (documents.Model, error) {
 	return nil, fmt.Errorf("implement me")
