@@ -1,6 +1,7 @@
 package purchaseorder
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 
@@ -168,14 +169,49 @@ func (s service) DerivePurchaseOrderResponse(doc documents.Model) (*clientpopb.P
 	}, nil
 }
 
+func (s service) getPurchaseOrderVersion(documentID, version []byte) (model *PurchaseOrderModel, err error) {
+	var doc documents.Model = new(PurchaseOrderModel)
+	err = s.repo.LoadByID(version, doc)
+	if err != nil {
+		return nil, err
+	}
+	model, ok := doc.(*PurchaseOrderModel)
+	if !ok {
+		return nil, err
+	}
+
+	if !bytes.Equal(model.CoreDocument.DocumentIdentifier, documentID) {
+		return nil, centerrors.New(code.DocumentInvalid, "version is not valid for this identifier")
+	}
+	return model, nil
+}
+
 // GetLastVersion returns the latest version of the document
 func (s service) GetCurrentVersion(documentID []byte) (documents.Model, error) {
-	return nil, fmt.Errorf("implement me")
+	model, err := s.getPurchaseOrderVersion(documentID, documentID)
+	if err != nil {
+		return nil, centerrors.Wrap(err, "document not found")
+	}
+	nextVersion := model.CoreDocument.NextVersion
+	for nextVersion != nil {
+		temp, err := s.getPurchaseOrderVersion(documentID, nextVersion)
+		if err != nil {
+			return model, nil
+		} else {
+			model = temp
+			nextVersion = model.CoreDocument.NextVersion
+		}
+	}
+	return model, nil
 }
 
 // GetVersion returns the specific version of the document
 func (s service) GetVersion(documentID []byte, version []byte) (documents.Model, error) {
-	return nil, fmt.Errorf("implement me")
+	inv, err := s.getPurchaseOrderVersion(documentID, version)
+	if err != nil {
+		return nil, centerrors.Wrap(err, "document not found for the given version")
+	}
+	return inv, nil
 }
 
 // CreateProofs generates proofs for given document
