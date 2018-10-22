@@ -309,7 +309,19 @@ func (m mockService) Create(ctx context.Context, doc documents.Model) (documents
 	return model, args.Error(1)
 }
 
+func (m mockService) Update(ctx context.Context, doc documents.Model) (documents.Model, error) {
+	args := m.Called(ctx, doc)
+	model, _ := args.Get(0).(documents.Model)
+	return model, args.Error(1)
+}
+
 func (m mockService) DeriveFromCreatePayload(req *clientpurchaseorderpb.PurchaseOrderCreatePayload, ctxh *documents.ContextHeader) (documents.Model, error) {
+	args := m.Called(req, ctxh)
+	model, _ := args.Get(0).(documents.Model)
+	return model, args.Error(1)
+}
+
+func (m mockService) DeriveFromUpdatePayload(req *clientpurchaseorderpb.PurchaseOrderUpdatePayload, ctxh *documents.ContextHeader) (documents.Model, error) {
 	args := m.Called(req, ctxh)
 	model, _ := args.Get(0).(documents.Model)
 	return model, args.Error(1)
@@ -370,6 +382,65 @@ func TestGRPCHandler_Create(t *testing.T) {
 	srv.On("DerivePurchaseOrderResponse", model).Return(eresp, nil).Once()
 	h.service = srv
 	resp, err = h.Create(ctx, req)
+	srv.AssertExpectations(t)
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+	assert.Equal(t, eresp, resp)
+}
+
+func TestGrpcHandler_Update(t *testing.T) {
+	h := grpcHandler{}
+	p := testingdocuments.CreatePOPayload()
+	req := &clientpurchaseorderpb.PurchaseOrderUpdatePayload{
+		Data:          p.Data,
+		Collaborators: p.Collaborators,
+	}
+	ctx := context.Background()
+	model := &testingdocuments.MockModel{}
+	ctxh, err := documents.NewContextHeader()
+	assert.Nil(t, err)
+
+	// derive fails
+	srv := mockService{}
+	srv.On("DeriveFromUpdatePayload", req, ctxh).Return(nil, fmt.Errorf("derive failed")).Once()
+	h.service = srv
+	resp, err := h.Update(ctx, req)
+	srv.AssertExpectations(t)
+	assert.Nil(t, resp)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "derive failed")
+
+	// create fails
+	srv = mockService{}
+	srv.On("DeriveFromUpdatePayload", req, ctxh).Return(model, nil).Once()
+	srv.On("Update", ctx, model).Return(nil, fmt.Errorf("update failed")).Once()
+	h.service = srv
+	resp, err = h.Update(ctx, req)
+	srv.AssertExpectations(t)
+	assert.Nil(t, resp)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "update failed")
+
+	// derive response fails
+	srv = mockService{}
+	srv.On("DeriveFromUpdatePayload", req, ctxh).Return(model, nil).Once()
+	srv.On("Update", ctx, model).Return(model, nil).Once()
+	srv.On("DerivePurchaseOrderResponse", model).Return(nil, fmt.Errorf("derive response fails")).Once()
+	h.service = srv
+	resp, err = h.Update(ctx, req)
+	srv.AssertExpectations(t)
+	assert.Nil(t, resp)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "derive response fails")
+
+	// success
+	eresp := &clientpurchaseorderpb.PurchaseOrderResponse{}
+	srv = mockService{}
+	srv.On("DeriveFromUpdatePayload", req, ctxh).Return(model, nil).Once()
+	srv.On("Update", ctx, model).Return(model, nil).Once()
+	srv.On("DerivePurchaseOrderResponse", model).Return(eresp, nil).Once()
+	h.service = srv
+	resp, err = h.Update(ctx, req)
 	srv.AssertExpectations(t)
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)

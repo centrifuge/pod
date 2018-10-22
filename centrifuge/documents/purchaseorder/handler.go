@@ -228,9 +228,24 @@ func (h grpcHandler) Create(ctx context.Context, req *clientpurchaseorderpb.Purc
 	return h.service.DerivePurchaseOrderResponse(doc)
 }
 
-func (grpcHandler) Update(context.Context, *clientpurchaseorderpb.PurchaseOrderUpdatePayload) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
-	apiLog.Error("Implement me")
-	return nil, centerrors.New(code.Unknown, "Implement me")
+// Update handles the document update and anchoring
+func (h grpcHandler) Update(ctx context.Context, payload *clientpurchaseorderpb.PurchaseOrderUpdatePayload) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
+	ctxHeader, err := documents.NewContextHeader()
+	if err != nil {
+		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
+	}
+
+	doc, err := h.service.DeriveFromUpdatePayload(payload, ctxHeader)
+	if err != nil {
+		return nil, err
+	}
+
+	doc, err = h.service.Update(ctx, doc)
+	if err != nil {
+		return nil, err
+	}
+
+	return h.service.DerivePurchaseOrderResponse(doc)
 }
 
 func (grpcHandler) GetVersion(context.Context, *clientpurchaseorderpb.GetVersionRequest) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
