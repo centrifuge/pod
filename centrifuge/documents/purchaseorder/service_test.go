@@ -1,3 +1,5 @@
+// +build unit
+
 package purchaseorder
 
 import (
@@ -5,11 +7,13 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 )
@@ -193,17 +197,96 @@ func TestService_DerivePurchaseOrderResponse(t *testing.T) {
 	assert.Equal(t, []string{"0x010101010101", "0x010101010101"}, r.Header.Collaborators)
 }
 
+func createMockDocument() (*PurchaseOrderModel, error) {
+	documentIdentifier := utils.RandomSlice(32)
+	nextIdentifier := utils.RandomSlice(32)
+
+	model := &PurchaseOrderModel{
+		PoNumber:    "test_po",
+		OrderAmount: 42,
+		CoreDocument: &coredocumentpb.CoreDocument{
+			DocumentIdentifier: documentIdentifier,
+			CurrentVersion:     documentIdentifier,
+			NextVersion:        nextIdentifier,
+		},
+	}
+	err := getRepository().Create(documentIdentifier, model)
+	return model, err
+}
+
 func TestService_GetCurrentVersion(t *testing.T) {
-	poSrv := service{}
-	m, err := poSrv.GetCurrentVersion(nil)
-	assert.Nil(t, m)
-	assert.Error(t, err)
+	poSrv := service{repo: getRepository()}
+	thirdIdentifier := utils.RandomSlice(32)
+	doc, err := createMockDocument()
+	assert.Nil(t, err)
+
+	mod1, err := poSrv.GetCurrentVersion(doc.CoreDocument.DocumentIdentifier)
+	assert.Nil(t, err)
+
+	poLoad1, _ := mod1.(*PurchaseOrderModel)
+	assert.Equal(t, poLoad1.CoreDocument.CurrentVersion, doc.CoreDocument.DocumentIdentifier)
+
+	po2 := &PurchaseOrderModel{
+		OrderAmount: 42,
+		CoreDocument: &coredocumentpb.CoreDocument{
+			DocumentIdentifier: doc.CoreDocument.DocumentIdentifier,
+			CurrentVersion:     doc.CoreDocument.NextVersion,
+			NextVersion:        thirdIdentifier,
+		},
+	}
+
+	err = getRepository().Create(doc.CoreDocument.NextVersion, po2)
+	assert.Nil(t, err)
+
+	mod2, err := poSrv.GetCurrentVersion(doc.CoreDocument.DocumentIdentifier)
+	assert.Nil(t, err)
+
+	poLoad2, _ := mod2.(*PurchaseOrderModel)
+	assert.Equal(t, poLoad2.CoreDocument.CurrentVersion, doc.CoreDocument.NextVersion)
+	assert.Equal(t, poLoad2.CoreDocument.NextVersion, thirdIdentifier)
+}
+
+func TestService_GetVersion_invalid_version(t *testing.T) {
+	poSrv := service{repo: getRepository()}
+	currentVersion := utils.RandomSlice(32)
+
+	po := &PurchaseOrderModel{
+		OrderAmount: 42,
+		CoreDocument: &coredocumentpb.CoreDocument{
+			DocumentIdentifier: utils.RandomSlice(32),
+			CurrentVersion:     currentVersion,
+		},
+	}
+	err := getRepository().Create(currentVersion, po)
+	assert.Nil(t, err)
+
+	mod, err := poSrv.GetVersion(utils.RandomSlice(32), currentVersion)
+	assert.EqualError(t, err, "[4]document not found for the given version: version is not valid for this identifier")
+	assert.Nil(t, mod)
 }
 
 func TestService_GetVersion(t *testing.T) {
-	poSrv := service{}
-	m, err := poSrv.GetVersion(nil, nil)
-	assert.Nil(t, m)
+	poSrv := service{repo: getRepository()}
+	documentIdentifier := utils.RandomSlice(32)
+	currentVersion := utils.RandomSlice(32)
+
+	po := &PurchaseOrderModel{
+		OrderAmount: 42,
+		CoreDocument: &coredocumentpb.CoreDocument{
+			DocumentIdentifier: documentIdentifier,
+			CurrentVersion:     currentVersion,
+		},
+	}
+	err := getRepository().Create(currentVersion, po)
+	assert.Nil(t, err)
+
+	mod, err := poSrv.GetVersion(documentIdentifier, currentVersion)
+	assert.Nil(t, err)
+	loadpo, _ := mod.(*PurchaseOrderModel)
+	assert.Equal(t, loadpo.CoreDocument.CurrentVersion, currentVersion)
+	assert.Equal(t, loadpo.CoreDocument.DocumentIdentifier, documentIdentifier)
+
+	mod, err = poSrv.GetVersion(documentIdentifier, []byte{})
 	assert.Error(t, err)
 }
 

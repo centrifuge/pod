@@ -6,6 +6,7 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	cc "github.com/centrifuge/go-centrifuge/centrifuge/context"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
 	logging "github.com/ipfs/go-log"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
@@ -73,6 +74,9 @@ func readConfigFile() {
 
 //setCentrifugeLoggers sets the loggers.
 func setCentrifugeLoggers() {
+
+	var formatter = gologging.MustStringFormatter(utils.GetCentLogFormat())
+	gologging.SetFormatter(formatter)
 	if verbose {
 		logging.SetAllLoggers(gologging.DEBUG)
 		return
