@@ -137,7 +137,11 @@ func (s service) GetVersion(documentID []byte, version []byte) (documents.Model,
 }
 
 // purchaseOrderProof creates proofs for purchaseOrder model fields
-func (s service) purchaseOrderProof(po *PurchaseOrderModel, fields []string) (*documents.DocumentProof, error) {
+func (s service) purchaseOrderProof(model documents.Model, fields []string) (*documents.DocumentProof, error) {
+	po, ok := model.(*PurchaseOrderModel)
+	if !ok {
+		return nil, centerrors.New(code.DocumentInvalid, "document of invalid type")
+	}
 	if err := coredocument.PostAnchoredValidator(s.anchorRepository).Validate(nil, po); err != nil {
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
 	}
@@ -158,11 +162,7 @@ func (s service) CreateProofs(documentID []byte, fields []string) (*documents.Do
 	if err != nil {
 		return nil, err
 	}
-	po, ok := model.(*PurchaseOrderModel)
-	if !ok {
-		return nil, centerrors.New(code.DocumentInvalid, "document of invalid type")
-	}
-	return s.purchaseOrderProof(po, fields)
+	return s.purchaseOrderProof(model, fields)
 }
 
 // CreateProofsForVersion generates proofs for specific version of the document
@@ -171,11 +171,7 @@ func (s service) CreateProofsForVersion(documentID, version []byte, fields []str
 	if err != nil {
 		return nil, err
 	}
-	po, ok := model.(*PurchaseOrderModel)
-	if !ok {
-		return nil, centerrors.New(code.DocumentInvalid, "document of invalid type")
-	}
-	return s.purchaseOrderProof(po, fields)
+	return s.purchaseOrderProof(model, fields)
 }
 
 // RequestDocumentSignature validates the document and returns the signature

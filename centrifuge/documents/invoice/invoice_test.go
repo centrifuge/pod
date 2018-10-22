@@ -7,7 +7,6 @@ package invoice
 
 import (
 	"flag"
-	"fmt"
 	"os"
 	"testing"
 
@@ -28,7 +27,6 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	fmt.Println("test")
 	ibootstappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},

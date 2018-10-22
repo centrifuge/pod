@@ -71,11 +71,8 @@ func (s service) CreateProofs(documentID []byte, fields []string) (*documents.Do
 	if err != nil {
 		return nil, err
 	}
-	inv, ok := model.(*InvoiceModel)
-	if !ok {
-		return nil, centerrors.New(code.DocumentInvalid, "document of invalid type")
-	}
-	return s.invoiceProof(inv, fields)
+
+	return s.invoiceProof(model, fields)
 }
 
 // CreateProofsForVersion creates proofs for a particular version of the document given the fields
@@ -84,15 +81,17 @@ func (s service) CreateProofsForVersion(documentID, version []byte, fields []str
 	if err != nil {
 		return nil, err
 	}
+
+	return s.invoiceProof(model, fields)
+}
+
+// invoiceProof creates proofs for invoice model fields
+func (s service) invoiceProof(model documents.Model, fields []string) (*documents.DocumentProof, error) {
 	inv, ok := model.(*InvoiceModel)
 	if !ok {
 		return nil, centerrors.New(code.DocumentInvalid, "document of invalid type")
 	}
-	return s.invoiceProof(inv, fields)
-}
 
-// invoiceProof creates proofs for invoice model fields
-func (s service) invoiceProof(inv *InvoiceModel, fields []string) (*documents.DocumentProof, error) {
 	if err := coredocument.PostAnchoredValidator(s.anchorRepository).Validate(nil, inv); err != nil {
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
 	}
