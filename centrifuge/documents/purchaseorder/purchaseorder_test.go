@@ -26,8 +26,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-
-
 func TestMain(m *testing.M) {
 	ibootstappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
@@ -59,7 +57,6 @@ func (r *mockAnchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.D
 	docRoot, _ := args.Get(0).(anchors.DocRoot)
 	return docRoot, args.Error(1)
 }
-
 
 func TestPurchaseOrderCoreDocumentConverter(t *testing.T) {
 	identifier := []byte("1")

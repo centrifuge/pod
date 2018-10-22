@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+
 	"github.com/centrifuge/go-centrifuge/centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/code"
@@ -53,6 +54,7 @@ type service struct {
 func DefaultService(repo documents.Repository, processor coredocumentprocessor.Processor, anchorRepository anchors.AnchorRepository) Service {
 	return service{repo: repo, coreDocProcessor: processor, notifier: &notification.WebhookSender{}, anchorRepository: anchorRepository}
 }
+
 // DeriveFromCoreDocument takes a core document and returns a purchase order
 func (s service) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (documents.Model, error) {
 	return nil, fmt.Errorf("implement me")
@@ -148,7 +150,6 @@ func (s service) purchaseOrderProof(po *PurchaseOrderModel, fields []string) (*d
 		FieldProofs: proofs,
 	}, nil
 }
-
 
 // CreateProofs generates proofs for given document
 func (s service) CreateProofs(documentID []byte, fields []string) (*documents.DocumentProof, error) {
