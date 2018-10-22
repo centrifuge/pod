@@ -7,6 +7,7 @@ package invoice
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"testing"
 
@@ -27,6 +28,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
+	fmt.Println("test")
 	ibootstappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
@@ -35,26 +37,25 @@ func TestMain(m *testing.M) {
 		&anchors.Bootstrapper{},
 		&Bootstrapper{},
 	}
-	anchorRepository = &anchorRepo{}
+	mockAnchorRepository = &mockAnchorRepo{}
 	context := map[string]interface{}{
-		bootstrap.BootstrappedAnchorRepository: anchorRepository,
+		bootstrap.BootstrappedAnchorRepository: mockAnchorRepository,
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, context)
-	invService = DefaultService(getRepository(), &testingutils.MockCoreDocumentProcessor{}, anchorRepository)
 	flag.Parse()
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)
 }
 
-var anchorRepository *anchorRepo
+var mockAnchorRepository *mockAnchorRepo
 
-type anchorRepo struct {
+type mockAnchorRepo struct {
 	mock.Mock
 	anchors.AnchorRepository
 }
 
-func (r *anchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.DocRoot, error) {
+func (r *mockAnchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.DocRoot, error) {
 	args := r.Called(anchorID)
 	docRoot, _ := args.Get(0).(anchors.DocRoot)
 	return docRoot, args.Error(1)

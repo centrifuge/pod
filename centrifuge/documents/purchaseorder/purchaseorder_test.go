@@ -4,35 +4,29 @@ package purchaseorder
 
 import (
 	"flag"
-	"github.com/centrifuge/go-centrifuge/centrifuge/anchors"
-	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/centrifuge/context/testlogging"
-	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
-	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
-	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
-	"github.com/stretchr/testify/mock"
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/mock"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
 
+	"github.com/centrifuge/go-centrifuge/centrifuge/anchors"
+	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/centrifuge/context/testlogging"
+	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
+	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 )
 
-
-var anchorRepository *anchorRepo
-
-type anchorRepo struct {
-	mock.Mock
-	anchors.AnchorRepository
-}
-
+var anchorRepository *mockAnchorRepo
 
 func TestMain(m *testing.M) {
 	ibootstappers := []bootstrap.TestBootstrapper{
@@ -40,21 +34,23 @@ func TestMain(m *testing.M) {
 		&config.Bootstrapper{},
 		&storage.Bootstrapper{},
 		&coredocumentrepository.Bootstrapper{},
-		&anchors.Bootstrapper{},
 		&Bootstrapper{},
 	}
-	anchorRepository = &anchorRepo{}
+	anchorRepository := &mockAnchorRepo{}
 	context := map[string]interface{}{
 		bootstrap.BootstrappedAnchorRepository: anchorRepository,
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, context)
-	poSrv = DefaultService(getRepository(), &testingutils.MockCoreDocumentProcessor{}, anchorRepository)
 	flag.Parse()
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)
 }
 
+type mockAnchorRepo struct {
+	mock.Mock
+	anchors.AnchorRepository
+}
 
 func TestPurchaseOrderCoreDocumentConverter(t *testing.T) {
 	identifier := []byte("1")
