@@ -104,6 +104,12 @@ func TestService_Create(t *testing.T) {
 	m, err = poSrv.Create(ctx, po)
 	proc.AssertExpectations(t)
 	assert.Nil(t, err)
+	assert.NotNil(t, m)
+
+	newCD, err := m.PackCoreDocument()
+	assert.Nil(t, err)
+	assert.True(t, getRepository().Exists(newCD.DocumentIdentifier))
+	assert.True(t, getRepository().Exists(newCD.CurrentVersion))
 }
 
 func TestService_CreateProofs(t *testing.T) {

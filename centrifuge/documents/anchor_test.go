@@ -113,4 +113,5 @@ func TestAnchorDocument(t *testing.T) {
 	m.AssertExpectations(t)
 	proc.AssertExpectations(t)
 	assert.Nil(t, err)
+	assert.NotNil(t, model)
 }
