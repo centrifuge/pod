@@ -8,6 +8,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
+	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
@@ -64,10 +65,40 @@ func TestService_DeriveFromCoreDocument(t *testing.T) {
 }
 
 func TestService_Create(t *testing.T) {
-	poSrv := service{}
-	m, err := poSrv.Create(context.Background(), nil)
+	poSrv := service{repo: getRepository()}
+	ctx := context.Background()
+
+	// calculate data root fails
+	m, err := poSrv.Create(context.Background(), &testingdocuments.MockModel{})
 	assert.Nil(t, m)
 	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "unknown document type")
+
+	// anchor fails
+	po, err := poSrv.DeriveFromCreatePayload(testingdocuments.CreatePOPayload())
+	assert.Nil(t, err)
+	proc := &testingutils.MockCoreDocumentProcessor{}
+	proc.On("PrepareForSignatureRequests", po).Return(fmt.Errorf("anchoring failed")).Once()
+	poSrv.coreDocProcessor = proc
+	m, err = poSrv.Create(ctx, po)
+	proc.AssertExpectations(t)
+	assert.Nil(t, m)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "anchoring failed")
+
+	// success
+	po, err = poSrv.DeriveFromCreatePayload(testingdocuments.CreatePOPayload())
+	assert.Nil(t, err)
+	proc = &testingutils.MockCoreDocumentProcessor{}
+	proc.On("PrepareForSignatureRequests", po).Return(nil).Once()
+	proc.On("RequestSignatures", ctx, po).Return(nil).Once()
+	proc.On("PrepareForAnchoring", po).Return(nil).Once()
+	proc.On("AnchorDocument", po).Return(nil).Once()
+	proc.On("SendDocument", ctx, po).Return(nil).Once()
+	poSrv.coreDocProcessor = proc
+	m, err = poSrv.Create(ctx, po)
+	proc.AssertExpectations(t)
+	assert.Nil(t, err)
 }
 
 func TestService_CreateProofs(t *testing.T) {
