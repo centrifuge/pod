@@ -161,7 +161,7 @@ func (s service) DeriveFromUpdatePayload(payload *clientpopb.PurchaseOrderUpdate
 		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("failed to fetch old version: %v", err))
 	}
 
-	// load invoice data
+	// load purchase order data
 	po := new(PurchaseOrderModel)
 	err = po.initPurchaseOrderFromData(payload.Data)
 	if err != nil {
