@@ -4,17 +4,12 @@ package coredocument
 
 import (
 	"crypto/sha256"
-	"fmt"
-	"math/big"
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
-	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
 
 	"github.com/centrifuge/precise-proofs/proofs"
@@ -268,85 +263,6 @@ func TestValidate(t *testing.T) {
 
 		assert.Contains(t, err.Error(), c.key)
 	}
-}
-
-func TestValidateWithSignature_fail_basic_check(t *testing.T) {
-	doc := &coredocumentpb.CoreDocument{
-		DocumentRoot:       id1,
-		DocumentIdentifier: id2,
-		CurrentVersion:     id3,
-		NextVersion:        id4,
-		DataRoot:           id5,
-	}
-
-	err := ValidateWithSignature(doc)
-	assert.NotNil(t, err, "must be not nil")
-	assert.Contains(t, err.Error(), "cd_salts : Required field")
-}
-
-func TestValidateWithSignature_fail_missing_signing_root(t *testing.T) {
-	doc := testingutils.GenerateCoreDocument()
-	err := ValidateWithSignature(doc)
-	assert.Error(t, err, "must be a non nil error")
-	assert.Contains(t, err.Error(), "signing root missing")
-}
-
-func TestValidateWithSignature_fail_mismatch_signing_root(t *testing.T) {
-	doc := testingutils.GenerateCoreDocument()
-	doc.SigningRoot = utils.RandomSlice(32)
-	err := ValidateWithSignature(doc)
-	assert.Error(t, err, "signing root must mismatch")
-	assert.Contains(t, err.Error(), "signing root mismatch")
-}
-
-func TestValidateWithSignature_failed_signature_verification(t *testing.T) {
-	sig := &coredocumentpb.Signature{
-		EntityId:  centID,
-		PublicKey: key1Pub[:],
-		Signature: utils.RandomSlice(32)}
-	srv := &testingcommons.MockIDService{}
-	centID, _ := identity.ToCentID(sig.EntityId)
-	srv.On("LookupIdentityForID", centID).Return(nil, fmt.Errorf("failed GetIdentity")).Once()
-	identity.IDService = srv
-	doc := testingutils.GenerateCoreDocument()
-	tree, _ := GetDocumentSigningTree(doc)
-	doc.SigningRoot = tree.RootHash()
-	doc.Signatures = append(doc.Signatures, sig)
-	err := ValidateWithSignature(doc)
-	srv.AssertExpectations(t)
-	assert.NotNil(t, err, "must be not nil")
-	assert.Contains(t, err.Error(), "failed GetIdentity")
-}
-
-func TestValidateWithSignature_successful_verification(t *testing.T) {
-	sig := &coredocumentpb.Signature{
-		EntityId:  centID,
-		PublicKey: key1Pub[:],
-	}
-	centID, _ := identity.ToCentID(sig.EntityId)
-	idkey := &identity.EthereumIdentityKey{
-		Key:       key1Pub,
-		Purposes:  []*big.Int{big.NewInt(identity.KeyPurposeSigning)},
-		RevokedAt: big.NewInt(0),
-	}
-	id := &testingcommons.MockID{}
-	srv := &testingcommons.MockIDService{}
-	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
-	id.On("FetchKey", key1Pub[:]).Return(idkey, nil).Once()
-	identity.IDService = srv
-	doc := testingutils.GenerateCoreDocument()
-	tree, _ := GetDocumentSigningTree(doc)
-	doc.SigningRoot = tree.RootHash()
-	sig = signatures.Sign(&config.IdentityConfig{
-		ID:         sig.EntityId,
-		PublicKey:  key1Pub[:],
-		PrivateKey: key1,
-	}, doc.SigningRoot)
-	doc.Signatures = append(doc.Signatures, sig)
-	err := ValidateWithSignature(doc)
-	srv.AssertExpectations(t)
-	id.AssertExpectations(t)
-	assert.Nil(t, err, "must be nil")
 }
 
 func TestGetTypeUrl(t *testing.T) {

@@ -54,10 +54,6 @@ func GetSigningProofHashes(document *coredocumentpb.CoreDocument) (hashes [][]by
 
 // CalculateSigningRoot calculates the signing root of the core document
 func CalculateSigningRoot(doc *coredocumentpb.CoreDocument) error {
-	if err := Validate(doc); err != nil {
-		return err
-	}
-
 	tree, err := GetDocumentSigningTree(doc)
 	if err != nil {
 		return err
