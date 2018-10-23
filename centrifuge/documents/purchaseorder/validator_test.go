@@ -1,6 +1,6 @@
 // +build unit
 
-package invoice
+package purchaseorder
 
 import (
 	"fmt"
@@ -24,21 +24,21 @@ func TestFieldValidator_Validate(t *testing.T) {
 	assert.Contains(t, errs[0].Error(), "nil document")
 
 	// unknown type
-	err = fv.Validate(nil, &mockModel{})
+	err = fv.Validate(nil, &testingdocuments.MockModel{})
 	assert.Error(t, err)
 	errs = documents.Errors(err)
 	assert.Len(t, errs, 1, "errors length must be one")
 	assert.Contains(t, errs[0].Error(), "unknown document type")
 
 	// fail
-	err = fv.Validate(nil, new(InvoiceModel))
+	err = fv.Validate(nil, new(PurchaseOrderModel))
 	assert.Error(t, err)
 	errs = documents.Errors(err)
 	assert.Len(t, errs, 1, "errors length must be 2")
 	assert.Contains(t, errs[0].Error(), "currency is invalid")
 
 	// success
-	err = fv.Validate(nil, &InvoiceModel{
+	err = fv.Validate(nil, &PurchaseOrderModel{
 		Currency: "EUR",
 	})
 	assert.Nil(t, err)
@@ -46,14 +46,16 @@ func TestFieldValidator_Validate(t *testing.T) {
 
 func TestDataRootValidation_Validate(t *testing.T) {
 	drv := dataRootValidator()
+	contextHeader, err := documents.NewContextHeader()
+	assert.Nil(t, err)
 
 	// nil error
-	err := drv.Validate(nil, nil)
+	err = drv.Validate(nil, nil)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "nil document")
 
 	// pack coredoc failed
-	model := &mockModel{}
+	model := &testingdocuments.MockModel{}
 	model.On("PackCoreDocument").Return(nil, fmt.Errorf("error")).Once()
 	err = drv.Validate(nil, model)
 	model.AssertExpectations(t)
@@ -61,7 +63,7 @@ func TestDataRootValidation_Validate(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to pack coredocument")
 
 	// missing data root
-	model = &mockModel{}
+	model = &testingdocuments.MockModel{}
 	model.On("PackCoreDocument").Return(coredocument.New(), nil).Once()
 	err = drv.Validate(nil, model)
 	model.AssertExpectations(t)
@@ -71,7 +73,7 @@ func TestDataRootValidation_Validate(t *testing.T) {
 	// unknown doc type
 	cd := coredocument.New()
 	cd.DataRoot = utils.RandomSlice(32)
-	model = &mockModel{}
+	model = &testingdocuments.MockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
 	err = drv.Validate(nil, model)
 	model.AssertExpectations(t)
@@ -79,23 +81,21 @@ func TestDataRootValidation_Validate(t *testing.T) {
 	assert.Contains(t, err.Error(), "unknown document type")
 
 	// mismatch
-	contextHeader, err := documents.NewContextHeader()
+	po := new(PurchaseOrderModel)
+	err = po.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), contextHeader)
 	assert.Nil(t, err)
-	inv := new(InvoiceModel)
-	err = inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), contextHeader)
-	assert.Nil(t, err)
-	inv.CoreDocument = cd
-	err = drv.Validate(nil, inv)
+	po.CoreDocument = cd
+	err = drv.Validate(nil, po)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "mismatched data root")
 
 	// success
-	inv = new(InvoiceModel)
-	err = inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), contextHeader)
+	po = new(PurchaseOrderModel)
+	err = po.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), contextHeader)
 	assert.Nil(t, err)
-	err = inv.calculateDataRoot()
+	err = po.calculateDataRoot()
 	assert.Nil(t, err)
-	err = drv.Validate(nil, inv)
+	err = drv.Validate(nil, po)
 	assert.Nil(t, err)
 }
 

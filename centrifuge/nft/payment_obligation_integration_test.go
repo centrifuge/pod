@@ -14,8 +14,6 @@ import (
 	cc "github.com/centrifuge/go-centrifuge/centrifuge/context/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents/invoice"
-	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	"github.com/centrifuge/go-centrifuge/centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
@@ -49,11 +47,8 @@ func TestPaymentObligationService_mint(t *testing.T) {
 	// create invoice (anchor)
 	service, err := documents.GetRegistryInstance().LocateService(documenttypes.InvoiceDataTypeUrl)
 	assert.Nil(t, err, "should not error out when getting invoice service")
-	idConfig, err := ed25519keys.GetIDConfig()
+	contextHeader, err := documents.NewContextHeader()
 	assert.Nil(t, err)
-	self, err := identity.ToCentID(idConfig.ID)
-	assert.Nil(t, err)
-	contextHeader := documents.NewContextHeader(self)
 	invoiceService := service.(invoice.Service)
 	dueDate := time.Now().Add(4 * 24 * time.Hour)
 	model, err := invoiceService.DeriveFromCreatePayload(

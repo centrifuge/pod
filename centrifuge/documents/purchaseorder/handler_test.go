@@ -8,18 +8,18 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
+	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	legacy "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/legacy/purchaseorder"
 	clientpopb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
+	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
 	"github.com/centrifuge/precise-proofs/proofs"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-errors/errors"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
@@ -299,59 +299,112 @@ func TestPurchaseOrderDocumentService_HandleCreatePurchaseOrderProof_NotExisting
 	assert.Error(t, err)
 }
 
-// testing handler for new API
-
 type mockService struct {
 	Service
 	mock.Mock
 }
 
-func (m *mockService) DeriveFromCreatePayload(payload *clientpopb.PurchaseOrderCreatePayload) (documents.Model, error) {
-	args := m.Called(payload)
+func (m mockService) Create(ctx context.Context, doc documents.Model) (documents.Model, error) {
+	args := m.Called(ctx, doc)
 	model, _ := args.Get(0).(documents.Model)
 	return model, args.Error(1)
 }
 
-func (m *mockService) Create(ctx context.Context, inv documents.Model) (documents.Model, error) {
-	args := m.Called(ctx, inv)
+func (m mockService) DeriveFromCreatePayload(req *clientpopb.PurchaseOrderCreatePayload, ctxh *documents.ContextHeader) (documents.Model, error) {
+	args := m.Called(req, ctxh)
 	model, _ := args.Get(0).(documents.Model)
 	return model, args.Error(1)
 }
 
-func (m *mockService) GetCurrentVersion(identifier []byte) (documents.Model, error) {
+func (m mockService) GetCurrentVersion(identifier []byte) (documents.Model, error) {
 	args := m.Called(identifier)
 	data, _ := args.Get(0).(documents.Model)
 	return data, args.Error(1)
 }
 
-func (m *mockService) GetVersion(identifier []byte, version []byte) (documents.Model, error) {
+func (m mockService) GetVersion(identifier []byte, version []byte) (documents.Model, error) {
 	args := m.Called(identifier, version)
 	data, _ := args.Get(0).(documents.Model)
 	return data, args.Error(1)
 }
 
-func (m *mockService) DerivePurchaseOrderData(po documents.Model) (*clientpopb.PurchaseOrderData, error) {
+func (m mockService) DerivePurchaseOrderData(po documents.Model) (*clientpopb.PurchaseOrderData, error) {
 	args := m.Called(po)
 	data, _ := args.Get(0).(*clientpopb.PurchaseOrderData)
 	return data, args.Error(1)
 }
 
-func (m *mockService) DerivePurchaseOrderResponse(po documents.Model) (*clientpopb.PurchaseOrderResponse, error) {
+func (m mockService) DerivePurchaseOrderResponse(po documents.Model) (*clientpopb.PurchaseOrderResponse, error) {
 	args := m.Called(po)
 	data, _ := args.Get(0).(*clientpopb.PurchaseOrderResponse)
 	return data, args.Error(1)
 }
 
-func (m *mockService) Update(ctx context.Context, doc documents.Model) (documents.Model, error) {
+func (m mockService) Update(ctx context.Context, doc documents.Model) (documents.Model, error) {
 	args := m.Called(ctx, doc)
 	doc1, _ := args.Get(0).(documents.Model)
 	return doc1, args.Error(1)
 }
 
-func (m *mockService) DeriveFromUpdatePayload(payload *clientpopb.PurchaseOrderUpdatePayload) (documents.Model, error) {
-	args := m.Called(payload)
+func (m mockService) DeriveFromUpdatePayload(payload *clientpopb.PurchaseOrderUpdatePayload, ctxH *documents.ContextHeader) (documents.Model, error) {
+	args := m.Called(payload, ctxH)
 	doc, _ := args.Get(0).(documents.Model)
 	return doc, args.Error(1)
+}
+
+func TestGRPCHandler_Create(t *testing.T) {
+	h := grpcHandler{}
+	req := testingdocuments.CreatePOPayload()
+	ctx := context.Background()
+	model := &testingdocuments.MockModel{}
+	ctxh, err := documents.NewContextHeader()
+	assert.Nil(t, err)
+
+	// derive fails
+	srv := mockService{}
+	srv.On("DeriveFromCreatePayload", req, ctxh).Return(nil, fmt.Errorf("derive failed")).Once()
+	h.service = srv
+	resp, err := h.Create(ctx, req)
+	srv.AssertExpectations(t)
+	assert.Nil(t, resp)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "derive failed")
+
+	// create fails
+	srv = mockService{}
+	srv.On("DeriveFromCreatePayload", req, ctxh).Return(model, nil).Once()
+	srv.On("Create", ctx, model).Return(nil, fmt.Errorf("create failed")).Once()
+	h.service = srv
+	resp, err = h.Create(ctx, req)
+	srv.AssertExpectations(t)
+	assert.Nil(t, resp)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "create failed")
+
+	// derive response fails
+	srv = mockService{}
+	srv.On("DeriveFromCreatePayload", req, ctxh).Return(model, nil).Once()
+	srv.On("Create", ctx, model).Return(model, nil).Once()
+	srv.On("DerivePurchaseOrderResponse", model).Return(nil, fmt.Errorf("derive response fails")).Once()
+	h.service = srv
+	resp, err = h.Create(ctx, req)
+	srv.AssertExpectations(t)
+	assert.Nil(t, resp)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "derive response fails")
+
+	// success
+	eresp := &clientpopb.PurchaseOrderResponse{}
+	srv = mockService{}
+	srv.On("DeriveFromCreatePayload", req, ctxh).Return(model, nil).Once()
+	srv.On("Create", ctx, model).Return(model, nil).Once()
+	srv.On("DerivePurchaseOrderResponse", model).Return(eresp, nil).Once()
+	h.service = srv
+	resp, err = h.Create(ctx, req)
+	srv.AssertExpectations(t)
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+	assert.Equal(t, eresp, resp)
 }
 
 type mockModel struct {

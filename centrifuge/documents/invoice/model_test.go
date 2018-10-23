@@ -12,7 +12,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
@@ -146,11 +145,8 @@ func TestInvoiceModel_getClientData(t *testing.T) {
 }
 
 func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
-	idConfig, err := ed25519keys.GetIDConfig()
+	contextHeader, err := documents.NewContextHeader()
 	assert.Nil(t, err)
-	self, err := identity.ToCentID(idConfig.ID)
-	assert.Nil(t, err)
-	contextHeader := documents.NewContextHeader(self)
 	// fail recipient
 	data := &clientinvoicepb.InvoiceData{
 		Sender:    "some number",
@@ -204,17 +200,15 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 	assert.Equal(t, inv.Payee[:], []byte{1, 2, 3, 3, 4, 5})
 	assert.Equal(t, inv.Recipient[:], []byte{1, 2, 3, 4, 5, 6})
 	assert.Equal(t, inv.ExtraData[:], []byte{1, 2, 3, 2, 3, 1})
-	assert.Equal(t, inv.CoreDocument.Collaborators, [][]byte{idConfig.ID, {1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}})
+	id := contextHeader.Self()
+	assert.Equal(t, inv.CoreDocument.Collaborators, [][]byte{id[:], {1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}})
 }
 
 func TestInvoiceModel_calculateDataRoot(t *testing.T) {
-	idConfig, err := ed25519keys.GetIDConfig()
+	ctxHeader, err := documents.NewContextHeader()
 	assert.Nil(t, err)
-	self, err := identity.ToCentID(idConfig.ID)
-	assert.Nil(t, err)
-	contextHeader := documents.NewContextHeader(self)
 	m := new(InvoiceModel)
-	err = m.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), contextHeader)
+	err = m.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), ctxHeader)
 	assert.Nil(t, err, "Init must pass")
 	assert.Nil(t, m.InvoiceSalts, "salts must be nil")
 

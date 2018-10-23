@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
-
 	logging "github.com/ipfs/go-log"
 	gologging "github.com/whyrusleeping/go-logging"
 )
