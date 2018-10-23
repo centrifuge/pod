@@ -34,9 +34,9 @@ func TestMain(m *testing.M) {
 		&coredocumentrepository.Bootstrapper{},
 		&Bootstrapper{},
 	}
-	anchorRepository := &mockAnchorRepo{}
+	mockAnchorRepository = &mockAnchorRepo{}
 	context := map[string]interface{}{
-		bootstrap.BootstrappedAnchorRepository: anchorRepository,
+		bootstrap.BootstrappedAnchorRepository: mockAnchorRepository,
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, context)
 	flag.Parse()
@@ -45,9 +45,17 @@ func TestMain(m *testing.M) {
 	os.Exit(result)
 }
 
+var mockAnchorRepository *mockAnchorRepo
+
 type mockAnchorRepo struct {
 	mock.Mock
 	anchors.AnchorRepository
+}
+
+func (r *mockAnchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.DocRoot, error) {
+	args := r.Called(anchorID)
+	docRoot, _ := args.Get(0).(anchors.DocRoot)
+	return docRoot, args.Error(1)
 }
 
 func TestPurchaseOrderCoreDocumentConverter(t *testing.T) {
