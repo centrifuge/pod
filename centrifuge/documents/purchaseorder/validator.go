@@ -8,7 +8,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
 )
 
-// fieldValidateFunc validates the fields of the invoice model
+// fieldValidateFunc validates the fields of the purchase order model
 func fieldValidator() documents.Validator {
 	return documents.ValidatorFunc(func(_, new documents.Model) error {
 		if new == nil {
