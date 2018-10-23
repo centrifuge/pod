@@ -74,7 +74,7 @@ func (s service) calculateDataRoot(old, new documents.Model, validator documents
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
 	}
 
-	// validate the invoice
+	// validate the purchase order
 	err = validator.Validate(old, po)
 	if err != nil {
 		return nil, centerrors.NewWithErrors(code.DocumentInvalid, "validations failed", documents.ConvertToMap(err))
