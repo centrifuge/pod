@@ -23,7 +23,10 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/signatures"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes"
+	logging "github.com/ipfs/go-log"
 )
+
+var srvLog = logging.Logger("po-service")
 
 // Service defines specific functions for purchase order
 type Service interface {
@@ -64,7 +67,7 @@ func DefaultService(repo documents.Repository, processor coredocumentprocessor.P
 
 // DeriveFromCoreDocument takes a core document and returns a purchase order
 func (s service) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (documents.Model, error) {
-	var model documents.Model = new(PurchaseOrderModel)
+	var model documents.Model = new(PurchaseOrder)
 	err := model.UnpackCoreDocument(cd)
 	if err != nil {
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
@@ -75,7 +78,7 @@ func (s service) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (docume
 
 // calculateDataRoot validates the document, calculates the data root, and persists to DB
 func (s service) calculateDataRoot(old, new documents.Model, validator documents.Validator) (documents.Model, error) {
-	po, ok := new.(*PurchaseOrderModel)
+	po, ok := new.(*PurchaseOrder)
 	if !ok {
 		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("unknown document type: %T", new))
 	}
@@ -147,7 +150,7 @@ func (s service) DeriveFromCreatePayload(payload *clientpopb.PurchaseOrderCreate
 		return nil, centerrors.New(code.DocumentInvalid, "input is nil")
 	}
 
-	po := new(PurchaseOrderModel)
+	po := new(PurchaseOrder)
 	err := po.InitPurchaseOrderInput(payload, ctxH)
 	if err != nil {
 		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("purchase order init failed: %v", err))
@@ -174,7 +177,7 @@ func (s service) DeriveFromUpdatePayload(payload *clientpopb.PurchaseOrderUpdate
 	}
 
 	// load purchase order data
-	po := new(PurchaseOrderModel)
+	po := new(PurchaseOrder)
 	err = po.initPurchaseOrderFromData(payload.Data)
 	if err != nil {
 		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("failed to load purchase order from data: %v", err))
@@ -197,7 +200,7 @@ func (s service) DeriveFromUpdatePayload(payload *clientpopb.PurchaseOrderUpdate
 
 // DerivePurchaseOrderData returns po data from the model
 func (s service) DerivePurchaseOrderData(doc documents.Model) (*clientpopb.PurchaseOrderData, error) {
-	po, ok := doc.(*PurchaseOrderModel)
+	po, ok := doc.(*PurchaseOrder)
 	if !ok {
 		return nil, centerrors.New(code.DocumentInvalid, "document of invalid type")
 	}
@@ -238,13 +241,13 @@ func (s service) DerivePurchaseOrderResponse(doc documents.Model) (*clientpopb.P
 	}, nil
 }
 
-func (s service) getPurchaseOrderVersion(documentID, version []byte) (model *PurchaseOrderModel, err error) {
-	var doc documents.Model = new(PurchaseOrderModel)
+func (s service) getPurchaseOrderVersion(documentID, version []byte) (model *PurchaseOrder, err error) {
+	var doc documents.Model = new(PurchaseOrder)
 	err = s.repo.LoadByID(version, doc)
 	if err != nil {
 		return nil, err
 	}
-	model, ok := doc.(*PurchaseOrderModel)
+	model, ok := doc.(*PurchaseOrder)
 	if !ok {
 		return nil, err
 	}
@@ -286,7 +289,7 @@ func (s service) GetVersion(documentID []byte, version []byte) (documents.Model,
 
 // purchaseOrderProof creates proofs for purchaseOrder model fields
 func (s service) purchaseOrderProof(model documents.Model, fields []string) (*documents.DocumentProof, error) {
-	po, ok := model.(*PurchaseOrderModel)
+	po, ok := model.(*PurchaseOrder)
 	if !ok {
 		return nil, centerrors.New(code.DocumentInvalid, "document of invalid type")
 	}
@@ -335,7 +338,7 @@ func (s service) RequestDocumentSignature(model documents.Model) (*coredocumentp
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
 	}
 
-	log.Infof("coredoc received %x with signing root %x", cd.DocumentIdentifier, cd.SigningRoot)
+	srvLog.Infof("coredoc received %x with signing root %x", cd.DocumentIdentifier, cd.SigningRoot)
 
 	idConfig, err := centED25519.GetIDConfig()
 	if err != nil {
@@ -358,7 +361,7 @@ func (s service) RequestDocumentSignature(model documents.Model) (*coredocumentp
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to store document: %v", err))
 	}
-	log.Infof("signed coredoc %x", cd.DocumentIdentifier)
+	srvLog.Infof("signed coredoc %x", cd.DocumentIdentifier)
 	return sig, nil
 }
 

@@ -26,7 +26,7 @@ import (
 	logging "github.com/ipfs/go-log"
 )
 
-var srvLog = logging.Logger("invoice-api")
+var srvLog = logging.Logger("invoice-service")
 
 // Service defines specific functions for invoice
 type Service interface {
