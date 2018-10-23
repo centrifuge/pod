@@ -35,17 +35,156 @@ func getServiceWithMockedLayers() Service {
 }
 
 func TestService_Update(t *testing.T) {
-	poSrv := service{}
-	m, err := poSrv.Update(context.Background(), nil)
-	assert.Nil(t, m)
+	poSrv := service{repo: getRepository()}
+	ctx := context.Background()
+	ctxh, err := documents.NewContextHeader()
+	assert.Nil(t, err)
+
+	// pack failed
+	model := &testingdocuments.MockModel{}
+	model.On("PackCoreDocument").Return(nil, fmt.Errorf("pack error")).Once()
+	_, err = poSrv.Update(ctx, model)
+	model.AssertExpectations(t)
 	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "pack error")
+
+	// missing last version
+	model = &testingdocuments.MockModel{}
+	cd := coredocument.New()
+	model.On("PackCoreDocument").Return(cd, nil).Once()
+	_, err = poSrv.Update(ctx, model)
+	model.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "document not found")
+
+	payload := testingdocuments.CreatePOPayload()
+	payload.Collaborators = []string{"0x010203040506"}
+	po, err := poSrv.DeriveFromCreatePayload(payload, ctxh)
+	assert.Nil(t, err)
+	cd, err = po.PackCoreDocument()
+	assert.Nil(t, err)
+	cd.DocumentRoot = utils.RandomSlice(32)
+	po.(*PurchaseOrderModel).CoreDocument = cd
+	getRepository().Create(cd.CurrentVersion, po)
+
+	// calculate data root fails
+	model = &testingdocuments.MockModel{}
+	model.On("PackCoreDocument").Return(cd, nil).Once()
+	_, err = poSrv.Update(ctx, model)
+	model.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "unknown document type")
+
+	// success
+	data, err := poSrv.DerivePurchaseOrderData(po)
+	assert.Nil(t, err)
+	data.OrderAmount = 100
+	data.ExtraData = hexutil.Encode(utils.RandomSlice(32))
+	collab := hexutil.Encode(utils.RandomSlice(6))
+	newInv, err := poSrv.DeriveFromUpdatePayload(&clientpurchaseorderpb.PurchaseOrderUpdatePayload{
+		Identifier:    hexutil.Encode(cd.DocumentIdentifier),
+		Collaborators: []string{collab},
+		Data:          data,
+	}, ctxh)
+	assert.Nil(t, err)
+	newData, err := poSrv.DerivePurchaseOrderData(newInv)
+	assert.Nil(t, err)
+	assert.Equal(t, data, newData)
+	proc := &testingutils.MockCoreDocumentProcessor{}
+	proc.On("PrepareForSignatureRequests", newInv).Return(nil).Once()
+	proc.On("RequestSignatures", ctx, newInv).Return(nil).Once()
+	proc.On("PrepareForAnchoring", newInv).Return(nil).Once()
+	proc.On("AnchorDocument", newInv).Return(nil).Once()
+	proc.On("SendDocument", ctx, newInv).Return(nil).Once()
+	poSrv.coreDocProcessor = proc
+	po, err = poSrv.Update(ctx, newInv)
+	proc.AssertExpectations(t)
+	assert.Nil(t, err)
+	assert.NotNil(t, po)
+
+	newCD, err := po.PackCoreDocument()
+	assert.Nil(t, err)
+	assert.True(t, getRepository().Exists(newCD.DocumentIdentifier))
+	assert.True(t, getRepository().Exists(newCD.CurrentVersion))
+	assert.True(t, getRepository().Exists(newCD.PreviousVersion))
+
+	newData, err = poSrv.DerivePurchaseOrderData(po)
+	assert.Nil(t, err)
+	assert.Equal(t, data, newData)
 }
 
 func TestService_DeriveFromUpdatePayload(t *testing.T) {
-	poSrv := service{}
-	m, err := poSrv.DeriveFromUpdatePayload(nil, nil)
-	assert.Nil(t, m)
+	poSrv := service{repo: getRepository()}
+
+	// nil payload
+	doc, err := poSrv.DeriveFromUpdatePayload(nil, nil)
 	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid payload")
+	assert.Nil(t, doc)
+
+	// messed up identifier
+	contextHeader, err := documents.NewContextHeader()
+	assert.Nil(t, err)
+	payload := &clientpurchaseorderpb.PurchaseOrderUpdatePayload{Identifier: "some identifier"}
+	doc, err = poSrv.DeriveFromUpdatePayload(payload, contextHeader)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to decode identifier")
+	assert.Nil(t, doc)
+
+	// missing last version
+	id := utils.RandomSlice(32)
+	payload.Identifier = hexutil.Encode(id)
+	doc, err = poSrv.DeriveFromUpdatePayload(payload, contextHeader)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to fetch old version")
+	assert.Nil(t, doc)
+
+	// failed to load from data
+	old := new(PurchaseOrderModel)
+	err = old.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), contextHeader)
+	assert.Nil(t, err)
+	old.CoreDocument.DocumentIdentifier = id
+	old.CoreDocument.CurrentVersion = id
+	old.CoreDocument.DocumentRoot = utils.RandomSlice(32)
+	err = getRepository().Create(id, old)
+	assert.Nil(t, err)
+	payload.Data = &clientpurchaseorderpb.PurchaseOrderData{
+		Recipient: "0x010203040506",
+		ExtraData: "some data",
+		Currency:  "EUR",
+	}
+
+	doc, err = poSrv.DeriveFromUpdatePayload(payload, contextHeader)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to load purchase order from data")
+	assert.Nil(t, doc)
+
+	// failed core document new version
+	payload.Data.ExtraData = hexutil.Encode(utils.RandomSlice(32))
+	payload.Collaborators = []string{"some wrong ID"}
+	doc, err = poSrv.DeriveFromUpdatePayload(payload, contextHeader)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to prepare new version")
+	assert.Nil(t, doc)
+
+	// success
+	wantCollab := utils.RandomSlice(6)
+	payload.Collaborators = []string{hexutil.Encode(wantCollab)}
+	doc, err = poSrv.DeriveFromUpdatePayload(payload, contextHeader)
+	assert.Nil(t, err)
+	assert.NotNil(t, doc)
+	cd, err := doc.PackCoreDocument()
+	assert.Nil(t, err)
+	assert.Equal(t, wantCollab, cd.Collaborators[1])
+	assert.Len(t, cd.Collaborators, 2)
+	oldCD, err := old.PackCoreDocument()
+	assert.Nil(t, err)
+	assert.Equal(t, oldCD.DocumentIdentifier, cd.DocumentIdentifier)
+	assert.Equal(t, payload.Identifier, hexutil.Encode(cd.DocumentIdentifier))
+	assert.Equal(t, oldCD.CurrentVersion, cd.PreviousVersion)
+	assert.Equal(t, oldCD.NextVersion, cd.CurrentVersion)
+	assert.NotNil(t, cd.NextVersion)
+	assert.Equal(t, payload.Data, doc.(*PurchaseOrderModel).getClientData())
 }
 
 func TestService_DeriveFromCreatePayload(t *testing.T) {
@@ -529,5 +668,4 @@ func TestService_calculateDataRoot(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, po)
 	assert.NotNil(t, po.(*PurchaseOrderModel).CoreDocument.DataRoot)
-
 }

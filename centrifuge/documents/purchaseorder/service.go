@@ -106,7 +106,27 @@ func (s service) Create(ctx context.Context, po documents.Model) (documents.Mode
 
 // Update validates, persists, and anchors a new version of purchase order
 func (s service) Update(ctx context.Context, po documents.Model) (documents.Model, error) {
-	return nil, fmt.Errorf("implement me")
+	cd, err := po.PackCoreDocument()
+	if err != nil {
+		return nil, centerrors.New(code.Unknown, err.Error())
+	}
+
+	old, err := s.GetCurrentVersion(cd.DocumentIdentifier)
+	if err != nil {
+		return nil, centerrors.New(code.DocumentNotFound, err.Error())
+	}
+
+	po, err = s.calculateDataRoot(old, po, UpdateValidator())
+	if err != nil {
+		return nil, err
+	}
+
+	po, err = documents.AnchorDocument(ctx, po, s.coreDocProcessor, s.repo.Update)
+	if err != nil {
+		return nil, centerrors.New(code.Unknown, err.Error())
+	}
+
+	return po, nil
 }
 
 // DeriveFromCreatePayload derives purchase order from create payload
@@ -126,7 +146,41 @@ func (s service) DeriveFromCreatePayload(payload *clientpopb.PurchaseOrderCreate
 
 // DeriveFromUpdatePayload derives purchase order from update payload
 func (s service) DeriveFromUpdatePayload(payload *clientpopb.PurchaseOrderUpdatePayload, ctxH *documents.ContextHeader) (documents.Model, error) {
-	return nil, fmt.Errorf("implement me")
+	if payload == nil {
+		return nil, centerrors.New(code.DocumentInvalid, "invalid payload")
+	}
+
+	// get latest old version of the document
+	id, err := hexutil.Decode(payload.Identifier)
+	if err != nil {
+		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("failed to decode identifier: %v", err))
+	}
+
+	old, err := s.GetCurrentVersion(id)
+	if err != nil {
+		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("failed to fetch old version: %v", err))
+	}
+
+	// load purchase order data
+	po := new(PurchaseOrderModel)
+	err = po.initPurchaseOrderFromData(payload.Data)
+	if err != nil {
+		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("failed to load purchase order from data: %v", err))
+	}
+
+	// update core document
+	oldCD, err := old.PackCoreDocument()
+	if err != nil {
+		return nil, centerrors.New(code.Unknown, err.Error())
+	}
+
+	collaborators := append([]string{ctxH.Self().String()}, payload.Collaborators...)
+	po.CoreDocument, err = coredocument.PrepareNewVersion(*oldCD, collaborators)
+	if err != nil {
+		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("failed to prepare new version: %v", err))
+	}
+
+	return po, nil
 }
 
 // DerivePurchaseOrderData returns po data from the model
