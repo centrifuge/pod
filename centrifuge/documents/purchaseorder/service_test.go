@@ -5,18 +5,34 @@ package purchaseorder
 import (
 	"context"
 	"fmt"
+	"math/big"
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/centrifuge/anchors"
+	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
+	"github.com/centrifuge/go-centrifuge/centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils"
+	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 )
+
+var (
+	centID  = utils.RandomSlice(identity.CentIDLength)
+	key1Pub = [...]byte{230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
+	key1    = []byte{102, 109, 71, 239, 130, 229, 128, 189, 37, 96, 223, 5, 189, 91, 210, 47, 89, 4, 165, 6, 188, 53, 49, 250, 109, 151, 234, 139, 57, 205, 231, 253, 230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
+)
+
+func getServiceWithMockedLayers() Service {
+	return DefaultService(getRepository(), &testingutils.MockCoreDocumentProcessor{}, mockAnchorRepository)
+}
 
 func TestService_Update(t *testing.T) {
 	poSrv := service{}
@@ -116,23 +132,191 @@ func TestService_Create(t *testing.T) {
 	assert.True(t, getRepository().Exists(newCD.CurrentVersion))
 }
 
+func setIdentityService(idService identity.Service) {
+	identity.IDService = idService
+}
+
+func createAnchoredMockDocument(t *testing.T, skipSave bool) (*PurchaseOrderModel, error) {
+	i := &PurchaseOrderModel{
+		PoNumber:     "test_po",
+		OrderAmount:  42,
+		CoreDocument: coredocument.New(),
+	}
+	err := i.calculateDataRoot()
+	if err != nil {
+		return nil, err
+	}
+	// get the coreDoc for the purchase order
+	corDoc, err := i.PackCoreDocument()
+	if err != nil {
+		return nil, err
+	}
+	coredocument.FillSalts(corDoc)
+	err = coredocument.CalculateSigningRoot(corDoc)
+	if err != nil {
+		return nil, err
+	}
+
+	sig := signatures.Sign(&config.IdentityConfig{
+		ID:         centID,
+		PublicKey:  key1Pub[:],
+		PrivateKey: key1,
+	}, corDoc.SigningRoot)
+
+	corDoc.Signatures = append(corDoc.Signatures, sig)
+
+	err = coredocument.CalculateDocumentRoot(corDoc)
+	if err != nil {
+		return nil, err
+	}
+	err = i.UnpackCoreDocument(corDoc)
+	if err != nil {
+		return nil, err
+	}
+
+	if !skipSave {
+		err = getRepository().Create(i.CoreDocument.CurrentVersion, i)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return i, nil
+}
+
+// Functions returns service mocks
+func mockSignatureCheck(i *PurchaseOrderModel) identity.Service {
+	idkey := &identity.EthereumIdentityKey{
+		Key:       key1Pub,
+		Purposes:  []*big.Int{big.NewInt(identity.KeyPurposeSigning)},
+		RevokedAt: big.NewInt(0),
+	}
+	anchorID, _ := anchors.NewAnchorID(i.CoreDocument.DocumentIdentifier)
+	docRoot, _ := anchors.NewDocRoot(i.CoreDocument.DocumentRoot)
+	mockAnchorRepository.On("GetDocumentRootOf", anchorID).Return(docRoot, nil).Once()
+	srv := &testingcommons.MockIDService{}
+	id := &testingcommons.MockID{}
+	centID, _ := identity.ToCentID(centID)
+	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
+	id.On("FetchKey", key1Pub[:]).Return(idkey, nil).Once()
+	return srv
+}
+
 func TestService_CreateProofs(t *testing.T) {
-	poSrv := service{}
-	p, err := poSrv.CreateProofs(nil, nil)
-	assert.Nil(t, p)
+	poSrv := getServiceWithMockedLayers()
+	defer setIdentityService(identity.IDService)
+	i, err := createAnchoredMockDocument(t, false)
+	assert.Nil(t, err)
+	idService := mockSignatureCheck(i)
+	setIdentityService(idService)
+	proof, err := poSrv.CreateProofs(i.CoreDocument.DocumentIdentifier, []string{"po_number"})
+	assert.Nil(t, err)
+	assert.Equal(t, i.CoreDocument.DocumentIdentifier, proof.DocumentId)
+	assert.Equal(t, i.CoreDocument.DocumentIdentifier, proof.VersionId)
+	assert.Equal(t, len(proof.FieldProofs), 1)
+	assert.Equal(t, proof.FieldProofs[0].GetProperty(), "po_number")
+}
+
+func TestService_CreateProofsValidationFails(t *testing.T) {
+	defer setIdentityService(identity.IDService)
+	poSrv := getServiceWithMockedLayers()
+	i, err := createAnchoredMockDocument(t, false)
+	assert.Nil(t, err)
+	i.CoreDocument.SigningRoot = nil
+	err = getRepository().Update(i.CoreDocument.CurrentVersion, i)
+	assert.Nil(t, err)
+	idService := mockSignatureCheck(i)
+	setIdentityService(idService)
+	_, err = poSrv.CreateProofs(i.CoreDocument.DocumentIdentifier, []string{"po_number"})
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "signing root missing")
+}
+
+func TestService_CreateProofsInvalidField(t *testing.T) {
+	defer setIdentityService(identity.IDService)
+	poSrv := getServiceWithMockedLayers()
+	i, err := createAnchoredMockDocument(t, false)
+	assert.Nil(t, err)
+	idService := mockSignatureCheck(i)
+	setIdentityService(idService)
+	_, err = poSrv.CreateProofs(i.CoreDocument.DocumentIdentifier, []string{"invalid_field"})
 	assert.Error(t, err)
+	assert.Equal(t, "createProofs error No such field: invalid_field in obj", err.Error())
+}
+
+func TestService_CreateProofsDocumentDoesntExist(t *testing.T) {
+	poSrv := getServiceWithMockedLayers()
+	_, err := poSrv.CreateProofs(utils.RandomSlice(32), []string{"po_number"})
+	assert.Error(t, err)
+	assert.Equal(t, "document not found: leveldb: not found", err.Error())
+}
+
+func updatedAnchoredMockDocument(t *testing.T, model *PurchaseOrderModel) (*PurchaseOrderModel, error) {
+	model.OrderAmount = 50
+	err := model.calculateDataRoot()
+	if err != nil {
+		return nil, err
+	}
+	// get the coreDoc for the purchase order
+	corDoc, err := model.PackCoreDocument()
+	if err != nil {
+		return nil, err
+	}
+	// hacky update to version
+	corDoc.CurrentVersion = corDoc.NextVersion
+	corDoc.NextVersion = utils.RandomSlice(32)
+	if err != nil {
+		return nil, err
+	}
+	err = coredocument.CalculateSigningRoot(corDoc)
+	if err != nil {
+		return nil, err
+	}
+	err = coredocument.CalculateDocumentRoot(corDoc)
+	if err != nil {
+		return nil, err
+	}
+	err = model.UnpackCoreDocument(corDoc)
+	if err != nil {
+		return nil, err
+	}
+	err = getRepository().Create(model.CoreDocument.CurrentVersion, model)
+	if err != nil {
+		return nil, err
+	}
+	return model, nil
 }
 
 func TestService_CreateProofsForVersion(t *testing.T) {
-	poSrv := service{}
-	p, err := poSrv.CreateProofsForVersion(nil, nil, nil)
-	assert.Nil(t, p)
+	defer setIdentityService(identity.IDService)
+	poSrv := getServiceWithMockedLayers()
+	i, err := createAnchoredMockDocument(t, false)
+	assert.Nil(t, err)
+	idService := mockSignatureCheck(i)
+	setIdentityService(idService)
+	olderVersion := i.CoreDocument.CurrentVersion
+	i, err = updatedAnchoredMockDocument(t, i)
+	assert.Nil(t, err)
+	proof, err := poSrv.CreateProofsForVersion(i.CoreDocument.DocumentIdentifier, olderVersion, []string{"po_number"})
+	assert.Nil(t, err)
+	assert.Equal(t, i.CoreDocument.DocumentIdentifier, proof.DocumentId)
+	assert.Equal(t, olderVersion, proof.VersionId)
+	assert.Equal(t, len(proof.FieldProofs), 1)
+	assert.Equal(t, proof.FieldProofs[0].GetProperty(), "po_number")
+}
+
+func TestService_CreateProofsForVersionDocumentDoesntExist(t *testing.T) {
+	i, err := createAnchoredMockDocument(t, false)
+	poSrv := getServiceWithMockedLayers()
+	assert.Nil(t, err)
+	_, err = poSrv.CreateProofsForVersion(i.CoreDocument.DocumentIdentifier, utils.RandomSlice(32), []string{"po_number"})
 	assert.Error(t, err)
+	assert.Equal(t, "document not found for the given version: leveldb: not found", err.Error())
 }
 
 func TestService_DerivePurchaseOrderData(t *testing.T) {
 	var m documents.Model
-	poSrv := service{}
+	poSrv := getServiceWithMockedLayers()
 	ctxh, err := documents.NewContextHeader()
 	assert.Nil(t, err)
 
