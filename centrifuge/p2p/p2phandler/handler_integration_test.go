@@ -24,12 +24,12 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
 
+	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/centrifuge/version"
+	"github.com/centrifuge/precise-proofs/proofs"
+	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/crypto/ed25519"
-	"github.com/golang/protobuf/ptypes/any"
-	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
-	"github.com/centrifuge/precise-proofs/proofs"
 )
 
 var handler = p2phandler.Handler{Notifier: &notification.WebhookSender{}}
