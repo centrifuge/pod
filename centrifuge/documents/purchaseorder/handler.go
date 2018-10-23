@@ -212,17 +212,20 @@ func (h grpcHandler) GetReceivedPurchaseOrderDocuments(ctx context.Context, empt
 func (h grpcHandler) Create(ctx context.Context, req *clientpurchaseorderpb.PurchaseOrderCreatePayload) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
 	ctxh, err := documents.NewContextHeader()
 	if err != nil {
+		apiLog.Error(err)
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
 
 	doc, err := h.service.DeriveFromCreatePayload(req, ctxh)
 	if err != nil {
+		apiLog.Error(err)
 		return nil, err
 	}
 
 	// validate, persist, and anchor
 	doc, err = h.service.Create(ctx, doc)
 	if err != nil {
+		apiLog.Error(err)
 		return nil, err
 	}
 
@@ -233,16 +236,19 @@ func (h grpcHandler) Create(ctx context.Context, req *clientpurchaseorderpb.Purc
 func (h grpcHandler) Update(ctx context.Context, payload *clientpurchaseorderpb.PurchaseOrderUpdatePayload) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
 	ctxHeader, err := documents.NewContextHeader()
 	if err != nil {
+		apiLog.Error(err)
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
 	}
 
 	doc, err := h.service.DeriveFromUpdatePayload(payload, ctxHeader)
 	if err != nil {
+		apiLog.Error(err)
 		return nil, err
 	}
 
 	doc, err = h.service.Update(ctx, doc)
 	if err != nil {
+		apiLog.Error(err)
 		return nil, err
 	}
 
@@ -253,18 +259,22 @@ func (h grpcHandler) Update(ctx context.Context, payload *clientpurchaseorderpb.
 func (h grpcHandler) GetVersion(ctx context.Context, req *clientpurchaseorderpb.GetVersionRequest) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
 	identifier, err := hexutil.Decode(req.Identifier)
 	if err != nil {
+		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "identifier is invalid")
 	}
 	version, err := hexutil.Decode(req.Version)
 	if err != nil {
+		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "version is invalid")
 	}
 	model, err := h.service.GetVersion(identifier, version)
 	if err != nil {
+		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "document not found")
 	}
 	resp, err := h.service.DerivePurchaseOrderResponse(model)
 	if err != nil {
+		apiLog.Error(err)
 		return nil, err
 	}
 	return resp, nil
@@ -274,14 +284,17 @@ func (h grpcHandler) GetVersion(ctx context.Context, req *clientpurchaseorderpb.
 func (h grpcHandler) Get(ctx context.Context, getRequest *clientpurchaseorderpb.GetRequest) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
 	identifier, err := hexutil.Decode(getRequest.Identifier)
 	if err != nil {
+		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "identifier is an invalid hex string")
 	}
 	model, err := h.service.GetCurrentVersion(identifier)
 	if err != nil {
+		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "document not found")
 	}
 	resp, err := h.service.DerivePurchaseOrderResponse(model)
 	if err != nil {
+		apiLog.Error(err)
 		return nil, err
 	}
 	return resp, nil
