@@ -76,7 +76,7 @@ func CreateValidator() documents.ValidatorGroup {
 	}
 }
 
-// UpdateValidator returns a validator group that should be run before updating the invoice
+// UpdateValidator returns a validator group that should be run before updating the purchase order
 func UpdateValidator() documents.ValidatorGroup {
 	return documents.ValidatorGroup{
 		fieldValidator(),
