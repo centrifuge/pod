@@ -31,14 +31,14 @@ func TestFieldValidator_Validate(t *testing.T) {
 	assert.Contains(t, errs[0].Error(), "unknown document type")
 
 	// fail
-	err = fv.Validate(nil, new(InvoiceModel))
+	err = fv.Validate(nil, new(Invoice))
 	assert.Error(t, err)
 	errs = documents.Errors(err)
 	assert.Len(t, errs, 1, "errors length must be 2")
 	assert.Contains(t, errs[0].Error(), "currency is invalid")
 
 	// success
-	err = fv.Validate(nil, &InvoiceModel{
+	err = fv.Validate(nil, &Invoice{
 		Currency: "EUR",
 	})
 	assert.Nil(t, err)
@@ -81,7 +81,7 @@ func TestDataRootValidation_Validate(t *testing.T) {
 	// mismatch
 	contextHeader, err := documents.NewContextHeader()
 	assert.Nil(t, err)
-	inv := new(InvoiceModel)
+	inv := new(Invoice)
 	err = inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), contextHeader)
 	assert.Nil(t, err)
 	inv.CoreDocument = cd
@@ -90,7 +90,7 @@ func TestDataRootValidation_Validate(t *testing.T) {
 	assert.Contains(t, err.Error(), "mismatched data root")
 
 	// success
-	inv = new(InvoiceModel)
+	inv = new(Invoice)
 	err = inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), contextHeader)
 	assert.Nil(t, err)
 	err = inv.calculateDataRoot()
