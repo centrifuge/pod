@@ -47,6 +47,8 @@ func (wh *WebhookSender) Send(notification *notificationpb.NotificationMessage) 
 		return FAILURE, err
 	}
 
+	log.Infof("Sent Webhook Notification with Payload [%v] to [%s]", notification, url)
+
 	return SUCCESS, nil
 }
 
