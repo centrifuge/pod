@@ -106,7 +106,27 @@ func (s service) Create(ctx context.Context, po documents.Model) (documents.Mode
 
 // Update validates, persists, and anchors a new version of purchase order
 func (s service) Update(ctx context.Context, po documents.Model) (documents.Model, error) {
-	return nil, fmt.Errorf("implement me")
+	cd, err := po.PackCoreDocument()
+	if err != nil {
+		return nil, centerrors.New(code.Unknown, err.Error())
+	}
+
+	old, err := s.GetCurrentVersion(cd.DocumentIdentifier)
+	if err != nil {
+		return nil, centerrors.New(code.DocumentNotFound, err.Error())
+	}
+
+	po, err = s.calculateDataRoot(old, po, UpdateValidator())
+	if err != nil {
+		return nil, err
+	}
+
+	po, err = documents.AnchorDocument(ctx, po, s.coreDocProcessor, s.repo.Update)
+	if err != nil {
+		return nil, centerrors.New(code.Unknown, err.Error())
+	}
+
+	return po, nil
 }
 
 // DeriveFromCreatePayload derives purchase order from create payload
