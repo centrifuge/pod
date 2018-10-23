@@ -68,7 +68,7 @@ func dataRootValidator() documents.Validator {
 	})
 }
 
-// CreateValidator returns a validator group that should be run before creating the invoice and persisting it to DB
+// CreateValidator returns a validator group that should be run before creating the purchase order and persisting it to DB
 func CreateValidator() documents.ValidatorGroup {
 	return documents.ValidatorGroup{
 		fieldValidator(),
