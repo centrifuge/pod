@@ -378,6 +378,7 @@ func (dp defaultProcessor) SendDocument(ctx context.Context, model documents.Mod
 	if err != nil {
 		return fmt.Errorf("get external collaborators failed: %v", err)
 	}
+
 	for _, c := range extCollaborators {
 		cID, erri := identity.ToCentID(c)
 		if erri != nil {

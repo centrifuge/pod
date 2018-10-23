@@ -7,10 +7,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/centrifuge/context/testlogging"
-
 	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/centrifuge/context/testlogging"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 )

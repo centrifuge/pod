@@ -12,7 +12,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
@@ -142,11 +141,8 @@ func TestPOModel_getClientData(t *testing.T) {
 }
 
 func TestPOOrderModel_InitPOInput(t *testing.T) {
-	idConfig, err := ed25519keys.GetIDConfig()
+	contextHeader, err := documents.NewContextHeader()
 	assert.Nil(t, err)
-	self, err := identity.ToCentID(idConfig.ID)
-	assert.Nil(t, err)
-	contextHeader := documents.NewContextHeader(self)
 	// fail recipient
 	data := &clientpurchaseorderpb.PurchaseOrderData{
 		Recipient: "some recipient",
@@ -178,15 +174,13 @@ func TestPOOrderModel_InitPOInput(t *testing.T) {
 
 	assert.Equal(t, poModel.Recipient[:], []byte{1, 2, 3, 4, 5, 6})
 	assert.Equal(t, poModel.ExtraData[:], []byte{1, 2, 3, 2, 3, 1})
-	assert.Equal(t, poModel.CoreDocument.Collaborators, [][]byte{idConfig.ID, {1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}})
+	id := contextHeader.Self()
+	assert.Equal(t, poModel.CoreDocument.Collaborators, [][]byte{id[:], {1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}})
 }
 
 func TestPOModel_calculateDataRoot(t *testing.T) {
-	idConfig, err := ed25519keys.GetIDConfig()
+	contextHeader, err := documents.NewContextHeader()
 	assert.Nil(t, err)
-	self, err := identity.ToCentID(idConfig.ID)
-	assert.Nil(t, err)
-	contextHeader := documents.NewContextHeader(self)
 	poModel := new(PurchaseOrderModel)
 	err = poModel.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), contextHeader)
 	assert.Nil(t, err, "Init must pass")

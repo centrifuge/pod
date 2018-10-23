@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
-
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	cc "github.com/centrifuge/go-centrifuge/centrifuge/context"
+	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
 	logging "github.com/ipfs/go-log"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"

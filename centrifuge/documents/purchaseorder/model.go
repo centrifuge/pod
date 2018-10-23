@@ -73,7 +73,6 @@ func (p *PurchaseOrderModel) ID() ([]byte, error) {
 }
 
 // getClientData returns the client data from the purchaseOrder model
-
 func (p *PurchaseOrderModel) getClientData() *clientpurchaseorderpb.PurchaseOrderData {
 	var recipient string
 	if p.Recipient != nil {
@@ -161,7 +160,6 @@ func (p *PurchaseOrderModel) InitPurchaseOrderInput(payload *clientpurchaseorder
 	}
 
 	collaborators := append([]string{contextHeader.Self().String()}, payload.Collaborators...)
-
 	p.CoreDocument, err = coredocument.NewWithCollaborators(collaborators)
 	if err != nil {
 		return fmt.Errorf("failed to init core document: %v", err)
