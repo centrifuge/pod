@@ -220,10 +220,21 @@ func TestService_DeriveFromCreatePayload(t *testing.T) {
 }
 
 func TestService_DeriveFromCoreDocument(t *testing.T) {
-	poSrv := service{}
-	m, err := poSrv.DeriveFromCoreDocument(nil)
-	assert.Nil(t, m)
-	assert.Error(t, err)
+	// nil doc
+	poSrv := service{repo: getRepository()}
+	_, err := poSrv.DeriveFromCoreDocument(nil)
+	assert.Error(t, err, "must fail to derive")
+
+	// successful
+	data := testingdocuments.CreatePOData()
+	cd := testingdocuments.CreateCDWithEmbeddedPO(t, data)
+	m, err := poSrv.DeriveFromCoreDocument(cd)
+	assert.Nil(t, err, "must return model")
+	assert.NotNil(t, m, "model must be non-nil")
+	po, ok := m.(*PurchaseOrderModel)
+	assert.True(t, ok, "must be true")
+	assert.Equal(t, po.Recipient[:], data.Recipient)
+	assert.Equal(t, po.OrderAmount, data.OrderAmount)
 }
 
 func TestService_Create(t *testing.T) {

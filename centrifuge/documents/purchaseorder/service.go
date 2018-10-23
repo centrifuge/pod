@@ -4,19 +4,25 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/processor"
+	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
+	centED25519 "github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	"github.com/centrifuge/go-centrifuge/centrifuge/notification"
 	clientpopb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
+	"github.com/centrifuge/go-centrifuge/centrifuge/signatures"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/golang/protobuf/ptypes"
 )
 
 // Service defines specific functions for purchase order
@@ -58,7 +64,13 @@ func DefaultService(repo documents.Repository, processor coredocumentprocessor.P
 
 // DeriveFromCoreDocument takes a core document and returns a purchase order
 func (s service) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (documents.Model, error) {
-	return nil, fmt.Errorf("implement me")
+	var model documents.Model = new(PurchaseOrderModel)
+	err := model.UnpackCoreDocument(cd)
+	if err != nil {
+		return nil, centerrors.New(code.DocumentInvalid, err.Error())
+	}
+
+	return model, nil
 }
 
 // calculateDataRoot validates the document, calculates the data root, and persists to DB
@@ -311,11 +323,79 @@ func (s service) CreateProofsForVersion(documentID, version []byte, fields []str
 }
 
 // RequestDocumentSignature validates the document and returns the signature
+// Note: this is document agnostic. But since we do not have a common implementation, adding it here.
+// will remove this once we have a common implementation for documents.Service
 func (s service) RequestDocumentSignature(model documents.Model) (*coredocumentpb.Signature, error) {
-	return nil, fmt.Errorf("implement me")
+	if err := coredocument.SignatureRequestValidator().Validate(nil, model); err != nil {
+		return nil, centerrors.New(code.DocumentInvalid, err.Error())
+	}
+
+	cd, err := model.PackCoreDocument()
+	if err != nil {
+		return nil, centerrors.New(code.DocumentInvalid, err.Error())
+	}
+
+	log.Infof("coredoc received %x with signing root %x", cd.DocumentIdentifier, cd.SigningRoot)
+
+	idConfig, err := centED25519.GetIDConfig()
+	if err != nil {
+		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get ID Config: %v", err))
+	}
+
+	sig := signatures.Sign(idConfig, cd.SigningRoot)
+	cd.Signatures = append(cd.Signatures, sig)
+	err = model.UnpackCoreDocument(cd)
+	if err != nil {
+		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to Unpack CoreDocument: %v", err))
+	}
+
+	err = coredocumentrepository.GetRepository().Create(cd.DocumentIdentifier, cd)
+	if err != nil {
+		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to Create legacy CoreDocument: %v", err))
+	}
+
+	err = s.repo.Create(cd.DocumentIdentifier, model)
+	if err != nil {
+		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to store document: %v", err))
+	}
+	log.Infof("signed coredoc %x", cd.DocumentIdentifier)
+	return sig, nil
 }
 
 // ReceiveAnchoredDocument validates the anchored document and updates it on DB
+// Note: this is document agnostic. But since we do not have a common implementation, adding it here.
+// will remove this once we have a common implementation for documents.Service
 func (s service) ReceiveAnchoredDocument(model documents.Model, headers *p2ppb.CentrifugeHeader) error {
-	return fmt.Errorf("implement me")
+	if err := coredocument.PostAnchoredValidator(s.anchorRepository).Validate(nil, model); err != nil {
+		return centerrors.New(code.DocumentInvalid, err.Error())
+	}
+
+	doc, err := model.PackCoreDocument()
+	if err != nil {
+		return centerrors.New(code.DocumentInvalid, err.Error())
+	}
+
+	err = coredocumentrepository.GetRepository().Update(doc.DocumentIdentifier, doc)
+	if err != nil {
+		return centerrors.New(code.Unknown, fmt.Sprintf("failed to Create legacy CoreDocument: %v", err))
+	}
+
+	err = s.repo.Update(doc.CurrentVersion, model)
+	if err != nil {
+		return centerrors.New(code.Unknown, err.Error())
+	}
+
+	ts, _ := ptypes.TimestampProto(time.Now().UTC())
+	notificationMsg := &notificationpb.NotificationMessage{
+		EventType:          uint32(notification.RECEIVED_PAYLOAD),
+		CentrifugeId:       headers.SenderCentrifugeId,
+		Recorded:           ts,
+		DocumentType:       doc.EmbeddedData.TypeUrl,
+		DocumentIdentifier: doc.DocumentIdentifier,
+	}
+
+	// Async until we add queuing
+	go s.notifier.Send(notificationMsg)
+
+	return nil
 }
