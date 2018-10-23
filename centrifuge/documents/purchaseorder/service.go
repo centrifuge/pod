@@ -5,8 +5,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/centrifuge/anchors"
