@@ -44,7 +44,6 @@ func LegacyGRPCHandler(repo storage.LegacyRepository, proc coredocumentprocessor
 func GRPCHandler() (clientpurchaseorderpb.DocumentServiceServer, error) {
 	srv, err := documents.GetRegistryInstance().LocateService(documenttypes.PurchaseOrderDataTypeUrl)
 	if err != nil {
-		apiLog.Error(err)
 		return nil, fmt.Errorf("failed to fetch purchase order service")
 	}
 

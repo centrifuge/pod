@@ -47,7 +47,6 @@ func LegacyGRPCHandler() legacyinvoicepb.InvoiceDocumentServiceServer {
 func GRPCHandler() (clientinvoicepb.DocumentServiceServer, error) {
 	invoiceService, err := documents.GetRegistryInstance().LocateService(documenttypes.InvoiceDataTypeUrl)
 	if err != nil {
-		apiLog.Error(err)
 		return nil, err
 	}
 	return &grpcHandler{
