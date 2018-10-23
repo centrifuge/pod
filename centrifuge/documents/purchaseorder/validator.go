@@ -8,7 +8,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
 )
 
-// fieldValidateFunc validates the fields of the invoice model
+// fieldValidateFunc validates the fields of the purchase order model
 func fieldValidator() documents.Validator {
 	return documents.ValidatorFunc(func(_, new documents.Model) error {
 		if new == nil {
@@ -68,7 +68,7 @@ func dataRootValidator() documents.Validator {
 	})
 }
 
-// CreateValidator returns a validator group that should be run before creating the invoice and persisting it to DB
+// CreateValidator returns a validator group that should be run before creating the purchase order and persisting it to DB
 func CreateValidator() documents.ValidatorGroup {
 	return documents.ValidatorGroup{
 		fieldValidator(),
@@ -76,7 +76,7 @@ func CreateValidator() documents.ValidatorGroup {
 	}
 }
 
-// UpdateValidator returns a validator group that should be run before updating the invoice
+// UpdateValidator returns a validator group that should be run before updating the purchase order
 func UpdateValidator() documents.ValidatorGroup {
 	return documents.ValidatorGroup{
 		fieldValidator(),
