@@ -64,32 +64,31 @@ func DefaultService(repo documents.Repository, processor coredocumentprocessor.P
 
 // CreateProofs creates proofs for the latest version document given the fields
 func (s service) CreateProofs(documentID []byte, fields []string) (*documents.DocumentProof, error) {
-	doc, err := s.GetCurrentVersion(documentID)
+	model, err := s.GetCurrentVersion(documentID)
 	if err != nil {
 		return nil, err
 	}
-	inv, ok := doc.(*InvoiceModel)
-	if !ok {
-		return nil, centerrors.New(code.DocumentInvalid, "document of invalid type")
-	}
-	return s.invoiceProof(inv, fields)
+
+	return s.invoiceProof(model, fields)
 }
 
 // CreateProofsForVersion creates proofs for a particular version of the document given the fields
 func (s service) CreateProofsForVersion(documentID, version []byte, fields []string) (*documents.DocumentProof, error) {
-	doc, err := s.GetVersion(documentID, version)
+	model, err := s.GetVersion(documentID, version)
 	if err != nil {
 		return nil, err
 	}
-	inv, ok := doc.(*InvoiceModel)
-	if !ok {
-		return nil, centerrors.New(code.DocumentInvalid, "document of invalid type")
-	}
-	return s.invoiceProof(inv, fields)
+
+	return s.invoiceProof(model, fields)
 }
 
 // invoiceProof creates proofs for invoice model fields
-func (s service) invoiceProof(inv *InvoiceModel, fields []string) (*documents.DocumentProof, error) {
+func (s service) invoiceProof(model documents.Model, fields []string) (*documents.DocumentProof, error) {
+	inv, ok := model.(*InvoiceModel)
+	if !ok {
+		return nil, centerrors.New(code.DocumentInvalid, "document of invalid type")
+	}
+
 	if err := coredocument.PostAnchoredValidator(s.anchorRepository).Validate(nil, inv); err != nil {
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
 	}
