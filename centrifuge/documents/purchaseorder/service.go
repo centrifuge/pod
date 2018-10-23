@@ -349,16 +349,16 @@ func (s service) RequestDocumentSignature(model documents.Model) (*coredocumentp
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to Unpack CoreDocument: %v", err))
 	}
 
-	err = coredocumentrepository.GetRepository().Create(cd.DocumentIdentifier, cd)
+	err = coredocumentrepository.GetRepository().Create(cd.CurrentVersion, cd)
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to Create legacy CoreDocument: %v", err))
 	}
 
-	err = s.repo.Create(cd.DocumentIdentifier, model)
+	err = s.repo.Create(cd.CurrentVersion, model)
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to store document: %v", err))
 	}
-	log.Infof("signed coredoc %x", cd.DocumentIdentifier)
+	log.Infof("signed coredoc %x with version %x", cd.DocumentIdentifier, cd.CurrentVersion)
 	return sig, nil
 }
 
@@ -375,9 +375,9 @@ func (s service) ReceiveAnchoredDocument(model documents.Model, headers *p2ppb.C
 		return centerrors.New(code.DocumentInvalid, err.Error())
 	}
 
-	err = coredocumentrepository.GetRepository().Update(doc.DocumentIdentifier, doc)
+	err = coredocumentrepository.GetRepository().Update(doc.CurrentVersion, doc)
 	if err != nil {
-		return centerrors.New(code.Unknown, fmt.Sprintf("failed to Create legacy CoreDocument: %v", err))
+		return centerrors.New(code.Unknown, fmt.Sprintf("failed to Update legacy CoreDocument: %v", err))
 	}
 
 	err = s.repo.Update(doc.CurrentVersion, model)

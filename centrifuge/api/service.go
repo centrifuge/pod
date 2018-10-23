@@ -15,7 +15,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/health"
 	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
-	legacyInvoice "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/legacy/invoice"
 	legacyPurchaseOrder "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/legacy/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/nft"
 	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
@@ -40,11 +39,6 @@ func registerServices(ctx context.Context, grpcServer *grpc.Server, gwmux *runti
 	}
 	invoicepb.RegisterDocumentServiceServer(grpcServer, handler)
 	err = invoicepb.RegisterDocumentServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
-	if err != nil {
-		return err
-	}
-	legacyInvoice.RegisterInvoiceDocumentServiceServer(grpcServer, invoice.LegacyGRPCHandler())
-	err = legacyInvoice.RegisterInvoiceDocumentServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
 	if err != nil {
 		return err
 	}

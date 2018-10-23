@@ -51,7 +51,6 @@ func TestCentAPIServer_StartContextCancel(t *testing.T) {
 }
 
 func TestCentAPIServer_StartListenError(t *testing.T) {
-	invoice.InitLegacyRepository(nil)
 	// cause an error by using an invalid port
 	capi := NewCentAPIServer("0.0.0.0:100000000", 100000000, "")
 	ctx, _ := context.WithCancel(context.Background())
