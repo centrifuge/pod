@@ -20,12 +20,12 @@
  - [Troubleshooting functional test setup](#troubleshooting-functional-test-setup)
  - [Running tests continuously while developing](#running-tests-continuously-while-developing)
 - [Run a Geth node locally or Rinkeby environments](#run-a-geth-node-locally-or-rinkeby-environments)
-    - [Run as local node with mining enabled](#run-as-local-node-with-mining-enabled)
+    - [Run as local node in dev mode](#run-as-local-node-with-mining-enabled)
     - [Run local peer connected to Rinkeby](#run-local-peer-connected-to-rinkeby)
     - [Checking on your local geth node](#checking-on-your-local-geth-node)
     - [Attaching to your local geth node](#attaching-to-your-local-geth-node)
-- [Run Integration Tests against Local/Integration/Rinkeby Environments](#run-integration-tests-against-localintegrationrinkeby-environments)
- - [Configure local mining run integration/functional tests](#configure-local-mining--run-integrationfunctional-tests)
+- [Run Integration Tests against Local/Rinkeby Environments](#run-integration-tests-against-localintegrationrinkeby-environments)
+ - [Configure local dev node run integration/functional tests](#configure-local-mining--run-integrationfunctional-tests)
  - [Configure node to point to integration run integration/functional tests](#configure-node-to-point-to-integration--run-integrationfunctional-tests)
  - [Configure node to point to rinkeby run integration/functional tests](#configure-node-to-point-to-rinkeby--run-integrationfunctional-tests)
  - [Configure node to point to infura-rinkeby run integration/functional tests](#configure-node-to-point-to-infura-rinkeby--run-integrationfunctional-tests)
@@ -83,21 +83,14 @@ make install
 mkdir -p $GOPATH/src/github.com/centrifuge/go-centrifuge/
 git clone git@github.com:centrifuge/go-centrifuge.git $GOPATH/src/github.com/centrifuge/go-centrifuge
 
-# initialize your local geth node deployment
-./scripts/docker/run.sh init
 
 # run your local geth node for the first time
-./scripts/docker/run.sh mine
-
-# Geth will take a while to generate the DAG. Wait for this to be completed before running functional tests
-# To find out how the DAG generation is going check
-docker logs geth-node -f
+./scripts/docker/run.sh dev
 
 # You can, however, already run unit/integration tests
 ./scripts/tests/run_unit_tests.sh
 ./scripts/tests/run_integration_tests.sh
 ```
-The DAG generation progress will take up to 45 minutes. When you see `Commit new mining work` for the first time, the sync is done.
 
 ## Running Tests
 
@@ -115,7 +108,7 @@ Run only integration Tests:
 ./scripts/tests/run_integration_tests.sh
 ```
 
-To run functional tests a few other components need to be set up.
+To run integration/functional tests a few other components need to be set up.
 - Geth node needs to be up and running
 - Contracts need to be deployed
     - Run contract migration (fetched by ENV_VAR CENT_ETHEREUM_CONTRACTS_DIR under `scripts/test-dependencies/test-ethereum/env_vars.sh` )
@@ -123,24 +116,17 @@ To run functional tests a few other components need to be set up.
 
 To do this setup + run all the tests (unit, integration, functional) use the `test_wrapper.sh` script.
 
-If you are running this for the first time, make sure to have run
-```bash
-./scripts/docker/run.sh init
-./scripts/docker/run.sh mine
-```
-beforehand and made sure that the DAG generation was completed as described in the setup chapter above.
-
-Then run the whole test-suite with
+Run the whole test-suite with
 ```bash
 ./scripts/test_wrapper.sh
 ```
 
 ### Troubleshooting functional test setup
 
-One of the most-likely issues during your first run of the `./scripts/test_wrapper.sh` will be that your geth node has not yet synced (if run against rinkeby) or finished building the DAG (if running locally).
-This issue will likely show up with an error about gas limits. That's a misleading error by Truffle. Check on your DAG generation status via `docker logs geth-node -f`. If the DAG is still generating, wait.
+One of the most-likely issues during your first run of the `./scripts/test_wrapper.sh` will be that your geth node has not yet synced (if run against rinkeby).
+This issue will likely show up with an error about gas limits. That's a misleading error by Truffle.
 
-Another case (if you ran your geth node manually via `./scripts/docker/run.sh` - instead of using `./scripts/test_wrapper.sh` - make sure to run it with the `mine` parameter instead of `local`. Otherwise it will not mine new transactions.
+Another case (if you ran your geth node manually via `./scripts/docker/run.sh` - instead of using `./scripts/test_wrapper.sh` - make sure to run it with the `dev` parameter.
 
 
 ### Running tests continuously while developing
@@ -166,10 +152,8 @@ reflex -R '(^|/)vendor/|(^|/)\\.idea/' -- go test ./centrifuge/invoice/... -tags
 We make use of Docker Compose locally as it is easy and clear to bundle volume and environment configurations:
 Docker Compose files live in `./scripts/docker`
 
-#### Run as local node with mining enabled
-The first time, initialize the config" `./scripts/docker/run.sh init`
-
-Then run the local node via `./scripts/docker/run.sh local`
+#### Run as local node in dev mode
+Then run the local node via `./scripts/docker/run.sh dev`
 By default it uses:
 - ETH_DATADIR=${HOME}/Library/Ethereum
 - RPC_PORT=9545
@@ -199,42 +183,22 @@ In order to attach via geth to this node running in docker run
 geth attach ws://localhost:9546
 ```
 
-## Run Integration Tests against Local/Integration/Rinkeby Environments
+## Run Integration Tests against Local/Rinkeby Environments
 
-### Configure local mining + run integration/functional tests
+### Configure local dev node + run integration/functional tests
   - Remove running container if any:
     - docker rm -f geth-node
   - Clear up ~/Library/Ethereum/8383 folder (keep in mind this will clear up all previous data you had before)
-    - cd ~/Library/Ethereum/8383
-    - rm -Rf files/ geth/ geth.ipc keystore/ .ethash/
+    - rm -Rf ~/Library/Ethereum/8383
   - In go-centrifuge project run:
-    - ./scripts/docker/run.sh init
-    - ./scripts/docker/run.sh mine
-    - Wait until DAG is generated:
-      - docker logs geth-node 2>&1 | grep 'mined potential block'
+    - ./scripts/docker/run.sh dev
   - Run contract migration to generate local contract address artifact:
     - In centrifuge-ethereum-contracts project:
-      - ./scripts/migrate.sh local
+      - ./scripts/migrate.sh localgeth
       - Verify that ./deployments/local.json has been generated (note that local.json is excluded in .gitignore)
   - Run tests:
     - To run only integration tests:
       - ./scripts/tests/run_integration_tests.sh
-
-### Configure node to point to integration + run integration/functional tests
-  - Remove running container if any:
-    - docker rm -f geth-node
-  - Clear up ~/Library/Ethereum/8383 folder (keep in mind this will clear up all previous data you had before) (no need if node has synced before with peer)
-    - cd ~/Library/Ethereum/8383
-    - rm -Rf files/ geth/ geth.ipc keystore/ .ethash/
-  - In go-centrifuge project run:
-    - ./scripts/docker/run.sh init (no need if node has synced before with peer)
-    - /.scripts/docker/run.sh local
-    - Wait until node is in sync with remote peer:
-      - geth attach ws://localhost:9546 --exec "net.peerCount" > 0
-      - geth attach ws://localhost:9546 --exec "eth.syncing" -> false
-  - Run tests:
-    - To run only integration tests (3-4 mins):
-      - CENT_CENTRIFUGENETWORK='centrifugeRussianhillEthIntegration' TEST_TARGET_ENVIRONMENT='integration' ./scripts/tests/run_integration_tests.sh
 
 ### Configure node to point to rinkeby + run integration/functional tests
   - Remove running container if any:
@@ -246,19 +210,19 @@ geth attach ws://localhost:9546
       - geth attach ws://localhost:9546 --exec "eth.syncing" -> false
   - Run tests:
     - To run only integration tests:
-      - CENT_CENTRIFUGENETWORK='centrifugeRussianhillEthRinkeby' TEST_TARGET_ENVIRONMENT='rinkeby' CENT_ETHEREUM_ACCOUNTS_MAIN_KEY='$JSON_KEY' CENT_ETHEREUM_ACCOUNTS_MAIN_PASSWORD="$PASS" CENT_ETHEREUM_ACCOUNTS_MAIN_ADDRESS="$ADDR" ./scripts/tests/run_integration_tests.sh
+      - CENT_CENTRIFUGENETWORK='russianhill' TEST_TARGET_ENVIRONMENT='rinkeby' CENT_ETHEREUM_ACCOUNTS_MAIN_KEY='$JSON_KEY' CENT_ETHEREUM_ACCOUNTS_MAIN_PASSWORD="$PASS" CENT_ETHEREUM_ACCOUNTS_MAIN_ADDRESS="$ADDR" ./scripts/tests/run_integration_tests.sh
 
 ### Configure node to point to infura-rinkeby + run integration/functional tests ####
   - Run tests:
     - To run only integration tests:
-      - CENT_ETHEREUM_TXPOOLACCESSENABLED=false CENT_ETHEREUM_NODEURL='wss://rinkeby.infura.io/ws/MtCWERMbJtnqPKI8co84' CENT_CENTRIFUGENETWORK='centrifugeRussianhillEthRinkeby' TEST_TARGET_ENVIRONMENT='rinkeby' CENT_ETHEREUM_ACCOUNTS_MAIN_KEY='$JSON_KEY' CENT_ETHEREUM_ACCOUNTS_MAIN_PASSWORD="$PASS" CENT_ETHEREUM_ACCOUNTS_MAIN_ADDRESS="$ADDR" ./scripts/tests/run_integration_tests.sh
+      - CENT_ETHEREUM_TXPOOLACCESSENABLED=false CENT_ETHEREUM_NODEURL='wss://rinkeby.infura.io/ws/MtCWERMbJtnqPKI8co84' CENT_CENTRIFUGENETWORK='russianhill' TEST_TARGET_ENVIRONMENT='rinkeby' CENT_ETHEREUM_ACCOUNTS_MAIN_KEY='$JSON_KEY' CENT_ETHEREUM_ACCOUNTS_MAIN_PASSWORD="$PASS" CENT_ETHEREUM_ACCOUNTS_MAIN_ADDRESS="$ADDR" ./scripts/tests/run_integration_tests.sh
 
 ## Ethereum Contract Bindings
 
 To create the go bindings for the deployed truffle contract, use the following command:
 
 ```bash
-abigen --abi abi/AnchorRegistry.abi --pkg anchor --type EthereumAnchorRegistryContract --out ${GOPATH}/src/github.com/centrifuge/go-centrifuge/centrifuge/anchor/ethereum_anchor_registry_contract.go
+abigen --abi abi/AnchorRepository.abi --pkg anchor --type EthereumAnchorRepositoryContract --out ${GOPATH}/src/github.com/centrifuge/go-centrifuge/centrifuge/anchor/ethereum_anchor_repository_contract.go
 ```
 
 and then copy the `ethereum_anchor_registry_contract.go` file to `centrifuge/anchor/`. You will also need to modify the file to add the following imports:
