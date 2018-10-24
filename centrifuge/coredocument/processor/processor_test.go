@@ -70,14 +70,8 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to pack core document")
 
-	// signing root failed
 	cd := new(coredocumentpb.CoreDocument)
 	model = mockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Once()
-	err = dp.PrepareForSignatureRequests(model)
-	model.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to calculate signing root")
 
 	// failed to get id
 	pub, _ := config.Config.GetSigningKeyPair()

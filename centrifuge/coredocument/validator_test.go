@@ -427,6 +427,151 @@ func TestValidator_anchoredValidator(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+func TestValidate_baseValidator(t *testing.T) {
+	tests := []struct {
+		doc *coredocumentpb.CoreDocument
+		key string
+	}{
+		// empty salts in document
+		{
+			doc: &coredocumentpb.CoreDocument{
+				DocumentRoot:       id1,
+				DocumentIdentifier: id2,
+				CurrentVersion:     id3,
+				NextVersion:        id4,
+				DataRoot:           id5,
+			},
+			key: "cd_salts",
+		},
+
+		// salts missing previous root
+		{
+			doc: &coredocumentpb.CoreDocument{
+				DocumentRoot:       id1,
+				DocumentIdentifier: id2,
+				CurrentVersion:     id3,
+				NextVersion:        id4,
+				DataRoot:           id5,
+				CoredocumentSalts: &coredocumentpb.CoreDocumentSalts{
+					DocumentIdentifier: id1,
+					CurrentVersion:     id2,
+					NextVersion:        id3,
+					DataRoot:           id4,
+				},
+			},
+			key: "cd_salts",
+		},
+
+		// missing identifiers in core document
+		{
+			doc: &coredocumentpb.CoreDocument{
+				DocumentRoot:       id1,
+				DocumentIdentifier: id2,
+				CurrentVersion:     id3,
+				NextVersion:        id4,
+				CoredocumentSalts: &coredocumentpb.CoreDocumentSalts{
+					DocumentIdentifier: id1,
+					CurrentVersion:     id2,
+					NextVersion:        id3,
+					DataRoot:           id4,
+					PreviousRoot:       id5,
+				},
+			},
+			key: "cd_data_root",
+		},
+
+		// missing identifiers in core document and salts
+		{
+			doc: &coredocumentpb.CoreDocument{
+				DocumentRoot:       id1,
+				DocumentIdentifier: id2,
+				CurrentVersion:     id3,
+				NextVersion:        id4,
+				CoredocumentSalts: &coredocumentpb.CoreDocumentSalts{
+					DocumentIdentifier: id1,
+					CurrentVersion:     id2,
+					NextVersion:        id3,
+					DataRoot:           id4,
+				},
+			},
+			key: "cd_data_root",
+		},
+
+		// repeated identifiers
+		{
+			doc: &coredocumentpb.CoreDocument{
+				DocumentRoot:       id1,
+				DocumentIdentifier: id2,
+				CurrentVersion:     id3,
+				NextVersion:        id3,
+				DataRoot:           id5,
+				CoredocumentSalts: &coredocumentpb.CoreDocumentSalts{
+					DocumentIdentifier: id1,
+					CurrentVersion:     id2,
+					NextVersion:        id3,
+					DataRoot:           id4,
+					PreviousRoot:       id5,
+				},
+			},
+			key: "cd_overall",
+		},
+
+		// repeated identifiers
+		{
+			doc: &coredocumentpb.CoreDocument{
+				DocumentRoot:       id1,
+				DocumentIdentifier: id2,
+				CurrentVersion:     id3,
+				NextVersion:        id2,
+				DataRoot:           id5,
+				CoredocumentSalts: &coredocumentpb.CoreDocumentSalts{
+					DocumentIdentifier: id1,
+					CurrentVersion:     id2,
+					NextVersion:        id3,
+					DataRoot:           id4,
+					PreviousRoot:       id5,
+				},
+			},
+			key: "cd_overall",
+		},
+
+		// All okay
+		{
+			doc: &coredocumentpb.CoreDocument{
+				DocumentRoot:       id1,
+				DocumentIdentifier: id2,
+				CurrentVersion:     id3,
+				NextVersion:        id4,
+				DataRoot:           id5,
+				CoredocumentSalts: &coredocumentpb.CoreDocumentSalts{
+					DocumentIdentifier: id1,
+					CurrentVersion:     id2,
+					NextVersion:        id3,
+					DataRoot:           id4,
+					PreviousRoot:       id5,
+				},
+			},
+		},
+	}
+
+	baseValidator := baseValidator()
+
+	for _, c := range tests {
+
+		model := mockModel{}
+		model.On("PackCoreDocument", mock.Anything).Return(c.doc, nil).Once()
+
+		err := baseValidator.Validate(nil, &model)
+		if c.key == "" {
+			assert.Nil(t, err)
+			continue
+		}
+
+		assert.Contains(t, err.Error(), c.key)
+
+	}
+}
+
 func TestPostAnchoredValidator(t *testing.T) {
 	pav := PostAnchoredValidator(nil)
 	assert.Len(t, pav, 2)
