@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
@@ -47,7 +46,7 @@ type Handler struct {
 
 // Deprecated
 func (srv *Handler) Post(ctx context.Context, req *p2ppb.P2PMessage) (*p2ppb.P2PReply, error) {
-	return nil,nil
+	return nil, nil
 }
 
 // RequestDocumentSignature signs the received document and returns the signature of the signingRoot

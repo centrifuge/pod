@@ -122,7 +122,6 @@ func (dp defaultProcessor) Anchor(
 	document *coredocumentpb.CoreDocument,
 	saveState func(coreDoc *coredocumentpb.CoreDocument) error) error {
 
-
 	return nil
 }
 
