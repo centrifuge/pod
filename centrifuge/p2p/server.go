@@ -61,7 +61,7 @@ func (c *CentP2PServer) Start(ctx context.Context, wg *sync.WaitGroup, startupEr
 	defer wg.Done()
 
 	if c.Port == 0 {
-		startupErr <- errors.New("Please provide a port to bind on")
+		startupErr <- errors.New("please provide a port to bind on")
 		return
 	}
 
@@ -77,6 +77,10 @@ func (c *CentP2PServer) Start(ctx context.Context, wg *sync.WaitGroup, startupEr
 	GRPCProtoInstance = *grpcProto
 
 	p2ppb.RegisterP2PServiceServer(grpcProto.GetGRPCServer(), &p2phandler.Handler{Notifier: &notification.WebhookSender{}})
+	errOut := make(chan error)
+	go func(proto *p2pgrpc.GRPCProtocol, errOut chan<- error) {
+		errOut <- proto.Serve()
+	}(grpcProto, errOut)
 
 	hostInstance.Peerstore().AddAddr(hostInstance.ID(), hostInstance.Addrs()[0], pstore.TempAddrTTL)
 
@@ -85,6 +89,10 @@ func (c *CentP2PServer) Start(ctx context.Context, wg *sync.WaitGroup, startupEr
 
 	for {
 		select {
+		case err := <-errOut:
+			log.Infof("failed to accept p2p grpc connections: %v\n", err)
+			startupErr <- err
+			return
 		case <-ctx.Done():
 			log.Info("Shutting down GRPC server")
 			grpcProto.GetGRPCServer().Stop()
