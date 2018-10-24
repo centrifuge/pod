@@ -13,7 +13,7 @@ var log = logging.Logger("storage")
 // levelDBInstance is levelDB instance
 var levelDBInstance *leveldb.DB
 
-// once to guard the levelDB instance
+// lock to guard the levelDB instance
 var lock sync.Mutex
 
 // GetStorage is a singleton implementation returning the default database as configured
