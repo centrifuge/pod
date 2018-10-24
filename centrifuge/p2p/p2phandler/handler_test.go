@@ -81,7 +81,7 @@ func TestSendAnchoredDocument_IncompatibleRequest(t *testing.T) {
 		CentNodeVersion:   "1000.0.0-invalid",
 		NetworkIdentifier: config.Config.GetNetworkID(),
 	}
-	req := p2ppb.AnchDocumentRequest{Document: coreDoc, Header: header}
+	req := p2ppb.AnchorDocumentRequest{Document: coreDoc, Header: header}
 	res, err := handler.SendAnchoredDocument(context.Background(), &req)
 	assert.Error(t, err)
 	p2perr, _ := centerrors.FromError(err)
@@ -103,7 +103,7 @@ func TestSendAnchoredDocument_NilDocument(t *testing.T) {
 		CentNodeVersion:   version.GetVersion().String(),
 		NetworkIdentifier: config.Config.GetNetworkID(),
 	}
-	req := p2ppb.AnchDocumentRequest{Header: header}
+	req := p2ppb.AnchorDocumentRequest{Header: header}
 	res, err := handler.SendAnchoredDocument(context.Background(), &req)
 
 	assert.Error(t, err)
@@ -111,7 +111,7 @@ func TestSendAnchoredDocument_NilDocument(t *testing.T) {
 }
 
 func TestHandler_SendAnchoredDocument_getServiceAndModel_fail(t *testing.T) {
-	req := &p2ppb.AnchDocumentRequest{
+	req := &p2ppb.AnchorDocumentRequest{
 		Header: &p2ppb.CentrifugeHeader{
 			CentNodeVersion:   version.GetVersion().String(),
 			NetworkIdentifier: config.Config.GetNetworkID(),
