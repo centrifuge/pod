@@ -190,7 +190,7 @@ func (c *CentP2PServer) makeBasicHost(listenPort int) (host.Host, error) {
 		} else {
 			a, err := ma.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%d", externalIP, listenPort))
 			if err != nil {
-				log.Errorf("Error creating multiaddress: %v\n", err)
+				log.Fatalf("Error creating multiaddress: %v\n", err)
 			}
 			addrs = append(addrs, a)
 		}
