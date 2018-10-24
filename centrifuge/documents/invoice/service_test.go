@@ -24,6 +24,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 var (
@@ -32,19 +33,30 @@ var (
 	key1    = []byte{102, 109, 71, 239, 130, 229, 128, 189, 37, 96, 223, 5, 189, 91, 210, 47, 89, 4, 165, 6, 188, 53, 49, 250, 109, 151, 234, 139, 57, 205, 231, 253, 230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
 )
 
+type mockAnchorRepo struct {
+	mock.Mock
+	anchors.AnchorRepository
+}
+
+func (r *mockAnchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.DocRoot, error) {
+	args := r.Called(anchorID)
+	docRoot, _ := args.Get(0).(anchors.DocRoot)
+	return docRoot, args.Error(1)
+}
+
 func TestDefaultService(t *testing.T) {
 	srv := DefaultService(getRepository(), &testingutils.MockCoreDocumentProcessor{}, nil)
 	assert.NotNil(t, srv, "must be non-nil")
 }
 
 func getServiceWithMockedLayers() Service {
-	return DefaultService(getRepository(), &testingutils.MockCoreDocumentProcessor{}, mockAnchorRepository)
+	return DefaultService(getRepository(), &testingutils.MockCoreDocumentProcessor{}, &mockAnchorRepo{})
 }
 
-func createMockDocument() (*InvoiceModel, error) {
+func createMockDocument() (*Invoice, error) {
 	documentIdentifier := utils.RandomSlice(32)
 	nextIdentifier := utils.RandomSlice(32)
-	inv1 := &InvoiceModel{
+	inv1 := &Invoice{
 		InvoiceNumber: "test_invoice",
 		GrossAmount:   60,
 		CoreDocument: &coredocumentpb.CoreDocument{
@@ -69,7 +81,7 @@ func TestService_DeriveFromCoreDocument(t *testing.T) {
 	model, err := invSrv.DeriveFromCoreDocument(coreDoc)
 	assert.Nil(t, err, "must return model")
 	assert.NotNil(t, model, "model must be non-nil")
-	inv, ok := model.(*InvoiceModel)
+	inv, ok := model.(*Invoice)
 	assert.True(t, ok, "must be true")
 	assert.Equal(t, inv.Payee[:], data.Payee)
 	assert.Equal(t, inv.Sender[:], data.Sender)
@@ -106,10 +118,10 @@ func TestService_GetLastVersion(t *testing.T) {
 	mod1, err := invSrv.GetCurrentVersion(doc.CoreDocument.DocumentIdentifier)
 	assert.Nil(t, err)
 
-	invLoad1, _ := mod1.(*InvoiceModel)
+	invLoad1, _ := mod1.(*Invoice)
 	assert.Equal(t, invLoad1.CoreDocument.CurrentVersion, doc.CoreDocument.DocumentIdentifier)
 
-	inv2 := &InvoiceModel{
+	inv2 := &Invoice{
 		GrossAmount: 60,
 		CoreDocument: &coredocumentpb.CoreDocument{
 			DocumentIdentifier: doc.CoreDocument.DocumentIdentifier,
@@ -124,7 +136,7 @@ func TestService_GetLastVersion(t *testing.T) {
 	mod2, err := invSrv.GetCurrentVersion(doc.CoreDocument.DocumentIdentifier)
 	assert.Nil(t, err)
 
-	invLoad2, _ := mod2.(*InvoiceModel)
+	invLoad2, _ := mod2.(*Invoice)
 	assert.Equal(t, invLoad2.CoreDocument.CurrentVersion, doc.CoreDocument.NextVersion)
 	assert.Equal(t, invLoad2.CoreDocument.NextVersion, thirdIdentifier)
 }
@@ -132,7 +144,7 @@ func TestService_GetLastVersion(t *testing.T) {
 func TestService_GetVersion_invalid_version(t *testing.T) {
 	invSrv := getServiceWithMockedLayers()
 	currentVersion := utils.RandomSlice(32)
-	inv := &InvoiceModel{
+	inv := &Invoice{
 		GrossAmount: 60,
 		CoreDocument: &coredocumentpb.CoreDocument{
 			DocumentIdentifier: utils.RandomSlice(32),
@@ -151,7 +163,7 @@ func TestService_GetVersion(t *testing.T) {
 	invSrv := getServiceWithMockedLayers()
 	documentIdentifier := utils.RandomSlice(32)
 	currentVersion := utils.RandomSlice(32)
-	inv := &InvoiceModel{
+	inv := &Invoice{
 		GrossAmount: 60,
 		CoreDocument: &coredocumentpb.CoreDocument{
 			DocumentIdentifier: documentIdentifier,
@@ -163,7 +175,7 @@ func TestService_GetVersion(t *testing.T) {
 
 	mod, err := invSrv.GetVersion(documentIdentifier, currentVersion)
 	assert.Nil(t, err)
-	loadInv, _ := mod.(*InvoiceModel)
+	loadInv, _ := mod.(*Invoice)
 	assert.Equal(t, loadInv.CoreDocument.CurrentVersion, currentVersion)
 	assert.Equal(t, loadInv.CoreDocument.DocumentIdentifier, documentIdentifier)
 
@@ -241,7 +253,7 @@ func TestService_DeriveInvoiceResponse(t *testing.T) {
 	assert.Nil(t, err)
 	inv1, err := invSrv.DeriveFromCreatePayload(payload, contextHeader)
 	assert.Nil(t, err, "must be non nil")
-	inv, ok := inv1.(*InvoiceModel)
+	inv, ok := inv1.(*Invoice)
 	assert.True(t, ok)
 	inv.CoreDocument = &coredocumentpb.CoreDocument{
 		DocumentIdentifier: []byte{},
@@ -253,7 +265,7 @@ func TestService_DeriveInvoiceResponse(t *testing.T) {
 }
 
 // Functions returns service mocks
-func mockSignatureCheck(i *InvoiceModel) identity.Service {
+func mockSignatureCheck(i *Invoice, invSrv Service) identity.Service {
 	idkey := &identity.EthereumIdentityKey{
 		Key:       key1Pub,
 		Purposes:  []*big.Int{big.NewInt(identity.KeyPurposeSigning)},
@@ -261,7 +273,8 @@ func mockSignatureCheck(i *InvoiceModel) identity.Service {
 	}
 	anchorID, _ := anchors.NewAnchorID(i.CoreDocument.DocumentIdentifier)
 	docRoot, _ := anchors.NewDocRoot(i.CoreDocument.DocumentRoot)
-	mockAnchorRepository.On("GetDocumentRootOf", anchorID).Return(docRoot, nil).Once()
+	mockRepo := invSrv.(service).anchorRepository.(*mockAnchorRepo)
+	mockRepo.On("GetDocumentRootOf", anchorID).Return(docRoot, nil).Once()
 	srv := &testingcommons.MockIDService{}
 	id := &testingcommons.MockID{}
 	centID, _ := identity.ToCentID(centID)
@@ -279,7 +292,7 @@ func TestService_CreateProofs(t *testing.T) {
 	invSrv := getServiceWithMockedLayers()
 	i, err := createAnchoredMockDocument(t, false)
 	assert.Nil(t, err)
-	idService := mockSignatureCheck(i)
+	idService := mockSignatureCheck(i, invSrv)
 	setIdentityService(idService)
 	proof, err := invSrv.CreateProofs(i.CoreDocument.DocumentIdentifier, []string{"invoice_number"})
 	assert.Nil(t, err)
@@ -297,7 +310,7 @@ func TestService_CreateProofsValidationFails(t *testing.T) {
 	i.CoreDocument.SigningRoot = nil
 	err = getRepository().Update(i.CoreDocument.CurrentVersion, i)
 	assert.Nil(t, err)
-	idService := mockSignatureCheck(i)
+	idService := mockSignatureCheck(i, invSrv)
 	setIdentityService(idService)
 	_, err = invSrv.CreateProofs(i.CoreDocument.DocumentIdentifier, []string{"invoice_number"})
 	assert.NotNil(t, err)
@@ -309,7 +322,7 @@ func TestService_CreateProofsInvalidField(t *testing.T) {
 	invSrv := getServiceWithMockedLayers()
 	i, err := createAnchoredMockDocument(t, false)
 	assert.Nil(t, err)
-	idService := mockSignatureCheck(i)
+	idService := mockSignatureCheck(i, invSrv)
 	setIdentityService(idService)
 	_, err = invSrv.CreateProofs(i.CoreDocument.DocumentIdentifier, []string{"invalid_field"})
 	assert.Error(t, err)
@@ -328,7 +341,7 @@ func TestService_CreateProofsForVersion(t *testing.T) {
 	invSrv := getServiceWithMockedLayers()
 	i, err := createAnchoredMockDocument(t, false)
 	assert.Nil(t, err)
-	idService := mockSignatureCheck(i)
+	idService := mockSignatureCheck(i, invSrv)
 	setIdentityService(idService)
 	olderVersion := i.CoreDocument.CurrentVersion
 	i, err = updatedAnchoredMockDocument(t, i)
@@ -355,7 +368,7 @@ func TestService_RequestDocumentSignature_SigningRootNil(t *testing.T) {
 	invSrv := getServiceWithMockedLayers()
 	i, err := createAnchoredMockDocument(t, true)
 	assert.Nil(t, err)
-	idService := mockSignatureCheck(i)
+	idService := mockSignatureCheck(i, invSrv)
 	setIdentityService(idService)
 	i.CoreDocument.SigningRoot = nil
 	signature, err := invSrv.RequestDocumentSignature(i)
@@ -365,8 +378,8 @@ func TestService_RequestDocumentSignature_SigningRootNil(t *testing.T) {
 	assert.Nil(t, signature)
 }
 
-func createAnchoredMockDocument(t *testing.T, skipSave bool) (*InvoiceModel, error) {
-	i := &InvoiceModel{
+func createAnchoredMockDocument(t *testing.T, skipSave bool) (*Invoice, error) {
+	i := &Invoice{
 		InvoiceNumber: "test_invoice",
 		GrossAmount:   60,
 		CoreDocument:  coredocument.New(),
@@ -413,7 +426,7 @@ func createAnchoredMockDocument(t *testing.T, skipSave bool) (*InvoiceModel, err
 	return i, nil
 }
 
-func updatedAnchoredMockDocument(t *testing.T, i *InvoiceModel) (*InvoiceModel, error) {
+func updatedAnchoredMockDocument(t *testing.T, i *Invoice) (*Invoice, error) {
 	i.GrossAmount = 50
 	err := i.calculateDataRoot()
 	if err != nil {
@@ -475,7 +488,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.Nil(t, doc)
 
 	// failed to load from data
-	old := new(InvoiceModel)
+	old := new(Invoice)
 	err = old.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), contextHeader)
 	assert.Nil(t, err)
 	old.CoreDocument.DocumentIdentifier = id
@@ -521,7 +534,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.Equal(t, oldCD.CurrentVersion, cd.PreviousVersion)
 	assert.Equal(t, oldCD.NextVersion, cd.CurrentVersion)
 	assert.NotNil(t, cd.NextVersion)
-	assert.Equal(t, payload.Data, doc.(*InvoiceModel).getClientData())
+	assert.Equal(t, payload.Data, doc.(*Invoice).getClientData())
 }
 
 func TestService_Update(t *testing.T) {
@@ -554,7 +567,7 @@ func TestService_Update(t *testing.T) {
 	cd, err = inv.PackCoreDocument()
 	assert.Nil(t, err)
 	cd.DocumentRoot = utils.RandomSlice(32)
-	inv.(*InvoiceModel).CoreDocument = cd
+	inv.(*Invoice).CoreDocument = cd
 	getRepository().Create(cd.CurrentVersion, inv)
 
 	// calculate data root fails
@@ -618,7 +631,7 @@ func TestService_calculateDataRoot(t *testing.T) {
 	// failed validator
 	inv, err = invSrv.DeriveFromCreatePayload(testingdocuments.CreateInvoicePayload(), ctxh)
 	assert.Nil(t, err)
-	assert.Nil(t, inv.(*InvoiceModel).CoreDocument.DataRoot)
+	assert.Nil(t, inv.(*Invoice).CoreDocument.DataRoot)
 	v := documents.ValidatorFunc(func(_, _ documents.Model) error {
 		return fmt.Errorf("validations fail")
 	})
@@ -630,8 +643,8 @@ func TestService_calculateDataRoot(t *testing.T) {
 	// create failed
 	inv, err = invSrv.DeriveFromCreatePayload(testingdocuments.CreateInvoicePayload(), ctxh)
 	assert.Nil(t, err)
-	assert.Nil(t, inv.(*InvoiceModel).CoreDocument.DataRoot)
-	err = invSrv.repo.Create(inv.(*InvoiceModel).CoreDocument.CurrentVersion, inv)
+	assert.Nil(t, inv.(*Invoice).CoreDocument.DataRoot)
+	err = invSrv.repo.Create(inv.(*Invoice).CoreDocument.CurrentVersion, inv)
 	assert.Nil(t, err)
 	inv, err = invSrv.calculateDataRoot(nil, inv, CreateValidator())
 	assert.Nil(t, inv)
@@ -641,10 +654,9 @@ func TestService_calculateDataRoot(t *testing.T) {
 	// success
 	inv, err = invSrv.DeriveFromCreatePayload(testingdocuments.CreateInvoicePayload(), ctxh)
 	assert.Nil(t, err)
-	assert.Nil(t, inv.(*InvoiceModel).CoreDocument.DataRoot)
+	assert.Nil(t, inv.(*Invoice).CoreDocument.DataRoot)
 	inv, err = invSrv.calculateDataRoot(nil, inv, CreateValidator())
 	assert.Nil(t, err)
 	assert.NotNil(t, inv)
-	assert.NotNil(t, inv.(*InvoiceModel).CoreDocument.DataRoot)
-
+	assert.NotNil(t, inv.(*Invoice).CoreDocument.DataRoot)
 }

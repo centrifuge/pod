@@ -31,14 +31,14 @@ func TestFieldValidator_Validate(t *testing.T) {
 	assert.Contains(t, errs[0].Error(), "unknown document type")
 
 	// fail
-	err = fv.Validate(nil, new(PurchaseOrderModel))
+	err = fv.Validate(nil, new(PurchaseOrder))
 	assert.Error(t, err)
 	errs = documents.Errors(err)
 	assert.Len(t, errs, 1, "errors length must be 2")
 	assert.Contains(t, errs[0].Error(), "currency is invalid")
 
 	// success
-	err = fv.Validate(nil, &PurchaseOrderModel{
+	err = fv.Validate(nil, &PurchaseOrder{
 		Currency: "EUR",
 	})
 	assert.Nil(t, err)
@@ -81,7 +81,7 @@ func TestDataRootValidation_Validate(t *testing.T) {
 	assert.Contains(t, err.Error(), "unknown document type")
 
 	// mismatch
-	po := new(PurchaseOrderModel)
+	po := new(PurchaseOrder)
 	err = po.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), contextHeader)
 	assert.Nil(t, err)
 	po.CoreDocument = cd
@@ -90,7 +90,7 @@ func TestDataRootValidation_Validate(t *testing.T) {
 	assert.Contains(t, err.Error(), "mismatched data root")
 
 	// success
-	po = new(PurchaseOrderModel)
+	po = new(PurchaseOrder)
 	err = po.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), contextHeader)
 	assert.Nil(t, err)
 	err = po.calculateDataRoot()

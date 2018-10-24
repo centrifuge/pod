@@ -15,7 +15,7 @@ func fieldValidator() documents.Validator {
 			return fmt.Errorf("nil document")
 		}
 
-		inv, ok := new.(*InvoiceModel)
+		inv, ok := new.(*Invoice)
 		if !ok {
 			return fmt.Errorf("unknown document type")
 		}
@@ -51,7 +51,7 @@ func dataRootValidator() documents.Validator {
 			return fmt.Errorf("data root missing")
 		}
 
-		inv, ok := model.(*InvoiceModel)
+		inv, ok := model.(*Invoice)
 		if !ok {
 			return fmt.Errorf("unknown document type: %T", model)
 		}

@@ -14,7 +14,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/processor"
-	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	centED25519 "github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
@@ -23,13 +22,16 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/signatures"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes"
+	logging "github.com/ipfs/go-log"
 )
+
+var srvLog = logging.Logger("invoice-service")
 
 // Service defines specific functions for invoice
 type Service interface {
 	documents.Service
 
-	// DeriverFromPayload derives InvoiceModel from clientPayload
+	// DeriverFromPayload derives Invoice from clientPayload
 	DeriveFromCreatePayload(*clientinvoicepb.InvoiceCreatePayload, *documents.ContextHeader) (documents.Model, error)
 
 	// DeriveFromUpdatePayload derives invoice model from update payload
@@ -84,7 +86,7 @@ func (s service) CreateProofsForVersion(documentID, version []byte, fields []str
 
 // invoiceProof creates proofs for invoice model fields
 func (s service) invoiceProof(model documents.Model, fields []string) (*documents.DocumentProof, error) {
-	inv, ok := model.(*InvoiceModel)
+	inv, ok := model.(*Invoice)
 	if !ok {
 		return nil, centerrors.New(code.DocumentInvalid, "document of invalid type")
 	}
@@ -105,7 +107,7 @@ func (s service) invoiceProof(model documents.Model, fields []string) (*document
 
 // DeriveFromCoreDocument unpacks the core document into a model
 func (s service) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (documents.Model, error) {
-	var model documents.Model = new(InvoiceModel)
+	var model documents.Model = new(Invoice)
 	err := model.UnpackCoreDocument(cd)
 	if err != nil {
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
@@ -120,7 +122,7 @@ func (s service) DeriveFromCreatePayload(invoiceInput *clientinvoicepb.InvoiceCr
 		return nil, centerrors.New(code.DocumentInvalid, "input is nil")
 	}
 
-	invoiceModel := new(InvoiceModel)
+	invoiceModel := new(Invoice)
 	err := invoiceModel.InitInvoiceInput(invoiceInput, contextHeader)
 	if err != nil {
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
@@ -131,7 +133,7 @@ func (s service) DeriveFromCreatePayload(invoiceInput *clientinvoicepb.InvoiceCr
 
 // calculateDataRoot validates the document, calculates the data root, and persists to DB
 func (s service) calculateDataRoot(old, new documents.Model, validator documents.Validator) (documents.Model, error) {
-	inv, ok := new.(*InvoiceModel)
+	inv, ok := new.(*Invoice)
 	if !ok {
 		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("unknown document type: %T", new))
 	}
@@ -225,13 +227,13 @@ func (s service) GetCurrentVersion(documentID []byte) (doc documents.Model, err 
 	return inv, nil
 }
 
-func (s service) getInvoiceVersion(documentID, version []byte) (inv *InvoiceModel, err error) {
-	var doc documents.Model = new(InvoiceModel)
+func (s service) getInvoiceVersion(documentID, version []byte) (inv *Invoice, err error) {
+	var doc documents.Model = new(Invoice)
 	err = s.repo.LoadByID(version, doc)
 	if err != nil {
 		return nil, err
 	}
-	inv, ok := doc.(*InvoiceModel)
+	inv, ok := doc.(*Invoice)
 	if !ok {
 		return nil, err
 	}
@@ -278,7 +280,7 @@ func (s service) DeriveInvoiceResponse(doc documents.Model) (*clientinvoicepb.In
 
 // DeriveInvoiceData returns create response from invoice model
 func (s service) DeriveInvoiceData(doc documents.Model) (*clientinvoicepb.InvoiceData, error) {
-	inv, ok := doc.(*InvoiceModel)
+	inv, ok := doc.(*Invoice)
 	if !ok {
 		return nil, centerrors.New(code.DocumentInvalid, "document of invalid type")
 	}
@@ -305,7 +307,7 @@ func (s service) DeriveFromUpdatePayload(payload *clientinvoicepb.InvoiceUpdateP
 	}
 
 	// load invoice data
-	inv := new(InvoiceModel)
+	inv := new(Invoice)
 	err = inv.initInvoiceFromData(payload.Data)
 	if err != nil {
 		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("failed to load invoice from data: %v", err))
@@ -337,7 +339,7 @@ func (s service) RequestDocumentSignature(model documents.Model) (*coredocumentp
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
 	}
 
-	log.Infof("coredoc received %x with signing root %x", doc.DocumentIdentifier, doc.SigningRoot)
+	srvLog.Infof("coredoc received %x with signing root %x", doc.DocumentIdentifier, doc.SigningRoot)
 
 	idConfig, err := centED25519.GetIDConfig()
 	if err != nil {
@@ -351,16 +353,12 @@ func (s service) RequestDocumentSignature(model documents.Model) (*coredocumentp
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to Unpack CoreDocument: %v", err))
 	}
 
-	err = coredocumentrepository.GetRepository().Create(doc.CurrentVersion, doc)
-	if err != nil {
-		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to Create legacy CoreDocument: %v", err))
-	}
-
 	err = s.repo.Create(doc.CurrentVersion, model)
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to store document: %v", err))
 	}
-	log.Infof("signed coredoc %x with version %x", doc.DocumentIdentifier, doc.CurrentVersion)
+
+	srvLog.Infof("signed coredoc %x with version %x", doc.DocumentIdentifier, doc.CurrentVersion)
 	return sig, nil
 }
 
@@ -373,11 +371,6 @@ func (s service) ReceiveAnchoredDocument(model documents.Model, headers *p2ppb.C
 	doc, err := model.PackCoreDocument()
 	if err != nil {
 		return centerrors.New(code.DocumentInvalid, err.Error())
-	}
-
-	err = coredocumentrepository.GetRepository().Update(doc.DocumentIdentifier, doc)
-	if err != nil {
-		return centerrors.New(code.Unknown, fmt.Sprintf("failed to Create legacy CoreDocument: %v", err))
 	}
 
 	err = s.repo.Update(doc.CurrentVersion, model)
