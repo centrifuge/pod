@@ -60,7 +60,6 @@ func TestCentP2PServer_makeBasicHostNoExternalIP(t *testing.T) {
 	h, err := cp2p.makeBasicHost(listenPort)
 	assert.Nil(t, err)
 	assert.NotNil(t, h)
-	assert.Equal(t, 2, len(h.Addrs()))
 }
 
 func TestCentP2PServer_makeBasicHostWithExternalIP(t *testing.T) {
@@ -73,7 +72,6 @@ func TestCentP2PServer_makeBasicHostWithExternalIP(t *testing.T) {
 	h, err := cp2p.makeBasicHost(listenPort)
 	assert.Nil(t, err)
 	assert.NotNil(t, h)
-	assert.Equal(t, 3, len(h.Addrs()))
 	addr, err := ma.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%d", externalIP, listenPort))
 	assert.Nil(t, err)
 	assert.Contains(t, h.Addrs(), addr)

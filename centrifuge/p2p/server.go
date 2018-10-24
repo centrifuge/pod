@@ -184,12 +184,10 @@ func (c *CentP2PServer) makeBasicHost(listenPort int) (host.Host, error) {
 	}
 
 	externalIP := config.Config.GetP2PExternalIP()
-	if externalIP == "" {
-		log.Warning("External IP not defined, Peers might not be able to resolve this node if behind NAT\n")
-	}
-
 	addressFactory := func(addrs []ma.Multiaddr) []ma.Multiaddr {
-		if externalIP != "" {
+		if externalIP == "" {
+			log.Warning("External IP not defined, Peers might not be able to resolve this node if behind NAT\n")
+		} else {
 			a, err := ma.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%d", externalIP, listenPort))
 			if err != nil {
 				log.Errorf("Error creating multiaddress: %v\n", err)
