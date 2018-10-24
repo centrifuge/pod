@@ -15,8 +15,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/context/testlogging"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/storage"
-	"github.com/centrifuge/go-centrifuge/testingutils"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/stretchr/testify/assert"
@@ -37,7 +35,7 @@ func TestMain(m *testing.M) {
 
 func TestGetSignatureForDocument_fail_connect(t *testing.T) {
 	client := &testingcommons.P2PMockClient{}
-	coreDoc := testingutils.GenerateCoreDocument()
+	coreDoc := testing.GenerateCoreDocument()
 	ctx := context.Background()
 
 	centrifugeId, err := identity.ToCentID(utils.RandomSlice(identity.CentIDLength))
@@ -51,7 +49,7 @@ func TestGetSignatureForDocument_fail_connect(t *testing.T) {
 
 func TestGetSignatureForDocument_fail_version_check(t *testing.T) {
 	client := &testingcommons.P2PMockClient{}
-	coreDoc := testingutils.GenerateCoreDocument()
+	coreDoc := testing.GenerateCoreDocument()
 	ctx := context.Background()
 	resp := &p2ppb.SignatureResponse{CentNodeVersion: "1.0.0"}
 
@@ -68,7 +66,7 @@ func TestGetSignatureForDocument_fail_version_check(t *testing.T) {
 
 func TestGetSignatureForDocument_fail_centrifugeId(t *testing.T) {
 	client := &testingcommons.P2PMockClient{}
-	coreDoc := testingutils.GenerateCoreDocument()
+	coreDoc := testing.GenerateCoreDocument()
 	ctx := context.Background()
 
 	centrifugeId, err := identity.ToCentID(utils.RandomSlice(identity.CentIDLength))

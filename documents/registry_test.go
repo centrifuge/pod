@@ -7,7 +7,6 @@ import (
 
 	cd "github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/stretchr/testify/assert"
 )
@@ -26,7 +25,7 @@ func TestRegistry_Register_LocateService_successful(t *testing.T) {
 
 	a := &testingdocuments.MockService{}
 
-	coreDocument := testingutils.GenerateCoreDocument()
+	coreDocument := testing.GenerateCoreDocument()
 	documentType, err := cd.GetTypeURL(coreDocument)
 	assert.Nil(t, err, "should not throw an error because core document contains a type")
 
@@ -47,7 +46,7 @@ func TestRegistry_Register_invalidId(t *testing.T) {
 
 	a := &testingdocuments.MockService{}
 
-	coreDocument := testingutils.GenerateCoreDocument()
+	coreDocument := testing.GenerateCoreDocument()
 	coreDocument.EmbeddedData.TypeUrl = "testID_1"
 
 	err := registry.Register(coreDocument.EmbeddedData.TypeUrl, a)
@@ -64,7 +63,7 @@ func TestRegistry_Register_invalidId(t *testing.T) {
 func TestRegistry_LocateService_invalid(t *testing.T) {
 
 	registry := documents.GetRegistryInstance()
-	coreDocument := testingutils.GenerateCoreDocument()
+	coreDocument := testing.GenerateCoreDocument()
 	coreDocument.EmbeddedData.TypeUrl = "testID_2"
 	documentType, err := cd.GetTypeURL(coreDocument)
 	assert.Nil(t, err, "should not throw an error because core document contains a type")

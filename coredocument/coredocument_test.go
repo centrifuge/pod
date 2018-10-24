@@ -9,7 +9,6 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -127,7 +126,7 @@ func TestGetDocumentRootTree(t *testing.T) {
 }
 
 func TestGetTypeUrl(t *testing.T) {
-	coreDocument := testingutils.GenerateCoreDocument()
+	coreDocument := testing.GenerateCoreDocument()
 
 	documentType, err := GetTypeURL(coreDocument)
 	assert.Nil(t, err, "should not throw an error because coreDocument has a type")

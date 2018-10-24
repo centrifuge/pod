@@ -15,7 +15,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/storage"
-	"github.com/centrifuge/go-centrifuge/testingutils"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -78,7 +77,7 @@ func TestInitTransactionWithRetries(t *testing.T) {
 	tx, err = ethereum.GetConnection().SubmitTransactionWithRetries(mockRequest.RegisterTransaction, &bind.TransactOpts{}, "otherError", "var2")
 	assert.EqualError(t, err, "Some other error", "Should error out")
 
-	mockRetries := testingutils.MockConfigOption("ethereum.maxRetries", 10)
+	mockRetries := testing.MockConfigOption("ethereum.maxRetries", 10)
 	defer mockRetries()
 
 	mockRequest.count = 0

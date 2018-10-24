@@ -14,7 +14,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/context/testlogging"
 	"github.com/centrifuge/go-centrifuge/storage"
-	"github.com/centrifuge/go-centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/ptypes"
@@ -36,7 +35,7 @@ func TestMain(m *testing.M) {
 func TestWebhookConstructPayload(t *testing.T) {
 	documentIdentifier := utils.RandomSlice(32)
 	coredoc := &coredocumentpb.CoreDocument{DocumentIdentifier: documentIdentifier}
-	cid := testingutils.Rand32Bytes()
+	cid := testing.Rand32Bytes()
 
 	ts, err := ptypes.TimestampProto(time.Now().UTC())
 	assert.Nil(t, err, "Should not error out")

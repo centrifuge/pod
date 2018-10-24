@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -127,7 +126,7 @@ func TestAnchoringConfirmationTask_RunTaskWatchError(t *testing.T) {
 		From:     address,
 		AnchorCommittedFilterer: &MockAnchorCommittedFilter{iter: &EthereumAnchorRepositoryContractAnchorCommittedIterator{
 			fail: fmt.Errorf("watch error"),
-			sub:  &testingutils.MockSubscription{},
+			sub:  &testing.MockSubscription{},
 		}},
 		EthContext: ctx,
 	}

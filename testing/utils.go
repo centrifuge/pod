@@ -1,6 +1,6 @@
 // +build integration unit
 
-package testingutils
+package testing
 
 import (
 	"context"
