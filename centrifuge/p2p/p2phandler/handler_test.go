@@ -54,44 +54,6 @@ func TestMain(m *testing.M) {
 
 var coreDoc = testingutils.GenerateCoreDocument()
 
-func TestP2PService(t *testing.T) {
-	req := p2ppb.P2PMessage{Document: coreDoc, CentNodeVersion: version.GetVersion().String(), NetworkIdentifier: config.Config.GetNetworkID()}
-	res, err := handler.Post(context.Background(), &req)
-	assert.Nil(t, err, "Received error")
-	assert.Equal(t, res.Document.DocumentIdentifier, coreDoc.DocumentIdentifier, "Incorrect identifier")
-
-	doc := new(coredocumentpb.CoreDocument)
-	assert.Equal(t, doc.DocumentIdentifier, coreDoc.DocumentIdentifier, "Document Identifier doesn't match")
-}
-
-func TestP2PService_IncompatibleRequest(t *testing.T) {
-	// Test invalid version
-	req := p2ppb.P2PMessage{Document: coreDoc, CentNodeVersion: "1000.0.0-invalid", NetworkIdentifier: config.Config.GetNetworkID()}
-	res, err := handler.Post(context.Background(), &req)
-
-	assert.Error(t, err)
-	p2perr, _ := centerrors.FromError(err)
-	assert.Contains(t, p2perr.Message(), strconv.Itoa(int(code.VersionMismatch)))
-	assert.Nil(t, res)
-
-	// Test invalid network
-	req = p2ppb.P2PMessage{Document: coreDoc, CentNodeVersion: version.GetVersion().String(), NetworkIdentifier: config.Config.GetNetworkID() + 1}
-	res, err = handler.Post(context.Background(), &req)
-
-	assert.Error(t, err)
-	p2perr, _ = centerrors.FromError(err)
-	assert.Contains(t, p2perr.Message(), strconv.Itoa(int(code.NetworkMismatch)))
-	assert.Nil(t, res)
-}
-
-func TestP2PService_HandleP2PPostNilDocument(t *testing.T) {
-	req := p2ppb.P2PMessage{CentNodeVersion: version.GetVersion().String(), NetworkIdentifier: config.Config.GetNetworkID()}
-	res, err := handler.Post(context.Background(), &req)
-
-	assert.Error(t, err)
-	assert.Nil(t, res)
-}
-
 func TestHandler_RequestDocumentSignature_nilDocument(t *testing.T) {
 	req := &p2ppb.SignatureRequest{Header: &p2ppb.CentrifugeHeader{
 		CentNodeVersion: version.GetVersion().String(), NetworkIdentifier: config.Config.GetNetworkID(),
