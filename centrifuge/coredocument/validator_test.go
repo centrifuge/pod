@@ -551,9 +551,7 @@ func TestValidate_baseValidator(t *testing.T) {
 					PreviousRoot:       id5,
 				},
 			},
-
 		},
-
 	}
 
 	baseValidator := baseValidator()
@@ -563,7 +561,7 @@ func TestValidate_baseValidator(t *testing.T) {
 		model := mockModel{}
 		model.On("PackCoreDocument", mock.Anything).Return(c.doc, nil).Once()
 
-		err := baseValidator.Validate(nil,&model)
+		err := baseValidator.Validate(nil, &model)
 		if c.key == "" {
 			assert.Nil(t, err)
 			continue

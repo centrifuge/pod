@@ -148,7 +148,6 @@ func GetDocumentSigningTree(document *coredocumentpb.CoreDocument) (tree *proofs
 	return tree, nil
 }
 
-
 // PrepareNewVersion creates a copy of the passed coreDocument with the version fields updated
 // Adds collaborators and fills salts
 // Note: ignores any collaborators in the oldCD
@@ -206,7 +205,8 @@ func NewWithCollaborators(collaborators []string) (*coredocumentpb.CoreDocument,
 	FillSalts(cd)
 	return cd, nil
 }
-//  TODO Comment
+
+//  GetExternalCollaborators returns collaborators of a document without the own centID
 func GetExternalCollaborators(doc *coredocumentpb.CoreDocument) ([][]byte, error) {
 	collaborators := [][]byte{}
 	// Get Self
