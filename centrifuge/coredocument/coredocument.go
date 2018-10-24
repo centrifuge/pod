@@ -9,14 +9,13 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
-
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 )
 
-// GetDataProofHashes returns the hashes needed to create a proof from DataRoot to SigningRoot. This method is used
+// getDataProofHashes returns the hashes needed to create a proof from DataRoot to SigningRoot. This method is used
 // to create field proofs
-func GetDataProofHashes(document *coredocumentpb.CoreDocument) (hashes [][]byte, err error) {
+func getDataProofHashes(document *coredocumentpb.CoreDocument) (hashes [][]byte, err error) {
 	tree, err := GetDocumentSigningTree(document)
 	if err != nil {
 		return
@@ -27,7 +26,7 @@ func GetDataProofHashes(document *coredocumentpb.CoreDocument) (hashes [][]byte,
 		return
 	}
 
-	rootProofHashes, err := GetSigningProofHashes(document)
+	rootProofHashes, err := getSigningProofHashes(document)
 	if err != nil {
 		return
 	}
@@ -35,9 +34,9 @@ func GetDataProofHashes(document *coredocumentpb.CoreDocument) (hashes [][]byte,
 	return append(signingProof.SortedHashes, rootProofHashes...), err
 }
 
-// GetSigningProofHashes returns the hashes needed to create a proof for fields from SigningRoot to DataRoot. This method is used
+// getSigningProofHashes returns the hashes needed to create a proof for fields from SigningRoot to DataRoot. This method is used
 // to create field proofs
-func GetSigningProofHashes(document *coredocumentpb.CoreDocument) (hashes [][]byte, err error) {
+func getSigningProofHashes(document *coredocumentpb.CoreDocument) (hashes [][]byte, err error) {
 	tree, err := GetDocumentRootTree(document)
 	if err != nil {
 		return
@@ -212,18 +211,19 @@ func NewWithCollaborators(collaborators []string) (*coredocumentpb.CoreDocument,
 
 //  GetExternalCollaborators returns collaborators of a document without the own centID
 func GetExternalCollaborators(doc *coredocumentpb.CoreDocument) ([][]byte, error) {
-	collaborators := [][]byte{}
-	// Get Self
+	var collabs [][]byte
 	idConfig, err := ed25519keys.GetIDConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode collaborator: %v", err)
 	}
+
 	for _, collab := range doc.Collaborators {
 		if !utils.IsSameByteSlice(collab, idConfig.ID) {
-			collaborators = append(collaborators, collab)
+			collabs = append(collabs, collab)
 		}
 	}
-	return collaborators, nil
+
+	return collabs, nil
 }
 
 // FillSalts creates a new coredocument.Salts and fills it
@@ -257,12 +257,12 @@ func GetTypeURL(coreDocument *coredocumentpb.CoreDocument) (string, error) {
 
 // CreateProofs util function that takes document data tree, coreDocument and a list fo fields and generates proofs
 func CreateProofs(dataTree *proofs.DocumentTree, coreDoc *coredocumentpb.CoreDocument, fields []string) (proofs []*proofspb.Proof, err error) {
-	dataRootHashes, err := GetDataProofHashes(coreDoc)
+	dataRootHashes, err := getDataProofHashes(coreDoc)
 	if err != nil {
 		return nil, fmt.Errorf("createProofs error %v", err)
 	}
 
-	signingRootHashes, err := GetSigningProofHashes(coreDoc)
+	signingRootHashes, err := getSigningProofHashes(coreDoc)
 	if err != nil {
 		return nil, fmt.Errorf("createProofs error %v", err)
 	}

@@ -49,7 +49,7 @@ func TestGetSigningProofHashes(t *testing.T) {
 	err = CalculateDocumentRoot(cd)
 	assert.Nil(t, err)
 
-	hashes, err := GetSigningProofHashes(cd)
+	hashes, err := getSigningProofHashes(cd)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(hashes))
 
@@ -78,7 +78,7 @@ func TestGetDataProofHashes(t *testing.T) {
 	err = CalculateDocumentRoot(cd)
 	assert.Nil(t, err)
 
-	hashes, err := GetDataProofHashes(cd)
+	hashes, err := getDataProofHashes(cd)
 	assert.Nil(t, err)
 	assert.Equal(t, 4, len(hashes))
 
