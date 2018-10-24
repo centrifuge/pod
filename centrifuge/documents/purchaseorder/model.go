@@ -23,7 +23,7 @@ import (
 )
 
 // PurchaseOrder implements the documents.Model keeps track of purchase order related fields and state
-type PurchaseOrderModel struct {
+type PurchaseOrder struct {
 	// purchase order number or reference number
 	PoNumber string
 	// name of the ordering company
@@ -64,7 +64,7 @@ type PurchaseOrderModel struct {
 	CoreDocument      *coredocumentpb.CoreDocument
 }
 
-func (p *PurchaseOrderModel) ID() ([]byte, error) {
+func (p *PurchaseOrder) ID() ([]byte, error) {
 	coreDoc, err := p.PackCoreDocument()
 	if err != nil {
 		return []byte{}, err
@@ -73,7 +73,7 @@ func (p *PurchaseOrderModel) ID() ([]byte, error) {
 }
 
 // getClientData returns the client data from the purchaseOrder model
-func (p *PurchaseOrderModel) getClientData() *clientpurchaseorderpb.PurchaseOrderData {
+func (p *PurchaseOrder) getClientData() *clientpurchaseorderpb.PurchaseOrderData {
 	var recipient string
 	if p.Recipient != nil {
 		recipient = hexutil.Encode(p.Recipient[:])
@@ -118,7 +118,7 @@ func (p *PurchaseOrderModel) getClientData() *clientpurchaseorderpb.PurchaseOrde
 }
 
 // createP2PProtobuf returns centrifuge protobuf specific purchaseOrderData
-func (p *PurchaseOrderModel) createP2PProtobuf() *purchaseorderpb.PurchaseOrderData {
+func (p *PurchaseOrder) createP2PProtobuf() *purchaseorderpb.PurchaseOrderData {
 	var recipient []byte
 	if p.Recipient != nil {
 		recipient = p.Recipient[:]
@@ -153,7 +153,7 @@ func (p *PurchaseOrderModel) createP2PProtobuf() *purchaseorderpb.PurchaseOrderD
 }
 
 // InitPurchaseOrderInput initialize the model based on the received parameters from the rest api call
-func (p *PurchaseOrderModel) InitPurchaseOrderInput(payload *clientpurchaseorderpb.PurchaseOrderCreatePayload, contextHeader *documents.ContextHeader) error {
+func (p *PurchaseOrder) InitPurchaseOrderInput(payload *clientpurchaseorderpb.PurchaseOrderCreatePayload, contextHeader *documents.ContextHeader) error {
 	err := p.initPurchaseOrderFromData(payload.Data)
 	if err != nil {
 		return err
@@ -169,7 +169,7 @@ func (p *PurchaseOrderModel) InitPurchaseOrderInput(payload *clientpurchaseorder
 }
 
 // initPurchaseOrderFromData initialises purchase order from purchaseOrderData
-func (p *PurchaseOrderModel) initPurchaseOrderFromData(data *clientpurchaseorderpb.PurchaseOrderData) error {
+func (p *PurchaseOrder) initPurchaseOrderFromData(data *clientpurchaseorderpb.PurchaseOrderData) error {
 	p.PoNumber = data.PoNumber
 	p.OrderName = data.OrderName
 	p.OrderStreet = data.OrderStreet
@@ -218,7 +218,7 @@ func (p *PurchaseOrderModel) initPurchaseOrderFromData(data *clientpurchaseorder
 }
 
 // loadFromP2PProtobuf loads the purcase order from centrifuge protobuf purchase order data
-func (p *PurchaseOrderModel) loadFromP2PProtobuf(purchaseOrderData *purchaseorderpb.PurchaseOrderData) {
+func (p *PurchaseOrder) loadFromP2PProtobuf(purchaseOrderData *purchaseorderpb.PurchaseOrderData) {
 	p.PoNumber = purchaseOrderData.PoNumber
 	p.OrderName = purchaseOrderData.OrderName
 	p.OrderStreet = purchaseOrderData.OrderStreet
@@ -248,7 +248,7 @@ func (p *PurchaseOrderModel) loadFromP2PProtobuf(purchaseOrderData *purchaseorde
 }
 
 // getPurchaseOrderSalts returns the purchase oder salts. Initialises if not present
-func (p *PurchaseOrderModel) getPurchaseOrderSalts(purchaseOrderData *purchaseorderpb.PurchaseOrderData) *purchaseorderpb.PurchaseOrderDataSalts {
+func (p *PurchaseOrder) getPurchaseOrderSalts(purchaseOrderData *purchaseorderpb.PurchaseOrderData) *purchaseorderpb.PurchaseOrderDataSalts {
 	if p.PurchaseOrderSalt == nil {
 		purchaseOrderSalt := &purchaseorderpb.PurchaseOrderDataSalts{}
 		proofs.FillSalts(purchaseOrderData, purchaseOrderSalt)
@@ -258,9 +258,9 @@ func (p *PurchaseOrderModel) getPurchaseOrderSalts(purchaseOrderData *purchaseor
 	return p.PurchaseOrderSalt
 }
 
-// PackCoreDocument packs the PurchaseOrderModel into a Core Document
+// PackCoreDocument packs the PurchaseOrder into a Core Document
 // If the, PurchaseOrder is new, it creates a valid identifiers
-func (p *PurchaseOrderModel) PackCoreDocument() (*coredocumentpb.CoreDocument, error) {
+func (p *PurchaseOrder) PackCoreDocument() (*coredocumentpb.CoreDocument, error) {
 	poData := p.createP2PProtobuf()
 	poSerialized, err := proto.Marshal(poData)
 	if err != nil {
@@ -291,8 +291,8 @@ func (p *PurchaseOrderModel) PackCoreDocument() (*coredocumentpb.CoreDocument, e
 	return coreDoc, err
 }
 
-// UnpackCoreDocument unpacks the core document into PurchaseOrderModel
-func (p *PurchaseOrderModel) UnpackCoreDocument(coreDoc *coredocumentpb.CoreDocument) error {
+// UnpackCoreDocument unpacks the core document into PurchaseOrder
+func (p *PurchaseOrder) UnpackCoreDocument(coreDoc *coredocumentpb.CoreDocument) error {
 	if coreDoc == nil {
 		return centerrors.NilError(coreDoc)
 	}
@@ -326,23 +326,23 @@ func (p *PurchaseOrderModel) UnpackCoreDocument(coreDoc *coredocumentpb.CoreDocu
 	return err
 }
 
-// JSON marshals PurchaseOrderModel into a json bytes
-func (p *PurchaseOrderModel) JSON() ([]byte, error) {
+// JSON marshals PurchaseOrder into a json bytes
+func (p *PurchaseOrder) JSON() ([]byte, error) {
 	return json.Marshal(p)
 }
 
-// FromJSON unmarshals the json bytes into PurchaseOrderModel
-func (p *PurchaseOrderModel) FromJSON(jsonData []byte) error {
+// FromJSON unmarshals the json bytes into PurchaseOrder
+func (p *PurchaseOrder) FromJSON(jsonData []byte) error {
 	return json.Unmarshal(jsonData, p)
 }
 
-// Type gives the PurchaseOrderModel type
-func (p *PurchaseOrderModel) Type() reflect.Type {
+// Type gives the PurchaseOrder type
+func (p *PurchaseOrder) Type() reflect.Type {
 	return reflect.TypeOf(p)
 }
 
 // calculateDataRoot calculates the data root and sets the root to core document
-func (p *PurchaseOrderModel) calculateDataRoot() error {
+func (p *PurchaseOrder) calculateDataRoot() error {
 	t, err := p.getDocumentDataTree()
 	if err != nil {
 		return fmt.Errorf("calculateDataRoot error %v", err)
@@ -352,7 +352,7 @@ func (p *PurchaseOrderModel) calculateDataRoot() error {
 }
 
 // getDocumentDataTree creates precise-proofs data tree for the model
-func (p *PurchaseOrderModel) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
+func (p *PurchaseOrder) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
 	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: sha256.New()})
 	poData := p.createP2PProtobuf()
 	err = t.AddLeavesFromDocument(poData, p.getPurchaseOrderSalts(poData))
@@ -367,7 +367,7 @@ func (p *PurchaseOrderModel) getDocumentDataTree() (tree *proofs.DocumentTree, e
 }
 
 // CreateProofs generates proofs for given fields
-func (p *PurchaseOrderModel) createProofs(fields []string) (coreDoc *coredocumentpb.CoreDocument, proofs []*proofspb.Proof, err error) {
+func (p *PurchaseOrder) createProofs(fields []string) (coreDoc *coredocumentpb.CoreDocument, proofs []*proofspb.Proof, err error) {
 	// There can be failure scenarios where the core doc for the particular document
 	// is still not saved with roots in db due to failures during getting signatures.
 	coreDoc, err = p.PackCoreDocument()
