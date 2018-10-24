@@ -19,7 +19,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/context/testlogging"
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
-	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/notification"
 	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
@@ -46,7 +45,6 @@ func TestMain(m *testing.M) {
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
 		&storage.Bootstrapper{},
-		&coredocumentrepository.Bootstrapper{},
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, nil)
 	result := m.Run()
@@ -63,7 +61,6 @@ func TestP2PService(t *testing.T) {
 	assert.Equal(t, res.Document.DocumentIdentifier, coreDoc.DocumentIdentifier, "Incorrect identifier")
 
 	doc := new(coredocumentpb.CoreDocument)
-	err = coredocumentrepository.GetRepository().GetByID(coreDoc.DocumentIdentifier, doc)
 	assert.Equal(t, doc.DocumentIdentifier, coreDoc.DocumentIdentifier, "Document Identifier doesn't match")
 }
 

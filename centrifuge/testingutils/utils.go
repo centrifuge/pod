@@ -35,16 +35,6 @@ func Rand32Bytes() []byte {
 	return bytes
 }
 
-func GenerateP2PRecipients(quantity int) [][]byte {
-	recipients := make([][]byte, quantity)
-
-	for i := 0; i < quantity; i++ {
-		ID := identity.NewRandomCentID()
-		recipients[i] = ID[:]
-	}
-	return recipients
-}
-
 func GenerateCoreDocument() *coredocumentpb.CoreDocument {
 	identifier := Rand32Bytes()
 	salts := &coredocumentpb.CoreDocumentSalts{}

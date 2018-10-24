@@ -10,7 +10,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/context/testlogging"
-	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
 	"github.com/stretchr/testify/assert"
 )
@@ -20,7 +19,6 @@ func TestMain(m *testing.M) {
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
 		&storage.Bootstrapper{},
-		&coredocumentrepository.Bootstrapper{},
 		&Bootstrapper{},
 	}
 
