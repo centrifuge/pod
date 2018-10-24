@@ -202,7 +202,11 @@ func NewWithCollaborators(collaborators []string) (*coredocumentpb.CoreDocument,
 		cd.Collaborators = append(cd.Collaborators, ids[i][:])
 	}
 
-	FillSalts(cd)
+	err = FillSalts(cd)
+	if err != nil {
+		return nil, err
+	}
+
 	return cd, nil
 }
 
@@ -222,12 +226,16 @@ func GetExternalCollaborators(doc *coredocumentpb.CoreDocument) ([][]byte, error
 	return collaborators, nil
 }
 
-// FillSalts of coredocument current state for proof tree creation
-func FillSalts(doc *coredocumentpb.CoreDocument) {
+// FillSalts creates a new coredocument.Salts and fills it
+func FillSalts(doc *coredocumentpb.CoreDocument) error {
 	salts := &coredocumentpb.CoreDocumentSalts{}
-	proofs.FillSalts(doc, salts)
+	err := proofs.FillSalts(doc, salts)
+	if err != nil {
+		return fmt.Errorf("failed to fill coredocument salts: %v", err)
+	}
+
 	doc.CoredocumentSalts = salts
-	return
+	return nil
 }
 
 // GetTypeURL returns the type of the embedded document
