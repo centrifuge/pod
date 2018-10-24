@@ -206,7 +206,7 @@ func NewWithCollaborators(collaborators []string) (*coredocumentpb.CoreDocument,
 	FillSalts(cd)
 	return cd, nil
 }
-
+//  TODO Comment
 func GetExternalCollaborators(doc *coredocumentpb.CoreDocument) ([][]byte, error) {
 	collaborators := [][]byte{}
 	// Get Self
