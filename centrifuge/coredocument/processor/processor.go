@@ -28,8 +28,6 @@ var log = logging.Logger("coredocument")
 // E.g. send, anchor, etc.
 type Processor interface {
 	Send(ctx context.Context, coreDocument *coredocumentpb.CoreDocument, recipient identity.CentID) (err error)
-	Anchor(ctx context.Context, document *coredocumentpb.CoreDocument,
-		saveState func(coreDoc *coredocumentpb.CoreDocument) error) (err error)
 	PrepareForSignatureRequests(model documents.Model) error
 	RequestSignatures(ctx context.Context, model documents.Model) error
 	PrepareForAnchoring(model documents.Model) error
@@ -102,25 +100,6 @@ func (dp defaultProcessor) Send(ctx context.Context, coreDocument *coredocumentp
 		log.Error(err)
 		return err
 	}
-
-	return nil
-}
-
-// Anchor anchors the given CoreDocument
-// This method should:
-// - calculate the signing root
-// - sign document with own key
-// - collect signatures (incl. validate)
-// - store signatures on coredocument
-// - calculate DocumentRoot
-// - store doc in db
-// - anchor the document
-// - send anchored document to collaborators [NOT NEEDED since we do this in the current flow already because HandleSend****Document does it after anchoring]
-// Deprecated: use individual flows instead
-func (dp defaultProcessor) Anchor(
-	ctx context.Context,
-	document *coredocumentpb.CoreDocument,
-	saveState func(coreDoc *coredocumentpb.CoreDocument) error) error {
 
 	return nil
 }
