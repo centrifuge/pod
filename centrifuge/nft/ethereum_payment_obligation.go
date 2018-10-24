@@ -153,7 +153,7 @@ type MintRequest struct {
 	// TokenURI is the metadata uri
 	TokenURI string
 
-	// AnchorID is the ID of the document as identified by the set up anchorRegistry.
+	// AnchorID is the ID of the document as identified by the set up anchorRepository.
 	AnchorID *big.Int
 
 	// MerkleRoot is the root hash of the merkle proof/doc
