@@ -222,7 +222,7 @@ geth attach ws://localhost:9546
 To create the go bindings for the deployed truffle contract, use the following command:
 
 ```bash
-abigen --abi abi/AnchorRegistry.abi --pkg anchor --type EthereumAnchorRegistryContract --out ${GOPATH}/src/github.com/centrifuge/go-centrifuge/centrifuge/anchor/ethereum_anchor_registry_contract.go
+abigen --abi abi/AnchorRepository.abi --pkg anchor --type EthereumAnchorRepositoryContract --out ${GOPATH}/src/github.com/centrifuge/go-centrifuge/centrifuge/anchor/ethereum_anchor_repository_contract.go
 ```
 
 and then copy the `ethereum_anchor_registry_contract.go` file to `centrifuge/anchor/`. You will also need to modify the file to add the following imports:
