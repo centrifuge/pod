@@ -14,7 +14,7 @@ var log = logging.Logger("storage")
 var levelDBInstance *leveldb.DB
 
 // once to guard the levelDB instance
-var lock sync.RWMutex
+var lock sync.Mutex
 
 // GetStorage is a singleton implementation returning the default database as configured
 func NewLevelDBStorage(path string) (*leveldb.DB, error) {
