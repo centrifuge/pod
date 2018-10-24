@@ -44,10 +44,6 @@ type Handler struct {
 	Notifier notification.Sender
 }
 
-// Deprecated
-func (srv *Handler) Post(ctx context.Context, req *p2ppb.P2PMessage) (*p2ppb.P2PReply, error) {
-	return nil, nil
-}
 
 // RequestDocumentSignature signs the received document and returns the signature of the signingRoot
 // Document signing root will be recalculated and verified
@@ -76,7 +72,7 @@ func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.
 }
 
 // SendAnchoredDocument receives a new anchored document, validates and updates the document in DB
-func (srv *Handler) SendAnchoredDocument(ctx context.Context, docReq *p2ppb.AnchDocumentRequest) (*p2ppb.AnchDocumentResponse, error) {
+func (srv *Handler) SendAnchoredDocument(ctx context.Context, docReq *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error) {
 	err := handshakeValidator().Validate(docReq.Header)
 	if err != nil {
 		return nil, err
@@ -92,7 +88,7 @@ func (srv *Handler) SendAnchoredDocument(ctx context.Context, docReq *p2ppb.Anch
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
 
-	return &p2ppb.AnchDocumentResponse{
+	return &p2ppb.AnchorDocumentResponse{
 		CentNodeVersion: version.GetVersion().String(),
 		Accepted:        true,
 	}, nil

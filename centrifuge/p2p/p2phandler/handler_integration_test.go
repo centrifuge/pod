@@ -307,8 +307,8 @@ func updateDocumentForP2Phandler(t *testing.T, doc *coredocumentpb.CoreDocument)
 	assert.Nil(t, err)
 }
 
-func getAnchoredRequest(doc *coredocumentpb.CoreDocument) *p2ppb.AnchDocumentRequest {
-	return &p2ppb.AnchDocumentRequest{
+func getAnchoredRequest(doc *coredocumentpb.CoreDocument) *p2ppb.AnchorDocumentRequest {
+	return &p2ppb.AnchorDocumentRequest{
 		Header: &p2ppb.CentrifugeHeader{
 			CentNodeVersion:   version.GetVersion().String(),
 			NetworkIdentifier: config.Config.GetNetworkID(),
