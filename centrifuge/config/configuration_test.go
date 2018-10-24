@@ -25,7 +25,7 @@ func TestConfiguration_CreateConfigFile(t *testing.T) {
 		"targetDataDir":   targetDir,
 		"accountKeyPath":  accountKeyPath,
 		"accountPassword": "pwrd",
-		"network":         "russianHill",
+		"network":         "russianhill",
 		"ethNodeUrl":      "ws://127.0.0.1:9546",
 		"bootstraps":      []string{"/ip4/127.0.0.1/bootstrap1", "/ip4/127.0.0.1/bootstrap2"},
 		"apiPort":         int64(8082),

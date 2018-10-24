@@ -1,4 +1,4 @@
-centrifugeNetwork: russianHill
+centrifugeNetwork: russianhill
 storage:
   path: /tmp/centrifuge_data_aux.leveldb
 
