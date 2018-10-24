@@ -12,7 +12,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/keytools/ed25519keys"
+	"github.com/centrifuge/go-centrifuge/keytools/ed25519"
 	"github.com/centrifuge/go-centrifuge/keytools/secp256k1"
 	"github.com/centrifuge/go-centrifuge/p2p"
 	"github.com/centrifuge/go-centrifuge/signatures"
@@ -81,7 +81,7 @@ func (dp defaultProcessor) Send(ctx context.Context, coreDocument *coredocumentp
 
 	log.Infof("Done opening connection against [%s]\n", lastB58Key)
 
-	idConfig, err := ed25519keys.GetIDConfig()
+	idConfig, err := ed25519.GetIDConfig()
 	if err != nil {
 		err = centerrors.Wrap(err, "failed to extract bytes")
 		log.Error(err)
@@ -117,7 +117,7 @@ func (dp defaultProcessor) PrepareForSignatureRequests(model documents.Model) er
 	}
 
 	// sign document with own key and append it to signatures
-	idConfig, err := ed25519keys.GetIDConfig()
+	idConfig, err := ed25519.GetIDConfig()
 	if err != nil {
 		return fmt.Errorf("failed to get keys for signing: %v", err)
 	}

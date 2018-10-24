@@ -12,7 +12,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/keytools/ed25519keys"
+	"github.com/centrifuge/go-centrifuge/keytools/ed25519"
 	"github.com/centrifuge/go-centrifuge/keytools/secp256k1"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
@@ -119,7 +119,7 @@ func (*MockSubscription) Unsubscribe() {}
 
 func CreateIdentityWithKeys() identity.CentID {
 	idConfigEth, _ := secp256k1.GetIDConfig()
-	idConfig, _ := ed25519keys.GetIDConfig()
+	idConfig, _ := ed25519.GetIDConfig()
 	centIdTyped, _ := identity.ToCentID(idConfigEth.ID)
 	// only create identity if it doesn't exist
 	id, err := identity.IDService.LookupIdentityForID(centIdTyped)

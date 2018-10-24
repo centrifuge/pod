@@ -6,7 +6,7 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/keytools/ed25519keys"
+	"github.com/centrifuge/go-centrifuge/keytools/ed25519"
 )
 
 // Model is an interface to abstract away model specificness like invoice or purchaseOrder
@@ -41,7 +41,7 @@ type ContextHeader struct {
 
 // NewContextHeader creates new instance of the request headers needed
 func NewContextHeader() (*ContextHeader, error) {
-	idConfig, err := ed25519keys.GetIDConfig()
+	idConfig, err := ed25519.GetIDConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get id config: %v", err)
 	}

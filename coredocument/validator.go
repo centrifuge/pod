@@ -7,7 +7,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/keytools/ed25519keys"
+	"github.com/centrifuge/go-centrifuge/keytools/ed25519"
 	"github.com/centrifuge/go-centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -212,7 +212,7 @@ func readyForSignaturesValidator() documents.Validator {
 			return fmt.Errorf("expecting only one signature")
 		}
 
-		c, err := ed25519keys.GetIDConfig()
+		c, err := ed25519.GetIDConfig()
 		if err != nil {
 			return fmt.Errorf("failed to get keys for signature calculation: %v", err)
 		}

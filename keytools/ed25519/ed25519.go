@@ -1,4 +1,4 @@
-package ed25519keys
+package ed25519
 
 import (
 	"fmt"

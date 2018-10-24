@@ -16,9 +16,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/keytools/ed25519keys"
+	"github.com/centrifuge/go-centrifuge/keytools/ed25519"
 	"github.com/centrifuge/go-centrifuge/signatures"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
@@ -271,7 +270,7 @@ func TestValidator_selfSignatureValidator(t *testing.T) {
 
 	// success
 	cd.SigningRoot = utils.RandomSlice(32)
-	c, err := ed25519keys.GetIDConfig()
+	c, err := ed25519.GetIDConfig()
 	assert.Nil(t, err)
 	s = signatures.Sign(c, cd.SigningRoot)
 	cd.Signatures = []*coredocumentpb.Signature{s}
@@ -316,7 +315,7 @@ func TestValidator_signatureValidator(t *testing.T) {
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
 	cd.SigningRoot = utils.RandomSlice(32)
-	c, err := ed25519keys.GetIDConfig()
+	c, err := ed25519.GetIDConfig()
 	assert.Nil(t, err)
 	s = signatures.Sign(c, cd.SigningRoot)
 	cd.Signatures = []*coredocumentpb.Signature{s}

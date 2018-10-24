@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/keytools/ed25519keys"
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/crypto/ed25519"
@@ -77,8 +76,8 @@ func TestCentP2PServer_makeBasicHostWithExternalIP(t *testing.T) {
 }
 
 func getKeys() (ed25519.PrivateKey, ed25519.PublicKey, error) {
-	pub, err := ed25519keys.GetPublicSigningKey("../../example/resources/signingKey.pub.pem")
-	pri, err := ed25519keys.GetPrivateSigningKey("../../example/resources/signingKey.key.pem")
+	pub, err := ed25519.GetPublicSigningKey("../../example/resources/signingKey.pub.pem")
+	pri, err := ed25519.GetPrivateSigningKey("../../example/resources/signingKey.key.pem")
 	return pri, pub, err
 
 }
