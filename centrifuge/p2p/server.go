@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/notification"
 	"github.com/centrifuge/go-centrifuge/centrifuge/p2p/p2phandler"
 	"github.com/ipfs/go-cid"
@@ -182,10 +183,27 @@ func (c *CentP2PServer) makeBasicHost(listenPort int) (host.Host, error) {
 		return nil, err
 	}
 
+	externalIP := config.Config.GetP2PExternalIP()
+	if externalIP == "" {
+		log.Warning("External IP not defined, Peers might not be able to resolve this node if behind NAT\n")
+	}
+
+	addressFactory := func(addrs []ma.Multiaddr) []ma.Multiaddr {
+		if externalIP != "" {
+			a, err := ma.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%d", externalIP, listenPort))
+			if err != nil {
+				log.Errorf("Error creating multiaddress: %v\n", err)
+			}
+			addrs = append(addrs, a)
+		}
+		return addrs
+	}
+
 	opts := []libp2p.Option{
 		libp2p.ListenAddrStrings(fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", listenPort)),
 		libp2p.Identity(priv),
 		libp2p.DefaultMuxers,
+		libp2p.AddrsFactory(addressFactory),
 	}
 
 	bhost, err := libp2p.New(context.Background(), opts...)
