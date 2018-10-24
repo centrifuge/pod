@@ -1,11 +1,9 @@
 package storage
 
 import (
+	"fmt"
 	"sync"
 
-	"fmt"
-
-	"github.com/golang/protobuf/proto"
 	logging "github.com/ipfs/go-log"
 	"github.com/syndtr/goleveldb/leveldb"
 )
@@ -16,23 +14,23 @@ var log = logging.Logger("storage")
 var levelDBInstance *leveldb.DB
 
 // once to guard the levelDB instance
-var once sync.Once
+var lock sync.RWMutex
 
 // GetStorage is a singleton implementation returning the default database as configured
-func NewLevelDBStorage(path string) *leveldb.DB {
+func NewLevelDBStorage(path string) (*leveldb.DB, error) {
 	if levelDBInstance != nil {
-		log.Fatalf("Can't open new DB, db already open")
+		return nil, fmt.Errorf("db already open")
 	}
 
-	once.Do(func() {
-		i, err := leveldb.OpenFile(path, nil)
-		if err != nil {
-			log.Fatal(err)
-		}
+	lock.Lock()
+	defer lock.Unlock()
+	i, err := leveldb.OpenFile(path, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-		levelDBInstance = i
-	})
-	return levelDBInstance
+	levelDBInstance = i
+	return levelDBInstance, nil
 }
 
 // GetLevelDBStorage returns levelDB instance if initialised
@@ -47,100 +45,16 @@ func GetLevelDBStorage() *leveldb.DB {
 
 // CloseLevelDBStorage closes any open instance of levelDB
 func CloseLevelDBStorage() {
-	if levelDBInstance != nil {
-		levelDBInstance.Close()
+	if levelDBInstance == nil {
+		return
 	}
-}
 
-// DefaultLevelDB implements the repository
-// Deprecated: use documents.LevelDBRepository
-type DefaultLevelDB struct {
-	KeyPrefix    string
-	LevelDB      *leveldb.DB
-	ValidateFunc func(proto.Message) error
-}
-
-// Exists returns if the document exists in the repository
-func (repo *DefaultLevelDB) Exists(id []byte) bool {
-	_, err := repo.LevelDB.Get(repo.GetKey(id), nil)
+	lock.Lock()
+	defer lock.Unlock()
+	err := levelDBInstance.Close()
 	if err != nil {
-		return false
+		log.Infof("failed to close the level DB: %v", err)
 	}
 
-	return true
-}
-
-// GetKey prepends the id with prefix and returns the result
-func (repo *DefaultLevelDB) GetKey(id []byte) []byte {
-	return append([]byte(repo.KeyPrefix), id...)
-}
-
-// GetByID finds the document by id and marshals into message
-func (repo *DefaultLevelDB) GetByID(id []byte, msg proto.Message) error {
-	if msg == nil {
-		return fmt.Errorf("nil document provided")
-	}
-
-	data, err := repo.LevelDB.Get(repo.GetKey(id), nil)
-	if err != nil {
-		return err
-	}
-
-	err = proto.Unmarshal(data, msg)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Create creates the document if not exists
-// errors out if document exists
-func (repo *DefaultLevelDB) Create(id []byte, msg proto.Message) error {
-	if msg == nil {
-		return fmt.Errorf("nil document provided")
-	}
-
-	if repo.Exists(id) {
-		return fmt.Errorf("document already exists")
-	}
-
-	if repo.ValidateFunc != nil {
-		err := repo.ValidateFunc(msg)
-		if err != nil {
-			return fmt.Errorf("validation failed: %v", err)
-		}
-	}
-
-	data, err := proto.Marshal(msg)
-	if err != nil {
-		return err
-	}
-
-	return repo.LevelDB.Put(repo.GetKey(id), data, nil)
-}
-
-// Update updates the doc with ID if exists
-func (repo *DefaultLevelDB) Update(id []byte, msg proto.Message) error {
-	if msg == nil {
-		return fmt.Errorf("nil document provided")
-	}
-
-	if !repo.Exists(id) {
-		return fmt.Errorf("document doesn't exists")
-	}
-
-	if repo.ValidateFunc != nil {
-		err := repo.ValidateFunc(msg)
-		if err != nil {
-			return fmt.Errorf("validation failed: %v", err)
-		}
-	}
-
-	data, err := proto.Marshal(msg)
-	if err != nil {
-		return err
-	}
-
-	return repo.LevelDB.Put(repo.GetKey(id), data, nil)
+	levelDBInstance = nil
 }
