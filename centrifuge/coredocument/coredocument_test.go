@@ -4,6 +4,8 @@ package coredocument
 
 import (
 	"crypto/sha256"
+	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
+	"github.com/stretchr/testify/mock"
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
@@ -254,8 +256,16 @@ func TestValidate(t *testing.T) {
 		},
 	}
 
+
+	baseValidator := baseValidator()
+
 	for _, c := range tests {
-		err := Validate(c.doc)
+
+		model := testingdocuments.MockModel{}
+		model.Mock.On("UnpackCoreDocument", mock.Anything).Return(c.doc, nil).Once()
+		model.UnpackCoreDocument(c.doc)
+
+		err := baseValidator.Validate(nil,&model)
 		if c.key == "" {
 			assert.Nil(t, err)
 			continue

@@ -142,10 +142,6 @@ func baseValidator() documents.Validator {
 			err = documents.AppendError(err, documents.NewError("cd_salts", centerrors.RequiredField))
 		}
 
-		if err := Validate(cd); err != nil {
-			return err
-		}
-
 		return nil
 	})
 }
