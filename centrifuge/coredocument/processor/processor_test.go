@@ -45,11 +45,6 @@ func TestCoreDocumentProcessor_SendNilDocument(t *testing.T) {
 	assert.Error(t, err, "should have thrown an error")
 }
 
-func TestCoreDocumentProcessor_AnchorNilDocument(t *testing.T) {
-	err := dp.Anchor(nil, nil, nil)
-	assert.Error(t, err, "should have thrown an error")
-}
-
 type mockModel struct {
 	mock.Mock
 	documents.Model

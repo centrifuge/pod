@@ -45,6 +45,11 @@ type Handler struct {
 	Notifier notification.Sender
 }
 
+// Deprecated
+func (srv *Handler) Post(ctx context.Context, req *p2ppb.P2PMessage) (*p2ppb.P2PReply, error) {
+	return nil,nil
+}
+
 // RequestDocumentSignature signs the received document and returns the signature of the signingRoot
 // Document signing root will be recalculated and verified
 // Existing signatures on the document will be verified
