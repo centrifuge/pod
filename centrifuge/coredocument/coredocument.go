@@ -10,7 +10,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
-	"github.com/centrifuge/go-centrifuge/centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
 
 	"github.com/centrifuge/precise-proofs/proofs"
@@ -199,36 +198,6 @@ func Validate(document *coredocumentpb.CoreDocument) error {
 	return err
 }
 
-// ValidateWithSignature does a basic validations and signature validations
-// signing_root is recalculated and verified
-// signatures are validated
-func ValidateWithSignature(doc *coredocumentpb.CoreDocument) error {
-	if err := Validate(doc); err != nil {
-		return err
-	}
-
-	if utils.IsEmptyByteSlice(doc.SigningRoot) {
-		return fmt.Errorf("signing root missing")
-	}
-
-	t, err := GetDocumentSigningTree(doc)
-	if err != nil {
-		return fmt.Errorf("failed to generate signing root")
-	}
-
-	if !utils.IsSameByteSlice(t.RootHash(), doc.SigningRoot) {
-		return fmt.Errorf("signing root mismatch")
-	}
-
-	for _, sig := range doc.Signatures {
-		erri := signatures.ValidateSignature(sig, doc.SigningRoot)
-		if erri != nil {
-			err = documents.AppendError(err, erri)
-		}
-	}
-
-	return err
-}
 
 // PrepareNewVersion creates a copy of the passed coreDocument with the version fields updated
 // Adds collaborators and fills salts
