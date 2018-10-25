@@ -40,7 +40,7 @@ proto-all: ## runs prototool all
 	$(PROTOTOOL_BIN) all
 
 gen-swagger: ## generates the swagger documentation
-	npm run build_swagger
+	 cd scripts/swagger && npm install && npm run build_swagger && cd ../..
 
 generate: ## autogenerate go files for config
 	go generate ./centrifuge/config/configuration.go

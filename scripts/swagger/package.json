@@ -1,10 +1,10 @@
 {
-  "name": "centrifuge-protobufs",
-  "version": "0.0.1",
-  "description": "Protobuf files &amp; go bindings for Centrifuge Documents",
-  "main": "index.js",
+  "name": "go-centrifuge",
+  "version": "0.0.2",
+  "description": "Protobuf files &amp; go bindings for go-centrifuge",
+  "main": "build_swagger.js",
   "scripts": {
-    "build_swagger": "node scripts/build_swagger.js"
+    "build_swagger": "node build_swagger.js"
   },
   "repository": {
     "type": "git",

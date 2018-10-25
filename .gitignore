@@ -1,4 +1,4 @@
-node_modules/
+scripts/swagger/node_modules/
 bin/
 pkg/
 vendor/*
