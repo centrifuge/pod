@@ -225,10 +225,10 @@ func (c *Configuration) InitializeViper() {
 	c.V.SetConfigType("yaml")
 
 	// Load defaults
-	data, _ := resources.Asset("resources/default_config.yaml")
+	data, _ := resources.Asset("../build/configs/default_config.yaml")
 	err := c.V.ReadConfig(bytes.NewReader(data))
 	if err != nil {
-		log.Panicf("Error reading from default configuration (resources/default_config.yaml): %s", err)
+		log.Panicf("Error reading from default configuration (../build/configs/default_config.yaml): %s", err)
 	}
 	// Load user specified config
 	if c.configFile != "" {

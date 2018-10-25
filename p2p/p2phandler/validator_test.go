@@ -46,10 +46,7 @@ func TestValidate_networkValidator(t *testing.T) {
 	err := nv.Validate(nil)
 	assert.NotNil(t, err)
 
-	// Empty header
 	header := &p2ppb.CentrifugeHeader{}
-	err = nv.Validate(header)
-	assert.NotNil(t, err)
 
 	// Incompatible network
 	header.NetworkIdentifier = 12
