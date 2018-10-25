@@ -4,7 +4,6 @@ const path = require('path');
 
 const swaggerFilesPath = path.resolve(__dirname, '../../centrifuge/protobufs/gen/swagger')
 const swaggerJsonPath = path.resolve(__dirname, '../../centrifuge/protobufs/gen/swagger.json')
-const swaggerHtmlPath = path.resolve(__dirname, '../../centrifuge/protobufs/gen/swagger/html')
 const swaggerConfig = require(path.resolve(__dirname, 'swagger_config'));
 
 
