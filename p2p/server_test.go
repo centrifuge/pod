@@ -76,6 +76,18 @@ func TestCentP2PServer_makeBasicHostWithExternalIP(t *testing.T) {
 	assert.Contains(t, h.Addrs(), addr)
 }
 
+func TestCentP2PServer_makeBasicHostWithWrongExternalIP(t *testing.T) {
+	externalIP := "100.200.300.400"
+	listenPort := 38202
+	config.Config.V.Set("p2p.externalIP", externalIP)
+	priv, pub, err := getKeys()
+	assert.Nil(t, err)
+	cp2p := NewCentP2PServer(listenPort, []string{}, pub, priv)
+	h, err := cp2p.makeBasicHost(listenPort)
+	assert.NotNil(t, err)
+	assert.Nil(t, h)
+}
+
 func getKeys() (ed25519.PrivateKey, ed25519.PublicKey, error) {
 	pub, err := cented25519.GetPublicSigningKey("../build/resources/signingKey.pub.pem")
 	pri, err := cented25519.GetPrivateSigningKey("../build/resources/signingKey.key.pem")
