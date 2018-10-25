@@ -49,4 +49,4 @@ jobs:
        - openssl aes-256-cbc -K $encrypted_f84a564476a2_key -iv $encrypted_f84a564476a2_iv -in peak-vista-185616-9f70002df7eb.json.enc -out peak-vista-185616-9f70002df7eb.json -d
       script: make build-ci
       after_script:
-       - ./scripts/push_to_swagger.sh
+       - ./scripts/swagger/push_to_swagger.sh
