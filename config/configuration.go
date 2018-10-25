@@ -225,10 +225,14 @@ func (c *Configuration) InitializeViper() {
 	c.V.SetConfigType("yaml")
 
 	// Load defaults
-	data, _ := resources.Asset("../build/configs/default_config.yaml")
-	err := c.V.ReadConfig(bytes.NewReader(data))
+	data, err := resources.Asset("go-centrifuge/build/configs/default_config.yaml")
 	if err != nil {
-		log.Panicf("Error reading from default configuration (../build/configs/default_config.yaml): %s", err)
+		log.Panicf("failed to load (go-centrifuge/build/configs/default_config.yaml): %s", err)
+	}
+
+	err = c.V.ReadConfig(bytes.NewReader(data))
+	if err != nil {
+		log.Panicf("Error reading from default configuration (go-centrifuge/build/configs/default_config.yaml): %s", err)
 	}
 	// Load user specified config
 	if c.configFile != "" {
