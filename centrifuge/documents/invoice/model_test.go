@@ -12,7 +12,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
@@ -23,7 +22,7 @@ import (
 )
 
 func TestInvoice_FromCoreDocuments_invalidParameter(t *testing.T) {
-	invoiceModel := &InvoiceModel{}
+	invoiceModel := &Invoice{}
 
 	emptyCoreDocument := &coredocumentpb.CoreDocument{}
 	err := invoiceModel.UnpackCoreDocument(emptyCoreDocument)
@@ -40,7 +39,7 @@ func TestInvoice_FromCoreDocuments_invalidParameter(t *testing.T) {
 }
 
 func TestInvoice_InitCoreDocument_successful(t *testing.T) {
-	invoiceModel := &InvoiceModel{}
+	invoiceModel := &Invoice{}
 
 	coreDocument := testingdocuments.CreateCDWithEmbeddedInvoice(t, testingdocuments.CreateInvoiceData())
 	err := invoiceModel.UnpackCoreDocument(coreDocument)
@@ -48,7 +47,7 @@ func TestInvoice_InitCoreDocument_successful(t *testing.T) {
 }
 
 func TestInvoice_InitCoreDocument_invalidCentId(t *testing.T) {
-	invoiceModel := &InvoiceModel{}
+	invoiceModel := &Invoice{}
 
 	coreDocument := testingdocuments.CreateCDWithEmbeddedInvoice(t, invoicepb.InvoiceData{
 		Recipient:   utils.RandomSlice(identity.CentIDLength + 1),
@@ -64,7 +63,7 @@ func TestInvoice_InitCoreDocument_invalidCentId(t *testing.T) {
 }
 
 func TestInvoice_CoreDocument_successful(t *testing.T) {
-	invoiceModel := &InvoiceModel{}
+	invoiceModel := &Invoice{}
 
 	//init model with a CoreDoc
 	coreDocument := testingdocuments.CreateCDWithEmbeddedInvoice(t, testingdocuments.CreateInvoiceData())
@@ -78,19 +77,19 @@ func TestInvoice_CoreDocument_successful(t *testing.T) {
 }
 
 func TestInvoice_ModelInterface(t *testing.T) {
-	var i interface{} = &InvoiceModel{}
+	var i interface{} = &Invoice{}
 	_, ok := i.(documents.Model)
 	assert.True(t, ok, "model interface not implemented correctly for invoiceModel")
 }
 
 func TestInvoice_Type(t *testing.T) {
 	var model documents.Model
-	model = &InvoiceModel{}
-	assert.Equal(t, model.Type(), reflect.TypeOf(&InvoiceModel{}), "InvoiceType not correct")
+	model = &Invoice{}
+	assert.Equal(t, model.Type(), reflect.TypeOf(&Invoice{}), "InvoiceType not correct")
 }
 
 func TestInvoice_JSON(t *testing.T) {
-	invoiceModel := &InvoiceModel{}
+	invoiceModel := &Invoice{}
 
 	//init model with a CoreDoc
 	coreDocument := testingdocuments.CreateCDWithEmbeddedInvoice(t, testingdocuments.CreateInvoiceData())
@@ -109,7 +108,7 @@ func TestInvoice_JSON(t *testing.T) {
 }
 
 func TestInvoiceModel_UnpackCoreDocument(t *testing.T) {
-	var model documents.Model = new(InvoiceModel)
+	var model documents.Model = new(Invoice)
 	var err error
 
 	// nil core doc
@@ -134,7 +133,7 @@ func TestInvoiceModel_UnpackCoreDocument(t *testing.T) {
 
 func TestInvoiceModel_getClientData(t *testing.T) {
 	invData := testingdocuments.CreateInvoiceData()
-	inv := new(InvoiceModel)
+	inv := new(Invoice)
 	inv.loadFromP2PProtobuf(&invData)
 
 	data := inv.getClientData()
@@ -146,11 +145,8 @@ func TestInvoiceModel_getClientData(t *testing.T) {
 }
 
 func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
-	idConfig, err := ed25519keys.GetIDConfig()
+	contextHeader, err := documents.NewContextHeader()
 	assert.Nil(t, err)
-	self, err := identity.ToCentID(idConfig.ID)
-	assert.Nil(t, err)
-	contextHeader := documents.NewContextHeader(self)
 	// fail recipient
 	data := &clientinvoicepb.InvoiceData{
 		Sender:    "some number",
@@ -158,7 +154,7 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 		Recipient: "some recipient",
 		ExtraData: "some data",
 	}
-	inv := new(InvoiceModel)
+	inv := new(Invoice)
 	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data}, contextHeader)
 	assert.Error(t, err, "must return err")
 	assert.Contains(t, err.Error(), "failed to decode extra data")
@@ -204,17 +200,15 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 	assert.Equal(t, inv.Payee[:], []byte{1, 2, 3, 3, 4, 5})
 	assert.Equal(t, inv.Recipient[:], []byte{1, 2, 3, 4, 5, 6})
 	assert.Equal(t, inv.ExtraData[:], []byte{1, 2, 3, 2, 3, 1})
-	assert.Equal(t, inv.CoreDocument.Collaborators, [][]byte{idConfig.ID, {1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}})
+	id := contextHeader.Self()
+	assert.Equal(t, inv.CoreDocument.Collaborators, [][]byte{id[:], {1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}})
 }
 
 func TestInvoiceModel_calculateDataRoot(t *testing.T) {
-	idConfig, err := ed25519keys.GetIDConfig()
+	ctxHeader, err := documents.NewContextHeader()
 	assert.Nil(t, err)
-	self, err := identity.ToCentID(idConfig.ID)
-	assert.Nil(t, err)
-	contextHeader := documents.NewContextHeader(self)
-	m := new(InvoiceModel)
-	err = m.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), contextHeader)
+	m := new(Invoice)
+	err = m.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), ctxHeader)
 	assert.Nil(t, err, "Init must pass")
 	assert.Nil(t, m.InvoiceSalts, "salts must be nil")
 
@@ -226,7 +220,7 @@ func TestInvoiceModel_calculateDataRoot(t *testing.T) {
 }
 
 func TestInvoiceModel_createProofs(t *testing.T) {
-	i, corDoc, err := createMockInvoice()
+	i, corDoc, err := createMockInvoice(t)
 	assert.Nil(t, err)
 	corDoc, proof, err := i.createProofs([]string{"invoice_number", "collaborators[0]", "document_type"})
 	assert.Nil(t, err)
@@ -251,29 +245,29 @@ func TestInvoiceModel_createProofs(t *testing.T) {
 }
 
 func TestInvoiceModel_createProofsFieldDoesNotExist(t *testing.T) {
-	i, _, err := createMockInvoice()
+	i, _, err := createMockInvoice(t)
 	assert.Nil(t, err)
 	_, _, err = i.createProofs([]string{"nonexisting"})
 	assert.NotNil(t, err)
 }
 
 func TestInvoiceModel_GetDocumentID(t *testing.T) {
-	i, corDoc, err := createMockInvoice()
+	i, corDoc, err := createMockInvoice(t)
 	assert.Nil(t, err)
 	ID, err := i.ID()
 	assert.Equal(t, corDoc.DocumentIdentifier, ID)
 }
 
 func TestInvoiceModel_getDocumentDataTree(t *testing.T) {
-	i := InvoiceModel{InvoiceNumber: "3213121", NetAmount: 2, GrossAmount: 2}
+	i := Invoice{InvoiceNumber: "3213121", NetAmount: 2, GrossAmount: 2}
 	tree, err := i.getDocumentDataTree()
 	assert.Nil(t, err, "tree should be generated without error")
 	_, leaf := tree.GetLeafByProperty("invoice_number")
 	assert.Equal(t, "invoice_number", leaf.Property)
 }
 
-func createMockInvoice() (*InvoiceModel, *coredocumentpb.CoreDocument, error) {
-	i := &InvoiceModel{InvoiceNumber: "3213121", NetAmount: 2, GrossAmount: 2, Currency: "USD", CoreDocument: coredocument.New()}
+func createMockInvoice(t *testing.T) (*Invoice, *coredocumentpb.CoreDocument, error) {
+	i := &Invoice{InvoiceNumber: "3213121", NetAmount: 2, GrossAmount: 2, Currency: "USD", CoreDocument: coredocument.New()}
 	i.CoreDocument.Collaborators = [][]byte{{1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}}
 	err := i.calculateDataRoot()
 	if err != nil {
@@ -284,7 +278,7 @@ func createMockInvoice() (*InvoiceModel, *coredocumentpb.CoreDocument, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	coredocument.FillSalts(corDoc)
+	assert.Nil(t, coredocument.FillSalts(corDoc))
 	err = coredocument.CalculateSigningRoot(corDoc)
 	if err != nil {
 		return nil, nil, err

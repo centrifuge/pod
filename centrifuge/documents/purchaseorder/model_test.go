@@ -12,7 +12,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
@@ -23,7 +22,7 @@ import (
 )
 
 func TestPO_FromCoreDocuments_invalidParameter(t *testing.T) {
-	poModel := &PurchaseOrderModel{}
+	poModel := &PurchaseOrder{}
 
 	emptyCoreDocument := &coredocumentpb.CoreDocument{}
 	err := poModel.UnpackCoreDocument(emptyCoreDocument)
@@ -40,7 +39,7 @@ func TestPO_FromCoreDocuments_invalidParameter(t *testing.T) {
 }
 
 func TestPO_InitCoreDocument_successful(t *testing.T) {
-	poModel := &PurchaseOrderModel{}
+	poModel := &PurchaseOrder{}
 
 	poData := testingdocuments.CreatePOData()
 
@@ -50,7 +49,7 @@ func TestPO_InitCoreDocument_successful(t *testing.T) {
 }
 
 func TestPO_InitCoreDocument_invalidCentId(t *testing.T) {
-	poModel := &PurchaseOrderModel{}
+	poModel := &PurchaseOrder{}
 
 	coreDocument := testingdocuments.CreateCDWithEmbeddedPO(t, purchaseorderpb.PurchaseOrderData{
 		Recipient: utils.RandomSlice(identity.CentIDLength + 1)})
@@ -61,7 +60,7 @@ func TestPO_InitCoreDocument_invalidCentId(t *testing.T) {
 }
 
 func TestPO_CoreDocument_successful(t *testing.T) {
-	poModel := &PurchaseOrderModel{}
+	poModel := &PurchaseOrder{}
 
 	//init model with a CoreDoc
 	poData := testingdocuments.CreatePOData()
@@ -77,19 +76,19 @@ func TestPO_CoreDocument_successful(t *testing.T) {
 }
 
 func TestPO_ModelInterface(t *testing.T) {
-	var i interface{} = &PurchaseOrderModel{}
+	var i interface{} = &PurchaseOrder{}
 	_, ok := i.(documents.Model)
 	assert.True(t, ok, "model interface not implemented correctly for purchaseOrder model")
 }
 
 func TestPO_Type(t *testing.T) {
 	var model documents.Model
-	model = &PurchaseOrderModel{}
-	assert.Equal(t, model.Type(), reflect.TypeOf(&PurchaseOrderModel{}), "purchaseOrder Type not correct")
+	model = &PurchaseOrder{}
+	assert.Equal(t, model.Type(), reflect.TypeOf(&PurchaseOrder{}), "purchaseOrder Type not correct")
 }
 
 func TestPO_JSON(t *testing.T) {
-	poModel := &PurchaseOrderModel{}
+	poModel := &PurchaseOrder{}
 	poData := testingdocuments.CreatePOData()
 	coreDocument := testingdocuments.CreateCDWithEmbeddedPO(t, poData)
 	poModel.UnpackCoreDocument(coreDocument)
@@ -107,7 +106,7 @@ func TestPO_JSON(t *testing.T) {
 }
 
 func TestPOModel_UnpackCoreDocument(t *testing.T) {
-	var model documents.Model = new(PurchaseOrderModel)
+	var model documents.Model = new(PurchaseOrder)
 	var err error
 
 	// nil core doc
@@ -132,7 +131,7 @@ func TestPOModel_UnpackCoreDocument(t *testing.T) {
 
 func TestPOModel_getClientData(t *testing.T) {
 	poData := testingdocuments.CreatePOData()
-	poModel := new(PurchaseOrderModel)
+	poModel := new(PurchaseOrder)
 	poModel.loadFromP2PProtobuf(&poData)
 
 	data := poModel.getClientData()
@@ -142,17 +141,14 @@ func TestPOModel_getClientData(t *testing.T) {
 }
 
 func TestPOOrderModel_InitPOInput(t *testing.T) {
-	idConfig, err := ed25519keys.GetIDConfig()
+	contextHeader, err := documents.NewContextHeader()
 	assert.Nil(t, err)
-	self, err := identity.ToCentID(idConfig.ID)
-	assert.Nil(t, err)
-	contextHeader := documents.NewContextHeader(self)
 	// fail recipient
 	data := &clientpurchaseorderpb.PurchaseOrderData{
 		Recipient: "some recipient",
 		ExtraData: "some data",
 	}
-	poModel := new(PurchaseOrderModel)
+	poModel := new(PurchaseOrder)
 	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data}, contextHeader)
 	assert.Error(t, err, "must return err")
 	assert.Contains(t, err.Error(), "failed to decode extra data")
@@ -178,16 +174,14 @@ func TestPOOrderModel_InitPOInput(t *testing.T) {
 
 	assert.Equal(t, poModel.Recipient[:], []byte{1, 2, 3, 4, 5, 6})
 	assert.Equal(t, poModel.ExtraData[:], []byte{1, 2, 3, 2, 3, 1})
-	assert.Equal(t, poModel.CoreDocument.Collaborators, [][]byte{idConfig.ID, {1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}})
+	id := contextHeader.Self()
+	assert.Equal(t, poModel.CoreDocument.Collaborators, [][]byte{id[:], {1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}})
 }
 
 func TestPOModel_calculateDataRoot(t *testing.T) {
-	idConfig, err := ed25519keys.GetIDConfig()
+	contextHeader, err := documents.NewContextHeader()
 	assert.Nil(t, err)
-	self, err := identity.ToCentID(idConfig.ID)
-	assert.Nil(t, err)
-	contextHeader := documents.NewContextHeader(self)
-	poModel := new(PurchaseOrderModel)
+	poModel := new(PurchaseOrder)
 	err = poModel.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), contextHeader)
 	assert.Nil(t, err, "Init must pass")
 	assert.Nil(t, poModel.PurchaseOrderSalt, "salts must be nil")
@@ -199,7 +193,7 @@ func TestPOModel_calculateDataRoot(t *testing.T) {
 	assert.NotNil(t, poModel.CoreDocument.DataRoot, "data root must be filled")
 }
 func TestPOModel_createProofs(t *testing.T) {
-	poModel, corDoc, err := createMockPurchaseOrder()
+	poModel, corDoc, err := createMockPurchaseOrder(t)
 	assert.Nil(t, err)
 	corDoc, proof, err := poModel.createProofs([]string{"po_number", "collaborators[0]", "document_type"})
 	assert.Nil(t, err)
@@ -224,22 +218,22 @@ func TestPOModel_createProofs(t *testing.T) {
 }
 
 func TestPOModel_createProofsFieldDoesNotExist(t *testing.T) {
-	poModel, _, err := createMockPurchaseOrder()
+	poModel, _, err := createMockPurchaseOrder(t)
 	assert.Nil(t, err)
 	_, _, err = poModel.createProofs([]string{"nonexisting"})
 	assert.NotNil(t, err)
 }
 
 func TestPOModel_getDocumentDataTree(t *testing.T) {
-	poModel := PurchaseOrderModel{PoNumber: "3213121", NetAmount: 2, OrderAmount: 2}
+	poModel := PurchaseOrder{PoNumber: "3213121", NetAmount: 2, OrderAmount: 2}
 	tree, err := poModel.getDocumentDataTree()
 	assert.Nil(t, err, "tree should be generated without error")
 	_, leaf := tree.GetLeafByProperty("po_number")
 	assert.Equal(t, "po_number", leaf.Property)
 }
 
-func createMockPurchaseOrder() (*PurchaseOrderModel, *coredocumentpb.CoreDocument, error) {
-	poModel := &PurchaseOrderModel{PoNumber: "3213121", NetAmount: 2, OrderAmount: 2, Currency: "USD", CoreDocument: coredocument.New()}
+func createMockPurchaseOrder(t *testing.T) (*PurchaseOrder, *coredocumentpb.CoreDocument, error) {
+	poModel := &PurchaseOrder{PoNumber: "3213121", NetAmount: 2, OrderAmount: 2, Currency: "USD", CoreDocument: coredocument.New()}
 	poModel.CoreDocument.Collaborators = [][]byte{{1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}}
 	err := poModel.calculateDataRoot()
 	if err != nil {
@@ -250,7 +244,7 @@ func createMockPurchaseOrder() (*PurchaseOrderModel, *coredocumentpb.CoreDocumen
 	if err != nil {
 		return nil, nil, err
 	}
-	coredocument.FillSalts(corDoc)
+	assert.Nil(t, coredocument.FillSalts(corDoc))
 	err = coredocument.CalculateSigningRoot(corDoc)
 	if err != nil {
 		return nil, nil, err

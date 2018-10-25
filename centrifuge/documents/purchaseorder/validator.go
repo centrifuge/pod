@@ -1,4 +1,4 @@
-package invoice
+package purchaseorder
 
 import (
 	"fmt"
@@ -8,21 +8,21 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
 )
 
-// fieldValidateFunc validates the fields of the invoice model
+// fieldValidateFunc validates the fields of the purchase order model
 func fieldValidator() documents.Validator {
 	return documents.ValidatorFunc(func(_, new documents.Model) error {
 		if new == nil {
 			return fmt.Errorf("nil document")
 		}
 
-		inv, ok := new.(*Invoice)
+		inv, ok := new.(*PurchaseOrder)
 		if !ok {
 			return fmt.Errorf("unknown document type")
 		}
 
 		var err error
 		if !documents.IsCurrencyValid(inv.Currency) {
-			err = documents.AppendError(err, documents.NewError("inv_currency", "currency is invalid"))
+			err = documents.AppendError(err, documents.NewError("po_currency", "currency is invalid"))
 		}
 
 		return err
@@ -51,7 +51,7 @@ func dataRootValidator() documents.Validator {
 			return fmt.Errorf("data root missing")
 		}
 
-		inv, ok := model.(*Invoice)
+		inv, ok := model.(*PurchaseOrder)
 		if !ok {
 			return fmt.Errorf("unknown document type: %T", model)
 		}
@@ -68,7 +68,7 @@ func dataRootValidator() documents.Validator {
 	})
 }
 
-// CreateValidator returns a validator group that should be run before creating the invoice and persisting it to DB
+// CreateValidator returns a validator group that should be run before creating the purchase order and persisting it to DB
 func CreateValidator() documents.ValidatorGroup {
 	return documents.ValidatorGroup{
 		fieldValidator(),
@@ -76,7 +76,7 @@ func CreateValidator() documents.ValidatorGroup {
 	}
 }
 
-// UpdateValidator returns a validator group that should be run before updating the invoice
+// UpdateValidator returns a validator group that should be run before updating the purchase order
 func UpdateValidator() documents.ValidatorGroup {
 	return documents.ValidatorGroup{
 		fieldValidator(),

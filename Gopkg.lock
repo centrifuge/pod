@@ -47,7 +47,7 @@
   source = "git@github.com:centrifuge/centrifuge-ethereum-contracts"
 
 [[projects]]
-  digest = "1:0e13c9b1928c6f00a637740ee94e93d79f3298a405762938dcb10983662b356f"
+  digest = "1:c6e2ed36c71d00b36eb36fa5b7aad8c06a1c07f58701557c4bb7b8e0084356d8"
   name = "github.com/centrifuge/centrifuge-protobufs"
   packages = [
     "documenttypes",
@@ -59,7 +59,7 @@
     "gen/go/purchaseorder",
   ]
   pruneopts = "T"
-  revision = "72fd0142cc3fcffe0c58d3cc08514b79911307f2"
+  revision = "838c11114163b6152d7b56574536f046b858e68d"
   source = "git@github.com:centrifuge/centrifuge-protobufs"
 
 [[projects]]
@@ -916,11 +916,12 @@
   version = "v1.0.2"
 
 [[projects]]
-  digest = "1:c678fc5e480693538ca4318aedaa4bd3e6685db9ad9b012fadb6655c112777a7"
+  digest = "1:317c23d0134d82f8158538d6d61ec0b5425319bcd6af716cda898636e51fb757"
   name = "github.com/paralin/go-libp2p-grpc"
   packages = ["."]
   pruneopts = "UT"
-  revision = "3d5d33466aef613c8ed7992fe35987b34245424e"
+  revision = "04711f07389ecbca09d7999474dda4a88c955c73"
+  source = "git@github.com:vedhavyas/go-libp2p-grpc.git"
 
 [[projects]]
   digest = "1:e5d0bd87abc2781d14e274807a470acd180f0499f8bf5bb18606e9ec22ad9de9"

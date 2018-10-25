@@ -8,7 +8,11 @@ import (
 	"testing"
 	"time"
 
+	"fmt"
+
+	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/keytools/ed25519keys"
+	ma "github.com/multiformats/go-multiaddr"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/crypto/ed25519"
 )
@@ -46,6 +50,43 @@ func TestCentP2PServer_StartListenError(t *testing.T) {
 	wg.Wait()
 	assert.NotNil(t, err, "Error should be not nil")
 	assert.Equal(t, "failed to parse tcp: 100000000 failed to parse port addr: greater than 65536", err.Error())
+}
+
+func TestCentP2PServer_makeBasicHostNoExternalIP(t *testing.T) {
+	listenPort := 38202
+	priv, pub, err := getKeys()
+	assert.Nil(t, err)
+	cp2p := NewCentP2PServer(listenPort, []string{}, pub, priv)
+	h, err := cp2p.makeBasicHost(listenPort)
+	assert.Nil(t, err)
+	assert.NotNil(t, h)
+}
+
+func TestCentP2PServer_makeBasicHostWithExternalIP(t *testing.T) {
+	externalIP := "100.100.100.100"
+	listenPort := 38202
+	config.Config.V.Set("p2p.externalIP", externalIP)
+	priv, pub, err := getKeys()
+	assert.Nil(t, err)
+	cp2p := NewCentP2PServer(listenPort, []string{}, pub, priv)
+	h, err := cp2p.makeBasicHost(listenPort)
+	assert.Nil(t, err)
+	assert.NotNil(t, h)
+	addr, err := ma.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%d", externalIP, listenPort))
+	assert.Nil(t, err)
+	assert.Contains(t, h.Addrs(), addr)
+}
+
+func TestCentP2PServer_makeBasicHostWithWrongExternalIP(t *testing.T) {
+	externalIP := "100.200.300.400"
+	listenPort := 38202
+	config.Config.V.Set("p2p.externalIP", externalIP)
+	priv, pub, err := getKeys()
+	assert.Nil(t, err)
+	cp2p := NewCentP2PServer(listenPort, []string{}, pub, priv)
+	h, err := cp2p.makeBasicHost(listenPort)
+	assert.NotNil(t, err)
+	assert.Nil(t, h)
 }
 
 func getKeys() (ed25519.PrivateKey, ed25519.PublicKey, error) {

@@ -22,8 +22,8 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 )
 
-// InvoiceModel implements the documents.Model keeps track of invoice related fields and state
-type InvoiceModel struct {
+// Invoice implements the documents.Model keeps track of invoice related fields and state
+type Invoice struct {
 	// invoice number or reference number
 	InvoiceNumber string
 	// name of the sender company
@@ -62,7 +62,7 @@ type InvoiceModel struct {
 }
 
 // getClientData returns the client data from the invoice model
-func (i *InvoiceModel) getClientData() *clientinvoicepb.InvoiceData {
+func (i *Invoice) getClientData() *clientinvoicepb.InvoiceData {
 	var recipient string
 	if i.Recipient != nil {
 		recipient = hexutil.Encode(i.Recipient[:])
@@ -112,7 +112,7 @@ func (i *InvoiceModel) getClientData() *clientinvoicepb.InvoiceData {
 }
 
 // createP2PProtobuf returns centrifuge protobuf specific invoiceData
-func (i *InvoiceModel) createP2PProtobuf() *invoicepb.InvoiceData {
+func (i *Invoice) createP2PProtobuf() *invoicepb.InvoiceData {
 
 	var recipient, sender, payee []byte
 	if i.Recipient != nil {
@@ -156,7 +156,7 @@ func (i *InvoiceModel) createP2PProtobuf() *invoicepb.InvoiceData {
 }
 
 // InitInvoiceInput initialize the model based on the received parameters from the rest api call
-func (i *InvoiceModel) InitInvoiceInput(payload *clientinvoicepb.InvoiceCreatePayload, contextHeader *documents.ContextHeader) error {
+func (i *Invoice) InitInvoiceInput(payload *clientinvoicepb.InvoiceCreatePayload, contextHeader *documents.ContextHeader) error {
 	err := i.initInvoiceFromData(payload.Data)
 	if err != nil {
 		return err
@@ -173,7 +173,7 @@ func (i *InvoiceModel) InitInvoiceInput(payload *clientinvoicepb.InvoiceCreatePa
 }
 
 // initInvoiceFromData initialises invoice from invoiceData
-func (i *InvoiceModel) initInvoiceFromData(data *clientinvoicepb.InvoiceData) error {
+func (i *Invoice) initInvoiceFromData(data *clientinvoicepb.InvoiceData) error {
 	i.InvoiceNumber = data.InvoiceNumber
 	i.SenderName = data.SenderName
 	i.SenderStreet = data.SenderStreet
@@ -219,7 +219,7 @@ func (i *InvoiceModel) initInvoiceFromData(data *clientinvoicepb.InvoiceData) er
 }
 
 // loadFromP2PProtobuf  loads the invoice from centrifuge protobuf invoice data
-func (i *InvoiceModel) loadFromP2PProtobuf(invoiceData *invoicepb.InvoiceData) {
+func (i *Invoice) loadFromP2PProtobuf(invoiceData *invoicepb.InvoiceData) {
 	i.InvoiceNumber = invoiceData.InvoiceNumber
 	i.SenderName = invoiceData.SenderName
 	i.SenderStreet = invoiceData.SenderStreet
@@ -256,7 +256,7 @@ func (i *InvoiceModel) loadFromP2PProtobuf(invoiceData *invoicepb.InvoiceData) {
 }
 
 // getInvoiceSalts returns the invoice salts. Initialises if not present
-func (i *InvoiceModel) getInvoiceSalts(invoiceData *invoicepb.InvoiceData) *invoicepb.InvoiceDataSalts {
+func (i *Invoice) getInvoiceSalts(invoiceData *invoicepb.InvoiceData) *invoicepb.InvoiceDataSalts {
 	if i.InvoiceSalts == nil {
 		invoiceSalts := &invoicepb.InvoiceDataSalts{}
 		proofs.FillSalts(invoiceData, invoiceSalts)
@@ -266,7 +266,7 @@ func (i *InvoiceModel) getInvoiceSalts(invoiceData *invoicepb.InvoiceData) *invo
 	return i.InvoiceSalts
 }
 
-func (i *InvoiceModel) ID() ([]byte, error) {
+func (i *Invoice) ID() ([]byte, error) {
 	coreDoc, err := i.PackCoreDocument()
 	if err != nil {
 		return []byte{}, err
@@ -274,9 +274,9 @@ func (i *InvoiceModel) ID() ([]byte, error) {
 	return coreDoc.DocumentIdentifier, nil
 }
 
-// PackCoreDocument packs the InvoiceModel into a Core Document
-// If the, InvoiceModel is new, it creates a valid identifiers
-func (i *InvoiceModel) PackCoreDocument() (*coredocumentpb.CoreDocument, error) {
+// PackCoreDocument packs the Invoice into a Core Document
+// If the, Invoice is new, it creates a valid identifiers
+func (i *Invoice) PackCoreDocument() (*coredocumentpb.CoreDocument, error) {
 	invoiceData := i.createP2PProtobuf()
 	serializedInvoice, err := proto.Marshal(invoiceData)
 	if err != nil {
@@ -307,8 +307,8 @@ func (i *InvoiceModel) PackCoreDocument() (*coredocumentpb.CoreDocument, error) 
 	return coreDoc, err
 }
 
-// UnpackCoreDocument unpacks the core document into InvoiceModel
-func (i *InvoiceModel) UnpackCoreDocument(coreDoc *coredocumentpb.CoreDocument) error {
+// UnpackCoreDocument unpacks the core document into Invoice
+func (i *Invoice) UnpackCoreDocument(coreDoc *coredocumentpb.CoreDocument) error {
 	if coreDoc == nil {
 		return centerrors.NilError(coreDoc)
 	}
@@ -342,23 +342,23 @@ func (i *InvoiceModel) UnpackCoreDocument(coreDoc *coredocumentpb.CoreDocument) 
 	return err
 }
 
-// JSON marshals InvoiceModel into a json bytes
-func (i *InvoiceModel) JSON() ([]byte, error) {
+// JSON marshals Invoice into a json bytes
+func (i *Invoice) JSON() ([]byte, error) {
 	return json.Marshal(i)
 }
 
-// FromJSON unmarshals the json bytes into InvoiceModel
-func (i *InvoiceModel) FromJSON(jsonData []byte) error {
+// FromJSON unmarshals the json bytes into Invoice
+func (i *Invoice) FromJSON(jsonData []byte) error {
 	return json.Unmarshal(jsonData, i)
 }
 
-// Type gives the InvoiceModel type
-func (i *InvoiceModel) Type() reflect.Type {
+// Type gives the Invoice type
+func (i *Invoice) Type() reflect.Type {
 	return reflect.TypeOf(i)
 }
 
 // calculateDataRoot calculates the data root and sets the root to core document
-func (i *InvoiceModel) calculateDataRoot() error {
+func (i *Invoice) calculateDataRoot() error {
 	t, err := i.getDocumentDataTree()
 	if err != nil {
 		return fmt.Errorf("calculateDataRoot error %v", err)
@@ -368,7 +368,7 @@ func (i *InvoiceModel) calculateDataRoot() error {
 }
 
 // getDocumentDataTree creates precise-proofs data tree for the model
-func (i *InvoiceModel) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
+func (i *Invoice) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
 	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: sha256.New()})
 	invoiceData := i.createP2PProtobuf()
 	err = t.AddLeavesFromDocument(invoiceData, i.getInvoiceSalts(invoiceData))
@@ -383,7 +383,7 @@ func (i *InvoiceModel) getDocumentDataTree() (tree *proofs.DocumentTree, err err
 }
 
 // CreateProofs generates proofs for given fields
-func (i *InvoiceModel) createProofs(fields []string) (coreDoc *coredocumentpb.CoreDocument, proofs []*proofspb.Proof, err error) {
+func (i *Invoice) createProofs(fields []string) (coreDoc *coredocumentpb.CoreDocument, proofs []*proofspb.Proof, err error) {
 	// There can be failure scenarios where the core doc for the particular document
 	// is still not saved with roots in db due to failures during getting signatures.
 	coreDoc, err = i.PackCoreDocument()

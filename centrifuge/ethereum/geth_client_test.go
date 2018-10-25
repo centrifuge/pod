@@ -11,7 +11,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/context/testlogging"
-	"github.com/centrifuge/go-centrifuge/centrifuge/coredocument/repository"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centrifuge/ethereum"
@@ -29,7 +28,6 @@ func TestMain(m *testing.M) {
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
 		&storage.Bootstrapper{},
-		&coredocumentrepository.Bootstrapper{},
 		&invoice.Bootstrapper{},
 		&purchaseorder.Bootstrapper{},
 	}

@@ -1,25 +1,23 @@
 // +build unit
 
-package purchaseorder
+package healthcheck
 
 import (
+	"context"
 	"flag"
 	"os"
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/centrifuge/context/testlogging"
-	"github.com/centrifuge/go-centrifuge/centrifuge/storage"
+	"github.com/centrifuge/go-centrifuge/centrifuge/version"
+	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestMain(m *testing.M) {
 	ibootstappers := []bootstrap.TestBootstrapper{
-		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
-		&storage.Bootstrapper{},
-		&Bootstrapper{},
 	}
 
 	bootstrap.RunTestBootstrappers(ibootstappers, nil)
@@ -29,7 +27,11 @@ func TestMain(m *testing.M) {
 	os.Exit(result)
 }
 
-func TestBootstrapper_Bootstrap(t *testing.T) {
-	err := (&Bootstrapper{}).Bootstrap(map[string]interface{}{})
-	assert.Error(t, err, "Should throw an error because of empty context")
+func TestHandler_Ping(t *testing.T) {
+	h := GRPCHandler()
+	pong, err := h.Ping(context.Background(), &empty.Empty{})
+	assert.Nil(t, err)
+	assert.NotNil(t, pong)
+	assert.Equal(t, pong.Version, version.GetVersion().String())
+	assert.Equal(t, pong.Network, config.Config.GetNetworkString())
 }

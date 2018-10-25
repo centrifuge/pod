@@ -145,7 +145,7 @@ func TestValidator_baseValidator(t *testing.T) {
 	// success
 	model = mockModel{}
 	cd.DataRoot = utils.RandomSlice(32)
-	FillSalts(cd)
+	assert.Nil(t, FillSalts(cd))
 	model.On("PackCoreDocument").Return(cd, nil).Once()
 	err = bv.Validate(nil, model)
 	assert.Nil(t, err)
@@ -163,7 +163,7 @@ func TestValidator_signingRootValidator(t *testing.T) {
 
 	// missing signing_root
 	cd := New()
-	FillSalts(cd)
+	assert.Nil(t, FillSalts(cd))
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
 	err = sv.Validate(nil, model)
@@ -207,7 +207,7 @@ func TestValidator_documentRootValidator(t *testing.T) {
 
 	// missing document root
 	cd := New()
-	FillSalts(cd)
+	assert.Nil(t, FillSalts(cd))
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
 	err = dv.Validate(nil, model)
@@ -247,7 +247,7 @@ func TestValidator_selfSignatureValidator(t *testing.T) {
 
 	// signature length mismatch
 	cd := New()
-	FillSalts(cd)
+	assert.Nil(t, FillSalts(cd))
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
 	err = rfsv.Validate(nil, model)
@@ -295,7 +295,7 @@ func TestValidator_signatureValidator(t *testing.T) {
 
 	// signature length mismatch
 	cd := New()
-	FillSalts(cd)
+	assert.Nil(t, FillSalts(cd))
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
 	err = ssv.Validate(nil, model)
@@ -425,6 +425,151 @@ func TestValidator_anchoredValidator(t *testing.T) {
 	model.AssertExpectations(t)
 	r.AssertExpectations(t)
 	assert.Nil(t, err)
+}
+
+func TestValidate_baseValidator(t *testing.T) {
+	tests := []struct {
+		doc *coredocumentpb.CoreDocument
+		key string
+	}{
+		// empty salts in document
+		{
+			doc: &coredocumentpb.CoreDocument{
+				DocumentRoot:       id1,
+				DocumentIdentifier: id2,
+				CurrentVersion:     id3,
+				NextVersion:        id4,
+				DataRoot:           id5,
+			},
+			key: "cd_salts",
+		},
+
+		// salts missing previous root
+		{
+			doc: &coredocumentpb.CoreDocument{
+				DocumentRoot:       id1,
+				DocumentIdentifier: id2,
+				CurrentVersion:     id3,
+				NextVersion:        id4,
+				DataRoot:           id5,
+				CoredocumentSalts: &coredocumentpb.CoreDocumentSalts{
+					DocumentIdentifier: id1,
+					CurrentVersion:     id2,
+					NextVersion:        id3,
+					DataRoot:           id4,
+				},
+			},
+			key: "cd_salts",
+		},
+
+		// missing identifiers in core document
+		{
+			doc: &coredocumentpb.CoreDocument{
+				DocumentRoot:       id1,
+				DocumentIdentifier: id2,
+				CurrentVersion:     id3,
+				NextVersion:        id4,
+				CoredocumentSalts: &coredocumentpb.CoreDocumentSalts{
+					DocumentIdentifier: id1,
+					CurrentVersion:     id2,
+					NextVersion:        id3,
+					DataRoot:           id4,
+					PreviousRoot:       id5,
+				},
+			},
+			key: "cd_data_root",
+		},
+
+		// missing identifiers in core document and salts
+		{
+			doc: &coredocumentpb.CoreDocument{
+				DocumentRoot:       id1,
+				DocumentIdentifier: id2,
+				CurrentVersion:     id3,
+				NextVersion:        id4,
+				CoredocumentSalts: &coredocumentpb.CoreDocumentSalts{
+					DocumentIdentifier: id1,
+					CurrentVersion:     id2,
+					NextVersion:        id3,
+					DataRoot:           id4,
+				},
+			},
+			key: "cd_data_root",
+		},
+
+		// repeated identifiers
+		{
+			doc: &coredocumentpb.CoreDocument{
+				DocumentRoot:       id1,
+				DocumentIdentifier: id2,
+				CurrentVersion:     id3,
+				NextVersion:        id3,
+				DataRoot:           id5,
+				CoredocumentSalts: &coredocumentpb.CoreDocumentSalts{
+					DocumentIdentifier: id1,
+					CurrentVersion:     id2,
+					NextVersion:        id3,
+					DataRoot:           id4,
+					PreviousRoot:       id5,
+				},
+			},
+			key: "cd_overall",
+		},
+
+		// repeated identifiers
+		{
+			doc: &coredocumentpb.CoreDocument{
+				DocumentRoot:       id1,
+				DocumentIdentifier: id2,
+				CurrentVersion:     id3,
+				NextVersion:        id2,
+				DataRoot:           id5,
+				CoredocumentSalts: &coredocumentpb.CoreDocumentSalts{
+					DocumentIdentifier: id1,
+					CurrentVersion:     id2,
+					NextVersion:        id3,
+					DataRoot:           id4,
+					PreviousRoot:       id5,
+				},
+			},
+			key: "cd_overall",
+		},
+
+		// All okay
+		{
+			doc: &coredocumentpb.CoreDocument{
+				DocumentRoot:       id1,
+				DocumentIdentifier: id2,
+				CurrentVersion:     id3,
+				NextVersion:        id4,
+				DataRoot:           id5,
+				CoredocumentSalts: &coredocumentpb.CoreDocumentSalts{
+					DocumentIdentifier: id1,
+					CurrentVersion:     id2,
+					NextVersion:        id3,
+					DataRoot:           id4,
+					PreviousRoot:       id5,
+				},
+			},
+		},
+	}
+
+	baseValidator := baseValidator()
+
+	for _, c := range tests {
+
+		model := mockModel{}
+		model.On("PackCoreDocument", mock.Anything).Return(c.doc, nil).Once()
+
+		err := baseValidator.Validate(nil, &model)
+		if c.key == "" {
+			assert.Nil(t, err)
+			continue
+		}
+
+		assert.Contains(t, err.Error(), c.key)
+
+	}
 }
 
 func TestPostAnchoredValidator(t *testing.T) {

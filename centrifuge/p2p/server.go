@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	"github.com/centrifuge/go-centrifuge/centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/centrifuge/notification"
 	"github.com/centrifuge/go-centrifuge/centrifuge/p2p/p2phandler"
 	"github.com/ipfs/go-cid"
@@ -61,7 +62,7 @@ func (c *CentP2PServer) Start(ctx context.Context, wg *sync.WaitGroup, startupEr
 	defer wg.Done()
 
 	if c.Port == 0 {
-		startupErr <- errors.New("Please provide a port to bind on")
+		startupErr <- errors.New("please provide a port to bind on")
 		return
 	}
 
@@ -77,6 +78,10 @@ func (c *CentP2PServer) Start(ctx context.Context, wg *sync.WaitGroup, startupEr
 	GRPCProtoInstance = *grpcProto
 
 	p2ppb.RegisterP2PServiceServer(grpcProto.GetGRPCServer(), &p2phandler.Handler{Notifier: &notification.WebhookSender{}})
+	errOut := make(chan error)
+	go func(proto *p2pgrpc.GRPCProtocol, errOut chan<- error) {
+		errOut <- proto.Serve()
+	}(grpcProto, errOut)
 
 	hostInstance.Peerstore().AddAddr(hostInstance.ID(), hostInstance.Addrs()[0], pstore.TempAddrTTL)
 
@@ -85,6 +90,10 @@ func (c *CentP2PServer) Start(ctx context.Context, wg *sync.WaitGroup, startupEr
 
 	for {
 		select {
+		case err := <-errOut:
+			log.Infof("failed to accept p2p grpc connections: %v\n", err)
+			startupErr <- err
+			return
 		case <-ctx.Done():
 			log.Info("Shutting down GRPC server")
 			grpcProto.GetGRPCServer().Stop()
@@ -182,10 +191,29 @@ func (c *CentP2PServer) makeBasicHost(listenPort int) (host.Host, error) {
 		return nil, err
 	}
 
+	externalIP := config.Config.GetP2PExternalIP()
+	var extMultiAddr ma.Multiaddr
+	if externalIP == "" {
+		log.Warning("External IP not defined, Peers might not be able to resolve this node if behind NAT\n")
+	} else {
+		extMultiAddr, err = ma.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%d", externalIP, listenPort))
+		if err != nil {
+			return nil, fmt.Errorf("failed to create multiaddr: %v", err)
+		}
+	}
+
+	addressFactory := func(addrs []ma.Multiaddr) []ma.Multiaddr {
+		if extMultiAddr != nil {
+			addrs = append(addrs, extMultiAddr)
+		}
+		return addrs
+	}
+
 	opts := []libp2p.Option{
 		libp2p.ListenAddrStrings(fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", listenPort)),
 		libp2p.Identity(priv),
 		libp2p.DefaultMuxers,
+		libp2p.AddrsFactory(addressFactory),
 	}
 
 	bhost, err := libp2p.New(context.Background(), opts...)
