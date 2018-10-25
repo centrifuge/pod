@@ -27,7 +27,6 @@ cache:
 
 before_install:
   - npm install -g truffle@4.1.13
-  - echo $CREDENTIALS_GCP | base64 -D -o ./build/peak-vista-185616-9f70002df7eb.json.enc
 
 install:
   - mkdir -p ~/bin
@@ -47,6 +46,7 @@ jobs:
     - stage: build_artifacts
       if: (NOT type IN (pull_request)) AND ((branch = develop) OR (branch = master))
       before_script:
+       - echo $CREDENTIALS_GCP | base64 -d -o ./build/peak-vista-185616-9f70002df7eb.json.enc
        - openssl aes-256-cbc -K $encrypted_f84a564476a2_key -iv $encrypted_f84a564476a2_iv -in ./build/peak-vista-185616-9f70002df7eb.json.enc -out ./build/peak-vista-185616-9f70002df7eb.json -d
       script: make build-ci
       after_script:
