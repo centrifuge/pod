@@ -17,7 +17,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/p2p"
 	"github.com/centrifuge/go-centrifuge/centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/centrifuge/utils"
-
 	"github.com/centrifuge/go-centrifuge/centrifuge/version"
 	logging "github.com/ipfs/go-log"
 )
@@ -94,7 +93,7 @@ func (dp defaultProcessor) Send(ctx context.Context, coreDocument *coredocumentp
 		CentNodeVersion:    version.GetVersion().String(),
 		NetworkIdentifier:  config.Config.GetNetworkID(),
 	}
-	_, err = client.SendAnchoredDocument(context.Background(), &p2ppb.AnchDocumentRequest{Document: coreDocument, Header: header})
+	_, err = client.SendAnchoredDocument(context.Background(), &p2ppb.AnchorDocumentRequest{Document: coreDocument, Header: header})
 	if err != nil {
 		err = centerrors.Wrap(err, "failed to post to the node")
 		log.Error(err)

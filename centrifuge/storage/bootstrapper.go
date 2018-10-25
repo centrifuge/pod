@@ -2,6 +2,7 @@ package storage
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/centrifuge/go-centrifuge/centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/centrifuge/config"
@@ -11,10 +12,15 @@ type Bootstrapper struct {
 }
 
 func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
-	if _, ok := context[bootstrap.BootstrappedConfig]; ok {
-		levelDB := NewLevelDBStorage(config.Config.GetStoragePath())
-		context[bootstrap.BootstrappedLevelDb] = levelDB
-		return nil
+	if _, ok := context[bootstrap.BootstrappedConfig]; !ok {
+		return errors.New("config not initialised")
 	}
-	return errors.New("could not initialize levelDB")
+
+	levelDB, err := NewLevelDBStorage(config.Config.GetStoragePath())
+	if err != nil {
+		return fmt.Errorf("failed to init level db: %v", err)
+	}
+
+	context[bootstrap.BootstrappedLevelDb] = levelDB
+	return nil
 }

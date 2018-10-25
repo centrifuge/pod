@@ -49,12 +49,15 @@ func (c *Configuration) GetStoragePath() string {
 	return c.V.GetString("storage.Path")
 }
 
-// P2P
+// P2P Port
 func (c *Configuration) GetP2PPort() int {
 	return c.V.GetInt("p2p.port")
 }
 
-//
+// P2P External IP
+func (c *Configuration) GetP2PExternalIP() string {
+	return c.V.GetString("p2p.externalIP")
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Notifications

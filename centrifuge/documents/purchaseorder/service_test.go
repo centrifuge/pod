@@ -314,7 +314,7 @@ func createAnchoredMockDocument(t *testing.T, skipSave bool) (*PurchaseOrder, er
 	if err != nil {
 		return nil, err
 	}
-	coredocument.FillSalts(corDoc)
+	assert.Nil(t, coredocument.FillSalts(corDoc))
 	err = coredocument.CalculateSigningRoot(corDoc)
 	if err != nil {
 		return nil, err

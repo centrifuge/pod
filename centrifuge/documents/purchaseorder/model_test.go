@@ -193,7 +193,7 @@ func TestPOModel_calculateDataRoot(t *testing.T) {
 	assert.NotNil(t, poModel.CoreDocument.DataRoot, "data root must be filled")
 }
 func TestPOModel_createProofs(t *testing.T) {
-	poModel, corDoc, err := createMockPurchaseOrder()
+	poModel, corDoc, err := createMockPurchaseOrder(t)
 	assert.Nil(t, err)
 	corDoc, proof, err := poModel.createProofs([]string{"po_number", "collaborators[0]", "document_type"})
 	assert.Nil(t, err)
@@ -218,7 +218,7 @@ func TestPOModel_createProofs(t *testing.T) {
 }
 
 func TestPOModel_createProofsFieldDoesNotExist(t *testing.T) {
-	poModel, _, err := createMockPurchaseOrder()
+	poModel, _, err := createMockPurchaseOrder(t)
 	assert.Nil(t, err)
 	_, _, err = poModel.createProofs([]string{"nonexisting"})
 	assert.NotNil(t, err)
@@ -232,7 +232,7 @@ func TestPOModel_getDocumentDataTree(t *testing.T) {
 	assert.Equal(t, "po_number", leaf.Property)
 }
 
-func createMockPurchaseOrder() (*PurchaseOrder, *coredocumentpb.CoreDocument, error) {
+func createMockPurchaseOrder(t *testing.T) (*PurchaseOrder, *coredocumentpb.CoreDocument, error) {
 	poModel := &PurchaseOrder{PoNumber: "3213121", NetAmount: 2, OrderAmount: 2, Currency: "USD", CoreDocument: coredocument.New()}
 	poModel.CoreDocument.Collaborators = [][]byte{{1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}}
 	err := poModel.calculateDataRoot()
@@ -244,7 +244,7 @@ func createMockPurchaseOrder() (*PurchaseOrder, *coredocumentpb.CoreDocument, er
 	if err != nil {
 		return nil, nil, err
 	}
-	coredocument.FillSalts(corDoc)
+	assert.Nil(t, coredocument.FillSalts(corDoc))
 	err = coredocument.CalculateSigningRoot(corDoc)
 	if err != nil {
 		return nil, nil, err

@@ -6,7 +6,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/centrifuge/documents/purchaseorder"
-	"github.com/centrifuge/go-centrifuge/centrifuge/healthcheck/controller"
+	"github.com/centrifuge/go-centrifuge/centrifuge/healthcheck"
 	"github.com/centrifuge/go-centrifuge/centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/documents"
 	"github.com/centrifuge/go-centrifuge/centrifuge/protobufs/gen/go/health"
@@ -51,7 +51,7 @@ func registerServices(ctx context.Context, grpcServer *grpc.Server, gwmux *runti
 	}
 
 	// healthcheck
-	healthpb.RegisterHealthCheckServiceServer(grpcServer, &healthcheckcontroller.HealthCheckController{})
+	healthpb.RegisterHealthCheckServiceServer(grpcServer, healthcheck.GRPCHandler())
 	err = healthpb.RegisterHealthCheckServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
 	if err != nil {
 		return err
