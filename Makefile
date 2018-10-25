@@ -65,9 +65,9 @@ build-linux-amd64: ## Build linux/amd64
 build-linux-amd64: install-xgo
 	@echo "Building amd64 with flags [${LD_FLAGS}]"
 	@mkdir -p build/linux-amd64
-	@xgo -dest build/linux-amd64 -targets=linux/amd64 -ldflags=${LD_FLAGS} ./...
+	@xgo -dest build/linux-amd64 -targets=linux/amd64 -ldflags=${LD_FLAGS} .
 	@mv build/linux-amd64/centrifuge-linux-amd64 build/linux-amd64/centrifuge
-	@tar -zcvf cent-api-linux-amd64-${TAG}.tar.gz -C build/linux-amd64/ ./...
+	@tar -zcvf cent-api-linux-amd64-${TAG}.tar.gz -C build/linux-amd64/ .
 
 build-docker: ## Build Docker Image
 build-docker:
