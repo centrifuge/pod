@@ -16,7 +16,6 @@ type P2PMockClient struct {
 	mock.Mock
 }
 
-
 func (p2p *P2PMockClient) RequestDocumentSignature(ctx context.Context, in *p2ppb.SignatureRequest, opts ...grpc.CallOption) (*p2ppb.SignatureResponse, error) {
 	args := p2p.Called(ctx, in, opts)
 	resp, _ := args.Get(0).(*p2ppb.SignatureResponse)
