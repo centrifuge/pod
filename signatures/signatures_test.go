@@ -9,6 +9,8 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/testingutils"
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -21,7 +23,7 @@ var (
 )
 
 func TestSign(t *testing.T) {
-	coreDoc := testing.GenerateCoreDocument()
+	coreDoc := testingutils.GenerateCoreDocument()
 	coreDoc.SigningRoot = key1Pub
 	idConfig := config.IdentityConfig{
 		ID:         id1,

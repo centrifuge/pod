@@ -9,6 +9,10 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/testingutils"
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/testingutils/documents"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/code"
@@ -42,12 +46,12 @@ func (r *mockAnchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.D
 }
 
 func TestDefaultService(t *testing.T) {
-	srv := DefaultService(getRepository(), &testing.MockCoreDocumentProcessor{}, nil)
+	srv := DefaultService(getRepository(), &testingutils.MockCoreDocumentProcessor{}, nil)
 	assert.NotNil(t, srv, "must be non-nil")
 }
 
 func getServiceWithMockedLayers() Service {
-	return DefaultService(getRepository(), &testing.MockCoreDocumentProcessor{}, &mockAnchorRepo{})
+	return DefaultService(getRepository(), &testingutils.MockCoreDocumentProcessor{}, &mockAnchorRepo{})
 }
 
 func createMockDocument() (*Invoice, error) {
@@ -195,7 +199,7 @@ func TestService_Create(t *testing.T) {
 	// anchor fails
 	po, err := invSrv.DeriveFromCreatePayload(testingdocuments.CreateInvoicePayload(), ctxh)
 	assert.Nil(t, err)
-	proc := &testing.MockCoreDocumentProcessor{}
+	proc := &testingutils.MockCoreDocumentProcessor{}
 	proc.On("PrepareForSignatureRequests", po).Return(fmt.Errorf("anchoring failed")).Once()
 	invSrv.coreDocProcessor = proc
 	m, err = invSrv.Create(ctx, po)
@@ -207,7 +211,7 @@ func TestService_Create(t *testing.T) {
 	// success
 	po, err = invSrv.DeriveFromCreatePayload(testingdocuments.CreateInvoicePayload(), ctxh)
 	assert.Nil(t, err)
-	proc = &testing.MockCoreDocumentProcessor{}
+	proc = &testingutils.MockCoreDocumentProcessor{}
 	proc.On("PrepareForSignatureRequests", po).Return(nil).Once()
 	proc.On("RequestSignatures", ctx, po).Return(nil).Once()
 	proc.On("PrepareForAnchoring", po).Return(nil).Once()
@@ -590,7 +594,7 @@ func TestService_Update(t *testing.T) {
 	newData, err := invSrv.DeriveInvoiceData(newInv)
 	assert.Nil(t, err)
 	assert.Equal(t, data, newData)
-	proc := &testing.MockCoreDocumentProcessor{}
+	proc := &testingutils.MockCoreDocumentProcessor{}
 	proc.On("PrepareForSignatureRequests", newInv).Return(nil).Once()
 	proc.On("RequestSignatures", ctx, newInv).Return(nil).Once()
 	proc.On("PrepareForAnchoring", newInv).Return(nil).Once()

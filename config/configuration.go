@@ -3,7 +3,7 @@ package config
 // Package the default resources into binary data that is embedded in centrifuge
 // executable
 //
-//go:generate go-bindata -pkg resources -prefix "../../" -o ../resources/data.go ../../resources/...
+//go:generate go-bindata -pkg resources -prefix "../../" -o ../resources/data.go ../build/configs/...
 
 import (
 	"bytes"

@@ -2,8 +2,8 @@ const swaggermerge = require('swagger-merge');
 const fs = require('fs');
 const path = require('path');
 
-const swaggerFilesPath = path.resolve(__dirname, '../centrifuge/protobufs/gen/swagger');
-const swaggerJsonPath = path.resolve(__dirname, '../centrifuge/protobufs/gen/swagger.json');
+const swaggerFilesPath = path.resolve(__dirname, '../../protobufs/gen/swagger');
+const swaggerJsonPath = path.resolve(__dirname, '../../protobufs/gen/swagger.json');
 const swaggerConfig = require(path.resolve(__dirname, '../swagger_config'));
 
 /* # build_swagger.js

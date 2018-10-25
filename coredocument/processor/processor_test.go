@@ -16,8 +16,10 @@ import (
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
+	cented25519 "github.com/centrifuge/go-centrifuge/keytools/ed25519"
 	"github.com/centrifuge/go-centrifuge/p2p"
 	"github.com/centrifuge/go-centrifuge/signatures"
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
@@ -108,7 +110,7 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 	assert.NotNil(t, cd.Signatures)
 	assert.Len(t, cd.Signatures, 1)
 	sig := cd.Signatures[0]
-	id, err := ed25519.GetIDConfig()
+	id, err := cented25519.GetIDConfig()
 	assert.Nil(t, err)
 	assert.True(t, ed25519.Verify(id.PublicKey, cd.SigningRoot, sig.Signature))
 }
@@ -224,7 +226,7 @@ func TestDefaultProcessor_PrepareForAnchoring(t *testing.T) {
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Times(4)
 	model.On("UnpackCoreDocument", cd).Return(fmt.Errorf("error")).Once()
-	c, err := ed25519.GetIDConfig()
+	c, err := cented25519.GetIDConfig()
 	assert.Nil(t, err)
 	s := signatures.Sign(c, cd.SigningRoot)
 	cd.Signatures = []*coredocumentpb.Signature{s}
@@ -314,7 +316,7 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	assert.Nil(t, coredocument.CalculateSigningRoot(cd))
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Times(5)
-	c, err := ed25519.GetIDConfig()
+	c, err := cented25519.GetIDConfig()
 	assert.Nil(t, err)
 	s := signatures.Sign(c, cd.SigningRoot)
 	cd.Signatures = []*coredocumentpb.Signature{s}
@@ -441,7 +443,7 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	assert.Nil(t, coredocument.CalculateSigningRoot(cd))
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Times(6)
-	c, err := ed25519.GetIDConfig()
+	c, err := cented25519.GetIDConfig()
 	assert.Nil(t, err)
 	s := signatures.Sign(c, cd.SigningRoot)
 	cd.Signatures = []*coredocumentpb.Signature{s}

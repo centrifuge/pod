@@ -20,10 +20,10 @@ protoc_version: 3.5.1
 #protoc_includes:
 #  - ../../vendor/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis
 protoc_includes:
-  - ../../vendor/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis
-  - ../../vendor/github.com/grpc-ecosystem/grpc-gateway/
-  - ../../vendor/github.com/centrifuge/
-  - ../../vendor/github.com/centrifuge/centrifuge-protobufs
+  - ../vendor/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis
+  - ../vendor/github.com/grpc-ecosystem/grpc-gateway/
+  - ../vendor/github.com/centrifuge/
+  - ../vendor/github.com/centrifuge/centrifuge-protobufs
 
 # Include the Well-Known Types when compiling with protoc.
 # For example, this allows you to do import "google/protobuf/timestamp.proto" in your Protobuf files.
@@ -125,38 +125,3 @@ gen:
     - name: grpc-gateway
       type: go
       output: gen/go/
-
-
-# The plugin name. This will go to protoc with --name_out, so it either needs
-      # to be a built-in name (like java), or a plugin name with a binary
-      # protoc-gen-name.
-#    - name: gogo
-
-      # The type, if any. Valid types are go, gogo.
-      # Use go if your plugin is a standard Golang plugin
-      # that uses github.com/golang/protobuf imports, use gogo
-      # if it uses github.com/gogo/protobuf imports. For protoc-gen-go
-      # use go, For protoc-gen-gogo, protoc-gen-gogoslick, etc, use gogo.
-#      type: gogo
-
-      # Extra flags to specify.
-      # The only flag you will generally set is plugins=grpc for Golang.
-      # The Mfile=package flags are automatically set.
-      # ** Otherwise, generally do not set this unless you know what you are doing. **
-#      flags: plugins=grpc
-
-      # The path to output generated files to.
-      # If the directory does not exist, it will be created when running generation.
-      # This needs to be a relative path.
-#      output: ../../.gen/proto/go
-
-#    - name: yarpc-go
-#      type: gogo
-#      output: ../../.gen/proto/go
-
-#    - name: grpc-gateway
-#      type: go
-#      output: ../../.gen/proto/go
-
-#    - name: java
-#      output: ../../.gen/proto/java

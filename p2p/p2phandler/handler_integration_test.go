@@ -16,11 +16,13 @@ import (
 	cc "github.com/centrifuge/go-centrifuge/context/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/identity"
-	cented25519 "github.com/centrifuge/go-centrifuge/keytools/ed25519keys"
+	cented25519 "github.com/centrifuge/go-centrifuge/keytools/ed25519"
 	"github.com/centrifuge/go-centrifuge/keytools/secp256k1"
 	"github.com/centrifuge/go-centrifuge/notification"
 	"github.com/centrifuge/go-centrifuge/p2p/p2phandler"
 	"github.com/centrifuge/go-centrifuge/signatures"
+	"github.com/centrifuge/go-centrifuge/testingutils"
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/centrifuge/precise-proofs/proofs"
@@ -32,7 +34,7 @@ import (
 var handler = p2phandler.Handler{Notifier: &notification.WebhookSender{}}
 
 func TestMain(m *testing.M) {
-	cc.DONT_USE_FOR_UNIT_TESTS_TestFunctionalEthereumBootstrap()
+	cc.TestFunctionalEthereumBootstrap()
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()
 	os.Exit(result)
@@ -275,7 +277,7 @@ func prepareDocumentForP2PHandler(t *testing.T, doc *coredocumentpb.CoreDocument
 	idConfig, err := cented25519.GetIDConfig()
 	assert.Nil(t, err)
 	if doc == nil {
-		doc = testing.GenerateCoreDocument()
+		doc = testingutils.GenerateCoreDocument()
 	}
 	tree, _ := coredocument.GetDocumentSigningTree(doc)
 	doc.SigningRoot = tree.RootHash()

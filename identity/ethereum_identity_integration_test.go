@@ -23,8 +23,8 @@ func TestMain(m *testing.M) {
 	time.Sleep(time.Second + 2)
 
 	cc.TestFunctionalEthereumBootstrap()
-	config.Config.V.Set("keys.signing.publicKey", "../../example/resources/signingKey.pub.pem")
-	config.Config.V.Set("keys.signing.privateKey", "../../example/resources/signingKey.key.pem")
+	config.Config.V.Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
+	config.Config.V.Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
 
 	identityService = identity.IDService
 	result := m.Run()
@@ -81,8 +81,8 @@ func TestAddKeyFromConfig(t *testing.T) {
 	centrifugeId, _ := identity.ToCentID(utils.RandomSlice(identity.CentIDLength))
 	defaultCentrifugeId := config.Config.V.GetString("identityId")
 	config.Config.V.Set("identityId", centrifugeId.String())
-	config.Config.V.Set("keys.ethauth.publicKey", "../../example/resources/ethauth.pub.pem")
-	config.Config.V.Set("keys.ethauth.privateKey", "../../example/resources/ethauth.key.pem")
+	config.Config.V.Set("keys.ethauth.publicKey", "../build/resources/ethauth.pub.pem")
+	config.Config.V.Set("keys.ethauth.privateKey", "../build/resources/ethauth.key.pem")
 	_, confirmations, err := identityService.CreateIdentity(centrifugeId)
 	assert.Nil(t, err, "should not error out when creating identity")
 
@@ -100,8 +100,8 @@ func TestAddKeyFromConfig_IdentityDoesNotExist(t *testing.T) {
 	centrifugeId, _ := identity.ToCentID(utils.RandomSlice(identity.CentIDLength))
 	defaultCentrifugeId := config.Config.V.GetString("identityId")
 	config.Config.V.Set("identityId", centrifugeId.String())
-	config.Config.V.Set("keys.ethauth.publicKey", "../../example/resources/ethauth.pub.pem")
-	config.Config.V.Set("keys.ethauth.privateKey", "../../example/resources/ethauth.key.pem")
+	config.Config.V.Set("keys.ethauth.publicKey", "../build/resources/ethauth.pub.pem")
+	config.Config.V.Set("keys.ethauth.privateKey", "../build/resources/ethauth.key.pem")
 
 	err := identity.AddKeyFromConfig(identity.KeyPurposeEthMsgAuth)
 	assert.NotNil(t, err, "should error out")

@@ -15,6 +15,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
+	"github.com/centrifuge/go-centrifuge/testingutils"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/stretchr/testify/assert"
 )
@@ -25,10 +26,10 @@ func TestMain(m *testing.M) {
 	prevSignPrivkey := config.Config.V.Get("keys.signing.privateKey")
 	prevEthPubkey := config.Config.V.Get("keys.ethauth.publicKey")
 	prevEthPrivkey := config.Config.V.Get("keys.ethauth.privateKey")
-	config.Config.V.Set("keys.signing.publicKey", "../../example/resources/signature1.pub.pem")
-	config.Config.V.Set("keys.signing.privateKey", "../../example/resources/signature1.key.pem")
-	config.Config.V.Set("keys.ethauth.publicKey", "../../example/resources/ethauth.pub.pem")
-	config.Config.V.Set("keys.ethauth.privateKey", "../../example/resources/ethauth.key.pem")
+	config.Config.V.Set("keys.signing.publicKey", "../build/resources/signature1.pub.pem")
+	config.Config.V.Set("keys.signing.privateKey", "../build/resources/signature1.key.pem")
+	config.Config.V.Set("keys.ethauth.publicKey", "../build/resources/ethauth.pub.pem")
+	config.Config.V.Set("keys.ethauth.privateKey", "../build/resources/ethauth.key.pem")
 	result := m.Run()
 	config.Config.V.Set("keys.signing.publicKey", prevSignPubkey)
 	config.Config.V.Set("keys.signing.privateKey", prevSignPrivkey)
@@ -40,7 +41,7 @@ func TestMain(m *testing.M) {
 
 func TestPaymentObligationService_mint(t *testing.T) {
 	// create identity
-	testing.CreateIdentityWithKeys()
+	testingutils.CreateIdentityWithKeys()
 
 	// create invoice (anchor)
 	service, err := documents.GetRegistryInstance().LocateService(documenttypes.InvoiceDataTypeUrl)

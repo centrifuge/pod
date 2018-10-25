@@ -16,7 +16,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/coredocument/processor"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
-	centED25519 "github.com/centrifuge/go-centrifuge/keytools/ed25519keys"
+	centED25519 "github.com/centrifuge/go-centrifuge/keytools/ed25519"
 	"github.com/centrifuge/go-centrifuge/notification"
 	clientpopb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/signatures"

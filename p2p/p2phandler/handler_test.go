@@ -21,6 +21,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/notification"
 	"github.com/centrifuge/go-centrifuge/storage"
+	"github.com/centrifuge/go-centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
@@ -50,7 +51,7 @@ func TestMain(m *testing.M) {
 	os.Exit(result)
 }
 
-var coreDoc = testing.GenerateCoreDocument()
+var coreDoc = testingutils.GenerateCoreDocument()
 
 func TestHandler_RequestDocumentSignature_nilDocument(t *testing.T) {
 	req := &p2ppb.SignatureRequest{Header: &p2ppb.CentrifugeHeader{

@@ -18,6 +18,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/keytools/ed25519"
 	"github.com/centrifuge/go-centrifuge/signatures"
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
@@ -30,8 +31,8 @@ func TestMain(m *testing.M) {
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, nil)
 	flag.Parse()
-	config.Config.V.Set("keys.signing.publicKey", "../../example/resources/signature1.pub.pem")
-	config.Config.V.Set("keys.signing.privateKey", "../../example/resources/signature1.key.pem")
+	config.Config.V.Set("keys.signing.publicKey", "../build/resources/signature1.pub.pem")
+	config.Config.V.Set("keys.signing.privateKey", "../build/resources/signature1.key.pem")
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)

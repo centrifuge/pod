@@ -16,6 +16,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/signatures"
+	"github.com/centrifuge/go-centrifuge/testingutils"
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -41,7 +43,7 @@ func (r *mockAnchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.D
 }
 
 func getServiceWithMockedLayers() Service {
-	return DefaultService(getRepository(), &testing.MockCoreDocumentProcessor{}, &mockAnchorRepo{})
+	return DefaultService(getRepository(), &testingutils.MockCoreDocumentProcessor{}, &mockAnchorRepo{})
 }
 
 func TestService_Update(t *testing.T) {
@@ -100,7 +102,7 @@ func TestService_Update(t *testing.T) {
 	newData, err := poSrv.DerivePurchaseOrderData(newInv)
 	assert.Nil(t, err)
 	assert.Equal(t, data, newData)
-	proc := &testing.MockCoreDocumentProcessor{}
+	proc := &testingutils.MockCoreDocumentProcessor{}
 	proc.On("PrepareForSignatureRequests", newInv).Return(nil).Once()
 	proc.On("RequestSignatures", ctx, newInv).Return(nil).Once()
 	proc.On("PrepareForAnchoring", newInv).Return(nil).Once()
@@ -262,7 +264,7 @@ func TestService_Create(t *testing.T) {
 	// anchor fails
 	po, err := poSrv.DeriveFromCreatePayload(testingdocuments.CreatePOPayload(), ctxh)
 	assert.Nil(t, err)
-	proc := &testing.MockCoreDocumentProcessor{}
+	proc := &testingutils.MockCoreDocumentProcessor{}
 	proc.On("PrepareForSignatureRequests", po).Return(fmt.Errorf("anchoring failed")).Once()
 	poSrv.coreDocProcessor = proc
 	m, err = poSrv.Create(ctx, po)
@@ -274,7 +276,7 @@ func TestService_Create(t *testing.T) {
 	// success
 	po, err = poSrv.DeriveFromCreatePayload(testingdocuments.CreatePOPayload(), ctxh)
 	assert.Nil(t, err)
-	proc = &testing.MockCoreDocumentProcessor{}
+	proc = &testingutils.MockCoreDocumentProcessor{}
 	proc.On("PrepareForSignatureRequests", po).Return(nil).Once()
 	proc.On("RequestSignatures", ctx, po).Return(nil).Once()
 	proc.On("PrepareForAnchoring", po).Return(nil).Once()
