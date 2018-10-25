@@ -9,11 +9,11 @@ identityId: AQEBAQEB
 
 keys:
   signing:
-    publicKey: example/resources/signature1.pub.pem
-    privateKey: example/resources/signingKey.key.pem
+    publicKey: ../../build/resources/signature1.pub.pem
+    privateKey: ../../build/resources/signingKey.key.pem
   ethauth:
-    publicKey: example/resources/ethauth.pub.pem
-    privateKey: example/resources/ethauth.key.pem
+    publicKey: ../../build/resources/ethauth.pub.pem
+    privateKey: ../../build/resources/ethauth.key.pem
 
 p2p:
   port: 38204

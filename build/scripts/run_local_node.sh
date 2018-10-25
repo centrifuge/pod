@@ -10,6 +10,6 @@ export CENT_ETHEREUM_CONTRACTS_DIR=${PARENT_DIR}/vendor/github.com/centrifuge/ce
 
 ################# Prepare for run ########################
 PARENT_DIR=`pwd`
-source "${PARENT_DIR}/scripts/setup_smart_contract_addresses.sh"
+source "${PARENT_DIR}/build/scripts/setup_smart_contract_addresses.sh"
 
 centrifuge run --config example/resources/centrifuge_example.yaml

@@ -15,7 +15,7 @@ source "${local_dir}/env_vars.sh"
 
 ################## Run GETH #########################
 ## Ethereum local POA Dev testnet
-ETH_DATADIR=$DATA_DIR ${PARENT_DIR}/scripts/docker/run.sh dev
+ETH_DATADIR=$DATA_DIR ${PARENT_DIR}/build/scripts/docker/run.sh dev
 
 echo "Waiting for GETH to Start Up ..."
 maxCount=$(( CENT_ETHEREUM_GETH_START_TIMEOUT / $CENT_ETHEREUM_GETH_START_INTERVAL ))
