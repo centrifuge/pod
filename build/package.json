@@ -1,7 +1,7 @@
 {
-  "name": "centrifuge-protobufs",
+  "name": "go-centrifuge",
   "version": "0.0.1",
-  "description": "Protobuf files &amp; go bindings for Centrifuge Documents",
+  "description": "Protobuf files &amp; go bindings for go-centrifuge",
   "main": "index.js",
   "scripts": {
     "build_swagger": "node scripts/build_swagger.js"
