@@ -31,8 +31,8 @@ func TestMain(m *testing.M) {
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, nil)
 	flag.Parse()
-	config.Config.V.Set("keys.signing.publicKey", "../build/resources/signature1.pub.pem")
-	config.Config.V.Set("keys.signing.privateKey", "../build/resources/signature1.key.pem")
+	config.Config.V.Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
+	config.Config.V.Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)
