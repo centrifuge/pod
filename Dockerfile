@@ -12,8 +12,8 @@ FROM alpine:latest
 RUN apk update && apk add --no-cache jq curl
 
 WORKDIR /root/
-COPY --from=builder /go/bin/centrifuge .
-COPY build/docker/files/entrypoint.sh /root
+COPY --from=builder /go/bin/go-centrifuge .
+COPY build/scripts/docker/entrypoint.sh /root
 
 VOLUME ["/root/config"]
 
