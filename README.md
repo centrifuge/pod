@@ -17,8 +17,7 @@
 - [Build](#build)
 - [Install](#install)
 - [Running Tests](#running-tests)
- - [Troubleshooting functional test setup](#troubleshooting-functional-test-setup)
- - [Running tests continuously while developing](#running-tests-continuously-while-developing)
+- [Running tests continuously while developing](#running-tests-continuously-while-developing)
 - [Run a Geth node locally or Rinkeby environments](#run-a-geth-node-locally-or-rinkeby-environments)
     - [Run as local node in dev mode](#run-as-local-node-with-mining-enabled)
     - [Run local peer connected to Rinkeby](#run-local-peer-connected-to-rinkeby)
@@ -66,6 +65,7 @@ npm install -g truffle@4.0.4
 # install Dep
 curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
 ```
+
 #### Install Docker Compose
 Make sure you have docker-compose installed, usually comes bundled with Mac OS Docker. Otherwise: https://docs.docker.com/compose/install/
 
@@ -121,12 +121,7 @@ Run the whole test-suite with
 ./scripts/test_wrapper.sh
 ```
 
-### Troubleshooting functional test setup
 
-One of the most-likely issues during your first run of the `./scripts/test_wrapper.sh` will be that your geth node has not yet synced (if run against rinkeby).
-This issue will likely show up with an error about gas limits. That's a misleading error by Truffle.
-
-Another case (if you ran your geth node manually via `./scripts/docker/run.sh` - instead of using `./scripts/test_wrapper.sh` - make sure to run it with the `dev` parameter.
 
 
 ### Running tests continuously while developing
@@ -149,7 +144,7 @@ reflex -R '(^|/)vendor/|(^|/)\\.idea/' -- go test ./centrifuge/invoice/... -tags
 
 ## Run a Geth node locally or Rinkeby environments
 
-We make use of Docker Compose locally as it is easy and clear to bundle volume and environment configurations:
+For development, we make use of Docker Compose locally as it is easy and clear to bundle volume and environment configurations:
 Docker Compose files live in `./scripts/docker`
 
 #### Run as local node in dev mode
@@ -170,18 +165,6 @@ By default it uses:
 Override those when needed
 
 Let it catch up for a while until is fully synced with the remote peer
-
-#### Checking on your local geth node
-To see what's up with your local geth node (e.g. to see how the DAG generation is going or if it is mining) use
-```bash
-docker logs geth-node -f
-```
-
-#### Attaching to your local geth node
-In order to attach via geth to this node running in docker run
-```bash
-geth attach ws://localhost:9546
-```
 
 ## Run Integration Tests against Local/Rinkeby Environments
 
@@ -244,5 +227,5 @@ Create any new `.proto` files in its own package under `protobufs` folder.
 Generating go bindings and swagger with the following command
 
 ```bash
-make gen_proto
+make proto-all
 ```
