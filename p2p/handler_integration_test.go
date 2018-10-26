@@ -1,6 +1,6 @@
 // +build integration
 
-package p2phandler_test
+package p2p_test
 
 import (
 	"context"
@@ -19,7 +19,7 @@ import (
 	cented25519 "github.com/centrifuge/go-centrifuge/keytools/ed25519"
 	"github.com/centrifuge/go-centrifuge/keytools/secp256k1"
 	"github.com/centrifuge/go-centrifuge/notification"
-	"github.com/centrifuge/go-centrifuge/p2p/p2phandler"
+	"github.com/centrifuge/go-centrifuge/p2p"
 	"github.com/centrifuge/go-centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
@@ -31,7 +31,7 @@ import (
 	"golang.org/x/crypto/ed25519"
 )
 
-var handler = p2phandler.Handler{Notifier: &notification.WebhookSender{}}
+var handler = p2p.Handler{Notifier: &notification.WebhookSender{}}
 
 func TestMain(m *testing.M) {
 	cc.TestFunctionalEthereumBootstrap()
