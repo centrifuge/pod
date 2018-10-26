@@ -29,8 +29,7 @@ func NewP2PClient() Client {
 	return &defaultClient{}
 }
 
-type defaultClient struct {
-}
+type defaultClient struct{}
 
 // Opens a client connection with libp2p
 func (d *defaultClient) OpenClient(target string) (p2ppb.P2PServiceClient, error) {

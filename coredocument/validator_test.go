@@ -33,20 +33,11 @@ func TestMain(m *testing.M) {
 	flag.Parse()
 	config.Config.V.Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
 	config.Config.V.Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
+	config.Config.V.Set("keys.ethauth.publicKey", "../build/resources/ethauth.pub.pem")
+	config.Config.V.Set("keys.ethauth.privateKey", "../build/resources/ethauth.key.pem")
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)
-}
-
-type mockModel struct {
-	mock.Mock
-	documents.Model
-}
-
-func (m mockModel) PackCoreDocument() (*coredocumentpb.CoreDocument, error) {
-	args := m.Called()
-	cd, _ := args.Get(0).(*coredocumentpb.CoreDocument)
-	return cd, args.Error(1)
 }
 
 func TestUpdateVersionValidator(t *testing.T) {
