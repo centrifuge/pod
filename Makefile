@@ -4,8 +4,8 @@ GIT_SHORT_COMMIT=`git rev-parse --short HEAD`
 TIMESTAMP=`date -u +%Y%m%d%H`
 TAG="${TRAVIS_BRANCH}-${TIMESTAMP}-${GIT_SHORT_COMMIT}"
 IMAGE_NAME?=centrifugeio/go-centrifuge
-LD_FLAGS?="-X github.com/centrifuge/go-centrifuge/centrifuge/version.gitCommit=${GIT_COMMIT}"
-GCLOUD_SERVICE?="peak-vista-185616-9f70002df7eb.json"
+LD_FLAGS?="-X github.com/centrifuge/go-centrifuge/version.gitCommit=${GIT_COMMIT}"
+GCLOUD_SERVICE?="./build/peak-vista-185616-9f70002df7eb.json"
 
 # GOBIN needs to be set to ensure govendor can actually be found and executed 
 PATH=$(shell printenv PATH):$(GOBIN)
@@ -25,10 +25,10 @@ help: ## Show this help message.
 install-deps: ## Install Dependencies
 	@command -v dep >/dev/null 2>&1 || go get -u github.com/golang/dep/...
 	@dep ensure
-	@npm install
+	@npm --prefix ./build  install
 
 format-go: ## formats go code
-	@goimports -w ./centrifuge
+	@goimports -w .
 
 proto-lint: ## runs prototool lint
 	$(PROTOTOOL_BIN) lint
@@ -40,10 +40,10 @@ proto-all: ## runs prototool all
 	$(PROTOTOOL_BIN) all
 
 gen-swagger: ## generates the swagger documentation
-	npm run build_swagger
+	npm --prefix ./build  run build_swagger
 
 generate: ## autogenerate go files for config
-	go generate ./centrifuge/config/configuration.go
+	go generate ./config/configuration.go
 
 vendorinstall: ## Installs all protobuf dependencies with go-vendorinstall
 	go install github.com/centrifuge/go-centrifuge/vendor/github.com/roboll/go-vendorinstall
@@ -55,7 +55,7 @@ vendorinstall: ## Installs all protobuf dependencies with go-vendorinstall
 
 install: ## Builds and Install binary for development
 install: install-deps vendorinstall
-	@go install ./centrifuge/
+	@go install ./...
 
 install-xgo: ## Install XGO
 	@echo "Ensuring XGO is installed"
@@ -65,9 +65,9 @@ build-linux-amd64: ## Build linux/amd64
 build-linux-amd64: install-xgo
 	@echo "Building amd64 with flags [${LD_FLAGS}]"
 	@mkdir -p build/linux-amd64
-	@xgo -dest build/linux-amd64 -targets=linux/amd64 -ldflags=${LD_FLAGS} ./centrifuge
-	@mv build/linux-amd64/centrifuge-linux-amd64 build/linux-amd64/centrifuge
-	@tar -zcvf cent-api-linux-amd64-${TAG}.tar.gz -C build/linux-amd64/ ./centrifuge
+	@xgo -dest build/linux-amd64 -targets=linux/amd64 -ldflags=${LD_FLAGS} .
+	@mv build/linux-amd64/go-centrifuge-linux-amd64 build/linux-amd64/go-centrifuge
+	@tar -zcvf cent-api-linux-amd64-${TAG}.tar.gz -C build/linux-amd64/ .
 
 build-docker: ## Build Docker Image
 build-docker:
