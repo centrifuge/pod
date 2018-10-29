@@ -203,7 +203,7 @@ func (c *CentP2PServer) makeBasicHost(listenPort int) (host.Host, error) {
 
 	addressFactory := func(addrs []ma.Multiaddr) []ma.Multiaddr {
 		if extMultiAddr != nil {
-			addrs = append(addrs, extMultiAddr)
+			addrs = []ma.Multiaddr{extMultiAddr}
 		}
 		return addrs
 	}
