@@ -44,22 +44,22 @@ type IdentityConfig struct {
 	PrivateKey []byte
 }
 
-// Storage backend
+// GetStoragePath returns the data storage backend
 func (c *Configuration) GetStoragePath() string {
 	return c.V.GetString("storage.Path")
 }
 
-// P2P Port
+// GetP2PPort returns P2P Port
 func (c *Configuration) GetP2PPort() int {
 	return c.V.GetInt("p2p.port")
 }
 
-// P2P External IP
+// GetP2PExternalIP returns P2P External IP
 func (c *Configuration) GetP2PExternalIP() string {
 	return c.V.GetString("p2p.externalIP")
 }
 
-// P2P Connect Timeout
+// GetP2PConnectionTimeout returns P2P Connect Timeout
 func (c *Configuration) GetP2PConnectionTimeout() time.Duration {
 	return c.V.GetDuration("p2p.connectTimeout")
 }
