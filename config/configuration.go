@@ -59,6 +59,11 @@ func (c *Configuration) GetP2PExternalIP() string {
 	return c.V.GetString("p2p.externalIP")
 }
 
+// P2P Connect Timeout
+func (c *Configuration) GetP2PConnectionTimeout() time.Duration {
+	return c.V.GetDuration("p2p.connectTimeout")
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Notifications
 ////////////////////////////////////////////////////////////////////////////////
