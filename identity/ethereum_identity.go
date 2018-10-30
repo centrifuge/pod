@@ -101,7 +101,8 @@ func (id *EthereumIdentity) FetchKey(key []byte) (Key, error) {
 	if err != nil {
 		return nil, err
 	}
-	opts := ethereum.GetGethCallOpts()
+	// Ignoring cancelFunc as code will block until response or timeout is triggered
+	opts, _ := ethereum.GetGethCallOpts()
 	key32, _ := utils.SliceToByte32(key)
 	keyInstance, err := contract.GetKey(opts, key32)
 	if err != nil {
@@ -135,7 +136,8 @@ func (id *EthereumIdentity) findContract() (exists bool, err error) {
 		return true, nil
 	}
 
-	opts := ethereum.GetGethCallOpts()
+	// Ignoring cancelFunc as code will block until response or timeout is triggered
+	opts, _ := ethereum.GetGethCallOpts()
 	idAddress, err := id.RegistryContract.GetIdentityByCentrifugeId(opts, id.CentrifugeId.BigInt())
 	if err != nil {
 		return false, err
@@ -219,7 +221,8 @@ func (id *EthereumIdentity) fetchKeysByPurpose(keyPurpose int) ([]EthereumIdenti
 	if err != nil {
 		return nil, err
 	}
-	opts := ethereum.GetGethCallOpts()
+	// Ignoring cancelFunc as code will block until response or timeout is triggered
+	opts, _ := ethereum.GetGethCallOpts()
 	bigInt := big.NewInt(int64(keyPurpose))
 	keys, err := contract.GetKeysByPurpose(opts, bigInt)
 	if err != nil {
@@ -372,7 +375,8 @@ func (ids *EthereumIdentityService) CreateIdentity(centrifugeID CentID) (id Iden
 
 // GetIdentityAddress gets the address of the ethereum identity contract for the given CentID
 func (ids *EthereumIdentityService) GetIdentityAddress(centID CentID) (common.Address, error) {
-	opts := ethereum.GetGethCallOpts()
+	// Ignoring cancelFunc as code will block until response or timeout is triggered
+	opts, _ := ethereum.GetGethCallOpts()
 	address, err := ids.registryContract.GetIdentityByCentrifugeId(opts, centID.BigInt())
 	if err != nil {
 		return common.Address{}, err
@@ -389,7 +393,7 @@ func (ids *EthereumIdentityService) LookupIdentityForID(centrifugeID CentID) (Id
 	id := NewEthereumIdentity(centrifugeID, ids.registryContract, ids.config)
 	exists, err := id.CheckIdentityExists()
 	if !exists {
-		return id, fmt.Errorf("identity [%s] does not exist", id.CentrifugeId)
+		return id, fmt.Errorf("identity [%s] does not exist with err [%v]", id.CentrifugeId, err)
 	}
 
 	if err != nil {

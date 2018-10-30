@@ -1,12 +1,11 @@
 // +build unit
 
-package anchors_test
+package anchors
 
 import (
 	"math/big"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/keytools/secp256k1"
@@ -19,7 +18,7 @@ import (
 
 type mockAnchorRepo struct {
 	mock.Mock
-	anchors.AnchorRepositoryContract
+	AnchorRepositoryContract
 }
 
 func (m *mockAnchorRepo) Commits(opts *bind.CallOpts, anchorID *big.Int) (docRoot [32]byte, err error) {
@@ -36,10 +35,10 @@ func TestCorrectCommitSignatureGen(t *testing.T) {
 	correctCommitToSign := "0x15f9cb57608a7ef31428fd6b1cb7ea2002ab032211d882b920c1474334004d6b"
 	correctCommitSignature := "0xb4051d6d03c3bf39f4ec4ba949a91a358b0cacb4804b82ed2ba978d338f5e747770c00b63c8e50c1a7aa5ba629870b54c2068a56f8b43460aa47891c6635d36d01"
 	testPrivateKey, _ := hexutil.Decode("0x17e063fa17dd8274b09c14b253697d9a20afff74ace3c04fdb1b9c814ce0ada5")
-	anchorIDTyped, _ := anchors.NewAnchorID(anchorID)
+	anchorIDTyped, _ := NewAnchorID(anchorID)
 	centIdTyped, _ := identity.ToCentID(centrifugeId)
-	docRootTyped, _ := anchors.NewDocRoot(documentRoot)
-	messageToSign := anchors.GenerateCommitHash(anchorIDTyped, centIdTyped, docRootTyped)
+	docRootTyped, _ := NewDocRoot(documentRoot)
+	messageToSign := GenerateCommitHash(anchorIDTyped, centIdTyped, docRootTyped)
 	assert.Equal(t, correctCommitToSign, hexutil.Encode(messageToSign), "messageToSign not calculated correctly")
 	signature, _ := secp256k1.SignEthereum(messageToSign, testPrivateKey)
 	assert.Equal(t, correctCommitSignature, hexutil.Encode(signature), "signature not correct")
@@ -55,16 +54,16 @@ func TestGenerateAnchor(t *testing.T) {
 	var documentProofs [][32]byte
 	documentProofs = append(documentProofs, documentProof)
 	centIdTyped, _ := identity.ToCentID(centrifugeId)
-	messageToSign := anchors.GenerateCommitHash(currentAnchorID, centIdTyped, currentDocumentRoot)
+	messageToSign := GenerateCommitHash(currentAnchorID, centIdTyped, currentDocumentRoot)
 	signature, _ := secp256k1.SignEthereum(messageToSign, testPrivateKey)
 
 	var documentRoot32Bytes [32]byte
 	copy(documentRoot32Bytes[:], currentDocumentRoot[:32])
 
-	commitData := anchors.NewCommitData(0, currentAnchorID, documentRoot32Bytes, centIdTyped, documentProofs, signature)
+	commitData := NewCommitData(0, currentAnchorID, documentRoot32Bytes, centIdTyped, documentProofs, signature)
 
-	anchorID, _ := anchors.NewAnchorID(currentAnchorID[:])
-	docRoot, _ := anchors.NewDocRoot(documentRoot32Bytes[:])
+	anchorID, _ := NewAnchorID(currentAnchorID[:])
+	docRoot, _ := NewDocRoot(documentRoot32Bytes[:])
 
 	assert.Equal(t, commitData.AnchorID, anchorID, "Anchor should have the passed ID")
 	assert.Equal(t, commitData.DocumentRoot, docRoot, "Anchor should have the passed document root")
@@ -75,10 +74,10 @@ func TestGenerateAnchor(t *testing.T) {
 
 func TestGetDocumentRootOf(t *testing.T) {
 	repo := &mockAnchorRepo{}
-	anchorID, err := anchors.NewAnchorID(utils.RandomSlice(32))
+	anchorID, err := NewAnchorID(utils.RandomSlice(32))
 	assert.Nil(t, err)
 
-	ethRepo := anchors.NewEthereumAnchorRepository(config.Config, repo)
+	ethRepo := NewEthereumAnchorRepository(config.Config, repo)
 	docRoot := utils.RandomByte32()
 	repo.On("Commits", mock.Anything, mock.Anything).Return(docRoot, nil)
 	gotRoot, err := ethRepo.GetDocumentRootOf(anchorID)

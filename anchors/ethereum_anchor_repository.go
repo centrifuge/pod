@@ -48,7 +48,9 @@ func NewEthereumAnchorRepository(config Config, anchorRepositoryContract AnchorR
 
 // Commits takes an anchorID and returns the corresponding documentRoot from the chain
 func (ethRepository *EthereumAnchorRepository) GetDocumentRootOf(anchorID AnchorID) (docRoot DocRoot, err error) {
-	return ethRepository.anchorRepositoryContract.Commits(ethereum.GetGethCallOpts(), anchorID.BigInt())
+	// Ignoring cancelFunc as code will block until response or timeout is triggered
+	opts, _ := ethereum.GetGethCallOpts()
+	return ethRepository.anchorRepositoryContract.Commits(opts, anchorID.BigInt())
 }
 
 //PreCommitAnchor will call the transaction PreCommit on the smart contract
