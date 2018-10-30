@@ -17,7 +17,6 @@ import (
 	pstore "github.com/libp2p/go-libp2p-peerstore"
 	ma "github.com/multiformats/go-multiaddr"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/connectivity"
 )
 
 type Client interface {
@@ -62,17 +61,14 @@ func (d *defaultClient) OpenClient(target string) (p2ppb.P2PServiceClient, error
 	// so LibP2P knows how to contact it
 	hostInstance.Peerstore().AddAddr(peerID, targetAddr, pstore.PermanentAddrTTL)
 
-	// make a new stream from host B to host A
-	g, err := grpcProtoInstance.Dial(context.Background(), peerID, grpc.WithInsecure())
+	// make a new stream from host B to host A with timeout
+	// Retrial is handled internally, connection request will be cancelled by the connection timeout context
+	ctx, _ := context.WithTimeout(context.Background(), config.Config.GetP2PConnectionTimeout())
+	g, err := grpcProtoInstance.Dial(ctx, peerID, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to dial peer [%s]: %v", peerID.Pretty(), err)
 	}
 
-	for {
-		if g.GetState() == connectivity.Ready {
-			break
-		}
-	}
 	return p2ppb.NewP2PServiceClient(g), nil
 }
 
