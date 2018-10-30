@@ -3,9 +3,8 @@
 package anchors
 
 import (
-	"testing"
-
 	"os"
+	"testing"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
