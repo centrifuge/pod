@@ -73,6 +73,7 @@ func TestCentP2PServer_makeBasicHostWithExternalIP(t *testing.T) {
 	assert.NotNil(t, h)
 	addr, err := ma.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%d", externalIP, listenPort))
 	assert.Nil(t, err)
+	assert.Equal(t, 1, len(h.Addrs()))
 	assert.Contains(t, h.Addrs(), addr)
 }
 

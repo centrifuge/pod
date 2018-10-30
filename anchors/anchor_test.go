@@ -3,11 +3,24 @@
 package anchors
 
 import (
+	"os"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestMain(m *testing.M) {
+	ibootstappers := []bootstrap.TestBootstrapper{
+		&config.Bootstrapper{},
+	}
+	bootstrap.RunTestBootstrappers(ibootstappers, nil)
+	result := m.Run()
+	bootstrap.RunTestTeardown(ibootstappers)
+	os.Exit(result)
+}
 
 func TestNewAnchorId(t *testing.T) {
 	tests := []struct {
