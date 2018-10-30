@@ -44,7 +44,6 @@
   packages = ["."]
   pruneopts = "T"
   revision = "c60964592c1a2b83c5676878c937cdbe6719869d"
-  source = "git@github.com:centrifuge/centrifuge-ethereum-contracts"
 
 [[projects]]
   digest = "1:c6e2ed36c71d00b36eb36fa5b7aad8c06a1c07f58701557c4bb7b8e0084356d8"
@@ -60,7 +59,6 @@
   ]
   pruneopts = "T"
   revision = "838c11114163b6152d7b56574536f046b858e68d"
-  source = "git@github.com:centrifuge/centrifuge-protobufs"
 
 [[projects]]
   digest = "1:c925cd40d25fe72f5916e010b79b5d9f6e0e97ec9b190fa658c6c67b913229ea"
@@ -68,7 +66,6 @@
   packages = ["."]
   pruneopts = "UT"
   revision = "80f35a18b9a0c632d7843e7e536873b0536f0040"
-  source = "git@github.com:centrifuge/gocelery"
 
 [[projects]]
   digest = "1:9ecc8c63be5b2a2e9c4daefc265ea476757d91a04394fbb984bcdb3c652129da"
@@ -79,7 +76,6 @@
   ]
   pruneopts = "UT"
   revision = "c673e56ee0de0d721a10dee5cd2aa59015e4420a"
-  source = "git@github.com:centrifuge/precise-proofs"
 
 [[projects]]
   digest = "1:0ef770954bca104ee99b3b6b7f9b240605ac03517d9f98cbc1893daa03f3c038"
@@ -135,7 +131,6 @@
   ]
   pruneopts = "T"
   revision = "89451f7c382ad2185987ee369f16416f89c28a7d"
-  source = "git@github.com:ethereum/go-ethereum"
   version = "v1.8.15"
 
 [[projects]]
@@ -271,7 +266,6 @@
   ]
   pruneopts = "T"
   revision = "8558711daa6c2853489043207b563dceacbc19cf"
-  source = "git@github.com:grpc-ecosystem/grpc-gateway"
   version = "v1.5.0"
 
 [[projects]]
@@ -1425,7 +1419,6 @@
     "google.golang.org/genproto/googleapis/api/annotations",
     "google.golang.org/grpc",
     "google.golang.org/grpc/codes",
-    "google.golang.org/grpc/connectivity",
     "google.golang.org/grpc/credentials",
     "google.golang.org/grpc/grpclog",
     "google.golang.org/grpc/status",
