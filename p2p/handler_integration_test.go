@@ -4,6 +4,7 @@ package p2p_test
 
 import (
 	"context"
+	"flag"
 	"math/big"
 	"os"
 	"testing"
@@ -35,6 +36,11 @@ var handler = p2p.Handler{Notifier: &notification.WebhookSender{}}
 
 func TestMain(m *testing.M) {
 	cc.TestFunctionalEthereumBootstrap()
+	flag.Parse()
+	config.Config.V.Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
+	config.Config.V.Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
+	config.Config.V.Set("keys.ethauth.publicKey", "../build/resources/ethauth.pub.pem")
+	config.Config.V.Set("keys.ethauth.privateKey", "../build/resources/ethauth.key.pem")
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()
 	os.Exit(result)
