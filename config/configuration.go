@@ -102,6 +102,10 @@ func (c *Configuration) GetEthereumNodeURL() string {
 	return c.V.GetString("ethereum.nodeURL")
 }
 
+func (c *Configuration) GetEthereumContextReadWaitTimeout() time.Duration {
+	return c.V.GetDuration("ethereum.contextReadWaitTimeout")
+}
+
 func (c *Configuration) GetEthereumContextWaitTimeout() time.Duration {
 	return c.V.GetDuration("ethereum.contextWaitTimeout")
 }

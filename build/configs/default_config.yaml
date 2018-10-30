@@ -56,6 +56,8 @@ ethereum:
   gasLimit: 4712388
   # Timeout to wait for an ethereum transaction to be added to a block and events triggered
   contextWaitTimeout: "600s"
+  # Timeout to wait for read only operations against ethereum
+  contextReadWaitTimeout: "15s"
   # Node transaction pool max retries to send a transaction over
   maxRetries: 200
   # Node transaction pool interval retry when a concurrent transaction has been detected
