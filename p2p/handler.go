@@ -1,4 +1,4 @@
-package p2phandler
+package p2p
 
 import (
 	"context"

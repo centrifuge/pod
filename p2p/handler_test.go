@@ -1,26 +1,22 @@
 // +build unit
 
-package p2phandler
+package p2p
 
 import (
 	"context"
 	"fmt"
-	"os"
 	"strconv"
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
-	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/context/testlogging"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/notification"
-	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/golang/protobuf/ptypes/any"
@@ -37,18 +33,6 @@ type MockWebhookSender struct{}
 
 func (wh *MockWebhookSender) Send(notification *notificationpb.NotificationMessage) (status notification.Status, err error) {
 	return
-}
-
-func TestMain(m *testing.M) {
-	ibootstappers := []bootstrap.TestBootstrapper{
-		&testlogging.TestLoggingBootstrapper{},
-		&config.Bootstrapper{},
-		&storage.Bootstrapper{},
-	}
-	bootstrap.RunTestBootstrappers(ibootstappers, nil)
-	result := m.Run()
-	bootstrap.RunTestTeardown(ibootstappers)
-	os.Exit(result)
 }
 
 var coreDoc = testingutils.GenerateCoreDocument()

@@ -7,7 +7,7 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/coredocument/processor"
+	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/p2p"
@@ -22,7 +22,7 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	}
 
 	// register service
-	srv := DefaultService(getRepository(), coredocumentprocessor.DefaultProcessor(identity.IDService, p2p.NewP2PClient(), anchors.GetAnchorRepository()), anchors.GetAnchorRepository())
+	srv := DefaultService(getRepository(), coredocument.DefaultProcessor(identity.IDService, p2p.NewP2PClient(), anchors.GetAnchorRepository()), anchors.GetAnchorRepository())
 	err := documents.GetRegistryInstance().Register(documenttypes.InvoiceDataTypeUrl, srv)
 	if err != nil {
 		return fmt.Errorf("failed to register invoice service: %v", err)
