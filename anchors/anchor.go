@@ -114,8 +114,8 @@ func newPreCommitData(anchorID AnchorID, signingRoot DocumentRoot, centrifugeID 
 	}
 }
 
-// newCommitData returns a CommitData with passed in details
-func newCommitData(blockHeight uint64, anchorID AnchorID, documentRoot DocumentRoot, centrifugeID identity.CentID, documentProofs [][32]byte, signature []byte) (commitData *CommitData) {
+// NewCommitData returns a CommitData with passed in details
+func NewCommitData(blockHeight uint64, anchorID AnchorID, documentRoot DocumentRoot, centrifugeID identity.CentID, documentProofs [][32]byte, signature []byte) (commitData *CommitData) {
 	return &CommitData{
 		BlockHeight:    blockHeight,
 		AnchorID:       anchorID,
