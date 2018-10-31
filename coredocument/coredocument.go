@@ -7,7 +7,6 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/keytools/ed25519"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
@@ -212,13 +211,17 @@ func NewWithCollaborators(collaborators []string) (*coredocumentpb.CoreDocument,
 //  GetExternalCollaborators returns collaborators of a document without the own centID
 func GetExternalCollaborators(doc *coredocumentpb.CoreDocument) ([][]byte, error) {
 	var collabs [][]byte
-	idConfig, err := ed25519.GetIDConfig()
+	idConfig, err := identity.GetIdentityConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode collaborator: %v", err)
 	}
 
 	for _, collab := range doc.Collaborators {
-		if !utils.IsSameByteSlice(collab, idConfig.ID) {
+		collabID, err := identity.ToCentID(collab)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert to CentID: %v", err)
+		}
+		if !idConfig.ID.Equal(collabID) {
 			collabs = append(collabs, collab)
 		}
 	}

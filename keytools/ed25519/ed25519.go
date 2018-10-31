@@ -71,23 +71,3 @@ func PublicKeyToP2PKey(publicKey [32]byte) (p2pId peer.ID, err error) {
 	}
 	return
 }
-
-// GetIDConfig reads the keys and ID from the config and returns a the Identity config
-func GetIDConfig() (identityConfig *config.IdentityConfig, err error) {
-	pk, pvk, err := GetSigningKeyPairFromConfig()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get signing keys: %v", err)
-	}
-
-	centID, err := config.Config.GetIdentityID()
-	if err != nil {
-		return nil, err
-	}
-
-	identityConfig = &config.IdentityConfig{
-		ID:         centID,
-		PublicKey:  pk,
-		PrivateKey: pvk,
-	}
-	return
-}
