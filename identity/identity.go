@@ -31,16 +31,19 @@ var IDService Service
 
 type CentID [CentIDLength]byte
 
+// IdentityConfig holds information about the identity
 type IdentityConfig struct {
 	ID   CentID
 	Keys map[int]IdentityKey
 }
 
+// IdentityKey represents a key pair
 type IdentityKey struct {
 	PublicKey  []byte
 	PrivateKey []byte
 }
 
+// GetIdentityConfig returns the identity and keys associated with the node
 func GetIdentityConfig() (*IdentityConfig, error) {
 	centIDBytes, err := config.Config.GetIdentityID()
 	if err != nil {
@@ -51,6 +54,7 @@ func GetIdentityConfig() (*IdentityConfig, error) {
 		return nil, err
 	}
 
+	//ed25519 keys
 	keys := map[int]IdentityKey{}
 	pk, sk, err := ed25519.GetSigningKeyPairFromConfig()
 	if err != nil {
@@ -59,11 +63,16 @@ func GetIdentityConfig() (*IdentityConfig, error) {
 	keys[KeyPurposeP2p] = IdentityKey{PublicKey: pk, PrivateKey: sk}
 	keys[KeyPurposeSigning] = IdentityKey{PublicKey: pk, PrivateKey: sk}
 
+	//secp256k1 keys
 	pk, sk, err = secp256k1.GetEthAuthKeyFromConfig()
 	if err != nil {
 		return nil, err
 	}
-	keys[KeyPurposeEthMsgAuth] = IdentityKey{PublicKey: pk, PrivateKey: sk}
+	pubKey, err := hexutil.Decode(secp256k1.GetAddress(pk))
+	if err != nil {
+		return nil, err
+	}
+	keys[KeyPurposeEthMsgAuth] = IdentityKey{PublicKey: pubKey, PrivateKey: sk}
 
 	return &IdentityConfig{ID: centID, Keys: keys}, nil
 }
