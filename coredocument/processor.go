@@ -1,4 +1,4 @@
-package coredocumentprocessor
+package coredocument
 
 import (
 	"context"
@@ -9,12 +9,10 @@ import (
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/keytools/ed25519"
 	"github.com/centrifuge/go-centrifuge/keytools/secp256k1"
-	"github.com/centrifuge/go-centrifuge/p2p"
 	"github.com/centrifuge/go-centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/version"
@@ -34,15 +32,22 @@ type Processor interface {
 	SendDocument(ctx context.Context, model documents.Model) error
 }
 
+// client defines the methods for p2pclient
+// we redefined it here so that we can avoid cyclic dependencies with p2p
+type client interface {
+	OpenClient(target string) (p2ppb.P2PServiceClient, error)
+	GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocument) error
+}
+
 // defaultProcessor implements Processor interface
 type defaultProcessor struct {
 	IdentityService  identity.Service
-	P2PClient        p2p.Client
+	P2PClient        client
 	AnchorRepository anchors.AnchorRepository
 }
 
 // DefaultProcessor returns the default implementation of CoreDocument Processor
-func DefaultProcessor(idService identity.Service, p2pClient p2p.Client, repository anchors.AnchorRepository) Processor {
+func DefaultProcessor(idService identity.Service, p2pClient client, repository anchors.AnchorRepository) Processor {
 	return defaultProcessor{
 		IdentityService:  idService,
 		P2PClient:        p2pClient,
@@ -111,7 +116,7 @@ func (dp defaultProcessor) PrepareForSignatureRequests(model documents.Model) er
 	}
 
 	// calculate the signing root
-	err = coredocument.CalculateSigningRoot(cd)
+	err = CalculateSigningRoot(cd)
 	if err != nil {
 		return fmt.Errorf("failed to calculate signing root: %v", err)
 	}
@@ -140,7 +145,7 @@ func (dp defaultProcessor) RequestSignatures(ctx context.Context, model document
 		return fmt.Errorf("failed to pack core document: %v", err)
 	}
 
-	psv := coredocument.PreSignatureRequestValidator()
+	psv := PreSignatureRequestValidator()
 	err = psv.Validate(nil, model)
 	if err != nil {
 		return fmt.Errorf("failed to validate model for signature request: %v", err)
@@ -166,13 +171,13 @@ func (dp defaultProcessor) PrepareForAnchoring(model documents.Model) error {
 		return fmt.Errorf("failed to pack core document: %v", err)
 	}
 
-	psv := coredocument.PostSignatureRequestValidator()
+	psv := PostSignatureRequestValidator()
 	err = psv.Validate(nil, model)
 	if err != nil {
 		return fmt.Errorf("failed to validate signatures: %v", err)
 	}
 
-	err = coredocument.CalculateDocumentRoot(cd)
+	err = CalculateDocumentRoot(cd)
 	if err != nil {
 		return fmt.Errorf("failed to generate document root: %v", err)
 	}
@@ -192,7 +197,7 @@ func (dp defaultProcessor) AnchorDocument(model documents.Model) error {
 		return fmt.Errorf("failed to pack core document: %v", err)
 	}
 
-	pav := coredocument.PreAnchorValidator()
+	pav := PreAnchorValidator()
 	err = pav.Validate(nil, model)
 	if err != nil {
 		return fmt.Errorf("pre anchor validation failed: %v", err)
@@ -247,13 +252,13 @@ func (dp defaultProcessor) SendDocument(ctx context.Context, model documents.Mod
 		return fmt.Errorf("failed to pack core document: %v", err)
 	}
 
-	av := coredocument.PostAnchoredValidator(dp.AnchorRepository)
+	av := PostAnchoredValidator(dp.AnchorRepository)
 	err = av.Validate(nil, model)
 	if err != nil {
 		return fmt.Errorf("post anchor validations failed: %v", err)
 	}
 
-	extCollaborators, err := coredocument.GetExternalCollaborators(cd)
+	extCollaborators, err := GetExternalCollaborators(cd)
 	if err != nil {
 		return fmt.Errorf("get external collaborators failed: %v", err)
 	}

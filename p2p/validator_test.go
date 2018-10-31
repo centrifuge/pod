@@ -1,6 +1,6 @@
 // +build unit
 
-package p2phandler
+package p2p
 
 import (
 	"testing"
