@@ -1,4 +1,4 @@
-FROM golang:1.10-alpine as builder
+FROM golang:1.11-alpine as builder
 
 RUN apk update && apk add --no-cache openssh git jq curl gcc libc-dev build-base
 
