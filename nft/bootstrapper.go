@@ -31,5 +31,5 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 
 func getPaymentObligationContract() (*EthereumPaymentObligationContract, error) {
 	client := ethereum.GetClient()
-	return NewEthereumPaymentObligationContract(config.Config.GetContractAddress("paymentObligation"), client.GetClient())
+	return NewEthereumPaymentObligationContract(config.Config.GetContractAddress("paymentObligation"), client.GetEthClient())
 }

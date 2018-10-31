@@ -14,6 +14,7 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
@@ -59,9 +60,8 @@ type Config interface {
 
 // Client can be implemented by any chain client
 type Client interface {
-	GetClient() *ethclient.Client
-	GetRPCClient() *rpc.Client
-	GetHost() *url.URL
+	GetEthClient() *ethclient.Client
+	GetNodeURL() *url.URL
 	GetTxOpts(accountName string) (*bind.TransactOpts, error)
 	SubmitTransactionWithRetries(contractMethod interface{}, opts *bind.TransactOpts, params ...interface{}) (tx *types.Transaction, err error)
 }
@@ -140,18 +140,13 @@ func (gc *GethClient) GetTxOpts(accountName string) (*bind.TransactOpts, error) 
 	return txOpts, nil
 }
 
-// GetClient returns the ethereum client
-func (gc *GethClient) GetClient() *ethclient.Client {
+// GetEthClient returns the ethereum client
+func (gc *GethClient) GetEthClient() *ethclient.Client {
 	return gc.client
 }
 
-// GetRPCClient returns the RPC client
-func (gc *GethClient) GetRPCClient() *rpc.Client {
-	return gc.rpcClient
-}
-
-// GetHost returns the node url
-func (gc *GethClient) GetHost() *url.URL {
+// GetNodeURL returns the node url
+func (gc *GethClient) GetNodeURL() *url.URL {
 	return gc.host
 }
 
@@ -197,7 +192,7 @@ func (gc *GethClient) SubmitTransactionWithRetries(contractMethod interface{}, o
 		}
 
 		current++
-		err := gc.incrementNonce(opts)
+		err := incrementNonce(opts, gc.config.GetTxPoolAccessEnabled(), gc.client, gc.rpcClient)
 		if err != nil {
 			return nil, fmt.Errorf("failed to increment nonce: %v", err)
 		}
@@ -234,17 +229,27 @@ func (gc *GethClient) SubmitTransactionWithRetries(contractMethod interface{}, o
 
 }
 
+// noncer defines functions to get the next nonce
+type noncer interface {
+	PendingNonceAt(ctx context.Context, account common.Address) (uint64, error)
+}
+
+// callContexter defines functions to get CallContext
+type callContexter interface {
+	CallContext(ctx context.Context, result interface{}, method string, args ...interface{}) error
+}
+
 // incrementNonce updates the opts.Nonce to next valid nonce
 // We pick the current nonce by getting latest transactions included in the blocks including pending blocks
 // then we check the txpool to see if there any new transactions from the address that are not included in any block
-// If there are no pending transactions in txpool, we use the current nonce
-// else we increment the greater of current nonce and txpool calculated nonce
-func (gc *GethClient) incrementNonce(opts *bind.TransactOpts) error {
-	// get current nonce
+// If there are no pending transactions in txpool, we use the current nonce + 1
+// else we increment the greater of current nonce or the nonce derived from txpool
+func incrementNonce(opts *bind.TransactOpts, txpoolAccessEnabled bool, noncer noncer, cc callContexter) error {
 	ctx, cancel := context.WithTimeout(context.Background(), GetDefaultContextTimeout())
 	defer cancel()
 
-	n, err := gc.client.PendingNonceAt(ctx, opts.From)
+	// get current nonce
+	n, err := noncer.PendingNonceAt(ctx, opts.From)
 	if err != nil {
 		return fmt.Errorf("failed to get chain nonce for %s: %v", opts.From.String(), err)
 	}
@@ -253,14 +258,14 @@ func (gc *GethClient) incrementNonce(opts *bind.TransactOpts) error {
 	opts.Nonce = new(big.Int).Add(new(big.Int).SetUint64(n), big.NewInt(1))
 
 	// check if the txpool access is enabled
-	if !gc.config.GetTxPoolAccessEnabled() {
-		log.Warningf("Ethereum Client doesn't support txpool API, may cause concurrency issues.")
+	if !txpoolAccessEnabled {
+		log.Warningf("Ethereum Client doesn't support txpool API, may cause transactions failures")
 		return nil
 	}
 
 	// check for any transactions in txpool
 	var res map[string]map[string]map[string][]string
-	err = gc.rpcClient.CallContext(ctx, &res, "txpool_inspect")
+	err = cc.CallContext(ctx, &res, "txpool_inspect")
 	if err != nil {
 		return fmt.Errorf("failed to get txpool data: %v", err)
 	}

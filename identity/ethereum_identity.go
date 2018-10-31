@@ -147,7 +147,7 @@ func (id *EthereumIdentity) findContract() (exists bool, err error) {
 	}
 
 	client := ethereum.GetClient()
-	idContract, err := NewEthereumIdentityContract(idAddress, client.GetClient())
+	idContract, err := NewEthereumIdentityContract(idAddress, client.GetEthClient())
 	if err == bind.ErrNoCode {
 		return false, err
 	}
@@ -193,7 +193,7 @@ func (id *EthereumIdentity) AddKeyToIdentity(ctx context.Context, keyPurpose int
 		return confirmations, err
 	}
 
-	h, err := conn.GetClient().HeaderByNumber(ctx, nil)
+	h, err := conn.GetEthClient().HeaderByNumber(ctx, nil)
 	if err != nil {
 		return confirmations, err
 	}
@@ -352,7 +352,7 @@ func (ids *EthereumIdentityService) CreateIdentity(centrifugeID CentID) (id Iden
 		return nil, confirmations, err
 	}
 
-	h, err := conn.GetClient().HeaderByNumber(context.Background(), nil)
+	h, err := conn.GetEthClient().HeaderByNumber(context.Background(), nil)
 	if err != nil {
 		return nil, confirmations, err
 	}

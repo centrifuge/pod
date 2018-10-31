@@ -23,7 +23,7 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	}
 
 	client := ethereum.GetClient()
-	repositoryContract, err := NewEthereumAnchorRepositoryContract(config.Config.GetContractAddress("anchorRepository"), client.GetClient())
+	repositoryContract, err := NewEthereumAnchorRepositoryContract(config.Config.GetContractAddress("anchorRepository"), client.GetEthClient())
 	if err != nil {
 		return err
 	}

@@ -63,13 +63,13 @@ func (transactionRequest *MockTransactionRequest) RegisterTransaction(opts *bind
 //	SetClient(gc)
 //
 //	// Success at first
-//	tx, err := GetClient().SubmitTransactionWithRetries(mockRequest.RegisterTransaction, &bind.TransactOpts{}, "var1", "var2")
+//	tx, err := GetEthClient().SubmitTransactionWithRetries(mockRequest.RegisterTransaction, &bind.TransactOpts{}, "var1", "var2")
 //	assert.Nil(t, err, "Should not error out")
 //	assert.EqualValues(t, 1, tx.Nonce(), "Nonce should equal to the one provided")
 //	assert.EqualValues(t, 1, mockRequest.count, "Transaction Run flag should be true")
 //
 //	// Failure with non-locking error
-//	tx, err = GetClient().SubmitTransactionWithRetries(mockRequest.RegisterTransaction, &bind.TransactOpts{}, "otherError", "var2")
+//	tx, err = GetEthClient().SubmitTransactionWithRetries(mockRequest.RegisterTransaction, &bind.TransactOpts{}, "otherError", "var2")
 //	assert.EqualError(t, err, "Some other error", "Should error out")
 //
 //	mockRetries := testingutils.MockConfigOption("ethereum.maxRetries", 10)
@@ -77,13 +77,13 @@ func (transactionRequest *MockTransactionRequest) RegisterTransaction(opts *bind
 //
 //	mockRequest.count = 0
 //	// Failure and timeout with locking error
-//	tx, err = GetClient().SubmitTransactionWithRetries(mockRequest.RegisterTransaction, &bind.TransactOpts{}, "optimisticLockingTimeout", "var2")
+//	tx, err = GetEthClient().SubmitTransactionWithRetries(mockRequest.RegisterTransaction, &bind.TransactOpts{}, "optimisticLockingTimeout", "var2")
 //	assert.EqualError(t, err, transactionUnderpriced, "Should error out")
 //	assert.EqualValues(t, 10, mockRequest.count, "Retries should be equal")
 //
 //	mockRequest.count = 0
 //	// Success after locking race condition overcome
-//	tx, err = GetClient().SubmitTransactionWithRetries(mockRequest.RegisterTransaction, &bind.TransactOpts{}, "optimisticLockingEventualSuccess", "var2")
+//	tx, err = GetEthClient().SubmitTransactionWithRetries(mockRequest.RegisterTransaction, &bind.TransactOpts{}, "optimisticLockingEventualSuccess", "var2")
 //	assert.Nil(t, err, "Should not error out")
 //	assert.EqualValues(t, 3, mockRequest.count, "Retries should be equal")
 //}

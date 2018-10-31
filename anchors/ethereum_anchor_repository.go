@@ -82,7 +82,7 @@ func (ethRepository *EthereumAnchorRepository) CommitAnchor(anchorID AnchorID, d
 		return nil, err
 	}
 
-	h, err := conn.GetClient().HeaderByNumber(context.Background(), nil)
+	h, err := conn.GetEthClient().HeaderByNumber(context.Background(), nil)
 	if err != nil {
 		return nil, err
 	}
