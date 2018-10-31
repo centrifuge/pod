@@ -22,7 +22,7 @@ func (m *MockEthClient) GetClient() *ethclient.Client {
 	return c
 }
 
-func (m *MockEthClient) GetRpcClient() *rpc.Client {
+func (m *MockEthClient) GetRPCClient() *rpc.Client {
 	args := m.Called()
 	return args.Get(0).(*rpc.Client)
 }

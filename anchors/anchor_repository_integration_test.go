@@ -103,7 +103,7 @@ func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
 		messageToSign := anchors.GenerateCommitHash(currentAnchorId, centIdFixed, currentDocumentRoot)
 		signature, _ := secp256k1.SignEthereum(messageToSign, testPrivateKey)
 		documentProofs := [][anchors.DocumentProofLength]byte{utils.RandomByte32()}
-		h, err := ethereum.GetConnection().GetClient().HeaderByNumber(context.Background(), nil)
+		h, err := ethereum.GetClient().GetClient().HeaderByNumber(context.Background(), nil)
 		assert.Nil(t, err, " error must be nil")
 		commitDataList[ix] = anchors.newCommitData(h.Number.Uint64(), currentAnchorId, currentDocumentRoot, centIdFixed, documentProofs, signature)
 		confirmationList[ix], err = anchors.CommitAnchor(currentAnchorId, currentDocumentRoot, centIdFixed, documentProofs, signature)

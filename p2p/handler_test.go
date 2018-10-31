@@ -17,7 +17,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/notification"
-	"github.com/centrifuge/go-centrifuge/testingutils"
+	"github.com/centrifuge/go-centrifuge/testingutils/coredocument"
 	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
@@ -35,7 +35,7 @@ func (wh *MockWebhookSender) Send(notification *notificationpb.NotificationMessa
 	return
 }
 
-var coreDoc = testingutils.GenerateCoreDocument()
+var coreDoc = testingcoredocument.GenerateCoreDocument()
 
 func TestHandler_RequestDocumentSignature_nilDocument(t *testing.T) {
 	req := &p2ppb.SignatureRequest{Header: &p2ppb.CentrifugeHeader{

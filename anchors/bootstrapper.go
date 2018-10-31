@@ -22,7 +22,7 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		return errors.New("ethereum client hasn't been initialized")
 	}
 
-	client := ethereum.GetConnection()
+	client := ethereum.GetClient()
 	repositoryContract, err := NewEthereumAnchorRepositoryContract(config.Config.GetContractAddress("anchorRepository"), client.GetClient())
 	if err != nil {
 		return err

@@ -55,7 +55,7 @@ func (ethRepository *EthereumAnchorRepository) GetDocumentRootOf(anchorID Anchor
 //PreCommitAnchor will call the transaction PreCommit on the smart contract
 func (ethRepository *EthereumAnchorRepository) PreCommitAnchor(anchorID AnchorID, signingRoot DocumentRoot, centrifugeId identity.CentID, signature []byte, expirationBlock *big.Int) (confirmations <-chan *WatchPreCommit, err error) {
 	ethRepositoryContract := ethRepository.anchorRepositoryContract
-	opts, err := ethereum.GetConnection().GetTxOpts(ethRepository.config.GetEthereumDefaultAccountName())
+	opts, err := ethereum.GetClient().GetTxOpts(ethRepository.config.GetEthereumDefaultAccountName())
 	if err != nil {
 		return
 	}
@@ -76,7 +76,7 @@ func (ethRepository *EthereumAnchorRepository) PreCommitAnchor(anchorID AnchorID
 
 // CommitAnchor will send a commit transaction to ethereum
 func (ethRepository *EthereumAnchorRepository) CommitAnchor(anchorID AnchorID, documentRoot DocumentRoot, centrifugeId identity.CentID, documentProofs [][32]byte, signature []byte) (confirmations <-chan *WatchCommit, err error) {
-	conn := ethereum.GetConnection()
+	conn := ethereum.GetClient()
 	opts, err := conn.GetTxOpts(ethRepository.config.GetEthereumDefaultAccountName())
 	if err != nil {
 		return nil, err
@@ -112,7 +112,7 @@ func sendPreCommitTransaction(contract AnchorRepositoryContract, opts *bind.Tran
 	//preparation of data in specific types for the call to Ethereum
 	schemaVersion := big.NewInt(int64(preCommitData.SchemaVersion))
 
-	tx, err := ethereum.GetConnection().SubmitTransactionWithRetries(contract.PreCommit, opts, preCommitData.AnchorID, preCommitData.SigningRoot,
+	tx, err := ethereum.GetClient().SubmitTransactionWithRetries(contract.PreCommit, opts, preCommitData.AnchorID, preCommitData.SigningRoot,
 		preCommitData.CentrifugeID, preCommitData.Signature, preCommitData.ExpirationBlock, schemaVersion)
 
 	if err != nil {
@@ -128,7 +128,7 @@ func sendPreCommitTransaction(contract AnchorRepositoryContract, opts *bind.Tran
 
 // sendCommitTransaction sends the actual transaction to register the Anchor on Ethereum registry contract
 func sendCommitTransaction(contract AnchorRepositoryContract, opts *bind.TransactOpts, commitData *CommitData) (err error) {
-	tx, err := ethereum.GetConnection().SubmitTransactionWithRetries(contract.Commit, opts, commitData.AnchorID.BigInt(), commitData.DocumentRoot,
+	tx, err := ethereum.GetClient().SubmitTransactionWithRetries(contract.Commit, opts, commitData.AnchorID.BigInt(), commitData.DocumentRoot,
 		commitData.CentrifugeID.BigInt(), commitData.DocumentProofs, commitData.Signature)
 
 	if err != nil {
