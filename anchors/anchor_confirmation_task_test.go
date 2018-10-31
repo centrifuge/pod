@@ -32,8 +32,8 @@ func (m *MockAnchorCommittedFilter) FilterAnchorCommitted(
 }
 
 func TestAnchoringConfirmationTask_ParseKwargsHappy(t *testing.T) {
-	act := AnchoringConfirmationTask{}
-	anchorID, _ := NewAnchorID(utils.RandomSlice(AnchorIDLength))
+	act := anchorConfirmationTask{}
+	anchorID, _ := ToAnchorID(utils.RandomSlice(AnchorIDLength))
 	address := common.BytesToAddress([]byte{1, 2, 3, 4})
 
 	centId, _ := identity.ToCentID(utils.RandomSlice(identity.CentIDLength))
@@ -56,7 +56,7 @@ func TestAnchoringConfirmationTask_ParseKwargsHappy(t *testing.T) {
 }
 
 func TestAnchoringConfirmationTask_ParseKwargsAnchorNotPassed(t *testing.T) {
-	act := AnchoringConfirmationTask{}
+	act := anchorConfirmationTask{}
 	address := common.BytesToAddress([]byte{1, 2, 3, 4})
 	var centrifugeIdBytes [6]byte
 
@@ -69,7 +69,7 @@ func TestAnchoringConfirmationTask_ParseKwargsAnchorNotPassed(t *testing.T) {
 }
 
 func TestAnchoringConfirmationTask_ParseKwargsInvalidAnchor(t *testing.T) {
-	act := AnchoringConfirmationTask{}
+	act := anchorConfirmationTask{}
 	anchorID := 123
 	address := common.BytesToAddress([]byte{1, 2, 3, 4})
 	kwargs, _ := utils.SimulateJsonDecodeForGocelery(map[string]interface{}{
@@ -81,7 +81,7 @@ func TestAnchoringConfirmationTask_ParseKwargsInvalidAnchor(t *testing.T) {
 }
 
 func TestAnchoringConfirmationTask_ParseKwargsAddressNotPassed(t *testing.T) {
-	act := AnchoringConfirmationTask{}
+	act := anchorConfirmationTask{}
 	anchorID := [32]byte{1, 2, 3}
 	kwargs, _ := utils.SimulateJsonDecodeForGocelery(map[string]interface{}{
 		AnchorIDParam: anchorID,
@@ -91,7 +91,7 @@ func TestAnchoringConfirmationTask_ParseKwargsAddressNotPassed(t *testing.T) {
 }
 
 func TestAnchoringConfirmationTask_ParseKwargsInvalidAddress(t *testing.T) {
-	act := AnchoringConfirmationTask{}
+	act := anchorConfirmationTask{}
 	anchorID := [32]byte{1, 2, 3}
 	address := 123
 	kwargs, _ := utils.SimulateJsonDecodeForGocelery(map[string]interface{}{
@@ -105,7 +105,7 @@ func TestAnchoringConfirmationTask_ParseKwargsInvalidAddress(t *testing.T) {
 func TestAnchoringConfirmationTask_RunTaskIterError(t *testing.T) {
 	anchorID := [32]byte{1, 2, 3}
 	address := common.BytesToAddress([]byte{1, 2, 3, 4})
-	act := AnchoringConfirmationTask{
+	act := anchorConfirmationTask{
 		AnchorID:                anchorID,
 		From:                    address,
 		AnchorCommittedFilterer: &MockAnchorCommittedFilter{err: fmt.Errorf("failed iterator")},
@@ -122,7 +122,7 @@ func TestAnchoringConfirmationTask_RunTaskWatchError(t *testing.T) {
 	ctx, _ := context.WithDeadline(context.Background(), toBeDone)
 	anchorID := [32]byte{1, 2, 3}
 	address := common.BytesToAddress([]byte{1, 2, 3, 4})
-	act := AnchoringConfirmationTask{
+	act := anchorConfirmationTask{
 		AnchorID: anchorID,
 		From:     address,
 		AnchorCommittedFilterer: &MockAnchorCommittedFilter{iter: &EthereumAnchorRepositoryContractAnchorCommittedIterator{

@@ -81,12 +81,12 @@ func (s *ethereumPaymentObligation) MintNFT(documentID []byte, docType, registry
 		return "", nil
 	}
 
-	anchorID, err := anchors.NewAnchorID(corDoc.CurrentVersion)
+	anchorID, err := anchors.ToAnchorID(corDoc.CurrentVersion)
 	if err != nil {
 		return "", nil
 	}
 
-	rootHash, err := anchors.NewDocRoot(corDoc.DocumentRoot)
+	rootHash, err := anchors.ToDocumentRoot(corDoc.DocumentRoot)
 	if err != nil {
 		return "", nil
 	}

@@ -261,15 +261,15 @@ type mockRepo struct {
 	anchors.AnchorRepository
 }
 
-func (m mockRepo) CommitAnchor(anchorID anchors.AnchorID, documentRoot anchors.DocRoot, centrifugeID identity.CentID, documentProofs [][32]byte, signature []byte) (<-chan *anchors.WatchCommit, error) {
+func (m mockRepo) CommitAnchor(anchorID anchors.AnchorID, documentRoot anchors.DocumentRoot, centrifugeID identity.CentID, documentProofs [][32]byte, signature []byte) (<-chan *anchors.WatchCommit, error) {
 	args := m.Called(anchorID, documentRoot, centrifugeID, documentProofs, signature)
 	c, _ := args.Get(0).(chan *anchors.WatchCommit)
 	return c, args.Error(1)
 }
 
-func (m mockRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.DocRoot, error) {
+func (m mockRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.DocumentRoot, error) {
 	args := m.Called(anchorID)
-	docRoot, _ := args.Get(0).(anchors.DocRoot)
+	docRoot, _ := args.Get(0).(anchors.DocumentRoot)
 	return docRoot, args.Error(1)
 }
 
@@ -448,7 +448,7 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
 	id.On("FetchKey", pubkey[:]).Return(idkey, nil).Once()
 	identity.IDService = srv
-	docRoot, err := anchors.NewDocRoot(cd.DocumentRoot)
+	docRoot, err := anchors.ToDocumentRoot(cd.DocumentRoot)
 	assert.Nil(t, err)
 	repo := mockRepo{}
 	repo.On("GetDocumentRootOf", mock.Anything).Return(docRoot, nil).Once()

@@ -39,9 +39,9 @@ type mockAnchorRepo struct {
 	anchors.AnchorRepository
 }
 
-func (r *mockAnchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.DocRoot, error) {
+func (r *mockAnchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.DocumentRoot, error) {
 	args := r.Called(anchorID)
-	docRoot, _ := args.Get(0).(anchors.DocRoot)
+	docRoot, _ := args.Get(0).(anchors.DocumentRoot)
 	return docRoot, args.Error(1)
 }
 
@@ -272,8 +272,8 @@ func mockSignatureCheck(i *Invoice, invSrv Service) identity.Service {
 		Purposes:  []*big.Int{big.NewInt(identity.KeyPurposeSigning)},
 		RevokedAt: big.NewInt(0),
 	}
-	anchorID, _ := anchors.NewAnchorID(i.CoreDocument.DocumentIdentifier)
-	docRoot, _ := anchors.NewDocRoot(i.CoreDocument.DocumentRoot)
+	anchorID, _ := anchors.ToAnchorID(i.CoreDocument.DocumentIdentifier)
+	docRoot, _ := anchors.ToDocumentRoot(i.CoreDocument.DocumentRoot)
 	mockRepo := invSrv.(service).anchorRepository.(*mockAnchorRepo)
 	mockRepo.On("GetDocumentRootOf", anchorID).Return(docRoot, nil).Once()
 	srv := &testingcommons.MockIDService{}
