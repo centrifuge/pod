@@ -216,6 +216,7 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
 
 [[constraint]]
   name = "github.com/paralin/go-libp2p-grpc"
+  source = "github.com/vedhavyas/go-libp2p-grpc"
   revision = "04711f07389ecbca09d7999474dda4a88c955c73"
 
 [[constraint]]
