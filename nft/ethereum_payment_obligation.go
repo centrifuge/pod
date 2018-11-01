@@ -1,6 +1,8 @@
 package nft
 
 import (
+	"context"
+	"encoding/hex"
 	"github.com/centrifuge/gocelery"
 	"math/big"
 
@@ -122,8 +124,15 @@ func (s *ethereumPaymentObligation) MintNFT(documentID []byte, docType, registry
 // about successful minting of an NFt
 func setUpMintEventListener(tokenID *big.Int) (confirmations chan *WatchTokenMinted, err error) {
 	confirmations = make(chan *WatchTokenMinted)
+	conn := ethereum.GetConnection()
+	h, err := conn.GetClient().HeaderByNumber(context.Background(), nil)
+	if err != nil {
+		return nil, err
+	}
+
 	asyncRes, err := queue.Queue.DelayKwargs(MintingConfirmationTaskName, map[string]interface{}{
-		TokenIDParam: tokenID,
+		TokenIDParam: hex.EncodeToString(tokenID.Bytes()),
+		BlockHeight: h.Number.Uint64(),
 	})
 	if err != nil {
 		return nil, err

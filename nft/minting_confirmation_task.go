@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/centrifuge/gocelery"
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/centerrors"
@@ -51,6 +52,16 @@ func (nftc *MintingConfirmationTask) Name() string {
 func (nftc *MintingConfirmationTask) Init() error {
 	queue.Queue.Register(MintingConfirmationTaskName, nftc)
 	return nil
+}
+
+func (nftc *MintingConfirmationTask) Copy() (gocelery.CeleryTask, error) {
+	return &MintingConfirmationTask{
+		nftc.TokenID,
+		nftc.BlockHeight,
+		nftc.EthContextInitializer,
+		nftc.EthContext,
+		nftc.PaymentObligationMintedFilterer,
+	}, nil
 }
 
 // ParseKwargs - define a method to parse CentID
@@ -104,7 +115,7 @@ func (nftc *MintingConfirmationTask) RunTask() (interface{}, error) {
 		}
 
 		err = utils.LookForEvent(iter)
-		if err == nil && iter.Event.TokenId.String() == nftc.TokenID {
+		if err == nil {
 			log.Infof("Received filtered event NFT minted for token [%s] \n", nftc.TokenID)
 			return iter.Event, nil
 		}
