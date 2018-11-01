@@ -266,7 +266,7 @@ func incrementNonce(opts *bind.TransactOpts, txpoolAccessEnabled bool, noncer no
 	opts.Nonce = new(big.Int).Add(new(big.Int).SetUint64(n), big.NewInt(1))
 
 	// check for any transactions in txpool
-	var res map[string]map[string]map[string][]string
+	res := make(map[string]map[string]map[string]string)
 	err = cc.CallContext(ctx, &res, "txpool_inspect")
 	if err != nil {
 		return fmt.Errorf("failed to get txpool data: %v", err)

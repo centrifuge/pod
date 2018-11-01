@@ -113,8 +113,8 @@ func (m *mockNoncer) PendingNonceAt(ctx context.Context, account common.Address)
 func (m *mockNoncer) CallContext(ctx context.Context, result interface{}, method string, a ...interface{}) error {
 	args := m.Called(ctx, result, method, a)
 	if args.Get(0) != nil {
-		res := result.(*map[string]map[string]map[string][]string)
-		*res = args.Get(0).(map[string]map[string]map[string][]string)
+		res := result.(*map[string]map[string]map[string]string)
+		*res = args.Get(0).(map[string]map[string]map[string]string)
 	}
 
 	return args.Error(1)
@@ -156,10 +156,10 @@ func Test_incrementNonce(t *testing.T) {
 	assert.Equal(t, "1001", opts.Nonce.String())
 
 	// bad result
-	var res = map[string]map[string]map[string][]string{
+	var res = map[string]map[string]map[string]string{
 		"pending": {
 			opts.From.String(): {
-				"abc": {"0x958c1fa64b34db746925c6f8a3dd81128e40355e: 1051546810000000000 wei + 90000 × 20000000000 gas"},
+				"abc": "0x958c1fa64b34db746925c6f8a3dd81128e40355e: 1051546810000000000 wei + 90000 × 20000000000 gas",
 			},
 		},
 	}
@@ -172,13 +172,13 @@ func Test_incrementNonce(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to convert nonce")
 
 	// higher nonce in txpool
-	res = map[string]map[string]map[string][]string{
+	res = map[string]map[string]map[string]string{
 		"pending": {
 			opts.From.String(): {
-				"1002": {"0x958c1fa64b34db746925c6f8a3dd81128e40355e: 1051546810000000000 wei + 90000 × 20000000000 gas"},
-				"1003": {"0x958c1fa64b34db746925c6f8a3dd81128e40355e: 1051546810000000000 wei + 90000 × 20000000000 gas"},
-				"1004": {"0x958c1fa64b34db746925c6f8a3dd81128e40355e: 1051546810000000000 wei + 90000 × 20000000000 gas"},
-				"1005": {"0x958c1fa64b34db746925c6f8a3dd81128e40355e: 1051546810000000000 wei + 90000 × 20000000000 gas"},
+				"1002": "0x958c1fa64b34db746925c6f8a3dd81128e40355e: 1051546810000000000 wei + 90000 × 20000000000 gas",
+				"1003": "0x958c1fa64b34db746925c6f8a3dd81128e40355e: 1051546810000000000 wei + 90000 × 20000000000 gas",
+				"1004": "0x958c1fa64b34db746925c6f8a3dd81128e40355e: 1051546810000000000 wei + 90000 × 20000000000 gas",
+				"1005": "0x958c1fa64b34db746925c6f8a3dd81128e40355e: 1051546810000000000 wei + 90000 × 20000000000 gas",
 			},
 		},
 	}
