@@ -75,8 +75,8 @@ type GethClient struct {
 	accMu     sync.Mutex // accMu to protect accounts
 	config    Config
 
-	// nonceMu to ensure one transaction at a time
-	nonceMu sync.Mutex
+	// txMu to ensure one transaction at a time per client
+	txMu sync.Mutex
 }
 
 // NewGethClient returns an GethClient which implements Client
@@ -97,7 +97,7 @@ func NewGethClient(config Config) (Client, error) {
 		rpcClient: c,
 		host:      u,
 		accounts:  make(map[string]*bind.TransactOpts),
-		nonceMu:   sync.Mutex{},
+		txMu:      sync.Mutex{},
 		accMu:     sync.Mutex{},
 		config:    config,
 	}, nil
@@ -123,11 +123,7 @@ func (gc *GethClient) GetTxOpts(accountName string) (*bind.TransactOpts, error) 
 	gc.accMu.Lock()
 	defer gc.accMu.Unlock()
 
-	if _, ok := gc.accounts[accountName]; ok {
-		opts := gc.accounts[accountName]
-
-		// Important to nil the nonce on the cached txopts, otherwise with high concurrency will be outdated
-		opts.Nonce = nil
+	if opts, ok := gc.accounts[accountName]; ok {
 		return opts, nil
 	}
 
@@ -183,21 +179,26 @@ func (gc *GethClient) SubmitTransactionWithRetries(contractMethod interface{}, o
 	f := reflect.ValueOf(contractMethod)
 	maxTries := gc.config.GetEthereumMaxRetries()
 
-	gc.nonceMu.Lock()
-	defer gc.nonceMu.Unlock()
+	gc.txMu.Lock()
+	defer gc.txMu.Unlock()
 
+	var err error
 	for {
+
 		if current >= maxTries {
-			return nil, fmt.Errorf("max concurrent transaction tries reached")
+			return nil, fmt.Errorf("max concurrent transaction tries reached: %v", err)
 		}
 
 		current++
-		err := incrementNonce(opts, gc.config.GetTxPoolAccessEnabled(), gc.client, gc.rpcClient)
+		err = incrementNonce(opts, gc.config.GetTxPoolAccessEnabled(), gc.client, gc.rpcClient)
 		if err != nil {
 			return nil, fmt.Errorf("failed to increment nonce: %v", err)
 		}
 
-		log.Infof("Incrementing Nonce to [%v]\n", opts.Nonce.String())
+		if opts.Nonce != nil {
+			log.Infof("Incrementing Nonce to [%v]\n", opts.Nonce.String())
+		}
+
 		var in []reflect.Value
 		in = append(in, reflect.ValueOf(opts))
 		for _, p := range params {
@@ -245,6 +246,13 @@ type callContexter interface {
 // If there are no pending transactions in txpool, we use the current nonce + 1
 // else we increment the greater of current nonce or the nonce derived from txpool
 func incrementNonce(opts *bind.TransactOpts, txpoolAccessEnabled bool, noncer noncer, cc callContexter) error {
+	// check if the txpool access is enabled
+	if !txpoolAccessEnabled {
+		log.Warningf("Ethereum Client doesn't support txpool API, may cause transactions failures")
+		opts.Nonce = nil
+		return nil
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), GetDefaultContextTimeout())
 	defer cancel()
 
@@ -256,12 +264,6 @@ func incrementNonce(opts *bind.TransactOpts, txpoolAccessEnabled bool, noncer no
 
 	// set the nonce
 	opts.Nonce = new(big.Int).Add(new(big.Int).SetUint64(n), big.NewInt(1))
-
-	// check if the txpool access is enabled
-	if !txpoolAccessEnabled {
-		log.Warningf("Ethereum Client doesn't support txpool API, may cause transactions failures")
-		return nil
-	}
 
 	// check for any transactions in txpool
 	var res map[string]map[string]map[string][]string

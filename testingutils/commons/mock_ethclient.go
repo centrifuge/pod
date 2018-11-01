@@ -8,7 +8,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -16,18 +15,13 @@ type MockEthClient struct {
 	mock.Mock
 }
 
-func (m *MockEthClient) GetClient() *ethclient.Client {
+func (m *MockEthClient) GetEthClient() *ethclient.Client {
 	args := m.Called()
 	c, _ := args.Get(0).(*ethclient.Client)
 	return c
 }
 
-func (m *MockEthClient) GetRPCClient() *rpc.Client {
-	args := m.Called()
-	return args.Get(0).(*rpc.Client)
-}
-
-func (m *MockEthClient) GetHost() *url.URL {
+func (m *MockEthClient) GetNodeURL() *url.URL {
 	args := m.Called()
 	return args.Get(0).(*url.URL)
 }
