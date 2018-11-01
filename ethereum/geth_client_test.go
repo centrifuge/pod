@@ -144,7 +144,7 @@ func Test_incrementNonce(t *testing.T) {
 	n.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to get txpool data")
-	assert.Equal(t, "101", opts.Nonce.String())
+	assert.Equal(t, "100", opts.Nonce.String())
 
 	// no pending txns in the tx pool
 	n = new(mockNoncer)
@@ -153,7 +153,7 @@ func Test_incrementNonce(t *testing.T) {
 	err = incrementNonce(opts, true, n, n)
 	n.AssertExpectations(t)
 	assert.Nil(t, err)
-	assert.Equal(t, "1001", opts.Nonce.String())
+	assert.Equal(t, "1000", opts.Nonce.String())
 
 	// bad result
 	var res = map[string]map[string]map[string]string{
@@ -175,10 +175,10 @@ func Test_incrementNonce(t *testing.T) {
 	res = map[string]map[string]map[string]string{
 		"pending": {
 			opts.From.String(): {
+				"1000": "0x958c1fa64b34db746925c6f8a3dd81128e40355e: 1051546810000000000 wei + 90000 × 20000000000 gas",
+				"1001": "0x958c1fa64b34db746925c6f8a3dd81128e40355e: 1051546810000000000 wei + 90000 × 20000000000 gas",
 				"1002": "0x958c1fa64b34db746925c6f8a3dd81128e40355e: 1051546810000000000 wei + 90000 × 20000000000 gas",
 				"1003": "0x958c1fa64b34db746925c6f8a3dd81128e40355e: 1051546810000000000 wei + 90000 × 20000000000 gas",
-				"1004": "0x958c1fa64b34db746925c6f8a3dd81128e40355e: 1051546810000000000 wei + 90000 × 20000000000 gas",
-				"1005": "0x958c1fa64b34db746925c6f8a3dd81128e40355e: 1051546810000000000 wei + 90000 × 20000000000 gas",
 			},
 		},
 	}
@@ -188,5 +188,5 @@ func Test_incrementNonce(t *testing.T) {
 	err = incrementNonce(opts, true, n, n)
 	n.AssertExpectations(t)
 	assert.Nil(t, err)
-	assert.Equal(t, "1006", opts.Nonce.String())
+	assert.Equal(t, "1004", opts.Nonce.String())
 }

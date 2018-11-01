@@ -263,7 +263,7 @@ func incrementNonce(opts *bind.TransactOpts, txpoolAccessEnabled bool, noncer no
 	}
 
 	// set the nonce
-	opts.Nonce = new(big.Int).Add(new(big.Int).SetUint64(n), big.NewInt(1))
+	opts.Nonce = new(big.Int).SetUint64(n)
 
 	// check for any transactions in txpool
 	res := make(map[string]map[string]map[string]string)
