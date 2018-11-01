@@ -57,7 +57,7 @@ func (transactionRequest *MockTransactionRequest) RegisterTransaction(opts *bind
 func TestInitTransactionWithRetries(t *testing.T) {
 	mockRequest := &MockTransactionRequest{}
 
-	gc := &GethClient{
+	gc := &gethClient{
 		accounts: make(map[string]*bind.TransactOpts),
 		accMu:    sync.Mutex{},
 		txMu:     sync.Mutex{},

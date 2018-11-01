@@ -66,8 +66,8 @@ type Client interface {
 	SubmitTransactionWithRetries(contractMethod interface{}, opts *bind.TransactOpts, params ...interface{}) (tx *types.Transaction, err error)
 }
 
-// GethClient implements Client for Ethereum
-type GethClient struct {
+// gethClient implements Client for Ethereum
+type gethClient struct {
 	client    *ethclient.Client
 	rpcClient *rpc.Client
 	host      *url.URL
@@ -79,7 +79,7 @@ type GethClient struct {
 	txMu sync.Mutex
 }
 
-// NewGethClient returns an GethClient which implements Client
+// NewGethClient returns an gethClient which implements Client
 func NewGethClient(config Config) (Client, error) {
 	log.Info("Opening connection to Ethereum:", config.GetEthereumNodeURL())
 	u, err := url.Parse(config.GetEthereumNodeURL())
@@ -92,7 +92,7 @@ func NewGethClient(config Config) (Client, error) {
 		return nil, fmt.Errorf("failed to connect to ethereum node: %v", err)
 	}
 
-	return &GethClient{
+	return &gethClient{
 		client:    ethclient.NewClient(c),
 		rpcClient: c,
 		host:      u,
@@ -119,7 +119,7 @@ func GetClient() Client {
 }
 
 // GetTxOpts returns a cached options if available else creates and returns new options
-func (gc *GethClient) GetTxOpts(accountName string) (*bind.TransactOpts, error) {
+func (gc *gethClient) GetTxOpts(accountName string) (*bind.TransactOpts, error) {
 	gc.accMu.Lock()
 	defer gc.accMu.Unlock()
 
@@ -137,18 +137,18 @@ func (gc *GethClient) GetTxOpts(accountName string) (*bind.TransactOpts, error) 
 }
 
 // GetEthClient returns the ethereum client
-func (gc *GethClient) GetEthClient() *ethclient.Client {
+func (gc *gethClient) GetEthClient() *ethclient.Client {
 	return gc.client
 }
 
 // GetNodeURL returns the node url
-func (gc *GethClient) GetNodeURL() *url.URL {
+func (gc *gethClient) GetNodeURL() *url.URL {
 	return gc.host
 }
 
 // getGethTxOpts retrieves the geth transaction options for the given account name. The account name influences which configuration
 // is used.
-func (gc *GethClient) getGethTxOpts(accountName string) (*bind.TransactOpts, error) {
+func (gc *gethClient) getGethTxOpts(accountName string) (*bind.TransactOpts, error) {
 	account, err := gc.config.GetEthereumAccount(accountName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get ethereum account: %v", err)
@@ -174,7 +174,7 @@ gas prices that means that a concurrent transaction race condition event has hap
 - params: Arbitrary number of parameters that are passed to the function fname call
 Note: contractMethod must always return "*types.Transaction, error"
 */
-func (gc *GethClient) SubmitTransactionWithRetries(contractMethod interface{}, opts *bind.TransactOpts, params ...interface{}) (*types.Transaction, error) {
+func (gc *gethClient) SubmitTransactionWithRetries(contractMethod interface{}, opts *bind.TransactOpts, params ...interface{}) (*types.Transaction, error) {
 	var current int
 	f := reflect.ValueOf(contractMethod)
 	maxTries := gc.config.GetEthereumMaxRetries()
