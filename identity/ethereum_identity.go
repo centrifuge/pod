@@ -19,11 +19,11 @@ import (
 
 var log = logging.Logger("identity")
 
-type IdentityFactory interface {
+type factory interface {
 	CreateIdentity(opts *bind.TransactOpts, _centrifugeId *big.Int) (*types.Transaction, error)
 }
 
-type IdentityContract interface {
+type contract interface {
 	AddKey(opts *bind.TransactOpts, _key [32]byte, _kPurpose *big.Int) (*types.Transaction, error)
 }
 
@@ -31,72 +31,76 @@ type Config interface {
 	GetEthereumDefaultAccountName() string
 }
 
+// EthereumIdentityKey holds the identity related details
 type EthereumIdentityKey struct {
 	Key       [32]byte
 	Purposes  []*big.Int
 	RevokedAt *big.Int
 }
 
+// GetKey returns the public key
 func (idk *EthereumIdentityKey) GetKey() [32]byte {
 	return idk.Key
 }
 
+// GetPurposes returns the purposes intended for the key
 func (idk *EthereumIdentityKey) GetPurposes() []*big.Int {
 	return idk.Purposes
 }
 
+// GetRevokedAt returns the block at which the identity is revoked
 func (idk *EthereumIdentityKey) GetRevokedAt() *big.Int {
 	return idk.RevokedAt
 }
 
+// String prints the peerID extracted from the key
 func (idk *EthereumIdentityKey) String() string {
 	peerID, _ := ed25519.PublicKeyToP2PKey(idk.Key)
 	return fmt.Sprintf("%s", peerID.Pretty())
 }
 
-type EthereumIdentity struct {
-	CentrifugeId     CentID
+type ethereumIdentity struct {
+	CentID           CentID
 	Contract         *EthereumIdentityContract
 	RegistryContract *EthereumIdentityRegistryContract
 	Config           Config
 }
 
-func NewEthereumIdentity(id CentID, registryContract *EthereumIdentityRegistryContract, config Config) *EthereumIdentity {
-	return &EthereumIdentity{CentrifugeId: id, RegistryContract: registryContract, Config: config}
+func newEthereumIdentity(id CentID, registryContract *EthereumIdentityRegistryContract, config Config) *ethereumIdentity {
+	return &ethereumIdentity{CentID: id, RegistryContract: registryContract, Config: config}
 }
 
-func (id *EthereumIdentity) CentrifugeID(cenId CentID) {
-	id.CentrifugeId = cenId
+// CentrifugeID sets the CentID to the Identity
+func (id *ethereumIdentity) SetCentrifugeID(centID CentID) {
+	id.CentID = centID
 }
 
-func (id *EthereumIdentity) CentrifugeIDBytes() CentID {
-	var idBytes [CentIDLength]byte
-	copy(idBytes[:], id.CentrifugeId[:CentIDLength])
-	return idBytes
+// String returns CentrifugeID
+func (id *ethereumIdentity) String() string {
+	return fmt.Sprintf("CentrifugeID [%s]", id.CentID)
 }
 
-func (id *EthereumIdentity) String() string {
-	return fmt.Sprintf("CentrifugeID [%s]", id.CentrifugeId)
+// CentrifugeID returns the CentrifugeID
+func (id *ethereumIdentity) CentrifugeID() CentID {
+	return id.CentID
 }
 
-func (id *EthereumIdentity) GetCentrifugeID() CentID {
-	return id.CentrifugeId
-}
-
-func (id *EthereumIdentity) GetLastKeyForPurpose(keyPurpose int) (key []byte, err error) {
+// LastKeyForPurpose returns the latest key for given purpose
+func (id *ethereumIdentity) LastKeyForPurpose(keyPurpose int) (key []byte, err error) {
 	idKeys, err := id.fetchKeysByPurpose(keyPurpose)
 	if err != nil {
 		return []byte{}, err
 	}
 
 	if len(idKeys) == 0 {
-		return []byte{}, fmt.Errorf("no key found for type [%d] in ID [%s]", keyPurpose, id.CentrifugeId)
+		return []byte{}, fmt.Errorf("no key found for type [%d] in ID [%s]", keyPurpose, id.CentID)
 	}
 
 	return idKeys[len(idKeys)-1].Key[:32], nil
 }
 
-func (id *EthereumIdentity) FetchKey(key []byte) (Key, error) {
+// FetchKey fetches the Key from the chain
+func (id *ethereumIdentity) FetchKey(key []byte) (Key, error) {
 	contract, err := id.getContract()
 	if err != nil {
 		return nil, err
@@ -117,8 +121,9 @@ func (id *EthereumIdentity) FetchKey(key []byte) (Key, error) {
 
 }
 
-func (id *EthereumIdentity) GetCurrentP2PKey() (ret string, err error) {
-	key, err := id.GetLastKeyForPurpose(KeyPurposeP2p)
+// CurrentP2PKey returns the latest P2P key
+func (id *ethereumIdentity) CurrentP2PKey() (ret string, err error) {
+	key, err := id.LastKeyForPurpose(KeyPurposeP2P)
 	if err != nil {
 		return
 	}
@@ -131,14 +136,14 @@ func (id *EthereumIdentity) GetCurrentP2PKey() (ret string, err error) {
 	return
 }
 
-func (id *EthereumIdentity) findContract() (exists bool, err error) {
+func (id *ethereumIdentity) findContract() (exists bool, err error) {
 	if id.Contract != nil {
 		return true, nil
 	}
 
 	// Ignoring cancelFunc as code will block until response or timeout is triggered
 	opts, _ := ethereum.GetGethCallOpts()
-	idAddress, err := id.RegistryContract.GetIdentityByCentrifugeId(opts, id.CentrifugeId.BigInt())
+	idAddress, err := id.RegistryContract.GetIdentityByCentrifugeId(opts, id.CentID.BigInt())
 	if err != nil {
 		return false, err
 	}
@@ -159,7 +164,7 @@ func (id *EthereumIdentity) findContract() (exists bool, err error) {
 	return true, nil
 }
 
-func (id *EthereumIdentity) getContract() (contract *EthereumIdentityContract, err error) {
+func (id *ethereumIdentity) getContract() (contract *EthereumIdentityContract, err error) {
 	if id.Contract == nil {
 		_, err := id.findContract()
 		if err != nil {
@@ -171,11 +176,12 @@ func (id *EthereumIdentity) getContract() (contract *EthereumIdentityContract, e
 }
 
 // CheckIdentityExists checks if the identity represented by id actually exists on ethereum
-func (id *EthereumIdentity) CheckIdentityExists() (exists bool, err error) {
+func (id *ethereumIdentity) CheckIdentityExists() (exists bool, err error) {
 	return id.findContract()
 }
 
-func (id *EthereumIdentity) AddKeyToIdentity(ctx context.Context, keyPurpose int, key []byte) (confirmations chan *WatchIdentity, err error) {
+// AddKeyToIdentity adds key to the purpose on chain
+func (id *ethereumIdentity) AddKeyToIdentity(ctx context.Context, keyPurpose int, key []byte) (confirmations chan *WatchIdentity, err error) {
 	if utils.IsEmptyByteSlice(key) || len(key) > 32 {
 		log.Errorf("Can't add key to identity: empty or invalid length(>32) key for [id: %s]: %x", id, key)
 		return confirmations, errors.New("Can't add key to identity: Invalid key")
@@ -216,7 +222,8 @@ func (id *EthereumIdentity) AddKeyToIdentity(ctx context.Context, keyPurpose int
 	return confirmations, nil
 }
 
-func (id *EthereumIdentity) fetchKeysByPurpose(keyPurpose int) ([]EthereumIdentityKey, error) {
+// fetchKeysByPurpose fetches keys from chain matching purpose
+func (id *ethereumIdentity) fetchKeysByPurpose(keyPurpose int) ([]EthereumIdentityKey, error) {
 	contract, err := id.getContract()
 	if err != nil {
 		return nil, err
@@ -239,7 +246,7 @@ func (id *EthereumIdentity) fetchKeysByPurpose(keyPurpose int) ([]EthereumIdenti
 }
 
 // sendRegistrationTransaction sends the actual transaction to add a Key on Ethereum registry contract
-func sendKeyRegistrationTransaction(identityContract IdentityContract, opts *bind.TransactOpts, identity *EthereumIdentity, keyPurpose int, key []byte) (err error) {
+func sendKeyRegistrationTransaction(identityContract contract, opts *bind.TransactOpts, identity *ethereumIdentity, keyPurpose int, key []byte) (err error) {
 
 	//preparation of data in specific types for the call to Ethereum
 	bigInt := big.NewInt(int64(keyPurpose))
@@ -250,7 +257,7 @@ func sendKeyRegistrationTransaction(identityContract IdentityContract, opts *bin
 
 	tx, err := ethereum.GetConnection().SubmitTransactionWithRetries(identityContract.AddKey, opts, bKey, bigInt)
 	if err != nil {
-		log.Infof("Failed to send key [%v:%x] to add to CentrifugeID [%x]: %v", keyPurpose, bKey, identity.CentrifugeId, err)
+		log.Infof("Failed to send key [%v:%x] to add to CentrifugeID [%x]: %v", keyPurpose, bKey, identity.CentID, err)
 		return err
 	}
 
@@ -259,9 +266,9 @@ func sendKeyRegistrationTransaction(identityContract IdentityContract, opts *bin
 }
 
 // sendIdentityCreationTransaction sends the actual transaction to create identity on Ethereum registry contract
-func sendIdentityCreationTransaction(identityFactory IdentityFactory, opts *bind.TransactOpts, identityToBeCreated Identity) (err error) {
+func sendIdentityCreationTransaction(identityFactory factory, opts *bind.TransactOpts, identityToBeCreated Identity) (err error) {
 	//preparation of data in specific types for the call to Ethereum
-	tx, err := ethereum.GetConnection().SubmitTransactionWithRetries(identityFactory.CreateIdentity, opts, identityToBeCreated.GetCentrifugeID().BigInt())
+	tx, err := ethereum.GetConnection().SubmitTransactionWithRetries(identityFactory.CreateIdentity, opts, identityToBeCreated.CentrifugeID().BigInt())
 
 	if err != nil {
 		log.Infof("Failed to send identity for creation [CentrifugeID: %s] : %v", identityToBeCreated, err)
@@ -275,18 +282,19 @@ func sendIdentityCreationTransaction(identityFactory IdentityFactory, opts *bind
 	return
 }
 
-func setUpKeyRegisteredEventListener(identity Identity, keyPurpose int, key [32]byte, blockHeight uint64) (confirmations chan *WatchIdentity, err error) {
+// setUpKeyRegisteredEventListener listens for Identity creation
+func setUpKeyRegisteredEventListener(identity Identity, keyPurpose int, key [32]byte, bh uint64) (confirmations chan *WatchIdentity, err error) {
 	confirmations = make(chan *WatchIdentity)
-	centId := identity.GetCentrifugeID()
+	centId := identity.CentrifugeID()
 	if err != nil {
 		return nil, err
 	}
-	asyncRes, err := queue.Queue.DelayKwargs(KeyRegistrationConfirmationTaskName,
+	asyncRes, err := queue.Queue.DelayKwargs(keyRegistrationConfirmationTaskName,
 		map[string]interface{}{
-			CentIdParam:     centId,
-			KeyParam:        key,
-			KeyPurposeParam: keyPurpose,
-			BlockHeight:     blockHeight,
+			centIDParam:      centId,
+			keyParam:         key,
+			keyPurposeParam:  keyPurpose,
+			blockHeightParam: bh,
 		})
 	if err != nil {
 		return nil, err
@@ -299,11 +307,11 @@ func setUpKeyRegisteredEventListener(identity Identity, keyPurpose int, key [32]
 // of the identity.
 func setUpRegistrationEventListener(identityToBeCreated Identity, blockHeight uint64) (confirmations chan *WatchIdentity, err error) {
 	confirmations = make(chan *WatchIdentity)
-	bCentId := identityToBeCreated.GetCentrifugeID()
+	bCentId := identityToBeCreated.CentrifugeID()
 	if err != nil {
 		return nil, err
 	}
-	asyncRes, err := queue.Queue.DelayKwargs(IdRegistrationConfirmationTaskName, map[string]interface{}{CentIdParam: bCentId, BlockHeight: blockHeight})
+	asyncRes, err := queue.Queue.DelayKwargs(idRegistrationConfirmationTaskName, map[string]interface{}{centIDParam: bCentId, blockHeightParam: blockHeight})
 	if err != nil {
 		return nil, err
 	}
@@ -337,15 +345,15 @@ func NewEthereumIdentityService(config Config, factoryContract *EthereumIdentity
 
 // CheckIdentityExists checks if the identity represented by id actually exists on ethereum
 func (ids *EthereumIdentityService) CheckIdentityExists(centrifugeID CentID) (exists bool, err error) {
-	id := NewEthereumIdentity(centrifugeID, ids.registryContract, ids.config)
+	id := newEthereumIdentity(centrifugeID, ids.registryContract, ids.config)
 	exists, err = id.CheckIdentityExists()
 	return
 }
 
 // CreateIdentity creates an identity representing the id on ethereum
 func (ids *EthereumIdentityService) CreateIdentity(centrifugeID CentID) (id Identity, confirmations chan *WatchIdentity, err error) {
-	log.Infof("Creating Identity [%x]", centrifugeID.ByteArray())
-	id = NewEthereumIdentity(centrifugeID, ids.registryContract, ids.config)
+	log.Infof("Creating Identity [%x]", centrifugeID)
+	id = newEthereumIdentity(centrifugeID, ids.registryContract, ids.config)
 	conn := ethereum.GetConnection()
 	opts, err := conn.GetTxOpts(ids.config.GetEthereumDefaultAccountName())
 	if err != nil {
@@ -390,10 +398,10 @@ func (ids *EthereumIdentityService) GetIdentityAddress(centID CentID) (common.Ad
 
 // LookupIdentityForID looks up if the identity for given CentID exists on ethereum
 func (ids *EthereumIdentityService) LookupIdentityForID(centrifugeID CentID) (Identity, error) {
-	id := NewEthereumIdentity(centrifugeID, ids.registryContract, ids.config)
+	id := newEthereumIdentity(centrifugeID, ids.registryContract, ids.config)
 	exists, err := id.CheckIdentityExists()
 	if !exists {
-		return id, fmt.Errorf("identity [%s] does not exist with err [%v]", id.CentrifugeId, err)
+		return id, fmt.Errorf("identity [%s] does not exist with err [%v]", id.CentID, err)
 	}
 
 	if err != nil {

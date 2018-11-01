@@ -20,7 +20,7 @@ var p2pPort int64
 var bootstraps []string
 
 func createIdentity() (identity.CentID, error) {
-	centrifugeId := identity.NewRandomCentID()
+	centrifugeId := identity.RandomCentID()
 	_, confirmations, err := identity.IDService.CreateIdentity(centrifugeId)
 	if err != nil {
 		return [identity.CentIDLength]byte{}, err
@@ -39,7 +39,7 @@ func generateKeys() {
 }
 
 func addKeys() error {
-	err := identity.AddKeyFromConfig(identity.KeyPurposeP2p)
+	err := identity.AddKeyFromConfig(identity.KeyPurposeP2P)
 	if err != nil {
 		panic(err)
 	}
@@ -99,7 +99,7 @@ func init() {
 			}
 			config.Config.V.Set("identityId", id.String())
 
-			log.Infof("Identity created [%s] [%x]", id.String(), id.ByteArray())
+			log.Infof("Identity created [%s] [%x]", id.String(), id)
 
 			err = addKeys()
 			if err != nil {

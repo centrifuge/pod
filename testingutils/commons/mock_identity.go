@@ -54,21 +54,21 @@ func (i *MockID) String() string {
 	return args.String(0)
 }
 
-func (i *MockID) GetCentrifugeID() identity.CentID {
+func (i *MockID) CentrifugeID() identity.CentID {
 	args := i.Called()
 	return args.Get(0).(identity.CentID)
 }
 
-func (i *MockID) CentrifugeID(centId identity.CentID) {
+func (i *MockID) SetCentrifugeID(centId identity.CentID) {
 	i.Called(centId)
 }
 
-func (i *MockID) GetCurrentP2PKey() (ret string, err error) {
+func (i *MockID) CurrentP2PKey() (ret string, err error) {
 	args := i.Called()
 	return args.String(0), args.Error(1)
 }
 
-func (i *MockID) GetLastKeyForPurpose(keyPurpose int) (key []byte, err error) {
+func (i *MockID) LastKeyForPurpose(keyPurpose int) (key []byte, err error) {
 	args := i.Called(keyPurpose)
 	return args.Get(0).([]byte), args.Error(1)
 }
@@ -76,11 +76,6 @@ func (i *MockID) GetLastKeyForPurpose(keyPurpose int) (key []byte, err error) {
 func (i *MockID) AddKeyToIdentity(ctx context.Context, keyPurpose int, key []byte) (confirmations chan *identity.WatchIdentity, err error) {
 	args := i.Called(ctx, keyPurpose, key)
 	return args.Get(0).(chan *identity.WatchIdentity), args.Error(1)
-}
-
-func (i *MockID) CheckIdentityExists() (exists bool, err error) {
-	args := i.Called()
-	return args.Bool(0), args.Error(1)
 }
 
 func (i *MockID) FetchKey(key []byte) (identity.Key, error) {

@@ -18,17 +18,23 @@ import (
 )
 
 const (
-	CentIDLength         = 6
-	ActionCreate         = "create"
-	ActionAddKey         = "addkey"
-	KeyPurposeP2p        = 1
-	KeyPurposeSigning    = 2
+	// CentIDLength is the length in bytes of the CentrifugeID
+	CentIDLength = 6
+
+	// KeyPurposeP2P represents a key used for p2p txns
+	KeyPurposeP2P = 1
+
+	// KeyPurposeSigning represents a key used for signing
+	KeyPurposeSigning = 2
+
+	// KeyPurposeEthMsgAuth represents a key used for ethereum txns
 	KeyPurposeEthMsgAuth = 3
 )
 
 // IDService is a default implementation of the Service
 var IDService Service
 
+// CentID represents a CentIDLength identity of an entity
 type CentID [CentIDLength]byte
 
 // IdentityConfig holds information about the identity
@@ -60,7 +66,7 @@ func GetIdentityConfig() (*IdentityConfig, error) {
 	if err != nil {
 		return nil, err
 	}
-	keys[KeyPurposeP2p] = IdentityKey{PublicKey: pk, PrivateKey: sk}
+	keys[KeyPurposeP2P] = IdentityKey{PublicKey: pk, PrivateKey: sk}
 	keys[KeyPurposeSigning] = IdentityKey{PublicKey: pk, PrivateKey: sk}
 
 	//secp256k1 keys
@@ -117,11 +123,13 @@ func CentIDsFromStrings(ids []string) ([]CentID, error) {
 	return cids, nil
 }
 
-func NewRandomCentID() CentID {
+// RandomCentID returns a randomly generated CentID
+func RandomCentID() CentID {
 	ID, _ := ToCentID(utils.RandomSlice(CentIDLength))
 	return ID
 }
 
+// Equal checks if c == other
 func (c CentID) Equal(other CentID) bool {
 	for i := range c {
 		if c[i] != other[i] {
@@ -132,44 +140,23 @@ func (c CentID) Equal(other CentID) bool {
 	return true
 }
 
+// String returns the hex format of CentID
 func (c CentID) String() string {
 	return hexutil.Encode(c[:])
 }
 
-func (c CentID) MarshalBinary() (data []byte, err error) {
-	return c[:], nil
-}
-
+// BigInt returns CentID in bigInt
 func (c CentID) BigInt() *big.Int {
 	return utils.ByteSliceToBigInt(c[:])
-}
-
-func (c CentID) ByteArray() [CentIDLength]byte {
-	var idBytes [CentIDLength]byte
-	copy(idBytes[:], c[:CentIDLength])
-	return idBytes
-}
-
-func ParseCentIDs(centIDByteArray [][]byte) (errs []error, centIDs []CentID) {
-	for _, element := range centIDByteArray {
-		centID, err := ToCentID(element)
-		if err != nil {
-			err = centerrors.Wrap(err, "error parsing receiver centId")
-			errs = append(errs, err)
-			continue
-		}
-		centIDs = append(centIDs, centID)
-	}
-	return errs, centIDs
 }
 
 // Identity defines an Identity on chain
 type Identity interface {
 	fmt.Stringer
-	GetCentrifugeID() CentID
-	CentrifugeID(cenId CentID)
-	GetCurrentP2PKey() (ret string, err error)
-	GetLastKeyForPurpose(keyPurpose int) (key []byte, err error)
+	CentrifugeID() CentID
+	SetCentrifugeID(centID CentID)
+	CurrentP2PKey() (ret string, err error)
+	LastKeyForPurpose(keyPurpose int) (key []byte, err error)
 	AddKeyToIdentity(ctx context.Context, keyPurpose int, key []byte) (confirmations chan *WatchIdentity, err error)
 	FetchKey(key []byte) (Key, error)
 }
@@ -181,6 +168,7 @@ type Key interface {
 	GetRevokedAt() *big.Int
 }
 
+// WatchIdentity holds the identity received form chain event
 type WatchIdentity struct {
 	Identity Identity
 	Error    error
@@ -209,7 +197,7 @@ func GetClientP2PURL(centID CentID) (url string, err error) {
 		return url, centerrors.Wrap(err, "error fetching receiver identity")
 	}
 
-	p2pKey, err := target.GetCurrentP2PKey()
+	p2pKey, err := target.CurrentP2PKey()
 	if err != nil {
 		return url, centerrors.Wrap(err, "error fetching p2p key")
 	}
@@ -294,7 +282,7 @@ func AddKeyFromConfig(purpose int) error {
 	}
 	watchAddedToIdentity := <-confirmations
 
-	lastKey, errLocal := watchAddedToIdentity.Identity.GetLastKeyForPurpose(purpose)
+	lastKey, errLocal := watchAddedToIdentity.Identity.LastKeyForPurpose(purpose)
 	if errLocal != nil {
 		return err
 	}
