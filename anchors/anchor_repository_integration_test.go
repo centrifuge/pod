@@ -19,10 +19,6 @@ import (
 
 var identityService identity.Service
 
-// Add Key
-var testAddress string
-var testPrivateKey string
-
 func TestMain(m *testing.M) {
 	cc.TestFunctionalEthereumBootstrap()
 	identityService = identity.IDService
@@ -44,7 +40,6 @@ func createIdentityWithKeys(t *testing.T, centrifugeId []byte) []byte {
 	id, err = identityService.LookupIdentityForID(centIdTyped)
 	assert.Nil(t, err, "should not error out when resolving identity")
 
-	testPrivateKey = "0x17e063fa17dd8274b09c14b253697d9a20afff74ace3c04fdb1b9c814ce0ada5"
 	pubKey, _ := hexutil.Decode("0xc8dd3d66e112fae5c88fe6a677be24013e53c33e")
 
 	confirmations, err = id.AddKeyToIdentity(context.Background(), identity.KeyPurposeEthMsgAuth, pubKey)
@@ -103,7 +98,7 @@ func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
 		messageToSign := anchors.GenerateCommitHash(currentAnchorId, centIdFixed, currentDocumentRoot)
 		signature, _ := secp256k1.SignEthereum(messageToSign, testPrivateKey)
 		documentProofs := [][anchors.DocumentProofLength]byte{utils.RandomByte32()}
-		h, err := ethereum.GetConnection().GetClient().HeaderByNumber(context.Background(), nil)
+		h, err := ethereum.GetClient().GetEthClient().HeaderByNumber(context.Background(), nil)
 		assert.Nil(t, err, " error must be nil")
 		commitDataList[ix] = anchors.NewCommitData(h.Number.Uint64(), currentAnchorId, currentDocumentRoot, centIdFixed, documentProofs, signature)
 		confirmationList[ix], err = anchors.CommitAnchor(currentAnchorId, currentDocumentRoot, centIdFixed, documentProofs, signature)

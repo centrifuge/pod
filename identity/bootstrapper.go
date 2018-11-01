@@ -54,11 +54,11 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 }
 
 func getIdentityFactoryContract() (identityFactoryContract *EthereumIdentityFactoryContract, err error) {
-	client := ethereum.GetConnection()
-	return NewEthereumIdentityFactoryContract(config.Config.GetContractAddress("identityFactory"), client.GetClient())
+	client := ethereum.GetClient()
+	return NewEthereumIdentityFactoryContract(config.Config.GetContractAddress("identityFactory"), client.GetEthClient())
 }
 
 func getIdentityRegistryContract() (identityRegistryContract *EthereumIdentityRegistryContract, err error) {
-	client := ethereum.GetConnection()
-	return NewEthereumIdentityRegistryContract(config.Config.GetContractAddress("identityRegistry"), client.GetClient())
+	client := ethereum.GetClient()
+	return NewEthereumIdentityRegistryContract(config.Config.GetContractAddress("identityRegistry"), client.GetEthClient())
 }

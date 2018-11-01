@@ -15,7 +15,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
-	"github.com/centrifuge/go-centrifuge/testingutils"
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/stretchr/testify/assert"
 )
@@ -41,7 +41,7 @@ func TestMain(m *testing.M) {
 
 func TestPaymentObligationService_mint(t *testing.T) {
 	// create identity
-	testingutils.CreateIdentityWithKeys()
+	testingidentity.CreateIdentityWithKeys()
 
 	// create invoice (anchor)
 	service, err := documents.GetRegistryInstance().LocateService(documenttypes.InvoiceDataTypeUrl)

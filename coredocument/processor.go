@@ -61,19 +61,14 @@ func (dp defaultProcessor) Send(ctx context.Context, coreDocument *coredocumentp
 	}
 
 	log.Infof("sending coredocument %x to recipient %x", coreDocument.DocumentIdentifier, recipient)
-
 	id, err := dp.IdentityService.LookupIdentityForID(recipient)
 	if err != nil {
-		err = centerrors.Wrap(err, "error fetching receiver identity")
-		log.Error(err)
-		return err
+		return centerrors.Wrap(err, "error fetching receiver identity")
 	}
 
 	lastB58Key, err := id.CurrentP2PKey()
 	if err != nil {
-		err = centerrors.Wrap(err, "error fetching p2p key")
-		log.Error(err)
-		return err
+		return centerrors.Wrap(err, "error fetching p2p key")
 	}
 
 	log.Infof("Sending Document to CentID [%v] with Key [%v]\n", recipient, lastB58Key)
@@ -84,12 +79,9 @@ func (dp defaultProcessor) Send(ctx context.Context, coreDocument *coredocumentp
 	}
 
 	log.Infof("Done opening connection against [%s]\n", lastB58Key)
-
 	idConfig, err := identity.GetIdentityConfig()
 	if err != nil {
-		err = centerrors.Wrap(err, "failed to extract bytes")
-		log.Error(err)
-		return err
+		return centerrors.Wrap(err, "failed to get IDConfig")
 	}
 
 	centIDBytes := idConfig.ID[:]
@@ -98,11 +90,10 @@ func (dp defaultProcessor) Send(ctx context.Context, coreDocument *coredocumentp
 		CentNodeVersion:    version.GetVersion().String(),
 		NetworkIdentifier:  config.Config.GetNetworkID(),
 	}
-	_, err = client.SendAnchoredDocument(context.Background(), &p2ppb.AnchorDocumentRequest{Document: coreDocument, Header: header})
-	if err != nil {
-		err = centerrors.Wrap(err, "failed to post to the node")
-		log.Error(err)
-		return err
+
+	resp, err := client.SendAnchoredDocument(ctx, &p2ppb.AnchorDocumentRequest{Document: coreDocument, Header: header})
+	if err != nil || !resp.Accepted {
+		return centerrors.Wrap(err, "failed to send document to the node")
 	}
 
 	return nil

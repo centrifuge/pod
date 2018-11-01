@@ -45,12 +45,12 @@ type ethereumPaymentObligationContract interface {
 type ethereumPaymentObligation struct {
 	paymentObligation ethereumPaymentObligationContract
 	identityService   identity.Service
-	ethClient         ethereum.EthereumClient
+	ethClient         ethereum.Client
 	config            Config
 }
 
 // NewEthereumPaymentObligation creates ethereumPaymentObligation given the parameters
-func NewEthereumPaymentObligation(paymentObligation ethereumPaymentObligationContract, identityService identity.Service, ethClient ethereum.EthereumClient, config Config) *ethereumPaymentObligation {
+func NewEthereumPaymentObligation(paymentObligation ethereumPaymentObligationContract, identityService identity.Service, ethClient ethereum.Client, config Config) *ethereumPaymentObligation {
 	return &ethereumPaymentObligation{paymentObligation: paymentObligation, identityService: identityService, ethClient: ethClient, config: config}
 }
 

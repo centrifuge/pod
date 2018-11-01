@@ -151,8 +151,8 @@ func (id *ethereumIdentity) findContract() (exists bool, err error) {
 		return false, errors.New("Identity not found by address provided")
 	}
 
-	client := ethereum.GetConnection()
-	idContract, err := NewEthereumIdentityContract(idAddress, client.GetClient())
+	client := ethereum.GetClient()
+	idContract, err := NewEthereumIdentityContract(idAddress, client.GetEthClient())
 	if err == bind.ErrNoCode {
 		return false, err
 	}
@@ -193,13 +193,13 @@ func (id *ethereumIdentity) AddKeyToIdentity(ctx context.Context, keyPurpose int
 		return confirmations, err
 	}
 
-	conn := ethereum.GetConnection()
-	opts, err := ethereum.GetConnection().GetTxOpts(id.config.GetEthereumDefaultAccountName())
+	conn := ethereum.GetClient()
+	opts, err := ethereum.GetClient().GetTxOpts(id.config.GetEthereumDefaultAccountName())
 	if err != nil {
 		return confirmations, err
 	}
 
-	h, err := conn.GetClient().HeaderByNumber(ctx, nil)
+	h, err := conn.GetEthClient().HeaderByNumber(ctx, nil)
 	if err != nil {
 		return confirmations, err
 	}
@@ -255,7 +255,7 @@ func sendKeyRegistrationTransaction(identityContract contract, opts *bind.Transa
 		return err
 	}
 
-	tx, err := ethereum.GetConnection().SubmitTransactionWithRetries(identityContract.AddKey, opts, bKey, bigInt)
+	tx, err := ethereum.GetClient().SubmitTransactionWithRetries(identityContract.AddKey, opts, bKey, bigInt)
 	if err != nil {
 		log.Infof("Failed to send key [%v:%x] to add to CentrifugeID [%x]: %v", keyPurpose, bKey, identity.CentID, err)
 		return err
@@ -268,8 +268,7 @@ func sendKeyRegistrationTransaction(identityContract contract, opts *bind.Transa
 // sendIdentityCreationTransaction sends the actual transaction to create identity on Ethereum registry contract
 func sendIdentityCreationTransaction(identityFactory factory, opts *bind.TransactOpts, identityToBeCreated Identity) (err error) {
 	//preparation of data in specific types for the call to Ethereum
-	tx, err := ethereum.GetConnection().SubmitTransactionWithRetries(identityFactory.CreateIdentity, opts, identityToBeCreated.CentID().BigInt())
-
+	tx, err := ethereum.GetClient().SubmitTransactionWithRetries(identityFactory.CreateIdentity, opts, identityToBeCreated.CentID().BigInt())
 	if err != nil {
 		log.Infof("Failed to send identity for creation [CentrifugeID: %s] : %v", identityToBeCreated, err)
 		return err
@@ -354,13 +353,13 @@ func (ids *EthereumIdentityService) CheckIdentityExists(centrifugeID CentID) (ex
 func (ids *EthereumIdentityService) CreateIdentity(centrifugeID CentID) (id Identity, confirmations chan *WatchIdentity, err error) {
 	log.Infof("Creating Identity [%x]", centrifugeID)
 	id = newEthereumIdentity(centrifugeID, ids.registryContract, ids.config)
-	conn := ethereum.GetConnection()
+	conn := ethereum.GetClient()
 	opts, err := conn.GetTxOpts(ids.config.GetEthereumDefaultAccountName())
 	if err != nil {
 		return nil, confirmations, err
 	}
 
-	h, err := conn.GetClient().HeaderByNumber(context.Background(), nil)
+	h, err := conn.GetEthClient().HeaderByNumber(context.Background(), nil)
 	if err != nil {
 		return nil, confirmations, err
 	}
