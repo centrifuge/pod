@@ -87,7 +87,7 @@ func (ethRepository *EthereumAnchorRepository) CommitAnchor(anchorID AnchorID, d
 		return nil, err
 	}
 
-	cd := newCommitData(h.Number.Uint64(), anchorID, documentRoot, centrifugeId, documentProofs, signature)
+	cd := NewCommitData(h.Number.Uint64(), anchorID, documentRoot, centrifugeId, documentProofs, signature)
 	confirmations, err = setUpCommitEventListener(opts.From, cd)
 	if err != nil {
 		wError := errors.Wrap(err, 1)
