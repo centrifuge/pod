@@ -115,31 +115,6 @@ func VerifySignature(publicKey, message, signature []byte) bool {
 
 }
 
-// GetIDConfig reads the keys and ID from the config and returns a the Identity config
-func GetIDConfig() (identityConfig *config.IdentityConfig, err error) {
-	pub, pvk, err := GetEthAuthKeyFromConfig()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get eth keys: %v", err)
-	}
-
-	centId, err := config.Config.GetIdentityID()
-	if err != nil {
-		return nil, err
-	}
-
-	pubKey, err := hexutil.Decode(GetAddress(pub))
-	if err != nil {
-		return nil, err
-	}
-	identityConfig = &config.IdentityConfig{
-		ID:         centId,
-		PublicKey:  pubKey,
-		PrivateKey: pvk,
-	}
-
-	return
-}
-
 // GetEthAuthKeyFromConfig returns the public and private keys as byte array
 func GetEthAuthKeyFromConfig() (public, private []byte, err error) {
 	pub, priv := config.Config.GetEthAuthKeyPair()

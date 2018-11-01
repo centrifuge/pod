@@ -12,8 +12,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/keytools/ed25519"
-	"github.com/centrifuge/go-centrifuge/keytools/secp256k1"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/golang/protobuf/ptypes/any"
@@ -118,16 +116,14 @@ func (m *MockSubscription) Err() <-chan error {
 func (*MockSubscription) Unsubscribe() {}
 
 func CreateIdentityWithKeys() identity.CentID {
-	idConfigEth, _ := secp256k1.GetIDConfig()
-	idConfig, _ := ed25519.GetIDConfig()
-	centIdTyped, _ := identity.ToCentID(idConfigEth.ID)
+	idConfig, _ := identity.GetIdentityConfig()
 	// only create identity if it doesn't exist
-	id, err := identity.IDService.LookupIdentityForID(centIdTyped)
+	id, err := identity.IDService.LookupIdentityForID(idConfig.ID)
 	if err != nil {
-		_, confirmations, _ := identity.IDService.CreateIdentity(centIdTyped)
+		_, confirmations, _ := identity.IDService.CreateIdentity(idConfig.ID)
 		<-confirmations
 		// LookupIdentityForId
-		id, _ = identity.IDService.LookupIdentityForID(centIdTyped)
+		id, _ = identity.IDService.LookupIdentityForID(idConfig.ID)
 	}
 
 	// only add key if it doesn't exist
@@ -135,16 +131,16 @@ func CreateIdentityWithKeys() identity.CentID {
 	ctx, cancel := ethereum.DefaultWaitForTransactionMiningContext()
 	defer cancel()
 	if err != nil {
-		confirmations, _ := id.AddKeyToIdentity(ctx, identity.KeyPurposeEthMsgAuth, idConfigEth.PublicKey)
+		confirmations, _ := id.AddKeyToIdentity(ctx, identity.KeyPurposeEthMsgAuth, idConfig.Keys[identity.KeyPurposeEthMsgAuth].PublicKey)
 		<-confirmations
 	}
 	_, err = id.GetLastKeyForPurpose(identity.KeyPurposeSigning)
 	ctx, cancel = ethereum.DefaultWaitForTransactionMiningContext()
 	defer cancel()
 	if err != nil {
-		confirmations, _ := id.AddKeyToIdentity(ctx, identity.KeyPurposeSigning, idConfig.PublicKey)
+		confirmations, _ := id.AddKeyToIdentity(ctx, identity.KeyPurposeSigning, idConfig.Keys[identity.KeyPurposeSigning].PublicKey)
 		<-confirmations
 	}
 
-	return centIdTyped
+	return idConfig.ID
 }

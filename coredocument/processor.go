@@ -11,7 +11,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/keytools/ed25519"
 	"github.com/centrifuge/go-centrifuge/keytools/secp256k1"
 	"github.com/centrifuge/go-centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -86,15 +85,16 @@ func (dp defaultProcessor) Send(ctx context.Context, coreDocument *coredocumentp
 
 	log.Infof("Done opening connection against [%s]\n", lastB58Key)
 
-	idConfig, err := ed25519.GetIDConfig()
+	idConfig, err := identity.GetIdentityConfig()
 	if err != nil {
 		err = centerrors.Wrap(err, "failed to extract bytes")
 		log.Error(err)
 		return err
 	}
 
+	centIDBytes, _ := idConfig.ID.MarshalBinary()
 	header := &p2ppb.CentrifugeHeader{
-		SenderCentrifugeId: idConfig.ID,
+		SenderCentrifugeId: centIDBytes,
 		CentNodeVersion:    version.GetVersion().String(),
 		NetworkIdentifier:  config.Config.GetNetworkID(),
 	}
@@ -122,11 +122,11 @@ func (dp defaultProcessor) PrepareForSignatureRequests(model documents.Model) er
 	}
 
 	// sign document with own key and append it to signatures
-	idConfig, err := ed25519.GetIDConfig()
+	idConfig, err := identity.GetIdentityConfig()
 	if err != nil {
 		return fmt.Errorf("failed to get keys for signing: %v", err)
 	}
-	sig := signatures.Sign(idConfig, cd.SigningRoot)
+	sig := signatures.Sign(idConfig, identity.KeyPurposeSigning, cd.SigningRoot)
 	cd.Signatures = append(cd.Signatures, sig)
 
 	err = model.UnpackCoreDocument(cd)
@@ -219,7 +219,7 @@ func (dp defaultProcessor) AnchorDocument(model documents.Model) error {
 	}
 
 	// generate message authentication code for the anchor call
-	secpIDConfig, err := secp256k1.GetIDConfig()
+	idConfig, err := identity.GetIdentityConfig()
 	if err != nil {
 		return fmt.Errorf("failed to get eth keys: %v", err)
 	}
@@ -229,7 +229,7 @@ func (dp defaultProcessor) AnchorDocument(model documents.Model) error {
 		return fmt.Errorf("failed to get anchor ID: %v", err)
 	}
 
-	mac, err := secp256k1.SignEthereum(anchors.GenerateCommitHash(anchorID, centID, rootHash), secpIDConfig.PrivateKey)
+	mac, err := secp256k1.SignEthereum(anchors.GenerateCommitHash(anchorID, centID, rootHash), idConfig.Keys[identity.KeyPurposeEthMsgAuth].PrivateKey)
 	if err != nil {
 		return fmt.Errorf("failed to generate ethereum MAC: %v", err)
 	}

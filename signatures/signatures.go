@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"golang.org/x/crypto/ed25519"
@@ -53,11 +52,12 @@ func verifySignature(pubKey, message, signature []byte) error {
 
 // Sign the document with the private key and return the signature along with the public key for the verification
 // assumes that signing root for the document is generated
-func Sign(idConfig *config.IdentityConfig, payload []byte) *coredocumentpb.Signature {
+func Sign(idConfig *identity.IdentityConfig, purpose int, payload []byte) *coredocumentpb.Signature {
+	centIDBytes, _ := idConfig.ID.MarshalBinary()
 	return &coredocumentpb.Signature{
-		EntityId:  idConfig.ID,
-		PublicKey: idConfig.PublicKey,
-		Signature: ed25519.Sign(idConfig.PrivateKey, payload),
+		EntityId:  centIDBytes,
+		PublicKey: idConfig.Keys[purpose].PublicKey,
+		Signature: ed25519.Sign(idConfig.Keys[purpose].PrivateKey, payload),
 		Timestamp: utils.ToTimestamp(time.Now().UTC()),
 	}
 }
