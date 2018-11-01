@@ -124,7 +124,7 @@ func (krct *keyRegistrationConfirmationTask) RunTask() (interface{}, error) {
 		krct.ctx, _ = krct.contextInitializer()
 	}
 
-	id := ethereumIdentity{CentID: krct.centID, RegistryContract: krct.contract, Config: krct.config}
+	id := ethereumIdentity{centID: krct.centID, registryContract: krct.contract, config: krct.config}
 	contract, err := id.getContract()
 	if err != nil {
 		return nil, err

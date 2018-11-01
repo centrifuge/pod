@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	idRegistrationConfirmationTaskName string = "IDRegistrationConfirmationTaskName"
+	idRegistrationConfirmationTaskName string = "idRegistrationConfirmationTaskName"
 )
 
 type identitiesCreatedFilterer interface {

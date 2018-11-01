@@ -54,7 +54,7 @@ func (i *MockID) String() string {
 	return args.String(0)
 }
 
-func (i *MockID) CentrifugeID() identity.CentID {
+func (i *MockID) CentID() identity.CentID {
 	args := i.Called()
 	return args.Get(0).(identity.CentID)
 }

@@ -153,7 +153,7 @@ func (c CentID) BigInt() *big.Int {
 // Identity defines an Identity on chain
 type Identity interface {
 	fmt.Stringer
-	CentrifugeID() CentID
+	CentID() CentID
 	SetCentrifugeID(centID CentID)
 	CurrentP2PKey() (ret string, err error)
 	LastKeyForPurpose(keyPurpose int) (key []byte, err error)

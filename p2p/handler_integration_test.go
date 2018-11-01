@@ -253,7 +253,7 @@ func createIdentity(t *testing.T) identity.CentID {
 	assert.Nil(t, err, "should not error out when creating identity")
 	watchRegisteredIdentity := <-confirmations
 	assert.Nil(t, watchRegisteredIdentity.Error, "No error thrown by context")
-	assert.Equal(t, centrifugeId, watchRegisteredIdentity.Identity.CentrifugeID(), "Resulting Identity should have the same ID as the input")
+	assert.Equal(t, centrifugeId, watchRegisteredIdentity.Identity.CentID(), "Resulting Identity should have the same ID as the input")
 
 	idConfig, err := identity.GetIdentityConfig()
 	// Add Keys
@@ -262,14 +262,14 @@ func createIdentity(t *testing.T) identity.CentID {
 	assert.Nil(t, err, "should not error out when adding key to identity")
 	assert.NotNil(t, confirmations, "confirmations channel should not be nil")
 	watchReceivedIdentity := <-confirmations
-	assert.Equal(t, centrifugeId, watchReceivedIdentity.Identity.CentrifugeID(), "Resulting Identity should have the same ID as the input")
+	assert.Equal(t, centrifugeId, watchReceivedIdentity.Identity.CentID(), "Resulting Identity should have the same ID as the input")
 
 	secPubKey := idConfig.Keys[identity.KeyPurposeEthMsgAuth].PublicKey
 	confirmations, err = id.AddKeyToIdentity(context.Background(), identity.KeyPurposeEthMsgAuth, secPubKey)
 	assert.Nil(t, err, "should not error out when adding key to identity")
 	assert.NotNil(t, confirmations, "confirmations channel should not be nil")
 	watchReceivedIdentity = <-confirmations
-	assert.Equal(t, centrifugeId, watchReceivedIdentity.Identity.CentrifugeID(), "Resulting Identity should have the same ID as the input")
+	assert.Equal(t, centrifugeId, watchReceivedIdentity.Identity.CentID(), "Resulting Identity should have the same ID as the input")
 
 	return centrifugeId
 }
