@@ -2,6 +2,7 @@ package nft
 
 import (
 	"errors"
+
 	"github.com/centrifuge/go-centrifuge/queue"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"

@@ -3,17 +3,18 @@ package nft
 import (
 	"context"
 	"encoding/hex"
-	"github.com/centrifuge/gocelery"
 	"math/big"
+
+	"github.com/centrifuge/gocelery"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 
@@ -132,7 +133,7 @@ func setUpMintEventListener(tokenID *big.Int) (confirmations chan *WatchTokenMin
 
 	asyncRes, err := queue.Queue.DelayKwargs(MintingConfirmationTaskName, map[string]interface{}{
 		TokenIDParam: hex.EncodeToString(tokenID.Bytes()),
-		BlockHeight: h.Number.Uint64(),
+		BlockHeight:  h.Number.Uint64(),
 	})
 	if err != nil {
 		return nil, err
