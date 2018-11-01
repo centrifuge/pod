@@ -23,8 +23,8 @@ func TestRegistrationConfirmationTask_ParseKwargsHappyPath(t *testing.T) {
 	if err != nil {
 		t.Errorf("Could not parse %s for [%x]", centIDParam, id)
 	}
-	assert.Equal(t, idBytes, rct.CentID, "Resulting mockID should have the same ID as the input")
-	assert.Equal(t, blockHeight, rct.BlockHeight, "Resulting blockheight should be same as the input")
+	assert.Equal(t, idBytes, rct.centID, "Resulting mockID should have the same ID as the input")
+	assert.Equal(t, blockHeight, rct.blockHeight, "Resulting blockheight should be same as the input")
 }
 
 func TestRegistrationConfirmationTask_ParseKwargsDoesNotExist(t *testing.T) {
