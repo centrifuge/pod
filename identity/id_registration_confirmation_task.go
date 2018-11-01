@@ -14,86 +14,89 @@ import (
 )
 
 const (
-	IdRegistrationConfirmationTaskName string = "IdRegistrationConfirmationTaskName"
+	idRegistrationConfirmationTaskName string = "idRegistrationConfirmationTaskName"
 )
 
-type IdentitiesCreatedFilterer interface {
+type identitiesCreatedFilterer interface {
 	FilterIdentityCreated(opts *bind.FilterOpts, centrifugeId []*big.Int) (*EthereumIdentityFactoryContractIdentityCreatedIterator, error)
 }
 
-// IdRegistrationConfirmationTask is a queued task to watch ID registration events on Ethereum using EthereumIdentityFactoryContract.
+// idRegistrationConfirmationTask is a queued task to watch ID registration events on Ethereum using EthereumIdentityFactoryContract.
 // To see how it gets registered see bootstrapper.go and to see how it gets used see setUpRegistrationEventListener method
-type IdRegistrationConfirmationTask struct {
-	CentID                 CentID
-	BlockHeight            uint64
-	EthContextInitializer  func() (ctx context.Context, cancelFunc context.CancelFunc)
-	EthContext             context.Context
-	IdentityCreatedWatcher IdentitiesCreatedFilterer
+type idRegistrationConfirmationTask struct {
+	centID             CentID
+	blockHeight        uint64
+	contextInitializer func() (ctx context.Context, cancelFunc context.CancelFunc)
+	ctx                context.Context
+	filterer           identitiesCreatedFilterer
 }
 
-func NewIdRegistrationConfirmationTask(
-	identityCreatedWatcher IdentitiesCreatedFilterer,
+func newIdRegistrationConfirmationTask(
+	identityCreatedWatcher identitiesCreatedFilterer,
 	ethContextInitializer func() (ctx context.Context, cancelFunc context.CancelFunc),
-) *IdRegistrationConfirmationTask {
-	return &IdRegistrationConfirmationTask{
-		IdentityCreatedWatcher: identityCreatedWatcher,
-		EthContextInitializer:  ethContextInitializer,
+) *idRegistrationConfirmationTask {
+	return &idRegistrationConfirmationTask{
+		filterer:           identityCreatedWatcher,
+		contextInitializer: ethContextInitializer,
 	}
 }
 
-func (rct *IdRegistrationConfirmationTask) Name() string {
-	return IdRegistrationConfirmationTaskName
+// Name returns the name of the task
+func (rct *idRegistrationConfirmationTask) Name() string {
+	return idRegistrationConfirmationTaskName
 }
 
-func (rct *IdRegistrationConfirmationTask) Init() error {
-	queue.Queue.Register(IdRegistrationConfirmationTaskName, rct)
+// Init registers the task to queue
+func (rct *idRegistrationConfirmationTask) Init() error {
+	queue.Queue.Register(idRegistrationConfirmationTaskName, rct)
 	return nil
 }
 
-func (rct *IdRegistrationConfirmationTask) Copy() (gocelery.CeleryTask, error) {
-	return &IdRegistrationConfirmationTask{
-		rct.CentID,
-		rct.BlockHeight,
-		rct.EthContextInitializer,
-		rct.EthContext,
-		rct.IdentityCreatedWatcher}, nil
+// Copy returns a new copy of the the task
+func (rct *idRegistrationConfirmationTask) Copy() (gocelery.CeleryTask, error) {
+	return &idRegistrationConfirmationTask{
+		rct.centID,
+		rct.blockHeight,
+		rct.contextInitializer,
+		rct.ctx,
+		rct.filterer}, nil
 }
 
-// ParseKwargs - define a method to parse CentID
-func (rct *IdRegistrationConfirmationTask) ParseKwargs(kwargs map[string]interface{}) error {
-	centId, ok := kwargs[CentIdParam]
+// ParseKwargs parses the kwargs into the task
+func (rct *idRegistrationConfirmationTask) ParseKwargs(kwargs map[string]interface{}) error {
+	centId, ok := kwargs[centIDParam]
 	if !ok {
-		return fmt.Errorf("undefined kwarg " + CentIdParam)
+		return fmt.Errorf("undefined kwarg " + centIDParam)
 	}
 	centIdTyped, err := getCentID(centId)
 	if err != nil {
-		return fmt.Errorf("malformed kwarg [%s] because [%s]", CentIdParam, err.Error())
+		return fmt.Errorf("malformed kwarg [%s] because [%s]", centIDParam, err.Error())
 	}
-	rct.CentID = centIdTyped
+	rct.centID = centIdTyped
 
-	rct.BlockHeight, err = parseBlockHeight(kwargs)
+	rct.blockHeight, err = parseBlockHeight(kwargs)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-// RunTask calls listens to events from geth related to IdRegistrationConfirmationTask#CentID and records result.
-func (rct *IdRegistrationConfirmationTask) RunTask() (interface{}, error) {
-	log.Infof("Waiting for confirmation for the ID [%x]", rct.CentID.ByteArray())
-	if rct.EthContext == nil {
-		rct.EthContext, _ = rct.EthContextInitializer()
+// RunTask calls listens to events from geth related to idRegistrationConfirmationTask#CentID and records result.
+func (rct *idRegistrationConfirmationTask) RunTask() (interface{}, error) {
+	log.Infof("Waiting for confirmation for the ID [%x]", rct.centID)
+	if rct.ctx == nil {
+		rct.ctx, _ = rct.contextInitializer()
 	}
 
 	fOpts := &bind.FilterOpts{
-		Context: rct.EthContext,
-		Start:   rct.BlockHeight,
+		Context: rct.ctx,
+		Start:   rct.blockHeight,
 	}
 
 	for {
-		iter, err := rct.IdentityCreatedWatcher.FilterIdentityCreated(
+		iter, err := rct.filterer.FilterIdentityCreated(
 			fOpts,
-			[]*big.Int{rct.CentID.BigInt()},
+			[]*big.Int{rct.centID.BigInt()},
 		)
 		if err != nil {
 			return nil, centerrors.Wrap(err, "failed to start filtering identity event logs")
@@ -101,7 +104,7 @@ func (rct *IdRegistrationConfirmationTask) RunTask() (interface{}, error) {
 
 		err = utils.LookForEvent(iter)
 		if err == nil {
-			log.Infof("Received filtered event Id Registration Confirmation for CentrifugeId [%s]\n", rct.CentID.String())
+			log.Infof("Received filtered event Id Registration Confirmation for CentrifugeID [%s]\n", rct.centID.String())
 			return iter.Event, nil
 		}
 

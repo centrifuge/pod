@@ -3,15 +3,15 @@ package identity
 import "errors"
 
 const (
-	CentIdParam string = "CentID"
-	BlockHeight string = "BlockHeight"
+	centIDParam      string = "CentID"
+	blockHeightParam string = "BlockHeight"
 )
 
 func getBytes32(key interface{}) ([32]byte, error) {
 	var fixed [32]byte
 	b, ok := key.([]interface{})
 	if !ok {
-		return fixed, errors.New("Could not parse interface to []byte")
+		return fixed, errors.New("could not parse interface to []byte")
 	}
 	// convert and copy b byte values
 	for i, v := range b {
@@ -25,7 +25,7 @@ func getCentID(key interface{}) (CentID, error) {
 	var fixed [CentIDLength]byte
 	b, ok := key.([]interface{})
 	if !ok {
-		return fixed, errors.New("Could not parse interface to []byte")
+		return fixed, errors.New("could not parse interface to []byte")
 	}
 	// convert and copy b byte values
 	for i, v := range b {
@@ -36,7 +36,7 @@ func getCentID(key interface{}) (CentID, error) {
 }
 
 func parseBlockHeight(valMap map[string]interface{}) (uint64, error) {
-	if bhi, ok := valMap[BlockHeight]; ok {
+	if bhi, ok := valMap[blockHeightParam]; ok {
 		bhf, ok := bhi.(float64)
 		if ok {
 			return uint64(bhf), nil

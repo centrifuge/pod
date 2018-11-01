@@ -12,8 +12,8 @@ import (
 type Bootstrapper struct {
 }
 
-// Bootstrap initializes the IdentityFactoryContract as well as the IdRegistrationConfirmationTask that depends on it.
-// the IdRegistrationConfirmationTask is added to be registered on the Queue at queue.Bootstrapper
+// Bootstrap initializes the IdentityFactoryContract as well as the idRegistrationConfirmationTask that depends on it.
+// the idRegistrationConfirmationTask is added to be registered on the Queue at queue.Bootstrapper
 func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	if _, ok := context[bootstrap.BootstrappedConfig]; !ok {
 		return errors.New("config hasn't been initialized")
@@ -40,13 +40,13 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	}
 
 	err = queue.InstallQueuedTask(context,
-		NewIdRegistrationConfirmationTask(&identityContract.EthereumIdentityFactoryContractFilterer, ethereum.DefaultWaitForTransactionMiningContext))
+		newIdRegistrationConfirmationTask(&identityContract.EthereumIdentityFactoryContractFilterer, ethereum.DefaultWaitForTransactionMiningContext))
 	if err != nil {
 		return err
 	}
 
 	err = queue.InstallQueuedTask(context,
-		NewKeyRegistrationConfirmationTask(ethereum.DefaultWaitForTransactionMiningContext, registryContract, config.Config))
+		newKeyRegistrationConfirmationTask(ethereum.DefaultWaitForTransactionMiningContext, registryContract, config.Config))
 	if err != nil {
 		return err
 	}

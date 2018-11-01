@@ -66,7 +66,7 @@ func (dp defaultProcessor) Send(ctx context.Context, coreDocument *coredocumentp
 		return centerrors.Wrap(err, "error fetching receiver identity")
 	}
 
-	lastB58Key, err := id.GetCurrentP2PKey()
+	lastB58Key, err := id.CurrentP2PKey()
 	if err != nil {
 		return centerrors.Wrap(err, "error fetching p2p key")
 	}
@@ -84,7 +84,7 @@ func (dp defaultProcessor) Send(ctx context.Context, coreDocument *coredocumentp
 		return centerrors.Wrap(err, "failed to get IDConfig")
 	}
 
-	centIDBytes, _ := idConfig.ID.MarshalBinary()
+	centIDBytes := idConfig.ID[:]
 	header := &p2ppb.CentrifugeHeader{
 		SenderCentrifugeId: centIDBytes,
 		CentNodeVersion:    version.GetVersion().String(),
