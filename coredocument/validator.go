@@ -7,7 +7,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/keytools/ed25519"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -212,12 +212,12 @@ func readyForSignaturesValidator() documents.Validator {
 			return fmt.Errorf("expecting only one signature")
 		}
 
-		c, err := ed25519.GetIDConfig()
+		c, err := identity.GetIdentityConfig()
 		if err != nil {
 			return fmt.Errorf("failed to get keys for signature calculation: %v", err)
 		}
 
-		s := signatures.Sign(c, cd.SigningRoot)
+		s := signatures.Sign(c, identity.KeyPurposeSigning, cd.SigningRoot)
 		sh := cd.Signatures[0]
 		if !utils.IsSameByteSlice(s.EntityId, sh.EntityId) {
 			err = documents.AppendError(err, documents.NewError("cd_entity_id", "entity ID mismatch"))
@@ -271,12 +271,12 @@ func anchoredValidator(repo anchors.AnchorRepository) documents.Validator {
 			return fmt.Errorf("failed to get core document: %v", err)
 		}
 
-		anchorID, err := anchors.NewAnchorID(cd.CurrentVersion)
+		anchorID, err := anchors.ToAnchorID(cd.CurrentVersion)
 		if err != nil {
 			return fmt.Errorf("failed to get anchorID: %v", err)
 		}
 
-		docRoot, err := anchors.NewDocRoot(cd.DocumentRoot)
+		docRoot, err := anchors.ToDocumentRoot(cd.DocumentRoot)
 		if err != nil {
 			return fmt.Errorf("failed to get document root: %v", err)
 		}

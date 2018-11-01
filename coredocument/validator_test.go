@@ -16,7 +16,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/keytools/ed25519"
 	"github.com/centrifuge/go-centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -33,20 +32,11 @@ func TestMain(m *testing.M) {
 	flag.Parse()
 	config.Config.V.Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
 	config.Config.V.Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
+	config.Config.V.Set("keys.ethauth.publicKey", "../build/resources/ethauth.pub.pem")
+	config.Config.V.Set("keys.ethauth.privateKey", "../build/resources/ethauth.key.pem")
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)
-}
-
-type mockModel struct {
-	mock.Mock
-	documents.Model
-}
-
-func (m mockModel) PackCoreDocument() (*coredocumentpb.CoreDocument, error) {
-	args := m.Called()
-	cd, _ := args.Get(0).(*coredocumentpb.CoreDocument)
-	return cd, args.Error(1)
 }
 
 func TestUpdateVersionValidator(t *testing.T) {
@@ -271,9 +261,9 @@ func TestValidator_selfSignatureValidator(t *testing.T) {
 
 	// success
 	cd.SigningRoot = utils.RandomSlice(32)
-	c, err := ed25519.GetIDConfig()
+	c, err := identity.GetIdentityConfig()
 	assert.Nil(t, err)
-	s = signatures.Sign(c, cd.SigningRoot)
+	s = signatures.Sign(c, identity.KeyPurposeSigning, cd.SigningRoot)
 	cd.Signatures = []*coredocumentpb.Signature{s}
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
@@ -316,11 +306,11 @@ func TestValidator_signatureValidator(t *testing.T) {
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
 	cd.SigningRoot = utils.RandomSlice(32)
-	c, err := ed25519.GetIDConfig()
+	c, err := identity.GetIdentityConfig()
 	assert.Nil(t, err)
-	s = signatures.Sign(c, cd.SigningRoot)
+	s = signatures.Sign(c, identity.KeyPurposeSigning, cd.SigningRoot)
 	cd.Signatures = []*coredocumentpb.Signature{s}
-	pubkey, err := utils.SliceToByte32(c.PublicKey)
+	pubkey, err := utils.SliceToByte32(c.Keys[identity.KeyPurposeSigning].PublicKey)
 	assert.Nil(t, err)
 	idkey := &identity.EthereumIdentityKey{
 		Key:       pubkey,
@@ -329,9 +319,7 @@ func TestValidator_signatureValidator(t *testing.T) {
 	}
 	id := &testingcommons.MockID{}
 	srv := &testingcommons.MockIDService{}
-	centID, err := identity.ToCentID(c.ID)
-	assert.Nil(t, err)
-	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
+	srv.On("LookupIdentityForID", c.ID).Return(id, nil).Once()
 	id.On("FetchKey", pubkey[:]).Return(idkey, nil).Once()
 	identity.IDService = srv
 	err = ssv.Validate(nil, model)
@@ -351,9 +339,9 @@ type repo struct {
 	anchors.AnchorRepository
 }
 
-func (r repo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.DocRoot, error) {
+func (r repo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.DocumentRoot, error) {
 	args := r.Called(anchorID)
-	docRoot, _ := args.Get(0).(anchors.DocRoot)
+	docRoot, _ := args.Get(0).(anchors.DocumentRoot)
 	return docRoot, args.Error(1)
 }
 
@@ -384,7 +372,7 @@ func TestValidator_anchoredValidator(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to get document root")
 
 	// failed to get docRoot from chain
-	anchorID, err := anchors.NewAnchorID(utils.RandomSlice(32))
+	anchorID, err := anchors.ToAnchorID(utils.RandomSlice(32))
 	assert.Nil(t, err)
 	r := &repo{}
 	av = anchoredValidator(r)
@@ -400,7 +388,7 @@ func TestValidator_anchoredValidator(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to get document root from chain")
 
 	// mismatched doc roots
-	docRoot := anchors.NewRandomDocRoot()
+	docRoot := anchors.RandomDocumentRoot()
 	r = &repo{}
 	av = anchoredValidator(r)
 	r.On("GetDocumentRootOf", anchorID).Return(docRoot, nil).Once()

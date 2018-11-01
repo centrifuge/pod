@@ -13,10 +13,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/coredocument"
-	"github.com/centrifuge/go-centrifuge/coredocument/processor"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
-	centED25519 "github.com/centrifuge/go-centrifuge/keytools/ed25519"
 	"github.com/centrifuge/go-centrifuge/notification"
 	clientpopb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/signatures"
@@ -54,13 +52,13 @@ type Service interface {
 // service always returns errors of type `centerrors` with proper error code
 type service struct {
 	repo             documents.Repository
-	coreDocProcessor coredocumentprocessor.Processor
+	coreDocProcessor coredocument.Processor
 	notifier         notification.Sender
 	anchorRepository anchors.AnchorRepository
 }
 
 // DefaultService returns the default implementation of the service
-func DefaultService(repo documents.Repository, processor coredocumentprocessor.Processor, anchorRepository anchors.AnchorRepository) Service {
+func DefaultService(repo documents.Repository, processor coredocument.Processor, anchorRepository anchors.AnchorRepository) Service {
 	return service{repo: repo, coreDocProcessor: processor, notifier: &notification.WebhookSender{}, anchorRepository: anchorRepository}
 }
 
@@ -188,7 +186,7 @@ func (s service) DeriveFromUpdatePayload(payload *clientpopb.PurchaseOrderUpdate
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
 
-	collaborators := append([]string{ctxH.Self().String()}, payload.Collaborators...)
+	collaborators := append([]string{ctxH.Self().ID.String()}, payload.Collaborators...)
 	po.CoreDocument, err = coredocument.PrepareNewVersion(*oldCD, collaborators)
 	if err != nil {
 		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("failed to prepare new version: %v", err))
@@ -339,12 +337,12 @@ func (s service) RequestDocumentSignature(model documents.Model) (*coredocumentp
 
 	srvLog.Infof("coredoc received %x with signing root %x", cd.DocumentIdentifier, cd.SigningRoot)
 
-	idConfig, err := centED25519.GetIDConfig()
+	idConfig, err := identity.GetIdentityConfig()
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get ID Config: %v", err))
 	}
 
-	sig := signatures.Sign(idConfig, cd.SigningRoot)
+	sig := signatures.Sign(idConfig, identity.KeyPurposeSigning, cd.SigningRoot)
 	cd.Signatures = append(cd.Signatures, sig)
 	err = model.UnpackCoreDocument(cd)
 	if err != nil {

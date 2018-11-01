@@ -27,11 +27,23 @@ var log = logging.Logger("geth-client")
 var gc EthereumClient
 var gcInit sync.Once
 
-// GetDefaultContextTimeout retrieves the default duration before an Ethereum call context should time out
+// GetDefaultContextTimeout retrieves the default duration before an Ethereum write call context should time out
 func GetDefaultContextTimeout() time.Duration {
 	return config.Config.GetEthereumContextWaitTimeout()
 }
 
+// GetDefaultReadContextTimeout retrieves the default duration before an Ethereum read call context should time out
+func GetDefaultReadContextTimeout() time.Duration {
+	return config.Config.GetEthereumContextReadWaitTimeout()
+}
+
+// DefaultWaitForReadContext returns context with timeout for read operations
+func DefaultWaitForReadContext() (ctx context.Context, cancelFunc context.CancelFunc) {
+	toBeDone := time.Now().Add(GetDefaultReadContextTimeout())
+	return context.WithDeadline(context.Background(), toBeDone)
+}
+
+// DefaultWaitForTransactionMiningContext returns context with timeout for write operations
 func DefaultWaitForTransactionMiningContext() (ctx context.Context, cancelFunc context.CancelFunc) {
 	toBeDone := time.Now().Add(GetDefaultContextTimeout())
 	return context.WithDeadline(context.TODO(), toBeDone)
@@ -254,8 +266,10 @@ func CalculateIncrement(chainNonce uint64, res map[string]map[string]map[string]
 	}
 }
 
-func GetGethCallOpts() (auth *bind.CallOpts) {
+func GetGethCallOpts() (*bind.CallOpts, context.CancelFunc) {
 	// Assuring that pending transactions are taken into account by go-ethereum when asking for things like
 	// specific transactions and client's nonce
-	return &bind.CallOpts{Pending: true}
+	// with timeout context, in case eth node is not in sync
+	ctx, cancelFunc := DefaultWaitForReadContext()
+	return &bind.CallOpts{Pending: true, Context: ctx}, cancelFunc
 }

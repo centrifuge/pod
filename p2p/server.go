@@ -11,7 +11,6 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/notification"
-	"github.com/centrifuge/go-centrifuge/p2p/p2phandler"
 	"github.com/ipfs/go-cid"
 	ds "github.com/ipfs/go-datastore"
 	"github.com/ipfs/go-ipfs-addr"
@@ -76,7 +75,7 @@ func (c *CentP2PServer) Start(ctx context.Context, wg *sync.WaitGroup, startupEr
 	grpcProto := p2pgrpc.NewGRPCProtocol(context.Background(), hostInstance)
 	GRPCProtoInstance = *grpcProto
 
-	p2ppb.RegisterP2PServiceServer(grpcProto.GetGRPCServer(), &p2phandler.Handler{Notifier: &notification.WebhookSender{}})
+	p2ppb.RegisterP2PServiceServer(grpcProto.GetGRPCServer(), &Handler{Notifier: &notification.WebhookSender{}})
 	errOut := make(chan error)
 	go func(proto *p2pgrpc.GRPCProtocol, errOut chan<- error) {
 		errOut <- proto.Serve()
@@ -203,7 +202,8 @@ func (c *CentP2PServer) makeBasicHost(listenPort int) (host.Host, error) {
 
 	addressFactory := func(addrs []ma.Multiaddr) []ma.Multiaddr {
 		if extMultiAddr != nil {
-			addrs = append(addrs, extMultiAddr)
+			// We currently support a single protocol and transport, if we add more to support then we will need to adapt this code
+			addrs = []ma.Multiaddr{extMultiAddr}
 		}
 		return addrs
 	}

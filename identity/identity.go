@@ -31,6 +31,52 @@ var IDService Service
 
 type CentID [CentIDLength]byte
 
+// IdentityConfig holds information about the identity
+type IdentityConfig struct {
+	ID   CentID
+	Keys map[int]IdentityKey
+}
+
+// IdentityKey represents a key pair
+type IdentityKey struct {
+	PublicKey  []byte
+	PrivateKey []byte
+}
+
+// GetIdentityConfig returns the identity and keys associated with the node
+func GetIdentityConfig() (*IdentityConfig, error) {
+	centIDBytes, err := config.Config.GetIdentityID()
+	if err != nil {
+		return nil, err
+	}
+	centID, err := ToCentID(centIDBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	//ed25519 keys
+	keys := map[int]IdentityKey{}
+	pk, sk, err := ed25519.GetSigningKeyPairFromConfig()
+	if err != nil {
+		return nil, err
+	}
+	keys[KeyPurposeP2p] = IdentityKey{PublicKey: pk, PrivateKey: sk}
+	keys[KeyPurposeSigning] = IdentityKey{PublicKey: pk, PrivateKey: sk}
+
+	//secp256k1 keys
+	pk, sk, err = secp256k1.GetEthAuthKeyFromConfig()
+	if err != nil {
+		return nil, err
+	}
+	pubKey, err := hexutil.Decode(secp256k1.GetAddress(pk))
+	if err != nil {
+		return nil, err
+	}
+	keys[KeyPurposeEthMsgAuth] = IdentityKey{PublicKey: pubKey, PrivateKey: sk}
+
+	return &IdentityConfig{ID: centID, Keys: keys}, nil
+}
+
 // ToCentID takes bytes and return CentID
 // errors out if bytes are empty, nil, or len(bytes) > CentIDLength
 func ToCentID(bytes []byte) (centID CentID, err error) {
@@ -230,37 +276,19 @@ func ValidateKey(centrifugeId CentID, key []byte, purpose int) error {
 
 // AddKeyFromConfig adds a key previously generated and indexed in the configuration file to the identity specified in such config file
 func AddKeyFromConfig(purpose int) error {
-	var identityConfig *config.IdentityConfig
-	var err error
-
-	switch purpose {
-	case KeyPurposeP2p:
-		identityConfig, err = ed25519.GetIDConfig()
-	case KeyPurposeSigning:
-		identityConfig, err = ed25519.GetIDConfig()
-	case KeyPurposeEthMsgAuth:
-		identityConfig, err = secp256k1.GetIDConfig()
-	default:
-		err = errors.New("option not supported")
-	}
-
+	identityConfig, err := GetIdentityConfig()
 	if err != nil {
 		return err
 	}
 
-	centId, err := ToCentID(identityConfig.ID)
-	if err != nil {
-		return err
-	}
-
-	id, err := IDService.LookupIdentityForID(centId)
+	id, err := IDService.LookupIdentityForID(identityConfig.ID)
 	if err != nil {
 		return err
 	}
 
 	ctx, cancel := ethereum.DefaultWaitForTransactionMiningContext()
 	defer cancel()
-	confirmations, err := id.AddKeyToIdentity(ctx, purpose, identityConfig.PublicKey)
+	confirmations, err := id.AddKeyToIdentity(ctx, purpose, identityConfig.Keys[purpose].PublicKey)
 	if err != nil {
 		return err
 	}

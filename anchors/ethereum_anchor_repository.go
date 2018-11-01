@@ -20,7 +20,6 @@ type Config interface {
 }
 
 type AnchorRepositoryContract interface {
-	//transactions
 	PreCommit(opts *bind.TransactOpts, anchorID *big.Int, signingRoot [32]byte, centrifugeId *big.Int, signature []byte, expirationBlock *big.Int) (*types.Transaction, error)
 	Commit(opts *bind.TransactOpts, _anchorID *big.Int, _documentRoot [32]byte, _centrifugeId *big.Int, _documentProofs [][32]byte, _signature []byte) (*types.Transaction, error)
 	Commits(opts *bind.CallOpts, anchorID *big.Int) (docRoot [32]byte, err error)
@@ -47,18 +46,20 @@ func NewEthereumAnchorRepository(config Config, anchorRepositoryContract AnchorR
 }
 
 // Commits takes an anchorID and returns the corresponding documentRoot from the chain
-func (ethRepository *EthereumAnchorRepository) GetDocumentRootOf(anchorID AnchorID) (docRoot DocRoot, err error) {
-	return ethRepository.anchorRepositoryContract.Commits(ethereum.GetGethCallOpts(), anchorID.BigInt())
+func (ethRepository *EthereumAnchorRepository) GetDocumentRootOf(anchorID AnchorID) (docRoot DocumentRoot, err error) {
+	// Ignoring cancelFunc as code will block until response or timeout is triggered
+	opts, _ := ethereum.GetGethCallOpts()
+	return ethRepository.anchorRepositoryContract.Commits(opts, anchorID.BigInt())
 }
 
 //PreCommitAnchor will call the transaction PreCommit on the smart contract
-func (ethRepository *EthereumAnchorRepository) PreCommitAnchor(anchorID AnchorID, signingRoot DocRoot, centrifugeId identity.CentID, signature []byte, expirationBlock *big.Int) (confirmations <-chan *WatchPreCommit, err error) {
+func (ethRepository *EthereumAnchorRepository) PreCommitAnchor(anchorID AnchorID, signingRoot DocumentRoot, centrifugeId identity.CentID, signature []byte, expirationBlock *big.Int) (confirmations <-chan *WatchPreCommit, err error) {
 	ethRepositoryContract := ethRepository.anchorRepositoryContract
 	opts, err := ethereum.GetConnection().GetTxOpts(ethRepository.config.GetEthereumDefaultAccountName())
 	if err != nil {
 		return
 	}
-	preCommitData := NewPreCommitData(anchorID, signingRoot, centrifugeId, signature, expirationBlock)
+	preCommitData := newPreCommitData(anchorID, signingRoot, centrifugeId, signature, expirationBlock)
 	if err != nil {
 		return
 	}
@@ -74,7 +75,7 @@ func (ethRepository *EthereumAnchorRepository) PreCommitAnchor(anchorID AnchorID
 }
 
 // CommitAnchor will send a commit transaction to ethereum
-func (ethRepository *EthereumAnchorRepository) CommitAnchor(anchorID AnchorID, documentRoot DocRoot, centrifugeId identity.CentID, documentProofs [][32]byte, signature []byte) (confirmations <-chan *WatchCommit, err error) {
+func (ethRepository *EthereumAnchorRepository) CommitAnchor(anchorID AnchorID, documentRoot DocumentRoot, centrifugeId identity.CentID, documentProofs [][32]byte, signature []byte) (confirmations <-chan *WatchCommit, err error) {
 	conn := ethereum.GetConnection()
 	opts, err := conn.GetTxOpts(ethRepository.config.GetEthereumDefaultAccountName())
 	if err != nil {

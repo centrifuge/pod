@@ -10,7 +10,6 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -26,9 +25,9 @@ import (
 )
 
 var (
-	centID  = utils.RandomSlice(identity.CentIDLength)
-	key1Pub = [...]byte{230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
-	key1    = []byte{102, 109, 71, 239, 130, 229, 128, 189, 37, 96, 223, 5, 189, 91, 210, 47, 89, 4, 165, 6, 188, 53, 49, 250, 109, 151, 234, 139, 57, 205, 231, 253, 230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
+	centIDBytes = utils.RandomSlice(identity.CentIDLength)
+	key1Pub     = [...]byte{230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
+	key1        = []byte{102, 109, 71, 239, 130, 229, 128, 189, 37, 96, 223, 5, 189, 91, 210, 47, 89, 4, 165, 6, 188, 53, 49, 250, 109, 151, 234, 139, 57, 205, 231, 253, 230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
 )
 
 type mockAnchorRepo struct {
@@ -36,9 +35,9 @@ type mockAnchorRepo struct {
 	anchors.AnchorRepository
 }
 
-func (r *mockAnchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.DocRoot, error) {
+func (r *mockAnchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.DocumentRoot, error) {
 	args := r.Called(anchorID)
-	docRoot, _ := args.Get(0).(anchors.DocRoot)
+	docRoot, _ := args.Get(0).(anchors.DocumentRoot)
 	return docRoot, args.Error(1)
 }
 
@@ -319,11 +318,20 @@ func createAnchoredMockDocument(t *testing.T, skipSave bool) (*PurchaseOrder, er
 		return nil, err
 	}
 
-	sig := signatures.Sign(&config.IdentityConfig{
-		ID:         centID,
+	centID, err := identity.ToCentID(centIDBytes)
+	assert.Nil(t, err)
+	signKey := identity.IdentityKey{
 		PublicKey:  key1Pub[:],
 		PrivateKey: key1,
-	}, corDoc.SigningRoot)
+	}
+	idConfig := &identity.IdentityConfig{
+		ID: centID,
+		Keys: map[int]identity.IdentityKey{
+			identity.KeyPurposeSigning: signKey,
+		},
+	}
+
+	sig := signatures.Sign(idConfig, identity.KeyPurposeSigning, corDoc.SigningRoot)
 
 	corDoc.Signatures = append(corDoc.Signatures, sig)
 
@@ -353,13 +361,13 @@ func mockSignatureCheck(i *PurchaseOrder, poSrv Service) identity.Service {
 		Purposes:  []*big.Int{big.NewInt(identity.KeyPurposeSigning)},
 		RevokedAt: big.NewInt(0),
 	}
-	anchorID, _ := anchors.NewAnchorID(i.CoreDocument.DocumentIdentifier)
-	docRoot, _ := anchors.NewDocRoot(i.CoreDocument.DocumentRoot)
+	anchorID, _ := anchors.ToAnchorID(i.CoreDocument.DocumentIdentifier)
+	docRoot, _ := anchors.ToDocumentRoot(i.CoreDocument.DocumentRoot)
 	mockRepo := poSrv.(service).anchorRepository.(*mockAnchorRepo)
 	mockRepo.On("GetDocumentRootOf", anchorID).Return(docRoot, nil).Once()
 	srv := &testingcommons.MockIDService{}
 	id := &testingcommons.MockID{}
-	centID, _ := identity.ToCentID(centID)
+	centID, _ := identity.ToCentID(centIDBytes)
 	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
 	id.On("FetchKey", key1Pub[:]).Return(idkey, nil).Once()
 	return srv

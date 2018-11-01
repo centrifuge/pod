@@ -8,7 +8,7 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
@@ -23,10 +23,6 @@ var (
 	id3 = utils.RandomSlice(32)
 	id4 = utils.RandomSlice(32)
 	id5 = utils.RandomSlice(32)
-
-	centID  = utils.RandomSlice(identity.CentIDLength)
-	key1Pub = [...]byte{230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
-	key1    = []byte{102, 109, 71, 239, 130, 229, 128, 189, 37, 96, 223, 5, 189, 91, 210, 47, 89, 4, 165, 6, 188, 53, 49, 250, 109, 151, 234, 139, 57, 205, 231, 253, 230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
 )
 
 func TestGetSigningProofHashes(t *testing.T) {
@@ -228,4 +224,19 @@ func TestGetExternalCollaborators(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, collaborators)
 	assert.Equal(t, [][]byte{c1, c2}, collaborators)
+}
+
+func TestGetExternalCollaborators_ErrorConfig(t *testing.T) {
+	c1 := utils.RandomSlice(6)
+	c2 := utils.RandomSlice(6)
+	c := []string{hexutil.Encode(c1), hexutil.Encode(c2)}
+	cd, err := NewWithCollaborators(c)
+	assert.Equal(t, [][]byte{c1, c2}, cd.Collaborators)
+	currentKeyPath, _ := config.Config.GetSigningKeyPair()
+	//Wrong path
+	config.Config.V.Set("keys.signing.publicKey", "./build/resources/signingKey.pub.pem")
+	collaborators, err := GetExternalCollaborators(cd)
+	assert.NotNil(t, err)
+	assert.Nil(t, collaborators)
+	config.Config.V.Set("keys.signing.publicKey", currentKeyPath)
 }
