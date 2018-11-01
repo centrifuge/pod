@@ -62,9 +62,9 @@ func TestCommitAnchor_Integration(t *testing.T) {
 	centrifugeId := utils.RandomSlice(identity.CentIDLength)
 	createIdentityWithKeys(t, centrifugeId)
 	testPrivateKey, _ := hexutil.Decode("0x17e063fa17dd8274b09c14b253697d9a20afff74ace3c04fdb1b9c814ce0ada5")
-	anchorIDTyped, _ := anchors.NewAnchorID(anchorID)
+	anchorIDTyped, _ := anchors.ToAnchorID(anchorID)
 	centIdTyped, _ := identity.ToCentID(centrifugeId)
-	docRootTyped, _ := anchors.NewDocRoot(documentRoot)
+	docRootTyped, _ := anchors.ToDocumentRoot(documentRoot)
 	messageToSign := anchors.GenerateCommitHash(anchorIDTyped, centIdTyped, docRootTyped)
 	signature, _ := secp256k1.SignEthereum(messageToSign, testPrivateKey)
 	commitAnchor(t, anchorID, centrifugeId, documentRoot, signature, [][anchors.DocumentProofLength]byte{utils.RandomByte32()})
@@ -74,8 +74,8 @@ func TestCommitAnchor_Integration(t *testing.T) {
 }
 
 func commitAnchor(t *testing.T, anchorID, centrifugeId, documentRoot, signature []byte, documentProofs [][32]byte) {
-	anchorIDTyped, _ := anchors.NewAnchorID(anchorID)
-	docRootTyped, _ := anchors.NewDocRoot(documentRoot)
+	anchorIDTyped, _ := anchors.ToAnchorID(anchorID)
+	docRootTyped, _ := anchors.ToDocumentRoot(documentRoot)
 	centIdFixed, _ := identity.ToCentID(centrifugeId)
 
 	confirmations, err := anchors.CommitAnchor(anchorIDTyped, docRootTyped, centIdFixed, documentProofs, signature)

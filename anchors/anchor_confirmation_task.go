@@ -24,7 +24,7 @@ const (
 	AddressParam                         string = "AddressParam"
 )
 
-type AnchorCommittedWatcher interface {
+type anchorCommittedWatcher interface {
 	FilterAnchorCommitted(
 		opts *bind.FilterOpts,
 		from []common.Address,
@@ -32,9 +32,9 @@ type AnchorCommittedWatcher interface {
 		centrifugeId []*big.Int) (*EthereumAnchorRepositoryContractAnchorCommittedIterator, error)
 }
 
-// AnchoringConfirmationTask is a queued task to watch ID registration events on Ethereum using EthereumAnchoryRepositoryContract.
+// anchorConfirmationTask is a queued task to watch ID registration events on Ethereum using EthereumAnchoryRepositoryContract.
 // To see how it gets registered see bootstrapper.go and to see how it gets used see setUpRegistrationEventListener method
-type AnchoringConfirmationTask struct {
+type anchorConfirmationTask struct {
 	// task parameters
 	From         common.Address
 	AnchorID     AnchorID
@@ -44,30 +44,23 @@ type AnchoringConfirmationTask struct {
 	// state
 	EthContextInitializer   func() (ctx context.Context, cancelFunc context.CancelFunc)
 	EthContext              context.Context
-	AnchorCommittedFilterer AnchorCommittedWatcher
+	AnchorCommittedFilterer anchorCommittedWatcher
 }
 
-func NewAnchoringConfirmationTask(
-	anchorCommittedWatcher AnchorCommittedWatcher,
-	ethContextInitializer func() (ctx context.Context, cancelFunc context.CancelFunc),
-) *AnchoringConfirmationTask {
-	return &AnchoringConfirmationTask{
-		AnchorCommittedFilterer: anchorCommittedWatcher,
-		EthContextInitializer:   ethContextInitializer,
-	}
-}
-
-func (act *AnchoringConfirmationTask) Name() string {
+// Name returns AnchorRepositoryConfirmationTaskName
+func (act *anchorConfirmationTask) Name() string {
 	return AnchorRepositoryConfirmationTaskName
 }
 
-func (act *AnchoringConfirmationTask) Init() error {
+// Init registers the task to the queue
+func (act *anchorConfirmationTask) Init() error {
 	queue.Queue.Register(act.Name(), act)
 	return nil
 }
 
-func (act *AnchoringConfirmationTask) Copy() (gocelery.CeleryTask, error) {
-	return &AnchoringConfirmationTask{
+// Copy returns a new instance of anchorConfirmationTask
+func (act *anchorConfirmationTask) Copy() (gocelery.CeleryTask, error) {
+	return &anchorConfirmationTask{
 		act.From,
 		act.AnchorID,
 		act.CentrifugeID,
@@ -78,15 +71,14 @@ func (act *AnchoringConfirmationTask) Copy() (gocelery.CeleryTask, error) {
 	}, nil
 }
 
-// ParseKwargs - define a method to parse AnchorID, Address and RootHash
-func (act *AnchoringConfirmationTask) ParseKwargs(kwargs map[string]interface{}) error {
+// ParseKwargs parses args to anchorConfirmationTask
+func (act *anchorConfirmationTask) ParseKwargs(kwargs map[string]interface{}) error {
 	anchorID, ok := kwargs[AnchorIDParam]
 	if !ok {
 		return fmt.Errorf("undefined kwarg " + AnchorIDParam)
 	}
 
 	anchorIDBytes, err := getBytesAnchorID(anchorID)
-
 	if err != nil {
 		return fmt.Errorf("malformed kwarg [%s] because [%s]", AnchorIDParam, err.Error())
 	}
@@ -94,27 +86,29 @@ func (act *AnchoringConfirmationTask) ParseKwargs(kwargs map[string]interface{})
 	act.AnchorID = anchorIDBytes
 
 	//parse the centrifuge id
-	centrifugeId, ok := kwargs[CentrifugeIDParam]
+	centID, ok := kwargs[CentrifugeIDParam]
 	if !ok {
 		return fmt.Errorf("undefined kwarg " + CentrifugeIDParam)
 	}
 
-	centrifugeIdBytes, err := getBytesCentrifugeID(centrifugeId)
+	centIDBytes, err := getBytesCentrifugeID(centID)
 	if err != nil {
 		return fmt.Errorf("malformed kwarg [%s] because [%s]", CentrifugeIDParam, err.Error())
 	}
 
-	act.CentrifugeID = centrifugeIdBytes
+	act.CentrifugeID = centIDBytes
 
 	// parse the address
 	address, ok := kwargs[AddressParam]
 	if !ok {
 		return fmt.Errorf("undefined kwarg " + AddressParam)
 	}
+
 	addressStr, ok := address.(string)
 	if !ok {
 		return fmt.Errorf("param is not hex string " + AddressParam)
 	}
+
 	addressTyped, err := getAddressFromHexString(addressStr)
 	if err != nil {
 		return fmt.Errorf("malformed kwarg [%s] because [%s]", AddressParam, err.Error())
@@ -131,8 +125,8 @@ func (act *AnchoringConfirmationTask) ParseKwargs(kwargs map[string]interface{})
 	return nil
 }
 
-// RunTask calls listens to events from geth related to AnchoringConfirmationTask#AnchorID and records result.
-func (act *AnchoringConfirmationTask) RunTask() (interface{}, error) {
+// RunTask calls listens to events from geth related to anchorConfirmationTask#AnchorID and records result.
+func (act *anchorConfirmationTask) RunTask() (interface{}, error) {
 	log.Infof("Waiting for confirmation for the anchorID [%x]", act.AnchorID)
 	if act.EthContext == nil {
 		act.EthContext, _ = act.EthContextInitializer()

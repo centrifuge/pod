@@ -339,9 +339,9 @@ type repo struct {
 	anchors.AnchorRepository
 }
 
-func (r repo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.DocRoot, error) {
+func (r repo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.DocumentRoot, error) {
 	args := r.Called(anchorID)
-	docRoot, _ := args.Get(0).(anchors.DocRoot)
+	docRoot, _ := args.Get(0).(anchors.DocumentRoot)
 	return docRoot, args.Error(1)
 }
 
@@ -372,7 +372,7 @@ func TestValidator_anchoredValidator(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to get document root")
 
 	// failed to get docRoot from chain
-	anchorID, err := anchors.NewAnchorID(utils.RandomSlice(32))
+	anchorID, err := anchors.ToAnchorID(utils.RandomSlice(32))
 	assert.Nil(t, err)
 	r := &repo{}
 	av = anchoredValidator(r)
@@ -388,7 +388,7 @@ func TestValidator_anchoredValidator(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to get document root from chain")
 
 	// mismatched doc roots
-	docRoot := anchors.NewRandomDocRoot()
+	docRoot := anchors.RandomDocumentRoot()
 	r = &repo{}
 	av = anchoredValidator(r)
 	r.On("GetDocumentRootOf", anchorID).Return(docRoot, nil).Once()

@@ -271,12 +271,12 @@ func anchoredValidator(repo anchors.AnchorRepository) documents.Validator {
 			return fmt.Errorf("failed to get core document: %v", err)
 		}
 
-		anchorID, err := anchors.NewAnchorID(cd.CurrentVersion)
+		anchorID, err := anchors.ToAnchorID(cd.CurrentVersion)
 		if err != nil {
 			return fmt.Errorf("failed to get anchorID: %v", err)
 		}
 
-		docRoot, err := anchors.NewDocRoot(cd.DocumentRoot)
+		docRoot, err := anchors.ToDocumentRoot(cd.DocumentRoot)
 		if err != nil {
 			return fmt.Errorf("failed to get document root: %v", err)
 		}

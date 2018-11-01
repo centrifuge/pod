@@ -185,8 +185,8 @@ func TestHandler_SendAnchoredDocument_update_fail(t *testing.T) {
 
 	// Anchor document
 	idConfig, err := identity.GetIdentityConfig()
-	anchorIDTyped, _ := anchors.NewAnchorID(doc.CurrentVersion)
-	docRootTyped, _ := anchors.NewDocRoot(doc.DocumentRoot)
+	anchorIDTyped, _ := anchors.ToAnchorID(doc.CurrentVersion)
+	docRootTyped, _ := anchors.ToDocumentRoot(doc.DocumentRoot)
 	messageToSign := anchors.GenerateCommitHash(anchorIDTyped, centrifugeId, docRootTyped)
 	signature, _ := secp256k1.SignEthereum(messageToSign, idConfig.Keys[identity.KeyPurposeEthMsgAuth].PrivateKey)
 	anchorConfirmations, err := anchors.CommitAnchor(anchorIDTyped, docRootTyped, centrifugeId, [][anchors.DocumentProofLength]byte{utils.RandomByte32()}, signature)
@@ -227,8 +227,8 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 
 	// Anchor document
 	idConfig, err := identity.GetIdentityConfig()
-	anchorIDTyped, _ := anchors.NewAnchorID(doc.CurrentVersion)
-	docRootTyped, _ := anchors.NewDocRoot(doc.DocumentRoot)
+	anchorIDTyped, _ := anchors.ToAnchorID(doc.CurrentVersion)
+	docRootTyped, _ := anchors.ToDocumentRoot(doc.DocumentRoot)
 	messageToSign := anchors.GenerateCommitHash(anchorIDTyped, centrifugeId, docRootTyped)
 	signature, _ := secp256k1.SignEthereum(messageToSign, idConfig.Keys[identity.KeyPurposeEthMsgAuth].PrivateKey)
 	anchorConfirmations, err := anchors.CommitAnchor(anchorIDTyped, docRootTyped, centrifugeId, [][anchors.DocumentProofLength]byte{utils.RandomByte32()}, signature)

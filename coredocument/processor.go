@@ -203,7 +203,7 @@ func (dp defaultProcessor) AnchorDocument(model documents.Model) error {
 		return fmt.Errorf("pre anchor validation failed: %v", err)
 	}
 
-	rootHash, err := anchors.NewDocRoot(cd.DocumentRoot)
+	rootHash, err := anchors.ToDocumentRoot(cd.DocumentRoot)
 	if err != nil {
 		return fmt.Errorf("failed to get document root: %v", err)
 	}
@@ -224,7 +224,7 @@ func (dp defaultProcessor) AnchorDocument(model documents.Model) error {
 		return fmt.Errorf("failed to get eth keys: %v", err)
 	}
 
-	anchorID, err := anchors.NewAnchorID(cd.CurrentVersion)
+	anchorID, err := anchors.ToAnchorID(cd.CurrentVersion)
 	if err != nil {
 		return fmt.Errorf("failed to get anchor ID: %v", err)
 	}
