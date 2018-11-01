@@ -213,7 +213,7 @@ func GetExternalCollaborators(doc *coredocumentpb.CoreDocument) ([][]byte, error
 	var collabs [][]byte
 	idConfig, err := identity.GetIdentityConfig()
 	if err != nil {
-		return nil, fmt.Errorf("failed to decode collaborator: %v", err)
+		return nil, fmt.Errorf("failed to get identity config: %v", err)
 	}
 
 	for _, collab := range doc.Collaborators {
