@@ -162,7 +162,7 @@ func (i *Invoice) InitInvoiceInput(payload *clientinvoicepb.InvoiceCreatePayload
 		return err
 	}
 
-	collaborators := append([]string{contextHeader.Self().String()}, payload.Collaborators...)
+	collaborators := append([]string{contextHeader.Self().ID.String()}, payload.Collaborators...)
 
 	i.CoreDocument, err = coredocument.NewWithCollaborators(collaborators)
 	if err != nil {

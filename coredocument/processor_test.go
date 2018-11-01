@@ -13,7 +13,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
-	cented25519 "github.com/centrifuge/go-centrifuge/keytools/ed25519"
 	"github.com/centrifuge/go-centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -96,9 +95,9 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 	assert.NotNil(t, cd.Signatures)
 	assert.Len(t, cd.Signatures, 1)
 	sig := cd.Signatures[0]
-	id, err := cented25519.GetIDConfig()
+	id, err := identity.GetIdentityConfig()
 	assert.Nil(t, err)
-	assert.True(t, ed25519.Verify(id.PublicKey, cd.SigningRoot, sig.Signature))
+	assert.True(t, ed25519.Verify(id.Keys[identity.KeyPurposeSigning].PublicKey, cd.SigningRoot, sig.Signature))
 }
 
 type p2pClient struct {
@@ -212,11 +211,11 @@ func TestDefaultProcessor_PrepareForAnchoring(t *testing.T) {
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Times(4)
 	model.On("UnpackCoreDocument", cd).Return(fmt.Errorf("error")).Once()
-	c, err := cented25519.GetIDConfig()
+	c, err := identity.GetIdentityConfig()
 	assert.Nil(t, err)
-	s := signatures.Sign(c, cd.SigningRoot)
+	s := signatures.Sign(c, identity.KeyPurposeSigning, cd.SigningRoot)
 	cd.Signatures = []*coredocumentpb.Signature{s}
-	pubkey, err := utils.SliceToByte32(c.PublicKey)
+	pubkey, err := utils.SliceToByte32(c.Keys[identity.KeyPurposeSigning].PublicKey)
 	assert.Nil(t, err)
 	idkey := &identity.EthereumIdentityKey{
 		Key:       pubkey,
@@ -225,9 +224,7 @@ func TestDefaultProcessor_PrepareForAnchoring(t *testing.T) {
 	}
 	id := &testingcommons.MockID{}
 	srv := &testingcommons.MockIDService{}
-	centID, err := identity.ToCentID(c.ID)
-	assert.Nil(t, err)
-	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
+	srv.On("LookupIdentityForID", c.ID).Return(id, nil).Once()
 	id.On("FetchKey", pubkey[:]).Return(idkey, nil).Once()
 	identity.IDService = srv
 	err = dp.PrepareForAnchoring(model)
@@ -243,9 +240,7 @@ func TestDefaultProcessor_PrepareForAnchoring(t *testing.T) {
 	model.On("UnpackCoreDocument", cd).Return(nil).Once()
 	id = &testingcommons.MockID{}
 	srv = &testingcommons.MockIDService{}
-	centID, err = identity.ToCentID(c.ID)
-	assert.Nil(t, err)
-	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
+	srv.On("LookupIdentityForID", c.ID).Return(id, nil).Once()
 	id.On("FetchKey", pubkey[:]).Return(idkey, nil).Once()
 	identity.IDService = srv
 	err = dp.PrepareForAnchoring(model)
@@ -302,12 +297,12 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	assert.Nil(t, CalculateSigningRoot(cd))
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Times(5)
-	c, err := cented25519.GetIDConfig()
+	c, err := identity.GetIdentityConfig()
 	assert.Nil(t, err)
-	s := signatures.Sign(c, cd.SigningRoot)
+	s := signatures.Sign(c, identity.KeyPurposeSigning, cd.SigningRoot)
 	cd.Signatures = []*coredocumentpb.Signature{s}
 	assert.Nil(t, CalculateDocumentRoot(cd))
-	pubkey, err := utils.SliceToByte32(c.PublicKey)
+	pubkey, err := utils.SliceToByte32(c.Keys[identity.KeyPurposeSigning].PublicKey)
 	assert.Nil(t, err)
 	idkey := &identity.EthereumIdentityKey{
 		Key:       pubkey,
@@ -316,9 +311,7 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	}
 	id := &testingcommons.MockID{}
 	srv := &testingcommons.MockIDService{}
-	centID, err := identity.ToCentID(c.ID)
-	assert.Nil(t, err)
-	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
+	srv.On("LookupIdentityForID", c.ID).Return(id, nil).Once()
 	id.On("FetchKey", pubkey[:]).Return(idkey, nil).Once()
 	identity.IDService = srv
 	oldID := config.Config.V.GetString("identityId")
@@ -334,7 +327,7 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	// wrong ID
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Times(5)
-	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
+	srv.On("LookupIdentityForID", c.ID).Return(id, nil).Once()
 	id.On("FetchKey", pubkey[:]).Return(idkey, nil).Once()
 	identity.IDService = srv
 	err = dp.AnchorDocument(model)
@@ -350,7 +343,7 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	config.Config.V.Set("keys.ethauth.publicKey", "wrong path")
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Times(5)
-	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
+	srv.On("LookupIdentityForID", c.ID).Return(id, nil).Once()
 	id.On("FetchKey", pubkey[:]).Return(idkey, nil).Once()
 	identity.IDService = srv
 	err = dp.AnchorDocument(model)
@@ -364,7 +357,7 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	// failed anchor commit
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Times(5)
-	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
+	srv.On("LookupIdentityForID", c.ID).Return(id, nil).Once()
 	id.On("FetchKey", pubkey[:]).Return(idkey, nil).Once()
 	identity.IDService = srv
 	repo := mockRepo{}
@@ -381,7 +374,7 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	// success
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Times(5)
-	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
+	srv.On("LookupIdentityForID", c.ID).Return(id, nil).Once()
 	id.On("FetchKey", pubkey[:]).Return(idkey, nil).Once()
 	identity.IDService = srv
 	repo = mockRepo{}
@@ -429,12 +422,12 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	assert.Nil(t, CalculateSigningRoot(cd))
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Times(6)
-	c, err := cented25519.GetIDConfig()
+	c, err := identity.GetIdentityConfig()
 	assert.Nil(t, err)
-	s := signatures.Sign(c, cd.SigningRoot)
+	s := signatures.Sign(c, identity.KeyPurposeSigning, cd.SigningRoot)
 	cd.Signatures = []*coredocumentpb.Signature{s}
 	assert.Nil(t, CalculateDocumentRoot(cd))
-	pubkey, err := utils.SliceToByte32(c.PublicKey)
+	pubkey, err := utils.SliceToByte32(c.Keys[identity.KeyPurposeSigning].PublicKey)
 	assert.Nil(t, err)
 	idkey := &identity.EthereumIdentityKey{
 		Key:       pubkey,
@@ -443,9 +436,7 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	}
 	id := &testingcommons.MockID{}
 	srv := &testingcommons.MockIDService{}
-	centID, err := identity.ToCentID(c.ID)
-	assert.Nil(t, err)
-	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
+	srv.On("LookupIdentityForID", c.ID).Return(id, nil).Once()
 	id.On("FetchKey", pubkey[:]).Return(idkey, nil).Once()
 	identity.IDService = srv
 	docRoot, err := anchors.ToDocumentRoot(cd.DocumentRoot)
