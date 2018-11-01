@@ -127,14 +127,14 @@ func CreateIdentityWithKeys() identity.CentID {
 	}
 
 	// only add key if it doesn't exist
-	_, err = id.GetLastKeyForPurpose(identity.KeyPurposeEthMsgAuth)
+	_, err = id.LastKeyForPurpose(identity.KeyPurposeEthMsgAuth)
 	ctx, cancel := ethereum.DefaultWaitForTransactionMiningContext()
 	defer cancel()
 	if err != nil {
 		confirmations, _ := id.AddKeyToIdentity(ctx, identity.KeyPurposeEthMsgAuth, idConfig.Keys[identity.KeyPurposeEthMsgAuth].PublicKey)
 		<-confirmations
 	}
-	_, err = id.GetLastKeyForPurpose(identity.KeyPurposeSigning)
+	_, err = id.LastKeyForPurpose(identity.KeyPurposeSigning)
 	ctx, cancel = ethereum.DefaultWaitForTransactionMiningContext()
 	defer cancel()
 	if err != nil {
