@@ -17,7 +17,6 @@ import (
 	cc "github.com/centrifuge/go-centrifuge/context/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/identity"
-	cented25519 "github.com/centrifuge/go-centrifuge/keytools/ed25519"
 	"github.com/centrifuge/go-centrifuge/keytools/secp256k1"
 	"github.com/centrifuge/go-centrifuge/notification"
 	"github.com/centrifuge/go-centrifuge/p2p"
@@ -58,10 +57,9 @@ func TestHandler_RequestDocumentSignature_verification_fail(t *testing.T) {
 
 func TestHandler_RequestDocumentSignature_AlreadyExists(t *testing.T) {
 	savedService := identity.IDService
-	idConfig, err := cented25519.GetIDConfig()
+	idConfig, err := identity.GetIdentityConfig()
 	assert.Nil(t, err)
-	centID, _ := identity.ToCentID(idConfig.ID)
-	pubKey := idConfig.PublicKey
+	pubKey := idConfig.Keys[identity.KeyPurposeSigning].PublicKey
 	b32Key, _ := utils.SliceToByte32(pubKey)
 	idkey := &identity.EthereumIdentityKey{
 		Key:       b32Key,
@@ -70,7 +68,7 @@ func TestHandler_RequestDocumentSignature_AlreadyExists(t *testing.T) {
 	}
 	id := &testingcommons.MockID{}
 	srv := &testingcommons.MockIDService{}
-	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
+	srv.On("LookupIdentityForID", idConfig.ID).Return(id, nil).Once()
 	id.On("FetchKey", pubKey).Return(idkey, nil).Once()
 	identity.IDService = srv
 
@@ -84,7 +82,7 @@ func TestHandler_RequestDocumentSignature_AlreadyExists(t *testing.T) {
 
 	id = &testingcommons.MockID{}
 	srv = &testingcommons.MockIDService{}
-	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
+	srv.On("LookupIdentityForID", idConfig.ID).Return(id, nil).Once()
 	id.On("FetchKey", pubKey).Return(idkey, nil).Once()
 	identity.IDService = srv
 
@@ -100,10 +98,9 @@ func TestHandler_RequestDocumentSignature_AlreadyExists(t *testing.T) {
 
 func TestHandler_RequestDocumentSignature_UpdateSucceeds(t *testing.T) {
 	savedService := identity.IDService
-	idConfig, err := cented25519.GetIDConfig()
+	idConfig, err := identity.GetIdentityConfig()
 	assert.Nil(t, err)
-	centID, _ := identity.ToCentID(idConfig.ID)
-	pubKey := idConfig.PublicKey
+	pubKey := idConfig.Keys[identity.KeyPurposeSigning].PublicKey
 	b32Key, _ := utils.SliceToByte32(pubKey)
 	idkey := &identity.EthereumIdentityKey{
 		Key:       b32Key,
@@ -112,7 +109,7 @@ func TestHandler_RequestDocumentSignature_UpdateSucceeds(t *testing.T) {
 	}
 	id := &testingcommons.MockID{}
 	srv := &testingcommons.MockIDService{}
-	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
+	srv.On("LookupIdentityForID", idConfig.ID).Return(id, nil).Once()
 	id.On("FetchKey", pubKey).Return(idkey, nil).Once()
 	identity.IDService = srv
 
@@ -132,7 +129,7 @@ func TestHandler_RequestDocumentSignature_UpdateSucceeds(t *testing.T) {
 	assert.Nil(t, err)
 	id = &testingcommons.MockID{}
 	srv = &testingcommons.MockIDService{}
-	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
+	srv.On("LookupIdentityForID", idConfig.ID).Return(id, nil).Once()
 	id.On("FetchKey", pubKey).Return(idkey, nil).Once()
 	identity.IDService = srv
 
@@ -152,10 +149,9 @@ func TestHandler_RequestDocumentSignature_UpdateSucceeds(t *testing.T) {
 
 func TestHandler_RequestDocumentSignature(t *testing.T) {
 	savedService := identity.IDService
-	idConfig, err := cented25519.GetIDConfig()
+	idConfig, err := identity.GetIdentityConfig()
 	assert.Nil(t, err)
-	centID, _ := identity.ToCentID(idConfig.ID)
-	pubKey := idConfig.PublicKey
+	pubKey := idConfig.Keys[identity.KeyPurposeSigning].PublicKey
 	b32Key, _ := utils.SliceToByte32(pubKey)
 	idkey := &identity.EthereumIdentityKey{
 		Key:       b32Key,
@@ -164,7 +160,7 @@ func TestHandler_RequestDocumentSignature(t *testing.T) {
 	}
 	id := &testingcommons.MockID{}
 	srv := &testingcommons.MockIDService{}
-	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
+	srv.On("LookupIdentityForID", idConfig.ID).Return(id, nil).Once()
 	id.On("FetchKey", pubKey).Return(idkey, nil).Once()
 	identity.IDService = srv
 
@@ -188,11 +184,11 @@ func TestHandler_SendAnchoredDocument_update_fail(t *testing.T) {
 	doc := prepareDocumentForP2PHandler(t, nil)
 
 	// Anchor document
-	secpIDConfig, err := secp256k1.GetIDConfig()
+	idConfig, err := identity.GetIdentityConfig()
 	anchorIDTyped, _ := anchors.NewAnchorID(doc.CurrentVersion)
 	docRootTyped, _ := anchors.NewDocRoot(doc.DocumentRoot)
 	messageToSign := anchors.GenerateCommitHash(anchorIDTyped, centrifugeId, docRootTyped)
-	signature, _ := secp256k1.SignEthereum(messageToSign, secpIDConfig.PrivateKey)
+	signature, _ := secp256k1.SignEthereum(messageToSign, idConfig.Keys[identity.KeyPurposeEthMsgAuth].PrivateKey)
 	anchorConfirmations, err := anchors.CommitAnchor(anchorIDTyped, docRootTyped, centrifugeId, [][anchors.DocumentProofLength]byte{utils.RandomByte32()}, signature)
 	assert.Nil(t, err)
 
@@ -230,11 +226,11 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 	doc.DocumentRoot = tree.RootHash()
 
 	// Anchor document
-	secpIDConfig, err := secp256k1.GetIDConfig()
+	idConfig, err := identity.GetIdentityConfig()
 	anchorIDTyped, _ := anchors.NewAnchorID(doc.CurrentVersion)
 	docRootTyped, _ := anchors.NewDocRoot(doc.DocumentRoot)
 	messageToSign := anchors.GenerateCommitHash(anchorIDTyped, centrifugeId, docRootTyped)
-	signature, _ := secp256k1.SignEthereum(messageToSign, secpIDConfig.PrivateKey)
+	signature, _ := secp256k1.SignEthereum(messageToSign, idConfig.Keys[identity.KeyPurposeEthMsgAuth].PrivateKey)
 	anchorConfirmations, err := anchors.CommitAnchor(anchorIDTyped, docRootTyped, centrifugeId, [][anchors.DocumentProofLength]byte{utils.RandomByte32()}, signature)
 	assert.Nil(t, err)
 
@@ -259,17 +255,16 @@ func createIdentity(t *testing.T) identity.CentID {
 	assert.Nil(t, watchRegisteredIdentity.Error, "No error thrown by context")
 	assert.Equal(t, centrifugeId, watchRegisteredIdentity.Identity.GetCentrifugeID(), "Resulting Identity should have the same ID as the input")
 
+	idConfig, err := identity.GetIdentityConfig()
 	// Add Keys
-	idConfig, err := cented25519.GetIDConfig()
-	pubKey := idConfig.PublicKey
+	pubKey := idConfig.Keys[identity.KeyPurposeSigning].PublicKey
 	confirmations, err = id.AddKeyToIdentity(context.Background(), identity.KeyPurposeSigning, pubKey)
 	assert.Nil(t, err, "should not error out when adding key to identity")
 	assert.NotNil(t, confirmations, "confirmations channel should not be nil")
 	watchReceivedIdentity := <-confirmations
 	assert.Equal(t, centrifugeId, watchReceivedIdentity.Identity.GetCentrifugeID(), "Resulting Identity should have the same ID as the input")
 
-	secpIDConfig, err := secp256k1.GetIDConfig()
-	secPubKey := secpIDConfig.PublicKey
+	secPubKey := idConfig.Keys[identity.KeyPurposeEthMsgAuth].PublicKey
 	confirmations, err = id.AddKeyToIdentity(context.Background(), identity.KeyPurposeEthMsgAuth, secPubKey)
 	assert.Nil(t, err, "should not error out when adding key to identity")
 	assert.NotNil(t, confirmations, "confirmations channel should not be nil")
@@ -280,18 +275,14 @@ func createIdentity(t *testing.T) identity.CentID {
 }
 
 func prepareDocumentForP2PHandler(t *testing.T, doc *coredocumentpb.CoreDocument) *coredocumentpb.CoreDocument {
-	idConfig, err := cented25519.GetIDConfig()
+	idConfig, err := identity.GetIdentityConfig()
 	assert.Nil(t, err)
 	if doc == nil {
 		doc = testingutils.GenerateCoreDocument()
 	}
 	tree, _ := coredocument.GetDocumentSigningTree(doc)
 	doc.SigningRoot = tree.RootHash()
-	sig := signatures.Sign(&config.IdentityConfig{
-		ID:         idConfig.ID,
-		PublicKey:  idConfig.PublicKey,
-		PrivateKey: idConfig.PrivateKey,
-	}, doc.SigningRoot)
+	sig := signatures.Sign(idConfig, identity.KeyPurposeSigning, doc.SigningRoot)
 	doc.Signatures = append(doc.Signatures, sig)
 	tree, _ = coredocument.GetDocumentRootTree(doc)
 	doc.DocumentRoot = tree.RootHash()

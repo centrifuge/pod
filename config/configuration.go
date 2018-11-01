@@ -37,13 +37,6 @@ type AccountConfig struct {
 	Password string
 }
 
-// IdentityConfig holds ID, public and private key of a single entity
-type IdentityConfig struct {
-	ID         []byte
-	PublicKey  []byte
-	PrivateKey []byte
-}
-
 // GetStoragePath returns the data storage backend
 func (c *Configuration) GetStoragePath() string {
 	return c.V.GetString("storage.Path")

@@ -6,7 +6,6 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/keytools/ed25519"
 )
 
 // Model is an interface to abstract away model specificness like invoice or purchaseOrder
@@ -36,25 +35,20 @@ type Model interface {
 
 // Placeholder to pass custom request objects down the pipeline
 type ContextHeader struct {
-	self identity.CentID
+	self *identity.IdentityConfig
 }
 
 // NewContextHeader creates new instance of the request headers needed
 func NewContextHeader() (*ContextHeader, error) {
-	idConfig, err := ed25519.GetIDConfig()
+	idConfig, err := identity.GetIdentityConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get id config: %v", err)
 	}
 
-	self, err := identity.ToCentID(idConfig.ID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to convert self to centID: %v", err)
-	}
-
-	return &ContextHeader{self: self}, nil
+	return &ContextHeader{self: idConfig}, nil
 }
 
 // Self returns Self CentID
-func (h *ContextHeader) Self() identity.CentID {
+func (h *ContextHeader) Self() *identity.IdentityConfig {
 	return h.self
 }

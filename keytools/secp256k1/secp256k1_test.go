@@ -230,32 +230,3 @@ func TestGetEthAuthKeyFromConfig(t *testing.T) {
 	assert.NotNil(t, pubK)
 	assert.NotNil(t, priK)
 }
-
-func TestGetIDConfig(t *testing.T) {
-	pub := config.Config.V.Get("keys.ethauth.publicKey")
-
-	// failed keys
-	config.Config.V.Set("keys.ethauth.publicKey", "bad path")
-	id, err := GetIDConfig()
-	assert.Error(t, err)
-	assert.Nil(t, id)
-	assert.Contains(t, err.Error(), "failed to get eth keys")
-	config.Config.V.Set("keys.ethauth.publicKey", pub)
-
-	// failed identity
-	gID := config.Config.V.Get("identityId")
-	config.Config.V.Set("identityId", "bad id")
-	id, err = GetIDConfig()
-	assert.Error(t, err)
-	assert.Nil(t, id)
-	assert.Contains(t, err.Error(), "can't read identityId from config")
-	config.Config.V.Set("identityId", gID)
-
-	// success
-	id, err = GetIDConfig()
-	assert.Nil(t, err)
-	assert.NotNil(t, id)
-	nID, err := config.Config.GetIdentityID()
-	assert.Nil(t, err)
-	assert.Equal(t, id.ID, nID)
-}

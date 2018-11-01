@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
@@ -25,13 +24,19 @@ var (
 func TestSign(t *testing.T) {
 	coreDoc := testingutils.GenerateCoreDocument()
 	coreDoc.SigningRoot = key1Pub
-	idConfig := config.IdentityConfig{
-		ID:         id1,
+	centID, err := identity.ToCentID(id1)
+	assert.Nil(t, err)
+	signKey := identity.IdentityKey{
 		PublicKey:  key1Pub,
 		PrivateKey: key1,
 	}
-
-	sig := Sign(&idConfig, coreDoc.SigningRoot)
+	idConfig := &identity.IdentityConfig{
+		ID: centID,
+		Keys: map[int]identity.IdentityKey{
+			identity.KeyPurposeSigning: signKey,
+		},
+	}
+	sig := Sign(idConfig, identity.KeyPurposeSigning, coreDoc.SigningRoot)
 	assert.NotNil(t, sig)
 	assert.Equal(t, sig.PublicKey, []byte(key1Pub))
 	assert.Equal(t, sig.EntityId, id1)

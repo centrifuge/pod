@@ -15,7 +15,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
-	centED25519 "github.com/centrifuge/go-centrifuge/keytools/ed25519"
 	"github.com/centrifuge/go-centrifuge/notification"
 	clientpopb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/signatures"
@@ -187,7 +186,7 @@ func (s service) DeriveFromUpdatePayload(payload *clientpopb.PurchaseOrderUpdate
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
 
-	collaborators := append([]string{ctxH.Self().String()}, payload.Collaborators...)
+	collaborators := append([]string{ctxH.Self().ID.String()}, payload.Collaborators...)
 	po.CoreDocument, err = coredocument.PrepareNewVersion(*oldCD, collaborators)
 	if err != nil {
 		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("failed to prepare new version: %v", err))
@@ -338,12 +337,12 @@ func (s service) RequestDocumentSignature(model documents.Model) (*coredocumentp
 
 	srvLog.Infof("coredoc received %x with signing root %x", cd.DocumentIdentifier, cd.SigningRoot)
 
-	idConfig, err := centED25519.GetIDConfig()
+	idConfig, err := identity.GetIdentityConfig()
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get ID Config: %v", err))
 	}
 
-	sig := signatures.Sign(idConfig, cd.SigningRoot)
+	sig := signatures.Sign(idConfig, identity.KeyPurposeSigning, cd.SigningRoot)
 	cd.Signatures = append(cd.Signatures, sig)
 	err = model.UnpackCoreDocument(cd)
 	if err != nil {
