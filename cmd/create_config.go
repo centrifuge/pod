@@ -97,7 +97,7 @@ func init() {
 			if err != nil {
 				log.Fatalf("error: %v", err)
 			}
-			config.Config().V.Set("identityId", id.String())
+			config.Config().Set("identityId", id.String())
 
 			log.Infof("Identity created [%s] [%x]", id.String(), id)
 

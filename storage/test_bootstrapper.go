@@ -14,7 +14,7 @@ const testStoragePath = "/tmp/centrifuge_data.leveldb_TESTING"
 
 func (*Bootstrapper) TestBootstrap(context map[string]interface{}) error {
 	rs := getRandomTestStoragePath()
-	config.Config().V.SetDefault("storage.Path", rs)
+	config.Config().SetDefault("storage.Path", rs)
 	log.Info("Set storage.Path to:", config.Config().GetStoragePath())
 	levelDB, err := NewLevelDBStorage(config.Config().GetStoragePath())
 	if err != nil {

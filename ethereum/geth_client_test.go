@@ -28,8 +28,8 @@ func TestMain(m *testing.M) {
 		&config.Bootstrapper{},
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, nil)
-	config.Config().V.Set("ethereum.txPoolAccessEnabled", false)
-	config.Config().V.Set("ethereum.intervalRetry", time.Millisecond*100)
+	config.Config().Set("ethereum.txPoolAccessEnabled", false)
+	config.Config().Set("ethereum.intervalRetry", time.Millisecond*100)
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)

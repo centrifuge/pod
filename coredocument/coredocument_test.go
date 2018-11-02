@@ -234,9 +234,9 @@ func TestGetExternalCollaborators_ErrorConfig(t *testing.T) {
 	assert.Equal(t, [][]byte{c1, c2}, cd.Collaborators)
 	currentKeyPath, _ := config.Config().GetSigningKeyPair()
 	//Wrong path
-	config.Config().V.Set("keys.signing.publicKey", "./build/resources/signingKey.pub.pem")
+	config.Config().Set("keys.signing.publicKey", "./build/resources/signingKey.pub.pem")
 	collaborators, err := GetExternalCollaborators(cd)
 	assert.NotNil(t, err)
 	assert.Nil(t, collaborators)
-	config.Config().V.Set("keys.signing.publicKey", currentKeyPath)
+	config.Config().Set("keys.signing.publicKey", currentKeyPath)
 }

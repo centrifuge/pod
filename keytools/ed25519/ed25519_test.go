@@ -34,26 +34,26 @@ func TestPublicKeyToP2PKey(t *testing.T) {
 }
 
 func TestGetSigningKeyPairFromConfig(t *testing.T) {
-	pub := config.Config().V.Get("keys.signing.publicKey")
-	pri := config.Config().V.Get("keys.signing.privateKey")
+	pub := config.Config().Get("keys.signing.publicKey")
+	pri := config.Config().Get("keys.signing.privateKey")
 
 	// bad public key path
-	config.Config().V.Set("keys.signing.publicKey", "bad path")
+	config.Config().Set("keys.signing.publicKey", "bad path")
 	pubK, priK, err := GetSigningKeyPairFromConfig()
 	assert.Error(t, err)
 	assert.Nil(t, priK)
 	assert.Nil(t, pubK)
 	assert.Contains(t, err.Error(), "failed to read public key")
-	config.Config().V.Set("keys.signing.publicKey", pub)
+	config.Config().Set("keys.signing.publicKey", pub)
 
 	// bad private key path
-	config.Config().V.Set("keys.signing.privateKey", "bad path")
+	config.Config().Set("keys.signing.privateKey", "bad path")
 	pubK, priK, err = GetSigningKeyPairFromConfig()
 	assert.Error(t, err)
 	assert.Nil(t, priK)
 	assert.Nil(t, pubK)
 	assert.Contains(t, err.Error(), "failed to read private key")
-	config.Config().V.Set("keys.signing.privateKey", pri)
+	config.Config().Set("keys.signing.privateKey", pri)
 
 	// success
 	pubK, priK, err = GetSigningKeyPairFromConfig()

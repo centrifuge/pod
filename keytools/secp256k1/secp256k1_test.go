@@ -203,26 +203,26 @@ func TestGetAddress(t *testing.T) {
 }
 
 func TestGetEthAuthKeyFromConfig(t *testing.T) {
-	pub := config.Config().V.Get("keys.ethauth.publicKey")
-	pri := config.Config().V.Get("keys.ethauth.privateKey")
+	pub := config.Config().Get("keys.ethauth.publicKey")
+	pri := config.Config().Get("keys.ethauth.privateKey")
 
 	// bad public key path
-	config.Config().V.Set("keys.ethauth.publicKey", "bad path")
+	config.Config().Set("keys.ethauth.publicKey", "bad path")
 	pubK, priK, err := GetEthAuthKeyFromConfig()
 	assert.Error(t, err)
 	assert.Nil(t, priK)
 	assert.Nil(t, pubK)
 	assert.Contains(t, err.Error(), "failed to read public key")
-	config.Config().V.Set("keys.ethauth.publicKey", pub)
+	config.Config().Set("keys.ethauth.publicKey", pub)
 
 	// bad private key path
-	config.Config().V.Set("keys.ethauth.privateKey", "bad path")
+	config.Config().Set("keys.ethauth.privateKey", "bad path")
 	pubK, priK, err = GetEthAuthKeyFromConfig()
 	assert.Error(t, err)
 	assert.Nil(t, priK)
 	assert.Nil(t, pubK)
 	assert.Contains(t, err.Error(), "failed to read private key")
-	config.Config().V.Set("keys.ethauth.privateKey", pri)
+	config.Config().Set("keys.ethauth.privateKey", pri)
 
 	// success
 	pubK, priK, err = GetEthAuthKeyFromConfig()
