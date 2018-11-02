@@ -56,7 +56,7 @@ func TestValidate_networkValidator(t *testing.T) {
 	assert.NotNil(t, err)
 
 	// Compatible network
-	header.NetworkIdentifier = config.Config.GetNetworkID()
+	header.NetworkIdentifier = config.Config().GetNetworkID()
 	err = nv.Validate(header)
 	assert.Nil(t, err)
 }
@@ -73,7 +73,7 @@ func TestValidate_handshakeValidator(t *testing.T) {
 	assert.NotNil(t, err)
 
 	// Incompatible version, correct network
-	header.NetworkIdentifier = config.Config.GetNetworkID()
+	header.NetworkIdentifier = config.Config().GetNetworkID()
 	err = hv.Validate(header)
 	assert.NotNil(t, err)
 
@@ -84,7 +84,7 @@ func TestValidate_handshakeValidator(t *testing.T) {
 	assert.NotNil(t, err)
 
 	// Compatible version and network
-	header.NetworkIdentifier = config.Config.GetNetworkID()
+	header.NetworkIdentifier = config.Config().GetNetworkID()
 	err = hv.Validate(header)
 	assert.Nil(t, err)
 }

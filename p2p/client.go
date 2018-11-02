@@ -62,7 +62,7 @@ func (d *defaultClient) OpenClient(target string) (p2ppb.P2PServiceClient, error
 
 	// make a new stream from host B to host A with timeout
 	// Retrial is handled internally, connection request will be cancelled by the connection timeout context
-	ctx, _ := context.WithTimeout(context.Background(), config.Config.GetP2PConnectionTimeout())
+	ctx, _ := context.WithTimeout(context.Background(), config.Config().GetP2PConnectionTimeout())
 	g, err := grpcProtoInstance.Dial(ctx, peerID, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		return nil, fmt.Errorf("failed to dial peer [%s]: %v", peerID.Pretty(), err)
@@ -73,13 +73,13 @@ func (d *defaultClient) OpenClient(target string) (p2ppb.P2PServiceClient, error
 
 // getSignatureForDocument requests the target node to sign the document
 func getSignatureForDocument(ctx context.Context, doc coredocumentpb.CoreDocument, client p2ppb.P2PServiceClient, receiverCentId identity.CentID) (*p2ppb.SignatureResponse, error) {
-	senderId, err := config.Config.GetIdentityID()
+	senderId, err := config.Config().GetIdentityID()
 	if err != nil {
 		return nil, err
 	}
 
 	header := p2ppb.CentrifugeHeader{
-		NetworkIdentifier:  config.Config.GetNetworkID(),
+		NetworkIdentifier:  config.Config().GetNetworkID(),
 		CentNodeVersion:    version.GetVersion().String(),
 		SenderCentrifugeId: senderId,
 	}

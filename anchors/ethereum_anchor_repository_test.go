@@ -77,7 +77,7 @@ func TestGetDocumentRootOf(t *testing.T) {
 	anchorID, err := ToAnchorID(utils.RandomSlice(32))
 	assert.Nil(t, err)
 
-	ethRepo := NewEthereumAnchorRepository(config.Config, repo)
+	ethRepo := NewEthereumAnchorRepository(config.Config(), repo)
 	docRoot := utils.RandomByte32()
 	repo.On("Commits", mock.Anything, mock.Anything).Return(docRoot, nil)
 	gotRoot, err := ethRepo.GetDocumentRootOf(anchorID)

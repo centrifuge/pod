@@ -56,8 +56,8 @@ func networkValidator() Validator {
 		if header == nil {
 			return fmt.Errorf("nil header")
 		}
-		if config.Config.GetNetworkID() != header.NetworkIdentifier {
-			return incompatibleNetworkError(config.Config.GetNetworkID(), header.NetworkIdentifier)
+		if config.Config().GetNetworkID() != header.NetworkIdentifier {
+			return incompatibleNetworkError(config.Config().GetNetworkID(), header.NetworkIdentifier)
 		}
 		return nil
 	})

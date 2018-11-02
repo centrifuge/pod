@@ -23,13 +23,14 @@ func (*Bootstrapper) TestBootstrap(context map[string]interface{}) error {
 			log.Fatal("Current working dir is not in `go-centrifuge`")
 		}
 	}
-	Config = NewConfiguration(fmt.Sprintf("%s/build/configs/testing_config.yaml", match))
-	Config.InitializeViper()
-	context[bootstrap.BootstrappedConfig] = Config
+	c := NewConfiguration(fmt.Sprintf("%s/build/configs/testing_config.yaml", match))
+	c.InitializeViper()
+	SetConfig(c)
+	context[bootstrap.BootstrappedConfig] = c
 	return nil
 }
 
 func (b *Bootstrapper) TestTearDown() error {
-	Config = nil
+	SetConfig(nil)
 	return nil
 }

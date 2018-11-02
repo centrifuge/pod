@@ -7,10 +7,10 @@ import (
 )
 
 func MockConfigOption(key string, value interface{}) func() {
-	mockedValue := config.Config.V.Get(key)
-	config.Config.V.Set(key, value)
+	mockedValue := config.Config().Get(key)
+	config.Config().Set(key, value)
 	return func() {
-		config.Config.V.Set(key, mockedValue)
+		config.Config().Set(key, mockedValue)
 	}
 }
 

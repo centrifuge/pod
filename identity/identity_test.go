@@ -22,10 +22,10 @@ func TestMain(m *testing.M) {
 		&config.Bootstrapper{},
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, nil)
-	config.Config.V.Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
-	config.Config.V.Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
-	config.Config.V.Set("keys.ethauth.publicKey", "../build/resources/ethauth.pub.pem")
-	config.Config.V.Set("keys.ethauth.privateKey", "../build/resources/ethauth.key.pem")
+	config.Config().Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
+	config.Config().Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
+	config.Config().Set("keys.ethauth.publicKey", "../build/resources/ethauth.pub.pem")
+	config.Config().Set("keys.ethauth.privateKey", "../build/resources/ethauth.key.pem")
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)
@@ -112,7 +112,7 @@ func TestGetIdentityConfig_Success(t *testing.T) {
 	idConfig, err := GetIdentityConfig()
 	assert.Nil(t, err)
 	assert.NotNil(t, idConfig)
-	configId, err := config.Config.GetIdentityID()
+	configId, err := config.Config().GetIdentityID()
 	assert.Nil(t, err)
 	idBytes := idConfig.ID[:]
 	assert.Equal(t, idBytes, configId)
@@ -121,40 +121,40 @@ func TestGetIdentityConfig_Success(t *testing.T) {
 
 func TestGetIdentityConfig_Error(t *testing.T) {
 	//Wrong Hex
-	currentId := config.Config.V.GetString("identityId")
-	config.Config.V.Set("identityId", "ABCD")
+	currentId := config.Config().GetString("identityId")
+	config.Config().Set("identityId", "ABCD")
 	idConfig, err := GetIdentityConfig()
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "hex string without 0x prefix")
 	assert.Nil(t, idConfig)
-	config.Config.V.Set("identityId", currentId)
+	config.Config().Set("identityId", currentId)
 
 	//Wrong length
-	currentId = config.Config.V.GetString("identityId")
-	config.Config.V.Set("identityId", "0x0101010101")
+	currentId = config.Config().GetString("identityId")
+	config.Config().Set("identityId", "0x0101010101")
 	idConfig, err = GetIdentityConfig()
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "invalid length byte slice provided for centID")
 	assert.Nil(t, idConfig)
-	config.Config.V.Set("identityId", currentId)
+	config.Config().Set("identityId", currentId)
 
 	//Wrong public signing key path
-	currentKeyPath, _ := config.Config.GetSigningKeyPair()
-	config.Config.V.Set("keys.signing.publicKey", "./build/resources/signingKey.pub.pem")
+	currentKeyPath, _ := config.Config().GetSigningKeyPair()
+	config.Config().Set("keys.signing.publicKey", "./build/resources/signingKey.pub.pem")
 	idConfig, err = GetIdentityConfig()
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "no such file or directory")
 	assert.Nil(t, idConfig)
-	config.Config.V.Set("keys.signing.publicKey", currentKeyPath)
+	config.Config().Set("keys.signing.publicKey", currentKeyPath)
 
 	//Wrong public ethauth key path
-	currentKeyPath, _ = config.Config.GetEthAuthKeyPair()
-	config.Config.V.Set("keys.ethauth.publicKey", "./build/resources/ethauth.pub.pem")
+	currentKeyPath, _ = config.Config().GetEthAuthKeyPair()
+	config.Config().Set("keys.ethauth.publicKey", "./build/resources/ethauth.pub.pem")
 	idConfig, err = GetIdentityConfig()
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "no such file or directory")
 	assert.Nil(t, idConfig)
-	config.Config.V.Set("keys.ethauth.publicKey", currentKeyPath)
+	config.Config().Set("keys.ethauth.publicKey", currentKeyPath)
 }
 
 func TestToCentId(t *testing.T) {

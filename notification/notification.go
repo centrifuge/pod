@@ -27,7 +27,7 @@ type Sender interface {
 type WebhookSender struct{}
 
 func (wh *WebhookSender) Send(notification *notificationpb.NotificationMessage) (Status, error) {
-	url := config.Config.GetReceiveEventNotificationEndpoint()
+	url := config.Config().GetReceiveEventNotificationEndpoint()
 	if url == "" {
 		log.Warningf("Webhook URL not defined, manually fetch received document")
 		return Success, nil

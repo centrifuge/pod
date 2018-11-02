@@ -88,7 +88,7 @@ func (dp defaultProcessor) Send(ctx context.Context, coreDocument *coredocumentp
 	header := &p2ppb.CentrifugeHeader{
 		SenderCentrifugeId: centIDBytes,
 		CentNodeVersion:    version.GetVersion().String(),
-		NetworkIdentifier:  config.Config.GetNetworkID(),
+		NetworkIdentifier:  config.Config().GetNetworkID(),
 	}
 
 	resp, err := client.SendAnchoredDocument(ctx, &p2ppb.AnchorDocumentRequest{Document: coreDocument, Header: header})
@@ -199,7 +199,7 @@ func (dp defaultProcessor) AnchorDocument(model documents.Model) error {
 		return fmt.Errorf("failed to get document root: %v", err)
 	}
 
-	id, err := config.Config.GetIdentityID()
+	id, err := config.Config().GetIdentityID()
 	if err != nil {
 		return fmt.Errorf("failed to get self cent ID: %v", err)
 	}
