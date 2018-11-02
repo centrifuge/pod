@@ -32,12 +32,12 @@ var gcMu sync.RWMutex
 
 // GetDefaultContextTimeout retrieves the default duration before an Ethereum write call context should time out
 func GetDefaultContextTimeout() time.Duration {
-	return config.Config.GetEthereumContextWaitTimeout()
+	return config.Config().GetEthereumContextWaitTimeout()
 }
 
 // defaultReadContext returns context with timeout for read operations
 func defaultReadContext() (ctx context.Context, cancelFunc context.CancelFunc) {
-	toBeDone := time.Now().Add(config.Config.GetEthereumContextReadWaitTimeout())
+	toBeDone := time.Now().Add(config.Config().GetEthereumContextReadWaitTimeout())
 	return context.WithDeadline(context.Background(), toBeDone)
 }
 

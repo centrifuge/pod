@@ -32,7 +32,7 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		return err
 	}
 
-	IDService = NewEthereumIdentityService(config.Config, idFactory, registryContract)
+	IDService = NewEthereumIdentityService(config.Config(), idFactory, registryContract)
 
 	identityContract, err := getIdentityFactoryContract()
 	if err != nil {
@@ -46,7 +46,7 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	}
 
 	err = queue.InstallQueuedTask(context,
-		newKeyRegistrationConfirmationTask(ethereum.DefaultWaitForTransactionMiningContext, registryContract, config.Config))
+		newKeyRegistrationConfirmationTask(ethereum.DefaultWaitForTransactionMiningContext, registryContract, config.Config()))
 	if err != nil {
 		return err
 	}
@@ -55,10 +55,10 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 
 func getIdentityFactoryContract() (identityFactoryContract *EthereumIdentityFactoryContract, err error) {
 	client := ethereum.GetClient()
-	return NewEthereumIdentityFactoryContract(config.Config.GetContractAddress("identityFactory"), client.GetEthClient())
+	return NewEthereumIdentityFactoryContract(config.Config().GetContractAddress("identityFactory"), client.GetEthClient())
 }
 
 func getIdentityRegistryContract() (identityRegistryContract *EthereumIdentityRegistryContract, err error) {
 	client := ethereum.GetClient()
-	return NewEthereumIdentityRegistryContract(config.Config.GetContractAddress("identityRegistry"), client.GetEthClient())
+	return NewEthereumIdentityRegistryContract(config.Config().GetContractAddress("identityRegistry"), client.GetEthClient())
 }

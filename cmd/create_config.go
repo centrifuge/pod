@@ -31,8 +31,8 @@ func createIdentity() (identity.CentID, error) {
 }
 
 func generateKeys() {
-	p2pPub, p2pPvt := config.Config.GetSigningKeyPair()
-	ethAuthPub, ethAuthPvt := config.Config.GetEthAuthKeyPair()
+	p2pPub, p2pPvt := config.Config().GetSigningKeyPair()
+	ethAuthPub, ethAuthPvt := config.Config().GetEthAuthKeyPair()
 	keytools.GenerateSigningKeyPair(p2pPub, p2pPvt, "ed25519")
 	keytools.GenerateSigningKeyPair(p2pPub, p2pPvt, "ed25519")
 	keytools.GenerateSigningKeyPair(ethAuthPub, ethAuthPvt, "secp256k1")
@@ -97,7 +97,7 @@ func init() {
 			if err != nil {
 				log.Fatalf("error: %v", err)
 			}
-			config.Config.V.Set("identityId", id.String())
+			config.Config().V.Set("identityId", id.String())
 
 			log.Infof("Identity created [%s] [%x]", id.String(), id)
 

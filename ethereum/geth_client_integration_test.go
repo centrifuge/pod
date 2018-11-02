@@ -34,7 +34,7 @@ func TestGetConnection_returnsSameConnection(t *testing.T) {
 }
 
 func TestNewGethClient(t *testing.T) {
-	gc, err := ethereum.NewGethClient(config.Config)
+	gc, err := ethereum.NewGethClient(config.Config())
 	assert.Nil(t, err)
 	assert.NotNil(t, gc)
 }

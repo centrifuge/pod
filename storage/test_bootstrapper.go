@@ -14,14 +14,14 @@ const testStoragePath = "/tmp/centrifuge_data.leveldb_TESTING"
 
 func (*Bootstrapper) TestBootstrap(context map[string]interface{}) error {
 	rs := getRandomTestStoragePath()
-	config.Config.V.SetDefault("storage.Path", rs)
-	log.Info("Set storage.Path to:", config.Config.GetStoragePath())
-	levelDB, err := NewLevelDBStorage(config.Config.GetStoragePath())
+	config.Config().V.SetDefault("storage.Path", rs)
+	log.Info("Set storage.Path to:", config.Config().GetStoragePath())
+	levelDB, err := NewLevelDBStorage(config.Config().GetStoragePath())
 	if err != nil {
 		return fmt.Errorf("failed to init level db: %v", err)
 	}
 
-	log.Infof("Setting levelDb at: %s", config.Config.GetStoragePath())
+	log.Infof("Setting levelDb at: %s", config.Config().GetStoragePath())
 	context[bootstrap.BootstrappedLevelDb] = levelDB
 	return nil
 }

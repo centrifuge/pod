@@ -64,7 +64,7 @@ func TestCentP2PServer_makeBasicHostNoExternalIP(t *testing.T) {
 func TestCentP2PServer_makeBasicHostWithExternalIP(t *testing.T) {
 	externalIP := "100.100.100.100"
 	listenPort := 38202
-	config.Config.V.Set("p2p.externalIP", externalIP)
+	config.Config().V.Set("p2p.externalIP", externalIP)
 	priv, pub, err := getKeys()
 	assert.Nil(t, err)
 	cp2p := NewCentP2PServer(listenPort, []string{}, pub, priv)
@@ -80,7 +80,7 @@ func TestCentP2PServer_makeBasicHostWithExternalIP(t *testing.T) {
 func TestCentP2PServer_makeBasicHostWithWrongExternalIP(t *testing.T) {
 	externalIP := "100.200.300.400"
 	listenPort := 38202
-	config.Config.V.Set("p2p.externalIP", externalIP)
+	config.Config().V.Set("p2p.externalIP", externalIP)
 	priv, pub, err := getKeys()
 	assert.Nil(t, err)
 	cp2p := NewCentP2PServer(listenPort, []string{}, pub, priv)

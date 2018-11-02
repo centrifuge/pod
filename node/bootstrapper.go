@@ -55,13 +55,13 @@ func defaultServerList() ([]Server, error) {
 
 	return []Server{
 		api.NewCentAPIServer(
-			config.Config.GetServerAddress(),
-			config.Config.GetServerPort(),
-			config.Config.GetNetworkString(),
+			config.Config().GetServerAddress(),
+			config.Config().GetServerPort(),
+			config.Config().GetNetworkString(),
 		),
 		p2p.NewCentP2PServer(
-			config.Config.GetP2PPort(),
-			config.Config.GetBootstrapPeers(),
+			config.Config().GetP2PPort(),
+			config.Config().GetBootstrapPeers(),
 			publicKey, privateKey,
 		),
 	}, nil

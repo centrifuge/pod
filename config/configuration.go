@@ -13,6 +13,7 @@ import (
 	"math/big"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/centerrors"
@@ -24,7 +25,26 @@ import (
 )
 
 var log = logging.Logger("config")
-var Config *Configuration
+
+// configMu protects the config from read/write
+var configMu sync.RWMutex
+
+// config holds the current node config
+var config *Configuration
+
+// Config returns the current loaded config
+func Config() *Configuration {
+	configMu.RLock()
+	defer configMu.RUnlock()
+	return config
+}
+
+// SetConfig sets the config
+func SetConfig(c *Configuration) {
+	configMu.Lock()
+	defer configMu.Unlock()
+	config = c
+}
 
 type Configuration struct {
 	configFile string
@@ -252,8 +272,9 @@ func (c *Configuration) InitializeViper() {
 }
 
 func Bootstrap(configFile string) {
-	Config = NewConfiguration(configFile)
-	Config.InitializeViper()
+	c := NewConfiguration(configFile)
+	c.InitializeViper()
+	SetConfig(c)
 }
 
 // CreateConfigFile creates minimum config file with arguments

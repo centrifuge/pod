@@ -51,7 +51,7 @@ type IdentityKey struct {
 
 // GetIdentityConfig returns the identity and keys associated with the node
 func GetIdentityConfig() (*IdentityConfig, error) {
-	centIDBytes, err := config.Config.GetIdentityID()
+	centIDBytes, err := config.Config().GetIdentityID()
 	if err != nil {
 		return nil, err
 	}
