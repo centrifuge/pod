@@ -18,6 +18,7 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/stretchr/testify/assert"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 func TestMain(m *testing.M) {
@@ -40,9 +41,9 @@ func TestWebhookConstructPayload(t *testing.T) {
 	ts, err := ptypes.TimestampProto(time.Now().UTC())
 	assert.Nil(t, err, "Should not error out")
 	notificationMessage := &notificationpb.NotificationMessage{
-		DocumentIdentifier: coredoc.DocumentIdentifier,
+		DocumentId: hexutil.Encode(coredoc.DocumentIdentifier),
 		DocumentType:       documenttypes.InvoiceDataTypeUrl,
-		CentrifugeId:       cid,
+		CentrifugeId:       hexutil.Encode(cid),
 		EventType:          uint32(ReceivedPayload),
 		Recorded:           ts,
 	}
@@ -57,7 +58,7 @@ func TestWebhookConstructPayload(t *testing.T) {
 
 	assert.Equal(t, notificationMessage.Recorded, unmarshaledNotificationMessage.Recorded, "Recorder Timestamp should be equal")
 	assert.Equal(t, notificationMessage.DocumentType, unmarshaledNotificationMessage.DocumentType, "DocumentType should be equal")
-	assert.Equal(t, notificationMessage.DocumentIdentifier, unmarshaledNotificationMessage.DocumentIdentifier, "DocumentIdentifier should be equal")
+	assert.Equal(t, notificationMessage.DocumentId, unmarshaledNotificationMessage.DocumentId, "DocumentIdentifier should be equal")
 	assert.Equal(t, notificationMessage.CentrifugeId, unmarshaledNotificationMessage.CentrifugeId, "CentrifugeID should be equal")
 	assert.Equal(t, notificationMessage.EventType, unmarshaledNotificationMessage.EventType, "EventType should be equal")
 }

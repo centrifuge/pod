@@ -46,7 +46,7 @@
   revision = "c60964592c1a2b83c5676878c937cdbe6719869d"
 
 [[projects]]
-  digest = "1:c6e2ed36c71d00b36eb36fa5b7aad8c06a1c07f58701557c4bb7b8e0084356d8"
+  digest = "1:172fd1858be37ef797612b58214f4d0a15f75a39d43b0fa2774ffca69f82f5c2"
   name = "github.com/centrifuge/centrifuge-protobufs"
   packages = [
     "documenttypes",
@@ -58,7 +58,7 @@
     "gen/go/purchaseorder",
   ]
   pruneopts = "T"
-  revision = "838c11114163b6152d7b56574536f046b858e68d"
+  revision = "be7d05cddb4149670d475538e208f358a99518e6"
 
 [[projects]]
   digest = "1:c925cd40d25fe72f5916e010b79b5d9f6e0e97ec9b190fa658c6c67b913229ea"
@@ -1407,6 +1407,7 @@
     "github.com/multiformats/go-multihash",
     "github.com/paralin/go-libp2p-grpc",
     "github.com/roboll/go-vendorinstall",
+    "github.com/spf13/cast",
     "github.com/spf13/cobra",
     "github.com/spf13/viper",
     "github.com/stretchr/testify/assert",
