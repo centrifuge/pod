@@ -7,6 +7,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/queue"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 )
 
 type Bootstrapper struct {
@@ -32,7 +34,10 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		return err
 	}
 
-	IDService = NewEthereumIdentityService(config.Config(), idFactory, registryContract)
+	IDService = NewEthereumIdentityService(config.Config(), idFactory, registryContract, ethereum.GetClient,
+		func(address common.Address, backend bind.ContractBackend) (contract, error) {
+			return NewEthereumIdentityContract(address, backend)
+	})
 
 	identityContract, err := getIdentityFactoryContract()
 	if err != nil {

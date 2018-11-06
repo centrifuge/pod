@@ -48,7 +48,7 @@ func NewEthereumAnchorRepository(config Config, anchorRepositoryContract AnchorR
 // Commits takes an anchorID and returns the corresponding documentRoot from the chain
 func (ethRepository *EthereumAnchorRepository) GetDocumentRootOf(anchorID AnchorID) (docRoot DocumentRoot, err error) {
 	// Ignoring cancelFunc as code will block until response or timeout is triggered
-	opts, _ := ethereum.GetGethCallOpts()
+	opts, _ := ethereum.GetClient().GetGethCallOpts()
 	return ethRepository.anchorRepositoryContract.Commits(opts, anchorID.BigInt())
 }
 

@@ -20,7 +20,7 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-)
+	)
 
 func TestMain(m *testing.M) {
 	ibootstappers := []bootstrap.TestBootstrapper{
@@ -93,7 +93,7 @@ func TestInitTransactionWithRetries(t *testing.T) {
 }
 
 func TestGetGethCallOpts(t *testing.T) {
-	opts, cancel := GetGethCallOpts()
+	opts, cancel := GetClient().GetGethCallOpts()
 	assert.NotNil(t, opts)
 	assert.True(t, opts.Pending)
 	assert.NotNil(t, cancel)
