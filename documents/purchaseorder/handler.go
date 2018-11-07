@@ -35,6 +35,7 @@ func GRPCHandler() (clientpurchaseorderpb.DocumentServiceServer, error) {
 
 // Create validates the purchase order, persists it to DB, and anchors it the chain
 func (h grpcHandler) Create(ctx context.Context, req *clientpurchaseorderpb.PurchaseOrderCreatePayload) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
+	apiLog.Infof("Create request %v", req)
 	ctxh, err := documents.NewContextHeader()
 	if err != nil {
 		apiLog.Error(err)
@@ -59,6 +60,7 @@ func (h grpcHandler) Create(ctx context.Context, req *clientpurchaseorderpb.Purc
 
 // Update handles the document update and anchoring
 func (h grpcHandler) Update(ctx context.Context, payload *clientpurchaseorderpb.PurchaseOrderUpdatePayload) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
+	apiLog.Infof("Update request %v", payload)
 	ctxHeader, err := documents.NewContextHeader()
 	if err != nil {
 		apiLog.Error(err)
@@ -82,6 +84,7 @@ func (h grpcHandler) Update(ctx context.Context, payload *clientpurchaseorderpb.
 
 // GetVersion returns the requested version of a purchase order
 func (h grpcHandler) GetVersion(ctx context.Context, req *clientpurchaseorderpb.GetVersionRequest) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
+	apiLog.Infof("GetVersion request %v", req)
 	identifier, err := hexutil.Decode(req.Identifier)
 	if err != nil {
 		apiLog.Error(err)
@@ -107,6 +110,7 @@ func (h grpcHandler) GetVersion(ctx context.Context, req *clientpurchaseorderpb.
 
 // Get returns the purchase order the latest version of the document with given identifier
 func (h grpcHandler) Get(ctx context.Context, getRequest *clientpurchaseorderpb.GetRequest) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
+	apiLog.Infof("Get request %v", getRequest)
 	identifier, err := hexutil.Decode(getRequest.Identifier)
 	if err != nil {
 		apiLog.Error(err)
