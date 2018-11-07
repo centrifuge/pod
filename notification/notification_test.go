@@ -15,10 +15,10 @@ import (
 	"github.com/centrifuge/go-centrifuge/context/testlogging"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/stretchr/testify/assert"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 func TestMain(m *testing.M) {
@@ -41,11 +41,11 @@ func TestWebhookConstructPayload(t *testing.T) {
 	ts, err := ptypes.TimestampProto(time.Now().UTC())
 	assert.Nil(t, err, "Should not error out")
 	notificationMessage := &notificationpb.NotificationMessage{
-		DocumentId: hexutil.Encode(coredoc.DocumentIdentifier),
-		DocumentType:       documenttypes.InvoiceDataTypeUrl,
-		CentrifugeId:       hexutil.Encode(cid),
-		EventType:          uint32(ReceivedPayload),
-		Recorded:           ts,
+		DocumentId:   hexutil.Encode(coredoc.DocumentIdentifier),
+		DocumentType: documenttypes.InvoiceDataTypeUrl,
+		CentrifugeId: hexutil.Encode(cid),
+		EventType:    uint32(ReceivedPayload),
+		Recorded:     ts,
 	}
 
 	whs := WebhookSender{}

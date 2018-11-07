@@ -46,7 +46,7 @@
   revision = "c60964592c1a2b83c5676878c937cdbe6719869d"
 
 [[projects]]
-  digest = "1:172fd1858be37ef797612b58214f4d0a15f75a39d43b0fa2774ffca69f82f5c2"
+  digest = "1:66b6977457e5e7eff7aba31099caed6f2a21480f5616b4e32bf982715ab24b8b"
   name = "github.com/centrifuge/centrifuge-protobufs"
   packages = [
     "documenttypes",
@@ -58,7 +58,7 @@
     "gen/go/purchaseorder",
   ]
   pruneopts = "T"
-  revision = "be7d05cddb4149670d475538e208f358a99518e6"
+  revision = "2660f56a4edb61312b7eb83a986fb5ae6ea73255"
 
 [[projects]]
   digest = "1:c925cd40d25fe72f5916e010b79b5d9f6e0e97ec9b190fa658c6c67b913229ea"
@@ -68,14 +68,14 @@
   revision = "80f35a18b9a0c632d7843e7e536873b0536f0040"
 
 [[projects]]
-  digest = "1:9ecc8c63be5b2a2e9c4daefc265ea476757d91a04394fbb984bcdb3c652129da"
+  digest = "1:3d9dcd118a682029404e301e7769803c3e6a48e7a964eb03364b938007080e24"
   name = "github.com/centrifuge/precise-proofs"
   packages = [
     "proofs",
     "proofs/proto",
   ]
   pruneopts = "UT"
-  revision = "c673e56ee0de0d721a10dee5cd2aa59015e4420a"
+  revision = "1abae88cef959657117754ae7602a5285d1008cc"
 
 [[projects]]
   digest = "1:0ef770954bca104ee99b3b6b7f9b240605ac03517d9f98cbc1893daa03f3c038"
@@ -353,14 +353,6 @@
   ]
   pruneopts = "UT"
   revision = "1395d1447324cbea88d249fbfcfd70ea878fdfca"
-
-[[projects]]
-  branch = "master"
-  digest = "1:89cd2208bdeb192cc83ee287216af3c987fc87a90b9087718ad6631b636cefcf"
-  name = "github.com/iancoleman/strcase"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "3605ed457bf7f8caa1371b4fafadadc026673479"
 
 [[projects]]
   digest = "1:870d441fe217b8e689d7949fef6e43efbc787e50f200cb1e70dbca9204a1d6be"
