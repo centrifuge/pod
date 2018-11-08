@@ -378,11 +378,11 @@ func (s service) ReceiveAnchoredDocument(model documents.Model, headers *p2ppb.C
 
 	ts, _ := ptypes.TimestampProto(time.Now().UTC())
 	notificationMsg := &notificationpb.NotificationMessage{
-		EventType:          uint32(notification.ReceivedPayload),
-		CentrifugeId:       headers.SenderCentrifugeId,
-		Recorded:           ts,
-		DocumentType:       doc.EmbeddedData.TypeUrl,
-		DocumentIdentifier: doc.DocumentIdentifier,
+		EventType:    uint32(notification.ReceivedPayload),
+		CentrifugeId: hexutil.Encode(headers.SenderCentrifugeId),
+		Recorded:     ts,
+		DocumentType: doc.EmbeddedData.TypeUrl,
+		DocumentId:   hexutil.Encode(doc.DocumentIdentifier),
 	}
 
 	// Async until we add queuing

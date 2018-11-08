@@ -210,6 +210,9 @@ func TestPOModel_createProofs(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
+	// Validate '0x' Hex format in []byte value
+	assert.Equal(t, hexutil.Encode(poModel.CoreDocument.Collaborators[0]), proof[1].Value)
+
 	// Validate document_type
 	valid, err = tree.ValidateProof(proof[2])
 	assert.Nil(t, err)
