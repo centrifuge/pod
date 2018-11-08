@@ -5,7 +5,6 @@ package coredocument
 import (
 	"flag"
 	"fmt"
-	"math/big"
 	"os"
 	"testing"
 
@@ -16,12 +15,12 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/signatures"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+		"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"errors"
 )
 
 func TestMain(m *testing.M) {
@@ -263,7 +262,7 @@ func TestValidator_selfSignatureValidator(t *testing.T) {
 	cd.SigningRoot = utils.RandomSlice(32)
 	c, err := identity.GetIdentityConfig()
 	assert.Nil(t, err)
-	s = signatures.Sign(c, identity.KeyPurposeSigning, cd.SigningRoot)
+	s = identity.Sign(c, identity.KeyPurposeSigning, cd.SigningRoot)
 	cd.Signatures = []*coredocumentpb.Signature{s}
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
@@ -273,7 +272,8 @@ func TestValidator_selfSignatureValidator(t *testing.T) {
 }
 
 func TestValidator_signatureValidator(t *testing.T) {
-	ssv := signaturesValidator()
+	srv := &testingcommons.MockIDService{}
+	ssv := signaturesValidator(srv)
 
 	// fail getCoreDoc
 	model := mockModel{}
@@ -295,6 +295,7 @@ func TestValidator_signatureValidator(t *testing.T) {
 	// failed validation
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
+	srv.On("ValidateSignature", mock.Anything, mock.Anything).Return(errors.New("fail")).Once()
 	s := &coredocumentpb.Signature{EntityId: utils.RandomSlice(7)}
 	cd.Signatures = append(cd.Signatures, s)
 	err = ssv.Validate(nil, model)
@@ -305,32 +306,18 @@ func TestValidator_signatureValidator(t *testing.T) {
 	// success
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
+	srv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil).Once()
 	cd.SigningRoot = utils.RandomSlice(32)
-	c, err := identity.GetIdentityConfig()
-	assert.Nil(t, err)
-	s = signatures.Sign(c, identity.KeyPurposeSigning, cd.SigningRoot)
-	cd.Signatures = []*coredocumentpb.Signature{s}
-	pubkey, err := utils.SliceToByte32(c.Keys[identity.KeyPurposeSigning].PublicKey)
-	assert.Nil(t, err)
-	idkey := &identity.EthereumIdentityKey{
-		Key:       pubkey,
-		Purposes:  []*big.Int{big.NewInt(identity.KeyPurposeSigning)},
-		RevokedAt: big.NewInt(0),
-	}
-	id := &testingcommons.MockID{}
-	srv := &testingcommons.MockIDService{}
-	srv.On("LookupIdentityForID", c.ID).Return(id, nil).Once()
-	id.On("FetchKey", pubkey[:]).Return(idkey, nil).Once()
-	identity.IDService = srv
+	cd.Signatures = []*coredocumentpb.Signature{{}}
+
 	err = ssv.Validate(nil, model)
 	model.AssertExpectations(t)
-	id.AssertExpectations(t)
 	srv.AssertExpectations(t)
 	assert.Nil(t, err)
 }
 
 func TestPreAnchorValidator(t *testing.T) {
-	pav := PreAnchorValidator()
+	pav := PreAnchorValidator(nil)
 	assert.Len(t, pav, 2)
 }
 
@@ -560,7 +547,7 @@ func TestValidate_baseValidator(t *testing.T) {
 }
 
 func TestPostAnchoredValidator(t *testing.T) {
-	pav := PostAnchoredValidator(nil)
+	pav := PostAnchoredValidator(nil, nil)
 	assert.Len(t, pav, 2)
 }
 
@@ -570,11 +557,11 @@ func TestPreSignatureRequestValidator(t *testing.T) {
 }
 
 func TestPostSignatureRequestValidator(t *testing.T) {
-	psv := PostSignatureRequestValidator()
+	psv := PostSignatureRequestValidator(nil)
 	assert.Len(t, psv, 3)
 }
 
 func TestSignatureRequestValidator(t *testing.T) {
-	srv := SignatureRequestValidator()
+	srv := SignatureRequestValidator(nil)
 	assert.Len(t, srv, 3)
 }

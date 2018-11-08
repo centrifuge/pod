@@ -14,6 +14,9 @@ import (
 	"net/url"
 	"context"
 	"github.com/go-errors/errors"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"fmt"
 )
 
 type MockConfig struct{}
@@ -362,3 +365,20 @@ func TestGetClientP2PURL_fail_p2pkey_error(t *testing.T) {
 //	id.AssertExpectations(t)
 //	assert.Nil(t, err, "must be nil")
 //}
+
+
+func TestValidateSignature_invalid_key(t *testing.T) {
+	sig := &coredocumentpb.Signature{EntityId: utils.RandomSlice(CentIDLength)}
+	srv := NewEthereumIdentityService(c, f, r, func() ethereum.Client {
+		return g
+	}, func(address common.Address, backend bind.ContractBackend) (contract, error) {
+		return i, nil
+	})
+	centId, _ := ToCentID(sig.EntityId)
+	srv.On("LookupIdentityForID", centId).Return(nil, fmt.Errorf("failed GetIdentity")).Once()
+	identity.IDService = srv
+	err := ValidateSignature(sig, key1Pub)
+	srv.AssertExpectations(t)
+	assert.NotNil(t, err, "must be not nil")
+	assert.Contains(t, err.Error(), "failed GetIdentity")
+}

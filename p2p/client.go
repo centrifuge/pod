@@ -11,8 +11,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/signatures"
-	"github.com/centrifuge/go-centrifuge/version"
+		"github.com/centrifuge/go-centrifuge/version"
 	"github.com/libp2p/go-libp2p-peer"
 	pstore "github.com/libp2p/go-libp2p-peerstore"
 	ma "github.com/multiformats/go-multiaddr"
@@ -21,7 +20,7 @@ import (
 
 type Client interface {
 	OpenClient(target string) (p2ppb.P2PServiceClient, error)
-	GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocument) error
+	GetSignaturesForDocument(ctx context.Context, identityService identity.Service, doc *coredocumentpb.CoreDocument) error
 }
 
 func NewP2PClient() Client {
@@ -72,7 +71,7 @@ func (d *defaultClient) OpenClient(target string) (p2ppb.P2PServiceClient, error
 }
 
 // getSignatureForDocument requests the target node to sign the document
-func getSignatureForDocument(ctx context.Context, doc coredocumentpb.CoreDocument, client p2ppb.P2PServiceClient, receiverCentId identity.CentID) (*p2ppb.SignatureResponse, error) {
+func getSignatureForDocument(ctx context.Context, identityService identity.Service, doc coredocumentpb.CoreDocument, client p2ppb.P2PServiceClient, receiverCentId identity.CentID) (*p2ppb.SignatureResponse, error) {
 	senderId, err := config.Config().GetIdentityID()
 	if err != nil {
 		return nil, err
@@ -101,12 +100,12 @@ func getSignatureForDocument(ctx context.Context, doc coredocumentpb.CoreDocumen
 		return nil, version.IncompatibleVersionError(resp.CentNodeVersion)
 	}
 
-	err = signatures.ValidateCentrifugeID(resp.Signature, receiverCentId)
+	err = identity.ValidateCentrifugeIDBytes(resp.Signature.EntityId, receiverCentId)
 	if err != nil {
 		return nil, centerrors.New(code.AuthenticationFailed, err.Error())
 	}
 
-	err = signatures.ValidateSignature(resp.Signature, doc.SigningRoot)
+	err = identityService.ValidateSignature(resp.Signature, doc.SigningRoot)
 	if err != nil {
 		return nil, centerrors.New(code.AuthenticationFailed, "signature invalid")
 	}
@@ -121,8 +120,8 @@ type signatureResponseWrap struct {
 	err  error
 }
 
-func getSignatureAsync(ctx context.Context, doc coredocumentpb.CoreDocument, client p2ppb.P2PServiceClient, receiverCentId identity.CentID, out chan<- signatureResponseWrap) {
-	resp, err := getSignatureForDocument(ctx, doc, client, receiverCentId)
+func getSignatureAsync(ctx context.Context, identityService identity.Service, doc coredocumentpb.CoreDocument, client p2ppb.P2PServiceClient, receiverCentId identity.CentID, out chan<- signatureResponseWrap) {
+	resp, err := getSignatureForDocument(ctx, identityService, doc, client, receiverCentId)
 	out <- signatureResponseWrap{
 		resp: resp,
 		err:  err,
@@ -130,7 +129,7 @@ func getSignatureAsync(ctx context.Context, doc coredocumentpb.CoreDocument, cli
 }
 
 // GetSignaturesForDocument requests peer nodes for the signature and verifies them
-func (d *defaultClient) GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocument) error {
+func (d *defaultClient) GetSignaturesForDocument(ctx context.Context, identityService identity.Service, doc *coredocumentpb.CoreDocument) error {
 	in := make(chan signatureResponseWrap)
 	defer close(in)
 
@@ -145,7 +144,7 @@ func (d *defaultClient) GetSignaturesForDocument(ctx context.Context, doc *cored
 		if err != nil {
 			return centerrors.Wrap(err, "failed to convert to CentID")
 		}
-		target, err := identity.GetClientP2PURL(collaboratorID)
+		target, err := identityService.GetClientP2PURL(collaboratorID)
 
 		if err != nil {
 			return centerrors.Wrap(err, "failed to get P2P url")
@@ -160,7 +159,7 @@ func (d *defaultClient) GetSignaturesForDocument(ctx context.Context, doc *cored
 		// for now going with context.background, once we have a timeout for request
 		// we can use context.Timeout for that
 		count++
-		go getSignatureAsync(ctx, *doc, client, collaboratorID, in)
+		go getSignatureAsync(ctx, identityService, *doc, client, collaboratorID, in)
 	}
 
 	var responses []signatureResponseWrap

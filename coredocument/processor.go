@@ -12,8 +12,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/keytools/secp256k1"
-	"github.com/centrifuge/go-centrifuge/signatures"
-	"github.com/centrifuge/go-centrifuge/utils"
+		"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/version"
 	logging "github.com/ipfs/go-log"
 )
@@ -35,7 +34,7 @@ type Processor interface {
 // we redefined it here so that we can avoid cyclic dependencies with p2p
 type client interface {
 	OpenClient(target string) (p2ppb.P2PServiceClient, error)
-	GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocument) error
+	GetSignaturesForDocument(ctx context.Context, identityService identity.Service, doc *coredocumentpb.CoreDocument) error
 }
 
 // defaultProcessor implements Processor interface
@@ -117,7 +116,7 @@ func (dp defaultProcessor) PrepareForSignatureRequests(model documents.Model) er
 	if err != nil {
 		return fmt.Errorf("failed to get keys for signing: %v", err)
 	}
-	sig := signatures.Sign(idConfig, identity.KeyPurposeSigning, cd.SigningRoot)
+	sig := identity.Sign(idConfig, identity.KeyPurposeSigning, cd.SigningRoot)
 	cd.Signatures = append(cd.Signatures, sig)
 
 	err = model.UnpackCoreDocument(cd)
@@ -142,7 +141,7 @@ func (dp defaultProcessor) RequestSignatures(ctx context.Context, model document
 		return fmt.Errorf("failed to validate model for signature request: %v", err)
 	}
 
-	err = dp.P2PClient.GetSignaturesForDocument(ctx, cd)
+	err = dp.P2PClient.GetSignaturesForDocument(ctx, dp.IdentityService, cd)
 	if err != nil {
 		return fmt.Errorf("failed to collect signatures from the collaborators: %v", err)
 	}
@@ -162,7 +161,7 @@ func (dp defaultProcessor) PrepareForAnchoring(model documents.Model) error {
 		return fmt.Errorf("failed to pack core document: %v", err)
 	}
 
-	psv := PostSignatureRequestValidator()
+	psv := PostSignatureRequestValidator(dp.IdentityService)
 	err = psv.Validate(nil, model)
 	if err != nil {
 		return fmt.Errorf("failed to validate signatures: %v", err)
@@ -188,7 +187,7 @@ func (dp defaultProcessor) AnchorDocument(model documents.Model) error {
 		return fmt.Errorf("failed to pack core document: %v", err)
 	}
 
-	pav := PreAnchorValidator()
+	pav := PreAnchorValidator(dp.IdentityService)
 	err = pav.Validate(nil, model)
 	if err != nil {
 		return fmt.Errorf("pre anchor validation failed: %v", err)
@@ -243,7 +242,7 @@ func (dp defaultProcessor) SendDocument(ctx context.Context, model documents.Mod
 		return fmt.Errorf("failed to pack core document: %v", err)
 	}
 
-	av := PostAnchoredValidator(dp.AnchorRepository)
+	av := PostAnchoredValidator(dp.IdentityService, dp.AnchorRepository)
 	err = av.Validate(nil, model)
 	if err != nil {
 		return fmt.Errorf("post anchor validations failed: %v", err)

@@ -13,6 +13,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/signatures"
 )
 
 const (
@@ -127,6 +129,27 @@ func RandomCentID() CentID {
 	return ID
 }
 
+// ValidateCentrifugeIDBytes validates a centrifuge ID given as bytes
+func ValidateCentrifugeIDBytes(givenCentID []byte, centrifugeID CentID) error {
+	centIDSignature, err := ToCentID(givenCentID)
+	if err != nil {
+		return err
+	}
+
+	if !centrifugeID.Equal(centIDSignature) {
+		return errors.New("signature entity doesn't match provided centID")
+	}
+
+	return nil
+}
+
+
+// Sign the document with the private key and return the signature along with the public key for the verification
+// assumes that signing root for the document is generated
+func Sign(idConfig *IdentityConfig, purpose int, payload []byte) *coredocumentpb.Signature {
+	return signatures.Sign(idConfig.ID[:], idConfig.Keys[purpose].PrivateKey, idConfig.Keys[purpose].PublicKey, payload)
+}
+
 // Equal checks if c == other
 func (c CentID) Equal(other CentID) bool {
 	for i := range c {
@@ -202,4 +225,7 @@ type Service interface {
 
 	// AddKeyFromConfig adds a key previously generated and indexed in the configuration file to the identity specified in such config file
 	AddKeyFromConfig(purpose int) error
+
+	// ValidateSignature validates a signature on a message based on identity data
+	ValidateSignature(signature *coredocumentpb.Signature, message []byte) error
 }

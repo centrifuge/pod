@@ -13,13 +13,12 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/signatures"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"golang.org/x/crypto/ed25519"
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 )
 
 var dp defaultProcessor
@@ -105,7 +104,7 @@ type p2pClient struct {
 	client
 }
 
-func (p p2pClient) GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocument) error {
+func (p p2pClient) GetSignaturesForDocument(ctx context.Context, identityService identity.Service, doc *coredocumentpb.CoreDocument) error {
 	args := p.Called(ctx, doc)
 	return args.Error(0)
 }
@@ -213,7 +212,7 @@ func TestDefaultProcessor_PrepareForAnchoring(t *testing.T) {
 	model.On("UnpackCoreDocument", cd).Return(fmt.Errorf("error")).Once()
 	c, err := identity.GetIdentityConfig()
 	assert.Nil(t, err)
-	s := signatures.Sign(c, identity.KeyPurposeSigning, cd.SigningRoot)
+	s := identity.Sign(c, identity.KeyPurposeSigning, cd.SigningRoot)
 	cd.Signatures = []*coredocumentpb.Signature{s}
 	pubkey, err := utils.SliceToByte32(c.Keys[identity.KeyPurposeSigning].PublicKey)
 	assert.Nil(t, err)
@@ -299,7 +298,7 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	model.On("PackCoreDocument").Return(cd, nil).Times(5)
 	c, err := identity.GetIdentityConfig()
 	assert.Nil(t, err)
-	s := signatures.Sign(c, identity.KeyPurposeSigning, cd.SigningRoot)
+	s := identity.Sign(c, identity.KeyPurposeSigning, cd.SigningRoot)
 	cd.Signatures = []*coredocumentpb.Signature{s}
 	assert.Nil(t, CalculateDocumentRoot(cd))
 	pubkey, err := utils.SliceToByte32(c.Keys[identity.KeyPurposeSigning].PublicKey)
@@ -424,7 +423,7 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	model.On("PackCoreDocument").Return(cd, nil).Times(6)
 	c, err := identity.GetIdentityConfig()
 	assert.Nil(t, err)
-	s := signatures.Sign(c, identity.KeyPurposeSigning, cd.SigningRoot)
+	s := identity.Sign(c, identity.KeyPurposeSigning, cd.SigningRoot)
 	cd.Signatures = []*coredocumentpb.Signature{s}
 	assert.Nil(t, CalculateDocumentRoot(cd))
 	pubkey, err := utils.SliceToByte32(c.Keys[identity.KeyPurposeSigning].PublicKey)

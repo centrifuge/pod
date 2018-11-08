@@ -17,7 +17,9 @@ import (
 	logging "github.com/ipfs/go-log"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"bytes"
-)
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/signatures"
+	)
 
 var log = logging.Logger("identity")
 
@@ -547,5 +549,20 @@ func (ids *EthereumIdentityService) AddKeyFromConfig(purpose int) error {
 	log.Infof("Key [%v] with type [$s] Added to Identity [%s]", lastKey, purpose, watchAddedToIdentity.Identity)
 
 	return nil
+}
+
+// ValidateSignature validates a signature on a message based on identity data
+func (ids *EthereumIdentityService) ValidateSignature(signature *coredocumentpb.Signature, message []byte) error {
+	centID, err := ToCentID(signature.EntityId)
+	if err != nil {
+		return err
+	}
+
+	err = ids.ValidateKey(centID, signature.PublicKey, KeyPurposeSigning)
+	if err != nil {
+		return err
+	}
+
+	return signatures.VerifySignature(signature.PublicKey, message, signature.Signature)
 }
 
