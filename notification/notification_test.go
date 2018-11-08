@@ -14,8 +14,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/context/testlogging"
 	"github.com/centrifuge/go-centrifuge/storage"
-	"github.com/centrifuge/go-centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/stretchr/testify/assert"
@@ -36,16 +36,16 @@ func TestMain(m *testing.M) {
 func TestWebhookConstructPayload(t *testing.T) {
 	documentIdentifier := utils.RandomSlice(32)
 	coredoc := &coredocumentpb.CoreDocument{DocumentIdentifier: documentIdentifier}
-	cid := testingutils.Rand32Bytes()
+	cid := utils.RandomSlice(32)
 
 	ts, err := ptypes.TimestampProto(time.Now().UTC())
 	assert.Nil(t, err, "Should not error out")
 	notificationMessage := &notificationpb.NotificationMessage{
-		DocumentIdentifier: coredoc.DocumentIdentifier,
-		DocumentType:       documenttypes.InvoiceDataTypeUrl,
-		CentrifugeId:       cid,
-		EventType:          uint32(ReceivedPayload),
-		Recorded:           ts,
+		DocumentId:   hexutil.Encode(coredoc.DocumentIdentifier),
+		DocumentType: documenttypes.InvoiceDataTypeUrl,
+		CentrifugeId: hexutil.Encode(cid),
+		EventType:    uint32(ReceivedPayload),
+		Recorded:     ts,
 	}
 
 	whs := WebhookSender{}
@@ -58,7 +58,7 @@ func TestWebhookConstructPayload(t *testing.T) {
 
 	assert.Equal(t, notificationMessage.Recorded, unmarshaledNotificationMessage.Recorded, "Recorder Timestamp should be equal")
 	assert.Equal(t, notificationMessage.DocumentType, unmarshaledNotificationMessage.DocumentType, "DocumentType should be equal")
-	assert.Equal(t, notificationMessage.DocumentIdentifier, unmarshaledNotificationMessage.DocumentIdentifier, "DocumentIdentifier should be equal")
+	assert.Equal(t, notificationMessage.DocumentId, unmarshaledNotificationMessage.DocumentId, "DocumentIdentifier should be equal")
 	assert.Equal(t, notificationMessage.CentrifugeId, unmarshaledNotificationMessage.CentrifugeId, "CentrifugeID should be equal")
 	assert.Equal(t, notificationMessage.EventType, unmarshaledNotificationMessage.EventType, "EventType should be equal")
 }

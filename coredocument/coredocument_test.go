@@ -9,7 +9,7 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/testingutils"
+	"github.com/centrifuge/go-centrifuge/testingutils/coredocument"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -123,7 +123,7 @@ func TestGetDocumentRootTree(t *testing.T) {
 }
 
 func TestGetTypeUrl(t *testing.T) {
-	coreDocument := testingutils.GenerateCoreDocument()
+	coreDocument := testingcoredocument.GenerateCoreDocument()
 
 	documentType, err := GetTypeURL(coreDocument)
 	assert.Nil(t, err, "should not throw an error because coreDocument has a type")
@@ -232,11 +232,11 @@ func TestGetExternalCollaborators_ErrorConfig(t *testing.T) {
 	c := []string{hexutil.Encode(c1), hexutil.Encode(c2)}
 	cd, err := NewWithCollaborators(c)
 	assert.Equal(t, [][]byte{c1, c2}, cd.Collaborators)
-	currentKeyPath, _ := config.Config.GetSigningKeyPair()
+	currentKeyPath, _ := config.Config().GetSigningKeyPair()
 	//Wrong path
-	config.Config.V.Set("keys.signing.publicKey", "./build/resources/signingKey.pub.pem")
+	config.Config().Set("keys.signing.publicKey", "./build/resources/signingKey.pub.pem")
 	collaborators, err := GetExternalCollaborators(cd)
 	assert.NotNil(t, err)
 	assert.Nil(t, collaborators)
-	config.Config.V.Set("keys.signing.publicKey", currentKeyPath)
+	config.Config().Set("keys.signing.publicKey", currentKeyPath)
 }

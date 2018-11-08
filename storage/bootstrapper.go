@@ -16,7 +16,7 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		return errors.New("config not initialised")
 	}
 
-	levelDB, err := NewLevelDBStorage(config.Config.GetStoragePath())
+	levelDB, err := NewLevelDBStorage(config.Config().GetStoragePath())
 	if err != nil {
 		return fmt.Errorf("failed to init level db: %v", err)
 	}

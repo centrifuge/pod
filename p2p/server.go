@@ -189,7 +189,7 @@ func (c *CentP2PServer) makeBasicHost(listenPort int) (host.Host, error) {
 		return nil, err
 	}
 
-	externalIP := config.Config.GetP2PExternalIP()
+	externalIP := config.Config().GetP2PExternalIP()
 	var extMultiAddr ma.Multiaddr
 	if externalIP == "" {
 		log.Warning("External IP not defined, Peers might not be able to resolve this node if behind NAT\n")

@@ -20,7 +20,7 @@ var p2pPort int64
 var bootstraps []string
 
 func createIdentity() (identity.CentID, error) {
-	centrifugeId := identity.NewRandomCentID()
+	centrifugeId := identity.RandomCentID()
 	_, confirmations, err := identity.IDService.CreateIdentity(centrifugeId)
 	if err != nil {
 		return [identity.CentIDLength]byte{}, err
@@ -31,15 +31,15 @@ func createIdentity() (identity.CentID, error) {
 }
 
 func generateKeys() {
-	p2pPub, p2pPvt := config.Config.GetSigningKeyPair()
-	ethAuthPub, ethAuthPvt := config.Config.GetEthAuthKeyPair()
+	p2pPub, p2pPvt := config.Config().GetSigningKeyPair()
+	ethAuthPub, ethAuthPvt := config.Config().GetEthAuthKeyPair()
 	keytools.GenerateSigningKeyPair(p2pPub, p2pPvt, "ed25519")
 	keytools.GenerateSigningKeyPair(p2pPub, p2pPvt, "ed25519")
 	keytools.GenerateSigningKeyPair(ethAuthPub, ethAuthPvt, "secp256k1")
 }
 
 func addKeys() error {
-	err := identity.AddKeyFromConfig(identity.KeyPurposeP2p)
+	err := identity.AddKeyFromConfig(identity.KeyPurposeP2P)
 	if err != nil {
 		panic(err)
 	}
@@ -97,9 +97,9 @@ func init() {
 			if err != nil {
 				log.Fatalf("error: %v", err)
 			}
-			config.Config.V.Set("identityId", id.String())
+			config.Config().Set("identityId", id.String())
 
-			log.Infof("Identity created [%s] [%x]", id.String(), id.ByteArray())
+			log.Infof("Identity created [%s] [%x]", id.String(), id)
 
 			err = addKeys()
 			if err != nil {

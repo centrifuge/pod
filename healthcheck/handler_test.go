@@ -33,5 +33,5 @@ func TestHandler_Ping(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, pong)
 	assert.Equal(t, pong.Version, version.GetVersion().String())
-	assert.Equal(t, pong.Network, config.Config.GetNetworkString())
+	assert.Equal(t, pong.Network, config.Config().GetNetworkString())
 }

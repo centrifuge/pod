@@ -17,7 +17,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/notification"
-	"github.com/centrifuge/go-centrifuge/testingutils"
+	"github.com/centrifuge/go-centrifuge/testingutils/coredocument"
 	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
@@ -35,11 +35,11 @@ func (wh *MockWebhookSender) Send(notification *notificationpb.NotificationMessa
 	return
 }
 
-var coreDoc = testingutils.GenerateCoreDocument()
+var coreDoc = testingcoredocument.GenerateCoreDocument()
 
 func TestHandler_RequestDocumentSignature_nilDocument(t *testing.T) {
 	req := &p2ppb.SignatureRequest{Header: &p2ppb.CentrifugeHeader{
-		CentNodeVersion: version.GetVersion().String(), NetworkIdentifier: config.Config.GetNetworkID(),
+		CentNodeVersion: version.GetVersion().String(), NetworkIdentifier: config.Config().GetNetworkID(),
 	}}
 
 	resp, err := handler.RequestDocumentSignature(context.Background(), req)
@@ -49,7 +49,7 @@ func TestHandler_RequestDocumentSignature_nilDocument(t *testing.T) {
 
 func TestHandler_RequestDocumentSignature_version_fail(t *testing.T) {
 	req := &p2ppb.SignatureRequest{Header: &p2ppb.CentrifugeHeader{
-		CentNodeVersion: "1000.0.1-invalid", NetworkIdentifier: config.Config.GetNetworkID(),
+		CentNodeVersion: "1000.0.1-invalid", NetworkIdentifier: config.Config().GetNetworkID(),
 	}}
 
 	resp, err := handler.RequestDocumentSignature(context.Background(), req)
@@ -62,7 +62,7 @@ func TestSendAnchoredDocument_IncompatibleRequest(t *testing.T) {
 	// Test invalid version
 	header := &p2ppb.CentrifugeHeader{
 		CentNodeVersion:   "1000.0.0-invalid",
-		NetworkIdentifier: config.Config.GetNetworkID(),
+		NetworkIdentifier: config.Config().GetNetworkID(),
 	}
 	req := p2ppb.AnchorDocumentRequest{Document: coreDoc, Header: header}
 	res, err := handler.SendAnchoredDocument(context.Background(), &req)
@@ -72,7 +72,7 @@ func TestSendAnchoredDocument_IncompatibleRequest(t *testing.T) {
 	assert.Nil(t, res)
 
 	// Test invalid network
-	header.NetworkIdentifier = config.Config.GetNetworkID() + 1
+	header.NetworkIdentifier = config.Config().GetNetworkID() + 1
 	header.CentNodeVersion = version.GetVersion().String()
 	res, err = handler.SendAnchoredDocument(context.Background(), &req)
 	assert.Error(t, err)
@@ -84,7 +84,7 @@ func TestSendAnchoredDocument_IncompatibleRequest(t *testing.T) {
 func TestSendAnchoredDocument_NilDocument(t *testing.T) {
 	header := &p2ppb.CentrifugeHeader{
 		CentNodeVersion:   version.GetVersion().String(),
-		NetworkIdentifier: config.Config.GetNetworkID(),
+		NetworkIdentifier: config.Config().GetNetworkID(),
 	}
 	req := p2ppb.AnchorDocumentRequest{Header: header}
 	res, err := handler.SendAnchoredDocument(context.Background(), &req)
@@ -97,7 +97,7 @@ func TestHandler_SendAnchoredDocument_getServiceAndModel_fail(t *testing.T) {
 	req := &p2ppb.AnchorDocumentRequest{
 		Header: &p2ppb.CentrifugeHeader{
 			CentNodeVersion:   version.GetVersion().String(),
-			NetworkIdentifier: config.Config.GetNetworkID(),
+			NetworkIdentifier: config.Config().GetNetworkID(),
 		},
 		Document: coredocument.New(),
 	}
@@ -115,16 +115,16 @@ func TestP2PService_basicChecks(t *testing.T) {
 	}{
 		{
 			header: &p2ppb.CentrifugeHeader{CentNodeVersion: "someversion", NetworkIdentifier: 12},
-			err:    documents.AppendError(version.IncompatibleVersionError("someversion"), incompatibleNetworkError(config.Config.GetNetworkID(), 12)),
+			err:    documents.AppendError(version.IncompatibleVersionError("someversion"), incompatibleNetworkError(config.Config().GetNetworkID(), 12)),
 		},
 
 		{
 			header: &p2ppb.CentrifugeHeader{CentNodeVersion: "0.0.1", NetworkIdentifier: 12},
-			err:    documents.AppendError(incompatibleNetworkError(config.Config.GetNetworkID(), 12), nil),
+			err:    documents.AppendError(incompatibleNetworkError(config.Config().GetNetworkID(), 12), nil),
 		},
 
 		{
-			header: &p2ppb.CentrifugeHeader{CentNodeVersion: version.GetVersion().String(), NetworkIdentifier: config.Config.GetNetworkID()},
+			header: &p2ppb.CentrifugeHeader{CentNodeVersion: version.GetVersion().String(), NetworkIdentifier: config.Config().GetNetworkID()},
 		},
 	}
 

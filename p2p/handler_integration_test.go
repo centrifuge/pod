@@ -21,8 +21,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/notification"
 	"github.com/centrifuge/go-centrifuge/p2p"
 	"github.com/centrifuge/go-centrifuge/signatures"
-	"github.com/centrifuge/go-centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/testingutils/coredocument"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/centrifuge/precise-proofs/proofs"
@@ -36,10 +36,10 @@ var handler = p2p.Handler{Notifier: &notification.WebhookSender{}}
 func TestMain(m *testing.M) {
 	cc.TestFunctionalEthereumBootstrap()
 	flag.Parse()
-	config.Config.V.Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
-	config.Config.V.Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
-	config.Config.V.Set("keys.ethauth.publicKey", "../build/resources/ethauth.pub.pem")
-	config.Config.V.Set("keys.ethauth.privateKey", "../build/resources/ethauth.key.pem")
+	config.Config().Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
+	config.Config().Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
+	config.Config().Set("keys.ethauth.publicKey", "../build/resources/ethauth.pub.pem")
+	config.Config().Set("keys.ethauth.privateKey", "../build/resources/ethauth.key.pem")
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()
 	os.Exit(result)
@@ -248,12 +248,12 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 func createIdentity(t *testing.T) identity.CentID {
 	// Create Identity
 	centrifugeId, _ := identity.ToCentID(utils.RandomSlice(identity.CentIDLength))
-	config.Config.V.Set("identityId", centrifugeId.String())
+	config.Config().Set("identityId", centrifugeId.String())
 	id, confirmations, err := identity.IDService.CreateIdentity(centrifugeId)
 	assert.Nil(t, err, "should not error out when creating identity")
 	watchRegisteredIdentity := <-confirmations
 	assert.Nil(t, watchRegisteredIdentity.Error, "No error thrown by context")
-	assert.Equal(t, centrifugeId, watchRegisteredIdentity.Identity.GetCentrifugeID(), "Resulting Identity should have the same ID as the input")
+	assert.Equal(t, centrifugeId, watchRegisteredIdentity.Identity.CentID(), "Resulting Identity should have the same ID as the input")
 
 	idConfig, err := identity.GetIdentityConfig()
 	// Add Keys
@@ -262,14 +262,14 @@ func createIdentity(t *testing.T) identity.CentID {
 	assert.Nil(t, err, "should not error out when adding key to identity")
 	assert.NotNil(t, confirmations, "confirmations channel should not be nil")
 	watchReceivedIdentity := <-confirmations
-	assert.Equal(t, centrifugeId, watchReceivedIdentity.Identity.GetCentrifugeID(), "Resulting Identity should have the same ID as the input")
+	assert.Equal(t, centrifugeId, watchReceivedIdentity.Identity.CentID(), "Resulting Identity should have the same ID as the input")
 
 	secPubKey := idConfig.Keys[identity.KeyPurposeEthMsgAuth].PublicKey
 	confirmations, err = id.AddKeyToIdentity(context.Background(), identity.KeyPurposeEthMsgAuth, secPubKey)
 	assert.Nil(t, err, "should not error out when adding key to identity")
 	assert.NotNil(t, confirmations, "confirmations channel should not be nil")
 	watchReceivedIdentity = <-confirmations
-	assert.Equal(t, centrifugeId, watchReceivedIdentity.Identity.GetCentrifugeID(), "Resulting Identity should have the same ID as the input")
+	assert.Equal(t, centrifugeId, watchReceivedIdentity.Identity.CentID(), "Resulting Identity should have the same ID as the input")
 
 	return centrifugeId
 }
@@ -278,7 +278,7 @@ func prepareDocumentForP2PHandler(t *testing.T, doc *coredocumentpb.CoreDocument
 	idConfig, err := identity.GetIdentityConfig()
 	assert.Nil(t, err)
 	if doc == nil {
-		doc = testingutils.GenerateCoreDocument()
+		doc = testingcoredocument.GenerateCoreDocument()
 	}
 	tree, _ := coredocument.GetDocumentSigningTree(doc)
 	doc.SigningRoot = tree.RootHash()
@@ -307,13 +307,13 @@ func getAnchoredRequest(doc *coredocumentpb.CoreDocument) *p2ppb.AnchorDocumentR
 	return &p2ppb.AnchorDocumentRequest{
 		Header: &p2ppb.CentrifugeHeader{
 			CentNodeVersion:   version.GetVersion().String(),
-			NetworkIdentifier: config.Config.GetNetworkID(),
+			NetworkIdentifier: config.Config().GetNetworkID(),
 		}, Document: doc,
 	}
 }
 
 func getSignatureRequest(doc *coredocumentpb.CoreDocument) *p2ppb.SignatureRequest {
 	return &p2ppb.SignatureRequest{Header: &p2ppb.CentrifugeHeader{
-		CentNodeVersion: version.GetVersion().String(), NetworkIdentifier: config.Config.GetNetworkID(),
+		CentNodeVersion: version.GetVersion().String(), NetworkIdentifier: config.Config().GetNetworkID(),
 	}, Document: doc}
 }

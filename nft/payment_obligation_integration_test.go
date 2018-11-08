@@ -15,33 +15,33 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
-	"github.com/centrifuge/go-centrifuge/testingutils"
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestMain(m *testing.M) {
 	cc.TestFunctionalEthereumBootstrap()
-	prevSignPubkey := config.Config.V.Get("keys.signing.publicKey")
-	prevSignPrivkey := config.Config.V.Get("keys.signing.privateKey")
-	prevEthPubkey := config.Config.V.Get("keys.ethauth.publicKey")
-	prevEthPrivkey := config.Config.V.Get("keys.ethauth.privateKey")
-	config.Config.V.Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
-	config.Config.V.Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
-	config.Config.V.Set("keys.ethauth.publicKey", "../build/resources/ethauth.pub.pem")
-	config.Config.V.Set("keys.ethauth.privateKey", "../build/resources/ethauth.key.pem")
+	prevSignPubkey := config.Config().Get("keys.signing.publicKey")
+	prevSignPrivkey := config.Config().Get("keys.signing.privateKey")
+	prevEthPubkey := config.Config().Get("keys.ethauth.publicKey")
+	prevEthPrivkey := config.Config().Get("keys.ethauth.privateKey")
+	config.Config().Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
+	config.Config().Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
+	config.Config().Set("keys.ethauth.publicKey", "../build/resources/ethauth.pub.pem")
+	config.Config().Set("keys.ethauth.privateKey", "../build/resources/ethauth.key.pem")
 	result := m.Run()
-	config.Config.V.Set("keys.signing.publicKey", prevSignPubkey)
-	config.Config.V.Set("keys.signing.privateKey", prevSignPrivkey)
-	config.Config.V.Set("keys.ethauth.publicKey", prevEthPubkey)
-	config.Config.V.Set("keys.ethauth.privateKey", prevEthPrivkey)
+	config.Config().Set("keys.signing.publicKey", prevSignPubkey)
+	config.Config().Set("keys.signing.privateKey", prevSignPrivkey)
+	config.Config().Set("keys.ethauth.publicKey", prevEthPubkey)
+	config.Config().Set("keys.ethauth.privateKey", prevEthPrivkey)
 	cc.TestFunctionalEthereumTearDown()
 	os.Exit(result)
 }
 
 func TestPaymentObligationService_mint(t *testing.T) {
 	// create identity
-	testingutils.CreateIdentityWithKeys()
+	testingidentity.CreateIdentityWithKeys()
 
 	// create invoice (anchor)
 	service, err := documents.GetRegistryInstance().LocateService(documenttypes.InvoiceDataTypeUrl)

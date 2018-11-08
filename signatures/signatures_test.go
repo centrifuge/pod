@@ -8,8 +8,8 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/testingutils/coredocument"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -22,7 +22,7 @@ var (
 )
 
 func TestSign(t *testing.T) {
-	coreDoc := testingutils.GenerateCoreDocument()
+	coreDoc := testingcoredocument.GenerateCoreDocument()
 	coreDoc.SigningRoot = key1Pub
 	centID, err := identity.ToCentID(id1)
 	assert.Nil(t, err)
@@ -75,22 +75,16 @@ func TestValidateSignature_success(t *testing.T) {
 }
 
 func TestValidateCentrifugeId(t *testing.T) {
-
 	randomBytes := utils.RandomSlice(identity.CentIDLength)
-
-	centrifugeId, err := identity.ToCentID(randomBytes)
-
-	assert.Nil(t, err, "centrifugeId not initialized correctly ")
+	centID, err := identity.ToCentID(randomBytes)
+	assert.Nil(t, err, "centID not initialized correctly ")
 
 	sig := &coredocumentpb.Signature{EntityId: randomBytes}
-
-	err = ValidateCentrifugeID(sig, centrifugeId)
+	err = ValidateCentrifugeID(sig, centID)
 	assert.Nil(t, err, "Validate centrifuge id didn't work correctly")
 
 	randomBytes = utils.RandomSlice(identity.CentIDLength)
-	centrifugeId, err = identity.ToCentID(randomBytes)
-
-	err = ValidateCentrifugeID(sig, centrifugeId)
+	centID, err = identity.ToCentID(randomBytes)
+	err = ValidateCentrifugeID(sig, centID)
 	assert.NotNil(t, err, "Validate centrifuge id didn't work correctly")
-
 }

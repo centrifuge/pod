@@ -9,7 +9,7 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/testingutils"
+	"github.com/centrifuge/go-centrifuge/testingutils/coredocument"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/stretchr/testify/assert"
 )
@@ -33,7 +33,7 @@ func TestAnchorDocument(t *testing.T) {
 	m = &testingdocuments.MockModel{}
 	cd := coredocument.New()
 	m.On("PackCoreDocument").Return(cd, nil).Once()
-	proc := &testingutils.MockCoreDocumentProcessor{}
+	proc := &testingcoredocument.MockCoreDocumentProcessor{}
 	proc.On("PrepareForSignatureRequests", m).Return(fmt.Errorf("error")).Once()
 	model, err = documents.AnchorDocument(ctx, m, proc, updater)
 	m.AssertExpectations(t)
@@ -45,7 +45,7 @@ func TestAnchorDocument(t *testing.T) {
 	// request signatures failed
 	m = &testingdocuments.MockModel{}
 	m.On("PackCoreDocument").Return(cd, nil).Once()
-	proc = &testingutils.MockCoreDocumentProcessor{}
+	proc = &testingcoredocument.MockCoreDocumentProcessor{}
 	proc.On("PrepareForSignatureRequests", m).Return(nil).Once()
 	proc.On("RequestSignatures", ctx, m).Return(fmt.Errorf("error")).Once()
 	model, err = documents.AnchorDocument(ctx, m, proc, updater)
@@ -58,7 +58,7 @@ func TestAnchorDocument(t *testing.T) {
 	// prepare for anchoring fails
 	m = &testingdocuments.MockModel{}
 	m.On("PackCoreDocument").Return(cd, nil).Once()
-	proc = &testingutils.MockCoreDocumentProcessor{}
+	proc = &testingcoredocument.MockCoreDocumentProcessor{}
 	proc.On("PrepareForSignatureRequests", m).Return(nil).Once()
 	proc.On("RequestSignatures", ctx, m).Return(nil).Once()
 	proc.On("PrepareForAnchoring", m).Return(fmt.Errorf("error")).Once()
@@ -72,7 +72,7 @@ func TestAnchorDocument(t *testing.T) {
 	// anchor fails
 	m = &testingdocuments.MockModel{}
 	m.On("PackCoreDocument").Return(cd, nil).Once()
-	proc = &testingutils.MockCoreDocumentProcessor{}
+	proc = &testingcoredocument.MockCoreDocumentProcessor{}
 	proc.On("PrepareForSignatureRequests", m).Return(nil).Once()
 	proc.On("RequestSignatures", ctx, m).Return(nil).Once()
 	proc.On("PrepareForAnchoring", m).Return(nil).Once()
@@ -87,7 +87,7 @@ func TestAnchorDocument(t *testing.T) {
 	// send failed
 	m = &testingdocuments.MockModel{}
 	m.On("PackCoreDocument").Return(cd, nil).Once()
-	proc = &testingutils.MockCoreDocumentProcessor{}
+	proc = &testingcoredocument.MockCoreDocumentProcessor{}
 	proc.On("PrepareForSignatureRequests", m).Return(nil).Once()
 	proc.On("RequestSignatures", ctx, m).Return(nil).Once()
 	proc.On("PrepareForAnchoring", m).Return(nil).Once()
@@ -103,7 +103,7 @@ func TestAnchorDocument(t *testing.T) {
 	// success
 	m = &testingdocuments.MockModel{}
 	m.On("PackCoreDocument").Return(cd, nil).Once()
-	proc = &testingutils.MockCoreDocumentProcessor{}
+	proc = &testingcoredocument.MockCoreDocumentProcessor{}
 	proc.On("PrepareForSignatureRequests", m).Return(nil).Once()
 	proc.On("RequestSignatures", ctx, m).Return(nil).Once()
 	proc.On("PrepareForAnchoring", m).Return(nil).Once()

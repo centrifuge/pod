@@ -22,10 +22,10 @@ func TestMain(m *testing.M) {
 		&config.Bootstrapper{},
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, nil)
-	config.Config.V.Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
-	config.Config.V.Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
-	config.Config.V.Set("keys.ethauth.publicKey", "../build/resources/ethauth.pub.pem")
-	config.Config.V.Set("keys.ethauth.privateKey", "../build/resources/ethauth.key.pem")
+	config.Config().Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
+	config.Config().Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
+	config.Config().Set("keys.ethauth.publicKey", "../build/resources/ethauth.pub.pem")
+	config.Config().Set("keys.ethauth.privateKey", "../build/resources/ethauth.key.pem")
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)
@@ -41,21 +41,21 @@ func (i *mockID) String() string {
 	return args.String(0)
 }
 
-func (i *mockID) GetCentrifugeID() CentID {
+func (i *mockID) CentID() CentID {
 	args := i.Called()
 	return args.Get(0).(CentID)
 }
 
-func (i *mockID) CentrifugeID(centId CentID) {
+func (i *mockID) SetCentrifugeID(centId CentID) {
 	i.Called(centId)
 }
 
-func (i *mockID) GetCurrentP2PKey() (ret string, err error) {
+func (i *mockID) CurrentP2PKey() (ret string, err error) {
 	args := i.Called()
 	return args.String(0), args.Error(1)
 }
 
-func (i *mockID) GetLastKeyForPurpose(keyPurpose int) (key []byte, err error) {
+func (i *mockID) LastKeyForPurpose(keyPurpose int) (key []byte, err error) {
 	args := i.Called(keyPurpose)
 	return args.Get(0).([]byte), args.Error(1)
 }
@@ -63,11 +63,6 @@ func (i *mockID) GetLastKeyForPurpose(keyPurpose int) (key []byte, err error) {
 func (i *mockID) AddKeyToIdentity(ctx context.Context, keyPurpose int, key []byte) (confirmations chan *WatchIdentity, err error) {
 	args := i.Called(ctx, keyPurpose, key)
 	return args.Get(0).(chan *WatchIdentity), args.Error(1)
-}
-
-func (i *mockID) CheckIdentityExists() (exists bool, err error) {
-	args := i.Called()
-	return args.Bool(0), args.Error(1)
 }
 
 func (i *mockID) FetchKey(key []byte) (Key, error) {
@@ -117,49 +112,49 @@ func TestGetIdentityConfig_Success(t *testing.T) {
 	idConfig, err := GetIdentityConfig()
 	assert.Nil(t, err)
 	assert.NotNil(t, idConfig)
-	configId, err := config.Config.GetIdentityID()
+	configId, err := config.Config().GetIdentityID()
 	assert.Nil(t, err)
-	idBytes, _ := idConfig.ID.MarshalBinary()
+	idBytes := idConfig.ID[:]
 	assert.Equal(t, idBytes, configId)
 	assert.Equal(t, 3, len(idConfig.Keys))
 }
 
 func TestGetIdentityConfig_Error(t *testing.T) {
 	//Wrong Hex
-	currentId := config.Config.V.GetString("identityId")
-	config.Config.V.Set("identityId", "ABCD")
+	currentId := config.Config().GetString("identityId")
+	config.Config().Set("identityId", "ABCD")
 	idConfig, err := GetIdentityConfig()
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "hex string without 0x prefix")
 	assert.Nil(t, idConfig)
-	config.Config.V.Set("identityId", currentId)
+	config.Config().Set("identityId", currentId)
 
 	//Wrong length
-	currentId = config.Config.V.GetString("identityId")
-	config.Config.V.Set("identityId", "0x0101010101")
+	currentId = config.Config().GetString("identityId")
+	config.Config().Set("identityId", "0x0101010101")
 	idConfig, err = GetIdentityConfig()
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "invalid length byte slice provided for centID")
 	assert.Nil(t, idConfig)
-	config.Config.V.Set("identityId", currentId)
+	config.Config().Set("identityId", currentId)
 
 	//Wrong public signing key path
-	currentKeyPath, _ := config.Config.GetSigningKeyPair()
-	config.Config.V.Set("keys.signing.publicKey", "./build/resources/signingKey.pub.pem")
+	currentKeyPath, _ := config.Config().GetSigningKeyPair()
+	config.Config().Set("keys.signing.publicKey", "./build/resources/signingKey.pub.pem")
 	idConfig, err = GetIdentityConfig()
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "no such file or directory")
 	assert.Nil(t, idConfig)
-	config.Config.V.Set("keys.signing.publicKey", currentKeyPath)
+	config.Config().Set("keys.signing.publicKey", currentKeyPath)
 
 	//Wrong public ethauth key path
-	currentKeyPath, _ = config.Config.GetEthAuthKeyPair()
-	config.Config.V.Set("keys.ethauth.publicKey", "./build/resources/ethauth.pub.pem")
+	currentKeyPath, _ = config.Config().GetEthAuthKeyPair()
+	config.Config().Set("keys.ethauth.publicKey", "./build/resources/ethauth.pub.pem")
 	idConfig, err = GetIdentityConfig()
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "no such file or directory")
 	assert.Nil(t, idConfig)
-	config.Config.V.Set("keys.ethauth.publicKey", currentKeyPath)
+	config.Config().Set("keys.ethauth.publicKey", currentKeyPath)
 }
 
 func TestToCentId(t *testing.T) {
@@ -222,7 +217,7 @@ func TestGetClientP2PURL_fail_identity(t *testing.T) {
 	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
 	srv := &mockIDService{}
 	id := &mockID{}
-	id.On("GetCurrentP2PKey").Return("", fmt.Errorf("error identity")).Once()
+	id.On("CurrentP2PKey").Return("", fmt.Errorf("error identity")).Once()
 	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
 	IDService = srv
 	p2p, err := GetClientP2PURL(centID)
@@ -237,7 +232,7 @@ func TestGetClientP2PURL_Success(t *testing.T) {
 	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
 	srv := &mockIDService{}
 	id := &mockID{}
-	id.On("GetCurrentP2PKey").Return("target", nil).Once()
+	id.On("CurrentP2PKey").Return("target", nil).Once()
 	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
 	IDService = srv
 	p2p, err := GetClientP2PURL(centID)
@@ -252,7 +247,7 @@ func TestGetClientsP2PURLs_fail(t *testing.T) {
 	centIDs := []CentID{centID}
 	srv := &mockIDService{}
 	id := &mockID{}
-	id.On("GetCurrentP2PKey").Return("", fmt.Errorf("error identity")).Once()
+	id.On("CurrentP2PKey").Return("", fmt.Errorf("error identity")).Once()
 	srv.On("LookupIdentityForID", centIDs[0]).Return(id, nil).Once()
 	IDService = srv
 	p2pURLs, err := GetClientsP2PURLs(centIDs)
@@ -267,7 +262,7 @@ func TestGetClientsP2PURLs_success(t *testing.T) {
 	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
 	centIDs := []CentID{centID}
 	id := &mockID{}
-	id.On("GetCurrentP2PKey").Return("target", nil).Once()
+	id.On("CurrentP2PKey").Return("target", nil).Once()
 	srv := &mockIDService{}
 	srv.On("LookupIdentityForID", centIDs[0]).Return(id, nil).Once()
 	IDService = srv

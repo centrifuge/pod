@@ -14,11 +14,11 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	if _, ok := context[bootstrap.BootstrappedConfig]; !ok {
 		return errors.New("config hasn't been initialized")
 	}
-	client, err := NewClientConnection(config.Config)
+	client, err := NewGethClient(config.Config())
 	if err != nil {
 		return err
 	}
-	SetConnection(client)
+	SetClient(client)
 	context[bootstrap.BootstrappedEthereumClient] = client
 	return nil
 }

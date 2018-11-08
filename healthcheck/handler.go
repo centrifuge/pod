@@ -21,6 +21,6 @@ func GRPCHandler() healthpb.HealthCheckServiceServer {
 func (handler) Ping(context.Context, *empty.Empty) (pong *healthpb.Pong, err error) {
 	return &healthpb.Pong{
 		Version: version.GetVersion().String(),
-		Network: config.Config.GetNetworkString(),
+		Network: config.Config().GetNetworkString(),
 	}, nil
 }

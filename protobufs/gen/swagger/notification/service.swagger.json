@@ -42,8 +42,7 @@
           "format": "int64"
         },
         "centrifuge_id": {
-          "type": "string",
-          "format": "byte"
+          "type": "string"
         },
         "recorded": {
           "type": "string",
@@ -52,9 +51,8 @@
         "document_type": {
           "type": "string"
         },
-        "document_identifier": {
-          "type": "string",
-          "format": "byte"
+        "document_id": {
+          "type": "string"
         }
       },
       "title": "NotificationMessage wraps a single CoreDocument to be notified to upstream services"

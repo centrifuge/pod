@@ -53,14 +53,13 @@ type ethereumPaymentObligationContract interface {
 type ethereumPaymentObligation struct {
 	paymentObligation ethereumPaymentObligationContract
 	identityService   identity.Service
-	ethClient         ethereum.EthereumClient
+	ethClient         ethereum.Client
 	config            Config
-	setupMintListener func(tokenID *big.Int) (confirmations chan *WatchTokenMinted, err error)
 }
 
 // NewEthereumPaymentObligation creates ethereumPaymentObligation given the parameters
-func NewEthereumPaymentObligation(paymentObligation ethereumPaymentObligationContract, identityService identity.Service, ethClient ethereum.EthereumClient, config Config, setupMintListener func(tokenID *big.Int) (confirmations chan *WatchTokenMinted, err error)) *ethereumPaymentObligation {
-	return &ethereumPaymentObligation{paymentObligation: paymentObligation, identityService: identityService, ethClient: ethClient, config: config, setupMintListener: setupMintListener}
+func NewEthereumPaymentObligation(paymentObligation ethereumPaymentObligationContract, identityService identity.Service, ethClient ethereum.Client, config Config) *ethereumPaymentObligation {
+	return &ethereumPaymentObligation{paymentObligation: paymentObligation, identityService: identityService, ethClient: ethClient, config: config}
 }
 
 // MintNFT mints an NFT
@@ -125,14 +124,14 @@ func (s *ethereumPaymentObligation) MintNFT(documentID []byte, docType, registry
 
 // setUpMintEventListener sets up the listened for the "PaymentObligationMinted" event to notify the upstream code
 // about successful minting of an NFt
-func setUpMintEventListener(tokenID *big.Int) (confirmations chan *WatchTokenMinted, err error) {
+func (s *ethereumPaymentObligation) setupMintListener(tokenID *big.Int) (confirmations chan *WatchTokenMinted, err error) {
 	confirmations = make(chan *WatchTokenMinted)
-	conn := ethereum.GetConnection()
-	h, err := conn.GetClient().HeaderByNumber(context.Background(), nil)
+	conn := ethereum.GetClient()
+
+	h, err := conn.GetEthClient().HeaderByNumber(context.Background(), nil)
 	if err != nil {
 		return nil, err
 	}
-
 	asyncRes, err := queue.Queue.DelayKwargs(MintingConfirmationTaskName, map[string]interface{}{
 		TokenIDParam: hex.EncodeToString(tokenID.Bytes()),
 		BlockHeight:  h.Number.Uint64(),

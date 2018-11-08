@@ -35,7 +35,7 @@ func GetPrivateSigningKey(fileName string) (privateKey ed25519.PrivateKey, err e
 
 // GetSigningKeyPairFromConfig returns the public and private key pair from the config
 func GetSigningKeyPairFromConfig() (publicKey ed25519.PublicKey, privateKey ed25519.PrivateKey, err error) {
-	pub, priv := config.Config.GetSigningKeyPair()
+	pub, priv := config.Config().GetSigningKeyPair()
 	publicKey, err = GetPublicSigningKey(pub)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to read public key: %v", err)
