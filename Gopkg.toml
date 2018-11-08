@@ -30,7 +30,7 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
   name = "github.com/centrifuge/centrifuge-protobufs"
   revision = "51fb5cf922b4a413a78397ad3707f755cfd48abf"
 
-[[constraint]]
+[[override]]
   name = "github.com/centrifuge/centrifuge-ethereum-contracts"
   branch = "develop"
 
@@ -54,7 +54,6 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
   name = "github.com/ethereum/go-ethereum"
   source = "github.com/centrifuge/go-ethereum"
   revision = "e024c16f34c6028060b645efae1d6258e442442a"
-
 
 [[override]]
   name = "github.com/satori/go.uuid"
