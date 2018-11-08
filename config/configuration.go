@@ -317,11 +317,6 @@ func (c *Configuration) InitializeViper() {
 	c.v.SetEnvPrefix("CENT")
 }
 
-func Bootstrap(configFile string) {
-	c := NewConfiguration(configFile)
-	SetConfig(c)
-}
-
 // CreateConfigFile creates minimum config file with arguments
 func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	targetDataDir := args["targetDataDir"].(string)

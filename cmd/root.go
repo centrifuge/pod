@@ -52,7 +52,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "set loglevel to debug")
 }
 
-// ensureConfigFile reads in config file and ENV variables if set.
+// ensureConfigFile ensures a config file is provided
 func ensureConfigFile() string {
 	if cfgFile == "" {
 		// Find home directory.
