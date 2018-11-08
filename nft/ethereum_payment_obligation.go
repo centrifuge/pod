@@ -99,7 +99,8 @@ func (s *ethereumPaymentObligation) MintNFT(documentID []byte, docType, registry
 		return nil, nil
 	}
 
-	requestData, err := NewMintRequest(toAddress, anchorID, proofs.FieldProofs, rootHash)
+	//last proofField should be the collaborator
+	requestData, err := NewMintRequest(toAddress, anchorID, proofs.FieldProofs, rootHash,proofFields[AmountOfProofs-1])
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +154,7 @@ func waitAndRouteNFTApprovedEvent(asyncRes *gocelery.AsyncResult, tokenID *big.I
 // sendMintTransaction sends the actual transaction to mint the NFT
 func (s *ethereumPaymentObligation) sendMintTransaction(contract ethereumPaymentObligationContract, opts *bind.TransactOpts, requestData *MintRequest) (err error) {
 	tx, err := s.ethClient.SubmitTransactionWithRetries(contract.Mint, opts, requestData.To, requestData.TokenID, requestData.TokenURI, requestData.AnchorID,
-		requestData.MerkleRoot,"collaborators[0]", requestData.Values, requestData.Salts, requestData.Proofs)
+		requestData.MerkleRoot,requestData.CollaboratorField, requestData.Values, requestData.Salts, requestData.Proofs)
 	if err != nil {
 		return err
 	}
@@ -199,6 +200,9 @@ type MintRequest struct {
 	// MerkleRoot is the root hash of the merkle proof/doc
 	MerkleRoot [32]byte
 
+	//CollaboratorField contains the value of the collaborator leaf
+	CollaboratorField string
+
 	// Values are the values of the leafs that is being proved Will be converted to string and concatenated for proof verification as outlined in precise-proofs library.
 	Values [AmountOfProofs]string
 
@@ -210,7 +214,7 @@ type MintRequest struct {
 }
 
 // NewMintRequest converts the parameters and returns a struct with needed parameter for minting
-func NewMintRequest(to common.Address, anchorID anchors.AnchorID, proofs []*proofspb.Proof, rootHash [32]byte) (*MintRequest, error) {
+func NewMintRequest(to common.Address, anchorID anchors.AnchorID, proofs []*proofspb.Proof, rootHash [32]byte,collaboratorField string) (*MintRequest, error) {
 	tokenID := utils.ByteSliceToBigInt(utils.RandomSlice(256))
 	tokenURI := "http:=//www.centrifuge.io/DUMMY_URI_SERVICE"
 	proofData, err := createProofData(proofs)
@@ -224,6 +228,7 @@ func NewMintRequest(to common.Address, anchorID anchors.AnchorID, proofs []*proo
 		TokenURI:   tokenURI,
 		AnchorID:   anchorID.BigInt(),
 		MerkleRoot: rootHash,
+		CollaboratorField: collaboratorField,
 		Values:     proofData.Values,
 		Salts:      proofData.Salts,
 		Proofs:     proofData.Proofs}, nil
