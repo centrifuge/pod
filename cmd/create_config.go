@@ -84,9 +84,8 @@ func init() {
 			}
 			log.Infof("Config File Created: %s\n", v.ConfigFileUsed())
 
-			config.Bootstrap(v.ConfigFileUsed())
+			baseBootstrap(v.ConfigFileUsed())
 			generateKeys()
-			baseBootstrap()
 			id, err := createIdentity()
 			if err != nil {
 				panic(err)
