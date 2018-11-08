@@ -4,10 +4,11 @@ package nft_test
 
 import (
 	"context"
-	"github.com/ethereum/go-ethereum/log"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/ethereum/go-ethereum/log"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/config"
@@ -77,8 +78,7 @@ func TestPaymentObligationService_mint(t *testing.T) {
 		documenttypes.InvoiceDataTypeUrl,
 		"doesntmatter",
 		"doesntmatter",
-		[]string{"gross_amount", "currency", "due_date","document_type","collaborators[0]"},
-
+		[]string{"gross_amount", "currency", "due_date", "document_type", "collaborators[0]"},
 	)
 	assert.Nil(t, err, "should not error out when minting an invoice")
 	tokenConfirm := <-confirmations
