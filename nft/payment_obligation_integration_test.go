@@ -4,6 +4,7 @@ package nft_test
 
 import (
 	"context"
+	"github.com/ethereum/go-ethereum/log"
 	"os"
 	"testing"
 	"time"
@@ -21,6 +22,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
+	log.Debug("Test PreSetup for NFT")
 	cc.TestFunctionalEthereumBootstrap()
 	prevSignPubkey := config.Config().Get("keys.signing.publicKey")
 	prevSignPrivkey := config.Config().Get("keys.signing.privateKey")
@@ -41,6 +43,7 @@ func TestMain(m *testing.M) {
 
 func TestPaymentObligationService_mint(t *testing.T) {
 	// create identity
+	log.Debug("Create Identity for Testing")
 	testingidentity.CreateIdentityWithKeys()
 
 	// create invoice (anchor)
@@ -74,7 +77,7 @@ func TestPaymentObligationService_mint(t *testing.T) {
 		documenttypes.InvoiceDataTypeUrl,
 		"doesntmatter",
 		"doesntmatter",
-		[]string{"gross_amount", "currency", "due_date","document_type"},
+		[]string{"gross_amount", "currency", "due_date","document_type","collaborators[0]"},
 
 	)
 	assert.Nil(t, err, "should not error out when minting an invoice")
