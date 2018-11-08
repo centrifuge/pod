@@ -34,7 +34,7 @@ func GRPCHandler() (clientinvoicepb.DocumentServiceServer, error) {
 
 // Create handles the creation of the invoices and anchoring the documents on chain
 func (h *grpcHandler) Create(ctx context.Context, req *clientinvoicepb.InvoiceCreatePayload) (*clientinvoicepb.InvoiceResponse, error) {
-	apiLog.Infof("Create request %v", req)
+	apiLog.Debugf("Create request %v", req)
 	ctxHeader, err := documents.NewContextHeader()
 	if err != nil {
 		apiLog.Error(err)
@@ -59,7 +59,7 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientinvoicepb.InvoiceCr
 
 // Update handles the document update and anchoring
 func (h *grpcHandler) Update(ctx context.Context, payload *clientinvoicepb.InvoiceUpdatePayload) (*clientinvoicepb.InvoiceResponse, error) {
-	apiLog.Infof("Update request %v", payload)
+	apiLog.Debugf("Update request %v", payload)
 	ctxHeader, err := documents.NewContextHeader()
 	if err != nil {
 		apiLog.Error(err)
@@ -83,7 +83,7 @@ func (h *grpcHandler) Update(ctx context.Context, payload *clientinvoicepb.Invoi
 
 // GetVersion returns the requested version of the document
 func (h *grpcHandler) GetVersion(ctx context.Context, getVersionRequest *clientinvoicepb.GetVersionRequest) (*clientinvoicepb.InvoiceResponse, error) {
-	apiLog.Infof("Get version request %v", getVersionRequest)
+	apiLog.Debugf("Get version request %v", getVersionRequest)
 	identifier, err := hexutil.Decode(getVersionRequest.Identifier)
 	if err != nil {
 		apiLog.Error(err)
@@ -109,7 +109,7 @@ func (h *grpcHandler) GetVersion(ctx context.Context, getVersionRequest *clienti
 
 // Get returns the invoice the latest version of the document with given identifier
 func (h *grpcHandler) Get(ctx context.Context, getRequest *clientinvoicepb.GetRequest) (*clientinvoicepb.InvoiceResponse, error) {
-	apiLog.Infof("Get request %v", getRequest)
+	apiLog.Debugf("Get request %v", getRequest)
 	identifier, err := hexutil.Decode(getRequest.Identifier)
 	if err != nil {
 		apiLog.Error(err)
