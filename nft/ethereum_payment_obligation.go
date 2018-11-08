@@ -3,6 +3,7 @@ package nft
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
 	"math/big"
 
 	"github.com/centrifuge/gocelery"
@@ -18,13 +19,14 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 
-	"github.com/go-errors/errors"
 	logging "github.com/ipfs/go-log"
 )
 
 var log = logging.Logger("nft")
 
 var po *ethereumPaymentObligation
+
+const AmountOfProofs = 5
 
 func setPaymentObligation(s *ethereumPaymentObligation) {
 	po = s
@@ -44,7 +46,7 @@ type Config interface {
 type ethereumPaymentObligationContract interface {
 
 	// Mint method abstracts Mint method on the contract
-	Mint(opts *bind.TransactOpts, _to common.Address, _tokenId *big.Int, _tokenURI string, _anchorId *big.Int, _merkleRoot [32]byte, _values [3]string, _salts [3][32]byte, _proofs [3][][32]byte) (*types.Transaction, error)
+	Mint(opts *bind.TransactOpts, _to common.Address, _tokenId *big.Int, _tokenURI string, _anchorId *big.Int, _merkleRoot [32]byte, _collaboratorField string, _values [5]string, _salts [5][32]byte, _proofs [5][][32]byte) (*types.Transaction, error)
 }
 
 // ethereumPaymentObligation handles all interactions related to minting of NFTs for payment obligations on Ethereum
@@ -152,7 +154,7 @@ func waitAndRouteNFTApprovedEvent(asyncRes *gocelery.AsyncResult, tokenID *big.I
 // sendMintTransaction sends the actual transaction to mint the NFT
 func (s *ethereumPaymentObligation) sendMintTransaction(contract ethereumPaymentObligationContract, opts *bind.TransactOpts, requestData *MintRequest) (err error) {
 	tx, err := s.ethClient.SubmitTransactionWithRetries(contract.Mint, opts, requestData.To, requestData.TokenID, requestData.TokenURI, requestData.AnchorID,
-		requestData.MerkleRoot, requestData.Values, requestData.Salts, requestData.Proofs)
+		requestData.MerkleRoot,"collaborators[0]", requestData.Values, requestData.Salts, requestData.Proofs)
 	if err != nil {
 		return err
 	}
@@ -199,13 +201,13 @@ type MintRequest struct {
 	MerkleRoot [32]byte
 
 	// Values are the values of the leafs that is being proved Will be converted to string and concatenated for proof verification as outlined in precise-proofs library.
-	Values [3]string
+	Values [AmountOfProofs]string
 
 	// salts are the salts for the field that is being proved Will be concatenated for proof verification as outlined in precise-proofs library.
-	Salts [3][32]byte
+	Salts [AmountOfProofs][32]byte
 
 	// Proofs are the documents proofs that are needed
-	Proofs [3][][32]byte
+	Proofs [AmountOfProofs][][32]byte
 }
 
 // NewMintRequest converts the parameters and returns a struct with needed parameter for minting
@@ -229,18 +231,18 @@ func NewMintRequest(to common.Address, anchorID anchors.AnchorID, proofs []*proo
 }
 
 type proofData struct {
-	Values [3]string
-	Salts  [3][32]byte
-	Proofs [3][][32]byte
+	Values [AmountOfProofs]string
+	Salts  [AmountOfProofs][32]byte
+	Proofs [AmountOfProofs][][32]byte
 }
 
 func createProofData(proofspb []*proofspb.Proof) (*proofData, error) {
-	if len(proofspb) > 3 {
-		return nil, errors.New("no more than 3 field proofs are accepted")
+	if len(proofspb) > AmountOfProofs {
+		return nil, fmt.Errorf("no more than %v field proofs are accepted",AmountOfProofs)
 	}
-	var values [3]string
-	var salts [3][32]byte
-	var proofs [3][][32]byte
+	var values [AmountOfProofs]string
+	var salts [AmountOfProofs][32]byte
+	var proofs [AmountOfProofs][][32]byte
 
 	for i, p := range proofspb {
 		values[i] = p.Value

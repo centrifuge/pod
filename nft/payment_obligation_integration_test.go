@@ -74,7 +74,8 @@ func TestPaymentObligationService_mint(t *testing.T) {
 		documenttypes.InvoiceDataTypeUrl,
 		"doesntmatter",
 		"doesntmatter",
-		[]string{"gross_amount", "currency", "due_date"},
+		[]string{"gross_amount", "currency", "due_date","document_type"},
+
 	)
 	assert.Nil(t, err, "should not error out when minting an invoice")
 	tokenConfirm := <-confirmations

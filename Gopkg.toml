@@ -52,7 +52,8 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
 
 [[constraint]]
   name = "github.com/ethereum/go-ethereum"
-  version = "1.8.15"
+  source = "github.com/centrifuge/go-ethereum"
+  revision = "5d3d246b5aded66b3de70bcbb1974457db9e0f1f"
 
 [[override]]
   name = "github.com/satori/go.uuid"
