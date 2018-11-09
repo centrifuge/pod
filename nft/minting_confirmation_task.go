@@ -20,8 +20,8 @@ const (
 	blockHeight                 string = "BlockHeight"
 )
 
-// PaymentObligationMintedFilterer filters the approved NFTs
-type PaymentObligationMintedFilterer interface {
+// paymentObligationMintedFilterer filters the approved NFTs
+type paymentObligationMintedFilterer interface {
 
 	// FilterPaymentObligationMinted filters PaymentObligationMinted events
 	FilterPaymentObligationMinted(opts *bind.FilterOpts) (*EthereumPaymentObligationContractPaymentObligationMintedIterator, error)
@@ -33,11 +33,11 @@ type mintingConfirmationTask struct {
 	BlockHeight                     uint64
 	EthContextInitializer           func() (ctx context.Context, cancelFunc context.CancelFunc)
 	EthContext                      context.Context
-	PaymentObligationMintedFilterer PaymentObligationMintedFilterer
+	PaymentObligationMintedFilterer paymentObligationMintedFilterer
 }
 
-func NewMintingConfirmationTask(
-	nftApprovedFilterer PaymentObligationMintedFilterer,
+func newMintingConfirmationTask(
+	nftApprovedFilterer paymentObligationMintedFilterer,
 	ethContextInitializer func() (ctx context.Context, cancelFunc context.CancelFunc),
 ) *mintingConfirmationTask {
 	return &mintingConfirmationTask{
