@@ -142,7 +142,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	// messed up identifier
 	contextHeader, err := documents.NewContextHeader()
 	assert.Nil(t, err)
-	payload := &clientpurchaseorderpb.PurchaseOrderUpdatePayload{Identifier: "some identifier"}
+	payload := &clientpurchaseorderpb.PurchaseOrderUpdatePayload{Identifier: "some identifier", Data: &clientpurchaseorderpb.PurchaseOrderData{}}
 	doc, err = poSrv.DeriveFromUpdatePayload(payload, contextHeader)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to decode identifier")
