@@ -51,9 +51,9 @@ func TestCreateProofData(t *testing.T) {
 				},
 			},
 			proofData{
-				Values: [AmountOfProofs]string{"value1", "value2"},
-				Proofs: [AmountOfProofs][][32]byte{{byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}, {byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}},
-				Salts:  [AmountOfProofs][32]byte{byteSliceToByteArray32(salt), byteSliceToByteArray32(salt)},
+				Values: [amountOfProofs]string{"value1", "value2"},
+				Proofs: [amountOfProofs][][32]byte{{byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}, {byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}},
+				Salts:  [amountOfProofs][32]byte{byteSliceToByteArray32(salt), byteSliceToByteArray32(salt)},
 			},
 			nil,
 		},
@@ -74,9 +74,9 @@ func TestCreateProofData(t *testing.T) {
 				},
 			},
 			proofData{
-				Values: [AmountOfProofs]string{"value1", "value2"},
-				Proofs: [AmountOfProofs][][32]byte{{byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}, {byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}},
-				Salts:  [AmountOfProofs][32]byte{byteSliceToByteArray32(salt), byteSliceToByteArray32(salt)},
+				Values: [amountOfProofs]string{"value1", "value2"},
+				Proofs: [amountOfProofs][][32]byte{{byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}, {byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}},
+				Salts:  [amountOfProofs][32]byte{byteSliceToByteArray32(salt), byteSliceToByteArray32(salt)},
 			},
 			errors.New("input exceeds length of 32"),
 		},
@@ -97,9 +97,9 @@ func TestCreateProofData(t *testing.T) {
 				},
 			},
 			proofData{
-				Values: [AmountOfProofs]string{"value1", "value2"},
-				Proofs: [AmountOfProofs][][32]byte{{byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}, {byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}},
-				Salts:  [AmountOfProofs][32]byte{byteSliceToByteArray32(salt), byteSliceToByteArray32(salt)},
+				Values: [amountOfProofs]string{"value1", "value2"},
+				Proofs: [amountOfProofs][][32]byte{{byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}, {byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}},
+				Salts:  [amountOfProofs][32]byte{byteSliceToByteArray32(salt), byteSliceToByteArray32(salt)},
 			},
 			errors.New("input exceeds length of 32"),
 		},
@@ -124,7 +124,7 @@ type MockPaymentObligation struct {
 	mock.Mock
 }
 
-func (m *MockPaymentObligation) Mint(opts *bind.TransactOpts, _to common.Address, _tokenId *big.Int, _tokenURI string, _anchorId *big.Int, _merkleRoot [32]byte, collaboratorField string, _values [AmountOfProofs]string, _salts [AmountOfProofs][32]byte, _proofs [AmountOfProofs][][32]byte) (*types.Transaction, error) {
+func (m *MockPaymentObligation) Mint(opts *bind.TransactOpts, _to common.Address, _tokenId *big.Int, _tokenURI string, _anchorId *big.Int, _merkleRoot [32]byte, collaboratorField string, _values [amountOfProofs]string, _salts [amountOfProofs][32]byte, _proofs [amountOfProofs][][32]byte) (*types.Transaction, error) {
 	args := m.Called(opts, _to, _tokenId, _tokenURI, _anchorId, _merkleRoot, _values, _salts, _proofs)
 	return args.Get(0).(*types.Transaction), args.Error(1)
 }

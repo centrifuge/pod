@@ -15,9 +15,9 @@ import (
 )
 
 const (
-	MintingConfirmationTaskName string = "MintingConfirmationTaskName"
-	TokenIDParam                string = "TokenIDParam"
-	BlockHeight                 string = "BlockHeight"
+	mintingConfirmationTaskName string = "MintingConfirmationTaskName"
+	tokenIDParam                string = "TokenIDParam"
+	blockHeight                 string = "BlockHeight"
 )
 
 // PaymentObligationMintedFilterer filters the approved NFTs
@@ -27,8 +27,8 @@ type PaymentObligationMintedFilterer interface {
 	FilterPaymentObligationMinted(opts *bind.FilterOpts) (*EthereumPaymentObligationContractPaymentObligationMintedIterator, error)
 }
 
-// MintingConfirmationTask confirms the minting of a payment obligation NFT
-type MintingConfirmationTask struct {
+// mintingConfirmationTask confirms the minting of a payment obligation NFT
+type mintingConfirmationTask struct {
 	TokenID                         string
 	BlockHeight                     uint64
 	EthContextInitializer           func() (ctx context.Context, cancelFunc context.CancelFunc)
@@ -39,24 +39,27 @@ type MintingConfirmationTask struct {
 func NewMintingConfirmationTask(
 	nftApprovedFilterer PaymentObligationMintedFilterer,
 	ethContextInitializer func() (ctx context.Context, cancelFunc context.CancelFunc),
-) *MintingConfirmationTask {
-	return &MintingConfirmationTask{
+) *mintingConfirmationTask {
+	return &mintingConfirmationTask{
 		PaymentObligationMintedFilterer: nftApprovedFilterer,
 		EthContextInitializer:           ethContextInitializer,
 	}
 }
 
-func (nftc *MintingConfirmationTask) Name() string {
-	return MintingConfirmationTaskName
+// Name returns mintingConfirmationTaskName
+func (nftc *mintingConfirmationTask) Name() string {
+	return mintingConfirmationTaskName
 }
 
-func (nftc *MintingConfirmationTask) Init() error {
-	queue.Queue.Register(MintingConfirmationTaskName, nftc)
+// Init registers the task to the queue
+func (nftc *mintingConfirmationTask) Init() error {
+	queue.Queue.Register(mintingConfirmationTaskName, nftc)
 	return nil
 }
 
-func (nftc *MintingConfirmationTask) Copy() (gocelery.CeleryTask, error) {
-	return &MintingConfirmationTask{
+// Copy returns a new instance of mintingConfirmationTask
+func (nftc *mintingConfirmationTask) Copy() (gocelery.CeleryTask, error) {
+	return &mintingConfirmationTask{
 		nftc.TokenID,
 		nftc.BlockHeight,
 		nftc.EthContextInitializer,
@@ -66,14 +69,14 @@ func (nftc *MintingConfirmationTask) Copy() (gocelery.CeleryTask, error) {
 }
 
 // ParseKwargs - define a method to parse CentID
-func (nftc *MintingConfirmationTask) ParseKwargs(kwargs map[string]interface{}) (err error) {
-	tokenID, ok := kwargs[TokenIDParam]
+func (nftc *mintingConfirmationTask) ParseKwargs(kwargs map[string]interface{}) (err error) {
+	tokenID, ok := kwargs[tokenIDParam]
 	if !ok {
-		return fmt.Errorf("undefined kwarg " + TokenIDParam)
+		return fmt.Errorf("undefined kwarg " + tokenIDParam)
 	}
 	nftc.TokenID, ok = tokenID.(string)
 	if !ok {
-		return fmt.Errorf("malformed kwarg [%s]", TokenIDParam)
+		return fmt.Errorf("malformed kwarg [%s]", tokenIDParam)
 	}
 
 	nftc.BlockHeight, err = parseBlockHeight(kwargs)
@@ -84,19 +87,17 @@ func (nftc *MintingConfirmationTask) ParseKwargs(kwargs map[string]interface{}) 
 }
 
 func parseBlockHeight(valMap map[string]interface{}) (uint64, error) {
-	if bhi, ok := valMap[BlockHeight]; ok {
+	if bhi, ok := valMap[blockHeight]; ok {
 		bhf, ok := bhi.(float64)
 		if ok {
 			return uint64(bhf), nil
-		} else {
-			return 0, errors.New("value can not be parsed")
 		}
 	}
 	return 0, errors.New("value can not be parsed")
 }
 
 // RunTask calls listens to events from geth related to MintingConfirmationTask#TokenID and records result.
-func (nftc *MintingConfirmationTask) RunTask() (interface{}, error) {
+func (nftc *mintingConfirmationTask) RunTask() (interface{}, error) {
 	log.Infof("Waiting for confirmation for the minting of token [%x]", nftc.TokenID)
 	if nftc.EthContext == nil {
 		nftc.EthContext, _ = nftc.EthContextInitializer()

@@ -26,7 +26,7 @@ var log = logging.Logger("nft")
 
 var po *ethereumPaymentObligation
 
-const AmountOfProofs = 5
+const amountOfProofs = 5
 
 func setPaymentObligation(s *ethereumPaymentObligation) {
 	po = s
@@ -46,7 +46,7 @@ type Config interface {
 type ethereumPaymentObligationContract interface {
 
 	// Mint method abstracts Mint method on the contract
-	Mint(opts *bind.TransactOpts, _to common.Address, _tokenId *big.Int, _tokenURI string, _anchorId *big.Int, _merkleRoot [32]byte, _collaboratorField string, _values [5]string, _salts [5][32]byte, _proofs [5][][32]byte) (*types.Transaction, error)
+	Mint(opts *bind.TransactOpts, to common.Address, tokenId *big.Int, tokenURI string, anchorId *big.Int, merkleRoot [32]byte, collaboratorField string, values [5]string, salts [5][32]byte, proofs [5][][32]byte) (*types.Transaction, error)
 }
 
 // ethereumPaymentObligation handles all interactions related to minting of NFTs for payment obligations on Ethereum
@@ -134,9 +134,9 @@ func setupMintListener(tokenID *big.Int) (confirmations chan *WatchTokenMinted, 
 	if err != nil {
 		return nil, err
 	}
-	asyncRes, err := queue.Queue.DelayKwargs(MintingConfirmationTaskName, map[string]interface{}{
-		TokenIDParam: hex.EncodeToString(tokenID.Bytes()),
-		BlockHeight:  h.Number.Uint64(),
+	asyncRes, err := queue.Queue.DelayKwargs(mintingConfirmationTaskName, map[string]interface{}{
+		tokenIDParam: hex.EncodeToString(tokenID.Bytes()),
+		blockHeight:  h.Number.Uint64(),
 	})
 	if err != nil {
 		return nil, err
@@ -205,13 +205,13 @@ type MintRequest struct {
 	CollaboratorField string
 
 	// Values are the values of the leafs that is being proved Will be converted to string and concatenated for proof verification as outlined in precise-proofs library.
-	Values [AmountOfProofs]string
+	Values [amountOfProofs]string
 
 	// salts are the salts for the field that is being proved Will be concatenated for proof verification as outlined in precise-proofs library.
-	Salts [AmountOfProofs][32]byte
+	Salts [amountOfProofs][32]byte
 
 	// Proofs are the documents proofs that are needed
-	Proofs [AmountOfProofs][][32]byte
+	Proofs [amountOfProofs][][32]byte
 }
 
 // NewMintRequest converts the parameters and returns a struct with needed parameter for minting
@@ -236,18 +236,18 @@ func NewMintRequest(to common.Address, anchorID anchors.AnchorID, proofs []*proo
 }
 
 type proofData struct {
-	Values [AmountOfProofs]string
-	Salts  [AmountOfProofs][32]byte
-	Proofs [AmountOfProofs][][32]byte
+	Values [amountOfProofs]string
+	Salts  [amountOfProofs][32]byte
+	Proofs [amountOfProofs][][32]byte
 }
 
 func createProofData(proofspb []*proofspb.Proof) (*proofData, error) {
-	if len(proofspb) > AmountOfProofs {
-		return nil, fmt.Errorf("no more than %v field proofs are accepted", AmountOfProofs)
+	if len(proofspb) > amountOfProofs {
+		return nil, fmt.Errorf("no more than %v field proofs are accepted", amountOfProofs)
 	}
-	var values [AmountOfProofs]string
-	var salts [AmountOfProofs][32]byte
-	var proofs [AmountOfProofs][][32]byte
+	var values [amountOfProofs]string
+	var salts [amountOfProofs][32]byte
+	var proofs [amountOfProofs][][32]byte
 
 	for i, p := range proofspb {
 		values[i] = p.Value

@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	"github.com/centrifuge/go-centrifuge/queue"
-
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/ethereum"
