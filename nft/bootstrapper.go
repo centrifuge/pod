@@ -3,11 +3,11 @@ package nft
 import (
 	"errors"
 
-	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/queue"
 )
 
 type Bootstrapper struct {
@@ -27,7 +27,7 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		return err
 	}
 
-	setPaymentObligation(NewEthereumPaymentObligation(contract, identity.IDService, ethereum.GetClient(), config.Config(),setupMintListener))
+	setPaymentObligation(NewEthereumPaymentObligation(contract, identity.IDService, ethereum.GetClient(), config.Config(), setupMintListener))
 	return queue.InstallQueuedTask(context,
 		NewMintingConfirmationTask(contract, ethereum.DefaultWaitForTransactionMiningContext))
 }

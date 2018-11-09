@@ -171,7 +171,7 @@ func TestPaymentObligationService(t *testing.T) {
 				ethClientMock.On("SubmitTransactionWithRetries",
 					mock.Anything, mock.Anything, mock.Anything, mock.Anything,
 					mock.Anything, mock.Anything, mock.Anything, mock.Anything,
-					mock.Anything, mock.Anything,mock.Anything,
+					mock.Anything, mock.Anything, mock.Anything,
 				).Return(&types.Transaction{}, nil)
 				configMock := MockConfig{}
 				configMock.On("GetEthereumDefaultAccountName").Return("ethacc")
@@ -190,7 +190,7 @@ func TestPaymentObligationService(t *testing.T) {
 			// with below config the documentType has to be test.name to avoid conflicts since registry is a singleton
 			documents.GetRegistryInstance().Register(test.name, &docService)
 			confirmations := make(chan *WatchTokenMinted)
-			service := NewEthereumPaymentObligation(paymentOb, &idService, &ethClient, &config,func(tokenID *big.Int) (chan *WatchTokenMinted, error) {
+			service := NewEthereumPaymentObligation(paymentOb, &idService, &ethClient, &config, func(tokenID *big.Int) (chan *WatchTokenMinted, error) {
 				return confirmations, nil
 			})
 			_, err := service.MintNFT(decodeHex(test.request.Identifier), test.request.Type, test.request.RegistryAddress, test.request.DepositAddress, test.request.ProofFields)

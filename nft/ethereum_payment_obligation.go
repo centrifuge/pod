@@ -59,8 +59,8 @@ type ethereumPaymentObligation struct {
 }
 
 // NewEthereumPaymentObligation creates ethereumPaymentObligation given the parameters
-func NewEthereumPaymentObligation(paymentObligation ethereumPaymentObligationContract, identityService identity.Service, ethClient ethereum.Client, config Config,setupMintListener func(tokenID *big.Int) (confirmations chan *WatchTokenMinted, err error)) *ethereumPaymentObligation {
-	return &ethereumPaymentObligation{paymentObligation: paymentObligation, identityService: identityService, ethClient: ethClient, config: config,setupMintListener: setupMintListener}
+func NewEthereumPaymentObligation(paymentObligation ethereumPaymentObligationContract, identityService identity.Service, ethClient ethereum.Client, config Config, setupMintListener func(tokenID *big.Int) (confirmations chan *WatchTokenMinted, err error)) *ethereumPaymentObligation {
+	return &ethereumPaymentObligation{paymentObligation: paymentObligation, identityService: identityService, ethClient: ethClient, config: config, setupMintListener: setupMintListener}
 }
 
 // MintNFT mints an NFT
