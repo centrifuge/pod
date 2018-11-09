@@ -98,6 +98,10 @@ func TestService_DeriveFromPayload(t *testing.T) {
 	_, err = invSrv.DeriveFromCreatePayload(nil, nil)
 	assert.Error(t, err, "DeriveWithInvoiceInput should produce an error if invoiceInput equals nil")
 
+	// fail due to nil payload data
+	_, err = invSrv.DeriveFromCreatePayload(&clientinvoicepb.InvoiceCreatePayload{}, nil)
+	assert.Error(t, err, "DeriveWithInvoiceInput should produce an error if invoiceInput equals nil")
+
 	contextHeader, err := documents.NewContextHeader()
 	assert.Nil(t, err)
 	model, err = invSrv.DeriveFromCreatePayload(payload, contextHeader)
@@ -474,6 +478,12 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	invSrv := getServiceWithMockedLayers()
 	// nil payload
 	doc, err := invSrv.DeriveFromUpdatePayload(nil, nil)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid payload")
+	assert.Nil(t, doc)
+
+	// nil payload data
+	doc, err = invSrv.DeriveFromUpdatePayload(&clientinvoicepb.InvoiceUpdatePayload{}, nil)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid payload")
 	assert.Nil(t, doc)

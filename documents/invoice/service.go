@@ -115,13 +115,13 @@ func (s service) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (docume
 }
 
 // UnpackFromCreatePayload initializes the model with parameters provided from the rest-api call
-func (s service) DeriveFromCreatePayload(invoiceInput *clientinvoicepb.InvoiceCreatePayload, contextHeader *documents.ContextHeader) (documents.Model, error) {
-	if invoiceInput == nil {
+func (s service) DeriveFromCreatePayload(payload *clientinvoicepb.InvoiceCreatePayload, contextHeader *documents.ContextHeader) (documents.Model, error) {
+	if payload == nil || payload.Data == nil {
 		return nil, centerrors.New(code.DocumentInvalid, "input is nil")
 	}
 
 	invoiceModel := new(Invoice)
-	err := invoiceModel.InitInvoiceInput(invoiceInput, contextHeader)
+	err := invoiceModel.InitInvoiceInput(payload, contextHeader)
 	if err != nil {
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
 	}
@@ -283,13 +283,12 @@ func (s service) DeriveInvoiceData(doc documents.Model) (*clientinvoicepb.Invoic
 		return nil, centerrors.New(code.DocumentInvalid, "document of invalid type")
 	}
 
-	data := inv.getClientData()
-	return data, nil
+	return inv.getClientData(), nil
 }
 
 // DeriveFromUpdatePayload returns a new version of the old invoice identified by identifier in payload
 func (s service) DeriveFromUpdatePayload(payload *clientinvoicepb.InvoiceUpdatePayload, contextHeader *documents.ContextHeader) (documents.Model, error) {
-	if payload == nil {
+	if payload == nil || payload.Data == nil {
 		return nil, centerrors.New(code.DocumentInvalid, "invalid payload")
 	}
 
