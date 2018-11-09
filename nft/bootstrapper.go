@@ -27,7 +27,8 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	if err != nil {
 		return err
 	}
-	setPaymentObligation(NewEthereumPaymentObligation(contract, identity.IDService, ethereum.GetClient(), config.Config()))
+
+	setPaymentObligation(NewEthereumPaymentObligation(contract, identity.IDService, ethereum.GetClient(), config.Config(),setupMintListener))
 	return queue.InstallQueuedTask(context,
 		NewMintingConfirmationTask(contract, ethereum.DefaultWaitForTransactionMiningContext))
 }

@@ -55,11 +55,12 @@ type ethereumPaymentObligation struct {
 	identityService   identity.Service
 	ethClient         ethereum.Client
 	config            Config
+	setupMintListener func(tokenID *big.Int) (confirmations chan *WatchTokenMinted, err error)
 }
 
 // NewEthereumPaymentObligation creates ethereumPaymentObligation given the parameters
-func NewEthereumPaymentObligation(paymentObligation ethereumPaymentObligationContract, identityService identity.Service, ethClient ethereum.Client, config Config) *ethereumPaymentObligation {
-	return &ethereumPaymentObligation{paymentObligation: paymentObligation, identityService: identityService, ethClient: ethClient, config: config}
+func NewEthereumPaymentObligation(paymentObligation ethereumPaymentObligationContract, identityService identity.Service, ethClient ethereum.Client, config Config,setupMintListener func(tokenID *big.Int) (confirmations chan *WatchTokenMinted, err error)) *ethereumPaymentObligation {
+	return &ethereumPaymentObligation{paymentObligation: paymentObligation, identityService: identityService, ethClient: ethClient, config: config,setupMintListener: setupMintListener}
 }
 
 // MintNFT mints an NFT
@@ -100,7 +101,7 @@ func (s *ethereumPaymentObligation) MintNFT(documentID []byte, docType, registry
 	}
 
 	//last proofField should be the collaborator
-	requestData, err := NewMintRequest(toAddress, anchorID, proofs.FieldProofs, rootHash, proofFields[AmountOfProofs-1])
+	requestData, err := NewMintRequest(toAddress, anchorID, proofs.FieldProofs, rootHash, proofFields[len(proofFields)-1])
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +126,7 @@ func (s *ethereumPaymentObligation) MintNFT(documentID []byte, docType, registry
 
 // setUpMintEventListener sets up the listened for the "PaymentObligationMinted" event to notify the upstream code
 // about successful minting of an NFt
-func (s *ethereumPaymentObligation) setupMintListener(tokenID *big.Int) (confirmations chan *WatchTokenMinted, err error) {
+func setupMintListener(tokenID *big.Int) (confirmations chan *WatchTokenMinted, err error) {
 	confirmations = make(chan *WatchTokenMinted)
 	conn := ethereum.GetClient()
 
