@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ethereum/go-ethereum/log"
+
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/config"
 	cc "github.com/centrifuge/go-centrifuge/context/testingbootstrap"
@@ -21,6 +23,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
+	log.Debug("Test PreSetup for NFT")
 	cc.TestFunctionalEthereumBootstrap()
 	prevSignPubkey := config.Config().Get("keys.signing.publicKey")
 	prevSignPrivkey := config.Config().Get("keys.signing.privateKey")
@@ -41,6 +44,7 @@ func TestMain(m *testing.M) {
 
 func TestPaymentObligationService_mint(t *testing.T) {
 	// create identity
+	log.Debug("Create Identity for Testing")
 	testingidentity.CreateIdentityWithKeys()
 
 	// create invoice (anchor)
@@ -69,12 +73,15 @@ func TestPaymentObligationService_mint(t *testing.T) {
 	assert.Nil(t, err, "should not error out when getting invoice ID")
 	// call mint
 	// assert no error
-	_, err = nft.GetPaymentObligation().MintNFT(
+	confirmations, err := nft.GetPaymentObligation().MintNFT(
 		ID,
 		documenttypes.InvoiceDataTypeUrl,
 		"doesntmatter",
 		"doesntmatter",
-		[]string{"gross_amount", "currency", "due_date"},
+		[]string{"gross_amount", "currency", "due_date", "document_type", "collaborators[0]"},
 	)
 	assert.Nil(t, err, "should not error out when minting an invoice")
+	tokenConfirm := <-confirmations
+	assert.Nil(t, tokenConfirm.Err, "should not error out when minting an invoice")
+	assert.NotNil(t, tokenConfirm.TokenID, "token id should be present")
 }

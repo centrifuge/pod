@@ -1,24 +1,32 @@
 package nft
 
 import (
+	"context"
+	"encoding/hex"
+	"fmt"
 	"math/big"
+
+	"github.com/centrifuge/gocelery"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/go-errors/errors"
+
 	logging "github.com/ipfs/go-log"
 )
 
 var log = logging.Logger("nft")
 
 var po *ethereumPaymentObligation
+
+const amountOfProofs = 5
 
 func setPaymentObligation(s *ethereumPaymentObligation) {
 	po = s
@@ -38,7 +46,7 @@ type Config interface {
 type ethereumPaymentObligationContract interface {
 
 	// Mint method abstracts Mint method on the contract
-	Mint(opts *bind.TransactOpts, _to common.Address, _tokenId *big.Int, _tokenURI string, _anchorId *big.Int, _merkleRoot [32]byte, _values [3]string, _salts [3][32]byte, _proofs [3][][32]byte) (*types.Transaction, error)
+	Mint(opts *bind.TransactOpts, to common.Address, tokenId *big.Int, tokenURI string, anchorId *big.Int, merkleRoot [32]byte, collaboratorField string, values [5]string, salts [5][32]byte, proofs [5][][32]byte) (*types.Transaction, error)
 }
 
 // ethereumPaymentObligation handles all interactions related to minting of NFTs for payment obligations on Ethereum
@@ -47,72 +55,107 @@ type ethereumPaymentObligation struct {
 	identityService   identity.Service
 	ethClient         ethereum.Client
 	config            Config
+	setupMintListener func(tokenID *big.Int) (confirmations chan *WatchTokenMinted, err error)
 }
 
 // NewEthereumPaymentObligation creates ethereumPaymentObligation given the parameters
-func NewEthereumPaymentObligation(paymentObligation ethereumPaymentObligationContract, identityService identity.Service, ethClient ethereum.Client, config Config) *ethereumPaymentObligation {
-	return &ethereumPaymentObligation{paymentObligation: paymentObligation, identityService: identityService, ethClient: ethClient, config: config}
+func NewEthereumPaymentObligation(paymentObligation ethereumPaymentObligationContract, identityService identity.Service, ethClient ethereum.Client, config Config, setupMintListener func(tokenID *big.Int) (confirmations chan *WatchTokenMinted, err error)) *ethereumPaymentObligation {
+	return &ethereumPaymentObligation{paymentObligation: paymentObligation, identityService: identityService, ethClient: ethClient, config: config, setupMintListener: setupMintListener}
 }
 
 // MintNFT mints an NFT
-func (s *ethereumPaymentObligation) MintNFT(documentID []byte, docType, registryAddress, depositAddress string, proofFields []string) (string, error) {
+func (s *ethereumPaymentObligation) MintNFT(documentID []byte, docType, registryAddress, depositAddress string, proofFields []string) (<-chan *WatchTokenMinted, error) {
 	docService, err := getDocumentService(docType)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	model, err := docService.GetCurrentVersion(documentID)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	corDoc, err := model.PackCoreDocument()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	proofs, err := docService.CreateProofs(documentID, proofFields)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	toAddress, err := s.getIdentityAddress()
 	if err != nil {
-		return "", nil
+		return nil, nil
 	}
 
 	anchorID, err := anchors.ToAnchorID(corDoc.CurrentVersion)
 	if err != nil {
-		return "", nil
+		return nil, nil
 	}
 
 	rootHash, err := anchors.ToDocumentRoot(corDoc.DocumentRoot)
 	if err != nil {
-		return "", nil
+		return nil, nil
 	}
 
-	requestData, err := NewMintRequest(toAddress, anchorID, proofs.FieldProofs, rootHash)
+	//last proofField should be the collaborator
+	requestData, err := NewMintRequest(toAddress, anchorID, proofs.FieldProofs, rootHash, proofFields[len(proofFields)-1])
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	opts, err := s.ethClient.GetTxOpts(s.config.GetEthereumDefaultAccountName())
 	if err != nil {
-		return "", err
+		return nil, err
+	}
+
+	watch, err := s.setupMintListener(requestData.TokenID)
+	if err != nil {
+		return nil, err
 	}
 
 	err = s.sendMintTransaction(s.paymentObligation, opts, requestData)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return requestData.TokenID.String(), nil
+	return watch, nil
+}
+
+// setUpMintEventListener sets up the listened for the "PaymentObligationMinted" event to notify the upstream code
+// about successful minting of an NFt
+func setupMintListener(tokenID *big.Int) (confirmations chan *WatchTokenMinted, err error) {
+	confirmations = make(chan *WatchTokenMinted)
+	conn := ethereum.GetClient()
+
+	h, err := conn.GetEthClient().HeaderByNumber(context.Background(), nil)
+	if err != nil {
+		return nil, err
+	}
+	asyncRes, err := queue.Queue.DelayKwargs(mintingConfirmationTaskName, map[string]interface{}{
+		tokenIDParam: hex.EncodeToString(tokenID.Bytes()),
+		blockHeight:  h.Number.Uint64(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	go waitAndRouteNFTApprovedEvent(asyncRes, tokenID, confirmations)
+	return confirmations, nil
+}
+
+// waitAndRouteNFTApprovedEvent notifies the confirmations channel whenever the key has been added to the identity and has been noted as Ethereum event
+func waitAndRouteNFTApprovedEvent(asyncRes *gocelery.AsyncResult, tokenID *big.Int, confirmations chan<- *WatchTokenMinted) {
+	_, err := asyncRes.Get(ethereum.GetDefaultContextTimeout())
+	confirmations <- &WatchTokenMinted{tokenID, err}
 }
 
 // sendMintTransaction sends the actual transaction to mint the NFT
 func (s *ethereumPaymentObligation) sendMintTransaction(contract ethereumPaymentObligationContract, opts *bind.TransactOpts, requestData *MintRequest) (err error) {
 	tx, err := s.ethClient.SubmitTransactionWithRetries(contract.Mint, opts, requestData.To, requestData.TokenID, requestData.TokenURI, requestData.AnchorID,
-		requestData.MerkleRoot, requestData.Values, requestData.Salts, requestData.Proofs)
+		requestData.MerkleRoot, requestData.CollaboratorField, requestData.Values, requestData.Salts, requestData.Proofs)
 	if err != nil {
 		return err
 	}
@@ -158,18 +201,21 @@ type MintRequest struct {
 	// MerkleRoot is the root hash of the merkle proof/doc
 	MerkleRoot [32]byte
 
+	//CollaboratorField contains the value of the collaborator leaf
+	CollaboratorField string
+
 	// Values are the values of the leafs that is being proved Will be converted to string and concatenated for proof verification as outlined in precise-proofs library.
-	Values [3]string
+	Values [amountOfProofs]string
 
 	// salts are the salts for the field that is being proved Will be concatenated for proof verification as outlined in precise-proofs library.
-	Salts [3][32]byte
+	Salts [amountOfProofs][32]byte
 
 	// Proofs are the documents proofs that are needed
-	Proofs [3][][32]byte
+	Proofs [amountOfProofs][][32]byte
 }
 
 // NewMintRequest converts the parameters and returns a struct with needed parameter for minting
-func NewMintRequest(to common.Address, anchorID anchors.AnchorID, proofs []*proofspb.Proof, rootHash [32]byte) (*MintRequest, error) {
+func NewMintRequest(to common.Address, anchorID anchors.AnchorID, proofs []*proofspb.Proof, rootHash [32]byte, collaboratorField string) (*MintRequest, error) {
 	tokenID := utils.ByteSliceToBigInt(utils.RandomSlice(256))
 	tokenURI := "http:=//www.centrifuge.io/DUMMY_URI_SERVICE"
 	proofData, err := createProofData(proofs)
@@ -178,29 +224,30 @@ func NewMintRequest(to common.Address, anchorID anchors.AnchorID, proofs []*proo
 	}
 
 	return &MintRequest{
-		To:         to,
-		TokenID:    tokenID,
-		TokenURI:   tokenURI,
-		AnchorID:   anchorID.BigInt(),
-		MerkleRoot: rootHash,
-		Values:     proofData.Values,
-		Salts:      proofData.Salts,
-		Proofs:     proofData.Proofs}, nil
+		To:                to,
+		TokenID:           tokenID,
+		TokenURI:          tokenURI,
+		AnchorID:          anchorID.BigInt(),
+		MerkleRoot:        rootHash,
+		CollaboratorField: collaboratorField,
+		Values:            proofData.Values,
+		Salts:             proofData.Salts,
+		Proofs:            proofData.Proofs}, nil
 }
 
 type proofData struct {
-	Values [3]string
-	Salts  [3][32]byte
-	Proofs [3][][32]byte
+	Values [amountOfProofs]string
+	Salts  [amountOfProofs][32]byte
+	Proofs [amountOfProofs][][32]byte
 }
 
 func createProofData(proofspb []*proofspb.Proof) (*proofData, error) {
-	if len(proofspb) > 3 {
-		return nil, errors.New("no more than 3 field proofs are accepted")
+	if len(proofspb) > amountOfProofs {
+		return nil, fmt.Errorf("no more than %v field proofs are accepted", amountOfProofs)
 	}
-	var values [3]string
-	var salts [3][32]byte
-	var proofs [3][][32]byte
+	var values [amountOfProofs]string
+	var salts [amountOfProofs][32]byte
+	var proofs [amountOfProofs][][32]byte
 
 	for i, p := range proofspb {
 		values[i] = p.Value
