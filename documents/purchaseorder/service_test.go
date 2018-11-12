@@ -133,10 +133,16 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.Contains(t, err.Error(), "invalid payload")
 	assert.Nil(t, doc)
 
+	// nil payload data
+	doc, err = poSrv.DeriveFromUpdatePayload(&clientpurchaseorderpb.PurchaseOrderUpdatePayload{}, nil)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid payload")
+	assert.Nil(t, doc)
+
 	// messed up identifier
 	contextHeader, err := documents.NewContextHeader()
 	assert.Nil(t, err)
-	payload := &clientpurchaseorderpb.PurchaseOrderUpdatePayload{Identifier: "some identifier"}
+	payload := &clientpurchaseorderpb.PurchaseOrderUpdatePayload{Identifier: "some identifier", Data: &clientpurchaseorderpb.PurchaseOrderData{}}
 	doc, err = poSrv.DeriveFromUpdatePayload(payload, contextHeader)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to decode identifier")
@@ -205,6 +211,12 @@ func TestService_DeriveFromCreatePayload(t *testing.T) {
 
 	// nil payload
 	m, err := poSrv.DeriveFromCreatePayload(nil, ctxh)
+	assert.Nil(t, m)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "input is nil")
+
+	// nil data payload
+	m, err = poSrv.DeriveFromCreatePayload(&clientpurchaseorderpb.PurchaseOrderCreatePayload{}, ctxh)
 	assert.Nil(t, m)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "input is nil")

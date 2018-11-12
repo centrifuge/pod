@@ -38,15 +38,14 @@
   revision = "cff30e1d23fc9e800b2b5b4b41ef1817dda07e9f"
 
 [[projects]]
-  branch = "develop"
-  digest = "1:2ad07f3fadd7fbed5895432782ffd4c427b766a1237b979590edbcc02d78ba68"
+  digest = "1:8f8c3deed3c1e42a1fbe03b386408023f376f388297294b683125ae4bb90324a"
   name = "github.com/centrifuge/centrifuge-ethereum-contracts"
   packages = ["."]
   pruneopts = "T"
-  revision = "c60964592c1a2b83c5676878c937cdbe6719869d"
+  revision = "d9a240d86d05350de86c26ed23d72b45562ae155"
 
 [[projects]]
-  digest = "1:66b6977457e5e7eff7aba31099caed6f2a21480f5616b4e32bf982715ab24b8b"
+  digest = "1:e296ad994e618f237b1fd55450f99007017a8aedd981628d2bb3d09704deab3a"
   name = "github.com/centrifuge/centrifuge-protobufs"
   packages = [
     "documenttypes",
@@ -58,7 +57,7 @@
     "gen/go/purchaseorder",
   ]
   pruneopts = "T"
-  revision = "2660f56a4edb61312b7eb83a986fb5ae6ea73255"
+  revision = "51fb5cf922b4a413a78397ad3707f755cfd48abf"
 
 [[projects]]
   digest = "1:c925cd40d25fe72f5916e010b79b5d9f6e0e97ec9b190fa658c6c67b913229ea"
@@ -75,7 +74,7 @@
     "proofs/proto",
   ]
   pruneopts = "UT"
-  revision = "1abae88cef959657117754ae7602a5285d1008cc"
+  revision = "ff15857d84b0eea93e52cc465f71662b78f62f6f"
 
 [[projects]]
   digest = "1:0ef770954bca104ee99b3b6b7f9b240605ac03517d9f98cbc1893daa03f3c038"
@@ -102,7 +101,7 @@
   version = "v1.7"
 
 [[projects]]
-  digest = "1:ba11b65320bfa1a5e8e43b050833bca23490e508a67c45d7e430156cefc2ab7f"
+  digest = "1:0f390470311a75caba6b4223dcd881d4a9c5141afaf7fef3c5908c145a5073dd"
   name = "github.com/ethereum/go-ethereum"
   packages = [
     ".",
@@ -114,6 +113,7 @@
     "common/hexutil",
     "common/math",
     "common/mclock",
+    "common/prque",
     "core/types",
     "crypto",
     "crypto/secp256k1",
@@ -130,8 +130,8 @@
     "trie",
   ]
   pruneopts = "T"
-  revision = "89451f7c382ad2185987ee369f16416f89c28a7d"
-  version = "v1.8.15"
+  revision = "e024c16f34c6028060b645efae1d6258e442442a"
+  source = "github.com/centrifuge/go-ethereum"
 
 [[projects]]
   digest = "1:d1341a04a4443bba8c8af76ec6c3960206074490a1284b4853ff5a88a66c63b7"
@@ -1313,14 +1313,6 @@
 
 [[projects]]
   branch = "v2"
-  digest = "1:0a2f4b974a413866afa1b41130d756643841fb9ad661b81c9a6dd9f1364ed19f"
-  name = "gopkg.in/karalabe/cookiejar.v2"
-  packages = ["collections/prque"]
-  pruneopts = "UT"
-  revision = "8dcd6a7f4951f6ff3ee9cbb919a06d8925822e57"
-
-[[projects]]
-  branch = "v2"
   digest = "1:3d3f9391ab615be8655ae0d686a1564f3fec413979bb1aaf018bac1ec1bb1cc7"
   name = "gopkg.in/natefinch/npipe.v2"
   packages = ["."]
@@ -1369,6 +1361,7 @@
     "github.com/ethereum/go-ethereum/crypto/secp256k1",
     "github.com/ethereum/go-ethereum/ethclient",
     "github.com/ethereum/go-ethereum/event",
+    "github.com/ethereum/go-ethereum/log",
     "github.com/ethereum/go-ethereum/rpc",
     "github.com/go-errors/errors",
     "github.com/golang/protobuf/jsonpb",

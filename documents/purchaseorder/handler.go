@@ -90,21 +90,25 @@ func (h grpcHandler) GetVersion(ctx context.Context, req *clientpurchaseorderpb.
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "identifier is invalid")
 	}
+
 	version, err := hexutil.Decode(req.Version)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "version is invalid")
 	}
+
 	model, err := h.service.GetVersion(identifier, version)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "document not found")
 	}
+
 	resp, err := h.service.DerivePurchaseOrderResponse(model)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, err
 	}
+
 	return resp, nil
 }
 
@@ -116,15 +120,18 @@ func (h grpcHandler) Get(ctx context.Context, getRequest *clientpurchaseorderpb.
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "identifier is an invalid hex string")
 	}
+
 	model, err := h.service.GetCurrentVersion(identifier)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "document not found")
 	}
+
 	resp, err := h.service.DerivePurchaseOrderResponse(model)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, err
 	}
+
 	return resp, nil
 }
