@@ -18,36 +18,39 @@ type Bootstrapper struct {
 }
 
 func (*Bootstrapper) Bootstrap(c map[string]interface{}) error {
-	if _, ok := c[bootstrap.BootstrappedConfig]; ok {
-		services, err := defaultServerList()
-		if err != nil {
-			return fmt.Errorf("failed to get default server list: %v", err)
-		}
-
-		n := NewNode(services)
-		feedback := make(chan error)
-		// may be we can pass a context that exists in c here
-		ctx, canc := context.WithCancel(context.Background())
-		go n.Start(ctx, feedback)
-		controlC := make(chan os.Signal, 1)
-		signal.Notify(controlC, os.Interrupt)
-		for {
-			select {
-			case err := <-feedback:
-				panic(err)
-			case sig := <-controlC:
-				log.Info("Node shutting down because of ", sig)
-				canc()
-				err := <-feedback
-				return err
-			}
-		}
-		return nil
+	if _, ok := c[bootstrap.BootstrappedConfig]; !ok {
+		return errors.New("config hasn't been initialized")
 	}
-	return errors.New("could not initialize node")
+	cfg := c[bootstrap.BootstrappedConfig].(*config.Configuration)
+
+	services, err := defaultServerList(cfg)
+	if err != nil {
+		return fmt.Errorf("failed to get default server list: %v", err)
+	}
+
+	n := NewNode(services)
+	feedback := make(chan error)
+	// may be we can pass a context that exists in c here
+	ctx, canc := context.WithCancel(context.Background())
+	go n.Start(ctx, feedback)
+	controlC := make(chan os.Signal, 1)
+	signal.Notify(controlC, os.Interrupt)
+	for {
+		select {
+		case err := <-feedback:
+			panic(err)
+		case sig := <-controlC:
+			log.Info("Node shutting down because of ", sig)
+			canc()
+			err := <-feedback
+			return err
+		}
+	}
+
+	return nil
 }
 
-func defaultServerList() ([]Server, error) {
+func defaultServerList(cfg *config.Configuration) ([]Server, error) {
 	publicKey, privateKey, err := ed25519.GetSigningKeyPairFromConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get keys: %v", err)
@@ -55,13 +58,13 @@ func defaultServerList() ([]Server, error) {
 
 	return []Server{
 		api.NewCentAPIServer(
-			config.Config().GetServerAddress(),
-			config.Config().GetServerPort(),
-			config.Config().GetNetworkString(),
+			cfg.GetServerAddress(),
+			cfg.GetServerPort(),
+			cfg.GetNetworkString(),
 		),
 		p2p.NewCentP2PServer(
-			config.Config().GetP2PPort(),
-			config.Config().GetBootstrapPeers(),
+			cfg.GetP2PPort(),
+			cfg.GetBootstrapPeers(),
 			publicKey, privateKey,
 		),
 	}, nil

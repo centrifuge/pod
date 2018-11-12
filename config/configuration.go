@@ -265,7 +265,11 @@ func (c *Configuration) GetEthAuthKeyPair() (pub, priv string) {
 
 // Configuration Implementation
 func NewConfiguration(configFile string) *Configuration {
-	return &Configuration{configFile: configFile, mu: sync.RWMutex{}}
+	cfg := &Configuration{configFile: configFile, mu: sync.RWMutex{}}
+	cfg.InitializeViper()
+	//TODO Will remove this soon, when we do not use global config variable
+	SetConfig(cfg)
+	return cfg
 }
 
 func (c *Configuration) readConfigFile(path string) error {
@@ -311,12 +315,6 @@ func (c *Configuration) InitializeViper() {
 	c.v.AutomaticEnv()
 	c.v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	c.v.SetEnvPrefix("CENT")
-}
-
-func Bootstrap(configFile string) {
-	c := NewConfiguration(configFile)
-	c.InitializeViper()
-	SetConfig(c)
 }
 
 // CreateConfigFile creates minimum config file with arguments

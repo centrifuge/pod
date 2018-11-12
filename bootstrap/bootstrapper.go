@@ -3,6 +3,7 @@ package bootstrap
 // DO NOT PUT any app logic in this package to avoid any dependency cycles
 
 const (
+	BootstrappedConfigFile       string = "BootstrappedConfigFile"
 	BootstrappedConfig           string = "BootstrappedConfig"
 	BootstrappedLevelDb          string = "BootstrappedLevelDb"
 	BootstrappedEthereumClient   string = "BootstrappedEthereumClient"
