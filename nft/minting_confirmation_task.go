@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common"
 	"time"
+
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/centrifuge/gocelery"
 
@@ -19,7 +20,7 @@ const (
 	mintingConfirmationTaskName string = "MintingConfirmationTaskName"
 	tokenIDParam                string = "TokenIDParam"
 	blockHeightParam            string = "BlockHeightParam"
-	registryAddressParam		string = "RegistryAddressParam"
+	registryAddressParam        string = "RegistryAddressParam"
 )
 
 // paymentObligationMintedFilterer filters the approved NFTs
@@ -32,9 +33,9 @@ type paymentObligationMintedFilterer interface {
 // mintingConfirmationTask confirms the minting of a payment obligation NFT
 type mintingConfirmationTask struct {
 	//task parameter
-	TokenID                         string
-	BlockHeight                     uint64
-	RegistryAddress					string
+	TokenID         string
+	BlockHeight     uint64
+	RegistryAddress string
 
 	//state
 	EthContextInitializer           func() (ctx context.Context, cancelFunc context.CancelFunc)

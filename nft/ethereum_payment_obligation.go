@@ -4,8 +4,9 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"github.com/centrifuge/go-centrifuge/config"
 	"math/big"
+
+	"github.com/centrifuge/go-centrifuge/config"
 
 	"regexp"
 
@@ -61,13 +62,11 @@ type ethereumPaymentObligation struct {
 }
 
 // NewEthereumPaymentObligation creates ethereumPaymentObligation given the parameters
-func NewEthereumPaymentObligation(identityService identity.Service, ethClient ethereum.Client, config Config, setupMintListener func(tokenID *big.Int,registryAddress string) (confirmations chan *WatchTokenMinted, err error)) *ethereumPaymentObligation {
+func NewEthereumPaymentObligation(identityService identity.Service, ethClient ethereum.Client, config Config, setupMintListener func(tokenID *big.Int, registryAddress string) (confirmations chan *WatchTokenMinted, err error)) *ethereumPaymentObligation {
 	return &ethereumPaymentObligation{identityService: identityService, ethClient: ethClient, config: config, setupMintListener: setupMintListener}
 }
 
-
-
-func (s *ethereumPaymentObligation) prepareMintRequest(documentID []byte, docType string, proofFields []string) (*MintRequest,error) {
+func (s *ethereumPaymentObligation) prepareMintRequest(documentID []byte, docType string, proofFields []string) (*MintRequest, error) {
 	docService, err := getDocumentService(docType)
 	if err != nil {
 		return nil, err
@@ -108,7 +107,7 @@ func (s *ethereumPaymentObligation) prepareMintRequest(documentID []byte, docTyp
 		return nil, err
 	}
 
-	requestData, err := NewMintRequest(toAddress, anchorID, proofs.FieldProofs, rootHash,collaboratorField)
+	requestData, err := NewMintRequest(toAddress, anchorID, proofs.FieldProofs, rootHash, collaboratorField)
 	if err != nil {
 		return nil, err
 	}
@@ -117,19 +116,17 @@ func (s *ethereumPaymentObligation) prepareMintRequest(documentID []byte, docTyp
 
 }
 
-
 // MintNFT mints an NFT
 func (s *ethereumPaymentObligation) MintNFT(documentID []byte, docType, registryAddress, depositAddress string, proofFields []string) (<-chan *WatchTokenMinted, error) {
 
-
-	requestData, err := s.prepareMintRequest(documentID,docType, proofFields)
+	requestData, err := s.prepareMintRequest(documentID, docType, proofFields)
 
 	opts, err := s.ethClient.GetTxOpts(s.config.GetEthereumDefaultAccountName())
 	if err != nil {
 		return nil, err
 	}
 
-	watch, err := s.setupMintListener(requestData.TokenID,registryAddress)
+	watch, err := s.setupMintListener(requestData.TokenID, registryAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -163,8 +160,8 @@ func setupMintListener(tokenID *big.Int, registryAddress string) (confirmations 
 		return nil, err
 	}
 	asyncRes, err := queue.Queue.DelayKwargs(mintingConfirmationTaskName, map[string]interface{}{
-		tokenIDParam: hex.EncodeToString(tokenID.Bytes()),
-		blockHeightParam:  h.Number.Uint64(),
+		tokenIDParam:         hex.EncodeToString(tokenID.Bytes()),
+		blockHeightParam:     h.Number.Uint64(),
 		registryAddressParam: registryAddress,
 	})
 	if err != nil {
@@ -323,7 +320,7 @@ func getDocumentService(documentType string) (documents.Service, error) {
 // examples: 'collaborators[0]','collaborators[1]', etc
 func getCollaboratorProofField(proofFields []string) (string, error) {
 
-	for _, proofField := range proofFields{
+	for _, proofField := range proofFields {
 
 		match, err := regexp.MatchString("collaborators\\[[0-9]*\\]", proofField)
 
@@ -336,7 +333,7 @@ func getCollaboratorProofField(proofFields []string) (string, error) {
 		}
 	}
 
-	return "",fmt.Errorf("proof_fields should contain a collaborator. (example: 'collaborators[0]')")
+	return "", fmt.Errorf("proof_fields should contain a collaborator. (example: 'collaborators[0]')")
 
 }
 
@@ -345,8 +342,7 @@ func newDefaultContract() (*EthereumPaymentObligationContract, error) {
 	return newContract(config.Config().GetContractAddress("paymentObligation"))
 }
 
-
-func  newContract(address common.Address) (*EthereumPaymentObligationContract, error) {
+func newContract(address common.Address) (*EthereumPaymentObligationContract, error) {
 	client := ethereum.GetClient()
 	return NewEthereumPaymentObligationContract(address, client.GetEthClient())
 }
