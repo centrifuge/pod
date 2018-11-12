@@ -2,6 +2,7 @@ package nft
 
 import (
 	"context"
+
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/centrifuge/go-centrifuge/centerrors"
@@ -28,7 +29,7 @@ func (g grpcHandler) MintNFT(context context.Context, request *nftpb.NFTMintRequ
 
 	err := g.validateParameters(request)
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 	identifier, err := hexutil.Decode(request.Identifier)
 	if err != nil {
@@ -43,14 +44,13 @@ func (g grpcHandler) MintNFT(context context.Context, request *nftpb.NFTMintRequ
 	return &nftpb.NFTMintResponse{TokenId: watchToken.TokenID.String()}, watchToken.Err
 }
 
+func (g grpcHandler) validateParameters(request *nftpb.NFTMintRequest) error {
 
-func (g grpcHandler) validateParameters(request *nftpb.NFTMintRequest)(error) {
-
-	if !common.IsHexAddress(request.RegistryAddress){
+	if !common.IsHexAddress(request.RegistryAddress) {
 		return centerrors.New(code.Unknown, "RegistryAddress is not a valid Ethereum address")
 	}
 
-	if !common.IsHexAddress(request.DepositAddress){
+	if !common.IsHexAddress(request.DepositAddress) {
 		return centerrors.New(code.Unknown, "DepositAddress is not a valid Ethereum address")
 	}
 

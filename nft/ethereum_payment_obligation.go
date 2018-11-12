@@ -107,7 +107,7 @@ func (s *ethereumPaymentObligation) MintNFT(documentID []byte, docType, registry
 		return nil, err
 	}
 
-	requestData, err := NewMintRequest(toAddress, anchorID, proofs.FieldProofs, rootHash,collaboratorField)
+	requestData, err := NewMintRequest(toAddress, anchorID, proofs.FieldProofs, rootHash, collaboratorField)
 	if err != nil {
 		return nil, err
 	}
@@ -300,7 +300,7 @@ func getDocumentService(documentType string) (documents.Service, error) {
 // examples: 'collaborators[0]','collaborators[1]', etc
 func getCollaboratorProofField(proofFields []string) (string, error) {
 
-	for _, proofField := range proofFields{
+	for _, proofField := range proofFields {
 
 		match, err := regexp.MatchString("collaborators\\[[0-9]*\\]", proofField)
 
@@ -313,6 +313,6 @@ func getCollaboratorProofField(proofFields []string) (string, error) {
 		}
 	}
 
-	return "",fmt.Errorf("proof_fields should contain a collaborator. (example: 'collaborators[0]')")
+	return "", fmt.Errorf("proof_fields should contain a collaborator. (example: 'collaborators[0]')")
 
 }

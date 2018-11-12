@@ -251,23 +251,23 @@ func decodeHex(hex string) []byte {
 
 func TestGetCollaboratorProofField(t *testing.T) {
 
-	proofField, err := getCollaboratorProofField([]string{"fuu","foo","collaborators[0]"})
-	assert.Nil(t,err,"getCollaboratorProofField should not throw an error")
-	assert.Equal(t,"collaborators[0]",proofField,"proofField should contain the correct field")
+	proofField, err := getCollaboratorProofField([]string{"fuu", "foo", "collaborators[0]"})
+	assert.Nil(t, err, "getCollaboratorProofField should not throw an error")
+	assert.Equal(t, "collaborators[0]", proofField, "proofField should contain the correct field")
 
-	proofField, err = getCollaboratorProofField([]string{"fuu","foo"})
-	assert.Error(t,err,"getCollaboratorProofField should throw an error")
-	assert.Equal(t,"",proofField,"proofField should be empty")
+	proofField, err = getCollaboratorProofField([]string{"fuu", "foo"})
+	assert.Error(t, err, "getCollaboratorProofField should throw an error")
+	assert.Equal(t, "", proofField, "proofField should be empty")
 
-	proofField, err = getCollaboratorProofField([]string{"fuu","foo","collaborators"})
-	assert.Error(t,err,"getCollaboratorProofField should throw an error")
-	assert.Equal(t,"",proofField,"proofField should be empty")
+	proofField, err = getCollaboratorProofField([]string{"fuu", "foo", "collaborators"})
+	assert.Error(t, err, "getCollaboratorProofField should throw an error")
+	assert.Equal(t, "", proofField, "proofField should be empty")
 
-	proofField, err = getCollaboratorProofField([]string{"fuu","foo","collaborators[a]"})
-	assert.Error(t,err,"getCollaboratorProofField should throw an error")
-	assert.Equal(t,"",proofField,"proofField should be empty")
+	proofField, err = getCollaboratorProofField([]string{"fuu", "foo", "collaborators[a]"})
+	assert.Error(t, err, "getCollaboratorProofField should throw an error")
+	assert.Equal(t, "", proofField, "proofField should be empty")
 
-	proofField, err = getCollaboratorProofField([]string{"fuu","foo","collaborators[12345678]"})
-	assert.Nil(t,err,"getCollaboratorProofField should not throw an error")
-	assert.Equal(t,"collaborators[12345678]",proofField,"proofField should contain the correct field")
+	proofField, err = getCollaboratorProofField([]string{"fuu", "foo", "collaborators[12345678]"})
+	assert.Nil(t, err, "getCollaboratorProofField should not throw an error")
+	assert.Equal(t, "collaborators[12345678]", proofField, "proofField should contain the correct field")
 }
