@@ -162,7 +162,7 @@ func TestPaymentObligationService(t *testing.T) {
 				proof := getDummyProof(coreDoc)
 				docServiceMock := testingdocuments.MockService{}
 				docServiceMock.On("GetCurrentVersion", decodeHex("0x1212")).Return(&invoice.Invoice{InvoiceNumber: "1232", CoreDocument: coreDoc}, nil)
-				docServiceMock.On("CreateProofs", decodeHex("0x1212"), []string{"somefield"}).Return(proof, nil)
+				docServiceMock.On("CreateProofs", decodeHex("0x1212"), []string{"collaborators[0]"}).Return(proof, nil)
 				paymentObligationMock := &MockPaymentObligation{}
 				idServiceMock := testingcommons.MockIDService{}
 				idServiceMock.On("GetIdentityAddress", centID).Return(address, nil)
@@ -178,7 +178,7 @@ func TestPaymentObligationService(t *testing.T) {
 				configMock.On("GetIdentityID").Return(centIDByte, nil)
 				return docServiceMock, paymentObligationMock, idServiceMock, ethClientMock, configMock
 			},
-			&nftpb.NFTMintRequest{Identifier: "0x1212", Type: "happypath", ProofFields: []string{"somefield"}},
+			&nftpb.NFTMintRequest{Identifier: "0x1212", Type: "happypath", ProofFields: []string{"collaborators[0]"}},
 			nil,
 			"",
 		},
@@ -247,4 +247,27 @@ func byteSliceToByteArray32(input []byte) (out [32]byte) {
 func decodeHex(hex string) []byte {
 	h, _ := hexutil.Decode(hex)
 	return h
+}
+
+func TestGetCollaboratorProofField(t *testing.T) {
+
+	proofField, err := getCollaboratorProofField([]string{"fuu","foo","collaborators[0]"})
+	assert.Nil(t,err,"getCollaboratorProofField should not throw an error")
+	assert.Equal(t,"collaborators[0]",proofField,"proofField should contain the correct field")
+
+	proofField, err = getCollaboratorProofField([]string{"fuu","foo"})
+	assert.Error(t,err,"getCollaboratorProofField should throw an error")
+	assert.Equal(t,"",proofField,"proofField should be empty")
+
+	proofField, err = getCollaboratorProofField([]string{"fuu","foo","collaborators"})
+	assert.Error(t,err,"getCollaboratorProofField should throw an error")
+	assert.Equal(t,"",proofField,"proofField should be empty")
+
+	proofField, err = getCollaboratorProofField([]string{"fuu","foo","collaborators[a]"})
+	assert.Error(t,err,"getCollaboratorProofField should throw an error")
+	assert.Equal(t,"",proofField,"proofField should be empty")
+
+	proofField, err = getCollaboratorProofField([]string{"fuu","foo","collaborators[12345678]"})
+	assert.Nil(t,err,"getCollaboratorProofField should not throw an error")
+	assert.Equal(t,"collaborators[12345678]",proofField,"proofField should contain the correct field")
 }
