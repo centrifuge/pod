@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/bootstrap"
 	cc "github.com/centrifuge/go-centrifuge/context"
 	"github.com/centrifuge/go-centrifuge/utils"
 	logging "github.com/ipfs/go-log"
@@ -52,8 +52,8 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "set loglevel to debug")
 }
 
-// readConfigFile reads in config file and ENV variables if set.
-func readConfigFile() {
+// ensureConfigFile ensures a config file is provided
+func ensureConfigFile() string {
 	if cfgFile == "" {
 		// Find home directory.
 		home, err := homedir.Dir()
@@ -68,8 +68,7 @@ func readConfigFile() {
 			cfgFile = ""
 		}
 	}
-	// If a config file is found, read it in.
-	config.Bootstrap(cfgFile)
+	return cfgFile
 }
 
 //setCentrifugeLoggers sets the loggers.
@@ -86,20 +85,24 @@ func setCentrifugeLoggers() {
 
 }
 
-func runBootstrap() {
+func runBootstrap(cfgFile string) {
 	mb := cc.MainBootstrapper{}
 	mb.PopulateRunBootstrappers()
-	err := mb.Bootstrap(map[string]interface{}{})
+	ctx := map[string]interface{}{}
+	ctx[bootstrap.BootstrappedConfigFile] = cfgFile
+	err := mb.Bootstrap(ctx)
 	if err != nil {
 		// application must not continue to run
 		panic(err)
 	}
 }
 
-func baseBootstrap() {
+func baseBootstrap(cfgFile string) {
 	mb := cc.MainBootstrapper{}
 	mb.PopulateBaseBootstrappers()
-	err := mb.Bootstrap(map[string]interface{}{})
+	ctx := map[string]interface{}{}
+	ctx[bootstrap.BootstrappedConfigFile] = cfgFile
+	err := mb.Bootstrap(ctx)
 	if err != nil {
 		// application must not continue to run
 		panic(err)

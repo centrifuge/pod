@@ -18,17 +18,19 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	if _, ok := context[bootstrap.BootstrappedConfig]; !ok {
 		return errors.New("config hasn't been initialized")
 	}
+	cfg := context[bootstrap.BootstrappedConfig].(*config.Configuration)
+
 	if _, ok := context[bootstrap.BootstrappedEthereumClient]; !ok {
 		return errors.New("ethereum client hasn't been initialized")
 	}
 
 	client := ethereum.GetClient()
-	repositoryContract, err := NewEthereumAnchorRepositoryContract(config.Config().GetContractAddress("anchorRepository"), client.GetEthClient())
+	repositoryContract, err := NewEthereumAnchorRepositoryContract(cfg.GetContractAddress("anchorRepository"), client.GetEthClient())
 	if err != nil {
 		return err
 	}
 
-	anchorRepo := NewEthereumAnchorRepository(config.Config(), repositoryContract)
+	anchorRepo := NewEthereumAnchorRepository(cfg, repositoryContract)
 	setAnchorRepository(anchorRepo)
 	if err != nil {
 		return err

@@ -143,7 +143,7 @@ func (s service) Update(ctx context.Context, po documents.Model) (documents.Mode
 
 // DeriveFromCreatePayload derives purchase order from create payload
 func (s service) DeriveFromCreatePayload(payload *clientpopb.PurchaseOrderCreatePayload, ctxH *documents.ContextHeader) (documents.Model, error) {
-	if payload == nil {
+	if payload == nil || payload.Data == nil {
 		return nil, centerrors.New(code.DocumentInvalid, "input is nil")
 	}
 
@@ -158,7 +158,7 @@ func (s service) DeriveFromCreatePayload(payload *clientpopb.PurchaseOrderCreate
 
 // DeriveFromUpdatePayload derives purchase order from update payload
 func (s service) DeriveFromUpdatePayload(payload *clientpopb.PurchaseOrderUpdatePayload, ctxH *documents.ContextHeader) (documents.Model, error) {
-	if payload == nil {
+	if payload == nil || payload.Data == nil {
 		return nil, centerrors.New(code.DocumentInvalid, "invalid payload")
 	}
 
