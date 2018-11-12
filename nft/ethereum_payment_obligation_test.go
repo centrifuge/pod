@@ -51,9 +51,9 @@ func TestCreateProofData(t *testing.T) {
 				},
 			},
 			proofData{
-				Values: [3]string{"value1", "value2"},
-				Proofs: [3][][32]byte{{byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}, {byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}},
-				Salts:  [3][32]byte{byteSliceToByteArray32(salt), byteSliceToByteArray32(salt)},
+				Values: [amountOfProofs]string{"value1", "value2"},
+				Proofs: [amountOfProofs][][32]byte{{byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}, {byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}},
+				Salts:  [amountOfProofs][32]byte{byteSliceToByteArray32(salt), byteSliceToByteArray32(salt)},
 			},
 			nil,
 		},
@@ -74,9 +74,9 @@ func TestCreateProofData(t *testing.T) {
 				},
 			},
 			proofData{
-				Values: [3]string{"value1", "value2"},
-				Proofs: [3][][32]byte{{byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}, {byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}},
-				Salts:  [3][32]byte{byteSliceToByteArray32(salt), byteSliceToByteArray32(salt)},
+				Values: [amountOfProofs]string{"value1", "value2"},
+				Proofs: [amountOfProofs][][32]byte{{byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}, {byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}},
+				Salts:  [amountOfProofs][32]byte{byteSliceToByteArray32(salt), byteSliceToByteArray32(salt)},
 			},
 			errors.New("input exceeds length of 32"),
 		},
@@ -97,9 +97,9 @@ func TestCreateProofData(t *testing.T) {
 				},
 			},
 			proofData{
-				Values: [3]string{"value1", "value2"},
-				Proofs: [3][][32]byte{{byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}, {byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}},
-				Salts:  [3][32]byte{byteSliceToByteArray32(salt), byteSliceToByteArray32(salt)},
+				Values: [amountOfProofs]string{"value1", "value2"},
+				Proofs: [amountOfProofs][][32]byte{{byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}, {byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}},
+				Salts:  [amountOfProofs][32]byte{byteSliceToByteArray32(salt), byteSliceToByteArray32(salt)},
 			},
 			errors.New("input exceeds length of 32"),
 		},
@@ -124,7 +124,7 @@ type MockPaymentObligation struct {
 	mock.Mock
 }
 
-func (m *MockPaymentObligation) Mint(opts *bind.TransactOpts, _to common.Address, _tokenId *big.Int, _tokenURI string, _anchorId *big.Int, _merkleRoot [32]byte, _values [3]string, _salts [3][32]byte, _proofs [3][][32]byte) (*types.Transaction, error) {
+func (m *MockPaymentObligation) Mint(opts *bind.TransactOpts, _to common.Address, _tokenId *big.Int, _tokenURI string, _anchorId *big.Int, _merkleRoot [32]byte, collaboratorField string, _values [amountOfProofs]string, _salts [amountOfProofs][32]byte, _proofs [amountOfProofs][][32]byte) (*types.Transaction, error) {
 	args := m.Called(opts, _to, _tokenId, _tokenURI, _anchorId, _merkleRoot, _values, _salts, _proofs)
 	return args.Get(0).(*types.Transaction), args.Error(1)
 }
@@ -171,7 +171,7 @@ func TestPaymentObligationService(t *testing.T) {
 				ethClientMock.On("SubmitTransactionWithRetries",
 					mock.Anything, mock.Anything, mock.Anything, mock.Anything,
 					mock.Anything, mock.Anything, mock.Anything, mock.Anything,
-					mock.Anything, mock.Anything,
+					mock.Anything, mock.Anything, mock.Anything,
 				).Return(&types.Transaction{}, nil)
 				configMock := MockConfig{}
 				configMock.On("GetEthereumDefaultAccountName").Return("ethacc")
@@ -189,8 +189,11 @@ func TestPaymentObligationService(t *testing.T) {
 			docService, paymentOb, idService, ethClient, config := test.mocker()
 			// with below config the documentType has to be test.name to avoid conflicts since registry is a singleton
 			documents.GetRegistryInstance().Register(test.name, &docService)
-			service := NewEthereumPaymentObligation(paymentOb, &idService, &ethClient, &config)
-			tokenID, err := service.MintNFT(decodeHex(test.request.Identifier), test.request.Type, test.request.RegistryAddress, test.request.DepositAddress, test.request.ProofFields)
+			confirmations := make(chan *WatchTokenMinted)
+			service := NewEthereumPaymentObligation(paymentOb, &idService, &ethClient, &config, func(tokenID *big.Int) (chan *WatchTokenMinted, error) {
+				return confirmations, nil
+			})
+			_, err := service.MintNFT(decodeHex(test.request.Identifier), test.request.Type, test.request.RegistryAddress, test.request.DepositAddress, test.request.ProofFields)
 			if test.err != nil {
 				assert.Equal(t, test.err.Error(), err.Error())
 			} else if err != nil {
@@ -201,7 +204,6 @@ func TestPaymentObligationService(t *testing.T) {
 			idService.AssertExpectations(t)
 			ethClient.AssertExpectations(t)
 			config.AssertExpectations(t)
-			assert.NotEmpty(t, tokenID)
 		})
 	}
 }

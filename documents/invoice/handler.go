@@ -34,6 +34,7 @@ func GRPCHandler() (clientinvoicepb.DocumentServiceServer, error) {
 
 // Create handles the creation of the invoices and anchoring the documents on chain
 func (h *grpcHandler) Create(ctx context.Context, req *clientinvoicepb.InvoiceCreatePayload) (*clientinvoicepb.InvoiceResponse, error) {
+	apiLog.Debugf("Create request %v", req)
 	ctxHeader, err := documents.NewContextHeader()
 	if err != nil {
 		apiLog.Error(err)
@@ -58,6 +59,7 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientinvoicepb.InvoiceCr
 
 // Update handles the document update and anchoring
 func (h *grpcHandler) Update(ctx context.Context, payload *clientinvoicepb.InvoiceUpdatePayload) (*clientinvoicepb.InvoiceResponse, error) {
+	apiLog.Debugf("Update request %v", payload)
 	ctxHeader, err := documents.NewContextHeader()
 	if err != nil {
 		apiLog.Error(err)
@@ -81,45 +83,54 @@ func (h *grpcHandler) Update(ctx context.Context, payload *clientinvoicepb.Invoi
 
 // GetVersion returns the requested version of the document
 func (h *grpcHandler) GetVersion(ctx context.Context, getVersionRequest *clientinvoicepb.GetVersionRequest) (*clientinvoicepb.InvoiceResponse, error) {
+	apiLog.Debugf("Get version request %v", getVersionRequest)
 	identifier, err := hexutil.Decode(getVersionRequest.Identifier)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "identifier is invalid")
 	}
+
 	version, err := hexutil.Decode(getVersionRequest.Version)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "version is invalid")
 	}
+
 	model, err := h.service.GetVersion(identifier, version)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "document not found")
 	}
+
 	resp, err := h.service.DeriveInvoiceResponse(model)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, err
 	}
+
 	return resp, nil
 }
 
 // Get returns the invoice the latest version of the document with given identifier
 func (h *grpcHandler) Get(ctx context.Context, getRequest *clientinvoicepb.GetRequest) (*clientinvoicepb.InvoiceResponse, error) {
+	apiLog.Debugf("Get request %v", getRequest)
 	identifier, err := hexutil.Decode(getRequest.Identifier)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "identifier is an invalid hex string")
 	}
+
 	model, err := h.service.GetCurrentVersion(identifier)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "document not found")
 	}
+
 	resp, err := h.service.DeriveInvoiceResponse(model)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, err
 	}
+
 	return resp, nil
 }
