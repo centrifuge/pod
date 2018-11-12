@@ -11,9 +11,9 @@ var runCmd = &cobra.Command{
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
 		//cmd requires a config file
-		readConfigFile()
+		cfgFile := ensureConfigFile()
 		// the following call will block
-		runBootstrap()
+		runBootstrap(cfgFile)
 	},
 }
 

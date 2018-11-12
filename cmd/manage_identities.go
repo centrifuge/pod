@@ -16,8 +16,8 @@ var createIdentityCmd = &cobra.Command{
 	Long:  "",
 	Run: func(cmd *cobra.Command, args []string) {
 		//cmd requires a config file
-		readConfigFile()
-		baseBootstrap()
+		cfgFile = ensureConfigFile()
+		baseBootstrap(cfgFile)
 		var centrifugeId identity.CentID
 		var err error
 		if centrifugeIdString == "" {
@@ -52,9 +52,8 @@ var addKeyCmd = &cobra.Command{
 	Long:  "add a signing key as p2p id against ethereum",
 	Run: func(cmd *cobra.Command, args []string) {
 		//cmd requires a config file
-		readConfigFile()
-
-		baseBootstrap()
+		cfgFile = ensureConfigFile()
+		baseBootstrap(cfgFile)
 
 		var purposeInt int
 

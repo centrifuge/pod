@@ -8,6 +8,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/queue"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 type Bootstrapper struct {
@@ -18,21 +19,23 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	if _, ok := context[bootstrap.BootstrappedConfig]; !ok {
 		return errors.New("config hasn't been initialized")
 	}
+	cfg := context[bootstrap.BootstrappedConfig].(*config.Configuration)
+
 	if _, ok := context[bootstrap.BootstrappedEthereumClient]; !ok {
 		return errors.New("ethereum client hasn't been initialized")
 	}
 
-	contract, err := getPaymentObligationContract()
+	contract, err := getPaymentObligationContract(cfg.GetContractAddress("paymentObligation"))
 	if err != nil {
 		return err
 	}
 
-	setPaymentObligation(NewEthereumPaymentObligation(contract, identity.IDService, ethereum.GetClient(), config.Config(), setupMintListener))
+	setPaymentObligation(NewEthereumPaymentObligation(contract, identity.IDService, ethereum.GetClient(), cfg, setupMintListener))
 	return queue.InstallQueuedTask(context,
 		newMintingConfirmationTask(contract, ethereum.DefaultWaitForTransactionMiningContext))
 }
 
-func getPaymentObligationContract() (*EthereumPaymentObligationContract, error) {
+func getPaymentObligationContract(obligationAddress common.Address) (*EthereumPaymentObligationContract, error) {
 	client := ethereum.GetClient()
-	return NewEthereumPaymentObligationContract(config.Config().GetContractAddress("paymentObligation"), client.GetEthClient())
+	return NewEthereumPaymentObligationContract(obligationAddress, client.GetEthClient())
 }
