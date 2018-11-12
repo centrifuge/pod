@@ -27,7 +27,11 @@ type Sender interface {
 	Send(notification *notificationpb.NotificationMessage) (Status, error)
 }
 
-type WebhookSender struct{
+func NewWebhookSender(config Config) *WebhookSender {
+	return &WebhookSender{config}
+}
+
+type WebhookSender struct {
 	config Config
 }
 

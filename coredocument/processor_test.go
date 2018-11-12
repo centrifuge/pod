@@ -10,7 +10,6 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/signatures"
@@ -58,8 +57,8 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 	model = mockModel{}
 
 	// failed to get id
-	pub, _ := config.Config().GetSigningKeyPair()
-	config.Config().Set("keys.signing.publicKey", "wrong path")
+	pub, _ := cfg.GetSigningKeyPair()
+	cfg.Set("keys.signing.publicKey", "wrong path")
 	cd = New()
 	cd.DataRoot = utils.RandomSlice(32)
 	cd.EmbeddedData = &any.Any{
@@ -73,7 +72,7 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 	model.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to get keys for signing")
-	config.Config().Set("keys.signing.publicKey", pub)
+	cfg.Set("keys.signing.publicKey", pub)
 
 	// failed unpack
 	model = mockModel{}
@@ -314,15 +313,15 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	srv.On("LookupIdentityForID", c.ID).Return(id, nil).Once()
 	id.On("FetchKey", pubkey[:]).Return(idkey, nil).Once()
 	identity.IDService = srv
-	oldID := config.Config().GetString("identityId")
-	config.Config().Set("identityId", "wrong id")
+	oldID := cfg.GetString("identityId")
+	cfg.Set("identityId", "wrong id")
 	err = dp.AnchorDocument(model)
 	model.AssertExpectations(t)
 	srv.AssertExpectations(t)
 	id.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to get self cent ID")
-	config.Config().Set("identityId", "0x0102030405060708")
+	cfg.Set("identityId", "0x0102030405060708")
 
 	// wrong ID
 	model = mockModel{}
@@ -336,11 +335,11 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	id.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "centID invalid")
-	config.Config().Set("identityId", oldID)
+	cfg.Set("identityId", oldID)
 
 	// missing eth keys
-	oldPth := config.Config().Get("keys.ethauth.publicKey")
-	config.Config().Set("keys.ethauth.publicKey", "wrong path")
+	oldPth := cfg.Get("keys.ethauth.publicKey")
+	cfg.Set("keys.ethauth.publicKey", "wrong path")
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Times(5)
 	srv.On("LookupIdentityForID", c.ID).Return(id, nil).Once()
@@ -352,7 +351,7 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	id.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to get eth keys")
-	config.Config().Set("keys.ethauth.publicKey", oldPth)
+	cfg.Set("keys.ethauth.publicKey", oldPth)
 
 	// failed anchor commit
 	model = mockModel{}

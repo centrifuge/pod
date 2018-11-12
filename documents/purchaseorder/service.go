@@ -12,6 +12,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/code"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -58,8 +59,8 @@ type service struct {
 }
 
 // DefaultService returns the default implementation of the service
-func DefaultService(repo documents.Repository, processor coredocument.Processor, anchorRepository anchors.AnchorRepository) Service {
-	return service{repo: repo, coreDocProcessor: processor, notifier: &notification.WebhookSender{}, anchorRepository: anchorRepository}
+func DefaultService(config *config.Configuration, repo documents.Repository, processor coredocument.Processor, anchorRepository anchors.AnchorRepository) Service {
+	return service{repo: repo, coreDocProcessor: processor, notifier: notification.NewWebhookSender(config), anchorRepository: anchorRepository}
 }
 
 // DeriveFromCoreDocument takes a core document and returns a purchase order
@@ -143,7 +144,7 @@ func (s service) Update(ctx context.Context, po documents.Model) (documents.Mode
 
 // DeriveFromCreatePayload derives purchase order from create payload
 func (s service) DeriveFromCreatePayload(payload *clientpopb.PurchaseOrderCreatePayload, ctxH *documents.ContextHeader) (documents.Model, error) {
-	if payload == nil {
+	if payload == nil || payload.Data == nil {
 		return nil, centerrors.New(code.DocumentInvalid, "input is nil")
 	}
 
@@ -158,7 +159,7 @@ func (s service) DeriveFromCreatePayload(payload *clientpopb.PurchaseOrderCreate
 
 // DeriveFromUpdatePayload derives purchase order from update payload
 func (s service) DeriveFromUpdatePayload(payload *clientpopb.PurchaseOrderUpdatePayload, ctxH *documents.ContextHeader) (documents.Model, error) {
-	if payload == nil {
+	if payload == nil || payload.Data == nil {
 		return nil, centerrors.New(code.DocumentInvalid, "invalid payload")
 	}
 

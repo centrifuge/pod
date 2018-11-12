@@ -13,7 +13,7 @@ type Config interface {
 }
 
 // handler is the grpc handler that implements healthpb.HealthCheckServiceServer
-type handler struct{
+type handler struct {
 	config Config
 }
 

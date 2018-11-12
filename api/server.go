@@ -26,7 +26,7 @@ var log = logging.Logger("cent-api-server")
 
 type Config interface {
 	GetServerAddress() string
-	GetServerPort()    int
+	GetServerPort() int
 	GetNetworkString() string
 }
 
@@ -77,7 +77,7 @@ func (c *CentAPIServer) Start(ctx context.Context, wg *sync.WaitGroup, startupEr
 	mux := http.NewServeMux()
 	gwmux := runtime.NewServeMux()
 
-	err = registerServices(ctx, grpcServer, gwmux, addr, dopts)
+	err = registerServices(ctx, c.config, grpcServer, gwmux, addr, dopts)
 	if err != nil {
 		startupErr <- err
 		return

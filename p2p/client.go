@@ -8,7 +8,6 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/code"
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/signatures"
@@ -24,11 +23,13 @@ type Client interface {
 	GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocument) error
 }
 
-func NewP2PClient() Client {
-	return &defaultClient{}
+func NewP2PClient(config Config) Client {
+	return &defaultClient{config}
 }
 
-type defaultClient struct{}
+type defaultClient struct {
+	config Config
+}
 
 // Opens a client connection with libp2p
 func (d *defaultClient) OpenClient(target string) (p2ppb.P2PServiceClient, error) {
@@ -62,7 +63,7 @@ func (d *defaultClient) OpenClient(target string) (p2ppb.P2PServiceClient, error
 
 	// make a new stream from host B to host A with timeout
 	// Retrial is handled internally, connection request will be cancelled by the connection timeout context
-	ctx, _ := context.WithTimeout(context.Background(), config.Config().GetP2PConnectionTimeout())
+	ctx, _ := context.WithTimeout(context.Background(), d.config.GetP2PConnectionTimeout())
 	g, err := grpcProtoInstance.Dial(ctx, peerID, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		return nil, fmt.Errorf("failed to dial peer [%s]: %v", peerID.Pretty(), err)
@@ -72,14 +73,14 @@ func (d *defaultClient) OpenClient(target string) (p2ppb.P2PServiceClient, error
 }
 
 // getSignatureForDocument requests the target node to sign the document
-func getSignatureForDocument(ctx context.Context, doc coredocumentpb.CoreDocument, client p2ppb.P2PServiceClient, receiverCentId identity.CentID) (*p2ppb.SignatureResponse, error) {
-	senderId, err := config.Config().GetIdentityID()
+func (d *defaultClient) getSignatureForDocument(ctx context.Context, doc coredocumentpb.CoreDocument, client p2ppb.P2PServiceClient, receiverCentId identity.CentID) (*p2ppb.SignatureResponse, error) {
+	senderId, err := d.config.GetIdentityID()
 	if err != nil {
 		return nil, err
 	}
 
 	header := p2ppb.CentrifugeHeader{
-		NetworkIdentifier:  config.Config().GetNetworkID(),
+		NetworkIdentifier:  d.config.GetNetworkID(),
 		CentNodeVersion:    version.GetVersion().String(),
 		SenderCentrifugeId: senderId,
 	}
@@ -121,8 +122,8 @@ type signatureResponseWrap struct {
 	err  error
 }
 
-func getSignatureAsync(ctx context.Context, doc coredocumentpb.CoreDocument, client p2ppb.P2PServiceClient, receiverCentId identity.CentID, out chan<- signatureResponseWrap) {
-	resp, err := getSignatureForDocument(ctx, doc, client, receiverCentId)
+func (d *defaultClient) getSignatureAsync(ctx context.Context, doc coredocumentpb.CoreDocument, client p2ppb.P2PServiceClient, receiverCentId identity.CentID, out chan<- signatureResponseWrap) {
+	resp, err := d.getSignatureForDocument(ctx, doc, client, receiverCentId)
 	out <- signatureResponseWrap{
 		resp: resp,
 		err:  err,
@@ -160,7 +161,7 @@ func (d *defaultClient) GetSignaturesForDocument(ctx context.Context, doc *cored
 		// for now going with context.background, once we have a timeout for request
 		// we can use context.Timeout for that
 		count++
-		go getSignatureAsync(ctx, *doc, client, collaboratorID, in)
+		go d.getSignatureAsync(ctx, *doc, client, collaboratorID, in)
 	}
 
 	var responses []signatureResponseWrap

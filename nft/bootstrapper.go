@@ -7,6 +7,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -28,8 +29,10 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	if err != nil {
 		return err
 	}
-	setPaymentObligation(NewEthereumPaymentObligation(contract, identity.IDService, ethereum.GetClient(), cfg))
-	return nil
+
+	setPaymentObligation(NewEthereumPaymentObligation(contract, identity.IDService, ethereum.GetClient(), cfg, setupMintListener))
+	return queue.InstallQueuedTask(context,
+		newMintingConfirmationTask(contract, ethereum.DefaultWaitForTransactionMiningContext))
 }
 
 func getPaymentObligationContract(obligationAddress common.Address) (*EthereumPaymentObligationContract, error) {

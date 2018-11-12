@@ -37,7 +37,7 @@ func getServiceAndModel(cd *coredocumentpb.CoreDocument) (documents.Service, doc
 }
 
 // Handler implements the grpc interface
-type Handler struct {}
+type Handler struct{}
 
 // RequestDocumentSignature signs the received document and returns the signature of the signingRoot
 // Document signing root will be recalculated and verified

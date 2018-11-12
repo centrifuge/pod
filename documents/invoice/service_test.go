@@ -44,12 +44,12 @@ func (r *mockAnchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.D
 }
 
 func TestDefaultService(t *testing.T) {
-	srv := DefaultService(getRepository(), &testingcoredocument.MockCoreDocumentProcessor{}, nil)
+	srv := DefaultService(nil, getRepository(), &testingcoredocument.MockCoreDocumentProcessor{}, nil)
 	assert.NotNil(t, srv, "must be non-nil")
 }
 
 func getServiceWithMockedLayers() Service {
-	return DefaultService(getRepository(), &testingcoredocument.MockCoreDocumentProcessor{}, &mockAnchorRepo{})
+	return DefaultService(nil, getRepository(), &testingcoredocument.MockCoreDocumentProcessor{}, &mockAnchorRepo{})
 }
 
 func createMockDocument() (*Invoice, error) {
@@ -96,6 +96,10 @@ func TestService_DeriveFromPayload(t *testing.T) {
 
 	// fail due to nil payload
 	_, err = invSrv.DeriveFromCreatePayload(nil, nil)
+	assert.Error(t, err, "DeriveWithInvoiceInput should produce an error if invoiceInput equals nil")
+
+	// fail due to nil payload data
+	_, err = invSrv.DeriveFromCreatePayload(&clientinvoicepb.InvoiceCreatePayload{}, nil)
 	assert.Error(t, err, "DeriveWithInvoiceInput should produce an error if invoiceInput equals nil")
 
 	contextHeader, err := documents.NewContextHeader()
@@ -478,10 +482,16 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.Contains(t, err.Error(), "invalid payload")
 	assert.Nil(t, doc)
 
+	// nil payload data
+	doc, err = invSrv.DeriveFromUpdatePayload(&clientinvoicepb.InvoiceUpdatePayload{}, nil)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid payload")
+	assert.Nil(t, doc)
+
 	// messed up identifier
 	contextHeader, err := documents.NewContextHeader()
 	assert.Nil(t, err)
-	payload := &clientinvoicepb.InvoiceUpdatePayload{Identifier: "some identifier"}
+	payload := &clientinvoicepb.InvoiceUpdatePayload{Identifier: "some identifier", Data: &clientinvoicepb.InvoiceData{}}
 	doc, err = invSrv.DeriveFromUpdatePayload(payload, contextHeader)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to decode identifier")

@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
-	"github.com/centrifuge/go-centrifuge/config"
+	cented25519 "github.com/centrifuge/go-centrifuge/keytools/ed25519"
 	"github.com/ipfs/go-cid"
 	ds "github.com/ipfs/go-datastore"
 	"github.com/ipfs/go-ipfs-addr"
@@ -23,7 +23,6 @@ import (
 	ma "github.com/multiformats/go-multiaddr"
 	mh "github.com/multiformats/go-multihash"
 	"github.com/paralin/go-libp2p-grpc"
-	cented25519 "github.com/centrifuge/go-centrifuge/keytools/ed25519"
 )
 
 var log = logging.Logger("cent-p2p-server")
@@ -31,9 +30,12 @@ var HostInstance host.Host
 var GRPCProtoInstance p2pgrpc.GRPCProtocol
 
 type Config interface {
-	GetP2PExternalIP()  string
-	GetP2PPort()        int
+	GetP2PExternalIP() string
+	GetP2PPort() int
 	GetBootstrapPeers() []string
+	GetP2PConnectionTimeout() time.Duration
+	GetNetworkID() uint32
+	GetIdentityID() ([]byte, error)
 }
 
 type CentP2PServer struct {
@@ -181,7 +183,7 @@ func (c *CentP2PServer) makeBasicHost(listenPort int) (host.Host, error) {
 		return nil, err
 	}
 
-	externalIP := config.Config().GetP2PExternalIP()
+	externalIP := c.config.GetP2PExternalIP()
 	var extMultiAddr ma.Multiaddr
 	if externalIP == "" {
 		log.Warning("External IP not defined, Peers might not be able to resolve this node if behind NAT\n")
