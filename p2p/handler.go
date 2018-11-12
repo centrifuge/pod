@@ -10,7 +10,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/notification"
 	"github.com/centrifuge/go-centrifuge/version"
 )
 
@@ -38,9 +37,7 @@ func getServiceAndModel(cd *coredocumentpb.CoreDocument) (documents.Service, doc
 }
 
 // Handler implements the grpc interface
-type Handler struct {
-	Notifier notification.Sender
-}
+type Handler struct {}
 
 // RequestDocumentSignature signs the received document and returns the signature of the signingRoot
 // Document signing root will be recalculated and verified

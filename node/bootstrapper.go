@@ -10,7 +10,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/api"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/keytools/ed25519"
 	"github.com/centrifuge/go-centrifuge/p2p"
 )
 
@@ -51,21 +50,5 @@ func (*Bootstrapper) Bootstrap(c map[string]interface{}) error {
 }
 
 func defaultServerList(cfg *config.Configuration) ([]Server, error) {
-	publicKey, privateKey, err := ed25519.GetSigningKeyPairFromConfig()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get keys: %v", err)
-	}
-
-	return []Server{
-		api.NewCentAPIServer(
-			cfg.GetServerAddress(),
-			cfg.GetServerPort(),
-			cfg.GetNetworkString(),
-		),
-		p2p.NewCentP2PServer(
-			cfg.GetP2PPort(),
-			cfg.GetBootstrapPeers(),
-			publicKey, privateKey,
-		),
-	}, nil
+	return []Server{api.NewCentAPIServer(cfg), p2p.NewCentP2PServer(cfg)}, nil
 }

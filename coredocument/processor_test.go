@@ -145,7 +145,7 @@ func TestDefaultProcessor_RequestSignatures(t *testing.T) {
 	model.AssertExpectations(t)
 	c := p2pClient{}
 	c.On("GetSignaturesForDocument", ctx, cd).Return(fmt.Errorf("error")).Once()
-	dp.P2PClient = c
+	dp.p2pClient = c
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Times(4)
 	err = dp.RequestSignatures(ctx, model)
@@ -157,7 +157,7 @@ func TestDefaultProcessor_RequestSignatures(t *testing.T) {
 	// unpack fail
 	c = p2pClient{}
 	c.On("GetSignaturesForDocument", ctx, cd).Return(nil).Once()
-	dp.P2PClient = c
+	dp.p2pClient = c
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Times(4)
 	model.On("UnpackCoreDocument", cd).Return(fmt.Errorf("error")).Once()
@@ -170,7 +170,7 @@ func TestDefaultProcessor_RequestSignatures(t *testing.T) {
 	// success
 	c = p2pClient{}
 	c.On("GetSignaturesForDocument", ctx, cd).Return(nil).Once()
-	dp.P2PClient = c
+	dp.p2pClient = c
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Times(4)
 	model.On("UnpackCoreDocument", cd).Return(nil).Once()
@@ -362,7 +362,7 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	identity.IDService = srv
 	repo := mockRepo{}
 	repo.On("CommitAnchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("error")).Once()
-	dp.AnchorRepository = repo
+	dp.anchorRepository = repo
 	err = dp.AnchorDocument(model)
 	model.AssertExpectations(t)
 	srv.AssertExpectations(t)
@@ -381,7 +381,7 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	ch := make(chan *anchors.WatchCommit, 1)
 	ch <- new(anchors.WatchCommit)
 	repo.On("CommitAnchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(ch, nil).Once()
-	dp.AnchorRepository = repo
+	dp.anchorRepository = repo
 	err = dp.AnchorDocument(model)
 	model.AssertExpectations(t)
 	srv.AssertExpectations(t)
@@ -443,7 +443,7 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	assert.Nil(t, err)
 	repo := mockRepo{}
 	repo.On("GetDocumentRootOf", mock.Anything).Return(docRoot, nil).Once()
-	dp.AnchorRepository = repo
+	dp.anchorRepository = repo
 	err = dp.SendDocument(ctx, model)
 	model.AssertExpectations(t)
 	srv.AssertExpectations(t)
