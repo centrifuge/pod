@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"github.com/centrifuge/go-centrifuge/config"
 	"math/big"
 
 	"regexp"
@@ -53,20 +54,20 @@ type ethereumPaymentObligationContract interface {
 
 // ethereumPaymentObligation handles all interactions related to minting of NFTs for payment obligations on Ethereum
 type ethereumPaymentObligation struct {
-	paymentObligation ethereumPaymentObligationContract
 	identityService   identity.Service
 	ethClient         ethereum.Client
 	config            Config
-	setupMintListener func(tokenID *big.Int) (confirmations chan *WatchTokenMinted, err error)
+	setupMintListener func(tokenID *big.Int, registryAddress string) (confirmations chan *WatchTokenMinted, err error)
 }
 
 // NewEthereumPaymentObligation creates ethereumPaymentObligation given the parameters
-func NewEthereumPaymentObligation(paymentObligation ethereumPaymentObligationContract, identityService identity.Service, ethClient ethereum.Client, config Config, setupMintListener func(tokenID *big.Int) (confirmations chan *WatchTokenMinted, err error)) *ethereumPaymentObligation {
-	return &ethereumPaymentObligation{paymentObligation: paymentObligation, identityService: identityService, ethClient: ethClient, config: config, setupMintListener: setupMintListener}
+func NewEthereumPaymentObligation(identityService identity.Service, ethClient ethereum.Client, config Config, setupMintListener func(tokenID *big.Int,registryAddress string) (confirmations chan *WatchTokenMinted, err error)) *ethereumPaymentObligation {
+	return &ethereumPaymentObligation{identityService: identityService, ethClient: ethClient, config: config, setupMintListener: setupMintListener}
 }
 
-// MintNFT mints an NFT
-func (s *ethereumPaymentObligation) MintNFT(documentID []byte, docType, registryAddress, depositAddress string, proofFields []string) (<-chan *WatchTokenMinted, error) {
+
+
+func (s *ethereumPaymentObligation) prepareMintRequest(documentID []byte, docType string, proofFields []string) (*MintRequest,error) {
 	docService, err := getDocumentService(docType)
 	if err != nil {
 		return nil, err
@@ -112,17 +113,38 @@ func (s *ethereumPaymentObligation) MintNFT(documentID []byte, docType, registry
 		return nil, err
 	}
 
+	return requestData, nil
+
+}
+
+
+// MintNFT mints an NFT
+func (s *ethereumPaymentObligation) MintNFT(documentID []byte, docType, registryAddress, depositAddress string, proofFields []string) (<-chan *WatchTokenMinted, error) {
+
+
+	requestData, err := s.prepareMintRequest(documentID,docType, proofFields)
+
 	opts, err := s.ethClient.GetTxOpts(s.config.GetEthereumDefaultAccountName())
 	if err != nil {
 		return nil, err
 	}
 
-	watch, err := s.setupMintListener(requestData.TokenID)
+	watch, err := s.setupMintListener(requestData.TokenID,registryAddress)
 	if err != nil {
 		return nil, err
 	}
 
-	err = s.sendMintTransaction(s.paymentObligation, opts, requestData)
+	var contract *EthereumPaymentObligationContract
+	if registryAddress == "" {
+		contract, err = newDefaultContract()
+	} else {
+		contract, err = newContract(common.HexToAddress(registryAddress))
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.sendMintTransaction(contract, opts, requestData)
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +154,7 @@ func (s *ethereumPaymentObligation) MintNFT(documentID []byte, docType, registry
 
 // setUpMintEventListener sets up the listened for the "PaymentObligationMinted" event to notify the upstream code
 // about successful minting of an NFt
-func setupMintListener(tokenID *big.Int) (confirmations chan *WatchTokenMinted, err error) {
+func setupMintListener(tokenID *big.Int, registryAddress string) (confirmations chan *WatchTokenMinted, err error) {
 	confirmations = make(chan *WatchTokenMinted)
 	conn := ethereum.GetClient()
 
@@ -142,7 +164,8 @@ func setupMintListener(tokenID *big.Int) (confirmations chan *WatchTokenMinted, 
 	}
 	asyncRes, err := queue.Queue.DelayKwargs(mintingConfirmationTaskName, map[string]interface{}{
 		tokenIDParam: hex.EncodeToString(tokenID.Bytes()),
-		blockHeight:  h.Number.Uint64(),
+		blockHeightParam:  h.Number.Uint64(),
+		registryAddressParam: registryAddress,
 	})
 	if err != nil {
 		return nil, err
@@ -315,4 +338,15 @@ func getCollaboratorProofField(proofFields []string) (string, error) {
 
 	return "",fmt.Errorf("proof_fields should contain a collaborator. (example: 'collaborators[0]')")
 
+}
+
+// getDefaultContract returns a contract bind to the default address in the config
+func newDefaultContract() (*EthereumPaymentObligationContract, error) {
+	return newContract(config.Config().GetContractAddress("paymentObligation"))
+}
+
+
+func  newContract(address common.Address) (*EthereumPaymentObligationContract, error) {
+	client := ethereum.GetClient()
+	return NewEthereumPaymentObligationContract(address, client.GetEthClient())
 }

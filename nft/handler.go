@@ -26,7 +26,7 @@ func GRPCHandler() nftpb.NFTServiceServer {
 func (g grpcHandler) MintNFT(context context.Context, request *nftpb.NFTMintRequest) (*nftpb.NFTMintResponse, error) {
 	apiLog.Infof("Received request to Mint an NFT for document %s type %s with proof fields %s", request.Identifier, request.Type, request.ProofFields)
 
-	err := g.validateParameters(request)
+	err := validateParameters(request)
 	if err != nil {
 		return nil,err
 	}
@@ -43,8 +43,7 @@ func (g grpcHandler) MintNFT(context context.Context, request *nftpb.NFTMintRequ
 	return &nftpb.NFTMintResponse{TokenId: watchToken.TokenID.String()}, watchToken.Err
 }
 
-
-func (g grpcHandler) validateParameters(request *nftpb.NFTMintRequest)(error) {
+func validateParameters(request *nftpb.NFTMintRequest)(error) {
 
 	if !common.IsHexAddress(request.RegistryAddress){
 		return centerrors.New(code.Unknown, "RegistryAddress is not a valid Ethereum address")

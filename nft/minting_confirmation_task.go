@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common"
 	"time"
 
 	"github.com/centrifuge/gocelery"
@@ -17,7 +18,8 @@ import (
 const (
 	mintingConfirmationTaskName string = "MintingConfirmationTaskName"
 	tokenIDParam                string = "TokenIDParam"
-	blockHeight                 string = "BlockHeight"
+	blockHeightParam            string = "BlockHeightParam"
+	registryAddressParam		string = "RegistryAddressParam"
 )
 
 // paymentObligationMintedFilterer filters the approved NFTs
@@ -29,8 +31,12 @@ type paymentObligationMintedFilterer interface {
 
 // mintingConfirmationTask confirms the minting of a payment obligation NFT
 type mintingConfirmationTask struct {
+	//task parameter
 	TokenID                         string
 	BlockHeight                     uint64
+	RegistryAddress					string
+
+	//state
 	EthContextInitializer           func() (ctx context.Context, cancelFunc context.CancelFunc)
 	EthContext                      context.Context
 	PaymentObligationMintedFilterer paymentObligationMintedFilterer
@@ -62,6 +68,7 @@ func (nftc *mintingConfirmationTask) Copy() (gocelery.CeleryTask, error) {
 	return &mintingConfirmationTask{
 		nftc.TokenID,
 		nftc.BlockHeight,
+		nftc.RegistryAddress,
 		nftc.EthContextInitializer,
 		nftc.EthContext,
 		nftc.PaymentObligationMintedFilterer,
@@ -87,7 +94,7 @@ func (nftc *mintingConfirmationTask) ParseKwargs(kwargs map[string]interface{}) 
 }
 
 func parseBlockHeight(valMap map[string]interface{}) (uint64, error) {
-	if bhi, ok := valMap[blockHeight]; ok {
+	if bhi, ok := valMap[blockHeightParam]; ok {
 		bhf, ok := bhi.(float64)
 		if ok {
 			return uint64(bhf), nil
@@ -108,8 +115,21 @@ func (nftc *mintingConfirmationTask) RunTask() (interface{}, error) {
 		Start:   nftc.BlockHeight,
 	}
 
+	var filter paymentObligationMintedFilterer
+	var err error
+
+	if nftc.RegistryAddress == "" {
+		filter = nftc.PaymentObligationMintedFilterer
+	} else {
+		filter, err = newContract(common.HexToAddress(nftc.RegistryAddress))
+
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	for {
-		iter, err := nftc.PaymentObligationMintedFilterer.FilterPaymentObligationMinted(
+		iter, err := filter.FilterPaymentObligationMinted(
 			fOpts,
 		)
 		if err != nil {
