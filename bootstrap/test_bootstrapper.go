@@ -2,6 +2,8 @@
 
 package bootstrap
 
+const TestBootstrappedPathMatch = "TestBootstrappedPathMatch"
+
 // TestBootstrapper must be implemented by all packages that needs bootstrapping at the start of testing suite
 type TestBootstrapper interface {
 

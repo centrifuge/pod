@@ -22,33 +22,21 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
-var log = logging.Logger("cent-api-server")
+var log = logging.Logger("api-server")
 
-// CentAPIServer is an implementation of node.Server interface for serving HTTP based Centrifuge API
-type CentAPIServer struct {
-	Address     string
-	Port        int
-	CentNetwork string
+// apiServer is an implementation of node.Server interface for serving HTTP based Centrifuge API
+type apiServer struct {
+	addr    string
+	port    int
+	network string
 }
 
-func NewCentAPIServer(
-	address string,
-	port int,
-	centNetwork string,
-) *CentAPIServer {
-	return &CentAPIServer{
-		Address:     address,
-		Port:        port,
-		CentNetwork: centNetwork,
-	}
-}
-
-func (*CentAPIServer) Name() string {
-	return "CentAPIServer"
+func (apiServer) Name() string {
+	return "APIServer"
 }
 
 // Serve exposes the client APIs for interacting with a centrifuge node
-func (c *CentAPIServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- error) {
+func (c apiServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- error) {
 	defer wg.Done()
 	certPool, err := loadCertPool()
 	if err != nil {
@@ -58,7 +46,7 @@ func (c *CentAPIServer) Start(ctx context.Context, wg *sync.WaitGroup, startupEr
 	if err != nil {
 		startupErr <- err
 	}
-	addr := c.Address
+	addr := c.addr
 
 	creds := credentials.NewTLS(&tls.Config{
 		RootCAs:            certPool,
@@ -99,13 +87,13 @@ func (c *CentAPIServer) Start(ctx context.Context, wg *sync.WaitGroup, startupEr
 
 	startUpErrOut := make(chan error)
 	go func(startUpErrInner chan<- error) {
-		conn, err := net.Listen("tcp", c.Address)
+		conn, err := net.Listen("tcp", c.addr)
 		if err != nil {
 			startUpErrInner <- err
 			return
 		}
-		log.Infof("HTTP/gRpc listening on Port: %d\n", c.Port)
-		log.Infof("Connecting to Network: %s\n", c.CentNetwork)
+		log.Infof("HTTP/gRpc listening on Port: %d\n", c.port)
+		log.Infof("Connecting to Network: %s\n", c.network)
 		err = srv.Serve(tls.NewListener(conn, srv.TLSConfig))
 		if err != nil {
 			startUpErrInner <- err

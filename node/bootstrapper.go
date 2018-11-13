@@ -2,33 +2,23 @@ package node
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"os/signal"
 
-	"github.com/centrifuge/go-centrifuge/api"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/keytools/ed25519"
-	"github.com/centrifuge/go-centrifuge/p2p"
 )
 
 type Bootstrapper struct {
 }
 
 func (*Bootstrapper) Bootstrap(c map[string]interface{}) error {
-	if _, ok := c[bootstrap.BootstrappedConfig]; !ok {
-		return errors.New("config hasn't been initialized")
-	}
-	cfg := c[bootstrap.BootstrappedConfig].(*config.Configuration)
-
-	services, err := defaultServerList(cfg)
+	srvs, err := getServers(c)
 	if err != nil {
-		return fmt.Errorf("failed to get default server list: %v", err)
+		return fmt.Errorf("failed to load servers: %v", err)
 	}
 
-	n := NewNode(services)
+	n := NewNode(srvs)
 	feedback := make(chan error)
 	// may be we can pass a context that exists in c here
 	ctx, canc := context.WithCancel(context.Background())
@@ -50,22 +40,19 @@ func (*Bootstrapper) Bootstrap(c map[string]interface{}) error {
 	return nil
 }
 
-func defaultServerList(cfg *config.Configuration) ([]Server, error) {
-	publicKey, privateKey, err := ed25519.GetSigningKeyPairFromConfig()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get keys: %v", err)
+func getServers(ctx map[string]interface{}) ([]Server, error) {
+	p2pSrv, ok := ctx[bootstrap.BootstrappedP2PServer]
+	if !ok {
+		return nil, fmt.Errorf("p2p server not initialised")
 	}
 
-	return []Server{
-		api.NewCentAPIServer(
-			cfg.GetServerAddress(),
-			cfg.GetServerPort(),
-			cfg.GetNetworkString(),
-		),
-		p2p.NewCentP2PServer(
-			cfg.GetP2PPort(),
-			cfg.GetBootstrapPeers(),
-			publicKey, privateKey,
-		),
-	}, nil
+	apiSrv, ok := ctx[bootstrap.BootstrappedAPIServer]
+	if !ok {
+		return nil, fmt.Errorf("API server not initiliase")
+	}
+
+	var servers []Server
+	servers = append(servers, p2pSrv.(Server))
+	servers = append(servers, apiSrv.(Server))
+	return servers, nil
 }

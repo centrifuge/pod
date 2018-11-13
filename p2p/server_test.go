@@ -23,7 +23,12 @@ func TestCentP2PServer_Start(t *testing.T) {
 func TestCentP2PServer_StartContextCancel(t *testing.T) {
 	priv, pub, err := getKeys()
 	assert.Nil(t, err)
-	cp2p := NewCentP2PServer(38203, []string{}, pub, priv)
+	cp2p := &p2pServer{
+		port:           38203,
+		bootstrapPeers: []string{},
+		publicKey:      pub,
+		privateKey:     priv,
+	}
 	ctx, canc := context.WithCancel(context.Background())
 	startErr := make(chan error)
 	var wg sync.WaitGroup
@@ -39,7 +44,12 @@ func TestCentP2PServer_StartListenError(t *testing.T) {
 	// cause an error by using an invalid port
 	priv, pub, err := getKeys()
 	assert.Nil(t, err)
-	cp2p := NewCentP2PServer(100000000, []string{}, pub, priv)
+	cp2p := &p2pServer{
+		port:           100000000,
+		bootstrapPeers: []string{},
+		publicKey:      pub,
+		privateKey:     priv,
+	}
 	ctx, _ := context.WithCancel(context.Background())
 	startErr := make(chan error)
 	var wg sync.WaitGroup
@@ -55,7 +65,7 @@ func TestCentP2PServer_makeBasicHostNoExternalIP(t *testing.T) {
 	listenPort := 38202
 	priv, pub, err := getKeys()
 	assert.Nil(t, err)
-	cp2p := NewCentP2PServer(listenPort, []string{}, pub, priv)
+	cp2p := p2pServer{port: listenPort, bootstrapPeers: []string{}, publicKey: pub, privateKey: priv}
 	h, err := cp2p.makeBasicHost(listenPort)
 	assert.Nil(t, err)
 	assert.NotNil(t, h)
@@ -67,7 +77,7 @@ func TestCentP2PServer_makeBasicHostWithExternalIP(t *testing.T) {
 	config.Config().Set("p2p.externalIP", externalIP)
 	priv, pub, err := getKeys()
 	assert.Nil(t, err)
-	cp2p := NewCentP2PServer(listenPort, []string{}, pub, priv)
+	cp2p := p2pServer{port: listenPort, bootstrapPeers: []string{}, publicKey: pub, privateKey: priv}
 	h, err := cp2p.makeBasicHost(listenPort)
 	assert.Nil(t, err)
 	assert.NotNil(t, h)
@@ -83,7 +93,7 @@ func TestCentP2PServer_makeBasicHostWithWrongExternalIP(t *testing.T) {
 	config.Config().Set("p2p.externalIP", externalIP)
 	priv, pub, err := getKeys()
 	assert.Nil(t, err)
-	cp2p := NewCentP2PServer(listenPort, []string{}, pub, priv)
+	cp2p := p2pServer{port: listenPort, bootstrapPeers: []string{}, publicKey: pub, privateKey: priv}
 	h, err := cp2p.makeBasicHost(listenPort)
 	assert.NotNil(t, err)
 	assert.Nil(t, h)

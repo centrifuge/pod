@@ -27,6 +27,7 @@ func (*Bootstrapper) TestBootstrap(context map[string]interface{}) error {
 	c.InitializeViper()
 	SetConfig(c)
 	context[bootstrap.BootstrappedConfig] = c
+	context[bootstrap.TestBootstrappedPathMatch] = match
 	return nil
 }
 

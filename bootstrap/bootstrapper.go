@@ -8,6 +8,9 @@ const (
 	BootstrappedLevelDb          string = "BootstrappedLevelDb"
 	BootstrappedEthereumClient   string = "BootstrappedEthereumClient"
 	BootstrappedAnchorRepository string = "BootstrappedAnchorRepository"
+	BootstrappedP2PClient        string = "BootstrappedP2PClient"
+	BootstrappedP2PServer        string = "BootstrappedP2PServer"
+	BootstrappedAPIServer        string = "BootstrappedAPIServer"
 )
 
 // Bootstrapper must be implemented by all packages that needs bootstrapping at application start
