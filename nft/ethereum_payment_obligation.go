@@ -60,17 +60,17 @@ type ethereumPaymentObligation struct {
 	ethClient         ethereum.Client
 	config            Config
 	setupMintListener func(tokenID *big.Int, registryAddress string) (confirmations chan *WatchTokenMinted, err error)
-	newContract       func(address common.Address) (*EthereumPaymentObligationContract, error)
+	bindContract      func(address common.Address,client ethereum.Client) (*EthereumPaymentObligationContract, error)
 }
 
 // NewEthereumPaymentObligation creates ethereumPaymentObligation given the parameters
 func NewEthereumPaymentObligation(identityService identity.Service, ethClient ethereum.Client, config Config,
-	setupMintListener func(tokenID *big.Int, registryAddress string) (confirmations chan *WatchTokenMinted, err error), newContract func(address common.Address) (*EthereumPaymentObligationContract, error)) *ethereumPaymentObligation {
+	setupMintListener func(tokenID *big.Int, registryAddress string) (confirmations chan *WatchTokenMinted, err error), bindContract func(address common.Address,client ethereum.Client) (*EthereumPaymentObligationContract, error)) *ethereumPaymentObligation {
 	return &ethereumPaymentObligation{identityService: identityService,
 		ethClient:         ethClient,
 		config:            config,
 		setupMintListener: setupMintListener,
-		newContract:       newContract}
+		bindContract:       bindContract}
 }
 
 func (s *ethereumPaymentObligation) prepareMintRequest(documentID []byte, docType string, proofFields []string) (*MintRequest, error) {
@@ -133,20 +133,23 @@ func (s *ethereumPaymentObligation) MintNFT(documentID []byte, docType, registry
 		return nil, err
 	}
 
+	var contract *EthereumPaymentObligationContract
+	if registryAddress == "" {
+		defaultRegistry := s.config.GetContractAddress("paymentObligation")
+		contract, err = s.bindContract(defaultRegistry,s.ethClient)
+		registryAddress = defaultRegistry.String()
+	} else {
+		contract, err = s.bindContract(common.HexToAddress(registryAddress),s.ethClient)
+	}
+	if err != nil {
+		return nil, err
+	}
+
 	watch, err := s.setupMintListener(requestData.TokenID, registryAddress)
 	if err != nil {
 		return nil, err
 	}
 
-	var contract *EthereumPaymentObligationContract
-	if registryAddress == "" {
-		contract, err = s.newContract(s.config.GetContractAddress("paymentObligation"))
-	} else {
-		contract, err = s.newContract(common.HexToAddress(registryAddress))
-	}
-	if err != nil {
-		return nil, err
-	}
 
 	err = s.sendMintTransaction(contract, opts, requestData)
 	if err != nil {
@@ -340,7 +343,6 @@ func getCollaboratorProofField(proofFields []string) (string, error) {
 
 }
 
-func newContract(address common.Address) (*EthereumPaymentObligationContract, error) {
-	client := ethereum.GetClient()
+func bindContract(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error) {
 	return NewEthereumPaymentObligationContract(address, client.GetEthClient())
 }

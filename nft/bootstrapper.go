@@ -24,13 +24,6 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		return errors.New("ethereum client hasn't been initialized")
 	}
 
-	contract, err := newContract(config.Config().GetContractAddress("paymentObligation"))
-
-	if err != nil {
-		return err
-	}
-
-	setPaymentObligation(NewEthereumPaymentObligation(identity.IDService, ethereum.GetClient(), cfg, setupMintListener, newContract))
-	return queue.InstallQueuedTask(context,
-		newMintingConfirmationTask(contract, ethereum.DefaultWaitForTransactionMiningContext))
+	setPaymentObligation(NewEthereumPaymentObligation(identity.IDService, ethereum.GetClient(), cfg, setupMintListener, bindContract))
+	return queue.InstallQueuedTask(context, newMintingConfirmationTask(ethereum.DefaultWaitForTransactionMiningContext))
 }

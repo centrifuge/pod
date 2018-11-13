@@ -4,6 +4,7 @@ package nft
 
 import (
 	"errors"
+	"github.com/centrifuge/go-centrifuge/ethereum"
 	"math/big"
 	"testing"
 
@@ -206,7 +207,7 @@ func TestPaymentObligationService(t *testing.T) {
 			confirmations := make(chan *WatchTokenMinted)
 			service := NewEthereumPaymentObligation(&idService, &ethClient, &config, func(tokenID *big.Int, registryAddress string) (chan *WatchTokenMinted, error) {
 				return confirmations, nil
-			}, func(address common.Address) (*EthereumPaymentObligationContract, error) {
+			}, func(address common.Address,client ethereum.Client) (*EthereumPaymentObligationContract, error) {
 				return &EthereumPaymentObligationContract{}, nil
 			})
 			_, err := service.MintNFT(decodeHex(test.request.Identifier), test.request.Type, test.request.RegistryAddress, test.request.DepositAddress, test.request.ProofFields)
