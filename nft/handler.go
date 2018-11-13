@@ -25,7 +25,7 @@ func GRPCHandler() nftpb.NFTServiceServer {
 
 // MintNFT will be called from the client API to mint an NFT
 func (g grpcHandler) MintNFT(context context.Context, request *nftpb.NFTMintRequest) (*nftpb.NFTMintResponse, error) {
-	apiLog.Infof("Received request to Mint an NFT for document %s type %s with proof fields %s", request.Identifier, request.Type, request.ProofFields)
+	apiLog.Infof("Received request to Mint an NFT with  %s with proof fields %s", request.Identifier, request.ProofFields)
 
 	err := validateParameters(request)
 	if err != nil {
@@ -36,7 +36,7 @@ func (g grpcHandler) MintNFT(context context.Context, request *nftpb.NFTMintRequ
 		return &nftpb.NFTMintResponse{}, centerrors.New(code.Unknown, err.Error())
 	}
 
-	confirmation, err := g.service.MintNFT(identifier, request.Type, request.RegistryAddress, request.DepositAddress, request.ProofFields)
+	confirmation, err := g.service.MintNFT(identifier, request.RegistryAddress, request.DepositAddress, request.ProofFields)
 	if err != nil {
 		return &nftpb.NFTMintResponse{}, centerrors.New(code.Unknown, err.Error())
 	}

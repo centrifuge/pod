@@ -6,7 +6,7 @@ import "math/big"
 type PaymentObligation interface {
 
 	// MintNFT mints an NFT
-	MintNFT(documentID []byte, docType, registryAddress, depositAddress string, proofFields []string) (<-chan *WatchTokenMinted, error)
+	MintNFT(documentID []byte, registryAddress, depositAddress string, proofFields []string) (<-chan *WatchTokenMinted, error)
 }
 
 type WatchTokenMinted struct {

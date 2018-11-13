@@ -20,6 +20,9 @@ type Service interface {
 	// GetCurrentVersion reads a document from the database
 	GetCurrentVersion(documentID []byte) (Model, error)
 
+	// Exists checks if a document exists
+	Exists(documentID []byte) bool
+
 	// GetVersion reads a document from the database
 	GetVersion(documentID []byte, version []byte) (Model, error)
 
