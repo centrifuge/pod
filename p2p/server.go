@@ -128,12 +128,11 @@ func (s *p2pServer) runDHT(ctx context.Context, h host.Host) error {
 	}
 
 	log.Infof("Found %d peers!\n", len(peers))
-	for _, p1 := range peers {
-		log.Infof("Peer %s %s\n", p1.ID.Pretty(), p1.Addrs)
-	}
 
 	// Now connect to them, so they are added to the PeerStore
 	for _, pe := range peers {
+		log.Infof("Peer %s %s\n", pe.ID.Pretty(), pe.Addrs)
+
 		if pe.ID == h.ID() {
 			// No sense connecting to ourselves
 			continue
