@@ -5,6 +5,10 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/spf13/cobra"
+	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/documents"
+	"context"
 )
 
 var centrifugeIdString string
@@ -53,9 +57,14 @@ var addKeyCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		//cmd requires a config file
 		cfgFile = ensureConfigFile()
-		baseBootstrap(cfgFile)
-
+		ctx := baseBootstrap(cfgFile)
+		cfg := ctx[bootstrap.BootstrappedConfig].(*config.Configuration)
 		var purposeInt int
+
+		ctxHeader, err := documents.NewContextHeader(context.Background(), cfg)
+		if err != nil {
+			panic(err)
+		}
 
 		switch purpose {
 		case "p2p":
@@ -68,7 +77,7 @@ var addKeyCmd = &cobra.Command{
 			panic("Option not supported")
 		}
 
-		err := identity.AddKeyFromConfig(purposeInt)
+		err = identity.AddKeyFromContext(ctxHeader, purposeInt)
 		if err != nil {
 			panic(err)
 		}

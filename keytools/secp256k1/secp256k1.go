@@ -116,8 +116,8 @@ func VerifySignature(publicKey, message, signature []byte) bool {
 }
 
 // GetEthAuthKeyFromConfig returns the public and private keys as byte array
-func GetEthAuthKeyFromConfig() (public, private []byte, err error) {
-	pub, priv := config.Config().GetEthAuthKeyPair()
+func GetEthAuthKeyFromConfig(config *config.Configuration) (public, private []byte, err error) {
+	pub, priv := config.GetEthAuthKeyPair()
 	privateKey, err := GetPrivateEthAuthKey(priv)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to read private key: %v", err)

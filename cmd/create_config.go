@@ -8,6 +8,9 @@ import (
 	"github.com/centrifuge/go-centrifuge/keytools"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
+	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/documents"
+	"context"
 )
 
 var targetDataDir string
@@ -30,24 +33,24 @@ func createIdentity() (identity.CentID, error) {
 	return centrifugeId, nil
 }
 
-func generateKeys() {
-	p2pPub, p2pPvt := config.Config().GetSigningKeyPair()
-	ethAuthPub, ethAuthPvt := config.Config().GetEthAuthKeyPair()
+func generateKeys(config *config.Configuration) {
+	p2pPub, p2pPvt := config.GetSigningKeyPair()
+	ethAuthPub, ethAuthPvt := config.GetEthAuthKeyPair()
 	keytools.GenerateSigningKeyPair(p2pPub, p2pPvt, "ed25519")
 	keytools.GenerateSigningKeyPair(p2pPub, p2pPvt, "ed25519")
 	keytools.GenerateSigningKeyPair(ethAuthPub, ethAuthPvt, "secp256k1")
 }
 
-func addKeys() error {
-	err := identity.AddKeyFromConfig(identity.KeyPurposeP2P)
+func addKeys(ctx *documents.ContextHeader) error {
+	err := identity.AddKeyFromContext(ctx, identity.KeyPurposeP2P)
 	if err != nil {
 		panic(err)
 	}
-	err = identity.AddKeyFromConfig(identity.KeyPurposeSigning)
+	err = identity.AddKeyFromContext(ctx, identity.KeyPurposeSigning)
 	if err != nil {
 		panic(err)
 	}
-	err = identity.AddKeyFromConfig(identity.KeyPurposeEthMsgAuth)
+	err = identity.AddKeyFromContext(ctx, identity.KeyPurposeEthMsgAuth)
 	if err != nil {
 		panic(err)
 	}
@@ -67,6 +70,7 @@ func init() {
 		Long:  ``,
 		Run: func(cmd *cobra.Command, args []string) {
 
+
 			data := map[string]interface{}{
 				"targetDataDir":   targetDataDir,
 				"accountKeyPath":  accountKeyPath,
@@ -84,8 +88,14 @@ func init() {
 			}
 			log.Infof("Config File Created: %s\n", v.ConfigFileUsed())
 
-			baseBootstrap(v.ConfigFileUsed())
-			generateKeys()
+			ctx := baseBootstrap(v.ConfigFileUsed())
+			cfg := ctx[bootstrap.BootstrappedConfig].(*config.Configuration)
+			ctxHeader, err := documents.NewContextHeader(context.Background(), cfg)
+			if err != nil {
+				panic(err)
+			}
+			generateKeys(cfg)
+
 			id, err := createIdentity()
 			if err != nil {
 				panic(err)
@@ -96,11 +106,11 @@ func init() {
 			if err != nil {
 				log.Fatalf("error: %v", err)
 			}
-			config.Config().Set("identityId", id.String())
+			cfg.Set("identityId", id.String())
 
 			log.Infof("Identity created [%s] [%x]", id.String(), id)
 
-			err = addKeys()
+			err = addKeys(ctxHeader)
 			if err != nil {
 				log.Fatalf("error: %v", err)
 			}

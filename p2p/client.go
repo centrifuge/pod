@@ -16,11 +16,12 @@ import (
 	pstore "github.com/libp2p/go-libp2p-peerstore"
 	ma "github.com/multiformats/go-multiaddr"
 	"google.golang.org/grpc"
+	"github.com/centrifuge/go-centrifuge/documents"
 )
 
 type Client interface {
 	OpenClient(target string) (p2ppb.P2PServiceClient, error)
-	GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocument) error
+	GetSignaturesForDocument(ctx *documents.ContextHeader, doc *coredocumentpb.CoreDocument) error
 }
 
 func NewP2PClient(config Config) Client {
@@ -131,11 +132,11 @@ func (d *defaultClient) getSignatureAsync(ctx context.Context, doc coredocumentp
 }
 
 // GetSignaturesForDocument requests peer nodes for the signature and verifies them
-func (d *defaultClient) GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocument) error {
+func (d *defaultClient) GetSignaturesForDocument(ctx *documents.ContextHeader, doc *coredocumentpb.CoreDocument) error {
 	in := make(chan signatureResponseWrap)
 	defer close(in)
 
-	extCollaborators, err := coredocument.GetExternalCollaborators(doc)
+	extCollaborators, err := coredocument.GetExternalCollaborators(ctx, doc)
 	if err != nil {
 		return centerrors.Wrap(err, "failed to get external collaborators")
 	}
@@ -161,7 +162,7 @@ func (d *defaultClient) GetSignaturesForDocument(ctx context.Context, doc *cored
 		// for now going with context.background, once we have a timeout for request
 		// we can use context.Timeout for that
 		count++
-		go d.getSignatureAsync(ctx, *doc, client, collaboratorID, in)
+		go d.getSignatureAsync(ctx.Context(), *doc, client, collaboratorID, in)
 	}
 
 	var responses []signatureResponseWrap

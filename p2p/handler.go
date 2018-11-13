@@ -11,6 +11,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/version"
+	"github.com/centrifuge/go-centrifuge/config"
 )
 
 // getService looks up the specific registry, derives service from core document
@@ -37,14 +38,21 @@ func getServiceAndModel(cd *coredocumentpb.CoreDocument) (documents.Service, doc
 }
 
 // Handler implements the grpc interface
-type Handler struct{}
+type Handler struct{
+	config *config.Configuration
+}
 
 // RequestDocumentSignature signs the received document and returns the signature of the signingRoot
 // Document signing root will be recalculated and verified
 // Existing signatures on the document will be verified
 // Document will be stored to the repository for state management
 func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.SignatureRequest) (*p2ppb.SignatureResponse, error) {
-	err := handshakeValidator().Validate(sigReq.Header)
+	ctxHeader, err := documents.NewContextHeader(ctx, srv.config)
+	if err != nil {
+		log.Error(err)
+		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
+	}
+	err = handshakeValidator(srv.config.GetNetworkID()).Validate(sigReq.Header)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +62,7 @@ func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
 	}
 
-	signature, err := svc.RequestDocumentSignature(model)
+	signature, err := svc.RequestDocumentSignature(ctxHeader, model)
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
@@ -67,7 +75,7 @@ func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.
 
 // SendAnchoredDocument receives a new anchored document, validates and updates the document in DB
 func (srv *Handler) SendAnchoredDocument(ctx context.Context, docReq *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error) {
-	err := handshakeValidator().Validate(docReq.Header)
+	err := handshakeValidator(srv.config.GetNetworkID()).Validate(docReq.Header)
 	if err != nil {
 		return nil, err
 	}

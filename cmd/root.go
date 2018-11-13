@@ -97,7 +97,7 @@ func runBootstrap(cfgFile string) {
 	}
 }
 
-func baseBootstrap(cfgFile string) {
+func baseBootstrap(cfgFile string) (map[string]interface{}) {
 	mb := cc.MainBootstrapper{}
 	mb.PopulateBaseBootstrappers()
 	ctx := map[string]interface{}{}
@@ -107,4 +107,5 @@ func baseBootstrap(cfgFile string) {
 		// application must not continue to run
 		panic(err)
 	}
+	return ctx
 }

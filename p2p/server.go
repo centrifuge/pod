@@ -23,6 +23,7 @@ import (
 	ma "github.com/multiformats/go-multiaddr"
 	mh "github.com/multiformats/go-multihash"
 	"github.com/paralin/go-libp2p-grpc"
+	"github.com/centrifuge/go-centrifuge/config"
 )
 
 var log = logging.Logger("cent-p2p-server")
@@ -39,10 +40,10 @@ type Config interface {
 }
 
 type CentP2PServer struct {
-	config Config
+	config *config.Configuration
 }
 
-func NewCentP2PServer(config Config) *CentP2PServer {
+func NewCentP2PServer(config *config.Configuration) *CentP2PServer {
 	return &CentP2PServer{config}
 }
 
@@ -69,7 +70,7 @@ func (c *CentP2PServer) Start(ctx context.Context, wg *sync.WaitGroup, startupEr
 	grpcProto := p2pgrpc.NewGRPCProtocol(context.Background(), hostInstance)
 	GRPCProtoInstance = *grpcProto
 
-	p2ppb.RegisterP2PServiceServer(grpcProto.GetGRPCServer(), &Handler{})
+	p2ppb.RegisterP2PServiceServer(grpcProto.GetGRPCServer(), &Handler{config: c.config})
 	errOut := make(chan error)
 	go func(proto *p2pgrpc.GRPCProtocol, errOut chan<- error) {
 		errOut <- proto.Serve()
@@ -225,7 +226,7 @@ func (c *CentP2PServer) makeBasicHost(listenPort int) (host.Host, error) {
 
 func (c *CentP2PServer) createSigningKey() (priv crypto.PrivKey, pub crypto.PubKey, err error) {
 	// Create the signing key for the host
-	publicKey, privateKey, err := cented25519.GetSigningKeyPairFromConfig()
+	publicKey, privateKey, err := cented25519.GetSigningKeyPairFromConfig(c.config)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get keys: %v", err)
 	}

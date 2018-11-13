@@ -201,7 +201,7 @@ func documentRootValidator() documents.Validator {
 // re-calculates the signature and compares with existing one
 // assumes signing_root is already generated and verified
 // Note: this needs to used only before document is sent for signatures from the collaborators
-func readyForSignaturesValidator() documents.Validator {
+func readyForSignaturesValidator(ctxHeader *documents.ContextHeader) documents.Validator {
 	return documents.ValidatorFunc(func(_, model documents.Model) error {
 		cd, err := getCoreDocument(model)
 		if err != nil {
@@ -212,12 +212,7 @@ func readyForSignaturesValidator() documents.Validator {
 			return fmt.Errorf("expecting only one signature")
 		}
 
-		c, err := identity.GetIdentityConfig()
-		if err != nil {
-			return fmt.Errorf("failed to get keys for signature calculation: %v", err)
-		}
-
-		s := signatures.Sign(c, identity.KeyPurposeSigning, cd.SigningRoot)
+		s := signatures.Sign(ctxHeader.Self(), identity.KeyPurposeSigning, cd.SigningRoot)
 		sh := cd.Signatures[0]
 		if !utils.IsSameByteSlice(s.EntityId, sh.EntityId) {
 			err = documents.AppendError(err, documents.NewError("cd_entity_id", "entity ID mismatch"))
@@ -332,11 +327,11 @@ func PostAnchoredValidator(repo anchors.AnchorRepository) documents.ValidatorGro
 // signingRootValidator
 // readyForSignaturesValidator
 // should be called after sender signing the document and before requesting the document
-func PreSignatureRequestValidator() documents.ValidatorGroup {
+func PreSignatureRequestValidator(ctxHeader *documents.ContextHeader) documents.ValidatorGroup {
 	return documents.ValidatorGroup{
 		baseValidator(),
 		signingRootValidator(),
-		readyForSignaturesValidator(),
+		readyForSignaturesValidator(ctxHeader),
 	}
 }
 

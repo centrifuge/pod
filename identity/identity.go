@@ -15,6 +15,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/centrifuge/go-centrifuge/documents"
 )
 
 const (
@@ -50,8 +51,8 @@ type IdentityKey struct {
 }
 
 // GetIdentityConfig returns the identity and keys associated with the node
-func GetIdentityConfig() (*IdentityConfig, error) {
-	centIDBytes, err := config.Config().GetIdentityID()
+func GetIdentityConfig(config *config.Configuration) (*IdentityConfig, error) {
+	centIDBytes, err := config.GetIdentityID()
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +63,7 @@ func GetIdentityConfig() (*IdentityConfig, error) {
 
 	//ed25519 keys
 	keys := map[int]IdentityKey{}
-	pk, sk, err := ed25519.GetSigningKeyPairFromConfig()
+	pk, sk, err := ed25519.GetSigningKeyPairFromConfig(config)
 	if err != nil {
 		return nil, err
 	}
@@ -262,12 +263,9 @@ func ValidateKey(centrifugeId CentID, key []byte, purpose int) error {
 	return nil
 }
 
-// AddKeyFromConfig adds a key previously generated and indexed in the configuration file to the identity specified in such config file
-func AddKeyFromConfig(purpose int) error {
-	identityConfig, err := GetIdentityConfig()
-	if err != nil {
-		return err
-	}
+// AddKeyFromContext adds a key previously generated and indexed in the configuration file to the identity specified in such config file
+func AddKeyFromContext(ctxHeader *documents.ContextHeader, purpose int) error {
+	identityConfig := ctxHeader.Self()
 
 	id, err := IDService.LookupIdentityForID(identityConfig.ID)
 	if err != nil {

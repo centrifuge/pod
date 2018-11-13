@@ -253,7 +253,7 @@ func incrementNonce(opts *bind.TransactOpts, txpoolAccessEnabled bool, noncer no
 		return nil
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), GetDefaultContextTimeout())
+	ctx, cancel := defaultReadContext()
 	defer cancel()
 
 	// get current nonce

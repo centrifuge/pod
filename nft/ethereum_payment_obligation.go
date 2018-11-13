@@ -20,6 +20,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 
 	logging "github.com/ipfs/go-log"
+	"github.com/centrifuge/go-centrifuge/config"
 )
 
 var log = logging.Logger("nft")
@@ -54,12 +55,12 @@ type ethereumPaymentObligation struct {
 	paymentObligation ethereumPaymentObligationContract
 	identityService   identity.Service
 	ethClient         ethereum.Client
-	config            Config
-	setupMintListener func(tokenID *big.Int) (confirmations chan *WatchTokenMinted, err error)
+	config            *config.Configuration
+	setupMintListener func(config *config.Configuration, tokenID *big.Int) (confirmations chan *WatchTokenMinted, err error)
 }
 
 // NewEthereumPaymentObligation creates ethereumPaymentObligation given the parameters
-func NewEthereumPaymentObligation(paymentObligation ethereumPaymentObligationContract, identityService identity.Service, ethClient ethereum.Client, config Config, setupMintListener func(tokenID *big.Int) (confirmations chan *WatchTokenMinted, err error)) *ethereumPaymentObligation {
+func NewEthereumPaymentObligation(paymentObligation ethereumPaymentObligationContract, identityService identity.Service, ethClient ethereum.Client, config *config.Configuration, setupMintListener func(config *config.Configuration, tokenID *big.Int) (confirmations chan *WatchTokenMinted, err error)) *ethereumPaymentObligation {
 	return &ethereumPaymentObligation{paymentObligation: paymentObligation, identityService: identityService, ethClient: ethClient, config: config, setupMintListener: setupMintListener}
 }
 
@@ -111,7 +112,7 @@ func (s *ethereumPaymentObligation) MintNFT(documentID []byte, docType, registry
 		return nil, err
 	}
 
-	watch, err := s.setupMintListener(requestData.TokenID)
+	watch, err := s.setupMintListener(s.config, requestData.TokenID)
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +127,7 @@ func (s *ethereumPaymentObligation) MintNFT(documentID []byte, docType, registry
 
 // setUpMintEventListener sets up the listened for the "PaymentObligationMinted" event to notify the upstream code
 // about successful minting of an NFt
-func setupMintListener(tokenID *big.Int) (confirmations chan *WatchTokenMinted, err error) {
+func setupMintListener(config *config.Configuration, tokenID *big.Int) (confirmations chan *WatchTokenMinted, err error) {
 	confirmations = make(chan *WatchTokenMinted)
 	conn := ethereum.GetClient()
 
@@ -142,13 +143,13 @@ func setupMintListener(tokenID *big.Int) (confirmations chan *WatchTokenMinted, 
 		return nil, err
 	}
 
-	go waitAndRouteNFTApprovedEvent(asyncRes, tokenID, confirmations)
+	go waitAndRouteNFTApprovedEvent(config, asyncRes, tokenID, confirmations)
 	return confirmations, nil
 }
 
 // waitAndRouteNFTApprovedEvent notifies the confirmations channel whenever the key has been added to the identity and has been noted as Ethereum event
-func waitAndRouteNFTApprovedEvent(asyncRes *gocelery.AsyncResult, tokenID *big.Int, confirmations chan<- *WatchTokenMinted) {
-	_, err := asyncRes.Get(ethereum.GetDefaultContextTimeout())
+func waitAndRouteNFTApprovedEvent(config *config.Configuration, asyncRes *gocelery.AsyncResult, tokenID *big.Int, confirmations chan<- *WatchTokenMinted) {
+	_, err := asyncRes.Get(config.GetEthereumContextWaitTimeout())
 	confirmations <- &WatchTokenMinted{tokenID, err}
 }
 

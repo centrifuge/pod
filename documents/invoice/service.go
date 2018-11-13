@@ -37,7 +37,7 @@ type Service interface {
 	DeriveFromUpdatePayload(*clientinvoicepb.InvoiceUpdatePayload, *documents.ContextHeader) (documents.Model, error)
 
 	// Create validates and persists invoice Model and returns a Updated model
-	Create(ctx context.Context, inv documents.Model) (documents.Model, error)
+	Create(ctx *documents.ContextHeader, inv documents.Model) (documents.Model, error)
 
 	// Update validates and updates the invoice model and return the updated model
 	Update(ctx context.Context, inv documents.Model) (documents.Model, error)
@@ -159,7 +159,7 @@ func (s service) calculateDataRoot(old, new documents.Model, validator documents
 }
 
 // Create takes and invoice model and does required validation checks, tries to persist to DB
-func (s service) Create(ctx context.Context, inv documents.Model) (documents.Model, error) {
+func (s service) Create(ctx *documents.ContextHeader, inv documents.Model) (documents.Model, error) {
 	inv, err := s.calculateDataRoot(nil, inv, CreateValidator())
 	if err != nil {
 		return nil, err
@@ -327,7 +327,7 @@ func (s service) DeriveFromUpdatePayload(payload *clientinvoicepb.InvoiceUpdateP
 }
 
 // RequestDocumentSignature Validates, Signs document received over the p2p layer and returs Signature
-func (s service) RequestDocumentSignature(model documents.Model) (*coredocumentpb.Signature, error) {
+func (s service) RequestDocumentSignature(ctx *documents.ContextHeader, model documents.Model) (*coredocumentpb.Signature, error) {
 	if err := coredocument.SignatureRequestValidator().Validate(nil, model); err != nil {
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
 	}
@@ -339,12 +339,7 @@ func (s service) RequestDocumentSignature(model documents.Model) (*coredocumentp
 
 	srvLog.Infof("coredoc received %x with signing root %x", doc.DocumentIdentifier, doc.SigningRoot)
 
-	idConfig, err := identity.GetIdentityConfig()
-	if err != nil {
-		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get ID Config: %v", err))
-	}
-
-	sig := signatures.Sign(idConfig, identity.KeyPurposeSigning, doc.SigningRoot)
+	sig := signatures.Sign(ctx.Self(), identity.KeyPurposeSigning, doc.SigningRoot)
 	doc.Signatures = append(doc.Signatures, sig)
 	err = model.UnpackCoreDocument(doc)
 	if err != nil {
