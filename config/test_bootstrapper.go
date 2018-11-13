@@ -25,7 +25,6 @@ func (*Bootstrapper) TestBootstrap(context map[string]interface{}) error {
 	}
 	c := NewConfiguration(fmt.Sprintf("%s/build/configs/testing_config.yaml", match))
 	context[bootstrap.BootstrappedConfig] = c
-	context[bootstrap.TestBootstrappedPathMatch] = match
 	return nil
 }
 
