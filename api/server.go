@@ -92,7 +92,6 @@ func (c apiServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr cha
 	startUpErrOut := make(chan error)
 	go func(startUpErrInner chan<- error) {
 		conn, err := net.Listen("tcp", c.config.GetServerAddress())
-
 		if err != nil {
 			startUpErrInner <- err
 			return
@@ -100,7 +99,6 @@ func (c apiServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr cha
 
 		log.Infof("HTTP/gRpc listening on Port: %d\n", c.config.GetServerPort())
 		log.Infof("Connecting to Network: %s\n", c.config.GetNetworkString())
-
 		err = srv.Serve(tls.NewListener(conn, srv.TLSConfig))
 		if err != nil {
 			startUpErrInner <- err
