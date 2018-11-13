@@ -7,6 +7,8 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/config"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -143,6 +145,16 @@ func (m *MockConfig) GetEthereumDefaultAccountName() string {
 	return args.Get(0).(string)
 }
 
+func (m *MockConfig) Config() *config.Configuration {
+	args := m.Called()
+	return args.Get(0).(*config.Configuration)
+}
+
+func (m *MockConfig) GetContractAddress(address string) common.Address {
+	args := m.Called()
+	return args.Get(0).(common.Address)
+}
+
 func TestPaymentObligationService(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -176,6 +188,8 @@ func TestPaymentObligationService(t *testing.T) {
 				configMock := MockConfig{}
 				configMock.On("GetEthereumDefaultAccountName").Return("ethacc")
 				configMock.On("GetIdentityID").Return(centIDByte, nil)
+				configMock.On("GetContractAddress").Return(common.HexToAddress("0xd0dbc72ae5e71382b3cc9cfdc53f6952a085db6d"))
+
 				return docServiceMock, paymentObligationMock, idServiceMock, ethClientMock, configMock
 			},
 			&nftpb.NFTMintRequest{Identifier: "0x1212", Type: "happypath", ProofFields: []string{"collaborators[0]"}},
@@ -192,6 +206,8 @@ func TestPaymentObligationService(t *testing.T) {
 			confirmations := make(chan *WatchTokenMinted)
 			service := NewEthereumPaymentObligation(&idService, &ethClient, &config, func(tokenID *big.Int, registryAddress string) (chan *WatchTokenMinted, error) {
 				return confirmations, nil
+			}, func(address common.Address) (*EthereumPaymentObligationContract, error) {
+				return &EthereumPaymentObligationContract{}, nil
 			})
 			_, err := service.MintNFT(decodeHex(test.request.Identifier), test.request.Type, test.request.RegistryAddress, test.request.DepositAddress, test.request.ProofFields)
 			if test.err != nil {

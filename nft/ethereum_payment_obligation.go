@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/centrifuge/go-centrifuge/config"
-
 	"regexp"
 
 	"github.com/centrifuge/gocelery"
@@ -44,6 +42,7 @@ func GetPaymentObligation() *ethereumPaymentObligation {
 type Config interface {
 	GetIdentityID() ([]byte, error)
 	GetEthereumDefaultAccountName() string
+	GetContractAddress(address string) common.Address
 }
 
 // ethereumPaymentObligationContract is an abstraction over the contract code to help in mocking it out
@@ -59,11 +58,17 @@ type ethereumPaymentObligation struct {
 	ethClient         ethereum.Client
 	config            Config
 	setupMintListener func(tokenID *big.Int, registryAddress string) (confirmations chan *WatchTokenMinted, err error)
+	newContract       func(address common.Address) (*EthereumPaymentObligationContract, error)
 }
 
 // NewEthereumPaymentObligation creates ethereumPaymentObligation given the parameters
-func NewEthereumPaymentObligation(identityService identity.Service, ethClient ethereum.Client, config Config, setupMintListener func(tokenID *big.Int, registryAddress string) (confirmations chan *WatchTokenMinted, err error)) *ethereumPaymentObligation {
-	return &ethereumPaymentObligation{identityService: identityService, ethClient: ethClient, config: config, setupMintListener: setupMintListener}
+func NewEthereumPaymentObligation(identityService identity.Service, ethClient ethereum.Client, config Config,
+	setupMintListener func(tokenID *big.Int, registryAddress string) (confirmations chan *WatchTokenMinted, err error), newContract func(address common.Address) (*EthereumPaymentObligationContract, error)) *ethereumPaymentObligation {
+	return &ethereumPaymentObligation{identityService: identityService,
+		ethClient:         ethClient,
+		config:            config,
+		setupMintListener: setupMintListener,
+		newContract:       newContract}
 }
 
 func (s *ethereumPaymentObligation) prepareMintRequest(documentID []byte, docType string, proofFields []string) (*MintRequest, error) {
@@ -133,9 +138,9 @@ func (s *ethereumPaymentObligation) MintNFT(documentID []byte, docType, registry
 
 	var contract *EthereumPaymentObligationContract
 	if registryAddress == "" {
-		contract, err = newDefaultContract()
+		contract, err = s.newContract(s.config.GetContractAddress("paymentObligation"))
 	} else {
-		contract, err = newContract(common.HexToAddress(registryAddress))
+		contract, err = s.newContract(common.HexToAddress(registryAddress))
 	}
 	if err != nil {
 		return nil, err
@@ -335,11 +340,6 @@ func getCollaboratorProofField(proofFields []string) (string, error) {
 
 	return "", fmt.Errorf("proof_fields should contain a collaborator. (example: 'collaborators[0]')")
 
-}
-
-// getDefaultContract returns a contract bind to the default address in the config
-func newDefaultContract() (*EthereumPaymentObligationContract, error) {
-	return newContract(config.Config().GetContractAddress("paymentObligation"))
 }
 
 func newContract(address common.Address) (*EthereumPaymentObligationContract, error) {
