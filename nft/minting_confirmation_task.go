@@ -1,12 +1,12 @@
-
 package nft
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/centrifuge/go-centrifuge/ethereum"
 	"time"
+
+	"github.com/centrifuge/go-centrifuge/ethereum"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -40,8 +40,7 @@ type mintingConfirmationTask struct {
 	RegistryAddress string
 
 	//state
-	EthContextInitializer           func() (ctx context.Context, cancelFunc context.CancelFunc)
-
+	EthContextInitializer func() (ctx context.Context, cancelFunc context.CancelFunc)
 }
 
 func newMintingConfirmationTask(
@@ -49,7 +48,7 @@ func newMintingConfirmationTask(
 ) *mintingConfirmationTask {
 	return &mintingConfirmationTask{
 
-		EthContextInitializer:           ethContextInitializer,
+		EthContextInitializer: ethContextInitializer,
 	}
 }
 
