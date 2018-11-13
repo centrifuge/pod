@@ -11,6 +11,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/centrifuge/go-centrifuge/config"
 )
 
 const (
@@ -34,13 +35,13 @@ type keyRegistrationConfirmationTask struct {
 	ctx                context.Context
 	filterer           keyRegisteredFilterer
 	contract           *EthereumIdentityRegistryContract
-	config             Config
+	config             *config.Configuration
 }
 
 func newKeyRegistrationConfirmationTask(
 	ethContextInitializer func() (ctx context.Context, cancelFunc context.CancelFunc),
 	registryContract *EthereumIdentityRegistryContract,
-	config Config,
+	config *config.Configuration,
 ) *keyRegistrationConfirmationTask {
 	return &keyRegistrationConfirmationTask{
 		contextInitializer: ethContextInitializer,

@@ -20,6 +20,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"github.com/centrifuge/go-centrifuge/config"
 )
 
 var log = logging.Logger("cent-api-server")
@@ -32,10 +33,11 @@ type Config interface {
 
 // CentAPIServer is an implementation of node.Server interface for serving HTTP based Centrifuge API
 type CentAPIServer struct {
-	config Config
+	config *config.Configuration
 }
 
-func NewCentAPIServer(config Config) *CentAPIServer {
+// NewCentAPIServer returns a new instance of the CentAPIServer initialized with the config
+func NewCentAPIServer(config *config.Configuration) *CentAPIServer {
 	return &CentAPIServer{config}
 }
 

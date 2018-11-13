@@ -5,12 +5,12 @@ import (
 	"os"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-	cc "github.com/centrifuge/go-centrifuge/context"
 	"github.com/centrifuge/go-centrifuge/utils"
 	logging "github.com/ipfs/go-log"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	gologging "github.com/whyrusleeping/go-logging"
+	"github.com/centrifuge/go-centrifuge/config"
 )
 
 //global flags
@@ -86,10 +86,10 @@ func setCentrifugeLoggers() {
 }
 
 func runBootstrap(cfgFile string) {
-	mb := cc.MainBootstrapper{}
+	mb := bootstrap.MainBootstrapper{}
 	mb.PopulateRunBootstrappers()
 	ctx := map[string]interface{}{}
-	ctx[bootstrap.BootstrappedConfigFile] = cfgFile
+	ctx[config.BootstrappedConfigFile] = cfgFile
 	err := mb.Bootstrap(ctx)
 	if err != nil {
 		// application must not continue to run
@@ -98,10 +98,10 @@ func runBootstrap(cfgFile string) {
 }
 
 func baseBootstrap(cfgFile string) (map[string]interface{}) {
-	mb := cc.MainBootstrapper{}
+	mb := bootstrap.MainBootstrapper{}
 	mb.PopulateBaseBootstrappers()
 	ctx := map[string]interface{}{}
-	ctx[bootstrap.BootstrappedConfigFile] = cfgFile
+	ctx[config.BootstrappedConfigFile] = cfgFile
 	err := mb.Bootstrap(ctx)
 	if err != nil {
 		// application must not continue to run

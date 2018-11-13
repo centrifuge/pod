@@ -90,7 +90,7 @@ func TestAddKeyFromConfig(t *testing.T) {
 	assert.Nil(t, watchRegisteredIdentity.Error, "No error thrown by context")
 	assert.Equal(t, centrifugeId, watchRegisteredIdentity.Identity.CentID(), "Resulting Identity should have the same ID as the input")
 
-	err = identity.AddKeyFromContext(identity.KeyPurposeEthMsgAuth)
+	err = identity.AddKeyFromConfig(identity.KeyPurposeEthMsgAuth)
 	assert.Nil(t, err, "should not error out")
 
 	config.Config().Set("identityId", defaultCentrifugeId)
@@ -103,7 +103,7 @@ func TestAddKeyFromConfig_IdentityDoesNotExist(t *testing.T) {
 	config.Config().Set("keys.ethauth.publicKey", "../build/resources/ethauth.pub.pem")
 	config.Config().Set("keys.ethauth.privateKey", "../build/resources/ethauth.key.pem")
 
-	err := identity.AddKeyFromContext(identity.KeyPurposeEthMsgAuth)
+	err := identity.AddKeyFromConfig(identity.KeyPurposeEthMsgAuth)
 	assert.NotNil(t, err, "should error out")
 
 	config.Config().Set("identityId", defaultCentrifugeId)

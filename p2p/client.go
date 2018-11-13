@@ -16,12 +16,12 @@ import (
 	pstore "github.com/libp2p/go-libp2p-peerstore"
 	ma "github.com/multiformats/go-multiaddr"
 	"google.golang.org/grpc"
-	"github.com/centrifuge/go-centrifuge/documents"
+	cc "github.com/centrifuge/go-centrifuge/context"
 )
 
 type Client interface {
 	OpenClient(target string) (p2ppb.P2PServiceClient, error)
-	GetSignaturesForDocument(ctx *documents.ContextHeader, doc *coredocumentpb.CoreDocument) error
+	GetSignaturesForDocument(ctx *cc.ContextHeader, doc *coredocumentpb.CoreDocument) error
 }
 
 func NewP2PClient(config Config) Client {
@@ -132,7 +132,7 @@ func (d *defaultClient) getSignatureAsync(ctx context.Context, doc coredocumentp
 }
 
 // GetSignaturesForDocument requests peer nodes for the signature and verifies them
-func (d *defaultClient) GetSignaturesForDocument(ctx *documents.ContextHeader, doc *coredocumentpb.CoreDocument) error {
+func (d *defaultClient) GetSignaturesForDocument(ctx *cc.ContextHeader, doc *coredocumentpb.CoreDocument) error {
 	in := make(chan signatureResponseWrap)
 	defer close(in)
 

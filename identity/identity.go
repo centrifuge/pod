@@ -15,7 +15,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/centrifuge/go-centrifuge/documents"
 )
 
 const (
@@ -71,7 +70,7 @@ func GetIdentityConfig(config *config.Configuration) (*IdentityConfig, error) {
 	keys[KeyPurposeSigning] = IdentityKey{PublicKey: pk, PrivateKey: sk}
 
 	//secp256k1 keys
-	pk, sk, err = secp256k1.GetEthAuthKeyFromConfig()
+	pk, sk, err = secp256k1.GetEthAuthKeyFromConfig(config)
 	if err != nil {
 		return nil, err
 	}
@@ -263,10 +262,8 @@ func ValidateKey(centrifugeId CentID, key []byte, purpose int) error {
 	return nil
 }
 
-// AddKeyFromContext adds a key previously generated and indexed in the configuration file to the identity specified in such config file
-func AddKeyFromContext(ctxHeader *documents.ContextHeader, purpose int) error {
-	identityConfig := ctxHeader.Self()
-
+// AddKeyFromConfig adds a key previously generated and indexed in the configuration file to the identity specified in such config file
+func AddKeyFromConfig(identityConfig *IdentityConfig, purpose int) error {
 	id, err := IDService.LookupIdentityForID(identityConfig.ID)
 	if err != nil {
 		return err

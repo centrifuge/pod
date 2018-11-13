@@ -16,10 +16,11 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"github.com/centrifuge/go-centrifuge/config"
 )
 
 // registerServices registers all endpoints to the grpc server
-func registerServices(ctx context.Context, config Config, grpcServer *grpc.Server, gwmux *runtime.ServeMux, addr string, dopts []grpc.DialOption) error {
+func registerServices(ctx context.Context, config *config.Configuration, grpcServer *grpc.Server, gwmux *runtime.ServeMux, addr string, dopts []grpc.DialOption) error {
 	// documents (common)
 	documentpb.RegisterDocumentServiceServer(grpcServer, documents.GRPCHandler())
 	err := documentpb.RegisterDocumentServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
@@ -28,7 +29,7 @@ func registerServices(ctx context.Context, config Config, grpcServer *grpc.Serve
 	}
 
 	// invoice
-	handler, err := invoice.GRPCHandler()
+	handler, err := invoice.GRPCHandler(config)
 	if err != nil {
 		return err
 	}

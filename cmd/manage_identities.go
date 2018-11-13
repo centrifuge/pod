@@ -5,10 +5,9 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/spf13/cobra"
-	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/documents"
 	"context"
+	cc "github.com/centrifuge/go-centrifuge/context"
 )
 
 var centrifugeIdString string
@@ -58,10 +57,10 @@ var addKeyCmd = &cobra.Command{
 		//cmd requires a config file
 		cfgFile = ensureConfigFile()
 		ctx := baseBootstrap(cfgFile)
-		cfg := ctx[bootstrap.BootstrappedConfig].(*config.Configuration)
+		cfg := ctx[config.BootstrappedConfig].(*config.Configuration)
 		var purposeInt int
 
-		ctxHeader, err := documents.NewContextHeader(context.Background(), cfg)
+		ctxHeader, err := cc.NewContextHeader(context.Background(), cfg)
 		if err != nil {
 			panic(err)
 		}
@@ -77,7 +76,7 @@ var addKeyCmd = &cobra.Command{
 			panic("Option not supported")
 		}
 
-		err = identity.AddKeyFromContext(ctxHeader, purposeInt)
+		err = identity.AddKeyFromConfig(ctxHeader.Self(), purposeInt)
 		if err != nil {
 			panic(err)
 		}

@@ -2,7 +2,6 @@ package invoice
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"time"
 
@@ -22,6 +21,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes"
 	logging "github.com/ipfs/go-log"
+	cc "github.com/centrifuge/go-centrifuge/context"
 )
 
 var srvLog = logging.Logger("invoice-service")
@@ -31,16 +31,16 @@ type Service interface {
 	documents.Service
 
 	// DeriverFromPayload derives Invoice from clientPayload
-	DeriveFromCreatePayload(*clientinvoicepb.InvoiceCreatePayload, *documents.ContextHeader) (documents.Model, error)
+	DeriveFromCreatePayload(*clientinvoicepb.InvoiceCreatePayload, *cc.ContextHeader) (documents.Model, error)
 
 	// DeriveFromUpdatePayload derives invoice model from update payload
-	DeriveFromUpdatePayload(*clientinvoicepb.InvoiceUpdatePayload, *documents.ContextHeader) (documents.Model, error)
+	DeriveFromUpdatePayload(*clientinvoicepb.InvoiceUpdatePayload, *cc.ContextHeader) (documents.Model, error)
 
 	// Create validates and persists invoice Model and returns a Updated model
-	Create(ctx *documents.ContextHeader, inv documents.Model) (documents.Model, error)
+	Create(ctx *cc.ContextHeader, inv documents.Model) (documents.Model, error)
 
 	// Update validates and updates the invoice model and return the updated model
-	Update(ctx context.Context, inv documents.Model) (documents.Model, error)
+	Update(ctx *cc.ContextHeader, inv documents.Model) (documents.Model, error)
 
 	// DeriveInvoiceData returns the invoice data as client data
 	DeriveInvoiceData(inv documents.Model) (*clientinvoicepb.InvoiceData, error)
@@ -116,7 +116,7 @@ func (s service) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (docume
 }
 
 // UnpackFromCreatePayload initializes the model with parameters provided from the rest-api call
-func (s service) DeriveFromCreatePayload(payload *clientinvoicepb.InvoiceCreatePayload, contextHeader *documents.ContextHeader) (documents.Model, error) {
+func (s service) DeriveFromCreatePayload(payload *clientinvoicepb.InvoiceCreatePayload, contextHeader *cc.ContextHeader) (documents.Model, error) {
 	if payload == nil || payload.Data == nil {
 		return nil, centerrors.New(code.DocumentInvalid, "input is nil")
 	}
@@ -159,7 +159,7 @@ func (s service) calculateDataRoot(old, new documents.Model, validator documents
 }
 
 // Create takes and invoice model and does required validation checks, tries to persist to DB
-func (s service) Create(ctx *documents.ContextHeader, inv documents.Model) (documents.Model, error) {
+func (s service) Create(ctx *cc.ContextHeader, inv documents.Model) (documents.Model, error) {
 	inv, err := s.calculateDataRoot(nil, inv, CreateValidator())
 	if err != nil {
 		return nil, err
@@ -174,7 +174,7 @@ func (s service) Create(ctx *documents.ContextHeader, inv documents.Model) (docu
 }
 
 // Update finds the old document, validates the new version and persists the updated document
-func (s service) Update(ctx context.Context, inv documents.Model) (documents.Model, error) {
+func (s service) Update(ctx *cc.ContextHeader, inv documents.Model) (documents.Model, error) {
 	cd, err := inv.PackCoreDocument()
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, err.Error())
@@ -288,7 +288,7 @@ func (s service) DeriveInvoiceData(doc documents.Model) (*clientinvoicepb.Invoic
 }
 
 // DeriveFromUpdatePayload returns a new version of the old invoice identified by identifier in payload
-func (s service) DeriveFromUpdatePayload(payload *clientinvoicepb.InvoiceUpdatePayload, contextHeader *documents.ContextHeader) (documents.Model, error) {
+func (s service) DeriveFromUpdatePayload(payload *clientinvoicepb.InvoiceUpdatePayload, contextHeader *cc.ContextHeader) (documents.Model, error) {
 	if payload == nil || payload.Data == nil {
 		return nil, centerrors.New(code.DocumentInvalid, "invalid payload")
 	}
@@ -327,7 +327,7 @@ func (s service) DeriveFromUpdatePayload(payload *clientinvoicepb.InvoiceUpdateP
 }
 
 // RequestDocumentSignature Validates, Signs document received over the p2p layer and returs Signature
-func (s service) RequestDocumentSignature(ctx *documents.ContextHeader, model documents.Model) (*coredocumentpb.Signature, error) {
+func (s service) RequestDocumentSignature(ctx *cc.ContextHeader, model documents.Model) (*coredocumentpb.Signature, error) {
 	if err := coredocument.SignatureRequestValidator().Validate(nil, model); err != nil {
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
 	}

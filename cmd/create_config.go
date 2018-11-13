@@ -8,9 +8,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/keytools"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
-	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/documents"
 	"context"
+	cc "github.com/centrifuge/go-centrifuge/context"
 )
 
 var targetDataDir string
@@ -41,16 +40,16 @@ func generateKeys(config *config.Configuration) {
 	keytools.GenerateSigningKeyPair(ethAuthPub, ethAuthPvt, "secp256k1")
 }
 
-func addKeys(ctx *documents.ContextHeader) error {
-	err := identity.AddKeyFromContext(ctx, identity.KeyPurposeP2P)
+func addKeys(ctx *cc.ContextHeader) error {
+	err := identity.AddKeyFromConfig(ctx.Self(), identity.KeyPurposeP2P)
 	if err != nil {
 		panic(err)
 	}
-	err = identity.AddKeyFromContext(ctx, identity.KeyPurposeSigning)
+	err = identity.AddKeyFromConfig(ctx.Self(), identity.KeyPurposeSigning)
 	if err != nil {
 		panic(err)
 	}
-	err = identity.AddKeyFromContext(ctx, identity.KeyPurposeEthMsgAuth)
+	err = identity.AddKeyFromConfig(ctx.Self(), identity.KeyPurposeEthMsgAuth)
 	if err != nil {
 		panic(err)
 	}
@@ -89,8 +88,8 @@ func init() {
 			log.Infof("Config File Created: %s\n", v.ConfigFileUsed())
 
 			ctx := baseBootstrap(v.ConfigFileUsed())
-			cfg := ctx[bootstrap.BootstrappedConfig].(*config.Configuration)
-			ctxHeader, err := documents.NewContextHeader(context.Background(), cfg)
+			cfg := ctx[config.BootstrappedConfig].(*config.Configuration)
+			ctxHeader, err := cc.NewContextHeader(context.Background(), cfg)
 			if err != nil {
 				panic(err)
 			}

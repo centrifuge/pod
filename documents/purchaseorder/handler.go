@@ -11,6 +11,8 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	logging "github.com/ipfs/go-log"
 	"golang.org/x/net/context"
+	cc "github.com/centrifuge/go-centrifuge/context"
+	"github.com/centrifuge/go-centrifuge/config"
 )
 
 var apiLog = logging.Logger("purchaseorder-api")
@@ -19,6 +21,7 @@ var apiLog = logging.Logger("purchaseorder-api")
 // anchoring, sending, finding stored purchase order document
 type grpcHandler struct {
 	service Service
+	config *config.Configuration
 }
 
 // GRPCHandler returns an implementation of the purchaseorder DocumentServiceServer
@@ -36,7 +39,7 @@ func GRPCHandler() (clientpurchaseorderpb.DocumentServiceServer, error) {
 // Create validates the purchase order, persists it to DB, and anchors it the chain
 func (h grpcHandler) Create(ctx context.Context, req *clientpurchaseorderpb.PurchaseOrderCreatePayload) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
 	apiLog.Debugf("Create request %v", req)
-	ctxh, err := documents.NewContextHeader()
+	ctxh, err := cc.NewContextHeader(ctx, h.config)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.New(code.Unknown, err.Error())
@@ -49,7 +52,7 @@ func (h grpcHandler) Create(ctx context.Context, req *clientpurchaseorderpb.Purc
 	}
 
 	// validate, persist, and anchor
-	doc, err = h.service.Create(ctx, doc)
+	doc, err = h.service.Create(ctxh, doc)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, err
@@ -61,7 +64,7 @@ func (h grpcHandler) Create(ctx context.Context, req *clientpurchaseorderpb.Purc
 // Update handles the document update and anchoring
 func (h grpcHandler) Update(ctx context.Context, payload *clientpurchaseorderpb.PurchaseOrderUpdatePayload) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
 	apiLog.Debugf("Update request %v", payload)
-	ctxHeader, err := documents.NewContextHeader()
+	ctxHeader, err := cc.NewContextHeader(ctx, h.config)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
@@ -73,7 +76,7 @@ func (h grpcHandler) Update(ctx context.Context, payload *clientpurchaseorderpb.
 		return nil, err
 	}
 
-	doc, err = h.service.Update(ctx, doc)
+	doc, err = h.service.Update(ctxHeader, doc)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, err

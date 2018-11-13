@@ -8,7 +8,6 @@ import (
 	"os/signal"
 
 	"github.com/centrifuge/go-centrifuge/api"
-	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/p2p"
 )
@@ -17,10 +16,10 @@ type Bootstrapper struct {
 }
 
 func (*Bootstrapper) Bootstrap(c map[string]interface{}) error {
-	if _, ok := c[bootstrap.BootstrappedConfig]; !ok {
+	if _, ok := c[config.BootstrappedConfig]; !ok {
 		return errors.New("config hasn't been initialized")
 	}
-	cfg := c[bootstrap.BootstrappedConfig].(*config.Configuration)
+	cfg := c[config.BootstrappedConfig].(*config.Configuration)
 
 	services, err := defaultServerList(cfg)
 	if err != nil {
