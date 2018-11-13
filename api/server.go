@@ -24,23 +24,19 @@ import (
 
 var log = logging.Logger("cent-api-server")
 
-// CentAPIServer is an implementation of node.Server interface for serving HTTP based Centrifuge API
-type CentAPIServer struct {
-	Address     string
-	Port        int
-	CentNetwork string
+type Config interface {
+	GetServerAddress() string
+	GetServerPort() int
+	GetNetworkString() string
 }
 
-func NewCentAPIServer(
-	address string,
-	port int,
-	centNetwork string,
-) *CentAPIServer {
-	return &CentAPIServer{
-		Address:     address,
-		Port:        port,
-		CentNetwork: centNetwork,
-	}
+// CentAPIServer is an implementation of node.Server interface for serving HTTP based Centrifuge API
+type CentAPIServer struct {
+	config Config
+}
+
+func NewCentAPIServer(config Config) *CentAPIServer {
+	return &CentAPIServer{config}
 }
 
 func (*CentAPIServer) Name() string {
@@ -58,7 +54,7 @@ func (c *CentAPIServer) Start(ctx context.Context, wg *sync.WaitGroup, startupEr
 	if err != nil {
 		startupErr <- err
 	}
-	addr := c.Address
+	addr := c.config.GetServerAddress()
 
 	creds := credentials.NewTLS(&tls.Config{
 		RootCAs:            certPool,
@@ -81,7 +77,7 @@ func (c *CentAPIServer) Start(ctx context.Context, wg *sync.WaitGroup, startupEr
 	mux := http.NewServeMux()
 	gwmux := runtime.NewServeMux()
 
-	err = registerServices(ctx, grpcServer, gwmux, addr, dopts)
+	err = registerServices(ctx, c.config, grpcServer, gwmux, addr, dopts)
 	if err != nil {
 		startupErr <- err
 		return
@@ -99,13 +95,13 @@ func (c *CentAPIServer) Start(ctx context.Context, wg *sync.WaitGroup, startupEr
 
 	startUpErrOut := make(chan error)
 	go func(startUpErrInner chan<- error) {
-		conn, err := net.Listen("tcp", c.Address)
+		conn, err := net.Listen("tcp", c.config.GetServerAddress())
 		if err != nil {
 			startUpErrInner <- err
 			return
 		}
-		log.Infof("HTTP/gRpc listening on Port: %d\n", c.Port)
-		log.Infof("Connecting to Network: %s\n", c.CentNetwork)
+		log.Infof("HTTP/gRpc listening on Port: %d\n", c.config.GetServerPort())
+		log.Infof("Connecting to Network: %s\n", c.config.GetNetworkString())
 		err = srv.Serve(tls.NewListener(conn, srv.TLSConfig))
 		if err != nil {
 			startUpErrInner <- err

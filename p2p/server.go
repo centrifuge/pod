@@ -9,8 +9,7 @@ import (
 	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/notification"
+	cented25519 "github.com/centrifuge/go-centrifuge/keytools/ed25519"
 	"github.com/ipfs/go-cid"
 	ds "github.com/ipfs/go-datastore"
 	"github.com/ipfs/go-ipfs-addr"
@@ -24,32 +23,27 @@ import (
 	ma "github.com/multiformats/go-multiaddr"
 	mh "github.com/multiformats/go-multihash"
 	"github.com/paralin/go-libp2p-grpc"
-	"golang.org/x/crypto/ed25519"
 )
 
 var log = logging.Logger("cent-p2p-server")
 var HostInstance host.Host
 var GRPCProtoInstance p2pgrpc.GRPCProtocol
 
-type CentP2PServer struct {
-	Port           int
-	BootstrapPeers []string
-	PublicKey      ed25519.PublicKey
-	PrivateKey     ed25519.PrivateKey
+type Config interface {
+	GetP2PExternalIP() string
+	GetP2PPort() int
+	GetBootstrapPeers() []string
+	GetP2PConnectionTimeout() time.Duration
+	GetNetworkID() uint32
+	GetIdentityID() ([]byte, error)
 }
 
-func NewCentP2PServer(
-	port int,
-	bootstrapPeers []string,
-	publicKey ed25519.PublicKey,
-	privateKey ed25519.PrivateKey,
-) *CentP2PServer {
-	return &CentP2PServer{
-		Port:           port,
-		BootstrapPeers: bootstrapPeers,
-		PublicKey:      publicKey,
-		PrivateKey:     privateKey,
-	}
+type CentP2PServer struct {
+	config Config
+}
+
+func NewCentP2PServer(config Config) *CentP2PServer {
+	return &CentP2PServer{config}
 }
 
 func (*CentP2PServer) Name() string {
@@ -59,13 +53,13 @@ func (*CentP2PServer) Name() string {
 func (c *CentP2PServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- error) {
 	defer wg.Done()
 
-	if c.Port == 0 {
+	if c.config.GetP2PPort() == 0 {
 		startupErr <- errors.New("please provide a port to bind on")
 		return
 	}
 
 	// Make a host that listens on the given multiaddress
-	hostInstance, err := c.makeBasicHost(c.Port)
+	hostInstance, err := c.makeBasicHost(c.config.GetP2PPort())
 	if err != nil {
 		startupErr <- err
 		return
@@ -75,7 +69,7 @@ func (c *CentP2PServer) Start(ctx context.Context, wg *sync.WaitGroup, startupEr
 	grpcProto := p2pgrpc.NewGRPCProtocol(context.Background(), hostInstance)
 	GRPCProtoInstance = *grpcProto
 
-	p2ppb.RegisterP2PServiceServer(grpcProto.GetGRPCServer(), &Handler{Notifier: &notification.WebhookSender{}})
+	p2ppb.RegisterP2PServiceServer(grpcProto.GetGRPCServer(), &Handler{})
 	errOut := make(chan error)
 	go func(proto *p2pgrpc.GRPCProtocol, errOut chan<- error) {
 		errOut <- proto.Serve()
@@ -106,8 +100,8 @@ func (c *CentP2PServer) runDHT(ctx context.Context, h host.Host) error {
 	//dhtClient := dht.NewDHTClient(ctx, h, rdStore) // Just run it as a client, will not respond to discovery requests
 	dhtClient := dht.NewDHT(ctx, h, ds.NewMapDatastore()) // Run it as a Bootstrap Node
 
-	log.Infof("Bootstrapping %s\n", c.BootstrapPeers)
-	for _, addr := range c.BootstrapPeers {
+	log.Infof("Bootstrapping %s\n", c.config.GetBootstrapPeers())
+	for _, addr := range c.config.GetBootstrapPeers() {
 		iaddr, _ := ipfsaddr.ParseString(addr)
 
 		pinfo, _ := pstore.InfoFromP2pAddr(iaddr.Multiaddr())
@@ -189,7 +183,7 @@ func (c *CentP2PServer) makeBasicHost(listenPort int) (host.Host, error) {
 		return nil, err
 	}
 
-	externalIP := config.Config().GetP2PExternalIP()
+	externalIP := c.config.GetP2PExternalIP()
 	var extMultiAddr ma.Multiaddr
 	if externalIP == "" {
 		log.Warning("External IP not defined, Peers might not be able to resolve this node if behind NAT\n")
@@ -231,9 +225,14 @@ func (c *CentP2PServer) makeBasicHost(listenPort int) (host.Host, error) {
 
 func (c *CentP2PServer) createSigningKey() (priv crypto.PrivKey, pub crypto.PubKey, err error) {
 	// Create the signing key for the host
+	publicKey, privateKey, err := cented25519.GetSigningKeyPairFromConfig()
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get keys: %v", err)
+	}
+
 	var key []byte
-	key = append(key, c.PrivateKey...)
-	key = append(key, c.PublicKey...)
+	key = append(key, privateKey...)
+	key = append(key, publicKey...)
 
 	priv, err = crypto.UnmarshalEd25519PrivateKey(key)
 	if err != nil {

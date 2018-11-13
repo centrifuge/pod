@@ -12,6 +12,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/code"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -58,8 +59,8 @@ type service struct {
 }
 
 // DefaultService returns the default implementation of the service
-func DefaultService(repo documents.Repository, processor coredocument.Processor, anchorRepository anchors.AnchorRepository) Service {
-	return service{repo: repo, coreDocProcessor: processor, notifier: &notification.WebhookSender{}, anchorRepository: anchorRepository}
+func DefaultService(config *config.Configuration, repo documents.Repository, processor coredocument.Processor, anchorRepository anchors.AnchorRepository) Service {
+	return service{repo: repo, coreDocProcessor: processor, notifier: notification.NewWebhookSender(config), anchorRepository: anchorRepository}
 }
 
 // CreateProofs creates proofs for the latest version document given the fields

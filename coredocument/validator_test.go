@@ -3,17 +3,13 @@
 package coredocument
 
 import (
-	"flag"
 	"fmt"
 	"math/big"
-	"os"
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
-	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/signatures"
@@ -23,21 +19,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
-
-func TestMain(m *testing.M) {
-	ibootstappers := []bootstrap.TestBootstrapper{
-		&config.Bootstrapper{},
-	}
-	bootstrap.RunTestBootstrappers(ibootstappers, nil)
-	flag.Parse()
-	config.Config().Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
-	config.Config().Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
-	config.Config().Set("keys.ethauth.publicKey", "../build/resources/ethauth.pub.pem")
-	config.Config().Set("keys.ethauth.privateKey", "../build/resources/ethauth.key.pem")
-	result := m.Run()
-	bootstrap.RunTestTeardown(ibootstappers)
-	os.Exit(result)
-}
 
 func TestUpdateVersionValidator(t *testing.T) {
 	uvv := UpdateVersionValidator()
