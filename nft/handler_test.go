@@ -28,6 +28,7 @@ func TestNFTMint_success(t *testing.T) {
 	nftMintRequest := getTestSetupData()
 	mockService := &MockPaymentObligationService{}
 	docID, _ := hexutil.Decode(nftMintRequest.Identifier)
+
 	confirmations := make(chan *WatchTokenMinted)
 	mockService.
 		On("MintNFT", docID, nftMintRequest.Type, nftMintRequest.RegistryAddress, nftMintRequest.DepositAddress, nftMintRequest.ProofFields).
