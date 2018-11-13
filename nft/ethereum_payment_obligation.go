@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"math/big"
 
+	"regexp"
+
 	"github.com/centrifuge/gocelery"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -27,6 +29,8 @@ var log = logging.Logger("nft")
 var po *ethereumPaymentObligation
 
 const amountOfProofs = 5
+
+var regexCollaborators, _ = regexp.Compile("collaborators\\[[0-9]+\\]")
 
 func setPaymentObligation(s *ethereumPaymentObligation) {
 	po = s
@@ -100,8 +104,12 @@ func (s *ethereumPaymentObligation) MintNFT(documentID []byte, docType, registry
 		return nil, nil
 	}
 
-	//last proofField should be the collaborator
-	requestData, err := NewMintRequest(toAddress, anchorID, proofs.FieldProofs, rootHash, proofFields[len(proofFields)-1])
+	collaboratorField, err := getCollaboratorProofField(proofFields)
+	if err != nil {
+		return nil, err
+	}
+
+	requestData, err := NewMintRequest(toAddress, anchorID, proofs.FieldProofs, rootHash, collaboratorField)
 	if err != nil {
 		return nil, err
 	}
@@ -286,4 +294,23 @@ func getDocumentService(documentType string) (documents.Service, error) {
 		return nil, err
 	}
 	return docService, nil
+}
+
+// getCollaborator returns the needed collaboratorField for a PaymentObligation NFT
+// In the current contract implementation the proofField for collaborator is a separated parameter
+// pattern: 'collaborators' + '[i]'
+// examples: 'collaborators[0]','collaborators[1]', etc
+func getCollaboratorProofField(proofFields []string) (string, error) {
+
+	for _, proofField := range proofFields {
+
+		match := regexCollaborators.MatchString(proofField)
+
+		if match {
+			return proofField, nil
+		}
+	}
+
+	return "", fmt.Errorf("proof_fields should contain a collaborator. (example: 'collaborators[0]')")
+
 }
