@@ -31,6 +31,7 @@ func TestCentP2PServer_StartContextCancel(t *testing.T) {
 	// cancel the context to shutdown the server
 	canc()
 	wg.Wait()
+	assert.Equal(t, 0, len(startErr), "should not error out")
 }
 
 func TestCentP2PServer_StartListenError(t *testing.T) {
