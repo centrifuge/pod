@@ -19,6 +19,8 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
+	"context"
+	"github.com/centrifuge/go-centrifuge/header"
 )
 
 var (
@@ -37,7 +39,7 @@ func TestMain(m *testing.M) {
 		&config.Bootstrapper{},
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
-	cfg = ctx[bootstrap.BootstrappedConfig].(*config.Configuration)
+	cfg = ctx[config.BootstrappedConfig].(*config.Configuration)
 	dp = DefaultProcessor(nil, nil, nil, cfg).(defaultProcessor)
 	flag.Parse()
 	cfg.Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
@@ -244,23 +246,23 @@ func TestGetExternalCollaborators(t *testing.T) {
 	c := []string{hexutil.Encode(c1), hexutil.Encode(c2)}
 	cd, err := NewWithCollaborators(c)
 	assert.Equal(t, [][]byte{c1, c2}, cd.Collaborators)
-	collaborators, err := GetExternalCollaborators(cd)
+	ctxh, err := header.NewContextHeader(context.Background(), cfg)
+	assert.Nil(t, err)
+	collaborators, err := GetExternalCollaborators(ctxh, cd)
 	assert.Nil(t, err)
 	assert.NotNil(t, collaborators)
 	assert.Equal(t, [][]byte{c1, c2}, collaborators)
 }
 
-func TestGetExternalCollaborators_ErrorConfig(t *testing.T) {
+func TestGetExternalCollaborators_WrongIDFormat(t *testing.T) {
 	c1 := utils.RandomSlice(6)
 	c2 := utils.RandomSlice(6)
 	c := []string{hexutil.Encode(c1), hexutil.Encode(c2)}
 	cd, err := NewWithCollaborators(c)
 	assert.Equal(t, [][]byte{c1, c2}, cd.Collaborators)
-	currentKeyPath, _ := cfg.GetSigningKeyPair()
-	//Wrong path
-	cfg.Set("keys.signing.publicKey", "./build/resources/signingKey.pub.pem")
-	collaborators, err := GetExternalCollaborators(cd)
+	cd.Collaborators[1] = utils.RandomSlice(5)
+	ctxh, err := header.NewContextHeader(context.Background(), cfg)
+	assert.Nil(t, err)
+	_, err = GetExternalCollaborators(ctxh, cd)
 	assert.NotNil(t, err)
-	assert.Nil(t, collaborators)
-	cfg.Set("keys.signing.publicKey", currentKeyPath)
 }

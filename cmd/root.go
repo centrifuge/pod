@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/utils"
 	logging "github.com/ipfs/go-log"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	gologging "github.com/whyrusleeping/go-logging"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/context"
 )
 
 //global flags
@@ -86,7 +86,7 @@ func setCentrifugeLoggers() {
 }
 
 func runBootstrap(cfgFile string) {
-	mb := bootstrap.MainBootstrapper{}
+	mb := context.MainBootstrapper{}
 	mb.PopulateRunBootstrappers()
 	ctx := map[string]interface{}{}
 	ctx[config.BootstrappedConfigFile] = cfgFile
@@ -98,7 +98,7 @@ func runBootstrap(cfgFile string) {
 }
 
 func baseBootstrap(cfgFile string) (map[string]interface{}) {
-	mb := bootstrap.MainBootstrapper{}
+	mb := context.MainBootstrapper{}
 	mb.PopulateBaseBootstrappers()
 	ctx := map[string]interface{}{}
 	ctx[config.BootstrappedConfigFile] = cfgFile

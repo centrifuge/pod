@@ -12,7 +12,8 @@ import (
 	logging "github.com/ipfs/go-log"
 	"golang.org/x/net/context"
 	"github.com/centrifuge/go-centrifuge/config"
-	cc "github.com/centrifuge/go-centrifuge/context"
+	//cc "github.com/centrifuge/go-centrifuge/context"
+	"github.com/centrifuge/go-centrifuge/header"
 )
 
 var apiLog = logging.Logger("invoice-api")
@@ -39,7 +40,7 @@ func GRPCHandler(config *config.Configuration) (clientinvoicepb.DocumentServiceS
 // Create handles the creation of the invoices and anchoring the documents on chain
 func (h *grpcHandler) Create(ctx context.Context, req *clientinvoicepb.InvoiceCreatePayload) (*clientinvoicepb.InvoiceResponse, error) {
 	apiLog.Debugf("Create request %v", req)
-	ctxHeader, err := cc.NewContextHeader(ctx, h.config)
+	ctxHeader, err := header.NewContextHeader(ctx, h.config)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
@@ -64,7 +65,7 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientinvoicepb.InvoiceCr
 // Update handles the document update and anchoring
 func (h *grpcHandler) Update(ctx context.Context, payload *clientinvoicepb.InvoiceUpdatePayload) (*clientinvoicepb.InvoiceResponse, error) {
 	apiLog.Debugf("Update request %v", payload)
-	ctxHeader, err := cc.NewContextHeader(ctx, h.config)
+	ctxHeader, err := header.NewContextHeader(ctx, h.config)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))

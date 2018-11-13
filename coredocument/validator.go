@@ -11,7 +11,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/centrifuge/go-centrifuge/context"
+	"github.com/centrifuge/go-centrifuge/header"
 )
 
 // UpdateVersionValidator validates if the new core document is properly derived from old one
@@ -202,7 +202,7 @@ func documentRootValidator() documents.Validator {
 // re-calculates the signature and compares with existing one
 // assumes signing_root is already generated and verified
 // Note: this needs to used only before document is sent for signatures from the collaborators
-func readyForSignaturesValidator(ctxHeader *context.ContextHeader) documents.Validator {
+func readyForSignaturesValidator(ctxHeader *header.ContextHeader) documents.Validator {
 	return documents.ValidatorFunc(func(_, model documents.Model) error {
 		cd, err := getCoreDocument(model)
 		if err != nil {
@@ -328,7 +328,7 @@ func PostAnchoredValidator(repo anchors.AnchorRepository) documents.ValidatorGro
 // signingRootValidator
 // readyForSignaturesValidator
 // should be called after sender signing the document and before requesting the document
-func PreSignatureRequestValidator(ctxHeader *context.ContextHeader) documents.ValidatorGroup {
+func PreSignatureRequestValidator(ctxHeader *header.ContextHeader) documents.ValidatorGroup {
 	return documents.ValidatorGroup{
 		baseValidator(),
 		signingRootValidator(),

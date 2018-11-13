@@ -17,15 +17,19 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+var ctx = map[string]interface{}{}
+var cfg *config.Configuration
+
 func TestMain(m *testing.M) {
 	ibootstappers := []bootstrap.TestBootstrapper{
 		&config.Bootstrapper{},
 	}
-	bootstrap.RunTestBootstrappers(ibootstappers, nil)
-	config.Config().Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
-	config.Config().Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
-	config.Config().Set("keys.ethauth.publicKey", "../build/resources/ethauth.pub.pem")
-	config.Config().Set("keys.ethauth.privateKey", "../build/resources/ethauth.key.pem")
+	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
+	cfg = ctx[config.BootstrappedConfig].(*config.Configuration)
+	cfg.Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
+	cfg.Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
+	cfg.Set("keys.ethauth.publicKey", "../build/resources/ethauth.pub.pem")
+	cfg.Set("keys.ethauth.privateKey", "../build/resources/ethauth.key.pem")
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)
@@ -109,10 +113,10 @@ func (srv *mockIDService) CheckIdentityExists(centID CentID) (exists bool, err e
 }
 
 func TestGetIdentityConfig_Success(t *testing.T) {
-	idConfig, err := GetIdentityConfig()
+	idConfig, err := GetIdentityConfig(cfg)
 	assert.Nil(t, err)
 	assert.NotNil(t, idConfig)
-	configId, err := config.Config().GetIdentityID()
+	configId, err := cfg.GetIdentityID()
 	assert.Nil(t, err)
 	idBytes := idConfig.ID[:]
 	assert.Equal(t, idBytes, configId)
@@ -121,40 +125,40 @@ func TestGetIdentityConfig_Success(t *testing.T) {
 
 func TestGetIdentityConfig_Error(t *testing.T) {
 	//Wrong Hex
-	currentId := config.Config().GetString("identityId")
-	config.Config().Set("identityId", "ABCD")
-	idConfig, err := GetIdentityConfig()
+	currentId := cfg.GetString("identityId")
+	cfg.Set("identityId", "ABCD")
+	idConfig, err := GetIdentityConfig(cfg)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "hex string without 0x prefix")
 	assert.Nil(t, idConfig)
-	config.Config().Set("identityId", currentId)
+	cfg.Set("identityId", currentId)
 
 	//Wrong length
-	currentId = config.Config().GetString("identityId")
-	config.Config().Set("identityId", "0x0101010101")
-	idConfig, err = GetIdentityConfig()
+	currentId = cfg.GetString("identityId")
+	cfg.Set("identityId", "0x0101010101")
+	idConfig, err = GetIdentityConfig(cfg)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "invalid length byte slice provided for centID")
 	assert.Nil(t, idConfig)
-	config.Config().Set("identityId", currentId)
+	cfg.Set("identityId", currentId)
 
 	//Wrong public signing key path
-	currentKeyPath, _ := config.Config().GetSigningKeyPair()
-	config.Config().Set("keys.signing.publicKey", "./build/resources/signingKey.pub.pem")
-	idConfig, err = GetIdentityConfig()
+	currentKeyPath, _ := cfg.GetSigningKeyPair()
+	cfg.Set("keys.signing.publicKey", "./build/resources/signingKey.pub.pem")
+	idConfig, err = GetIdentityConfig(cfg)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "no such file or directory")
 	assert.Nil(t, idConfig)
-	config.Config().Set("keys.signing.publicKey", currentKeyPath)
+	cfg.Set("keys.signing.publicKey", currentKeyPath)
 
 	//Wrong public ethauth key path
-	currentKeyPath, _ = config.Config().GetEthAuthKeyPair()
-	config.Config().Set("keys.ethauth.publicKey", "./build/resources/ethauth.pub.pem")
-	idConfig, err = GetIdentityConfig()
+	currentKeyPath, _ = cfg.GetEthAuthKeyPair()
+	cfg.Set("keys.ethauth.publicKey", "./build/resources/ethauth.pub.pem")
+	idConfig, err = GetIdentityConfig(cfg)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "no such file or directory")
 	assert.Nil(t, idConfig)
-	config.Config().Set("keys.ethauth.publicKey", currentKeyPath)
+	cfg.Set("keys.ethauth.publicKey", currentKeyPath)
 }
 
 func TestToCentId(t *testing.T) {

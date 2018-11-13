@@ -18,6 +18,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
+	"github.com/centrifuge/go-centrifuge/header"
 )
 
 func TestInvoice_FromCoreDocuments_invalidParameter(t *testing.T) {
@@ -144,7 +145,7 @@ func TestInvoiceModel_getClientData(t *testing.T) {
 }
 
 func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
-	contextHeader, err := documents.NewContextHeader()
+	contextHeader, err := header.NewContextHeader()
 	assert.Nil(t, err)
 	// fail recipient
 	data := &clientinvoicepb.InvoiceData{
@@ -204,7 +205,7 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 }
 
 func TestInvoiceModel_calculateDataRoot(t *testing.T) {
-	ctxHeader, err := documents.NewContextHeader()
+	ctxHeader, err := header.NewContextHeader()
 	assert.Nil(t, err)
 	m := new(Invoice)
 	err = m.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), ctxHeader)

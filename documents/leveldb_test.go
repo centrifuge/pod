@@ -4,34 +4,14 @@ package documents
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
-	"os"
 	"reflect"
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/context/testlogging"
-	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
 )
-
-func TestMain(m *testing.M) {
-	ibootstappers := []bootstrap.TestBootstrapper{
-		&testlogging.TestLoggingBootstrapper{},
-		&config.Bootstrapper{},
-		&storage.Bootstrapper{},
-		&Bootstrapper{},
-	}
-	bootstrap.RunTestBootstrappers(ibootstappers, nil)
-	flag.Parse()
-	result := m.Run()
-	bootstrap.RunTestTeardown(ibootstappers)
-	os.Exit(result)
-}
 
 type model struct {
 	shouldError bool

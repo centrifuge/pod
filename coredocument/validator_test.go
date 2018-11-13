@@ -18,6 +18,8 @@ import (
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"context"
+	"github.com/centrifuge/go-centrifuge/header"
 )
 
 func TestUpdateVersionValidator(t *testing.T) {
@@ -206,12 +208,14 @@ func TestValidator_documentRootValidator(t *testing.T) {
 }
 
 func TestValidator_selfSignatureValidator(t *testing.T) {
-	rfsv := readyForSignaturesValidator()
+	ctxh, err := header.NewContextHeader(context.Background(), cfg)
+	assert.Nil(t, err)
+	rfsv := readyForSignaturesValidator(ctxh)
 
 	// fail getCoreDoc
 	model := mockModel{}
 	model.On("PackCoreDocument").Return(nil, fmt.Errorf("err")).Once()
-	err := rfsv.Validate(nil, model)
+	err = rfsv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
 
@@ -242,7 +246,7 @@ func TestValidator_selfSignatureValidator(t *testing.T) {
 
 	// success
 	cd.SigningRoot = utils.RandomSlice(32)
-	c, err := identity.GetIdentityConfig()
+	c, err := identity.GetIdentityConfig(cfg)
 	assert.Nil(t, err)
 	s = signatures.Sign(c, identity.KeyPurposeSigning, cd.SigningRoot)
 	cd.Signatures = []*coredocumentpb.Signature{s}
@@ -287,7 +291,7 @@ func TestValidator_signatureValidator(t *testing.T) {
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
 	cd.SigningRoot = utils.RandomSlice(32)
-	c, err := identity.GetIdentityConfig()
+	c, err := identity.GetIdentityConfig(cfg)
 	assert.Nil(t, err)
 	s = signatures.Sign(c, identity.KeyPurposeSigning, cd.SigningRoot)
 	cd.Signatures = []*coredocumentpb.Signature{s}
@@ -546,7 +550,9 @@ func TestPostAnchoredValidator(t *testing.T) {
 }
 
 func TestPreSignatureRequestValidator(t *testing.T) {
-	psv := PreSignatureRequestValidator()
+	ctxh, err := header.NewContextHeader(context.Background(), cfg)
+	assert.Nil(t, err)
+	psv := PreSignatureRequestValidator(ctxh)
 	assert.Len(t, psv, 3)
 }
 

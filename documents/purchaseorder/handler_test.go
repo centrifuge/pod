@@ -14,6 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/centrifuge/go-centrifuge/header"
 )
 
 type mockService struct {
@@ -21,19 +22,19 @@ type mockService struct {
 	mock.Mock
 }
 
-func (m mockService) Create(ctx context.Context, doc documents.Model) (documents.Model, error) {
+func (m mockService) Create(ctx *header.ContextHeader, doc documents.Model) (documents.Model, error) {
 	args := m.Called(ctx, doc)
 	model, _ := args.Get(0).(documents.Model)
 	return model, args.Error(1)
 }
 
-func (m mockService) Update(ctx context.Context, doc documents.Model) (documents.Model, error) {
+func (m mockService) Update(ctx *header.ContextHeader, doc documents.Model) (documents.Model, error) {
 	args := m.Called(ctx, doc)
 	model, _ := args.Get(0).(documents.Model)
 	return model, args.Error(1)
 }
 
-func (m mockService) DeriveFromCreatePayload(req *clientpopb.PurchaseOrderCreatePayload, ctxh *documents.ContextHeader) (documents.Model, error) {
+func (m mockService) DeriveFromCreatePayload(req *clientpopb.PurchaseOrderCreatePayload, ctxh *header.ContextHeader) (documents.Model, error) {
 	args := m.Called(req, ctxh)
 	model, _ := args.Get(0).(documents.Model)
 	return model, args.Error(1)
@@ -63,8 +64,8 @@ func (m mockService) DerivePurchaseOrderResponse(po documents.Model) (*clientpop
 	return data, args.Error(1)
 }
 
-func (m mockService) DeriveFromUpdatePayload(payload *clientpopb.PurchaseOrderUpdatePayload, ctxH *documents.ContextHeader) (documents.Model, error) {
-	args := m.Called(payload, ctxH)
+func (m mockService) DeriveFromUpdatePayload(payload *clientpopb.PurchaseOrderUpdatePayload, ctxh *header.ContextHeader) (documents.Model, error) {
+	args := m.Called(payload, ctxh)
 	doc, _ := args.Get(0).(documents.Model)
 	return doc, args.Error(1)
 }
@@ -74,7 +75,7 @@ func TestGRPCHandler_Create(t *testing.T) {
 	req := testingdocuments.CreatePOPayload()
 	ctx := context.Background()
 	model := &testingdocuments.MockModel{}
-	ctxh, err := documents.NewContextHeader()
+	ctxh, err := documents.NewContextHeader(ctx, cfg)
 	assert.Nil(t, err)
 
 	// derive fails
@@ -133,7 +134,7 @@ func TestGrpcHandler_Update(t *testing.T) {
 	}
 	ctx := context.Background()
 	model := &testingdocuments.MockModel{}
-	ctxh, err := documents.NewContextHeader()
+	ctxh, err := documents.NewContextHeader(ctx, cfg)
 	assert.Nil(t, err)
 
 	// derive fails

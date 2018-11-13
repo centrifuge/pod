@@ -1,17 +1,12 @@
-// +build unit
-
-package healthcheck
+package documents
 
 import (
-	"context"
-	"os"
 	"testing"
-
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/version"
-	"github.com/golang/protobuf/ptypes/empty"
-	"github.com/stretchr/testify/assert"
+	"os"
+	"github.com/centrifuge/go-centrifuge/storage"
+	"github.com/centrifuge/go-centrifuge/context/testlogging"
 )
 
 var ctx = map[string]interface{}{}
@@ -19,20 +14,14 @@ var cfg *config.Configuration
 
 func TestMain(m *testing.M) {
 	ibootstappers := []bootstrap.TestBootstrapper{
+		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
+		&storage.Bootstrapper{},
+		&Bootstrapper{},
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 	cfg = ctx[config.BootstrappedConfig].(*config.Configuration)
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)
-}
-
-func TestHandler_Ping(t *testing.T) {
-	h := GRPCHandler(cfg)
-	pong, err := h.Ping(context.Background(), &empty.Empty{})
-	assert.Nil(t, err)
-	assert.NotNil(t, pong)
-	assert.Equal(t, pong.Version, version.GetVersion().String())
-	assert.Equal(t, pong.Network, cfg.GetNetworkString())
 }

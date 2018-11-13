@@ -1,6 +1,6 @@
 // +build unit
 
-package bootstrap
+package context
 
 import (
 	"testing"

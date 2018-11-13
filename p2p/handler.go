@@ -12,7 +12,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/centrifuge/go-centrifuge/config"
-	cc "github.com/centrifuge/go-centrifuge/context"
+	"github.com/centrifuge/go-centrifuge/header"
 )
 
 // getService looks up the specific registry, derives service from core document
@@ -48,7 +48,7 @@ type Handler struct{
 // Existing signatures on the document will be verified
 // Document will be stored to the repository for state management
 func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.SignatureRequest) (*p2ppb.SignatureResponse, error) {
-	ctxHeader, err := cc.NewContextHeader(ctx, srv.config)
+	ctxHeader, err := header.NewContextHeader(ctx, srv.config)
 	if err != nil {
 		log.Error(err)
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))

@@ -9,7 +9,7 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"context"
-	cc "github.com/centrifuge/go-centrifuge/context"
+	"github.com/centrifuge/go-centrifuge/documents"
 )
 
 var targetDataDir string
@@ -40,7 +40,7 @@ func generateKeys(config *config.Configuration) {
 	keytools.GenerateSigningKeyPair(ethAuthPub, ethAuthPvt, "secp256k1")
 }
 
-func addKeys(ctx *cc.ContextHeader) error {
+func addKeys(ctx *documents.ContextHeader) error {
 	err := identity.AddKeyFromConfig(ctx.Self(), identity.KeyPurposeP2P)
 	if err != nil {
 		panic(err)
@@ -89,7 +89,7 @@ func init() {
 
 			ctx := baseBootstrap(v.ConfigFileUsed())
 			cfg := ctx[config.BootstrappedConfig].(*config.Configuration)
-			ctxHeader, err := cc.NewContextHeader(context.Background(), cfg)
+			ctxHeader, err := documents.NewContextHeader(context.Background(), cfg)
 			if err != nil {
 				panic(err)
 			}

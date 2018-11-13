@@ -31,7 +31,7 @@ func TestMain(m *testing.M) {
 		&config.Bootstrapper{},
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
-	cfg = ctx[bootstrap.BootstrappedConfig].(*config.Configuration)
+	cfg = ctx[config.BootstrappedConfig].(*config.Configuration)
 	cfg.Set("ethereum.txPoolAccessEnabled", false)
 	cfg.Set("ethereum.intervalRetry", time.Millisecond*100)
 	result := m.Run()

@@ -1,4 +1,4 @@
-package context
+package header
 
 import (
 	"github.com/centrifuge/go-centrifuge/identity"

@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/centrifuge/go-centrifuge/config"
 	"context"
-	cc "github.com/centrifuge/go-centrifuge/context"
+	"github.com/centrifuge/go-centrifuge/documents"
 )
 
 var centrifugeIdString string
@@ -60,7 +60,7 @@ var addKeyCmd = &cobra.Command{
 		cfg := ctx[config.BootstrappedConfig].(*config.Configuration)
 		var purposeInt int
 
-		ctxHeader, err := cc.NewContextHeader(context.Background(), cfg)
+		ctxHeader, err := documents.NewContextHeader(context.Background(), cfg)
 		if err != nil {
 			panic(err)
 		}

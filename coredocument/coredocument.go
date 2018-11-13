@@ -10,7 +10,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
-	"github.com/centrifuge/go-centrifuge/context"
+	"github.com/centrifuge/go-centrifuge/header"
 )
 
 // getDataProofHashes returns the hashes needed to create a proof from DataRoot to SigningRoot. This method is used
@@ -210,7 +210,7 @@ func NewWithCollaborators(collaborators []string) (*coredocumentpb.CoreDocument,
 }
 
 //  GetExternalCollaborators returns collaborators of a document without the own centID
-func GetExternalCollaborators(ctxHeader *context.ContextHeader, doc *coredocumentpb.CoreDocument) ([][]byte, error) {
+func GetExternalCollaborators(ctxHeader *header.ContextHeader, doc *coredocumentpb.CoreDocument) ([][]byte, error) {
 	var collabs [][]byte
 	idConfig := ctxHeader.Self()
 

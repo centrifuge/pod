@@ -43,7 +43,7 @@ func TestMain(m *testing.M) {
 		&storage.Bootstrapper{},
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
-	cfg = ctx[bootstrap.BootstrappedConfig].(*config.Configuration)
+	cfg = ctx[config.BootstrappedConfig].(*config.Configuration)
 	defaultTestClient = defaultClient{cfg}
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
@@ -52,7 +52,7 @@ func TestMain(m *testing.M) {
 
 func TestHandler_RequestDocumentSignature_nilDocument(t *testing.T) {
 	req := &p2ppb.SignatureRequest{Header: &p2ppb.CentrifugeHeader{
-		CentNodeVersion: version.GetVersion().String(), NetworkIdentifier: config.Config().GetNetworkID(),
+		CentNodeVersion: version.GetVersion().String(), NetworkIdentifier: cfg.GetNetworkID(),
 	}}
 
 	resp, err := handler.RequestDocumentSignature(context.Background(), req)
@@ -62,7 +62,7 @@ func TestHandler_RequestDocumentSignature_nilDocument(t *testing.T) {
 
 func TestHandler_RequestDocumentSignature_version_fail(t *testing.T) {
 	req := &p2ppb.SignatureRequest{Header: &p2ppb.CentrifugeHeader{
-		CentNodeVersion: "1000.0.1-invalid", NetworkIdentifier: config.Config().GetNetworkID(),
+		CentNodeVersion: "1000.0.1-invalid", NetworkIdentifier: cfg.GetNetworkID(),
 	}}
 
 	resp, err := handler.RequestDocumentSignature(context.Background(), req)
@@ -75,7 +75,7 @@ func TestSendAnchoredDocument_IncompatibleRequest(t *testing.T) {
 	// Test invalid version
 	header := &p2ppb.CentrifugeHeader{
 		CentNodeVersion:   "1000.0.0-invalid",
-		NetworkIdentifier: config.Config().GetNetworkID(),
+		NetworkIdentifier: cfg.GetNetworkID(),
 	}
 	req := p2ppb.AnchorDocumentRequest{Document: coreDoc, Header: header}
 	res, err := handler.SendAnchoredDocument(context.Background(), &req)
@@ -85,7 +85,7 @@ func TestSendAnchoredDocument_IncompatibleRequest(t *testing.T) {
 	assert.Nil(t, res)
 
 	// Test invalid network
-	header.NetworkIdentifier = config.Config().GetNetworkID() + 1
+	header.NetworkIdentifier = cfg.GetNetworkID() + 1
 	header.CentNodeVersion = version.GetVersion().String()
 	res, err = handler.SendAnchoredDocument(context.Background(), &req)
 	assert.Error(t, err)
@@ -97,7 +97,7 @@ func TestSendAnchoredDocument_IncompatibleRequest(t *testing.T) {
 func TestSendAnchoredDocument_NilDocument(t *testing.T) {
 	header := &p2ppb.CentrifugeHeader{
 		CentNodeVersion:   version.GetVersion().String(),
-		NetworkIdentifier: config.Config().GetNetworkID(),
+		NetworkIdentifier: cfg.GetNetworkID(),
 	}
 	req := p2ppb.AnchorDocumentRequest{Header: header}
 	res, err := handler.SendAnchoredDocument(context.Background(), &req)
@@ -110,7 +110,7 @@ func TestHandler_SendAnchoredDocument_getServiceAndModel_fail(t *testing.T) {
 	req := &p2ppb.AnchorDocumentRequest{
 		Header: &p2ppb.CentrifugeHeader{
 			CentNodeVersion:   version.GetVersion().String(),
-			NetworkIdentifier: config.Config().GetNetworkID(),
+			NetworkIdentifier: cfg.GetNetworkID(),
 		},
 		Document: coredocument.New(),
 	}
@@ -128,21 +128,21 @@ func TestP2PService_basicChecks(t *testing.T) {
 	}{
 		{
 			header: &p2ppb.CentrifugeHeader{CentNodeVersion: "someversion", NetworkIdentifier: 12},
-			err:    documents.AppendError(version.IncompatibleVersionError("someversion"), incompatibleNetworkError(config.Config().GetNetworkID(), 12)),
+			err:    documents.AppendError(version.IncompatibleVersionError("someversion"), incompatibleNetworkError(cfg.GetNetworkID(), 12)),
 		},
 
 		{
 			header: &p2ppb.CentrifugeHeader{CentNodeVersion: "0.0.1", NetworkIdentifier: 12},
-			err:    documents.AppendError(incompatibleNetworkError(config.Config().GetNetworkID(), 12), nil),
+			err:    documents.AppendError(incompatibleNetworkError(cfg.GetNetworkID(), 12), nil),
 		},
 
 		{
-			header: &p2ppb.CentrifugeHeader{CentNodeVersion: version.GetVersion().String(), NetworkIdentifier: config.Config().GetNetworkID()},
+			header: &p2ppb.CentrifugeHeader{CentNodeVersion: version.GetVersion().String(), NetworkIdentifier: cfg.GetNetworkID()},
 		},
 	}
 
 	for _, c := range tests {
-		err := handshakeValidator().Validate(c.header)
+		err := handshakeValidator(cfg.GetNetworkID()).Validate(c.header)
 		if err != nil {
 			if c.err == nil {
 				t.Fatalf("unexpected error: %v\n", err)
