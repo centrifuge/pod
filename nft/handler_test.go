@@ -70,6 +70,20 @@ func TestNFTMint_ServiceError(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
+func TestNFTMint_InvalidAddresses(t *testing.T) {
+	nftMintRequest := getTestSetupData()
+	nftMintRequest.RegistryAddress = "0x1234"
+	handler := grpcHandler{&MockPaymentObligationService{}}
+	_, err := handler.MintNFT(context.Background(), nftMintRequest)
+	assert.Error(t, err, "invalid registry address should throw an error")
+
+	nftMintRequest = getTestSetupData()
+	nftMintRequest.DepositAddress = "abc"
+	handler = grpcHandler{&MockPaymentObligationService{}}
+	_, err = handler.MintNFT(context.Background(), nftMintRequest)
+	assert.Error(t, err, "invalid deposit address should throw an error")
+}
+
 func getTestSetupData() *nftpb.NFTMintRequest {
 	return &nftpb.NFTMintRequest{
 		Identifier:      "0x12121212",

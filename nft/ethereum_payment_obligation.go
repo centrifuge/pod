@@ -30,6 +30,8 @@ var po *ethereumPaymentObligation
 
 const amountOfProofs = 5
 
+var regexCollaborators, _ = regexp.Compile("collaborators\\[[0-9]+\\]")
+
 func setPaymentObligation(s *ethereumPaymentObligation) {
 	po = s
 }
@@ -327,11 +329,7 @@ func getCollaboratorProofField(proofFields []string) (string, error) {
 
 	for _, proofField := range proofFields {
 
-		match, err := regexp.MatchString("collaborators\\[[0-9]+\\]", proofField)
-
-		if err != nil {
-			return "", err
-		}
+		match := regexCollaborators.MatchString(proofField)
 
 		if match {
 			return proofField, nil
