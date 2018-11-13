@@ -327,7 +327,7 @@ func getCollaboratorProofField(proofFields []string) (string, error) {
 
 	for _, proofField := range proofFields {
 
-		match, err := regexp.MatchString("collaborators\\[[0-9]*\\]", proofField)
+		match, err := regexp.MatchString("collaborators\\[[0-9]+\\]", proofField)
 
 		if err != nil {
 			return "", err
