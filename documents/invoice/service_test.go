@@ -44,12 +44,12 @@ func (r *mockAnchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.D
 }
 
 func TestDefaultService(t *testing.T) {
-	srv := DefaultService(getRepository(), &testingcoredocument.MockCoreDocumentProcessor{}, nil)
+	srv := DefaultService(nil, getRepository(), &testingcoredocument.MockCoreDocumentProcessor{}, nil)
 	assert.NotNil(t, srv, "must be non-nil")
 }
 
 func getServiceWithMockedLayers() Service {
-	return DefaultService(getRepository(), &testingcoredocument.MockCoreDocumentProcessor{}, &mockAnchorRepo{})
+	return DefaultService(nil, getRepository(), &testingcoredocument.MockCoreDocumentProcessor{}, &mockAnchorRepo{})
 }
 
 func createMockDocument() (*Invoice, error) {

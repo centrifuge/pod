@@ -8,7 +8,6 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/centerrors"
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/keytools/secp256k1"
@@ -19,6 +18,12 @@ import (
 )
 
 var log = logging.Logger("coredocument")
+
+// config defines functions to get processor details
+type Config interface {
+	GetNetworkID() uint32
+	GetIdentityID() ([]byte, error)
+}
 
 // Processor identifies an implementation, which can do a bunch of things with a CoreDocument.
 // E.g. send, anchor, etc.
@@ -40,17 +45,19 @@ type client interface {
 
 // defaultProcessor implements Processor interface
 type defaultProcessor struct {
-	IdentityService  identity.Service
-	P2PClient        client
-	AnchorRepository anchors.AnchorRepository
+	identityService  identity.Service
+	p2pClient        client
+	anchorRepository anchors.AnchorRepository
+	config           Config
 }
 
 // DefaultProcessor returns the default implementation of CoreDocument Processor
-func DefaultProcessor(idService identity.Service, p2pClient client, repository anchors.AnchorRepository) Processor {
+func DefaultProcessor(idService identity.Service, p2pClient client, repository anchors.AnchorRepository, config Config) Processor {
 	return defaultProcessor{
-		IdentityService:  idService,
-		P2PClient:        p2pClient,
-		AnchorRepository: repository,
+		identityService:  idService,
+		p2pClient:        p2pClient,
+		anchorRepository: repository,
+		config:           config,
 	}
 }
 
@@ -61,7 +68,7 @@ func (dp defaultProcessor) Send(ctx context.Context, coreDocument *coredocumentp
 	}
 
 	log.Infof("sending coredocument %x to recipient %x", coreDocument.DocumentIdentifier, recipient)
-	id, err := dp.IdentityService.LookupIdentityForID(recipient)
+	id, err := dp.identityService.LookupIdentityForID(recipient)
 	if err != nil {
 		return centerrors.Wrap(err, "error fetching receiver identity")
 	}
@@ -73,7 +80,7 @@ func (dp defaultProcessor) Send(ctx context.Context, coreDocument *coredocumentp
 
 	log.Infof("Sending Document to CentID [%v] with Key [%v]\n", recipient, lastB58Key)
 	clientWithProtocol := fmt.Sprintf("/ipfs/%s", lastB58Key)
-	client, err := dp.P2PClient.OpenClient(clientWithProtocol)
+	client, err := dp.p2pClient.OpenClient(clientWithProtocol)
 	if err != nil {
 		return fmt.Errorf("failed to open client: %v", err)
 	}
@@ -88,7 +95,7 @@ func (dp defaultProcessor) Send(ctx context.Context, coreDocument *coredocumentp
 	header := &p2ppb.CentrifugeHeader{
 		SenderCentrifugeId: centIDBytes,
 		CentNodeVersion:    version.GetVersion().String(),
-		NetworkIdentifier:  config.Config().GetNetworkID(),
+		NetworkIdentifier:  dp.config.GetNetworkID(),
 	}
 
 	resp, err := client.SendAnchoredDocument(ctx, &p2ppb.AnchorDocumentRequest{Document: coreDocument, Header: header})
@@ -142,7 +149,7 @@ func (dp defaultProcessor) RequestSignatures(ctx context.Context, model document
 		return fmt.Errorf("failed to validate model for signature request: %v", err)
 	}
 
-	err = dp.P2PClient.GetSignaturesForDocument(ctx, cd)
+	err = dp.p2pClient.GetSignaturesForDocument(ctx, cd)
 	if err != nil {
 		return fmt.Errorf("failed to collect signatures from the collaborators: %v", err)
 	}
@@ -199,7 +206,7 @@ func (dp defaultProcessor) AnchorDocument(model documents.Model) error {
 		return fmt.Errorf("failed to get document root: %v", err)
 	}
 
-	id, err := config.Config().GetIdentityID()
+	id, err := dp.config.GetIdentityID()
 	if err != nil {
 		return fmt.Errorf("failed to get self cent ID: %v", err)
 	}
@@ -226,7 +233,7 @@ func (dp defaultProcessor) AnchorDocument(model documents.Model) error {
 	}
 
 	log.Infof("Anchoring document with identifiers: [document: %#x, current: %#x, next: %#x], rootHash: %#x", cd.DocumentIdentifier, cd.CurrentVersion, cd.NextVersion, cd.DocumentRoot)
-	confirmations, err := dp.AnchorRepository.CommitAnchor(anchorID, rootHash, centID, [][anchors.DocumentProofLength]byte{utils.RandomByte32()}, mac)
+	confirmations, err := dp.anchorRepository.CommitAnchor(anchorID, rootHash, centID, [][anchors.DocumentProofLength]byte{utils.RandomByte32()}, mac)
 	if err != nil {
 		return fmt.Errorf("failed to commit anchor: %v", err)
 	}
@@ -243,7 +250,7 @@ func (dp defaultProcessor) SendDocument(ctx context.Context, model documents.Mod
 		return fmt.Errorf("failed to pack core document: %v", err)
 	}
 
-	av := PostAnchoredValidator(dp.AnchorRepository)
+	av := PostAnchoredValidator(dp.anchorRepository)
 	err = av.Validate(nil, model)
 	if err != nil {
 		return fmt.Errorf("post anchor validations failed: %v", err)

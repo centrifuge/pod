@@ -1,6 +1,11 @@
 package queue
 
-import "errors"
+import (
+	"errors"
+
+	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/config"
+)
 
 const BootstrappedQueuedTasks string = "BootstrappedQueuedTasks"
 
@@ -8,10 +13,14 @@ type Bootstrapper struct {
 }
 
 func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
+	if _, ok := context[bootstrap.BootstrappedConfig]; !ok {
+		return errors.New("config hasn't been initialized")
+	}
+	cfg := context[bootstrap.BootstrappedConfig].(*config.Configuration)
 	// to see how BootstrappedQueuedTasks get populated check usages of InstallQueuedTask
 	if queuedTasks, ok := context[BootstrappedQueuedTasks]; ok {
 		if queuedTasksTyped, ok := queuedTasks.([]QueuedTask); ok {
-			InitQueue(queuedTasksTyped)
+			InitQueue(queuedTasksTyped, cfg.GetNumWorkers(), cfg.GetWorkerWaitTimeMS())
 			return nil
 		}
 	}

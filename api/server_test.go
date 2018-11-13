@@ -20,6 +20,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var ctx = map[string]interface{}{}
+var cfg *config.Configuration
+
 func TestMain(m *testing.M) {
 	ibootstappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
@@ -28,7 +31,8 @@ func TestMain(m *testing.M) {
 		&invoice.Bootstrapper{},
 		&purchaseorder.Bootstrapper{},
 	}
-	bootstrap.RunTestBootstrappers(ibootstappers, nil)
+	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
+	cfg = ctx[bootstrap.BootstrappedConfig].(*config.Configuration)
 	flag.Parse()
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
@@ -36,8 +40,11 @@ func TestMain(m *testing.M) {
 }
 
 func TestCentAPIServer_StartContextCancel(t *testing.T) {
-	documents.GetRegistryInstance().Register(documenttypes.InvoiceDataTypeUrl, invoice.DefaultService(nil, nil, nil))
-	capi := NewCentAPIServer("0.0.0.0:9000", 9000, "")
+	cfg.Set("nodeHostname", "0.0.0.0")
+	cfg.Set("nodePort", 9000)
+	cfg.Set("centrifugeNetwork", "")
+	documents.GetRegistryInstance().Register(documenttypes.InvoiceDataTypeUrl, invoice.DefaultService(cfg, nil, nil, nil))
+	capi := NewCentAPIServer(cfg)
 	ctx, canc := context.WithCancel(context.Background())
 	startErr := make(chan error)
 	var wg sync.WaitGroup
@@ -50,7 +57,10 @@ func TestCentAPIServer_StartContextCancel(t *testing.T) {
 
 func TestCentAPIServer_StartListenError(t *testing.T) {
 	// cause an error by using an invalid port
-	capi := NewCentAPIServer("0.0.0.0:100000000", 100000000, "")
+	cfg.Set("nodeHostname", "0.0.0.0")
+	cfg.Set("nodePort", 100000000)
+	cfg.Set("centrifugeNetwork", "")
+	capi := NewCentAPIServer(cfg)
 	ctx, _ := context.WithCancel(context.Background())
 	startErr := make(chan error)
 	var wg sync.WaitGroup
