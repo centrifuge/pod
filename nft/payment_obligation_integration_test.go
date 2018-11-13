@@ -76,8 +76,8 @@ func TestPaymentObligationService_mint(t *testing.T) {
 	confirmations, err := nft.GetPaymentObligation().MintNFT(
 		ID,
 		documenttypes.InvoiceDataTypeUrl,
-		"doesntmatter",
-		"doesntmatter",
+		config.Config().GetContractAddress("paymentObligation").String(),
+		"0xf72855759a39fb75fc7341139f5d7a3974d4da08",
 		[]string{"gross_amount", "currency", "due_date", "document_type", "collaborators[0]"},
 	)
 	assert.Nil(t, err, "should not error out when minting an invoice")

@@ -6,11 +6,11 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 )
 
-func MockConfigOption(key string, value interface{}) func() {
-	mockedValue := config.Config().Get(key)
-	config.Config().Set(key, value)
+func MockConfigOption(cfg *config.Configuration, key string, value interface{}) func() {
+	mockedValue := cfg.Get(key)
+	cfg.Set(key, value)
 	return func() {
-		config.Config().Set(key, mockedValue)
+		cfg.Set(key, mockedValue)
 	}
 }
 

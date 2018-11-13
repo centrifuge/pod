@@ -28,6 +28,7 @@ func TestNFTMint_success(t *testing.T) {
 	nftMintRequest := getTestSetupData()
 	mockService := &MockPaymentObligationService{}
 	docID, _ := hexutil.Decode(nftMintRequest.Identifier)
+
 	confirmations := make(chan *WatchTokenMinted)
 	mockService.
 		On("MintNFT", docID, nftMintRequest.Type, nftMintRequest.RegistryAddress, nftMintRequest.DepositAddress, nftMintRequest.ProofFields).
@@ -67,6 +68,20 @@ func TestNFTMint_ServiceError(t *testing.T) {
 	_, err := handler.MintNFT(context.Background(), nftMintRequest)
 	mockService.AssertExpectations(t)
 	assert.NotNil(t, err)
+}
+
+func TestNFTMint_InvalidAddresses(t *testing.T) {
+	nftMintRequest := getTestSetupData()
+	nftMintRequest.RegistryAddress = "0x1234"
+	handler := grpcHandler{&MockPaymentObligationService{}}
+	_, err := handler.MintNFT(context.Background(), nftMintRequest)
+	assert.Error(t, err, "invalid registry address should throw an error")
+
+	nftMintRequest = getTestSetupData()
+	nftMintRequest.DepositAddress = "abc"
+	handler = grpcHandler{&MockPaymentObligationService{}}
+	_, err = handler.MintNFT(context.Background(), nftMintRequest)
+	assert.Error(t, err, "invalid deposit address should throw an error")
 }
 
 func getTestSetupData() *nftpb.NFTMintRequest {

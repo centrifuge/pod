@@ -9,8 +9,7 @@ import (
 	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/notification"
+	cented25519 "github.com/centrifuge/go-centrifuge/keytools/ed25519"
 	"github.com/ipfs/go-cid"
 	ds "github.com/ipfs/go-datastore"
 	"github.com/ipfs/go-ipfs-addr"
@@ -24,19 +23,24 @@ import (
 	ma "github.com/multiformats/go-multiaddr"
 	mh "github.com/multiformats/go-multihash"
 	"github.com/paralin/go-libp2p-grpc"
-	"golang.org/x/crypto/ed25519"
 )
 
 var log = logging.Logger("p2p-server")
 
+type Config interface {
+	GetP2PExternalIP() string
+	GetP2PPort() int
+	GetBootstrapPeers() []string
+	GetP2PConnectionTimeout() time.Duration
+	GetNetworkID() uint32
+	GetIdentityID() ([]byte, error)
+}
+
 // p2pServer implements api.Server
 type p2pServer struct {
-	port           int
-	bootstrapPeers []string
-	publicKey      ed25519.PublicKey
-	privateKey     ed25519.PrivateKey
-	host           host.Host
-	protocol       *p2pgrpc.GRPCProtocol
+	config   Config
+	host     host.Host
+	protocol *p2pgrpc.GRPCProtocol
 }
 
 // Name returns the P2PServer
@@ -48,14 +52,14 @@ func (*p2pServer) Name() string {
 func (s *p2pServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- error) {
 	defer wg.Done()
 
-	if s.port == 0 {
+	if s.config.GetP2PPort() == 0 {
 		startupErr <- errors.New("please provide a port to bind on")
 		return
 	}
 
 	// Make a host that listens on the given multiaddress
 	var err error
-	s.host, err = s.makeBasicHost(s.port)
+	s.host, err = s.makeBasicHost(s.config.GetP2PPort())
 	if err != nil {
 		startupErr <- err
 		return
@@ -63,7 +67,7 @@ func (s *p2pServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr ch
 
 	// Set the grpc protocol handler on it
 	s.protocol = p2pgrpc.NewGRPCProtocol(context.Background(), s.host)
-	p2ppb.RegisterP2PServiceServer(s.protocol.GetGRPCServer(), &Handler{Notifier: &notification.WebhookSender{}})
+	p2ppb.RegisterP2PServiceServer(s.protocol.GetGRPCServer(), &Handler{})
 	errOut := make(chan error)
 	go func(proto *p2pgrpc.GRPCProtocol, errOut chan<- error) {
 		errOut <- proto.Serve()
@@ -92,9 +96,11 @@ func (s *p2pServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr ch
 func (s *p2pServer) runDHT(ctx context.Context, h host.Host) error {
 	// Run it as a Bootstrap Node
 	dhtClient := dht.NewDHT(ctx, h, ds.NewMapDatastore())
-	log.Infof("Bootstrapping %s\n", s.bootstrapPeers)
 
-	for _, addr := range s.bootstrapPeers {
+	bootstrapPeers := s.config.GetBootstrapPeers()
+	log.Infof("Bootstrapping %s\n", bootstrapPeers)
+
+	for _, addr := range bootstrapPeers {
 		iaddr, _ := ipfsaddr.ParseString(addr)
 		pinfo, _ := pstore.InfoFromP2pAddr(iaddr.Multiaddr())
 		if err := h.Connect(ctx, *pinfo); err != nil {
@@ -170,13 +176,14 @@ func (s *p2pServer) makeBasicHost(listenPort int) (host.Host, error) {
 		log.Infof("Could not enable encryption: %v\n", err)
 		return nil, err
 	}
+
 	err = ps.AddPrivKey(pid, priv)
 	if err != nil {
 		log.Infof("Could not enable encryption: %v\n", err)
 		return nil, err
 	}
 
-	externalIP := config.Config().GetP2PExternalIP()
+	externalIP := s.config.GetP2PExternalIP()
 	var extMultiAddr ma.Multiaddr
 	if externalIP == "" {
 		log.Warning("External IP not defined, Peers might not be able to resolve this node if behind NAT\n")
@@ -218,14 +225,20 @@ func (s *p2pServer) makeBasicHost(listenPort int) (host.Host, error) {
 
 func (s *p2pServer) createSigningKey() (priv crypto.PrivKey, pub crypto.PubKey, err error) {
 	// Create the signing key for the host
+	publicKey, privateKey, err := cented25519.GetSigningKeyPairFromConfig()
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get keys: %v", err)
+	}
+
 	var key []byte
-	key = append(key, s.privateKey...)
-	key = append(key, s.publicKey...)
+	key = append(key, privateKey...)
+	key = append(key, publicKey...)
 
 	priv, err = crypto.UnmarshalEd25519PrivateKey(key)
 	if err != nil {
 		return nil, nil, err
 	}
+
 	pub = priv.GetPublic()
 	return priv, pub, nil
 }

@@ -17,11 +17,7 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	}
 
 	cfg := ctx[bootstrap.BootstrappedConfig].(*config.Configuration)
-	srv := apiServer{
-		addr:    cfg.GetServerAddress(),
-		port:    cfg.GetServerPort(),
-		network: cfg.GetNetworkString(),
-	}
+	srv := apiServer{config: cfg}
 
 	ctx[bootstrap.BootstrappedAPIServer] = srv
 	return nil

@@ -3,7 +3,6 @@ package queue
 import (
 	"sync"
 
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/gocelery"
 )
 
@@ -16,14 +15,14 @@ type QueuedTask interface {
 	Init() error
 }
 
-func InitQueue(tasks []QueuedTask) {
+func InitQueue(tasks []QueuedTask, numWorkers, workerWaitTime int) {
 	queueInit.Do(func() {
 		var err error
 		Queue, err = gocelery.NewCeleryClient(
 			gocelery.NewInMemoryBroker(),
 			gocelery.NewInMemoryBackend(),
-			config.Config().GetNumWorkers(),
-			config.Config().GetWorkerWaitTimeMS(),
+			numWorkers,
+			workerWaitTime,
 		)
 		if err != nil {
 			panic("Could not initialize the queue")

@@ -24,11 +24,15 @@ import (
 
 var log = logging.Logger("api-server")
 
+type Config interface {
+	GetServerAddress() string
+	GetServerPort() int
+	GetNetworkString() string
+}
+
 // apiServer is an implementation of node.Server interface for serving HTTP based Centrifuge API
 type apiServer struct {
-	addr    string
-	port    int
-	network string
+	config Config
 }
 
 func (apiServer) Name() string {
@@ -46,8 +50,8 @@ func (c apiServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr cha
 	if err != nil {
 		startupErr <- err
 	}
-	addr := c.addr
 
+	addr := c.config.GetServerAddress()
 	creds := credentials.NewTLS(&tls.Config{
 		RootCAs:            certPool,
 		ServerName:         addr,
@@ -69,7 +73,7 @@ func (c apiServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr cha
 	mux := http.NewServeMux()
 	gwmux := runtime.NewServeMux()
 
-	err = registerServices(ctx, grpcServer, gwmux, addr, dopts)
+	err = registerServices(ctx, c.config, grpcServer, gwmux, addr, dopts)
 	if err != nil {
 		startupErr <- err
 		return
@@ -87,13 +91,16 @@ func (c apiServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr cha
 
 	startUpErrOut := make(chan error)
 	go func(startUpErrInner chan<- error) {
-		conn, err := net.Listen("tcp", c.addr)
+		conn, err := net.Listen("tcp", c.config.GetServerAddress())
+
 		if err != nil {
 			startUpErrInner <- err
 			return
 		}
-		log.Infof("HTTP/gRpc listening on Port: %d\n", c.port)
-		log.Infof("Connecting to Network: %s\n", c.network)
+
+		log.Infof("HTTP/gRpc listening on Port: %d\n", c.config.GetServerPort())
+		log.Infof("Connecting to Network: %s\n", c.config.GetNetworkString())
+
 		err = srv.Serve(tls.NewListener(conn, srv.TLSConfig))
 		if err != nil {
 			startUpErrInner <- err

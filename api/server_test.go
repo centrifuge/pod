@@ -21,6 +21,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var ctx = map[string]interface{}{}
+var cfg *config.Configuration
+
 func TestMain(m *testing.M) {
 	ibootstappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
@@ -30,8 +33,9 @@ func TestMain(m *testing.M) {
 		&invoice.Bootstrapper{},
 		&purchaseorder.Bootstrapper{},
 	}
+	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
+	cfg = ctx[bootstrap.BootstrappedConfig].(*config.Configuration)
 
-	bootstrap.RunTestBootstrappers(ibootstappers, nil)
 	flag.Parse()
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
@@ -39,12 +43,11 @@ func TestMain(m *testing.M) {
 }
 
 func TestCentAPIServer_StartContextCancel(t *testing.T) {
-	documents.GetRegistryInstance().Register(documenttypes.InvoiceDataTypeUrl, invoice.DefaultService(nil, nil, nil))
-	capi := apiServer{
-		addr:    "0.0.0.0:9000",
-		port:    9000,
-		network: "",
-	}
+	cfg.Set("nodeHostname", "0.0.0.0")
+	cfg.Set("nodePort", 9000)
+	cfg.Set("centrifugeNetwork", "")
+	documents.GetRegistryInstance().Register(documenttypes.InvoiceDataTypeUrl, invoice.DefaultService(cfg, nil, nil, nil))
+	capi := apiServer{config: cfg}
 	ctx, canc := context.WithCancel(context.Background())
 	startErr := make(chan error)
 	var wg sync.WaitGroup
@@ -57,12 +60,11 @@ func TestCentAPIServer_StartContextCancel(t *testing.T) {
 
 func TestCentAPIServer_StartListenError(t *testing.T) {
 	// cause an error by using an invalid port
-	capi := apiServer{
-		addr:    "0.0.0.0:100000000",
-		port:    100000000,
-		network: "",
-	}
+	cfg.Set("nodeHostname", "0.0.0.0")
+	cfg.Set("nodePort", 100000000)
+	cfg.Set("centrifugeNetwork", "")
 	ctx, _ := context.WithCancel(context.Background())
+	capi := apiServer{config: cfg}
 	startErr := make(chan error)
 	var wg sync.WaitGroup
 	wg.Add(1)

@@ -7,6 +7,10 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/ethereum"
+
+	"github.com/centrifuge/go-centrifuge/config"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -143,6 +147,16 @@ func (m *MockConfig) GetEthereumDefaultAccountName() string {
 	return args.Get(0).(string)
 }
 
+func (m *MockConfig) Config() *config.Configuration {
+	args := m.Called()
+	return args.Get(0).(*config.Configuration)
+}
+
+func (m *MockConfig) GetContractAddress(address string) common.Address {
+	args := m.Called()
+	return args.Get(0).(common.Address)
+}
+
 func TestPaymentObligationService(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -162,7 +176,7 @@ func TestPaymentObligationService(t *testing.T) {
 				proof := getDummyProof(coreDoc)
 				docServiceMock := testingdocuments.MockService{}
 				docServiceMock.On("GetCurrentVersion", decodeHex("0x1212")).Return(&invoice.Invoice{InvoiceNumber: "1232", CoreDocument: coreDoc}, nil)
-				docServiceMock.On("CreateProofs", decodeHex("0x1212"), []string{"somefield"}).Return(proof, nil)
+				docServiceMock.On("CreateProofs", decodeHex("0x1212"), []string{"collaborators[0]"}).Return(proof, nil)
 				paymentObligationMock := &MockPaymentObligation{}
 				idServiceMock := testingcommons.MockIDService{}
 				idServiceMock.On("GetIdentityAddress", centID).Return(address, nil)
@@ -176,9 +190,11 @@ func TestPaymentObligationService(t *testing.T) {
 				configMock := MockConfig{}
 				configMock.On("GetEthereumDefaultAccountName").Return("ethacc")
 				configMock.On("GetIdentityID").Return(centIDByte, nil)
+				configMock.On("GetContractAddress").Return(common.HexToAddress("0xd0dbc72ae5e71382b3cc9cfdc53f6952a085db6d"))
+
 				return docServiceMock, paymentObligationMock, idServiceMock, ethClientMock, configMock
 			},
-			&nftpb.NFTMintRequest{Identifier: "0x1212", Type: "happypath", ProofFields: []string{"somefield"}},
+			&nftpb.NFTMintRequest{Identifier: "0x1212", Type: "happypath", ProofFields: []string{"collaborators[0]"}},
 			nil,
 			"",
 		},
@@ -190,8 +206,10 @@ func TestPaymentObligationService(t *testing.T) {
 			// with below config the documentType has to be test.name to avoid conflicts since registry is a singleton
 			documents.GetRegistryInstance().Register(test.name, &docService)
 			confirmations := make(chan *WatchTokenMinted)
-			service := NewEthereumPaymentObligation(paymentOb, &idService, &ethClient, &config, func(tokenID *big.Int) (chan *WatchTokenMinted, error) {
+			service := NewEthereumPaymentObligation(&idService, &ethClient, &config, func(tokenID *big.Int, registryAddress string) (chan *WatchTokenMinted, error) {
 				return confirmations, nil
+			}, func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error) {
+				return &EthereumPaymentObligationContract{}, nil
 			})
 			_, err := service.MintNFT(decodeHex(test.request.Identifier), test.request.Type, test.request.RegistryAddress, test.request.DepositAddress, test.request.ProofFields)
 			if test.err != nil {
@@ -247,4 +265,27 @@ func byteSliceToByteArray32(input []byte) (out [32]byte) {
 func decodeHex(hex string) []byte {
 	h, _ := hexutil.Decode(hex)
 	return h
+}
+
+func TestGetCollaboratorProofField(t *testing.T) {
+
+	proofField, err := getCollaboratorProofField([]string{"fuu", "foo", "collaborators[0]"})
+	assert.Nil(t, err, "getCollaboratorProofField should not throw an error")
+	assert.Equal(t, "collaborators[0]", proofField, "proofField should contain the correct field")
+
+	proofField, err = getCollaboratorProofField([]string{"fuu", "foo"})
+	assert.Error(t, err, "getCollaboratorProofField should throw an error")
+	assert.Equal(t, "", proofField, "proofField should be empty")
+
+	proofField, err = getCollaboratorProofField([]string{"fuu", "foo", "collaborators"})
+	assert.Error(t, err, "getCollaboratorProofField should throw an error")
+	assert.Equal(t, "", proofField, "proofField should be empty")
+
+	proofField, err = getCollaboratorProofField([]string{"fuu", "foo", "collaborators[a]"})
+	assert.Error(t, err, "getCollaboratorProofField should throw an error")
+	assert.Equal(t, "", proofField, "proofField should be empty")
+
+	proofField, err = getCollaboratorProofField([]string{"fuu", "foo", "collaborators[12345678]"})
+	assert.Nil(t, err, "getCollaboratorProofField should not throw an error")
+	assert.Equal(t, "collaborators[12345678]", proofField, "proofField should contain the correct field")
 }
