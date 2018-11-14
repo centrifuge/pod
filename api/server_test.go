@@ -16,6 +16,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
+	"github.com/centrifuge/go-centrifuge/p2p"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/stretchr/testify/assert"
 )
@@ -28,11 +29,13 @@ func TestMain(m *testing.M) {
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
 		&storage.Bootstrapper{},
+		p2p.Bootstrapper{},
 		&invoice.Bootstrapper{},
 		&purchaseorder.Bootstrapper{},
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 	cfg = ctx[bootstrap.BootstrappedConfig].(*config.Configuration)
+
 	flag.Parse()
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
@@ -44,7 +47,7 @@ func TestCentAPIServer_StartContextCancel(t *testing.T) {
 	cfg.Set("nodePort", 9000)
 	cfg.Set("centrifugeNetwork", "")
 	documents.GetRegistryInstance().Register(documenttypes.InvoiceDataTypeUrl, invoice.DefaultService(cfg, nil, nil, nil))
-	capi := NewCentAPIServer(cfg)
+	capi := apiServer{config: cfg}
 	ctx, canc := context.WithCancel(context.Background())
 	startErr := make(chan error)
 	var wg sync.WaitGroup
@@ -60,8 +63,8 @@ func TestCentAPIServer_StartListenError(t *testing.T) {
 	cfg.Set("nodeHostname", "0.0.0.0")
 	cfg.Set("nodePort", 100000000)
 	cfg.Set("centrifugeNetwork", "")
-	capi := NewCentAPIServer(cfg)
 	ctx, _ := context.WithCancel(context.Background())
+	capi := apiServer{config: cfg}
 	startErr := make(chan error)
 	var wg sync.WaitGroup
 	wg.Add(1)
