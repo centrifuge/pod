@@ -19,13 +19,13 @@ func TestCentP2PServer_Start(t *testing.T) {
 
 func TestCentP2PServer_StartContextCancel(t *testing.T) {
 	cfg.Set("p2p.port", 38203)
-	k := cfg.GetNetworkKey("bootstrapPeers")
-	cfg.Set(k, nil)
+	//k := cfg.GetNetworkKey("bootstrapPeers")
+	//cfg.Set(k, nil)
 	cfg.Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
 	cfg.Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
 	cp2p := &p2pServer{config: cfg}
 	ctx, canc := context.WithCancel(context.Background())
-	startErr := make(chan error)
+	startErr := make(chan error, 1)
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go cp2p.Start(ctx, &wg, startErr)
