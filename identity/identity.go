@@ -263,13 +263,13 @@ func ValidateKey(centrifugeId CentID, key []byte, purpose int) error {
 }
 
 // AddKeyFromConfig adds a key previously generated and indexed in the configuration file to the identity specified in such config file
-func AddKeyFromConfig(identityConfig *IdentityConfig, purpose int) error {
+func AddKeyFromConfig(config *config.Configuration, identityConfig *IdentityConfig, purpose int) error {
 	id, err := IDService.LookupIdentityForID(identityConfig.ID)
 	if err != nil {
 		return err
 	}
 
-	ctx, cancel := ethereum.DefaultWaitForTransactionMiningContext()
+	ctx, cancel := ethereum.DefaultWaitForTransactionMiningContext(config.GetEthereumContextWaitTimeout())
 	defer cancel()
 	confirmations, err := id.AddKeyToIdentity(ctx, purpose, identityConfig.Keys[purpose].PublicKey)
 	if err != nil {

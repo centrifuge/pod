@@ -40,9 +40,10 @@ type anchorConfirmationTask struct {
 	AnchorID     AnchorID
 	CentrifugeID identity.CentID
 	BlockHeight  uint64
+	Timeout      time.Duration
 
 	// state
-	EthContextInitializer   func() (ctx context.Context, cancelFunc context.CancelFunc)
+	EthContextInitializer   func(d time.Duration) (ctx context.Context, cancelFunc context.CancelFunc)
 	EthContext              context.Context
 	AnchorCommittedFilterer anchorCommittedWatcher
 }
@@ -65,6 +66,7 @@ func (act *anchorConfirmationTask) Copy() (gocelery.CeleryTask, error) {
 		act.AnchorID,
 		act.CentrifugeID,
 		act.BlockHeight,
+		act.Timeout,
 		act.EthContextInitializer,
 		act.EthContext,
 		act.AnchorCommittedFilterer,
@@ -113,6 +115,7 @@ func (act *anchorConfirmationTask) ParseKwargs(kwargs map[string]interface{}) er
 	if err != nil {
 		return fmt.Errorf("malformed kwarg [%s] because [%s]", AddressParam, err.Error())
 	}
+	act.From = addressTyped
 
 	if bhi, ok := kwargs[BlockHeight]; ok {
 		bhf, ok := bhi.(float64)
@@ -121,7 +124,16 @@ func (act *anchorConfirmationTask) ParseKwargs(kwargs map[string]interface{}) er
 		}
 	}
 
-	act.From = addressTyped
+	tdRaw, ok := kwargs[queue.TimeoutParam]
+	if !ok {
+		return fmt.Errorf("undefined kwarg " + queue.TimeoutParam)
+	}
+	td, err := queue.GetDuration(tdRaw)
+	if err != nil {
+		return fmt.Errorf("malformed kwarg [%s] because [%s]", queue.TimeoutParam, err.Error())
+	}
+	act.Timeout = td
+
 	return nil
 }
 
@@ -129,7 +141,7 @@ func (act *anchorConfirmationTask) ParseKwargs(kwargs map[string]interface{}) er
 func (act *anchorConfirmationTask) RunTask() (interface{}, error) {
 	log.Infof("Waiting for confirmation for the anchorID [%x]", act.AnchorID)
 	if act.EthContext == nil {
-		act.EthContext, _ = act.EthContextInitializer()
+		act.EthContext, _ = act.EthContextInitializer(act.Timeout)
 	}
 
 	fOpts := &bind.FilterOpts{

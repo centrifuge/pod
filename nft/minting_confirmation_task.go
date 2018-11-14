@@ -31,16 +31,19 @@ type paymentObligationMintedFilterer interface {
 type mintingConfirmationTask struct {
 	TokenID                         string
 	BlockHeight                     uint64
-	EthContextInitializer           func() (ctx context.Context, cancelFunc context.CancelFunc)
+	Timeout                         time.Duration
+	EthContextInitializer           func(d time.Duration) (ctx context.Context, cancelFunc context.CancelFunc)
 	EthContext                      context.Context
 	PaymentObligationMintedFilterer paymentObligationMintedFilterer
 }
 
 func newMintingConfirmationTask(
+	timeout time.Duration,
 	nftApprovedFilterer paymentObligationMintedFilterer,
-	ethContextInitializer func() (ctx context.Context, cancelFunc context.CancelFunc),
+	ethContextInitializer func(d time.Duration) (ctx context.Context, cancelFunc context.CancelFunc),
 ) *mintingConfirmationTask {
 	return &mintingConfirmationTask{
+		Timeout:                         timeout,
 		PaymentObligationMintedFilterer: nftApprovedFilterer,
 		EthContextInitializer:           ethContextInitializer,
 	}
@@ -62,6 +65,7 @@ func (nftc *mintingConfirmationTask) Copy() (gocelery.CeleryTask, error) {
 	return &mintingConfirmationTask{
 		nftc.TokenID,
 		nftc.BlockHeight,
+		nftc.Timeout,
 		nftc.EthContextInitializer,
 		nftc.EthContext,
 		nftc.PaymentObligationMintedFilterer,
@@ -83,6 +87,17 @@ func (nftc *mintingConfirmationTask) ParseKwargs(kwargs map[string]interface{}) 
 	if err != nil {
 		return err
 	}
+
+	tdRaw, ok := kwargs[queue.TimeoutParam]
+	if !ok {
+		return fmt.Errorf("undefined kwarg " + queue.TimeoutParam)
+	}
+	td, err := queue.GetDuration(tdRaw)
+	if err != nil {
+		return fmt.Errorf("malformed kwarg [%s] because [%s]", queue.TimeoutParam, err.Error())
+	}
+	nftc.Timeout = td
+
 	return nil
 }
 
@@ -100,7 +115,7 @@ func parseBlockHeight(valMap map[string]interface{}) (uint64, error) {
 func (nftc *mintingConfirmationTask) RunTask() (interface{}, error) {
 	log.Infof("Waiting for confirmation for the minting of token [%x]", nftc.TokenID)
 	if nftc.EthContext == nil {
-		nftc.EthContext, _ = nftc.EthContextInitializer()
+		nftc.EthContext, _ = nftc.EthContextInitializer(nftc.Timeout)
 	}
 
 	fOpts := &bind.FilterOpts{

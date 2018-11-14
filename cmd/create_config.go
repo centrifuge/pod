@@ -41,16 +41,16 @@ func generateKeys(config *config.Configuration) {
 	keytools.GenerateSigningKeyPair(ethAuthPub, ethAuthPvt, "secp256k1")
 }
 
-func addKeys(ctx *header.ContextHeader) error {
-	err := identity.AddKeyFromConfig(ctx.Self(), identity.KeyPurposeP2P)
+func addKeys(config *config.Configuration, ctx *header.ContextHeader) error {
+	err := identity.AddKeyFromConfig(config, ctx.Self(), identity.KeyPurposeP2P)
 	if err != nil {
 		panic(err)
 	}
-	err = identity.AddKeyFromConfig(ctx.Self(), identity.KeyPurposeSigning)
+	err = identity.AddKeyFromConfig(config, ctx.Self(), identity.KeyPurposeSigning)
 	if err != nil {
 		panic(err)
 	}
-	err = identity.AddKeyFromConfig(ctx.Self(), identity.KeyPurposeEthMsgAuth)
+	err = identity.AddKeyFromConfig(config, ctx.Self(), identity.KeyPurposeEthMsgAuth)
 	if err != nil {
 		panic(err)
 	}
@@ -109,7 +109,7 @@ func init() {
 
 			log.Infof("Identity created [%s] [%x]", id.String(), id)
 
-			err = addKeys(ctxHeader)
+			err = addKeys(cfg, ctxHeader)
 			if err != nil {
 				log.Fatalf("error: %v", err)
 			}

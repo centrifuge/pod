@@ -4,6 +4,8 @@ import (
 	"context"
 	"math/big"
 
+	"time"
+
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -49,7 +51,7 @@ func NewEthereumAnchorRepository(config *config.Configuration, anchorRepositoryC
 // Commits takes an anchorID and returns the corresponding documentRoot from the chain
 func (ethRepository *EthereumAnchorRepository) GetDocumentRootOf(anchorID AnchorID) (docRoot DocumentRoot, err error) {
 	// Ignoring cancelFunc as code will block until response or timeout is triggered
-	opts, _ := ethereum.GetGethCallOpts()
+	opts, _ := ethereum.GetGethCallOpts(ethRepository.config.GetEthereumContextWaitTimeout())
 	return ethRepository.anchorRepositoryContract.Commits(opts, anchorID.BigInt())
 }
 
@@ -143,9 +145,10 @@ func sendCommitTransaction(contract AnchorRepositoryContract, opts *bind.Transac
 	return
 }
 
+// TODO: This method is only used by setUpPreCommitEventListener below, it will be changed soon so we can remove the hardcoded `time.Second` and use the global one
 func generateEventContext() (*bind.WatchOpts, context.CancelFunc) {
 	//listen to this particular anchor being mined/event is triggered
-	ctx, cancelFunc := ethereum.DefaultWaitForTransactionMiningContext()
+	ctx, cancelFunc := ethereum.DefaultWaitForTransactionMiningContext(time.Second)
 	watchOpts := &bind.WatchOpts{Context: ctx}
 
 	return watchOpts, cancelFunc

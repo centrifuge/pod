@@ -37,7 +37,7 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	IDService = NewEthereumIdentityService(cfg, idFactory, registryContract)
 
 	err = queue.InstallQueuedTask(context,
-		newIdRegistrationConfirmationTask(&idFactory.EthereumIdentityFactoryContractFilterer, ethereum.DefaultWaitForTransactionMiningContext))
+		newIdRegistrationConfirmationTask(cfg.GetEthereumContextWaitTimeout(), &idFactory.EthereumIdentityFactoryContractFilterer, ethereum.DefaultWaitForTransactionMiningContext))
 	if err != nil {
 		return err
 	}

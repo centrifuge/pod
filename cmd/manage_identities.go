@@ -77,7 +77,7 @@ var addKeyCmd = &cobra.Command{
 			panic("Option not supported")
 		}
 
-		err = identity.AddKeyFromConfig(ctxHeader.Self(), purposeInt)
+		err = identity.AddKeyFromConfig(cfg, ctxHeader.Self(), purposeInt)
 		if err != nil {
 			panic(err)
 		}

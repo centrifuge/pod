@@ -5,6 +5,7 @@ package identity
 import (
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -17,12 +18,14 @@ func TestKeyRegistrationConfirmationTask_ParseKwargsHappyPath(t *testing.T) {
 	copy(keyFixed[:], key)
 	keyPurpose := KeyPurposeSigning
 	bh := uint64(12)
+	timeout := float64(3000)
 	idBytes, _ := ToCentID(id)
 	kwargs := map[string]interface{}{
-		centIDParam:      idBytes,
-		keyParam:         keyFixed,
-		keyPurposeParam:  keyPurpose,
-		blockHeightParam: bh,
+		centIDParam:        idBytes,
+		keyParam:           keyFixed,
+		keyPurposeParam:    keyPurpose,
+		blockHeightParam:   bh,
+		queue.TimeoutParam: timeout,
 	}
 	decoded, err := utils.SimulateJsonDecodeForGocelery(kwargs)
 	err = rct.ParseKwargs(decoded)

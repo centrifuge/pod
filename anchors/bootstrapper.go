@@ -36,6 +36,8 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	}
 
 	task := &anchorConfirmationTask{
+		// Passing timeout as a common property for every request, if we need more fine-grain control per request then we will override by invoker
+		Timeout:                 cfg.GetEthereumContextWaitTimeout(),
 		AnchorCommittedFilterer: &repositoryContract.EthereumAnchorRepositoryContractFilterer,
 		EthContextInitializer:   ethereum.DefaultWaitForTransactionMiningContext,
 	}

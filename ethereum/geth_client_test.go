@@ -97,7 +97,7 @@ func TestInitTransactionWithRetries(t *testing.T) {
 }
 
 func TestGetGethCallOpts(t *testing.T) {
-	opts, cancel := GetGethCallOpts()
+	opts, cancel := GetGethCallOpts(cfg.GetEthereumContextWaitTimeout())
 	assert.NotNil(t, opts)
 	assert.True(t, opts.Pending)
 	assert.NotNil(t, cancel)
@@ -128,14 +128,14 @@ func Test_incrementNonce(t *testing.T) {
 	opts := &bind.TransactOpts{From: common.HexToAddress("0x45B9c4798999FFa52e1ff1eFce9d3e45819E4158")}
 
 	// txpool access disabled
-	err := incrementNonce(opts, false, nil, nil)
+	err := incrementNonce(opts, cfg.GetEthereumContextWaitTimeout(), false, nil, nil)
 	assert.Nil(t, err)
 	assert.Nil(t, opts.Nonce)
 
 	// noncer failed
 	n := new(mockNoncer)
 	n.On("PendingNonceAt", mock.Anything, opts.From).Return(0, fmt.Errorf("error")).Once()
-	err = incrementNonce(opts, true, n, nil)
+	err = incrementNonce(opts, cfg.GetEthereumContextWaitTimeout(), true, n, nil)
 	n.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to get chain nonce")
@@ -144,7 +144,7 @@ func Test_incrementNonce(t *testing.T) {
 	n = new(mockNoncer)
 	n.On("PendingNonceAt", mock.Anything, opts.From).Return(uint64(100), nil).Once()
 	n.On("CallContext", mock.Anything, mock.Anything, "txpool_inspect", mock.Anything).Return(nil, fmt.Errorf("error")).Once()
-	err = incrementNonce(opts, true, n, n)
+	err = incrementNonce(opts, cfg.GetEthereumContextWaitTimeout(), true, n, n)
 	n.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to get txpool data")
@@ -154,7 +154,7 @@ func Test_incrementNonce(t *testing.T) {
 	n = new(mockNoncer)
 	n.On("PendingNonceAt", mock.Anything, opts.From).Return(uint64(1000), nil).Once()
 	n.On("CallContext", mock.Anything, mock.Anything, "txpool_inspect", mock.Anything).Return(nil, nil).Once()
-	err = incrementNonce(opts, true, n, n)
+	err = incrementNonce(opts, cfg.GetEthereumContextWaitTimeout(), true, n, n)
 	n.AssertExpectations(t)
 	assert.Nil(t, err)
 	assert.Equal(t, "1000", opts.Nonce.String())
@@ -170,7 +170,7 @@ func Test_incrementNonce(t *testing.T) {
 	n = new(mockNoncer)
 	n.On("PendingNonceAt", mock.Anything, opts.From).Return(uint64(1000), nil).Once()
 	n.On("CallContext", mock.Anything, mock.Anything, "txpool_inspect", mock.Anything).Return(res, nil).Once()
-	err = incrementNonce(opts, true, n, n)
+	err = incrementNonce(opts, cfg.GetEthereumContextWaitTimeout(), true, n, n)
 	n.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to convert nonce")
@@ -189,7 +189,7 @@ func Test_incrementNonce(t *testing.T) {
 	n = new(mockNoncer)
 	n.On("PendingNonceAt", mock.Anything, opts.From).Return(uint64(1000), nil).Once()
 	n.On("CallContext", mock.Anything, mock.Anything, "txpool_inspect", mock.Anything).Return(res, nil).Once()
-	err = incrementNonce(opts, true, n, n)
+	err = incrementNonce(opts, cfg.GetEthereumContextWaitTimeout(), true, n, n)
 	n.AssertExpectations(t)
 	assert.Nil(t, err)
 	assert.Equal(t, "1004", opts.Nonce.String())

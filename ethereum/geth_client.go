@@ -30,20 +30,15 @@ var log = logging.Logger("geth-client")
 var gc Client
 var gcMu sync.RWMutex
 
-// GetDefaultContextTimeout retrieves the default duration before an Ethereum write call context should time out
-func GetDefaultContextTimeout() time.Duration {
-	return config.Config().GetEthereumContextWaitTimeout()
-}
-
 // defaultReadContext returns context with timeout for read operations
-func defaultReadContext() (ctx context.Context, cancelFunc context.CancelFunc) {
-	toBeDone := time.Now().Add(config.Config().GetEthereumContextReadWaitTimeout())
+func defaultReadContext(d time.Duration) (ctx context.Context, cancelFunc context.CancelFunc) {
+	toBeDone := time.Now().Add(d)
 	return context.WithDeadline(context.Background(), toBeDone)
 }
 
 // DefaultWaitForTransactionMiningContext returns context with timeout for write operations
-func DefaultWaitForTransactionMiningContext() (ctx context.Context, cancelFunc context.CancelFunc) {
-	toBeDone := time.Now().Add(GetDefaultContextTimeout())
+func DefaultWaitForTransactionMiningContext(d time.Duration) (ctx context.Context, cancelFunc context.CancelFunc) {
+	toBeDone := time.Now().Add(d)
 	return context.WithDeadline(context.Background(), toBeDone)
 }
 
@@ -56,6 +51,7 @@ type Config interface {
 	GetEthereumIntervalRetry() time.Duration
 	GetEthereumMaxRetries() int
 	GetTxPoolAccessEnabled() bool
+	GetEthereumContextWaitTimeout() time.Duration
 }
 
 // Client can be implemented by any chain client
@@ -190,7 +186,7 @@ func (gc *gethClient) SubmitTransactionWithRetries(contractMethod interface{}, o
 		}
 
 		current++
-		err = incrementNonce(opts, gc.config.GetTxPoolAccessEnabled(), gc.client, gc.rpcClient)
+		err = incrementNonce(opts, gc.config.GetEthereumContextWaitTimeout(), gc.config.GetTxPoolAccessEnabled(), gc.client, gc.rpcClient)
 		if err != nil {
 			return nil, fmt.Errorf("failed to increment nonce: %v", err)
 		}
@@ -245,7 +241,7 @@ type callContexter interface {
 // then we check the txpool to see if there any new transactions from the address that are not included in any block
 // If there are no pending transactions in txpool, we use the current nonce + 1
 // else we increment the greater of current nonce or the nonce derived from txpool
-func incrementNonce(opts *bind.TransactOpts, txpoolAccessEnabled bool, noncer noncer, cc callContexter) error {
+func incrementNonce(opts *bind.TransactOpts, timeout time.Duration, txpoolAccessEnabled bool, noncer noncer, cc callContexter) error {
 	// check if the txpool access is enabled
 	if !txpoolAccessEnabled {
 		log.Warningf("Ethereum Client doesn't support txpool API, may cause transactions failures")
@@ -253,7 +249,7 @@ func incrementNonce(opts *bind.TransactOpts, txpoolAccessEnabled bool, noncer no
 		return nil
 	}
 
-	ctx, cancel := defaultReadContext()
+	ctx, cancel := defaultReadContext(timeout)
 	defer cancel()
 
 	// get current nonce
@@ -299,10 +295,10 @@ func incrementNonce(opts *bind.TransactOpts, txpoolAccessEnabled bool, noncer no
 }
 
 // GetGethCallOpts returns the Call options with default
-func GetGethCallOpts() (*bind.CallOpts, context.CancelFunc) {
+func GetGethCallOpts(timeout time.Duration) (*bind.CallOpts, context.CancelFunc) {
 	// Assuring that pending transactions are taken into account by go-ethereum when asking for things like
 	// specific transactions and client's nonce
 	// with timeout context, in case eth node is not in sync
-	ctx, cancel := defaultReadContext()
+	ctx, cancel := defaultReadContext(timeout)
 	return &bind.CallOpts{Pending: true, Context: ctx}, cancel
 }
