@@ -34,6 +34,22 @@ func TestRegistry_Register_LocateService_successful(t *testing.T) {
 	assert.Equal(t, a, b, "locateService should return the same service ")
 }
 
+func TestServiceRegistry_FindService(t *testing.T) {
+	registry := documents.GetRegistryInstance()
+	a := &testingdocuments.MockService{}
+	b := &testingdocuments.MockService{}
+	a.On("Exists").Return(true)
+	b.On("Exists").Return(false)
+	err := registry.Register("a service", a)
+	err = registry.Register("b service", b)
+
+	service, err := registry.FindService([]byte{})
+	assert.Nil(t, err, "findService should be successful")
+
+	assert.Equal(t, a, service, "service a should be returned")
+
+}
+
 func TestRegistry_Register_invalidId(t *testing.T) {
 	registry := documents.GetRegistryInstance()
 	a := &testingdocuments.MockService{}
