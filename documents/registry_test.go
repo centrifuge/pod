@@ -37,7 +37,7 @@ func TestServiceRegistry_FindService(t *testing.T) {
 func TestRegistry_Register_LocateService_successful(t *testing.T) {
 	registry := documents.GetRegistryInstance()
 	a := &testingdocuments.MockService{}
-
+	a.On("Exists").Return(false)
 	coreDocument := testingcoredocument.GenerateCoreDocument()
 	documentType, err := cd.GetTypeURL(coreDocument)
 	assert.Nil(t, err, "should not throw an error because core document contains a type")
@@ -53,6 +53,7 @@ func TestRegistry_Register_LocateService_successful(t *testing.T) {
 func TestRegistry_Register_invalidId(t *testing.T) {
 	registry := documents.GetRegistryInstance()
 	a := &testingdocuments.MockService{}
+	a.On("Exists").Return(false)
 
 	coreDocument := testingcoredocument.GenerateCoreDocument()
 	coreDocument.EmbeddedData.TypeUrl = "testID_1"
