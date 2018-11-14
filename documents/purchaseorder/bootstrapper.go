@@ -27,8 +27,13 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		return errors.New("could not initialize purchase order repository")
 	}
 
+	p2pClient, ok := context[bootstrap.BootstrappedP2PClient].(p2p.Client)
+	if !ok {
+		return fmt.Errorf("p2p client not initialised")
+	}
+
 	// register service
-	srv := DefaultService(cfg, getRepository(), coredocument.DefaultProcessor(identity.IDService, p2p.NewP2PClient(cfg), anchors.GetAnchorRepository(), cfg), anchors.GetAnchorRepository())
+	srv := DefaultService(cfg, getRepository(), coredocument.DefaultProcessor(identity.IDService, p2pClient, anchors.GetAnchorRepository(), cfg), anchors.GetAnchorRepository())
 	err := documents.GetRegistryInstance().Register(documenttypes.PurchaseOrderDataTypeUrl, srv)
 	if err != nil {
 		return fmt.Errorf("failed to register purchase order service")

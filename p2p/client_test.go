@@ -26,7 +26,7 @@ func TestGetSignatureForDocument_fail_connect(t *testing.T) {
 	centrifugeId, err := identity.ToCentID(utils.RandomSlice(identity.CentIDLength))
 	assert.Nil(t, err, "centrifugeId not initialized correctly ")
 	client.On("RequestDocumentSignature", ctx, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("signature failed")).Once()
-	resp, err := defaultTestClient.getSignatureForDocument(ctx, *coreDoc, client, centrifugeId)
+	resp, err := testClient.getSignatureForDocument(ctx, *coreDoc, client, centrifugeId)
 	client.AssertExpectations(t)
 	assert.Error(t, err, "must fail")
 	assert.Nil(t, resp, "must be nil")
@@ -42,7 +42,7 @@ func TestGetSignatureForDocument_fail_version_check(t *testing.T) {
 	assert.Nil(t, err, "centrifugeId not initialized correctly ")
 
 	client.On("RequestDocumentSignature", ctx, mock.Anything, mock.Anything).Return(resp, nil).Once()
-	resp, err = defaultTestClient.getSignatureForDocument(ctx, *coreDoc, client, centrifugeId)
+	resp, err = testClient.getSignatureForDocument(ctx, *coreDoc, client, centrifugeId)
 	client.AssertExpectations(t)
 	assert.Error(t, err, "must fail")
 	assert.Contains(t, err.Error(), "Incompatible version")
@@ -66,7 +66,7 @@ func TestGetSignatureForDocument_fail_centrifugeId(t *testing.T) {
 	}
 
 	client.On("RequestDocumentSignature", ctx, mock.Anything, mock.Anything).Return(sigResp, nil).Once()
-	resp, err := defaultTestClient.getSignatureForDocument(ctx, *coreDoc, client, centrifugeId)
+	resp, err := testClient.getSignatureForDocument(ctx, *coreDoc, client, centrifugeId)
 
 	client.AssertExpectations(t)
 	assert.Nil(t, resp, "must be nil")

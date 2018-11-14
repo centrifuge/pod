@@ -25,9 +25,7 @@ import (
 	"github.com/paralin/go-libp2p-grpc"
 )
 
-var log = logging.Logger("cent-p2p-server")
-var HostInstance host.Host
-var GRPCProtoInstance p2pgrpc.GRPCProtocol
+var log = logging.Logger("p2p-server")
 
 type Config interface {
 	GetP2PExternalIP() string
@@ -38,74 +36,68 @@ type Config interface {
 	GetIdentityID() ([]byte, error)
 }
 
-type CentP2PServer struct {
-	config Config
+// p2pServer implements api.Server
+type p2pServer struct {
+	config   Config
+	host     host.Host
+	protocol *p2pgrpc.GRPCProtocol
 }
 
-func NewCentP2PServer(config Config) *CentP2PServer {
-	return &CentP2PServer{config}
+// Name returns the P2PServer
+func (*p2pServer) Name() string {
+	return "P2PServer"
 }
 
-func (*CentP2PServer) Name() string {
-	return "CentP2PServer"
-}
-
-func (c *CentP2PServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- error) {
+// Start starts the DHT and GRPC server for p2p communications
+func (s *p2pServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- error) {
 	defer wg.Done()
 
-	if c.config.GetP2PPort() == 0 {
+	if s.config.GetP2PPort() == 0 {
 		startupErr <- errors.New("please provide a port to bind on")
 		return
 	}
 
 	// Make a host that listens on the given multiaddress
-	hostInstance, err := c.makeBasicHost(c.config.GetP2PPort())
+	var err error
+	s.host, err = s.makeBasicHost(s.config.GetP2PPort())
 	if err != nil {
 		startupErr <- err
 		return
 	}
-	HostInstance = hostInstance
+
 	// Set the grpc protocol handler on it
-	grpcProto := p2pgrpc.NewGRPCProtocol(context.Background(), hostInstance)
-	GRPCProtoInstance = *grpcProto
+	s.protocol = p2pgrpc.NewGRPCProtocol(ctx, s.host)
+	p2ppb.RegisterP2PServiceServer(s.protocol.GetGRPCServer(), &Handler{})
+	go func(proto *p2pgrpc.GRPCProtocol) {
+		proto.Serve()
+	}(s.protocol)
 
-	p2ppb.RegisterP2PServiceServer(grpcProto.GetGRPCServer(), &Handler{})
-	errOut := make(chan error)
-	go func(proto *p2pgrpc.GRPCProtocol, errOut chan<- error) {
-		errOut <- proto.Serve()
-	}(grpcProto, errOut)
-
-	hostInstance.Peerstore().AddAddr(hostInstance.ID(), hostInstance.Addrs()[0], pstore.TempAddrTTL)
+	s.host.Peerstore().AddAddr(s.host.ID(), s.host.Addrs()[0], pstore.TempAddrTTL)
 
 	// Start DHT
-	c.runDHT(ctx, hostInstance)
+	s.runDHT(ctx, s.host)
 
 	for {
 		select {
-		case err := <-errOut:
-			log.Infof("failed to accept p2p grpc connections: %v\n", err)
-			startupErr <- err
-			return
 		case <-ctx.Done():
 			log.Info("Shutting down GRPC server")
-			grpcProto.GetGRPCServer().Stop()
+			s.protocol.GetGRPCServer().GracefulStop()
 			log.Info("GRPC server stopped")
 			return
 		}
 	}
 }
 
-func (c *CentP2PServer) runDHT(ctx context.Context, h host.Host) error {
+func (s *p2pServer) runDHT(ctx context.Context, h host.Host) error {
+	// Run it as a Bootstrap Node
+	dhtClient := dht.NewDHT(ctx, h, ds.NewMapDatastore())
 
-	//dhtClient := dht.NewDHTClient(ctx, h, rdStore) // Just run it as a client, will not respond to discovery requests
-	dhtClient := dht.NewDHT(ctx, h, ds.NewMapDatastore()) // Run it as a Bootstrap Node
+	bootstrapPeers := s.config.GetBootstrapPeers()
+	log.Infof("Bootstrapping %s\n", bootstrapPeers)
 
-	log.Infof("Bootstrapping %s\n", c.config.GetBootstrapPeers())
-	for _, addr := range c.config.GetBootstrapPeers() {
+	for _, addr := range bootstrapPeers {
 		iaddr, _ := ipfsaddr.ParseString(addr)
-
 		pinfo, _ := pstore.InfoFromP2pAddr(iaddr.Multiaddr())
-
 		if err := h.Connect(ctx, *pinfo); err != nil {
 			log.Info("Bootstrapping to peer failed: ", err)
 		}
@@ -129,17 +121,18 @@ func (c *CentP2PServer) runDHT(ctx context.Context, h host.Host) error {
 	if err != nil {
 		log.Error(err)
 	}
+
 	log.Infof("Found %d peers!\n", len(peers))
-	for _, p1 := range peers {
-		log.Infof("Peer %s %s\n", p1.ID.Pretty(), p1.Addrs)
-	}
 
 	// Now connect to them, so they are added to the PeerStore
 	for _, pe := range peers {
+		log.Infof("Peer %s %s\n", pe.ID.Pretty(), pe.Addrs)
+
 		if pe.ID == h.ID() {
 			// No sense connecting to ourselves
 			continue
 		}
+
 		tctx, _ := context.WithTimeout(ctx, time.Second*5)
 		if err := h.Connect(tctx, pe); err != nil {
 			log.Info("Failed to connect to peer: ", err)
@@ -151,8 +144,8 @@ func (c *CentP2PServer) runDHT(ctx context.Context, h host.Host) error {
 }
 
 // makeBasicHost creates a LibP2P host with a peer ID listening on the given port
-func (c *CentP2PServer) makeBasicHost(listenPort int) (host.Host, error) {
-	priv, pub, err := c.createSigningKey()
+func (s *p2pServer) makeBasicHost(listenPort int) (host.Host, error) {
+	priv, pub, err := s.createSigningKey()
 	if err != nil {
 		return nil, err
 	}
@@ -177,13 +170,14 @@ func (c *CentP2PServer) makeBasicHost(listenPort int) (host.Host, error) {
 		log.Infof("Could not enable encryption: %v\n", err)
 		return nil, err
 	}
+
 	err = ps.AddPrivKey(pid, priv)
 	if err != nil {
 		log.Infof("Could not enable encryption: %v\n", err)
 		return nil, err
 	}
 
-	externalIP := c.config.GetP2PExternalIP()
+	externalIP := s.config.GetP2PExternalIP()
 	var extMultiAddr ma.Multiaddr
 	if externalIP == "" {
 		log.Warning("External IP not defined, Peers might not be able to resolve this node if behind NAT\n")
@@ -223,7 +217,7 @@ func (c *CentP2PServer) makeBasicHost(listenPort int) (host.Host, error) {
 	return bhost, nil
 }
 
-func (c *CentP2PServer) createSigningKey() (priv crypto.PrivKey, pub crypto.PubKey, err error) {
+func (s *p2pServer) createSigningKey() (priv crypto.PrivKey, pub crypto.PubKey, err error) {
 	// Create the signing key for the host
 	publicKey, privateKey, err := cented25519.GetSigningKeyPairFromConfig()
 	if err != nil {
@@ -238,22 +232,7 @@ func (c *CentP2PServer) createSigningKey() (priv crypto.PrivKey, pub crypto.PubK
 	if err != nil {
 		return nil, nil, err
 	}
+
 	pub = priv.GetPublic()
 	return priv, pub, nil
-}
-
-func GetHost() (h host.Host) {
-	h = HostInstance
-	if h == nil {
-		log.Fatal("Host undefined")
-	}
-	return
-}
-
-func GetGRPCProto() (g *p2pgrpc.GRPCProtocol) {
-	g = &GRPCProtoInstance
-	if g == nil {
-		log.Fatal("Grpc not instantiated")
-	}
-	return
 }

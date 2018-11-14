@@ -34,7 +34,7 @@ var (
 var coreDoc = testingcoredocument.GenerateCoreDocument()
 var ctx = map[string]interface{}{}
 var cfg *config.Configuration
-var defaultTestClient defaultClient
+var testClient *p2pServer
 
 func TestMain(m *testing.M) {
 	ibootstappers := []bootstrap.TestBootstrapper{
@@ -44,7 +44,7 @@ func TestMain(m *testing.M) {
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 	cfg = ctx[bootstrap.BootstrappedConfig].(*config.Configuration)
-	defaultTestClient = defaultClient{cfg}
+	testClient = &p2pServer{config: cfg}
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)

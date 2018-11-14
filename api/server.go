@@ -22,7 +22,7 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
-var log = logging.Logger("cent-api-server")
+var log = logging.Logger("api-server")
 
 type Config interface {
 	GetServerAddress() string
@@ -30,21 +30,17 @@ type Config interface {
 	GetNetworkString() string
 }
 
-// CentAPIServer is an implementation of node.Server interface for serving HTTP based Centrifuge API
-type CentAPIServer struct {
+// apiServer is an implementation of node.Server interface for serving HTTP based Centrifuge API
+type apiServer struct {
 	config Config
 }
 
-func NewCentAPIServer(config Config) *CentAPIServer {
-	return &CentAPIServer{config}
-}
-
-func (*CentAPIServer) Name() string {
-	return "CentAPIServer"
+func (apiServer) Name() string {
+	return "APIServer"
 }
 
 // Serve exposes the client APIs for interacting with a centrifuge node
-func (c *CentAPIServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- error) {
+func (c apiServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- error) {
 	defer wg.Done()
 	certPool, err := loadCertPool()
 	if err != nil {
@@ -54,8 +50,8 @@ func (c *CentAPIServer) Start(ctx context.Context, wg *sync.WaitGroup, startupEr
 	if err != nil {
 		startupErr <- err
 	}
-	addr := c.config.GetServerAddress()
 
+	addr := c.config.GetServerAddress()
 	creds := credentials.NewTLS(&tls.Config{
 		RootCAs:            certPool,
 		ServerName:         addr,
@@ -100,6 +96,7 @@ func (c *CentAPIServer) Start(ctx context.Context, wg *sync.WaitGroup, startupEr
 			startUpErrInner <- err
 			return
 		}
+
 		log.Infof("HTTP/gRpc listening on Port: %d\n", c.config.GetServerPort())
 		log.Infof("Connecting to Network: %s\n", c.config.GetNetworkString())
 		err = srv.Serve(tls.NewListener(conn, srv.TLSConfig))
