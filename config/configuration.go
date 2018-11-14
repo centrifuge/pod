@@ -27,26 +27,6 @@ import (
 
 var log = logging.Logger("config")
 
-// configMu protects the config from read/write
-var configMu sync.RWMutex
-
-// config holds the current node config
-var config *Configuration
-
-// Config returns the current loaded config
-func Config() *Configuration {
-	configMu.RLock()
-	defer configMu.RUnlock()
-	return config
-}
-
-// SetConfig sets the config
-func SetConfig(c *Configuration) {
-	configMu.Lock()
-	defer configMu.Unlock()
-	config = c
-}
-
 // Configuration holds the configuration details for the node
 type Configuration struct {
 	mu         sync.RWMutex
