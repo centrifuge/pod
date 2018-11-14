@@ -66,7 +66,7 @@ func (s *p2pServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr ch
 	}
 
 	// Set the grpc protocol handler on it
-	s.protocol = p2pgrpc.NewGRPCProtocol(context.Background(), s.host)
+	s.protocol = p2pgrpc.NewGRPCProtocol(ctx, s.host)
 	p2ppb.RegisterP2PServiceServer(s.protocol.GetGRPCServer(), &Handler{})
 	go func(proto *p2pgrpc.GRPCProtocol) {
 		proto.Serve()
