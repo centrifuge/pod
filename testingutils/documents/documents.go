@@ -6,8 +6,8 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/stretchr/testify/mock"
 	"github.com/centrifuge/go-centrifuge/header"
+	"github.com/stretchr/testify/mock"
 )
 
 type MockService struct {

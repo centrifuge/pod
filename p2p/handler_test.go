@@ -27,10 +27,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-var (
-	handler = Handler{}
-)
-
+var handler Handler
 var coreDoc = testingcoredocument.GenerateCoreDocument()
 var ctx = map[string]interface{}{}
 var cfg *config.Configuration
@@ -44,6 +41,11 @@ func TestMain(m *testing.M) {
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 	cfg = ctx[config.BootstrappedConfig].(*config.Configuration)
+	cfg.Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
+	cfg.Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
+	cfg.Set("keys.ethauth.publicKey", "../build/resources/ethauth.pub.pem")
+	cfg.Set("keys.ethauth.privateKey", "../build/resources/ethauth.key.pem")
+	handler = Handler{Config: cfg}
 	defaultTestClient = defaultClient{cfg}
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)

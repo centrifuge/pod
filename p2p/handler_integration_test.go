@@ -30,15 +30,18 @@ import (
 	"golang.org/x/crypto/ed25519"
 )
 
-var handler = p2p.Handler{}
+var handler p2p.Handler
+var cfg *config.Configuration
 
 func TestMain(m *testing.M) {
-	cc.TestFunctionalEthereumBootstrap()
+	ctx := cc.TestFunctionalEthereumBootstrap()
+	cfg = ctx[config.BootstrappedConfig].(*config.Configuration)
+	handler = p2p.Handler{cfg}
 	flag.Parse()
-	config.Config().Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
-	config.Config().Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
-	config.Config().Set("keys.ethauth.publicKey", "../build/resources/ethauth.pub.pem")
-	config.Config().Set("keys.ethauth.privateKey", "../build/resources/ethauth.key.pem")
+	cfg.Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
+	cfg.Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
+	cfg.Set("keys.ethauth.publicKey", "../build/resources/ethauth.pub.pem")
+	cfg.Set("keys.ethauth.privateKey", "../build/resources/ethauth.key.pem")
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()
 	os.Exit(result)
@@ -56,7 +59,7 @@ func TestHandler_RequestDocumentSignature_verification_fail(t *testing.T) {
 
 func TestHandler_RequestDocumentSignature_AlreadyExists(t *testing.T) {
 	savedService := identity.IDService
-	idConfig, err := identity.GetIdentityConfig()
+	idConfig, err := identity.GetIdentityConfig(cfg)
 	assert.Nil(t, err)
 	pubKey := idConfig.Keys[identity.KeyPurposeSigning].PublicKey
 	b32Key, _ := utils.SliceToByte32(pubKey)
@@ -97,7 +100,7 @@ func TestHandler_RequestDocumentSignature_AlreadyExists(t *testing.T) {
 
 func TestHandler_RequestDocumentSignature_UpdateSucceeds(t *testing.T) {
 	savedService := identity.IDService
-	idConfig, err := identity.GetIdentityConfig()
+	idConfig, err := identity.GetIdentityConfig(cfg)
 	assert.Nil(t, err)
 	pubKey := idConfig.Keys[identity.KeyPurposeSigning].PublicKey
 	b32Key, _ := utils.SliceToByte32(pubKey)
@@ -148,7 +151,7 @@ func TestHandler_RequestDocumentSignature_UpdateSucceeds(t *testing.T) {
 
 func TestHandler_RequestDocumentSignature(t *testing.T) {
 	savedService := identity.IDService
-	idConfig, err := identity.GetIdentityConfig()
+	idConfig, err := identity.GetIdentityConfig(cfg)
 	assert.Nil(t, err)
 	pubKey := idConfig.Keys[identity.KeyPurposeSigning].PublicKey
 	b32Key, _ := utils.SliceToByte32(pubKey)
@@ -183,7 +186,7 @@ func TestHandler_SendAnchoredDocument_update_fail(t *testing.T) {
 	doc := prepareDocumentForP2PHandler(t, nil)
 
 	// Anchor document
-	idConfig, err := identity.GetIdentityConfig()
+	idConfig, err := identity.GetIdentityConfig(cfg)
 	anchorIDTyped, _ := anchors.ToAnchorID(doc.CurrentVersion)
 	docRootTyped, _ := anchors.ToDocumentRoot(doc.DocumentRoot)
 	messageToSign := anchors.GenerateCommitHash(anchorIDTyped, centrifugeId, docRootTyped)
@@ -225,7 +228,7 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 	doc.DocumentRoot = tree.RootHash()
 
 	// Anchor document
-	idConfig, err := identity.GetIdentityConfig()
+	idConfig, err := identity.GetIdentityConfig(cfg)
 	anchorIDTyped, _ := anchors.ToAnchorID(doc.CurrentVersion)
 	docRootTyped, _ := anchors.ToDocumentRoot(doc.DocumentRoot)
 	messageToSign := anchors.GenerateCommitHash(anchorIDTyped, centrifugeId, docRootTyped)
@@ -247,14 +250,14 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 func createIdentity(t *testing.T) identity.CentID {
 	// Create Identity
 	centrifugeId, _ := identity.ToCentID(utils.RandomSlice(identity.CentIDLength))
-	config.Config().Set("identityId", centrifugeId.String())
+	cfg.Set("identityId", centrifugeId.String())
 	id, confirmations, err := identity.IDService.CreateIdentity(centrifugeId)
 	assert.Nil(t, err, "should not error out when creating identity")
 	watchRegisteredIdentity := <-confirmations
 	assert.Nil(t, watchRegisteredIdentity.Error, "No error thrown by context")
 	assert.Equal(t, centrifugeId, watchRegisteredIdentity.Identity.CentID(), "Resulting Identity should have the same ID as the input")
 
-	idConfig, err := identity.GetIdentityConfig()
+	idConfig, err := identity.GetIdentityConfig(cfg)
 	// Add Keys
 	pubKey := idConfig.Keys[identity.KeyPurposeSigning].PublicKey
 	confirmations, err = id.AddKeyToIdentity(context.Background(), identity.KeyPurposeSigning, pubKey)
@@ -274,7 +277,7 @@ func createIdentity(t *testing.T) identity.CentID {
 }
 
 func prepareDocumentForP2PHandler(t *testing.T, doc *coredocumentpb.CoreDocument) *coredocumentpb.CoreDocument {
-	idConfig, err := identity.GetIdentityConfig()
+	idConfig, err := identity.GetIdentityConfig(cfg)
 	assert.Nil(t, err)
 	if doc == nil {
 		doc = testingcoredocument.GenerateCoreDocument()
@@ -306,13 +309,13 @@ func getAnchoredRequest(doc *coredocumentpb.CoreDocument) *p2ppb.AnchorDocumentR
 	return &p2ppb.AnchorDocumentRequest{
 		Header: &p2ppb.CentrifugeHeader{
 			CentNodeVersion:   version.GetVersion().String(),
-			NetworkIdentifier: config.Config().GetNetworkID(),
+			NetworkIdentifier: cfg.GetNetworkID(),
 		}, Document: doc,
 	}
 }
 
 func getSignatureRequest(doc *coredocumentpb.CoreDocument) *p2ppb.SignatureRequest {
 	return &p2ppb.SignatureRequest{Header: &p2ppb.CentrifugeHeader{
-		CentNodeVersion: version.GetVersion().String(), NetworkIdentifier: config.Config().GetNetworkID(),
+		CentNodeVersion: version.GetVersion().String(), NetworkIdentifier: cfg.GetNetworkID(),
 	}, Document: doc}
 }

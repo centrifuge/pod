@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
@@ -16,7 +17,6 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	"github.com/centrifuge/go-centrifuge/config"
 )
 
 // registerServices registers all endpoints to the grpc server

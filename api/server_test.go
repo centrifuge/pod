@@ -9,15 +9,15 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/context/testlogging"
+	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/documents/invoice"
+	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/stretchr/testify/assert"
-	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
-	"github.com/centrifuge/go-centrifuge/documents/invoice"
-	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
-	"github.com/centrifuge/go-centrifuge/documents"
 )
 
 var ctx = map[string]interface{}{}

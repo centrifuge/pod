@@ -12,6 +12,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/identity"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/signatures"
@@ -47,14 +48,13 @@ func getServiceWithMockedLayers() Service {
 
 func TestService_Update(t *testing.T) {
 	poSrv := service{repo: getRepository()}
-	ctx := context.Background()
-	ctxh, err := documents.NewContextHeader()
+	ctxh, err := header.NewContextHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 
 	// pack failed
 	model := &testingdocuments.MockModel{}
 	model.On("PackCoreDocument").Return(nil, fmt.Errorf("pack error")).Once()
-	_, err = poSrv.Update(ctx, model)
+	_, err = poSrv.Update(ctxh, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "pack error")
@@ -63,7 +63,7 @@ func TestService_Update(t *testing.T) {
 	model = &testingdocuments.MockModel{}
 	cd := coredocument.New()
 	model.On("PackCoreDocument").Return(cd, nil).Once()
-	_, err = poSrv.Update(ctx, model)
+	_, err = poSrv.Update(ctxh, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "document not found")
@@ -81,7 +81,7 @@ func TestService_Update(t *testing.T) {
 	// calculate data root fails
 	model = &testingdocuments.MockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
-	_, err = poSrv.Update(ctx, model)
+	_, err = poSrv.Update(ctxh, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "unknown document type")
@@ -103,12 +103,12 @@ func TestService_Update(t *testing.T) {
 	assert.Equal(t, data, newData)
 	proc := &testingcoredocument.MockCoreDocumentProcessor{}
 	proc.On("PrepareForSignatureRequests", newInv).Return(nil).Once()
-	proc.On("RequestSignatures", ctx, newInv).Return(nil).Once()
+	proc.On("RequestSignatures", ctxh, newInv).Return(nil).Once()
 	proc.On("PrepareForAnchoring", newInv).Return(nil).Once()
 	proc.On("AnchorDocument", newInv).Return(nil).Once()
-	proc.On("SendDocument", ctx, newInv).Return(nil).Once()
+	proc.On("SendDocument", ctxh, newInv).Return(nil).Once()
 	poSrv.coreDocProcessor = proc
-	po, err = poSrv.Update(ctx, newInv)
+	po, err = poSrv.Update(ctxh, newInv)
 	proc.AssertExpectations(t)
 	assert.Nil(t, err)
 	assert.NotNil(t, po)
@@ -140,7 +140,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.Nil(t, doc)
 
 	// messed up identifier
-	contextHeader, err := documents.NewContextHeader()
+	contextHeader, err := header.NewContextHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 	payload := &clientpurchaseorderpb.PurchaseOrderUpdatePayload{Identifier: "some identifier", Data: &clientpurchaseorderpb.PurchaseOrderData{}}
 	doc, err = poSrv.DeriveFromUpdatePayload(payload, contextHeader)
@@ -206,7 +206,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 func TestService_DeriveFromCreatePayload(t *testing.T) {
 	poSrv := service{}
-	ctxh, err := documents.NewContextHeader()
+	ctxh, err := header.NewContextHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 
 	// nil payload
@@ -261,13 +261,12 @@ func TestService_DeriveFromCoreDocument(t *testing.T) {
 }
 
 func TestService_Create(t *testing.T) {
-	ctxh, err := documents.NewContextHeader()
+	ctxh, err := header.NewContextHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 	poSrv := service{repo: getRepository()}
-	ctx := context.Background()
 
 	// calculate data root fails
-	m, err := poSrv.Create(context.Background(), &testingdocuments.MockModel{})
+	m, err := poSrv.Create(ctxh, &testingdocuments.MockModel{})
 	assert.Nil(t, m)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "unknown document type")
@@ -278,7 +277,7 @@ func TestService_Create(t *testing.T) {
 	proc := &testingcoredocument.MockCoreDocumentProcessor{}
 	proc.On("PrepareForSignatureRequests", po).Return(fmt.Errorf("anchoring failed")).Once()
 	poSrv.coreDocProcessor = proc
-	m, err = poSrv.Create(ctx, po)
+	m, err = poSrv.Create(ctxh, po)
 	proc.AssertExpectations(t)
 	assert.Nil(t, m)
 	assert.Error(t, err)
@@ -289,12 +288,12 @@ func TestService_Create(t *testing.T) {
 	assert.Nil(t, err)
 	proc = &testingcoredocument.MockCoreDocumentProcessor{}
 	proc.On("PrepareForSignatureRequests", po).Return(nil).Once()
-	proc.On("RequestSignatures", ctx, po).Return(nil).Once()
+	proc.On("RequestSignatures", ctxh, po).Return(nil).Once()
 	proc.On("PrepareForAnchoring", po).Return(nil).Once()
 	proc.On("AnchorDocument", po).Return(nil).Once()
-	proc.On("SendDocument", ctx, po).Return(nil).Once()
+	proc.On("SendDocument", ctxh, po).Return(nil).Once()
 	poSrv.coreDocProcessor = proc
-	m, err = poSrv.Create(ctx, po)
+	m, err = poSrv.Create(ctxh, po)
 	proc.AssertExpectations(t)
 	assert.Nil(t, err)
 	assert.NotNil(t, m)
@@ -500,7 +499,7 @@ func TestService_CreateProofsForVersionDocumentDoesntExist(t *testing.T) {
 func TestService_DerivePurchaseOrderData(t *testing.T) {
 	var m documents.Model
 	poSrv := getServiceWithMockedLayers()
-	ctxh, err := documents.NewContextHeader()
+	ctxh, err := header.NewContextHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 
 	// unknown type
@@ -521,7 +520,7 @@ func TestService_DerivePurchaseOrderData(t *testing.T) {
 
 func TestService_DerivePurchaseOrderResponse(t *testing.T) {
 	poSrv := service{}
-	ctxh, err := documents.NewContextHeader()
+	ctxh, err := header.NewContextHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 
 	// pack fails
@@ -664,15 +663,17 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 }
 
 func TestService_RequestDocumentSignature(t *testing.T) {
+	ctxh, err := header.NewContextHeader(context.Background(), cfg)
+	assert.Nil(t, err)
 	poSrv := service{}
-	s, err := poSrv.RequestDocumentSignature(nil)
+	s, err := poSrv.RequestDocumentSignature(ctxh, nil)
 	assert.Nil(t, s)
 	assert.Error(t, err)
 }
 
 func TestService_calculateDataRoot(t *testing.T) {
 	poSrv := service{repo: getRepository()}
-	ctxh, err := documents.NewContextHeader()
+	ctxh, err := header.NewContextHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 
 	// type mismatch

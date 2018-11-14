@@ -2,6 +2,7 @@ package documents
 
 import (
 	"fmt"
+
 	"github.com/centrifuge/go-centrifuge/header"
 )
 

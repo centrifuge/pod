@@ -14,6 +14,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/identity"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/signatures"
@@ -102,7 +103,7 @@ func TestService_DeriveFromPayload(t *testing.T) {
 	_, err = invSrv.DeriveFromCreatePayload(&clientinvoicepb.InvoiceCreatePayload{}, nil)
 	assert.Error(t, err, "DeriveWithInvoiceInput should produce an error if invoiceInput equals nil")
 
-	contextHeader, err := documents.NewContextHeader()
+	contextHeader, err := header.NewContextHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 	model, err = invSrv.DeriveFromCreatePayload(payload, contextHeader)
 	assert.Nil(t, err, "valid invoiceData shouldn't produce an error")
@@ -187,13 +188,12 @@ func TestService_GetVersion(t *testing.T) {
 }
 
 func TestService_Create(t *testing.T) {
-	ctxh, err := documents.NewContextHeader()
+	ctxh, err := header.NewContextHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 	invSrv := service{repo: getRepository()}
-	ctx := context.Background()
 
 	// calculate data root fails
-	m, err := invSrv.Create(context.Background(), &testingdocuments.MockModel{})
+	m, err := invSrv.Create(ctxh, &testingdocuments.MockModel{})
 	assert.Nil(t, m)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "unknown document type")
@@ -204,7 +204,7 @@ func TestService_Create(t *testing.T) {
 	proc := &testingcoredocument.MockCoreDocumentProcessor{}
 	proc.On("PrepareForSignatureRequests", po).Return(fmt.Errorf("anchoring failed")).Once()
 	invSrv.coreDocProcessor = proc
-	m, err = invSrv.Create(ctx, po)
+	m, err = invSrv.Create(ctxh, po)
 	proc.AssertExpectations(t)
 	assert.Nil(t, m)
 	assert.Error(t, err)
@@ -215,12 +215,12 @@ func TestService_Create(t *testing.T) {
 	assert.Nil(t, err)
 	proc = &testingcoredocument.MockCoreDocumentProcessor{}
 	proc.On("PrepareForSignatureRequests", po).Return(nil).Once()
-	proc.On("RequestSignatures", ctx, po).Return(nil).Once()
+	proc.On("RequestSignatures", ctxh, po).Return(nil).Once()
 	proc.On("PrepareForAnchoring", po).Return(nil).Once()
 	proc.On("AnchorDocument", po).Return(nil).Once()
-	proc.On("SendDocument", ctx, po).Return(nil).Once()
+	proc.On("SendDocument", ctxh, po).Return(nil).Once()
 	invSrv.coreDocProcessor = proc
-	m, err = invSrv.Create(ctx, po)
+	m, err = invSrv.Create(ctxh, po)
 	proc.AssertExpectations(t)
 	assert.Nil(t, err)
 
@@ -239,7 +239,7 @@ func TestService_DeriveInvoiceData(t *testing.T) {
 
 	// success
 	payload := testingdocuments.CreateInvoicePayload()
-	contextHeader, err := documents.NewContextHeader()
+	contextHeader, err := header.NewContextHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 	inv, err := invSrv.DeriveFromCreatePayload(payload, contextHeader)
 	assert.Nil(t, err, "must be non nil")
@@ -252,7 +252,7 @@ func TestService_DeriveInvoiceResponse(t *testing.T) {
 	// success
 	invSrv := service{repo: getRepository()}
 	payload := testingdocuments.CreateInvoicePayload()
-	contextHeader, err := documents.NewContextHeader()
+	contextHeader, err := header.NewContextHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 	inv1, err := invSrv.DeriveFromCreatePayload(payload, contextHeader)
 	assert.Nil(t, err, "must be non nil")
@@ -374,7 +374,8 @@ func TestService_RequestDocumentSignature_SigningRootNil(t *testing.T) {
 	idService := mockSignatureCheck(i, invSrv)
 	setIdentityService(idService)
 	i.CoreDocument.SigningRoot = nil
-	signature, err := invSrv.RequestDocumentSignature(i)
+	ctxh, err := header.NewContextHeader(context.Background(), cfg)
+	signature, err := invSrv.RequestDocumentSignature(ctxh, i)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), strconv.Itoa(int(code.DocumentInvalid)))
 	assert.Contains(t, err.Error(), "signing root missing")
@@ -489,7 +490,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.Nil(t, doc)
 
 	// messed up identifier
-	contextHeader, err := documents.NewContextHeader()
+	contextHeader, err := header.NewContextHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 	payload := &clientinvoicepb.InvoiceUpdatePayload{Identifier: "some identifier", Data: &clientinvoicepb.InvoiceData{}}
 	doc, err = invSrv.DeriveFromUpdatePayload(payload, contextHeader)
@@ -557,14 +558,13 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 func TestService_Update(t *testing.T) {
 	invSrv := service{repo: getRepository()}
-	ctx := context.Background()
-	ctxh, err := documents.NewContextHeader()
+	ctxh, err := header.NewContextHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 
 	// pack failed
 	model := &mockModel{}
 	model.On("PackCoreDocument").Return(nil, fmt.Errorf("pack error")).Once()
-	_, err = invSrv.Update(ctx, model)
+	_, err = invSrv.Update(ctxh, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "pack error")
@@ -573,7 +573,7 @@ func TestService_Update(t *testing.T) {
 	model = &mockModel{}
 	cd := coredocument.New()
 	model.On("PackCoreDocument").Return(cd, nil).Once()
-	_, err = invSrv.Update(ctx, model)
+	_, err = invSrv.Update(ctxh, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "document not found")
@@ -591,7 +591,7 @@ func TestService_Update(t *testing.T) {
 	// calculate data root fails
 	model = &mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
-	_, err = invSrv.Update(ctx, model)
+	_, err = invSrv.Update(ctxh, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "unknown document type")
@@ -613,12 +613,12 @@ func TestService_Update(t *testing.T) {
 	assert.Equal(t, data, newData)
 	proc := &testingcoredocument.MockCoreDocumentProcessor{}
 	proc.On("PrepareForSignatureRequests", newInv).Return(nil).Once()
-	proc.On("RequestSignatures", ctx, newInv).Return(nil).Once()
+	proc.On("RequestSignatures", ctxh, newInv).Return(nil).Once()
 	proc.On("PrepareForAnchoring", newInv).Return(nil).Once()
 	proc.On("AnchorDocument", newInv).Return(nil).Once()
-	proc.On("SendDocument", ctx, newInv).Return(nil).Once()
+	proc.On("SendDocument", ctxh, newInv).Return(nil).Once()
 	invSrv.coreDocProcessor = proc
-	inv, err = invSrv.Update(ctx, newInv)
+	inv, err = invSrv.Update(ctxh, newInv)
 	proc.AssertExpectations(t)
 	assert.Nil(t, err)
 	assert.NotNil(t, inv)
@@ -637,7 +637,7 @@ func TestService_Update(t *testing.T) {
 
 func TestService_calculateDataRoot(t *testing.T) {
 	invSrv := getServiceWithMockedLayers().(service)
-	ctxh, err := documents.NewContextHeader()
+	ctxh, err := header.NewContextHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 
 	// type mismatch

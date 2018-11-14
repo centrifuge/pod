@@ -15,12 +15,12 @@ import (
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/centerrors"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	logging "github.com/ipfs/go-log"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-	"github.com/centrifuge/go-centrifuge/config"
 )
 
 var log = logging.Logger("cent-api-server")

@@ -1,12 +1,13 @@
 package documents
 
 import (
+	"os"
 	"testing"
+
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
-	"os"
-	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/context/testlogging"
+	"github.com/centrifuge/go-centrifuge/storage"
 )
 
 var ctx = map[string]interface{}{}

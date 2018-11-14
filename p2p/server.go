@@ -1,4 +1,4 @@
-// PLEASE DO NOT call any config.* stuff here as it creates dependencies that can't be injected easily when testing
+// PLEASE DO NOT call any Config.* stuff here as it creates dependencies that can't be injected easily when testing
 package p2p
 
 import (
@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	"github.com/centrifuge/go-centrifuge/config"
 	cented25519 "github.com/centrifuge/go-centrifuge/keytools/ed25519"
 	"github.com/ipfs/go-cid"
 	ds "github.com/ipfs/go-datastore"
@@ -23,7 +24,6 @@ import (
 	ma "github.com/multiformats/go-multiaddr"
 	mh "github.com/multiformats/go-multihash"
 	"github.com/paralin/go-libp2p-grpc"
-	"github.com/centrifuge/go-centrifuge/config"
 )
 
 var log = logging.Logger("cent-p2p-server")
@@ -70,7 +70,7 @@ func (c *CentP2PServer) Start(ctx context.Context, wg *sync.WaitGroup, startupEr
 	grpcProto := p2pgrpc.NewGRPCProtocol(context.Background(), hostInstance)
 	GRPCProtoInstance = *grpcProto
 
-	p2ppb.RegisterP2PServiceServer(grpcProto.GetGRPCServer(), &Handler{config: c.config})
+	p2ppb.RegisterP2PServiceServer(grpcProto.GetGRPCServer(), &Handler{Config: c.config})
 	errOut := make(chan error)
 	go func(proto *p2pgrpc.GRPCProtocol, errOut chan<- error) {
 		errOut <- proto.Serve()

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
-
 )
 
 func (*Bootstrapper) TestBootstrap(context map[string]interface{}) error {

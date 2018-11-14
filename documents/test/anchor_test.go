@@ -7,15 +7,16 @@ import (
 	"fmt"
 	"testing"
 
+	"os"
+
+	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/coredocument"
+	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/testingutils/coredocument"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/stretchr/testify/assert"
-	"github.com/centrifuge/go-centrifuge/header"
-	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"os"
 )
 
 var ctx = map[string]interface{}{}
@@ -67,7 +68,7 @@ func TestAnchorDocument(t *testing.T) {
 	m.On("PackCoreDocument").Return(cd, nil).Once()
 	proc = &testingcoredocument.MockCoreDocumentProcessor{}
 	proc.On("PrepareForSignatureRequests", m).Return(nil).Once()
-	proc.On("RequestSignatures", ctx, m).Return(fmt.Errorf("error")).Once()
+	proc.On("RequestSignatures", ctxh, m).Return(fmt.Errorf("error")).Once()
 	model, err = documents.AnchorDocument(ctxh, m, proc, updater)
 	m.AssertExpectations(t)
 	proc.AssertExpectations(t)
@@ -80,7 +81,7 @@ func TestAnchorDocument(t *testing.T) {
 	m.On("PackCoreDocument").Return(cd, nil).Once()
 	proc = &testingcoredocument.MockCoreDocumentProcessor{}
 	proc.On("PrepareForSignatureRequests", m).Return(nil).Once()
-	proc.On("RequestSignatures", ctx, m).Return(nil).Once()
+	proc.On("RequestSignatures", ctxh, m).Return(nil).Once()
 	proc.On("PrepareForAnchoring", m).Return(fmt.Errorf("error")).Once()
 	model, err = documents.AnchorDocument(ctxh, m, proc, updater)
 	m.AssertExpectations(t)
@@ -94,7 +95,7 @@ func TestAnchorDocument(t *testing.T) {
 	m.On("PackCoreDocument").Return(cd, nil).Once()
 	proc = &testingcoredocument.MockCoreDocumentProcessor{}
 	proc.On("PrepareForSignatureRequests", m).Return(nil).Once()
-	proc.On("RequestSignatures", ctx, m).Return(nil).Once()
+	proc.On("RequestSignatures", ctxh, m).Return(nil).Once()
 	proc.On("PrepareForAnchoring", m).Return(nil).Once()
 	proc.On("AnchorDocument", m).Return(fmt.Errorf("error")).Once()
 	model, err = documents.AnchorDocument(ctxh, m, proc, updater)
@@ -109,10 +110,10 @@ func TestAnchorDocument(t *testing.T) {
 	m.On("PackCoreDocument").Return(cd, nil).Once()
 	proc = &testingcoredocument.MockCoreDocumentProcessor{}
 	proc.On("PrepareForSignatureRequests", m).Return(nil).Once()
-	proc.On("RequestSignatures", ctx, m).Return(nil).Once()
+	proc.On("RequestSignatures", ctxh, m).Return(nil).Once()
 	proc.On("PrepareForAnchoring", m).Return(nil).Once()
 	proc.On("AnchorDocument", m).Return(nil).Once()
-	proc.On("SendDocument", ctx, m).Return(fmt.Errorf("error")).Once()
+	proc.On("SendDocument", ctxh, m).Return(fmt.Errorf("error")).Once()
 	model, err = documents.AnchorDocument(ctxh, m, proc, updater)
 	m.AssertExpectations(t)
 	proc.AssertExpectations(t)
@@ -125,10 +126,10 @@ func TestAnchorDocument(t *testing.T) {
 	m.On("PackCoreDocument").Return(cd, nil).Once()
 	proc = &testingcoredocument.MockCoreDocumentProcessor{}
 	proc.On("PrepareForSignatureRequests", m).Return(nil).Once()
-	proc.On("RequestSignatures", ctx, m).Return(nil).Once()
+	proc.On("RequestSignatures", ctxh, m).Return(nil).Once()
 	proc.On("PrepareForAnchoring", m).Return(nil).Once()
 	proc.On("AnchorDocument", m).Return(nil).Once()
-	proc.On("SendDocument", ctx, m).Return(nil).Once()
+	proc.On("SendDocument", ctxh, m).Return(nil).Once()
 	model, err = documents.AnchorDocument(ctxh, m, proc, updater)
 	m.AssertExpectations(t)
 	proc.AssertExpectations(t)

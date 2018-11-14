@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/context"
 	"github.com/centrifuge/go-centrifuge/utils"
 	logging "github.com/ipfs/go-log"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	gologging "github.com/whyrusleeping/go-logging"
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/context"
 )
 
 //global flags
@@ -97,7 +97,7 @@ func runBootstrap(cfgFile string) {
 	}
 }
 
-func baseBootstrap(cfgFile string) (map[string]interface{}) {
+func baseBootstrap(cfgFile string) map[string]interface{} {
 	mb := context.MainBootstrapper{}
 	mb.PopulateBaseBootstrappers()
 	ctx := map[string]interface{}{}

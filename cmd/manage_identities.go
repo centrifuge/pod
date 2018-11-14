@@ -3,11 +3,12 @@ package cmd
 import (
 	"io/ioutil"
 
+	"context"
+
+	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/spf13/cobra"
-	"github.com/centrifuge/go-centrifuge/config"
-	"context"
-	"github.com/centrifuge/go-centrifuge/documents"
 )
 
 var centrifugeIdString string
@@ -60,7 +61,7 @@ var addKeyCmd = &cobra.Command{
 		cfg := ctx[config.BootstrappedConfig].(*config.Configuration)
 		var purposeInt int
 
-		ctxHeader, err := documents.NewContextHeader(context.Background(), cfg)
+		ctxHeader, err := header.NewContextHeader(context.Background(), cfg)
 		if err != nil {
 			panic(err)
 		}

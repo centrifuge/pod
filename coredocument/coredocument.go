@@ -6,11 +6,11 @@ import (
 	"strings"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
-	"github.com/centrifuge/go-centrifuge/header"
 )
 
 // getDataProofHashes returns the hashes needed to create a proof from DataRoot to SigningRoot. This method is used

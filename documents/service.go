@@ -3,8 +3,8 @@ package documents
 import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
-	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/centrifuge/go-centrifuge/header"
+	"github.com/centrifuge/precise-proofs/proofs/proto"
 )
 
 // DocumentProof is a value to represent a document and its field proofs

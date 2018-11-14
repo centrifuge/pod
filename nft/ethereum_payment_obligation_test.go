@@ -7,6 +7,8 @@ import (
 	"math/big"
 	"testing"
 
+	"time"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -143,6 +145,11 @@ func (m *MockConfig) GetEthereumDefaultAccountName() string {
 	return args.Get(0).(string)
 }
 
+func (m *MockConfig) GetEthereumContextWaitTimeout() time.Duration {
+	args := m.Called()
+	return args.Get(0).(time.Duration)
+}
+
 func TestPaymentObligationService(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -190,7 +197,7 @@ func TestPaymentObligationService(t *testing.T) {
 			// with below config the documentType has to be test.name to avoid conflicts since registry is a singleton
 			documents.GetRegistryInstance().Register(test.name, &docService)
 			confirmations := make(chan *WatchTokenMinted)
-			service := NewEthereumPaymentObligation(paymentOb, &idService, &ethClient, &config, func(tokenID *big.Int) (chan *WatchTokenMinted, error) {
+			service := NewEthereumPaymentObligation(paymentOb, &idService, &ethClient, &config, func(config Config, tokenID *big.Int) (chan *WatchTokenMinted, error) {
 				return confirmations, nil
 			})
 			_, err := service.MintNFT(decodeHex(test.request.Identifier), test.request.Type, test.request.RegistryAddress, test.request.DepositAddress, test.request.ProofFields)

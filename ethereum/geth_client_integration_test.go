@@ -12,8 +12,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var cfg *config.Configuration
+
 func TestMain(m *testing.M) {
-	cc.TestFunctionalEthereumBootstrap()
+	ctx := cc.TestFunctionalEthereumBootstrap()
+	cfg = ctx[config.BootstrappedConfig].(*config.Configuration)
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()
 	os.Exit(result)
@@ -34,7 +37,7 @@ func TestGetConnection_returnsSameConnection(t *testing.T) {
 }
 
 func TestNewGethClient(t *testing.T) {
-	gc, err := ethereum.NewGethClient(config.Config())
+	gc, err := ethereum.NewGethClient(cfg)
 	assert.Nil(t, err)
 	assert.NotNil(t, gc)
 }

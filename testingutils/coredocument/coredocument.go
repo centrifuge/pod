@@ -6,12 +6,12 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/mock"
-	"github.com/centrifuge/go-centrifuge/header"
 )
 
 func GenerateCoreDocument() *coredocumentpb.CoreDocument {

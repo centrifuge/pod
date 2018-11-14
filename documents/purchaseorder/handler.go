@@ -6,13 +6,13 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/code"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/header"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	logging "github.com/ipfs/go-log"
 	"golang.org/x/net/context"
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/header"
 )
 
 var apiLog = logging.Logger("purchaseorder-api")
@@ -21,7 +21,7 @@ var apiLog = logging.Logger("purchaseorder-api")
 // anchoring, sending, finding stored purchase order document
 type grpcHandler struct {
 	service Service
-	config *config.Configuration
+	config  *config.Configuration
 }
 
 // GRPCHandler returns an implementation of the purchaseorder DocumentServiceServer

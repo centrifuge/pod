@@ -8,13 +8,13 @@ import (
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/keytools/secp256k1"
 	"github.com/centrifuge/go-centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/version"
 	logging "github.com/ipfs/go-log"
-	"github.com/centrifuge/go-centrifuge/header"
 )
 
 var log = logging.Logger("coredocument")
@@ -207,7 +207,6 @@ func (dp defaultProcessor) AnchorDocument(ctx *header.ContextHeader, model docum
 	if err != nil {
 		return fmt.Errorf("centID invalid: %v", err)
 	}
-
 
 	anchorID, err := anchors.ToAnchorID(cd.CurrentVersion)
 	if err != nil {

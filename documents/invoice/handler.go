@@ -6,12 +6,13 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/code"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	logging "github.com/ipfs/go-log"
 	"golang.org/x/net/context"
-	"github.com/centrifuge/go-centrifuge/config"
+
 	//cc "github.com/centrifuge/go-centrifuge/context"
 	"github.com/centrifuge/go-centrifuge/header"
 )
@@ -22,7 +23,7 @@ var apiLog = logging.Logger("invoice-api")
 // anchoring, sending, finding stored invoice document
 type grpcHandler struct {
 	service Service
-	config *config.Configuration
+	config  *config.Configuration
 }
 
 // GRPCHandler returns an implementation of invoice.DocumentServiceServer
@@ -33,7 +34,7 @@ func GRPCHandler(config *config.Configuration) (clientinvoicepb.DocumentServiceS
 	}
 	return &grpcHandler{
 		service: invoiceService.(Service),
-		config: config,
+		config:  config,
 	}, nil
 }
 

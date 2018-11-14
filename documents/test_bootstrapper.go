@@ -5,8 +5,8 @@ package documents
 import (
 	"errors"
 
-	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/centrifuge/go-centrifuge/storage"
+	"github.com/syndtr/goleveldb/leveldb"
 )
 
 // initialized ONLY for tests

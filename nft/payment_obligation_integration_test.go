@@ -15,6 +15,7 @@ import (
 	cc "github.com/centrifuge/go-centrifuge/context/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
+	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
@@ -22,22 +23,25 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var cfg *config.Configuration
+
 func TestMain(m *testing.M) {
 	log.Debug("Test PreSetup for NFT")
-	cc.TestFunctionalEthereumBootstrap()
-	prevSignPubkey := config.Config().Get("keys.signing.publicKey")
-	prevSignPrivkey := config.Config().Get("keys.signing.privateKey")
-	prevEthPubkey := config.Config().Get("keys.ethauth.publicKey")
-	prevEthPrivkey := config.Config().Get("keys.ethauth.privateKey")
-	config.Config().Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
-	config.Config().Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
-	config.Config().Set("keys.ethauth.publicKey", "../build/resources/ethauth.pub.pem")
-	config.Config().Set("keys.ethauth.privateKey", "../build/resources/ethauth.key.pem")
+	ctx := cc.TestFunctionalEthereumBootstrap()
+	cfg = ctx[config.BootstrappedConfig].(*config.Configuration)
+	prevSignPubkey := cfg.Get("keys.signing.publicKey")
+	prevSignPrivkey := cfg.Get("keys.signing.privateKey")
+	prevEthPubkey := cfg.Get("keys.ethauth.publicKey")
+	prevEthPrivkey := cfg.Get("keys.ethauth.privateKey")
+	cfg.Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
+	cfg.Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
+	cfg.Set("keys.ethauth.publicKey", "../build/resources/ethauth.pub.pem")
+	cfg.Set("keys.ethauth.privateKey", "../build/resources/ethauth.key.pem")
 	result := m.Run()
-	config.Config().Set("keys.signing.publicKey", prevSignPubkey)
-	config.Config().Set("keys.signing.privateKey", prevSignPrivkey)
-	config.Config().Set("keys.ethauth.publicKey", prevEthPubkey)
-	config.Config().Set("keys.ethauth.privateKey", prevEthPrivkey)
+	cfg.Set("keys.signing.publicKey", prevSignPubkey)
+	cfg.Set("keys.signing.privateKey", prevSignPrivkey)
+	cfg.Set("keys.ethauth.publicKey", prevEthPubkey)
+	cfg.Set("keys.ethauth.privateKey", prevEthPrivkey)
 	cc.TestFunctionalEthereumTearDown()
 	os.Exit(result)
 }
@@ -45,12 +49,12 @@ func TestMain(m *testing.M) {
 func TestPaymentObligationService_mint(t *testing.T) {
 	// create identity
 	log.Debug("Create Identity for Testing")
-	testingidentity.CreateIdentityWithKeys()
+	testingidentity.CreateIdentityWithKeys(cfg)
 
 	// create invoice (anchor)
 	service, err := documents.GetRegistryInstance().LocateService(documenttypes.InvoiceDataTypeUrl)
 	assert.Nil(t, err, "should not error out when getting invoice service")
-	contextHeader, err := documents.NewContextHeader()
+	contextHeader, err := header.NewContextHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 	invoiceService := service.(invoice.Service)
 	dueDate := time.Now().Add(4 * 24 * time.Hour)
@@ -66,7 +70,7 @@ func TestPaymentObligationService_mint(t *testing.T) {
 			},
 		}, contextHeader)
 	assert.Nil(t, err, "should not error out when creating invoice model")
-	modelUpdated, err := invoiceService.Create(context.Background(), model)
+	modelUpdated, err := invoiceService.Create(contextHeader, model)
 
 	// get ID
 	ID, err := modelUpdated.ID()

@@ -2,12 +2,11 @@ package config
 
 import (
 	"errors"
-
 )
 
 const (
-	BootstrappedConfig       string = "BootstrappedConfig"
-	BootstrappedConfigFile   string = "BootstrappedConfigFile"
+	BootstrappedConfig     string = "BootstrappedConfig"
+	BootstrappedConfigFile string = "BootstrappedConfigFile"
 )
 
 type Bootstrapper struct{}

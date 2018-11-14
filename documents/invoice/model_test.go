@@ -7,19 +7,45 @@ import (
 	"reflect"
 	"testing"
 
+	"context"
+	"os"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
+	"github.com/centrifuge/go-centrifuge/anchors"
+	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/context/testlogging"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/identity"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
+	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
-	"github.com/centrifuge/go-centrifuge/header"
 )
+
+var ctx = map[string]interface{}{}
+var cfg *config.Configuration
+
+func TestMain(m *testing.M) {
+	ibootstappers := []bootstrap.TestBootstrapper{
+		&testlogging.TestLoggingBootstrapper{},
+		&config.Bootstrapper{},
+		&storage.Bootstrapper{},
+		&anchors.Bootstrapper{},
+		&Bootstrapper{},
+	}
+	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
+	cfg = ctx[config.BootstrappedConfig].(*config.Configuration)
+	result := m.Run()
+	bootstrap.RunTestTeardown(ibootstappers)
+	os.Exit(result)
+}
 
 func TestInvoice_FromCoreDocuments_invalidParameter(t *testing.T) {
 	invoiceModel := &Invoice{}
@@ -145,7 +171,7 @@ func TestInvoiceModel_getClientData(t *testing.T) {
 }
 
 func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
-	contextHeader, err := header.NewContextHeader()
+	contextHeader, err := header.NewContextHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 	// fail recipient
 	data := &clientinvoicepb.InvoiceData{
@@ -205,7 +231,7 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 }
 
 func TestInvoiceModel_calculateDataRoot(t *testing.T) {
-	ctxHeader, err := header.NewContextHeader()
+	ctxHeader, err := header.NewContextHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 	m := new(Invoice)
 	err = m.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), ctxHeader)

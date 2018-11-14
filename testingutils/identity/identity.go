@@ -3,12 +3,13 @@
 package testingidentity
 
 import (
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 )
 
-func CreateIdentityWithKeys() identity.CentID {
-	idConfig, _ := identity.GetIdentityConfig()
+func CreateIdentityWithKeys(cfg *config.Configuration) identity.CentID {
+	idConfig, _ := identity.GetIdentityConfig(cfg)
 	// only create identity if it doesn't exist
 	id, err := identity.IDService.LookupIdentityForID(idConfig.ID)
 	if err != nil {

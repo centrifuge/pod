@@ -1,16 +1,17 @@
 package header
 
 import (
-	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/config"
-	"fmt"
 	"context"
+	"fmt"
+
+	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/identity"
 )
 
 // Placeholder to pass custom request objects down the pipeline
 type ContextHeader struct {
 	context context.Context
-	self *identity.IdentityConfig
+	self    *identity.IdentityConfig
 }
 
 // NewContextHeader creates new instance of the request headers needed

@@ -6,7 +6,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/bootstrap/testlogging"
+	"github.com/centrifuge/go-centrifuge/context/testlogging"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/ethereum"
@@ -32,7 +32,7 @@ var bootstappers = []bootstrap.TestBootstrapper{
 	&queue.Bootstrapper{},
 }
 
-func TestFunctionalEthereumBootstrap() {
+func TestFunctionalEthereumBootstrap() map[string]interface{} {
 	contextval := map[string]interface{}{}
 	for _, b := range bootstappers {
 		err := b.TestBootstrap(contextval)
@@ -41,6 +41,7 @@ func TestFunctionalEthereumBootstrap() {
 			panic(err)
 		}
 	}
+	return contextval
 }
 func TestFunctionalEthereumTearDown() {
 	for _, b := range bootstappers {

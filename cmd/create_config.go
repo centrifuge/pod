@@ -3,13 +3,14 @@ package cmd
 import (
 	"os"
 
+	"context"
+
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/keytools"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
-	"context"
-	"github.com/centrifuge/go-centrifuge/documents"
 )
 
 var targetDataDir string
@@ -40,7 +41,7 @@ func generateKeys(config *config.Configuration) {
 	keytools.GenerateSigningKeyPair(ethAuthPub, ethAuthPvt, "secp256k1")
 }
 
-func addKeys(ctx *documents.ContextHeader) error {
+func addKeys(ctx *header.ContextHeader) error {
 	err := identity.AddKeyFromConfig(ctx.Self(), identity.KeyPurposeP2P)
 	if err != nil {
 		panic(err)
@@ -69,7 +70,6 @@ func init() {
 		Long:  ``,
 		Run: func(cmd *cobra.Command, args []string) {
 
-
 			data := map[string]interface{}{
 				"targetDataDir":   targetDataDir,
 				"accountKeyPath":  accountKeyPath,
@@ -89,7 +89,7 @@ func init() {
 
 			ctx := baseBootstrap(v.ConfigFileUsed())
 			cfg := ctx[config.BootstrappedConfig].(*config.Configuration)
-			ctxHeader, err := documents.NewContextHeader(context.Background(), cfg)
+			ctxHeader, err := header.NewContextHeader(context.Background(), cfg)
 			if err != nil {
 				panic(err)
 			}

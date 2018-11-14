@@ -15,6 +15,7 @@ import (
 )
 
 const MaxMsgLen = 32
+
 var ctx = map[string]interface{}{}
 var cfg *config.Configuration
 
