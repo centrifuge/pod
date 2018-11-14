@@ -20,6 +20,5 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	srv := &p2pServer{config: cfg}
 	ctx[bootstrap.BootstrappedP2PServer] = srv
 	ctx[bootstrap.BootstrappedP2PClient] = srv
-	fmt.Println(ctx)
 	return nil
 }
