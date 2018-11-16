@@ -5,8 +5,7 @@ package coredocument
 import (
 	"context"
 	"fmt"
-	"math/big"
-	"testing"
+		"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -218,21 +217,12 @@ func TestDefaultProcessor_PrepareForAnchoring(t *testing.T) {
 	assert.Nil(t, err)
 	s := identity.Sign(c, identity.KeyPurposeSigning, cd.SigningRoot)
 	cd.Signatures = []*coredocumentpb.Signature{s}
-	pubkey, err := utils.SliceToByte32(c.Keys[identity.KeyPurposeSigning].PublicKey)
 	assert.Nil(t, err)
-	idkey := &identity.EthereumIdentityKey{
-		Key:       pubkey,
-		Purposes:  []*big.Int{big.NewInt(identity.KeyPurposeSigning)},
-		RevokedAt: big.NewInt(0),
-	}
-	id := &testingcommons.MockID{}
-	srv.On("LookupIdentityForID", c.ID).Return(id, nil).Once()
-	id.On("FetchKey", pubkey[:]).Return(idkey, nil).Once()
+	srv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
 	dp = DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
 	err = dp.PrepareForAnchoring(model)
 	model.AssertExpectations(t)
 	srv.AssertExpectations(t)
-	id.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to unpack core document")
 
@@ -240,14 +230,9 @@ func TestDefaultProcessor_PrepareForAnchoring(t *testing.T) {
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Times(4)
 	model.On("UnpackCoreDocument", cd).Return(nil).Once()
-	id = &testingcommons.MockID{}
-	srv = &testingcommons.MockIDService{}
-	srv.On("LookupIdentityForID", c.ID).Return(id, nil).Once()
-	id.On("FetchKey", pubkey[:]).Return(idkey, nil).Once()
 	err = dp.PrepareForAnchoring(model)
 	model.AssertExpectations(t)
 	srv.AssertExpectations(t)
-	id.AssertExpectations(t)
 	assert.Nil(t, err)
 	assert.NotNil(t, cd.DocumentRoot)
 }
@@ -376,6 +361,7 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 
 func TestDefaultProcessor_SendDocument(t *testing.T) {
 	srv := &testingcommons.MockIDService{}
+	srv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
 	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
 	ctx := context.Background()
 
@@ -413,16 +399,6 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	s := identity.Sign(c, identity.KeyPurposeSigning, cd.SigningRoot)
 	cd.Signatures = []*coredocumentpb.Signature{s}
 	assert.Nil(t, CalculateDocumentRoot(cd))
-	pubkey, err := utils.SliceToByte32(c.Keys[identity.KeyPurposeSigning].PublicKey)
-	assert.Nil(t, err)
-	idkey := &identity.EthereumIdentityKey{
-		Key:       pubkey,
-		Purposes:  []*big.Int{big.NewInt(identity.KeyPurposeSigning)},
-		RevokedAt: big.NewInt(0),
-	}
-	id := &testingcommons.MockID{}
-	srv.On("LookupIdentityForID", c.ID).Return(id, nil).Once()
-	id.On("FetchKey", pubkey[:]).Return(idkey, nil).Once()
 	docRoot, err := anchors.ToDocumentRoot(cd.DocumentRoot)
 	assert.Nil(t, err)
 	repo := mockRepo{}
@@ -431,7 +407,6 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	err = dp.SendDocument(ctx, model)
 	model.AssertExpectations(t)
 	srv.AssertExpectations(t)
-	id.AssertExpectations(t)
 	repo.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid length byte slice provided for centID")

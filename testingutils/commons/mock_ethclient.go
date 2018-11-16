@@ -9,10 +9,17 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/stretchr/testify/mock"
+	"context"
 )
 
 type MockEthClient struct {
 	mock.Mock
+}
+
+func (m *MockEthClient) GetGethCallOpts() (*bind.CallOpts, context.CancelFunc) {
+	args := m.Called()
+	c, _ := args.Get(0).(*bind.CallOpts)
+	return c, func() {}
 }
 
 func (m *MockEthClient) GetEthClient() *ethclient.Client {
