@@ -5,7 +5,7 @@ package coredocument
 import (
 	"context"
 	"fmt"
-		"testing"
+	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"

@@ -5,11 +5,12 @@ package testingcommons
 import (
 	"net/url"
 
+	"context"
+
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/stretchr/testify/mock"
-	"context"
 )
 
 type MockEthClient struct {
