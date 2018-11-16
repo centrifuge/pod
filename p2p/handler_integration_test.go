@@ -5,7 +5,6 @@ package p2p_test
 import (
 	"context"
 	"flag"
-	"math/big"
 	"os"
 	"testing"
 
@@ -20,8 +19,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/keytools/secp256k1"
 	"github.com/centrifuge/go-centrifuge/p2p"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/coredocument"
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/centrifuge/precise-proofs/proofs"
@@ -41,6 +40,7 @@ func TestMain(m *testing.M) {
 	config.Config().Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
 	config.Config().Set("keys.ethauth.publicKey", "../build/resources/ethauth.pub.pem")
 	config.Config().Set("keys.ethauth.privateKey", "../build/resources/ethauth.key.pem")
+	testingidentity.CreateIdentityWithKeys()
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()
 	os.Exit(result)
@@ -57,126 +57,50 @@ func TestHandler_RequestDocumentSignature_verification_fail(t *testing.T) {
 }
 
 func TestHandler_RequestDocumentSignature_AlreadyExists(t *testing.T) {
-	savedService := identity.IDService
-	idConfig, err := identity.GetIdentityConfig()
-	assert.Nil(t, err)
-	pubKey := idConfig.Keys[identity.KeyPurposeSigning].PublicKey
-	b32Key, _ := utils.SliceToByte32(pubKey)
-	idkey := &identity.EthereumIdentityKey{
-		Key:       b32Key,
-		Purposes:  []*big.Int{big.NewInt(identity.KeyPurposeSigning)},
-		RevokedAt: big.NewInt(0),
-	}
-	id := &testingcommons.MockID{}
-	srv := &testingcommons.MockIDService{}
-	srv.On("LookupIdentityForID", idConfig.ID).Return(id, nil).Once()
-	id.On("FetchKey", pubKey).Return(idkey, nil).Once()
-	identity.IDService = srv
-
 	doc := prepareDocumentForP2PHandler(t, nil)
 	req := getSignatureRequest(doc)
 	resp, err := handler.RequestDocumentSignature(context.Background(), req)
-	srv.AssertExpectations(t)
-	id.AssertExpectations(t)
 	assert.Nil(t, err, "must be nil")
 	assert.NotNil(t, resp, "must be non nil")
 
-	id = &testingcommons.MockID{}
-	srv = &testingcommons.MockIDService{}
-	srv.On("LookupIdentityForID", idConfig.ID).Return(id, nil).Once()
-	id.On("FetchKey", pubKey).Return(idkey, nil).Once()
-	identity.IDService = srv
-
 	req = getSignatureRequest(doc)
 	resp, err = handler.RequestDocumentSignature(context.Background(), req)
-	srv.AssertExpectations(t)
-	id.AssertExpectations(t)
 	assert.NotNil(t, err, "must not be nil")
 	assert.Contains(t, err.Error(), "document already exists")
-
-	identity.IDService = savedService
 }
 
 func TestHandler_RequestDocumentSignature_UpdateSucceeds(t *testing.T) {
-	savedService := identity.IDService
-	idConfig, err := identity.GetIdentityConfig()
-	assert.Nil(t, err)
-	pubKey := idConfig.Keys[identity.KeyPurposeSigning].PublicKey
-	b32Key, _ := utils.SliceToByte32(pubKey)
-	idkey := &identity.EthereumIdentityKey{
-		Key:       b32Key,
-		Purposes:  []*big.Int{big.NewInt(identity.KeyPurposeSigning)},
-		RevokedAt: big.NewInt(0),
-	}
-	id := &testingcommons.MockID{}
-	srv := &testingcommons.MockIDService{}
-	srv.On("LookupIdentityForID", idConfig.ID).Return(id, nil).Once()
-	id.On("FetchKey", pubKey).Return(idkey, nil).Once()
-	identity.IDService = srv
-
 	doc := prepareDocumentForP2PHandler(t, nil)
 	req := getSignatureRequest(doc)
 	resp, err := handler.RequestDocumentSignature(context.Background(), req)
-	srv.AssertExpectations(t)
-	id.AssertExpectations(t)
 	assert.Nil(t, err, "must be nil")
 	assert.NotNil(t, resp, "must be non nil")
 	assert.NotNil(t, resp.Signature.Signature, "must be non nil")
 	sig := resp.Signature
 	assert.True(t, ed25519.Verify(sig.PublicKey, doc.SigningRoot, sig.Signature), "signature must be valid")
-
 	//Update document
 	newDoc, err := coredocument.PrepareNewVersion(*doc, nil)
 	assert.Nil(t, err)
-	id = &testingcommons.MockID{}
-	srv = &testingcommons.MockIDService{}
-	srv.On("LookupIdentityForID", idConfig.ID).Return(id, nil).Once()
-	id.On("FetchKey", pubKey).Return(idkey, nil).Once()
-	identity.IDService = srv
-
 	updateDocumentForP2Phandler(t, newDoc)
 	newDoc = prepareDocumentForP2PHandler(t, newDoc)
 	req = getSignatureRequest(newDoc)
 	resp, err = handler.RequestDocumentSignature(context.Background(), req)
-	srv.AssertExpectations(t)
-	id.AssertExpectations(t)
 	assert.Nil(t, err, "must be nil")
 	assert.NotNil(t, resp, "must be non nil")
 	assert.NotNil(t, resp.Signature.Signature, "must be non nil")
 	sig = resp.Signature
 	assert.True(t, ed25519.Verify(sig.PublicKey, newDoc.SigningRoot, sig.Signature), "signature must be valid")
-	identity.IDService = savedService
 }
 
 func TestHandler_RequestDocumentSignature(t *testing.T) {
-	savedService := identity.IDService
-	idConfig, err := identity.GetIdentityConfig()
-	assert.Nil(t, err)
-	pubKey := idConfig.Keys[identity.KeyPurposeSigning].PublicKey
-	b32Key, _ := utils.SliceToByte32(pubKey)
-	idkey := &identity.EthereumIdentityKey{
-		Key:       b32Key,
-		Purposes:  []*big.Int{big.NewInt(identity.KeyPurposeSigning)},
-		RevokedAt: big.NewInt(0),
-	}
-	id := &testingcommons.MockID{}
-	srv := &testingcommons.MockIDService{}
-	srv.On("LookupIdentityForID", idConfig.ID).Return(id, nil).Once()
-	id.On("FetchKey", pubKey).Return(idkey, nil).Once()
-	identity.IDService = srv
-
 	doc := prepareDocumentForP2PHandler(t, nil)
 	req := getSignatureRequest(doc)
 	resp, err := handler.RequestDocumentSignature(context.Background(), req)
-	srv.AssertExpectations(t)
-	id.AssertExpectations(t)
 	assert.Nil(t, err, "must be nil")
 	assert.NotNil(t, resp, "must be non nil")
 	assert.NotNil(t, resp.Signature.Signature, "must be non nil")
 	sig := resp.Signature
 	assert.True(t, ed25519.Verify(sig.PublicKey, doc.SigningRoot, sig.Signature), "signature must be valid")
-
-	identity.IDService = savedService
 }
 
 func TestHandler_SendAnchoredDocument_update_fail(t *testing.T) {

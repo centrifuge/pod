@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/centerrors"
+	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -37,8 +37,8 @@ type keyRegistrationConfirmationTask struct {
 	filterer           keyRegisteredFilterer
 	contract           *EthereumIdentityRegistryContract
 	config             Config
-	gethClientFinder func() ethereum.Client
-	contractProvider func(address common.Address, backend bind.ContractBackend) (contract, error)
+	gethClientFinder   func() ethereum.Client
+	contractProvider   func(address common.Address, backend bind.ContractBackend) (contract, error)
 }
 
 func newKeyRegistrationConfirmationTask(
@@ -52,8 +52,8 @@ func newKeyRegistrationConfirmationTask(
 		contextInitializer: ethContextInitializer,
 		contract:           registryContract,
 		config:             config,
-		gethClientFinder: gethClientFinder,
-		contractProvider: contractProvider,
+		gethClientFinder:   gethClientFinder,
+		contractProvider:   contractProvider,
 	}
 }
 
@@ -81,7 +81,7 @@ func (krct *keyRegistrationConfirmationTask) Copy() (gocelery.CeleryTask, error)
 		krct.contract,
 		krct.config,
 		krct.gethClientFinder,
-		krct.contractProvider,}, nil
+		krct.contractProvider}, nil
 }
 
 // ParseKwargs parses the args into the task
