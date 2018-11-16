@@ -15,18 +15,19 @@ var apiLog = logging.Logger("document-api")
 
 // grpcHandler handles all the common document related actions: proof generation
 type grpcHandler struct {
+	registry *ServiceRegistry
 }
 
 // GRPCHandler returns an implementation of documentpb.DocumentServiceServer
-func GRPCHandler() documentpb.DocumentServiceServer {
-	return grpcHandler{}
+func GRPCHandler(registry *ServiceRegistry) documentpb.DocumentServiceServer {
+	return grpcHandler{registry: registry}
 }
 
 // CreateDocumentProof creates precise proofs for the given fields
-func (grpcHandler) CreateDocumentProof(ctx context.Context, createDocumentProofEnvelope *documentpb.CreateDocumentProofRequest) (*documentpb.DocumentProof, error) {
+func (h grpcHandler) CreateDocumentProof(ctx context.Context, createDocumentProofEnvelope *documentpb.CreateDocumentProofRequest) (*documentpb.DocumentProof, error) {
 	apiLog.Infof("Document proof request %v", createDocumentProofEnvelope)
 
-	service, err := GetRegistryInstance().LocateService(createDocumentProofEnvelope.Type)
+	service, err := h.registry.LocateService(createDocumentProofEnvelope.Type)
 	if err != nil {
 		return &documentpb.DocumentProof{}, err
 	}
@@ -44,10 +45,10 @@ func (grpcHandler) CreateDocumentProof(ctx context.Context, createDocumentProofE
 }
 
 // CreateDocumentProofForVersion creates precise proofs for the given fields for the given version of the document
-func (grpcHandler) CreateDocumentProofForVersion(ctx context.Context, createDocumentProofForVersionEnvelope *documentpb.CreateDocumentProofForVersionRequest) (*documentpb.DocumentProof, error) {
+func (h grpcHandler) CreateDocumentProofForVersion(ctx context.Context, createDocumentProofForVersionEnvelope *documentpb.CreateDocumentProofForVersionRequest) (*documentpb.DocumentProof, error) {
 	apiLog.Infof("Document proof request %v", createDocumentProofForVersionEnvelope)
 
-	service, err := GetRegistryInstance().LocateService(createDocumentProofForVersionEnvelope.Type)
+	service, err := h.registry.LocateService(createDocumentProofForVersionEnvelope.Type)
 	if err != nil {
 		return &documentpb.DocumentProof{}, err
 	}

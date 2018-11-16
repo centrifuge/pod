@@ -19,16 +19,16 @@ import (
 )
 
 // registerServices registers all endpoints to the grpc server
-func registerServices(ctx context.Context, config Config, grpcServer *grpc.Server, gwmux *runtime.ServeMux, addr string, dopts []grpc.DialOption) error {
+func registerServices(ctx context.Context, config Config, registry *documents.ServiceRegistry, grpcServer *grpc.Server, gwmux *runtime.ServeMux, addr string, dopts []grpc.DialOption) error {
 	// documents (common)
-	documentpb.RegisterDocumentServiceServer(grpcServer, documents.GRPCHandler())
+	documentpb.RegisterDocumentServiceServer(grpcServer, documents.GRPCHandler(registry))
 	err := documentpb.RegisterDocumentServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
 	if err != nil {
 		return err
 	}
 
 	// invoice
-	handler, err := invoice.GRPCHandler()
+	handler, err := invoice.GRPCHandler(registry)
 	if err != nil {
 		return err
 	}
@@ -39,7 +39,7 @@ func registerServices(ctx context.Context, config Config, grpcServer *grpc.Serve
 	}
 
 	// purchase orders
-	srv, err := purchaseorder.GRPCHandler()
+	srv, err := purchaseorder.GRPCHandler(registry)
 	if err != nil {
 		return fmt.Errorf("failed to get purchase order handler: %v", err)
 	}

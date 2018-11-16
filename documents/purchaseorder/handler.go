@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
+
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -22,8 +23,8 @@ type grpcHandler struct {
 }
 
 // GRPCHandler returns an implementation of the purchaseorder DocumentServiceServer
-func GRPCHandler() (clientpurchaseorderpb.DocumentServiceServer, error) {
-	srv, err := documents.GetRegistryInstance().LocateService(documenttypes.PurchaseOrderDataTypeUrl)
+func GRPCHandler(registry *documents.ServiceRegistry) (clientpurchaseorderpb.DocumentServiceServer, error) {
+	srv, err := registry.LocateService(documenttypes.PurchaseOrderDataTypeUrl)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch purchase order service")
 	}

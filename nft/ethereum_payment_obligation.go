@@ -56,6 +56,7 @@ type ethereumPaymentObligationContract interface {
 
 // ethereumPaymentObligation handles all interactions related to minting of NFTs for payment obligations on Ethereum
 type ethereumPaymentObligation struct {
+	registry          *documents.ServiceRegistry
 	identityService   identity.Service
 	ethClient         ethereum.Client
 	config            Config
@@ -64,17 +65,20 @@ type ethereumPaymentObligation struct {
 }
 
 // NewEthereumPaymentObligation creates ethereumPaymentObligation given the parameters
-func NewEthereumPaymentObligation(identityService identity.Service, ethClient ethereum.Client, config Config,
+func NewEthereumPaymentObligation(registry *documents.ServiceRegistry, identityService identity.Service, ethClient ethereum.Client, config Config,
 	setupMintListener func(tokenID *big.Int, registryAddress string) (confirmations chan *WatchTokenMinted, err error), bindContract func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error)) *ethereumPaymentObligation {
-	return &ethereumPaymentObligation{identityService: identityService,
+	return &ethereumPaymentObligation{
+		registry:          registry,
+		identityService:   identityService,
 		ethClient:         ethClient,
 		config:            config,
 		setupMintListener: setupMintListener,
-		bindContract:      bindContract}
+		bindContract:      bindContract,
+	}
 }
 
 func (s *ethereumPaymentObligation) prepareMintRequest(documentID []byte, proofFields []string) (*MintRequest, error) {
-	docService, err := getDocumentService(documentID)
+	docService, err := s.registry.FindService(documentID)
 	if err != nil {
 		return nil, err
 	}
@@ -313,14 +317,6 @@ func convertProofProperty(sortedHashes [][]byte) ([][32]byte, error) {
 	}
 
 	return property, nil
-}
-
-func getDocumentService(documentID []byte) (documents.Service, error) {
-	docService, err := documents.GetRegistryInstance().FindService(documentID)
-	if err != nil {
-		return nil, err
-	}
-	return docService, nil
 }
 
 // getCollaborator returns the needed collaboratorField for a PaymentObligation NFT

@@ -200,14 +200,16 @@ func TestPaymentObligationService(t *testing.T) {
 			"",
 		},
 	}
+
+	registry := documents.NewServiceRegistry()
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			// get mocks
 			docService, paymentOb, idService, ethClient, config := test.mocker()
 			// with below config the documentType has to be test.name to avoid conflicts since registry is a singleton
-			documents.GetRegistryInstance().Register(test.name, &docService)
+			registry.Register(test.name, &docService)
 			confirmations := make(chan *WatchTokenMinted)
-			service := NewEthereumPaymentObligation(&idService, &ethClient, &config, func(tokenID *big.Int, registryAddress string) (chan *WatchTokenMinted, error) {
+			service := NewEthereumPaymentObligation(registry, &idService, &ethClient, &config, func(tokenID *big.Int, registryAddress string) (chan *WatchTokenMinted, error) {
 				return confirmations, nil
 			}, func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error) {
 				return &EthereumPaymentObligationContract{}, nil

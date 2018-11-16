@@ -17,24 +17,29 @@ import (
 type Bootstrapper struct {
 }
 
-func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
-	if _, ok := context[bootstrap.BootstrappedConfig]; !ok {
+func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
+	if _, ok := ctx[bootstrap.BootstrappedConfig]; !ok {
 		return errors.New("config hasn't been initialized")
 	}
-	cfg := context[bootstrap.BootstrappedConfig].(*config.Configuration)
+	cfg := ctx[bootstrap.BootstrappedConfig].(*config.Configuration)
 
-	if _, ok := context[bootstrap.BootstrappedLevelDb]; !ok {
+	if _, ok := ctx[bootstrap.BootstrappedLevelDb]; !ok {
 		return errors.New("could not initialize purchase order repository")
 	}
 
-	p2pClient, ok := context[bootstrap.BootstrappedP2PClient].(p2p.Client)
+	p2pClient, ok := ctx[bootstrap.BootstrappedP2PClient].(p2p.Client)
 	if !ok {
 		return fmt.Errorf("p2p client not initialised")
 	}
 
+	registry, ok := ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
+	if !ok {
+		return fmt.Errorf("service registry not initialised")
+	}
+
 	// register service
 	srv := DefaultService(cfg, getRepository(), coredocument.DefaultProcessor(identity.IDService, p2pClient, anchors.GetAnchorRepository(), cfg), anchors.GetAnchorRepository())
-	err := documents.GetRegistryInstance().Register(documenttypes.PurchaseOrderDataTypeUrl, srv)
+	err := registry.Register(documenttypes.PurchaseOrderDataTypeUrl, srv)
 	if err != nil {
 		return fmt.Errorf("failed to register purchase order service")
 	}
