@@ -48,7 +48,10 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	}
 
 	err = queue.InstallQueuedTask(context,
-		newKeyRegistrationConfirmationTask(ethereum.DefaultWaitForTransactionMiningContext, registryContract, cfg))
+		newKeyRegistrationConfirmationTask(ethereum.DefaultWaitForTransactionMiningContext, registryContract, cfg, ethereum.GetClient,
+			func(address common.Address, backend bind.ContractBackend) (contract, error) {
+				return NewEthereumIdentityContract(address, backend)
+			}))
 	if err != nil {
 		return err
 	}
