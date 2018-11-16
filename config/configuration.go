@@ -265,7 +265,11 @@ func (c *Configuration) GetEthAuthKeyPair() (pub, priv string) {
 
 // Configuration Implementation
 func NewConfiguration(configFile string) *Configuration {
-	return &Configuration{configFile: configFile, mu: sync.RWMutex{}}
+	cfg := &Configuration{configFile: configFile, mu: sync.RWMutex{}}
+	cfg.InitializeViper()
+	//TODO Will remove this soon, when we do not use global config variable
+	SetConfig(cfg)
+	return cfg
 }
 
 func (c *Configuration) readConfigFile(path string) error {
@@ -313,12 +317,6 @@ func (c *Configuration) InitializeViper() {
 	c.v.SetEnvPrefix("CENT")
 }
 
-func Bootstrap(configFile string) {
-	c := NewConfiguration(configFile)
-	c.InitializeViper()
-	SetConfig(c)
-}
-
 // CreateConfigFile creates minimum config file with arguments
 func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	targetDataDir := args["targetDataDir"].(string)
@@ -338,7 +336,7 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	}
 
 	if _, err := os.Stat(accountKeyPath); os.IsNotExist(err) {
-		return nil, errors.New("Account Key Path does not exist")
+		return nil, errors.New("account Key Path does not exist")
 	}
 
 	bfile, err := ioutil.ReadFile(accountKeyPath)

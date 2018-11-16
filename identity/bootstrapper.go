@@ -20,50 +20,47 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	if _, ok := context[bootstrap.BootstrappedConfig]; !ok {
 		return errors.New("config hasn't been initialized")
 	}
+	cfg := context[bootstrap.BootstrappedConfig].(*config.Configuration)
+
 	if _, ok := context[bootstrap.BootstrappedEthereumClient]; !ok {
 		return errors.New("ethereum client hasn't been initialized")
 	}
 
-	idFactory, err := getIdentityFactoryContract()
+	idFactory, err := getIdentityFactoryContract(cfg.GetContractAddress("identityFactory"))
 	if err != nil {
 		return err
 	}
 
-	registryContract, err := getIdentityRegistryContract()
+	registryContract, err := getIdentityRegistryContract(cfg.GetContractAddress("identityRegistry"))
 	if err != nil {
 		return err
 	}
 
-	IDService = NewEthereumIdentityService(config.Config(), idFactory, registryContract, ethereum.GetClient,
+	IDService = NewEthereumIdentityService(cfg, idFactory, registryContract, ethereum.GetClient,
 		func(address common.Address, backend bind.ContractBackend) (contract, error) {
 			return NewEthereumIdentityContract(address, backend)
-	})
+		})
 
-	identityContract, err := getIdentityFactoryContract()
+	err = queue.InstallQueuedTask(context,
+		newIdRegistrationConfirmationTask(&idFactory.EthereumIdentityFactoryContractFilterer, ethereum.DefaultWaitForTransactionMiningContext))
 	if err != nil {
 		return err
 	}
 
 	err = queue.InstallQueuedTask(context,
-		newIdRegistrationConfirmationTask(&identityContract.EthereumIdentityFactoryContractFilterer, ethereum.DefaultWaitForTransactionMiningContext))
-	if err != nil {
-		return err
-	}
-
-	err = queue.InstallQueuedTask(context,
-		newKeyRegistrationConfirmationTask(ethereum.DefaultWaitForTransactionMiningContext, registryContract, config.Config()))
+		newKeyRegistrationConfirmationTask(ethereum.DefaultWaitForTransactionMiningContext, registryContract, cfg))
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func getIdentityFactoryContract() (identityFactoryContract *EthereumIdentityFactoryContract, err error) {
+func getIdentityFactoryContract(factoryAddress common.Address) (identityFactoryContract *EthereumIdentityFactoryContract, err error) {
 	client := ethereum.GetClient()
-	return NewEthereumIdentityFactoryContract(config.Config().GetContractAddress("identityFactory"), client.GetEthClient())
+	return NewEthereumIdentityFactoryContract(factoryAddress, client.GetEthClient())
 }
 
-func getIdentityRegistryContract() (identityRegistryContract *EthereumIdentityRegistryContract, err error) {
+func getIdentityRegistryContract(registryAddress common.Address) (identityRegistryContract *EthereumIdentityRegistryContract, err error) {
 	client := ethereum.GetClient()
-	return NewEthereumIdentityRegistryContract(config.Config().GetContractAddress("identityRegistry"), client.GetEthClient())
+	return NewEthereumIdentityRegistryContract(registryAddress, client.GetEthClient())
 }

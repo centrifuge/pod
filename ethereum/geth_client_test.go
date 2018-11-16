@@ -22,14 +22,18 @@ import (
 	"github.com/stretchr/testify/mock"
 	)
 
+var ctx = map[string]interface{}{}
+var cfg *config.Configuration
+
 func TestMain(m *testing.M) {
 	ibootstappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
 	}
-	bootstrap.RunTestBootstrappers(ibootstappers, nil)
-	config.Config().Set("ethereum.txPoolAccessEnabled", false)
-	config.Config().Set("ethereum.intervalRetry", time.Millisecond*100)
+	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
+	cfg = ctx[bootstrap.BootstrappedConfig].(*config.Configuration)
+	cfg.Set("ethereum.txPoolAccessEnabled", false)
+	cfg.Set("ethereum.intervalRetry", time.Millisecond*100)
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)
@@ -61,7 +65,7 @@ func TestInitTransactionWithRetries(t *testing.T) {
 		accounts: make(map[string]*bind.TransactOpts),
 		accMu:    sync.Mutex{},
 		txMu:     sync.Mutex{},
-		config:   config.Config(),
+		config:   cfg,
 	}
 
 	SetClient(gc)
@@ -76,7 +80,7 @@ func TestInitTransactionWithRetries(t *testing.T) {
 	tx, err = gc.SubmitTransactionWithRetries(mockRequest.RegisterTransaction, &bind.TransactOpts{}, "otherError", "var2")
 	assert.EqualError(t, err, "Some other error", "Should error out")
 
-	mockRetries := testingutils.MockConfigOption("ethereum.maxRetries", 10)
+	mockRetries := testingutils.MockConfigOption(cfg, "ethereum.maxRetries", 10)
 	defer mockRetries()
 
 	mockRequest.count = 0

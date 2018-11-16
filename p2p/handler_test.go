@@ -8,15 +8,18 @@ import (
 	"strconv"
 	"testing"
 
+	"os"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/context/testlogging"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/notification"
+	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/testingutils/coredocument"
 	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/golang/protobuf/ptypes/any"
@@ -25,24 +28,37 @@ import (
 )
 
 var (
-	handler = Handler{Notifier: &MockWebhookSender{}}
+	grpcHandler p2ppb.P2PServiceServer
+	registry    *documents.ServiceRegistry
+	coreDoc     = testingcoredocument.GenerateCoreDocument()
+	cfg         *config.Configuration
+	testClient  *p2pServer
 )
 
-// MockWebhookSender implements notification.Sender
-type MockWebhookSender struct{}
-
-func (wh *MockWebhookSender) Send(notification *notificationpb.NotificationMessage) (status notification.Status, err error) {
-	return
+func TestMain(m *testing.M) {
+	ibootstappers := []bootstrap.TestBootstrapper{
+		&testlogging.TestLoggingBootstrapper{},
+		&config.Bootstrapper{},
+		&storage.Bootstrapper{},
+		documents.Bootstrapper{},
+	}
+	ctx := make(map[string]interface{})
+	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
+	cfg = ctx[bootstrap.BootstrappedConfig].(*config.Configuration)
+	registry = ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
+	grpcHandler = GRPCHandler(registry)
+	testClient = &p2pServer{config: cfg}
+	result := m.Run()
+	bootstrap.RunTestTeardown(ibootstappers)
+	os.Exit(result)
 }
-
-var coreDoc = testingcoredocument.GenerateCoreDocument()
 
 func TestHandler_RequestDocumentSignature_nilDocument(t *testing.T) {
 	req := &p2ppb.SignatureRequest{Header: &p2ppb.CentrifugeHeader{
 		CentNodeVersion: version.GetVersion().String(), NetworkIdentifier: config.Config().GetNetworkID(),
 	}}
 
-	resp, err := handler.RequestDocumentSignature(context.Background(), req)
+	resp, err := grpcHandler.RequestDocumentSignature(context.Background(), req)
 	assert.Error(t, err, "must return error")
 	assert.Nil(t, resp, "must be nil")
 }
@@ -52,7 +68,7 @@ func TestHandler_RequestDocumentSignature_version_fail(t *testing.T) {
 		CentNodeVersion: "1000.0.1-invalid", NetworkIdentifier: config.Config().GetNetworkID(),
 	}}
 
-	resp, err := handler.RequestDocumentSignature(context.Background(), req)
+	resp, err := grpcHandler.RequestDocumentSignature(context.Background(), req)
 	assert.Error(t, err, "must return error")
 	assert.Contains(t, err.Error(), "Incompatible version")
 	assert.Nil(t, resp, "must be nil")
@@ -65,7 +81,7 @@ func TestSendAnchoredDocument_IncompatibleRequest(t *testing.T) {
 		NetworkIdentifier: config.Config().GetNetworkID(),
 	}
 	req := p2ppb.AnchorDocumentRequest{Document: coreDoc, Header: header}
-	res, err := handler.SendAnchoredDocument(context.Background(), &req)
+	res, err := grpcHandler.SendAnchoredDocument(context.Background(), &req)
 	assert.Error(t, err)
 	p2perr, _ := centerrors.FromError(err)
 	assert.Contains(t, p2perr.Message(), strconv.Itoa(int(code.VersionMismatch)))
@@ -74,7 +90,7 @@ func TestSendAnchoredDocument_IncompatibleRequest(t *testing.T) {
 	// Test invalid network
 	header.NetworkIdentifier = config.Config().GetNetworkID() + 1
 	header.CentNodeVersion = version.GetVersion().String()
-	res, err = handler.SendAnchoredDocument(context.Background(), &req)
+	res, err = grpcHandler.SendAnchoredDocument(context.Background(), &req)
 	assert.Error(t, err)
 	p2perr, _ = centerrors.FromError(err)
 	assert.Contains(t, p2perr.Message(), strconv.Itoa(int(code.NetworkMismatch)))
@@ -87,7 +103,7 @@ func TestSendAnchoredDocument_NilDocument(t *testing.T) {
 		NetworkIdentifier: config.Config().GetNetworkID(),
 	}
 	req := p2ppb.AnchorDocumentRequest{Header: header}
-	res, err := handler.SendAnchoredDocument(context.Background(), &req)
+	res, err := grpcHandler.SendAnchoredDocument(context.Background(), &req)
 
 	assert.Error(t, err)
 	assert.Nil(t, res)
@@ -102,7 +118,7 @@ func TestHandler_SendAnchoredDocument_getServiceAndModel_fail(t *testing.T) {
 		Document: coredocument.New(),
 	}
 
-	res, err := handler.SendAnchoredDocument(context.Background(), req)
+	res, err := grpcHandler.SendAnchoredDocument(context.Background(), req)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to get type of the document")
 	assert.Nil(t, res)
@@ -169,12 +185,12 @@ func (s mockService) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (do
 
 func Test_getServiceAndModel(t *testing.T) {
 	// document nil fail
-	s, m, err := getServiceAndModel(nil)
+	s, m, err := getServiceAndModel(registry, nil)
 	assert.Error(t, err)
 
 	// docType fetch fail
 	cd := coredocument.New()
-	s, m, err = getServiceAndModel(cd)
+	s, m, err = getServiceAndModel(registry, cd)
 	assert.Error(t, err)
 	assert.Nil(t, s)
 	assert.Nil(t, m)
@@ -185,19 +201,18 @@ func Test_getServiceAndModel(t *testing.T) {
 		TypeUrl: "model_type_fail",
 		Value:   []byte("some data"),
 	}
-	s, m, err = getServiceAndModel(cd)
+	s, m, err = getServiceAndModel(registry, cd)
 	assert.Error(t, err)
 	assert.Nil(t, s)
 	assert.Nil(t, m)
 	assert.Contains(t, err.Error(), "failed to locate the service")
 
 	// derive fails
-	reg := documents.GetRegistryInstance()
 	srv := mockService{}
 	srv.On("DeriveFromCoreDocument", cd).Return(nil, fmt.Errorf("error")).Once()
-	err = reg.Register(cd.EmbeddedData.TypeUrl, srv)
+	err = registry.Register(cd.EmbeddedData.TypeUrl, srv)
 	assert.Nil(t, err)
-	s, m, err = getServiceAndModel(cd)
+	s, m, err = getServiceAndModel(registry, cd)
 	srv.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Nil(t, s)
@@ -209,9 +224,9 @@ func Test_getServiceAndModel(t *testing.T) {
 	cd.EmbeddedData.TypeUrl = "get_model_type"
 	srv = mockService{}
 	srv.On("DeriveFromCoreDocument", cd).Return(model, nil).Once()
-	err = reg.Register(cd.EmbeddedData.TypeUrl, srv)
+	err = registry.Register(cd.EmbeddedData.TypeUrl, srv)
 	assert.Nil(t, err)
-	s, m, err = getServiceAndModel(cd)
+	s, m, err = getServiceAndModel(registry, cd)
 	srv.AssertExpectations(t)
 	assert.Nil(t, err)
 	assert.NotNil(t, s)

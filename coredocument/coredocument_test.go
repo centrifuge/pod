@@ -6,8 +6,12 @@ import (
 	"crypto/sha256"
 	"testing"
 
+	"flag"
+	"os"
+
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/coredocument"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -24,6 +28,26 @@ var (
 	id4 = utils.RandomSlice(32)
 	id5 = utils.RandomSlice(32)
 )
+
+var ctx = map[string]interface{}{}
+var cfg *config.Configuration
+
+func TestMain(m *testing.M) {
+	ibootstappers := []bootstrap.TestBootstrapper{
+		&config.Bootstrapper{},
+	}
+	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
+	cfg = ctx[bootstrap.BootstrappedConfig].(*config.Configuration)
+	dp = DefaultProcessor(nil, nil, nil, cfg).(defaultProcessor)
+	flag.Parse()
+	cfg.Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
+	cfg.Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
+	cfg.Set("keys.ethauth.publicKey", "../build/resources/ethauth.pub.pem")
+	cfg.Set("keys.ethauth.privateKey", "../build/resources/ethauth.key.pem")
+	result := m.Run()
+	bootstrap.RunTestTeardown(ibootstappers)
+	os.Exit(result)
+}
 
 func TestGetSigningProofHashes(t *testing.T) {
 	docAny := &any.Any{
@@ -232,11 +256,11 @@ func TestGetExternalCollaborators_ErrorConfig(t *testing.T) {
 	c := []string{hexutil.Encode(c1), hexutil.Encode(c2)}
 	cd, err := NewWithCollaborators(c)
 	assert.Equal(t, [][]byte{c1, c2}, cd.Collaborators)
-	currentKeyPath, _ := config.Config().GetSigningKeyPair()
+	currentKeyPath, _ := cfg.GetSigningKeyPair()
 	//Wrong path
-	config.Config().Set("keys.signing.publicKey", "./build/resources/signingKey.pub.pem")
+	cfg.Set("keys.signing.publicKey", "./build/resources/signingKey.pub.pem")
 	collaborators, err := GetExternalCollaborators(cd)
 	assert.NotNil(t, err)
 	assert.Nil(t, collaborators)
-	config.Config().Set("keys.signing.publicKey", currentKeyPath)
+	cfg.Set("keys.signing.publicKey", currentKeyPath)
 }

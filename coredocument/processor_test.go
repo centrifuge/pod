@@ -10,7 +10,6 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -57,8 +56,8 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 	model = mockModel{}
 
 	// failed to get id
-	pub, _ := config.Config().GetSigningKeyPair()
-	config.Config().Set("keys.signing.publicKey", "wrong path")
+	pub, _ := cfg.GetSigningKeyPair()
+	cfg.Set("keys.signing.publicKey", "wrong path")
 	cd = New()
 	cd.DataRoot = utils.RandomSlice(32)
 	cd.EmbeddedData = &any.Any{
@@ -72,7 +71,7 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 	model.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to get keys for signing")
-	config.Config().Set("keys.signing.publicKey", pub)
+	cfg.Set("keys.signing.publicKey", pub)
 
 	// failed unpack
 	model = mockModel{}
@@ -144,7 +143,7 @@ func TestDefaultProcessor_RequestSignatures(t *testing.T) {
 	model.AssertExpectations(t)
 	c := p2pClient{}
 	c.On("GetSignaturesForDocument", ctx, cd).Return(fmt.Errorf("error")).Once()
-	dp.P2PClient = c
+	dp.p2pClient = c
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Times(4)
 	err = dp.RequestSignatures(ctx, model)
@@ -156,7 +155,7 @@ func TestDefaultProcessor_RequestSignatures(t *testing.T) {
 	// unpack fail
 	c = p2pClient{}
 	c.On("GetSignaturesForDocument", ctx, cd).Return(nil).Once()
-	dp.P2PClient = c
+	dp.p2pClient = c
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Times(4)
 	model.On("UnpackCoreDocument", cd).Return(fmt.Errorf("error")).Once()
@@ -169,7 +168,7 @@ func TestDefaultProcessor_RequestSignatures(t *testing.T) {
 	// success
 	c = p2pClient{}
 	c.On("GetSignaturesForDocument", ctx, cd).Return(nil).Once()
-	dp.P2PClient = c
+	dp.p2pClient = c
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Times(4)
 	model.On("UnpackCoreDocument", cd).Return(nil).Once()
@@ -313,15 +312,15 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	srv.On("LookupIdentityForID", c.ID).Return(id, nil).Once()
 	id.On("FetchKey", pubkey[:]).Return(idkey, nil).Once()
 	identity.IDService = srv
-	oldID := config.Config().GetString("identityId")
-	config.Config().Set("identityId", "wrong id")
+	oldID := cfg.GetString("identityId")
+	cfg.Set("identityId", "wrong id")
 	err = dp.AnchorDocument(model)
 	model.AssertExpectations(t)
 	srv.AssertExpectations(t)
 	id.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to get self cent ID")
-	config.Config().Set("identityId", "0x0102030405060708")
+	cfg.Set("identityId", "0x0102030405060708")
 
 	// wrong ID
 	model = mockModel{}
@@ -335,11 +334,11 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	id.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "centID invalid")
-	config.Config().Set("identityId", oldID)
+	cfg.Set("identityId", oldID)
 
 	// missing eth keys
-	oldPth := config.Config().Get("keys.ethauth.publicKey")
-	config.Config().Set("keys.ethauth.publicKey", "wrong path")
+	oldPth := cfg.Get("keys.ethauth.publicKey")
+	cfg.Set("keys.ethauth.publicKey", "wrong path")
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Times(5)
 	srv.On("LookupIdentityForID", c.ID).Return(id, nil).Once()
@@ -351,7 +350,7 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	id.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to get eth keys")
-	config.Config().Set("keys.ethauth.publicKey", oldPth)
+	cfg.Set("keys.ethauth.publicKey", oldPth)
 
 	// failed anchor commit
 	model = mockModel{}
@@ -361,7 +360,7 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	identity.IDService = srv
 	repo := mockRepo{}
 	repo.On("CommitAnchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("error")).Once()
-	dp.AnchorRepository = repo
+	dp.anchorRepository = repo
 	err = dp.AnchorDocument(model)
 	model.AssertExpectations(t)
 	srv.AssertExpectations(t)
@@ -380,7 +379,7 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	ch := make(chan *anchors.WatchCommit, 1)
 	ch <- new(anchors.WatchCommit)
 	repo.On("CommitAnchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(ch, nil).Once()
-	dp.AnchorRepository = repo
+	dp.anchorRepository = repo
 	err = dp.AnchorDocument(model)
 	model.AssertExpectations(t)
 	srv.AssertExpectations(t)
@@ -442,7 +441,7 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	assert.Nil(t, err)
 	repo := mockRepo{}
 	repo.On("GetDocumentRootOf", mock.Anything).Return(docRoot, nil).Once()
-	dp.AnchorRepository = repo
+	dp.anchorRepository = repo
 	err = dp.SendDocument(ctx, model)
 	model.AssertExpectations(t)
 	srv.AssertExpectations(t)

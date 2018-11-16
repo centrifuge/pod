@@ -6,6 +6,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/ethereum"
+
+	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/centrifuge/gocelery"
 
 	"github.com/centrifuge/go-centrifuge/centerrors"
@@ -17,7 +21,8 @@ import (
 const (
 	mintingConfirmationTaskName string = "MintingConfirmationTaskName"
 	tokenIDParam                string = "TokenIDParam"
-	blockHeight                 string = "BlockHeight"
+	blockHeightParam            string = "BlockHeightParam"
+	registryAddressParam        string = "RegistryAddressParam"
 )
 
 // paymentObligationMintedFilterer filters the approved NFTs
@@ -29,20 +34,21 @@ type paymentObligationMintedFilterer interface {
 
 // mintingConfirmationTask confirms the minting of a payment obligation NFT
 type mintingConfirmationTask struct {
-	TokenID                         string
-	BlockHeight                     uint64
-	EthContextInitializer           func() (ctx context.Context, cancelFunc context.CancelFunc)
-	EthContext                      context.Context
-	PaymentObligationMintedFilterer paymentObligationMintedFilterer
+	//task parameter
+	TokenID         string
+	BlockHeight     uint64
+	RegistryAddress string
+
+	//state
+	EthContextInitializer func() (ctx context.Context, cancelFunc context.CancelFunc)
 }
 
 func newMintingConfirmationTask(
-	nftApprovedFilterer paymentObligationMintedFilterer,
 	ethContextInitializer func() (ctx context.Context, cancelFunc context.CancelFunc),
 ) *mintingConfirmationTask {
 	return &mintingConfirmationTask{
-		PaymentObligationMintedFilterer: nftApprovedFilterer,
-		EthContextInitializer:           ethContextInitializer,
+
+		EthContextInitializer: ethContextInitializer,
 	}
 }
 
@@ -62,14 +68,14 @@ func (nftc *mintingConfirmationTask) Copy() (gocelery.CeleryTask, error) {
 	return &mintingConfirmationTask{
 		nftc.TokenID,
 		nftc.BlockHeight,
+		nftc.RegistryAddress,
 		nftc.EthContextInitializer,
-		nftc.EthContext,
-		nftc.PaymentObligationMintedFilterer,
 	}, nil
 }
 
 // ParseKwargs - define a method to parse CentID
 func (nftc *mintingConfirmationTask) ParseKwargs(kwargs map[string]interface{}) (err error) {
+	// parse TokenID
 	tokenID, ok := kwargs[tokenIDParam]
 	if !ok {
 		return fmt.Errorf("undefined kwarg " + tokenIDParam)
@@ -79,15 +85,28 @@ func (nftc *mintingConfirmationTask) ParseKwargs(kwargs map[string]interface{}) 
 		return fmt.Errorf("malformed kwarg [%s]", tokenIDParam)
 	}
 
+	// parse BlockHeight
 	nftc.BlockHeight, err = parseBlockHeight(kwargs)
 	if err != nil {
 		return err
 	}
+
+	//parse RegistryAddress
+	registryAddress, ok := kwargs[registryAddressParam]
+	if !ok {
+		return fmt.Errorf("undefined kwarg " + registryAddressParam)
+	}
+
+	nftc.RegistryAddress, ok = registryAddress.(string)
+	if !ok {
+		return fmt.Errorf("malformed kwarg [%s]", registryAddressParam)
+	}
+
 	return nil
 }
 
 func parseBlockHeight(valMap map[string]interface{}) (uint64, error) {
-	if bhi, ok := valMap[blockHeight]; ok {
+	if bhi, ok := valMap[blockHeightParam]; ok {
 		bhf, ok := bhi.(float64)
 		if ok {
 			return uint64(bhf), nil
@@ -99,17 +118,25 @@ func parseBlockHeight(valMap map[string]interface{}) (uint64, error) {
 // RunTask calls listens to events from geth related to MintingConfirmationTask#TokenID and records result.
 func (nftc *mintingConfirmationTask) RunTask() (interface{}, error) {
 	log.Infof("Waiting for confirmation for the minting of token [%x]", nftc.TokenID)
-	if nftc.EthContext == nil {
-		nftc.EthContext, _ = nftc.EthContextInitializer()
-	}
+
+	ethContext, _ := nftc.EthContextInitializer()
 
 	fOpts := &bind.FilterOpts{
-		Context: nftc.EthContext,
+		Context: ethContext,
 		Start:   nftc.BlockHeight,
 	}
 
+	var filter paymentObligationMintedFilterer
+	var err error
+
+	filter, err = bindContract(common.HexToAddress(nftc.RegistryAddress), ethereum.GetClient())
+
+	if err != nil {
+		return nil, err
+	}
+
 	for {
-		iter, err := nftc.PaymentObligationMintedFilterer.FilterPaymentObligationMinted(
+		iter, err := filter.FilterPaymentObligationMinted(
 			fOpts,
 		)
 		if err != nil {

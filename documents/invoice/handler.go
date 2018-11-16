@@ -22,13 +22,14 @@ type grpcHandler struct {
 }
 
 // GRPCHandler returns an implementation of invoice.DocumentServiceServer
-func GRPCHandler() (clientinvoicepb.DocumentServiceServer, error) {
-	invoiceService, err := documents.GetRegistryInstance().LocateService(documenttypes.InvoiceDataTypeUrl)
+func GRPCHandler(registry *documents.ServiceRegistry) (clientinvoicepb.DocumentServiceServer, error) {
+	srv, err := registry.LocateService(documenttypes.InvoiceDataTypeUrl)
 	if err != nil {
 		return nil, err
 	}
+
 	return &grpcHandler{
-		service: invoiceService.(Service),
+		service: srv.(Service),
 	}, nil
 }
 
