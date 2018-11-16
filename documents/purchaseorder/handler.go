@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
-
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/documents"

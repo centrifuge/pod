@@ -11,7 +11,7 @@ type ServiceRegistry struct {
 	mutex    sync.RWMutex
 }
 
-// NewServiceRegistry
+// NewServiceRegistry returns a new instance of service registry
 func NewServiceRegistry() *ServiceRegistry {
 	return &ServiceRegistry{
 		services: make(map[string]Service),
