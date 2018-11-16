@@ -77,7 +77,7 @@ func NewEthereumPaymentObligation(registry *documents.ServiceRegistry, identityS
 	}
 }
 
-func (s *ethereumPaymentObligation) prepareMintRequest(documentID []byte, proofFields []string) (*MintRequest, error) {
+func (s *ethereumPaymentObligation) prepareMintRequest(documentID []byte, depositAddress string, proofFields []string) (*MintRequest, error) {
 	docService, err := s.registry.FindService(documentID)
 	if err != nil {
 		return nil, err
@@ -98,10 +98,7 @@ func (s *ethereumPaymentObligation) prepareMintRequest(documentID []byte, proofF
 		return nil, err
 	}
 
-	toAddress, err := s.getIdentityAddress()
-	if err != nil {
-		return nil, nil
-	}
+	toAddress := common.HexToAddress(depositAddress)
 
 	anchorID, err := anchors.ToAnchorID(corDoc.CurrentVersion)
 	if err != nil {
@@ -130,7 +127,7 @@ func (s *ethereumPaymentObligation) prepareMintRequest(documentID []byte, proofF
 // MintNFT mints an NFT
 func (s *ethereumPaymentObligation) MintNFT(documentID []byte, registryAddress, depositAddress string, proofFields []string) (<-chan *WatchTokenMinted, error) {
 
-	requestData, err := s.prepareMintRequest(documentID, proofFields)
+	requestData, err := s.prepareMintRequest(documentID, depositAddress, proofFields)
 
 	opts, err := s.ethClient.GetTxOpts(s.config.GetEthereumDefaultAccountName())
 	if err != nil {
