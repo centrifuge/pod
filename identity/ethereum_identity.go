@@ -175,7 +175,7 @@ func (id *ethereumIdentity) findContract() (exists bool, err error) {
 		return false, errors.New("Identity not found by address provided")
 	}
 
-	idContract, err := id.contractProvider(idAddress, client.GetEthClient()) // TODO NewEthereumIdentityContract(idAddress, client.GetEthClient())
+	idContract, err := id.contractProvider(idAddress, client.GetEthClient())
 	if err == bind.ErrNoCode {
 		return false, err
 	}

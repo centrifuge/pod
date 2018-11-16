@@ -14,6 +14,8 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/centrifuge/go-centrifuge/ethereum"
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 )
 
 type mockAnchorRepo struct {
@@ -77,7 +79,11 @@ func TestGetDocumentRootOf(t *testing.T) {
 	anchorID, err := ToAnchorID(utils.RandomSlice(32))
 	assert.Nil(t, err)
 
-	ethRepo := NewEthereumAnchorRepository(config.Config(), repo)
+	ethClient := &testingcommons.MockEthClient{}
+	ethClient.On("GetGethCallOpts").Return(nil)
+	ethRepo := NewEthereumAnchorRepository(config.Config(), repo, func() ethereum.Client {
+		return ethClient
+	})
 	docRoot := utils.RandomByte32()
 	repo.On("Commits", mock.Anything, mock.Anything).Return(docRoot, nil)
 	gotRoot, err := ethRepo.GetDocumentRootOf(anchorID)

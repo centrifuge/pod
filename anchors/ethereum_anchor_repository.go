@@ -39,16 +39,17 @@ type WatchAnchorCommitted interface {
 type EthereumAnchorRepository struct {
 	config                   Config
 	anchorRepositoryContract AnchorRepositoryContract
+	gethClientFinder func() ethereum.Client
 }
 
-func NewEthereumAnchorRepository(config Config, anchorRepositoryContract AnchorRepositoryContract) *EthereumAnchorRepository {
-	return &EthereumAnchorRepository{config: config, anchorRepositoryContract: anchorRepositoryContract}
+func NewEthereumAnchorRepository(config Config, anchorRepositoryContract AnchorRepositoryContract, gethClientFinder func() ethereum.Client) *EthereumAnchorRepository {
+	return &EthereumAnchorRepository{config: config, anchorRepositoryContract: anchorRepositoryContract, gethClientFinder: gethClientFinder}
 }
 
 // Commits takes an anchorID and returns the corresponding documentRoot from the chain
 func (ethRepository *EthereumAnchorRepository) GetDocumentRootOf(anchorID AnchorID) (docRoot DocumentRoot, err error) {
 	// Ignoring cancelFunc as code will block until response or timeout is triggered
-	opts, _ := ethereum.GetClient().GetGethCallOpts()
+	opts, _ := ethRepository.gethClientFinder().GetGethCallOpts()
 	return ethRepository.anchorRepositoryContract.Commits(opts, anchorID.BigInt())
 }
 
