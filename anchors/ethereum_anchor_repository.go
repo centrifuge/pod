@@ -39,7 +39,7 @@ type WatchAnchorCommitted interface {
 type EthereumAnchorRepository struct {
 	config                   Config
 	anchorRepositoryContract AnchorRepositoryContract
-	gethClientFinder func() ethereum.Client
+	gethClientFinder         func() ethereum.Client
 }
 
 func NewEthereumAnchorRepository(config Config, anchorRepositoryContract AnchorRepositoryContract, gethClientFinder func() ethereum.Client) *EthereumAnchorRepository {
