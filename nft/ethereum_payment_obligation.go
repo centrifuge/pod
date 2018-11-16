@@ -73,8 +73,8 @@ func NewEthereumPaymentObligation(identityService identity.Service, ethClient et
 		bindContract:      bindContract}
 }
 
-func (s *ethereumPaymentObligation) prepareMintRequest(documentID []byte, docType string, proofFields []string) (*MintRequest, error) {
-	docService, err := getDocumentService(docType)
+func (s *ethereumPaymentObligation) prepareMintRequest(documentID []byte, proofFields []string) (*MintRequest, error) {
+	docService, err := getDocumentService(documentID)
 	if err != nil {
 		return nil, err
 	}
@@ -124,9 +124,9 @@ func (s *ethereumPaymentObligation) prepareMintRequest(documentID []byte, docTyp
 }
 
 // MintNFT mints an NFT
-func (s *ethereumPaymentObligation) MintNFT(documentID []byte, docType, registryAddress, depositAddress string, proofFields []string) (<-chan *WatchTokenMinted, error) {
+func (s *ethereumPaymentObligation) MintNFT(documentID []byte, registryAddress, depositAddress string, proofFields []string) (<-chan *WatchTokenMinted, error) {
 
-	requestData, err := s.prepareMintRequest(documentID, docType, proofFields)
+	requestData, err := s.prepareMintRequest(documentID, proofFields)
 
 	opts, err := s.ethClient.GetTxOpts(s.config.GetEthereumDefaultAccountName())
 	if err != nil {
@@ -315,8 +315,8 @@ func convertProofProperty(sortedHashes [][]byte) ([][32]byte, error) {
 	return property, nil
 }
 
-func getDocumentService(documentType string) (documents.Service, error) {
-	docService, err := documents.GetRegistryInstance().LocateService(documentType)
+func getDocumentService(documentID []byte) (documents.Service, error) {
+	docService, err := documents.GetRegistryInstance().FindService(documentID)
 	if err != nil {
 		return nil, err
 	}
