@@ -1,19 +1,20 @@
 package identity
 
 import (
-	"github.com/stretchr/testify/assert"
-	"testing"
-	"github.com/centrifuge/go-centrifuge/utils"
-		"math/big"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/stretchr/testify/mock"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/centrifuge/go-centrifuge/ethereum"
-	"github.com/ethereum/go-ethereum/ethclient"
-	"net/url"
 	"context"
+	"math/big"
+	"net/url"
+	"testing"
+
+	"github.com/centrifuge/go-centrifuge/ethereum"
+	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/go-errors/errors"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 type MockConfig struct{}
@@ -22,7 +23,7 @@ func (MockConfig) GetEthereumDefaultAccountName() string {
 	return "mockacc"
 }
 
-type MockIDFactory struct{
+type MockIDFactory struct {
 	mock.Mock
 }
 
@@ -32,7 +33,7 @@ func (f MockIDFactory) CreateIdentity(opts *bind.TransactOpts, _centrifugeId *bi
 	return id, args.Error(1)
 }
 
-type MockIDRegistry struct{
+type MockIDRegistry struct {
 	mock.Mock
 }
 
@@ -42,7 +43,7 @@ func (r MockIDRegistry) GetIdentityByCentrifugeId(opts *bind.CallOpts, bigInt *b
 	return id, args.Error(1)
 }
 
-type MockGethClient struct{
+type MockGethClient struct {
 	mock.Mock
 }
 
@@ -71,7 +72,7 @@ func (gc MockGethClient) GetGethCallOpts() (*bind.CallOpts, context.CancelFunc) 
 	return args.Get(0).(*bind.CallOpts), args.Get(1).(func())
 }
 
-type MockIDContract struct{
+type MockIDContract struct {
 	mock.Mock
 }
 
@@ -164,218 +165,289 @@ func TestGetClientP2PURL_fail_p2pkey_error(t *testing.T) {
 	assert.Contains(t, err.Error(), "p2p key error")
 }
 
-//
-//func TestGetClientsP2PURLs_fail(t *testing.T) {
-//	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
-//	centIDs := []CentID{centID}
-//	srv := &mockIDService{}
-//	id := &mockID{}
-//	id.On("CurrentP2PKey").Return("", fmt.Errorf("error identity")).Once()
-//	srv.On("LookupIdentityForID", centIDs[0]).Return(id, nil).Once()
-//	IDService = srv
-//	p2pURLs, err := GetClientsP2PURLs(centIDs)
-//	srv.AssertExpectations(t)
-//	id.AssertExpectations(t)
-//	assert.Empty(t, p2pURLs, "p2p is not empty")
-//	assert.Errorf(t, err, "error should not be nil")
-//	assert.Contains(t, err.Error(), "error identity")
-//}
-//
-//func TestGetClientsP2PURLs_success(t *testing.T) {
-//	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
-//	centIDs := []CentID{centID}
-//	id := &mockID{}
-//	id.On("CurrentP2PKey").Return("target", nil).Once()
-//	srv := &mockIDService{}
-//	srv.On("LookupIdentityForID", centIDs[0]).Return(id, nil).Once()
-//	IDService = srv
-//	p2pURLs, err := GetClientsP2PURLs(centIDs)
-//	srv.AssertExpectations(t)
-//	id.AssertExpectations(t)
-//	assert.Nil(t, err, "should be nil")
-//	assert.NotEmpty(t, p2pURLs, "should not be empty")
-//	assert.Equal(t, p2pURLs[0], "/ipfs/target")
-//}
-//
-//func TestGetIdentityKey_fail_lookup(t *testing.T) {
-//	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
-//	srv := &mockIDService{}
-//	srv.On("LookupIdentityForID", centID).Return(nil, fmt.Errorf("lookup failed")).Once()
-//	IDService = srv
-//	id, err := GetIdentityKey(centID, utils.RandomSlice(32))
-//	srv.AssertExpectations(t)
-//	assert.Error(t, err, "must be not nil")
-//	assert.Contains(t, err.Error(), "lookup failed")
-//	assert.Nil(t, id, "must be nil")
-//}
-//
-//func TestGetIdentityKey_fail_FetchKey(t *testing.T) {
-//	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
-//	pubKey := utils.RandomSlice(32)
-//	id := &mockID{}
-//	srv := &mockIDService{}
-//	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
-//	id.On("FetchKey", pubKey).Return(nil, fmt.Errorf("fetch key failed")).Once()
-//	IDService = srv
-//	key, err := GetIdentityKey(centID, pubKey)
-//	srv.AssertExpectations(t)
-//	id.AssertExpectations(t)
-//	assert.Error(t, err, "must be not nil")
-//	assert.Contains(t, err.Error(), "fetch key failed")
-//	assert.Nil(t, key, "must be nil")
-//}
-//
-//func TestGetIdentityKey_fail_empty(t *testing.T) {
-//	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
-//	pubKey := utils.RandomSlice(32)
-//	var emptyKey [32]byte
-//	idkey := &EthereumIdentityKey{Key: emptyKey}
-//	id := &mockID{}
-//	srv := &mockIDService{}
-//	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
-//	id.On("FetchKey", pubKey).Return(idkey, nil).Once()
-//	IDService = srv
-//	key, err := GetIdentityKey(centID, pubKey)
-//	srv.AssertExpectations(t)
-//	id.AssertExpectations(t)
-//	assert.Error(t, err, "must be not nil")
-//	assert.Contains(t, err.Error(), "key not found for identity")
-//	assert.Nil(t, key, "must be nil")
-//}
-//
-//func TestGetIdentityKey_Success(t *testing.T) {
-//	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
-//	pubKey := utils.RandomSlice(32)
-//	pkey := utils.RandomByte32()
-//	idkey := &EthereumIdentityKey{Key: pkey}
-//	id := &mockID{}
-//	srv := &mockIDService{}
-//	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
-//	id.On("FetchKey", pubKey).Return(idkey, nil).Once()
-//	IDService = srv
-//	key, err := GetIdentityKey(centID, pubKey)
-//	srv.AssertExpectations(t)
-//	id.AssertExpectations(t)
-//	assert.Nil(t, err, "error must be nil")
-//	assert.NotNil(t, key, "must not be nil")
-//	assert.Equal(t, key, idkey)
-//}
-//
-//func TestValidateKey_fail_getId(t *testing.T) {
-//	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
-//	pubKey := utils.RandomSlice(32)
-//	srv := &mockIDService{}
-//	srv.On("LookupIdentityForID", centID).Return(nil, fmt.Errorf("failed at GetIdentity")).Once()
-//	IDService = srv
-//	err := ValidateKey(centID, pubKey, KeyPurposeSigning)
-//	srv.AssertExpectations(t)
-//	assert.Error(t, err, "must be not nil")
-//	assert.Contains(t, err.Error(), "failed at GetIdentity")
-//}
-//
-//func TestValidateKey_fail_mismatch_key(t *testing.T) {
-//	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
-//	pubKey := utils.RandomSlice(32)
-//	idkey := &EthereumIdentityKey{Key: utils.RandomByte32()}
-//	id := &mockID{}
-//	srv := &mockIDService{}
-//	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
-//	id.On("FetchKey", pubKey).Return(idkey, nil).Once()
-//	IDService = srv
-//	err := ValidateKey(centID, pubKey, KeyPurposeSigning)
-//	srv.AssertExpectations(t)
-//	id.AssertExpectations(t)
-//	assert.Error(t, err, "must be not nil")
-//	assert.Contains(t, err.Error(), " Key doesn't match")
-//}
-//
-//func TestValidateKey_fail_missing_purpose(t *testing.T) {
-//	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
-//	pubKey := utils.RandomByte32()
-//	idkey := &EthereumIdentityKey{Key: pubKey}
-//	id := &mockID{}
-//	srv := &mockIDService{}
-//	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
-//	id.On("FetchKey", pubKey[:]).Return(idkey, nil).Once()
-//	IDService = srv
-//	err := ValidateKey(centID, pubKey[:], KeyPurposeSigning)
-//	srv.AssertExpectations(t)
-//	id.AssertExpectations(t)
-//	assert.Error(t, err, "must be not nil")
-//	assert.Contains(t, err.Error(), "Key doesn't have purpose")
-//}
-//
-//func TestValidateKey_fail_wrong_purpose(t *testing.T) {
-//	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
-//	pubKey := utils.RandomByte32()
-//	idkey := &EthereumIdentityKey{
-//		Key:      pubKey,
-//		Purposes: []*big.Int{big.NewInt(KeyPurposeEthMsgAuth)},
-//	}
-//	id := &mockID{}
-//	srv := &mockIDService{}
-//	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
-//	id.On("FetchKey", pubKey[:]).Return(idkey, nil).Once()
-//	IDService = srv
-//	err := ValidateKey(centID, pubKey[:], KeyPurposeSigning)
-//	srv.AssertExpectations(t)
-//	id.AssertExpectations(t)
-//	assert.Error(t, err, "must be not nil")
-//	assert.Contains(t, err.Error(), "Key doesn't have purpose")
-//}
-//
-//func TestValidateKey_fail_revocation(t *testing.T) {
-//	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
-//	pubKey := utils.RandomByte32()
-//	idkey := &EthereumIdentityKey{
-//		Key:       pubKey,
-//		Purposes:  []*big.Int{big.NewInt(KeyPurposeSigning)},
-//		RevokedAt: big.NewInt(1),
-//	}
-//	id := &mockID{}
-//	srv := &mockIDService{}
-//	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
-//	id.On("FetchKey", pubKey[:]).Return(idkey, nil).Once()
-//	IDService = srv
-//	err := ValidateKey(centID, pubKey[:], KeyPurposeSigning)
-//	srv.AssertExpectations(t)
-//	id.AssertExpectations(t)
-//	assert.Error(t, err, "must be not nil")
-//	assert.Contains(t, err.Error(), "Key is currently revoked since block")
-//}
-//
-//func TestValidateKey_success(t *testing.T) {
-//	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
-//	pubKey := utils.RandomByte32()
-//	idkey := &EthereumIdentityKey{
-//		Key:       pubKey,
-//		Purposes:  []*big.Int{big.NewInt(KeyPurposeSigning)},
-//		RevokedAt: big.NewInt(0),
-//	}
-//	id := &mockID{}
-//	srv := &mockIDService{}
-//	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
-//	id.On("FetchKey", pubKey[:]).Return(idkey, nil).Once()
-//	IDService = srv
-//	err := ValidateKey(centID, pubKey[:], KeyPurposeSigning)
-//	srv.AssertExpectations(t)
-//	id.AssertExpectations(t)
-//	assert.Nil(t, err, "must be nil")
-//}
+func TestGetIdentityKey_fail_lookup(t *testing.T) {
+	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
+	pubKey := utils.RandomSlice(32)
+	c, f, r, g, i := &MockConfig{}, &MockIDFactory{}, &MockIDRegistry{}, &MockGethClient{}, &MockIDContract{}
+	g.On("GetGethCallOpts").Return(&bind.CallOpts{}, func() {})
+	r.On("GetIdentityByCentrifugeId", mock.Anything, centID.BigInt()).Return(common.BytesToAddress(utils.RandomSlice(20)), errors.New("ID lookup failed"))
+	srv := NewEthereumIdentityService(c, f, r, func() ethereum.Client {
+		return g
+	}, func(address common.Address, backend bind.ContractBackend) (contract, error) {
+		return i, nil
+	})
+	p2p, err := srv.GetIdentityKey(centID, pubKey)
+	f.AssertExpectations(t)
+	r.AssertExpectations(t)
+	g.AssertExpectations(t)
+	assert.Empty(t, p2p, "p2p is not empty")
+	assert.Errorf(t, err, "error should not be nil")
+	assert.Contains(t, err.Error(), "ID lookup failed")
+}
 
+func TestGetIdentityKey_fail_FetchKey(t *testing.T) {
+	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
+	pubKey := utils.RandomSlice(32)
+	c, f, r, g, i := &MockConfig{}, &MockIDFactory{}, &MockIDRegistry{}, &MockGethClient{}, &MockIDContract{}
+	g.On("GetGethCallOpts").Return(&bind.CallOpts{}, func() {})
+	g.On("GetEthClient").Return(&ethclient.Client{})
+	r.On("GetIdentityByCentrifugeId", mock.Anything, centID.BigInt()).Return(common.BytesToAddress(utils.RandomSlice(20)), nil)
+	i.On("GetKey", mock.Anything, mock.Anything).Return(struct {
+		Key       [32]byte
+		Purposes  []*big.Int
+		RevokedAt *big.Int
+	}{
+		[32]byte{1},
+		[]*big.Int{big.NewInt(KeyPurposeP2P)},
+		big.NewInt(1),
+	}, errors.New("p2p key error"))
+	srv := NewEthereumIdentityService(c, f, r, func() ethereum.Client {
+		return g
+	}, func(address common.Address, backend bind.ContractBackend) (contract, error) {
+		return i, nil
+	})
+	p2p, err := srv.GetIdentityKey(centID, pubKey)
+	f.AssertExpectations(t)
+	r.AssertExpectations(t)
+	g.AssertExpectations(t)
+	assert.Empty(t, p2p, "p2p is not empty")
+	assert.Errorf(t, err, "error should not be nil")
+	assert.Contains(t, err.Error(), "p2p key error")
+}
 
-//func TestValidateSignature_invalid_key(t *testing.T) {
-//	sig := &coredocumentpb.Signature{EntityId: utils.RandomSlice(CentIDLength)}
-//	srv := NewEthereumIdentityService(c, f, r, func() ethereum.Client {
-//		return g
-//	}, func(address common.Address, backend bind.ContractBackend) (contract, error) {
-//		return i, nil
-//	})
-//	centId, _ := ToCentID(sig.EntityId)
-//	srv.On("LookupIdentityForID", centId).Return(nil, fmt.Errorf("failed GetIdentity")).Once()
-//	identity.IDService = srv
-//	err := ValidateSignature(sig, key1Pub)
-//	srv.AssertExpectations(t)
-//	assert.NotNil(t, err, "must be not nil")
-//	assert.Contains(t, err.Error(), "failed GetIdentity")
-//}
+func TestGetIdentityKey_fail_empty(t *testing.T) {
+	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
+	pubKey := utils.RandomSlice(32)
+	c, f, r, g, i := &MockConfig{}, &MockIDFactory{}, &MockIDRegistry{}, &MockGethClient{}, &MockIDContract{}
+	g.On("GetGethCallOpts").Return(&bind.CallOpts{}, func() {})
+	g.On("GetEthClient").Return(&ethclient.Client{})
+	r.On("GetIdentityByCentrifugeId", mock.Anything, centID.BigInt()).Return(common.BytesToAddress(utils.RandomSlice(20)), nil)
+	i.On("GetKey", mock.Anything, mock.Anything).Return(struct {
+		Key       [32]byte
+		Purposes  []*big.Int
+		RevokedAt *big.Int
+	}{
+		[32]byte{},
+		[]*big.Int{big.NewInt(KeyPurposeP2P)},
+		big.NewInt(1),
+	}, nil)
+	srv := NewEthereumIdentityService(c, f, r, func() ethereum.Client {
+		return g
+	}, func(address common.Address, backend bind.ContractBackend) (contract, error) {
+		return i, nil
+	})
+	p2p, err := srv.GetIdentityKey(centID, pubKey)
+	f.AssertExpectations(t)
+	r.AssertExpectations(t)
+	g.AssertExpectations(t)
+	assert.Empty(t, p2p, "p2p is not empty")
+	assert.Errorf(t, err, "error should not be nil")
+	assert.Contains(t, err.Error(), "key not found for identity")
+}
+
+func TestGetIdentityKey_Success(t *testing.T) {
+	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
+	pubKey := utils.RandomSlice(32)
+	c, f, r, g, i := &MockConfig{}, &MockIDFactory{}, &MockIDRegistry{}, &MockGethClient{}, &MockIDContract{}
+	g.On("GetGethCallOpts").Return(&bind.CallOpts{}, func() {})
+	g.On("GetEthClient").Return(&ethclient.Client{})
+	r.On("GetIdentityByCentrifugeId", mock.Anything, centID.BigInt()).Return(common.BytesToAddress(utils.RandomSlice(20)), nil)
+	i.On("GetKey", mock.Anything, mock.Anything).Return(struct {
+		Key       [32]byte
+		Purposes  []*big.Int
+		RevokedAt *big.Int
+	}{
+		[32]byte{1},
+		[]*big.Int{big.NewInt(KeyPurposeP2P)},
+		big.NewInt(1),
+	}, nil)
+	srv := NewEthereumIdentityService(c, f, r, func() ethereum.Client {
+		return g
+	}, func(address common.Address, backend bind.ContractBackend) (contract, error) {
+		return i, nil
+	})
+	p2p, err := srv.GetIdentityKey(centID, pubKey)
+	f.AssertExpectations(t)
+	r.AssertExpectations(t)
+	g.AssertExpectations(t)
+	assert.NotEmpty(t, p2p, "p2p is empty")
+	assert.Nil(t, err, "error must be nil")
+}
+
+func TestValidateKey_success(t *testing.T) {
+	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
+	pubKey := utils.RandomSlice(32)
+	var key [32]byte
+	copy(key[:], pubKey)
+	c, f, r, g, i := &MockConfig{}, &MockIDFactory{}, &MockIDRegistry{}, &MockGethClient{}, &MockIDContract{}
+	g.On("GetGethCallOpts").Return(&bind.CallOpts{}, func() {})
+	g.On("GetEthClient").Return(&ethclient.Client{})
+	r.On("GetIdentityByCentrifugeId", mock.Anything, centID.BigInt()).Return(common.BytesToAddress(utils.RandomSlice(20)), nil)
+	i.On("GetKey", mock.Anything, mock.Anything).Return(struct {
+		Key       [32]byte
+		Purposes  []*big.Int
+		RevokedAt *big.Int
+	}{
+		key,
+		[]*big.Int{big.NewInt(KeyPurposeSigning)},
+		big.NewInt(0),
+	}, nil)
+	srv := NewEthereumIdentityService(c, f, r, func() ethereum.Client {
+		return g
+	}, func(address common.Address, backend bind.ContractBackend) (contract, error) {
+		return i, nil
+	})
+	err := srv.ValidateKey(centID, pubKey, KeyPurposeSigning)
+	f.AssertExpectations(t)
+	r.AssertExpectations(t)
+	g.AssertExpectations(t)
+	assert.Nil(t, err, "error must be nil")
+}
+
+func TestValidateKey_fail_getId(t *testing.T) {
+	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
+	pubKey := utils.RandomSlice(32)
+	var key [32]byte
+	copy(key[:], pubKey)
+	c, f, r, g, i := &MockConfig{}, &MockIDFactory{}, &MockIDRegistry{}, &MockGethClient{}, &MockIDContract{}
+	g.On("GetGethCallOpts").Return(&bind.CallOpts{}, func() {})
+	g.On("GetEthClient").Return(&ethclient.Client{})
+	r.On("GetIdentityByCentrifugeId", mock.Anything, centID.BigInt()).Return(common.BytesToAddress(utils.RandomSlice(20)), nil)
+	i.On("GetKey", mock.Anything, mock.Anything).Return(struct {
+		Key       [32]byte
+		Purposes  []*big.Int
+		RevokedAt *big.Int
+	}{
+		key,
+		[]*big.Int{big.NewInt(KeyPurposeSigning)},
+		big.NewInt(0),
+	}, errors.New("Key error"))
+	srv := NewEthereumIdentityService(c, f, r, func() ethereum.Client {
+		return g
+	}, func(address common.Address, backend bind.ContractBackend) (contract, error) {
+		return i, nil
+	})
+	err := srv.ValidateKey(centID, pubKey, KeyPurposeSigning)
+	f.AssertExpectations(t)
+	r.AssertExpectations(t)
+	g.AssertExpectations(t)
+	assert.Contains(t, err.Error(), "Key error")
+}
+
+func TestValidateKey_fail_mismatch_key(t *testing.T) {
+	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
+	pubKey := utils.RandomSlice(32)
+	c, f, r, g, i := &MockConfig{}, &MockIDFactory{}, &MockIDRegistry{}, &MockGethClient{}, &MockIDContract{}
+	g.On("GetGethCallOpts").Return(&bind.CallOpts{}, func() {})
+	g.On("GetEthClient").Return(&ethclient.Client{})
+	r.On("GetIdentityByCentrifugeId", mock.Anything, centID.BigInt()).Return(common.BytesToAddress(utils.RandomSlice(20)), nil)
+	i.On("GetKey", mock.Anything, mock.Anything).Return(struct {
+		Key       [32]byte
+		Purposes  []*big.Int
+		RevokedAt *big.Int
+	}{
+		[32]byte{1},
+		[]*big.Int{big.NewInt(KeyPurposeSigning)},
+		big.NewInt(0),
+	}, nil)
+	srv := NewEthereumIdentityService(c, f, r, func() ethereum.Client {
+		return g
+	}, func(address common.Address, backend bind.ContractBackend) (contract, error) {
+		return i, nil
+	})
+	err := srv.ValidateKey(centID, pubKey, KeyPurposeSigning)
+	f.AssertExpectations(t)
+	r.AssertExpectations(t)
+	g.AssertExpectations(t)
+	assert.Contains(t, err.Error(), "Key doesn't match")
+}
+
+func TestValidateKey_fail_missing_purpose(t *testing.T) {
+	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
+	pubKey := utils.RandomSlice(32)
+	var key [32]byte
+	copy(key[:], pubKey)
+	c, f, r, g, i := &MockConfig{}, &MockIDFactory{}, &MockIDRegistry{}, &MockGethClient{}, &MockIDContract{}
+	g.On("GetGethCallOpts").Return(&bind.CallOpts{}, func() {})
+	g.On("GetEthClient").Return(&ethclient.Client{})
+	r.On("GetIdentityByCentrifugeId", mock.Anything, centID.BigInt()).Return(common.BytesToAddress(utils.RandomSlice(20)), nil)
+	i.On("GetKey", mock.Anything, mock.Anything).Return(struct {
+		Key       [32]byte
+		Purposes  []*big.Int
+		RevokedAt *big.Int
+	}{
+		key,
+		nil,
+		big.NewInt(0),
+	}, nil)
+	srv := NewEthereumIdentityService(c, f, r, func() ethereum.Client {
+		return g
+	}, func(address common.Address, backend bind.ContractBackend) (contract, error) {
+		return i, nil
+	})
+	err := srv.ValidateKey(centID, pubKey, KeyPurposeSigning)
+	f.AssertExpectations(t)
+	r.AssertExpectations(t)
+	g.AssertExpectations(t)
+	assert.Contains(t, err.Error(), "Key doesn't have purpose")
+}
+
+func TestValidateKey_fail_wrong_purpose(t *testing.T) {
+	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
+	pubKey := utils.RandomSlice(32)
+	var key [32]byte
+	copy(key[:], pubKey)
+	c, f, r, g, i := &MockConfig{}, &MockIDFactory{}, &MockIDRegistry{}, &MockGethClient{}, &MockIDContract{}
+	g.On("GetGethCallOpts").Return(&bind.CallOpts{}, func() {})
+	g.On("GetEthClient").Return(&ethclient.Client{})
+	r.On("GetIdentityByCentrifugeId", mock.Anything, centID.BigInt()).Return(common.BytesToAddress(utils.RandomSlice(20)), nil)
+	i.On("GetKey", mock.Anything, mock.Anything).Return(struct {
+		Key       [32]byte
+		Purposes  []*big.Int
+		RevokedAt *big.Int
+	}{
+		key,
+		[]*big.Int{big.NewInt(KeyPurposeP2P)},
+		big.NewInt(0),
+	}, nil)
+	srv := NewEthereumIdentityService(c, f, r, func() ethereum.Client {
+		return g
+	}, func(address common.Address, backend bind.ContractBackend) (contract, error) {
+		return i, nil
+	})
+	err := srv.ValidateKey(centID, pubKey, KeyPurposeSigning)
+	f.AssertExpectations(t)
+	r.AssertExpectations(t)
+	g.AssertExpectations(t)
+	assert.Contains(t, err.Error(), "Key doesn't have purpose")
+}
+
+func TestValidateKey_fail_revocation(t *testing.T) {
+	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
+	pubKey := utils.RandomSlice(32)
+	var key [32]byte
+	copy(key[:], pubKey)
+	c, f, r, g, i := &MockConfig{}, &MockIDFactory{}, &MockIDRegistry{}, &MockGethClient{}, &MockIDContract{}
+	g.On("GetGethCallOpts").Return(&bind.CallOpts{}, func() {})
+	g.On("GetEthClient").Return(&ethclient.Client{})
+	r.On("GetIdentityByCentrifugeId", mock.Anything, centID.BigInt()).Return(common.BytesToAddress(utils.RandomSlice(20)), nil)
+	i.On("GetKey", mock.Anything, mock.Anything).Return(struct {
+		Key       [32]byte
+		Purposes  []*big.Int
+		RevokedAt *big.Int
+	}{
+		key,
+		[]*big.Int{big.NewInt(KeyPurposeSigning)},
+		big.NewInt(1),
+	}, nil)
+	srv := NewEthereumIdentityService(c, f, r, func() ethereum.Client {
+		return g
+	}, func(address common.Address, backend bind.ContractBackend) (contract, error) {
+		return i, nil
+	})
+	err := srv.ValidateKey(centID, pubKey, KeyPurposeSigning)
+	f.AssertExpectations(t)
+	r.AssertExpectations(t)
+	g.AssertExpectations(t)
+	assert.Contains(t, err.Error(), "Key is currently revoked since block")
+}

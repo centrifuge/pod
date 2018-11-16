@@ -1,20 +1,20 @@
 package identity
 
 import (
-		"context"
+	"context"
 	"errors"
 	"fmt"
 	"math/big"
 
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/config"
-		"github.com/centrifuge/go-centrifuge/keytools/ed25519"
+	"github.com/centrifuge/go-centrifuge/keytools/ed25519"
 	"github.com/centrifuge/go-centrifuge/keytools/secp256k1"
+	"github.com/centrifuge/go-centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/signatures"
 )
 
 const (
@@ -142,7 +142,6 @@ func ValidateCentrifugeIDBytes(givenCentID []byte, centrifugeID CentID) error {
 
 	return nil
 }
-
 
 // Sign the document with the private key and return the signature along with the public key for the verification
 // assumes that signing root for the document is generated

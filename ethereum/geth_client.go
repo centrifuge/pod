@@ -248,9 +248,8 @@ func (gc *gethClient) SubmitTransactionWithRetries(contractMethod interface{}, o
 
 }
 
-
 // GetGethCallOpts returns the Call options with default
-func  (gc *gethClient) GetGethCallOpts() (*bind.CallOpts, context.CancelFunc) {
+func (gc *gethClient) GetGethCallOpts() (*bind.CallOpts, context.CancelFunc) {
 	// Assuring that pending transactions are taken into account by go-ethereum when asking for things like
 	// specific transactions and client's nonce
 	// with timeout context, in case eth node is not in sync

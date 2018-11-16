@@ -10,7 +10,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/identity"
-		"github.com/centrifuge/go-centrifuge/version"
+	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/libp2p/go-libp2p-peer"
 	pstore "github.com/libp2p/go-libp2p-peerstore"
 	ma "github.com/multiformats/go-multiaddr"

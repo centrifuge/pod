@@ -1,11 +1,11 @@
 package signatures
 
 import (
-		"fmt"
+	"fmt"
 	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-		"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"golang.org/x/crypto/ed25519"
 )
 

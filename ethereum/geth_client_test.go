@@ -20,7 +20,7 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	)
+)
 
 var ctx = map[string]interface{}{}
 var cfg *config.Configuration

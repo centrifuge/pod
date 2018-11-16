@@ -39,15 +39,15 @@ func generateKeys() {
 }
 
 func addKeys() error {
-	err := identity.AddKeyFromConfig(identity.KeyPurposeP2P)
+	err := identity.IDService.AddKeyFromConfig(identity.KeyPurposeP2P)
 	if err != nil {
 		panic(err)
 	}
-	err = identity.AddKeyFromConfig(identity.KeyPurposeSigning)
+	err = identity.IDService.AddKeyFromConfig(identity.KeyPurposeSigning)
 	if err != nil {
 		panic(err)
 	}
-	err = identity.AddKeyFromConfig(identity.KeyPurposeEthMsgAuth)
+	err = identity.IDService.AddKeyFromConfig(identity.KeyPurposeEthMsgAuth)
 	if err != nil {
 		panic(err)
 	}

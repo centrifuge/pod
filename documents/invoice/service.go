@@ -18,7 +18,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/notification"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
-	"github.com/centrifuge/go-centrifuge/signatures"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes"
 	logging "github.com/ipfs/go-log"
@@ -56,11 +55,12 @@ type service struct {
 	coreDocProcessor coredocument.Processor
 	notifier         notification.Sender
 	anchorRepository anchors.AnchorRepository
+	identityService  identity.Service
 }
 
 // DefaultService returns the default implementation of the service
-func DefaultService(config *config.Configuration, repo documents.Repository, processor coredocument.Processor, anchorRepository anchors.AnchorRepository) Service {
-	return service{repo: repo, coreDocProcessor: processor, notifier: notification.NewWebhookSender(config), anchorRepository: anchorRepository}
+func DefaultService(config *config.Configuration, repo documents.Repository, processor coredocument.Processor, anchorRepository anchors.AnchorRepository, identityService identity.Service) Service {
+	return service{repo: repo, coreDocProcessor: processor, notifier: notification.NewWebhookSender(config), anchorRepository: anchorRepository, identityService: identityService}
 }
 
 // CreateProofs creates proofs for the latest version document given the fields
@@ -90,7 +90,7 @@ func (s service) invoiceProof(model documents.Model, fields []string) (*document
 		return nil, centerrors.New(code.DocumentInvalid, "document of invalid type")
 	}
 
-	if err := coredocument.PostAnchoredValidator(s.anchorRepository).Validate(nil, inv); err != nil {
+	if err := coredocument.PostAnchoredValidator(s.identityService, s.anchorRepository).Validate(nil, inv); err != nil {
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
 	}
 	coreDoc, proofs, err := inv.createProofs(fields)
@@ -328,7 +328,7 @@ func (s service) DeriveFromUpdatePayload(payload *clientinvoicepb.InvoiceUpdateP
 
 // RequestDocumentSignature Validates, Signs document received over the p2p layer and returs Signature
 func (s service) RequestDocumentSignature(model documents.Model) (*coredocumentpb.Signature, error) {
-	if err := coredocument.SignatureRequestValidator().Validate(nil, model); err != nil {
+	if err := coredocument.SignatureRequestValidator(s.identityService).Validate(nil, model); err != nil {
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
 	}
 
@@ -344,7 +344,7 @@ func (s service) RequestDocumentSignature(model documents.Model) (*coredocumentp
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get ID Config: %v", err))
 	}
 
-	sig := signatures.Sign(idConfig, identity.KeyPurposeSigning, doc.SigningRoot)
+	sig := identity.Sign(idConfig, identity.KeyPurposeSigning, doc.SigningRoot)
 	doc.Signatures = append(doc.Signatures, sig)
 	err = model.UnpackCoreDocument(doc)
 	if err != nil {
@@ -362,7 +362,7 @@ func (s service) RequestDocumentSignature(model documents.Model) (*coredocumentp
 
 // ReceiveAnchoredDocument receives a new anchored document, validates and updates the document in DB
 func (s service) ReceiveAnchoredDocument(model documents.Model, headers *p2ppb.CentrifugeHeader) error {
-	if err := coredocument.PostAnchoredValidator(s.anchorRepository).Validate(nil, model); err != nil {
+	if err := coredocument.PostAnchoredValidator(s.identityService, s.anchorRepository).Validate(nil, model); err != nil {
 		return centerrors.New(code.DocumentInvalid, err.Error())
 	}
 

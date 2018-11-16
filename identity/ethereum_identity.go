@@ -5,9 +5,14 @@ import (
 	"fmt"
 	"math/big"
 
+	"bytes"
+
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/keytools/ed25519"
 	"github.com/centrifuge/go-centrifuge/queue"
+	"github.com/centrifuge/go-centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -15,26 +20,19 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/go-errors/errors"
 	logging "github.com/ipfs/go-log"
-	"github.com/centrifuge/go-centrifuge/centerrors"
-	"bytes"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/signatures"
-	)
+)
 
 var log = logging.Logger("identity")
 
 type factory interface {
-
 	CreateIdentity(opts *bind.TransactOpts, _centrifugeId *big.Int) (*types.Transaction, error)
 }
 
 type registry interface {
-
 	GetIdentityByCentrifugeId(opts *bind.CallOpts, bigInt *big.Int) (common.Address, error)
 }
 
 type contract interface {
-
 	AddKey(opts *bind.TransactOpts, _key [32]byte, _kPurpose *big.Int) (*types.Transaction, error)
 
 	GetKeysByPurpose(opts *bind.CallOpts, _purpose *big.Int) ([][32]byte, error)
@@ -86,11 +84,11 @@ type ethereumIdentity struct {
 	contractProvider func(address common.Address, backend bind.ContractBackend) (contract, error)
 	registryContract registry
 	config           Config
-	gethClientFinder func () ethereum.Client
+	gethClientFinder func() ethereum.Client
 }
 
 func newEthereumIdentity(id CentID, registryContract registry, config Config,
-	gethClientFinder func () ethereum.Client,
+	gethClientFinder func() ethereum.Client,
 	contractProvider func(address common.Address, backend bind.ContractBackend) (contract, error)) *ethereumIdentity {
 	return &ethereumIdentity{centID: id, registryContract: registryContract, config: config, gethClientFinder: gethClientFinder, contractProvider: contractProvider}
 }
@@ -355,13 +353,13 @@ type EthereumIdentityService struct {
 	config           Config
 	factoryContract  factory
 	registryContract registry
-	gethClientFinder func () ethereum.Client
+	gethClientFinder func() ethereum.Client
 	contractProvider func(address common.Address, backend bind.ContractBackend) (contract, error)
 }
 
 // NewEthereumIdentityService creates a new NewEthereumIdentityService given the config and the smart contracts
 func NewEthereumIdentityService(config Config, factoryContract factory, registryContract registry,
-	gethClientFinder func () ethereum.Client,
+	gethClientFinder func() ethereum.Client,
 	contractProvider func(address common.Address, backend bind.ContractBackend) (contract, error)) Service {
 	return &EthereumIdentityService{config: config, factoryContract: factoryContract, registryContract: registryContract, gethClientFinder: gethClientFinder, contractProvider: contractProvider}
 }
@@ -565,4 +563,3 @@ func (ids *EthereumIdentityService) ValidateSignature(signature *coredocumentpb.
 
 	return signatures.VerifySignature(signature.PublicKey, message, signature.Signature)
 }
-

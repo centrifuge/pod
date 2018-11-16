@@ -5,7 +5,7 @@ package identity
 import (
 	"context"
 	"fmt"
-		"os"
+	"os"
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
