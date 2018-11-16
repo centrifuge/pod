@@ -189,7 +189,7 @@ func TestPaymentObligationService(t *testing.T) {
 
 				return docServiceMock, paymentObligationMock, idServiceMock, ethClientMock, configMock
 			},
-			&nftpb.NFTMintRequest{Identifier: "0x1212", ProofFields: []string{"collaborators[0]"},DepositAddress:"0xf72855759a39fb75fc7341139f5d7a3974d4da08"},
+			&nftpb.NFTMintRequest{Identifier: "0x1212", ProofFields: []string{"collaborators[0]"}, DepositAddress: "0xf72855759a39fb75fc7341139f5d7a3974d4da08"},
 			nil,
 			"",
 		},
