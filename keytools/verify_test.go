@@ -11,7 +11,6 @@ import (
 )
 
 func TestVerifyMessageED25519(t *testing.T) {
-
 	publicKeyFile := "publicKey"
 	privateKeyFile := "privateKey"
 	testMsg := "test"
@@ -23,7 +22,5 @@ func TestVerifyMessageED25519(t *testing.T) {
 	assert.NotNil(t, err)
 	os.Remove(publicKeyFile)
 	os.Remove(privateKeyFile)
-
 	assert.True(t, len(signature) == 0, "verify ed25519 is not implemented yet and should not work")
-
 }

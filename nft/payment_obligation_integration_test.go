@@ -8,8 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethereum/go-ethereum/log"
-
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/config"
 	cc "github.com/centrifuge/go-centrifuge/context/testingbootstrap"
@@ -18,13 +16,17 @@ import (
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/stretchr/testify/assert"
 )
 
+var registry *documents.ServiceRegistry
+
 func TestMain(m *testing.M) {
 	log.Debug("Test PreSetup for NFT")
-	cc.TestFunctionalEthereumBootstrap()
+	ctx := cc.TestFunctionalEthereumBootstrap()
+	registry = ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
 	prevSignPubkey := config.Config().Get("keys.signing.publicKey")
 	prevSignPrivkey := config.Config().Get("keys.signing.privateKey")
 	prevEthPubkey := config.Config().Get("keys.ethauth.publicKey")
@@ -48,7 +50,7 @@ func TestPaymentObligationService_mint(t *testing.T) {
 	testingidentity.CreateIdentityWithKeys()
 
 	// create invoice (anchor)
-	service, err := documents.GetRegistryInstance().LocateService(documenttypes.InvoiceDataTypeUrl)
+	service, err := registry.LocateService(documenttypes.InvoiceDataTypeUrl)
 	assert.Nil(t, err, "should not error out when getting invoice service")
 	contextHeader, err := documents.NewContextHeader()
 	assert.Nil(t, err)

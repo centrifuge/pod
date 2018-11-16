@@ -12,21 +12,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestRegistry_GetRegistryInstance(t *testing.T) {
-	registryFirst := documents.GetRegistryInstance()
-	registrySecond := documents.GetRegistryInstance()
-	assert.Equal(t, &registryFirst, &registrySecond, "only one instance of registry should exist")
-}
-
-
-/*
-
-testcase requires a mocked Exist method in every service registered
-currently the registry is not independent from other test cases
-other testcases add services without mocked Exist method to the registry
-
 func TestServiceRegistry_FindService(t *testing.T) {
-	registry := documents.GetRegistryInstance()
+	registry := documents.NewServiceRegistry()
 	a := &testingdocuments.MockService{}
 	b := &testingdocuments.MockService{}
 	a.On("Exists").Return(true)
@@ -36,13 +23,11 @@ func TestServiceRegistry_FindService(t *testing.T) {
 
 	service, err := registry.FindService([]byte{})
 	assert.Nil(t, err, "findService should be successful")
-
 	assert.Equal(t, a, service, "service a should be returned")
-
-}*/
+}
 
 func TestRegistry_Register_LocateService_successful(t *testing.T) {
-	registry := documents.GetRegistryInstance()
+	registry := documents.NewServiceRegistry()
 	a := &testingdocuments.MockService{}
 	coreDocument := testingcoredocument.GenerateCoreDocument()
 	documentType, err := cd.GetTypeURL(coreDocument)
@@ -57,7 +42,7 @@ func TestRegistry_Register_LocateService_successful(t *testing.T) {
 }
 
 func TestRegistry_Register_invalidId(t *testing.T) {
-	registry := documents.GetRegistryInstance()
+	registry := documents.NewServiceRegistry()
 	a := &testingdocuments.MockService{}
 	coreDocument := testingcoredocument.GenerateCoreDocument()
 	coreDocument.EmbeddedData.TypeUrl = "testID_1"
@@ -73,7 +58,7 @@ func TestRegistry_Register_invalidId(t *testing.T) {
 }
 
 func TestRegistry_LocateService_invalid(t *testing.T) {
-	registry := documents.GetRegistryInstance()
+	registry := documents.NewServiceRegistry()
 	coreDocument := testingcoredocument.GenerateCoreDocument()
 	coreDocument.EmbeddedData.TypeUrl = "testID_2"
 	documentType, err := cd.GetTypeURL(coreDocument)

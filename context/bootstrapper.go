@@ -5,6 +5,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/api"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/ethereum"
@@ -32,6 +33,7 @@ func (m *MainBootstrapper) PopulateBaseBootstrappers() {
 		&ethereum.Bootstrapper{},
 		&anchors.Bootstrapper{},
 		&identity.Bootstrapper{},
+		documents.Bootstrapper{},
 		p2p.Bootstrapper{},
 		api.Bootstrapper{},
 		&invoice.Bootstrapper{},

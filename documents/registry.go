@@ -11,17 +11,11 @@ type ServiceRegistry struct {
 	mutex    sync.RWMutex
 }
 
-var registryInstance *ServiceRegistry
-var registryOnce sync.Once
-
-// GetRegistryInstance returns current registry instance
-func GetRegistryInstance() *ServiceRegistry {
-	registryOnce.Do(func() {
-		registryInstance = &ServiceRegistry{}
-		registryInstance.services = make(map[string]Service)
-		registryInstance.mutex = sync.RWMutex{}
-	})
-	return registryInstance
+// NewServiceRegistry returns a new instance of service registry
+func NewServiceRegistry() *ServiceRegistry {
+	return &ServiceRegistry{
+		services: make(map[string]Service),
+	}
 }
 
 // Register can register a service which implements the ModelDeriver interface
