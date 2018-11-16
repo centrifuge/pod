@@ -7,8 +7,6 @@ type Bootstrapper struct{}
 
 // Bootstrap sets the required storage and registers
 func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
-	ctx[BootstrappedRegistry] = &ServiceRegistry{
-		services: make(map[string]Service),
-	}
+	ctx[BootstrappedRegistry] = NewServiceRegistry()
 	return nil
 }
