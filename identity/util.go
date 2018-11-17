@@ -3,8 +3,7 @@ package identity
 import "errors"
 
 const (
-	centIDParam      string = "CentID"
-	blockHeightParam string = "BlockHeight"
+	centIDParam string = "CentID"
 )
 
 func getBytes32(key interface{}) ([32]byte, error) {
@@ -33,16 +32,4 @@ func getCentID(key interface{}) (CentID, error) {
 		fixed[i] = byte(fv)
 	}
 	return fixed, nil
-}
-
-func parseBlockHeight(valMap map[string]interface{}) (uint64, error) {
-	if bhi, ok := valMap[blockHeightParam]; ok {
-		bhf, ok := bhi.(float64)
-		if ok {
-			return uint64(bhf), nil
-		} else {
-			return 0, errors.New("value can not be parsed")
-		}
-	}
-	return 0, errors.New("value can not be parsed")
 }

@@ -138,8 +138,8 @@ func setupMintListener(config Config, tokenID *big.Int) (confirmations chan *Wat
 		return nil, err
 	}
 	asyncRes, err := queue.Queue.DelayKwargs(mintingConfirmationTaskName, map[string]interface{}{
-		tokenIDParam: hex.EncodeToString(tokenID.Bytes()),
-		blockHeight:  h.Number.Uint64(),
+		tokenIDParam:           hex.EncodeToString(tokenID.Bytes()),
+		queue.BlockHeightParam: h.Number.Uint64(),
 	})
 	if err != nil {
 		return nil, err

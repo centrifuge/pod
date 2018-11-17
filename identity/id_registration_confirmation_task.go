@@ -78,20 +78,20 @@ func (rct *idRegistrationConfirmationTask) ParseKwargs(kwargs map[string]interfa
 	}
 	rct.centID = centIdTyped
 
-	rct.blockHeight, err = parseBlockHeight(kwargs)
+	rct.blockHeight, err = queue.ParseBlockHeight(kwargs)
 	if err != nil {
 		return err
 	}
 
+	// override timeout param if provided
 	tdRaw, ok := kwargs[queue.TimeoutParam]
-	if !ok {
-		return fmt.Errorf("undefined kwarg " + queue.TimeoutParam)
+	if ok {
+		td, err := queue.GetDuration(tdRaw)
+		if err != nil {
+			return fmt.Errorf("malformed kwarg [%s] because [%s]", queue.TimeoutParam, err.Error())
+		}
+		rct.timeout = td
 	}
-	td, err := queue.GetDuration(tdRaw)
-	if err != nil {
-		return fmt.Errorf("malformed kwarg [%s] because [%s]", queue.TimeoutParam, err.Error())
-	}
-	rct.timeout = td
 
 	return nil
 }

@@ -247,8 +247,6 @@ func (c *Configuration) GetEthAuthKeyPair() (pub, priv string) {
 func NewConfiguration(configFile string) *Configuration {
 	cfg := &Configuration{configFile: configFile, mu: sync.RWMutex{}}
 	cfg.InitializeViper()
-	//TODO Will remove this soon, when we do not use global config variable
-	SetConfig(cfg)
 	return cfg
 }
 

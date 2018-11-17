@@ -27,6 +27,5 @@ func (*Bootstrapper) TestBootstrap(context map[string]interface{}) error {
 }
 
 func (b *Bootstrapper) TestTearDown() error {
-	SetConfig(nil)
 	return nil
 }

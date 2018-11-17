@@ -114,20 +114,19 @@ func (krct *keyRegistrationConfirmationTask) ParseKwargs(kwargs map[string]inter
 	}
 
 	// block height parsing
-	krct.blockHeight, err = parseBlockHeight(kwargs)
+	krct.blockHeight, err = queue.ParseBlockHeight(kwargs)
 	if err != nil {
 		return err
 	}
 
 	tdRaw, ok := kwargs[queue.TimeoutParam]
-	if !ok {
-		return fmt.Errorf("undefined kwarg " + queue.TimeoutParam)
+	if ok {
+		td, err := queue.GetDuration(tdRaw)
+		if err != nil {
+			return fmt.Errorf("malformed kwarg [%s] because [%s]", queue.TimeoutParam, err.Error())
+		}
+		krct.timeout = td
 	}
-	td, err := queue.GetDuration(tdRaw)
-	if err != nil {
-		return fmt.Errorf("malformed kwarg [%s] because [%s]", queue.TimeoutParam, err.Error())
-	}
-	krct.timeout = td
 
 	return nil
 }

@@ -2,7 +2,6 @@ package nft
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -17,7 +16,6 @@ import (
 const (
 	mintingConfirmationTaskName string = "MintingConfirmationTaskName"
 	tokenIDParam                string = "TokenIDParam"
-	blockHeight                 string = "BlockHeight"
 )
 
 // paymentObligationMintedFilterer filters the approved NFTs
@@ -83,32 +81,21 @@ func (nftc *mintingConfirmationTask) ParseKwargs(kwargs map[string]interface{}) 
 		return fmt.Errorf("malformed kwarg [%s]", tokenIDParam)
 	}
 
-	nftc.BlockHeight, err = parseBlockHeight(kwargs)
+	nftc.BlockHeight, err = queue.ParseBlockHeight(kwargs)
 	if err != nil {
 		return err
 	}
 
 	tdRaw, ok := kwargs[queue.TimeoutParam]
-	if !ok {
-		return fmt.Errorf("undefined kwarg " + queue.TimeoutParam)
+	if ok {
+		td, err := queue.GetDuration(tdRaw)
+		if err != nil {
+			return fmt.Errorf("malformed kwarg [%s] because [%s]", queue.TimeoutParam, err.Error())
+		}
+		nftc.Timeout = td
 	}
-	td, err := queue.GetDuration(tdRaw)
-	if err != nil {
-		return fmt.Errorf("malformed kwarg [%s] because [%s]", queue.TimeoutParam, err.Error())
-	}
-	nftc.Timeout = td
 
 	return nil
-}
-
-func parseBlockHeight(valMap map[string]interface{}) (uint64, error) {
-	if bhi, ok := valMap[blockHeight]; ok {
-		bhf, ok := bhi.(float64)
-		if ok {
-			return uint64(bhf), nil
-		}
-	}
-	return 0, errors.New("value can not be parsed")
 }
 
 // RunTask calls listens to events from geth related to MintingConfirmationTask#TokenID and records result.

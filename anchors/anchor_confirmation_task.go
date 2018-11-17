@@ -124,15 +124,15 @@ func (act *anchorConfirmationTask) ParseKwargs(kwargs map[string]interface{}) er
 		}
 	}
 
+	// Override default timeout param
 	tdRaw, ok := kwargs[queue.TimeoutParam]
-	if !ok {
-		return fmt.Errorf("undefined kwarg " + queue.TimeoutParam)
+	if ok {
+		td, err := queue.GetDuration(tdRaw)
+		if err != nil {
+			return fmt.Errorf("malformed kwarg [%s] because [%s]", queue.TimeoutParam, err.Error())
+		}
+		act.Timeout = td
 	}
-	td, err := queue.GetDuration(tdRaw)
-	if err != nil {
-		return fmt.Errorf("malformed kwarg [%s] because [%s]", queue.TimeoutParam, err.Error())
-	}
-	act.Timeout = td
 
 	return nil
 }

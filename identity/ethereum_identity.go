@@ -291,10 +291,10 @@ func setUpKeyRegisteredEventListener(config *config.Configuration, identity Iden
 	}
 	asyncRes, err := queue.Queue.DelayKwargs(keyRegistrationConfirmationTaskName,
 		map[string]interface{}{
-			centIDParam:      centId,
-			keyParam:         key,
-			keyPurposeParam:  keyPurpose,
-			blockHeightParam: bh,
+			centIDParam:            centId,
+			keyParam:               key,
+			keyPurposeParam:        keyPurpose,
+			queue.BlockHeightParam: bh,
 		})
 	if err != nil {
 		return nil, err
@@ -311,7 +311,7 @@ func setUpRegistrationEventListener(config *config.Configuration, identityToBeCr
 	if err != nil {
 		return nil, err
 	}
-	asyncRes, err := queue.Queue.DelayKwargs(idRegistrationConfirmationTaskName, map[string]interface{}{centIDParam: bCentId, blockHeightParam: blockHeight})
+	asyncRes, err := queue.Queue.DelayKwargs(idRegistrationConfirmationTaskName, map[string]interface{}{centIDParam: bCentId, queue.BlockHeightParam: blockHeight})
 	if err != nil {
 		return nil, err
 	}
