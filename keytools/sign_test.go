@@ -32,7 +32,6 @@ func TestSignMessage(t *testing.T) {
 	os.Remove(privateKeyFile)
 
 	assert.True(t, correct, "signature or verification didn't work correctly")
-
 }
 
 func TestSignAndVerifyMessageEthereum(t *testing.T) {
@@ -65,5 +64,4 @@ func TestSignAndVerifyMessageEthereum(t *testing.T) {
 	os.Remove(privateKeyFile)
 
 	assert.True(t, correct, "signature or verification didn't work correctly")
-
 }

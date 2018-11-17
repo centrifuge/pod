@@ -2,39 +2,35 @@ package nft
 
 import (
 	"errors"
+	"fmt"
 
+	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/queue"
-	"github.com/ethereum/go-ethereum/common"
 )
 
 type Bootstrapper struct {
 }
 
 // Bootstrap initializes the payment obligation contract
-func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
-	if _, ok := context[config.BootstrappedConfig]; !ok {
+func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
+	if _, ok := ctx[config.BootstrappedConfig]; !ok {
 		return errors.New("config hasn't been initialized")
 	}
-	cfg := context[config.BootstrappedConfig].(*config.Configuration)
+	cfg := ctx[config.BootstrappedConfig].(*config.Configuration)
 
-	if _, ok := context[ethereum.BootstrappedEthereumClient]; !ok {
+	if _, ok := ctx[ethereum.BootstrappedEthereumClient]; !ok {
 		return errors.New("ethereum client hasn't been initialized")
 	}
 
-	contract, err := getPaymentObligationContract(cfg.GetContractAddress("paymentObligation"))
-	if err != nil {
-		return err
+	registry, ok := ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
+	if !ok {
+		return fmt.Errorf("service registry not initialised")
 	}
 
-	setPaymentObligation(NewEthereumPaymentObligation(contract, identity.IDService, ethereum.GetClient(), cfg, setupMintListener))
-	return queue.InstallQueuedTask(context,
-		newMintingConfirmationTask(cfg.GetEthereumContextWaitTimeout(), contract, ethereum.DefaultWaitForTransactionMiningContext))
-}
-
-func getPaymentObligationContract(obligationAddress common.Address) (*EthereumPaymentObligationContract, error) {
-	client := ethereum.GetClient()
-	return NewEthereumPaymentObligationContract(obligationAddress, client.GetEthClient())
+	setPaymentObligation(NewEthereumPaymentObligation(registry, identity.IDService, ethereum.GetClient(), cfg, setupMintListener, bindContract))
+	return queue.InstallQueuedTask(ctx, newMintingConfirmationTask(ethereum.DefaultWaitForTransactionMiningContext))
 }

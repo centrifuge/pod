@@ -187,6 +187,27 @@ func TestService_GetVersion(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestService_Exists(t *testing.T) {
+	invSrv := getServiceWithMockedLayers()
+	documentIdentifier := utils.RandomSlice(32)
+	inv := &Invoice{
+		GrossAmount: 60,
+		CoreDocument: &coredocumentpb.CoreDocument{
+			DocumentIdentifier: documentIdentifier,
+			CurrentVersion:     documentIdentifier,
+		},
+	}
+	err := getRepository().Create(documentIdentifier, inv)
+	assert.Nil(t, err)
+
+	exists := invSrv.Exists(documentIdentifier)
+	assert.True(t, exists, "invoice should exist")
+
+	exists = invSrv.Exists(utils.RandomSlice(32))
+	assert.False(t, exists, "invoice should not exist")
+
+}
+
 func TestService_Create(t *testing.T) {
 	ctxh, err := header.NewContextHeader(context.Background(), cfg)
 	assert.Nil(t, err)

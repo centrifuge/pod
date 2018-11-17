@@ -16,6 +16,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	cc "github.com/centrifuge/go-centrifuge/context/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/coredocument"
+	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/keytools/secp256k1"
 	"github.com/centrifuge/go-centrifuge/p2p"
@@ -30,14 +31,15 @@ import (
 	"golang.org/x/crypto/ed25519"
 )
 
-var handler p2p.Handler
+var handler p2ppb.P2PServiceServer
 var cfg *config.Configuration
 
 func TestMain(m *testing.M) {
-	ctx := cc.TestFunctionalEthereumBootstrap()
-	cfg = ctx[config.BootstrappedConfig].(*config.Configuration)
-	handler = p2p.Handler{cfg}
 	flag.Parse()
+	ctx := cc.TestFunctionalEthereumBootstrap()
+	registry := ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
+	cfg = ctx[config.BootstrappedConfig].(*config.Configuration)
+	handler = p2p.GRPCHandler(cfg, registry)
 	cfg.Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
 	cfg.Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
 	cfg.Set("keys.ethauth.publicKey", "../build/resources/ethauth.pub.pem")

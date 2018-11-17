@@ -12,16 +12,23 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestRegistry_GetRegistryInstance(t *testing.T) {
-	registryFirst := documents.GetRegistryInstance()
-	registrySecond := documents.GetRegistryInstance()
-	assert.Equal(t, &registryFirst, &registrySecond, "only one instance of registry should exist")
+func TestServiceRegistry_FindService(t *testing.T) {
+	registry := documents.NewServiceRegistry()
+	a := &testingdocuments.MockService{}
+	b := &testingdocuments.MockService{}
+	a.On("Exists").Return(true)
+	b.On("Exists").Return(false)
+	err := registry.Register("a service", a)
+	err = registry.Register("b service", b)
+
+	service, err := registry.FindService([]byte{})
+	assert.Nil(t, err, "findService should be successful")
+	assert.Equal(t, a, service, "service a should be returned")
 }
 
 func TestRegistry_Register_LocateService_successful(t *testing.T) {
-	registry := documents.GetRegistryInstance()
+	registry := documents.NewServiceRegistry()
 	a := &testingdocuments.MockService{}
-
 	coreDocument := testingcoredocument.GenerateCoreDocument()
 	documentType, err := cd.GetTypeURL(coreDocument)
 	assert.Nil(t, err, "should not throw an error because core document contains a type")
@@ -35,9 +42,8 @@ func TestRegistry_Register_LocateService_successful(t *testing.T) {
 }
 
 func TestRegistry_Register_invalidId(t *testing.T) {
-	registry := documents.GetRegistryInstance()
+	registry := documents.NewServiceRegistry()
 	a := &testingdocuments.MockService{}
-
 	coreDocument := testingcoredocument.GenerateCoreDocument()
 	coreDocument.EmbeddedData.TypeUrl = "testID_1"
 
@@ -52,7 +58,7 @@ func TestRegistry_Register_invalidId(t *testing.T) {
 }
 
 func TestRegistry_LocateService_invalid(t *testing.T) {
-	registry := documents.GetRegistryInstance()
+	registry := documents.NewServiceRegistry()
 	coreDocument := testingcoredocument.GenerateCoreDocument()
 	coreDocument.EmbeddedData.TypeUrl = "testID_2"
 	documentType, err := cd.GetTypeURL(coreDocument)

@@ -13,7 +13,6 @@ import (
 	logging "github.com/ipfs/go-log"
 	"golang.org/x/net/context"
 
-	//cc "github.com/centrifuge/go-centrifuge/context"
 	"github.com/centrifuge/go-centrifuge/header"
 )
 
@@ -27,14 +26,15 @@ type grpcHandler struct {
 }
 
 // GRPCHandler returns an implementation of invoice.DocumentServiceServer
-func GRPCHandler(config *config.Configuration) (clientinvoicepb.DocumentServiceServer, error) {
-	invoiceService, err := documents.GetRegistryInstance().LocateService(documenttypes.InvoiceDataTypeUrl)
+func GRPCHandler(config *config.Configuration, registry *documents.ServiceRegistry) (clientinvoicepb.DocumentServiceServer, error) {
+	srv, err := registry.LocateService(documenttypes.InvoiceDataTypeUrl)
 	if err != nil {
 		return nil, err
 	}
+
 	return &grpcHandler{
-		service: invoiceService.(Service),
-		config:  config,
+		service: srv.(Service),
+		config: config,
 	}, nil
 }
 

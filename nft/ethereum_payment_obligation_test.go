@@ -7,13 +7,16 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/ethereum"
+
+	"github.com/centrifuge/go-centrifuge/config"
+
 	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/nft"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
@@ -145,6 +148,16 @@ func (m *MockConfig) GetEthereumDefaultAccountName() string {
 	return args.Get(0).(string)
 }
 
+func (m *MockConfig) Config() *config.Configuration {
+	args := m.Called()
+	return args.Get(0).(*config.Configuration)
+}
+
+func (m *MockConfig) GetContractAddress(address string) common.Address {
+	args := m.Called()
+	return args.Get(0).(common.Address)
+}
+
 func (m *MockConfig) GetEthereumContextWaitTimeout() time.Duration {
 	args := m.Called()
 	return args.Get(0).(time.Duration)
@@ -161,18 +174,15 @@ func TestPaymentObligationService(t *testing.T) {
 		{
 			"happypath",
 			func() (testingdocuments.MockService, *MockPaymentObligation, testingcommons.MockIDService, testingcommons.MockEthClient, MockConfig) {
-				centIDByte := utils.RandomSlice(6)
-				centID, _ := identity.ToCentID(centIDByte)
-				address := common.BytesToAddress(utils.RandomSlice(32))
 				coreDoc := coredocument.New()
 				coreDoc.DocumentRoot = utils.RandomSlice(32)
 				proof := getDummyProof(coreDoc)
 				docServiceMock := testingdocuments.MockService{}
 				docServiceMock.On("GetCurrentVersion", decodeHex("0x1212")).Return(&invoice.Invoice{InvoiceNumber: "1232", CoreDocument: coreDoc}, nil)
-				docServiceMock.On("CreateProofs", decodeHex("0x1212"), []string{"somefield"}).Return(proof, nil)
+				docServiceMock.On("CreateProofs", decodeHex("0x1212"), []string{"collaborators[0]"}).Return(proof, nil)
+				docServiceMock.On("Exists").Return(true)
 				paymentObligationMock := &MockPaymentObligation{}
 				idServiceMock := testingcommons.MockIDService{}
-				idServiceMock.On("GetIdentityAddress", centID).Return(address, nil)
 				ethClientMock := testingcommons.MockEthClient{}
 				ethClientMock.On("GetTxOpts", "ethacc").Return(&bind.TransactOpts{}, nil)
 				ethClientMock.On("SubmitTransactionWithRetries",
@@ -182,25 +192,30 @@ func TestPaymentObligationService(t *testing.T) {
 				).Return(&types.Transaction{}, nil)
 				configMock := MockConfig{}
 				configMock.On("GetEthereumDefaultAccountName").Return("ethacc")
-				configMock.On("GetIdentityID").Return(centIDByte, nil)
+				configMock.On("GetContractAddress").Return(common.HexToAddress("0xd0dbc72ae5e71382b3cc9cfdc53f6952a085db6d"))
+
 				return docServiceMock, paymentObligationMock, idServiceMock, ethClientMock, configMock
 			},
-			&nftpb.NFTMintRequest{Identifier: "0x1212", Type: "happypath", ProofFields: []string{"somefield"}},
+			&nftpb.NFTMintRequest{Identifier: "0x1212", ProofFields: []string{"collaborators[0]"}, DepositAddress: "0xf72855759a39fb75fc7341139f5d7a3974d4da08"},
 			nil,
 			"",
 		},
 	}
+
+	registry := documents.NewServiceRegistry()
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			// get mocks
 			docService, paymentOb, idService, ethClient, config := test.mocker()
 			// with below config the documentType has to be test.name to avoid conflicts since registry is a singleton
-			documents.GetRegistryInstance().Register(test.name, &docService)
+			registry.Register(test.name, &docService)
 			confirmations := make(chan *WatchTokenMinted)
-			service := NewEthereumPaymentObligation(paymentOb, &idService, &ethClient, &config, func(config Config, tokenID *big.Int) (chan *WatchTokenMinted, error) {
+			service := NewEthereumPaymentObligation(registry, &idService, &ethClient, &config, func(tokenID *big.Int, registryAddress string) (chan *WatchTokenMinted, error) {
 				return confirmations, nil
+			}, func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error) {
+				return &EthereumPaymentObligationContract{}, nil
 			})
-			_, err := service.MintNFT(decodeHex(test.request.Identifier), test.request.Type, test.request.RegistryAddress, test.request.DepositAddress, test.request.ProofFields)
+			_, err := service.MintNFT(decodeHex(test.request.Identifier), test.request.RegistryAddress, test.request.DepositAddress, test.request.ProofFields)
 			if test.err != nil {
 				assert.Equal(t, test.err.Error(), err.Error())
 			} else if err != nil {
@@ -254,4 +269,27 @@ func byteSliceToByteArray32(input []byte) (out [32]byte) {
 func decodeHex(hex string) []byte {
 	h, _ := hexutil.Decode(hex)
 	return h
+}
+
+func TestGetCollaboratorProofField(t *testing.T) {
+
+	proofField, err := getCollaboratorProofField([]string{"fuu", "foo", "collaborators[0]"})
+	assert.Nil(t, err, "getCollaboratorProofField should not throw an error")
+	assert.Equal(t, "collaborators[0]", proofField, "proofField should contain the correct field")
+
+	proofField, err = getCollaboratorProofField([]string{"fuu", "foo"})
+	assert.Error(t, err, "getCollaboratorProofField should throw an error")
+	assert.Equal(t, "", proofField, "proofField should be empty")
+
+	proofField, err = getCollaboratorProofField([]string{"fuu", "foo", "collaborators"})
+	assert.Error(t, err, "getCollaboratorProofField should throw an error")
+	assert.Equal(t, "", proofField, "proofField should be empty")
+
+	proofField, err = getCollaboratorProofField([]string{"fuu", "foo", "collaborators[a]"})
+	assert.Error(t, err, "getCollaboratorProofField should throw an error")
+	assert.Equal(t, "", proofField, "proofField should be empty")
+
+	proofField, err = getCollaboratorProofField([]string{"fuu", "foo", "collaborators[12345678]"})
+	assert.Nil(t, err, "getCollaboratorProofField should not throw an error")
+	assert.Equal(t, "collaborators[12345678]", proofField, "proofField should contain the correct field")
 }

@@ -25,8 +25,8 @@ type grpcHandler struct {
 }
 
 // GRPCHandler returns an implementation of the purchaseorder DocumentServiceServer
-func GRPCHandler() (clientpurchaseorderpb.DocumentServiceServer, error) {
-	srv, err := documents.GetRegistryInstance().LocateService(documenttypes.PurchaseOrderDataTypeUrl)
+func GRPCHandler(registry *documents.ServiceRegistry) (clientpurchaseorderpb.DocumentServiceServer, error) {
+	srv, err := registry.LocateService(documenttypes.PurchaseOrderDataTypeUrl)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch purchase order service")
 	}

@@ -18,12 +18,12 @@ func TestCentP2PServer_Start(t *testing.T) {
 }
 
 func TestCentP2PServer_StartContextCancel(t *testing.T) {
+	cfg.Set("p2p.port", 38203)
 	cfg.Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
 	cfg.Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
-	cfg.Set("p2p.port", 38203)
-	cp2p := NewCentP2PServer(cfg)
+	cp2p := &p2pServer{config: cfg}
 	ctx, canc := context.WithCancel(context.Background())
-	startErr := make(chan error)
+	startErr := make(chan error, 1)
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go cp2p.Start(ctx, &wg, startErr)
@@ -31,6 +31,7 @@ func TestCentP2PServer_StartContextCancel(t *testing.T) {
 	// cancel the context to shutdown the server
 	canc()
 	wg.Wait()
+	assert.Equal(t, 0, len(startErr), "should not error out")
 }
 
 func TestCentP2PServer_StartListenError(t *testing.T) {
@@ -38,7 +39,7 @@ func TestCentP2PServer_StartListenError(t *testing.T) {
 	cfg.Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
 	// cause an error by using an invalid port
 	cfg.Set("p2p.port", 100000000)
-	cp2p := NewCentP2PServer(cfg)
+	cp2p := &p2pServer{config: cfg}
 	ctx, _ := context.WithCancel(context.Background())
 	startErr := make(chan error)
 	var wg sync.WaitGroup
@@ -55,7 +56,8 @@ func TestCentP2PServer_makeBasicHostNoExternalIP(t *testing.T) {
 	cfg.Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
 	cfg.Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
 	cfg.Set("p2p.port", listenPort)
-	cp2p := NewCentP2PServer(cfg)
+	cp2p := &p2pServer{config: cfg}
+
 	h, err := cp2p.makeBasicHost(listenPort)
 	assert.Nil(t, err)
 	assert.NotNil(t, h)
@@ -68,7 +70,7 @@ func TestCentP2PServer_makeBasicHostWithExternalIP(t *testing.T) {
 	cfg.Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
 	cfg.Set("p2p.port", listenPort)
 	cfg.Set("p2p.externalIP", externalIP)
-	cp2p := NewCentP2PServer(cfg)
+	cp2p := &p2pServer{config: cfg}
 	h, err := cp2p.makeBasicHost(listenPort)
 	assert.Nil(t, err)
 	assert.NotNil(t, h)
@@ -85,7 +87,7 @@ func TestCentP2PServer_makeBasicHostWithWrongExternalIP(t *testing.T) {
 	cfg.Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
 	cfg.Set("p2p.port", listenPort)
 	cfg.Set("p2p.externalIP", externalIP)
-	cp2p := NewCentP2PServer(cfg)
+	cp2p := &p2pServer{config: cfg}
 	h, err := cp2p.makeBasicHost(listenPort)
 	assert.NotNil(t, err)
 	assert.Nil(t, h)

@@ -656,6 +656,27 @@ func TestService_GetVersion(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestService_Exists(t *testing.T) {
+	poSrv := getServiceWithMockedLayers()
+	documentIdentifier := utils.RandomSlice(32)
+	po := &PurchaseOrder{
+		OrderAmount: 42,
+		CoreDocument: &coredocumentpb.CoreDocument{
+			DocumentIdentifier: documentIdentifier,
+			CurrentVersion:     documentIdentifier,
+		},
+	}
+	err := getRepository().Create(documentIdentifier, po)
+	assert.Nil(t, err)
+
+	exists := poSrv.Exists(documentIdentifier)
+	assert.True(t, exists, "purchase order should exist")
+
+	exists = poSrv.Exists(utils.RandomSlice(32))
+	assert.False(t, exists, "purchase order should not exist")
+
+}
+
 func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	poSrv := service{}
 	err := poSrv.ReceiveAnchoredDocument(nil, nil)

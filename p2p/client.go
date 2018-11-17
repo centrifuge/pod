@@ -32,8 +32,8 @@ type defaultClient struct {
 	config Config
 }
 
-// Opens a client connection with libp2p
-func (d *defaultClient) OpenClient(target string) (p2ppb.P2PServiceClient, error) {
+// OpenClient returns P2PServiceClient to contact the remote peer
+func (s *p2pServer) OpenClient(target string) (p2ppb.P2PServiceClient, error) {
 	log.Info("Opening connection to: %s", target)
 	ipfsAddr, err := ma.NewMultiaddr(target)
 	if err != nil {
@@ -55,17 +55,14 @@ func (d *defaultClient) OpenClient(target string) (p2ppb.P2PServiceClient, error
 	targetPeerAddr, _ := ma.NewMultiaddr(fmt.Sprintf("/ipfs/%s", peer.IDB58Encode(peerID)))
 	targetAddr := ipfsAddr.Decapsulate(targetPeerAddr)
 
-	hostInstance := GetHost()
-	grpcProtoInstance := GetGRPCProto()
-
 	// We have a peer ID and a targetAddr so we add it to the peer store
 	// so LibP2P knows how to contact it
-	hostInstance.Peerstore().AddAddr(peerID, targetAddr, pstore.PermanentAddrTTL)
+	s.host.Peerstore().AddAddr(peerID, targetAddr, pstore.PermanentAddrTTL)
 
 	// make a new stream from host B to host A with timeout
 	// Retrial is handled internally, connection request will be cancelled by the connection timeout context
-	ctx, _ := context.WithTimeout(context.Background(), d.config.GetP2PConnectionTimeout())
-	g, err := grpcProtoInstance.Dial(ctx, peerID, grpc.WithInsecure(), grpc.WithBlock())
+	ctx, _ := context.WithTimeout(context.Background(), s.config.GetP2PConnectionTimeout())
+	g, err := s.protocol.Dial(ctx, peerID, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		return nil, fmt.Errorf("failed to dial peer [%s]: %v", peerID.Pretty(), err)
 	}
@@ -74,14 +71,14 @@ func (d *defaultClient) OpenClient(target string) (p2ppb.P2PServiceClient, error
 }
 
 // getSignatureForDocument requests the target node to sign the document
-func (d *defaultClient) getSignatureForDocument(ctx context.Context, doc coredocumentpb.CoreDocument, client p2ppb.P2PServiceClient, receiverCentId identity.CentID) (*p2ppb.SignatureResponse, error) {
-	senderId, err := d.config.GetIdentityID()
+func (s *p2pServer) getSignatureForDocument(ctx context.Context, doc coredocumentpb.CoreDocument, client p2ppb.P2PServiceClient, receiverCentId identity.CentID) (*p2ppb.SignatureResponse, error) {
+	senderId, err := s.config.GetIdentityID()
 	if err != nil {
 		return nil, err
 	}
 
 	header := p2ppb.CentrifugeHeader{
-		NetworkIdentifier:  d.config.GetNetworkID(),
+		NetworkIdentifier:  s.config.GetNetworkID(),
 		CentNodeVersion:    version.GetVersion().String(),
 		SenderCentrifugeId: senderId,
 	}
@@ -123,8 +120,8 @@ type signatureResponseWrap struct {
 	err  error
 }
 
-func (d *defaultClient) getSignatureAsync(ctx context.Context, doc coredocumentpb.CoreDocument, client p2ppb.P2PServiceClient, receiverCentId identity.CentID, out chan<- signatureResponseWrap) {
-	resp, err := d.getSignatureForDocument(ctx, doc, client, receiverCentId)
+func (s *p2pServer) getSignatureAsync(ctx context.Context, doc coredocumentpb.CoreDocument, client p2ppb.P2PServiceClient, receiverCentId identity.CentID, out chan<- signatureResponseWrap) {
+	resp, err := s.getSignatureForDocument(ctx, doc, client, receiverCentId)
 	out <- signatureResponseWrap{
 		resp: resp,
 		err:  err,
@@ -132,7 +129,7 @@ func (d *defaultClient) getSignatureAsync(ctx context.Context, doc coredocumentp
 }
 
 // GetSignaturesForDocument requests peer nodes for the signature and verifies them
-func (d *defaultClient) GetSignaturesForDocument(ctx *header.ContextHeader, doc *coredocumentpb.CoreDocument) error {
+func (s *p2pServer) GetSignaturesForDocument(ctx *header.ContextHeader, doc *coredocumentpb.CoreDocument) error {
 	in := make(chan signatureResponseWrap)
 	defer close(in)
 
@@ -153,7 +150,7 @@ func (d *defaultClient) GetSignaturesForDocument(ctx *header.ContextHeader, doc 
 			return centerrors.Wrap(err, "failed to get P2P url")
 		}
 
-		client, err := d.OpenClient(target)
+		client, err := s.OpenClient(target)
 		if err != nil {
 			log.Error(centerrors.Wrap(err, "failed to connect to target"))
 			continue
@@ -162,7 +159,7 @@ func (d *defaultClient) GetSignaturesForDocument(ctx *header.ContextHeader, doc 
 		// for now going with context.background, once we have a timeout for request
 		// we can use context.Timeout for that
 		count++
-		go d.getSignatureAsync(ctx.Context(), *doc, client, collaboratorID, in)
+		go s.getSignatureAsync(ctx.Context(), *doc, client, collaboratorID, in)
 	}
 
 	var responses []signatureResponseWrap

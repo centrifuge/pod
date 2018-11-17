@@ -49,6 +49,11 @@ func (m *MockService) ReceiveAnchoredDocument(model documents.Model, headers *p2
 	return args.Error(0)
 }
 
+func (m *MockService) Exists(documentID []byte) bool {
+	args := m.Called()
+	return args.Get(0).(bool)
+}
+
 type MockModel struct {
 	documents.Model
 	mock.Mock

@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/centerrors"
+	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	logging "github.com/ipfs/go-log"
@@ -23,7 +24,7 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
-var log = logging.Logger("cent-api-server")
+var log = logging.Logger("api-server")
 
 type Config interface {
 	GetServerAddress() string
@@ -31,22 +32,18 @@ type Config interface {
 	GetNetworkString() string
 }
 
-// CentAPIServer is an implementation of node.Server interface for serving HTTP based Centrifuge API
-type CentAPIServer struct {
-	config *config.Configuration
+// apiServer is an implementation of node.Server interface for serving HTTP based Centrifuge API
+type apiServer struct {
+	config   Config
+	registry *documents.ServiceRegistry
 }
 
-// NewCentAPIServer returns a new instance of the CentAPIServer initialized with the config
-func NewCentAPIServer(config *config.Configuration) *CentAPIServer {
-	return &CentAPIServer{config}
-}
-
-func (*CentAPIServer) Name() string {
-	return "CentAPIServer"
+func (apiServer) Name() string {
+	return "APIServer"
 }
 
 // Serve exposes the client APIs for interacting with a centrifuge node
-func (c *CentAPIServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- error) {
+func (c apiServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- error) {
 	defer wg.Done()
 	certPool, err := loadCertPool()
 	if err != nil {
@@ -56,8 +53,8 @@ func (c *CentAPIServer) Start(ctx context.Context, wg *sync.WaitGroup, startupEr
 	if err != nil {
 		startupErr <- err
 	}
-	addr := c.config.GetServerAddress()
 
+	addr := c.config.GetServerAddress()
 	creds := credentials.NewTLS(&tls.Config{
 		RootCAs:            certPool,
 		ServerName:         addr,
@@ -79,7 +76,7 @@ func (c *CentAPIServer) Start(ctx context.Context, wg *sync.WaitGroup, startupEr
 	mux := http.NewServeMux()
 	gwmux := runtime.NewServeMux()
 
-	err = registerServices(ctx, c.config, grpcServer, gwmux, addr, dopts)
+	err = registerServices(ctx, c.config, c.registry, grpcServer, gwmux, addr, dopts)
 	if err != nil {
 		startupErr <- err
 		return
@@ -102,6 +99,7 @@ func (c *CentAPIServer) Start(ctx context.Context, wg *sync.WaitGroup, startupEr
 			startUpErrInner <- err
 			return
 		}
+
 		log.Infof("HTTP/gRpc listening on Port: %d\n", c.config.GetServerPort())
 		log.Infof("Connecting to Network: %s\n", c.config.GetNetworkString())
 		err = srv.Serve(tls.NewListener(conn, srv.TLSConfig))

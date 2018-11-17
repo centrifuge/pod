@@ -2,38 +2,40 @@ package context
 
 import (
 	"github.com/centrifuge/go-centrifuge/anchors"
+	"github.com/centrifuge/go-centrifuge/api"
+	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/node"
+	"github.com/centrifuge/go-centrifuge/p2p"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/version"
 	logging "github.com/ipfs/go-log"
 )
 
-// Bootstrapper must be implemented by all packages that needs bootstrapping at application start
-type Bootstrapper interface {
-	Bootstrap(context map[string]interface{}) error
-}
-
 var log = logging.Logger("context")
 
 type MainBootstrapper struct {
-	Bootstrappers []Bootstrapper
+	Bootstrappers []bootstrap.Bootstrapper
 }
 
 func (m *MainBootstrapper) PopulateBaseBootstrappers() {
-	m.Bootstrappers = []Bootstrapper{
+	m.Bootstrappers = []bootstrap.Bootstrapper{
 		&version.Bootstrapper{},
 		&config.Bootstrapper{},
 		&storage.Bootstrapper{},
 		&ethereum.Bootstrapper{},
 		&anchors.Bootstrapper{},
 		&identity.Bootstrapper{},
+		documents.Bootstrapper{},
+		p2p.Bootstrapper{},
+		api.Bootstrapper{},
 		&invoice.Bootstrapper{},
 		&purchaseorder.Bootstrapper{},
 		&nft.Bootstrapper{},

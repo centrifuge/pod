@@ -2,31 +2,23 @@ package node
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"os/signal"
 
-	"github.com/centrifuge/go-centrifuge/api"
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/p2p"
+	"github.com/centrifuge/go-centrifuge/bootstrap"
 )
 
 type Bootstrapper struct {
 }
 
 func (*Bootstrapper) Bootstrap(c map[string]interface{}) error {
-	if _, ok := c[config.BootstrappedConfig]; !ok {
-		return errors.New("config hasn't been initialized")
-	}
-	cfg := c[config.BootstrappedConfig].(*config.Configuration)
-
-	services, err := defaultServerList(cfg)
+	srvs, err := getServers(c)
 	if err != nil {
-		return fmt.Errorf("failed to get default server list: %v", err)
+		return fmt.Errorf("failed to load servers: %v", err)
 	}
 
-	n := NewNode(services)
+	n := NewNode(srvs)
 	feedback := make(chan error)
 	// may be we can pass a context that exists in c here
 	ctx, canc := context.WithCancel(context.Background())
@@ -48,6 +40,19 @@ func (*Bootstrapper) Bootstrap(c map[string]interface{}) error {
 	return nil
 }
 
-func defaultServerList(cfg *config.Configuration) ([]Server, error) {
-	return []Server{api.NewCentAPIServer(cfg), p2p.NewCentP2PServer(cfg)}, nil
+func getServers(ctx map[string]interface{}) ([]Server, error) {
+	p2pSrv, ok := ctx[bootstrap.BootstrappedP2PServer]
+	if !ok {
+		return nil, fmt.Errorf("p2p server not initialised")
+	}
+
+	apiSrv, ok := ctx[bootstrap.BootstrappedAPIServer]
+	if !ok {
+		return nil, fmt.Errorf("API server not initiliase")
+	}
+
+	var servers []Server
+	servers = append(servers, p2pSrv.(Server))
+	servers = append(servers, apiSrv.(Server))
+	return servers, nil
 }

@@ -385,3 +385,8 @@ func (s service) ReceiveAnchoredDocument(model documents.Model, headers *p2ppb.C
 
 	return nil
 }
+
+// Exists checks if an invoice exists
+func (s service) Exists(documentID []byte) bool {
+	return s.repo.Exists(documentID)
+}
