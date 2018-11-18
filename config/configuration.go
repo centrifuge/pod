@@ -27,6 +27,37 @@ import (
 
 var log = logging.Logger("config")
 
+type Config interface {
+	GetStoragePath() string
+	GetP2PPort() int
+	GetP2PExternalIP() string
+	GetP2PConnectionTimeout() time.Duration
+	GetReceiveEventNotificationEndpoint() string
+	GetServerPort() int
+	GetServerAddress() string
+	GetNumWorkers() int
+	GetWorkerWaitTimeMS() int
+	GetEthereumNodeURL() string
+	GetEthereumContextReadWaitTimeout() time.Duration
+	GetEthereumContextWaitTimeout() time.Duration
+	GetEthereumIntervalRetry() time.Duration
+	GetEthereumMaxRetries() int
+	GetEthereumGasPrice() *big.Int
+	GetEthereumGasLimit() uint64
+	GetEthereumDefaultAccountName() string
+	GetEthereumAccount(accountName string) (account *AccountConfig, err error)
+	GetTxPoolAccessEnabled() bool
+	GetNetworkString() string
+	GetNetworkKey(k string) string
+	GetContractAddressString(address string) string
+	GetContractAddress(address string) common.Address
+	GetBootstrapPeers() []string
+	GetNetworkID() uint32
+	GetIdentityID() ([]byte, error)
+	GetSigningKeyPair() (pub, priv string)
+	GetEthAuthKeyPair() (pub, priv string)
+}
+
 // Configuration holds the configuration details for the node
 type Configuration struct {
 	mu         sync.RWMutex

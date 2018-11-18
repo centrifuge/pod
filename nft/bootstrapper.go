@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/ethereum"
@@ -32,5 +31,5 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	}
 
 	setPaymentObligation(NewEthereumPaymentObligation(registry, identity.IDService, ethereum.GetClient(), cfg, setupMintListener, bindContract))
-	return queue.InstallQueuedTask(ctx, newMintingConfirmationTask(ethereum.DefaultWaitForTransactionMiningContext))
+	return queue.InstallQueuedTask(ctx, newMintingConfirmationTask(cfg.GetEthereumContextWaitTimeout(), ethereum.DefaultWaitForTransactionMiningContext))
 }

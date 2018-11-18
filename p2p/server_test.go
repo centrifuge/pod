@@ -19,8 +19,6 @@ func TestCentP2PServer_Start(t *testing.T) {
 
 func TestCentP2PServer_StartContextCancel(t *testing.T) {
 	cfg.Set("p2p.port", 38203)
-	cfg.Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
-	cfg.Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
 	cp2p := &p2pServer{config: cfg}
 	ctx, canc := context.WithCancel(context.Background())
 	startErr := make(chan error, 1)
@@ -35,8 +33,6 @@ func TestCentP2PServer_StartContextCancel(t *testing.T) {
 }
 
 func TestCentP2PServer_StartListenError(t *testing.T) {
-	cfg.Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
-	cfg.Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
 	// cause an error by using an invalid port
 	cfg.Set("p2p.port", 100000000)
 	cp2p := &p2pServer{config: cfg}
@@ -53,8 +49,6 @@ func TestCentP2PServer_StartListenError(t *testing.T) {
 
 func TestCentP2PServer_makeBasicHostNoExternalIP(t *testing.T) {
 	listenPort := 38202
-	cfg.Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
-	cfg.Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
 	cfg.Set("p2p.port", listenPort)
 	cp2p := &p2pServer{config: cfg}
 
@@ -66,8 +60,6 @@ func TestCentP2PServer_makeBasicHostNoExternalIP(t *testing.T) {
 func TestCentP2PServer_makeBasicHostWithExternalIP(t *testing.T) {
 	externalIP := "100.100.100.100"
 	listenPort := 38202
-	cfg.Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
-	cfg.Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
 	cfg.Set("p2p.port", listenPort)
 	cfg.Set("p2p.externalIP", externalIP)
 	cp2p := &p2pServer{config: cfg}
@@ -83,8 +75,6 @@ func TestCentP2PServer_makeBasicHostWithExternalIP(t *testing.T) {
 func TestCentP2PServer_makeBasicHostWithWrongExternalIP(t *testing.T) {
 	externalIP := "100.200.300.400"
 	listenPort := 38202
-	cfg.Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
-	cfg.Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
 	cfg.Set("p2p.port", listenPort)
 	cfg.Set("p2p.externalIP", externalIP)
 	cp2p := &p2pServer{config: cfg}

@@ -21,7 +21,7 @@ var apiLog = logging.Logger("purchaseorder-api")
 // anchoring, sending, finding stored purchase order document
 type grpcHandler struct {
 	service Service
-	config  *config.Configuration
+	config  config.Config
 }
 
 // GRPCHandler returns an implementation of the purchaseorder DocumentServiceServer

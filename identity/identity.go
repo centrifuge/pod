@@ -50,7 +50,7 @@ type IdentityKey struct {
 }
 
 // GetIdentityConfig returns the identity and keys associated with the node
-func GetIdentityConfig(config *config.Configuration) (*IdentityConfig, error) {
+func GetIdentityConfig(config config.Config) (*IdentityConfig, error) {
 	centIDBytes, err := config.GetIdentityID()
 	if err != nil {
 		return nil, err
@@ -263,7 +263,7 @@ func ValidateKey(centrifugeId CentID, key []byte, purpose int) error {
 }
 
 // AddKeyFromConfig adds a key previously generated and indexed in the configuration file to the identity specified in such config file
-func AddKeyFromConfig(config *config.Configuration, identityConfig *IdentityConfig, purpose int) error {
+func AddKeyFromConfig(config config.Config, identityConfig *IdentityConfig, purpose int) error {
 	id, err := IDService.LookupIdentityForID(identityConfig.ID)
 	if err != nil {
 		return err

@@ -28,10 +28,6 @@ type contract interface {
 	AddKey(opts *bind.TransactOpts, _key [32]byte, _kPurpose *big.Int) (*types.Transaction, error)
 }
 
-type Config interface {
-	GetEthereumDefaultAccountName() string
-}
-
 // EthereumIdentityKey holds the identity related details
 type EthereumIdentityKey struct {
 	Key       [32]byte
@@ -64,10 +60,10 @@ type ethereumIdentity struct {
 	centID           CentID
 	contract         *EthereumIdentityContract
 	registryContract *EthereumIdentityRegistryContract
-	config           *config.Configuration
+	config           config.Config
 }
 
-func newEthereumIdentity(id CentID, registryContract *EthereumIdentityRegistryContract, config *config.Configuration) *ethereumIdentity {
+func newEthereumIdentity(id CentID, registryContract *EthereumIdentityRegistryContract, config config.Config) *ethereumIdentity {
 	return &ethereumIdentity{centID: id, registryContract: registryContract, config: config}
 }
 
@@ -283,7 +279,7 @@ func sendIdentityCreationTransaction(identityFactory factory, opts *bind.Transac
 }
 
 // setUpKeyRegisteredEventListener listens for Identity creation
-func setUpKeyRegisteredEventListener(config *config.Configuration, identity Identity, keyPurpose int, key [32]byte, bh uint64) (confirmations chan *WatchIdentity, err error) {
+func setUpKeyRegisteredEventListener(config config.Config, identity Identity, keyPurpose int, key [32]byte, bh uint64) (confirmations chan *WatchIdentity, err error) {
 	confirmations = make(chan *WatchIdentity)
 	centId := identity.CentID()
 	if err != nil {
@@ -305,7 +301,7 @@ func setUpKeyRegisteredEventListener(config *config.Configuration, identity Iden
 
 // setUpRegistrationEventListener sets up the listened for the "IdentityCreated" event to notify the upstream code about successful mining/creation
 // of the identity.
-func setUpRegistrationEventListener(config *config.Configuration, identityToBeCreated Identity, blockHeight uint64) (confirmations chan *WatchIdentity, err error) {
+func setUpRegistrationEventListener(config config.Config, identityToBeCreated Identity, blockHeight uint64) (confirmations chan *WatchIdentity, err error) {
 	confirmations = make(chan *WatchIdentity)
 	bCentId := identityToBeCreated.CentID()
 	if err != nil {
@@ -320,26 +316,26 @@ func setUpRegistrationEventListener(config *config.Configuration, identityToBeCr
 }
 
 // waitAndRouteKeyRegistrationEvent notifies the confirmations channel whenever the key has been added to the identity and has been noted as Ethereum event
-func waitAndRouteKeyRegistrationEvent(config *config.Configuration, asyncRes *gocelery.AsyncResult, confirmations chan<- *WatchIdentity, pushThisIdentity Identity) {
+func waitAndRouteKeyRegistrationEvent(config config.Config, asyncRes *gocelery.AsyncResult, confirmations chan<- *WatchIdentity, pushThisIdentity Identity) {
 	_, err := asyncRes.Get(config.GetEthereumContextWaitTimeout())
 	confirmations <- &WatchIdentity{Identity: pushThisIdentity, Error: err}
 }
 
 // waitAndRouteIdentityRegistrationEvent notifies the confirmations channel whenever the identity creation is being noted as Ethereum event
-func waitAndRouteIdentityRegistrationEvent(config *config.Configuration, asyncRes *gocelery.AsyncResult, confirmations chan<- *WatchIdentity, pushThisIdentity Identity) {
+func waitAndRouteIdentityRegistrationEvent(config config.Config, asyncRes *gocelery.AsyncResult, confirmations chan<- *WatchIdentity, pushThisIdentity Identity) {
 	_, err := asyncRes.Get(config.GetEthereumContextWaitTimeout())
 	confirmations <- &WatchIdentity{pushThisIdentity, err}
 }
 
 // EthereumidentityService implements `Service`
 type EthereumIdentityService struct {
-	config           *config.Configuration
+	config           config.Config
 	factoryContract  *EthereumIdentityFactoryContract
 	registryContract *EthereumIdentityRegistryContract
 }
 
 // NewEthereumIdentityService creates a new NewEthereumIdentityService given the config and the smart contracts
-func NewEthereumIdentityService(config *config.Configuration, factoryContract *EthereumIdentityFactoryContract, registryContract *EthereumIdentityRegistryContract) Service {
+func NewEthereumIdentityService(config config.Config, factoryContract *EthereumIdentityFactoryContract, registryContract *EthereumIdentityRegistryContract) Service {
 	return &EthereumIdentityService{config: config, factoryContract: factoryContract, registryContract: registryContract}
 }
 

@@ -59,7 +59,7 @@ type service struct {
 }
 
 // DefaultService returns the default implementation of the service
-func DefaultService(config *config.Configuration, repo documents.Repository, processor coredocument.Processor, anchorRepository anchors.AnchorRepository) Service {
+func DefaultService(config config.Config, repo documents.Repository, processor coredocument.Processor, anchorRepository anchors.AnchorRepository) Service {
 	return service{repo: repo, coreDocProcessor: processor, notifier: notification.NewWebhookSender(config), anchorRepository: anchorRepository}
 }
 

@@ -7,18 +7,20 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 )
 
+const BootstrappedP2PClient string = "BootstrappedP2PClient"
+
 // Bootstrapper implements Bootstrapper with p2p details
 type Bootstrapper struct{}
 
 // Bootstrap initiates p2p server and client into context
 func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
-	if _, ok := ctx[bootstrap.BootstrappedConfig]; !ok {
+	if _, ok := ctx[config.BootstrappedConfig]; !ok {
 		return fmt.Errorf("config not initialised")
 	}
 
-	cfg := ctx[bootstrap.BootstrappedConfig].(*config.Configuration)
+	cfg := ctx[config.BootstrappedConfig].(*config.Configuration)
 	srv := &p2pServer{config: cfg}
 	ctx[bootstrap.BootstrappedP2PServer] = srv
-	ctx[bootstrap.BootstrappedP2PClient] = srv
+	ctx[BootstrappedP2PClient] = srv
 	return nil
 }

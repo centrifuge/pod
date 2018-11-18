@@ -22,11 +22,11 @@ var apiLog = logging.Logger("invoice-api")
 // anchoring, sending, finding stored invoice document
 type grpcHandler struct {
 	service Service
-	config  *config.Configuration
+	config  config.Config
 }
 
 // GRPCHandler returns an implementation of invoice.DocumentServiceServer
-func GRPCHandler(config *config.Configuration, registry *documents.ServiceRegistry) (clientinvoicepb.DocumentServiceServer, error) {
+func GRPCHandler(config config.Config, registry *documents.ServiceRegistry) (clientinvoicepb.DocumentServiceServer, error) {
 	srv, err := registry.LocateService(documenttypes.InvoiceDataTypeUrl)
 	if err != nil {
 		return nil, err
@@ -34,7 +34,7 @@ func GRPCHandler(config *config.Configuration, registry *documents.ServiceRegist
 
 	return &grpcHandler{
 		service: srv.(Service),
-		config: config,
+		config:  config,
 	}, nil
 }
 

@@ -24,14 +24,6 @@ type Client interface {
 	GetSignaturesForDocument(ctx *header.ContextHeader, doc *coredocumentpb.CoreDocument) error
 }
 
-func NewP2PClient(config Config) Client {
-	return &defaultClient{config}
-}
-
-type defaultClient struct {
-	config Config
-}
-
 // OpenClient returns P2PServiceClient to contact the remote peer
 func (s *p2pServer) OpenClient(target string) (p2ppb.P2PServiceClient, error) {
 	log.Info("Opening connection to: %s", target)

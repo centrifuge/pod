@@ -18,10 +18,6 @@ import (
 	"github.com/go-errors/errors"
 )
 
-type Config interface {
-	GetEthereumDefaultAccountName() string
-}
-
 type AnchorRepositoryContract interface {
 	PreCommit(opts *bind.TransactOpts, anchorID *big.Int, signingRoot [32]byte, centrifugeId *big.Int, signature []byte, expirationBlock *big.Int) (*types.Transaction, error)
 	Commit(opts *bind.TransactOpts, _anchorID *big.Int, _documentRoot [32]byte, _centrifugeId *big.Int, _documentProofs [][32]byte, _signature []byte) (*types.Transaction, error)
@@ -40,11 +36,11 @@ type WatchAnchorCommitted interface {
 }
 
 type EthereumAnchorRepository struct {
-	config                   *config.Configuration
+	config                   config.Config
 	anchorRepositoryContract AnchorRepositoryContract
 }
 
-func NewEthereumAnchorRepository(config *config.Configuration, anchorRepositoryContract AnchorRepositoryContract) *EthereumAnchorRepository {
+func NewEthereumAnchorRepository(config config.Config, anchorRepositoryContract AnchorRepositoryContract) *EthereumAnchorRepository {
 	return &EthereumAnchorRepository{config: config, anchorRepositoryContract: anchorRepositoryContract}
 }
 
@@ -180,7 +176,7 @@ func setUpPreCommitEventListener(contractEvent WatchAnchorPreCommitted, from com
 
 // setUpCommitEventListener sets up the listened for the "AnchorCommitted" event to notify the upstream code
 // about successful mining/creation of a commit
-func setUpCommitEventListener(config *config.Configuration, from common.Address, commitData *CommitData) (confirmations chan *WatchCommit, err error) {
+func setUpCommitEventListener(config config.Config, from common.Address, commitData *CommitData) (confirmations chan *WatchCommit, err error) {
 	confirmations = make(chan *WatchCommit)
 	asyncRes, err := queue.Queue.DelayKwargs(AnchorRepositoryConfirmationTaskName, map[string]interface{}{
 		AnchorIDParam:     commitData.AnchorID,
@@ -213,7 +209,7 @@ func waitAndRoutePreCommitEvent(conf <-chan *EthereumAnchorRepositoryContractAnc
 }
 
 // waitAndRouteCommitEvent notifies the confirmations channel whenever a commit is being noted as Ethereum event
-func waitAndRouteCommitEvent(config *config.Configuration, asyncResult *gocelery.AsyncResult, confirmations chan<- *WatchCommit, commitData *CommitData) {
+func waitAndRouteCommitEvent(config config.Config, asyncResult *gocelery.AsyncResult, confirmations chan<- *WatchCommit, commitData *CommitData) {
 	_, err := asyncResult.Get(config.GetEthereumContextWaitTimeout())
 	confirmations <- &WatchCommit{commitData, err}
 }

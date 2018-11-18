@@ -344,22 +344,6 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	assert.Contains(t, err.Error(), "centID invalid")
 	cfg.Set("identityId", oldID)
 
-	// missing eth keys
-	oldPth := cfg.Get("keys.ethauth.publicKey")
-	cfg.Set("keys.ethauth.publicKey", "wrong path")
-	model = mockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Times(5)
-	srv.On("LookupIdentityForID", c.ID).Return(id, nil).Once()
-	id.On("FetchKey", pubkey[:]).Return(idkey, nil).Once()
-	identity.IDService = srv
-	err = dp.AnchorDocument(model)
-	model.AssertExpectations(t)
-	srv.AssertExpectations(t)
-	id.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to get eth keys")
-	cfg.Set("keys.ethauth.publicKey", oldPth)
-
 	// failed anchor commit
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Times(5)

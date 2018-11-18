@@ -36,7 +36,7 @@ type mintingConfirmationTask struct {
 	TokenID         string
 	BlockHeight     uint64
 	RegistryAddress string
-	Timeout                         time.Duration
+	Timeout         time.Duration
 
 	//state
 	EthContextInitializer func(d time.Duration) (ctx context.Context, cancelFunc context.CancelFunc)
@@ -47,7 +47,7 @@ func newMintingConfirmationTask(
 	ethContextInitializer func(d time.Duration) (ctx context.Context, cancelFunc context.CancelFunc),
 ) *mintingConfirmationTask {
 	return &mintingConfirmationTask{
-		Timeout: timeout,
+		Timeout:               timeout,
 		EthContextInitializer: ethContextInitializer,
 	}
 }
@@ -115,7 +115,6 @@ func (nftc *mintingConfirmationTask) ParseKwargs(kwargs map[string]interface{}) 
 
 	return nil
 }
-
 
 // RunTask calls listens to events from geth related to MintingConfirmationTask#TokenID and records result.
 func (nftc *mintingConfirmationTask) RunTask() (interface{}, error) {

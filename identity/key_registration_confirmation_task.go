@@ -36,13 +36,13 @@ type keyRegistrationConfirmationTask struct {
 	ctx                context.Context
 	filterer           keyRegisteredFilterer
 	contract           *EthereumIdentityRegistryContract
-	config             *config.Configuration
+	config             config.Config
 }
 
 func newKeyRegistrationConfirmationTask(
 	ethContextInitializer func(d time.Duration) (ctx context.Context, cancelFunc context.CancelFunc),
 	registryContract *EthereumIdentityRegistryContract,
-	config *config.Configuration,
+	config config.Config,
 ) *keyRegistrationConfirmationTask {
 	return &keyRegistrationConfirmationTask{
 		contextInitializer: ethContextInitializer,

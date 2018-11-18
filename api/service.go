@@ -20,7 +20,7 @@ import (
 )
 
 // registerServices registers all endpoints to the grpc server
-func registerServices(ctx context.Context, config Config, registry *documents.ServiceRegistry, grpcServer *grpc.Server, gwmux *runtime.ServeMux, addr string, dopts []grpc.DialOption) error {
+func registerServices(ctx context.Context, config config.Config, registry *documents.ServiceRegistry, grpcServer *grpc.Server, gwmux *runtime.ServeMux, addr string, dopts []grpc.DialOption) error {
 	// documents (common)
 	documentpb.RegisterDocumentServiceServer(grpcServer, documents.GRPCHandler(registry))
 	err := documentpb.RegisterDocumentServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)

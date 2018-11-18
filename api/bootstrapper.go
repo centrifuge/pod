@@ -13,7 +13,7 @@ type Bootstrapper struct{}
 
 // Bootstrap initiates api server
 func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
-	cfg, ok := ctx[bootstrap.BootstrappedConfig].(*config.Configuration)
+	cfg, ok := ctx[config.BootstrappedConfig].(*config.Configuration)
 	if !ok {
 		return fmt.Errorf("config not initialised")
 	}

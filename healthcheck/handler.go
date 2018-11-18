@@ -3,22 +3,19 @@ package healthcheck
 import (
 	"context"
 
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/health"
 	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/golang/protobuf/ptypes/empty"
 )
 
-type Config interface {
-	GetNetworkString() string
-}
-
 // handler is the grpc handler that implements healthpb.HealthCheckServiceServer
 type handler struct {
-	config Config
+	config config.Config
 }
 
 // GRPCHandler returns the grpc implementation instance of healthpb.HealthCheckServiceServer
-func GRPCHandler(config Config) healthpb.HealthCheckServiceServer {
+func GRPCHandler(config config.Config) healthpb.HealthCheckServiceServer {
 	return handler{config}
 }
 

@@ -11,14 +11,13 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/config"
 
-	"time"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/nft"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
@@ -134,46 +133,17 @@ func (m *MockPaymentObligation) Mint(opts *bind.TransactOpts, _to common.Address
 	return args.Get(0).(*types.Transaction), args.Error(1)
 }
 
-type MockConfig struct {
-	mock.Mock
-}
-
-func (m *MockConfig) GetIdentityID() ([]byte, error) {
-	args := m.Called()
-	return args.Get(0).([]byte), args.Error(1)
-}
-
-func (m *MockConfig) GetEthereumDefaultAccountName() string {
-	args := m.Called()
-	return args.Get(0).(string)
-}
-
-func (m *MockConfig) Config() *config.Configuration {
-	args := m.Called()
-	return args.Get(0).(*config.Configuration)
-}
-
-func (m *MockConfig) GetContractAddress(address string) common.Address {
-	args := m.Called()
-	return args.Get(0).(common.Address)
-}
-
-func (m *MockConfig) GetEthereumContextWaitTimeout() time.Duration {
-	args := m.Called()
-	return args.Get(0).(time.Duration)
-}
-
 func TestPaymentObligationService(t *testing.T) {
 	tests := []struct {
 		name    string
-		mocker  func() (testingdocuments.MockService, *MockPaymentObligation, testingcommons.MockIDService, testingcommons.MockEthClient, MockConfig)
+		mocker  func() (testingdocuments.MockService, *MockPaymentObligation, testingcommons.MockIDService, testingcommons.MockEthClient, testingconfig.MockConfig)
 		request *nftpb.NFTMintRequest
 		err     error
 		result  string
 	}{
 		{
 			"happypath",
-			func() (testingdocuments.MockService, *MockPaymentObligation, testingcommons.MockIDService, testingcommons.MockEthClient, MockConfig) {
+			func() (testingdocuments.MockService, *MockPaymentObligation, testingcommons.MockIDService, testingcommons.MockEthClient, testingconfig.MockConfig) {
 				coreDoc := coredocument.New()
 				coreDoc.DocumentRoot = utils.RandomSlice(32)
 				proof := getDummyProof(coreDoc)
@@ -190,7 +160,7 @@ func TestPaymentObligationService(t *testing.T) {
 					mock.Anything, mock.Anything, mock.Anything, mock.Anything,
 					mock.Anything, mock.Anything, mock.Anything,
 				).Return(&types.Transaction{}, nil)
-				configMock := MockConfig{}
+				configMock := testingconfig.MockConfig{}
 				configMock.On("GetEthereumDefaultAccountName").Return("ethacc")
 				configMock.On("GetContractAddress").Return(common.HexToAddress("0xd0dbc72ae5e71382b3cc9cfdc53f6952a085db6d"))
 
@@ -206,11 +176,11 @@ func TestPaymentObligationService(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			// get mocks
-			docService, paymentOb, idService, ethClient, config := test.mocker()
+			docService, paymentOb, idService, ethClient, mockCfg := test.mocker()
 			// with below config the documentType has to be test.name to avoid conflicts since registry is a singleton
 			registry.Register(test.name, &docService)
 			confirmations := make(chan *WatchTokenMinted)
-			service := NewEthereumPaymentObligation(registry, &idService, &ethClient, &config, func(tokenID *big.Int, registryAddress string) (chan *WatchTokenMinted, error) {
+			service := NewEthereumPaymentObligation(registry, &idService, &ethClient, &mockCfg, func(config config.Config, tokenID *big.Int, registryAddress string) (chan *WatchTokenMinted, error) {
 				return confirmations, nil
 			}, func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error) {
 				return &EthereumPaymentObligationContract{}, nil
@@ -225,7 +195,7 @@ func TestPaymentObligationService(t *testing.T) {
 			paymentOb.AssertExpectations(t)
 			idService.AssertExpectations(t)
 			ethClient.AssertExpectations(t)
-			config.AssertExpectations(t)
+			mockCfg.AssertExpectations(t)
 		})
 	}
 }

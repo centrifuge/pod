@@ -28,18 +28,9 @@ import (
 
 var log = logging.Logger("p2p-server")
 
-type Config interface {
-	GetP2PExternalIP() string
-	GetP2PPort() int
-	GetBootstrapPeers() []string
-	GetP2PConnectionTimeout() time.Duration
-	GetNetworkID() uint32
-	GetIdentityID() ([]byte, error)
-}
-
 // p2pServer implements api.Server
 type p2pServer struct {
-	config   Config
+	config   config.Config
 	host     host.Host
 	protocol *p2pgrpc.GRPCProtocol
 }

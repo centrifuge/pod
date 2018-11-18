@@ -42,18 +42,6 @@ func DefaultWaitForTransactionMiningContext(d time.Duration) (ctx context.Contex
 	return context.WithDeadline(context.Background(), toBeDone)
 }
 
-// Config defines functions to get ethereum details
-type Config interface {
-	GetEthereumGasPrice() *big.Int
-	GetEthereumGasLimit() uint64
-	GetEthereumNodeURL() string
-	GetEthereumAccount(accountName string) (account *config.AccountConfig, err error)
-	GetEthereumIntervalRetry() time.Duration
-	GetEthereumMaxRetries() int
-	GetTxPoolAccessEnabled() bool
-	GetEthereumContextWaitTimeout() time.Duration
-}
-
 // Client can be implemented by any chain client
 type Client interface {
 	GetEthClient() *ethclient.Client
@@ -69,14 +57,14 @@ type gethClient struct {
 	host      *url.URL
 	accounts  map[string]*bind.TransactOpts
 	accMu     sync.Mutex // accMu to protect accounts
-	config    Config
+	config    config.Config
 
 	// txMu to ensure one transaction at a time per client
 	txMu sync.Mutex
 }
 
 // NewGethClient returns an gethClient which implements Client
-func NewGethClient(config Config) (Client, error) {
+func NewGethClient(config config.Config) (Client, error) {
 	log.Info("Opening connection to Ethereum:", config.GetEthereumNodeURL())
 	u, err := url.Parse(config.GetEthereumNodeURL())
 	if err != nil {

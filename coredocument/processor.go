@@ -7,6 +7,7 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/centerrors"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -18,12 +19,6 @@ import (
 )
 
 var log = logging.Logger("coredocument")
-
-// config defines functions to get processor details
-type Config interface {
-	GetNetworkID() uint32
-	GetIdentityID() ([]byte, error)
-}
 
 // Processor identifies an implementation, which can do a bunch of things with a CoreDocument.
 // E.g. send, anchor, etc.
@@ -48,11 +43,11 @@ type defaultProcessor struct {
 	identityService  identity.Service
 	p2pClient        client
 	anchorRepository anchors.AnchorRepository
-	config           Config
+	config           config.Config
 }
 
 // DefaultProcessor returns the default implementation of CoreDocument Processor
-func DefaultProcessor(idService identity.Service, p2pClient client, repository anchors.AnchorRepository, config Config) Processor {
+func DefaultProcessor(idService identity.Service, p2pClient client, repository anchors.AnchorRepository, config config.Config) Processor {
 	return defaultProcessor{
 		identityService:  idService,
 		p2pClient:        p2pClient,

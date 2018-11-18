@@ -33,7 +33,7 @@ func createIdentity() (identity.CentID, error) {
 	return centrifugeId, nil
 }
 
-func generateKeys(config *config.Configuration) {
+func generateKeys(config config.Config) {
 	p2pPub, p2pPvt := config.GetSigningKeyPair()
 	ethAuthPub, ethAuthPvt := config.GetEthAuthKeyPair()
 	keytools.GenerateSigningKeyPair(p2pPub, p2pPvt, "ed25519")
@@ -41,7 +41,7 @@ func generateKeys(config *config.Configuration) {
 	keytools.GenerateSigningKeyPair(ethAuthPub, ethAuthPvt, "secp256k1")
 }
 
-func addKeys(config *config.Configuration, ctx *header.ContextHeader) error {
+func addKeys(config config.Config, ctx *header.ContextHeader) error {
 	err := identity.AddKeyFromConfig(config, ctx.Self(), identity.KeyPurposeP2P)
 	if err != nil {
 		panic(err)

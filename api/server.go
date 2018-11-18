@@ -15,8 +15,8 @@ import (
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/centerrors"
-	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	logging "github.com/ipfs/go-log"
 	"golang.org/x/net/context"
@@ -26,15 +26,9 @@ import (
 
 var log = logging.Logger("api-server")
 
-type Config interface {
-	GetServerAddress() string
-	GetServerPort() int
-	GetNetworkString() string
-}
-
 // apiServer is an implementation of node.Server interface for serving HTTP based Centrifuge API
 type apiServer struct {
-	config   Config
+	config   config.Config
 	registry *documents.ServiceRegistry
 }
 
