@@ -39,7 +39,7 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	}
 
 	// register service
-	srv := DefaultService(cfg, getRepository(), coredocument.DefaultProcessor(identity.IDService, p2pClient, anchors.GetAnchorRepository(), cfg), anchors.GetAnchorRepository())
+	srv := DefaultService(cfg, getRepository(), coredocument.DefaultProcessor(identity.IDService, p2pClient, anchors.GetAnchorRepository(), cfg), anchors.GetAnchorRepository(), identity.IDService)
 	err := registry.Register(documenttypes.InvoiceDataTypeUrl, srv)
 	if err != nil {
 		return fmt.Errorf("failed to register invoice service: %v", err)

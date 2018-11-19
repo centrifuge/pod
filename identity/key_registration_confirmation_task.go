@@ -7,10 +7,12 @@ import (
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/centerrors"
+	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 const (
@@ -35,17 +37,23 @@ type keyRegistrationConfirmationTask struct {
 	filterer           keyRegisteredFilterer
 	contract           *EthereumIdentityRegistryContract
 	config             Config
+	gethClientFinder   func() ethereum.Client
+	contractProvider   func(address common.Address, backend bind.ContractBackend) (contract, error)
 }
 
 func newKeyRegistrationConfirmationTask(
 	ethContextInitializer func() (ctx context.Context, cancelFunc context.CancelFunc),
 	registryContract *EthereumIdentityRegistryContract,
 	config Config,
+	gethClientFinder func() ethereum.Client,
+	contractProvider func(address common.Address, backend bind.ContractBackend) (contract, error),
 ) *keyRegistrationConfirmationTask {
 	return &keyRegistrationConfirmationTask{
 		contextInitializer: ethContextInitializer,
 		contract:           registryContract,
 		config:             config,
+		gethClientFinder:   gethClientFinder,
+		contractProvider:   contractProvider,
 	}
 }
 
@@ -71,7 +79,9 @@ func (krct *keyRegistrationConfirmationTask) Copy() (gocelery.CeleryTask, error)
 		krct.ctx,
 		krct.filterer,
 		krct.contract,
-		krct.config}, nil
+		krct.config,
+		krct.gethClientFinder,
+		krct.contractProvider}, nil
 }
 
 // ParseKwargs parses the args into the task
@@ -124,7 +134,7 @@ func (krct *keyRegistrationConfirmationTask) RunTask() (interface{}, error) {
 		krct.ctx, _ = krct.contextInitializer()
 	}
 
-	id := ethereumIdentity{centID: krct.centID, registryContract: krct.contract, config: krct.config}
+	id := newEthereumIdentity(krct.centID, krct.contract, krct.config, krct.gethClientFinder, krct.contractProvider)
 	contract, err := id.getContract()
 	if err != nil {
 		return nil, err

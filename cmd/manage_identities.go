@@ -68,7 +68,7 @@ var addKeyCmd = &cobra.Command{
 			panic("Option not supported")
 		}
 
-		err := identity.AddKeyFromConfig(purposeInt)
+		err := identity.IDService.AddKeyFromConfig(purposeInt)
 		if err != nil {
 			panic(err)
 		}

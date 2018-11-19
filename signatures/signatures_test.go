@@ -3,13 +3,8 @@
 package signatures
 
 import (
-	"fmt"
 	"testing"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
-	"github.com/centrifuge/go-centrifuge/testingutils/coredocument"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -22,21 +17,7 @@ var (
 )
 
 func TestSign(t *testing.T) {
-	coreDoc := testingcoredocument.GenerateCoreDocument()
-	coreDoc.SigningRoot = key1Pub
-	centID, err := identity.ToCentID(id1)
-	assert.Nil(t, err)
-	signKey := identity.IdentityKey{
-		PublicKey:  key1Pub,
-		PrivateKey: key1,
-	}
-	idConfig := &identity.IdentityConfig{
-		ID: centID,
-		Keys: map[int]identity.IdentityKey{
-			identity.KeyPurposeSigning: signKey,
-		},
-	}
-	sig := Sign(idConfig, identity.KeyPurposeSigning, coreDoc.SigningRoot)
+	sig := Sign(id1, key1, key1Pub, key1Pub)
 	assert.NotNil(t, sig)
 	assert.Equal(t, sig.PublicKey, []byte(key1Pub))
 	assert.Equal(t, sig.EntityId, id1)
@@ -46,23 +27,11 @@ func TestSign(t *testing.T) {
 	assert.NotNil(t, sig.Timestamp, "must be non nil")
 }
 
-func TestValidateSignature_invalid_key(t *testing.T) {
-	sig := &coredocumentpb.Signature{EntityId: utils.RandomSlice(identity.CentIDLength)}
-	srv := &testingcommons.MockIDService{}
-	centId, _ := identity.ToCentID(sig.EntityId)
-	srv.On("LookupIdentityForID", centId).Return(nil, fmt.Errorf("failed GetIdentity")).Once()
-	identity.IDService = srv
-	err := ValidateSignature(sig, key1Pub)
-	srv.AssertExpectations(t)
-	assert.NotNil(t, err, "must be not nil")
-	assert.Contains(t, err.Error(), "failed GetIdentity")
-}
-
 func TestValidateSignature_invalid_sig(t *testing.T) {
 	pubKey := key1Pub
 	message := key1Pub
 	signature := utils.RandomSlice(32)
-	err := verifySignature(pubKey, message, signature)
+	err := VerifySignature(pubKey, message, signature)
 	assert.NotNil(t, err, "must be not nil")
 	assert.Contains(t, err.Error(), "invalid signature")
 }
@@ -70,21 +39,6 @@ func TestValidateSignature_invalid_sig(t *testing.T) {
 func TestValidateSignature_success(t *testing.T) {
 	pubKey := key1Pub
 	message := key1Pub
-	err := verifySignature(pubKey, message, signature)
+	err := VerifySignature(pubKey, message, signature)
 	assert.Nil(t, err, "must be nil")
-}
-
-func TestValidateCentrifugeId(t *testing.T) {
-	randomBytes := utils.RandomSlice(identity.CentIDLength)
-	centID, err := identity.ToCentID(randomBytes)
-	assert.Nil(t, err, "centID not initialized correctly ")
-
-	sig := &coredocumentpb.Signature{EntityId: randomBytes}
-	err = ValidateCentrifugeID(sig, centID)
-	assert.Nil(t, err, "Validate centrifuge id didn't work correctly")
-
-	randomBytes = utils.RandomSlice(identity.CentIDLength)
-	centID, err = identity.ToCentID(randomBytes)
-	err = ValidateCentrifugeID(sig, centID)
-	assert.NotNil(t, err, "Validate centrifuge id didn't work correctly")
 }
