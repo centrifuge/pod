@@ -94,7 +94,7 @@ type WatchIdentity struct {
 	Error    error
 }
 
-// Service is used to fetch identities
+// Service is used to interact with centrifuge identities
 type Service interface {
 
 	// LookupIdentityForID looks up if the identity for given CentID exists on ethereum
