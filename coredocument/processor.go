@@ -246,7 +246,7 @@ func (dp defaultProcessor) SendDocument(ctx *header.ContextHeader, model documen
 		return fmt.Errorf("post anchor validations failed: %v", err)
 	}
 
-	extCollaborators, err := GetExternalCollaborators(ctx, cd)
+	extCollaborators, err := GetExternalCollaborators(ctx.Self().ID, cd)
 	if err != nil {
 		return fmt.Errorf("get external collaborators failed: %v", err)
 	}

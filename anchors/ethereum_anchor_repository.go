@@ -189,7 +189,7 @@ func setUpCommitEventListener(config config.Config, from common.Address, commitD
 		return nil, err
 	}
 
-	go waitAndRouteCommitEvent(config, asyncRes, confirmations, commitData)
+	go waitAndRouteCommitEvent(config.GetEthereumContextWaitTimeout(), asyncRes, confirmations, commitData)
 	return confirmations, nil
 }
 
@@ -210,7 +210,7 @@ func waitAndRoutePreCommitEvent(conf <-chan *EthereumAnchorRepositoryContractAnc
 }
 
 // waitAndRouteCommitEvent notifies the confirmations channel whenever a commit is being noted as Ethereum event
-func waitAndRouteCommitEvent(config config.Config, asyncResult *gocelery.AsyncResult, confirmations chan<- *WatchCommit, commitData *CommitData) {
-	_, err := asyncResult.Get(config.GetEthereumContextWaitTimeout())
+func waitAndRouteCommitEvent(timeout time.Duration, asyncResult *gocelery.AsyncResult, confirmations chan<- *WatchCommit, commitData *CommitData) {
+	_, err := asyncResult.Get(timeout)
 	confirmations <- &WatchCommit{commitData, err}
 }

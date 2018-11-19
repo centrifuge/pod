@@ -248,7 +248,7 @@ func TestGetExternalCollaborators(t *testing.T) {
 	assert.Equal(t, [][]byte{c1, c2}, cd.Collaborators)
 	ctxh, err := header.NewContextHeader(context.Background(), cfg)
 	assert.Nil(t, err)
-	collaborators, err := GetExternalCollaborators(ctxh, cd)
+	collaborators, err := GetExternalCollaborators(ctxh.Self().ID, cd)
 	assert.Nil(t, err)
 	assert.NotNil(t, collaborators)
 	assert.Equal(t, [][]byte{c1, c2}, collaborators)
@@ -263,6 +263,6 @@ func TestGetExternalCollaborators_WrongIDFormat(t *testing.T) {
 	cd.Collaborators[1] = utils.RandomSlice(5)
 	ctxh, err := header.NewContextHeader(context.Background(), cfg)
 	assert.Nil(t, err)
-	_, err = GetExternalCollaborators(ctxh, cd)
+	_, err = GetExternalCollaborators(ctxh.Self().ID, cd)
 	assert.NotNil(t, err)
 }

@@ -124,7 +124,7 @@ func (s *p2pServer) GetSignaturesForDocument(ctx *header.ContextHeader, identity
 	in := make(chan signatureResponseWrap)
 	defer close(in)
 
-	extCollaborators, err := coredocument.GetExternalCollaborators(ctx, doc)
+	extCollaborators, err := coredocument.GetExternalCollaborators(ctx.Self().ID, doc)
 	if err != nil {
 		return centerrors.Wrap(err, "failed to get external collaborators")
 	}
