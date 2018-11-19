@@ -24,46 +24,36 @@ import (
 
 // PurchaseOrder implements the documents.Model keeps track of purchase order related fields and state
 type PurchaseOrder struct {
-	// purchase order number or reference number
-	PoNumber string
-	// name of the ordering company
-	OrderName string
-	// street and address details of the ordering company
-	OrderStreet  string
-	OrderCity    string
-	OrderZipcode string
-	// country ISO code of the ordering company of this purchase order
-	OrderCountry string
-	// name of the recipient company
-	RecipientName    string
-	RecipientStreet  string
-	RecipientCity    string
-	RecipientZipcode string
-	// country ISO code of the receipient of this purchase order
-	RecipientCountry string
-	// ISO currency code
-	Currency string
-	// ordering gross amount including tax
-	OrderAmount int64
-	// invoice amount excluding tax
-	NetAmount int64
-	TaxAmount int64
-	TaxRate   int64
-	Recipient *identity.CentID
-	Order     []byte
-	// contact or requester or purchaser at the ordering company
-	OrderContact string
-	Comment      string
-	// requested delivery date
-	DeliveryDate *timestamp.Timestamp
-	// purchase order date
-	DateCreated *timestamp.Timestamp
-	ExtraData   []byte
-
+	Status            string // status of the Purchase Order
+	PoNumber          string // purchase order number or reference number
+	OrderName         string // name of the ordering company
+	OrderStreet       string // street and address details of the ordering company
+	OrderCity         string
+	OrderZipcode      string
+	OrderCountry      string // country ISO code of the ordering company of this purchase order
+	RecipientName     string // name of the recipient company
+	RecipientStreet   string
+	RecipientCity     string
+	RecipientZipcode  string
+	RecipientCountry  string // country ISO code of the receipient of this purchase order
+	Currency          string // ISO currency code
+	OrderAmount       int64  // ordering gross amount including tax
+	NetAmount         int64  // invoice amount excluding tax
+	TaxAmount         int64
+	TaxRate           int64
+	Recipient         *identity.CentID
+	Order             []byte
+	OrderContact      string
+	Comment           string
+	DeliveryDate      *timestamp.Timestamp // requested delivery date
+	DateCreated       *timestamp.Timestamp // purchase order date
+	ExtraData         []byte
 	PurchaseOrderSalt *purchaseorderpb.PurchaseOrderDataSalts
 	CoreDocument      *coredocumentpb.CoreDocument
 }
 
+// ID returns the DocumentIdentifier for this document
+// Note: this is not same as VersionIdentifier
 func (p *PurchaseOrder) ID() ([]byte, error) {
 	coreDoc, err := p.PackCoreDocument()
 	if err != nil {
@@ -90,6 +80,7 @@ func (p *PurchaseOrder) getClientData() *clientpurchaseorderpb.PurchaseOrderData
 	}
 
 	return &clientpurchaseorderpb.PurchaseOrderData{
+		PoStatus:         p.Status,
 		PoNumber:         p.PoNumber,
 		OrderName:        p.OrderName,
 		OrderStreet:      p.OrderStreet,
@@ -125,6 +116,7 @@ func (p *PurchaseOrder) createP2PProtobuf() *purchaseorderpb.PurchaseOrderData {
 	}
 
 	return &purchaseorderpb.PurchaseOrderData{
+		PoStatus:         p.Status,
 		PoNumber:         p.PoNumber,
 		OrderName:        p.OrderName,
 		OrderStreet:      p.OrderStreet,
@@ -170,6 +162,7 @@ func (p *PurchaseOrder) InitPurchaseOrderInput(payload *clientpurchaseorderpb.Pu
 
 // initPurchaseOrderFromData initialises purchase order from purchaseOrderData
 func (p *PurchaseOrder) initPurchaseOrderFromData(data *clientpurchaseorderpb.PurchaseOrderData) error {
+	p.Status = data.PoStatus
 	p.PoNumber = data.PoNumber
 	p.OrderName = data.OrderName
 	p.OrderStreet = data.OrderStreet
@@ -218,31 +211,32 @@ func (p *PurchaseOrder) initPurchaseOrderFromData(data *clientpurchaseorderpb.Pu
 }
 
 // loadFromP2PProtobuf loads the purcase order from centrifuge protobuf purchase order data
-func (p *PurchaseOrder) loadFromP2PProtobuf(purchaseOrderData *purchaseorderpb.PurchaseOrderData) {
-	p.PoNumber = purchaseOrderData.PoNumber
-	p.OrderName = purchaseOrderData.OrderName
-	p.OrderStreet = purchaseOrderData.OrderStreet
-	p.OrderCity = purchaseOrderData.OrderCity
-	p.OrderZipcode = purchaseOrderData.OrderZipcode
-	p.OrderCountry = purchaseOrderData.OrderCountry
-	p.RecipientName = purchaseOrderData.RecipientName
-	p.RecipientStreet = purchaseOrderData.RecipientStreet
-	p.RecipientCity = purchaseOrderData.RecipientCity
-	p.RecipientZipcode = purchaseOrderData.RecipientZipcode
-	p.RecipientCountry = purchaseOrderData.RecipientCountry
-	p.Currency = purchaseOrderData.Currency
-	p.OrderAmount = purchaseOrderData.OrderAmount
-	p.NetAmount = purchaseOrderData.NetAmount
-	p.TaxAmount = purchaseOrderData.TaxAmount
-	p.TaxRate = purchaseOrderData.TaxRate
-	p.Order = purchaseOrderData.Order
-	p.OrderContact = purchaseOrderData.OrderContact
-	p.Comment = purchaseOrderData.Comment
-	p.DeliveryDate = purchaseOrderData.DeliveryDate
-	p.DateCreated = purchaseOrderData.DateCreated
-	p.ExtraData = purchaseOrderData.ExtraData
+func (p *PurchaseOrder) loadFromP2PProtobuf(data *purchaseorderpb.PurchaseOrderData) {
+	p.Status = data.PoStatus
+	p.PoNumber = data.PoNumber
+	p.OrderName = data.OrderName
+	p.OrderStreet = data.OrderStreet
+	p.OrderCity = data.OrderCity
+	p.OrderZipcode = data.OrderZipcode
+	p.OrderCountry = data.OrderCountry
+	p.RecipientName = data.RecipientName
+	p.RecipientStreet = data.RecipientStreet
+	p.RecipientCity = data.RecipientCity
+	p.RecipientZipcode = data.RecipientZipcode
+	p.RecipientCountry = data.RecipientCountry
+	p.Currency = data.Currency
+	p.OrderAmount = data.OrderAmount
+	p.NetAmount = data.NetAmount
+	p.TaxAmount = data.TaxAmount
+	p.TaxRate = data.TaxRate
+	p.Order = data.Order
+	p.OrderContact = data.OrderContact
+	p.Comment = data.Comment
+	p.DeliveryDate = data.DeliveryDate
+	p.DateCreated = data.DateCreated
+	p.ExtraData = data.ExtraData
 
-	if recipient, err := identity.ToCentID(purchaseOrderData.Recipient); err == nil {
+	if recipient, err := identity.ToCentID(data.Recipient); err == nil {
 		p.Recipient = &recipient
 	}
 }

@@ -8,18 +8,20 @@ import (
 	"github.com/centrifuge/go-centrifuge/queue"
 )
 
-type Bootstrapper struct {
-}
+// BootstrappedAnchorRepo is used as a key to map the configured anchor repository through context.
+const BootstrappedAnchorRepo string = "BootstrappedAnchorRepo"
+
+type Bootstrapper struct{}
 
 // Bootstrap initializes the AnchorRepositoryContract as well as the anchorConfirmationTask that depends on it.
-// the anchorConfirmationTask is added to be registered on the Queue at queue.Bootstrapper
-func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
-	if _, ok := context[config.BootstrappedConfig]; !ok {
+// the anchorConfirmationTask is added to be registered on the Queue at queue.Bootstrapper.
+func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
+	if _, ok := ctx[config.BootstrappedConfig]; !ok {
 		return errors.New("config hasn't been initialized")
 	}
-	cfg := context[config.BootstrappedConfig].(*config.Configuration)
+	cfg := ctx[config.BootstrappedConfig].(*config.Configuration)
 
-	if _, ok := context[ethereum.BootstrappedEthereumClient]; !ok {
+	if _, ok := ctx[ethereum.BootstrappedEthereumClient]; !ok {
 		return errors.New("ethereum client hasn't been initialized")
 	}
 
@@ -29,11 +31,9 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		return err
 	}
 
-	anchorRepo := NewEthereumAnchorRepository(cfg, repositoryContract, ethereum.GetClient)
-	setAnchorRepository(anchorRepo)
-	if err != nil {
-		return err
-	}
+	var repo AnchorRepository
+	repo = NewEthereumAnchorRepository(cfg, repositoryContract, ethereum.GetClient)
+	ctx[BootstrappedAnchorRepo] = repo
 
 	task := &anchorConfirmationTask{
 		// Passing timeout as a common property for every request, if we need more fine-grain control per request then we will override by invoker
@@ -42,5 +42,5 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		EthContextInitializer:   ethereum.DefaultWaitForTransactionMiningContext,
 	}
 
-	return queue.InstallQueuedTask(context, task)
+	return queue.InstallQueuedTask(ctx, task)
 }

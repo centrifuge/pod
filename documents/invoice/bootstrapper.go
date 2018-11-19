@@ -17,7 +17,7 @@ import (
 type Bootstrapper struct{}
 
 // Bootstrap sets the required storage and registers
-func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
+func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	if _, ok := ctx[config.BootstrappedConfig]; !ok {
 		return errors.New("config hasn't been initialized")
 	}
@@ -38,8 +38,13 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return fmt.Errorf("service registry not initialised")
 	}
 
+	anchorRepo, ok := ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
+	if !ok {
+		return fmt.Errorf("anchor repository not initialised")
+	}
+
 	// register service
-	srv := DefaultService(cfg, getRepository(), coredocument.DefaultProcessor(identity.IDService, p2pClient, anchors.GetAnchorRepository(), cfg), anchors.GetAnchorRepository(), identity.IDService)
+	srv := DefaultService(cfg, getRepository(), coredocument.DefaultProcessor(identity.IDService, p2pClient, anchorRepo, cfg), anchorRepo, identity.IDService)
 	err := registry.Register(documenttypes.InvoiceDataTypeUrl, srv)
 	if err != nil {
 		return fmt.Errorf("failed to register invoice service: %v", err)
