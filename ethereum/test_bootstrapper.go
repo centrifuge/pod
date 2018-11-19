@@ -2,10 +2,10 @@
 
 package ethereum
 
-func (b *Bootstrapper) TestBootstrap(context map[string]interface{}) error {
+func (b Bootstrapper) TestBootstrap(context map[string]interface{}) error {
 	return b.Bootstrap(context)
 }
 
-func (*Bootstrapper) TestTearDown() error {
+func (Bootstrapper) TestTearDown() error {
 	return nil
 }

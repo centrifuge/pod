@@ -29,13 +29,17 @@ import (
 	"golang.org/x/crypto/ed25519"
 )
 
-var handler p2ppb.P2PServiceServer
+var (
+	handler    p2ppb.P2PServiceServer
+	anchorRepo anchors.AnchorRepository
+)
 
 func TestMain(m *testing.M) {
 	flag.Parse()
 	ctx := cc.TestFunctionalEthereumBootstrap()
 	registry := ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
 	handler = p2p.GRPCHandler(registry)
+	anchorRepo = ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
 	config.Config().Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
 	config.Config().Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
 	config.Config().Set("keys.ethauth.publicKey", "../build/resources/ethauth.pub.pem")
@@ -114,7 +118,7 @@ func TestHandler_SendAnchoredDocument_update_fail(t *testing.T) {
 	docRootTyped, _ := anchors.ToDocumentRoot(doc.DocumentRoot)
 	messageToSign := anchors.GenerateCommitHash(anchorIDTyped, centrifugeId, docRootTyped)
 	signature, _ := secp256k1.SignEthereum(messageToSign, idConfig.Keys[identity.KeyPurposeEthMsgAuth].PrivateKey)
-	anchorConfirmations, err := anchors.CommitAnchor(anchorIDTyped, docRootTyped, centrifugeId, [][anchors.DocumentProofLength]byte{utils.RandomByte32()}, signature)
+	anchorConfirmations, err := anchorRepo.CommitAnchor(anchorIDTyped, docRootTyped, centrifugeId, [][anchors.DocumentProofLength]byte{utils.RandomByte32()}, signature)
 	assert.Nil(t, err)
 
 	watchCommittedAnchor := <-anchorConfirmations
@@ -156,7 +160,7 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 	docRootTyped, _ := anchors.ToDocumentRoot(doc.DocumentRoot)
 	messageToSign := anchors.GenerateCommitHash(anchorIDTyped, centrifugeId, docRootTyped)
 	signature, _ := secp256k1.SignEthereum(messageToSign, idConfig.Keys[identity.KeyPurposeEthMsgAuth].PrivateKey)
-	anchorConfirmations, err := anchors.CommitAnchor(anchorIDTyped, docRootTyped, centrifugeId, [][anchors.DocumentProofLength]byte{utils.RandomByte32()}, signature)
+	anchorConfirmations, err := anchorRepo.CommitAnchor(anchorIDTyped, docRootTyped, centrifugeId, [][anchors.DocumentProofLength]byte{utils.RandomByte32()}, signature)
 	assert.Nil(t, err)
 
 	watchCommittedAnchor := <-anchorConfirmations
