@@ -39,7 +39,7 @@ func TestMain(m *testing.M) {
 	flag.Parse()
 	ctx := cc.TestFunctionalEthereumBootstrap()
 	registry := ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
-	handler = p2p.GRPCHandler(registry)
+	handler = p2p.GRPCHandler(cfg, registry)
 	anchorRepo = ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
 	cfg = ctx[config.BootstrappedConfig].(*config.Configuration)
 	cfg.Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")

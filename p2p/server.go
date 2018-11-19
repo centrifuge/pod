@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
-	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/documents"
 	cented25519 "github.com/centrifuge/go-centrifuge/keytools/ed25519"
 	"github.com/ipfs/go-cid"
 	ds "github.com/ipfs/go-datastore"
