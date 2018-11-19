@@ -13,7 +13,7 @@ type Bootstrapper struct {
 }
 
 // Bootstrap initializes the AnchorRepositoryContract as well as the anchorConfirmationTask that depends on it.
-// the anchorConfirmationTask is added to be registered on the Queue at queue.Bootstrapper
+// the anchorConfirmationTask is added to be registered on the queue at queue.Bootstrapper
 func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	if _, ok := context[bootstrap.BootstrappedConfig]; !ok {
 		return errors.New("config hasn't been initialized")
@@ -41,5 +41,10 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		EthContextInitializer:   ethereum.DefaultWaitForTransactionMiningContext,
 	}
 
-	return queue.InstallQueuedTask(context, task)
+	if _, ok := context[bootstrap.BootstrappedQueueServer]; !ok {
+		return errors.New("queue hasn't been initialized")
+	}
+	queueSrv := context[bootstrap.BootstrappedQueueServer].(queue.QueueServer)
+	queueSrv.RegisterTaskType(task.TaskTypeName(), task)
+	return nil
 }

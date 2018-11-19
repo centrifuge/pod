@@ -8,8 +8,7 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/queue"
-	"github.com/centrifuge/go-centrifuge/utils"
+		"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -47,15 +46,9 @@ type anchorConfirmationTask struct {
 	AnchorCommittedFilterer anchorCommittedWatcher
 }
 
-// Name returns AnchorRepositoryConfirmationTaskName
-func (act *anchorConfirmationTask) Name() string {
+// TaskTypeName returns AnchorRepositoryConfirmationTaskName
+func (act *anchorConfirmationTask) TaskTypeName() string {
 	return AnchorRepositoryConfirmationTaskName
-}
-
-// Init registers the task to the queue
-func (act *anchorConfirmationTask) Init() error {
-	queue.Queue.Register(act.Name(), act)
-	return nil
 }
 
 // Copy returns a new instance of anchorConfirmationTask

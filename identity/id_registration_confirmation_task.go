@@ -7,8 +7,7 @@ import (
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/centerrors"
-	"github.com/centrifuge/go-centrifuge/queue"
-	"github.com/centrifuge/go-centrifuge/utils"
+		"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 )
@@ -41,15 +40,9 @@ func newIdRegistrationConfirmationTask(
 	}
 }
 
-// Name returns the name of the task
-func (rct *idRegistrationConfirmationTask) Name() string {
+// TaskTypeName returns the name of the task
+func (rct *idRegistrationConfirmationTask) TaskTypeName() string {
 	return idRegistrationConfirmationTaskName
-}
-
-// Init registers the task to queue
-func (rct *idRegistrationConfirmationTask) Init() error {
-	queue.Queue.Register(idRegistrationConfirmationTaskName, rct)
-	return nil
 }
 
 // Copy returns a new copy of the the task

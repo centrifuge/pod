@@ -2,11 +2,13 @@
 
 package queue
 
+import "github.com/centrifuge/go-centrifuge/bootstrap"
+
 func (b *Bootstrapper) TestBootstrap(context map[string]interface{}) error {
 	return b.Bootstrap(context)
 }
 
 func (b *Bootstrapper) TestTearDown() error {
-	StopQueue()
-	return nil
+	srv := b.context[bootstrap.BootstrappedQueueServer].(QueueServer)
+	return srv.Stop()
 }

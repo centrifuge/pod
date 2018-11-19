@@ -169,7 +169,7 @@ func setupMintListener(tokenID *big.Int, registryAddress string) (confirmations 
 	if err != nil {
 		return nil, err
 	}
-	asyncRes, err := queue.Queue.DelayKwargs(mintingConfirmationTaskName, map[string]interface{}{
+	asyncRes, err := queue.queue.DelayKwargs(mintingConfirmationTaskName, map[string]interface{}{
 		tokenIDParam:         hex.EncodeToString(tokenID.Bytes()),
 		blockHeightParam:     h.Number.Uint64(),
 		registryAddressParam: registryAddress,

@@ -306,7 +306,7 @@ func setUpKeyRegisteredEventListener(identity Identity, keyPurpose int, key [32]
 	if err != nil {
 		return nil, err
 	}
-	asyncRes, err := queue.Queue.DelayKwargs(keyRegistrationConfirmationTaskName,
+	asyncRes, err := queue.queue.DelayKwargs(keyRegistrationConfirmationTaskName,
 		map[string]interface{}{
 			centIDParam:      centId,
 			keyParam:         key,
@@ -328,7 +328,7 @@ func setUpRegistrationEventListener(identityToBeCreated Identity, blockHeight ui
 	if err != nil {
 		return nil, err
 	}
-	asyncRes, err := queue.Queue.DelayKwargs(idRegistrationConfirmationTaskName, map[string]interface{}{centIDParam: bCentId, blockHeightParam: blockHeight})
+	asyncRes, err := queue.queue.DelayKwargs(idRegistrationConfirmationTaskName, map[string]interface{}{centIDParam: bCentId, blockHeightParam: blockHeight})
 	if err != nil {
 		return nil, err
 	}

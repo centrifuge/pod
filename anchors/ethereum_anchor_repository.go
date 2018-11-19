@@ -179,7 +179,7 @@ func setUpPreCommitEventListener(contractEvent WatchAnchorPreCommitted, from com
 // about successful mining/creation of a commit
 func setUpCommitEventListener(from common.Address, commitData *CommitData) (confirmations chan *WatchCommit, err error) {
 	confirmations = make(chan *WatchCommit)
-	asyncRes, err := queue.Queue.DelayKwargs(AnchorRepositoryConfirmationTaskName, map[string]interface{}{
+	asyncRes, err := queue.queue.DelayKwargs(AnchorRepositoryConfirmationTaskName, map[string]interface{}{
 		AnchorIDParam:     commitData.AnchorID,
 		AddressParam:      from,
 		CentrifugeIDParam: commitData.CentrifugeID,

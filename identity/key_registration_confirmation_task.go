@@ -8,8 +8,7 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
-	"github.com/centrifuge/go-centrifuge/queue"
-	"github.com/centrifuge/go-centrifuge/utils"
+		"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -57,15 +56,9 @@ func newKeyRegistrationConfirmationTask(
 	}
 }
 
-// Name returns keyRegistrationConfirmationTaskName
-func (krct *keyRegistrationConfirmationTask) Name() string {
+// TaskTypeName returns keyRegistrationConfirmationTaskName
+func (krct *keyRegistrationConfirmationTask) TaskTypeName() string {
 	return keyRegistrationConfirmationTaskName
-}
-
-// Init registers task with the queue
-func (krct *keyRegistrationConfirmationTask) Init() error {
-	queue.Queue.Register(keyRegistrationConfirmationTaskName, krct)
-	return nil
 }
 
 // Copy returns a new copy of the task

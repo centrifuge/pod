@@ -13,10 +13,10 @@ import (
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/node"
 	"github.com/centrifuge/go-centrifuge/p2p"
-	"github.com/centrifuge/go-centrifuge/queue"
-	"github.com/centrifuge/go-centrifuge/storage"
+		"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/version"
 	logging "github.com/ipfs/go-log"
+	"github.com/centrifuge/go-centrifuge/queue"
 )
 
 var log = logging.Logger("context")
@@ -31,6 +31,7 @@ func (m *MainBootstrapper) PopulateBaseBootstrappers() {
 		&config.Bootstrapper{},
 		&storage.Bootstrapper{},
 		&ethereum.Bootstrapper{},
+		&queue.Bootstrapper{},
 		&anchors.Bootstrapper{},
 		&identity.Bootstrapper{},
 		documents.Bootstrapper{},
@@ -39,7 +40,6 @@ func (m *MainBootstrapper) PopulateBaseBootstrappers() {
 		&invoice.Bootstrapper{},
 		&purchaseorder.Bootstrapper{},
 		&nft.Bootstrapper{},
-		&queue.Bootstrapper{},
 	}
 }
 

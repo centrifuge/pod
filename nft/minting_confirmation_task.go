@@ -13,8 +13,7 @@ import (
 	"github.com/centrifuge/gocelery"
 
 	"github.com/centrifuge/go-centrifuge/centerrors"
-	"github.com/centrifuge/go-centrifuge/queue"
-	"github.com/centrifuge/go-centrifuge/utils"
+		"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 )
 
@@ -52,15 +51,9 @@ func newMintingConfirmationTask(
 	}
 }
 
-// Name returns mintingConfirmationTaskName
-func (nftc *mintingConfirmationTask) Name() string {
+// TaskTypeName returns mintingConfirmationTaskName
+func (nftc *mintingConfirmationTask) TaskTypeName() string {
 	return mintingConfirmationTaskName
-}
-
-// Init registers the task to the queue
-func (nftc *mintingConfirmationTask) Init() error {
-	queue.Queue.Register(mintingConfirmationTaskName, nftc)
-	return nil
 }
 
 // Copy returns a new instance of mintingConfirmationTask

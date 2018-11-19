@@ -32,5 +32,13 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	}
 
 	setPaymentObligation(NewEthereumPaymentObligation(registry, identity.IDService, ethereum.GetClient(), cfg, setupMintListener, bindContract))
-	return queue.InstallQueuedTask(ctx, newMintingConfirmationTask(ethereum.DefaultWaitForTransactionMiningContext))
+
+	// queue task
+	task := newMintingConfirmationTask(ethereum.DefaultWaitForTransactionMiningContext)
+	if _, ok := ctx[bootstrap.BootstrappedQueueServer]; !ok {
+		return errors.New("queue hasn't been initialized")
+	}
+	queueSrv := ctx[bootstrap.BootstrappedQueueServer].(queue.QueueServer)
+	queueSrv.RegisterTaskType(task.TaskTypeName(), task)
+	return nil
 }
