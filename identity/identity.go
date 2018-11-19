@@ -1,17 +1,17 @@
 package identity
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"math/big"
 
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/keytools/ed25519"
 	"github.com/centrifuge/go-centrifuge/keytools/secp256k1"
+	"github.com/centrifuge/go-centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -129,6 +129,26 @@ func RandomCentID() CentID {
 	return ID
 }
 
+// ValidateCentrifugeIDBytes validates a centrifuge ID given as bytes
+func ValidateCentrifugeIDBytes(givenCentID []byte, centrifugeID CentID) error {
+	centIDSignature, err := ToCentID(givenCentID)
+	if err != nil {
+		return err
+	}
+
+	if !centrifugeID.Equal(centIDSignature) {
+		return errors.New("signature entity doesn't match provided centID")
+	}
+
+	return nil
+}
+
+// Sign the document with the private key and return the signature along with the public key for the verification
+// assumes that signing root for the document is generated
+func Sign(idConfig *IdentityConfig, purpose int, payload []byte) *coredocumentpb.Signature {
+	return signatures.Sign(idConfig.ID[:], idConfig.Keys[purpose].PrivateKey, idConfig.Keys[purpose].PublicKey, payload)
+}
+
 // Equal checks if c == other
 func (c CentID) Equal(other CentID) bool {
 	for i := range c {
@@ -188,101 +208,23 @@ type Service interface {
 
 	// GetIdentityAddress gets the address of the ethereum identity contract for the given CentID
 	GetIdentityAddress(centID CentID) (common.Address, error)
-}
 
-// GetClientP2PURL returns the p2p url associated with the centID
-func GetClientP2PURL(centID CentID) (url string, err error) {
-	target, err := IDService.LookupIdentityForID(centID)
-	if err != nil {
-		return url, centerrors.Wrap(err, "error fetching receiver identity")
-	}
+	// GetClientP2PURL returns the p2p url associated with the centID
+	GetClientP2PURL(centID CentID) (url string, err error)
 
-	p2pKey, err := target.CurrentP2PKey()
-	if err != nil {
-		return url, centerrors.Wrap(err, "error fetching p2p key")
-	}
+	// GetClientsP2PURLs returns p2p urls associated with each centIDs
+	// will error out at first failure
+	GetClientsP2PURLs(centIDs []CentID) ([]string, error)
 
-	return fmt.Sprintf("/ipfs/%s", p2pKey), nil
-}
+	// GetIdentityKey returns the key for provided identity
+	GetIdentityKey(identity CentID, pubKey []byte) (keyInfo Key, err error)
 
-// GetClientsP2PURLs returns p2p urls associated with each centIDs
-// will error out at first failure
-func GetClientsP2PURLs(centIDs []CentID) ([]string, error) {
-	var p2pURLs []string
-	for _, id := range centIDs {
-		url, err := GetClientP2PURL(id)
-		if err != nil {
-			return nil, err
-		}
+	// ValidateKey checks if a given key is valid for the given centrifugeID.
+	ValidateKey(centrifugeId CentID, key []byte, purpose int) error
 
-		p2pURLs = append(p2pURLs, url)
-	}
+	// AddKeyFromConfig adds a key previously generated and indexed in the configuration file to the identity specified in such config file
+	AddKeyFromConfig(purpose int) error
 
-	return p2pURLs, nil
-}
-
-// GetIdentityKey returns the key for provided identity
-func GetIdentityKey(identity CentID, pubKey []byte) (keyInfo Key, err error) {
-	id, err := IDService.LookupIdentityForID(identity)
-	if err != nil {
-		return keyInfo, err
-	}
-
-	key, err := id.FetchKey(pubKey)
-	if err != nil {
-		return keyInfo, err
-	}
-
-	if utils.IsEmptyByte32(key.GetKey()) {
-		return keyInfo, fmt.Errorf(fmt.Sprintf("key not found for identity: %x", identity))
-	}
-
-	return key, nil
-}
-
-// ValidateKey checks if a given key is valid for the given centrifugeID.
-func ValidateKey(centrifugeId CentID, key []byte, purpose int) error {
-	idKey, err := GetIdentityKey(centrifugeId, key)
-	if err != nil {
-		return err
-	}
-
-	if !bytes.Equal(key, utils.Byte32ToSlice(idKey.GetKey())) {
-		return fmt.Errorf(fmt.Sprintf("[Key: %x] Key doesn't match", idKey.GetKey()))
-	}
-
-	if !utils.ContainsBigIntInSlice(big.NewInt(int64(purpose)), idKey.GetPurposes()) {
-		return fmt.Errorf(fmt.Sprintf("[Key: %x] Key doesn't have purpose [%d]", idKey.GetKey(), purpose))
-	}
-
-	if idKey.GetRevokedAt().Cmp(big.NewInt(0)) != 0 {
-		return fmt.Errorf(fmt.Sprintf("[Key: %x] Key is currently revoked since block [%d]", idKey.GetKey(), idKey.GetRevokedAt()))
-	}
-
-	return nil
-}
-
-// AddKeyFromConfig adds a key previously generated and indexed in the configuration file to the identity specified in such config file
-func AddKeyFromConfig(config config.Config, identityConfig *IdentityConfig, purpose int) error {
-	id, err := IDService.LookupIdentityForID(identityConfig.ID)
-	if err != nil {
-		return err
-	}
-
-	ctx, cancel := ethereum.DefaultWaitForTransactionMiningContext(config.GetEthereumContextWaitTimeout())
-	defer cancel()
-	confirmations, err := id.AddKeyToIdentity(ctx, purpose, identityConfig.Keys[purpose].PublicKey)
-	if err != nil {
-		return err
-	}
-	watchAddedToIdentity := <-confirmations
-
-	lastKey, errLocal := watchAddedToIdentity.Identity.LastKeyForPurpose(purpose)
-	if errLocal != nil {
-		return err
-	}
-
-	log.Infof("Key [%v] with type [$s] Added to Identity [%s]", lastKey, purpose, watchAddedToIdentity.Identity)
-
-	return nil
+	// ValidateSignature validates a signature on a message based on identity data
+	ValidateSignature(signature *coredocumentpb.Signature, message []byte) error
 }

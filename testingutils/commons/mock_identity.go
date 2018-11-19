@@ -8,6 +8,7 @@ package testingcommons
 import (
 	"context"
 
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/mock"
@@ -16,6 +17,39 @@ import (
 // MockIDService implements Service
 type MockIDService struct {
 	mock.Mock
+}
+
+func (srv *MockIDService) ValidateSignature(signature *coredocumentpb.Signature, message []byte) error {
+	args := srv.Called(signature, message)
+	return args.Error(0)
+}
+
+func (srv *MockIDService) GetClientP2PURL(centID identity.CentID) (url string, err error) {
+	args := srv.Called(centID)
+	addr := args.Get(0).(string)
+	return addr, args.Error(1)
+}
+
+func (srv *MockIDService) GetClientsP2PURLs(centIDs []identity.CentID) ([]string, error) {
+	args := srv.Called(centIDs)
+	addr := args.Get(0).([]string)
+	return addr, args.Error(1)
+}
+
+func (srv *MockIDService) GetIdentityKey(id identity.CentID, pubKey []byte) (keyInfo identity.Key, err error) {
+	args := srv.Called(id, pubKey)
+	addr := args.Get(0).(identity.Key)
+	return addr, args.Error(1)
+}
+
+func (srv *MockIDService) ValidateKey(centrifugeId identity.CentID, key []byte, purpose int) error {
+	args := srv.Called(centrifugeId, key, purpose)
+	return args.Error(0)
+}
+
+func (srv *MockIDService) AddKeyFromConfig(purpose int) error {
+	args := srv.Called(purpose)
+	return args.Error(0)
 }
 
 func (srv *MockIDService) GetIdentityAddress(centID identity.CentID) (common.Address, error) {

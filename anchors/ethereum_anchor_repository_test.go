@@ -6,8 +6,10 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/keytools/secp256k1"
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -76,7 +78,11 @@ func TestGetDocumentRootOf(t *testing.T) {
 	anchorID, err := ToAnchorID(utils.RandomSlice(32))
 	assert.Nil(t, err)
 
-	ethRepo := NewEthereumAnchorRepository(cfg, repo)
+	ethClient := &testingcommons.MockEthClient{}
+	ethClient.On("GetGethCallOpts").Return(nil)
+	ethRepo := NewEthereumAnchorRepository(cfg, repo, func() ethereum.Client {
+		return ethClient
+	})
 	docRoot := utils.RandomByte32()
 	repo.On("Commits", mock.Anything, mock.Anything).Return(docRoot, nil)
 	gotRoot, err := ethRepo.GetDocumentRootOf(anchorID)

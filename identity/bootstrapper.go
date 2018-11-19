@@ -6,6 +6,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/queue"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -34,7 +35,10 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		return err
 	}
 
-	IDService = NewEthereumIdentityService(cfg, idFactory, registryContract)
+	IDService = NewEthereumIdentityService(cfg, idFactory, registryContract, ethereum.GetClient,
+		func(address common.Address, backend bind.ContractBackend) (contract, error) {
+			return NewEthereumIdentityContract(address, backend)
+		})
 
 	err = queue.InstallQueuedTask(context,
 		newIdRegistrationConfirmationTask(cfg.GetEthereumContextWaitTimeout(), &idFactory.EthereumIdentityFactoryContractFilterer, ethereum.DefaultWaitForTransactionMiningContext))
@@ -43,7 +47,10 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	}
 
 	err = queue.InstallQueuedTask(context,
-		newKeyRegistrationConfirmationTask(ethereum.DefaultWaitForTransactionMiningContext, registryContract, cfg))
+		newKeyRegistrationConfirmationTask(ethereum.DefaultWaitForTransactionMiningContext, registryContract, cfg, ethereum.GetClient,
+			func(address common.Address, backend bind.ContractBackend) (contract, error) {
+				return NewEthereumIdentityContract(address, backend)
+			}))
 	if err != nil {
 		return err
 	}

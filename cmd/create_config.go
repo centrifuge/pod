@@ -3,10 +3,7 @@ package cmd
 import (
 	"os"
 
-	"context"
-
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/keytools"
 	"github.com/mitchellh/go-homedir"
@@ -41,16 +38,16 @@ func generateKeys(config config.Config) {
 	keytools.GenerateSigningKeyPair(ethAuthPub, ethAuthPvt, "secp256k1")
 }
 
-func addKeys(config config.Config, ctx *header.ContextHeader) error {
-	err := identity.AddKeyFromConfig(config, ctx.Self(), identity.KeyPurposeP2P)
+func addKeys() error {
+	err := identity.IDService.AddKeyFromConfig(identity.KeyPurposeP2P)
 	if err != nil {
 		panic(err)
 	}
-	err = identity.AddKeyFromConfig(config, ctx.Self(), identity.KeyPurposeSigning)
+	err = identity.IDService.AddKeyFromConfig(identity.KeyPurposeSigning)
 	if err != nil {
 		panic(err)
 	}
-	err = identity.AddKeyFromConfig(config, ctx.Self(), identity.KeyPurposeEthMsgAuth)
+	err = identity.IDService.AddKeyFromConfig(identity.KeyPurposeEthMsgAuth)
 	if err != nil {
 		panic(err)
 	}
@@ -89,10 +86,6 @@ func init() {
 
 			ctx := baseBootstrap(v.ConfigFileUsed())
 			cfg := ctx[config.BootstrappedConfig].(*config.Configuration)
-			ctxHeader, err := header.NewContextHeader(context.Background(), cfg)
-			if err != nil {
-				panic(err)
-			}
 			generateKeys(cfg)
 
 			id, err := createIdentity()
@@ -109,7 +102,7 @@ func init() {
 
 			log.Infof("Identity created [%s] [%x]", id.String(), id)
 
-			err = addKeys(cfg, ctxHeader)
+			err = addKeys()
 			if err != nil {
 				log.Fatalf("error: %v", err)
 			}

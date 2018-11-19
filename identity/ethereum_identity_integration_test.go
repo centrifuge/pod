@@ -10,7 +10,6 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/config"
 	cc "github.com/centrifuge/go-centrifuge/context/testingbootstrap"
-	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
@@ -92,9 +91,8 @@ func TestAddKeyFromConfig(t *testing.T) {
 	watchRegisteredIdentity := <-confirmations
 	assert.Nil(t, watchRegisteredIdentity.Error, "No error thrown by context")
 	assert.Equal(t, centrifugeId, watchRegisteredIdentity.Identity.CentID(), "Resulting Identity should have the same ID as the input")
-	ctxh, err := header.NewContextHeader(context.Background(), cfg)
-	assert.Nil(t, err)
-	err = identity.AddKeyFromConfig(cfg, ctxh.Self(), identity.KeyPurposeEthMsgAuth)
+
+	err = identity.IDService.AddKeyFromConfig(identity.KeyPurposeEthMsgAuth)
 	assert.Nil(t, err, "should not error out")
 
 	cfg.Set("identityId", defaultCentrifugeId)
@@ -106,9 +104,8 @@ func TestAddKeyFromConfig_IdentityDoesNotExist(t *testing.T) {
 	cfg.Set("identityId", centrifugeId.String())
 	cfg.Set("keys.ethauth.publicKey", "../build/resources/ethauth.pub.pem")
 	cfg.Set("keys.ethauth.privateKey", "../build/resources/ethauth.key.pem")
-	ctxh, err := header.NewContextHeader(context.Background(), cfg)
-	assert.Nil(t, err)
-	err = identity.AddKeyFromConfig(cfg, ctxh.Self(), identity.KeyPurposeEthMsgAuth)
+
+	err := identity.IDService.AddKeyFromConfig(identity.KeyPurposeEthMsgAuth)
 	assert.NotNil(t, err, "should error out")
 
 	cfg.Set("identityId", defaultCentrifugeId)

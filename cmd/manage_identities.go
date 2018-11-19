@@ -3,10 +3,6 @@ package cmd
 import (
 	"io/ioutil"
 
-	"context"
-
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/spf13/cobra"
 )
@@ -57,14 +53,7 @@ var addKeyCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		//cmd requires a config file
 		cfgFile = ensureConfigFile()
-		ctx := baseBootstrap(cfgFile)
-		cfg := ctx[config.BootstrappedConfig].(*config.Configuration)
 		var purposeInt int
-
-		ctxHeader, err := header.NewContextHeader(context.Background(), cfg)
-		if err != nil {
-			panic(err)
-		}
 
 		switch purpose {
 		case "p2p":
@@ -77,7 +66,7 @@ var addKeyCmd = &cobra.Command{
 			panic("Option not supported")
 		}
 
-		err = identity.AddKeyFromConfig(cfg, ctxHeader.Self(), purposeInt)
+		err := identity.IDService.AddKeyFromConfig(purposeInt)
 		if err != nil {
 			panic(err)
 		}

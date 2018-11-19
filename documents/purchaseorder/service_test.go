@@ -15,7 +15,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/identity"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
-	"github.com/centrifuge/go-centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/coredocument"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
@@ -43,7 +42,9 @@ func (r *mockAnchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.D
 }
 
 func getServiceWithMockedLayers() Service {
-	return DefaultService(nil, getRepository(), &testingcoredocument.MockCoreDocumentProcessor{}, &mockAnchorRepo{})
+	idService := &testingcommons.MockIDService{}
+	idService.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
+	return DefaultService(nil, getRepository(), &testingcoredocument.MockCoreDocumentProcessor{}, &mockAnchorRepo{}, idService)
 }
 
 func TestService_Update(t *testing.T) {
@@ -342,7 +343,7 @@ func createAnchoredMockDocument(t *testing.T, skipSave bool) (*PurchaseOrder, er
 		},
 	}
 
-	sig := signatures.Sign(idConfig, identity.KeyPurposeSigning, corDoc.SigningRoot)
+	sig := identity.Sign(idConfig, identity.KeyPurposeSigning, corDoc.SigningRoot)
 
 	corDoc.Signatures = append(corDoc.Signatures, sig)
 

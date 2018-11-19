@@ -56,11 +56,12 @@ type service struct {
 	coreDocProcessor coredocument.Processor
 	notifier         notification.Sender
 	anchorRepository anchors.AnchorRepository
+	identityService  identity.Service
 }
 
 // DefaultService returns the default implementation of the service
-func DefaultService(config config.Config, repo documents.Repository, processor coredocument.Processor, anchorRepository anchors.AnchorRepository) Service {
-	return service{repo: repo, coreDocProcessor: processor, notifier: notification.NewWebhookSender(config), anchorRepository: anchorRepository}
+func DefaultService(config config.Config, repo documents.Repository, processor coredocument.Processor, anchorRepository anchors.AnchorRepository, identityService identity.Service) Service {
+	return service{repo: repo, coreDocProcessor: processor, notifier: notification.NewWebhookSender(config), anchorRepository: anchorRepository, identityService: identityService}
 }
 
 // DeriveFromCoreDocument takes a core document and returns a purchase order
@@ -291,7 +292,7 @@ func (s service) purchaseOrderProof(model documents.Model, fields []string) (*do
 	if !ok {
 		return nil, centerrors.New(code.DocumentInvalid, "document of invalid type")
 	}
-	if err := coredocument.PostAnchoredValidator(s.anchorRepository).Validate(nil, po); err != nil {
+	if err := coredocument.PostAnchoredValidator(s.identityService, s.anchorRepository).Validate(nil, po); err != nil {
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
 	}
 	coreDoc, proofs, err := po.createProofs(fields)
@@ -326,8 +327,8 @@ func (s service) CreateProofsForVersion(documentID, version []byte, fields []str
 // RequestDocumentSignature validates the document and returns the signature
 // Note: this is document agnostic. But since we do not have a common implementation, adding it here.
 // will remove this once we have a common implementation for documents.Service
-func (s service) RequestDocumentSignature(ctx *header.ContextHeader, model documents.Model) (*coredocumentpb.Signature, error) {
-	if err := coredocument.SignatureRequestValidator().Validate(nil, model); err != nil {
+func (s service) RequestDocumentSignature(contextHeader *header.ContextHeader, model documents.Model) (*coredocumentpb.Signature, error) {
+	if err := coredocument.SignatureRequestValidator(s.identityService).Validate(nil, model); err != nil {
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
 	}
 
@@ -338,7 +339,11 @@ func (s service) RequestDocumentSignature(ctx *header.ContextHeader, model docum
 
 	srvLog.Infof("coredoc received %x with signing root %x", cd.DocumentIdentifier, cd.SigningRoot)
 
-	sig := signatures.Sign(ctx.Self(), identity.KeyPurposeSigning, cd.SigningRoot)
+	idKeys, ok := contextHeader.Self().Keys[identity.KeyPurposeSigning]
+	if !ok {
+		return nil, centerrors.New(code.Unknown, fmt.Sprintf("missing signing key"))
+	}
+	sig := signatures.Sign(contextHeader.Self().ID[:], idKeys.PrivateKey, idKeys.PublicKey, cd.SigningRoot)
 	cd.Signatures = append(cd.Signatures, sig)
 	err = model.UnpackCoreDocument(cd)
 	if err != nil {
@@ -358,7 +363,7 @@ func (s service) RequestDocumentSignature(ctx *header.ContextHeader, model docum
 // Note: this is document agnostic. But since we do not have a common implementation, adding it here.
 // will remove this once we have a common implementation for documents.Service
 func (s service) ReceiveAnchoredDocument(model documents.Model, headers *p2ppb.CentrifugeHeader) error {
-	if err := coredocument.PostAnchoredValidator(s.anchorRepository).Validate(nil, model); err != nil {
+	if err := coredocument.PostAnchoredValidator(s.identityService, s.anchorRepository).Validate(nil, model); err != nil {
 		return centerrors.New(code.DocumentInvalid, err.Error())
 	}
 
