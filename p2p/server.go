@@ -1,4 +1,3 @@
-// PLEASE DO NOT call any Config.* stuff here as it creates dependencies that can't be injected easily when testing
 package p2p
 
 import (
@@ -9,6 +8,7 @@ import (
 	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/config"
 	cented25519 "github.com/centrifuge/go-centrifuge/keytools/ed25519"
 	"github.com/ipfs/go-cid"
@@ -32,6 +32,7 @@ var log = logging.Logger("p2p-server")
 type p2pServer struct {
 	config   config.Config
 	host     host.Host
+	registry *documents.ServiceRegistry
 	protocol *p2pgrpc.GRPCProtocol
 }
 
@@ -59,7 +60,7 @@ func (s *p2pServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr ch
 
 	// Set the grpc protocol handler on it
 	s.protocol = p2pgrpc.NewGRPCProtocol(ctx, s.host)
-	p2ppb.RegisterP2PServiceServer(s.protocol.GetGRPCServer(), &handler{})
+	p2ppb.RegisterP2PServiceServer(s.protocol.GetGRPCServer(), GRPCHandler(s.config, s.registry))
 
 	serveErr := make(chan error)
 	go func() {
