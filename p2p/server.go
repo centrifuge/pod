@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	"github.com/centrifuge/go-centrifuge/documents"
 	cented25519 "github.com/centrifuge/go-centrifuge/keytools/ed25519"
 	"github.com/ipfs/go-cid"
 	ds "github.com/ipfs/go-datastore"
@@ -40,6 +41,7 @@ type Config interface {
 type p2pServer struct {
 	config   Config
 	host     host.Host
+	registry *documents.ServiceRegistry
 	protocol *p2pgrpc.GRPCProtocol
 }
 
@@ -67,7 +69,7 @@ func (s *p2pServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr ch
 
 	// Set the grpc protocol handler on it
 	s.protocol = p2pgrpc.NewGRPCProtocol(ctx, s.host)
-	p2ppb.RegisterP2PServiceServer(s.protocol.GetGRPCServer(), &handler{})
+	p2ppb.RegisterP2PServiceServer(s.protocol.GetGRPCServer(), GRPCHandler(s.registry))
 
 	serveErr := make(chan error)
 	go func() {

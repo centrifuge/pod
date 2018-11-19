@@ -9,42 +9,42 @@ import (
 	"github.com/centrifuge/go-centrifuge/queue"
 )
 
-type Bootstrapper struct {
-}
+// BootstrappedAnchorRepo is used as a key to map the configured anchor repository through context.
+const BootstrappedAnchorRepo string = "BootstrappedAnchorRepo"
+
+type Bootstrapper struct{}
 
 // Bootstrap initializes the AnchorRepositoryContract as well as the anchorConfirmationTask that depends on it.
-// the anchorConfirmationTask is added to be registered on the queue at queue.Bootstrapper
-func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
-	if _, ok := context[bootstrap.BootstrappedConfig]; !ok {
+// the anchorConfirmationTask is added to be registered on the Queue at queue.Bootstrapper.
+func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
+	if _, ok := ctx[bootstrap.BootstrappedConfig]; !ok {
 		return errors.New("config hasn't been initialized")
 	}
-	cfg := context[bootstrap.BootstrappedConfig].(*config.Configuration)
+	cfg := ctx[bootstrap.BootstrappedConfig].(*config.Configuration)
 
-	if _, ok := context[bootstrap.BootstrappedEthereumClient]; !ok {
+	if _, ok := ctx[bootstrap.BootstrappedEthereumClient]; !ok {
 		return errors.New("ethereum client hasn't been initialized")
 	}
+	client := ctx[bootstrap.BootstrappedEthereumClient].(ethereum.Client)
 
-	client := ethereum.GetClient()
 	repositoryContract, err := NewEthereumAnchorRepositoryContract(cfg.GetContractAddress("anchorRepository"), client.GetEthClient())
 	if err != nil {
 		return err
 	}
 
-	anchorRepo := NewEthereumAnchorRepository(cfg, repositoryContract, ethereum.GetClient)
-	setAnchorRepository(anchorRepo)
-	if err != nil {
-		return err
-	}
+	var repo AnchorRepository
+	repo = NewEthereumAnchorRepository(cfg, repositoryContract, ethereum.GetClient)
+	ctx[BootstrappedAnchorRepo] = repo
 
 	task := &anchorConfirmationTask{
 		AnchorCommittedFilterer: &repositoryContract.EthereumAnchorRepositoryContractFilterer,
 		EthContextInitializer:   ethereum.DefaultWaitForTransactionMiningContext,
 	}
 
-	if _, ok := context[bootstrap.BootstrappedQueueServer]; !ok {
+	if _, ok := ctx[bootstrap.BootstrappedQueueServer]; !ok {
 		return errors.New("queue hasn't been initialized")
 	}
-	queueSrv := context[bootstrap.BootstrappedQueueServer].(queue.QueueServer)
+	queueSrv := ctx[bootstrap.BootstrappedQueueServer].(queue.QueueServer)
 	queueSrv.RegisterTaskType(task.TaskTypeName(), task)
 	return nil
 }

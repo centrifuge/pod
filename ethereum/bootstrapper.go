@@ -7,10 +7,9 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 )
 
-type Bootstrapper struct {
-}
+type Bootstrapper struct{}
 
-func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
+func (Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	if _, ok := context[bootstrap.BootstrappedConfig]; !ok {
 		return errors.New("config hasn't been initialized")
 	}

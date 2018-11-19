@@ -30,7 +30,7 @@ func (m *MainBootstrapper) PopulateBaseBootstrappers() {
 		&version.Bootstrapper{},
 		&config.Bootstrapper{},
 		&storage.Bootstrapper{},
-		&ethereum.Bootstrapper{},
+		ethereum.Bootstrapper{},
 		&queue.Bootstrapper{},
 		&anchors.Bootstrapper{},
 		&identity.Bootstrapper{},
