@@ -8,20 +8,14 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 )
 
-func (b *Bootstrapper) TestBootstrap(context map[string]interface{}) error {
+func (b Bootstrapper) TestBootstrap(context map[string]interface{}) error {
 	if _, ok := context[bootstrap.BootstrappedConfig]; !ok {
 		return errors.New("config hasn't been initialized")
 	}
 
-	if repo, ok := context[bootstrap.BootstrappedAnchorRepository]; ok {
-		setAnchorRepository(repo.(AnchorRepository))
-	} else {
-		b.Bootstrap(context)
-	}
-
-	return nil
+	return b.Bootstrap(context)
 }
 
-func (b *Bootstrapper) TestTearDown() error {
+func (b Bootstrapper) TestTearDown() error {
 	return nil
 }
