@@ -25,8 +25,8 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	if _, ok := ctx[bootstrap.BootstrappedEthereumClient]; !ok {
 		return errors.New("ethereum client hasn't been initialized")
 	}
+	client := ctx[bootstrap.BootstrappedEthereumClient].(ethereum.Client)
 
-	client := ethereum.GetClient()
 	repositoryContract, err := NewEthereumAnchorRepositoryContract(cfg.GetContractAddress("anchorRepository"), client.GetEthClient())
 	if err != nil {
 		return err
