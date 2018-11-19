@@ -49,6 +49,87 @@ type IdentityKey struct {
 	PrivateKey []byte
 }
 
+// Equal checks if c == other
+func (c CentID) Equal(other CentID) bool {
+	for i := range c {
+		if c[i] != other[i] {
+			return false
+		}
+	}
+
+	return true
+}
+
+// String returns the hex format of CentID
+func (c CentID) String() string {
+	return hexutil.Encode(c[:])
+}
+
+// BigInt returns CentID in bigInt
+func (c CentID) BigInt() *big.Int {
+	return utils.ByteSliceToBigInt(c[:])
+}
+
+// Identity defines an Identity on chain
+type Identity interface {
+	fmt.Stringer
+	CentID() CentID
+	SetCentrifugeID(centID CentID)
+	CurrentP2PKey() (ret string, err error)
+	LastKeyForPurpose(keyPurpose int) (key []byte, err error)
+	AddKeyToIdentity(ctx context.Context, keyPurpose int, key []byte) (confirmations chan *WatchIdentity, err error)
+	FetchKey(key []byte) (Key, error)
+}
+
+// Key defines a single ERC725 identity key
+type Key interface {
+	GetKey() [32]byte
+	GetPurposes() []*big.Int
+	GetRevokedAt() *big.Int
+}
+
+// WatchIdentity holds the identity received form chain event
+type WatchIdentity struct {
+	Identity Identity
+	Error    error
+}
+
+// Service is used to interact with centrifuge identities
+type Service interface {
+
+	// LookupIdentityForID looks up if the identity for given CentID exists on ethereum
+	LookupIdentityForID(centrifugeID CentID) (id Identity, err error)
+
+	// CreateIdentity creates an identity representing the id on ethereum
+	CreateIdentity(centrifugeID CentID) (id Identity, confirmations chan *WatchIdentity, err error)
+
+	// CheckIdentityExists checks if the identity represented by id actually exists on ethereum
+	CheckIdentityExists(centrifugeID CentID) (exists bool, err error)
+
+	// GetIdentityAddress gets the address of the ethereum identity contract for the given CentID
+	GetIdentityAddress(centID CentID) (common.Address, error)
+
+	// GetClientP2PURL returns the p2p url associated with the centID
+	GetClientP2PURL(centID CentID) (url string, err error)
+
+	// GetClientsP2PURLs returns p2p urls associated with each centIDs
+	// will error out at first failure
+	GetClientsP2PURLs(centIDs []CentID) ([]string, error)
+
+	// GetIdentityKey returns the key for provided identity
+	GetIdentityKey(identity CentID, pubKey []byte) (keyInfo Key, err error)
+
+	// ValidateKey checks if a given key is valid for the given centrifugeID.
+	ValidateKey(centrifugeId CentID, key []byte, purpose int) error
+
+	// AddKeyFromConfig adds a key previously generated and indexed in the configuration file to the identity specified in such config file
+	AddKeyFromConfig(purpose int) error
+
+	// ValidateSignature validates a signature on a message based on identity data
+	ValidateSignature(signature *coredocumentpb.Signature, message []byte) error
+}
+
+
 // GetIdentityConfig returns the identity and keys associated with the node
 func GetIdentityConfig() (*IdentityConfig, error) {
 	centIDBytes, err := config.Config().GetIdentityID()
@@ -137,7 +218,7 @@ func ValidateCentrifugeIDBytes(givenCentID []byte, centrifugeID CentID) error {
 	}
 
 	if !centrifugeID.Equal(centIDSignature) {
-		return errors.New("signature entity doesn't match provided centID")
+		return errors.New("provided bytes doesn't match centID")
 	}
 
 	return nil
@@ -147,84 +228,4 @@ func ValidateCentrifugeIDBytes(givenCentID []byte, centrifugeID CentID) error {
 // assumes that signing root for the document is generated
 func Sign(idConfig *IdentityConfig, purpose int, payload []byte) *coredocumentpb.Signature {
 	return signatures.Sign(idConfig.ID[:], idConfig.Keys[purpose].PrivateKey, idConfig.Keys[purpose].PublicKey, payload)
-}
-
-// Equal checks if c == other
-func (c CentID) Equal(other CentID) bool {
-	for i := range c {
-		if c[i] != other[i] {
-			return false
-		}
-	}
-
-	return true
-}
-
-// String returns the hex format of CentID
-func (c CentID) String() string {
-	return hexutil.Encode(c[:])
-}
-
-// BigInt returns CentID in bigInt
-func (c CentID) BigInt() *big.Int {
-	return utils.ByteSliceToBigInt(c[:])
-}
-
-// Identity defines an Identity on chain
-type Identity interface {
-	fmt.Stringer
-	CentID() CentID
-	SetCentrifugeID(centID CentID)
-	CurrentP2PKey() (ret string, err error)
-	LastKeyForPurpose(keyPurpose int) (key []byte, err error)
-	AddKeyToIdentity(ctx context.Context, keyPurpose int, key []byte) (confirmations chan *WatchIdentity, err error)
-	FetchKey(key []byte) (Key, error)
-}
-
-// Key defines a single ERC725 identity key
-type Key interface {
-	GetKey() [32]byte
-	GetPurposes() []*big.Int
-	GetRevokedAt() *big.Int
-}
-
-// WatchIdentity holds the identity received form chain event
-type WatchIdentity struct {
-	Identity Identity
-	Error    error
-}
-
-// Service is used to fetch identities
-type Service interface {
-
-	// LookupIdentityForID looks up if the identity for given CentID exists on ethereum
-	LookupIdentityForID(centrifugeID CentID) (id Identity, err error)
-
-	// CreateIdentity creates an identity representing the id on ethereum
-	CreateIdentity(centrifugeID CentID) (id Identity, confirmations chan *WatchIdentity, err error)
-
-	// CheckIdentityExists checks if the identity represented by id actually exists on ethereum
-	CheckIdentityExists(centrifugeID CentID) (exists bool, err error)
-
-	// GetIdentityAddress gets the address of the ethereum identity contract for the given CentID
-	GetIdentityAddress(centID CentID) (common.Address, error)
-
-	// GetClientP2PURL returns the p2p url associated with the centID
-	GetClientP2PURL(centID CentID) (url string, err error)
-
-	// GetClientsP2PURLs returns p2p urls associated with each centIDs
-	// will error out at first failure
-	GetClientsP2PURLs(centIDs []CentID) ([]string, error)
-
-	// GetIdentityKey returns the key for provided identity
-	GetIdentityKey(identity CentID, pubKey []byte) (keyInfo Key, err error)
-
-	// ValidateKey checks if a given key is valid for the given centrifugeID.
-	ValidateKey(centrifugeId CentID, key []byte, purpose int) error
-
-	// AddKeyFromConfig adds a key previously generated and indexed in the configuration file to the identity specified in such config file
-	AddKeyFromConfig(purpose int) error
-
-	// ValidateSignature validates a signature on a message based on identity data
-	ValidateSignature(signature *coredocumentpb.Signature, message []byte) error
 }
