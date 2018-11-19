@@ -12,24 +12,27 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/context/testlogging"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/p2p"
 	"github.com/centrifuge/go-centrifuge/storage"
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 )
 
 func TestMain(m *testing.M) {
+	ethClient := &testingcommons.MockEthClient{}
+	ethClient.On("GetEthClient").Return(nil)
+	ctx := map[string]interface{}{
+		bootstrap.BootstrappedEthereumClient: ethClient,
+	}
 	ibootstappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
 		&storage.Bootstrapper{},
-		ethereum.Bootstrapper{},
 		anchors.Bootstrapper{},
 		documents.Bootstrapper{},
 		p2p.Bootstrapper{},
 		&Bootstrapper{},
 	}
-
-	bootstrap.RunTestBootstrappers(ibootstappers, nil)
+	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 	flag.Parse()
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)

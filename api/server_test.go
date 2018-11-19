@@ -17,9 +17,9 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
-	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/p2p"
 	"github.com/centrifuge/go-centrifuge/storage"
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -32,7 +32,14 @@ func TestMain(m *testing.M) {
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
 		&storage.Bootstrapper{},
-		ethereum.Bootstrapper{},
+	}
+	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
+
+	ethClient := &testingcommons.MockEthClient{}
+	ethClient.On("GetEthClient").Return(nil)
+	ctx[bootstrap.BootstrappedEthereumClient] = ethClient
+
+	ibootstappers = []bootstrap.TestBootstrapper{
 		anchors.Bootstrapper{},
 		documents.Bootstrapper{},
 		p2p.Bootstrapper{},
