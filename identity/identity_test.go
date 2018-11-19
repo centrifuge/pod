@@ -14,6 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/centrifuge/go-centrifuge/signatures"
 )
 
 func TestMain(m *testing.M) {
@@ -252,4 +253,30 @@ func TestCentIDsFromStrings(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, cids)
 	assert.Equal(t, cids, []CentID{{1, 2, 3, 4, 5, 6}, {2, 3, 1, 2, 3, 4}})
+}
+
+func TestValidateCentrifugeIDBytes(t *testing.T) {
+	c := RandomCentID()
+	assert.True(t, ValidateCentrifugeIDBytes(c[:], c) == nil)
+
+	err := ValidateCentrifugeIDBytes(utils.RandomSlice(20), c)
+	if assert.Error(t, err) {
+		assert.Equal(t, "invalid length byte slice provided for centID", err.Error())
+	}
+
+	err = ValidateCentrifugeIDBytes(utils.RandomSlice(6), c)
+	if assert.Error(t, err) {
+		assert.Equal(t, "provided bytes doesn't match centID", err.Error())
+	}
+}
+
+func TestSign(t *testing.T) {
+	key1Pub     := []byte{230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
+	key1        := []byte{102, 109, 71, 239, 130, 229, 128, 189, 37, 96, 223, 5, 189, 91, 210, 47, 89, 4, 165, 6, 188, 53, 49, 250, 109, 151, 234, 139, 57, 205, 231, 253, 230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
+	c := RandomCentID()
+	msg := utils.RandomSlice(100)
+	sig := Sign(&IdentityConfig{c , map[int]IdentityKey{KeyPurposeSigning: {PrivateKey: key1, PublicKey: key1Pub}}}, KeyPurposeSigning, msg)
+
+	err := signatures.VerifySignature(key1Pub, msg, sig.Signature)
+	assert.True(t, err == nil)
 }
