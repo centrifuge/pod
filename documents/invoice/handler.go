@@ -6,11 +6,14 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/code"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	logging "github.com/ipfs/go-log"
 	"golang.org/x/net/context"
+
+	"github.com/centrifuge/go-centrifuge/header"
 )
 
 var apiLog = logging.Logger("invoice-api")
@@ -19,10 +22,11 @@ var apiLog = logging.Logger("invoice-api")
 // anchoring, sending, finding stored invoice document
 type grpcHandler struct {
 	service Service
+	config  config.Config
 }
 
 // GRPCHandler returns an implementation of invoice.DocumentServiceServer
-func GRPCHandler(registry *documents.ServiceRegistry) (clientinvoicepb.DocumentServiceServer, error) {
+func GRPCHandler(config config.Config, registry *documents.ServiceRegistry) (clientinvoicepb.DocumentServiceServer, error) {
 	srv, err := registry.LocateService(documenttypes.InvoiceDataTypeUrl)
 	if err != nil {
 		return nil, err
@@ -30,13 +34,14 @@ func GRPCHandler(registry *documents.ServiceRegistry) (clientinvoicepb.DocumentS
 
 	return &grpcHandler{
 		service: srv.(Service),
+		config:  config,
 	}, nil
 }
 
 // Create handles the creation of the invoices and anchoring the documents on chain
 func (h *grpcHandler) Create(ctx context.Context, req *clientinvoicepb.InvoiceCreatePayload) (*clientinvoicepb.InvoiceResponse, error) {
 	apiLog.Debugf("Create request %v", req)
-	ctxHeader, err := documents.NewContextHeader()
+	ctxHeader, err := header.NewContextHeader(ctx, h.config)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
@@ -49,7 +54,7 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientinvoicepb.InvoiceCr
 	}
 
 	// validate and persist
-	doc, err = h.service.Create(ctx, doc)
+	doc, err = h.service.Create(ctxHeader, doc)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, err
@@ -61,7 +66,7 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientinvoicepb.InvoiceCr
 // Update handles the document update and anchoring
 func (h *grpcHandler) Update(ctx context.Context, payload *clientinvoicepb.InvoiceUpdatePayload) (*clientinvoicepb.InvoiceResponse, error) {
 	apiLog.Debugf("Update request %v", payload)
-	ctxHeader, err := documents.NewContextHeader()
+	ctxHeader, err := header.NewContextHeader(ctx, h.config)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
@@ -73,7 +78,7 @@ func (h *grpcHandler) Update(ctx context.Context, payload *clientinvoicepb.Invoi
 		return nil, err
 	}
 
-	doc, err = h.service.Update(ctx, doc)
+	doc, err = h.service.Update(ctxHeader, doc)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, err

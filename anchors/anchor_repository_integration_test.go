@@ -32,14 +32,11 @@ func TestMain(m *testing.M) {
 }
 
 func createIdentityWithKeys(t *testing.T, centrifugeId []byte) []byte {
-
 	centIdTyped, _ := identity.ToCentID(centrifugeId)
 	id, confirmations, err := identityService.CreateIdentity(centIdTyped)
 	assert.Nil(t, err, "should not error out when creating identity")
-
 	watchRegisteredIdentity := <-confirmations
 	assert.Nil(t, watchRegisteredIdentity.Error, "No error thrown by context")
-
 	// LookupIdentityForId
 	id, err = identityService.LookupIdentityForID(centIdTyped)
 	assert.Nil(t, err, "should not error out when resolving identity")

@@ -3,11 +3,10 @@
 package testingcoredocument
 
 import (
-	"context"
-
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
@@ -39,13 +38,13 @@ type MockCoreDocumentProcessor struct {
 	mock.Mock
 }
 
-func (m *MockCoreDocumentProcessor) Send(ctx context.Context, coreDocument *coredocumentpb.CoreDocument, recipient identity.CentID) (err error) {
+func (m *MockCoreDocumentProcessor) Send(ctx *header.ContextHeader, coreDocument *coredocumentpb.CoreDocument, recipient identity.CentID) (err error) {
 	args := m.Called(coreDocument, ctx, recipient)
 	return args.Error(0)
 }
 
 func (m *MockCoreDocumentProcessor) Anchor(
-	ctx context.Context,
+	ctx *header.ContextHeader,
 	coreDocument *coredocumentpb.CoreDocument,
 	saveState func(*coredocumentpb.CoreDocument) error) (err error) {
 	args := m.Called(ctx, coreDocument, saveState)
@@ -58,12 +57,12 @@ func (m *MockCoreDocumentProcessor) Anchor(
 	return args.Error(0)
 }
 
-func (m *MockCoreDocumentProcessor) PrepareForSignatureRequests(model documents.Model) error {
+func (m *MockCoreDocumentProcessor) PrepareForSignatureRequests(ctx *header.ContextHeader, model documents.Model) error {
 	args := m.Called(model)
 	return args.Error(0)
 }
 
-func (m *MockCoreDocumentProcessor) RequestSignatures(ctx context.Context, model documents.Model) error {
+func (m *MockCoreDocumentProcessor) RequestSignatures(ctx *header.ContextHeader, model documents.Model) error {
 	args := m.Called(ctx, model)
 	return args.Error(0)
 }
@@ -73,12 +72,12 @@ func (m *MockCoreDocumentProcessor) PrepareForAnchoring(model documents.Model) e
 	return args.Error(0)
 }
 
-func (m *MockCoreDocumentProcessor) AnchorDocument(model documents.Model) error {
+func (m *MockCoreDocumentProcessor) AnchorDocument(ctx *header.ContextHeader, model documents.Model) error {
 	args := m.Called(model)
 	return args.Error(0)
 }
 
-func (m *MockCoreDocumentProcessor) SendDocument(ctx context.Context, model documents.Model) error {
+func (m *MockCoreDocumentProcessor) SendDocument(ctx *header.ContextHeader, model documents.Model) error {
 	args := m.Called(ctx, model)
 	return args.Error(0)
 }

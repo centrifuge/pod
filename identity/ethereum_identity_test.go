@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/ethereum"
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -18,12 +19,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
-
-type MockConfig struct{}
-
-func (MockConfig) GetEthereumDefaultAccountName() string {
-	return "mockacc"
-}
 
 type MockIDFactory struct {
 	mock.Mock
@@ -108,7 +103,7 @@ func (mic MockIDContract) FilterKeyAdded(opts *bind.FilterOpts, key [][32]byte, 
 
 func TestGetClientP2PURL_happy(t *testing.T) {
 	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
-	c, f, r, g, i := &MockConfig{}, &MockIDFactory{}, &MockIDRegistry{}, &MockGethClient{}, &MockIDContract{}
+	c, f, r, g, i := &testingconfig.MockConfig{}, &MockIDFactory{}, &MockIDRegistry{}, &MockGethClient{}, &MockIDContract{}
 	g.On("GetGethCallOpts").Return(&bind.CallOpts{}, func() {})
 	g.On("GetEthClient").Return(&ethclient.Client{})
 	r.On("GetIdentityByCentrifugeId", mock.Anything, centID.BigInt()).Return(common.BytesToAddress(utils.RandomSlice(20)), nil)
@@ -128,7 +123,7 @@ func TestGetClientP2PURL_happy(t *testing.T) {
 
 func TestGetClientP2PURL_fail_identity_lookup(t *testing.T) {
 	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
-	c, f, r, g, i := &MockConfig{}, &MockIDFactory{}, &MockIDRegistry{}, &MockGethClient{}, &MockIDContract{}
+	c, f, r, g, i := &testingconfig.MockConfig{}, &MockIDFactory{}, &MockIDRegistry{}, &MockGethClient{}, &MockIDContract{}
 	g.On("GetGethCallOpts").Return(&bind.CallOpts{}, func() {})
 	r.On("GetIdentityByCentrifugeId", mock.Anything, centID.BigInt()).Return(common.BytesToAddress(utils.RandomSlice(20)), errors.New("ID lookup failed"))
 	i.On("GetKeysByPurpose", mock.Anything, mock.Anything).Return([][32]byte{{1}}, nil)
@@ -148,7 +143,7 @@ func TestGetClientP2PURL_fail_identity_lookup(t *testing.T) {
 
 func TestGetClientP2PURL_fail_p2pkey_error(t *testing.T) {
 	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
-	c, f, r, g, i := &MockConfig{}, &MockIDFactory{}, &MockIDRegistry{}, &MockGethClient{}, &MockIDContract{}
+	c, f, r, g, i := &testingconfig.MockConfig{}, &MockIDFactory{}, &MockIDRegistry{}, &MockGethClient{}, &MockIDContract{}
 	g.On("GetGethCallOpts").Return(&bind.CallOpts{}, func() {})
 	g.On("GetEthClient").Return(&ethclient.Client{})
 	r.On("GetIdentityByCentrifugeId", mock.Anything, centID.BigInt()).Return(common.BytesToAddress(utils.RandomSlice(20)), nil)
@@ -170,7 +165,7 @@ func TestGetClientP2PURL_fail_p2pkey_error(t *testing.T) {
 func TestGetIdentityKey_fail_lookup(t *testing.T) {
 	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
 	pubKey := utils.RandomSlice(32)
-	c, f, r, g, i := &MockConfig{}, &MockIDFactory{}, &MockIDRegistry{}, &MockGethClient{}, &MockIDContract{}
+	c, f, r, g, i := &testingconfig.MockConfig{}, &MockIDFactory{}, &MockIDRegistry{}, &MockGethClient{}, &MockIDContract{}
 	g.On("GetGethCallOpts").Return(&bind.CallOpts{}, func() {})
 	r.On("GetIdentityByCentrifugeId", mock.Anything, centID.BigInt()).Return(common.BytesToAddress(utils.RandomSlice(20)), errors.New("ID lookup failed"))
 	srv := NewEthereumIdentityService(c, f, r, func() ethereum.Client {
@@ -190,7 +185,7 @@ func TestGetIdentityKey_fail_lookup(t *testing.T) {
 func TestGetIdentityKey_fail_FetchKey(t *testing.T) {
 	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
 	pubKey := utils.RandomSlice(32)
-	c, f, r, g, i := &MockConfig{}, &MockIDFactory{}, &MockIDRegistry{}, &MockGethClient{}, &MockIDContract{}
+	c, f, r, g, i := &testingconfig.MockConfig{}, &MockIDFactory{}, &MockIDRegistry{}, &MockGethClient{}, &MockIDContract{}
 	g.On("GetGethCallOpts").Return(&bind.CallOpts{}, func() {})
 	g.On("GetEthClient").Return(&ethclient.Client{})
 	r.On("GetIdentityByCentrifugeId", mock.Anything, centID.BigInt()).Return(common.BytesToAddress(utils.RandomSlice(20)), nil)
@@ -220,7 +215,7 @@ func TestGetIdentityKey_fail_FetchKey(t *testing.T) {
 func TestGetIdentityKey_fail_empty(t *testing.T) {
 	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
 	pubKey := utils.RandomSlice(32)
-	c, f, r, g, i := &MockConfig{}, &MockIDFactory{}, &MockIDRegistry{}, &MockGethClient{}, &MockIDContract{}
+	c, f, r, g, i := &testingconfig.MockConfig{}, &MockIDFactory{}, &MockIDRegistry{}, &MockGethClient{}, &MockIDContract{}
 	g.On("GetGethCallOpts").Return(&bind.CallOpts{}, func() {})
 	g.On("GetEthClient").Return(&ethclient.Client{})
 	r.On("GetIdentityByCentrifugeId", mock.Anything, centID.BigInt()).Return(common.BytesToAddress(utils.RandomSlice(20)), nil)
@@ -250,7 +245,7 @@ func TestGetIdentityKey_fail_empty(t *testing.T) {
 func TestGetIdentityKey_Success(t *testing.T) {
 	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
 	pubKey := utils.RandomSlice(32)
-	c, f, r, g, i := &MockConfig{}, &MockIDFactory{}, &MockIDRegistry{}, &MockGethClient{}, &MockIDContract{}
+	c, f, r, g, i := &testingconfig.MockConfig{}, &MockIDFactory{}, &MockIDRegistry{}, &MockGethClient{}, &MockIDContract{}
 	g.On("GetGethCallOpts").Return(&bind.CallOpts{}, func() {})
 	g.On("GetEthClient").Return(&ethclient.Client{})
 	r.On("GetIdentityByCentrifugeId", mock.Anything, centID.BigInt()).Return(common.BytesToAddress(utils.RandomSlice(20)), nil)
@@ -281,7 +276,7 @@ func TestValidateKey_success(t *testing.T) {
 	pubKey := utils.RandomSlice(32)
 	var key [32]byte
 	copy(key[:], pubKey)
-	c, f, r, g, i := &MockConfig{}, &MockIDFactory{}, &MockIDRegistry{}, &MockGethClient{}, &MockIDContract{}
+	c, f, r, g, i := &testingconfig.MockConfig{}, &MockIDFactory{}, &MockIDRegistry{}, &MockGethClient{}, &MockIDContract{}
 	g.On("GetGethCallOpts").Return(&bind.CallOpts{}, func() {})
 	g.On("GetEthClient").Return(&ethclient.Client{})
 	r.On("GetIdentityByCentrifugeId", mock.Anything, centID.BigInt()).Return(common.BytesToAddress(utils.RandomSlice(20)), nil)
@@ -311,7 +306,7 @@ func TestValidateKey_fail_getId(t *testing.T) {
 	pubKey := utils.RandomSlice(32)
 	var key [32]byte
 	copy(key[:], pubKey)
-	c, f, r, g, i := &MockConfig{}, &MockIDFactory{}, &MockIDRegistry{}, &MockGethClient{}, &MockIDContract{}
+	c, f, r, g, i := &testingconfig.MockConfig{}, &MockIDFactory{}, &MockIDRegistry{}, &MockGethClient{}, &MockIDContract{}
 	g.On("GetGethCallOpts").Return(&bind.CallOpts{}, func() {})
 	g.On("GetEthClient").Return(&ethclient.Client{})
 	r.On("GetIdentityByCentrifugeId", mock.Anything, centID.BigInt()).Return(common.BytesToAddress(utils.RandomSlice(20)), nil)
@@ -339,7 +334,7 @@ func TestValidateKey_fail_getId(t *testing.T) {
 func TestValidateKey_fail_mismatch_key(t *testing.T) {
 	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
 	pubKey := utils.RandomSlice(32)
-	c, f, r, g, i := &MockConfig{}, &MockIDFactory{}, &MockIDRegistry{}, &MockGethClient{}, &MockIDContract{}
+	c, f, r, g, i := &testingconfig.MockConfig{}, &MockIDFactory{}, &MockIDRegistry{}, &MockGethClient{}, &MockIDContract{}
 	g.On("GetGethCallOpts").Return(&bind.CallOpts{}, func() {})
 	g.On("GetEthClient").Return(&ethclient.Client{})
 	r.On("GetIdentityByCentrifugeId", mock.Anything, centID.BigInt()).Return(common.BytesToAddress(utils.RandomSlice(20)), nil)
@@ -369,7 +364,7 @@ func TestValidateKey_fail_missing_purpose(t *testing.T) {
 	pubKey := utils.RandomSlice(32)
 	var key [32]byte
 	copy(key[:], pubKey)
-	c, f, r, g, i := &MockConfig{}, &MockIDFactory{}, &MockIDRegistry{}, &MockGethClient{}, &MockIDContract{}
+	c, f, r, g, i := &testingconfig.MockConfig{}, &MockIDFactory{}, &MockIDRegistry{}, &MockGethClient{}, &MockIDContract{}
 	g.On("GetGethCallOpts").Return(&bind.CallOpts{}, func() {})
 	g.On("GetEthClient").Return(&ethclient.Client{})
 	r.On("GetIdentityByCentrifugeId", mock.Anything, centID.BigInt()).Return(common.BytesToAddress(utils.RandomSlice(20)), nil)
@@ -399,7 +394,7 @@ func TestValidateKey_fail_wrong_purpose(t *testing.T) {
 	pubKey := utils.RandomSlice(32)
 	var key [32]byte
 	copy(key[:], pubKey)
-	c, f, r, g, i := &MockConfig{}, &MockIDFactory{}, &MockIDRegistry{}, &MockGethClient{}, &MockIDContract{}
+	c, f, r, g, i := &testingconfig.MockConfig{}, &MockIDFactory{}, &MockIDRegistry{}, &MockGethClient{}, &MockIDContract{}
 	g.On("GetGethCallOpts").Return(&bind.CallOpts{}, func() {})
 	g.On("GetEthClient").Return(&ethclient.Client{})
 	r.On("GetIdentityByCentrifugeId", mock.Anything, centID.BigInt()).Return(common.BytesToAddress(utils.RandomSlice(20)), nil)
@@ -429,7 +424,7 @@ func TestValidateKey_fail_revocation(t *testing.T) {
 	pubKey := utils.RandomSlice(32)
 	var key [32]byte
 	copy(key[:], pubKey)
-	c, f, r, g, i := &MockConfig{}, &MockIDFactory{}, &MockIDRegistry{}, &MockGethClient{}, &MockIDContract{}
+	c, f, r, g, i := &testingconfig.MockConfig{}, &MockIDFactory{}, &MockIDRegistry{}, &MockGethClient{}, &MockIDContract{}
 	g.On("GetGethCallOpts").Return(&bind.CallOpts{}, func() {})
 	g.On("GetEthClient").Return(&ethclient.Client{})
 	r.On("GetIdentityByCentrifugeId", mock.Anything, centID.BigInt()).Return(common.BytesToAddress(utils.RandomSlice(20)), nil)

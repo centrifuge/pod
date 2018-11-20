@@ -6,7 +6,6 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/code"
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/version"
 )
@@ -51,22 +50,22 @@ func versionValidator() Validator {
 	})
 }
 
-func networkValidator() Validator {
+func networkValidator(networkID uint32) Validator {
 	return ValidatorFunc(func(header *p2ppb.CentrifugeHeader) error {
 		if header == nil {
 			return fmt.Errorf("nil header")
 		}
-		if config.Config().GetNetworkID() != header.NetworkIdentifier {
-			return incompatibleNetworkError(config.Config().GetNetworkID(), header.NetworkIdentifier)
+		if networkID != header.NetworkIdentifier {
+			return incompatibleNetworkError(networkID, header.NetworkIdentifier)
 		}
 		return nil
 	})
 }
 
-func handshakeValidator() ValidatorGroup {
+func handshakeValidator(networkID uint32) ValidatorGroup {
 	return ValidatorGroup{
 		versionValidator(),
-		networkValidator(),
+		networkValidator(networkID),
 	}
 }
 

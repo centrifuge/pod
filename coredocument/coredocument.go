@@ -209,19 +209,15 @@ func NewWithCollaborators(collaborators []string) (*coredocumentpb.CoreDocument,
 }
 
 //  GetExternalCollaborators returns collaborators of a document without the own centID
-func GetExternalCollaborators(doc *coredocumentpb.CoreDocument) ([][]byte, error) {
+func GetExternalCollaborators(selfCentID identity.CentID, doc *coredocumentpb.CoreDocument) ([][]byte, error) {
 	var collabs [][]byte
-	idConfig, err := identity.GetIdentityConfig()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get identity config: %v", err)
-	}
 
 	for _, collab := range doc.Collaborators {
 		collabID, err := identity.ToCentID(collab)
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert to CentID: %v", err)
 		}
-		if !idConfig.ID.Equal(collabID) {
+		if !selfCentID.Equal(collabID) {
 			collabs = append(collabs, collab)
 		}
 	}

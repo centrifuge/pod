@@ -26,16 +26,19 @@ type identitiesCreatedFilterer interface {
 type idRegistrationConfirmationTask struct {
 	centID             CentID
 	blockHeight        uint64
-	contextInitializer func() (ctx context.Context, cancelFunc context.CancelFunc)
+	timeout            time.Duration
+	contextInitializer func(d time.Duration) (ctx context.Context, cancelFunc context.CancelFunc)
 	ctx                context.Context
 	filterer           identitiesCreatedFilterer
 }
 
 func newIdRegistrationConfirmationTask(
+	timeout time.Duration,
 	identityCreatedWatcher identitiesCreatedFilterer,
-	ethContextInitializer func() (ctx context.Context, cancelFunc context.CancelFunc),
+	ethContextInitializer func(d time.Duration) (ctx context.Context, cancelFunc context.CancelFunc),
 ) *idRegistrationConfirmationTask {
 	return &idRegistrationConfirmationTask{
+		timeout:            timeout,
 		filterer:           identityCreatedWatcher,
 		contextInitializer: ethContextInitializer,
 	}
@@ -57,6 +60,7 @@ func (rct *idRegistrationConfirmationTask) Copy() (gocelery.CeleryTask, error) {
 	return &idRegistrationConfirmationTask{
 		rct.centID,
 		rct.blockHeight,
+		rct.timeout,
 		rct.contextInitializer,
 		rct.ctx,
 		rct.filterer}, nil
@@ -74,10 +78,21 @@ func (rct *idRegistrationConfirmationTask) ParseKwargs(kwargs map[string]interfa
 	}
 	rct.centID = centIdTyped
 
-	rct.blockHeight, err = parseBlockHeight(kwargs)
+	rct.blockHeight, err = queue.ParseBlockHeight(kwargs)
 	if err != nil {
 		return err
 	}
+
+	// override timeout param if provided
+	tdRaw, ok := kwargs[queue.TimeoutParam]
+	if ok {
+		td, err := queue.GetDuration(tdRaw)
+		if err != nil {
+			return fmt.Errorf("malformed kwarg [%s] because [%s]", queue.TimeoutParam, err.Error())
+		}
+		rct.timeout = td
+	}
+
 	return nil
 }
 
@@ -85,7 +100,7 @@ func (rct *idRegistrationConfirmationTask) ParseKwargs(kwargs map[string]interfa
 func (rct *idRegistrationConfirmationTask) RunTask() (interface{}, error) {
 	log.Infof("Waiting for confirmation for the ID [%x]", rct.centID)
 	if rct.ctx == nil {
-		rct.ctx, _ = rct.contextInitializer()
+		rct.ctx, _ = rct.contextInitializer(rct.timeout)
 	}
 
 	fOpts := &bind.FilterOpts{

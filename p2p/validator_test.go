@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/stretchr/testify/assert"
 )
@@ -40,7 +39,7 @@ func TestValidate_versionValidator(t *testing.T) {
 }
 
 func TestValidate_networkValidator(t *testing.T) {
-	nv := networkValidator()
+	nv := networkValidator(cfg.GetNetworkID())
 
 	// Nil header
 	err := nv.Validate(nil)
@@ -56,13 +55,13 @@ func TestValidate_networkValidator(t *testing.T) {
 	assert.NotNil(t, err)
 
 	// Compatible network
-	header.NetworkIdentifier = config.Config().GetNetworkID()
+	header.NetworkIdentifier = cfg.GetNetworkID()
 	err = nv.Validate(header)
 	assert.Nil(t, err)
 }
 
 func TestValidate_handshakeValidator(t *testing.T) {
-	hv := handshakeValidator()
+	hv := handshakeValidator(cfg.GetNetworkID())
 
 	// Incompatible version and network
 	header := &p2ppb.CentrifugeHeader{
@@ -73,7 +72,7 @@ func TestValidate_handshakeValidator(t *testing.T) {
 	assert.NotNil(t, err)
 
 	// Incompatible version, correct network
-	header.NetworkIdentifier = config.Config().GetNetworkID()
+	header.NetworkIdentifier = cfg.GetNetworkID()
 	err = hv.Validate(header)
 	assert.NotNil(t, err)
 
@@ -84,7 +83,7 @@ func TestValidate_handshakeValidator(t *testing.T) {
 	assert.NotNil(t, err)
 
 	// Compatible version and network
-	header.NetworkIdentifier = config.Config().GetNetworkID()
+	header.NetworkIdentifier = cfg.GetNetworkID()
 	err = hv.Validate(header)
 	assert.Nil(t, err)
 }

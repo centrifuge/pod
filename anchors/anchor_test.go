@@ -12,11 +12,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var ctx = map[string]interface{}{}
+var cfg Config
+
 func TestMain(m *testing.M) {
 	ibootstappers := []bootstrap.TestBootstrapper{
 		&config.Bootstrapper{},
 	}
-	bootstrap.RunTestBootstrappers(ibootstappers, nil)
+	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
+	cfg = ctx[config.BootstrappedConfig].(Config)
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)

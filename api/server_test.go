@@ -17,6 +17,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
+	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/p2p"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
@@ -28,18 +29,14 @@ var cfg *config.Configuration
 var registry *documents.ServiceRegistry
 
 func TestMain(m *testing.M) {
+	ethClient := &testingcommons.MockEthClient{}
+	ethClient.On("GetEthClient").Return(nil)
+	ctx[ethereum.BootstrappedEthereumClient] = ethClient
+
 	ibootstappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
 		&storage.Bootstrapper{},
-	}
-	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
-
-	ethClient := &testingcommons.MockEthClient{}
-	ethClient.On("GetEthClient").Return(nil)
-	ctx[bootstrap.BootstrappedEthereumClient] = ethClient
-
-	ibootstappers = []bootstrap.TestBootstrapper{
 		anchors.Bootstrapper{},
 		documents.Bootstrapper{},
 		p2p.Bootstrapper{},
@@ -47,7 +44,8 @@ func TestMain(m *testing.M) {
 		&purchaseorder.Bootstrapper{},
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
-	cfg = ctx[bootstrap.BootstrappedConfig].(*config.Configuration)
+
+	cfg = ctx[config.BootstrappedConfig].(*config.Configuration)
 	registry = ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
 	flag.Parse()
 	result := m.Run()

@@ -2,7 +2,6 @@ package nft
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -21,7 +20,6 @@ import (
 const (
 	mintingConfirmationTaskName string = "MintingConfirmationTaskName"
 	tokenIDParam                string = "TokenIDParam"
-	blockHeightParam            string = "BlockHeightParam"
 	registryAddressParam        string = "RegistryAddressParam"
 )
 
@@ -38,16 +36,18 @@ type mintingConfirmationTask struct {
 	TokenID         string
 	BlockHeight     uint64
 	RegistryAddress string
+	Timeout         time.Duration
 
 	//state
-	EthContextInitializer func() (ctx context.Context, cancelFunc context.CancelFunc)
+	EthContextInitializer func(d time.Duration) (ctx context.Context, cancelFunc context.CancelFunc)
 }
 
 func newMintingConfirmationTask(
-	ethContextInitializer func() (ctx context.Context, cancelFunc context.CancelFunc),
+	timeout time.Duration,
+	ethContextInitializer func(d time.Duration) (ctx context.Context, cancelFunc context.CancelFunc),
 ) *mintingConfirmationTask {
 	return &mintingConfirmationTask{
-
+		Timeout:               timeout,
 		EthContextInitializer: ethContextInitializer,
 	}
 }
@@ -69,6 +69,7 @@ func (nftc *mintingConfirmationTask) Copy() (gocelery.CeleryTask, error) {
 		nftc.TokenID,
 		nftc.BlockHeight,
 		nftc.RegistryAddress,
+		nftc.Timeout,
 		nftc.EthContextInitializer,
 	}, nil
 }
@@ -86,7 +87,7 @@ func (nftc *mintingConfirmationTask) ParseKwargs(kwargs map[string]interface{}) 
 	}
 
 	// parse BlockHeight
-	nftc.BlockHeight, err = parseBlockHeight(kwargs)
+	nftc.BlockHeight, err = queue.ParseBlockHeight(kwargs)
 	if err != nil {
 		return err
 	}
@@ -102,24 +103,24 @@ func (nftc *mintingConfirmationTask) ParseKwargs(kwargs map[string]interface{}) 
 		return fmt.Errorf("malformed kwarg [%s]", registryAddressParam)
 	}
 
-	return nil
-}
-
-func parseBlockHeight(valMap map[string]interface{}) (uint64, error) {
-	if bhi, ok := valMap[blockHeightParam]; ok {
-		bhf, ok := bhi.(float64)
-		if ok {
-			return uint64(bhf), nil
+	// override TimeoutParam if provided
+	tdRaw, ok := kwargs[queue.TimeoutParam]
+	if ok {
+		td, err := queue.GetDuration(tdRaw)
+		if err != nil {
+			return fmt.Errorf("malformed kwarg [%s] because [%s]", queue.TimeoutParam, err.Error())
 		}
+		nftc.Timeout = td
 	}
-	return 0, errors.New("value can not be parsed")
+
+	return nil
 }
 
 // RunTask calls listens to events from geth related to MintingConfirmationTask#TokenID and records result.
 func (nftc *mintingConfirmationTask) RunTask() (interface{}, error) {
 	log.Infof("Waiting for confirmation for the minting of token [%x]", nftc.TokenID)
 
-	ethContext, _ := nftc.EthContextInitializer()
+	ethContext, _ := nftc.EthContextInitializer(nftc.Timeout)
 
 	fOpts := &bind.FilterOpts{
 		Context: ethContext,

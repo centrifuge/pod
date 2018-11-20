@@ -9,6 +9,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/coredocument"
+	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/libp2p/go-libp2p-peer"
@@ -19,7 +20,7 @@ import (
 
 type Client interface {
 	OpenClient(target string) (p2ppb.P2PServiceClient, error)
-	GetSignaturesForDocument(ctx context.Context, identityService identity.Service, doc *coredocumentpb.CoreDocument) error
+	GetSignaturesForDocument(ctx *header.ContextHeader, identityService identity.Service, doc *coredocumentpb.CoreDocument) error
 }
 
 // OpenClient returns P2PServiceClient to contact the remote peer
@@ -119,11 +120,11 @@ func (s *p2pServer) getSignatureAsync(ctx context.Context, identityService ident
 }
 
 // GetSignaturesForDocument requests peer nodes for the signature and verifies them
-func (s *p2pServer) GetSignaturesForDocument(ctx context.Context, identityService identity.Service, doc *coredocumentpb.CoreDocument) error {
+func (s *p2pServer) GetSignaturesForDocument(ctx *header.ContextHeader, identityService identity.Service, doc *coredocumentpb.CoreDocument) error {
 	in := make(chan signatureResponseWrap)
 	defer close(in)
 
-	extCollaborators, err := coredocument.GetExternalCollaborators(doc)
+	extCollaborators, err := coredocument.GetExternalCollaborators(ctx.Self().ID, doc)
 	if err != nil {
 		return centerrors.Wrap(err, "failed to get external collaborators")
 	}
@@ -149,7 +150,7 @@ func (s *p2pServer) GetSignaturesForDocument(ctx context.Context, identityServic
 		// for now going with context.background, once we have a timeout for request
 		// we can use context.Timeout for that
 		count++
-		go s.getSignatureAsync(ctx, identityService, *doc, client, collaboratorID, in)
+		go s.getSignatureAsync(ctx.Context(), identityService, *doc, client, collaboratorID, in)
 	}
 
 	var responses []signatureResponseWrap

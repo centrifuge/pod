@@ -30,9 +30,9 @@ func createIdentity() (identity.CentID, error) {
 	return centrifugeId, nil
 }
 
-func generateKeys() {
-	p2pPub, p2pPvt := config.Config().GetSigningKeyPair()
-	ethAuthPub, ethAuthPvt := config.Config().GetEthAuthKeyPair()
+func generateKeys(config config.Config) {
+	p2pPub, p2pPvt := config.GetSigningKeyPair()
+	ethAuthPub, ethAuthPvt := config.GetEthAuthKeyPair()
 	keytools.GenerateSigningKeyPair(p2pPub, p2pPvt, "ed25519")
 	keytools.GenerateSigningKeyPair(p2pPub, p2pPvt, "ed25519")
 	keytools.GenerateSigningKeyPair(ethAuthPub, ethAuthPvt, "secp256k1")
@@ -84,8 +84,10 @@ func init() {
 			}
 			log.Infof("Config File Created: %s\n", v.ConfigFileUsed())
 
-			baseBootstrap(v.ConfigFileUsed())
-			generateKeys()
+			ctx := baseBootstrap(v.ConfigFileUsed())
+			cfg := ctx[config.BootstrappedConfig].(*config.Configuration)
+			generateKeys(cfg)
+
 			id, err := createIdentity()
 			if err != nil {
 				panic(err)
@@ -96,7 +98,7 @@ func init() {
 			if err != nil {
 				log.Fatalf("error: %v", err)
 			}
-			config.Config().Set("identityId", id.String())
+			cfg.Set("identityId", id.String())
 
 			log.Infof("Identity created [%s] [%x]", id.String(), id)
 

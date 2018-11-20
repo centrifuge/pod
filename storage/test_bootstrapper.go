@@ -5,7 +5,6 @@ package storage
 import (
 	"fmt"
 
-	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/utils"
 )
@@ -14,15 +13,16 @@ const testStoragePath = "/tmp/centrifuge_data.leveldb_TESTING"
 
 func (*Bootstrapper) TestBootstrap(context map[string]interface{}) error {
 	rs := getRandomTestStoragePath()
-	config.Config().SetDefault("storage.Path", rs)
-	log.Info("Set storage.Path to:", config.Config().GetStoragePath())
-	levelDB, err := NewLevelDBStorage(config.Config().GetStoragePath())
+	cfg := context[config.BootstrappedConfig].(*config.Configuration)
+	cfg.SetDefault("storage.Path", rs)
+	log.Info("Set storage.Path to:", cfg.GetStoragePath())
+	levelDB, err := NewLevelDBStorage(cfg.GetStoragePath())
 	if err != nil {
 		return fmt.Errorf("failed to init level db: %v", err)
 	}
 
-	log.Infof("Setting levelDb at: %s", config.Config().GetStoragePath())
-	context[bootstrap.BootstrappedLevelDb] = levelDB
+	log.Infof("Setting levelDb at: %s", cfg.GetStoragePath())
+	context[BootstrappedLevelDb] = levelDB
 	return nil
 }
 

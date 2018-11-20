@@ -6,8 +6,11 @@ import (
 	"fmt"
 	"testing"
 
+	"context"
+
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
@@ -46,7 +49,7 @@ func TestFieldValidator_Validate(t *testing.T) {
 
 func TestDataRootValidation_Validate(t *testing.T) {
 	drv := dataRootValidator()
-	contextHeader, err := documents.NewContextHeader()
+	contextHeader, err := header.NewContextHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 
 	// nil error

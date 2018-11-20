@@ -7,6 +7,8 @@ import (
 
 	"bytes"
 
+	"time"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
@@ -44,10 +46,6 @@ type contract interface {
 	}, error)
 
 	FilterKeyAdded(opts *bind.FilterOpts, key [][32]byte, purpose []*big.Int) (*EthereumIdentityContractKeyAddedIterator, error)
-}
-
-type Config interface {
-	GetEthereumDefaultAccountName() string
 }
 
 // EthereumIdentityKey holds the identity related details
@@ -224,7 +222,7 @@ func (id *ethereumIdentity) AddKeyToIdentity(ctx context.Context, keyPurpose int
 
 	var keyFixed [32]byte
 	copy(keyFixed[:], key)
-	confirmations, err = setUpKeyRegisteredEventListener(id, keyPurpose, keyFixed, h.Number.Uint64())
+	confirmations, err = setUpKeyRegisteredEventListener(id.config, id, keyPurpose, keyFixed, h.Number.Uint64())
 	if err != nil {
 		wError := errors.Wrap(err, 1)
 		log.Errorf("Failed to set up event listener for identity [id: %s]: %v", id, wError)
@@ -300,7 +298,7 @@ func sendIdentityCreationTransaction(identityFactory factory, opts *bind.Transac
 }
 
 // setUpKeyRegisteredEventListener listens for Identity creation
-func setUpKeyRegisteredEventListener(identity Identity, keyPurpose int, key [32]byte, bh uint64) (confirmations chan *WatchIdentity, err error) {
+func setUpKeyRegisteredEventListener(config Config, identity Identity, keyPurpose int, key [32]byte, bh uint64) (confirmations chan *WatchIdentity, err error) {
 	confirmations = make(chan *WatchIdentity)
 	centId := identity.CentID()
 	if err != nil {
@@ -308,43 +306,43 @@ func setUpKeyRegisteredEventListener(identity Identity, keyPurpose int, key [32]
 	}
 	asyncRes, err := queue.Queue.DelayKwargs(keyRegistrationConfirmationTaskName,
 		map[string]interface{}{
-			centIDParam:      centId,
-			keyParam:         key,
-			keyPurposeParam:  keyPurpose,
-			blockHeightParam: bh,
+			centIDParam:            centId,
+			keyParam:               key,
+			keyPurposeParam:        keyPurpose,
+			queue.BlockHeightParam: bh,
 		})
 	if err != nil {
 		return nil, err
 	}
-	go waitAndRouteKeyRegistrationEvent(asyncRes, confirmations, identity)
+	go waitAndRouteKeyRegistrationEvent(config.GetEthereumContextWaitTimeout(), asyncRes, confirmations, identity)
 	return confirmations, nil
 }
 
 // setUpRegistrationEventListener sets up the listened for the "IdentityCreated" event to notify the upstream code about successful mining/creation
 // of the identity.
-func setUpRegistrationEventListener(identityToBeCreated Identity, blockHeight uint64) (confirmations chan *WatchIdentity, err error) {
+func setUpRegistrationEventListener(config Config, identityToBeCreated Identity, blockHeight uint64) (confirmations chan *WatchIdentity, err error) {
 	confirmations = make(chan *WatchIdentity)
 	bCentId := identityToBeCreated.CentID()
 	if err != nil {
 		return nil, err
 	}
-	asyncRes, err := queue.Queue.DelayKwargs(idRegistrationConfirmationTaskName, map[string]interface{}{centIDParam: bCentId, blockHeightParam: blockHeight})
+	asyncRes, err := queue.Queue.DelayKwargs(idRegistrationConfirmationTaskName, map[string]interface{}{centIDParam: bCentId, queue.BlockHeightParam: blockHeight})
 	if err != nil {
 		return nil, err
 	}
-	go waitAndRouteIdentityRegistrationEvent(asyncRes, confirmations, identityToBeCreated)
+	go waitAndRouteIdentityRegistrationEvent(config.GetEthereumContextWaitTimeout(), asyncRes, confirmations, identityToBeCreated)
 	return confirmations, nil
 }
 
 // waitAndRouteKeyRegistrationEvent notifies the confirmations channel whenever the key has been added to the identity and has been noted as Ethereum event
-func waitAndRouteKeyRegistrationEvent(asyncRes *gocelery.AsyncResult, confirmations chan<- *WatchIdentity, pushThisIdentity Identity) {
-	_, err := asyncRes.Get(ethereum.GetDefaultContextTimeout())
+func waitAndRouteKeyRegistrationEvent(timeout time.Duration, asyncRes *gocelery.AsyncResult, confirmations chan<- *WatchIdentity, pushThisIdentity Identity) {
+	_, err := asyncRes.Get(timeout)
 	confirmations <- &WatchIdentity{Identity: pushThisIdentity, Error: err}
 }
 
 // waitAndRouteIdentityRegistrationEvent notifies the confirmations channel whenever the identity creation is being noted as Ethereum event
-func waitAndRouteIdentityRegistrationEvent(asyncRes *gocelery.AsyncResult, confirmations chan<- *WatchIdentity, pushThisIdentity Identity) {
-	_, err := asyncRes.Get(ethereum.GetDefaultContextTimeout())
+func waitAndRouteIdentityRegistrationEvent(timeout time.Duration, asyncRes *gocelery.AsyncResult, confirmations chan<- *WatchIdentity, pushThisIdentity Identity) {
+	_, err := asyncRes.Get(timeout)
 	confirmations <- &WatchIdentity{pushThisIdentity, err}
 }
 
@@ -403,7 +401,7 @@ func (ids *EthereumIdentityService) CreateIdentity(centrifugeID CentID) (id Iden
 		return nil, confirmations, err
 	}
 
-	confirmations, err = setUpRegistrationEventListener(id, h.Number.Uint64())
+	confirmations, err = setUpRegistrationEventListener(ids.config, id, h.Number.Uint64())
 	if err != nil {
 		wError := errors.Wrap(err, 1)
 		log.Infof("Failed to set up event listener for identity [mockID: %s]: %v", id, wError)
@@ -521,7 +519,7 @@ func (ids *EthereumIdentityService) ValidateKey(centrifugeId CentID, key []byte,
 
 // AddKeyFromConfig adds a key previously generated and indexed in the configuration file to the identity specified in such config file
 func (ids *EthereumIdentityService) AddKeyFromConfig(purpose int) error {
-	identityConfig, err := GetIdentityConfig()
+	identityConfig, err := GetIdentityConfig(ids.config)
 	if err != nil {
 		return err
 	}
@@ -531,7 +529,7 @@ func (ids *EthereumIdentityService) AddKeyFromConfig(purpose int) error {
 		return err
 	}
 
-	ctx, cancel := ethereum.DefaultWaitForTransactionMiningContext()
+	ctx, cancel := ethereum.DefaultWaitForTransactionMiningContext(ids.config.GetEthereumContextWaitTimeout())
 	defer cancel()
 	confirmations, err := id.AddKeyToIdentity(ctx, purpose, identityConfig.Keys[purpose].PublicKey)
 	if err != nil {

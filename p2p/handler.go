@@ -8,8 +8,10 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/code"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/version"
 )
 
@@ -39,11 +41,12 @@ func getServiceAndModel(registry *documents.ServiceRegistry, cd *coredocumentpb.
 // handler implements the grpc interface
 type handler struct {
 	registry *documents.ServiceRegistry
+	config   config.Config
 }
 
 // GRPCHandler returns an implementation of P2PServiceServer
-func GRPCHandler(registry *documents.ServiceRegistry) p2ppb.P2PServiceServer {
-	return handler{registry: registry}
+func GRPCHandler(config config.Config, registry *documents.ServiceRegistry) p2ppb.P2PServiceServer {
+	return handler{registry: registry, config: config}
 }
 
 // RequestDocumentSignature signs the received document and returns the signature of the signingRoot
@@ -51,7 +54,12 @@ func GRPCHandler(registry *documents.ServiceRegistry) p2ppb.P2PServiceServer {
 // Existing signatures on the document will be verified
 // Document will be stored to the repository for state management
 func (srv handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.SignatureRequest) (*p2ppb.SignatureResponse, error) {
-	err := handshakeValidator().Validate(sigReq.Header)
+	ctxHeader, err := header.NewContextHeader(ctx, srv.config)
+	if err != nil {
+		log.Error(err)
+		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
+	}
+	err = handshakeValidator(srv.config.GetNetworkID()).Validate(sigReq.Header)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +69,7 @@ func (srv handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.S
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
 	}
 
-	signature, err := svc.RequestDocumentSignature(model)
+	signature, err := svc.RequestDocumentSignature(ctxHeader, model)
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
@@ -74,7 +82,7 @@ func (srv handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.S
 
 // SendAnchoredDocument receives a new anchored document, validates and updates the document in DB
 func (srv handler) SendAnchoredDocument(ctx context.Context, docReq *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error) {
-	err := handshakeValidator().Validate(docReq.Header)
+	err := handshakeValidator(srv.config.GetNetworkID()).Validate(docReq.Header)
 	if err != nil {
 		return nil, err
 	}

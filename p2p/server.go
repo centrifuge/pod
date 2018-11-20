@@ -1,4 +1,3 @@
-// PLEASE DO NOT call any config.* stuff here as it creates dependencies that can't be injected easily when testing
 package p2p
 
 import (
@@ -35,6 +34,7 @@ type Config interface {
 	GetP2PConnectionTimeout() time.Duration
 	GetNetworkID() uint32
 	GetIdentityID() ([]byte, error)
+	GetSigningKeyPair() (pub, priv string)
 }
 
 // p2pServer implements api.Server
@@ -43,6 +43,7 @@ type p2pServer struct {
 	host     host.Host
 	registry *documents.ServiceRegistry
 	protocol *p2pgrpc.GRPCProtocol
+	handler  p2ppb.P2PServiceServer
 }
 
 // Name returns the P2PServer
@@ -69,7 +70,7 @@ func (s *p2pServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr ch
 
 	// Set the grpc protocol handler on it
 	s.protocol = p2pgrpc.NewGRPCProtocol(ctx, s.host)
-	p2ppb.RegisterP2PServiceServer(s.protocol.GetGRPCServer(), GRPCHandler(s.registry))
+	p2ppb.RegisterP2PServiceServer(s.protocol.GetGRPCServer(), s.handler)
 
 	serveErr := make(chan error)
 	go func() {
@@ -229,7 +230,7 @@ func (s *p2pServer) makeBasicHost(listenPort int) (host.Host, error) {
 
 func (s *p2pServer) createSigningKey() (priv crypto.PrivKey, pub crypto.PubKey, err error) {
 	// Create the signing key for the host
-	publicKey, privateKey, err := cented25519.GetSigningKeyPairFromConfig()
+	publicKey, privateKey, err := cented25519.GetSigningKeyPair(s.config.GetSigningKeyPair())
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get keys: %v", err)
 	}

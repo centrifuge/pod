@@ -8,6 +8,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
@@ -200,7 +201,7 @@ func documentRootValidator() documents.Validator {
 // re-calculates the signature and compares with existing one
 // assumes signing_root is already generated and verified
 // Note: this needs to used only before document is sent for signatures from the collaborators
-func readyForSignaturesValidator() documents.Validator {
+func readyForSignaturesValidator(centIDBytes, priv, pub []byte) documents.Validator {
 	return documents.ValidatorFunc(func(_, model documents.Model) error {
 		cd, err := getCoreDocument(model)
 		if err != nil {
@@ -211,12 +212,7 @@ func readyForSignaturesValidator() documents.Validator {
 			return fmt.Errorf("expecting only one signature")
 		}
 
-		c, err := identity.GetIdentityConfig()
-		if err != nil {
-			return fmt.Errorf("failed to get keys for signature calculation: %v", err)
-		}
-
-		s := identity.Sign(c, identity.KeyPurposeSigning, cd.SigningRoot)
+		s := signatures.Sign(centIDBytes, priv, pub, cd.SigningRoot)
 		sh := cd.Signatures[0]
 		if !utils.IsSameByteSlice(s.EntityId, sh.EntityId) {
 			err = documents.AppendError(err, documents.NewError("cd_entity_id", "entity ID mismatch"))
@@ -331,11 +327,11 @@ func PostAnchoredValidator(idService identity.Service, repo anchors.AnchorReposi
 // signingRootValidator
 // readyForSignaturesValidator
 // should be called after sender signing the document and before requesting the document
-func PreSignatureRequestValidator() documents.ValidatorGroup {
+func PreSignatureRequestValidator(centIDBytes, priv, pub []byte) documents.ValidatorGroup {
 	return documents.ValidatorGroup{
 		baseValidator(),
 		signingRootValidator(),
-		readyForSignaturesValidator(),
+		readyForSignaturesValidator(centIDBytes, priv, pub),
 	}
 }
 

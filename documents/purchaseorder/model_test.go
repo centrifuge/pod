@@ -7,18 +7,54 @@ import (
 	"reflect"
 	"testing"
 
+	"context"
+	"os"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
+	"github.com/centrifuge/go-centrifuge/anchors"
+	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/context/testlogging"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/ethereum"
+	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/p2p"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
+	"github.com/centrifuge/go-centrifuge/storage"
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 )
+
+var ctx = map[string]interface{}{}
+var cfg *config.Configuration
+
+func TestMain(m *testing.M) {
+	ethClient := &testingcommons.MockEthClient{}
+	ethClient.On("GetEthClient").Return(nil)
+	ctx[ethereum.BootstrappedEthereumClient] = ethClient
+
+	ibootstappers := []bootstrap.TestBootstrapper{
+		&testlogging.TestLoggingBootstrapper{},
+		&config.Bootstrapper{},
+		&storage.Bootstrapper{},
+		anchors.Bootstrapper{},
+		documents.Bootstrapper{},
+		p2p.Bootstrapper{},
+		&Bootstrapper{},
+	}
+	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
+	cfg = ctx[config.BootstrappedConfig].(*config.Configuration)
+	result := m.Run()
+	bootstrap.RunTestTeardown(ibootstappers)
+	os.Exit(result)
+}
 
 func TestPO_FromCoreDocuments_invalidParameter(t *testing.T) {
 	poModel := &PurchaseOrder{}
@@ -140,7 +176,7 @@ func TestPOModel_getClientData(t *testing.T) {
 }
 
 func TestPOOrderModel_InitPOInput(t *testing.T) {
-	contextHeader, err := documents.NewContextHeader()
+	contextHeader, err := header.NewContextHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 	// fail recipient
 	data := &clientpurchaseorderpb.PurchaseOrderData{
@@ -178,7 +214,7 @@ func TestPOOrderModel_InitPOInput(t *testing.T) {
 }
 
 func TestPOModel_calculateDataRoot(t *testing.T) {
-	contextHeader, err := documents.NewContextHeader()
+	contextHeader, err := header.NewContextHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 	poModel := new(PurchaseOrder)
 	err = poModel.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), contextHeader)

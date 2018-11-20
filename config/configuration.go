@@ -27,24 +27,35 @@ import (
 
 var log = logging.Logger("config")
 
-// configMu protects the config from read/write
-var configMu sync.RWMutex
-
-// config holds the current node config
-var config *Configuration
-
-// Config returns the current loaded config
-func Config() *Configuration {
-	configMu.RLock()
-	defer configMu.RUnlock()
-	return config
-}
-
-// SetConfig sets the config
-func SetConfig(c *Configuration) {
-	configMu.Lock()
-	defer configMu.Unlock()
-	config = c
+type Config interface {
+	GetStoragePath() string
+	GetP2PPort() int
+	GetP2PExternalIP() string
+	GetP2PConnectionTimeout() time.Duration
+	GetReceiveEventNotificationEndpoint() string
+	GetServerPort() int
+	GetServerAddress() string
+	GetNumWorkers() int
+	GetWorkerWaitTimeMS() int
+	GetEthereumNodeURL() string
+	GetEthereumContextReadWaitTimeout() time.Duration
+	GetEthereumContextWaitTimeout() time.Duration
+	GetEthereumIntervalRetry() time.Duration
+	GetEthereumMaxRetries() int
+	GetEthereumGasPrice() *big.Int
+	GetEthereumGasLimit() uint64
+	GetEthereumDefaultAccountName() string
+	GetEthereumAccount(accountName string) (account *AccountConfig, err error)
+	GetTxPoolAccessEnabled() bool
+	GetNetworkString() string
+	GetNetworkKey(k string) string
+	GetContractAddressString(address string) string
+	GetContractAddress(address string) common.Address
+	GetBootstrapPeers() []string
+	GetNetworkID() uint32
+	GetIdentityID() ([]byte, error)
+	GetSigningKeyPair() (pub, priv string)
+	GetEthAuthKeyPair() (pub, priv string)
 }
 
 // Configuration holds the configuration details for the node
@@ -267,8 +278,6 @@ func (c *Configuration) GetEthAuthKeyPair() (pub, priv string) {
 func NewConfiguration(configFile string) *Configuration {
 	cfg := &Configuration{configFile: configFile, mu: sync.RWMutex{}}
 	cfg.InitializeViper()
-	//TODO Will remove this soon, when we do not use global config variable
-	SetConfig(cfg)
 	return cfg
 }
 

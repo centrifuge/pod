@@ -6,29 +6,29 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/anchors"
-	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/p2p"
+	"github.com/centrifuge/go-centrifuge/storage"
 )
 
 type Bootstrapper struct{}
 
 // Bootstrap sets the required storage and registers
-func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
-	if _, ok := ctx[bootstrap.BootstrappedConfig]; !ok {
+func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
+	if _, ok := ctx[config.BootstrappedConfig]; !ok {
 		return errors.New("config hasn't been initialized")
 	}
 
-	cfg := ctx[bootstrap.BootstrappedConfig].(*config.Configuration)
+	cfg := ctx[config.BootstrappedConfig].(*config.Configuration)
 
-	if _, ok := ctx[bootstrap.BootstrappedLevelDb]; !ok {
+	if _, ok := ctx[storage.BootstrappedLevelDb]; !ok {
 		return errors.New("initializing LevelDB repository failed")
 	}
 
-	p2pClient, ok := ctx[bootstrap.BootstrappedP2PClient].(p2p.Client)
+	p2pClient, ok := ctx[p2p.BootstrappedP2PClient].(p2p.Client)
 	if !ok {
 		return fmt.Errorf("p2p client not initialised")
 	}

@@ -4,8 +4,11 @@ import (
 	"errors"
 	"math/big"
 
+	"time"
+
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
@@ -25,6 +28,12 @@ const (
 
 // AnchorID type is byte array of length AnchorIDLength
 type AnchorID [AnchorIDLength]byte
+
+type Config interface {
+	GetEthereumDefaultAccountName() string
+	GetEthereumContextWaitTimeout() time.Duration
+	GetContractAddress(address string) common.Address
+}
 
 // ToAnchorID convert the bytes into AnchorID type
 // returns an error if the bytes length != AnchorIDLength
