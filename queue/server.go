@@ -90,7 +90,7 @@ func (qs *QueueServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr
 
 // RegisterTaskType registers a task type on the queue server
 func (qs *QueueServer) RegisterTaskType(name string, task interface{}) {
-	qs.queue.Register(name, task)
+	qs.taskTypes = append(qs.taskTypes, task.(QueuedTaskType))
 }
 
 // EnqueueJob enqueues a job on the queue server for the given taskTypeName
