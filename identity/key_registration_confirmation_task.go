@@ -40,12 +40,14 @@ type keyRegistrationConfirmationTask struct {
 	config             Config
 	gethClientFinder   func() ethereum.Client
 	contractProvider   func(address common.Address, backend bind.ContractBackend) (contract, error)
+	queue              *queue.QueueServer
 }
 
 func newKeyRegistrationConfirmationTask(
 	ethContextInitializer func(d time.Duration) (ctx context.Context, cancelFunc context.CancelFunc),
 	registryContract *EthereumIdentityRegistryContract,
 	config Config,
+	queue *queue.QueueServer,
 	gethClientFinder func() ethereum.Client,
 	contractProvider func(address common.Address, backend bind.ContractBackend) (contract, error),
 ) *keyRegistrationConfirmationTask {
@@ -53,6 +55,7 @@ func newKeyRegistrationConfirmationTask(
 		contextInitializer: ethContextInitializer,
 		contract:           registryContract,
 		config:             config,
+		queue:              queue,
 		timeout:            config.GetEthereumContextWaitTimeout(),
 		gethClientFinder:   gethClientFinder,
 		contractProvider:   contractProvider,
@@ -78,7 +81,9 @@ func (krct *keyRegistrationConfirmationTask) Copy() (gocelery.CeleryTask, error)
 		krct.contract,
 		krct.config,
 		krct.gethClientFinder,
-		krct.contractProvider}, nil
+		krct.contractProvider,
+		krct.queue,
+	}, nil
 }
 
 // ParseKwargs parses the args into the task
@@ -141,7 +146,7 @@ func (krct *keyRegistrationConfirmationTask) RunTask() (interface{}, error) {
 		krct.ctx, _ = krct.contextInitializer(krct.timeout)
 	}
 
-	id := newEthereumIdentity(krct.centID, krct.contract, krct.config, krct.gethClientFinder, krct.contractProvider)
+	id := newEthereumIdentity(krct.centID, krct.contract, krct.config, krct.queue, krct.gethClientFinder, krct.contractProvider)
 	contract, err := id.getContract()
 	if err != nil {
 		return nil, err

@@ -32,8 +32,12 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return err
 	}
 
-	var repo AnchorRepository
-	repo = NewEthereumAnchorRepository(cfg, repositoryContract, ethereum.GetClient)
+	if _, ok := ctx[bootstrap.BootstrappedQueueServer]; !ok {
+		return errors.New("queue server hasn't been initialized")
+	}
+
+	queueSrv := ctx[bootstrap.BootstrappedQueueServer].(*queue.QueueServer)
+	repo := NewEthereumAnchorRepository(cfg, repositoryContract, queueSrv, ethereum.GetClient)
 	ctx[BootstrappedAnchorRepo] = repo
 
 	task := &anchorConfirmationTask{
@@ -43,10 +47,6 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		EthContextInitializer:   ethereum.DefaultWaitForTransactionMiningContext,
 	}
 
-	if _, ok := ctx[bootstrap.BootstrappedQueueServer]; !ok {
-		return errors.New("queue hasn't been initialized")
-	}
-	queueSrv := ctx[bootstrap.BootstrappedQueueServer].(queue.QueueServer)
 	queueSrv.RegisterTaskType(task.TaskTypeName(), task)
 	return nil
 }

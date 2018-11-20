@@ -36,17 +36,18 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		return err
 	}
 
-	IDService = NewEthereumIdentityService(cfg, idFactory, registryContract, ethereum.GetClient,
+	if _, ok := context[bootstrap.BootstrappedQueueServer]; !ok {
+		return errors.New("queue hasn't been initialized")
+	}
+	queueSrv := context[bootstrap.BootstrappedQueueServer].(*queue.QueueServer)
+
+	IDService = NewEthereumIdentityService(cfg, idFactory, registryContract, queueSrv, ethereum.GetClient,
 		func(address common.Address, backend bind.ContractBackend) (contract, error) {
 			return NewEthereumIdentityContract(address, backend)
 		})
 
-	if _, ok := context[bootstrap.BootstrappedQueueServer]; !ok {
-		return errors.New("queue hasn't been initialized")
-	}
-	queueSrv := context[bootstrap.BootstrappedQueueServer].(queue.QueueServer)
 	idRegTask := newIdRegistrationConfirmationTask(cfg.GetEthereumContextWaitTimeout(), &idFactory.EthereumIdentityFactoryContractFilterer, ethereum.DefaultWaitForTransactionMiningContext)
-	keyRegTask := newKeyRegistrationConfirmationTask(ethereum.DefaultWaitForTransactionMiningContext, registryContract, cfg, ethereum.GetClient,
+	keyRegTask := newKeyRegistrationConfirmationTask(ethereum.DefaultWaitForTransactionMiningContext, registryContract, cfg, queueSrv, ethereum.GetClient,
 		func(address common.Address, backend bind.ContractBackend) (contract, error) {
 			return NewEthereumIdentityContract(address, backend)
 		})

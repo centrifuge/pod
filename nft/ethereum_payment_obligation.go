@@ -8,8 +8,6 @@ import (
 
 	"regexp"
 
-	"github.com/centrifuge/gocelery"
-
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/ethereum"
@@ -63,13 +61,15 @@ type ethereumPaymentObligation struct {
 	identityService   identity.Service
 	ethClient         ethereum.Client
 	config            Config
-	setupMintListener func(config Config, tokenID *big.Int, registryAddress string) (confirmations chan *WatchTokenMinted, err error)
+	queue             *queue.QueueServer
+	setupMintListener func(config Config, queue *queue.QueueServer, tokenID *big.Int, registryAddress string) (confirmations chan *WatchTokenMinted, err error)
 	bindContract      func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error)
 }
 
 // NewEthereumPaymentObligation creates ethereumPaymentObligation given the parameters
 func NewEthereumPaymentObligation(registry *documents.ServiceRegistry, identityService identity.Service, ethClient ethereum.Client, config Config,
-	setupMintListener func(config Config, tokenID *big.Int, registryAddress string) (confirmations chan *WatchTokenMinted, err error), bindContract func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error)) *ethereumPaymentObligation {
+	queue *queue.QueueServer,
+	setupMintListener func(config Config, queue *queue.QueueServer, tokenID *big.Int, registryAddress string) (confirmations chan *WatchTokenMinted, err error), bindContract func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error)) *ethereumPaymentObligation {
 	return &ethereumPaymentObligation{
 		registry:          registry,
 		identityService:   identityService,
@@ -77,6 +77,7 @@ func NewEthereumPaymentObligation(registry *documents.ServiceRegistry, identityS
 		config:            config,
 		setupMintListener: setupMintListener,
 		bindContract:      bindContract,
+		queue:             queue,
 	}
 }
 
@@ -149,7 +150,7 @@ func (s *ethereumPaymentObligation) MintNFT(documentID []byte, registryAddress, 
 		return nil, err
 	}
 
-	watch, err := s.setupMintListener(s.config, requestData.TokenID, registryAddress)
+	watch, err := s.setupMintListener(s.config, s.queue, requestData.TokenID, registryAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +165,7 @@ func (s *ethereumPaymentObligation) MintNFT(documentID []byte, registryAddress, 
 
 // setUpMintEventListener sets up the listened for the "PaymentObligationMinted" event to notify the upstream code
 // about successful minting of an NFt
-func setupMintListener(config Config, tokenID *big.Int, registryAddress string) (confirmations chan *WatchTokenMinted, err error) {
+func setupMintListener(config Config, qs *queue.QueueServer, tokenID *big.Int, registryAddress string) (confirmations chan *WatchTokenMinted, err error) {
 	confirmations = make(chan *WatchTokenMinted)
 	conn := ethereum.GetClient()
 
@@ -172,9 +173,9 @@ func setupMintListener(config Config, tokenID *big.Int, registryAddress string) 
 	if err != nil {
 		return nil, err
 	}
-	asyncRes, err := queue.queue.DelayKwargs(mintingConfirmationTaskName, map[string]interface{}{
+	asyncRes, err := qs.EnqueueJob(mintingConfirmationTaskName, map[string]interface{}{
 		tokenIDParam:           hex.EncodeToString(tokenID.Bytes()),
-		queue.blockHeightParam: h.Number.Uint64(),
+		queue.BlockHeightParam: h.Number.Uint64(),
 		registryAddressParam:   registryAddress,
 	})
 	if err != nil {
@@ -186,7 +187,7 @@ func setupMintListener(config Config, tokenID *big.Int, registryAddress string) 
 }
 
 // waitAndRouteNFTApprovedEvent notifies the confirmations channel whenever the key has been added to the identity and has been noted as Ethereum event
-func waitAndRouteNFTApprovedEvent(timeout time.Duration, asyncRes *gocelery.AsyncResult, tokenID *big.Int, confirmations chan<- *WatchTokenMinted) {
+func waitAndRouteNFTApprovedEvent(timeout time.Duration, asyncRes queue.QueuedTaskResult, tokenID *big.Int, confirmations chan<- *WatchTokenMinted) {
 	_, err := asyncRes.Get(timeout)
 	confirmations <- &WatchTokenMinted{tokenID, err}
 }

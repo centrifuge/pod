@@ -31,14 +31,14 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return fmt.Errorf("service registry not initialised")
 	}
 
-	setPaymentObligation(NewEthereumPaymentObligation(registry, identity.IDService, ethereum.GetClient(), cfg, setupMintListener, bindContract))
-
-	// queue task
-	task := newMintingConfirmationTask(cfg.GetEthereumContextWaitTimeout(), ethereum.DefaultWaitForTransactionMiningContext)
 	if _, ok := ctx[bootstrap.BootstrappedQueueServer]; !ok {
 		return errors.New("queue hasn't been initialized")
 	}
-	queueSrv := ctx[bootstrap.BootstrappedQueueServer].(queue.QueueServer)
+	queueSrv := ctx[bootstrap.BootstrappedQueueServer].(*queue.QueueServer)
+	setPaymentObligation(NewEthereumPaymentObligation(registry, identity.IDService, ethereum.GetClient(), cfg, queueSrv, setupMintListener, bindContract))
+
+	// queue task
+	task := newMintingConfirmationTask(cfg.GetEthereumContextWaitTimeout(), ethereum.DefaultWaitForTransactionMiningContext)
 	queueSrv.RegisterTaskType(task.TaskTypeName(), task)
 	return nil
 }
