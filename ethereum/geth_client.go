@@ -30,6 +30,18 @@ var log = logging.Logger("geth-client")
 var gc Client
 var gcMu sync.RWMutex
 
+// Config defines functions to get ethereum details
+type Config interface {
+	GetEthereumGasPrice() *big.Int
+	GetEthereumGasLimit() uint64
+	GetEthereumNodeURL() string
+	GetEthereumAccount(accountName string) (account *config.AccountConfig, err error)
+	GetEthereumIntervalRetry() time.Duration
+	GetEthereumMaxRetries() int
+	GetTxPoolAccessEnabled() bool
+	GetEthereumContextReadWaitTimeout() time.Duration
+}
+
 // DefaultWaitForTransactionMiningContext returns context with timeout for write operations
 func DefaultWaitForTransactionMiningContext(d time.Duration) (ctx context.Context, cancelFunc context.CancelFunc) {
 	toBeDone := time.Now().Add(d)
@@ -68,14 +80,14 @@ type gethClient struct {
 	host      *url.URL
 	accounts  map[string]*bind.TransactOpts
 	accMu     sync.Mutex // accMu to protect accounts
-	config    config.Config
+	config    Config
 
 	// txMu to ensure one transaction at a time per client
 	txMu sync.Mutex
 }
 
 // NewGethClient returns an gethClient which implements Client
-func NewGethClient(config config.Config) (Client, error) {
+func NewGethClient(config Config) (Client, error) {
 	log.Info("Opening connection to Ethereum:", config.GetEthereumNodeURL())
 	u, err := url.Parse(config.GetEthereumNodeURL())
 	if err != nil {

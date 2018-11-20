@@ -6,7 +6,6 @@ import (
 	"crypto/rand"
 	"fmt"
 
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -115,9 +114,8 @@ func VerifySignature(publicKey, message, signature []byte) bool {
 
 }
 
-// GetEthAuthKeyFromConfig returns the public and private keys as byte array
-func GetEthAuthKeyFromConfig(config config.Config) (public, private []byte, err error) {
-	pub, priv := config.GetEthAuthKeyPair()
+// GetEthAuthKey returns the public and private keys as byte array
+func GetEthAuthKey(pub, priv string) (public, private []byte, err error) {
 	privateKey, err := GetPrivateEthAuthKey(priv)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to read private key: %v", err)

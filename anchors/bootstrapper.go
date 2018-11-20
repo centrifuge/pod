@@ -19,7 +19,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	if _, ok := ctx[config.BootstrappedConfig]; !ok {
 		return errors.New("config hasn't been initialized")
 	}
-	cfg := ctx[config.BootstrappedConfig].(*config.Configuration)
+	cfg := ctx[config.BootstrappedConfig].(Config)
 
 	if _, ok := ctx[ethereum.BootstrappedEthereumClient]; !ok {
 		return errors.New("ethereum client hasn't been initialized")

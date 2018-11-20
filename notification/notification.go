@@ -2,7 +2,6 @@ package notification
 
 import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/golang/protobuf/jsonpb"
 	logging "github.com/ipfs/go-log"
@@ -20,16 +19,20 @@ const (
 	Success         Status    = 1
 )
 
+type Config interface {
+	GetReceiveEventNotificationEndpoint() string
+}
+
 type Sender interface {
 	Send(notification *notificationpb.NotificationMessage) (Status, error)
 }
 
-func NewWebhookSender(config config.Config) *WebhookSender {
+func NewWebhookSender(config Config) *WebhookSender {
 	return &WebhookSender{config}
 }
 
 type WebhookSender struct {
-	config config.Config
+	config Config
 }
 
 func (wh *WebhookSender) Send(notification *notificationpb.NotificationMessage) (Status, error) {

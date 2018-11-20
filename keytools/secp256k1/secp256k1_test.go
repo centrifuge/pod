@@ -212,7 +212,7 @@ func TestGetEthAuthKeyFromConfig(t *testing.T) {
 
 	// bad public key path
 	cfg.Set("keys.ethauth.publicKey", "bad path")
-	pubK, priK, err := GetEthAuthKeyFromConfig(cfg)
+	pubK, priK, err := GetEthAuthKey(cfg.GetEthAuthKeyPair())
 	assert.Error(t, err)
 	assert.Nil(t, priK)
 	assert.Nil(t, pubK)
@@ -221,7 +221,7 @@ func TestGetEthAuthKeyFromConfig(t *testing.T) {
 
 	// bad private key path
 	cfg.Set("keys.ethauth.privateKey", "bad path")
-	pubK, priK, err = GetEthAuthKeyFromConfig(cfg)
+	pubK, priK, err = GetEthAuthKey(cfg.GetEthAuthKeyPair())
 	assert.Error(t, err)
 	assert.Nil(t, priK)
 	assert.Nil(t, pubK)
@@ -229,7 +229,7 @@ func TestGetEthAuthKeyFromConfig(t *testing.T) {
 	cfg.Set("keys.ethauth.privateKey", pri)
 
 	// success
-	pubK, priK, err = GetEthAuthKeyFromConfig(cfg)
+	pubK, priK, err = GetEthAuthKey(cfg.GetEthAuthKeyPair())
 	assert.Nil(t, err)
 	assert.NotNil(t, pubK)
 	assert.NotNil(t, priK)

@@ -25,7 +25,7 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return fmt.Errorf("registry not initialised")
 	}
 
-	srv := &p2pServer{config: cfg, registry: registry}
+	srv := &p2pServer{config: cfg, registry: registry, handler: GRPCHandler(cfg, registry)}
 	ctx[bootstrap.BootstrappedP2PServer] = srv
 	ctx[BootstrappedP2PClient] = srv
 	return nil

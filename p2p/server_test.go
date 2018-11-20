@@ -19,7 +19,7 @@ func TestCentP2PServer_Start(t *testing.T) {
 
 func TestCentP2PServer_StartContextCancel(t *testing.T) {
 	cfg.Set("p2p.port", 38203)
-	cp2p := &p2pServer{config: cfg}
+	cp2p := &p2pServer{config: cfg, handler: GRPCHandler(cfg, nil)}
 	ctx, canc := context.WithCancel(context.Background())
 	startErr := make(chan error, 1)
 	var wg sync.WaitGroup

@@ -14,7 +14,7 @@ func (Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	if _, ok := context[config.BootstrappedConfig]; !ok {
 		return errors.New("config hasn't been initialized")
 	}
-	cfg := context[config.BootstrappedConfig].(*config.Configuration)
+	cfg := context[config.BootstrappedConfig].(Config)
 	client, err := NewGethClient(cfg)
 	if err != nil {
 		return err

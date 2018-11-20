@@ -7,7 +7,6 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/centerrors"
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -18,6 +17,11 @@ import (
 )
 
 var log = logging.Logger("coredocument")
+
+type Config interface {
+	GetNetworkID() uint32
+	GetIdentityID() ([]byte, error)
+}
 
 // Processor identifies an implementation, which can do a bunch of things with a CoreDocument.
 // E.g. send, anchor, etc.
@@ -42,11 +46,11 @@ type defaultProcessor struct {
 	identityService  identity.Service
 	p2pClient        client
 	anchorRepository anchors.AnchorRepository
-	config           config.Config
+	config           Config
 }
 
 // DefaultProcessor returns the default implementation of CoreDocument Processor
-func DefaultProcessor(idService identity.Service, p2pClient client, repository anchors.AnchorRepository, config config.Config) Processor {
+func DefaultProcessor(idService identity.Service, p2pClient client, repository anchors.AnchorRepository, config Config) Processor {
 	return defaultProcessor{
 		identityService:  idService,
 		p2pClient:        p2pClient,
@@ -82,13 +86,13 @@ func (dp defaultProcessor) Send(ctx *header.ContextHeader, coreDocument *coredoc
 	log.Infof("Done opening connection against [%s]\n", lastB58Key)
 	idConfig := ctx.Self()
 	centIDBytes := idConfig.ID[:]
-	header := &p2ppb.CentrifugeHeader{
+	p2pheader := &p2ppb.CentrifugeHeader{
 		SenderCentrifugeId: centIDBytes,
 		CentNodeVersion:    version.GetVersion().String(),
 		NetworkIdentifier:  dp.config.GetNetworkID(),
 	}
 
-	resp, err := client.SendAnchoredDocument(ctx.Context(), &p2ppb.AnchorDocumentRequest{Document: coreDocument, Header: header})
+	resp, err := client.SendAnchoredDocument(ctx.Context(), &p2ppb.AnchorDocumentRequest{Document: coreDocument, Header: p2pheader})
 	if err != nil || !resp.Accepted {
 		return centerrors.Wrap(err, "failed to send document to the node")
 	}
@@ -109,12 +113,7 @@ func (dp defaultProcessor) PrepareForSignatureRequests(ctx *header.ContextHeader
 		return fmt.Errorf("failed to calculate signing root: %v", err)
 	}
 
-	// sign document with own key and append it to signatures
-	idConfig, err := identity.GetIdentityConfig(dp.config)
-	if err != nil {
-		return fmt.Errorf("failed to get keys for signing: %v", err)
-	}
-	sig := identity.Sign(idConfig, identity.KeyPurposeSigning, cd.SigningRoot)
+	sig := identity.Sign(ctx.Self(), identity.KeyPurposeSigning, cd.SigningRoot)
 	cd.Signatures = append(cd.Signatures, sig)
 
 	err = model.UnpackCoreDocument(cd)

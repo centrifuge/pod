@@ -20,7 +20,7 @@ import (
 )
 
 // registerServices registers all endpoints to the grpc server
-func registerServices(ctx context.Context, config config.Config, registry *documents.ServiceRegistry, grpcServer *grpc.Server, gwmux *runtime.ServeMux, addr string, dopts []grpc.DialOption) error {
+func registerServices(ctx context.Context, cfg Config, registry *documents.ServiceRegistry, grpcServer *grpc.Server, gwmux *runtime.ServeMux, addr string, dopts []grpc.DialOption) error {
 	// documents (common)
 	documentpb.RegisterDocumentServiceServer(grpcServer, documents.GRPCHandler(registry))
 	err := documentpb.RegisterDocumentServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
@@ -29,7 +29,8 @@ func registerServices(ctx context.Context, config config.Config, registry *docum
 	}
 
 	// invoice
-	handler, err := invoice.GRPCHandler(config, registry)
+	invCfg := cfg.(config.Config)
+	handler, err := invoice.GRPCHandler(invCfg, registry)
 	if err != nil {
 		return err
 	}
@@ -52,7 +53,8 @@ func registerServices(ctx context.Context, config config.Config, registry *docum
 	}
 
 	// healthcheck
-	healthpb.RegisterHealthCheckServiceServer(grpcServer, healthcheck.GRPCHandler(config))
+	hcCfg := cfg.(healthcheck.Config)
+	healthpb.RegisterHealthCheckServiceServer(grpcServer, healthcheck.GRPCHandler(hcCfg))
 	err = healthpb.RegisterHealthCheckServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
 	if err != nil {
 		return err

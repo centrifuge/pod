@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/centerrors"
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -38,7 +37,7 @@ type keyRegistrationConfirmationTask struct {
 	ctx                context.Context
 	filterer           keyRegisteredFilterer
 	contract           *EthereumIdentityRegistryContract
-	config             config.Config
+	config             Config
 	gethClientFinder   func() ethereum.Client
 	contractProvider   func(address common.Address, backend bind.ContractBackend) (contract, error)
 }
@@ -46,7 +45,7 @@ type keyRegistrationConfirmationTask struct {
 func newKeyRegistrationConfirmationTask(
 	ethContextInitializer func(d time.Duration) (ctx context.Context, cancelFunc context.CancelFunc),
 	registryContract *EthereumIdentityRegistryContract,
-	config config.Config,
+	config Config,
 	gethClientFinder func() ethereum.Client,
 	contractProvider func(address common.Address, backend bind.ContractBackend) (contract, error),
 ) *keyRegistrationConfirmationTask {

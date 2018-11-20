@@ -12,6 +12,7 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/code"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/header"
@@ -44,14 +45,14 @@ func (r *mockAnchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.D
 }
 
 func TestDefaultService(t *testing.T) {
-	srv := DefaultService(nil, getRepository(), &testingcoredocument.MockCoreDocumentProcessor{}, nil, nil)
+	srv := DefaultService(&config.Configuration{}, getRepository(), &testingcoredocument.MockCoreDocumentProcessor{}, nil, nil)
 	assert.NotNil(t, srv, "must be non-nil")
 }
 
 func getServiceWithMockedLayers() Service {
 	idService := &testingcommons.MockIDService{}
 	idService.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
-	return DefaultService(nil, getRepository(), &testingcoredocument.MockCoreDocumentProcessor{}, &mockAnchorRepo{}, idService)
+	return DefaultService(&config.Configuration{}, getRepository(), &testingcoredocument.MockCoreDocumentProcessor{}, &mockAnchorRepo{}, idService)
 }
 
 func createMockDocument() (*Invoice, error) {

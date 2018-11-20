@@ -43,7 +43,7 @@ func TestGetSigningKeyPairFromConfig(t *testing.T) {
 
 	// bad public key path
 	cfg.Set("keys.signing.publicKey", "bad path")
-	pubK, priK, err := GetSigningKeyPairFromConfig(cfg)
+	pubK, priK, err := GetSigningKeyPair(cfg.GetSigningKeyPair())
 	assert.Error(t, err)
 	assert.Nil(t, priK)
 	assert.Nil(t, pubK)
@@ -52,7 +52,7 @@ func TestGetSigningKeyPairFromConfig(t *testing.T) {
 
 	// bad private key path
 	cfg.Set("keys.signing.privateKey", "bad path")
-	pubK, priK, err = GetSigningKeyPairFromConfig(cfg)
+	pubK, priK, err = GetSigningKeyPair(cfg.GetSigningKeyPair())
 	assert.Error(t, err)
 	assert.Nil(t, priK)
 	assert.Nil(t, pubK)
@@ -60,7 +60,7 @@ func TestGetSigningKeyPairFromConfig(t *testing.T) {
 	cfg.Set("keys.signing.privateKey", pri)
 
 	// success
-	pubK, priK, err = GetSigningKeyPairFromConfig(cfg)
+	pubK, priK, err = GetSigningKeyPair(cfg.GetSigningKeyPair())
 	assert.Nil(t, err)
 	assert.NotNil(t, pubK)
 	assert.NotNil(t, priK)

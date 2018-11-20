@@ -6,7 +6,6 @@ import (
 
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/queue"
@@ -36,12 +35,12 @@ type WatchAnchorCommitted interface {
 }
 
 type EthereumAnchorRepository struct {
-	config                   config.Config
+	config                   Config
 	anchorRepositoryContract AnchorRepositoryContract
 	gethClientFinder         func() ethereum.Client
 }
 
-func NewEthereumAnchorRepository(config config.Config, anchorRepositoryContract AnchorRepositoryContract, gethClientFinder func() ethereum.Client) *EthereumAnchorRepository {
+func NewEthereumAnchorRepository(config Config, anchorRepositoryContract AnchorRepositoryContract, gethClientFinder func() ethereum.Client) *EthereumAnchorRepository {
 	return &EthereumAnchorRepository{config: config, anchorRepositoryContract: anchorRepositoryContract, gethClientFinder: gethClientFinder}
 }
 
@@ -88,7 +87,7 @@ func (ethRepository *EthereumAnchorRepository) CommitAnchor(anchorID AnchorID, d
 	}
 
 	cd := NewCommitData(h.Number.Uint64(), anchorID, documentRoot, centrifugeId, documentProofs, signature)
-	confirmations, err = setUpCommitEventListener(ethRepository.config, opts.From, cd)
+	confirmations, err = setUpCommitEventListener(ethRepository.config.GetEthereumContextWaitTimeout(), opts.From, cd)
 	if err != nil {
 		wError := errors.Wrap(err, 1)
 		log.Errorf("Failed to set up event listener for commit transaction [id: %x, hash: %x]: %v",
@@ -177,7 +176,7 @@ func setUpPreCommitEventListener(contractEvent WatchAnchorPreCommitted, from com
 
 // setUpCommitEventListener sets up the listened for the "AnchorCommitted" event to notify the upstream code
 // about successful mining/creation of a commit
-func setUpCommitEventListener(config config.Config, from common.Address, commitData *CommitData) (confirmations chan *WatchCommit, err error) {
+func setUpCommitEventListener(timeout time.Duration, from common.Address, commitData *CommitData) (confirmations chan *WatchCommit, err error) {
 	confirmations = make(chan *WatchCommit)
 	asyncRes, err := queue.Queue.DelayKwargs(AnchorRepositoryConfirmationTaskName, map[string]interface{}{
 		AnchorIDParam:     commitData.AnchorID,
@@ -189,7 +188,7 @@ func setUpCommitEventListener(config config.Config, from common.Address, commitD
 		return nil, err
 	}
 
-	go waitAndRouteCommitEvent(config.GetEthereumContextWaitTimeout(), asyncRes, confirmations, commitData)
+	go waitAndRouteCommitEvent(timeout, asyncRes, confirmations, commitData)
 	return confirmations, nil
 }
 

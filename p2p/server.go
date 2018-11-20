@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	cented25519 "github.com/centrifuge/go-centrifuge/keytools/ed25519"
 	"github.com/ipfs/go-cid"
@@ -28,12 +27,23 @@ import (
 
 var log = logging.Logger("p2p-server")
 
+type Config interface {
+	GetP2PExternalIP() string
+	GetP2PPort() int
+	GetBootstrapPeers() []string
+	GetP2PConnectionTimeout() time.Duration
+	GetNetworkID() uint32
+	GetIdentityID() ([]byte, error)
+	GetSigningKeyPair() (pub, priv string)
+}
+
 // p2pServer implements api.Server
 type p2pServer struct {
-	config   config.Config
+	config   Config
 	host     host.Host
 	registry *documents.ServiceRegistry
 	protocol *p2pgrpc.GRPCProtocol
+	handler  p2ppb.P2PServiceServer
 }
 
 // Name returns the P2PServer
@@ -60,7 +70,7 @@ func (s *p2pServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr ch
 
 	// Set the grpc protocol handler on it
 	s.protocol = p2pgrpc.NewGRPCProtocol(ctx, s.host)
-	p2ppb.RegisterP2PServiceServer(s.protocol.GetGRPCServer(), GRPCHandler(s.config, s.registry))
+	p2ppb.RegisterP2PServiceServer(s.protocol.GetGRPCServer(), s.handler)
 
 	serveErr := make(chan error)
 	go func() {
@@ -220,7 +230,7 @@ func (s *p2pServer) makeBasicHost(listenPort int) (host.Host, error) {
 
 func (s *p2pServer) createSigningKey() (priv crypto.PrivKey, pub crypto.PubKey, err error) {
 	// Create the signing key for the host
-	publicKey, privateKey, err := cented25519.GetSigningKeyPairFromConfig(s.config)
+	publicKey, privateKey, err := cented25519.GetSigningKeyPair(s.config.GetSigningKeyPair())
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get keys: %v", err)
 	}

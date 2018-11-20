@@ -9,8 +9,6 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/ethereum"
 
-	"github.com/centrifuge/go-centrifuge/config"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -180,7 +178,7 @@ func TestPaymentObligationService(t *testing.T) {
 			// with below config the documentType has to be test.name to avoid conflicts since registry is a singleton
 			registry.Register(test.name, &docService)
 			confirmations := make(chan *WatchTokenMinted)
-			service := NewEthereumPaymentObligation(registry, &idService, &ethClient, &mockCfg, func(config config.Config, tokenID *big.Int, registryAddress string) (chan *WatchTokenMinted, error) {
+			service := NewEthereumPaymentObligation(registry, &idService, &ethClient, &mockCfg, func(config Config, tokenID *big.Int, registryAddress string) (chan *WatchTokenMinted, error) {
 				return confirmations, nil
 			}, func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error) {
 				return &EthereumPaymentObligationContract{}, nil
