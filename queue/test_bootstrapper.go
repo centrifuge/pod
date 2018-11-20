@@ -2,10 +2,23 @@
 
 package queue
 
-import "github.com/centrifuge/go-centrifuge/bootstrap"
+import (
+	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"sync"
+	"context"
+)
 
-func (b *Bootstrapper) TestBootstrap(context map[string]interface{}) error {
-	return b.Bootstrap(context)
+func (b *Bootstrapper) TestBootstrap(ctx map[string]interface{}) error {
+	err := b.Bootstrap(ctx)
+	if err != nil {
+		return err
+	}
+	srv := ctx[bootstrap.BootstrappedQueueServer].(*QueueServer)
+	childErr := make(chan error)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go srv.Start(context.Background(), &wg, childErr)
+	return nil
 }
 
 func (b *Bootstrapper) TestTearDown() error {
