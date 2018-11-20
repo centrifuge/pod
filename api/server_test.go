@@ -29,18 +29,14 @@ var cfg *config.Configuration
 var registry *documents.ServiceRegistry
 
 func TestMain(m *testing.M) {
-	ibootstappers := []bootstrap.TestBootstrapper{
-		&testlogging.TestLoggingBootstrapper{},
-		&config.Bootstrapper{},
-		&storage.Bootstrapper{},
-	}
-	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
-
 	ethClient := &testingcommons.MockEthClient{}
 	ethClient.On("GetEthClient").Return(nil)
 	ctx[ethereum.BootstrappedEthereumClient] = ethClient
 
-	ibootstappers = []bootstrap.TestBootstrapper{
+	ibootstappers := []bootstrap.TestBootstrapper{
+		&testlogging.TestLoggingBootstrapper{},
+		&config.Bootstrapper{},
+		&storage.Bootstrapper{},
 		anchors.Bootstrapper{},
 		documents.Bootstrapper{},
 		p2p.Bootstrapper{},
@@ -48,6 +44,7 @@ func TestMain(m *testing.M) {
 		&purchaseorder.Bootstrapper{},
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
+
 	cfg = ctx[config.BootstrappedConfig].(*config.Configuration)
 	registry = ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
 	flag.Parse()
