@@ -3,6 +3,7 @@ package documents
 import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 )
 
@@ -36,7 +37,7 @@ type Service interface {
 	CreateProofsForVersion(documentID, version []byte, fields []string) (*DocumentProof, error)
 
 	// RequestDocumentSignature Validates and Signs document received over the p2p layer
-	RequestDocumentSignature(model Model) (*coredocumentpb.Signature, error)
+	RequestDocumentSignature(contextHeader *header.ContextHeader, model Model) (*coredocumentpb.Signature, error)
 
 	// ReceiveAnchoredDocument receives a new anchored document over the p2p layer, validates and updates the document in DB
 	ReceiveAnchoredDocument(model Model, headers *p2ppb.CentrifugeHeader) error

@@ -6,7 +6,9 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/code"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/header"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	logging "github.com/ipfs/go-log"
@@ -19,6 +21,7 @@ var apiLog = logging.Logger("purchaseorder-api")
 // anchoring, sending, finding stored purchase order document
 type grpcHandler struct {
 	service Service
+	config  config.Config
 }
 
 // GRPCHandler returns an implementation of the purchaseorder DocumentServiceServer
@@ -36,7 +39,7 @@ func GRPCHandler(registry *documents.ServiceRegistry) (clientpurchaseorderpb.Doc
 // Create validates the purchase order, persists it to DB, and anchors it the chain
 func (h grpcHandler) Create(ctx context.Context, req *clientpurchaseorderpb.PurchaseOrderCreatePayload) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
 	apiLog.Debugf("Create request %v", req)
-	ctxh, err := documents.NewContextHeader()
+	ctxh, err := header.NewContextHeader(ctx, h.config)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.New(code.Unknown, err.Error())
@@ -49,7 +52,7 @@ func (h grpcHandler) Create(ctx context.Context, req *clientpurchaseorderpb.Purc
 	}
 
 	// validate, persist, and anchor
-	doc, err = h.service.Create(ctx, doc)
+	doc, err = h.service.Create(ctxh, doc)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, err
@@ -61,7 +64,7 @@ func (h grpcHandler) Create(ctx context.Context, req *clientpurchaseorderpb.Purc
 // Update handles the document update and anchoring
 func (h grpcHandler) Update(ctx context.Context, payload *clientpurchaseorderpb.PurchaseOrderUpdatePayload) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
 	apiLog.Debugf("Update request %v", payload)
-	ctxHeader, err := documents.NewContextHeader()
+	ctxHeader, err := header.NewContextHeader(ctx, h.config)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
@@ -73,7 +76,7 @@ func (h grpcHandler) Update(ctx context.Context, payload *clientpurchaseorderpb.
 		return nil, err
 	}
 
-	doc, err = h.service.Update(ctx, doc)
+	doc, err = h.service.Update(ctxHeader, doc)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, err

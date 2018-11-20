@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -37,15 +38,17 @@ func TestAnchoringConfirmationTask_ParseKwargsHappy(t *testing.T) {
 	address := common.BytesToAddress([]byte{1, 2, 3, 4})
 
 	centId, _ := identity.ToCentID(utils.RandomSlice(identity.CentIDLength))
-
+	timeout := float64(5000)
 	kwargs, _ := utils.SimulateJsonDecodeForGocelery(map[string]interface{}{
-		AnchorIDParam:     anchorID,
-		AddressParam:      address,
-		CentrifugeIDParam: centId,
-		BlockHeight:       float64(0),
+		AnchorIDParam:      anchorID,
+		AddressParam:       address,
+		CentrifugeIDParam:  centId,
+		BlockHeight:        float64(0),
+		queue.TimeoutParam: timeout,
 	})
 	err := act.ParseKwargs(kwargs)
 	if err != nil {
+		assert.Nil(t, err)
 		t.Fatalf("Could not parse %s or %s", AnchorIDParam, AddressParam)
 	}
 
@@ -53,6 +56,7 @@ func TestAnchoringConfirmationTask_ParseKwargsHappy(t *testing.T) {
 	assert.Equal(t, anchorID, anchorID, "Resulting anchor Id should have the same ID as the input")
 	assert.Equal(t, address, act.From, "Resulting address should have the same ID as the input")
 	assert.Equal(t, centId, act.CentrifugeID, "Resulting centId should have the same centId as the input")
+	assert.Equal(t, time.Duration(timeout), act.Timeout, "Resulting timeout should have the same timeout as the input")
 }
 
 func TestAnchoringConfirmationTask_ParseKwargsAnchorNotPassed(t *testing.T) {
@@ -100,6 +104,24 @@ func TestAnchoringConfirmationTask_ParseKwargsInvalidAddress(t *testing.T) {
 	})
 	err := act.ParseKwargs(kwargs)
 	assert.NotNil(t, err, "address should not have been parsed because it was of incorrect type")
+}
+
+func TestAnchoringConfirmationTask_ParseKwargsInvalidTimeout(t *testing.T) {
+	act := anchorConfirmationTask{}
+	anchorID, _ := ToAnchorID(utils.RandomSlice(AnchorIDLength))
+	address := common.BytesToAddress([]byte{1, 2, 3, 4})
+
+	centId, _ := identity.ToCentID(utils.RandomSlice(identity.CentIDLength))
+	timeout := "int64"
+	kwargs, _ := utils.SimulateJsonDecodeForGocelery(map[string]interface{}{
+		AnchorIDParam:      anchorID,
+		AddressParam:       address,
+		CentrifugeIDParam:  centId,
+		BlockHeight:        float64(0),
+		queue.TimeoutParam: timeout,
+	})
+	err := act.ParseKwargs(kwargs)
+	assert.NotNil(t, err, "timeout should not have been parsed because it was of incorrect type")
 }
 
 func TestAnchoringConfirmationTask_RunTaskIterError(t *testing.T) {

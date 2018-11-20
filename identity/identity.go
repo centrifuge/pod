@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"math/big"
 
+	"time"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/centerrors"
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/keytools/ed25519"
 	"github.com/centrifuge/go-centrifuge/keytools/secp256k1"
 	"github.com/centrifuge/go-centrifuge/signatures"
@@ -68,6 +69,15 @@ func (c CentID) String() string {
 // BigInt returns CentID in bigInt
 func (c CentID) BigInt() *big.Int {
 	return utils.ByteSliceToBigInt(c[:])
+}
+
+type Config interface {
+	GetEthereumDefaultAccountName() string
+	GetIdentityID() ([]byte, error)
+	GetSigningKeyPair() (pub, priv string)
+	GetEthAuthKeyPair() (pub, priv string)
+	GetEthereumContextWaitTimeout() time.Duration
+	GetContractAddress(address string) common.Address
 }
 
 // Identity defines an Identity on chain
@@ -130,8 +140,8 @@ type Service interface {
 }
 
 // GetIdentityConfig returns the identity and keys associated with the node
-func GetIdentityConfig() (*IdentityConfig, error) {
-	centIDBytes, err := config.Config().GetIdentityID()
+func GetIdentityConfig(config Config) (*IdentityConfig, error) {
+	centIDBytes, err := config.GetIdentityID()
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +152,7 @@ func GetIdentityConfig() (*IdentityConfig, error) {
 
 	//ed25519 keys
 	keys := map[int]IdentityKey{}
-	pk, sk, err := ed25519.GetSigningKeyPairFromConfig()
+	pk, sk, err := ed25519.GetSigningKeyPair(config.GetSigningKeyPair())
 	if err != nil {
 		return nil, err
 	}
@@ -150,7 +160,7 @@ func GetIdentityConfig() (*IdentityConfig, error) {
 	keys[KeyPurposeSigning] = IdentityKey{PublicKey: pk, PrivateKey: sk}
 
 	//secp256k1 keys
-	pk, sk, err = secp256k1.GetEthAuthKeyFromConfig()
+	pk, sk, err = secp256k1.GetEthAuthKey(config.GetEthAuthKeyPair())
 	if err != nil {
 		return nil, err
 	}

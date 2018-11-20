@@ -9,6 +9,7 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/header"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
@@ -20,13 +21,13 @@ type mockService struct {
 	mock.Mock
 }
 
-func (m *mockService) DeriveFromCreatePayload(payload *clientinvoicepb.InvoiceCreatePayload, contextHeader *documents.ContextHeader) (documents.Model, error) {
+func (m *mockService) DeriveFromCreatePayload(payload *clientinvoicepb.InvoiceCreatePayload, contextHeader *header.ContextHeader) (documents.Model, error) {
 	args := m.Called(payload, contextHeader)
 	model, _ := args.Get(0).(documents.Model)
 	return model, args.Error(1)
 }
 
-func (m *mockService) Create(ctx context.Context, inv documents.Model) (documents.Model, error) {
+func (m *mockService) Create(ctx *header.ContextHeader, inv documents.Model) (documents.Model, error) {
 	args := m.Called(ctx, inv)
 	model, _ := args.Get(0).(documents.Model)
 	return model, args.Error(1)
@@ -56,20 +57,20 @@ func (m *mockService) DeriveInvoiceResponse(doc documents.Model) (*clientinvoice
 	return data, args.Error(1)
 }
 
-func (m *mockService) Update(ctx context.Context, doc documents.Model) (documents.Model, error) {
+func (m *mockService) Update(ctx *header.ContextHeader, doc documents.Model) (documents.Model, error) {
 	args := m.Called(ctx, doc)
 	doc1, _ := args.Get(0).(documents.Model)
 	return doc1, args.Error(1)
 }
 
-func (m *mockService) DeriveFromUpdatePayload(payload *clientinvoicepb.InvoiceUpdatePayload, contextHeader *documents.ContextHeader) (documents.Model, error) {
+func (m *mockService) DeriveFromUpdatePayload(payload *clientinvoicepb.InvoiceUpdatePayload, contextHeader *header.ContextHeader) (documents.Model, error) {
 	args := m.Called(payload, contextHeader)
 	doc, _ := args.Get(0).(documents.Model)
 	return doc, args.Error(1)
 }
 
 func getHandler() *grpcHandler {
-	return &grpcHandler{service: &mockService{}}
+	return &grpcHandler{service: &mockService{}, config: cfg}
 }
 
 func TestGRPCHandler_Create_derive_fail(t *testing.T) {
@@ -236,9 +237,11 @@ func TestGrpcHandler_Update_update_fail(t *testing.T) {
 	srv := h.service.(*mockService)
 	model := &mockModel{}
 	ctx := context.Background()
+	ctxh, err := header.NewContextHeader(ctx, cfg)
+	assert.Nil(t, err)
 	payload := &clientinvoicepb.InvoiceUpdatePayload{Identifier: "0x010201"}
 	srv.On("DeriveFromUpdatePayload", payload, mock.Anything).Return(model, nil).Once()
-	srv.On("Update", ctx, model).Return(nil, fmt.Errorf("update error")).Once()
+	srv.On("Update", ctxh, model).Return(nil, fmt.Errorf("update error")).Once()
 	res, err := h.Update(ctx, payload)
 	srv.AssertExpectations(t)
 	assert.Error(t, err)
@@ -251,9 +254,11 @@ func TestGrpcHandler_Update_derive_response_fail(t *testing.T) {
 	srv := h.service.(*mockService)
 	model := &mockModel{}
 	ctx := context.Background()
+	ctxh, err := header.NewContextHeader(ctx, cfg)
+	assert.Nil(t, err)
 	payload := &clientinvoicepb.InvoiceUpdatePayload{Identifier: "0x010201"}
 	srv.On("DeriveFromUpdatePayload", payload, mock.Anything).Return(model, nil).Once()
-	srv.On("Update", ctx, model).Return(model, nil).Once()
+	srv.On("Update", ctxh, model).Return(model, nil).Once()
 	srv.On("DeriveInvoiceResponse", model).Return(nil, fmt.Errorf("derive response error")).Once()
 	res, err := h.Update(ctx, payload)
 	srv.AssertExpectations(t)
@@ -267,10 +272,12 @@ func TestGrpcHandler_Update(t *testing.T) {
 	srv := h.service.(*mockService)
 	model := &mockModel{}
 	ctx := context.Background()
+	ctxh, err := header.NewContextHeader(ctx, cfg)
+	assert.Nil(t, err)
 	payload := &clientinvoicepb.InvoiceUpdatePayload{Identifier: "0x010201"}
 	resp := &clientinvoicepb.InvoiceResponse{}
 	srv.On("DeriveFromUpdatePayload", payload, mock.Anything).Return(model, nil).Once()
-	srv.On("Update", ctx, model).Return(model, nil).Once()
+	srv.On("Update", ctxh, model).Return(model, nil).Once()
 	srv.On("DeriveInvoiceResponse", model).Return(resp, nil).Once()
 	res, err := h.Update(ctx, payload)
 	srv.AssertExpectations(t)

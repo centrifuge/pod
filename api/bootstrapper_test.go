@@ -22,7 +22,7 @@ func TestBootstrapper_Bootstrap(t *testing.T) {
 
 	// config
 	c := &config.Configuration{}
-	m[bootstrap.BootstrappedConfig] = c
+	m[config.BootstrappedConfig] = c
 	m[documents.BootstrappedRegistry] = documents.NewServiceRegistry()
 	err = b.Bootstrap(m)
 	assert.Nil(t, err)

@@ -3,10 +3,17 @@ package queue
 import (
 	"sync"
 
-	"github.com/centrifuge/gocelery"
 	"context"
+	"errors"
 	"time"
+
+	"github.com/centrifuge/gocelery"
 	logging "github.com/ipfs/go-log"
+)
+
+const (
+	BlockHeightParam string = "BlockHeight"
+	TimeoutParam     string = "Timeout"
 )
 
 var log = logging.Logger("queue-server")
@@ -41,7 +48,7 @@ type QueueServer struct {
 	config    Config
 	queue     *gocelery.CeleryClient
 	taskTypes []QueuedTaskType
-	stop 	  chan bool
+	stop      chan bool
 }
 
 // TaskTypeName of the queue server
@@ -95,4 +102,26 @@ func (qs *QueueServer) EnqueueJob(taskTypeName string, params map[string]interfa
 func (qs *QueueServer) Stop() error {
 	qs.stop <- true
 	return nil
+}
+
+// GetDuration parses key parameter to time.Duration type
+func GetDuration(key interface{}) (time.Duration, error) {
+	f64, ok := key.(float64)
+	if !ok {
+		return time.Duration(0), errors.New("Could not parse interface to float64")
+	}
+	return time.Duration(f64), nil
+}
+
+// ParseBlockHeight parses blockHeight interface param to uint64
+func ParseBlockHeight(valMap map[string]interface{}) (uint64, error) {
+	if bhi, ok := valMap[BlockHeightParam]; ok {
+		bhf, ok := bhi.(float64)
+		if ok {
+			return uint64(bhf), nil
+		} else {
+			return 0, errors.New("value can not be parsed")
+		}
+	}
+	return 0, errors.New("value can not be parsed")
 }

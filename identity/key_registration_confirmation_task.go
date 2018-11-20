@@ -8,7 +8,8 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
-		"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-centrifuge/queue"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -31,7 +32,8 @@ type keyRegistrationConfirmationTask struct {
 	key                [32]byte
 	keyPurpose         int
 	blockHeight        uint64
-	contextInitializer func() (ctx context.Context, cancelFunc context.CancelFunc)
+	timeout            time.Duration
+	contextInitializer func(d time.Duration) (ctx context.Context, cancelFunc context.CancelFunc)
 	ctx                context.Context
 	filterer           keyRegisteredFilterer
 	contract           *EthereumIdentityRegistryContract
@@ -41,7 +43,7 @@ type keyRegistrationConfirmationTask struct {
 }
 
 func newKeyRegistrationConfirmationTask(
-	ethContextInitializer func() (ctx context.Context, cancelFunc context.CancelFunc),
+	ethContextInitializer func(d time.Duration) (ctx context.Context, cancelFunc context.CancelFunc),
 	registryContract *EthereumIdentityRegistryContract,
 	config Config,
 	gethClientFinder func() ethereum.Client,
@@ -51,6 +53,7 @@ func newKeyRegistrationConfirmationTask(
 		contextInitializer: ethContextInitializer,
 		contract:           registryContract,
 		config:             config,
+		timeout:            config.GetEthereumContextWaitTimeout(),
 		gethClientFinder:   gethClientFinder,
 		contractProvider:   contractProvider,
 	}
@@ -68,6 +71,7 @@ func (krct *keyRegistrationConfirmationTask) Copy() (gocelery.CeleryTask, error)
 		krct.key,
 		krct.keyPurpose,
 		krct.blockHeight,
+		krct.timeout,
 		krct.contextInitializer,
 		krct.ctx,
 		krct.filterer,
@@ -113,10 +117,20 @@ func (krct *keyRegistrationConfirmationTask) ParseKwargs(kwargs map[string]inter
 	}
 
 	// block height parsing
-	krct.blockHeight, err = parseBlockHeight(kwargs)
+	krct.blockHeight, err = queue.ParseBlockHeight(kwargs)
 	if err != nil {
 		return err
 	}
+
+	tdRaw, ok := kwargs[queue.TimeoutParam]
+	if ok {
+		td, err := queue.GetDuration(tdRaw)
+		if err != nil {
+			return fmt.Errorf("malformed kwarg [%s] because [%s]", queue.TimeoutParam, err.Error())
+		}
+		krct.timeout = td
+	}
+
 	return nil
 }
 
@@ -124,7 +138,7 @@ func (krct *keyRegistrationConfirmationTask) ParseKwargs(kwargs map[string]inter
 func (krct *keyRegistrationConfirmationTask) RunTask() (interface{}, error) {
 	log.Infof("Waiting for confirmation for the Key [%x]", krct.key)
 	if krct.ctx == nil {
-		krct.ctx, _ = krct.contextInitializer()
+		krct.ctx, _ = krct.contextInitializer(krct.timeout)
 	}
 
 	id := newEthereumIdentity(krct.centID, krct.contract, krct.config, krct.gethClientFinder, krct.contractProvider)

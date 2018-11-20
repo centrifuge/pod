@@ -53,8 +53,6 @@ var addKeyCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		//cmd requires a config file
 		cfgFile = ensureConfigFile()
-		baseBootstrap(cfgFile)
-
 		var purposeInt int
 
 		switch purpose {

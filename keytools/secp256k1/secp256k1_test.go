@@ -16,12 +16,16 @@ import (
 
 const MaxMsgLen = 32
 
+var ctx = map[string]interface{}{}
+var cfg *config.Configuration
+
 func TestMain(m *testing.M) {
 	ibootstappers := []bootstrap.TestBootstrapper{
 		&config.Bootstrapper{},
 		&testlogging.TestLoggingBootstrapper{},
 	}
-	bootstrap.RunTestBootstrappers(ibootstappers, nil)
+	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
+	cfg = ctx[config.BootstrappedConfig].(*config.Configuration)
 	result := m.Run()
 	os.Exit(result)
 }
@@ -203,29 +207,29 @@ func TestGetAddress(t *testing.T) {
 }
 
 func TestGetEthAuthKeyFromConfig(t *testing.T) {
-	pub := config.Config().Get("keys.ethauth.publicKey")
-	pri := config.Config().Get("keys.ethauth.privateKey")
+	pub := cfg.Get("keys.ethauth.publicKey")
+	pri := cfg.Get("keys.ethauth.privateKey")
 
 	// bad public key path
-	config.Config().Set("keys.ethauth.publicKey", "bad path")
-	pubK, priK, err := GetEthAuthKeyFromConfig()
+	cfg.Set("keys.ethauth.publicKey", "bad path")
+	pubK, priK, err := GetEthAuthKey(cfg.GetEthAuthKeyPair())
 	assert.Error(t, err)
 	assert.Nil(t, priK)
 	assert.Nil(t, pubK)
 	assert.Contains(t, err.Error(), "failed to read public key")
-	config.Config().Set("keys.ethauth.publicKey", pub)
+	cfg.Set("keys.ethauth.publicKey", pub)
 
 	// bad private key path
-	config.Config().Set("keys.ethauth.privateKey", "bad path")
-	pubK, priK, err = GetEthAuthKeyFromConfig()
+	cfg.Set("keys.ethauth.privateKey", "bad path")
+	pubK, priK, err = GetEthAuthKey(cfg.GetEthAuthKeyPair())
 	assert.Error(t, err)
 	assert.Nil(t, priK)
 	assert.Nil(t, pubK)
 	assert.Contains(t, err.Error(), "failed to read private key")
-	config.Config().Set("keys.ethauth.privateKey", pri)
+	cfg.Set("keys.ethauth.privateKey", pri)
 
 	// success
-	pubK, priK, err = GetEthAuthKeyFromConfig()
+	pubK, priK, err = GetEthAuthKey(cfg.GetEthAuthKeyPair())
 	assert.Nil(t, err)
 	assert.NotNil(t, pubK)
 	assert.NotNil(t, priK)

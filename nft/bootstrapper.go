@@ -17,12 +17,12 @@ type Bootstrapper struct {
 
 // Bootstrap initializes the payment obligation contract
 func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
-	if _, ok := ctx[bootstrap.BootstrappedConfig]; !ok {
+	if _, ok := ctx[config.BootstrappedConfig]; !ok {
 		return errors.New("config hasn't been initialized")
 	}
-	cfg := ctx[bootstrap.BootstrappedConfig].(*config.Configuration)
+	cfg := ctx[config.BootstrappedConfig].(Config)
 
-	if _, ok := ctx[bootstrap.BootstrappedEthereumClient]; !ok {
+	if _, ok := ctx[ethereum.BootstrappedEthereumClient]; !ok {
 		return errors.New("ethereum client hasn't been initialized")
 	}
 
@@ -34,7 +34,7 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	setPaymentObligation(NewEthereumPaymentObligation(registry, identity.IDService, ethereum.GetClient(), cfg, setupMintListener, bindContract))
 
 	// queue task
-	task := newMintingConfirmationTask(ethereum.DefaultWaitForTransactionMiningContext)
+	task := newMintingConfirmationTask(cfg.GetEthereumContextWaitTimeout(), ethereum.DefaultWaitForTransactionMiningContext)
 	if _, ok := ctx[bootstrap.BootstrappedQueueServer]; !ok {
 		return errors.New("queue hasn't been initialized")
 	}

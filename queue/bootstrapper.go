@@ -12,10 +12,10 @@ type Bootstrapper struct {
 }
 
 func (b *Bootstrapper) Bootstrap(context map[string]interface{}) error {
-	if _, ok := context[bootstrap.BootstrappedConfig]; !ok {
+	if _, ok := context[config.BootstrappedConfig]; !ok {
 		return errors.New("config hasn't been initialized")
 	}
-	cfg := context[bootstrap.BootstrappedConfig].(*config.Configuration)
+	cfg := context[config.BootstrappedConfig].(*config.Configuration)
 	srv := &QueueServer{config: cfg, taskTypes: []QueuedTaskType{}}
 	context[bootstrap.BootstrappedQueueServer] = srv
 	b.context = context
