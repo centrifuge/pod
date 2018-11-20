@@ -41,7 +41,8 @@ func registerServices(ctx context.Context, cfg Config, registry *documents.Servi
 	}
 
 	// purchase orders
-	srv, err := purchaseorder.GRPCHandler(registry)
+	poCfg := cfg.(config.Config)
+	srv, err := purchaseorder.GRPCHandler(poCfg, registry)
 	if err != nil {
 		return fmt.Errorf("failed to get purchase order handler: %v", err)
 	}
