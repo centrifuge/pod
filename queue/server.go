@@ -100,7 +100,9 @@ func (qs *QueueServer) EnqueueJob(taskTypeName string, params map[string]interfa
 
 // Stop force stops the queue server
 func (qs *QueueServer) Stop() error {
-	qs.stop <- true
+	if qs.stop != nil {
+		qs.stop <- true
+	}
 	return nil
 }
 

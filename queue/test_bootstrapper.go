@@ -9,6 +9,6 @@ func (b *Bootstrapper) TestBootstrap(context map[string]interface{}) error {
 }
 
 func (b *Bootstrapper) TestTearDown() error {
-	srv := b.context[bootstrap.BootstrappedQueueServer].(QueueServer)
+	srv := b.context[bootstrap.BootstrappedQueueServer].(*QueueServer)
 	return srv.Stop()
 }
