@@ -44,6 +44,7 @@ func TestMain(m *testing.M) {
 		p2p.Bootstrapper{},
 		&invoice.Bootstrapper{},
 		&purchaseorder.Bootstrapper{},
+		&queue.Starter{},
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 
