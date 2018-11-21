@@ -60,6 +60,8 @@ func (qs *Server) Name() string {
 // Start the queue server
 func (qs *Server) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- error) {
 	defer wg.Done()
+	qs.lock.Lock()
+	defer qs.lock.Unlock()
 	var err error
 	qs.queue, err = gocelery.NewCeleryClient(
 		gocelery.NewInMemoryBroker(),
@@ -75,10 +77,8 @@ func (qs *Server) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan
 	}
 	// start the workers
 	qs.queue.StartWorker()
-	qs.lock.Lock()
-	qs.stop = make(chan bool)
-	qs.lock.Unlock()
 
+	qs.stop = make(chan bool)
 	for {
 		select {
 		case <-qs.stop:
@@ -93,11 +93,15 @@ func (qs *Server) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan
 
 // RegisterTaskType registers a task type on the queue server
 func (qs *Server) RegisterTaskType(name string, task interface{}) {
+	qs.lock.Lock()
+	defer qs.lock.Unlock()
 	qs.taskTypes = append(qs.taskTypes, task.(QueuedTaskType))
 }
 
 // EnqueueJob enqueues a job on the queue server for the given taskTypeName
 func (qs *Server) EnqueueJob(taskTypeName string, params map[string]interface{}) (QueuedTaskResult, error) {
+	qs.lock.Lock()
+	defer qs.lock.Unlock()
 	return qs.queue.DelayKwargs(taskTypeName, params)
 }
 
