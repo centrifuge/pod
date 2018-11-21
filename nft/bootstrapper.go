@@ -34,7 +34,7 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	if _, ok := ctx[bootstrap.BootstrappedQueueServer]; !ok {
 		return errors.New("queue hasn't been initialized")
 	}
-	queueSrv := ctx[bootstrap.BootstrappedQueueServer].(*queue.QueueServer)
+	queueSrv := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
 	setPaymentObligation(NewEthereumPaymentObligation(registry, identity.IDService, ethereum.GetClient(), cfg, queueSrv, setupMintListener, bindContract))
 
 	// queue task

@@ -40,14 +40,14 @@ type keyRegistrationConfirmationTask struct {
 	config             Config
 	gethClientFinder   func() ethereum.Client
 	contractProvider   func(address common.Address, backend bind.ContractBackend) (contract, error)
-	queue              *queue.QueueServer
+	queue              *queue.Server
 }
 
 func newKeyRegistrationConfirmationTask(
 	ethContextInitializer func(d time.Duration) (ctx context.Context, cancelFunc context.CancelFunc),
 	registryContract *EthereumIdentityRegistryContract,
 	config Config,
-	queue *queue.QueueServer,
+	queue *queue.Server,
 	gethClientFinder func() ethereum.Client,
 	contractProvider func(address common.Address, backend bind.ContractBackend) (contract, error),
 ) *keyRegistrationConfirmationTask {

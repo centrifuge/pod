@@ -36,7 +36,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("queue server hasn't been initialized")
 	}
 
-	queueSrv := ctx[bootstrap.BootstrappedQueueServer].(*queue.QueueServer)
+	queueSrv := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
 	repo := NewEthereumAnchorRepository(cfg, repositoryContract, queueSrv, ethereum.GetClient)
 	ctx[BootstrappedAnchorRepo] = repo
 

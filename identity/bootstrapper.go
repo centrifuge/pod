@@ -39,7 +39,7 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	if _, ok := context[bootstrap.BootstrappedQueueServer]; !ok {
 		return errors.New("queue hasn't been initialized")
 	}
-	queueSrv := context[bootstrap.BootstrappedQueueServer].(*queue.QueueServer)
+	queueSrv := context[bootstrap.BootstrappedQueueServer].(*queue.Server)
 
 	IDService = NewEthereumIdentityService(cfg, idFactory, registryContract, queueSrv, ethereum.GetClient,
 		func(address common.Address, backend bind.ContractBackend) (contract, error) {

@@ -61,15 +61,15 @@ type ethereumPaymentObligation struct {
 	identityService   identity.Service
 	ethClient         ethereum.Client
 	config            Config
-	queue             *queue.QueueServer
-	setupMintListener func(config Config, queue *queue.QueueServer, tokenID *big.Int, registryAddress string) (confirmations chan *WatchTokenMinted, err error)
+	queue             *queue.Server
+	setupMintListener func(config Config, queue *queue.Server, tokenID *big.Int, registryAddress string) (confirmations chan *WatchTokenMinted, err error)
 	bindContract      func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error)
 }
 
 // NewEthereumPaymentObligation creates ethereumPaymentObligation given the parameters
 func NewEthereumPaymentObligation(registry *documents.ServiceRegistry, identityService identity.Service, ethClient ethereum.Client, config Config,
-	queue *queue.QueueServer,
-	setupMintListener func(config Config, queue *queue.QueueServer, tokenID *big.Int, registryAddress string) (confirmations chan *WatchTokenMinted, err error), bindContract func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error)) *ethereumPaymentObligation {
+	queue *queue.Server,
+	setupMintListener func(config Config, queue *queue.Server, tokenID *big.Int, registryAddress string) (confirmations chan *WatchTokenMinted, err error), bindContract func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error)) *ethereumPaymentObligation {
 	return &ethereumPaymentObligation{
 		registry:          registry,
 		identityService:   identityService,
@@ -165,7 +165,7 @@ func (s *ethereumPaymentObligation) MintNFT(documentID []byte, registryAddress, 
 
 // setUpMintEventListener sets up the listened for the "PaymentObligationMinted" event to notify the upstream code
 // about successful minting of an NFt
-func setupMintListener(config Config, qs *queue.QueueServer, tokenID *big.Int, registryAddress string) (confirmations chan *WatchTokenMinted, err error) {
+func setupMintListener(config Config, qs *queue.Server, tokenID *big.Int, registryAddress string) (confirmations chan *WatchTokenMinted, err error) {
 	confirmations = make(chan *WatchTokenMinted)
 	conn := ethereum.GetClient()
 

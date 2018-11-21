@@ -16,7 +16,7 @@ func (b *Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		return errors.New("config hasn't been initialized")
 	}
 	cfg := context[config.BootstrappedConfig].(*config.Configuration)
-	srv := &QueueServer{config: cfg, taskTypes: []QueuedTaskType{}}
+	srv := &Server{config: cfg, taskTypes: []QueuedTaskType{}}
 	context[bootstrap.BootstrappedQueueServer] = srv
 	b.context = context
 	return nil

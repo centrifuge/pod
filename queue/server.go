@@ -43,8 +43,8 @@ type QueuedTaskResult interface {
 	Get(timeout time.Duration) (interface{}, error)
 }
 
-// QueueServer represents the queue server currently implemented based on gocelery
-type QueueServer struct {
+// Server represents the queue server currently implemented based on gocelery
+type Server struct {
 	config    Config
 	queue     *gocelery.CeleryClient
 	taskTypes []QueuedTaskType
@@ -52,12 +52,12 @@ type QueueServer struct {
 }
 
 // TaskTypeName of the queue server
-func (qs *QueueServer) Name() string {
+func (qs *Server) Name() string {
 	return "QueueServer"
 }
 
 // Start the queue server
-func (qs *QueueServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- error) {
+func (qs *Server) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- error) {
 	defer wg.Done()
 	var err error
 	qs.queue, err = gocelery.NewCeleryClient(
@@ -89,17 +89,17 @@ func (qs *QueueServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr
 }
 
 // RegisterTaskType registers a task type on the queue server
-func (qs *QueueServer) RegisterTaskType(name string, task interface{}) {
+func (qs *Server) RegisterTaskType(name string, task interface{}) {
 	qs.taskTypes = append(qs.taskTypes, task.(QueuedTaskType))
 }
 
 // EnqueueJob enqueues a job on the queue server for the given taskTypeName
-func (qs *QueueServer) EnqueueJob(taskTypeName string, params map[string]interface{}) (QueuedTaskResult, error) {
+func (qs *Server) EnqueueJob(taskTypeName string, params map[string]interface{}) (QueuedTaskResult, error) {
 	return qs.queue.DelayKwargs(taskTypeName, params)
 }
 
 // Stop force stops the queue server
-func (qs *QueueServer) Stop() error {
+func (qs *Server) Stop() error {
 	if qs.stop != nil {
 		qs.stop <- true
 	}

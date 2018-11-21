@@ -82,11 +82,11 @@ type ethereumIdentity struct {
 	registryContract registry
 	config           Config
 	gethClientFinder func() ethereum.Client
-	queue            *queue.QueueServer
+	queue            *queue.Server
 }
 
 func newEthereumIdentity(id CentID, registryContract registry, config Config,
-	queue *queue.QueueServer,
+	queue *queue.Server,
 	gethClientFinder func() ethereum.Client,
 	contractProvider func(address common.Address, backend bind.ContractBackend) (contract, error)) *ethereumIdentity {
 	return &ethereumIdentity{centID: id, registryContract: registryContract, config: config, gethClientFinder: gethClientFinder, contractProvider: contractProvider, queue: queue}
@@ -354,12 +354,12 @@ type EthereumIdentityService struct {
 	registryContract registry
 	gethClientFinder func() ethereum.Client
 	contractProvider func(address common.Address, backend bind.ContractBackend) (contract, error)
-	queue            *queue.QueueServer
+	queue            *queue.Server
 }
 
 // NewEthereumIdentityService creates a new NewEthereumIdentityService given the config and the smart contracts
 func NewEthereumIdentityService(config Config, factoryContract factory, registryContract registry,
-	queue *queue.QueueServer,
+	queue *queue.Server,
 	gethClientFinder func() ethereum.Client,
 	contractProvider func(address common.Address, backend bind.ContractBackend) (contract, error)) Service {
 	return &EthereumIdentityService{config: config, factoryContract: factoryContract, registryContract: registryContract, gethClientFinder: gethClientFinder, contractProvider: contractProvider, queue: queue}
