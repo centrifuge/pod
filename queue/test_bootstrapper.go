@@ -21,7 +21,7 @@ type Starter struct {}
 
 func (Starter) TestBootstrap(ctx map[string]interface{}) error {
 	// handle the special case for running the queue server after task types have been registered (done by node bootstrapper at runtime)
-	qs := ctx[bootstrap.BootstrappedQueueServer].(Server)
+	qs := ctx[bootstrap.BootstrappedQueueServer].(*Server)
 	childErr := make(chan error)
 	var wg sync.WaitGroup
 	wg.Add(1)
