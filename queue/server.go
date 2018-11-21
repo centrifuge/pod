@@ -49,6 +49,7 @@ type Server struct {
 	queue     *gocelery.CeleryClient
 	taskTypes []QueuedTaskType
 	stop      chan bool
+	lock 	  sync.RWMutex
 }
 
 // TaskTypeName of the queue server
@@ -74,7 +75,9 @@ func (qs *Server) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan
 	}
 	// start the workers
 	qs.queue.StartWorker()
+	qs.lock.Lock()
 	qs.stop = make(chan bool)
+	qs.lock.Unlock()
 
 	for {
 		select {
@@ -100,6 +103,8 @@ func (qs *Server) EnqueueJob(taskTypeName string, params map[string]interface{})
 
 // Stop force stops the queue server
 func (qs *Server) Stop() error {
+	qs.lock.Lock()
+	defer qs.lock.Unlock()
 	if qs.stop != nil {
 		qs.stop <- true
 	}
