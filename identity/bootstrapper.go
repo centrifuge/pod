@@ -10,6 +10,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
+// BootstrappedIDService is used as a key to map the configured ID Service through context.
+const BootstrappedIDService string = "BootstrappedIDService"
+
 type Bootstrapper struct {
 }
 
@@ -24,18 +27,19 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	if _, ok := context[ethereum.BootstrappedEthereumClient]; !ok {
 		return errors.New("ethereum client hasn't been initialized")
 	}
+	gethClient := context[ethereum.BootstrappedEthereumClient].(ethereum.Client)
 
-	idFactory, err := getIdentityFactoryContract(cfg.GetContractAddress("identityFactory"))
+	idFactory, err := getIdentityFactoryContract(cfg.GetContractAddress("identityFactory"), gethClient)
 	if err != nil {
 		return err
 	}
 
-	registryContract, err := getIdentityRegistryContract(cfg.GetContractAddress("identityRegistry"))
+	registryContract, err := getIdentityRegistryContract(cfg.GetContractAddress("identityRegistry"), gethClient)
 	if err != nil {
 		return err
 	}
 
-	IDService = NewEthereumIdentityService(cfg, idFactory, registryContract, ethereum.GetClient,
+	context[BootstrappedIDService] = NewEthereumIdentityService(cfg, idFactory, registryContract, ethereum.GetClient,
 		func(address common.Address, backend bind.ContractBackend) (contract, error) {
 			return NewEthereumIdentityContract(address, backend)
 		})
@@ -57,12 +61,10 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	return nil
 }
 
-func getIdentityFactoryContract(factoryAddress common.Address) (identityFactoryContract *EthereumIdentityFactoryContract, err error) {
-	client := ethereum.GetClient()
-	return NewEthereumIdentityFactoryContract(factoryAddress, client.GetEthClient())
+func getIdentityFactoryContract(factoryAddress common.Address, ethClient ethereum.Client) (identityFactoryContract *EthereumIdentityFactoryContract, err error) {
+	return NewEthereumIdentityFactoryContract(factoryAddress, ethClient.GetEthClient())
 }
 
-func getIdentityRegistryContract(registryAddress common.Address) (identityRegistryContract *EthereumIdentityRegistryContract, err error) {
-	client := ethereum.GetClient()
-	return NewEthereumIdentityRegistryContract(registryAddress, client.GetEthClient())
+func getIdentityRegistryContract(registryAddress common.Address, ethClient ethereum.Client) (identityRegistryContract *EthereumIdentityRegistryContract, err error) {
+	return NewEthereumIdentityRegistryContract(registryAddress, ethClient.GetEthClient())
 }
