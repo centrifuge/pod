@@ -18,6 +18,7 @@ var network string
 var apiPort int64
 var p2pPort int64
 var bootstraps []string
+var txPoolAccess bool
 
 func createIdentity() (identity.CentID, error) {
 	centrifugeId := identity.RandomCentID()
@@ -76,6 +77,7 @@ func init() {
 				"bootstraps":      bootstraps,
 				"apiPort":         apiPort,
 				"p2pPort":         p2pPort,
+				"txpoolaccess":    txPoolAccess,
 			}
 
 			v, err := config.CreateConfigFile(data)
@@ -110,12 +112,13 @@ func init() {
 	}
 
 	createConfigCmd.Flags().StringVarP(&targetDataDir, "targetdir", "t", home+"/datadir", "Target Data Dir")
-	createConfigCmd.Flags().StringVarP(&ethNodeUrl, "ethnodeurl", "e", "ws://127.0.0.1:9546", "URL of Ethereum Client Node (WS only)")
+	createConfigCmd.Flags().StringVarP(&ethNodeUrl, "ethnodeurl", "e", "ws://127.0.0.1:9546", "URL of Ethereum Client Node")
 	createConfigCmd.Flags().StringVarP(&accountKeyPath, "accountkeypath", "z", home+"/datadir/main.key", "Path of Ethereum Account Key JSON file")
 	createConfigCmd.Flags().StringVarP(&accountPassword, "accountpwd", "k", "", "Ethereum Account Password")
 	createConfigCmd.Flags().Int64VarP(&apiPort, "apiPort", "a", 8082, "Api Port")
 	createConfigCmd.Flags().Int64VarP(&p2pPort, "p2pPort", "p", 38202, "Peer-to-Peer Port")
 	createConfigCmd.Flags().StringVarP(&network, "network", "n", "russianhill", "Default Network")
 	createConfigCmd.Flags().StringSliceVarP(&bootstraps, "bootstraps", "b", nil, "Bootstrap P2P Nodes")
+	createConfigCmd.Flags().BoolVarP(&txPoolAccess, "txpoolaccess", "x", true, "Transaction Pool access")
 	rootCmd.AddCommand(createConfigCmd)
 }

@@ -336,6 +336,7 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	bootstraps := args["bootstraps"].([]string)
 	apiPort := args["apiPort"].(int64)
 	p2pPort := args["p2pPort"].(int64)
+	txPoolAccess := args["txpoolaccess"].(bool)
 
 	if targetDataDir == "" {
 		return nil, errors.New("targetDataDir not provided")
@@ -366,6 +367,7 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	v.Set("nodePort", apiPort)
 	v.Set("p2p.port", p2pPort)
 	v.Set("ethereum.nodeURL", ethNodeUrl)
+	v.Set("ethereum.txPoolAccessEnabled", txPoolAccess)
 	v.Set("ethereum.accounts.main.key", string(bfile))
 	v.Set("ethereum.accounts.main.password", accountPassword)
 	v.Set("keys.p2p.privateKey", targetDataDir+"/p2p.key.pem")

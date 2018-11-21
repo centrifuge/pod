@@ -542,7 +542,7 @@ func (ids *EthereumIdentityService) AddKeyFromConfig(purpose int) error {
 		return err
 	}
 
-	log.Infof("Key [%v] with type [$s] Added to Identity [%s]", lastKey, purpose, watchAddedToIdentity.Identity)
+	log.Infof("Key [%v] with type [%d] Added to Identity [%s]", lastKey, purpose, watchAddedToIdentity.Identity)
 
 	return nil
 }
