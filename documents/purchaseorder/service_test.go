@@ -392,12 +392,12 @@ func TestService_CreateProofs(t *testing.T) {
 	assert.Nil(t, err)
 	idService := mockSignatureCheck(i, poSrv)
 	setIdentityService(idService)
-	proof, err := poSrv.CreateProofs(i.CoreDocument.DocumentIdentifier, []string{"po_number"})
+	proof, err := poSrv.CreateProofs(i.CoreDocument.DocumentIdentifier, []string{"po.po_number"})
 	assert.Nil(t, err)
 	assert.Equal(t, i.CoreDocument.DocumentIdentifier, proof.DocumentId)
 	assert.Equal(t, i.CoreDocument.DocumentIdentifier, proof.VersionId)
 	assert.Equal(t, len(proof.FieldProofs), 1)
-	assert.Equal(t, proof.FieldProofs[0].GetProperty(), "po_number")
+	assert.Equal(t, proof.FieldProofs[0].GetProperty(), "po.po_number")
 }
 
 func TestService_CreateProofsValidationFails(t *testing.T) {
@@ -410,7 +410,7 @@ func TestService_CreateProofsValidationFails(t *testing.T) {
 	assert.Nil(t, err)
 	idService := mockSignatureCheck(i, poSrv)
 	setIdentityService(idService)
-	_, err = poSrv.CreateProofs(i.CoreDocument.DocumentIdentifier, []string{"po_number"})
+	_, err = poSrv.CreateProofs(i.CoreDocument.DocumentIdentifier, []string{"po.po_number"})
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "signing root missing")
 }
@@ -429,7 +429,7 @@ func TestService_CreateProofsInvalidField(t *testing.T) {
 
 func TestService_CreateProofsDocumentDoesntExist(t *testing.T) {
 	poSrv := getServiceWithMockedLayers()
-	_, err := poSrv.CreateProofs(utils.RandomSlice(32), []string{"po_number"})
+	_, err := poSrv.CreateProofs(utils.RandomSlice(32), []string{"po.po_number"})
 	assert.Error(t, err)
 	assert.Equal(t, "document not found: leveldb: not found", err.Error())
 }
@@ -480,19 +480,19 @@ func TestService_CreateProofsForVersion(t *testing.T) {
 	olderVersion := i.CoreDocument.CurrentVersion
 	i, err = updatedAnchoredMockDocument(t, i)
 	assert.Nil(t, err)
-	proof, err := poSrv.CreateProofsForVersion(i.CoreDocument.DocumentIdentifier, olderVersion, []string{"po_number"})
+	proof, err := poSrv.CreateProofsForVersion(i.CoreDocument.DocumentIdentifier, olderVersion, []string{"po.po_number"})
 	assert.Nil(t, err)
 	assert.Equal(t, i.CoreDocument.DocumentIdentifier, proof.DocumentId)
 	assert.Equal(t, olderVersion, proof.VersionId)
 	assert.Equal(t, len(proof.FieldProofs), 1)
-	assert.Equal(t, proof.FieldProofs[0].GetProperty(), "po_number")
+	assert.Equal(t, proof.FieldProofs[0].GetProperty(), "po.po_number")
 }
 
 func TestService_CreateProofsForVersionDocumentDoesntExist(t *testing.T) {
 	i, err := createAnchoredMockDocument(t, false)
 	poSrv := getServiceWithMockedLayers()
 	assert.Nil(t, err)
-	_, err = poSrv.CreateProofsForVersion(i.CoreDocument.DocumentIdentifier, utils.RandomSlice(32), []string{"po_number"})
+	_, err = poSrv.CreateProofsForVersion(i.CoreDocument.DocumentIdentifier, utils.RandomSlice(32), []string{"po.po_number"})
 	assert.Error(t, err)
 	assert.Equal(t, "document not found for the given version: leveldb: not found", err.Error())
 }

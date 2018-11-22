@@ -38,9 +38,9 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
   name = "github.com/Masterminds/semver"
   version = "1.4.2"
 
-[[constraint]]
+[[override]]
   name = "github.com/centrifuge/precise-proofs"
-  revision = "ff15857d84b0eea93e52cc465f71662b78f62f6f"
+  revision = "8957bc48e1bd690a835c630fa6fdfd141c41f5dd"
 
 [[constraint]]
   name = "github.com/centrifuge/gocelery"
