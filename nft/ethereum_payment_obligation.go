@@ -28,8 +28,6 @@ import (
 
 var log = logging.Logger("nft")
 
-var po *ethereumPaymentObligation
-
 const amountOfProofs = 5
 
 var regexCollaborators, _ = regexp.Compile("collaborators\\[[0-9]+\\]")
@@ -40,14 +38,6 @@ type Config interface {
 	GetEthereumDefaultAccountName() string
 	GetContractAddress(address string) common.Address
 	GetEthereumContextWaitTimeout() time.Duration
-}
-
-func setPaymentObligation(s *ethereumPaymentObligation) {
-	po = s
-}
-
-func GetPaymentObligation() *ethereumPaymentObligation {
-	return po
 }
 
 // ethereumPaymentObligationContract is an abstraction over the contract code to help in mocking it out
