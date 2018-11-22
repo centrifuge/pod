@@ -23,6 +23,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/stretchr/testify/assert"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/nft"
 )
 
 var ctx = map[string]interface{}{}
@@ -44,6 +45,7 @@ func TestMain(m *testing.M) {
 		p2p.Bootstrapper{},
 		&invoice.Bootstrapper{},
 		&purchaseorder.Bootstrapper{},
+		&nft.Bootstrapper{},
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 
@@ -60,8 +62,8 @@ func TestCentAPIServer_StartContextCancel(t *testing.T) {
 	cfg.Set("nodePort", 9000)
 	cfg.Set("centrifugeNetwork", "")
 	registry.Register(documenttypes.InvoiceDataTypeUrl, invoice.DefaultService(cfg, nil, nil, nil, nil))
-	capi := apiServer{config: cfg, registry: registry}
-	ctx, canc := context.WithCancel(context.Background())
+	capi := apiServer{config: cfg}
+	ctx, canc := context.WithCancel(context.WithValue(context.Background(), bootstrap.NodeObjRegistry, ctx))
 	startErr := make(chan error)
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -76,8 +78,8 @@ func TestCentAPIServer_StartListenError(t *testing.T) {
 	cfg.Set("nodeHostname", "0.0.0.0")
 	cfg.Set("nodePort", 100000000)
 	cfg.Set("centrifugeNetwork", "")
-	ctx, _ := context.WithCancel(context.Background())
-	capi := apiServer{config: cfg, registry: registry}
+	ctx, _ := context.WithCancel(context.WithValue(context.Background(), bootstrap.NodeObjRegistry, ctx))
+	capi := apiServer{config: cfg}
 	startErr := make(chan error)
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -86,4 +88,21 @@ func TestCentAPIServer_StartListenError(t *testing.T) {
 	wg.Wait()
 	assert.NotNil(t, err, "Error should be not nil")
 	assert.Equal(t, "listen tcp: address 100000000: invalid port", err.Error())
+}
+
+func TestCentAPIServer_FailedToGetRegistry(t *testing.T) {
+	// cause an error by using an invalid port
+	cfg.Set("nodeHostname", "0.0.0.0")
+	cfg.Set("nodePort", 100000000)
+	cfg.Set("centrifugeNetwork", "")
+	ctx, _ := context.WithCancel(context.Background())
+	capi := apiServer{config: cfg}
+	startErr := make(chan error)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go capi.Start(ctx, &wg, startErr)
+	err := <-startErr
+	wg.Wait()
+	assert.NotNil(t, err, "Error should be not nil")
+	assert.Equal(t, "failed to get NodeObjRegistry", err.Error())
 }

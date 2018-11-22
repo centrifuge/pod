@@ -26,6 +26,7 @@ import (
 var registry *documents.ServiceRegistry
 var cfg *config.Configuration
 var idService identity.Service
+var payOb nft.PaymentObligation
 
 func TestMain(m *testing.M) {
 	log.Debug("Test PreSetup for NFT")
@@ -33,6 +34,7 @@ func TestMain(m *testing.M) {
 	registry = ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
 	idService = ctx[identity.BootstrappedIDService].(identity.Service)
 	cfg = ctx[config.BootstrappedConfig].(*config.Configuration)
+	payOb = ctx[nft.BootstrappedPayObService].(nft.PaymentObligation)
 	prevSignPubkey := cfg.Get("keys.signing.publicKey")
 	prevSignPrivkey := cfg.Get("keys.signing.privateKey")
 	prevEthPubkey := cfg.Get("keys.ethauth.publicKey")
@@ -81,7 +83,7 @@ func TestPaymentObligationService_mint(t *testing.T) {
 	assert.Nil(t, err, "should not error out when getting invoice ID")
 	// call mint
 	// assert no error
-	confirmations, err := nft.GetPaymentObligation().MintNFT(
+	confirmations, err :=payOb.MintNFT(
 		ID,
 		cfg.GetContractAddress("paymentObligation").String(),
 		"0xf72855759a39fb75fc7341139f5d7a3974d4da08",
