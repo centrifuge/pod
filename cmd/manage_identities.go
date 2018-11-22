@@ -17,7 +17,7 @@ var createIdentityCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		//cmd requires a config file
 		cfgFile = ensureConfigFile()
-		baseBootstrap(cfgFile)
+		ctx := baseBootstrap(cfgFile)
 		var centrifugeId identity.CentID
 		var err error
 		if centrifugeIdString == "" {
@@ -28,7 +28,9 @@ var createIdentityCmd = &cobra.Command{
 				panic(err)
 			}
 		}
-		_, confirmations, err := identity.IDService.CreateIdentity(centrifugeId)
+
+		idService := ctx[identity.BootstrappedIDService].(identity.Service)
+		_, confirmations, err := idService.CreateIdentity(centrifugeId)
 		if err != nil {
 			panic(err)
 		}
@@ -53,6 +55,7 @@ var addKeyCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		//cmd requires a config file
 		cfgFile = ensureConfigFile()
+		ctx := baseBootstrap(cfgFile)
 		var purposeInt int
 
 		switch purpose {
@@ -66,7 +69,8 @@ var addKeyCmd = &cobra.Command{
 			panic("Option not supported")
 		}
 
-		err := identity.IDService.AddKeyFromConfig(purposeInt)
+		idService := ctx[identity.BootstrappedIDService].(identity.Service)
+		err := idService.AddKeyFromConfig(purposeInt)
 		if err != nil {
 			panic(err)
 		}

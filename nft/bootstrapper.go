@@ -30,6 +30,11 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return fmt.Errorf("service registry not initialised")
 	}
 
-	setPaymentObligation(NewEthereumPaymentObligation(registry, identity.IDService, ethereum.GetClient(), cfg, setupMintListener, bindContract))
+	idService, ok := ctx[identity.BootstrappedIDService].(identity.Service)
+	if !ok {
+		return fmt.Errorf("identity service not initialised")
+	}
+
+	setPaymentObligation(NewEthereumPaymentObligation(registry, idService, ethereum.GetClient(), cfg, setupMintListener, bindContract))
 	return queue.InstallQueuedTask(ctx, newMintingConfirmationTask(cfg.GetEthereumContextWaitTimeout(), ethereum.DefaultWaitForTransactionMiningContext))
 }

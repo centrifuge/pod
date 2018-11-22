@@ -33,6 +33,7 @@ var (
 	handler    p2ppb.P2PServiceServer
 	anchorRepo anchors.AnchorRepository
 	cfg        *config.Configuration
+	idService  identity.Service
 )
 
 func TestMain(m *testing.M) {
@@ -40,13 +41,14 @@ func TestMain(m *testing.M) {
 	ctx := cc.TestFunctionalEthereumBootstrap()
 	registry := ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
 	anchorRepo = ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
+	idService = ctx[identity.BootstrappedIDService].(identity.Service)
 	cfg = ctx[config.BootstrappedConfig].(*config.Configuration)
 	cfg.Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
 	cfg.Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
 	cfg.Set("keys.ethauth.publicKey", "../build/resources/ethauth.pub.pem")
 	cfg.Set("keys.ethauth.privateKey", "../build/resources/ethauth.key.pem")
 	handler = p2p.GRPCHandler(cfg, registry)
-	testingidentity.CreateIdentityWithKeys(cfg)
+	testingidentity.CreateIdentityWithKeys(cfg, idService)
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()
 	os.Exit(result)
@@ -180,7 +182,7 @@ func createIdentity(t *testing.T) identity.CentID {
 	// Create Identity
 	centrifugeId, _ := identity.ToCentID(utils.RandomSlice(identity.CentIDLength))
 	cfg.Set("identityId", centrifugeId.String())
-	id, confirmations, err := identity.IDService.CreateIdentity(centrifugeId)
+	id, confirmations, err := idService.CreateIdentity(centrifugeId)
 	assert.Nil(t, err, "should not error out when creating identity")
 	watchRegisteredIdentity := <-confirmations
 	assert.Nil(t, watchRegisteredIdentity.Error, "No error thrown by context")

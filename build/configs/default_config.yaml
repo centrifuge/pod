@@ -30,7 +30,23 @@ networks:
       identityFactory: "0x90d294571e73842697a66b7a99a09dd6c73d356d"
       identityRegistry: "0x9660c039d311453af0d58c5666723d9c2fa7d6ec"
       anchorRepository: "0x7f854dfa98012d7fa55c803bba2260bcdee4b5ed"
-      paymentObligation: ""
+      paymentObligation: "0x691280677b52e3ca71e023eed2d83fa9fac3b64b"
+
+  bernalheights:
+    # Numeric ID of the Centrifuge network
+    id: 52
+    # Bootstrap list of nodes that Centrifuge provides to the russianhill testnet
+    bootstrapPeers:
+    - "/ip4/35.225.200.42/tcp/38202/ipfs/12D3KooWLiicQVwThTBY6xKcPoLf6RQYJFpwf1r75wLx2ZR3pCd1"
+    - "/ip4/35.225.86.210/tcp/38202/ipfs/12D3KooWQZMA8GPHrvEZB9wdkoUcAAmCZHp9eyyZ4SE8gFr3hTNX"
+    # Ethereum network ID - Kovan
+    ethereumNetworkId: 42
+    # Latest deployed Smart Contracts for the given testnet
+    contractAddresses:
+      identityFactory: "0x85b32f7a3f40481f12334041670c8cbe07f7d79c"
+      identityRegistry: "0x54ae373f096faf2db6b8a46717c0b98ecfa075dd"
+      anchorRepository: "0x444f649e307442e76ccf737466e52f1609b98260"
+      paymentObligation: "0xa3d3b45f422016201d7cd4c2bc217665483d90e6"
 
 # Peer-to-peer configurations
 p2p:
@@ -65,3 +81,7 @@ ethereum:
   # Disable when some ethereum clients do not support txpool api
   txPoolAccessEnabled: true
 
+# any debugging config will go here
+debug:
+  # pprof for debugging
+  pprof: false

@@ -22,6 +22,17 @@
   revision = "5312a61534124124185d41f09206b9fef1d88403"
 
 [[projects]]
+  digest = "1:1156cfea0ff969858f6027df95c15ca5e802556b466aebeedaf53dde3b301db3"
+  name = "github.com/allegro/bigcache"
+  packages = [
+    ".",
+    "queue",
+  ]
+  pruneopts = "UT"
+  revision = "f31987a23e44c5121ef8c8b2f2ea2e8ffa37b068"
+  version = "v1.1.0"
+
+[[projects]]
   branch = "master"
   digest = "1:7d191fd0c54ff370eaf6116a14dafe2a328df487baea280699f597aae858d00d"
   name = "github.com/aristanetworks/goarista"
@@ -101,7 +112,7 @@
   version = "v1.7"
 
 [[projects]]
-  digest = "1:0f390470311a75caba6b4223dcd881d4a9c5141afaf7fef3c5908c145a5073dd"
+  digest = "1:6aada383585d097e8ef3d06b74956eb1f22f49acb94ca0cb0672c1e767171a23"
   name = "github.com/ethereum/go-ethereum"
   packages = [
     ".",
@@ -130,7 +141,7 @@
     "trie",
   ]
   pruneopts = "T"
-  revision = "e024c16f34c6028060b645efae1d6258e442442a"
+  revision = "27e633ca943ee9f49614b9ea074667227402b571"
   source = "github.com/centrifuge/go-ethereum"
 
 [[projects]]

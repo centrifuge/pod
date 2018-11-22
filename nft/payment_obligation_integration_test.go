@@ -9,15 +9,18 @@ import (
 	cc "github.com/centrifuge/go-centrifuge/context/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/centrifuge/go-centrifuge/identity"
 )
 
 var registry *documents.ServiceRegistry
 var cfg *config.Configuration
+var idService identity.Service
 
 func TestMain(m *testing.M) {
 	log.Debug("Test PreSetup for NFT")
 	ctx := cc.TestFunctionalEthereumBootstrap()
 	registry = ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
+	idService = ctx[identity.BootstrappedIDService].(identity.Service)
 	cfg = ctx[config.BootstrappedConfig].(*config.Configuration)
 	prevSignPubkey := cfg.Get("keys.signing.publicKey")
 	prevSignPrivkey := cfg.Get("keys.signing.privateKey")
@@ -39,7 +42,7 @@ func TestMain(m *testing.M) {
 //func TestPaymentObligationService_mint(t *testing.T) {
 //	// create identity
 //	log.Debug("Create Identity for Testing")
-//	testingidentity.CreateIdentityWithKeys(cfg)
+//	testingidentity.CreateIdentityWithKeys(cfg, idService)
 //
 //	// create invoice (anchor)
 //	service, err := registry.LocateService(documenttypes.InvoiceDataTypeUrl)

@@ -50,10 +50,10 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
   name = "github.com/xsleonard/go-merkle"
   revision = "fbb7cafc5ae411e13e718172f5af7917ad6c3ed7"
 
-[[constraint]]
+[[override]]
   name = "github.com/ethereum/go-ethereum"
   source = "github.com/centrifuge/go-ethereum"
-  revision = "e024c16f34c6028060b645efae1d6258e442442a"
+  revision = "27e633ca943ee9f49614b9ea074667227402b571"
 
 [[override]]
   name = "github.com/satori/go.uuid"
