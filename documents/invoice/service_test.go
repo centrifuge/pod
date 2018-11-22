@@ -313,12 +313,12 @@ func TestService_CreateProofs(t *testing.T) {
 	i, err := createAnchoredMockDocument(t, false)
 	assert.Nil(t, err)
 	idService = mockSignatureCheck(i, idService, invSrv)
-	proof, err := invSrv.CreateProofs(i.CoreDocument.DocumentIdentifier, []string{"invoice_number"})
+	proof, err := invSrv.CreateProofs(i.CoreDocument.DocumentIdentifier, []string{"invoice.invoice_number"})
 	assert.Nil(t, err)
 	assert.Equal(t, i.CoreDocument.DocumentIdentifier, proof.DocumentId)
 	assert.Equal(t, i.CoreDocument.DocumentIdentifier, proof.VersionId)
 	assert.Equal(t, len(proof.FieldProofs), 1)
-	assert.Equal(t, proof.FieldProofs[0].GetProperty(), "invoice_number")
+	assert.Equal(t, proof.FieldProofs[0].GetProperty(), "invoice.invoice_number")
 }
 
 func TestService_CreateProofsValidationFails(t *testing.T) {
@@ -329,7 +329,7 @@ func TestService_CreateProofsValidationFails(t *testing.T) {
 	err = getRepository().Update(i.CoreDocument.CurrentVersion, i)
 	assert.Nil(t, err)
 	idService = mockSignatureCheck(i, idService, invSrv)
-	_, err = invSrv.CreateProofs(i.CoreDocument.DocumentIdentifier, []string{"invoice_number"})
+	_, err = invSrv.CreateProofs(i.CoreDocument.DocumentIdentifier, []string{"invoice.invoice_number"})
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "signing root missing")
 }
@@ -346,7 +346,7 @@ func TestService_CreateProofsInvalidField(t *testing.T) {
 
 func TestService_CreateProofsDocumentDoesntExist(t *testing.T) {
 	_, invService := getServiceWithMockedLayers()
-	_, err := invService.CreateProofs(utils.RandomSlice(32), []string{"invoice_number"})
+	_, err := invService.CreateProofs(utils.RandomSlice(32), []string{"invoice.invoice_number"})
 	assert.Error(t, err)
 	assert.Equal(t, "document not found: leveldb: not found", err.Error())
 }
@@ -359,19 +359,19 @@ func TestService_CreateProofsForVersion(t *testing.T) {
 	olderVersion := i.CoreDocument.CurrentVersion
 	i, err = updatedAnchoredMockDocument(t, i)
 	assert.Nil(t, err)
-	proof, err := invSrv.CreateProofsForVersion(i.CoreDocument.DocumentIdentifier, olderVersion, []string{"invoice_number"})
+	proof, err := invSrv.CreateProofsForVersion(i.CoreDocument.DocumentIdentifier, olderVersion, []string{"invoice.invoice_number"})
 	assert.Nil(t, err)
 	assert.Equal(t, i.CoreDocument.DocumentIdentifier, proof.DocumentId)
 	assert.Equal(t, olderVersion, proof.VersionId)
 	assert.Equal(t, len(proof.FieldProofs), 1)
-	assert.Equal(t, proof.FieldProofs[0].GetProperty(), "invoice_number")
+	assert.Equal(t, proof.FieldProofs[0].GetProperty(), "invoice.invoice_number")
 }
 
 func TestService_CreateProofsForVersionDocumentDoesntExist(t *testing.T) {
 	i, err := createAnchoredMockDocument(t, false)
 	_, invSrv := getServiceWithMockedLayers()
 	assert.Nil(t, err)
-	_, err = invSrv.CreateProofsForVersion(i.CoreDocument.DocumentIdentifier, utils.RandomSlice(32), []string{"invoice_number"})
+	_, err = invSrv.CreateProofsForVersion(i.CoreDocument.DocumentIdentifier, utils.RandomSlice(32), []string{"invoice.invoice_number"})
 	assert.Error(t, err)
 	assert.Equal(t, "document not found for the given version: leveldb: not found", err.Error())
 }
