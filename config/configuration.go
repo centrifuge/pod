@@ -274,6 +274,13 @@ func (c *Configuration) GetEthAuthKeyPair() (pub, priv string) {
 	return c.GetString("keys.ethauth.publicKey"), c.GetString("keys.ethauth.privateKey")
 }
 
+// IsPProfEnabled returns port and ok from the config
+// if the !ok, then don't run pprof
+// else run pprof on the given port
+func (c *Configuration) GetPprofPort() (port int, ok bool) {
+	return c.GetInt("debug.pprof.port"), cast.ToBool(c.get("debug.pprof.enabled"))
+}
+
 // Configuration Implementation
 func NewConfiguration(configFile string) *Configuration {
 	cfg := &Configuration{configFile: configFile, mu: sync.RWMutex{}}

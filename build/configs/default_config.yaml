@@ -81,3 +81,10 @@ ethereum:
   # Disable when some ethereum clients do not support txpool api
   txPoolAccessEnabled: true
 
+# any debugging config will go here
+debug:
+  # pprof related config
+  pprof:
+    enabled: false
+    port: 7070
+

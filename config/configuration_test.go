@@ -38,6 +38,9 @@ func TestConfiguration_CreateConfigFile(t *testing.T) {
 	assert.Equal(t, data["p2pPort"].(int64), v.GetInt64("p2p.port"), "p2p port match")
 	_, err = os.Stat(targetDir + "/config.yaml")
 	assert.Nil(t, err, "must be nil, config file should be created")
-
+	c := NewConfiguration(v.ConfigFileUsed())
+	port, ok := c.GetPprofPort()
+	assert.False(t, ok, "pprof is disabled by default")
+	assert.Equal(t, 7070, port, "default port should be 7070")
 	os.Remove(targetDir)
 }
