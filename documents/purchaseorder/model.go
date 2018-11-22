@@ -22,7 +22,7 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 )
 
-const Prefix string = "po"
+const prefix string = "po"
 
 // PurchaseOrder implements the documents.Model keeps track of purchase order related fields and state
 type PurchaseOrder struct {
@@ -349,7 +349,7 @@ func (p *PurchaseOrder) calculateDataRoot() error {
 
 // getDocumentDataTree creates precise-proofs data tree for the model
 func (p *PurchaseOrder) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
-	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: sha256.New(), ParentPrefix: Prefix})
+	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: sha256.New(), ParentPrefix: prefix})
 	poData := p.createP2PProtobuf()
 	err = t.AddLeavesFromDocument(poData, p.getPurchaseOrderSalts(poData))
 	if err != nil {

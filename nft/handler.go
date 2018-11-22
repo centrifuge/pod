@@ -19,8 +19,8 @@ type grpcHandler struct {
 }
 
 // GRPCHandler returns an implementation of invoice.DocumentServiceServer
-func GRPCHandler() nftpb.NFTServiceServer {
-	return &grpcHandler{service: GetPaymentObligation()}
+func GRPCHandler(payOb PaymentObligation) nftpb.NFTServiceServer {
+	return &grpcHandler{service: payOb}
 }
 
 // MintNFT will be called from the client API to mint an NFT

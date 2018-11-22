@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/centerrors"
-	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	logging "github.com/ipfs/go-log"
 	"golang.org/x/net/context"
@@ -35,8 +34,7 @@ type Config interface {
 
 // apiServer is an implementation of node.Server interface for serving HTTP based Centrifuge API
 type apiServer struct {
-	config   Config
-	registry *documents.ServiceRegistry
+	config Config
 }
 
 func (apiServer) Name() string {
@@ -77,7 +75,7 @@ func (c apiServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr cha
 	mux := http.NewServeMux()
 	gwmux := runtime.NewServeMux()
 
-	err = registerServices(ctx, c.config, c.registry, grpcServer, gwmux, addr, dopts)
+	err = registerServices(ctx, c.config, grpcServer, gwmux, addr, dopts)
 	if err != nil {
 		startupErr <- err
 		return
