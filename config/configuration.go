@@ -107,6 +107,11 @@ func (c *Configuration) GetInt(key string) int {
 	return cast.ToInt(c.get(key))
 }
 
+// GetBool returns value bool associated with key
+func (c *Configuration) GetBool(key string) bool {
+	return cast.ToBool(c.get(key))
+}
+
 // GetDuration returns value duration associated with key
 func (c *Configuration) GetDuration(key string) time.Duration {
 	return cast.ToDuration(c.get(key))
@@ -223,7 +228,7 @@ func (c *Configuration) GetEthereumAccount(accountName string) (account *Account
 
 // Important flag for concurrency handling. Disable if Ethereum client doesn't support txpool API (INFURA)
 func (c *Configuration) GetTxPoolAccessEnabled() bool {
-	return cast.ToBool(c.get("ethereum.txPoolAccessEnabled"))
+	return c.GetBool("ethereum.txPoolAccessEnabled")
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -276,7 +281,7 @@ func (c *Configuration) GetEthAuthKeyPair() (pub, priv string) {
 
 // IsPProfEnabled returns true if the pprof is enabled
 func (c *Configuration) IsPProfEnabled() bool {
-	return cast.ToBool(c.get("debug.pprof"))
+	return c.GetBool("debug.pprof")
 }
 
 // Configuration Implementation
