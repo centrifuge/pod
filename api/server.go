@@ -32,7 +32,7 @@ type Config interface {
 
 // apiServer is an implementation of node.Server interface for serving HTTP based Centrifuge API
 type apiServer struct {
-	config   Config
+	config Config
 }
 
 func (apiServer) Name() string {

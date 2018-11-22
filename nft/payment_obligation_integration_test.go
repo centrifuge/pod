@@ -14,13 +14,13 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/header"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/stretchr/testify/assert"
-	"github.com/centrifuge/go-centrifuge/identity"
 )
 
 var registry *documents.ServiceRegistry
@@ -83,7 +83,7 @@ func TestPaymentObligationService_mint(t *testing.T) {
 	assert.Nil(t, err, "should not error out when getting invoice ID")
 	// call mint
 	// assert no error
-	confirmations, err :=payOb.MintNFT(
+	confirmations, err := payOb.MintNFT(
 		ID,
 		cfg.GetContractAddress("paymentObligation").String(),
 		"0xf72855759a39fb75fc7341139f5d7a3974d4da08",
