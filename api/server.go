@@ -10,6 +10,7 @@ import (
 	"errors"
 	"net"
 	"net/http"
+	_ "net/http/pprof"
 	"strings"
 	"sync"
 	"time"
@@ -29,6 +30,7 @@ type Config interface {
 	GetServerAddress() string
 	GetServerPort() int
 	GetNetworkString() string
+	IsPProfEnabled() bool
 }
 
 // apiServer is an implementation of node.Server interface for serving HTTP based Centrifuge API
@@ -79,6 +81,11 @@ func (c apiServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr cha
 	if err != nil {
 		startupErr <- err
 		return
+	}
+
+	if c.config.IsPProfEnabled() {
+		log.Info("added pprof endpoints to the server")
+		mux.Handle("/debug/", http.DefaultServeMux)
 	}
 
 	mux.Handle("/", gwmux)

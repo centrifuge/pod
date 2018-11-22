@@ -39,8 +39,6 @@ func TestConfiguration_CreateConfigFile(t *testing.T) {
 	_, err = os.Stat(targetDir + "/config.yaml")
 	assert.Nil(t, err, "must be nil, config file should be created")
 	c := NewConfiguration(v.ConfigFileUsed())
-	port, ok := c.GetPprofPort()
-	assert.False(t, ok, "pprof is disabled by default")
-	assert.Equal(t, 7070, port, "default port should be 7070")
+	assert.False(t, c.IsPProfEnabled(), "pprof is disabled by default")
 	os.Remove(targetDir)
 }

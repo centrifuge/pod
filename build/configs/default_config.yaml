@@ -83,8 +83,5 @@ ethereum:
 
 # any debugging config will go here
 debug:
-  # pprof related config
-  pprof:
-    enabled: false
-    port: 7070
-
+  # pprof for debugging
+  pprof: false
