@@ -134,7 +134,7 @@ func GetPrivateEthAuthKey(fileName string) (key []byte, err error) {
 	if err != nil {
 		log.Error(err)
 	}
-	return
+	return key, nil
 }
 
 // GetPublicEthAuthKey returns the public key from the file
@@ -143,5 +143,5 @@ func GetPublicEthAuthKey(fileName string) (key []byte, err error) {
 	if err != nil {
 		log.Error(err)
 	}
-	return
+	return key, nil
 }

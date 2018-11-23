@@ -401,5 +401,5 @@ func (i *Invoice) createProofs(fields []string) (coreDoc *coredocumentpb.CoreDoc
 	}
 
 	proofs, err = coredocument.CreateProofs(tree, coreDoc, fields)
-	return
+	return coreDoc, nil
 }

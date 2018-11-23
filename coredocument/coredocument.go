@@ -290,5 +290,6 @@ func CreateProofs(dataTree *proofs.DocumentTree, coreDoc *coredocumentpb.CoreDoc
 		proof.SortedHashes = append(proof.SortedHashes, rootHashes...)
 		proofs = append(proofs, &proof)
 	}
-	return
+
+	return proofs, nil
 }

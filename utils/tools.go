@@ -26,7 +26,7 @@ func SliceToByte32(in []byte) (out [32]byte, err error) {
 		return [32]byte{}, errors.New("input exceeds length of 32")
 	}
 	copy(out[:], in)
-	return
+	return out, nil
 }
 
 // IsEmptyAddress checks if the addr is empty.

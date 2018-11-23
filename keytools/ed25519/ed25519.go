@@ -53,7 +53,7 @@ func GenerateSigningKeyPair() (publicKey ed25519.PublicKey, privateKey ed25519.P
 	if err != nil {
 		log.Fatal(err)
 	}
-	return
+	return publicKey, privateKey
 }
 
 // PublicKeyToP2PKey returns p2pId from the public key

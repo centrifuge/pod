@@ -146,15 +146,15 @@ func (id *ethereumIdentity) FetchKey(key []byte) (Key, error) {
 func (id *ethereumIdentity) CurrentP2PKey() (ret string, err error) {
 	key, err := id.LastKeyForPurpose(KeyPurposeP2P)
 	if err != nil {
-		return
+		return ret, err
 	}
 	key32, _ := utils.SliceToByte32(key)
 	p2pID, err := ed25519.PublicKeyToP2PKey(key32)
 	if err != nil {
-		return
+		return ret, err
 	}
-	ret = p2pID.Pretty()
-	return
+
+	return p2pID.Pretty(), nil
 }
 
 func (id *ethereumIdentity) findContract() (exists bool, err error) {
@@ -262,7 +262,7 @@ func (id *ethereumIdentity) fetchKeysByPurpose(keyPurpose int) ([]EthereumIdenti
 }
 
 // sendRegistrationTransaction sends the actual transaction to add a Key on Ethereum registry contract
-func sendKeyRegistrationTransaction(identityContract contract, opts *bind.TransactOpts, identity *ethereumIdentity, keyPurpose int, key []byte) (err error) {
+func sendKeyRegistrationTransaction(identityContract contract, opts *bind.TransactOpts, identity *ethereumIdentity, keyPurpose int, key []byte) error {
 
 	//preparation of data in specific types for the call to Ethereum
 	bigInt := big.NewInt(int64(keyPurpose))
@@ -278,7 +278,7 @@ func sendKeyRegistrationTransaction(identityContract contract, opts *bind.Transa
 	}
 
 	log.Infof("Sent off key [%v:%x] to add to CentrifugeID [%s]. Ethereum transaction hash [%x]", keyPurpose, bKey, identity, tx.Hash())
-	return
+	return nil
 }
 
 // sendIdentityCreationTransaction sends the actual transaction to create identity on Ethereum registry contract
