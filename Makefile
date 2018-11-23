@@ -27,6 +27,7 @@ install-deps: ## Install Dependencies
 	@dep ensure
 	@npm --prefix ./build  install
 	@curl -L https://git.io/vp6lP | sh
+	@mv ./bin/* $GOPATH/bin/; rm -rf ./bin
 
 lint-check: ## formats go code
 	@gometalinter --disable-all --enable=golint --enable=goimports --enable=vet --enable=nakedret \
