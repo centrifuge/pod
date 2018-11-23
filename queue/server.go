@@ -46,6 +46,7 @@ type TaskResult interface {
 // Server represents the queue server currently implemented based on gocelery
 type Server struct {
 	config    Config
+	lock 	  sync.RWMutex
 	queue     *gocelery.CeleryClient
 	taskTypes []TaskType
 }
@@ -58,6 +59,8 @@ func (qs *Server) Name() string {
 // Start the queue server
 func (qs *Server) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- error) {
 	defer wg.Done()
+	qs.lock.Lock()
+	defer qs.lock.Unlock()
 	var err error
 	qs.queue, err = gocelery.NewCeleryClient(
 		gocelery.NewInMemoryBroker(),
@@ -87,6 +90,8 @@ func (qs *Server) RegisterTaskType(name string, task interface{}) {
 
 // EnqueueJob enqueues a job on the queue server for the given taskTypeName
 func (qs *Server) EnqueueJob(taskTypeName string, params map[string]interface{}) (TaskResult, error) {
+	qs.lock.RLock()
+	defer qs.lock.RUnlock()
 	return qs.queue.DelayKwargs(taskTypeName, params)
 }
 
