@@ -107,6 +107,11 @@ func (c *Configuration) GetInt(key string) int {
 	return cast.ToInt(c.get(key))
 }
 
+// GetBool returns value bool associated with key
+func (c *Configuration) GetBool(key string) bool {
+	return cast.ToBool(c.get(key))
+}
+
 // GetDuration returns value duration associated with key
 func (c *Configuration) GetDuration(key string) time.Duration {
 	return cast.ToDuration(c.get(key))
@@ -223,7 +228,7 @@ func (c *Configuration) GetEthereumAccount(accountName string) (account *Account
 
 // Important flag for concurrency handling. Disable if Ethereum client doesn't support txpool API (INFURA)
 func (c *Configuration) GetTxPoolAccessEnabled() bool {
-	return cast.ToBool(c.get("ethereum.txPoolAccessEnabled"))
+	return c.GetBool("ethereum.txPoolAccessEnabled")
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -272,6 +277,11 @@ func (c *Configuration) GetSigningKeyPair() (pub, priv string) {
 
 func (c *Configuration) GetEthAuthKeyPair() (pub, priv string) {
 	return c.GetString("keys.ethauth.publicKey"), c.GetString("keys.ethauth.privateKey")
+}
+
+// IsPProfEnabled returns true if the pprof is enabled
+func (c *Configuration) IsPProfEnabled() bool {
+	return c.GetBool("debug.pprof")
 }
 
 // Configuration Implementation
@@ -336,6 +346,7 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	bootstraps := args["bootstraps"].([]string)
 	apiPort := args["apiPort"].(int64)
 	p2pPort := args["p2pPort"].(int64)
+	txPoolAccess := args["txpoolaccess"].(bool)
 
 	if targetDataDir == "" {
 		return nil, errors.New("targetDataDir not provided")
@@ -366,6 +377,7 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	v.Set("nodePort", apiPort)
 	v.Set("p2p.port", p2pPort)
 	v.Set("ethereum.nodeURL", ethNodeUrl)
+	v.Set("ethereum.txPoolAccessEnabled", txPoolAccess)
 	v.Set("ethereum.accounts.main.key", string(bfile))
 	v.Set("ethereum.accounts.main.password", accountPassword)
 	v.Set("keys.p2p.privateKey", targetDataDir+"/p2p.key.pem")

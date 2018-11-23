@@ -44,6 +44,7 @@ func TestMain(m *testing.M) {
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
 		&storage.Bootstrapper{},
+		&identity.Bootstrapper{},
 		anchors.Bootstrapper{},
 		documents.Bootstrapper{},
 		p2p.Bootstrapper{},
@@ -230,7 +231,7 @@ func TestPOModel_calculateDataRoot(t *testing.T) {
 func TestPOModel_createProofs(t *testing.T) {
 	poModel, corDoc, err := createMockPurchaseOrder(t)
 	assert.Nil(t, err)
-	corDoc, proof, err := poModel.createProofs([]string{"po_number", "collaborators[0]", "document_type"})
+	corDoc, proof, err := poModel.createProofs([]string{"po.po_number", "collaborators[0]", "document_type"})
 	assert.Nil(t, err)
 	assert.NotNil(t, proof)
 	assert.NotNil(t, corDoc)
@@ -266,8 +267,9 @@ func TestPOModel_getDocumentDataTree(t *testing.T) {
 	poModel := PurchaseOrder{PoNumber: "3213121", NetAmount: 2, OrderAmount: 2}
 	tree, err := poModel.getDocumentDataTree()
 	assert.Nil(t, err, "tree should be generated without error")
-	_, leaf := tree.GetLeafByProperty("po_number")
-	assert.Equal(t, "po_number", leaf.Property)
+	_, leaf := tree.GetLeafByProperty("po.po_number")
+	assert.NotNil(t, leaf)
+	assert.Equal(t, "po.po_number", leaf.Property)
 }
 
 func createMockPurchaseOrder(t *testing.T) (*PurchaseOrder, *coredocumentpb.CoreDocument, error) {

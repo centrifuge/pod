@@ -25,7 +25,7 @@ var (
 func TestMain(m *testing.M) {
 	ctx := cc.TestFunctionalEthereumBootstrap()
 	anchorRepo = ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
-	identityService = identity.IDService
+	identityService = ctx[identity.BootstrappedIDService].(identity.Service)
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()
 	os.Exit(result)

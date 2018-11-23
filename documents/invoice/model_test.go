@@ -46,6 +46,7 @@ func TestMain(m *testing.M) {
 		&config.Bootstrapper{},
 		&storage.Bootstrapper{},
 		&queue.Bootstrapper{},
+		&identity.Bootstrapper{},
 		anchors.Bootstrapper{},
 		documents.Bootstrapper{},
 		p2p.Bootstrapper{},
@@ -260,7 +261,7 @@ func TestInvoiceModel_calculateDataRoot(t *testing.T) {
 func TestInvoiceModel_createProofs(t *testing.T) {
 	i, corDoc, err := createMockInvoice(t)
 	assert.Nil(t, err)
-	corDoc, proof, err := i.createProofs([]string{"invoice_number", "collaborators[0]", "document_type"})
+	corDoc, proof, err := i.createProofs([]string{"invoice.invoice_number", "collaborators[0]", "document_type"})
 	assert.Nil(t, err)
 	assert.NotNil(t, proof)
 	assert.NotNil(t, corDoc)
@@ -303,8 +304,9 @@ func TestInvoiceModel_getDocumentDataTree(t *testing.T) {
 	i := Invoice{InvoiceNumber: "3213121", NetAmount: 2, GrossAmount: 2}
 	tree, err := i.getDocumentDataTree()
 	assert.Nil(t, err, "tree should be generated without error")
-	_, leaf := tree.GetLeafByProperty("invoice_number")
-	assert.Equal(t, "invoice_number", leaf.Property)
+	_, leaf := tree.GetLeafByProperty("invoice.invoice_number")
+	assert.NotNil(t, leaf)
+	assert.Equal(t, "invoice.invoice_number", leaf.Property)
 }
 
 func createMockInvoice(t *testing.T) (*Invoice, *coredocumentpb.CoreDocument, error) {

@@ -49,10 +49,10 @@ func TestDefaultService(t *testing.T) {
 	assert.NotNil(t, srv, "must be non-nil")
 }
 
-func getServiceWithMockedLayers() Service {
-	idService := &testingcommons.MockIDService{}
+func getServiceWithMockedLayers() (testingcommons.MockIDService, Service) {
+	idService := testingcommons.MockIDService{}
 	idService.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
-	return DefaultService(&config.Configuration{}, getRepository(), &testingcoredocument.MockCoreDocumentProcessor{}, &mockAnchorRepo{}, idService)
+	return idService, DefaultService(&config.Configuration{}, getRepository(), &testingcoredocument.MockCoreDocumentProcessor{}, &mockAnchorRepo{}, &idService)
 }
 
 func createMockDocument() (*Invoice, error) {
@@ -92,7 +92,7 @@ func TestService_DeriveFromCoreDocument(t *testing.T) {
 }
 
 func TestService_DeriveFromPayload(t *testing.T) {
-	invSrv := getServiceWithMockedLayers()
+	_, invSrv := getServiceWithMockedLayers()
 	payload := testingdocuments.CreateInvoicePayload()
 	var model documents.Model
 	var err error
@@ -116,7 +116,7 @@ func TestService_DeriveFromPayload(t *testing.T) {
 }
 
 func TestService_GetLastVersion(t *testing.T) {
-	invSrv := getServiceWithMockedLayers()
+	_, invSrv := getServiceWithMockedLayers()
 	thirdIdentifier := utils.RandomSlice(32)
 	doc, err := createMockDocument()
 	assert.Nil(t, err)
@@ -148,7 +148,7 @@ func TestService_GetLastVersion(t *testing.T) {
 }
 
 func TestService_GetVersion_invalid_version(t *testing.T) {
-	invSrv := getServiceWithMockedLayers()
+	_, invSrv := getServiceWithMockedLayers()
 	currentVersion := utils.RandomSlice(32)
 	inv := &Invoice{
 		GrossAmount: 60,
@@ -166,7 +166,7 @@ func TestService_GetVersion_invalid_version(t *testing.T) {
 }
 
 func TestService_GetVersion(t *testing.T) {
-	invSrv := getServiceWithMockedLayers()
+	_, invSrv := getServiceWithMockedLayers()
 	documentIdentifier := utils.RandomSlice(32)
 	currentVersion := utils.RandomSlice(32)
 	inv := &Invoice{
@@ -190,7 +190,7 @@ func TestService_GetVersion(t *testing.T) {
 }
 
 func TestService_Exists(t *testing.T) {
-	invSrv := getServiceWithMockedLayers()
+	_, invSrv := getServiceWithMockedLayers()
 	documentIdentifier := utils.RandomSlice(32)
 	inv := &Invoice{
 		GrossAmount: 60,
@@ -254,7 +254,7 @@ func TestService_Create(t *testing.T) {
 }
 
 func TestService_DeriveInvoiceData(t *testing.T) {
-	invSrv := getServiceWithMockedLayers()
+	_, invSrv := getServiceWithMockedLayers()
 
 	// some random model
 	_, err := invSrv.DeriveInvoiceData(&mockModel{})
@@ -291,7 +291,7 @@ func TestService_DeriveInvoiceResponse(t *testing.T) {
 }
 
 // Functions returns service mocks
-func mockSignatureCheck(i *Invoice, invSrv Service) identity.Service {
+func mockSignatureCheck(i *Invoice, idService testingcommons.MockIDService, invSrv Service) testingcommons.MockIDService {
 	idkey := &identity.EthereumIdentityKey{
 		Key:       key1Pub,
 		Purposes:  []*big.Int{big.NewInt(identity.KeyPurposeSigning)},
@@ -301,101 +301,86 @@ func mockSignatureCheck(i *Invoice, invSrv Service) identity.Service {
 	docRoot, _ := anchors.ToDocumentRoot(i.CoreDocument.DocumentRoot)
 	mockRepo := invSrv.(service).anchorRepository.(*mockAnchorRepo)
 	mockRepo.On("GetDocumentRootOf", anchorID).Return(docRoot, nil).Once()
-	srv := &testingcommons.MockIDService{}
 	id := &testingcommons.MockID{}
 	centID, _ := identity.ToCentID(centIDBytes)
-	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
+	idService.On("LookupIdentityForID", centID).Return(id, nil).Once()
 	id.On("FetchKey", key1Pub[:]).Return(idkey, nil).Once()
-	return srv
-}
-
-func setIdentityService(idService identity.Service) {
-	identity.IDService = idService
+	return idService
 }
 
 func TestService_CreateProofs(t *testing.T) {
-	defer setIdentityService(identity.IDService)
-	invSrv := getServiceWithMockedLayers()
+	idService, invSrv := getServiceWithMockedLayers()
 	i, err := createAnchoredMockDocument(t, false)
 	assert.Nil(t, err)
-	idService := mockSignatureCheck(i, invSrv)
-	setIdentityService(idService)
-	proof, err := invSrv.CreateProofs(i.CoreDocument.DocumentIdentifier, []string{"invoice_number"})
+	idService = mockSignatureCheck(i, idService, invSrv)
+	proof, err := invSrv.CreateProofs(i.CoreDocument.DocumentIdentifier, []string{"invoice.invoice_number"})
 	assert.Nil(t, err)
 	assert.Equal(t, i.CoreDocument.DocumentIdentifier, proof.DocumentId)
 	assert.Equal(t, i.CoreDocument.DocumentIdentifier, proof.VersionId)
 	assert.Equal(t, len(proof.FieldProofs), 1)
-	assert.Equal(t, proof.FieldProofs[0].GetProperty(), "invoice_number")
+	assert.Equal(t, proof.FieldProofs[0].GetProperty(), "invoice.invoice_number")
 }
 
 func TestService_CreateProofsValidationFails(t *testing.T) {
-	defer setIdentityService(identity.IDService)
-	invSrv := getServiceWithMockedLayers()
+	idService, invSrv := getServiceWithMockedLayers()
 	i, err := createAnchoredMockDocument(t, false)
 	assert.Nil(t, err)
 	i.CoreDocument.SigningRoot = nil
 	err = getRepository().Update(i.CoreDocument.CurrentVersion, i)
 	assert.Nil(t, err)
-	idService := mockSignatureCheck(i, invSrv)
-	setIdentityService(idService)
-	_, err = invSrv.CreateProofs(i.CoreDocument.DocumentIdentifier, []string{"invoice_number"})
+	idService = mockSignatureCheck(i, idService, invSrv)
+	_, err = invSrv.CreateProofs(i.CoreDocument.DocumentIdentifier, []string{"invoice.invoice_number"})
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "signing root missing")
 }
 
 func TestService_CreateProofsInvalidField(t *testing.T) {
-	defer setIdentityService(identity.IDService)
-	invSrv := getServiceWithMockedLayers()
+	idService, invSrv := getServiceWithMockedLayers()
 	i, err := createAnchoredMockDocument(t, false)
 	assert.Nil(t, err)
-	idService := mockSignatureCheck(i, invSrv)
-	setIdentityService(idService)
+	idService = mockSignatureCheck(i, idService, invSrv)
 	_, err = invSrv.CreateProofs(i.CoreDocument.DocumentIdentifier, []string{"invalid_field"})
 	assert.Error(t, err)
 	assert.Equal(t, "createProofs error No such field: invalid_field in obj", err.Error())
 }
 
 func TestService_CreateProofsDocumentDoesntExist(t *testing.T) {
-	invService := getServiceWithMockedLayers()
-	_, err := invService.CreateProofs(utils.RandomSlice(32), []string{"invoice_number"})
+	_, invService := getServiceWithMockedLayers()
+	_, err := invService.CreateProofs(utils.RandomSlice(32), []string{"invoice.invoice_number"})
 	assert.Error(t, err)
 	assert.Equal(t, "document not found: leveldb: not found", err.Error())
 }
 
 func TestService_CreateProofsForVersion(t *testing.T) {
-	defer setIdentityService(identity.IDService)
-	invSrv := getServiceWithMockedLayers()
+	idService, invSrv := getServiceWithMockedLayers()
 	i, err := createAnchoredMockDocument(t, false)
 	assert.Nil(t, err)
-	idService := mockSignatureCheck(i, invSrv)
-	setIdentityService(idService)
+	idService = mockSignatureCheck(i, idService, invSrv)
 	olderVersion := i.CoreDocument.CurrentVersion
 	i, err = updatedAnchoredMockDocument(t, i)
 	assert.Nil(t, err)
-	proof, err := invSrv.CreateProofsForVersion(i.CoreDocument.DocumentIdentifier, olderVersion, []string{"invoice_number"})
+	proof, err := invSrv.CreateProofsForVersion(i.CoreDocument.DocumentIdentifier, olderVersion, []string{"invoice.invoice_number"})
 	assert.Nil(t, err)
 	assert.Equal(t, i.CoreDocument.DocumentIdentifier, proof.DocumentId)
 	assert.Equal(t, olderVersion, proof.VersionId)
 	assert.Equal(t, len(proof.FieldProofs), 1)
-	assert.Equal(t, proof.FieldProofs[0].GetProperty(), "invoice_number")
+	assert.Equal(t, proof.FieldProofs[0].GetProperty(), "invoice.invoice_number")
 }
 
 func TestService_CreateProofsForVersionDocumentDoesntExist(t *testing.T) {
 	i, err := createAnchoredMockDocument(t, false)
-	invSrv := getServiceWithMockedLayers()
+	_, invSrv := getServiceWithMockedLayers()
 	assert.Nil(t, err)
-	_, err = invSrv.CreateProofsForVersion(i.CoreDocument.DocumentIdentifier, utils.RandomSlice(32), []string{"invoice_number"})
+	_, err = invSrv.CreateProofsForVersion(i.CoreDocument.DocumentIdentifier, utils.RandomSlice(32), []string{"invoice.invoice_number"})
 	assert.Error(t, err)
 	assert.Equal(t, "document not found for the given version: leveldb: not found", err.Error())
 }
 
 func TestService_RequestDocumentSignature_SigningRootNil(t *testing.T) {
-	defer setIdentityService(identity.IDService)
-	invSrv := getServiceWithMockedLayers()
+	idService, invSrv := getServiceWithMockedLayers()
 	i, err := createAnchoredMockDocument(t, true)
 	assert.Nil(t, err)
-	idService := mockSignatureCheck(i, invSrv)
-	setIdentityService(idService)
+	idService = mockSignatureCheck(i, idService, invSrv)
 	i.CoreDocument.SigningRoot = nil
 	ctxh, err := header.NewContextHeader(context.Background(), cfg)
 	signature, err := invSrv.RequestDocumentSignature(ctxh, i)
@@ -499,7 +484,7 @@ func updatedAnchoredMockDocument(t *testing.T, i *Invoice) (*Invoice, error) {
 }
 
 func TestService_DeriveFromUpdatePayload(t *testing.T) {
-	invSrv := getServiceWithMockedLayers()
+	_, invSrv := getServiceWithMockedLayers()
 	// nil payload
 	doc, err := invSrv.DeriveFromUpdatePayload(nil, nil)
 	assert.Error(t, err)
@@ -659,7 +644,8 @@ func TestService_Update(t *testing.T) {
 }
 
 func TestService_calculateDataRoot(t *testing.T) {
-	invSrv := getServiceWithMockedLayers().(service)
+	_, srv := getServiceWithMockedLayers()
+	invSrv := srv.(service)
 	ctxh, err := header.NewContextHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 

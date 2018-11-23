@@ -30,6 +30,7 @@ func TestConfiguration_CreateConfigFile(t *testing.T) {
 		"bootstraps":      []string{"/ip4/127.0.0.1/bootstrap1", "/ip4/127.0.0.1/bootstrap2"},
 		"apiPort":         int64(8082),
 		"p2pPort":         int64(38202),
+		"txpoolaccess":    false,
 	}
 
 	v, err := CreateConfigFile(data)
@@ -37,6 +38,7 @@ func TestConfiguration_CreateConfigFile(t *testing.T) {
 	assert.Equal(t, data["p2pPort"].(int64), v.GetInt64("p2p.port"), "p2p port match")
 	_, err = os.Stat(targetDir + "/config.yaml")
 	assert.Nil(t, err, "must be nil, config file should be created")
-
+	c := NewConfiguration(v.ConfigFileUsed())
+	assert.False(t, c.IsPProfEnabled(), "pprof is disabled by default")
 	os.Remove(targetDir)
 }

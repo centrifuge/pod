@@ -12,6 +12,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/queue"
 )
 
+const BootstrappedPayObService = "BootstrappedPayObService"
+
 type Bootstrapper struct {
 }
 
@@ -31,12 +33,17 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return fmt.Errorf("service registry not initialised")
 	}
 
+	idService, ok := ctx[identity.BootstrappedIDService].(identity.Service)
+	if !ok {
+		return fmt.Errorf("identity service not initialised")
+	}
+
 	if _, ok := ctx[bootstrap.BootstrappedQueueServer]; !ok {
 		return errors.New("queue hasn't been initialized")
 	}
 	queueSrv := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
-	setPaymentObligation(NewEthereumPaymentObligation(registry, identity.IDService, ethereum.GetClient(), cfg, queueSrv, setupMintListener, bindContract))
 
+	ctx[BootstrappedPayObService] = NewEthereumPaymentObligation(registry, idService, ethereum.GetClient(), cfg, queueSrv, setupMintListener, bindContract)
 	// queue task
 	task := newMintingConfirmationTask(cfg.GetEthereumContextWaitTimeout(), ethereum.DefaultWaitForTransactionMiningContext)
 	queueSrv.RegisterTaskType(task.TaskTypeName(), task)

@@ -22,6 +22,17 @@
   revision = "5312a61534124124185d41f09206b9fef1d88403"
 
 [[projects]]
+  digest = "1:1156cfea0ff969858f6027df95c15ca5e802556b466aebeedaf53dde3b301db3"
+  name = "github.com/allegro/bigcache"
+  packages = [
+    ".",
+    "queue",
+  ]
+  pruneopts = "UT"
+  revision = "f31987a23e44c5121ef8c8b2f2ea2e8ffa37b068"
+  version = "v1.1.0"
+
+[[projects]]
   branch = "master"
   digest = "1:7d191fd0c54ff370eaf6116a14dafe2a328df487baea280699f597aae858d00d"
   name = "github.com/aristanetworks/goarista"
@@ -67,14 +78,14 @@
   revision = "80f35a18b9a0c632d7843e7e536873b0536f0040"
 
 [[projects]]
-  digest = "1:3d9dcd118a682029404e301e7769803c3e6a48e7a964eb03364b938007080e24"
+  digest = "1:d065eb5f32b539d2935f0ec4f2f160b78c924306b923ce5eac6e7dfe46d07794"
   name = "github.com/centrifuge/precise-proofs"
   packages = [
     "proofs",
     "proofs/proto",
   ]
   pruneopts = "UT"
-  revision = "ff15857d84b0eea93e52cc465f71662b78f62f6f"
+  revision = "8957bc48e1bd690a835c630fa6fdfd141c41f5dd"
 
 [[projects]]
   digest = "1:0ef770954bca104ee99b3b6b7f9b240605ac03517d9f98cbc1893daa03f3c038"
@@ -101,7 +112,7 @@
   version = "v1.7"
 
 [[projects]]
-  digest = "1:0f390470311a75caba6b4223dcd881d4a9c5141afaf7fef3c5908c145a5073dd"
+  digest = "1:6aada383585d097e8ef3d06b74956eb1f22f49acb94ca0cb0672c1e767171a23"
   name = "github.com/ethereum/go-ethereum"
   packages = [
     ".",
@@ -130,7 +141,7 @@
     "trie",
   ]
   pruneopts = "T"
-  revision = "e024c16f34c6028060b645efae1d6258e442442a"
+  revision = "27e633ca943ee9f49614b9ea074667227402b571"
   source = "github.com/centrifuge/go-ethereum"
 
 [[projects]]

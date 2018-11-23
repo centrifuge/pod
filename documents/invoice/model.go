@@ -22,6 +22,8 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 )
 
+const prefix string = "invoice"
+
 // Invoice implements the documents.Model keeps track of invoice related fields and state
 type Invoice struct {
 	// invoice number or reference number
@@ -369,7 +371,7 @@ func (i *Invoice) calculateDataRoot() error {
 
 // getDocumentDataTree creates precise-proofs data tree for the model
 func (i *Invoice) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
-	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: sha256.New()})
+	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: sha256.New(), ParentPrefix: prefix})
 	invoiceData := i.createP2PProtobuf()
 	err = t.AddLeavesFromDocument(invoiceData, i.getInvoiceSalts(invoiceData))
 	if err != nil {

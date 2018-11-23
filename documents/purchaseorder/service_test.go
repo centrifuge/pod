@@ -41,10 +41,10 @@ func (r *mockAnchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.D
 	return docRoot, args.Error(1)
 }
 
-func getServiceWithMockedLayers() Service {
+func getServiceWithMockedLayers() (*testingcommons.MockIDService, Service) {
 	idService := &testingcommons.MockIDService{}
 	idService.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
-	return DefaultService(nil, getRepository(), &testingcoredocument.MockCoreDocumentProcessor{}, &mockAnchorRepo{}, idService)
+	return idService, DefaultService(nil, getRepository(), &testingcoredocument.MockCoreDocumentProcessor{}, &mockAnchorRepo{}, idService)
 }
 
 func TestService_Update(t *testing.T) {
@@ -305,10 +305,6 @@ func TestService_Create(t *testing.T) {
 	assert.True(t, getRepository().Exists(newCD.CurrentVersion))
 }
 
-func setIdentityService(idService identity.Service) {
-	identity.IDService = idService
-}
-
 func createAnchoredMockDocument(t *testing.T, skipSave bool) (*PurchaseOrder, error) {
 	i := &PurchaseOrder{
 		PoNumber:     "test_po",
@@ -367,7 +363,7 @@ func createAnchoredMockDocument(t *testing.T, skipSave bool) (*PurchaseOrder, er
 }
 
 // Functions returns service mocks
-func mockSignatureCheck(i *PurchaseOrder, poSrv Service) identity.Service {
+func mockSignatureCheck(i *PurchaseOrder, srv *testingcommons.MockIDService, poSrv Service) *testingcommons.MockIDService {
 	idkey := &identity.EthereumIdentityKey{
 		Key:       key1Pub,
 		Purposes:  []*big.Int{big.NewInt(identity.KeyPurposeSigning)},
@@ -377,7 +373,6 @@ func mockSignatureCheck(i *PurchaseOrder, poSrv Service) identity.Service {
 	docRoot, _ := anchors.ToDocumentRoot(i.CoreDocument.DocumentRoot)
 	mockRepo := poSrv.(service).anchorRepository.(*mockAnchorRepo)
 	mockRepo.On("GetDocumentRootOf", anchorID).Return(docRoot, nil).Once()
-	srv := &testingcommons.MockIDService{}
 	id := &testingcommons.MockID{}
 	centID, _ := identity.ToCentID(centIDBytes)
 	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
@@ -386,50 +381,44 @@ func mockSignatureCheck(i *PurchaseOrder, poSrv Service) identity.Service {
 }
 
 func TestService_CreateProofs(t *testing.T) {
-	poSrv := getServiceWithMockedLayers()
-	defer setIdentityService(identity.IDService)
+	idService, poSrv := getServiceWithMockedLayers()
 	i, err := createAnchoredMockDocument(t, false)
 	assert.Nil(t, err)
-	idService := mockSignatureCheck(i, poSrv)
-	setIdentityService(idService)
-	proof, err := poSrv.CreateProofs(i.CoreDocument.DocumentIdentifier, []string{"po_number"})
+	idService = mockSignatureCheck(i, idService, poSrv)
+	proof, err := poSrv.CreateProofs(i.CoreDocument.DocumentIdentifier, []string{"po.po_number"})
 	assert.Nil(t, err)
 	assert.Equal(t, i.CoreDocument.DocumentIdentifier, proof.DocumentId)
 	assert.Equal(t, i.CoreDocument.DocumentIdentifier, proof.VersionId)
 	assert.Equal(t, len(proof.FieldProofs), 1)
-	assert.Equal(t, proof.FieldProofs[0].GetProperty(), "po_number")
+	assert.Equal(t, proof.FieldProofs[0].GetProperty(), "po.po_number")
 }
 
 func TestService_CreateProofsValidationFails(t *testing.T) {
-	defer setIdentityService(identity.IDService)
-	poSrv := getServiceWithMockedLayers()
+	idService, poSrv := getServiceWithMockedLayers()
 	i, err := createAnchoredMockDocument(t, false)
 	assert.Nil(t, err)
 	i.CoreDocument.SigningRoot = nil
 	err = getRepository().Update(i.CoreDocument.CurrentVersion, i)
 	assert.Nil(t, err)
-	idService := mockSignatureCheck(i, poSrv)
-	setIdentityService(idService)
-	_, err = poSrv.CreateProofs(i.CoreDocument.DocumentIdentifier, []string{"po_number"})
+	idService = mockSignatureCheck(i, idService, poSrv)
+	_, err = poSrv.CreateProofs(i.CoreDocument.DocumentIdentifier, []string{"po.po_number"})
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "signing root missing")
 }
 
 func TestService_CreateProofsInvalidField(t *testing.T) {
-	defer setIdentityService(identity.IDService)
-	poSrv := getServiceWithMockedLayers()
+	idService, poSrv := getServiceWithMockedLayers()
 	i, err := createAnchoredMockDocument(t, false)
 	assert.Nil(t, err)
-	idService := mockSignatureCheck(i, poSrv)
-	setIdentityService(idService)
+	idService = mockSignatureCheck(i, idService, poSrv)
 	_, err = poSrv.CreateProofs(i.CoreDocument.DocumentIdentifier, []string{"invalid_field"})
 	assert.Error(t, err)
 	assert.Equal(t, "createProofs error No such field: invalid_field in obj", err.Error())
 }
 
 func TestService_CreateProofsDocumentDoesntExist(t *testing.T) {
-	poSrv := getServiceWithMockedLayers()
-	_, err := poSrv.CreateProofs(utils.RandomSlice(32), []string{"po_number"})
+	_, poSrv := getServiceWithMockedLayers()
+	_, err := poSrv.CreateProofs(utils.RandomSlice(32), []string{"po.po_number"})
 	assert.Error(t, err)
 	assert.Equal(t, "document not found: leveldb: not found", err.Error())
 }
@@ -471,35 +460,33 @@ func updatedAnchoredMockDocument(t *testing.T, model *PurchaseOrder) (*PurchaseO
 }
 
 func TestService_CreateProofsForVersion(t *testing.T) {
-	defer setIdentityService(identity.IDService)
-	poSrv := getServiceWithMockedLayers()
+	idService, poSrv := getServiceWithMockedLayers()
 	i, err := createAnchoredMockDocument(t, false)
 	assert.Nil(t, err)
-	idService := mockSignatureCheck(i, poSrv)
-	setIdentityService(idService)
+	idService = mockSignatureCheck(i, idService, poSrv)
 	olderVersion := i.CoreDocument.CurrentVersion
 	i, err = updatedAnchoredMockDocument(t, i)
 	assert.Nil(t, err)
-	proof, err := poSrv.CreateProofsForVersion(i.CoreDocument.DocumentIdentifier, olderVersion, []string{"po_number"})
+	proof, err := poSrv.CreateProofsForVersion(i.CoreDocument.DocumentIdentifier, olderVersion, []string{"po.po_number"})
 	assert.Nil(t, err)
 	assert.Equal(t, i.CoreDocument.DocumentIdentifier, proof.DocumentId)
 	assert.Equal(t, olderVersion, proof.VersionId)
 	assert.Equal(t, len(proof.FieldProofs), 1)
-	assert.Equal(t, proof.FieldProofs[0].GetProperty(), "po_number")
+	assert.Equal(t, proof.FieldProofs[0].GetProperty(), "po.po_number")
 }
 
 func TestService_CreateProofsForVersionDocumentDoesntExist(t *testing.T) {
 	i, err := createAnchoredMockDocument(t, false)
-	poSrv := getServiceWithMockedLayers()
+	_, poSrv := getServiceWithMockedLayers()
 	assert.Nil(t, err)
-	_, err = poSrv.CreateProofsForVersion(i.CoreDocument.DocumentIdentifier, utils.RandomSlice(32), []string{"po_number"})
+	_, err = poSrv.CreateProofsForVersion(i.CoreDocument.DocumentIdentifier, utils.RandomSlice(32), []string{"po.po_number"})
 	assert.Error(t, err)
 	assert.Equal(t, "document not found for the given version: leveldb: not found", err.Error())
 }
 
 func TestService_DerivePurchaseOrderData(t *testing.T) {
 	var m documents.Model
-	poSrv := getServiceWithMockedLayers()
+	_, poSrv := getServiceWithMockedLayers()
 	ctxh, err := header.NewContextHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 
@@ -658,7 +645,7 @@ func TestService_GetVersion(t *testing.T) {
 }
 
 func TestService_Exists(t *testing.T) {
-	poSrv := getServiceWithMockedLayers()
+	_, poSrv := getServiceWithMockedLayers()
 	documentIdentifier := utils.RandomSlice(32)
 	po := &PurchaseOrder{
 		OrderAmount: 42,

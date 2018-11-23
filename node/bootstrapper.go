@@ -21,7 +21,7 @@ func (*Bootstrapper) Bootstrap(c map[string]interface{}) error {
 	n := NewNode(srvs)
 	feedback := make(chan error)
 	// may be we can pass a context that exists in c here
-	ctx, canc := context.WithCancel(context.Background())
+	ctx, canc := context.WithCancel(context.WithValue(context.Background(), bootstrap.NodeObjRegistry, c))
 	go n.Start(ctx, feedback)
 	controlC := make(chan os.Signal, 1)
 	signal.Notify(controlC, os.Interrupt)

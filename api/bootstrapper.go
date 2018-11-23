@@ -18,12 +18,13 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return fmt.Errorf("config not initialised")
 	}
 
-	registry, ok := ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
+	// just check to make sure that registry is initialised
+	_, ok = ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
 	if !ok {
 		return fmt.Errorf("service registry not initialised")
 	}
 
-	srv := apiServer{config: cfg, registry: registry}
+	srv := apiServer{config: cfg}
 	ctx[bootstrap.BootstrappedAPIServer] = srv
 	return nil
 }

@@ -32,9 +32,6 @@ const (
 	KeyPurposeEthMsgAuth = 3
 )
 
-// IDService is a default implementation of the Service
-var IDService Service
-
 // CentID represents a CentIDLength identity of an entity
 type CentID [CentIDLength]byte
 
