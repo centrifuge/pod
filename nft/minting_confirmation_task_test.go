@@ -23,7 +23,7 @@ func TestMintingConfirmationTask_ParseKwargs_success(t *testing.T) {
 		registryAddressParam:   registryAddress,
 	}
 
-	decoded, err := utils.SimulateJsonDecodeForGocelery(kwargs)
+	decoded, err := utils.SimulateJSONDecodeForGocelery(kwargs)
 	assert.Nil(t, err, "json decode should not thrown an error")
 	err = task.ParseKwargs(decoded)
 	assert.Nil(t, err, "parsing should be successful")
@@ -59,7 +59,7 @@ func TestMintingConfirmationTask_ParseKwargs_fail(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		decoded, err := utils.SimulateJsonDecodeForGocelery(test)
+		decoded, err := utils.SimulateJSONDecodeForGocelery(test)
 		assert.Nil(t, err, "json decode should not thrown an error")
 		err = task.ParseKwargs(decoded)
 		assert.Error(t, err, "test case %v: parsing should fail", i)

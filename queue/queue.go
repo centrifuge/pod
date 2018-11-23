@@ -9,11 +9,13 @@ import (
 	"github.com/centrifuge/gocelery"
 )
 
+// Constant key params which are passed as kwargs to queue.
 const (
 	BlockHeightParam string = "BlockHeight"
 	TimeoutParam     string = "Timeout"
 )
 
+// Queue is the initialise celeryClient
 var Queue *gocelery.CeleryClient
 var queueInit sync.Once
 
@@ -23,6 +25,7 @@ type QueuedTask interface {
 	Init() error
 }
 
+// InitQueue initialises the queue.
 func InitQueue(tasks []QueuedTask, numWorkers, workerWaitTime int) {
 	queueInit.Do(func() {
 		var err error
@@ -42,6 +45,7 @@ func InitQueue(tasks []QueuedTask, numWorkers, workerWaitTime int) {
 	})
 }
 
+// StopQueue stops the current queue client.
 func StopQueue() {
 	Queue.StopWorker()
 }
@@ -50,20 +54,22 @@ func StopQueue() {
 func GetDuration(key interface{}) (time.Duration, error) {
 	f64, ok := key.(float64)
 	if !ok {
-		return time.Duration(0), errors.New("Could not parse interface to float64")
+		return time.Duration(0), errors.New("could not parse interface to float64")
 	}
 	return time.Duration(f64), nil
 }
 
 // ParseBlockHeight parses blockHeight interface param to uint64
 func ParseBlockHeight(valMap map[string]interface{}) (uint64, error) {
-	if bhi, ok := valMap[BlockHeightParam]; ok {
-		bhf, ok := bhi.(float64)
-		if ok {
-			return uint64(bhf), nil
-		} else {
-			return 0, errors.New("value can not be parsed")
-		}
+	bhi, ok := valMap[BlockHeightParam]
+	if !ok {
+		return 0, errors.New("value can not be parsed")
 	}
-	return 0, errors.New("value can not be parsed")
+
+	bhf, ok := bhi.(float64)
+	if !ok {
+		return 0, errors.New("value can not be parsed")
+	}
+
+	return uint64(bhf), nil
 }

@@ -8,6 +8,7 @@ import (
 
 var log = logging.Logger("http-utils")
 
+// SendPOSTRequest sends post with data to given URL.
 func SendPOSTRequest(url string, contentType string, payload []byte) (statusCode int, err error) {
 	resp, err := resty.R().
 		SetHeader("Content-Type", contentType).

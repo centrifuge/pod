@@ -7,11 +7,13 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 )
 
-const BootstrappedLevelDb string = "BootstrappedLevelDb"
+// BootstrappedLevelDB is a key mapped to levelDB in the boot
+const BootstrappedLevelDB string = "BootstrappedLevelDB"
 
-type Bootstrapper struct {
-}
+// Bootstrapper implements bootstrapper.Bootstrapper.
+type Bootstrapper struct{}
 
+// Bootstrap initialises the levelDB.
 func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	if _, ok := context[config.BootstrappedConfig]; !ok {
 		return errors.New("config not initialised")
@@ -23,6 +25,6 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		return fmt.Errorf("failed to init level db: %v", err)
 	}
 
-	context[BootstrappedLevelDb] = levelDB
+	context[BootstrappedLevelDB] = levelDB
 	return nil
 }

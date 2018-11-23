@@ -41,7 +41,7 @@ func (m *MainBootstrapper) PopulateBaseBootstrappers() {
 		&invoice.Bootstrapper{},
 		&purchaseorder.Bootstrapper{},
 		&nft.Bootstrapper{},
-		&queue.Bootstrapper{},
+		queue.Bootstrapper{},
 	}
 }
 

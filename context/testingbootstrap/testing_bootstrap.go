@@ -33,7 +33,7 @@ var bootstappers = []bootstrap.TestBootstrapper{
 	&invoice.Bootstrapper{},
 	&purchaseorder.Bootstrapper{},
 	&nft.Bootstrapper{},
-	&queue.Bootstrapper{},
+	queue.Bootstrapper{},
 }
 
 func TestFunctionalEthereumBootstrap() map[string]interface{} {

@@ -130,7 +130,7 @@ func (rct *idRegistrationConfirmationTask) RunTask() (interface{}, error) {
 			return iter.Event, nil
 		}
 
-		if err != utils.EventNotFound {
+		if err != utils.ErrEventNotFound {
 			break
 		}
 		time.Sleep(100 * time.Millisecond)

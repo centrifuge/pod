@@ -25,7 +25,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 
 	cfg := ctx[config.BootstrappedConfig].(*config.Configuration)
 
-	if _, ok := ctx[storage.BootstrappedLevelDb]; !ok {
+	if _, ok := ctx[storage.BootstrappedLevelDB]; !ok {
 		return errors.New("initializing LevelDB repository failed")
 	}
 

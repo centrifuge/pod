@@ -21,7 +21,7 @@ func TestRegistrationConfirmationTask_ParseKwargsHappyPath(t *testing.T) {
 		queue.BlockHeightParam: blockHeight,
 		queue.TimeoutParam:     timeout,
 	}
-	decoded, err := utils.SimulateJsonDecodeForGocelery(kwargs)
+	decoded, err := utils.SimulateJSONDecodeForGocelery(kwargs)
 	err = rct.ParseKwargs(decoded)
 	if err != nil {
 		t.Errorf("Could not parse %s for [%x]", centIDParam, id)

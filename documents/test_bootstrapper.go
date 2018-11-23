@@ -13,10 +13,10 @@ import (
 var testLevelDB Repository
 
 func (b Bootstrapper) TestBootstrap(context map[string]interface{}) error {
-	if _, ok := context[storage.BootstrappedLevelDb]; !ok {
+	if _, ok := context[storage.BootstrappedLevelDB]; !ok {
 		return errors.New("initializing LevelDB repository failed")
 	}
-	testLevelDB = LevelDBRepository{LevelDB: context[storage.BootstrappedLevelDb].(*leveldb.DB)}
+	testLevelDB = LevelDBRepository{LevelDB: context[storage.BootstrappedLevelDB].(*leveldb.DB)}
 	return b.Bootstrap(context)
 }
 
