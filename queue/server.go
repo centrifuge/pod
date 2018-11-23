@@ -105,8 +105,6 @@ func ParseBlockHeight(valMap map[string]interface{}) (uint64, error) {
 		bhf, ok := bhi.(float64)
 		if ok {
 			return uint64(bhf), nil
-		} else {
-			return 0, errors.New("value can not be parsed")
 		}
 	}
 	return 0, errors.New("value can not be parsed")
