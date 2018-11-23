@@ -22,13 +22,14 @@ const (
 	// DocumentProofLength is the length in bytes of a single proof
 	DocumentProofLength = 32
 
-	//Supported anchor schema version as stored on public repository
+	// AnchorSchemaVersion as stored on public repository
 	AnchorSchemaVersion uint = 1
 )
 
 // AnchorID type is byte array of length AnchorIDLength
 type AnchorID [AnchorIDLength]byte
 
+// Config defines required functions for the package Anchors
 type Config interface {
 	GetEthereumDefaultAccountName() string
 	GetEthereumContextWaitTimeout() time.Duration

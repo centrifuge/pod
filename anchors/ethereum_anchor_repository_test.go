@@ -19,7 +19,7 @@ import (
 
 type mockAnchorRepo struct {
 	mock.Mock
-	AnchorRepositoryContract
+	anchorRepositoryContract
 }
 
 func (m *mockAnchorRepo) Commits(opts *bind.CallOpts, anchorID *big.Int) (docRoot [32]byte, err error) {
@@ -80,7 +80,7 @@ func TestGetDocumentRootOf(t *testing.T) {
 
 	ethClient := &testingcommons.MockEthClient{}
 	ethClient.On("GetGethCallOpts").Return(nil)
-	ethRepo := NewEthereumAnchorRepository(cfg, repo, func() ethereum.Client {
+	ethRepo := newEthereumAnchorRepository(cfg, repo, func() ethereum.Client {
 		return ethClient
 	})
 	docRoot := utils.RandomByte32()

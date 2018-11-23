@@ -582,7 +582,7 @@ func (_EthereumAnchorRepositoryContract *EthereumAnchorRepositoryContractFiltere
 	return &EthereumAnchorRepositoryContractAnchorPreCommittedIterator{contract: _EthereumAnchorRepositoryContract.contract, event: "AnchorPreCommitted", logs: logs, sub: sub}, nil
 }
 
-// WatchAnchorPreCommitted is a free log subscription operation binding the contract event 0xaa2928be4e330731bc1f0289edebfc72ccb9979ffc703a3de4edd8ea760462da.
+// watchAnchorPreCommitted is a free log subscription operation binding the contract event 0xaa2928be4e330731bc1f0289edebfc72ccb9979ffc703a3de4edd8ea760462da.
 //
 // Solidity: e AnchorPreCommitted(from indexed address, anchorId indexed uint256, blockHeight uint32)
 func (_EthereumAnchorRepositoryContract *EthereumAnchorRepositoryContractFilterer) WatchAnchorPreCommitted(opts *bind.WatchOpts, sink chan<- *EthereumAnchorRepositoryContractAnchorPreCommitted, from []common.Address, anchorId []*big.Int) (event.Subscription, error) {
