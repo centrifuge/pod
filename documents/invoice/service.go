@@ -99,8 +99,8 @@ func (s service) invoiceProof(model documents.Model, fields []string) (*document
 		return nil, err
 	}
 	return &documents.DocumentProof{
-		DocumentId:  coreDoc.DocumentIdentifier,
-		VersionId:   coreDoc.CurrentVersion,
+		DocumentID:  coreDoc.DocumentIdentifier,
+		VersionID:   coreDoc.CurrentVersion,
 		FieldProofs: proofs,
 	}, nil
 }
@@ -219,10 +219,10 @@ func (s service) GetCurrentVersion(documentID []byte) (doc documents.Model, err 
 		temp, err := s.getInvoiceVersion(documentID, nextVersion)
 		if err != nil {
 			return inv, nil
-		} else {
-			inv = temp
-			nextVersion = inv.CoreDocument.NextVersion
 		}
+
+		inv = temp
+		nextVersion = inv.CoreDocument.NextVersion
 	}
 	return inv, nil
 }

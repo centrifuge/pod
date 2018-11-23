@@ -9,8 +9,8 @@ import (
 
 // DocumentProof is a value to represent a document and its field proofs
 type DocumentProof struct {
-	DocumentId  []byte
-	VersionId   []byte
+	DocumentID  []byte
+	VersionID   []byte
 	State       string
 	FieldProofs []*proofspb.Proof
 }

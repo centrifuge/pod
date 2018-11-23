@@ -14,6 +14,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/storage"
 )
 
+// Bootstrapper implements bootstrap.Bootstrapper.
 type Bootstrapper struct{}
 
 // Bootstrap sets the required storage and registers

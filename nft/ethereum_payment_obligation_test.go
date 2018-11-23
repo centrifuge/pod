@@ -200,8 +200,8 @@ func TestPaymentObligationService(t *testing.T) {
 
 func getDummyProof(coreDoc *coredocumentpb.CoreDocument) *documents.DocumentProof {
 	return &documents.DocumentProof{
-		DocumentId: coreDoc.DocumentIdentifier,
-		VersionId:  coreDoc.CurrentVersion,
+		DocumentID: coreDoc.DocumentIdentifier,
+		VersionID:  coreDoc.CurrentVersion,
 		State:      "state",
 		FieldProofs: []*proofspb.Proof{
 			{
