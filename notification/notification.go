@@ -1,6 +1,8 @@
 package notification
 
 import (
+	"net/http"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/golang/protobuf/jsonpb"
@@ -53,12 +55,15 @@ func (wh webhookSender) Send(notification *notificationpb.NotificationMessage) (
 
 	payload, err := wh.constructPayload(notification)
 	if err != nil {
-		log.Error(err)
 		return Failure, err
 	}
 
 	httpStatusCode, err := utils.SendPOSTRequest(url, "application/json", payload)
-	if httpStatusCode != 200 {
+	if err != nil {
+		return Failure, err
+	}
+
+	if httpStatusCode != http.StatusOK {
 		return Failure, err
 	}
 

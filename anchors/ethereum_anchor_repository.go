@@ -118,6 +118,7 @@ func sendPreCommitTransaction(contract anchorRepositoryContract, opts *bind.Tran
 	log.Infof("Sent off transaction pre-commit [id: %x, hash: %x, SchemaVersion:%v] to registry. Ethereum transaction hash [%x] and Nonce [%v] and Check [%v]", preCommitData.AnchorID,
 		preCommitData.SigningRoot, schemaVersion, tx.Hash(), tx.Nonce(), tx.CheckNonce())
 
+	log.Infof("Transfer pending: 0x%x\n", tx.Hash())
 	return nil
 }
 
@@ -132,6 +133,7 @@ func sendCommitTransaction(contract anchorRepositoryContract, opts *bind.Transac
 
 	log.Infof("Sent off the anchor [id: %x, hash: %x] to registry. Ethereum transaction hash [%x] and Nonce [%v] and Check [%v]", commitData.AnchorID,
 		commitData.DocumentRoot, tx.Hash(), tx.Nonce(), tx.CheckNonce())
+	log.Infof("Transfer pending: 0x%x\n", tx.Hash())
 	return nil
 }
 

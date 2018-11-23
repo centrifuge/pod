@@ -149,19 +149,15 @@ func (act *anchorConfirmationTask) RunTask() (interface{}, error) {
 		Start:   act.BlockHeight,
 	}
 
-	var iter *EthereumAnchorRepositoryContractAnchorCommittedIterator
-	var err error
-
 	for {
-		iter, err = act.AnchorCommittedFilterer.FilterAnchorCommitted(
+		iter, err := act.AnchorCommittedFilterer.FilterAnchorCommitted(
 			fOpts,
 			[]common.Address{act.From},
 			[]*big.Int{act.AnchorID.BigInt()},
 			[]*big.Int{act.CentrifugeID.BigInt()},
 		)
 		if err != nil {
-			err = centerrors.Wrap(err, "failed to start filtering anchor event logs")
-			break
+			return nil, centerrors.Wrap(err, "failed to start filtering anchor event logs")
 		}
 
 		err = utils.LookForEvent(iter)
@@ -171,13 +167,11 @@ func (act *anchorConfirmationTask) RunTask() (interface{}, error) {
 		}
 
 		if err != utils.ErrEventNotFound {
-			break
+			return nil, err
 		}
 
 		time.Sleep(100 * time.Millisecond)
 	}
-
-	return nil, err
 }
 
 func getBytesAnchorID(key interface{}) (AnchorID, error) {

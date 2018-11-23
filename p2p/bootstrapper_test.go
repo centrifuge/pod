@@ -6,10 +6,8 @@ import (
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-
-	"github.com/centrifuge/go-centrifuge/documents"
-
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/node"
 	"github.com/stretchr/testify/assert"
 )

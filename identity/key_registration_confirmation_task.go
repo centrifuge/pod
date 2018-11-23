@@ -159,16 +159,10 @@ func (krct *keyRegistrationConfirmationTask) RunTask() (interface{}, error) {
 		Start:   krct.blockHeight,
 	}
 
-	var iter *EthereumIdentityContractKeyAddedIterator
 	for {
-		iter, err = krct.filterer.FilterKeyAdded(
-			fOpts,
-			[][32]byte{krct.key},
-			[]*big.Int{big.NewInt(int64(krct.keyPurpose))},
-		)
+		iter, err := krct.filterer.FilterKeyAdded(fOpts, [][32]byte{krct.key}, []*big.Int{big.NewInt(int64(krct.keyPurpose))})
 		if err != nil {
-			err = centerrors.Wrap(err, "failed to start filtering key event logs")
-			break
+			return nil, centerrors.Wrap(err, "failed to start filtering key event logs")
 		}
 
 		err = utils.LookForEvent(iter)
@@ -178,10 +172,8 @@ func (krct *keyRegistrationConfirmationTask) RunTask() (interface{}, error) {
 		}
 
 		if err != utils.ErrEventNotFound {
-			break
+			return nil, err
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
-
-	return nil, err
 }

@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/centerrors"
-
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/gocelery"
@@ -109,19 +108,10 @@ func (rct *idRegistrationConfirmationTask) RunTask() (interface{}, error) {
 		Start:   rct.blockHeight,
 	}
 
-	var (
-		iter *EthereumIdentityFactoryContractIdentityCreatedIterator
-		err  error
-	)
-
 	for {
-		iter, err = rct.filterer.FilterIdentityCreated(
-			fOpts,
-			[]*big.Int{rct.centID.BigInt()},
-		)
+		iter, err := rct.filterer.FilterIdentityCreated(fOpts, []*big.Int{rct.centID.BigInt()})
 		if err != nil {
-			err = centerrors.Wrap(err, "failed to start filtering identity event logs")
-			break
+			return nil, centerrors.Wrap(err, "failed to start filtering identity event logs")
 		}
 
 		err = utils.LookForEvent(iter)
@@ -131,10 +121,8 @@ func (rct *idRegistrationConfirmationTask) RunTask() (interface{}, error) {
 		}
 
 		if err != utils.ErrEventNotFound {
-			break
+			return nil, err
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
-
-	return nil, err
 }

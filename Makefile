@@ -53,7 +53,6 @@ generate: ## autogenerate go files for config
 
 vendorinstall: ## Installs all protobuf dependencies with go-vendorinstall
 	go install github.com/centrifuge/go-centrifuge/vendor/github.com/roboll/go-vendorinstall
-	go-vendorinstall golang.org/x/tools/cmd/goimports
 	go-vendorinstall github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
 	go-vendorinstall github.com/golang/protobuf/protoc-gen-go
 	go-vendorinstall github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
