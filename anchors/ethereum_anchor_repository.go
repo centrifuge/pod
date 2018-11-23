@@ -40,7 +40,7 @@ type EthereumAnchorRepository struct {
 	queue                    *queue.Server
 }
 
-func NewEthereumAnchorRepository(config Config, anchorRepositoryContract AnchorRepositoryContract, queue *queue.Server, gethClientFinder func() ethereum.Client) *EthereumAnchorRepository {
+func newEthereumAnchorRepository(config Config, anchorRepositoryContract AnchorRepositoryContract, queue *queue.Server, gethClientFinder func() ethereum.Client) *EthereumAnchorRepository {
 	return &EthereumAnchorRepository{config: config, anchorRepositoryContract: anchorRepositoryContract, gethClientFinder: gethClientFinder, queue: queue}
 }
 
