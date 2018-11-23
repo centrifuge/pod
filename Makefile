@@ -26,6 +26,10 @@ install-deps: ## Install Dependencies
 	@command -v dep >/dev/null 2>&1 || go get -u github.com/golang/dep/...
 	@dep ensure
 	@npm --prefix ./build  install
+	@curl -L https://git.io/vp6lP | sh
+
+lint-check: ## formats go code
+	@gometalinter --disable-all --enable=golint --enable=goimports --enable=vet --enable=nakedret --enable=staticcheck --vendor --skip=resources --skip=testingutils ./...;
 
 format-go: ## formats go code
 	@goimports -w .

@@ -38,7 +38,7 @@ jobs:
   include:
     - stage: test
       script:
-        - make proto-lint proto-all gen-swagger generate format-go
+        - make lint-check proto-lint proto-all gen-swagger generate format-go
         - echo "Checking that prototool and format-go don't result in a modified git tree" && git diff --exit-code protobufs/gen
         - ./build/scripts/test_wrapper.sh
       after_success:
