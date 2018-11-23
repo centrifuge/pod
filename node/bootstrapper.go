@@ -9,8 +9,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 )
 
-type Bootstrapper struct {
-}
+type Bootstrapper struct{}
 
 func (*Bootstrapper) Bootstrap(c map[string]interface{}) error {
 	srvs, err := getServers(c)

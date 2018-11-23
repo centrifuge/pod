@@ -10,7 +10,7 @@ import (
 	"errors"
 	"net"
 	"net/http"
-	_ "net/http/pprof"
+	_ "net/http/pprof" // we need this side effect that loads the pprof endpoints to defaultServerMux
 	"strings"
 	"sync"
 	"time"
@@ -25,6 +25,7 @@ import (
 
 var log = logging.Logger("api-server")
 
+// Config defines methods required for the package api
 type Config interface {
 	GetServerAddress() string
 	GetServerPort() int
@@ -156,7 +157,7 @@ func grpcHandlerFunc(grpcServer *grpc.Server, otherHandler http.Handler) http.Ha
 
 func loadCertPool() (certPool *x509.CertPool, err error) {
 	certPool = x509.NewCertPool()
-	ok := certPool.AppendCertsFromPEM([]byte(InsecureCert))
+	ok := certPool.AppendCertsFromPEM([]byte(insecureCert))
 	if !ok {
 		return nil, centerrors.Wrap(errors.New("could not load certpool"), "")
 	}
@@ -164,7 +165,7 @@ func loadCertPool() (certPool *x509.CertPool, err error) {
 }
 
 func loadKeyPair() (keyPair tls.Certificate, err error) {
-	pair, err := tls.X509KeyPair([]byte(InsecureCert), []byte(InsecureKey))
+	pair, err := tls.X509KeyPair([]byte(insecureCert), []byte(insecureKey))
 	if err != nil {
 		return pair, err
 	}

@@ -11,7 +11,7 @@ import (
 )
 
 var targetDataDir string
-var ethNodeUrl string
+var ethNodeURL string
 var accountKeyPath string
 var accountPassword string
 var network string
@@ -21,14 +21,14 @@ var bootstraps []string
 var txPoolAccess bool
 
 func createIdentity(idService identity.Service) (identity.CentID, error) {
-	centrifugeId := identity.RandomCentID()
-	_, confirmations, err := idService.CreateIdentity(centrifugeId)
+	centID := identity.RandomCentID()
+	_, confirmations, err := idService.CreateIdentity(centID)
 	if err != nil {
 		return [identity.CentIDLength]byte{}, err
 	}
 	_ = <-confirmations
 
-	return centrifugeId, nil
+	return centID, nil
 }
 
 func generateKeys(config config.Config) {
@@ -73,7 +73,7 @@ func init() {
 				"accountKeyPath":  accountKeyPath,
 				"accountPassword": accountPassword,
 				"network":         network,
-				"ethNodeUrl":      ethNodeUrl,
+				"ethNodeURL":      ethNodeURL,
 				"bootstraps":      bootstraps,
 				"apiPort":         apiPort,
 				"p2pPort":         p2pPort,
@@ -113,7 +113,7 @@ func init() {
 	}
 
 	createConfigCmd.Flags().StringVarP(&targetDataDir, "targetdir", "t", home+"/datadir", "Target Data Dir")
-	createConfigCmd.Flags().StringVarP(&ethNodeUrl, "ethnodeurl", "e", "ws://127.0.0.1:9546", "URL of Ethereum Client Node")
+	createConfigCmd.Flags().StringVarP(&ethNodeURL, "ethnodeurl", "e", "ws://127.0.0.1:9546", "URL of Ethereum Client Node")
 	createConfigCmd.Flags().StringVarP(&accountKeyPath, "accountkeypath", "z", home+"/datadir/main.key", "Path of Ethereum Account Key JSON file")
 	createConfigCmd.Flags().StringVarP(&accountPassword, "accountpwd", "k", "", "Ethereum Account Password")
 	createConfigCmd.Flags().Int64VarP(&apiPort, "apiPort", "a", 8082, "Api Port")

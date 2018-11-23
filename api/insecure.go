@@ -6,7 +6,7 @@ package api
 // Make sure you enter "localhost:8082" as the Common Name.
 
 const (
-	InsecureKey = `-----BEGIN RSA PRIVATE KEY-----
+	insecureKey = `-----BEGIN RSA PRIVATE KEY-----
 MIIEowIBAAKCAQEAyEnDbL/RxZrgDN85W958GvCnWYfLIl/yf3OnzRpSlhz5oKg6
 hnigQeUiFlU60p8vnTbjr4idoyobYCTvqRh6oZk8r1zJ4H2Kx3HIIAkSgu1jzPV/
 QwwbA0O4cJ9RttS3vFf9bDoJ4T93t8JNuRgF0jrQX8zPn/22/g1BrrhIV5gp8pWD
@@ -33,7 +33,7 @@ FsU0FQKBgDS5XqHLIuN8isp2uOYzOLUqafStV/qAzvx9Tv6PNgBWLFekz9xpfxux
 yaQJtUNTfTXQ6tMjUpAwJam/G1h7ZTNYj2iuDVNlAgpwP45SkxWQ2dJEwtAyooVe
 kkVOdXE61p7fxhigyBb77uoX3adz4ECr3ktbAL2a0Z1XG9oTa2LW
 -----END RSA PRIVATE KEY-----`
-	InsecureCert = `-----BEGIN CERTIFICATE-----
+	insecureCert = `-----BEGIN CERTIFICATE-----
 MIIDmDCCAoACCQDHr6ZuK9By7zANBgkqhkiG9w0BAQsFADCBjTELMAkGA1UEBhMC
 VVMxEzARBgNVBAgMCkNhbGlmb3JuaWExFjAUBgNVBAcMDVNhbiBGcmFuY2lzY28x
 GDAWBgNVBAoMD0NlbnRyaWZ1Z2UgSW5jLjESMBAGA1UEAwwJbG9jYWxob3N0MSMw
