@@ -9,33 +9,42 @@ import (
 
 var log = logging.Logger("notification-api")
 
+// EventType is the type of the notification.
 type EventType int
 
+// Status defines the status of the notification.
 type Status int
 
+// Constants defined for notification delivery.
 const (
 	ReceivedPayload EventType = 1
 	Failure         Status    = 0
 	Success         Status    = 1
 )
 
+// Config defines methods required for this package.
 type Config interface {
 	GetReceiveEventNotificationEndpoint() string
 }
 
+// Sender defines methods that can handle a notification.
 type Sender interface {
 	Send(notification *notificationpb.NotificationMessage) (Status, error)
 }
 
-func NewWebhookSender(config Config) *WebhookSender {
-	return &WebhookSender{config}
+// NewWebhookSender returns an implementation of a Sender that sends notifications through webhooks.
+func NewWebhookSender(config Config) Sender {
+	return webhookSender{config}
 }
 
-type WebhookSender struct {
+// NewWebhookSender implements Sender.
+// Sends notification through a webhook defined.
+type webhookSender struct {
 	config Config
 }
 
-func (wh *WebhookSender) Send(notification *notificationpb.NotificationMessage) (Status, error) {
+// Send sends notification to the defined webhook.
+func (wh webhookSender) Send(notification *notificationpb.NotificationMessage) (Status, error) {
 	url := wh.config.GetReceiveEventNotificationEndpoint()
 	if url == "" {
 		log.Warningf("Webhook URL not defined, manually fetch received document")
@@ -58,7 +67,7 @@ func (wh *WebhookSender) Send(notification *notificationpb.NotificationMessage) 
 	return Success, nil
 }
 
-func (wh *WebhookSender) constructPayload(notification *notificationpb.NotificationMessage) ([]byte, error) {
+func (wh webhookSender) constructPayload(notification *notificationpb.NotificationMessage) ([]byte, error) {
 	marshaler := jsonpb.Marshaler{}
 	payload, err := marshaler.MarshalToString(notification)
 	if err != nil {

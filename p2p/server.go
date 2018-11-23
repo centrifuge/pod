@@ -27,6 +27,7 @@ import (
 
 var log = logging.Logger("p2p-server")
 
+// Config defines methods that are required for the package p2p.
 type Config interface {
 	GetP2PExternalIP() string
 	GetP2PPort() int
@@ -119,20 +120,21 @@ func (s *p2pServer) runDHT(ctx context.Context, h host.Host) error {
 
 	// First, announce ourselves as participating in this topic
 	log.Info("Announcing ourselves...")
-	tctx, _ := context.WithTimeout(ctx, time.Second*10)
+	tctx, cancel := context.WithTimeout(ctx, time.Second*10)
 	if err := dhtClient.Provide(tctx, cidPref, true); err != nil {
 		// Important to keep this as Non-Fatal error, otherwise it will fail for a node that behaves as well as bootstrap one
 		log.Infof("Error: %s\n", err.Error())
 	}
+	cancel()
 
 	// Now, look for others who have announced
 	log.Info("Searching for other peers ...")
-	tctx, _ = context.WithTimeout(ctx, time.Second*10)
+	tctx, cancel = context.WithTimeout(ctx, time.Second*10)
 	peers, err := dhtClient.FindProviders(tctx, cidPref)
 	if err != nil {
 		log.Error(err)
 	}
-
+	cancel()
 	log.Infof("Found %d peers!\n", len(peers))
 
 	// Now connect to them, so they are added to the PeerStore
@@ -144,10 +146,11 @@ func (s *p2pServer) runDHT(ctx context.Context, h host.Host) error {
 			continue
 		}
 
-		tctx, _ := context.WithTimeout(ctx, time.Second*5)
+		tctx, cancel := context.WithTimeout(ctx, time.Second*5)
 		if err := h.Connect(tctx, pe); err != nil {
 			log.Info("Failed to connect to peer: ", err)
 		}
+		cancel()
 	}
 
 	log.Info("Bootstrapping and discovery complete!")
