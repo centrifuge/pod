@@ -136,12 +136,12 @@ func (nftc *mintingConfirmationTask) RunTask() (interface{}, error) {
 		return nil, err
 	}
 
+	var iter *EthereumPaymentObligationContractPaymentObligationMintedIterator
 	for {
-		iter, err := filter.FilterPaymentObligationMinted(
-			fOpts,
-		)
+		iter, err = filter.FilterPaymentObligationMinted(fOpts)
 		if err != nil {
-			return nil, centerrors.Wrap(err, "failed to start filtering token minted logs")
+			err = centerrors.Wrap(err, "failed to start filtering token minted logs")
+			break
 		}
 
 		err = utils.LookForEvent(iter)
@@ -151,10 +151,10 @@ func (nftc *mintingConfirmationTask) RunTask() (interface{}, error) {
 		}
 
 		if err != utils.EventNotFound {
-			return nil, err
+			break
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
 
-	return nil, fmt.Errorf("failed to filter nft minted events")
+	return nil, err
 }

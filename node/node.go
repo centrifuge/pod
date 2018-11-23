@@ -1,4 +1,4 @@
-// node provides utilities to control all long running background services on Centrifuge node
+// Package node provides utilities to control all long running background services on Centrifuge node
 package node
 
 import (
@@ -26,12 +26,14 @@ type Node struct {
 	services []Server
 }
 
+// NewNode returns a new Node with given services.
 func NewNode(services []Server) *Node {
 	return &Node{
 		services: services,
 	}
 }
 
+// Name returns "CentNode".
 func (n *Node) Name() string {
 	return "CentNode"
 }
@@ -39,6 +41,7 @@ func (n *Node) Name() string {
 // Start starts all services that are wired in the Node and waits for further actions depending on errors or commands from upstream.
 func (n *Node) Start(ctx context.Context, startupErr chan<- error) {
 	ctxCh, cancel := context.WithCancel(ctx)
+	defer cancel()
 	childErr := make(chan error)
 	var wg sync.WaitGroup
 	wg.Add(len(n.services))

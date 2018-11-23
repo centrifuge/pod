@@ -11,10 +11,11 @@ import (
 	"github.com/centrifuge/go-centrifuge/queue"
 )
 
+// BootstrappedPayObService is the key to PaymentObligationService in bootstrap context.
 const BootstrappedPayObService = "BootstrappedPayObService"
 
-type Bootstrapper struct {
-}
+// Bootstrapper implements bootstrap.Bootstrapper.
+type Bootstrapper struct{}
 
 // Bootstrap initializes the payment obligation contract
 func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
@@ -37,6 +38,6 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return fmt.Errorf("identity service not initialised")
 	}
 
-	ctx[BootstrappedPayObService] = NewEthereumPaymentObligation(registry, idService, ethereum.GetClient(), cfg, setupMintListener, bindContract)
+	ctx[BootstrappedPayObService] = newEthereumPaymentObligation(registry, idService, ethereum.GetClient(), cfg, setupMintListener, bindContract)
 	return queue.InstallQueuedTask(ctx, newMintingConfirmationTask(cfg.GetEthereumContextWaitTimeout(), ethereum.DefaultWaitForTransactionMiningContext))
 }

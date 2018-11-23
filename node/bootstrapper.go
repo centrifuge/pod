@@ -9,8 +9,11 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 )
 
+// Bootstrapper implements bootstrap.Bootstrapper.
 type Bootstrapper struct{}
 
+// Bootstrap runs the severs.
+// Note: this is a blocking call.
 func (*Bootstrapper) Bootstrap(c map[string]interface{}) error {
 	srvs, err := getServers(c)
 	if err != nil {
@@ -35,8 +38,6 @@ func (*Bootstrapper) Bootstrap(c map[string]interface{}) error {
 			return err
 		}
 	}
-
-	return nil
 }
 
 func getServers(ctx map[string]interface{}) ([]Server, error) {

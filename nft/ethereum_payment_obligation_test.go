@@ -177,8 +177,8 @@ func TestPaymentObligationService(t *testing.T) {
 			docService, paymentOb, idService, ethClient, mockCfg := test.mocker()
 			// with below config the documentType has to be test.name to avoid conflicts since registry is a singleton
 			registry.Register(test.name, &docService)
-			confirmations := make(chan *WatchTokenMinted)
-			service := NewEthereumPaymentObligation(registry, &idService, &ethClient, &mockCfg, func(config Config, tokenID *big.Int, registryAddress string) (chan *WatchTokenMinted, error) {
+			confirmations := make(chan *watchTokenMinted)
+			service := newEthereumPaymentObligation(registry, &idService, &ethClient, &mockCfg, func(config Config, tokenID *big.Int, registryAddress string) (chan *watchTokenMinted, error) {
 				return confirmations, nil
 			}, func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error) {
 				return &EthereumPaymentObligationContract{}, nil
