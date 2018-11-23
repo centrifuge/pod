@@ -121,6 +121,9 @@ func (s *ethereumPaymentObligation) prepareMintRequest(documentID []byte, deposi
 func (s *ethereumPaymentObligation) MintNFT(documentID []byte, registryAddress, depositAddress string, proofFields []string) (<-chan *watchTokenMinted, error) {
 
 	requestData, err := s.prepareMintRequest(documentID, depositAddress, proofFields)
+	if err != nil {
+		return nil, fmt.Errorf("failed to prepare mint request: %v", err)
+	}
 
 	opts, err := s.ethClient.GetTxOpts(s.config.GetEthereumDefaultAccountName())
 	if err != nil {

@@ -29,7 +29,8 @@ install-deps: ## Install Dependencies
 	@curl -L https://git.io/vp6lP | sh
 
 lint-check: ## formats go code
-	@gometalinter --disable-all --enable=golint --enable=goimports --enable=vet --enable=nakedret --enable=staticcheck --vendor --skip=resources --skip=testingutils ./...;
+	@gometalinter --disable-all --enable=golint --enable=goimports --enable=vet --enable=nakedret \
+	--enable=staticcheck --vendor --skip=resources --skip=testingutils --skip=protobufs ./...;
 
 format-go: ## formats go code
 	@goimports -w .
