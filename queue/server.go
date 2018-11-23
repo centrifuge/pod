@@ -92,6 +92,9 @@ func (qs *Server) RegisterTaskType(name string, task interface{}) {
 func (qs *Server) EnqueueJob(taskTypeName string, params map[string]interface{}) (TaskResult, error) {
 	qs.lock.RLock()
 	defer qs.lock.RUnlock()
+	if qs.queue == nil {
+		return nil, errors.New("queue hasn't been initialised")
+	}
 	return qs.queue.DelayKwargs(taskTypeName, params)
 }
 
