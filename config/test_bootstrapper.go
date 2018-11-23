@@ -21,7 +21,7 @@ func (*Bootstrapper) TestBootstrap(context map[string]interface{}) error {
 			log.Fatal("Current working dir is not in `go-centrifuge`")
 		}
 	}
-	c := NewConfiguration(fmt.Sprintf("%s/build/configs/testing_config.yaml", match))
+	c := LoadConfiguration(fmt.Sprintf("%s/build/configs/testing_config.yaml", match))
 	context[BootstrappedConfig] = c
 	return nil
 }
