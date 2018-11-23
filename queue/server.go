@@ -60,7 +60,6 @@ func (qs *Server) Name() string {
 func (qs *Server) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- error) {
 	defer wg.Done()
 	qs.lock.Lock()
-	defer qs.lock.Unlock()
 	var err error
 	qs.queue, err = gocelery.NewCeleryClient(
 		gocelery.NewInMemoryBroker(),
@@ -76,10 +75,13 @@ func (qs *Server) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan
 	}
 	// start the workers
 	qs.queue.StartWorker()
+	qs.lock.Unlock()
 
 	<-ctx.Done()
 	log.Info("Shutting down Queue server with context done")
+	qs.lock.Lock()
 	qs.queue.StopWorker()
+	qs.lock.Unlock()
 	log.Info("Queue server stopped")
 }
 
