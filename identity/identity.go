@@ -35,14 +35,14 @@ const (
 // CentID represents a CentIDLength identity of an entity
 type CentID [CentIDLength]byte
 
-// IdentityConfig holds information about the identity
-type IdentityConfig struct {
+// IDConfig holds information about the identity
+type IDConfig struct {
 	ID   CentID
-	Keys map[int]IdentityKey
+	Keys map[int]IDKey
 }
 
-// IdentityKey represents a key pair
-type IdentityKey struct {
+// IDKey represents a key pair
+type IDKey struct {
 	PublicKey  []byte
 	PrivateKey []byte
 }
@@ -68,6 +68,7 @@ func (c CentID) BigInt() *big.Int {
 	return utils.ByteSliceToBigInt(c[:])
 }
 
+// Config defines methods required for the package identity.
 type Config interface {
 	GetEthereumDefaultAccountName() string
 	GetIdentityID() ([]byte, error)
@@ -127,7 +128,7 @@ type Service interface {
 	GetIdentityKey(identity CentID, pubKey []byte) (keyInfo Key, err error)
 
 	// ValidateKey checks if a given key is valid for the given centrifugeID.
-	ValidateKey(centrifugeId CentID, key []byte, purpose int) error
+	ValidateKey(centID CentID, key []byte, purpose int) error
 
 	// AddKeyFromConfig adds a key previously generated and indexed in the configuration file to the identity specified in such config file
 	AddKeyFromConfig(purpose int) error
@@ -137,7 +138,7 @@ type Service interface {
 }
 
 // GetIdentityConfig returns the identity and keys associated with the node
-func GetIdentityConfig(config Config) (*IdentityConfig, error) {
+func GetIdentityConfig(config Config) (*IDConfig, error) {
 	centIDBytes, err := config.GetIdentityID()
 	if err != nil {
 		return nil, err
@@ -148,13 +149,13 @@ func GetIdentityConfig(config Config) (*IdentityConfig, error) {
 	}
 
 	//ed25519 keys
-	keys := map[int]IdentityKey{}
+	keys := map[int]IDKey{}
 	pk, sk, err := ed25519.GetSigningKeyPair(config.GetSigningKeyPair())
 	if err != nil {
 		return nil, err
 	}
-	keys[KeyPurposeP2P] = IdentityKey{PublicKey: pk, PrivateKey: sk}
-	keys[KeyPurposeSigning] = IdentityKey{PublicKey: pk, PrivateKey: sk}
+	keys[KeyPurposeP2P] = IDKey{PublicKey: pk, PrivateKey: sk}
+	keys[KeyPurposeSigning] = IDKey{PublicKey: pk, PrivateKey: sk}
 
 	//secp256k1 keys
 	pk, sk, err = secp256k1.GetEthAuthKey(config.GetEthAuthKeyPair())
@@ -165,9 +166,9 @@ func GetIdentityConfig(config Config) (*IdentityConfig, error) {
 	if err != nil {
 		return nil, err
 	}
-	keys[KeyPurposeEthMsgAuth] = IdentityKey{PublicKey: pubKey, PrivateKey: sk}
+	keys[KeyPurposeEthMsgAuth] = IDKey{PublicKey: pubKey, PrivateKey: sk}
 
-	return &IdentityConfig{ID: centID, Keys: keys}, nil
+	return &IDConfig{ID: centID, Keys: keys}, nil
 }
 
 // ToCentID takes bytes and return CentID
@@ -232,6 +233,6 @@ func ValidateCentrifugeIDBytes(givenCentID []byte, centrifugeID CentID) error {
 
 // Sign the document with the private key and return the signature along with the public key for the verification
 // assumes that signing root for the document is generated
-func Sign(idConfig *IdentityConfig, purpose int, payload []byte) *coredocumentpb.Signature {
+func Sign(idConfig *IDConfig, purpose int, payload []byte) *coredocumentpb.Signature {
 	return signatures.Sign(idConfig.ID[:], idConfig.Keys[purpose].PrivateKey, idConfig.Keys[purpose].PublicKey, payload)
 }

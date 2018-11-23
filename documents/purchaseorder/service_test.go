@@ -328,13 +328,13 @@ func createAnchoredMockDocument(t *testing.T, skipSave bool) (*PurchaseOrder, er
 
 	centID, err := identity.ToCentID(centIDBytes)
 	assert.Nil(t, err)
-	signKey := identity.IdentityKey{
+	signKey := identity.IDKey{
 		PublicKey:  key1Pub[:],
 		PrivateKey: key1,
 	}
-	idConfig := &identity.IdentityConfig{
+	idConfig := &identity.IDConfig{
 		ID: centID,
-		Keys: map[int]identity.IdentityKey{
+		Keys: map[int]identity.IDKey{
 			identity.KeyPurposeSigning: signKey,
 		},
 	}

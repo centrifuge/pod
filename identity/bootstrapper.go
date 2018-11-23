@@ -13,8 +13,8 @@ import (
 // BootstrappedIDService is used as a key to map the configured ID Service through context.
 const BootstrappedIDService string = "BootstrappedIDService"
 
-type Bootstrapper struct {
-}
+// Bootstrapper implements bootstrap.Bootstrapper.
+type Bootstrapper struct{}
 
 // Bootstrap initializes the IdentityFactoryContract as well as the idRegistrationConfirmationTask that depends on it.
 // the idRegistrationConfirmationTask is added to be registered on the Queue at queue.Bootstrapper
@@ -45,7 +45,7 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		})
 
 	err = queue.InstallQueuedTask(context,
-		newIdRegistrationConfirmationTask(cfg.GetEthereumContextWaitTimeout(), &idFactory.EthereumIdentityFactoryContractFilterer, ethereum.DefaultWaitForTransactionMiningContext))
+		newIDRegistrationConfirmationTask(cfg.GetEthereumContextWaitTimeout(), &idFactory.EthereumIdentityFactoryContractFilterer, ethereum.DefaultWaitForTransactionMiningContext))
 	if err != nil {
 		return err
 	}

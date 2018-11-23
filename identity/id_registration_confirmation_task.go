@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/centerrors"
+
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/gocelery"
@@ -18,7 +19,7 @@ const (
 )
 
 type identitiesCreatedFilterer interface {
-	FilterIdentityCreated(opts *bind.FilterOpts, centrifugeId []*big.Int) (*EthereumIdentityFactoryContractIdentityCreatedIterator, error)
+	FilterIdentityCreated(opts *bind.FilterOpts, centID []*big.Int) (*EthereumIdentityFactoryContractIdentityCreatedIterator, error)
 }
 
 // idRegistrationConfirmationTask is a queued task to watch ID registration events on Ethereum using EthereumIdentityFactoryContract.
@@ -32,7 +33,7 @@ type idRegistrationConfirmationTask struct {
 	filterer           identitiesCreatedFilterer
 }
 
-func newIdRegistrationConfirmationTask(
+func newIDRegistrationConfirmationTask(
 	timeout time.Duration,
 	identityCreatedWatcher identitiesCreatedFilterer,
 	ethContextInitializer func(d time.Duration) (ctx context.Context, cancelFunc context.CancelFunc),
@@ -49,13 +50,13 @@ func (rct *idRegistrationConfirmationTask) Name() string {
 	return idRegistrationConfirmationTaskName
 }
 
-// Init registers the task to queue
+// Init registers the task to queue.
 func (rct *idRegistrationConfirmationTask) Init() error {
 	queue.Queue.Register(idRegistrationConfirmationTaskName, rct)
 	return nil
 }
 
-// Copy returns a new copy of the the task
+// Copy returns a new copy of the the task.
 func (rct *idRegistrationConfirmationTask) Copy() (gocelery.CeleryTask, error) {
 	return &idRegistrationConfirmationTask{
 		rct.centID,
@@ -66,17 +67,17 @@ func (rct *idRegistrationConfirmationTask) Copy() (gocelery.CeleryTask, error) {
 		rct.filterer}, nil
 }
 
-// ParseKwargs parses the kwargs into the task
+// ParseKwargs parses the kwargs into the task.
 func (rct *idRegistrationConfirmationTask) ParseKwargs(kwargs map[string]interface{}) error {
-	centId, ok := kwargs[centIDParam]
+	id, ok := kwargs[centIDParam]
 	if !ok {
 		return fmt.Errorf("undefined kwarg " + centIDParam)
 	}
-	centIdTyped, err := getCentID(centId)
+	centID, err := getCentID(id)
 	if err != nil {
 		return fmt.Errorf("malformed kwarg [%s] because [%s]", centIDParam, err.Error())
 	}
-	rct.centID = centIdTyped
+	rct.centID = centID
 
 	rct.blockHeight, err = queue.ParseBlockHeight(kwargs)
 	if err != nil {
@@ -108,13 +109,19 @@ func (rct *idRegistrationConfirmationTask) RunTask() (interface{}, error) {
 		Start:   rct.blockHeight,
 	}
 
+	var (
+		iter *EthereumIdentityFactoryContractIdentityCreatedIterator
+		err  error
+	)
+
 	for {
-		iter, err := rct.filterer.FilterIdentityCreated(
+		iter, err = rct.filterer.FilterIdentityCreated(
 			fOpts,
 			[]*big.Int{rct.centID.BigInt()},
 		)
 		if err != nil {
-			return nil, centerrors.Wrap(err, "failed to start filtering identity event logs")
+			err = centerrors.Wrap(err, "failed to start filtering identity event logs")
+			break
 		}
 
 		err = utils.LookForEvent(iter)
@@ -124,10 +131,10 @@ func (rct *idRegistrationConfirmationTask) RunTask() (interface{}, error) {
 		}
 
 		if err != utils.EventNotFound {
-			return nil, err
+			break
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
 
-	return nil, fmt.Errorf("failed to filter identity events")
+	return nil, err
 }

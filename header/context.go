@@ -8,13 +8,13 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 )
 
-// Placeholder to pass custom request objects down the pipeline
+// ContextHeader holds custom request objects to pass down the pipeline.
 type ContextHeader struct {
 	context context.Context
-	self    *identity.IdentityConfig
+	self    *identity.IDConfig
 }
 
-// NewContextHeader creates new instance of the request headers needed
+// NewContextHeader creates new instance of the request headers.
 func NewContextHeader(context context.Context, config config.Config) (*ContextHeader, error) {
 	idConfig, err := identity.GetIdentityConfig(config.(identity.Config))
 	if err != nil {
@@ -24,12 +24,12 @@ func NewContextHeader(context context.Context, config config.Config) (*ContextHe
 	return &ContextHeader{self: idConfig, context: context}, nil
 }
 
-// Self returns Self CentID
-func (h *ContextHeader) Self() *identity.IdentityConfig {
+// Self returns Self CentID.
+func (h *ContextHeader) Self() *identity.IDConfig {
 	return h.self
 }
 
-// Context returns context.Context of the request
+// Context returns context.Context of the request.
 func (h *ContextHeader) Context() context.Context {
 	return h.context
 }

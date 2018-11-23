@@ -27,7 +27,7 @@ import (
 var log = logging.Logger("identity")
 
 type factory interface {
-	CreateIdentity(opts *bind.TransactOpts, _centrifugeId *big.Int) (*types.Transaction, error)
+	CreateIdentity(opts *bind.TransactOpts, centID *big.Int) (*types.Transaction, error)
 }
 
 type registry interface {
@@ -149,11 +149,11 @@ func (id *ethereumIdentity) CurrentP2PKey() (ret string, err error) {
 		return
 	}
 	key32, _ := utils.SliceToByte32(key)
-	p2pId, err := ed25519.PublicKeyToP2PKey(key32)
+	p2pID, err := ed25519.PublicKeyToP2PKey(key32)
 	if err != nil {
 		return
 	}
-	ret = p2pId.Pretty()
+	ret = p2pID.Pretty()
 	return
 }
 
@@ -282,31 +282,29 @@ func sendKeyRegistrationTransaction(identityContract contract, opts *bind.Transa
 }
 
 // sendIdentityCreationTransaction sends the actual transaction to create identity on Ethereum registry contract
-func sendIdentityCreationTransaction(identityFactory factory, opts *bind.TransactOpts, identityToBeCreated Identity) (err error) {
+func sendIdentityCreationTransaction(identityFactory factory, opts *bind.TransactOpts, identityToBeCreated Identity) error {
 	//preparation of data in specific types for the call to Ethereum
 	tx, err := ethereum.GetClient().SubmitTransactionWithRetries(identityFactory.CreateIdentity, opts, identityToBeCreated.CentID().BigInt())
 	if err != nil {
 		log.Infof("Failed to send identity for creation [CentrifugeID: %s] : %v", identityToBeCreated, err)
 		return err
-	} else {
-		log.Infof("Sent off identity creation [%s]. Ethereum transaction hash [%x] and Nonce [%v] and Check [%v]", identityToBeCreated, tx.Hash(), tx.Nonce(), tx.CheckNonce())
 	}
 
+	log.Infof("Sent off identity creation [%s]. Ethereum transaction hash [%x] and Nonce [%v] and Check [%v]", identityToBeCreated, tx.Hash(), tx.Nonce(), tx.CheckNonce())
 	log.Infof("Transfer pending: 0x%x\n", tx.Hash())
-
-	return
+	return err
 }
 
 // setUpKeyRegisteredEventListener listens for Identity creation
 func setUpKeyRegisteredEventListener(config Config, identity Identity, keyPurpose int, key [32]byte, bh uint64) (confirmations chan *WatchIdentity, err error) {
 	confirmations = make(chan *WatchIdentity)
-	centId := identity.CentID()
+	centID := identity.CentID()
 	if err != nil {
 		return nil, err
 	}
 	asyncRes, err := queue.Queue.DelayKwargs(keyRegistrationConfirmationTaskName,
 		map[string]interface{}{
-			centIDParam:            centId,
+			centIDParam:            centID,
 			keyParam:               key,
 			keyPurposeParam:        keyPurpose,
 			queue.BlockHeightParam: bh,
@@ -322,11 +320,11 @@ func setUpKeyRegisteredEventListener(config Config, identity Identity, keyPurpos
 // of the identity.
 func setUpRegistrationEventListener(config Config, identityToBeCreated Identity, blockHeight uint64) (confirmations chan *WatchIdentity, err error) {
 	confirmations = make(chan *WatchIdentity)
-	bCentId := identityToBeCreated.CentID()
+	centID := identityToBeCreated.CentID()
 	if err != nil {
 		return nil, err
 	}
-	asyncRes, err := queue.Queue.DelayKwargs(idRegistrationConfirmationTaskName, map[string]interface{}{centIDParam: bCentId, queue.BlockHeightParam: blockHeight})
+	asyncRes, err := queue.Queue.DelayKwargs(idRegistrationConfirmationTaskName, map[string]interface{}{centIDParam: centID, queue.BlockHeightParam: blockHeight})
 	if err != nil {
 		return nil, err
 	}
@@ -346,7 +344,7 @@ func waitAndRouteIdentityRegistrationEvent(timeout time.Duration, asyncRes *goce
 	confirmations <- &WatchIdentity{pushThisIdentity, err}
 }
 
-// EthereumidentityService implements `Service`
+// EthereumIdentityService implements `Service`
 type EthereumIdentityService struct {
 	config           Config
 	factoryContract  factory
@@ -496,8 +494,8 @@ func (ids *EthereumIdentityService) GetIdentityKey(identity CentID, pubKey []byt
 }
 
 // ValidateKey checks if a given key is valid for the given centrifugeID.
-func (ids *EthereumIdentityService) ValidateKey(centrifugeId CentID, key []byte, purpose int) error {
-	idKey, err := ids.GetIdentityKey(centrifugeId, key)
+func (ids *EthereumIdentityService) ValidateKey(centID CentID, key []byte, purpose int) error {
+	idKey, err := ids.GetIdentityKey(centID, key)
 	if err != nil {
 		return err
 	}

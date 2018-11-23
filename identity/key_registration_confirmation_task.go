@@ -89,15 +89,15 @@ func (krct *keyRegistrationConfirmationTask) Copy() (gocelery.CeleryTask, error)
 
 // ParseKwargs parses the args into the task
 func (krct *keyRegistrationConfirmationTask) ParseKwargs(kwargs map[string]interface{}) error {
-	centId, ok := kwargs[centIDParam]
+	id, ok := kwargs[centIDParam]
 	if !ok {
 		return fmt.Errorf("undefined kwarg " + centIDParam)
 	}
-	centIdTyped, err := getCentID(centId)
+	centID, err := getCentID(id)
 	if err != nil {
 		return fmt.Errorf("malformed kwarg [%s] because [%s]", centIDParam, err.Error())
 	}
-	krct.centID = centIdTyped
+	krct.centID = centID
 
 	// key parsing
 	key, ok := kwargs[keyParam]
@@ -152,21 +152,23 @@ func (krct *keyRegistrationConfirmationTask) RunTask() (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	krct.filterer = contract
 
+	krct.filterer = contract
 	fOpts := &bind.FilterOpts{
 		Context: krct.ctx,
 		Start:   krct.blockHeight,
 	}
 
+	var iter *EthereumIdentityContractKeyAddedIterator
 	for {
-		iter, err := krct.filterer.FilterKeyAdded(
+		iter, err = krct.filterer.FilterKeyAdded(
 			fOpts,
 			[][32]byte{krct.key},
 			[]*big.Int{big.NewInt(int64(krct.keyPurpose))},
 		)
 		if err != nil {
-			return nil, centerrors.Wrap(err, "failed to start filtering key event logs")
+			err = centerrors.Wrap(err, "failed to start filtering key event logs")
+			break
 		}
 
 		err = utils.LookForEvent(iter)
@@ -176,10 +178,10 @@ func (krct *keyRegistrationConfirmationTask) RunTask() (interface{}, error) {
 		}
 
 		if err != utils.EventNotFound {
-			return nil, err
+			break
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
 
-	return nil, fmt.Errorf("failed to filter key events")
+	return nil, err
 }
