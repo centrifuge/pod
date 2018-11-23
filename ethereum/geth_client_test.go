@@ -55,7 +55,7 @@ func (transactionRequest *MockTransactionRequest) RegisterTransaction(opts *bind
 		}
 	}
 
-	return types.NewTransaction(1, common.Address{}, nil, 0, nil, nil), nil
+	return types.NewTransaction(1, common.Address{}, nil, 0, nil, nil), err
 }
 
 func TestInitTransactionWithRetries(t *testing.T) {

@@ -377,5 +377,5 @@ func (p *PurchaseOrder) createProofs(fields []string) (coreDoc *coredocumentpb.C
 	}
 
 	proofs, err = coredocument.CreateProofs(tree, coreDoc, fields)
-	return coreDoc, proofs, nil
+	return coreDoc, proofs, err
 }

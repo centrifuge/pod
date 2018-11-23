@@ -125,6 +125,7 @@ func GetEthAuthKey(pub, priv string) (public, private []byte, err error) {
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to read public key: %v", err)
 	}
+
 	return publicKey, privateKey, nil
 }
 
@@ -132,7 +133,7 @@ func GetEthAuthKey(pub, priv string) (public, private []byte, err error) {
 func GetPrivateEthAuthKey(fileName string) (key []byte, err error) {
 	key, err = utils.ReadKeyFromPemFile(fileName, utils.PrivateKey)
 	if err != nil {
-		log.Error(err)
+		return nil, err
 	}
 	return key, nil
 }
@@ -141,7 +142,7 @@ func GetPrivateEthAuthKey(fileName string) (key []byte, err error) {
 func GetPublicEthAuthKey(fileName string) (key []byte, err error) {
 	key, err = utils.ReadKeyFromPemFile(fileName, utils.PublicKey)
 	if err != nil {
-		log.Error(err)
+		return nil, err
 	}
 	return key, nil
 }
