@@ -208,7 +208,7 @@ func NewWithCollaborators(collaborators []string) (*coredocumentpb.CoreDocument,
 	return cd, nil
 }
 
-//  GetExternalCollaborators returns collaborators of a document without the own centID
+// GetExternalCollaborators returns collaborators of a document without the own centID
 func GetExternalCollaborators(selfCentID identity.CentID, doc *coredocumentpb.CoreDocument) ([][]byte, error) {
 	var collabs [][]byte
 

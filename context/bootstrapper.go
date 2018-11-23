@@ -21,10 +21,12 @@ import (
 
 var log = logging.Logger("context")
 
+// MainBootstrapper holds all the bootstrapper implementations
 type MainBootstrapper struct {
 	Bootstrappers []bootstrap.Bootstrapper
 }
 
+// PopulateBaseBootstrappers adds all the bootstrapper implementations to MainBootstrapper
 func (m *MainBootstrapper) PopulateBaseBootstrappers() {
 	m.Bootstrappers = []bootstrap.Bootstrapper{
 		&version.Bootstrapper{},
@@ -43,12 +45,14 @@ func (m *MainBootstrapper) PopulateBaseBootstrappers() {
 	}
 }
 
+// PopulateRunBootstrappers adds blocking Node bootstrapper at the end.
+// Note: Node bootstrapper must be the last bootstrapper to be invoked as it won't return until node is shutdown
 func (m *MainBootstrapper) PopulateRunBootstrappers() {
 	m.PopulateBaseBootstrappers()
-	// NODE BOOTSTRAPPER MUST BE THE LAST BOOTSTRAPPER TO BE INVOKED AS IT WON'T RETURN UNTIL NODE IS SHUTDOWN
 	m.Bootstrappers = append(m.Bootstrappers, &node.Bootstrapper{})
 }
 
+// Bootstrap runs all the loaded bootstrapper implementations.
 func (m *MainBootstrapper) Bootstrap(context map[string]interface{}) error {
 	for _, b := range m.Bootstrappers {
 		err := b.Bootstrap(context)
