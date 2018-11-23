@@ -177,7 +177,7 @@ func setupMintListener(config Config, qs *queue.Server, tokenID *big.Int, regist
 }
 
 // waitAndRouteNFTApprovedEvent notifies the confirmations channel whenever the key has been added to the identity and has been noted as Ethereum event
-func waitAndRouteNFTApprovedEvent(timeout time.Duration, asyncRes queue.QueuedTaskResult, tokenID *big.Int, confirmations chan<- *WatchTokenMinted) {
+func waitAndRouteNFTApprovedEvent(timeout time.Duration, asyncRes queue.TaskResult, tokenID *big.Int, confirmations chan<- *WatchTokenMinted) {
 	_, err := asyncRes.Get(timeout)
 	confirmations <- &WatchTokenMinted{tokenID, err}
 }

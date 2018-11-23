@@ -336,13 +336,13 @@ func (ids *EthereumIdentityService) setUpRegistrationEventListener(config Config
 }
 
 // waitAndRouteKeyRegistrationEvent notifies the confirmations channel whenever the key has been added to the identity and has been noted as Ethereum event
-func waitAndRouteKeyRegistrationEvent(timeout time.Duration, asyncRes queue.QueuedTaskResult, confirmations chan<- *WatchIdentity, pushThisIdentity Identity) {
+func waitAndRouteKeyRegistrationEvent(timeout time.Duration, asyncRes queue.TaskResult, confirmations chan<- *WatchIdentity, pushThisIdentity Identity) {
 	_, err := asyncRes.Get(timeout)
 	confirmations <- &WatchIdentity{Identity: pushThisIdentity, Error: err}
 }
 
 // waitAndRouteIdentityRegistrationEvent notifies the confirmations channel whenever the identity creation is being noted as Ethereum event
-func waitAndRouteIdentityRegistrationEvent(timeout time.Duration, asyncRes queue.QueuedTaskResult, confirmations chan<- *WatchIdentity, pushThisIdentity Identity) {
+func waitAndRouteIdentityRegistrationEvent(timeout time.Duration, asyncRes queue.TaskResult, confirmations chan<- *WatchIdentity, pushThisIdentity Identity) {
 	_, err := asyncRes.Get(timeout)
 	confirmations <- &WatchIdentity{pushThisIdentity, err}
 }

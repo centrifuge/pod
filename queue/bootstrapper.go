@@ -5,8 +5,7 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
-	"sync"
-)
+	)
 
 type Bootstrapper struct {
 	context map[string]interface{}
@@ -17,7 +16,7 @@ func (b *Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		return errors.New("config hasn't been initialized")
 	}
 	cfg := context[config.BootstrappedConfig].(*config.Configuration)
-	srv := &Server{config: cfg, taskTypes: []QueuedTaskType{}, lock: sync.RWMutex{}}
+	srv := &Server{config: cfg, taskTypes: []TaskType{}}
 	context[bootstrap.BootstrappedQueueServer] = srv
 	b.context = context
 	return nil

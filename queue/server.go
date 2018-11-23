@@ -29,15 +29,15 @@ type Config interface {
 	GetWorkerWaitTimeMS() int
 }
 
-// QueuedTaskType is a task to be queued in the centrifuge node to be completed asynchronously
-type QueuedTaskType interface {
+// TaskType is a task to be queued in the centrifuge node to be completed asynchronously
+type TaskType interface {
 
 	// TaskTypeName of the task
 	TaskTypeName() string
 }
 
-// QueuedTaskResult represents a result from a queued task execution
-type QueuedTaskResult interface {
+// TaskResult represents a result from a queued task execution
+type TaskResult interface {
 
 	// Get the result within a timeout from the queue task execution
 	Get(timeout time.Duration) (interface{}, error)
@@ -47,9 +47,7 @@ type QueuedTaskResult interface {
 type Server struct {
 	config    Config
 	queue     *gocelery.CeleryClient
-	taskTypes []QueuedTaskType
-	stop      chan bool
-	lock 	  sync.RWMutex
+	taskTypes []TaskType
 }
 
 // TaskTypeName of the queue server
@@ -60,8 +58,6 @@ func (qs *Server) Name() string {
 // Start the queue server
 func (qs *Server) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- error) {
 	defer wg.Done()
-	qs.lock.Lock()
-	defer qs.lock.Unlock()
 	var err error
 	qs.queue, err = gocelery.NewCeleryClient(
 		gocelery.NewInMemoryBroker(),
@@ -78,41 +74,20 @@ func (qs *Server) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan
 	// start the workers
 	qs.queue.StartWorker()
 
-	qs.stop = make(chan bool)
-	for {
-		select {
-		case <-qs.stop:
-		case <-ctx.Done():
-			log.Info("Shutting down Queue server with context done")
-			qs.queue.StopWorker()
-			log.Info("Queue server stopped")
-			return
-		}
-	}
+	<-ctx.Done()
+	log.Info("Shutting down Queue server with context done")
+	qs.queue.StopWorker()
+	log.Info("Queue server stopped")
 }
 
 // RegisterTaskType registers a task type on the queue server
 func (qs *Server) RegisterTaskType(name string, task interface{}) {
-	qs.lock.Lock()
-	defer qs.lock.Unlock()
-	qs.taskTypes = append(qs.taskTypes, task.(QueuedTaskType))
+	qs.taskTypes = append(qs.taskTypes, task.(TaskType))
 }
 
 // EnqueueJob enqueues a job on the queue server for the given taskTypeName
-func (qs *Server) EnqueueJob(taskTypeName string, params map[string]interface{}) (QueuedTaskResult, error) {
-	qs.lock.Lock()
-	defer qs.lock.Unlock()
+func (qs *Server) EnqueueJob(taskTypeName string, params map[string]interface{}) (TaskResult, error) {
 	return qs.queue.DelayKwargs(taskTypeName, params)
-}
-
-// Stop force stops the queue server
-func (qs *Server) Stop() error {
-	qs.lock.Lock()
-	defer qs.lock.Unlock()
-	if qs.stop != nil {
-		qs.stop <- true
-	}
-	return nil
 }
 
 // GetDuration parses key parameter to time.Duration type

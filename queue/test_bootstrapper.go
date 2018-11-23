@@ -13,22 +13,26 @@ func (b *Bootstrapper) TestBootstrap(context map[string]interface{}) error {
 }
 
 func (b *Bootstrapper) TestTearDown() error {
-	srv := b.context[bootstrap.BootstrappedQueueServer].(*Server)
-	return srv.Stop()
+	return nil
 }
 
-type Starter struct {}
+type Starter struct {
+	canF context.CancelFunc
+}
 
-func (Starter) TestBootstrap(ctx map[string]interface{}) error {
+func (s *Starter) TestBootstrap(ctx map[string]interface{}) error {
 	// handle the special case for running the queue server after task types have been registered (done by node bootstrapper at runtime)
 	qs := ctx[bootstrap.BootstrappedQueueServer].(*Server)
 	childErr := make(chan error)
 	var wg sync.WaitGroup
 	wg.Add(1)
-	go qs.Start(context.Background(), &wg, childErr)
+	c, canF := context.WithCancel(context.Background())
+	s.canF = canF
+	go qs.Start(c, &wg, childErr)
 	return nil
 }
 
-func (Starter) TestTearDown() error {
+func (s *Starter) TestTearDown() error {
+	s.canF()
 	return nil
 }
