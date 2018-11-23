@@ -45,7 +45,6 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	}
 	queueSrv := context[bootstrap.BootstrappedQueueServer].(*queue.Server)
 
-
 	context[BootstrappedIDService] = NewEthereumIdentityService(cfg, idFactory, registryContract, queueSrv, ethereum.GetClient,
 		func(address common.Address, backend bind.ContractBackend) (contract, error) {
 			return NewEthereumIdentityContract(address, backend)

@@ -5,7 +5,7 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
-	)
+)
 
 type Bootstrapper struct {
 	context map[string]interface{}

@@ -3,9 +3,10 @@
 package queue
 
 import (
-	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"sync"
 	"context"
+	"sync"
+
+	"github.com/centrifuge/go-centrifuge/bootstrap"
 )
 
 func (b *Bootstrapper) TestBootstrap(context map[string]interface{}) error {

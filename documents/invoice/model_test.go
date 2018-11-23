@@ -23,6 +23,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/p2p"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
+	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
@@ -30,7 +31,6 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
-	"github.com/centrifuge/go-centrifuge/queue"
 )
 
 var ctx = map[string]interface{}{}
