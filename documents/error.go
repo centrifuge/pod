@@ -18,7 +18,7 @@ func (e Error) Error() string {
 	return e.err.Error()
 }
 
-// NewError creates a new error from a key and a msg
+// NewError creates a new error from a key and a msg.
 func NewError(key, msg string) error {
 	err := fmt.Errorf(msg)
 	return Error{key: key, err: err}
@@ -69,7 +69,7 @@ func Errors(err error) []error {
 	return []error{err}
 }
 
-// LenError returns the amount of embedded errors
+// LenError returns the amount of embedded errors.
 func LenError(err error) int {
 
 	if err == nil {

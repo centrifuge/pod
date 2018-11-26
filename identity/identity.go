@@ -137,7 +137,7 @@ type Service interface {
 	ValidateSignature(signature *coredocumentpb.Signature, message []byte) error
 }
 
-// GetIdentityConfig returns the identity and keys associated with the node
+// GetIdentityConfig returns the identity and keys associated with the node.
 func GetIdentityConfig(config Config) (*IDConfig, error) {
 	centIDBytes, err := config.GetIdentityID()
 	if err != nil {

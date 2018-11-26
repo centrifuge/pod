@@ -39,7 +39,7 @@ func newEthereumAnchorRepository(config Config, anchorRepositoryContract anchorR
 	return &ethereumAnchorRepository{config: config, anchorRepositoryContract: anchorRepositoryContract, gethClientFinder: gethClientFinder}
 }
 
-// GetDocumentRootOf takes an anchorID and returns the corresponding documentRoot from the chain
+// GetDocumentRootOf takes an anchorID and returns the corresponding documentRoot from the chain.
 func (ethRepository *ethereumAnchorRepository) GetDocumentRootOf(anchorID AnchorID) (docRoot DocumentRoot, err error) {
 	// Ignoring cancelFunc as code will block until response or timeout is triggered
 	opts, _ := ethRepository.gethClientFinder().GetGethCallOpts()
@@ -70,7 +70,7 @@ func (ethRepository *ethereumAnchorRepository) PreCommitAnchor(anchorID AnchorID
 	return confirmations, err
 }
 
-// CommitAnchor will send a commit transaction to ethereum
+// CommitAnchor will send a commit transaction to Ethereum.
 func (ethRepository *ethereumAnchorRepository) CommitAnchor(anchorID AnchorID, documentRoot DocumentRoot, centID identity.CentID, documentProofs [][32]byte, signature []byte) (confirmations <-chan *WatchCommit, err error) {
 	conn := ethereum.GetClient()
 	opts, err := conn.GetTxOpts(ethRepository.config.GetEthereumDefaultAccountName())
@@ -102,7 +102,7 @@ func (ethRepository *ethereumAnchorRepository) CommitAnchor(anchorID AnchorID, d
 	return confirmations, err
 }
 
-// sendPreCommitTransaction sends the actual transaction to the ethereum node
+// sendPreCommitTransaction sends the actual transaction to the ethereum node.
 func sendPreCommitTransaction(contract anchorRepositoryContract, opts *bind.TransactOpts, preCommitData *PreCommitData) error {
 
 	//preparation of data in specific types for the call to Ethereum
