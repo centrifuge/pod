@@ -52,7 +52,7 @@ type Server struct {
 }
 
 // TaskTypeName of the queue server
-func (qs *Server) TaskTypeName() string {
+func (qs *Server) Name() string {
 	return "QueueServer"
 }
 
