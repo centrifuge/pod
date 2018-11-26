@@ -40,12 +40,14 @@ type keyRegistrationConfirmationTask struct {
 	config             Config
 	gethClientFinder   func() ethereum.Client
 	contractProvider   func(address common.Address, backend bind.ContractBackend) (contract, error)
+	queue              *queue.Server
 }
 
 func newKeyRegistrationConfirmationTask(
 	ethContextInitializer func(d time.Duration) (ctx context.Context, cancelFunc context.CancelFunc),
 	registryContract *EthereumIdentityRegistryContract,
 	config Config,
+	queue *queue.Server,
 	gethClientFinder func() ethereum.Client,
 	contractProvider func(address common.Address, backend bind.ContractBackend) (contract, error),
 ) *keyRegistrationConfirmationTask {
@@ -53,21 +55,16 @@ func newKeyRegistrationConfirmationTask(
 		contextInitializer: ethContextInitializer,
 		contract:           registryContract,
 		config:             config,
+		queue:              queue,
 		timeout:            config.GetEthereumContextWaitTimeout(),
 		gethClientFinder:   gethClientFinder,
 		contractProvider:   contractProvider,
 	}
 }
 
-// Name returns keyRegistrationConfirmationTaskName
-func (krct *keyRegistrationConfirmationTask) Name() string {
+// TaskTypeName returns keyRegistrationConfirmationTaskName
+func (krct *keyRegistrationConfirmationTask) TaskTypeName() string {
 	return keyRegistrationConfirmationTaskName
-}
-
-// Init registers task with the queue
-func (krct *keyRegistrationConfirmationTask) Init() error {
-	queue.Queue.Register(keyRegistrationConfirmationTaskName, krct)
-	return nil
 }
 
 // Copy returns a new copy of the task
@@ -84,7 +81,9 @@ func (krct *keyRegistrationConfirmationTask) Copy() (gocelery.CeleryTask, error)
 		krct.contract,
 		krct.config,
 		krct.gethClientFinder,
-		krct.contractProvider}, nil
+		krct.contractProvider,
+		krct.queue,
+	}, nil
 }
 
 // ParseKwargs parses the args into the task
@@ -147,7 +146,7 @@ func (krct *keyRegistrationConfirmationTask) RunTask() (interface{}, error) {
 		krct.ctx, _ = krct.contextInitializer(krct.timeout)
 	}
 
-	id := newEthereumIdentity(krct.centID, krct.contract, krct.config, krct.gethClientFinder, krct.contractProvider)
+	id := newEthereumIdentity(krct.centID, krct.contract, krct.config, krct.queue, krct.gethClientFinder, krct.contractProvider)
 	contract, err := id.getContract()
 	if err != nil {
 		return nil, err

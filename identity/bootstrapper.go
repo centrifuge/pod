@@ -3,6 +3,7 @@ package identity
 import (
 	"errors"
 
+	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/queue"
@@ -17,7 +18,7 @@ type Bootstrapper struct {
 }
 
 // Bootstrap initializes the IdentityFactoryContract as well as the idRegistrationConfirmationTask that depends on it.
-// the idRegistrationConfirmationTask is added to be registered on the Queue at queue.Bootstrapper
+// the idRegistrationConfirmationTask is added to be registered on the queue at queue.Bootstrapper
 func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	if _, ok := context[config.BootstrappedConfig]; !ok {
 		return errors.New("config hasn't been initialized")
@@ -39,25 +40,23 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		return err
 	}
 
-	context[BootstrappedIDService] = NewEthereumIdentityService(cfg, idFactory, registryContract, ethereum.GetClient,
+	if _, ok := context[bootstrap.BootstrappedQueueServer]; !ok {
+		return errors.New("queue hasn't been initialized")
+	}
+	queueSrv := context[bootstrap.BootstrappedQueueServer].(*queue.Server)
+
+	context[BootstrappedIDService] = NewEthereumIdentityService(cfg, idFactory, registryContract, queueSrv, ethereum.GetClient,
 		func(address common.Address, backend bind.ContractBackend) (contract, error) {
 			return NewEthereumIdentityContract(address, backend)
 		})
 
-	err = queue.InstallQueuedTask(context,
-		newIdRegistrationConfirmationTask(cfg.GetEthereumContextWaitTimeout(), &idFactory.EthereumIdentityFactoryContractFilterer, ethereum.DefaultWaitForTransactionMiningContext))
-	if err != nil {
-		return err
-	}
-
-	err = queue.InstallQueuedTask(context,
-		newKeyRegistrationConfirmationTask(ethereum.DefaultWaitForTransactionMiningContext, registryContract, cfg, ethereum.GetClient,
-			func(address common.Address, backend bind.ContractBackend) (contract, error) {
-				return NewEthereumIdentityContract(address, backend)
-			}))
-	if err != nil {
-		return err
-	}
+	idRegTask := newIdRegistrationConfirmationTask(cfg.GetEthereumContextWaitTimeout(), &idFactory.EthereumIdentityFactoryContractFilterer, ethereum.DefaultWaitForTransactionMiningContext)
+	keyRegTask := newKeyRegistrationConfirmationTask(ethereum.DefaultWaitForTransactionMiningContext, registryContract, cfg, queueSrv, ethereum.GetClient,
+		func(address common.Address, backend bind.ContractBackend) (contract, error) {
+			return NewEthereumIdentityContract(address, backend)
+		})
+	queueSrv.RegisterTaskType(idRegTask.TaskTypeName(), idRegTask)
+	queueSrv.RegisterTaskType(keyRegTask.TaskTypeName(), keyRegTask)
 	return nil
 }
 

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/ethereum"
@@ -37,6 +38,14 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return fmt.Errorf("identity service not initialised")
 	}
 
-	ctx[BootstrappedPayObService] = NewEthereumPaymentObligation(registry, idService, ethereum.GetClient(), cfg, setupMintListener, bindContract)
-	return queue.InstallQueuedTask(ctx, newMintingConfirmationTask(cfg.GetEthereumContextWaitTimeout(), ethereum.DefaultWaitForTransactionMiningContext))
+	if _, ok := ctx[bootstrap.BootstrappedQueueServer]; !ok {
+		return errors.New("queue hasn't been initialized")
+	}
+	queueSrv := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
+
+	ctx[BootstrappedPayObService] = NewEthereumPaymentObligation(registry, idService, ethereum.GetClient(), cfg, queueSrv, setupMintListener, bindContract)
+	// queue task
+	task := newMintingConfirmationTask(cfg.GetEthereumContextWaitTimeout(), ethereum.DefaultWaitForTransactionMiningContext)
+	queueSrv.RegisterTaskType(task.TaskTypeName(), task)
+	return nil
 }

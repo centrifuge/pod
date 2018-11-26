@@ -3,6 +3,7 @@ package anchors
 import (
 	"errors"
 
+	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/queue"
@@ -31,8 +32,12 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return err
 	}
 
-	var repo AnchorRepository
-	repo = NewEthereumAnchorRepository(cfg, repositoryContract, ethereum.GetClient)
+	if _, ok := ctx[bootstrap.BootstrappedQueueServer]; !ok {
+		return errors.New("queue server hasn't been initialized")
+	}
+
+	queueSrv := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
+	repo := newEthereumAnchorRepository(cfg, repositoryContract, queueSrv, ethereum.GetClient)
 	ctx[BootstrappedAnchorRepo] = repo
 
 	task := &anchorConfirmationTask{
@@ -42,5 +47,6 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		EthContextInitializer:   ethereum.DefaultWaitForTransactionMiningContext,
 	}
 
-	return queue.InstallQueuedTask(ctx, task)
+	queueSrv.RegisterTaskType(task.TaskTypeName(), task)
+	return nil
 }
