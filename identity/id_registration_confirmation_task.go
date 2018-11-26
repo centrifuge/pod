@@ -44,18 +44,12 @@ func newIDRegistrationConfirmationTask(
 	}
 }
 
-// Name returns the name of the task
-func (rct *idRegistrationConfirmationTask) Name() string {
+// TaskTypeName returns the name of the task
+func (rct *idRegistrationConfirmationTask) TaskTypeName() string {
 	return idRegistrationConfirmationTaskName
 }
 
-// Init registers the task to queue.
-func (rct *idRegistrationConfirmationTask) Init() error {
-	queue.Queue.Register(idRegistrationConfirmationTaskName, rct)
-	return nil
-}
-
-// Copy returns a new copy of the the task.
+// Copy returns a new copy of the the task
 func (rct *idRegistrationConfirmationTask) Copy() (gocelery.CeleryTask, error) {
 	return &idRegistrationConfirmationTask{
 		rct.centID,

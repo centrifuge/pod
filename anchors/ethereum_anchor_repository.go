@@ -9,7 +9,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/queue"
-	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -33,10 +32,11 @@ type ethereumAnchorRepository struct {
 	config                   Config
 	anchorRepositoryContract anchorRepositoryContract
 	gethClientFinder         func() ethereum.Client
+	queue                    *queue.Server
 }
 
-func newEthereumAnchorRepository(config Config, anchorRepositoryContract anchorRepositoryContract, gethClientFinder func() ethereum.Client) *ethereumAnchorRepository {
-	return &ethereumAnchorRepository{config: config, anchorRepositoryContract: anchorRepositoryContract, gethClientFinder: gethClientFinder}
+func newEthereumAnchorRepository(config Config, anchorRepositoryContract anchorRepositoryContract, queue *queue.Server, gethClientFinder func() ethereum.Client) AnchorRepository {
+	return &ethereumAnchorRepository{config: config, anchorRepositoryContract: anchorRepositoryContract, gethClientFinder: gethClientFinder, queue: queue}
 }
 
 // GetDocumentRootOf takes an anchorID and returns the corresponding documentRoot from the chain.
@@ -84,7 +84,8 @@ func (ethRepository *ethereumAnchorRepository) CommitAnchor(anchorID AnchorID, d
 	}
 
 	cd := NewCommitData(h.Number.Uint64(), anchorID, documentRoot, centID, documentProofs, signature)
-	confirmations, err = setUpCommitEventListener(ethRepository.config.GetEthereumContextWaitTimeout(), opts.From, cd)
+	confirmations, err = ethRepository.setUpCommitEventListener(ethRepository.config.GetEthereumContextWaitTimeout(), opts.From, cd)
+
 	if err != nil {
 		wError := errors.Wrap(err, 1)
 		log.Errorf("Failed to set up event listener for commit transaction [id: %x, hash: %x]: %v",
@@ -172,9 +173,9 @@ func setUpPreCommitEventListener(contractEvent watchAnchorPreCommitted, from com
 
 // setUpCommitEventListener sets up the listened for the "AnchorCommitted" event to notify the upstream code
 // about successful mining/creation of a commit
-func setUpCommitEventListener(timeout time.Duration, from common.Address, commitData *CommitData) (confirmations chan *WatchCommit, err error) {
+func (ethRepository *ethereumAnchorRepository) setUpCommitEventListener(timeout time.Duration, from common.Address, commitData *CommitData) (confirmations chan *WatchCommit, err error) {
 	confirmations = make(chan *WatchCommit)
-	asyncRes, err := queue.Queue.DelayKwargs(anchorRepositoryConfirmationTaskName, map[string]interface{}{
+	asyncRes, err := ethRepository.queue.EnqueueJob(anchorRepositoryConfirmationTaskName, map[string]interface{}{
 		anchorIDParam: commitData.AnchorID,
 		addressParam:  from,
 		centIDParam:   commitData.CentrifugeID,
@@ -205,7 +206,7 @@ func waitAndRoutePreCommitEvent(ctx context.Context, conf <-chan *EthereumAnchor
 }
 
 // waitAndRouteCommitEvent notifies the confirmations channel whenever a commit is being noted as Ethereum event
-func waitAndRouteCommitEvent(timeout time.Duration, asyncResult *gocelery.AsyncResult, confirmations chan<- *WatchCommit, commitData *CommitData) {
+func waitAndRouteCommitEvent(timeout time.Duration, asyncResult queue.TaskResult, confirmations chan<- *WatchCommit, commitData *CommitData) {
 	_, err := asyncResult.Get(timeout)
 	confirmations <- &WatchCommit{commitData, err}
 }

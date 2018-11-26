@@ -43,16 +43,20 @@ func (*Bootstrapper) Bootstrap(c map[string]interface{}) error {
 func getServers(ctx map[string]interface{}) ([]Server, error) {
 	p2pSrv, ok := ctx[bootstrap.BootstrappedP2PServer]
 	if !ok {
-		return nil, fmt.Errorf("p2p server not initialised")
+		return nil, fmt.Errorf("p2p server not initialized")
 	}
 
 	apiSrv, ok := ctx[bootstrap.BootstrappedAPIServer]
 	if !ok {
-		return nil, fmt.Errorf("API server not initiliase")
+		return nil, fmt.Errorf("API server not initialized")
+	}
+
+	queueSrv, ok := ctx[bootstrap.BootstrappedQueueServer]
+	if !ok {
+		return nil, fmt.Errorf("queue server not initialized")
 	}
 
 	var servers []Server
-	servers = append(servers, p2pSrv.(Server))
-	servers = append(servers, apiSrv.(Server))
+	servers = append(servers, p2pSrv.(Server), apiSrv.(Server), queueSrv.(Server))
 	return servers, nil
 }

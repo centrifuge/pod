@@ -48,15 +48,9 @@ type anchorConfirmationTask struct {
 	AnchorCommittedFilterer anchorCommittedWatcher
 }
 
-// Name returns anchorRepositoryConfirmationTaskName
-func (act *anchorConfirmationTask) Name() string {
+// TaskTypeName returns anchorRepositoryConfirmationTaskName
+func (act *anchorConfirmationTask) TaskTypeName() string {
 	return anchorRepositoryConfirmationTaskName
-}
-
-// Init registers the task to the queue
-func (act *anchorConfirmationTask) Init() error {
-	queue.Queue.Register(act.Name(), act)
-	return nil
 }
 
 // Copy returns a new instance of anchorConfirmationTask

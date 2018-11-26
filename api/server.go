@@ -1,9 +1,5 @@
 package api
 
-// LICENSE: Apache
-// This is taken from https://github.com/philips/grpc-gateway-example/
-// PLEASE DO NOT call any config.* stuff here as it creates dependencies that can't be injected easily when testing
-
 import (
 	"crypto/tls"
 	"crypto/x509"

@@ -33,7 +33,8 @@ func (m *MainBootstrapper) PopulateBaseBootstrappers() {
 		&config.Bootstrapper{},
 		&storage.Bootstrapper{},
 		ethereum.Bootstrapper{},
-		anchors.Bootstrapper{},
+		&queue.Bootstrapper{},
+		&anchors.Bootstrapper{},
 		&identity.Bootstrapper{},
 		documents.Bootstrapper{},
 		p2p.Bootstrapper{},
@@ -41,7 +42,6 @@ func (m *MainBootstrapper) PopulateBaseBootstrappers() {
 		&invoice.Bootstrapper{},
 		&purchaseorder.Bootstrapper{},
 		&nft.Bootstrapper{},
-		queue.Bootstrapper{},
 	}
 }
 

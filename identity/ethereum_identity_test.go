@@ -108,7 +108,7 @@ func TestGetClientP2PURL_happy(t *testing.T) {
 	g.On("GetEthClient").Return(&ethclient.Client{})
 	r.On("GetIdentityByCentrifugeId", mock.Anything, centID.BigInt()).Return(common.BytesToAddress(utils.RandomSlice(20)), nil)
 	i.On("GetKeysByPurpose", mock.Anything, mock.Anything).Return([][32]byte{{1}}, nil)
-	srv := NewEthereumIdentityService(c, f, r, func() ethereum.Client {
+	srv := NewEthereumIdentityService(c, f, r, nil, func() ethereum.Client {
 		return g
 	}, func(address common.Address, backend bind.ContractBackend) (contract, error) {
 		return i, nil
@@ -127,7 +127,7 @@ func TestGetClientP2PURL_fail_identity_lookup(t *testing.T) {
 	g.On("GetGethCallOpts").Return(&bind.CallOpts{}, func() {})
 	r.On("GetIdentityByCentrifugeId", mock.Anything, centID.BigInt()).Return(common.BytesToAddress(utils.RandomSlice(20)), errors.New("ID lookup failed"))
 	i.On("GetKeysByPurpose", mock.Anything, mock.Anything).Return([][32]byte{{1}}, nil)
-	srv := NewEthereumIdentityService(c, f, r, func() ethereum.Client {
+	srv := NewEthereumIdentityService(c, f, r, nil, func() ethereum.Client {
 		return g
 	}, func(address common.Address, backend bind.ContractBackend) (contract, error) {
 		return i, nil
@@ -148,7 +148,7 @@ func TestGetClientP2PURL_fail_p2pkey_error(t *testing.T) {
 	g.On("GetEthClient").Return(&ethclient.Client{})
 	r.On("GetIdentityByCentrifugeId", mock.Anything, centID.BigInt()).Return(common.BytesToAddress(utils.RandomSlice(20)), nil)
 	i.On("GetKeysByPurpose", mock.Anything, mock.Anything).Return([][32]byte{{1}}, errors.New("p2p key error"))
-	srv := NewEthereumIdentityService(c, f, r, func() ethereum.Client {
+	srv := NewEthereumIdentityService(c, f, r, nil, func() ethereum.Client {
 		return g
 	}, func(address common.Address, backend bind.ContractBackend) (contract, error) {
 		return i, nil
@@ -168,7 +168,7 @@ func TestGetIdentityKey_fail_lookup(t *testing.T) {
 	c, f, r, g, i := &testingconfig.MockConfig{}, &MockIDFactory{}, &MockIDRegistry{}, &MockGethClient{}, &MockIDContract{}
 	g.On("GetGethCallOpts").Return(&bind.CallOpts{}, func() {})
 	r.On("GetIdentityByCentrifugeId", mock.Anything, centID.BigInt()).Return(common.BytesToAddress(utils.RandomSlice(20)), errors.New("ID lookup failed"))
-	srv := NewEthereumIdentityService(c, f, r, func() ethereum.Client {
+	srv := NewEthereumIdentityService(c, f, r, nil, func() ethereum.Client {
 		return g
 	}, func(address common.Address, backend bind.ContractBackend) (contract, error) {
 		return i, nil
@@ -198,7 +198,7 @@ func TestGetIdentityKey_fail_FetchKey(t *testing.T) {
 		[]*big.Int{big.NewInt(KeyPurposeP2P)},
 		big.NewInt(1),
 	}, errors.New("p2p key error"))
-	srv := NewEthereumIdentityService(c, f, r, func() ethereum.Client {
+	srv := NewEthereumIdentityService(c, f, r, nil, func() ethereum.Client {
 		return g
 	}, func(address common.Address, backend bind.ContractBackend) (contract, error) {
 		return i, nil
@@ -228,7 +228,7 @@ func TestGetIdentityKey_fail_empty(t *testing.T) {
 		[]*big.Int{big.NewInt(KeyPurposeP2P)},
 		big.NewInt(1),
 	}, nil)
-	srv := NewEthereumIdentityService(c, f, r, func() ethereum.Client {
+	srv := NewEthereumIdentityService(c, f, r, nil, func() ethereum.Client {
 		return g
 	}, func(address common.Address, backend bind.ContractBackend) (contract, error) {
 		return i, nil
@@ -258,7 +258,7 @@ func TestGetIdentityKey_Success(t *testing.T) {
 		[]*big.Int{big.NewInt(KeyPurposeP2P)},
 		big.NewInt(1),
 	}, nil)
-	srv := NewEthereumIdentityService(c, f, r, func() ethereum.Client {
+	srv := NewEthereumIdentityService(c, f, r, nil, func() ethereum.Client {
 		return g
 	}, func(address common.Address, backend bind.ContractBackend) (contract, error) {
 		return i, nil
@@ -289,7 +289,7 @@ func TestValidateKey_success(t *testing.T) {
 		[]*big.Int{big.NewInt(KeyPurposeSigning)},
 		big.NewInt(0),
 	}, nil)
-	srv := NewEthereumIdentityService(c, f, r, func() ethereum.Client {
+	srv := NewEthereumIdentityService(c, f, r, nil, func() ethereum.Client {
 		return g
 	}, func(address common.Address, backend bind.ContractBackend) (contract, error) {
 		return i, nil
@@ -319,7 +319,7 @@ func TestValidateKey_fail_getId(t *testing.T) {
 		[]*big.Int{big.NewInt(KeyPurposeSigning)},
 		big.NewInt(0),
 	}, errors.New("Key error"))
-	srv := NewEthereumIdentityService(c, f, r, func() ethereum.Client {
+	srv := NewEthereumIdentityService(c, f, r, nil, func() ethereum.Client {
 		return g
 	}, func(address common.Address, backend bind.ContractBackend) (contract, error) {
 		return i, nil
@@ -347,7 +347,7 @@ func TestValidateKey_fail_mismatch_key(t *testing.T) {
 		[]*big.Int{big.NewInt(KeyPurposeSigning)},
 		big.NewInt(0),
 	}, nil)
-	srv := NewEthereumIdentityService(c, f, r, func() ethereum.Client {
+	srv := NewEthereumIdentityService(c, f, r, nil, func() ethereum.Client {
 		return g
 	}, func(address common.Address, backend bind.ContractBackend) (contract, error) {
 		return i, nil
@@ -377,7 +377,7 @@ func TestValidateKey_fail_missing_purpose(t *testing.T) {
 		nil,
 		big.NewInt(0),
 	}, nil)
-	srv := NewEthereumIdentityService(c, f, r, func() ethereum.Client {
+	srv := NewEthereumIdentityService(c, f, r, nil, func() ethereum.Client {
 		return g
 	}, func(address common.Address, backend bind.ContractBackend) (contract, error) {
 		return i, nil
@@ -407,7 +407,7 @@ func TestValidateKey_fail_wrong_purpose(t *testing.T) {
 		[]*big.Int{big.NewInt(KeyPurposeP2P)},
 		big.NewInt(0),
 	}, nil)
-	srv := NewEthereumIdentityService(c, f, r, func() ethereum.Client {
+	srv := NewEthereumIdentityService(c, f, r, nil, func() ethereum.Client {
 		return g
 	}, func(address common.Address, backend bind.ContractBackend) (contract, error) {
 		return i, nil
@@ -437,7 +437,7 @@ func TestValidateKey_fail_revocation(t *testing.T) {
 		[]*big.Int{big.NewInt(KeyPurposeSigning)},
 		big.NewInt(1),
 	}, nil)
-	srv := NewEthereumIdentityService(c, f, r, func() ethereum.Client {
+	srv := NewEthereumIdentityService(c, f, r, nil, func() ethereum.Client {
 		return g
 	}, func(address common.Address, backend bind.ContractBackend) (contract, error) {
 		return i, nil

@@ -49,15 +49,9 @@ func newMintingConfirmationTask(
 	}
 }
 
-// Name returns mintingConfirmationTaskName
-func (nftc *mintingConfirmationTask) Name() string {
+// TaskTypeName returns mintingConfirmationTaskName
+func (nftc *mintingConfirmationTask) TaskTypeName() string {
 	return mintingConfirmationTaskName
-}
-
-// Init registers the task to the queue
-func (nftc *mintingConfirmationTask) Init() error {
-	queue.Queue.Register(mintingConfirmationTaskName, nftc)
-	return nil
 }
 
 // Copy returns a new instance of mintingConfirmationTask
