@@ -22,7 +22,7 @@ func (*Bootstrapper) TestBootstrap(context map[string]interface{}) error {
 	}
 
 	log.Infof("Setting levelDb at: %s", cfg.GetStoragePath())
-	context[BootstrappedLevelDb] = levelDB
+	context[BootstrappedLevelDB] = levelDB
 	return nil
 }
 

@@ -37,7 +37,7 @@ func TestLookForEvent_event_not_found(t *testing.T) {
 	iter := &mockIterator{}
 	err := LookForEvent(iter)
 	assert.NotNil(t, err, "error should be non nil")
-	assert.Equal(t, err, EventNotFound)
+	assert.Equal(t, err, ErrEventNotFound)
 }
 
 func TestLookForEvent_success(t *testing.T) {

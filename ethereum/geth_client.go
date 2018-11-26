@@ -300,7 +300,7 @@ func (gc *gethClient) incrementNonce(opts *bind.TransactOpts, txpoolAccessEnable
 	}
 
 	var keys []int
-	for k, _ := range res["pending"][opts.From.Hex()] {
+	for k := range res["pending"][opts.From.Hex()] {
 		ki, err := strconv.Atoi(k)
 		if err != nil {
 			return fmt.Errorf("failed to convert nonce: %v", err)

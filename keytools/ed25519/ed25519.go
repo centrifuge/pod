@@ -53,19 +53,15 @@ func GenerateSigningKeyPair() (publicKey ed25519.PublicKey, privateKey ed25519.P
 	if err != nil {
 		log.Fatal(err)
 	}
-	return
+	return publicKey, privateKey
 }
 
 // PublicKeyToP2PKey returns p2pId from the public key
-func PublicKeyToP2PKey(publicKey [32]byte) (p2pId peer.ID, err error) {
+func PublicKeyToP2PKey(publicKey [32]byte) (p2pID peer.ID, err error) {
 	pk, err := crypto.UnmarshalEd25519PublicKey(publicKey[:])
 	if err != nil {
-		return "", err
+		return p2pID, err
 	}
 
-	p2pId, err = peer.IDFromPublicKey(pk)
-	if err != nil {
-		return "", err
-	}
-	return
+	return peer.IDFromPublicKey(pk)
 }

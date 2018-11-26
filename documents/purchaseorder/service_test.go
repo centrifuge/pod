@@ -328,13 +328,13 @@ func createAnchoredMockDocument(t *testing.T, skipSave bool) (*PurchaseOrder, er
 
 	centID, err := identity.ToCentID(centIDBytes)
 	assert.Nil(t, err)
-	signKey := identity.IdentityKey{
+	signKey := identity.IDKey{
 		PublicKey:  key1Pub[:],
 		PrivateKey: key1,
 	}
-	idConfig := &identity.IdentityConfig{
+	idConfig := &identity.IDConfig{
 		ID: centID,
-		Keys: map[int]identity.IdentityKey{
+		Keys: map[int]identity.IDKey{
 			identity.KeyPurposeSigning: signKey,
 		},
 	}
@@ -387,8 +387,8 @@ func TestService_CreateProofs(t *testing.T) {
 	idService = mockSignatureCheck(i, idService, poSrv)
 	proof, err := poSrv.CreateProofs(i.CoreDocument.DocumentIdentifier, []string{"po.po_number"})
 	assert.Nil(t, err)
-	assert.Equal(t, i.CoreDocument.DocumentIdentifier, proof.DocumentId)
-	assert.Equal(t, i.CoreDocument.DocumentIdentifier, proof.VersionId)
+	assert.Equal(t, i.CoreDocument.DocumentIdentifier, proof.DocumentID)
+	assert.Equal(t, i.CoreDocument.DocumentIdentifier, proof.VersionID)
 	assert.Equal(t, len(proof.FieldProofs), 1)
 	assert.Equal(t, proof.FieldProofs[0].GetProperty(), "po.po_number")
 }
@@ -469,8 +469,8 @@ func TestService_CreateProofsForVersion(t *testing.T) {
 	assert.Nil(t, err)
 	proof, err := poSrv.CreateProofsForVersion(i.CoreDocument.DocumentIdentifier, olderVersion, []string{"po.po_number"})
 	assert.Nil(t, err)
-	assert.Equal(t, i.CoreDocument.DocumentIdentifier, proof.DocumentId)
-	assert.Equal(t, olderVersion, proof.VersionId)
+	assert.Equal(t, i.CoreDocument.DocumentIdentifier, proof.DocumentID)
+	assert.Equal(t, olderVersion, proof.VersionID)
 	assert.Equal(t, len(proof.FieldProofs), 1)
 	assert.Equal(t, proof.FieldProofs[0].GetProperty(), "po.po_number")
 }

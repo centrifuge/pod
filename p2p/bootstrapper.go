@@ -8,7 +8,10 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 )
 
-const BootstrappedP2PClient string = "BootstrappedP2PClient"
+// Bootstrapped constants that are used as key in bootstrap context
+const (
+	BootstrappedP2PClient string = "BootstrappedP2PClient"
+)
 
 // Bootstrapper implements Bootstrapper with p2p details
 type Bootstrapper struct{}

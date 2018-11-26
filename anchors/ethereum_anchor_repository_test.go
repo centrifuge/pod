@@ -19,7 +19,7 @@ import (
 
 type mockAnchorRepo struct {
 	mock.Mock
-	AnchorRepositoryContract
+	anchorRepositoryContract
 }
 
 func (m *mockAnchorRepo) Commits(opts *bind.CallOpts, anchorID *big.Int) (docRoot [32]byte, err error) {

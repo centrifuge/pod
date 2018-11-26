@@ -18,13 +18,13 @@ func (e Error) Error() string {
 	return e.err.Error()
 }
 
-// New creates a new error from a key and a msg
+// NewError creates a new error from a key and a msg.
 func NewError(key, msg string) error {
 	err := fmt.Errorf(msg)
 	return Error{key: key, err: err}
 }
 
-// Append function is used to create a list of errors.
+// AppendError function is used to create a list of errors.
 // First argument can be nil, a multierror.Error, or any other error
 func AppendError(dstErr, srcErr error) error {
 	_, ok := dstErr.(*multierror.Error)
@@ -69,7 +69,7 @@ func Errors(err error) []error {
 	return []error{err}
 }
 
-// Len returns the amount of embedded errors
+// LenError returns the amount of embedded errors.
 func LenError(err error) int {
 
 	if err == nil {

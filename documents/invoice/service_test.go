@@ -315,8 +315,8 @@ func TestService_CreateProofs(t *testing.T) {
 	idService = mockSignatureCheck(i, idService, invSrv)
 	proof, err := invSrv.CreateProofs(i.CoreDocument.DocumentIdentifier, []string{"invoice.invoice_number"})
 	assert.Nil(t, err)
-	assert.Equal(t, i.CoreDocument.DocumentIdentifier, proof.DocumentId)
-	assert.Equal(t, i.CoreDocument.DocumentIdentifier, proof.VersionId)
+	assert.Equal(t, i.CoreDocument.DocumentIdentifier, proof.DocumentID)
+	assert.Equal(t, i.CoreDocument.DocumentIdentifier, proof.VersionID)
 	assert.Equal(t, len(proof.FieldProofs), 1)
 	assert.Equal(t, proof.FieldProofs[0].GetProperty(), "invoice.invoice_number")
 }
@@ -361,8 +361,8 @@ func TestService_CreateProofsForVersion(t *testing.T) {
 	assert.Nil(t, err)
 	proof, err := invSrv.CreateProofsForVersion(i.CoreDocument.DocumentIdentifier, olderVersion, []string{"invoice.invoice_number"})
 	assert.Nil(t, err)
-	assert.Equal(t, i.CoreDocument.DocumentIdentifier, proof.DocumentId)
-	assert.Equal(t, olderVersion, proof.VersionId)
+	assert.Equal(t, i.CoreDocument.DocumentIdentifier, proof.DocumentID)
+	assert.Equal(t, olderVersion, proof.VersionID)
 	assert.Equal(t, len(proof.FieldProofs), 1)
 	assert.Equal(t, proof.FieldProofs[0].GetProperty(), "invoice.invoice_number")
 }
@@ -413,13 +413,13 @@ func createAnchoredMockDocument(t *testing.T, skipSave bool) (*Invoice, error) {
 
 	centID, err := identity.ToCentID(centIDBytes)
 	assert.Nil(t, err)
-	signKey := identity.IdentityKey{
+	signKey := identity.IDKey{
 		PublicKey:  key1Pub[:],
 		PrivateKey: key1,
 	}
-	idConfig := &identity.IdentityConfig{
+	idConfig := &identity.IDConfig{
 		ID: centID,
-		Keys: map[int]identity.IdentityKey{
+		Keys: map[int]identity.IDKey{
 			identity.KeyPurposeSigning: signKey,
 		},
 	}

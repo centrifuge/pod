@@ -74,8 +74,8 @@ func (h grpcHandler) CreateDocumentProofForVersion(ctx context.Context, createDo
 func ConvertDocProofToClientFormat(proof *DocumentProof) (*documentpb.DocumentProof, error) {
 	return &documentpb.DocumentProof{
 		Header: &documentpb.ResponseHeader{
-			DocumentId: hexutil.Encode(proof.DocumentId),
-			VersionId:  hexutil.Encode(proof.VersionId),
+			DocumentId: hexutil.Encode(proof.DocumentID),
+			VersionId:  hexutil.Encode(proof.VersionID),
 			State:      proof.State,
 		},
 		FieldProofs: ConvertProofsToClientFormat(proof.FieldProofs)}, nil

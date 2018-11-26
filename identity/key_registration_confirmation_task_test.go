@@ -27,7 +27,7 @@ func TestKeyRegistrationConfirmationTask_ParseKwargsHappyPath(t *testing.T) {
 		keyPurposeParam:        keyPurpose,
 		queue.BlockHeightParam: bh,
 	}
-	decoded, err := utils.SimulateJsonDecodeForGocelery(kwargs)
+	decoded, err := utils.SimulateJSONDecodeForGocelery(kwargs)
 	err = rct.ParseKwargs(decoded)
 	if err != nil {
 		t.Errorf("parse error %s", err.Error())
@@ -55,7 +55,7 @@ func TestKeyRegistrationConfirmationTask_ParseKwargsHappyPathOverrideTimeout(t *
 		queue.BlockHeightParam: bh,
 		queue.TimeoutParam:     overrideTimeout,
 	}
-	decoded, err := utils.SimulateJsonDecodeForGocelery(kwargs)
+	decoded, err := utils.SimulateJSONDecodeForGocelery(kwargs)
 	err = rct.ParseKwargs(decoded)
 	if err != nil {
 		t.Errorf("parse error %s", err.Error())

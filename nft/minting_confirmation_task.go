@@ -5,16 +5,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/ethereum"
-
-	"github.com/ethereum/go-ethereum/common"
-
-	"github.com/centrifuge/gocelery"
-
 	"github.com/centrifuge/go-centrifuge/centerrors"
+	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 const (
@@ -131,9 +128,7 @@ func (nftc *mintingConfirmationTask) RunTask() (interface{}, error) {
 	}
 
 	for {
-		iter, err := filter.FilterPaymentObligationMinted(
-			fOpts,
-		)
+		iter, err := filter.FilterPaymentObligationMinted(fOpts)
 		if err != nil {
 			return nil, centerrors.Wrap(err, "failed to start filtering token minted logs")
 		}
@@ -144,11 +139,9 @@ func (nftc *mintingConfirmationTask) RunTask() (interface{}, error) {
 			return iter.Event, nil
 		}
 
-		if err != utils.EventNotFound {
+		if err != utils.ErrEventNotFound {
 			return nil, err
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
-
-	return nil, fmt.Errorf("failed to filter nft minted events")
 }

@@ -48,7 +48,7 @@ func TestWebhookConstructPayload(t *testing.T) {
 		Recorded:     ts,
 	}
 
-	whs := WebhookSender{}
+	whs := webhookSender{}
 	bresult, err := whs.constructPayload(notificationMessage)
 	assert.Nil(t, err, "Should not error out")
 

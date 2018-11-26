@@ -10,6 +10,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/version"
 )
 
+// Validator defines method that must be implemented by any validator type.
 type Validator interface {
 	// Validate validates p2p requests
 	Validate(header *p2ppb.CentrifugeHeader) error

@@ -14,16 +14,17 @@ import (
 	"github.com/centrifuge/go-centrifuge/storage"
 )
 
-type Bootstrapper struct {
-}
+// Bootstrapper implements bootstrap.Bootstrapper.
+type Bootstrapper struct{}
 
+// Bootstrap initialises required services for purchaseorder.
 func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	if _, ok := ctx[config.BootstrappedConfig]; !ok {
 		return errors.New("config hasn't been initialized")
 	}
 	cfg := ctx[config.BootstrappedConfig].(*config.Configuration)
 
-	if _, ok := ctx[storage.BootstrappedLevelDb]; !ok {
+	if _, ok := ctx[storage.BootstrappedLevelDB]; !ok {
 		return errors.New("could not initialize purchase order repository")
 	}
 

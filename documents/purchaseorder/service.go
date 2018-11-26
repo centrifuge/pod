@@ -268,10 +268,10 @@ func (s service) GetCurrentVersion(documentID []byte) (documents.Model, error) {
 		temp, err := s.getPurchaseOrderVersion(documentID, nextVersion)
 		if err != nil {
 			return model, nil
-		} else {
-			model = temp
-			nextVersion = model.CoreDocument.NextVersion
 		}
+
+		model = temp
+		nextVersion = model.CoreDocument.NextVersion
 	}
 	return model, nil
 }
@@ -300,8 +300,8 @@ func (s service) purchaseOrderProof(model documents.Model, fields []string) (*do
 		return nil, err
 	}
 	return &documents.DocumentProof{
-		DocumentId:  coreDoc.DocumentIdentifier,
-		VersionId:   coreDoc.CurrentVersion,
+		DocumentID:  coreDoc.DocumentIdentifier,
+		VersionID:   coreDoc.CurrentVersion,
 		FieldProofs: proofs,
 	}, nil
 }

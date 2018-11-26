@@ -16,7 +16,7 @@ var levelDBInstance *leveldb.DB
 // lock to guard the levelDB instance
 var lock sync.Mutex
 
-// GetStorage is a singleton implementation returning the default database as configured
+// NewLevelDBStorage is a singleton implementation returning the default database as configured.
 func NewLevelDBStorage(path string) (*leveldb.DB, error) {
 	if levelDBInstance != nil {
 		return nil, fmt.Errorf("db already open")

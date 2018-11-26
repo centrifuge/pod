@@ -8,6 +8,7 @@ import (
 	"github.com/golang/protobuf/ptypes/empty"
 )
 
+// Config defines methods required for the package healthcheck
 type Config interface {
 	GetNetworkString() string
 }

@@ -80,7 +80,7 @@ func TestGrpcHandler_CreateDocumentProofForVersion(t *testing.T) {
 	}
 	id, _ := hexutil.Decode(req.Identifier)
 	version, _ := hexutil.Decode(req.Version)
-	doc := &documents.DocumentProof{DocumentId: utils.RandomSlice(32)}
+	doc := &documents.DocumentProof{DocumentID: utils.RandomSlice(32)}
 	service.On("CreateProofsForVersion", id, version, req.Fields).Return(doc, nil)
 	grpcHandler := documents.GRPCHandler(registry)
 	retDoc, _ := grpcHandler.CreateDocumentProofForVersion(context.TODO(), req)
@@ -149,8 +149,8 @@ func TestConvertDocProofToClientFormat(t *testing.T) {
 		{
 			name: "happy",
 			input: &documents.DocumentProof{
-				DocumentId: []byte{1, 2, 1},
-				VersionId:  []byte{1, 2, 2},
+				DocumentID: []byte{1, 2, 1},
+				VersionID:  []byte{1, 2, 2},
 				State:      "state",
 				FieldProofs: []*proofspb.Proof{
 					{

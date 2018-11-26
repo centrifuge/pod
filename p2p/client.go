@@ -18,6 +18,7 @@ import (
 	"google.golang.org/grpc"
 )
 
+// Client defines methods that can be implemented by any type handling p2p communications.
 type Client interface {
 	OpenClient(target string) (p2ppb.P2PServiceClient, error)
 	GetSignaturesForDocument(ctx *header.ContextHeader, identityService identity.Service, doc *coredocumentpb.CoreDocument) error
@@ -52,7 +53,8 @@ func (s *p2pServer) OpenClient(target string) (p2ppb.P2PServiceClient, error) {
 
 	// make a new stream from host B to host A with timeout
 	// Retrial is handled internally, connection request will be cancelled by the connection timeout context
-	ctx, _ := context.WithTimeout(context.Background(), s.config.GetP2PConnectionTimeout())
+	ctx, cancel := context.WithTimeout(context.Background(), s.config.GetP2PConnectionTimeout())
+	defer cancel()
 	g, err := s.protocol.Dial(ctx, peerID, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		return nil, fmt.Errorf("failed to dial peer [%s]: %v", peerID.Pretty(), err)
@@ -62,8 +64,8 @@ func (s *p2pServer) OpenClient(target string) (p2ppb.P2PServiceClient, error) {
 }
 
 // getSignatureForDocument requests the target node to sign the document
-func (s *p2pServer) getSignatureForDocument(ctx context.Context, identityService identity.Service, doc coredocumentpb.CoreDocument, client p2ppb.P2PServiceClient, receiverCentId identity.CentID) (*p2ppb.SignatureResponse, error) {
-	senderId, err := s.config.GetIdentityID()
+func (s *p2pServer) getSignatureForDocument(ctx context.Context, identityService identity.Service, doc coredocumentpb.CoreDocument, client p2ppb.P2PServiceClient, receiverCentID identity.CentID) (*p2ppb.SignatureResponse, error) {
+	senderID, err := s.config.GetIdentityID()
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +73,7 @@ func (s *p2pServer) getSignatureForDocument(ctx context.Context, identityService
 	header := p2ppb.CentrifugeHeader{
 		NetworkIdentifier:  s.config.GetNetworkID(),
 		CentNodeVersion:    version.GetVersion().String(),
-		SenderCentrifugeId: senderId,
+		SenderCentrifugeId: senderID,
 	}
 
 	req := &p2ppb.SignatureRequest{
@@ -79,7 +81,7 @@ func (s *p2pServer) getSignatureForDocument(ctx context.Context, identityService
 		Document: &doc,
 	}
 
-	log.Infof("Requesting signature from %s\n", receiverCentId)
+	log.Infof("Requesting signature from %s\n", receiverCentID)
 
 	resp, err := client.RequestDocumentSignature(ctx, req)
 	if err != nil {
@@ -91,7 +93,7 @@ func (s *p2pServer) getSignatureForDocument(ctx context.Context, identityService
 		return nil, version.IncompatibleVersionError(resp.CentNodeVersion)
 	}
 
-	err = identity.ValidateCentrifugeIDBytes(resp.Signature.EntityId, receiverCentId)
+	err = identity.ValidateCentrifugeIDBytes(resp.Signature.EntityId, receiverCentID)
 	if err != nil {
 		return nil, centerrors.New(code.AuthenticationFailed, err.Error())
 	}
@@ -101,8 +103,7 @@ func (s *p2pServer) getSignatureForDocument(ctx context.Context, identityService
 		return nil, centerrors.New(code.AuthenticationFailed, "signature invalid")
 	}
 
-	log.Infof("Signature successfully received from %s\n", receiverCentId)
-
+	log.Infof("Signature successfully received from %s\n", receiverCentID)
 	return resp, nil
 }
 
@@ -111,8 +112,8 @@ type signatureResponseWrap struct {
 	err  error
 }
 
-func (s *p2pServer) getSignatureAsync(ctx context.Context, identityService identity.Service, doc coredocumentpb.CoreDocument, client p2ppb.P2PServiceClient, receiverCentId identity.CentID, out chan<- signatureResponseWrap) {
-	resp, err := s.getSignatureForDocument(ctx, identityService, doc, client, receiverCentId)
+func (s *p2pServer) getSignatureAsync(ctx context.Context, identityService identity.Service, doc coredocumentpb.CoreDocument, client p2ppb.P2PServiceClient, receiverCentID identity.CentID, out chan<- signatureResponseWrap) {
+	resp, err := s.getSignatureForDocument(ctx, identityService, doc, client, receiverCentID)
 	out <- signatureResponseWrap{
 		resp: resp,
 		err:  err,

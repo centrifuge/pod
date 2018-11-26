@@ -19,9 +19,9 @@ type MockPaymentObligationService struct {
 	mock.Mock
 }
 
-func (m *MockPaymentObligationService) MintNFT(documentID []byte, registryAddress, depositAddress string, proofFields []string) (<-chan *WatchTokenMinted, error) {
+func (m *MockPaymentObligationService) MintNFT(documentID []byte, registryAddress, depositAddress string, proofFields []string) (<-chan *watchTokenMinted, error) {
 	args := m.Called(documentID, registryAddress, depositAddress, proofFields)
-	return args.Get(0).(chan *WatchTokenMinted), args.Error(1)
+	return args.Get(0).(chan *watchTokenMinted), args.Error(1)
 }
 
 func TestNFTMint_success(t *testing.T) {
@@ -29,14 +29,14 @@ func TestNFTMint_success(t *testing.T) {
 	mockService := &MockPaymentObligationService{}
 	docID, _ := hexutil.Decode(nftMintRequest.Identifier)
 
-	confirmations := make(chan *WatchTokenMinted)
+	confirmations := make(chan *watchTokenMinted)
 	mockService.
 		On("MintNFT", docID, nftMintRequest.RegistryAddress, nftMintRequest.DepositAddress, nftMintRequest.ProofFields).
 		Return(confirmations, nil)
 
 	tokID := big.NewInt(1)
 	go func() {
-		confirmations <- &WatchTokenMinted{tokID, nil}
+		confirmations <- &watchTokenMinted{tokID, nil}
 	}()
 
 	handler := grpcHandler{mockService}
@@ -59,7 +59,7 @@ func TestNFTMint_ServiceError(t *testing.T) {
 	nftMintRequest := getTestSetupData()
 	mockService := &MockPaymentObligationService{}
 	docID, _ := hexutil.Decode(nftMintRequest.Identifier)
-	confirmations := make(chan *WatchTokenMinted)
+	confirmations := make(chan *watchTokenMinted)
 	mockService.
 		On("MintNFT", docID, nftMintRequest.RegistryAddress, nftMintRequest.DepositAddress, nftMintRequest.ProofFields).
 		Return(confirmations, errors.New("service error"))

@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
+// ContainsBigIntInSlice checks if value is present in list.
 func ContainsBigIntInSlice(value *big.Int, list []*big.Int) bool {
 	for _, v := range list {
 		if v.Cmp(value) == 0 {
@@ -25,10 +26,10 @@ func SliceToByte32(in []byte) (out [32]byte, err error) {
 		return [32]byte{}, errors.New("input exceeds length of 32")
 	}
 	copy(out[:], in)
-	return
+	return out, nil
 }
 
-//
+// IsEmptyAddress checks if the addr is empty.
 func IsEmptyAddress(addr common.Address) bool {
 	return addr.Hex() == "0x0000000000000000000000000000000000000000"
 }
@@ -46,12 +47,12 @@ func SliceOfByteSlicesToHexStringSlice(byteSlices [][]byte) []string {
 func Byte32ToSlice(in [32]byte) []byte {
 	if IsEmptyByte32(in) {
 		return []byte{}
-	} else {
-		return in[:]
 	}
+
+	return in[:]
 }
 
-// Check32BytesFilled takes multiple []byte slices and ensures they are all of length 32 and don't contain all 0x0 bytes.
+// CheckMultiple32BytesFilled takes multiple []byte slices and ensures they are all of length 32 and don't contain all 0x0 bytes.
 func CheckMultiple32BytesFilled(b []byte, bs ...[]byte) bool {
 	bs = append(bs, b)
 	for _, v := range bs {
@@ -80,6 +81,7 @@ func RandomByte32() (out [32]byte) {
 	return
 }
 
+// IsEmptyByte32 checks if the source is empty.
 func IsEmptyByte32(source [32]byte) bool {
 	sl := make([]byte, 32)
 	copy(sl, source[:32])
@@ -102,6 +104,7 @@ func IsEmptyByteSlice(s []byte) bool {
 	return true
 }
 
+// IsSameByteSlice checks if a and b contains same bytes.
 func IsSameByteSlice(a []byte, b []byte) bool {
 	if a == nil && b == nil {
 		return true
@@ -124,7 +127,7 @@ func IsSameByteSlice(a []byte, b []byte) bool {
 	return true
 }
 
-// ByteFixedToBigInt convert bute slices to big.Int (bigendian)
+// ByteSliceToBigInt convert bute slices to big.Int (bigendian)
 func ByteSliceToBigInt(slice []byte) *big.Int {
 	bi := new(big.Int)
 	bi.SetBytes(slice)
@@ -138,17 +141,19 @@ func ByteFixedToBigInt(bytes []byte, size int) *big.Int {
 	return bi
 }
 
-// Useful for tests
-func SimulateJsonDecodeForGocelery(kwargs map[string]interface{}) (map[string]interface{}, error) {
+// SimulateJSONDecodeForGocelery encodes and decodes the kwargs.
+func SimulateJSONDecodeForGocelery(kwargs map[string]interface{}) (map[string]interface{}, error) {
 	t1 := gocelery.TaskMessage{Kwargs: kwargs}
 	encoded, err := t1.Encode()
 	if err != nil {
 		return nil, err
 	}
+
 	t2, err := gocelery.DecodeTaskMessage(encoded)
 	return t2.Kwargs, err
 }
 
+// IsValidByteSliceForLength checks if the len(slice) == length.
 func IsValidByteSliceForLength(slice []byte, length int) bool {
 	return len(slice) == length
 }

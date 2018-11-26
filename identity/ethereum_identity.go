@@ -26,7 +26,7 @@ import (
 var log = logging.Logger("identity")
 
 type factory interface {
-	CreateIdentity(opts *bind.TransactOpts, _centrifugeId *big.Int) (*types.Transaction, error)
+	CreateIdentity(opts *bind.TransactOpts, centID *big.Int) (*types.Transaction, error)
 }
 
 type registry interface {
@@ -147,15 +147,15 @@ func (id *ethereumIdentity) FetchKey(key []byte) (Key, error) {
 func (id *ethereumIdentity) CurrentP2PKey() (ret string, err error) {
 	key, err := id.LastKeyForPurpose(KeyPurposeP2P)
 	if err != nil {
-		return
+		return ret, err
 	}
 	key32, _ := utils.SliceToByte32(key)
-	p2pId, err := ed25519.PublicKeyToP2PKey(key32)
+	p2pID, err := ed25519.PublicKeyToP2PKey(key32)
 	if err != nil {
-		return
+		return ret, err
 	}
-	ret = p2pId.Pretty()
-	return
+
+	return p2pID.Pretty(), nil
 }
 
 func (id *ethereumIdentity) findContract() (exists bool, err error) {
@@ -263,7 +263,7 @@ func (id *ethereumIdentity) fetchKeysByPurpose(keyPurpose int) ([]EthereumIdenti
 }
 
 // sendRegistrationTransaction sends the actual transaction to add a Key on Ethereum registry contract
-func sendKeyRegistrationTransaction(identityContract contract, opts *bind.TransactOpts, identity *ethereumIdentity, keyPurpose int, key []byte) (err error) {
+func sendKeyRegistrationTransaction(identityContract contract, opts *bind.TransactOpts, identity *ethereumIdentity, keyPurpose int, key []byte) error {
 
 	//preparation of data in specific types for the call to Ethereum
 	bigInt := big.NewInt(int64(keyPurpose))
@@ -279,35 +279,33 @@ func sendKeyRegistrationTransaction(identityContract contract, opts *bind.Transa
 	}
 
 	log.Infof("Sent off key [%v:%x] to add to CentrifugeID [%s]. Ethereum transaction hash [%x]", keyPurpose, bKey, identity, tx.Hash())
-	return
+	return nil
 }
 
 // sendIdentityCreationTransaction sends the actual transaction to create identity on Ethereum registry contract
-func sendIdentityCreationTransaction(identityFactory factory, opts *bind.TransactOpts, identityToBeCreated Identity) (err error) {
+func sendIdentityCreationTransaction(identityFactory factory, opts *bind.TransactOpts, identityToBeCreated Identity) error {
 	//preparation of data in specific types for the call to Ethereum
 	tx, err := ethereum.GetClient().SubmitTransactionWithRetries(identityFactory.CreateIdentity, opts, identityToBeCreated.CentID().BigInt())
 	if err != nil {
 		log.Infof("Failed to send identity for creation [CentrifugeID: %s] : %v", identityToBeCreated, err)
 		return err
-	} else {
-		log.Infof("Sent off identity creation [%s]. Ethereum transaction hash [%x] and Nonce [%v] and Check [%v]", identityToBeCreated, tx.Hash(), tx.Nonce(), tx.CheckNonce())
 	}
 
+	log.Infof("Sent off identity creation [%s]. Ethereum transaction hash [%x] and Nonce [%v] and Check [%v]", identityToBeCreated, tx.Hash(), tx.Nonce(), tx.CheckNonce())
 	log.Infof("Transfer pending: 0x%x\n", tx.Hash())
-
-	return
+	return err
 }
 
 // setUpKeyRegisteredEventListener listens for Identity creation
 func (id *ethereumIdentity) setUpKeyRegisteredEventListener(config Config, identity Identity, keyPurpose int, key [32]byte, bh uint64) (confirmations chan *WatchIdentity, err error) {
 	confirmations = make(chan *WatchIdentity)
-	centId := identity.CentID()
+	centID := identity.CentID()
 	if err != nil {
 		return nil, err
 	}
 	asyncRes, err := id.queue.EnqueueJob(keyRegistrationConfirmationTaskName,
 		map[string]interface{}{
-			centIDParam:            centId,
+			centIDParam:            centID,
 			keyParam:               key,
 			keyPurposeParam:        keyPurpose,
 			queue.BlockHeightParam: bh,
@@ -323,11 +321,12 @@ func (id *ethereumIdentity) setUpKeyRegisteredEventListener(config Config, ident
 // of the identity.
 func (ids *EthereumIdentityService) setUpRegistrationEventListener(config Config, identityToBeCreated Identity, blockHeight uint64) (confirmations chan *WatchIdentity, err error) {
 	confirmations = make(chan *WatchIdentity)
-	bCentId := identityToBeCreated.CentID()
+	centID := identityToBeCreated.CentID()
 	if err != nil {
 		return nil, err
 	}
-	asyncRes, err := ids.queue.EnqueueJob(idRegistrationConfirmationTaskName, map[string]interface{}{centIDParam: bCentId, queue.BlockHeightParam: blockHeight})
+
+	asyncRes, err := ids.queue.EnqueueJob(idRegistrationConfirmationTaskName, map[string]interface{}{centIDParam: centID, queue.BlockHeightParam: blockHeight})
 	if err != nil {
 		return nil, err
 	}
@@ -347,7 +346,7 @@ func waitAndRouteIdentityRegistrationEvent(timeout time.Duration, asyncRes queue
 	confirmations <- &WatchIdentity{pushThisIdentity, err}
 }
 
-// EthereumidentityService implements `Service`
+// EthereumIdentityService implements `Service`
 type EthereumIdentityService struct {
 	config           Config
 	factoryContract  factory
@@ -499,8 +498,8 @@ func (ids *EthereumIdentityService) GetIdentityKey(identity CentID, pubKey []byt
 }
 
 // ValidateKey checks if a given key is valid for the given centrifugeID.
-func (ids *EthereumIdentityService) ValidateKey(centrifugeId CentID, key []byte, purpose int) error {
-	idKey, err := ids.GetIdentityKey(centrifugeId, key)
+func (ids *EthereumIdentityService) ValidateKey(centID CentID, key []byte, purpose int) error {
+	idKey, err := ids.GetIdentityKey(centID, key)
 	if err != nil {
 		return err
 	}

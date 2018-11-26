@@ -12,9 +12,10 @@ import (
 // BootstrappedAnchorRepo is used as a key to map the configured anchor repository through context.
 const BootstrappedAnchorRepo string = "BootstrappedAnchorRepo"
 
+// Bootstrapper implements bootstrapper.Bootstrapper for package requirement initialisations.
 type Bootstrapper struct{}
 
-// Bootstrap initializes the AnchorRepositoryContract as well as the anchorConfirmationTask that depends on it.
+// Bootstrap initializes the anchorRepositoryContract as well as the anchorConfirmationTask that depends on it.
 // the anchorConfirmationTask is added to be registered on the Queue at queue.Bootstrapper.
 func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	if _, ok := ctx[config.BootstrappedConfig]; !ok {

@@ -268,6 +268,8 @@ func (i *Invoice) getInvoiceSalts(invoiceData *invoicepb.InvoiceData) *invoicepb
 	return i.InvoiceSalts
 }
 
+// ID returns document identifier.
+// Note: this is not a unique identifier for each version of the document.
 func (i *Invoice) ID() ([]byte, error) {
 	coreDoc, err := i.PackCoreDocument()
 	if err != nil {
@@ -399,5 +401,5 @@ func (i *Invoice) createProofs(fields []string) (coreDoc *coredocumentpb.CoreDoc
 	}
 
 	proofs, err = coredocument.CreateProofs(tree, coreDoc, fields)
-	return
+	return coreDoc, proofs, err
 }

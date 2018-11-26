@@ -27,6 +27,7 @@ import (
 
 var log = logging.Logger("config")
 
+// Config defines the methods that a config type should implement.
 type Config interface {
 	GetStoragePath() string
 	GetP2PPort() int
@@ -58,61 +59,62 @@ type Config interface {
 	GetEthAuthKeyPair() (pub, priv string)
 }
 
-// Configuration holds the configuration details for the node
+// Configuration holds the configuration details for the node.
 type Configuration struct {
 	mu         sync.RWMutex
 	configFile string
 	v          *viper.Viper
 }
 
-// AccountConfig holds the account details
+// AccountConfig holds the account details.
 type AccountConfig struct {
 	Address  string
 	Key      string
 	Password string
 }
 
-// IsSet check if the key is set in the config
+// IsSet check if the key is set in the config.
 func (c *Configuration) IsSet(key string) bool {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return c.v.IsSet(key)
 }
 
-// Set update the key and the value it holds in the configuration
+// Set update the key and the value it holds in the configuration.
 func (c *Configuration) Set(key string, value interface{}) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.v.Set(key, value)
 }
 
+// SetDefault sets the default value for the given key.
 func (c *Configuration) SetDefault(key string, value interface{}) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.v.SetDefault(key, value)
 }
 
-// Get returns associated value for the key
+// Get returns associated value for the key.
 func (c *Configuration) Get(key string) interface{} {
 	return c.get(key)
 }
 
-// GetString returns value string associated with key
+// GetString returns value string associated with key.
 func (c *Configuration) GetString(key string) string {
 	return cast.ToString(c.get(key))
 }
 
-// GetInt returns value int associated with key
+// GetInt returns value int associated with key.
 func (c *Configuration) GetInt(key string) int {
 	return cast.ToInt(c.get(key))
 }
 
-// GetBool returns value bool associated with key
+// GetBool returns value bool associated with key.
 func (c *Configuration) GetBool(key string) bool {
 	return cast.ToBool(c.get(key))
 }
 
-// GetDuration returns value duration associated with key
+// GetDuration returns value duration associated with key.
 func (c *Configuration) GetDuration(key string) time.Duration {
 	return cast.ToDuration(c.get(key))
 }
@@ -123,92 +125,92 @@ func (c *Configuration) get(key string) interface{} {
 	return c.v.Get(key)
 }
 
-// GetStoragePath returns the data storage backend
+// GetStoragePath returns the data storage backend.
 func (c *Configuration) GetStoragePath() string {
 	return c.GetString("storage.Path")
 }
 
-// GetP2PPort returns P2P Port
+// GetP2PPort returns P2P Port.
 func (c *Configuration) GetP2PPort() int {
 	return c.GetInt("p2p.port")
 }
 
-// GetP2PExternalIP returns P2P External IP
+// GetP2PExternalIP returns P2P External IP.
 func (c *Configuration) GetP2PExternalIP() string {
 	return c.GetString("p2p.externalIP")
 }
 
-// GetP2PConnectionTimeout returns P2P Connect Timeout
+// GetP2PConnectionTimeout returns P2P Connect Timeout.
 func (c *Configuration) GetP2PConnectionTimeout() time.Duration {
 	return c.GetDuration("p2p.connectTimeout")
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// Notifications
-////////////////////////////////////////////////////////////////////////////////
+// GetReceiveEventNotificationEndpoint returns the webhook endpoint defined in the config.
 func (c *Configuration) GetReceiveEventNotificationEndpoint() string {
 	return c.GetString("notifications.endpoint")
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// Server
-////////////////////////////////////////////////////////////////////////////////
-
+// GetServerPort returns the defined server port in the config.
 func (c *Configuration) GetServerPort() int {
 	return c.GetInt("nodePort")
 }
 
+// GetServerAddress returns the defined server address of form host:port in the config.
 func (c *Configuration) GetServerAddress() string {
 	return fmt.Sprintf("%s:%s", c.GetString("nodeHostname"), c.GetString("nodePort"))
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// Queuing
-////////////////////////////////////////////////////////////////////////////////
-
+// GetNumWorkers returns number of queue workers defined in the config.
 func (c *Configuration) GetNumWorkers() int {
 	return c.GetInt("queue.numWorkers")
 }
 
+// GetWorkerWaitTimeMS returns the queue worker sleep time between cycles.
 func (c *Configuration) GetWorkerWaitTimeMS() int {
 	return c.GetInt("queue.workerWaitTimeMS")
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// Ethereum
-////////////////////////////////////////////////////////////////////////////////
+// GetEthereumNodeURL returns the URL of the Ethereum Node.
 func (c *Configuration) GetEthereumNodeURL() string {
 	return c.GetString("ethereum.nodeURL")
 }
 
+// GetEthereumContextReadWaitTimeout returns the read duration to pass for context.Deadline.
 func (c *Configuration) GetEthereumContextReadWaitTimeout() time.Duration {
 	return c.GetDuration("ethereum.contextReadWaitTimeout")
 }
 
+// GetEthereumContextWaitTimeout returns the commit duration to pass for context.Deadline.
 func (c *Configuration) GetEthereumContextWaitTimeout() time.Duration {
 	return c.GetDuration("ethereum.contextWaitTimeout")
 }
 
+// GetEthereumIntervalRetry returns duration to wait between retries.
 func (c *Configuration) GetEthereumIntervalRetry() time.Duration {
 	return c.GetDuration("ethereum.intervalRetry")
 }
 
+// GetEthereumMaxRetries returns the max acceptable retries.
 func (c *Configuration) GetEthereumMaxRetries() int {
 	return c.GetInt("ethereum.maxRetries")
 }
 
+// GetEthereumGasPrice returns the gas price to use for a ethereum transaction.
 func (c *Configuration) GetEthereumGasPrice() *big.Int {
 	return big.NewInt(cast.ToInt64(c.get("ethereum.gasPrice")))
 }
 
+// GetEthereumGasLimit returns the gas limit to use for a ethereum transaction.
 func (c *Configuration) GetEthereumGasLimit() uint64 {
 	return cast.ToUint64(c.get("ethereum.gasLimit"))
 }
 
+// GetEthereumDefaultAccountName returns the default account to use for the transaction.
 func (c *Configuration) GetEthereumDefaultAccountName() string {
 	return c.GetString("ethereum.defaultAccountName")
 }
 
+// GetEthereumAccount returns the account details associated with the account name.
 func (c *Configuration) GetEthereumAccount(accountName string) (account *AccountConfig, err error) {
 	k := fmt.Sprintf("ethereum.accounts.%s", accountName)
 
@@ -226,18 +228,18 @@ func (c *Configuration) GetEthereumAccount(accountName string) (account *Account
 	return account, nil
 }
 
-// Important flag for concurrency handling. Disable if Ethereum client doesn't support txpool API (INFURA)
+// GetTxPoolAccessEnabled returns if the node can check the txpool for nonce increment.
+// Note:Important flag for concurrency handling. Disable if Ethereum client doesn't support txpool API (INFURA).
 func (c *Configuration) GetTxPoolAccessEnabled() bool {
 	return c.GetBool("ethereum.txPoolAccessEnabled")
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// Network Configuration
-////////////////////////////////////////////////////////////////////////////////
+// GetNetworkString returns defined network the node is connected to.
 func (c *Configuration) GetNetworkString() string {
 	return c.GetString("centrifugeNetwork")
 }
 
+// GetNetworkKey returns the specific key(k) value defined in the default network.
 func (c *Configuration) GetNetworkKey(k string) string {
 	return fmt.Sprintf("networks.%s.%s", c.GetNetworkString(), k)
 }
@@ -262,7 +264,7 @@ func (c *Configuration) GetNetworkID() uint32 {
 	return uint32(c.GetInt(c.GetNetworkKey("id")))
 }
 
-// GetIdentityID returns the self centID
+// GetIdentityID returns the self centID in bytes.
 func (c *Configuration) GetIdentityID() ([]byte, error) {
 	id, err := hexutil.Decode(c.GetString("identityId"))
 	if err != nil {
@@ -271,10 +273,12 @@ func (c *Configuration) GetIdentityID() ([]byte, error) {
 	return id, err
 }
 
+// GetSigningKeyPair returns the signing key pair.
 func (c *Configuration) GetSigningKeyPair() (pub, priv string) {
 	return c.GetString("keys.signing.publicKey"), c.GetString("keys.signing.privateKey")
 }
 
+// GetEthAuthKeyPair returns ethereum key pair.
 func (c *Configuration) GetEthAuthKeyPair() (pub, priv string) {
 	return c.GetString("keys.ethauth.publicKey"), c.GetString("keys.ethauth.privateKey")
 }
@@ -284,8 +288,8 @@ func (c *Configuration) IsPProfEnabled() bool {
 	return c.GetBool("debug.pprof")
 }
 
-// Configuration Implementation
-func NewConfiguration(configFile string) *Configuration {
+// LoadConfiguration loads the configuration from the given file.
+func LoadConfiguration(configFile string) *Configuration {
 	cfg := &Configuration{configFile: configFile, mu: sync.RWMutex{}}
 	cfg.InitializeViper()
 	return cfg
@@ -302,8 +306,9 @@ func (c *Configuration) readConfigFile(path string) error {
 	return err
 }
 
+// InitializeViper loads viper if not loaded already.
+// This method should not have any effects if Viper is already initialized.
 func (c *Configuration) InitializeViper() {
-	// This method should not have any effects if Viper is already initialized.
 	if c.v != nil {
 		return
 	}
@@ -342,7 +347,7 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	accountKeyPath := args["accountKeyPath"].(string)
 	accountPassword := args["accountPassword"].(string)
 	network := args["network"].(string)
-	ethNodeUrl := args["ethNodeUrl"].(string)
+	ethNodeURL := args["ethNodeURL"].(string)
 	bootstraps := args["bootstraps"].([]string)
 	apiPort := args["apiPort"].(int64)
 	p2pPort := args["p2pPort"].(int64)
@@ -376,7 +381,7 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	v.Set("nodeHostname", "0.0.0.0")
 	v.Set("nodePort", apiPort)
 	v.Set("p2p.port", p2pPort)
-	v.Set("ethereum.nodeURL", ethNodeUrl)
+	v.Set("ethereum.nodeURL", ethNodeURL)
 	v.Set("ethereum.txPoolAccessEnabled", txPoolAccess)
 	v.Set("ethereum.accounts.main.key", string(bfile))
 	v.Set("ethereum.accounts.main.password", accountPassword)

@@ -1,16 +1,16 @@
 package queue
 
 import (
-	"sync"
-
 	"context"
 	"errors"
+	"sync"
 	"time"
 
 	"github.com/centrifuge/gocelery"
 	logging "github.com/ipfs/go-log"
 )
 
+// Constants are commonly used by all the tasks through kwargs.
 const (
 	BlockHeightParam string = "BlockHeight"
 	TimeoutParam     string = "Timeout"
@@ -46,13 +46,13 @@ type TaskResult interface {
 // Server represents the queue server currently implemented based on gocelery
 type Server struct {
 	config    Config
-	lock 	  sync.RWMutex
+	lock      sync.RWMutex
 	queue     *gocelery.CeleryClient
 	taskTypes []TaskType
 }
 
 // TaskTypeName of the queue server
-func (qs *Server) Name() string {
+func (qs *Server) TaskTypeName() string {
 	return "QueueServer"
 }
 

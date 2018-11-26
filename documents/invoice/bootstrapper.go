@@ -14,6 +14,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/storage"
 )
 
+// Bootstrapper implements bootstrap.Bootstrapper.
 type Bootstrapper struct{}
 
 // Bootstrap sets the required storage and registers
@@ -24,7 +25,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 
 	cfg := ctx[config.BootstrappedConfig].(*config.Configuration)
 
-	if _, ok := ctx[storage.BootstrappedLevelDb]; !ok {
+	if _, ok := ctx[storage.BootstrappedLevelDB]; !ok {
 		return errors.New("initializing LevelDB repository failed")
 	}
 
