@@ -170,7 +170,7 @@ func (c *Configuration) GetWorkerWaitTimeMS() int {
 	return c.GetInt("queue.workerWaitTimeMS")
 }
 
-// GetEthereumNodeURL returns the ethereum node to connect to.
+// GetEthereumNodeURL returns the URL of the Ethereum Node.
 func (c *Configuration) GetEthereumNodeURL() string {
 	return c.GetString("ethereum.nodeURL")
 }
