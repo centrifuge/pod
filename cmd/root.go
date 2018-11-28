@@ -1,20 +1,20 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
-	c "context"
 
+	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/context"
+	c "github.com/centrifuge/go-centrifuge/context"
+	"github.com/centrifuge/go-centrifuge/node"
+	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/utils"
 	logging "github.com/ipfs/go-log"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	gologging "github.com/whyrusleeping/go-logging"
-	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/queue"
-	"github.com/centrifuge/go-centrifuge/node"
 )
 
 //global flags
@@ -90,7 +90,7 @@ func setCentrifugeLoggers() {
 }
 
 func runBootstrap(cfgFile string) {
-	mb := context.MainBootstrapper{}
+	mb := c.MainBootstrapper{}
 	mb.PopulateRunBootstrappers()
 	ctx := map[string]interface{}{}
 	ctx[config.BootstrappedConfigFile] = cfgFile
@@ -102,7 +102,7 @@ func runBootstrap(cfgFile string) {
 }
 
 func baseBootstrap(cfgFile string) map[string]interface{} {
-	mb := context.MainBootstrapper{}
+	mb := c.MainBootstrapper{}
 	mb.PopulateBaseBootstrappers()
 	ctx := map[string]interface{}{}
 	ctx[config.BootstrappedConfigFile] = cfgFile
@@ -114,12 +114,12 @@ func baseBootstrap(cfgFile string) map[string]interface{} {
 	return ctx
 }
 
-func commandBootstrap(cfgFile string) (map[string]interface{}, c.CancelFunc, error) {
+func commandBootstrap(cfgFile string) (map[string]interface{}, context.CancelFunc, error) {
 	ctx := baseBootstrap(cfgFile)
 	queueSrv := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
 	// init node with only the queue server which is needed by commands
 	n := node.New([]node.Server{queueSrv})
-	cx, canc := c.WithCancel(c.Background())
+	cx, canc := context.WithCancel(context.Background())
 	e := make(chan error)
 	go n.Start(cx, e)
 	return ctx, canc, nil
