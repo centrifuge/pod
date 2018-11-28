@@ -20,7 +20,7 @@ func (*Bootstrapper) Bootstrap(c map[string]interface{}) error {
 		return fmt.Errorf("failed to load servers: %v", err)
 	}
 
-	n := NewNode(srvs)
+	n := New(srvs)
 	feedback := make(chan error)
 	// may be we can pass a context that exists in c here
 	ctx, canc := context.WithCancel(context.WithValue(context.Background(), bootstrap.NodeObjRegistry, c))

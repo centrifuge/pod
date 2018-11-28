@@ -26,8 +26,8 @@ type Node struct {
 	services []Server
 }
 
-// NewNode returns a new Node with given services.
-func NewNode(services []Server) *Node {
+// New returns a new Node with given services.
+func New(services []Server) *Node {
 	return &Node{
 		services: services,
 	}
