@@ -82,18 +82,18 @@ func init() {
 
 			v, err := config.CreateConfigFile(data)
 			if err != nil {
-				panic(err)
+				log.Fatalf("error: %v", err)
 			}
 			log.Infof("Config File Created: %s\n", v.ConfigFileUsed())
 
-			ctx := baseBootstrap(v.ConfigFileUsed())
+			ctx, canc, _ := commandBootstrap(v.ConfigFileUsed())
 			cfg := ctx[config.BootstrappedConfig].(*config.Configuration)
 			generateKeys(cfg)
 
 			idService := ctx[identity.BootstrappedIDService].(identity.Service)
 			id, err := createIdentity(idService)
 			if err != nil {
-				panic(err)
+				log.Fatalf("error: %v", err)
 			}
 
 			v.Set("identityId", id.String())
@@ -109,6 +109,7 @@ func init() {
 			if err != nil {
 				log.Fatalf("error: %v", err)
 			}
+			canc()
 		},
 	}
 

@@ -51,7 +51,7 @@ func (s *MockService) Start(ctx context.Context, wg *sync.WaitGroup, startupErr 
 func TestNode_StartHappy(t *testing.T) {
 	// create node with two mocked out services
 	services := []Server{&MockService{mustReturnStartErr: false}, &MockService{mustReturnStartErr: false}}
-	n := NewNode(services)
+	n := New(services)
 	errChan := make(chan error)
 	ctx, _ := context.WithTimeout(context.TODO(), time.Millisecond)
 	go n.Start(ctx, errChan)
@@ -65,7 +65,7 @@ func TestNode_StartHappy(t *testing.T) {
 func TestNode_StartContextCancel(t *testing.T) {
 	// create node with two mocked out services
 	services := []Server{&MockService{mustReturnStartErr: false}, &MockService{mustReturnStartErr: false}}
-	n := NewNode(services)
+	n := New(services)
 	errChan := make(chan error)
 	ctx, canc := context.WithCancel(context.TODO())
 	go n.Start(ctx, errChan)
@@ -82,7 +82,7 @@ func TestNode_StartContextCancel(t *testing.T) {
 func TestNode_StartChildError(t *testing.T) {
 	// create node with two mocked out services
 	services := []Server{&MockService{mustReturnStartErr: true}, &MockService{mustReturnStartErr: false}}
-	n := NewNode(services)
+	n := New(services)
 	errChan := make(chan error)
 	ctx, _ := context.WithCancel(context.TODO())
 	go n.Start(ctx, errChan)
