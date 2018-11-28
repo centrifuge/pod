@@ -1,0 +1,21 @@
+package tests
+
+import (
+	"testing"
+	"fmt"
+	)
+
+// These aren't proper tests, just for checking if the util functions work
+
+func TestRunMigrations(t *testing.T) {
+	runSmartContractMigrations()
+}
+
+func TestGetSmartContractAddresses(t *testing.T) {
+	//runSmartContractMigrations()
+	c := getSmartContractAddresses()
+	if c == nil {
+		t.Error("Failed")
+	}
+	fmt.Printf("%+v\n", c)
+}

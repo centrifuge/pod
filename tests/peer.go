@@ -1,59 +1,66 @@
-// +build integration
+// +build p2p_test
 
 package tests
 
 import (
-	"github.com/centrifuge/go-centrifuge/node"
-		"github.com/centrifuge/go-centrifuge/config"
-	ctx "github.com/centrifuge/go-centrifuge/context"
+	"context"
 	"fmt"
-	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"os"
 	"os/signal"
-	"context"
-	logging "github.com/ipfs/go-log"
+
+	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/cmd"
+	"github.com/centrifuge/go-centrifuge/config"
+	ctx "github.com/centrifuge/go-centrifuge/context"
+	"github.com/centrifuge/go-centrifuge/documents/invoice"
+	"github.com/centrifuge/go-centrifuge/node"
+	logging "github.com/ipfs/go-log"
 )
 
 var log = logging.Logger("peer")
 
 type peer struct {
-	name, dir, ethNodeUrl, accountKeyPath, accountPassword, network string
-	apiPort, p2pPort int64
-	bootstrapNodes []string
-	bootstrappedCtx map[string]interface{}
-	txPoolAccess bool
-	node *node.Node
+	name, dir, ethNodeUrl, accountKeyPath, accountPassword, network,
+	identityFactoryAddr, identityRegistryAddr, anchorRepositoryAddr, paymentObligationAddr string
+	apiPort, p2pPort   int64
+	bootstrapNodes     []string
+	bootstrappedCtx    map[string]interface{}
+	txPoolAccess       bool
+	smartContractAddrs *config.SmartContractAddresses
+	node               *node.Node
 }
 
-func NewPeer(name, ethNodeUrl, accountKeyPath, accountPassword, network string,
-	apiPort,
-	p2pPort int64,
+func NewPeer(
+	name, ethNodeUrl, accountKeyPath, accountPassword, network string,
+	apiPort, p2pPort int64,
 	bootstraps []string,
-	txPoolAccess bool) *peer {
+	txPoolAccess bool,
+	smartContractAddrs *config.SmartContractAddresses,
+) *peer {
 	return &peer{
-		name: name,
-		ethNodeUrl: ethNodeUrl,
-		accountKeyPath: accountKeyPath,
-		accountPassword: accountPassword,
-		network: network,
-		apiPort: apiPort,
-		p2pPort: p2pPort,
-		bootstrapNodes: bootstraps,
-		txPoolAccess: txPoolAccess,
-		dir: "peerconfigs/" + name,
+		name:               name,
+		ethNodeUrl:         ethNodeUrl,
+		accountKeyPath:     accountKeyPath,
+		accountPassword:    accountPassword,
+		network:            network,
+		apiPort:            apiPort,
+		p2pPort:            p2pPort,
+		bootstrapNodes:     bootstraps,
+		txPoolAccess:       txPoolAccess,
+		smartContractAddrs: smartContractAddrs,
+		dir:                "peerconfigs/" + name,
 	}
 }
 
 func (p *peer) Init() error {
-	err := cmd.CreateConfig(p.dir, p.ethNodeUrl, p.accountKeyPath, p.accountPassword, p.network, p.apiPort, p.p2pPort, p.bootstrapNodes, p.txPoolAccess)
+	err := cmd.CreateConfig(p.dir, p.ethNodeUrl, p.accountKeyPath, p.accountPassword, p.network, p.apiPort, p.p2pPort, p.bootstrapNodes, p.txPoolAccess, p.smartContractAddrs)
 	if err != nil {
 		return err
 	}
 	m := ctx.MainBootstrapper{}
 	m.PopulateBaseBootstrappers()
 	p.bootstrappedCtx = map[string]interface{}{
-		config.BootstrappedConfigFile: "<conf filename>",
+		config.BootstrappedConfigFile: p.dir + "/config.yaml",
 	}
 	return m.Bootstrap(p.bootstrappedCtx)
 }
@@ -74,13 +81,17 @@ func (p *peer) Start(c context.Context) error {
 	for {
 		select {
 		case err := <-feedback:
-			log.Error(p.name + " panicking because of ", err)
+			log.Error(p.name+" panicking because of ", err)
 			panic(err)
 		case sig := <-controlC:
-			log.Info(p.name + " shutting down because of ", sig)
+			log.Info(p.name+" shutting down because of ", sig)
 			canc()
 			err := <-feedback
 			return err
 		}
 	}
+}
+
+func (p *peer) CreateInvoice(inv invoice.Invoice, collaborators []string) {
+	// TODO work
 }

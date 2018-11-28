@@ -74,8 +74,9 @@ func init() {
 				network,
 				apiPort,
 				p2pPort,
-				 bootstraps,
-				 txPoolAccess)
+				bootstraps,
+				txPoolAccess,
+				nil)
 			if err != nil {
 				log.Info(targetDataDir,
 					accountKeyPath,
@@ -103,11 +104,12 @@ func init() {
 	rootCmd.AddCommand(createConfigCmd)
 }
 
-func CreateConfig(targetDataDir, ethNodeURL, accountKeyPath, accountPassword, network string,
-	apiPort,
-	p2pPort int64,
+func CreateConfig(
+	targetDataDir, ethNodeURL, accountKeyPath, accountPassword, network string,
+	apiPort, p2pPort int64,
 	bootstraps []string,
-	txPoolAccess bool) error {
+	txPoolAccess bool,
+	smartContractAddrs *config.SmartContractAddresses) error {
 
 	data := map[string]interface{}{
 		"targetDataDir":   targetDataDir,
@@ -120,6 +122,9 @@ func CreateConfig(targetDataDir, ethNodeURL, accountKeyPath, accountPassword, ne
 		"p2pPort":         p2pPort,
 		"txpoolaccess":    txPoolAccess,
 	}
+	if smartContractAddrs != nil {
+		data["smartContractAddresses"] = smartContractAddrs
+	}
 	v, err := config.CreateConfigFile(data)
 	if err != nil {
 		return err
@@ -128,7 +133,6 @@ func CreateConfig(targetDataDir, ethNodeURL, accountKeyPath, accountPassword, ne
 	ctx, canc, _ := commandBootstrap(v.ConfigFileUsed())
 	cfg := ctx[config.BootstrappedConfig].(*config.Configuration)
 	generateKeys(cfg)
-
 
 	idService := ctx[identity.BootstrappedIDService].(identity.Service)
 	id, err := createIdentity(idService)
