@@ -51,7 +51,7 @@ type Server struct {
 	taskTypes []TaskType
 }
 
-// TaskTypeName of the queue server
+// Name of the queue server
 func (qs *Server) Name() string {
 	return "QueueServer"
 }
