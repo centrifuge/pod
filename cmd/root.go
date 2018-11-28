@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	c "context"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/context"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -11,6 +12,9 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	gologging "github.com/whyrusleeping/go-logging"
+	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/queue"
+	"github.com/centrifuge/go-centrifuge/node"
 )
 
 //global flags
@@ -108,4 +112,15 @@ func baseBootstrap(cfgFile string) map[string]interface{} {
 		panic(err)
 	}
 	return ctx
+}
+
+func commandBootstrap(cfgFile string) (map[string]interface{}, c.CancelFunc, error) {
+	ctx := baseBootstrap(cfgFile)
+	queueSrv := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
+	// init node with only the queue server which is needed by commands
+	n := node.New([]node.Server{queueSrv})
+	cx, canc := c.WithCancel(c.Background())
+	e := make(chan error)
+	go n.Start(cx, e)
+	return ctx, canc, nil
 }

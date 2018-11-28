@@ -15,12 +15,12 @@ type Bootstrapper struct{}
 // Bootstrap runs the severs.
 // Note: this is a blocking call.
 func (*Bootstrapper) Bootstrap(c map[string]interface{}) error {
-	srvs, err := getServers(c)
+	srvs, err := GetServers(c)
 	if err != nil {
 		return fmt.Errorf("failed to load servers: %v", err)
 	}
 
-	n := NewNode(srvs)
+	n := New(srvs)
 	feedback := make(chan error)
 	// may be we can pass a context that exists in c here
 	ctx, canc := context.WithCancel(context.WithValue(context.Background(), bootstrap.NodeObjRegistry, c))
@@ -40,7 +40,7 @@ func (*Bootstrapper) Bootstrap(c map[string]interface{}) error {
 	}
 }
 
-func getServers(ctx map[string]interface{}) ([]Server, error) {
+func GetServers(ctx map[string]interface{}) ([]Server, error) {
 	p2pSrv, ok := ctx[bootstrap.BootstrappedP2PServer]
 	if !ok {
 		return nil, fmt.Errorf("p2p server not initialized")

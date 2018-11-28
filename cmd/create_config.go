@@ -67,46 +67,25 @@ func init() {
 		Short: "Configures Node",
 		Long:  ``,
 		Run: func(cmd *cobra.Command, args []string) {
-
-			data := map[string]interface{}{
-				"targetDataDir":   targetDataDir,
-				"accountKeyPath":  accountKeyPath,
-				"accountPassword": accountPassword,
-				"network":         network,
-				"ethNodeURL":      ethNodeURL,
-				"bootstraps":      bootstraps,
-				"apiPort":         apiPort,
-				"p2pPort":         p2pPort,
-				"txpoolaccess":    txPoolAccess,
-			}
-
-			v, err := config.CreateConfigFile(data)
+			err := CreateConfig(targetDataDir,
+				ethNodeURL,
+				accountKeyPath,
+				accountPassword,
+				network,
+				apiPort,
+				p2pPort,
+				 bootstraps,
+				 txPoolAccess)
 			if err != nil {
-				panic(err)
-			}
-			log.Infof("Config File Created: %s\n", v.ConfigFileUsed())
-
-			ctx := baseBootstrap(v.ConfigFileUsed())
-			cfg := ctx[config.BootstrappedConfig].(*config.Configuration)
-			generateKeys(cfg)
-
-			idService := ctx[identity.BootstrappedIDService].(identity.Service)
-			id, err := createIdentity(idService)
-			if err != nil {
-				panic(err)
-			}
-
-			v.Set("identityId", id.String())
-			err = v.WriteConfig()
-			if err != nil {
-				log.Fatalf("error: %v", err)
-			}
-			cfg.Set("identityId", id.String())
-
-			log.Infof("Identity created [%s] [%x]", id.String(), id)
-
-			err = addKeys(idService)
-			if err != nil {
+				log.Info(targetDataDir,
+					accountKeyPath,
+					accountPassword,
+					network,
+					ethNodeURL,
+					apiPort,
+					p2pPort,
+					bootstraps,
+					txPoolAccess)
 				log.Fatalf("error: %v", err)
 			}
 		},
@@ -122,4 +101,51 @@ func init() {
 	createConfigCmd.Flags().StringSliceVarP(&bootstraps, "bootstraps", "b", nil, "Bootstrap P2P Nodes")
 	createConfigCmd.Flags().BoolVarP(&txPoolAccess, "txpoolaccess", "x", true, "Transaction Pool access")
 	rootCmd.AddCommand(createConfigCmd)
+}
+
+func CreateConfig(targetDataDir, ethNodeURL, accountKeyPath, accountPassword, network string,
+	apiPort,
+	p2pPort int64,
+	bootstraps []string,
+	txPoolAccess bool) error {
+
+	data := map[string]interface{}{
+		"targetDataDir":   targetDataDir,
+		"accountKeyPath":  accountKeyPath,
+		"accountPassword": accountPassword,
+		"network":         network,
+		"ethNodeURL":      ethNodeURL,
+		"bootstraps":      bootstraps,
+		"apiPort":         apiPort,
+		"p2pPort":         p2pPort,
+		"txpoolaccess":    txPoolAccess,
+	}
+	v, err := config.CreateConfigFile(data)
+	if err != nil {
+		return err
+	}
+	log.Infof("Config File Created: %s\n", v.ConfigFileUsed())
+	ctx, canc, _ := commandBootstrap(v.ConfigFileUsed())
+	cfg := ctx[config.BootstrappedConfig].(*config.Configuration)
+	generateKeys(cfg)
+
+
+	idService := ctx[identity.BootstrappedIDService].(identity.Service)
+	id, err := createIdentity(idService)
+	if err != nil {
+		return err
+	}
+	v.Set("identityId", id.String())
+	err = v.WriteConfig()
+	if err != nil {
+		return err
+	}
+	cfg.Set("identityId", id.String())
+	log.Infof("Identity created [%s] [%x]", id.String(), id)
+	err = addKeys(idService)
+	if err != nil {
+		return err
+	}
+	canc()
+	return nil
 }
