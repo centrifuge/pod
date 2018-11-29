@@ -29,7 +29,7 @@ install-deps: ## Install Dependencies
 	@curl -L https://git.io/vp6lP | sh
 	@mv ./bin/* $(GOPATH)/bin/; rm -rf ./bin
 
-lint-check: ## formats go code
+lint-check: ## runs linters on go code
 	@gometalinter --disable-all --enable=golint --enable=goimports --enable=vet --enable=nakedret \
 	--enable=staticcheck --vendor --skip=resources --skip=testingutils --skip=protobufs  --deadline=1m ./...;
 
@@ -60,7 +60,7 @@ vendorinstall: ## Installs all protobuf dependencies with go-vendorinstall
 
 install: ## Builds and Install binary for development
 install: install-deps vendorinstall
-	@go install ./...
+	@go install ./cmd/centrifuge/...
 
 install-xgo: ## Install XGO
 	@echo "Ensuring XGO is installed"
@@ -70,8 +70,8 @@ build-linux-amd64: ## Build linux/amd64
 build-linux-amd64: install-xgo
 	@echo "Building amd64 with flags [${LD_FLAGS}]"
 	@mkdir -p build/linux-amd64
-	@xgo -go 1.11.x -dest build/linux-amd64 -targets=linux/amd64 -ldflags=${LD_FLAGS} .
-	@mv build/linux-amd64/go-centrifuge-linux-amd64 build/linux-amd64/go-centrifuge
+	@xgo -go 1.11.x -dest build/linux-amd64 -targets=linux/amd64 -ldflags=${LD_FLAGS} ./cmd/centrifuge/
+	@mv build/linux-amd64/centrifuge-linux-amd64 build/linux-amd64/centrifuge
 	@tar -zcvf cent-api-linux-amd64-${TAG}.tar.gz -C build/linux-amd64/ .
 
 build-docker: ## Build Docker Image

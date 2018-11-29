@@ -2,7 +2,7 @@ package invoice
 
 import (
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/storage"
+	"github.com/syndtr/goleveldb/leveldb"
 )
 
 // repository is the invoice repository
@@ -11,11 +11,11 @@ type repository struct {
 }
 
 // getRepository returns the implemented documents.legacyRepo for invoices
-func getRepository() documents.Repository {
+func getRepository(ldb *leveldb.DB) documents.Repository {
 	return &repository{
 		documents.LevelDBRepository{
 			KeyPrefix: "invoice",
-			LevelDB:   storage.GetLevelDBStorage(),
+			LevelDB:   ldb,
 		},
 	}
 }
