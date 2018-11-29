@@ -24,7 +24,6 @@ import (
 
 var log = logging.Logger("nft")
 
-
 // Config is an interface to configurations required by nft package
 type Config interface {
 	GetIdentityID() ([]byte, error)
@@ -98,7 +97,6 @@ func (s *ethereumPaymentObligation) prepareMintRequest(documentID []byte, deposi
 	if err != nil {
 		return nil, nil
 	}
-
 
 	requestData, err := NewMintRequest(toAddress, anchorID, proofs.FieldProofs, rootHash)
 	if err != nil {
@@ -245,14 +243,14 @@ func NewMintRequest(to common.Address, anchorID anchors.AnchorID, proofs []*proo
 	}
 
 	return &MintRequest{
-		To:                to,
-		TokenID:           tokenID,
-		TokenURI:          tokenURI,
-		AnchorID:          anchorID.BigInt(),
-		MerkleRoot:        rootHash,
-		Values:            proofData.Values,
-		Salts:             proofData.Salts,
-		Proofs:            proofData.Proofs}, nil
+		To:         to,
+		TokenID:    tokenID,
+		TokenURI:   tokenURI,
+		AnchorID:   anchorID.BigInt(),
+		MerkleRoot: rootHash,
+		Values:     proofData.Values,
+		Salts:      proofData.Salts,
+		Proofs:     proofData.Proofs}, nil
 }
 
 type proofData struct {
@@ -264,7 +262,7 @@ type proofData struct {
 func createProofData(proofspb []*proofspb.Proof) (*proofData, error) {
 	var values = make([]string, len(proofspb))
 	var salts = make([][32]byte, len(proofspb))
-	var proofs =  make([][][32]byte, len(proofspb))
+	var proofs = make([][][32]byte, len(proofspb))
 
 	for i, p := range proofspb {
 		values[i] = p.Value
@@ -296,8 +294,6 @@ func convertProofProperty(sortedHashes [][]byte) ([][32]byte, error) {
 
 	return property, nil
 }
-
-
 
 func bindContract(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error) {
 	return NewEthereumPaymentObligationContract(address, client.GetEthClient())

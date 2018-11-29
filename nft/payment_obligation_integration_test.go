@@ -4,6 +4,10 @@ package nft_test
 
 import (
 	"context"
+	"os"
+	"testing"
+	"time"
+
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/header"
@@ -11,9 +15,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/stretchr/testify/assert"
-	"os"
-	"testing"
-	"time"
 
 	"github.com/centrifuge/go-centrifuge/config"
 	cc "github.com/centrifuge/go-centrifuge/context/testingbootstrap"
@@ -88,8 +89,6 @@ func TestPaymentObligationService_mint(t *testing.T) {
 		cfg.GetContractAddress("paymentObligation").String(),
 		"0xf72855759a39fb75fc7341139f5d7a3974d4da08",
 		[]string{"invoice.gross_amount", "invoice.currency", "invoice.due_date", "collaborators[0]"},
-
-
 	)
 	assert.Nil(t, err, "should not error out when minting an invoice")
 	tokenConfirm := <-confirmations
