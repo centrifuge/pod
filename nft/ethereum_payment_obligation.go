@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"math/big"
 
-	"regexp"
-
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/ethereum"
@@ -26,9 +24,6 @@ import (
 
 var log = logging.Logger("nft")
 
-const amountOfProofs = 5
-
-var regexCollaborators, _ = regexp.Compile("collaborators\\[[0-9]+\\]")
 
 // Config is an interface to configurations required by nft package
 type Config interface {
@@ -104,12 +99,8 @@ func (s *ethereumPaymentObligation) prepareMintRequest(documentID []byte, deposi
 		return nil, nil
 	}
 
-	collaboratorField, err := getCollaboratorProofField(proofFields)
-	if err != nil {
-		return nil, err
-	}
 
-	requestData, err := NewMintRequest(toAddress, anchorID, proofs.FieldProofs, rootHash, collaboratorField)
+	requestData, err := NewMintRequest(toAddress, anchorID, proofs.FieldProofs, rootHash)
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +179,7 @@ func waitAndRouteNFTApprovedEvent(timeout time.Duration, asyncRes queue.TaskResu
 // sendMintTransaction sends the actual transaction to mint the NFT
 func (s *ethereumPaymentObligation) sendMintTransaction(contract ethereumPaymentObligationContract, opts *bind.TransactOpts, requestData *MintRequest) error {
 	tx, err := s.ethClient.SubmitTransactionWithRetries(contract.Mint, opts, requestData.To, requestData.TokenID, requestData.TokenURI, requestData.AnchorID,
-		requestData.MerkleRoot, requestData.CollaboratorField, requestData.Values, requestData.Salts, requestData.Proofs)
+		requestData.MerkleRoot, requestData.Values, requestData.Salts, requestData.Proofs)
 	if err != nil {
 		return err
 	}
@@ -234,21 +225,18 @@ type MintRequest struct {
 	// MerkleRoot is the root hash of the merkle proof/doc
 	MerkleRoot [32]byte
 
-	//CollaboratorField contains the value of the collaborator leaf
-	CollaboratorField string
-
 	// Values are the values of the leafs that is being proved Will be converted to string and concatenated for proof verification as outlined in precise-proofs library.
-	Values [amountOfProofs]string
+	Values []string
 
 	// salts are the salts for the field that is being proved Will be concatenated for proof verification as outlined in precise-proofs library.
-	Salts [amountOfProofs][32]byte
+	Salts [][32]byte
 
 	// Proofs are the documents proofs that are needed
-	Proofs [amountOfProofs][][32]byte
+	Proofs [][][32]byte
 }
 
 // NewMintRequest converts the parameters and returns a struct with needed parameter for minting
-func NewMintRequest(to common.Address, anchorID anchors.AnchorID, proofs []*proofspb.Proof, rootHash [32]byte, collaboratorField string) (*MintRequest, error) {
+func NewMintRequest(to common.Address, anchorID anchors.AnchorID, proofs []*proofspb.Proof, rootHash [32]byte) (*MintRequest, error) {
 	tokenID := utils.ByteSliceToBigInt(utils.RandomSlice(256))
 	tokenURI := "http:=//www.centrifuge.io/DUMMY_URI_SERVICE"
 	proofData, err := createProofData(proofs)
@@ -262,25 +250,21 @@ func NewMintRequest(to common.Address, anchorID anchors.AnchorID, proofs []*proo
 		TokenURI:          tokenURI,
 		AnchorID:          anchorID.BigInt(),
 		MerkleRoot:        rootHash,
-		CollaboratorField: collaboratorField,
 		Values:            proofData.Values,
 		Salts:             proofData.Salts,
 		Proofs:            proofData.Proofs}, nil
 }
 
 type proofData struct {
-	Values [amountOfProofs]string
-	Salts  [amountOfProofs][32]byte
-	Proofs [amountOfProofs][][32]byte
+	Values []string
+	Salts  [][32]byte
+	Proofs [][][32]byte
 }
 
 func createProofData(proofspb []*proofspb.Proof) (*proofData, error) {
-	if len(proofspb) > amountOfProofs {
-		return nil, fmt.Errorf("no more than %v field proofs are accepted", amountOfProofs)
-	}
-	var values [amountOfProofs]string
-	var salts [amountOfProofs][32]byte
-	var proofs [amountOfProofs][][32]byte
+	var values = make([]string, len(proofspb))
+	var salts = make([][32]byte, len(proofspb))
+	var proofs =  make([][][32]byte, len(proofspb))
 
 	for i, p := range proofspb {
 		values[i] = p.Value
@@ -313,24 +297,7 @@ func convertProofProperty(sortedHashes [][]byte) ([][32]byte, error) {
 	return property, nil
 }
 
-// getCollaborator returns the needed collaboratorField for a PaymentObligation NFT
-// In the current contract implementation the proofField for collaborator is a separated parameter
-// pattern: 'collaborators' + '[i]'
-// examples: 'collaborators[0]','collaborators[1]', etc
-func getCollaboratorProofField(proofFields []string) (string, error) {
 
-	for _, proofField := range proofFields {
-
-		match := regexCollaborators.MatchString(proofField)
-
-		if match {
-			return proofField, nil
-		}
-	}
-
-	return "", fmt.Errorf("proof_fields should contain a collaborator. (example: 'collaborators[0]')")
-
-}
 
 func bindContract(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error) {
 	return NewEthereumPaymentObligationContract(address, client.GetEthClient())
