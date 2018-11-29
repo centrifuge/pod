@@ -12,6 +12,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/p2p"
 	"github.com/centrifuge/go-centrifuge/storage"
+	"github.com/syndtr/goleveldb/leveldb"
 )
 
 // Bootstrapper implements bootstrap.Bootstrapper.
@@ -24,8 +25,9 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	}
 	cfg := ctx[config.BootstrappedConfig].(*config.Configuration)
 
-	if _, ok := ctx[storage.BootstrappedLevelDB]; !ok {
-		return errors.New("could not initialize purchase order repository")
+	ldb, ok := ctx[storage.BootstrappedLevelDB].(*leveldb.DB)
+	if !ok {
+		return errors.New("initializing LevelDB repository failed")
 	}
 
 	p2pClient, ok := ctx[p2p.BootstrappedP2PClient].(p2p.Client)
@@ -49,7 +51,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	}
 
 	// register service
-	srv := DefaultService(cfg, getRepository(), coredocument.DefaultProcessor(idService, p2pClient, anchorRepo, cfg), anchorRepo, idService)
+	srv := DefaultService(cfg, getRepository(ldb), coredocument.DefaultProcessor(idService, p2pClient, anchorRepo, cfg), anchorRepo, idService)
 	err := registry.Register(documenttypes.PurchaseOrderDataTypeUrl, srv)
 	if err != nil {
 		return fmt.Errorf("failed to register purchase order service")
