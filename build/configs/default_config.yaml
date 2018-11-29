@@ -65,7 +65,7 @@ ethereum:
   # Selects which ethereum account to use of the ones provided in the custom config file
   defaultAccountName: "main"
   # Location of the ethereum client node (we require ws or ipc to be able to catch events)
-  nodeURL: ws://localhost:9546
+  nodeURL: http://localhost:9545
   # Default gas price
   gasPrice: 1000000000
   # Default gas limit

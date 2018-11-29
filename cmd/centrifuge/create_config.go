@@ -1,4 +1,4 @@
-package cmd
+package main
 
 import (
 	"os"
@@ -95,7 +95,7 @@ func init() {
 	}
 
 	createConfigCmd.Flags().StringVarP(&targetDataDir, "targetdir", "t", home+"/datadir", "Target Data Dir")
-	createConfigCmd.Flags().StringVarP(&ethNodeURL, "ethnodeurl", "e", "ws://127.0.0.1:9546", "URL of Ethereum Client Node")
+	createConfigCmd.Flags().StringVarP(&ethNodeURL, "ethnodeurl", "e", "http://127.0.0.1:9545", "URL of Ethereum Client Node")
 	createConfigCmd.Flags().StringVarP(&accountKeyPath, "accountkeypath", "z", home+"/datadir/main.key", "Path of Ethereum Account Key JSON file")
 	createConfigCmd.Flags().StringVarP(&accountPassword, "accountpwd", "k", "", "Ethereum Account Password")
 	createConfigCmd.Flags().Int64VarP(&apiPort, "apiPort", "a", 8082, "Api Port")
