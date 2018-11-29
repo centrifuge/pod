@@ -2,7 +2,7 @@ package purchaseorder
 
 import (
 	"github.com/centrifuge/go-centrifuge/documents"
-		"github.com/syndtr/goleveldb/leveldb"
+	"github.com/syndtr/goleveldb/leveldb"
 )
 
 // repository is the purchase order repository
