@@ -1,10 +1,9 @@
-// +build p2p_test
+// +build testworld
 
 package tests
 
 import (
 	"io/ioutil"
-	"log"
 	"os"
 	"os/exec"
 	"path"

@@ -1,4 +1,4 @@
-// +build p2p_test
+// +build testworld
 
 package tests
 
@@ -17,9 +17,9 @@ import (
 	logging "github.com/ipfs/go-log"
 )
 
-var log = logging.Logger("peer")
+var log = logging.Logger("host")
 
-type peer struct {
+type host struct {
 	name, dir, ethNodeUrl, accountKeyPath, accountPassword, network,
 	identityFactoryAddr, identityRegistryAddr, anchorRepositoryAddr, paymentObligationAddr string
 	apiPort, p2pPort   int64
@@ -30,14 +30,14 @@ type peer struct {
 	node               *node.Node
 }
 
-func NewPeer(
+func newHost(
 	name, ethNodeUrl, accountKeyPath, accountPassword, network string,
 	apiPort, p2pPort int64,
 	bootstraps []string,
 	txPoolAccess bool,
 	smartContractAddrs *config.SmartContractAddresses,
-) *peer {
-	return &peer{
+) *host {
+	return &host{
 		name:               name,
 		ethNodeUrl:         ethNodeUrl,
 		accountKeyPath:     accountKeyPath,
@@ -52,39 +52,39 @@ func NewPeer(
 	}
 }
 
-func (p *peer) Init() error {
-	err := cmd.CreateConfig(p.dir, p.ethNodeUrl, p.accountKeyPath, p.accountPassword, p.network, p.apiPort, p.p2pPort, p.bootstrapNodes, p.txPoolAccess, p.smartContractAddrs)
+func (h *host) Init() error {
+	err := cmd.CreateConfig(h.dir, h.ethNodeUrl, h.accountKeyPath, h.accountPassword, h.network, h.apiPort, h.p2pPort, h.bootstrapNodes, h.txPoolAccess, h.smartContractAddrs)
 	if err != nil {
 		return err
 	}
 	m := ctx.MainBootstrapper{}
 	m.PopulateBaseBootstrappers()
-	p.bootstrappedCtx = map[string]interface{}{
-		config.BootstrappedConfigFile: p.dir + "/config.yaml",
+	h.bootstrappedCtx = map[string]interface{}{
+		config.BootstrappedConfigFile: h.dir + "/config.yaml",
 	}
-	return m.Bootstrap(p.bootstrappedCtx)
+	return m.Bootstrap(h.bootstrappedCtx)
 }
 
-func (p *peer) Start(c context.Context) error {
-	srvs, err := node.GetServers(p.bootstrappedCtx)
+func (h *host) Start(c context.Context) error {
+	srvs, err := node.GetServers(h.bootstrappedCtx)
 	if err != nil {
 		return fmt.Errorf("failed to load servers: %v", err)
 	}
 
-	p.node = node.New(srvs)
+	h.node = node.New(srvs)
 	feedback := make(chan error)
 	// may be we can pass a context that exists in c here
-	cancCtx, canc := context.WithCancel(context.WithValue(c, bootstrap.NodeObjRegistry, p.bootstrappedCtx))
-	go p.node.Start(cancCtx, feedback)
+	cancCtx, canc := context.WithCancel(context.WithValue(c, bootstrap.NodeObjRegistry, h.bootstrappedCtx))
+	go h.node.Start(cancCtx, feedback)
 	controlC := make(chan os.Signal, 1)
 	signal.Notify(controlC, os.Interrupt)
 	for {
 		select {
 		case err := <-feedback:
-			log.Error(p.name+" panicking because of ", err)
+			log.Error(h.name+" panicking because of ", err)
 			panic(err)
 		case sig := <-controlC:
-			log.Info(p.name+" shutting down because of ", sig)
+			log.Info(h.name+" shutting down because of ", sig)
 			canc()
 			err := <-feedback
 			return err
@@ -92,6 +92,6 @@ func (p *peer) Start(c context.Context) error {
 	}
 }
 
-func (p *peer) CreateInvoice(inv invoice.Invoice, collaborators []string) {
+func (h *host) CreateInvoice(inv invoice.Invoice, collaborators []string) {
 	// TODO work
 }

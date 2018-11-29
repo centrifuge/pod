@@ -1,4 +1,4 @@
-// +build p2p_test
+// +build testworld
 
 package tests
 
@@ -27,15 +27,15 @@ func TestMain(m *testing.M) {
 	os.Exit(result)
 }
 
-func TestPeer_Start(t *testing.T) {
+func TestHost_Start(t *testing.T) {
 	cancCtx, canc := context.WithCancel(context.Background())
-	alice := createPeer("Alice", 8084, 38204)
+	alice := createHost("Alice", 8084, 38204)
 	err := alice.Init()
 	if err != nil {
 		t.Error(err)
 	}
 
-	bob := createPeer("Bob", 8084, 38204)
+	bob := createHost("Bob", 8084, 38204)
 	err = bob.Init()
 	if err != nil {
 		t.Error(err)
@@ -51,8 +51,8 @@ func TestPeer_Start(t *testing.T) {
 	canc()
 }
 
-func createPeer(name string, apiPort, p2pPort int64) *peer {
-	return NewPeer(
+func createHost(name string, apiPort, p2pPort int64) *host {
+	return newHost(
 		name,
 		"ws://127.0.0.1:9546",
 		"keystore", "", "testing", apiPort, p2pPort, nil, true,
