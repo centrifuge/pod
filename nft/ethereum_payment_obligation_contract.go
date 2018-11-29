@@ -16,7 +16,7 @@ import (
 )
 
 // EthereumPaymentObligationContractABI is the input ABI used to generate the binding from.
-const EthereumPaymentObligationContractABI = "[{\"constant\":true,\"inputs\":[{\"name\":\"_interfaceId\",\"type\":\"bytes4\"}],\"name\":\"supportsInterface\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"name\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_tokenId\",\"type\":\"uint256\"}],\"name\":\"getApproved\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_to\",\"type\":\"address\"},{\"name\":\"_tokenId\",\"type\":\"uint256\"}],\"name\":\"approve\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"totalSupply\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"InterfaceId_ERC165\",\"outputs\":[{\"name\":\"\",\"type\":\"bytes4\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_from\",\"type\":\"address\"},{\"name\":\"_to\",\"type\":\"address\"},{\"name\":\"_tokenId\",\"type\":\"uint256\"}],\"name\":\"transferFrom\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_owner\",\"type\":\"address\"},{\"name\":\"_index\",\"type\":\"uint256\"}],\"name\":\"tokenOfOwnerByIndex\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_from\",\"type\":\"address\"},{\"name\":\"_to\",\"type\":\"address\"},{\"name\":\"_tokenId\",\"type\":\"uint256\"}],\"name\":\"safeTransferFrom\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_tokenId\",\"type\":\"uint256\"}],\"name\":\"exists\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_index\",\"type\":\"uint256\"}],\"name\":\"tokenByIndex\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"anchorRegistry\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_tokenId\",\"type\":\"uint256\"}],\"name\":\"ownerOf\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_owner\",\"type\":\"address\"}],\"name\":\"balanceOf\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"symbol\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_to\",\"type\":\"address\"},{\"name\":\"_approved\",\"type\":\"bool\"}],\"name\":\"setApprovalForAll\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_from\",\"type\":\"address\"},{\"name\":\"_to\",\"type\":\"address\"},{\"name\":\"_tokenId\",\"type\":\"uint256\"},{\"name\":\"_data\",\"type\":\"bytes\"}],\"name\":\"safeTransferFrom\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_tokenId\",\"type\":\"uint256\"}],\"name\":\"tokenURI\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_owner\",\"type\":\"address\"},{\"name\":\"_operator\",\"type\":\"address\"}],\"name\":\"isApprovedForAll\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"name\":\"_name\",\"type\":\"string\"},{\"name\":\"_symbol\",\"type\":\"string\"},{\"name\":\"_anchorRegistry\",\"type\":\"address\"},{\"name\":\"_identityRegistry\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"to\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"tokenId\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"tokenURI\",\"type\":\"string\"}],\"name\":\"PaymentObligationMinted\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"_from\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"_to\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"_tokenId\",\"type\":\"uint256\"}],\"name\":\"Transfer\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"_owner\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"_approved\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"_tokenId\",\"type\":\"uint256\"}],\"name\":\"Approval\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"_owner\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"_operator\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"_approved\",\"type\":\"bool\"}],\"name\":\"ApprovalForAll\",\"type\":\"event\"},{\"constant\":false,\"inputs\":[{\"name\":\"_to\",\"type\":\"address\"},{\"name\":\"_tokenId\",\"type\":\"uint256\"},{\"name\":\"_tokenURI\",\"type\":\"string\"},{\"name\":\"_anchorId\",\"type\":\"uint256\"},{\"name\":\"_merkleRoot\",\"type\":\"bytes32\"},{\"name\":\"_collaboratorField\",\"type\":\"string\"},{\"name\":\"_values\",\"type\":\"string[5]\"},{\"name\":\"_salts\",\"type\":\"bytes32[5]\"},{\"name\":\"_proofs\",\"type\":\"bytes32[][5]\"}],\"name\":\"mint\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_tokenId\",\"type\":\"uint256\"}],\"name\":\"getTokenDetails\",\"outputs\":[{\"name\":\"grossAmount\",\"type\":\"string\"},{\"name\":\"currency\",\"type\":\"string\"},{\"name\":\"dueDate\",\"type\":\"string\"},{\"name\":\"anchorId\",\"type\":\"uint256\"},{\"name\":\"documentRoot\",\"type\":\"bytes32\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}]"
+const EthereumPaymentObligationContractABI = "[{\"constant\":true,\"inputs\":[{\"name\":\"interfaceId\",\"type\":\"bytes4\"}],\"name\":\"supportsInterface\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"name\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"getApproved\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"to\",\"type\":\"address\"},{\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"approve\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"from\",\"type\":\"address\"},{\"name\":\"to\",\"type\":\"address\"},{\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"transferFrom\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"from\",\"type\":\"address\"},{\"name\":\"to\",\"type\":\"address\"},{\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"safeTransferFrom\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"name\",\"type\":\"string\"},{\"name\":\"symbol\",\"type\":\"string\"}],\"name\":\"initialize\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"anchorRegistry\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"ownerOf\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"owner\",\"type\":\"address\"}],\"name\":\"balanceOf\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"initialize\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"symbol\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"to\",\"type\":\"address\"},{\"name\":\"approved\",\"type\":\"bool\"}],\"name\":\"setApprovalForAll\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"from\",\"type\":\"address\"},{\"name\":\"to\",\"type\":\"address\"},{\"name\":\"tokenId\",\"type\":\"uint256\"},{\"name\":\"_data\",\"type\":\"bytes\"}],\"name\":\"safeTransferFrom\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"mandatoryFields\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"tokenURI\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"owner\",\"type\":\"address\"},{\"name\":\"operator\",\"type\":\"address\"}],\"name\":\"isApprovedForAll\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"name\":\"_anchorRegistry\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"to\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"tokenId\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"tokenURI\",\"type\":\"string\"}],\"name\":\"PaymentObligationMinted\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"from\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"to\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"Transfer\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"approved\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"Approval\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"operator\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"approved\",\"type\":\"bool\"}],\"name\":\"ApprovalForAll\",\"type\":\"event\"},{\"constant\":false,\"inputs\":[{\"name\":\"_to\",\"type\":\"address\"},{\"name\":\"_tokenId\",\"type\":\"uint256\"},{\"name\":\"_tokenURI\",\"type\":\"string\"},{\"name\":\"_anchorId\",\"type\":\"uint256\"},{\"name\":\"_merkleRoot\",\"type\":\"bytes32\"},{\"name\":\"_values\",\"type\":\"string[]\"},{\"name\":\"_salts\",\"type\":\"bytes32[]\"},{\"name\":\"_proofs\",\"type\":\"bytes32[][]\"}],\"name\":\"mint\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_tokenId\",\"type\":\"uint256\"}],\"name\":\"getTokenDetails\",\"outputs\":[{\"name\":\"grossAmount\",\"type\":\"string\"},{\"name\":\"currency\",\"type\":\"string\"},{\"name\":\"dueDate\",\"type\":\"string\"},{\"name\":\"anchorId\",\"type\":\"uint256\"},{\"name\":\"documentRoot\",\"type\":\"bytes32\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}]"
 
 // EthereumPaymentObligationContract is an auto generated Go binding around an Ethereum contract.
 type EthereumPaymentObligationContract struct {
@@ -160,32 +160,6 @@ func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractTrans
 	return _EthereumPaymentObligationContract.Contract.contract.Transact(opts, method, params...)
 }
 
-// InterfaceIdERC165 is a free data retrieval call binding the contract method 0x19fa8f50.
-//
-// Solidity: function InterfaceId_ERC165() constant returns(bytes4)
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCaller) InterfaceIdERC165(opts *bind.CallOpts) ([4]byte, error) {
-	var (
-		ret0 = new([4]byte)
-	)
-	out := ret0
-	err := _EthereumPaymentObligationContract.contract.Call(opts, out, "InterfaceId_ERC165")
-	return *ret0, err
-}
-
-// InterfaceIdERC165 is a free data retrieval call binding the contract method 0x19fa8f50.
-//
-// Solidity: function InterfaceId_ERC165() constant returns(bytes4)
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractSession) InterfaceIdERC165() ([4]byte, error) {
-	return _EthereumPaymentObligationContract.Contract.InterfaceIdERC165(&_EthereumPaymentObligationContract.CallOpts)
-}
-
-// InterfaceIdERC165 is a free data retrieval call binding the contract method 0x19fa8f50.
-//
-// Solidity: function InterfaceId_ERC165() constant returns(bytes4)
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCallerSession) InterfaceIdERC165() ([4]byte, error) {
-	return _EthereumPaymentObligationContract.Contract.InterfaceIdERC165(&_EthereumPaymentObligationContract.CallOpts)
-}
-
 // AnchorRegistry is a free data retrieval call binding the contract method 0x5a180c0a.
 //
 // Solidity: function anchorRegistry() constant returns(address)
@@ -214,80 +188,54 @@ func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCalle
 
 // BalanceOf is a free data retrieval call binding the contract method 0x70a08231.
 //
-// Solidity: function balanceOf(_owner address) constant returns(uint256)
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCaller) BalanceOf(opts *bind.CallOpts, _owner common.Address) (*big.Int, error) {
+// Solidity: function balanceOf(owner address) constant returns(uint256)
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCaller) BalanceOf(opts *bind.CallOpts, owner common.Address) (*big.Int, error) {
 	var (
 		ret0 = new(*big.Int)
 	)
 	out := ret0
-	err := _EthereumPaymentObligationContract.contract.Call(opts, out, "balanceOf", _owner)
+	err := _EthereumPaymentObligationContract.contract.Call(opts, out, "balanceOf", owner)
 	return *ret0, err
 }
 
 // BalanceOf is a free data retrieval call binding the contract method 0x70a08231.
 //
-// Solidity: function balanceOf(_owner address) constant returns(uint256)
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractSession) BalanceOf(_owner common.Address) (*big.Int, error) {
-	return _EthereumPaymentObligationContract.Contract.BalanceOf(&_EthereumPaymentObligationContract.CallOpts, _owner)
+// Solidity: function balanceOf(owner address) constant returns(uint256)
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractSession) BalanceOf(owner common.Address) (*big.Int, error) {
+	return _EthereumPaymentObligationContract.Contract.BalanceOf(&_EthereumPaymentObligationContract.CallOpts, owner)
 }
 
 // BalanceOf is a free data retrieval call binding the contract method 0x70a08231.
 //
-// Solidity: function balanceOf(_owner address) constant returns(uint256)
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCallerSession) BalanceOf(_owner common.Address) (*big.Int, error) {
-	return _EthereumPaymentObligationContract.Contract.BalanceOf(&_EthereumPaymentObligationContract.CallOpts, _owner)
-}
-
-// Exists is a free data retrieval call binding the contract method 0x4f558e79.
-//
-// Solidity: function exists(_tokenId uint256) constant returns(bool)
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCaller) Exists(opts *bind.CallOpts, _tokenId *big.Int) (bool, error) {
-	var (
-		ret0 = new(bool)
-	)
-	out := ret0
-	err := _EthereumPaymentObligationContract.contract.Call(opts, out, "exists", _tokenId)
-	return *ret0, err
-}
-
-// Exists is a free data retrieval call binding the contract method 0x4f558e79.
-//
-// Solidity: function exists(_tokenId uint256) constant returns(bool)
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractSession) Exists(_tokenId *big.Int) (bool, error) {
-	return _EthereumPaymentObligationContract.Contract.Exists(&_EthereumPaymentObligationContract.CallOpts, _tokenId)
-}
-
-// Exists is a free data retrieval call binding the contract method 0x4f558e79.
-//
-// Solidity: function exists(_tokenId uint256) constant returns(bool)
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCallerSession) Exists(_tokenId *big.Int) (bool, error) {
-	return _EthereumPaymentObligationContract.Contract.Exists(&_EthereumPaymentObligationContract.CallOpts, _tokenId)
+// Solidity: function balanceOf(owner address) constant returns(uint256)
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCallerSession) BalanceOf(owner common.Address) (*big.Int, error) {
+	return _EthereumPaymentObligationContract.Contract.BalanceOf(&_EthereumPaymentObligationContract.CallOpts, owner)
 }
 
 // GetApproved is a free data retrieval call binding the contract method 0x081812fc.
 //
-// Solidity: function getApproved(_tokenId uint256) constant returns(address)
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCaller) GetApproved(opts *bind.CallOpts, _tokenId *big.Int) (common.Address, error) {
+// Solidity: function getApproved(tokenId uint256) constant returns(address)
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCaller) GetApproved(opts *bind.CallOpts, tokenId *big.Int) (common.Address, error) {
 	var (
 		ret0 = new(common.Address)
 	)
 	out := ret0
-	err := _EthereumPaymentObligationContract.contract.Call(opts, out, "getApproved", _tokenId)
+	err := _EthereumPaymentObligationContract.contract.Call(opts, out, "getApproved", tokenId)
 	return *ret0, err
 }
 
 // GetApproved is a free data retrieval call binding the contract method 0x081812fc.
 //
-// Solidity: function getApproved(_tokenId uint256) constant returns(address)
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractSession) GetApproved(_tokenId *big.Int) (common.Address, error) {
-	return _EthereumPaymentObligationContract.Contract.GetApproved(&_EthereumPaymentObligationContract.CallOpts, _tokenId)
+// Solidity: function getApproved(tokenId uint256) constant returns(address)
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractSession) GetApproved(tokenId *big.Int) (common.Address, error) {
+	return _EthereumPaymentObligationContract.Contract.GetApproved(&_EthereumPaymentObligationContract.CallOpts, tokenId)
 }
 
 // GetApproved is a free data retrieval call binding the contract method 0x081812fc.
 //
-// Solidity: function getApproved(_tokenId uint256) constant returns(address)
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCallerSession) GetApproved(_tokenId *big.Int) (common.Address, error) {
-	return _EthereumPaymentObligationContract.Contract.GetApproved(&_EthereumPaymentObligationContract.CallOpts, _tokenId)
+// Solidity: function getApproved(tokenId uint256) constant returns(address)
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCallerSession) GetApproved(tokenId *big.Int) (common.Address, error) {
+	return _EthereumPaymentObligationContract.Contract.GetApproved(&_EthereumPaymentObligationContract.CallOpts, tokenId)
 }
 
 // GetTokenDetails is a free data retrieval call binding the contract method 0xc1e03728.
@@ -340,28 +288,54 @@ func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCalle
 
 // IsApprovedForAll is a free data retrieval call binding the contract method 0xe985e9c5.
 //
-// Solidity: function isApprovedForAll(_owner address, _operator address) constant returns(bool)
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCaller) IsApprovedForAll(opts *bind.CallOpts, _owner common.Address, _operator common.Address) (bool, error) {
+// Solidity: function isApprovedForAll(owner address, operator address) constant returns(bool)
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCaller) IsApprovedForAll(opts *bind.CallOpts, owner common.Address, operator common.Address) (bool, error) {
 	var (
 		ret0 = new(bool)
 	)
 	out := ret0
-	err := _EthereumPaymentObligationContract.contract.Call(opts, out, "isApprovedForAll", _owner, _operator)
+	err := _EthereumPaymentObligationContract.contract.Call(opts, out, "isApprovedForAll", owner, operator)
 	return *ret0, err
 }
 
 // IsApprovedForAll is a free data retrieval call binding the contract method 0xe985e9c5.
 //
-// Solidity: function isApprovedForAll(_owner address, _operator address) constant returns(bool)
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractSession) IsApprovedForAll(_owner common.Address, _operator common.Address) (bool, error) {
-	return _EthereumPaymentObligationContract.Contract.IsApprovedForAll(&_EthereumPaymentObligationContract.CallOpts, _owner, _operator)
+// Solidity: function isApprovedForAll(owner address, operator address) constant returns(bool)
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractSession) IsApprovedForAll(owner common.Address, operator common.Address) (bool, error) {
+	return _EthereumPaymentObligationContract.Contract.IsApprovedForAll(&_EthereumPaymentObligationContract.CallOpts, owner, operator)
 }
 
 // IsApprovedForAll is a free data retrieval call binding the contract method 0xe985e9c5.
 //
-// Solidity: function isApprovedForAll(_owner address, _operator address) constant returns(bool)
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCallerSession) IsApprovedForAll(_owner common.Address, _operator common.Address) (bool, error) {
-	return _EthereumPaymentObligationContract.Contract.IsApprovedForAll(&_EthereumPaymentObligationContract.CallOpts, _owner, _operator)
+// Solidity: function isApprovedForAll(owner address, operator address) constant returns(bool)
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCallerSession) IsApprovedForAll(owner common.Address, operator common.Address) (bool, error) {
+	return _EthereumPaymentObligationContract.Contract.IsApprovedForAll(&_EthereumPaymentObligationContract.CallOpts, owner, operator)
+}
+
+// MandatoryFields is a free data retrieval call binding the contract method 0xc4ac61f7.
+//
+// Solidity: function mandatoryFields( uint256) constant returns(string)
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCaller) MandatoryFields(opts *bind.CallOpts, arg0 *big.Int) (string, error) {
+	var (
+		ret0 = new(string)
+	)
+	out := ret0
+	err := _EthereumPaymentObligationContract.contract.Call(opts, out, "mandatoryFields", arg0)
+	return *ret0, err
+}
+
+// MandatoryFields is a free data retrieval call binding the contract method 0xc4ac61f7.
+//
+// Solidity: function mandatoryFields( uint256) constant returns(string)
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractSession) MandatoryFields(arg0 *big.Int) (string, error) {
+	return _EthereumPaymentObligationContract.Contract.MandatoryFields(&_EthereumPaymentObligationContract.CallOpts, arg0)
+}
+
+// MandatoryFields is a free data retrieval call binding the contract method 0xc4ac61f7.
+//
+// Solidity: function mandatoryFields( uint256) constant returns(string)
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCallerSession) MandatoryFields(arg0 *big.Int) (string, error) {
+	return _EthereumPaymentObligationContract.Contract.MandatoryFields(&_EthereumPaymentObligationContract.CallOpts, arg0)
 }
 
 // Name is a free data retrieval call binding the contract method 0x06fdde03.
@@ -392,54 +366,54 @@ func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCalle
 
 // OwnerOf is a free data retrieval call binding the contract method 0x6352211e.
 //
-// Solidity: function ownerOf(_tokenId uint256) constant returns(address)
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCaller) OwnerOf(opts *bind.CallOpts, _tokenId *big.Int) (common.Address, error) {
+// Solidity: function ownerOf(tokenId uint256) constant returns(address)
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCaller) OwnerOf(opts *bind.CallOpts, tokenId *big.Int) (common.Address, error) {
 	var (
 		ret0 = new(common.Address)
 	)
 	out := ret0
-	err := _EthereumPaymentObligationContract.contract.Call(opts, out, "ownerOf", _tokenId)
+	err := _EthereumPaymentObligationContract.contract.Call(opts, out, "ownerOf", tokenId)
 	return *ret0, err
 }
 
 // OwnerOf is a free data retrieval call binding the contract method 0x6352211e.
 //
-// Solidity: function ownerOf(_tokenId uint256) constant returns(address)
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractSession) OwnerOf(_tokenId *big.Int) (common.Address, error) {
-	return _EthereumPaymentObligationContract.Contract.OwnerOf(&_EthereumPaymentObligationContract.CallOpts, _tokenId)
+// Solidity: function ownerOf(tokenId uint256) constant returns(address)
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractSession) OwnerOf(tokenId *big.Int) (common.Address, error) {
+	return _EthereumPaymentObligationContract.Contract.OwnerOf(&_EthereumPaymentObligationContract.CallOpts, tokenId)
 }
 
 // OwnerOf is a free data retrieval call binding the contract method 0x6352211e.
 //
-// Solidity: function ownerOf(_tokenId uint256) constant returns(address)
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCallerSession) OwnerOf(_tokenId *big.Int) (common.Address, error) {
-	return _EthereumPaymentObligationContract.Contract.OwnerOf(&_EthereumPaymentObligationContract.CallOpts, _tokenId)
+// Solidity: function ownerOf(tokenId uint256) constant returns(address)
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCallerSession) OwnerOf(tokenId *big.Int) (common.Address, error) {
+	return _EthereumPaymentObligationContract.Contract.OwnerOf(&_EthereumPaymentObligationContract.CallOpts, tokenId)
 }
 
 // SupportsInterface is a free data retrieval call binding the contract method 0x01ffc9a7.
 //
-// Solidity: function supportsInterface(_interfaceId bytes4) constant returns(bool)
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCaller) SupportsInterface(opts *bind.CallOpts, _interfaceId [4]byte) (bool, error) {
+// Solidity: function supportsInterface(interfaceId bytes4) constant returns(bool)
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCaller) SupportsInterface(opts *bind.CallOpts, interfaceId [4]byte) (bool, error) {
 	var (
 		ret0 = new(bool)
 	)
 	out := ret0
-	err := _EthereumPaymentObligationContract.contract.Call(opts, out, "supportsInterface", _interfaceId)
+	err := _EthereumPaymentObligationContract.contract.Call(opts, out, "supportsInterface", interfaceId)
 	return *ret0, err
 }
 
 // SupportsInterface is a free data retrieval call binding the contract method 0x01ffc9a7.
 //
-// Solidity: function supportsInterface(_interfaceId bytes4) constant returns(bool)
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractSession) SupportsInterface(_interfaceId [4]byte) (bool, error) {
-	return _EthereumPaymentObligationContract.Contract.SupportsInterface(&_EthereumPaymentObligationContract.CallOpts, _interfaceId)
+// Solidity: function supportsInterface(interfaceId bytes4) constant returns(bool)
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractSession) SupportsInterface(interfaceId [4]byte) (bool, error) {
+	return _EthereumPaymentObligationContract.Contract.SupportsInterface(&_EthereumPaymentObligationContract.CallOpts, interfaceId)
 }
 
 // SupportsInterface is a free data retrieval call binding the contract method 0x01ffc9a7.
 //
-// Solidity: function supportsInterface(_interfaceId bytes4) constant returns(bool)
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCallerSession) SupportsInterface(_interfaceId [4]byte) (bool, error) {
-	return _EthereumPaymentObligationContract.Contract.SupportsInterface(&_EthereumPaymentObligationContract.CallOpts, _interfaceId)
+// Solidity: function supportsInterface(interfaceId bytes4) constant returns(bool)
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCallerSession) SupportsInterface(interfaceId [4]byte) (bool, error) {
+	return _EthereumPaymentObligationContract.Contract.SupportsInterface(&_EthereumPaymentObligationContract.CallOpts, interfaceId)
 }
 
 // Symbol is a free data retrieval call binding the contract method 0x95d89b41.
@@ -468,213 +442,156 @@ func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCalle
 	return _EthereumPaymentObligationContract.Contract.Symbol(&_EthereumPaymentObligationContract.CallOpts)
 }
 
-// TokenByIndex is a free data retrieval call binding the contract method 0x4f6ccce7.
-//
-// Solidity: function tokenByIndex(_index uint256) constant returns(uint256)
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCaller) TokenByIndex(opts *bind.CallOpts, _index *big.Int) (*big.Int, error) {
-	var (
-		ret0 = new(*big.Int)
-	)
-	out := ret0
-	err := _EthereumPaymentObligationContract.contract.Call(opts, out, "tokenByIndex", _index)
-	return *ret0, err
-}
-
-// TokenByIndex is a free data retrieval call binding the contract method 0x4f6ccce7.
-//
-// Solidity: function tokenByIndex(_index uint256) constant returns(uint256)
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractSession) TokenByIndex(_index *big.Int) (*big.Int, error) {
-	return _EthereumPaymentObligationContract.Contract.TokenByIndex(&_EthereumPaymentObligationContract.CallOpts, _index)
-}
-
-// TokenByIndex is a free data retrieval call binding the contract method 0x4f6ccce7.
-//
-// Solidity: function tokenByIndex(_index uint256) constant returns(uint256)
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCallerSession) TokenByIndex(_index *big.Int) (*big.Int, error) {
-	return _EthereumPaymentObligationContract.Contract.TokenByIndex(&_EthereumPaymentObligationContract.CallOpts, _index)
-}
-
-// TokenOfOwnerByIndex is a free data retrieval call binding the contract method 0x2f745c59.
-//
-// Solidity: function tokenOfOwnerByIndex(_owner address, _index uint256) constant returns(uint256)
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCaller) TokenOfOwnerByIndex(opts *bind.CallOpts, _owner common.Address, _index *big.Int) (*big.Int, error) {
-	var (
-		ret0 = new(*big.Int)
-	)
-	out := ret0
-	err := _EthereumPaymentObligationContract.contract.Call(opts, out, "tokenOfOwnerByIndex", _owner, _index)
-	return *ret0, err
-}
-
-// TokenOfOwnerByIndex is a free data retrieval call binding the contract method 0x2f745c59.
-//
-// Solidity: function tokenOfOwnerByIndex(_owner address, _index uint256) constant returns(uint256)
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractSession) TokenOfOwnerByIndex(_owner common.Address, _index *big.Int) (*big.Int, error) {
-	return _EthereumPaymentObligationContract.Contract.TokenOfOwnerByIndex(&_EthereumPaymentObligationContract.CallOpts, _owner, _index)
-}
-
-// TokenOfOwnerByIndex is a free data retrieval call binding the contract method 0x2f745c59.
-//
-// Solidity: function tokenOfOwnerByIndex(_owner address, _index uint256) constant returns(uint256)
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCallerSession) TokenOfOwnerByIndex(_owner common.Address, _index *big.Int) (*big.Int, error) {
-	return _EthereumPaymentObligationContract.Contract.TokenOfOwnerByIndex(&_EthereumPaymentObligationContract.CallOpts, _owner, _index)
-}
-
 // TokenURI is a free data retrieval call binding the contract method 0xc87b56dd.
 //
-// Solidity: function tokenURI(_tokenId uint256) constant returns(string)
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCaller) TokenURI(opts *bind.CallOpts, _tokenId *big.Int) (string, error) {
+// Solidity: function tokenURI(tokenId uint256) constant returns(string)
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCaller) TokenURI(opts *bind.CallOpts, tokenId *big.Int) (string, error) {
 	var (
 		ret0 = new(string)
 	)
 	out := ret0
-	err := _EthereumPaymentObligationContract.contract.Call(opts, out, "tokenURI", _tokenId)
+	err := _EthereumPaymentObligationContract.contract.Call(opts, out, "tokenURI", tokenId)
 	return *ret0, err
 }
 
 // TokenURI is a free data retrieval call binding the contract method 0xc87b56dd.
 //
-// Solidity: function tokenURI(_tokenId uint256) constant returns(string)
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractSession) TokenURI(_tokenId *big.Int) (string, error) {
-	return _EthereumPaymentObligationContract.Contract.TokenURI(&_EthereumPaymentObligationContract.CallOpts, _tokenId)
+// Solidity: function tokenURI(tokenId uint256) constant returns(string)
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractSession) TokenURI(tokenId *big.Int) (string, error) {
+	return _EthereumPaymentObligationContract.Contract.TokenURI(&_EthereumPaymentObligationContract.CallOpts, tokenId)
 }
 
 // TokenURI is a free data retrieval call binding the contract method 0xc87b56dd.
 //
-// Solidity: function tokenURI(_tokenId uint256) constant returns(string)
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCallerSession) TokenURI(_tokenId *big.Int) (string, error) {
-	return _EthereumPaymentObligationContract.Contract.TokenURI(&_EthereumPaymentObligationContract.CallOpts, _tokenId)
-}
-
-// TotalSupply is a free data retrieval call binding the contract method 0x18160ddd.
-//
-// Solidity: function totalSupply() constant returns(uint256)
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCaller) TotalSupply(opts *bind.CallOpts) (*big.Int, error) {
-	var (
-		ret0 = new(*big.Int)
-	)
-	out := ret0
-	err := _EthereumPaymentObligationContract.contract.Call(opts, out, "totalSupply")
-	return *ret0, err
-}
-
-// TotalSupply is a free data retrieval call binding the contract method 0x18160ddd.
-//
-// Solidity: function totalSupply() constant returns(uint256)
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractSession) TotalSupply() (*big.Int, error) {
-	return _EthereumPaymentObligationContract.Contract.TotalSupply(&_EthereumPaymentObligationContract.CallOpts)
-}
-
-// TotalSupply is a free data retrieval call binding the contract method 0x18160ddd.
-//
-// Solidity: function totalSupply() constant returns(uint256)
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCallerSession) TotalSupply() (*big.Int, error) {
-	return _EthereumPaymentObligationContract.Contract.TotalSupply(&_EthereumPaymentObligationContract.CallOpts)
+// Solidity: function tokenURI(tokenId uint256) constant returns(string)
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCallerSession) TokenURI(tokenId *big.Int) (string, error) {
+	return _EthereumPaymentObligationContract.Contract.TokenURI(&_EthereumPaymentObligationContract.CallOpts, tokenId)
 }
 
 // Approve is a paid mutator transaction binding the contract method 0x095ea7b3.
 //
-// Solidity: function approve(_to address, _tokenId uint256) returns()
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractTransactor) Approve(opts *bind.TransactOpts, _to common.Address, _tokenId *big.Int) (*types.Transaction, error) {
-	return _EthereumPaymentObligationContract.contract.Transact(opts, "approve", _to, _tokenId)
+// Solidity: function approve(to address, tokenId uint256) returns()
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractTransactor) Approve(opts *bind.TransactOpts, to common.Address, tokenId *big.Int) (*types.Transaction, error) {
+	return _EthereumPaymentObligationContract.contract.Transact(opts, "approve", to, tokenId)
 }
 
 // Approve is a paid mutator transaction binding the contract method 0x095ea7b3.
 //
-// Solidity: function approve(_to address, _tokenId uint256) returns()
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractSession) Approve(_to common.Address, _tokenId *big.Int) (*types.Transaction, error) {
-	return _EthereumPaymentObligationContract.Contract.Approve(&_EthereumPaymentObligationContract.TransactOpts, _to, _tokenId)
+// Solidity: function approve(to address, tokenId uint256) returns()
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractSession) Approve(to common.Address, tokenId *big.Int) (*types.Transaction, error) {
+	return _EthereumPaymentObligationContract.Contract.Approve(&_EthereumPaymentObligationContract.TransactOpts, to, tokenId)
 }
 
 // Approve is a paid mutator transaction binding the contract method 0x095ea7b3.
 //
-// Solidity: function approve(_to address, _tokenId uint256) returns()
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractTransactorSession) Approve(_to common.Address, _tokenId *big.Int) (*types.Transaction, error) {
-	return _EthereumPaymentObligationContract.Contract.Approve(&_EthereumPaymentObligationContract.TransactOpts, _to, _tokenId)
+// Solidity: function approve(to address, tokenId uint256) returns()
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractTransactorSession) Approve(to common.Address, tokenId *big.Int) (*types.Transaction, error) {
+	return _EthereumPaymentObligationContract.Contract.Approve(&_EthereumPaymentObligationContract.TransactOpts, to, tokenId)
 }
 
-// Mint is a paid mutator transaction binding the contract method 0xcb40425f.
+// Initialize is a paid mutator transaction binding the contract method 0x8129fc1c.
 //
-// Solidity: function mint(_to address, _tokenId uint256, _tokenURI string, _anchorId uint256, _merkleRoot bytes32, _collaboratorField string, _values string[5], _salts bytes32[5], _proofs bytes32[][5]) returns()
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractTransactor) Mint(opts *bind.TransactOpts, _to common.Address, _tokenId *big.Int, _tokenURI string, _anchorId *big.Int, _merkleRoot [32]byte, _collaboratorField string, _values [5]string, _salts [5][32]byte, _proofs [5][][32]byte) (*types.Transaction, error) {
-	return _EthereumPaymentObligationContract.contract.Transact(opts, "mint", _to, _tokenId, _tokenURI, _anchorId, _merkleRoot, _collaboratorField, _values, _salts, _proofs)
+// Solidity: function initialize() returns()
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractTransactor) Initialize(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _EthereumPaymentObligationContract.contract.Transact(opts, "initialize")
 }
 
-// Mint is a paid mutator transaction binding the contract method 0xcb40425f.
+// Initialize is a paid mutator transaction binding the contract method 0x8129fc1c.
 //
-// Solidity: function mint(_to address, _tokenId uint256, _tokenURI string, _anchorId uint256, _merkleRoot bytes32, _collaboratorField string, _values string[5], _salts bytes32[5], _proofs bytes32[][5]) returns()
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractSession) Mint(_to common.Address, _tokenId *big.Int, _tokenURI string, _anchorId *big.Int, _merkleRoot [32]byte, _collaboratorField string, _values [5]string, _salts [5][32]byte, _proofs [5][][32]byte) (*types.Transaction, error) {
-	return _EthereumPaymentObligationContract.Contract.Mint(&_EthereumPaymentObligationContract.TransactOpts, _to, _tokenId, _tokenURI, _anchorId, _merkleRoot, _collaboratorField, _values, _salts, _proofs)
+// Solidity: function initialize() returns()
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractSession) Initialize() (*types.Transaction, error) {
+	return _EthereumPaymentObligationContract.Contract.Initialize(&_EthereumPaymentObligationContract.TransactOpts)
 }
 
-// Mint is a paid mutator transaction binding the contract method 0xcb40425f.
+// Initialize is a paid mutator transaction binding the contract method 0x8129fc1c.
 //
-// Solidity: function mint(_to address, _tokenId uint256, _tokenURI string, _anchorId uint256, _merkleRoot bytes32, _collaboratorField string, _values string[5], _salts bytes32[5], _proofs bytes32[][5]) returns()
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractTransactorSession) Mint(_to common.Address, _tokenId *big.Int, _tokenURI string, _anchorId *big.Int, _merkleRoot [32]byte, _collaboratorField string, _values [5]string, _salts [5][32]byte, _proofs [5][][32]byte) (*types.Transaction, error) {
-	return _EthereumPaymentObligationContract.Contract.Mint(&_EthereumPaymentObligationContract.TransactOpts, _to, _tokenId, _tokenURI, _anchorId, _merkleRoot, _collaboratorField, _values, _salts, _proofs)
+// Solidity: function initialize() returns()
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractTransactorSession) Initialize() (*types.Transaction, error) {
+	return _EthereumPaymentObligationContract.Contract.Initialize(&_EthereumPaymentObligationContract.TransactOpts)
+}
+
+// Mint is a paid mutator transaction binding the contract method 0x093b02fe.
+//
+// Solidity: function mint(_to address, _tokenId uint256, _tokenURI string, _anchorId uint256, _merkleRoot bytes32, _values string[], _salts bytes32[], _proofs bytes32[][]) returns()
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractTransactor) Mint(opts *bind.TransactOpts, _to common.Address, _tokenId *big.Int, _tokenURI string, _anchorId *big.Int, _merkleRoot [32]byte, _values []string, _salts [][32]byte, _proofs [][][32]byte) (*types.Transaction, error) {
+	return _EthereumPaymentObligationContract.contract.Transact(opts, "mint", _to, _tokenId, _tokenURI, _anchorId, _merkleRoot, _values, _salts, _proofs)
+}
+
+// Mint is a paid mutator transaction binding the contract method 0x093b02fe.
+//
+// Solidity: function mint(_to address, _tokenId uint256, _tokenURI string, _anchorId uint256, _merkleRoot bytes32, _values string[], _salts bytes32[], _proofs bytes32[][]) returns()
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractSession) Mint(_to common.Address, _tokenId *big.Int, _tokenURI string, _anchorId *big.Int, _merkleRoot [32]byte, _values []string, _salts [][32]byte, _proofs [][][32]byte) (*types.Transaction, error) {
+	return _EthereumPaymentObligationContract.Contract.Mint(&_EthereumPaymentObligationContract.TransactOpts, _to, _tokenId, _tokenURI, _anchorId, _merkleRoot, _values, _salts, _proofs)
+}
+
+// Mint is a paid mutator transaction binding the contract method 0x093b02fe.
+//
+// Solidity: function mint(_to address, _tokenId uint256, _tokenURI string, _anchorId uint256, _merkleRoot bytes32, _values string[], _salts bytes32[], _proofs bytes32[][]) returns()
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractTransactorSession) Mint(_to common.Address, _tokenId *big.Int, _tokenURI string, _anchorId *big.Int, _merkleRoot [32]byte, _values []string, _salts [][32]byte, _proofs [][][32]byte) (*types.Transaction, error) {
+	return _EthereumPaymentObligationContract.Contract.Mint(&_EthereumPaymentObligationContract.TransactOpts, _to, _tokenId, _tokenURI, _anchorId, _merkleRoot, _values, _salts, _proofs)
 }
 
 // SafeTransferFrom is a paid mutator transaction binding the contract method 0xb88d4fde.
 //
-// Solidity: function safeTransferFrom(_from address, _to address, _tokenId uint256, _data bytes) returns()
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractTransactor) SafeTransferFrom(opts *bind.TransactOpts, _from common.Address, _to common.Address, _tokenId *big.Int, _data []byte) (*types.Transaction, error) {
-	return _EthereumPaymentObligationContract.contract.Transact(opts, "safeTransferFrom", _from, _to, _tokenId, _data)
+// Solidity: function safeTransferFrom(from address, to address, tokenId uint256, _data bytes) returns()
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractTransactor) SafeTransferFrom(opts *bind.TransactOpts, from common.Address, to common.Address, tokenId *big.Int, _data []byte) (*types.Transaction, error) {
+	return _EthereumPaymentObligationContract.contract.Transact(opts, "safeTransferFrom", from, to, tokenId, _data)
 }
 
 // SafeTransferFrom is a paid mutator transaction binding the contract method 0xb88d4fde.
 //
-// Solidity: function safeTransferFrom(_from address, _to address, _tokenId uint256, _data bytes) returns()
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractSession) SafeTransferFrom(_from common.Address, _to common.Address, _tokenId *big.Int, _data []byte) (*types.Transaction, error) {
-	return _EthereumPaymentObligationContract.Contract.SafeTransferFrom(&_EthereumPaymentObligationContract.TransactOpts, _from, _to, _tokenId, _data)
+// Solidity: function safeTransferFrom(from address, to address, tokenId uint256, _data bytes) returns()
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractSession) SafeTransferFrom(from common.Address, to common.Address, tokenId *big.Int, _data []byte) (*types.Transaction, error) {
+	return _EthereumPaymentObligationContract.Contract.SafeTransferFrom(&_EthereumPaymentObligationContract.TransactOpts, from, to, tokenId, _data)
 }
 
 // SafeTransferFrom is a paid mutator transaction binding the contract method 0xb88d4fde.
 //
-// Solidity: function safeTransferFrom(_from address, _to address, _tokenId uint256, _data bytes) returns()
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractTransactorSession) SafeTransferFrom(_from common.Address, _to common.Address, _tokenId *big.Int, _data []byte) (*types.Transaction, error) {
-	return _EthereumPaymentObligationContract.Contract.SafeTransferFrom(&_EthereumPaymentObligationContract.TransactOpts, _from, _to, _tokenId, _data)
+// Solidity: function safeTransferFrom(from address, to address, tokenId uint256, _data bytes) returns()
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractTransactorSession) SafeTransferFrom(from common.Address, to common.Address, tokenId *big.Int, _data []byte) (*types.Transaction, error) {
+	return _EthereumPaymentObligationContract.Contract.SafeTransferFrom(&_EthereumPaymentObligationContract.TransactOpts, from, to, tokenId, _data)
 }
 
 // SetApprovalForAll is a paid mutator transaction binding the contract method 0xa22cb465.
 //
-// Solidity: function setApprovalForAll(_to address, _approved bool) returns()
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractTransactor) SetApprovalForAll(opts *bind.TransactOpts, _to common.Address, _approved bool) (*types.Transaction, error) {
-	return _EthereumPaymentObligationContract.contract.Transact(opts, "setApprovalForAll", _to, _approved)
+// Solidity: function setApprovalForAll(to address, approved bool) returns()
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractTransactor) SetApprovalForAll(opts *bind.TransactOpts, to common.Address, approved bool) (*types.Transaction, error) {
+	return _EthereumPaymentObligationContract.contract.Transact(opts, "setApprovalForAll", to, approved)
 }
 
 // SetApprovalForAll is a paid mutator transaction binding the contract method 0xa22cb465.
 //
-// Solidity: function setApprovalForAll(_to address, _approved bool) returns()
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractSession) SetApprovalForAll(_to common.Address, _approved bool) (*types.Transaction, error) {
-	return _EthereumPaymentObligationContract.Contract.SetApprovalForAll(&_EthereumPaymentObligationContract.TransactOpts, _to, _approved)
+// Solidity: function setApprovalForAll(to address, approved bool) returns()
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractSession) SetApprovalForAll(to common.Address, approved bool) (*types.Transaction, error) {
+	return _EthereumPaymentObligationContract.Contract.SetApprovalForAll(&_EthereumPaymentObligationContract.TransactOpts, to, approved)
 }
 
 // SetApprovalForAll is a paid mutator transaction binding the contract method 0xa22cb465.
 //
-// Solidity: function setApprovalForAll(_to address, _approved bool) returns()
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractTransactorSession) SetApprovalForAll(_to common.Address, _approved bool) (*types.Transaction, error) {
-	return _EthereumPaymentObligationContract.Contract.SetApprovalForAll(&_EthereumPaymentObligationContract.TransactOpts, _to, _approved)
+// Solidity: function setApprovalForAll(to address, approved bool) returns()
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractTransactorSession) SetApprovalForAll(to common.Address, approved bool) (*types.Transaction, error) {
+	return _EthereumPaymentObligationContract.Contract.SetApprovalForAll(&_EthereumPaymentObligationContract.TransactOpts, to, approved)
 }
 
 // TransferFrom is a paid mutator transaction binding the contract method 0x23b872dd.
 //
-// Solidity: function transferFrom(_from address, _to address, _tokenId uint256) returns()
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractTransactor) TransferFrom(opts *bind.TransactOpts, _from common.Address, _to common.Address, _tokenId *big.Int) (*types.Transaction, error) {
-	return _EthereumPaymentObligationContract.contract.Transact(opts, "transferFrom", _from, _to, _tokenId)
+// Solidity: function transferFrom(from address, to address, tokenId uint256) returns()
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractTransactor) TransferFrom(opts *bind.TransactOpts, from common.Address, to common.Address, tokenId *big.Int) (*types.Transaction, error) {
+	return _EthereumPaymentObligationContract.contract.Transact(opts, "transferFrom", from, to, tokenId)
 }
 
 // TransferFrom is a paid mutator transaction binding the contract method 0x23b872dd.
 //
-// Solidity: function transferFrom(_from address, _to address, _tokenId uint256) returns()
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractSession) TransferFrom(_from common.Address, _to common.Address, _tokenId *big.Int) (*types.Transaction, error) {
-	return _EthereumPaymentObligationContract.Contract.TransferFrom(&_EthereumPaymentObligationContract.TransactOpts, _from, _to, _tokenId)
+// Solidity: function transferFrom(from address, to address, tokenId uint256) returns()
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractSession) TransferFrom(from common.Address, to common.Address, tokenId *big.Int) (*types.Transaction, error) {
+	return _EthereumPaymentObligationContract.Contract.TransferFrom(&_EthereumPaymentObligationContract.TransactOpts, from, to, tokenId)
 }
 
 // TransferFrom is a paid mutator transaction binding the contract method 0x23b872dd.
 //
-// Solidity: function transferFrom(_from address, _to address, _tokenId uint256) returns()
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractTransactorSession) TransferFrom(_from common.Address, _to common.Address, _tokenId *big.Int) (*types.Transaction, error) {
-	return _EthereumPaymentObligationContract.Contract.TransferFrom(&_EthereumPaymentObligationContract.TransactOpts, _from, _to, _tokenId)
+// Solidity: function transferFrom(from address, to address, tokenId uint256) returns()
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractTransactorSession) TransferFrom(from common.Address, to common.Address, tokenId *big.Int) (*types.Transaction, error) {
+	return _EthereumPaymentObligationContract.Contract.TransferFrom(&_EthereumPaymentObligationContract.TransactOpts, from, to, tokenId)
 }
 
 // EthereumPaymentObligationContractApprovalIterator is returned from FilterApproval and is used to iterate over the raw logs and unpacked data for Approval events raised by the EthereumPaymentObligationContract contract.
@@ -754,23 +671,23 @@ type EthereumPaymentObligationContractApproval struct {
 
 // FilterApproval is a free log retrieval operation binding the contract event 0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925.
 //
-// Solidity: e Approval(_owner indexed address, _approved indexed address, _tokenId indexed uint256)
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractFilterer) FilterApproval(opts *bind.FilterOpts, _owner []common.Address, _approved []common.Address, _tokenId []*big.Int) (*EthereumPaymentObligationContractApprovalIterator, error) {
+// Solidity: e Approval(owner indexed address, approved indexed address, tokenId indexed uint256)
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractFilterer) FilterApproval(opts *bind.FilterOpts, owner []common.Address, approved []common.Address, tokenId []*big.Int) (*EthereumPaymentObligationContractApprovalIterator, error) {
 
-	var _ownerRule []interface{}
-	for _, _ownerItem := range _owner {
-		_ownerRule = append(_ownerRule, _ownerItem)
+	var ownerRule []interface{}
+	for _, ownerItem := range owner {
+		ownerRule = append(ownerRule, ownerItem)
 	}
-	var _approvedRule []interface{}
-	for _, _approvedItem := range _approved {
-		_approvedRule = append(_approvedRule, _approvedItem)
+	var approvedRule []interface{}
+	for _, approvedItem := range approved {
+		approvedRule = append(approvedRule, approvedItem)
 	}
-	var _tokenIdRule []interface{}
-	for _, _tokenIdItem := range _tokenId {
-		_tokenIdRule = append(_tokenIdRule, _tokenIdItem)
+	var tokenIdRule []interface{}
+	for _, tokenIdItem := range tokenId {
+		tokenIdRule = append(tokenIdRule, tokenIdItem)
 	}
 
-	logs, sub, err := _EthereumPaymentObligationContract.contract.FilterLogs(opts, "Approval", _ownerRule, _approvedRule, _tokenIdRule)
+	logs, sub, err := _EthereumPaymentObligationContract.contract.FilterLogs(opts, "Approval", ownerRule, approvedRule, tokenIdRule)
 	if err != nil {
 		return nil, err
 	}
@@ -779,23 +696,23 @@ func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractFilte
 
 // WatchApproval is a free log subscription operation binding the contract event 0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925.
 //
-// Solidity: e Approval(_owner indexed address, _approved indexed address, _tokenId indexed uint256)
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractFilterer) WatchApproval(opts *bind.WatchOpts, sink chan<- *EthereumPaymentObligationContractApproval, _owner []common.Address, _approved []common.Address, _tokenId []*big.Int) (event.Subscription, error) {
+// Solidity: e Approval(owner indexed address, approved indexed address, tokenId indexed uint256)
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractFilterer) WatchApproval(opts *bind.WatchOpts, sink chan<- *EthereumPaymentObligationContractApproval, owner []common.Address, approved []common.Address, tokenId []*big.Int) (event.Subscription, error) {
 
-	var _ownerRule []interface{}
-	for _, _ownerItem := range _owner {
-		_ownerRule = append(_ownerRule, _ownerItem)
+	var ownerRule []interface{}
+	for _, ownerItem := range owner {
+		ownerRule = append(ownerRule, ownerItem)
 	}
-	var _approvedRule []interface{}
-	for _, _approvedItem := range _approved {
-		_approvedRule = append(_approvedRule, _approvedItem)
+	var approvedRule []interface{}
+	for _, approvedItem := range approved {
+		approvedRule = append(approvedRule, approvedItem)
 	}
-	var _tokenIdRule []interface{}
-	for _, _tokenIdItem := range _tokenId {
-		_tokenIdRule = append(_tokenIdRule, _tokenIdItem)
+	var tokenIdRule []interface{}
+	for _, tokenIdItem := range tokenId {
+		tokenIdRule = append(tokenIdRule, tokenIdItem)
 	}
 
-	logs, sub, err := _EthereumPaymentObligationContract.contract.WatchLogs(opts, "Approval", _ownerRule, _approvedRule, _tokenIdRule)
+	logs, sub, err := _EthereumPaymentObligationContract.contract.WatchLogs(opts, "Approval", ownerRule, approvedRule, tokenIdRule)
 	if err != nil {
 		return nil, err
 	}
@@ -904,19 +821,19 @@ type EthereumPaymentObligationContractApprovalForAll struct {
 
 // FilterApprovalForAll is a free log retrieval operation binding the contract event 0x17307eab39ab6107e8899845ad3d59bd9653f200f220920489ca2b5937696c31.
 //
-// Solidity: e ApprovalForAll(_owner indexed address, _operator indexed address, _approved bool)
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractFilterer) FilterApprovalForAll(opts *bind.FilterOpts, _owner []common.Address, _operator []common.Address) (*EthereumPaymentObligationContractApprovalForAllIterator, error) {
+// Solidity: e ApprovalForAll(owner indexed address, operator indexed address, approved bool)
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractFilterer) FilterApprovalForAll(opts *bind.FilterOpts, owner []common.Address, operator []common.Address) (*EthereumPaymentObligationContractApprovalForAllIterator, error) {
 
-	var _ownerRule []interface{}
-	for _, _ownerItem := range _owner {
-		_ownerRule = append(_ownerRule, _ownerItem)
+	var ownerRule []interface{}
+	for _, ownerItem := range owner {
+		ownerRule = append(ownerRule, ownerItem)
 	}
-	var _operatorRule []interface{}
-	for _, _operatorItem := range _operator {
-		_operatorRule = append(_operatorRule, _operatorItem)
+	var operatorRule []interface{}
+	for _, operatorItem := range operator {
+		operatorRule = append(operatorRule, operatorItem)
 	}
 
-	logs, sub, err := _EthereumPaymentObligationContract.contract.FilterLogs(opts, "ApprovalForAll", _ownerRule, _operatorRule)
+	logs, sub, err := _EthereumPaymentObligationContract.contract.FilterLogs(opts, "ApprovalForAll", ownerRule, operatorRule)
 	if err != nil {
 		return nil, err
 	}
@@ -925,19 +842,19 @@ func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractFilte
 
 // WatchApprovalForAll is a free log subscription operation binding the contract event 0x17307eab39ab6107e8899845ad3d59bd9653f200f220920489ca2b5937696c31.
 //
-// Solidity: e ApprovalForAll(_owner indexed address, _operator indexed address, _approved bool)
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractFilterer) WatchApprovalForAll(opts *bind.WatchOpts, sink chan<- *EthereumPaymentObligationContractApprovalForAll, _owner []common.Address, _operator []common.Address) (event.Subscription, error) {
+// Solidity: e ApprovalForAll(owner indexed address, operator indexed address, approved bool)
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractFilterer) WatchApprovalForAll(opts *bind.WatchOpts, sink chan<- *EthereumPaymentObligationContractApprovalForAll, owner []common.Address, operator []common.Address) (event.Subscription, error) {
 
-	var _ownerRule []interface{}
-	for _, _ownerItem := range _owner {
-		_ownerRule = append(_ownerRule, _ownerItem)
+	var ownerRule []interface{}
+	for _, ownerItem := range owner {
+		ownerRule = append(ownerRule, ownerItem)
 	}
-	var _operatorRule []interface{}
-	for _, _operatorItem := range _operator {
-		_operatorRule = append(_operatorRule, _operatorItem)
+	var operatorRule []interface{}
+	for _, operatorItem := range operator {
+		operatorRule = append(operatorRule, operatorItem)
 	}
 
-	logs, sub, err := _EthereumPaymentObligationContract.contract.WatchLogs(opts, "ApprovalForAll", _ownerRule, _operatorRule)
+	logs, sub, err := _EthereumPaymentObligationContract.contract.WatchLogs(opts, "ApprovalForAll", ownerRule, operatorRule)
 	if err != nil {
 		return nil, err
 	}
@@ -1170,23 +1087,23 @@ type EthereumPaymentObligationContractTransfer struct {
 
 // FilterTransfer is a free log retrieval operation binding the contract event 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef.
 //
-// Solidity: e Transfer(_from indexed address, _to indexed address, _tokenId indexed uint256)
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractFilterer) FilterTransfer(opts *bind.FilterOpts, _from []common.Address, _to []common.Address, _tokenId []*big.Int) (*EthereumPaymentObligationContractTransferIterator, error) {
+// Solidity: e Transfer(from indexed address, to indexed address, tokenId indexed uint256)
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractFilterer) FilterTransfer(opts *bind.FilterOpts, from []common.Address, to []common.Address, tokenId []*big.Int) (*EthereumPaymentObligationContractTransferIterator, error) {
 
-	var _fromRule []interface{}
-	for _, _fromItem := range _from {
-		_fromRule = append(_fromRule, _fromItem)
+	var fromRule []interface{}
+	for _, fromItem := range from {
+		fromRule = append(fromRule, fromItem)
 	}
-	var _toRule []interface{}
-	for _, _toItem := range _to {
-		_toRule = append(_toRule, _toItem)
+	var toRule []interface{}
+	for _, toItem := range to {
+		toRule = append(toRule, toItem)
 	}
-	var _tokenIdRule []interface{}
-	for _, _tokenIdItem := range _tokenId {
-		_tokenIdRule = append(_tokenIdRule, _tokenIdItem)
+	var tokenIdRule []interface{}
+	for _, tokenIdItem := range tokenId {
+		tokenIdRule = append(tokenIdRule, tokenIdItem)
 	}
 
-	logs, sub, err := _EthereumPaymentObligationContract.contract.FilterLogs(opts, "Transfer", _fromRule, _toRule, _tokenIdRule)
+	logs, sub, err := _EthereumPaymentObligationContract.contract.FilterLogs(opts, "Transfer", fromRule, toRule, tokenIdRule)
 	if err != nil {
 		return nil, err
 	}
@@ -1195,23 +1112,23 @@ func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractFilte
 
 // WatchTransfer is a free log subscription operation binding the contract event 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef.
 //
-// Solidity: e Transfer(_from indexed address, _to indexed address, _tokenId indexed uint256)
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractFilterer) WatchTransfer(opts *bind.WatchOpts, sink chan<- *EthereumPaymentObligationContractTransfer, _from []common.Address, _to []common.Address, _tokenId []*big.Int) (event.Subscription, error) {
+// Solidity: e Transfer(from indexed address, to indexed address, tokenId indexed uint256)
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractFilterer) WatchTransfer(opts *bind.WatchOpts, sink chan<- *EthereumPaymentObligationContractTransfer, from []common.Address, to []common.Address, tokenId []*big.Int) (event.Subscription, error) {
 
-	var _fromRule []interface{}
-	for _, _fromItem := range _from {
-		_fromRule = append(_fromRule, _fromItem)
+	var fromRule []interface{}
+	for _, fromItem := range from {
+		fromRule = append(fromRule, fromItem)
 	}
-	var _toRule []interface{}
-	for _, _toItem := range _to {
-		_toRule = append(_toRule, _toItem)
+	var toRule []interface{}
+	for _, toItem := range to {
+		toRule = append(toRule, toItem)
 	}
-	var _tokenIdRule []interface{}
-	for _, _tokenIdItem := range _tokenId {
-		_tokenIdRule = append(_tokenIdRule, _tokenIdItem)
+	var tokenIdRule []interface{}
+	for _, tokenIdItem := range tokenId {
+		tokenIdRule = append(tokenIdRule, tokenIdItem)
 	}
 
-	logs, sub, err := _EthereumPaymentObligationContract.contract.WatchLogs(opts, "Transfer", _fromRule, _toRule, _tokenIdRule)
+	logs, sub, err := _EthereumPaymentObligationContract.contract.WatchLogs(opts, "Transfer", fromRule, toRule, tokenIdRule)
 	if err != nil {
 		return nil, err
 	}
