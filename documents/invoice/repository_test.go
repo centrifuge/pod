@@ -5,12 +5,14 @@ package invoice
 import (
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestRepository(t *testing.T) {
-	repo := getRepository()
+	repo := testRepo()
 	invRepo := repo.(*repository)
 	assert.Equal(t, invRepo.KeyPrefix, "invoice")
 	assert.NotNil(t, invRepo.LevelDB, "missing leveldb instance")
@@ -46,7 +48,20 @@ func TestRepository(t *testing.T) {
 }
 
 func TestRepository_getRepository(t *testing.T) {
-	r := getRepository()
+	r := testRepo()
 	assert.NotNil(t, r)
 	assert.Equal(t, "invoice", r.(*repository).KeyPrefix)
+}
+
+var testRepoGlobal documents.Repository
+
+func testRepo() documents.Repository {
+	if testRepoGlobal == nil {
+		ldb, err := storage.NewLevelDBStorage(storage.GetRandomTestStoragePath())
+		if err != nil {
+			panic(err)
+		}
+		testRepoGlobal = getRepository(ldb)
+	}
+	return testRepoGlobal
 }
