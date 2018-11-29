@@ -18,8 +18,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/identity"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
-	"github.com/centrifuge/go-centrifuge/storage"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+		"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/coredocument"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -57,7 +56,6 @@ func getServiceWithMockedLayers() (testingcommons.MockIDService, Service) {
 }
 
 func createMockDocument() (*Invoice, error) {
-	ldb, _ := storage.NewLevelDBStorage("tr")
 	documentIdentifier := utils.RandomSlice(32)
 	nextIdentifier := utils.RandomSlice(32)
 	inv1 := &Invoice{
@@ -69,7 +67,7 @@ func createMockDocument() (*Invoice, error) {
 			NextVersion:        nextIdentifier,
 		},
 	}
-	err := getRepository(ldb).Create(documentIdentifier, inv1)
+	err := testRepo().Create(documentIdentifier, inv1)
 	return inv1, err
 }
 

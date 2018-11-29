@@ -11,7 +11,7 @@ var log = logging.Logger("storage")
 func NewLevelDBStorage(path string) (*leveldb.DB, error) {
 	i, err := leveldb.OpenFile(path, nil)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	return i, nil
 }

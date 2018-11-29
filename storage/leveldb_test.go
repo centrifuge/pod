@@ -9,7 +9,7 @@ import (
 )
 
 func TestNewLevelDBStorage(t *testing.T) {
-	path := getRandomTestStoragePath()
+	path := GetRandomTestStoragePath()
 	db, err := NewLevelDBStorage(path)
 	assert.Nil(t, err)
 	assert.NotNil(t, db)

@@ -57,7 +57,10 @@ var testRepoGlobal documents.Repository
 
 func testRepo() documents.Repository {
 	if testRepoGlobal == nil {
-		ldb, _ := storage.NewLevelDBStorage("tr")
+		ldb, err := storage.NewLevelDBStorage(storage.GetRandomTestStoragePath())
+		if err != nil {
+			panic(err)
+		}
 		testRepoGlobal = getRepository(ldb)
 	}
 	return testRepoGlobal
