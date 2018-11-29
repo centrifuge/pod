@@ -13,6 +13,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	ctx "github.com/centrifuge/go-centrifuge/context"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/node"
 	logging "github.com/ipfs/go-log"
 )
@@ -27,6 +28,7 @@ type host struct {
 	bootstrappedCtx    map[string]interface{}
 	txPoolAccess       bool
 	smartContractAddrs *config.SmartContractAddresses
+	config             config.Config
 	node               *node.Node
 }
 
@@ -62,7 +64,12 @@ func (h *host) Init() error {
 	h.bootstrappedCtx = map[string]interface{}{
 		config.BootstrappedConfigFile: h.dir + "/config.yaml",
 	}
-	return m.Bootstrap(h.bootstrappedCtx)
+	err = m.Bootstrap(h.bootstrappedCtx)
+	if err != nil {
+		return err
+	}
+	h.config = h.bootstrappedCtx[config.BootstrappedConfig].(config.Config)
+	return nil
 }
 
 func (h *host) Start(c context.Context) error {
@@ -94,4 +101,12 @@ func (h *host) Start(c context.Context) error {
 
 func (h *host) CreateInvoice(inv invoice.Invoice, collaborators []string) {
 	// TODO work
+}
+
+func (h *host) id() (identity.CentID, error) {
+	id, err := h.config.GetIdentityID()
+	if err != nil {
+		return identity.CentID{}, err
+	}
+	return identity.ToCentID(id)
 }

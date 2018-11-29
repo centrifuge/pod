@@ -6,8 +6,10 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/keytools"
+	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
+	"github.com/syndtr/goleveldb/leveldb"
 )
 
 var targetDataDir string
@@ -151,5 +153,7 @@ func CreateConfig(
 		return err
 	}
 	canc()
+	db := ctx[storage.BootstrappedLevelDB].(*leveldb.DB)
+	db.Close()
 	return nil
 }

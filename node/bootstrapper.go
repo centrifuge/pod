@@ -7,6 +7,8 @@ import (
 	"os/signal"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/storage"
+	"github.com/syndtr/goleveldb/leveldb"
 )
 
 // Bootstrapper implements bootstrap.Bootstrapper.
@@ -17,6 +19,7 @@ type Bootstrapper struct{}
 func (*Bootstrapper) Bootstrap(c map[string]interface{}) error {
 	srvs, err := GetServers(c)
 	if err != nil {
+		cleanUp(c)
 		return fmt.Errorf("failed to load servers: %v", err)
 	}
 
@@ -30,14 +33,22 @@ func (*Bootstrapper) Bootstrap(c map[string]interface{}) error {
 	for {
 		select {
 		case err := <-feedback:
+			cleanUp(c)
 			panic(err)
 		case sig := <-controlC:
 			log.Info("Node shutting down because of ", sig)
 			canc()
+			cleanUp(c)
 			err := <-feedback
 			return err
 		}
 	}
+}
+
+func cleanUp(c map[string]interface{}) {
+	// close the node db
+	db := c[storage.BootstrappedLevelDB].(*leveldb.DB)
+	db.Close()
 }
 
 func GetServers(ctx map[string]interface{}) ([]Server, error) {
