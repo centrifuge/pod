@@ -1,4 +1,4 @@
-package cmd
+package main
 
 import (
 	"context"
@@ -25,7 +25,6 @@ var verbose bool
 var rootCmd = &cobra.Command{
 	Use:   "centrifuge",
 	Short: "Centrifuge protocol node",
-	Long:  `POC for centrifuge app`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	//	Run: func(cmd *cobra.Command, args []string) { },
