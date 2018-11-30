@@ -54,9 +54,9 @@ func TestCreateProofData(t *testing.T) {
 				},
 			},
 			proofData{
-				Values: [amountOfProofs]string{"value1", "value2"},
-				Proofs: [amountOfProofs][][32]byte{{byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}, {byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}},
-				Salts:  [amountOfProofs][32]byte{byteSliceToByteArray32(salt), byteSliceToByteArray32(salt)},
+				Values: []string{"value1", "value2"},
+				Proofs: [][][32]byte{{byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}, {byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}},
+				Salts:  [][32]byte{byteSliceToByteArray32(salt), byteSliceToByteArray32(salt)},
 			},
 			nil,
 		},
@@ -77,9 +77,9 @@ func TestCreateProofData(t *testing.T) {
 				},
 			},
 			proofData{
-				Values: [amountOfProofs]string{"value1", "value2"},
-				Proofs: [amountOfProofs][][32]byte{{byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}, {byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}},
-				Salts:  [amountOfProofs][32]byte{byteSliceToByteArray32(salt), byteSliceToByteArray32(salt)},
+				Values: []string{"value1", "value2"},
+				Proofs: [][][32]byte{{byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}, {byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}},
+				Salts:  [][32]byte{byteSliceToByteArray32(salt), byteSliceToByteArray32(salt)},
 			},
 			errors.New("input exceeds length of 32"),
 		},
@@ -100,9 +100,9 @@ func TestCreateProofData(t *testing.T) {
 				},
 			},
 			proofData{
-				Values: [amountOfProofs]string{"value1", "value2"},
-				Proofs: [amountOfProofs][][32]byte{{byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}, {byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}},
-				Salts:  [amountOfProofs][32]byte{byteSliceToByteArray32(salt), byteSliceToByteArray32(salt)},
+				Values: []string{"value1", "value2"},
+				Proofs: [][][32]byte{{byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}, {byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}},
+				Salts:  [][32]byte{byteSliceToByteArray32(salt), byteSliceToByteArray32(salt)},
 			},
 			errors.New("input exceeds length of 32"),
 		},
@@ -127,7 +127,7 @@ type MockPaymentObligation struct {
 	mock.Mock
 }
 
-func (m *MockPaymentObligation) Mint(opts *bind.TransactOpts, _to common.Address, _tokenId *big.Int, _tokenURI string, _anchorId *big.Int, _merkleRoot [32]byte, collaboratorField string, _values [amountOfProofs]string, _salts [amountOfProofs][32]byte, _proofs [amountOfProofs][][32]byte) (*types.Transaction, error) {
+func (m *MockPaymentObligation) Mint(opts *bind.TransactOpts, _to common.Address, _tokenId *big.Int, _tokenURI string, _anchorId *big.Int, _merkleRoot [32]byte, _values []string, _salts [][32]byte, _proofs [][][32]byte) (*types.Transaction, error) {
 	args := m.Called(opts, _to, _tokenId, _tokenURI, _anchorId, _merkleRoot, _values, _salts, _proofs)
 	return args.Get(0).(*types.Transaction), args.Error(1)
 }
@@ -238,27 +238,4 @@ func byteSliceToByteArray32(input []byte) (out [32]byte) {
 func decodeHex(hex string) []byte {
 	h, _ := hexutil.Decode(hex)
 	return h
-}
-
-func TestGetCollaboratorProofField(t *testing.T) {
-
-	proofField, err := getCollaboratorProofField([]string{"fuu", "foo", "collaborators[0]"})
-	assert.Nil(t, err, "getCollaboratorProofField should not throw an error")
-	assert.Equal(t, "collaborators[0]", proofField, "proofField should contain the correct field")
-
-	proofField, err = getCollaboratorProofField([]string{"fuu", "foo"})
-	assert.Error(t, err, "getCollaboratorProofField should throw an error")
-	assert.Equal(t, "", proofField, "proofField should be empty")
-
-	proofField, err = getCollaboratorProofField([]string{"fuu", "foo", "collaborators"})
-	assert.Error(t, err, "getCollaboratorProofField should throw an error")
-	assert.Equal(t, "", proofField, "proofField should be empty")
-
-	proofField, err = getCollaboratorProofField([]string{"fuu", "foo", "collaborators[a]"})
-	assert.Error(t, err, "getCollaboratorProofField should throw an error")
-	assert.Equal(t, "", proofField, "proofField should be empty")
-
-	proofField, err = getCollaboratorProofField([]string{"fuu", "foo", "collaborators[12345678]"})
-	assert.Nil(t, err, "getCollaboratorProofField should not throw an error")
-	assert.Equal(t, "collaborators[12345678]", proofField, "proofField should contain the correct field")
 }
