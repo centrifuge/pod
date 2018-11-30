@@ -298,3 +298,7 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
 [[constraint]]
   branch = "master"
   name = "github.com/savaki/jq"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/gavv/httpexpect"

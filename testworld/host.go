@@ -1,6 +1,6 @@
 // +build testworld
 
-package tests
+package testworld
 
 import (
 	"context"
@@ -8,17 +8,23 @@ import (
 	"os"
 	"os/signal"
 
+	"testing"
+
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/cmd"
 	"github.com/centrifuge/go-centrifuge/config"
 	ctx "github.com/centrifuge/go-centrifuge/context"
-	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/node"
+	"github.com/gavv/httpexpect"
 	logging "github.com/ipfs/go-log"
 )
 
 var log = logging.Logger("host")
+
+type robert struct {
+	hosts map[string]*host
+}
 
 type host struct {
 	name, dir, ethNodeUrl, accountKeyPath, accountPassword, network,
@@ -29,6 +35,7 @@ type host struct {
 	txPoolAccess       bool
 	smartContractAddrs *config.SmartContractAddresses
 	config             config.Config
+	identity           identity.Identity
 	node               *node.Node
 }
 
@@ -54,7 +61,7 @@ func newHost(
 	}
 }
 
-func (h *host) Init() error {
+func (h *host) init() error {
 	err := cmd.CreateConfig(h.dir, h.ethNodeUrl, h.accountKeyPath, h.accountPassword, h.network, h.apiPort, h.p2pPort, h.bootstrapNodes, h.txPoolAccess, h.smartContractAddrs)
 	if err != nil {
 		return err
@@ -69,10 +76,23 @@ func (h *host) Init() error {
 		return err
 	}
 	h.config = h.bootstrappedCtx[config.BootstrappedConfig].(config.Config)
+	idService := h.bootstrappedCtx[identity.BootstrappedIDService].(identity.Service)
+	idBytes, err := h.config.GetIdentityID()
+	if err != nil {
+		return err
+	}
+	id, err := identity.ToCentID(idBytes)
+	if err != nil {
+		return err
+	}
+	h.identity, err = idService.LookupIdentityForID(id)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
-func (h *host) Start(c context.Context) error {
+func (h *host) start(c context.Context) error {
 	srvs, err := node.GetServers(h.bootstrappedCtx)
 	if err != nil {
 		return fmt.Errorf("failed to load servers: %v", err)
@@ -99,14 +119,22 @@ func (h *host) Start(c context.Context) error {
 	}
 }
 
-func (h *host) CreateInvoice(inv invoice.Invoice, collaborators []string) {
-	// TODO work
+func (h *host) createInvoice(e *httpexpect.Expect, inv map[string]interface{}) (*httpexpect.Object, error) {
+	return createInvoice(e, inv), nil
+}
+
+func (h *host) createHttpExpectation(t *testing.T) *httpexpect.Expect {
+	return CreateInsecureClient(t, fmt.Sprintf("https://localhost:%d", h.config.GetServerPort()))
 }
 
 func (h *host) id() (identity.CentID, error) {
-	id, err := h.config.GetIdentityID()
+	return h.identity.CentID(), nil
+}
+
+func (h *host) p2pURL() (string, error) {
+	lastB58Key, err := h.identity.CurrentP2PKey()
 	if err != nil {
-		return identity.CentID{}, err
+		return "", err
 	}
-	return identity.ToCentID(id)
+	return fmt.Sprintf("/ip4/127.0.0.1/tcp/%d/ipfs/%s", h.p2pPort, lastB58Key), nil
 }

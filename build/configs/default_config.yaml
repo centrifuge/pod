@@ -7,8 +7,8 @@ networks:
     id: 333
     ethereumNetworkId: 8383
     bootstrapPeers:
-      - "/ip4/127.0.0.1/tcp/38202/ipfs/QmTQxbwkuZYYDfuzTbxEAReTNCLozyy558vQngVvPMjLYk"
-      - "/ip4/127.0.0.1/tcp/38203/ipfs/QmVf6EN6mkqWejWKW2qPu16XpdG3kJo1T3mhahPB5Se5n1"
+    - "/ip4/127.0.0.1/tcp/38202/ipfs/QmTQxbwkuZYYDfuzTbxEAReTNCLozyy558vQngVvPMjLYk"
+    - "/ip4/127.0.0.1/tcp/38203/ipfs/QmVf6EN6mkqWejWKW2qPu16XpdG3kJo1T3mhahPB5Se5n1"
     contractAddresses:
       identityFactory: ""
       identityRegistry: ""
@@ -21,8 +21,8 @@ networks:
     id: 51
     # Bootstrap list of nodes that Centrifuge provides to the russianhill testnet
     bootstrapPeers:
-      - "/ip4/35.225.200.42/tcp/38202/ipfs/12D3KooWLiicQVwThTBY6xKcPoLf6RQYJFpwf1r75wLx2ZR3pCd1"
-      - "/ip4/35.225.86.210/tcp/38202/ipfs/12D3KooWQZMA8GPHrvEZB9wdkoUcAAmCZHp9eyyZ4SE8gFr3hTNX"
+    - "/ip4/35.225.200.42/tcp/38202/ipfs/12D3KooWLiicQVwThTBY6xKcPoLf6RQYJFpwf1r75wLx2ZR3pCd1"
+    - "/ip4/35.225.86.210/tcp/38202/ipfs/12D3KooWQZMA8GPHrvEZB9wdkoUcAAmCZHp9eyyZ4SE8gFr3hTNX"
     # Ethereum network ID - Rinkeby
     ethereumNetworkId: 4
     # Latest deployed Smart Contracts for the given testnet
@@ -35,7 +35,7 @@ networks:
   bernalheights:
     # Numeric ID of the Centrifuge network
     id: 52
-    # Bootstrap list of nodes that Centrifuge provides to the russianhill testnet
+    # Bootstrap list of nodes that Centrifuge provides to the bernalheights testnet
     bootstrapPeers:
     - "/ip4/35.225.200.42/tcp/38202/ipfs/12D3KooWLiicQVwThTBY6xKcPoLf6RQYJFpwf1r75wLx2ZR3pCd1"
     - "/ip4/35.225.86.210/tcp/38202/ipfs/12D3KooWQZMA8GPHrvEZB9wdkoUcAAmCZHp9eyyZ4SE8gFr3hTNX"
