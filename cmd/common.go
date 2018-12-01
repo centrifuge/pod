@@ -53,6 +53,7 @@ func addKeys(idService identity.Service) error {
 	return nil
 }
 
+// CreateConfig creates a config file using provide parameters and the default config
 func CreateConfig(
 	targetDataDir, ethNodeURL, accountKeyPath, accountPassword, network string,
 	apiPort, p2pPort int64,
@@ -105,6 +106,7 @@ func CreateConfig(
 	return nil
 }
 
+// RunBootstrap bootstraps the node for running
 func RunBootstrap(cfgFile string) {
 	mb := c.MainBootstrapper{}
 	mb.PopulateRunBootstrappers()
@@ -117,6 +119,7 @@ func RunBootstrap(cfgFile string) {
 	}
 }
 
+// BaseBootstrap bootstraps the node for testing purposes mainly
 func BaseBootstrap(cfgFile string) map[string]interface{} {
 	mb := c.MainBootstrapper{}
 	mb.PopulateBaseBootstrappers()
@@ -130,6 +133,7 @@ func BaseBootstrap(cfgFile string) map[string]interface{} {
 	return ctx
 }
 
+// CommandBootstrap bootstraps the node for one time commands
 func CommandBootstrap(cfgFile string) (map[string]interface{}, context.CancelFunc, error) {
 	ctx := BaseBootstrap(cfgFile)
 	queueSrv := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)

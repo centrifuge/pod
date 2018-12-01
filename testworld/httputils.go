@@ -9,7 +9,7 @@ import (
 	"github.com/gavv/httpexpect"
 )
 
-func CreateInsecureClient(t *testing.T, baseURL string) *httpexpect.Expect {
+func createInsecureClient(t *testing.T, baseURL string) *httpexpect.Expect {
 	transport := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}

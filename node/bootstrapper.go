@@ -51,6 +51,7 @@ func cleanUp(c map[string]interface{}) {
 	db.Close()
 }
 
+// GetServers gets the long running background services in the node as a list
 func GetServers(ctx map[string]interface{}) ([]Server, error) {
 	p2pSrv, ok := ctx[bootstrap.BootstrappedP2PServer]
 	if !ok {

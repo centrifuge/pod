@@ -232,7 +232,7 @@ func (h *host) createInvoice(e *httpexpect.Expect, inv map[string]interface{}) (
 }
 
 func (h *host) createHttpExpectation(t *testing.T) *httpexpect.Expect {
-	return CreateInsecureClient(t, fmt.Sprintf("https://localhost:%d", h.config.GetServerPort()))
+	return createInsecureClient(t, fmt.Sprintf("https://localhost:%d", h.config.GetServerPort()))
 }
 
 func (h *host) id() (identity.CentID, error) {
