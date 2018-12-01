@@ -10,6 +10,8 @@ import (
 
 	"testing"
 
+	"time"
+
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/cmd"
 	"github.com/centrifuge/go-centrifuge/config"
@@ -22,8 +24,114 @@ import (
 
 var log = logging.Logger("host")
 
-type robert struct {
-	hosts map[string]*host
+var hostconfig = []struct {
+	name             string
+	apiPort, p2pPort int64
+}{
+	{"Alice", 8084, 38204},
+	{"Bob", 8085, 38205},
+	{"Charlie", 8086, 38206},
+}
+
+// manager is the manager of the hosts at Testworld (Robert)
+type manager struct {
+
+	// network settings
+	ethNodeUrl, accountKeyPath, accountPassword, network string
+
+	txPoolAccess bool
+
+	// contractAddresses are the addresses of centrifuge contracts on Ethereum
+	contractAddresses *config.SmartContractAddresses
+
+	// bernard is the bootnode for all the hosts
+	bernard *host
+
+	// niceHosts are the happy and nice hosts at the Testworld such as Teddy
+	niceHosts map[string]*host
+
+	// TODO create evil hosts such as William (or Eve)
+
+	// canc is the cancel signal for all hosts
+	canc context.CancelFunc
+}
+
+func newManager(
+	ethNodeUrl, accountKeyPath, accountPassword, network string,
+	txPoolAccess bool,
+	smartContractAddrs *config.SmartContractAddresses) *manager {
+	return &manager{
+		ethNodeUrl:        ethNodeUrl,
+		accountKeyPath:    accountKeyPath,
+		accountPassword:   accountPassword,
+		network:           network,
+		txPoolAccess:      txPoolAccess,
+		contractAddresses: smartContractAddrs,
+		niceHosts:         make(map[string]*host),
+	}
+}
+
+func (r *manager) init() error {
+	cancCtx, canc := context.WithCancel(context.Background())
+	r.bernard = r.createHost("Bernard", 8081, 38201, nil)
+	err := r.bernard.init()
+	if err != nil {
+		return err
+	}
+
+	// start and wait for Bernard since other hosts depend on him
+	go r.bernard.start(cancCtx)
+	time.Sleep(10 * time.Second)
+
+	bootnode, err := r.bernard.p2pURL()
+	if err != nil {
+		return err
+	}
+
+	// start hosts
+	for _, h := range hostconfig {
+		r.niceHosts[h.name] = r.createHost(h.name, h.apiPort, h.p2pPort, []string{bootnode})
+		err = r.niceHosts[h.name].init()
+		if err != nil {
+			return err
+		}
+		go r.niceHosts[h.name].start(cancCtx)
+	}
+	r.canc = canc
+	// print host centIDs
+	for name, host := range r.niceHosts {
+		i, err := host.id()
+		if err != nil {
+			return err
+		}
+		fmt.Printf("CentID for %s is %s \n", name, i)
+	}
+	return nil
+}
+
+func (r *manager) getHost(name string) *host {
+	if h, ok := r.niceHosts[name]; ok {
+		return h
+	}
+	return nil
+}
+
+func (r *manager) stop() {
+	r.canc()
+}
+
+func (r *manager) createHost(name string, apiPort, p2pPort int64, bootstraps []string) *host {
+	// TODO make configs selectable as settings for different networks, eg Kovan + parity
+	return newHost(
+		name,
+		r.ethNodeUrl,
+		r.accountKeyPath,
+		r.accountPassword,
+		r.network,
+		apiPort, p2pPort, bootstraps,
+		r.txPoolAccess,
+		r.contractAddresses,
+	)
 }
 
 type host struct {
@@ -108,8 +216,8 @@ func (h *host) start(c context.Context) error {
 	for {
 		select {
 		case err := <-feedback:
-			log.Error(h.name+" panicking because of ", err)
-			panic(err)
+			log.Error(h.name+" encountered error ", err)
+			return err
 		case sig := <-controlC:
 			log.Info(h.name+" shutting down because of ", sig)
 			canc()
