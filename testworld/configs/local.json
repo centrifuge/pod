@@ -1,0 +1,7 @@
+{
+  "ethNodeUrl": "ws://127.0.0.1:9546",
+  "accountKeyPath": "keystore",
+  "accountPassword": "",
+  "network" : "testing",
+  "txPoolAccess": true
+}

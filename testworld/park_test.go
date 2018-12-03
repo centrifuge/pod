@@ -12,14 +12,18 @@ import (
 // TODO remember to cleanup config files generated
 
 var doctorFord *hostManager
+var configFile string = "configs/local.json"
 
 func TestMain(m *testing.M) {
+	c, err := loadConfig(configFile)
+	if err != nil {
+		panic(err)
+	}
 	// TODO start POA geth here
 	//runSmartContractMigrations()
 	contractAddresses := getSmartContractAddresses()
-	doctorFord = newHostManager("ws://127.0.0.1:9546",
-		"keystore", "", "testing", true, contractAddresses)
-	err := doctorFord.init()
+	doctorFord = newHostManager(c.EthNodeUrl, c.AccountKeyPath, c.AccountPassword, c.Network, c.TxPoolAccess, contractAddresses)
+	err = doctorFord.init()
 	if err != nil {
 		panic(err)
 	}
