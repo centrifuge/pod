@@ -14,7 +14,7 @@ import (
 // Bootstrapper implements bootstrap.Bootstrapper.
 type Bootstrapper struct{}
 
-// Bootstrap runs the severs.
+// Bootstrap runs the servers.
 // Note: this is a blocking call.
 func (*Bootstrapper) Bootstrap(c map[string]interface{}) error {
 	srvs, err := GetServers(c)

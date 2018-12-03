@@ -11,28 +11,28 @@ import (
 
 // TODO remember to cleanup config files generated
 
-var robert *manager
+var doctorFord *hostManager
 
 func TestMain(m *testing.M) {
 	// TODO start POA geth here
 	//runSmartContractMigrations()
 	contractAddresses := getSmartContractAddresses()
-	robert = newManager("ws://127.0.0.1:9546",
+	doctorFord = newHostManager("ws://127.0.0.1:9546",
 		"keystore", "", "testing", true, contractAddresses)
-	err := robert.init()
+	err := doctorFord.init()
 	if err != nil {
 		panic(err)
 	}
 	fmt.Printf("contract addresses %+v\n", contractAddresses)
 	result := m.Run()
-	robert.stop()
+	doctorFord.stop()
 	os.Exit(result)
 }
 
 func TestHost_Happy(t *testing.T) {
-	alice := robert.getHost("Alice")
-	bob := robert.getHost("Bob")
-	charlie := robert.getHost("Charlie")
+	alice := doctorFord.getHost("Alice")
+	bob := doctorFord.getHost("Bob")
+	charlie := doctorFord.getHost("Charlie")
 	eAlice := alice.createHttpExpectation(t)
 	eBob := bob.createHttpExpectation(t)
 	eCharlie := charlie.createHttpExpectation(t)

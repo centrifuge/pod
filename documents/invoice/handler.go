@@ -40,7 +40,7 @@ func GRPCHandler(config config.Config, registry *documents.ServiceRegistry) (cli
 
 // Create handles the creation of the invoices and anchoring the documents on chain
 func (h *grpcHandler) Create(ctx context.Context, req *clientinvoicepb.InvoiceCreatePayload) (*clientinvoicepb.InvoiceResponse, error) {
-	apiLog.Infof("Create request %v", req)
+	apiLog.Debugf("Create request %v", req)
 	ctxHeader, err := header.NewContextHeader(ctx, h.config)
 	if err != nil {
 		apiLog.Error(err)

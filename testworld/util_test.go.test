@@ -1,11 +1,11 @@
+// These aren't proper tests, just for checking if the util functions work
+
 package tests
 
 import (
 	"testing"
 	"fmt"
 	)
-
-// These aren't proper tests, just for checking if the util functions work
 
 func TestRunMigrations(t *testing.T) {
 	runSmartContractMigrations()

@@ -33,8 +33,8 @@ var hostconfig = []struct {
 	{"Charlie", 8086, 38206},
 }
 
-// manager is the manager of the hosts at Testworld (Robert)
-type manager struct {
+// hostManager is the hostManager of the hosts at Testworld (Robert)
+type hostManager struct {
 
 	// network settings
 	ethNodeUrl, accountKeyPath, accountPassword, network string
@@ -56,11 +56,11 @@ type manager struct {
 	canc context.CancelFunc
 }
 
-func newManager(
+func newHostManager(
 	ethNodeUrl, accountKeyPath, accountPassword, network string,
 	txPoolAccess bool,
-	smartContractAddrs *config.SmartContractAddresses) *manager {
-	return &manager{
+	smartContractAddrs *config.SmartContractAddresses) *hostManager {
+	return &hostManager{
 		ethNodeUrl:        ethNodeUrl,
 		accountKeyPath:    accountKeyPath,
 		accountPassword:   accountPassword,
@@ -71,7 +71,7 @@ func newManager(
 	}
 }
 
-func (r *manager) init() error {
+func (r *hostManager) init() error {
 	cancCtx, canc := context.WithCancel(context.Background())
 	r.bernard = r.createHost("Bernard", 8081, 38201, nil)
 	err := r.bernard.init()
@@ -109,18 +109,18 @@ func (r *manager) init() error {
 	return nil
 }
 
-func (r *manager) getHost(name string) *host {
+func (r *hostManager) getHost(name string) *host {
 	if h, ok := r.niceHosts[name]; ok {
 		return h
 	}
 	return nil
 }
 
-func (r *manager) stop() {
+func (r *hostManager) stop() {
 	r.canc()
 }
 
-func (r *manager) createHost(name string, apiPort, p2pPort int64, bootstraps []string) *host {
+func (r *hostManager) createHost(name string, apiPort, p2pPort int64, bootstraps []string) *host {
 	// TODO make configs selectable as settings for different networks, eg Kovan + parity
 	return newHost(
 		name,

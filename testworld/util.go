@@ -8,8 +8,6 @@ import (
 	"os/exec"
 	"path"
 
-	"encoding/json"
-
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/savaki/jq"
 )
@@ -50,7 +48,7 @@ func getOpAddr(addrOp jq.Op, dat []byte) string {
 		panic(err)
 	}
 
-	// remove annoying quotes
+	// remove extra quotes inside the string
 	addrStr := string(addr)
 	if len(addrStr) > 0 && addrStr[0] == '"' {
 		addrStr = addrStr[1:]
@@ -73,23 +71,4 @@ func getProjectDir() string {
 	gp := os.Getenv("GOPATH")
 	projDir := path.Join(gp, "src", "github.com", "centrifuge", "go-centrifuge")
 	return projDir
-}
-
-// ToMap converts a struct to a map using the struct's tags.
-//
-// ToMap uses tags on struct fields to decide which fields to add to the
-// returned map.
-func toMap(in interface{}) (map[string]interface{}, error) {
-	var inInterface map[string]interface{}
-	inrec, _ := json.Marshal(in)
-	json.Unmarshal(inrec, &inInterface)
-	return map[string]interface{}{
-		"data": map[string]interface{}{
-			"invoice_number": "12324",
-			"due_date":       "2018-09-26T23:12:37.902198664Z",
-			"gross_amount":   "40",
-			"currency":       "GBP",
-			"net_amount":     "40",
-		},
-		"collaborators": []string{"0x24fe6555beb9"}}, nil
 }
