@@ -24,7 +24,7 @@ import (
 
 var log = logging.Logger("host")
 
-var hostconfig = []struct {
+var hostConfig = []struct {
 	name             string
 	apiPort, p2pPort int64
 }{
@@ -89,7 +89,7 @@ func (r *hostManager) init() error {
 	}
 
 	// start hosts
-	for _, h := range hostconfig {
+	for _, h := range hostConfig {
 		r.niceHosts[h.name] = r.createHost(h.name, h.apiPort, h.p2pPort, []string{bootnode})
 		err = r.niceHosts[h.name].init()
 		if err != nil {
