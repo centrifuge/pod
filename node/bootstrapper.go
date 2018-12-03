@@ -7,16 +7,19 @@ import (
 	"os/signal"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/storage"
+	"github.com/syndtr/goleveldb/leveldb"
 )
 
 // Bootstrapper implements bootstrap.Bootstrapper.
 type Bootstrapper struct{}
 
-// Bootstrap runs the severs.
+// Bootstrap runs the servers.
 // Note: this is a blocking call.
 func (*Bootstrapper) Bootstrap(c map[string]interface{}) error {
-	srvs, err := getServers(c)
+	srvs, err := GetServers(c)
 	if err != nil {
+		cleanUp(c)
 		return fmt.Errorf("failed to load servers: %v", err)
 	}
 
@@ -30,17 +33,26 @@ func (*Bootstrapper) Bootstrap(c map[string]interface{}) error {
 	for {
 		select {
 		case err := <-feedback:
+			cleanUp(c)
 			panic(err)
 		case sig := <-controlC:
 			log.Info("Node shutting down because of ", sig)
 			canc()
+			cleanUp(c)
 			err := <-feedback
 			return err
 		}
 	}
 }
 
-func getServers(ctx map[string]interface{}) ([]Server, error) {
+func cleanUp(c map[string]interface{}) {
+	// close the node db
+	db := c[storage.BootstrappedLevelDB].(*leveldb.DB)
+	db.Close()
+}
+
+// GetServers gets the long running background services in the node as a list
+func GetServers(ctx map[string]interface{}) ([]Server, error) {
 	p2pSrv, ok := ctx[bootstrap.BootstrappedP2PServer]
 	if !ok {
 		return nil, fmt.Errorf("p2p server not initialized")

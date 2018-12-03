@@ -3,9 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/keytools"
+	"github.com/centrifuge/go-centrifuge/cmd"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 )
@@ -20,41 +18,6 @@ var p2pPort int64
 var bootstraps []string
 var txPoolAccess bool
 
-func createIdentity(idService identity.Service) (identity.CentID, error) {
-	centID := identity.RandomCentID()
-	_, confirmations, err := idService.CreateIdentity(centID)
-	if err != nil {
-		return [identity.CentIDLength]byte{}, err
-	}
-	_ = <-confirmations
-
-	return centID, nil
-}
-
-func generateKeys(config config.Config) {
-	p2pPub, p2pPvt := config.GetSigningKeyPair()
-	ethAuthPub, ethAuthPvt := config.GetEthAuthKeyPair()
-	keytools.GenerateSigningKeyPair(p2pPub, p2pPvt, "ed25519")
-	keytools.GenerateSigningKeyPair(p2pPub, p2pPvt, "ed25519")
-	keytools.GenerateSigningKeyPair(ethAuthPub, ethAuthPvt, "secp256k1")
-}
-
-func addKeys(idService identity.Service) error {
-	err := idService.AddKeyFromConfig(identity.KeyPurposeP2P)
-	if err != nil {
-		panic(err)
-	}
-	err = idService.AddKeyFromConfig(identity.KeyPurposeSigning)
-	if err != nil {
-		panic(err)
-	}
-	err = idService.AddKeyFromConfig(identity.KeyPurposeEthMsgAuth)
-	if err != nil {
-		panic(err)
-	}
-	return nil
-}
-
 func init() {
 	home, err := homedir.Dir()
 	if err != nil {
@@ -66,50 +29,29 @@ func init() {
 		Use:   "createconfig",
 		Short: "Configures Node",
 		Long:  ``,
-		Run: func(cmd *cobra.Command, args []string) {
-
-			data := map[string]interface{}{
-				"targetDataDir":   targetDataDir,
-				"accountKeyPath":  accountKeyPath,
-				"accountPassword": accountPassword,
-				"network":         network,
-				"ethNodeURL":      ethNodeURL,
-				"bootstraps":      bootstraps,
-				"apiPort":         apiPort,
-				"p2pPort":         p2pPort,
-				"txpoolaccess":    txPoolAccess,
-			}
-
-			v, err := config.CreateConfigFile(data)
+		Run: func(c *cobra.Command, args []string) {
+			err := cmd.CreateConfig(targetDataDir,
+				ethNodeURL,
+				accountKeyPath,
+				accountPassword,
+				network,
+				apiPort,
+				p2pPort,
+				bootstraps,
+				txPoolAccess,
+				nil)
 			if err != nil {
+				log.Info(targetDataDir,
+					accountKeyPath,
+					accountPassword,
+					network,
+					ethNodeURL,
+					apiPort,
+					p2pPort,
+					bootstraps,
+					txPoolAccess)
 				log.Fatalf("error: %v", err)
 			}
-			log.Infof("Config File Created: %s\n", v.ConfigFileUsed())
-
-			ctx, canc, _ := commandBootstrap(v.ConfigFileUsed())
-			cfg := ctx[config.BootstrappedConfig].(*config.Configuration)
-			generateKeys(cfg)
-
-			idService := ctx[identity.BootstrappedIDService].(identity.Service)
-			id, err := createIdentity(idService)
-			if err != nil {
-				log.Fatalf("error: %v", err)
-			}
-
-			v.Set("identityId", id.String())
-			err = v.WriteConfig()
-			if err != nil {
-				log.Fatalf("error: %v", err)
-			}
-			cfg.Set("identityId", id.String())
-
-			log.Infof("Identity created [%s] [%x]", id.String(), id)
-
-			err = addKeys(idService)
-			if err != nil {
-				log.Fatalf("error: %v", err)
-			}
-			canc()
 		},
 	}
 

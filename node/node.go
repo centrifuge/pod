@@ -17,7 +17,7 @@ type Server interface {
 	Name() string
 
 	// Start starts the service, expectation is that this would always be called in a separate go routine.
-	// WaitGroup contract should always be honoured by calling `defer wg.Done()`
+	// WaitGroup contract must always be honoured by calling `defer wg.Done()`
 	Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- error)
 }
 

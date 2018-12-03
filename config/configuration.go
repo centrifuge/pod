@@ -341,6 +341,11 @@ func (c *Configuration) InitializeViper() {
 	c.v.SetEnvPrefix("CENT")
 }
 
+// SmartContractAddresses encapsulates the smart contract addresses ne
+type SmartContractAddresses struct {
+	IdentityFactoryAddr, IdentityRegistryAddr, AnchorRepositoryAddr, PaymentObligationAddr string
+}
+
 // CreateConfigFile creates minimum config file with arguments
 func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	targetDataDir := args["targetDataDir"].(string)
@@ -394,6 +399,13 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 
 	if bootstraps != nil {
 		v.Set("networks."+network+".bootstrapPeers", bootstraps)
+	}
+
+	if smartContractAddresses, ok := args["smartContractAddresses"].(*SmartContractAddresses); ok {
+		v.Set("networks."+network+".contractAddresses.identityFactory", smartContractAddresses.IdentityFactoryAddr)
+		v.Set("networks."+network+".contractAddresses.identityRegistry", smartContractAddresses.IdentityRegistryAddr)
+		v.Set("networks."+network+".contractAddresses.anchorRepository", smartContractAddresses.AnchorRepositoryAddr)
+		v.Set("networks."+network+".contractAddresses.paymentObligation", smartContractAddresses.PaymentObligationAddr)
 	}
 
 	v.SetConfigFile(targetDataDir + "/config.yaml")

@@ -3,6 +3,7 @@ package main
 import (
 	"io/ioutil"
 
+	"github.com/centrifuge/go-centrifuge/cmd"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/spf13/cobra"
 )
@@ -14,10 +15,10 @@ var createIdentityCmd = &cobra.Command{
 	Use:   "createidentity",
 	Short: "creates identity with signing key as p2p id against ethereum",
 	Long:  "",
-	Run: func(cmd *cobra.Command, args []string) {
-		//cmd requires a config file
+	Run: func(cm *cobra.Command, args []string) {
+		//cm requires a config file
 		cfgFile = ensureConfigFile()
-		ctx, canc, _ := commandBootstrap(cfgFile)
+		ctx, canc, _ := cmd.CommandBootstrap(cfgFile)
 		var centID identity.CentID
 		var err error
 		if centIDString == "" {
@@ -53,10 +54,10 @@ var addKeyCmd = &cobra.Command{
 	Use:   "addkey",
 	Short: "add a signing key as p2p id against ethereum",
 	Long:  "add a signing key as p2p id against ethereum",
-	Run: func(cmd *cobra.Command, args []string) {
-		//cmd requires a config file
+	Run: func(cm *cobra.Command, args []string) {
+		//cm requires a config file
 		cfgFile = ensureConfigFile()
-		ctx, canc, _ := commandBootstrap(cfgFile)
+		ctx, canc, _ := cmd.CommandBootstrap(cfgFile)
 		var purposeInt int
 
 		switch purpose {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/centrifuge/go-centrifuge/cmd"
 	"github.com/spf13/cobra"
 )
 
@@ -9,11 +10,11 @@ var runCmd = &cobra.Command{
 	Use:   "run",
 	Short: "run a centrifuge node",
 	Long:  ``,
-	Run: func(cmd *cobra.Command, args []string) {
-		//cmd requires a config file
+	Run: func(cm *cobra.Command, args []string) {
+		//cm requires a config file
 		cfgFile := ensureConfigFile()
 		// the following call will block
-		runBootstrap(cfgFile)
+		cmd.RunBootstrap(cfgFile)
 	},
 }
 
