@@ -100,6 +100,22 @@ func TestHandler_RequestDocumentSignature_UpdateSucceeds(t *testing.T) {
 	assert.True(t, ed25519.Verify(sig.PublicKey, newDoc.SigningRoot, sig.Signature), "signature must be valid")
 }
 
+func TestHandler_RequestDocumentSignatureFirstTimeOnUpdatedDocument(t *testing.T) {
+	doc := prepareDocumentForP2PHandler(t, nil)
+	newDoc, err := coredocument.PrepareNewVersion(*doc, nil)
+	assert.Nil(t, err)
+	assert.NotEqual(t, newDoc.DocumentIdentifier, newDoc.CurrentVersion)
+	updateDocumentForP2Phandler(t, newDoc)
+	newDoc = prepareDocumentForP2PHandler(t, newDoc)
+	req := getSignatureRequest(newDoc)
+	resp, err := handler.RequestDocumentSignature(context.Background(), req)
+	assert.Nil(t, err, "must be nil")
+	assert.NotNil(t, resp, "must be non nil")
+	assert.NotNil(t, resp.Signature.Signature, "must be non nil")
+	sig := resp.Signature
+	assert.True(t, ed25519.Verify(sig.PublicKey, newDoc.SigningRoot, sig.Signature), "signature must be valid")
+}
+
 func TestHandler_RequestDocumentSignature(t *testing.T) {
 	doc := prepareDocumentForP2PHandler(t, nil)
 	req := getSignatureRequest(doc)

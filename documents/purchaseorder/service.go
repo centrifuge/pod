@@ -19,6 +19,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/notification"
 	clientpopb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/signatures"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes"
 	logging "github.com/ipfs/go-log"
@@ -348,6 +349,14 @@ func (s service) RequestDocumentSignature(contextHeader *header.ContextHeader, m
 	err = model.UnpackCoreDocument(cd)
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to Unpack CoreDocument: %v", err))
+	}
+
+	// Logic for receiving version n (n > 1) of the document for the first time
+	if !s.repo.Exists(cd.DocumentIdentifier) && !utils.IsSameByteSlice(cd.DocumentIdentifier, cd.CurrentVersion) {
+		err = s.repo.Create(cd.DocumentIdentifier, model)
+		if err != nil {
+			return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to store local first version of the document: %v", err))
+		}
 	}
 
 	err = s.repo.Create(cd.CurrentVersion, model)
