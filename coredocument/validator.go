@@ -246,10 +246,12 @@ func signaturesValidator(idService identity.Service) documents.Validator {
 		}
 
 		for _, sig := range cd.Signatures {
-			if errI := idService.ValidateSignature(sig, cd.SigningRoot); errI != nil {
+			if erri := idService.ValidateSignature(sig, cd.SigningRoot); erri != nil {
 				err = documents.AppendError(
 					err,
-					documents.NewError(fmt.Sprintf("signature_%s", hexutil.Encode(sig.EntityId)), "signature verification failed"))
+					documents.NewError(
+						fmt.Sprintf("signature_%s", hexutil.Encode(sig.EntityId)),
+						fmt.Sprintf("signature verification failed: %v", erri)))
 			}
 		}
 
