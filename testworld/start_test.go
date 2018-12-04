@@ -1,4 +1,5 @@
 // This is the starting point for all Testworld tests
+// +build testworld
 
 package testworld
 
