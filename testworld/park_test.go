@@ -6,28 +6,7 @@ import (
 	"testing"
 
 	"fmt"
-	"os"
 )
-
-// TODO remember to cleanup config files generated
-
-var doctorFord *hostManager
-
-func TestMain(m *testing.M) {
-	// TODO start POA geth here
-	//runSmartContractMigrations()
-	contractAddresses := getSmartContractAddresses()
-	doctorFord = newHostManager("ws://127.0.0.1:9546",
-		"keystore", "", "testing", true, contractAddresses)
-	err := doctorFord.init()
-	if err != nil {
-		panic(err)
-	}
-	fmt.Printf("contract addresses %+v\n", contractAddresses)
-	result := m.Run()
-	doctorFord.stop()
-	os.Exit(result)
-}
 
 func TestHost_Happy(t *testing.T) {
 	alice := doctorFord.getHost("Alice")
