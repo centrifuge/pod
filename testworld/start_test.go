@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"os"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/config"
 )
 
 var isRunningOnCI = len(os.Getenv("TRAVIS")) != 0
@@ -33,7 +35,10 @@ func TestMain(m *testing.M) {
 	if runMigrations {
 		runSmartContractMigrations()
 	}
-	contractAddresses := getSmartContractAddresses()
+	var contractAddresses *config.SmartContractAddresses
+	if c.Network == "testing" {
+		contractAddresses = getSmartContractAddresses()
+	}
 	doctorFord = newHostManager(c.EthNodeURL, c.AccountKeyPath, c.AccountPassword, c.Network, c.TxPoolAccess, contractAddresses)
 	err = doctorFord.init()
 	if err != nil {

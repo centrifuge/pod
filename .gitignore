@@ -11,3 +11,5 @@ coverage.txt
 *.swp
 *.swo
 testworld/peerconfigs/*
+testworld/configs/kovan.json
+testworld/kovankeystore
