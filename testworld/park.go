@@ -121,7 +121,6 @@ func (r *hostManager) stop() {
 }
 
 func (r *hostManager) createHost(name string, apiPort, p2pPort int64, bootstraps []string) *host {
-	// TODO make configs selectable as settings for different networks, eg Kovan + parity
 	return newHost(
 		name,
 		r.ethNodeUrl,
