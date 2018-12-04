@@ -8,9 +8,26 @@ import (
 	"os/exec"
 	"path"
 
+	"fmt"
+
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/savaki/jq"
 )
+
+// startPOAGeth runs the proof of authority geth for tests
+func startPOAGeth() {
+	// don't run if its already running
+	if IsPOAGethRunning() {
+		return
+	}
+	projDir := getProjectDir()
+	gethRunScript := path.Join(projDir, "build", "scripts", "docker", "run.sh")
+	o, err := exec.Command(gethRunScript, "dev").Output()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("%s", string(o))
+}
 
 // runSmartContractMigrations migrates smart contracts to localgeth
 func runSmartContractMigrations() {
@@ -24,9 +41,7 @@ func runSmartContractMigrations() {
 
 // getSmartContractAddresses finds migrated smart contract addresses for localgeth
 func getSmartContractAddresses() *config.SmartContractAddresses {
-	projDir := getProjectDir()
-	deployJSONFile := path.Join(projDir, "vendor", "github.com", "centrifuge", "centrifuge-ethereum-contracts", "deployments", "localgeth.json")
-	dat, err := ioutil.ReadFile(deployJSONFile)
+	dat, err := findContractDeployJSON()
 	if err != nil {
 		panic(err)
 	}
@@ -40,6 +55,16 @@ func getSmartContractAddresses() *config.SmartContractAddresses {
 		AnchorRepositoryAddr:  getOpAddr(anchorRepoAddrOp, dat),
 		PaymentObligationAddr: getOpAddr(payObAddrOp, dat),
 	}
+}
+
+func findContractDeployJSON() ([]byte, error) {
+	projDir := getProjectDir()
+	deployJSONFile := path.Join(projDir, "vendor", "github.com", "centrifuge", "centrifuge-ethereum-contracts", "deployments", "localgeth.json")
+	dat, err := ioutil.ReadFile(deployJSONFile)
+	if err != nil {
+		return nil, err
+	}
+	return dat, nil
 }
 
 func getOpAddr(addrOp jq.Op, dat []byte) string {
@@ -71,4 +96,13 @@ func getProjectDir() string {
 	gp := os.Getenv("GOPATH")
 	projDir := path.Join(gp, "src", "github.com", "centrifuge", "go-centrifuge")
 	return projDir
+}
+
+func IsPOAGethRunning() bool {
+	cmd := "docker ps -a --filter \"name=geth-node\" --filter \"status=running\" --quiet"
+	o, err := exec.Command("/bin/sh", "-c", cmd).Output()
+	if err != nil {
+		panic(err)
+	}
+	return len(o) != 0
 }
