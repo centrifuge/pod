@@ -1,5 +1,5 @@
 {
-  "ethNodeUrl": "ws://127.0.0.1:9546",
+  "ethNodeURL": "ws://127.0.0.1:9546",
   "accountKeyPath": "../build/scripts/test-dependencies/test-ethereum/migrateAccount.json",
   "accountPassword": "",
   "network" : "testing",

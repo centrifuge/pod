@@ -34,7 +34,7 @@ func TestMain(m *testing.M) {
 		runSmartContractMigrations()
 	}
 	contractAddresses := getSmartContractAddresses()
-	doctorFord = newHostManager(c.EthNodeUrl, c.AccountKeyPath, c.AccountPassword, c.Network, c.TxPoolAccess, contractAddresses)
+	doctorFord = newHostManager(c.EthNodeURL, c.AccountKeyPath, c.AccountPassword, c.Network, c.TxPoolAccess, contractAddresses)
 	err = doctorFord.init()
 	if err != nil {
 		panic(err)
