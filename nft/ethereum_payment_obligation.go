@@ -236,10 +236,9 @@ type MintRequest struct {
 // NewMintRequest converts the parameters and returns a struct with needed parameter for minting
 func NewMintRequest(to common.Address, anchorID anchors.AnchorID, proofs []*proofspb.Proof, rootHash [32]byte) (*MintRequest, error) {
 
-	// tokenID is uint256 in Solidity (max value is 2^256-1)
-	// tokenID has 77 digits
-	// 1 byte = 8 bits
-	tokenID := utils.ByteSliceToBigInt(utils.RandomSlice(256/8))
+	// tokenID is uint256 in Solidity (256 bits | max value is 2^256-1)
+	// tokenID should be random 32 bytes (32 byte = 256 bits)
+	tokenID := utils.ByteSliceToBigInt(utils.RandomSlice(32))
 	tokenURI := "http:=//www.centrifuge.io/DUMMY_URI_SERVICE"
 	proofData, err := createProofData(proofs)
 	if err != nil {
