@@ -213,18 +213,17 @@ func (h *host) start(c context.Context) error {
 	go h.node.Start(cancCtx, feedback)
 	controlC := make(chan os.Signal, 1)
 	signal.Notify(controlC, os.Interrupt)
-	for {
-		select {
-		case err := <-feedback:
-			log.Error(h.name+" encountered error ", err)
-			return err
-		case sig := <-controlC:
-			log.Info(h.name+" shutting down because of ", sig)
-			canc()
-			err := <-feedback
-			return err
-		}
+	select {
+	case err := <-feedback:
+		log.Error(h.name+" encountered error ", err)
+		return err
+	case sig := <-controlC:
+		log.Info(h.name+" shutting down because of ", sig)
+		canc()
+		err := <-feedback
+		return err
 	}
+
 }
 
 func (h *host) createInvoice(e *httpexpect.Expect, inv map[string]interface{}) (*httpexpect.Object, error) {
