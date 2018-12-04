@@ -13,7 +13,7 @@ Here you can create, run and test nodes with various behaviours to observe how t
 - At the start of the each test run a test config is loaded for the required Ethereum network(eg: Rinkeby or local). The host configs are defined based on this.
 - The test initialisation also ensures that geth is running in the background and require smart contracts are migrated for the network.
 - Refer `park_test.go` for a simple starting point to define your own simulations/tests.
-- Each test scenario must be defined in a <scenario_name>_test.go file and the build tag `// +build testworld` must be included at the top.
+- Each test scenario must be defined in a `testworld/<scenario_name>_test.go` file and the build tag `// +build testworld` must be included at the top.
 - Plus points if you write a test with a scenario that matches a scene in Westworld with node names matching the characters ;)
 
 
