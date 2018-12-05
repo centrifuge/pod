@@ -1,4 +1,4 @@
-// +build unit integration
+// +build unit
 
 package documents
 
