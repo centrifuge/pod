@@ -30,19 +30,18 @@ func (*Bootstrapper) Bootstrap(c map[string]interface{}) error {
 	go n.Start(ctx, feedback)
 	controlC := make(chan os.Signal, 1)
 	signal.Notify(controlC, os.Interrupt)
-	for {
-		select {
-		case err := <-feedback:
-			cleanUp(c)
-			panic(err)
-		case sig := <-controlC:
-			log.Info("Node shutting down because of ", sig)
-			canc()
-			cleanUp(c)
-			err := <-feedback
-			return err
-		}
+	select {
+	case err := <-feedback:
+		cleanUp(c)
+		panic(err)
+	case sig := <-controlC:
+		log.Info("Node shutting down because of ", sig)
+		canc()
+		cleanUp(c)
+		err := <-feedback
+		return err
 	}
+
 }
 
 func cleanUp(c map[string]interface{}) {

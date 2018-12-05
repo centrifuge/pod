@@ -110,32 +110,29 @@ func (c apiServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr cha
 	}(startUpErrOut)
 
 	// listen to context events as well as http server startup errors
-	for {
-		select {
-		case err := <-startUpErrOut:
-			// this could create an issue if the listeners are blocking.
-			// We need to only propagate the error if its an error other than a server closed
-			if err != nil && err.Error() != http.ErrServerClosed.Error() {
-				startupErr <- err
-				return
-			}
-			// most probably a graceful shutdown
-			log.Info(err)
-			return
-		case <-ctx.Done():
-			ctxn, _ := context.WithTimeout(context.Background(), 1*time.Second)
-			// gracefully shutdown the server
-			// we can only do this because srv is thread safe
-			log.Info("Shutting down API server")
-			err := srv.Shutdown(ctxn)
-			if err != nil {
-				panic(err)
-			}
-			log.Info("API server stopped")
+	select {
+	case err := <-startUpErrOut:
+		// this could create an issue if the listeners are blocking.
+		// We need to only propagate the error if its an error other than a server closed
+		if err != nil && err.Error() != http.ErrServerClosed.Error() {
+			startupErr <- err
 			return
 		}
+		// most probably a graceful shutdown
+		log.Info(err)
+		return
+	case <-ctx.Done():
+		ctxn, _ := context.WithTimeout(context.Background(), 1*time.Second)
+		// gracefully shutdown the server
+		// we can only do this because srv is thread safe
+		log.Info("Shutting down API server")
+		err := srv.Shutdown(ctxn)
+		if err != nil {
+			panic(err)
+		}
+		log.Info("API server stopped")
+		return
 	}
-
 }
 
 // grpcHandlerFunc returns an http.Handler that delegates to grpcServer on incoming gRPC

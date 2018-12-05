@@ -83,21 +83,19 @@ func (s *p2pServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr ch
 
 	// Start DHT
 	s.runDHT(ctx, s.host)
-
-	for {
-		select {
-		case err := <-serveErr:
-			log.Infof("GRPC server error: %v", err)
-			s.protocol.GetGRPCServer().GracefulStop()
-			log.Info("GRPC server stopped")
-			return
-		case <-ctx.Done():
-			log.Info("Shutting down GRPC server")
-			s.protocol.GetGRPCServer().GracefulStop()
-			log.Info("GRPC server stopped")
-			return
-		}
+	select {
+	case err := <-serveErr:
+		log.Infof("GRPC server error: %v", err)
+		s.protocol.GetGRPCServer().GracefulStop()
+		log.Info("GRPC server stopped")
+		return
+	case <-ctx.Done():
+		log.Info("Shutting down GRPC server")
+		s.protocol.GetGRPCServer().GracefulStop()
+		log.Info("GRPC server stopped")
+		return
 	}
+
 }
 
 func (s *p2pServer) runDHT(ctx context.Context, h host.Host) error {
