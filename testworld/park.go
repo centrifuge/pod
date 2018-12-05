@@ -229,6 +229,10 @@ func (h *host) createInvoice(e *httpexpect.Expect, inv map[string]interface{}) (
 	return createInvoice(e, inv), nil
 }
 
+func (h *host) updateInvoice(e *httpexpect.Expect, docIdentifier string, inv map[string]interface{}) (*httpexpect.Object, error) {
+	return updateInvoice(e, docIdentifier, inv), nil
+}
+
 func (h *host) createHttpExpectation(t *testing.T) *httpexpect.Expect {
 	return createInsecureClient(t, fmt.Sprintf("https://localhost:%d", h.config.GetServerPort()))
 }
