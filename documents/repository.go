@@ -59,7 +59,7 @@ type levelDBRepo struct {
 	mu     sync.RWMutex // to protect the models
 }
 
-// value is an internal representation of how levelDb stored the value
+// value is an internal representation of how levelDb stores the model.
 type value struct {
 	Type string          `json:"type"`
 	Data json.RawMessage `json:"data"`
@@ -97,12 +97,7 @@ func (l *levelDBRepo) getModel(mt string) (Model, error) {
 		return nil, fmt.Errorf("type %s not registered", mt)
 	}
 
-	nm, ok := reflect.New(tp).Interface().(Model)
-	if !ok {
-		return nil, fmt.Errorf("type %s doesn't implement Model", mt)
-	}
-
-	return nm, nil
+	return reflect.New(tp).Interface().(Model), nil
 }
 
 // Get returns the model associated with ID, owned by tenantID.
