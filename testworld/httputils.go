@@ -57,3 +57,11 @@ func updateInvoice(e *httpexpect.Expect, docIdentifier string, payload map[strin
 		Expect().Status(http.StatusOK).JSON().Object()
 	return obj
 }
+
+func getDocumentIdentifier(t *testing.T, response *httpexpect.Object) string {
+	docIdentifier := response.Value("header").Path("$.document_id").String().NotEmpty().Raw()
+	if docIdentifier == "" {
+		t.Error("docIdentifier empty")
+	}
+	return docIdentifier
+}

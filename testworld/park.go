@@ -253,3 +253,22 @@ func (h *host) p2pURL() (string, error) {
 	}
 	return fmt.Sprintf("/ip4/127.0.0.1/tcp/%d/ipfs/%s", h.p2pPort, lastB58Key), nil
 }
+
+type hostTestSuite struct {
+	name string
+	host *host
+	id identity.CentID
+	expect *httpexpect.Expect
+
+}
+
+func getHostTestSuite(t*testing.T, name string) hostTestSuite {
+	host := doctorFord.getHost(name)
+	expect := host.createHttpExpectation(t)
+	id, err := host.id()
+	if err != nil {
+		t.Error(err)
+	}
+	return hostTestSuite{name: name, host: host, id:id,expect: expect}
+
+}
