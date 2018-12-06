@@ -5,6 +5,7 @@ package testworld
 import (
 	"net/http"
 	"testing"
+	"time"
 )
 
 func TestHost_AddExternalCollaborator(t *testing.T) {
@@ -90,6 +91,7 @@ func TestHost_CollaboratorTimeOut(t *testing.T) {
 
 	// bring Kenny back to life
 	doctorFord.startHost(kenny.name)
+	time.Sleep(time.Second * 2)
 
 	// Kenny should not have latest version
 	getInvoiceAndCheck(kenny.expect, paramsV1)
