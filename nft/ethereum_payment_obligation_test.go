@@ -161,7 +161,6 @@ func TestPaymentObligationService(t *testing.T) {
 				).Return(&types.Transaction{}, nil)
 				configMock := testingconfig.MockConfig{}
 				configMock.On("GetEthereumDefaultAccountName").Return("ethacc")
-				configMock.On("GetContractAddress").Return(common.HexToAddress("0xd0dbc72ae5e71382b3cc9cfdc53f6952a085db6d"))
 
 				return docServiceMock, paymentObligationMock, idServiceMock, ethClientMock, configMock
 			},
