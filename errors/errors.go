@@ -1,7 +1,6 @@
 package errors
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 )
@@ -10,7 +9,7 @@ import (
 const ErrUnknown = Error("unknown error")
 
 // Error is a string that implements error
-// this will have interesting side effects of having a constant errors
+// this will have interesting side effects of having constant errors
 type Error string
 
 // Error returns error message
@@ -25,10 +24,10 @@ func (e Error) Error() string {
 // New("some error: %v", "some context") returns error with message "some error: some context"
 func New(msg string, args ...interface{}) error {
 	if len(args) > 0 {
-		return fmt.Errorf(msg, args...)
+		return Error(fmt.Sprintf(msg, args...))
 	}
 
-	return errors.New(msg)
+	return Error(msg)
 }
 
 // listError holds a list of errors

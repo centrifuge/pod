@@ -86,7 +86,7 @@ func TestAppendError(t *testing.T) {
 
 func TestIsOfType(t *testing.T) {
 	// single type error
-	errBadErr := New("bad error")
+	const errBadErr = Error("bad error")
 	serr := New("some error")
 	terr := NewTypeError(ErrUnknown, serr)
 	assert.True(t, IsOfType(ErrUnknown, terr))
