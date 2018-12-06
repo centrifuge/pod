@@ -31,6 +31,7 @@ var hostConfig = []struct {
 	{"Alice", 8084, 38204},
 	{"Bob", 8085, 38205},
 	{"Charlie", 8086, 38206},
+	{"Kenny", 8087, 38207},
 }
 
 // hostManager is the hostManager of the hosts at Testworld (Robert)
@@ -55,6 +56,8 @@ type hostManager struct {
 	// canc is the cancel signal for all hosts
 	canc context.CancelFunc
 
+	// TODO: context should be removed from hostManager
+	// currently needed to restart a node
 	// parent context
 	cancCtx context.Context
 }

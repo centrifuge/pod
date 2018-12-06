@@ -50,32 +50,32 @@ func TestHost_AddExternalCollaborator(t *testing.T) {
 
 func TestHost_CollaboratorTimeOut(t *testing.T) {
 
-	alice := doctorFord.getHostTestSuite(t, "Alice")
+	kenny := doctorFord.getHostTestSuite(t, "Kenny")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 
-	// alice shares an invoice bob
-	response, err := alice.host.createInvoice(alice.expect, http.StatusOK, defaultInvoicePayload([]string{bob.id.String()}))
+	// Kenny shares an invoice with Bob
+	response, err := kenny.host.createInvoice(kenny.expect, http.StatusOK, defaultInvoicePayload([]string{bob.id.String()}))
 
 	if err != nil {
 		t.Error(err)
 	}
 
-	// check if bob and alice received the document
+	// check if Bob and Kenny received the document
 	docIdentifier := getDocumentIdentifier(t, response)
 	paramsV1 := map[string]interface{}{
 		"document_id": docIdentifier,
 		"currency":    "USD",
 	}
-	getInvoiceAndCheck(alice.expect, paramsV1)
+	getInvoiceAndCheck(kenny.expect, paramsV1)
 	getInvoiceAndCheck(bob.expect, paramsV1)
 
-	// Alice gets killed
-	alice.host.canc()
+	// Kenny gets killed
+	kenny.host.canc()
 
 	// Bob updates and sends to Alice
-	updatedPayload := updatedInvoicePayload([]string{alice.id.String()})
+	updatedPayload := updatedInvoicePayload([]string{kenny.id.String()})
 
-	// Bob will anchor the document without Alice signature but will receive an error because alice is dead
+	// Bob will anchor the document without Alice signature but will receive an error because kenny is dead
 	response, err = bob.host.updateInvoice(bob.expect, http.StatusInternalServerError, docIdentifier, updatedPayload)
 	if err != nil {
 		t.Error(err)
@@ -88,10 +88,10 @@ func TestHost_CollaboratorTimeOut(t *testing.T) {
 	}
 	getInvoiceAndCheck(bob.expect, paramsV2)
 
-	// bring alice back to life
-	doctorFord.startHost(alice.name)
+	// bring Kenny back to life
+	doctorFord.startHost(kenny.name)
 
-	// alice should not have latest version
-	getInvoiceAndCheck(alice.expect, paramsV1)
+	// Kenny should not have latest version
+	getInvoiceAndCheck(kenny.expect, paramsV1)
 
 }
