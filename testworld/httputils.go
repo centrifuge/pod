@@ -40,7 +40,7 @@ func getInvoiceAndCheck(e *httpexpect.Expect, params map[string]interface{}) *ht
 	return objGet
 }
 
-func createInvoice(e *httpexpect.Expect,status int, payload map[string]interface{}) *httpexpect.Object {
+func createInvoice(e *httpexpect.Expect, status int, payload map[string]interface{}) *httpexpect.Object {
 	obj := e.POST("/invoice").
 		WithHeader("accept", "application/json").
 		WithHeader("Content-Type", "application/json").
@@ -49,7 +49,7 @@ func createInvoice(e *httpexpect.Expect,status int, payload map[string]interface
 	return obj
 }
 
-func updateInvoice(e *httpexpect.Expect,status int, docIdentifier string, payload map[string]interface{}) *httpexpect.Object {
+func updateInvoice(e *httpexpect.Expect, status int, docIdentifier string, payload map[string]interface{}) *httpexpect.Object {
 	obj := e.PUT("/invoice/"+docIdentifier).
 		WithHeader("accept", "application/json").
 		WithHeader("Content-Type", "application/json").
