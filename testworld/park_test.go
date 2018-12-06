@@ -3,50 +3,33 @@
 package testworld
 
 import (
-	"testing"
-
 	"fmt"
+	"net/http"
+	"testing"
 )
 
 func TestHost_Happy(t *testing.T) {
-	alice := doctorFord.getHost("Alice")
-	bob := doctorFord.getHost("Bob")
-	charlie := doctorFord.getHost("Charlie")
-	eAlice := alice.createHttpExpectation(t)
-	eBob := bob.createHttpExpectation(t)
-	eCharlie := charlie.createHttpExpectation(t)
+	alice := doctorFord.getHostTestSuite(t, "Alice")
+	bob := doctorFord.getHostTestSuite(t, "Bob")
+	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 
-	b, err := bob.id()
+	// alice shares a document with bob and charlie
+	res, err := alice.host.createInvoice(alice.expect, http.StatusOK, defaultInvoicePayload([]string{bob.id.String(), charlie.id.String()}))
 	if err != nil {
 		t.Error(err)
 	}
 
-	c, err := charlie.id()
-	if err != nil {
-		t.Error(err)
-	}
-	res, err := alice.createInvoice(eAlice, map[string]interface{}{
-		"data": map[string]interface{}{
-			"invoice_number": "12324",
-			"due_date":       "2018-09-26T23:12:37.902198664Z",
-			"gross_amount":   "40",
-			"currency":       "GBP",
-			"net_amount":     "40",
-		},
-		"collaborators": []string{b.String(), c.String()},
-	})
-	if err != nil {
-		t.Error(err)
-	}
-	docIdentifier := res.Value("header").Path("$.document_id").String().NotEmpty().Raw()
+	docIdentifier := getDocumentIdentifier(t, res)
+
 	if docIdentifier == "" {
 		t.Error("docIdentifier empty")
 	}
 	params := map[string]interface{}{
 		"document_id": docIdentifier,
-		"currency":    "GBP",
+		"currency":    "USD",
 	}
-	getInvoiceAndCheck(eBob, params)
-	getInvoiceAndCheck(eCharlie, params)
+	getInvoiceAndCheck(alice.expect, params)
+	getInvoiceAndCheck(bob.expect, params)
+	getInvoiceAndCheck(charlie.expect, params)
 	fmt.Println("Host test success")
 }

@@ -40,20 +40,28 @@ func getInvoiceAndCheck(e *httpexpect.Expect, params map[string]interface{}) *ht
 	return objGet
 }
 
-func createInvoice(e *httpexpect.Expect, payload map[string]interface{}) *httpexpect.Object {
+func createInvoice(e *httpexpect.Expect, status int, payload map[string]interface{}) *httpexpect.Object {
 	obj := e.POST("/invoice").
 		WithHeader("accept", "application/json").
 		WithHeader("Content-Type", "application/json").
 		WithJSON(payload).
-		Expect().Status(http.StatusOK).JSON().Object()
+		Expect().Status(status).JSON().Object()
 	return obj
 }
 
-func updateInvoice(e *httpexpect.Expect, docIdentifier string, payload map[string]interface{}) *httpexpect.Object {
+func updateInvoice(e *httpexpect.Expect, status int, docIdentifier string, payload map[string]interface{}) *httpexpect.Object {
 	obj := e.PUT("/invoice/"+docIdentifier).
 		WithHeader("accept", "application/json").
 		WithHeader("Content-Type", "application/json").
 		WithJSON(payload).
-		Expect().Status(http.StatusOK).JSON().Object()
+		Expect().Status(status).JSON().Object()
 	return obj
+}
+
+func getDocumentIdentifier(t *testing.T, response *httpexpect.Object) string {
+	docIdentifier := response.Value("header").Path("$.document_id").String().NotEmpty().Raw()
+	if docIdentifier == "" {
+		t.Error("docIdentifier empty")
+	}
+	return docIdentifier
 }

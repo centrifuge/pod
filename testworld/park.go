@@ -31,6 +31,7 @@ var hostConfig = []struct {
 	{"Alice", 8084, 38204},
 	{"Bob", 8085, 38205},
 	{"Charlie", 8086, 38206},
+	{"Kenny", 8087, 38207},
 }
 
 // hostManager is the hostManager of the hosts at Testworld (Robert)
@@ -54,6 +55,11 @@ type hostManager struct {
 
 	// canc is the cancel signal for all hosts
 	canc context.CancelFunc
+
+	// TODO: context should be removed from hostManager
+	// currently needed to restart a node
+	// parent context
+	cancCtx context.Context
 }
 
 func newHostManager(
@@ -71,8 +77,17 @@ func newHostManager(
 	}
 }
 
+func (r *hostManager) restartHost(name string) {
+	r.startHost(name)
+	time.Sleep(time.Second * 2)
+}
+
+func (r *hostManager) startHost(name string) {
+	go r.niceHosts[name].start(r.cancCtx)
+}
+
 func (r *hostManager) init() error {
-	cancCtx, canc := context.WithCancel(context.Background())
+	r.cancCtx, r.canc = context.WithCancel(context.Background())
 	r.bernard = r.createHost("Bernard", 8081, 38201, nil)
 	err := r.bernard.init()
 	if err != nil {
@@ -80,7 +95,7 @@ func (r *hostManager) init() error {
 	}
 
 	// start and wait for Bernard since other hosts depend on him
-	go r.bernard.start(cancCtx)
+	go r.bernard.start(r.cancCtx)
 	time.Sleep(10 * time.Second)
 
 	bootnode, err := r.bernard.p2pURL()
@@ -91,13 +106,14 @@ func (r *hostManager) init() error {
 	// start hosts
 	for _, h := range hostConfig {
 		r.niceHosts[h.name] = r.createHost(h.name, h.apiPort, h.p2pPort, []string{bootnode})
-		err = r.niceHosts[h.name].init()
+
+		err := r.niceHosts[h.name].init()
 		if err != nil {
 			return err
 		}
-		go r.niceHosts[h.name].start(cancCtx)
+		r.startHost(h.name)
+
 	}
-	r.canc = canc
 	// print host centIDs
 	for name, host := range r.niceHosts {
 		i, err := host.id()
@@ -133,6 +149,24 @@ func (r *hostManager) createHost(name string, apiPort, p2pPort int64, bootstraps
 	)
 }
 
+type hostTestSuite struct {
+	name   string
+	host   *host
+	id     identity.CentID
+	expect *httpexpect.Expect
+}
+
+func (r *hostManager) getHostTestSuite(t *testing.T, name string) hostTestSuite {
+	host := r.getHost(name)
+	expect := host.createHttpExpectation(t)
+	id, err := host.id()
+	if err != nil {
+		t.Error(err)
+	}
+	return hostTestSuite{name: name, host: host, id: id, expect: expect}
+
+}
+
 type host struct {
 	name, dir, ethNodeUrl, accountKeyPath, accountPassword, network,
 	identityFactoryAddr, identityRegistryAddr, anchorRepositoryAddr, paymentObligationAddr string
@@ -144,6 +178,7 @@ type host struct {
 	config             config.Config
 	identity           identity.Identity
 	node               *node.Node
+	canc               context.CancelFunc
 }
 
 func newHost(
@@ -209,6 +244,10 @@ func (h *host) start(c context.Context) error {
 	feedback := make(chan error)
 	// may be we can pass a context that exists in c here
 	cancCtx, canc := context.WithCancel(context.WithValue(c, bootstrap.NodeObjRegistry, h.bootstrappedCtx))
+
+	// cancel func of individual node
+	h.canc = canc
+
 	go h.node.Start(cancCtx, feedback)
 	controlC := make(chan os.Signal, 1)
 	signal.Notify(controlC, os.Interrupt)
@@ -225,12 +264,12 @@ func (h *host) start(c context.Context) error {
 
 }
 
-func (h *host) createInvoice(e *httpexpect.Expect, inv map[string]interface{}) (*httpexpect.Object, error) {
-	return createInvoice(e, inv), nil
+func (h *host) createInvoice(e *httpexpect.Expect, status int, inv map[string]interface{}) (*httpexpect.Object, error) {
+	return createInvoice(e, status, inv), nil
 }
 
-func (h *host) updateInvoice(e *httpexpect.Expect, docIdentifier string, inv map[string]interface{}) (*httpexpect.Object, error) {
-	return updateInvoice(e, docIdentifier, inv), nil
+func (h *host) updateInvoice(e *httpexpect.Expect, status int, docIdentifier string, inv map[string]interface{}) (*httpexpect.Object, error) {
+	return updateInvoice(e, status, docIdentifier, inv), nil
 }
 
 func (h *host) createHttpExpectation(t *testing.T) *httpexpect.Expect {
