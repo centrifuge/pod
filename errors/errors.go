@@ -61,12 +61,11 @@ func getErrs(err error) []error {
 // append errn errors to err and return err
 func AppendError(err, errn error) error {
 	var errs []error
-	if serrs := getErrs(err); len(serrs) > 0 {
-		errs = append(errs, serrs...)
-	}
 
-	if serrs := getErrs(errn); len(serrs) > 0 {
-		errs = append(errs, serrs...)
+	for _, e := range []error{err, errn} {
+		if serrs := getErrs(e); len(serrs) > 0 {
+			errs = append(errs, serrs...)
+		}
 	}
 
 	if len(errs) < 1 {
