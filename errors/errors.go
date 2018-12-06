@@ -7,7 +7,16 @@ import (
 )
 
 // ErrUnknown is an unknown error type
-var ErrUnknown = New("unknown error")
+const ErrUnknown = Error("unknown error")
+
+// Error is a string that implements error
+// this will have interesting side effects of having a constant errors
+type Error string
+
+// Error returns error message
+func (e Error) Error() string {
+	return string(e)
+}
 
 // New returns a new error with message passed.
 // if args are passed, we will format the message with args
@@ -116,7 +125,7 @@ type TypeError interface {
 	IsOfType(terr error) bool
 }
 
-// isOfType returns if the err t is of type terr
+// IsOfType returns if the err t is of type terr
 func (t *typeError) IsOfType(terr error) bool {
 	if t.terr.Error() == terr.Error() {
 		return true

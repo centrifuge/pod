@@ -5,7 +5,7 @@ import (
 )
 
 // ErrEventNotFound when event is not found and need to retry
-var ErrEventNotFound = errors.New("event not found")
+const ErrEventNotFound = errors.Error("event not found")
 
 // EventIterator contains functions that make events listening more easier
 type EventIterator interface {
