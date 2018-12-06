@@ -120,14 +120,8 @@ func (s *ethereumPaymentObligation) MintNFT(documentID []byte, registryAddress, 
 		return nil, err
 	}
 
-	var contract *EthereumPaymentObligationContract
-	if registryAddress == "" {
-		defaultRegistry := s.config.GetContractAddress("paymentObligation")
-		contract, err = s.bindContract(defaultRegistry, s.ethClient)
-		registryAddress = defaultRegistry.String()
-	} else {
-		contract, err = s.bindContract(common.HexToAddress(registryAddress), s.ethClient)
-	}
+	contract, err := s.bindContract(common.HexToAddress(registryAddress), s.ethClient)
+
 	if err != nil {
 		return nil, err
 	}
