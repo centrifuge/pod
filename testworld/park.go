@@ -144,6 +144,7 @@ type host struct {
 	config             config.Config
 	identity           identity.Identity
 	node               *node.Node
+	canc context.CancelFunc
 }
 
 func newHost(
@@ -209,6 +210,10 @@ func (h *host) start(c context.Context) error {
 	feedback := make(chan error)
 	// may be we can pass a context that exists in c here
 	cancCtx, canc := context.WithCancel(context.WithValue(c, bootstrap.NodeObjRegistry, h.bootstrappedCtx))
+
+	// cancel func of individual node
+	h.canc = canc
+
 	go h.node.Start(cancCtx, feedback)
 	controlC := make(chan os.Signal, 1)
 	signal.Notify(controlC, os.Interrupt)

@@ -33,7 +33,7 @@ func TestMain(m *testing.M) {
 		startPOAGeth()
 	}
 	if runMigrations {
-		runSmartContractMigrations()
+		//runSmartContractMigrations()
 	}
 	var contractAddresses *config.SmartContractAddresses
 	if c.Network == "testing" {
