@@ -1,0 +1,131 @@
+package errors
+
+import (
+	"errors"
+	"fmt"
+	"strings"
+)
+
+// ErrUnknown is an unknown error type
+var ErrUnknown = New("unknown error")
+
+// New returns a new error with message passed.
+// if args are passed, we will format the message with args
+// Example:
+// New("some error") returns error with exact string passed
+// New("some error: %v", "some context") returns error with message "some error: some context"
+func New(msg string, args ...interface{}) error {
+	if len(args) > 0 {
+		return fmt.Errorf(msg, args...)
+	}
+
+	return errors.New(msg)
+}
+
+// listError holds a list of errors
+type listError struct {
+	errs []error
+}
+
+// Error formats the underlying errs into string
+func (l *listError) Error() string {
+	if len(l.errs) == 0 {
+		return ""
+	}
+
+	var errs []string
+	for _, err := range l.errs {
+		errs = append(errs, err.Error())
+	}
+
+	res := strings.Join(errs, "; ")
+	return "[" + res + "]"
+}
+
+// append appends the err to the list of errs
+func getErrs(err error) []error {
+	if err == nil {
+		return nil
+	}
+
+	if errl, ok := err.(*listError); ok {
+		return errl.errs
+	}
+
+	return []error{err}
+}
+
+// NewListError returns a new listError
+// if errn == nil, return err
+// if err is of type listError and if errn is of type listerror,
+// append errn errors to err and return err
+func NewListError(err, errn error) error {
+	var errs []error
+	if serrs := getErrs(err); len(serrs) > 0 {
+		errs = append(errs, serrs...)
+	}
+
+	if serrs := getErrs(errn); len(serrs) > 0 {
+		errs = append(errs, serrs...)
+	}
+
+	if len(errs) < 1 {
+		return nil
+	}
+
+	return &listError{errs}
+}
+
+// Len returns the total number of errors
+// if err is listError, return len(listError.errs)
+// if err == nil, return 0
+// else return 1
+func Len(err error) int {
+	if err == nil {
+		return 0
+	}
+
+	if lerr, ok := err.(*listError); ok {
+		return len(lerr.errs)
+	}
+
+	return 1
+}
+
+// typeError holds a type of error and an context error
+type typeError struct {
+	terr   error
+	ctxErr error
+}
+
+// Error returns the error in string
+func (t *typeError) Error() string {
+	return fmt.Sprintf("%v: %v", t.terr, t.ctxErr)
+}
+
+// NewTypeError returns a new error of type typeError
+func NewTypeError(terr, err error) error {
+	if terr == nil {
+		terr = ErrUnknown
+	}
+
+	return &typeError{terr: terr, ctxErr: err}
+}
+
+// TypeError can be implemented by any type error
+type TypeError interface {
+	IsOfType(terr error) bool
+}
+
+// isOfType returns if the err t is of type terr
+func (t *typeError) IsOfType(terr error) bool {
+	if t.terr.Error() == terr.Error() {
+		return true
+	}
+
+	if cterr, ok := t.ctxErr.(TypeError); ok {
+		return cterr.IsOfType(terr)
+	}
+
+	return t.ctxErr.Error() == terr.Error()
+}

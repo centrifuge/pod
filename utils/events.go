@@ -1,9 +1,11 @@
 package utils
 
-import "fmt"
+import (
+	"github.com/centrifuge/go-centrifuge/errors"
+)
 
 // ErrEventNotFound when event is not found and need to retry
-var ErrEventNotFound = fmt.Errorf("event not found")
+var ErrEventNotFound = errors.New("event not found")
 
 // EventIterator contains functions that make events listening more easier
 type EventIterator interface {
