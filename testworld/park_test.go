@@ -4,7 +4,7 @@ package testworld
 
 import (
 	"testing"
-
+	"net/http"
 	"fmt"
 )
 
@@ -25,7 +25,7 @@ func TestHost_Happy(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	res, err := alice.createInvoice(eAlice, map[string]interface{}{
+	res, err := alice.createInvoice(eAlice,http.StatusOK, map[string]interface{}{
 		"data": map[string]interface{}{
 			"invoice_number": "12324",
 			"due_date":       "2018-09-26T23:12:37.902198664Z",

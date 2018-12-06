@@ -3,6 +3,7 @@
 package testworld
 
 import (
+	"net/http"
 	"testing"
 )
 
@@ -30,7 +31,7 @@ func TestHost_AddExternalCollaborator(t *testing.T) {
 	}
 
 	// Alice shares invoice document with Bob first
-	res, err := alice.createInvoice(eAlice, map[string]interface{}{
+	res, err := alice.createInvoice(eAlice,http.StatusOK, map[string]interface{}{
 		"data": map[string]interface{}{
 			"invoice_number": "12324",
 			"due_date":       "2018-09-26T23:12:37.902198664Z",
@@ -55,7 +56,7 @@ func TestHost_AddExternalCollaborator(t *testing.T) {
 	getInvoiceAndCheck(eBob, params)
 
 	// Bob updates invoice and shares with Charlie as well
-	res, err = bob.updateInvoice(eBob, docIdentifier, map[string]interface{}{
+	res, err = bob.updateInvoice(eBob,http.StatusOK, docIdentifier, map[string]interface{}{
 		"data": map[string]interface{}{
 			"invoice_number": "12324",
 			"due_date":       "2018-09-26T23:12:37.902198664Z",
@@ -84,7 +85,7 @@ func TestHost_CollaboratorTimeOut(t *testing.T) {
 	bob := getHostTestSuite(t, "Bob")
 
 	// alice shares an invoice bob
-	response, err := alice.host.createInvoice(alice.expect, defaultInvoicePayload([]string{bob.id.String()}))
+	response, err := alice.host.createInvoice(alice.expect,http.StatusOK, defaultInvoicePayload([]string{bob.id.String()}))
 
 	if err != nil {
 		t.Error(err)
@@ -99,12 +100,23 @@ func TestHost_CollaboratorTimeOut(t *testing.T) {
 	getInvoiceAndCheck(alice.expect, params)
 	getInvoiceAndCheck(bob.expect, params)
 
+	// Alice gets killed
+	alice.host.canc()
+
+
 	// Bob updates and sends to Alice
 	updatedPayload := updatedInvoicePayload([]string{alice.id.String()})
-	response, err = bob.host.updateInvoice(bob.expect, docIdentifier, updatedPayload)
+
+	// Bob will anchor the document without Alice signature but will receive an error because alice is dead
+	response, err = bob.host.updateInvoice(bob.expect,http.StatusInternalServerError, docIdentifier, updatedPayload)
 	if err != nil {
 		t.Error(err)
 	}
 
-	docIdentifier = getDocumentIdentifier(t, response)
+	// check if bob saved the updated document
+	params = map[string]interface{}{
+		"document_id": docIdentifier,
+		"currency":    "EUR",
+	}
+	getInvoiceAndCheck(bob.expect, params)
 }
