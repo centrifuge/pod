@@ -9,9 +9,9 @@ import (
 
 func TestHost_AddExternalCollaborator(t *testing.T) {
 
-	alice := getHostTestSuite(t, "Alice")
-	bob := getHostTestSuite(t, "Bob")
-	charlie := getHostTestSuite(t, "Charlie")
+	alice := doctorFord.getHostTestSuite(t, "Alice")
+	bob := doctorFord.getHostTestSuite(t, "Bob")
+	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 
 	// Alice shares invoice document with Bob first
 	res, err := alice.host.createInvoice(alice.expect, http.StatusOK, defaultInvoicePayload([]string{bob.id.String()}))
@@ -50,8 +50,8 @@ func TestHost_AddExternalCollaborator(t *testing.T) {
 
 func TestHost_CollaboratorTimeOut(t *testing.T) {
 
-	alice := getHostTestSuite(t, "Alice")
-	bob := getHostTestSuite(t, "Bob")
+	alice := doctorFord.getHostTestSuite(t, "Alice")
+	bob := doctorFord.getHostTestSuite(t, "Bob")
 
 	// alice shares an invoice bob
 	response, err := alice.host.createInvoice(alice.expect, http.StatusOK, defaultInvoicePayload([]string{bob.id.String()}))

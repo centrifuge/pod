@@ -9,9 +9,9 @@ import (
 )
 
 func TestHost_Happy(t *testing.T) {
-	alice := getHostTestSuite(t, "Alice")
-	bob := getHostTestSuite(t, "Bob")
-	charlie := getHostTestSuite(t, "Charlie")
+	alice := doctorFord.getHostTestSuite(t, "Alice")
+	bob := doctorFord.getHostTestSuite(t, "Bob")
+	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 
 	// alice shares a document with bob and charlie
 	res, err := alice.host.createInvoice(alice.expect, http.StatusOK, defaultInvoicePayload([]string{bob.id.String(), charlie.id.String()}))
