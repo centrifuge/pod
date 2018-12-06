@@ -62,12 +62,12 @@ func TestHost_CollaboratorTimeOut(t *testing.T) {
 
 	// check if bob and alice received the document
 	docIdentifier := getDocumentIdentifier(t, response)
-	params := map[string]interface{}{
+	paramsV1 := map[string]interface{}{
 		"document_id": docIdentifier,
 		"currency":    "USD",
 	}
-	getInvoiceAndCheck(alice.expect, params)
-	getInvoiceAndCheck(bob.expect, params)
+	getInvoiceAndCheck(alice.expect, paramsV1)
+	getInvoiceAndCheck(bob.expect, paramsV1)
 
 	// Alice gets killed
 	alice.host.canc()
@@ -82,9 +82,16 @@ func TestHost_CollaboratorTimeOut(t *testing.T) {
 	}
 
 	// check if bob saved the updated document
-	params = map[string]interface{}{
+	paramsV2 := map[string]interface{}{
 		"document_id": docIdentifier,
 		"currency":    "EUR",
 	}
-	getInvoiceAndCheck(bob.expect, params)
+	getInvoiceAndCheck(bob.expect, paramsV2)
+
+	// bring alice back to life
+	doctorFord.startHost(alice.name)
+
+	// alice should not have latest version
+	getInvoiceAndCheck(alice.expect, paramsV1)
+
 }

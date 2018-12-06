@@ -54,6 +54,9 @@ type hostManager struct {
 
 	// canc is the cancel signal for all hosts
 	canc context.CancelFunc
+
+	// parent context
+	cancCtx context.Context
 }
 
 func newHostManager(
@@ -71,8 +74,12 @@ func newHostManager(
 	}
 }
 
+func (r *hostManager) startHost(name string) {
+	go r.niceHosts[name].start(r.cancCtx)
+}
+
 func (r *hostManager) init() error {
-	cancCtx, canc := context.WithCancel(context.Background())
+	r.cancCtx, r.canc = context.WithCancel(context.Background())
 	r.bernard = r.createHost("Bernard", 8081, 38201, nil)
 	err := r.bernard.init()
 	if err != nil {
@@ -80,7 +87,7 @@ func (r *hostManager) init() error {
 	}
 
 	// start and wait for Bernard since other hosts depend on him
-	go r.bernard.start(cancCtx)
+	go r.bernard.start(r.cancCtx)
 	time.Sleep(10 * time.Second)
 
 	bootnode, err := r.bernard.p2pURL()
@@ -91,13 +98,14 @@ func (r *hostManager) init() error {
 	// start hosts
 	for _, h := range hostConfig {
 		r.niceHosts[h.name] = r.createHost(h.name, h.apiPort, h.p2pPort, []string{bootnode})
-		err = r.niceHosts[h.name].init()
+
+		err := r.niceHosts[h.name].init()
 		if err != nil {
 			return err
 		}
-		go r.niceHosts[h.name].start(cancCtx)
+		r.startHost(h.name)
+
 	}
-	r.canc = canc
 	// print host centIDs
 	for name, host := range r.niceHosts {
 		i, err := host.id()
@@ -271,5 +279,3 @@ func (h *host) p2pURL() (string, error) {
 	}
 	return fmt.Sprintf("/ip4/127.0.0.1/tcp/%d/ipfs/%s", h.p2pPort, lastB58Key), nil
 }
-
-
