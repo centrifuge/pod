@@ -11,7 +11,7 @@ type repository struct {
 }
 
 // getRepository returns the implemented documents.legacyRepo for purchase orders
-func getRepository(ldb *leveldb.DB) documents.Repository {
+func getRepository(ldb *leveldb.DB) documents.LegacyRepository {
 	return &repository{
 		documents.LevelDBRepository{
 			KeyPrefix: "purchaseorder",

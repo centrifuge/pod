@@ -163,7 +163,7 @@ func TestP2PService_basicChecks(t *testing.T) {
 
 type mockRepo struct {
 	mock.Mock
-	documents.Repository
+	documents.LegacyRepository
 }
 
 func (r mockRepo) Update(id []byte, m documents.Model) error {

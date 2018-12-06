@@ -16,9 +16,9 @@ func TestRepository_getRepository(t *testing.T) {
 	assert.Equal(t, "purchaseorder", r.(*repository).KeyPrefix)
 }
 
-var testRepoGlobal documents.Repository
+var testRepoGlobal documents.LegacyRepository
 
-func testRepo() documents.Repository {
+func testRepo() documents.LegacyRepository {
 	if testRepoGlobal == nil {
 		ldb, err := storage.NewLevelDBStorage(storage.GetRandomTestStoragePath())
 		if err != nil {
