@@ -2,8 +2,7 @@
 
 package testworld
 
-
-func defaultInvoicePayload(collaborators []string)  map[string]interface{} {
+func defaultInvoicePayload(collaborators []string) map[string]interface{} {
 
 	return map[string]interface{}{
 		"data": map[string]interface{}{
@@ -18,7 +17,7 @@ func defaultInvoicePayload(collaborators []string)  map[string]interface{} {
 
 }
 
-func updatedInvoicePayload(collaborators []string)  map[string]interface{} {
+func updatedInvoicePayload(collaborators []string) map[string]interface{} {
 	return map[string]interface{}{
 		"data": map[string]interface{}{
 			"invoice_number": "12324",

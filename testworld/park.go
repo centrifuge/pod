@@ -144,7 +144,7 @@ type host struct {
 	config             config.Config
 	identity           identity.Identity
 	node               *node.Node
-	canc context.CancelFunc
+	canc               context.CancelFunc
 }
 
 func newHost(
@@ -255,20 +255,19 @@ func (h *host) p2pURL() (string, error) {
 }
 
 type hostTestSuite struct {
-	name string
-	host *host
-	id identity.CentID
+	name   string
+	host   *host
+	id     identity.CentID
 	expect *httpexpect.Expect
-
 }
 
-func getHostTestSuite(t*testing.T, name string) hostTestSuite {
+func getHostTestSuite(t *testing.T, name string) hostTestSuite {
 	host := doctorFord.getHost(name)
 	expect := host.createHttpExpectation(t)
 	id, err := host.id()
 	if err != nil {
 		t.Error(err)
 	}
-	return hostTestSuite{name: name, host: host, id:id,expect: expect}
+	return hostTestSuite{name: name, host: host, id: id, expect: expect}
 
 }

@@ -78,8 +78,6 @@ func TestHost_AddExternalCollaborator(t *testing.T) {
 	getInvoiceAndCheck(eCharlie, params)
 }
 
-
-
 func TestHost_CollaboratorTimeOut(t *testing.T) {
 
 	alice := getHostTestSuite(t, "Alice")
