@@ -16,10 +16,8 @@ Here you can create, run and test nodes with various behaviours to observe how t
 - Each test scenario must be defined in a `testworld/<scenario_name>_test.go` file and the build tag `// +build testworld` must be included at the top.
 - Plus points if you write a test with a scenario that matches a scene in Westworld with node names matching the characters ;)
 
-
-### Speed improvements for testing
+### Dev
+#### Speed improvements for local testing
 - set `runMigrations` to `false` after the contracts are deployed once at the local geth node.
 - remove `cmd.CreateConfig(...)` in `park.go` after identities are already deployed once at the local geth node.
-
-
 
