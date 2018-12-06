@@ -17,5 +17,9 @@ Here you can create, run and test nodes with various behaviours to observe how t
 - Plus points if you write a test with a scenario that matches a scene in Westworld with node names matching the characters ;)
 
 
+### Speed improvements for testing
+- set `runMigrations` to `false` after the contracts are deployed once at the local geth node.
+- remove `cmd.CreateConfig(...)` in `park.go` after identities are already deployed once at the local geth node.
+
 
 

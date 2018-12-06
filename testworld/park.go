@@ -77,6 +77,11 @@ func newHostManager(
 	}
 }
 
+func (r *hostManager) restartHost(name string) {
+	r.startHost(name)
+	time.Sleep(time.Second * 1)
+}
+
 func (r *hostManager) startHost(name string) {
 	go r.niceHosts[name].start(r.cancCtx)
 }
