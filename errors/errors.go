@@ -55,11 +55,11 @@ func getErrs(err error) []error {
 	return []error{err}
 }
 
-// NewListError returns a new listError
+// AppendError returns a new listError
 // if errn == nil, return err
 // if err is of type listError and if errn is of type listerror,
 // append errn errors to err and return err
-func NewListError(err, errn error) error {
+func AppendError(err, errn error) error {
 	var errs []error
 	if serrs := getErrs(err); len(serrs) > 0 {
 		errs = append(errs, serrs...)
@@ -128,4 +128,13 @@ func (t *typeError) IsOfType(terr error) bool {
 	}
 
 	return t.ctxErr.Error() == terr.Error()
+}
+
+// IsOfType returns if the err is of type terr
+func IsOfType(terr, err error) bool {
+	if errt, ok := err.(TypeError); ok {
+		return errt.IsOfType(terr)
+	}
+
+	return err.Error() == terr.Error()
 }
