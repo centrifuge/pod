@@ -79,7 +79,7 @@ func newHostManager(
 
 func (r *hostManager) restartHost(name string) {
 	r.startHost(name)
-	time.Sleep(time.Second * 1)
+	time.Sleep(time.Second * 2)
 }
 
 func (r *hostManager) startHost(name string) {
