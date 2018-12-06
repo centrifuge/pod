@@ -44,8 +44,8 @@ networks:
     id: 52
     # Bootstrap list of nodes that Centrifuge provides to the bernalheights testnet
     bootstrapPeers:
-    - "/ip4/35.225.200.42/tcp/38202/ipfs/12D3KooWLiicQVwThTBY6xKcPoLf6RQYJFpwf1r75wLx2ZR3pCd1"
-    - "/ip4/35.225.86.210/tcp/38202/ipfs/12D3KooWQZMA8GPHrvEZB9wdkoUcAAmCZHp9eyyZ4SE8gFr3hTNX"
+    - "/ip4/104.154.18.51/tcp/38202/ipfs/12D3KooWPs6iaeUuFZNu1GxvsyBTSrTs9vtB6btMAnHFoLjbkzCa"
+    - "/ip4/104.155.185.237/tcp/38202/ipfs/12D3KooWPCGcwiTjoKWHfBa482UPtaeUxNLwd8zbnB1S7weAZUxZ"
     # Ethereum network ID - Kovan
     ethereumNetworkId: 42
     # Latest deployed Smart Contracts for the given testnet
