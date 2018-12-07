@@ -78,12 +78,12 @@ type TenantConfig struct {
 }
 
 // NewTenantConfig creates a new TenantConfig instance with configs
-func NewTenantConfig(name string, config Config) (*TenantConfig, error) {
+func NewTenantConfig(ethAccountName string, config Config) (*TenantConfig, error) {
 	id, err := config.GetIdentityID()
 	if err != nil {
 		return nil, err
 	}
-	acc, err := config.GetEthereumAccount(name)
+	acc, err := config.GetEthereumAccount(ethAccountName)
 	if err != nil {
 		return nil, err
 	}

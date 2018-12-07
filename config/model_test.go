@@ -6,6 +6,7 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/mock"
 )
@@ -100,7 +101,7 @@ func (m *MockConfig) GetEthereumDefaultAccountName() string {
 }
 
 func (m *MockConfig) GetEthereumAccount(accountName string) (account *AccountConfig, err error) {
-	args := m.Called()
+	args := m.Called(accountName)
 	return args.Get(0).(*AccountConfig), args.Error(1)
 }
 
@@ -156,32 +157,42 @@ func (m *MockConfig) GetEthAuthKeyPair() (pub, priv string) {
 
 func TestNewNodeConfig(t *testing.T) {
 	c := &MockConfig{}
-	c.On("GetStoragePath").Return("dummyStorage")
-	c.On("GetP2PPort").Return(30000)
-	c.On("GetP2PExternalIP").Return("ip")
-	c.On("GetP2PConnectionTimeout").Return(time.Second)
-	c.On("GetReceiveEventNotificationEndpoint").Return("dummyNotifier")
+	c.On("GetStoragePath").Return("dummyStorage").Once()
+	c.On("GetP2PPort").Return(30000).Once()
+	c.On("GetP2PExternalIP").Return("ip").Once()
+	c.On("GetP2PConnectionTimeout").Return(time.Second).Once()
+	c.On("GetReceiveEventNotificationEndpoint").Return("dummyNotifier").Once()
 
-	c.On("GetServerPort").Return(8080)
-	c.On("GetServerAddress").Return("dummyServer")
-	c.On("GetNumWorkers").Return(2)
-	c.On("GetWorkerWaitTimeMS").Return(1)
-	c.On("GetEthereumNodeURL").Return("dummyNode")
+	c.On("GetServerPort").Return(8080).Once()
+	c.On("GetServerAddress").Return("dummyServer").Once()
+	c.On("GetNumWorkers").Return(2).Once()
+	c.On("GetWorkerWaitTimeMS").Return(1).Once()
+	c.On("GetEthereumNodeURL").Return("dummyNode").Once()
 
-	c.On("GetEthereumContextReadWaitTimeout").Return(time.Second)
-	c.On("GetEthereumContextWaitTimeout").Return(time.Second)
-	c.On("GetEthereumIntervalRetry").Return(time.Second)
-	c.On("GetEthereumMaxRetries").Return(1)
-	c.On("GetEthereumGasPrice").Return(big.NewInt(1))
+	c.On("GetEthereumContextReadWaitTimeout").Return(time.Second).Once()
+	c.On("GetEthereumContextWaitTimeout").Return(time.Second).Once()
+	c.On("GetEthereumIntervalRetry").Return(time.Second).Once()
+	c.On("GetEthereumMaxRetries").Return(1).Once()
+	c.On("GetEthereumGasPrice").Return(big.NewInt(1)).Once()
 
-	c.On("GetEthereumGasLimit").Return(uint64(100))
-	c.On("GetEthereumDefaultAccountName").Return("dummyAcc")
-	c.On("GetTxPoolAccessEnabled").Return(true)
-	c.On("GetNetworkString").Return("somehill")
-	c.On("GetBootstrapPeers").Return([]string{"p1", "p2"})
+	c.On("GetEthereumGasLimit").Return(uint64(100)).Once()
+	c.On("GetEthereumDefaultAccountName").Return("dummyAcc").Once()
+	c.On("GetTxPoolAccessEnabled").Return(true).Once()
+	c.On("GetNetworkString").Return("somehill").Once()
+	c.On("GetBootstrapPeers").Return([]string{"p1", "p2"}).Once()
 
-	c.On("GetNetworkID").Return(uint32(1))
+	c.On("GetNetworkID").Return(uint32(1)).Once()
 	NewNodeConfig(c)
 
+	c.AssertExpectations(t)
+}
+
+func TestNewTenantConfig(t *testing.T) {
+	c := &MockConfig{}
+	c.On("GetEthereumAccount", "name").Return(&AccountConfig{}, nil).Once()
+	c.On("GetIdentityID").Return(utils.RandomSlice(6), nil).Once()
+	c.On("GetSigningKeyPair").Return("pub", "priv").Once()
+	c.On("GetEthAuthKeyPair").Return("pub", "priv").Once()
+	NewTenantConfig("name", c)
 	c.AssertExpectations(t)
 }
