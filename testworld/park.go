@@ -12,6 +12,8 @@ import (
 
 	"time"
 
+	"net/http"
+
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/cmd"
 	"github.com/centrifuge/go-centrifuge/config"
@@ -32,6 +34,14 @@ var hostConfig = []struct {
 	{"Bob", 8085, 38205},
 	{"Charlie", 8086, 38206},
 	{"Kenny", 8087, 38207},
+}
+
+// hostTestSuite encapsulates test utilities on top of each host
+type hostTestSuite struct {
+	name       string
+	host       *host
+	id         identity.CentID
+	httpExpect *httpexpect.Expect
 }
 
 // hostManager is the hostManager of the hosts at Testworld (Robert)
@@ -77,26 +87,35 @@ func newHostManager(
 	}
 }
 
-func (r *hostManager) restartHost(name string) {
+func (r *hostManager) reLive(t *testing.T, name string) {
 	r.startHost(name)
-	time.Sleep(time.Second * 2)
+	// wait for the host to be live, here its 11 seconds allowed but the host should come alive before that and this will return faster
+	ok, err := r.getHost(name).isLive(11 * time.Second)
+	if ok {
+		return
+	} else {
+		t.Error(err)
+	}
 }
 
 func (r *hostManager) startHost(name string) {
-	go r.niceHosts[name].start(r.cancCtx)
+	go r.niceHosts[name].live(r.cancCtx)
 }
 
-func (r *hostManager) init() error {
+func (r *hostManager) init(createConfig bool) error {
 	r.cancCtx, r.canc = context.WithCancel(context.Background())
-	r.bernard = r.createHost("Bernard", 8081, 38201, nil)
+	r.bernard = r.createHost("Bernard", 8081, 38201, createConfig, nil)
 	err := r.bernard.init()
 	if err != nil {
 		return err
 	}
 
 	// start and wait for Bernard since other hosts depend on him
-	go r.bernard.start(r.cancCtx)
-	time.Sleep(10 * time.Second)
+	go r.bernard.live(r.cancCtx)
+	_, err = r.bernard.isLive(10 * time.Second)
+	if err != nil {
+		return fmt.Errorf("bernard couldn't be made alive %v", err)
+	}
 
 	bootnode, err := r.bernard.p2pURL()
 	if err != nil {
@@ -105,7 +124,7 @@ func (r *hostManager) init() error {
 
 	// start hosts
 	for _, h := range hostConfig {
-		r.niceHosts[h.name] = r.createHost(h.name, h.apiPort, h.p2pPort, []string{bootnode})
+		r.niceHosts[h.name] = r.createHost(h.name, h.apiPort, h.p2pPort, createConfig, []string{bootnode})
 
 		err := r.niceHosts[h.name].init()
 		if err != nil {
@@ -136,7 +155,7 @@ func (r *hostManager) stop() {
 	r.canc()
 }
 
-func (r *hostManager) createHost(name string, apiPort, p2pPort int64, bootstraps []string) *host {
+func (r *hostManager) createHost(name string, apiPort, p2pPort int64, createConfig bool, bootstraps []string) *host {
 	return newHost(
 		name,
 		r.ethNodeUrl,
@@ -145,15 +164,9 @@ func (r *hostManager) createHost(name string, apiPort, p2pPort int64, bootstraps
 		r.network,
 		apiPort, p2pPort, bootstraps,
 		r.txPoolAccess,
+		createConfig,
 		r.contractAddresses,
 	)
-}
-
-type hostTestSuite struct {
-	name   string
-	host   *host
-	id     identity.CentID
-	expect *httpexpect.Expect
 }
 
 func (r *hostManager) getHostTestSuite(t *testing.T, name string) hostTestSuite {
@@ -163,7 +176,7 @@ func (r *hostManager) getHostTestSuite(t *testing.T, name string) hostTestSuite 
 	if err != nil {
 		t.Error(err)
 	}
-	return hostTestSuite{name: name, host: host, id: id, expect: expect}
+	return hostTestSuite{name: name, host: host, id: id, httpExpect: expect}
 
 }
 
@@ -179,13 +192,14 @@ type host struct {
 	identity           identity.Identity
 	node               *node.Node
 	canc               context.CancelFunc
+	createConfig       bool
 }
 
 func newHost(
 	name, ethNodeUrl, accountKeyPath, accountPassword, network string,
 	apiPort, p2pPort int64,
 	bootstraps []string,
-	txPoolAccess bool,
+	txPoolAccess, createConfig bool,
 	smartContractAddrs *config.SmartContractAddresses,
 ) *host {
 	return &host{
@@ -200,20 +214,24 @@ func newHost(
 		txPoolAccess:       txPoolAccess,
 		smartContractAddrs: smartContractAddrs,
 		dir:                "peerconfigs/" + name,
+		createConfig:       createConfig,
 	}
 }
 
 func (h *host) init() error {
-	err := cmd.CreateConfig(h.dir, h.ethNodeUrl, h.accountKeyPath, h.accountPassword, h.network, h.apiPort, h.p2pPort, h.bootstrapNodes, h.txPoolAccess, h.smartContractAddrs)
-	if err != nil {
-		return err
+	if h.createConfig {
+		err := cmd.CreateConfig(h.dir, h.ethNodeUrl, h.accountKeyPath, h.accountPassword, h.network, h.apiPort, h.p2pPort, h.bootstrapNodes, h.txPoolAccess, h.smartContractAddrs)
+		if err != nil {
+			return err
+		}
 	}
+
 	m := ctx.MainBootstrapper{}
 	m.PopulateBaseBootstrappers()
 	h.bootstrappedCtx = map[string]interface{}{
 		config.BootstrappedConfigFile: h.dir + "/config.yaml",
 	}
-	err = m.Bootstrap(h.bootstrappedCtx)
+	err := m.Bootstrap(h.bootstrappedCtx)
 	if err != nil {
 		return err
 	}
@@ -234,7 +252,7 @@ func (h *host) init() error {
 	return nil
 }
 
-func (h *host) start(c context.Context) error {
+func (h *host) live(c context.Context) error {
 	srvs, err := node.GetServers(h.bootstrappedCtx)
 	if err != nil {
 		return fmt.Errorf("failed to load servers: %v", err)
@@ -264,6 +282,42 @@ func (h *host) start(c context.Context) error {
 
 }
 
+func (h *host) kill() {
+	h.canc()
+}
+
+func (h *host) isLive(softTimeOut time.Duration) (bool, error) {
+	sig := make(chan error)
+	c := createInsecureClient()
+	go func(sig chan<- error) {
+		var fErr error
+		// wait upto 10 seconds(hard timeout) for the host to be live
+		for i := 0; i < 10; i++ {
+			res, err := c.Get(fmt.Sprintf("https://localhost:%d/ping", h.config.GetServerPort()))
+			fErr = err
+			if err != nil {
+				time.Sleep(time.Second)
+				continue
+			}
+			if res.StatusCode == http.StatusOK {
+				sig <- nil
+				return
+			}
+		}
+		sig <- fErr
+	}(sig)
+	t := time.After(softTimeOut)
+	select {
+	case <-t:
+		return false, fmt.Errorf("host failed to live even after %f seconds", softTimeOut.Seconds())
+	case err := <-sig:
+		if err != nil {
+			return false, err
+		}
+		return true, nil
+	}
+}
+
 func (h *host) createInvoice(e *httpexpect.Expect, status int, inv map[string]interface{}) (*httpexpect.Object, error) {
 	return createInvoice(e, status, inv), nil
 }
@@ -273,7 +327,7 @@ func (h *host) updateInvoice(e *httpexpect.Expect, status int, docIdentifier str
 }
 
 func (h *host) createHttpExpectation(t *testing.T) *httpexpect.Expect {
-	return createInsecureClient(t, fmt.Sprintf("https://localhost:%d", h.config.GetServerPort()))
+	return createInsecureClientWithExpect(t, fmt.Sprintf("https://localhost:%d", h.config.GetServerPort()))
 }
 
 func (h *host) id() (identity.CentID, error) {

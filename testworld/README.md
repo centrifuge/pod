@@ -18,6 +18,6 @@ Here you can create, run and test nodes with various behaviours to observe how t
 
 ### Dev
 #### Speed improvements for local testing
-- set `runMigrations` to `false` after the contracts are deployed once at the local geth node.
-- remove `cmd.CreateConfig(...)` in `park.go` after identities are already deployed once at the local geth node.
+- On `start_test.go` set `runMigrations` to `false` after the contracts are deployed once at the local geth node.
+- On `start_test.go` set `createHostConfigs` to `false` after configs have been generated in `peerconfigs` dir, note that if you add new hosts using `hostConfig` you would need this to be set to `true` again to generate the config for the new host.
 
