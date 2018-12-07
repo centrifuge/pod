@@ -80,27 +80,27 @@ func GetDocumentRootTree(document *coredocumentpb.CoreDocument) (tree *proofs.Do
 	tree = &t
 
 	// The first leave added is the signing_root
-	err = tree.AddLeaf(proofs.LeafNode{Hash: document.SigningRoot, Hashed: true, Property: "signing_root"})
+	err = tree.AddLeaf(proofs.LeafNode{Hash: document.SigningRoot, Hashed: true, Property: proofs.NewProperty("signing_root")})
 	if err != nil {
 		return nil, err
 	}
 	// For every signature we create a LeafNode
 	sigLeafList := make([]proofs.LeafNode, len(document.Signatures)+1)
 	sigLengthNode := proofs.LeafNode{
-		Property: "signatures.length",
+		Property: proofs.NewProperty("signatures.length"),
 		Salt:     make([]byte, 32),
 		Value:    fmt.Sprintf("%d", len(document.Signatures)),
 	}
-	sigLengthNode.HashNode(h)
+	sigLengthNode.HashNode(h, false)
 	sigLeafList[0] = sigLengthNode
 	for i, sig := range document.Signatures {
 		payload := sha256.Sum256(append(sig.EntityId, append(sig.PublicKey, sig.Signature...)...))
 		leaf := proofs.LeafNode{
 			Hash:     payload[:],
 			Hashed:   true,
-			Property: fmt.Sprintf("signatures[%d]", i),
+			Property: proofs.NewProperty(fmt.Sprintf("signatures[%d]", i)),
 		}
-		leaf.HashNode(h)
+		leaf.HashNode(h, false)
 		sigLeafList[i+1] = leaf
 	}
 	err = tree.AddLeaves(sigLeafList)
@@ -129,11 +129,11 @@ func GetDocumentSigningTree(document *coredocumentpb.CoreDocument) (tree *proofs
 	}
 	// Adding document type as it is an excluded field in the tree
 	documentTypeNode := proofs.LeafNode{
-		Property: "document_type",
+		Property: proofs.NewProperty("document_type"),
 		Salt:     make([]byte, 32),
 		Value:    document.EmbeddedData.TypeUrl,
 	}
-	documentTypeNode.HashNode(h)
+	documentTypeNode.HashNode(h, false)
 	err = tree.AddLeaf(documentTypeNode)
 	if err != nil {
 		return nil, err
