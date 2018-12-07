@@ -393,11 +393,11 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	v.Set("ethereum.accounts.main.key", string(bfile))
 	v.Set("ethereum.accounts.main.password", accountPassword)
 	v.Set("keys.p2p.privateKey", targetDataDir+"/p2p.key.pem")
-	v.Set("keys.p2p.publicKey", targetDataDir+"/p2p.Pub.pem")
+	v.Set("keys.p2p.publicKey", targetDataDir+"/p2p.pub.pem")
 	v.Set("keys.ethauth.privateKey", targetDataDir+"/ethauth.key.pem")
-	v.Set("keys.ethauth.publicKey", targetDataDir+"/ethauth.Pub.pem")
+	v.Set("keys.ethauth.publicKey", targetDataDir+"/ethauth.pub.pem")
 	v.Set("keys.signing.privateKey", targetDataDir+"/signing.key.pem")
-	v.Set("keys.signing.publicKey", targetDataDir+"/signing.Pub.pem")
+	v.Set("keys.signing.publicKey", targetDataDir+"/signing.pub.pem")
 
 	if bootstraps != nil {
 		v.Set("networks."+network+".bootstrapPeers", bootstraps)
