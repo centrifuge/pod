@@ -23,11 +23,7 @@ func (e Error) Error() string {
 // New("some error") returns error with exact string passed
 // New("some error: %v", "some context") returns error with message "some error: some context"
 func New(format string, args ...interface{}) error {
-	if len(args) > 0 {
-		return Error(fmt.Sprintf(format, args...))
-	}
-
-	return Error(format)
+	return Error(fmt.Sprintf(format, args...))
 }
 
 // listError holds a list of errors
