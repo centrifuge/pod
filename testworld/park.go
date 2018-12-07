@@ -36,6 +36,8 @@ var hostConfig = []struct {
 	{"Kenny", 8087, 38207},
 }
 
+const defaultP2PTimeout = "2s"
+
 // hostTestSuite encapsulates test utilities on top of each host
 type hostTestSuite struct {
 	name       string
@@ -104,7 +106,7 @@ func (r *hostManager) startHost(name string) {
 
 func (r *hostManager) init(createConfig bool) error {
 	r.cancCtx, r.canc = context.WithCancel(context.Background())
-	r.bernard = r.createHost("Bernard", 8081, 38201, createConfig, nil)
+	r.bernard = r.createHost("Bernard", defaultP2PTimeout, 8081, 38201, createConfig, nil)
 	err := r.bernard.init()
 	if err != nil {
 		return err
@@ -124,7 +126,7 @@ func (r *hostManager) init(createConfig bool) error {
 
 	// start hosts
 	for _, h := range hostConfig {
-		r.niceHosts[h.name] = r.createHost(h.name, h.apiPort, h.p2pPort, createConfig, []string{bootnode})
+		r.niceHosts[h.name] = r.createHost(h.name, defaultP2PTimeout, h.apiPort, h.p2pPort, createConfig, []string{bootnode})
 
 		err := r.niceHosts[h.name].init()
 		if err != nil {
@@ -155,13 +157,14 @@ func (r *hostManager) stop() {
 	r.canc()
 }
 
-func (r *hostManager) createHost(name string, apiPort, p2pPort int64, createConfig bool, bootstraps []string) *host {
+func (r *hostManager) createHost(name, p2pTimeout string, apiPort, p2pPort int64, createConfig bool, bootstraps []string) *host {
 	return newHost(
 		name,
 		r.ethNodeUrl,
 		r.accountKeyPath,
 		r.accountPassword,
 		r.network,
+		p2pTimeout,
 		apiPort, p2pPort, bootstraps,
 		r.txPoolAccess,
 		createConfig,
@@ -182,7 +185,7 @@ func (r *hostManager) getHostTestSuite(t *testing.T, name string) hostTestSuite 
 
 type host struct {
 	name, dir, ethNodeUrl, accountKeyPath, accountPassword, network,
-	identityFactoryAddr, identityRegistryAddr, anchorRepositoryAddr, paymentObligationAddr string
+	identityFactoryAddr, identityRegistryAddr, anchorRepositoryAddr, paymentObligationAddr, p2pTimeout string
 	apiPort, p2pPort   int64
 	bootstrapNodes     []string
 	bootstrappedCtx    map[string]interface{}
@@ -196,7 +199,7 @@ type host struct {
 }
 
 func newHost(
-	name, ethNodeUrl, accountKeyPath, accountPassword, network string,
+	name, ethNodeUrl, accountKeyPath, accountPassword, network, p2pTimeout string,
 	apiPort, p2pPort int64,
 	bootstraps []string,
 	txPoolAccess, createConfig bool,
@@ -210,6 +213,7 @@ func newHost(
 		network:            network,
 		apiPort:            apiPort,
 		p2pPort:            p2pPort,
+		p2pTimeout:         p2pTimeout,
 		bootstrapNodes:     bootstraps,
 		txPoolAccess:       txPoolAccess,
 		smartContractAddrs: smartContractAddrs,
@@ -220,7 +224,7 @@ func newHost(
 
 func (h *host) init() error {
 	if h.createConfig {
-		err := cmd.CreateConfig(h.dir, h.ethNodeUrl, h.accountKeyPath, h.accountPassword, h.network, h.apiPort, h.p2pPort, h.bootstrapNodes, h.txPoolAccess, h.smartContractAddrs)
+		err := cmd.CreateConfig(h.dir, h.ethNodeUrl, h.accountKeyPath, h.accountPassword, h.network, h.apiPort, h.p2pPort, h.bootstrapNodes, h.txPoolAccess, h.p2pTimeout, h.smartContractAddrs)
 		if err != nil {
 			return err
 		}
@@ -263,7 +267,7 @@ func (h *host) live(c context.Context) error {
 	// may be we can pass a context that exists in c here
 	cancCtx, canc := context.WithCancel(context.WithValue(c, bootstrap.NodeObjRegistry, h.bootstrappedCtx))
 
-	// cancel func of individual node
+	// cancel func of individual host
 	h.canc = canc
 
 	go h.node.Start(cancCtx, feedback)
@@ -286,6 +290,7 @@ func (h *host) kill() {
 	h.canc()
 }
 
+// isLive waits for host to come alive until the given soft timeout has passed, or the hard timeout of 10s is passed
 func (h *host) isLive(softTimeOut time.Duration) (bool, error) {
 	sig := make(chan error)
 	c := createInsecureClient()

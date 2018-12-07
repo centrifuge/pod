@@ -59,18 +59,20 @@ func CreateConfig(
 	apiPort, p2pPort int64,
 	bootstraps []string,
 	txPoolAccess bool,
+	p2pConnectionTimeout string,
 	smartContractAddrs *config.SmartContractAddresses) error {
 
 	data := map[string]interface{}{
-		"targetDataDir":   targetDataDir,
-		"accountKeyPath":  accountKeyPath,
-		"accountPassword": accountPassword,
-		"network":         network,
-		"ethNodeURL":      ethNodeURL,
-		"bootstraps":      bootstraps,
-		"apiPort":         apiPort,
-		"p2pPort":         p2pPort,
-		"txpoolaccess":    txPoolAccess,
+		"targetDataDir":     targetDataDir,
+		"accountKeyPath":    accountKeyPath,
+		"accountPassword":   accountPassword,
+		"network":           network,
+		"ethNodeURL":        ethNodeURL,
+		"bootstraps":        bootstraps,
+		"apiPort":           apiPort,
+		"p2pPort":           p2pPort,
+		"p2pConnectTimeout": p2pConnectionTimeout,
+		"txpoolaccess":      txPoolAccess,
 	}
 	if smartContractAddrs != nil {
 		data["smartContractAddresses"] = smartContractAddrs
