@@ -4,21 +4,14 @@ import (
 	"crypto/tls"
 	"net/http"
 	"testing"
-	"time"
 
 	"github.com/gavv/httpexpect"
 )
 
-func createInsecureClient(t *testing.T, baseURL string) *httpexpect.Expect {
-	transport := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}
+func createInsecureClientWithExpect(t *testing.T, baseURL string) *httpexpect.Expect {
 	config := httpexpect.Config{
-		BaseURL: baseURL,
-		Client: &http.Client{
-			Transport: transport,
-			Timeout:   time.Second * 600,
-		},
+		BaseURL:  baseURL,
+		Client:   createInsecureClient(),
 		Reporter: httpexpect.NewAssertReporter(t),
 		Printers: []httpexpect.Printer{
 			httpexpect.NewCompactPrinter(t),
@@ -64,4 +57,11 @@ func getDocumentIdentifier(t *testing.T, response *httpexpect.Object) string {
 		t.Error("docIdentifier empty")
 	}
 	return docIdentifier
+}
+
+func createInsecureClient() *http.Client {
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	return &http.Client{Transport: tr}
 }

@@ -12,6 +12,8 @@ import (
 
 	"time"
 
+	"net/http"
+
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/cmd"
 	"github.com/centrifuge/go-centrifuge/config"
@@ -85,9 +87,15 @@ func newHostManager(
 	}
 }
 
-func (r *hostManager) reLive(name string) {
+func (r *hostManager) reLive(t *testing.T, name string) {
 	r.startHost(name)
-	time.Sleep(time.Second * 2)
+	// wait for the host to be live, here its 11 seconds allowed but the host should come alive before that and this will return faster
+	ok, err := r.getHost(name).isLive(11 * time.Second)
+	if ok {
+		return
+	} else {
+		t.Error(err)
+	}
 }
 
 func (r *hostManager) startHost(name string) {
@@ -104,7 +112,10 @@ func (r *hostManager) init(createConfig bool) error {
 
 	// start and wait for Bernard since other hosts depend on him
 	go r.bernard.live(r.cancCtx)
-	time.Sleep(10 * time.Second)
+	_, err = r.bernard.isLive(10 * time.Second)
+	if err != nil {
+		return fmt.Errorf("bernard couldn't be made alive %v", err)
+	}
 
 	bootnode, err := r.bernard.p2pURL()
 	if err != nil {
@@ -275,6 +286,38 @@ func (h *host) kill() {
 	h.canc()
 }
 
+func (h *host) isLive(softTimeOut time.Duration) (bool, error) {
+	sig := make(chan error)
+	c := createInsecureClient()
+	go func(sig chan<- error) {
+		var fErr error
+		// wait upto 10 seconds(hard timeout) for the host to be live
+		for i := 0; i < 10; i++ {
+			res, err := c.Get(fmt.Sprintf("https://localhost:%d/ping", h.config.GetServerPort()))
+			fErr = err
+			if err != nil {
+				time.Sleep(time.Second)
+				continue
+			}
+			if res.StatusCode == http.StatusOK {
+				sig <- nil
+				return
+			}
+		}
+		sig <- fErr
+	}(sig)
+	t := time.After(softTimeOut)
+	select {
+	case <-t:
+		return false, fmt.Errorf("host failed to live even after %f seconds", softTimeOut.Seconds())
+	case err := <-sig:
+		if err != nil {
+			return false, err
+		}
+		return true, nil
+	}
+}
+
 func (h *host) createInvoice(e *httpexpect.Expect, status int, inv map[string]interface{}) (*httpexpect.Object, error) {
 	return createInvoice(e, status, inv), nil
 }
@@ -284,7 +327,7 @@ func (h *host) updateInvoice(e *httpexpect.Expect, status int, docIdentifier str
 }
 
 func (h *host) createHttpExpectation(t *testing.T) *httpexpect.Expect {
-	return createInsecureClient(t, fmt.Sprintf("https://localhost:%d", h.config.GetServerPort()))
+	return createInsecureClientWithExpect(t, fmt.Sprintf("https://localhost:%d", h.config.GetServerPort()))
 }
 
 func (h *host) id() (identity.CentID, error) {

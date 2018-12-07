@@ -8,7 +8,6 @@ import (
 )
 
 func TestHost_AddExternalCollaborator(t *testing.T) {
-
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
@@ -20,10 +19,10 @@ func TestHost_AddExternalCollaborator(t *testing.T) {
 	}
 
 	docIdentifier := getDocumentIdentifier(t, res)
-
 	if docIdentifier == "" {
 		t.Error("docIdentifier empty")
 	}
+
 	params := map[string]interface{}{
 		"document_id": docIdentifier,
 		"currency":    "USD",
@@ -33,12 +32,11 @@ func TestHost_AddExternalCollaborator(t *testing.T) {
 
 	// Bob updates invoice and shares with Charlie as well
 	res, err = bob.host.updateInvoice(bob.httpExpect, http.StatusOK, docIdentifier, updatedInvoicePayload([]string{alice.id.String(), charlie.id.String()}))
-
 	if err != nil {
 		t.Error(err)
 	}
-	docIdentifier = getDocumentIdentifier(t, res)
 
+	docIdentifier = getDocumentIdentifier(t, res)
 	if docIdentifier == "" {
 		t.Error("docIdentifier empty")
 	}
@@ -49,7 +47,6 @@ func TestHost_AddExternalCollaborator(t *testing.T) {
 }
 
 func TestHost_CollaboratorTimeOut(t *testing.T) {
-
 	kenny := doctorFord.getHostTestSuite(t, "Kenny")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 
@@ -89,9 +86,9 @@ func TestHost_CollaboratorTimeOut(t *testing.T) {
 	getInvoiceAndCheck(bob.httpExpect, paramsV2)
 
 	// bring Kenny back to life
-	doctorFord.reLive(kenny.name)
+	doctorFord.reLive(t, kenny.name)
 
-	// Kenny should not have latest version
+	// Kenny should NOT have latest version
 	getInvoiceAndCheck(kenny.httpExpect, paramsV1)
 
 }
