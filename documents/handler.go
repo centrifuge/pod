@@ -93,7 +93,7 @@ func ConvertProofsToClientFormat(proofs []*proofspb.Proof) []*documentpb.Proof {
 // ConvertProofToClientFormat converts a proof in precise proof format in to a client protobuf proof
 func ConvertProofToClientFormat(proof *proofspb.Proof) *documentpb.Proof {
 	return &documentpb.Proof{
-		Property:     proof.Property,
+		Property:     proof.GetReadableName(),
 		Value:        proof.Value,
 		Salt:         hexutil.Encode(proof.Salt),
 		Hash:         hexutil.Encode(proof.Hash),

@@ -318,7 +318,7 @@ func TestService_CreateProofs(t *testing.T) {
 	assert.Equal(t, i.CoreDocument.DocumentIdentifier, proof.DocumentID)
 	assert.Equal(t, i.CoreDocument.DocumentIdentifier, proof.VersionID)
 	assert.Equal(t, len(proof.FieldProofs), 1)
-	assert.Equal(t, proof.FieldProofs[0].GetProperty(), "invoice.invoice_number")
+	assert.Equal(t, proof.FieldProofs[0].GetReadableName(), "invoice.invoice_number")
 }
 
 func TestService_CreateProofsValidationFails(t *testing.T) {
@@ -364,7 +364,7 @@ func TestService_CreateProofsForVersion(t *testing.T) {
 	assert.Equal(t, i.CoreDocument.DocumentIdentifier, proof.DocumentID)
 	assert.Equal(t, olderVersion, proof.VersionID)
 	assert.Equal(t, len(proof.FieldProofs), 1)
-	assert.Equal(t, proof.FieldProofs[0].GetProperty(), "invoice.invoice_number")
+	assert.Equal(t, proof.FieldProofs[0].GetReadableName(), "invoice.invoice_number")
 }
 
 func TestService_CreateProofsForVersionDocumentDoesntExist(t *testing.T) {
