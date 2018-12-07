@@ -151,7 +151,8 @@ func (s *p2pServer) GetSignaturesForDocument(ctx *header.ContextHeader, identity
 		// for now going with context.background, once we have a timeout for request
 		// we can use context.Timeout for that
 		count++
-		go s.getSignatureAsync(ctx.Context(), identityService, *doc, client, collaboratorID, in)
+		c, _ := context.WithTimeout(ctx.Context(), s.config.GetP2PConnectionTimeout())
+		go s.getSignatureAsync(c, identityService, *doc, client, collaboratorID, in)
 	}
 
 	var responses []signatureResponseWrap

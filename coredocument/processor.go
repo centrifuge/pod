@@ -3,6 +3,9 @@ package coredocument
 import (
 	"fmt"
 
+	"context"
+	"time"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -22,6 +25,7 @@ var log = logging.Logger("coredocument")
 type Config interface {
 	GetNetworkID() uint32
 	GetIdentityID() ([]byte, error)
+	GetP2PConnectionTimeout() time.Duration
 }
 
 // Processor identifies an implementation, which can do a bunch of things with a CoreDocument.
@@ -93,7 +97,8 @@ func (dp defaultProcessor) Send(ctx *header.ContextHeader, coreDocument *coredoc
 		NetworkIdentifier:  dp.config.GetNetworkID(),
 	}
 
-	resp, err := client.SendAnchoredDocument(ctx.Context(), &p2ppb.AnchorDocumentRequest{Document: coreDocument, Header: p2pheader})
+	c, _ := context.WithTimeout(ctx.Context(), dp.config.GetP2PConnectionTimeout())
+	resp, err := client.SendAnchoredDocument(c, &p2ppb.AnchorDocumentRequest{Document: coreDocument, Header: p2pheader})
 	if err != nil || !resp.Accepted {
 		return centerrors.Wrap(err, "failed to send document to the node")
 	}
