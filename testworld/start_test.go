@@ -16,9 +16,10 @@ var isRunningOnCI = len(os.Getenv("TRAVIS")) != 0
 // Adjust these based on local testing requirments, please revert for CI server
 var configFile = "configs/local.json"
 var runPOAGeth = !isRunningOnCI
+var createHostConfigs = false
 
 // make this false if you want to make the tests run faster locally, but revert before committing to repo
-var runMigrations = !isRunningOnCI
+var runMigrations = false
 
 // doctorFord manages the hosts
 var doctorFord *hostManager
@@ -40,7 +41,7 @@ func TestMain(m *testing.M) {
 		contractAddresses = getSmartContractAddresses()
 	}
 	doctorFord = newHostManager(c.EthNodeURL, c.AccountKeyPath, c.AccountPassword, c.Network, c.TxPoolAccess, contractAddresses)
-	err = doctorFord.init()
+	err = doctorFord.init(createHostConfigs)
 	if err != nil {
 		panic(err)
 	}

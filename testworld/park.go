@@ -34,6 +34,14 @@ var hostConfig = []struct {
 	{"Kenny", 8087, 38207},
 }
 
+// hostTestSuite encapsulates test utilities on top of each host
+type hostTestSuite struct {
+	name       string
+	host       *host
+	id         identity.CentID
+	httpExpect *httpexpect.Expect
+}
+
 // hostManager is the hostManager of the hosts at Testworld (Robert)
 type hostManager struct {
 
@@ -77,25 +85,25 @@ func newHostManager(
 	}
 }
 
-func (r *hostManager) restartHost(name string) {
+func (r *hostManager) reLive(name string) {
 	r.startHost(name)
 	time.Sleep(time.Second * 2)
 }
 
 func (r *hostManager) startHost(name string) {
-	go r.niceHosts[name].start(r.cancCtx)
+	go r.niceHosts[name].live(r.cancCtx)
 }
 
-func (r *hostManager) init() error {
+func (r *hostManager) init(createConfig bool) error {
 	r.cancCtx, r.canc = context.WithCancel(context.Background())
-	r.bernard = r.createHost("Bernard", 8081, 38201, nil)
+	r.bernard = r.createHost("Bernard", 8081, 38201, createConfig, nil)
 	err := r.bernard.init()
 	if err != nil {
 		return err
 	}
 
 	// start and wait for Bernard since other hosts depend on him
-	go r.bernard.start(r.cancCtx)
+	go r.bernard.live(r.cancCtx)
 	time.Sleep(10 * time.Second)
 
 	bootnode, err := r.bernard.p2pURL()
@@ -105,7 +113,7 @@ func (r *hostManager) init() error {
 
 	// start hosts
 	for _, h := range hostConfig {
-		r.niceHosts[h.name] = r.createHost(h.name, h.apiPort, h.p2pPort, []string{bootnode})
+		r.niceHosts[h.name] = r.createHost(h.name, h.apiPort, h.p2pPort, createConfig, []string{bootnode})
 
 		err := r.niceHosts[h.name].init()
 		if err != nil {
@@ -136,7 +144,7 @@ func (r *hostManager) stop() {
 	r.canc()
 }
 
-func (r *hostManager) createHost(name string, apiPort, p2pPort int64, bootstraps []string) *host {
+func (r *hostManager) createHost(name string, apiPort, p2pPort int64, createConfig bool, bootstraps []string) *host {
 	return newHost(
 		name,
 		r.ethNodeUrl,
@@ -145,15 +153,9 @@ func (r *hostManager) createHost(name string, apiPort, p2pPort int64, bootstraps
 		r.network,
 		apiPort, p2pPort, bootstraps,
 		r.txPoolAccess,
+		createConfig,
 		r.contractAddresses,
 	)
-}
-
-type hostTestSuite struct {
-	name   string
-	host   *host
-	id     identity.CentID
-	expect *httpexpect.Expect
 }
 
 func (r *hostManager) getHostTestSuite(t *testing.T, name string) hostTestSuite {
@@ -163,7 +165,7 @@ func (r *hostManager) getHostTestSuite(t *testing.T, name string) hostTestSuite 
 	if err != nil {
 		t.Error(err)
 	}
-	return hostTestSuite{name: name, host: host, id: id, expect: expect}
+	return hostTestSuite{name: name, host: host, id: id, httpExpect: expect}
 
 }
 
@@ -179,13 +181,14 @@ type host struct {
 	identity           identity.Identity
 	node               *node.Node
 	canc               context.CancelFunc
+	createConfig       bool
 }
 
 func newHost(
 	name, ethNodeUrl, accountKeyPath, accountPassword, network string,
 	apiPort, p2pPort int64,
 	bootstraps []string,
-	txPoolAccess bool,
+	txPoolAccess, createConfig bool,
 	smartContractAddrs *config.SmartContractAddresses,
 ) *host {
 	return &host{
@@ -200,20 +203,24 @@ func newHost(
 		txPoolAccess:       txPoolAccess,
 		smartContractAddrs: smartContractAddrs,
 		dir:                "peerconfigs/" + name,
+		createConfig:       createConfig,
 	}
 }
 
 func (h *host) init() error {
-	err := cmd.CreateConfig(h.dir, h.ethNodeUrl, h.accountKeyPath, h.accountPassword, h.network, h.apiPort, h.p2pPort, h.bootstrapNodes, h.txPoolAccess, h.smartContractAddrs)
-	if err != nil {
-		return err
+	if h.createConfig {
+		err := cmd.CreateConfig(h.dir, h.ethNodeUrl, h.accountKeyPath, h.accountPassword, h.network, h.apiPort, h.p2pPort, h.bootstrapNodes, h.txPoolAccess, h.smartContractAddrs)
+		if err != nil {
+			return err
+		}
 	}
+
 	m := ctx.MainBootstrapper{}
 	m.PopulateBaseBootstrappers()
 	h.bootstrappedCtx = map[string]interface{}{
 		config.BootstrappedConfigFile: h.dir + "/config.yaml",
 	}
-	err = m.Bootstrap(h.bootstrappedCtx)
+	err := m.Bootstrap(h.bootstrappedCtx)
 	if err != nil {
 		return err
 	}
@@ -234,7 +241,7 @@ func (h *host) init() error {
 	return nil
 }
 
-func (h *host) start(c context.Context) error {
+func (h *host) live(c context.Context) error {
 	srvs, err := node.GetServers(h.bootstrappedCtx)
 	if err != nil {
 		return fmt.Errorf("failed to load servers: %v", err)
@@ -262,6 +269,10 @@ func (h *host) start(c context.Context) error {
 		return err
 	}
 
+}
+
+func (h *host) kill() {
+	h.canc()
 }
 
 func (h *host) createInvoice(e *httpexpect.Expect, status int, inv map[string]interface{}) (*httpexpect.Object, error) {

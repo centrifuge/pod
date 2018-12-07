@@ -14,7 +14,7 @@ func TestHost_AddExternalCollaborator(t *testing.T) {
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 
 	// Alice shares invoice document with Bob first
-	res, err := alice.host.createInvoice(alice.expect, http.StatusOK, defaultInvoicePayload([]string{bob.id.String()}))
+	res, err := alice.host.createInvoice(alice.httpExpect, http.StatusOK, defaultInvoicePayload([]string{bob.id.String()}))
 	if err != nil {
 		t.Error(err)
 	}
@@ -28,11 +28,11 @@ func TestHost_AddExternalCollaborator(t *testing.T) {
 		"document_id": docIdentifier,
 		"currency":    "USD",
 	}
-	getInvoiceAndCheck(alice.expect, params)
-	getInvoiceAndCheck(bob.expect, params)
+	getInvoiceAndCheck(alice.httpExpect, params)
+	getInvoiceAndCheck(bob.httpExpect, params)
 
 	// Bob updates invoice and shares with Charlie as well
-	res, err = bob.host.updateInvoice(bob.expect, http.StatusOK, docIdentifier, updatedInvoicePayload([]string{alice.id.String(), charlie.id.String()}))
+	res, err = bob.host.updateInvoice(bob.httpExpect, http.StatusOK, docIdentifier, updatedInvoicePayload([]string{alice.id.String(), charlie.id.String()}))
 
 	if err != nil {
 		t.Error(err)
@@ -43,9 +43,9 @@ func TestHost_AddExternalCollaborator(t *testing.T) {
 		t.Error("docIdentifier empty")
 	}
 	params["currency"] = "EUR"
-	getInvoiceAndCheck(alice.expect, params)
-	getInvoiceAndCheck(bob.expect, params)
-	getInvoiceAndCheck(charlie.expect, params)
+	getInvoiceAndCheck(alice.httpExpect, params)
+	getInvoiceAndCheck(bob.httpExpect, params)
+	getInvoiceAndCheck(charlie.httpExpect, params)
 }
 
 func TestHost_CollaboratorTimeOut(t *testing.T) {
@@ -54,7 +54,7 @@ func TestHost_CollaboratorTimeOut(t *testing.T) {
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 
 	// Kenny shares an invoice with Bob
-	response, err := kenny.host.createInvoice(kenny.expect, http.StatusOK, defaultInvoicePayload([]string{bob.id.String()}))
+	response, err := kenny.host.createInvoice(kenny.httpExpect, http.StatusOK, defaultInvoicePayload([]string{bob.id.String()}))
 
 	if err != nil {
 		t.Error(err)
@@ -66,17 +66,17 @@ func TestHost_CollaboratorTimeOut(t *testing.T) {
 		"document_id": docIdentifier,
 		"currency":    "USD",
 	}
-	getInvoiceAndCheck(kenny.expect, paramsV1)
-	getInvoiceAndCheck(bob.expect, paramsV1)
+	getInvoiceAndCheck(kenny.httpExpect, paramsV1)
+	getInvoiceAndCheck(bob.httpExpect, paramsV1)
 
 	// Kenny gets killed
-	kenny.host.canc()
+	kenny.host.kill()
 
 	// Bob updates and sends to Alice
 	updatedPayload := updatedInvoicePayload([]string{kenny.id.String()})
 
 	// Bob will anchor the document without Alice signature but will receive an error because kenny is dead
-	response, err = bob.host.updateInvoice(bob.expect, http.StatusInternalServerError, docIdentifier, updatedPayload)
+	response, err = bob.host.updateInvoice(bob.httpExpect, http.StatusInternalServerError, docIdentifier, updatedPayload)
 	if err != nil {
 		t.Error(err)
 	}
@@ -86,12 +86,12 @@ func TestHost_CollaboratorTimeOut(t *testing.T) {
 		"document_id": docIdentifier,
 		"currency":    "EUR",
 	}
-	getInvoiceAndCheck(bob.expect, paramsV2)
+	getInvoiceAndCheck(bob.httpExpect, paramsV2)
 
 	// bring Kenny back to life
-	doctorFord.restartHost(kenny.name)
+	doctorFord.reLive(kenny.name)
 
 	// Kenny should not have latest version
-	getInvoiceAndCheck(kenny.expect, paramsV1)
+	getInvoiceAndCheck(kenny.httpExpect, paramsV1)
 
 }
