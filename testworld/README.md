@@ -16,6 +16,8 @@ Here you can create, run and test nodes with various behaviours to observe how t
 - Each test scenario must be defined in a `testworld/<scenario_name>_test.go` file and the build tag `// +build testworld` must be included at the top.
 - Plus points if you write a test with a scenario that matches a scene in Westworld with node names matching the characters ;)
 
-
-
+### Dev
+#### Speed improvements for local testing
+- On `start_test.go` set `runMigrations` to `false` after the contracts are deployed once at the local geth node.
+- On `start_test.go` set `createHostConfigs` to `false` after configs have been generated in `peerconfigs` dir, note that if you add new hosts using `hostConfig` you would need this to be set to `true` again to generate the config for the new host.
 

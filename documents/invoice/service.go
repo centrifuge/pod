@@ -53,7 +53,7 @@ type Service interface {
 // service implements Service and handles all invoice related persistence and validations
 // service always returns errors of type `centerrors` with proper error code
 type service struct {
-	repo             documents.Repository
+	repo             documents.LegacyRepository
 	coreDocProcessor coredocument.Processor
 	notifier         notification.Sender
 	anchorRepository anchors.AnchorRepository
@@ -61,7 +61,7 @@ type service struct {
 }
 
 // DefaultService returns the default implementation of the service
-func DefaultService(config config.Config, repo documents.Repository, processor coredocument.Processor, anchorRepository anchors.AnchorRepository, identityService identity.Service) Service {
+func DefaultService(config config.Config, repo documents.LegacyRepository, processor coredocument.Processor, anchorRepository anchors.AnchorRepository, identityService identity.Service) Service {
 	return service{repo: repo, coreDocProcessor: processor, notifier: notification.NewWebhookSender(config.(notification.Config)), anchorRepository: anchorRepository, identityService: identityService}
 }
 

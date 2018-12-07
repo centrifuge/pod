@@ -10,7 +10,7 @@ import (
 )
 
 // initialized ONLY for tests
-var testLevelDB Repository
+var testLevelDB LegacyRepository
 
 func (b Bootstrapper) TestBootstrap(context map[string]interface{}) error {
 	if _, ok := context[storage.BootstrappedLevelDB]; !ok {
