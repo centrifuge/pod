@@ -135,8 +135,12 @@ func (r *hostManager) init(createConfig bool) error {
 		r.startHost(h.name)
 
 	}
-	// print host centIDs
+	// make sure hosts are alive and print host centIDs
 	for name, host := range r.niceHosts {
+		_, err = host.isLive(10 * time.Second)
+		if err != nil {
+			return fmt.Errorf("%s couldn't be made alive %v", host.name, err)
+		}
 		i, err := host.id()
 		if err != nil {
 			return err
