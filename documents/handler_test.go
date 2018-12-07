@@ -6,6 +6,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/centrifuge/precise-proofs/proofs"
+
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/documents"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
@@ -154,7 +156,7 @@ func TestConvertDocProofToClientFormat(t *testing.T) {
 				State:      "state",
 				FieldProofs: []*proofspb.Proof{
 					{
-						Property: "prop1",
+						Property: proofs.ReadableName("prop1"),
 						Value:    "val1",
 						Salt:     []byte{1, 2, 3},
 						Hash:     []byte{1, 2, 4},
@@ -212,7 +214,7 @@ func TestConvertDocProofToClientFormat(t *testing.T) {
 func TestConvertProofsToClientFormat(t *testing.T) {
 	clientFormat := documents.ConvertProofsToClientFormat([]*proofspb.Proof{
 		{
-			Property: "prop1",
+			Property: proofs.ReadableName("prop1"),
 			Value:    "val1",
 			Salt:     utils.RandomSlice(32),
 			Hash:     utils.RandomSlice(32),
@@ -223,7 +225,7 @@ func TestConvertProofsToClientFormat(t *testing.T) {
 			},
 		},
 		{
-			Property: "prop2",
+			Property: proofs.ReadableName("prop2"),
 			Value:    "val2",
 			Salt:     utils.RandomSlice(32),
 			Hash:     utils.RandomSlice(32),

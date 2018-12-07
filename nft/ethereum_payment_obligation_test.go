@@ -7,18 +7,18 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/ethereum"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
+	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/nft"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -41,13 +41,13 @@ func TestCreateProofData(t *testing.T) {
 			"happypath",
 			[]*proofspb.Proof{
 				{
-					Property:     "prop1",
+					Property:     proofs.ReadableName("prop1"),
 					Value:        "value1",
 					Salt:         salt,
 					SortedHashes: sortedHashes,
 				},
 				{
-					Property:     "prop2",
+					Property:     proofs.ReadableName("prop2"),
 					Value:        "value2",
 					Salt:         salt,
 					SortedHashes: sortedHashes,
@@ -64,13 +64,13 @@ func TestCreateProofData(t *testing.T) {
 			"invalid hashes",
 			[]*proofspb.Proof{
 				{
-					Property:     "prop1",
+					Property:     proofs.ReadableName("prop1"),
 					Value:        "value1",
 					Salt:         salt,
 					SortedHashes: [][]byte{utils.RandomSlice(33), utils.RandomSlice(31)},
 				},
 				{
-					Property:     "prop2",
+					Property:     proofs.ReadableName("prop2"),
 					Value:        "value2",
 					Salt:         salt,
 					SortedHashes: [][]byte{utils.RandomSlice(33), utils.RandomSlice(31)},
@@ -87,13 +87,13 @@ func TestCreateProofData(t *testing.T) {
 			"invalid salts",
 			[]*proofspb.Proof{
 				{
-					Property:     "prop1",
+					Property:     proofs.ReadableName("prop1"),
 					Value:        "value1",
 					Salt:         utils.RandomSlice(33),
 					SortedHashes: sortedHashes,
 				},
 				{
-					Property:     "prop2",
+					Property:     proofs.ReadableName("prop2"),
 					Value:        "value2",
 					Salt:         utils.RandomSlice(32),
 					SortedHashes: sortedHashes,
@@ -205,7 +205,7 @@ func getDummyProof(coreDoc *coredocumentpb.CoreDocument) *documents.DocumentProo
 		State:      "state",
 		FieldProofs: []*proofspb.Proof{
 			{
-				Property: "prop1",
+				Property: proofs.ReadableName("prop1"),
 				Value:    "val1",
 				Salt:     utils.RandomSlice(32),
 				Hash:     utils.RandomSlice(32),
@@ -216,7 +216,7 @@ func getDummyProof(coreDoc *coredocumentpb.CoreDocument) *documents.DocumentProo
 				},
 			},
 			{
-				Property: "prop2",
+				Property: proofs.ReadableName("prop2"),
 				Value:    "val2",
 				Salt:     utils.RandomSlice(32),
 				Hash:     utils.RandomSlice(32),

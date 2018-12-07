@@ -85,9 +85,10 @@ func GetDocumentRootTree(document *coredocumentpb.CoreDocument) (tree *proofs.Do
 		return nil, err
 	}
 	// For every signature we create a LeafNode
+	sigProperty := proofs.NewProperty("signatures")
 	sigLeafList := make([]proofs.LeafNode, len(document.Signatures)+1)
 	sigLengthNode := proofs.LeafNode{
-		Property: proofs.NewProperty("signatures.length"),
+		Property: sigProperty.LengthProp(),
 		Salt:     make([]byte, 32),
 		Value:    fmt.Sprintf("%d", len(document.Signatures)),
 	}
@@ -98,7 +99,7 @@ func GetDocumentRootTree(document *coredocumentpb.CoreDocument) (tree *proofs.Do
 		leaf := proofs.LeafNode{
 			Hash:     payload[:],
 			Hashed:   true,
-			Property: proofs.NewProperty(fmt.Sprintf("signatures[%d]", i)),
+			Property: sigProperty.ElemProp(proofs.FieldNum(i)),
 		}
 		leaf.HashNode(h, false)
 		sigLeafList[i+1] = leaf
