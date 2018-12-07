@@ -8,6 +8,7 @@ import (
 )
 
 func TestHost_AddExternalCollaborator(t *testing.T) {
+	t.Parallel()
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
@@ -47,6 +48,7 @@ func TestHost_AddExternalCollaborator(t *testing.T) {
 }
 
 func TestHost_CollaboratorTimeOut(t *testing.T) {
+	t.Parallel()
 	kenny := doctorFord.getHostTestSuite(t, "Kenny")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 
