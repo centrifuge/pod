@@ -22,12 +22,12 @@ func (e Error) Error() string {
 // Example:
 // New("some error") returns error with exact string passed
 // New("some error: %v", "some context") returns error with message "some error: some context"
-func New(msg string, args ...interface{}) error {
+func New(format string, args ...interface{}) error {
 	if len(args) > 0 {
-		return Error(fmt.Sprintf(msg, args...))
+		return Error(fmt.Sprintf(format, args...))
 	}
 
-	return Error(msg)
+	return Error(format)
 }
 
 // listError holds a list of errors
