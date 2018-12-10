@@ -41,7 +41,7 @@ type NodeConfig struct {
 }
 
 // NewNodeConfig creates a new NodeConfig instance with configs
-func NewNodeConfig(config Config) *NodeConfig {
+func NewNodeConfig(config Configuration) *NodeConfig {
 	return &NodeConfig{
 		StoragePath:                    config.GetStoragePath(),
 		P2PPort:                        config.GetP2PPort(),
@@ -76,7 +76,7 @@ type TenantConfig struct {
 }
 
 // NewTenantConfig creates a new TenantConfig instance with configs
-func NewTenantConfig(ethAccountName string, config Config) (*TenantConfig, error) {
+func NewTenantConfig(ethAccountName string, config Configuration) (*TenantConfig, error) {
 	id, err := config.GetIdentityID()
 	if err != nil {
 		return nil, err

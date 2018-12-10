@@ -12,11 +12,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var cfg *config.Configuration
+var cfg config.Configuration
 
 func TestMain(m *testing.M) {
 	ctx := cc.TestFunctionalEthereumBootstrap()
-	cfg = ctx[config.BootstrappedConfig].(*config.Configuration)
+	cfg = ctx[config.BootstrappedConfig].(config.Configuration)
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()
 	os.Exit(result)

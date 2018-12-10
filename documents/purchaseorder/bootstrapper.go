@@ -23,7 +23,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	if _, ok := ctx[config.BootstrappedConfig]; !ok {
 		return errors.New("config hasn't been initialized")
 	}
-	cfg := ctx[config.BootstrappedConfig].(*config.Configuration)
+	cfg := ctx[config.BootstrappedConfig].(config.Configuration)
 
 	ldb, ok := ctx[storage.BootstrappedLevelDB].(*leveldb.DB)
 	if !ok {

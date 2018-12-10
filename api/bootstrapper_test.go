@@ -9,6 +9,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/node"
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -21,8 +22,7 @@ func TestBootstrapper_Bootstrap(t *testing.T) {
 	assert.Error(t, err)
 
 	// config
-	c := &config.Configuration{}
-	m[config.BootstrappedConfig] = c
+	m[config.BootstrappedConfig] = new(testingconfig.MockConfig)
 	m[documents.BootstrappedRegistry] = documents.NewServiceRegistry()
 	err = b.Bootstrap(m)
 	assert.Nil(t, err)

@@ -26,38 +26,29 @@ const prefix string = "invoice"
 
 // Invoice implements the documents.Model keeps track of invoice related fields and state
 type Invoice struct {
-	// invoice number or reference number
-	InvoiceNumber string
-	// name of the sender company
-	SenderName string
-	// street and address details of the sender company
-	SenderStreet  string
-	SenderCity    string
-	SenderZipcode string
-	// country ISO code of the sender of this invoice
-	SenderCountry string
-	// name of the recipient company
-	RecipientName    string
+	InvoiceNumber    string // invoice number or reference number
+	SenderName       string // name of the sender company
+	SenderStreet     string // street and address details of the sender company
+	SenderCity       string
+	SenderZipcode    string // country ISO code of the sender of this invoice
+	SenderCountry    string
+	RecipientName    string // name of the recipient company
 	RecipientStreet  string
 	RecipientCity    string
 	RecipientZipcode string
-	// country ISO code of the receipient of this invoice
-	RecipientCountry string
-	// ISO currency code
-	Currency string
-	// invoice amount including tax
-	GrossAmount int64
-	// invoice amount excluding tax
-	NetAmount   int64
-	TaxAmount   int64
-	TaxRate     int64
-	Recipient   *identity.CentID
-	Sender      *identity.CentID
-	Payee       *identity.CentID
-	Comment     string
-	DueDate     *timestamp.Timestamp
-	DateCreated *timestamp.Timestamp
-	ExtraData   []byte
+	RecipientCountry string // country ISO code of the receipient of this invoice
+	Currency         string // country ISO code of the receipient of this invoice
+	GrossAmount      int64  // invoice amount including tax
+	NetAmount        int64  // invoice amount excluding tax
+	TaxAmount        int64
+	TaxRate          int64
+	Recipient        *identity.CentID
+	Sender           *identity.CentID
+	Payee            *identity.CentID
+	Comment          string
+	DueDate          *timestamp.Timestamp
+	DateCreated      *timestamp.Timestamp
+	ExtraData        []byte
 
 	InvoiceSalts *invoicepb.InvoiceDataSalts
 	CoreDocument *coredocumentpb.CoreDocument

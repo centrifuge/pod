@@ -23,7 +23,7 @@ import (
 )
 
 var ctx = map[string]interface{}{}
-var cfg *config.Configuration
+var cfg config.Configuration
 
 func TestMain(m *testing.M) {
 	ibootstappers := []bootstrap.TestBootstrapper{
@@ -31,7 +31,7 @@ func TestMain(m *testing.M) {
 		&config.Bootstrapper{},
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
-	cfg = ctx[config.BootstrappedConfig].(*config.Configuration)
+	cfg = ctx[config.BootstrappedConfig].(config.Configuration)
 	cfg.Set("ethereum.txPoolAccessEnabled", false)
 	cfg.Set("ethereum.intervalRetry", time.Millisecond*100)
 	result := m.Run()

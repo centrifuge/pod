@@ -28,7 +28,7 @@ import (
 )
 
 var ctx = map[string]interface{}{}
-var cfg *config.Configuration
+var cfg config.Configuration
 var registry *documents.ServiceRegistry
 
 func TestMain(m *testing.M) {
@@ -52,7 +52,7 @@ func TestMain(m *testing.M) {
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 
-	cfg = ctx[config.BootstrappedConfig].(*config.Configuration)
+	cfg = ctx[config.BootstrappedConfig].(config.Configuration)
 	registry = ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
 	flag.Parse()
 	result := m.Run()

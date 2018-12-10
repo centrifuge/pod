@@ -3,13 +3,11 @@
 package coredocument
 
 import (
+	"context"
 	"crypto/sha256"
-	"testing"
-
 	"flag"
 	"os"
-
-	"context"
+	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -33,14 +31,14 @@ var (
 )
 
 var ctx = map[string]interface{}{}
-var cfg *config.Configuration
+var cfg config.Configuration
 
 func TestMain(m *testing.M) {
 	ibootstappers := []bootstrap.TestBootstrapper{
 		&config.Bootstrapper{},
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
-	cfg = ctx[config.BootstrappedConfig].(*config.Configuration)
+	cfg = ctx[config.BootstrappedConfig].(config.Configuration)
 	flag.Parse()
 	cfg.Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
 	cfg.Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")

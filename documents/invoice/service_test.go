@@ -10,7 +10,6 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -18,6 +17,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/coredocument"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -44,14 +44,14 @@ func (r *mockAnchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.D
 }
 
 func TestDefaultService(t *testing.T) {
-	srv := DefaultService(&config.Configuration{}, testRepo(), &testingcoredocument.MockCoreDocumentProcessor{}, nil, nil)
+	srv := DefaultService(new(testingconfig.MockConfig), testRepo(), &testingcoredocument.MockCoreDocumentProcessor{}, nil, nil)
 	assert.NotNil(t, srv, "must be non-nil")
 }
 
 func getServiceWithMockedLayers() (testingcommons.MockIDService, Service) {
 	idService := testingcommons.MockIDService{}
 	idService.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
-	return idService, DefaultService(&config.Configuration{}, testRepo(), &testingcoredocument.MockCoreDocumentProcessor{}, &mockAnchorRepo{}, &idService)
+	return idService, DefaultService(new(testingconfig.MockConfig), testRepo(), &testingcoredocument.MockCoreDocumentProcessor{}, &mockAnchorRepo{}, &idService)
 }
 
 func createMockDocument() (*Invoice, error) {

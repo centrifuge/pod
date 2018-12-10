@@ -21,11 +21,11 @@ var apiLog = logging.Logger("purchaseorder-api")
 // anchoring, sending, finding stored purchase order document
 type grpcHandler struct {
 	service Service
-	config  config.Config
+	config  config.Configuration
 }
 
 // GRPCHandler returns an implementation of the purchaseorder DocumentServiceServer
-func GRPCHandler(config config.Config, registry *documents.ServiceRegistry) (clientpurchaseorderpb.DocumentServiceServer, error) {
+func GRPCHandler(config config.Configuration, registry *documents.ServiceRegistry) (clientpurchaseorderpb.DocumentServiceServer, error) {
 	srv, err := registry.LocateService(documenttypes.PurchaseOrderDataTypeUrl)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch purchase order service")

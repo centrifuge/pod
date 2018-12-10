@@ -17,6 +17,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/coredocument"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -45,7 +46,7 @@ func (r *mockAnchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.D
 func getServiceWithMockedLayers() (*testingcommons.MockIDService, Service) {
 	idService := &testingcommons.MockIDService{}
 	idService.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
-	return idService, DefaultService(nil, testRepo(), &testingcoredocument.MockCoreDocumentProcessor{}, &mockAnchorRepo{}, idService)
+	return idService, DefaultService(new(testingconfig.MockConfig), testRepo(), &testingcoredocument.MockCoreDocumentProcessor{}, &mockAnchorRepo{}, idService)
 }
 
 func TestService_Update(t *testing.T) {
