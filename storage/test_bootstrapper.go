@@ -16,7 +16,7 @@ var db *leveldb.DB
 
 func (*Bootstrapper) TestBootstrap(context map[string]interface{}) (err error) {
 	rs := GetRandomTestStoragePath()
-	cfg := context[config.BootstrappedConfig].(*config.Configuration)
+	cfg := context[config.BootstrappedConfig].(config.Configuration)
 	cfg.SetDefault("storage.Path", rs)
 	log.Info("Set storage.Path to:", cfg.GetStoragePath())
 	db, err = NewLevelDBStorage(cfg.GetStoragePath())

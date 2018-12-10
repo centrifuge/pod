@@ -28,7 +28,7 @@ import (
 )
 
 var ctx = map[string]interface{}{}
-var cfg *config.Configuration
+var cfg config.Configuration
 var registry *documents.ServiceRegistry
 
 func TestMain(m *testing.M) {
@@ -52,7 +52,7 @@ func TestMain(m *testing.M) {
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 
-	cfg = ctx[config.BootstrappedConfig].(*config.Configuration)
+	cfg = ctx[config.BootstrappedConfig].(config.Configuration)
 	registry = ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
 	flag.Parse()
 	result := m.Run()
@@ -65,7 +65,7 @@ func TestCentAPIServer_StartContextCancel(t *testing.T) {
 	cfg.Set("nodePort", 9000)
 	cfg.Set("centrifugeNetwork", "")
 	registry.Register(documenttypes.InvoiceDataTypeUrl, invoice.DefaultService(cfg, nil, nil, nil, nil))
-	capi := apiServer{config: cfg}
+	capi := apiServer{config: cfg.(Config)}
 	ctx, canc := context.WithCancel(context.WithValue(context.Background(), bootstrap.NodeObjRegistry, ctx))
 	startErr := make(chan error)
 	var wg sync.WaitGroup
@@ -82,7 +82,7 @@ func TestCentAPIServer_StartListenError(t *testing.T) {
 	cfg.Set("nodePort", 100000000)
 	cfg.Set("centrifugeNetwork", "")
 	ctx, _ := context.WithCancel(context.WithValue(context.Background(), bootstrap.NodeObjRegistry, ctx))
-	capi := apiServer{config: cfg}
+	capi := apiServer{config: cfg.(Config)}
 	startErr := make(chan error)
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -99,7 +99,7 @@ func TestCentAPIServer_FailedToGetRegistry(t *testing.T) {
 	cfg.Set("nodePort", 100000000)
 	cfg.Set("centrifugeNetwork", "")
 	ctx, _ := context.WithCancel(context.Background())
-	capi := apiServer{config: cfg}
+	capi := apiServer{config: cfg.(Config)}
 	startErr := make(chan error)
 	var wg sync.WaitGroup
 	wg.Add(1)

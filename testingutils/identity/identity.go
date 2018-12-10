@@ -8,7 +8,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 )
 
-func CreateIdentityWithKeys(cfg config.Config, idService identity.Service) identity.CentID {
+func CreateIdentityWithKeys(cfg config.Configuration, idService identity.Service) identity.CentID {
 	idConfig, _ := identity.GetIdentityConfig(cfg)
 	// only create identity if it doesn't exist
 	id, err := idService.LookupIdentityForID(idConfig.ID)

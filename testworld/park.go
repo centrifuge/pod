@@ -195,7 +195,7 @@ type host struct {
 	bootstrappedCtx    map[string]interface{}
 	txPoolAccess       bool
 	smartContractAddrs *config.SmartContractAddresses
-	config             config.Config
+	config             config.Configuration
 	identity           identity.Identity
 	node               *node.Node
 	canc               context.CancelFunc
@@ -243,7 +243,7 @@ func (h *host) init() error {
 	if err != nil {
 		return err
 	}
-	h.config = h.bootstrappedCtx[config.BootstrappedConfig].(config.Config)
+	h.config = h.bootstrappedCtx[config.BootstrappedConfig].(config.Configuration)
 	idService := h.bootstrappedCtx[identity.BootstrappedIDService].(identity.Service)
 	idBytes, err := h.config.GetIdentityID()
 	if err != nil {

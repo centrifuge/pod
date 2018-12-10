@@ -10,6 +10,7 @@ import (
 )
 
 type MockConfig struct {
+	config.Configuration
 	mock.Mock
 }
 
