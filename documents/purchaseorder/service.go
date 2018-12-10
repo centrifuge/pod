@@ -69,7 +69,7 @@ func (s service) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (docume
 	var model documents.Model = new(PurchaseOrder)
 	err := model.UnpackCoreDocument(cd)
 	if err != nil {
-		return nil, errors.NewTypeError(documents.ErrDocumentUnPackingCoreDocument, err)
+		return nil, errors.NewTypedError(documents.ErrDocumentUnPackingCoreDocument, err)
 	}
 
 	return model, nil
@@ -79,25 +79,25 @@ func (s service) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (docume
 func (s service) calculateDataRoot(old, new documents.Model, validator documents.Validator) (documents.Model, error) {
 	po, ok := new.(*PurchaseOrder)
 	if !ok {
-		return nil, errors.NewTypeError(documents.ErrDocumentInvalidType, fmt.Errorf("unknown document type: %T", new))
+		return nil, errors.NewTypedError(documents.ErrDocumentInvalidType, fmt.Errorf("unknown document type: %T", new))
 	}
 
 	// create data root, has to be done at the model level to access fields
 	err := po.calculateDataRoot()
 	if err != nil {
-		return nil, errors.NewTypeError(documents.ErrDocumentInvalid, err)
+		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
 
 	// validate the invoice
 	err = validator.Validate(old, po)
 	if err != nil {
-		return nil, errors.NewTypeError(documents.ErrDocumentInvalid, err)
+		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
 
 	// we use CurrentVersion as the id since that will be unique across multiple versions of the same document
 	err = s.repo.Create(po.CoreDocument.CurrentVersion, po)
 	if err != nil {
-		return nil, errors.NewTypeError(documents.ErrDocumentPersistence, err)
+		return nil, errors.NewTypedError(documents.ErrDocumentPersistence, err)
 	}
 
 	return po, nil
@@ -122,12 +122,12 @@ func (s service) Create(ctx *header.ContextHeader, po documents.Model) (document
 func (s service) Update(ctx *header.ContextHeader, po documents.Model) (documents.Model, error) {
 	cd, err := po.PackCoreDocument()
 	if err != nil {
-		return nil, errors.NewTypeError(documents.ErrDocumentPackingCoreDocument, err)
+		return nil, errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
 	}
 
 	old, err := s.GetCurrentVersion(cd.DocumentIdentifier)
 	if err != nil {
-		return nil, errors.NewTypeError(documents.ErrDocumentNotFound, err)
+		return nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
 	}
 
 	po, err = s.calculateDataRoot(old, po, UpdateValidator())
@@ -152,7 +152,7 @@ func (s service) DeriveFromCreatePayload(payload *clientpopb.PurchaseOrderCreate
 	po := new(PurchaseOrder)
 	err := po.InitPurchaseOrderInput(payload, ctxH)
 	if err != nil {
-		return nil, errors.NewTypeError(documents.ErrDocumentInvalid, err)
+		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
 
 	return po, nil
@@ -167,7 +167,7 @@ func (s service) DeriveFromUpdatePayload(payload *clientpopb.PurchaseOrderUpdate
 	// get latest old version of the document
 	id, err := hexutil.Decode(payload.Identifier)
 	if err != nil {
-		return nil, errors.NewTypeError(documents.ErrDocumentIdentifier, fmt.Errorf("failed to decode identifier: %v", err))
+		return nil, errors.NewTypedError(documents.ErrDocumentIdentifier, fmt.Errorf("failed to decode identifier: %v", err))
 	}
 
 	old, err := s.GetCurrentVersion(id)
@@ -179,19 +179,19 @@ func (s service) DeriveFromUpdatePayload(payload *clientpopb.PurchaseOrderUpdate
 	po := new(PurchaseOrder)
 	err = po.initPurchaseOrderFromData(payload.Data)
 	if err != nil {
-		return nil, errors.NewTypeError(documents.ErrDocumentInvalid, fmt.Errorf("failed to load purchase order from data: %v", err))
+		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, fmt.Errorf("failed to load purchase order from data: %v", err))
 	}
 
 	// update core document
 	oldCD, err := old.PackCoreDocument()
 	if err != nil {
-		return nil, errors.NewTypeError(documents.ErrDocumentPackingCoreDocument, err)
+		return nil, errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
 	}
 
 	collaborators := append([]string{ctxH.Self().ID.String()}, payload.Collaborators...)
 	po.CoreDocument, err = coredocument.PrepareNewVersion(*oldCD, collaborators)
 	if err != nil {
-		return nil, errors.NewTypeError(documents.ErrDocumentPrepareCoreDocument, err)
+		return nil, errors.NewTypedError(documents.ErrDocumentPrepareCoreDocument, err)
 	}
 
 	return po, nil
@@ -211,14 +211,14 @@ func (s service) DerivePurchaseOrderData(doc documents.Model) (*clientpopb.Purch
 func (s service) DerivePurchaseOrderResponse(doc documents.Model) (*clientpopb.PurchaseOrderResponse, error) {
 	cd, err := doc.PackCoreDocument()
 	if err != nil {
-		return nil, errors.NewTypeError(documents.ErrDocumentPackingCoreDocument, err)
+		return nil, errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
 	}
 
 	collaborators := make([]string, len(cd.Collaborators))
 	for i, c := range cd.Collaborators {
 		cid, err := identity.ToCentID(c)
 		if err != nil {
-			return nil, errors.NewTypeError(documents.ErrDocumentCollaborator, err)
+			return nil, errors.NewTypedError(documents.ErrDocumentCollaborator, err)
 		}
 		collaborators[i] = cid.String()
 	}
@@ -244,7 +244,7 @@ func (s service) getPurchaseOrderVersion(documentID, version []byte) (model *Pur
 	var doc documents.Model = new(PurchaseOrder)
 	err = s.repo.LoadByID(version, doc)
 	if err != nil {
-		return nil, errors.NewTypeError(documents.ErrDocumentVersionNotFound, err)
+		return nil, errors.NewTypedError(documents.ErrDocumentVersionNotFound, err)
 	}
 	model, ok := doc.(*PurchaseOrder)
 	if !ok {
@@ -252,7 +252,7 @@ func (s service) getPurchaseOrderVersion(documentID, version []byte) (model *Pur
 	}
 
 	if !bytes.Equal(model.CoreDocument.DocumentIdentifier, documentID) {
-		return nil, errors.NewTypeError(documents.ErrDocumentVersionNotFound, fmt.Errorf("version is not valid for this identifier"))
+		return nil, errors.NewTypedError(documents.ErrDocumentVersionNotFound, fmt.Errorf("version is not valid for this identifier"))
 	}
 	return model, nil
 }
@@ -261,7 +261,7 @@ func (s service) getPurchaseOrderVersion(documentID, version []byte) (model *Pur
 func (s service) GetCurrentVersion(documentID []byte) (documents.Model, error) {
 	model, err := s.getPurchaseOrderVersion(documentID, documentID)
 	if err != nil {
-		return nil, errors.NewTypeError(documents.ErrDocumentNotFound, err)
+		return nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
 	}
 	nextVersion := model.CoreDocument.NextVersion
 	for nextVersion != nil {
@@ -294,11 +294,11 @@ func (s service) purchaseOrderProof(model documents.Model, fields []string) (*do
 		return nil, documents.ErrDocumentInvalidType
 	}
 	if err := coredocument.PostAnchoredValidator(s.identityService, s.anchorRepository).Validate(nil, po); err != nil {
-		return nil, errors.NewTypeError(documents.ErrDocumentInvalid, err)
+		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
 	coreDoc, proofs, err := po.createProofs(fields)
 	if err != nil {
-		return nil, errors.NewTypeError(documents.ErrDocumentProof, err)
+		return nil, errors.NewTypedError(documents.ErrDocumentProof, err)
 	}
 	return &documents.DocumentProof{
 		DocumentID:  coreDoc.DocumentIdentifier,
@@ -330,38 +330,38 @@ func (s service) CreateProofsForVersion(documentID, version []byte, fields []str
 // will remove this once we have a common implementation for documents.Service
 func (s service) RequestDocumentSignature(contextHeader *header.ContextHeader, model documents.Model) (*coredocumentpb.Signature, error) {
 	if err := coredocument.SignatureRequestValidator(s.identityService).Validate(nil, model); err != nil {
-		return nil, errors.NewTypeError(documents.ErrDocumentInvalid, err)
+		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
 
 	cd, err := model.PackCoreDocument()
 	if err != nil {
-		return nil, errors.NewTypeError(documents.ErrDocumentPackingCoreDocument, err)
+		return nil, errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
 	}
 
 	srvLog.Infof("coredoc received %x with signing root %x", cd.DocumentIdentifier, cd.SigningRoot)
 
 	idKeys, ok := contextHeader.Self().Keys[identity.KeyPurposeSigning]
 	if !ok {
-		return nil, errors.NewTypeError(documents.ErrDocumentSigning, fmt.Errorf("missing signing key"))
+		return nil, errors.NewTypedError(documents.ErrDocumentSigning, fmt.Errorf("missing signing key"))
 	}
 	sig := signatures.Sign(contextHeader.Self().ID[:], idKeys.PrivateKey, idKeys.PublicKey, cd.SigningRoot)
 	cd.Signatures = append(cd.Signatures, sig)
 	err = model.UnpackCoreDocument(cd)
 	if err != nil {
-		return nil, errors.NewTypeError(documents.ErrDocumentUnPackingCoreDocument, err)
+		return nil, errors.NewTypedError(documents.ErrDocumentUnPackingCoreDocument, err)
 	}
 
 	// Logic for receiving version n (n > 1) of the document for the first time
 	if !s.repo.Exists(cd.DocumentIdentifier) && !utils.IsSameByteSlice(cd.DocumentIdentifier, cd.CurrentVersion) {
 		err = s.repo.Create(cd.DocumentIdentifier, model)
 		if err != nil {
-			return nil, errors.NewTypeError(documents.ErrDocumentPersistence, err)
+			return nil, errors.NewTypedError(documents.ErrDocumentPersistence, err)
 		}
 	}
 
 	err = s.repo.Create(cd.CurrentVersion, model)
 	if err != nil {
-		return nil, errors.NewTypeError(documents.ErrDocumentPersistence, err)
+		return nil, errors.NewTypedError(documents.ErrDocumentPersistence, err)
 	}
 
 	srvLog.Infof("signed coredoc %x with version %x", cd.DocumentIdentifier, cd.CurrentVersion)
@@ -373,17 +373,17 @@ func (s service) RequestDocumentSignature(contextHeader *header.ContextHeader, m
 // will remove this once we have a common implementation for documents.Service
 func (s service) ReceiveAnchoredDocument(model documents.Model, headers *p2ppb.CentrifugeHeader) error {
 	if err := coredocument.PostAnchoredValidator(s.identityService, s.anchorRepository).Validate(nil, model); err != nil {
-		return errors.NewTypeError(documents.ErrDocumentInvalid, err)
+		return errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
 
 	doc, err := model.PackCoreDocument()
 	if err != nil {
-		return errors.NewTypeError(documents.ErrDocumentPackingCoreDocument, err)
+		return errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
 	}
 
 	err = s.repo.Update(doc.CurrentVersion, model)
 	if err != nil {
-		return errors.NewTypeError(documents.ErrDocumentPersistence, err)
+		return errors.NewTypedError(documents.ErrDocumentPersistence, err)
 	}
 
 	ts, _ := ptypes.TimestampProto(time.Now().UTC())

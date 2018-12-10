@@ -202,7 +202,7 @@ func (i *Invoice) initInvoiceFromData(data *clientinvoicepb.InvoiceData) error {
 	if data.ExtraData != "" {
 		ed, err := hexutil.Decode(data.ExtraData)
 		if err != nil {
-			return errors.NewTypeError(err, fmt.Errorf("failed to decode extra data"))
+			return errors.NewTypedError(err, fmt.Errorf("failed to decode extra data"))
 		}
 
 		i.ExtraData = ed
@@ -275,7 +275,7 @@ func (i *Invoice) PackCoreDocument() (*coredocumentpb.CoreDocument, error) {
 	invoiceData := i.createP2PProtobuf()
 	serializedInvoice, err := proto.Marshal(invoiceData)
 	if err != nil {
-		return nil, errors.NewTypeError(err, fmt.Errorf("couldn't serialise InvoiceData"))
+		return nil, errors.NewTypedError(err, fmt.Errorf("couldn't serialise InvoiceData"))
 	}
 
 	invoiceAny := any.Any{
@@ -287,7 +287,7 @@ func (i *Invoice) PackCoreDocument() (*coredocumentpb.CoreDocument, error) {
 
 	serializedSalts, err := proto.Marshal(invoiceSalt)
 	if err != nil {
-		return nil, errors.NewTypeError(err, fmt.Errorf("couldn't serialise InvoiceSalts"))
+		return nil, errors.NewTypedError(err, fmt.Errorf("couldn't serialise InvoiceSalts"))
 	}
 
 	invoiceSaltsAny := any.Any{

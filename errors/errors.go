@@ -93,24 +93,24 @@ func Len(err error) int {
 	return 1
 }
 
-// typeError holds a type of error and an context error
-type typeError struct {
+// typedError holds a type of error and an context error
+type typedError struct {
 	terr   error
 	ctxErr error
 }
 
 // Error returns the error in string
-func (t *typeError) Error() string {
+func (t *typedError) Error() string {
 	return fmt.Sprintf("%v: %v", t.terr, t.ctxErr)
 }
 
-// NewTypeError returns a new error of type typeError
-func NewTypeError(terr, err error) error {
+// NewTypedError returns a new error of type typedError
+func NewTypedError(terr, err error) error {
 	if terr == nil {
 		terr = ErrUnknown
 	}
 
-	return &typeError{terr: terr, ctxErr: err}
+	return &typedError{terr: terr, ctxErr: err}
 }
 
 // TypedError can be implemented by any type error
@@ -119,7 +119,7 @@ type TypedError interface {
 }
 
 // IsOfType returns if the err t is of type terr
-func (t *typeError) IsOfType(terr error) bool {
+func (t *typedError) IsOfType(terr error) bool {
 	if t.terr.Error() == terr.Error() {
 		return true
 	}
