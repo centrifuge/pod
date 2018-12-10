@@ -33,7 +33,7 @@ import (
 )
 
 var ctx = map[string]interface{}{}
-var cfg *config.Configuration
+var cfg config.Configuration
 
 func TestMain(m *testing.M) {
 	ethClient := &testingcommons.MockEthClient{}
@@ -52,7 +52,7 @@ func TestMain(m *testing.M) {
 		&Bootstrapper{},
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
-	cfg = ctx[config.BootstrappedConfig].(*config.Configuration)
+	cfg = ctx[config.BootstrappedConfig].(config.Configuration)
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)

@@ -41,11 +41,11 @@ func getServiceAndModel(registry *documents.ServiceRegistry, cd *coredocumentpb.
 // handler implements the grpc interface
 type handler struct {
 	registry *documents.ServiceRegistry
-	config   config.Config
+	config   config.Configuration
 }
 
 // GRPCHandler returns an implementation of P2PServiceServer
-func GRPCHandler(config config.Config, registry *documents.ServiceRegistry) p2ppb.P2PServiceServer {
+func GRPCHandler(config config.Configuration, registry *documents.ServiceRegistry) p2ppb.P2PServiceServer {
 	return handler{registry: registry, config: config}
 }
 

@@ -61,8 +61,8 @@ type service struct {
 }
 
 // DefaultService returns the default implementation of the service
-func DefaultService(config config.Config, repo documents.LegacyRepository, processor coredocument.Processor, anchorRepository anchors.AnchorRepository, identityService identity.Service) Service {
-	return service{repo: repo, coreDocProcessor: processor, notifier: notification.NewWebhookSender(config.(notification.Config)), anchorRepository: anchorRepository, identityService: identityService}
+func DefaultService(config config.Configuration, repo documents.LegacyRepository, processor coredocument.Processor, anchorRepository anchors.AnchorRepository, identityService identity.Service) Service {
+	return service{repo: repo, coreDocProcessor: processor, notifier: notification.NewWebhookSender(config), anchorRepository: anchorRepository, identityService: identityService}
 }
 
 // CreateProofs creates proofs for the latest version document given the fields

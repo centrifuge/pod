@@ -11,152 +11,153 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-type MockConfig struct {
+type mockConfig struct {
+	Configuration
 	mock.Mock
 }
 
-func (m *MockConfig) GetStoragePath() string {
+func (m *mockConfig) GetStoragePath() string {
 	args := m.Called()
 	return args.Get(0).(string)
 }
 
-func (m *MockConfig) GetP2PPort() int {
+func (m *mockConfig) GetP2PPort() int {
 	args := m.Called()
 	return args.Get(0).(int)
 }
 
-func (m *MockConfig) GetP2PExternalIP() string {
+func (m *mockConfig) GetP2PExternalIP() string {
 	args := m.Called()
 	return args.Get(0).(string)
 }
 
-func (m *MockConfig) GetP2PConnectionTimeout() time.Duration {
+func (m *mockConfig) GetP2PConnectionTimeout() time.Duration {
 	args := m.Called()
 	return args.Get(0).(time.Duration)
 }
 
-func (m *MockConfig) GetReceiveEventNotificationEndpoint() string {
+func (m *mockConfig) GetReceiveEventNotificationEndpoint() string {
 	args := m.Called()
 	return args.Get(0).(string)
 }
 
-func (m *MockConfig) GetServerPort() int {
+func (m *mockConfig) GetServerPort() int {
 	args := m.Called()
 	return args.Get(0).(int)
 }
 
-func (m *MockConfig) GetServerAddress() string {
+func (m *mockConfig) GetServerAddress() string {
 	args := m.Called()
 	return args.Get(0).(string)
 }
 
-func (m *MockConfig) GetNumWorkers() int {
+func (m *mockConfig) GetNumWorkers() int {
 	args := m.Called()
 	return args.Get(0).(int)
 }
 
-func (m *MockConfig) GetWorkerWaitTimeMS() int {
+func (m *mockConfig) GetWorkerWaitTimeMS() int {
 	args := m.Called()
 	return args.Get(0).(int)
 }
 
-func (m *MockConfig) GetEthereumNodeURL() string {
+func (m *mockConfig) GetEthereumNodeURL() string {
 	args := m.Called()
 	return args.Get(0).(string)
 }
 
-func (m *MockConfig) GetEthereumContextReadWaitTimeout() time.Duration {
+func (m *mockConfig) GetEthereumContextReadWaitTimeout() time.Duration {
 	args := m.Called()
 	return args.Get(0).(time.Duration)
 }
 
-func (m *MockConfig) GetEthereumContextWaitTimeout() time.Duration {
+func (m *mockConfig) GetEthereumContextWaitTimeout() time.Duration {
 	args := m.Called()
 	return args.Get(0).(time.Duration)
 }
 
-func (m *MockConfig) GetEthereumIntervalRetry() time.Duration {
+func (m *mockConfig) GetEthereumIntervalRetry() time.Duration {
 	args := m.Called()
 	return args.Get(0).(time.Duration)
 }
 
-func (m *MockConfig) GetEthereumMaxRetries() int {
+func (m *mockConfig) GetEthereumMaxRetries() int {
 	args := m.Called()
 	return args.Get(0).(int)
 }
 
-func (m *MockConfig) GetEthereumGasPrice() *big.Int {
+func (m *mockConfig) GetEthereumGasPrice() *big.Int {
 	args := m.Called()
 	return args.Get(0).(*big.Int)
 }
 
-func (m *MockConfig) GetEthereumGasLimit() uint64 {
+func (m *mockConfig) GetEthereumGasLimit() uint64 {
 	args := m.Called()
 	return args.Get(0).(uint64)
 }
 
-func (m *MockConfig) GetEthereumDefaultAccountName() string {
+func (m *mockConfig) GetEthereumDefaultAccountName() string {
 	args := m.Called()
 	return args.Get(0).(string)
 }
 
-func (m *MockConfig) GetEthereumAccount(accountName string) (account *AccountConfig, err error) {
+func (m *mockConfig) GetEthereumAccount(accountName string) (account *AccountConfig, err error) {
 	args := m.Called(accountName)
 	return args.Get(0).(*AccountConfig), args.Error(1)
 }
 
-func (m *MockConfig) GetTxPoolAccessEnabled() bool {
+func (m *mockConfig) GetTxPoolAccessEnabled() bool {
 	args := m.Called()
 	return args.Get(0).(bool)
 }
 
-func (m *MockConfig) GetNetworkString() string {
+func (m *mockConfig) GetNetworkString() string {
 	args := m.Called()
 	return args.Get(0).(string)
 }
 
-func (m *MockConfig) GetNetworkKey(k string) string {
+func (m *mockConfig) GetNetworkKey(k string) string {
 	args := m.Called()
 	return args.Get(0).(string)
 }
 
-func (m *MockConfig) GetContractAddressString(address string) string {
+func (m *mockConfig) GetContractAddressString(address string) string {
 	args := m.Called()
 	return args.Get(0).(string)
 }
 
-func (m *MockConfig) GetContractAddress(address string) common.Address {
+func (m *mockConfig) GetContractAddress(address string) common.Address {
 	args := m.Called()
 	return args.Get(0).(common.Address)
 }
 
-func (m *MockConfig) GetBootstrapPeers() []string {
+func (m *mockConfig) GetBootstrapPeers() []string {
 	args := m.Called()
 	return args.Get(0).([]string)
 }
 
-func (m *MockConfig) GetNetworkID() uint32 {
+func (m *mockConfig) GetNetworkID() uint32 {
 	args := m.Called()
 	return args.Get(0).(uint32)
 }
 
-func (m *MockConfig) GetIdentityID() ([]byte, error) {
+func (m *mockConfig) GetIdentityID() ([]byte, error) {
 	args := m.Called()
 	return args.Get(0).([]byte), args.Error(1)
 }
 
-func (m *MockConfig) GetSigningKeyPair() (pub, priv string) {
+func (m *mockConfig) GetSigningKeyPair() (pub, priv string) {
 	args := m.Called()
 	return args.Get(0).(string), args.Get(1).(string)
 }
 
-func (m *MockConfig) GetEthAuthKeyPair() (pub, priv string) {
+func (m *mockConfig) GetEthAuthKeyPair() (pub, priv string) {
 	args := m.Called()
 	return args.Get(0).(string), args.Get(1).(string)
 }
 
 func TestNewNodeConfig(t *testing.T) {
-	c := &MockConfig{}
+	c := &mockConfig{}
 	c.On("GetStoragePath").Return("dummyStorage").Once()
 	c.On("GetP2PPort").Return(30000).Once()
 	c.On("GetP2PExternalIP").Return("ip").Once()
@@ -186,7 +187,7 @@ func TestNewNodeConfig(t *testing.T) {
 }
 
 func TestNewTenantConfig(t *testing.T) {
-	c := &MockConfig{}
+	c := &mockConfig{}
 	c.On("GetEthereumAccount", "name").Return(&AccountConfig{}, nil).Once()
 	c.On("GetEthereumDefaultAccountName").Return("dummyAcc").Once()
 	c.On("GetReceiveEventNotificationEndpoint").Return("dummyNotifier").Once()
