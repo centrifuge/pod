@@ -306,7 +306,7 @@ func (c *configuration) IsPProfEnabled() bool {
 // LoadConfiguration loads the configuration from the given file.
 func LoadConfiguration(configFile string) Configuration {
 	cfg := &configuration{configFile: configFile, mu: sync.RWMutex{}}
-	cfg.InitializeViper()
+	cfg.initializeViper()
 	return cfg
 }
 
@@ -321,9 +321,9 @@ func (c *configuration) readConfigFile(path string) error {
 	return err
 }
 
-// InitializeViper loads viper if not loaded already.
+// initializeViper loads viper if not loaded already.
 // This method should not have any effects if Viper is already initialized.
-func (c *configuration) InitializeViper() {
+func (c *configuration) initializeViper() {
 	if c.v != nil {
 		return
 	}

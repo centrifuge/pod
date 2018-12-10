@@ -52,7 +52,7 @@ func TestDefaultService(t *testing.T) {
 func getServiceWithMockedLayers() (testingcommons.MockIDService, Service) {
 	idService := testingcommons.MockIDService{}
 	idService.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
-	return idService, DefaultService(nil, testRepo(), &testingcoredocument.MockCoreDocumentProcessor{}, &mockAnchorRepo{}, &idService)
+	return idService, DefaultService(new(testingconfig.MockConfig), testRepo(), &testingcoredocument.MockCoreDocumentProcessor{}, &mockAnchorRepo{}, &idService)
 }
 
 func createMockDocument() (*Invoice, error) {
