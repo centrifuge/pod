@@ -161,7 +161,6 @@ func TestNewNodeConfig(t *testing.T) {
 	c.On("GetP2PPort").Return(30000).Once()
 	c.On("GetP2PExternalIP").Return("ip").Once()
 	c.On("GetP2PConnectionTimeout").Return(time.Second).Once()
-	c.On("GetReceiveEventNotificationEndpoint").Return("dummyNotifier").Once()
 
 	c.On("GetServerPort").Return(8080).Once()
 	c.On("GetServerAddress").Return("dummyServer").Once()
@@ -176,7 +175,6 @@ func TestNewNodeConfig(t *testing.T) {
 	c.On("GetEthereumGasPrice").Return(big.NewInt(1)).Once()
 
 	c.On("GetEthereumGasLimit").Return(uint64(100)).Once()
-	c.On("GetEthereumDefaultAccountName").Return("dummyAcc").Once()
 	c.On("GetTxPoolAccessEnabled").Return(true).Once()
 	c.On("GetNetworkString").Return("somehill").Once()
 	c.On("GetBootstrapPeers").Return([]string{"p1", "p2"}).Once()
@@ -190,6 +188,8 @@ func TestNewNodeConfig(t *testing.T) {
 func TestNewTenantConfig(t *testing.T) {
 	c := &MockConfig{}
 	c.On("GetEthereumAccount", "name").Return(&AccountConfig{}, nil).Once()
+	c.On("GetEthereumDefaultAccountName").Return("dummyAcc").Once()
+	c.On("GetReceiveEventNotificationEndpoint").Return("dummyNotifier").Once()
 	c.On("GetIdentityID").Return(utils.RandomSlice(6), nil).Once()
 	c.On("GetSigningKeyPair").Return("pub", "priv").Once()
 	c.On("GetEthAuthKeyPair").Return("pub", "priv").Once()
