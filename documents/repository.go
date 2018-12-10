@@ -9,28 +9,6 @@ import (
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
-// LegacyRepository should be implemented by any type that wants to store a document in key-value storage.
-// Deprecated: Use the single collection DB.
-type LegacyRepository interface {
-	// GetKey will prepare the the identifier key from ID
-	GetKey(id []byte) (key []byte)
-
-	// GetByID finds the doc with identifier and marshals it into message
-	LoadByID(id []byte, model Model) error
-
-	// Exists checks for document existence
-	// True if exists else false
-	Exists(id []byte) bool
-
-	// Create stores the initial document
-	// If document exist, it errors out
-	Create(id []byte, model Model) error
-
-	// Update updates the already stored document
-	// errors out when document is missing
-	Update(id []byte, model Model) error
-}
-
 // Repository defines the required methods for a document repository.
 // Can be implemented by any type that stores the documents. Ex: levelDB, sql etc...
 type Repository interface {

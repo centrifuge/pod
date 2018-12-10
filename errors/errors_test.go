@@ -40,7 +40,7 @@ func TestNew(t *testing.T) {
 
 func checkListError(t *testing.T, lerr error, len int, result string) {
 	assert.NotNil(t, lerr)
-	_, ok := lerr.(*listError)
+	_, ok := lerr.(listError)
 	assert.True(t, ok)
 	assert.Equal(t, len, Len(lerr))
 	assert.Equal(t, result, lerr.Error())

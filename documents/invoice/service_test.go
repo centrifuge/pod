@@ -6,15 +6,14 @@ import (
 	"context"
 	"fmt"
 	"math/big"
-	"strconv"
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
-	"github.com/centrifuge/go-centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/identity"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
@@ -161,7 +160,7 @@ func TestService_GetVersion_invalid_version(t *testing.T) {
 	assert.Nil(t, err)
 
 	mod, err := invSrv.GetVersion(utils.RandomSlice(32), currentVersion)
-	assert.EqualError(t, err, "[4]document not found for the given version: version is not valid for this identifier")
+	assert.True(t, errors.IsOfType(documents.ErrDocumentVersionNotFound, err))
 	assert.Nil(t, mod)
 }
 
@@ -341,14 +340,14 @@ func TestService_CreateProofsInvalidField(t *testing.T) {
 	idService = mockSignatureCheck(i, idService, invSrv)
 	_, err = invSrv.CreateProofs(i.CoreDocument.DocumentIdentifier, []string{"invalid_field"})
 	assert.Error(t, err)
-	assert.Equal(t, "createProofs error No such field: invalid_field in obj", err.Error())
+	assert.True(t, errors.IsOfType(documents.ErrDocumentProof, err))
 }
 
 func TestService_CreateProofsDocumentDoesntExist(t *testing.T) {
 	_, invService := getServiceWithMockedLayers()
 	_, err := invService.CreateProofs(utils.RandomSlice(32), []string{"invoice.invoice_number"})
 	assert.Error(t, err)
-	assert.Equal(t, "document not found: leveldb: not found", err.Error())
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
 }
 
 func TestService_CreateProofsForVersion(t *testing.T) {
@@ -373,7 +372,7 @@ func TestService_CreateProofsForVersionDocumentDoesntExist(t *testing.T) {
 	assert.Nil(t, err)
 	_, err = invSrv.CreateProofsForVersion(i.CoreDocument.DocumentIdentifier, utils.RandomSlice(32), []string{"invoice.invoice_number"})
 	assert.Error(t, err)
-	assert.Equal(t, "document not found for the given version: leveldb: not found", err.Error())
+	assert.True(t, errors.IsOfType(documents.ErrDocumentVersionNotFound, err))
 }
 
 func TestService_RequestDocumentSignature_SigningRootNil(t *testing.T) {
@@ -385,8 +384,7 @@ func TestService_RequestDocumentSignature_SigningRootNil(t *testing.T) {
 	ctxh, err := header.NewContextHeader(context.Background(), cfg)
 	signature, err := invSrv.RequestDocumentSignature(ctxh, i)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), strconv.Itoa(int(code.DocumentInvalid)))
-	assert.Contains(t, err.Error(), "signing root missing")
+	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
 	assert.Nil(t, signature)
 }
 
@@ -488,13 +486,13 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	// nil payload
 	doc, err := invSrv.DeriveFromUpdatePayload(nil, nil)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid payload")
+	assert.True(t, errors.IsOfType(documents.ErrDocumentProvidedIsNil, err))
 	assert.Nil(t, doc)
 
 	// nil payload data
 	doc, err = invSrv.DeriveFromUpdatePayload(&clientinvoicepb.InvoiceUpdatePayload{}, nil)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid payload")
+	assert.True(t, errors.IsOfType(documents.ErrDocumentProvidedIsNil, err))
 	assert.Nil(t, doc)
 
 	// messed up identifier
@@ -503,6 +501,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	payload := &clientinvoicepb.InvoiceUpdatePayload{Identifier: "some identifier", Data: &clientinvoicepb.InvoiceData{}}
 	doc, err = invSrv.DeriveFromUpdatePayload(payload, contextHeader)
 	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentIdentifier, err))
 	assert.Contains(t, err.Error(), "failed to decode identifier")
 	assert.Nil(t, doc)
 
@@ -511,7 +510,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	payload.Identifier = hexutil.Encode(id)
 	doc, err = invSrv.DeriveFromUpdatePayload(payload, contextHeader)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to fetch old version")
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
 	assert.Nil(t, doc)
 
 	// failed to load from data
@@ -533,7 +532,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	}
 	doc, err = invSrv.DeriveFromUpdatePayload(payload, contextHeader)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to load invoice from data")
+	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
 	assert.Nil(t, doc)
 
 	// failed core document new version
@@ -541,7 +540,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	payload.Collaborators = []string{"some wrong ID"}
 	doc, err = invSrv.DeriveFromUpdatePayload(payload, contextHeader)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to prepare new version")
+	assert.True(t, errors.IsOfType(documents.ErrDocumentPrepareCoreDocument, err))
 	assert.Nil(t, doc)
 
 	// success

@@ -11,18 +11,23 @@ import (
 
 const (
 	// RequiredField error when required field is empty
+	// Deprecated: in favour of error types in each package
 	RequiredField = "Required field"
 
 	// NilDocument error when document passed is Nil
+	// Deprecated: in favour of error types in each package
 	NilDocument = "Nil document"
 
 	// IdentifierReUsed error when same identifier is re-used
+	// Deprecated: in favour of error types in each package
 	IdentifierReUsed = "Identifier re-used"
 
 	// NilDocumentData error when document data is Nil
+	// Deprecated: in favour of error types in each package
 	NilDocumentData = "Nil document data"
 
 	// RequirePositiveNumber error when amount or any such is zero or negative
+	// Deprecated: in favour of error types in each package
 	RequirePositiveNumber = "Require positive number"
 )
 
@@ -45,7 +50,7 @@ func New(code code.Code, message string) error {
 }
 
 // NewWithErrors constructs a new error with code, error message, and errors
-func NewWithErrors(c code.Code, message string, errors map[string]string) error {
+func NewWithErrors(c code.Code, message string, errs map[string]string) error {
 	if c == code.Ok {
 		return nil
 	}
@@ -53,7 +58,7 @@ func NewWithErrors(c code.Code, message string, errors map[string]string) error 
 	return &errpb{
 		Code:    int32(c),
 		Message: message,
-		Errors:  errors,
+		Errors:  errs,
 	}
 }
 
@@ -106,12 +111,14 @@ func (p2pErr *P2PError) Errors() map[string]string {
 }
 
 // NilError returns error with Type added to message
+// Deprecated: in favour of functions in `github.com/centrifuge/go-centrifuge/errors`
 func NilError(param interface{}) error {
 	return errors.Errorf("NIL %v provided", reflect.TypeOf(param))
 }
 
 // Wrap appends msg to errpb.Message if it is of type *errpb
 // else appends the msg to error through fmt.Errorf
+// Deprecated: this is intended for use within p2p or api handlers only, For services and internal errors use the Error type defined in `github.com/centrifuge/go-centrifuge/errors`
 func Wrap(err error, msg string) error {
 	if err == nil {
 		return fmt.Errorf(msg)

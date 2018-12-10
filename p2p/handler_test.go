@@ -19,6 +19,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/context/testlogging"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/testingutils/coredocument"
 	"github.com/centrifuge/go-centrifuge/version"
@@ -135,12 +136,12 @@ func TestP2PService_basicChecks(t *testing.T) {
 	}{
 		{
 			header: &p2ppb.CentrifugeHeader{CentNodeVersion: "someversion", NetworkIdentifier: 12},
-			err:    documents.AppendError(version.IncompatibleVersionError("someversion"), incompatibleNetworkError(cfg.GetNetworkID(), 12)),
+			err:    errors.AppendError(version.IncompatibleVersionError("someversion"), incompatibleNetworkError(cfg.GetNetworkID(), 12)),
 		},
 
 		{
 			header: &p2ppb.CentrifugeHeader{CentNodeVersion: "0.0.1", NetworkIdentifier: 12},
-			err:    documents.AppendError(incompatibleNetworkError(cfg.GetNetworkID(), 12), nil),
+			err:    errors.AppendError(incompatibleNetworkError(cfg.GetNetworkID(), 12), nil),
 		},
 
 		{
