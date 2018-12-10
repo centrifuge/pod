@@ -4,8 +4,8 @@
 PARENT_DIR=$1
 if [ -z ${PARENT_DIR} ];
 then
-    echo "PARENT DIR $1"
-    PARENT_DIR = `pwd`
+    PARENT_DIR=`pwd`
+    echo "PARENT DIR ${PARENT_DIR}"
 fi
 
 # Even if other `env_vars.sh` might hold this variable
