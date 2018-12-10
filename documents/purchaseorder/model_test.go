@@ -270,7 +270,7 @@ func TestPOModel_getDocumentDataTree(t *testing.T) {
 	assert.Nil(t, err, "tree should be generated without error")
 	_, leaf := tree.GetLeafByProperty("po.po_number")
 	assert.NotNil(t, leaf)
-	assert.Equal(t, "po.po_number", leaf.Property)
+	assert.Equal(t, "po.po_number", leaf.Property.ReadableName())
 }
 
 func createMockPurchaseOrder(t *testing.T) (*PurchaseOrder, *coredocumentpb.CoreDocument, error) {

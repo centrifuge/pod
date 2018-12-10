@@ -358,6 +358,7 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	bootstraps := args["bootstraps"].([]string)
 	apiPort := args["apiPort"].(int64)
 	p2pPort := args["p2pPort"].(int64)
+	p2pConnectTimeout := args["p2pConnectTimeout"].(string)
 	txPoolAccess := args["txpoolaccess"].(bool)
 
 	if targetDataDir == "" {
@@ -388,6 +389,9 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	v.Set("nodeHostname", "0.0.0.0")
 	v.Set("nodePort", apiPort)
 	v.Set("p2p.port", p2pPort)
+	if p2pConnectTimeout != "" {
+		v.Set("p2p.connectTimeout", p2pConnectTimeout)
+	}
 	v.Set("ethereum.nodeURL", ethNodeURL)
 	v.Set("ethereum.txPoolAccessEnabled", txPoolAccess)
 	v.Set("ethereum.accounts.main.key", string(bfile))

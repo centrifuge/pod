@@ -22,15 +22,16 @@ func TestConfiguration_CreateConfigFile(t *testing.T) {
 	assert.Nil(t, err, "err should be nil")
 
 	data := map[string]interface{}{
-		"targetDataDir":   targetDir,
-		"accountKeyPath":  accountKeyPath,
-		"accountPassword": "pwrd",
-		"network":         "russianhill",
-		"ethNodeURL":      "http://127.0.0.1:9545",
-		"bootstraps":      []string{"/ip4/127.0.0.1/bootstrap1", "/ip4/127.0.0.1/bootstrap2"},
-		"apiPort":         int64(8082),
-		"p2pPort":         int64(38202),
-		"txpoolaccess":    false,
+		"targetDataDir":     targetDir,
+		"accountKeyPath":    accountKeyPath,
+		"accountPassword":   "pwrd",
+		"network":           "russianhill",
+		"ethNodeURL":        "http://127.0.0.1:9545",
+		"bootstraps":        []string{"/ip4/127.0.0.1/bootstrap1", "/ip4/127.0.0.1/bootstrap2"},
+		"apiPort":           int64(8082),
+		"p2pPort":           int64(38202),
+		"txpoolaccess":      false,
+		"p2pConnectTimeout": "",
 	}
 
 	v, err := CreateConfigFile(data)

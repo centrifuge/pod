@@ -306,7 +306,7 @@ func TestInvoiceModel_getDocumentDataTree(t *testing.T) {
 	assert.Nil(t, err, "tree should be generated without error")
 	_, leaf := tree.GetLeafByProperty("invoice.invoice_number")
 	assert.NotNil(t, leaf)
-	assert.Equal(t, "invoice.invoice_number", leaf.Property)
+	assert.Equal(t, "invoice.invoice_number", leaf.Property.ReadableName())
 }
 
 func createMockInvoice(t *testing.T) (*Invoice, *coredocumentpb.CoreDocument, error) {

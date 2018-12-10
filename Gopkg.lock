@@ -86,14 +86,14 @@
   revision = "80f35a18b9a0c632d7843e7e536873b0536f0040"
 
 [[projects]]
-  digest = "1:d065eb5f32b539d2935f0ec4f2f160b78c924306b923ce5eac6e7dfe46d07794"
+  digest = "1:f84321c62605dab82f35a0795dfe30981199e28ea8a0652e5e7ba9af66575fef"
   name = "github.com/centrifuge/precise-proofs"
   packages = [
     "proofs",
     "proofs/proto",
   ]
   pruneopts = "UT"
-  revision = "8957bc48e1bd690a835c630fa6fdfd141c41f5dd"
+  revision = "d0df6e2ed059de47375ef8281529a500cd920261"
 
 [[projects]]
   digest = "1:0ef770954bca104ee99b3b6b7f9b240605ac03517d9f98cbc1893daa03f3c038"
@@ -120,7 +120,7 @@
   version = "v1.7"
 
 [[projects]]
-  digest = "1:6aada383585d097e8ef3d06b74956eb1f22f49acb94ca0cb0672c1e767171a23"
+  digest = "1:54f69b2b6585c979160e3b00194fcdf343abf0f439a9ae5a7d40dd223c7f7364"
   name = "github.com/ethereum/go-ethereum"
   packages = [
     ".",
@@ -149,8 +149,7 @@
     "trie",
   ]
   pruneopts = "T"
-  revision = "27e633ca943ee9f49614b9ea074667227402b571"
-  source = "github.com/centrifuge/go-ethereum"
+  revision = "d2328b604a2d4ecdccc47d8f9133593161cbd40a"
 
 [[projects]]
   digest = "1:af43bdaaf86655a2343f113e9b293bbc16b12099eaeb223982bbe4d4c22ba14d"
