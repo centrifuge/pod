@@ -33,7 +33,6 @@ type Config interface {
 	GetP2PPort() int
 	GetP2PExternalIP() string
 	GetP2PConnectionTimeout() time.Duration
-	GetReceiveEventNotificationEndpoint() string
 	GetServerPort() int
 	GetServerAddress() string
 	GetNumWorkers() int
@@ -45,8 +44,6 @@ type Config interface {
 	GetEthereumMaxRetries() int
 	GetEthereumGasPrice() *big.Int
 	GetEthereumGasLimit() uint64
-	GetEthereumDefaultAccountName() string
-	GetEthereumAccount(accountName string) (account *AccountConfig, err error)
 	GetTxPoolAccessEnabled() bool
 	GetNetworkString() string
 	GetNetworkKey(k string) string
@@ -54,6 +51,11 @@ type Config interface {
 	GetContractAddress(address string) common.Address
 	GetBootstrapPeers() []string
 	GetNetworkID() uint32
+
+	// CentID specific configs (eg: for multi tenancy)
+	GetEthereumAccount(accountName string) (account *AccountConfig, err error)
+	GetEthereumDefaultAccountName() string
+	GetReceiveEventNotificationEndpoint() string
 	GetIdentityID() ([]byte, error)
 	GetSigningKeyPair() (pub, priv string)
 	GetEthAuthKeyPair() (pub, priv string)
