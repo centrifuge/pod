@@ -119,7 +119,7 @@ func (s service) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (docume
 // UnpackFromCreatePayload initializes the model with parameters provided from the rest-api call
 func (s service) DeriveFromCreatePayload(payload *clientinvoicepb.InvoiceCreatePayload, contextHeader *header.ContextHeader) (documents.Model, error) {
 	if payload == nil || payload.Data == nil {
-		return nil, documents.ErrDocumentProvidedIsNil
+		return nil, documents.ErrDocumentNil
 	}
 
 	invoiceModel := new(Invoice)
@@ -292,7 +292,7 @@ func (s service) DeriveInvoiceData(doc documents.Model) (*clientinvoicepb.Invoic
 // DeriveFromUpdatePayload returns a new version of the old invoice identified by identifier in payload
 func (s service) DeriveFromUpdatePayload(payload *clientinvoicepb.InvoiceUpdatePayload, contextHeader *header.ContextHeader) (documents.Model, error) {
 	if payload == nil || payload.Data == nil {
-		return nil, documents.ErrDocumentProvidedIsNil
+		return nil, documents.ErrDocumentNil
 	}
 
 	// get latest old version of the document

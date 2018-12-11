@@ -146,7 +146,7 @@ func (s service) Update(ctx *header.ContextHeader, po documents.Model) (document
 // DeriveFromCreatePayload derives purchase order from create payload
 func (s service) DeriveFromCreatePayload(payload *clientpopb.PurchaseOrderCreatePayload, ctxH *header.ContextHeader) (documents.Model, error) {
 	if payload == nil || payload.Data == nil {
-		return nil, documents.ErrDocumentProvidedIsNil
+		return nil, documents.ErrDocumentNil
 	}
 
 	po := new(PurchaseOrder)
@@ -161,7 +161,7 @@ func (s service) DeriveFromCreatePayload(payload *clientpopb.PurchaseOrderCreate
 // DeriveFromUpdatePayload derives purchase order from update payload
 func (s service) DeriveFromUpdatePayload(payload *clientpopb.PurchaseOrderUpdatePayload, ctxH *header.ContextHeader) (documents.Model, error) {
 	if payload == nil || payload.Data == nil {
-		return nil, documents.ErrDocumentProvidedIsNil
+		return nil, documents.ErrDocumentNil
 	}
 
 	// get latest old version of the document
