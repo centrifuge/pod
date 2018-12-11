@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"sync"
 
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
@@ -72,7 +73,7 @@ func (l *levelDBRepo) Exists(tenantID, id []byte) bool {
 func (l *levelDBRepo) getModel(mt string) (Model, error) {
 	tp, ok := l.models[mt]
 	if !ok {
-		return nil, fmt.Errorf("type %s not registered", mt)
+		return nil, errors.NewTypedError(ErrDocumentRepositoryModelNotRegistered, fmt.Errorf("type %s not registered", mt))
 	}
 
 	return reflect.New(tp).Interface().(Model), nil
@@ -83,25 +84,25 @@ func (l *levelDBRepo) Get(tenantID, id []byte) (Model, error) {
 	key := getKey(tenantID, id)
 	data, err := l.db.Get(key, nil)
 	if err != nil {
-		return nil, fmt.Errorf("document missing: %v", err)
+		return nil, errors.NewTypedError(ErrDocumentRepositoryModelNotFound, fmt.Errorf("document missing: %v", err))
 	}
 
 	v := new(value)
 	err = json.Unmarshal(data, v)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal value: %v", err)
+		return nil, errors.NewTypedError(ErrDocumentRepositorySerialisation, fmt.Errorf("failed to unmarshal value: %v", err))
 	}
 
 	l.mu.RLock()
 	defer l.mu.RUnlock()
 	nm, err := l.getModel(v.Type)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get model type: %v", err)
+		return nil, err
 	}
 
 	err = nm.FromJSON([]byte(v.Data))
 	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal to model: %v", err)
+		return nil, errors.NewTypedError(ErrDocumentRepositorySerialisation, fmt.Errorf("failed to unmarshal to model: %v", err))
 	}
 
 	return nm, nil
@@ -120,7 +121,7 @@ func getTypeIndirect(tp reflect.Type) reflect.Type {
 func (l *levelDBRepo) save(tenantID, id []byte, model Model) error {
 	data, err := model.JSON()
 	if err != nil {
-		return fmt.Errorf("failed to marshall model: %v", err)
+		return errors.NewTypedError(ErrDocumentRepositorySerialisation, fmt.Errorf("failed to marshall model: %v", err))
 	}
 
 	tp := getTypeIndirect(model.Type())
@@ -131,13 +132,13 @@ func (l *levelDBRepo) save(tenantID, id []byte, model Model) error {
 
 	data, err = json.Marshal(v)
 	if err != nil {
-		return fmt.Errorf("failed to marshall value: %v", err)
+		return errors.NewTypedError(ErrDocumentRepositorySerialisation, fmt.Errorf("failed to marshall value: %v", err))
 	}
 
 	key := getKey(tenantID, id)
 	err = l.db.Put(key, data, nil)
 	if err != nil {
-		return fmt.Errorf("failed to save model to DB: %v", err)
+		return errors.NewTypedError(ErrDocumentRepositoryModelSave, fmt.Errorf("%v", err))
 	}
 
 	return nil
@@ -147,7 +148,7 @@ func (l *levelDBRepo) save(tenantID, id []byte, model Model) error {
 // Errors out if the model already exists.
 func (l *levelDBRepo) Create(tenantID, id []byte, model Model) error {
 	if l.Exists(tenantID, id) {
-		return fmt.Errorf("model already exists")
+		return ErrDocumentRepositoryModelAllReadyExists
 	}
 
 	return l.save(tenantID, id, model)
@@ -157,7 +158,7 @@ func (l *levelDBRepo) Create(tenantID, id []byte, model Model) error {
 // Errors out if model doesn't exist
 func (l *levelDBRepo) Update(tenantID, id []byte, model Model) error {
 	if !l.Exists(tenantID, id) {
-		return fmt.Errorf("model doesn't exist")
+		return ErrDocumentRepositoryModelDoesntExist
 	}
 
 	return l.save(tenantID, id, model)
