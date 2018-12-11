@@ -6,8 +6,9 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/centrifuge/go-centrifuge/config"
+
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
@@ -46,7 +47,7 @@ func (*Bootstrapper) Bootstrap(c map[string]interface{}) error {
 
 func cleanUp(c map[string]interface{}) {
 	// close the node db
-	db := c[storage.BootstrappedLevelDB].(*leveldb.DB)
+	db := c[config.BootstrappedLevelDB].(*leveldb.DB)
 	db.Close()
 }
 

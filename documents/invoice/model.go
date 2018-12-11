@@ -41,7 +41,7 @@ type Invoice struct {
 	RecipientStreet  string
 	RecipientCity    string
 	RecipientZipcode string
-	// country ISO code of the receipient of this invoice
+	// country ISO code of the recipient of this invoice
 	RecipientCountry string
 	// ISO currency code
 	Currency string

@@ -30,6 +30,7 @@ var log = logging.Logger("config")
 // Config defines the methods that a config type should implement.
 type Config interface {
 	GetStoragePath() string
+	GetConfigStoragePath() string
 	GetP2PPort() int
 	GetP2PExternalIP() string
 	GetP2PConnectionTimeout() time.Duration
@@ -129,7 +130,12 @@ func (c *Configuration) get(key string) interface{} {
 
 // GetStoragePath returns the data storage backend.
 func (c *Configuration) GetStoragePath() string {
-	return c.GetString("storage.Path")
+	return c.GetString("storage.path")
+}
+
+// GetConfigStoragePath returns the data storage backend.
+func (c *Configuration) GetConfigStoragePath() string {
+	return c.GetString("configStorage.path")
 }
 
 // GetP2PPort returns P2P Port.

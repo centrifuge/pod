@@ -7,14 +7,15 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/storage"
+	"github.com/centrifuge/go-centrifuge/config"
+
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
 func getRepository(ctx map[string]interface{}) Repository {
-	db := ctx[storage.BootstrappedLevelDB].(*leveldb.DB)
+	db := ctx[config.BootstrappedLevelDB].(*leveldb.DB)
 	return NewLevelDBRepository(db)
 }
 

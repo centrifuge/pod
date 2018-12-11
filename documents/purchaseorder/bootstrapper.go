@@ -11,7 +11,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/p2p"
-	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
@@ -25,7 +24,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	}
 	cfg := ctx[config.BootstrappedConfig].(*config.Configuration)
 
-	ldb, ok := ctx[storage.BootstrappedLevelDB].(*leveldb.DB)
+	ldb, ok := ctx[config.BootstrappedLevelDB].(*leveldb.DB)
 	if !ok {
 		return errors.New("initializing LevelDB repository failed")
 	}

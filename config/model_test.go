@@ -1,3 +1,5 @@
+// +build unit
+
 package config
 
 import (
@@ -16,6 +18,11 @@ type MockConfig struct {
 }
 
 func (m *MockConfig) GetStoragePath() string {
+	args := m.Called()
+	return args.Get(0).(string)
+}
+
+func (m *MockConfig) GetConfigStoragePath() string {
 	args := m.Called()
 	return args.Get(0).(string)
 }
