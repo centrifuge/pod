@@ -45,6 +45,9 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	}
 
 	repo, ok := ctx[documents.BootstrappedDocumentRepository].(documents.Repository)
+	if !ok {
+		return fmt.Errorf("document db repository not initialised")
+	}
 	repo.Register(&Invoice{})
 
 	// register service
