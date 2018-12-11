@@ -60,7 +60,7 @@ type Error struct {
 
 // Error returns the underlying error message
 func (e Error) Error() string {
-	return e.err.Error()
+	return fmt.Sprintf("%s : %s", e.key, e.err)
 }
 
 // NewError creates a new error from a key and a msg.

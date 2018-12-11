@@ -6,14 +6,12 @@ import (
 	"fmt"
 	"testing"
 
-	"errors"
-
 	"context"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
-	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
@@ -60,7 +58,7 @@ func TestUpdateVersionValidator(t *testing.T) {
 	old.AssertExpectations(t)
 	new.AssertExpectations(t)
 	assert.Error(t, err)
-	assert.Len(t, documents.ConvertToMap(err), 4)
+	assert.Equal(t, 5, errors.Len(err))
 
 	// success
 	newCD, err = PrepareNewVersion(*oldCD, nil)
@@ -113,7 +111,7 @@ func TestValidator_baseValidator(t *testing.T) {
 	model.On("PackCoreDocument").Return(cd, nil).Once()
 	err = bv.Validate(nil, model)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "cd_salts : Required field")
+	assert.Equal(t, "cd_salts : Required field", errors.GetErrs(err)[1].Error())
 
 	// success
 	model = mockModel{}
@@ -244,7 +242,7 @@ func TestValidator_selfSignatureValidator(t *testing.T) {
 	err = rfsv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
-	assert.Len(t, documents.ConvertToMap(err), 3)
+	assert.Equal(t, 3, errors.Len(err))
 
 	// success
 	cd.SigningRoot = utils.RandomSlice(32)
@@ -403,7 +401,7 @@ func TestValidate_baseValidator(t *testing.T) {
 				NextVersion:        id4,
 				DataRoot:           id5,
 			},
-			key: "cd_salts",
+			key: "[cd_salts : Required field]",
 		},
 
 		// salts missing previous root
@@ -421,7 +419,7 @@ func TestValidate_baseValidator(t *testing.T) {
 					DataRoot:           id4,
 				},
 			},
-			key: "cd_salts",
+			key: "[cd_salts : Required field]",
 		},
 
 		// missing identifiers in core document
@@ -439,7 +437,7 @@ func TestValidate_baseValidator(t *testing.T) {
 					PreviousRoot:       id5,
 				},
 			},
-			key: "cd_data_root",
+			key: "[cd_data_root : Required field]",
 		},
 
 		// missing identifiers in core document and salts
@@ -456,7 +454,7 @@ func TestValidate_baseValidator(t *testing.T) {
 					DataRoot:           id4,
 				},
 			},
-			key: "cd_data_root",
+			key: "[cd_data_root : Required field; cd_salts : Required field]",
 		},
 
 		// repeated identifiers
@@ -475,7 +473,7 @@ func TestValidate_baseValidator(t *testing.T) {
 					PreviousRoot:       id5,
 				},
 			},
-			key: "cd_overall",
+			key: "[cd_overall : Identifier re-used]",
 		},
 
 		// repeated identifiers
@@ -494,7 +492,7 @@ func TestValidate_baseValidator(t *testing.T) {
 					PreviousRoot:       id5,
 				},
 			},
-			key: "cd_overall",
+			key: "[cd_overall : Identifier re-used]",
 		},
 
 		// All okay
@@ -529,7 +527,7 @@ func TestValidate_baseValidator(t *testing.T) {
 			continue
 		}
 
-		assert.Contains(t, err.Error(), c.key)
+		assert.Equal(t, c.key, err.Error())
 
 	}
 }
