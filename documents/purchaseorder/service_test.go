@@ -140,13 +140,13 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	// nil payload
 	doc, err := poSrv.DeriveFromUpdatePayload(nil, nil)
 	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(documents.ErrDocumentProvidedIsNil, err))
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNil, err))
 	assert.Nil(t, doc)
 
 	// nil payload data
 	doc, err = poSrv.DeriveFromUpdatePayload(&clientpurchaseorderpb.PurchaseOrderUpdatePayload{}, nil)
 	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(documents.ErrDocumentProvidedIsNil, err))
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNil, err))
 	assert.Nil(t, doc)
 
 	// messed up identifier
@@ -223,13 +223,13 @@ func TestService_DeriveFromCreatePayload(t *testing.T) {
 	m, err := poSrv.DeriveFromCreatePayload(nil, ctxh)
 	assert.Nil(t, m)
 	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(documents.ErrDocumentProvidedIsNil, err))
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNil, err))
 
 	// nil data payload
 	m, err = poSrv.DeriveFromCreatePayload(&clientpurchaseorderpb.PurchaseOrderCreatePayload{}, ctxh)
 	assert.Nil(t, m)
 	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(documents.ErrDocumentProvidedIsNil, err))
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNil, err))
 
 	// Init fails
 	payload := &clientpurchaseorderpb.PurchaseOrderCreatePayload{
