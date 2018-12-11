@@ -54,3 +54,49 @@ func TestPaymentObligationMint_successful(t *testing.T) {
 	assert.True(t, len(response.Value("token_id").String().Raw()) >= tokenIdLength, "successful tokenId should have length 77")
 
 }
+
+func TestPaymentObligationMint_errors(t *testing.T) {
+	alice := doctorFord.getHostTestSuite(t, "Alice")
+
+	tests := []struct {
+		errorMsg   string
+		httpStatus int
+		payload    map[string]interface{}
+	}{
+		{
+			"RegistryAddress is not a valid Ethereum address",
+			http.StatusInternalServerError,
+			map[string]interface{}{
+
+				"registryAddress": "0x123",
+			},
+		},
+		{
+			"DepositAddress is not a valid Ethereum address",
+			http.StatusInternalServerError,
+			map[string]interface{}{
+
+				"registryAddress": "0xf72855759a39fb75fc7341139f5d7a3974d4da08", //dummy address
+				"depositAddress":  "abc",
+			},
+		},
+		{
+			"no service exists for provided documentID",
+			http.StatusInternalServerError,
+			map[string]interface{}{
+
+				"identifier":      "0x12121212",
+				"registryAddress": "0xf72855759a39fb75fc7341139f5d7a3974d4da08", //dummy address
+				"depositAddress":  "0xf72855759a39fb75fc7341139f5d7a3974d4da08", //dummy address
+			},
+		},
+	}
+
+	for _, test := range tests {
+		response, err := alice.host.mintNFT(alice.httpExpect, test.httpStatus, test.payload)
+		assert.Nil(t, err, "it should be possible to call the API endpoint")
+		response.Value("message").String().Contains(test.errorMsg)
+
+	}
+
+}
