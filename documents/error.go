@@ -14,8 +14,8 @@ const (
 	// ErrDocumentInvalidType must be used when a provided document type is not valid to be processed by the service
 	ErrDocumentInvalidType = errors.Error("document is of invalid type")
 
-	// ErrDocumentProvidedIsNil must be used when the provided document through a function is nil
-	ErrDocumentProvidedIsNil = errors.Error("no(nil) document provided")
+	// ErrDocumentNil must be used when the provided document through a function is nil
+	ErrDocumentNil = errors.Error("no(nil) document provided")
 
 	// ErrDocumentInvalid must only be used when the reason for invalidity is impossible to determine or the invalidity is caused by validation errors
 	ErrDocumentInvalid = errors.Error("document is invalid")
