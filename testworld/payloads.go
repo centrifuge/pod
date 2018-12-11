@@ -17,6 +17,22 @@ func defaultInvoicePayload(collaborators []string) map[string]interface{} {
 
 }
 
+func defaultNFTPayload(collaborators []string) map[string]interface{} {
+
+	return map[string]interface{}{
+		"data": map[string]interface{}{
+			"invoice_number": "12324",
+			"due_date":       "2018-09-26T23:12:37.902198664Z",
+			"gross_amount":   "40",
+			"currency":       "USD",
+			"net_amount":     "40",
+			"document_type":  "invoice",
+		},
+		"collaborators": collaborators,
+	}
+
+}
+
 func updatedInvoicePayload(collaborators []string) map[string]interface{} {
 	return map[string]interface{}{
 		"data": map[string]interface{}{
