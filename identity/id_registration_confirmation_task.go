@@ -2,11 +2,11 @@ package identity
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/centerrors"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/gocelery"
@@ -64,11 +64,11 @@ func (rct *idRegistrationConfirmationTask) Copy() (gocelery.CeleryTask, error) {
 func (rct *idRegistrationConfirmationTask) ParseKwargs(kwargs map[string]interface{}) error {
 	id, ok := kwargs[centIDParam]
 	if !ok {
-		return fmt.Errorf("undefined kwarg " + centIDParam)
+		return errors.New("undefined kwarg " + centIDParam)
 	}
 	centID, err := getCentID(id)
 	if err != nil {
-		return fmt.Errorf("malformed kwarg [%s] because [%s]", centIDParam, err.Error())
+		return errors.New("malformed kwarg [%s] because [%s]", centIDParam, err.Error())
 	}
 	rct.centID = centID
 
@@ -82,7 +82,7 @@ func (rct *idRegistrationConfirmationTask) ParseKwargs(kwargs map[string]interfa
 	if ok {
 		td, err := queue.GetDuration(tdRaw)
 		if err != nil {
-			return fmt.Errorf("malformed kwarg [%s] because [%s]", queue.TimeoutParam, err.Error())
+			return errors.New("malformed kwarg [%s] because [%s]", queue.TimeoutParam, err.Error())
 		}
 		rct.timeout = td
 	}

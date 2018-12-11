@@ -2,11 +2,11 @@ package identity
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/centerrors"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -90,35 +90,35 @@ func (krct *keyRegistrationConfirmationTask) Copy() (gocelery.CeleryTask, error)
 func (krct *keyRegistrationConfirmationTask) ParseKwargs(kwargs map[string]interface{}) error {
 	id, ok := kwargs[centIDParam]
 	if !ok {
-		return fmt.Errorf("undefined kwarg " + centIDParam)
+		return errors.New("undefined kwarg " + centIDParam)
 	}
 	centID, err := getCentID(id)
 	if err != nil {
-		return fmt.Errorf("malformed kwarg [%s] because [%s]", centIDParam, err.Error())
+		return errors.New("malformed kwarg [%s] because [%s]", centIDParam, err.Error())
 	}
 	krct.centID = centID
 
 	// key parsing
 	key, ok := kwargs[keyParam]
 	if !ok {
-		return fmt.Errorf("undefined kwarg " + keyParam)
+		return errors.New("undefined kwarg " + keyParam)
 	}
 	keyTyped, err := getBytes32(key)
 	if err != nil {
-		return fmt.Errorf("malformed kwarg [%s] because [%s]", keyParam, err.Error())
+		return errors.New("malformed kwarg [%s] because [%s]", keyParam, err.Error())
 	}
 	krct.key = keyTyped
 
 	// key purpose parsing
 	keyPurpose, ok := kwargs[keyPurposeParam]
 	if !ok {
-		return fmt.Errorf("undefined kwarg " + keyPurposeParam)
+		return errors.New("undefined kwarg " + keyPurposeParam)
 	}
 	keyPurposeF, ok := keyPurpose.(float64)
 	if ok {
 		krct.keyPurpose = int(keyPurposeF)
 	} else {
-		return fmt.Errorf("can not parse " + keyPurposeParam)
+		return errors.New("can not parse " + keyPurposeParam)
 	}
 
 	// block height parsing
@@ -131,7 +131,7 @@ func (krct *keyRegistrationConfirmationTask) ParseKwargs(kwargs map[string]inter
 	if ok {
 		td, err := queue.GetDuration(tdRaw)
 		if err != nil {
-			return fmt.Errorf("malformed kwarg [%s] because [%s]", queue.TimeoutParam, err.Error())
+			return errors.New("malformed kwarg [%s] because [%s]", queue.TimeoutParam, err.Error())
 		}
 		krct.timeout = td
 	}

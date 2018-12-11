@@ -1,8 +1,6 @@
 package documents
 
 import (
-	"fmt"
-
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/header"
 )
@@ -32,7 +30,7 @@ func AnchorDocument(ctx *header.ContextHeader, model Model, proc anchorProcessor
 	id := cd.CurrentVersion
 	err = proc.PrepareForSignatureRequests(ctx, model)
 	if err != nil {
-		return nil, errors.NewTypedError(ErrDocumentAnchoring, fmt.Errorf("failed to prepare document for signatures: %v", err))
+		return nil, errors.NewTypedError(ErrDocumentAnchoring, errors.New("failed to prepare document for signatures: %v", err))
 	}
 
 	err = updater(id, model)
@@ -42,7 +40,7 @@ func AnchorDocument(ctx *header.ContextHeader, model Model, proc anchorProcessor
 
 	err = proc.RequestSignatures(ctx, model)
 	if err != nil {
-		return nil, errors.NewTypedError(ErrDocumentAnchoring, fmt.Errorf("failed to collect signatures: %v", err))
+		return nil, errors.NewTypedError(ErrDocumentAnchoring, errors.New("failed to collect signatures: %v", err))
 	}
 
 	err = updater(id, model)
@@ -52,7 +50,7 @@ func AnchorDocument(ctx *header.ContextHeader, model Model, proc anchorProcessor
 
 	err = proc.PrepareForAnchoring(model)
 	if err != nil {
-		return nil, errors.NewTypedError(ErrDocumentAnchoring, fmt.Errorf("failed to prepare for anchoring: %v", err))
+		return nil, errors.NewTypedError(ErrDocumentAnchoring, errors.New("failed to prepare for anchoring: %v", err))
 	}
 
 	err = updater(id, model)
@@ -62,7 +60,7 @@ func AnchorDocument(ctx *header.ContextHeader, model Model, proc anchorProcessor
 
 	err = proc.AnchorDocument(ctx, model)
 	if err != nil {
-		return nil, errors.NewTypedError(ErrDocumentAnchoring, fmt.Errorf("failed to anchor document: %v", err))
+		return nil, errors.NewTypedError(ErrDocumentAnchoring, errors.New("failed to anchor document: %v", err))
 	}
 
 	err = updater(id, model)
@@ -72,7 +70,7 @@ func AnchorDocument(ctx *header.ContextHeader, model Model, proc anchorProcessor
 
 	err = proc.SendDocument(ctx, model)
 	if err != nil {
-		return nil, errors.NewTypedError(ErrDocumentAnchoring, fmt.Errorf("failed to send anchored document: %v", err))
+		return nil, errors.NewTypedError(ErrDocumentAnchoring, errors.New("failed to send anchored document: %v", err))
 	}
 
 	err = updater(id, model)

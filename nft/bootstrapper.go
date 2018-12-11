@@ -1,8 +1,7 @@
 package nft
 
 import (
-	"errors"
-	"fmt"
+	"github.com/centrifuge/go-centrifuge/errors"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
@@ -31,12 +30,12 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 
 	registry, ok := ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
 	if !ok {
-		return fmt.Errorf("service registry not initialised")
+		return errors.New("service registry not initialised")
 	}
 
 	idService, ok := ctx[identity.BootstrappedIDService].(identity.Service)
 	if !ok {
-		return fmt.Errorf("identity service not initialised")
+		return errors.New("identity service not initialised")
 	}
 
 	if _, ok := ctx[bootstrap.BootstrappedQueueServer]; !ok {

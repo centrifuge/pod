@@ -4,7 +4,6 @@ package purchaseorder
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 	"testing"
 
@@ -61,7 +60,7 @@ func TestService_Update(t *testing.T) {
 
 	// pack failed
 	model := &testingdocuments.MockModel{}
-	model.On("PackCoreDocument").Return(nil, fmt.Errorf("pack error")).Once()
+	model.On("PackCoreDocument").Return(nil, errors.New("pack error")).Once()
 	_, err = poSrv.Update(ctxh, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
@@ -287,7 +286,7 @@ func TestService_Create(t *testing.T) {
 	po, err := poSrv.DeriveFromCreatePayload(testingdocuments.CreatePOPayload(), ctxh)
 	assert.Nil(t, err)
 	proc := &testingcoredocument.MockCoreDocumentProcessor{}
-	proc.On("PrepareForSignatureRequests", po).Return(fmt.Errorf("anchoring failed")).Once()
+	proc.On("PrepareForSignatureRequests", po).Return(errors.New("anchoring failed")).Once()
 	poSrv.coreDocProcessor = proc
 	m, err = poSrv.Create(ctxh, po)
 	proc.AssertExpectations(t)
@@ -524,7 +523,7 @@ func TestService_DerivePurchaseOrderResponse(t *testing.T) {
 
 	// pack fails
 	m := &testingdocuments.MockModel{}
-	m.On("PackCoreDocument").Return(nil, fmt.Errorf("pack core document failed")).Once()
+	m.On("PackCoreDocument").Return(nil, errors.New("pack core document failed")).Once()
 	r, err := poSrv.DerivePurchaseOrderResponse(m)
 	m.AssertExpectations(t)
 	assert.Nil(t, r)
@@ -715,7 +714,7 @@ func TestService_calculateDataRoot(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Nil(t, po.(*PurchaseOrder).CoreDocument.DataRoot)
 	v := documents.ValidatorFunc(func(_, _ documents.Model) error {
-		return fmt.Errorf("validations fail")
+		return errors.New("validations fail")
 	})
 	po, err = poSrv.calculateDataRoot(nil, po, v)
 	assert.Nil(t, po)

@@ -1,7 +1,7 @@
 package signatures
 
 import (
-	"fmt"
+	"errors"
 	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -13,7 +13,7 @@ import (
 func VerifySignature(pubKey, message, signature []byte) error {
 	valid := ed25519.Verify(pubKey, message, signature)
 	if !valid {
-		return fmt.Errorf("invalid signature")
+		return errors.New("invalid signature")
 	}
 
 	return nil

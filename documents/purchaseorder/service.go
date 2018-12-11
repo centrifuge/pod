@@ -2,7 +2,6 @@ package purchaseorder
 
 import (
 	"bytes"
-	"fmt"
 	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -80,7 +79,7 @@ func (s service) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (docume
 func (s service) calculateDataRoot(old, new documents.Model, validator documents.Validator) (documents.Model, error) {
 	po, ok := new.(*PurchaseOrder)
 	if !ok {
-		return nil, errors.NewTypedError(documents.ErrDocumentInvalidType, fmt.Errorf("unknown document type: %T", new))
+		return nil, errors.NewTypedError(documents.ErrDocumentInvalidType, errors.New("unknown document type: %T", new))
 	}
 
 	// create data root, has to be done at the model level to access fields
@@ -184,7 +183,7 @@ func (s service) DeriveFromUpdatePayload(payload *clientpopb.PurchaseOrderUpdate
 	// get latest old version of the document
 	id, err := hexutil.Decode(payload.Identifier)
 	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentIdentifier, fmt.Errorf("failed to decode identifier: %v", err))
+		return nil, errors.NewTypedError(documents.ErrDocumentIdentifier, errors.New("failed to decode identifier: %v", err))
 	}
 
 	old, err := s.GetCurrentVersion(id)
@@ -196,7 +195,7 @@ func (s service) DeriveFromUpdatePayload(payload *clientpopb.PurchaseOrderUpdate
 	po := new(PurchaseOrder)
 	err = po.initPurchaseOrderFromData(payload.Data)
 	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, fmt.Errorf("failed to load purchase order from data: %v", err))
+		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, errors.New("failed to load purchase order from data: %v", err))
 	}
 
 	// update core document
@@ -273,7 +272,7 @@ func (s service) getPurchaseOrderVersion(documentID, version []byte) (model *Pur
 	}
 
 	if !bytes.Equal(model.CoreDocument.DocumentIdentifier, documentID) {
-		return nil, errors.NewTypedError(documents.ErrDocumentVersionNotFound, fmt.Errorf("version is not valid for this identifier"))
+		return nil, errors.NewTypedError(documents.ErrDocumentVersionNotFound, errors.New("version is not valid for this identifier"))
 	}
 	return model, nil
 }
@@ -363,7 +362,7 @@ func (s service) RequestDocumentSignature(contextHeader *header.ContextHeader, m
 
 	idKeys, ok := contextHeader.Self().Keys[identity.KeyPurposeSigning]
 	if !ok {
-		return nil, errors.NewTypedError(documents.ErrDocumentSigning, fmt.Errorf("missing signing key"))
+		return nil, errors.NewTypedError(documents.ErrDocumentSigning, errors.New("missing signing key"))
 	}
 	sig := signatures.Sign(contextHeader.Self().ID[:], idKeys.PrivateKey, idKeys.PublicKey, cd.SigningRoot)
 	cd.Signatures = append(cd.Signatures, sig)

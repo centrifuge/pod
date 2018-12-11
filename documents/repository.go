@@ -2,7 +2,6 @@ package documents
 
 import (
 	"encoding/json"
-	"fmt"
 	"reflect"
 	"sync"
 
@@ -73,7 +72,7 @@ func (l *levelDBRepo) Exists(tenantID, id []byte) bool {
 func (l *levelDBRepo) getModel(mt string) (Model, error) {
 	tp, ok := l.models[mt]
 	if !ok {
-		return nil, errors.NewTypedError(ErrDocumentRepositoryModelNotRegistered, fmt.Errorf("type %s not registered", mt))
+		return nil, errors.NewTypedError(ErrDocumentRepositoryModelNotRegistered, errors.New("type %s not registered", mt))
 	}
 
 	return reflect.New(tp).Interface().(Model), nil
@@ -84,13 +83,13 @@ func (l *levelDBRepo) Get(tenantID, id []byte) (Model, error) {
 	key := getKey(tenantID, id)
 	data, err := l.db.Get(key, nil)
 	if err != nil {
-		return nil, errors.NewTypedError(ErrDocumentRepositoryModelNotFound, fmt.Errorf("document missing: %v", err))
+		return nil, errors.NewTypedError(ErrDocumentRepositoryModelNotFound, errors.New("document missing: %v", err))
 	}
 
 	v := new(value)
 	err = json.Unmarshal(data, v)
 	if err != nil {
-		return nil, errors.NewTypedError(ErrDocumentRepositorySerialisation, fmt.Errorf("failed to unmarshal value: %v", err))
+		return nil, errors.NewTypedError(ErrDocumentRepositorySerialisation, errors.New("failed to unmarshal value: %v", err))
 	}
 
 	l.mu.RLock()
@@ -102,7 +101,7 @@ func (l *levelDBRepo) Get(tenantID, id []byte) (Model, error) {
 
 	err = nm.FromJSON([]byte(v.Data))
 	if err != nil {
-		return nil, errors.NewTypedError(ErrDocumentRepositorySerialisation, fmt.Errorf("failed to unmarshal to model: %v", err))
+		return nil, errors.NewTypedError(ErrDocumentRepositorySerialisation, errors.New("failed to unmarshal to model: %v", err))
 	}
 
 	return nm, nil
@@ -121,7 +120,7 @@ func getTypeIndirect(tp reflect.Type) reflect.Type {
 func (l *levelDBRepo) save(tenantID, id []byte, model Model) error {
 	data, err := model.JSON()
 	if err != nil {
-		return errors.NewTypedError(ErrDocumentRepositorySerialisation, fmt.Errorf("failed to marshall model: %v", err))
+		return errors.NewTypedError(ErrDocumentRepositorySerialisation, errors.New("failed to marshall model: %v", err))
 	}
 
 	tp := getTypeIndirect(model.Type())
@@ -132,13 +131,13 @@ func (l *levelDBRepo) save(tenantID, id []byte, model Model) error {
 
 	data, err = json.Marshal(v)
 	if err != nil {
-		return errors.NewTypedError(ErrDocumentRepositorySerialisation, fmt.Errorf("failed to marshall value: %v", err))
+		return errors.NewTypedError(ErrDocumentRepositorySerialisation, errors.New("failed to marshall value: %v", err))
 	}
 
 	key := getKey(tenantID, id)
 	err = l.db.Put(key, data, nil)
 	if err != nil {
-		return errors.NewTypedError(ErrDocumentRepositoryModelSave, fmt.Errorf("%v", err))
+		return errors.NewTypedError(ErrDocumentRepositoryModelSave, errors.New("%v", err))
 	}
 
 	return nil

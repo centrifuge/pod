@@ -3,7 +3,7 @@
 package documents
 
 import (
-	"errors"
+	"github.com/centrifuge/go-centrifuge/errors"
 
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/syndtr/goleveldb/leveldb"

@@ -4,11 +4,11 @@ package purchaseorder
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/header"
 	clientpopb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
@@ -80,7 +80,7 @@ func TestGRPCHandler_Create(t *testing.T) {
 
 	// derive fails
 	srv := h.service.(*mockService)
-	srv.On("DeriveFromCreatePayload", req, ctxh).Return(nil, fmt.Errorf("derive failed")).Once()
+	srv.On("DeriveFromCreatePayload", req, ctxh).Return(nil, errors.New("derive failed")).Once()
 	h.service = srv
 	resp, err := h.Create(ctx, req)
 	srv.AssertExpectations(t)
@@ -90,7 +90,7 @@ func TestGRPCHandler_Create(t *testing.T) {
 
 	// create fails
 	srv.On("DeriveFromCreatePayload", req, ctxh).Return(model, nil).Once()
-	srv.On("Create", ctxh, model).Return(nil, fmt.Errorf("create failed")).Once()
+	srv.On("Create", ctxh, model).Return(nil, errors.New("create failed")).Once()
 	h.service = srv
 	resp, err = h.Create(ctx, req)
 	srv.AssertExpectations(t)
@@ -101,7 +101,7 @@ func TestGRPCHandler_Create(t *testing.T) {
 	// derive response fails
 	srv.On("DeriveFromCreatePayload", req, ctxh).Return(model, nil).Once()
 	srv.On("Create", ctxh, model).Return(model, nil).Once()
-	srv.On("DerivePurchaseOrderResponse", model).Return(nil, fmt.Errorf("derive response fails")).Once()
+	srv.On("DerivePurchaseOrderResponse", model).Return(nil, errors.New("derive response fails")).Once()
 	h.service = srv
 	resp, err = h.Create(ctx, req)
 	srv.AssertExpectations(t)
@@ -136,7 +136,7 @@ func TestGrpcHandler_Update(t *testing.T) {
 
 	// derive fails
 	srv := h.service.(*mockService)
-	srv.On("DeriveFromUpdatePayload", req, ctxh).Return(nil, fmt.Errorf("derive failed")).Once()
+	srv.On("DeriveFromUpdatePayload", req, ctxh).Return(nil, errors.New("derive failed")).Once()
 	h.service = srv
 	resp, err := h.Update(ctx, req)
 	srv.AssertExpectations(t)
@@ -146,7 +146,7 @@ func TestGrpcHandler_Update(t *testing.T) {
 
 	// create fails
 	srv.On("DeriveFromUpdatePayload", req, ctxh).Return(model, nil).Once()
-	srv.On("Update", ctxh, model).Return(nil, fmt.Errorf("update failed")).Once()
+	srv.On("Update", ctxh, model).Return(nil, errors.New("update failed")).Once()
 	h.service = srv
 	resp, err = h.Update(ctx, req)
 	srv.AssertExpectations(t)
@@ -157,7 +157,7 @@ func TestGrpcHandler_Update(t *testing.T) {
 	// derive response fails
 	srv.On("DeriveFromUpdatePayload", req, ctxh).Return(model, nil).Once()
 	srv.On("Update", ctxh, model).Return(model, nil).Once()
-	srv.On("DerivePurchaseOrderResponse", model).Return(nil, fmt.Errorf("derive response fails")).Once()
+	srv.On("DerivePurchaseOrderResponse", model).Return(nil, errors.New("derive response fails")).Once()
 	h.service = srv
 	resp, err = h.Update(ctx, req)
 	srv.AssertExpectations(t)
@@ -220,7 +220,7 @@ func TestGrpcHandler_GetVersion_invalid_input(t *testing.T) {
 	payload.Version = "0x00"
 	payload.Identifier = "0x01"
 
-	mockErr := fmt.Errorf("not found")
+	mockErr := errors.New("not found")
 	srv.On("GetVersion", []byte{0x01}, []byte{0x00}).Return(nil, mockErr)
 	res, err = h.GetVersion(context.Background(), payload)
 	srv.AssertExpectations(t)

@@ -1,8 +1,7 @@
 package ed25519
 
 import (
-	"fmt"
-
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils"
 	logging "github.com/ipfs/go-log"
 	"github.com/libp2p/go-libp2p-crypto"
@@ -16,7 +15,7 @@ var log = logging.Logger("ed25519")
 func GetPublicSigningKey(fileName string) (publicKey ed25519.PublicKey, err error) {
 	key, err := utils.ReadKeyFromPemFile(fileName, utils.PublicKey)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read pem file: %v", err)
+		return nil, errors.New("failed to read pem file: %v", err)
 	}
 
 	return ed25519.PublicKey(key), nil
@@ -26,7 +25,7 @@ func GetPublicSigningKey(fileName string) (publicKey ed25519.PublicKey, err erro
 func GetPrivateSigningKey(fileName string) (privateKey ed25519.PrivateKey, err error) {
 	key, err := utils.ReadKeyFromPemFile(fileName, utils.PrivateKey)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read pem file: %v", err)
+		return nil, errors.New("failed to read pem file: %v", err)
 	}
 
 	return ed25519.PrivateKey(key), nil
@@ -36,12 +35,12 @@ func GetPrivateSigningKey(fileName string) (privateKey ed25519.PrivateKey, err e
 func GetSigningKeyPair(pub, priv string) (publicKey ed25519.PublicKey, privateKey ed25519.PrivateKey, err error) {
 	publicKey, err = GetPublicSigningKey(pub)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to read public key: %v", err)
+		return nil, nil, errors.New("failed to read public key: %v", err)
 	}
 
 	privateKey, err = GetPrivateSigningKey(priv)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to read private key: %v", err)
+		return nil, nil, errors.New("failed to read private key: %v", err)
 	}
 
 	return publicKey, privateKey, nil

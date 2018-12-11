@@ -3,7 +3,6 @@
 package invoice
 
 import (
-	"fmt"
 	"testing"
 
 	"context"
@@ -57,7 +56,7 @@ func TestDataRootValidation_Validate(t *testing.T) {
 
 	// pack coredoc failed
 	model := &mockModel{}
-	model.On("PackCoreDocument").Return(nil, fmt.Errorf("error")).Once()
+	model.On("PackCoreDocument").Return(nil, errors.New("error")).Once()
 	err = drv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)

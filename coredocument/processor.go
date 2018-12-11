@@ -86,7 +86,7 @@ func (dp defaultProcessor) Send(ctx *header.ContextHeader, coreDocument *coredoc
 	clientWithProtocol := fmt.Sprintf("/ipfs/%s", lastB58Key)
 	client, err := dp.p2pClient.OpenClient(clientWithProtocol)
 	if err != nil {
-		return fmt.Errorf("failed to open client: %v", err)
+		return errors.New("failed to open client: %v", err)
 	}
 
 	log.Infof("Done opening connection against [%s]\n", lastB58Key)
@@ -111,13 +111,13 @@ func (dp defaultProcessor) Send(ctx *header.ContextHeader, coreDocument *coredoc
 func (dp defaultProcessor) PrepareForSignatureRequests(ctx *header.ContextHeader, model documents.Model) error {
 	cd, err := model.PackCoreDocument()
 	if err != nil {
-		return fmt.Errorf("failed to pack core document: %v", err)
+		return errors.New("failed to pack core document: %v", err)
 	}
 
 	// calculate the signing root
 	err = CalculateSigningRoot(cd)
 	if err != nil {
-		return fmt.Errorf("failed to calculate signing root: %v", err)
+		return errors.New("failed to calculate signing root: %v", err)
 	}
 
 	sig := identity.Sign(ctx.Self(), identity.KeyPurposeSigning, cd.SigningRoot)
@@ -125,7 +125,7 @@ func (dp defaultProcessor) PrepareForSignatureRequests(ctx *header.ContextHeader
 
 	err = model.UnpackCoreDocument(cd)
 	if err != nil {
-		return fmt.Errorf("failed to unpack the core document: %v", err)
+		return errors.New("failed to unpack the core document: %v", err)
 	}
 
 	return nil
@@ -136,28 +136,28 @@ func (dp defaultProcessor) PrepareForSignatureRequests(ctx *header.ContextHeader
 func (dp defaultProcessor) RequestSignatures(ctx *header.ContextHeader, model documents.Model) error {
 	cd, err := model.PackCoreDocument()
 	if err != nil {
-		return fmt.Errorf("failed to pack core document: %v", err)
+		return errors.New("failed to pack core document: %v", err)
 	}
 
 	idKeys, ok := ctx.Self().Keys[identity.KeyPurposeSigning]
 	if !ok {
-		return fmt.Errorf("missing keys for signing")
+		return errors.New("missing keys for signing")
 	}
 
 	psv := PreSignatureRequestValidator(ctx.Self().ID[:], idKeys.PrivateKey, idKeys.PublicKey)
 	err = psv.Validate(nil, model)
 	if err != nil {
-		return fmt.Errorf("failed to validate model for signature request: %v", err)
+		return errors.New("failed to validate model for signature request: %v", err)
 	}
 
 	err = dp.p2pClient.GetSignaturesForDocument(ctx, dp.identityService, cd)
 	if err != nil {
-		return fmt.Errorf("failed to collect signatures from the collaborators: %v", err)
+		return errors.New("failed to collect signatures from the collaborators: %v", err)
 	}
 
 	err = model.UnpackCoreDocument(cd)
 	if err != nil {
-		return fmt.Errorf("failed to unpack core document: %v", err)
+		return errors.New("failed to unpack core document: %v", err)
 	}
 
 	return nil
@@ -167,23 +167,23 @@ func (dp defaultProcessor) RequestSignatures(ctx *header.ContextHeader, model do
 func (dp defaultProcessor) PrepareForAnchoring(model documents.Model) error {
 	cd, err := model.PackCoreDocument()
 	if err != nil {
-		return fmt.Errorf("failed to pack core document: %v", err)
+		return errors.New("failed to pack core document: %v", err)
 	}
 
 	psv := PostSignatureRequestValidator(dp.identityService)
 	err = psv.Validate(nil, model)
 	if err != nil {
-		return fmt.Errorf("failed to validate signatures: %v", err)
+		return errors.New("failed to validate signatures: %v", err)
 	}
 
 	err = CalculateDocumentRoot(cd)
 	if err != nil {
-		return fmt.Errorf("failed to generate document root: %v", err)
+		return errors.New("failed to generate document root: %v", err)
 	}
 
 	err = model.UnpackCoreDocument(cd)
 	if err != nil {
-		return fmt.Errorf("failed to unpack core document: %v", err)
+		return errors.New("failed to unpack core document: %v", err)
 	}
 
 	return nil
@@ -193,45 +193,45 @@ func (dp defaultProcessor) PrepareForAnchoring(model documents.Model) error {
 func (dp defaultProcessor) AnchorDocument(ctx *header.ContextHeader, model documents.Model) error {
 	cd, err := model.PackCoreDocument()
 	if err != nil {
-		return fmt.Errorf("failed to pack core document: %v", err)
+		return errors.New("failed to pack core document: %v", err)
 	}
 
 	pav := PreAnchorValidator(dp.identityService)
 	err = pav.Validate(nil, model)
 	if err != nil {
-		return fmt.Errorf("pre anchor validation failed: %v", err)
+		return errors.New("pre anchor validation failed: %v", err)
 	}
 
 	rootHash, err := anchors.ToDocumentRoot(cd.DocumentRoot)
 	if err != nil {
-		return fmt.Errorf("failed to get document root: %v", err)
+		return errors.New("failed to get document root: %v", err)
 	}
 
 	id, err := dp.config.GetIdentityID()
 	if err != nil {
-		return fmt.Errorf("failed to get self cent ID: %v", err)
+		return errors.New("failed to get self cent ID: %v", err)
 	}
 
 	centID, err := identity.ToCentID(id)
 	if err != nil {
-		return fmt.Errorf("centID invalid: %v", err)
+		return errors.New("centID invalid: %v", err)
 	}
 
 	anchorID, err := anchors.ToAnchorID(cd.CurrentVersion)
 	if err != nil {
-		return fmt.Errorf("failed to get anchor ID: %v", err)
+		return errors.New("failed to get anchor ID: %v", err)
 	}
 
 	// generate message authentication code for the anchor call
 	mac, err := secp256k1.SignEthereum(anchors.GenerateCommitHash(anchorID, centID, rootHash), ctx.Self().Keys[identity.KeyPurposeEthMsgAuth].PrivateKey)
 	if err != nil {
-		return fmt.Errorf("failed to generate ethereum MAC: %v", err)
+		return errors.New("failed to generate ethereum MAC: %v", err)
 	}
 
 	log.Infof("Anchoring document with identifiers: [document: %#x, current: %#x, next: %#x], rootHash: %#x", cd.DocumentIdentifier, cd.CurrentVersion, cd.NextVersion, cd.DocumentRoot)
 	confirmations, err := dp.anchorRepository.CommitAnchor(anchorID, rootHash, centID, [][anchors.DocumentProofLength]byte{utils.RandomByte32()}, mac)
 	if err != nil {
-		return fmt.Errorf("failed to commit anchor: %v", err)
+		return errors.New("failed to commit anchor: %v", err)
 	}
 
 	<-confirmations
@@ -243,18 +243,18 @@ func (dp defaultProcessor) AnchorDocument(ctx *header.ContextHeader, model docum
 func (dp defaultProcessor) SendDocument(ctx *header.ContextHeader, model documents.Model) error {
 	cd, err := model.PackCoreDocument()
 	if err != nil {
-		return fmt.Errorf("failed to pack core document: %v", err)
+		return errors.New("failed to pack core document: %v", err)
 	}
 
 	av := PostAnchoredValidator(dp.identityService, dp.anchorRepository)
 	err = av.Validate(nil, model)
 	if err != nil {
-		return fmt.Errorf("post anchor validations failed: %v", err)
+		return errors.New("post anchor validations failed: %v", err)
 	}
 
 	extCollaborators, err := GetExternalCollaborators(ctx.Self().ID, cd)
 	if err != nil {
-		return fmt.Errorf("get external collaborators failed: %v", err)
+		return errors.New("get external collaborators failed: %v", err)
 	}
 
 	for _, c := range extCollaborators {

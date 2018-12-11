@@ -1,8 +1,6 @@
 package purchaseorder
 
 import (
-	"fmt"
-
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -13,12 +11,12 @@ import (
 func fieldValidator() documents.Validator {
 	return documents.ValidatorFunc(func(_, new documents.Model) error {
 		if new == nil {
-			return fmt.Errorf("nil document")
+			return errors.New("nil document")
 		}
 
 		po, ok := new.(*PurchaseOrder)
 		if !ok {
-			return fmt.Errorf("unknown document type")
+			return errors.New("unknown document type")
 		}
 
 		var err error
@@ -35,34 +33,34 @@ func dataRootValidator() documents.Validator {
 	return documents.ValidatorFunc(func(_, model documents.Model) (err error) {
 		defer func() {
 			if err != nil {
-				err = fmt.Errorf("data root validation failed: %v", err)
+				err = errors.New("data root validation failed: %v", err)
 			}
 		}()
 
 		if model == nil {
-			return fmt.Errorf("nil document")
+			return errors.New("nil document")
 		}
 
 		coreDoc, err := model.PackCoreDocument()
 		if err != nil {
-			return fmt.Errorf("failed to pack coredocument: %v", err)
+			return errors.New("failed to pack coredocument: %v", err)
 		}
 
 		if utils.IsEmptyByteSlice(coreDoc.DataRoot) {
-			return fmt.Errorf("data root missing")
+			return errors.New("data root missing")
 		}
 
 		inv, ok := model.(*PurchaseOrder)
 		if !ok {
-			return fmt.Errorf("unknown document type: %T", model)
+			return errors.New("unknown document type: %T", model)
 		}
 
 		if err = inv.calculateDataRoot(); err != nil {
-			return fmt.Errorf("failed to calculate data root: %v", err)
+			return errors.New("failed to calculate data root: %v", err)
 		}
 
 		if !utils.IsSameByteSlice(inv.CoreDocument.DataRoot, coreDoc.DataRoot) {
-			return fmt.Errorf("mismatched data root")
+			return errors.New("mismatched data root")
 		}
 
 		return nil

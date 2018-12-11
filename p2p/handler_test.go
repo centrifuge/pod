@@ -4,7 +4,6 @@ package p2p
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"testing"
 
@@ -204,7 +203,7 @@ func Test_getServiceAndModel(t *testing.T) {
 
 	// derive fails
 	srv := mockService{}
-	srv.On("DeriveFromCoreDocument", cd).Return(nil, fmt.Errorf("error")).Once()
+	srv.On("DeriveFromCoreDocument", cd).Return(nil, errors.New("error")).Once()
 	err = registry.Register(cd.EmbeddedData.TypeUrl, srv)
 	assert.Nil(t, err)
 	s, m, err = getServiceAndModel(registry, cd)

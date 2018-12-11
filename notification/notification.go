@@ -1,7 +1,7 @@
 package notification
 
 import (
-	"fmt"
+	"errors"
 	"net/http"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
@@ -65,7 +65,7 @@ func (wh webhookSender) Send(notification *notificationpb.NotificationMessage) (
 	}
 
 	if statusCode != http.StatusOK {
-		return Failure, fmt.Errorf("failed to send webhook: status = %v", statusCode)
+		return Failure, errors.New("failed to send webhook: status = %v", statusCode)
 	}
 
 	log.Infof("Sent Webhook Notification with Payload [%v] to [%s]", notification, url)

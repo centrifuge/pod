@@ -4,11 +4,11 @@ package invoice
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/header"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -77,7 +77,7 @@ func TestGRPCHandler_Create_derive_fail(t *testing.T) {
 	// DeriveFrom payload fails
 	h := getHandler()
 	srv := h.service.(*mockService)
-	srv.On("DeriveFromCreatePayload", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("derive failed")).Once()
+	srv.On("DeriveFromCreatePayload", mock.Anything, mock.Anything).Return(nil, errors.New("derive failed")).Once()
 	_, err := h.Create(context.Background(), nil)
 	srv.AssertExpectations(t)
 	assert.Error(t, err, "must be non nil")
@@ -88,7 +88,7 @@ func TestGRPCHandler_Create_create_fail(t *testing.T) {
 	h := getHandler()
 	srv := h.service.(*mockService)
 	srv.On("DeriveFromCreatePayload", mock.Anything, mock.Anything).Return(new(Invoice), nil).Once()
-	srv.On("Create", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("create failed")).Once()
+	srv.On("Create", mock.Anything, mock.Anything).Return(nil, errors.New("create failed")).Once()
 	payload := &clientinvoicepb.InvoiceCreatePayload{Data: &clientinvoicepb.InvoiceData{GrossAmount: 300}}
 	_, err := h.Create(context.Background(), payload)
 	srv.AssertExpectations(t)
@@ -120,7 +120,7 @@ func TestGRPCHandler_Create_DeriveInvoiceResponse_fail(t *testing.T) {
 	model := new(Invoice)
 	srv.On("DeriveFromCreatePayload", mock.Anything, mock.Anything).Return(model, nil).Once()
 	srv.On("Create", mock.Anything, mock.Anything).Return(model, nil).Once()
-	srv.On("DeriveInvoiceResponse", mock.Anything).Return(nil, fmt.Errorf("derive response failed"))
+	srv.On("DeriveInvoiceResponse", mock.Anything).Return(nil, errors.New("derive response failed"))
 	payload := &clientinvoicepb.InvoiceCreatePayload{Data: &clientinvoicepb.InvoiceData{Currency: "EUR"}}
 	_, err := h.Create(context.Background(), payload)
 	srv.AssertExpectations(t)
@@ -156,7 +156,7 @@ func TestGrpcHandler_Get_invalid_input(t *testing.T) {
 	assert.EqualError(t, err, "identifier is an invalid hex string: hex string without 0x prefix")
 
 	payload.Identifier = identifier
-	srv.On("GetCurrentVersion", identifierBytes).Return(nil, fmt.Errorf("not found"))
+	srv.On("GetCurrentVersion", identifierBytes).Return(nil, errors.New("not found"))
 	res, err = h.Get(context.Background(), payload)
 	srv.AssertExpectations(t)
 	assert.Nil(t, res)
@@ -195,7 +195,7 @@ func TestGrpcHandler_GetVersion_invalid_input(t *testing.T) {
 	payload.Version = "0x00"
 	payload.Identifier = "0x01"
 
-	mockErr := fmt.Errorf("not found")
+	mockErr := errors.New("not found")
 	srv.On("GetVersion", []byte{0x01}, []byte{0x00}).Return(nil, mockErr)
 	res, err = h.GetVersion(context.Background(), payload)
 	srv.AssertExpectations(t)
@@ -224,7 +224,7 @@ func TestGrpcHandler_Update_derive_fail(t *testing.T) {
 	h := getHandler()
 	srv := h.service.(*mockService)
 	payload := &clientinvoicepb.InvoiceUpdatePayload{Identifier: "0x010201"}
-	srv.On("DeriveFromUpdatePayload", payload, mock.Anything).Return(nil, fmt.Errorf("derive error")).Once()
+	srv.On("DeriveFromUpdatePayload", payload, mock.Anything).Return(nil, errors.New("derive error")).Once()
 	res, err := h.Update(context.Background(), payload)
 	srv.AssertExpectations(t)
 	assert.Error(t, err)
@@ -241,7 +241,7 @@ func TestGrpcHandler_Update_update_fail(t *testing.T) {
 	assert.Nil(t, err)
 	payload := &clientinvoicepb.InvoiceUpdatePayload{Identifier: "0x010201"}
 	srv.On("DeriveFromUpdatePayload", payload, mock.Anything).Return(model, nil).Once()
-	srv.On("Update", ctxh, model).Return(nil, fmt.Errorf("update error")).Once()
+	srv.On("Update", ctxh, model).Return(nil, errors.New("update error")).Once()
 	res, err := h.Update(ctx, payload)
 	srv.AssertExpectations(t)
 	assert.Error(t, err)
@@ -259,7 +259,7 @@ func TestGrpcHandler_Update_derive_response_fail(t *testing.T) {
 	payload := &clientinvoicepb.InvoiceUpdatePayload{Identifier: "0x010201"}
 	srv.On("DeriveFromUpdatePayload", payload, mock.Anything).Return(model, nil).Once()
 	srv.On("Update", ctxh, model).Return(model, nil).Once()
-	srv.On("DeriveInvoiceResponse", model).Return(nil, fmt.Errorf("derive response error")).Once()
+	srv.On("DeriveInvoiceResponse", model).Return(nil, errors.New("derive response error")).Once()
 	res, err := h.Update(ctx, payload)
 	srv.AssertExpectations(t)
 	assert.Error(t, err)

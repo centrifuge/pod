@@ -3,9 +3,10 @@
 package nft
 
 import (
-	"errors"
 	"math/big"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/errors"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/coredocument"
