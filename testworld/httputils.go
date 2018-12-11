@@ -59,6 +59,17 @@ func getDocumentIdentifier(t *testing.T, response *httpexpect.Object) string {
 	return docIdentifier
 }
 
+func mintNFT(e *httpexpect.Expect, httpStatus int, payload map[string]interface{}) *httpexpect.Object {
+	resp := e.POST("/token/mint").
+		WithHeader("accept", "application/json").
+		WithHeader("Content-Type", "application/json").
+		WithJSON(payload).
+		Expect().Status(httpStatus)
+
+	httpObj := resp.JSON().Object()
+	return httpObj
+}
+
 func createInsecureClient() *http.Client {
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
