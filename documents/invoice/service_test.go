@@ -492,13 +492,13 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	// nil payload
 	doc, err := invSrv.DeriveFromUpdatePayload(nil, nil)
 	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(documents.ErrDocumentProvidedIsNil, err))
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNil, err))
 	assert.Nil(t, doc)
 
 	// nil payload data
 	doc, err = invSrv.DeriveFromUpdatePayload(&clientinvoicepb.InvoiceUpdatePayload{}, nil)
 	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(documents.ErrDocumentProvidedIsNil, err))
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNil, err))
 	assert.Nil(t, doc)
 
 	// messed up identifier
