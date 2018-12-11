@@ -20,7 +20,7 @@ const (
 	// ErrDocumentInvalidType must be used when a provided document type is not valid to be processed by the service
 	ErrDocumentInvalidType = errors.Error("document is of invalid type")
 
-	// ErrNoDocumentProvidedIsNil must be used when the provided document through a function is nil
+	// ErrDocumentProvidedIsNil must be used when the provided document through a function is nil
 	ErrDocumentProvidedIsNil = errors.Error("no(nil) document provided")
 
 	// ErrDocumentInvalid must only be used when the reason for invalidity is impossible to determine or the invalidity is caused by validation errors
@@ -29,7 +29,7 @@ const (
 	// ErrDocumentNotFound must be used to indicate that the document for provided id is not found in the system
 	ErrDocumentNotFound = errors.Error("document not found in the system database")
 
-	// ErrDocumentNotFound must be used to indicate that the specified version of the document for provided id is not found in the system
+	// ErrDocumentVersionNotFound must be used to indicate that the specified version of the document for provided id is not found in the system
 	ErrDocumentVersionNotFound = errors.Error("specified version of the document not found in the system database")
 
 	// ErrDocumentPersistence must be used when creating or updating a document in the system database failed
