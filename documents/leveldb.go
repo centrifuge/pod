@@ -6,7 +6,35 @@ import (
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
+// LegacyRepository should be implemented by any type that wants to store a document in key-value storage.
+// Deprecated: Use the single collection DB -> `Repository`
+type LegacyRepository interface {
+	// GetKey will prepare the the identifier key from ID
+	// Deprecated: Use the single collection DB functions -> `Repository`
+	GetKey(id []byte) (key []byte)
+
+	// GetByID finds the doc with identifier and marshals it into message
+	// Deprecated: Use the single collection DB functions -> `Repository`
+	LoadByID(id []byte, model Model) error
+
+	// Exists checks for document existence
+	// True if exists else false
+	// Deprecated: Use the single collection DB functions -> `Repository`
+	Exists(id []byte) bool
+
+	// Create stores the initial document
+	// If document exist, it errors out
+	// Deprecated: Use the single collection DB functions -> `Repository`
+	Create(id []byte, model Model) error
+
+	// Update updates the already stored document
+	// errors out when document is missing
+	// Deprecated: Use the single collection DB functions -> `Repository`
+	Update(id []byte, model Model) error
+}
+
 // LevelDBRepository is implements repository
+// Deprecated: in favour of `levelDBRepo`
 type LevelDBRepository struct {
 	KeyPrefix string
 	LevelDB   *leveldb.DB

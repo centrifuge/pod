@@ -12,6 +12,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/identity"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
@@ -132,13 +133,13 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	// nil payload
 	doc, err := poSrv.DeriveFromUpdatePayload(nil, nil)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid payload")
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNil, err))
 	assert.Nil(t, doc)
 
 	// nil payload data
 	doc, err = poSrv.DeriveFromUpdatePayload(&clientpurchaseorderpb.PurchaseOrderUpdatePayload{}, nil)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid payload")
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNil, err))
 	assert.Nil(t, doc)
 
 	// messed up identifier
@@ -155,7 +156,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	payload.Identifier = hexutil.Encode(id)
 	doc, err = poSrv.DeriveFromUpdatePayload(payload, contextHeader)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to fetch old version")
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
 	assert.Nil(t, doc)
 
 	// failed to load from data
@@ -183,7 +184,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	payload.Collaborators = []string{"some wrong ID"}
 	doc, err = poSrv.DeriveFromUpdatePayload(payload, contextHeader)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to prepare new version")
+	assert.True(t, errors.IsOfType(documents.ErrDocumentPrepareCoreDocument, err))
 	assert.Nil(t, doc)
 
 	// success
@@ -215,13 +216,13 @@ func TestService_DeriveFromCreatePayload(t *testing.T) {
 	m, err := poSrv.DeriveFromCreatePayload(nil, ctxh)
 	assert.Nil(t, m)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "input is nil")
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNil, err))
 
 	// nil data payload
 	m, err = poSrv.DeriveFromCreatePayload(&clientpurchaseorderpb.PurchaseOrderCreatePayload{}, ctxh)
 	assert.Nil(t, m)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "input is nil")
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNil, err))
 
 	// Init fails
 	payload := &clientpurchaseorderpb.PurchaseOrderCreatePayload{
@@ -233,7 +234,7 @@ func TestService_DeriveFromCreatePayload(t *testing.T) {
 	m, err = poSrv.DeriveFromCreatePayload(payload, ctxh)
 	assert.Nil(t, m)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "purchase order init failed")
+	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
 
 	// success
 	payload.Data.ExtraData = "0x01020304050607"
@@ -414,14 +415,14 @@ func TestService_CreateProofsInvalidField(t *testing.T) {
 	idService = mockSignatureCheck(i, idService, poSrv)
 	_, err = poSrv.CreateProofs(i.CoreDocument.DocumentIdentifier, []string{"invalid_field"})
 	assert.Error(t, err)
-	assert.Equal(t, "createProofs error No such field: invalid_field in obj", err.Error())
+	assert.True(t, errors.IsOfType(documents.ErrDocumentProof, err))
 }
 
 func TestService_CreateProofsDocumentDoesntExist(t *testing.T) {
 	_, poSrv := getServiceWithMockedLayers()
 	_, err := poSrv.CreateProofs(utils.RandomSlice(32), []string{"po.po_number"})
 	assert.Error(t, err)
-	assert.Equal(t, "document not found: leveldb: not found", err.Error())
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
 }
 
 func updatedAnchoredMockDocument(t *testing.T, model *PurchaseOrder) (*PurchaseOrder, error) {
@@ -482,7 +483,7 @@ func TestService_CreateProofsForVersionDocumentDoesntExist(t *testing.T) {
 	assert.Nil(t, err)
 	_, err = poSrv.CreateProofsForVersion(i.CoreDocument.DocumentIdentifier, utils.RandomSlice(32), []string{"po.po_number"})
 	assert.Error(t, err)
-	assert.Equal(t, "document not found for the given version: leveldb: not found", err.Error())
+	assert.True(t, errors.IsOfType(documents.ErrDocumentVersionNotFound, err))
 }
 
 func TestService_DerivePurchaseOrderData(t *testing.T) {
@@ -496,7 +497,7 @@ func TestService_DerivePurchaseOrderData(t *testing.T) {
 	d, err := poSrv.DerivePurchaseOrderData(m)
 	assert.Nil(t, d)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "document of invalid type")
+	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalidType, err))
 
 	// success
 	payload := testingdocuments.CreatePOPayload()
@@ -540,7 +541,7 @@ func TestService_DerivePurchaseOrderResponse(t *testing.T) {
 	m.AssertExpectations(t)
 	assert.Nil(t, r)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "document of invalid type")
+	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalidType, err))
 
 	// success
 	payload := testingdocuments.CreatePOPayload()
@@ -616,7 +617,7 @@ func TestService_GetVersion_invalid_version(t *testing.T) {
 	assert.Nil(t, err)
 
 	mod, err := poSrv.GetVersion(utils.RandomSlice(32), currentVersion)
-	assert.EqualError(t, err, "[4]document not found for the given version: version is not valid for this identifier")
+	assert.True(t, errors.IsOfType(documents.ErrDocumentVersionNotFound, err))
 	assert.Nil(t, mod)
 }
 

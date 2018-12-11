@@ -9,7 +9,7 @@ import (
 	"context"
 
 	"github.com/centrifuge/go-centrifuge/coredocument"
-	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -22,21 +22,21 @@ func TestFieldValidator_Validate(t *testing.T) {
 	//  nil error
 	err := fv.Validate(nil, nil)
 	assert.Error(t, err)
-	errs := documents.Errors(err)
+	errs := errors.GetErrs(err)
 	assert.Len(t, errs, 1, "errors length must be one")
 	assert.Contains(t, errs[0].Error(), "nil document")
 
 	// unknown type
 	err = fv.Validate(nil, &testingdocuments.MockModel{})
 	assert.Error(t, err)
-	errs = documents.Errors(err)
+	errs = errors.GetErrs(err)
 	assert.Len(t, errs, 1, "errors length must be one")
 	assert.Contains(t, errs[0].Error(), "unknown document type")
 
 	// fail
 	err = fv.Validate(nil, new(PurchaseOrder))
 	assert.Error(t, err)
-	errs = documents.Errors(err)
+	errs = errors.GetErrs(err)
 	assert.Len(t, errs, 1, "errors length must be 2")
 	assert.Contains(t, errs[0].Error(), "currency is invalid")
 

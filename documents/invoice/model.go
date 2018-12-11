@@ -9,8 +9,8 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
-	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/coredocument"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/identity"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
@@ -202,7 +202,7 @@ func (i *Invoice) initInvoiceFromData(data *clientinvoicepb.InvoiceData) error {
 	if data.ExtraData != "" {
 		ed, err := hexutil.Decode(data.ExtraData)
 		if err != nil {
-			return centerrors.Wrap(err, "failed to decode extra data")
+			return errors.NewTypedError(err, fmt.Errorf("failed to decode extra data"))
 		}
 
 		i.ExtraData = ed
@@ -275,7 +275,7 @@ func (i *Invoice) PackCoreDocument() (*coredocumentpb.CoreDocument, error) {
 	invoiceData := i.createP2PProtobuf()
 	serializedInvoice, err := proto.Marshal(invoiceData)
 	if err != nil {
-		return nil, centerrors.Wrap(err, "couldn't serialise InvoiceData")
+		return nil, errors.NewTypedError(err, fmt.Errorf("couldn't serialise InvoiceData"))
 	}
 
 	invoiceAny := any.Any{
@@ -287,7 +287,7 @@ func (i *Invoice) PackCoreDocument() (*coredocumentpb.CoreDocument, error) {
 
 	serializedSalts, err := proto.Marshal(invoiceSalt)
 	if err != nil {
-		return nil, centerrors.Wrap(err, "couldn't serialise InvoiceSalts")
+		return nil, errors.NewTypedError(err, fmt.Errorf("couldn't serialise InvoiceSalts"))
 	}
 
 	invoiceSaltsAny := any.Any{
@@ -305,7 +305,7 @@ func (i *Invoice) PackCoreDocument() (*coredocumentpb.CoreDocument, error) {
 // UnpackCoreDocument unpacks the core document into Invoice
 func (i *Invoice) UnpackCoreDocument(coreDoc *coredocumentpb.CoreDocument) error {
 	if coreDoc == nil {
-		return centerrors.NilError(coreDoc)
+		return errors.New("core document provided is nil %v", coreDoc)
 	}
 
 	if coreDoc.EmbeddedData == nil ||
