@@ -7,6 +7,13 @@ import (
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 )
 
+// Config specified configs required by documents package
+type Config interface {
+
+	// GetIdentityID retrieves the centID(TenentID) configured
+	GetIdentityID() ([]byte, error)
+}
+
 // DocumentProof is a value to represent a document and its field proofs
 type DocumentProof struct {
 	DocumentID  []byte

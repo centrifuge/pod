@@ -52,7 +52,8 @@ type Service interface {
 // service implements Service and handles all invoice related persistence and validations
 // service always returns errors of type `errors.Error` or `errors.TypedError`
 type service struct {
-	repo             documents.LegacyRepository
+	config           documents.Config
+	repo             documents.Repository
 	coreDocProcessor coredocument.Processor
 	notifier         notification.Sender
 	anchorRepository anchors.AnchorRepository
@@ -60,8 +61,8 @@ type service struct {
 }
 
 // DefaultService returns the default implementation of the service
-func DefaultService(config config.Configuration, repo documents.LegacyRepository, processor coredocument.Processor, anchorRepository anchors.AnchorRepository, identityService identity.Service) Service {
-	return service{repo: repo, coreDocProcessor: processor, notifier: notification.NewWebhookSender(config), anchorRepository: anchorRepository, identityService: identityService}
+func DefaultService(config config.Configuration, repo documents.Repository, processor coredocument.Processor, anchorRepository anchors.AnchorRepository, identityService identity.Service) Service {
+	return service{config: config, repo: repo, coreDocProcessor: processor, notifier: notification.NewWebhookSender(config), anchorRepository: anchorRepository, identityService: identityService}
 }
 
 // CreateProofs creates proofs for the latest version document given the fields
@@ -150,8 +151,14 @@ func (s service) calculateDataRoot(old, new documents.Model, validator documents
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
 
+	// get tenant ID
+	tenantID, err := s.config.GetIdentityID()
+	if err != nil {
+		return nil, errors.NewTypedError(documents.ErrDocumentConfigTenantID, err)
+	}
+
 	// we use CurrentVersion as the id since that will be unique across multiple versions of the same document
-	err = s.repo.Create(inv.CoreDocument.CurrentVersion, inv)
+	err = s.repo.Create(tenantID, inv.CoreDocument.CurrentVersion, inv)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentPersistence, err)
 	}
@@ -166,12 +173,22 @@ func (s service) Create(ctx *header.ContextHeader, inv documents.Model) (documen
 		return nil, err
 	}
 
-	inv, err = documents.AnchorDocument(ctx, inv, s.coreDocProcessor, s.repo.Update)
+	inv, err = documents.AnchorDocument(ctx, inv, s.coreDocProcessor, s.updater)
 	if err != nil {
 		return nil, err
 	}
 
 	return inv, nil
+}
+
+// updater wraps logic related to updating documents so that it can be executed as a closure
+func (s service) updater(id []byte, model documents.Model) error {
+	// get tenant ID
+	tenantID, err := s.config.GetIdentityID()
+	if err != nil {
+		return errors.NewTypedError(documents.ErrDocumentConfigTenantID, err)
+	}
+	return s.repo.Update(tenantID, id, model)
 }
 
 // Update finds the old document, validates the new version and persists the updated document
@@ -191,7 +208,7 @@ func (s service) Update(ctx *header.ContextHeader, inv documents.Model) (documen
 		return nil, err
 	}
 
-	inv, err = documents.AnchorDocument(ctx, inv, s.coreDocProcessor, s.repo.Update)
+	inv, err = documents.AnchorDocument(ctx, inv, s.coreDocProcessor, s.updater)
 	if err != nil {
 		return nil, err
 	}
@@ -229,8 +246,12 @@ func (s service) GetCurrentVersion(documentID []byte) (doc documents.Model, err 
 }
 
 func (s service) getInvoiceVersion(documentID, version []byte) (inv *Invoice, err error) {
-	var doc documents.Model = new(Invoice)
-	err = s.repo.LoadByID(version, doc)
+	// get tenant ID
+	tenantID, err := s.config.GetIdentityID()
+	if err != nil {
+		return nil, errors.NewTypedError(documents.ErrDocumentConfigTenantID, err)
+	}
+	doc, err := s.repo.Get(tenantID, version)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentVersionNotFound, err)
 	}
@@ -352,15 +373,21 @@ func (s service) RequestDocumentSignature(contextHeader *header.ContextHeader, m
 		return nil, errors.NewTypedError(documents.ErrDocumentUnPackingCoreDocument, err)
 	}
 
+	// get tenant ID
+	tenantID, err := s.config.GetIdentityID()
+	if err != nil {
+		return nil, errors.NewTypedError(documents.ErrDocumentConfigTenantID, err)
+	}
+
 	// Logic for receiving version n (n > 1) of the document for the first time
-	if !s.repo.Exists(doc.DocumentIdentifier) && !utils.IsSameByteSlice(doc.DocumentIdentifier, doc.CurrentVersion) {
-		err = s.repo.Create(doc.DocumentIdentifier, model)
+	if !s.repo.Exists(tenantID, doc.DocumentIdentifier) && !utils.IsSameByteSlice(doc.DocumentIdentifier, doc.CurrentVersion) {
+		err = s.repo.Create(tenantID, doc.DocumentIdentifier, model)
 		if err != nil {
 			return nil, errors.NewTypedError(documents.ErrDocumentPersistence, err)
 		}
 	}
 
-	err = s.repo.Create(doc.CurrentVersion, model)
+	err = s.repo.Create(tenantID, doc.CurrentVersion, model)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentPersistence, err)
 	}
@@ -380,7 +407,13 @@ func (s service) ReceiveAnchoredDocument(model documents.Model, headers *p2ppb.C
 		return errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
 	}
 
-	err = s.repo.Update(doc.CurrentVersion, model)
+	// get tenant ID
+	tenantID, err := s.config.GetIdentityID()
+	if err != nil {
+		return errors.NewTypedError(documents.ErrDocumentConfigTenantID, err)
+	}
+
+	err = s.repo.Update(tenantID, doc.CurrentVersion, model)
 	if err != nil {
 		return errors.NewTypedError(documents.ErrDocumentPersistence, err)
 	}
@@ -402,5 +435,10 @@ func (s service) ReceiveAnchoredDocument(model documents.Model, headers *p2ppb.C
 
 // Exists checks if an invoice exists
 func (s service) Exists(documentID []byte) bool {
-	return s.repo.Exists(documentID)
+	// get tenant ID
+	tenantID, err := s.config.GetIdentityID()
+	if err != nil {
+		return false
+	}
+	return s.repo.Exists(tenantID, documentID)
 }
