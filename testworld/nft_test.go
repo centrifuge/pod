@@ -12,6 +12,7 @@ import (
 const tokenIdLength = 77
 
 func TestPaymentObligationMint_successful(t *testing.T) {
+	t.Parallel()
 
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
@@ -56,6 +57,8 @@ func TestPaymentObligationMint_successful(t *testing.T) {
 }
 
 func TestPaymentObligationMint_errors(t *testing.T) {
+	t.Parallel()
+
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 
 	tests := []struct {

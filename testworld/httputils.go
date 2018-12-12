@@ -70,6 +70,15 @@ func mintNFT(e *httpexpect.Expect, httpStatus int, payload map[string]interface{
 	return httpObj
 }
 
+func getProof(e *httpexpect.Expect, httpStatus int, documentID string, payload map[string]interface{}) *httpexpect.Object {
+	resp := e.POST("/document/"+documentID+"/proof").
+		WithHeader("accept", "application/json").
+		WithHeader("Content-Type", "application/json").
+		WithJSON(payload).
+		Expect().Status(httpStatus)
+	return resp.JSON().Object()
+}
+
 func createInsecureClient() *http.Client {
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
