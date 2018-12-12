@@ -3,10 +3,11 @@
 package config
 
 import (
-	"github.com/syndtr/goleveldb/leveldb"
 	"os"
 	"reflect"
 	"testing"
+
+	"github.com/syndtr/goleveldb/leveldb"
 
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/utils"

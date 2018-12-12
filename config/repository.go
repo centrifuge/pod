@@ -103,7 +103,6 @@ func (l *levelDBRepo) GetConfig() (Model, error) {
 	return l.get(key)
 }
 
-
 func (l *levelDBRepo) parseModel(data []byte) (Model, error) {
 	v := new(value)
 	err := json.Unmarshal(data, v)
