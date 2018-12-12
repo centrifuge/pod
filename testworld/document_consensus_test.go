@@ -23,7 +23,7 @@ func addExternalCollaborator(t *testing.T, documentType string) {
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 
-	// Alice shares invoice document with Bob first
+	// Alice shares document with Bob first
 	res := createDocument(alice.httpExpect,documentType, http.StatusOK, defaultDocumentPayload(documentType, []string{bob.id.String()}))
 
 	docIdentifier := getDocumentIdentifier(t, res)
@@ -39,7 +39,7 @@ func addExternalCollaborator(t *testing.T, documentType string) {
 	getDocumentAndCheck(bob.httpExpect,documentType, params)
 
 	// Bob updates invoice and shares with Charlie as well
-	res = updateDocument(bob.httpExpect,documentType, http.StatusOK, docIdentifier, updatedInvoicePayload([]string{alice.id.String(), charlie.id.String()}))
+	res = updateDocument(bob.httpExpect,documentType, http.StatusOK, docIdentifier, updatedDocumentPayload(documentType,[]string{alice.id.String(), charlie.id.String()}))
 
 
 	docIdentifier = getDocumentIdentifier(t, res)
@@ -52,18 +52,26 @@ func addExternalCollaborator(t *testing.T, documentType string) {
 	getDocumentAndCheck(charlie.httpExpect,documentType, params)
 }
 
-/*
-func TestHost_CollaboratorTimeOut(t *testing.T) {
+
+
+func TestHost_CollaboratorTimeOut_invoice(t *testing.T) {
 	t.Parallel()
+	collaboratorTimeOut(t,TypeInvoice)
+}
+
+func TestHost_CollaboratorTimeOut_po(t *testing.T) {
+	t.Parallel()
+	collaboratorTimeOut(t,TypePO)
+}
+
+func collaboratorTimeOut(t *testing.T, documentType string) {
+
 	kenny := doctorFord.getHostTestSuite(t, "Kenny")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 
-	// Kenny shares an invoice with Bob
-	response, err := kenny.host.createInvoice(kenny.httpExpect, http.StatusOK, defaultInvoicePayload([]string{bob.id.String()}))
+	// Kenny shares a document with Bob
+	response := createDocument(kenny.httpExpect,documentType, http.StatusOK, defaultInvoicePayload([]string{bob.id.String()}))
 
-	if err != nil {
-		t.Error(err)
-	}
 
 	// check if Bob and Kenny received the document
 	docIdentifier := getDocumentIdentifier(t, response)
@@ -71,32 +79,31 @@ func TestHost_CollaboratorTimeOut(t *testing.T) {
 		"document_id": docIdentifier,
 		"currency":    "USD",
 	}
-	getInvoiceAndCheck(kenny.httpExpect, paramsV1)
-	getInvoiceAndCheck(bob.httpExpect, paramsV1)
+	getDocumentAndCheck(kenny.httpExpect,documentType, paramsV1)
+	getDocumentAndCheck(bob.httpExpect,documentType, paramsV1)
 
 	// Kenny gets killed
 	kenny.host.kill()
 
 	// Bob updates and sends to Alice
-	updatedPayload := updatedInvoicePayload([]string{kenny.id.String()})
+	updatedPayload := updatedDocumentPayload(documentType, []string{kenny.id.String()})
 
 	// Bob will anchor the document without Alice signature but will receive an error because kenny is dead
-	response, err = bob.host.updateInvoice(bob.httpExpect, http.StatusInternalServerError, docIdentifier, updatedPayload)
-	if err != nil {
-		t.Error(err)
-	}
+	response = updateDocument(bob.httpExpect,documentType, http.StatusInternalServerError, docIdentifier, updatedPayload)
+
 
 	// check if bob saved the updated document
 	paramsV2 := map[string]interface{}{
 		"document_id": docIdentifier,
 		"currency":    "EUR",
 	}
-	getInvoiceAndCheck(bob.httpExpect, paramsV2)
+	getDocumentAndCheck(bob.httpExpect,documentType, paramsV2)
 
 	// bring Kenny back to life
 	doctorFord.reLive(t, kenny.name)
 
 	// Kenny should NOT have latest version
-	getInvoiceAndCheck(kenny.httpExpect, paramsV1)
+	getDocumentAndCheck(kenny.httpExpect,documentType, paramsV1)
 
-} */
+}
+

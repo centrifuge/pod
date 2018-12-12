@@ -8,9 +8,6 @@ import (
 	"testing"
 )
 
-const TypeInvoice string = "invoice"
-const TypePO string = "purchaseorder"
-
 func TestHost_Happy(t *testing.T) {
 	t.Parallel()
 	alice := doctorFord.getHostTestSuite(t, "Alice")

@@ -57,7 +57,7 @@ func defaultNFTPayload(collaborators []string) map[string]interface{} {
 
 }
 
-func updatedDocumentPayload(collaborators []string, documentType string) map[string]interface{} {
+func updatedDocumentPayload( documentType string, collaborators []string) map[string]interface{} {
 	switch documentType{
 	case TypeInvoice: return updatedInvoicePayload(collaborators)
 	case TypePO: return updatedPOPayload(collaborators)

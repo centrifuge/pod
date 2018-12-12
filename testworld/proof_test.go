@@ -4,6 +4,8 @@ package testworld
 
 import (
 	"testing"
+	"net/http"
+	"github.com/gavv/httpexpect"
 )
 
 func TestProofWithMultipleFields_invoice_successful(t *testing.T) {
