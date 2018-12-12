@@ -2,13 +2,7 @@
 
 package testworld
 
-import (
-	"net/http"
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-)
-
+/*
 const tokenIdLength = 77
 
 func TestPaymentObligationMint_successful(t *testing.T) {
@@ -100,3 +94,4 @@ func TestPaymentObligationMint_errors(t *testing.T) {
 	}
 
 }
+*/

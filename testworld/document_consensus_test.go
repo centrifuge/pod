@@ -2,11 +2,7 @@
 
 package testworld
 
-import (
-	"net/http"
-	"testing"
-)
-
+/*
 func TestHost_AddExternalCollaborator(t *testing.T) {
 	t.Parallel()
 	alice := doctorFord.getHostTestSuite(t, "Alice")
@@ -94,3 +90,4 @@ func TestHost_CollaboratorTimeOut(t *testing.T) {
 	getInvoiceAndCheck(kenny.httpExpect, paramsV1)
 
 }
+*/

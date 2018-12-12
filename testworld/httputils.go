@@ -20,10 +20,10 @@ func createInsecureClientWithExpect(t *testing.T, baseURL string) *httpexpect.Ex
 	return httpexpect.WithConfig(config)
 }
 
-func getInvoiceAndCheck(e *httpexpect.Expect, params map[string]interface{}) *httpexpect.Value {
+func getDocumentAndCheck(e *httpexpect.Expect,documentType string, params map[string]interface{}) *httpexpect.Value {
 	docIdentifier := params["document_id"].(string)
 
-	objGet := e.GET("/invoice/"+docIdentifier).
+	objGet := e.GET("/"+documentType+"/"+docIdentifier).
 		WithHeader("accept", "application/json").
 		WithHeader("Content-Type", "application/json").
 		Expect().Status(http.StatusOK).JSON().NotNull()
@@ -33,8 +33,8 @@ func getInvoiceAndCheck(e *httpexpect.Expect, params map[string]interface{}) *ht
 	return objGet
 }
 
-func createInvoice(e *httpexpect.Expect, status int, payload map[string]interface{}) *httpexpect.Object {
-	obj := e.POST("/invoice").
+func createDocument(e *httpexpect.Expect,documentType string, status int, payload map[string]interface{}) *httpexpect.Object {
+	obj := e.POST("/"+documentType).
 		WithHeader("accept", "application/json").
 		WithHeader("Content-Type", "application/json").
 		WithJSON(payload).
@@ -42,8 +42,8 @@ func createInvoice(e *httpexpect.Expect, status int, payload map[string]interfac
 	return obj
 }
 
-func updateInvoice(e *httpexpect.Expect, status int, docIdentifier string, payload map[string]interface{}) *httpexpect.Object {
-	obj := e.PUT("/invoice/"+docIdentifier).
+func updateDocument(e *httpexpect.Expect,documentType string, status int, docIdentifier string, payload map[string]interface{}) *httpexpect.Object {
+	obj := e.PUT("/"+documentType+"/"+docIdentifier).
 		WithHeader("accept", "application/json").
 		WithHeader("Content-Type", "application/json").
 		WithJSON(payload).

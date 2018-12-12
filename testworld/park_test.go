@@ -8,6 +8,9 @@ import (
 	"testing"
 )
 
+const TypeInvoice string = "invoice"
+const TypePO string = "purchaseorder"
+
 func TestHost_Happy(t *testing.T) {
 	t.Parallel()
 	alice := doctorFord.getHostTestSuite(t, "Alice")
@@ -15,10 +18,8 @@ func TestHost_Happy(t *testing.T) {
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 
 	// alice shares a document with bob and charlie
-	res, err := alice.host.createInvoice(alice.httpExpect, http.StatusOK, defaultInvoicePayload([]string{bob.id.String(), charlie.id.String()}))
-	if err != nil {
-		t.Error(err)
-	}
+	res := createDocument(alice.httpExpect, TypeInvoice, http.StatusOK, defaultInvoicePayload([]string{bob.id.String(), charlie.id.String()}))
+
 
 	docIdentifier := getDocumentIdentifier(t, res)
 
@@ -29,8 +30,8 @@ func TestHost_Happy(t *testing.T) {
 		"document_id": docIdentifier,
 		"currency":    "USD",
 	}
-	getInvoiceAndCheck(alice.httpExpect, params)
-	getInvoiceAndCheck(bob.httpExpect, params)
-	getInvoiceAndCheck(charlie.httpExpect, params)
+	getDocumentAndCheck(alice.httpExpect,TypeInvoice, params)
+	getDocumentAndCheck(bob.httpExpect,TypeInvoice, params)
+	getDocumentAndCheck(charlie.httpExpect,TypeInvoice, params)
 	fmt.Println("Host test success")
 }
