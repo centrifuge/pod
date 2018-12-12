@@ -5,6 +5,8 @@ package testworld
 import (
 	"net/http"
 	"testing"
+
+	"github.com/gavv/httpexpect"
 )
 
 func TestProofWithMultipleFields_successful(t *testing.T) {
@@ -22,13 +24,17 @@ func TestProofWithMultipleFields_successful(t *testing.T) {
 		t.Error("docIdentifier empty")
 	}
 
-	// Alice want's to get a proof
-	proofPayload := map[string]interface{}{
-		"type":   "http://github.com/centrifuge/centrifuge-protobufs/invoice/#invoice.InvoiceData",
-		"fields": []string{"invoice.net_amount", "invoice.currency"},
-	}
-	objProof := getProof(alice.httpExpect, http.StatusOK, docIdentifier, proofPayload)
+	proofPayload := defaultProofPayload()
 
+	proofFromAlice := getProof(alice.httpExpect, http.StatusOK, docIdentifier, proofPayload)
+	proofFromBob := getProof(bob.httpExpect, http.StatusOK, docIdentifier, proofPayload)
+
+	checkProof(proofFromAlice, docIdentifier)
+	checkProof(proofFromBob, docIdentifier)
+
+}
+
+func checkProof(objProof *httpexpect.Object, docIdentifier string) {
 	objProof.Path("$.header.document_id").String().Equal(docIdentifier)
 	objProof.Path("$.field_proofs[0].property").String().Equal("invoice.net_amount")
 	objProof.Path("$.field_proofs[0].sorted_hashes").NotNull()
