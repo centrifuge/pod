@@ -13,13 +13,13 @@ const tokenIdLength = 77
 
 func TestPaymentObligationMint_invoice_successful(t *testing.T) {
 	t.Parallel()
-	paymentObligationMint(t, TypeInvoice)
+	paymentObligationMint(t, typeInvoice)
 
 }
 
 func TestPaymentObligationMint_po_successful(t *testing.T) {
 	t.Parallel()
-	paymentObligationMint(t, TypePO)
+	paymentObligationMint(t, typePO)
 
 }
 
@@ -44,8 +44,8 @@ func paymentObligationMint(t *testing.T, documentType string) {
 	getDocumentAndCheck(bob.httpExpect, documentType, params)
 
 	proofPrefix := documentType
-	if proofPrefix == TypePO {
-		proofPrefix = POPrefix
+	if proofPrefix == typePO {
+		proofPrefix = poPrefix
 	}
 
 	// mint an NFT

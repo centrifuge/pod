@@ -5,9 +5,9 @@ package testworld
 func defaultDocumentPayload(documentType string, collaborators []string) map[string]interface{} {
 
 	switch documentType {
-	case TypeInvoice:
+	case typeInvoice:
 		return defaultInvoicePayload(collaborators)
-	case TypePO:
+	case typePO:
 		return defaultPOPayload(collaborators)
 	default:
 		return defaultInvoicePayload(collaborators)
@@ -75,9 +75,9 @@ func pONFTPayload(collaborators []string) map[string]interface{} {
 func defaultNFTPayload(documentType string, collaborators []string) map[string]interface{} {
 
 	switch documentType {
-	case TypeInvoice:
+	case typeInvoice:
 		return invoiceNFTPayload(collaborators)
-	case TypePO:
+	case typePO:
 		return pONFTPayload(collaborators)
 	default:
 		return invoiceNFTPayload(collaborators)
@@ -87,9 +87,9 @@ func defaultNFTPayload(documentType string, collaborators []string) map[string]i
 
 func updatedDocumentPayload(documentType string, collaborators []string) map[string]interface{} {
 	switch documentType {
-	case TypeInvoice:
+	case typeInvoice:
 		return updatedInvoicePayload(collaborators)
-	case TypePO:
+	case typePO:
 		return updatedPOPayload(collaborators)
 	default:
 		return updatedInvoicePayload(collaborators)
@@ -125,7 +125,7 @@ func updatedInvoicePayload(collaborators []string) map[string]interface{} {
 }
 
 func defaultProofPayload(documentType string) map[string]interface{} {
-	if documentType == TypeInvoice {
+	if documentType == typeInvoice {
 
 		return map[string]interface{}{
 			"type":   "http://github.com/centrifuge/centrifuge-protobufs/invoice/#invoice.InvoiceData",

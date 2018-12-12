@@ -8,9 +8,9 @@ import (
 	"github.com/gavv/httpexpect"
 )
 
-const TypeInvoice string = "invoice"
-const TypePO string = "purchaseorder"
-const POPrefix string = "po"
+const typeInvoice string = "invoice"
+const typePO string = "purchaseorder"
+const poPrefix string = "po"
 
 func createInsecureClientWithExpect(t *testing.T, baseURL string) *httpexpect.Expect {
 	config := httpexpect.Config{

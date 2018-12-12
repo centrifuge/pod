@@ -15,7 +15,7 @@ func TestHost_Happy(t *testing.T) {
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 
 	// alice shares a document with bob and charlie
-	res := createDocument(alice.httpExpect, TypeInvoice, http.StatusOK, defaultInvoicePayload([]string{bob.id.String(), charlie.id.String()}))
+	res := createDocument(alice.httpExpect, typeInvoice, http.StatusOK, defaultInvoicePayload([]string{bob.id.String(), charlie.id.String()}))
 
 	docIdentifier := getDocumentIdentifier(t, res)
 
@@ -26,8 +26,8 @@ func TestHost_Happy(t *testing.T) {
 		"document_id": docIdentifier,
 		"currency":    "USD",
 	}
-	getDocumentAndCheck(alice.httpExpect, TypeInvoice, params)
-	getDocumentAndCheck(bob.httpExpect, TypeInvoice, params)
-	getDocumentAndCheck(charlie.httpExpect, TypeInvoice, params)
+	getDocumentAndCheck(alice.httpExpect, typeInvoice, params)
+	getDocumentAndCheck(bob.httpExpect, typeInvoice, params)
+	getDocumentAndCheck(charlie.httpExpect, typeInvoice, params)
 	fmt.Println("Host test success")
 }

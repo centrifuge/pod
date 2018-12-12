@@ -9,12 +9,12 @@ import (
 
 func TestHost_AddExternalCollaborator_invoice(t *testing.T) {
 	t.Parallel()
-	addExternalCollaborator(t, TypeInvoice)
+	addExternalCollaborator(t, typeInvoice)
 }
 
 func TestHost_AddExternalCollaborator_po(t *testing.T) {
 	t.Parallel()
-	addExternalCollaborator(t, TypePO)
+	addExternalCollaborator(t, typePO)
 }
 
 func addExternalCollaborator(t *testing.T, documentType string) {
@@ -50,14 +50,12 @@ func addExternalCollaborator(t *testing.T, documentType string) {
 	getDocumentAndCheck(charlie.httpExpect, documentType, params)
 }
 
-func TestHost_CollaboratorTimeOut_invoice(t *testing.T) {
+func TestHost_CollaboratorTimeOut(t *testing.T) {
 	t.Parallel()
-	collaboratorTimeOut(t, TypeInvoice)
-}
 
-func TestHost_CollaboratorTimeOut_po(t *testing.T) {
-	t.Parallel()
-	collaboratorTimeOut(t, TypePO)
+	//currently can't be run in parallel (because of node kill)
+	collaboratorTimeOut(t, typeInvoice)
+	collaboratorTimeOut(t, typePO)
 }
 
 func collaboratorTimeOut(t *testing.T, documentType string) {

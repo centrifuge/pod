@@ -11,13 +11,13 @@ import (
 
 func TestProofWithMultipleFields_invoice_successful(t *testing.T) {
 	t.Parallel()
-	proofWithMultipleFields_successful(t, TypeInvoice)
+	proofWithMultipleFields_successful(t, typeInvoice)
 
 }
 
 func TestProofWithMultipleFields_po_successful(t *testing.T) {
 	t.Parallel()
-	proofWithMultipleFields_successful(t, TypePO)
+	proofWithMultipleFields_successful(t, typePO)
 
 }
 
@@ -45,8 +45,8 @@ func proofWithMultipleFields_successful(t *testing.T, documentType string) {
 
 func checkProof(objProof *httpexpect.Object, documentType string, docIdentifier string) {
 
-	if documentType == TypePO {
-		documentType = POPrefix
+	if documentType == typePO {
+		documentType = poPrefix
 	}
 
 	objProof.Path("$.header.document_id").String().Equal(docIdentifier)
