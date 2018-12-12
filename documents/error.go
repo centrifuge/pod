@@ -8,6 +8,12 @@ import (
 
 const (
 
+	// ErrDocumentConfigTenantID must be used for errors related to tenantID operations
+	ErrDocumentConfigTenantID = errors.Error("error with tenantID operations")
+
+	// ErrDocumentBootstrap must be used for errors related to documents package bootstrapping
+	ErrDocumentBootstrap = errors.Error("error when bootstrapping document package")
+
 	// ErrDocumentIdentifier must be used for errors caused by document identifier problems
 	ErrDocumentIdentifier = errors.Error("document identifier error")
 
@@ -49,6 +55,26 @@ const (
 
 	// ErrDocumentProof must be used when document proof creation fails
 	ErrDocumentProof = errors.Error("document proof error")
+
+	// Document repository errors
+
+	// ErrDocumentRepositoryModelNotRegistered must be used when the model hasn't been registered in the database repository
+	ErrDocumentRepositoryModelNotRegistered = errors.Error("document model hasn't been registered in the database repository")
+
+	// ErrDocumentRepositorySerialisation must be used when document repository encounters a marshalling error
+	ErrDocumentRepositorySerialisation = errors.Error("document repository encountered a marshalling error")
+
+	// ErrDocumentRepositoryModelNotFound must be used when document repository can not locate the given model
+	ErrDocumentRepositoryModelNotFound = errors.Error("document repository could not locate the given model")
+
+	// ErrDocumentRepositoryModelSave must be used when document repository can not save the given model
+	ErrDocumentRepositoryModelSave = errors.Error("document repository could not save the given model")
+
+	// ErrDocumentRepositoryModelAllReadyExists must be used when document repository finds an already existing model when saving
+	ErrDocumentRepositoryModelAllReadyExists = errors.Error("document repository found an already existing model when saving")
+
+	// ErrDocumentRepositoryModelDoesntExist must be used when document repository does not find an existing model for an update
+	ErrDocumentRepositoryModelDoesntExist = errors.Error("document repository did not find an existing model for an update")
 )
 
 // Error wraps an error with specific key
