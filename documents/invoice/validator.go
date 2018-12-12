@@ -5,6 +5,7 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils"
 )
 
@@ -22,7 +23,7 @@ func fieldValidator() documents.Validator {
 
 		var err error
 		if !documents.IsCurrencyValid(inv.Currency) {
-			err = documents.AppendError(err, documents.NewError("inv_currency", "currency is invalid"))
+			err = errors.AppendError(err, documents.NewError("inv_currency", "currency is invalid"))
 		}
 
 		return err

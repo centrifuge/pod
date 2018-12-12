@@ -32,7 +32,7 @@ import (
 var (
 	handler    p2ppb.P2PServiceServer
 	anchorRepo anchors.AnchorRepository
-	cfg        *config.Configuration
+	cfg        config.Configuration
 	idService  identity.Service
 )
 
@@ -42,7 +42,7 @@ func TestMain(m *testing.M) {
 	registry := ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
 	anchorRepo = ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
 	idService = ctx[identity.BootstrappedIDService].(identity.Service)
-	cfg = ctx[config.BootstrappedConfig].(*config.Configuration)
+	cfg = ctx[config.BootstrappedConfig].(config.Configuration)
 	cfg.Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
 	cfg.Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
 	cfg.Set("keys.ethauth.publicKey", "../build/resources/ethauth.pub.pem")
@@ -74,7 +74,7 @@ func TestHandler_RequestDocumentSignature_AlreadyExists(t *testing.T) {
 	req = getSignatureRequest(doc)
 	resp, err = handler.RequestDocumentSignature(context.Background(), req)
 	assert.NotNil(t, err, "must not be nil")
-	assert.Contains(t, err.Error(), "document already exists")
+	assert.Contains(t, err.Error(), documents.ErrDocumentRepositoryModelAllReadyExists.Error())
 }
 
 func TestHandler_RequestDocumentSignature_UpdateSucceeds(t *testing.T) {
@@ -147,7 +147,7 @@ func TestHandler_SendAnchoredDocument_update_fail(t *testing.T) {
 	anchorReq := getAnchoredRequest(doc)
 	anchorResp, err := handler.SendAnchoredDocument(context.Background(), anchorReq)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "document doesn't exists")
+	assert.Contains(t, err.Error(), documents.ErrDocumentRepositoryModelDoesntExist.Error())
 	assert.Nil(t, anchorResp)
 }
 

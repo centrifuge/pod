@@ -3,12 +3,11 @@
 package invoice
 
 import (
+	"context"
 	"encoding/json"
+	"os"
 	"reflect"
 	"testing"
-
-	"context"
-	"os"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
@@ -33,7 +32,7 @@ import (
 )
 
 var ctx = map[string]interface{}{}
-var cfg *config.Configuration
+var cfg config.Configuration
 
 func TestMain(m *testing.M) {
 	ethClient := &testingcommons.MockEthClient{}
@@ -52,7 +51,7 @@ func TestMain(m *testing.M) {
 		&queue.Starter{},
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
-	cfg = ctx[config.BootstrappedConfig].(*config.Configuration)
+	cfg = ctx[config.BootstrappedConfig].(config.Configuration)
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)

@@ -11,6 +11,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/keytools/secp256k1"
@@ -259,13 +260,13 @@ func (dp defaultProcessor) SendDocument(ctx *header.ContextHeader, model documen
 	for _, c := range extCollaborators {
 		cID, erri := identity.ToCentID(c)
 		if erri != nil {
-			err = documents.AppendError(err, erri)
+			err = errors.AppendError(err, erri)
 			continue
 		}
 
 		erri = dp.Send(ctx, cd, cID)
 		if erri != nil {
-			err = documents.AppendError(err, erri)
+			err = errors.AppendError(err, erri)
 		}
 	}
 

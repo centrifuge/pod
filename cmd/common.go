@@ -28,7 +28,7 @@ func createIdentity(idService identity.Service) (identity.CentID, error) {
 	return centID, nil
 }
 
-func generateKeys(config config.Config) {
+func generateKeys(config config.Configuration) {
 	p2pPub, p2pPvt := config.GetSigningKeyPair()
 	ethAuthPub, ethAuthPvt := config.GetEthAuthKeyPair()
 	keytools.GenerateSigningKeyPair(p2pPub, p2pPvt, "ed25519")
@@ -82,7 +82,7 @@ func CreateConfig(
 	}
 	log.Infof("Config File Created: %s\n", v.ConfigFileUsed())
 	ctx, canc, _ := CommandBootstrap(v.ConfigFileUsed())
-	cfg := ctx[config.BootstrappedConfig].(*config.Configuration)
+	cfg := ctx[config.BootstrappedConfig].(config.Configuration)
 	generateKeys(cfg)
 
 	idService := ctx[identity.BootstrappedIDService].(identity.Service)

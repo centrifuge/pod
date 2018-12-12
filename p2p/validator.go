@@ -6,7 +6,7 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/code"
-	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/version"
 )
 
@@ -20,13 +20,13 @@ type Validator interface {
 type ValidatorGroup []Validator
 
 // Validate will execute all group specific atomic validations
-func (group ValidatorGroup) Validate(header *p2ppb.CentrifugeHeader) (errors error) {
+func (group ValidatorGroup) Validate(header *p2ppb.CentrifugeHeader) (errs error) {
 	for _, v := range group {
 		if err := v.Validate(header); err != nil {
-			errors = documents.AppendError(errors, err)
+			errs = errors.AppendError(errs, err)
 		}
 	}
-	return errors
+	return errs
 }
 
 // ValidatorFunc implements Validator and can be used as a adaptor for functions

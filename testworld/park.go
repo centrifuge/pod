@@ -195,7 +195,7 @@ type host struct {
 	bootstrappedCtx    map[string]interface{}
 	txPoolAccess       bool
 	smartContractAddrs *config.SmartContractAddresses
-	config             config.Config
+	config             config.Configuration
 	identity           identity.Identity
 	node               *node.Node
 	canc               context.CancelFunc
@@ -243,7 +243,7 @@ func (h *host) init() error {
 	if err != nil {
 		return err
 	}
-	h.config = h.bootstrappedCtx[config.BootstrappedConfig].(config.Config)
+	h.config = h.bootstrappedCtx[config.BootstrappedConfig].(config.Configuration)
 	idService := h.bootstrappedCtx[identity.BootstrappedIDService].(identity.Service)
 	idBytes, err := h.config.GetIdentityID()
 	if err != nil {
@@ -329,6 +329,10 @@ func (h *host) isLive(softTimeOut time.Duration) (bool, error) {
 
 func (h *host) createInvoice(e *httpexpect.Expect, status int, inv map[string]interface{}) (*httpexpect.Object, error) {
 	return createInvoice(e, status, inv), nil
+}
+
+func (h *host) mintNFT(e *httpexpect.Expect, status int, inv map[string]interface{}) (*httpexpect.Object, error) {
+	return mintNFT(e, status, inv), nil
 }
 
 func (h *host) updateInvoice(e *httpexpect.Expect, status int, docIdentifier string, inv map[string]interface{}) (*httpexpect.Object, error) {

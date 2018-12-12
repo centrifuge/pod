@@ -1,6 +1,7 @@
 package documents
 
 import (
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils"
 )
 
@@ -14,14 +15,14 @@ type Validator interface {
 type ValidatorGroup []Validator
 
 //Validate will execute all group specific atomic validations
-func (group ValidatorGroup) Validate(oldState Model, newState Model) (errors error) {
+func (group ValidatorGroup) Validate(oldState Model, newState Model) (errs error) {
 
 	for _, v := range group {
 		if err := v.Validate(oldState, newState); err != nil {
-			errors = AppendError(errors, err)
+			errs = errors.AppendError(errs, err)
 		}
 	}
-	return errors
+	return errs
 }
 
 // IsCurrencyValid checks if the currency is of length 3

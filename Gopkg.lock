@@ -343,22 +343,6 @@
   revision = "d9f6b97f8db22dd1e090fd0bbbe98f09cc7dd0a8"
 
 [[projects]]
-  digest = "1:0ade334594e69404d80d9d323445d2297ff8161637f9b2d347cc6973d2d6f05b"
-  name = "github.com/hashicorp/errwrap"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "8a6fb523712970c966eefc6b39ed2c5e74880354"
-  version = "v1.0.0"
-
-[[projects]]
-  digest = "1:f668349b83f7d779567c880550534addeca7ebadfdcf44b0b9c39be61864b4b7"
-  name = "github.com/hashicorp/go-multierror"
-  packages = ["."]
-  pruneopts = "T"
-  revision = "886a7fbe3eb1c874d46f623bfa70af45f425b3d1"
-  version = "v1.0.0"
-
-[[projects]]
   digest = "1:8ec8d88c248041a6df5f6574b87bc00e7e0b493881dad2e7ef47b11dc69093b5"
   name = "github.com/hashicorp/golang-lru"
   packages = [
@@ -1553,7 +1537,6 @@
     "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger/options",
     "github.com/grpc-ecosystem/grpc-gateway/runtime",
     "github.com/grpc-ecosystem/grpc-gateway/utilities",
-    "github.com/hashicorp/go-multierror",
     "github.com/ipfs/go-cid",
     "github.com/ipfs/go-datastore",
     "github.com/ipfs/go-ipfs-addr",
@@ -1577,6 +1560,7 @@
     "github.com/stretchr/testify/assert",
     "github.com/stretchr/testify/mock",
     "github.com/syndtr/goleveldb/leveldb",
+    "github.com/syndtr/goleveldb/leveldb/util",
     "github.com/whyrusleeping/go-logging",
     "golang.org/x/crypto/ed25519",
     "golang.org/x/net/context",

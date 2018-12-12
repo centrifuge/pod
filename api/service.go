@@ -46,7 +46,7 @@ func registerServices(ctx context.Context, cfg Config, grpcServer *grpc.Server, 
 	}
 
 	// invoice
-	invCfg := cfg.(config.Config)
+	invCfg := cfg.(config.Configuration)
 	handler, err := invoice.GRPCHandler(invCfg, registry)
 	if err != nil {
 		return err
@@ -58,7 +58,7 @@ func registerServices(ctx context.Context, cfg Config, grpcServer *grpc.Server, 
 	}
 
 	// purchase orders
-	poCfg := cfg.(config.Config)
+	poCfg := cfg.(config.Configuration)
 	srv, err := purchaseorder.GRPCHandler(poCfg, registry)
 	if err != nil {
 		return fmt.Errorf("failed to get purchase order handler: %v", err)

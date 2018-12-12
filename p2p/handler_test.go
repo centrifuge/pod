@@ -19,6 +19,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/context/testlogging"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/testingutils/coredocument"
 	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/golang/protobuf/ptypes/any"
@@ -30,7 +31,7 @@ var (
 	grpcHandler p2ppb.P2PServiceServer
 	registry    *documents.ServiceRegistry
 	coreDoc     = testingcoredocument.GenerateCoreDocument()
-	cfg         *config.Configuration
+	cfg         config.Configuration
 	testClient  *p2pServer
 )
 
@@ -42,7 +43,7 @@ func TestMain(m *testing.M) {
 	}
 	ctx := make(map[string]interface{})
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
-	cfg = ctx[config.BootstrappedConfig].(*config.Configuration)
+	cfg = ctx[config.BootstrappedConfig].(config.Configuration)
 	cfg.Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
 	cfg.Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
 	cfg.Set("keys.ethauth.publicKey", "../build/resources/ethauth.pub.pem")
@@ -133,12 +134,12 @@ func TestP2PService_basicChecks(t *testing.T) {
 	}{
 		{
 			header: &p2ppb.CentrifugeHeader{CentNodeVersion: "someversion", NetworkIdentifier: 12},
-			err:    documents.AppendError(version.IncompatibleVersionError("someversion"), incompatibleNetworkError(cfg.GetNetworkID(), 12)),
+			err:    errors.AppendError(version.IncompatibleVersionError("someversion"), incompatibleNetworkError(cfg.GetNetworkID(), 12)),
 		},
 
 		{
 			header: &p2ppb.CentrifugeHeader{CentNodeVersion: "0.0.1", NetworkIdentifier: 12},
-			err:    documents.AppendError(incompatibleNetworkError(cfg.GetNetworkID(), 12), nil),
+			err:    errors.AppendError(incompatibleNetworkError(cfg.GetNetworkID(), 12), nil),
 		},
 
 		{

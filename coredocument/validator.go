@@ -7,6 +7,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -61,17 +62,17 @@ func UpdateVersionValidator() documents.Validator {
 
 		for _, c := range checks {
 			if !utils.CheckMultiple32BytesFilled(c.a, c.b) {
-				err = documents.AppendError(err, documents.NewError(c.name, "missing identifiers"))
+				err = errors.AppendError(err, documents.NewError(c.name, "missing identifiers"))
 				continue
 			}
 
 			if !utils.IsSameByteSlice(c.a, c.b) {
-				err = documents.AppendError(err, documents.NewError(c.name, "mismatched"))
+				err = errors.AppendError(err, documents.NewError(c.name, "mismatched"))
 			}
 		}
 
 		if utils.IsEmptyByteSlice(newCD.NextVersion) {
-			err = documents.AppendError(err, documents.NewError("cd_next_version", centerrors.RequiredField))
+			err = errors.AppendError(err, documents.NewError("cd_next_version", centerrors.RequiredField))
 		}
 
 		return err
@@ -105,19 +106,19 @@ func baseValidator() documents.Validator {
 		}
 
 		if utils.IsEmptyByteSlice(cd.DocumentIdentifier) {
-			err = documents.AppendError(err, documents.NewError("cd_identifier", centerrors.RequiredField))
+			err = errors.AppendError(err, documents.NewError("cd_identifier", centerrors.RequiredField))
 		}
 
 		if utils.IsEmptyByteSlice(cd.CurrentVersion) {
-			err = documents.AppendError(err, documents.NewError("cd_current_version", centerrors.RequiredField))
+			err = errors.AppendError(err, documents.NewError("cd_current_version", centerrors.RequiredField))
 		}
 
 		if utils.IsEmptyByteSlice(cd.NextVersion) {
-			err = documents.AppendError(err, documents.NewError("cd_next_version", centerrors.RequiredField))
+			err = errors.AppendError(err, documents.NewError("cd_next_version", centerrors.RequiredField))
 		}
 
 		if utils.IsEmptyByteSlice(cd.DataRoot) {
-			err = documents.AppendError(err, documents.NewError("cd_data_root", centerrors.RequiredField))
+			err = errors.AppendError(err, documents.NewError("cd_data_root", centerrors.RequiredField))
 		}
 
 		// double check the identifiers
@@ -126,7 +127,7 @@ func baseValidator() documents.Validator {
 		// Problem (re-using an old identifier for NextVersion): CurrentVersion or DocumentIdentifier same as NextVersion
 		if isSameBytes(cd.NextVersion, cd.DocumentIdentifier) ||
 			isSameBytes(cd.NextVersion, cd.CurrentVersion) {
-			err = documents.AppendError(err, documents.NewError("cd_overall", centerrors.IdentifierReUsed))
+			err = errors.AppendError(err, documents.NewError("cd_overall", centerrors.IdentifierReUsed))
 		}
 
 		// lets not do verbose check like earlier since these will be
@@ -138,7 +139,7 @@ func baseValidator() documents.Validator {
 				salts.NextVersion,
 				salts.DocumentIdentifier,
 				salts.PreviousRoot) {
-			err = documents.AppendError(err, documents.NewError("cd_salts", centerrors.RequiredField))
+			err = errors.AppendError(err, documents.NewError("cd_salts", centerrors.RequiredField))
 		}
 
 		return err
@@ -215,15 +216,15 @@ func readyForSignaturesValidator(centIDBytes, priv, pub []byte) documents.Valida
 		s := signatures.Sign(centIDBytes, priv, pub, cd.SigningRoot)
 		sh := cd.Signatures[0]
 		if !utils.IsSameByteSlice(s.EntityId, sh.EntityId) {
-			err = documents.AppendError(err, documents.NewError("cd_entity_id", "entity ID mismatch"))
+			err = errors.AppendError(err, documents.NewError("cd_entity_id", "entity ID mismatch"))
 		}
 
 		if !utils.IsSameByteSlice(s.PublicKey, sh.PublicKey) {
-			err = documents.AppendError(err, documents.NewError("cd_public_key", "public key mismatch"))
+			err = errors.AppendError(err, documents.NewError("cd_public_key", "public key mismatch"))
 		}
 
 		if !utils.IsSameByteSlice(s.Signature, sh.Signature) {
-			err = documents.AppendError(err, documents.NewError("cd_signature", "signature mismatch"))
+			err = errors.AppendError(err, documents.NewError("cd_signature", "signature mismatch"))
 		}
 
 		return err
@@ -247,7 +248,7 @@ func signaturesValidator(idService identity.Service) documents.Validator {
 
 		for _, sig := range cd.Signatures {
 			if erri := idService.ValidateSignature(sig, cd.SigningRoot); erri != nil {
-				err = documents.AppendError(
+				err = errors.AppendError(
 					err,
 					documents.NewError(
 						fmt.Sprintf("signature_%s", hexutil.Encode(sig.EntityId)),
