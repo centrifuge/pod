@@ -46,3 +46,10 @@ func updatedInvoicePayload(collaborators []string) map[string]interface{} {
 	}
 
 }
+
+func defaultProofPayload() map[string]interface{} {
+	return map[string]interface{}{
+		"type":   "http://github.com/centrifuge/centrifuge-protobufs/invoice/#invoice.InvoiceData",
+		"fields": []string{"invoice.net_amount", "invoice.currency"},
+	}
+}
