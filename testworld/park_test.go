@@ -17,7 +17,6 @@ func TestHost_Happy(t *testing.T) {
 	// alice shares a document with bob and charlie
 	res := createDocument(alice.httpExpect, TypeInvoice, http.StatusOK, defaultInvoicePayload([]string{bob.id.String(), charlie.id.String()}))
 
-
 	docIdentifier := getDocumentIdentifier(t, res)
 
 	if docIdentifier == "" {
@@ -27,8 +26,8 @@ func TestHost_Happy(t *testing.T) {
 		"document_id": docIdentifier,
 		"currency":    "USD",
 	}
-	getDocumentAndCheck(alice.httpExpect,TypeInvoice, params)
-	getDocumentAndCheck(bob.httpExpect,TypeInvoice, params)
-	getDocumentAndCheck(charlie.httpExpect,TypeInvoice, params)
+	getDocumentAndCheck(alice.httpExpect, TypeInvoice, params)
+	getDocumentAndCheck(bob.httpExpect, TypeInvoice, params)
+	getDocumentAndCheck(charlie.httpExpect, TypeInvoice, params)
 	fmt.Println("Host test success")
 }

@@ -23,7 +23,7 @@ func createInsecureClientWithExpect(t *testing.T, baseURL string) *httpexpect.Ex
 	return httpexpect.WithConfig(config)
 }
 
-func getDocumentAndCheck(e *httpexpect.Expect,documentType string, params map[string]interface{}) *httpexpect.Value {
+func getDocumentAndCheck(e *httpexpect.Expect, documentType string, params map[string]interface{}) *httpexpect.Value {
 	docIdentifier := params["document_id"].(string)
 
 	objGet := e.GET("/"+documentType+"/"+docIdentifier).
@@ -36,7 +36,7 @@ func getDocumentAndCheck(e *httpexpect.Expect,documentType string, params map[st
 	return objGet
 }
 
-func createDocument(e *httpexpect.Expect,documentType string, status int, payload map[string]interface{}) *httpexpect.Object {
+func createDocument(e *httpexpect.Expect, documentType string, status int, payload map[string]interface{}) *httpexpect.Object {
 	obj := e.POST("/"+documentType).
 		WithHeader("accept", "application/json").
 		WithHeader("Content-Type", "application/json").
@@ -45,7 +45,7 @@ func createDocument(e *httpexpect.Expect,documentType string, status int, payloa
 	return obj
 }
 
-func updateDocument(e *httpexpect.Expect,documentType string, status int, docIdentifier string, payload map[string]interface{}) *httpexpect.Object {
+func updateDocument(e *httpexpect.Expect, documentType string, status int, docIdentifier string, payload map[string]interface{}) *httpexpect.Object {
 	obj := e.PUT("/"+documentType+"/"+docIdentifier).
 		WithHeader("accept", "application/json").
 		WithHeader("Content-Type", "application/json").

@@ -3,14 +3,15 @@
 package testworld
 
 import (
-	"testing"
 	"net/http"
+	"testing"
+
 	"github.com/gavv/httpexpect"
 )
 
 func TestProofWithMultipleFields_invoice_successful(t *testing.T) {
 	t.Parallel()
-	proofWithMultipleFields_successful(t,TypeInvoice)
+	proofWithMultipleFields_successful(t, TypeInvoice)
 
 }
 
@@ -27,8 +28,7 @@ func proofWithMultipleFields_successful(t *testing.T, documentType string) {
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 
 	// Alice shares a document with Bob
-	res := createDocument(alice.httpExpect,documentType, http.StatusOK, defaultDocumentPayload(documentType,[]string{bob.id.String()}))
-
+	res := createDocument(alice.httpExpect, documentType, http.StatusOK, defaultDocumentPayload(documentType, []string{bob.id.String()}))
 
 	docIdentifier := getDocumentIdentifier(t, res)
 	if docIdentifier == "" {
@@ -41,16 +41,15 @@ func proofWithMultipleFields_successful(t *testing.T, documentType string) {
 	proofFromBob := getProof(bob.httpExpect, http.StatusOK, docIdentifier, proofPayload)
 
 	checkProof(proofFromAlice, documentType, docIdentifier)
-	checkProof(proofFromBob,documentType, docIdentifier)
+	checkProof(proofFromBob, documentType, docIdentifier)
 
 }
 
-func checkProof(objProof *httpexpect.Object,documentType string, docIdentifier string) {
+func checkProof(objProof *httpexpect.Object, documentType string, docIdentifier string) {
 	objProof.Path("$.header.document_id").String().Equal(docIdentifier)
-	objProof.Path("$.field_proofs[0].property").String().Equal(documentType+".net_amount")
+	objProof.Path("$.field_proofs[0].property").String().Equal(documentType + ".net_amount")
 	objProof.Path("$.field_proofs[0].sorted_hashes").NotNull()
-	objProof.Path("$.field_proofs[1].property").String().Equal(documentType+".currency")
+	objProof.Path("$.field_proofs[1].property").String().Equal(documentType + ".currency")
 	objProof.Path("$.field_proofs[1].sorted_hashes").NotNull()
 
 }
-
