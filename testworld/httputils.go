@@ -10,6 +10,7 @@ import (
 
 const TypeInvoice string = "invoice"
 const TypePO string = "purchaseorder"
+const POPrefix string = "po"
 
 func createInsecureClientWithExpect(t *testing.T, baseURL string) *httpexpect.Expect {
 	config := httpexpect.Config{

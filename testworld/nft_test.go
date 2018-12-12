@@ -17,13 +17,11 @@ func TestPaymentObligationMint_invoice_successful(t *testing.T) {
 
 }
 
-/*
 func TestPaymentObligationMint_po_successful(t *testing.T) {
 	t.Parallel()
-	paymentObligationMint(t,TypePO)
+	paymentObligationMint(t, TypePO)
 
 }
-*/
 
 func paymentObligationMint(t *testing.T, documentType string) {
 
@@ -31,7 +29,7 @@ func paymentObligationMint(t *testing.T, documentType string) {
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 
 	// Alice shares document with Bob
-	res := createDocument(alice.httpExpect, documentType, http.StatusOK, defaultNFTPayload([]string{bob.id.String()}))
+	res := createDocument(alice.httpExpect, documentType, http.StatusOK, defaultNFTPayload(documentType, []string{bob.id.String()}))
 
 	docIdentifier := getDocumentIdentifier(t, res)
 	if docIdentifier == "" {
@@ -47,7 +45,7 @@ func paymentObligationMint(t *testing.T, documentType string) {
 
 	proofPrefix := documentType
 	if proofPrefix == TypePO {
-		proofPrefix = "po"
+		proofPrefix = POPrefix
 	}
 
 	// mint an NFT

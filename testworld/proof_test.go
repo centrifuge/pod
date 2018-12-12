@@ -15,13 +15,11 @@ func TestProofWithMultipleFields_invoice_successful(t *testing.T) {
 
 }
 
-/* TODO: fix proofs for PO
 func TestProofWithMultipleFields_po_successful(t *testing.T) {
 	t.Parallel()
-	proofWithMultipleFields_successful(t,TypePO)
+	proofWithMultipleFields_successful(t, TypePO)
 
 }
-*/
 
 func proofWithMultipleFields_successful(t *testing.T, documentType string) {
 	alice := doctorFord.getHostTestSuite(t, "Alice")
@@ -46,6 +44,11 @@ func proofWithMultipleFields_successful(t *testing.T, documentType string) {
 }
 
 func checkProof(objProof *httpexpect.Object, documentType string, docIdentifier string) {
+
+	if documentType == TypePO {
+		documentType = POPrefix
+	}
+
 	objProof.Path("$.header.document_id").String().Equal(docIdentifier)
 	objProof.Path("$.field_proofs[0].property").String().Equal(documentType + ".net_amount")
 	objProof.Path("$.field_proofs[0].sorted_hashes").NotNull()

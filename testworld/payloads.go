@@ -42,8 +42,7 @@ func defaultInvoicePayload(collaborators []string) map[string]interface{} {
 
 }
 
-func defaultNFTPayload(collaborators []string) map[string]interface{} {
-
+func invoiceNFTPayload(collaborators []string) map[string]interface{} {
 	return map[string]interface{}{
 		"data": map[string]interface{}{
 			"invoice_number": "12324",
@@ -54,6 +53,34 @@ func defaultNFTPayload(collaborators []string) map[string]interface{} {
 			"document_type":  "invoice",
 		},
 		"collaborators": collaborators,
+	}
+
+}
+
+func pONFTPayload(collaborators []string) map[string]interface{} {
+	return map[string]interface{}{
+		"data": map[string]interface{}{
+			"po_number":     "123245",
+			"due_date":      "2018-09-26T23:12:37.902198664Z",
+			"gross_amount":  "40",
+			"currency":      "USD",
+			"net_amount":    "40",
+			"document_type": "po",
+		},
+		"collaborators": collaborators,
+	}
+
+}
+
+func defaultNFTPayload(documentType string, collaborators []string) map[string]interface{} {
+
+	switch documentType {
+	case TypeInvoice:
+		return invoiceNFTPayload(collaborators)
+	case TypePO:
+		return pONFTPayload(collaborators)
+	default:
+		return invoiceNFTPayload(collaborators)
 	}
 
 }
@@ -107,6 +134,6 @@ func defaultProofPayload(documentType string) map[string]interface{} {
 	}
 	return map[string]interface{}{
 		"type":   "http://github.com/centrifuge/centrifuge-protobufs/purchaseorder/#purchaseorder.PurchaseOrderData",
-		"fields": []string{"purchaseorder.net_amount", "purchaseorder.currency"},
+		"fields": []string{"po.net_amount", "po.currency"},
 	}
 }
