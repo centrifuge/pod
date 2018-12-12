@@ -74,7 +74,7 @@ func TestHandler_RequestDocumentSignature_AlreadyExists(t *testing.T) {
 	req = getSignatureRequest(doc)
 	resp, err = handler.RequestDocumentSignature(context.Background(), req)
 	assert.NotNil(t, err, "must not be nil")
-	assert.Contains(t, err.Error(), "document already exists")
+	assert.Contains(t, err.Error(), documents.ErrDocumentRepositoryModelAllReadyExists.Error())
 }
 
 func TestHandler_RequestDocumentSignature_UpdateSucceeds(t *testing.T) {
@@ -147,7 +147,7 @@ func TestHandler_SendAnchoredDocument_update_fail(t *testing.T) {
 	anchorReq := getAnchoredRequest(doc)
 	anchorResp, err := handler.SendAnchoredDocument(context.Background(), anchorReq)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "document doesn't exists")
+	assert.Contains(t, err.Error(), documents.ErrDocumentRepositoryModelDoesntExist.Error())
 	assert.Nil(t, anchorResp)
 }
 

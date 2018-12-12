@@ -9,11 +9,10 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/anchors"
-	"github.com/centrifuge/go-centrifuge/centerrors"
-	"github.com/centrifuge/go-centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/notification"
@@ -51,7 +50,7 @@ type Service interface {
 }
 
 // service implements Service and handles all purchase order related persistence and validations
-// service always returns errors of type `centerrors` with proper error code
+// service always returns errors of type `errors.Error` or `errors.TypedError`
 type service struct {
 	repo             documents.LegacyRepository
 	coreDocProcessor coredocument.Processor
@@ -70,7 +69,7 @@ func (s service) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (docume
 	var model documents.Model = new(PurchaseOrder)
 	err := model.UnpackCoreDocument(cd)
 	if err != nil {
-		return nil, centerrors.New(code.DocumentInvalid, err.Error())
+		return nil, errors.NewTypedError(documents.ErrDocumentUnPackingCoreDocument, err)
 	}
 
 	return model, nil
@@ -80,25 +79,25 @@ func (s service) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (docume
 func (s service) calculateDataRoot(old, new documents.Model, validator documents.Validator) (documents.Model, error) {
 	po, ok := new.(*PurchaseOrder)
 	if !ok {
-		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("unknown document type: %T", new))
+		return nil, errors.NewTypedError(documents.ErrDocumentInvalidType, fmt.Errorf("unknown document type: %T", new))
 	}
 
 	// create data root, has to be done at the model level to access fields
 	err := po.calculateDataRoot()
 	if err != nil {
-		return nil, centerrors.New(code.DocumentInvalid, err.Error())
+		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
 
-	// validate the purchase order
+	// validate the invoice
 	err = validator.Validate(old, po)
 	if err != nil {
-		return nil, centerrors.NewWithErrors(code.DocumentInvalid, "validations failed", documents.ConvertToMap(err))
+		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
 
 	// we use CurrentVersion as the id since that will be unique across multiple versions of the same document
 	err = s.repo.Create(po.CoreDocument.CurrentVersion, po)
 	if err != nil {
-		return nil, centerrors.New(code.Unknown, err.Error())
+		return nil, errors.NewTypedError(documents.ErrDocumentPersistence, err)
 	}
 
 	return po, nil
@@ -113,7 +112,7 @@ func (s service) Create(ctx *header.ContextHeader, po documents.Model) (document
 
 	po, err = documents.AnchorDocument(ctx, po, s.coreDocProcessor, s.repo.Update)
 	if err != nil {
-		return nil, centerrors.New(code.Unknown, err.Error())
+		return nil, err
 	}
 
 	return po, nil
@@ -123,12 +122,12 @@ func (s service) Create(ctx *header.ContextHeader, po documents.Model) (document
 func (s service) Update(ctx *header.ContextHeader, po documents.Model) (documents.Model, error) {
 	cd, err := po.PackCoreDocument()
 	if err != nil {
-		return nil, centerrors.New(code.Unknown, err.Error())
+		return nil, errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
 	}
 
 	old, err := s.GetCurrentVersion(cd.DocumentIdentifier)
 	if err != nil {
-		return nil, centerrors.New(code.DocumentNotFound, err.Error())
+		return nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
 	}
 
 	po, err = s.calculateDataRoot(old, po, UpdateValidator())
@@ -138,7 +137,7 @@ func (s service) Update(ctx *header.ContextHeader, po documents.Model) (document
 
 	po, err = documents.AnchorDocument(ctx, po, s.coreDocProcessor, s.repo.Update)
 	if err != nil {
-		return nil, centerrors.New(code.Unknown, err.Error())
+		return nil, err
 	}
 
 	return po, nil
@@ -147,13 +146,13 @@ func (s service) Update(ctx *header.ContextHeader, po documents.Model) (document
 // DeriveFromCreatePayload derives purchase order from create payload
 func (s service) DeriveFromCreatePayload(payload *clientpopb.PurchaseOrderCreatePayload, ctxH *header.ContextHeader) (documents.Model, error) {
 	if payload == nil || payload.Data == nil {
-		return nil, centerrors.New(code.DocumentInvalid, "input is nil")
+		return nil, documents.ErrDocumentNil
 	}
 
 	po := new(PurchaseOrder)
 	err := po.InitPurchaseOrderInput(payload, ctxH)
 	if err != nil {
-		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("purchase order init failed: %v", err))
+		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
 
 	return po, nil
@@ -162,37 +161,37 @@ func (s service) DeriveFromCreatePayload(payload *clientpopb.PurchaseOrderCreate
 // DeriveFromUpdatePayload derives purchase order from update payload
 func (s service) DeriveFromUpdatePayload(payload *clientpopb.PurchaseOrderUpdatePayload, ctxH *header.ContextHeader) (documents.Model, error) {
 	if payload == nil || payload.Data == nil {
-		return nil, centerrors.New(code.DocumentInvalid, "invalid payload")
+		return nil, documents.ErrDocumentNil
 	}
 
 	// get latest old version of the document
 	id, err := hexutil.Decode(payload.Identifier)
 	if err != nil {
-		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("failed to decode identifier: %v", err))
+		return nil, errors.NewTypedError(documents.ErrDocumentIdentifier, fmt.Errorf("failed to decode identifier: %v", err))
 	}
 
 	old, err := s.GetCurrentVersion(id)
 	if err != nil {
-		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("failed to fetch old version: %v", err))
+		return nil, err
 	}
 
 	// load purchase order data
 	po := new(PurchaseOrder)
 	err = po.initPurchaseOrderFromData(payload.Data)
 	if err != nil {
-		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("failed to load purchase order from data: %v", err))
+		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, fmt.Errorf("failed to load purchase order from data: %v", err))
 	}
 
 	// update core document
 	oldCD, err := old.PackCoreDocument()
 	if err != nil {
-		return nil, centerrors.New(code.Unknown, err.Error())
+		return nil, errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
 	}
 
 	collaborators := append([]string{ctxH.Self().ID.String()}, payload.Collaborators...)
 	po.CoreDocument, err = coredocument.PrepareNewVersion(*oldCD, collaborators)
 	if err != nil {
-		return nil, centerrors.New(code.DocumentInvalid, fmt.Sprintf("failed to prepare new version: %v", err))
+		return nil, errors.NewTypedError(documents.ErrDocumentPrepareCoreDocument, err)
 	}
 
 	return po, nil
@@ -202,7 +201,7 @@ func (s service) DeriveFromUpdatePayload(payload *clientpopb.PurchaseOrderUpdate
 func (s service) DerivePurchaseOrderData(doc documents.Model) (*clientpopb.PurchaseOrderData, error) {
 	po, ok := doc.(*PurchaseOrder)
 	if !ok {
-		return nil, centerrors.New(code.DocumentInvalid, "document of invalid type")
+		return nil, documents.ErrDocumentInvalidType
 	}
 
 	return po.getClientData(), nil
@@ -212,14 +211,14 @@ func (s service) DerivePurchaseOrderData(doc documents.Model) (*clientpopb.Purch
 func (s service) DerivePurchaseOrderResponse(doc documents.Model) (*clientpopb.PurchaseOrderResponse, error) {
 	cd, err := doc.PackCoreDocument()
 	if err != nil {
-		return nil, centerrors.New(code.DocumentInvalid, err.Error())
+		return nil, errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
 	}
 
 	collaborators := make([]string, len(cd.Collaborators))
 	for i, c := range cd.Collaborators {
 		cid, err := identity.ToCentID(c)
 		if err != nil {
-			return nil, centerrors.New(code.Unknown, err.Error())
+			return nil, errors.NewTypedError(documents.ErrDocumentCollaborator, err)
 		}
 		collaborators[i] = cid.String()
 	}
@@ -245,15 +244,15 @@ func (s service) getPurchaseOrderVersion(documentID, version []byte) (model *Pur
 	var doc documents.Model = new(PurchaseOrder)
 	err = s.repo.LoadByID(version, doc)
 	if err != nil {
-		return nil, err
+		return nil, errors.NewTypedError(documents.ErrDocumentVersionNotFound, err)
 	}
 	model, ok := doc.(*PurchaseOrder)
 	if !ok {
-		return nil, err
+		return nil, documents.ErrDocumentInvalidType
 	}
 
 	if !bytes.Equal(model.CoreDocument.DocumentIdentifier, documentID) {
-		return nil, centerrors.New(code.DocumentInvalid, "version is not valid for this identifier")
+		return nil, errors.NewTypedError(documents.ErrDocumentVersionNotFound, fmt.Errorf("version is not valid for this identifier"))
 	}
 	return model, nil
 }
@@ -262,12 +261,13 @@ func (s service) getPurchaseOrderVersion(documentID, version []byte) (model *Pur
 func (s service) GetCurrentVersion(documentID []byte) (documents.Model, error) {
 	model, err := s.getPurchaseOrderVersion(documentID, documentID)
 	if err != nil {
-		return nil, centerrors.Wrap(err, "document not found")
+		return nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
 	}
 	nextVersion := model.CoreDocument.NextVersion
 	for nextVersion != nil {
 		temp, err := s.getPurchaseOrderVersion(documentID, nextVersion)
 		if err != nil {
+			// here the err is returned as nil because it is expected that the nextVersion is not available in the db at some stage of the iteration
 			return model, nil
 		}
 
@@ -281,7 +281,7 @@ func (s service) GetCurrentVersion(documentID []byte) (documents.Model, error) {
 func (s service) GetVersion(documentID []byte, version []byte) (documents.Model, error) {
 	po, err := s.getPurchaseOrderVersion(documentID, version)
 	if err != nil {
-		return nil, centerrors.Wrap(err, "document not found for the given version")
+		return nil, err
 	}
 	return po, nil
 
@@ -291,14 +291,14 @@ func (s service) GetVersion(documentID []byte, version []byte) (documents.Model,
 func (s service) purchaseOrderProof(model documents.Model, fields []string) (*documents.DocumentProof, error) {
 	po, ok := model.(*PurchaseOrder)
 	if !ok {
-		return nil, centerrors.New(code.DocumentInvalid, "document of invalid type")
+		return nil, documents.ErrDocumentInvalidType
 	}
 	if err := coredocument.PostAnchoredValidator(s.identityService, s.anchorRepository).Validate(nil, po); err != nil {
-		return nil, centerrors.New(code.DocumentInvalid, err.Error())
+		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
 	coreDoc, proofs, err := po.createProofs(fields)
 	if err != nil {
-		return nil, err
+		return nil, errors.NewTypedError(documents.ErrDocumentProof, err)
 	}
 	return &documents.DocumentProof{
 		DocumentID:  coreDoc.DocumentIdentifier,
@@ -330,38 +330,38 @@ func (s service) CreateProofsForVersion(documentID, version []byte, fields []str
 // will remove this once we have a common implementation for documents.Service
 func (s service) RequestDocumentSignature(contextHeader *header.ContextHeader, model documents.Model) (*coredocumentpb.Signature, error) {
 	if err := coredocument.SignatureRequestValidator(s.identityService).Validate(nil, model); err != nil {
-		return nil, centerrors.New(code.DocumentInvalid, err.Error())
+		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
 
 	cd, err := model.PackCoreDocument()
 	if err != nil {
-		return nil, centerrors.New(code.DocumentInvalid, err.Error())
+		return nil, errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
 	}
 
 	srvLog.Infof("coredoc received %x with signing root %x", cd.DocumentIdentifier, cd.SigningRoot)
 
 	idKeys, ok := contextHeader.Self().Keys[identity.KeyPurposeSigning]
 	if !ok {
-		return nil, centerrors.New(code.Unknown, fmt.Sprintf("missing signing key"))
+		return nil, errors.NewTypedError(documents.ErrDocumentSigning, fmt.Errorf("missing signing key"))
 	}
 	sig := signatures.Sign(contextHeader.Self().ID[:], idKeys.PrivateKey, idKeys.PublicKey, cd.SigningRoot)
 	cd.Signatures = append(cd.Signatures, sig)
 	err = model.UnpackCoreDocument(cd)
 	if err != nil {
-		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to Unpack CoreDocument: %v", err))
+		return nil, errors.NewTypedError(documents.ErrDocumentUnPackingCoreDocument, err)
 	}
 
 	// Logic for receiving version n (n > 1) of the document for the first time
 	if !s.repo.Exists(cd.DocumentIdentifier) && !utils.IsSameByteSlice(cd.DocumentIdentifier, cd.CurrentVersion) {
 		err = s.repo.Create(cd.DocumentIdentifier, model)
 		if err != nil {
-			return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to store local first version of the document: %v", err))
+			return nil, errors.NewTypedError(documents.ErrDocumentPersistence, err)
 		}
 	}
 
 	err = s.repo.Create(cd.CurrentVersion, model)
 	if err != nil {
-		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to store document: %v", err))
+		return nil, errors.NewTypedError(documents.ErrDocumentPersistence, err)
 	}
 
 	srvLog.Infof("signed coredoc %x with version %x", cd.DocumentIdentifier, cd.CurrentVersion)
@@ -373,17 +373,17 @@ func (s service) RequestDocumentSignature(contextHeader *header.ContextHeader, m
 // will remove this once we have a common implementation for documents.Service
 func (s service) ReceiveAnchoredDocument(model documents.Model, headers *p2ppb.CentrifugeHeader) error {
 	if err := coredocument.PostAnchoredValidator(s.identityService, s.anchorRepository).Validate(nil, model); err != nil {
-		return centerrors.New(code.DocumentInvalid, err.Error())
+		return errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
 
 	doc, err := model.PackCoreDocument()
 	if err != nil {
-		return centerrors.New(code.DocumentInvalid, err.Error())
+		return errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
 	}
 
 	err = s.repo.Update(doc.CurrentVersion, model)
 	if err != nil {
-		return centerrors.New(code.Unknown, err.Error())
+		return errors.NewTypedError(documents.ErrDocumentPersistence, err)
 	}
 
 	ts, _ := ptypes.TimestampProto(time.Now().UTC())

@@ -1,19 +1,21 @@
 // +build testworld
 
 package testworld
-
 /*
-func TestHost_AddExternalCollaborator(t *testing.T) {
+func TestHost_AddExternalCollaborator_invoice(t *testing.T) {
 	t.Parallel()
+	AddExternalCollaborator(t, TypeInvoice)
+}
+
+
+func addExternalCollaborator(t *testing.T, documentType string) {
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 
 	// Alice shares invoice document with Bob first
-	res, err := alice.host.createInvoice(alice.httpExpect, http.StatusOK, defaultInvoicePayload([]string{bob.id.String()}))
-	if err != nil {
-		t.Error(err)
-	}
+	res := createDocument(alice.httpExpect,documentType, http.StatusOK, defaultDocumentPayload(documentType, []string{bob.id.String()}))
+
 
 	docIdentifier := getDocumentIdentifier(t, res)
 	if docIdentifier == "" {
@@ -43,6 +45,7 @@ func TestHost_AddExternalCollaborator(t *testing.T) {
 	getInvoiceAndCheck(charlie.httpExpect, params)
 }
 
+/*
 func TestHost_CollaboratorTimeOut(t *testing.T) {
 	t.Parallel()
 	kenny := doctorFord.getHostTestSuite(t, "Kenny")
@@ -89,5 +92,4 @@ func TestHost_CollaboratorTimeOut(t *testing.T) {
 	// Kenny should NOT have latest version
 	getInvoiceAndCheck(kenny.httpExpect, paramsV1)
 
-}
-*/
+} */

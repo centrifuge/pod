@@ -11,8 +11,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/p2p"
-	"github.com/centrifuge/go-centrifuge/storage"
-	"github.com/syndtr/goleveldb/leveldb"
 )
 
 // Bootstrapper implements bootstrap.Bootstrapper.
@@ -25,11 +23,6 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	}
 
 	cfg := ctx[config.BootstrappedConfig].(config.Configuration)
-
-	ldb, ok := ctx[storage.BootstrappedLevelDB].(*leveldb.DB)
-	if !ok {
-		return errors.New("initializing LevelDB repository failed")
-	}
 
 	p2pClient, ok := ctx[p2p.BootstrappedP2PClient].(p2p.Client)
 	if !ok {
@@ -51,8 +44,14 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return fmt.Errorf("identity service not initialised")
 	}
 
+	repo, ok := ctx[documents.BootstrappedDocumentRepository].(documents.Repository)
+	if !ok {
+		return fmt.Errorf("document db repository not initialised")
+	}
+	repo.Register(&Invoice{})
+
 	// register service
-	srv := DefaultService(cfg, getRepository(ldb), coredocument.DefaultProcessor(idService, p2pClient, anchorRepo, cfg), anchorRepo, idService)
+	srv := DefaultService(cfg, repo, coredocument.DefaultProcessor(idService, p2pClient, anchorRepo, cfg), anchorRepo, idService)
 	err := registry.Register(documenttypes.InvoiceDataTypeUrl, srv)
 	if err != nil {
 		return fmt.Errorf("failed to register invoice service: %v", err)

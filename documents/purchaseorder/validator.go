@@ -5,6 +5,7 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils"
 )
 
@@ -15,14 +16,14 @@ func fieldValidator() documents.Validator {
 			return fmt.Errorf("nil document")
 		}
 
-		inv, ok := new.(*PurchaseOrder)
+		po, ok := new.(*PurchaseOrder)
 		if !ok {
 			return fmt.Errorf("unknown document type")
 		}
 
 		var err error
-		if !documents.IsCurrencyValid(inv.Currency) {
-			err = documents.AppendError(err, documents.NewError("po_currency", "currency is invalid"))
+		if !documents.IsCurrencyValid(po.Currency) {
+			err = errors.AppendError(err, documents.NewError("po_currency", "currency is invalid"))
 		}
 
 		return err

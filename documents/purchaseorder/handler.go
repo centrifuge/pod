@@ -49,17 +49,23 @@ func (h grpcHandler) Create(ctx context.Context, req *clientpurchaseorderpb.Purc
 	doc, err := h.service.DeriveFromCreatePayload(req, ctxh)
 	if err != nil {
 		apiLog.Error(err)
-		return nil, err
+		return nil, centerrors.Wrap(err, "could not derive create payload")
 	}
 
 	// validate, persist, and anchor
 	doc, err = h.service.Create(ctxh, doc)
 	if err != nil {
 		apiLog.Error(err)
-		return nil, err
+		return nil, centerrors.Wrap(err, "could not create document")
 	}
 
-	return h.service.DerivePurchaseOrderResponse(doc)
+	resp, err := h.service.DerivePurchaseOrderResponse(doc)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, centerrors.Wrap(err, "could not derive response")
+	}
+
+	return resp, nil
 }
 
 // Update handles the document update and anchoring
@@ -74,16 +80,22 @@ func (h grpcHandler) Update(ctx context.Context, payload *clientpurchaseorderpb.
 	doc, err := h.service.DeriveFromUpdatePayload(payload, ctxHeader)
 	if err != nil {
 		apiLog.Error(err)
-		return nil, err
+		return nil, centerrors.Wrap(err, "could not derive update payload")
 	}
 
 	doc, err = h.service.Update(ctxHeader, doc)
 	if err != nil {
 		apiLog.Error(err)
-		return nil, err
+		return nil, centerrors.Wrap(err, "could not update document")
 	}
 
-	return h.service.DerivePurchaseOrderResponse(doc)
+	resp, err := h.service.DerivePurchaseOrderResponse(doc)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, centerrors.Wrap(err, "could not derive response")
+	}
+
+	return resp, nil
 }
 
 // GetVersion returns the requested version of a purchase order
@@ -110,7 +122,7 @@ func (h grpcHandler) GetVersion(ctx context.Context, req *clientpurchaseorderpb.
 	resp, err := h.service.DerivePurchaseOrderResponse(model)
 	if err != nil {
 		apiLog.Error(err)
-		return nil, err
+		return nil, centerrors.Wrap(err, "could not derive response")
 	}
 
 	return resp, nil
@@ -134,7 +146,7 @@ func (h grpcHandler) Get(ctx context.Context, getRequest *clientpurchaseorderpb.
 	resp, err := h.service.DerivePurchaseOrderResponse(model)
 	if err != nil {
 		apiLog.Error(err)
-		return nil, err
+		return nil, centerrors.Wrap(err, "could not derive response")
 	}
 
 	return resp, nil
