@@ -1,10 +1,20 @@
 // +build testworld
 
 package testworld
-/*
+
+import (
+	"net/http"
+	"testing"
+)
+
 func TestHost_AddExternalCollaborator_invoice(t *testing.T) {
 	t.Parallel()
-	AddExternalCollaborator(t, TypeInvoice)
+	addExternalCollaborator(t, TypeInvoice)
+}
+
+func TestHost_AddExternalCollaborator_po(t *testing.T) {
+	t.Parallel()
+	addExternalCollaborator(t, TypePO)
 }
 
 
@@ -16,7 +26,6 @@ func addExternalCollaborator(t *testing.T, documentType string) {
 	// Alice shares invoice document with Bob first
 	res := createDocument(alice.httpExpect,documentType, http.StatusOK, defaultDocumentPayload(documentType, []string{bob.id.String()}))
 
-
 	docIdentifier := getDocumentIdentifier(t, res)
 	if docIdentifier == "" {
 		t.Error("docIdentifier empty")
@@ -26,23 +35,21 @@ func addExternalCollaborator(t *testing.T, documentType string) {
 		"document_id": docIdentifier,
 		"currency":    "USD",
 	}
-	getInvoiceAndCheck(alice.httpExpect, params)
-	getInvoiceAndCheck(bob.httpExpect, params)
+	getDocumentAndCheck(alice.httpExpect,documentType, params)
+	getDocumentAndCheck(bob.httpExpect,documentType, params)
 
 	// Bob updates invoice and shares with Charlie as well
-	res, err = bob.host.updateInvoice(bob.httpExpect, http.StatusOK, docIdentifier, updatedInvoicePayload([]string{alice.id.String(), charlie.id.String()}))
-	if err != nil {
-		t.Error(err)
-	}
+	res = updateDocument(bob.httpExpect,documentType, http.StatusOK, docIdentifier, updatedInvoicePayload([]string{alice.id.String(), charlie.id.String()}))
+
 
 	docIdentifier = getDocumentIdentifier(t, res)
 	if docIdentifier == "" {
 		t.Error("docIdentifier empty")
 	}
 	params["currency"] = "EUR"
-	getInvoiceAndCheck(alice.httpExpect, params)
-	getInvoiceAndCheck(bob.httpExpect, params)
-	getInvoiceAndCheck(charlie.httpExpect, params)
+	getDocumentAndCheck(alice.httpExpect,documentType, params)
+	getDocumentAndCheck(bob.httpExpect,documentType, params)
+	getDocumentAndCheck(charlie.httpExpect,documentType, params)
 }
 
 /*
