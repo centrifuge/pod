@@ -11,16 +11,27 @@ import (
 
 const tokenIdLength = 77
 
-func TestPaymentObligationMint_successful(t *testing.T) {
+func TestPaymentObligationMint_invoice_successful(t *testing.T) {
+	t.Parallel()
+	paymentObligationMint(t, typeInvoice)
+
+}
+
+/* TODO: testcase not stable
+func TestPaymentObligationMint_po_successful(t *testing.T) {
+	t.Parallel()
+	paymentObligationMint(t, typePO)
+
+}
+*/
+
+func paymentObligationMint(t *testing.T, documentType string) {
 
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 
-	// Alice shares invoice document with Bob
-	res, err := alice.host.createInvoice(alice.httpExpect, http.StatusOK, defaultNFTPayload([]string{bob.id.String()}))
-	if err != nil {
-		t.Error(err)
-	}
+	// Alice shares document with Bob
+	res := createDocument(alice.httpExpect, documentType, http.StatusOK, defaultNFTPayload(documentType, []string{bob.id.String()}))
 
 	docIdentifier := getDocumentIdentifier(t, res)
 	if docIdentifier == "" {
@@ -31,8 +42,13 @@ func TestPaymentObligationMint_successful(t *testing.T) {
 		"document_id": docIdentifier,
 		"currency":    "USD",
 	}
-	getInvoiceAndCheck(alice.httpExpect, params)
-	getInvoiceAndCheck(bob.httpExpect, params)
+	getDocumentAndCheck(alice.httpExpect, documentType, params)
+	getDocumentAndCheck(bob.httpExpect, documentType, params)
+
+	proofPrefix := documentType
+	if proofPrefix == typePO {
+		proofPrefix = poPrefix
+	}
 
 	// mint an NFT
 	test := struct {
@@ -45,7 +61,7 @@ func TestPaymentObligationMint_successful(t *testing.T) {
 			"identifier":      docIdentifier,
 			"registryAddress": doctorFord.contractAddresses.PaymentObligationAddr,
 			"depositAddress":  "0xf72855759a39fb75fc7341139f5d7a3974d4da08", // dummy address
-			"proofFields":     []string{"invoice.gross_amount", "invoice.currency", "invoice.due_date", "collaborators[0]"},
+			"proofFields":     []string{proofPrefix + ".gross_amount", proofPrefix + ".currency", proofPrefix + ".due_date", "collaborators[0]"},
 		},
 	}
 
@@ -56,6 +72,8 @@ func TestPaymentObligationMint_successful(t *testing.T) {
 }
 
 func TestPaymentObligationMint_errors(t *testing.T) {
+	t.Parallel()
+
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 
 	tests := []struct {

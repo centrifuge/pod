@@ -2,7 +2,6 @@ package documents
 
 import (
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
@@ -21,7 +20,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	ctx[BootstrappedRegistry] = NewServiceRegistry()
 	ldb, ok := ctx[config.BootstrappedLevelDB].(*leveldb.DB)
 	if !ok {
-		return errors.Error(ErrDocumentBootstrap)
+		return ErrDocumentBootstrap
 	}
 	repo := NewLevelDBRepository(ldb)
 	ctx[BootstrappedDocumentRepository] = repo

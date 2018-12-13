@@ -160,16 +160,6 @@ func TestP2PService_basicChecks(t *testing.T) {
 
 }
 
-type mockRepo struct {
-	mock.Mock
-	documents.LegacyRepository
-}
-
-func (r mockRepo) Update(id []byte, m documents.Model) error {
-	args := r.Called(id, m)
-	return args.Error(0)
-}
-
 type mockModel struct {
 	mock.Mock
 	documents.Model
