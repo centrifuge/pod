@@ -64,6 +64,8 @@ func addExternalCollaborator(t *testing.T, documentType string) {
 }
 
 func TestHost_CollaboratorTimeOut(t *testing.T) {
+	// Run only locally since this creates resource issues for the entire test suite
+	t.SkipNow()
 	t.Parallel()
 
 	//currently can't be run in parallel (because of node kill)

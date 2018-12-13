@@ -37,7 +37,7 @@ var hostConfig = []struct {
 	{"Kenny", 8087, 38207},
 }
 
-const defaultP2PTimeout = "20s"
+const defaultP2PTimeout = "10s"
 
 // hostTestSuite encapsulates test utilities on top of each host
 type hostTestSuite struct {
@@ -280,7 +280,7 @@ func (h *host) live(c context.Context) error {
 	signal.Notify(controlC, os.Interrupt)
 	select {
 	case err := <-feedback:
-		log.Error(h.name+" encountered error ", err)
+		log.Info(h.name+" encountered error ", err)
 		return err
 	case sig := <-controlC:
 		log.Info(h.name+" shutting down because of ", sig)
