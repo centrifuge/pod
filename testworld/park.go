@@ -37,7 +37,7 @@ var hostConfig = []struct {
 	{"Kenny", 8087, 38207},
 }
 
-const defaultP2PTimeout = "10s"
+const defaultP2PTimeout = "20s"
 
 // hostTestSuite encapsulates test utilities on top of each host
 type hostTestSuite struct {
