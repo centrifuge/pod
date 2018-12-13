@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/keytools/ed25519"
@@ -451,12 +450,12 @@ func (ids *EthereumIdentityService) LookupIdentityForID(centrifugeID CentID) (Id
 func (ids *EthereumIdentityService) GetClientP2PURL(centID CentID) (url string, err error) {
 	target, err := ids.LookupIdentityForID(centID)
 	if err != nil {
-		return url, centerrors.Wrap(err, "error fetching receiver identity")
+		return url, errors.New("error fetching receiver identity: %v", err)
 	}
 
 	p2pKey, err := target.CurrentP2PKey()
 	if err != nil {
-		return url, centerrors.Wrap(err, "error fetching p2p key")
+		return url, errors.New("error fetching p2p key: %v", err)
 	}
 
 	return fmt.Sprintf("/ipfs/%s", p2pKey), nil
@@ -491,7 +490,7 @@ func (ids *EthereumIdentityService) GetIdentityKey(identity CentID, pubKey []byt
 	}
 
 	if utils.IsEmptyByte32(key.GetKey()) {
-		return keyInfo, errors.New(fmt.Sprintf("key not found for identity: %x", identity))
+		return keyInfo, errors.New("key not found for identity: %x", identity)
 	}
 
 	return key, nil
@@ -505,15 +504,15 @@ func (ids *EthereumIdentityService) ValidateKey(centID CentID, key []byte, purpo
 	}
 
 	if !bytes.Equal(key, utils.Byte32ToSlice(idKey.GetKey())) {
-		return errors.New(fmt.Sprintf("[Key: %x] Key doesn't match", idKey.GetKey()))
+		return errors.New("[Key: %x] Key doesn't match", idKey.GetKey())
 	}
 
 	if !utils.ContainsBigIntInSlice(big.NewInt(int64(purpose)), idKey.GetPurposes()) {
-		return errors.New(fmt.Sprintf("[Key: %x] Key doesn't have purpose [%d]", idKey.GetKey(), purpose))
+		return errors.New("[Key: %x] Key doesn't have purpose [%d]", idKey.GetKey(), purpose)
 	}
 
 	if idKey.GetRevokedAt().Cmp(big.NewInt(0)) != 0 {
-		return errors.New(fmt.Sprintf("[Key: %x] Key is currently revoked since block [%d]", idKey.GetKey(), idKey.GetRevokedAt()))
+		return errors.New("[Key: %x] Key is currently revoked since block [%d]", idKey.GetKey(), idKey.GetRevokedAt())
 	}
 
 	return nil
