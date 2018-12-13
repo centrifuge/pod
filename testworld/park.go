@@ -37,7 +37,7 @@ var hostConfig = []struct {
 	{"Kenny", 8087, 38207},
 }
 
-const defaultP2PTimeout = "2s"
+const defaultP2PTimeout = "10s"
 
 // hostTestSuite encapsulates test utilities on top of each host
 type hostTestSuite struct {
@@ -328,16 +328,8 @@ func (h *host) isLive(softTimeOut time.Duration) (bool, error) {
 	}
 }
 
-func (h *host) createInvoice(e *httpexpect.Expect, status int, inv map[string]interface{}) (*httpexpect.Object, error) {
-	return createInvoice(e, status, inv), nil
-}
-
 func (h *host) mintNFT(e *httpexpect.Expect, status int, inv map[string]interface{}) (*httpexpect.Object, error) {
 	return mintNFT(e, status, inv), nil
-}
-
-func (h *host) updateInvoice(e *httpexpect.Expect, status int, docIdentifier string, inv map[string]interface{}) (*httpexpect.Object, error) {
-	return updateInvoice(e, status, docIdentifier, inv), nil
 }
 
 func (h *host) createHttpExpectation(t *testing.T) *httpexpect.Expect {
