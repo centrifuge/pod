@@ -146,7 +146,7 @@ func (c *configuration) GetStoragePath() string {
 	return c.GetString("storage.path")
 }
 
-// GetConfigStoragePath returns the data storage backend.
+// GetConfigStoragePath returns the config storage backend.
 func (c *configuration) GetConfigStoragePath() string {
 	return c.GetString("configStorage.path")
 }
