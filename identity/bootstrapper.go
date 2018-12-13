@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -20,10 +19,10 @@ type Bootstrapper struct{}
 // Bootstrap initializes the IdentityFactoryContract as well as the idRegistrationConfirmationTask that depends on it.
 // the idRegistrationConfirmationTask is added to be registered on the queue at queue.Bootstrapper
 func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
-	if _, ok := context[config.BootstrappedConfig]; !ok {
+	if _, ok := context[bootstrap.BootstrappedConfig]; !ok {
 		return errors.New("config hasn't been initialized")
 	}
-	cfg := context[config.BootstrappedConfig].(Config)
+	cfg := context[bootstrap.BootstrappedConfig].(Config)
 
 	if _, ok := context[ethereum.BootstrappedEthereumClient]; !ok {
 		return errors.New("ethereum client hasn't been initialized")

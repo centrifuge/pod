@@ -1,15 +1,13 @@
 package documents
 
 import (
-	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
 const (
-	// BootstrappedRegistry is the key to ServiceRegistry in Bootstrap context
-	BootstrappedRegistry = "BootstrappedRegistry"
-	// BootstrappedDocumentRepository is the key to the database repository of documents
-	BootstrappedDocumentRepository = "BootstrappedDocumentRepository"
+	BootstrappedRegistry           = "BootstrappedRegistry"           // BootstrappedRegistry is the key to ServiceRegistry in Bootstrap context
+	BootstrappedDocumentRepository = "BootstrappedDocumentRepository" // BootstrappedDocumentRepository is the key to the database repository of documents
 )
 
 // Bootstrapper implements bootstrap.Bootstrapper.
@@ -18,7 +16,7 @@ type Bootstrapper struct{}
 // Bootstrap sets the required storage and registers
 func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	ctx[BootstrappedRegistry] = NewServiceRegistry()
-	ldb, ok := ctx[config.BootstrappedLevelDB].(*leveldb.DB)
+	ldb, ok := ctx[storage.BootstrappedLevelDB].(*leveldb.DB)
 	if !ok {
 		return ErrDocumentBootstrap
 	}

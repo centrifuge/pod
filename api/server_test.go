@@ -9,6 +9,8 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/storage"
+
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -38,6 +40,7 @@ func TestMain(m *testing.M) {
 	ibootstappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
+		&storage.Bootstrapper{},
 		&queue.Bootstrapper{},
 		anchors.Bootstrapper{},
 		&identity.Bootstrapper{},
@@ -50,7 +53,7 @@ func TestMain(m *testing.M) {
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 
-	cfg = ctx[config.BootstrappedConfig].(config.Configuration)
+	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	registry = ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
 	flag.Parse()
 	result := m.Run()

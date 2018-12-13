@@ -243,7 +243,7 @@ func (h *host) init() error {
 	if err != nil {
 		return err
 	}
-	h.config = h.bootstrappedCtx[config.BootstrappedConfig].(config.Configuration)
+	h.config = h.bootstrappedCtx[bootstrap.BootstrappedConfig].(config.Configuration)
 	idService := h.bootstrappedCtx[identity.BootstrappedIDService].(identity.Service)
 	idBytes, err := h.config.GetIdentityID()
 	if err != nil {

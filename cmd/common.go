@@ -3,6 +3,8 @@ package cmd
 import (
 	"context"
 
+	"github.com/centrifuge/go-centrifuge/storage"
+
 	logging "github.com/ipfs/go-log"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -82,7 +84,7 @@ func CreateConfig(
 	}
 	log.Infof("Config File Created: %s\n", v.ConfigFileUsed())
 	ctx, canc, _ := CommandBootstrap(v.ConfigFileUsed())
-	cfg := ctx[config.BootstrappedConfig].(config.Configuration)
+	cfg := ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	generateKeys(cfg)
 
 	idService := ctx[identity.BootstrappedIDService].(identity.Service)
@@ -102,8 +104,10 @@ func CreateConfig(
 		return err
 	}
 	canc()
-	db := ctx[config.BootstrappedLevelDB].(*leveldb.DB)
+	db := ctx[storage.BootstrappedLevelDB].(*leveldb.DB)
+	dbCfg := ctx[storage.BootstrappedConfigLevelDB].(*leveldb.DB)
 	db.Close()
+	dbCfg.Close()
 	return nil
 }
 

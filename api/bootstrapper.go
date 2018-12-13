@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 )
 
@@ -13,7 +12,7 @@ type Bootstrapper struct{}
 
 // Bootstrap initiates api server
 func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
-	cfg, ok := ctx[config.BootstrappedConfig].(Config)
+	cfg, ok := ctx[bootstrap.BootstrappedConfig].(Config)
 	if !ok {
 		return fmt.Errorf("config not initialised")
 	}

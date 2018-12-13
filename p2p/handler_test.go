@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/storage"
+
 	"os"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -39,11 +41,12 @@ func TestMain(m *testing.M) {
 	ibootstappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
+		&storage.Bootstrapper{},
 		documents.Bootstrapper{},
 	}
 	ctx := make(map[string]interface{})
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
-	cfg = ctx[config.BootstrappedConfig].(config.Configuration)
+	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfg.Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
 	cfg.Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
 	cfg.Set("keys.ethauth.publicKey", "../build/resources/ethauth.pub.pem")
