@@ -73,15 +73,14 @@ func paymentObligationMint(t *testing.T, documentType string) {
 
 func TestPaymentObligationMint_errors(t *testing.T) {
 	t.Parallel()
-
 	alice := doctorFord.getHostTestSuite(t, "Alice")
-
 	tests := []struct {
 		errorMsg   string
 		httpStatus int
 		payload    map[string]interface{}
 	}{
 		{
+
 			"RegistryAddress is not a valid Ethereum address",
 			http.StatusInternalServerError,
 			map[string]interface{}{
@@ -109,12 +108,11 @@ func TestPaymentObligationMint_errors(t *testing.T) {
 			},
 		},
 	}
-
 	for _, test := range tests {
-		response, err := alice.host.mintNFT(alice.httpExpect, test.httpStatus, test.payload)
-		assert.Nil(t, err, "it should be possible to call the API endpoint")
-		response.Value("message").String().Contains(test.errorMsg)
-
+		t.Run(test.errorMsg, func(t *testing.T) {
+			response, err := alice.host.mintNFT(alice.httpExpect, test.httpStatus, test.payload)
+			assert.Nil(t, err, "it should be possible to call the API endpoint")
+			response.Value("message").String().Contains(test.errorMsg)
+		})
 	}
-
 }
