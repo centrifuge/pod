@@ -37,7 +37,7 @@ var hostConfig = []struct {
 	{"Kenny", 8087, 38207},
 }
 
-const defaultP2PTimeout = "10s"
+const defaultP2PTimeout = "20s"
 
 // hostTestSuite encapsulates test utilities on top of each host
 type hostTestSuite struct {
@@ -244,7 +244,7 @@ func (h *host) init() error {
 	if err != nil {
 		return err
 	}
-	h.config = h.bootstrappedCtx[config.BootstrappedConfig].(config.Configuration)
+	h.config = h.bootstrappedCtx[bootstrap.BootstrappedConfig].(config.Configuration)
 	idService := h.bootstrappedCtx[identity.BootstrappedIDService].(identity.Service)
 	idBytes, err := h.config.GetIdentityID()
 	if err != nil {

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
+	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
@@ -34,7 +35,7 @@ func TestMain(m *testing.M) {
 	ctx := cc.TestFunctionalEthereumBootstrap()
 	registry = ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
 	idService = ctx[identity.BootstrappedIDService].(identity.Service)
-	cfg = ctx[config.BootstrappedConfig].(config.Configuration)
+	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	payOb = ctx[nft.BootstrappedPayObService].(nft.PaymentObligation)
 	prevSignPubkey := cfg.Get("keys.signing.publicKey")
 	prevSignPrivkey := cfg.Get("keys.signing.privateKey")

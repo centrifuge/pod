@@ -17,7 +17,7 @@ type Bootstrapper struct{}
 
 // Bootstrap initiates p2p server and client into context
 func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
-	cfg, ok := ctx[config.BootstrappedConfig].(config.Configuration)
+	cfg, ok := ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	if !ok {
 		return errors.New("config not initialised")
 	}

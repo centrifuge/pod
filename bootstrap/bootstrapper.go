@@ -4,6 +4,7 @@ package bootstrap
 
 // Bootstrap constants are keys to mapped value in bootstrapped context
 const (
+	BootstrappedConfig      string = "BootstrappedConfig"
 	BootstrappedP2PServer   string = "BootstrappedP2PServer"
 	BootstrappedAPIServer   string = "BootstrappedAPIServer"
 	BootstrappedQueueServer string = "BootstrappedQueueServer"

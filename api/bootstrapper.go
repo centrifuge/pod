@@ -2,7 +2,6 @@ package api
 
 import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 )
@@ -12,7 +11,7 @@ type Bootstrapper struct{}
 
 // Bootstrap initiates api server
 func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
-	cfg, ok := ctx[config.BootstrappedConfig].(Config)
+	cfg, ok := ctx[bootstrap.BootstrappedConfig].(Config)
 	if !ok {
 		return errors.New("config not initialised")
 	}

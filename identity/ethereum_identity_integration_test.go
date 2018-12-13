@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	cc "github.com/centrifuge/go-centrifuge/context/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -24,7 +25,7 @@ func TestMain(m *testing.M) {
 	time.Sleep(time.Second + 2)
 
 	ctx := cc.TestFunctionalEthereumBootstrap()
-	cfg = ctx[config.BootstrappedConfig].(config.Configuration)
+	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfg.Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
 	cfg.Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
 
