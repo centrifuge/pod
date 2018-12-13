@@ -28,11 +28,6 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("ethereum client hasn't been initialized")
 	}
 
-	registry, ok := ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
-	if !ok {
-		return errors.New("service registry not initialised")
-	}
-
 	idService, ok := ctx[identity.BootstrappedIDService].(identity.Service)
 	if !ok {
 		return errors.New("identity service not initialised")
@@ -41,9 +36,20 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	if _, ok := ctx[bootstrap.BootstrappedQueueServer]; !ok {
 		return errors.New("queue hasn't been initialized")
 	}
+
+	repo, ok := ctx[documents.BootstrappedDocumentRepository].(documents.Repository)
+	if !ok {
+		return errors.New("document db repository not initialised")
+	}
+
+	registry, ok := ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
+	if !ok {
+		return errors.New("service registry not initialised")
+	}
+
 	queueSrv := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
 
-	ctx[BootstrappedPayObService] = newEthereumPaymentObligation(registry, idService, ethereum.GetClient(), cfg, queueSrv, setupMintListener, bindContract)
+	ctx[BootstrappedPayObService] = newEthereumPaymentObligation(repo,registry, idService, ethereum.GetClient(), cfg, queueSrv, setupMintListener, bindContract)
 	// queue task
 	task := newMintingConfirmationTask(cfg.GetEthereumContextWaitTimeout(), ethereum.DefaultWaitForTransactionMiningContext)
 	queueSrv.RegisterTaskType(task.TaskTypeName(), task)

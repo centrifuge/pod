@@ -3,6 +3,7 @@ package nft
 import (
 	"context"
 	"encoding/hex"
+	"github.com/centrifuge/go-centrifuge/coredocument"
 	"math/big"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -41,7 +42,8 @@ type ethereumPaymentObligationContract interface {
 
 // ethereumPaymentObligation handles all interactions related to minting of NFTs for payment obligations on Ethereum
 type ethereumPaymentObligation struct {
-	registry          *documents.ServiceRegistry
+	repo documents.Repository
+	registry *documents.ServiceRegistry
 	identityService   identity.Service
 	ethClient         ethereum.Client
 	config            Config
@@ -51,11 +53,12 @@ type ethereumPaymentObligation struct {
 }
 
 // newEthereumPaymentObligation creates ethereumPaymentObligation given the parameters
-func newEthereumPaymentObligation(registry *documents.ServiceRegistry, identityService identity.Service, ethClient ethereum.Client, config Config,
+func newEthereumPaymentObligation(repo documents.Repository,registry *documents.ServiceRegistry, identityService identity.Service, ethClient ethereum.Client, config Config,
 	queue *queue.Server,
 	setupMintListener func(config Config, queue *queue.Server, tokenID *big.Int, registryAddress string) (confirmations chan *watchTokenMinted, err error), bindContract func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error)) *ethereumPaymentObligation {
 	return &ethereumPaymentObligation{
-		registry:          registry,
+		repo:          repo,
+		registry: registry,
 		identityService:   identityService,
 		ethClient:         ethClient,
 		config:            config,
@@ -66,17 +69,28 @@ func newEthereumPaymentObligation(registry *documents.ServiceRegistry, identityS
 }
 
 func (s *ethereumPaymentObligation) prepareMintRequest(documentID []byte, depositAddress string, proofFields []string) (*MintRequest, error) {
-	docService, err := s.registry.FindService(documentID)
+
+	tenantID, err := s.config.GetIdentityID()
 	if err != nil {
 		return nil, err
 	}
 
-	model, err := docService.GetCurrentVersion(documentID)
+	model, err := s.repo.Get(tenantID,documentID)
 	if err != nil {
 		return nil, err
 	}
 
 	corDoc, err := model.PackCoreDocument()
+	if err != nil {
+		return nil, err
+	}
+
+	typeUrl, err := coredocument.GetTypeURL(corDoc)
+	if err != nil {
+		return nil, err
+	}
+
+	docService, err := s.registry.LocateService(typeUrl)
 	if err != nil {
 		return nil, err
 	}

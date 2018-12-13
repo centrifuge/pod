@@ -42,20 +42,3 @@ func (s *ServiceRegistry) LocateService(serviceID string) (Service, error) {
 	return s.services[serviceID], nil
 }
 
-// FindService will search the service based on the documentID
-func (s *ServiceRegistry) FindService(documentID []byte) (Service, error) {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
-
-	for _, service := range s.services {
-
-		exists := service.Exists(documentID)
-
-		if exists {
-			return service, nil
-		}
-
-	}
-	return nil, errors.New("no service exists for provided documentID")
-
-}
