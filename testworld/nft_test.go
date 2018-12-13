@@ -110,6 +110,7 @@ func TestPaymentObligationMint_errors(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.errorMsg, func(t *testing.T) {
+			t.Parallel()
 			response, err := alice.host.mintNFT(alice.httpExpect, test.httpStatus, test.payload)
 			assert.Nil(t, err, "it should be possible to call the API endpoint")
 			response.Value("message").String().Contains(test.errorMsg)
