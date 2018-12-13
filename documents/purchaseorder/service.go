@@ -240,7 +240,7 @@ func (s service) DerivePurchaseOrderResponse(doc documents.Model) (*clientpopb.P
 		collaborators[i] = cid.String()
 	}
 
-	header := &clientpopb.ResponseHeader{
+	h := &clientpopb.ResponseHeader{
 		DocumentId:    hexutil.Encode(cd.DocumentIdentifier),
 		VersionId:     hexutil.Encode(cd.CurrentVersion),
 		Collaborators: collaborators,
@@ -252,7 +252,7 @@ func (s service) DerivePurchaseOrderResponse(doc documents.Model) (*clientpopb.P
 	}
 
 	return &clientpopb.PurchaseOrderResponse{
-		Header: header,
+		Header: h,
 		Data:   data,
 	}, nil
 }

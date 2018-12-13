@@ -70,14 +70,14 @@ func (s *p2pServer) getSignatureForDocument(ctx context.Context, identityService
 		return nil, err
 	}
 
-	header := p2ppb.CentrifugeHeader{
+	h := p2ppb.CentrifugeHeader{
 		NetworkIdentifier:  s.config.GetNetworkID(),
 		CentNodeVersion:    version.GetVersion().String(),
 		SenderCentrifugeId: senderID,
 	}
 
 	req := &p2ppb.SignatureRequest{
-		Header:   &header,
+		Header:   &h,
 		Document: &doc,
 	}
 

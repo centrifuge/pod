@@ -282,7 +282,7 @@ func (s service) DeriveInvoiceResponse(doc documents.Model) (*clientinvoicepb.In
 		collaborators[i] = cid.String()
 	}
 
-	header := &clientinvoicepb.ResponseHeader{
+	h := &clientinvoicepb.ResponseHeader{
 		DocumentId:    hexutil.Encode(cd.DocumentIdentifier),
 		VersionId:     hexutil.Encode(cd.CurrentVersion),
 		Collaborators: collaborators,
@@ -294,7 +294,7 @@ func (s service) DeriveInvoiceResponse(doc documents.Model) (*clientinvoicepb.In
 	}
 
 	return &clientinvoicepb.InvoiceResponse{
-		Header: header,
+		Header: h,
 		Data:   data,
 	}, nil
 
