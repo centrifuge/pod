@@ -1,10 +1,10 @@
 package notification
 
 import (
-	"errors"
 	"net/http"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/golang/protobuf/jsonpb"
 	logging "github.com/ipfs/go-log"
