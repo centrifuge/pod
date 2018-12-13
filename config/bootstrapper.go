@@ -1,7 +1,7 @@
 package config
 
 import (
-	"errors"
+	"github.com/centrifuge/go-centrifuge/errors"
 )
 
 // Bootstrap constants are keys to the value mappings in context bootstrap.

@@ -3,14 +3,13 @@ package invoice
 import (
 	"crypto/sha256"
 	"encoding/json"
-	"fmt"
 	"reflect"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
-	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/coredocument"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/identity"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
@@ -159,7 +158,7 @@ func (i *Invoice) InitInvoiceInput(payload *clientinvoicepb.InvoiceCreatePayload
 
 	i.CoreDocument, err = coredocument.NewWithCollaborators(collaborators)
 	if err != nil {
-		return fmt.Errorf("failed to init core document: %v", err)
+		return errors.New("failed to init core document: %v", err)
 	}
 
 	return nil
@@ -202,7 +201,7 @@ func (i *Invoice) initInvoiceFromData(data *clientinvoicepb.InvoiceData) error {
 	if data.ExtraData != "" {
 		ed, err := hexutil.Decode(data.ExtraData)
 		if err != nil {
-			return centerrors.Wrap(err, "failed to decode extra data")
+			return errors.NewTypedError(err, errors.New("failed to decode extra data"))
 		}
 
 		i.ExtraData = ed
@@ -275,7 +274,7 @@ func (i *Invoice) PackCoreDocument() (*coredocumentpb.CoreDocument, error) {
 	invoiceData := i.createP2PProtobuf()
 	serializedInvoice, err := proto.Marshal(invoiceData)
 	if err != nil {
-		return nil, centerrors.Wrap(err, "couldn't serialise InvoiceData")
+		return nil, errors.NewTypedError(err, errors.New("couldn't serialise InvoiceData"))
 	}
 
 	invoiceAny := any.Any{
@@ -287,7 +286,7 @@ func (i *Invoice) PackCoreDocument() (*coredocumentpb.CoreDocument, error) {
 
 	serializedSalts, err := proto.Marshal(invoiceSalt)
 	if err != nil {
-		return nil, centerrors.Wrap(err, "couldn't serialise InvoiceSalts")
+		return nil, errors.NewTypedError(err, errors.New("couldn't serialise InvoiceSalts"))
 	}
 
 	invoiceSaltsAny := any.Any{
@@ -305,14 +304,14 @@ func (i *Invoice) PackCoreDocument() (*coredocumentpb.CoreDocument, error) {
 // UnpackCoreDocument unpacks the core document into Invoice
 func (i *Invoice) UnpackCoreDocument(coreDoc *coredocumentpb.CoreDocument) error {
 	if coreDoc == nil {
-		return centerrors.NilError(coreDoc)
+		return errors.New("core document provided is nil %v", coreDoc)
 	}
 
 	if coreDoc.EmbeddedData == nil ||
 		coreDoc.EmbeddedData.TypeUrl != documenttypes.InvoiceDataTypeUrl ||
 		coreDoc.EmbeddedDataSalts == nil ||
 		coreDoc.EmbeddedDataSalts.TypeUrl != documenttypes.InvoiceSaltsTypeUrl {
-		return fmt.Errorf("trying to convert document with incorrect schema")
+		return errors.New("trying to convert document with incorrect schema")
 	}
 
 	invoiceData := &invoicepb.InvoiceData{}
@@ -356,7 +355,7 @@ func (i *Invoice) Type() reflect.Type {
 func (i *Invoice) calculateDataRoot() error {
 	t, err := i.getDocumentDataTree()
 	if err != nil {
-		return fmt.Errorf("calculateDataRoot error %v", err)
+		return errors.New("calculateDataRoot error %v", err)
 	}
 	i.CoreDocument.DataRoot = t.RootHash()
 	return nil
@@ -369,11 +368,11 @@ func (i *Invoice) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
 	invoiceData := i.createP2PProtobuf()
 	err = t.AddLeavesFromDocument(invoiceData, i.getInvoiceSalts(invoiceData))
 	if err != nil {
-		return nil, fmt.Errorf("getDocumentDataTree error %v", err)
+		return nil, errors.New("getDocumentDataTree error %v", err)
 	}
 	err = t.Generate()
 	if err != nil {
-		return nil, fmt.Errorf("getDocumentDataTree error %v", err)
+		return nil, errors.New("getDocumentDataTree error %v", err)
 	}
 	return &t, nil
 }
@@ -384,12 +383,12 @@ func (i *Invoice) createProofs(fields []string) (coreDoc *coredocumentpb.CoreDoc
 	// is still not saved with roots in db due to failures during getting signatures.
 	coreDoc, err = i.PackCoreDocument()
 	if err != nil {
-		return nil, nil, fmt.Errorf("createProofs error %v", err)
+		return nil, nil, errors.New("createProofs error %v", err)
 	}
 
 	tree, err := i.getDocumentDataTree()
 	if err != nil {
-		return coreDoc, nil, fmt.Errorf("createProofs error %v", err)
+		return coreDoc, nil, errors.New("createProofs error %v", err)
 	}
 
 	proofs, err = coredocument.CreateProofs(tree, coreDoc, fields)

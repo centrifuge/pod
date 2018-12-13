@@ -18,6 +18,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/cmd"
 	"github.com/centrifuge/go-centrifuge/config"
 	ctx "github.com/centrifuge/go-centrifuge/context"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/node"
 	"github.com/gavv/httpexpect"
@@ -36,7 +37,7 @@ var hostConfig = []struct {
 	{"Kenny", 8087, 38207},
 }
 
-const defaultP2PTimeout = "2s"
+const defaultP2PTimeout = "10s"
 
 // hostTestSuite encapsulates test utilities on top of each host
 type hostTestSuite struct {
@@ -116,7 +117,7 @@ func (r *hostManager) init(createConfig bool) error {
 	go r.bernard.live(r.cancCtx)
 	_, err = r.bernard.isLive(10 * time.Second)
 	if err != nil {
-		return fmt.Errorf("bernard couldn't be made alive %v", err)
+		return errors.New("bernard couldn't be made alive %v", err)
 	}
 
 	bootnode, err := r.bernard.p2pURL()
@@ -139,7 +140,7 @@ func (r *hostManager) init(createConfig bool) error {
 	for name, host := range r.niceHosts {
 		_, err = host.isLive(10 * time.Second)
 		if err != nil {
-			return fmt.Errorf("%s couldn't be made alive %v", host.name, err)
+			return errors.New("%s couldn't be made alive %v", host.name, err)
 		}
 		i, err := host.id()
 		if err != nil {
@@ -263,7 +264,7 @@ func (h *host) init() error {
 func (h *host) live(c context.Context) error {
 	srvs, err := node.GetServers(h.bootstrappedCtx)
 	if err != nil {
-		return fmt.Errorf("failed to load servers: %v", err)
+		return errors.New("failed to load servers: %v", err)
 	}
 
 	h.node = node.New(srvs)
@@ -318,7 +319,7 @@ func (h *host) isLive(softTimeOut time.Duration) (bool, error) {
 	t := time.After(softTimeOut)
 	select {
 	case <-t:
-		return false, fmt.Errorf("host failed to live even after %f seconds", softTimeOut.Seconds())
+		return false, errors.New("host failed to live even after %f seconds", softTimeOut.Seconds())
 	case err := <-sig:
 		if err != nil {
 			return false, err
@@ -327,16 +328,8 @@ func (h *host) isLive(softTimeOut time.Duration) (bool, error) {
 	}
 }
 
-func (h *host) createInvoice(e *httpexpect.Expect, status int, inv map[string]interface{}) (*httpexpect.Object, error) {
-	return createInvoice(e, status, inv), nil
-}
-
 func (h *host) mintNFT(e *httpexpect.Expect, status int, inv map[string]interface{}) (*httpexpect.Object, error) {
 	return mintNFT(e, status, inv), nil
-}
-
-func (h *host) updateInvoice(e *httpexpect.Expect, status int, docIdentifier string, inv map[string]interface{}) (*httpexpect.Object, error) {
-	return updateInvoice(e, status, docIdentifier, inv), nil
 }
 
 func (h *host) createHttpExpectation(t *testing.T) *httpexpect.Expect {

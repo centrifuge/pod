@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/centerrors"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/keytools/ed25519"
 	"github.com/centrifuge/go-centrifuge/queue"
@@ -19,7 +19,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/go-errors/errors"
 	logging "github.com/ipfs/go-log"
 )
 
@@ -115,7 +114,7 @@ func (id *ethereumIdentity) LastKeyForPurpose(keyPurpose int) (key []byte, err e
 	}
 
 	if len(idKeys) == 0 {
-		return []byte{}, fmt.Errorf("no key found for type [%d] in ID [%s]", keyPurpose, id.centID)
+		return []byte{}, errors.New("no key found for type [%d] in ID [%s]", keyPurpose, id.centID)
 	}
 
 	return idKeys[len(idKeys)-1].Key[:32], nil
@@ -225,14 +224,14 @@ func (id *ethereumIdentity) AddKeyToIdentity(ctx context.Context, keyPurpose int
 	copy(keyFixed[:], key)
 	confirmations, err = id.setUpKeyRegisteredEventListener(id.config, id, keyPurpose, keyFixed, h.Number.Uint64())
 	if err != nil {
-		wError := errors.Wrap(err, 1)
+		wError := errors.New("%v", err)
 		log.Errorf("Failed to set up event listener for identity [id: %s]: %v", id, wError)
 		return confirmations, wError
 	}
 
 	err = sendKeyRegistrationTransaction(ethIdentityContract, opts, id, keyPurpose, key)
 	if err != nil {
-		wError := errors.Wrap(err, 1)
+		wError := errors.New("%v", err)
 		log.Errorf("Failed to create transaction for identity [id: %s]: %v", id, wError)
 		return confirmations, wError
 	}
@@ -405,14 +404,14 @@ func (ids *EthereumIdentityService) CreateIdentity(centrifugeID CentID) (id Iden
 
 	confirmations, err = ids.setUpRegistrationEventListener(ids.config, id, h.Number.Uint64())
 	if err != nil {
-		wError := errors.Wrap(err, 1)
+		wError := errors.New("%v", err)
 		log.Infof("Failed to set up event listener for identity [mockID: %s]: %v", id, wError)
 		return nil, confirmations, wError
 	}
 
 	err = sendIdentityCreationTransaction(ids.factoryContract, opts, id)
 	if err != nil {
-		wError := errors.Wrap(err, 1)
+		wError := errors.New("%v", err)
 		log.Infof("Failed to create transaction for identity [mockID: %s]: %v", id, wError)
 		return nil, confirmations, wError
 	}
@@ -438,7 +437,7 @@ func (ids *EthereumIdentityService) GetIdentityAddress(centID CentID) (common.Ad
 func (ids *EthereumIdentityService) LookupIdentityForID(centrifugeID CentID) (Identity, error) {
 	exists, err := ids.CheckIdentityExists(centrifugeID)
 	if !exists {
-		return nil, fmt.Errorf("identity [%s] does not exist with err [%v]", centrifugeID, err)
+		return nil, errors.New("identity [%s] does not exist with err [%v]", centrifugeID, err)
 	}
 
 	if err != nil {
@@ -451,12 +450,12 @@ func (ids *EthereumIdentityService) LookupIdentityForID(centrifugeID CentID) (Id
 func (ids *EthereumIdentityService) GetClientP2PURL(centID CentID) (url string, err error) {
 	target, err := ids.LookupIdentityForID(centID)
 	if err != nil {
-		return url, centerrors.Wrap(err, "error fetching receiver identity")
+		return url, errors.New("error fetching receiver identity: %v", err)
 	}
 
 	p2pKey, err := target.CurrentP2PKey()
 	if err != nil {
-		return url, centerrors.Wrap(err, "error fetching p2p key")
+		return url, errors.New("error fetching p2p key: %v", err)
 	}
 
 	return fmt.Sprintf("/ipfs/%s", p2pKey), nil
@@ -491,7 +490,7 @@ func (ids *EthereumIdentityService) GetIdentityKey(identity CentID, pubKey []byt
 	}
 
 	if utils.IsEmptyByte32(key.GetKey()) {
-		return keyInfo, fmt.Errorf(fmt.Sprintf("key not found for identity: %x", identity))
+		return keyInfo, errors.New("key not found for identity: %x", identity)
 	}
 
 	return key, nil
@@ -505,15 +504,15 @@ func (ids *EthereumIdentityService) ValidateKey(centID CentID, key []byte, purpo
 	}
 
 	if !bytes.Equal(key, utils.Byte32ToSlice(idKey.GetKey())) {
-		return fmt.Errorf(fmt.Sprintf("[Key: %x] Key doesn't match", idKey.GetKey()))
+		return errors.New("[Key: %x] Key doesn't match", idKey.GetKey())
 	}
 
 	if !utils.ContainsBigIntInSlice(big.NewInt(int64(purpose)), idKey.GetPurposes()) {
-		return fmt.Errorf(fmt.Sprintf("[Key: %x] Key doesn't have purpose [%d]", idKey.GetKey(), purpose))
+		return errors.New("[Key: %x] Key doesn't have purpose [%d]", idKey.GetKey(), purpose)
 	}
 
 	if idKey.GetRevokedAt().Cmp(big.NewInt(0)) != 0 {
-		return fmt.Errorf(fmt.Sprintf("[Key: %x] Key is currently revoked since block [%d]", idKey.GetKey(), idKey.GetRevokedAt()))
+		return errors.New("[Key: %x] Key is currently revoked since block [%d]", idKey.GetKey(), idKey.GetRevokedAt())
 	}
 
 	return nil

@@ -7,6 +7,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -17,17 +18,17 @@ import (
 func UpdateVersionValidator() documents.Validator {
 	return documents.ValidatorFunc(func(old, new documents.Model) error {
 		if old == nil || new == nil {
-			return fmt.Errorf("need both the old and new model")
+			return errors.New("need both the old and new model")
 		}
 
 		oldCD, err := old.PackCoreDocument()
 		if err != nil {
-			return fmt.Errorf("failed to fetch old core document: %v", err)
+			return errors.New("failed to fetch old core document: %v", err)
 		}
 
 		newCD, err := new.PackCoreDocument()
 		if err != nil {
-			return fmt.Errorf("failed to fetch new core document: %v", err)
+			return errors.New("failed to fetch new core document: %v", err)
 		}
 
 		checks := []struct {
@@ -61,17 +62,17 @@ func UpdateVersionValidator() documents.Validator {
 
 		for _, c := range checks {
 			if !utils.CheckMultiple32BytesFilled(c.a, c.b) {
-				err = documents.AppendError(err, documents.NewError(c.name, "missing identifiers"))
+				err = errors.AppendError(err, documents.NewError(c.name, "missing identifiers"))
 				continue
 			}
 
 			if !utils.IsSameByteSlice(c.a, c.b) {
-				err = documents.AppendError(err, documents.NewError(c.name, "mismatched"))
+				err = errors.AppendError(err, documents.NewError(c.name, "mismatched"))
 			}
 		}
 
 		if utils.IsEmptyByteSlice(newCD.NextVersion) {
-			err = documents.AppendError(err, documents.NewError("cd_next_version", centerrors.RequiredField))
+			err = errors.AppendError(err, documents.NewError("cd_next_version", centerrors.RequiredField))
 		}
 
 		return err
@@ -81,12 +82,12 @@ func UpdateVersionValidator() documents.Validator {
 // getCoreDocument takes an model and returns the core document of the model
 func getCoreDocument(model documents.Model) (*coredocumentpb.CoreDocument, error) {
 	if model == nil {
-		return nil, fmt.Errorf("nil model")
+		return nil, errors.New("nil model")
 	}
 
 	cd, err := model.PackCoreDocument()
 	if err != nil {
-		return nil, fmt.Errorf("failed to pack core document: %v", err)
+		return nil, errors.New("failed to pack core document: %v", err)
 	}
 
 	return cd, nil
@@ -101,23 +102,23 @@ func baseValidator() documents.Validator {
 		}
 
 		if cd == nil {
-			return fmt.Errorf("nil document")
+			return errors.New("nil document")
 		}
 
 		if utils.IsEmptyByteSlice(cd.DocumentIdentifier) {
-			err = documents.AppendError(err, documents.NewError("cd_identifier", centerrors.RequiredField))
+			err = errors.AppendError(err, documents.NewError("cd_identifier", centerrors.RequiredField))
 		}
 
 		if utils.IsEmptyByteSlice(cd.CurrentVersion) {
-			err = documents.AppendError(err, documents.NewError("cd_current_version", centerrors.RequiredField))
+			err = errors.AppendError(err, documents.NewError("cd_current_version", centerrors.RequiredField))
 		}
 
 		if utils.IsEmptyByteSlice(cd.NextVersion) {
-			err = documents.AppendError(err, documents.NewError("cd_next_version", centerrors.RequiredField))
+			err = errors.AppendError(err, documents.NewError("cd_next_version", centerrors.RequiredField))
 		}
 
 		if utils.IsEmptyByteSlice(cd.DataRoot) {
-			err = documents.AppendError(err, documents.NewError("cd_data_root", centerrors.RequiredField))
+			err = errors.AppendError(err, documents.NewError("cd_data_root", centerrors.RequiredField))
 		}
 
 		// double check the identifiers
@@ -126,7 +127,7 @@ func baseValidator() documents.Validator {
 		// Problem (re-using an old identifier for NextVersion): CurrentVersion or DocumentIdentifier same as NextVersion
 		if isSameBytes(cd.NextVersion, cd.DocumentIdentifier) ||
 			isSameBytes(cd.NextVersion, cd.CurrentVersion) {
-			err = documents.AppendError(err, documents.NewError("cd_overall", centerrors.IdentifierReUsed))
+			err = errors.AppendError(err, documents.NewError("cd_overall", centerrors.IdentifierReUsed))
 		}
 
 		// lets not do verbose check like earlier since these will be
@@ -138,7 +139,7 @@ func baseValidator() documents.Validator {
 				salts.NextVersion,
 				salts.DocumentIdentifier,
 				salts.PreviousRoot) {
-			err = documents.AppendError(err, documents.NewError("cd_salts", centerrors.RequiredField))
+			err = errors.AppendError(err, documents.NewError("cd_salts", centerrors.RequiredField))
 		}
 
 		return err
@@ -155,16 +156,16 @@ func signingRootValidator() documents.Validator {
 		}
 
 		if utils.IsEmptyByteSlice(cd.SigningRoot) {
-			return fmt.Errorf("signing root missing")
+			return errors.New("signing root missing")
 		}
 
 		tree, err := GetDocumentSigningTree(cd)
 		if err != nil {
-			return fmt.Errorf("failed to calculate signing root: %v", err)
+			return errors.New("failed to calculate signing root: %v", err)
 		}
 
 		if !utils.IsSameByteSlice(cd.SigningRoot, tree.RootHash()) {
-			return fmt.Errorf("signing root mismatch")
+			return errors.New("signing root mismatch")
 		}
 
 		return nil
@@ -181,16 +182,16 @@ func documentRootValidator() documents.Validator {
 		}
 
 		if utils.IsEmptyByteSlice(cd.DocumentRoot) {
-			return fmt.Errorf("document root missing")
+			return errors.New("document root missing")
 		}
 
 		tree, err := GetDocumentRootTree(cd)
 		if err != nil {
-			return fmt.Errorf("failed to calculate document root: %v", err)
+			return errors.New("failed to calculate document root: %v", err)
 		}
 
 		if !utils.IsSameByteSlice(cd.DocumentRoot, tree.RootHash()) {
-			return fmt.Errorf("document root mismatch")
+			return errors.New("document root mismatch")
 		}
 
 		return nil
@@ -209,21 +210,21 @@ func readyForSignaturesValidator(centIDBytes, priv, pub []byte) documents.Valida
 		}
 
 		if len(cd.Signatures) != 1 {
-			return fmt.Errorf("expecting only one signature")
+			return errors.New("expecting only one signature")
 		}
 
 		s := signatures.Sign(centIDBytes, priv, pub, cd.SigningRoot)
 		sh := cd.Signatures[0]
 		if !utils.IsSameByteSlice(s.EntityId, sh.EntityId) {
-			err = documents.AppendError(err, documents.NewError("cd_entity_id", "entity ID mismatch"))
+			err = errors.AppendError(err, documents.NewError("cd_entity_id", "entity ID mismatch"))
 		}
 
 		if !utils.IsSameByteSlice(s.PublicKey, sh.PublicKey) {
-			err = documents.AppendError(err, documents.NewError("cd_public_key", "public key mismatch"))
+			err = errors.AppendError(err, documents.NewError("cd_public_key", "public key mismatch"))
 		}
 
 		if !utils.IsSameByteSlice(s.Signature, sh.Signature) {
-			err = documents.AppendError(err, documents.NewError("cd_signature", "signature mismatch"))
+			err = errors.AppendError(err, documents.NewError("cd_signature", "signature mismatch"))
 		}
 
 		return err
@@ -242,12 +243,12 @@ func signaturesValidator(idService identity.Service) documents.Validator {
 		}
 
 		if len(cd.Signatures) < 1 {
-			return fmt.Errorf("atleast one signature expected")
+			return errors.New("atleast one signature expected")
 		}
 
 		for _, sig := range cd.Signatures {
 			if erri := idService.ValidateSignature(sig, cd.SigningRoot); erri != nil {
-				err = documents.AppendError(
+				err = errors.AppendError(
 					err,
 					documents.NewError(
 						fmt.Sprintf("signature_%s", hexutil.Encode(sig.EntityId)),
@@ -265,26 +266,26 @@ func anchoredValidator(repo anchors.AnchorRepository) documents.Validator {
 	return documents.ValidatorFunc(func(_, new documents.Model) error {
 		cd, err := getCoreDocument(new)
 		if err != nil {
-			return fmt.Errorf("failed to get core document: %v", err)
+			return errors.New("failed to get core document: %v", err)
 		}
 
 		anchorID, err := anchors.ToAnchorID(cd.CurrentVersion)
 		if err != nil {
-			return fmt.Errorf("failed to get anchorID: %v", err)
+			return errors.New("failed to get anchorID: %v", err)
 		}
 
 		docRoot, err := anchors.ToDocumentRoot(cd.DocumentRoot)
 		if err != nil {
-			return fmt.Errorf("failed to get document root: %v", err)
+			return errors.New("failed to get document root: %v", err)
 		}
 
 		gotRoot, err := repo.GetDocumentRootOf(anchorID)
 		if err != nil {
-			return fmt.Errorf("failed to get document root from chain: %v", err)
+			return errors.New("failed to get document root from chain: %v", err)
 		}
 
 		if !utils.IsSameByteSlice(docRoot[:], gotRoot[:]) {
-			return fmt.Errorf("mismatched document roots")
+			return errors.New("mismatched document roots")
 		}
 
 		return nil

@@ -3,7 +3,6 @@
 package errors
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -40,7 +39,7 @@ func TestNew(t *testing.T) {
 
 func checkListError(t *testing.T, lerr error, len int, result string) {
 	assert.NotNil(t, lerr)
-	_, ok := lerr.(*listError)
+	_, ok := lerr.(listError)
 	assert.True(t, ok)
 	assert.Equal(t, len, Len(lerr))
 	assert.Equal(t, result, lerr.Error())
@@ -51,7 +50,7 @@ func TestAppendError(t *testing.T) {
 	assert.Nil(t, AppendError(nil, nil))
 
 	// errn nil, and err not nil but simple error
-	serr := errors.New("some error")
+	serr := New("some error")
 	lerr := AppendError(serr, nil)
 	checkListError(t, lerr, 1, "[some error]")
 
@@ -88,13 +87,13 @@ func TestIsOfType(t *testing.T) {
 	// single type error
 	const errBadErr = Error("bad error")
 	serr := New("some error")
-	terr := NewTypeError(ErrUnknown, serr)
+	terr := NewTypedError(ErrUnknown, serr)
 	assert.True(t, IsOfType(ErrUnknown, terr))
 	assert.False(t, IsOfType(errBadErr, terr))
 	assert.Equal(t, "unknown error: some error", terr.Error())
 
 	// recursive error
-	terr = NewTypeError(errBadErr, terr)
+	terr = NewTypedError(errBadErr, terr)
 	assert.True(t, IsOfType(ErrUnknown, terr))
 	assert.True(t, IsOfType(errBadErr, terr))
 	assert.Equal(t, "bad error: unknown error: some error", terr.Error())
@@ -108,6 +107,6 @@ func TestIsOfType(t *testing.T) {
 	lerr := AppendError(serr, nil)
 	assert.False(t, IsOfType(ErrUnknown, lerr))
 	assert.False(t, IsOfType(errBadErr, lerr))
-	terr = NewTypeError(errBadErr, lerr)
+	terr = NewTypedError(errBadErr, lerr)
 	assert.True(t, IsOfType(errBadErr, terr))
 }

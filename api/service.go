@@ -1,13 +1,12 @@
 package api
 
 import (
-	"fmt"
-
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/healthcheck"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/documents"
@@ -25,17 +24,17 @@ func registerServices(ctx context.Context, cfg Config, grpcServer *grpc.Server, 
 	// node object registry
 	nodeObjReg, ok := ctx.Value(bootstrap.NodeObjRegistry).(map[string]interface{})
 	if !ok {
-		return fmt.Errorf("failed to get %s", bootstrap.NodeObjRegistry)
+		return errors.New("failed to get %s", bootstrap.NodeObjRegistry)
 	}
 
 	// load dependencies
 	registry, ok := nodeObjReg[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
 	if !ok {
-		return fmt.Errorf("failed to get %s", documents.BootstrappedRegistry)
+		return errors.New("failed to get %s", documents.BootstrappedRegistry)
 	}
 	payObService, ok := nodeObjReg[nft.BootstrappedPayObService].(nft.PaymentObligation)
 	if !ok {
-		return fmt.Errorf("failed to get %s", nft.BootstrappedPayObService)
+		return errors.New("failed to get %s", nft.BootstrappedPayObService)
 	}
 
 	// documents (common)
@@ -61,7 +60,7 @@ func registerServices(ctx context.Context, cfg Config, grpcServer *grpc.Server, 
 	poCfg := cfg.(config.Configuration)
 	srv, err := purchaseorder.GRPCHandler(poCfg, registry)
 	if err != nil {
-		return fmt.Errorf("failed to get purchase order handler: %v", err)
+		return errors.New("failed to get purchase order handler: %v", err)
 	}
 
 	purchaseorderpb.RegisterDocumentServiceServer(grpcServer, srv)

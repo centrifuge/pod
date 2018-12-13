@@ -29,7 +29,7 @@ func (h grpcHandler) CreateDocumentProof(ctx context.Context, createDocumentProo
 
 	service, err := h.registry.LocateService(createDocumentProofEnvelope.Type)
 	if err != nil {
-		return &documentpb.DocumentProof{}, err
+		return &documentpb.DocumentProof{}, centerrors.Wrap(err, "could not locate service for document type")
 	}
 
 	identifier, err := hexutil.Decode(createDocumentProofEnvelope.Identifier)
@@ -50,7 +50,7 @@ func (h grpcHandler) CreateDocumentProofForVersion(ctx context.Context, createDo
 
 	service, err := h.registry.LocateService(createDocumentProofForVersionEnvelope.Type)
 	if err != nil {
-		return &documentpb.DocumentProof{}, err
+		return &documentpb.DocumentProof{}, centerrors.Wrap(err, "could not locate service for document type")
 	}
 
 	identifier, err := hexutil.Decode(createDocumentProofForVersionEnvelope.Identifier)

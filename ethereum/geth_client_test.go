@@ -4,7 +4,6 @@ package ethereum
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"sync"
 	"testing"
@@ -13,11 +12,11 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/context/testlogging"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/testingutils"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/go-errors/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -46,12 +45,12 @@ type MockTransactionRequest struct {
 func (transactionRequest *MockTransactionRequest) RegisterTransaction(opts *bind.TransactOpts, transactionName string, anotherVar string) (tx *types.Transaction, err error) {
 	transactionRequest.count++
 	if transactionName == "otherError" {
-		err = errors.Wrap("Some other error", 1)
+		err = errors.New("Some other error")
 	} else if transactionName == "optimisticLockingTimeout" {
-		err = errors.Wrap(transactionUnderpriced, 1)
+		err = transactionUnderpriced
 	} else if transactionName == "optimisticLockingEventualSuccess" {
 		if transactionRequest.count < 3 {
-			err = errors.Wrap(transactionUnderpriced, 1)
+			err = transactionUnderpriced
 		}
 	}
 
@@ -137,7 +136,7 @@ func Test_incrementNonce(t *testing.T) {
 
 	// noncer failed
 	n := new(mockNoncer)
-	n.On("PendingNonceAt", mock.Anything, opts.From).Return(0, fmt.Errorf("error")).Once()
+	n.On("PendingNonceAt", mock.Anything, opts.From).Return(0, errors.New("error")).Once()
 	err = gc.incrementNonce(opts, true, n, nil)
 	n.AssertExpectations(t)
 	assert.Error(t, err)
@@ -146,7 +145,7 @@ func Test_incrementNonce(t *testing.T) {
 	// rpc call failed
 	n = new(mockNoncer)
 	n.On("PendingNonceAt", mock.Anything, opts.From).Return(uint64(100), nil).Once()
-	n.On("CallContext", mock.Anything, mock.Anything, "txpool_inspect", mock.Anything).Return(nil, fmt.Errorf("error")).Once()
+	n.On("CallContext", mock.Anything, mock.Anything, "txpool_inspect", mock.Anything).Return(nil, errors.New("error")).Once()
 	err = gc.incrementNonce(opts, true, n, n)
 	n.AssertExpectations(t)
 	assert.Error(t, err)

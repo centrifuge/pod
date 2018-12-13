@@ -1,6 +1,6 @@
 package identity
 
-import "errors"
+import "github.com/centrifuge/go-centrifuge/errors"
 
 const (
 	centIDParam string = "CentID"

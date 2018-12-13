@@ -1,8 +1,7 @@
 package storage
 
 import (
-	"errors"
-	"fmt"
+	"github.com/centrifuge/go-centrifuge/errors"
 
 	"github.com/centrifuge/go-centrifuge/config"
 )
@@ -22,7 +21,7 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 
 	levelDB, err := NewLevelDBStorage(cfg.GetStoragePath())
 	if err != nil {
-		return fmt.Errorf("failed to init level db: %v", err)
+		return errors.New("failed to init level db: %v", err)
 	}
 
 	context[BootstrappedLevelDB] = levelDB

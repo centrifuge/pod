@@ -4,7 +4,6 @@ package p2p
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"testing"
 
@@ -19,6 +18,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/context/testlogging"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/testingutils/coredocument"
 	"github.com/centrifuge/go-centrifuge/version"
@@ -135,12 +135,12 @@ func TestP2PService_basicChecks(t *testing.T) {
 	}{
 		{
 			header: &p2ppb.CentrifugeHeader{CentNodeVersion: "someversion", NetworkIdentifier: 12},
-			err:    documents.AppendError(version.IncompatibleVersionError("someversion"), incompatibleNetworkError(cfg.GetNetworkID(), 12)),
+			err:    errors.AppendError(version.IncompatibleVersionError("someversion"), incompatibleNetworkError(cfg.GetNetworkID(), 12)),
 		},
 
 		{
 			header: &p2ppb.CentrifugeHeader{CentNodeVersion: "0.0.1", NetworkIdentifier: 12},
-			err:    documents.AppendError(incompatibleNetworkError(cfg.GetNetworkID(), 12), nil),
+			err:    errors.AppendError(incompatibleNetworkError(cfg.GetNetworkID(), 12), nil),
 		},
 
 		{
@@ -159,16 +159,6 @@ func TestP2PService_basicChecks(t *testing.T) {
 		}
 	}
 
-}
-
-type mockRepo struct {
-	mock.Mock
-	documents.LegacyRepository
-}
-
-func (r mockRepo) Update(id []byte, m documents.Model) error {
-	args := r.Called(id, m)
-	return args.Error(0)
 }
 
 type mockModel struct {
@@ -213,7 +203,7 @@ func Test_getServiceAndModel(t *testing.T) {
 
 	// derive fails
 	srv := mockService{}
-	srv.On("DeriveFromCoreDocument", cd).Return(nil, fmt.Errorf("error")).Once()
+	srv.On("DeriveFromCoreDocument", cd).Return(nil, errors.New("error")).Once()
 	err = registry.Register(cd.EmbeddedData.TypeUrl, srv)
 	assert.Nil(t, err)
 	s, m, err = getServiceAndModel(registry, cd)
