@@ -7,7 +7,7 @@ import (
 
 const (
 	// BootstrappedRegistry is the key to ServiceRegistry in Bootstrap context
-	BootstrappedRegistry           = "BootstrappedRegistry"
+	BootstrappedRegistry = "BootstrappedRegistry"
 	// BootstrappedDocumentRepository is the key to the database repository of documents
 	BootstrappedDocumentRepository = "BootstrappedDocumentRepository"
 )

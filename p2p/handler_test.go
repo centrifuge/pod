@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"testing"
 
-
 	"os"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"

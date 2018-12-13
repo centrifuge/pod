@@ -57,7 +57,7 @@ type NodeConfig struct {
 	// TODO what to do about contract addresses?
 }
 
-// Get the ID of the document represented by this model
+// ID Gets the ID of the document represented by this model
 func (nc *NodeConfig) ID() ([]byte, error) {
 	return []byte{}, nil
 }
@@ -112,7 +112,7 @@ type TenantConfig struct {
 	EthAuthKeyPair                   KeyPair
 }
 
-// Get the ID of the document represented by this model
+// ID Get the ID of the document represented by this model
 func (tc *TenantConfig) ID() ([]byte, error) {
 	return tc.IdentityID, nil
 }

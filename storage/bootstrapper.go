@@ -7,7 +7,7 @@ import (
 
 const (
 	// BootstrappedLevelDB is a key mapped to levelDB at boot
-	BootstrappedLevelDB       string = "BootstrappedLevelDB"
+	BootstrappedLevelDB string = "BootstrappedLevelDB"
 	// BootstrappedConfigLevelDB is a key mapped to levelDB for configs at boot
 	BootstrappedConfigLevelDB string = "BootstrappedConfigLevelDB"
 )
