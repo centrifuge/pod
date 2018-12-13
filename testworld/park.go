@@ -35,8 +35,6 @@ var hostConfig = []struct {
 	{"Bob", 8085, 38205},
 	{"Charlie", 8086, 38206},
 	{"Kenny", 8087, 38207},
-	{"Dolores", 8088, 38208},
-	{"Teddy", 8089, 38209},
 }
 
 const defaultP2PTimeout = "20s"
