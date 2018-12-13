@@ -7,14 +7,27 @@ import (
 	"testing"
 )
 
-func TestHost_AddExternalCollaborator_invoice(t *testing.T) {
+func TestHost_AddExternalCollaborator(t *testing.T) {
 	t.Parallel()
-	addExternalCollaborator(t, typeInvoice)
-}
-
-func TestHost_AddExternalCollaborator_po(t *testing.T) {
-	t.Parallel()
-	addExternalCollaborator(t, typePO)
+	tests := []struct {
+		name    string
+		docType string
+	}{
+		{
+			"Invoice_AddExternalCollaborator",
+			typeInvoice,
+		},
+		{
+			"PO_AddExternalCollaborator",
+			typePO,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.docType, func(t *testing.T) {
+			t.Parallel()
+			addExternalCollaborator(t, test.docType)
+		})
+	}
 }
 
 func addExternalCollaborator(t *testing.T, documentType string) {
