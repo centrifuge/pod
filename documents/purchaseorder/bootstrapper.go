@@ -1,8 +1,7 @@
 package purchaseorder
 
 import (
-	"errors"
-	"fmt"
+	"github.com/centrifuge/go-centrifuge/errors"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -26,27 +25,27 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 
 	p2pClient, ok := ctx[p2p.BootstrappedP2PClient].(p2p.Client)
 	if !ok {
-		return fmt.Errorf("p2p client not initialised")
+		return errors.New("p2p client not initialised")
 	}
 
 	registry, ok := ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
 	if !ok {
-		return fmt.Errorf("service registry not initialised")
+		return errors.New("service registry not initialised")
 	}
 
 	anchorRepo, ok := ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
 	if !ok {
-		return fmt.Errorf("anchor repository not initialised")
+		return errors.New("anchor repository not initialised")
 	}
 
 	idService, ok := ctx[identity.BootstrappedIDService].(identity.Service)
 	if !ok {
-		return fmt.Errorf("identity service not initialised")
+		return errors.New("identity service not initialised")
 	}
 
 	repo, ok := ctx[documents.BootstrappedDocumentRepository].(documents.Repository)
 	if !ok {
-		return fmt.Errorf("document db repository not initialised")
+		return errors.New("document db repository not initialised")
 	}
 	repo.Register(&PurchaseOrder{})
 
@@ -54,7 +53,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	srv := DefaultService(cfg, repo, coredocument.DefaultProcessor(idService, p2pClient, anchorRepo, cfg), anchorRepo, idService)
 	err := registry.Register(documenttypes.PurchaseOrderDataTypeUrl, srv)
 	if err != nil {
-		return fmt.Errorf("failed to register purchase order service")
+		return errors.New("failed to register purchase order service")
 	}
 
 	return nil

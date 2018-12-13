@@ -7,7 +7,6 @@ package config
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"math/big"
@@ -15,6 +14,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/centrifuge/go-centrifuge/errors"
 
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/resources"
@@ -236,7 +237,7 @@ func (c *configuration) GetEthereumAccount(accountName string) (account *Account
 	k := fmt.Sprintf("ethereum.accounts.%s", accountName)
 
 	if !c.IsSet(k) {
-		return nil, fmt.Errorf("no account found with account name %s", accountName)
+		return nil, errors.New("no account found with account name %s", accountName)
 	}
 
 	// Workaround for bug https://github.com/spf13/viper/issues/309 && https://github.com/spf13/viper/issues/513

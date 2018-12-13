@@ -2,9 +2,10 @@ package identity
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"math/big"
+
+	"github.com/centrifuge/go-centrifuge/errors"
 
 	"time"
 
@@ -175,7 +176,7 @@ func GetIdentityConfig(config Config) (*IDConfig, error) {
 // errors out if bytes are empty, nil, or len(bytes) > CentIDLength
 func ToCentID(bytes []byte) (centID CentID, err error) {
 	if utils.IsEmptyByteSlice(bytes) {
-		return centID, fmt.Errorf("empty bytes provided")
+		return centID, errors.New("empty bytes provided")
 	}
 
 	if !utils.IsValidByteSliceForLength(bytes, CentIDLength) {

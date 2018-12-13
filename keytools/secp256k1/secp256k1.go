@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"fmt"
 
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -118,12 +119,12 @@ func VerifySignature(publicKey, message, signature []byte) bool {
 func GetEthAuthKey(pub, priv string) (public, private []byte, err error) {
 	privateKey, err := GetPrivateEthAuthKey(priv)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to read private key: %v", err)
+		return nil, nil, errors.New("failed to read private key: %v", err)
 	}
 
 	publicKey, err := GetPublicEthAuthKey(pub)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to read public key: %v", err)
+		return nil, nil, errors.New("failed to read public key: %v", err)
 	}
 
 	return publicKey, privateKey, nil

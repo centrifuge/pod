@@ -3,7 +3,6 @@ package purchaseorder
 import (
 	"crypto/sha256"
 	"encoding/json"
-	"fmt"
 	"reflect"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
@@ -11,6 +10,7 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/coredocument"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/identity"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
@@ -156,7 +156,7 @@ func (p *PurchaseOrder) InitPurchaseOrderInput(payload *clientpurchaseorderpb.Pu
 	collaborators := append([]string{contextHeader.Self().ID.String()}, payload.Collaborators...)
 	p.CoreDocument, err = coredocument.NewWithCollaborators(collaborators)
 	if err != nil {
-		return fmt.Errorf("failed to init core document: %v", err)
+		return errors.New("failed to init core document: %v", err)
 	}
 
 	return nil
@@ -297,7 +297,7 @@ func (p *PurchaseOrder) UnpackCoreDocument(coreDoc *coredocumentpb.CoreDocument)
 		coreDoc.EmbeddedData.TypeUrl != documenttypes.PurchaseOrderDataTypeUrl ||
 		coreDoc.EmbeddedDataSalts == nil ||
 		coreDoc.EmbeddedDataSalts.TypeUrl != documenttypes.PurchaseOrderSaltsTypeUrl {
-		return fmt.Errorf("trying to convert document with incorrect schema")
+		return errors.New("trying to convert document with incorrect schema")
 	}
 
 	poData := &purchaseorderpb.PurchaseOrderData{}
@@ -341,7 +341,7 @@ func (p *PurchaseOrder) Type() reflect.Type {
 func (p *PurchaseOrder) calculateDataRoot() error {
 	t, err := p.getDocumentDataTree()
 	if err != nil {
-		return fmt.Errorf("calculateDataRoot error %v", err)
+		return errors.New("calculateDataRoot error %v", err)
 	}
 	p.CoreDocument.DataRoot = t.RootHash()
 	return nil
@@ -354,11 +354,11 @@ func (p *PurchaseOrder) getDocumentDataTree() (tree *proofs.DocumentTree, err er
 	poData := p.createP2PProtobuf()
 	err = t.AddLeavesFromDocument(poData, p.getPurchaseOrderSalts(poData))
 	if err != nil {
-		return nil, fmt.Errorf("getDocumentDataTree error %v", err)
+		return nil, errors.New("getDocumentDataTree error %v", err)
 	}
 	err = t.Generate()
 	if err != nil {
-		return nil, fmt.Errorf("getDocumentDataTree error %v", err)
+		return nil, errors.New("getDocumentDataTree error %v", err)
 	}
 	return &t, nil
 }
@@ -369,12 +369,12 @@ func (p *PurchaseOrder) createProofs(fields []string) (coreDoc *coredocumentpb.C
 	// is still not saved with roots in db due to failures during getting signatures.
 	coreDoc, err = p.PackCoreDocument()
 	if err != nil {
-		return nil, nil, fmt.Errorf("createProofs error %v", err)
+		return nil, nil, errors.New("createProofs error %v", err)
 	}
 
 	tree, err := p.getDocumentDataTree()
 	if err != nil {
-		return coreDoc, nil, fmt.Errorf("createProofs error %v", err)
+		return coreDoc, nil, errors.New("createProofs error %v", err)
 	}
 
 	proofs, err = coredocument.CreateProofs(tree, coreDoc, fields)

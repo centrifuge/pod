@@ -3,7 +3,6 @@
 package errors
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -51,7 +50,7 @@ func TestAppendError(t *testing.T) {
 	assert.Nil(t, AppendError(nil, nil))
 
 	// errn nil, and err not nil but simple error
-	serr := errors.New("some error")
+	serr := New("some error")
 	lerr := AppendError(serr, nil)
 	checkListError(t, lerr, 1, "[some error]")
 

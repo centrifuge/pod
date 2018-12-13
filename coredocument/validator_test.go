@@ -3,7 +3,6 @@
 package coredocument
 
 import (
-	"fmt"
 	"testing"
 
 	"context"
@@ -31,21 +30,21 @@ func TestUpdateVersionValidator(t *testing.T) {
 
 	// old model pack core doc fail
 	old := mockModel{}
-	new := mockModel{}
-	old.On("PackCoreDocument").Return(nil, fmt.Errorf("error")).Once()
-	err = uvv.Validate(old, new)
+	newM := mockModel{}
+	old.On("PackCoreDocument").Return(nil, errors.New("error")).Once()
+	err = uvv.Validate(old, newM)
 	old.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to fetch old core document")
 
-	// new model pack core doc fail
+	// newM model pack core doc fail
 	oldCD := New()
 	oldCD.DocumentRoot = utils.RandomSlice(32)
 	old.On("PackCoreDocument").Return(oldCD, nil).Once()
-	new.On("PackCoreDocument").Return(nil, fmt.Errorf("error")).Once()
-	err = uvv.Validate(old, new)
+	newM.On("PackCoreDocument").Return(nil, errors.New("error")).Once()
+	err = uvv.Validate(old, newM)
 	old.AssertExpectations(t)
-	new.AssertExpectations(t)
+	newM.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to fetch new core document")
 
@@ -53,10 +52,10 @@ func TestUpdateVersionValidator(t *testing.T) {
 	newCD := New()
 	newCD.NextVersion = nil
 	old.On("PackCoreDocument").Return(oldCD, nil).Once()
-	new.On("PackCoreDocument").Return(newCD, nil).Once()
-	err = uvv.Validate(old, new)
+	newM.On("PackCoreDocument").Return(newCD, nil).Once()
+	err = uvv.Validate(old, newM)
 	old.AssertExpectations(t)
-	new.AssertExpectations(t)
+	newM.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Equal(t, 5, errors.Len(err))
 
@@ -64,10 +63,10 @@ func TestUpdateVersionValidator(t *testing.T) {
 	newCD, err = PrepareNewVersion(*oldCD, nil)
 	assert.Nil(t, err)
 	old.On("PackCoreDocument").Return(oldCD, nil).Once()
-	new.On("PackCoreDocument").Return(newCD, nil).Once()
-	err = uvv.Validate(old, new)
+	newM.On("PackCoreDocument").Return(newCD, nil).Once()
+	err = uvv.Validate(old, newM)
 	old.AssertExpectations(t)
-	new.AssertExpectations(t)
+	newM.AssertExpectations(t)
 	assert.Nil(t, err)
 }
 
@@ -79,7 +78,7 @@ func Test_getCoreDocument(t *testing.T) {
 
 	// pack core document fail
 	model := mockModel{}
-	model.On("PackCoreDocument").Return(nil, fmt.Errorf("err")).Once()
+	model.On("PackCoreDocument").Return(nil, errors.New("err")).Once()
 	cd, err = getCoreDocument(model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
@@ -100,7 +99,7 @@ func TestValidator_baseValidator(t *testing.T) {
 
 	// fail getCoreDocument
 	model := mockModel{}
-	model.On("PackCoreDocument").Return(nil, fmt.Errorf("err")).Once()
+	model.On("PackCoreDocument").Return(nil, errors.New("err")).Once()
 	err := bv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
@@ -127,7 +126,7 @@ func TestValidator_signingRootValidator(t *testing.T) {
 
 	// fail getCoreDoc
 	model := mockModel{}
-	model.On("PackCoreDocument").Return(nil, fmt.Errorf("err")).Once()
+	model.On("PackCoreDocument").Return(nil, errors.New("err")).Once()
 	err := sv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
@@ -171,7 +170,7 @@ func TestValidator_documentRootValidator(t *testing.T) {
 
 	// fail getCoreDoc
 	model := mockModel{}
-	model.On("PackCoreDocument").Return(nil, fmt.Errorf("err")).Once()
+	model.On("PackCoreDocument").Return(nil, errors.New("err")).Once()
 	err := dv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
@@ -214,7 +213,7 @@ func TestValidator_selfSignatureValidator(t *testing.T) {
 
 	// fail getCoreDoc
 	model := mockModel{}
-	model.On("PackCoreDocument").Return(nil, fmt.Errorf("err")).Once()
+	model.On("PackCoreDocument").Return(nil, errors.New("err")).Once()
 	err = rfsv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
@@ -263,7 +262,7 @@ func TestValidator_signatureValidator(t *testing.T) {
 
 	// fail getCoreDoc
 	model := mockModel{}
-	model.On("PackCoreDocument").Return(nil, fmt.Errorf("err")).Once()
+	model.On("PackCoreDocument").Return(nil, errors.New("err")).Once()
 	err := ssv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
@@ -350,7 +349,7 @@ func TestValidator_anchoredValidator(t *testing.T) {
 	r := &repo{}
 	av = anchoredValidator(r)
 	cd.CurrentVersion = anchorID[:]
-	r.On("GetDocumentRootOf", anchorID).Return(nil, fmt.Errorf("error")).Once()
+	r.On("GetDocumentRootOf", anchorID).Return(nil, errors.New("error")).Once()
 	cd.DocumentRoot = utils.RandomSlice(32)
 	model = &mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()

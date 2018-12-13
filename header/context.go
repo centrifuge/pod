@@ -2,9 +2,9 @@ package header
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 )
 
@@ -18,7 +18,7 @@ type ContextHeader struct {
 func NewContextHeader(context context.Context, config config.Configuration) (*ContextHeader, error) {
 	idConfig, err := identity.GetIdentityConfig(config.(identity.Config))
 	if err != nil {
-		return nil, fmt.Errorf("failed to get id config: %v", err)
+		return nil, errors.New("failed to get id config: %v", err)
 	}
 
 	return &ContextHeader{self: idConfig, context: context}, nil

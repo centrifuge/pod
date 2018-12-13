@@ -2,8 +2,9 @@ package utils
 
 import (
 	"crypto/rand"
-	"errors"
 	"math/big"
+
+	"github.com/centrifuge/go-centrifuge/errors"
 
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/common"

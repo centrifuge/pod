@@ -3,13 +3,14 @@ package api
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"errors"
 	"net"
 	"net/http"
 	_ "net/http/pprof" // we need this side effect that loads the pprof endpoints to defaultServerMux
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/centrifuge/go-centrifuge/errors"
 
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"

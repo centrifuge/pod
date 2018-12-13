@@ -8,6 +8,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/header"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -28,7 +29,7 @@ type grpcHandler struct {
 func GRPCHandler(config config.Configuration, registry *documents.ServiceRegistry) (clientpurchaseorderpb.DocumentServiceServer, error) {
 	srv, err := registry.LocateService(documenttypes.PurchaseOrderDataTypeUrl)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch purchase order service")
+		return nil, errors.New("failed to fetch purchase order service")
 	}
 
 	return grpcHandler{

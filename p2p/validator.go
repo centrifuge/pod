@@ -42,7 +42,7 @@ func (vf ValidatorFunc) Validate(header *p2ppb.CentrifugeHeader) error {
 func versionValidator() Validator {
 	return ValidatorFunc(func(header *p2ppb.CentrifugeHeader) error {
 		if header == nil {
-			return fmt.Errorf("nil header")
+			return errors.New("nil header")
 		}
 		if !version.CheckVersion(header.CentNodeVersion) {
 			return version.IncompatibleVersionError(header.CentNodeVersion)
@@ -54,7 +54,7 @@ func versionValidator() Validator {
 func networkValidator(networkID uint32) Validator {
 	return ValidatorFunc(func(header *p2ppb.CentrifugeHeader) error {
 		if header == nil {
-			return fmt.Errorf("nil header")
+			return errors.New("nil header")
 		}
 		if networkID != header.NetworkIdentifier {
 			return incompatibleNetworkError(networkID, header.NetworkIdentifier)

@@ -2,18 +2,17 @@ package anchors
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/centerrors"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/go-errors/errors"
 )
 
 const (
@@ -71,12 +70,12 @@ func (act *anchorConfirmationTask) Copy() (gocelery.CeleryTask, error) {
 func (act *anchorConfirmationTask) ParseKwargs(kwargs map[string]interface{}) error {
 	anchorID, ok := kwargs[anchorIDParam]
 	if !ok {
-		return fmt.Errorf("undefined kwarg " + anchorIDParam)
+		return errors.New("undefined kwarg " + anchorIDParam)
 	}
 
 	anchorIDBytes, err := getBytesAnchorID(anchorID)
 	if err != nil {
-		return fmt.Errorf("malformed kwarg [%s] because [%s]", anchorIDParam, err.Error())
+		return errors.New("malformed kwarg [%s] because [%s]", anchorIDParam, err.Error())
 	}
 
 	act.AnchorID = anchorIDBytes
@@ -84,12 +83,12 @@ func (act *anchorConfirmationTask) ParseKwargs(kwargs map[string]interface{}) er
 	//parse the centrifuge id
 	centID, ok := kwargs[centIDParam]
 	if !ok {
-		return fmt.Errorf("undefined kwarg " + centIDParam)
+		return errors.New("undefined kwarg " + centIDParam)
 	}
 
 	centIDBytes, err := getBytesCentrifugeID(centID)
 	if err != nil {
-		return fmt.Errorf("malformed kwarg [%s] because [%s]", centIDParam, err.Error())
+		return errors.New("malformed kwarg [%s] because [%s]", centIDParam, err.Error())
 	}
 
 	act.CentrifugeID = centIDBytes
@@ -97,17 +96,17 @@ func (act *anchorConfirmationTask) ParseKwargs(kwargs map[string]interface{}) er
 	// parse the address
 	address, ok := kwargs[addressParam]
 	if !ok {
-		return fmt.Errorf("undefined kwarg " + addressParam)
+		return errors.New("undefined kwarg " + addressParam)
 	}
 
 	addressStr, ok := address.(string)
 	if !ok {
-		return fmt.Errorf("param is not hex string " + addressParam)
+		return errors.New("param is not hex string " + addressParam)
 	}
 
 	addressTyped, err := getAddressFromHexString(addressStr)
 	if err != nil {
-		return fmt.Errorf("malformed kwarg [%s] because [%s]", addressParam, err.Error())
+		return errors.New("malformed kwarg [%s] because [%s]", addressParam, err.Error())
 	}
 	act.From = addressTyped
 
@@ -123,7 +122,7 @@ func (act *anchorConfirmationTask) ParseKwargs(kwargs map[string]interface{}) er
 	if ok {
 		td, err := queue.GetDuration(tdRaw)
 		if err != nil {
-			return fmt.Errorf("malformed kwarg [%s] because [%s]", queue.TimeoutParam, err.Error())
+			return errors.New("malformed kwarg [%s] because [%s]", queue.TimeoutParam, err.Error())
 		}
 		act.Timeout = td
 	}
