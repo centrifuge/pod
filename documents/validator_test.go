@@ -3,7 +3,6 @@
 package documents
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -29,7 +28,7 @@ func (m MockValidatorWithErrors) Validate(oldState Model, newState Model) error 
 type MockValidatorWithOneError struct{}
 
 func (m MockValidatorWithOneError) Validate(oldState Model, newState Model) error {
-	return fmt.Errorf("one error")
+	return errors.New("one error")
 }
 
 func TestValidatorInterface(t *testing.T) {

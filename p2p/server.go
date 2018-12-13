@@ -2,10 +2,11 @@ package p2p
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"sync"
 	"time"
+
+	"github.com/centrifuge/go-centrifuge/errors"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -196,7 +197,7 @@ func (s *p2pServer) makeBasicHost(listenPort int) (host.Host, error) {
 	} else {
 		extMultiAddr, err = ma.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%d", externalIP, listenPort))
 		if err != nil {
-			return nil, fmt.Errorf("failed to create multiaddr: %v", err)
+			return nil, errors.New("failed to create multiaddr: %v", err)
 		}
 	}
 
@@ -222,7 +223,7 @@ func (s *p2pServer) makeBasicHost(listenPort int) (host.Host, error) {
 
 	hostAddr, err := ma.NewMultiaddr(fmt.Sprintf("/ipfs/%s", bhost.ID().Pretty()))
 	if err != nil {
-		return nil, fmt.Errorf("failed to get addr: %v", err)
+		return nil, errors.New("failed to get addr: %v", err)
 	}
 
 	log.Infof("P2P Server at: %s %s\n", hostAddr.String(), bhost.Addrs())
@@ -233,7 +234,7 @@ func (s *p2pServer) createSigningKey() (priv crypto.PrivKey, pub crypto.PubKey, 
 	// Create the signing key for the host
 	publicKey, privateKey, err := cented25519.GetSigningKeyPair(s.config.GetSigningKeyPair())
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get keys: %v", err)
+		return nil, nil, errors.New("failed to get keys: %v", err)
 	}
 
 	var key []byte

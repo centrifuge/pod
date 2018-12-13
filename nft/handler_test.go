@@ -8,9 +8,9 @@ import (
 
 	"math/big"
 
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/nft"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/go-errors/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )

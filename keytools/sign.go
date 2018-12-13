@@ -1,9 +1,9 @@
 package keytools
 
 import (
-	"fmt"
 	"strings"
 
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/keytools/secp256k1"
 )
 
@@ -21,9 +21,9 @@ func SignMessage(privateKey, message []byte, curveType string, ethereumSign bool
 
 		return secp256k1.Sign(msg, privateKey)
 	case CurveEd25519:
-		return nil, fmt.Errorf("curve ed25519 not supported yet")
+		return nil, errors.New("curve ed25519 not supported yet")
 	default:
-		return nil, fmt.Errorf("curve %s not supported", curveType)
+		return nil, errors.New("curve %s not supported", curveType)
 	}
 
 }

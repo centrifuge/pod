@@ -2,7 +2,6 @@ package ethereum
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 	"net/url"
 	"reflect"
@@ -13,6 +12,7 @@ import (
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -22,8 +22,8 @@ import (
 )
 
 const (
-	transactionUnderpriced = "replacement transaction underpriced"
-	nonceTooLow            = "nonce too low"
+	transactionUnderpriced = errors.Error("replacement transaction underpriced")
+	nonceTooLow            = errors.Error("nonce too low")
 )
 
 var log = logging.Logger("geth-client")
@@ -91,12 +91,12 @@ func NewGethClient(config Config) (Client, error) {
 	log.Info("Opening connection to Ethereum:", config.GetEthereumNodeURL())
 	u, err := url.Parse(config.GetEthereumNodeURL())
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse ethereum node URL: %v", err)
+		return nil, errors.New("failed to parse ethereum node URL: %v", err)
 	}
 
 	c, err := rpc.Dial(u.String())
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to ethereum node: %v", err)
+		return nil, errors.New("failed to connect to ethereum node: %v", err)
 	}
 
 	return &gethClient{
@@ -164,12 +164,12 @@ func (gc *gethClient) GetNodeURL() *url.URL {
 func (gc *gethClient) getGethTxOpts(accountName string) (*bind.TransactOpts, error) {
 	account, err := gc.config.GetEthereumAccount(accountName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get ethereum account: %v", err)
+		return nil, errors.New("failed to get ethereum account: %v", err)
 	}
 
 	opts, err := bind.NewTransactor(strings.NewReader(account.Key), account.Password)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create new transaction opts: %v", err)
+		return nil, errors.New("failed to create new transaction opts: %v", err)
 	}
 
 	opts.GasPrice = gc.config.GetEthereumGasPrice()
@@ -199,13 +199,13 @@ func (gc *gethClient) SubmitTransactionWithRetries(contractMethod interface{}, o
 	for {
 
 		if current >= maxTries {
-			return nil, fmt.Errorf("max concurrent transaction tries reached: %v", err)
+			return nil, errors.New("max concurrent transaction tries reached: %v", err)
 		}
 
 		current++
 		err = gc.incrementNonce(opts, gc.config.GetTxPoolAccessEnabled(), gc.client, gc.rpcClient)
 		if err != nil {
-			return nil, fmt.Errorf("failed to increment nonce: %v", err)
+			return nil, errors.New("failed to increment nonce: %v", err)
 		}
 
 		if opts.Nonce != nil {
@@ -232,7 +232,7 @@ func (gc *gethClient) SubmitTransactionWithRetries(contractMethod interface{}, o
 			return tx, nil
 		}
 
-		if (err.Error() == transactionUnderpriced) || (err.Error() == nonceTooLow) {
+		if (err.Error() == transactionUnderpriced.Error()) || (err.Error() == nonceTooLow.Error()) {
 			log.Warningf("Concurrent transaction identified, trying again [%d/%d]\n", current, maxTries)
 			time.Sleep(gc.config.GetEthereumIntervalRetry())
 			continue
@@ -281,7 +281,7 @@ func (gc *gethClient) incrementNonce(opts *bind.TransactOpts, txpoolAccessEnable
 	// get current nonce
 	n, err := noncer.PendingNonceAt(ctx, opts.From)
 	if err != nil {
-		return fmt.Errorf("failed to get chain nonce for %s: %v", opts.From.String(), err)
+		return errors.New("failed to get chain nonce for %s: %v", opts.From.String(), err)
 	}
 
 	// set the nonce
@@ -291,7 +291,7 @@ func (gc *gethClient) incrementNonce(opts *bind.TransactOpts, txpoolAccessEnable
 	res := make(map[string]map[string]map[string]string)
 	err = cc.CallContext(ctx, &res, "txpool_inspect")
 	if err != nil {
-		return fmt.Errorf("failed to get txpool data: %v", err)
+		return errors.New("failed to get txpool data: %v", err)
 	}
 
 	// no pending transaction from this account in tx pool
@@ -303,7 +303,7 @@ func (gc *gethClient) incrementNonce(opts *bind.TransactOpts, txpoolAccessEnable
 	for k := range res["pending"][opts.From.Hex()] {
 		ki, err := strconv.Atoi(k)
 		if err != nil {
-			return fmt.Errorf("failed to convert nonce: %v", err)
+			return errors.New("failed to convert nonce: %v", err)
 		}
 
 		keys = append(keys, ki)

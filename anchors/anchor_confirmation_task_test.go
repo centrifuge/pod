@@ -4,11 +4,11 @@ package anchors
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 	"testing"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/testingutils"
@@ -130,7 +130,7 @@ func TestAnchoringConfirmationTask_RunTaskIterError(t *testing.T) {
 	act := anchorConfirmationTask{
 		AnchorID:                anchorID,
 		From:                    address,
-		AnchorCommittedFilterer: &MockAnchorCommittedFilter{err: fmt.Errorf("failed iterator")},
+		AnchorCommittedFilterer: &MockAnchorCommittedFilter{err: errors.New("failed iterator")},
 		EthContext:              context.Background(),
 	}
 
@@ -148,7 +148,7 @@ func TestAnchoringConfirmationTask_RunTaskWatchError(t *testing.T) {
 		AnchorID: anchorID,
 		From:     address,
 		AnchorCommittedFilterer: &MockAnchorCommittedFilter{iter: &EthereumAnchorRepositoryContractAnchorCommittedIterator{
-			fail: fmt.Errorf("watch error"),
+			fail: errors.New("watch error"),
 			sub:  &testingutils.MockSubscription{},
 		}},
 		EthContext: ctx,

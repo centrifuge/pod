@@ -3,11 +3,11 @@ package nft
 import (
 	"context"
 	"encoding/hex"
-	"fmt"
 	"math/big"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/queue"
@@ -112,7 +112,7 @@ func (s *ethereumPaymentObligation) MintNFT(documentID []byte, registryAddress, 
 
 	requestData, err := s.prepareMintRequest(documentID, depositAddress, proofFields)
 	if err != nil {
-		return nil, fmt.Errorf("failed to prepare mint request: %v", err)
+		return nil, errors.New("failed to prepare mint request: %v", err)
 	}
 
 	opts, err := s.ethClient.GetTxOpts(s.config.GetEthereumDefaultAccountName())

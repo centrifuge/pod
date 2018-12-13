@@ -4,7 +4,6 @@ package invoice
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 	"testing"
 
@@ -230,7 +229,7 @@ func TestService_Create(t *testing.T) {
 	po, err := invSrv.DeriveFromCreatePayload(testingdocuments.CreateInvoicePayload(), ctxh)
 	assert.Nil(t, err)
 	proc := &testingcoredocument.MockCoreDocumentProcessor{}
-	proc.On("PrepareForSignatureRequests", po).Return(fmt.Errorf("anchoring failed")).Once()
+	proc.On("PrepareForSignatureRequests", po).Return(errors.New("anchoring failed")).Once()
 	invSrv.coreDocProcessor = proc
 	m, err = invSrv.Create(ctxh, po)
 	proc.AssertExpectations(t)
@@ -577,7 +576,7 @@ func TestService_Update(t *testing.T) {
 
 	// pack failed
 	model := &mockModel{}
-	model.On("PackCoreDocument").Return(nil, fmt.Errorf("pack error")).Once()
+	model.On("PackCoreDocument").Return(nil, errors.New("pack error")).Once()
 	_, err = invSrv.Update(ctxh, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
@@ -666,7 +665,7 @@ func TestService_calculateDataRoot(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Nil(t, inv.(*Invoice).CoreDocument.DataRoot)
 	v := documents.ValidatorFunc(func(_, _ documents.Model) error {
-		return fmt.Errorf("validations fail")
+		return errors.New("validations fail")
 	})
 	inv, err = invSrv.calculateDataRoot(nil, inv, v)
 	assert.Nil(t, inv)

@@ -3,9 +3,9 @@
 package utils
 
 import (
-	"fmt"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -27,7 +27,7 @@ func (m *mockIterator) Close() error {
 }
 
 func TestLookForEvent_iterator_error(t *testing.T) {
-	iter := &mockIterator{next: false, err: fmt.Errorf("failed iterator")}
+	iter := &mockIterator{next: false, err: errors.New("failed iterator")}
 	err := LookForEvent(iter)
 	assert.NotNil(t, err, "error should be non nil")
 	assert.Contains(t, err.Error(), "failed iterator")

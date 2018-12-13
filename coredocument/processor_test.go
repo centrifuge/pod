@@ -4,12 +4,12 @@ package coredocument
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
@@ -47,7 +47,7 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
 	// pack failed
 	model := mockModel{}
-	model.On("PackCoreDocument").Return(nil, fmt.Errorf("error")).Once()
+	model.On("PackCoreDocument").Return(nil, errors.New("error")).Once()
 	ctxh, err := header.NewContextHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 	err = dp.PrepareForSignatureRequests(ctxh, model)
@@ -79,7 +79,7 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 	// failed unpack
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
-	model.On("UnpackCoreDocument", cd).Return(fmt.Errorf("error")).Once()
+	model.On("UnpackCoreDocument", cd).Return(errors.New("error")).Once()
 	err = dp.PrepareForSignatureRequests(ctxh, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
@@ -118,7 +118,7 @@ func TestDefaultProcessor_RequestSignatures(t *testing.T) {
 	assert.Nil(t, err)
 	// pack failed
 	model := mockModel{}
-	model.On("PackCoreDocument").Return(nil, fmt.Errorf("error")).Once()
+	model.On("PackCoreDocument").Return(nil, errors.New("error")).Once()
 	err = dp.RequestSignatures(ctxh, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
@@ -148,7 +148,7 @@ func TestDefaultProcessor_RequestSignatures(t *testing.T) {
 	assert.Nil(t, err)
 	model.AssertExpectations(t)
 	c := p2pClient{}
-	c.On("GetSignaturesForDocument", ctxh, cd).Return(fmt.Errorf("error")).Once()
+	c.On("GetSignaturesForDocument", ctxh, cd).Return(errors.New("error")).Once()
 	dp.p2pClient = c
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Times(4)
@@ -164,7 +164,7 @@ func TestDefaultProcessor_RequestSignatures(t *testing.T) {
 	dp.p2pClient = c
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Times(4)
-	model.On("UnpackCoreDocument", cd).Return(fmt.Errorf("error")).Once()
+	model.On("UnpackCoreDocument", cd).Return(errors.New("error")).Once()
 	err = dp.RequestSignatures(ctxh, model)
 	model.AssertExpectations(t)
 	c.AssertExpectations(t)
@@ -189,7 +189,7 @@ func TestDefaultProcessor_PrepareForAnchoring(t *testing.T) {
 	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
 	// pack failed
 	model := mockModel{}
-	model.On("PackCoreDocument").Return(nil, fmt.Errorf("error")).Once()
+	model.On("PackCoreDocument").Return(nil, errors.New("error")).Once()
 	err := dp.PrepareForAnchoring(model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
@@ -216,7 +216,7 @@ func TestDefaultProcessor_PrepareForAnchoring(t *testing.T) {
 	assert.Nil(t, err)
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Times(4)
-	model.On("UnpackCoreDocument", cd).Return(fmt.Errorf("error")).Once()
+	model.On("UnpackCoreDocument", cd).Return(errors.New("error")).Once()
 	c, err := identity.GetIdentityConfig(cfg)
 	assert.Nil(t, err)
 	s := identity.Sign(c, identity.KeyPurposeSigning, cd.SigningRoot)
@@ -267,7 +267,7 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 
 	// pack failed
 	model := mockModel{}
-	model.On("PackCoreDocument").Return(nil, fmt.Errorf("error")).Once()
+	model.On("PackCoreDocument").Return(nil, errors.New("error")).Once()
 	err = dp.AnchorDocument(ctxh, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
@@ -327,7 +327,7 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	srv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil).Once()
 
 	repo := mockRepo{}
-	repo.On("CommitAnchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("error")).Once()
+	repo.On("CommitAnchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("error")).Once()
 	dp.anchorRepository = repo
 	err = dp.AnchorDocument(ctxh, model)
 	model.AssertExpectations(t)
@@ -362,7 +362,7 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	assert.Nil(t, err)
 	// pack failed
 	model := mockModel{}
-	model.On("PackCoreDocument").Return(nil, fmt.Errorf("error")).Once()
+	model.On("PackCoreDocument").Return(nil, errors.New("error")).Once()
 	err = dp.SendDocument(ctxh, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
