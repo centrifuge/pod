@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	ConfigPrefix string = "config"
-	TenantPrefix string = "tenant-"
+	configPrefix string = "config"
+	tenantPrefix string = "tenant-"
 )
 
 // Repository defines the required methods for the config repository.
@@ -76,11 +76,11 @@ func NewLevelDBRepository(db *leveldb.DB) Repository {
 }
 
 func (l *levelDBRepo) getTenantKey(id []byte) []byte {
-	return append([]byte(TenantPrefix), id...)
+	return append([]byte(tenantPrefix), id...)
 }
 
 func (l *levelDBRepo) getConfigKey() []byte {
-	return []byte(ConfigPrefix)
+	return []byte(configPrefix)
 }
 
 // getModel returns a new instance of the type mt.
@@ -141,7 +141,7 @@ func (l *levelDBRepo) GetAllTenants() ([]Model, error) {
 	var models []Model
 	l.mu.RLock()
 	defer l.mu.RUnlock()
-	iter := l.db.NewIterator(util.BytesPrefix([]byte(TenantPrefix)), nil)
+	iter := l.db.NewIterator(util.BytesPrefix([]byte(tenantPrefix)), nil)
 	for iter.Next() {
 		data := iter.Value()
 		model, err := l.parseModel(data)

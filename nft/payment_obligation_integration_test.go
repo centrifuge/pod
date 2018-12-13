@@ -8,9 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/bootstrap"
-
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
+	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"

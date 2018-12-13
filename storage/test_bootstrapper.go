@@ -5,9 +5,8 @@ package storage
 import (
 	"fmt"
 
-	"github.com/centrifuge/go-centrifuge/errors"
-
 	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/syndtr/goleveldb/leveldb"
 )
 

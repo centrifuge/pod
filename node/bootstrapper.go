@@ -6,9 +6,8 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/centrifuge/go-centrifuge/storage"
-
 	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/syndtr/goleveldb/leveldb"
 )
 

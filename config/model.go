@@ -57,18 +57,22 @@ type NodeConfig struct {
 	// TODO what to do about contract addresses?
 }
 
+// Get the ID of the document represented by this model
 func (nc *NodeConfig) ID() ([]byte, error) {
 	return []byte{}, nil
 }
 
+// Type Returns the underlying type of the Model
 func (nc *NodeConfig) Type() reflect.Type {
 	return reflect.TypeOf(nc)
 }
 
+// JSON return the json representation of the model
 func (nc *NodeConfig) JSON() ([]byte, error) {
 	return json.Marshal(nc)
 }
 
+// FromJSON initialize the model with a json
 func (nc *NodeConfig) FromJSON(data []byte) error {
 	return json.Unmarshal(data, nc)
 }
@@ -108,18 +112,22 @@ type TenantConfig struct {
 	EthAuthKeyPair                   KeyPair
 }
 
+// Get the ID of the document represented by this model
 func (tc *TenantConfig) ID() ([]byte, error) {
 	return tc.IdentityID, nil
 }
 
+// Type Returns the underlying type of the Model
 func (tc *TenantConfig) Type() reflect.Type {
 	return reflect.TypeOf(tc)
 }
 
+// JSON return the json representation of the model
 func (tc *TenantConfig) JSON() ([]byte, error) {
 	return json.Marshal(tc)
 }
 
+// FromJSON initialize the model with a json
 func (tc *TenantConfig) FromJSON(data []byte) error {
 	return json.Unmarshal(data, tc)
 }
