@@ -31,7 +31,7 @@ func TestUpdateVersionValidator(t *testing.T) {
 	// old model pack core doc fail
 	old := mockModel{}
 	newM := mockModel{}
-	old.On("PackCoreDocument").Return(nil, fmt.Errorf("error")).Once()
+	old.On("PackCoreDocument").Return(nil, errors.New("error")).Once()
 	err = uvv.Validate(old, newM)
 	old.AssertExpectations(t)
 	assert.Error(t, err)
@@ -41,7 +41,7 @@ func TestUpdateVersionValidator(t *testing.T) {
 	oldCD := New()
 	oldCD.DocumentRoot = utils.RandomSlice(32)
 	old.On("PackCoreDocument").Return(oldCD, nil).Once()
-	newM.On("PackCoreDocument").Return(nil, fmt.Errorf("error")).Once()
+	newM.On("PackCoreDocument").Return(nil, errors.New("error")).Once()
 	err = uvv.Validate(old, newM)
 	old.AssertExpectations(t)
 	newM.AssertExpectations(t)
