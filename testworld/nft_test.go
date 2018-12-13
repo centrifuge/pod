@@ -27,11 +27,11 @@ func TestPaymentObligationMint_po_successful(t *testing.T) {
 
 func paymentObligationMint(t *testing.T, documentType string) {
 
-	alice := doctorFord.getHostTestSuite(t, "Alice")
-	bob := doctorFord.getHostTestSuite(t, "Bob")
+	dolores := doctorFord.getHostTestSuite(t, "Dolores")
+	teddy := doctorFord.getHostTestSuite(t, "Teddy")
 
 	// Alice shares document with Bob
-	res := createDocument(alice.httpExpect, documentType, http.StatusOK, defaultNFTPayload(documentType, []string{bob.id.String()}))
+	res := createDocument(dolores.httpExpect, documentType, http.StatusOK, defaultNFTPayload(documentType, []string{teddy.id.String()}))
 
 	docIdentifier := getDocumentIdentifier(t, res)
 	if docIdentifier == "" {
@@ -42,8 +42,8 @@ func paymentObligationMint(t *testing.T, documentType string) {
 		"document_id": docIdentifier,
 		"currency":    "USD",
 	}
-	getDocumentAndCheck(alice.httpExpect, documentType, params)
-	getDocumentAndCheck(bob.httpExpect, documentType, params)
+	getDocumentAndCheck(dolores.httpExpect, documentType, params)
+	getDocumentAndCheck(teddy.httpExpect, documentType, params)
 
 	proofPrefix := documentType
 	if proofPrefix == typePO {
@@ -65,7 +65,7 @@ func paymentObligationMint(t *testing.T, documentType string) {
 		},
 	}
 
-	response, err := alice.host.mintNFT(alice.httpExpect, test.httpStatus, test.payload)
+	response, err := dolores.host.mintNFT(dolores.httpExpect, test.httpStatus, test.payload)
 	assert.Nil(t, err, "mintNFT should be successful")
 	assert.True(t, len(response.Value("token_id").String().Raw()) >= tokenIdLength, "successful tokenId should have length 77")
 
@@ -73,7 +73,7 @@ func paymentObligationMint(t *testing.T, documentType string) {
 
 func TestPaymentObligationMint_errors(t *testing.T) {
 	t.Parallel()
-	alice := doctorFord.getHostTestSuite(t, "Alice")
+	dolores := doctorFord.getHostTestSuite(t, "Dolores")
 	tests := []struct {
 		errorMsg   string
 		httpStatus int
@@ -111,7 +111,7 @@ func TestPaymentObligationMint_errors(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.errorMsg, func(t *testing.T) {
 			t.Parallel()
-			response, err := alice.host.mintNFT(alice.httpExpect, test.httpStatus, test.payload)
+			response, err := dolores.host.mintNFT(dolores.httpExpect, test.httpStatus, test.payload)
 			assert.Nil(t, err, "it should be possible to call the API endpoint")
 			response.Value("message").String().Contains(test.errorMsg)
 		})
