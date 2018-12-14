@@ -25,6 +25,7 @@ type Repository interface {
 	Register(model Model)
 }
 
+// NewDBRepository creates an instance of the documents Repository
 func NewDBRepository(db storage.Repository) Repository {
 	return &repo{db: db}
 }

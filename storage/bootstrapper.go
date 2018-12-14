@@ -6,10 +6,10 @@ import (
 )
 
 const (
-	// BootstrappedLevelDB is a key mapped to levelDB at boot
-	BootstrappedDB string = "BootstrappedLevelDB"
-	// BootstrappedConfigLevelDB is a key mapped to levelDB for configs at boot
-	BootstrappedConfigDB string = "BootstrappedConfigLevelDB"
+	// BootstrappedDB is a key mapped to DB at boot
+	BootstrappedDB string = "BootstrappedDB"
+	// BootstrappedConfigDB is a key mapped to DB for configs at boot
+	BootstrappedConfigDB string = "BootstrappedConfigDB"
 )
 
 // Config holds configuration data for storage package

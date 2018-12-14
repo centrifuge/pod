@@ -63,6 +63,7 @@ func (r *repo) getConfigKey() []byte {
 	return []byte(configPrefix)
 }
 
+// NewDBRepository creates instance of Config Repository
 func NewDBRepository(db storage.Repository) Repository {
 	return &repo{db: db}
 }
@@ -141,14 +142,14 @@ func (r *repo) UpdateConfig(nodeConfig *NodeConfig) error {
 
 // Delete deletes tenant config
 // Will not error out when config model doesn't exists in DB
-func (l *repo) DeleteTenant(id []byte) error {
-	key := l.getTenantKey(id)
-	return l.db.Delete(key)
+func (r *repo) DeleteTenant(id []byte) error {
+	key := r.getTenantKey(id)
+	return r.db.Delete(key)
 }
 
 // Delete deletes node config
 // Will not error out when config model doesn't exists in DB
-func (l *repo) DeleteConfig() error {
-	key := l.getConfigKey()
-	return l.db.Delete(key)
+func (r *repo) DeleteConfig() error {
+	key := r.getConfigKey()
+	return r.db.Delete(key)
 }

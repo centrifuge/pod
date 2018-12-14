@@ -4,6 +4,7 @@ import (
 	"reflect"
 )
 
+// Model is an interface to abstract away storage model specificness
 type Model interface {
 	// Get the ID of the document represented by this model
 	ID() ([]byte, error)
@@ -18,6 +19,7 @@ type Model interface {
 	FromJSON(json []byte) error
 }
 
+// Repository defines the required methods for standard storage repository.
 type Repository interface {
 	Register(model Model)
 	Exists(key []byte) bool
