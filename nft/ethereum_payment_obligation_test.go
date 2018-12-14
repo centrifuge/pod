@@ -133,24 +133,59 @@ func (m *MockPaymentObligation) Mint(opts *bind.TransactOpts, _to common.Address
 	return args.Get(0).(*types.Transaction), args.Error(1)
 }
 
+
+type MockRepository struct {
+	mock.Mock
+}
+
+func (m MockRepository) Exists(tenantID, id []byte) bool {
+	args := m.Called()
+	c, _ := args.Get(0).(bool)
+	return c
+}
+
+
+func (m MockRepository) Get(tenantID, id []byte) (documents.Model, error) {
+	args := m.Called()
+	return args.Get(0).(documents.Model), args.Error(1)
+
+}
+
+
+func (m MockRepository) Create(tenantID, id []byte, model documents.Model) error {
+	args := m.Called()
+	return  args.Error(0)
+
+}
+
+
+func (m MockRepository) Update(tenantID, id []byte, model documents.Model) error {
+	args := m.Called()
+	return  args.Error(0)
+
+}
+
+
+func (m MockRepository) Register(model documents.Model) {
+
+}
+
 func TestPaymentObligationService(t *testing.T) {
 	tests := []struct {
 		name    string
-		mocker  func() (testingdocuments.MockService, *MockPaymentObligation, testingcommons.MockIDService, testingcommons.MockEthClient, testingconfig.MockConfig)
+		mocker  func() (testingdocuments.MockService, documents.Repository, *MockPaymentObligation, testingcommons.MockIDService, testingcommons.MockEthClient, testingconfig.MockConfig, string)
 		request *nftpb.NFTMintRequest
 		err     error
 		result  string
 	}{
 		{
 			"happypath",
-			func() (testingdocuments.MockService, *MockPaymentObligation, testingcommons.MockIDService, testingcommons.MockEthClient, testingconfig.MockConfig) {
+			func() (testingdocuments.MockService, documents.Repository, *MockPaymentObligation, testingcommons.MockIDService, testingcommons.MockEthClient, testingconfig.MockConfig, string) {
 				coreDoc := coredocument.New()
 				coreDoc.DocumentRoot = utils.RandomSlice(32)
 				proof := getDummyProof(coreDoc)
 				docServiceMock := testingdocuments.MockService{}
-				docServiceMock.On("GetCurrentVersion", decodeHex("0x1212")).Return(&invoice.Invoice{InvoiceNumber: "1232", CoreDocument: coreDoc}, nil)
 				docServiceMock.On("CreateProofs", decodeHex("0x1212"), []string{"collaborators[0]"}).Return(proof, nil)
-				docServiceMock.On("Exists").Return(true)
 				paymentObligationMock := &MockPaymentObligation{}
 				idServiceMock := testingcommons.MockIDService{}
 				ethClientMock := testingcommons.MockEthClient{}
@@ -163,7 +198,13 @@ func TestPaymentObligationService(t *testing.T) {
 				configMock := testingconfig.MockConfig{}
 				configMock.On("GetEthereumDefaultAccountName").Return("ethacc")
 
-				return docServiceMock, paymentObligationMock, idServiceMock, ethClientMock, configMock
+				configMock.On("GetIdentityID").Return(decodeHex("0x1212"),nil)
+
+				mockRepository := MockRepository{}
+				mockRepository.On("Get").Return(&invoice.Invoice{InvoiceNumber: "1232", CoreDocument: coreDoc},nil)
+				docType := "http://github.com/centrifuge/centrifuge-protobufs/invoice/#invoice.InvoiceData"
+
+				return docServiceMock, mockRepository, paymentObligationMock, idServiceMock, ethClientMock, configMock, docType
 			},
 			&nftpb.NFTMintRequest{Identifier: "0x1212", ProofFields: []string{"collaborators[0]"}, DepositAddress: "0xf72855759a39fb75fc7341139f5d7a3974d4da08"},
 			nil,
@@ -175,11 +216,11 @@ func TestPaymentObligationService(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			// get mocks
-			docService, paymentOb, idService, ethClient, mockCfg := test.mocker()
+			docService, mockRepository, paymentOb, idService, ethClient, mockCfg, docType := test.mocker()
 			// with below config the documentType has to be test.name to avoid conflicts since registry is a singleton
-			registry.Register(test.name, &docService)
+			registry.Register(docType, &docService)
 			confirmations := make(chan *watchTokenMinted)
-			service := newEthereumPaymentObligation(registry, &idService, &ethClient, &mockCfg, nil, func(config Config, qs *queue.Server, tokenID *big.Int, registryAddress string) (chan *watchTokenMinted, error) {
+			service := newEthereumPaymentObligation(mockRepository,registry, &idService, &ethClient, &mockCfg, nil, func(config Config, qs *queue.Server, tokenID *big.Int, registryAddress string) (chan *watchTokenMinted, error) {
 				return confirmations, nil
 			}, func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error) {
 				return &EthereumPaymentObligationContract{}, nil
