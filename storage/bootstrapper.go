@@ -7,9 +7,9 @@ import (
 
 const (
 	// BootstrappedLevelDB is a key mapped to levelDB at boot
-	BootstrappedLevelDB string = "BootstrappedLevelDB"
+	BootstrappedDB string = "BootstrappedLevelDB"
 	// BootstrappedConfigLevelDB is a key mapped to levelDB for configs at boot
-	BootstrappedConfigLevelDB string = "BootstrappedConfigLevelDB"
+	BootstrappedConfigDB string = "BootstrappedConfigLevelDB"
 )
 
 // Config holds configuration data for storage package
@@ -33,12 +33,12 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	if err != nil {
 		return errors.New("failed to init config level db: %v", err)
 	}
-	context[BootstrappedConfigLevelDB] = configLevelDB
+	context[BootstrappedConfigDB] = NewLevelDBRepository(configLevelDB)
 
 	levelDB, err := NewLevelDBStorage(cfg.GetStoragePath())
 	if err != nil {
 		return errors.New("failed to init level db: %v", err)
 	}
-	context[BootstrappedLevelDB] = levelDB
+	context[BootstrappedDB] = NewLevelDBRepository(levelDB)
 	return nil
 }

@@ -14,7 +14,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/keytools"
 	"github.com/centrifuge/go-centrifuge/node"
 	"github.com/centrifuge/go-centrifuge/queue"
-	"github.com/syndtr/goleveldb/leveldb"
 )
 
 var log = logging.Logger("centrifuge-cmd")
@@ -104,8 +103,8 @@ func CreateConfig(
 		return err
 	}
 	canc()
-	db := ctx[storage.BootstrappedLevelDB].(*leveldb.DB)
-	dbCfg := ctx[storage.BootstrappedConfigLevelDB].(*leveldb.DB)
+	db := ctx[storage.BootstrappedDB].(storage.Repository)
+	dbCfg := ctx[storage.BootstrappedConfigDB].(storage.Repository)
 	db.Close()
 	dbCfg.Close()
 	return nil

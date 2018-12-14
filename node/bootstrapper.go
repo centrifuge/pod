@@ -8,7 +8,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/storage"
-	"github.com/syndtr/goleveldb/leveldb"
 )
 
 // Bootstrapper implements bootstrap.Bootstrapper.
@@ -46,7 +45,7 @@ func (*Bootstrapper) Bootstrap(c map[string]interface{}) error {
 
 func cleanUp(c map[string]interface{}) {
 	// close the node db
-	db := c[storage.BootstrappedLevelDB].(*leveldb.DB)
+	db := c[storage.BootstrappedDB].(storage.Repository)
 	db.Close()
 }
 
