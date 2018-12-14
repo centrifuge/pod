@@ -3,8 +3,9 @@ package nft
 import (
 	"context"
 	"encoding/hex"
-	"github.com/centrifuge/go-centrifuge/coredocument"
 	"math/big"
+
+	"github.com/centrifuge/go-centrifuge/coredocument"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -42,8 +43,8 @@ type ethereumPaymentObligationContract interface {
 
 // ethereumPaymentObligation handles all interactions related to minting of NFTs for payment obligations on Ethereum
 type ethereumPaymentObligation struct {
-	repo documents.Repository
-	registry *documents.ServiceRegistry
+	repo              documents.Repository
+	registry          *documents.ServiceRegistry
 	identityService   identity.Service
 	ethClient         ethereum.Client
 	config            Config
@@ -53,12 +54,12 @@ type ethereumPaymentObligation struct {
 }
 
 // newEthereumPaymentObligation creates ethereumPaymentObligation given the parameters
-func newEthereumPaymentObligation(repo documents.Repository,registry *documents.ServiceRegistry, identityService identity.Service, ethClient ethereum.Client, config Config,
+func newEthereumPaymentObligation(repo documents.Repository, registry *documents.ServiceRegistry, identityService identity.Service, ethClient ethereum.Client, config Config,
 	queue *queue.Server,
 	setupMintListener func(config Config, queue *queue.Server, tokenID *big.Int, registryAddress string) (confirmations chan *watchTokenMinted, err error), bindContract func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error)) *ethereumPaymentObligation {
 	return &ethereumPaymentObligation{
-		repo:          repo,
-		registry: registry,
+		repo:              repo,
+		registry:          registry,
 		identityService:   identityService,
 		ethClient:         ethClient,
 		config:            config,
@@ -75,7 +76,7 @@ func (s *ethereumPaymentObligation) prepareMintRequest(documentID []byte, deposi
 		return nil, err
 	}
 
-	model, err := s.repo.Get(tenantID,documentID)
+	model, err := s.repo.Get(tenantID, documentID)
 	if err != nil {
 		return nil, err
 	}

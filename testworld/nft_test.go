@@ -16,6 +16,7 @@ func TestPaymentObligationMint_invoice_successful(t *testing.T) {
 	paymentObligationMint(t, typeInvoice)
 
 }
+
 /* TODO: write test for PO NFT with own contract
 func TestPaymentObligationMint_po_fail(t *testing.T) {
 	t.Parallel()
@@ -23,7 +24,7 @@ func TestPaymentObligationMint_po_fail(t *testing.T) {
 
 }
 */
-func paymentObligationMint(t *testing.T, documentType string)  {
+func paymentObligationMint(t *testing.T, documentType string) {
 
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")

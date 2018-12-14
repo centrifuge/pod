@@ -41,4 +41,3 @@ func (s *ServiceRegistry) LocateService(serviceID string) (Service, error) {
 
 	return s.services[serviceID], nil
 }
-

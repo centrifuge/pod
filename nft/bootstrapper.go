@@ -49,7 +49,7 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 
 	queueSrv := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
 
-	ctx[BootstrappedPayObService] = newEthereumPaymentObligation(repo,registry, idService, ethereum.GetClient(), cfg, queueSrv, setupMintListener, bindContract)
+	ctx[BootstrappedPayObService] = newEthereumPaymentObligation(repo, registry, idService, ethereum.GetClient(), cfg, queueSrv, setupMintListener, bindContract)
 	// queue task
 	task := newMintingConfirmationTask(cfg.GetEthereumContextWaitTimeout(), ethereum.DefaultWaitForTransactionMiningContext)
 	queueSrv.RegisterTaskType(task.TaskTypeName(), task)

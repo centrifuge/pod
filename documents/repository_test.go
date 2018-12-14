@@ -4,7 +4,6 @@ package documents
 
 import (
 	"encoding/json"
-	"github.com/stretchr/testify/mock"
 	"reflect"
 	"testing"
 
@@ -109,4 +108,3 @@ func TestLevelDBRepo_Get_Create_Update(t *testing.T) {
 	nd = m.(*doc)
 	assert.Equal(t, d, nd, "must be equal")
 }
-
