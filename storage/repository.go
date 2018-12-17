@@ -6,9 +6,6 @@ import (
 
 // Model is an interface to abstract away storage model specificness
 type Model interface {
-	// Get the ID of the document represented by this model
-	ID() ([]byte, error)
-
 	//Returns the underlying type of the Model
 	Type() reflect.Type
 
