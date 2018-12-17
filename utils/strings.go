@@ -13,3 +13,14 @@ func IsStringOfLength(msg string, n int) bool {
 func IsStringEmpty(msg string) bool {
 	return IsStringOfLength(msg, 0)
 }
+
+// ContainsString returns true if the slice contains str.
+func ContainsString(slice []string, str string) bool {
+	for _, s := range slice {
+		if s == str {
+			return true
+		}
+	}
+
+	return false
+}

@@ -2,7 +2,14 @@ package errors
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
+
+	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+
+	"google.golang.org/grpc/codes"
+
+	"google.golang.org/grpc/status"
 )
 
 // ErrUnknown is an unknown error type
@@ -140,4 +147,30 @@ func IsOfType(terr, err error) bool {
 	}
 
 	return err.Error() == terr.Error()
+}
+
+// NewHTTPError returns an HTTPError.
+func NewHTTPError(c int, err error) error {
+	// there is a limitation with how err is handled by grpc library.
+	// we will come to this once we have format for error types
+	return status.Error(codes.Code(c), err.Error())
+}
+
+// GetHTTPDetails returns a http code and message
+// default http code is 500.
+func GetHTTPDetails(err error) (code int, msg string) {
+	serr, ok := status.FromError(err)
+	if !ok {
+		return http.StatusInternalServerError, err.Error()
+	}
+
+	code = int(serr.Code())
+
+	// if this is a grpc code, then convert it
+	if code < http.StatusContinue {
+		code = runtime.HTTPStatusFromCode(serr.Code())
+	}
+
+	return code, serr.Message()
+
 }
