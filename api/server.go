@@ -21,13 +21,18 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-var log = logging.Logger("api-server")
-
 // ErrNoAuthHeader used for requests when header is not passed.
 const ErrNoAuthHeader = errors.Error("'authorization' header missing")
 
-// noAuthPaths holds the paths that doesn't require header to be passed.
-var noAuthPaths = [...]string{"/health.HealthCheckService/Ping"}
+var (
+	log = logging.Logger("api-server")
+
+	// noAuthPaths holds the paths that doesn't require header to be passed.
+	noAuthPaths = [...]string{"/health.HealthCheckService/Ping"}
+
+	// TenantKey represents the key used to fetch the tenant id from context
+	TenantKey struct{}
+)
 
 // Config defines methods required for the package api
 type Config interface {
@@ -189,7 +194,7 @@ func grpcInterceptor() grpc.ServerOption {
 // at this point we are going with one interceptor. Once we have more than one interceptor,
 // we can write a wrapper interceptor that will call the chain of interceptor
 //
-// Note: each handler can access tenantID from the context: ctx.Value("authorization")
+// Note: each handler can access tenantID from the context: ctx.Value(api.TenantKey)
 func auth(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 	// if this request is for ping
 	if utils.ContainsString(noAuthPaths[:], info.FullMethod) {
@@ -207,7 +212,7 @@ func auth(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, hand
 		return nil, err
 	}
 
-	ctx = context.WithValue(ctx, "authorization", auth[0])
+	ctx = context.WithValue(ctx, TenantKey, auth[0])
 	return handler(ctx, req)
 }
 

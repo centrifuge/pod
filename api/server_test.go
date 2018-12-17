@@ -115,7 +115,7 @@ func TestCentAPIServer_FailedToGetRegistry(t *testing.T) {
 
 func Test_auth(t *testing.T) {
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return ctx.Value("authorization"), nil
+		return ctx.Value(TenantKey), nil
 	}
 
 	// send ping path
