@@ -6,9 +6,7 @@ import (
 	"strings"
 
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-
 	"google.golang.org/grpc/codes"
-
 	"google.golang.org/grpc/status"
 )
 
