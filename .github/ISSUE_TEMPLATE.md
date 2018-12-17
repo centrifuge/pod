@@ -1,4 +1,4 @@
-<This is intended as a guide when thinking about or creating issues for `go-centrifuge`.>
+<This is intended as a guide when thinking about or creating issues for go-centrifuge>
 
 
 #### Testing
