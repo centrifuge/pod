@@ -142,6 +142,10 @@ func IsOfType(terr, err error) bool {
 		return errt.IsOfType(terr)
 	}
 
+	if serr, ok := status.FromError(err); ok {
+		return serr.Message() == terr.Error()
+	}
+
 	return err.Error() == terr.Error()
 }
 

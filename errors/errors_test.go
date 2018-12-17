@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"testing"
 
+	"google.golang.org/grpc/status"
+
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
 )
@@ -111,6 +113,10 @@ func TestIsOfType(t *testing.T) {
 	assert.False(t, IsOfType(errBadErr, lerr))
 	terr = NewTypedError(errBadErr, lerr)
 	assert.True(t, IsOfType(errBadErr, terr))
+
+	// status err
+	serr = status.Error(codes.Unknown, errBadErr.Error())
+	assert.True(t, IsOfType(errBadErr, serr))
 }
 
 func TestGetHTTPCode(t *testing.T) {

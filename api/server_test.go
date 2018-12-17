@@ -9,6 +9,12 @@ import (
 	"sync"
 	"testing"
 
+	"google.golang.org/grpc/metadata"
+
+	"github.com/centrifuge/go-centrifuge/errors"
+
+	"google.golang.org/grpc"
+
 	"github.com/centrifuge/go-centrifuge/storage"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
@@ -109,4 +115,46 @@ func TestCentAPIServer_FailedToGetRegistry(t *testing.T) {
 	wg.Wait()
 	assert.NotNil(t, err, "Error should be not nil")
 	assert.Equal(t, "failed to get NodeObjRegistry", err.Error())
+}
+
+func Test_auth(t *testing.T) {
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return ctx.Value("authorization"), nil
+	}
+
+	// send ping path
+	resp, err := auth(
+		context.Background(),
+		nil,
+		&grpc.UnaryServerInfo{FullMethod: noAuthPaths[0]},
+		handler,
+	)
+	assert.Nil(t, resp)
+	assert.Nil(t, err)
+
+	// send no auth
+	resp, err = auth(
+		context.Background(),
+		nil,
+		&grpc.UnaryServerInfo{FullMethod: "some method"},
+		handler,
+	)
+
+	assert.Nil(t, resp)
+	assert.True(t, errors.IsOfType(ErrNoAuthHeader, err))
+
+	// send Auth
+	ctx := metadata.NewIncomingContext(
+		context.Background(),
+		map[string][]string{"authorization": {"1234567890"}})
+
+	resp, err = auth(
+		ctx,
+		nil,
+		&grpc.UnaryServerInfo{FullMethod: "some method"},
+		handler,
+	)
+
+	assert.Nil(t, err)
+	assert.Equal(t, "1234567890", resp)
 }

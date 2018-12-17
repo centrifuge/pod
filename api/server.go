@@ -23,6 +23,9 @@ import (
 
 var log = logging.Logger("api-server")
 
+// ErrNoAuthHeader used for requests when header is not passed.
+const ErrNoAuthHeader = errors.Error("'authorization' header missing")
+
 // noAuthPaths holds the paths that doesn't require header to be passed.
 var noAuthPaths = [...]string{"/health.HealthCheckService/Ping"}
 
@@ -68,7 +71,7 @@ func (c apiServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr cha
 
 	opts := []grpc.ServerOption{
 		grpc.Creds(creds),
-		//authInterceptor(), // enable this once we start requiring the tenant id to passed as header
+		// grpcInterceptor(), // enable this once we start requiring the tenant id to passed as header
 	}
 
 	grpcServer := grpc.NewServer(opts...)
@@ -175,38 +178,37 @@ func loadKeyPair() (keyPair tls.Certificate, err error) {
 	return pair, nil
 }
 
-// authInterceptor is the grpc unary interceptor to to check if the tenent ID is passed in the header.
+// grpcInterceptor returns a GRPC UnaryInterceptor for all grpc/http requests.
+func grpcInterceptor() grpc.ServerOption {
+	return grpc.UnaryInterceptor(auth)
+}
+
+// auth is the grpc unary interceptor to to check if the tenent ID is passed in the header.
 // interceptor will check "authorisation" header. If not set, we return an error.
 //
 // at this point we are going with one interceptor. Once we have more than one interceptor,
 // we can write a wrapper interceptor that will call the chain of interceptor
 //
 // Note: each handler can access tenantID from the context: ctx.Value("authorization")
-func authInterceptor() grpc.ServerOption {
-	return grpc.UnaryInterceptor(func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
-		// if this request is for ping
-		if utils.ContainsString(noAuthPaths[:], info.FullMethod) {
-			return handler(ctx, req)
-		}
-
-		err = errors.NewHTTPError(
-			http.StatusBadRequest,
-			errors.New("'authorization' header missing"))
-
-		md, ok := metadata.FromIncomingContext(ctx)
-		if !ok {
-			return nil, err
-		}
-
-		auth := md.Get("authorization")
-		if len(auth) < 1 {
-			return nil, err
-		}
-
-		ctx = context.WithValue(ctx, "authorization", auth[0])
+func auth(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+	// if this request is for ping
+	if utils.ContainsString(noAuthPaths[:], info.FullMethod) {
 		return handler(ctx, req)
+	}
 
-	})
+	err = errors.NewHTTPError(http.StatusBadRequest, ErrNoAuthHeader)
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return nil, err
+	}
+
+	auth := md.Get("authorization")
+	if len(auth) < 1 {
+		return nil, err
+	}
+
+	ctx = context.WithValue(ctx, "authorization", auth[0])
+	return handler(ctx, req)
 }
 
 // httpResponseInterceptor will intercept if the we return an error from the grpc handler.
