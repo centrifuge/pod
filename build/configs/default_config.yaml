@@ -55,10 +55,15 @@ networks:
       anchorRepository: "0x444f649e307442e76ccf737466e52f1609b98260"
       paymentObligation: "0x0417eb37941164368401D666984cED7694ABcBb1"
 
-# Local Storage configuration
+# Data Storage
 storage:
   # Path for levelDB file
   path: /tmp/centrifuge_data.leveldb
+
+# Configuration Storage
+configStorage:
+  # Path for levelDB file
+  path: /tmp/centrifuge_config_data.leveldb
 
 # Interface where the API and P2P Server listens to
 nodeHostname: 0.0.0.0

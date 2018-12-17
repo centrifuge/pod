@@ -244,7 +244,7 @@ func (h *host) init() error {
 	if err != nil {
 		return err
 	}
-	h.config = h.bootstrappedCtx[config.BootstrappedConfig].(config.Configuration)
+	h.config = h.bootstrappedCtx[bootstrap.BootstrappedConfig].(config.Configuration)
 	idService := h.bootstrappedCtx[identity.BootstrappedIDService].(identity.Service)
 	idBytes, err := h.config.GetIdentityID()
 	if err != nil {
@@ -280,7 +280,7 @@ func (h *host) live(c context.Context) error {
 	signal.Notify(controlC, os.Interrupt)
 	select {
 	case err := <-feedback:
-		log.Error(h.name+" encountered error ", err)
+		log.Info(h.name+" encountered error ", err)
 		return err
 	case sig := <-controlC:
 		log.Info(h.name+" shutting down because of ", sig)

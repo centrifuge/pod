@@ -4,7 +4,7 @@ echo "Running Testworld"
 
 status=$?
 
-output="go test -race -parallel 4 -coverprofile=profile.out -covermode=atomic -tags=testworld github.com/centrifuge/go-centrifuge/testworld 2>&1"
+output="go test -race -coverprofile=profile.out -covermode=atomic -tags=testworld github.com/centrifuge/go-centrifuge/testworld 2>&1"
 eval "$output" | while IFS= read -r line; do printf '[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$line"; done
 if [ ${PIPESTATUS[0]} -ne 0 ]; then
   status=1

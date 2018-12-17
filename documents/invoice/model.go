@@ -35,8 +35,8 @@ type Invoice struct {
 	RecipientStreet  string
 	RecipientCity    string
 	RecipientZipcode string
-	RecipientCountry string // country ISO code of the receipient of this invoice
-	Currency         string // country ISO code of the receipient of this invoice
+	RecipientCountry string // country ISO code of the recipient of this invoice
+	Currency         string // country ISO code of the recipient of this invoice
 	GrossAmount      int64  // invoice amount including tax
 	NetAmount        int64  // invoice amount excluding tax
 	TaxAmount        int64

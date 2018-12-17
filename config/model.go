@@ -1,9 +1,26 @@
 package config
 
 import (
+	"encoding/json"
 	"math/big"
+	"reflect"
 	"time"
 )
+
+// Model is an interface for both tenant and node config models
+type Model interface {
+	// Get the ID of the document represented by this model
+	ID() ([]byte, error)
+
+	//Returns the underlying type of the Model
+	Type() reflect.Type
+
+	// JSON return the json representation of the model
+	JSON() ([]byte, error)
+
+	// FromJSON initialize the model with a json
+	FromJSON(json []byte) error
+}
 
 // KeyPair represents a key pair config
 type KeyPair struct {
@@ -40,6 +57,26 @@ type NodeConfig struct {
 	// TODO what to do about contract addresses?
 }
 
+// ID Gets the ID of the document represented by this model
+func (nc *NodeConfig) ID() ([]byte, error) {
+	return []byte{}, nil
+}
+
+// Type Returns the underlying type of the Model
+func (nc *NodeConfig) Type() reflect.Type {
+	return reflect.TypeOf(nc)
+}
+
+// JSON return the json representation of the model
+func (nc *NodeConfig) JSON() ([]byte, error) {
+	return json.Marshal(nc)
+}
+
+// FromJSON initialize the model with a json
+func (nc *NodeConfig) FromJSON(data []byte) error {
+	return json.Unmarshal(data, nc)
+}
+
 // NewNodeConfig creates a new NodeConfig instance with configs
 func NewNodeConfig(config Configuration) *NodeConfig {
 	return &NodeConfig{
@@ -73,6 +110,26 @@ type TenantConfig struct {
 	IdentityID                       []byte
 	SigningKeyPair                   KeyPair
 	EthAuthKeyPair                   KeyPair
+}
+
+// ID Get the ID of the document represented by this model
+func (tc *TenantConfig) ID() ([]byte, error) {
+	return tc.IdentityID, nil
+}
+
+// Type Returns the underlying type of the Model
+func (tc *TenantConfig) Type() reflect.Type {
+	return reflect.TypeOf(tc)
+}
+
+// JSON return the json representation of the model
+func (tc *TenantConfig) JSON() ([]byte, error) {
+	return json.Marshal(tc)
+}
+
+// FromJSON initialize the model with a json
+func (tc *TenantConfig) FromJSON(data []byte) error {
+	return json.Unmarshal(data, tc)
 }
 
 // NewTenantConfig creates a new TenantConfig instance with configs

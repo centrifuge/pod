@@ -41,6 +41,7 @@ type Configuration interface {
 	GetDuration(key string) time.Duration
 
 	GetStoragePath() string
+	GetConfigStoragePath() string
 	GetP2PPort() int
 	GetP2PExternalIP() string
 	GetP2PConnectionTimeout() time.Duration
@@ -143,7 +144,12 @@ func (c *configuration) get(key string) interface{} {
 
 // GetStoragePath returns the data storage backend.
 func (c *configuration) GetStoragePath() string {
-	return c.GetString("storage.Path")
+	return c.GetString("storage.path")
+}
+
+// GetConfigStoragePath returns the config storage backend.
+func (c *configuration) GetConfigStoragePath() string {
+	return c.GetString("configStorage.path")
 }
 
 // GetP2PPort returns P2P Port.
@@ -398,6 +404,7 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	v := viper.New()
 	v.SetConfigType("yaml")
 	v.Set("storage.path", targetDataDir+"/db/centrifuge_data.leveldb")
+	v.Set("configStorage.path", targetDataDir+"/db/centrifuge_config_data.leveldb")
 	v.Set("identityId", "")
 	v.Set("centrifugeNetwork", network)
 	v.Set("nodeHostname", "0.0.0.0")
