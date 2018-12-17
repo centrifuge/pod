@@ -50,17 +50,23 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientinvoicepb.InvoiceCr
 	doc, err := h.service.DeriveFromCreatePayload(req, ctxHeader)
 	if err != nil {
 		apiLog.Error(err)
-		return nil, err
+		return nil, centerrors.Wrap(err, "could not derive create payload")
 	}
 
 	// validate and persist
 	doc, err = h.service.Create(ctxHeader, doc)
 	if err != nil {
 		apiLog.Error(err)
-		return nil, err
+		return nil, centerrors.Wrap(err, "could not create document")
 	}
 
-	return h.service.DeriveInvoiceResponse(doc)
+	resp, err := h.service.DeriveInvoiceResponse(doc)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, centerrors.Wrap(err, "could not derive response")
+	}
+
+	return resp, nil
 }
 
 // Update handles the document update and anchoring
@@ -75,16 +81,22 @@ func (h *grpcHandler) Update(ctx context.Context, payload *clientinvoicepb.Invoi
 	doc, err := h.service.DeriveFromUpdatePayload(payload, ctxHeader)
 	if err != nil {
 		apiLog.Error(err)
-		return nil, err
+		return nil, centerrors.Wrap(err, "could not derive update payload")
 	}
 
 	doc, err = h.service.Update(ctxHeader, doc)
 	if err != nil {
 		apiLog.Error(err)
-		return nil, err
+		return nil, centerrors.Wrap(err, "could not update document")
 	}
 
-	return h.service.DeriveInvoiceResponse(doc)
+	resp, err := h.service.DeriveInvoiceResponse(doc)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, centerrors.Wrap(err, "could not derive response")
+	}
+
+	return resp, nil
 }
 
 // GetVersion returns the requested version of the document
@@ -111,7 +123,7 @@ func (h *grpcHandler) GetVersion(ctx context.Context, getVersionRequest *clienti
 	resp, err := h.service.DeriveInvoiceResponse(model)
 	if err != nil {
 		apiLog.Error(err)
-		return nil, err
+		return nil, centerrors.Wrap(err, "could not derive response")
 	}
 
 	return resp, nil
@@ -135,7 +147,7 @@ func (h *grpcHandler) Get(ctx context.Context, getRequest *clientinvoicepb.GetRe
 	resp, err := h.service.DeriveInvoiceResponse(model)
 	if err != nil {
 		apiLog.Error(err)
-		return nil, err
+		return nil, centerrors.Wrap(err, "could not derive response")
 	}
 
 	return resp, nil

@@ -4,10 +4,11 @@ package node
 
 import (
 	"context"
-	"errors"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/centrifuge/go-centrifuge/errors"
 
 	"github.com/stretchr/testify/assert"
 )

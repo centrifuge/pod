@@ -1,11 +1,9 @@
 package nft
 
 import (
-	"errors"
-	"fmt"
+	"github.com/centrifuge/go-centrifuge/errors"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -20,10 +18,10 @@ type Bootstrapper struct{}
 
 // Bootstrap initializes the payment obligation contract
 func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
-	if _, ok := ctx[config.BootstrappedConfig]; !ok {
+	if _, ok := ctx[bootstrap.BootstrappedConfig]; !ok {
 		return errors.New("config hasn't been initialized")
 	}
-	cfg := ctx[config.BootstrappedConfig].(Config)
+	cfg := ctx[bootstrap.BootstrappedConfig].(Config)
 
 	if _, ok := ctx[ethereum.BootstrappedEthereumClient]; !ok {
 		return errors.New("ethereum client hasn't been initialized")
@@ -31,12 +29,12 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 
 	registry, ok := ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
 	if !ok {
-		return fmt.Errorf("service registry not initialised")
+		return errors.New("service registry not initialised")
 	}
 
 	idService, ok := ctx[identity.BootstrappedIDService].(identity.Service)
 	if !ok {
-		return fmt.Errorf("identity service not initialised")
+		return errors.New("identity service not initialised")
 	}
 
 	if _, ok := ctx[bootstrap.BootstrappedQueueServer]; !ok {

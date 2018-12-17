@@ -11,6 +11,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/version"
 )
@@ -18,21 +19,21 @@ import (
 // getService looks up the specific registry, derives service from core document
 func getServiceAndModel(registry *documents.ServiceRegistry, cd *coredocumentpb.CoreDocument) (documents.Service, documents.Model, error) {
 	if cd == nil {
-		return nil, nil, fmt.Errorf("nil core document")
+		return nil, nil, errors.New("nil core document")
 	}
 	docType, err := coredocument.GetTypeURL(cd)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get type of the document: %v", err)
+		return nil, nil, errors.New("failed to get type of the document: %v", err)
 	}
 
 	srv, err := registry.LocateService(docType)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to locate the service: %v", err)
+		return nil, nil, errors.New("failed to locate the service: %v", err)
 	}
 
 	model, err := srv.DeriveFromCoreDocument(cd)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to derive model from core document: %v", err)
+		return nil, nil, errors.New("failed to derive model from core document: %v", err)
 	}
 
 	return srv, model, nil

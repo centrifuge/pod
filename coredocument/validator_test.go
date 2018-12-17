@@ -3,17 +3,14 @@
 package coredocument
 
 import (
-	"fmt"
 	"testing"
-
-	"errors"
 
 	"context"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
-	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
@@ -33,21 +30,21 @@ func TestUpdateVersionValidator(t *testing.T) {
 
 	// old model pack core doc fail
 	old := mockModel{}
-	new := mockModel{}
-	old.On("PackCoreDocument").Return(nil, fmt.Errorf("error")).Once()
-	err = uvv.Validate(old, new)
+	newM := mockModel{}
+	old.On("PackCoreDocument").Return(nil, errors.New("error")).Once()
+	err = uvv.Validate(old, newM)
 	old.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to fetch old core document")
 
-	// new model pack core doc fail
+	// newM model pack core doc fail
 	oldCD := New()
 	oldCD.DocumentRoot = utils.RandomSlice(32)
 	old.On("PackCoreDocument").Return(oldCD, nil).Once()
-	new.On("PackCoreDocument").Return(nil, fmt.Errorf("error")).Once()
-	err = uvv.Validate(old, new)
+	newM.On("PackCoreDocument").Return(nil, errors.New("error")).Once()
+	err = uvv.Validate(old, newM)
 	old.AssertExpectations(t)
-	new.AssertExpectations(t)
+	newM.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to fetch new core document")
 
@@ -55,21 +52,21 @@ func TestUpdateVersionValidator(t *testing.T) {
 	newCD := New()
 	newCD.NextVersion = nil
 	old.On("PackCoreDocument").Return(oldCD, nil).Once()
-	new.On("PackCoreDocument").Return(newCD, nil).Once()
-	err = uvv.Validate(old, new)
+	newM.On("PackCoreDocument").Return(newCD, nil).Once()
+	err = uvv.Validate(old, newM)
 	old.AssertExpectations(t)
-	new.AssertExpectations(t)
+	newM.AssertExpectations(t)
 	assert.Error(t, err)
-	assert.Len(t, documents.ConvertToMap(err), 4)
+	assert.Equal(t, 5, errors.Len(err))
 
 	// success
 	newCD, err = PrepareNewVersion(*oldCD, nil)
 	assert.Nil(t, err)
 	old.On("PackCoreDocument").Return(oldCD, nil).Once()
-	new.On("PackCoreDocument").Return(newCD, nil).Once()
-	err = uvv.Validate(old, new)
+	newM.On("PackCoreDocument").Return(newCD, nil).Once()
+	err = uvv.Validate(old, newM)
 	old.AssertExpectations(t)
-	new.AssertExpectations(t)
+	newM.AssertExpectations(t)
 	assert.Nil(t, err)
 }
 
@@ -81,7 +78,7 @@ func Test_getCoreDocument(t *testing.T) {
 
 	// pack core document fail
 	model := mockModel{}
-	model.On("PackCoreDocument").Return(nil, fmt.Errorf("err")).Once()
+	model.On("PackCoreDocument").Return(nil, errors.New("err")).Once()
 	cd, err = getCoreDocument(model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
@@ -102,7 +99,7 @@ func TestValidator_baseValidator(t *testing.T) {
 
 	// fail getCoreDocument
 	model := mockModel{}
-	model.On("PackCoreDocument").Return(nil, fmt.Errorf("err")).Once()
+	model.On("PackCoreDocument").Return(nil, errors.New("err")).Once()
 	err := bv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
@@ -113,7 +110,7 @@ func TestValidator_baseValidator(t *testing.T) {
 	model.On("PackCoreDocument").Return(cd, nil).Once()
 	err = bv.Validate(nil, model)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "cd_salts : Required field")
+	assert.Equal(t, "cd_salts : Required field", errors.GetErrs(err)[1].Error())
 
 	// success
 	model = mockModel{}
@@ -129,7 +126,7 @@ func TestValidator_signingRootValidator(t *testing.T) {
 
 	// fail getCoreDoc
 	model := mockModel{}
-	model.On("PackCoreDocument").Return(nil, fmt.Errorf("err")).Once()
+	model.On("PackCoreDocument").Return(nil, errors.New("err")).Once()
 	err := sv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
@@ -173,7 +170,7 @@ func TestValidator_documentRootValidator(t *testing.T) {
 
 	// fail getCoreDoc
 	model := mockModel{}
-	model.On("PackCoreDocument").Return(nil, fmt.Errorf("err")).Once()
+	model.On("PackCoreDocument").Return(nil, errors.New("err")).Once()
 	err := dv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
@@ -216,7 +213,7 @@ func TestValidator_selfSignatureValidator(t *testing.T) {
 
 	// fail getCoreDoc
 	model := mockModel{}
-	model.On("PackCoreDocument").Return(nil, fmt.Errorf("err")).Once()
+	model.On("PackCoreDocument").Return(nil, errors.New("err")).Once()
 	err = rfsv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
@@ -244,7 +241,7 @@ func TestValidator_selfSignatureValidator(t *testing.T) {
 	err = rfsv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
-	assert.Len(t, documents.ConvertToMap(err), 3)
+	assert.Equal(t, 3, errors.Len(err))
 
 	// success
 	cd.SigningRoot = utils.RandomSlice(32)
@@ -265,7 +262,7 @@ func TestValidator_signatureValidator(t *testing.T) {
 
 	// fail getCoreDoc
 	model := mockModel{}
-	model.On("PackCoreDocument").Return(nil, fmt.Errorf("err")).Once()
+	model.On("PackCoreDocument").Return(nil, errors.New("err")).Once()
 	err := ssv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
@@ -352,7 +349,7 @@ func TestValidator_anchoredValidator(t *testing.T) {
 	r := &repo{}
 	av = anchoredValidator(r)
 	cd.CurrentVersion = anchorID[:]
-	r.On("GetDocumentRootOf", anchorID).Return(nil, fmt.Errorf("error")).Once()
+	r.On("GetDocumentRootOf", anchorID).Return(nil, errors.New("error")).Once()
 	cd.DocumentRoot = utils.RandomSlice(32)
 	model = &mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
@@ -403,7 +400,7 @@ func TestValidate_baseValidator(t *testing.T) {
 				NextVersion:        id4,
 				DataRoot:           id5,
 			},
-			key: "cd_salts",
+			key: "[cd_salts : Required field]",
 		},
 
 		// salts missing previous root
@@ -421,7 +418,7 @@ func TestValidate_baseValidator(t *testing.T) {
 					DataRoot:           id4,
 				},
 			},
-			key: "cd_salts",
+			key: "[cd_salts : Required field]",
 		},
 
 		// missing identifiers in core document
@@ -439,7 +436,7 @@ func TestValidate_baseValidator(t *testing.T) {
 					PreviousRoot:       id5,
 				},
 			},
-			key: "cd_data_root",
+			key: "[cd_data_root : Required field]",
 		},
 
 		// missing identifiers in core document and salts
@@ -456,7 +453,7 @@ func TestValidate_baseValidator(t *testing.T) {
 					DataRoot:           id4,
 				},
 			},
-			key: "cd_data_root",
+			key: "[cd_data_root : Required field; cd_salts : Required field]",
 		},
 
 		// repeated identifiers
@@ -475,7 +472,7 @@ func TestValidate_baseValidator(t *testing.T) {
 					PreviousRoot:       id5,
 				},
 			},
-			key: "cd_overall",
+			key: "[cd_overall : Identifier re-used]",
 		},
 
 		// repeated identifiers
@@ -494,7 +491,7 @@ func TestValidate_baseValidator(t *testing.T) {
 					PreviousRoot:       id5,
 				},
 			},
-			key: "cd_overall",
+			key: "[cd_overall : Identifier re-used]",
 		},
 
 		// All okay
@@ -529,7 +526,7 @@ func TestValidate_baseValidator(t *testing.T) {
 			continue
 		}
 
-		assert.Contains(t, err.Error(), c.key)
+		assert.Equal(t, c.key, err.Error())
 
 	}
 }

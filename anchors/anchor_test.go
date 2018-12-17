@@ -20,7 +20,7 @@ func TestMain(m *testing.M) {
 		&config.Bootstrapper{},
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
-	cfg = ctx[config.BootstrappedConfig].(Config)
+	cfg = ctx[bootstrap.BootstrappedConfig].(Config)
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)

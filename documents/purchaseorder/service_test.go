@@ -4,7 +4,6 @@ package purchaseorder
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 	"testing"
 
@@ -12,9 +11,11 @@ import (
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/identity"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
+	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/coredocument"
@@ -43,19 +44,23 @@ func (r *mockAnchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.D
 }
 
 func getServiceWithMockedLayers() (*testingcommons.MockIDService, Service) {
+	c := &testingconfig.MockConfig{}
+	c.On("GetIdentityID").Return(centIDBytes, nil)
 	idService := &testingcommons.MockIDService{}
 	idService.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
-	return idService, DefaultService(new(testingconfig.MockConfig), testRepo(), &testingcoredocument.MockCoreDocumentProcessor{}, &mockAnchorRepo{}, idService)
+	return idService, DefaultService(c, testRepo(), &testingcoredocument.MockCoreDocumentProcessor{}, &mockAnchorRepo{}, idService)
 }
 
 func TestService_Update(t *testing.T) {
-	poSrv := service{repo: testRepo()}
+	c := &testingconfig.MockConfig{}
+	c.On("GetIdentityID").Return(centIDBytes, nil)
+	poSrv := service{config: c, repo: testRepo()}
 	ctxh, err := header.NewContextHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 
 	// pack failed
 	model := &testingdocuments.MockModel{}
-	model.On("PackCoreDocument").Return(nil, fmt.Errorf("pack error")).Once()
+	model.On("PackCoreDocument").Return(nil, errors.New("pack error")).Once()
 	_, err = poSrv.Update(ctxh, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
@@ -78,7 +83,7 @@ func TestService_Update(t *testing.T) {
 	assert.Nil(t, err)
 	cd.DocumentRoot = utils.RandomSlice(32)
 	po.(*PurchaseOrder).CoreDocument = cd
-	testRepo().Create(cd.CurrentVersion, po)
+	testRepo().Create(centIDBytes, cd.CurrentVersion, po)
 
 	// calculate data root fails
 	model = &testingdocuments.MockModel{}
@@ -117,9 +122,9 @@ func TestService_Update(t *testing.T) {
 
 	newCD, err := po.PackCoreDocument()
 	assert.Nil(t, err)
-	assert.True(t, testRepo().Exists(newCD.DocumentIdentifier))
-	assert.True(t, testRepo().Exists(newCD.CurrentVersion))
-	assert.True(t, testRepo().Exists(newCD.PreviousVersion))
+	assert.True(t, testRepo().Exists(centIDBytes, newCD.DocumentIdentifier))
+	assert.True(t, testRepo().Exists(centIDBytes, newCD.CurrentVersion))
+	assert.True(t, testRepo().Exists(centIDBytes, newCD.PreviousVersion))
 
 	newData, err = poSrv.DerivePurchaseOrderData(po)
 	assert.Nil(t, err)
@@ -127,18 +132,20 @@ func TestService_Update(t *testing.T) {
 }
 
 func TestService_DeriveFromUpdatePayload(t *testing.T) {
-	poSrv := service{repo: testRepo()}
+	c := &testingconfig.MockConfig{}
+	c.On("GetIdentityID").Return(centIDBytes, nil)
+	poSrv := service{config: c, repo: testRepo()}
 
 	// nil payload
 	doc, err := poSrv.DeriveFromUpdatePayload(nil, nil)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid payload")
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNil, err))
 	assert.Nil(t, doc)
 
 	// nil payload data
 	doc, err = poSrv.DeriveFromUpdatePayload(&clientpurchaseorderpb.PurchaseOrderUpdatePayload{}, nil)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid payload")
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNil, err))
 	assert.Nil(t, doc)
 
 	// messed up identifier
@@ -155,7 +162,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	payload.Identifier = hexutil.Encode(id)
 	doc, err = poSrv.DeriveFromUpdatePayload(payload, contextHeader)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to fetch old version")
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
 	assert.Nil(t, doc)
 
 	// failed to load from data
@@ -165,7 +172,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	old.CoreDocument.DocumentIdentifier = id
 	old.CoreDocument.CurrentVersion = id
 	old.CoreDocument.DocumentRoot = utils.RandomSlice(32)
-	err = testRepo().Create(id, old)
+	err = testRepo().Create(centIDBytes, id, old)
 	assert.Nil(t, err)
 	payload.Data = &clientpurchaseorderpb.PurchaseOrderData{
 		Recipient: "0x010203040506",
@@ -183,7 +190,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	payload.Collaborators = []string{"some wrong ID"}
 	doc, err = poSrv.DeriveFromUpdatePayload(payload, contextHeader)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to prepare new version")
+	assert.True(t, errors.IsOfType(documents.ErrDocumentPrepareCoreDocument, err))
 	assert.Nil(t, doc)
 
 	// success
@@ -215,13 +222,13 @@ func TestService_DeriveFromCreatePayload(t *testing.T) {
 	m, err := poSrv.DeriveFromCreatePayload(nil, ctxh)
 	assert.Nil(t, m)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "input is nil")
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNil, err))
 
 	// nil data payload
 	m, err = poSrv.DeriveFromCreatePayload(&clientpurchaseorderpb.PurchaseOrderCreatePayload{}, ctxh)
 	assert.Nil(t, m)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "input is nil")
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNil, err))
 
 	// Init fails
 	payload := &clientpurchaseorderpb.PurchaseOrderCreatePayload{
@@ -233,7 +240,7 @@ func TestService_DeriveFromCreatePayload(t *testing.T) {
 	m, err = poSrv.DeriveFromCreatePayload(payload, ctxh)
 	assert.Nil(t, m)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "purchase order init failed")
+	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
 
 	// success
 	payload.Data.ExtraData = "0x01020304050607"
@@ -265,7 +272,9 @@ func TestService_DeriveFromCoreDocument(t *testing.T) {
 func TestService_Create(t *testing.T) {
 	ctxh, err := header.NewContextHeader(context.Background(), cfg)
 	assert.Nil(t, err)
-	poSrv := service{repo: testRepo()}
+	c := &testingconfig.MockConfig{}
+	c.On("GetIdentityID").Return(centIDBytes, nil)
+	poSrv := service{config: c, repo: testRepo()}
 
 	// calculate data root fails
 	m, err := poSrv.Create(ctxh, &testingdocuments.MockModel{})
@@ -277,7 +286,7 @@ func TestService_Create(t *testing.T) {
 	po, err := poSrv.DeriveFromCreatePayload(testingdocuments.CreatePOPayload(), ctxh)
 	assert.Nil(t, err)
 	proc := &testingcoredocument.MockCoreDocumentProcessor{}
-	proc.On("PrepareForSignatureRequests", po).Return(fmt.Errorf("anchoring failed")).Once()
+	proc.On("PrepareForSignatureRequests", po).Return(errors.New("anchoring failed")).Once()
 	poSrv.coreDocProcessor = proc
 	m, err = poSrv.Create(ctxh, po)
 	proc.AssertExpectations(t)
@@ -302,8 +311,8 @@ func TestService_Create(t *testing.T) {
 
 	newCD, err := m.PackCoreDocument()
 	assert.Nil(t, err)
-	assert.True(t, testRepo().Exists(newCD.DocumentIdentifier))
-	assert.True(t, testRepo().Exists(newCD.CurrentVersion))
+	assert.True(t, testRepo().Exists(centIDBytes, newCD.DocumentIdentifier))
+	assert.True(t, testRepo().Exists(centIDBytes, newCD.CurrentVersion))
 }
 
 func createAnchoredMockDocument(t *testing.T, skipSave bool) (*PurchaseOrder, error) {
@@ -354,7 +363,7 @@ func createAnchoredMockDocument(t *testing.T, skipSave bool) (*PurchaseOrder, er
 	}
 
 	if !skipSave {
-		err = testRepo().Create(i.CoreDocument.CurrentVersion, i)
+		err = testRepo().Create(centIDBytes, i.CoreDocument.CurrentVersion, i)
 		if err != nil {
 			return nil, err
 		}
@@ -399,7 +408,7 @@ func TestService_CreateProofsValidationFails(t *testing.T) {
 	i, err := createAnchoredMockDocument(t, false)
 	assert.Nil(t, err)
 	i.CoreDocument.SigningRoot = nil
-	err = testRepo().Update(i.CoreDocument.CurrentVersion, i)
+	err = testRepo().Update(centIDBytes, i.CoreDocument.CurrentVersion, i)
 	assert.Nil(t, err)
 	idService = mockSignatureCheck(i, idService, poSrv)
 	_, err = poSrv.CreateProofs(i.CoreDocument.DocumentIdentifier, []string{"po.po_number"})
@@ -414,14 +423,14 @@ func TestService_CreateProofsInvalidField(t *testing.T) {
 	idService = mockSignatureCheck(i, idService, poSrv)
 	_, err = poSrv.CreateProofs(i.CoreDocument.DocumentIdentifier, []string{"invalid_field"})
 	assert.Error(t, err)
-	assert.Equal(t, "createProofs error No such field: invalid_field in obj", err.Error())
+	assert.True(t, errors.IsOfType(documents.ErrDocumentProof, err))
 }
 
 func TestService_CreateProofsDocumentDoesntExist(t *testing.T) {
 	_, poSrv := getServiceWithMockedLayers()
 	_, err := poSrv.CreateProofs(utils.RandomSlice(32), []string{"po.po_number"})
 	assert.Error(t, err)
-	assert.Equal(t, "document not found: leveldb: not found", err.Error())
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
 }
 
 func updatedAnchoredMockDocument(t *testing.T, model *PurchaseOrder) (*PurchaseOrder, error) {
@@ -453,7 +462,7 @@ func updatedAnchoredMockDocument(t *testing.T, model *PurchaseOrder) (*PurchaseO
 	if err != nil {
 		return nil, err
 	}
-	err = testRepo().Create(model.CoreDocument.CurrentVersion, model)
+	err = testRepo().Create(centIDBytes, model.CoreDocument.CurrentVersion, model)
 	if err != nil {
 		return nil, err
 	}
@@ -482,7 +491,7 @@ func TestService_CreateProofsForVersionDocumentDoesntExist(t *testing.T) {
 	assert.Nil(t, err)
 	_, err = poSrv.CreateProofsForVersion(i.CoreDocument.DocumentIdentifier, utils.RandomSlice(32), []string{"po.po_number"})
 	assert.Error(t, err)
-	assert.Equal(t, "document not found for the given version: leveldb: not found", err.Error())
+	assert.True(t, errors.IsOfType(documents.ErrDocumentVersionNotFound, err))
 }
 
 func TestService_DerivePurchaseOrderData(t *testing.T) {
@@ -496,7 +505,7 @@ func TestService_DerivePurchaseOrderData(t *testing.T) {
 	d, err := poSrv.DerivePurchaseOrderData(m)
 	assert.Nil(t, d)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "document of invalid type")
+	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalidType, err))
 
 	// success
 	payload := testingdocuments.CreatePOPayload()
@@ -514,7 +523,7 @@ func TestService_DerivePurchaseOrderResponse(t *testing.T) {
 
 	// pack fails
 	m := &testingdocuments.MockModel{}
-	m.On("PackCoreDocument").Return(nil, fmt.Errorf("pack core document failed")).Once()
+	m.On("PackCoreDocument").Return(nil, errors.New("pack core document failed")).Once()
 	r, err := poSrv.DerivePurchaseOrderResponse(m)
 	m.AssertExpectations(t)
 	assert.Nil(t, r)
@@ -540,7 +549,7 @@ func TestService_DerivePurchaseOrderResponse(t *testing.T) {
 	m.AssertExpectations(t)
 	assert.Nil(t, r)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "document of invalid type")
+	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalidType, err))
 
 	// success
 	payload := testingdocuments.CreatePOPayload()
@@ -565,12 +574,14 @@ func createMockDocument() (*PurchaseOrder, error) {
 			NextVersion:        nextIdentifier,
 		},
 	}
-	err := testRepo().Create(documentIdentifier, model)
+	err := testRepo().Create(centIDBytes, documentIdentifier, model)
 	return model, err
 }
 
 func TestService_GetCurrentVersion(t *testing.T) {
-	poSrv := service{repo: testRepo()}
+	c := &testingconfig.MockConfig{}
+	c.On("GetIdentityID").Return(centIDBytes, nil)
+	poSrv := service{config: c, repo: testRepo()}
 	thirdIdentifier := utils.RandomSlice(32)
 	doc, err := createMockDocument()
 	assert.Nil(t, err)
@@ -590,7 +601,7 @@ func TestService_GetCurrentVersion(t *testing.T) {
 		},
 	}
 
-	err = testRepo().Create(doc.CoreDocument.NextVersion, po2)
+	err = testRepo().Create(centIDBytes, doc.CoreDocument.NextVersion, po2)
 	assert.Nil(t, err)
 
 	mod2, err := poSrv.GetCurrentVersion(doc.CoreDocument.DocumentIdentifier)
@@ -602,7 +613,9 @@ func TestService_GetCurrentVersion(t *testing.T) {
 }
 
 func TestService_GetVersion_invalid_version(t *testing.T) {
-	poSrv := service{repo: testRepo()}
+	c := &testingconfig.MockConfig{}
+	c.On("GetIdentityID").Return(centIDBytes, nil)
+	poSrv := service{config: c, repo: testRepo()}
 	currentVersion := utils.RandomSlice(32)
 
 	po := &PurchaseOrder{
@@ -612,16 +625,18 @@ func TestService_GetVersion_invalid_version(t *testing.T) {
 			CurrentVersion:     currentVersion,
 		},
 	}
-	err := testRepo().Create(currentVersion, po)
+	err := testRepo().Create(centIDBytes, currentVersion, po)
 	assert.Nil(t, err)
 
 	mod, err := poSrv.GetVersion(utils.RandomSlice(32), currentVersion)
-	assert.EqualError(t, err, "[4]document not found for the given version: version is not valid for this identifier")
+	assert.True(t, errors.IsOfType(documents.ErrDocumentVersionNotFound, err))
 	assert.Nil(t, mod)
 }
 
 func TestService_GetVersion(t *testing.T) {
-	poSrv := service{repo: testRepo()}
+	c := &testingconfig.MockConfig{}
+	c.On("GetIdentityID").Return(centIDBytes, nil)
+	poSrv := service{config: c, repo: testRepo()}
 	documentIdentifier := utils.RandomSlice(32)
 	currentVersion := utils.RandomSlice(32)
 
@@ -632,7 +647,7 @@ func TestService_GetVersion(t *testing.T) {
 			CurrentVersion:     currentVersion,
 		},
 	}
-	err := testRepo().Create(currentVersion, po)
+	err := testRepo().Create(centIDBytes, currentVersion, po)
 	assert.Nil(t, err)
 
 	mod, err := poSrv.GetVersion(documentIdentifier, currentVersion)
@@ -655,7 +670,7 @@ func TestService_Exists(t *testing.T) {
 			CurrentVersion:     documentIdentifier,
 		},
 	}
-	err := testRepo().Create(documentIdentifier, po)
+	err := testRepo().Create(centIDBytes, documentIdentifier, po)
 	assert.Nil(t, err)
 
 	exists := poSrv.Exists(documentIdentifier)
@@ -682,7 +697,9 @@ func TestService_RequestDocumentSignature(t *testing.T) {
 }
 
 func TestService_calculateDataRoot(t *testing.T) {
-	poSrv := service{repo: testRepo()}
+	c := &testingconfig.MockConfig{}
+	c.On("GetIdentityID").Return(centIDBytes, nil)
+	poSrv := service{config: c, repo: testRepo()}
 	ctxh, err := header.NewContextHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 
@@ -697,7 +714,7 @@ func TestService_calculateDataRoot(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Nil(t, po.(*PurchaseOrder).CoreDocument.DataRoot)
 	v := documents.ValidatorFunc(func(_, _ documents.Model) error {
-		return fmt.Errorf("validations fail")
+		return errors.New("validations fail")
 	})
 	po, err = poSrv.calculateDataRoot(nil, po, v)
 	assert.Nil(t, po)
@@ -708,12 +725,12 @@ func TestService_calculateDataRoot(t *testing.T) {
 	po, err = poSrv.DeriveFromCreatePayload(testingdocuments.CreatePOPayload(), ctxh)
 	assert.Nil(t, err)
 	assert.Nil(t, po.(*PurchaseOrder).CoreDocument.DataRoot)
-	err = poSrv.repo.Create(po.(*PurchaseOrder).CoreDocument.CurrentVersion, po)
+	err = poSrv.repo.Create(centIDBytes, po.(*PurchaseOrder).CoreDocument.CurrentVersion, po)
 	assert.Nil(t, err)
 	po, err = poSrv.calculateDataRoot(nil, po, CreateValidator())
 	assert.Nil(t, po)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "document already exists")
+	assert.Contains(t, err.Error(), documents.ErrDocumentRepositoryModelAllReadyExists)
 
 	// success
 	po, err = poSrv.DeriveFromCreatePayload(testingdocuments.CreatePOPayload(), ctxh)
@@ -723,4 +740,18 @@ func TestService_calculateDataRoot(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, po)
 	assert.NotNil(t, po.(*PurchaseOrder).CoreDocument.DataRoot)
+}
+
+var testRepoGlobal documents.Repository
+
+func testRepo() documents.Repository {
+	if testRepoGlobal == nil {
+		ldb, err := storage.NewLevelDBStorage(storage.GetRandomTestStoragePath())
+		if err != nil {
+			panic(err)
+		}
+		testRepoGlobal = documents.NewLevelDBRepository(ldb)
+		testRepoGlobal.Register(&PurchaseOrder{})
+	}
+	return testRepoGlobal
 }

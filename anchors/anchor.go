@@ -1,8 +1,9 @@
 package anchors
 
 import (
-	"errors"
 	"math/big"
+
+	"github.com/centrifuge/go-centrifuge/errors"
 
 	"time"
 

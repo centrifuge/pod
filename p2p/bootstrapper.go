@@ -1,11 +1,10 @@
 package p2p
 
 import (
-	"fmt"
-
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
 )
 
 // Bootstrapped constants that are used as key in bootstrap context
@@ -18,14 +17,14 @@ type Bootstrapper struct{}
 
 // Bootstrap initiates p2p server and client into context
 func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
-	cfg, ok := ctx[config.BootstrappedConfig].(config.Configuration)
+	cfg, ok := ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	if !ok {
-		return fmt.Errorf("config not initialised")
+		return errors.New("config not initialised")
 	}
 
 	registry, ok := ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
 	if !ok {
-		return fmt.Errorf("registry not initialised")
+		return errors.New("registry not initialised")
 	}
 
 	srv := &p2pServer{config: cfg, registry: registry, handler: GRPCHandler(cfg, registry)}

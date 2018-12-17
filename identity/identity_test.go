@@ -4,12 +4,12 @@ package identity
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
@@ -25,7 +25,7 @@ func TestMain(m *testing.M) {
 		&config.Bootstrapper{},
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
-	cfg = ctx[config.BootstrappedConfig].(config.Configuration)
+	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfg.Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
 	cfg.Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
 	cfg.Set("keys.ethauth.publicKey", "../build/resources/ethauth.pub.pem")
@@ -218,17 +218,17 @@ func TestCentIDFromString(t *testing.T) {
 
 		{
 			id:  "0x01020304050607",
-			err: fmt.Errorf("invalid length byte slice provided for centID"),
+			err: errors.New("invalid length byte slice provided for centID"),
 		},
 
 		{
 			id:  "0xsome random",
-			err: fmt.Errorf("failed to decode id"),
+			err: errors.New("failed to decode id"),
 		},
 
 		{
 			id:  "some random",
-			err: fmt.Errorf("hex string without 0x"),
+			err: errors.New("hex string without 0x"),
 		},
 	}
 

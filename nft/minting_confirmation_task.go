@@ -2,10 +2,10 @@ package nft
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/centerrors"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -70,11 +70,11 @@ func (nftc *mintingConfirmationTask) ParseKwargs(kwargs map[string]interface{}) 
 	// parse TokenID
 	tokenID, ok := kwargs[tokenIDParam]
 	if !ok {
-		return fmt.Errorf("undefined kwarg " + tokenIDParam)
+		return errors.New("undefined kwarg " + tokenIDParam)
 	}
 	nftc.TokenID, ok = tokenID.(string)
 	if !ok {
-		return fmt.Errorf("malformed kwarg [%s]", tokenIDParam)
+		return errors.New("malformed kwarg [%s]", tokenIDParam)
 	}
 
 	// parse BlockHeight
@@ -86,12 +86,12 @@ func (nftc *mintingConfirmationTask) ParseKwargs(kwargs map[string]interface{}) 
 	//parse RegistryAddress
 	registryAddress, ok := kwargs[registryAddressParam]
 	if !ok {
-		return fmt.Errorf("undefined kwarg " + registryAddressParam)
+		return errors.New("undefined kwarg " + registryAddressParam)
 	}
 
 	nftc.RegistryAddress, ok = registryAddress.(string)
 	if !ok {
-		return fmt.Errorf("malformed kwarg [%s]", registryAddressParam)
+		return errors.New("malformed kwarg [%s]", registryAddressParam)
 	}
 
 	// override TimeoutParam if provided
@@ -99,7 +99,7 @@ func (nftc *mintingConfirmationTask) ParseKwargs(kwargs map[string]interface{}) 
 	if ok {
 		td, err := queue.GetDuration(tdRaw)
 		if err != nil {
-			return fmt.Errorf("malformed kwarg [%s] because [%s]", queue.TimeoutParam, err.Error())
+			return errors.New("malformed kwarg [%s] because [%s]", queue.TimeoutParam, err.Error())
 		}
 		nftc.Timeout = td
 	}

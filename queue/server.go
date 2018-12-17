@@ -2,9 +2,10 @@ package queue
 
 import (
 	"context"
-	"errors"
 	"sync"
 	"time"
+
+	"github.com/centrifuge/go-centrifuge/errors"
 
 	"github.com/centrifuge/gocelery"
 	logging "github.com/ipfs/go-log"

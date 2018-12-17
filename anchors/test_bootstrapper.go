@@ -3,15 +3,15 @@
 package anchors
 
 import (
-	"errors"
+	"github.com/centrifuge/go-centrifuge/errors"
 
-	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/bootstrap"
 )
 
 const BootstrappedAnchorRepository string = "BootstrappedAnchorRepository"
 
 func (b Bootstrapper) TestBootstrap(context map[string]interface{}) error {
-	if _, ok := context[config.BootstrappedConfig]; !ok {
+	if _, ok := context[bootstrap.BootstrappedConfig]; !ok {
 		return errors.New("config hasn't been initialized")
 	}
 

@@ -34,18 +34,16 @@ func New(format string, args ...interface{}) error {
 }
 
 // listError holds a list of errors
-type listError struct {
-	errs []error
-}
+type listError []error
 
 // Error formats the underlying errs into string
-func (l *listError) Error() string {
-	if len(l.errs) == 0 {
+func (l listError) Error() string {
+	if len(l) == 0 {
 		return ""
 	}
 
 	var errs []string
-	for _, err := range l.errs {
+	for _, err := range l {
 		errs = append(errs, err.Error())
 	}
 
@@ -53,14 +51,14 @@ func (l *listError) Error() string {
 	return "[" + res + "]"
 }
 
-// append appends the err to the list of errs
-func getErrs(err error) []error {
+// GetErrs gets the list of errors if its a list
+func GetErrs(err error) []error {
 	if err == nil {
 		return nil
 	}
 
-	if errl, ok := err.(*listError); ok {
-		return errl.errs
+	if errl, ok := err.(listError); ok {
+		return errl
 	}
 
 	return []error{err}
@@ -71,10 +69,10 @@ func getErrs(err error) []error {
 // if err is of type listError and if errn is of type listerror,
 // append errn errors to err and return err
 func AppendError(err, errn error) error {
-	var errs []error
+	var errs listError
 
 	for _, e := range []error{err, errn} {
-		if serrs := getErrs(e); len(serrs) > 0 {
+		if serrs := GetErrs(e); len(serrs) > 0 {
 			errs = append(errs, serrs...)
 		}
 	}
@@ -83,7 +81,7 @@ func AppendError(err, errn error) error {
 		return nil
 	}
 
-	return &listError{errs}
+	return errs
 }
 
 // Len returns the total number of errors
@@ -95,45 +93,45 @@ func Len(err error) int {
 		return 0
 	}
 
-	if lerr, ok := err.(*listError); ok {
-		return len(lerr.errs)
+	if lerr, ok := err.(listError); ok {
+		return len(lerr)
 	}
 
 	return 1
 }
 
-// typeError holds a type of error and an context error
-type typeError struct {
+// typedError holds a type of error and an context error
+type typedError struct {
 	terr   error
 	ctxErr error
 }
 
 // Error returns the error in string
-func (t *typeError) Error() string {
+func (t *typedError) Error() string {
 	return fmt.Sprintf("%v: %v", t.terr, t.ctxErr)
 }
 
-// NewTypeError returns a new error of type typeError
-func NewTypeError(terr, err error) error {
+// NewTypedError returns a new error of type typedError
+func NewTypedError(terr, err error) error {
 	if terr == nil {
 		terr = ErrUnknown
 	}
 
-	return &typeError{terr: terr, ctxErr: err}
+	return &typedError{terr: terr, ctxErr: err}
 }
 
-// TypeError can be implemented by any type error
-type TypeError interface {
+// TypedError can be implemented by any type error
+type TypedError interface {
 	IsOfType(terr error) bool
 }
 
 // IsOfType returns if the err t is of type terr
-func (t *typeError) IsOfType(terr error) bool {
+func (t *typedError) IsOfType(terr error) bool {
 	if t.terr.Error() == terr.Error() {
 		return true
 	}
 
-	if cterr, ok := t.ctxErr.(TypeError); ok {
+	if cterr, ok := t.ctxErr.(TypedError); ok {
 		return cterr.IsOfType(terr)
 	}
 
@@ -142,7 +140,7 @@ func (t *typeError) IsOfType(terr error) bool {
 
 // IsOfType returns if the err is of type terr
 func IsOfType(terr, err error) bool {
-	if errt, ok := err.(TypeError); ok {
+	if errt, ok := err.(TypedError); ok {
 		return errt.IsOfType(terr)
 	}
 

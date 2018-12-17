@@ -2,11 +2,11 @@ package node
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/signal"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/syndtr/goleveldb/leveldb"
 )
@@ -20,7 +20,7 @@ func (*Bootstrapper) Bootstrap(c map[string]interface{}) error {
 	srvs, err := GetServers(c)
 	if err != nil {
 		cleanUp(c)
-		return fmt.Errorf("failed to load servers: %v", err)
+		return errors.New("failed to load servers: %v", err)
 	}
 
 	n := New(srvs)
@@ -54,17 +54,17 @@ func cleanUp(c map[string]interface{}) {
 func GetServers(ctx map[string]interface{}) ([]Server, error) {
 	p2pSrv, ok := ctx[bootstrap.BootstrappedP2PServer]
 	if !ok {
-		return nil, fmt.Errorf("p2p server not initialized")
+		return nil, errors.New("p2p server not initialized")
 	}
 
 	apiSrv, ok := ctx[bootstrap.BootstrappedAPIServer]
 	if !ok {
-		return nil, fmt.Errorf("API server not initialized")
+		return nil, errors.New("API server not initialized")
 	}
 
 	queueSrv, ok := ctx[bootstrap.BootstrappedQueueServer]
 	if !ok {
-		return nil, fmt.Errorf("queue server not initialized")
+		return nil, errors.New("queue server not initialized")
 	}
 
 	var servers []Server

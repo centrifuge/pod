@@ -11,9 +11,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/utils"
-
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	logging "github.com/ipfs/go-log"
 	"golang.org/x/net/context"
@@ -64,7 +63,7 @@ func (c apiServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr cha
 		InsecureSkipVerify: true,
 	})
 
-	// set http interceptor
+	// set http error interceptor
 	runtime.HTTPError = httpResponseInterceptor
 
 	opts := []grpc.ServerOption{

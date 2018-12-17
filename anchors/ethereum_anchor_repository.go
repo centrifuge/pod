@@ -6,6 +6,7 @@ import (
 
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/queue"
@@ -13,7 +14,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/event"
-	"github.com/go-errors/errors"
 )
 
 type anchorRepositoryContract interface {
@@ -61,7 +61,7 @@ func (ethRepository *ethereumAnchorRepository) PreCommitAnchor(anchorID AnchorID
 
 	err = sendPreCommitTransaction(ethRepositoryContract, opts, preCommitData)
 	if err != nil {
-		wError := errors.Wrap(err, 1)
+		wError := errors.New("%v", err)
 		log.Errorf("Failed to send Ethereum pre-commit transaction [id: %x, signingRoot: %x, SchemaVersion:%v]: %v",
 			preCommitData.AnchorID, preCommitData.SigningRoot, preCommitData.SchemaVersion, wError)
 		return confirmations, err
@@ -87,7 +87,7 @@ func (ethRepository *ethereumAnchorRepository) CommitAnchor(anchorID AnchorID, d
 	confirmations, err = ethRepository.setUpCommitEventListener(ethRepository.config.GetEthereumContextWaitTimeout(), opts.From, cd)
 
 	if err != nil {
-		wError := errors.Wrap(err, 1)
+		wError := errors.New("%v", err)
 		log.Errorf("Failed to set up event listener for commit transaction [id: %x, hash: %x]: %v",
 			cd.AnchorID, cd.DocumentRoot, wError)
 		return
@@ -95,7 +95,7 @@ func (ethRepository *ethereumAnchorRepository) CommitAnchor(anchorID AnchorID, d
 
 	err = sendCommitTransaction(ethRepository.anchorRepositoryContract, opts, cd)
 	if err != nil {
-		wError := errors.Wrap(err, 1)
+		wError := errors.New("%v", err)
 		log.Errorf("Failed to send Ethereum commit transaction[id: %x, hash: %x, SchemaVersion:%v]: %v",
 			cd.AnchorID, cd.DocumentRoot, cd.SchemaVersion, wError)
 		return
@@ -163,7 +163,7 @@ func setUpPreCommitEventListener(contractEvent watchAnchorPreCommitted, from com
 	// Subscriptions a bit better before writing this code.
 	_, err = contractEvent.WatchAnchorPreCommitted(watchOpts, anchorPreCommittedEvents, []common.Address{from}, []*big.Int{preCommitData.AnchorID.BigInt()})
 	if err != nil {
-		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for anchor registration", 1)
+		wError := errors.New("Could not subscribe to event logs for anchor registration: %v", err)
 		log.Errorf("Failed to watch anchor registered event: %v", wError.Error())
 		cancelFunc() // cancel the event router
 		return confirmations, wError

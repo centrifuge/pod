@@ -13,7 +13,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/context/testlogging"
-	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/jsonpb"
@@ -25,7 +24,6 @@ func TestMain(m *testing.M) {
 	ibootstappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
-		&storage.Bootstrapper{},
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, nil)
 	result := m.Run()

@@ -9,6 +9,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/coredocument"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/version"
@@ -57,7 +58,7 @@ func (s *p2pServer) OpenClient(target string) (p2ppb.P2PServiceClient, error) {
 	defer cancel()
 	g, err := s.protocol.Dial(ctx, peerID, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
-		return nil, fmt.Errorf("failed to dial peer [%s]: %v", peerID.Pretty(), err)
+		return nil, errors.New("failed to dial peer [%s]: %v", peerID.Pretty(), err)
 	}
 
 	return p2ppb.NewP2PServiceClient(g), nil
@@ -70,14 +71,14 @@ func (s *p2pServer) getSignatureForDocument(ctx context.Context, identityService
 		return nil, err
 	}
 
-	header := p2ppb.CentrifugeHeader{
+	h := p2ppb.CentrifugeHeader{
 		NetworkIdentifier:  s.config.GetNetworkID(),
 		CentNodeVersion:    version.GetVersion().String(),
 		SenderCentrifugeId: senderID,
 	}
 
 	req := &p2ppb.SignatureRequest{
-		Header:   &header,
+		Header:   &h,
 		Document: &doc,
 	}
 
