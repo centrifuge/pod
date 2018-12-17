@@ -1,6 +1,6 @@
-## Shiny new `go-centrifuge` PR !!!
+## <Shiny new go-centrifuge PR !!!>
 
-This is intended as a guide when describing/reviewing pull requests for `go-centrifuge` or related projects
+<This is intended as a guide when describing/reviewing pull requests for `go-centrifuge` or related projects>
 
 - [ ] Issue link
 - [ ] The solution implemented
