@@ -4,94 +4,90 @@ import (
 	"context"
 	"math/big"
 
+	"time"
+
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/queue"
-	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/event"
-	"github.com/go-errors/errors"
 )
 
-type Config interface {
-	GetEthereumDefaultAccountName() string
-}
-
-type AnchorRepositoryContract interface {
-	//transactions
-	PreCommit(opts *bind.TransactOpts, anchorID *big.Int, signingRoot [32]byte, centrifugeId *big.Int, signature []byte, expirationBlock *big.Int) (*types.Transaction, error)
-	Commit(opts *bind.TransactOpts, _anchorID *big.Int, _documentRoot [32]byte, _centrifugeId *big.Int, _documentProofs [][32]byte, _signature []byte) (*types.Transaction, error)
+type anchorRepositoryContract interface {
+	PreCommit(opts *bind.TransactOpts, anchorID *big.Int, signingRoot [32]byte, centID *big.Int, signature []byte, expirationBlock *big.Int) (*types.Transaction, error)
+	Commit(opts *bind.TransactOpts, anchorID *big.Int, documentRoot [32]byte, centID *big.Int, documentProofs [][32]byte, signatures []byte) (*types.Transaction, error)
 	Commits(opts *bind.CallOpts, anchorID *big.Int) (docRoot [32]byte, err error)
 }
-type WatchAnchorPreCommitted interface {
+
+type watchAnchorPreCommitted interface {
 	//event name: AnchorPreCommitted
 	WatchAnchorPreCommitted(opts *bind.WatchOpts, sink chan<- *EthereumAnchorRepositoryContractAnchorPreCommitted,
 		from []common.Address, anchorID []*big.Int) (event.Subscription, error)
 }
 
-type WatchAnchorCommitted interface {
-	//event name: AnchorCommitted
-	WatchAnchorCommitted(opts *bind.WatchOpts, sink chan<- *EthereumAnchorRepositoryContractAnchorCommitted,
-		from []common.Address, anchorID []*big.Int, centrifugeId []*big.Int) (event.Subscription, error)
-}
-
-type EthereumAnchorRepository struct {
+type ethereumAnchorRepository struct {
 	config                   Config
-	anchorRepositoryContract AnchorRepositoryContract
+	anchorRepositoryContract anchorRepositoryContract
+	gethClientFinder         func() ethereum.Client
+	queue                    *queue.Server
 }
 
-func NewEthereumAnchorRepository(config Config, anchorRepositoryContract AnchorRepositoryContract) *EthereumAnchorRepository {
-	return &EthereumAnchorRepository{config: config, anchorRepositoryContract: anchorRepositoryContract}
+func newEthereumAnchorRepository(config Config, anchorRepositoryContract anchorRepositoryContract, queue *queue.Server, gethClientFinder func() ethereum.Client) AnchorRepository {
+	return &ethereumAnchorRepository{config: config, anchorRepositoryContract: anchorRepositoryContract, gethClientFinder: gethClientFinder, queue: queue}
 }
 
-// Commits takes an anchorID and returns the corresponding documentRoot from the chain
-func (ethRepository *EthereumAnchorRepository) GetDocumentRootOf(anchorID AnchorID) (docRoot DocRoot, err error) {
+// GetDocumentRootOf takes an anchorID and returns the corresponding documentRoot from the chain.
+func (ethRepository *ethereumAnchorRepository) GetDocumentRootOf(anchorID AnchorID) (docRoot DocumentRoot, err error) {
 	// Ignoring cancelFunc as code will block until response or timeout is triggered
-	opts, _ := ethereum.GetGethCallOpts()
+	opts, _ := ethRepository.gethClientFinder().GetGethCallOpts()
 	return ethRepository.anchorRepositoryContract.Commits(opts, anchorID.BigInt())
 }
 
-//PreCommitAnchor will call the transaction PreCommit on the smart contract
-func (ethRepository *EthereumAnchorRepository) PreCommitAnchor(anchorID AnchorID, signingRoot DocRoot, centrifugeId identity.CentID, signature []byte, expirationBlock *big.Int) (confirmations <-chan *WatchPreCommit, err error) {
+// PreCommitAnchor will call the transaction PreCommit on the smart contract
+func (ethRepository *ethereumAnchorRepository) PreCommitAnchor(anchorID AnchorID, signingRoot DocumentRoot, centID identity.CentID, signature []byte, expirationBlock *big.Int) (confirmations <-chan *WatchPreCommit, err error) {
 	ethRepositoryContract := ethRepository.anchorRepositoryContract
-	opts, err := ethereum.GetConnection().GetTxOpts(ethRepository.config.GetEthereumDefaultAccountName())
+	opts, err := ethereum.GetClient().GetTxOpts(ethRepository.config.GetEthereumDefaultAccountName())
 	if err != nil {
-		return
+		return confirmations, err
 	}
-	preCommitData := NewPreCommitData(anchorID, signingRoot, centrifugeId, signature, expirationBlock)
+
+	preCommitData := newPreCommitData(anchorID, signingRoot, centID, signature, expirationBlock)
 	if err != nil {
-		return
+		return confirmations, err
 	}
 
 	err = sendPreCommitTransaction(ethRepositoryContract, opts, preCommitData)
 	if err != nil {
-		wError := errors.Wrap(err, 1)
+		wError := errors.New("%v", err)
 		log.Errorf("Failed to send Ethereum pre-commit transaction [id: %x, signingRoot: %x, SchemaVersion:%v]: %v",
 			preCommitData.AnchorID, preCommitData.SigningRoot, preCommitData.SchemaVersion, wError)
-		return
+		return confirmations, err
 	}
+
 	return confirmations, err
 }
 
-// CommitAnchor will send a commit transaction to ethereum
-func (ethRepository *EthereumAnchorRepository) CommitAnchor(anchorID AnchorID, documentRoot DocRoot, centrifugeId identity.CentID, documentProofs [][32]byte, signature []byte) (confirmations <-chan *WatchCommit, err error) {
-	conn := ethereum.GetConnection()
+// CommitAnchor will send a commit transaction to Ethereum.
+func (ethRepository *ethereumAnchorRepository) CommitAnchor(anchorID AnchorID, documentRoot DocumentRoot, centID identity.CentID, documentProofs [][32]byte, signature []byte) (confirmations <-chan *WatchCommit, err error) {
+	conn := ethereum.GetClient()
 	opts, err := conn.GetTxOpts(ethRepository.config.GetEthereumDefaultAccountName())
 	if err != nil {
 		return nil, err
 	}
 
-	h, err := conn.GetClient().HeaderByNumber(context.Background(), nil)
+	h, err := conn.GetEthClient().HeaderByNumber(context.Background(), nil)
 	if err != nil {
 		return nil, err
 	}
 
-	cd := NewCommitData(h.Number.Uint64(), anchorID, documentRoot, centrifugeId, documentProofs, signature)
-	confirmations, err = setUpCommitEventListener(opts.From, cd)
+	cd := NewCommitData(h.Number.Uint64(), anchorID, documentRoot, centID, documentProofs, signature)
+	confirmations, err = ethRepository.setUpCommitEventListener(ethRepository.config.GetEthereumContextWaitTimeout(), opts.From, cd)
+
 	if err != nil {
-		wError := errors.Wrap(err, 1)
+		wError := errors.New("%v", err)
 		log.Errorf("Failed to set up event listener for commit transaction [id: %x, hash: %x]: %v",
 			cd.AnchorID, cd.DocumentRoot, wError)
 		return
@@ -99,7 +95,7 @@ func (ethRepository *EthereumAnchorRepository) CommitAnchor(anchorID AnchorID, d
 
 	err = sendCommitTransaction(ethRepository.anchorRepositoryContract, opts, cd)
 	if err != nil {
-		wError := errors.Wrap(err, 1)
+		wError := errors.New("%v", err)
 		log.Errorf("Failed to send Ethereum commit transaction[id: %x, hash: %x, SchemaVersion:%v]: %v",
 			cd.AnchorID, cd.DocumentRoot, cd.SchemaVersion, wError)
 		return
@@ -107,45 +103,45 @@ func (ethRepository *EthereumAnchorRepository) CommitAnchor(anchorID AnchorID, d
 	return confirmations, err
 }
 
-// sendPreCommitTransaction sends the actual transaction to the ethereum node
-func sendPreCommitTransaction(contract AnchorRepositoryContract, opts *bind.TransactOpts, preCommitData *PreCommitData) (err error) {
+// sendPreCommitTransaction sends the actual transaction to the ethereum node.
+func sendPreCommitTransaction(contract anchorRepositoryContract, opts *bind.TransactOpts, preCommitData *PreCommitData) error {
 
 	//preparation of data in specific types for the call to Ethereum
 	schemaVersion := big.NewInt(int64(preCommitData.SchemaVersion))
 
-	tx, err := ethereum.GetConnection().SubmitTransactionWithRetries(contract.PreCommit, opts, preCommitData.AnchorID, preCommitData.SigningRoot,
+	tx, err := ethereum.GetClient().SubmitTransactionWithRetries(contract.PreCommit, opts, preCommitData.AnchorID, preCommitData.SigningRoot,
 		preCommitData.CentrifugeID, preCommitData.Signature, preCommitData.ExpirationBlock, schemaVersion)
 
 	if err != nil {
-		return
-	} else {
-		log.Infof("Sent off transaction pre-commit [id: %x, hash: %x, SchemaVersion:%v] to registry. Ethereum transaction hash [%x] and Nonce [%v] and Check [%v]", preCommitData.AnchorID,
-			preCommitData.SigningRoot, schemaVersion, tx.Hash(), tx.Nonce(), tx.CheckNonce())
+		return err
 	}
 
+	log.Infof("Sent off transaction pre-commit [id: %x, hash: %x, SchemaVersion:%v] to registry. Ethereum transaction hash [%x] and Nonce [%v] and Check [%v]", preCommitData.AnchorID,
+		preCommitData.SigningRoot, schemaVersion, tx.Hash(), tx.Nonce(), tx.CheckNonce())
+
 	log.Infof("Transfer pending: 0x%x\n", tx.Hash())
-	return
+	return nil
 }
 
 // sendCommitTransaction sends the actual transaction to register the Anchor on Ethereum registry contract
-func sendCommitTransaction(contract AnchorRepositoryContract, opts *bind.TransactOpts, commitData *CommitData) (err error) {
-	tx, err := ethereum.GetConnection().SubmitTransactionWithRetries(contract.Commit, opts, commitData.AnchorID.BigInt(), commitData.DocumentRoot,
+func sendCommitTransaction(contract anchorRepositoryContract, opts *bind.TransactOpts, commitData *CommitData) error {
+	tx, err := ethereum.GetClient().SubmitTransactionWithRetries(contract.Commit, opts, commitData.AnchorID.BigInt(), commitData.DocumentRoot,
 		commitData.CentrifugeID.BigInt(), commitData.DocumentProofs, commitData.Signature)
 
 	if err != nil {
 		return err
-	} else {
-		log.Infof("Sent off the anchor [id: %x, hash: %x] to registry. Ethereum transaction hash [%x] and Nonce [%v] and Check [%v]", commitData.AnchorID,
-			commitData.DocumentRoot, tx.Hash(), tx.Nonce(), tx.CheckNonce())
 	}
 
+	log.Infof("Sent off the anchor [id: %x, hash: %x] to registry. Ethereum transaction hash [%x] and Nonce [%v] and Check [%v]", commitData.AnchorID,
+		commitData.DocumentRoot, tx.Hash(), tx.Nonce(), tx.CheckNonce())
 	log.Infof("Transfer pending: 0x%x\n", tx.Hash())
-	return
+	return nil
 }
 
+// TODO: This method is only used by setUpPreCommitEventListener below, it will be changed soon so we can remove the hardcoded `time.Second` and use the global one
 func generateEventContext() (*bind.WatchOpts, context.CancelFunc) {
 	//listen to this particular anchor being mined/event is triggered
-	ctx, cancelFunc := ethereum.DefaultWaitForTransactionMiningContext()
+	ctx, cancelFunc := ethereum.DefaultWaitForTransactionMiningContext(time.Second)
 	watchOpts := &bind.WatchOpts{Context: ctx}
 
 	return watchOpts, cancelFunc
@@ -154,20 +150,20 @@ func generateEventContext() (*bind.WatchOpts, context.CancelFunc) {
 
 // setUpPreCommitEventListener sets up the listened for the "PreCommit" event to notify the upstream code
 // about successful mining/creation of a pre-commit.
-func setUpPreCommitEventListener(contractEvent WatchAnchorPreCommitted, from common.Address, preCommitData *PreCommitData) (confirmations chan *WatchPreCommit, err error) {
+func setUpPreCommitEventListener(contractEvent watchAnchorPreCommitted, from common.Address, preCommitData *PreCommitData) (confirmations chan *WatchPreCommit, err error) {
 	watchOpts, cancelFunc := generateEventContext()
 
 	//there should always be only one notification coming for this
 	//single anchor being registered
 	anchorPreCommittedEvents := make(chan *EthereumAnchorRepositoryContractAnchorPreCommitted)
 	confirmations = make(chan *WatchPreCommit)
-	go waitAndRoutePreCommitEvent(anchorPreCommittedEvents, watchOpts.Context, confirmations, preCommitData)
+	go waitAndRoutePreCommitEvent(watchOpts.Context, anchorPreCommittedEvents, confirmations, preCommitData)
 
 	// Somehow there are some possible resource leakage situations with this handling but I have to understand
 	// Subscriptions a bit better before writing this code.
 	_, err = contractEvent.WatchAnchorPreCommitted(watchOpts, anchorPreCommittedEvents, []common.Address{from}, []*big.Int{preCommitData.AnchorID.BigInt()})
 	if err != nil {
-		wError := errors.WrapPrefix(err, "Could not subscribe to event logs for anchor registration", 1)
+		wError := errors.New("Could not subscribe to event logs for anchor registration: %v", err)
 		log.Errorf("Failed to watch anchor registered event: %v", wError.Error())
 		cancelFunc() // cancel the event router
 		return confirmations, wError
@@ -177,24 +173,24 @@ func setUpPreCommitEventListener(contractEvent WatchAnchorPreCommitted, from com
 
 // setUpCommitEventListener sets up the listened for the "AnchorCommitted" event to notify the upstream code
 // about successful mining/creation of a commit
-func setUpCommitEventListener(from common.Address, commitData *CommitData) (confirmations chan *WatchCommit, err error) {
+func (ethRepository *ethereumAnchorRepository) setUpCommitEventListener(timeout time.Duration, from common.Address, commitData *CommitData) (confirmations chan *WatchCommit, err error) {
 	confirmations = make(chan *WatchCommit)
-	asyncRes, err := queue.Queue.DelayKwargs(AnchorRepositoryConfirmationTaskName, map[string]interface{}{
-		AnchorIDParam:     commitData.AnchorID,
-		AddressParam:      from,
-		CentrifugeIDParam: commitData.CentrifugeID,
-		BlockHeight:       commitData.BlockHeight,
+	asyncRes, err := ethRepository.queue.EnqueueJob(anchorRepositoryConfirmationTaskName, map[string]interface{}{
+		anchorIDParam: commitData.AnchorID,
+		addressParam:  from,
+		centIDParam:   commitData.CentrifugeID,
+		blockHeight:   commitData.BlockHeight,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	go waitAndRouteCommitEvent(asyncRes, confirmations, commitData)
+	go waitAndRouteCommitEvent(timeout, asyncRes, confirmations, commitData)
 	return confirmations, nil
 }
 
 // waitAndRoutePreCommitEvent notifies the confirmations channel whenever a pre-commit is being noted as Ethereum event
-func waitAndRoutePreCommitEvent(conf <-chan *EthereumAnchorRepositoryContractAnchorPreCommitted, ctx context.Context, confirmations chan<- *WatchPreCommit, preCommitData *PreCommitData) {
+func waitAndRoutePreCommitEvent(ctx context.Context, conf <-chan *EthereumAnchorRepositoryContractAnchorPreCommitted, confirmations chan<- *WatchPreCommit, preCommitData *PreCommitData) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -210,7 +206,7 @@ func waitAndRoutePreCommitEvent(conf <-chan *EthereumAnchorRepositoryContractAnc
 }
 
 // waitAndRouteCommitEvent notifies the confirmations channel whenever a commit is being noted as Ethereum event
-func waitAndRouteCommitEvent(asyncResult *gocelery.AsyncResult, confirmations chan<- *WatchCommit, commitData *CommitData) {
-	_, err := asyncResult.Get(ethereum.GetDefaultContextTimeout())
+func waitAndRouteCommitEvent(timeout time.Duration, asyncResult queue.TaskResult, confirmations chan<- *WatchCommit, commitData *CommitData) {
+	_, err := asyncResult.Get(timeout)
 	confirmations <- &WatchCommit{commitData, err}
 }

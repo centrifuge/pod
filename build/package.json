@@ -1,6 +1,6 @@
 {
   "name": "go-centrifuge",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Protobuf files &amp; go bindings for go-centrifuge",
   "main": "index.js",
   "scripts": {

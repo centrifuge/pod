@@ -15,20 +15,21 @@ var apiLog = logging.Logger("document-api")
 
 // grpcHandler handles all the common document related actions: proof generation
 type grpcHandler struct {
+	registry *ServiceRegistry
 }
 
 // GRPCHandler returns an implementation of documentpb.DocumentServiceServer
-func GRPCHandler() documentpb.DocumentServiceServer {
-	return grpcHandler{}
+func GRPCHandler(registry *ServiceRegistry) documentpb.DocumentServiceServer {
+	return grpcHandler{registry: registry}
 }
 
 // CreateDocumentProof creates precise proofs for the given fields
-func (grpcHandler) CreateDocumentProof(ctx context.Context, createDocumentProofEnvelope *documentpb.CreateDocumentProofRequest) (*documentpb.DocumentProof, error) {
+func (h grpcHandler) CreateDocumentProof(ctx context.Context, createDocumentProofEnvelope *documentpb.CreateDocumentProofRequest) (*documentpb.DocumentProof, error) {
 	apiLog.Infof("Document proof request %v", createDocumentProofEnvelope)
 
-	service, err := GetRegistryInstance().LocateService(createDocumentProofEnvelope.Type)
+	service, err := h.registry.LocateService(createDocumentProofEnvelope.Type)
 	if err != nil {
-		return &documentpb.DocumentProof{}, err
+		return &documentpb.DocumentProof{}, centerrors.Wrap(err, "could not locate service for document type")
 	}
 
 	identifier, err := hexutil.Decode(createDocumentProofEnvelope.Identifier)
@@ -44,12 +45,12 @@ func (grpcHandler) CreateDocumentProof(ctx context.Context, createDocumentProofE
 }
 
 // CreateDocumentProofForVersion creates precise proofs for the given fields for the given version of the document
-func (grpcHandler) CreateDocumentProofForVersion(ctx context.Context, createDocumentProofForVersionEnvelope *documentpb.CreateDocumentProofForVersionRequest) (*documentpb.DocumentProof, error) {
+func (h grpcHandler) CreateDocumentProofForVersion(ctx context.Context, createDocumentProofForVersionEnvelope *documentpb.CreateDocumentProofForVersionRequest) (*documentpb.DocumentProof, error) {
 	apiLog.Infof("Document proof request %v", createDocumentProofForVersionEnvelope)
 
-	service, err := GetRegistryInstance().LocateService(createDocumentProofForVersionEnvelope.Type)
+	service, err := h.registry.LocateService(createDocumentProofForVersionEnvelope.Type)
 	if err != nil {
-		return &documentpb.DocumentProof{}, err
+		return &documentpb.DocumentProof{}, centerrors.Wrap(err, "could not locate service for document type")
 	}
 
 	identifier, err := hexutil.Decode(createDocumentProofForVersionEnvelope.Identifier)
@@ -73,8 +74,8 @@ func (grpcHandler) CreateDocumentProofForVersion(ctx context.Context, createDocu
 func ConvertDocProofToClientFormat(proof *DocumentProof) (*documentpb.DocumentProof, error) {
 	return &documentpb.DocumentProof{
 		Header: &documentpb.ResponseHeader{
-			DocumentId: hexutil.Encode(proof.DocumentId),
-			VersionId:  hexutil.Encode(proof.VersionId),
+			DocumentId: hexutil.Encode(proof.DocumentID),
+			VersionId:  hexutil.Encode(proof.VersionID),
 			State:      proof.State,
 		},
 		FieldProofs: ConvertProofsToClientFormat(proof.FieldProofs)}, nil
@@ -92,7 +93,7 @@ func ConvertProofsToClientFormat(proofs []*proofspb.Proof) []*documentpb.Proof {
 // ConvertProofToClientFormat converts a proof in precise proof format in to a client protobuf proof
 func ConvertProofToClientFormat(proof *proofspb.Proof) *documentpb.Proof {
 	return &documentpb.Proof{
-		Property:     proof.Property,
+		Property:     proof.GetReadableName(),
 		Value:        proof.Value,
 		Salt:         hexutil.Encode(proof.Salt),
 		Hash:         hexutil.Encode(proof.Hash),

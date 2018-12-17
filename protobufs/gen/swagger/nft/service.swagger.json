@@ -51,10 +51,6 @@
           "type": "string",
           "title": "Document identifier"
         },
-        "type": {
-          "type": "string",
-          "title": "Document type"
-        },
         "registry_address": {
           "type": "string",
           "title": "The contract address of the registry where the token should be minted"

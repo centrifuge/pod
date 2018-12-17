@@ -11,11 +11,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var ctx = map[string]interface{}{}
+var cfg config.Configuration
+
 func TestMain(m *testing.M) {
 	ibootstappers := []bootstrap.TestBootstrapper{
 		&config.Bootstrapper{},
 	}
-	bootstrap.RunTestBootstrappers(ibootstappers, nil)
+	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
+	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	result := m.Run()
 	os.Exit(result)
 }
@@ -34,59 +38,30 @@ func TestPublicKeyToP2PKey(t *testing.T) {
 }
 
 func TestGetSigningKeyPairFromConfig(t *testing.T) {
-	pub := config.Config.V.Get("keys.signing.publicKey")
-	pri := config.Config.V.Get("keys.signing.privateKey")
+	pub := cfg.Get("keys.signing.publicKey")
+	pri := cfg.Get("keys.signing.privateKey")
 
 	// bad public key path
-	config.Config.V.Set("keys.signing.publicKey", "bad path")
-	pubK, priK, err := GetSigningKeyPairFromConfig()
+	cfg.Set("keys.signing.publicKey", "bad path")
+	pubK, priK, err := GetSigningKeyPair(cfg.GetSigningKeyPair())
 	assert.Error(t, err)
 	assert.Nil(t, priK)
 	assert.Nil(t, pubK)
 	assert.Contains(t, err.Error(), "failed to read public key")
-	config.Config.V.Set("keys.signing.publicKey", pub)
+	cfg.Set("keys.signing.publicKey", pub)
 
 	// bad private key path
-	config.Config.V.Set("keys.signing.privateKey", "bad path")
-	pubK, priK, err = GetSigningKeyPairFromConfig()
+	cfg.Set("keys.signing.privateKey", "bad path")
+	pubK, priK, err = GetSigningKeyPair(cfg.GetSigningKeyPair())
 	assert.Error(t, err)
 	assert.Nil(t, priK)
 	assert.Nil(t, pubK)
 	assert.Contains(t, err.Error(), "failed to read private key")
-	config.Config.V.Set("keys.signing.privateKey", pri)
+	cfg.Set("keys.signing.privateKey", pri)
 
 	// success
-	pubK, priK, err = GetSigningKeyPairFromConfig()
+	pubK, priK, err = GetSigningKeyPair(cfg.GetSigningKeyPair())
 	assert.Nil(t, err)
 	assert.NotNil(t, pubK)
 	assert.NotNil(t, priK)
-}
-
-func TestGetIDConfig(t *testing.T) {
-	pub := config.Config.V.Get("keys.signing.publicKey")
-
-	// failed keys
-	config.Config.V.Set("keys.signing.publicKey", "bad path")
-	id, err := GetIDConfig()
-	assert.Error(t, err)
-	assert.Nil(t, id)
-	assert.Contains(t, err.Error(), "failed to get signing keys")
-	config.Config.V.Set("keys.signing.publicKey", pub)
-
-	// failed identity
-	gID := config.Config.V.Get("identityId")
-	config.Config.V.Set("identityId", "bad id")
-	id, err = GetIDConfig()
-	assert.Error(t, err)
-	assert.Nil(t, id)
-	assert.Contains(t, err.Error(), "can't read identityId from config")
-	config.Config.V.Set("identityId", gID)
-
-	// success
-	id, err = GetIDConfig()
-	assert.Nil(t, err)
-	assert.NotNil(t, id)
-	nID, err := config.Config.GetIdentityID()
-	assert.Nil(t, err)
-	assert.Equal(t, id.ID, nID)
 }

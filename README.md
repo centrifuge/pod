@@ -189,8 +189,8 @@ Let it catch up for a while until is fully synced with the remote peer
   - In go-centrifuge project run:
     - ./build/scripts/docker/run.sh rinkeby
     - Wait until node is in sync with remote peer (1-2 hours):
-      - geth attach ws://localhost:9546 --exec "net.peerCount" > 0 (rinkeby takes additional time to sync as it needs a peer to pull from, and has shortage of full node peers)
-      - geth attach ws://localhost:9546 --exec "eth.syncing" -> false
+      - geth attach http://localhost:9545 --exec "net.peerCount" > 0 (rinkeby takes additional time to sync as it needs a peer to pull from, and has shortage of full node peers)
+      - geth attach http://localhost:9545 --exec "eth.syncing" -> false
   - Run tests:
     - To run only integration tests:
       - CENT_CENTRIFUGENETWORK='russianhill' TEST_TARGET_ENVIRONMENT='rinkeby' CENT_ETHEREUM_ACCOUNTS_MAIN_KEY='$JSON_KEY' CENT_ETHEREUM_ACCOUNTS_MAIN_PASSWORD="$PASS" CENT_ETHEREUM_ACCOUNTS_MAIN_ADDRESS="$ADDR" ./build/scripts/tests/run_integration_tests.sh
@@ -229,3 +229,10 @@ Generating go bindings and swagger with the following command
 ```bash
 make proto-all
 ```
+
+## Kovan FAQ
+
+- With infura you get an error - "This request is not supported because your node is running with state pruning. Run with --pruning=archive.",
+  what to do? Run a local parity node with kovan eg: with `parity --chain=kovan --port=30304 --warp --warp-barrier 5680000 --no-ancient-blocks --no-serve-light --max-peers 250 --snapshot-peers 50 --min-peers 50 --mode active --tracing off --pruning=archive --db-compaction ssd --cache-size 4096 --jsonrpc-hosts all --jsonrpc-interface all`
+- With local parity node you get an error - "Blocked connection to WebSockets server from untrusted origin: .."
+  what to do? Run the parity node with `--unsafe-expose` flag

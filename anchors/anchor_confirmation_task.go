@@ -2,140 +2,139 @@ package anchors
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/centerrors"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/go-errors/errors"
 )
 
 const (
-	AnchorRepositoryConfirmationTaskName string = "AnchorRepositoryConfirmationTaskName"
-	AnchorIDParam                        string = "AnchorIDParam"
-	CentrifugeIDParam                    string = "CentrifugeIDParam"
-	BlockHeight                          string = "BlockHeight"
-	AddressParam                         string = "AddressParam"
+	anchorRepositoryConfirmationTaskName string = "anchorRepositoryConfirmationTaskName"
+	anchorIDParam                        string = "anchorIDParam"
+	centIDParam                          string = "centIDParam"
+	blockHeight                          string = "blockHeight"
+	addressParam                         string = "addressParam"
 )
 
-type AnchorCommittedWatcher interface {
+type anchorCommittedWatcher interface {
 	FilterAnchorCommitted(
 		opts *bind.FilterOpts,
 		from []common.Address,
-		anchorId []*big.Int,
-		centrifugeId []*big.Int) (*EthereumAnchorRepositoryContractAnchorCommittedIterator, error)
+		anchorID []*big.Int,
+		centID []*big.Int) (*EthereumAnchorRepositoryContractAnchorCommittedIterator, error)
 }
 
-// AnchoringConfirmationTask is a queued task to watch ID registration events on Ethereum using EthereumAnchoryRepositoryContract.
+// anchorConfirmationTask is a queued task to watch ID registration events on Ethereum using EthereumAnchoryRepositoryContract.
 // To see how it gets registered see bootstrapper.go and to see how it gets used see setUpRegistrationEventListener method
-type AnchoringConfirmationTask struct {
+type anchorConfirmationTask struct {
 	// task parameters
 	From         common.Address
 	AnchorID     AnchorID
 	CentrifugeID identity.CentID
 	BlockHeight  uint64
+	Timeout      time.Duration
 
 	// state
-	EthContextInitializer   func() (ctx context.Context, cancelFunc context.CancelFunc)
+	EthContextInitializer   func(d time.Duration) (ctx context.Context, cancelFunc context.CancelFunc)
 	EthContext              context.Context
-	AnchorCommittedFilterer AnchorCommittedWatcher
+	AnchorCommittedFilterer anchorCommittedWatcher
 }
 
-func NewAnchoringConfirmationTask(
-	anchorCommittedWatcher AnchorCommittedWatcher,
-	ethContextInitializer func() (ctx context.Context, cancelFunc context.CancelFunc),
-) *AnchoringConfirmationTask {
-	return &AnchoringConfirmationTask{
-		AnchorCommittedFilterer: anchorCommittedWatcher,
-		EthContextInitializer:   ethContextInitializer,
-	}
+// TaskTypeName returns anchorRepositoryConfirmationTaskName
+func (act *anchorConfirmationTask) TaskTypeName() string {
+	return anchorRepositoryConfirmationTaskName
 }
 
-func (act *AnchoringConfirmationTask) Name() string {
-	return AnchorRepositoryConfirmationTaskName
-}
-
-func (act *AnchoringConfirmationTask) Init() error {
-	queue.Queue.Register(act.Name(), act)
-	return nil
-}
-
-func (act *AnchoringConfirmationTask) Copy() (gocelery.CeleryTask, error) {
-	return &AnchoringConfirmationTask{
+// Copy returns a new instance of anchorConfirmationTask
+func (act *anchorConfirmationTask) Copy() (gocelery.CeleryTask, error) {
+	return &anchorConfirmationTask{
 		act.From,
 		act.AnchorID,
 		act.CentrifugeID,
 		act.BlockHeight,
+		act.Timeout,
 		act.EthContextInitializer,
 		act.EthContext,
 		act.AnchorCommittedFilterer,
 	}, nil
 }
 
-// ParseKwargs - define a method to parse AnchorID, Address and RootHash
-func (act *AnchoringConfirmationTask) ParseKwargs(kwargs map[string]interface{}) error {
-	anchorID, ok := kwargs[AnchorIDParam]
+// ParseKwargs parses args to anchorConfirmationTask
+func (act *anchorConfirmationTask) ParseKwargs(kwargs map[string]interface{}) error {
+	anchorID, ok := kwargs[anchorIDParam]
 	if !ok {
-		return fmt.Errorf("undefined kwarg " + AnchorIDParam)
+		return errors.New("undefined kwarg " + anchorIDParam)
 	}
 
 	anchorIDBytes, err := getBytesAnchorID(anchorID)
-
 	if err != nil {
-		return fmt.Errorf("malformed kwarg [%s] because [%s]", AnchorIDParam, err.Error())
+		return errors.New("malformed kwarg [%s] because [%s]", anchorIDParam, err.Error())
 	}
 
 	act.AnchorID = anchorIDBytes
 
 	//parse the centrifuge id
-	centrifugeId, ok := kwargs[CentrifugeIDParam]
+	centID, ok := kwargs[centIDParam]
 	if !ok {
-		return fmt.Errorf("undefined kwarg " + CentrifugeIDParam)
+		return errors.New("undefined kwarg " + centIDParam)
 	}
 
-	centrifugeIdBytes, err := getBytesCentrifugeID(centrifugeId)
+	centIDBytes, err := getBytesCentrifugeID(centID)
 	if err != nil {
-		return fmt.Errorf("malformed kwarg [%s] because [%s]", CentrifugeIDParam, err.Error())
+		return errors.New("malformed kwarg [%s] because [%s]", centIDParam, err.Error())
 	}
 
-	act.CentrifugeID = centrifugeIdBytes
+	act.CentrifugeID = centIDBytes
 
 	// parse the address
-	address, ok := kwargs[AddressParam]
+	address, ok := kwargs[addressParam]
 	if !ok {
-		return fmt.Errorf("undefined kwarg " + AddressParam)
-	}
-	addressStr, ok := address.(string)
-	if !ok {
-		return fmt.Errorf("param is not hex string " + AddressParam)
-	}
-	addressTyped, err := getAddressFromHexString(addressStr)
-	if err != nil {
-		return fmt.Errorf("malformed kwarg [%s] because [%s]", AddressParam, err.Error())
+		return errors.New("undefined kwarg " + addressParam)
 	}
 
-	if bhi, ok := kwargs[BlockHeight]; ok {
+	addressStr, ok := address.(string)
+	if !ok {
+		return errors.New("param is not hex string " + addressParam)
+	}
+
+	addressTyped, err := getAddressFromHexString(addressStr)
+	if err != nil {
+		return errors.New("malformed kwarg [%s] because [%s]", addressParam, err.Error())
+	}
+	act.From = addressTyped
+
+	if bhi, ok := kwargs[blockHeight]; ok {
 		bhf, ok := bhi.(float64)
 		if ok {
 			act.BlockHeight = uint64(bhf)
 		}
 	}
 
-	act.From = addressTyped
+	// Override default timeout param
+	tdRaw, ok := kwargs[queue.TimeoutParam]
+	if ok {
+		td, err := queue.GetDuration(tdRaw)
+		if err != nil {
+			return errors.New("malformed kwarg [%s] because [%s]", queue.TimeoutParam, err.Error())
+		}
+		act.Timeout = td
+	}
+
 	return nil
 }
 
-// RunTask calls listens to events from geth related to AnchoringConfirmationTask#AnchorID and records result.
-func (act *AnchoringConfirmationTask) RunTask() (interface{}, error) {
+// RunTask calls listens to events from geth related to anchorConfirmationTask#AnchorID and records result.
+func (act *anchorConfirmationTask) RunTask() (interface{}, error) {
 	log.Infof("Waiting for confirmation for the anchorID [%x]", act.AnchorID)
 	if act.EthContext == nil {
-		act.EthContext, _ = act.EthContextInitializer()
+		act.EthContext, _ = act.EthContextInitializer(act.Timeout)
 	}
 
 	fOpts := &bind.FilterOpts{
@@ -156,17 +155,16 @@ func (act *AnchoringConfirmationTask) RunTask() (interface{}, error) {
 
 		err = utils.LookForEvent(iter)
 		if err == nil {
-			log.Infof("Received filtered event Anchor Confirmation for AnchorID [%x] and CentrifugeId [%s]\n", act.AnchorID.BigInt(), act.CentrifugeID.String())
+			log.Infof("Received filtered event Anchor Confirmation for AnchorID [%x] and CentrifugeID [%s]\n", act.AnchorID.BigInt(), act.CentrifugeID.String())
 			return iter.Event, nil
 		}
 
-		if err != utils.EventNotFound {
+		if err != utils.ErrEventNotFound {
 			return nil, err
 		}
+
 		time.Sleep(100 * time.Millisecond)
 	}
-
-	return nil, fmt.Errorf("failed to filter anchor events")
 }
 
 func getBytesAnchorID(key interface{}) (AnchorID, error) {

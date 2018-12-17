@@ -3,15 +3,14 @@ package invoice
 import (
 	"crypto/sha256"
 	"encoding/json"
-	"fmt"
 	"reflect"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
-	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/coredocument"
-	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/identity"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/precise-proofs/proofs"
@@ -22,40 +21,33 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 )
 
+const prefix string = "invoice"
+
 // Invoice implements the documents.Model keeps track of invoice related fields and state
 type Invoice struct {
-	// invoice number or reference number
-	InvoiceNumber string
-	// name of the sender company
-	SenderName string
-	// street and address details of the sender company
-	SenderStreet  string
-	SenderCity    string
-	SenderZipcode string
-	// country ISO code of the sender of this invoice
-	SenderCountry string
-	// name of the recipient company
-	RecipientName    string
+	InvoiceNumber    string // invoice number or reference number
+	SenderName       string // name of the sender company
+	SenderStreet     string // street and address details of the sender company
+	SenderCity       string
+	SenderZipcode    string // country ISO code of the sender of this invoice
+	SenderCountry    string
+	RecipientName    string // name of the recipient company
 	RecipientStreet  string
 	RecipientCity    string
 	RecipientZipcode string
-	// country ISO code of the receipient of this invoice
-	RecipientCountry string
-	// ISO currency code
-	Currency string
-	// invoice amount including tax
-	GrossAmount int64
-	// invoice amount excluding tax
-	NetAmount   int64
-	TaxAmount   int64
-	TaxRate     int64
-	Recipient   *identity.CentID
-	Sender      *identity.CentID
-	Payee       *identity.CentID
-	Comment     string
-	DueDate     *timestamp.Timestamp
-	DateCreated *timestamp.Timestamp
-	ExtraData   []byte
+	RecipientCountry string // country ISO code of the recipient of this invoice
+	Currency         string // country ISO code of the recipient of this invoice
+	GrossAmount      int64  // invoice amount including tax
+	NetAmount        int64  // invoice amount excluding tax
+	TaxAmount        int64
+	TaxRate          int64
+	Recipient        *identity.CentID
+	Sender           *identity.CentID
+	Payee            *identity.CentID
+	Comment          string
+	DueDate          *timestamp.Timestamp
+	DateCreated      *timestamp.Timestamp
+	ExtraData        []byte
 
 	InvoiceSalts *invoicepb.InvoiceDataSalts
 	CoreDocument *coredocumentpb.CoreDocument
@@ -156,17 +148,17 @@ func (i *Invoice) createP2PProtobuf() *invoicepb.InvoiceData {
 }
 
 // InitInvoiceInput initialize the model based on the received parameters from the rest api call
-func (i *Invoice) InitInvoiceInput(payload *clientinvoicepb.InvoiceCreatePayload, contextHeader *documents.ContextHeader) error {
+func (i *Invoice) InitInvoiceInput(payload *clientinvoicepb.InvoiceCreatePayload, contextHeader *header.ContextHeader) error {
 	err := i.initInvoiceFromData(payload.Data)
 	if err != nil {
 		return err
 	}
 
-	collaborators := append([]string{contextHeader.Self().String()}, payload.Collaborators...)
+	collaborators := append([]string{contextHeader.Self().ID.String()}, payload.Collaborators...)
 
 	i.CoreDocument, err = coredocument.NewWithCollaborators(collaborators)
 	if err != nil {
-		return fmt.Errorf("failed to init core document: %v", err)
+		return errors.New("failed to init core document: %v", err)
 	}
 
 	return nil
@@ -209,7 +201,7 @@ func (i *Invoice) initInvoiceFromData(data *clientinvoicepb.InvoiceData) error {
 	if data.ExtraData != "" {
 		ed, err := hexutil.Decode(data.ExtraData)
 		if err != nil {
-			return centerrors.Wrap(err, "failed to decode extra data")
+			return errors.NewTypedError(err, errors.New("failed to decode extra data"))
 		}
 
 		i.ExtraData = ed
@@ -266,6 +258,8 @@ func (i *Invoice) getInvoiceSalts(invoiceData *invoicepb.InvoiceData) *invoicepb
 	return i.InvoiceSalts
 }
 
+// ID returns document identifier.
+// Note: this is not a unique identifier for each version of the document.
 func (i *Invoice) ID() ([]byte, error) {
 	coreDoc, err := i.PackCoreDocument()
 	if err != nil {
@@ -280,7 +274,7 @@ func (i *Invoice) PackCoreDocument() (*coredocumentpb.CoreDocument, error) {
 	invoiceData := i.createP2PProtobuf()
 	serializedInvoice, err := proto.Marshal(invoiceData)
 	if err != nil {
-		return nil, centerrors.Wrap(err, "couldn't serialise InvoiceData")
+		return nil, errors.NewTypedError(err, errors.New("couldn't serialise InvoiceData"))
 	}
 
 	invoiceAny := any.Any{
@@ -292,7 +286,7 @@ func (i *Invoice) PackCoreDocument() (*coredocumentpb.CoreDocument, error) {
 
 	serializedSalts, err := proto.Marshal(invoiceSalt)
 	if err != nil {
-		return nil, centerrors.Wrap(err, "couldn't serialise InvoiceSalts")
+		return nil, errors.NewTypedError(err, errors.New("couldn't serialise InvoiceSalts"))
 	}
 
 	invoiceSaltsAny := any.Any{
@@ -310,14 +304,14 @@ func (i *Invoice) PackCoreDocument() (*coredocumentpb.CoreDocument, error) {
 // UnpackCoreDocument unpacks the core document into Invoice
 func (i *Invoice) UnpackCoreDocument(coreDoc *coredocumentpb.CoreDocument) error {
 	if coreDoc == nil {
-		return centerrors.NilError(coreDoc)
+		return errors.New("core document provided is nil %v", coreDoc)
 	}
 
 	if coreDoc.EmbeddedData == nil ||
 		coreDoc.EmbeddedData.TypeUrl != documenttypes.InvoiceDataTypeUrl ||
 		coreDoc.EmbeddedDataSalts == nil ||
 		coreDoc.EmbeddedDataSalts.TypeUrl != documenttypes.InvoiceSaltsTypeUrl {
-		return fmt.Errorf("trying to convert document with incorrect schema")
+		return errors.New("trying to convert document with incorrect schema")
 	}
 
 	invoiceData := &invoicepb.InvoiceData{}
@@ -361,7 +355,7 @@ func (i *Invoice) Type() reflect.Type {
 func (i *Invoice) calculateDataRoot() error {
 	t, err := i.getDocumentDataTree()
 	if err != nil {
-		return fmt.Errorf("calculateDataRoot error %v", err)
+		return errors.New("calculateDataRoot error %v", err)
 	}
 	i.CoreDocument.DataRoot = t.RootHash()
 	return nil
@@ -369,15 +363,16 @@ func (i *Invoice) calculateDataRoot() error {
 
 // getDocumentDataTree creates precise-proofs data tree for the model
 func (i *Invoice) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
-	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: sha256.New()})
+	prop := proofs.NewProperty(prefix)
+	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: sha256.New(), ParentPrefix: &prop})
 	invoiceData := i.createP2PProtobuf()
 	err = t.AddLeavesFromDocument(invoiceData, i.getInvoiceSalts(invoiceData))
 	if err != nil {
-		return nil, fmt.Errorf("getDocumentDataTree error %v", err)
+		return nil, errors.New("getDocumentDataTree error %v", err)
 	}
 	err = t.Generate()
 	if err != nil {
-		return nil, fmt.Errorf("getDocumentDataTree error %v", err)
+		return nil, errors.New("getDocumentDataTree error %v", err)
 	}
 	return &t, nil
 }
@@ -388,14 +383,14 @@ func (i *Invoice) createProofs(fields []string) (coreDoc *coredocumentpb.CoreDoc
 	// is still not saved with roots in db due to failures during getting signatures.
 	coreDoc, err = i.PackCoreDocument()
 	if err != nil {
-		return nil, nil, fmt.Errorf("createProofs error %v", err)
+		return nil, nil, errors.New("createProofs error %v", err)
 	}
 
 	tree, err := i.getDocumentDataTree()
 	if err != nil {
-		return coreDoc, nil, fmt.Errorf("createProofs error %v", err)
+		return coreDoc, nil, errors.New("createProofs error %v", err)
 	}
 
 	proofs, err = coredocument.CreateProofs(tree, coreDoc, fields)
-	return
+	return coreDoc, proofs, err
 }

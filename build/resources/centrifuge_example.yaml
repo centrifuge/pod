@@ -23,6 +23,10 @@ p2p:
   #externalIP: 100.111.112.113
   port: 38202
 
+#Configure your node to push notifications to your custom WebHook
+#notifications:
+#  endpoint: "https://webhook.site/9fa0b32f-c745-4367-acd6-a7ed418ef608"
+
 ethereum:
   accounts:
     main:
