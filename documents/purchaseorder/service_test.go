@@ -730,7 +730,7 @@ func TestService_calculateDataRoot(t *testing.T) {
 	po, err = poSrv.calculateDataRoot(nil, po, CreateValidator())
 	assert.Nil(t, po)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), documents.ErrDocumentRepositoryModelAllReadyExists)
+	assert.Contains(t, err.Error(), storage.ErrRepositoryModelCreateKeyExists)
 
 	// success
 	po, err = poSrv.DeriveFromCreatePayload(testingdocuments.CreatePOPayload(), ctxh)
@@ -750,7 +750,7 @@ func testRepo() documents.Repository {
 		if err != nil {
 			panic(err)
 		}
-		testRepoGlobal = documents.NewLevelDBRepository(ldb)
+		testRepoGlobal = documents.NewDBRepository(storage.NewLevelDBRepository(ldb))
 		testRepoGlobal.Register(&PurchaseOrder{})
 	}
 	return testRepoGlobal

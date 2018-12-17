@@ -681,7 +681,7 @@ func TestService_calculateDataRoot(t *testing.T) {
 	inv, err = invSrv.calculateDataRoot(nil, inv, CreateValidator())
 	assert.Nil(t, inv)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "document repository found an already existing model when saving")
+	assert.Contains(t, err.Error(), "db repository could not create the given model, key already exists")
 
 	// success
 	inv, err = invSrv.DeriveFromCreatePayload(testingdocuments.CreateInvoicePayload(), ctxh)
@@ -701,7 +701,7 @@ func testRepo() documents.Repository {
 		if err != nil {
 			panic(err)
 		}
-		testRepoGlobal = documents.NewLevelDBRepository(ldb)
+		testRepoGlobal = documents.NewDBRepository(storage.NewLevelDBRepository(ldb))
 		testRepoGlobal.Register(&Invoice{})
 	}
 	return testRepoGlobal

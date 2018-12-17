@@ -21,7 +21,7 @@ func (*Bootstrapper) TestBootstrap(context map[string]interface{}) (err error) {
 	if err != nil {
 		return errors.New("failed to init config level db: %v", err)
 	}
-	context[BootstrappedConfigLevelDB] = configdb
+	context[BootstrappedConfigDB] = NewLevelDBRepository(configdb)
 
 	rs := GetRandomTestStoragePath()
 	cfg.SetDefault("storage.Path", rs)
@@ -31,7 +31,7 @@ func (*Bootstrapper) TestBootstrap(context map[string]interface{}) (err error) {
 		return errors.New("failed to init level db: %v", err)
 	}
 	log.Infof("Setting levelDb at: %s", cfg.GetStoragePath())
-	context[BootstrappedLevelDB] = db
+	context[BootstrappedDB] = NewLevelDBRepository(db)
 	return nil
 }
 

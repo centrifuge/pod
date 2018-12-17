@@ -7,21 +7,6 @@ import (
 	"time"
 )
 
-// Model is an interface for both tenant and node config models
-type Model interface {
-	// Get the ID of the document represented by this model
-	ID() ([]byte, error)
-
-	//Returns the underlying type of the Model
-	Type() reflect.Type
-
-	// JSON return the json representation of the model
-	JSON() ([]byte, error)
-
-	// FromJSON initialize the model with a json
-	FromJSON(json []byte) error
-}
-
 // KeyPair represents a key pair config
 type KeyPair struct {
 	Pub, Priv string
