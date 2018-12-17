@@ -21,7 +21,7 @@ func checkMajorCompatibility(versionString string) (match bool, err error) {
 	return v.Major() == GetVersion().Major(), nil
 }
 
-// checkVersion checks if the peer node version matches with the current node
+// CheckVersion checks if the peer node version matches with the current node.
 func CheckVersion(peerVersion string) bool {
 	compatible, err := checkMajorCompatibility(peerVersion)
 	if err != nil {

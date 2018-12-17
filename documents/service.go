@@ -3,13 +3,21 @@ package documents
 import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 )
 
+// Config specified configs required by documents package
+type Config interface {
+
+	// GetIdentityID retrieves the centID(TenentID) configured
+	GetIdentityID() ([]byte, error)
+}
+
 // DocumentProof is a value to represent a document and its field proofs
 type DocumentProof struct {
-	DocumentId  []byte
-	VersionId   []byte
+	DocumentID  []byte
+	VersionID   []byte
 	State       string
 	FieldProofs []*proofspb.Proof
 }
@@ -19,6 +27,9 @@ type Service interface {
 
 	// GetCurrentVersion reads a document from the database
 	GetCurrentVersion(documentID []byte) (Model, error)
+
+	// Exists checks if a document exists
+	Exists(documentID []byte) bool
 
 	// GetVersion reads a document from the database
 	GetVersion(documentID []byte, version []byte) (Model, error)
@@ -33,7 +44,7 @@ type Service interface {
 	CreateProofsForVersion(documentID, version []byte, fields []string) (*DocumentProof, error)
 
 	// RequestDocumentSignature Validates and Signs document received over the p2p layer
-	RequestDocumentSignature(model Model) (*coredocumentpb.Signature, error)
+	RequestDocumentSignature(contextHeader *header.ContextHeader, model Model) (*coredocumentpb.Signature, error)
 
 	// ReceiveAnchoredDocument receives a new anchored document over the p2p layer, validates and updates the document in DB
 	ReceiveAnchoredDocument(model Model, headers *p2ppb.CentrifugeHeader) error

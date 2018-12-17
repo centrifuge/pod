@@ -3,19 +3,23 @@
 package nft
 
 import (
-	"errors"
 	"math/big"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/errors"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
-	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/nft"
+	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -38,22 +42,22 @@ func TestCreateProofData(t *testing.T) {
 			"happypath",
 			[]*proofspb.Proof{
 				{
-					Property:     "prop1",
+					Property:     proofs.ReadableName("prop1"),
 					Value:        "value1",
 					Salt:         salt,
 					SortedHashes: sortedHashes,
 				},
 				{
-					Property:     "prop2",
+					Property:     proofs.ReadableName("prop2"),
 					Value:        "value2",
 					Salt:         salt,
 					SortedHashes: sortedHashes,
 				},
 			},
 			proofData{
-				Values: [3]string{"value1", "value2"},
-				Proofs: [3][][32]byte{{byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}, {byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}},
-				Salts:  [3][32]byte{byteSliceToByteArray32(salt), byteSliceToByteArray32(salt)},
+				Values: []string{"value1", "value2"},
+				Proofs: [][][32]byte{{byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}, {byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}},
+				Salts:  [][32]byte{byteSliceToByteArray32(salt), byteSliceToByteArray32(salt)},
 			},
 			nil,
 		},
@@ -61,22 +65,22 @@ func TestCreateProofData(t *testing.T) {
 			"invalid hashes",
 			[]*proofspb.Proof{
 				{
-					Property:     "prop1",
+					Property:     proofs.ReadableName("prop1"),
 					Value:        "value1",
 					Salt:         salt,
 					SortedHashes: [][]byte{utils.RandomSlice(33), utils.RandomSlice(31)},
 				},
 				{
-					Property:     "prop2",
+					Property:     proofs.ReadableName("prop2"),
 					Value:        "value2",
 					Salt:         salt,
 					SortedHashes: [][]byte{utils.RandomSlice(33), utils.RandomSlice(31)},
 				},
 			},
 			proofData{
-				Values: [3]string{"value1", "value2"},
-				Proofs: [3][][32]byte{{byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}, {byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}},
-				Salts:  [3][32]byte{byteSliceToByteArray32(salt), byteSliceToByteArray32(salt)},
+				Values: []string{"value1", "value2"},
+				Proofs: [][][32]byte{{byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}, {byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}},
+				Salts:  [][32]byte{byteSliceToByteArray32(salt), byteSliceToByteArray32(salt)},
 			},
 			errors.New("input exceeds length of 32"),
 		},
@@ -84,22 +88,22 @@ func TestCreateProofData(t *testing.T) {
 			"invalid salts",
 			[]*proofspb.Proof{
 				{
-					Property:     "prop1",
+					Property:     proofs.ReadableName("prop1"),
 					Value:        "value1",
 					Salt:         utils.RandomSlice(33),
 					SortedHashes: sortedHashes,
 				},
 				{
-					Property:     "prop2",
+					Property:     proofs.ReadableName("prop2"),
 					Value:        "value2",
 					Salt:         utils.RandomSlice(32),
 					SortedHashes: sortedHashes,
 				},
 			},
 			proofData{
-				Values: [3]string{"value1", "value2"},
-				Proofs: [3][][32]byte{{byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}, {byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}},
-				Salts:  [3][32]byte{byteSliceToByteArray32(salt), byteSliceToByteArray32(salt)},
+				Values: []string{"value1", "value2"},
+				Proofs: [][][32]byte{{byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}, {byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}},
+				Salts:  [][32]byte{byteSliceToByteArray32(salt), byteSliceToByteArray32(salt)},
 			},
 			errors.New("input exceeds length of 32"),
 		},
@@ -124,73 +128,63 @@ type MockPaymentObligation struct {
 	mock.Mock
 }
 
-func (m *MockPaymentObligation) Mint(opts *bind.TransactOpts, _to common.Address, _tokenId *big.Int, _tokenURI string, _anchorId *big.Int, _merkleRoot [32]byte, _values [3]string, _salts [3][32]byte, _proofs [3][][32]byte) (*types.Transaction, error) {
+func (m *MockPaymentObligation) Mint(opts *bind.TransactOpts, _to common.Address, _tokenId *big.Int, _tokenURI string, _anchorId *big.Int, _merkleRoot [32]byte, _values []string, _salts [][32]byte, _proofs [][][32]byte) (*types.Transaction, error) {
 	args := m.Called(opts, _to, _tokenId, _tokenURI, _anchorId, _merkleRoot, _values, _salts, _proofs)
 	return args.Get(0).(*types.Transaction), args.Error(1)
-}
-
-type MockConfig struct {
-	mock.Mock
-}
-
-func (m *MockConfig) GetIdentityID() ([]byte, error) {
-	args := m.Called()
-	return args.Get(0).([]byte), args.Error(1)
-}
-
-func (m *MockConfig) GetEthereumDefaultAccountName() string {
-	args := m.Called()
-	return args.Get(0).(string)
 }
 
 func TestPaymentObligationService(t *testing.T) {
 	tests := []struct {
 		name    string
-		mocker  func() (testingdocuments.MockService, *MockPaymentObligation, testingcommons.MockIDService, testingcommons.MockEthClient, MockConfig)
+		mocker  func() (testingdocuments.MockService, *MockPaymentObligation, testingcommons.MockIDService, testingcommons.MockEthClient, testingconfig.MockConfig)
 		request *nftpb.NFTMintRequest
 		err     error
 		result  string
 	}{
 		{
 			"happypath",
-			func() (testingdocuments.MockService, *MockPaymentObligation, testingcommons.MockIDService, testingcommons.MockEthClient, MockConfig) {
-				centIDByte := utils.RandomSlice(6)
-				centID, _ := identity.ToCentID(centIDByte)
-				address := common.BytesToAddress(utils.RandomSlice(32))
+			func() (testingdocuments.MockService, *MockPaymentObligation, testingcommons.MockIDService, testingcommons.MockEthClient, testingconfig.MockConfig) {
 				coreDoc := coredocument.New()
 				coreDoc.DocumentRoot = utils.RandomSlice(32)
 				proof := getDummyProof(coreDoc)
 				docServiceMock := testingdocuments.MockService{}
 				docServiceMock.On("GetCurrentVersion", decodeHex("0x1212")).Return(&invoice.Invoice{InvoiceNumber: "1232", CoreDocument: coreDoc}, nil)
-				docServiceMock.On("CreateProofs", decodeHex("0x1212"), []string{"somefield"}).Return(proof, nil)
+				docServiceMock.On("CreateProofs", decodeHex("0x1212"), []string{"collaborators[0]"}).Return(proof, nil)
+				docServiceMock.On("Exists").Return(true)
 				paymentObligationMock := &MockPaymentObligation{}
 				idServiceMock := testingcommons.MockIDService{}
-				idServiceMock.On("GetIdentityAddress", centID).Return(address, nil)
 				ethClientMock := testingcommons.MockEthClient{}
 				ethClientMock.On("GetTxOpts", "ethacc").Return(&bind.TransactOpts{}, nil)
 				ethClientMock.On("SubmitTransactionWithRetries",
 					mock.Anything, mock.Anything, mock.Anything, mock.Anything,
 					mock.Anything, mock.Anything, mock.Anything, mock.Anything,
-					mock.Anything, mock.Anything,
+					mock.Anything, mock.Anything, mock.Anything,
 				).Return(&types.Transaction{}, nil)
-				configMock := MockConfig{}
+				configMock := testingconfig.MockConfig{}
 				configMock.On("GetEthereumDefaultAccountName").Return("ethacc")
-				configMock.On("GetIdentityID").Return(centIDByte, nil)
+
 				return docServiceMock, paymentObligationMock, idServiceMock, ethClientMock, configMock
 			},
-			&nftpb.NFTMintRequest{Identifier: "0x1212", Type: "happypath", ProofFields: []string{"somefield"}},
+			&nftpb.NFTMintRequest{Identifier: "0x1212", ProofFields: []string{"collaborators[0]"}, DepositAddress: "0xf72855759a39fb75fc7341139f5d7a3974d4da08"},
 			nil,
 			"",
 		},
 	}
+
+	registry := documents.NewServiceRegistry()
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			// get mocks
-			docService, paymentOb, idService, ethClient, config := test.mocker()
+			docService, paymentOb, idService, ethClient, mockCfg := test.mocker()
 			// with below config the documentType has to be test.name to avoid conflicts since registry is a singleton
-			documents.GetRegistryInstance().Register(test.name, &docService)
-			service := NewEthereumPaymentObligation(paymentOb, &idService, &ethClient, &config)
-			tokenID, err := service.MintNFT(decodeHex(test.request.Identifier), test.request.Type, test.request.RegistryAddress, test.request.DepositAddress, test.request.ProofFields)
+			registry.Register(test.name, &docService)
+			confirmations := make(chan *watchTokenMinted)
+			service := newEthereumPaymentObligation(registry, &idService, &ethClient, &mockCfg, nil, func(config Config, qs *queue.Server, tokenID *big.Int, registryAddress string) (chan *watchTokenMinted, error) {
+				return confirmations, nil
+			}, func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error) {
+				return &EthereumPaymentObligationContract{}, nil
+			})
+			_, err := service.MintNFT(decodeHex(test.request.Identifier), test.request.RegistryAddress, test.request.DepositAddress, test.request.ProofFields)
 			if test.err != nil {
 				assert.Equal(t, test.err.Error(), err.Error())
 			} else if err != nil {
@@ -200,20 +194,19 @@ func TestPaymentObligationService(t *testing.T) {
 			paymentOb.AssertExpectations(t)
 			idService.AssertExpectations(t)
 			ethClient.AssertExpectations(t)
-			config.AssertExpectations(t)
-			assert.NotEmpty(t, tokenID)
+			mockCfg.AssertExpectations(t)
 		})
 	}
 }
 
 func getDummyProof(coreDoc *coredocumentpb.CoreDocument) *documents.DocumentProof {
 	return &documents.DocumentProof{
-		DocumentId: coreDoc.DocumentIdentifier,
-		VersionId:  coreDoc.CurrentVersion,
+		DocumentID: coreDoc.DocumentIdentifier,
+		VersionID:  coreDoc.CurrentVersion,
 		State:      "state",
 		FieldProofs: []*proofspb.Proof{
 			{
-				Property: "prop1",
+				Property: proofs.ReadableName("prop1"),
 				Value:    "val1",
 				Salt:     utils.RandomSlice(32),
 				Hash:     utils.RandomSlice(32),
@@ -224,7 +217,7 @@ func getDummyProof(coreDoc *coredocumentpb.CoreDocument) *documents.DocumentProo
 				},
 			},
 			{
-				Property: "prop2",
+				Property: proofs.ReadableName("prop2"),
 				Value:    "val2",
 				Salt:     utils.RandomSlice(32),
 				Hash:     utils.RandomSlice(32),

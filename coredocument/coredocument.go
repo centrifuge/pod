@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/keytools/ed25519"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
@@ -62,7 +62,7 @@ func CalculateSigningRoot(doc *coredocumentpb.CoreDocument) error {
 // CalculateDocumentRoot calculates the document root of the core document
 func CalculateDocumentRoot(document *coredocumentpb.CoreDocument) error {
 	if len(document.SigningRoot) != 32 {
-		return fmt.Errorf("signing root invalid")
+		return errors.New("signing root invalid")
 	}
 
 	tree, err := GetDocumentRootTree(document)
@@ -81,27 +81,28 @@ func GetDocumentRootTree(document *coredocumentpb.CoreDocument) (tree *proofs.Do
 	tree = &t
 
 	// The first leave added is the signing_root
-	err = tree.AddLeaf(proofs.LeafNode{Hash: document.SigningRoot, Hashed: true, Property: "signing_root"})
+	err = tree.AddLeaf(proofs.LeafNode{Hash: document.SigningRoot, Hashed: true, Property: proofs.NewProperty("signing_root")})
 	if err != nil {
 		return nil, err
 	}
 	// For every signature we create a LeafNode
+	sigProperty := proofs.NewProperty("signatures")
 	sigLeafList := make([]proofs.LeafNode, len(document.Signatures)+1)
 	sigLengthNode := proofs.LeafNode{
-		Property: "signatures.length",
+		Property: sigProperty.LengthProp(),
 		Salt:     make([]byte, 32),
 		Value:    fmt.Sprintf("%d", len(document.Signatures)),
 	}
-	sigLengthNode.HashNode(h)
+	sigLengthNode.HashNode(h, false)
 	sigLeafList[0] = sigLengthNode
 	for i, sig := range document.Signatures {
 		payload := sha256.Sum256(append(sig.EntityId, append(sig.PublicKey, sig.Signature...)...))
 		leaf := proofs.LeafNode{
 			Hash:     payload[:],
 			Hashed:   true,
-			Property: fmt.Sprintf("signatures[%d]", i),
+			Property: sigProperty.ElemProp(proofs.FieldNum(i)),
 		}
-		leaf.HashNode(h)
+		leaf.HashNode(h, false)
 		sigLeafList[i+1] = leaf
 	}
 	err = tree.AddLeaves(sigLeafList)
@@ -126,15 +127,15 @@ func GetDocumentSigningTree(document *coredocumentpb.CoreDocument) (tree *proofs
 	}
 
 	if document.EmbeddedData == nil {
-		return nil, fmt.Errorf("EmbeddedData cannot be nil when generating signing tree")
+		return nil, errors.New("EmbeddedData cannot be nil when generating signing tree")
 	}
 	// Adding document type as it is an excluded field in the tree
 	documentTypeNode := proofs.LeafNode{
-		Property: "document_type",
+		Property: proofs.NewProperty("document_type"),
 		Salt:     make([]byte, 32),
 		Value:    document.EmbeddedData.TypeUrl,
 	}
-	documentTypeNode.HashNode(h)
+	documentTypeNode.HashNode(h, false)
 	err = tree.AddLeaf(documentTypeNode)
 	if err != nil {
 		return nil, err
@@ -157,22 +158,22 @@ func PrepareNewVersion(oldCD coredocumentpb.CoreDocument, collaborators []string
 	}
 
 	if oldCD.DocumentIdentifier == nil {
-		return nil, fmt.Errorf("coredocument.DocumentIdentifier is nil")
+		return nil, errors.New("coredocument.DocumentIdentifier is nil")
 	}
 	newCD.DocumentIdentifier = oldCD.DocumentIdentifier
 
 	if oldCD.CurrentVersion == nil {
-		return nil, fmt.Errorf("coredocument.CurrentVersion is nil")
+		return nil, errors.New("coredocument.CurrentVersion is nil")
 	}
 	newCD.PreviousVersion = oldCD.CurrentVersion
 
 	if oldCD.NextVersion == nil {
-		return nil, fmt.Errorf("coredocument.NextVersion is nil")
+		return nil, errors.New("coredocument.NextVersion is nil")
 	}
 	newCD.CurrentVersion = oldCD.NextVersion
 	newCD.NextVersion = utils.RandomSlice(32)
 	if oldCD.DocumentRoot == nil {
-		return nil, fmt.Errorf("coredocument.DocumentRoot is nil")
+		return nil, errors.New("coredocument.DocumentRoot is nil")
 	}
 	newCD.PreviousRoot = oldCD.DocumentRoot
 	return newCD, nil
@@ -194,7 +195,7 @@ func NewWithCollaborators(collaborators []string) (*coredocumentpb.CoreDocument,
 	cd := New()
 	ids, err := identity.CentIDsFromStrings(collaborators)
 	if err != nil {
-		return nil, fmt.Errorf("failed to decode collaborator: %v", err)
+		return nil, errors.New("failed to decode collaborator: %v", err)
 	}
 
 	for i := range ids {
@@ -209,16 +210,16 @@ func NewWithCollaborators(collaborators []string) (*coredocumentpb.CoreDocument,
 	return cd, nil
 }
 
-//  GetExternalCollaborators returns collaborators of a document without the own centID
-func GetExternalCollaborators(doc *coredocumentpb.CoreDocument) ([][]byte, error) {
+// GetExternalCollaborators returns collaborators of a document without the own centID.
+func GetExternalCollaborators(selfCentID identity.CentID, doc *coredocumentpb.CoreDocument) ([][]byte, error) {
 	var collabs [][]byte
-	idConfig, err := ed25519.GetIDConfig()
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode collaborator: %v", err)
-	}
 
 	for _, collab := range doc.Collaborators {
-		if !utils.IsSameByteSlice(collab, idConfig.ID) {
+		collabID, err := identity.ToCentID(collab)
+		if err != nil {
+			return nil, errors.New("failed to convert to CentID: %v", err)
+		}
+		if !selfCentID.Equal(collabID) {
 			collabs = append(collabs, collab)
 		}
 	}
@@ -231,7 +232,7 @@ func FillSalts(doc *coredocumentpb.CoreDocument) error {
 	salts := &coredocumentpb.CoreDocumentSalts{}
 	err := proofs.FillSalts(doc, salts)
 	if err != nil {
-		return fmt.Errorf("failed to fill coredocument salts: %v", err)
+		return errors.New("failed to fill coredocument salts: %v", err)
 	}
 
 	doc.CoredocumentSalts = salts
@@ -242,15 +243,15 @@ func FillSalts(doc *coredocumentpb.CoreDocument) error {
 func GetTypeURL(coreDocument *coredocumentpb.CoreDocument) (string, error) {
 
 	if coreDocument == nil {
-		return "", fmt.Errorf("core document is nil")
+		return "", errors.New("core document is nil")
 	}
 
 	if coreDocument.EmbeddedData == nil {
-		return "", fmt.Errorf("core document doesn't have embedded data")
+		return "", errors.New("core document doesn't have embedded data")
 	}
 
 	if coreDocument.EmbeddedData.TypeUrl == "" {
-		return "", fmt.Errorf("typeUrl not set properly")
+		return "", errors.New("typeUrl not set properly")
 	}
 	return coreDocument.EmbeddedData.TypeUrl, nil
 }
@@ -259,17 +260,17 @@ func GetTypeURL(coreDocument *coredocumentpb.CoreDocument) (string, error) {
 func CreateProofs(dataTree *proofs.DocumentTree, coreDoc *coredocumentpb.CoreDocument, fields []string) (proofs []*proofspb.Proof, err error) {
 	dataRootHashes, err := getDataProofHashes(coreDoc)
 	if err != nil {
-		return nil, fmt.Errorf("createProofs error %v", err)
+		return nil, errors.New("createProofs error %v", err)
 	}
 
 	signingRootHashes, err := getSigningProofHashes(coreDoc)
 	if err != nil {
-		return nil, fmt.Errorf("createProofs error %v", err)
+		return nil, errors.New("createProofs error %v", err)
 	}
 
 	cdtree, err := GetDocumentSigningTree(coreDoc)
 	if err != nil {
-		return nil, fmt.Errorf("createProofs error %v", err)
+		return nil, errors.New("createProofs error %v", err)
 	}
 
 	// We support fields that belong to different document trees, as we do not prepend a tree prefix to the field, the approach
@@ -281,15 +282,16 @@ func CreateProofs(dataTree *proofs.DocumentTree, coreDoc *coredocumentpb.CoreDoc
 			if strings.Contains(err.Error(), "No such field") {
 				proof, err = cdtree.CreateProof(field)
 				if err != nil {
-					return nil, fmt.Errorf("createProofs error %v", err)
+					return nil, errors.New("createProofs error %v", err)
 				}
 				rootHashes = signingRootHashes
 			} else {
-				return nil, fmt.Errorf("createProofs error %v", err)
+				return nil, errors.New("createProofs error %v", err)
 			}
 		}
 		proof.SortedHashes = append(proof.SortedHashes, rootHashes...)
 		proofs = append(proofs, &proof)
 	}
-	return
+
+	return proofs, nil
 }

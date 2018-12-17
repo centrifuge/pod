@@ -2,67 +2,72 @@ package node
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"os"
 	"os/signal"
 
-	"github.com/centrifuge/go-centrifuge/api"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/keytools/ed25519"
-	"github.com/centrifuge/go-centrifuge/p2p"
+	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/storage"
+	"github.com/syndtr/goleveldb/leveldb"
 )
 
-type Bootstrapper struct {
-}
+// Bootstrapper implements bootstrap.Bootstrapper.
+type Bootstrapper struct{}
 
+// Bootstrap runs the servers.
+// Note: this is a blocking call.
 func (*Bootstrapper) Bootstrap(c map[string]interface{}) error {
-	if _, ok := c[bootstrap.BootstrappedConfig]; ok {
-		services, err := defaultServerList()
-		if err != nil {
-			return fmt.Errorf("failed to get default server list: %v", err)
-		}
-
-		n := NewNode(services)
-		feedback := make(chan error)
-		// may be we can pass a context that exists in c here
-		ctx, canc := context.WithCancel(context.Background())
-		go n.Start(ctx, feedback)
-		controlC := make(chan os.Signal, 1)
-		signal.Notify(controlC, os.Interrupt)
-		for {
-			select {
-			case err := <-feedback:
-				panic(err)
-			case sig := <-controlC:
-				log.Info("Node shutting down because of ", sig)
-				canc()
-				err := <-feedback
-				return err
-			}
-		}
-		return nil
+	srvs, err := GetServers(c)
+	if err != nil {
+		cleanUp(c)
+		return errors.New("failed to load servers: %v", err)
 	}
-	return errors.New("could not initialize node")
+
+	n := New(srvs)
+	feedback := make(chan error)
+	// may be we can pass a context that exists in c here
+	ctx, canc := context.WithCancel(context.WithValue(context.Background(), bootstrap.NodeObjRegistry, c))
+	go n.Start(ctx, feedback)
+	controlC := make(chan os.Signal, 1)
+	signal.Notify(controlC, os.Interrupt)
+	select {
+	case err := <-feedback:
+		cleanUp(c)
+		panic(err)
+	case sig := <-controlC:
+		log.Info("Node shutting down because of ", sig)
+		canc()
+		cleanUp(c)
+		err := <-feedback
+		return err
+	}
+
 }
 
-func defaultServerList() ([]Server, error) {
-	publicKey, privateKey, err := ed25519.GetSigningKeyPairFromConfig()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get keys: %v", err)
+func cleanUp(c map[string]interface{}) {
+	// close the node db
+	db := c[storage.BootstrappedLevelDB].(*leveldb.DB)
+	db.Close()
+}
+
+// GetServers gets the long running background services in the node as a list
+func GetServers(ctx map[string]interface{}) ([]Server, error) {
+	p2pSrv, ok := ctx[bootstrap.BootstrappedP2PServer]
+	if !ok {
+		return nil, errors.New("p2p server not initialized")
 	}
 
-	return []Server{
-		api.NewCentAPIServer(
-			config.Config.GetServerAddress(),
-			config.Config.GetServerPort(),
-			config.Config.GetNetworkString(),
-		),
-		p2p.NewCentP2PServer(
-			config.Config.GetP2PPort(),
-			config.Config.GetBootstrapPeers(),
-			publicKey, privateKey,
-		),
-	}, nil
+	apiSrv, ok := ctx[bootstrap.BootstrappedAPIServer]
+	if !ok {
+		return nil, errors.New("API server not initialized")
+	}
+
+	queueSrv, ok := ctx[bootstrap.BootstrappedQueueServer]
+	if !ok {
+		return nil, errors.New("queue server not initialized")
+	}
+
+	var servers []Server
+	servers = append(servers, p2pSrv.(Server), apiSrv.(Server), queueSrv.(Server))
+	return servers, nil
 }

@@ -12,12 +12,12 @@ type TestBootstrapper interface {
 	TestTearDown() error
 }
 
-func RunTestBootstrappers(bootstrappers []TestBootstrapper, context map[string]interface{}) {
-	if context == nil {
-		context = map[string]interface{}{}
+func RunTestBootstrappers(bootstrappers []TestBootstrapper, ctx map[string]interface{}) {
+	if ctx == nil {
+		ctx = map[string]interface{}{}
 	}
 	for _, b := range bootstrappers {
-		err := b.TestBootstrap(context)
+		err := b.TestBootstrap(ctx)
 		if err != nil {
 			panic(err)
 		}

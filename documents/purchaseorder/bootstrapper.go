@@ -1,31 +1,59 @@
 package purchaseorder
 
 import (
-	"errors"
-	"fmt"
+	"github.com/centrifuge/go-centrifuge/errors"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/coredocument/processor"
+	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/p2p"
 )
 
-type Bootstrapper struct {
-}
+// Bootstrapper implements bootstrap.Bootstrapper.
+type Bootstrapper struct{}
 
-func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
-	if _, ok := context[bootstrap.BootstrappedLevelDb]; !ok {
-		return errors.New("could not initialize purchase order repository")
+// Bootstrap initialises required services for purchaseorder.
+func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
+	if _, ok := ctx[bootstrap.BootstrappedConfig]; !ok {
+		return errors.New("config hasn't been initialized")
+	}
+	cfg := ctx[bootstrap.BootstrappedConfig].(config.Configuration)
+
+	p2pClient, ok := ctx[p2p.BootstrappedP2PClient].(p2p.Client)
+	if !ok {
+		return errors.New("p2p client not initialised")
 	}
 
+	registry, ok := ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
+	if !ok {
+		return errors.New("service registry not initialised")
+	}
+
+	anchorRepo, ok := ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
+	if !ok {
+		return errors.New("anchor repository not initialised")
+	}
+
+	idService, ok := ctx[identity.BootstrappedIDService].(identity.Service)
+	if !ok {
+		return errors.New("identity service not initialised")
+	}
+
+	repo, ok := ctx[documents.BootstrappedDocumentRepository].(documents.Repository)
+	if !ok {
+		return errors.New("document db repository not initialised")
+	}
+	repo.Register(&PurchaseOrder{})
+
 	// register service
-	srv := DefaultService(getRepository(), coredocumentprocessor.DefaultProcessor(identity.IDService, p2p.NewP2PClient(), anchors.GetAnchorRepository()), anchors.GetAnchorRepository())
-	err := documents.GetRegistryInstance().Register(documenttypes.PurchaseOrderDataTypeUrl, srv)
+	srv := DefaultService(cfg, repo, coredocument.DefaultProcessor(idService, p2pClient, anchorRepo, cfg), anchorRepo, idService)
+	err := registry.Register(documenttypes.PurchaseOrderDataTypeUrl, srv)
 	if err != nil {
-		return fmt.Errorf("failed to register purchase order service")
+		return errors.New("failed to register purchase order service")
 	}
 
 	return nil

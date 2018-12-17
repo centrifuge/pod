@@ -3,11 +3,11 @@
 package centerrors
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/code"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/magiconair/properties/assert"
 )
 
@@ -62,7 +62,7 @@ func TestP2PError(t *testing.T) {
 
 func TestWrap(t *testing.T) {
 	// simple error
-	err := fmt.Errorf("simple-error")
+	err := errors.New("simple-error")
 	err = Wrap(err, "wrapped error")
 	assert.Equal(t, err.Error(), "wrapped error: simple-error")
 

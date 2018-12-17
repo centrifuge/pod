@@ -8,6 +8,7 @@ package testingcommons
 import (
 	"context"
 
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/mock"
@@ -16,6 +17,39 @@ import (
 // MockIDService implements Service
 type MockIDService struct {
 	mock.Mock
+}
+
+func (srv *MockIDService) ValidateSignature(signature *coredocumentpb.Signature, message []byte) error {
+	args := srv.Called(signature, message)
+	return args.Error(0)
+}
+
+func (srv *MockIDService) GetClientP2PURL(centID identity.CentID) (url string, err error) {
+	args := srv.Called(centID)
+	addr := args.Get(0).(string)
+	return addr, args.Error(1)
+}
+
+func (srv *MockIDService) GetClientsP2PURLs(centIDs []identity.CentID) ([]string, error) {
+	args := srv.Called(centIDs)
+	addr := args.Get(0).([]string)
+	return addr, args.Error(1)
+}
+
+func (srv *MockIDService) GetIdentityKey(id identity.CentID, pubKey []byte) (keyInfo identity.Key, err error) {
+	args := srv.Called(id, pubKey)
+	addr := args.Get(0).(identity.Key)
+	return addr, args.Error(1)
+}
+
+func (srv *MockIDService) ValidateKey(centrifugeId identity.CentID, key []byte, purpose int) error {
+	args := srv.Called(centrifugeId, key, purpose)
+	return args.Error(0)
+}
+
+func (srv *MockIDService) AddKeyFromConfig(purpose int) error {
+	args := srv.Called(purpose)
+	return args.Error(0)
 }
 
 func (srv *MockIDService) GetIdentityAddress(centID identity.CentID) (common.Address, error) {
@@ -54,21 +88,21 @@ func (i *MockID) String() string {
 	return args.String(0)
 }
 
-func (i *MockID) GetCentrifugeID() identity.CentID {
+func (i *MockID) CentID() identity.CentID {
 	args := i.Called()
 	return args.Get(0).(identity.CentID)
 }
 
-func (i *MockID) CentrifugeID(centId identity.CentID) {
+func (i *MockID) SetCentrifugeID(centId identity.CentID) {
 	i.Called(centId)
 }
 
-func (i *MockID) GetCurrentP2PKey() (ret string, err error) {
+func (i *MockID) CurrentP2PKey() (ret string, err error) {
 	args := i.Called()
 	return args.String(0), args.Error(1)
 }
 
-func (i *MockID) GetLastKeyForPurpose(keyPurpose int) (key []byte, err error) {
+func (i *MockID) LastKeyForPurpose(keyPurpose int) (key []byte, err error) {
 	args := i.Called(keyPurpose)
 	return args.Get(0).([]byte), args.Error(1)
 }
@@ -76,11 +110,6 @@ func (i *MockID) GetLastKeyForPurpose(keyPurpose int) (key []byte, err error) {
 func (i *MockID) AddKeyToIdentity(ctx context.Context, keyPurpose int, key []byte) (confirmations chan *identity.WatchIdentity, err error) {
 	args := i.Called(ctx, keyPurpose, key)
 	return args.Get(0).(chan *identity.WatchIdentity), args.Error(1)
-}
-
-func (i *MockID) CheckIdentityExists() (exists bool, err error) {
-	args := i.Called()
-	return args.Bool(0), args.Error(1)
 }
 
 func (i *MockID) FetchKey(key []byte) (identity.Key, error) {

@@ -1,8 +1,9 @@
 package documents
 
 import (
-	"fmt"
 	"sync"
+
+	"github.com/centrifuge/go-centrifuge/errors"
 )
 
 //ServiceRegistry matches for a provided coreDocument the corresponding service
@@ -11,17 +12,11 @@ type ServiceRegistry struct {
 	mutex    sync.RWMutex
 }
 
-var registryInstance *ServiceRegistry
-var registryOnce sync.Once
-
-// GetRegistryInstance returns current registry instance
-func GetRegistryInstance() *ServiceRegistry {
-	registryOnce.Do(func() {
-		registryInstance = &ServiceRegistry{}
-		registryInstance.services = make(map[string]Service)
-		registryInstance.mutex = sync.RWMutex{}
-	})
-	return registryInstance
+// NewServiceRegistry returns a new instance of service registry
+func NewServiceRegistry() *ServiceRegistry {
+	return &ServiceRegistry{
+		services: make(map[string]Service),
+	}
 }
 
 // Register can register a service which implements the ModelDeriver interface
@@ -29,7 +24,7 @@ func (s *ServiceRegistry) Register(serviceID string, service Service) error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	if _, ok := s.services[serviceID]; ok {
-		return fmt.Errorf("service with provided id already registered")
+		return errors.New("service with provided id already registered")
 	}
 
 	s.services[serviceID] = service
@@ -41,8 +36,26 @@ func (s *ServiceRegistry) LocateService(serviceID string) (Service, error) {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
 	if s.services[serviceID] == nil {
-		return nil, fmt.Errorf("no service for core document type is registered")
+		return nil, errors.New("no service for core document type is registered")
 	}
 
 	return s.services[serviceID], nil
+}
+
+// FindService will search the service based on the documentID
+func (s *ServiceRegistry) FindService(documentID []byte) (Service, error) {
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+
+	for _, service := range s.services {
+
+		exists := service.Exists(documentID)
+
+		if exists {
+			return service, nil
+		}
+
+	}
+	return nil, errors.New("no service exists for provided documentID")
+
 }

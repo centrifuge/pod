@@ -12,11 +12,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var ctx = map[string]interface{}{}
+var cfg Config
+
 func TestMain(m *testing.M) {
 	ibootstappers := []bootstrap.TestBootstrapper{
 		&config.Bootstrapper{},
 	}
-	bootstrap.RunTestBootstrappers(ibootstappers, nil)
+	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
+	cfg = ctx[bootstrap.BootstrappedConfig].(Config)
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)
@@ -46,7 +50,7 @@ func TestNewAnchorId(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := NewAnchorID(test.slice)
+			_, err := ToAnchorID(test.slice)
 			assert.Equal(t, test.err, err.Error())
 		})
 	}
@@ -60,12 +64,12 @@ func TestNewDocRoot(t *testing.T) {
 	}{
 		{
 			"smallerSlice",
-			utils.RandomSlice(RootLength - 1),
+			utils.RandomSlice(DocumentRootLength - 1),
 			"invalid length byte slice provided for docRoot",
 		},
 		{
 			"largerSlice",
-			utils.RandomSlice(RootLength + 1),
+			utils.RandomSlice(DocumentRootLength + 1),
 			"invalid length byte slice provided for docRoot",
 		},
 		{
@@ -76,7 +80,7 @@ func TestNewDocRoot(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := NewDocRoot(test.slice)
+			_, err := ToDocumentRoot(test.slice)
 			assert.Equal(t, test.err, err.Error())
 		})
 	}

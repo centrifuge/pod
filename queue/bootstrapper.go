@@ -1,35 +1,25 @@
 package queue
 
-import "errors"
+import (
+	"github.com/centrifuge/go-centrifuge/errors"
 
-const BootstrappedQueuedTasks string = "BootstrappedQueuedTasks"
+	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/config"
+)
 
+// Bootstrapper implements bootstrap.Bootstrapper.
 type Bootstrapper struct {
+	context map[string]interface{}
 }
 
-func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
-	// to see how BootstrappedQueuedTasks get populated check usages of InstallQueuedTask
-	if queuedTasks, ok := context[BootstrappedQueuedTasks]; ok {
-		if queuedTasksTyped, ok := queuedTasks.([]QueuedTask); ok {
-			InitQueue(queuedTasksTyped)
-			return nil
-		}
+// Bootstrap initiates the queue.
+func (b *Bootstrapper) Bootstrap(context map[string]interface{}) error {
+	if _, ok := context[bootstrap.BootstrappedConfig]; !ok {
+		return errors.New("config hasn't been initialized")
 	}
-	return errors.New("could not find the list of " + BootstrappedQueuedTasks)
-}
-
-// InstallQueuedTask adds a queued task to the context so that when the queue initializes it can update it self
-// with different tasks types queued in the node
-func InstallQueuedTask(context map[string]interface{}, queuedTask QueuedTask) error {
-	if queuedTasks, ok := context[BootstrappedQueuedTasks]; ok {
-		if queuedTasksTyped, ok := queuedTasks.([]QueuedTask); ok {
-			context[BootstrappedQueuedTasks] = append(queuedTasksTyped, queuedTask)
-			return nil
-		} else {
-			return errors.New(BootstrappedQueuedTasks + " is of an unexpected type")
-		}
-	} else {
-		context[BootstrappedQueuedTasks] = []QueuedTask{queuedTask}
-		return nil
-	}
+	cfg := context[bootstrap.BootstrappedConfig].(config.Configuration)
+	srv := &Server{config: cfg, taskTypes: []TaskType{}}
+	context[bootstrap.BootstrappedQueueServer] = srv
+	b.context = context
+	return nil
 }

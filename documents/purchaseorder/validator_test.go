@@ -3,11 +3,13 @@
 package purchaseorder
 
 import (
-	"fmt"
 	"testing"
 
+	"context"
+
 	"github.com/centrifuge/go-centrifuge/coredocument"
-	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
@@ -19,21 +21,21 @@ func TestFieldValidator_Validate(t *testing.T) {
 	//  nil error
 	err := fv.Validate(nil, nil)
 	assert.Error(t, err)
-	errs := documents.Errors(err)
+	errs := errors.GetErrs(err)
 	assert.Len(t, errs, 1, "errors length must be one")
 	assert.Contains(t, errs[0].Error(), "nil document")
 
 	// unknown type
 	err = fv.Validate(nil, &testingdocuments.MockModel{})
 	assert.Error(t, err)
-	errs = documents.Errors(err)
+	errs = errors.GetErrs(err)
 	assert.Len(t, errs, 1, "errors length must be one")
 	assert.Contains(t, errs[0].Error(), "unknown document type")
 
 	// fail
 	err = fv.Validate(nil, new(PurchaseOrder))
 	assert.Error(t, err)
-	errs = documents.Errors(err)
+	errs = errors.GetErrs(err)
 	assert.Len(t, errs, 1, "errors length must be 2")
 	assert.Contains(t, errs[0].Error(), "currency is invalid")
 
@@ -46,7 +48,7 @@ func TestFieldValidator_Validate(t *testing.T) {
 
 func TestDataRootValidation_Validate(t *testing.T) {
 	drv := dataRootValidator()
-	contextHeader, err := documents.NewContextHeader()
+	contextHeader, err := header.NewContextHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 
 	// nil error
@@ -56,7 +58,7 @@ func TestDataRootValidation_Validate(t *testing.T) {
 
 	// pack coredoc failed
 	model := &testingdocuments.MockModel{}
-	model.On("PackCoreDocument").Return(nil, fmt.Errorf("error")).Once()
+	model.On("PackCoreDocument").Return(nil, errors.New("error")).Once()
 	err = drv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)

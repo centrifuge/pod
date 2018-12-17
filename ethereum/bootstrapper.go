@@ -1,24 +1,28 @@
 package ethereum
 
 import (
-	"errors"
+	"github.com/centrifuge/go-centrifuge/errors"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/config"
 )
 
-type Bootstrapper struct {
-}
+// BootstrappedEthereumClient is a key to mapped client in bootstrap context.
+const BootstrappedEthereumClient string = "BootstrappedEthereumClient"
 
-func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
+// Bootstrapper implements bootstrap.Bootstrapper.
+type Bootstrapper struct{}
+
+// Bootstrap initialises ethereum client.
+func (Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	if _, ok := context[bootstrap.BootstrappedConfig]; !ok {
 		return errors.New("config hasn't been initialized")
 	}
-	client, err := NewClientConnection(config.Config)
+	cfg := context[bootstrap.BootstrappedConfig].(Config)
+	client, err := NewGethClient(cfg)
 	if err != nil {
 		return err
 	}
-	SetConnection(client)
-	context[bootstrap.BootstrappedEthereumClient] = client
+	SetClient(client)
+	context[BootstrappedEthereumClient] = client
 	return nil
 }
