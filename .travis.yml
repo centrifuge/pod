@@ -1,6 +1,6 @@
 language: go
 go:
-  - 1.11.2
+  - 1.11.x
 
 # Maybe this helps with building branches in a fork
 go_import_path: github.com/centrifuge/go-centrifuge
