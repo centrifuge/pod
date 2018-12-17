@@ -7,6 +7,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/errors"
+
 	"github.com/centrifuge/go-centrifuge/utils"
 
 	"github.com/stretchr/testify/assert"
@@ -85,7 +87,7 @@ func TestLevelDBRepo_Get(t *testing.T) {
 
 	// Key doesnt exist
 	_, err = repo.Get(id)
-	assert.NotNil(t, err)
+	assert.True(t, errors.IsOfType(ErrModelRepositoryNotFound, err))
 
 	d := &doc{SomeString: "Hello, Repo!"}
 	err = repo.Create(id, d)
@@ -93,7 +95,7 @@ func TestLevelDBRepo_Get(t *testing.T) {
 
 	// Model not registered
 	_, err = repo.Get(id)
-	assert.NotNil(t, err)
+	assert.True(t, errors.IsOfType(ErrModelTypeNotRegistered, err))
 
 	// Success
 	repo.Register(&doc{})
@@ -138,7 +140,7 @@ func TestLevelDBRepo_Create(t *testing.T) {
 
 	//Already exists
 	err = repo.Create(id, d)
-	assert.NotNil(t, err)
+	assert.True(t, errors.IsOfType(ErrRepositoryModelCreateKeyExists, err))
 }
 
 func TestLevelDBRepo_Update(t *testing.T) {
@@ -150,7 +152,7 @@ func TestLevelDBRepo_Update(t *testing.T) {
 
 	// Doesn't exist
 	err = repo.Update(id, d)
-	assert.NotNil(t, err)
+	assert.True(t, errors.IsOfType(ErrRepositoryModelUpdateKeyNotFound, err))
 
 	err = repo.Create(id, d)
 	assert.Nil(t, err)
@@ -185,5 +187,5 @@ func TestLevelDBRepo_Delete(t *testing.T) {
 
 	// Entry doesnt exist
 	_, err = repo.Get(id)
-	assert.NotNil(t, err)
+	assert.True(t, errors.IsOfType(ErrModelRepositoryNotFound, err))
 }

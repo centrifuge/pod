@@ -2,7 +2,6 @@ package storage
 
 import (
 	"encoding/json"
-	"fmt"
 	"reflect"
 	"sync"
 
@@ -52,6 +51,7 @@ func (l *levelDBRepo) Register(model Model) {
 	l.models[tp.String()] = tp
 }
 
+// Exists checks whether the key exists in db
 func (l *levelDBRepo) Exists(key []byte) bool {
 	res, err := l.db.Has(key, nil)
 	if err != nil {
@@ -64,7 +64,7 @@ func (l *levelDBRepo) Exists(key []byte) bool {
 func (l *levelDBRepo) getModel(mt string) (Model, error) {
 	tp, ok := l.models[mt]
 	if !ok {
-		return nil, fmt.Errorf("type %s not registered", mt)
+		return nil, errors.NewTypedError(ErrModelTypeNotRegistered, errors.New("%s", mt))
 	}
 
 	return reflect.New(tp).Interface().(Model), nil
@@ -74,33 +74,36 @@ func (l *levelDBRepo) parseModel(data []byte) (Model, error) {
 	v := new(value)
 	err := json.Unmarshal(data, v)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal value: %v", err)
+		return nil, errors.NewTypedError(ErrModelRepositorySerialisation, errors.New("failed to unmarshal to value: %v", err))
 	}
 
 	nm, err := l.getModel(v.Type)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get model type: %v", err)
+		return nil, err
 	}
 
 	err = nm.FromJSON([]byte(v.Data))
 	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal to model: %v", err)
+		return nil, errors.NewTypedError(ErrModelRepositorySerialisation, errors.New("failed to unmarshal to model: %v", err))
 	}
 
 	return nm, nil
 }
 
+// Get retrieves model by key, otherwise returns error
 func (l *levelDBRepo) Get(key []byte) (Model, error) {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
 	data, err := l.db.Get(key, nil)
 	if err != nil {
-		return nil, fmt.Errorf("model missing: %v", err)
+		return nil, errors.NewTypedError(ErrModelRepositoryNotFound, err)
 	}
 
 	return l.parseModel(data)
 }
 
+// GetAllByPrefix returns all models which keys match the provided prefix
+// If an error is found parsing one of the matched models, logs warning and continues
 func (l *levelDBRepo) GetAllByPrefix(prefix string) ([]Model, error) {
 	var models []Model
 	l.mu.RLock()
@@ -144,6 +147,8 @@ func (l *levelDBRepo) save(key []byte, model Model) error {
 	return nil
 }
 
+// Create creates a model indexed by the key provided
+// errors out if key already exists
 func (l *levelDBRepo) Create(key []byte, model Model) error {
 	if l.Exists(key) {
 		return ErrRepositoryModelCreateKeyExists
@@ -151,6 +156,8 @@ func (l *levelDBRepo) Create(key []byte, model Model) error {
 	return l.save(key, model)
 }
 
+// Update updates a model indexed by the key provided
+// errors out if key doesn't exists
 func (l *levelDBRepo) Update(key []byte, model Model) error {
 	if !l.Exists(key) {
 		return ErrRepositoryModelUpdateKeyNotFound
@@ -158,10 +165,12 @@ func (l *levelDBRepo) Update(key []byte, model Model) error {
 	return l.save(key, model)
 }
 
+// Delete deletes a model by the key provided
 func (l *levelDBRepo) Delete(key []byte) error {
 	return l.db.Delete(key, nil)
 }
 
+// Close closes the database
 func (l *levelDBRepo) Close() error {
 	return l.db.Close()
 }
