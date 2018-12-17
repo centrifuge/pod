@@ -5,6 +5,7 @@ package p2p_test
 import (
 	"context"
 	"flag"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"os"
 	"testing"
 
@@ -20,6 +21,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/keytools/secp256k1"
 	"github.com/centrifuge/go-centrifuge/p2p"
+	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/testingutils/coredocument"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -75,7 +77,7 @@ func TestHandler_RequestDocumentSignature_AlreadyExists(t *testing.T) {
 	req = getSignatureRequest(doc)
 	resp, err = handler.RequestDocumentSignature(context.Background(), req)
 	assert.NotNil(t, err, "must not be nil")
-	assert.Contains(t, err.Error(), documents.ErrDocumentRepositoryModelAllReadyExists.Error())
+	assert.True(t, errors.IsOfType(storage.ErrRepositoryModelCreateKeyExists, err))
 }
 
 func TestHandler_RequestDocumentSignature_UpdateSucceeds(t *testing.T) {
