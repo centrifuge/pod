@@ -2,6 +2,7 @@ package documents
 
 import (
 	"bytes"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/config"
@@ -55,21 +56,20 @@ type Service interface {
 
 // service implements Service
 type service struct {
-	config           Config
-	repo             Repository
+	config Config
+	repo   Repository
 }
-
 
 // DefaultService returns the default implementation of the service
 func DefaultService(config config.Configuration, repo Repository) Service {
-	return service{repo:repo,config:config}
+	return service{repo: repo, config: config}
 }
 
-func getIds(model Model) ([]byte,[]byte, error) {
+func getIds(model Model) ([]byte, []byte, error) {
 	cd, err := model.PackCoreDocument()
 
 	if err != nil {
-		return nil,nil, err
+		return nil, nil, err
 	}
 
 	return cd.DocumentIdentifier, cd.NextVersion, nil
@@ -107,7 +107,6 @@ func (s service) GetVersion(documentID []byte, version []byte) (Model, error) {
 	return s.getVersion(documentID, version)
 }
 
-
 func (s service) CreateProofs(documentID []byte, fields []string) (*DocumentProof, error) {
 	return nil, nil
 }
@@ -137,7 +136,6 @@ func (s service) Exists(documentID []byte) bool {
 	return s.repo.Exists(tenantID, documentID)
 }
 
-
 func (s service) getVersion(documentID, version []byte) (Model, error) {
 	// get tenant ID
 	tenantID, err := s.config.GetIdentityID()
@@ -159,8 +157,3 @@ func (s service) getVersion(documentID, version []byte) (Model, error) {
 	}
 	return model, nil
 }
-
-
-
-
-
