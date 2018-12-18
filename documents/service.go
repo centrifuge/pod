@@ -1,9 +1,12 @@
 package documents
 
 import (
+	"bytes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/header"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 )
 
@@ -49,3 +52,107 @@ type Service interface {
 	// ReceiveAnchoredDocument receives a new anchored document over the p2p layer, validates and updates the document in DB
 	ReceiveAnchoredDocument(model Model, headers *p2ppb.CentrifugeHeader) error
 }
+
+// service implements Service
+type service struct {
+	config           Config
+	repo             Repository
+	identityService  identity.Service
+}
+
+/*
+// DefaultService returns the default implementation of the service
+func DefaultService(config config.Configuration, repo Repository, processor coredocument.Processor, anchorRepository anchors.AnchorRepository, identityService identity.Service) Service {
+	//return service{config: config, repo: repo, coreDocProcessor: processor, notifier: notification.NewWebhookSender(config), anchorRepository: anchorRepository, identityService: identityService}
+}*/
+
+
+func getIds(model Model) ([]byte,[]byte, error) {
+	cd, err := model.PackCoreDocument()
+
+	if err != nil {
+		return nil,nil, err
+	}
+
+	return cd.DocumentIdentifier, cd.NextVersion, nil
+}
+
+
+func (s service) searchVersion(m Model) (Model, error) {
+
+	id, next, err := getIds(m)
+
+	nm, err := s.getVersion(id, next)
+
+	if err != nil {
+		// here the err is returned as nil because it is expected that the nextVersion
+		// is not available in the db at some stage of the iteration
+		return m, nil
+	}
+
+	if next != nil {
+		return s.searchVersion(nm)
+	}
+
+	return nm, nil
+}
+
+
+func (s service) GetCurrentVersion(documentID []byte) (Model, error) {
+	model, err := s.getVersion(documentID, documentID)
+	if err != nil {
+		return nil, errors.NewTypedError(ErrDocumentNotFound, err)
+	}
+	return s.searchVersion(model)
+
+}
+
+func (s service) GetVersion(documentID []byte, version []byte) (Model, error) {
+	return s.getVersion(documentID, version)
+}
+
+
+func (s service) CreateProofs(documentID []byte, fields []string) (*DocumentProof, error) {
+	return nil, nil
+}
+
+func (s service) CreateProofsForVersion(documentID, version []byte, fields []string) (*DocumentProof, error) {
+	return nil, nil
+}
+
+func (s service) Exists(documentID []byte) bool {
+	// get tenant ID
+	tenantID, err := s.config.GetIdentityID()
+	if err != nil {
+		return false
+	}
+	return s.repo.Exists(tenantID, documentID)
+}
+
+
+func (s service) getVersion(documentID, version []byte) (Model, error) {
+	// get tenant ID
+	tenantID, err := s.config.GetIdentityID()
+	if err != nil {
+		return nil, errors.NewTypedError(ErrDocumentConfigTenantID, err)
+	}
+	model, err := s.repo.Get(tenantID, version)
+	if err != nil {
+		return nil, errors.NewTypedError(ErrDocumentVersionNotFound, err)
+	}
+
+	cd, err := model.PackCoreDocument()
+	if err != nil {
+		return nil, err
+	}
+
+	if !bytes.Equal(cd.DocumentIdentifier, documentID) {
+		return nil, errors.NewTypedError(ErrDocumentVersionNotFound, errors.New("version is not valid for this identifier"))
+	}
+	return model, nil
+}
+
+
+
+
+
