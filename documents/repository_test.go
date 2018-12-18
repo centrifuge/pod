@@ -10,12 +10,11 @@ import (
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
-	"github.com/syndtr/goleveldb/leveldb"
 )
 
 func getRepository(ctx map[string]interface{}) Repository {
-	db := ctx[storage.BootstrappedLevelDB].(*leveldb.DB)
-	return NewLevelDBRepository(db)
+	db := ctx[storage.BootstrappedDB].(storage.Repository)
+	return NewDBRepository(db)
 }
 
 type doc struct {
@@ -65,15 +64,6 @@ func TestLevelDBRepo_Update_Exists(t *testing.T) {
 	err = repo.Update(tenantID, id, d)
 	assert.Nil(t, err, "Update: unknown error")
 	assert.True(t, repo.Exists(tenantID, id), "doc must be [resent")
-}
-
-func TestLevelDBRepo_Register(t *testing.T) {
-	repo := getRepository(ctx)
-	assert.Len(t, repo.(*levelDBRepo).models, 0, "should be empty")
-	d := &doc{SomeString: "Hello, Repo!"}
-	repo.Register(d)
-	assert.Len(t, repo.(*levelDBRepo).models, 1, "should be not empty")
-	assert.Contains(t, repo.(*levelDBRepo).models, "documents.doc")
 }
 
 func TestLevelDBRepo_Get_Create_Update(t *testing.T) {

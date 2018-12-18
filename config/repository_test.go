@@ -7,15 +7,18 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/syndtr/goleveldb/leveldb"
-
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
 )
 
-func getRandomStorage() (*leveldb.DB, error) {
-	return storage.NewLevelDBStorage(storage.GetRandomTestStoragePath())
+func getRandomStorage() (Repository, string, error) {
+	randomPath := storage.GetRandomTestStoragePath()
+	db, err := storage.NewLevelDBStorage(randomPath)
+	if err != nil {
+		return nil, "", err
+	}
+	return NewDBRepository(storage.NewLevelDBRepository(db)), randomPath, nil
 }
 
 func TestMain(m *testing.M) {
@@ -24,14 +27,12 @@ func TestMain(m *testing.M) {
 }
 
 func TestNewLevelDBRepository(t *testing.T) {
-	testStorage, _ := getRandomStorage()
-	repo := NewLevelDBRepository(testStorage)
+	repo, _, _ := getRandomStorage()
 	assert.NotNil(t, repo)
 }
 
 func TestUnregisteredModel(t *testing.T) {
-	testStorage, _ := getRandomStorage()
-	repo := NewLevelDBRepository(testStorage)
+	repo, _, _ := getRandomStorage()
 	assert.NotNil(t, repo)
 	id := utils.RandomSlice(32)
 	newTenant := &TenantConfig{
@@ -45,22 +46,21 @@ func TestUnregisteredModel(t *testing.T) {
 	_, err = repo.GetTenant(id)
 	assert.NotNil(t, err)
 
-	repo.Register(&TenantConfig{})
+	repo.RegisterTenant(&TenantConfig{})
 
 	_, err = repo.GetTenant(id)
 	assert.Nil(t, err)
 }
 
 func TestTenantOperations(t *testing.T) {
-	testStorage, _ := getRandomStorage()
-	repo := NewLevelDBRepository(testStorage)
+	repo, _, _ := getRandomStorage()
 	assert.NotNil(t, repo)
 	id := utils.RandomSlice(32)
 	newTenant := &TenantConfig{
 		IdentityID:                 id,
 		EthereumDefaultAccountName: "main",
 	}
-	repo.Register(&TenantConfig{})
+	repo.RegisterTenant(&TenantConfig{})
 	err := repo.CreateTenant(id, newTenant)
 	assert.Nil(t, err)
 
@@ -68,9 +68,8 @@ func TestTenantOperations(t *testing.T) {
 	err = repo.CreateTenant(id, newTenant)
 	assert.NotNil(t, err)
 
-	readModel, err := repo.GetTenant(id)
+	readTenant, err := repo.GetTenant(id)
 	assert.Nil(t, err)
-	readTenant := readModel.(*TenantConfig)
 	assert.Equal(t, reflect.TypeOf(newTenant), readTenant.Type())
 	assert.Equal(t, newTenant.IdentityID, readTenant.IdentityID)
 
@@ -92,13 +91,12 @@ func TestTenantOperations(t *testing.T) {
 }
 
 func TestConfigOperations(t *testing.T) {
-	testStorage, _ := getRandomStorage()
-	repo := NewLevelDBRepository(testStorage)
+	repo, _, _ := getRandomStorage()
 	assert.NotNil(t, repo)
 	newConfig := &NodeConfig{
 		NetworkID: 4,
 	}
-	repo.Register(&NodeConfig{})
+	repo.RegisterConfig(&NodeConfig{})
 	err := repo.CreateConfig(newConfig)
 	assert.Nil(t, err)
 
@@ -106,8 +104,7 @@ func TestConfigOperations(t *testing.T) {
 	err = repo.CreateConfig(newConfig)
 	assert.NotNil(t, err)
 
-	readModel, err := repo.GetConfig()
-	readDoc := readModel.(*NodeConfig)
+	readDoc, err := repo.GetConfig()
 	assert.Nil(t, err)
 	assert.Equal(t, reflect.TypeOf(newConfig), readDoc.Type())
 	assert.Equal(t, newConfig.NetworkID, readDoc.NetworkID)
@@ -129,10 +126,9 @@ func TestConfigOperations(t *testing.T) {
 }
 
 func TestLevelDBRepo_GetAllTenants(t *testing.T) {
-	testStorage, _ := getRandomStorage()
-	repo := NewLevelDBRepository(testStorage)
+	repo, _, _ := getRandomStorage()
 	assert.NotNil(t, repo)
-	repo.Register(&TenantConfig{})
+	repo.RegisterTenant(&TenantConfig{})
 	ids := [][]byte{utils.RandomSlice(32), utils.RandomSlice(32), utils.RandomSlice(32)}
 	ten1 := &TenantConfig{
 		IdentityID:                 ids[0],
