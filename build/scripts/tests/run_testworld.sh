@@ -2,6 +2,10 @@
 
 echo "Running Testworld"
 
+cleanup="ls testworld/peerconfigs/* | grep testworld | grep -v README.md | tr -d : | xargs rm -rf"
+
+eval "$cleanup"
+
 status=$?
 
 output="go test -race -coverprofile=profile.out -covermode=atomic -tags=testworld github.com/centrifuge/go-centrifuge/testworld 2>&1"
@@ -15,5 +19,6 @@ if [ -f profile.out ]; then
     rm profile.out
 fi
 
+eval "$cleanup"
 
 exit $status
