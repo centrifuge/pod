@@ -65,7 +65,7 @@ func DefaultService(config config.Configuration, repo Repository) Service {
 	return service{repo: repo, config: config}
 }
 
-func getIds(model Model) ([]byte, []byte, error) {
+func getIDs(model Model) ([]byte, []byte, error) {
 	cd, err := model.PackCoreDocument()
 
 	if err != nil {
@@ -77,21 +77,23 @@ func getIds(model Model) ([]byte, []byte, error) {
 
 func (s service) searchVersion(m Model) (Model, error) {
 
-	id, next, err := getIds(m)
-
-	nm, err := s.getVersion(id, next)
+	id, next, err := getIDs(m)
 
 	if err != nil {
-		// here the err is returned as nil because it is expected that the nextVersion
-		// is not available in the db at some stage of the iteration
-		return m, nil
+		return nil, err
 	}
 
-	if next != nil {
+	if s.Exists(next) {
+		nm, err := s.getVersion(id, next)
+		if err != nil {
+
+			return nil, err
+		}
 		return s.searchVersion(nm)
 	}
 
-	return nm, nil
+	return m, nil
+
 }
 
 func (s service) GetCurrentVersion(documentID []byte) (Model, error) {

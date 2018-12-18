@@ -32,17 +32,20 @@ func TestService_GetCurrentVersion_successful(t *testing.T) {
 
 	service := getServiceWithMockedLayers()
 	documentIdentifier := utils.RandomSlice(32)
-	const amountVersions = 4
-	versions := [amountVersions][]byte{documentIdentifier, utils.RandomSlice(32), utils.RandomSlice(32), utils.RandomSlice(32)}
+	const amountVersions = 10
+	var versions [amountVersions][]byte
+	versions[0] = documentIdentifier
 
 	nonExistingVersion := utils.RandomSlice(32)
 
 	for i := 0; i < amountVersions; i++ {
 
 		version := versions[i]
+
 		var next []byte
 		if i != amountVersions-1 {
-			next = versions[i+1]
+			next = utils.RandomSlice(32)
+			versions[i+1] = next
 		} else {
 			next = nonExistingVersion
 		}
