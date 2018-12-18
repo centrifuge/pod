@@ -5,6 +5,11 @@ import (
 	"math/big"
 	"reflect"
 	"time"
+
+	"github.com/ethereum/go-ethereum/common/hexutil"
+
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/config"
+	"github.com/golang/protobuf/ptypes/duration"
 )
 
 // KeyPair represents a key pair config
@@ -62,6 +67,49 @@ func (nc *NodeConfig) FromJSON(data []byte) error {
 	return json.Unmarshal(data, nc)
 }
 
+func (nc *NodeConfig) createProtobuf() *configpb.ConfigData {
+	return &configpb.ConfigData{
+		StoragePath:               nc.StoragePath,
+		P2PPort:                   int32(nc.P2PPort),
+		P2PExternalIp:             nc.P2PExternalIP,
+		P2PConnectionTimeout:      &duration.Duration{Seconds: int64(nc.P2PConnectionTimeout.Seconds())},
+		ServerPort:                int32(nc.ServerPort),
+		ServerAddress:             nc.ServerAddress,
+		NumWorkers:                int32(nc.NumWorkers),
+		WorkerWaitTimeMs:          int32(nc.WorkerWaitTimeMS),
+		EthContextReadWaitTimeout: &duration.Duration{Seconds: int64(nc.EthereumContextReadWaitTimeout.Seconds())},
+		EthContextWaitTimeout:     &duration.Duration{Seconds: int64(nc.EthereumContextWaitTimeout.Seconds())},
+		EthIntervalRetry:          &duration.Duration{Seconds: int64(nc.EthereumIntervalRetry.Seconds())},
+		EthGasPrice:               nc.EthereumGasPrice.Uint64(),
+		EthGasLimit:               nc.EthereumGasLimit,
+		TxPoolEnabled:             nc.TxPoolAccessEnabled,
+		Network:                   nc.NetworkString,
+		NetworkId:                 nc.NetworkID,
+	}
+}
+
+func (nc *NodeConfig) loadFromProtobuf(data *configpb.ConfigData) {
+	nc.StoragePath = data.StoragePath
+	nc.P2PPort = int(data.P2PPort)
+	nc.P2PExternalIP = data.P2PExternalIp
+	nc.P2PConnectionTimeout = time.Duration(data.P2PConnectionTimeout.Seconds)
+	nc.ServerPort = int(data.ServerPort)
+	nc.ServerAddress = data.ServerAddress
+	nc.NumWorkers = int(data.NumWorkers)
+	nc.WorkerWaitTimeMS = int(data.WorkerWaitTimeMs)
+	nc.EthereumNodeURL = data.EthNodeUrl
+	nc.EthereumContextReadWaitTimeout = time.Duration(data.EthContextReadWaitTimeout.Seconds)
+	nc.EthereumContextWaitTimeout = time.Duration(data.EthContextWaitTimeout.Seconds)
+	nc.EthereumIntervalRetry = time.Duration(data.EthIntervalRetry.Seconds)
+	nc.EthereumMaxRetries = int(data.EthMaxRetries)
+	nc.EthereumGasPrice = big.NewInt(int64(data.EthGasPrice))
+	nc.EthereumGasLimit = data.EthGasLimit
+	nc.TxPoolAccessEnabled = data.TxPoolEnabled
+	nc.NetworkString = data.Network
+	nc.BootstrapPeers = data.BootstrapPeers
+	nc.NetworkID = data.NetworkId
+}
+
 // NewNodeConfig creates a new NodeConfig instance with configs
 func NewNodeConfig(config Configuration) *NodeConfig {
 	return &NodeConfig{
@@ -115,6 +163,46 @@ func (tc *TenantConfig) JSON() ([]byte, error) {
 // FromJSON initialize the model with a json
 func (tc *TenantConfig) FromJSON(data []byte) error {
 	return json.Unmarshal(data, tc)
+}
+
+func (tc *TenantConfig) createProtobuf() *configpb.TenantData {
+	return &configpb.TenantData{
+		EthAccount: &configpb.EthereumAccount{
+			Address:  tc.EthereumAccount.Address,
+			Key:      tc.EthereumAccount.Key,
+			Password: tc.EthereumAccount.Password,
+		},
+		EthDefaultAccountName:            tc.EthereumDefaultAccountName,
+		ReceiveEventNotificationEndpoint: tc.ReceiveEventNotificationEndpoint,
+		IdentityId:                       hexutil.Encode(tc.IdentityID),
+		SigningKeyPair: &configpb.KeyPair{
+			Pub: tc.SigningKeyPair.Pub,
+			Pvt: tc.SigningKeyPair.Priv,
+		},
+		EthauthKeyPair: &configpb.KeyPair{
+			Pub: tc.EthAuthKeyPair.Pub,
+			Pvt: tc.EthAuthKeyPair.Priv,
+		},
+	}
+}
+
+func (tc *TenantConfig) loadFromProtobuf(data *configpb.TenantData) {
+	tc.EthereumAccount = &AccountConfig{
+		Address:  data.EthAccount.Address,
+		Key:      data.EthAccount.Key,
+		Password: data.EthAccount.Password,
+	}
+	tc.EthereumDefaultAccountName = data.EthDefaultAccountName
+	tc.IdentityID = []byte(data.IdentityId)
+	tc.ReceiveEventNotificationEndpoint = data.ReceiveEventNotificationEndpoint
+	tc.SigningKeyPair = KeyPair{
+		Pub:  data.SigningKeyPair.Pub,
+		Priv: data.SigningKeyPair.Pvt,
+	}
+	tc.EthAuthKeyPair = KeyPair{
+		Pub:  data.EthauthKeyPair.Pub,
+		Priv: data.EthauthKeyPair.Pvt,
+	}
 }
 
 // NewTenantConfig creates a new TenantConfig instance with configs
