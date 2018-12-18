@@ -145,4 +145,5 @@ message ConfigData {
   string network = 17;
   repeated string bootstrap_peers = 18;
   uint32 network_id = 19;
+  TenantData main_identity = 20;
 }

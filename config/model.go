@@ -24,6 +24,7 @@ func NewKeyPair(pub, priv string) KeyPair {
 
 // NodeConfig exposes configs specific to the node
 type NodeConfig struct {
+	MainIdentity                   TenantConfig
 	StoragePath                    string
 	P2PPort                        int
 	P2PExternalIP                  string
@@ -43,8 +44,6 @@ type NodeConfig struct {
 	NetworkString                  string
 	BootstrapPeers                 []string
 	NetworkID                      uint32
-
-	// TODO what to do about contract addresses?
 }
 
 // ID Gets the ID of the document represented by this model
@@ -69,6 +68,24 @@ func (nc *NodeConfig) FromJSON(data []byte) error {
 
 func (nc *NodeConfig) createProtobuf() *configpb.ConfigData {
 	return &configpb.ConfigData{
+		MainIdentity: &configpb.TenantData{
+			EthAccount: &configpb.EthereumAccount{
+				Address:  nc.MainIdentity.EthereumAccount.Address,
+				Key:      nc.MainIdentity.EthereumAccount.Key,
+				Password: nc.MainIdentity.EthereumAccount.Password,
+			},
+			EthDefaultAccountName:            nc.MainIdentity.EthereumDefaultAccountName,
+			IdentityId:                       hexutil.Encode(nc.MainIdentity.IdentityID),
+			ReceiveEventNotificationEndpoint: nc.MainIdentity.ReceiveEventNotificationEndpoint,
+			EthauthKeyPair: &configpb.KeyPair{
+				Pub: nc.MainIdentity.EthAuthKeyPair.Pub,
+				Pvt: nc.MainIdentity.EthAuthKeyPair.Priv,
+			},
+			SigningKeyPair: &configpb.KeyPair{
+				Pub: nc.MainIdentity.SigningKeyPair.Pub,
+				Pvt: nc.MainIdentity.SigningKeyPair.Priv,
+			},
+		},
 		StoragePath:               nc.StoragePath,
 		P2PPort:                   int32(nc.P2PPort),
 		P2PExternalIp:             nc.P2PExternalIP,
@@ -89,6 +106,26 @@ func (nc *NodeConfig) createProtobuf() *configpb.ConfigData {
 }
 
 func (nc *NodeConfig) loadFromProtobuf(data *configpb.ConfigData) {
+	identityId, _ := hexutil.Decode(data.MainIdentity.IdentityId)
+
+	nc.MainIdentity = TenantConfig{
+		EthereumAccount: &AccountConfig{
+			Address:  data.MainIdentity.EthAccount.Address,
+			Key:      data.MainIdentity.EthAccount.Key,
+			Password: data.MainIdentity.EthAccount.Password,
+		},
+		EthereumDefaultAccountName:       data.MainIdentity.EthDefaultAccountName,
+		IdentityID:                       identityId,
+		ReceiveEventNotificationEndpoint: data.MainIdentity.ReceiveEventNotificationEndpoint,
+		SigningKeyPair: KeyPair{
+			Pub:  data.MainIdentity.SigningKeyPair.Pub,
+			Priv: data.MainIdentity.SigningKeyPair.Pvt,
+		},
+		EthAuthKeyPair: KeyPair{
+			Pub:  data.MainIdentity.EthauthKeyPair.Pub,
+			Priv: data.MainIdentity.EthauthKeyPair.Pvt,
+		},
+	}
 	nc.StoragePath = data.StoragePath
 	nc.P2PPort = int(data.P2PPort)
 	nc.P2PExternalIP = data.P2PExternalIp
@@ -112,7 +149,30 @@ func (nc *NodeConfig) loadFromProtobuf(data *configpb.ConfigData) {
 
 // NewNodeConfig creates a new NodeConfig instance with configs
 func NewNodeConfig(config Configuration) *NodeConfig {
+	mainAccount, _ := config.GetEthereumAccount(config.GetEthereumDefaultAccountName())
+	mainIdentity, _ := config.GetIdentityID()
+	signPub, signPriv := config.GetSigningKeyPair()
+	ethAuthPub, ethAuthPriv := config.GetEthAuthKeyPair()
+
 	return &NodeConfig{
+		MainIdentity: TenantConfig{
+			EthereumAccount: &AccountConfig{
+				Address:  mainAccount.Address,
+				Key:      mainAccount.Key,
+				Password: mainAccount.Password,
+			},
+			EthereumDefaultAccountName:       config.GetEthereumDefaultAccountName(),
+			IdentityID:                       mainIdentity,
+			ReceiveEventNotificationEndpoint: config.GetReceiveEventNotificationEndpoint(),
+			SigningKeyPair: KeyPair{
+				Pub:  signPub,
+				Priv: signPriv,
+			},
+			EthAuthKeyPair: KeyPair{
+				Pub:  ethAuthPub,
+				Priv: ethAuthPriv,
+			},
+		},
 		StoragePath:                    config.GetStoragePath(),
 		P2PPort:                        config.GetP2PPort(),
 		P2PExternalIP:                  config.GetP2PExternalIP(),
@@ -193,7 +253,7 @@ func (tc *TenantConfig) loadFromProtobuf(data *configpb.TenantData) {
 		Password: data.EthAccount.Password,
 	}
 	tc.EthereumDefaultAccountName = data.EthDefaultAccountName
-	tc.IdentityID = []byte(data.IdentityId)
+	tc.IdentityID, _ = hexutil.Decode(data.IdentityId)
 	tc.ReceiveEventNotificationEndpoint = data.ReceiveEventNotificationEndpoint
 	tc.SigningKeyPair = KeyPair{
 		Pub:  data.SigningKeyPair.Pub,

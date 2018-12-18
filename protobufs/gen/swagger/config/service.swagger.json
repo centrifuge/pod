@@ -293,6 +293,9 @@
         "network_id": {
           "type": "integer",
           "format": "int64"
+        },
+        "main_identity": {
+          "$ref": "#/definitions/configTenantData"
         }
       }
     },
