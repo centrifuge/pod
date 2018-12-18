@@ -59,3 +59,42 @@ func TestStringEmpty(t *testing.T) {
 		assert.Equal(t, c.result, got, "result must match")
 	}
 }
+
+func TestContainsString(t *testing.T) {
+	tests := []struct {
+		str    string
+		slice  []string
+		result bool
+	}{
+		// empty everything
+		{},
+		// empty string
+		{
+			slice: []string{"abc"},
+		},
+
+		// empty slice
+		{
+			str: "abc",
+		},
+
+		// missing str
+		{
+			str:   "test",
+			slice: []string{"abc", "bcd", "cde"},
+		},
+
+		// success
+		{
+			str:    "abc",
+			slice:  []string{"bcd", "cde", "abc"},
+			result: true,
+		},
+	}
+
+	for _, c := range tests {
+		if ok := ContainsString(c.slice, c.str); ok != c.result {
+			t.Fatalf("ContainsString(%v, %s)=%v; expected %v", c.slice, c.str, c.result, ok)
+		}
+	}
+}
