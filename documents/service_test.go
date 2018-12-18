@@ -33,19 +33,17 @@ func TestService_GetCurrentVersion_successful(t *testing.T) {
 	service := getServiceWithMockedLayers()
 	documentIdentifier := utils.RandomSlice(32)
 	const amountVersions = 10
-	var versions [amountVersions][]byte
-	versions[0] = documentIdentifier
+
+	version := documentIdentifier
+	var currentVersion []byte
 
 	nonExistingVersion := utils.RandomSlice(32)
 
 	for i := 0; i < amountVersions; i++ {
 
-		version := versions[i]
-
 		var next []byte
 		if i != amountVersions-1 {
 			next = utils.RandomSlice(32)
-			versions[i+1] = next
 		} else {
 			next = nonExistingVersion
 		}
@@ -60,6 +58,8 @@ func TestService_GetCurrentVersion_successful(t *testing.T) {
 		}
 
 		err := testRepo().Create(centIDBytes, version, inv)
+		currentVersion = version
+		version = next
 		assert.Nil(t, err)
 
 	}
@@ -70,7 +70,7 @@ func TestService_GetCurrentVersion_successful(t *testing.T) {
 	cd, err := model.PackCoreDocument()
 	assert.Nil(t, err)
 
-	assert.Equal(t, cd.CurrentVersion, versions[amountVersions-1], "should return latest version")
+	assert.Equal(t, cd.CurrentVersion, currentVersion, "should return latest version")
 	assert.Equal(t, cd.NextVersion, nonExistingVersion, "latest version should have a non existing id as nextVersion ")
 
 }
