@@ -188,7 +188,7 @@ func grpcInterceptor() grpc.ServerOption {
 	return grpc.UnaryInterceptor(auth)
 }
 
-// auth is the grpc unary interceptor to to check if the tenent ID is passed in the header.
+// auth is the grpc unary interceptor to to check if the tenant ID is passed in the header.
 // interceptor will check "authorisation" header. If not set, we return an error.
 //
 // at this point we are going with one interceptor. Once we have more than one interceptor,
