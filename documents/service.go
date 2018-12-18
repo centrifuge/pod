@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/header"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 )
 
@@ -57,15 +57,13 @@ type Service interface {
 type service struct {
 	config           Config
 	repo             Repository
-	identityService  identity.Service
 }
 
-/*
-// DefaultService returns the default implementation of the service
-func DefaultService(config config.Configuration, repo Repository, processor coredocument.Processor, anchorRepository anchors.AnchorRepository, identityService identity.Service) Service {
-	//return service{config: config, repo: repo, coreDocProcessor: processor, notifier: notification.NewWebhookSender(config), anchorRepository: anchorRepository, identityService: identityService}
-}*/
 
+// DefaultService returns the default implementation of the service
+func DefaultService(config config.Configuration, repo Repository) Service {
+	return service{repo:repo,config:config}
+}
 
 func getIds(model Model) ([]byte,[]byte, error) {
 	cd, err := model.PackCoreDocument()
@@ -76,7 +74,6 @@ func getIds(model Model) ([]byte,[]byte, error) {
 
 	return cd.DocumentIdentifier, cd.NextVersion, nil
 }
-
 
 func (s service) searchVersion(m Model) (Model, error) {
 
@@ -96,7 +93,6 @@ func (s service) searchVersion(m Model) (Model, error) {
 
 	return nm, nil
 }
-
 
 func (s service) GetCurrentVersion(documentID []byte) (Model, error) {
 	model, err := s.getVersion(documentID, documentID)
@@ -118,6 +114,18 @@ func (s service) CreateProofs(documentID []byte, fields []string) (*DocumentProo
 
 func (s service) CreateProofsForVersion(documentID, version []byte, fields []string) (*DocumentProof, error) {
 	return nil, nil
+}
+
+func (s service) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (Model, error) {
+	return nil, nil
+}
+
+func (s service) RequestDocumentSignature(contextHeader *header.ContextHeader, model Model) (*coredocumentpb.Signature, error) {
+	return nil, nil
+}
+
+func (s service) ReceiveAnchoredDocument(model Model, headers *p2ppb.CentrifugeHeader) error {
+	return nil
 }
 
 func (s service) Exists(documentID []byte) bool {
