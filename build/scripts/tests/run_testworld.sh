@@ -2,7 +2,7 @@
 
 echo "Running Testworld"
 
-cleanup="ls testworld/peerconfigs/* | grep testworld | grep -v README.md | tr -d : | xargs rm -r"
+cleanup="ls testworld/peerconfigs/* | grep testworld | grep -v README.md | tr -d : | xargs rm -rf"
 
 eval "$cleanup"
 
