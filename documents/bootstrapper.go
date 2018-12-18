@@ -2,7 +2,6 @@ package documents
 
 import (
 	"github.com/centrifuge/go-centrifuge/storage"
-	"github.com/syndtr/goleveldb/leveldb"
 )
 
 const (
@@ -18,11 +17,10 @@ type Bootstrapper struct{}
 // Bootstrap sets the required storage and registers
 func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	ctx[BootstrappedRegistry] = NewServiceRegistry()
-	ldb, ok := ctx[storage.BootstrappedLevelDB].(*leveldb.DB)
+	ldb, ok := ctx[storage.BootstrappedDB].(storage.Repository)
 	if !ok {
 		return ErrDocumentBootstrap
 	}
-	repo := NewLevelDBRepository(ldb)
-	ctx[BootstrappedDocumentRepository] = repo
+	ctx[BootstrappedDocumentRepository] = NewDBRepository(ldb)
 	return nil
 }

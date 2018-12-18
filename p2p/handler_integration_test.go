@@ -20,6 +20,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/keytools/secp256k1"
 	"github.com/centrifuge/go-centrifuge/p2p"
+	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/testingutils/coredocument"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -75,7 +76,7 @@ func TestHandler_RequestDocumentSignature_AlreadyExists(t *testing.T) {
 	req = getSignatureRequest(doc)
 	resp, err = handler.RequestDocumentSignature(context.Background(), req)
 	assert.NotNil(t, err, "must not be nil")
-	assert.Contains(t, err.Error(), documents.ErrDocumentRepositoryModelAllReadyExists.Error())
+	assert.Contains(t, err.Error(), storage.ErrRepositoryModelCreateKeyExists.Error())
 }
 
 func TestHandler_RequestDocumentSignature_UpdateSucceeds(t *testing.T) {
@@ -148,7 +149,7 @@ func TestHandler_SendAnchoredDocument_update_fail(t *testing.T) {
 	anchorReq := getAnchoredRequest(doc)
 	anchorResp, err := handler.SendAnchoredDocument(context.Background(), anchorReq)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), documents.ErrDocumentRepositoryModelDoesntExist.Error())
+	assert.Contains(t, err.Error(), storage.ErrRepositoryModelUpdateKeyNotFound.Error())
 	assert.Nil(t, anchorResp)
 }
 

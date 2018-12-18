@@ -1,13 +1,7 @@
 package config
 
 import (
-	"encoding/json"
-	"fmt"
-	"reflect"
-	"sync"
-
-	"github.com/syndtr/goleveldb/leveldb"
-	"github.com/syndtr/goleveldb/leveldb/util"
+	"github.com/centrifuge/go-centrifuge/storage"
 )
 
 const (
@@ -17,30 +11,36 @@ const (
 
 // Repository defines the required methods for the config repository.
 type Repository interface {
-	// Get returns the tenant config Model associated with tenant ID
-	GetTenant(id []byte) (Model, error)
+	// RegisterTenant registers tenant config in DB
+	RegisterTenant(config *TenantConfig)
+
+	// RegisterConfig registers node config in DB
+	RegisterConfig(config *NodeConfig)
+
+	// GetTenant returns the tenant config Model associated with tenant ID
+	GetTenant(id []byte) (*TenantConfig, error)
 
 	// GetConfig returns the node config model
-	GetConfig() (Model, error)
+	GetConfig() (*NodeConfig, error)
 
 	// GetAllTenants returns a list of all tenant models in the config DB
-	GetAllTenants() ([]Model, error)
+	GetAllTenants() ([]*TenantConfig, error)
 
 	// Create creates the tenant config model if not present in the DB.
 	// should error out if the config exists.
-	CreateTenant(id []byte, model Model) error
+	CreateTenant(id []byte, tenant *TenantConfig) error
 
 	// Create creates the node config model if not present in the DB.
 	// should error out if the config exists.
-	CreateConfig(model Model) error
+	CreateConfig(nodeConfig *NodeConfig) error
 
 	// Update strictly updates the tenant config model.
 	// Will error out when the config model doesn't exist in the DB.
-	UpdateTenant(id []byte, model Model) error
+	UpdateTenant(id []byte, tenant *TenantConfig) error
 
 	// Update strictly updates the node config model.
 	// Will error out when the config model doesn't exist in the DB.
-	UpdateConfig(model Model) error
+	UpdateConfig(nodeConfig *NodeConfig) error
 
 	// Delete deletes tenant config
 	// Will not error out when config model doesn't exists in DB
@@ -49,223 +49,107 @@ type Repository interface {
 	// Delete deletes node config
 	// Will not error out when config model doesn't exists in DB
 	DeleteConfig() error
-
-	// Register registers the model so that the DB can return the config without knowing the type
-	Register(model Model)
 }
 
-// levelDBRepo implements Repository using LevelDB as storage layer
-type levelDBRepo struct {
-	db     *leveldb.DB
-	models map[string]reflect.Type
-	mu     sync.RWMutex // to protect the models
+type repo struct {
+	db storage.Repository
 }
 
-// value is an internal representation of how levelDb stores the model.
-type value struct {
-	Type string          `json:"type"`
-	Data json.RawMessage `json:"data"`
-}
-
-// NewLevelDBRepository returns levelDb implementation of Repository
-func NewLevelDBRepository(db *leveldb.DB) Repository {
-	return &levelDBRepo{
-		db:     db,
-		models: make(map[string]reflect.Type),
-	}
-}
-
-func (l *levelDBRepo) getTenantKey(id []byte) []byte {
+func (r *repo) getTenantKey(id []byte) []byte {
 	return append([]byte(tenantPrefix), id...)
 }
 
-func (l *levelDBRepo) getConfigKey() []byte {
+func (r *repo) getConfigKey() []byte {
 	return []byte(configPrefix)
 }
 
-// getModel returns a new instance of the type mt.
-func (l *levelDBRepo) getModel(mt string) (Model, error) {
-	tp, ok := l.models[mt]
-	if !ok {
-		return nil, fmt.Errorf("type %s not registered", mt)
-	}
-
-	return reflect.New(tp).Interface().(Model), nil
+// NewDBRepository creates instance of Config Repository
+func NewDBRepository(db storage.Repository) Repository {
+	return &repo{db: db}
 }
 
-func (l *levelDBRepo) GetTenant(id []byte) (Model, error) {
-	key := l.getTenantKey(id)
-	return l.get(key)
+// RegisterTenant registers tenant config in DB
+func (r *repo) RegisterTenant(config *TenantConfig) {
+	r.db.Register(config)
 }
 
-func (l *levelDBRepo) GetConfig() (Model, error) {
-	key := l.getConfigKey()
-	return l.get(key)
+// RegisterConfig registers node config in DB
+func (r *repo) RegisterConfig(config *NodeConfig) {
+	r.db.Register(config)
 }
 
-func (l *levelDBRepo) parseModel(data []byte) (Model, error) {
-	v := new(value)
-	err := json.Unmarshal(data, v)
+// GetTenant returns the tenant config Model associated with tenant ID
+func (r *repo) GetTenant(id []byte) (*TenantConfig, error) {
+	key := r.getTenantKey(id)
+	model, err := r.db.Get(key)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal value: %v", err)
+		return nil, err
 	}
-
-	nm, err := l.getModel(v.Type)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get model type: %v", err)
-	}
-
-	err = nm.FromJSON([]byte(v.Data))
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal to model: %v", err)
-	}
-
-	return nm, nil
+	return model.(*TenantConfig), nil
 }
 
-// Get returns the model associated with ID
-func (l *levelDBRepo) get(id []byte) (Model, error) {
-	l.mu.RLock()
-	defer l.mu.RUnlock()
-	data, err := l.db.Get(id, nil)
+// GetConfig returns the node config model
+func (r *repo) GetConfig() (*NodeConfig, error) {
+	key := r.getConfigKey()
+	model, err := r.db.Get(key)
 	if err != nil {
-		return nil, fmt.Errorf("config missing: %v", err)
+		return nil, err
 	}
-
-	return l.parseModel(data)
+	return model.(*NodeConfig), nil
 }
 
 // GetAllTenants iterates over all tenant entries in DB and returns a list of Models
 // If an error occur reading a tenant, throws a warning and continue
-func (l *levelDBRepo) GetAllTenants() ([]Model, error) {
-	var models []Model
-	l.mu.RLock()
-	defer l.mu.RUnlock()
-	iter := l.db.NewIterator(util.BytesPrefix([]byte(tenantPrefix)), nil)
-	for iter.Next() {
-		data := iter.Value()
-		model, err := l.parseModel(data)
-		if err != nil {
-			log.Warningf("Error parsing tenant: %v", err)
-			continue
-		}
-		models = append(models, model)
-	}
-	iter.Release()
-	return models, iter.Error()
-}
-
-// save stores the model.
-func (l *levelDBRepo) save(id []byte, model Model) error {
-	data, err := model.JSON()
+func (r *repo) GetAllTenants() ([]*TenantConfig, error) {
+	var tenantConfigs []*TenantConfig
+	models, err := r.db.GetAllByPrefix(tenantPrefix)
 	if err != nil {
-		return fmt.Errorf("failed to marshall model: %v", err)
+		return nil, err
 	}
-
-	tp := getTypeIndirect(model.Type())
-	v := value{
-		Type: tp.String(),
-		Data: json.RawMessage(data),
+	for _, tc := range models {
+		tenantConfigs = append(tenantConfigs, tc.(*TenantConfig))
 	}
-
-	data, err = json.Marshal(v)
-	if err != nil {
-		return fmt.Errorf("failed to marshall value: %v", err)
-	}
-
-	err = l.db.Put(id, data, nil)
-	if err != nil {
-		return fmt.Errorf("failed to save model to DB: %v", err)
-	}
-
-	return nil
-}
-
-// Exists returns true if the id exists.
-func (l *levelDBRepo) exists(id []byte) bool {
-	res, err := l.db.Has(id, nil)
-	// TODO check this
-	if err != nil {
-		return false
-	}
-
-	return res
+	return tenantConfigs, nil
 }
 
 // Create creates the tenant config model if not present in the DB.
 // should error out if the config exists.
-func (l *levelDBRepo) CreateTenant(id []byte, model Model) error {
-	key := l.getTenantKey(id)
-	return l.create(key, model)
+func (r *repo) CreateTenant(id []byte, tenant *TenantConfig) error {
+	key := r.getTenantKey(id)
+	return r.db.Create(key, tenant)
 }
 
 // Create creates the node config model if not present in the DB.
 // should error out if the config exists.
-func (l *levelDBRepo) CreateConfig(model Model) error {
-	key := l.getConfigKey()
-	return l.create(key, model)
-}
-
-// Create stores the model to the DB.
-// Errors out if the model already exists.
-func (l *levelDBRepo) create(id []byte, model Model) error {
-	if l.exists(id) {
-		return fmt.Errorf("model already exists")
-	}
-
-	return l.save(id, model)
+func (r *repo) CreateConfig(nodeConfig *NodeConfig) error {
+	key := r.getConfigKey()
+	return r.db.Create(key, nodeConfig)
 }
 
 // Update strictly updates the tenant config model.
 // Will error out when the config model doesn't exist in the DB.
-func (l *levelDBRepo) UpdateTenant(id []byte, model Model) error {
-	key := l.getTenantKey(id)
-	return l.update(key, model)
+func (r *repo) UpdateTenant(id []byte, tenant *TenantConfig) error {
+	key := r.getTenantKey(id)
+	return r.db.Update(key, tenant)
 }
 
 // Update strictly updates the node config model.
 // Will error out when the config model doesn't exist in the DB.
-func (l *levelDBRepo) UpdateConfig(model Model) error {
-	key := l.getConfigKey()
-	return l.update(key, model)
-}
-
-// Update overwrites the value at tenantID+id.
-// Errors out if model doesn't exist
-func (l *levelDBRepo) update(id []byte, model Model) error {
-	if !l.exists(id) {
-		return fmt.Errorf("model doesn't exist")
-	}
-
-	return l.save(id, model)
+func (r *repo) UpdateConfig(nodeConfig *NodeConfig) error {
+	key := r.getConfigKey()
+	return r.db.Update(key, nodeConfig)
 }
 
 // Delete deletes tenant config
 // Will not error out when config model doesn't exists in DB
-func (l *levelDBRepo) DeleteTenant(id []byte) error {
-	key := l.getTenantKey(id)
-	return l.db.Delete(key, nil)
+func (r *repo) DeleteTenant(id []byte) error {
+	key := r.getTenantKey(id)
+	return r.db.Delete(key)
 }
 
-func (l *levelDBRepo) DeleteConfig() error {
-	key := l.getConfigKey()
-	return l.db.Delete(key, nil)
-}
-
-// Register registers the model for type less operations.
-// Same type names will be overwritten.
-func (l *levelDBRepo) Register(model Model) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	tp := getTypeIndirect(model.Type())
-	l.models[tp.String()] = tp
-}
-
-// getTypeIndirect returns the type of the model without pointers.
-func getTypeIndirect(tp reflect.Type) reflect.Type {
-	if tp.Kind() == reflect.Ptr {
-		return getTypeIndirect(tp.Elem())
-	}
-
-	return tp
+// Delete deletes node config
+// Will not error out when config model doesn't exists in DB
+func (r *repo) DeleteConfig() error {
+	key := r.getConfigKey()
+	return r.db.Delete(key)
 }
