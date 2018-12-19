@@ -1,6 +1,7 @@
 package documents
 
 import (
+	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"reflect"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -29,4 +30,7 @@ type Model interface {
 
 	// FromJSON initialize the model with a json
 	FromJSON(json []byte) error
+
+	// CreateProofs creates precise-proofs for given fields
+	CreateProofs(fields []string) (coreDoc *coredocumentpb.CoreDocument, proofs []*proofspb.Proof, err error)
 }

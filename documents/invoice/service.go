@@ -51,6 +51,7 @@ type Service interface {
 // service implements Service and handles all invoice related persistence and validations
 // service always returns errors of type `errors.Error` or `errors.TypedError`
 type service struct {
+
 	config           documents.Config
 	repo             documents.Repository
 	coreDocProcessor coredocument.Processor
@@ -94,7 +95,7 @@ func (s service) invoiceProof(model documents.Model, fields []string) (*document
 	if err := coredocument.PostAnchoredValidator(s.identityService, s.anchorRepository).Validate(nil, inv); err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
-	coreDoc, proofs, err := inv.createProofs(fields)
+	coreDoc, proofs, err := inv.CreateProofs(fields)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentProof, err)
 	}

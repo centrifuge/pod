@@ -232,7 +232,7 @@ func TestPOModel_calculateDataRoot(t *testing.T) {
 func TestPOModel_createProofs(t *testing.T) {
 	poModel, corDoc, err := createMockPurchaseOrder(t)
 	assert.Nil(t, err)
-	corDoc, proof, err := poModel.createProofs([]string{"po.po_number", "collaborators[0]", "document_type"})
+	corDoc, proof, err := poModel.CreateProofs([]string{"po.po_number", "collaborators[0]", "document_type"})
 	assert.Nil(t, err)
 	assert.NotNil(t, proof)
 	assert.NotNil(t, corDoc)
@@ -260,7 +260,7 @@ func TestPOModel_createProofs(t *testing.T) {
 func TestPOModel_createProofsFieldDoesNotExist(t *testing.T) {
 	poModel, _, err := createMockPurchaseOrder(t)
 	assert.Nil(t, err)
-	_, _, err = poModel.createProofs([]string{"nonexisting"})
+	_, _, err = poModel.CreateProofs([]string{"nonexisting"})
 	assert.NotNil(t, err)
 }
 

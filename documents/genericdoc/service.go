@@ -6,7 +6,6 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/header"
@@ -75,7 +74,7 @@ func (s service) GetVersion(documentID []byte, version []byte) (documents.Model,
 }
 
 func (s service) CreateProofs(documentID []byte, fields []string) (*documents.DocumentProof, error) {
-	model, err := s.GetCurrentVersion(documentID)
+	/*model, err := s.GetCurrentVersion(documentID)
 	if err != nil {
 		return nil, err
 	}
