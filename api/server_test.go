@@ -9,8 +9,6 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/storage"
-
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -19,13 +17,17 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/p2p"
 	"github.com/centrifuge/go-centrifuge/queue"
+	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 )
 
 var ctx = map[string]interface{}{}
@@ -109,4 +111,46 @@ func TestCentAPIServer_FailedToGetRegistry(t *testing.T) {
 	wg.Wait()
 	assert.NotNil(t, err, "Error should be not nil")
 	assert.Equal(t, "failed to get NodeObjRegistry", err.Error())
+}
+
+func Test_auth(t *testing.T) {
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return ctx.Value(TenantKey), nil
+	}
+
+	// send ping path
+	resp, err := auth(
+		context.Background(),
+		nil,
+		&grpc.UnaryServerInfo{FullMethod: noAuthPaths[0]},
+		handler,
+	)
+	assert.Nil(t, resp)
+	assert.Nil(t, err)
+
+	// send no auth
+	resp, err = auth(
+		context.Background(),
+		nil,
+		&grpc.UnaryServerInfo{FullMethod: "some method"},
+		handler,
+	)
+
+	assert.Nil(t, resp)
+	assert.True(t, errors.IsOfType(ErrNoAuthHeader, err))
+
+	// send Auth
+	ctx := metadata.NewIncomingContext(
+		context.Background(),
+		map[string][]string{"authorization": {"1234567890"}})
+
+	resp, err = auth(
+		ctx,
+		nil,
+		&grpc.UnaryServerInfo{FullMethod: "some method"},
+		handler,
+	)
+
+	assert.Nil(t, err)
+	assert.Equal(t, "1234567890", resp)
 }
