@@ -3,6 +3,8 @@ package config
 import (
 	"context"
 
+	"github.com/ethereum/go-ethereum/common/hexutil"
+
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/config"
 	"github.com/golang/protobuf/ptypes/empty"
 	logging "github.com/ipfs/go-log"
@@ -14,13 +16,13 @@ type grpcHandler struct {
 	service Service
 }
 
+// GRPCHandler returns an implementation of configpb.ConfigServiceServer
 func GRPCHandler(svc Service) configpb.ConfigServiceServer {
 	return &grpcHandler{service: svc}
 }
 
 func (h grpcHandler) deriveAllTenantResponse(cfgs []*TenantConfig) (*configpb.GetAllTenantResponse, error) {
 	response := new(configpb.GetAllTenantResponse)
-	response.Data = make([]*configpb.TenantData, len(cfgs))
 	for _, t := range cfgs {
 		response.Data = append(response.Data, t.createProtobuf())
 	}
@@ -28,11 +30,23 @@ func (h grpcHandler) deriveAllTenantResponse(cfgs []*TenantConfig) (*configpb.Ge
 }
 
 func (h grpcHandler) GetConfig(ctx context.Context, _ *empty.Empty) (*configpb.ConfigData, error) {
-	return h.service.GetConfig()
+	nodeConfig, err := h.service.GetConfig()
+	if err != nil {
+		return nil, err
+	}
+	return nodeConfig.createProtobuf(), nil
 }
 
 func (h grpcHandler) GetTenant(ctx context.Context, req *configpb.GetTenantRequest) (*configpb.TenantData, error) {
-	return h.service.GetTenant([]byte(req.Identifier))
+	id, err := hexutil.Decode(req.Identifier)
+	if err != nil {
+		return nil, err
+	}
+	tenantConfig, err := h.service.GetTenant(id)
+	if err != nil {
+		return nil, err
+	}
+	return tenantConfig.createProtobuf(), nil
 }
 
 func (h grpcHandler) GetAllTenants(ctx context.Context, _ *empty.Empty) (*configpb.GetAllTenantResponse, error) {
@@ -45,22 +59,46 @@ func (h grpcHandler) GetAllTenants(ctx context.Context, _ *empty.Empty) (*config
 
 func (h grpcHandler) CreateConfig(ctx context.Context, data *configpb.ConfigData) (*configpb.ConfigData, error) {
 	apiLog.Infof("Creating node config: %v", data)
-	return h.service.CreateConfig(data)
+	nodeConfig := new(NodeConfig)
+	nodeConfig.loadFromProtobuf(data)
+	nodeConfig, err := h.service.CreateConfig(nodeConfig)
+	if err != nil {
+		return nil, err
+	}
+	return nodeConfig.createProtobuf(), nil
 }
 
 func (h grpcHandler) CreateTenant(ctx context.Context, data *configpb.TenantData) (*configpb.TenantData, error) {
 	apiLog.Infof("Creating tenant config: %v", data)
-	return h.service.CreateTenant(data)
+	tenantConfig := new(TenantConfig)
+	tenantConfig.loadFromProtobuf(data)
+	tenantConfig, err := h.service.CreateTenant(tenantConfig)
+	if err != nil {
+		return nil, err
+	}
+	return tenantConfig.createProtobuf(), nil
 }
 
 func (h grpcHandler) UpdateConfig(ctx context.Context, data *configpb.ConfigData) (*configpb.ConfigData, error) {
 	apiLog.Infof("Updating node config: %v", data)
-	return h.service.UpdateConfig(data)
+	nodeConfig := new(NodeConfig)
+	nodeConfig.loadFromProtobuf(data)
+	nodeConfig, err := h.service.UpdateConfig(nodeConfig)
+	if err != nil {
+		return nil, err
+	}
+	return nodeConfig.createProtobuf(), nil
 }
 
 func (h grpcHandler) UpdateTenant(ctx context.Context, req *configpb.UpdateTenantRequest) (*configpb.TenantData, error) {
 	apiLog.Infof("Updating tenant config: %v", req)
-	return h.service.UpdateTenant(req.Data)
+	tenantConfig := new(TenantConfig)
+	tenantConfig.loadFromProtobuf(req.Data)
+	tenantConfig, err := h.service.UpdateTenant(tenantConfig)
+	if err != nil {
+		return nil, err
+	}
+	return tenantConfig.createProtobuf(), nil
 }
 
 func (h grpcHandler) DeleteConfig(ctx context.Context, _ *empty.Empty) (*configpb.ConfigData, error) {
@@ -70,5 +108,9 @@ func (h grpcHandler) DeleteConfig(ctx context.Context, _ *empty.Empty) (*configp
 
 func (h grpcHandler) DeleteTenant(ctx context.Context, req *configpb.GetTenantRequest) (*configpb.TenantData, error) {
 	apiLog.Infof("Deleting tenant config: %v", req.Identifier)
-	return nil, h.service.DeleteTenant([]byte(req.Identifier))
+	id, err := hexutil.Decode(req.Identifier)
+	if err != nil {
+		return nil, err
+	}
+	return nil, h.service.DeleteTenant(id)
 }

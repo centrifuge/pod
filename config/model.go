@@ -106,7 +106,7 @@ func (nc *NodeConfig) createProtobuf() *configpb.ConfigData {
 }
 
 func (nc *NodeConfig) loadFromProtobuf(data *configpb.ConfigData) {
-	identityId, _ := hexutil.Decode(data.MainIdentity.IdentityId)
+	identityID, _ := hexutil.Decode(data.MainIdentity.IdentityId)
 
 	nc.MainIdentity = TenantConfig{
 		EthereumAccount: &AccountConfig{
@@ -115,7 +115,7 @@ func (nc *NodeConfig) loadFromProtobuf(data *configpb.ConfigData) {
 			Password: data.MainIdentity.EthAccount.Password,
 		},
 		EthereumDefaultAccountName:       data.MainIdentity.EthDefaultAccountName,
-		IdentityID:                       identityId,
+		IdentityID:                       identityID,
 		ReceiveEventNotificationEndpoint: data.MainIdentity.ReceiveEventNotificationEndpoint,
 		SigningKeyPair: KeyPair{
 			Pub:  data.MainIdentity.SigningKeyPair.Pub,

@@ -1,16 +1,14 @@
 package config
 
-import "github.com/centrifuge/go-centrifuge/protobufs/gen/go/config"
-
 // Service exposes functions over the config objects
 type Service interface {
-	GetConfig() (*configpb.ConfigData, error)
-	GetTenant(identifier []byte) (*configpb.TenantData, error)
+	GetConfig() (*NodeConfig, error)
+	GetTenant(identifier []byte) (*TenantConfig, error)
 	GetAllTenants() ([]*TenantConfig, error)
-	CreateConfig(data *configpb.ConfigData) (*configpb.ConfigData, error)
-	CreateTenant(data *configpb.TenantData) (*configpb.TenantData, error)
-	UpdateConfig(data *configpb.ConfigData) (*configpb.ConfigData, error)
-	UpdateTenant(data *configpb.TenantData) (*configpb.TenantData, error)
+	CreateConfig(data *NodeConfig) (*NodeConfig, error)
+	CreateTenant(data *TenantConfig) (*TenantConfig, error)
+	UpdateConfig(data *NodeConfig) (*NodeConfig, error)
+	UpdateTenant(data *TenantConfig) (*TenantConfig, error)
 	DeleteConfig() error
 	DeleteTenant(identifier []byte) error
 }
@@ -19,68 +17,37 @@ type service struct {
 	repo Repository
 }
 
+// DefaultService returns an implementation of the config.Service
 func DefaultService(repository Repository) Service {
 	return &service{repo: repository}
 }
 
-func (s service) GetConfig() (*configpb.ConfigData, error) {
-	cfg, err := s.repo.GetConfig()
-	if err != nil {
-		return nil, err
-	}
-	return cfg.createProtobuf(), nil
+func (s service) GetConfig() (*NodeConfig, error) {
+	return s.repo.GetConfig()
 }
 
-func (s service) GetTenant(identifier []byte) (*configpb.TenantData, error) {
-	cfg, err := s.repo.GetTenant(identifier)
-	if err != nil {
-		return nil, err
-	}
-	return cfg.createProtobuf(), nil
+func (s service) GetTenant(identifier []byte) (*TenantConfig, error) {
+	return s.repo.GetTenant(identifier)
 }
 
 func (s service) GetAllTenants() ([]*TenantConfig, error) {
 	return s.repo.GetAllTenants()
 }
 
-func (s service) CreateConfig(data *configpb.ConfigData) (*configpb.ConfigData, error) {
-	nodeConfig := new(NodeConfig)
-	nodeConfig.loadFromProtobuf(data)
-	err := s.repo.CreateConfig(nodeConfig)
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
+func (s service) CreateConfig(data *NodeConfig) (*NodeConfig, error) {
+	return data, s.repo.CreateConfig(data)
 }
 
-func (s service) CreateTenant(data *configpb.TenantData) (*configpb.TenantData, error) {
-	tenantConfig := new(TenantConfig)
-	tenantConfig.loadFromProtobuf(data)
-	err := s.repo.CreateTenant(tenantConfig.IdentityID, tenantConfig)
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
+func (s service) CreateTenant(data *TenantConfig) (*TenantConfig, error) {
+	return data, s.repo.CreateTenant(data.IdentityID, data)
 }
 
-func (s service) UpdateConfig(data *configpb.ConfigData) (*configpb.ConfigData, error) {
-	nodeConfig := new(NodeConfig)
-	nodeConfig.loadFromProtobuf(data)
-	err := s.repo.UpdateConfig(nodeConfig)
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
+func (s service) UpdateConfig(data *NodeConfig) (*NodeConfig, error) {
+	return data, s.repo.UpdateConfig(data)
 }
 
-func (s service) UpdateTenant(data *configpb.TenantData) (*configpb.TenantData, error) {
-	tenantConfig := new(TenantConfig)
-	tenantConfig.loadFromProtobuf(data)
-	err := s.repo.UpdateTenant(tenantConfig.IdentityID, tenantConfig)
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
+func (s service) UpdateTenant(data *TenantConfig) (*TenantConfig, error) {
+	return data, s.repo.UpdateTenant(data.IdentityID, data)
 }
 
 func (s service) DeleteConfig() error {
