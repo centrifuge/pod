@@ -25,7 +25,7 @@ func getServiceWithMockedLayers() documents.Service {
 	c := &testingconfig.MockConfig{}
 	c.On("GetIdentityID").Return(centIDBytes, nil)
 	repo := testRepo()
-	return DefaultService(c, repo,nil,nil)
+	return DefaultService(c, repo, nil, nil)
 }
 
 func TestService_GetCurrentVersion_successful(t *testing.T) {

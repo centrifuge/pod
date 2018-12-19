@@ -51,7 +51,6 @@ type Service interface {
 // service implements Service and handles all invoice related persistence and validations
 // service always returns errors of type `errors.Error` or `errors.TypedError`
 type service struct {
-
 	config           documents.Config
 	repo             documents.Repository
 	coreDocProcessor coredocument.Processor

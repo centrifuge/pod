@@ -2,6 +2,7 @@ package genericdoc
 
 import (
 	"bytes"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -14,8 +15,8 @@ import (
 
 // service implements Service
 type service struct {
-	config documents.Config
-	repo   documents.Repository
+	config           documents.Config
+	repo             documents.Repository
 	identityService  identity.Service
 	anchorRepository anchors.AnchorRepository
 }
@@ -23,10 +24,10 @@ type service struct {
 // DefaultService returns the default implementation of the service
 func DefaultService(config config.Configuration, repo documents.Repository,
 	anchorRepo anchors.AnchorRepository, idService identity.Service) documents.Service {
-	return service { repo: repo,
-		config: config,
-		anchorRepository:anchorRepo,
-		identityService: idService }
+	return service{repo: repo,
+		config:           config,
+		anchorRepository: anchorRepo,
+		identityService:  idService}
 }
 
 func getIDs(model documents.Model) ([]byte, []byte, error) {
@@ -91,7 +92,7 @@ func (s service) CreateProofs(documentID []byte, fields []string) (*documents.Do
 		VersionID:   coreDoc.CurrentVersion,
 		FieldProofs: proofs,
 	}, nil*/
-	return nil,nil
+	return nil, nil
 }
 
 func (s service) CreateProofsForVersion(documentID, version []byte, fields []string) (*documents.DocumentProof, error) {

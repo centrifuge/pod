@@ -1,8 +1,9 @@
 package documents
 
 import (
-	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"reflect"
+
+	"github.com/centrifuge/precise-proofs/proofs/proto"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 )

@@ -49,4 +49,3 @@ type Service interface {
 	// ReceiveAnchoredDocument receives a new anchored document over the p2p layer, validates and updates the document in DB
 	ReceiveAnchoredDocument(model Model, headers *p2ppb.CentrifugeHeader) error
 }
-
