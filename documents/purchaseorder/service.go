@@ -316,7 +316,7 @@ func (s service) purchaseOrderProof(model documents.Model, fields []string) (*do
 	if err := coredocument.PostAnchoredValidator(s.identityService, s.anchorRepository).Validate(nil, po); err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
-	coreDoc, proofs, err := po.createProofs(fields)
+	coreDoc, proofs, err := po.CreateProofs(fields)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentProof, err)
 	}
