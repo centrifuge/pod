@@ -3,6 +3,8 @@ package genericdoc
 import (
 	"bytes"
 
+	"github.com/centrifuge/go-centrifuge/coredocument"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -41,7 +43,6 @@ func getIDs(model documents.Model) ([]byte, []byte, error) {
 }
 
 func (s service) searchVersion(m documents.Model) (documents.Model, error) {
-
 	id, next, err := getIDs(m)
 
 	if err != nil {
@@ -75,28 +76,36 @@ func (s service) GetVersion(documentID []byte, version []byte) (documents.Model,
 }
 
 func (s service) CreateProofs(documentID []byte, fields []string) (*documents.DocumentProof, error) {
-	/*model, err := s.GetCurrentVersion(documentID)
+	model, err := s.GetCurrentVersion(documentID)
 	if err != nil {
 		return nil, err
 	}
+	return s.createProofs(model, fields)
 
+}
+
+func (s service) createProofs(model documents.Model, fields []string) (*documents.DocumentProof, error) {
 	if err := coredocument.PostAnchoredValidator(s.identityService, s.anchorRepository).Validate(nil, model); err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
-	//coreDoc, proofs, err := model.CreateProofs(fields)
+	coreDoc, proofs, err := model.CreateProofs(fields)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentProof, err)
 	}
-	/*return &DocumentProof{
+	return &documents.DocumentProof{
 		DocumentID:  coreDoc.DocumentIdentifier,
 		VersionID:   coreDoc.CurrentVersion,
 		FieldProofs: proofs,
-	}, nil*/
-	return nil, nil
+	}, nil
+
 }
 
 func (s service) CreateProofsForVersion(documentID, version []byte, fields []string) (*documents.DocumentProof, error) {
-	return nil, nil
+	model, err := s.getVersion(documentID, version)
+	if err != nil {
+		return nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
+	}
+	return s.createProofs(model, fields)
 }
 
 func (s service) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (documents.Model, error) {
