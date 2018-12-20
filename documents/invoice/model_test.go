@@ -260,7 +260,7 @@ func TestInvoiceModel_calculateDataRoot(t *testing.T) {
 func TestInvoiceModel_createProofs(t *testing.T) {
 	i, corDoc, err := createMockInvoice(t)
 	assert.Nil(t, err)
-	corDoc, proof, err := i.createProofs([]string{"invoice.invoice_number", "collaborators[0]", "document_type"})
+	corDoc, proof, err := i.CreateProofs([]string{"invoice.invoice_number", "collaborators[0]", "document_type"})
 	assert.Nil(t, err)
 	assert.NotNil(t, proof)
 	assert.NotNil(t, corDoc)
@@ -288,7 +288,7 @@ func TestInvoiceModel_createProofs(t *testing.T) {
 func TestInvoiceModel_createProofsFieldDoesNotExist(t *testing.T) {
 	i, _, err := createMockInvoice(t)
 	assert.Nil(t, err)
-	_, _, err = i.createProofs([]string{"nonexisting"})
+	_, _, err = i.CreateProofs([]string{"nonexisting"})
 	assert.NotNil(t, err)
 }
 

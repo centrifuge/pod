@@ -1,6 +1,6 @@
 // +build unit
 
-package documents_test
+package genericdoc
 
 import (
 	"testing"
@@ -25,7 +25,7 @@ func getServiceWithMockedLayers() documents.Service {
 	c := &testingconfig.MockConfig{}
 	c.On("GetIdentityID").Return(centIDBytes, nil)
 	repo := testRepo()
-	return documents.DefaultService(c, repo)
+	return DefaultService(c, repo, nil, nil)
 }
 
 func TestService_GetCurrentVersion_successful(t *testing.T) {
