@@ -3,8 +3,16 @@
 package genericdoc
 
 import (
+	"context"
 	"math/big"
+	"os"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/context/testlogging"
+	"github.com/centrifuge/go-centrifuge/ethereum"
+	"github.com/centrifuge/go-centrifuge/header"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/coredocument"
@@ -28,6 +36,30 @@ var (
 	key1Pub     = [...]byte{230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
 	key1        = []byte{102, 109, 71, 239, 130, 229, 128, 189, 37, 96, 223, 5, 189, 91, 210, 47, 89, 4, 165, 6, 188, 53, 49, 250, 109, 151, 234, 139, 57, 205, 231, 253, 230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
 )
+
+var ctx = map[string]interface{}{}
+var cfg config.Configuration
+
+func TestMain(m *testing.M) {
+	ethClient := &testingcommons.MockEthClient{}
+	ethClient.On("GetEthClient").Return(nil)
+	ctx[ethereum.BootstrappedEthereumClient] = ethClient
+	ibootstappers := []bootstrap.TestBootstrapper{
+		&testlogging.TestLoggingBootstrapper{},
+		&config.Bootstrapper{},
+	}
+	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
+	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
+	result := m.Run()
+	bootstrap.RunTestTeardown(ibootstappers)
+	os.Exit(result)
+}
+
+func TestService_ReceiveAnchoredDocument(t *testing.T) {
+	poSrv := service{}
+	err := poSrv.ReceiveAnchoredDocument(nil, nil)
+	assert.Error(t, err)
+}
 
 func getServiceWithMockedLayers() (documents.Service, testingcommons.MockIDService) {
 	c := &testingconfig.MockConfig{}
@@ -216,6 +248,19 @@ func TestService_CreateProofsForVersion(t *testing.T) {
 	assert.Equal(t, olderVersion, proof.VersionID)
 	assert.Equal(t, len(proof.FieldProofs), 1)
 	assert.Equal(t, proof.FieldProofs[0].GetReadableName(), "invoice.invoice_number")
+}
+
+func TestService_RequestDocumentSignature_SigningRootNil(t *testing.T) {
+	service, idService := getServiceWithMockedLayers()
+	i, err := createAnchoredMockDocument(t, true)
+	assert.Nil(t, err)
+	idService = mockSignatureCheck(i, idService, service)
+	i.CoreDocument.SigningRoot = nil
+	ctxh, err := header.NewContextHeader(context.Background(), cfg)
+	signature, err := service.RequestDocumentSignature(ctxh, i)
+	assert.NotNil(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
+	assert.Nil(t, signature)
 }
 
 func TestService_CreateProofsForVersionDocumentDoesntExist(t *testing.T) {

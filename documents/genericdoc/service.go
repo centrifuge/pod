@@ -2,6 +2,14 @@ package genericdoc
 
 import (
 	"bytes"
+	"time"
+
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
+	"github.com/centrifuge/go-centrifuge/notification"
+	"github.com/centrifuge/go-centrifuge/signatures"
+	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/golang/protobuf/ptypes"
 
 	"github.com/centrifuge/go-centrifuge/coredocument"
 
@@ -13,6 +21,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/identity"
+	logging "github.com/ipfs/go-log"
 )
 
 // service implements Service
@@ -20,8 +29,11 @@ type service struct {
 	config           documents.Config
 	repo             documents.Repository
 	identityService  identity.Service
+	notifier         notification.Sender
 	anchorRepository anchors.AnchorRepository
 }
+
+var srvLog = logging.Logger("document-service")
 
 // DefaultService returns the default implementation of the service
 func DefaultService(config config.Configuration, repo documents.Repository,
@@ -29,6 +41,7 @@ func DefaultService(config config.Configuration, repo documents.Repository,
 	return service{repo: repo,
 		config:           config,
 		anchorRepository: anchorRepo,
+		notifier:         notification.NewWebhookSender(config),
 		identityService:  idService}
 }
 
@@ -109,14 +122,89 @@ func (s service) CreateProofsForVersion(documentID, version []byte, fields []str
 }
 
 func (s service) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (documents.Model, error) {
+
 	return nil, nil
 }
 
 func (s service) RequestDocumentSignature(contextHeader *header.ContextHeader, model documents.Model) (*coredocumentpb.Signature, error) {
-	return nil, nil
+	if err := coredocument.SignatureRequestValidator(s.identityService).Validate(nil, model); err != nil {
+		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
+	}
+
+	doc, err := model.PackCoreDocument()
+	if err != nil {
+		return nil, errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
+	}
+
+	srvLog.Infof("coredoc received %x with signing root %x", doc.DocumentIdentifier, doc.SigningRoot)
+
+	idKeys, ok := contextHeader.Self().Keys[identity.KeyPurposeSigning]
+	if !ok {
+		return nil, errors.NewTypedError(documents.ErrDocumentSigning, errors.New("missing signing key"))
+	}
+	sig := signatures.Sign(contextHeader.Self().ID[:], idKeys.PrivateKey, idKeys.PublicKey, doc.SigningRoot)
+	doc.Signatures = append(doc.Signatures, sig)
+	err = model.UnpackCoreDocument(doc)
+	if err != nil {
+		return nil, errors.NewTypedError(documents.ErrDocumentUnPackingCoreDocument, err)
+	}
+
+	// get tenant ID
+	tenantID, err := s.config.GetIdentityID()
+	if err != nil {
+		return nil, errors.NewTypedError(documents.ErrDocumentConfigTenantID, err)
+	}
+
+	// Logic for receiving version n (n > 1) of the document for the first time
+	if !s.repo.Exists(tenantID, doc.DocumentIdentifier) && !utils.IsSameByteSlice(doc.DocumentIdentifier, doc.CurrentVersion) {
+		err = s.repo.Create(tenantID, doc.DocumentIdentifier, model)
+		if err != nil {
+			return nil, errors.NewTypedError(documents.ErrDocumentPersistence, err)
+		}
+	}
+
+	err = s.repo.Create(tenantID, doc.CurrentVersion, model)
+	if err != nil {
+		return nil, errors.NewTypedError(documents.ErrDocumentPersistence, err)
+	}
+
+	srvLog.Infof("signed coredoc %x with version %x", doc.DocumentIdentifier, doc.CurrentVersion)
+	return sig, nil
 }
 
 func (s service) ReceiveAnchoredDocument(model documents.Model, headers *p2ppb.CentrifugeHeader) error {
+	if err := coredocument.PostAnchoredValidator(s.identityService, s.anchorRepository).Validate(nil, model); err != nil {
+		return errors.NewTypedError(documents.ErrDocumentInvalid, err)
+	}
+
+	doc, err := model.PackCoreDocument()
+	if err != nil {
+		return errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
+	}
+
+	// get tenant ID
+	tenantID, err := s.config.GetIdentityID()
+	if err != nil {
+		return errors.NewTypedError(documents.ErrDocumentConfigTenantID, err)
+	}
+
+	err = s.repo.Update(tenantID, doc.CurrentVersion, model)
+	if err != nil {
+		return errors.NewTypedError(documents.ErrDocumentPersistence, err)
+	}
+
+	ts, _ := ptypes.TimestampProto(time.Now().UTC())
+	notificationMsg := &notificationpb.NotificationMessage{
+		EventType:    uint32(notification.ReceivedPayload),
+		CentrifugeId: hexutil.Encode(headers.SenderCentrifugeId),
+		Recorded:     ts,
+		DocumentType: doc.EmbeddedData.TypeUrl,
+		DocumentId:   hexutil.Encode(doc.DocumentIdentifier),
+	}
+
+	// Async until we add queuing
+	go s.notifier.Send(notificationMsg)
+
 	return nil
 }
 
