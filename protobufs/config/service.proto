@@ -74,7 +74,7 @@ service ConfigService {
       description: "Updates tenant config"
     };
   }
-  rpc DeleteConfig(google.protobuf.Empty) returns (ConfigData) {
+  rpc DeleteConfig(google.protobuf.Empty) returns (google.protobuf.Empty) {
     option (google.api.http) = {
       delete: "/config/node"
     };
@@ -82,7 +82,7 @@ service ConfigService {
       description: "Deletes node config"
     };
   }
-  rpc DeleteTenant(GetTenantRequest) returns (TenantData) {
+  rpc DeleteTenant(GetTenantRequest) returns (google.protobuf.Empty) {
       option (google.api.http) = {
       delete: "/config/tenant/{identifier}"
     };

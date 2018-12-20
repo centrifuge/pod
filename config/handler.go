@@ -101,12 +101,12 @@ func (h grpcHandler) UpdateTenant(ctx context.Context, req *configpb.UpdateTenan
 	return tenantConfig.createProtobuf(), nil
 }
 
-func (h grpcHandler) DeleteConfig(ctx context.Context, _ *empty.Empty) (*configpb.ConfigData, error) {
+func (h grpcHandler) DeleteConfig(ctx context.Context, _ *empty.Empty) (*empty.Empty, error) {
 	apiLog.Infof("Deleting node config")
 	return nil, h.service.DeleteConfig()
 }
 
-func (h grpcHandler) DeleteTenant(ctx context.Context, req *configpb.GetTenantRequest) (*configpb.TenantData, error) {
+func (h grpcHandler) DeleteTenant(ctx context.Context, req *configpb.GetTenantRequest) (*empty.Empty, error) {
 	apiLog.Infof("Deleting tenant config: %v", req.Identifier)
 	id, err := hexutil.Decode(req.Identifier)
 	if err != nil {
