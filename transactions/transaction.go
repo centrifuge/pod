@@ -12,8 +12,8 @@ import (
 // Status represents the status of the transaction
 type Status uint8
 
+// Status constants
 const (
-	// Status constants
 	Success Status = iota
 	Failed
 	Pending
