@@ -2,6 +2,7 @@ package genericdoc
 
 import (
 	"bytes"
+
 	"github.com/centrifuge/go-centrifuge/coredocument"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -42,7 +43,6 @@ func getIDs(model documents.Model) ([]byte, []byte, error) {
 }
 
 func (s service) searchVersion(m documents.Model) (documents.Model, error) {
-
 	id, next, err := getIDs(m)
 
 	if err != nil {
@@ -80,7 +80,7 @@ func (s service) CreateProofs(documentID []byte, fields []string) (*documents.Do
 	if err != nil {
 		return nil, err
 	}
-	return s.createProofs(model,fields)
+	return s.createProofs(model, fields)
 
 }
 
@@ -105,7 +105,7 @@ func (s service) CreateProofsForVersion(documentID, version []byte, fields []str
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
 	}
-	return s.createProofs(model,fields)
+	return s.createProofs(model, fields)
 }
 
 func (s service) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (documents.Model, error) {
