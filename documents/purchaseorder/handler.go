@@ -26,6 +26,7 @@ type grpcHandler struct {
 }
 
 // GRPCHandler returns an implementation of the purchaseorder DocumentServiceServer
+// TODO pass *tenant.Registry instead of *documents.ServiceRegistry
 func GRPCHandler(config config.Configuration, registry *documents.ServiceRegistry) (clientpurchaseorderpb.DocumentServiceServer, error) {
 	srv, err := registry.LocateService(documenttypes.PurchaseOrderDataTypeUrl)
 	if err != nil {

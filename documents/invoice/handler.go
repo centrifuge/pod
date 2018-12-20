@@ -26,6 +26,7 @@ type grpcHandler struct {
 }
 
 // GRPCHandler returns an implementation of invoice.DocumentServiceServer
+// TODO pass *tenant.Registry instead of *documents.ServiceRegistry
 func GRPCHandler(config config.Configuration, registry *documents.ServiceRegistry) (clientinvoicepb.DocumentServiceServer, error) {
 	srv, err := registry.LocateService(documenttypes.InvoiceDataTypeUrl)
 	if err != nil {

@@ -24,14 +24,6 @@ import (
 
 var log = logging.Logger("nft")
 
-// Config is an interface to configurations required by nft package
-type Config interface {
-	GetIdentityID() ([]byte, error)
-	GetEthereumDefaultAccountName() string
-	GetContractAddress(address string) common.Address
-	GetEthereumContextWaitTimeout() time.Duration
-}
-
 // ethereumPaymentObligationContract is an abstraction over the contract code to help in mocking it out
 type ethereumPaymentObligationContract interface {
 

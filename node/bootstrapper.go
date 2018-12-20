@@ -22,6 +22,7 @@ func (*Bootstrapper) Bootstrap(c map[string]interface{}) error {
 		return errors.New("failed to load servers: %v", err)
 	}
 
+	// TODO load the list of bootstrapped Tenants from the context here and provide them to the node so that they can be started
 	n := New(srvs)
 	feedback := make(chan error)
 	// may be we can pass a context that exists in c here
@@ -32,7 +33,7 @@ func (*Bootstrapper) Bootstrap(c map[string]interface{}) error {
 	select {
 	case err := <-feedback:
 		cleanUp(c)
-		panic(err)
+		log.Fatal(err)
 	case sig := <-controlC:
 		log.Info("Node shutting down because of ", sig)
 		canc()
@@ -46,7 +47,10 @@ func (*Bootstrapper) Bootstrap(c map[string]interface{}) error {
 func cleanUp(c map[string]interface{}) {
 	// close the node db
 	db := c[storage.BootstrappedDB].(storage.Repository)
-	db.Close()
+	err := db.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 // GetServers gets the long running background services in the node as a list

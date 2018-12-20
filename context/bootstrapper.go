@@ -63,3 +63,37 @@ func (m *MainBootstrapper) Bootstrap(context map[string]interface{}) error {
 	}
 	return nil
 }
+
+// TenantBootstrapper ensures all dependencies for a tenant is initialised correctly
+type TenantBootstrapper struct {
+	IOCContext    map[string]interface{}
+	Bootstrappers []bootstrap.Bootstrapper
+}
+
+func (t *TenantBootstrapper) Populate() {
+	t.Bootstrappers = []bootstrap.Bootstrapper{
+		documents.Bootstrapper{},
+		p2p.Bootstrapper{},
+		&invoice.Bootstrapper{},
+		&purchaseorder.Bootstrapper{},
+		&nft.Bootstrapper{},
+	}
+}
+
+// Bootstrap runs all the loaded bootstrapper implementations.
+// The context passed has to be the same one used for the MainBootstrapper otherwise this will error out
+func (t *TenantBootstrapper) Bootstrap(context map[string]interface{}) error {
+	t.IOCContext = make(map[string]interface{})
+	// make a copy of the context
+	for k, v := range context {
+		t.IOCContext[k] = v
+	}
+	for _, b := range t.Bootstrappers {
+		err := b.Bootstrap(t.IOCContext)
+		if err != nil {
+			log.Error("Error encountered while bootstrapping", err)
+			return err
+		}
+	}
+	return nil
+}

@@ -19,6 +19,7 @@ type grpcHandler struct {
 }
 
 // GRPCHandler returns an implementation of documentpb.DocumentServiceServer
+// TODO pass *tenant.Registry instead of *documents.ServiceRegistry
 func GRPCHandler(registry *ServiceRegistry) documentpb.DocumentServiceServer {
 	return grpcHandler{registry: registry}
 }

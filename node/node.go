@@ -27,6 +27,7 @@ type Node struct {
 }
 
 // New returns a new Node with given services.
+// TODO Take in a list of Tenants (wrapped by own interface)
 func New(services []Server) *Node {
 	return &Node{
 		services: services,

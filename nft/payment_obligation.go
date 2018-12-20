@@ -1,6 +1,19 @@
 package nft
 
-import "math/big"
+import (
+	"math/big"
+	"time"
+
+	"github.com/ethereum/go-ethereum/common"
+)
+
+// Config is an interface to configurations required by nft package
+type Config interface {
+	GetIdentityID() ([]byte, error)
+	GetEthereumDefaultAccountName() string
+	GetContractAddress(address string) common.Address
+	GetEthereumContextWaitTimeout() time.Duration
+}
 
 // PaymentObligation handles transactions related to minting of NFTs
 type PaymentObligation interface {
