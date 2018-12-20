@@ -101,7 +101,7 @@ func (s service) createProofs(model documents.Model, fields []string) (*document
 }
 
 func (s service) CreateProofsForVersion(documentID, version []byte, fields []string) (*documents.DocumentProof, error) {
-	model, err := s.getVersion(documentID, documentID)
+	model, err := s.getVersion(documentID, version)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
 	}

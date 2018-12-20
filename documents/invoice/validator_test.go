@@ -95,7 +95,7 @@ func TestDataRootValidation_Validate(t *testing.T) {
 	inv = new(Invoice)
 	err = inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), contextHeader)
 	assert.Nil(t, err)
-	err = inv.calculateDataRoot()
+	err = inv.CalculateDataRoot()
 	assert.Nil(t, err)
 	err = drv.Validate(nil, inv)
 	assert.Nil(t, err)
