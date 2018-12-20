@@ -30,7 +30,6 @@ var (
 )
 
 func getServiceWithMockedLayers() (documents.Service, testingcommons.MockIDService) {
-
 	c := &testingconfig.MockConfig{}
 	c.On("GetIdentityID").Return(centIDBytes, nil)
 	repo := testRepo()
@@ -221,9 +220,9 @@ func TestService_CreateProofsForVersion(t *testing.T) {
 
 func TestService_CreateProofsForVersionDocumentDoesntExist(t *testing.T) {
 	i, err := createAnchoredMockDocument(t, false)
-	service, _ := getServiceWithMockedLayers()
+	s, _ := getServiceWithMockedLayers()
 	assert.Nil(t, err)
-	_, err = service.CreateProofsForVersion(i.CoreDocument.DocumentIdentifier, utils.RandomSlice(32), []string{"invoice.invoice_number"})
+	_, err = s.CreateProofsForVersion(i.CoreDocument.DocumentIdentifier, utils.RandomSlice(32), []string{"invoice.invoice_number"})
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentVersionNotFound, err))
 }
