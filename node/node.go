@@ -23,13 +23,18 @@ type Server interface {
 
 // Node provides utilities to control all background services on Cent Node
 type Node struct {
+	// context used at bootstrap, this is useful when we need to restart a specific tenant
+	context map[string]interface{}
+
+	// services for the node
 	services []Server
 }
 
 // New returns a new Node with given services.
 // TODO Take in a list of Tenants (wrapped by own interface)
-func New(services []Server) *Node {
+func New(context map[string]interface{}, services []Server) *Node {
 	return &Node{
+		context:  context,
 		services: services,
 	}
 }

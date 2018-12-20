@@ -13,8 +13,7 @@ const BootstrappedTenants = "BootstrappedTenants"
 // Bootstrapper implements bootstrap.Bootstrapper.
 type Bootstrapper struct{}
 
-// Bootstrap runs the servers.
-// Note: this is a blocking call.
+// Bootstrap bootstraps the tenants.
 func (*Bootstrapper) Bootstrap(c map[string]interface{}) error {
 	// TODO get tenant configs and for each tenant config(config.Repository#GetAllTenants) run tenantBootstrapper with the context map and add create the tenant using the resulting contexts
 	srvs, err := GetServers(c)

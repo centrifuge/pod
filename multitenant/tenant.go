@@ -21,7 +21,7 @@ type Config interface {
 	GetEthAuthKeyPair() (pub, priv string)
 }
 
-// Server interface must be implemented by all background servers on Cent Node
+// Server interface must be implemented by all tenant specific background servers on Cent Node
 type Server interface {
 
 	// Name is the unique name given to the service within the Cent Node

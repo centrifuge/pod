@@ -23,7 +23,7 @@ func (*Bootstrapper) Bootstrap(c map[string]interface{}) error {
 	}
 
 	// TODO load the list of bootstrapped Tenants from the context here and provide them to the node so that they can be started
-	n := New(srvs)
+	n := New(c, srvs)
 	feedback := make(chan error)
 	// may be we can pass a context that exists in c here
 	ctx, canc := context.WithCancel(context.WithValue(context.Background(), bootstrap.NodeObjRegistry, c))
