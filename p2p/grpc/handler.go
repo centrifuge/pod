@@ -1,4 +1,4 @@
-package p2p
+package grpc
 
 import (
 	"context"
@@ -14,6 +14,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/version"
+	"github.com/ethereum/go-ethereum/log"
 )
 
 // getService looks up the specific registry, derives service from core document

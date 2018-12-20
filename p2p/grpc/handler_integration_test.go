@@ -1,6 +1,6 @@
 // +build integration
 
-package p2p_test
+package grpc_test
 
 import (
 	"context"

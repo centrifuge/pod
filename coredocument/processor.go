@@ -1,8 +1,6 @@
 package coredocument
 
 import (
-	"fmt"
-
 	"context"
 	"time"
 
@@ -43,7 +41,7 @@ type Processor interface {
 // client defines the methods for p2pclient
 // we redefined it here so that we can avoid cyclic dependencies with p2p
 type client interface {
-	OpenClient(target string) (p2ppb.P2PServiceClient, error)
+	OpenClient(id identity.Identity) (p2ppb.P2PServiceClient, error)
 	GetSignaturesForDocument(ctx *header.ContextHeader, identityService identity.Service, doc *coredocumentpb.CoreDocument) error
 }
 
@@ -70,26 +68,17 @@ func (dp defaultProcessor) Send(ctx *header.ContextHeader, coreDocument *coredoc
 	if coreDocument == nil {
 		return centerrors.NilError(coreDocument)
 	}
-
 	log.Infof("sending coredocument %x to recipient %x", coreDocument.DocumentIdentifier, recipient)
 	id, err := dp.identityService.LookupIdentityForID(recipient)
 	if err != nil {
 		return centerrors.Wrap(err, "error fetching receiver identity")
 	}
-
-	lastB58Key, err := id.CurrentP2PKey()
-	if err != nil {
-		return centerrors.Wrap(err, "error fetching p2p key")
-	}
-
-	log.Infof("Sending Document to CentID [%v] with Key [%v]\n", recipient, lastB58Key)
-	clientWithProtocol := fmt.Sprintf("/ipfs/%s", lastB58Key)
-	client, err := dp.p2pClient.OpenClient(clientWithProtocol)
+	client, err := dp.p2pClient.OpenClient(id)
 	if err != nil {
 		return errors.New("failed to open client: %v", err)
 	}
 
-	log.Infof("Done opening connection against [%s]\n", lastB58Key)
+	log.Infof("Done opening connection against recipient [%x]\n", recipient)
 	idConfig := ctx.Self()
 	centIDBytes := idConfig.ID[:]
 	p2pheader := &p2ppb.CentrifugeHeader{

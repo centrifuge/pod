@@ -21,12 +21,16 @@ import (
 
 // Client defines methods that can be implemented by any type handling p2p communications.
 type Client interface {
-	OpenClient(target string) (p2ppb.P2PServiceClient, error)
+	OpenClient(id identity.Identity) (p2ppb.P2PServiceClient, error)
 	GetSignaturesForDocument(ctx *header.ContextHeader, identityService identity.Service, doc *coredocumentpb.CoreDocument) error
 }
 
 // OpenClient returns P2PServiceClient to contact the remote peer
-func (s *p2pServer) OpenClient(target string) (p2ppb.P2PServiceClient, error) {
+func (s *p2pServer) OpenClient(id identity.Identity) (p2ppb.P2PServiceClient, error) {
+	target, err := id.CurrentP2PKey()
+	if err != nil {
+		return nil, errors.New("error fetching p2p key: %v", err)
+	}
 	log.Info("Opening connection to: %s", target)
 	ipfsAddr, err := ma.NewMultiaddr(target)
 	if err != nil {
@@ -56,7 +60,7 @@ func (s *p2pServer) OpenClient(target string) (p2ppb.P2PServiceClient, error) {
 	// Retrial is handled internally, connection request will be cancelled by the connection timeout context
 	ctx, cancel := context.WithTimeout(context.Background(), s.config.GetP2PConnectionTimeout())
 	defer cancel()
-	g, err := s.protocol.Dial(ctx, peerID, grpc.WithInsecure(), grpc.WithBlock())
+	g, err := s.grpcSrvs[id.CentID()].Dial(ctx, peerID, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		return nil, errors.New("failed to dial peer [%s]: %v", peerID.Pretty(), err)
 	}
@@ -137,13 +141,12 @@ func (s *p2pServer) GetSignaturesForDocument(ctx *header.ContextHeader, identity
 		if err != nil {
 			return centerrors.Wrap(err, "failed to convert to CentID")
 		}
-		target, err := identityService.GetClientP2PURL(collaboratorID)
-
+		id, err := identityService.LookupIdentityForID(collaboratorID)
 		if err != nil {
-			return centerrors.Wrap(err, "failed to get P2P url")
+			return centerrors.Wrap(err, "error fetching collaborator identity")
 		}
 
-		client, err := s.OpenClient(target)
+		client, err := s.OpenClient(id)
 		if err != nil {
 			log.Error(centerrors.Wrap(err, "failed to connect to target"))
 			continue
