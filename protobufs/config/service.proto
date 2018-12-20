@@ -8,8 +8,8 @@ option java_outer_classname = "ServiceProto";
 option java_package = "com.config";
 
 import "google/api/annotations.proto";
-import "google/protobuf/empty.proto";
 import "google/protobuf/duration.proto";
+import "google/protobuf/empty.proto";
 import "protoc-gen-swagger/options/annotations.proto";
 
 // ConfigService allows to manage the node and tenant configuration of the node
@@ -31,10 +31,10 @@ service ConfigService {
     };
   }
   rpc GetAllTenants(google.protobuf.Empty) returns (GetAllTenantResponse) {
-      option (google.api.http) = {
+    option (google.api.http) = {
       get: "/config/tenant/list"
     };
-      option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
       description: "Get All Tenant Configs"
     };
   }
@@ -83,10 +83,10 @@ service ConfigService {
     };
   }
   rpc DeleteTenant(GetTenantRequest) returns (google.protobuf.Empty) {
-      option (google.api.http) = {
+    option (google.api.http) = {
       delete: "/config/tenant/{identifier}"
     };
-      option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
       description: "Deletes tenant config"
     };
   }
@@ -112,8 +112,8 @@ message EthereumAccount {
 }
 
 message KeyPair {
-    string pub = 1;
-    string pvt = 2;
+  string pub = 1;
+  string pvt = 2;
 }
 
 message TenantData {
