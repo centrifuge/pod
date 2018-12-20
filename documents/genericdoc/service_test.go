@@ -220,7 +220,7 @@ func TestService_CreateProofsForVersion(t *testing.T) {
 
 func TestService_CreateProofsForVersionDocumentDoesntExist(t *testing.T) {
 	i, err := createAnchoredMockDocument(t, false)
-	s ,_ := getServiceWithMockedLayers()
+	s, _ := getServiceWithMockedLayers()
 	assert.Nil(t, err)
 	_, err = s.CreateProofsForVersion(i.CoreDocument.DocumentIdentifier, utils.RandomSlice(32), []string{"invoice.invoice_number"})
 	assert.Error(t, err)
