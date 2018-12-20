@@ -1553,6 +1553,7 @@
     "github.com/multiformats/go-multihash",
     "github.com/paralin/go-libp2p-grpc",
     "github.com/roboll/go-vendorinstall",
+    "github.com/satori/go.uuid",
     "github.com/savaki/jq",
     "github.com/spf13/cast",
     "github.com/spf13/cobra",
@@ -1570,6 +1571,7 @@
     "google.golang.org/grpc/codes",
     "google.golang.org/grpc/credentials",
     "google.golang.org/grpc/grpclog",
+    "google.golang.org/grpc/metadata",
     "google.golang.org/grpc/status",
     "gopkg.in/resty.v1",
   ]
