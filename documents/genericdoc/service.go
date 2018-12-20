@@ -2,16 +2,16 @@ package genericdoc
 
 import (
 	"bytes"
+	"time"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
 	"github.com/centrifuge/go-centrifuge/notification"
 	"github.com/centrifuge/go-centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes"
-	"time"
 
 	"github.com/centrifuge/go-centrifuge/coredocument"
-
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
@@ -41,7 +41,7 @@ func DefaultService(config config.Configuration, repo documents.Repository,
 	return service{repo: repo,
 		config:           config,
 		anchorRepository: anchorRepo,
-		notifier: notification.NewWebhookSender(config),
+		notifier:         notification.NewWebhookSender(config),
 		identityService:  idService}
 }
 
@@ -122,7 +122,6 @@ func (s service) CreateProofsForVersion(documentID, version []byte, fields []str
 }
 
 func (s service) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (documents.Model, error) {
-
 
 	return nil, nil
 }
