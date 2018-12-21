@@ -11,6 +11,9 @@ import (
 )
 
 func (*Bootstrapper) TestBootstrap(context map[string]interface{}) error {
+	if _, ok := context[bootstrap.BootstrappedConfig]; ok {
+		return nil
+	}
 	// To get the config location, we need to traverse the path to find the `go-centrifuge` folder
 	path, _ := filepath.Abs("./")
 	match := ""

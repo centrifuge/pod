@@ -24,7 +24,7 @@ func TestMain(m *testing.M) {
 	// Adding delay to startup (concurrency hack)
 	time.Sleep(time.Second + 2)
 
-	ctx := cc.TestFunctionalEthereumBootstrap()
+	ctx := cc.TestFunctionalEthereumBootstrap(make(map[string]interface{}))
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfg.Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
 	cfg.Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")

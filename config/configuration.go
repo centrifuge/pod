@@ -34,6 +34,7 @@ type Configuration interface {
 	IsSet(key string) bool
 	Set(key string, value interface{})
 	SetDefault(key string, value interface{})
+	SetupSmartContractAddresses(network string, smartContractAddresses *SmartContractAddresses)
 	Get(key string) interface{}
 	GetString(key string) string
 	GetBool(key string) bool
@@ -443,4 +444,11 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	}
 
 	return v, nil
+}
+
+func (c *configuration) SetupSmartContractAddresses(network string, smartContractAddresses *SmartContractAddresses) {
+	c.v.Set("networks."+network+".contractAddresses.identityFactory", smartContractAddresses.IdentityFactoryAddr)
+	c.v.Set("networks."+network+".contractAddresses.identityRegistry", smartContractAddresses.IdentityRegistryAddr)
+	c.v.Set("networks."+network+".contractAddresses.anchorRepository", smartContractAddresses.AnchorRepositoryAddr)
+	c.v.Set("networks."+network+".contractAddresses.paymentObligation", smartContractAddresses.PaymentObligationAddr)
 }

@@ -1,4 +1,4 @@
-package p2p
+package grpc
 
 import (
 	"context"
@@ -14,7 +14,10 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/version"
+	logging "github.com/ipfs/go-log"
 )
+
+var log = logging.Logger("grpc")
 
 // getService looks up the specific registry, derives service from core document
 func getServiceAndModel(registry *documents.ServiceRegistry, cd *coredocumentpb.CoreDocument) (documents.Service, documents.Model, error) {
@@ -39,22 +42,22 @@ func getServiceAndModel(registry *documents.ServiceRegistry, cd *coredocumentpb.
 	return srv, model, nil
 }
 
-// handler implements the grpc interface
-type handler struct {
+// Handler implements the grpc interface
+type Handler struct {
 	registry *documents.ServiceRegistry
 	config   config.Configuration
 }
 
-// GRPCHandler returns an implementation of P2PServiceServer
-func GRPCHandler(config config.Configuration, registry *documents.ServiceRegistry) p2ppb.P2PServiceServer {
-	return handler{registry: registry, config: config}
+// New returns an implementation of P2PServiceServer
+func New(config config.Configuration, registry *documents.ServiceRegistry) *Handler {
+	return &Handler{registry: registry, config: config}
 }
 
 // RequestDocumentSignature signs the received document and returns the signature of the signingRoot
 // Document signing root will be recalculated and verified
 // Existing signatures on the document will be verified
 // Document will be stored to the repository for state management
-func (srv handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.SignatureRequest) (*p2ppb.SignatureResponse, error) {
+func (srv Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.SignatureRequest) (*p2ppb.SignatureResponse, error) {
 	ctxHeader, err := header.NewContextHeader(ctx, srv.config)
 	if err != nil {
 		log.Error(err)
@@ -82,7 +85,7 @@ func (srv handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.S
 }
 
 // SendAnchoredDocument receives a new anchored document, validates and updates the document in DB
-func (srv handler) SendAnchoredDocument(ctx context.Context, docReq *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error) {
+func (srv Handler) SendAnchoredDocument(ctx context.Context, docReq *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error) {
 	err := handshakeValidator(srv.config.GetNetworkID()).Validate(docReq.Header)
 	if err != nil {
 		return nil, err

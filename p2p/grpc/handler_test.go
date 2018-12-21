@@ -1,6 +1,6 @@
 // +build unit
 
-package p2p
+package grpc
 
 import (
 	"context"
@@ -32,7 +32,6 @@ var (
 	registry    *documents.ServiceRegistry
 	coreDoc     = testingcoredocument.GenerateCoreDocument()
 	cfg         config.Configuration
-	testClient  *p2pServer
 )
 
 func TestMain(m *testing.M) {
@@ -45,13 +44,12 @@ func TestMain(m *testing.M) {
 	ctx := make(map[string]interface{})
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-	cfg.Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
-	cfg.Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
-	cfg.Set("keys.ethauth.publicKey", "../build/resources/ethauth.pub.pem")
-	cfg.Set("keys.ethauth.privateKey", "../build/resources/ethauth.key.pem")
+	cfg.Set("keys.signing.publicKey", "../../build/resources/signingKey.pub.pem")
+	cfg.Set("keys.signing.privateKey", "../../build/resources/signingKey.key.pem")
+	cfg.Set("keys.ethauth.publicKey", "../../build/resources/ethauth.pub.pem")
+	cfg.Set("keys.ethauth.privateKey", "../../build/resources/ethauth.key.pem")
 	registry = ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
-	grpcHandler = GRPCHandler(cfg, registry)
-	testClient = &p2pServer{config: cfg}
+	grpcHandler = New(cfg, registry)
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)

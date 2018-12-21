@@ -6,10 +6,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/identity"
+
 	"github.com/centrifuge/go-centrifuge/errors"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
-	"github.com/centrifuge/go-centrifuge/documents"
 	cented25519 "github.com/centrifuge/go-centrifuge/keytools/ed25519"
 	"github.com/ipfs/go-cid"
 	ds "github.com/ipfs/go-datastore"
@@ -41,11 +42,10 @@ type Config interface {
 
 // p2pServer implements api.Server
 type p2pServer struct {
-	config   Config
-	host     host.Host
-	registry *documents.ServiceRegistry
-	protocol *p2pgrpc.GRPCProtocol
-	handler  p2ppb.P2PServiceServer
+	config             Config
+	host               host.Host
+	grpcSrvs           map[identity.CentID]*p2pgrpc.GRPCProtocol
+	grpcHandlerCreator func() p2ppb.P2PServiceServer
 }
 
 // Name returns the P2PServer
@@ -70,29 +70,43 @@ func (s *p2pServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr ch
 		return
 	}
 
+	// TODO remove following after proper multi tenant setup. Before that the node only has one configure main identity
+	id, err := s.config.GetIdentityID()
+	if err != nil {
+		startupErr <- err
+		return
+	}
+
+	centID, err := identity.ToCentID(id)
+	if err != nil {
+		startupErr <- err
+		return
+	}
+
 	// Set the grpc protocol handler on it
-	s.protocol = p2pgrpc.NewGRPCProtocol(ctx, s.host)
-	p2ppb.RegisterP2PServiceServer(s.protocol.GetGRPCServer(), s.handler)
+	// TODO create NewGRPCProtocol per tenant after multi tenancy is implemented
+	s.grpcSrvs[centID] = p2pgrpc.NewGRPCProtocol(ctx, s.host)
+	p2ppb.RegisterP2PServiceServer(s.grpcSrvs[centID].GetGRPCServer(), s.grpcHandlerCreator())
 
 	serveErr := make(chan error)
-	go func() {
-		err := s.protocol.Serve()
+	go func(p *p2pgrpc.GRPCProtocol) {
+		err := p.Serve()
 		serveErr <- err
-	}()
+	}(s.grpcSrvs[centID])
 
 	s.host.Peerstore().AddAddr(s.host.ID(), s.host.Addrs()[0], pstore.TempAddrTTL)
 
-	// Start DHT
-	s.runDHT(ctx, s.host)
+	// Start DHT and properly ignore errors :)
+	_ = s.runDHT(ctx, s.host)
 	select {
 	case err := <-serveErr:
 		log.Infof("GRPC server error: %v", err)
-		s.protocol.GetGRPCServer().GracefulStop()
+		s.grpcSrvs[centID].GetGRPCServer().GracefulStop()
 		log.Info("GRPC server stopped")
 		return
 	case <-ctx.Done():
 		log.Info("Shutting down GRPC server")
-		s.protocol.GetGRPCServer().GracefulStop()
+		s.grpcSrvs[centID].GetGRPCServer().GracefulStop()
 		log.Info("GRPC server stopped")
 		return
 	}
