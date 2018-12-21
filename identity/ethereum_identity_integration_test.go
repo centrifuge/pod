@@ -23,12 +23,8 @@ var cfg config.Configuration
 func TestMain(m *testing.M) {
 	// Adding delay to startup (concurrency hack)
 	time.Sleep(time.Second + 2)
-
-	ctx := cc.TestFunctionalEthereumBootstrap(make(map[string]interface{}))
+	ctx := cc.TestFunctionalEthereumBootstrap()
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-	cfg.Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
-	cfg.Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
-
 	identityService = ctx[identity.BootstrappedIDService].(identity.Service)
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()

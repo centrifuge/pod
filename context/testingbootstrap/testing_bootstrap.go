@@ -16,6 +16,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/p2p"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage"
+	"github.com/centrifuge/go-centrifuge/testingutils"
 	logging "github.com/ipfs/go-log"
 )
 
@@ -37,16 +38,17 @@ var bootstappers = []bootstrap.TestBootstrapper{
 	&queue.Starter{},
 }
 
-func TestFunctionalEthereumBootstrap(ctx map[string]interface{}) map[string]interface{} {
+func TestFunctionalEthereumBootstrap() map[string]interface{} {
+	cm := testingutils.BuildIntegrationTestingContext()
 	for _, b := range bootstappers {
-		err := b.TestBootstrap(ctx)
+		err := b.TestBootstrap(cm)
 		if err != nil {
 			log.Error("Error encountered while bootstrapping", err)
 			panic(err)
 		}
 	}
 
-	return ctx
+	return cm
 }
 func TestFunctionalEthereumTearDown() {
 	for _, b := range bootstappers {

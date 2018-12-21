@@ -23,7 +23,7 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	ctx := cc.TestFunctionalEthereumBootstrap(make(map[string]interface{}))
+	ctx := cc.TestFunctionalEthereumBootstrap()
 	anchorRepo = ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
 	identityService = ctx[identity.BootstrappedIDService].(identity.Service)
 	result := m.Run()
