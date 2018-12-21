@@ -250,7 +250,7 @@ func TestInvoiceModel_calculateDataRoot(t *testing.T) {
 	assert.Nil(t, err, "Init must pass")
 	assert.Nil(t, m.InvoiceSalts, "salts must be nil")
 
-	err = m.calculateDataRoot()
+	err = m.CalculateDataRoot()
 	assert.Nil(t, err, "calculate must pass")
 	assert.NotNil(t, m.CoreDocument, "coredoc must be created")
 	assert.NotNil(t, m.InvoiceSalts, "salts must be created")
@@ -311,7 +311,7 @@ func TestInvoiceModel_getDocumentDataTree(t *testing.T) {
 func createMockInvoice(t *testing.T) (*Invoice, *coredocumentpb.CoreDocument, error) {
 	i := &Invoice{InvoiceNumber: "3213121", NetAmount: 2, GrossAmount: 2, Currency: "USD", CoreDocument: coredocument.New()}
 	i.CoreDocument.Collaborators = [][]byte{{1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}}
-	err := i.calculateDataRoot()
+	err := i.CalculateDataRoot()
 	if err != nil {
 		return nil, nil, err
 	}

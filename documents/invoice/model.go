@@ -351,8 +351,8 @@ func (i *Invoice) Type() reflect.Type {
 	return reflect.TypeOf(i)
 }
 
-// calculateDataRoot calculates the data root and sets the root to core document
-func (i *Invoice) calculateDataRoot() error {
+// CalculateDataRoot calculates the data root and sets the root to core document
+func (i *Invoice) CalculateDataRoot() error {
 	t, err := i.getDocumentDataTree()
 	if err != nil {
 		return errors.New("calculateDataRoot error %v", err)

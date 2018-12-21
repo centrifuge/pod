@@ -1,0 +1,378 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "config/service.proto",
+    "version": "version not set"
+  },
+  "schemes": [
+    "http",
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/config/node": {
+      "get": {
+        "description": "Get Node Config",
+        "operationId": "GetConfig",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/configConfigData"
+            }
+          }
+        },
+        "tags": [
+          "ConfigService"
+        ]
+      },
+      "delete": {
+        "description": "Deletes node config",
+        "operationId": "DeleteConfig",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/protobufEmpty"
+            }
+          }
+        },
+        "tags": [
+          "ConfigService"
+        ]
+      },
+      "post": {
+        "description": "Creates node config data",
+        "operationId": "CreateConfig",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/configConfigData"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/configConfigData"
+            }
+          }
+        ],
+        "tags": [
+          "ConfigService"
+        ]
+      },
+      "put": {
+        "description": "Updates node config",
+        "operationId": "UpdateConfig",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/configConfigData"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/configConfigData"
+            }
+          }
+        ],
+        "tags": [
+          "ConfigService"
+        ]
+      }
+    },
+    "/config/tenant": {
+      "post": {
+        "description": "Creates tenant config data",
+        "operationId": "CreateTenant",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/configTenantData"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/configTenantData"
+            }
+          }
+        ],
+        "tags": [
+          "ConfigService"
+        ]
+      }
+    },
+    "/config/tenant/list": {
+      "get": {
+        "description": "Get All Tenant Configs",
+        "operationId": "GetAllTenants",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/configGetAllTenantResponse"
+            }
+          }
+        },
+        "tags": [
+          "ConfigService"
+        ]
+      }
+    },
+    "/config/tenant/{identifier}": {
+      "get": {
+        "description": "Get Tenant Config",
+        "operationId": "GetTenant",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/configTenantData"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "ConfigService"
+        ]
+      },
+      "delete": {
+        "description": "Deletes tenant config",
+        "operationId": "DeleteTenant",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/protobufEmpty"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "ConfigService"
+        ]
+      },
+      "put": {
+        "description": "Updates tenant config",
+        "operationId": "UpdateTenant",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/configTenantData"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/configUpdateTenantRequest"
+            }
+          }
+        ],
+        "tags": [
+          "ConfigService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "configConfigData": {
+      "type": "object",
+      "properties": {
+        "storage_path": {
+          "type": "string"
+        },
+        "p2p_port": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "p2p_external_ip": {
+          "type": "string"
+        },
+        "p2p_connection_timeout": {
+          "type": "string"
+        },
+        "server_port": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "server_address": {
+          "type": "string"
+        },
+        "num_workers": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "worker_wait_time_ms": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "eth_node_url": {
+          "type": "string"
+        },
+        "eth_context_read_wait_timeout": {
+          "type": "string"
+        },
+        "eth_context_wait_timeout": {
+          "type": "string"
+        },
+        "eth_interval_retry": {
+          "type": "string"
+        },
+        "eth_max_retries": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "eth_gas_price": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "eth_gas_limit": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "tx_pool_enabled": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "network": {
+          "type": "string"
+        },
+        "bootstrap_peers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "network_id": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "main_identity": {
+          "$ref": "#/definitions/configTenantData"
+        }
+      }
+    },
+    "configEthereumAccount": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string"
+        },
+        "key": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string"
+        }
+      }
+    },
+    "configGetAllTenantResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/configTenantData"
+          }
+        }
+      }
+    },
+    "configKeyPair": {
+      "type": "object",
+      "properties": {
+        "pub": {
+          "type": "string"
+        },
+        "pvt": {
+          "type": "string"
+        }
+      }
+    },
+    "configTenantData": {
+      "type": "object",
+      "properties": {
+        "eth_account": {
+          "$ref": "#/definitions/configEthereumAccount"
+        },
+        "eth_default_account_name": {
+          "type": "string"
+        },
+        "receive_event_notification_endpoint": {
+          "type": "string"
+        },
+        "identity_id": {
+          "type": "string"
+        },
+        "signing_key_pair": {
+          "$ref": "#/definitions/configKeyPair"
+        },
+        "ethauth_key_pair": {
+          "$ref": "#/definitions/configKeyPair"
+        }
+      }
+    },
+    "configUpdateTenantRequest": {
+      "type": "object",
+      "properties": {
+        "identifier": {
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/definitions/configTenantData"
+        }
+      }
+    },
+    "protobufEmpty": {
+      "type": "object",
+      "description": "service Foo {\n      rpc Bar(google.protobuf.Empty) returns (google.protobuf.Empty);\n    }\n\nThe JSON representation for `Empty` is empty JSON object `{}`.",
+      "title": "A generic empty message that you can re-use to avoid defining duplicated\nempty messages in your APIs. A typical example is to use it as the request\nor the response type of an API method. For instance:"
+    }
+  }
+}

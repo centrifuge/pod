@@ -1,0 +1,149 @@
+syntax = "proto3";
+
+package config;
+
+option go_package = "configpb";
+option java_multiple_files = true;
+option java_outer_classname = "ServiceProto";
+option java_package = "com.config";
+
+import "google/api/annotations.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/empty.proto";
+import "protoc-gen-swagger/options/annotations.proto";
+
+// ConfigService allows to manage the node and tenant configuration of the node
+service ConfigService {
+  rpc GetConfig(google.protobuf.Empty) returns (ConfigData) {
+    option (google.api.http) = {
+      get: "/config/node"
+    };
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "Get Node Config"
+    };
+  }
+  rpc GetTenant(GetTenantRequest) returns (TenantData) {
+    option (google.api.http) = {
+      get: "/config/tenant/{identifier}"
+    };
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "Get Tenant Config"
+    };
+  }
+  rpc GetAllTenants(google.protobuf.Empty) returns (GetAllTenantResponse) {
+    option (google.api.http) = {
+      get: "/config/tenant/list"
+    };
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "Get All Tenant Configs"
+    };
+  }
+  rpc CreateConfig(ConfigData) returns (ConfigData) {
+    option (google.api.http) = {
+      post: "/config/node"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "Creates node config data"
+    };
+  }
+  rpc CreateTenant(TenantData) returns (TenantData) {
+    option (google.api.http) = {
+      post: "/config/tenant"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "Creates tenant config data"
+    };
+  }
+  rpc UpdateConfig(ConfigData) returns (ConfigData) {
+    option (google.api.http) = {
+      put: "/config/node"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "Updates node config"
+    };
+  }
+  rpc UpdateTenant(UpdateTenantRequest) returns (TenantData) {
+    option (google.api.http) = {
+      put: "/config/tenant/{identifier}"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "Updates tenant config"
+    };
+  }
+  rpc DeleteConfig(google.protobuf.Empty) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/config/node"
+    };
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "Deletes node config"
+    };
+  }
+  rpc DeleteTenant(GetTenantRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/config/tenant/{identifier}"
+    };
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "Deletes tenant config"
+    };
+  }
+}
+
+message GetTenantRequest {
+  string identifier = 1;
+}
+
+message GetAllTenantResponse {
+  repeated TenantData data = 1;
+}
+
+message UpdateTenantRequest {
+  string identifier = 1;
+  TenantData data = 2;
+}
+
+message EthereumAccount {
+  string address = 1;
+  string key = 2;
+  string password = 3;
+}
+
+message KeyPair {
+  string pub = 1;
+  string pvt = 2;
+}
+
+message TenantData {
+  EthereumAccount eth_account = 1;
+  string eth_default_account_name = 2;
+  string receive_event_notification_endpoint = 3;
+  string identity_id = 4;
+  KeyPair signing_key_pair = 5;
+  KeyPair ethauth_key_pair = 6;
+}
+
+message ConfigData {
+  string storage_path = 1;
+  int32 p2p_port = 2;
+  string p2p_external_ip = 3;
+  google.protobuf.Duration p2p_connection_timeout = 4;
+  int32 server_port = 5;
+  string server_address = 6;
+  int32 num_workers = 7;
+  int32 worker_wait_time_ms = 8;
+  string eth_node_url = 9;
+  google.protobuf.Duration eth_context_read_wait_timeout = 10;
+  google.protobuf.Duration eth_context_wait_timeout = 11;
+  google.protobuf.Duration eth_interval_retry = 12;
+  uint32 eth_max_retries = 13;
+  uint64 eth_gas_price = 14;
+  uint64 eth_gas_limit = 15;
+  bool tx_pool_enabled = 16;
+  string network = 17;
+  repeated string bootstrap_peers = 18;
+  uint32 network_id = 19;
+  TenantData main_identity = 20;
+}
