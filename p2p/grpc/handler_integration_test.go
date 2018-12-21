@@ -8,6 +8,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/p2p/grpc"
+
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
@@ -19,7 +21,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/keytools/secp256k1"
-	"github.com/centrifuge/go-centrifuge/p2p"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/testingutils/coredocument"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
@@ -49,7 +50,7 @@ func TestMain(m *testing.M) {
 	cfg.Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
 	cfg.Set("keys.ethauth.publicKey", "../build/resources/ethauth.pub.pem")
 	cfg.Set("keys.ethauth.privateKey", "../build/resources/ethauth.key.pem")
-	handler = p2p.GRPCHandler(cfg, registry)
+	handler = grpc.GRPCHandler(cfg, registry)
 	testingidentity.CreateIdentityWithKeys(cfg, idService)
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()

@@ -14,8 +14,10 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/version"
-	"github.com/ethereum/go-ethereum/log"
+	logging "github.com/ipfs/go-log"
 )
+
+var log = logging.Logger("p2p-handler")
 
 // getService looks up the specific registry, derives service from core document
 func getServiceAndModel(registry *documents.ServiceRegistry, cd *coredocumentpb.CoreDocument) (documents.Service, documents.Model, error) {

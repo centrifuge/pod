@@ -5,6 +5,9 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/p2p/grpc"
+	"github.com/paralin/go-libp2p-grpc"
 )
 
 // Bootstrapped constants that are used as key in bootstrap context
@@ -27,7 +30,7 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("registry not initialised")
 	}
 
-	srv := &p2pServer{config: cfg, registry: registry, handler: GRPCHandler(cfg, registry)}
+	srv := &p2pServer{grpcSrvs: make(map[identity.CentID]*p2pgrpc.GRPCProtocol), config: cfg, registry: registry, handler: grpc.GRPCHandler(cfg, registry)}
 	ctx[bootstrap.BootstrappedP2PServer] = srv
 	ctx[BootstrappedP2PClient] = srv
 	return nil

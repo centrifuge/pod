@@ -1,6 +1,6 @@
 // +build unit
 
-package p2p
+package grpc
 
 import (
 	"testing"
