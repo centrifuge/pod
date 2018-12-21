@@ -10,6 +10,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	"github.com/centrifuge/go-centrifuge/p2p/grpc"
+
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/paralin/go-libp2p-grpc"
 
@@ -19,8 +22,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/storage"
 
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/p2p/grpc"
-
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/stretchr/testify/assert"
 )
@@ -56,7 +57,9 @@ func TestCentP2PServer_Start(t *testing.T) {
 
 func TestCentP2PServer_StartContextCancel(t *testing.T) {
 	cfg.Set("p2p.port", 38203)
-	cp2p := &p2pServer{grpcSrvs: make(map[identity.CentID]*p2pgrpc.GRPCProtocol), config: cfg, handler: grpc.GRPCHandler(cfg, nil)}
+	cp2p := &p2pServer{grpcSrvs: make(map[identity.CentID]*p2pgrpc.GRPCProtocol), config: cfg, grpcHandlerCreator: func() p2ppb.P2PServiceServer {
+		return grpc.New(cfg, nil)
+	}}
 	ctx, canc := context.WithCancel(context.Background())
 	startErr := make(chan error, 1)
 	var wg sync.WaitGroup

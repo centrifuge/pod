@@ -1,6 +1,7 @@
 package p2p
 
 import (
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -30,7 +31,9 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("registry not initialised")
 	}
 
-	srv := &p2pServer{grpcSrvs: make(map[identity.CentID]*p2pgrpc.GRPCProtocol), config: cfg, registry: registry, handler: grpc.GRPCHandler(cfg, registry)}
+	srv := &p2pServer{grpcSrvs: make(map[identity.CentID]*p2pgrpc.GRPCProtocol), config: cfg, grpcHandlerCreator: func() p2ppb.P2PServiceServer {
+		return grpc.New(cfg, registry)
+	}}
 	ctx[bootstrap.BootstrappedP2PServer] = srv
 	ctx[BootstrappedP2PClient] = srv
 	return nil

@@ -27,10 +27,11 @@ type Client interface {
 
 // OpenClient returns P2PServiceClient to contact the remote peer
 func (s *p2pServer) OpenClient(id identity.Identity) (p2ppb.P2PServiceClient, error) {
-	target, err := id.CurrentP2PKey()
+	lastB58Key, err := id.CurrentP2PKey()
 	if err != nil {
 		return nil, errors.New("error fetching p2p key: %v", err)
 	}
+	target := fmt.Sprintf("/ipfs/%s", lastB58Key)
 	log.Info("Opening connection to: %s", target)
 	ipfsAddr, err := ma.NewMultiaddr(target)
 	if err != nil {

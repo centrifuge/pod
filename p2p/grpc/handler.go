@@ -17,7 +17,7 @@ import (
 	logging "github.com/ipfs/go-log"
 )
 
-var log = logging.Logger("p2p-handler")
+var log = logging.Logger("grpc")
 
 // getService looks up the specific registry, derives service from core document
 func getServiceAndModel(registry *documents.ServiceRegistry, cd *coredocumentpb.CoreDocument) (documents.Service, documents.Model, error) {
@@ -48,9 +48,9 @@ type handler struct {
 	config   config.Configuration
 }
 
-// GRPCHandler returns an implementation of P2PServiceServer
-func GRPCHandler(config config.Configuration, registry *documents.ServiceRegistry) p2ppb.P2PServiceServer {
-	return handler{registry: registry, config: config}
+// New returns an implementation of P2PServiceServer
+func New(config config.Configuration, registry *documents.ServiceRegistry) *handler {
+	return &handler{registry: registry, config: config}
 }
 
 // RequestDocumentSignature signs the received document and returns the signature of the signingRoot

@@ -49,7 +49,7 @@ func TestMain(m *testing.M) {
 	cfg.Set("keys.ethauth.publicKey", "../../build/resources/ethauth.pub.pem")
 	cfg.Set("keys.ethauth.privateKey", "../../build/resources/ethauth.key.pem")
 	registry = ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
-	grpcHandler = GRPCHandler(cfg, registry)
+	grpcHandler = New(cfg, registry)
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)

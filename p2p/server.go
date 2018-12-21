@@ -11,7 +11,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
-	"github.com/centrifuge/go-centrifuge/documents"
 	cented25519 "github.com/centrifuge/go-centrifuge/keytools/ed25519"
 	"github.com/ipfs/go-cid"
 	ds "github.com/ipfs/go-datastore"
@@ -43,11 +42,10 @@ type Config interface {
 
 // p2pServer implements api.Server
 type p2pServer struct {
-	config   Config
-	host     host.Host
-	registry *documents.ServiceRegistry
-	grpcSrvs map[identity.CentID]*p2pgrpc.GRPCProtocol
-	handler  p2ppb.P2PServiceServer
+	config             Config
+	host               host.Host
+	grpcSrvs           map[identity.CentID]*p2pgrpc.GRPCProtocol
+	grpcHandlerCreator func() p2ppb.P2PServiceServer
 }
 
 // Name returns the P2PServer
@@ -88,7 +86,7 @@ func (s *p2pServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr ch
 	// Set the grpc protocol handler on it
 	// TODO create NewGRPCProtocol per tenant after multi tenancy is implemented
 	s.grpcSrvs[centID] = p2pgrpc.NewGRPCProtocol(ctx, s.host)
-	p2ppb.RegisterP2PServiceServer(s.grpcSrvs[centID].GetGRPCServer(), s.handler)
+	p2ppb.RegisterP2PServiceServer(s.grpcSrvs[centID].GetGRPCServer(), s.grpcHandlerCreator())
 
 	serveErr := make(chan error)
 	go func(p *p2pgrpc.GRPCProtocol) {
