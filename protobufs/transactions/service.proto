@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package transactions;
+
+import "google/api/annotations.proto";
+import "protoc-gen-swagger/options/annotations.proto";
+
+option go_package = "transactionspb";
+option java_multiple_files = true;
+option java_outer_classname = "ServiceProto";
+option java_package = "com.transactions";
+
+message TransactionStatusRequest {
+    string transaction_id = 1;
+}
+
+message TransactionStatusResponse {
+    string transaction_id = 1;
+    string status = 2;
+    string message = 3;
+}
+
+service TransactionService {
+    rpc GetTransactionStatus(TransactionStatusRequest) returns (TransactionStatusResponse) {
+        option (google.api.http) = {
+            get: "/transaction/{transaction_id}"
+        };
+
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+            description: "Get Transaction Status"
+        };
+    }
+}
