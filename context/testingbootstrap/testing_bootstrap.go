@@ -37,8 +37,7 @@ var bootstappers = []bootstrap.TestBootstrapper{
 	&queue.Starter{},
 }
 
-func TestFunctionalEthereumBootstrap() map[string]interface{} {
-	ctx := map[string]interface{}{}
+func TestFunctionalEthereumBootstrap(ctx map[string]interface{}) map[string]interface{} {
 	for _, b := range bootstappers {
 		err := b.TestBootstrap(ctx)
 		if err != nil {

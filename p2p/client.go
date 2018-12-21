@@ -61,7 +61,11 @@ func (s *p2pServer) OpenClient(id identity.Identity) (p2ppb.P2PServiceClient, er
 	// Retrial is handled internally, connection request will be cancelled by the connection timeout context
 	ctx, cancel := context.WithTimeout(context.Background(), s.config.GetP2PConnectionTimeout())
 	defer cancel()
-	g, err := s.grpcSrvs[id.CentID()].Dial(ctx, peerID, grpc.WithInsecure(), grpc.WithBlock())
+	gp, ok := s.grpcSrvs[id.CentID()]
+	if !ok {
+		return nil, errors.New("failed to dial peer [%s]: no grpc server found for centID %x", peerID.Pretty(), id.CentID())
+	}
+	g, err := gp.Dial(ctx, peerID, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		return nil, errors.New("failed to dial peer [%s]: %v", peerID.Pretty(), err)
 	}

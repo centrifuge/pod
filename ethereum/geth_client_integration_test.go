@@ -16,7 +16,7 @@ import (
 var cfg config.Configuration
 
 func TestMain(m *testing.M) {
-	ctx := cc.TestFunctionalEthereumBootstrap()
+	ctx := cc.TestFunctionalEthereumBootstrap(make(map[string]interface{}))
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()

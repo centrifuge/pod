@@ -8,13 +8,16 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/bootstrap"
+
+	"github.com/centrifuge/go-centrifuge/testingutils"
+
 	"github.com/centrifuge/go-centrifuge/p2p/grpc"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/anchors"
-	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	cc "github.com/centrifuge/go-centrifuge/context/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/coredocument"
@@ -41,15 +44,12 @@ var (
 
 func TestMain(m *testing.M) {
 	flag.Parse()
-	ctx := cc.TestFunctionalEthereumBootstrap()
+	cm := testingutils.BuildIntegrationTestingContext()
+	ctx := cc.TestFunctionalEthereumBootstrap(cm)
+	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	registry := ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
 	anchorRepo = ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
 	idService = ctx[identity.BootstrappedIDService].(identity.Service)
-	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-	cfg.Set("keys.signing.publicKey", "../../build/resources/signingKey.pub.pem")
-	cfg.Set("keys.signing.privateKey", "../../build/resources/signingKey.key.pem")
-	cfg.Set("keys.ethauth.publicKey", "../../build/resources/ethauth.pub.pem")
-	cfg.Set("keys.ethauth.privateKey", "../../build/resources/ethauth.key.pem")
 	handler = grpc.New(cfg, registry)
 	testingidentity.CreateIdentityWithKeys(cfg, idService)
 	result := m.Run()

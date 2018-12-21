@@ -32,7 +32,7 @@ var payOb nft.PaymentObligation
 
 func TestMain(m *testing.M) {
 	log.Debug("Test PreSetup for NFT")
-	ctx := cc.TestFunctionalEthereumBootstrap()
+	ctx := cc.TestFunctionalEthereumBootstrap(make(map[string]interface{}))
 	registry = ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
 	idService = ctx[identity.BootstrappedIDService].(identity.Service)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
