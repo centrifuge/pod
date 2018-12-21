@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/common"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
@@ -29,9 +30,6 @@ var (
 
 	// noAuthPaths holds the paths that doesn't require header to be passed.
 	noAuthPaths = [...]string{"/health.HealthCheckService/Ping"}
-
-	// TenantKey represents the key used to fetch the tenant id from context
-	TenantKey struct{}
 )
 
 // Config defines methods required for the package api
@@ -212,7 +210,7 @@ func auth(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, hand
 		return nil, err
 	}
 
-	ctx = context.WithValue(ctx, TenantKey, auth[0])
+	ctx = context.WithValue(ctx, common.TenantKey, auth[0])
 	return handler(ctx, req)
 }
 

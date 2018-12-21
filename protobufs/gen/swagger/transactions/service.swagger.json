@@ -53,6 +53,10 @@
         },
         "message": {
           "type": "string"
+        },
+        "last_updated": {
+          "type": "string",
+          "format": "date-time"
         }
       }
     }

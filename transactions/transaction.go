@@ -10,28 +10,28 @@ import (
 )
 
 // Status represents the status of the transaction
-type Status uint8
+type Status string
 
 // Status constants
 const (
-	Success Status = iota
-	Failed
-	Pending
+	Success Status = "success"
+	Failed         = "failed"
+	Pending        = "pending"
 )
 
 // Log represents a single task in a transaction.
 type Log struct {
-	Action  string
-	Message string
-	Time    time.Time
+	Action    string
+	Message   string
+	CreatedAt time.Time
 }
 
 // NewLog constructs a new log with action and message
 func NewLog(action, message string) Log {
 	return Log{
-		Action:  action,
-		Message: message,
-		Time:    time.Now().UTC(),
+		Action:    action,
+		Message:   message,
+		CreatedAt: time.Now().UTC(),
 	}
 }
 
@@ -43,6 +43,7 @@ type Transaction struct {
 	Status      Status
 	Logs        []Log
 	Metadata    map[string]string
+	CreatedAt   time.Time
 }
 
 // JSON returns json marshaled transaction.
@@ -68,5 +69,6 @@ func NewTransaction(identity common.Address, description string) *Transaction {
 		Description: description,
 		Status:      Pending,
 		Metadata:    make(map[string]string),
+		CreatedAt:   time.Now().UTC(),
 	}
 }
