@@ -8,8 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/testingutils"
-
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	cc "github.com/centrifuge/go-centrifuge/context/testingbootstrap"
@@ -25,9 +23,7 @@ var cfg config.Configuration
 func TestMain(m *testing.M) {
 	// Adding delay to startup (concurrency hack)
 	time.Sleep(time.Second + 2)
-
-	cm := testingutils.BuildIntegrationTestingContext()
-	ctx := cc.TestFunctionalEthereumBootstrap(cm)
+	ctx := cc.TestFunctionalEthereumBootstrap()
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	identityService = ctx[identity.BootstrappedIDService].(identity.Service)
 	result := m.Run()

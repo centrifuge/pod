@@ -7,8 +7,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/testingutils"
-
 	"github.com/centrifuge/go-centrifuge/anchors"
 	cc "github.com/centrifuge/go-centrifuge/context/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/ethereum"
@@ -25,8 +23,7 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	cm := testingutils.BuildIntegrationTestingContext()
-	ctx := cc.TestFunctionalEthereumBootstrap(cm)
+	ctx := cc.TestFunctionalEthereumBootstrap()
 	anchorRepo = ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
 	identityService = ctx[identity.BootstrappedIDService].(identity.Service)
 	result := m.Run()

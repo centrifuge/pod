@@ -10,8 +10,6 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 
-	"github.com/centrifuge/go-centrifuge/testingutils"
-
 	"github.com/centrifuge/go-centrifuge/p2p/grpc"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
@@ -44,8 +42,7 @@ var (
 
 func TestMain(m *testing.M) {
 	flag.Parse()
-	cm := testingutils.BuildIntegrationTestingContext()
-	ctx := cc.TestFunctionalEthereumBootstrap(cm)
+	ctx := cc.TestFunctionalEthereumBootstrap()
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	registry := ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
 	anchorRepo = ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
