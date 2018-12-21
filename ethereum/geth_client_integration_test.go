@@ -6,6 +6,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/testingutils"
+
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	cc "github.com/centrifuge/go-centrifuge/context/testingbootstrap"
@@ -16,7 +18,8 @@ import (
 var cfg config.Configuration
 
 func TestMain(m *testing.M) {
-	ctx := cc.TestFunctionalEthereumBootstrap(make(map[string]interface{}))
+	cm := testingutils.BuildIntegrationTestingContext()
+	ctx := cc.TestFunctionalEthereumBootstrap(cm)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()

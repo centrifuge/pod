@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/testingutils"
+
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
@@ -32,24 +34,13 @@ var payOb nft.PaymentObligation
 
 func TestMain(m *testing.M) {
 	log.Debug("Test PreSetup for NFT")
-	ctx := cc.TestFunctionalEthereumBootstrap(make(map[string]interface{}))
+	cm := testingutils.BuildIntegrationTestingContext()
+	ctx := cc.TestFunctionalEthereumBootstrap(cm)
 	registry = ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
 	idService = ctx[identity.BootstrappedIDService].(identity.Service)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	payOb = ctx[nft.BootstrappedPayObService].(nft.PaymentObligation)
-	prevSignPubkey := cfg.Get("keys.signing.publicKey")
-	prevSignPrivkey := cfg.Get("keys.signing.privateKey")
-	prevEthPubkey := cfg.Get("keys.ethauth.publicKey")
-	prevEthPrivkey := cfg.Get("keys.ethauth.privateKey")
-	cfg.Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
-	cfg.Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
-	cfg.Set("keys.ethauth.publicKey", "../build/resources/ethauth.pub.pem")
-	cfg.Set("keys.ethauth.privateKey", "../build/resources/ethauth.key.pem")
 	result := m.Run()
-	cfg.Set("keys.signing.publicKey", prevSignPubkey)
-	cfg.Set("keys.signing.privateKey", prevSignPrivkey)
-	cfg.Set("keys.ethauth.publicKey", prevEthPubkey)
-	cfg.Set("keys.ethauth.privateKey", prevEthPrivkey)
 	cc.TestFunctionalEthereumTearDown()
 	os.Exit(result)
 }
