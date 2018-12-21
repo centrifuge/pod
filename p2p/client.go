@@ -61,9 +61,18 @@ func (s *p2pServer) OpenClient(id identity.Identity) (p2ppb.P2PServiceClient, er
 	// Retrial is handled internally, connection request will be cancelled by the connection timeout context
 	ctx, cancel := context.WithTimeout(context.Background(), s.config.GetP2PConnectionTimeout())
 	defer cancel()
-	gp, ok := s.grpcSrvs[id.CentID()]
+	// TODO remove this self config and pass in the selfID in the OpenClient function
+	selfIDBytes, err := s.config.GetIdentityID()
+	if err != nil {
+		return nil, errors.New("failed to get self identity: %v", err)
+	}
+	selfID, err := identity.ToCentID(selfIDBytes)
+	if err != nil {
+		return nil, errors.New("failed to cast self identity: %v", err)
+	}
+	gp, ok := s.grpcSrvs[selfID]
 	if !ok {
-		return nil, errors.New("failed to dial peer [%s]: no grpc server found for centID %x", peerID.Pretty(), id.CentID())
+		return nil, errors.New("failed to dial peer [%s]: no grpc server found for centID [%s]", peerID.Pretty(), id.CentID())
 	}
 	g, err := gp.Dial(ctx, peerID, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
