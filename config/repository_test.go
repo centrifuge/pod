@@ -7,10 +7,26 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/context/testlogging"
+
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
 )
+
+var dbFiles []string
+var ctx = map[string]interface{}{}
+var cfg Configuration
+
+func cleanupDBFiles() {
+	for _, db := range dbFiles {
+		err := os.RemoveAll(db)
+		if err != nil {
+			log.Warningf("Cleanup warn: %v", err)
+		}
+	}
+}
 
 func getRandomStorage() (Repository, string, error) {
 	randomPath := storage.GetRandomTestStoragePath()
@@ -18,11 +34,19 @@ func getRandomStorage() (Repository, string, error) {
 	if err != nil {
 		return nil, "", err
 	}
+	dbFiles = append(dbFiles, randomPath)
 	return NewDBRepository(storage.NewLevelDBRepository(db)), randomPath, nil
 }
 
 func TestMain(m *testing.M) {
+	ibootstappers := []bootstrap.TestBootstrapper{
+		&testlogging.TestLoggingBootstrapper{},
+		&Bootstrapper{},
+	}
+	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
+	cfg = ctx[bootstrap.BootstrappedConfig].(Configuration)
 	result := m.Run()
+	cleanupDBFiles()
 	os.Exit(result)
 }
 
