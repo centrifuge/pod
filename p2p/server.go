@@ -6,11 +6,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/p2p/receiver"
+
+	pb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
+	"github.com/libp2p/go-libp2p-protocol"
 
 	"github.com/centrifuge/go-centrifuge/errors"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	cented25519 "github.com/centrifuge/go-centrifuge/keytools/ed25519"
 	"github.com/ipfs/go-cid"
 	ds "github.com/ipfs/go-datastore"
@@ -24,10 +26,11 @@ import (
 	pstore "github.com/libp2p/go-libp2p-peerstore"
 	ma "github.com/multiformats/go-multiaddr"
 	mh "github.com/multiformats/go-multihash"
-	"github.com/paralin/go-libp2p-grpc"
 )
 
 var log = logging.Logger("p2p-server")
+
+const CentrifugeProtocol protocol.ID = "/centrifuge/0.0.1"
 
 // Config defines methods that are required for the package p2p.
 type Config interface {
@@ -42,10 +45,10 @@ type Config interface {
 
 // p2pServer implements api.Server
 type p2pServer struct {
-	config             Config
-	host               host.Host
-	grpcSrvs           map[identity.CentID]*p2pgrpc.GRPCProtocol
-	grpcHandlerCreator func() p2ppb.P2PServiceServer
+	config         Config
+	host           host.Host
+	handlerCreator func() *receiver.Handler
+	mes            *messenger
 }
 
 // Name returns the P2PServer
@@ -53,7 +56,7 @@ func (*p2pServer) Name() string {
 	return "P2PServer"
 }
 
-// Start starts the DHT and GRPC server for p2p communications
+// Start starts the DHT and libp2p host
 func (s *p2pServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- error) {
 	defer wg.Done()
 
@@ -70,46 +73,13 @@ func (s *p2pServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr ch
 		return
 	}
 
-	// TODO remove following after proper multi tenant setup. Before that the node only has one configure main identity
-	id, err := s.config.GetIdentityID()
-	if err != nil {
-		startupErr <- err
-		return
-	}
+	s.mes = newMessenger(ctx, s.host, s.host.ID(), s.config.GetP2PConnectionTimeout())
+	handler := s.handlerCreator()
+	s.mes.addHandler(pb.MessageType_MESSAGE_TYPE_SEND_ANCHORED_DOC, handler.HandleSendAnchoredDocument)
+	s.mes.addHandler(pb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE, handler.HandleRequestDocumentSignature)
+	s.host.SetStreamHandler(CentrifugeProtocol, s.mes.handleNewStream)
 
-	centID, err := identity.ToCentID(id)
-	if err != nil {
-		startupErr <- err
-		return
-	}
-
-	// Set the grpc protocol handler on it
-	// TODO create NewGRPCProtocol per tenant after multi tenancy is implemented
-	s.grpcSrvs[centID] = p2pgrpc.NewGRPCProtocol(ctx, s.host)
-	p2ppb.RegisterP2PServiceServer(s.grpcSrvs[centID].GetGRPCServer(), s.grpcHandlerCreator())
-
-	serveErr := make(chan error)
-	go func(p *p2pgrpc.GRPCProtocol) {
-		err := p.Serve()
-		serveErr <- err
-	}(s.grpcSrvs[centID])
-
-	s.host.Peerstore().AddAddr(s.host.ID(), s.host.Addrs()[0], pstore.TempAddrTTL)
-
-	// Start DHT and properly ignore errors :)
-	_ = s.runDHT(ctx, s.host)
-	select {
-	case err := <-serveErr:
-		log.Infof("GRPC server error: %v", err)
-		s.grpcSrvs[centID].GetGRPCServer().GracefulStop()
-		log.Info("GRPC server stopped")
-		return
-	case <-ctx.Done():
-		log.Info("Shutting down GRPC server")
-		s.grpcSrvs[centID].GetGRPCServer().GracefulStop()
-		log.Info("GRPC server stopped")
-		return
-	}
+	<-ctx.Done()
 
 }
 
@@ -186,6 +156,8 @@ func (s *p2pServer) makeBasicHost(listenPort int) (host.Host, error) {
 	if err != nil {
 		return nil, err
 	}
+	peerIDstr := pid.Pretty()
+	log.Infof("PEER is %s", peerIDstr)
 
 	// Create a peerstore
 	ps := pstore.NewPeerstore()

@@ -1,8 +1,12 @@
-package grpc
+package receiver
 
 import (
 	"context"
 	"fmt"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/libp2p/go-libp2p-peer"
+	"github.com/libp2p/go-libp2p-protocol"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
@@ -13,6 +17,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/header"
+	pb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/version"
 	logging "github.com/ipfs/go-log"
 )
@@ -53,11 +58,30 @@ func New(config config.Configuration, registry *documents.ServiceRegistry) *Hand
 	return &Handler{registry: registry, config: config}
 }
 
+func (srv *Handler) HandleRequestDocumentSignature(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (*pb.P2PEnvelope, error) {
+	m := new(p2ppb.SignatureRequest)
+	err := proto.Unmarshal(msg.Body, m)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := srv.RequestDocumentSignature(ctx, m)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := proto.Marshal(res)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.P2PEnvelope{Type: pb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE_REP, Body: resp}, nil
+}
+
 // RequestDocumentSignature signs the received document and returns the signature of the signingRoot
 // Document signing root will be recalculated and verified
 // Existing signatures on the document will be verified
 // Document will be stored to the repository for state management
-func (srv Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.SignatureRequest) (*p2ppb.SignatureResponse, error) {
+func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.SignatureRequest) (*p2ppb.SignatureResponse, error) {
 	ctxHeader, err := header.NewContextHeader(ctx, srv.config)
 	if err != nil {
 		log.Error(err)
@@ -84,8 +108,27 @@ func (srv Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.S
 	}, nil
 }
 
+func (srv *Handler) HandleSendAnchoredDocument(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (*pb.P2PEnvelope, error) {
+	m := new(p2ppb.AnchorDocumentRequest)
+	err := proto.Unmarshal(msg.Body, m)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := srv.SendAnchoredDocument(ctx, m)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := proto.Marshal(res)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.P2PEnvelope{Type: pb.MessageType_MESSAGE_TYPE_SEND_ANCHORED_DOC_REP, Body: resp}, nil
+}
+
 // SendAnchoredDocument receives a new anchored document, validates and updates the document in DB
-func (srv Handler) SendAnchoredDocument(ctx context.Context, docReq *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error) {
+func (srv *Handler) SendAnchoredDocument(ctx context.Context, docReq *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error) {
 	err := handshakeValidator(srv.config.GetNetworkID()).Validate(docReq.Header)
 	if err != nil {
 		return nil, err
