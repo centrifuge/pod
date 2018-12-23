@@ -30,6 +30,7 @@ import (
 
 var log = logging.Logger("p2p-server")
 
+// CentrifugeProtocol is the centrifuge wire protocol
 const CentrifugeProtocol protocol.ID = "/centrifuge/0.0.1"
 
 // Config defines methods that are required for the package p2p.

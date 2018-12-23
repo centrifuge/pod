@@ -28,10 +28,10 @@ type Client interface {
 	GetSignaturesForDocument(ctx *header.ContextHeader, identityService identity.Service, doc *coredocumentpb.CoreDocument) error
 
 	// after all signatures are collected the sender sends the document including the signatures
-	SendAnchoredDocument(id identity.Identity, ctx context.Context, in *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error)
+	SendAnchoredDocument(ctx context.Context, id identity.Identity, in *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error)
 }
 
-func (s *p2pServer) SendAnchoredDocument(id identity.Identity, ctx context.Context, in *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error) {
+func (s *p2pServer) SendAnchoredDocument(ctx context.Context, id identity.Identity, in *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error) {
 	pid, err := s.getPeerID(id)
 	if err != nil {
 		return nil, err

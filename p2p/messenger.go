@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/errors"
+
 	"github.com/libp2p/go-libp2p-host"
 	"github.com/libp2p/go-libp2p-protocol"
 
@@ -19,7 +21,8 @@ import (
 	ps "github.com/libp2p/go-libp2p-peerstore"
 )
 
-var ErrReadTimeout = fmt.Errorf("timed out reading response")
+// ErrReadTimeout timeout while reading
+const ErrReadTimeout = errors.Error("timed out reading response")
 
 type bufferedWriteCloser interface {
 	ggio.WriteCloser
@@ -280,11 +283,11 @@ func (ms *messageSender) SendMessage(ctx context.Context, pmes *pb.P2PEnvelope, 
 			if retry {
 				log.Info("error writing message, bailing: ", err)
 				return err
-			} else {
-				log.Info("error writing message, trying again: ", err)
-				retry = true
-				continue
 			}
+			log.Info("error writing message, trying again: ", err)
+			retry = true
+			continue
+
 		}
 
 		if ms.singleMes > streamReuseTries {
@@ -314,11 +317,11 @@ func (ms *messageSender) SendRequest(ctx context.Context, pmes *pb.P2PEnvelope, 
 			if retry {
 				log.Info("error writing message, bailing: ", err)
 				return nil, err
-			} else {
-				log.Info("error writing message, trying again: ", err)
-				retry = true
-				continue
 			}
+			log.Info("error writing message, trying again: ", err)
+			retry = true
+			continue
+
 		}
 
 		mes := new(pb.P2PEnvelope)
@@ -329,11 +332,11 @@ func (ms *messageSender) SendRequest(ctx context.Context, pmes *pb.P2PEnvelope, 
 			if retry {
 				log.Info("error reading message, bailing: ", err)
 				return nil, err
-			} else {
-				log.Info("error reading message, trying again: ", err)
-				retry = true
-				continue
 			}
+			log.Info("error reading message, trying again: ", err)
+			retry = true
+			continue
+
 		}
 
 		if ms.singleMes > streamReuseTries {

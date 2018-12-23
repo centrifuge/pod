@@ -42,7 +42,7 @@ type Processor interface {
 // we redefined it here so that we can avoid cyclic dependencies with p2p
 type client interface {
 	GetSignaturesForDocument(ctx *header.ContextHeader, identityService identity.Service, doc *coredocumentpb.CoreDocument) error
-	SendAnchoredDocument(id identity.Identity, ctx context.Context, in *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error)
+	SendAnchoredDocument(ctx context.Context, id identity.Identity, in *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error)
 }
 
 // defaultProcessor implements Processor interface
@@ -84,7 +84,7 @@ func (dp defaultProcessor) Send(ctx *header.ContextHeader, coreDocument *coredoc
 	}
 
 	c, _ := context.WithTimeout(ctx.Context(), dp.config.GetP2PConnectionTimeout())
-	resp, err := dp.p2pClient.SendAnchoredDocument(id, c, &p2ppb.AnchorDocumentRequest{Document: coreDocument, Header: p2pheader})
+	resp, err := dp.p2pClient.SendAnchoredDocument(c, id, &p2ppb.AnchorDocumentRequest{Document: coreDocument, Header: p2pheader})
 	if err != nil || !resp.Accepted {
 		return centerrors.Wrap(err, "failed to send document to the node")
 	}
