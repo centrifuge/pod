@@ -16,6 +16,7 @@ import (
 	"github.com/jbenet/go-context/io"
 	inet "github.com/libp2p/go-libp2p-net"
 	peer "github.com/libp2p/go-libp2p-peer"
+	ps "github.com/libp2p/go-libp2p-peerstore"
 )
 
 var ErrReadTimeout = fmt.Errorf("timed out reading response")
@@ -237,6 +238,13 @@ func (ms *messageSender) prep(protoc protocol.ID) error {
 	}
 	if ms.s != nil {
 		return nil
+	}
+
+	err := ms.mes.host.Connect(ms.mes.ctx, ps.PeerInfo{
+		ID: ms.p,
+	})
+	if err != nil {
+		return err
 	}
 
 	nstr, err := ms.mes.host.NewStream(ms.mes.ctx, ms.p, protoc)

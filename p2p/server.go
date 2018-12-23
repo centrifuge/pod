@@ -79,6 +79,8 @@ func (s *p2pServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr ch
 	s.mes.addHandler(pb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE, handler.HandleRequestDocumentSignature)
 	s.host.SetStreamHandler(CentrifugeProtocol, s.mes.handleNewStream)
 
+	// Start DHT and properly ignore errors :)
+	_ = s.runDHT(ctx, s.host)
 	<-ctx.Done()
 
 }
