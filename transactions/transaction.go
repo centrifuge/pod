@@ -15,8 +15,8 @@ type Status string
 // Status constants
 const (
 	Success Status = "success"
-	Failed         = "failed"
-	Pending        = "pending"
+	Failed  Status = "failed"
+	Pending Status = "pending"
 )
 
 // Log represents a single task in a transaction.

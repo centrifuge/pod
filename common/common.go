@@ -1,5 +1,4 @@
 // Package common holds the common types used across the node
-
 package common
 
 import "github.com/ethereum/go-ethereum/common"

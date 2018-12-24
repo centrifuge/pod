@@ -9,6 +9,7 @@ import (
 	"github.com/satori/go.uuid"
 )
 
+// ErrInvalidTransactionID error for Invalid transaction ID.
 const ErrInvalidTransactionID = errors.Error("Invalid Transaction ID")
 
 // GRPCHandler returns an implementation of the TransactionServiceServer

@@ -34,7 +34,7 @@ func TestService_GetTransaction(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, txs)
 	assert.Equal(t, txs.TransactionId, txn.ID.String())
-	assert.Equal(t, txs.Status, Pending)
+	assert.Equal(t, string(Pending), txs.Status)
 	assert.Empty(t, txs.Message)
 	assert.Equal(t, utils.ToTimestamp(txn.CreatedAt), txs.LastUpdated)
 
@@ -48,7 +48,7 @@ func TestService_GetTransaction(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, txs)
 	assert.Equal(t, txs.TransactionId, txn.ID.String())
-	assert.Equal(t, txs.Status, string(Success))
+	assert.Equal(t, string(Success), txs.Status)
 	assert.Equal(t, log.Message, txs.Message)
 	assert.Equal(t, utils.ToTimestamp(log.CreatedAt), txs.LastUpdated)
 }
