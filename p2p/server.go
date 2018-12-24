@@ -22,6 +22,7 @@ import (
 	"github.com/libp2p/go-libp2p-crypto"
 	"github.com/libp2p/go-libp2p-host"
 	"github.com/libp2p/go-libp2p-kad-dht"
+	inet "github.com/libp2p/go-libp2p-net"
 	"github.com/libp2p/go-libp2p-peer"
 	pstore "github.com/libp2p/go-libp2p-peerstore"
 	ma "github.com/multiformats/go-multiaddr"
@@ -44,12 +45,21 @@ type Config interface {
 	GetSigningKeyPair() (pub, priv string)
 }
 
+// messenger is an interface to wrap p2p messaging implementation
+type messenger interface {
+	addHandler(mType pb.MessageType, handler func(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (*pb.P2PEnvelope, error))
+
+	handleNewStream(s inet.Stream)
+
+	sendRequest(ctx context.Context, p peer.ID, pmes *pb.P2PEnvelope, protoc protocol.ID) (*pb.P2PEnvelope, error)
+}
+
 // p2pServer implements api.Server
 type p2pServer struct {
 	config         Config
 	host           host.Host
 	handlerCreator func() *receiver.Handler
-	mes            *messenger
+	mes            messenger
 }
 
 // Name returns the P2PServer

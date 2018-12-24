@@ -23,8 +23,7 @@ import (
 )
 
 var (
-	cfg        config.Configuration
-	testClient *p2pServer
+	cfg config.Configuration
 )
 
 func TestMain(m *testing.M) {
@@ -41,7 +40,6 @@ func TestMain(m *testing.M) {
 	cfg.Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
 	cfg.Set("keys.ethauth.publicKey", "../build/resources/ethauth.pub.pem")
 	cfg.Set("keys.ethauth.privateKey", "../build/resources/ethauth.key.pem")
-	testClient = &p2pServer{config: cfg}
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)

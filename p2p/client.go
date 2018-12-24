@@ -36,11 +36,11 @@ func (s *p2pServer) SendAnchoredDocument(ctx context.Context, id identity.Identi
 	if err != nil {
 		return nil, err
 	}
-	adr, err := proto.Marshal(in)
+	marshalledRequest, err := proto.Marshal(in)
 	if err != nil {
 		return nil, err
 	}
-	recv, err := s.mes.sendRequest(ctx, pid, &protocolpb.P2PEnvelope{Type: protocolpb.MessageType_MESSAGE_TYPE_SEND_ANCHORED_DOC, Body: adr}, CentrifugeProtocol)
+	recv, err := s.mes.sendRequest(ctx, pid, &protocolpb.P2PEnvelope{Type: protocolpb.MessageType_MESSAGE_TYPE_SEND_ANCHORED_DOC, Body: marshalledRequest}, CentrifugeProtocol)
 	if err != nil {
 		return nil, err
 	}
@@ -91,30 +91,19 @@ func (s *p2pServer) getPeerID(id identity.Identity) (peer.ID, error) {
 }
 
 // getSignatureForDocument requests the target node to sign the document
-func (s *p2pServer) getSignatureForDocument(ctx context.Context, identityService identity.Service, doc coredocumentpb.CoreDocument, client peer.ID, receiverCentID identity.CentID) (*p2ppb.SignatureResponse, error) {
+func (s *p2pServer) getSignatureForDocument(ctx context.Context, identityService identity.Service, doc coredocumentpb.CoreDocument, receiverPeer peer.ID, receiverCentID identity.CentID) (*p2ppb.SignatureResponse, error) {
 	senderID, err := s.config.GetIdentityID()
 	if err != nil {
 		return nil, err
 	}
 
-	h := p2ppb.CentrifugeHeader{
-		NetworkIdentifier:  s.config.GetNetworkID(),
-		CentNodeVersion:    version.GetVersion().String(),
-		SenderCentrifugeId: senderID,
-	}
-
-	req := &p2ppb.SignatureRequest{
-		Header:   &h,
-		Document: &doc,
-	}
-
-	log.Infof("Requesting signature from %s\n", receiverCentID)
-
-	reqB, err := proto.Marshal(req)
+	req, err := s.createSignatureRequest(senderID, &doc)
 	if err != nil {
 		return nil, err
 	}
-	recv, err := s.mes.sendRequest(ctx, client, &protocolpb.P2PEnvelope{Type: protocolpb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE, Body: reqB}, CentrifugeProtocol)
+
+	log.Infof("Requesting signature from %s\n", receiverCentID)
+	recv, err := s.mes.sendRequest(ctx, receiverPeer, req, CentrifugeProtocol)
 	if err != nil {
 		return nil, err
 	}
@@ -151,8 +140,8 @@ type signatureResponseWrap struct {
 	err  error
 }
 
-func (s *p2pServer) getSignatureAsync(ctx context.Context, identityService identity.Service, doc coredocumentpb.CoreDocument, client peer.ID, receiverCentID identity.CentID, out chan<- signatureResponseWrap) {
-	resp, err := s.getSignatureForDocument(ctx, identityService, doc, client, receiverCentID)
+func (s *p2pServer) getSignatureAsync(ctx context.Context, identityService identity.Service, doc coredocumentpb.CoreDocument, receiverPeer peer.ID, receiverCentID identity.CentID, out chan<- signatureResponseWrap) {
+	resp, err := s.getSignatureForDocument(ctx, identityService, doc, receiverPeer, receiverCentID)
 	out <- signatureResponseWrap{
 		resp: resp,
 		err:  err,
@@ -180,7 +169,7 @@ func (s *p2pServer) GetSignaturesForDocument(ctx *header.ContextHeader, identity
 			return centerrors.Wrap(err, "error fetching collaborator identity")
 		}
 
-		client, err := s.getPeerID(id)
+		receiverPeer, err := s.getPeerID(id)
 		if err != nil {
 			log.Error(centerrors.Wrap(err, "failed to connect to target"))
 			continue
@@ -190,7 +179,7 @@ func (s *p2pServer) GetSignaturesForDocument(ctx *header.ContextHeader, identity
 		// we can use context.Timeout for that
 		count++
 		c, _ := context.WithTimeout(ctx.Context(), s.config.GetP2PConnectionTimeout())
-		go s.getSignatureAsync(c, identityService, *doc, client, collaboratorID, in)
+		go s.getSignatureAsync(c, identityService, *doc, receiverPeer, collaboratorID, in)
 	}
 
 	var responses []signatureResponseWrap
@@ -208,4 +197,22 @@ func (s *p2pServer) GetSignaturesForDocument(ctx *header.ContextHeader, identity
 	}
 
 	return nil
+}
+
+func (s *p2pServer) createSignatureRequest(senderID []byte, doc *coredocumentpb.CoreDocument) (*protocolpb.P2PEnvelope, error) {
+	h := p2ppb.CentrifugeHeader{
+		NetworkIdentifier:  s.config.GetNetworkID(),
+		CentNodeVersion:    version.GetVersion().String(),
+		SenderCentrifugeId: senderID,
+	}
+	req := &p2ppb.SignatureRequest{
+		Header:   &h,
+		Document: doc,
+	}
+
+	reqB, err := proto.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+	return &protocolpb.P2PEnvelope{Type: protocolpb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE, Body: reqB}, nil
 }

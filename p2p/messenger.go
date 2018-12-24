@@ -49,7 +49,7 @@ func (w *bufferedDelimitedWriter) Flush() error {
 	return w.Writer.Flush()
 }
 
-type messenger struct {
+type p2pMessenger struct {
 	host host.Host // the network services we need
 	self peer.ID   // Local peer (yourself)
 
@@ -64,8 +64,8 @@ type messenger struct {
 	msgHandlers map[pb.MessageType]func(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (*pb.P2PEnvelope, error)
 }
 
-func newMessenger(ctx context.Context, host host.Host, self peer.ID, p2pTimeout time.Duration) *messenger {
-	return &messenger{
+func newMessenger(ctx context.Context, host host.Host, self peer.ID, p2pTimeout time.Duration) *p2pMessenger {
+	return &p2pMessenger{
 		ctx:         ctx,
 		host:        host,
 		self:        self,
@@ -75,16 +75,16 @@ func newMessenger(ctx context.Context, host host.Host, self peer.ID, p2pTimeout 
 }
 
 // addHandler adds a message handler for a specific message type
-func (mes *messenger) addHandler(mType pb.MessageType, handler func(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (*pb.P2PEnvelope, error)) {
+func (mes *p2pMessenger) addHandler(mType pb.MessageType, handler func(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (*pb.P2PEnvelope, error)) {
 	mes.msgHandlers[mType] = handler
 }
 
 // handleNewStream implements the inet.StreamHandler
-func (mes *messenger) handleNewStream(s inet.Stream) {
+func (mes *p2pMessenger) handleNewStream(s inet.Stream) {
 	go mes.handleNewMessage(s)
 }
 
-func (mes *messenger) handleNewMessage(s inet.Stream) {
+func (mes *p2pMessenger) handleNewMessage(s inet.Stream) {
 	ctx := mes.ctx
 	cr := ctxio.NewReader(ctx, s) // ok to use. we defer close stream in this func
 	cw := ctxio.NewWriter(ctx, s) // ok to use. we defer close stream in this func
@@ -142,7 +142,7 @@ func (mes *messenger) handleNewMessage(s inet.Stream) {
 }
 
 // sendRequest sends out a request
-func (mes *messenger) sendRequest(ctx context.Context, p peer.ID, pmes *pb.P2PEnvelope, protoc protocol.ID) (*pb.P2PEnvelope, error) {
+func (mes *p2pMessenger) sendRequest(ctx context.Context, p peer.ID, pmes *pb.P2PEnvelope, protoc protocol.ID) (*pb.P2PEnvelope, error) {
 
 	ms, err := mes.messageSenderForPeer(p, protoc)
 	if err != nil {
@@ -158,7 +158,7 @@ func (mes *messenger) sendRequest(ctx context.Context, p peer.ID, pmes *pb.P2PEn
 }
 
 // sendMessage sends out a message
-func (mes *messenger) sendMessage(ctx context.Context, p peer.ID, pmes *pb.P2PEnvelope, protoc protocol.ID) error {
+func (mes *p2pMessenger) sendMessage(ctx context.Context, p peer.ID, pmes *pb.P2PEnvelope, protoc protocol.ID) error {
 	ms, err := mes.messageSenderForPeer(p, protoc)
 	if err != nil {
 		return err
@@ -170,7 +170,7 @@ func (mes *messenger) sendMessage(ctx context.Context, p peer.ID, pmes *pb.P2PEn
 	return nil
 }
 
-func (mes *messenger) messageSenderForPeer(p peer.ID, protoc protocol.ID) (*messageSender, error) {
+func (mes *p2pMessenger) messageSenderForPeer(p peer.ID, protoc protocol.ID) (*messageSender, error) {
 	mes.smlk.Lock()
 	ms, ok := mes.strmap[p]
 	if ok {
@@ -208,7 +208,7 @@ type messageSender struct {
 	w   bufferedWriteCloser
 	lk  sync.Mutex
 	p   peer.ID
-	mes *messenger
+	mes *p2pMessenger
 
 	invalid   bool
 	singleMes int
