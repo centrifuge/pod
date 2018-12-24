@@ -33,15 +33,18 @@ func (g grpcHandler) MintNFT(context context.Context, request *nftpb.NFTMintRequ
 	}
 	identifier, err := hexutil.Decode(request.Identifier)
 	if err != nil {
-		return &nftpb.NFTMintResponse{}, centerrors.New(code.Unknown, err.Error())
+		return nil, centerrors.New(code.Unknown, err.Error())
 	}
 
-	confirmation, err := g.service.MintNFT(identifier, request.RegistryAddress, request.DepositAddress, request.ProofFields)
+	resp, err := g.service.MintNFT(identifier, request.RegistryAddress, request.DepositAddress, request.ProofFields)
 	if err != nil {
-		return &nftpb.NFTMintResponse{}, centerrors.New(code.Unknown, err.Error())
+		return nil, centerrors.New(code.Unknown, err.Error())
 	}
-	watchToken := <-confirmation
-	return &nftpb.NFTMintResponse{TokenId: watchToken.TokenID.String()}, watchToken.Err
+
+	return &nftpb.NFTMintResponse{
+		TokenId:       resp.TokenID,
+		TransactionId: resp.TransactionID,
+	}, nil
 }
 
 func validateParameters(request *nftpb.NFTMintRequest) error {

@@ -6,15 +6,15 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/transactions"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/nft"
-	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
@@ -171,6 +171,7 @@ func TestPaymentObligationService(t *testing.T) {
 		},
 	}
 
+	txRepo := ctx[transactions.BootstrappedRepo].(transactions.Repository)
 	registry := documents.NewServiceRegistry()
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -178,12 +179,9 @@ func TestPaymentObligationService(t *testing.T) {
 			docService, paymentOb, idService, ethClient, mockCfg := test.mocker()
 			// with below config the documentType has to be test.name to avoid conflicts since registry is a singleton
 			registry.Register(test.name, &docService)
-			confirmations := make(chan *watchTokenMinted)
-			service := newEthereumPaymentObligation(registry, &idService, &ethClient, &mockCfg, nil, func(config Config, qs *queue.Server, tokenID *big.Int, registryAddress string) (chan *watchTokenMinted, error) {
-				return confirmations, nil
-			}, func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error) {
+			service := newEthereumPaymentObligation(registry, &idService, &ethClient, &mockCfg, nil, func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error) {
 				return &EthereumPaymentObligationContract{}, nil
-			})
+			}, txRepo)
 			_, err := service.MintNFT(decodeHex(test.request.Identifier), test.request.RegistryAddress, test.request.DepositAddress, test.request.ProofFields)
 			if test.err != nil {
 				assert.Equal(t, test.err.Error(), err.Error())

@@ -19,9 +19,10 @@ type MockPaymentObligationService struct {
 	mock.Mock
 }
 
-func (m *MockPaymentObligationService) MintNFT(documentID []byte, registryAddress, depositAddress string, proofFields []string) (<-chan *watchTokenMinted, error) {
+func (m *MockPaymentObligationService) MintNFT(documentID []byte, registryAddress, depositAddress string, proofFields []string) (*MintNFTResponse, error) {
 	args := m.Called(documentID, registryAddress, depositAddress, proofFields)
-	return args.Get(0).(chan *watchTokenMinted), args.Error(1)
+	resp, _ := args.Get(0).(*MintNFTResponse)
+	return resp, args.Error(1)
 }
 
 func TestNFTMint_success(t *testing.T) {
@@ -29,19 +30,14 @@ func TestNFTMint_success(t *testing.T) {
 	mockService := &MockPaymentObligationService{}
 	docID, _ := hexutil.Decode(nftMintRequest.Identifier)
 
-	confirmations := make(chan *watchTokenMinted)
+	tokID := big.NewInt(1)
+	nftResponse := &MintNFTResponse{TokenID: tokID.String()}
 	mockService.
 		On("MintNFT", docID, nftMintRequest.RegistryAddress, nftMintRequest.DepositAddress, nftMintRequest.ProofFields).
-		Return(confirmations, nil)
-
-	tokID := big.NewInt(1)
-	go func() {
-		confirmations <- &watchTokenMinted{tokID, nil}
-	}()
+		Return(nftResponse, nil)
 
 	handler := grpcHandler{mockService}
 	nftMintResponse, err := handler.MintNFT(context.Background(), nftMintRequest)
-
 	mockService.AssertExpectations(t)
 	assert.Nil(t, err, "mint nft should be successful")
 	assert.Equal(t, tokID.String(), nftMintResponse.TokenId, "TokenID should have a dummy value")
@@ -59,10 +55,9 @@ func TestNFTMint_ServiceError(t *testing.T) {
 	nftMintRequest := getTestSetupData()
 	mockService := &MockPaymentObligationService{}
 	docID, _ := hexutil.Decode(nftMintRequest.Identifier)
-	confirmations := make(chan *watchTokenMinted)
 	mockService.
 		On("MintNFT", docID, nftMintRequest.RegistryAddress, nftMintRequest.DepositAddress, nftMintRequest.ProofFields).
-		Return(confirmations, errors.New("service error"))
+		Return(nil, errors.New("service error"))
 
 	handler := grpcHandler{mockService}
 	_, err := handler.MintNFT(context.Background(), nftMintRequest)

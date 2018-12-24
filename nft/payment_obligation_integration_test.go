@@ -8,27 +8,31 @@ import (
 	"testing"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/common"
+	"github.com/satori/go.uuid"
+
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/documents/invoice"
-	"github.com/centrifuge/go-centrifuge/header"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
-	"github.com/centrifuge/go-centrifuge/testingutils/identity"
-	"github.com/golang/protobuf/ptypes/timestamp"
-	"github.com/stretchr/testify/assert"
-
 	"github.com/centrifuge/go-centrifuge/config"
 	cc "github.com/centrifuge/go-centrifuge/context/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/documents/invoice"
+	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/nft"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
+	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/golang/protobuf/ptypes/timestamp"
+	"github.com/stretchr/testify/assert"
 )
 
 var registry *documents.ServiceRegistry
 var cfg config.Configuration
 var idService identity.Service
 var payOb nft.PaymentObligation
+var txService transactions.Service
 
 func TestMain(m *testing.M) {
 	log.Debug("Test PreSetup for NFT")
@@ -37,6 +41,7 @@ func TestMain(m *testing.M) {
 	idService = ctx[identity.BootstrappedIDService].(identity.Service)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	payOb = ctx[nft.BootstrappedPayObService].(nft.PaymentObligation)
+	txService = ctx[transactions.BootstrappedService].(transactions.Service)
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()
 	os.Exit(result)
@@ -73,14 +78,36 @@ func TestPaymentObligationService_mint(t *testing.T) {
 	assert.Nil(t, err, "should not error out when getting invoice ID")
 	// call mint
 	// assert no error
-	confirmations, err := payOb.MintNFT(
+	resp, err := payOb.MintNFT(
 		ID,
 		cfg.GetContractAddress("paymentObligation").String(),
 		"0xf72855759a39fb75fc7341139f5d7a3974d4da08",
 		[]string{"invoice.gross_amount", "invoice.currency", "invoice.due_date", "collaborators[0]"},
 	)
 	assert.Nil(t, err, "should not error out when minting an invoice")
-	tokenConfirm := <-confirmations
-	assert.Nil(t, tokenConfirm.Err, "should not error out when minting an invoice")
-	assert.NotNil(t, tokenConfirm.TokenID, "token id should be present")
+
+	confirm, err := waitTillSuccessOrError(resp.TransactionID, txService)
+	assert.True(t, confirm)
+	assert.Nil(t, err)
+	assert.NotNil(t, resp.TokenID, "token id should be present")
+}
+
+func waitTillSuccessOrError(id string, txService transactions.Service) (bool, error) {
+	txID := uuid.Must(uuid.FromString(id))
+	status := transactions.Pending
+	for status == transactions.Pending {
+		resp, err := txService.GetTransactionStatus(common.DummyIdentity, txID)
+		if err != nil {
+			return false, err
+		}
+
+		if resp.Status == string(transactions.Pending) {
+			continue
+		}
+
+		status = transactions.Status(resp.Status)
+		break
+	}
+
+	return status == transactions.Success, nil
 }
