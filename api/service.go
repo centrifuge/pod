@@ -14,6 +14,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/nft"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/transactions"
+	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -80,6 +82,14 @@ func registerServices(ctx context.Context, cfg Config, grpcServer *grpc.Server, 
 	nftpb.RegisterNFTServiceServer(grpcServer, nft.GRPCHandler(payObService))
 	err = nftpb.RegisterNFTServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
 	if err != nil {
+		return err
+	}
+
+	// transactions
+	txSrv := nodeObjReg[transactions.BootstrappedService].(transactions.Service)
+	h := transactions.GRPCHandler(txSrv)
+	transactionspb.RegisterTransactionServiceServer(grpcServer, h)
+	if err := transactionspb.RegisterTransactionServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts); err != nil {
 		return err
 	}
 
