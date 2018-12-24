@@ -71,6 +71,9 @@
       "properties": {
         "token_id": {
           "type": "string"
+        },
+        "transaction_id": {
+          "type": "string"
         }
       }
     }
