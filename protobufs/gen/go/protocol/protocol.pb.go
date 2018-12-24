@@ -3,12 +3,9 @@
 
 package protocolpb
 
-import (
-	fmt "fmt"
-	math "math"
-
-	proto "github.com/golang/protobuf/proto"
-)
+import proto "github.com/golang/protobuf/proto"
+import fmt "fmt"
+import math "math"
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -38,7 +35,6 @@ var MessageType_name = map[int32]string{
 	3: "MESSAGE_TYPE_SEND_ANCHORED_DOC",
 	4: "MESSAGE_TYPE_SEND_ANCHORED_DOC_REP",
 }
-
 var MessageType_value = map[string]int32{
 	"MESSAGE_TYPE_INVALID":               0,
 	"MESSAGE_TYPE_REQUEST_SIGNATURE":     1,
@@ -50,9 +46,8 @@ var MessageType_value = map[string]int32{
 func (x MessageType) String() string {
 	return proto.EnumName(MessageType_name, int32(x))
 }
-
 func (MessageType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_87968d26f3046c60, []int{0}
+	return fileDescriptor_protocol_d8718db914298289, []int{0}
 }
 
 type P2PEnvelope struct {
@@ -69,17 +64,16 @@ func (m *P2PEnvelope) Reset()         { *m = P2PEnvelope{} }
 func (m *P2PEnvelope) String() string { return proto.CompactTextString(m) }
 func (*P2PEnvelope) ProtoMessage()    {}
 func (*P2PEnvelope) Descriptor() ([]byte, []int) {
-	return fileDescriptor_87968d26f3046c60, []int{0}
+	return fileDescriptor_protocol_d8718db914298289, []int{0}
 }
-
 func (m *P2PEnvelope) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_P2PEnvelope.Unmarshal(m, b)
 }
 func (m *P2PEnvelope) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_P2PEnvelope.Marshal(b, m, deterministic)
 }
-func (m *P2PEnvelope) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_P2PEnvelope.Merge(m, src)
+func (dst *P2PEnvelope) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_P2PEnvelope.Merge(dst, src)
 }
 func (m *P2PEnvelope) XXX_Size() int {
 	return xxx_messageInfo_P2PEnvelope.Size(m)
@@ -105,13 +99,13 @@ func (m *P2PEnvelope) GetBody() []byte {
 }
 
 func init() {
-	proto.RegisterEnum("protocol.MessageType", MessageType_name, MessageType_value)
 	proto.RegisterType((*P2PEnvelope)(nil), "protocol.P2PEnvelope")
+	proto.RegisterEnum("protocol.MessageType", MessageType_name, MessageType_value)
 }
 
-func init() { proto.RegisterFile("protocol/protocol.proto", fileDescriptor_87968d26f3046c60) }
+func init() { proto.RegisterFile("protocol/protocol.proto", fileDescriptor_protocol_d8718db914298289) }
 
-var fileDescriptor_87968d26f3046c60 = []byte{
+var fileDescriptor_protocol_d8718db914298289 = []byte{
 	// 236 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x12, 0x2f, 0x28, 0xca, 0x2f,
 	0xc9, 0x4f, 0xce, 0xcf, 0xd1, 0x87, 0x31, 0xf4, 0xc0, 0x0c, 0x21, 0x0e, 0x18, 0x5f, 0xc9, 0x87,
