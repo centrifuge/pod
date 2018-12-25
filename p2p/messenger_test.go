@@ -66,7 +66,7 @@ func TestHandleNewMessage(t *testing.T) {
 	msg, err := m1.sendRequest(c, h2.ID(), &pb.P2PEnvelope{Type: pb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE, Body: utils.RandomSlice(3)}, MessengerDummyProtocol)
 	assert.NoError(t, err)
 	assert.Equal(t, pb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE_REP, msg.Type)
-	// from h1 to h2 different protocol
+	// from h1 to h2 different protocol - intentionally setting reply-response in opposite for differentiation
 	msg, err = m1.sendRequest(c, h2.ID(), &pb.P2PEnvelope{Type: pb.MessageType_MESSAGE_TYPE_SEND_ANCHORED_DOC_REP, Body: utils.RandomSlice(3)}, MessengerDummyProtocol2)
 	assert.NoError(t, err)
 	assert.Equal(t, pb.MessageType_MESSAGE_TYPE_SEND_ANCHORED_DOC, msg.Type)
