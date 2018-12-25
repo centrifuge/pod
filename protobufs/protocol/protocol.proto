@@ -13,11 +13,12 @@ enum MessageType {
   MESSAGE_TYPE_REQUEST_SIGNATURE_REP = 2;
   MESSAGE_TYPE_SEND_ANCHORED_DOC = 3;
   MESSAGE_TYPE_SEND_ANCHORED_DOC_REP = 4;
+  MESSAGE_TYPE_ERROR = 5;
 }
 
 message P2PEnvelope {
   // defines what type of message it is. (if we modify centrifuge-protobufs we can use type any with typeURL here)
   MessageType type = 1;
-  // serialized
+  // serialized protobuf for the actual message
   bytes body = 2;
 }

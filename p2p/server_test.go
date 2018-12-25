@@ -45,10 +45,6 @@ func TestMain(m *testing.M) {
 	os.Exit(result)
 }
 
-func TestCentP2PServer_Start(t *testing.T) {
-
-}
-
 func TestCentP2PServer_StartContextCancel(t *testing.T) {
 	cfg.Set("p2p.port", 38203)
 	cp2p := &p2pServer{config: cfg, handlerCreator: func() *receiver.Handler {
@@ -83,10 +79,9 @@ func TestCentP2PServer_StartListenError(t *testing.T) {
 
 func TestCentP2PServer_makeBasicHostNoExternalIP(t *testing.T) {
 	listenPort := 38202
-	cfg.Set("p2p.port", listenPort)
 	cp2p := &p2pServer{config: cfg}
-
-	h, err := cp2p.makeBasicHost(listenPort)
+	priv, pub, err := cp2p.createSigningKey()
+	h, err := makeBasicHost(priv, pub, "", listenPort)
 	assert.Nil(t, err)
 	assert.NotNil(t, h)
 }
@@ -94,10 +89,9 @@ func TestCentP2PServer_makeBasicHostNoExternalIP(t *testing.T) {
 func TestCentP2PServer_makeBasicHostWithExternalIP(t *testing.T) {
 	externalIP := "100.100.100.100"
 	listenPort := 38202
-	cfg.Set("p2p.port", listenPort)
-	cfg.Set("p2p.externalIP", externalIP)
 	cp2p := &p2pServer{config: cfg}
-	h, err := cp2p.makeBasicHost(listenPort)
+	priv, pub, err := cp2p.createSigningKey()
+	h, err := makeBasicHost(priv, pub, externalIP, listenPort)
 	assert.Nil(t, err)
 	assert.NotNil(t, h)
 	addr, err := ma.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%d", externalIP, listenPort))
@@ -109,10 +103,9 @@ func TestCentP2PServer_makeBasicHostWithExternalIP(t *testing.T) {
 func TestCentP2PServer_makeBasicHostWithWrongExternalIP(t *testing.T) {
 	externalIP := "100.200.300.400"
 	listenPort := 38202
-	cfg.Set("p2p.port", listenPort)
-	cfg.Set("p2p.externalIP", externalIP)
 	cp2p := &p2pServer{config: cfg}
-	h, err := cp2p.makeBasicHost(listenPort)
+	priv, pub, err := cp2p.createSigningKey()
+	h, err := makeBasicHost(priv, pub, externalIP, listenPort)
 	assert.NotNil(t, err)
 	assert.Nil(t, h)
 }

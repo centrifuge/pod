@@ -68,7 +68,7 @@ func (srv *Handler) HandleRequestDocumentSignature(ctx context.Context, peer pee
 
 	res, err := srv.RequestDocumentSignature(ctx, m)
 	if err != nil {
-		return nil, err
+		return convertToErrorEnvelop(err)
 	}
 
 	resp, err := proto.Marshal(res)
@@ -119,7 +119,7 @@ func (srv *Handler) HandleSendAnchoredDocument(ctx context.Context, peer peer.ID
 
 	res, err := srv.SendAnchoredDocument(ctx, m)
 	if err != nil {
-		return nil, err
+		return convertToErrorEnvelop(err)
 	}
 
 	resp, err := proto.Marshal(res)
@@ -150,4 +150,17 @@ func (srv *Handler) SendAnchoredDocument(ctx context.Context, docReq *p2ppb.Anch
 		CentNodeVersion: version.GetVersion().String(),
 		Accepted:        true,
 	}, nil
+}
+
+func convertToErrorEnvelop(err error) (*pb.P2PEnvelope, error) {
+	errPb, ok := err.(proto.Message)
+	if !ok {
+		return nil, err
+	}
+	errBytes, err := proto.Marshal(errPb)
+	if err != nil {
+		return nil, err
+	}
+	// an error for the client
+	return &pb.P2PEnvelope{Type: pb.MessageType_MESSAGE_TYPE_ERROR, Body: errBytes}, nil
 }

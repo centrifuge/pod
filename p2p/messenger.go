@@ -3,7 +3,6 @@ package p2p
 import (
 	"bufio"
 	"context"
-	"fmt"
 	"io"
 	"sync"
 	"time"
@@ -17,12 +16,14 @@ import (
 	ggio "github.com/gogo/protobuf/io"
 	"github.com/jbenet/go-context/io"
 	inet "github.com/libp2p/go-libp2p-net"
-	peer "github.com/libp2p/go-libp2p-peer"
-	ps "github.com/libp2p/go-libp2p-peerstore"
+	"github.com/libp2p/go-libp2p-peer"
 )
 
-// ErrReadTimeout timeout while reading
+// ErrReadTimeout must be used when receiving timeout while reading
 const ErrReadTimeout = errors.Error("timed out reading response")
+
+// ErrInvalidatedMessageSender must be used when the message sender object created is no longer valid (connection has dropped)
+const ErrInvalidatedMessageSender = errors.Error("message sender has been invalidated")
 
 type bufferedWriteCloser interface {
 	ggio.WriteCloser
@@ -56,7 +57,7 @@ type p2pMessenger struct {
 	timout time.Duration
 	ctx    context.Context
 
-	strmap map[peer.ID]*messageSender
+	strmap map[peer.ID]map[protocol.ID]*messageSender
 	smlk   sync.Mutex
 
 	plk sync.Mutex
@@ -64,14 +65,21 @@ type p2pMessenger struct {
 	msgHandlers map[pb.MessageType]func(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (*pb.P2PEnvelope, error)
 }
 
-func newMessenger(ctx context.Context, host host.Host, self peer.ID, p2pTimeout time.Duration) *p2pMessenger {
+func newP2PMessenger(ctx context.Context, host host.Host, p2pTimeout time.Duration) *p2pMessenger {
 	return &p2pMessenger{
 		ctx:         ctx,
 		host:        host,
-		self:        self,
+		self:        host.ID(),
 		timout:      p2pTimeout,
-		strmap:      make(map[peer.ID]*messageSender),
+		strmap:      make(map[peer.ID]map[protocol.ID]*messageSender),
 		msgHandlers: make(map[pb.MessageType]func(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (*pb.P2PEnvelope, error))}
+}
+
+// init initiates listening to given set of protocol streams
+func (mes *p2pMessenger) init(protocols ...protocol.ID) {
+	for _, p := range protocols {
+		mes.host.SetStreamHandler(p, mes.handleNewStream)
+	}
 }
 
 // addHandler adds a message handler for a specific message type
@@ -86,8 +94,11 @@ func (mes *p2pMessenger) handleNewStream(s inet.Stream) {
 
 func (mes *p2pMessenger) handleNewMessage(s inet.Stream) {
 	ctx := mes.ctx
-	cr := ctxio.NewReader(ctx, s) // ok to use. we defer close stream in this func
-	cw := ctxio.NewWriter(ctx, s) // ok to use. we defer close stream in this func
+	// ok to use. we defer close stream in this func
+	cr := ctxio.NewReader(ctx, s)
+	cw := ctxio.NewWriter(ctx, s)
+
+	// delimited readers and writers to set length of the protobuf messages to the stream
 	r := ggio.NewDelimitedReader(cr, inet.MessageSizeMax)
 	w := newBufferedDelimitedWriter(cw)
 	mPeer := s.Conn().RemotePeer()
@@ -110,7 +121,7 @@ func (mes *p2pMessenger) handleNewMessage(s inet.Stream) {
 		handler := mes.msgHandlers[pmes.GetType()]
 		if handler == nil {
 			s.Reset()
-			log.Debug("got back nil handler from handlerForMsgType")
+			log.Warning("got back nil handler from handlerForMsgType")
 			return
 		}
 
@@ -118,13 +129,13 @@ func (mes *p2pMessenger) handleNewMessage(s inet.Stream) {
 		rpmes, err := handler(ctx, mPeer, s.Protocol(), pmes)
 		if err != nil {
 			s.Reset()
-			log.Debugf("handle message error: %s", err)
+			log.Errorf("handle message error: %s", err)
 			return
 		}
 
 		// if nil response, return it before serializing
 		if rpmes == nil {
-			log.Debug("got back nil response from request")
+			log.Warning("got back nil response from request")
 			continue
 		}
 
@@ -135,7 +146,7 @@ func (mes *p2pMessenger) handleNewMessage(s inet.Stream) {
 		}
 		if err != nil {
 			s.Reset()
-			log.Debugf("send response error: %s", err)
+			log.Errorf("send response error: %s", err)
 			return
 		}
 	}
@@ -143,13 +154,12 @@ func (mes *p2pMessenger) handleNewMessage(s inet.Stream) {
 
 // sendRequest sends out a request
 func (mes *p2pMessenger) sendRequest(ctx context.Context, p peer.ID, pmes *pb.P2PEnvelope, protoc protocol.ID) (*pb.P2PEnvelope, error) {
-
-	ms, err := mes.messageSenderForPeer(p, protoc)
+	ms, err := mes.messageSenderForPeerAndProto(p, protoc)
 	if err != nil {
 		return nil, err
 	}
 
-	rpmes, err := ms.SendRequest(ctx, pmes, protoc)
+	rpmes, err := ms.sendRequest(ctx, pmes)
 	if err != nil {
 		return nil, err
 	}
@@ -159,33 +169,38 @@ func (mes *p2pMessenger) sendRequest(ctx context.Context, p peer.ID, pmes *pb.P2
 
 // sendMessage sends out a message
 func (mes *p2pMessenger) sendMessage(ctx context.Context, p peer.ID, pmes *pb.P2PEnvelope, protoc protocol.ID) error {
-	ms, err := mes.messageSenderForPeer(p, protoc)
+	ms, err := mes.messageSenderForPeerAndProto(p, protoc)
 	if err != nil {
 		return err
 	}
 
-	if err := ms.SendMessage(ctx, pmes, protoc); err != nil {
+	if err := ms.sendMessage(ctx, pmes, protoc); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (mes *p2pMessenger) messageSenderForPeer(p peer.ID, protoc protocol.ID) (*messageSender, error) {
+func (mes *p2pMessenger) messageSenderForPeerAndProto(p peer.ID, protoc protocol.ID) (*messageSender, error) {
 	mes.smlk.Lock()
-	ms, ok := mes.strmap[p]
+	ms, ok := mes.strmap[p][protoc]
 	if ok {
 		mes.smlk.Unlock()
 		return ms, nil
 	}
-	ms = &messageSender{p: p, mes: mes}
-	mes.strmap[p] = ms
+
+	// create a new message sender for the peer and protocol
+	ms = &messageSender{p: p, mes: mes, protoc: protoc}
+	if mes.strmap[p] == nil {
+		mes.strmap[p] = make(map[protocol.ID]*messageSender)
+	}
+	mes.strmap[p][protoc] = ms
 	mes.smlk.Unlock()
 
-	if err := ms.prepOrInvalidate(protoc); err != nil {
+	if err := ms.prepOrInvalidate(); err != nil {
 		mes.smlk.Lock()
 		defer mes.smlk.Unlock()
 
-		if msCur, ok := mes.strmap[p]; ok {
+		if msCur, ok := mes.strmap[p][protoc]; ok {
 			// Changed. Use the new one, old one is invalid and
 			// not in the map so we can just throw it away.
 			if ms != msCur {
@@ -193,7 +208,7 @@ func (mes *p2pMessenger) messageSenderForPeer(p peer.ID, protoc protocol.ID) (*m
 			}
 			// Not changed, remove the now invalid stream from the
 			// map.
-			delete(mes.strmap, p)
+			delete(mes.strmap[p], protoc)
 		}
 		// Invalid but not in map. Must have been removed by a disconnect.
 		return nil, err
@@ -203,12 +218,13 @@ func (mes *p2pMessenger) messageSenderForPeer(p peer.ID, protoc protocol.ID) (*m
 }
 
 type messageSender struct {
-	s   inet.Stream
-	r   ggio.ReadCloser
-	w   bufferedWriteCloser
-	lk  sync.Mutex
-	p   peer.ID
-	mes *p2pMessenger
+	s      inet.Stream
+	r      ggio.ReadCloser
+	w      bufferedWriteCloser
+	lk     sync.Mutex
+	p      peer.ID
+	protoc protocol.ID
+	mes    *p2pMessenger
 
 	invalid   bool
 	singleMes int
@@ -225,33 +241,29 @@ func (ms *messageSender) invalidate() {
 	}
 }
 
-func (ms *messageSender) prepOrInvalidate(protoc protocol.ID) error {
+func (ms *messageSender) prepOrInvalidate() error {
 	ms.lk.Lock()
 	defer ms.lk.Unlock()
-	if err := ms.prep(protoc); err != nil {
+	if err := ms.prep(); err != nil {
 		ms.invalidate()
 		return err
 	}
 	return nil
 }
 
-func (ms *messageSender) prep(protoc protocol.ID) error {
+func (ms *messageSender) prep() error {
 	if ms.invalid {
-		return fmt.Errorf("message sender has been invalidated")
+		return ErrInvalidatedMessageSender
 	}
 	if ms.s != nil {
 		return nil
 	}
 
-	err := ms.mes.host.Connect(ms.mes.ctx, ps.PeerInfo{
-		ID: ms.p,
-	})
+	// set the p2p timeout as the connection timeout
+	timeoutCtx, canc := context.WithTimeout(ms.mes.ctx, ms.mes.timout)
+	nstr, err := ms.mes.host.NewStream(timeoutCtx, ms.p, ms.protoc)
 	if err != nil {
-		return err
-	}
-
-	nstr, err := ms.mes.host.NewStream(ms.mes.ctx, ms.p, protoc)
-	if err != nil {
+		canc()
 		return err
 	}
 
@@ -267,12 +279,12 @@ func (ms *messageSender) prep(protoc protocol.ID) error {
 // behaviour.
 const streamReuseTries = 3
 
-func (ms *messageSender) SendMessage(ctx context.Context, pmes *pb.P2PEnvelope, protoc protocol.ID) error {
+func (ms *messageSender) sendMessage(ctx context.Context, pmes *pb.P2PEnvelope, protoc protocol.ID) error {
 	ms.lk.Lock()
 	defer ms.lk.Unlock()
 	retry := false
 	for {
-		if err := ms.prep(protoc); err != nil {
+		if err := ms.prep(); err != nil {
 			return err
 		}
 
@@ -301,12 +313,12 @@ func (ms *messageSender) SendMessage(ctx context.Context, pmes *pb.P2PEnvelope, 
 	}
 }
 
-func (ms *messageSender) SendRequest(ctx context.Context, pmes *pb.P2PEnvelope, protoc protocol.ID) (*pb.P2PEnvelope, error) {
+func (ms *messageSender) sendRequest(ctx context.Context, pmes *pb.P2PEnvelope) (*pb.P2PEnvelope, error) {
 	ms.lk.Lock()
 	defer ms.lk.Unlock()
 	retry := false
 	for {
-		if err := ms.prep(protoc); err != nil {
+		if err := ms.prep(); err != nil {
 			return nil, err
 		}
 

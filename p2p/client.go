@@ -8,6 +8,7 @@ import (
 	"github.com/golang/protobuf/proto"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/errors"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/code"
@@ -44,6 +45,12 @@ func (s *p2pServer) SendAnchoredDocument(ctx context.Context, id identity.Identi
 	if err != nil {
 		return nil, err
 	}
+
+	// handle client error
+	if recv.Type == protocolpb.MessageType_MESSAGE_TYPE_ERROR {
+		return nil, convertClientError(recv)
+	}
+
 	if recv.Type != protocolpb.MessageType_MESSAGE_TYPE_SEND_ANCHORED_DOC_REP {
 		return nil, errors.New("the received send anchored document response is incorrect")
 	}
@@ -107,6 +114,12 @@ func (s *p2pServer) getSignatureForDocument(ctx context.Context, identityService
 	if err != nil {
 		return nil, err
 	}
+
+	// handle client error
+	if recv.Type == protocolpb.MessageType_MESSAGE_TYPE_ERROR {
+		return nil, convertClientError(recv)
+	}
+
 	if recv.Type != protocolpb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE_REP {
 		return nil, errors.New("the received request signature response is incorrect")
 	}
@@ -215,4 +228,13 @@ func (s *p2pServer) createSignatureRequest(senderID []byte, doc *coredocumentpb.
 		return nil, err
 	}
 	return &protocolpb.P2PEnvelope{Type: protocolpb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE, Body: reqB}, nil
+}
+
+func convertClientError(recv *protocolpb.P2PEnvelope) error {
+	resp := new(errorspb.Error)
+	err := proto.Unmarshal(recv.Body, resp)
+	if err != nil {
+		return err
+	}
+	return errors.New(resp.Message)
 }

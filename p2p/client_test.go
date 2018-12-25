@@ -11,7 +11,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
-	"github.com/libp2p/go-libp2p-net"
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/libp2p/go-libp2p-protocol"
 
@@ -33,8 +32,8 @@ func (mm *MockMessenger) addHandler(mType protocolpb.MessageType, handler func(c
 	mm.Called(mType, handler)
 }
 
-func (mm *MockMessenger) handleNewStream(s net.Stream) {
-	mm.Called(s)
+func (mm *MockMessenger) init(id ...protocol.ID) {
+	mm.Called(id)
 }
 
 func (mm *MockMessenger) sendRequest(ctx context.Context, p peer.ID, pmes *protocolpb.P2PEnvelope, protoc protocol.ID) (*protocolpb.P2PEnvelope, error) {
