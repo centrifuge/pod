@@ -41,7 +41,7 @@ func (s *p2pServer) SendAnchoredDocument(ctx context.Context, id identity.Identi
 	if err != nil {
 		return nil, err
 	}
-	recv, err := s.mes.sendRequest(ctx, pid, &protocolpb.P2PEnvelope{Type: protocolpb.MessageType_MESSAGE_TYPE_SEND_ANCHORED_DOC, Body: marshalledRequest}, CentrifugeProtocol)
+	recv, err := s.mes.sendMessage(ctx, pid, &protocolpb.P2PEnvelope{Type: protocolpb.MessageType_MESSAGE_TYPE_SEND_ANCHORED_DOC, Body: marshalledRequest}, CentrifugeProtocol)
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +110,7 @@ func (s *p2pServer) getSignatureForDocument(ctx context.Context, identityService
 	}
 
 	log.Infof("Requesting signature from %s\n", receiverCentID)
-	recv, err := s.mes.sendRequest(ctx, receiverPeer, req, CentrifugeProtocol)
+	recv, err := s.mes.sendMessage(ctx, receiverPeer, req, CentrifugeProtocol)
 	if err != nil {
 		return nil, err
 	}

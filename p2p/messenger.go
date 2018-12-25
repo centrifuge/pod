@@ -152,32 +152,19 @@ func (mes *p2pMessenger) handleNewMessage(s inet.Stream) {
 	}
 }
 
-// sendRequest sends out a request
-func (mes *p2pMessenger) sendRequest(ctx context.Context, p peer.ID, pmes *pb.P2PEnvelope, protoc protocol.ID) (*pb.P2PEnvelope, error) {
+// sendMessage sends out a request
+func (mes *p2pMessenger) sendMessage(ctx context.Context, p peer.ID, pmes *pb.P2PEnvelope, protoc protocol.ID) (*pb.P2PEnvelope, error) {
 	ms, err := mes.messageSenderForPeerAndProto(p, protoc)
 	if err != nil {
 		return nil, err
 	}
 
-	rpmes, err := ms.sendRequest(ctx, pmes)
+	rpmes, err := ms.sendMessage(ctx, pmes)
 	if err != nil {
 		return nil, err
 	}
 
 	return rpmes, nil
-}
-
-// sendMessage sends out a message
-func (mes *p2pMessenger) sendMessage(ctx context.Context, p peer.ID, pmes *pb.P2PEnvelope, protoc protocol.ID) error {
-	ms, err := mes.messageSenderForPeerAndProto(p, protoc)
-	if err != nil {
-		return err
-	}
-
-	if err := ms.sendMessage(ctx, pmes, protoc); err != nil {
-		return err
-	}
-	return nil
 }
 
 func (mes *p2pMessenger) messageSenderForPeerAndProto(p peer.ID, protoc protocol.ID) (*messageSender, error) {
@@ -279,41 +266,7 @@ func (ms *messageSender) prep() error {
 // behaviour.
 const streamReuseTries = 3
 
-func (ms *messageSender) sendMessage(ctx context.Context, pmes *pb.P2PEnvelope, protoc protocol.ID) error {
-	ms.lk.Lock()
-	defer ms.lk.Unlock()
-	retry := false
-	for {
-		if err := ms.prep(); err != nil {
-			return err
-		}
-
-		if err := ms.writeMsg(pmes); err != nil {
-			ms.s.Reset()
-			ms.s = nil
-
-			if retry {
-				log.Info("error writing message, bailing: ", err)
-				return err
-			}
-			log.Info("error writing message, trying again: ", err)
-			retry = true
-			continue
-
-		}
-
-		if ms.singleMes > streamReuseTries {
-			go inet.FullClose(ms.s)
-			ms.s = nil
-		} else if retry {
-			ms.singleMes++
-		}
-
-		return nil
-	}
-}
-
-func (ms *messageSender) sendRequest(ctx context.Context, pmes *pb.P2PEnvelope) (*pb.P2PEnvelope, error) {
+func (ms *messageSender) sendMessage(ctx context.Context, pmes *pb.P2PEnvelope) (*pb.P2PEnvelope, error) {
 	ms.lk.Lock()
 	defer ms.lk.Unlock()
 	retry := false

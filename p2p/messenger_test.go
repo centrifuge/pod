@@ -63,44 +63,44 @@ func TestHandleNewMessage(t *testing.T) {
 
 	// 1. happy path
 	// from h1 to h2
-	msg, err := m1.sendRequest(c, h2.ID(), &pb.P2PEnvelope{Type: pb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE, Body: utils.RandomSlice(3)}, MessengerDummyProtocol)
+	msg, err := m1.sendMessage(c, h2.ID(), &pb.P2PEnvelope{Type: pb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE, Body: utils.RandomSlice(3)}, MessengerDummyProtocol)
 	assert.NoError(t, err)
 	assert.Equal(t, pb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE_REP, msg.Type)
 	// from h1 to h2 different protocol - intentionally setting reply-response in opposite for differentiation
-	msg, err = m1.sendRequest(c, h2.ID(), &pb.P2PEnvelope{Type: pb.MessageType_MESSAGE_TYPE_SEND_ANCHORED_DOC_REP, Body: utils.RandomSlice(3)}, MessengerDummyProtocol2)
+	msg, err = m1.sendMessage(c, h2.ID(), &pb.P2PEnvelope{Type: pb.MessageType_MESSAGE_TYPE_SEND_ANCHORED_DOC_REP, Body: utils.RandomSlice(3)}, MessengerDummyProtocol2)
 	assert.NoError(t, err)
 	assert.Equal(t, pb.MessageType_MESSAGE_TYPE_SEND_ANCHORED_DOC, msg.Type)
 	// from h2 to h1
-	msg, err = m2.sendRequest(c, h1.ID(), &pb.P2PEnvelope{Type: pb.MessageType_MESSAGE_TYPE_SEND_ANCHORED_DOC, Body: utils.RandomSlice(3)}, MessengerDummyProtocol)
+	msg, err = m2.sendMessage(c, h1.ID(), &pb.P2PEnvelope{Type: pb.MessageType_MESSAGE_TYPE_SEND_ANCHORED_DOC, Body: utils.RandomSlice(3)}, MessengerDummyProtocol)
 	assert.NoError(t, err)
 	assert.Equal(t, pb.MessageType_MESSAGE_TYPE_SEND_ANCHORED_DOC_REP, msg.Type)
 
 	// 2. unrecognized  protocol
-	msg, err = m1.sendRequest(c, h2.ID(), &pb.P2PEnvelope{Type: pb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE, Body: utils.RandomSlice(3)}, "wrong")
+	msg, err = m1.sendMessage(c, h2.ID(), &pb.P2PEnvelope{Type: pb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE, Body: utils.RandomSlice(3)}, "wrong")
 	if assert.Error(t, err) {
 		assert.Equal(t, "protocol not supported", err.Error())
 	}
 
 	// 3. unrecognized message type - stream would be reset by the peer
-	msg, err = m1.sendRequest(c, h2.ID(), &pb.P2PEnvelope{Type: pb.MessageType_MESSAGE_TYPE_INVALID, Body: utils.RandomSlice(3)}, MessengerDummyProtocol)
+	msg, err = m1.sendMessage(c, h2.ID(), &pb.P2PEnvelope{Type: pb.MessageType_MESSAGE_TYPE_INVALID, Body: utils.RandomSlice(3)}, MessengerDummyProtocol)
 	if assert.Error(t, err) {
 		assert.Equal(t, "stream reset", err.Error())
 	}
 
 	// 4. handler error
-	msg, err = m1.sendRequest(c, h2.ID(), &pb.P2PEnvelope{Type: pb.MessageType_MESSAGE_TYPE_ERROR, Body: utils.RandomSlice(3)}, MessengerDummyProtocol)
+	msg, err = m1.sendMessage(c, h2.ID(), &pb.P2PEnvelope{Type: pb.MessageType_MESSAGE_TYPE_ERROR, Body: utils.RandomSlice(3)}, MessengerDummyProtocol)
 	if assert.Error(t, err) {
 		assert.Equal(t, "stream reset", err.Error())
 	}
 
 	// 5. can't find host - h3
-	msg, err = m1.sendRequest(c, h3.ID(), &pb.P2PEnvelope{Type: pb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE, Body: utils.RandomSlice(3)}, MessengerDummyProtocol)
+	msg, err = m1.sendMessage(c, h3.ID(), &pb.P2PEnvelope{Type: pb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE, Body: utils.RandomSlice(3)}, MessengerDummyProtocol)
 	if assert.Error(t, err) {
 		assert.Contains(t, err.Error(), "dial attempt failed: failed to dial <peer.ID")
 	}
 
 	// 6. handler nil response
-	msg, err = m1.sendRequest(c, h2.ID(), &pb.P2PEnvelope{Type: pb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE_REP, Body: utils.RandomSlice(3)}, MessengerDummyProtocol)
+	msg, err = m1.sendMessage(c, h2.ID(), &pb.P2PEnvelope{Type: pb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE_REP, Body: utils.RandomSlice(3)}, MessengerDummyProtocol)
 	if assert.Error(t, err) {
 		assert.Equal(t, "timed out reading response", err.Error())
 	}

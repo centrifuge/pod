@@ -50,7 +50,7 @@ type messenger interface {
 
 	init(protocols ...protocol.ID)
 
-	sendRequest(ctx context.Context, p peer.ID, pmes *pb.P2PEnvelope, protoc protocol.ID) (*pb.P2PEnvelope, error)
+	sendMessage(ctx context.Context, p peer.ID, pmes *pb.P2PEnvelope, protoc protocol.ID) (*pb.P2PEnvelope, error)
 }
 
 // p2pServer implements api.Server
