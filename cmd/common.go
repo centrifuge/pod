@@ -10,8 +10,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	c "github.com/centrifuge/go-centrifuge/context"
+	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/keytools"
 	"github.com/centrifuge/go-centrifuge/node"
 	"github.com/centrifuge/go-centrifuge/queue"
 )
@@ -32,9 +32,9 @@ func createIdentity(idService identity.Service) (identity.CentID, error) {
 func generateKeys(config config.Configuration) {
 	p2pPub, p2pPvt := config.GetSigningKeyPair()
 	ethAuthPub, ethAuthPvt := config.GetEthAuthKeyPair()
-	keytools.GenerateSigningKeyPair(p2pPub, p2pPvt, "ed25519")
-	keytools.GenerateSigningKeyPair(p2pPub, p2pPvt, "ed25519")
-	keytools.GenerateSigningKeyPair(ethAuthPub, ethAuthPvt, "secp256k1")
+	crypto.GenerateSigningKeyPair(p2pPub, p2pPvt, "ed25519")
+	crypto.GenerateSigningKeyPair(p2pPub, p2pPvt, "ed25519")
+	crypto.GenerateSigningKeyPair(ethAuthPub, ethAuthPvt, "secp256k1")
 }
 
 func addKeys(idService identity.Service) error {

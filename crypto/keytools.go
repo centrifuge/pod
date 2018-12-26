@@ -1,4 +1,4 @@
-package keytools
+package crypto
 
 import (
 	logging "github.com/ipfs/go-log"

@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/keytools"
+	"github.com/centrifuge/go-centrifuge/crypto"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
@@ -365,7 +365,7 @@ func (s service) RequestDocumentSignature(contextHeader *header.ContextHeader, m
 	if !ok {
 		return nil, errors.NewTypedError(documents.ErrDocumentSigning, errors.New("missing signing key"))
 	}
-	sig := keytools.Sign(contextHeader.Self().ID[:], idKeys.PrivateKey, idKeys.PublicKey, cd.SigningRoot)
+	sig := crypto.Sign(contextHeader.Self().ID[:], idKeys.PrivateKey, idKeys.PublicKey, cd.SigningRoot)
 	cd.Signatures = append(cd.Signatures, sig)
 	err = model.UnpackCoreDocument(cd)
 	if err != nil {

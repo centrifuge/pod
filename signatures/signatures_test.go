@@ -5,7 +5,7 @@ package signatures
 import (
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/keytools"
+	"github.com/centrifuge/go-centrifuge/crypto"
 
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
@@ -19,7 +19,7 @@ var (
 )
 
 func TestSign(t *testing.T) {
-	sig := keytools.Sign(id1, key1, key1Pub, key1Pub)
+	sig := crypto.Sign(id1, key1, key1Pub, key1Pub)
 	assert.NotNil(t, sig)
 	assert.Equal(t, sig.PublicKey, []byte(key1Pub))
 	assert.Equal(t, sig.EntityId, id1)
@@ -33,7 +33,7 @@ func TestValidateSignature_invalid_sig(t *testing.T) {
 	pubKey := key1Pub
 	message := key1Pub
 	signature := utils.RandomSlice(32)
-	err := keytools.VerifySignature(pubKey, message, signature)
+	err := crypto.VerifySignature(pubKey, message, signature)
 	assert.NotNil(t, err, "must be not nil")
 	assert.Contains(t, err.Error(), "invalid signature")
 }
@@ -41,6 +41,6 @@ func TestValidateSignature_invalid_sig(t *testing.T) {
 func TestValidateSignature_success(t *testing.T) {
 	pubKey := key1Pub
 	message := key1Pub
-	err := keytools.VerifySignature(pubKey, message, signature)
+	err := crypto.VerifySignature(pubKey, message, signature)
 	assert.Nil(t, err, "must be nil")
 }

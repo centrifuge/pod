@@ -3,7 +3,7 @@ package coredocument
 import (
 	"fmt"
 
-	"github.com/centrifuge/go-centrifuge/keytools"
+	"github.com/centrifuge/go-centrifuge/crypto"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -214,7 +214,7 @@ func readyForSignaturesValidator(centIDBytes, priv, pub []byte) documents.Valida
 			return errors.New("expecting only one signature")
 		}
 
-		s := keytools.Sign(centIDBytes, priv, pub, cd.SigningRoot)
+		s := crypto.Sign(centIDBytes, priv, pub, cd.SigningRoot)
 		sh := cd.Signatures[0]
 		if !utils.IsSameByteSlice(s.EntityId, sh.EntityId) {
 			err = errors.AppendError(err, documents.NewError("cd_entity_id", "entity ID mismatch"))

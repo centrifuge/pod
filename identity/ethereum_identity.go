@@ -5,16 +5,16 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/centrifuge/go-centrifuge/keytools"
+	"github.com/centrifuge/go-centrifuge/crypto"
 
 	"bytes"
 
 	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
-	"github.com/centrifuge/go-centrifuge/keytools/ed25519"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -561,5 +561,5 @@ func (ids *EthereumIdentityService) ValidateSignature(signature *coredocumentpb.
 		return err
 	}
 
-	return keytools.VerifySignature(signature.PublicKey, message, signature.Signature)
+	return crypto.VerifySignature(signature.PublicKey, message, signature.Signature)
 }

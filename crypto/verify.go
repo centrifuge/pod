@@ -1,7 +1,7 @@
-package keytools
+package crypto
 
 import (
-	"github.com/centrifuge/go-centrifuge/keytools/secp256k1"
+	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
