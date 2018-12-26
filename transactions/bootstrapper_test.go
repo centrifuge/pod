@@ -23,4 +23,5 @@ func TestBootstrapper_Bootstrap(t *testing.T) {
 	err = b.Bootstrap(ctx)
 	assert.Nil(t, err)
 	assert.NotNil(t, ctx[BootstrappedRepo])
+	assert.NotNil(t, ctx[BootstrappedService])
 }
