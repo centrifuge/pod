@@ -1,7 +1,6 @@
 package nft
 
 import (
-	"context"
 	"encoding/hex"
 	"math/big"
 	"time"
@@ -33,6 +32,11 @@ type Config interface {
 	GetEthereumContextWaitTimeout() time.Duration
 }
 
+// taskQueuer can be implemented by any queueing system
+type taskQueuer interface {
+	EnqueueJob(taskTypeName string, params map[string]interface{}) (queue.TaskResult, error)
+}
+
 // ethereumPaymentObligationContract is an abstraction over the contract code to help in mocking it out
 type ethereumPaymentObligationContract interface {
 
@@ -46,9 +50,10 @@ type ethereumPaymentObligation struct {
 	identityService identity.Service
 	ethClient       ethereum.Client
 	config          Config
-	queue           *queue.Server
+	queue           taskQueuer
 	bindContract    func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error)
 	txRepository    transactions.Repository
+	blockHeightFunc func() (height uint64, err error)
 }
 
 // newEthereumPaymentObligation creates ethereumPaymentObligation given the parameters
@@ -57,9 +62,10 @@ func newEthereumPaymentObligation(
 	identityService identity.Service,
 	ethClient ethereum.Client,
 	config Config,
-	queue *queue.Server,
+	queue taskQueuer,
 	bindContract func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error),
-	txRepository transactions.Repository) *ethereumPaymentObligation {
+	txRepository transactions.Repository,
+	blockHeightFunc func() (uint64, error)) *ethereumPaymentObligation {
 	return &ethereumPaymentObligation{
 		registry:        registry,
 		identityService: identityService,
@@ -68,6 +74,7 @@ func newEthereumPaymentObligation(
 		bindContract:    bindContract,
 		queue:           queue,
 		txRepository:    txRepository,
+		blockHeightFunc: blockHeightFunc,
 	}
 }
 
@@ -148,12 +155,10 @@ func (s *ethereumPaymentObligation) MintNFT(documentID []byte, registryAddress, 
 }
 
 func (s *ethereumPaymentObligation) queueTask(tokenID *big.Int, registryAddress string) (txID uuid.UUID, err error) {
-	conn := ethereum.GetClient()
-	h, err := conn.GetEthClient().HeaderByNumber(context.Background(), nil)
+	height, err := s.blockHeightFunc()
 	if err != nil {
 		return txID, err
 	}
-
 	tx := transactions.NewTransaction(ccommon.DummyIdentity, "Mint NFT")
 	err = s.txRepository.Save(tx)
 	if err != nil {
@@ -161,9 +166,9 @@ func (s *ethereumPaymentObligation) queueTask(tokenID *big.Int, registryAddress 
 	}
 
 	_, err = s.queue.EnqueueJob(mintingConfirmationTaskName, map[string]interface{}{
-		txIDParam:              tx.ID,
+		txIDParam:              tx.ID.String(),
 		tokenIDParam:           hex.EncodeToString(tokenID.Bytes()),
-		queue.BlockHeightParam: h.Number.Uint64(),
+		queue.BlockHeightParam: height,
 		registryAddressParam:   registryAddress,
 	})
 

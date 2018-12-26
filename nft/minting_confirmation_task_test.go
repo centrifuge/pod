@@ -8,6 +8,7 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -18,6 +19,7 @@ func TestMintingConfirmationTask_ParseKwargs_success(t *testing.T) {
 	registryAddress := "0xf72855759a39fb75fc7341139f5d7a3974d4da08"
 
 	kwargs := map[string]interface{}{
+		txIDParam:              uuid.Must(uuid.NewV4()).String(),
 		tokenIDParam:           tokenId,
 		queue.BlockHeightParam: blockHeight,
 		registryAddressParam:   registryAddress,

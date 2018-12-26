@@ -17,6 +17,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/testingutils"
+	"github.com/centrifuge/go-centrifuge/transactions"
 	logging "github.com/ipfs/go-log"
 )
 
@@ -26,6 +27,7 @@ var bootstappers = []bootstrap.TestBootstrapper{
 	&testlogging.TestLoggingBootstrapper{},
 	&config.Bootstrapper{},
 	&storage.Bootstrapper{},
+	transactions.Bootstrapper{},
 	ethereum.Bootstrapper{},
 	&queue.Bootstrapper{},
 	anchors.Bootstrapper{},

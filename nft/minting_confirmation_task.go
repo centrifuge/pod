@@ -78,11 +78,11 @@ func (nftc *mintingConfirmationTask) Copy() (gocelery.CeleryTask, error) {
 
 // ParseKwargs - define a method to parse CentID
 func (nftc *mintingConfirmationTask) ParseKwargs(kwargs map[string]interface{}) (err error) {
-	txID, ok := kwargs[txIDParam].(uuid.UUID)
+	txID, ok := kwargs[txIDParam].(string)
 	if !ok {
 		return errors.New("malformed transactionID: %v", kwargs[txIDParam])
 	}
-	nftc.TransactionID = txID
+	nftc.TransactionID = uuid.Must(uuid.FromString(txID))
 
 	// parse TokenID
 	tokenID, ok := kwargs[tokenIDParam]

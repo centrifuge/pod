@@ -1,6 +1,8 @@
 package nft
 
 import (
+	"context"
+
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/transactions"
 
@@ -48,13 +50,21 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("transactions repository not initialised")
 	}
 
+	client := ethereum.GetClient()
 	ctx[BootstrappedPayObService] = newEthereumPaymentObligation(
 		registry,
 		idService,
-		ethereum.GetClient(),
+		client,
 		cfg, queueSrv,
 		bindContract,
-		txRepository)
+		txRepository, func() (uint64, error) {
+			h, err := client.GetEthClient().HeaderByNumber(context.Background(), nil)
+			if err != nil {
+				return 0, err
+			}
+
+			return h.Number.Uint64(), nil
+		})
 
 	// queue task
 	task := newMintingConfirmationTask(cfg.GetEthereumContextWaitTimeout(), ethereum.DefaultWaitForTransactionMiningContext, txRepository)
