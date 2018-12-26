@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/centrifuge/go-centrifuge/keytools"
+
 	"github.com/centrifuge/go-centrifuge/errors"
 
 	"time"
@@ -13,7 +15,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/keytools/ed25519"
 	"github.com/centrifuge/go-centrifuge/keytools/secp256k1"
-	"github.com/centrifuge/go-centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -235,5 +236,5 @@ func ValidateCentrifugeIDBytes(givenCentID []byte, centrifugeID CentID) error {
 // Sign the document with the private key and return the signature along with the public key for the verification
 // assumes that signing root for the document is generated
 func Sign(idConfig *IDConfig, purpose int, payload []byte) *coredocumentpb.Signature {
-	return signatures.Sign(idConfig.ID[:], idConfig.Keys[purpose].PrivateKey, idConfig.Keys[purpose].PublicKey, payload)
+	return keytools.Sign(idConfig.ID[:], idConfig.Keys[purpose].PrivateKey, idConfig.Keys[purpose].PublicKey, payload)
 }

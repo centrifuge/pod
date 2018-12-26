@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/centrifuge/go-centrifuge/keytools"
+
 	"bytes"
 
 	"time"
@@ -14,7 +16,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/keytools/ed25519"
 	"github.com/centrifuge/go-centrifuge/queue"
-	"github.com/centrifuge/go-centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -560,5 +561,5 @@ func (ids *EthereumIdentityService) ValidateSignature(signature *coredocumentpb.
 		return err
 	}
 
-	return signatures.VerifySignature(signature.PublicKey, message, signature.Signature)
+	return keytools.VerifySignature(signature.PublicKey, message, signature.Signature)
 }

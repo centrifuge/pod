@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/keytools"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
@@ -16,7 +18,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/notification"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
-	"github.com/centrifuge/go-centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes"
@@ -365,7 +366,7 @@ func (s service) RequestDocumentSignature(contextHeader *header.ContextHeader, m
 	if !ok {
 		return nil, errors.NewTypedError(documents.ErrDocumentSigning, errors.New("missing signing key"))
 	}
-	sig := signatures.Sign(contextHeader.Self().ID[:], idKeys.PrivateKey, idKeys.PublicKey, doc.SigningRoot)
+	sig := keytools.Sign(contextHeader.Self().ID[:], idKeys.PrivateKey, idKeys.PublicKey, doc.SigningRoot)
 	doc.Signatures = append(doc.Signatures, sig)
 	err = model.UnpackCoreDocument(doc)
 	if err != nil {
