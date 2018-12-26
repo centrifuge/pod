@@ -4,15 +4,16 @@ import (
 	"context"
 	"time"
 
+	context2 "github.com/centrifuge/go-centrifuge/context"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/centerrors"
+	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/keytools/secp256k1"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/version"
 	logging "github.com/ipfs/go-log"
@@ -30,18 +31,18 @@ type Config interface {
 // Processor identifies an implementation, which can do a bunch of things with a CoreDocument.
 // E.g. send, anchor, etc.
 type Processor interface {
-	Send(ctx *header.ContextHeader, coreDocument *coredocumentpb.CoreDocument, recipient identity.CentID) (err error)
-	PrepareForSignatureRequests(ctx *header.ContextHeader, model documents.Model) error
-	RequestSignatures(ctx *header.ContextHeader, model documents.Model) error
+	Send(ctx *context2.Header, coreDocument *coredocumentpb.CoreDocument, recipient identity.CentID) (err error)
+	PrepareForSignatureRequests(ctx *context2.Header, model documents.Model) error
+	RequestSignatures(ctx *context2.Header, model documents.Model) error
 	PrepareForAnchoring(model documents.Model) error
-	AnchorDocument(ctx *header.ContextHeader, model documents.Model) error
-	SendDocument(ctx *header.ContextHeader, model documents.Model) error
+	AnchorDocument(ctx *context2.Header, model documents.Model) error
+	SendDocument(ctx *context2.Header, model documents.Model) error
 }
 
 // client defines the methods for p2pclient
 // we redefined it here so that we can avoid cyclic dependencies with p2p
 type client interface {
-	GetSignaturesForDocument(ctx *header.ContextHeader, identityService identity.Service, doc *coredocumentpb.CoreDocument) error
+	GetSignaturesForDocument(ctx *context2.Header, identityService identity.Service, doc *coredocumentpb.CoreDocument) error
 	SendAnchoredDocument(ctx context.Context, id identity.Identity, in *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error)
 }
 
@@ -64,7 +65,7 @@ func DefaultProcessor(idService identity.Service, p2pClient client, repository a
 }
 
 // Send sends the given defaultProcessor to the given recipient on the P2P layer
-func (dp defaultProcessor) Send(ctx *header.ContextHeader, coreDocument *coredocumentpb.CoreDocument, recipient identity.CentID) (err error) {
+func (dp defaultProcessor) Send(ctx *context2.Header, coreDocument *coredocumentpb.CoreDocument, recipient identity.CentID) (err error) {
 	if coreDocument == nil {
 		return centerrors.NilError(coreDocument)
 	}
@@ -93,7 +94,7 @@ func (dp defaultProcessor) Send(ctx *header.ContextHeader, coreDocument *coredoc
 }
 
 // PrepareForSignatureRequests gets the core document from the model, and adds the node's own signature
-func (dp defaultProcessor) PrepareForSignatureRequests(ctx *header.ContextHeader, model documents.Model) error {
+func (dp defaultProcessor) PrepareForSignatureRequests(ctx *context2.Header, model documents.Model) error {
 	cd, err := model.PackCoreDocument()
 	if err != nil {
 		return errors.New("failed to pack core document: %v", err)
@@ -118,7 +119,7 @@ func (dp defaultProcessor) PrepareForSignatureRequests(ctx *header.ContextHeader
 
 // RequestSignatures gets the core document from the model, validates pre signature requirements,
 // collects signatures, and validates the signatures,
-func (dp defaultProcessor) RequestSignatures(ctx *header.ContextHeader, model documents.Model) error {
+func (dp defaultProcessor) RequestSignatures(ctx *context2.Header, model documents.Model) error {
 	cd, err := model.PackCoreDocument()
 	if err != nil {
 		return errors.New("failed to pack core document: %v", err)
@@ -175,7 +176,7 @@ func (dp defaultProcessor) PrepareForAnchoring(model documents.Model) error {
 }
 
 // AnchorDocument validates the model, and anchors the document
-func (dp defaultProcessor) AnchorDocument(ctx *header.ContextHeader, model documents.Model) error {
+func (dp defaultProcessor) AnchorDocument(ctx *context2.Header, model documents.Model) error {
 	cd, err := model.PackCoreDocument()
 	if err != nil {
 		return errors.New("failed to pack core document: %v", err)
@@ -225,7 +226,7 @@ func (dp defaultProcessor) AnchorDocument(ctx *header.ContextHeader, model docum
 }
 
 // SendDocument does post anchor validations and sends the document to collaborators
-func (dp defaultProcessor) SendDocument(ctx *header.ContextHeader, model documents.Model) error {
+func (dp defaultProcessor) SendDocument(ctx *context2.Header, model documents.Model) error {
 	cd, err := model.PackCoreDocument()
 	if err != nil {
 		return errors.New("failed to pack core document: %v", err)

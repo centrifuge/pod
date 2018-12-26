@@ -7,13 +7,14 @@ import (
 	"errors"
 	"testing"
 
+	context2 "github.com/centrifuge/go-centrifuge/context"
+
 	"os"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/testingutils/coredocument"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/stretchr/testify/assert"
@@ -35,7 +36,7 @@ func TestMain(m *testing.M) {
 
 func TestAnchorDocument(t *testing.T) {
 	ctx := context.Background()
-	ctxh, err := header.NewContextHeader(ctx, cfg)
+	ctxh, err := context2.NewContextHeader(ctx, cfg)
 	assert.Nil(t, err)
 	updater := func(id []byte, model documents.Model) error {
 		return nil

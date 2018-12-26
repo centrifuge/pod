@@ -5,13 +5,14 @@ package coredocument
 import (
 	"testing"
 
+	context2 "github.com/centrifuge/go-centrifuge/context"
+
 	"context"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -206,7 +207,7 @@ func TestValidator_documentRootValidator(t *testing.T) {
 }
 
 func TestValidator_selfSignatureValidator(t *testing.T) {
-	ctxh, err := header.NewContextHeader(context.Background(), cfg)
+	ctxh, err := context2.NewContextHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 	idKeys := ctxh.Self().Keys[identity.KeyPurposeSigning]
 	rfsv := readyForSignaturesValidator(ctxh.Self().ID[:], idKeys.PrivateKey, idKeys.PublicKey)
@@ -537,7 +538,7 @@ func TestPostAnchoredValidator(t *testing.T) {
 }
 
 func TestPreSignatureRequestValidator(t *testing.T) {
-	ctxh, err := header.NewContextHeader(context.Background(), cfg)
+	ctxh, err := context2.NewContextHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 	idKeys := ctxh.Self().Keys[identity.KeyPurposeSigning]
 	psv := PreSignatureRequestValidator(ctxh.Self().ID[:], idKeys.PrivateKey, idKeys.PublicKey)

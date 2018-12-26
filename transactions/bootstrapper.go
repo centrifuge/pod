@@ -11,6 +11,9 @@ const (
 
 	// BootstrappedRepo is the key mapped to transactions.Repository.
 	BootstrappedRepo = "BootstrappedRepo"
+
+	// BootstrappedService is the key to mapped transactions.Service
+	BootstrappedService = "BootstrappedService"
 )
 
 // Bootstrapper implements bootstrap.Bootstrapper.
@@ -25,5 +28,8 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 
 	txRepo := NewRepository(repo)
 	ctx[BootstrappedRepo] = txRepo
+
+	txSrv := NewService(txRepo)
+	ctx[BootstrappedService] = txSrv
 	return nil
 }

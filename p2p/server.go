@@ -13,7 +13,7 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/errors"
 
-	cented25519 "github.com/centrifuge/go-centrifuge/keytools/ed25519"
+	cented25519 "github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	"github.com/ipfs/go-cid"
 	ds "github.com/ipfs/go-datastore"
 	"github.com/ipfs/go-ipfs-addr"

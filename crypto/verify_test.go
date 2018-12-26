@@ -1,6 +1,6 @@
 // +build unit
 
-package keytools
+package crypto
 
 import (
 	"os"
