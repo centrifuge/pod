@@ -8,7 +8,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/p2p/grpc"
-	p2pgrpc "github.com/centrifuge/go-libp2p-grpc"
+	"github.com/paralin/go-libp2p-grpc"
 )
 
 // Bootstrapped constants that are used as key in bootstrap context

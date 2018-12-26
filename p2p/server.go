@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/identity"
-	p2pgrpc "github.com/centrifuge/go-libp2p-grpc"
+	"github.com/paralin/go-libp2p-grpc"
 
 	"github.com/centrifuge/go-centrifuge/errors"
 

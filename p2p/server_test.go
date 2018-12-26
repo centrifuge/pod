@@ -12,7 +12,7 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/p2p/grpc"
-	p2pgrpc "github.com/centrifuge/go-libp2p-grpc"
+	"github.com/paralin/go-libp2p-grpc"
 
 	"github.com/centrifuge/go-centrifuge/identity"
 
