@@ -3,13 +3,14 @@ package cmd
 import (
 	"context"
 
+	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers"
+
 	"github.com/centrifuge/go-centrifuge/storage"
 
 	logging "github.com/ipfs/go-log"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
-	c "github.com/centrifuge/go-centrifuge/context"
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/node"
@@ -112,7 +113,7 @@ func CreateConfig(
 
 // RunBootstrap bootstraps the node for running
 func RunBootstrap(cfgFile string) {
-	mb := c.MainBootstrapper{}
+	mb := bootstrappers.MainBootstrapper{}
 	mb.PopulateRunBootstrappers()
 	ctx := map[string]interface{}{}
 	ctx[config.BootstrappedConfigFile] = cfgFile
@@ -125,7 +126,7 @@ func RunBootstrap(cfgFile string) {
 
 // BaseBootstrap bootstraps the node for testing purposes mainly
 func BaseBootstrap(cfgFile string) map[string]interface{} {
-	mb := c.MainBootstrapper{}
+	mb := bootstrappers.MainBootstrapper{}
 	mb.PopulateBaseBootstrappers()
 	ctx := map[string]interface{}{}
 	ctx[config.BootstrappedConfigFile] = cfgFile

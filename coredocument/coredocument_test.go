@@ -9,11 +9,12 @@ import (
 	"os"
 	"testing"
 
+	context2 "github.com/centrifuge/go-centrifuge/context"
+
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/testingutils/coredocument"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
@@ -244,7 +245,7 @@ func TestGetExternalCollaborators(t *testing.T) {
 	c := []string{hexutil.Encode(c1), hexutil.Encode(c2)}
 	cd, err := NewWithCollaborators(c)
 	assert.Equal(t, [][]byte{c1, c2}, cd.Collaborators)
-	ctxh, err := header.NewContextHeader(context.Background(), cfg)
+	ctxh, err := context2.NewContextHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 	collaborators, err := GetExternalCollaborators(ctxh.Self().ID, cd)
 	assert.Nil(t, err)
@@ -259,7 +260,7 @@ func TestGetExternalCollaborators_WrongIDFormat(t *testing.T) {
 	cd, err := NewWithCollaborators(c)
 	assert.Equal(t, [][]byte{c1, c2}, cd.Collaborators)
 	cd.Collaborators[1] = utils.RandomSlice(5)
-	ctxh, err := header.NewContextHeader(context.Background(), cfg)
+	ctxh, err := context2.NewContextHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 	_, err = GetExternalCollaborators(ctxh.Self().ID, cd)
 	assert.NotNil(t, err)

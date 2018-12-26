@@ -4,13 +4,14 @@ import (
 	"context"
 	"fmt"
 
+	context2 "github.com/centrifuge/go-centrifuge/context"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/libp2p/go-libp2p-peer"
@@ -22,7 +23,7 @@ import (
 // Client defines methods that can be implemented by any type handling p2p communications.
 type Client interface {
 	OpenClient(id identity.Identity) (p2ppb.P2PServiceClient, error)
-	GetSignaturesForDocument(ctx *header.ContextHeader, identityService identity.Service, doc *coredocumentpb.CoreDocument) error
+	GetSignaturesForDocument(ctx *context2.ContextHeader, identityService identity.Service, doc *coredocumentpb.CoreDocument) error
 }
 
 // OpenClient returns P2PServiceClient to contact the remote peer
@@ -140,7 +141,7 @@ func (s *p2pServer) getSignatureAsync(ctx context.Context, identityService ident
 }
 
 // GetSignaturesForDocument requests peer nodes for the signature and verifies them
-func (s *p2pServer) GetSignaturesForDocument(ctx *header.ContextHeader, identityService identity.Service, doc *coredocumentpb.CoreDocument) error {
+func (s *p2pServer) GetSignaturesForDocument(ctx *context2.ContextHeader, identityService identity.Service, doc *coredocumentpb.CoreDocument) error {
 	in := make(chan signatureResponseWrap)
 	defer close(in)
 

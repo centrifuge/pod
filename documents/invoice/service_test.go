@@ -7,12 +7,13 @@ import (
 	"math/big"
 	"testing"
 
+	context2 "github.com/centrifuge/go-centrifuge/context"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/identity"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/storage"
@@ -108,7 +109,7 @@ func TestService_DeriveFromPayload(t *testing.T) {
 	_, err = invSrv.DeriveFromCreatePayload(&clientinvoicepb.InvoiceCreatePayload{}, nil)
 	assert.Error(t, err, "DeriveWithInvoiceInput should produce an error if invoiceInput equals nil")
 
-	contextHeader, err := header.NewContextHeader(context.Background(), cfg)
+	contextHeader, err := context2.NewContextHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 	model, err = invSrv.DeriveFromCreatePayload(payload, contextHeader)
 	assert.Nil(t, err, "valid invoiceData shouldn't produce an error")
@@ -214,7 +215,7 @@ func TestService_Exists(t *testing.T) {
 }
 
 func TestService_Create(t *testing.T) {
-	ctxh, err := header.NewContextHeader(context.Background(), cfg)
+	ctxh, err := context2.NewContextHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 	_, srv := getServiceWithMockedLayers()
 	invSrv := srv.(service)
@@ -266,7 +267,7 @@ func TestService_DeriveInvoiceData(t *testing.T) {
 
 	// success
 	payload := testingdocuments.CreateInvoicePayload()
-	contextHeader, err := header.NewContextHeader(context.Background(), cfg)
+	contextHeader, err := context2.NewContextHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 	inv, err := invSrv.DeriveFromCreatePayload(payload, contextHeader)
 	assert.Nil(t, err, "must be non nil")
@@ -279,7 +280,7 @@ func TestService_DeriveInvoiceResponse(t *testing.T) {
 	// success
 	invSrv := service{repo: testRepo()}
 	payload := testingdocuments.CreateInvoicePayload()
-	contextHeader, err := header.NewContextHeader(context.Background(), cfg)
+	contextHeader, err := context2.NewContextHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 	inv1, err := invSrv.DeriveFromCreatePayload(payload, contextHeader)
 	assert.Nil(t, err, "must be non nil")
@@ -386,7 +387,7 @@ func TestService_RequestDocumentSignature_SigningRootNil(t *testing.T) {
 	assert.Nil(t, err)
 	idService = mockSignatureCheck(i, idService, invSrv)
 	i.CoreDocument.SigningRoot = nil
-	ctxh, err := header.NewContextHeader(context.Background(), cfg)
+	ctxh, err := context2.NewContextHeader(context.Background(), cfg)
 	signature, err := invSrv.RequestDocumentSignature(ctxh, i)
 	assert.NotNil(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
@@ -501,7 +502,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.Nil(t, doc)
 
 	// messed up identifier
-	contextHeader, err := header.NewContextHeader(context.Background(), cfg)
+	contextHeader, err := context2.NewContextHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 	payload := &clientinvoicepb.InvoiceUpdatePayload{Identifier: "some identifier", Data: &clientinvoicepb.InvoiceData{}}
 	doc, err = invSrv.DeriveFromUpdatePayload(payload, contextHeader)
@@ -571,7 +572,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 func TestService_Update(t *testing.T) {
 	_, srv := getServiceWithMockedLayers()
 	invSrv := srv.(service)
-	ctxh, err := header.NewContextHeader(context.Background(), cfg)
+	ctxh, err := context2.NewContextHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 
 	// pack failed
@@ -651,7 +652,7 @@ func TestService_Update(t *testing.T) {
 func TestService_calculateDataRoot(t *testing.T) {
 	_, srv := getServiceWithMockedLayers()
 	invSrv := srv.(service)
-	ctxh, err := header.NewContextHeader(context.Background(), cfg)
+	ctxh, err := context2.NewContextHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 
 	// type mismatch

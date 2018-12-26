@@ -6,11 +6,12 @@ import (
 	"context"
 	"testing"
 
+	context2 "github.com/centrifuge/go-centrifuge/context"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -48,7 +49,7 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 	// pack failed
 	model := mockModel{}
 	model.On("PackCoreDocument").Return(nil, errors.New("error")).Once()
-	ctxh, err := header.NewContextHeader(context.Background(), cfg)
+	ctxh, err := context2.NewContextHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 	err = dp.PrepareForSignatureRequests(ctxh, model)
 	model.AssertExpectations(t)
@@ -70,10 +71,10 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 	assert.Nil(t, FillSalts(cd))
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
-	ctxh, err = header.NewContextHeader(context.Background(), cfg)
+	ctxh, err = context2.NewContextHeader(context.Background(), cfg)
 	assert.NotNil(t, err)
 	cfg.Set("keys.signing.publicKey", pub)
-	ctxh, err = header.NewContextHeader(context.Background(), cfg)
+	ctxh, err = context2.NewContextHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 
 	// failed unpack
@@ -105,7 +106,7 @@ type p2pClient struct {
 	client
 }
 
-func (p p2pClient) GetSignaturesForDocument(ctx *header.ContextHeader, identityService identity.Service, doc *coredocumentpb.CoreDocument) error {
+func (p p2pClient) GetSignaturesForDocument(ctx *context2.ContextHeader, identityService identity.Service, doc *coredocumentpb.CoreDocument) error {
 	args := p.Called(ctx, doc)
 	return args.Error(0)
 }
@@ -114,7 +115,7 @@ func TestDefaultProcessor_RequestSignatures(t *testing.T) {
 	srv := &testingcommons.MockIDService{}
 	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
 	ctx := context.Background()
-	ctxh, err := header.NewContextHeader(ctx, cfg)
+	ctxh, err := context2.NewContextHeader(ctx, cfg)
 	assert.Nil(t, err)
 	// pack failed
 	model := mockModel{}
@@ -262,7 +263,7 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	srv := &testingcommons.MockIDService{}
 	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
 	ctx := context.Background()
-	ctxh, err := header.NewContextHeader(ctx, cfg)
+	ctxh, err := context2.NewContextHeader(ctx, cfg)
 	assert.Nil(t, err)
 
 	// pack failed
@@ -358,7 +359,7 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	srv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
 	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
 	ctx := context.Background()
-	ctxh, err := header.NewContextHeader(ctx, cfg)
+	ctxh, err := context2.NewContextHeader(ctx, cfg)
 	assert.Nil(t, err)
 	// pack failed
 	model := mockModel{}

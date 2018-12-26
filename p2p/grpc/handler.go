@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	context2 "github.com/centrifuge/go-centrifuge/context"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/centerrors"
@@ -12,7 +14,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/version"
 	logging "github.com/ipfs/go-log"
 )
@@ -58,7 +59,7 @@ func New(config config.Configuration, registry *documents.ServiceRegistry) *Hand
 // Existing signatures on the document will be verified
 // Document will be stored to the repository for state management
 func (srv Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.SignatureRequest) (*p2ppb.SignatureResponse, error) {
-	ctxHeader, err := header.NewContextHeader(ctx, srv.config)
+	ctxHeader, err := context2.NewContextHeader(ctx, srv.config)
 	if err != nil {
 		log.Error(err)
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
