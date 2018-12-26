@@ -256,7 +256,7 @@ func TestService_RequestDocumentSignature_SigningRootNil(t *testing.T) {
 	assert.Nil(t, err)
 	idService = mockSignatureCheck(i, idService, service)
 	i.CoreDocument.SigningRoot = nil
-	ctxh, err := context2.NewContextHeader(context.Background(), cfg)
+	ctxh, err := context2.NewHeader(context.Background(), cfg)
 	signature, err := service.RequestDocumentSignature(ctxh, i)
 	assert.NotNil(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))

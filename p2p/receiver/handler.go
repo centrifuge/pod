@@ -84,7 +84,7 @@ func (srv *Handler) HandleRequestDocumentSignature(ctx context.Context, peer pee
 // Existing signatures on the document will be verified
 // Document will be stored to the repository for state management
 func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.SignatureRequest) (*p2ppb.SignatureResponse, error) {
-	ctxHeader, err := context2.NewContextHeader(ctx, srv.config)
+	ctxHeader, err := context2.NewHeader(ctx, srv.config)
 	if err != nil {
 		log.Error(err)
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))

@@ -76,7 +76,7 @@ func TestGRPCHandler_Create(t *testing.T) {
 	req := testingdocuments.CreatePOPayload()
 	ctx := context.Background()
 	model := &testingdocuments.MockModel{}
-	ctxh, err := context2.NewContextHeader(ctx, cfg)
+	ctxh, err := context2.NewHeader(ctx, cfg)
 	assert.Nil(t, err)
 
 	// derive fails
@@ -132,7 +132,7 @@ func TestGrpcHandler_Update(t *testing.T) {
 	}
 	ctx := context.Background()
 	model := &testingdocuments.MockModel{}
-	ctxh, err := context2.NewContextHeader(ctx, cfg)
+	ctxh, err := context2.NewHeader(ctx, cfg)
 	assert.Nil(t, err)
 
 	// derive fails

@@ -207,7 +207,7 @@ func TestValidator_documentRootValidator(t *testing.T) {
 }
 
 func TestValidator_selfSignatureValidator(t *testing.T) {
-	ctxh, err := context2.NewContextHeader(context.Background(), cfg)
+	ctxh, err := context2.NewHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 	idKeys := ctxh.Self().Keys[identity.KeyPurposeSigning]
 	rfsv := readyForSignaturesValidator(ctxh.Self().ID[:], idKeys.PrivateKey, idKeys.PublicKey)
@@ -538,7 +538,7 @@ func TestPostAnchoredValidator(t *testing.T) {
 }
 
 func TestPreSignatureRequestValidator(t *testing.T) {
-	ctxh, err := context2.NewContextHeader(context.Background(), cfg)
+	ctxh, err := context2.NewHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 	idKeys := ctxh.Self().Keys[identity.KeyPurposeSigning]
 	psv := PreSignatureRequestValidator(ctxh.Self().ID[:], idKeys.PrivateKey, idKeys.PublicKey)

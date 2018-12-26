@@ -184,7 +184,7 @@ func TestInvoiceModel_getClientData(t *testing.T) {
 }
 
 func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
-	contextHeader, err := context2.NewContextHeader(context.Background(), cfg)
+	contextHeader, err := context2.NewHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 	// fail recipient
 	data := &clientinvoicepb.InvoiceData{
@@ -244,7 +244,7 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 }
 
 func TestInvoiceModel_calculateDataRoot(t *testing.T) {
-	ctxHeader, err := context2.NewContextHeader(context.Background(), cfg)
+	ctxHeader, err := context2.NewHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 	m := new(Invoice)
 	err = m.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), ctxHeader)

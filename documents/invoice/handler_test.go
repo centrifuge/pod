@@ -238,7 +238,7 @@ func TestGrpcHandler_Update_update_fail(t *testing.T) {
 	srv := h.service.(*mockService)
 	model := &mockModel{}
 	ctx := context.Background()
-	ctxh, err := context2.NewContextHeader(ctx, cfg)
+	ctxh, err := context2.NewHeader(ctx, cfg)
 	assert.Nil(t, err)
 	payload := &clientinvoicepb.InvoiceUpdatePayload{Identifier: "0x010201"}
 	srv.On("DeriveFromUpdatePayload", payload, mock.Anything).Return(model, nil).Once()
@@ -255,7 +255,7 @@ func TestGrpcHandler_Update_derive_response_fail(t *testing.T) {
 	srv := h.service.(*mockService)
 	model := &mockModel{}
 	ctx := context.Background()
-	ctxh, err := context2.NewContextHeader(ctx, cfg)
+	ctxh, err := context2.NewHeader(ctx, cfg)
 	assert.Nil(t, err)
 	payload := &clientinvoicepb.InvoiceUpdatePayload{Identifier: "0x010201"}
 	srv.On("DeriveFromUpdatePayload", payload, mock.Anything).Return(model, nil).Once()
@@ -273,7 +273,7 @@ func TestGrpcHandler_Update(t *testing.T) {
 	srv := h.service.(*mockService)
 	model := &mockModel{}
 	ctx := context.Background()
-	ctxh, err := context2.NewContextHeader(ctx, cfg)
+	ctxh, err := context2.NewHeader(ctx, cfg)
 	assert.Nil(t, err)
 	payload := &clientinvoicepb.InvoiceUpdatePayload{Identifier: "0x010201"}
 	resp := &clientinvoicepb.InvoiceResponse{}

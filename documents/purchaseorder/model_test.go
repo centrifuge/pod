@@ -179,7 +179,7 @@ func TestPOModel_getClientData(t *testing.T) {
 }
 
 func TestPOOrderModel_InitPOInput(t *testing.T) {
-	contextHeader, err := context2.NewContextHeader(context.Background(), cfg)
+	contextHeader, err := context2.NewHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 	// fail recipient
 	data := &clientpurchaseorderpb.PurchaseOrderData{
@@ -217,7 +217,7 @@ func TestPOOrderModel_InitPOInput(t *testing.T) {
 }
 
 func TestPOModel_calculateDataRoot(t *testing.T) {
-	contextHeader, err := context2.NewContextHeader(context.Background(), cfg)
+	contextHeader, err := context2.NewHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 	poModel := new(PurchaseOrder)
 	err = poModel.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), contextHeader)

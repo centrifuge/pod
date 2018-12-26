@@ -82,7 +82,7 @@ func TestDataRootValidation_Validate(t *testing.T) {
 	assert.Contains(t, err.Error(), "unknown document type")
 
 	// mismatch
-	contextHeader, err := context2.NewContextHeader(context.Background(), cfg)
+	contextHeader, err := context2.NewHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 	inv := new(Invoice)
 	err = inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), contextHeader)

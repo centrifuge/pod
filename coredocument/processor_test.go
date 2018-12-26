@@ -49,7 +49,7 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 	// pack failed
 	model := mockModel{}
 	model.On("PackCoreDocument").Return(nil, errors.New("error")).Once()
-	ctxh, err := context2.NewContextHeader(context.Background(), cfg)
+	ctxh, err := context2.NewHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 	err = dp.PrepareForSignatureRequests(ctxh, model)
 	model.AssertExpectations(t)
@@ -71,10 +71,10 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 	assert.Nil(t, FillSalts(cd))
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
-	ctxh, err = context2.NewContextHeader(context.Background(), cfg)
+	ctxh, err = context2.NewHeader(context.Background(), cfg)
 	assert.NotNil(t, err)
 	cfg.Set("keys.signing.publicKey", pub)
-	ctxh, err = context2.NewContextHeader(context.Background(), cfg)
+	ctxh, err = context2.NewHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 
 	// failed unpack
@@ -115,7 +115,7 @@ func TestDefaultProcessor_RequestSignatures(t *testing.T) {
 	srv := &testingcommons.MockIDService{}
 	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
 	ctx := context.Background()
-	ctxh, err := context2.NewContextHeader(ctx, cfg)
+	ctxh, err := context2.NewHeader(ctx, cfg)
 	assert.Nil(t, err)
 	// pack failed
 	model := mockModel{}
@@ -263,7 +263,7 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	srv := &testingcommons.MockIDService{}
 	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
 	ctx := context.Background()
-	ctxh, err := context2.NewContextHeader(ctx, cfg)
+	ctxh, err := context2.NewHeader(ctx, cfg)
 	assert.Nil(t, err)
 
 	// pack failed
@@ -359,7 +359,7 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	srv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
 	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
 	ctx := context.Background()
-	ctxh, err := context2.NewContextHeader(ctx, cfg)
+	ctxh, err := context2.NewHeader(ctx, cfg)
 	assert.Nil(t, err)
 	// pack failed
 	model := mockModel{}

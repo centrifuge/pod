@@ -56,7 +56,7 @@ func TestService_Update(t *testing.T) {
 	c := &testingconfig.MockConfig{}
 	c.On("GetIdentityID").Return(centIDBytes, nil)
 	poSrv := service{config: c, repo: testRepo()}
-	ctxh, err := context2.NewContextHeader(context.Background(), cfg)
+	ctxh, err := context2.NewHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 
 	// pack failed
@@ -150,7 +150,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.Nil(t, doc)
 
 	// messed up identifier
-	contextHeader, err := context2.NewContextHeader(context.Background(), cfg)
+	contextHeader, err := context2.NewHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 	payload := &clientpurchaseorderpb.PurchaseOrderUpdatePayload{Identifier: "some identifier", Data: &clientpurchaseorderpb.PurchaseOrderData{}}
 	doc, err = poSrv.DeriveFromUpdatePayload(payload, contextHeader)
@@ -216,7 +216,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 func TestService_DeriveFromCreatePayload(t *testing.T) {
 	poSrv := service{}
-	ctxh, err := context2.NewContextHeader(context.Background(), cfg)
+	ctxh, err := context2.NewHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 
 	// nil payload
@@ -271,7 +271,7 @@ func TestService_DeriveFromCoreDocument(t *testing.T) {
 }
 
 func TestService_Create(t *testing.T) {
-	ctxh, err := context2.NewContextHeader(context.Background(), cfg)
+	ctxh, err := context2.NewHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 	c := &testingconfig.MockConfig{}
 	c.On("GetIdentityID").Return(centIDBytes, nil)
@@ -498,7 +498,7 @@ func TestService_CreateProofsForVersionDocumentDoesntExist(t *testing.T) {
 func TestService_DerivePurchaseOrderData(t *testing.T) {
 	var m documents.Model
 	_, poSrv := getServiceWithMockedLayers()
-	ctxh, err := context2.NewContextHeader(context.Background(), cfg)
+	ctxh, err := context2.NewHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 
 	// unknown type
@@ -519,7 +519,7 @@ func TestService_DerivePurchaseOrderData(t *testing.T) {
 
 func TestService_DerivePurchaseOrderResponse(t *testing.T) {
 	poSrv := service{}
-	ctxh, err := context2.NewContextHeader(context.Background(), cfg)
+	ctxh, err := context2.NewHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 
 	// pack fails
@@ -689,7 +689,7 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 }
 
 func TestService_RequestDocumentSignature(t *testing.T) {
-	ctxh, err := context2.NewContextHeader(context.Background(), cfg)
+	ctxh, err := context2.NewHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 	poSrv := service{}
 	s, err := poSrv.RequestDocumentSignature(ctxh, nil)
@@ -701,7 +701,7 @@ func TestService_calculateDataRoot(t *testing.T) {
 	c := &testingconfig.MockConfig{}
 	c.On("GetIdentityID").Return(centIDBytes, nil)
 	poSrv := service{config: c, repo: testRepo()}
-	ctxh, err := context2.NewContextHeader(context.Background(), cfg)
+	ctxh, err := context2.NewHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 
 	// type mismatch

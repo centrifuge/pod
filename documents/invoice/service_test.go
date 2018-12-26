@@ -109,7 +109,7 @@ func TestService_DeriveFromPayload(t *testing.T) {
 	_, err = invSrv.DeriveFromCreatePayload(&clientinvoicepb.InvoiceCreatePayload{}, nil)
 	assert.Error(t, err, "DeriveWithInvoiceInput should produce an error if invoiceInput equals nil")
 
-	contextHeader, err := context2.NewContextHeader(context.Background(), cfg)
+	contextHeader, err := context2.NewHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 	model, err = invSrv.DeriveFromCreatePayload(payload, contextHeader)
 	assert.Nil(t, err, "valid invoiceData shouldn't produce an error")
@@ -215,7 +215,7 @@ func TestService_Exists(t *testing.T) {
 }
 
 func TestService_Create(t *testing.T) {
-	ctxh, err := context2.NewContextHeader(context.Background(), cfg)
+	ctxh, err := context2.NewHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 	_, srv := getServiceWithMockedLayers()
 	invSrv := srv.(service)
@@ -267,7 +267,7 @@ func TestService_DeriveInvoiceData(t *testing.T) {
 
 	// success
 	payload := testingdocuments.CreateInvoicePayload()
-	contextHeader, err := context2.NewContextHeader(context.Background(), cfg)
+	contextHeader, err := context2.NewHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 	inv, err := invSrv.DeriveFromCreatePayload(payload, contextHeader)
 	assert.Nil(t, err, "must be non nil")
@@ -280,7 +280,7 @@ func TestService_DeriveInvoiceResponse(t *testing.T) {
 	// success
 	invSrv := service{repo: testRepo()}
 	payload := testingdocuments.CreateInvoicePayload()
-	contextHeader, err := context2.NewContextHeader(context.Background(), cfg)
+	contextHeader, err := context2.NewHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 	inv1, err := invSrv.DeriveFromCreatePayload(payload, contextHeader)
 	assert.Nil(t, err, "must be non nil")
@@ -387,7 +387,7 @@ func TestService_RequestDocumentSignature_SigningRootNil(t *testing.T) {
 	assert.Nil(t, err)
 	idService = mockSignatureCheck(i, idService, invSrv)
 	i.CoreDocument.SigningRoot = nil
-	ctxh, err := context2.NewContextHeader(context.Background(), cfg)
+	ctxh, err := context2.NewHeader(context.Background(), cfg)
 	signature, err := invSrv.RequestDocumentSignature(ctxh, i)
 	assert.NotNil(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
@@ -502,7 +502,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.Nil(t, doc)
 
 	// messed up identifier
-	contextHeader, err := context2.NewContextHeader(context.Background(), cfg)
+	contextHeader, err := context2.NewHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 	payload := &clientinvoicepb.InvoiceUpdatePayload{Identifier: "some identifier", Data: &clientinvoicepb.InvoiceData{}}
 	doc, err = invSrv.DeriveFromUpdatePayload(payload, contextHeader)
@@ -572,7 +572,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 func TestService_Update(t *testing.T) {
 	_, srv := getServiceWithMockedLayers()
 	invSrv := srv.(service)
-	ctxh, err := context2.NewContextHeader(context.Background(), cfg)
+	ctxh, err := context2.NewHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 
 	// pack failed
@@ -652,7 +652,7 @@ func TestService_Update(t *testing.T) {
 func TestService_calculateDataRoot(t *testing.T) {
 	_, srv := getServiceWithMockedLayers()
 	invSrv := srv.(service)
-	ctxh, err := context2.NewContextHeader(context.Background(), cfg)
+	ctxh, err := context2.NewHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 
 	// type mismatch

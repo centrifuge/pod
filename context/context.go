@@ -14,8 +14,8 @@ type Header struct {
 	self    *identity.IDConfig
 }
 
-// NewContextHeader creates new instance of the request headers.
-func NewContextHeader(context context.Context, config config.Configuration) (*Header, error) {
+// NewHeader creates new instance of the request headers.
+func NewHeader(context context.Context, config config.Configuration) (*Header, error) {
 	idConfig, err := identity.GetIdentityConfig(config.(identity.Config))
 	if err != nil {
 		return nil, errors.New("failed to get id config: %v", err)
