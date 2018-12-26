@@ -32,16 +32,16 @@ type Service interface {
 	documents.Service
 
 	// DeriverFromPayload derives purchase order from clientPayload
-	DeriveFromCreatePayload(payload *clientpopb.PurchaseOrderCreatePayload, hdr *context.ContextHeader) (documents.Model, error)
+	DeriveFromCreatePayload(payload *clientpopb.PurchaseOrderCreatePayload, hdr *context.Header) (documents.Model, error)
 
 	// DeriveFromUpdatePayload derives purchase order from update payload
-	DeriveFromUpdatePayload(payload *clientpopb.PurchaseOrderUpdatePayload, hdr *context.ContextHeader) (documents.Model, error)
+	DeriveFromUpdatePayload(payload *clientpopb.PurchaseOrderUpdatePayload, hdr *context.Header) (documents.Model, error)
 
 	// Create validates and persists purchase order and returns a Updated model
-	Create(ctx *context.ContextHeader, po documents.Model) (documents.Model, error)
+	Create(ctx *context.Header, po documents.Model) (documents.Model, error)
 
 	// Update validates and updates the purchase order and return the updated model
-	Update(ctx *context.ContextHeader, po documents.Model) (documents.Model, error)
+	Update(ctx *context.Header, po documents.Model) (documents.Model, error)
 
 	// DerivePurchaseOrderData returns the purchase order data as client data
 	DerivePurchaseOrderData(po documents.Model) (*clientpopb.PurchaseOrderData, error)
@@ -112,7 +112,7 @@ func (s service) calculateDataRoot(old, new documents.Model, validator documents
 }
 
 // Create validates, persists, and anchors a purchase order
-func (s service) Create(ctx *context.ContextHeader, po documents.Model) (documents.Model, error) {
+func (s service) Create(ctx *context.Header, po documents.Model) (documents.Model, error) {
 	po, err := s.calculateDataRoot(nil, po, CreateValidator())
 	if err != nil {
 		return nil, err
@@ -137,7 +137,7 @@ func (s service) updater(id []byte, model documents.Model) error {
 }
 
 // Update validates, persists, and anchors a new version of purchase order
-func (s service) Update(ctx *context.ContextHeader, po documents.Model) (documents.Model, error) {
+func (s service) Update(ctx *context.Header, po documents.Model) (documents.Model, error) {
 	cd, err := po.PackCoreDocument()
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
@@ -162,7 +162,7 @@ func (s service) Update(ctx *context.ContextHeader, po documents.Model) (documen
 }
 
 // DeriveFromCreatePayload derives purchase order from create payload
-func (s service) DeriveFromCreatePayload(payload *clientpopb.PurchaseOrderCreatePayload, ctxH *context.ContextHeader) (documents.Model, error) {
+func (s service) DeriveFromCreatePayload(payload *clientpopb.PurchaseOrderCreatePayload, ctxH *context.Header) (documents.Model, error) {
 	if payload == nil || payload.Data == nil {
 		return nil, documents.ErrDocumentNil
 	}
@@ -177,7 +177,7 @@ func (s service) DeriveFromCreatePayload(payload *clientpopb.PurchaseOrderCreate
 }
 
 // DeriveFromUpdatePayload derives purchase order from update payload
-func (s service) DeriveFromUpdatePayload(payload *clientpopb.PurchaseOrderUpdatePayload, ctxH *context.ContextHeader) (documents.Model, error) {
+func (s service) DeriveFromUpdatePayload(payload *clientpopb.PurchaseOrderUpdatePayload, ctxH *context.Header) (documents.Model, error) {
 	if payload == nil || payload.Data == nil {
 		return nil, documents.ErrDocumentNil
 	}
@@ -350,7 +350,7 @@ func (s service) CreateProofsForVersion(documentID, version []byte, fields []str
 // RequestDocumentSignature validates the document and returns the signature
 // Note: this is document agnostic. But since we do not have a common implementation, adding it here.
 // will remove this once we have a common implementation for documents.Service
-func (s service) RequestDocumentSignature(contextHeader *context.ContextHeader, model documents.Model) (*coredocumentpb.Signature, error) {
+func (s service) RequestDocumentSignature(contextHeader *context.Header, model documents.Model) (*coredocumentpb.Signature, error) {
 	if err := coredocument.SignatureRequestValidator(s.identityService).Validate(nil, model); err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}

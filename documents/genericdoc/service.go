@@ -128,7 +128,7 @@ func (s service) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (docume
 	return nil, nil
 }
 
-func (s service) RequestDocumentSignature(contextHeader *context.ContextHeader, model documents.Model) (*coredocumentpb.Signature, error) {
+func (s service) RequestDocumentSignature(contextHeader *context.Header, model documents.Model) (*coredocumentpb.Signature, error) {
 	if err := coredocument.SignatureRequestValidator(s.identityService).Validate(nil, model); err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}

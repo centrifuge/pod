@@ -31,19 +31,19 @@ type Config interface {
 // Processor identifies an implementation, which can do a bunch of things with a CoreDocument.
 // E.g. send, anchor, etc.
 type Processor interface {
-	Send(ctx *context2.ContextHeader, coreDocument *coredocumentpb.CoreDocument, recipient identity.CentID) (err error)
-	PrepareForSignatureRequests(ctx *context2.ContextHeader, model documents.Model) error
-	RequestSignatures(ctx *context2.ContextHeader, model documents.Model) error
+	Send(ctx *context2.Header, coreDocument *coredocumentpb.CoreDocument, recipient identity.CentID) (err error)
+	PrepareForSignatureRequests(ctx *context2.Header, model documents.Model) error
+	RequestSignatures(ctx *context2.Header, model documents.Model) error
 	PrepareForAnchoring(model documents.Model) error
-	AnchorDocument(ctx *context2.ContextHeader, model documents.Model) error
-	SendDocument(ctx *context2.ContextHeader, model documents.Model) error
+	AnchorDocument(ctx *context2.Header, model documents.Model) error
+	SendDocument(ctx *context2.Header, model documents.Model) error
 }
 
 // client defines the methods for p2pclient
 // we redefined it here so that we can avoid cyclic dependencies with p2p
 type client interface {
 	OpenClient(id identity.Identity) (p2ppb.P2PServiceClient, error)
-	GetSignaturesForDocument(ctx *context2.ContextHeader, identityService identity.Service, doc *coredocumentpb.CoreDocument) error
+	GetSignaturesForDocument(ctx *context2.Header, identityService identity.Service, doc *coredocumentpb.CoreDocument) error
 }
 
 // defaultProcessor implements Processor interface
@@ -65,7 +65,7 @@ func DefaultProcessor(idService identity.Service, p2pClient client, repository a
 }
 
 // Send sends the given defaultProcessor to the given recipient on the P2P layer
-func (dp defaultProcessor) Send(ctx *context2.ContextHeader, coreDocument *coredocumentpb.CoreDocument, recipient identity.CentID) (err error) {
+func (dp defaultProcessor) Send(ctx *context2.Header, coreDocument *coredocumentpb.CoreDocument, recipient identity.CentID) (err error) {
 	if coreDocument == nil {
 		return centerrors.NilError(coreDocument)
 	}
@@ -98,7 +98,7 @@ func (dp defaultProcessor) Send(ctx *context2.ContextHeader, coreDocument *cored
 }
 
 // PrepareForSignatureRequests gets the core document from the model, and adds the node's own signature
-func (dp defaultProcessor) PrepareForSignatureRequests(ctx *context2.ContextHeader, model documents.Model) error {
+func (dp defaultProcessor) PrepareForSignatureRequests(ctx *context2.Header, model documents.Model) error {
 	cd, err := model.PackCoreDocument()
 	if err != nil {
 		return errors.New("failed to pack core document: %v", err)
@@ -123,7 +123,7 @@ func (dp defaultProcessor) PrepareForSignatureRequests(ctx *context2.ContextHead
 
 // RequestSignatures gets the core document from the model, validates pre signature requirements,
 // collects signatures, and validates the signatures,
-func (dp defaultProcessor) RequestSignatures(ctx *context2.ContextHeader, model documents.Model) error {
+func (dp defaultProcessor) RequestSignatures(ctx *context2.Header, model documents.Model) error {
 	cd, err := model.PackCoreDocument()
 	if err != nil {
 		return errors.New("failed to pack core document: %v", err)
@@ -180,7 +180,7 @@ func (dp defaultProcessor) PrepareForAnchoring(model documents.Model) error {
 }
 
 // AnchorDocument validates the model, and anchors the document
-func (dp defaultProcessor) AnchorDocument(ctx *context2.ContextHeader, model documents.Model) error {
+func (dp defaultProcessor) AnchorDocument(ctx *context2.Header, model documents.Model) error {
 	cd, err := model.PackCoreDocument()
 	if err != nil {
 		return errors.New("failed to pack core document: %v", err)
@@ -230,7 +230,7 @@ func (dp defaultProcessor) AnchorDocument(ctx *context2.ContextHeader, model doc
 }
 
 // SendDocument does post anchor validations and sends the document to collaborators
-func (dp defaultProcessor) SendDocument(ctx *context2.ContextHeader, model documents.Model) error {
+func (dp defaultProcessor) SendDocument(ctx *context2.Header, model documents.Model) error {
 	cd, err := model.PackCoreDocument()
 	if err != nil {
 		return errors.New("failed to pack core document: %v", err)

@@ -148,7 +148,7 @@ func (p *PurchaseOrder) createP2PProtobuf() *purchaseorderpb.PurchaseOrderData {
 }
 
 // InitPurchaseOrderInput initialize the model based on the received parameters from the rest api call
-func (p *PurchaseOrder) InitPurchaseOrderInput(payload *clientpurchaseorderpb.PurchaseOrderCreatePayload, contextHeader *context.ContextHeader) error {
+func (p *PurchaseOrder) InitPurchaseOrderInput(payload *clientpurchaseorderpb.PurchaseOrderCreatePayload, contextHeader *context.Header) error {
 	err := p.initPurchaseOrderFromData(payload.Data)
 	if err != nil {
 		return err

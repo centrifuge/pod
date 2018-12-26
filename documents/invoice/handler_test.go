@@ -22,13 +22,13 @@ type mockService struct {
 	mock.Mock
 }
 
-func (m *mockService) DeriveFromCreatePayload(payload *clientinvoicepb.InvoiceCreatePayload, contextHeader *context2.ContextHeader) (documents.Model, error) {
+func (m *mockService) DeriveFromCreatePayload(payload *clientinvoicepb.InvoiceCreatePayload, contextHeader *context2.Header) (documents.Model, error) {
 	args := m.Called(payload, contextHeader)
 	model, _ := args.Get(0).(documents.Model)
 	return model, args.Error(1)
 }
 
-func (m *mockService) Create(ctx *context2.ContextHeader, inv documents.Model) (documents.Model, error) {
+func (m *mockService) Create(ctx *context2.Header, inv documents.Model) (documents.Model, error) {
 	args := m.Called(ctx, inv)
 	model, _ := args.Get(0).(documents.Model)
 	return model, args.Error(1)
@@ -58,13 +58,13 @@ func (m *mockService) DeriveInvoiceResponse(doc documents.Model) (*clientinvoice
 	return data, args.Error(1)
 }
 
-func (m *mockService) Update(ctx *context2.ContextHeader, doc documents.Model) (documents.Model, error) {
+func (m *mockService) Update(ctx *context2.Header, doc documents.Model) (documents.Model, error) {
 	args := m.Called(ctx, doc)
 	doc1, _ := args.Get(0).(documents.Model)
 	return doc1, args.Error(1)
 }
 
-func (m *mockService) DeriveFromUpdatePayload(payload *clientinvoicepb.InvoiceUpdatePayload, contextHeader *context2.ContextHeader) (documents.Model, error) {
+func (m *mockService) DeriveFromUpdatePayload(payload *clientinvoicepb.InvoiceUpdatePayload, contextHeader *context2.Header) (documents.Model, error) {
 	args := m.Called(payload, contextHeader)
 	doc, _ := args.Get(0).(documents.Model)
 	return doc, args.Error(1)

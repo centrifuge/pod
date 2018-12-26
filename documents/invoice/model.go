@@ -149,7 +149,7 @@ func (i *Invoice) createP2PProtobuf() *invoicepb.InvoiceData {
 }
 
 // InitInvoiceInput initialize the model based on the received parameters from the rest api call
-func (i *Invoice) InitInvoiceInput(payload *clientinvoicepb.InvoiceCreatePayload, contextHeader *context.ContextHeader) error {
+func (i *Invoice) InitInvoiceInput(payload *clientinvoicepb.InvoiceCreatePayload, contextHeader *context.Header) error {
 	err := i.initInvoiceFromData(payload.Data)
 	if err != nil {
 		return err

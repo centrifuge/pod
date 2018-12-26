@@ -39,7 +39,7 @@ func (m *MockService) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (d
 	return args.Get(0).(documents.Model), args.Error(1)
 }
 
-func (m *MockService) RequestDocumentSignature(ctx *context.ContextHeader, model documents.Model) (*coredocumentpb.Signature, error) {
+func (m *MockService) RequestDocumentSignature(ctx *context.Header, model documents.Model) (*coredocumentpb.Signature, error) {
 	args := m.Called()
 	return args.Get(0).(*coredocumentpb.Signature), args.Error(1)
 }

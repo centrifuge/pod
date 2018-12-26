@@ -23,19 +23,19 @@ type mockService struct {
 	mock.Mock
 }
 
-func (m mockService) Create(ctx *context2.ContextHeader, doc documents.Model) (documents.Model, error) {
+func (m mockService) Create(ctx *context2.Header, doc documents.Model) (documents.Model, error) {
 	args := m.Called(ctx, doc)
 	model, _ := args.Get(0).(documents.Model)
 	return model, args.Error(1)
 }
 
-func (m mockService) Update(ctx *context2.ContextHeader, doc documents.Model) (documents.Model, error) {
+func (m mockService) Update(ctx *context2.Header, doc documents.Model) (documents.Model, error) {
 	args := m.Called(ctx, doc)
 	model, _ := args.Get(0).(documents.Model)
 	return model, args.Error(1)
 }
 
-func (m mockService) DeriveFromCreatePayload(req *clientpopb.PurchaseOrderCreatePayload, ctxh *context2.ContextHeader) (documents.Model, error) {
+func (m mockService) DeriveFromCreatePayload(req *clientpopb.PurchaseOrderCreatePayload, ctxh *context2.Header) (documents.Model, error) {
 	args := m.Called(req, ctxh)
 	model, _ := args.Get(0).(documents.Model)
 	return model, args.Error(1)
@@ -65,7 +65,7 @@ func (m mockService) DerivePurchaseOrderResponse(po documents.Model) (*clientpop
 	return data, args.Error(1)
 }
 
-func (m mockService) DeriveFromUpdatePayload(payload *clientpopb.PurchaseOrderUpdatePayload, ctxh *context2.ContextHeader) (documents.Model, error) {
+func (m mockService) DeriveFromUpdatePayload(payload *clientpopb.PurchaseOrderUpdatePayload, ctxh *context2.Header) (documents.Model, error) {
 	args := m.Called(payload, ctxh)
 	doc, _ := args.Get(0).(documents.Model)
 	return doc, args.Error(1)
