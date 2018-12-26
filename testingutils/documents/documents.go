@@ -5,8 +5,8 @@ package testingdocuments
 import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	"github.com/centrifuge/go-centrifuge/context"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -39,7 +39,7 @@ func (m *MockService) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (d
 	return args.Get(0).(documents.Model), args.Error(1)
 }
 
-func (m *MockService) RequestDocumentSignature(ctx *header.ContextHeader, model documents.Model) (*coredocumentpb.Signature, error) {
+func (m *MockService) RequestDocumentSignature(ctx *context.Header, model documents.Model) (*coredocumentpb.Signature, error) {
 	args := m.Called()
 	return args.Get(0).(*coredocumentpb.Signature), args.Error(1)
 }

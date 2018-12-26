@@ -9,16 +9,17 @@ import (
 	"reflect"
 	"testing"
 
+	context2 "github.com/centrifuge/go-centrifuge/context"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/context/testlogging"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/ethereum"
-	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/p2p"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
@@ -178,7 +179,7 @@ func TestPOModel_getClientData(t *testing.T) {
 }
 
 func TestPOOrderModel_InitPOInput(t *testing.T) {
-	contextHeader, err := header.NewContextHeader(context.Background(), cfg)
+	contextHeader, err := context2.NewContextHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 	// fail recipient
 	data := &clientpurchaseorderpb.PurchaseOrderData{
@@ -216,7 +217,7 @@ func TestPOOrderModel_InitPOInput(t *testing.T) {
 }
 
 func TestPOModel_calculateDataRoot(t *testing.T) {
-	contextHeader, err := header.NewContextHeader(context.Background(), cfg)
+	contextHeader, err := context2.NewContextHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 	poModel := new(PurchaseOrder)
 	err = poModel.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), contextHeader)

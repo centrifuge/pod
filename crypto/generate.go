@@ -1,10 +1,10 @@
-package keytools
+package crypto
 
 import (
 	"strings"
 
-	"github.com/centrifuge/go-centrifuge/keytools/ed25519"
-	"github.com/centrifuge/go-centrifuge/keytools/secp256k1"
+	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
+	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/centrifuge/go-centrifuge/utils"
 )
 

@@ -9,16 +9,17 @@ import (
 	"reflect"
 	"testing"
 
+	context2 "github.com/centrifuge/go-centrifuge/context"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/context/testlogging"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/ethereum"
-	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/p2p"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
@@ -183,7 +184,7 @@ func TestInvoiceModel_getClientData(t *testing.T) {
 }
 
 func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
-	contextHeader, err := header.NewContextHeader(context.Background(), cfg)
+	contextHeader, err := context2.NewContextHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 	// fail recipient
 	data := &clientinvoicepb.InvoiceData{
@@ -243,7 +244,7 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 }
 
 func TestInvoiceModel_calculateDataRoot(t *testing.T) {
-	ctxHeader, err := header.NewContextHeader(context.Background(), cfg)
+	ctxHeader, err := context2.NewContextHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 	m := new(Invoice)
 	err = m.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), ctxHeader)

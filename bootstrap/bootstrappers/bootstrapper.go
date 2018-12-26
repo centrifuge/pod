@@ -1,4 +1,4 @@
-package context
+package bootstrappers
 
 import (
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -17,10 +17,10 @@ import (
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/version"
-	logging "github.com/ipfs/go-log"
+	log2 "github.com/ipfs/go-log"
 )
 
-var log = logging.Logger("context")
+var log = log2.Logger("context")
 
 // MainBootstrapper holds all the bootstrapper implementations
 type MainBootstrapper struct {
