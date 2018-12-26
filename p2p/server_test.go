@@ -12,12 +12,12 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/p2p/grpc"
+	p2pgrpc "github.com/centrifuge/go-libp2p-grpc"
 
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/paralin/go-libp2p-grpc"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/context/testlogging"
+	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/storage"
 

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/identity"
+	p2pgrpc "github.com/centrifuge/go-libp2p-grpc"
 
 	"github.com/centrifuge/go-centrifuge/errors"
 
@@ -24,7 +25,6 @@ import (
 	pstore "github.com/libp2p/go-libp2p-peerstore"
 	ma "github.com/multiformats/go-multiaddr"
 	mh "github.com/multiformats/go-multihash"
-	"github.com/paralin/go-libp2p-grpc"
 )
 
 var log = logging.Logger("p2p-server")

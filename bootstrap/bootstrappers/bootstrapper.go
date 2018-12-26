@@ -1,4 +1,4 @@
-package context
+package bootstrappers
 
 import (
 	"github.com/centrifuge/go-centrifuge/anchors"

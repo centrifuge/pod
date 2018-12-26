@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
+	cc "github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
-	cc "github.com/centrifuge/go-centrifuge/context/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/stretchr/testify/assert"
 )
