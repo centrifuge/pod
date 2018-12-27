@@ -1,10 +1,12 @@
-package config
+package configstore
 
 import (
 	"encoding/json"
 	"math/big"
 	"reflect"
 	"time"
+
+	"github.com/centrifuge/go-centrifuge/config"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 
@@ -109,7 +111,7 @@ func (nc *NodeConfig) loadFromProtobuf(data *configpb.ConfigData) {
 	identityID, _ := hexutil.Decode(data.MainIdentity.IdentityId)
 
 	nc.MainIdentity = TenantConfig{
-		EthereumAccount: &AccountConfig{
+		EthereumAccount: &config.AccountConfig{
 			Address:  data.MainIdentity.EthAccount.Address,
 			Key:      data.MainIdentity.EthAccount.Key,
 			Password: data.MainIdentity.EthAccount.Password,
@@ -148,22 +150,22 @@ func (nc *NodeConfig) loadFromProtobuf(data *configpb.ConfigData) {
 }
 
 // NewNodeConfig creates a new NodeConfig instance with configs
-func NewNodeConfig(config Configuration) *NodeConfig {
-	mainAccount, _ := config.GetEthereumAccount(config.GetEthereumDefaultAccountName())
-	mainIdentity, _ := config.GetIdentityID()
-	signPub, signPriv := config.GetSigningKeyPair()
-	ethAuthPub, ethAuthPriv := config.GetEthAuthKeyPair()
+func NewNodeConfig(c config.Configuration) *NodeConfig {
+	mainAccount, _ := c.GetEthereumAccount(c.GetEthereumDefaultAccountName())
+	mainIdentity, _ := c.GetIdentityID()
+	signPub, signPriv := c.GetSigningKeyPair()
+	ethAuthPub, ethAuthPriv := c.GetEthAuthKeyPair()
 
 	return &NodeConfig{
 		MainIdentity: TenantConfig{
-			EthereumAccount: &AccountConfig{
+			EthereumAccount: &config.AccountConfig{
 				Address:  mainAccount.Address,
 				Key:      mainAccount.Key,
 				Password: mainAccount.Password,
 			},
-			EthereumDefaultAccountName:       config.GetEthereumDefaultAccountName(),
+			EthereumDefaultAccountName:       c.GetEthereumDefaultAccountName(),
 			IdentityID:                       mainIdentity,
-			ReceiveEventNotificationEndpoint: config.GetReceiveEventNotificationEndpoint(),
+			ReceiveEventNotificationEndpoint: c.GetReceiveEventNotificationEndpoint(),
 			SigningKeyPair: KeyPair{
 				Pub:  signPub,
 				Priv: signPriv,
@@ -173,31 +175,31 @@ func NewNodeConfig(config Configuration) *NodeConfig {
 				Priv: ethAuthPriv,
 			},
 		},
-		StoragePath:                    config.GetStoragePath(),
-		P2PPort:                        config.GetP2PPort(),
-		P2PExternalIP:                  config.GetP2PExternalIP(),
-		P2PConnectionTimeout:           config.GetP2PConnectionTimeout(),
-		ServerPort:                     config.GetServerPort(),
-		ServerAddress:                  config.GetServerAddress(),
-		NumWorkers:                     config.GetNumWorkers(),
-		WorkerWaitTimeMS:               config.GetWorkerWaitTimeMS(),
-		EthereumNodeURL:                config.GetEthereumNodeURL(),
-		EthereumContextReadWaitTimeout: config.GetEthereumContextReadWaitTimeout(),
-		EthereumContextWaitTimeout:     config.GetEthereumContextWaitTimeout(),
-		EthereumIntervalRetry:          config.GetEthereumIntervalRetry(),
-		EthereumMaxRetries:             config.GetEthereumMaxRetries(),
-		EthereumGasPrice:               config.GetEthereumGasPrice(),
-		EthereumGasLimit:               config.GetEthereumGasLimit(),
-		TxPoolAccessEnabled:            config.GetTxPoolAccessEnabled(),
-		NetworkString:                  config.GetNetworkString(),
-		BootstrapPeers:                 config.GetBootstrapPeers(),
-		NetworkID:                      config.GetNetworkID(),
+		StoragePath:                    c.GetStoragePath(),
+		P2PPort:                        c.GetP2PPort(),
+		P2PExternalIP:                  c.GetP2PExternalIP(),
+		P2PConnectionTimeout:           c.GetP2PConnectionTimeout(),
+		ServerPort:                     c.GetServerPort(),
+		ServerAddress:                  c.GetServerAddress(),
+		NumWorkers:                     c.GetNumWorkers(),
+		WorkerWaitTimeMS:               c.GetWorkerWaitTimeMS(),
+		EthereumNodeURL:                c.GetEthereumNodeURL(),
+		EthereumContextReadWaitTimeout: c.GetEthereumContextReadWaitTimeout(),
+		EthereumContextWaitTimeout:     c.GetEthereumContextWaitTimeout(),
+		EthereumIntervalRetry:          c.GetEthereumIntervalRetry(),
+		EthereumMaxRetries:             c.GetEthereumMaxRetries(),
+		EthereumGasPrice:               c.GetEthereumGasPrice(),
+		EthereumGasLimit:               c.GetEthereumGasLimit(),
+		TxPoolAccessEnabled:            c.GetTxPoolAccessEnabled(),
+		NetworkString:                  c.GetNetworkString(),
+		BootstrapPeers:                 c.GetBootstrapPeers(),
+		NetworkID:                      c.GetNetworkID(),
 	}
 }
 
 // TenantConfig exposes configs specific to a tenant in the node
 type TenantConfig struct {
-	EthereumAccount                  *AccountConfig
+	EthereumAccount                  *config.AccountConfig
 	EthereumDefaultAccountName       string
 	ReceiveEventNotificationEndpoint string
 	IdentityID                       []byte
@@ -206,8 +208,8 @@ type TenantConfig struct {
 }
 
 // ID Get the ID of the document represented by this model
-func (tc *TenantConfig) ID() ([]byte, error) {
-	return tc.IdentityID, nil
+func (tc *TenantConfig) ID() []byte {
+	return tc.IdentityID
 }
 
 // Type Returns the underlying type of the Model
@@ -247,7 +249,7 @@ func (tc *TenantConfig) createProtobuf() *configpb.TenantData {
 }
 
 func (tc *TenantConfig) loadFromProtobuf(data *configpb.TenantData) {
-	tc.EthereumAccount = &AccountConfig{
+	tc.EthereumAccount = &config.AccountConfig{
 		Address:  data.EthAccount.Address,
 		Key:      data.EthAccount.Key,
 		Password: data.EthAccount.Password,
@@ -266,21 +268,21 @@ func (tc *TenantConfig) loadFromProtobuf(data *configpb.TenantData) {
 }
 
 // NewTenantConfig creates a new TenantConfig instance with configs
-func NewTenantConfig(ethAccountName string, config Configuration) (*TenantConfig, error) {
-	id, err := config.GetIdentityID()
+func NewTenantConfig(ethAccountName string, c config.Configuration) (*TenantConfig, error) {
+	id, err := c.GetIdentityID()
 	if err != nil {
 		return nil, err
 	}
-	acc, err := config.GetEthereumAccount(ethAccountName)
+	acc, err := c.GetEthereumAccount(ethAccountName)
 	if err != nil {
 		return nil, err
 	}
 	return &TenantConfig{
 		EthereumAccount:                  acc,
-		EthereumDefaultAccountName:       config.GetEthereumDefaultAccountName(),
+		EthereumDefaultAccountName:       c.GetEthereumDefaultAccountName(),
 		IdentityID:                       id,
-		ReceiveEventNotificationEndpoint: config.GetReceiveEventNotificationEndpoint(),
-		SigningKeyPair:                   NewKeyPair(config.GetSigningKeyPair()),
-		EthAuthKeyPair:                   NewKeyPair(config.GetEthAuthKeyPair()),
+		ReceiveEventNotificationEndpoint: c.GetReceiveEventNotificationEndpoint(),
+		SigningKeyPair:                   NewKeyPair(c.GetSigningKeyPair()),
+		EthAuthKeyPair:                   NewKeyPair(c.GetEthAuthKeyPair()),
 	}, nil
 }

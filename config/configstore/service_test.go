@@ -1,6 +1,6 @@
 // +build unit
 
-package config
+package configstore
 
 import (
 	"testing"

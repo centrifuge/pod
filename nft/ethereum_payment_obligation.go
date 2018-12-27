@@ -41,9 +41,10 @@ type ethereumPaymentObligationContract interface {
 
 // ethereumPaymentObligation handles all interactions related to minting of NFTs for payment obligations on Ethereum
 type ethereumPaymentObligation struct {
-	registry          *documents.ServiceRegistry
-	identityService   identity.Service
-	ethClient         ethereum.Client
+	registry        *documents.ServiceRegistry
+	identityService identity.Service
+	ethClient       ethereum.Client
+	// TODO [multi-tenancy] replace this with config service
 	config            Config
 	queue             *queue.Server
 	setupMintListener func(config Config, queue *queue.Server, tokenID *big.Int, registryAddress string) (confirmations chan *watchTokenMinted, err error)

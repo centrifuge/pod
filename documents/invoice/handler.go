@@ -22,7 +22,8 @@ var apiLog = logging.Logger("invoice-api")
 // anchoring, sending, finding stored invoice document
 type grpcHandler struct {
 	service Service
-	config  config.Configuration
+	// TODO [multi-tenancy] replace this with config service
+	config config.Configuration
 }
 
 // GRPCHandler returns an implementation of invoice.DocumentServiceServer

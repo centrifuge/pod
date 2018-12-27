@@ -28,6 +28,7 @@ import (
 
 // service implements Service
 type service struct {
+	// TODO [multi-tenancy] replace this with config service
 	config           documents.Config
 	repo             documents.Repository
 	identityService  identity.Service
