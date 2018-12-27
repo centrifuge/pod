@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	context2 "github.com/centrifuge/go-centrifuge/context"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -51,21 +51,20 @@ func TestPaymentObligationService_mint(t *testing.T) {
 	// create invoice (anchor)
 	service, err := registry.LocateService(documenttypes.InvoiceDataTypeUrl)
 	assert.Nil(t, err, "should not error out when getting invoice service")
-	contextHeader, err := context2.NewHeader(context.Background(), cfg)
+	contextHeader, err := contextutil.NewCentrifugeContext(context.Background(), cfg)
 	assert.Nil(t, err)
 	invoiceService := service.(invoice.Service)
 	dueDate := time.Now().Add(4 * 24 * time.Hour)
-	model, err := invoiceService.DeriveFromCreatePayload(
-		&invoicepb.InvoiceCreatePayload{
-			Collaborators: []string{},
-			Data: &invoicepb.InvoiceData{
-				InvoiceNumber: "2132131",
-				GrossAmount:   123,
-				NetAmount:     123,
-				Currency:      "EUR",
-				DueDate:       &timestamp.Timestamp{Seconds: dueDate.Unix()},
-			},
-		}, contextHeader)
+	model, err := invoiceService.DeriveFromCreatePayload(contextHeader, &invoicepb.InvoiceCreatePayload{
+		Collaborators: []string{},
+		Data: &invoicepb.InvoiceData{
+			InvoiceNumber: "2132131",
+			GrossAmount:   123,
+			NetAmount:     123,
+			Currency:      "EUR",
+			DueDate:       &timestamp.Timestamp{Seconds: dueDate.Unix()},
+		},
+	})
 	assert.Nil(t, err, "should not error out when creating invoice model")
 	modelUpdated, err := invoiceService.Create(contextHeader, model)
 

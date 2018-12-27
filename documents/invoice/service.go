@@ -2,9 +2,10 @@ package invoice
 
 import (
 	"bytes"
+	"context"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/context"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 
 	"github.com/centrifuge/go-centrifuge/crypto"
 
@@ -32,16 +33,16 @@ type Service interface {
 	documents.Service
 
 	// DeriverFromPayload derives Invoice from clientPayload
-	DeriveFromCreatePayload(*clientinvoicepb.InvoiceCreatePayload, *context.Header) (documents.Model, error)
+	DeriveFromCreatePayload(ctx context.Context, payload *clientinvoicepb.InvoiceCreatePayload) (documents.Model, error)
 
 	// DeriveFromUpdatePayload derives invoice model from update payload
-	DeriveFromUpdatePayload(*clientinvoicepb.InvoiceUpdatePayload, *context.Header) (documents.Model, error)
+	DeriveFromUpdatePayload(ctx context.Context, payload *clientinvoicepb.InvoiceUpdatePayload) (documents.Model, error)
 
 	// Create validates and persists invoice Model and returns a Updated model
-	Create(ctx *context.Header, inv documents.Model) (documents.Model, error)
+	Create(ctx context.Context, inv documents.Model) (documents.Model, error)
 
 	// Update validates and updates the invoice model and return the updated model
-	Update(ctx *context.Header, inv documents.Model) (documents.Model, error)
+	Update(ctx context.Context, inv documents.Model) (documents.Model, error)
 
 	// DeriveInvoiceData returns the invoice data as client data
 	DeriveInvoiceData(inv documents.Model) (*clientinvoicepb.InvoiceData, error)
@@ -119,13 +120,18 @@ func (s service) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (docume
 }
 
 // UnpackFromCreatePayload initializes the model with parameters provided from the rest-api call
-func (s service) DeriveFromCreatePayload(payload *clientinvoicepb.InvoiceCreatePayload, contextHeader *context.Header) (documents.Model, error) {
+func (s service) DeriveFromCreatePayload(ctx context.Context, payload *clientinvoicepb.InvoiceCreatePayload) (documents.Model, error) {
 	if payload == nil || payload.Data == nil {
 		return nil, documents.ErrDocumentNil
 	}
 
+	id, err := contextutil.Self(ctx)
+	if err != nil {
+		return nil, documents.ErrDocumentConfigTenantID
+	}
+
 	invoiceModel := new(Invoice)
-	err := invoiceModel.InitInvoiceInput(payload, contextHeader)
+	err = invoiceModel.InitInvoiceInput(payload, id.ID.String())
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
@@ -168,7 +174,7 @@ func (s service) calculateDataRoot(old, new documents.Model, validator documents
 }
 
 // Create takes and invoice model and does required validation checks, tries to persist to DB
-func (s service) Create(ctx *context.Header, inv documents.Model) (documents.Model, error) {
+func (s service) Create(ctx context.Context, inv documents.Model) (documents.Model, error) {
 	inv, err := s.calculateDataRoot(nil, inv, CreateValidator())
 	if err != nil {
 		return nil, err
@@ -193,7 +199,7 @@ func (s service) updater(id []byte, model documents.Model) error {
 }
 
 // Update finds the old document, validates the new version and persists the updated document
-func (s service) Update(ctx *context.Header, inv documents.Model) (documents.Model, error) {
+func (s service) Update(ctx context.Context, inv documents.Model) (documents.Model, error) {
 	cd, err := inv.PackCoreDocument()
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
@@ -312,7 +318,7 @@ func (s service) DeriveInvoiceData(doc documents.Model) (*clientinvoicepb.Invoic
 }
 
 // DeriveFromUpdatePayload returns a new version of the old invoice identified by identifier in payload
-func (s service) DeriveFromUpdatePayload(payload *clientinvoicepb.InvoiceUpdatePayload, contextHeader *context.Header) (documents.Model, error) {
+func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *clientinvoicepb.InvoiceUpdatePayload) (documents.Model, error) {
 	if payload == nil || payload.Data == nil {
 		return nil, documents.ErrDocumentNil
 	}
@@ -341,7 +347,12 @@ func (s service) DeriveFromUpdatePayload(payload *clientinvoicepb.InvoiceUpdateP
 		return nil, errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
 	}
 
-	collaborators := append([]string{contextHeader.Self().ID.String()}, payload.Collaborators...)
+	idConf, err := contextutil.Self(ctx)
+	if err != nil {
+		return nil, documents.ErrDocumentConfigTenantID
+	}
+
+	collaborators := append([]string{idConf.ID.String()}, payload.Collaborators...)
 	inv.CoreDocument, err = coredocument.PrepareNewVersion(*oldCD, collaborators)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentPrepareCoreDocument, err)
@@ -351,7 +362,7 @@ func (s service) DeriveFromUpdatePayload(payload *clientinvoicepb.InvoiceUpdateP
 }
 
 // RequestDocumentSignature Validates, Signs document received over the p2p layer and returns Signature
-func (s service) RequestDocumentSignature(contextHeader *context.Header, model documents.Model) (*coredocumentpb.Signature, error) {
+func (s service) RequestDocumentSignature(ctx context.Context, model documents.Model) (*coredocumentpb.Signature, error) {
 	if err := coredocument.SignatureRequestValidator(s.identityService).Validate(nil, model); err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
@@ -363,11 +374,16 @@ func (s service) RequestDocumentSignature(contextHeader *context.Header, model d
 
 	srvLog.Infof("coredoc received %x with signing root %x", doc.DocumentIdentifier, doc.SigningRoot)
 
-	idKeys, ok := contextHeader.Self().Keys[identity.KeyPurposeSigning]
+	idConf, err := contextutil.Self(ctx)
+	if err != nil {
+		return nil, documents.ErrDocumentConfigTenantID
+	}
+
+	idKeys, ok := idConf.Keys[identity.KeyPurposeSigning]
 	if !ok {
 		return nil, errors.NewTypedError(documents.ErrDocumentSigning, errors.New("missing signing key"))
 	}
-	sig := crypto.Sign(contextHeader.Self().ID[:], idKeys.PrivateKey, idKeys.PublicKey, doc.SigningRoot)
+	sig := crypto.Sign(idConf.ID[:], idKeys.PrivateKey, idKeys.PublicKey, doc.SigningRoot)
 	doc.Signatures = append(doc.Signatures, sig)
 	err = model.UnpackCoreDocument(doc)
 	if err != nil {

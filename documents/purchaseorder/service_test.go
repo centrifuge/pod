@@ -7,7 +7,7 @@ import (
 	"math/big"
 	"testing"
 
-	context2 "github.com/centrifuge/go-centrifuge/context"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -56,7 +56,7 @@ func TestService_Update(t *testing.T) {
 	c := &testingconfig.MockConfig{}
 	c.On("GetIdentityID").Return(centIDBytes, nil)
 	poSrv := service{config: c, repo: testRepo()}
-	ctxh, err := context2.NewHeader(context.Background(), cfg)
+	ctxh, err := contextutil.NewCentrifugeContext(context.Background(), cfg)
 	assert.Nil(t, err)
 
 	// pack failed
@@ -78,7 +78,7 @@ func TestService_Update(t *testing.T) {
 
 	payload := testingdocuments.CreatePOPayload()
 	payload.Collaborators = []string{"0x010203040506"}
-	po, err := poSrv.DeriveFromCreatePayload(payload, ctxh)
+	po, err := poSrv.DeriveFromCreatePayload(ctxh, payload)
 	assert.Nil(t, err)
 	cd, err = po.PackCoreDocument()
 	assert.Nil(t, err)
@@ -100,11 +100,11 @@ func TestService_Update(t *testing.T) {
 	data.OrderAmount = 100
 	data.ExtraData = hexutil.Encode(utils.RandomSlice(32))
 	collab := hexutil.Encode(utils.RandomSlice(6))
-	newInv, err := poSrv.DeriveFromUpdatePayload(&clientpurchaseorderpb.PurchaseOrderUpdatePayload{
+	newInv, err := poSrv.DeriveFromUpdatePayload(ctxh, &clientpurchaseorderpb.PurchaseOrderUpdatePayload{
 		Identifier:    hexutil.Encode(cd.DocumentIdentifier),
 		Collaborators: []string{collab},
 		Data:          data,
-	}, ctxh)
+	})
 	assert.Nil(t, err)
 	newData, err := poSrv.DerivePurchaseOrderData(newInv)
 	assert.Nil(t, err)
@@ -144,16 +144,16 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.Nil(t, doc)
 
 	// nil payload data
-	doc, err = poSrv.DeriveFromUpdatePayload(&clientpurchaseorderpb.PurchaseOrderUpdatePayload{}, nil)
+	doc, err = poSrv.DeriveFromUpdatePayload(nil, &clientpurchaseorderpb.PurchaseOrderUpdatePayload{})
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentNil, err))
 	assert.Nil(t, doc)
 
 	// messed up identifier
-	contextHeader, err := context2.NewHeader(context.Background(), cfg)
+	contextHeader, err := contextutil.NewCentrifugeContext(context.Background(), cfg)
 	assert.Nil(t, err)
 	payload := &clientpurchaseorderpb.PurchaseOrderUpdatePayload{Identifier: "some identifier", Data: &clientpurchaseorderpb.PurchaseOrderData{}}
-	doc, err = poSrv.DeriveFromUpdatePayload(payload, contextHeader)
+	doc, err = poSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to decode identifier")
 	assert.Nil(t, doc)
@@ -161,14 +161,15 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	// missing last version
 	id := utils.RandomSlice(32)
 	payload.Identifier = hexutil.Encode(id)
-	doc, err = poSrv.DeriveFromUpdatePayload(payload, contextHeader)
+	doc, err = poSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
 	assert.Nil(t, doc)
 
 	// failed to load from data
+	self, _ := contextutil.Self(contextHeader)
 	old := new(PurchaseOrder)
-	err = old.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), contextHeader)
+	err = old.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), self.ID.String())
 	assert.Nil(t, err)
 	old.CoreDocument.DocumentIdentifier = id
 	old.CoreDocument.CurrentVersion = id
@@ -181,7 +182,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 		Currency:  "EUR",
 	}
 
-	doc, err = poSrv.DeriveFromUpdatePayload(payload, contextHeader)
+	doc, err = poSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load purchase order from data")
 	assert.Nil(t, doc)
@@ -189,7 +190,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	// failed core document new version
 	payload.Data.ExtraData = hexutil.Encode(utils.RandomSlice(32))
 	payload.Collaborators = []string{"some wrong ID"}
-	doc, err = poSrv.DeriveFromUpdatePayload(payload, contextHeader)
+	doc, err = poSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentPrepareCoreDocument, err))
 	assert.Nil(t, doc)
@@ -197,7 +198,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	// success
 	wantCollab := utils.RandomSlice(6)
 	payload.Collaborators = []string{hexutil.Encode(wantCollab)}
-	doc, err = poSrv.DeriveFromUpdatePayload(payload, contextHeader)
+	doc, err = poSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Nil(t, err)
 	assert.NotNil(t, doc)
 	cd, err := doc.PackCoreDocument()
@@ -216,17 +217,17 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 func TestService_DeriveFromCreatePayload(t *testing.T) {
 	poSrv := service{}
-	ctxh, err := context2.NewHeader(context.Background(), cfg)
+	ctxh, err := contextutil.NewCentrifugeContext(context.Background(), cfg)
 	assert.Nil(t, err)
 
 	// nil payload
-	m, err := poSrv.DeriveFromCreatePayload(nil, ctxh)
+	m, err := poSrv.DeriveFromCreatePayload(ctxh, nil)
 	assert.Nil(t, m)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentNil, err))
 
 	// nil data payload
-	m, err = poSrv.DeriveFromCreatePayload(&clientpurchaseorderpb.PurchaseOrderCreatePayload{}, ctxh)
+	m, err = poSrv.DeriveFromCreatePayload(ctxh, &clientpurchaseorderpb.PurchaseOrderCreatePayload{})
 	assert.Nil(t, m)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentNil, err))
@@ -238,14 +239,14 @@ func TestService_DeriveFromCreatePayload(t *testing.T) {
 		},
 	}
 
-	m, err = poSrv.DeriveFromCreatePayload(payload, ctxh)
+	m, err = poSrv.DeriveFromCreatePayload(ctxh, payload)
 	assert.Nil(t, m)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
 
 	// success
 	payload.Data.ExtraData = "0x01020304050607"
-	m, err = poSrv.DeriveFromCreatePayload(payload, ctxh)
+	m, err = poSrv.DeriveFromCreatePayload(ctxh, payload)
 	assert.Nil(t, err)
 	assert.NotNil(t, m)
 	po := m.(*PurchaseOrder)
@@ -271,7 +272,7 @@ func TestService_DeriveFromCoreDocument(t *testing.T) {
 }
 
 func TestService_Create(t *testing.T) {
-	ctxh, err := context2.NewHeader(context.Background(), cfg)
+	ctxh, err := contextutil.NewCentrifugeContext(context.Background(), cfg)
 	assert.Nil(t, err)
 	c := &testingconfig.MockConfig{}
 	c.On("GetIdentityID").Return(centIDBytes, nil)
@@ -284,7 +285,7 @@ func TestService_Create(t *testing.T) {
 	assert.Contains(t, err.Error(), "unknown document type")
 
 	// anchor fails
-	po, err := poSrv.DeriveFromCreatePayload(testingdocuments.CreatePOPayload(), ctxh)
+	po, err := poSrv.DeriveFromCreatePayload(ctxh, testingdocuments.CreatePOPayload())
 	assert.Nil(t, err)
 	proc := &testingcoredocument.MockCoreDocumentProcessor{}
 	proc.On("PrepareForSignatureRequests", po).Return(errors.New("anchoring failed")).Once()
@@ -296,7 +297,7 @@ func TestService_Create(t *testing.T) {
 	assert.Contains(t, err.Error(), "anchoring failed")
 
 	// success
-	po, err = poSrv.DeriveFromCreatePayload(testingdocuments.CreatePOPayload(), ctxh)
+	po, err = poSrv.DeriveFromCreatePayload(ctxh, testingdocuments.CreatePOPayload())
 	assert.Nil(t, err)
 	proc = &testingcoredocument.MockCoreDocumentProcessor{}
 	proc.On("PrepareForSignatureRequests", po).Return(nil).Once()
@@ -498,7 +499,7 @@ func TestService_CreateProofsForVersionDocumentDoesntExist(t *testing.T) {
 func TestService_DerivePurchaseOrderData(t *testing.T) {
 	var m documents.Model
 	_, poSrv := getServiceWithMockedLayers()
-	ctxh, err := context2.NewHeader(context.Background(), cfg)
+	ctxh, err := contextutil.NewCentrifugeContext(context.Background(), cfg)
 	assert.Nil(t, err)
 
 	// unknown type
@@ -510,7 +511,7 @@ func TestService_DerivePurchaseOrderData(t *testing.T) {
 
 	// success
 	payload := testingdocuments.CreatePOPayload()
-	m, err = poSrv.DeriveFromCreatePayload(payload, ctxh)
+	m, err = poSrv.DeriveFromCreatePayload(ctxh, payload)
 	assert.Nil(t, err)
 	d, err = poSrv.DerivePurchaseOrderData(m)
 	assert.Nil(t, err)
@@ -519,7 +520,7 @@ func TestService_DerivePurchaseOrderData(t *testing.T) {
 
 func TestService_DerivePurchaseOrderResponse(t *testing.T) {
 	poSrv := service{}
-	ctxh, err := context2.NewHeader(context.Background(), cfg)
+	ctxh, err := contextutil.NewCentrifugeContext(context.Background(), cfg)
 	assert.Nil(t, err)
 
 	// pack fails
@@ -554,7 +555,7 @@ func TestService_DerivePurchaseOrderResponse(t *testing.T) {
 
 	// success
 	payload := testingdocuments.CreatePOPayload()
-	po, err := poSrv.DeriveFromCreatePayload(payload, ctxh)
+	po, err := poSrv.DeriveFromCreatePayload(ctxh, payload)
 	assert.Nil(t, err)
 	r, err = poSrv.DerivePurchaseOrderResponse(po)
 	assert.Nil(t, err)
@@ -689,7 +690,7 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 }
 
 func TestService_RequestDocumentSignature(t *testing.T) {
-	ctxh, err := context2.NewHeader(context.Background(), cfg)
+	ctxh, err := contextutil.NewCentrifugeContext(context.Background(), cfg)
 	assert.Nil(t, err)
 	poSrv := service{}
 	s, err := poSrv.RequestDocumentSignature(ctxh, nil)
@@ -701,7 +702,7 @@ func TestService_calculateDataRoot(t *testing.T) {
 	c := &testingconfig.MockConfig{}
 	c.On("GetIdentityID").Return(centIDBytes, nil)
 	poSrv := service{config: c, repo: testRepo()}
-	ctxh, err := context2.NewHeader(context.Background(), cfg)
+	ctxh, err := contextutil.NewCentrifugeContext(context.Background(), cfg)
 	assert.Nil(t, err)
 
 	// type mismatch
@@ -711,7 +712,7 @@ func TestService_calculateDataRoot(t *testing.T) {
 	assert.Contains(t, err.Error(), "unknown document type")
 
 	// failed validator
-	po, err = poSrv.DeriveFromCreatePayload(testingdocuments.CreatePOPayload(), ctxh)
+	po, err = poSrv.DeriveFromCreatePayload(ctxh, testingdocuments.CreatePOPayload())
 	assert.Nil(t, err)
 	assert.Nil(t, po.(*PurchaseOrder).CoreDocument.DataRoot)
 	v := documents.ValidatorFunc(func(_, _ documents.Model) error {
@@ -723,7 +724,7 @@ func TestService_calculateDataRoot(t *testing.T) {
 	assert.Contains(t, err.Error(), "validations fail")
 
 	// create failed
-	po, err = poSrv.DeriveFromCreatePayload(testingdocuments.CreatePOPayload(), ctxh)
+	po, err = poSrv.DeriveFromCreatePayload(ctxh, testingdocuments.CreatePOPayload())
 	assert.Nil(t, err)
 	assert.Nil(t, po.(*PurchaseOrder).CoreDocument.DataRoot)
 	err = poSrv.repo.Create(centIDBytes, po.(*PurchaseOrder).CoreDocument.CurrentVersion, po)
@@ -734,7 +735,7 @@ func TestService_calculateDataRoot(t *testing.T) {
 	assert.Contains(t, err.Error(), storage.ErrRepositoryModelCreateKeyExists)
 
 	// success
-	po, err = poSrv.DeriveFromCreatePayload(testingdocuments.CreatePOPayload(), ctxh)
+	po, err = poSrv.DeriveFromCreatePayload(ctxh, testingdocuments.CreatePOPayload())
 	assert.Nil(t, err)
 	assert.Nil(t, po.(*PurchaseOrder).CoreDocument.DataRoot)
 	po, err = poSrv.calculateDataRoot(nil, po, CreateValidator())

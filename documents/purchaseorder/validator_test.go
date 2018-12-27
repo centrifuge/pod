@@ -5,7 +5,7 @@ package purchaseorder
 import (
 	"testing"
 
-	context2 "github.com/centrifuge/go-centrifuge/context"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 
 	"context"
 
@@ -49,7 +49,7 @@ func TestFieldValidator_Validate(t *testing.T) {
 
 func TestDataRootValidation_Validate(t *testing.T) {
 	drv := dataRootValidator()
-	contextHeader, err := context2.NewHeader(context.Background(), cfg)
+	contextHeader, err := contextutil.NewCentrifugeContext(context.Background(), cfg)
 	assert.Nil(t, err)
 
 	// nil error
@@ -84,8 +84,9 @@ func TestDataRootValidation_Validate(t *testing.T) {
 	assert.Contains(t, err.Error(), "unknown document type")
 
 	// mismatch
+	id, _ := contextutil.Self(contextHeader)
 	po := new(PurchaseOrder)
-	err = po.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), contextHeader)
+	err = po.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), id.ID.String())
 	assert.Nil(t, err)
 	po.CoreDocument = cd
 	err = drv.Validate(nil, po)
@@ -94,7 +95,7 @@ func TestDataRootValidation_Validate(t *testing.T) {
 
 	// success
 	po = new(PurchaseOrder)
-	err = po.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), contextHeader)
+	err = po.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), id.ID.String())
 	assert.Nil(t, err)
 	err = po.calculateDataRoot()
 	assert.Nil(t, err)

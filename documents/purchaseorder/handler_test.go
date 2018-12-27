@@ -6,7 +6,7 @@ import (
 	"context"
 	"testing"
 
-	context2 "github.com/centrifuge/go-centrifuge/context"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -23,20 +23,20 @@ type mockService struct {
 	mock.Mock
 }
 
-func (m mockService) Create(ctx *context2.Header, doc documents.Model) (documents.Model, error) {
-	args := m.Called(ctx, doc)
+func (m mockService) Create(ctx context.Context, po documents.Model) (documents.Model, error) {
+	args := m.Called(ctx, po)
 	model, _ := args.Get(0).(documents.Model)
 	return model, args.Error(1)
 }
 
-func (m mockService) Update(ctx *context2.Header, doc documents.Model) (documents.Model, error) {
-	args := m.Called(ctx, doc)
+func (m mockService) Update(ctx context.Context, po documents.Model) (documents.Model, error) {
+	args := m.Called(ctx, po)
 	model, _ := args.Get(0).(documents.Model)
 	return model, args.Error(1)
 }
 
-func (m mockService) DeriveFromCreatePayload(req *clientpopb.PurchaseOrderCreatePayload, ctxh *context2.Header) (documents.Model, error) {
-	args := m.Called(req, ctxh)
+func (m mockService) DeriveFromCreatePayload(ctx context.Context, payload *clientpopb.PurchaseOrderCreatePayload) (documents.Model, error) {
+	args := m.Called(ctx, payload)
 	model, _ := args.Get(0).(documents.Model)
 	return model, args.Error(1)
 }
@@ -65,8 +65,8 @@ func (m mockService) DerivePurchaseOrderResponse(po documents.Model) (*clientpop
 	return data, args.Error(1)
 }
 
-func (m mockService) DeriveFromUpdatePayload(payload *clientpopb.PurchaseOrderUpdatePayload, ctxh *context2.Header) (documents.Model, error) {
-	args := m.Called(payload, ctxh)
+func (m mockService) DeriveFromUpdatePayload(ctx context.Context, payload *clientpopb.PurchaseOrderUpdatePayload) (documents.Model, error) {
+	args := m.Called(ctx, payload)
 	doc, _ := args.Get(0).(documents.Model)
 	return doc, args.Error(1)
 }
@@ -76,12 +76,12 @@ func TestGRPCHandler_Create(t *testing.T) {
 	req := testingdocuments.CreatePOPayload()
 	ctx := context.Background()
 	model := &testingdocuments.MockModel{}
-	ctxh, err := context2.NewHeader(ctx, cfg)
+	ctxh, err := contextutil.NewCentrifugeContext(ctx, cfg)
 	assert.Nil(t, err)
 
 	// derive fails
 	srv := h.service.(*mockService)
-	srv.On("DeriveFromCreatePayload", req, ctxh).Return(nil, errors.New("derive failed")).Once()
+	srv.On("DeriveFromCreatePayload", ctxh, req).Return(nil, errors.New("derive failed")).Once()
 	h.service = srv
 	resp, err := h.Create(ctx, req)
 	srv.AssertExpectations(t)
@@ -90,7 +90,7 @@ func TestGRPCHandler_Create(t *testing.T) {
 	assert.Contains(t, err.Error(), "derive failed")
 
 	// create fails
-	srv.On("DeriveFromCreatePayload", req, ctxh).Return(model, nil).Once()
+	srv.On("DeriveFromCreatePayload", ctxh, req).Return(model, nil).Once()
 	srv.On("Create", ctxh, model).Return(nil, errors.New("create failed")).Once()
 	h.service = srv
 	resp, err = h.Create(ctx, req)
@@ -100,7 +100,7 @@ func TestGRPCHandler_Create(t *testing.T) {
 	assert.Contains(t, err.Error(), "create failed")
 
 	// derive response fails
-	srv.On("DeriveFromCreatePayload", req, ctxh).Return(model, nil).Once()
+	srv.On("DeriveFromCreatePayload", ctxh, req).Return(model, nil).Once()
 	srv.On("Create", ctxh, model).Return(model, nil).Once()
 	srv.On("DerivePurchaseOrderResponse", model).Return(nil, errors.New("derive response fails")).Once()
 	h.service = srv
@@ -112,7 +112,7 @@ func TestGRPCHandler_Create(t *testing.T) {
 
 	// success
 	eresp := &clientpopb.PurchaseOrderResponse{}
-	srv.On("DeriveFromCreatePayload", req, ctxh).Return(model, nil).Once()
+	srv.On("DeriveFromCreatePayload", ctxh, req).Return(model, nil).Once()
 	srv.On("Create", ctxh, model).Return(model, nil).Once()
 	srv.On("DerivePurchaseOrderResponse", model).Return(eresp, nil).Once()
 	h.service = srv
@@ -132,12 +132,12 @@ func TestGrpcHandler_Update(t *testing.T) {
 	}
 	ctx := context.Background()
 	model := &testingdocuments.MockModel{}
-	ctxh, err := context2.NewHeader(ctx, cfg)
+	ctxh, err := contextutil.NewCentrifugeContext(ctx, cfg)
 	assert.Nil(t, err)
 
 	// derive fails
 	srv := h.service.(*mockService)
-	srv.On("DeriveFromUpdatePayload", req, ctxh).Return(nil, errors.New("derive failed")).Once()
+	srv.On("DeriveFromUpdatePayload", ctxh, req).Return(nil, errors.New("derive failed")).Once()
 	h.service = srv
 	resp, err := h.Update(ctx, req)
 	srv.AssertExpectations(t)
@@ -146,7 +146,7 @@ func TestGrpcHandler_Update(t *testing.T) {
 	assert.Contains(t, err.Error(), "derive failed")
 
 	// create fails
-	srv.On("DeriveFromUpdatePayload", req, ctxh).Return(model, nil).Once()
+	srv.On("DeriveFromUpdatePayload", ctxh, req).Return(model, nil).Once()
 	srv.On("Update", ctxh, model).Return(nil, errors.New("update failed")).Once()
 	h.service = srv
 	resp, err = h.Update(ctx, req)
@@ -156,7 +156,7 @@ func TestGrpcHandler_Update(t *testing.T) {
 	assert.Contains(t, err.Error(), "update failed")
 
 	// derive response fails
-	srv.On("DeriveFromUpdatePayload", req, ctxh).Return(model, nil).Once()
+	srv.On("DeriveFromUpdatePayload", ctxh, req).Return(model, nil).Once()
 	srv.On("Update", ctxh, model).Return(model, nil).Once()
 	srv.On("DerivePurchaseOrderResponse", model).Return(nil, errors.New("derive response fails")).Once()
 	h.service = srv
@@ -168,7 +168,7 @@ func TestGrpcHandler_Update(t *testing.T) {
 
 	// success
 	eresp := &clientpopb.PurchaseOrderResponse{}
-	srv.On("DeriveFromUpdatePayload", req, ctxh).Return(model, nil).Once()
+	srv.On("DeriveFromUpdatePayload", ctxh, req).Return(model, nil).Once()
 	srv.On("Update", ctxh, model).Return(model, nil).Once()
 	srv.On("DerivePurchaseOrderResponse", model).Return(eresp, nil).Once()
 	h.service = srv
