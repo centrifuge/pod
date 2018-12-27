@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"reflect"
 
-	"github.com/centrifuge/go-centrifuge/context"
-
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
@@ -148,13 +146,13 @@ func (p *PurchaseOrder) createP2PProtobuf() *purchaseorderpb.PurchaseOrderData {
 }
 
 // InitPurchaseOrderInput initialize the model based on the received parameters from the rest api call
-func (p *PurchaseOrder) InitPurchaseOrderInput(payload *clientpurchaseorderpb.PurchaseOrderCreatePayload, contextHeader *context.Header) error {
+func (p *PurchaseOrder) InitPurchaseOrderInput(payload *clientpurchaseorderpb.PurchaseOrderCreatePayload, self string) error {
 	err := p.initPurchaseOrderFromData(payload.Data)
 	if err != nil {
 		return err
 	}
 
-	collaborators := append([]string{contextHeader.Self().ID.String()}, payload.Collaborators...)
+	collaborators := append([]string{self}, payload.Collaborators...)
 	p.CoreDocument, err = coredocument.NewWithCollaborators(collaborators)
 	if err != nil {
 		return errors.New("failed to init core document: %v", err)

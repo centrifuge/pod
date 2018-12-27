@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	context2 "github.com/centrifuge/go-centrifuge/context"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
@@ -23,7 +23,7 @@ import (
 // Client defines methods that can be implemented by any type handling p2p communications.
 type Client interface {
 	OpenClient(id identity.Identity) (p2ppb.P2PServiceClient, error)
-	GetSignaturesForDocument(ctx *context2.Header, identityService identity.Service, doc *coredocumentpb.CoreDocument) error
+	GetSignaturesForDocument(ctx context.Context, identityService identity.Service, doc *coredocumentpb.CoreDocument) error
 }
 
 // OpenClient returns P2PServiceClient to contact the remote peer
@@ -141,11 +141,16 @@ func (s *p2pServer) getSignatureAsync(ctx context.Context, identityService ident
 }
 
 // GetSignaturesForDocument requests peer nodes for the signature and verifies them
-func (s *p2pServer) GetSignaturesForDocument(ctx *context2.Header, identityService identity.Service, doc *coredocumentpb.CoreDocument) error {
+func (s *p2pServer) GetSignaturesForDocument(ctx context.Context, identityService identity.Service, doc *coredocumentpb.CoreDocument) error {
 	in := make(chan signatureResponseWrap)
 	defer close(in)
 
-	extCollaborators, err := coredocument.GetExternalCollaborators(ctx.Self().ID, doc)
+	self, err := contextutil.Self(ctx)
+	if err != nil {
+		return centerrors.Wrap(err, "failed to get self")
+	}
+
+	extCollaborators, err := coredocument.GetExternalCollaborators(self.ID, doc)
 	if err != nil {
 		return centerrors.Wrap(err, "failed to get external collaborators")
 	}
@@ -170,7 +175,7 @@ func (s *p2pServer) GetSignaturesForDocument(ctx *context2.Header, identityServi
 		// for now going with context.background, once we have a timeout for request
 		// we can use context.Timeout for that
 		count++
-		c, _ := context.WithTimeout(ctx.Context(), s.config.GetP2PConnectionTimeout())
+		c, _ := context.WithTimeout(ctx, s.config.GetP2PConnectionTimeout())
 		go s.getSignatureAsync(c, identityService, *doc, client, collaboratorID, in)
 	}
 

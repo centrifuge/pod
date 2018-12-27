@@ -1,7 +1,8 @@
 package documents
 
 import (
-	"github.com/centrifuge/go-centrifuge/context"
+	"context"
+
 	"github.com/centrifuge/go-centrifuge/errors"
 )
 
@@ -9,11 +10,11 @@ import (
 // this is to avoid import cycles
 // this will disappear once we have queueing logic in place
 type anchorProcessor interface {
-	PrepareForSignatureRequests(ctx *context.Header, model Model) error
-	RequestSignatures(ctx *context.Header, model Model) error
+	PrepareForSignatureRequests(ctx context.Context, model Model) error
+	RequestSignatures(ctx context.Context, model Model) error
 	PrepareForAnchoring(model Model) error
-	AnchorDocument(ctx *context.Header, model Model) error
-	SendDocument(ctx *context.Header, model Model) error
+	AnchorDocument(ctx context.Context, model Model) error
+	SendDocument(ctx context.Context, model Model) error
 }
 
 // updaterFunc is a wrapper that will be called to save the state of the model between processor steps
@@ -21,7 +22,7 @@ type updaterFunc func(id []byte, model Model) error
 
 // AnchorDocument add signature, requests signatures, anchors document, and sends the anchored document
 // to collaborators
-func AnchorDocument(ctx *context.Header, model Model, proc anchorProcessor, updater updaterFunc) (Model, error) {
+func AnchorDocument(ctx context.Context, model Model, proc anchorProcessor, updater updaterFunc) (Model, error) {
 	cd, err := model.PackCoreDocument()
 	if err != nil {
 		return nil, err

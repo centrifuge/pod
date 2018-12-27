@@ -4,12 +4,11 @@ import (
 	"context"
 	"time"
 
-	context2 "github.com/centrifuge/go-centrifuge/context"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/anchors"
-	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -31,19 +30,19 @@ type Config interface {
 // Processor identifies an implementation, which can do a bunch of things with a CoreDocument.
 // E.g. send, anchor, etc.
 type Processor interface {
-	Send(ctx *context2.Header, coreDocument *coredocumentpb.CoreDocument, recipient identity.CentID) (err error)
-	PrepareForSignatureRequests(ctx *context2.Header, model documents.Model) error
-	RequestSignatures(ctx *context2.Header, model documents.Model) error
+	Send(ctx context.Context, coreDocument *coredocumentpb.CoreDocument, recipient identity.CentID) (err error)
+	PrepareForSignatureRequests(ctx context.Context, model documents.Model) error
+	RequestSignatures(ctx context.Context, model documents.Model) error
 	PrepareForAnchoring(model documents.Model) error
-	AnchorDocument(ctx *context2.Header, model documents.Model) error
-	SendDocument(ctx *context2.Header, model documents.Model) error
+	AnchorDocument(ctx context.Context, model documents.Model) error
+	SendDocument(ctx context.Context, model documents.Model) error
 }
 
 // client defines the methods for p2pclient
 // we redefined it here so that we can avoid cyclic dependencies with p2p
 type client interface {
 	OpenClient(id identity.Identity) (p2ppb.P2PServiceClient, error)
-	GetSignaturesForDocument(ctx *context2.Header, identityService identity.Service, doc *coredocumentpb.CoreDocument) error
+	GetSignaturesForDocument(ctx context.Context, identityService identity.Service, doc *coredocumentpb.CoreDocument) error
 }
 
 // defaultProcessor implements Processor interface
@@ -65,40 +64,44 @@ func DefaultProcessor(idService identity.Service, p2pClient client, repository a
 }
 
 // Send sends the given defaultProcessor to the given recipient on the P2P layer
-func (dp defaultProcessor) Send(ctx *context2.Header, coreDocument *coredocumentpb.CoreDocument, recipient identity.CentID) (err error) {
+func (dp defaultProcessor) Send(ctx context.Context, coreDocument *coredocumentpb.CoreDocument, recipient identity.CentID) (err error) {
 	if coreDocument == nil {
-		return centerrors.NilError(coreDocument)
+		return errors.New("passed coreDoc is nil")
 	}
 	log.Infof("sending coredocument %x to recipient %x", coreDocument.DocumentIdentifier, recipient)
 	id, err := dp.identityService.LookupIdentityForID(recipient)
 	if err != nil {
-		return centerrors.Wrap(err, "error fetching receiver identity")
+		return errors.New("error fetching receiver identity: %v", err)
 	}
 	client, err := dp.p2pClient.OpenClient(id)
 	if err != nil {
 		return errors.New("failed to open client: %v", err)
 	}
 
+	self, err := contextutil.Self(ctx)
+	if err != nil {
+		return err
+	}
+
 	log.Infof("Done opening connection against recipient [%x]\n", recipient)
-	idConfig := ctx.Self()
-	centIDBytes := idConfig.ID[:]
+	centIDBytes := self.ID[:]
 	p2pheader := &p2ppb.CentrifugeHeader{
 		SenderCentrifugeId: centIDBytes,
 		CentNodeVersion:    version.GetVersion().String(),
 		NetworkIdentifier:  dp.config.GetNetworkID(),
 	}
 
-	c, _ := context.WithTimeout(ctx.Context(), dp.config.GetP2PConnectionTimeout())
+	c, _ := context.WithTimeout(ctx, dp.config.GetP2PConnectionTimeout())
 	resp, err := client.SendAnchoredDocument(c, &p2ppb.AnchorDocumentRequest{Document: coreDocument, Header: p2pheader})
 	if err != nil || !resp.Accepted {
-		return centerrors.Wrap(err, "failed to send document to the node")
+		return errors.New("failed to send document to the node: %v", err)
 	}
 
 	return nil
 }
 
 // PrepareForSignatureRequests gets the core document from the model, and adds the node's own signature
-func (dp defaultProcessor) PrepareForSignatureRequests(ctx *context2.Header, model documents.Model) error {
+func (dp defaultProcessor) PrepareForSignatureRequests(ctx context.Context, model documents.Model) error {
 	cd, err := model.PackCoreDocument()
 	if err != nil {
 		return errors.New("failed to pack core document: %v", err)
@@ -110,7 +113,12 @@ func (dp defaultProcessor) PrepareForSignatureRequests(ctx *context2.Header, mod
 		return errors.New("failed to calculate signing root: %v", err)
 	}
 
-	sig := identity.Sign(ctx.Self(), identity.KeyPurposeSigning, cd.SigningRoot)
+	self, err := contextutil.Self(ctx)
+	if err != nil {
+		return err
+	}
+
+	sig := identity.Sign(self, identity.KeyPurposeSigning, cd.SigningRoot)
 	cd.Signatures = append(cd.Signatures, sig)
 
 	err = model.UnpackCoreDocument(cd)
@@ -123,18 +131,23 @@ func (dp defaultProcessor) PrepareForSignatureRequests(ctx *context2.Header, mod
 
 // RequestSignatures gets the core document from the model, validates pre signature requirements,
 // collects signatures, and validates the signatures,
-func (dp defaultProcessor) RequestSignatures(ctx *context2.Header, model documents.Model) error {
+func (dp defaultProcessor) RequestSignatures(ctx context.Context, model documents.Model) error {
 	cd, err := model.PackCoreDocument()
 	if err != nil {
 		return errors.New("failed to pack core document: %v", err)
 	}
 
-	idKeys, ok := ctx.Self().Keys[identity.KeyPurposeSigning]
+	self, err := contextutil.Self(ctx)
+	if err != nil {
+		return err
+	}
+
+	idKeys, ok := self.Keys[identity.KeyPurposeSigning]
 	if !ok {
 		return errors.New("missing keys for signing")
 	}
 
-	psv := PreSignatureRequestValidator(ctx.Self().ID[:], idKeys.PrivateKey, idKeys.PublicKey)
+	psv := PreSignatureRequestValidator(self.ID[:], idKeys.PrivateKey, idKeys.PublicKey)
 	err = psv.Validate(nil, model)
 	if err != nil {
 		return errors.New("failed to validate model for signature request: %v", err)
@@ -180,7 +193,7 @@ func (dp defaultProcessor) PrepareForAnchoring(model documents.Model) error {
 }
 
 // AnchorDocument validates the model, and anchors the document
-func (dp defaultProcessor) AnchorDocument(ctx *context2.Header, model documents.Model) error {
+func (dp defaultProcessor) AnchorDocument(ctx context.Context, model documents.Model) error {
 	cd, err := model.PackCoreDocument()
 	if err != nil {
 		return errors.New("failed to pack core document: %v", err)
@@ -212,8 +225,13 @@ func (dp defaultProcessor) AnchorDocument(ctx *context2.Header, model documents.
 		return errors.New("failed to get anchor ID: %v", err)
 	}
 
+	self, err := contextutil.Self(ctx)
+	if err != nil {
+		return err
+	}
+
 	// generate message authentication code for the anchor call
-	mac, err := secp256k1.SignEthereum(anchors.GenerateCommitHash(anchorID, centID, rootHash), ctx.Self().Keys[identity.KeyPurposeEthMsgAuth].PrivateKey)
+	mac, err := secp256k1.SignEthereum(anchors.GenerateCommitHash(anchorID, centID, rootHash), self.Keys[identity.KeyPurposeEthMsgAuth].PrivateKey)
 	if err != nil {
 		return errors.New("failed to generate ethereum MAC: %v", err)
 	}
@@ -230,7 +248,7 @@ func (dp defaultProcessor) AnchorDocument(ctx *context2.Header, model documents.
 }
 
 // SendDocument does post anchor validations and sends the document to collaborators
-func (dp defaultProcessor) SendDocument(ctx *context2.Header, model documents.Model) error {
+func (dp defaultProcessor) SendDocument(ctx context.Context, model documents.Model) error {
 	cd, err := model.PackCoreDocument()
 	if err != nil {
 		return errors.New("failed to pack core document: %v", err)
@@ -242,7 +260,12 @@ func (dp defaultProcessor) SendDocument(ctx *context2.Header, model documents.Mo
 		return errors.New("post anchor validations failed: %v", err)
 	}
 
-	extCollaborators, err := GetExternalCollaborators(ctx.Self().ID, cd)
+	self, err := contextutil.Self(ctx)
+	if err != nil {
+		return err
+	}
+
+	extCollaborators, err := GetExternalCollaborators(self.ID, cd)
 	if err != nil {
 		return errors.New("get external collaborators failed: %v", err)
 	}

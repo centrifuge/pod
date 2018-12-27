@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"reflect"
 
-	"github.com/centrifuge/go-centrifuge/context"
-
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
@@ -149,13 +147,13 @@ func (i *Invoice) createP2PProtobuf() *invoicepb.InvoiceData {
 }
 
 // InitInvoiceInput initialize the model based on the received parameters from the rest api call
-func (i *Invoice) InitInvoiceInput(payload *clientinvoicepb.InvoiceCreatePayload, contextHeader *context.Header) error {
+func (i *Invoice) InitInvoiceInput(payload *clientinvoicepb.InvoiceCreatePayload, self string) error {
 	err := i.initInvoiceFromData(payload.Data)
 	if err != nil {
 		return err
 	}
 
-	collaborators := append([]string{contextHeader.Self().ID.String()}, payload.Collaborators...)
+	collaborators := append([]string{self}, payload.Collaborators...)
 
 	i.CoreDocument, err = coredocument.NewWithCollaborators(collaborators)
 	if err != nil {
