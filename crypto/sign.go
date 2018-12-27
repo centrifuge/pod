@@ -1,7 +1,6 @@
 package crypto
 
 import (
-	errors2 "errors"
 	"strings"
 	"time"
 
@@ -38,7 +37,7 @@ func SignMessage(privateKey, message []byte, curveType string, ethereumSign bool
 func VerifySignature(pubKey, message, signature []byte) error {
 	valid := ed25519.Verify(pubKey, message, signature)
 	if !valid {
-		return errors2.New("invalid signature")
+		return errors.New("invalid signature")
 	}
 
 	return nil
