@@ -2,9 +2,8 @@ package genericdoc
 
 import (
 	"bytes"
+	"context"
 	"time"
-
-	"github.com/centrifuge/go-centrifuge/context"
 
 	"github.com/centrifuge/go-centrifuge/crypto"
 
@@ -128,7 +127,7 @@ func (s service) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (docume
 	return nil, nil
 }
 
-func (s service) RequestDocumentSignature(contextHeader *context.Header, model documents.Model) (*coredocumentpb.Signature, error) {
+func (s service) RequestDocumentSignature(ctx context.Context, model documents.Model) (*coredocumentpb.Signature, error) {
 	if err := coredocument.SignatureRequestValidator(s.identityService).Validate(nil, model); err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
@@ -140,11 +139,11 @@ func (s service) RequestDocumentSignature(contextHeader *context.Header, model d
 
 	srvLog.Infof("coredoc received %x with signing root %x", doc.DocumentIdentifier, doc.SigningRoot)
 
-	idKeys, ok := contextHeader.Self().Keys[identity.KeyPurposeSigning]
+	idKeys, ok := ctx.Self().Keys[identity.KeyPurposeSigning]
 	if !ok {
 		return nil, errors.NewTypedError(documents.ErrDocumentSigning, errors.New("missing signing key"))
 	}
-	sig := crypto.Sign(contextHeader.Self().ID[:], idKeys.PrivateKey, idKeys.PublicKey, doc.SigningRoot)
+	sig := crypto.Sign(ctx.Self().ID[:], idKeys.PrivateKey, idKeys.PublicKey, doc.SigningRoot)
 	doc.Signatures = append(doc.Signatures, sig)
 	err = model.UnpackCoreDocument(doc)
 	if err != nil {

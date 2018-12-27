@@ -2,9 +2,10 @@ package purchaseorder
 
 import (
 	"bytes"
+	"context"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/context"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 
 	"github.com/centrifuge/go-centrifuge/crypto"
 
@@ -32,16 +33,16 @@ type Service interface {
 	documents.Service
 
 	// DeriverFromPayload derives purchase order from clientPayload
-	DeriveFromCreatePayload(payload *clientpopb.PurchaseOrderCreatePayload, hdr *context.Header) (documents.Model, error)
+	DeriveFromCreatePayload(ctx context.Context, payload *clientpopb.PurchaseOrderCreatePayload) (documents.Model, error)
 
 	// DeriveFromUpdatePayload derives purchase order from update payload
-	DeriveFromUpdatePayload(payload *clientpopb.PurchaseOrderUpdatePayload, hdr *context.Header) (documents.Model, error)
+	DeriveFromUpdatePayload(ctx context.Context, payload *clientpopb.PurchaseOrderUpdatePayload) (documents.Model, error)
 
 	// Create validates and persists purchase order and returns a Updated model
-	Create(ctx *context.Header, po documents.Model) (documents.Model, error)
+	Create(ctx context.Context, po documents.Model) (documents.Model, error)
 
 	// Update validates and updates the purchase order and return the updated model
-	Update(ctx *context.Header, po documents.Model) (documents.Model, error)
+	Update(ctx context.Context, po documents.Model) (documents.Model, error)
 
 	// DerivePurchaseOrderData returns the purchase order data as client data
 	DerivePurchaseOrderData(po documents.Model) (*clientpopb.PurchaseOrderData, error)
@@ -112,7 +113,7 @@ func (s service) calculateDataRoot(old, new documents.Model, validator documents
 }
 
 // Create validates, persists, and anchors a purchase order
-func (s service) Create(ctx *context.Header, po documents.Model) (documents.Model, error) {
+func (s service) Create(ctx context.Context, po documents.Model) (documents.Model, error) {
 	po, err := s.calculateDataRoot(nil, po, CreateValidator())
 	if err != nil {
 		return nil, err
@@ -137,7 +138,7 @@ func (s service) updater(id []byte, model documents.Model) error {
 }
 
 // Update validates, persists, and anchors a new version of purchase order
-func (s service) Update(ctx *context.Header, po documents.Model) (documents.Model, error) {
+func (s service) Update(ctx context.Context, po documents.Model) (documents.Model, error) {
 	cd, err := po.PackCoreDocument()
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
@@ -162,13 +163,18 @@ func (s service) Update(ctx *context.Header, po documents.Model) (documents.Mode
 }
 
 // DeriveFromCreatePayload derives purchase order from create payload
-func (s service) DeriveFromCreatePayload(payload *clientpopb.PurchaseOrderCreatePayload, ctxH *context.Header) (documents.Model, error) {
+func (s service) DeriveFromCreatePayload(ctx context.Context, payload *clientpopb.PurchaseOrderCreatePayload) (documents.Model, error) {
 	if payload == nil || payload.Data == nil {
 		return nil, documents.ErrDocumentNil
 	}
 
+	idConf, err := contextutil.Self(ctx)
+	if err != nil {
+		return nil, documents.ErrDocumentConfigTenantID
+	}
+
 	po := new(PurchaseOrder)
-	err := po.InitPurchaseOrderInput(payload, ctxH)
+	err = po.InitPurchaseOrderInput(payload, idConf.ID.String())
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
@@ -177,7 +183,7 @@ func (s service) DeriveFromCreatePayload(payload *clientpopb.PurchaseOrderCreate
 }
 
 // DeriveFromUpdatePayload derives purchase order from update payload
-func (s service) DeriveFromUpdatePayload(payload *clientpopb.PurchaseOrderUpdatePayload, ctxH *context.Header) (documents.Model, error) {
+func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *clientpopb.PurchaseOrderUpdatePayload) (documents.Model, error) {
 	if payload == nil || payload.Data == nil {
 		return nil, documents.ErrDocumentNil
 	}
@@ -206,7 +212,12 @@ func (s service) DeriveFromUpdatePayload(payload *clientpopb.PurchaseOrderUpdate
 		return nil, errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
 	}
 
-	collaborators := append([]string{ctxH.Self().ID.String()}, payload.Collaborators...)
+	idConf, err := contextutil.Self(ctx)
+	if err != nil {
+		return nil, documents.ErrDocumentConfigTenantID
+	}
+
+	collaborators := append([]string{idConf.ID.String()}, payload.Collaborators...)
 	po.CoreDocument, err = coredocument.PrepareNewVersion(*oldCD, collaborators)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentPrepareCoreDocument, err)
@@ -350,7 +361,7 @@ func (s service) CreateProofsForVersion(documentID, version []byte, fields []str
 // RequestDocumentSignature validates the document and returns the signature
 // Note: this is document agnostic. But since we do not have a common implementation, adding it here.
 // will remove this once we have a common implementation for documents.Service
-func (s service) RequestDocumentSignature(contextHeader *context.Header, model documents.Model) (*coredocumentpb.Signature, error) {
+func (s service) RequestDocumentSignature(ctx context.Context, model documents.Model) (*coredocumentpb.Signature, error) {
 	if err := coredocument.SignatureRequestValidator(s.identityService).Validate(nil, model); err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
@@ -362,11 +373,16 @@ func (s service) RequestDocumentSignature(contextHeader *context.Header, model d
 
 	srvLog.Infof("coredoc received %x with signing root %x", cd.DocumentIdentifier, cd.SigningRoot)
 
-	idKeys, ok := contextHeader.Self().Keys[identity.KeyPurposeSigning]
+	idConf, err := contextutil.Self(ctx)
+	if err != nil {
+		return nil, documents.ErrDocumentConfigTenantID
+	}
+
+	idKeys, ok := idConf.Keys[identity.KeyPurposeSigning]
 	if !ok {
 		return nil, errors.NewTypedError(documents.ErrDocumentSigning, errors.New("missing signing key"))
 	}
-	sig := crypto.Sign(contextHeader.Self().ID[:], idKeys.PrivateKey, idKeys.PublicKey, cd.SigningRoot)
+	sig := crypto.Sign(idConf.ID[:], idKeys.PrivateKey, idKeys.PublicKey, cd.SigningRoot)
 	cd.Signatures = append(cd.Signatures, sig)
 	err = model.UnpackCoreDocument(cd)
 	if err != nil {

@@ -7,7 +7,7 @@ import (
 	"errors"
 	"testing"
 
-	context2 "github.com/centrifuge/go-centrifuge/context"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 
 	"os"
 
@@ -36,7 +36,7 @@ func TestMain(m *testing.M) {
 
 func TestAnchorDocument(t *testing.T) {
 	ctx := context.Background()
-	ctxh, err := context2.NewContextHeader(ctx, cfg)
+	ctxh, err := contextutil.NewCentrifugeContext(ctx, cfg)
 	assert.Nil(t, err)
 	updater := func(id []byte, model documents.Model) error {
 		return nil

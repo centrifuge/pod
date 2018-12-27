@@ -5,7 +5,7 @@ package invoice
 import (
 	"testing"
 
-	context2 "github.com/centrifuge/go-centrifuge/context"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 
 	"context"
 
@@ -82,10 +82,11 @@ func TestDataRootValidation_Validate(t *testing.T) {
 	assert.Contains(t, err.Error(), "unknown document type")
 
 	// mismatch
-	contextHeader, err := context2.NewContextHeader(context.Background(), cfg)
+	contextHeader, err := contextutil.NewCentrifugeContext(context.Background(), cfg)
 	assert.Nil(t, err)
+	id, _ := contextutil.Self(contextHeader)
 	inv := new(Invoice)
-	err = inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), contextHeader)
+	err = inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), id.ID.String())
 	assert.Nil(t, err)
 	inv.CoreDocument = cd
 	err = drv.Validate(nil, inv)
@@ -94,7 +95,7 @@ func TestDataRootValidation_Validate(t *testing.T) {
 
 	// success
 	inv = new(Invoice)
-	err = inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), contextHeader)
+	err = inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), id.ID.String())
 	assert.Nil(t, err)
 	err = inv.CalculateDataRoot()
 	assert.Nil(t, err)

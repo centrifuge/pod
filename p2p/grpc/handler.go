@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	context2 "github.com/centrifuge/go-centrifuge/context"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
@@ -59,7 +59,7 @@ func New(config config.Configuration, registry *documents.ServiceRegistry) *Hand
 // Existing signatures on the document will be verified
 // Document will be stored to the repository for state management
 func (srv Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.SignatureRequest) (*p2ppb.SignatureResponse, error) {
-	ctxHeader, err := context2.NewContextHeader(ctx, srv.config)
+	ctxHeader, err := contextutil.NewCentrifugeContext(ctx, srv.config)
 	if err != nil {
 		log.Error(err)
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
