@@ -21,7 +21,7 @@ const (
 	documentAnchorTaskName = "Document Anchoring"
 )
 
-var log = logging.Logger("nft")
+var log = logging.Logger("anchor_task")
 
 type documentAnchorTask struct {
 	txID     uuid.UUID
@@ -76,30 +76,29 @@ func (d *documentAnchorTask) Copy() (gocelery.CeleryTask, error) {
 	}, nil
 }
 
+func (d *documentAnchorTask) updateTransaction(err error) error {
+	tx, erri := d.txRepository.Get(d.tenantID, d.txID)
+	if erri != nil {
+		return errors.AppendError(err, erri)
+	}
+
+	if err == nil {
+		log.Infof("anchor task successful: %v\n", d.txID.String())
+		tx.Status = transactions.Success
+		tx.Logs = append(tx.Logs, transactions.NewLog(documentAnchorTaskName, ""))
+		return d.txRepository.Save(tx)
+	}
+
+	log.Infof("anchor task failed: %v\n", err)
+	tx.Status = transactions.Failed
+	tx.Logs = append(tx.Logs, transactions.NewLog(documentAnchorTaskName, err.Error()))
+	return errors.AppendError(err, d.txRepository.Save(tx))
+}
+
 func (d *documentAnchorTask) RunTask() (res interface{}, err error) {
 	log.Infof("starting anchor task: %v\n", d.txID.String())
 	defer func() {
-		tx, erri := d.txRepository.Get(d.tenantID, d.txID)
-		if erri != nil {
-			log.Infof("transaction not found: %v\n", erri)
-			return
-		}
-
-		if err == nil {
-			log.Infof("anchor task successful: %v\n", d.txID.String())
-			tx.Status = transactions.Success
-			tx.Logs = append(tx.Logs, transactions.NewLog(documentAnchorTaskName, ""))
-			err = d.txRepository.Save(tx)
-			return
-		}
-
-		log.Infof("anchor task failed: %v\n", err)
-		tx.Status = transactions.Failed
-		tx.Logs = append(tx.Logs, transactions.NewLog(documentAnchorTaskName, err.Error()))
-		erri = d.txRepository.Save(tx)
-		if erri != nil {
-			err = errors.AppendError(err, erri)
-		}
+		err = d.updateTransaction(err)
 	}()
 
 	ctxh, err := header.NewContextHeader(context.Background(), d.config)

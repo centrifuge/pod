@@ -5,9 +5,8 @@ package documents_test
 import (
 	"context"
 	"errors"
-	"testing"
-
 	"os"
+	"testing"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
