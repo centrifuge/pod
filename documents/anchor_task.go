@@ -84,7 +84,7 @@ func (d *documentAnchorTask) RunTask() (res interface{}, err error) {
 			log.Infof("anchor task failed: %v\n", err)
 		}
 
-		err = d.UpdateTransaction(d.tenantID, documentAnchorTaskName, err)
+		err = d.UpdateTransaction(d.tenantID, d.TaskTypeName(), err)
 	}()
 
 	ctxh, err := header.NewContextHeader(context.Background(), d.config)
