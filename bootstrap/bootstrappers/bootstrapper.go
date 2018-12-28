@@ -49,6 +49,20 @@ func (m *MainBootstrapper) PopulateBaseBootstrappers() {
 	}
 }
 
+// PopulateCommandBootstrappers adds all the bootstrapper implementations relevant for one off commands
+func (m *MainBootstrapper) PopulateCommandBootstrappers() {
+	m.Bootstrappers = []bootstrap.Bootstrapper{
+		&version.Bootstrapper{},
+		&config.Bootstrapper{},
+		&storage.Bootstrapper{},
+		transactions.Bootstrapper{},
+		ethereum.Bootstrapper{},
+		&queue.Bootstrapper{},
+		&anchors.Bootstrapper{},
+		&identity.Bootstrapper{},
+	}
+}
+
 // PopulateRunBootstrappers adds blocking Node bootstrapper at the end.
 // Note: Node bootstrapper must be the last bootstrapper to be invoked as it won't return until node is shutdown
 func (m *MainBootstrapper) PopulateRunBootstrappers() {
