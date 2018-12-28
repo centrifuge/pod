@@ -25,5 +25,5 @@ func TestConfig_Happy(t *testing.T) {
 	res = getAllTenantConfigs(charlie.httpExpect, http.StatusOK)
 	tenants := res.Value("data").Array()
 	tenants.Length().Equal(1)
-	tenants.Element(1).Path("identity_id").String().NotEmpty().Equal(charlie.id.String())
+	tenants.Element(0).Path("$.identity_id").String().NotEmpty().Equal(charlie.id.String())
 }

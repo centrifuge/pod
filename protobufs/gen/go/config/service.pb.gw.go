@@ -487,7 +487,7 @@ var (
 
 	pattern_ConfigService_GetTenant_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"config", "tenant", "identifier"}, ""))
 
-	pattern_ConfigService_GetAllTenants_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"config", "tenant", "list"}, ""))
+	pattern_ConfigService_GetAllTenants_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"config", "tenant"}, ""))
 
 	pattern_ConfigService_CreateConfig_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"config", "node"}, ""))
 

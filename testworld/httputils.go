@@ -100,7 +100,7 @@ func getTenantConfig(e *httpexpect.Expect, httpStatus int, identifier string) *h
 }
 
 func getAllTenantConfigs(e *httpexpect.Expect, httpStatus int) *httpexpect.Object {
-	resp := e.GET("/config/tenant/list").
+	resp := e.GET("/config/tenant").
 		WithHeader("accept", "application/json").
 		WithHeader("Content-Type", "application/json").
 		Expect().Status(httpStatus)
