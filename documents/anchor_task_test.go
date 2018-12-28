@@ -5,11 +5,8 @@ package documents
 import (
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/errors"
-
-	"github.com/centrifuge/go-centrifuge/transactions"
-
 	cc "github.com/centrifuge/go-centrifuge/common"
+	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/satori/go.uuid"
@@ -29,7 +26,7 @@ func TestDocumentAnchorTask_ParseKwargs(t *testing.T) {
 
 		{
 			kwargs: map[string]interface{}{
-				txIDParam: "some string",
+				transactions.TxIDParam: "some string",
 			},
 			err: "invalid transaction ID",
 		},
@@ -37,7 +34,7 @@ func TestDocumentAnchorTask_ParseKwargs(t *testing.T) {
 		// missing model ID
 		{
 			kwargs: map[string]interface{}{
-				txIDParam: uuid.Must(uuid.NewV4()).String(),
+				transactions.TxIDParam: uuid.Must(uuid.NewV4()).String(),
 			},
 			err: "missing model ID",
 		},
@@ -45,8 +42,8 @@ func TestDocumentAnchorTask_ParseKwargs(t *testing.T) {
 		// missing tenantID
 		{
 			kwargs: map[string]interface{}{
-				txIDParam:    uuid.Must(uuid.NewV4()).String(),
-				modelIDParam: hexutil.Encode(utils.RandomSlice(32)),
+				transactions.TxIDParam: uuid.Must(uuid.NewV4()).String(),
+				modelIDParam:           hexutil.Encode(utils.RandomSlice(32)),
 			},
 
 			err: "missing tenant ID",
@@ -56,9 +53,9 @@ func TestDocumentAnchorTask_ParseKwargs(t *testing.T) {
 		{
 			name: "success",
 			kwargs: map[string]interface{}{
-				txIDParam:     uuid.Must(uuid.NewV4()).String(),
-				modelIDParam:  hexutil.Encode(utils.RandomSlice(32)),
-				tenantIDParam: cc.DummyIdentity,
+				transactions.TxIDParam: uuid.Must(uuid.NewV4()).String(),
+				modelIDParam:           hexutil.Encode(utils.RandomSlice(32)),
+				tenantIDParam:          cc.DummyIdentity,
 			},
 		},
 	}
@@ -78,7 +75,7 @@ func TestDocumentAnchorTask_ParseKwargs(t *testing.T) {
 			task := new(documentAnchorTask)
 			err = task.ParseKwargs(d)
 			if c.err == "" {
-				assert.Equal(t, task.txID.String(), c.kwargs[txIDParam])
+				assert.Equal(t, task.TxID.String(), c.kwargs[transactions.TxIDParam])
 				assert.Equal(t, hexutil.Encode(task.id), c.kwargs[modelIDParam])
 				assert.Equal(t, task.tenantID, c.kwargs[tenantIDParam])
 				return
@@ -87,43 +84,4 @@ func TestDocumentAnchorTask_ParseKwargs(t *testing.T) {
 			assert.EqualError(t, err, c.err)
 		})
 	}
-}
-
-func TestDocumentAnchorTask_updateTransaction(t *testing.T) {
-	task := new(documentAnchorTask)
-	task.tenantID = cc.DummyIdentity
-	task.id = utils.RandomSlice(32)
-	task.txID = uuid.Must(uuid.NewV4())
-	task.txRepository = ctx[transactions.BootstrappedRepo].(transactions.Repository)
-
-	// missing transaction with nil error
-	err := task.updateTransaction(nil)
-	err = errors.GetErrs(err)[0]
-	assert.True(t, errors.IsOfType(transactions.ErrTransactionMissing, err))
-
-	// missing transaction with error
-	err = task.updateTransaction(errors.New("anchor error"))
-	err = errors.GetErrs(err)[1]
-	assert.True(t, errors.IsOfType(transactions.ErrTransactionMissing, err))
-
-	// no error and success
-	tx := transactions.NewTransaction(task.tenantID, "")
-	assert.NoError(t, task.txRepository.Save(tx))
-	task.txID = tx.ID
-	assert.NoError(t, task.updateTransaction(nil))
-	tx, err = task.txRepository.Get(task.tenantID, task.txID)
-	assert.NoError(t, err)
-	assert.Equal(t, tx.Status, transactions.Success)
-	assert.Len(t, tx.Logs, 1)
-
-	// failed task
-	tx = transactions.NewTransaction(task.tenantID, "")
-	assert.NoError(t, task.txRepository.Save(tx))
-	task.txID = tx.ID
-	err = task.updateTransaction(errors.New("anchor error"))
-	assert.EqualError(t, errors.GetErrs(err)[0], "anchor error")
-	tx, err = task.txRepository.Get(task.tenantID, task.txID)
-	assert.NoError(t, err)
-	assert.Equal(t, tx.Status, transactions.Failed)
-	assert.Len(t, tx.Logs, 1)
 }

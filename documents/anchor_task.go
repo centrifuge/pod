@@ -11,11 +11,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	logging "github.com/ipfs/go-log"
-	"github.com/satori/go.uuid"
 )
 
 const (
-	txIDParam              = "transactionID"
 	modelIDParam           = "modelID"
 	tenantIDParam          = "tenantID"
 	documentAnchorTaskName = "Document Anchoring"
@@ -24,27 +22,26 @@ const (
 var log = logging.Logger("anchor_task")
 
 type documentAnchorTask struct {
-	txID     uuid.UUID
-	id       []byte
-	tenantID common.Address
+	transactions.BaseTask
 
-	txRepository  transactions.Repository
+	id            []byte
+	tenantID      common.Address
 	config        config.Configuration
 	processor     anchorProcessor
 	modelGetFunc  func(tenantID, id []byte) (Model, error)
 	modelSaveFunc func(tenantID, id []byte, model Model) error
 }
 
-func (d *documentAnchorTask) ParseKwargs(kwargs map[string]interface{}) error {
-	txID, ok := kwargs[txIDParam].(string)
-	if !ok {
-		return errors.New("missing transaction ID")
-	}
+// TaskTypeName returns the name of the task.
+func (d *documentAnchorTask) TaskTypeName() string {
+	return documentAnchorTaskName
+}
 
-	var err error
-	d.txID, err = uuid.FromString(txID)
+// ParseKwargs parses the kwargs.
+func (d *documentAnchorTask) ParseKwargs(kwargs map[string]interface{}) error {
+	err := d.ParseTransactionID(kwargs)
 	if err != nil {
-		return errors.New("invalid transaction ID")
+		return err
 	}
 
 	modelID, ok := kwargs[modelIDParam].(string)
@@ -66,9 +63,10 @@ func (d *documentAnchorTask) ParseKwargs(kwargs map[string]interface{}) error {
 	return nil
 }
 
+// Copy returns a new task with state.
 func (d *documentAnchorTask) Copy() (gocelery.CeleryTask, error) {
 	return &documentAnchorTask{
-		txRepository:  d.txRepository,
+		BaseTask:      transactions.BaseTask{TxRepository: d.TxRepository},
 		config:        d.config,
 		processor:     d.processor,
 		modelGetFunc:  d.modelGetFunc,
@@ -76,29 +74,17 @@ func (d *documentAnchorTask) Copy() (gocelery.CeleryTask, error) {
 	}, nil
 }
 
-func (d *documentAnchorTask) updateTransaction(err error) error {
-	tx, erri := d.txRepository.Get(d.tenantID, d.txID)
-	if erri != nil {
-		return errors.AppendError(err, erri)
-	}
-
-	if err == nil {
-		log.Infof("anchor task successful: %v\n", d.txID.String())
-		tx.Status = transactions.Success
-		tx.Logs = append(tx.Logs, transactions.NewLog(documentAnchorTaskName, ""))
-		return d.txRepository.Save(tx)
-	}
-
-	log.Infof("anchor task failed: %v\n", err)
-	tx.Status = transactions.Failed
-	tx.Logs = append(tx.Logs, transactions.NewLog(documentAnchorTaskName, err.Error()))
-	return errors.AppendError(err, d.txRepository.Save(tx))
-}
-
+// RunTask anchors the document.
 func (d *documentAnchorTask) RunTask() (res interface{}, err error) {
-	log.Infof("starting anchor task: %v\n", d.txID.String())
+	log.Infof("starting anchor task: %v\n", d.TxID.String())
 	defer func() {
-		err = d.updateTransaction(err)
+		if err == nil {
+			log.Infof("anchor task successful: %v\n", d.TxID.String())
+		} else {
+			log.Infof("anchor task failed: %v\n", err)
+		}
+
+		err = d.UpdateTransaction(d.tenantID, documentAnchorTaskName, err)
 	}()
 
 	ctxh, err := header.NewContextHeader(context.Background(), d.config)
