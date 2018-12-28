@@ -39,6 +39,9 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		}
 	}
 	tc, err := NewTenantConfig(nc.MainIdentity.EthereumDefaultAccountName, cfg)
+	if err != nil {
+		return errors.NewTypedError(ErrConfigStorageBootstrap, errors.New("%v", err))
+	}
 	configdb.Register(tc)
 	_, err = service.GetTenant(nc.MainIdentity.ID())
 	// if main tenant config doesn't exist in the db, add it
