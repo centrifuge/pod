@@ -54,158 +54,197 @@ type NodeConfig struct {
 	PprofEnabled                   bool
 }
 
+// IsSet refer the interface
 func (nc *NodeConfig) IsSet(key string) bool {
 	panic("irrelevant, NodeConfig#IsSet must not be used")
 }
 
+// Set refer the interface
 func (nc *NodeConfig) Set(key string, value interface{}) {
 	panic("irrelevant, NodeConfig#Set must not be used")
 }
 
+// SetDefault refer the interface
 func (nc *NodeConfig) SetDefault(key string, value interface{}) {
 	panic("irrelevant, NodeConfig#SetDefault must not be used")
 }
 
+// SetupSmartContractAddresses refer the interface
 func (nc *NodeConfig) SetupSmartContractAddresses(network string, smartContractAddresses *config.SmartContractAddresses) {
 	panic("irrelevant, NodeConfig#SetupSmartContractAddresses must not be used")
 }
 
+// Get refer the interface
 func (nc *NodeConfig) Get(key string) interface{} {
 	panic("irrelevant, NodeConfig#Get must not be used")
 }
 
+// GetString refer the interface
 func (nc *NodeConfig) GetString(key string) string {
 	panic("irrelevant, NodeConfig#GetString must not be used")
 }
 
+// GetBool refer the interface
 func (nc *NodeConfig) GetBool(key string) bool {
 	panic("irrelevant, NodeConfig#GetBool must not be used")
 }
 
+// GetInt refer the interface
 func (nc *NodeConfig) GetInt(key string) int {
 	panic("irrelevant, NodeConfig#GetInt must not be used")
 }
 
+// GetDuration refer the interface
 func (nc *NodeConfig) GetDuration(key string) time.Duration {
 	panic("irrelevant, NodeConfig#GetDuration must not be used")
 }
 
+// GetStoragePath refer the interface
 func (nc *NodeConfig) GetStoragePath() string {
 	return nc.StoragePath
 }
 
+// GetConfigStoragePath refer the interface
 func (nc *NodeConfig) GetConfigStoragePath() string {
 	panic("irrelevant, NodeConfig#GetConfigStoragePath must not be used")
 }
 
+// GetP2PPort refer the interface
 func (nc *NodeConfig) GetP2PPort() int {
 	return nc.P2PPort
 }
 
+// GetP2PExternalIP refer the interface
 func (nc *NodeConfig) GetP2PExternalIP() string {
 	return nc.P2PExternalIP
 }
 
+// GetP2PConnectionTimeout refer the interface
 func (nc *NodeConfig) GetP2PConnectionTimeout() time.Duration {
 	return nc.P2PConnectionTimeout
 }
 
+// GetServerPort refer the interface
 func (nc *NodeConfig) GetServerPort() int {
 	return nc.ServerPort
 }
 
+// GetServerAddress refer the interface
 func (nc *NodeConfig) GetServerAddress() string {
 	return nc.ServerAddress
 }
 
+// GetNumWorkers refer the interface
 func (nc *NodeConfig) GetNumWorkers() int {
 	return nc.NumWorkers
 }
 
+// GetWorkerWaitTimeMS refer the interface
 func (nc *NodeConfig) GetWorkerWaitTimeMS() int {
 	return nc.WorkerWaitTimeMS
 }
 
+// GetEthereumNodeURL refer the interface
 func (nc *NodeConfig) GetEthereumNodeURL() string {
 	return nc.EthereumNodeURL
 }
 
+// GetEthereumContextReadWaitTimeout refer the interface
 func (nc *NodeConfig) GetEthereumContextReadWaitTimeout() time.Duration {
 	return nc.EthereumContextReadWaitTimeout
 }
 
+// GetEthereumContextWaitTimeout refer the interface
 func (nc *NodeConfig) GetEthereumContextWaitTimeout() time.Duration {
 	return nc.EthereumContextWaitTimeout
 }
 
+// GetEthereumIntervalRetry refer the interface
 func (nc *NodeConfig) GetEthereumIntervalRetry() time.Duration {
 	return nc.EthereumIntervalRetry
 }
 
+// GetEthereumMaxRetries refer the interface
 func (nc *NodeConfig) GetEthereumMaxRetries() int {
 	return nc.EthereumMaxRetries
 }
 
+// GetEthereumGasPrice refer the interface
 func (nc *NodeConfig) GetEthereumGasPrice() *big.Int {
 	return nc.EthereumGasPrice
 }
 
+// GetEthereumGasLimit refer the interface
 func (nc *NodeConfig) GetEthereumGasLimit() uint64 {
 	return nc.EthereumGasLimit
 }
 
+// GetTxPoolAccessEnabled refer the interface
 func (nc *NodeConfig) GetTxPoolAccessEnabled() bool {
 	return nc.TxPoolAccessEnabled
 }
 
+// GetNetworkString refer the interface
 func (nc *NodeConfig) GetNetworkString() string {
 	return nc.NetworkString
 }
 
+// GetNetworkKey refer the interface
 func (nc *NodeConfig) GetNetworkKey(k string) string {
 	panic("irrelevant, NodeConfig#GetNetworkKey must not be used")
 }
 
+// GetContractAddressString refer the interface
 func (nc *NodeConfig) GetContractAddressString(address string) string {
 	panic("irrelevant, NodeConfig#GetContractAddressString must not be used")
 }
 
+// GetContractAddress refer the interface
 func (nc *NodeConfig) GetContractAddress(contractName config.ContractName) common.Address {
 	return nc.SmartContractAddresses[contractName]
 }
 
+// GetBootstrapPeers refer the interface
 func (nc *NodeConfig) GetBootstrapPeers() []string {
 	return nc.BootstrapPeers
 }
 
+// GetNetworkID refer the interface
 func (nc *NodeConfig) GetNetworkID() uint32 {
 	return nc.NetworkID
 }
 
+// GetEthereumAccount refer the interface
 func (nc *NodeConfig) GetEthereumAccount(accountName string) (account *config.AccountConfig, err error) {
 	return nc.MainIdentity.EthereumAccount, nil
 }
 
+// GetEthereumDefaultAccountName refer the interface
 func (nc *NodeConfig) GetEthereumDefaultAccountName() string {
 	return nc.MainIdentity.EthereumDefaultAccountName
 }
 
+// GetReceiveEventNotificationEndpoint refer the interface
 func (nc *NodeConfig) GetReceiveEventNotificationEndpoint() string {
 	return nc.MainIdentity.ReceiveEventNotificationEndpoint
 }
 
+// GetIdentityID refer the interface
 func (nc *NodeConfig) GetIdentityID() ([]byte, error) {
 	return nc.MainIdentity.IdentityID, nil
 }
 
+// GetSigningKeyPair refer the interface
 func (nc *NodeConfig) GetSigningKeyPair() (pub, priv string) {
 	return nc.MainIdentity.SigningKeyPair.Pub, nc.MainIdentity.SigningKeyPair.Priv
 }
 
+// GetEthAuthKeyPair refer the interface
 func (nc *NodeConfig) GetEthAuthKeyPair() (pub, priv string) {
 	return nc.MainIdentity.EthAuthKeyPair.Pub, nc.MainIdentity.EthAuthKeyPair.Priv
 }
 
+// IsPProfEnabled refer the interface
 func (nc *NodeConfig) IsPProfEnabled() bool {
 	return nc.PprofEnabled
 }
