@@ -19,8 +19,54 @@ import (
 )
 
 type mockConfig struct {
-	config.Configuration
 	mock.Mock
+}
+
+func (m *mockConfig) IsSet(key string) bool {
+	args := m.Called(key)
+	return args.Get(0).(bool)
+}
+
+func (m *mockConfig) Set(key string, value interface{}) {
+	m.Called(key, value)
+}
+
+func (m *mockConfig) SetDefault(key string, value interface{}) {
+	m.Called(key, value)
+}
+
+func (m *mockConfig) SetupSmartContractAddresses(network string, smartContractAddresses *config.SmartContractAddresses) {
+	m.Called(network, smartContractAddresses)
+}
+
+func (m *mockConfig) Get(key string) interface{} {
+	args := m.Called(key)
+	return args.Get(0)
+}
+
+func (m *mockConfig) GetString(key string) string {
+	args := m.Called(key)
+	return args.Get(0).(string)
+}
+
+func (m *mockConfig) GetBool(key string) bool {
+	args := m.Called(key)
+	return args.Get(0).(bool)
+}
+
+func (m *mockConfig) GetInt(key string) int {
+	args := m.Called(key)
+	return args.Get(0).(int)
+}
+
+func (m *mockConfig) GetDuration(key string) time.Duration {
+	args := m.Called(key)
+	return args.Get(0).(time.Duration)
+}
+
+func (m *mockConfig) IsPProfEnabled() bool {
+	args := m.Called()
+	return args.Get(0).(bool)
 }
 
 func (m *mockConfig) GetStoragePath() string {
@@ -138,7 +184,7 @@ func (m *mockConfig) GetContractAddressString(address string) string {
 	return args.Get(0).(string)
 }
 
-func (m *mockConfig) GetContractAddress(address string) common.Address {
+func (m *mockConfig) GetContractAddress(contractName config.ContractName) common.Address {
 	args := m.Called()
 	return args.Get(0).(common.Address)
 }
@@ -255,5 +301,7 @@ func createMockConfig() *mockConfig {
 	c.On("GetNetworkString").Return("somehill").Once()
 	c.On("GetBootstrapPeers").Return([]string{"p1", "p2"}).Once()
 	c.On("GetNetworkID").Return(uint32(1)).Once()
+	c.On("GetContractAddress", mock.Anything).Return(common.Address{})
+	c.On("IsPProfEnabled", mock.Anything).Return(true)
 	return c
 }

@@ -60,8 +60,11 @@ func (h grpcHandler) GetAllTenants(ctx context.Context, _ *empty.Empty) (*config
 func (h grpcHandler) CreateConfig(ctx context.Context, data *configpb.ConfigData) (*configpb.ConfigData, error) {
 	apiLog.Infof("Creating node config: %v", data)
 	nodeConfig := new(NodeConfig)
-	nodeConfig.loadFromProtobuf(data)
-	nodeConfig, err := h.service.CreateConfig(nodeConfig)
+	err := nodeConfig.loadFromProtobuf(data)
+	if err != nil {
+		return nil, err
+	}
+	nodeConfig, err = h.service.CreateConfig(nodeConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -82,8 +85,11 @@ func (h grpcHandler) CreateTenant(ctx context.Context, data *configpb.TenantData
 func (h grpcHandler) UpdateConfig(ctx context.Context, data *configpb.ConfigData) (*configpb.ConfigData, error) {
 	apiLog.Infof("Updating node config: %v", data)
 	nodeConfig := new(NodeConfig)
-	nodeConfig.loadFromProtobuf(data)
-	nodeConfig, err := h.service.UpdateConfig(nodeConfig)
+	err := nodeConfig.loadFromProtobuf(data)
+	if err != nil {
+		return nil, err
+	}
+	nodeConfig, err = h.service.UpdateConfig(nodeConfig)
 	if err != nil {
 		return nil, err
 	}

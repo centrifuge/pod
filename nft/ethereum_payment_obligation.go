@@ -5,6 +5,8 @@ import (
 	"encoding/hex"
 	"math/big"
 
+	"github.com/centrifuge/go-centrifuge/config"
+
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -28,7 +30,7 @@ var log = logging.Logger("nft")
 type Config interface {
 	GetIdentityID() ([]byte, error)
 	GetEthereumDefaultAccountName() string
-	GetContractAddress(address string) common.Address
+	GetContractAddress(address config.ContractName) common.Address
 	GetEthereumContextWaitTimeout() time.Duration
 }
 

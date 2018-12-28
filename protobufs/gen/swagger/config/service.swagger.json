@@ -294,6 +294,16 @@
         },
         "main_identity": {
           "$ref": "#/definitions/configTenantData"
+        },
+        "smart_contract_addresses": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "pprof_enabled": {
+          "type": "boolean",
+          "format": "boolean"
         }
       }
     },
