@@ -83,6 +83,32 @@ func getProof(e *httpexpect.Expect, httpStatus int, documentID string, payload m
 	return resp.JSON().Object()
 }
 
+func getNodeConfig(e *httpexpect.Expect, httpStatus int) *httpexpect.Object {
+	resp := e.GET("/config/node").
+		WithHeader("accept", "application/json").
+		WithHeader("Content-Type", "application/json").
+		Expect().Status(httpStatus)
+	return resp.JSON().Object()
+}
+
+func getTenantConfig(e *httpexpect.Expect, httpStatus int, identifier string) *httpexpect.Object {
+	resp := e.GET("/config/tenant/"+identifier).
+		WithHeader("accept", "application/json").
+		WithHeader("Content-Type", "application/json").
+		Expect().Status(httpStatus)
+	return resp.JSON().Object()
+}
+
+func getAllTenantConfigs(e *httpexpect.Expect, httpStatus int) *httpexpect.Object {
+	resp := e.GET("/config/tenant/list").
+		WithHeader("accept", "application/json").
+		WithHeader("Content-Type", "application/json").
+		Expect().Status(httpStatus)
+	return resp.JSON().Object()
+}
+
+// TODO add rest of the endpoints for config
+
 func createInsecureClient() *http.Client {
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
