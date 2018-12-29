@@ -972,14 +972,6 @@
   version = "v1.0.2"
 
 [[projects]]
-  digest = "1:317c23d0134d82f8158538d6d61ec0b5425319bcd6af716cda898636e51fb757"
-  name = "github.com/paralin/go-libp2p-grpc"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "04711f07389ecbca09d7999474dda4a88c955c73"
-  source = "github.com/vedhavyas/go-libp2p-grpc"
-
-[[projects]]
   digest = "1:e5d0bd87abc2781d14e274807a470acd180f0499f8bf5bb18606e9ec22ad9de9"
   name = "github.com/pborman/uuid"
   packages = ["."]
@@ -1526,11 +1518,13 @@
     "github.com/ethereum/go-ethereum/rpc",
     "github.com/gavv/httpexpect",
     "github.com/go-errors/errors",
+    "github.com/gogo/protobuf/io",
     "github.com/golang/protobuf/jsonpb",
     "github.com/golang/protobuf/proto",
     "github.com/golang/protobuf/protoc-gen-go",
     "github.com/golang/protobuf/ptypes",
     "github.com/golang/protobuf/ptypes/any",
+    "github.com/golang/protobuf/ptypes/duration",
     "github.com/golang/protobuf/ptypes/empty",
     "github.com/golang/protobuf/ptypes/timestamp",
     "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway",
@@ -1541,17 +1535,19 @@
     "github.com/ipfs/go-datastore",
     "github.com/ipfs/go-ipfs-addr",
     "github.com/ipfs/go-log",
+    "github.com/jbenet/go-context/io",
     "github.com/libp2p/go-libp2p",
     "github.com/libp2p/go-libp2p-crypto",
     "github.com/libp2p/go-libp2p-host",
     "github.com/libp2p/go-libp2p-kad-dht",
+    "github.com/libp2p/go-libp2p-net",
     "github.com/libp2p/go-libp2p-peer",
     "github.com/libp2p/go-libp2p-peerstore",
+    "github.com/libp2p/go-libp2p-protocol",
     "github.com/magiconair/properties/assert",
     "github.com/mitchellh/go-homedir",
     "github.com/multiformats/go-multiaddr",
     "github.com/multiformats/go-multihash",
-    "github.com/paralin/go-libp2p-grpc",
     "github.com/roboll/go-vendorinstall",
     "github.com/satori/go.uuid",
     "github.com/savaki/jq",
