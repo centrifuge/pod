@@ -121,7 +121,7 @@ func (s *ethereumPaymentObligation) prepareMintRequest(documentID []byte, deposi
 }
 
 // MintNFT mints an NFT
-func (s *ethereumPaymentObligation) MintNFT(documentID []byte, registryAddress, depositAddress string, proofFields []string) (*MintNFTResponse, error) {
+func (s *ethereumPaymentObligation) MintNFT(tenantID common.Address, documentID []byte, registryAddress, depositAddress string, proofFields []string) (*MintNFTResponse, error) {
 
 	requestData, err := s.prepareMintRequest(documentID, depositAddress, proofFields)
 	if err != nil {
@@ -138,7 +138,7 @@ func (s *ethereumPaymentObligation) MintNFT(documentID []byte, registryAddress, 
 		return nil, err
 	}
 
-	txID, err := s.queueTask(requestData.TokenID, registryAddress)
+	txID, err := s.queueTask(tenantID, requestData.TokenID, registryAddress)
 	if err != nil {
 		return nil, errors.New("failed to queue task: %v", err)
 	}
@@ -154,7 +154,7 @@ func (s *ethereumPaymentObligation) MintNFT(documentID []byte, registryAddress, 
 	}, nil
 }
 
-func (s *ethereumPaymentObligation) queueTask(tokenID *big.Int, registryAddress string) (txID uuid.UUID, err error) {
+func (s *ethereumPaymentObligation) queueTask(tenantID common.Address, tokenID *big.Int, registryAddress string) (txID uuid.UUID, err error) {
 	height, err := s.blockHeightFunc()
 	if err != nil {
 		return txID, err
@@ -166,7 +166,8 @@ func (s *ethereumPaymentObligation) queueTask(tokenID *big.Int, registryAddress 
 	}
 
 	_, err = s.queue.EnqueueJob(mintingConfirmationTaskName, map[string]interface{}{
-		txIDParam:              tx.ID.String(),
+		transactions.TxIDParam: tx.ID.String(),
+		tenantIDParam:          tenantID.String(),
 		tokenIDParam:           hex.EncodeToString(tokenID.Bytes()),
 		queue.BlockHeightParam: height,
 		registryAddressParam:   registryAddress,

@@ -8,11 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/common"
-	"github.com/satori/go.uuid"
-
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/common"
 	"github.com/centrifuge/go-centrifuge/config"
 	cc "github.com/centrifuge/go-centrifuge/context/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -25,6 +23,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/golang/protobuf/ptypes/timestamp"
+	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -79,6 +78,7 @@ func TestPaymentObligationService_mint(t *testing.T) {
 	// call mint
 	// assert no error
 	resp, err := payOb.MintNFT(
+		common.DummyIdentity,
 		ID,
 		cfg.GetContractAddress("paymentObligation").String(),
 		"0xf72855759a39fb75fc7341139f5d7a3974d4da08",

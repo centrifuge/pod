@@ -3,11 +3,11 @@ package nft
 import (
 	"context"
 
-	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/code"
+	ccommon "github.com/centrifuge/go-centrifuge/common"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/nft"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	logging "github.com/ipfs/go-log"
 )
@@ -36,7 +36,8 @@ func (g grpcHandler) MintNFT(context context.Context, request *nftpb.NFTMintRequ
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
 
-	resp, err := g.service.MintNFT(identifier, request.RegistryAddress, request.DepositAddress, request.ProofFields)
+	tenantID := ccommon.DummyIdentity
+	resp, err := g.service.MintNFT(tenantID, identifier, request.RegistryAddress, request.DepositAddress, request.ProofFields)
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
@@ -50,7 +51,7 @@ func (g grpcHandler) MintNFT(context context.Context, request *nftpb.NFTMintRequ
 func validateParameters(request *nftpb.NFTMintRequest) error {
 
 	if !common.IsHexAddress(request.RegistryAddress) {
-		return centerrors.New(code.Unknown, "RegistryAddress is not a valid Ethereum address")
+		return centerrors.New(code.Unknown, "registryAddress is not a valid Ethereum address")
 	}
 
 	if !common.IsHexAddress(request.DepositAddress) {

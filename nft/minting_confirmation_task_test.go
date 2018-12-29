@@ -6,7 +6,9 @@ import (
 	"encoding/hex"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/common"
 	"github.com/centrifuge/go-centrifuge/queue"
+	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
@@ -17,9 +19,11 @@ func TestMintingConfirmationTask_ParseKwargs_success(t *testing.T) {
 	tokenId := hex.EncodeToString(utils.RandomSlice(256))
 	blockHeight := uint64(12)
 	registryAddress := "0xf72855759a39fb75fc7341139f5d7a3974d4da08"
+	txID := uuid.Must(uuid.NewV4()).String()
 
 	kwargs := map[string]interface{}{
-		txIDParam:              uuid.Must(uuid.NewV4()).String(),
+		transactions.TxIDParam: txID,
+		tenantIDParam:          common.DummyIdentity.String(),
 		tokenIDParam:           tokenId,
 		queue.BlockHeightParam: blockHeight,
 		registryAddressParam:   registryAddress,
@@ -30,9 +34,11 @@ func TestMintingConfirmationTask_ParseKwargs_success(t *testing.T) {
 	err = task.ParseKwargs(decoded)
 	assert.Nil(t, err, "parsing should be successful")
 
-	assert.Equal(t, tokenId, task.TokenID, "tokenId should be parsed correctly")
-	assert.Equal(t, blockHeight, task.BlockHeight, "blockHeight should be parsed correctly")
-	assert.Equal(t, registryAddress, task.RegistryAddress, "registryAddress should be parsed correctly")
+	assert.Equal(t, common.DummyIdentity, task.tenantID)
+	assert.Equal(t, txID, task.TxID.String())
+	assert.Equal(t, tokenId, task.tokenID, "tokenId should be parsed correctly")
+	assert.Equal(t, blockHeight, task.blockHeight, "blockHeight should be parsed correctly")
+	assert.Equal(t, registryAddress, task.registryAddress, "registryAddress should be parsed correctly")
 
 }
 
