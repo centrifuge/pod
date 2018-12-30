@@ -50,7 +50,8 @@ type defaultProcessor struct {
 	identityService  identity.Service
 	p2pClient        client
 	anchorRepository anchors.AnchorRepository
-	config           Config
+	// TODO [multi-tenancy] replace this with config service
+	config Config
 }
 
 // DefaultProcessor returns the default implementation of CoreDocument Processor

@@ -1,4 +1,4 @@
-package config
+package configstore
 
 // Service exposes functions over the config objects
 type Service interface {

@@ -32,7 +32,7 @@ service ConfigService {
   }
   rpc GetAllTenants(google.protobuf.Empty) returns (GetAllTenantResponse) {
     option (google.api.http) = {
-      get: "/config/tenant/list"
+      get: "/config/tenant"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
       description: "Get All Tenant Configs"

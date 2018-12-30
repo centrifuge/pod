@@ -124,10 +124,10 @@ func RunBootstrap(cfgFile string) {
 	}
 }
 
-// BaseBootstrap bootstraps the node for testing purposes mainly
-func BaseBootstrap(cfgFile string) map[string]interface{} {
+// ExecCmdBootstrap bootstraps the node for command line and testing purposes
+func ExecCmdBootstrap(cfgFile string) map[string]interface{} {
 	mb := bootstrappers.MainBootstrapper{}
-	mb.PopulateBaseBootstrappers()
+	mb.PopulateCommandBootstrappers()
 	ctx := map[string]interface{}{}
 	ctx[config.BootstrappedConfigFile] = cfgFile
 	err := mb.Bootstrap(ctx)
@@ -140,7 +140,7 @@ func BaseBootstrap(cfgFile string) map[string]interface{} {
 
 // CommandBootstrap bootstraps the node for one time commands
 func CommandBootstrap(cfgFile string) (map[string]interface{}, context.CancelFunc, error) {
-	ctx := BaseBootstrap(cfgFile)
+	ctx := ExecCmdBootstrap(cfgFile)
 	queueSrv := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
 	// init node with only the queue server which is needed by commands
 	n := node.New([]node.Server{queueSrv})

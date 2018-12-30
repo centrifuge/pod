@@ -1,4 +1,4 @@
-package config
+package configstore
 
 import (
 	"github.com/centrifuge/go-centrifuge/storage"
@@ -55,11 +55,11 @@ type repo struct {
 	db storage.Repository
 }
 
-func (r *repo) getTenantKey(id []byte) []byte {
+func getTenantKey(id []byte) []byte {
 	return append([]byte(tenantPrefix), id...)
 }
 
-func (r *repo) getConfigKey() []byte {
+func getConfigKey() []byte {
 	return []byte(configPrefix)
 }
 
@@ -80,7 +80,7 @@ func (r *repo) RegisterConfig(config *NodeConfig) {
 
 // GetTenant returns the tenant config Model associated with tenant ID
 func (r *repo) GetTenant(id []byte) (*TenantConfig, error) {
-	key := r.getTenantKey(id)
+	key := getTenantKey(id)
 	model, err := r.db.Get(key)
 	if err != nil {
 		return nil, err
@@ -90,7 +90,7 @@ func (r *repo) GetTenant(id []byte) (*TenantConfig, error) {
 
 // GetConfig returns the node config model
 func (r *repo) GetConfig() (*NodeConfig, error) {
-	key := r.getConfigKey()
+	key := getConfigKey()
 	model, err := r.db.Get(key)
 	if err != nil {
 		return nil, err
@@ -115,41 +115,41 @@ func (r *repo) GetAllTenants() ([]*TenantConfig, error) {
 // Create creates the tenant config model if not present in the DB.
 // should error out if the config exists.
 func (r *repo) CreateTenant(id []byte, tenant *TenantConfig) error {
-	key := r.getTenantKey(id)
+	key := getTenantKey(id)
 	return r.db.Create(key, tenant)
 }
 
 // Create creates the node config model if not present in the DB.
 // should error out if the config exists.
 func (r *repo) CreateConfig(nodeConfig *NodeConfig) error {
-	key := r.getConfigKey()
+	key := getConfigKey()
 	return r.db.Create(key, nodeConfig)
 }
 
 // Update strictly updates the tenant config model.
 // Will error out when the config model doesn't exist in the DB.
 func (r *repo) UpdateTenant(id []byte, tenant *TenantConfig) error {
-	key := r.getTenantKey(id)
+	key := getTenantKey(id)
 	return r.db.Update(key, tenant)
 }
 
 // Update strictly updates the node config model.
 // Will error out when the config model doesn't exist in the DB.
 func (r *repo) UpdateConfig(nodeConfig *NodeConfig) error {
-	key := r.getConfigKey()
+	key := getConfigKey()
 	return r.db.Update(key, nodeConfig)
 }
 
 // Delete deletes tenant config
 // Will not error out when config model doesn't exists in DB
 func (r *repo) DeleteTenant(id []byte) error {
-	key := r.getTenantKey(id)
+	key := getTenantKey(id)
 	return r.db.Delete(key)
 }
 
 // Delete deletes node config
 // Will not error out when config model doesn't exists in DB
 func (r *repo) DeleteConfig() error {
-	key := r.getConfigKey()
+	key := getConfigKey()
 	return r.db.Delete(key)
 }

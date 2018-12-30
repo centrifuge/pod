@@ -3,12 +3,14 @@ package api
 import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/healthcheck"
 	"github.com/centrifuge/go-centrifuge/nft"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/config"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/documents"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/health"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
@@ -79,8 +81,20 @@ func registerServices(ctx context.Context, cfg Config, grpcServer *grpc.Server, 
 		return err
 	}
 
+	// nft api
 	nftpb.RegisterNFTServiceServer(grpcServer, nft.GRPCHandler(payObService))
 	err = nftpb.RegisterNFTServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
+	if err != nil {
+		return err
+	}
+
+	// config api
+	configService, ok := nodeObjReg[configstore.BootstrappedConfigStorage].(configstore.Service)
+	if !ok {
+		return errors.New("failed to get %s", configstore.BootstrappedConfigStorage)
+	}
+	configpb.RegisterConfigServiceServer(grpcServer, configstore.GRPCHandler(configService))
+	err = configpb.RegisterConfigServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
 	if err != nil {
 		return err
 	}
