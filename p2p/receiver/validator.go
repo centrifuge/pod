@@ -1,4 +1,4 @@
-package grpc
+package receiver
 
 import (
 	"fmt"

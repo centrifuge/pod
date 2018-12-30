@@ -1,6 +1,6 @@
 // +build integration
 
-package grpc_test
+package receiver_test
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 
-	"github.com/centrifuge/go-centrifuge/p2p/grpc"
+	"github.com/centrifuge/go-centrifuge/p2p/receiver"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -47,7 +47,7 @@ func TestMain(m *testing.M) {
 	registry := ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
 	anchorRepo = ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
 	idService = ctx[identity.BootstrappedIDService].(identity.Service)
-	handler = grpc.New(cfg, registry)
+	handler = receiver.New(cfg, registry)
 	testingidentity.CreateIdentityWithKeys(cfg, idService)
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()
