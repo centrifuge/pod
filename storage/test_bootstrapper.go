@@ -4,6 +4,7 @@ package storage
 
 import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/syndtr/goleveldb/leveldb"
 )
@@ -12,7 +13,7 @@ var db *leveldb.DB
 var configdb *leveldb.DB
 
 func (*Bootstrapper) TestBootstrap(context map[string]interface{}) (err error) {
-	cfg := context[bootstrap.BootstrappedConfig].(Config)
+	cfg := context[bootstrap.BootstrappedConfig].(config.Configuration)
 
 	crs := GetRandomTestStoragePath()
 	cfg.SetDefault("configStorage.path", crs)
