@@ -41,8 +41,8 @@ type Processor interface {
 // client defines the methods for p2pclient
 // we redefined it here so that we can avoid cyclic dependencies with p2p
 type client interface {
-	OpenClient(id identity.Identity) (p2ppb.P2PServiceClient, error)
 	GetSignaturesForDocument(ctx context.Context, identityService identity.Service, doc *coredocumentpb.CoreDocument) error
+	SendAnchoredDocument(ctx context.Context, id identity.Identity, in *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error)
 }
 
 // defaultProcessor implements Processor interface
@@ -74,10 +74,6 @@ func (dp defaultProcessor) Send(ctx context.Context, coreDocument *coredocumentp
 	if err != nil {
 		return errors.New("error fetching receiver identity: %v", err)
 	}
-	client, err := dp.p2pClient.OpenClient(id)
-	if err != nil {
-		return errors.New("failed to open client: %v", err)
-	}
 
 	self, err := contextutil.Self(ctx)
 	if err != nil {
@@ -93,7 +89,7 @@ func (dp defaultProcessor) Send(ctx context.Context, coreDocument *coredocumentp
 	}
 
 	c, _ := context.WithTimeout(ctx, dp.config.GetP2PConnectionTimeout())
-	resp, err := client.SendAnchoredDocument(c, &p2ppb.AnchorDocumentRequest{Document: coreDocument, Header: p2pheader})
+	resp, err := dp.p2pClient.SendAnchoredDocument(c, id, &p2ppb.AnchorDocumentRequest{Document: coreDocument, Header: p2pheader})
 	if err != nil || !resp.Accepted {
 		return errors.New("failed to send document to the node: %v", err)
 	}
