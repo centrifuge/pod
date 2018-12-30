@@ -9,7 +9,7 @@ type MockService struct {
 }
 
 func (MockService) GetConfig() (*NodeConfig, error) {
-	panic("implement me")
+	return nil, nil
 }
 
 func (MockService) GetTenant(identifier []byte) (*TenantConfig, error) {
