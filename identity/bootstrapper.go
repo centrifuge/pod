@@ -2,7 +2,6 @@ package identity
 
 import (
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/errors"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -21,9 +20,11 @@ type Bootstrapper struct{}
 // Bootstrap initializes the IdentityFactoryContract as well as the idRegistrationConfirmationTask that depends on it.
 // the idRegistrationConfirmationTask is added to be registered on the queue at queue.Bootstrapper
 func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
-	cfg, err := configstore.RetrieveConfig(false, context)
-	if err != nil {
-		return err
+	// we have to allow loading from file in case this is coming from create config cmd where we don't add configs to db
+	// TODO make the db config work for identity, would have to remove idconfig stuff from the contextutil package as it creates dep cycles
+	cfg, ok := context[bootstrap.BootstrappedConfig].(config.Configuration)
+	if !ok {
+		return errors.New("config hasn't been initialized")
 	}
 
 	if _, ok := context[ethereum.BootstrappedEthereumClient]; !ok {
