@@ -9,6 +9,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/config/configstore"
+
 	"github.com/centrifuge/go-centrifuge/contextutil"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -45,6 +47,7 @@ func TestMain(m *testing.M) {
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
 		&storage.Bootstrapper{},
+		&configstore.Bootstrapper{},
 		&queue.Bootstrapper{},
 		&identity.Bootstrapper{},
 		anchors.Bootstrapper{},
