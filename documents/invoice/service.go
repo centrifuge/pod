@@ -62,7 +62,7 @@ type service struct {
 	notifier         notification.Sender
 	anchorRepository anchors.AnchorRepository
 	identityService  identity.Service
-	queueSrv         *queue.Server
+	queueSrv         queue.TaskQueuer
 	txRepository     transactions.Repository
 }
 
@@ -72,7 +72,7 @@ func DefaultService(
 	repo documents.Repository,
 	anchorRepository anchors.AnchorRepository,
 	identityService identity.Service,
-	queueSrv *queue.Server,
+	queueSrv queue.TaskQueuer,
 	txRepository transactions.Repository) Service {
 	return service{
 		config:           config,

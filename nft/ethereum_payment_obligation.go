@@ -32,11 +32,6 @@ type Config interface {
 	GetEthereumContextWaitTimeout() time.Duration
 }
 
-// taskQueuer can be implemented by any queueing system
-type taskQueuer interface {
-	EnqueueJob(taskTypeName string, params map[string]interface{}) (queue.TaskResult, error)
-}
-
 // ethereumPaymentObligationContract is an abstraction over the contract code to help in mocking it out
 type ethereumPaymentObligationContract interface {
 
@@ -52,7 +47,7 @@ type ethereumPaymentObligation struct {
 
 	// TODO [multi-tenancy] replace this with config service
 	config          Config
-	queue           taskQueuer
+	queue           queue.TaskQueuer
 	bindContract    func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error)
 	txRepository    transactions.Repository
 	blockHeightFunc func() (height uint64, err error)
@@ -64,7 +59,7 @@ func newEthereumPaymentObligation(
 	identityService identity.Service,
 	ethClient ethereum.Client,
 	config Config,
-	queue taskQueuer,
+	queue queue.TaskQueuer,
 	bindContract func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error),
 	txRepository transactions.Repository,
 	blockHeightFunc func() (uint64, error)) *ethereumPaymentObligation {
