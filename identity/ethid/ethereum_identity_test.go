@@ -1,12 +1,14 @@
 // +build unit
 
-package identity
+package ethid
 
 import (
 	"context"
 	"math/big"
 	"net/url"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/identity"
 
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
@@ -102,7 +104,7 @@ func (mic MockIDContract) FilterKeyAdded(opts *bind.FilterOpts, key [][32]byte, 
 }
 
 func TestGetClientP2PURL_happy(t *testing.T) {
-	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
+	centID, _ := identity.ToCentID(utils.RandomSlice(identity.CentIDLength))
 	c, f, r, g, i := &testingconfig.MockConfig{}, &MockIDFactory{}, &MockIDRegistry{}, &MockGethClient{}, &MockIDContract{}
 	g.On("GetGethCallOpts").Return(&bind.CallOpts{}, func() {})
 	g.On("GetEthClient").Return(&ethclient.Client{})
@@ -122,7 +124,7 @@ func TestGetClientP2PURL_happy(t *testing.T) {
 }
 
 func TestGetClientP2PURL_fail_identity_lookup(t *testing.T) {
-	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
+	centID, _ := identity.ToCentID(utils.RandomSlice(identity.CentIDLength))
 	c, f, r, g, i := &testingconfig.MockConfig{}, &MockIDFactory{}, &MockIDRegistry{}, &MockGethClient{}, &MockIDContract{}
 	g.On("GetGethCallOpts").Return(&bind.CallOpts{}, func() {})
 	r.On("GetIdentityByCentrifugeId", mock.Anything, centID.BigInt()).Return(common.BytesToAddress(utils.RandomSlice(20)), errors.New("ID lookup failed"))
@@ -142,7 +144,7 @@ func TestGetClientP2PURL_fail_identity_lookup(t *testing.T) {
 }
 
 func TestGetClientP2PURL_fail_p2pkey_error(t *testing.T) {
-	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
+	centID, _ := identity.ToCentID(utils.RandomSlice(identity.CentIDLength))
 	c, f, r, g, i := &testingconfig.MockConfig{}, &MockIDFactory{}, &MockIDRegistry{}, &MockGethClient{}, &MockIDContract{}
 	g.On("GetGethCallOpts").Return(&bind.CallOpts{}, func() {})
 	g.On("GetEthClient").Return(&ethclient.Client{})
@@ -163,7 +165,7 @@ func TestGetClientP2PURL_fail_p2pkey_error(t *testing.T) {
 }
 
 func TestGetIdentityKey_fail_lookup(t *testing.T) {
-	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
+	centID, _ := identity.ToCentID(utils.RandomSlice(identity.CentIDLength))
 	pubKey := utils.RandomSlice(32)
 	c, f, r, g, i := &testingconfig.MockConfig{}, &MockIDFactory{}, &MockIDRegistry{}, &MockGethClient{}, &MockIDContract{}
 	g.On("GetGethCallOpts").Return(&bind.CallOpts{}, func() {})
@@ -183,7 +185,7 @@ func TestGetIdentityKey_fail_lookup(t *testing.T) {
 }
 
 func TestGetIdentityKey_fail_FetchKey(t *testing.T) {
-	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
+	centID, _ := identity.ToCentID(utils.RandomSlice(identity.CentIDLength))
 	pubKey := utils.RandomSlice(32)
 	c, f, r, g, i := &testingconfig.MockConfig{}, &MockIDFactory{}, &MockIDRegistry{}, &MockGethClient{}, &MockIDContract{}
 	g.On("GetGethCallOpts").Return(&bind.CallOpts{}, func() {})
@@ -195,7 +197,7 @@ func TestGetIdentityKey_fail_FetchKey(t *testing.T) {
 		RevokedAt *big.Int
 	}{
 		[32]byte{1},
-		[]*big.Int{big.NewInt(KeyPurposeP2P)},
+		[]*big.Int{big.NewInt(identity.KeyPurposeP2P)},
 		big.NewInt(1),
 	}, errors.New("p2p key error"))
 	srv := NewEthereumIdentityService(c, f, r, nil, func() ethereum.Client {
@@ -213,7 +215,7 @@ func TestGetIdentityKey_fail_FetchKey(t *testing.T) {
 }
 
 func TestGetIdentityKey_fail_empty(t *testing.T) {
-	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
+	centID, _ := identity.ToCentID(utils.RandomSlice(identity.CentIDLength))
 	pubKey := utils.RandomSlice(32)
 	c, f, r, g, i := &testingconfig.MockConfig{}, &MockIDFactory{}, &MockIDRegistry{}, &MockGethClient{}, &MockIDContract{}
 	g.On("GetGethCallOpts").Return(&bind.CallOpts{}, func() {})
@@ -225,7 +227,7 @@ func TestGetIdentityKey_fail_empty(t *testing.T) {
 		RevokedAt *big.Int
 	}{
 		[32]byte{},
-		[]*big.Int{big.NewInt(KeyPurposeP2P)},
+		[]*big.Int{big.NewInt(identity.KeyPurposeP2P)},
 		big.NewInt(1),
 	}, nil)
 	srv := NewEthereumIdentityService(c, f, r, nil, func() ethereum.Client {
@@ -243,7 +245,7 @@ func TestGetIdentityKey_fail_empty(t *testing.T) {
 }
 
 func TestGetIdentityKey_Success(t *testing.T) {
-	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
+	centID, _ := identity.ToCentID(utils.RandomSlice(identity.CentIDLength))
 	pubKey := utils.RandomSlice(32)
 	c, f, r, g, i := &testingconfig.MockConfig{}, &MockIDFactory{}, &MockIDRegistry{}, &MockGethClient{}, &MockIDContract{}
 	g.On("GetGethCallOpts").Return(&bind.CallOpts{}, func() {})
@@ -255,7 +257,7 @@ func TestGetIdentityKey_Success(t *testing.T) {
 		RevokedAt *big.Int
 	}{
 		[32]byte{1},
-		[]*big.Int{big.NewInt(KeyPurposeP2P)},
+		[]*big.Int{big.NewInt(identity.KeyPurposeP2P)},
 		big.NewInt(1),
 	}, nil)
 	srv := NewEthereumIdentityService(c, f, r, nil, func() ethereum.Client {
@@ -272,7 +274,7 @@ func TestGetIdentityKey_Success(t *testing.T) {
 }
 
 func TestValidateKey_success(t *testing.T) {
-	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
+	centID, _ := identity.ToCentID(utils.RandomSlice(identity.CentIDLength))
 	pubKey := utils.RandomSlice(32)
 	var key [32]byte
 	copy(key[:], pubKey)
@@ -286,7 +288,7 @@ func TestValidateKey_success(t *testing.T) {
 		RevokedAt *big.Int
 	}{
 		key,
-		[]*big.Int{big.NewInt(KeyPurposeSigning)},
+		[]*big.Int{big.NewInt(identity.KeyPurposeSigning)},
 		big.NewInt(0),
 	}, nil)
 	srv := NewEthereumIdentityService(c, f, r, nil, func() ethereum.Client {
@@ -294,7 +296,7 @@ func TestValidateKey_success(t *testing.T) {
 	}, func(address common.Address, backend bind.ContractBackend) (contract, error) {
 		return i, nil
 	})
-	err := srv.ValidateKey(centID, pubKey, KeyPurposeSigning)
+	err := srv.ValidateKey(centID, pubKey, identity.KeyPurposeSigning)
 	f.AssertExpectations(t)
 	r.AssertExpectations(t)
 	g.AssertExpectations(t)
@@ -302,7 +304,7 @@ func TestValidateKey_success(t *testing.T) {
 }
 
 func TestValidateKey_fail_getId(t *testing.T) {
-	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
+	centID, _ := identity.ToCentID(utils.RandomSlice(identity.CentIDLength))
 	pubKey := utils.RandomSlice(32)
 	var key [32]byte
 	copy(key[:], pubKey)
@@ -316,7 +318,7 @@ func TestValidateKey_fail_getId(t *testing.T) {
 		RevokedAt *big.Int
 	}{
 		key,
-		[]*big.Int{big.NewInt(KeyPurposeSigning)},
+		[]*big.Int{big.NewInt(identity.KeyPurposeSigning)},
 		big.NewInt(0),
 	}, errors.New("Key error"))
 	srv := NewEthereumIdentityService(c, f, r, nil, func() ethereum.Client {
@@ -324,7 +326,7 @@ func TestValidateKey_fail_getId(t *testing.T) {
 	}, func(address common.Address, backend bind.ContractBackend) (contract, error) {
 		return i, nil
 	})
-	err := srv.ValidateKey(centID, pubKey, KeyPurposeSigning)
+	err := srv.ValidateKey(centID, pubKey, identity.KeyPurposeSigning)
 	f.AssertExpectations(t)
 	r.AssertExpectations(t)
 	g.AssertExpectations(t)
@@ -332,7 +334,7 @@ func TestValidateKey_fail_getId(t *testing.T) {
 }
 
 func TestValidateKey_fail_mismatch_key(t *testing.T) {
-	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
+	centID, _ := identity.ToCentID(utils.RandomSlice(identity.CentIDLength))
 	pubKey := utils.RandomSlice(32)
 	c, f, r, g, i := &testingconfig.MockConfig{}, &MockIDFactory{}, &MockIDRegistry{}, &MockGethClient{}, &MockIDContract{}
 	g.On("GetGethCallOpts").Return(&bind.CallOpts{}, func() {})
@@ -344,7 +346,7 @@ func TestValidateKey_fail_mismatch_key(t *testing.T) {
 		RevokedAt *big.Int
 	}{
 		[32]byte{1},
-		[]*big.Int{big.NewInt(KeyPurposeSigning)},
+		[]*big.Int{big.NewInt(identity.KeyPurposeSigning)},
 		big.NewInt(0),
 	}, nil)
 	srv := NewEthereumIdentityService(c, f, r, nil, func() ethereum.Client {
@@ -352,7 +354,7 @@ func TestValidateKey_fail_mismatch_key(t *testing.T) {
 	}, func(address common.Address, backend bind.ContractBackend) (contract, error) {
 		return i, nil
 	})
-	err := srv.ValidateKey(centID, pubKey, KeyPurposeSigning)
+	err := srv.ValidateKey(centID, pubKey, identity.KeyPurposeSigning)
 	f.AssertExpectations(t)
 	r.AssertExpectations(t)
 	g.AssertExpectations(t)
@@ -360,7 +362,7 @@ func TestValidateKey_fail_mismatch_key(t *testing.T) {
 }
 
 func TestValidateKey_fail_missing_purpose(t *testing.T) {
-	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
+	centID, _ := identity.ToCentID(utils.RandomSlice(identity.CentIDLength))
 	pubKey := utils.RandomSlice(32)
 	var key [32]byte
 	copy(key[:], pubKey)
@@ -382,7 +384,7 @@ func TestValidateKey_fail_missing_purpose(t *testing.T) {
 	}, func(address common.Address, backend bind.ContractBackend) (contract, error) {
 		return i, nil
 	})
-	err := srv.ValidateKey(centID, pubKey, KeyPurposeSigning)
+	err := srv.ValidateKey(centID, pubKey, identity.KeyPurposeSigning)
 	f.AssertExpectations(t)
 	r.AssertExpectations(t)
 	g.AssertExpectations(t)
@@ -390,7 +392,7 @@ func TestValidateKey_fail_missing_purpose(t *testing.T) {
 }
 
 func TestValidateKey_fail_wrong_purpose(t *testing.T) {
-	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
+	centID, _ := identity.ToCentID(utils.RandomSlice(identity.CentIDLength))
 	pubKey := utils.RandomSlice(32)
 	var key [32]byte
 	copy(key[:], pubKey)
@@ -404,7 +406,7 @@ func TestValidateKey_fail_wrong_purpose(t *testing.T) {
 		RevokedAt *big.Int
 	}{
 		key,
-		[]*big.Int{big.NewInt(KeyPurposeP2P)},
+		[]*big.Int{big.NewInt(identity.KeyPurposeP2P)},
 		big.NewInt(0),
 	}, nil)
 	srv := NewEthereumIdentityService(c, f, r, nil, func() ethereum.Client {
@@ -412,7 +414,7 @@ func TestValidateKey_fail_wrong_purpose(t *testing.T) {
 	}, func(address common.Address, backend bind.ContractBackend) (contract, error) {
 		return i, nil
 	})
-	err := srv.ValidateKey(centID, pubKey, KeyPurposeSigning)
+	err := srv.ValidateKey(centID, pubKey, identity.KeyPurposeSigning)
 	f.AssertExpectations(t)
 	r.AssertExpectations(t)
 	g.AssertExpectations(t)
@@ -420,7 +422,7 @@ func TestValidateKey_fail_wrong_purpose(t *testing.T) {
 }
 
 func TestValidateKey_fail_revocation(t *testing.T) {
-	centID, _ := ToCentID(utils.RandomSlice(CentIDLength))
+	centID, _ := identity.ToCentID(utils.RandomSlice(identity.CentIDLength))
 	pubKey := utils.RandomSlice(32)
 	var key [32]byte
 	copy(key[:], pubKey)
@@ -434,7 +436,7 @@ func TestValidateKey_fail_revocation(t *testing.T) {
 		RevokedAt *big.Int
 	}{
 		key,
-		[]*big.Int{big.NewInt(KeyPurposeSigning)},
+		[]*big.Int{big.NewInt(identity.KeyPurposeSigning)},
 		big.NewInt(1),
 	}, nil)
 	srv := NewEthereumIdentityService(c, f, r, nil, func() ethereum.Client {
@@ -442,7 +444,7 @@ func TestValidateKey_fail_revocation(t *testing.T) {
 	}, func(address common.Address, backend bind.ContractBackend) (contract, error) {
 		return i, nil
 	})
-	err := srv.ValidateKey(centID, pubKey, KeyPurposeSigning)
+	err := srv.ValidateKey(centID, pubKey, identity.KeyPurposeSigning)
 	f.AssertExpectations(t)
 	r.AssertExpectations(t)
 	g.AssertExpectations(t)

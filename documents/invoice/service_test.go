@@ -3,9 +3,10 @@
 package invoice
 
 import (
-	"context"
 	"math/big"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/identity/ethid"
 
 	"github.com/centrifuge/go-centrifuge/contextutil"
 
@@ -109,9 +110,7 @@ func TestService_DeriveFromPayload(t *testing.T) {
 	_, err = invSrv.DeriveFromCreatePayload(nil, &clientinvoicepb.InvoiceCreatePayload{})
 	assert.Error(t, err, "DeriveWithInvoiceInput should produce an error if invoiceInput equals nil")
 
-	contextHeader, err := contextutil.NewCentrifugeContext(context.Background(), cfg)
-	assert.Nil(t, err)
-	model, err = invSrv.DeriveFromCreatePayload(contextHeader, payload)
+	model, err = invSrv.DeriveFromCreatePayload(testingconfig.CreateTenantContext(t, cfg), payload)
 	assert.Nil(t, err, "valid invoiceData shouldn't produce an error")
 
 	receivedCoreDocument, err := model.PackCoreDocument()
@@ -215,13 +214,12 @@ func TestService_Exists(t *testing.T) {
 }
 
 func TestService_Create(t *testing.T) {
-	ctxh, err := contextutil.NewCentrifugeContext(context.Background(), cfg)
-	assert.Nil(t, err)
+	ctxh := testingconfig.CreateTenantContext(t, cfg)
 	_, srv := getServiceWithMockedLayers()
 	invSrv := srv.(service)
 
 	// calculate data root fails
-	m, err := invSrv.Create(ctxh, &testingdocuments.MockModel{})
+	m, err := invSrv.Create(testingconfig.CreateTenantContext(t, cfg), &testingdocuments.MockModel{})
 	assert.Nil(t, m)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "unknown document type")
@@ -267,9 +265,7 @@ func TestService_DeriveInvoiceData(t *testing.T) {
 
 	// success
 	payload := testingdocuments.CreateInvoicePayload()
-	contextHeader, err := contextutil.NewCentrifugeContext(context.Background(), cfg)
-	assert.Nil(t, err)
-	inv, err := invSrv.DeriveFromCreatePayload(contextHeader, payload)
+	inv, err := invSrv.DeriveFromCreatePayload(testingconfig.CreateTenantContext(t, cfg), payload)
 	assert.Nil(t, err, "must be non nil")
 	data, err := invSrv.DeriveInvoiceData(inv)
 	assert.Nil(t, err, "Derive must succeed")
@@ -280,9 +276,7 @@ func TestService_DeriveInvoiceResponse(t *testing.T) {
 	// success
 	invSrv := service{repo: testRepo()}
 	payload := testingdocuments.CreateInvoicePayload()
-	contextHeader, err := contextutil.NewCentrifugeContext(context.Background(), cfg)
-	assert.Nil(t, err)
-	inv1, err := invSrv.DeriveFromCreatePayload(contextHeader, payload)
+	inv1, err := invSrv.DeriveFromCreatePayload(testingconfig.CreateTenantContext(t, cfg), payload)
 	assert.Nil(t, err, "must be non nil")
 	inv, ok := inv1.(*Invoice)
 	assert.True(t, ok)
@@ -297,7 +291,7 @@ func TestService_DeriveInvoiceResponse(t *testing.T) {
 
 // Functions returns service mocks
 func mockSignatureCheck(i *Invoice, idService testingcommons.MockIDService, invSrv Service) testingcommons.MockIDService {
-	idkey := &identity.EthereumIdentityKey{
+	idkey := &ethid.EthereumIdentityKey{
 		Key:       key1Pub,
 		Purposes:  []*big.Int{big.NewInt(identity.KeyPurposeSigning)},
 		RevokedAt: big.NewInt(0),
@@ -387,8 +381,7 @@ func TestService_RequestDocumentSignature_SigningRootNil(t *testing.T) {
 	assert.Nil(t, err)
 	idService = mockSignatureCheck(i, idService, invSrv)
 	i.CoreDocument.SigningRoot = nil
-	ctxh, err := contextutil.NewCentrifugeContext(context.Background(), cfg)
-	signature, err := invSrv.RequestDocumentSignature(ctxh, i)
+	signature, err := invSrv.RequestDocumentSignature(testingconfig.CreateTenantContext(t, cfg), i)
 	assert.NotNil(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
 	assert.Nil(t, signature)
@@ -502,7 +495,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.Nil(t, doc)
 
 	// messed up identifier
-	contextHeader, err := contextutil.NewCentrifugeContext(context.Background(), cfg)
+	contextHeader := testingconfig.CreateTenantContext(t, cfg)
 	assert.Nil(t, err)
 	payload := &clientinvoicepb.InvoiceUpdatePayload{Identifier: "some identifier", Data: &clientinvoicepb.InvoiceData{}}
 	doc, err = invSrv.DeriveFromUpdatePayload(contextHeader, payload)
@@ -573,13 +566,12 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 func TestService_Update(t *testing.T) {
 	_, srv := getServiceWithMockedLayers()
 	invSrv := srv.(service)
-	ctxh, err := contextutil.NewCentrifugeContext(context.Background(), cfg)
-	assert.Nil(t, err)
+	ctxh := testingconfig.CreateTenantContext(t, cfg)
 
 	// pack failed
 	model := &mockModel{}
 	model.On("PackCoreDocument").Return(nil, errors.New("pack error")).Once()
-	_, err = invSrv.Update(ctxh, model)
+	_, err := invSrv.Update(ctxh, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "pack error")
@@ -653,8 +645,7 @@ func TestService_Update(t *testing.T) {
 func TestService_calculateDataRoot(t *testing.T) {
 	_, srv := getServiceWithMockedLayers()
 	invSrv := srv.(service)
-	ctxh, err := contextutil.NewCentrifugeContext(context.Background(), cfg)
-	assert.Nil(t, err)
+	ctxh := testingconfig.CreateTenantContext(t, cfg)
 
 	// type mismatch
 	inv, err := invSrv.calculateDataRoot(nil, &testingdocuments.MockModel{}, nil)

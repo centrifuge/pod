@@ -8,6 +8,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/identity/ethid"
+
 	"github.com/centrifuge/go-centrifuge/contextutil"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -176,7 +178,7 @@ func updatedAnchoredMockDocument(t *testing.T, i *invoice.Invoice) (*invoice.Inv
 
 // Functions returns service mocks
 func mockSignatureCheck(i *invoice.Invoice, idService testingcommons.MockIDService, s documents.Service) testingcommons.MockIDService {
-	idkey := &identity.EthereumIdentityKey{
+	idkey := &ethid.EthereumIdentityKey{
 		Key:       key1Pub,
 		Purposes:  []*big.Int{big.NewInt(identity.KeyPurposeSigning)},
 		RevokedAt: big.NewInt(0),

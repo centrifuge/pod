@@ -3,11 +3,12 @@
 package coredocument
 
 import (
-	"context"
 	"crypto/sha256"
 	"flag"
 	"os"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
 
 	"github.com/centrifuge/go-centrifuge/contextutil"
 
@@ -245,9 +246,7 @@ func TestGetExternalCollaborators(t *testing.T) {
 	c := []string{hexutil.Encode(c1), hexutil.Encode(c2)}
 	cd, err := NewWithCollaborators(c)
 	assert.Equal(t, [][]byte{c1, c2}, cd.Collaborators)
-	ctxh, err := contextutil.NewCentrifugeContext(context.Background(), cfg)
-	assert.Nil(t, err)
-	self, _ := contextutil.Self(ctxh)
+	self, _ := contextutil.Self(testingconfig.CreateTenantContext(t, cfg))
 	collaborators, err := GetExternalCollaborators(self.ID, cd)
 	assert.Nil(t, err)
 	assert.NotNil(t, collaborators)
@@ -261,9 +260,7 @@ func TestGetExternalCollaborators_WrongIDFormat(t *testing.T) {
 	cd, err := NewWithCollaborators(c)
 	assert.Equal(t, [][]byte{c1, c2}, cd.Collaborators)
 	cd.Collaborators[1] = utils.RandomSlice(5)
-	ctxh, err := contextutil.NewCentrifugeContext(context.Background(), cfg)
-	assert.Nil(t, err)
-	self, _ := contextutil.Self(ctxh)
+	self, _ := contextutil.Self(testingconfig.CreateTenantContext(t, cfg))
 	_, err = GetExternalCollaborators(self.ID, cd)
 	assert.NotNil(t, err)
 }

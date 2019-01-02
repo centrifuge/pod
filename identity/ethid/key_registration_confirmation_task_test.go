@@ -1,9 +1,11 @@
 // +build unit
 
-package identity
+package ethid
 
 import (
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/identity"
 
 	"time"
 
@@ -14,13 +16,13 @@ import (
 
 func TestKeyRegistrationConfirmationTask_ParseKwargsHappyPath(t *testing.T) {
 	rct := keyRegistrationConfirmationTask{timeout: time.Second * 10}
-	id := utils.RandomSlice(CentIDLength)
+	id := utils.RandomSlice(identity.CentIDLength)
 	key := utils.RandomSlice(32)
 	var keyFixed [32]byte
 	copy(keyFixed[:], key)
-	keyPurpose := KeyPurposeSigning
+	keyPurpose := identity.KeyPurposeSigning
 	bh := uint64(12)
-	idBytes, _ := ToCentID(id)
+	idBytes, _ := identity.ToCentID(id)
 	kwargs := map[string]interface{}{
 		centIDParam:            idBytes,
 		keyParam:               keyFixed,
@@ -40,13 +42,13 @@ func TestKeyRegistrationConfirmationTask_ParseKwargsHappyPath(t *testing.T) {
 
 func TestKeyRegistrationConfirmationTask_ParseKwargsHappyPathOverrideTimeout(t *testing.T) {
 	rct := keyRegistrationConfirmationTask{timeout: time.Second * 10}
-	id := utils.RandomSlice(CentIDLength)
+	id := utils.RandomSlice(identity.CentIDLength)
 	key := utils.RandomSlice(32)
 	var keyFixed [32]byte
 	copy(keyFixed[:], key)
-	keyPurpose := KeyPurposeSigning
+	keyPurpose := identity.KeyPurposeSigning
 	bh := uint64(12)
-	idBytes, _ := ToCentID(id)
+	idBytes, _ := identity.ToCentID(id)
 	overrideTimeout := float64(time.Second * 3)
 	kwargs := map[string]interface{}{
 		centIDParam:            idBytes,
@@ -69,14 +71,14 @@ func TestKeyRegistrationConfirmationTask_ParseKwargsHappyPathOverrideTimeout(t *
 
 func TestKeyRegistrationConfirmationTask_ParseKwargsDoesNotExist(t *testing.T) {
 	rct := keyRegistrationConfirmationTask{}
-	id := utils.RandomSlice(CentIDLength)
+	id := utils.RandomSlice(identity.CentIDLength)
 	err := rct.ParseKwargs(map[string]interface{}{"notId": id})
 	assert.NotNil(t, err, "Should not allow parsing without centId")
 }
 
 func TestKeyRegistrationConfirmationTask_ParseKwargsInvalidType(t *testing.T) {
 	rct := keyRegistrationConfirmationTask{}
-	id := utils.RandomSlice(CentIDLength)
+	id := utils.RandomSlice(identity.CentIDLength)
 	err := rct.ParseKwargs(map[string]interface{}{centIDParam: id})
 	assert.NotNil(t, err, "Should not parse without the correct type of centId")
 }

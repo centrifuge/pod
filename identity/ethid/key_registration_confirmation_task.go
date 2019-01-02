@@ -1,9 +1,11 @@
-package identity
+package ethid
 
 import (
 	"context"
 	"math/big"
 	"time"
+
+	"github.com/centrifuge/go-centrifuge/identity"
 
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -28,7 +30,7 @@ type keyRegisteredFilterer interface {
 // keyRegistrationConfirmationTask is a queued task to filter key registration events on Ethereum using EthereumIdentityContract.
 // To see how it gets registered see bootstrapper.go and to see how it gets used see setUpKeyRegisteredEventListener method
 type keyRegistrationConfirmationTask struct {
-	centID             CentID
+	centID             identity.CentID
 	key                [32]byte
 	keyPurpose         int
 	blockHeight        uint64
@@ -38,7 +40,7 @@ type keyRegistrationConfirmationTask struct {
 	filterer           keyRegisteredFilterer
 	contract           *EthereumIdentityRegistryContract
 	// TODO [multi-tenancy] replace this with config service
-	config           Config
+	config           identity.Config
 	gethClientFinder func() ethereum.Client
 	contractProvider func(address common.Address, backend bind.ContractBackend) (contract, error)
 	queue            *queue.Server
@@ -47,7 +49,7 @@ type keyRegistrationConfirmationTask struct {
 func newKeyRegistrationConfirmationTask(
 	ethContextInitializer func(d time.Duration) (ctx context.Context, cancelFunc context.CancelFunc),
 	registryContract *EthereumIdentityRegistryContract,
-	config Config,
+	config identity.Config,
 	queue *queue.Server,
 	gethClientFinder func() ethereum.Client,
 	contractProvider func(address common.Address, backend bind.ContractBackend) (contract, error),

@@ -1,4 +1,4 @@
-package identity
+package ethid
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"math/big"
 
 	"github.com/centrifuge/go-centrifuge/crypto"
+	"github.com/centrifuge/go-centrifuge/identity"
 
 	"bytes"
 
@@ -76,17 +77,17 @@ func (idk *EthereumIdentityKey) String() string {
 }
 
 type ethereumIdentity struct {
-	centID           CentID
+	centID           identity.CentID
 	contract         contract
 	contractProvider func(address common.Address, backend bind.ContractBackend) (contract, error)
 	registryContract registry
 	// TODO [multi-tenancy] replace this with config service
-	config           Config
+	config           identity.Config
 	gethClientFinder func() ethereum.Client
 	queue            *queue.Server
 }
 
-func newEthereumIdentity(id CentID, registryContract registry, config Config,
+func newEthereumIdentity(id identity.CentID, registryContract registry, config identity.Config,
 	queue *queue.Server,
 	gethClientFinder func() ethereum.Client,
 	contractProvider func(address common.Address, backend bind.ContractBackend) (contract, error)) *ethereumIdentity {
@@ -94,7 +95,7 @@ func newEthereumIdentity(id CentID, registryContract registry, config Config,
 }
 
 // CentrifugeID sets the CentID to the Identity
-func (id *ethereumIdentity) SetCentrifugeID(centID CentID) {
+func (id *ethereumIdentity) SetCentrifugeID(centID identity.CentID) {
 	id.centID = centID
 }
 
@@ -104,7 +105,7 @@ func (id *ethereumIdentity) String() string {
 }
 
 // CentrifugeID returns the CentrifugeID
-func (id *ethereumIdentity) CentID() CentID {
+func (id *ethereumIdentity) CentID() identity.CentID {
 	return id.centID
 }
 
@@ -123,7 +124,7 @@ func (id *ethereumIdentity) LastKeyForPurpose(keyPurpose int) (key []byte, err e
 }
 
 // FetchKey fetches the Key from the chain
-func (id *ethereumIdentity) FetchKey(key []byte) (Key, error) {
+func (id *ethereumIdentity) FetchKey(key []byte) (identity.Key, error) {
 	contract, err := id.getContract()
 	if err != nil {
 		return nil, err
@@ -146,7 +147,7 @@ func (id *ethereumIdentity) FetchKey(key []byte) (Key, error) {
 
 // CurrentP2PKey returns the latest P2P key
 func (id *ethereumIdentity) CurrentP2PKey() (ret string, err error) {
-	key, err := id.LastKeyForPurpose(KeyPurposeP2P)
+	key, err := id.LastKeyForPurpose(identity.KeyPurposeP2P)
 	if err != nil {
 		return ret, err
 	}
@@ -199,7 +200,7 @@ func (id *ethereumIdentity) getContract() (contract contract, err error) {
 }
 
 // AddKeyToIdentity adds key to the purpose on chain
-func (id *ethereumIdentity) AddKeyToIdentity(ctx context.Context, keyPurpose int, key []byte) (confirmations chan *WatchIdentity, err error) {
+func (id *ethereumIdentity) AddKeyToIdentity(ctx context.Context, keyPurpose int, key []byte) (confirmations chan *identity.WatchIdentity, err error) {
 	if utils.IsEmptyByteSlice(key) || len(key) > 32 {
 		log.Errorf("Can't add key to identity: empty or invalid length(>32) key for [id: %s]: %x", id, key)
 		return confirmations, errors.New("Can't add key to identity: Invalid key")
@@ -284,7 +285,7 @@ func sendKeyRegistrationTransaction(identityContract contract, opts *bind.Transa
 }
 
 // sendIdentityCreationTransaction sends the actual transaction to create identity on Ethereum registry contract
-func sendIdentityCreationTransaction(identityFactory factory, opts *bind.TransactOpts, identityToBeCreated Identity) error {
+func sendIdentityCreationTransaction(identityFactory factory, opts *bind.TransactOpts, identityToBeCreated identity.Identity) error {
 	//preparation of data in specific types for the call to Ethereum
 	tx, err := ethereum.GetClient().SubmitTransactionWithRetries(identityFactory.CreateIdentity, opts, identityToBeCreated.CentID().BigInt())
 	if err != nil {
@@ -298,9 +299,9 @@ func sendIdentityCreationTransaction(identityFactory factory, opts *bind.Transac
 }
 
 // setUpKeyRegisteredEventListener listens for Identity creation
-func (id *ethereumIdentity) setUpKeyRegisteredEventListener(config Config, identity Identity, keyPurpose int, key [32]byte, bh uint64) (confirmations chan *WatchIdentity, err error) {
-	confirmations = make(chan *WatchIdentity)
-	centID := identity.CentID()
+func (id *ethereumIdentity) setUpKeyRegisteredEventListener(config identity.Config, i identity.Identity, keyPurpose int, key [32]byte, bh uint64) (confirmations chan *identity.WatchIdentity, err error) {
+	confirmations = make(chan *identity.WatchIdentity)
+	centID := i.CentID()
 	if err != nil {
 		return nil, err
 	}
@@ -314,14 +315,14 @@ func (id *ethereumIdentity) setUpKeyRegisteredEventListener(config Config, ident
 	if err != nil {
 		return nil, err
 	}
-	go waitAndRouteKeyRegistrationEvent(config.GetEthereumContextWaitTimeout(), asyncRes, confirmations, identity)
+	go waitAndRouteKeyRegistrationEvent(config.GetEthereumContextWaitTimeout(), asyncRes, confirmations, i)
 	return confirmations, nil
 }
 
 // setUpRegistrationEventListener sets up the listened for the "IdentityCreated" event to notify the upstream code about successful mining/creation
 // of the identity.
-func (ids *EthereumIdentityService) setUpRegistrationEventListener(config Config, identityToBeCreated Identity, blockHeight uint64) (confirmations chan *WatchIdentity, err error) {
-	confirmations = make(chan *WatchIdentity)
+func (ids *ethereumIdentityService) setUpRegistrationEventListener(config identity.Config, identityToBeCreated identity.Identity, blockHeight uint64) (confirmations chan *identity.WatchIdentity, err error) {
+	confirmations = make(chan *identity.WatchIdentity)
 	centID := identityToBeCreated.CentID()
 	if err != nil {
 		return nil, err
@@ -336,21 +337,21 @@ func (ids *EthereumIdentityService) setUpRegistrationEventListener(config Config
 }
 
 // waitAndRouteKeyRegistrationEvent notifies the confirmations channel whenever the key has been added to the identity and has been noted as Ethereum event
-func waitAndRouteKeyRegistrationEvent(timeout time.Duration, asyncRes queue.TaskResult, confirmations chan<- *WatchIdentity, pushThisIdentity Identity) {
+func waitAndRouteKeyRegistrationEvent(timeout time.Duration, asyncRes queue.TaskResult, confirmations chan<- *identity.WatchIdentity, pushThisIdentity identity.Identity) {
 	_, err := asyncRes.Get(timeout)
-	confirmations <- &WatchIdentity{Identity: pushThisIdentity, Error: err}
+	confirmations <- &identity.WatchIdentity{Identity: pushThisIdentity, Error: err}
 }
 
 // waitAndRouteIdentityRegistrationEvent notifies the confirmations channel whenever the identity creation is being noted as Ethereum event
-func waitAndRouteIdentityRegistrationEvent(timeout time.Duration, asyncRes queue.TaskResult, confirmations chan<- *WatchIdentity, pushThisIdentity Identity) {
+func waitAndRouteIdentityRegistrationEvent(timeout time.Duration, asyncRes queue.TaskResult, confirmations chan<- *identity.WatchIdentity, pushThisIdentity identity.Identity) {
 	_, err := asyncRes.Get(timeout)
-	confirmations <- &WatchIdentity{pushThisIdentity, err}
+	confirmations <- &identity.WatchIdentity{pushThisIdentity, err}
 }
 
-// EthereumIdentityService implements `Service`
-type EthereumIdentityService struct {
+// ethereumIdentityService implements `Service`
+type ethereumIdentityService struct {
 	// TODO [multi-tenancy] replace this with config service
-	config           Config
+	config           identity.Config
 	factoryContract  factory
 	registryContract registry
 	gethClientFinder func() ethereum.Client
@@ -359,15 +360,15 @@ type EthereumIdentityService struct {
 }
 
 // NewEthereumIdentityService creates a new NewEthereumIdentityService given the config and the smart contracts
-func NewEthereumIdentityService(config Config, factoryContract factory, registryContract registry,
+func NewEthereumIdentityService(config identity.Config, factoryContract factory, registryContract registry,
 	queue *queue.Server,
 	gethClientFinder func() ethereum.Client,
-	contractProvider func(address common.Address, backend bind.ContractBackend) (contract, error)) Service {
-	return &EthereumIdentityService{config: config, factoryContract: factoryContract, registryContract: registryContract, gethClientFinder: gethClientFinder, contractProvider: contractProvider, queue: queue}
+	contractProvider func(address common.Address, backend bind.ContractBackend) (contract, error)) identity.Service {
+	return &ethereumIdentityService{config: config, factoryContract: factoryContract, registryContract: registryContract, gethClientFinder: gethClientFinder, contractProvider: contractProvider, queue: queue}
 }
 
 // CheckIdentityExists checks if the identity represented by id actually exists on ethereum
-func (ids *EthereumIdentityService) CheckIdentityExists(centrifugeID CentID) (exists bool, err error) {
+func (ids *ethereumIdentityService) CheckIdentityExists(centrifugeID identity.CentID) (exists bool, err error) {
 	client := ids.gethClientFinder()
 	// Ignoring cancelFunc as code will block until response or timeout is triggered
 	opts, _ := client.GetGethCallOpts()
@@ -391,7 +392,7 @@ func (ids *EthereumIdentityService) CheckIdentityExists(centrifugeID CentID) (ex
 }
 
 // CreateIdentity creates an identity representing the id on ethereum
-func (ids *EthereumIdentityService) CreateIdentity(centrifugeID CentID) (id Identity, confirmations chan *WatchIdentity, err error) {
+func (ids *ethereumIdentityService) CreateIdentity(centrifugeID identity.CentID) (id identity.Identity, confirmations chan *identity.WatchIdentity, err error) {
 	log.Infof("Creating Identity [%x]", centrifugeID)
 	id = newEthereumIdentity(centrifugeID, ids.registryContract, ids.config, ids.queue, ids.gethClientFinder, ids.contractProvider)
 	conn := ids.gethClientFinder()
@@ -422,7 +423,7 @@ func (ids *EthereumIdentityService) CreateIdentity(centrifugeID CentID) (id Iden
 }
 
 // GetIdentityAddress gets the address of the ethereum identity contract for the given CentID
-func (ids *EthereumIdentityService) GetIdentityAddress(centID CentID) (common.Address, error) {
+func (ids *ethereumIdentityService) GetIdentityAddress(centID identity.CentID) (common.Address, error) {
 	// Ignoring cancelFunc as code will block until response or timeout is triggered
 	opts, _ := ethereum.GetClient().GetGethCallOpts()
 	address, err := ids.registryContract.GetIdentityByCentrifugeId(opts, centID.BigInt())
@@ -437,7 +438,7 @@ func (ids *EthereumIdentityService) GetIdentityAddress(centID CentID) (common.Ad
 }
 
 // LookupIdentityForID looks up if the identity for given CentID exists on ethereum
-func (ids *EthereumIdentityService) LookupIdentityForID(centrifugeID CentID) (Identity, error) {
+func (ids *ethereumIdentityService) LookupIdentityForID(centrifugeID identity.CentID) (identity.Identity, error) {
 	exists, err := ids.CheckIdentityExists(centrifugeID)
 	if !exists {
 		return nil, errors.New("identity [%s] does not exist with err [%v]", centrifugeID, err)
@@ -450,7 +451,7 @@ func (ids *EthereumIdentityService) LookupIdentityForID(centrifugeID CentID) (Id
 }
 
 // GetClientP2PURL returns the p2p url associated with the centID
-func (ids *EthereumIdentityService) GetClientP2PURL(centID CentID) (url string, err error) {
+func (ids *ethereumIdentityService) GetClientP2PURL(centID identity.CentID) (url string, err error) {
 	target, err := ids.LookupIdentityForID(centID)
 	if err != nil {
 		return url, errors.New("error fetching receiver identity: %v", err)
@@ -466,7 +467,7 @@ func (ids *EthereumIdentityService) GetClientP2PURL(centID CentID) (url string, 
 
 // GetClientsP2PURLs returns p2p urls associated with each centIDs
 // will error out at first failure
-func (ids *EthereumIdentityService) GetClientsP2PURLs(centIDs []CentID) ([]string, error) {
+func (ids *ethereumIdentityService) GetClientsP2PURLs(centIDs []identity.CentID) ([]string, error) {
 	var p2pURLs []string
 	for _, id := range centIDs {
 		url, err := ids.GetClientP2PURL(id)
@@ -481,7 +482,7 @@ func (ids *EthereumIdentityService) GetClientsP2PURLs(centIDs []CentID) ([]strin
 }
 
 // GetIdentityKey returns the key for provided identity
-func (ids *EthereumIdentityService) GetIdentityKey(identity CentID, pubKey []byte) (keyInfo Key, err error) {
+func (ids *ethereumIdentityService) GetIdentityKey(identity identity.CentID, pubKey []byte) (keyInfo identity.Key, err error) {
 	id, err := ids.LookupIdentityForID(identity)
 	if err != nil {
 		return keyInfo, err
@@ -500,7 +501,7 @@ func (ids *EthereumIdentityService) GetIdentityKey(identity CentID, pubKey []byt
 }
 
 // ValidateKey checks if a given key is valid for the given centrifugeID.
-func (ids *EthereumIdentityService) ValidateKey(centID CentID, key []byte, purpose int) error {
+func (ids *ethereumIdentityService) ValidateKey(centID identity.CentID, key []byte, purpose int) error {
 	idKey, err := ids.GetIdentityKey(centID, key)
 	if err != nil {
 		return err
@@ -522,8 +523,8 @@ func (ids *EthereumIdentityService) ValidateKey(centID CentID, key []byte, purpo
 }
 
 // AddKeyFromConfig adds a key previously generated and indexed in the configuration file to the identity specified in such config file
-func (ids *EthereumIdentityService) AddKeyFromConfig(purpose int) error {
-	identityConfig, err := GetIdentityConfig(ids.config)
+func (ids *ethereumIdentityService) AddKeyFromConfig(purpose int) error {
+	identityConfig, err := identity.GetIdentityConfig(ids.config)
 	if err != nil {
 		return err
 	}
@@ -552,13 +553,13 @@ func (ids *EthereumIdentityService) AddKeyFromConfig(purpose int) error {
 }
 
 // ValidateSignature validates a signature on a message based on identity data
-func (ids *EthereumIdentityService) ValidateSignature(signature *coredocumentpb.Signature, message []byte) error {
-	centID, err := ToCentID(signature.EntityId)
+func (ids *ethereumIdentityService) ValidateSignature(signature *coredocumentpb.Signature, message []byte) error {
+	centID, err := identity.ToCentID(signature.EntityId)
 	if err != nil {
 		return err
 	}
 
-	err = ids.ValidateKey(centID, signature.PublicKey, KeyPurposeSigning)
+	err = ids.ValidateKey(centID, signature.PublicKey, identity.KeyPurposeSigning)
 	if err != nil {
 		return err
 	}

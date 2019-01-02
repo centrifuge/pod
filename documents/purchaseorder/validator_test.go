@@ -5,9 +5,9 @@ package purchaseorder
 import (
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/contextutil"
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
 
-	"context"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -49,11 +49,10 @@ func TestFieldValidator_Validate(t *testing.T) {
 
 func TestDataRootValidation_Validate(t *testing.T) {
 	drv := dataRootValidator()
-	contextHeader, err := contextutil.NewCentrifugeContext(context.Background(), cfg)
-	assert.Nil(t, err)
+	contextHeader := testingconfig.CreateTenantContext(t, cfg)
 
 	// nil error
-	err = drv.Validate(nil, nil)
+	err := drv.Validate(nil, nil)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "nil document")
 

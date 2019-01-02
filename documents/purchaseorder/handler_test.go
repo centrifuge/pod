@@ -6,7 +6,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/contextutil"
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -76,8 +76,7 @@ func TestGRPCHandler_Create(t *testing.T) {
 	req := testingdocuments.CreatePOPayload()
 	ctx := context.Background()
 	model := &testingdocuments.MockModel{}
-	ctxh, err := contextutil.NewCentrifugeContext(ctx, cfg)
-	assert.Nil(t, err)
+	ctxh := testingconfig.CreateTenantContext(t, cfg)
 
 	// derive fails
 	srv := h.service.(*mockService)
@@ -132,8 +131,7 @@ func TestGrpcHandler_Update(t *testing.T) {
 	}
 	ctx := context.Background()
 	model := &testingdocuments.MockModel{}
-	ctxh, err := contextutil.NewCentrifugeContext(ctx, cfg)
-	assert.Nil(t, err)
+	ctxh := testingconfig.CreateTenantContext(t, cfg)
 
 	// derive fails
 	srv := h.service.(*mockService)

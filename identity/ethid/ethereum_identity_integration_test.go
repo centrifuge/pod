@@ -1,12 +1,14 @@
 // +build integration
 
-package identity_test
+package ethid_test
 
 import (
 	"context"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/centrifuge/go-centrifuge/identity/ethid"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	cc "github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testingbootstrap"
@@ -25,7 +27,7 @@ func TestMain(m *testing.M) {
 	time.Sleep(time.Second + 2)
 	ctx := cc.TestFunctionalEthereumBootstrap()
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-	identityService = ctx[identity.BootstrappedIDService].(identity.Service)
+	identityService = ctx[ethid.BootstrappedIDService].(identity.Service)
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()
 	os.Exit(result)

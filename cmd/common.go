@@ -3,6 +3,8 @@ package cmd
 import (
 	"context"
 
+	"github.com/centrifuge/go-centrifuge/identity/ethid"
+
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers"
 
 	"github.com/centrifuge/go-centrifuge/storage"
@@ -87,7 +89,7 @@ func CreateConfig(
 	cfg := ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	generateKeys(cfg)
 
-	idService := ctx[identity.BootstrappedIDService].(identity.Service)
+	idService := ctx[ethid.BootstrappedIDService].(identity.Service)
 	id, err := createIdentity(idService)
 	if err != nil {
 		return err

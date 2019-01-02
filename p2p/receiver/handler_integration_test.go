@@ -8,6 +8,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/identity/ethid"
+
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 
 	"github.com/centrifuge/go-centrifuge/p2p/receiver"
@@ -46,7 +48,7 @@ func TestMain(m *testing.M) {
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	registry := ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
 	anchorRepo = ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
-	idService = ctx[identity.BootstrappedIDService].(identity.Service)
+	idService = ctx[ethid.BootstrappedIDService].(identity.Service)
 	handler = receiver.New(cfg, registry)
 	testingidentity.CreateIdentityWithKeys(cfg, idService)
 	result := m.Run()

@@ -1,4 +1,4 @@
-package identity
+package ethid
 
 import (
 	"github.com/centrifuge/go-centrifuge/config"

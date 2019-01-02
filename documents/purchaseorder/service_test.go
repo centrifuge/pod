@@ -3,9 +3,10 @@
 package purchaseorder
 
 import (
-	"context"
 	"math/big"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/identity/ethid"
 
 	"github.com/centrifuge/go-centrifuge/contextutil"
 
@@ -56,13 +57,12 @@ func TestService_Update(t *testing.T) {
 	c := &testingconfig.MockConfig{}
 	c.On("GetIdentityID").Return(centIDBytes, nil)
 	poSrv := service{config: c, repo: testRepo()}
-	ctxh, err := contextutil.NewCentrifugeContext(context.Background(), cfg)
-	assert.Nil(t, err)
+	ctxh := testingconfig.CreateTenantContext(t, cfg)
 
 	// pack failed
 	model := &testingdocuments.MockModel{}
 	model.On("PackCoreDocument").Return(nil, errors.New("pack error")).Once()
-	_, err = poSrv.Update(ctxh, model)
+	_, err := poSrv.Update(ctxh, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "pack error")
@@ -150,8 +150,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.Nil(t, doc)
 
 	// messed up identifier
-	contextHeader, err := contextutil.NewCentrifugeContext(context.Background(), cfg)
-	assert.Nil(t, err)
+	contextHeader := testingconfig.CreateTenantContext(t, cfg)
 	payload := &clientpurchaseorderpb.PurchaseOrderUpdatePayload{Identifier: "some identifier", Data: &clientpurchaseorderpb.PurchaseOrderData{}}
 	doc, err = poSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Error(t, err)
@@ -217,8 +216,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 func TestService_DeriveFromCreatePayload(t *testing.T) {
 	poSrv := service{}
-	ctxh, err := contextutil.NewCentrifugeContext(context.Background(), cfg)
-	assert.Nil(t, err)
+	ctxh := testingconfig.CreateTenantContext(t, cfg)
 
 	// nil payload
 	m, err := poSrv.DeriveFromCreatePayload(ctxh, nil)
@@ -272,8 +270,7 @@ func TestService_DeriveFromCoreDocument(t *testing.T) {
 }
 
 func TestService_Create(t *testing.T) {
-	ctxh, err := contextutil.NewCentrifugeContext(context.Background(), cfg)
-	assert.Nil(t, err)
+	ctxh := testingconfig.CreateTenantContext(t, cfg)
 	c := &testingconfig.MockConfig{}
 	c.On("GetIdentityID").Return(centIDBytes, nil)
 	poSrv := service{config: c, repo: testRepo()}
@@ -376,7 +373,7 @@ func createAnchoredMockDocument(t *testing.T, skipSave bool) (*PurchaseOrder, er
 
 // Functions returns service mocks
 func mockSignatureCheck(i *PurchaseOrder, srv *testingcommons.MockIDService, poSrv Service) *testingcommons.MockIDService {
-	idkey := &identity.EthereumIdentityKey{
+	idkey := &ethid.EthereumIdentityKey{
 		Key:       key1Pub,
 		Purposes:  []*big.Int{big.NewInt(identity.KeyPurposeSigning)},
 		RevokedAt: big.NewInt(0),
@@ -499,8 +496,6 @@ func TestService_CreateProofsForVersionDocumentDoesntExist(t *testing.T) {
 func TestService_DerivePurchaseOrderData(t *testing.T) {
 	var m documents.Model
 	_, poSrv := getServiceWithMockedLayers()
-	ctxh, err := contextutil.NewCentrifugeContext(context.Background(), cfg)
-	assert.Nil(t, err)
 
 	// unknown type
 	m = &testingdocuments.MockModel{}
@@ -511,7 +506,7 @@ func TestService_DerivePurchaseOrderData(t *testing.T) {
 
 	// success
 	payload := testingdocuments.CreatePOPayload()
-	m, err = poSrv.DeriveFromCreatePayload(ctxh, payload)
+	m, err = poSrv.DeriveFromCreatePayload(testingconfig.CreateTenantContext(t, cfg), payload)
 	assert.Nil(t, err)
 	d, err = poSrv.DerivePurchaseOrderData(m)
 	assert.Nil(t, err)
@@ -520,8 +515,6 @@ func TestService_DerivePurchaseOrderData(t *testing.T) {
 
 func TestService_DerivePurchaseOrderResponse(t *testing.T) {
 	poSrv := service{}
-	ctxh, err := contextutil.NewCentrifugeContext(context.Background(), cfg)
-	assert.Nil(t, err)
 
 	// pack fails
 	m := &testingdocuments.MockModel{}
@@ -555,7 +548,7 @@ func TestService_DerivePurchaseOrderResponse(t *testing.T) {
 
 	// success
 	payload := testingdocuments.CreatePOPayload()
-	po, err := poSrv.DeriveFromCreatePayload(ctxh, payload)
+	po, err := poSrv.DeriveFromCreatePayload(testingconfig.CreateTenantContext(t, cfg), payload)
 	assert.Nil(t, err)
 	r, err = poSrv.DerivePurchaseOrderResponse(po)
 	assert.Nil(t, err)
@@ -690,10 +683,8 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 }
 
 func TestService_RequestDocumentSignature(t *testing.T) {
-	ctxh, err := contextutil.NewCentrifugeContext(context.Background(), cfg)
-	assert.Nil(t, err)
 	poSrv := service{}
-	s, err := poSrv.RequestDocumentSignature(ctxh, nil)
+	s, err := poSrv.RequestDocumentSignature(testingconfig.CreateTenantContext(t, cfg), nil)
 	assert.Nil(t, s)
 	assert.Error(t, err)
 }
@@ -702,8 +693,7 @@ func TestService_calculateDataRoot(t *testing.T) {
 	c := &testingconfig.MockConfig{}
 	c.On("GetIdentityID").Return(centIDBytes, nil)
 	poSrv := service{config: c, repo: testRepo()}
-	ctxh, err := contextutil.NewCentrifugeContext(context.Background(), cfg)
-	assert.Nil(t, err)
+	ctxh := testingconfig.CreateTenantContext(t, cfg)
 
 	// type mismatch
 	po, err := poSrv.calculateDataRoot(nil, &testingdocuments.MockModel{}, nil)

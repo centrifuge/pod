@@ -3,12 +3,12 @@
 package nft_test
 
 import (
-	"context"
 	"os"
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/contextutil"
+	"github.com/centrifuge/go-centrifuge/identity/ethid"
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -35,7 +35,7 @@ func TestMain(m *testing.M) {
 	log.Debug("Test PreSetup for NFT")
 	ctx := cc.TestFunctionalEthereumBootstrap()
 	registry = ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
-	idService = ctx[identity.BootstrappedIDService].(identity.Service)
+	idService = ctx[ethid.BootstrappedIDService].(identity.Service)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	payOb = ctx[nft.BootstrappedPayObService].(nft.PaymentObligation)
 	result := m.Run()
@@ -51,8 +51,7 @@ func TestPaymentObligationService_mint(t *testing.T) {
 	// create invoice (anchor)
 	service, err := registry.LocateService(documenttypes.InvoiceDataTypeUrl)
 	assert.Nil(t, err, "should not error out when getting invoice service")
-	contextHeader, err := contextutil.NewCentrifugeContext(context.Background(), cfg)
-	assert.Nil(t, err)
+	contextHeader := testingconfig.CreateTenantContext(t, cfg)
 	invoiceService := service.(invoice.Service)
 	dueDate := time.Now().Add(4 * 24 * time.Hour)
 	model, err := invoiceService.DeriveFromCreatePayload(contextHeader, &invoicepb.InvoiceCreatePayload{

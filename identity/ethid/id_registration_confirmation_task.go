@@ -1,9 +1,11 @@
-package identity
+package ethid
 
 import (
 	"context"
 	"math/big"
 	"time"
+
+	"github.com/centrifuge/go-centrifuge/identity"
 
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -24,7 +26,7 @@ type identitiesCreatedFilterer interface {
 // idRegistrationConfirmationTask is a queued task to watch ID registration events on Ethereum using EthereumIdentityFactoryContract.
 // To see how it gets registered see bootstrapper.go and to see how it gets used see setUpRegistrationEventListener method
 type idRegistrationConfirmationTask struct {
-	centID             CentID
+	centID             identity.CentID
 	blockHeight        uint64
 	timeout            time.Duration
 	contextInitializer func(d time.Duration) (ctx context.Context, cancelFunc context.CancelFunc)

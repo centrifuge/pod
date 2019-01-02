@@ -5,9 +5,9 @@ package coredocument
 import (
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/contextutil"
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
 
-	"context"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -207,16 +207,14 @@ func TestValidator_documentRootValidator(t *testing.T) {
 }
 
 func TestValidator_selfSignatureValidator(t *testing.T) {
-	ctxh, err := contextutil.NewCentrifugeContext(context.Background(), cfg)
-	assert.Nil(t, err)
-	self, _ := contextutil.Self(ctxh)
+	self, _ := contextutil.Self(testingconfig.CreateTenantContext(t, cfg))
 	idKeys := self.Keys[identity.KeyPurposeSigning]
 	rfsv := readyForSignaturesValidator(self.ID[:], idKeys.PrivateKey, idKeys.PublicKey)
 
 	// fail getCoreDoc
 	model := mockModel{}
 	model.On("PackCoreDocument").Return(nil, errors.New("err")).Once()
-	err = rfsv.Validate(nil, model)
+	err := rfsv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
 
@@ -539,9 +537,7 @@ func TestPostAnchoredValidator(t *testing.T) {
 }
 
 func TestPreSignatureRequestValidator(t *testing.T) {
-	ctxh, err := contextutil.NewCentrifugeContext(context.Background(), cfg)
-	assert.Nil(t, err)
-	self, _ := contextutil.Self(ctxh)
+	self, _ := contextutil.Self(testingconfig.CreateTenantContext(t, cfg))
 	idKeys := self.Keys[identity.KeyPurposeSigning]
 	psv := PreSignatureRequestValidator(self.ID[:], idKeys.PrivateKey, idKeys.PublicKey)
 	assert.Len(t, psv, 3)

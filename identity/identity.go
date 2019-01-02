@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/centrifuge/go-centrifuge/config"
-
 	"github.com/centrifuge/go-centrifuge/crypto"
 
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -79,7 +77,6 @@ type Config interface {
 	GetSigningKeyPair() (pub, priv string)
 	GetEthAuthKeyPair() (pub, priv string)
 	GetEthereumContextWaitTimeout() time.Duration
-	GetContractAddress(contractName config.ContractName) common.Address
 }
 
 // Identity defines an Identity on chain
