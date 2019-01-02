@@ -92,7 +92,7 @@ func getNodeConfig(e *httpexpect.Expect, httpStatus int) *httpexpect.Object {
 }
 
 func getTenantConfig(e *httpexpect.Expect, httpStatus int, identifier string) *httpexpect.Object {
-	resp := e.GET("/config/tenant/"+identifier).
+	resp := e.GET("/config/tenants/"+identifier).
 		WithHeader("accept", "application/json").
 		WithHeader("Content-Type", "application/json").
 		Expect().Status(httpStatus)
@@ -100,7 +100,7 @@ func getTenantConfig(e *httpexpect.Expect, httpStatus int, identifier string) *h
 }
 
 func getAllTenantConfigs(e *httpexpect.Expect, httpStatus int) *httpexpect.Object {
-	resp := e.GET("/config/tenant").
+	resp := e.GET("/config/tenants").
 		WithHeader("accept", "application/json").
 		WithHeader("Content-Type", "application/json").
 		Expect().Status(httpStatus)
