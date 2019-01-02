@@ -16,6 +16,8 @@ func TestHost_Happy(t *testing.T) {
 
 	// alice shares a document with bob and charlie
 	res := createDocument(alice.httpExpect, typeInvoice, http.StatusOK, defaultInvoicePayload([]string{bob.id.String(), charlie.id.String()}))
+	txID := getTransactionID(t, res)
+	waitTillSuccess(t, alice.httpExpect, txID)
 
 	docIdentifier := getDocumentIdentifier(t, res)
 

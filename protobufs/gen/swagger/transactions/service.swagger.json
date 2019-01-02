@@ -15,7 +15,7 @@
     "application/json"
   ],
   "paths": {
-    "/transaction/{transaction_id}": {
+    "/transactions/{transaction_id}": {
       "get": {
         "description": "Get Transaction Status",
         "operationId": "GetTransactionStatus",

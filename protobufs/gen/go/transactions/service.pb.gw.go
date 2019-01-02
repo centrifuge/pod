@@ -126,7 +126,7 @@ func RegisterTransactionServiceHandlerClient(ctx context.Context, mux *runtime.S
 }
 
 var (
-	pattern_TransactionService_GetTransactionStatus_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"transaction", "transaction_id"}, ""))
+	pattern_TransactionService_GetTransactionStatus_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"transactions", "transaction_id"}, ""))
 )
 
 var (

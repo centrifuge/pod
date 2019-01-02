@@ -37,6 +37,8 @@ func addExternalCollaborator(t *testing.T, documentType string) {
 
 	// Alice shares document with Bob first
 	res := createDocument(alice.httpExpect, documentType, http.StatusOK, defaultDocumentPayload(documentType, []string{bob.id.String()}))
+	txID := getTransactionID(t, res)
+	waitTillSuccess(t, alice.httpExpect, txID)
 
 	docIdentifier := getDocumentIdentifier(t, res)
 	if docIdentifier == "" {
@@ -52,6 +54,8 @@ func addExternalCollaborator(t *testing.T, documentType string) {
 
 	// Bob updates invoice and shares with Charlie as well
 	res = updateDocument(bob.httpExpect, documentType, http.StatusOK, docIdentifier, updatedDocumentPayload(documentType, []string{alice.id.String(), charlie.id.String()}))
+	txID := getTransactionID(t, res)
+	waitTillSuccess(t, bob.httpExpect, txID)
 
 	docIdentifier = getDocumentIdentifier(t, res)
 	if docIdentifier == "" {
@@ -80,6 +84,8 @@ func collaboratorTimeOut(t *testing.T, documentType string) {
 
 	// Kenny shares a document with Bob
 	response := createDocument(kenny.httpExpect, documentType, http.StatusOK, defaultInvoicePayload([]string{bob.id.String()}))
+	txID := getTransactionID(t, response)
+	waitTillSuccess(t, kenny.httpExpect, txID)
 
 	// check if Bob and Kenny received the document
 	docIdentifier := getDocumentIdentifier(t, response)
@@ -98,6 +104,8 @@ func collaboratorTimeOut(t *testing.T, documentType string) {
 
 	// Bob will anchor the document without Alice signature but will receive an error because kenny is dead
 	response = updateDocument(bob.httpExpect, documentType, http.StatusInternalServerError, docIdentifier, updatedPayload)
+	txID := getTransactionID(t, response)
+	waitTillSuccess(t, bob.httpExpect, txID)
 
 	// check if bob saved the updated document
 	paramsV2 := map[string]interface{}{
