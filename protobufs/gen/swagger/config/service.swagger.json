@@ -97,7 +97,7 @@
         ]
       }
     },
-    "/config/tenant": {
+    "/config/tenants": {
       "get": {
         "description": "Get All Tenant Configs",
         "operationId": "GetAllTenants",
@@ -139,7 +139,7 @@
         ]
       }
     },
-    "/config/tenant/{identifier}": {
+    "/config/tenants/{identifier}": {
       "get": {
         "description": "Get Tenant Config",
         "operationId": "GetTenant",
