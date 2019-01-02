@@ -132,7 +132,7 @@ type Service interface {
 	ValidateKey(centID CentID, key []byte, purpose int) error
 
 	// AddKeyFromConfig adds a key previously generated and indexed in the configuration file to the identity specified in such config file
-	AddKeyFromConfig(purpose int) error
+	AddKeyFromConfig(config Config, purpose int) error
 
 	// ValidateSignature validates a signature on a message based on identity data
 	ValidateSignature(signature *coredocumentpb.Signature, message []byte) error

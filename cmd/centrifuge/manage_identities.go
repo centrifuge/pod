@@ -3,6 +3,9 @@ package main
 import (
 	"io/ioutil"
 
+	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/config"
+
 	"github.com/centrifuge/go-centrifuge/identity/ethid"
 
 	"github.com/centrifuge/go-centrifuge/cmd"
@@ -73,8 +76,9 @@ var addKeyCmd = &cobra.Command{
 			panic("Option not supported")
 		}
 
+		cfg := ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 		idService := ctx[ethid.BootstrappedIDService].(identity.Service)
-		err := idService.AddKeyFromConfig(purposeInt)
+		err := idService.AddKeyFromConfig(cfg, purposeInt)
 		if err != nil {
 			panic(err)
 		}

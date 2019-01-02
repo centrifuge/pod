@@ -523,8 +523,8 @@ func (ids *ethereumIdentityService) ValidateKey(centID identity.CentID, key []by
 }
 
 // AddKeyFromConfig adds a key previously generated and indexed in the configuration file to the identity specified in such config file
-func (ids *ethereumIdentityService) AddKeyFromConfig(purpose int) error {
-	identityConfig, err := identity.GetIdentityConfig(ids.config)
+func (ids *ethereumIdentityService) AddKeyFromConfig(config identity.Config, purpose int) error {
+	identityConfig, err := identity.GetIdentityConfig(config)
 	if err != nil {
 		return err
 	}
@@ -534,7 +534,7 @@ func (ids *ethereumIdentityService) AddKeyFromConfig(purpose int) error {
 		return err
 	}
 
-	ctx, cancel := ethereum.DefaultWaitForTransactionMiningContext(ids.config.GetEthereumContextWaitTimeout())
+	ctx, cancel := ethereum.DefaultWaitForTransactionMiningContext(config.GetEthereumContextWaitTimeout())
 	defer cancel()
 	confirmations, err := id.AddKeyToIdentity(ctx, purpose, identityConfig.Keys[purpose].PublicKey)
 	if err != nil {

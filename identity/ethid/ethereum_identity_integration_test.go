@@ -82,8 +82,8 @@ func TestAddKeyFromConfig(t *testing.T) {
 	centrifugeId, _ := identity.ToCentID(utils.RandomSlice(identity.CentIDLength))
 	defaultCentrifugeId := cfg.GetString("identityId")
 	cfg.Set("identityId", centrifugeId.String())
-	cfg.Set("keys.ethauth.publicKey", "../build/resources/ethauth.pub.pem")
-	cfg.Set("keys.ethauth.privateKey", "../build/resources/ethauth.key.pem")
+	cfg.Set("keys.ethauth.publicKey", "../../build/resources/ethauth.pub.pem")
+	cfg.Set("keys.ethauth.privateKey", "../../build/resources/ethauth.key.pem")
 	_, confirmations, err := identityService.CreateIdentity(centrifugeId)
 	assert.Nil(t, err, "should not error out when creating identity")
 
@@ -91,7 +91,7 @@ func TestAddKeyFromConfig(t *testing.T) {
 	assert.Nil(t, watchRegisteredIdentity.Error, "No error thrown by context")
 	assert.Equal(t, centrifugeId, watchRegisteredIdentity.Identity.CentID(), "Resulting Identity should have the same ID as the input")
 
-	err = identityService.AddKeyFromConfig(identity.KeyPurposeEthMsgAuth)
+	err = identityService.AddKeyFromConfig(cfg, identity.KeyPurposeEthMsgAuth)
 	assert.Nil(t, err, "should not error out")
 
 	cfg.Set("identityId", defaultCentrifugeId)
@@ -101,10 +101,10 @@ func TestAddKeyFromConfig_IdentityDoesNotExist(t *testing.T) {
 	centrifugeId, _ := identity.ToCentID(utils.RandomSlice(identity.CentIDLength))
 	defaultCentrifugeId := cfg.GetString("identityId")
 	cfg.Set("identityId", centrifugeId.String())
-	cfg.Set("keys.ethauth.publicKey", "../build/resources/ethauth.pub.pem")
-	cfg.Set("keys.ethauth.privateKey", "../build/resources/ethauth.key.pem")
+	cfg.Set("keys.ethauth.publicKey", "../../build/resources/ethauth.pub.pem")
+	cfg.Set("keys.ethauth.privateKey", "../../build/resources/ethauth.key.pem")
 
-	err := identityService.AddKeyFromConfig(identity.KeyPurposeEthMsgAuth)
+	err := identityService.AddKeyFromConfig(cfg, identity.KeyPurposeEthMsgAuth)
 	assert.NotNil(t, err, "should error out")
 
 	cfg.Set("identityId", defaultCentrifugeId)
