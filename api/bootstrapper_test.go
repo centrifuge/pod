@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/node"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/stretchr/testify/assert"
@@ -22,7 +21,6 @@ func TestBootstrapper_Bootstrap(t *testing.T) {
 
 	// config
 	m[bootstrap.BootstrappedConfig] = new(testingconfig.MockConfig)
-	m[documents.BootstrappedRegistry] = documents.NewServiceRegistry()
 	err = b.Bootstrap(m)
 	assert.Nil(t, err)
 	assert.NotNil(t, m[bootstrap.BootstrappedAPIServer])

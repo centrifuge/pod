@@ -2,7 +2,6 @@ package api
 
 import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 )
 
@@ -14,12 +13,6 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	cfg, ok := ctx[bootstrap.BootstrappedConfig].(Config)
 	if !ok {
 		return errors.New("config not initialised")
-	}
-
-	// just check to make sure that registry is initialised
-	_, ok = ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
-	if !ok {
-		return errors.New("service registry not initialised")
 	}
 
 	srv := apiServer{config: cfg}

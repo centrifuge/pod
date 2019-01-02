@@ -28,18 +28,35 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return ErrDocumentBootstrap
 	}
 	ctx[BootstrappedDocumentRepository] = NewDBRepository(ldb)
+	return nil
+}
 
+type PostBootstrapper struct{}
+
+func (PostBootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	queueSrv, ok := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
 	if !ok {
 		return errors.New("queue not initialised")
 	}
 
-	// todo(ved): add core document processor here
+	coreDocProc, ok := ctx[bootstrap.BootstrappedCoreDocProc].(anchorProcessor)
+	if !ok {
+		return errors.New("coredoc processor not initialised")
+	}
+
+	repo, ok := ctx[BootstrappedDocumentRepository].(Repository)
+	if !ok {
+		return errors.New("document repository not initialised")
+	}
+
 	task := &documentAnchorTask{
 		BaseTask: transactions.BaseTask{
 			TxRepository: ctx[transactions.BootstrappedRepo].(transactions.Repository),
 		},
-		config: ctx[bootstrap.BootstrappedConfig].(config.Configuration),
+		config:        ctx[bootstrap.BootstrappedConfig].(config.Configuration),
+		processor:     coreDocProc,
+		modelGetFunc:  repo.Get,
+		modelSaveFunc: repo.Update,
 	}
 	queueSrv.RegisterTaskType(documentAnchorTaskName, task)
 	return nil

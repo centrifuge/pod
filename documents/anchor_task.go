@@ -26,8 +26,10 @@ var log = logging.Logger("anchor_task")
 type documentAnchorTask struct {
 	transactions.BaseTask
 
-	id            []byte
-	tenantID      common.Address
+	id       []byte
+	tenantID common.Address
+
+	// state
 	config        config.Configuration
 	processor     anchorProcessor
 	modelGetFunc  func(tenantID, id []byte) (Model, error)

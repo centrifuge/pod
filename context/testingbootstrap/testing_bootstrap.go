@@ -7,6 +7,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/context/testlogging"
+	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
@@ -36,6 +37,8 @@ var bootstappers = []bootstrap.TestBootstrapper{
 	p2p.Bootstrapper{},
 	&invoice.Bootstrapper{},
 	&purchaseorder.Bootstrapper{},
+	coredocument.Bootstrapper{},
+	documents.PostBootstrapper{},
 	&nft.Bootstrapper{},
 	&queue.Starter{},
 }
