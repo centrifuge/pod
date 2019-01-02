@@ -3,6 +3,8 @@ package invoice
 import (
 	"fmt"
 
+	"github.com/centrifuge/go-centrifuge/contextutil"
+
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/code"
@@ -12,8 +14,6 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	logging "github.com/ipfs/go-log"
 	"golang.org/x/net/context"
-
-	"github.com/centrifuge/go-centrifuge/header"
 )
 
 var apiLog = logging.Logger("invoice-api")
@@ -22,7 +22,8 @@ var apiLog = logging.Logger("invoice-api")
 // anchoring, sending, finding stored invoice document
 type grpcHandler struct {
 	service Service
-	config  config.Configuration
+	// TODO [multi-tenancy] replace this with config service
+	config config.Configuration
 }
 
 // GRPCHandler returns an implementation of invoice.DocumentServiceServer
@@ -41,13 +42,13 @@ func GRPCHandler(config config.Configuration, registry *documents.ServiceRegistr
 // Create handles the creation of the invoices and anchoring the documents on chain
 func (h *grpcHandler) Create(ctx context.Context, req *clientinvoicepb.InvoiceCreatePayload) (*clientinvoicepb.InvoiceResponse, error) {
 	apiLog.Debugf("Create request %v", req)
-	ctxHeader, err := header.NewContextHeader(ctx, h.config)
+	ctxHeader, err := contextutil.NewCentrifugeContext(ctx, h.config)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
 	}
 
-	doc, err := h.service.DeriveFromCreatePayload(req, ctxHeader)
+	doc, err := h.service.DeriveFromCreatePayload(ctxHeader, req)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "could not derive create payload")
@@ -73,13 +74,13 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientinvoicepb.InvoiceCr
 // Update handles the document update and anchoring
 func (h *grpcHandler) Update(ctx context.Context, payload *clientinvoicepb.InvoiceUpdatePayload) (*clientinvoicepb.InvoiceResponse, error) {
 	apiLog.Debugf("Update request %v", payload)
-	ctxHeader, err := header.NewContextHeader(ctx, h.config)
+	ctxHeader, err := contextutil.NewCentrifugeContext(ctx, h.config)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
 	}
 
-	doc, err := h.service.DeriveFromUpdatePayload(payload, ctxHeader)
+	doc, err := h.service.DeriveFromUpdatePayload(ctxHeader, payload)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "could not derive update payload")

@@ -2,6 +2,7 @@ package invoice
 
 import (
 	"bytes"
+	"context"
 	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -10,15 +11,15 @@ import (
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/common"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/coredocument"
+	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/notification"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/queue"
-	"github.com/centrifuge/go-centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -34,16 +35,16 @@ type Service interface {
 	documents.Service
 
 	// DeriverFromPayload derives Invoice from clientPayload
-	DeriveFromCreatePayload(*clientinvoicepb.InvoiceCreatePayload, *header.ContextHeader) (documents.Model, error)
+	DeriveFromCreatePayload(ctx context.Context, payload *clientinvoicepb.InvoiceCreatePayload) (documents.Model, error)
 
 	// DeriveFromUpdatePayload derives invoice model from update payload
-	DeriveFromUpdatePayload(*clientinvoicepb.InvoiceUpdatePayload, *header.ContextHeader) (documents.Model, error)
+	DeriveFromUpdatePayload(ctx context.Context, payload *clientinvoicepb.InvoiceUpdatePayload) (documents.Model, error)
 
 	// Create validates and persists invoice Model and returns a Updated model
-	Create(ctx *header.ContextHeader, inv documents.Model) (documents.Model, uuid.UUID, error)
+	Create(ctx context.Context, inv documents.Model) (documents.Model, uuid.UUID, error)
 
 	// Update validates and updates the invoice model and return the updated model
-	Update(ctx *header.ContextHeader, inv documents.Model) (documents.Model, uuid.UUID, error)
+	Update(ctx context.Context, inv documents.Model) (documents.Model, uuid.UUID, error)
 
 	// DeriveInvoiceData returns the invoice data as client data
 	DeriveInvoiceData(inv documents.Model) (*clientinvoicepb.InvoiceData, error)
@@ -55,6 +56,7 @@ type Service interface {
 // service implements Service and handles all invoice related persistence and validations
 // service always returns errors of type `errors.Error` or `errors.TypedError`
 type service struct {
+	// TODO [multi-tenancy] replace this with config service
 	config           documents.Config
 	repo             documents.Repository
 	notifier         notification.Sender
@@ -135,13 +137,18 @@ func (s service) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (docume
 }
 
 // UnpackFromCreatePayload initializes the model with parameters provided from the rest-api call
-func (s service) DeriveFromCreatePayload(payload *clientinvoicepb.InvoiceCreatePayload, contextHeader *header.ContextHeader) (documents.Model, error) {
+func (s service) DeriveFromCreatePayload(ctx context.Context, payload *clientinvoicepb.InvoiceCreatePayload) (documents.Model, error) {
 	if payload == nil || payload.Data == nil {
 		return nil, documents.ErrDocumentNil
 	}
 
+	id, err := contextutil.Self(ctx)
+	if err != nil {
+		return nil, documents.ErrDocumentConfigTenantID
+	}
+
 	invoiceModel := new(Invoice)
-	err := invoiceModel.InitInvoiceInput(payload, contextHeader)
+	err = invoiceModel.InitInvoiceInput(payload, id.ID.String())
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
@@ -184,7 +191,7 @@ func (s service) calculateDataRoot(old, new documents.Model, validator documents
 }
 
 // Create takes and invoice model and does required validation checks, tries to persist to DB
-func (s service) Create(ctx *header.ContextHeader, inv documents.Model) (documents.Model, uuid.UUID, error) {
+func (s service) Create(ctx context.Context, inv documents.Model) (documents.Model, uuid.UUID, error) {
 	inv, err := s.calculateDataRoot(nil, inv, CreateValidator())
 	if err != nil {
 		return nil, uuid.Nil, err
@@ -200,6 +207,9 @@ func (s service) Create(ctx *header.ContextHeader, inv documents.Model) (documen
 		s.txRepository,
 		common.DummyIdentity,
 		cd.CurrentVersion)
+	if err != nil {
+		return nil, uuid.Nil, err
+	}
 
 	return inv, txID, nil
 }
@@ -215,7 +225,7 @@ func (s service) updater(id []byte, model documents.Model) error {
 }
 
 // Update finds the old document, validates the new version and persists the updated document
-func (s service) Update(ctx *header.ContextHeader, inv documents.Model) (documents.Model, uuid.UUID, error) {
+func (s service) Update(ctx context.Context, inv documents.Model) (documents.Model, uuid.UUID, error) {
 	cd, err := inv.PackCoreDocument()
 	if err != nil {
 		return nil, uuid.Nil, errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
@@ -236,6 +246,9 @@ func (s service) Update(ctx *header.ContextHeader, inv documents.Model) (documen
 		s.txRepository,
 		common.DummyIdentity,
 		cd.CurrentVersion)
+	if err != nil {
+		return nil, uuid.Nil, err
+	}
 
 	return inv, txID, nil
 }
@@ -335,7 +348,7 @@ func (s service) DeriveInvoiceData(doc documents.Model) (*clientinvoicepb.Invoic
 }
 
 // DeriveFromUpdatePayload returns a new version of the old invoice identified by identifier in payload
-func (s service) DeriveFromUpdatePayload(payload *clientinvoicepb.InvoiceUpdatePayload, contextHeader *header.ContextHeader) (documents.Model, error) {
+func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *clientinvoicepb.InvoiceUpdatePayload) (documents.Model, error) {
 	if payload == nil || payload.Data == nil {
 		return nil, documents.ErrDocumentNil
 	}
@@ -364,7 +377,12 @@ func (s service) DeriveFromUpdatePayload(payload *clientinvoicepb.InvoiceUpdateP
 		return nil, errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
 	}
 
-	collaborators := append([]string{contextHeader.Self().ID.String()}, payload.Collaborators...)
+	idConf, err := contextutil.Self(ctx)
+	if err != nil {
+		return nil, documents.ErrDocumentConfigTenantID
+	}
+
+	collaborators := append([]string{idConf.ID.String()}, payload.Collaborators...)
 	inv.CoreDocument, err = coredocument.PrepareNewVersion(*oldCD, collaborators)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentPrepareCoreDocument, err)
@@ -374,7 +392,7 @@ func (s service) DeriveFromUpdatePayload(payload *clientinvoicepb.InvoiceUpdateP
 }
 
 // RequestDocumentSignature Validates, Signs document received over the p2p layer and returns Signature
-func (s service) RequestDocumentSignature(contextHeader *header.ContextHeader, model documents.Model) (*coredocumentpb.Signature, error) {
+func (s service) RequestDocumentSignature(ctx context.Context, model documents.Model) (*coredocumentpb.Signature, error) {
 	if err := coredocument.SignatureRequestValidator(s.identityService).Validate(nil, model); err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
@@ -386,11 +404,16 @@ func (s service) RequestDocumentSignature(contextHeader *header.ContextHeader, m
 
 	srvLog.Infof("coredoc received %x with signing root %x", doc.DocumentIdentifier, doc.SigningRoot)
 
-	idKeys, ok := contextHeader.Self().Keys[identity.KeyPurposeSigning]
+	idConf, err := contextutil.Self(ctx)
+	if err != nil {
+		return nil, documents.ErrDocumentConfigTenantID
+	}
+
+	idKeys, ok := idConf.Keys[identity.KeyPurposeSigning]
 	if !ok {
 		return nil, errors.NewTypedError(documents.ErrDocumentSigning, errors.New("missing signing key"))
 	}
-	sig := signatures.Sign(contextHeader.Self().ID[:], idKeys.PrivateKey, idKeys.PublicKey, doc.SigningRoot)
+	sig := crypto.Sign(idConf.ID[:], idKeys.PrivateKey, idKeys.PublicKey, doc.SigningRoot)
 	doc.Signatures = append(doc.Signatures, sig)
 	err = model.UnpackCoreDocument(doc)
 	if err != nil {

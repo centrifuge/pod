@@ -6,12 +6,11 @@ import (
 	"os"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/context/testlogging"
-	"github.com/centrifuge/go-centrifuge/transactions"
-
 	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/storage"
+	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/stretchr/testify/assert"
 )
 

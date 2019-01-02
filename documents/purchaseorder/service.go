@@ -2,6 +2,7 @@ package purchaseorder
 
 import (
 	"bytes"
+	"context"
 	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -10,15 +11,15 @@ import (
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/common"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/coredocument"
+	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/notification"
 	clientpopb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/queue"
-	"github.com/centrifuge/go-centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -34,16 +35,16 @@ type Service interface {
 	documents.Service
 
 	// DeriverFromPayload derives purchase order from clientPayload
-	DeriveFromCreatePayload(payload *clientpopb.PurchaseOrderCreatePayload, hdr *header.ContextHeader) (documents.Model, error)
+	DeriveFromCreatePayload(ctx context.Context, payload *clientpopb.PurchaseOrderCreatePayload) (documents.Model, error)
 
 	// DeriveFromUpdatePayload derives purchase order from update payload
-	DeriveFromUpdatePayload(payload *clientpopb.PurchaseOrderUpdatePayload, hdr *header.ContextHeader) (documents.Model, error)
+	DeriveFromUpdatePayload(ctx context.Context, payload *clientpopb.PurchaseOrderUpdatePayload) (documents.Model, error)
 
 	// Create validates and persists purchase order and returns a Updated model
-	Create(ctx *header.ContextHeader, po documents.Model) (documents.Model, uuid.UUID, error)
+	Create(ctx context.Context, po documents.Model) (documents.Model, uuid.UUID, error)
 
 	// Update validates and updates the purchase order and return the updated model
-	Update(ctx *header.ContextHeader, po documents.Model) (documents.Model, uuid.UUID, error)
+	Update(ctx context.Context, po documents.Model) (documents.Model, uuid.UUID, error)
 
 	// DerivePurchaseOrderData returns the purchase order data as client data
 	DerivePurchaseOrderData(po documents.Model) (*clientpopb.PurchaseOrderData, error)
@@ -55,6 +56,7 @@ type Service interface {
 // service implements Service and handles all purchase order related persistence and validations
 // service always returns errors of type `errors.Error` or `errors.TypedError`
 type service struct {
+	// TODO [multi-tenancy] replace this with config service
 	config           documents.Config
 	repo             documents.Repository
 	notifier         notification.Sender
@@ -129,7 +131,7 @@ func (s service) calculateDataRoot(old, new documents.Model, validator documents
 }
 
 // Create validates, persists, and anchors a purchase order
-func (s service) Create(ctx *header.ContextHeader, po documents.Model) (documents.Model, uuid.UUID, error) {
+func (s service) Create(ctx context.Context, po documents.Model) (documents.Model, uuid.UUID, error) {
 	po, err := s.calculateDataRoot(nil, po, CreateValidator())
 	if err != nil {
 		return nil, uuid.Nil, err
@@ -159,7 +161,7 @@ func (s service) updater(id []byte, model documents.Model) error {
 }
 
 // Update validates, persists, and anchors a new version of purchase order
-func (s service) Update(ctx *header.ContextHeader, po documents.Model) (documents.Model, uuid.UUID, error) {
+func (s service) Update(ctx context.Context, po documents.Model) (documents.Model, uuid.UUID, error) {
 	cd, err := po.PackCoreDocument()
 	if err != nil {
 		return nil, uuid.Nil, errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
@@ -184,13 +186,18 @@ func (s service) Update(ctx *header.ContextHeader, po documents.Model) (document
 }
 
 // DeriveFromCreatePayload derives purchase order from create payload
-func (s service) DeriveFromCreatePayload(payload *clientpopb.PurchaseOrderCreatePayload, ctxH *header.ContextHeader) (documents.Model, error) {
+func (s service) DeriveFromCreatePayload(ctx context.Context, payload *clientpopb.PurchaseOrderCreatePayload) (documents.Model, error) {
 	if payload == nil || payload.Data == nil {
 		return nil, documents.ErrDocumentNil
 	}
 
+	idConf, err := contextutil.Self(ctx)
+	if err != nil {
+		return nil, documents.ErrDocumentConfigTenantID
+	}
+
 	po := new(PurchaseOrder)
-	err := po.InitPurchaseOrderInput(payload, ctxH)
+	err = po.InitPurchaseOrderInput(payload, idConf.ID.String())
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
@@ -199,7 +206,7 @@ func (s service) DeriveFromCreatePayload(payload *clientpopb.PurchaseOrderCreate
 }
 
 // DeriveFromUpdatePayload derives purchase order from update payload
-func (s service) DeriveFromUpdatePayload(payload *clientpopb.PurchaseOrderUpdatePayload, ctxH *header.ContextHeader) (documents.Model, error) {
+func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *clientpopb.PurchaseOrderUpdatePayload) (documents.Model, error) {
 	if payload == nil || payload.Data == nil {
 		return nil, documents.ErrDocumentNil
 	}
@@ -228,7 +235,12 @@ func (s service) DeriveFromUpdatePayload(payload *clientpopb.PurchaseOrderUpdate
 		return nil, errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
 	}
 
-	collaborators := append([]string{ctxH.Self().ID.String()}, payload.Collaborators...)
+	idConf, err := contextutil.Self(ctx)
+	if err != nil {
+		return nil, documents.ErrDocumentConfigTenantID
+	}
+
+	collaborators := append([]string{idConf.ID.String()}, payload.Collaborators...)
 	po.CoreDocument, err = coredocument.PrepareNewVersion(*oldCD, collaborators)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentPrepareCoreDocument, err)
@@ -372,7 +384,7 @@ func (s service) CreateProofsForVersion(documentID, version []byte, fields []str
 // RequestDocumentSignature validates the document and returns the signature
 // Note: this is document agnostic. But since we do not have a common implementation, adding it here.
 // will remove this once we have a common implementation for documents.Service
-func (s service) RequestDocumentSignature(contextHeader *header.ContextHeader, model documents.Model) (*coredocumentpb.Signature, error) {
+func (s service) RequestDocumentSignature(ctx context.Context, model documents.Model) (*coredocumentpb.Signature, error) {
 	if err := coredocument.SignatureRequestValidator(s.identityService).Validate(nil, model); err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
@@ -384,11 +396,16 @@ func (s service) RequestDocumentSignature(contextHeader *header.ContextHeader, m
 
 	srvLog.Infof("coredoc received %x with signing root %x", cd.DocumentIdentifier, cd.SigningRoot)
 
-	idKeys, ok := contextHeader.Self().Keys[identity.KeyPurposeSigning]
+	idConf, err := contextutil.Self(ctx)
+	if err != nil {
+		return nil, documents.ErrDocumentConfigTenantID
+	}
+
+	idKeys, ok := idConf.Keys[identity.KeyPurposeSigning]
 	if !ok {
 		return nil, errors.NewTypedError(documents.ErrDocumentSigning, errors.New("missing signing key"))
 	}
-	sig := signatures.Sign(contextHeader.Self().ID[:], idKeys.PrivateKey, idKeys.PublicKey, cd.SigningRoot)
+	sig := crypto.Sign(idConf.ID[:], idKeys.PrivateKey, idKeys.PublicKey, cd.SigningRoot)
 	cd.Signatures = append(cd.Signatures, sig)
 	err = model.UnpackCoreDocument(cd)
 	if err != nil {

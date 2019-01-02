@@ -97,7 +97,22 @@
         ]
       }
     },
-    "/config/tenant": {
+    "/config/tenants": {
+      "get": {
+        "description": "Get All Tenant Configs",
+        "operationId": "GetAllTenants",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/configGetAllTenantResponse"
+            }
+          }
+        },
+        "tags": [
+          "ConfigService"
+        ]
+      },
       "post": {
         "description": "Creates tenant config data",
         "operationId": "CreateTenant",
@@ -124,24 +139,7 @@
         ]
       }
     },
-    "/config/tenant/list": {
-      "get": {
-        "description": "Get All Tenant Configs",
-        "operationId": "GetAllTenants",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/configGetAllTenantResponse"
-            }
-          }
-        },
-        "tags": [
-          "ConfigService"
-        ]
-      }
-    },
-    "/config/tenant/{identifier}": {
+    "/config/tenants/{identifier}": {
       "get": {
         "description": "Get Tenant Config",
         "operationId": "GetTenant",

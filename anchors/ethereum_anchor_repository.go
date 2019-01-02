@@ -29,6 +29,7 @@ type watchAnchorPreCommitted interface {
 }
 
 type ethereumAnchorRepository struct {
+	// TODO [multi-tenancy] replace this with config service
 	config                   Config
 	anchorRepositoryContract anchorRepositoryContract
 	gethClientFinder         func() ethereum.Client

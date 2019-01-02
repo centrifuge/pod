@@ -43,6 +43,7 @@ func NewWebhookSender(config Config) Sender {
 // NewWebhookSender implements Sender.
 // Sends notification through a webhook defined.
 type webhookSender struct {
+	// TODO [multi-tenancy] replace this with config service
 	config Config
 }
 

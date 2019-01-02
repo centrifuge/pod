@@ -49,6 +49,8 @@ type ethereumPaymentObligation struct {
 	registry        *documents.ServiceRegistry
 	identityService identity.Service
 	ethClient       ethereum.Client
+
+	// TODO [multi-tenancy] replace this with config service
 	config          Config
 	queue           taskQueuer
 	bindContract    func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error)

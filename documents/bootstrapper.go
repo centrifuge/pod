@@ -31,8 +31,10 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	return nil
 }
 
+// PostBootstrapper to run the post after all bootstrappers.
 type PostBootstrapper struct{}
 
+// Bootstrap register task to the queue.
 func (PostBootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	queueSrv, ok := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
 	if !ok {

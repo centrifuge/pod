@@ -9,10 +9,10 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/identity"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/queue"
@@ -111,12 +111,12 @@ func TestService_DeriveFromPayload(t *testing.T) {
 	assert.Error(t, err, "DeriveWithInvoiceInput should produce an error if invoiceInput equals nil")
 
 	// fail due to nil payload data
-	_, err = invSrv.DeriveFromCreatePayload(&clientinvoicepb.InvoiceCreatePayload{}, nil)
+	_, err = invSrv.DeriveFromCreatePayload(nil, &clientinvoicepb.InvoiceCreatePayload{})
 	assert.Error(t, err, "DeriveWithInvoiceInput should produce an error if invoiceInput equals nil")
 
-	contextHeader, err := header.NewContextHeader(context.Background(), cfg)
+	contextHeader, err := contextutil.NewCentrifugeContext(context.Background(), cfg)
 	assert.Nil(t, err)
-	model, err = invSrv.DeriveFromCreatePayload(payload, contextHeader)
+	model, err = invSrv.DeriveFromCreatePayload(contextHeader, payload)
 	assert.Nil(t, err, "valid invoiceData shouldn't produce an error")
 
 	receivedCoreDocument, err := model.PackCoreDocument()
@@ -220,7 +220,7 @@ func TestService_Exists(t *testing.T) {
 }
 
 func TestService_Create(t *testing.T) {
-	ctxh, err := header.NewContextHeader(context.Background(), cfg)
+	ctxh, err := contextutil.NewCentrifugeContext(context.Background(), cfg)
 	assert.Nil(t, err)
 	_, srv := getServiceWithMockedLayers()
 	invSrv := srv.(service)
@@ -232,7 +232,7 @@ func TestService_Create(t *testing.T) {
 	assert.Contains(t, err.Error(), "unknown document type")
 
 	// anchor success
-	po, err := invSrv.DeriveFromCreatePayload(testingdocuments.CreateInvoicePayload(), ctxh)
+	po, err := invSrv.DeriveFromCreatePayload(ctxh, testingdocuments.CreateInvoicePayload())
 	assert.Nil(t, err)
 	m, _, err = invSrv.Create(ctxh, po)
 	assert.Nil(t, err)
@@ -251,9 +251,9 @@ func TestService_DeriveInvoiceData(t *testing.T) {
 
 	// success
 	payload := testingdocuments.CreateInvoicePayload()
-	contextHeader, err := header.NewContextHeader(context.Background(), cfg)
+	contextHeader, err := contextutil.NewCentrifugeContext(context.Background(), cfg)
 	assert.Nil(t, err)
-	inv, err := invSrv.DeriveFromCreatePayload(payload, contextHeader)
+	inv, err := invSrv.DeriveFromCreatePayload(contextHeader, payload)
 	assert.Nil(t, err, "must be non nil")
 	data, err := invSrv.DeriveInvoiceData(inv)
 	assert.Nil(t, err, "Derive must succeed")
@@ -264,9 +264,9 @@ func TestService_DeriveInvoiceResponse(t *testing.T) {
 	// success
 	invSrv := service{repo: testRepo()}
 	payload := testingdocuments.CreateInvoicePayload()
-	contextHeader, err := header.NewContextHeader(context.Background(), cfg)
+	contextHeader, err := contextutil.NewCentrifugeContext(context.Background(), cfg)
 	assert.Nil(t, err)
-	inv1, err := invSrv.DeriveFromCreatePayload(payload, contextHeader)
+	inv1, err := invSrv.DeriveFromCreatePayload(contextHeader, payload)
 	assert.Nil(t, err, "must be non nil")
 	inv, ok := inv1.(*Invoice)
 	assert.True(t, ok)
@@ -371,7 +371,7 @@ func TestService_RequestDocumentSignature_SigningRootNil(t *testing.T) {
 	assert.Nil(t, err)
 	idService = mockSignatureCheck(i, idService, invSrv)
 	i.CoreDocument.SigningRoot = nil
-	ctxh, err := header.NewContextHeader(context.Background(), cfg)
+	ctxh, err := contextutil.NewCentrifugeContext(context.Background(), cfg)
 	signature, err := invSrv.RequestDocumentSignature(ctxh, i)
 	assert.NotNil(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
@@ -480,16 +480,16 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.Nil(t, doc)
 
 	// nil payload data
-	doc, err = invSrv.DeriveFromUpdatePayload(&clientinvoicepb.InvoiceUpdatePayload{}, nil)
+	doc, err = invSrv.DeriveFromUpdatePayload(nil, &clientinvoicepb.InvoiceUpdatePayload{})
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentNil, err))
 	assert.Nil(t, doc)
 
 	// messed up identifier
-	contextHeader, err := header.NewContextHeader(context.Background(), cfg)
+	contextHeader, err := contextutil.NewCentrifugeContext(context.Background(), cfg)
 	assert.Nil(t, err)
 	payload := &clientinvoicepb.InvoiceUpdatePayload{Identifier: "some identifier", Data: &clientinvoicepb.InvoiceData{}}
-	doc, err = invSrv.DeriveFromUpdatePayload(payload, contextHeader)
+	doc, err = invSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentIdentifier, err))
 	assert.Contains(t, err.Error(), "failed to decode identifier")
@@ -498,14 +498,15 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	// missing last version
 	id := utils.RandomSlice(32)
 	payload.Identifier = hexutil.Encode(id)
-	doc, err = invSrv.DeriveFromUpdatePayload(payload, contextHeader)
+	doc, err = invSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
 	assert.Nil(t, doc)
 
 	// failed to load from data
+	idC, _ := contextutil.Self(contextHeader)
 	old := new(Invoice)
-	err = old.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), contextHeader)
+	err = old.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), idC.ID.String())
 	assert.Nil(t, err)
 	old.CoreDocument.DocumentIdentifier = id
 	old.CoreDocument.CurrentVersion = id
@@ -520,7 +521,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 		ExtraData:   "some data",
 		Currency:    "EUR",
 	}
-	doc, err = invSrv.DeriveFromUpdatePayload(payload, contextHeader)
+	doc, err = invSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
 	assert.Nil(t, doc)
@@ -528,7 +529,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	// failed core document new version
 	payload.Data.ExtraData = hexutil.Encode(utils.RandomSlice(32))
 	payload.Collaborators = []string{"some wrong ID"}
-	doc, err = invSrv.DeriveFromUpdatePayload(payload, contextHeader)
+	doc, err = invSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentPrepareCoreDocument, err))
 	assert.Nil(t, doc)
@@ -536,7 +537,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	// success
 	wantCollab := utils.RandomSlice(6)
 	payload.Collaborators = []string{hexutil.Encode(wantCollab)}
-	doc, err = invSrv.DeriveFromUpdatePayload(payload, contextHeader)
+	doc, err = invSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Nil(t, err)
 	assert.NotNil(t, doc)
 	cd, err := doc.PackCoreDocument()
@@ -556,7 +557,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 func TestService_Update(t *testing.T) {
 	_, srv := getServiceWithMockedLayers()
 	invSrv := srv.(service)
-	ctxh, err := header.NewContextHeader(context.Background(), cfg)
+	ctxh, err := contextutil.NewCentrifugeContext(context.Background(), cfg)
 	assert.Nil(t, err)
 
 	// pack failed
@@ -578,7 +579,7 @@ func TestService_Update(t *testing.T) {
 
 	payload := testingdocuments.CreateInvoicePayload()
 	payload.Collaborators = []string{"0x010203040506"}
-	inv, err := invSrv.DeriveFromCreatePayload(payload, ctxh)
+	inv, err := invSrv.DeriveFromCreatePayload(ctxh, payload)
 	assert.Nil(t, err)
 	cd, err = inv.PackCoreDocument()
 	assert.Nil(t, err)
@@ -600,11 +601,11 @@ func TestService_Update(t *testing.T) {
 	data.GrossAmount = 100
 	data.ExtraData = hexutil.Encode(utils.RandomSlice(32))
 	collab := hexutil.Encode(utils.RandomSlice(6))
-	newInv, err := invSrv.DeriveFromUpdatePayload(&clientinvoicepb.InvoiceUpdatePayload{
+	newInv, err := invSrv.DeriveFromUpdatePayload(ctxh, &clientinvoicepb.InvoiceUpdatePayload{
 		Identifier:    hexutil.Encode(cd.DocumentIdentifier),
 		Collaborators: []string{collab},
 		Data:          data,
-	}, ctxh)
+	})
 	assert.Nil(t, err)
 	newData, err := invSrv.DeriveInvoiceData(newInv)
 	assert.Nil(t, err)
@@ -626,7 +627,7 @@ func TestService_Update(t *testing.T) {
 func TestService_calculateDataRoot(t *testing.T) {
 	_, srv := getServiceWithMockedLayers()
 	invSrv := srv.(service)
-	ctxh, err := header.NewContextHeader(context.Background(), cfg)
+	ctxh, err := contextutil.NewCentrifugeContext(context.Background(), cfg)
 	assert.Nil(t, err)
 
 	// type mismatch
@@ -636,7 +637,7 @@ func TestService_calculateDataRoot(t *testing.T) {
 	assert.Contains(t, err.Error(), "unknown document type")
 
 	// failed validator
-	inv, err = invSrv.DeriveFromCreatePayload(testingdocuments.CreateInvoicePayload(), ctxh)
+	inv, err = invSrv.DeriveFromCreatePayload(ctxh, testingdocuments.CreateInvoicePayload())
 	assert.Nil(t, err)
 	assert.Nil(t, inv.(*Invoice).CoreDocument.DataRoot)
 	v := documents.ValidatorFunc(func(_, _ documents.Model) error {
@@ -648,7 +649,7 @@ func TestService_calculateDataRoot(t *testing.T) {
 	assert.Contains(t, err.Error(), "validations fail")
 
 	// create failed
-	inv, err = invSrv.DeriveFromCreatePayload(testingdocuments.CreateInvoicePayload(), ctxh)
+	inv, err = invSrv.DeriveFromCreatePayload(ctxh, testingdocuments.CreateInvoicePayload())
 	assert.Nil(t, err)
 	assert.Nil(t, inv.(*Invoice).CoreDocument.DataRoot)
 	err = invSrv.repo.Create(centIDBytes, inv.(*Invoice).CoreDocument.CurrentVersion, inv)
@@ -659,7 +660,7 @@ func TestService_calculateDataRoot(t *testing.T) {
 	assert.Contains(t, err.Error(), "db repository could not create the given model, key already exists")
 
 	// success
-	inv, err = invSrv.DeriveFromCreatePayload(testingdocuments.CreateInvoicePayload(), ctxh)
+	inv, err = invSrv.DeriveFromCreatePayload(ctxh, testingdocuments.CreateInvoicePayload())
 	assert.Nil(t, err)
 	assert.Nil(t, inv.(*Invoice).CoreDocument.DataRoot)
 	inv, err = invSrv.calculateDataRoot(nil, inv, CreateValidator())

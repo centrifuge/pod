@@ -10,12 +10,12 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/common"
+	cc "github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testingbootstrap"
+	ccommon "github.com/centrifuge/go-centrifuge/common"
 	"github.com/centrifuge/go-centrifuge/config"
-	cc "github.com/centrifuge/go-centrifuge/context/testingbootstrap"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
-	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
@@ -54,23 +54,22 @@ func TestPaymentObligationService_mint(t *testing.T) {
 	// create invoice (anchor)
 	service, err := registry.LocateService(documenttypes.InvoiceDataTypeUrl)
 	assert.Nil(t, err, "should not error out when getting invoice service")
-	contextHeader, err := header.NewContextHeader(context.Background(), cfg)
+	contextHeader, err := contextutil.NewCentrifugeContext(context.Background(), cfg)
 	assert.Nil(t, err)
 	invoiceService := service.(invoice.Service)
 	dueDate := time.Now().Add(4 * 24 * time.Hour)
-	model, err := invoiceService.DeriveFromCreatePayload(
-		&invoicepb.InvoiceCreatePayload{
-			Collaborators: []string{},
-			Data: &invoicepb.InvoiceData{
-				InvoiceNumber: "2132131",
-				GrossAmount:   123,
-				NetAmount:     123,
-				Currency:      "EUR",
-				DueDate:       &timestamp.Timestamp{Seconds: dueDate.Unix()},
-			},
-		}, contextHeader)
+	model, err := invoiceService.DeriveFromCreatePayload(contextHeader, &invoicepb.InvoiceCreatePayload{
+		Collaborators: []string{},
+		Data: &invoicepb.InvoiceData{
+			InvoiceNumber: "2132131",
+			GrossAmount:   123,
+			NetAmount:     123,
+			Currency:      "EUR",
+			DueDate:       &timestamp.Timestamp{Seconds: dueDate.Unix()},
+		},
+	})
 	assert.Nil(t, err, "should not error out when creating invoice model")
-	modelUpdated, err := invoiceService.Create(contextHeader, model)
+	modelUpdated, _, err := invoiceService.Create(contextHeader, model)
 
 	// get ID
 	ID, err := modelUpdated.ID()
@@ -78,7 +77,7 @@ func TestPaymentObligationService_mint(t *testing.T) {
 	// call mint
 	// assert no error
 	resp, err := payOb.MintNFT(
-		common.DummyIdentity,
+		ccommon.DummyIdentity,
 		ID,
 		cfg.GetContractAddress("paymentObligation").String(),
 		"0xf72855759a39fb75fc7341139f5d7a3974d4da08",
@@ -96,7 +95,7 @@ func waitTillSuccessOrError(id string, txService transactions.Service) (bool, er
 	txID := uuid.Must(uuid.FromString(id))
 	status := transactions.Pending
 	for status == transactions.Pending {
-		resp, err := txService.GetTransactionStatus(common.DummyIdentity, txID)
+		resp, err := txService.GetTransactionStatus(ccommon.DummyIdentity, txID)
 		if err != nil {
 			return false, err
 		}

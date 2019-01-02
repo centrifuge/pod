@@ -3,15 +3,16 @@ package cmd
 import (
 	"context"
 
+	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers"
+
 	"github.com/centrifuge/go-centrifuge/storage"
 
 	logging "github.com/ipfs/go-log"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
-	c "github.com/centrifuge/go-centrifuge/context"
+	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/keytools"
 	"github.com/centrifuge/go-centrifuge/node"
 	"github.com/centrifuge/go-centrifuge/queue"
 )
@@ -32,9 +33,9 @@ func createIdentity(idService identity.Service) (identity.CentID, error) {
 func generateKeys(config config.Configuration) {
 	p2pPub, p2pPvt := config.GetSigningKeyPair()
 	ethAuthPub, ethAuthPvt := config.GetEthAuthKeyPair()
-	keytools.GenerateSigningKeyPair(p2pPub, p2pPvt, "ed25519")
-	keytools.GenerateSigningKeyPair(p2pPub, p2pPvt, "ed25519")
-	keytools.GenerateSigningKeyPair(ethAuthPub, ethAuthPvt, "secp256k1")
+	crypto.GenerateSigningKeyPair(p2pPub, p2pPvt, "ed25519")
+	crypto.GenerateSigningKeyPair(p2pPub, p2pPvt, "ed25519")
+	crypto.GenerateSigningKeyPair(ethAuthPub, ethAuthPvt, "secp256k1")
 }
 
 func addKeys(idService identity.Service) error {
@@ -112,7 +113,7 @@ func CreateConfig(
 
 // RunBootstrap bootstraps the node for running
 func RunBootstrap(cfgFile string) {
-	mb := c.MainBootstrapper{}
+	mb := bootstrappers.MainBootstrapper{}
 	mb.PopulateRunBootstrappers()
 	ctx := map[string]interface{}{}
 	ctx[config.BootstrappedConfigFile] = cfgFile
@@ -123,10 +124,10 @@ func RunBootstrap(cfgFile string) {
 	}
 }
 
-// BaseBootstrap bootstraps the node for testing purposes mainly
-func BaseBootstrap(cfgFile string) map[string]interface{} {
-	mb := c.MainBootstrapper{}
-	mb.PopulateBaseBootstrappers()
+// ExecCmdBootstrap bootstraps the node for command line and testing purposes
+func ExecCmdBootstrap(cfgFile string) map[string]interface{} {
+	mb := bootstrappers.MainBootstrapper{}
+	mb.PopulateCommandBootstrappers()
 	ctx := map[string]interface{}{}
 	ctx[config.BootstrappedConfigFile] = cfgFile
 	err := mb.Bootstrap(ctx)
@@ -139,7 +140,7 @@ func BaseBootstrap(cfgFile string) map[string]interface{} {
 
 // CommandBootstrap bootstraps the node for one time commands
 func CommandBootstrap(cfgFile string) (map[string]interface{}, context.CancelFunc, error) {
-	ctx := BaseBootstrap(cfgFile)
+	ctx := ExecCmdBootstrap(cfgFile)
 	queueSrv := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
 	// init node with only the queue server which is needed by commands
 	n := node.New([]node.Server{queueSrv})

@@ -11,6 +11,7 @@ import (
 // Bootstrapper to initialise processor
 type Bootstrapper struct{}
 
+// Bootstrap adds processor to the context.
 func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	cfg, ok := ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	if !ok {

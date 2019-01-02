@@ -9,16 +9,17 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/contextutil"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/context/testlogging"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/ethereum"
-	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/p2p"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
@@ -181,7 +182,8 @@ func TestPOModel_getClientData(t *testing.T) {
 }
 
 func TestPOOrderModel_InitPOInput(t *testing.T) {
-	contextHeader, err := header.NewContextHeader(context.Background(), cfg)
+	contextHeader, err := contextutil.NewCentrifugeContext(context.Background(), cfg)
+	id, _ := contextutil.Self(contextHeader)
 	assert.Nil(t, err)
 	// fail recipient
 	data := &clientpurchaseorderpb.PurchaseOrderData{
@@ -189,7 +191,7 @@ func TestPOOrderModel_InitPOInput(t *testing.T) {
 		ExtraData: "some data",
 	}
 	poModel := new(PurchaseOrder)
-	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data}, contextHeader)
+	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data}, id.ID.String())
 	assert.Error(t, err, "must return err")
 	assert.Contains(t, err.Error(), "failed to decode extra data")
 	assert.Nil(t, poModel.Recipient)
@@ -198,31 +200,32 @@ func TestPOOrderModel_InitPOInput(t *testing.T) {
 	data.ExtraData = "0x010203020301"
 	data.Recipient = "0x010203040506"
 
-	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data}, contextHeader)
+	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data}, id.ID.String())
 	assert.Nil(t, err)
 	assert.NotNil(t, poModel.ExtraData)
 	assert.NotNil(t, poModel.Recipient)
 
 	data.ExtraData = "0x010203020301"
 	collabs := []string{"0x010102040506", "some id"}
-	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data, Collaborators: collabs}, contextHeader)
+	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data, Collaborators: collabs}, id.ID.String())
 	assert.Contains(t, err.Error(), "failed to decode collaborator")
 
 	collabs = []string{"0x010102040506", "0x010203020302"}
-	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data, Collaborators: collabs}, contextHeader)
+	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data, Collaborators: collabs}, id.ID.String())
 	assert.Nil(t, err, "must be nil")
 
 	assert.Equal(t, poModel.Recipient[:], []byte{1, 2, 3, 4, 5, 6})
 	assert.Equal(t, poModel.ExtraData[:], []byte{1, 2, 3, 2, 3, 1})
-	id := contextHeader.Self().ID
-	assert.Equal(t, poModel.CoreDocument.Collaborators, [][]byte{id[:], {1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}})
+
+	assert.Equal(t, poModel.CoreDocument.Collaborators, [][]byte{id.ID[:], {1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}})
 }
 
 func TestPOModel_calculateDataRoot(t *testing.T) {
-	contextHeader, err := header.NewContextHeader(context.Background(), cfg)
+	contextHeader, err := contextutil.NewCentrifugeContext(context.Background(), cfg)
 	assert.Nil(t, err)
+	id, _ := contextutil.Self(contextHeader)
 	poModel := new(PurchaseOrder)
-	err = poModel.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), contextHeader)
+	err = poModel.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), id.ID.String())
 	assert.Nil(t, err, "Init must pass")
 	assert.Nil(t, poModel.PurchaseOrderSalt, "salts must be nil")
 

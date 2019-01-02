@@ -3,9 +3,10 @@ package documents
 import (
 	"context"
 
+	"github.com/centrifuge/go-centrifuge/contextutil"
+
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/gocelery"
@@ -91,7 +92,7 @@ func (d *documentAnchorTask) RunTask() (res interface{}, err error) {
 		err = d.UpdateTransaction(d.tenantID, d.TaskTypeName(), err)
 	}()
 
-	ctxh, err := header.NewContextHeader(context.Background(), d.config)
+	ctxh, err := contextutil.NewCentrifugeContext(context.Background(), d.config)
 	if err != nil {
 		return false, errors.New("failed to get context header: %v", err)
 	}
