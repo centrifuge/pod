@@ -9,17 +9,19 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
+	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/identity"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
+	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
-	"github.com/centrifuge/go-centrifuge/testingutils/coredocument"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
+	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
@@ -48,20 +50,22 @@ func getServiceWithMockedLayers() (*testingcommons.MockIDService, Service) {
 	c.On("GetIdentityID").Return(centIDBytes, nil)
 	idService := &testingcommons.MockIDService{}
 	idService.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
-	return idService, DefaultService(c, testRepo(), &testingcoredocument.MockCoreDocumentProcessor{}, &mockAnchorRepo{}, idService)
+	queueSrv := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
+	txRepo := ctx[transactions.BootstrappedRepo].(transactions.Repository)
+	return idService, DefaultService(c, testRepo(), &mockAnchorRepo{}, idService, queueSrv, txRepo)
 }
 
 func TestService_Update(t *testing.T) {
 	c := &testingconfig.MockConfig{}
 	c.On("GetIdentityID").Return(centIDBytes, nil)
-	poSrv := service{config: c, repo: testRepo()}
+	_, poSrv := getServiceWithMockedLayers()
 	ctxh, err := header.NewContextHeader(context.Background(), cfg)
 	assert.Nil(t, err)
 
 	// pack failed
 	model := &testingdocuments.MockModel{}
 	model.On("PackCoreDocument").Return(nil, errors.New("pack error")).Once()
-	_, err = poSrv.Update(ctxh, model)
+	_, _, err = poSrv.Update(ctxh, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "pack error")
@@ -70,7 +74,7 @@ func TestService_Update(t *testing.T) {
 	model = &testingdocuments.MockModel{}
 	cd := coredocument.New()
 	model.On("PackCoreDocument").Return(cd, nil).Once()
-	_, err = poSrv.Update(ctxh, model)
+	_, _, err = poSrv.Update(ctxh, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "document not found")
@@ -88,7 +92,7 @@ func TestService_Update(t *testing.T) {
 	// calculate data root fails
 	model = &testingdocuments.MockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
-	_, err = poSrv.Update(ctxh, model)
+	_, _, err = poSrv.Update(ctxh, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "unknown document type")
@@ -108,15 +112,7 @@ func TestService_Update(t *testing.T) {
 	newData, err := poSrv.DerivePurchaseOrderData(newInv)
 	assert.Nil(t, err)
 	assert.Equal(t, data, newData)
-	proc := &testingcoredocument.MockCoreDocumentProcessor{}
-	proc.On("PrepareForSignatureRequests", newInv).Return(nil).Once()
-	proc.On("RequestSignatures", ctxh, newInv).Return(nil).Once()
-	proc.On("PrepareForAnchoring", newInv).Return(nil).Once()
-	proc.On("AnchorDocument", newInv).Return(nil).Once()
-	proc.On("SendDocument", ctxh, newInv).Return(nil).Once()
-	poSrv.coreDocProcessor = proc
-	po, err = poSrv.Update(ctxh, newInv)
-	proc.AssertExpectations(t)
+	po, _, err = poSrv.Update(ctxh, newInv)
 	assert.Nil(t, err)
 	assert.NotNil(t, po)
 
@@ -274,10 +270,10 @@ func TestService_Create(t *testing.T) {
 	assert.Nil(t, err)
 	c := &testingconfig.MockConfig{}
 	c.On("GetIdentityID").Return(centIDBytes, nil)
-	poSrv := service{config: c, repo: testRepo()}
+	_, poSrv := getServiceWithMockedLayers()
 
 	// calculate data root fails
-	m, err := poSrv.Create(ctxh, &testingdocuments.MockModel{})
+	m, _, err := poSrv.Create(ctxh, &testingdocuments.MockModel{})
 	assert.Nil(t, m)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "unknown document type")
@@ -285,27 +281,7 @@ func TestService_Create(t *testing.T) {
 	// anchor fails
 	po, err := poSrv.DeriveFromCreatePayload(testingdocuments.CreatePOPayload(), ctxh)
 	assert.Nil(t, err)
-	proc := &testingcoredocument.MockCoreDocumentProcessor{}
-	proc.On("PrepareForSignatureRequests", po).Return(errors.New("anchoring failed")).Once()
-	poSrv.coreDocProcessor = proc
-	m, err = poSrv.Create(ctxh, po)
-	proc.AssertExpectations(t)
-	assert.Nil(t, m)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "anchoring failed")
-
-	// success
-	po, err = poSrv.DeriveFromCreatePayload(testingdocuments.CreatePOPayload(), ctxh)
-	assert.Nil(t, err)
-	proc = &testingcoredocument.MockCoreDocumentProcessor{}
-	proc.On("PrepareForSignatureRequests", po).Return(nil).Once()
-	proc.On("RequestSignatures", ctxh, po).Return(nil).Once()
-	proc.On("PrepareForAnchoring", po).Return(nil).Once()
-	proc.On("AnchorDocument", po).Return(nil).Once()
-	proc.On("SendDocument", ctxh, po).Return(nil).Once()
-	poSrv.coreDocProcessor = proc
-	m, err = poSrv.Create(ctxh, po)
-	proc.AssertExpectations(t)
+	m, _, err = poSrv.Create(ctxh, po)
 	assert.Nil(t, err)
 	assert.NotNil(t, m)
 
