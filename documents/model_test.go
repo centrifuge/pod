@@ -9,6 +9,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/context/testlogging"
+	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/transactions"
 )
@@ -21,6 +22,7 @@ func TestMain(m *testing.M) {
 		&config.Bootstrapper{},
 		&storage.Bootstrapper{},
 		transactions.Bootstrapper{},
+		&queue.Bootstrapper{},
 		&Bootstrapper{},
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)

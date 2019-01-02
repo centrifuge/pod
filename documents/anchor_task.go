@@ -6,11 +6,13 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/header"
+	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	logging "github.com/ipfs/go-log"
+	"github.com/satori/go.uuid"
 )
 
 const (
@@ -104,4 +106,31 @@ func (d *documentAnchorTask) RunTask() (res interface{}, err error) {
 	}
 
 	return true, nil
+}
+
+// taskQueuer can be implemented by any queueing system
+type taskQueuer interface {
+	EnqueueJob(taskTypeName string, params map[string]interface{}) (queue.TaskResult, error)
+}
+
+// InitDocumentAnchorTask enqueues a new document anchor task and returns the txID.
+func InitDocumentAnchorTask(tq taskQueuer, txRepo transactions.Repository, tenantID common.Address, modelID []byte) (uuid.UUID, error) {
+	tx := transactions.NewTransaction(tenantID, documentAnchorTaskName)
+	err := txRepo.Save(tx)
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	params := map[string]interface{}{
+		transactions.TxIDParam: tx.ID.String(),
+		modelIDParam:           hexutil.Encode(modelID),
+		tenantIDParam:          tenantID,
+	}
+
+	_, err = tq.EnqueueJob(documentAnchorTaskName, params)
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	return tx.ID, nil
 }

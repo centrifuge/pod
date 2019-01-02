@@ -1,14 +1,13 @@
 package purchaseorder
 
 import (
-	"github.com/centrifuge/go-centrifuge/errors"
-
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/p2p"
 )
@@ -23,7 +22,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	}
 	cfg := ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 
-	p2pClient, ok := ctx[p2p.BootstrappedP2PClient].(p2p.Client)
+	p2pClient, ok := ctx[bootstrap.BootstrappedP2PClient].(p2p.Client)
 	if !ok {
 		return errors.New("p2p client not initialised")
 	}

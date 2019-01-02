@@ -8,6 +8,7 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/anchors"
+	"github.com/centrifuge/go-centrifuge/common"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -16,11 +17,14 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/notification"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
+	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/signatures"
+	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes"
 	logging "github.com/ipfs/go-log"
+	"github.com/satori/go.uuid"
 )
 
 var srvLog = logging.Logger("invoice-service")
@@ -36,10 +40,10 @@ type Service interface {
 	DeriveFromUpdatePayload(*clientinvoicepb.InvoiceUpdatePayload, *header.ContextHeader) (documents.Model, error)
 
 	// Create validates and persists invoice Model and returns a Updated model
-	Create(ctx *header.ContextHeader, inv documents.Model) (documents.Model, error)
+	Create(ctx *header.ContextHeader, inv documents.Model) (documents.Model, uuid.UUID, error)
 
 	// Update validates and updates the invoice model and return the updated model
-	Update(ctx *header.ContextHeader, inv documents.Model) (documents.Model, error)
+	Update(ctx *header.ContextHeader, inv documents.Model) (documents.Model, uuid.UUID, error)
 
 	// DeriveInvoiceData returns the invoice data as client data
 	DeriveInvoiceData(inv documents.Model) (*clientinvoicepb.InvoiceData, error)
@@ -53,15 +57,29 @@ type Service interface {
 type service struct {
 	config           documents.Config
 	repo             documents.Repository
-	coreDocProcessor coredocument.Processor
 	notifier         notification.Sender
 	anchorRepository anchors.AnchorRepository
 	identityService  identity.Service
+	queueSrv         *queue.Server
+	txRepository     transactions.Repository
 }
 
-// DefaultService returns the default implementation of the service
-func DefaultService(config config.Configuration, repo documents.Repository, processor coredocument.Processor, anchorRepository anchors.AnchorRepository, identityService identity.Service) Service {
-	return service{config: config, repo: repo, coreDocProcessor: processor, notifier: notification.NewWebhookSender(config), anchorRepository: anchorRepository, identityService: identityService}
+// DefaultService returns the default implementation of the service.
+func DefaultService(
+	config config.Configuration,
+	repo documents.Repository,
+	anchorRepository anchors.AnchorRepository,
+	identityService identity.Service,
+	queueSrv *queue.Server,
+	txRepository transactions.Repository) Service {
+	return service{
+		config:           config,
+		repo:             repo,
+		notifier:         notification.NewWebhookSender(config),
+		anchorRepository: anchorRepository,
+		identityService:  identityService,
+		queueSrv:         queueSrv,
+		txRepository:     txRepository}
 }
 
 // CreateProofs creates proofs for the latest version document given the fields
@@ -166,18 +184,24 @@ func (s service) calculateDataRoot(old, new documents.Model, validator documents
 }
 
 // Create takes and invoice model and does required validation checks, tries to persist to DB
-func (s service) Create(ctx *header.ContextHeader, inv documents.Model) (documents.Model, error) {
+func (s service) Create(ctx *header.ContextHeader, inv documents.Model) (documents.Model, uuid.UUID, error) {
 	inv, err := s.calculateDataRoot(nil, inv, CreateValidator())
 	if err != nil {
-		return nil, err
+		return nil, uuid.Nil, err
 	}
 
-	inv, err = documents.AnchorDocument(ctx, inv, s.coreDocProcessor, s.updater)
+	cd, err := inv.PackCoreDocument()
 	if err != nil {
-		return nil, err
+		return nil, uuid.Nil, err
 	}
 
-	return inv, nil
+	txID, err := documents.InitDocumentAnchorTask(
+		s.queueSrv,
+		s.txRepository,
+		common.DummyIdentity,
+		cd.CurrentVersion)
+
+	return inv, txID, nil
 }
 
 // updater wraps logic related to updating documents so that it can be executed as a closure
@@ -191,28 +215,29 @@ func (s service) updater(id []byte, model documents.Model) error {
 }
 
 // Update finds the old document, validates the new version and persists the updated document
-func (s service) Update(ctx *header.ContextHeader, inv documents.Model) (documents.Model, error) {
+func (s service) Update(ctx *header.ContextHeader, inv documents.Model) (documents.Model, uuid.UUID, error) {
 	cd, err := inv.PackCoreDocument()
 	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
+		return nil, uuid.Nil, errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
 	}
 
 	old, err := s.GetCurrentVersion(cd.DocumentIdentifier)
 	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
+		return nil, uuid.Nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
 	}
 
 	inv, err = s.calculateDataRoot(old, inv, UpdateValidator())
 	if err != nil {
-		return nil, err
+		return nil, uuid.Nil, err
 	}
 
-	inv, err = documents.AnchorDocument(ctx, inv, s.coreDocProcessor, s.updater)
-	if err != nil {
-		return nil, err
-	}
+	txID, err := documents.InitDocumentAnchorTask(
+		s.queueSrv,
+		s.txRepository,
+		common.DummyIdentity,
+		cd.CurrentVersion)
 
-	return inv, nil
+	return inv, txID, nil
 }
 
 // GetVersion returns an invoice for a given version

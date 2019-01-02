@@ -30,7 +30,7 @@ func TestBootstrapper_Bootstrap(t *testing.T) {
 	_, ok := m[bootstrap.BootstrappedP2PServer].(node.Server)
 	assert.True(t, ok)
 
-	assert.NotNil(t, m[BootstrappedP2PClient])
-	_, ok = m[BootstrappedP2PClient].(Client)
+	assert.NotNil(t, m[bootstrap.BootstrappedP2PClient])
+	_, ok = m[bootstrap.BootstrappedP2PClient].(Client)
 	assert.True(t, ok)
 }

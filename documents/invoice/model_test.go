@@ -9,6 +9,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/transactions"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -45,6 +47,7 @@ func TestMain(m *testing.M) {
 		&config.Bootstrapper{},
 		&storage.Bootstrapper{},
 		&queue.Bootstrapper{},
+		transactions.Bootstrapper{},
 		&identity.Bootstrapper{},
 		anchors.Bootstrapper{},
 		documents.Bootstrapper{},

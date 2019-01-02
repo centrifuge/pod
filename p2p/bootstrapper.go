@@ -11,11 +11,6 @@ import (
 	"github.com/paralin/go-libp2p-grpc"
 )
 
-// Bootstrapped constants that are used as key in bootstrap context
-const (
-	BootstrappedP2PClient string = "BootstrappedP2PClient"
-)
-
 // Bootstrapper implements Bootstrapper with p2p details
 type Bootstrapper struct{}
 
@@ -35,6 +30,6 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return grpc.New(cfg, registry)
 	}}
 	ctx[bootstrap.BootstrappedP2PServer] = srv
-	ctx[BootstrappedP2PClient] = srv
+	ctx[bootstrap.BootstrappedP2PClient] = srv
 	return nil
 }

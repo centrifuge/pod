@@ -6,6 +6,7 @@ package bootstrap
 const (
 	BootstrappedConfig      string = "BootstrappedConfig"
 	BootstrappedP2PServer   string = "BootstrappedP2PServer"
+	BootstrappedP2PClient   string = "BootstrappedP2PClient"
 	BootstrappedAPIServer   string = "BootstrappedAPIServer"
 	BootstrappedQueueServer string = "BootstrappedQueueServer"
 	NodeObjRegistry         string = "NodeObjRegistry"
