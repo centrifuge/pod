@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/gavv/httpexpect"
 )
@@ -130,6 +131,7 @@ func waitTillSuccess(t *testing.T, e *httpexpect.Expect, txID string) {
 		resp := e.GET("/transactions/" + txID).Expect().Status(200).JSON().Object()
 		status := resp.Path("$.status").String().Raw()
 		if status == "pending" {
+			time.Sleep(100 * time.Millisecond)
 			continue
 		}
 
