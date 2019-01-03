@@ -3,14 +3,11 @@
 package genericdoc
 
 import (
-	"context"
 	"math/big"
 	"os"
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/identity/ethid"
-
-	"github.com/centrifuge/go-centrifuge/contextutil"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -258,7 +255,7 @@ func TestService_RequestDocumentSignature_SigningRootNil(t *testing.T) {
 	assert.Nil(t, err)
 	idService = mockSignatureCheck(i, idService, service)
 	i.CoreDocument.SigningRoot = nil
-	ctxh, err := contextutil.NewCentrifugeContext(context.Background(), cfg)
+	ctxh := testingconfig.CreateTenantContext(t, cfg)
 	signature, err := service.RequestDocumentSignature(ctxh, i)
 	assert.NotNil(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
