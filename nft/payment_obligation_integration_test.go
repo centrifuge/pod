@@ -69,7 +69,10 @@ func TestPaymentObligationService_mint(t *testing.T) {
 		},
 	})
 	assert.Nil(t, err, "should not error out when creating invoice model")
-	modelUpdated, _, err := invoiceService.Create(contextHeader, model)
+	modelUpdated, txID, err := invoiceService.Create(contextHeader, model)
+	confirm, err := waitTillSuccessOrError(txID, txService)
+	assert.Nil(t, err)
+	assert.True(t, confirm)
 
 	// get ID
 	ID, err := modelUpdated.ID()
@@ -84,15 +87,10 @@ func TestPaymentObligationService_mint(t *testing.T) {
 		[]string{"invoice.gross_amount", "invoice.currency", "invoice.due_date", "collaborators[0]"},
 	)
 	assert.Nil(t, err, "should not error out when minting an invoice")
-
-	confirm, err := waitTillSuccessOrError(resp.TransactionID, txService)
-	assert.True(t, confirm)
-	assert.Nil(t, err)
 	assert.NotNil(t, resp.TokenID, "token id should be present")
 }
 
-func waitTillSuccessOrError(id string, txService transactions.Service) (bool, error) {
-	txID := uuid.Must(uuid.FromString(id))
+func waitTillSuccessOrError(txID uuid.UUID, txService transactions.Service) (bool, error) {
 	status := transactions.Pending
 	for status == transactions.Pending {
 		resp, err := txService.GetTransactionStatus(ccommon.DummyIdentity, txID)
