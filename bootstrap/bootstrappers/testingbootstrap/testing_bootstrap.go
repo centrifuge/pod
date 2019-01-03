@@ -8,6 +8,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
@@ -18,6 +19,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/testingutils"
+	"github.com/centrifuge/go-centrifuge/transactions"
 	logging "github.com/ipfs/go-log"
 )
 
@@ -27,6 +29,7 @@ var bootstappers = []bootstrap.TestBootstrapper{
 	&testlogging.TestLoggingBootstrapper{},
 	&config.Bootstrapper{},
 	&storage.Bootstrapper{},
+	transactions.Bootstrapper{},
 	&configstore.Bootstrapper{},
 	ethereum.Bootstrapper{},
 	&queue.Bootstrapper{},
@@ -36,6 +39,8 @@ var bootstappers = []bootstrap.TestBootstrapper{
 	p2p.Bootstrapper{},
 	&invoice.Bootstrapper{},
 	&purchaseorder.Bootstrapper{},
+	coredocument.Bootstrapper{},
+	documents.PostBootstrapper{},
 	&nft.Bootstrapper{},
 	&queue.Starter{},
 }

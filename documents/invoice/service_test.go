@@ -7,10 +7,14 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/contextutil"
+	"github.com/centrifuge/go-centrifuge/common"
+
+	"github.com/centrifuge/go-centrifuge/testingutils"
+	"github.com/centrifuge/gocelery"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -19,8 +23,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
-	"github.com/centrifuge/go-centrifuge/testingutils/coredocument"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
+	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
@@ -29,6 +33,7 @@ import (
 
 var (
 	centIDBytes = utils.RandomSlice(identity.CentIDLength)
+	tenantID    = common.DummyIdentity.Bytes()
 	key1Pub     = [...]byte{230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
 	key1        = []byte{102, 109, 71, 239, 130, 229, 128, 189, 37, 96, 223, 5, 189, 91, 210, 47, 89, 4, 165, 6, 188, 53, 49, 250, 109, 151, 234, 139, 57, 205, 231, 253, 230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
 )
@@ -47,7 +52,7 @@ func (r *mockAnchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.D
 func TestDefaultService(t *testing.T) {
 	c := &testingconfig.MockConfig{}
 	c.On("GetIdentityID").Return(centIDBytes, nil).Once()
-	srv := DefaultService(c, testRepo(), &testingcoredocument.MockCoreDocumentProcessor{}, nil, nil)
+	srv := DefaultService(c, testRepo(), nil, nil, nil, nil)
 	assert.NotNil(t, srv, "must be non-nil")
 }
 
@@ -56,7 +61,14 @@ func getServiceWithMockedLayers() (testingcommons.MockIDService, Service) {
 	c.On("GetIdentityID").Return(centIDBytes, nil)
 	idService := testingcommons.MockIDService{}
 	idService.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
-	return idService, DefaultService(c, testRepo(), &testingcoredocument.MockCoreDocumentProcessor{}, &mockAnchorRepo{}, &idService)
+	queueSrv := new(testingutils.MockQueue)
+	queueSrv.On("EnqueueJob", mock.Anything, mock.Anything).Return(&gocelery.AsyncResult{}, nil)
+	return idService, DefaultService(
+		c,
+		testRepo(),
+		&mockAnchorRepo{}, &idService,
+		queueSrv,
+		ctx[transactions.BootstrappedService].(transactions.Service))
 }
 
 func createMockDocument() (*Invoice, error) {
@@ -71,7 +83,7 @@ func createMockDocument() (*Invoice, error) {
 			NextVersion:        nextIdentifier,
 		},
 	}
-	err := testRepo().Create(centIDBytes, documentIdentifier, inv1)
+	err := testRepo().Create(tenantID, documentIdentifier, inv1)
 	return inv1, err
 }
 
@@ -140,7 +152,7 @@ func TestService_GetLastVersion(t *testing.T) {
 		},
 	}
 
-	err = testRepo().Create(centIDBytes, doc.CoreDocument.NextVersion, inv2)
+	err = testRepo().Create(tenantID, doc.CoreDocument.NextVersion, inv2)
 	assert.Nil(t, err)
 
 	mod2, err := invSrv.GetCurrentVersion(doc.CoreDocument.DocumentIdentifier)
@@ -161,7 +173,7 @@ func TestService_GetVersion_invalid_version(t *testing.T) {
 			CurrentVersion:     currentVersion,
 		},
 	}
-	err := testRepo().Create(centIDBytes, currentVersion, inv)
+	err := testRepo().Create(tenantID, currentVersion, inv)
 	assert.Nil(t, err)
 
 	mod, err := invSrv.GetVersion(utils.RandomSlice(32), currentVersion)
@@ -180,7 +192,7 @@ func TestService_GetVersion(t *testing.T) {
 			CurrentVersion:     currentVersion,
 		},
 	}
-	err := testRepo().Create(centIDBytes, currentVersion, inv)
+	err := testRepo().Create(tenantID, currentVersion, inv)
 	assert.Nil(t, err)
 
 	mod, err := invSrv.GetVersion(documentIdentifier, currentVersion)
@@ -203,7 +215,7 @@ func TestService_Exists(t *testing.T) {
 			CurrentVersion:     documentIdentifier,
 		},
 	}
-	err := testRepo().Create(centIDBytes, documentIdentifier, inv)
+	err := testRepo().Create(tenantID, documentIdentifier, inv)
 	assert.Nil(t, err)
 
 	exists := invSrv.Exists(documentIdentifier)
@@ -221,41 +233,20 @@ func TestService_Create(t *testing.T) {
 	invSrv := srv.(service)
 
 	// calculate data root fails
-	m, err := invSrv.Create(ctxh, &testingdocuments.MockModel{})
+	m, _, err := invSrv.Create(ctxh, &testingdocuments.MockModel{})
 	assert.Nil(t, m)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "unknown document type")
 
-	// anchor fails
+	// anchor success
 	po, err := invSrv.DeriveFromCreatePayload(ctxh, testingdocuments.CreateInvoicePayload())
 	assert.Nil(t, err)
-	proc := &testingcoredocument.MockCoreDocumentProcessor{}
-	proc.On("PrepareForSignatureRequests", po).Return(errors.New("anchoring failed")).Once()
-	invSrv.coreDocProcessor = proc
-	m, err = invSrv.Create(ctxh, po)
-	proc.AssertExpectations(t)
-	assert.Nil(t, m)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "anchoring failed")
-
-	// success
-	po, err = invSrv.DeriveFromCreatePayload(ctxh, testingdocuments.CreateInvoicePayload())
+	m, _, err = invSrv.Create(ctxh, po)
 	assert.Nil(t, err)
-	proc = &testingcoredocument.MockCoreDocumentProcessor{}
-	proc.On("PrepareForSignatureRequests", po).Return(nil).Once()
-	proc.On("RequestSignatures", ctxh, po).Return(nil).Once()
-	proc.On("PrepareForAnchoring", po).Return(nil).Once()
-	proc.On("AnchorDocument", po).Return(nil).Once()
-	proc.On("SendDocument", ctxh, po).Return(nil).Once()
-	invSrv.coreDocProcessor = proc
-	m, err = invSrv.Create(ctxh, po)
-	proc.AssertExpectations(t)
-	assert.Nil(t, err)
-
 	newCD, err := m.PackCoreDocument()
 	assert.Nil(t, err)
-	assert.True(t, testRepo().Exists(centIDBytes, newCD.DocumentIdentifier))
-	assert.True(t, testRepo().Exists(centIDBytes, newCD.CurrentVersion))
+	assert.True(t, testRepo().Exists(tenantID, newCD.DocumentIdentifier))
+	assert.True(t, testRepo().Exists(tenantID, newCD.CurrentVersion))
 }
 
 func TestService_DeriveInvoiceData(t *testing.T) {
@@ -331,7 +322,7 @@ func TestService_CreateProofsValidationFails(t *testing.T) {
 	i, err := createAnchoredMockDocument(t, false)
 	assert.Nil(t, err)
 	i.CoreDocument.SigningRoot = nil
-	err = testRepo().Update(centIDBytes, i.CoreDocument.CurrentVersion, i)
+	err = testRepo().Update(tenantID, i.CoreDocument.CurrentVersion, i)
 	assert.Nil(t, err)
 	idService = mockSignatureCheck(i, idService, invSrv)
 	_, err = invSrv.CreateProofs(i.CoreDocument.DocumentIdentifier, []string{"invoice.invoice_number"})
@@ -442,7 +433,7 @@ func createAnchoredMockDocument(t *testing.T, skipSave bool) (*Invoice, error) {
 	}
 
 	if !skipSave {
-		err = testRepo().Create(centIDBytes, i.CoreDocument.CurrentVersion, i)
+		err = testRepo().Create(tenantID, i.CoreDocument.CurrentVersion, i)
 		if err != nil {
 			return nil, err
 		}
@@ -480,7 +471,7 @@ func updatedAnchoredMockDocument(t *testing.T, i *Invoice) (*Invoice, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = testRepo().Create(centIDBytes, i.CoreDocument.CurrentVersion, i)
+	err = testRepo().Create(tenantID, i.CoreDocument.CurrentVersion, i)
 	if err != nil {
 		return nil, err
 	}
@@ -527,7 +518,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	old.CoreDocument.DocumentIdentifier = id
 	old.CoreDocument.CurrentVersion = id
 	old.CoreDocument.DocumentRoot = utils.RandomSlice(32)
-	err = testRepo().Create(centIDBytes, id, old)
+	err = testRepo().Create(tenantID, id, old)
 	assert.Nil(t, err)
 	payload.Data = &clientinvoicepb.InvoiceData{
 		Sender:      "0x010101010101",
@@ -579,7 +570,7 @@ func TestService_Update(t *testing.T) {
 	// pack failed
 	model := &mockModel{}
 	model.On("PackCoreDocument").Return(nil, errors.New("pack error")).Once()
-	_, err = invSrv.Update(ctxh, model)
+	_, _, err = invSrv.Update(ctxh, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "pack error")
@@ -588,7 +579,7 @@ func TestService_Update(t *testing.T) {
 	model = &mockModel{}
 	cd := coredocument.New()
 	model.On("PackCoreDocument").Return(cd, nil).Once()
-	_, err = invSrv.Update(ctxh, model)
+	_, _, err = invSrv.Update(ctxh, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "document not found")
@@ -601,12 +592,12 @@ func TestService_Update(t *testing.T) {
 	assert.Nil(t, err)
 	cd.DocumentRoot = utils.RandomSlice(32)
 	inv.(*Invoice).CoreDocument = cd
-	testRepo().Create(centIDBytes, cd.CurrentVersion, inv)
+	testRepo().Create(tenantID, cd.CurrentVersion, inv)
 
 	// calculate data root fails
 	model = &mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
-	_, err = invSrv.Update(ctxh, model)
+	_, _, err = invSrv.Update(ctxh, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "unknown document type")
@@ -626,24 +617,14 @@ func TestService_Update(t *testing.T) {
 	newData, err := invSrv.DeriveInvoiceData(newInv)
 	assert.Nil(t, err)
 	assert.Equal(t, data, newData)
-	proc := &testingcoredocument.MockCoreDocumentProcessor{}
-	proc.On("PrepareForSignatureRequests", newInv).Return(nil).Once()
-	proc.On("RequestSignatures", ctxh, newInv).Return(nil).Once()
-	proc.On("PrepareForAnchoring", newInv).Return(nil).Once()
-	proc.On("AnchorDocument", newInv).Return(nil).Once()
-	proc.On("SendDocument", ctxh, newInv).Return(nil).Once()
-	invSrv.coreDocProcessor = proc
-	inv, err = invSrv.Update(ctxh, newInv)
-	proc.AssertExpectations(t)
+	inv, _, err = invSrv.Update(ctxh, newInv)
 	assert.Nil(t, err)
 	assert.NotNil(t, inv)
-
 	newCD, err := inv.PackCoreDocument()
 	assert.Nil(t, err)
-	assert.True(t, testRepo().Exists(centIDBytes, newCD.DocumentIdentifier))
-	assert.True(t, testRepo().Exists(centIDBytes, newCD.CurrentVersion))
-	assert.True(t, testRepo().Exists(centIDBytes, newCD.PreviousVersion))
-
+	assert.True(t, testRepo().Exists(tenantID, newCD.DocumentIdentifier))
+	assert.True(t, testRepo().Exists(tenantID, newCD.CurrentVersion))
+	assert.True(t, testRepo().Exists(tenantID, newCD.PreviousVersion))
 	newData, err = invSrv.DeriveInvoiceData(inv)
 	assert.Nil(t, err)
 	assert.Equal(t, data, newData)
@@ -678,7 +659,7 @@ func TestService_calculateDataRoot(t *testing.T) {
 	inv, err = invSrv.DeriveFromCreatePayload(ctxh, testingdocuments.CreateInvoicePayload())
 	assert.Nil(t, err)
 	assert.Nil(t, inv.(*Invoice).CoreDocument.DataRoot)
-	err = invSrv.repo.Create(centIDBytes, inv.(*Invoice).CoreDocument.CurrentVersion, inv)
+	err = invSrv.repo.Create(tenantID, inv.(*Invoice).CoreDocument.CurrentVersion, inv)
 	assert.Nil(t, err)
 	inv, err = invSrv.calculateDataRoot(nil, inv, CreateValidator())
 	assert.Nil(t, inv)

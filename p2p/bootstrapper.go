@@ -8,11 +8,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/p2p/receiver"
 )
 
-// Bootstrapped constants that are used as key in bootstrap context
-const (
-	BootstrappedP2PClient string = "BootstrappedP2PClient"
-)
-
 // Bootstrapper implements Bootstrapper with p2p details
 type Bootstrapper struct{}
 
@@ -32,6 +27,6 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return receiver.New(cfg, registry)
 	}}
 	ctx[bootstrap.BootstrappedP2PServer] = srv
-	ctx[BootstrappedP2PClient] = srv
+	ctx[bootstrap.BootstrappedP2PClient] = srv
 	return nil
 }

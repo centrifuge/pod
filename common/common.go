@@ -8,6 +8,6 @@ var (
 	TenantKey struct{}
 
 	// DummyIdentity to be used until we have identity coming from auth header
-	// TODO(ved): get rid of this once we have multitenancy enabled/
+	// TODO(ved): get rid of this once we have multitenancy enabled
 	DummyIdentity = common.Address([20]byte{1})
 )

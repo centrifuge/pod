@@ -5,14 +5,12 @@ package documents_test
 import (
 	"context"
 	"errors"
-	"testing"
-
-	"github.com/centrifuge/go-centrifuge/contextutil"
-
 	"os"
+	"testing"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/testingutils/coredocument"

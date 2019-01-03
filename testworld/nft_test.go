@@ -32,6 +32,8 @@ func paymentObligationMint(t *testing.T, documentType string) {
 
 	// Alice shares document with Bob
 	res := createDocument(alice.httpExpect, documentType, http.StatusOK, defaultNFTPayload(documentType, []string{bob.id.String()}))
+	txID := getTransactionID(t, res)
+	waitTillSuccess(t, alice.httpExpect, txID)
 
 	docIdentifier := getDocumentIdentifier(t, res)
 	if docIdentifier == "" {

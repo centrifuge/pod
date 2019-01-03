@@ -8,6 +8,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/queue"
+	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -18,6 +19,7 @@ const (
 	mintingConfirmationTaskName string = "MintingConfirmationTaskName"
 	tokenIDParam                string = "TokenIDParam"
 	registryAddressParam        string = "RegistryAddressParam"
+	tenantIDParam               string = "Tenant ID"
 )
 
 // paymentObligationMintedFilterer filters the approved NFTs
@@ -29,23 +31,28 @@ type paymentObligationMintedFilterer interface {
 
 // mintingConfirmationTask confirms the minting of a payment obligation NFT
 type mintingConfirmationTask struct {
+	transactions.BaseTask
+
 	//task parameter
-	TokenID         string
-	BlockHeight     uint64
-	RegistryAddress string
-	Timeout         time.Duration
+	tenantID        common.Address
+	tokenID         string
+	blockHeight     uint64
+	registryAddress string
+	timeout         time.Duration
 
 	//state
-	EthContextInitializer func(d time.Duration) (ctx context.Context, cancelFunc context.CancelFunc)
+	ethContextInitializer func(d time.Duration) (ctx context.Context, cancelFunc context.CancelFunc)
 }
 
 func newMintingConfirmationTask(
 	timeout time.Duration,
 	ethContextInitializer func(d time.Duration) (ctx context.Context, cancelFunc context.CancelFunc),
+	txService transactions.Service,
 ) *mintingConfirmationTask {
 	return &mintingConfirmationTask{
-		Timeout:               timeout,
-		EthContextInitializer: ethContextInitializer,
+		timeout:               timeout,
+		ethContextInitializer: ethContextInitializer,
+		BaseTask:              transactions.BaseTask{TxService: txService},
 	}
 }
 
@@ -57,39 +64,49 @@ func (nftc *mintingConfirmationTask) TaskTypeName() string {
 // Copy returns a new instance of mintingConfirmationTask
 func (nftc *mintingConfirmationTask) Copy() (gocelery.CeleryTask, error) {
 	return &mintingConfirmationTask{
-		nftc.TokenID,
-		nftc.BlockHeight,
-		nftc.RegistryAddress,
-		nftc.Timeout,
-		nftc.EthContextInitializer,
+		timeout:               nftc.timeout,
+		ethContextInitializer: nftc.ethContextInitializer,
+		BaseTask:              transactions.BaseTask{TxService: nftc.TxService},
 	}, nil
 }
 
 // ParseKwargs - define a method to parse CentID
 func (nftc *mintingConfirmationTask) ParseKwargs(kwargs map[string]interface{}) (err error) {
+	err = nftc.ParseTransactionID(kwargs)
+	if err != nil {
+		return err
+	}
+
+	tenantID, ok := kwargs[tenantIDParam].(string)
+	if !ok {
+		return errors.New("missing tenant ID")
+	}
+
+	nftc.tenantID = common.HexToAddress(tenantID)
+
 	// parse TokenID
 	tokenID, ok := kwargs[tokenIDParam]
 	if !ok {
 		return errors.New("undefined kwarg " + tokenIDParam)
 	}
-	nftc.TokenID, ok = tokenID.(string)
+	nftc.tokenID, ok = tokenID.(string)
 	if !ok {
 		return errors.New("malformed kwarg [%s]", tokenIDParam)
 	}
 
-	// parse BlockHeight
-	nftc.BlockHeight, err = queue.ParseBlockHeight(kwargs)
+	// parse blockHeight
+	nftc.blockHeight, err = queue.ParseBlockHeight(kwargs)
 	if err != nil {
 		return err
 	}
 
-	//parse RegistryAddress
+	//parse registryAddress
 	registryAddress, ok := kwargs[registryAddressParam]
 	if !ok {
 		return errors.New("undefined kwarg " + registryAddressParam)
 	}
 
-	nftc.RegistryAddress, ok = registryAddress.(string)
+	nftc.registryAddress, ok = registryAddress.(string)
 	if !ok {
 		return errors.New("malformed kwarg [%s]", registryAddressParam)
 	}
@@ -101,28 +118,35 @@ func (nftc *mintingConfirmationTask) ParseKwargs(kwargs map[string]interface{}) 
 		if err != nil {
 			return errors.New("malformed kwarg [%s] because [%s]", queue.TimeoutParam, err.Error())
 		}
-		nftc.Timeout = td
+		nftc.timeout = td
 	}
 
 	return nil
 }
 
 // RunTask calls listens to events from geth related to MintingConfirmationTask#TokenID and records result.
-func (nftc *mintingConfirmationTask) RunTask() (interface{}, error) {
-	log.Infof("Waiting for confirmation for the minting of token [%x]", nftc.TokenID)
+func (nftc *mintingConfirmationTask) RunTask() (resp interface{}, err error) {
+	log.Infof("Waiting for confirmation for the minting of token [%x]", nftc.tokenID)
 
-	ethContext, _ := nftc.EthContextInitializer(nftc.Timeout)
-
+	ethContext, cancelF := nftc.ethContextInitializer(nftc.timeout)
+	defer cancelF()
 	fOpts := &bind.FilterOpts{
 		Context: ethContext,
-		Start:   nftc.BlockHeight,
+		Start:   nftc.blockHeight,
 	}
 
+	defer func() {
+		if err != nil {
+			log.Infof("failed to mint NFT: %v\n", err)
+		} else {
+			log.Infof("NFT minted successfully: %v\n", nftc.tokenID)
+		}
+
+		err = nftc.UpdateTransaction(nftc.tenantID, nftc.TaskTypeName(), err)
+	}()
+
 	var filter paymentObligationMintedFilterer
-	var err error
-
-	filter, err = bindContract(common.HexToAddress(nftc.RegistryAddress), ethereum.GetClient())
-
+	filter, err = bindContract(common.HexToAddress(nftc.registryAddress), ethereum.GetClient())
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +159,7 @@ func (nftc *mintingConfirmationTask) RunTask() (interface{}, error) {
 
 		err = utils.LookForEvent(iter)
 		if err == nil {
-			log.Infof("Received filtered event NFT minted for token [%s] \n", nftc.TokenID)
+			log.Infof("Received filtered event NFT minted for token [%s] \n", nftc.tokenID)
 			return iter.Event, nil
 		}
 

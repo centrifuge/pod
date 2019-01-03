@@ -25,7 +25,7 @@ message TransactionStatusResponse {
 service TransactionService {
   rpc GetTransactionStatus(TransactionStatusRequest) returns (TransactionStatusResponse) {
     option (google.api.http) = {
-      get: "/transaction/{transaction_id}"
+      get: "/transactions/{transaction_id}"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
       description: "Get Transaction Status"
