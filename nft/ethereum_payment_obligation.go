@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
-	ccommon "github.com/centrifuge/go-centrifuge/common"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
@@ -156,7 +155,7 @@ func (s *ethereumPaymentObligation) queueTask(tenantID common.Address, tokenID *
 	if err != nil {
 		return txID, err
 	}
-	tx := transactions.NewTransaction(ccommon.DummyIdentity, "Mint NFT")
+	tx := transactions.NewTransaction(tenantID, "Mint NFT")
 	err = s.txRepository.Save(tx)
 	if err != nil {
 		return txID, err
