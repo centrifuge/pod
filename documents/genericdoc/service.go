@@ -5,25 +5,22 @@ import (
 	"context"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/contextutil"
-
-	"github.com/centrifuge/go-centrifuge/crypto"
-
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	"github.com/centrifuge/go-centrifuge/anchors"
+	"github.com/centrifuge/go-centrifuge/common"
+	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/contextutil"
+	"github.com/centrifuge/go-centrifuge/coredocument"
+	"github.com/centrifuge/go-centrifuge/crypto"
+	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/notification"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes"
-
-	"github.com/centrifuge/go-centrifuge/coredocument"
-
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
-	"github.com/centrifuge/go-centrifuge/anchors"
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
 	logging "github.com/ipfs/go-log"
 )
 
@@ -157,11 +154,7 @@ func (s service) RequestDocumentSignature(ctx context.Context, model documents.M
 		return nil, errors.NewTypedError(documents.ErrDocumentUnPackingCoreDocument, err)
 	}
 
-	// get tenant ID
-	tenantID, err := s.config.GetIdentityID()
-	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentConfigTenantID, err)
-	}
+	tenantID := common.DummyIdentity.Bytes()
 
 	// Logic for receiving version n (n > 1) of the document for the first time
 	if !s.repo.Exists(tenantID, doc.DocumentIdentifier) && !utils.IsSameByteSlice(doc.DocumentIdentifier, doc.CurrentVersion) {
@@ -190,13 +183,7 @@ func (s service) ReceiveAnchoredDocument(model documents.Model, headers *p2ppb.C
 		return errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
 	}
 
-	// get tenant ID
-	tenantID, err := s.config.GetIdentityID()
-	if err != nil {
-		return errors.NewTypedError(documents.ErrDocumentConfigTenantID, err)
-	}
-
-	err = s.repo.Update(tenantID, doc.CurrentVersion, model)
+	err = s.repo.Update(common.DummyIdentity.Bytes(), doc.CurrentVersion, model)
 	if err != nil {
 		return errors.NewTypedError(documents.ErrDocumentPersistence, err)
 	}
@@ -217,21 +204,11 @@ func (s service) ReceiveAnchoredDocument(model documents.Model, headers *p2ppb.C
 }
 
 func (s service) Exists(documentID []byte) bool {
-	// get tenant ID
-	tenantID, err := s.config.GetIdentityID()
-	if err != nil {
-		return false
-	}
-	return s.repo.Exists(tenantID, documentID)
+	return s.repo.Exists(common.DummyIdentity.Bytes(), documentID)
 }
 
 func (s service) getVersion(documentID, version []byte) (documents.Model, error) {
-	// get tenant ID
-	tenantID, err := s.config.GetIdentityID()
-	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentConfigTenantID, err)
-	}
-	model, err := s.repo.Get(tenantID, version)
+	model, err := s.repo.Get(common.DummyIdentity.Bytes(), version)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentVersionNotFound, err)
 	}

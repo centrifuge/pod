@@ -9,6 +9,7 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
+	"github.com/centrifuge/go-centrifuge/common"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -29,6 +30,7 @@ import (
 )
 
 var (
+	tenantID    = common.DummyIdentity.Bytes()
 	centIDBytes = utils.RandomSlice(identity.CentIDLength)
 	key1Pub     = [...]byte{230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
 	key1        = []byte{102, 109, 71, 239, 130, 229, 128, 189, 37, 96, 223, 5, 189, 91, 210, 47, 89, 4, 165, 6, 188, 53, 49, 250, 109, 151, 234, 139, 57, 205, 231, 253, 230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
@@ -88,7 +90,7 @@ func TestService_Update(t *testing.T) {
 	assert.Nil(t, err)
 	cd.DocumentRoot = utils.RandomSlice(32)
 	po.(*PurchaseOrder).CoreDocument = cd
-	testRepo().Create(centIDBytes, cd.CurrentVersion, po)
+	testRepo().Create(tenantID, cd.CurrentVersion, po)
 
 	// calculate data root fails
 	model = &testingdocuments.MockModel{}
@@ -119,9 +121,9 @@ func TestService_Update(t *testing.T) {
 
 	newCD, err := po.PackCoreDocument()
 	assert.Nil(t, err)
-	assert.True(t, testRepo().Exists(centIDBytes, newCD.DocumentIdentifier))
-	assert.True(t, testRepo().Exists(centIDBytes, newCD.CurrentVersion))
-	assert.True(t, testRepo().Exists(centIDBytes, newCD.PreviousVersion))
+	assert.True(t, testRepo().Exists(tenantID, newCD.DocumentIdentifier))
+	assert.True(t, testRepo().Exists(tenantID, newCD.CurrentVersion))
+	assert.True(t, testRepo().Exists(tenantID, newCD.PreviousVersion))
 
 	newData, err = poSrv.DerivePurchaseOrderData(po)
 	assert.Nil(t, err)
@@ -170,7 +172,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	old.CoreDocument.DocumentIdentifier = id
 	old.CoreDocument.CurrentVersion = id
 	old.CoreDocument.DocumentRoot = utils.RandomSlice(32)
-	err = testRepo().Create(centIDBytes, id, old)
+	err = testRepo().Create(tenantID, id, old)
 	assert.Nil(t, err)
 	payload.Data = &clientpurchaseorderpb.PurchaseOrderData{
 		Recipient: "0x010203040506",
@@ -289,8 +291,8 @@ func TestService_Create(t *testing.T) {
 
 	newCD, err := m.PackCoreDocument()
 	assert.Nil(t, err)
-	assert.True(t, testRepo().Exists(centIDBytes, newCD.DocumentIdentifier))
-	assert.True(t, testRepo().Exists(centIDBytes, newCD.CurrentVersion))
+	assert.True(t, testRepo().Exists(tenantID, newCD.DocumentIdentifier))
+	assert.True(t, testRepo().Exists(tenantID, newCD.CurrentVersion))
 }
 
 func createAnchoredMockDocument(t *testing.T, skipSave bool) (*PurchaseOrder, error) {
@@ -341,7 +343,7 @@ func createAnchoredMockDocument(t *testing.T, skipSave bool) (*PurchaseOrder, er
 	}
 
 	if !skipSave {
-		err = testRepo().Create(centIDBytes, i.CoreDocument.CurrentVersion, i)
+		err = testRepo().Create(tenantID, i.CoreDocument.CurrentVersion, i)
 		if err != nil {
 			return nil, err
 		}
@@ -386,7 +388,7 @@ func TestService_CreateProofsValidationFails(t *testing.T) {
 	i, err := createAnchoredMockDocument(t, false)
 	assert.Nil(t, err)
 	i.CoreDocument.SigningRoot = nil
-	err = testRepo().Update(centIDBytes, i.CoreDocument.CurrentVersion, i)
+	err = testRepo().Update(tenantID, i.CoreDocument.CurrentVersion, i)
 	assert.Nil(t, err)
 	idService = mockSignatureCheck(i, idService, poSrv)
 	_, err = poSrv.CreateProofs(i.CoreDocument.DocumentIdentifier, []string{"po.po_number"})
@@ -440,7 +442,7 @@ func updatedAnchoredMockDocument(t *testing.T, model *PurchaseOrder) (*PurchaseO
 	if err != nil {
 		return nil, err
 	}
-	err = testRepo().Create(centIDBytes, model.CoreDocument.CurrentVersion, model)
+	err = testRepo().Create(tenantID, model.CoreDocument.CurrentVersion, model)
 	if err != nil {
 		return nil, err
 	}
@@ -552,7 +554,7 @@ func createMockDocument() (*PurchaseOrder, error) {
 			NextVersion:        nextIdentifier,
 		},
 	}
-	err := testRepo().Create(centIDBytes, documentIdentifier, model)
+	err := testRepo().Create(tenantID, documentIdentifier, model)
 	return model, err
 }
 
@@ -579,7 +581,7 @@ func TestService_GetCurrentVersion(t *testing.T) {
 		},
 	}
 
-	err = testRepo().Create(centIDBytes, doc.CoreDocument.NextVersion, po2)
+	err = testRepo().Create(tenantID, doc.CoreDocument.NextVersion, po2)
 	assert.Nil(t, err)
 
 	mod2, err := poSrv.GetCurrentVersion(doc.CoreDocument.DocumentIdentifier)
@@ -603,7 +605,7 @@ func TestService_GetVersion_invalid_version(t *testing.T) {
 			CurrentVersion:     currentVersion,
 		},
 	}
-	err := testRepo().Create(centIDBytes, currentVersion, po)
+	err := testRepo().Create(tenantID, currentVersion, po)
 	assert.Nil(t, err)
 
 	mod, err := poSrv.GetVersion(utils.RandomSlice(32), currentVersion)
@@ -625,7 +627,7 @@ func TestService_GetVersion(t *testing.T) {
 			CurrentVersion:     currentVersion,
 		},
 	}
-	err := testRepo().Create(centIDBytes, currentVersion, po)
+	err := testRepo().Create(tenantID, currentVersion, po)
 	assert.Nil(t, err)
 
 	mod, err := poSrv.GetVersion(documentIdentifier, currentVersion)
@@ -648,7 +650,7 @@ func TestService_Exists(t *testing.T) {
 			CurrentVersion:     documentIdentifier,
 		},
 	}
-	err := testRepo().Create(centIDBytes, documentIdentifier, po)
+	err := testRepo().Create(tenantID, documentIdentifier, po)
 	assert.Nil(t, err)
 
 	exists := poSrv.Exists(documentIdentifier)
@@ -703,7 +705,7 @@ func TestService_calculateDataRoot(t *testing.T) {
 	po, err = poSrv.DeriveFromCreatePayload(ctxh, testingdocuments.CreatePOPayload())
 	assert.Nil(t, err)
 	assert.Nil(t, po.(*PurchaseOrder).CoreDocument.DataRoot)
-	err = poSrv.repo.Create(centIDBytes, po.(*PurchaseOrder).CoreDocument.CurrentVersion, po)
+	err = poSrv.repo.Create(tenantID, po.(*PurchaseOrder).CoreDocument.CurrentVersion, po)
 	assert.Nil(t, err)
 	po, err = poSrv.calculateDataRoot(nil, po, CreateValidator())
 	assert.Nil(t, po)
