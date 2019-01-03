@@ -22,7 +22,7 @@ func TestBootstrapper_Bootstrap(t *testing.T) {
 	ctx[bootstrap.BootstrappedConfig] = &testingconfig.MockConfig{}
 	ctx[storage.BootstrappedDB] = repo
 	ctx[bootstrap.BootstrappedQueueServer] = new(queue.Server)
-	ctx[transactions.BootstrappedRepo] = transactions.NewRepository(repo)
+	ctx[transactions.BootstrappedService] = transactions.NewService(transactions.NewRepository(repo))
 	err = Bootstrapper{}.Bootstrap(ctx)
 	assert.Nil(t, err)
 	assert.NotNil(t, ctx[BootstrappedRegistry])

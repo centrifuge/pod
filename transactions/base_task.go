@@ -14,8 +14,8 @@ const (
 // BaseTask holds the required details and helper functions for tasks to update transactions.
 // should be embedded into the task
 type BaseTask struct {
-	TxID         uuid.UUID
-	TxRepository Repository
+	TxID      uuid.UUID
+	TxService Service
 }
 
 // ParseTransactionID parses txID.
@@ -36,7 +36,7 @@ func (b *BaseTask) ParseTransactionID(kwargs map[string]interface{}) error {
 
 // UpdateTransaction add a new log and updates the status of the transaction based on the error.
 func (b *BaseTask) UpdateTransaction(tenantID common.Address, name string, err error) error {
-	tx, erri := b.TxRepository.Get(tenantID, b.TxID)
+	tx, erri := b.TxService.GetTransaction(tenantID, b.TxID)
 	if erri != nil {
 		return errors.AppendError(err, erri)
 	}
@@ -44,10 +44,10 @@ func (b *BaseTask) UpdateTransaction(tenantID common.Address, name string, err e
 	if err == nil {
 		tx.Status = Success
 		tx.Logs = append(tx.Logs, NewLog(name, ""))
-		return b.TxRepository.Save(tx)
+		return b.TxService.SaveTransaction(tx)
 	}
 
 	tx.Status = Failed
 	tx.Logs = append(tx.Logs, NewLog(name, err.Error()))
-	return errors.AppendError(err, b.TxRepository.Save(tx))
+	return errors.AppendError(err, b.TxService.SaveTransaction(tx))
 }

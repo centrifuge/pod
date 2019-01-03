@@ -53,7 +53,7 @@ func (PostBootstrapper) Bootstrap(ctx map[string]interface{}) error {
 
 	task := &documentAnchorTask{
 		BaseTask: transactions.BaseTask{
-			TxRepository: ctx[transactions.BootstrappedRepo].(transactions.Repository),
+			TxService: ctx[transactions.BootstrappedService].(transactions.Service),
 		},
 		config:        ctx[bootstrap.BootstrappedConfig].(config.Configuration),
 		processor:     coreDocProc,

@@ -45,7 +45,7 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	}
 	queueSrv := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
 
-	txRepository, ok := ctx[transactions.BootstrappedRepo].(transactions.Repository)
+	txService, ok := ctx[transactions.BootstrappedService].(transactions.Service)
 	if !ok {
 		return errors.New("transactions repository not initialised")
 	}
@@ -57,7 +57,7 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		client,
 		cfg, queueSrv,
 		bindContract,
-		txRepository, func() (uint64, error) {
+		txService, func() (uint64, error) {
 			h, err := client.GetEthClient().HeaderByNumber(context.Background(), nil)
 			if err != nil {
 				return 0, err
@@ -67,7 +67,7 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		})
 
 	// queue task
-	task := newMintingConfirmationTask(cfg.GetEthereumContextWaitTimeout(), ethereum.DefaultWaitForTransactionMiningContext, txRepository)
+	task := newMintingConfirmationTask(cfg.GetEthereumContextWaitTimeout(), ethereum.DefaultWaitForTransactionMiningContext, txService)
 	queueSrv.RegisterTaskType(task.TaskTypeName(), task)
 	return nil
 }

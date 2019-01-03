@@ -70,7 +70,7 @@ func (d *documentAnchorTask) ParseKwargs(kwargs map[string]interface{}) error {
 // Copy returns a new task with state.
 func (d *documentAnchorTask) Copy() (gocelery.CeleryTask, error) {
 	return &documentAnchorTask{
-		BaseTask:      transactions.BaseTask{TxRepository: d.TxRepository},
+		BaseTask:      transactions.BaseTask{TxService: d.TxService},
 		config:        d.config,
 		processor:     d.processor,
 		modelGetFunc:  d.modelGetFunc,
@@ -116,9 +116,8 @@ type taskQueuer interface {
 }
 
 // InitDocumentAnchorTask enqueues a new document anchor task and returns the txID.
-func InitDocumentAnchorTask(tq taskQueuer, txRepo transactions.Repository, tenantID common.Address, modelID []byte) (uuid.UUID, error) {
-	tx := transactions.NewTransaction(tenantID, documentAnchorTaskName)
-	err := txRepo.Save(tx)
+func InitDocumentAnchorTask(tq taskQueuer, txService transactions.Service, tenantID common.Address, modelID []byte) (uuid.UUID, error) {
+	tx, err := txService.CreateTransaction(tenantID, documentAnchorTaskName)
 	if err != nil {
 		return uuid.Nil, err
 	}

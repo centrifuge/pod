@@ -48,7 +48,7 @@ type ethereumPaymentObligation struct {
 	config          Config
 	queue           queue.TaskQueuer
 	bindContract    func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error)
-	txRepository    transactions.Repository
+	txService       transactions.Service
 	blockHeightFunc func() (height uint64, err error)
 }
 
@@ -60,7 +60,7 @@ func newEthereumPaymentObligation(
 	config Config,
 	queue queue.TaskQueuer,
 	bindContract func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error),
-	txRepository transactions.Repository,
+	txService transactions.Service,
 	blockHeightFunc func() (uint64, error)) *ethereumPaymentObligation {
 	return &ethereumPaymentObligation{
 		registry:        registry,
@@ -69,7 +69,7 @@ func newEthereumPaymentObligation(
 		config:          config,
 		bindContract:    bindContract,
 		queue:           queue,
-		txRepository:    txRepository,
+		txService:       txService,
 		blockHeightFunc: blockHeightFunc,
 	}
 }
@@ -155,8 +155,7 @@ func (s *ethereumPaymentObligation) queueTask(tenantID common.Address, tokenID *
 	if err != nil {
 		return txID, err
 	}
-	tx := transactions.NewTransaction(tenantID, "Mint NFT")
-	err = s.txRepository.Save(tx)
+	tx, err := s.txService.CreateTransaction(tenantID, "Mint NFT")
 	if err != nil {
 		return txID, err
 	}

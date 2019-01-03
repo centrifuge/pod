@@ -13,6 +13,8 @@ import (
 // Service wraps the repository and exposes specific functions.
 type Service interface {
 	CreateTransaction(tenantID common.Address, desc string) (*Transaction, error)
+	GetTransaction(tenantID common.Address, id uuid.UUID) (*Transaction, error)
+	SaveTransaction(tx *Transaction) error
 	GetTransactionStatus(identity common.Address, id uuid.UUID) (*transactionspb.TransactionStatusResponse, error)
 	WaitForTransaction(tenantID common.Address, txID uuid.UUID) error
 }
@@ -27,10 +29,20 @@ type service struct {
 	repo Repository
 }
 
+// SaveTransaction saves the transaction.
+func (s service) SaveTransaction(tx *Transaction) error {
+	return s.repo.Save(tx)
+}
+
+// GetTransaction returns the transaction associated with identity and id.
+func (s service) GetTransaction(tenantID common.Address, id uuid.UUID) (*Transaction, error) {
+	return s.repo.Get(tenantID, id)
+}
+
 // CreateTransaction creates a new transaction and saves it to the DB.
 func (s service) CreateTransaction(tenantID common.Address, desc string) (*Transaction, error) {
 	tx := NewTransaction(tenantID, desc)
-	return tx, s.repo.Save(tx)
+	return tx, s.SaveTransaction(tx)
 }
 
 // WaitForTransaction blocks until transaction status is moved from pending state.
@@ -56,7 +68,7 @@ func (s service) WaitForTransaction(tenantID common.Address, txID uuid.UUID) err
 
 // GetTransactionStatus returns the transaction status associated with identity and id.
 func (s service) GetTransactionStatus(identity common.Address, id uuid.UUID) (*transactionspb.TransactionStatusResponse, error) {
-	tx, err := s.repo.Get(identity, id)
+	tx, err := s.GetTransaction(identity, id)
 	if err != nil {
 		return nil, err
 	}

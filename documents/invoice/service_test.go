@@ -68,7 +68,7 @@ func getServiceWithMockedLayers() (testingcommons.MockIDService, Service) {
 		testRepo(),
 		&mockAnchorRepo{}, &idService,
 		queueSrv,
-		ctx[transactions.BootstrappedRepo].(transactions.Repository))
+		ctx[transactions.BootstrappedService].(transactions.Service))
 }
 
 func createMockDocument() (*Invoice, error) {

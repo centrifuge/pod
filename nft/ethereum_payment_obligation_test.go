@@ -173,7 +173,7 @@ func TestPaymentObligationService(t *testing.T) {
 		},
 	}
 
-	txRepo := ctx[transactions.BootstrappedRepo].(transactions.Repository)
+	txService := ctx[transactions.BootstrappedService].(transactions.Service)
 
 	registry := documents.NewServiceRegistry()
 	for _, test := range tests {
@@ -184,7 +184,7 @@ func TestPaymentObligationService(t *testing.T) {
 			registry.Register(test.name, &docService)
 			service := newEthereumPaymentObligation(registry, &idService, &ethClient, &mockCfg, queueSrv, func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error) {
 				return &EthereumPaymentObligationContract{}, nil
-			}, txRepo, func() (uint64, error) { return 10, nil })
+			}, txService, func() (uint64, error) { return 10, nil })
 			tenantID := common.Address([20]byte{1, 2})
 			_, err := service.MintNFT(tenantID, decodeHex(test.request.Identifier), test.request.RegistryAddress, test.request.DepositAddress, test.request.ProofFields)
 			if test.err != nil {

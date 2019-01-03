@@ -23,7 +23,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/golang/protobuf/ptypes/timestamp"
-	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -70,9 +69,8 @@ func TestPaymentObligationService_mint(t *testing.T) {
 	})
 	assert.Nil(t, err, "should not error out when creating invoice model")
 	modelUpdated, txID, err := invoiceService.Create(contextHeader, model)
-	confirm, err := waitTillSuccessOrError(txID, txService)
+	err = txService.WaitForTransaction(ccommon.DummyIdentity, txID)
 	assert.Nil(t, err)
-	assert.True(t, confirm)
 
 	// get ID
 	ID, err := modelUpdated.ID()
@@ -88,23 +86,4 @@ func TestPaymentObligationService_mint(t *testing.T) {
 	)
 	assert.Nil(t, err, "should not error out when minting an invoice")
 	assert.NotNil(t, resp.TokenID, "token id should be present")
-}
-
-func waitTillSuccessOrError(txID uuid.UUID, txService transactions.Service) (bool, error) {
-	status := transactions.Pending
-	for status == transactions.Pending {
-		resp, err := txService.GetTransactionStatus(ccommon.DummyIdentity, txID)
-		if err != nil {
-			return false, err
-		}
-
-		if resp.Status == string(transactions.Pending) {
-			continue
-		}
-
-		status = transactions.Status(resp.Status)
-		break
-	}
-
-	return status == transactions.Success, nil
 }

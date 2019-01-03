@@ -48,13 +48,13 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("queue server not initialised")
 	}
 
-	txRepo, ok := ctx[transactions.BootstrappedRepo].(transactions.Repository)
+	txService, ok := ctx[transactions.BootstrappedService].(transactions.Service)
 	if !ok {
-		return errors.New("transaction repository not initialised")
+		return errors.New("transaction service not initialised")
 	}
 
 	// register service
-	srv := DefaultService(cfg, repo, anchorRepo, idService, queueSrv, txRepo)
+	srv := DefaultService(cfg, repo, anchorRepo, idService, queueSrv, txService)
 	err := registry.Register(documenttypes.PurchaseOrderDataTypeUrl, srv)
 	if err != nil {
 		return errors.New("failed to register purchase order service")

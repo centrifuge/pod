@@ -49,9 +49,9 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("queue server not initialised")
 	}
 
-	txRepo, ok := ctx[transactions.BootstrappedRepo].(transactions.Repository)
+	txService, ok := ctx[transactions.BootstrappedService].(transactions.Service)
 	if !ok {
-		return errors.New("transaction repository not initialised")
+		return errors.New("transaction service not initialised")
 	}
 
 	// register service
@@ -59,7 +59,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		cfg,
 		repo,
 		anchorRepo,
-		idService, queueSrv, txRepo)
+		idService, queueSrv, txService)
 	err := registry.Register(documenttypes.InvoiceDataTypeUrl, srv)
 	if err != nil {
 		return errors.New("failed to register invoice service: %v", err)

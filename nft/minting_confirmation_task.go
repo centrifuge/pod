@@ -47,12 +47,12 @@ type mintingConfirmationTask struct {
 func newMintingConfirmationTask(
 	timeout time.Duration,
 	ethContextInitializer func(d time.Duration) (ctx context.Context, cancelFunc context.CancelFunc),
-	txRepo transactions.Repository,
+	txService transactions.Service,
 ) *mintingConfirmationTask {
 	return &mintingConfirmationTask{
 		timeout:               timeout,
 		ethContextInitializer: ethContextInitializer,
-		BaseTask:              transactions.BaseTask{TxRepository: txRepo},
+		BaseTask:              transactions.BaseTask{TxService: txService},
 	}
 }
 
@@ -66,7 +66,7 @@ func (nftc *mintingConfirmationTask) Copy() (gocelery.CeleryTask, error) {
 	return &mintingConfirmationTask{
 		timeout:               nftc.timeout,
 		ethContextInitializer: nftc.ethContextInitializer,
-		BaseTask:              transactions.BaseTask{TxRepository: nftc.TxRepository},
+		BaseTask:              transactions.BaseTask{TxService: nftc.TxService},
 	}, nil
 }
 
