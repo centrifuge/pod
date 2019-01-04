@@ -7,6 +7,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
+
 	"github.com/centrifuge/go-centrifuge/common"
 	"github.com/centrifuge/go-centrifuge/identity/ethid"
 
@@ -15,7 +17,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"

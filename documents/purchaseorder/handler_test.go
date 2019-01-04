@@ -9,7 +9,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	clientpopb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"

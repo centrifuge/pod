@@ -8,8 +8,6 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/identity/ethid"
 
-	"github.com/centrifuge/go-centrifuge/contextutil"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/common"

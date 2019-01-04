@@ -15,7 +15,6 @@ import (
 	cc "github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testingbootstrap"
 	ccommon "github.com/centrifuge/go-centrifuge/common"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/identity"
