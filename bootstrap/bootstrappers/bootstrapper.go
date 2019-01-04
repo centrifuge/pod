@@ -6,6 +6,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
@@ -45,6 +46,8 @@ func (m *MainBootstrapper) PopulateBaseBootstrappers() {
 		api.Bootstrapper{},
 		&invoice.Bootstrapper{},
 		&purchaseorder.Bootstrapper{},
+		coredocument.Bootstrapper{},
+		documents.PostBootstrapper{},
 		&nft.Bootstrapper{},
 	}
 }

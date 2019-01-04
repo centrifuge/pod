@@ -7,9 +7,13 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/coredocument"
+	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/p2p"
+	"github.com/centrifuge/go-centrifuge/queue"
+	"github.com/centrifuge/go-centrifuge/transactions"
 )
 
 // Bootstrapper implements bootstrap.Bootstrapper.
@@ -20,11 +24,6 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	cfg, err := configstore.RetrieveConfig(true, ctx)
 	if err != nil {
 		return err
-	}
-
-	p2pClient, ok := ctx[p2p.BootstrappedP2PClient].(p2p.Client)
-	if !ok {
-		return errors.New("p2p client not initialised")
 	}
 
 	registry, ok := ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
@@ -48,7 +47,23 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	}
 	repo.Register(&Invoice{})
 
+	queueSrv, ok := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
+	if !ok {
+		return errors.New("queue server not initialised")
+	}
+
+	txService, ok := ctx[transactions.BootstrappedService].(transactions.Service)
+	if !ok {
+		return errors.New("transaction service not initialised")
+	}
+
 	// register service
+	srv := DefaultService(
+		cfg,
+		repo,
+		anchorRepo,
+		idService, queueSrv, txService)
+	err := registry.Register(documenttypes.InvoiceDataTypeUrl, srv)
 	srv := DefaultService(cfg, repo, coredocument.DefaultProcessor(idService, p2pClient, anchorRepo, cfg), anchorRepo, idService)
 	err = registry.Register(documenttypes.InvoiceDataTypeUrl, srv)
 	if err != nil {

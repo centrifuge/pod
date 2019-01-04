@@ -15,7 +15,7 @@ func TestService_GetTransaction(t *testing.T) {
 	repo := ctx[BootstrappedRepo].(Repository)
 	srv := ctx[BootstrappedService].(Service)
 
-	identity := common.Address([20]byte{})
+	identity := common.Address([20]byte{1})
 	bytes := utils.RandomSlice(common.AddressLength)
 	assert.Equal(t, common.AddressLength, copy(identity[:], bytes))
 	txn := NewTransaction(identity, "Some transaction")
@@ -51,4 +51,33 @@ func TestService_GetTransaction(t *testing.T) {
 	assert.Equal(t, string(Success), txs.Status)
 	assert.Equal(t, log.Message, txs.Message)
 	assert.Equal(t, utils.ToTimestamp(log.CreatedAt), txs.LastUpdated)
+}
+
+func TestService_CreateTransaction(t *testing.T) {
+	srv := ctx[BootstrappedService].(Service)
+	identity := common.Address([20]byte{1})
+	tx, err := srv.CreateTransaction(identity, "test")
+	assert.NoError(t, err)
+	assert.NotNil(t, tx)
+	assert.Equal(t, identity.String(), tx.Identity.String())
+}
+
+func TestService_WaitForTransaction(t *testing.T) {
+	srv := ctx[BootstrappedService].(Service)
+	repo := ctx[BootstrappedRepo].(Repository)
+	identity := common.Address([20]byte{1})
+
+	// failed
+	tx, err := srv.CreateTransaction(identity, "test")
+	assert.NoError(t, err)
+	assert.NotNil(t, tx)
+	assert.Equal(t, identity.String(), tx.Identity.String())
+	tx.Status = Failed
+	assert.NoError(t, repo.Save(tx))
+	assert.Error(t, srv.WaitForTransaction(identity, tx.ID))
+
+	// success
+	tx.Status = Success
+	assert.NoError(t, repo.Save(tx))
+	assert.NoError(t, srv.WaitForTransaction(identity, tx.ID))
 }
