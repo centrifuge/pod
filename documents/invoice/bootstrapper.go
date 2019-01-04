@@ -6,11 +6,8 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/anchors"
-	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/transactions"
@@ -63,8 +60,6 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		repo,
 		anchorRepo,
 		idService, queueSrv, txService)
-	err := registry.Register(documenttypes.InvoiceDataTypeUrl, srv)
-	srv := DefaultService(cfg, repo, coredocument.DefaultProcessor(idService, p2pClient, anchorRepo, cfg), anchorRepo, idService)
 	err = registry.Register(documenttypes.InvoiceDataTypeUrl, srv)
 	if err != nil {
 		return errors.New("failed to register invoice service: %v", err)
