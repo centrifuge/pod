@@ -3,11 +3,14 @@
 package invoice
 
 import (
-	"context"
 	"encoding/json"
 	"os"
 	"reflect"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
+
+	"github.com/centrifuge/go-centrifuge/identity/ethid"
 
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 
@@ -51,7 +54,7 @@ func TestMain(m *testing.M) {
 		&configstore.Bootstrapper{},
 		&queue.Bootstrapper{},
 		transactions.Bootstrapper{},
-		&identity.Bootstrapper{},
+		&ethid.Bootstrapper{},
 		anchors.Bootstrapper{},
 		documents.Bootstrapper{},
 		p2p.Bootstrapper{},
@@ -189,9 +192,7 @@ func TestInvoiceModel_getClientData(t *testing.T) {
 }
 
 func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
-	contextHeader, err := contextutil.NewCentrifugeContext(context.Background(), cfg)
-	assert.Nil(t, err)
-	id, _ := contextutil.Self(contextHeader)
+	id, _ := contextutil.Self(testingconfig.CreateTenantContext(t, cfg))
 	// fail recipient
 	data := &clientinvoicepb.InvoiceData{
 		Sender:    "some number",
@@ -200,7 +201,7 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 		ExtraData: "some data",
 	}
 	inv := new(Invoice)
-	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data}, id.ID.String())
+	err := inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data}, id.ID.String())
 	assert.Error(t, err, "must return err")
 	assert.Contains(t, err.Error(), "failed to decode extra data")
 	assert.Nil(t, inv.Recipient)
@@ -249,11 +250,9 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 }
 
 func TestInvoiceModel_calculateDataRoot(t *testing.T) {
-	ctxHeader, err := contextutil.NewCentrifugeContext(context.Background(), cfg)
-	assert.Nil(t, err)
-	id, _ := contextutil.Self(ctxHeader)
+	id, _ := contextutil.Self(testingconfig.CreateTenantContext(t, cfg))
 	m := new(Invoice)
-	err = m.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), id.ID.String())
+	err := m.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), id.ID.String())
 	assert.Nil(t, err, "Init must pass")
 	assert.Nil(t, m.InvoiceSalts, "salts must be nil")
 

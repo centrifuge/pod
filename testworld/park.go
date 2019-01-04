@@ -8,6 +8,8 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/centrifuge/go-centrifuge/identity/ethid"
+
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers"
 
 	"testing"
@@ -246,7 +248,7 @@ func (h *host) init() error {
 		return err
 	}
 	h.config = h.bootstrappedCtx[bootstrap.BootstrappedConfig].(config.Configuration)
-	idService := h.bootstrappedCtx[identity.BootstrappedIDService].(identity.Service)
+	idService := h.bootstrappedCtx[ethid.BootstrappedIDService].(identity.Service)
 	idBytes, err := h.config.GetIdentityID()
 	if err != nil {
 		return err

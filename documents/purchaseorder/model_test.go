@@ -3,11 +3,14 @@
 package purchaseorder
 
 import (
-	"context"
 	"encoding/json"
 	"os"
 	"reflect"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
+
+	"github.com/centrifuge/go-centrifuge/identity/ethid"
 
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 
@@ -51,7 +54,7 @@ func TestMain(m *testing.M) {
 		&configstore.Bootstrapper{},
 		&queue.Bootstrapper{},
 		transactions.Bootstrapper{},
-		&identity.Bootstrapper{},
+		&ethid.Bootstrapper{},
 		anchors.Bootstrapper{},
 		documents.Bootstrapper{},
 		p2p.Bootstrapper{},
@@ -185,16 +188,14 @@ func TestPOModel_getClientData(t *testing.T) {
 }
 
 func TestPOOrderModel_InitPOInput(t *testing.T) {
-	contextHeader, err := contextutil.NewCentrifugeContext(context.Background(), cfg)
-	id, _ := contextutil.Self(contextHeader)
-	assert.Nil(t, err)
+	id, _ := contextutil.Self(testingconfig.CreateTenantContext(t, cfg))
 	// fail recipient
 	data := &clientpurchaseorderpb.PurchaseOrderData{
 		Recipient: "some recipient",
 		ExtraData: "some data",
 	}
 	poModel := new(PurchaseOrder)
-	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data}, id.ID.String())
+	err := poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data}, id.ID.String())
 	assert.Error(t, err, "must return err")
 	assert.Contains(t, err.Error(), "failed to decode extra data")
 	assert.Nil(t, poModel.Recipient)
@@ -224,11 +225,9 @@ func TestPOOrderModel_InitPOInput(t *testing.T) {
 }
 
 func TestPOModel_calculateDataRoot(t *testing.T) {
-	contextHeader, err := contextutil.NewCentrifugeContext(context.Background(), cfg)
-	assert.Nil(t, err)
-	id, _ := contextutil.Self(contextHeader)
+	id, _ := contextutil.Self(testingconfig.CreateTenantContext(t, cfg))
 	poModel := new(PurchaseOrder)
-	err = poModel.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), id.ID.String())
+	err := poModel.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), id.ID.String())
 	assert.Nil(t, err, "Init must pass")
 	assert.Nil(t, poModel.PurchaseOrderSalt, "salts must be nil")
 

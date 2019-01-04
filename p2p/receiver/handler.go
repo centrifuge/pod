@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/centrifuge/go-centrifuge/config/configstore"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/libp2p/go-libp2p-protocol"
@@ -84,7 +86,13 @@ func (srv *Handler) HandleRequestDocumentSignature(ctx context.Context, peer pee
 // Existing signatures on the document will be verified
 // Document will be stored to the repository for state management
 func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.SignatureRequest) (*p2ppb.SignatureResponse, error) {
-	ctxHeader, err := contextutil.NewCentrifugeContext(ctx, srv.config)
+	// TODO [multi-tenancy] remove following and read the config from the context
+	tc, err := configstore.NewTenantConfig("", srv.config)
+	if err != nil {
+		log.Error(err)
+		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
+	}
+	ctxHeader, err := contextutil.NewCentrifugeContext(ctx, tc)
 	if err != nil {
 		log.Error(err)
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))

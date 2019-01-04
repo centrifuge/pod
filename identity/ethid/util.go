@@ -1,6 +1,9 @@
-package identity
+package ethid
 
-import "github.com/centrifuge/go-centrifuge/errors"
+import (
+	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/identity"
+)
 
 const (
 	centIDParam string = "CentID"
@@ -20,8 +23,8 @@ func getBytes32(key interface{}) ([32]byte, error) {
 	return fixed, nil
 }
 
-func getCentID(key interface{}) (CentID, error) {
-	var fixed [CentIDLength]byte
+func getCentID(key interface{}) (identity.CentID, error) {
+	var fixed [identity.CentIDLength]byte
 	b, ok := key.([]interface{})
 	if !ok {
 		return fixed, errors.New("could not parse interface to []byte")

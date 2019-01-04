@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/centrifuge/go-centrifuge/config"
-
 	"github.com/centrifuge/go-centrifuge/crypto"
 
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -79,7 +77,6 @@ type Config interface {
 	GetSigningKeyPair() (pub, priv string)
 	GetEthAuthKeyPair() (pub, priv string)
 	GetEthereumContextWaitTimeout() time.Duration
-	GetContractAddress(contractName config.ContractName) common.Address
 }
 
 // Identity defines an Identity on chain
@@ -135,7 +132,7 @@ type Service interface {
 	ValidateKey(centID CentID, key []byte, purpose int) error
 
 	// AddKeyFromConfig adds a key previously generated and indexed in the configuration file to the identity specified in such config file
-	AddKeyFromConfig(purpose int) error
+	AddKeyFromConfig(config Config, purpose int) error
 
 	// ValidateSignature validates a signature on a message based on identity data
 	ValidateSignature(signature *coredocumentpb.Signature, message []byte) error

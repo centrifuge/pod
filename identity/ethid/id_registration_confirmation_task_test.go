@@ -1,9 +1,11 @@
 // +build unit
 
-package identity
+package ethid
 
 import (
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/identity"
 
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -12,10 +14,10 @@ import (
 
 func TestRegistrationConfirmationTask_ParseKwargsHappyPath(t *testing.T) {
 	rct := idRegistrationConfirmationTask{}
-	id := utils.RandomSlice(CentIDLength)
+	id := utils.RandomSlice(identity.CentIDLength)
 	blockHeight := uint64(3132)
 	timeout := float64(3000)
-	idBytes, _ := ToCentID(id)
+	idBytes, _ := identity.ToCentID(id)
 	kwargs := map[string]interface{}{
 		centIDParam:            idBytes,
 		queue.BlockHeightParam: blockHeight,
@@ -32,14 +34,14 @@ func TestRegistrationConfirmationTask_ParseKwargsHappyPath(t *testing.T) {
 
 func TestRegistrationConfirmationTask_ParseKwargsDoesNotExist(t *testing.T) {
 	rct := idRegistrationConfirmationTask{}
-	id := utils.RandomSlice(CentIDLength)
+	id := utils.RandomSlice(identity.CentIDLength)
 	err := rct.ParseKwargs(map[string]interface{}{"notId": id})
 	assert.NotNil(t, err, "Should not allow parsing without centId")
 }
 
 func TestRegistrationConfirmationTask_ParseKwargsInvalidType(t *testing.T) {
 	rct := idRegistrationConfirmationTask{}
-	id := utils.RandomSlice(CentIDLength)
+	id := utils.RandomSlice(identity.CentIDLength)
 	err := rct.ParseKwargs(map[string]interface{}{centIDParam: id})
 	assert.NotNil(t, err, "Should not parse without the correct type of centId")
 }

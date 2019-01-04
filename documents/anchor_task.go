@@ -2,6 +2,11 @@ package documents
 
 import (
 	"context"
+	"fmt"
+
+	"github.com/centrifuge/go-centrifuge/centerrors"
+	"github.com/centrifuge/go-centrifuge/code"
+	"github.com/centrifuge/go-centrifuge/config/configstore"
 
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -91,7 +96,12 @@ func (d *documentAnchorTask) RunTask() (res interface{}, err error) {
 		err = d.UpdateTransaction(d.tenantID, d.TaskTypeName(), err)
 	}()
 
-	ctxh, err := contextutil.NewCentrifugeContext(context.Background(), d.config)
+	tc, err := configstore.NewTenantConfig("", d.config)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
+	}
+	ctxh, err := contextutil.NewCentrifugeContext(context.Background(), tc)
 	if err != nil {
 		return false, errors.New("failed to get context header: %v", err)
 	}

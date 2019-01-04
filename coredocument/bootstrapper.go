@@ -6,6 +6,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/identity/ethid"
 )
 
 // Bootstrapper to initialise processor
@@ -23,7 +24,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("anchor repository not initialised")
 	}
 
-	idService, ok := ctx[identity.BootstrappedIDService].(identity.Service)
+	idService, ok := ctx[ethid.BootstrappedIDService].(identity.Service)
 	if !ok {
 		return errors.New("identity service not initialised")
 	}

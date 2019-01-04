@@ -1,12 +1,14 @@
 // +build integration
 
-package identity_test
+package ethid_test
 
 import (
 	"context"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/centrifuge/go-centrifuge/identity/ethid"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	cc "github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testingbootstrap"
@@ -25,7 +27,7 @@ func TestMain(m *testing.M) {
 	time.Sleep(time.Second + 2)
 	ctx := cc.TestFunctionalEthereumBootstrap()
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-	identityService = ctx[identity.BootstrappedIDService].(identity.Service)
+	identityService = ctx[ethid.BootstrappedIDService].(identity.Service)
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()
 	os.Exit(result)
@@ -80,8 +82,8 @@ func TestAddKeyFromConfig(t *testing.T) {
 	centrifugeId, _ := identity.ToCentID(utils.RandomSlice(identity.CentIDLength))
 	defaultCentrifugeId := cfg.GetString("identityId")
 	cfg.Set("identityId", centrifugeId.String())
-	cfg.Set("keys.ethauth.publicKey", "../build/resources/ethauth.pub.pem")
-	cfg.Set("keys.ethauth.privateKey", "../build/resources/ethauth.key.pem")
+	cfg.Set("keys.ethauth.publicKey", "../../build/resources/ethauth.pub.pem")
+	cfg.Set("keys.ethauth.privateKey", "../../build/resources/ethauth.key.pem")
 	_, confirmations, err := identityService.CreateIdentity(centrifugeId)
 	assert.Nil(t, err, "should not error out when creating identity")
 
@@ -89,7 +91,7 @@ func TestAddKeyFromConfig(t *testing.T) {
 	assert.Nil(t, watchRegisteredIdentity.Error, "No error thrown by context")
 	assert.Equal(t, centrifugeId, watchRegisteredIdentity.Identity.CentID(), "Resulting Identity should have the same ID as the input")
 
-	err = identityService.AddKeyFromConfig(identity.KeyPurposeEthMsgAuth)
+	err = identityService.AddKeyFromConfig(cfg, identity.KeyPurposeEthMsgAuth)
 	assert.Nil(t, err, "should not error out")
 
 	cfg.Set("identityId", defaultCentrifugeId)
@@ -99,10 +101,10 @@ func TestAddKeyFromConfig_IdentityDoesNotExist(t *testing.T) {
 	centrifugeId, _ := identity.ToCentID(utils.RandomSlice(identity.CentIDLength))
 	defaultCentrifugeId := cfg.GetString("identityId")
 	cfg.Set("identityId", centrifugeId.String())
-	cfg.Set("keys.ethauth.publicKey", "../build/resources/ethauth.pub.pem")
-	cfg.Set("keys.ethauth.privateKey", "../build/resources/ethauth.key.pem")
+	cfg.Set("keys.ethauth.publicKey", "../../build/resources/ethauth.pub.pem")
+	cfg.Set("keys.ethauth.privateKey", "../../build/resources/ethauth.key.pem")
 
-	err := identityService.AddKeyFromConfig(identity.KeyPurposeEthMsgAuth)
+	err := identityService.AddKeyFromConfig(cfg, identity.KeyPurposeEthMsgAuth)
 	assert.NotNil(t, err, "should error out")
 
 	cfg.Set("identityId", defaultCentrifugeId)

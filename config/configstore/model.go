@@ -448,6 +448,31 @@ type TenantConfig struct {
 	EthAuthKeyPair                   KeyPair
 }
 
+// GetEthereumDefaultAccountName gets EthereumDefaultAccountName
+func (tc *TenantConfig) GetEthereumDefaultAccountName() string {
+	return tc.EthereumDefaultAccountName
+}
+
+// GetIdentityID gets IdentityID
+func (tc *TenantConfig) GetIdentityID() ([]byte, error) {
+	return tc.IdentityID, nil
+}
+
+// GetSigningKeyPair gets SigningKeyPair
+func (tc *TenantConfig) GetSigningKeyPair() (pub, priv string) {
+	return tc.SigningKeyPair.Pub, tc.SigningKeyPair.Priv
+}
+
+// GetEthAuthKeyPair gets EthAuthKeyPair
+func (tc *TenantConfig) GetEthAuthKeyPair() (pub, priv string) {
+	return tc.EthAuthKeyPair.Pub, tc.EthAuthKeyPair.Priv
+}
+
+// GetEthereumContextWaitTimeout gets EthereumContextWaitTimeout
+func (tc *TenantConfig) GetEthereumContextWaitTimeout() time.Duration {
+	panic("irrelevant, TenantConfig#GetEthereumContextWaitTimeout must not be used")
+}
+
 // ID Get the ID of the document represented by this model
 func (tc *TenantConfig) ID() []byte {
 	return tc.IdentityID
@@ -515,7 +540,7 @@ func NewTenantConfig(ethAccountName string, c config.Configuration) (*TenantConf
 		return nil, err
 	}
 	acc, err := c.GetEthereumAccount(ethAccountName)
-	if err != nil {
+	if err != nil && ethAccountName != "" {
 		return nil, err
 	}
 	return &TenantConfig{

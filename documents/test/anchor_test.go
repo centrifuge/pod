@@ -3,14 +3,15 @@
 package documents_test
 
 import (
-	"context"
 	"errors"
-	"os"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
+
+	"os"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/testingutils/coredocument"
@@ -33,9 +34,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestAnchorDocument(t *testing.T) {
-	ctx := context.Background()
-	ctxh, err := contextutil.NewCentrifugeContext(ctx, cfg)
-	assert.Nil(t, err)
+	ctxh := testingconfig.CreateTenantContext(t, cfg)
 	updater := func(id []byte, model documents.Model) error {
 		return nil
 	}

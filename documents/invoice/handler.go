@@ -3,6 +3,8 @@ package invoice
 import (
 	"fmt"
 
+	"github.com/centrifuge/go-centrifuge/config/configstore"
+
 	"github.com/centrifuge/go-centrifuge/contextutil"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
@@ -42,7 +44,13 @@ func GRPCHandler(config config.Configuration, registry *documents.ServiceRegistr
 // Create handles the creation of the invoices and anchoring the documents on chain
 func (h *grpcHandler) Create(ctx context.Context, req *clientinvoicepb.InvoiceCreatePayload) (*clientinvoicepb.InvoiceResponse, error) {
 	apiLog.Debugf("Create request %v", req)
-	ctxHeader, err := contextutil.NewCentrifugeContext(ctx, h.config)
+	// TODO [multi-tenancy] remove following and read the config from the context
+	tc, err := configstore.NewTenantConfig("", h.config)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
+	}
+	ctxHeader, err := contextutil.NewCentrifugeContext(ctx, tc)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
@@ -74,7 +82,13 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientinvoicepb.InvoiceCr
 // Update handles the document update and anchoring
 func (h *grpcHandler) Update(ctx context.Context, payload *clientinvoicepb.InvoiceUpdatePayload) (*clientinvoicepb.InvoiceResponse, error) {
 	apiLog.Debugf("Update request %v", payload)
-	ctxHeader, err := contextutil.NewCentrifugeContext(ctx, h.config)
+	// TODO [multi-tenancy] remove following and read the config from the context
+	tc, err := configstore.NewTenantConfig("", h.config)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
+	}
+	ctxHeader, err := contextutil.NewCentrifugeContext(ctx, tc)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))

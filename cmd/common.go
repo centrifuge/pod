@@ -3,6 +3,8 @@ package cmd
 import (
 	"context"
 
+	"github.com/centrifuge/go-centrifuge/identity/ethid"
+
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers"
 
 	"github.com/centrifuge/go-centrifuge/storage"
@@ -38,16 +40,16 @@ func generateKeys(config config.Configuration) {
 	crypto.GenerateSigningKeyPair(ethAuthPub, ethAuthPvt, "secp256k1")
 }
 
-func addKeys(idService identity.Service) error {
-	err := idService.AddKeyFromConfig(identity.KeyPurposeP2P)
+func addKeys(config config.Configuration, idService identity.Service) error {
+	err := idService.AddKeyFromConfig(config, identity.KeyPurposeP2P)
 	if err != nil {
 		panic(err)
 	}
-	err = idService.AddKeyFromConfig(identity.KeyPurposeSigning)
+	err = idService.AddKeyFromConfig(config, identity.KeyPurposeSigning)
 	if err != nil {
 		panic(err)
 	}
-	err = idService.AddKeyFromConfig(identity.KeyPurposeEthMsgAuth)
+	err = idService.AddKeyFromConfig(config, identity.KeyPurposeEthMsgAuth)
 	if err != nil {
 		panic(err)
 	}
@@ -87,7 +89,7 @@ func CreateConfig(
 	cfg := ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	generateKeys(cfg)
 
-	idService := ctx[identity.BootstrappedIDService].(identity.Service)
+	idService := ctx[ethid.BootstrappedIDService].(identity.Service)
 	id, err := createIdentity(idService)
 	if err != nil {
 		return err
@@ -99,7 +101,7 @@ func CreateConfig(
 	}
 	cfg.Set("identityId", id.String())
 	log.Infof("Identity created [%s] [%x]", id.String(), id)
-	err = addKeys(idService)
+	err = addKeys(cfg, idService)
 	if err != nil {
 		return err
 	}

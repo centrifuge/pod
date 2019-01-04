@@ -3,6 +3,8 @@ package purchaseorder
 import (
 	"fmt"
 
+	"github.com/centrifuge/go-centrifuge/config/configstore"
+
 	"github.com/centrifuge/go-centrifuge/contextutil"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
@@ -43,7 +45,13 @@ func GRPCHandler(config config.Configuration, registry *documents.ServiceRegistr
 // Create validates the purchase order, persists it to DB, and anchors it the chain
 func (h grpcHandler) Create(ctx context.Context, req *clientpurchaseorderpb.PurchaseOrderCreatePayload) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
 	apiLog.Debugf("Create request %v", req)
-	ctxh, err := contextutil.NewCentrifugeContext(ctx, h.config)
+	// TODO [multi-tenancy] remove following and read the config from the context
+	tc, err := configstore.NewTenantConfig("", h.config)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
+	}
+	ctxh, err := contextutil.NewCentrifugeContext(ctx, tc)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.New(code.Unknown, err.Error())
@@ -75,7 +83,13 @@ func (h grpcHandler) Create(ctx context.Context, req *clientpurchaseorderpb.Purc
 // Update handles the document update and anchoring
 func (h grpcHandler) Update(ctx context.Context, payload *clientpurchaseorderpb.PurchaseOrderUpdatePayload) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
 	apiLog.Debugf("Update request %v", payload)
-	ctxHeader, err := contextutil.NewCentrifugeContext(ctx, h.config)
+	// TODO [multi-tenancy] remove following and read the config from the context
+	tc, err := configstore.NewTenantConfig("", h.config)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
+	}
+	ctxHeader, err := contextutil.NewCentrifugeContext(ctx, tc)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))

@@ -1,6 +1,6 @@
 // +build unit
 
-package identity
+package ethid
 
 import (
 	"testing"
