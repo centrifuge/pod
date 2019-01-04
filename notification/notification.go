@@ -1,12 +1,12 @@
 package notification
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/golang/protobuf/jsonpb"
 	logging "github.com/ipfs/go-log"
 )
 
@@ -55,7 +55,7 @@ func (wh webhookSender) Send(notification *notificationpb.NotificationMessage) (
 		return Success, nil
 	}
 
-	payload, err := wh.constructPayload(notification)
+	payload, err := json.Marshal(notification)
 	if err != nil {
 		return Failure, err
 	}
@@ -72,14 +72,4 @@ func (wh webhookSender) Send(notification *notificationpb.NotificationMessage) (
 	log.Infof("Sent Webhook Notification with Payload [%v] to [%s]", notification, url)
 
 	return Success, nil
-}
-
-func (wh webhookSender) constructPayload(notification *notificationpb.NotificationMessage) ([]byte, error) {
-	marshaler := jsonpb.Marshaler{}
-	payload, err := marshaler.MarshalToString(notification)
-	if err != nil {
-		log.Error(err)
-		return nil, err
-	}
-	return []byte(payload), nil
 }
