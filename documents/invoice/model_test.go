@@ -32,6 +32,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
+	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/any"
@@ -52,6 +53,7 @@ func TestMain(m *testing.M) {
 		&storage.Bootstrapper{},
 		&configstore.Bootstrapper{},
 		&queue.Bootstrapper{},
+		transactions.Bootstrapper{},
 		&ethid.Bootstrapper{},
 		anchors.Bootstrapper{},
 		documents.Bootstrapper{},

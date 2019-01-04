@@ -63,7 +63,7 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientinvoicepb.InvoiceCr
 	}
 
 	// validate and persist
-	doc, err = h.service.Create(ctxHeader, doc)
+	doc, txID, err := h.service.Create(ctxHeader, doc)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "could not create document")
@@ -75,6 +75,7 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientinvoicepb.InvoiceCr
 		return nil, centerrors.Wrap(err, "could not derive response")
 	}
 
+	resp.Header.TransactionId = txID.String()
 	return resp, nil
 }
 
@@ -99,7 +100,7 @@ func (h *grpcHandler) Update(ctx context.Context, payload *clientinvoicepb.Invoi
 		return nil, centerrors.Wrap(err, "could not derive update payload")
 	}
 
-	doc, err = h.service.Update(ctxHeader, doc)
+	doc, txID, err := h.service.Update(ctxHeader, doc)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "could not update document")
@@ -111,6 +112,7 @@ func (h *grpcHandler) Update(ctx context.Context, payload *clientinvoicepb.Invoi
 		return nil, centerrors.Wrap(err, "could not derive response")
 	}
 
+	resp.Header.TransactionId = txID.String()
 	return resp, nil
 }
 
