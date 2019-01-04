@@ -124,7 +124,7 @@ func (m *MockConfig) GetContractAddressString(address string) string {
 	return args.Get(0).(string)
 }
 
-func (m *MockConfig) GetContractAddress(address string) common.Address {
+func (m *MockConfig) GetContractAddress(contractName config.ContractName) common.Address {
 	args := m.Called()
 	return args.Get(0).(common.Address)
 }

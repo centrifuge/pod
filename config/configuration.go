@@ -28,6 +28,28 @@ import (
 
 var log = logging.Logger("config")
 
+// ContractName is a type to indicate a contract name parameter
+type ContractName string
+
+const (
+	// AnchorRepo is the contract name for AnchorRepo
+	AnchorRepo ContractName = "anchorRepository"
+
+	// IdentityFactory is the contract name for IdentityFactory
+	IdentityFactory ContractName = "identityFactory"
+
+	// IdentityRegistry is the contract name for IdentityRegistry
+	IdentityRegistry ContractName = "identityRegistry"
+
+	// PaymentObligation is the contract name for PaymentObligation
+	PaymentObligation ContractName = "paymentObligation"
+)
+
+// ContractNames returns the list of smart contract names currently used in the system, please update this when adding new contracts
+func ContractNames() [4]ContractName {
+	return [4]ContractName{AnchorRepo, IdentityFactory, IdentityRegistry, PaymentObligation}
+}
+
 // Configuration defines the methods that a config type should implement.
 type Configuration interface {
 	// generic methods
@@ -61,7 +83,7 @@ type Configuration interface {
 	GetNetworkString() string
 	GetNetworkKey(k string) string
 	GetContractAddressString(address string) string
-	GetContractAddress(address string) common.Address
+	GetContractAddress(contractName ContractName) common.Address
 	GetBootstrapPeers() []string
 	GetNetworkID() uint32
 
@@ -273,8 +295,8 @@ func (c *configuration) GetContractAddressString(contract string) (address strin
 }
 
 // GetContractAddress returns the deployed contract address for a given contract.
-func (c *configuration) GetContractAddress(contract string) (address common.Address) {
-	return common.HexToAddress(c.GetContractAddressString(contract))
+func (c *configuration) GetContractAddress(contractName ContractName) common.Address {
+	return common.HexToAddress(c.GetContractAddressString(string(contractName)))
 }
 
 // GetBootstrapPeers returns the list of configured bootstrap nodes for the given network.

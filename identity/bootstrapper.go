@@ -1,6 +1,7 @@
 package identity
 
 import (
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -19,22 +20,24 @@ type Bootstrapper struct{}
 // Bootstrap initializes the IdentityFactoryContract as well as the idRegistrationConfirmationTask that depends on it.
 // the idRegistrationConfirmationTask is added to be registered on the queue at queue.Bootstrapper
 func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
-	if _, ok := context[bootstrap.BootstrappedConfig]; !ok {
+	// we have to allow loading from file in case this is coming from create config cmd where we don't add configs to db
+	// TODO make the db config work for identity, would have to remove idconfig stuff from the contextutil package as it creates dep cycles
+	cfg, ok := context[bootstrap.BootstrappedConfig].(config.Configuration)
+	if !ok {
 		return errors.New("config hasn't been initialized")
 	}
-	cfg := context[bootstrap.BootstrappedConfig].(Config)
 
 	if _, ok := context[ethereum.BootstrappedEthereumClient]; !ok {
 		return errors.New("ethereum client hasn't been initialized")
 	}
 	gethClient := context[ethereum.BootstrappedEthereumClient].(ethereum.Client)
 
-	idFactory, err := getIdentityFactoryContract(cfg.GetContractAddress("identityFactory"), gethClient)
+	idFactory, err := getIdentityFactoryContract(cfg.GetContractAddress(config.IdentityFactory), gethClient)
 	if err != nil {
 		return err
 	}
 
-	registryContract, err := getIdentityRegistryContract(cfg.GetContractAddress("identityRegistry"), gethClient)
+	registryContract, err := getIdentityRegistryContract(cfg.GetContractAddress(config.IdentityRegistry), gethClient)
 	if err != nil {
 		return err
 	}

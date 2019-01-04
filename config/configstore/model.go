@@ -6,6 +6,10 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/errors"
+
+	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/centrifuge/go-centrifuge/config"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -46,6 +50,203 @@ type NodeConfig struct {
 	NetworkString                  string
 	BootstrapPeers                 []string
 	NetworkID                      uint32
+	SmartContractAddresses         map[config.ContractName]common.Address
+	PprofEnabled                   bool
+}
+
+// IsSet refer the interface
+func (nc *NodeConfig) IsSet(key string) bool {
+	panic("irrelevant, NodeConfig#IsSet must not be used")
+}
+
+// Set refer the interface
+func (nc *NodeConfig) Set(key string, value interface{}) {
+	panic("irrelevant, NodeConfig#Set must not be used")
+}
+
+// SetDefault refer the interface
+func (nc *NodeConfig) SetDefault(key string, value interface{}) {
+	panic("irrelevant, NodeConfig#SetDefault must not be used")
+}
+
+// SetupSmartContractAddresses refer the interface
+func (nc *NodeConfig) SetupSmartContractAddresses(network string, smartContractAddresses *config.SmartContractAddresses) {
+	panic("irrelevant, NodeConfig#SetupSmartContractAddresses must not be used")
+}
+
+// Get refer the interface
+func (nc *NodeConfig) Get(key string) interface{} {
+	panic("irrelevant, NodeConfig#Get must not be used")
+}
+
+// GetString refer the interface
+func (nc *NodeConfig) GetString(key string) string {
+	panic("irrelevant, NodeConfig#GetString must not be used")
+}
+
+// GetBool refer the interface
+func (nc *NodeConfig) GetBool(key string) bool {
+	panic("irrelevant, NodeConfig#GetBool must not be used")
+}
+
+// GetInt refer the interface
+func (nc *NodeConfig) GetInt(key string) int {
+	panic("irrelevant, NodeConfig#GetInt must not be used")
+}
+
+// GetDuration refer the interface
+func (nc *NodeConfig) GetDuration(key string) time.Duration {
+	panic("irrelevant, NodeConfig#GetDuration must not be used")
+}
+
+// GetStoragePath refer the interface
+func (nc *NodeConfig) GetStoragePath() string {
+	return nc.StoragePath
+}
+
+// GetConfigStoragePath refer the interface
+func (nc *NodeConfig) GetConfigStoragePath() string {
+	panic("irrelevant, NodeConfig#GetConfigStoragePath must not be used")
+}
+
+// GetP2PPort refer the interface
+func (nc *NodeConfig) GetP2PPort() int {
+	return nc.P2PPort
+}
+
+// GetP2PExternalIP refer the interface
+func (nc *NodeConfig) GetP2PExternalIP() string {
+	return nc.P2PExternalIP
+}
+
+// GetP2PConnectionTimeout refer the interface
+func (nc *NodeConfig) GetP2PConnectionTimeout() time.Duration {
+	return nc.P2PConnectionTimeout
+}
+
+// GetServerPort refer the interface
+func (nc *NodeConfig) GetServerPort() int {
+	return nc.ServerPort
+}
+
+// GetServerAddress refer the interface
+func (nc *NodeConfig) GetServerAddress() string {
+	return nc.ServerAddress
+}
+
+// GetNumWorkers refer the interface
+func (nc *NodeConfig) GetNumWorkers() int {
+	return nc.NumWorkers
+}
+
+// GetWorkerWaitTimeMS refer the interface
+func (nc *NodeConfig) GetWorkerWaitTimeMS() int {
+	return nc.WorkerWaitTimeMS
+}
+
+// GetEthereumNodeURL refer the interface
+func (nc *NodeConfig) GetEthereumNodeURL() string {
+	return nc.EthereumNodeURL
+}
+
+// GetEthereumContextReadWaitTimeout refer the interface
+func (nc *NodeConfig) GetEthereumContextReadWaitTimeout() time.Duration {
+	return nc.EthereumContextReadWaitTimeout
+}
+
+// GetEthereumContextWaitTimeout refer the interface
+func (nc *NodeConfig) GetEthereumContextWaitTimeout() time.Duration {
+	return nc.EthereumContextWaitTimeout
+}
+
+// GetEthereumIntervalRetry refer the interface
+func (nc *NodeConfig) GetEthereumIntervalRetry() time.Duration {
+	return nc.EthereumIntervalRetry
+}
+
+// GetEthereumMaxRetries refer the interface
+func (nc *NodeConfig) GetEthereumMaxRetries() int {
+	return nc.EthereumMaxRetries
+}
+
+// GetEthereumGasPrice refer the interface
+func (nc *NodeConfig) GetEthereumGasPrice() *big.Int {
+	return nc.EthereumGasPrice
+}
+
+// GetEthereumGasLimit refer the interface
+func (nc *NodeConfig) GetEthereumGasLimit() uint64 {
+	return nc.EthereumGasLimit
+}
+
+// GetTxPoolAccessEnabled refer the interface
+func (nc *NodeConfig) GetTxPoolAccessEnabled() bool {
+	return nc.TxPoolAccessEnabled
+}
+
+// GetNetworkString refer the interface
+func (nc *NodeConfig) GetNetworkString() string {
+	return nc.NetworkString
+}
+
+// GetNetworkKey refer the interface
+func (nc *NodeConfig) GetNetworkKey(k string) string {
+	panic("irrelevant, NodeConfig#GetNetworkKey must not be used")
+}
+
+// GetContractAddressString refer the interface
+func (nc *NodeConfig) GetContractAddressString(address string) string {
+	panic("irrelevant, NodeConfig#GetContractAddressString must not be used")
+}
+
+// GetContractAddress refer the interface
+func (nc *NodeConfig) GetContractAddress(contractName config.ContractName) common.Address {
+	return nc.SmartContractAddresses[contractName]
+}
+
+// GetBootstrapPeers refer the interface
+func (nc *NodeConfig) GetBootstrapPeers() []string {
+	return nc.BootstrapPeers
+}
+
+// GetNetworkID refer the interface
+func (nc *NodeConfig) GetNetworkID() uint32 {
+	return nc.NetworkID
+}
+
+// GetEthereumAccount refer the interface
+func (nc *NodeConfig) GetEthereumAccount(accountName string) (account *config.AccountConfig, err error) {
+	return nc.MainIdentity.EthereumAccount, nil
+}
+
+// GetEthereumDefaultAccountName refer the interface
+func (nc *NodeConfig) GetEthereumDefaultAccountName() string {
+	return nc.MainIdentity.EthereumDefaultAccountName
+}
+
+// GetReceiveEventNotificationEndpoint refer the interface
+func (nc *NodeConfig) GetReceiveEventNotificationEndpoint() string {
+	return nc.MainIdentity.ReceiveEventNotificationEndpoint
+}
+
+// GetIdentityID refer the interface
+func (nc *NodeConfig) GetIdentityID() ([]byte, error) {
+	return nc.MainIdentity.IdentityID, nil
+}
+
+// GetSigningKeyPair refer the interface
+func (nc *NodeConfig) GetSigningKeyPair() (pub, priv string) {
+	return nc.MainIdentity.SigningKeyPair.Pub, nc.MainIdentity.SigningKeyPair.Priv
+}
+
+// GetEthAuthKeyPair refer the interface
+func (nc *NodeConfig) GetEthAuthKeyPair() (pub, priv string) {
+	return nc.MainIdentity.EthAuthKeyPair.Pub, nc.MainIdentity.EthAuthKeyPair.Priv
+}
+
+// IsPProfEnabled refer the interface
+func (nc *NodeConfig) IsPProfEnabled() bool {
+	return nc.PprofEnabled
 }
 
 // ID Gets the ID of the document represented by this model
@@ -104,10 +305,20 @@ func (nc *NodeConfig) createProtobuf() *configpb.ConfigData {
 		TxPoolEnabled:             nc.TxPoolAccessEnabled,
 		Network:                   nc.NetworkString,
 		NetworkId:                 nc.NetworkID,
+		PprofEnabled:              nc.PprofEnabled,
+		SmartContractAddresses:    convertAddressesToStringMap(nc.SmartContractAddresses),
 	}
 }
 
-func (nc *NodeConfig) loadFromProtobuf(data *configpb.ConfigData) {
+func convertAddressesToStringMap(addresses map[config.ContractName]common.Address) map[string]string {
+	m := make(map[string]string)
+	for k, v := range addresses {
+		m[string(k)] = v.String()
+	}
+	return m
+}
+
+func (nc *NodeConfig) loadFromProtobuf(data *configpb.ConfigData) error {
 	identityID, _ := hexutil.Decode(data.MainIdentity.IdentityId)
 
 	nc.MainIdentity = TenantConfig{
@@ -147,6 +358,25 @@ func (nc *NodeConfig) loadFromProtobuf(data *configpb.ConfigData) {
 	nc.NetworkString = data.Network
 	nc.BootstrapPeers = data.BootstrapPeers
 	nc.NetworkID = data.NetworkId
+	var err error
+	nc.SmartContractAddresses, err = convertStringMapToSmartContractAddresses(data.SmartContractAddresses)
+	if err != nil {
+		return err
+	}
+	nc.PprofEnabled = data.PprofEnabled
+	return nil
+}
+
+func convertStringMapToSmartContractAddresses(addrs map[string]string) (map[config.ContractName]common.Address, error) {
+	m := make(map[config.ContractName]common.Address)
+	for k, v := range addrs {
+		if common.IsHexAddress(v) {
+			m[config.ContractName(k)] = common.HexToAddress(v)
+		} else {
+			return nil, errors.New("provided smart contract address %s is invalid", v)
+		}
+	}
+	return m, nil
 }
 
 // NewNodeConfig creates a new NodeConfig instance with configs
@@ -194,7 +424,18 @@ func NewNodeConfig(c config.Configuration) *NodeConfig {
 		NetworkString:                  c.GetNetworkString(),
 		BootstrapPeers:                 c.GetBootstrapPeers(),
 		NetworkID:                      c.GetNetworkID(),
+		SmartContractAddresses:         extractSmartContractAddresses(c),
+		PprofEnabled:                   c.IsPProfEnabled(),
 	}
+}
+
+func extractSmartContractAddresses(c config.Configuration) map[config.ContractName]common.Address {
+	sms := make(map[config.ContractName]common.Address)
+	names := config.ContractNames()
+	for _, n := range names {
+		sms[n] = c.GetContractAddress(n)
+	}
+	return sms
 }
 
 // TenantConfig exposes configs specific to a tenant in the node

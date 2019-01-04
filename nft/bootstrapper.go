@@ -3,6 +3,7 @@ package nft
 import (
 	"context"
 
+	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/transactions"
 
@@ -21,10 +22,10 @@ type Bootstrapper struct{}
 
 // Bootstrap initializes the payment obligation contract
 func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
-	if _, ok := ctx[bootstrap.BootstrappedConfig]; !ok {
-		return errors.New("config hasn't been initialized")
+	cfg, err := configstore.RetrieveConfig(true, ctx)
+	if err != nil {
+		return err
 	}
-	cfg := ctx[bootstrap.BootstrappedConfig].(Config)
 
 	if _, ok := ctx[ethereum.BootstrappedEthereumClient]; !ok {
 		return errors.New("ethereum client hasn't been initialized")

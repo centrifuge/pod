@@ -2,7 +2,7 @@ package documents
 
 import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage"
@@ -36,6 +36,10 @@ type PostBootstrapper struct{}
 
 // Bootstrap register task to the queue.
 func (PostBootstrapper) Bootstrap(ctx map[string]interface{}) error {
+	cfg, err := configstore.RetrieveConfig(true, ctx)
+	if err != nil {
+		return err
+	}
 	queueSrv, ok := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
 	if !ok {
 		return errors.New("queue not initialised")
@@ -55,7 +59,7 @@ func (PostBootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		BaseTask: transactions.BaseTask{
 			TxService: ctx[transactions.BootstrappedService].(transactions.Service),
 		},
-		config:        ctx[bootstrap.BootstrappedConfig].(config.Configuration),
+		config:        cfg,
 		processor:     coreDocProc,
 		modelGetFunc:  repo.Get,
 		modelSaveFunc: repo.Update,

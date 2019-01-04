@@ -3,7 +3,7 @@ package coredocument
 import (
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 )
@@ -13,9 +13,9 @@ type Bootstrapper struct{}
 
 // Bootstrap adds processor to the context.
 func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
-	cfg, ok := ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-	if !ok {
-		return errors.New("config hasn't been initialized")
+	cfg, err := configstore.RetrieveConfig(true, ctx)
+	if err != nil {
+		return err
 	}
 
 	anchorRepo, ok := ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)

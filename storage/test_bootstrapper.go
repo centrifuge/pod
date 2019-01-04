@@ -16,7 +16,7 @@ func (*Bootstrapper) TestBootstrap(context map[string]interface{}) (err error) {
 	cfg := context[bootstrap.BootstrappedConfig].(config.Configuration)
 
 	crs := GetRandomTestStoragePath()
-	cfg.SetDefault("configStorage.path", crs)
+	cfg.Set("configStorage.path", crs)
 	log.Info("Set configStorage.path to:", cfg.GetConfigStoragePath())
 	configdb, err = NewLevelDBStorage(cfg.GetConfigStoragePath())
 	if err != nil {
@@ -25,7 +25,7 @@ func (*Bootstrapper) TestBootstrap(context map[string]interface{}) (err error) {
 	context[BootstrappedConfigDB] = NewLevelDBRepository(configdb)
 
 	rs := GetRandomTestStoragePath()
-	cfg.SetDefault("storage.Path", rs)
+	cfg.Set("storage.Path", rs)
 	log.Info("Set storage.Path to:", cfg.GetStoragePath())
 	db, err = NewLevelDBStorage(cfg.GetStoragePath())
 	if err != nil {

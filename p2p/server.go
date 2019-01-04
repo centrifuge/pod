@@ -55,6 +55,7 @@ type messenger interface {
 
 // p2pServer implements api.Server
 type p2pServer struct {
+	// TODO [multi-tenancy] replace this with config service
 	config         Config
 	host           host.Host
 	handlerCreator func() *receiver.Handler

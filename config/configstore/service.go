@@ -1,5 +1,11 @@
 package configstore
 
+import (
+	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/errors"
+)
+
 // Service exposes functions over the config objects
 type Service interface {
 	GetConfig() (*NodeConfig, error)
@@ -56,4 +62,26 @@ func (s service) DeleteConfig() error {
 
 func (s service) DeleteTenant(identifier []byte) error {
 	return s.repo.DeleteTenant(identifier)
+}
+
+// RetrieveConfig retrieves system config giving priority to db store config
+func RetrieveConfig(dbOnly bool, ctx map[string]interface{}) (config.Configuration, error) {
+	var cfg config.Configuration
+	var err error
+	if cfgService, ok := ctx[BootstrappedConfigStorage].(Service); ok {
+		// may be we need a way to detect a corrupted db here
+		cfg, err = cfgService.GetConfig()
+		if err != nil {
+			apiLog.Warningf("could not load config from db: %v", err)
+		}
+		return cfg, nil
+	}
+
+	// we have to allow loading from file in case this is coming from create config cmd where we don't add configs to db
+	if _, ok := ctx[bootstrap.BootstrappedConfig]; ok && cfg == nil && !dbOnly {
+		cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
+	} else {
+		return nil, errors.NewTypedError(ErrConfigRetrieve, err)
+	}
+	return cfg, nil
 }

@@ -2,7 +2,7 @@ package p2p
 
 import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/p2p/receiver"
@@ -13,9 +13,9 @@ type Bootstrapper struct{}
 
 // Bootstrap initiates p2p server and client into context
 func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
-	cfg, ok := ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-	if !ok {
-		return errors.New("config not initialised")
+	cfg, err := configstore.RetrieveConfig(true, ctx)
+	if err != nil {
+		return err
 	}
 
 	registry, ok := ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)

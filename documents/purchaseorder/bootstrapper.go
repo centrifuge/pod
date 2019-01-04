@@ -1,12 +1,13 @@
 package purchaseorder
 
 import (
+	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/errors"
+
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/transactions"
@@ -17,10 +18,10 @@ type Bootstrapper struct{}
 
 // Bootstrap initialises required services for purchaseorder.
 func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
-	if _, ok := ctx[bootstrap.BootstrappedConfig]; !ok {
-		return errors.New("config hasn't been initialized")
+	cfg, err := configstore.RetrieveConfig(true, ctx)
+	if err != nil {
+		return err
 	}
-	cfg := ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 
 	registry, ok := ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
 	if !ok {
@@ -55,7 +56,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 
 	// register service
 	srv := DefaultService(cfg, repo, anchorRepo, idService, queueSrv, txService)
-	err := registry.Register(documenttypes.PurchaseOrderDataTypeUrl, srv)
+	err = registry.Register(documenttypes.PurchaseOrderDataTypeUrl, srv)
 	if err != nil {
 		return errors.New("failed to register purchase order service")
 	}
