@@ -44,13 +44,13 @@ func (m mockService) DeriveFromCreatePayload(ctx context.Context, payload *clien
 	return model, args.Error(1)
 }
 
-func (m mockService) GetCurrentVersion(identifier []byte) (documents.Model, error) {
+func (m mockService) GetCurrentVersion(ctx context.Context, documentID []byte) (documents.Model, error) {
 	args := m.Called(identifier)
 	data, _ := args.Get(0).(documents.Model)
 	return data, args.Error(1)
 }
 
-func (m mockService) GetVersion(identifier []byte, version []byte) (documents.Model, error) {
+func (m mockService) GetVersion(ctx context.Context, documentID []byte, version []byte) (documents.Model, error) {
 	args := m.Called(identifier, version)
 	data, _ := args.Get(0).(documents.Model)
 	return data, args.Error(1)

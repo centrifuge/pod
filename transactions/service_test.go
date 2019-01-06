@@ -5,9 +5,10 @@ package transactions
 import (
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/identity"
+
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -15,13 +16,13 @@ func TestService_GetTransaction(t *testing.T) {
 	repo := ctx[BootstrappedRepo].(Repository)
 	srv := ctx[BootstrappedService].(Service)
 
-	identity := common.Address([20]byte{1})
-	bytes := utils.RandomSlice(common.AddressLength)
-	assert.Equal(t, common.AddressLength, copy(identity[:], bytes))
-	txn := NewTransaction(identity, "Some transaction")
+	cid := identity.RandomCentID()
+	bytes := utils.RandomSlice(identity.CentIDLength)
+	assert.Equal(t, identity.CentIDLength, copy(cid[:], bytes))
+	txn := NewTransaction(cid, "Some transaction")
 
 	// no transaction
-	txs, err := srv.GetTransactionStatus(identity, txn.ID)
+	txs, err := srv.GetTransactionStatus(cid, txn.ID)
 	assert.Nil(t, txs)
 	assert.NotNil(t, err)
 	assert.True(t, errors.IsOfType(ErrTransactionMissing, err))
@@ -30,7 +31,7 @@ func TestService_GetTransaction(t *testing.T) {
 	assert.Nil(t, repo.Save(txn))
 
 	// pending with no log
-	txs, err = srv.GetTransactionStatus(identity, txn.ID)
+	txs, err = srv.GetTransactionStatus(cid, txn.ID)
 	assert.Nil(t, err)
 	assert.NotNil(t, txs)
 	assert.Equal(t, txs.TransactionId, txn.ID.String())
@@ -44,7 +45,7 @@ func TestService_GetTransaction(t *testing.T) {
 	assert.Nil(t, repo.Save(txn))
 
 	// log with message
-	txs, err = srv.GetTransactionStatus(identity, txn.ID)
+	txs, err = srv.GetTransactionStatus(cid, txn.ID)
 	assert.Nil(t, err)
 	assert.NotNil(t, txs)
 	assert.Equal(t, txs.TransactionId, txn.ID.String())
@@ -55,29 +56,29 @@ func TestService_GetTransaction(t *testing.T) {
 
 func TestService_CreateTransaction(t *testing.T) {
 	srv := ctx[BootstrappedService].(Service)
-	identity := common.Address([20]byte{1})
-	tx, err := srv.CreateTransaction(identity, "test")
+	cid := identity.RandomCentID()
+	tx, err := srv.CreateTransaction(cid, "test")
 	assert.NoError(t, err)
 	assert.NotNil(t, tx)
-	assert.Equal(t, identity.String(), tx.Identity.String())
+	assert.Equal(t, cid.String(), tx.CID.String())
 }
 
 func TestService_WaitForTransaction(t *testing.T) {
 	srv := ctx[BootstrappedService].(Service)
 	repo := ctx[BootstrappedRepo].(Repository)
-	identity := common.Address([20]byte{1})
+	cid := identity.RandomCentID()
 
 	// failed
-	tx, err := srv.CreateTransaction(identity, "test")
+	tx, err := srv.CreateTransaction(cid, "test")
 	assert.NoError(t, err)
 	assert.NotNil(t, tx)
-	assert.Equal(t, identity.String(), tx.Identity.String())
+	assert.Equal(t, cid.String(), tx.CID.String())
 	tx.Status = Failed
 	assert.NoError(t, repo.Save(tx))
-	assert.Error(t, srv.WaitForTransaction(identity, tx.ID))
+	assert.Error(t, srv.WaitForTransaction(cid, tx.ID))
 
 	// success
 	tx.Status = Success
 	assert.NoError(t, repo.Save(tx))
-	assert.NoError(t, srv.WaitForTransaction(identity, tx.ID))
+	assert.NoError(t, srv.WaitForTransaction(cid, tx.ID))
 }

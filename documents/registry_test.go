@@ -21,7 +21,7 @@ func TestServiceRegistry_FindService(t *testing.T) {
 	err := registry.Register("a service", a)
 	err = registry.Register("b service", b)
 
-	service, err := registry.FindService([]byte{})
+	service, err := registry.FindService(nil, []byte{})
 	assert.Nil(t, err, "findService should be successful")
 	assert.Equal(t, a, service, "service a should be returned")
 }

@@ -150,7 +150,7 @@ func (srv *Handler) SendAnchoredDocument(ctx context.Context, docReq *p2ppb.Anch
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
 	}
 
-	err = svc.ReceiveAnchoredDocument(model, docReq.Header)
+	err = svc.ReceiveAnchoredDocument(ctx, model, docReq.Header)
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}

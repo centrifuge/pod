@@ -4,17 +4,17 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/centrifuge/go-centrifuge/identity"
+
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/gocelery"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	logging "github.com/ipfs/go-log"
 	"github.com/satori/go.uuid"
@@ -32,10 +32,10 @@ type documentAnchorTask struct {
 	transactions.BaseTask
 
 	id       []byte
-	tenantID common.Address
+	tenantID identity.CentID
 
 	// state
-	config        config.Configuration
+	config        configstore.Service
 	processor     anchorProcessor
 	modelGetFunc  func(tenantID, id []byte) (Model, error)
 	modelSaveFunc func(tenantID, id []byte, model Model) error
@@ -68,7 +68,10 @@ func (d *documentAnchorTask) ParseKwargs(kwargs map[string]interface{}) error {
 		return errors.New("missing tenant ID")
 	}
 
-	d.tenantID = common.HexToAddress(tenantID)
+	d.tenantID, err = identity.CentIDFromString(tenantID)
+	if err != nil {
+		return errors.New("invalid cent ID")
+	}
 	return nil
 }
 
@@ -96,7 +99,7 @@ func (d *documentAnchorTask) RunTask() (res interface{}, err error) {
 		err = d.UpdateTransaction(d.tenantID, d.TaskTypeName(), err)
 	}()
 
-	tc, err := configstore.NewTenantConfig("", d.config)
+	tc, err := d.config.GetTenant(d.tenantID[:])
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
@@ -126,7 +129,7 @@ type taskQueuer interface {
 }
 
 // InitDocumentAnchorTask enqueues a new document anchor task and returns the txID.
-func InitDocumentAnchorTask(tq taskQueuer, txService transactions.Service, tenantID common.Address, modelID []byte) (uuid.UUID, error) {
+func InitDocumentAnchorTask(tq taskQueuer, txService transactions.Service, tenantID identity.CentID, modelID []byte) (uuid.UUID, error) {
 	tx, err := txService.CreateTransaction(tenantID, documentAnchorTaskName)
 	if err != nil {
 		return uuid.Nil, err
@@ -135,7 +138,7 @@ func InitDocumentAnchorTask(tq taskQueuer, txService transactions.Service, tenan
 	params := map[string]interface{}{
 		transactions.TxIDParam: tx.ID.String(),
 		modelIDParam:           hexutil.Encode(modelID),
-		tenantIDParam:          tenantID,
+		tenantIDParam:          tenantID.String(),
 	}
 
 	_, err = tq.EnqueueJob(documentAnchorTaskName, params)

@@ -1,7 +1,6 @@
 package invoice
 
 import (
-	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity/ethid"
 
@@ -19,11 +18,6 @@ type Bootstrapper struct{}
 
 // Bootstrap sets the required storage and registers
 func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
-	cfg, err := configstore.RetrieveConfig(true, ctx)
-	if err != nil {
-		return err
-	}
-
 	registry, ok := ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
 	if !ok {
 		return errors.New("service registry not initialised")
@@ -57,11 +51,10 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 
 	// register service
 	srv := DefaultService(
-		cfg,
 		repo,
 		anchorRepo,
 		idService, queueSrv, txService)
-	err = registry.Register(documenttypes.InvoiceDataTypeUrl, srv)
+	err := registry.Register(documenttypes.InvoiceDataTypeUrl, srv)
 	if err != nil {
 		return errors.New("failed to register invoice service: %v", err)
 	}

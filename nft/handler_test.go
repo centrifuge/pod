@@ -10,7 +10,6 @@ import (
 	ccommon "github.com/centrifuge/go-centrifuge/common"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/nft"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -20,8 +19,8 @@ type mockPaymentObligationService struct {
 	mock.Mock
 }
 
-func (m *mockPaymentObligationService) MintNFT(tenantID common.Address, documentID []byte, registryAddress, depositAddress string, proofFields []string) (*MintNFTResponse, error) {
-	args := m.Called(tenantID, documentID, registryAddress, depositAddress, proofFields)
+func (m *mockPaymentObligationService) MintNFT(ctx context.Context, documentID []byte, registryAddress, depositAddress string, proofFields []string) (*MintNFTResponse, error) {
+	args := m.Called(ctx, documentID, registryAddress, depositAddress, proofFields)
 	resp, _ := args.Get(0).(*MintNFTResponse)
 	return resp, args.Error(1)
 }

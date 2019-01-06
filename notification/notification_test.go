@@ -83,7 +83,7 @@ func TestWebhookSender_Send(t *testing.T) {
 		Recorded:     ts,
 	}
 
-	status, err := wb.Send(notif)
+	status, err := wb.Send(nil, notif)
 	assert.NoError(t, err)
 	assert.Equal(t, status, Success)
 	wg.Wait()

@@ -1,13 +1,12 @@
 package nft
 
 import (
+	"context"
 	"encoding/hex"
 	"math/big"
-	"time"
-
-	"github.com/centrifuge/go-centrifuge/config"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
@@ -25,14 +24,6 @@ import (
 
 var log = logging.Logger("nft")
 
-// Config is an interface to configurations required by nft package
-type Config interface {
-	GetIdentityID() ([]byte, error)
-	GetEthereumDefaultAccountName() string
-	GetContractAddress(address config.ContractName) common.Address
-	GetEthereumContextWaitTimeout() time.Duration
-}
-
 // ethereumPaymentObligationContract is an abstraction over the contract code to help in mocking it out
 type ethereumPaymentObligationContract interface {
 
@@ -45,9 +36,6 @@ type ethereumPaymentObligation struct {
 	registry        *documents.ServiceRegistry
 	identityService identity.Service
 	ethClient       ethereum.Client
-
-	// TODO [multi-tenancy] replace this with config service
-	config          Config
 	queue           queue.TaskQueuer
 	bindContract    func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error)
 	txService       transactions.Service
@@ -59,7 +47,6 @@ func newEthereumPaymentObligation(
 	registry *documents.ServiceRegistry,
 	identityService identity.Service,
 	ethClient ethereum.Client,
-	config Config,
 	queue queue.TaskQueuer,
 	bindContract func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error),
 	txService transactions.Service,
@@ -68,7 +55,6 @@ func newEthereumPaymentObligation(
 		registry:        registry,
 		identityService: identityService,
 		ethClient:       ethClient,
-		config:          config,
 		bindContract:    bindContract,
 		queue:           queue,
 		txService:       txService,
@@ -76,13 +62,13 @@ func newEthereumPaymentObligation(
 	}
 }
 
-func (s *ethereumPaymentObligation) prepareMintRequest(documentID []byte, depositAddress string, proofFields []string) (*MintRequest, error) {
-	docService, err := s.registry.FindService(documentID)
+func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, documentID []byte, depositAddress string, proofFields []string) (*MintRequest, error) {
+	docService, err := s.registry.FindService(ctx, documentID)
 	if err != nil {
 		return nil, err
 	}
 
-	model, err := docService.GetCurrentVersion(documentID)
+	model, err := docService.GetCurrentVersion(ctx, documentID)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +78,7 @@ func (s *ethereumPaymentObligation) prepareMintRequest(documentID []byte, deposi
 		return nil, err
 	}
 
-	proofs, err := docService.CreateProofs(documentID, proofFields)
+	proofs, err := docService.CreateProofs(ctx, documentID, proofFields)
 	if err != nil {
 		return nil, err
 	}
@@ -119,14 +105,18 @@ func (s *ethereumPaymentObligation) prepareMintRequest(documentID []byte, deposi
 }
 
 // MintNFT mints an NFT
-func (s *ethereumPaymentObligation) MintNFT(tenantID common.Address, documentID []byte, registryAddress, depositAddress string, proofFields []string) (*MintNFTResponse, error) {
+func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, documentID []byte, registryAddress, depositAddress string, proofFields []string) (*MintNFTResponse, error) {
+	tc, err := contextutil.Tenant(ctx)
+	if err != nil {
+		return nil, err
+	}
 
-	requestData, err := s.prepareMintRequest(documentID, depositAddress, proofFields)
+	requestData, err := s.prepareMintRequest(ctx, documentID, depositAddress, proofFields)
 	if err != nil {
 		return nil, errors.New("failed to prepare mint request: %v", err)
 	}
 
-	opts, err := s.ethClient.GetTxOpts(s.config.GetEthereumDefaultAccountName())
+	opts, err := s.ethClient.GetTxOpts(tc.EthereumDefaultAccountName)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +126,12 @@ func (s *ethereumPaymentObligation) MintNFT(tenantID common.Address, documentID 
 		return nil, err
 	}
 
-	txID, err := s.queueTask(tenantID, requestData.TokenID, registryAddress)
+	cid, err := identity.ToCentID(tc.IdentityID)
+	if err != nil {
+		return nil, err
+	}
+
+	txID, err := s.queueTask(cid, requestData.TokenID, registryAddress)
 	if err != nil {
 		return nil, errors.New("failed to queue task: %v", err)
 	}
@@ -152,7 +147,7 @@ func (s *ethereumPaymentObligation) MintNFT(tenantID common.Address, documentID 
 	}, nil
 }
 
-func (s *ethereumPaymentObligation) queueTask(tenantID common.Address, tokenID *big.Int, registryAddress string) (txID uuid.UUID, err error) {
+func (s *ethereumPaymentObligation) queueTask(tenantID identity.CentID, tokenID *big.Int, registryAddress string) (txID uuid.UUID, err error) {
 	height, err := s.blockHeightFunc()
 	if err != nil {
 		return txID, err
@@ -184,24 +179,6 @@ func (s *ethereumPaymentObligation) sendMintTransaction(contract ethereumPayment
 		requestData.TokenID, requestData.AnchorID, requestData.To, tx.Hash(), tx.Nonce(), tx.CheckNonce())
 	log.Infof("Transfer pending: 0x%x\n", tx.Hash())
 	return nil
-}
-
-func (s *ethereumPaymentObligation) getIdentityAddress() (common.Address, error) {
-	centIDBytes, err := s.config.GetIdentityID()
-	if err != nil {
-		return common.Address{}, err
-	}
-
-	centID, err := identity.ToCentID(centIDBytes)
-	if err != nil {
-		return common.Address{}, err
-	}
-
-	address, err := s.identityService.GetIdentityAddress(centID)
-	if err != nil {
-		return common.Address{}, err
-	}
-	return address, nil
 }
 
 // MintRequest holds the data needed to mint and NFT from a Centrifuge document

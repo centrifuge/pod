@@ -58,7 +58,7 @@ func TestMain(m *testing.M) {
 
 func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	poSrv := service{}
-	err := poSrv.ReceiveAnchoredDocument(nil, nil)
+	err := poSrv.ReceiveAnchoredDocument(nil, nil, nil)
 	assert.Error(t, err)
 }
 
@@ -196,7 +196,7 @@ func TestService_CreateProofs(t *testing.T) {
 	i, err := createAnchoredMockDocument(t, false)
 	assert.Nil(t, err)
 	idService = mockSignatureCheck(i, idService, service)
-	proof, err := service.CreateProofs(i.CoreDocument.DocumentIdentifier, []string{"invoice.invoice_number"})
+	proof, err := service.CreateProofs(nil, i.CoreDocument.DocumentIdentifier, []string{"invoice.invoice_number"})
 	assert.Nil(t, err)
 	assert.Equal(t, i.CoreDocument.DocumentIdentifier, proof.DocumentID)
 	assert.Equal(t, i.CoreDocument.DocumentIdentifier, proof.VersionID)
@@ -211,7 +211,7 @@ func TestService_CreateProofsValidationFails(t *testing.T) {
 	err = testRepo().Update(tenantID, i.CoreDocument.CurrentVersion, i)
 	assert.Nil(t, err)
 	idService = mockSignatureCheck(i, idService, service)
-	_, err = service.CreateProofs(i.CoreDocument.DocumentIdentifier, []string{"invoice.invoice_number"})
+	_, err = service.CreateProofs(nil, i.CoreDocument.DocumentIdentifier, []string{"invoice.invoice_number"})
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "signing root missing")
 }
@@ -221,14 +221,14 @@ func TestService_CreateProofsInvalidField(t *testing.T) {
 	i, err := createAnchoredMockDocument(t, false)
 	assert.Nil(t, err)
 	idService = mockSignatureCheck(i, idService, service)
-	_, err = service.CreateProofs(i.CoreDocument.DocumentIdentifier, []string{"invalid_field"})
+	_, err = service.CreateProofs(nil, i.CoreDocument.DocumentIdentifier, []string{"invalid_field"})
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentProof, err))
 }
 
 func TestService_CreateProofsDocumentDoesntExist(t *testing.T) {
 	service, _ := getServiceWithMockedLayers()
-	_, err := service.CreateProofs(utils.RandomSlice(32), []string{"invoice.invoice_number"})
+	_, err := service.CreateProofs(nil, utils.RandomSlice(32), []string{"invoice.invoice_number"})
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
 }
@@ -241,7 +241,7 @@ func TestService_CreateProofsForVersion(t *testing.T) {
 	olderVersion := i.CoreDocument.CurrentVersion
 	i, err = updatedAnchoredMockDocument(t, i)
 	assert.Nil(t, err)
-	proof, err := service.CreateProofsForVersion(i.CoreDocument.DocumentIdentifier, olderVersion, []string{"invoice.invoice_number"})
+	proof, err := service.CreateProofsForVersion(nil, i.CoreDocument.DocumentIdentifier, olderVersion, []string{"invoice.invoice_number"})
 	assert.Nil(t, err)
 	assert.Equal(t, i.CoreDocument.DocumentIdentifier, proof.DocumentID)
 	assert.Equal(t, olderVersion, proof.VersionID)
@@ -266,7 +266,7 @@ func TestService_CreateProofsForVersionDocumentDoesntExist(t *testing.T) {
 	i, err := createAnchoredMockDocument(t, false)
 	s, _ := getServiceWithMockedLayers()
 	assert.Nil(t, err)
-	_, err = s.CreateProofsForVersion(i.CoreDocument.DocumentIdentifier, utils.RandomSlice(32), []string{"invoice.invoice_number"})
+	_, err = s.CreateProofsForVersion(nil, i.CoreDocument.DocumentIdentifier, utils.RandomSlice(32), []string{"invoice.invoice_number"})
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentVersionNotFound, err))
 }
@@ -306,7 +306,7 @@ func TestService_GetCurrentVersion_successful(t *testing.T) {
 
 	}
 
-	model, err := service.GetCurrentVersion(documentIdentifier)
+	model, err := service.GetCurrentVersion(nil, documentIdentifier)
 	assert.Nil(t, err)
 
 	cd, err := model.PackCoreDocument()
@@ -332,7 +332,7 @@ func TestService_GetVersion_successful(t *testing.T) {
 	err := testRepo().Create(tenantID, currentVersion, inv)
 	assert.Nil(t, err)
 
-	mod, err := service.GetVersion(documentIdentifier, currentVersion)
+	mod, err := service.GetVersion(nil, documentIdentifier, currentVersion)
 	assert.Nil(t, err)
 
 	cd, err := mod.PackCoreDocument()
@@ -347,7 +347,7 @@ func TestService_GetCurrentVersion_error(t *testing.T) {
 	documentIdentifier := utils.RandomSlice(32)
 
 	//document is not existing
-	_, err := service.GetCurrentVersion(documentIdentifier)
+	_, err := service.GetCurrentVersion(nil, documentIdentifier)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentVersionNotFound, err))
 
 	inv := &invoice.Invoice{
@@ -361,7 +361,7 @@ func TestService_GetCurrentVersion_error(t *testing.T) {
 	err = testRepo().Create(tenantID, documentIdentifier, inv)
 	assert.Nil(t, err)
 
-	_, err = service.GetCurrentVersion(documentIdentifier)
+	_, err = service.GetCurrentVersion(nil, documentIdentifier)
 	assert.Nil(t, err)
 
 }
@@ -373,7 +373,7 @@ func TestService_GetVersion_error(t *testing.T) {
 	currentVersion := utils.RandomSlice(32)
 
 	//document is not existing
-	_, err := service.GetVersion(documentIdentifier, currentVersion)
+	_, err := service.GetVersion(nil, documentIdentifier, currentVersion)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentVersionNotFound, err))
 
 	inv := &invoice.Invoice{
@@ -387,11 +387,11 @@ func TestService_GetVersion_error(t *testing.T) {
 	assert.Nil(t, err)
 
 	//random version
-	_, err = service.GetVersion(documentIdentifier, utils.RandomSlice(32))
+	_, err = service.GetVersion(nil, documentIdentifier, utils.RandomSlice(32))
 	assert.True(t, errors.IsOfType(documents.ErrDocumentVersionNotFound, err))
 
 	//random document id
-	_, err = service.GetVersion(utils.RandomSlice(32), documentIdentifier)
+	_, err = service.GetVersion(nil, utils.RandomSlice(32), documentIdentifier)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentVersionNotFound, err))
 }
 
@@ -412,7 +412,7 @@ func TestService_Exists(t *testing.T) {
 	documentIdentifier := utils.RandomSlice(32)
 
 	//document is not existing
-	_, err := service.GetCurrentVersion(documentIdentifier)
+	_, err := service.GetCurrentVersion(nil, documentIdentifier)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentVersionNotFound, err))
 
 	inv := &invoice.Invoice{
@@ -425,10 +425,10 @@ func TestService_Exists(t *testing.T) {
 
 	err = testRepo().Create(tenantID, documentIdentifier, inv)
 
-	exists := service.Exists(documentIdentifier)
+	exists := service.Exists(nil, documentIdentifier)
 	assert.True(t, exists, "document should exist")
 
-	exists = service.Exists(utils.RandomSlice(32))
+	exists = service.Exists(nil, utils.RandomSlice(32))
 	assert.False(t, exists, "document should not exist")
 
 }

@@ -6,6 +6,8 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/identity"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -182,10 +184,10 @@ func TestPaymentObligationService(t *testing.T) {
 			docService, paymentOb, idService, ethClient, mockCfg, queueSrv := test.mocker()
 			// with below config the documentType has to be test.name to avoid conflicts since registry is a singleton
 			registry.Register(test.name, &docService)
-			service := newEthereumPaymentObligation(registry, &idService, &ethClient, &mockCfg, queueSrv, func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error) {
+			service := newEthereumPaymentObligation(registry, &idService, &ethClient, queueSrv, func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error) {
 				return &EthereumPaymentObligationContract{}, nil
 			}, txService, func() (uint64, error) { return 10, nil })
-			tenantID := common.Address([20]byte{1, 2})
+			tenantID := identity.RandomCentID()
 			_, err := service.MintNFT(tenantID, decodeHex(test.request.Identifier), test.request.RegistryAddress, test.request.DepositAddress, test.request.ProofFields)
 			if test.err != nil {
 				assert.Equal(t, test.err.Error(), err.Error())
