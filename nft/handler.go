@@ -30,7 +30,7 @@ func GRPCHandler(config configstore.Service, payOb PaymentObligation) nftpb.NFTS
 // MintNFT will be called from the client API to mint an NFT
 func (g grpcHandler) MintNFT(ctx context.Context, request *nftpb.NFTMintRequest) (*nftpb.NFTMintResponse, error) {
 	apiLog.Infof("Received request to Mint an NFT with  %s with proof fields %s", request.Identifier, request.ProofFields)
-	ctxHeader, err := contextutil.CentContext(g.config, ctx)
+	ctxHeader, err := contextutil.CentContext(ctx, g.config)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, err

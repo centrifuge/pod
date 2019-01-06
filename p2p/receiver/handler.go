@@ -140,7 +140,18 @@ func (srv *Handler) HandleSendAnchoredDocument(ctx context.Context, peer peer.ID
 
 // SendAnchoredDocument receives a new anchored document, validates and updates the document in DB
 func (srv *Handler) SendAnchoredDocument(ctx context.Context, docReq *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error) {
-	err := handshakeValidator(srv.config.GetNetworkID()).Validate(docReq.Header)
+	// TODO [multi-tenancy] remove following and read the config from the context
+	tc, err := configstore.NewTenantConfig("", srv.config)
+	if err != nil {
+		log.Error(err)
+		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
+	}
+	ctxHeader, err := contextutil.NewCentrifugeContext(ctx, tc)
+	if err != nil {
+		log.Error(err)
+		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
+	}
+	err = handshakeValidator(srv.config.GetNetworkID()).Validate(docReq.Header)
 	if err != nil {
 		return nil, err
 	}
@@ -150,7 +161,7 @@ func (srv *Handler) SendAnchoredDocument(ctx context.Context, docReq *p2ppb.Anch
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
 	}
 
-	err = svc.ReceiveAnchoredDocument(ctx, model, docReq.Header)
+	err = svc.ReceiveAnchoredDocument(ctxHeader, model, docReq.Header)
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}

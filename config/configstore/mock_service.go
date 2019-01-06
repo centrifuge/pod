@@ -8,38 +8,48 @@ type MockService struct {
 	mock.Mock
 }
 
-func (MockService) GetConfig() (*NodeConfig, error) {
-	return nil, nil
+func (m MockService) GetConfig() (*NodeConfig, error) {
+	args := m.Called()
+	return args.Get(0).(*NodeConfig), args.Error(1)
 }
 
-func (MockService) GetTenant(identifier []byte) (*TenantConfig, error) {
-	panic("implement me")
+func (m MockService) GetTenant(identifier []byte) (*TenantConfig, error) {
+	args := m.Called(identifier)
+	return args.Get(0).(*TenantConfig), args.Error(0)
 }
 
-func (MockService) GetAllTenants() ([]*TenantConfig, error) {
-	panic("implement me")
+func (m MockService) GetAllTenants() ([]*TenantConfig, error) {
+	args := m.Called()
+	v, _ := args.Get(0).([]*TenantConfig)
+	return v, nil
 }
 
-func (MockService) CreateConfig(data *NodeConfig) (*NodeConfig, error) {
-	panic("implement me")
+func (m MockService) CreateConfig(data *NodeConfig) (*NodeConfig, error) {
+	args := m.Called(data)
+	return args.Get(0).(*NodeConfig), args.Error(0)
 }
 
-func (MockService) CreateTenant(data *TenantConfig) (*TenantConfig, error) {
-	panic("implement me")
+func (m MockService) CreateTenant(data *TenantConfig) (*TenantConfig, error) {
+	args := m.Called(data)
+	return args.Get(0).(*TenantConfig), args.Error(0)
 }
 
-func (MockService) UpdateConfig(data *NodeConfig) (*NodeConfig, error) {
-	panic("implement me")
+func (m MockService) UpdateConfig(data *NodeConfig) (*NodeConfig, error) {
+	args := m.Called()
+	return args.Get(0).(*NodeConfig), args.Error(0)
 }
 
-func (MockService) UpdateTenant(data *TenantConfig) (*TenantConfig, error) {
-	panic("implement me")
+func (m MockService) UpdateTenant(data *TenantConfig) (*TenantConfig, error) {
+	args := m.Called(data)
+	return args.Get(0).(*TenantConfig), args.Error(0)
 }
 
-func (MockService) DeleteConfig() error {
-	panic("implement me")
+func (m MockService) DeleteConfig() error {
+	args := m.Called()
+	return args.Error(0)
 }
 
-func (MockService) DeleteTenant(identifier []byte) error {
-	panic("implement me")
+func (m MockService) DeleteTenant(identifier []byte) error {
+	args := m.Called(identifier)
+	return args.Error(0)
 }

@@ -73,7 +73,7 @@ func (s service) searchVersion(ctx context.Context, m documents.Model) (document
 }
 
 func (s service) GetCurrentVersion(ctx context.Context, documentID []byte) (documents.Model, error) {
-	model, err := s.getVersion(nil, documentID, documentID)
+	model, err := s.getVersion(ctx, documentID, documentID)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
 	}
@@ -200,7 +200,7 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, model documents.Mo
 	}
 
 	// Async until we add queuing
-	go s.notifier.Send(nil, notificationMsg)
+	go s.notifier.Send(ctx, notificationMsg)
 
 	return nil
 }

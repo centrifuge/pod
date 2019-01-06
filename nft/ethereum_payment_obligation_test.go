@@ -6,6 +6,8 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/config"
+
 	"github.com/centrifuge/go-centrifuge/identity"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -165,6 +167,12 @@ func TestPaymentObligationService(t *testing.T) {
 				).Return(&types.Transaction{}, nil)
 				configMock := testingconfig.MockConfig{}
 				configMock.On("GetEthereumDefaultAccountName").Return("ethacc")
+				cid := identity.RandomCentID()
+				configMock.On("GetIdentityID").Return(cid[:], nil)
+				configMock.On("GetEthereumAccount").Return(&config.AccountConfig{}, nil)
+				configMock.On("GetReceiveEventNotificationEndpoint").Return("")
+				configMock.On("GetSigningKeyPair").Return("", "")
+				configMock.On("GetEthAuthKeyPair").Return("", "")
 				queueSrv := new(testingutils.MockQueue)
 				queueSrv.On("EnqueueJob", mock.Anything, mock.Anything).Return(&gocelery.AsyncResult{}, nil)
 				return docServiceMock, paymentObligationMock, idServiceMock, ethClientMock, configMock, queueSrv
@@ -187,8 +195,8 @@ func TestPaymentObligationService(t *testing.T) {
 			service := newEthereumPaymentObligation(registry, &idService, &ethClient, queueSrv, func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error) {
 				return &EthereumPaymentObligationContract{}, nil
 			}, txService, func() (uint64, error) { return 10, nil })
-			tenantID := identity.RandomCentID()
-			_, err := service.MintNFT(tenantID, decodeHex(test.request.Identifier), test.request.RegistryAddress, test.request.DepositAddress, test.request.ProofFields)
+			ctxh := testingconfig.CreateTenantContext(t, &mockCfg)
+			_, err := service.MintNFT(ctxh, decodeHex(test.request.Identifier), test.request.RegistryAddress, test.request.DepositAddress, test.request.ProofFields)
 			if test.err != nil {
 				assert.Equal(t, test.err.Error(), err.Error())
 			} else if err != nil {

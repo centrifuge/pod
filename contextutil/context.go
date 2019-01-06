@@ -37,6 +37,7 @@ func Self(ctx context.Context) (*identity.IDConfig, error) {
 	return identity.GetIdentityConfig(tc)
 }
 
+// Tenant extracts the TenanConfig from the given context value
 func Tenant(ctx context.Context) (*configstore.TenantConfig, error) {
 	tc, ok := ctx.Value(self).(*configstore.TenantConfig)
 	if !ok {
@@ -46,7 +47,7 @@ func Tenant(ctx context.Context) (*configstore.TenantConfig, error) {
 }
 
 // CentContext updates a context with tenant info using the configstore, must only be used for api handlers
-func CentContext(config configstore.Service, ctx context.Context) (context.Context, error) {
+func CentContext(ctx context.Context, config configstore.Service) (context.Context, error) {
 	// TODO [multi-tenancy] remove following and read the tenantID from the context
 	tc, err := config.GetAllTenants()
 	if err != nil {
