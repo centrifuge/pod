@@ -3,22 +3,28 @@
 package invoice
 
 import (
-	"context"
 	"encoding/json"
 	"os"
 	"reflect"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
+
+	"github.com/centrifuge/go-centrifuge/identity/ethid"
+
+	"github.com/centrifuge/go-centrifuge/config/configstore"
+
+	"github.com/centrifuge/go-centrifuge/contextutil"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/context/testlogging"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/ethereum"
-	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/p2p"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
@@ -26,6 +32,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
+	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/any"
@@ -44,8 +51,10 @@ func TestMain(m *testing.M) {
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
 		&storage.Bootstrapper{},
+		&configstore.Bootstrapper{},
 		&queue.Bootstrapper{},
-		&identity.Bootstrapper{},
+		transactions.Bootstrapper{},
+		&ethid.Bootstrapper{},
 		anchors.Bootstrapper{},
 		documents.Bootstrapper{},
 		p2p.Bootstrapper{},
@@ -183,8 +192,7 @@ func TestInvoiceModel_getClientData(t *testing.T) {
 }
 
 func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
-	contextHeader, err := header.NewContextHeader(context.Background(), cfg)
-	assert.Nil(t, err)
+	id, _ := contextutil.Self(testingconfig.CreateTenantContext(t, cfg))
 	// fail recipient
 	data := &clientinvoicepb.InvoiceData{
 		Sender:    "some number",
@@ -193,7 +201,7 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 		ExtraData: "some data",
 	}
 	inv := new(Invoice)
-	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data}, contextHeader)
+	err := inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data}, id.ID.String())
 	assert.Error(t, err, "must return err")
 	assert.Contains(t, err.Error(), "failed to decode extra data")
 	assert.Nil(t, inv.Recipient)
@@ -203,7 +211,7 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 
 	data.ExtraData = "0x010203020301"
 	data.Recipient = "0x010203040506"
-	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data}, contextHeader)
+	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data}, id.ID.String())
 	assert.Nil(t, err)
 	assert.NotNil(t, inv.ExtraData)
 	assert.NotNil(t, inv.Recipient)
@@ -211,7 +219,7 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 	assert.Nil(t, inv.Payee)
 
 	data.Sender = "0x010203060506"
-	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data}, contextHeader)
+	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data}, id.ID.String())
 	assert.Nil(t, err)
 	assert.NotNil(t, inv.ExtraData)
 	assert.NotNil(t, inv.Recipient)
@@ -219,7 +227,7 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 	assert.Nil(t, inv.Payee)
 
 	data.Payee = "0x010203030405"
-	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data}, contextHeader)
+	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data}, id.ID.String())
 	assert.Nil(t, err)
 	assert.NotNil(t, inv.ExtraData)
 	assert.NotNil(t, inv.Recipient)
@@ -228,29 +236,27 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 
 	data.ExtraData = "0x010203020301"
 	collabs := []string{"0x010102040506", "some id"}
-	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data, Collaborators: collabs}, contextHeader)
+	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data, Collaborators: collabs}, id.ID.String())
 	assert.Contains(t, err.Error(), "failed to decode collaborator")
 
 	collabs = []string{"0x010102040506", "0x010203020302"}
-	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data, Collaborators: collabs}, contextHeader)
+	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data, Collaborators: collabs}, id.ID.String())
 	assert.Nil(t, err, "must be nil")
 	assert.Equal(t, inv.Sender[:], []byte{1, 2, 3, 6, 5, 6})
 	assert.Equal(t, inv.Payee[:], []byte{1, 2, 3, 3, 4, 5})
 	assert.Equal(t, inv.Recipient[:], []byte{1, 2, 3, 4, 5, 6})
 	assert.Equal(t, inv.ExtraData[:], []byte{1, 2, 3, 2, 3, 1})
-	id := contextHeader.Self().ID
-	assert.Equal(t, inv.CoreDocument.Collaborators, [][]byte{id[:], {1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}})
+	assert.Equal(t, inv.CoreDocument.Collaborators, [][]byte{id.ID[:], {1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}})
 }
 
 func TestInvoiceModel_calculateDataRoot(t *testing.T) {
-	ctxHeader, err := header.NewContextHeader(context.Background(), cfg)
-	assert.Nil(t, err)
+	id, _ := contextutil.Self(testingconfig.CreateTenantContext(t, cfg))
 	m := new(Invoice)
-	err = m.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), ctxHeader)
+	err := m.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), id.ID.String())
 	assert.Nil(t, err, "Init must pass")
 	assert.Nil(t, m.InvoiceSalts, "salts must be nil")
 
-	err = m.calculateDataRoot()
+	err = m.CalculateDataRoot()
 	assert.Nil(t, err, "calculate must pass")
 	assert.NotNil(t, m.CoreDocument, "coredoc must be created")
 	assert.NotNil(t, m.InvoiceSalts, "salts must be created")
@@ -260,7 +266,7 @@ func TestInvoiceModel_calculateDataRoot(t *testing.T) {
 func TestInvoiceModel_createProofs(t *testing.T) {
 	i, corDoc, err := createMockInvoice(t)
 	assert.Nil(t, err)
-	corDoc, proof, err := i.createProofs([]string{"invoice.invoice_number", "collaborators[0]", "document_type"})
+	corDoc, proof, err := i.CreateProofs([]string{"invoice.invoice_number", "collaborators[0]", "document_type"})
 	assert.Nil(t, err)
 	assert.NotNil(t, proof)
 	assert.NotNil(t, corDoc)
@@ -288,7 +294,7 @@ func TestInvoiceModel_createProofs(t *testing.T) {
 func TestInvoiceModel_createProofsFieldDoesNotExist(t *testing.T) {
 	i, _, err := createMockInvoice(t)
 	assert.Nil(t, err)
-	_, _, err = i.createProofs([]string{"nonexisting"})
+	_, _, err = i.CreateProofs([]string{"nonexisting"})
 	assert.NotNil(t, err)
 }
 
@@ -311,7 +317,7 @@ func TestInvoiceModel_getDocumentDataTree(t *testing.T) {
 func createMockInvoice(t *testing.T) (*Invoice, *coredocumentpb.CoreDocument, error) {
 	i := &Invoice{InvoiceNumber: "3213121", NetAmount: 2, GrossAmount: 2, Currency: "USD", CoreDocument: coredocument.New()}
 	i.CoreDocument.Collaborators = [][]byte{{1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}}
-	err := i.calculateDataRoot()
+	err := i.CalculateDataRoot()
 	if err != nil {
 		return nil, nil, err
 	}

@@ -32,6 +32,8 @@ func paymentObligationMint(t *testing.T, documentType string) {
 
 	// Alice shares document with Bob
 	res := createDocument(alice.httpExpect, documentType, http.StatusOK, defaultNFTPayload(documentType, []string{bob.id.String()}))
+	txID := getTransactionID(t, res)
+	waitTillSuccess(t, alice.httpExpect, txID)
 
 	docIdentifier := getDocumentIdentifier(t, res)
 	if docIdentifier == "" {
@@ -113,7 +115,7 @@ func TestPaymentObligationMint_errors(t *testing.T) {
 			t.Parallel()
 			response, err := alice.host.mintNFT(alice.httpExpect, test.httpStatus, test.payload)
 			assert.Nil(t, err, "it should be possible to call the API endpoint")
-			response.Value("message").String().Contains(test.errorMsg)
+			response.Value("error").String().Contains(test.errorMsg)
 		})
 	}
 }

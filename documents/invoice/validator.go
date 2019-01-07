@@ -55,7 +55,7 @@ func dataRootValidator() documents.Validator {
 			return errors.New("unknown document type: %T", model)
 		}
 
-		if err = inv.calculateDataRoot(); err != nil {
+		if err = inv.CalculateDataRoot(); err != nil {
 			return errors.New("failed to calculate data root: %v", err)
 		}
 

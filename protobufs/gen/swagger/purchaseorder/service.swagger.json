@@ -285,6 +285,9 @@
           "items": {
             "type": "string"
           }
+        },
+        "transaction_id": {
+          "type": "string"
         }
       },
       "title": "ResponseHeader contains a set of common fields for most documents"

@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/centrifuge/go-centrifuge/keytools"
+	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/spf13/cobra"
@@ -33,7 +33,7 @@ func init() {
 			if err != nil {
 				log.Fatal(err)
 			}
-			correct := keytools.VerifyMessage(publicKey, []byte(messageParam), signatureBytes, curveTypeParam, ethereumSignFlag)
+			correct := crypto.VerifyMessage(publicKey, []byte(messageParam), signatureBytes, curveTypeParam, ethereumSignFlag)
 			fmt.Println(correct)
 		},
 	}

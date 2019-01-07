@@ -5,11 +5,12 @@ package purchaseorder
 import (
 	"testing"
 
-	"context"
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
+
+	"github.com/centrifuge/go-centrifuge/contextutil"
 
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
@@ -48,11 +49,10 @@ func TestFieldValidator_Validate(t *testing.T) {
 
 func TestDataRootValidation_Validate(t *testing.T) {
 	drv := dataRootValidator()
-	contextHeader, err := header.NewContextHeader(context.Background(), cfg)
-	assert.Nil(t, err)
+	contextHeader := testingconfig.CreateTenantContext(t, cfg)
 
 	// nil error
-	err = drv.Validate(nil, nil)
+	err := drv.Validate(nil, nil)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "nil document")
 
@@ -83,8 +83,9 @@ func TestDataRootValidation_Validate(t *testing.T) {
 	assert.Contains(t, err.Error(), "unknown document type")
 
 	// mismatch
+	id, _ := contextutil.Self(contextHeader)
 	po := new(PurchaseOrder)
-	err = po.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), contextHeader)
+	err = po.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), id.ID.String())
 	assert.Nil(t, err)
 	po.CoreDocument = cd
 	err = drv.Validate(nil, po)
@@ -93,7 +94,7 @@ func TestDataRootValidation_Validate(t *testing.T) {
 
 	// success
 	po = new(PurchaseOrder)
-	err = po.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), contextHeader)
+	err = po.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), id.ID.String())
 	assert.Nil(t, err)
 	err = po.calculateDataRoot()
 	assert.Nil(t, err)

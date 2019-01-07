@@ -1,16 +1,17 @@
 package invoice
 
 import (
+	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/identity/ethid"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/p2p"
+	"github.com/centrifuge/go-centrifuge/queue"
+	"github.com/centrifuge/go-centrifuge/transactions"
 )
 
 // Bootstrapper implements bootstrap.Bootstrapper.
@@ -18,15 +19,9 @@ type Bootstrapper struct{}
 
 // Bootstrap sets the required storage and registers
 func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
-	if _, ok := ctx[bootstrap.BootstrappedConfig]; !ok {
-		return errors.New("config hasn't been initialized")
-	}
-
-	cfg := ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-
-	p2pClient, ok := ctx[p2p.BootstrappedP2PClient].(p2p.Client)
-	if !ok {
-		return errors.New("p2p client not initialised")
+	cfg, err := configstore.RetrieveConfig(true, ctx)
+	if err != nil {
+		return err
 	}
 
 	registry, ok := ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
@@ -39,7 +34,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("anchor repository not initialised")
 	}
 
-	idService, ok := ctx[identity.BootstrappedIDService].(identity.Service)
+	idService, ok := ctx[ethid.BootstrappedIDService].(identity.Service)
 	if !ok {
 		return errors.New("identity service not initialised")
 	}
@@ -50,9 +45,23 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	}
 	repo.Register(&Invoice{})
 
+	queueSrv, ok := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
+	if !ok {
+		return errors.New("queue server not initialised")
+	}
+
+	txService, ok := ctx[transactions.BootstrappedService].(transactions.Service)
+	if !ok {
+		return errors.New("transaction service not initialised")
+	}
+
 	// register service
-	srv := DefaultService(cfg, repo, coredocument.DefaultProcessor(idService, p2pClient, anchorRepo, cfg), anchorRepo, idService)
-	err := registry.Register(documenttypes.InvoiceDataTypeUrl, srv)
+	srv := DefaultService(
+		cfg,
+		repo,
+		anchorRepo,
+		idService, queueSrv, txService)
+	err = registry.Register(documenttypes.InvoiceDataTypeUrl, srv)
 	if err != nil {
 		return errors.New("failed to register invoice service: %v", err)
 	}

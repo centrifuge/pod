@@ -4,44 +4,41 @@ package nft
 
 import (
 	"context"
+	"math/big"
 	"testing"
 
-	"math/big"
-
+	ccommon "github.com/centrifuge/go-centrifuge/common"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/nft"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
-type MockPaymentObligationService struct {
+type mockPaymentObligationService struct {
 	mock.Mock
 }
 
-func (m *MockPaymentObligationService) MintNFT(documentID []byte, registryAddress, depositAddress string, proofFields []string) (<-chan *watchTokenMinted, error) {
-	args := m.Called(documentID, registryAddress, depositAddress, proofFields)
-	return args.Get(0).(chan *watchTokenMinted), args.Error(1)
+func (m *mockPaymentObligationService) MintNFT(tenantID common.Address, documentID []byte, registryAddress, depositAddress string, proofFields []string) (*MintNFTResponse, error) {
+	args := m.Called(tenantID, documentID, registryAddress, depositAddress, proofFields)
+	resp, _ := args.Get(0).(*MintNFTResponse)
+	return resp, args.Error(1)
 }
 
 func TestNFTMint_success(t *testing.T) {
 	nftMintRequest := getTestSetupData()
-	mockService := &MockPaymentObligationService{}
+	mockService := &mockPaymentObligationService{}
 	docID, _ := hexutil.Decode(nftMintRequest.Identifier)
 
-	confirmations := make(chan *watchTokenMinted)
-	mockService.
-		On("MintNFT", docID, nftMintRequest.RegistryAddress, nftMintRequest.DepositAddress, nftMintRequest.ProofFields).
-		Return(confirmations, nil)
-
 	tokID := big.NewInt(1)
-	go func() {
-		confirmations <- &watchTokenMinted{tokID, nil}
-	}()
+	nftResponse := &MintNFTResponse{TokenID: tokID.String()}
+	mockService.
+		On("MintNFT", ccommon.DummyIdentity, docID, nftMintRequest.RegistryAddress, nftMintRequest.DepositAddress, nftMintRequest.ProofFields).
+		Return(nftResponse, nil)
 
 	handler := grpcHandler{mockService}
 	nftMintResponse, err := handler.MintNFT(context.Background(), nftMintRequest)
-
 	mockService.AssertExpectations(t)
 	assert.Nil(t, err, "mint nft should be successful")
 	assert.Equal(t, tokID.String(), nftMintResponse.TokenId, "TokenID should have a dummy value")
@@ -50,19 +47,18 @@ func TestNFTMint_success(t *testing.T) {
 func TestNFTMint_InvalidIdentifier(t *testing.T) {
 	nftMintRequest := getTestSetupData()
 	nftMintRequest.Identifier = "32321"
-	handler := grpcHandler{&MockPaymentObligationService{}}
+	handler := grpcHandler{&mockPaymentObligationService{}}
 	_, err := handler.MintNFT(context.Background(), nftMintRequest)
 	assert.Error(t, err, "invalid identifier should throw an error")
 }
 
 func TestNFTMint_ServiceError(t *testing.T) {
 	nftMintRequest := getTestSetupData()
-	mockService := &MockPaymentObligationService{}
+	mockService := &mockPaymentObligationService{}
 	docID, _ := hexutil.Decode(nftMintRequest.Identifier)
-	confirmations := make(chan *watchTokenMinted)
 	mockService.
-		On("MintNFT", docID, nftMintRequest.RegistryAddress, nftMintRequest.DepositAddress, nftMintRequest.ProofFields).
-		Return(confirmations, errors.New("service error"))
+		On("MintNFT", ccommon.DummyIdentity, docID, nftMintRequest.RegistryAddress, nftMintRequest.DepositAddress, nftMintRequest.ProofFields).
+		Return(nil, errors.New("service error"))
 
 	handler := grpcHandler{mockService}
 	_, err := handler.MintNFT(context.Background(), nftMintRequest)
@@ -73,13 +69,13 @@ func TestNFTMint_ServiceError(t *testing.T) {
 func TestNFTMint_InvalidAddresses(t *testing.T) {
 	nftMintRequest := getTestSetupData()
 	nftMintRequest.RegistryAddress = "0x1234"
-	handler := grpcHandler{&MockPaymentObligationService{}}
+	handler := grpcHandler{&mockPaymentObligationService{}}
 	_, err := handler.MintNFT(context.Background(), nftMintRequest)
 	assert.Error(t, err, "invalid registry address should throw an error")
 
 	nftMintRequest = getTestSetupData()
 	nftMintRequest.DepositAddress = "abc"
-	handler = grpcHandler{&MockPaymentObligationService{}}
+	handler = grpcHandler{&mockPaymentObligationService{}}
 	_, err = handler.MintNFT(context.Background(), nftMintRequest)
 	assert.Error(t, err, "invalid deposit address should throw an error")
 }

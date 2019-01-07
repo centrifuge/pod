@@ -1,8 +1,14 @@
 package testingconfig
 
 import (
+	"context"
 	"math/big"
+	"testing"
 	"time"
+
+	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/contextutil"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/ethereum/go-ethereum/common"
@@ -124,7 +130,7 @@ func (m *MockConfig) GetContractAddressString(address string) string {
 	return args.Get(0).(string)
 }
 
-func (m *MockConfig) GetContractAddress(address string) common.Address {
+func (m *MockConfig) GetContractAddress(contractName config.ContractName) common.Address {
 	args := m.Called()
 	return args.Get(0).(common.Address)
 }
@@ -152,4 +158,12 @@ func (m *MockConfig) GetSigningKeyPair() (pub, priv string) {
 func (m *MockConfig) GetEthAuthKeyPair() (pub, priv string) {
 	args := m.Called()
 	return args.Get(0).(string), args.Get(1).(string)
+}
+
+func CreateTenantContext(t *testing.T, cfg config.Configuration) context.Context {
+	tc, err := configstore.NewTenantConfig("", cfg)
+	assert.Nil(t, err)
+	contextHeader, err := contextutil.NewCentrifugeContext(context.Background(), tc)
+	assert.Nil(t, err)
+	return contextHeader
 }

@@ -80,7 +80,8 @@ type gethClient struct {
 	host      *url.URL
 	accounts  map[string]*bind.TransactOpts
 	accMu     sync.Mutex // accMu to protect accounts
-	config    Config
+	// TODO [multi-tenancy] replace this with config service
+	config Config
 
 	// txMu to ensure one transaction at a time per client
 	txMu sync.Mutex

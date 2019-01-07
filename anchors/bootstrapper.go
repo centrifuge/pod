@@ -1,6 +1,8 @@
 package anchors
 
 import (
+	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/errors"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -17,17 +19,17 @@ type Bootstrapper struct{}
 // Bootstrap initializes the anchorRepositoryContract as well as the anchorConfirmationTask that depends on it.
 // the anchorConfirmationTask is added to be registered on the Queue at queue.Bootstrapper.
 func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
-	if _, ok := ctx[bootstrap.BootstrappedConfig]; !ok {
-		return errors.New("config hasn't been initialized")
+	cfg, err := configstore.RetrieveConfig(false, ctx)
+	if err != nil {
+		return err
 	}
-	cfg := ctx[bootstrap.BootstrappedConfig].(Config)
 
 	if _, ok := ctx[ethereum.BootstrappedEthereumClient]; !ok {
 		return errors.New("ethereum client hasn't been initialized")
 	}
 	client := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
 
-	repositoryContract, err := NewEthereumAnchorRepositoryContract(cfg.GetContractAddress("anchorRepository"), client.GetEthClient())
+	repositoryContract, err := NewEthereumAnchorRepositoryContract(cfg.GetContractAddress(config.AnchorRepo), client.GetEthClient())
 	if err != nil {
 		return err
 	}

@@ -120,3 +120,8 @@ func ParseBlockHeight(valMap map[string]interface{}) (uint64, error) {
 	}
 	return 0, errors.New("value can not be parsed")
 }
+
+// TaskQueuer can be implemented by any queueing system
+type TaskQueuer interface {
+	EnqueueJob(taskTypeName string, params map[string]interface{}) (TaskResult, error)
+}

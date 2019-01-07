@@ -3,6 +3,7 @@ package api
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"io"
 	"net"
 	"net/http"
 	_ "net/http/pprof" // we need this side effect that loads the pprof endpoints to defaultServerMux
@@ -10,17 +11,26 @@ import (
 	"sync"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/common"
 	"github.com/centrifuge/go-centrifuge/errors"
-
-	"github.com/centrifuge/go-centrifuge/centerrors"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	logging "github.com/ipfs/go-log"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/metadata"
 )
 
-var log = logging.Logger("api-server")
+// ErrNoAuthHeader used for requests when header is not passed.
+const ErrNoAuthHeader = errors.Error("'authorization' header missing")
+
+var (
+	log = logging.Logger("api-server")
+
+	// noAuthPaths holds the paths that doesn't require header to be passed.
+	noAuthPaths = [...]string{"/health.HealthCheckService/Ping"}
+)
 
 // Config defines methods required for the package api
 type Config interface {
@@ -59,10 +69,15 @@ func (c apiServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr cha
 		InsecureSkipVerify: true,
 	})
 
-	opts := []grpc.ServerOption{grpc.Creds(creds)}
+	// set http error interceptor
+	runtime.HTTPError = httpResponseInterceptor
+
+	opts := []grpc.ServerOption{
+		grpc.Creds(creds),
+		// grpcInterceptor(), // enable this once we start requiring the tenant id to passed as header
+	}
 
 	grpcServer := grpc.NewServer(opts...)
-
 	dcreds := credentials.NewTLS(&tls.Config{
 		ServerName:         addr,
 		RootCAs:            certPool,
@@ -153,7 +168,7 @@ func loadCertPool() (certPool *x509.CertPool, err error) {
 	certPool = x509.NewCertPool()
 	ok := certPool.AppendCertsFromPEM([]byte(insecureCert))
 	if !ok {
-		return nil, centerrors.Wrap(errors.New("could not load certpool"), "")
+		return nil, errors.New("could not load certpool")
 	}
 	return certPool, nil
 }
@@ -164,4 +179,67 @@ func loadKeyPair() (keyPair tls.Certificate, err error) {
 		return pair, err
 	}
 	return pair, nil
+}
+
+// grpcInterceptor returns a GRPC UnaryInterceptor for all grpc/http requests.
+func grpcInterceptor() grpc.ServerOption {
+	return grpc.UnaryInterceptor(auth)
+}
+
+// auth is the grpc unary interceptor to to check if the tenant ID is passed in the header.
+// interceptor will check "authorisation" header. If not set, we return an error.
+//
+// at this point we are going with one interceptor. Once we have more than one interceptor,
+// we can write a wrapper interceptor that will call the chain of interceptor
+//
+// Note: each handler can access tenantID from the context: ctx.Value(api.TenantKey)
+func auth(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+	// if this request is for ping
+	if utils.ContainsString(noAuthPaths[:], info.FullMethod) {
+		return handler(ctx, req)
+	}
+
+	err = errors.NewHTTPError(http.StatusBadRequest, ErrNoAuthHeader)
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return nil, err
+	}
+
+	auth := md.Get("authorization")
+	if len(auth) < 1 {
+		return nil, err
+	}
+
+	ctx = context.WithValue(ctx, common.TenantKey, auth[0])
+	return handler(ctx, req)
+}
+
+// httpResponseInterceptor will intercept if the we return an error from the grpc handler.
+// we fetch the http code from the error using errors.GetHTTPDetails.
+//
+// copied some stuff from the DefaultHTTPError interceptor.
+// Note: this is where we marshal the error.
+func httpResponseInterceptor(_ context.Context, _ *runtime.ServeMux, marshaler runtime.Marshaler, w http.ResponseWriter, _ *http.Request, err error) {
+	const fallback = `{"error": "failed to marshal error message"}`
+
+	w.Header().Set("Content-Type", marshaler.ContentType())
+	var errBody struct {
+		Error string `protobuf:"bytes,1,name=error" json:"error"`
+	}
+
+	code, msg := errors.GetHTTPDetails(err)
+	errBody.Error = msg
+	buf, merr := marshaler.Marshal(errBody)
+	if merr != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		if _, err := io.WriteString(w, fallback); err != nil {
+			log.Infof("Failed to write response: %v", err)
+		}
+		return
+	}
+
+	w.WriteHeader(code)
+	if _, err := w.Write(buf); err != nil {
+		log.Infof("Failed to write response: %v", err)
+	}
 }

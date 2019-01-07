@@ -47,8 +47,8 @@ func (srv *MockIDService) ValidateKey(centrifugeId identity.CentID, key []byte, 
 	return args.Error(0)
 }
 
-func (srv *MockIDService) AddKeyFromConfig(purpose int) error {
-	args := srv.Called(purpose)
+func (srv *MockIDService) AddKeyFromConfig(config identity.Config, purpose int) error {
+	args := srv.Called(config, purpose)
 	return args.Error(0)
 }
 
