@@ -4,6 +4,7 @@ package purchaseorder
 
 import (
 	"encoding/json"
+	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 	"os"
 	"reflect"
 	"testing"
@@ -58,6 +59,7 @@ func TestMain(m *testing.M) {
 		anchors.Bootstrapper{},
 		documents.Bootstrapper{},
 		p2p.Bootstrapper{},
+		&genericdoc.Bootstrapper{},
 		&Bootstrapper{},
 		&queue.Starter{},
 	}

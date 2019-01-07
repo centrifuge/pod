@@ -4,6 +4,7 @@ package invoice
 
 import (
 	"encoding/json"
+	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 	"os"
 	"reflect"
 	"testing"
@@ -57,9 +58,11 @@ func TestMain(m *testing.M) {
 		&ethid.Bootstrapper{},
 		anchors.Bootstrapper{},
 		documents.Bootstrapper{},
+		&genericdoc.Bootstrapper{},
 		p2p.Bootstrapper{},
 		&Bootstrapper{},
 		&queue.Starter{},
+
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
