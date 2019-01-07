@@ -8,6 +8,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
+
 	"github.com/centrifuge/go-centrifuge/identity/ethid"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -140,7 +142,8 @@ func TestHandler_SendAnchoredDocument_update_fail(t *testing.T) {
 	docRootTyped, _ := anchors.ToDocumentRoot(doc.DocumentRoot)
 	messageToSign := anchors.GenerateCommitHash(anchorIDTyped, centrifugeId, docRootTyped)
 	signature, _ := secp256k1.SignEthereum(messageToSign, idConfig.Keys[identity.KeyPurposeEthMsgAuth].PrivateKey)
-	anchorConfirmations, err := anchorRepo.CommitAnchor(anchorIDTyped, docRootTyped, centrifugeId, [][anchors.DocumentProofLength]byte{utils.RandomByte32()}, signature)
+	ctx := testingconfig.CreateTenantContext(t, cfg)
+	anchorConfirmations, err := anchorRepo.CommitAnchor(ctx, anchorIDTyped, docRootTyped, centrifugeId, [][anchors.DocumentProofLength]byte{utils.RandomByte32()}, signature)
 	assert.Nil(t, err)
 
 	watchCommittedAnchor := <-anchorConfirmations
@@ -182,7 +185,8 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 	docRootTyped, _ := anchors.ToDocumentRoot(doc.DocumentRoot)
 	messageToSign := anchors.GenerateCommitHash(anchorIDTyped, centrifugeId, docRootTyped)
 	signature, _ := secp256k1.SignEthereum(messageToSign, idConfig.Keys[identity.KeyPurposeEthMsgAuth].PrivateKey)
-	anchorConfirmations, err := anchorRepo.CommitAnchor(anchorIDTyped, docRootTyped, centrifugeId, [][anchors.DocumentProofLength]byte{utils.RandomByte32()}, signature)
+	ctx := testingconfig.CreateTenantContext(t, cfg)
+	anchorConfirmations, err := anchorRepo.CommitAnchor(ctx, anchorIDTyped, docRootTyped, centrifugeId, [][anchors.DocumentProofLength]byte{utils.RandomByte32()}, signature)
 	assert.Nil(t, err)
 
 	watchCommittedAnchor := <-anchorConfirmations
