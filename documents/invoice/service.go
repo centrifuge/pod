@@ -1,7 +1,6 @@
 package invoice
 
 import (
-	"bytes"
 	"context"
 	"time"
 
@@ -243,49 +242,32 @@ func (s service) Update(ctx context.Context, inv documents.Model) (documents.Mod
 	return inv, txID, nil
 }
 
-// GetVersion returns an invoice for a given version
-func (s service) GetVersion(documentID []byte, version []byte) (doc documents.Model, err error) {
-	inv, err := s.getInvoiceVersion(documentID, version)
-	if err != nil {
-		return nil, err
-	}
-	return inv, nil
-}
-
-// GetCurrentVersion returns the last known version of an invoice
-func (s service) GetCurrentVersion(documentID []byte) (doc documents.Model, err error) {
-	inv, err := s.getInvoiceVersion(documentID, documentID)
-	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
-	}
-	nextVersion := inv.CoreDocument.NextVersion
-	for nextVersion != nil {
-		temp, err := s.getInvoiceVersion(documentID, nextVersion)
-		if err != nil {
-			// here the err is returned as nil because it is expected that the nextVersion is not available in the db at some stage of the iteration
-			return inv, nil
-		}
-
-		inv = temp
-		nextVersion = inv.CoreDocument.NextVersion
-	}
-	return inv, nil
-}
-
-func (s service) getInvoiceVersion(documentID, version []byte) (inv *Invoice, err error) {
-	doc, err := s.repo.Get(common.DummyIdentity.Bytes(), version)
-	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentVersionNotFound, err)
-	}
-	inv, ok := doc.(*Invoice)
+func (s service) checkType(model documents.Model) (documents.Model, error) {
+	_, ok := model.(*Invoice)
 	if !ok {
 		return nil, documents.ErrDocumentInvalidType
 	}
+	return model, nil
+}
 
-	if !bytes.Equal(inv.CoreDocument.DocumentIdentifier, documentID) {
-		return nil, errors.NewTypedError(documents.ErrDocumentVersionNotFound, errors.New("version is not valid for this identifier"))
+// GetVersion returns an invoice for a given version
+func (s service) GetVersion(documentID []byte, version []byte) (model documents.Model, err error) {
+	model, err = s.genService.GetVersion(documentID,version)
+	if err != nil {
+		return nil, err
 	}
-	return inv, nil
+	return s.checkType(model)
+
+}
+
+// GetCurrentVersion returns the last known version of an invoice
+func (s service) GetCurrentVersion(documentID []byte) (model documents.Model, err error) {
+	model, err = s.genService.GetCurrentVersion(documentID)
+	if err != nil {
+		return nil, err
+	}
+	return s.checkType(model)
+
 }
 
 // DeriveInvoiceResponse returns create response from invoice model
@@ -456,5 +438,5 @@ func (s service) ReceiveAnchoredDocument(model documents.Model, headers *p2ppb.C
 
 // Exists checks if an invoice exists
 func (s service) Exists(documentID []byte) bool {
-	return s.repo.Exists(common.DummyIdentity.Bytes(), documentID)
+	return s.genService.Exists(documentID)
 }

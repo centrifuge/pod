@@ -58,8 +58,8 @@ func TestMain(m *testing.M) {
 		&ethid.Bootstrapper{},
 		anchors.Bootstrapper{},
 		documents.Bootstrapper{},
-		&genericdoc.Bootstrapper{},
 		p2p.Bootstrapper{},
+		&genericdoc.Bootstrapper{},
 		&Bootstrapper{},
 		&queue.Starter{},
 
