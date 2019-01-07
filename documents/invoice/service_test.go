@@ -3,6 +3,7 @@
 package invoice
 
 import (
+	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 	"math/big"
 	"testing"
 
@@ -63,12 +64,16 @@ func getServiceWithMockedLayers() (testingcommons.MockIDService, Service) {
 	idService.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
 	queueSrv := new(testingutils.MockQueue)
 	queueSrv.On("EnqueueJob", mock.Anything, mock.Anything).Return(&gocelery.AsyncResult{}, nil)
+
+	repo := testRepo()
+	mockAnchor := &mockAnchorRepo{}
+	genService := genericdoc.DefaultService(nil, repo, mockAnchor, &idService)
 	return idService, DefaultService(
 		c,
-		testRepo(),
-		&mockAnchorRepo{}, &idService,
+		repo,
+		mockAnchor, &idService,
 		queueSrv,
-		ctx[transactions.BootstrappedService].(transactions.Service), nil)
+		ctx[transactions.BootstrappedService].(transactions.Service), genService)
 }
 
 func createMockDocument() (*Invoice, error) {
