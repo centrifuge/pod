@@ -1,8 +1,11 @@
 package notification
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
+
+	"github.com/centrifuge/go-centrifuge/contextutil"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -25,31 +28,28 @@ const (
 	Success         Status    = 1
 )
 
-// Config defines methods required for this package.
-type Config interface {
-	GetReceiveEventNotificationEndpoint() string
-}
-
 // Sender defines methods that can handle a notification.
 type Sender interface {
-	Send(notification *notificationpb.NotificationMessage) (Status, error)
+	Send(ctx context.Context, notification *notificationpb.NotificationMessage) (Status, error)
 }
 
 // NewWebhookSender returns an implementation of a Sender that sends notifications through webhooks.
-func NewWebhookSender(config Config) Sender {
-	return webhookSender{config}
+func NewWebhookSender() Sender {
+	return webhookSender{}
 }
 
 // NewWebhookSender implements Sender.
 // Sends notification through a webhook defined.
 type webhookSender struct {
-	// TODO [multi-tenancy] replace this with config service
-	config Config
 }
 
 // Send sends notification to the defined webhook.
-func (wh webhookSender) Send(notification *notificationpb.NotificationMessage) (Status, error) {
-	url := wh.config.GetReceiveEventNotificationEndpoint()
+func (wh webhookSender) Send(ctx context.Context, notification *notificationpb.NotificationMessage) (Status, error) {
+	tc, err := contextutil.Tenant(ctx)
+	if err != nil {
+		return Failure, err
+	}
+	url := tc.ReceiveEventNotificationEndpoint
 	if url == "" {
 		log.Warningf("Webhook URL not defined, manually fetch received document")
 		return Success, nil

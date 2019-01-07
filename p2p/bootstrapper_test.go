@@ -23,8 +23,10 @@ func TestBootstrapper_Bootstrap(t *testing.T) {
 	assert.Error(t, err)
 
 	// config
+	cs := new(configstore.MockService)
 	m[bootstrap.BootstrappedConfig] = new(testingconfig.MockConfig)
-	m[configstore.BootstrappedConfigStorage] = new(configstore.MockService)
+	m[configstore.BootstrappedConfigStorage] = cs
+	cs.On("GetConfig").Return(&configstore.NodeConfig{}, nil)
 	m[documents.BootstrappedRegistry] = documents.NewServiceRegistry()
 	err = b.Bootstrap(m)
 	assert.Nil(t, err)

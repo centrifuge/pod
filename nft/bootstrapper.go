@@ -57,7 +57,7 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		registry,
 		idService,
 		client,
-		cfg, queueSrv,
+		queueSrv,
 		bindContract,
 		txService, func() (uint64, error) {
 			h, err := client.GetEthClient().HeaderByNumber(context.Background(), nil)

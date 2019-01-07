@@ -36,10 +36,11 @@ type PostBootstrapper struct{}
 
 // Bootstrap register task to the queue.
 func (PostBootstrapper) Bootstrap(ctx map[string]interface{}) error {
-	cfg, err := configstore.RetrieveConfig(true, ctx)
-	if err != nil {
-		return err
+	cfgService, ok := ctx[configstore.BootstrappedConfigStorage].(configstore.Service)
+	if !ok {
+		return errors.New("config service not initialised")
 	}
+
 	queueSrv, ok := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
 	if !ok {
 		return errors.New("queue not initialised")
@@ -59,7 +60,7 @@ func (PostBootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		BaseTask: transactions.BaseTask{
 			TxService: ctx[transactions.BootstrappedService].(transactions.Service),
 		},
-		config:        cfg,
+		config:        cfgService,
 		processor:     coreDocProc,
 		modelGetFunc:  repo.Get,
 		modelSaveFunc: repo.Update,
