@@ -63,7 +63,7 @@ var srvLog = logging.Logger("document-service")
 
 // DefaultService returns the default implementation of the service
 func DefaultService(config config.Configuration, repo documents.Repository,
-	anchorRepo anchors.AnchorRepository, idService identity.Service) documents.Service {
+	anchorRepo anchors.AnchorRepository, idService identity.Service) Service {
 	return service{repo: repo,
 		config:           config,
 		anchorRepository: anchorRepo,

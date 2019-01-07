@@ -3,6 +3,7 @@ package invoice
 import (
 	"bytes"
 	"context"
+	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -64,6 +65,7 @@ type service struct {
 	identityService  identity.Service
 	queueSrv         queue.TaskQueuer
 	txService        transactions.Service
+	genService       genericdoc.Service
 }
 
 // DefaultService returns the default implementation of the service.
@@ -73,7 +75,9 @@ func DefaultService(
 	anchorRepository anchors.AnchorRepository,
 	identityService identity.Service,
 	queueSrv queue.TaskQueuer,
-	txService transactions.Service) Service {
+	txService transactions.Service,
+	genService genericdoc.Service,
+	) Service {
 	return service{
 		config:           config,
 		repo:             repo,
@@ -81,7 +85,8 @@ func DefaultService(
 		anchorRepository: anchorRepository,
 		identityService:  identityService,
 		queueSrv:         queueSrv,
-		txService:        txService}
+		txService:        txService,
+		genService: genService,}
 }
 
 // CreateProofs creates proofs for the latest version document given the fields

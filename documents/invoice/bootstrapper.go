@@ -2,6 +2,7 @@ package invoice
 
 import (
 	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity/ethid"
 
@@ -55,12 +56,16 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("transaction service not initialised")
 	}
 
+	genService, ok := ctx[genericdoc.BootstrappedGenService].(genericdoc.Service)
+	if !ok {
+		return errors.New("transaction service not initialised")
+	}
 	// register service
 	srv := DefaultService(
 		cfg,
 		repo,
 		anchorRepo,
-		idService, queueSrv, txService)
+		idService, queueSrv, txService, genService)
 	err = registry.Register(documenttypes.InvoiceDataTypeUrl, srv)
 	if err != nil {
 		return errors.New("failed to register invoice service: %v", err)
