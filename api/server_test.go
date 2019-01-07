@@ -9,6 +9,8 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
+
 	"github.com/centrifuge/go-centrifuge/identity/ethid"
 
 	"github.com/centrifuge/go-centrifuge/config/configstore"
@@ -55,6 +57,7 @@ func TestMain(m *testing.M) {
 		&ethid.Bootstrapper{},
 		documents.Bootstrapper{},
 		p2p.Bootstrapper{},
+		&genericdoc.Bootstrapper{},
 		&invoice.Bootstrapper{},
 		&purchaseorder.Bootstrapper{},
 		&nft.Bootstrapper{},

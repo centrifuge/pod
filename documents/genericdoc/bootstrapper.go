@@ -13,7 +13,6 @@ import (
 // Bootstrapper implements bootstrap.Bootstrapper.
 type Bootstrapper struct{}
 
-
 const BootstrappedGenService = "BootstrappedGenService "
 
 // Bootstrap sets the required storage and registers
@@ -40,5 +39,5 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 
 	ctx[BootstrappedGenService] = DefaultService(cfg, repo, anchorRepo, idService)
 	return nil
-	
+
 }

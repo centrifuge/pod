@@ -3,8 +3,9 @@ package invoice
 import (
 	"bytes"
 	"context"
-	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 	"time"
+
+	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
@@ -77,7 +78,7 @@ func DefaultService(
 	queueSrv queue.TaskQueuer,
 	txService transactions.Service,
 	genService genericdoc.Service,
-	) Service {
+) Service {
 	return service{
 		config:           config,
 		repo:             repo,
@@ -86,7 +87,7 @@ func DefaultService(
 		identityService:  identityService,
 		queueSrv:         queueSrv,
 		txService:        txService,
-		genService: genService,}
+		genService:       genService}
 }
 
 // CreateProofs creates proofs for the latest version document given the fields

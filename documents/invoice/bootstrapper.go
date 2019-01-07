@@ -58,7 +58,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 
 	genService, ok := ctx[genericdoc.BootstrappedGenService].(genericdoc.Service)
 	if !ok {
-		return errors.New("transaction service not initialised")
+		return errors.New("generic service is not initialised")
 	}
 	// register service
 	srv := DefaultService(
