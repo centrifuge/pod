@@ -450,8 +450,8 @@ func updatedAnchoredMockDocument(t *testing.T, model *PurchaseOrder) (*PurchaseO
 }
 
 func TestService_CreateProofsForVersion(t *testing.T) {
-	idService, poSrv := getServiceWithMockedLayers()
 	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	idService, poSrv := getServiceWithMockedLayers()
 	i, err := createAnchoredMockDocument(t, false)
 	assert.Nil(t, err)
 	idService = mockSignatureCheck(i, idService, poSrv)

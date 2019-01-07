@@ -366,7 +366,7 @@ func (s service) CreateProofs(ctx context.Context, documentID []byte, fields []s
 
 // CreateProofsForVersion generates proofs for specific version of the document
 func (s service) CreateProofsForVersion(ctx context.Context, documentID, version []byte, fields []string) (*documents.DocumentProof, error) {
-	model, err := s.GetVersion(ctx, documentID, nil)
+	model, err := s.GetVersion(ctx, documentID, version)
 	if err != nil {
 		return nil, err
 	}
