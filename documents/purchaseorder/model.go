@@ -349,7 +349,7 @@ func (p *PurchaseOrder) calculateDataRoot() error {
 // getDocumentDataTree creates precise-proofs data tree for the model
 func (p *PurchaseOrder) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
 	prop := proofs.NewProperty(prefix)
-	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: sha256.New(), ParentPrefix: &prop})
+	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: sha256.New(), ParentPrefix: prop})
 	poData := p.createP2PProtobuf()
 	err = t.AddLeavesFromDocument(poData, p.getPurchaseOrderSalts(poData))
 	if err != nil {

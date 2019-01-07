@@ -86,14 +86,14 @@
   revision = "80f35a18b9a0c632d7843e7e536873b0536f0040"
 
 [[projects]]
-  digest = "1:f84321c62605dab82f35a0795dfe30981199e28ea8a0652e5e7ba9af66575fef"
+  digest = "1:7564ab9af5eead6e9a7f4935ada1b44336b6e0b3645ed0b9e258660d04d81a73"
   name = "github.com/centrifuge/precise-proofs"
   packages = [
     "proofs",
     "proofs/proto",
   ]
   pruneopts = "UT"
-  revision = "d0df6e2ed059de47375ef8281529a500cd920261"
+  revision = "e6376eab28a9a7da6c94f8d23099932a65b4e2a2"
 
 [[projects]]
   digest = "1:0ef770954bca104ee99b3b6b7f9b240605ac03517d9f98cbc1893daa03f3c038"
@@ -1519,7 +1519,6 @@
     "github.com/gavv/httpexpect",
     "github.com/go-errors/errors",
     "github.com/gogo/protobuf/io",
-    "github.com/golang/protobuf/jsonpb",
     "github.com/golang/protobuf/proto",
     "github.com/golang/protobuf/protoc-gen-go",
     "github.com/golang/protobuf/ptypes",
