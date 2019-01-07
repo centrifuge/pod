@@ -62,7 +62,7 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func getServiceWithMockedLayers() (documents.Service, testingcommons.MockIDService) {
+func getServiceWithMockedLayers() (Service, testingcommons.MockIDService) {
 	repo := testRepo()
 	idService := testingcommons.MockIDService{}
 	idService.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
@@ -174,7 +174,7 @@ func updatedAnchoredMockDocument(t *testing.T, i *invoice.Invoice) (*invoice.Inv
 }
 
 // Functions returns service mocks
-func mockSignatureCheck(i *invoice.Invoice, idService testingcommons.MockIDService, s documents.Service) testingcommons.MockIDService {
+func mockSignatureCheck(i *invoice.Invoice, idService testingcommons.MockIDService, s Service) testingcommons.MockIDService {
 	idkey := &ethid.EthereumIdentityKey{
 		Key:       key1Pub,
 		Purposes:  []*big.Int{big.NewInt(identity.KeyPurposeSigning)},

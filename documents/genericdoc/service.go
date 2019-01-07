@@ -24,6 +24,31 @@ import (
 	logging "github.com/ipfs/go-log"
 )
 
+// Service provides an interface for generic document methods
+type Service interface {
+
+	// GetCurrentVersion reads a document from the database
+	GetCurrentVersion(documentID []byte) (documents.Model, error)
+
+	// Exists checks if a document exists
+	Exists(documentID []byte) bool
+
+	// GetVersion reads a document from the database
+	GetVersion(documentID []byte, version []byte) (documents.Model, error)
+
+	// CreateProofs creates proofs for the latest version document given the fields
+	CreateProofs(documentID []byte, fields []string) (*documents.DocumentProof, error)
+
+	// CreateProofsForVersion creates proofs for a particular version of the document given the fields
+	CreateProofsForVersion(documentID, version []byte, fields []string) (*documents.DocumentProof, error)
+
+	// RequestDocumentSignature Validates and Signs document received over the p2p layer
+	RequestDocumentSignature(ctx context.Context, model documents.Model) (*coredocumentpb.Signature, error)
+
+	// ReceiveAnchoredDocument receives a new anchored document over the p2p layer, validates and updates the document in DB
+	ReceiveAnchoredDocument(model documents.Model, headers *p2ppb.CentrifugeHeader) error
+}
+
 // service implements Service
 type service struct {
 	// TODO [multi-tenancy] replace this with config service
