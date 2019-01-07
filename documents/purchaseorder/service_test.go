@@ -536,7 +536,7 @@ func TestService_DerivePurchaseOrderResponse(t *testing.T) {
 	r, err = poSrv.DerivePurchaseOrderResponse(po)
 	assert.Nil(t, err)
 	assert.Equal(t, payload.Data, r.Data)
-	assert.Equal(t, []string{"0x010101010101", "0x010101010101"}, r.Header.Collaborators)
+	assert.Equal(t, []string{cid.String(), "0x010101010101"}, r.Header.Collaborators)
 }
 
 func createMockDocument() (*PurchaseOrder, error) {
