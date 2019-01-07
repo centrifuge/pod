@@ -3,9 +3,10 @@
 package documents_test
 
 import (
-	"context"
 	"errors"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
 
 	"os"
 
@@ -13,7 +14,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/testingutils/coredocument"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/stretchr/testify/assert"
@@ -34,9 +34,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestAnchorDocument(t *testing.T) {
-	ctx := context.Background()
-	ctxh, err := header.NewContextHeader(ctx, cfg)
-	assert.Nil(t, err)
+	ctxh := testingconfig.CreateTenantContext(t, cfg)
 	updater := func(id []byte, model documents.Model) error {
 		return nil
 	}

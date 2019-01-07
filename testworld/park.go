@@ -8,6 +8,10 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/centrifuge/go-centrifuge/identity/ethid"
+
+	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers"
+
 	"testing"
 
 	"time"
@@ -17,7 +21,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/cmd"
 	"github.com/centrifuge/go-centrifuge/config"
-	ctx "github.com/centrifuge/go-centrifuge/context"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/node"
@@ -235,7 +238,7 @@ func (h *host) init() error {
 		}
 	}
 
-	m := ctx.MainBootstrapper{}
+	m := bootstrappers.MainBootstrapper{}
 	m.PopulateBaseBootstrappers()
 	h.bootstrappedCtx = map[string]interface{}{
 		config.BootstrappedConfigFile: h.dir + "/config.yaml",
@@ -245,7 +248,7 @@ func (h *host) init() error {
 		return err
 	}
 	h.config = h.bootstrappedCtx[bootstrap.BootstrappedConfig].(config.Configuration)
-	idService := h.bootstrappedCtx[identity.BootstrappedIDService].(identity.Service)
+	idService := h.bootstrappedCtx[ethid.BootstrappedIDService].(identity.Service)
 	idBytes, err := h.config.GetIdentityID()
 	if err != nil {
 		return err

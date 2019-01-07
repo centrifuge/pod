@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/gavv/httpexpect"
 )
@@ -63,6 +64,15 @@ func getDocumentIdentifier(t *testing.T, response *httpexpect.Object) string {
 	return docIdentifier
 }
 
+func getTransactionID(t *testing.T, resp *httpexpect.Object) string {
+	txID := resp.Value("header").Path("$.transaction_id").String().Raw()
+	if txID == "" {
+		t.Error("transaction ID empty")
+	}
+
+	return txID
+}
+
 func mintNFT(e *httpexpect.Expect, httpStatus int, payload map[string]interface{}) *httpexpect.Object {
 	resp := e.POST("/token/mint").
 		WithHeader("accept", "application/json").
@@ -83,9 +93,52 @@ func getProof(e *httpexpect.Expect, httpStatus int, documentID string, payload m
 	return resp.JSON().Object()
 }
 
+func getNodeConfig(e *httpexpect.Expect, httpStatus int) *httpexpect.Object {
+	resp := e.GET("/config/node").
+		WithHeader("accept", "application/json").
+		WithHeader("Content-Type", "application/json").
+		Expect().Status(httpStatus)
+	return resp.JSON().Object()
+}
+
+func getTenantConfig(e *httpexpect.Expect, httpStatus int, identifier string) *httpexpect.Object {
+	resp := e.GET("/config/tenants/"+identifier).
+		WithHeader("accept", "application/json").
+		WithHeader("Content-Type", "application/json").
+		Expect().Status(httpStatus)
+	return resp.JSON().Object()
+}
+
+func getAllTenantConfigs(e *httpexpect.Expect, httpStatus int) *httpexpect.Object {
+	resp := e.GET("/config/tenants").
+		WithHeader("accept", "application/json").
+		WithHeader("Content-Type", "application/json").
+		Expect().Status(httpStatus)
+	return resp.JSON().Object()
+}
+
+// TODO add rest of the endpoints for config
+
 func createInsecureClient() *http.Client {
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	return &http.Client{Transport: tr}
+}
+
+func waitTillSuccess(t *testing.T, e *httpexpect.Expect, txID string) {
+	for {
+		resp := e.GET("/transactions/" + txID).Expect().Status(200).JSON().Object()
+		status := resp.Path("$.status").String().Raw()
+		if status == "pending" {
+			time.Sleep(1 * time.Second)
+			continue
+		}
+
+		if status == "failed" {
+			t.Error(resp.Path("$.message").String().Raw())
+		}
+
+		break
+	}
 }

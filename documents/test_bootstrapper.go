@@ -22,3 +22,11 @@ func (b Bootstrapper) TestBootstrap(context map[string]interface{}) error {
 func (Bootstrapper) TestTearDown() error {
 	return nil
 }
+
+func (b PostBootstrapper) TestBootstrap(ctx map[string]interface{}) error {
+	return b.Bootstrap(ctx)
+}
+
+func (PostBootstrapper) TestTearDown() error {
+	return nil
+}

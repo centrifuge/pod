@@ -27,6 +27,8 @@ func proofWithMultipleFields_successful(t *testing.T, documentType string) {
 
 	// Alice shares a document with Bob
 	res := createDocument(alice.httpExpect, documentType, http.StatusOK, defaultDocumentPayload(documentType, []string{bob.id.String()}))
+	txID := getTransactionID(t, res)
+	waitTillSuccess(t, alice.httpExpect, txID)
 
 	docIdentifier := getDocumentIdentifier(t, res)
 	if docIdentifier == "" {

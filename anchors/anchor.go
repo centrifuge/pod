@@ -3,6 +3,8 @@ package anchors
 import (
 	"math/big"
 
+	"github.com/centrifuge/go-centrifuge/config"
+
 	"github.com/centrifuge/go-centrifuge/errors"
 
 	"time"
@@ -34,7 +36,7 @@ type AnchorID [AnchorIDLength]byte
 type Config interface {
 	GetEthereumDefaultAccountName() string
 	GetEthereumContextWaitTimeout() time.Duration
-	GetContractAddress(address string) common.Address
+	GetContractAddress(contractName config.ContractName) common.Address
 }
 
 // ToAnchorID convert the bytes into AnchorID type

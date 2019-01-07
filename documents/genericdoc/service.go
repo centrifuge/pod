@@ -2,30 +2,31 @@ package genericdoc
 
 import (
 	"bytes"
+	"context"
 	"time"
 
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	"github.com/centrifuge/go-centrifuge/anchors"
+	"github.com/centrifuge/go-centrifuge/common"
+	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/contextutil"
+	"github.com/centrifuge/go-centrifuge/coredocument"
+	"github.com/centrifuge/go-centrifuge/crypto"
+	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/notification"
-	"github.com/centrifuge/go-centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes"
-
-	"github.com/centrifuge/go-centrifuge/coredocument"
-
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
-	"github.com/centrifuge/go-centrifuge/anchors"
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/header"
-	"github.com/centrifuge/go-centrifuge/identity"
 	logging "github.com/ipfs/go-log"
 )
 
 // service implements Service
 type service struct {
+	// TODO [multi-tenancy] replace this with config service
 	config           documents.Config
 	repo             documents.Repository
 	identityService  identity.Service
@@ -126,7 +127,7 @@ func (s service) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (docume
 	return nil, nil
 }
 
-func (s service) RequestDocumentSignature(contextHeader *header.ContextHeader, model documents.Model) (*coredocumentpb.Signature, error) {
+func (s service) RequestDocumentSignature(ctx context.Context, model documents.Model) (*coredocumentpb.Signature, error) {
 	if err := coredocument.SignatureRequestValidator(s.identityService).Validate(nil, model); err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
@@ -137,23 +138,23 @@ func (s service) RequestDocumentSignature(contextHeader *header.ContextHeader, m
 	}
 
 	srvLog.Infof("coredoc received %x with signing root %x", doc.DocumentIdentifier, doc.SigningRoot)
+	idConf, err := contextutil.Self(ctx)
+	if err != nil {
+		return nil, documents.ErrDocumentConfigTenantID
+	}
 
-	idKeys, ok := contextHeader.Self().Keys[identity.KeyPurposeSigning]
+	idKeys, ok := idConf.Keys[identity.KeyPurposeSigning]
 	if !ok {
 		return nil, errors.NewTypedError(documents.ErrDocumentSigning, errors.New("missing signing key"))
 	}
-	sig := signatures.Sign(contextHeader.Self().ID[:], idKeys.PrivateKey, idKeys.PublicKey, doc.SigningRoot)
+	sig := crypto.Sign(idConf.ID[:], idKeys.PrivateKey, idKeys.PublicKey, doc.SigningRoot)
 	doc.Signatures = append(doc.Signatures, sig)
 	err = model.UnpackCoreDocument(doc)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentUnPackingCoreDocument, err)
 	}
 
-	// get tenant ID
-	tenantID, err := s.config.GetIdentityID()
-	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentConfigTenantID, err)
-	}
+	tenantID := common.DummyIdentity.Bytes()
 
 	// Logic for receiving version n (n > 1) of the document for the first time
 	if !s.repo.Exists(tenantID, doc.DocumentIdentifier) && !utils.IsSameByteSlice(doc.DocumentIdentifier, doc.CurrentVersion) {
@@ -182,13 +183,7 @@ func (s service) ReceiveAnchoredDocument(model documents.Model, headers *p2ppb.C
 		return errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
 	}
 
-	// get tenant ID
-	tenantID, err := s.config.GetIdentityID()
-	if err != nil {
-		return errors.NewTypedError(documents.ErrDocumentConfigTenantID, err)
-	}
-
-	err = s.repo.Update(tenantID, doc.CurrentVersion, model)
+	err = s.repo.Update(common.DummyIdentity.Bytes(), doc.CurrentVersion, model)
 	if err != nil {
 		return errors.NewTypedError(documents.ErrDocumentPersistence, err)
 	}
@@ -209,21 +204,11 @@ func (s service) ReceiveAnchoredDocument(model documents.Model, headers *p2ppb.C
 }
 
 func (s service) Exists(documentID []byte) bool {
-	// get tenant ID
-	tenantID, err := s.config.GetIdentityID()
-	if err != nil {
-		return false
-	}
-	return s.repo.Exists(tenantID, documentID)
+	return s.repo.Exists(common.DummyIdentity.Bytes(), documentID)
 }
 
 func (s service) getVersion(documentID, version []byte) (documents.Model, error) {
-	// get tenant ID
-	tenantID, err := s.config.GetIdentityID()
-	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentConfigTenantID, err)
-	}
-	model, err := s.repo.Get(tenantID, version)
+	model, err := s.repo.Get(common.DummyIdentity.Bytes(), version)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentVersionNotFound, err)
 	}

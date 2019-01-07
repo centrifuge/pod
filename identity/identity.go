@@ -5,15 +5,16 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/centrifuge/go-centrifuge/crypto"
+
 	"github.com/centrifuge/go-centrifuge/errors"
 
 	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/centerrors"
-	"github.com/centrifuge/go-centrifuge/keytools/ed25519"
-	"github.com/centrifuge/go-centrifuge/keytools/secp256k1"
-	"github.com/centrifuge/go-centrifuge/signatures"
+	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
+	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -76,7 +77,6 @@ type Config interface {
 	GetSigningKeyPair() (pub, priv string)
 	GetEthAuthKeyPair() (pub, priv string)
 	GetEthereumContextWaitTimeout() time.Duration
-	GetContractAddress(address string) common.Address
 }
 
 // Identity defines an Identity on chain
@@ -132,7 +132,7 @@ type Service interface {
 	ValidateKey(centID CentID, key []byte, purpose int) error
 
 	// AddKeyFromConfig adds a key previously generated and indexed in the configuration file to the identity specified in such config file
-	AddKeyFromConfig(purpose int) error
+	AddKeyFromConfig(config Config, purpose int) error
 
 	// ValidateSignature validates a signature on a message based on identity data
 	ValidateSignature(signature *coredocumentpb.Signature, message []byte) error
@@ -235,5 +235,5 @@ func ValidateCentrifugeIDBytes(givenCentID []byte, centrifugeID CentID) error {
 // Sign the document with the private key and return the signature along with the public key for the verification
 // assumes that signing root for the document is generated
 func Sign(idConfig *IDConfig, purpose int, payload []byte) *coredocumentpb.Signature {
-	return signatures.Sign(idConfig.ID[:], idConfig.Keys[purpose].PrivateKey, idConfig.Keys[purpose].PublicKey, payload)
+	return crypto.Sign(idConfig.ID[:], idConfig.Keys[purpose].PrivateKey, idConfig.Keys[purpose].PublicKey, payload)
 }

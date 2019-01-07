@@ -6,11 +6,14 @@ import (
 	"context"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
+
+	"github.com/centrifuge/go-centrifuge/contextutil"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -48,9 +51,8 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 	// pack failed
 	model := mockModel{}
 	model.On("PackCoreDocument").Return(nil, errors.New("error")).Once()
-	ctxh, err := header.NewContextHeader(context.Background(), cfg)
-	assert.Nil(t, err)
-	err = dp.PrepareForSignatureRequests(ctxh, model)
+	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	err := dp.PrepareForSignatureRequests(ctxh, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to pack core document")
@@ -70,11 +72,8 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 	assert.Nil(t, FillSalts(cd))
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
-	ctxh, err = header.NewContextHeader(context.Background(), cfg)
-	assert.NotNil(t, err)
 	cfg.Set("keys.signing.publicKey", pub)
-	ctxh, err = header.NewContextHeader(context.Background(), cfg)
-	assert.Nil(t, err)
+	ctxh = testingconfig.CreateTenantContext(t, cfg)
 
 	// failed unpack
 	model = mockModel{}
@@ -96,8 +95,8 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 	assert.NotNil(t, cd.Signatures)
 	assert.Len(t, cd.Signatures, 1)
 	sig := cd.Signatures[0]
-	id := ctxh.Self()
-	assert.True(t, ed25519.Verify(id.Keys[identity.KeyPurposeSigning].PublicKey, cd.SigningRoot, sig.Signature))
+	self, _ := contextutil.Self(ctxh)
+	assert.True(t, ed25519.Verify(self.Keys[identity.KeyPurposeSigning].PublicKey, cd.SigningRoot, sig.Signature))
 }
 
 type p2pClient struct {
@@ -105,7 +104,7 @@ type p2pClient struct {
 	client
 }
 
-func (p p2pClient) GetSignaturesForDocument(ctx *header.ContextHeader, identityService identity.Service, doc *coredocumentpb.CoreDocument) error {
+func (p p2pClient) GetSignaturesForDocument(ctx context.Context, identityService identity.Service, doc *coredocumentpb.CoreDocument) error {
 	args := p.Called(ctx, doc)
 	return args.Error(0)
 }
@@ -113,13 +112,11 @@ func (p p2pClient) GetSignaturesForDocument(ctx *header.ContextHeader, identityS
 func TestDefaultProcessor_RequestSignatures(t *testing.T) {
 	srv := &testingcommons.MockIDService{}
 	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
-	ctx := context.Background()
-	ctxh, err := header.NewContextHeader(ctx, cfg)
-	assert.Nil(t, err)
+	ctxh := testingconfig.CreateTenantContext(t, cfg)
 	// pack failed
 	model := mockModel{}
 	model.On("PackCoreDocument").Return(nil, errors.New("error")).Once()
-	err = dp.RequestSignatures(ctxh, model)
+	err := dp.RequestSignatures(ctxh, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to pack core document")
@@ -261,14 +258,12 @@ func (m mockRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.Document
 func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	srv := &testingcommons.MockIDService{}
 	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
-	ctx := context.Background()
-	ctxh, err := header.NewContextHeader(ctx, cfg)
-	assert.Nil(t, err)
+	ctxh := testingconfig.CreateTenantContext(t, cfg)
 
 	// pack failed
 	model := mockModel{}
 	model.On("PackCoreDocument").Return(nil, errors.New("error")).Once()
-	err = dp.AnchorDocument(ctxh, model)
+	err := dp.AnchorDocument(ctxh, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to pack core document")
@@ -357,13 +352,11 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	srv := &testingcommons.MockIDService{}
 	srv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
 	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
-	ctx := context.Background()
-	ctxh, err := header.NewContextHeader(ctx, cfg)
-	assert.Nil(t, err)
+	ctxh := testingconfig.CreateTenantContext(t, cfg)
 	// pack failed
 	model := mockModel{}
 	model.On("PackCoreDocument").Return(nil, errors.New("error")).Once()
-	err = dp.SendDocument(ctxh, model)
+	err := dp.SendDocument(ctxh, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to pack core document")

@@ -7,10 +7,11 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/crypto"
+
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
@@ -281,6 +282,6 @@ func TestSign(t *testing.T) {
 	msg := utils.RandomSlice(100)
 	sig := Sign(&IDConfig{c, map[int]IDKey{KeyPurposeSigning: {PrivateKey: key1, PublicKey: key1Pub}}}, KeyPurposeSigning, msg)
 
-	err := signatures.VerifySignature(key1Pub, msg, sig.Signature)
+	err := crypto.VerifySignature(key1Pub, msg, sig.Signature)
 	assert.True(t, err == nil)
 }

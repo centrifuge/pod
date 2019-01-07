@@ -34,4 +34,5 @@ message NFTMintRequest {
 
 message NFTMintResponse {
   string token_id = 1;
+  string transaction_id = 2;
 }

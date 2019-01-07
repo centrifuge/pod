@@ -9,22 +9,27 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/identity/ethid"
+
+	"github.com/centrifuge/go-centrifuge/config/configstore"
+
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
+	"github.com/centrifuge/go-centrifuge/common"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/context/testlogging"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/p2p"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
@@ -43,9 +48,11 @@ func TestMain(m *testing.M) {
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
 		&storage.Bootstrapper{},
+		&configstore.Bootstrapper{},
+		transactions.Bootstrapper{},
 		&queue.Bootstrapper{},
 		anchors.Bootstrapper{},
-		&identity.Bootstrapper{},
+		&ethid.Bootstrapper{},
 		documents.Bootstrapper{},
 		p2p.Bootstrapper{},
 		&invoice.Bootstrapper{},
@@ -67,7 +74,7 @@ func TestCentAPIServer_StartContextCancel(t *testing.T) {
 	cfg.Set("nodeHostname", "0.0.0.0")
 	cfg.Set("nodePort", 9000)
 	cfg.Set("centrifugeNetwork", "")
-	registry.Register(documenttypes.InvoiceDataTypeUrl, invoice.DefaultService(cfg, nil, nil, nil, nil))
+	registry.Register(documenttypes.InvoiceDataTypeUrl, invoice.DefaultService(cfg, nil, nil, nil, nil, nil))
 	capi := apiServer{config: cfg}
 	ctx, canc := context.WithCancel(context.WithValue(context.Background(), bootstrap.NodeObjRegistry, ctx))
 	startErr := make(chan error)
@@ -115,7 +122,7 @@ func TestCentAPIServer_FailedToGetRegistry(t *testing.T) {
 
 func Test_auth(t *testing.T) {
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return ctx.Value(TenantKey), nil
+		return ctx.Value(common.TenantKey), nil
 	}
 
 	// send ping path
