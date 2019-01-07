@@ -7,6 +7,10 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
+
 	"github.com/centrifuge/go-centrifuge/identity/ethid"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -22,12 +26,14 @@ import (
 var (
 	identityService identity.Service
 	anchorRepo      anchors.AnchorRepository
+	cfg             config.Configuration
 )
 
 func TestMain(m *testing.M) {
 	ctx := cc.TestFunctionalEthereumBootstrap()
 	anchorRepo = ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
 	identityService = ctx[ethid.BootstrappedIDService].(identity.Service)
+	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()
 	os.Exit(result)
@@ -35,7 +41,8 @@ func TestMain(m *testing.M) {
 
 func createIdentityWithKeys(t *testing.T, centrifugeId []byte) []byte {
 	centIdTyped, _ := identity.ToCentID(centrifugeId)
-	id, confirmations, err := identityService.CreateIdentity(centIdTyped)
+	cfg.Set("identityId", centIdTyped.String())
+	id, confirmations, err := identityService.CreateIdentity(testingconfig.CreateTenantContext(t, cfg), centIdTyped)
 	assert.Nil(t, err, "should not error out when creating identity")
 	watchRegisteredIdentity := <-confirmations
 	assert.Nil(t, watchRegisteredIdentity.Error, "No error thrown by context")

@@ -36,7 +36,7 @@ var createIdentityCmd = &cobra.Command{
 		}
 
 		idService := ctx[ethid.BootstrappedIDService].(identity.Service)
-		_, confirmations, err := idService.CreateIdentity(centID)
+		_, confirmations, err := idService.CreateIdentity(nil, centID)
 		if err != nil {
 			panic(err)
 		}

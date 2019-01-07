@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/centrifuge/go-centrifuge/contextutil"
+
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/identity"
 
@@ -392,11 +394,16 @@ func (ids *ethereumIdentityService) CheckIdentityExists(centrifugeID identity.Ce
 }
 
 // CreateIdentity creates an identity representing the id on ethereum
-func (ids *ethereumIdentityService) CreateIdentity(centrifugeID identity.CentID) (id identity.Identity, confirmations chan *identity.WatchIdentity, err error) {
+func (ids *ethereumIdentityService) CreateIdentity(ctx context.Context, centrifugeID identity.CentID) (id identity.Identity, confirmations chan *identity.WatchIdentity, err error) {
 	log.Infof("Creating Identity [%x]", centrifugeID)
+	tc, err := contextutil.Tenant(ctx)
+	if err != nil {
+		return nil, confirmations, err
+	}
+
 	id = newEthereumIdentity(centrifugeID, ids.registryContract, ids.config, ids.queue, ids.gethClientFinder, ids.contractProvider)
 	conn := ids.gethClientFinder()
-	opts, err := conn.GetTxOpts(ids.config.GetEthereumDefaultAccountName())
+	opts, err := conn.GetTxOpts(tc.GetEthereumDefaultAccountName())
 	if err != nil {
 		return nil, confirmations, err
 	}

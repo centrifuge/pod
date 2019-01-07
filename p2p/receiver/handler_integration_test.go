@@ -8,6 +8,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
+
 	"github.com/centrifuge/go-centrifuge/identity/ethid"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -200,7 +202,7 @@ func createIdentity(t *testing.T) identity.CentID {
 	// Create Identity
 	centrifugeId, _ := identity.ToCentID(utils.RandomSlice(identity.CentIDLength))
 	cfg.Set("identityId", centrifugeId.String())
-	id, confirmations, err := idService.CreateIdentity(centrifugeId)
+	id, confirmations, err := idService.CreateIdentity(testingconfig.CreateTenantContext(t, cfg), centrifugeId)
 	assert.Nil(t, err, "should not error out when creating identity")
 	watchRegisteredIdentity := <-confirmations
 	assert.Nil(t, watchRegisteredIdentity.Error, "No error thrown by context")

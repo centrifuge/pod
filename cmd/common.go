@@ -3,6 +3,9 @@ package cmd
 import (
 	"context"
 
+	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/contextutil"
+
 	"github.com/centrifuge/go-centrifuge/identity/ethid"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers"
@@ -21,9 +24,9 @@ import (
 
 var log = logging.Logger("centrifuge-cmd")
 
-func createIdentity(idService identity.Service) (identity.CentID, error) {
+func createIdentity(ctx context.Context, idService identity.Service) (identity.CentID, error) {
 	centID := identity.RandomCentID()
-	_, confirmations, err := idService.CreateIdentity(centID)
+	_, confirmations, err := idService.CreateIdentity(ctx, centID)
 	if err != nil {
 		return [identity.CentIDLength]byte{}, err
 	}
@@ -89,8 +92,18 @@ func CreateConfig(
 	cfg := ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	generateKeys(cfg)
 
+	tc, err := configstore.NewTenantConfig(cfg.GetEthereumDefaultAccountName(), cfg)
+	if err != nil {
+		return err
+	}
+
+	tctx, err := contextutil.NewCentrifugeContext(context.Background(), tc)
+	if err != nil {
+		return err
+	}
+
 	idService := ctx[ethid.BootstrappedIDService].(identity.Service)
-	id, err := createIdentity(idService)
+	id, err := createIdentity(tctx, idService)
 	if err != nil {
 		return err
 	}
