@@ -147,11 +147,6 @@ func (s service) CreateProofsForVersion(documentID, version []byte, fields []str
 	return s.createProofs(model, fields)
 }
 
-func (s service) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (documents.Model, error) {
-
-	return nil, nil
-}
-
 func (s service) RequestDocumentSignature(ctx context.Context, model documents.Model) (*coredocumentpb.Signature, error) {
 	if err := coredocument.SignatureRequestValidator(s.identityService).Validate(nil, model); err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
