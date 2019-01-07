@@ -4,6 +4,8 @@ import (
 	"context"
 	"math/big"
 
+	"github.com/centrifuge/go-centrifuge/contextutil"
+
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -29,7 +31,6 @@ type watchAnchorPreCommitted interface {
 }
 
 type ethereumAnchorRepository struct {
-	// TODO [multi-tenancy] replace this with config service
 	config                   Config
 	anchorRepositoryContract anchorRepositoryContract
 	gethClientFinder         func() ethereum.Client
@@ -48,9 +49,14 @@ func (ethRepository *ethereumAnchorRepository) GetDocumentRootOf(anchorID Anchor
 }
 
 // PreCommitAnchor will call the transaction PreCommit on the smart contract
-func (ethRepository *ethereumAnchorRepository) PreCommitAnchor(anchorID AnchorID, signingRoot DocumentRoot, centID identity.CentID, signature []byte, expirationBlock *big.Int) (confirmations <-chan *WatchPreCommit, err error) {
+func (ethRepository *ethereumAnchorRepository) PreCommitAnchor(ctx context.Context, anchorID AnchorID, signingRoot DocumentRoot, centID identity.CentID, signature []byte, expirationBlock *big.Int) (confirmations <-chan *WatchPreCommit, err error) {
+	tc, err := contextutil.Tenant(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	ethRepositoryContract := ethRepository.anchorRepositoryContract
-	opts, err := ethereum.GetClient().GetTxOpts(ethRepository.config.GetEthereumDefaultAccountName())
+	opts, err := ethereum.GetClient().GetTxOpts(tc.GetEthereumDefaultAccountName())
 	if err != nil {
 		return confirmations, err
 	}
@@ -72,9 +78,14 @@ func (ethRepository *ethereumAnchorRepository) PreCommitAnchor(anchorID AnchorID
 }
 
 // CommitAnchor will send a commit transaction to Ethereum.
-func (ethRepository *ethereumAnchorRepository) CommitAnchor(anchorID AnchorID, documentRoot DocumentRoot, centID identity.CentID, documentProofs [][32]byte, signature []byte) (confirmations <-chan *WatchCommit, err error) {
+func (ethRepository *ethereumAnchorRepository) CommitAnchor(ctx context.Context, anchorID AnchorID, documentRoot DocumentRoot, centID identity.CentID, documentProofs [][32]byte, signature []byte) (confirmations <-chan *WatchCommit, err error) {
+	tc, err := contextutil.Tenant(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	conn := ethereum.GetClient()
-	opts, err := conn.GetTxOpts(ethRepository.config.GetEthereumDefaultAccountName())
+	opts, err := conn.GetTxOpts(tc.GetEthereumDefaultAccountName())
 	if err != nil {
 		return nil, err
 	}

@@ -17,7 +17,7 @@ const (
 
 // Repository can be implemented by a type that handles storage for transactions.
 type Repository interface {
-	Get(identity identity.CentID, id uuid.UUID) (*Transaction, error)
+	Get(cid identity.CentID, id uuid.UUID) (*Transaction, error)
 	Save(transaction *Transaction) error
 }
 
@@ -44,8 +44,8 @@ func getKey(cid identity.CentID, id uuid.UUID) ([]byte, error) {
 }
 
 // Get returns the transaction associated with identity and id.
-func (r *txRepository) Get(identity identity.CentID, id uuid.UUID) (*Transaction, error) {
-	key, err := getKey(identity, id)
+func (r *txRepository) Get(cid identity.CentID, id uuid.UUID) (*Transaction, error) {
+	key, err := getKey(cid, id)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrKeyConstructionFailed, err)
 	}
