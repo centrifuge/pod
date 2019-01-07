@@ -13,6 +13,7 @@ import (
 // Bootstrapper implements bootstrap.Bootstrapper.
 type Bootstrapper struct{}
 
+// BootstrappedGenService is a key mapped to the generic document service
 const BootstrappedGenService = "BootstrappedGenService "
 
 // Bootstrap sets the required storage and registers
