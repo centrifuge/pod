@@ -3,10 +3,11 @@
 package genericdoc_test
 
 import (
-	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 	"math/big"
 	"os"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 
@@ -42,7 +43,6 @@ var (
 var ctx = map[string]interface{}{}
 var cfg config.Configuration
 
-
 func TestMain(m *testing.M) {
 	ethClient := &testingcommons.MockEthClient{}
 	ethClient.On("GetEthClient").Return(nil)
@@ -59,7 +59,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestService_ReceiveAnchoredDocument(t *testing.T) {
-	poSrv := genericdoc.DefaultService(nil,nil,nil,nil)
+	poSrv := genericdoc.DefaultService(nil, nil, nil, nil)
 	err := poSrv.ReceiveAnchoredDocument(nil, nil)
 	assert.Error(t, err)
 }
@@ -76,6 +76,7 @@ type mockAnchorRepo struct {
 	mock.Mock
 	anchors.AnchorRepository
 }
+
 var mockAnchor *mockAnchorRepo
 
 func (r *mockAnchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.DocumentRoot, error) {

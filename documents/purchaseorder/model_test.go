@@ -4,10 +4,11 @@ package purchaseorder
 
 import (
 	"encoding/json"
-	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 	"os"
 	"reflect"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 

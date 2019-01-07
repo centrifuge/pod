@@ -4,10 +4,11 @@ package invoice
 
 import (
 	"encoding/json"
-	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 	"os"
 	"reflect"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 
@@ -62,7 +63,6 @@ func TestMain(m *testing.M) {
 		p2p.Bootstrapper{},
 		&Bootstrapper{},
 		&queue.Starter{},
-
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
