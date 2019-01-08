@@ -2,6 +2,7 @@ package purchaseorder
 
 import (
 	"context"
+
 	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -72,7 +73,7 @@ func DefaultService(
 		identityService:  identityService,
 		queueSrv:         queueSrv,
 		txService:        txService,
-		Service:       genService,
+		Service:          genService,
 	}
 }
 
