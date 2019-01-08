@@ -1,11 +1,13 @@
 // +build unit
 
-package genericdoc
+package genericdoc_test
 
 import (
 	"math/big"
 	"os"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 
@@ -58,23 +60,26 @@ func TestMain(m *testing.M) {
 }
 
 func TestService_ReceiveAnchoredDocument(t *testing.T) {
-	poSrv := service{}
+	poSrv := genericdoc.DefaultService(nil, nil, nil)
 	ctxh := testingconfig.CreateTenantContext(t, cfg)
 	err := poSrv.ReceiveAnchoredDocument(ctxh, nil, nil)
 	assert.Error(t, err)
 }
 
-func getServiceWithMockedLayers() (documents.Service, testingcommons.MockIDService) {
+func getServiceWithMockedLayers() (genericdoc.Service, testingcommons.MockIDService) {
 	repo := testRepo()
 	idService := testingcommons.MockIDService{}
 	idService.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
-	return DefaultService(repo, &mockAnchorRepo{}, &idService), idService
+	mockAnchor = &mockAnchorRepo{}
+	return genericdoc.DefaultService(repo, mockAnchor, &idService), idService
 }
 
 type mockAnchorRepo struct {
 	mock.Mock
 	anchors.AnchorRepository
 }
+
+var mockAnchor *mockAnchorRepo
 
 func (r *mockAnchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.DocumentRoot, error) {
 	args := r.Called(anchorID)
@@ -176,7 +181,7 @@ func updatedAnchoredMockDocument(t *testing.T, i *invoice.Invoice) (*invoice.Inv
 }
 
 // Functions returns service mocks
-func mockSignatureCheck(i *invoice.Invoice, idService testingcommons.MockIDService, s documents.Service) testingcommons.MockIDService {
+func mockSignatureCheck(i *invoice.Invoice, idService testingcommons.MockIDService, s genericdoc.Service) testingcommons.MockIDService {
 	idkey := &ethid.EthereumIdentityKey{
 		Key:       key1Pub,
 		Purposes:  []*big.Int{big.NewInt(identity.KeyPurposeSigning)},
@@ -184,8 +189,7 @@ func mockSignatureCheck(i *invoice.Invoice, idService testingcommons.MockIDServi
 	}
 	anchorID, _ := anchors.ToAnchorID(i.CoreDocument.DocumentIdentifier)
 	docRoot, _ := anchors.ToDocumentRoot(i.CoreDocument.DocumentRoot)
-	mockRepo := s.(service).anchorRepository.(*mockAnchorRepo)
-	mockRepo.On("GetDocumentRootOf", anchorID).Return(docRoot, nil).Once()
+	mockAnchor.On("GetDocumentRootOf", anchorID).Return(docRoot, nil).Once()
 	id := &testingcommons.MockID{}
 	centID, _ := identity.ToCentID(centIDBytes)
 	idService.On("LookupIdentityForID", centID).Return(id, nil).Once()

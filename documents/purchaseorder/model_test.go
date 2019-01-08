@@ -8,6 +8,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
+
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 
 	"github.com/centrifuge/go-centrifuge/identity/ethid"
@@ -59,6 +61,7 @@ func TestMain(m *testing.M) {
 		anchors.Bootstrapper{},
 		documents.Bootstrapper{},
 		p2p.Bootstrapper{},
+		&genericdoc.Bootstrapper{},
 		&Bootstrapper{},
 		&queue.Starter{},
 	}

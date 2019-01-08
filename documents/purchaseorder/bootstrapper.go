@@ -1,6 +1,7 @@
 package purchaseorder
 
 import (
+	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity/ethid"
 
@@ -49,8 +50,13 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("transaction service not initialised")
 	}
 
+	genService, ok := ctx[genericdoc.BootstrappedGenService].(genericdoc.Service)
+	if !ok {
+		return errors.New("generic service is not initialised")
+	}
+
 	// register service
-	srv := DefaultService(repo, anchorRepo, idService, queueSrv, txService)
+	srv := DefaultService(repo, anchorRepo, idService, queueSrv, txService, genService)
 	err := registry.Register(documenttypes.PurchaseOrderDataTypeUrl, srv)
 	if err != nil {
 		return errors.New("failed to register purchase order service")

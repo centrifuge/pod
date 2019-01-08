@@ -9,6 +9,8 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
+
 	"github.com/centrifuge/go-centrifuge/identity/ethid"
 
 	"github.com/centrifuge/go-centrifuge/config/configstore"
@@ -54,6 +56,7 @@ func TestMain(m *testing.M) {
 		&ethid.Bootstrapper{},
 		documents.Bootstrapper{},
 		p2p.Bootstrapper{},
+		&genericdoc.Bootstrapper{},
 		&invoice.Bootstrapper{},
 		&purchaseorder.Bootstrapper{},
 		&nft.Bootstrapper{},
@@ -73,7 +76,7 @@ func TestCentAPIServer_StartContextCancel(t *testing.T) {
 	cfg.Set("nodeHostname", "0.0.0.0")
 	cfg.Set("nodePort", 9000)
 	cfg.Set("centrifugeNetwork", "")
-	registry.Register(documenttypes.InvoiceDataTypeUrl, invoice.DefaultService(nil, nil, nil, nil, nil))
+	registry.Register(documenttypes.InvoiceDataTypeUrl, invoice.DefaultService(nil, nil, nil, nil, nil, nil))
 	capi := apiServer{config: cfg}
 	ctx, canc := context.WithCancel(context.WithValue(context.Background(), bootstrap.NodeObjRegistry, ctx))
 	startErr := make(chan error)

@@ -5,6 +5,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
@@ -60,6 +62,7 @@ type service struct {
 	identityService  identity.Service
 	queueSrv         queue.TaskQueuer
 	txService        transactions.Service
+	genService       genericdoc.Service
 }
 
 // DefaultService returns the default implementation of the service.
@@ -68,14 +71,17 @@ func DefaultService(
 	anchorRepository anchors.AnchorRepository,
 	identityService identity.Service,
 	queueSrv queue.TaskQueuer,
-	txService transactions.Service) Service {
+	txService transactions.Service,
+	genService genericdoc.Service,
+) Service {
 	return service{
 		repo:             repo,
 		notifier:         notification.NewWebhookSender(),
 		anchorRepository: anchorRepository,
 		identityService:  identityService,
 		queueSrv:         queueSrv,
-		txService:        txService}
+		txService:        txService,
+		genService:       genService}
 }
 
 // CreateProofs creates proofs for the latest version document given the fields

@@ -54,7 +54,7 @@ func getServiceWithMockedLayers() (*testingcommons.MockIDService, Service) {
 	queueSrv := new(testingutils.MockQueue)
 	queueSrv.On("EnqueueJob", mock.Anything, mock.Anything).Return(&gocelery.AsyncResult{}, nil)
 	txService := ctx[transactions.BootstrappedService].(transactions.Service)
-	return idService, DefaultService(testRepo(), &mockAnchorRepo{}, idService, queueSrv, txService)
+	return idService, DefaultService(testRepo(), &mockAnchorRepo{}, idService, queueSrv, txService, nil)
 }
 
 func TestService_Update(t *testing.T) {
