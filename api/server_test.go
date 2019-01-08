@@ -19,7 +19,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
-	"github.com/centrifuge/go-centrifuge/common"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
@@ -77,7 +76,7 @@ func TestCentAPIServer_StartContextCancel(t *testing.T) {
 	cfg.Set("nodeHostname", "0.0.0.0")
 	cfg.Set("nodePort", 9000)
 	cfg.Set("centrifugeNetwork", "")
-	registry.Register(documenttypes.InvoiceDataTypeUrl, invoice.DefaultService(cfg, nil, nil, nil, nil, nil,nil))
+	registry.Register(documenttypes.InvoiceDataTypeUrl, invoice.DefaultService(cfg, nil, nil, nil, nil, nil, nil))
 	capi := apiServer{config: cfg}
 	ctx, canc := context.WithCancel(context.WithValue(context.Background(), bootstrap.NodeObjRegistry, ctx))
 	startErr := make(chan error)
@@ -125,7 +124,7 @@ func TestCentAPIServer_FailedToGetRegistry(t *testing.T) {
 
 func Test_auth(t *testing.T) {
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return ctx.Value(common.TenantKey), nil
+		return ctx.Value(config.TenantKey), nil
 	}
 
 	// send ping path

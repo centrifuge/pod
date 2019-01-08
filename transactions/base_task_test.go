@@ -5,7 +5,8 @@ package transactions
 import (
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/common"
+	"github.com/centrifuge/go-centrifuge/identity"
+
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/satori/go.uuid"
@@ -15,7 +16,7 @@ import (
 func TestDocumentAnchorTask_updateTransaction(t *testing.T) {
 	task := new(BaseTask)
 
-	tenantID := common.DummyIdentity
+	tenantID := identity.RandomCentID()
 	name := "some task"
 	task.TxID = uuid.Must(uuid.NewV4())
 	task.TxService = NewService(NewRepository(ctx[storage.BootstrappedDB].(storage.Repository)))

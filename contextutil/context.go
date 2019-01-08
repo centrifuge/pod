@@ -2,6 +2,10 @@ package contextutil
 
 import (
 	"context"
+	"fmt"
+
+	"github.com/centrifuge/go-centrifuge/centerrors"
+	"github.com/centrifuge/go-centrifuge/code"
 
 	"github.com/centrifuge/go-centrifuge/identity"
 
@@ -31,4 +35,27 @@ func Self(ctx context.Context) (*identity.IDConfig, error) {
 		return nil, ErrSelfNotFound
 	}
 	return identity.GetIdentityConfig(tc)
+}
+
+// Tenant extracts the TenanConfig from the given context value
+func Tenant(ctx context.Context) (*configstore.TenantConfig, error) {
+	tc, ok := ctx.Value(self).(*configstore.TenantConfig)
+	if !ok {
+		return nil, ErrSelfNotFound
+	}
+	return tc, nil
+}
+
+// CentContext updates a context with tenant info using the configstore, must only be used for api handlers
+func CentContext(ctx context.Context, config configstore.Service) (context.Context, error) {
+	// TODO [multi-tenancy] remove following and read the tenantID from the context
+	tc, err := config.GetAllTenants()
+	if err != nil {
+		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
+	}
+	ctxHeader, err := NewCentrifugeContext(ctx, tc[0])
+	if err != nil {
+		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
+	}
+	return ctxHeader, nil
 }

@@ -5,7 +5,8 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/centrifuge/go-centrifuge/identity"
+
 	"github.com/satori/go.uuid"
 )
 
@@ -38,7 +39,7 @@ func NewLog(action, message string) Log {
 // Transaction contains details of transaction.
 type Transaction struct {
 	ID          uuid.UUID
-	Identity    common.Address
+	CID         identity.CentID
 	Description string
 	Status      Status
 	Logs        []Log
@@ -62,10 +63,10 @@ func (t *Transaction) Type() reflect.Type {
 }
 
 // NewTransaction returns a new transaction with a pending state
-func NewTransaction(identity common.Address, description string) *Transaction {
+func NewTransaction(identity identity.CentID, description string) *Transaction {
 	return &Transaction{
 		ID:          uuid.Must(uuid.NewV4()),
-		Identity:    identity,
+		CID:         identity,
 		Description: description,
 		Status:      Pending,
 		Metadata:    make(map[string]string),
