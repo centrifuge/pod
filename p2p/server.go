@@ -53,7 +53,7 @@ type messenger interface {
 	sendMessage(ctx context.Context, p peer.ID, pmes *pb.P2PEnvelope, protoc protocol.ID) (*pb.P2PEnvelope, error)
 }
 
-// centPeer implements api.Server
+// centPeer implements node.Server
 type centPeer struct {
 	// TODO [multi-tenancy] replace this with config service
 	config         Config
