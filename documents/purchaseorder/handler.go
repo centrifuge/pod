@@ -1,16 +1,11 @@
 package purchaseorder
 
 import (
-	"fmt"
-
 	"github.com/centrifuge/go-centrifuge/config/configstore"
-
 	"github.com/centrifuge/go-centrifuge/contextutil"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/centerrors"
-	"github.com/centrifuge/go-centrifuge/code"
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
@@ -25,12 +20,11 @@ var apiLog = logging.Logger("purchaseorder-api")
 // anchoring, sending, finding stored purchase order document
 type grpcHandler struct {
 	service Service
-	// TODO [multi-tenancy] replace this with config service
-	config config.Configuration
+	config  configstore.Service
 }
 
 // GRPCHandler returns an implementation of the purchaseorder DocumentServiceServer
-func GRPCHandler(config config.Configuration, registry *documents.ServiceRegistry) (clientpurchaseorderpb.DocumentServiceServer, error) {
+func GRPCHandler(config configstore.Service, registry *documents.ServiceRegistry) (clientpurchaseorderpb.DocumentServiceServer, error) {
 	srv, err := registry.LocateService(documenttypes.PurchaseOrderDataTypeUrl)
 	if err != nil {
 		return nil, errors.New("failed to fetch purchase order service")
@@ -45,16 +39,10 @@ func GRPCHandler(config config.Configuration, registry *documents.ServiceRegistr
 // Create validates the purchase order, persists it to DB, and anchors it the chain
 func (h grpcHandler) Create(ctx context.Context, req *clientpurchaseorderpb.PurchaseOrderCreatePayload) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
 	apiLog.Debugf("Create request %v", req)
-	// TODO [multi-tenancy] remove following and read the config from the context
-	tc, err := configstore.NewTenantConfig("", h.config)
+	ctxh, err := contextutil.CentContext(ctx, h.config)
 	if err != nil {
 		apiLog.Error(err)
-		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
-	}
-	ctxh, err := contextutil.NewCentrifugeContext(ctx, tc)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, centerrors.New(code.Unknown, err.Error())
+		return nil, err
 	}
 
 	doc, err := h.service.DeriveFromCreatePayload(ctxh, req)
@@ -83,16 +71,10 @@ func (h grpcHandler) Create(ctx context.Context, req *clientpurchaseorderpb.Purc
 // Update handles the document update and anchoring
 func (h grpcHandler) Update(ctx context.Context, payload *clientpurchaseorderpb.PurchaseOrderUpdatePayload) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
 	apiLog.Debugf("Update request %v", payload)
-	// TODO [multi-tenancy] remove following and read the config from the context
-	tc, err := configstore.NewTenantConfig("", h.config)
+	ctxHeader, err := contextutil.CentContext(ctx, h.config)
 	if err != nil {
 		apiLog.Error(err)
-		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
-	}
-	ctxHeader, err := contextutil.NewCentrifugeContext(ctx, tc)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
+		return nil, err
 	}
 
 	doc, err := h.service.DeriveFromUpdatePayload(ctxHeader, payload)
@@ -120,6 +102,12 @@ func (h grpcHandler) Update(ctx context.Context, payload *clientpurchaseorderpb.
 // GetVersion returns the requested version of a purchase order
 func (h grpcHandler) GetVersion(ctx context.Context, req *clientpurchaseorderpb.GetVersionRequest) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
 	apiLog.Debugf("GetVersion request %v", req)
+	ctxHeader, err := contextutil.CentContext(ctx, h.config)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, err
+	}
+
 	identifier, err := hexutil.Decode(req.Identifier)
 	if err != nil {
 		apiLog.Error(err)
@@ -132,7 +120,7 @@ func (h grpcHandler) GetVersion(ctx context.Context, req *clientpurchaseorderpb.
 		return nil, centerrors.Wrap(err, "version is invalid")
 	}
 
-	model, err := h.service.GetVersion(identifier, version)
+	model, err := h.service.GetVersion(ctxHeader, identifier, version)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "document not found")
@@ -150,13 +138,19 @@ func (h grpcHandler) GetVersion(ctx context.Context, req *clientpurchaseorderpb.
 // Get returns the purchase order the latest version of the document with given identifier
 func (h grpcHandler) Get(ctx context.Context, getRequest *clientpurchaseorderpb.GetRequest) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
 	apiLog.Debugf("Get request %v", getRequest)
+	ctxHeader, err := contextutil.CentContext(ctx, h.config)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, err
+	}
+
 	identifier, err := hexutil.Decode(getRequest.Identifier)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "identifier is an invalid hex string")
 	}
 
-	model, err := h.service.GetCurrentVersion(identifier)
+	model, err := h.service.GetCurrentVersion(ctxHeader, identifier)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "document not found")

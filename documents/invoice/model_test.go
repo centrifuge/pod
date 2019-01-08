@@ -43,6 +43,7 @@ import (
 
 var ctx = map[string]interface{}{}
 var cfg config.Configuration
+var configService configstore.Service
 
 func TestMain(m *testing.M) {
 	ethClient := &testingcommons.MockEthClient{}
@@ -66,6 +67,8 @@ func TestMain(m *testing.M) {
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
+	cfg.Set("identityId", cid.String())
+	configService = ctx[configstore.BootstrappedConfigStorage].(configstore.Service)
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)

@@ -6,13 +6,16 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/config/configstore"
+
+	"github.com/centrifuge/go-centrifuge/identity"
+
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 )
@@ -24,6 +27,7 @@ func TestMain(m *testing.M) {
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
 		&storage.Bootstrapper{},
+		&configstore.Bootstrapper{},
 		Bootstrapper{},
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
@@ -33,41 +37,33 @@ func TestMain(m *testing.M) {
 }
 
 func Test_getKey(t *testing.T) {
-	identity := common.Address([20]byte{})
+	cid := identity.RandomCentID()
 	id := uuid.UUID([16]byte{})
 
-	// zero address
-	key, err := getKey(identity, id)
-	assert.Nil(t, key)
-	assert.Equal(t, "identity cannot be empty", err.Error())
-
-	bytes := utils.RandomSlice(common.AddressLength)
-	assert.Equal(t, common.AddressLength, copy(identity[:], bytes))
-
 	// empty id
-	key, err = getKey(identity, id)
+	key, err := getKey(cid, id)
 	assert.Nil(t, key)
 	assert.Equal(t, "transaction ID is not valid", err.Error())
 
 	id = uuid.Must(uuid.NewV4())
-	key, err = getKey(identity, id)
+	key, err = getKey(cid, id)
 	assert.Nil(t, err)
-	assert.Equal(t, append(identity[:], id.Bytes()...), key)
+	assert.Equal(t, append(cid[:], id.Bytes()...), key)
 }
 
 func TestRepository(t *testing.T) {
-	identity := common.Address([20]byte{})
-	bytes := utils.RandomSlice(common.AddressLength)
-	assert.Equal(t, common.AddressLength, copy(identity[:], bytes))
+	cid := identity.RandomCentID()
+	bytes := utils.RandomSlice(identity.CentIDLength)
+	assert.Equal(t, identity.CentIDLength, copy(cid[:], bytes))
 
 	repo := ctx[BootstrappedRepo].(Repository)
-	tx := NewTransaction(identity, "Some transaction")
+	tx := NewTransaction(cid, "Some transaction")
 	assert.NotNil(t, tx.ID)
-	assert.NotNil(t, tx.Identity)
+	assert.NotNil(t, tx.CID)
 	assert.Equal(t, Pending, tx.Status)
 
 	// get tx from repo
-	_, err := repo.Get(identity, tx.ID)
+	_, err := repo.Get(cid, tx.ID)
 	assert.True(t, errors.IsOfType(ErrTransactionMissing, err))
 
 	// save tx into repo
@@ -76,9 +72,9 @@ func TestRepository(t *testing.T) {
 	assert.Nil(t, err)
 
 	// get tx back
-	tx, err = repo.Get(identity, tx.ID)
+	tx, err = repo.Get(cid, tx.ID)
 	assert.Nil(t, err)
 	assert.NotNil(t, tx)
-	assert.Equal(t, identity, tx.Identity)
+	assert.Equal(t, cid, tx.CID)
 	assert.Equal(t, Success, tx.Status)
 }

@@ -28,6 +28,9 @@ import (
 
 var log = logging.Logger("config")
 
+// TenantKey is used as key for the tenant identity in the context.ContextWithValue.
+var TenantKey struct{}
+
 // ContractName is a type to indicate a contract name parameter
 type ContractName string
 

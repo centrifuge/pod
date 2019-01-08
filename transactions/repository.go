@@ -2,9 +2,8 @@ package transactions
 
 import (
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/storage"
-	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/satori/go.uuid"
 )
 
@@ -18,7 +17,7 @@ const (
 
 // Repository can be implemented by a type that handles storage for transactions.
 type Repository interface {
-	Get(identity common.Address, id uuid.UUID) (*Transaction, error)
+	Get(identity identity.CentID, id uuid.UUID) (*Transaction, error)
 	Save(transaction *Transaction) error
 }
 
@@ -36,20 +35,16 @@ func NewRepository(repo storage.Repository) Repository {
 
 // getKey appends identity with id.
 // With identity coming at first, we can even fetch transactions belonging to specific identity through prefix.
-func getKey(identity common.Address, id uuid.UUID) ([]byte, error) {
-	if utils.IsEmptyAddress(identity) {
-		return nil, errors.New("identity cannot be empty")
-	}
-
+func getKey(cid identity.CentID, id uuid.UUID) ([]byte, error) {
 	if uuid.Equal(uuid.Nil, id) {
 		return nil, errors.New("transaction ID is not valid")
 	}
 
-	return append(identity[:], id.Bytes()...), nil
+	return append(cid[:], id.Bytes()...), nil
 }
 
 // Get returns the transaction associated with identity and id.
-func (r *txRepository) Get(identity common.Address, id uuid.UUID) (*Transaction, error) {
+func (r *txRepository) Get(identity identity.CentID, id uuid.UUID) (*Transaction, error) {
 	key, err := getKey(identity, id)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrKeyConstructionFailed, err)
@@ -65,7 +60,7 @@ func (r *txRepository) Get(identity common.Address, id uuid.UUID) (*Transaction,
 
 // Save saves the transaction to the repository.
 func (r *txRepository) Save(tx *Transaction) error {
-	key, err := getKey(tx.Identity, tx.ID)
+	key, err := getKey(tx.CID, tx.ID)
 	if err != nil {
 		return errors.NewTypedError(ErrKeyConstructionFailed, err)
 	}

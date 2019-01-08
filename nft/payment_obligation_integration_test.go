@@ -13,7 +13,6 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	cc "github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testingbootstrap"
-	ccommon "github.com/centrifuge/go-centrifuge/common"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
@@ -49,7 +48,7 @@ func TestMain(m *testing.M) {
 func TestPaymentObligationService_mint(t *testing.T) {
 	// create identity
 	log.Debug("Create Identity for Testing")
-	testingidentity.CreateIdentityWithKeys(cfg, idService)
+	cid := testingidentity.CreateIdentityWithKeys(cfg, idService)
 
 	// create invoice (anchor)
 	service, err := registry.LocateService(documenttypes.InvoiceDataTypeUrl)
@@ -69,7 +68,7 @@ func TestPaymentObligationService_mint(t *testing.T) {
 	})
 	assert.Nil(t, err, "should not error out when creating invoice model")
 	modelUpdated, txID, err := invoiceService.Create(contextHeader, model)
-	err = txService.WaitForTransaction(ccommon.DummyIdentity, txID)
+	err = txService.WaitForTransaction(cid, txID)
 	assert.Nil(t, err)
 
 	// get ID
@@ -78,7 +77,7 @@ func TestPaymentObligationService_mint(t *testing.T) {
 	// call mint
 	// assert no error
 	resp, err := payOb.MintNFT(
-		ccommon.DummyIdentity,
+		contextHeader,
 		ID,
 		cfg.GetContractAddress(config.PaymentObligation).String(),
 		"0xf72855759a39fb75fc7341139f5d7a3974d4da08",

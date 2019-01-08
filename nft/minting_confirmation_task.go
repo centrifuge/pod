@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/identity"
+
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
@@ -34,7 +36,7 @@ type mintingConfirmationTask struct {
 	transactions.BaseTask
 
 	//task parameter
-	tenantID        common.Address
+	tenantID        identity.CentID
 	tokenID         string
 	blockHeight     uint64
 	registryAddress string
@@ -82,7 +84,10 @@ func (nftc *mintingConfirmationTask) ParseKwargs(kwargs map[string]interface{}) 
 		return errors.New("missing tenant ID")
 	}
 
-	nftc.tenantID = common.HexToAddress(tenantID)
+	nftc.tenantID, err = identity.CentIDFromString(tenantID)
+	if err != nil {
+		return err
+	}
 
 	// parse TokenID
 	tokenID, ok := kwargs[tokenIDParam]
