@@ -1,7 +1,6 @@
 package invoice
 
 import (
-	"bytes"
 	"context"
 	"time"
 
@@ -336,7 +335,7 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *clientinv
 		return nil, errors.NewTypedError(documents.ErrDocumentIdentifier, errors.New("failed to decode identifier: %v", err))
 	}
 
-	old, err := s.GetCurrentVersion(id)
+	old, err := s.GetCurrentVersion(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -457,6 +456,12 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, model documents.Mo
 
 // Exists checks if an invoice exists
 func (s service) Exists(ctx context.Context, documentID []byte) bool {
-	// TODO
+	if s.genService.Exists(ctx, documentID) {
+		// check if document is an invoice
+		_, err := s.genService.GetCurrentVersion(ctx,documentID)
+		if err == nil {
+			return true
+		}
+	}
 	return false
 }
