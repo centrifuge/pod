@@ -3,9 +3,12 @@
 package testingidentity
 
 import (
+	"testing"
+
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
 )
 
 func CreateIdentityWithKeys(cfg config.Configuration, idService identity.Service) identity.CentID {
@@ -13,7 +16,7 @@ func CreateIdentityWithKeys(cfg config.Configuration, idService identity.Service
 	// only create identity if it doesn't exist
 	id, err := idService.LookupIdentityForID(idConfig.ID)
 	if err != nil {
-		_, confirmations, _ := idService.CreateIdentity(idConfig.ID)
+		_, confirmations, _ := idService.CreateIdentity(testingconfig.CreateTenantContext(&testing.T{}, cfg), idConfig.ID)
 		<-confirmations
 		// LookupIdentityForId
 		id, _ = idService.LookupIdentityForID(idConfig.ID)

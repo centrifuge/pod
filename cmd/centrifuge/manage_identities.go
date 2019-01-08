@@ -1,7 +1,11 @@
 package main
 
 import (
+	"context"
 	"io/ioutil"
+
+	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
@@ -34,9 +38,19 @@ var createIdentityCmd = &cobra.Command{
 				panic(err)
 			}
 		}
+		cfg := ctx[bootstrap.BootstrappedConfig].(config.Configuration)
+		tc, err := configstore.TempTenantConfig(cfg.GetEthereumDefaultAccountName(), cfg)
+		if err != nil {
+			panic(err)
+		}
+
+		tctx, err := contextutil.NewCentrifugeContext(context.Background(), tc)
+		if err != nil {
+			panic(err)
+		}
 
 		idService := ctx[ethid.BootstrappedIDService].(identity.Service)
-		_, confirmations, err := idService.CreateIdentity(centID)
+		_, confirmations, err := idService.CreateIdentity(tctx, centID)
 		if err != nil {
 			panic(err)
 		}

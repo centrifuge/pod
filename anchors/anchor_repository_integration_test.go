@@ -41,7 +41,8 @@ func TestMain(m *testing.M) {
 
 func createIdentityWithKeys(t *testing.T, centrifugeId []byte) []byte {
 	centIdTyped, _ := identity.ToCentID(centrifugeId)
-	id, confirmations, err := identityService.CreateIdentity(centIdTyped)
+	cfg.Set("identityId", centIdTyped.String())
+	id, confirmations, err := identityService.CreateIdentity(testingconfig.CreateTenantContext(t, cfg), centIdTyped)
 	assert.Nil(t, err, "should not error out when creating identity")
 	watchRegisteredIdentity := <-confirmations
 	assert.Nil(t, watchRegisteredIdentity.Error, "No error thrown by context")
