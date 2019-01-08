@@ -2,6 +2,7 @@ package invoice
 
 import (
 	"context"
+
 	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -79,14 +80,13 @@ func DefaultService(
 
 // CreateProofs creates proofs for the latest version document given the fields
 func (s service) CreateProofs(ctx context.Context, documentID []byte, fields []string) (*documents.DocumentProof, error) {
-	return s.genService.CreateProofs(ctx,documentID,fields)
+	return s.genService.CreateProofs(ctx, documentID, fields)
 }
 
 // CreateProofsForVersion creates proofs for a particular version of the document given the fields
 func (s service) CreateProofsForVersion(ctx context.Context, documentID, version []byte, fields []string) (*documents.DocumentProof, error) {
-	return s.genService.CreateProofsForVersion(ctx,documentID,version,fields)
+	return s.genService.CreateProofsForVersion(ctx, documentID, version, fields)
 }
-
 
 // DeriveFromCoreDocument unpacks the core document into a model
 func (s service) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (documents.Model, error) {
@@ -225,7 +225,7 @@ func (s service) checkType(model documents.Model) (documents.Model, error) {
 
 // GetVersion returns an invoice for a given version
 func (s service) GetVersion(ctx context.Context, documentID []byte, version []byte) (model documents.Model, err error) {
-	model, err = s.genService.GetVersion(ctx,documentID,version)
+	model, err = s.genService.GetVersion(ctx, documentID, version)
 	if err != nil {
 		return nil, err
 	}
@@ -234,7 +234,7 @@ func (s service) GetVersion(ctx context.Context, documentID []byte, version []by
 }
 
 // GetCurrentVersion returns the last known version of an invoice
-func (s service) GetCurrentVersion(ctx context.Context,documentID []byte) (model documents.Model, err error) {
+func (s service) GetCurrentVersion(ctx context.Context, documentID []byte) (model documents.Model, err error) {
 	model, err = s.genService.GetCurrentVersion(ctx, documentID)
 	if err != nil {
 		return nil, err
@@ -333,19 +333,19 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *clientinv
 
 // RequestDocumentSignature Validates, Signs document received over the p2p layer and returns Signature
 func (s service) RequestDocumentSignature(ctx context.Context, model documents.Model) (*coredocumentpb.Signature, error) {
-	return s.genService.RequestDocumentSignature(ctx,model)
+	return s.genService.RequestDocumentSignature(ctx, model)
 }
 
 // ReceiveAnchoredDocument receives a new anchored document, validates and updates the document in DB
 func (s service) ReceiveAnchoredDocument(ctx context.Context, model documents.Model, headers *p2ppb.CentrifugeHeader) error {
-	return s.genService.ReceiveAnchoredDocument(ctx,model,headers)
+	return s.genService.ReceiveAnchoredDocument(ctx, model, headers)
 }
 
 // Exists checks if an invoice exists
 func (s service) Exists(ctx context.Context, documentID []byte) bool {
 	if s.genService.Exists(ctx, documentID) {
 		// check if document is an invoice
-		_, err := s.genService.GetCurrentVersion(ctx,documentID)
+		_, err := s.genService.GetCurrentVersion(ctx, documentID)
 		if err == nil {
 			return true
 		}

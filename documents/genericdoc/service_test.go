@@ -3,10 +3,11 @@
 package genericdoc_test
 
 import (
-	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"math/big"
 	"os"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/documents/invoice"
 
 	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 

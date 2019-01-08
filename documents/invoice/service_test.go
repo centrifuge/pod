@@ -3,9 +3,10 @@
 package invoice
 
 import (
-	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 	"math/big"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 
 	"github.com/centrifuge/go-centrifuge/identity/ethid"
 	"github.com/centrifuge/go-centrifuge/testingutils"
@@ -66,7 +67,7 @@ func getServiceWithMockedLayers() (testingcommons.MockIDService, Service) {
 
 	repo := testRepo()
 	mockAnchor := &mockAnchorRepo{}
-	genService := genericdoc.DefaultService( repo, mockAnchor, &idService)
+	genService := genericdoc.DefaultService(repo, mockAnchor, &idService)
 	return idService, DefaultService(
 		repo,
 		mockAnchor, &idService,
