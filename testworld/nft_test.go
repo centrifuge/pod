@@ -100,7 +100,7 @@ func TestPaymentObligationMint_errors(t *testing.T) {
 			},
 		},
 		{
-			"no service exists for provided documentID",
+			"document not found in the system database",
 			http.StatusInternalServerError,
 			map[string]interface{}{
 
