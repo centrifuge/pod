@@ -67,8 +67,8 @@ func (srv *MockIDService) LookupIdentityForID(centID identity.CentID) (identity.
 }
 
 func (srv *MockIDService) CreateIdentity(ctx context.Context, centrifugeID identity.CentID) (id identity.Identity, confirmations chan *identity.WatchIdentity, err error) {
-	args := srv.Called(centID)
-	id, _ := args.Get(0).(identity.Identity)
+	args := srv.Called(centrifugeID)
+	id, _ = args.Get(0).(identity.Identity)
 	watch, _ := args.Get(1).(chan *identity.WatchIdentity)
 	return id, watch, args.Error(2)
 }
