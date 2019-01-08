@@ -3,14 +3,12 @@
 package invoice
 
 import (
-	"math/big"
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 
 	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 
-	"github.com/centrifuge/go-centrifuge/identity/ethid"
 	"github.com/centrifuge/go-centrifuge/testingutils"
 	"github.com/centrifuge/gocelery"
 
@@ -290,24 +288,6 @@ func TestService_DeriveInvoiceResponse(t *testing.T) {
 	assert.Nil(t, err, "Derive must succeed")
 	assert.NotNil(t, resp, "data must be non nil")
 	assert.Equal(t, resp.Data, payload.Data, "data mismatch")
-}
-
-// Functions returns service mocks
-func mockSignatureCheck(i *Invoice, idService testingcommons.MockIDService, invSrv Service) testingcommons.MockIDService {
-	idkey := &ethid.EthereumIdentityKey{
-		Key:       key1Pub,
-		Purposes:  []*big.Int{big.NewInt(identity.KeyPurposeSigning)},
-		RevokedAt: big.NewInt(0),
-	}
-	anchorID, _ := anchors.ToAnchorID(i.CoreDocument.DocumentIdentifier)
-	docRoot, _ := anchors.ToDocumentRoot(i.CoreDocument.DocumentRoot)
-	mockRepo := invSrv.(service).anchorRepository.(*mockAnchorRepo)
-	mockRepo.On("GetDocumentRootOf", anchorID).Return(docRoot, nil).Once()
-	id := &testingcommons.MockID{}
-	centID, _ := identity.ToCentID(centIDBytes)
-	idService.On("LookupIdentityForID", centID).Return(id, nil).Once()
-	id.On("FetchKey", key1Pub[:]).Return(idkey, nil).Once()
-	return idService
 }
 
 func TestService_DeriveFromUpdatePayload(t *testing.T) {
