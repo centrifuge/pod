@@ -3,6 +3,8 @@ package nft
 import (
 	"context"
 
+	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
+
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity/ethid"
@@ -52,12 +54,18 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("transactions repository not initialised")
 	}
 
+	genService, ok := ctx[genericdoc.BootstrappedGenService].(genericdoc.Service)
+	if !ok {
+		return errors.New("generic service is not initialised")
+	}
+
 	client := ethereum.GetClient()
 	ctx[BootstrappedPayObService] = newEthereumPaymentObligation(
 		registry,
 		idService,
 		client,
 		queueSrv,
+		genService,
 		bindContract,
 		txService, func() (uint64, error) {
 			h, err := client.GetEthClient().HeaderByNumber(context.Background(), nil)
