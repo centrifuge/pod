@@ -12,20 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestServiceRegistry_FindService(t *testing.T) {
-	registry := documents.NewServiceRegistry()
-	a := &testingdocuments.MockService{}
-	b := &testingdocuments.MockService{}
-	a.On("Exists").Return(true)
-	b.On("Exists").Return(false)
-	err := registry.Register("a service", a)
-	err = registry.Register("b service", b)
-
-	service, err := registry.FindService(nil, []byte{})
-	assert.Nil(t, err, "findService should be successful")
-	assert.Equal(t, a, service, "service a should be returned")
-}
-
 func TestRegistry_Register_LocateService_successful(t *testing.T) {
 	registry := documents.NewServiceRegistry()
 	a := &testingdocuments.MockService{}
