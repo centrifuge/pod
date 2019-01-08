@@ -62,8 +62,8 @@ func TestHandleNewMessage(t *testing.T) {
 	m2.init(MessengerDummyProtocol2)
 
 	// 1. happy path
-	// from h1 to h2 (with a message size ~ 30MB)
-	msg, err := m1.sendMessage(c, h2.ID(), &pb.P2PEnvelope{Type: pb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE, Body: utils.RandomSlice(33554425)}, MessengerDummyProtocol)
+	// from h1 to h2 (with a message size ~ MessageSizeMax, has to be less because of the length bytes)
+	msg, err := m1.sendMessage(c, h2.ID(), &pb.P2PEnvelope{Type: pb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE, Body: utils.RandomSlice(MessageSizeMax - 7)}, MessengerDummyProtocol)
 	assert.NoError(t, err)
 	assert.Equal(t, pb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE_REP, msg.Type)
 	// from h1 to h2 different protocol - intentionally setting reply-response in opposite for differentiation
@@ -103,6 +103,13 @@ func TestHandleNewMessage(t *testing.T) {
 	msg, err = m1.sendMessage(c, h2.ID(), &pb.P2PEnvelope{Type: pb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE_REP, Body: utils.RandomSlice(3)}, MessengerDummyProtocol)
 	if assert.Error(t, err) {
 		assert.Equal(t, "timed out reading response", err.Error())
+	}
+
+	// 7. message size more than the max
+	// from h1 to h2 (with a message size > MessageSizeMax)
+	msg, err = m1.sendMessage(c, h2.ID(), &pb.P2PEnvelope{Type: pb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE, Body: utils.RandomSlice(MessageSizeMax)}, MessengerDummyProtocol)
+	if assert.Error(t, err) {
+		assert.Equal(t, "stream reset", err.Error())
 	}
 	canc()
 }
