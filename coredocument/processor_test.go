@@ -243,8 +243,8 @@ type mockRepo struct {
 	anchors.AnchorRepository
 }
 
-func (m mockRepo) CommitAnchor(anchorID anchors.AnchorID, documentRoot anchors.DocumentRoot, centrifugeID identity.CentID, documentProofs [][32]byte, signature []byte) (<-chan *anchors.WatchCommit, error) {
-	args := m.Called(anchorID, documentRoot, centrifugeID, documentProofs, signature)
+func (m mockRepo) CommitAnchor(ctx context.Context, anchorID anchors.AnchorID, documentRoot anchors.DocumentRoot, centID identity.CentID, documentProofs [][32]byte, signature []byte) (confirmations <-chan *anchors.WatchCommit, err error) {
+	args := m.Called(anchorID, documentRoot, centID, documentProofs, signature)
 	c, _ := args.Get(0).(chan *anchors.WatchCommit)
 	return c, args.Error(1)
 }

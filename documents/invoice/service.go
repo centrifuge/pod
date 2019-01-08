@@ -5,6 +5,8 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 
+	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/anchors"
