@@ -5,6 +5,8 @@ import (
 	"encoding/hex"
 	"math/big"
 
+	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
+
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -37,6 +39,7 @@ type ethereumPaymentObligation struct {
 	identityService identity.Service
 	ethClient       ethereum.Client
 	queue           queue.TaskQueuer
+	genService      genericdoc.Service
 	bindContract    func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error)
 	txService       transactions.Service
 	blockHeightFunc func() (height uint64, err error)
@@ -48,6 +51,7 @@ func newEthereumPaymentObligation(
 	identityService identity.Service,
 	ethClient ethereum.Client,
 	queue queue.TaskQueuer,
+	genService genericdoc.Service,
 	bindContract func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error),
 	txService transactions.Service,
 	blockHeightFunc func() (uint64, error)) *ethereumPaymentObligation {
@@ -57,18 +61,15 @@ func newEthereumPaymentObligation(
 		ethClient:       ethClient,
 		bindContract:    bindContract,
 		queue:           queue,
+		genService:      genService,
 		txService:       txService,
 		blockHeightFunc: blockHeightFunc,
 	}
 }
 
 func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, documentID []byte, depositAddress string, proofFields []string) (*MintRequest, error) {
-	docService, err := s.registry.FindService(ctx, documentID)
-	if err != nil {
-		return nil, err
-	}
 
-	model, err := docService.GetCurrentVersion(ctx, documentID)
+	model, err := s.genService.GetCurrentVersion(ctx, documentID)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +79,7 @@ func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, docu
 		return nil, err
 	}
 
-	proofs, err := docService.CreateProofs(ctx, documentID, proofFields)
+	proofs, err := s.genService.CreateProofs(ctx, documentID, proofFields)
 	if err != nil {
 		return nil, err
 	}

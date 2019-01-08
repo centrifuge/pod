@@ -1,7 +1,6 @@
 package documents
 
 import (
-	"context"
 	"sync"
 
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -42,18 +41,4 @@ func (s *ServiceRegistry) LocateService(serviceID string) (Service, error) {
 		return nil, errors.New("no service for core document type is registered")
 	}
 	return s.services[serviceID], nil
-}
-
-// FindService will search the service based on the documentID
-func (s *ServiceRegistry) FindService(ctx context.Context, documentID []byte) (Service, error) {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
-
-	for _, service := range s.services {
-		exists := service.Exists(ctx, documentID)
-		if exists {
-			return service, nil
-		}
-	}
-	return nil, errors.New("no service exists for provided documentID")
 }

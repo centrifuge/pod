@@ -62,6 +62,7 @@ func TestMain(m *testing.M) {
 		documents.Bootstrapper{},
 		&genericdoc.Bootstrapper{},
 		p2p.Bootstrapper{},
+		&genericdoc.Bootstrapper{},
 		&Bootstrapper{},
 		&queue.Starter{},
 	}

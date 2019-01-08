@@ -110,7 +110,7 @@ type Service interface {
 	LookupIdentityForID(centrifugeID CentID) (id Identity, err error)
 
 	// CreateIdentity creates an identity representing the id on ethereum
-	CreateIdentity(centrifugeID CentID) (id Identity, confirmations chan *WatchIdentity, err error)
+	CreateIdentity(ctx context.Context, centrifugeID CentID) (id Identity, confirmations chan *WatchIdentity, err error)
 
 	// CheckIdentityExists checks if the identity represented by id actually exists on ethereum
 	CheckIdentityExists(centrifugeID CentID) (exists bool, err error)

@@ -552,3 +552,19 @@ func NewTenantConfig(ethAccountName string, c config.Configuration) (*TenantConf
 		EthAuthKeyPair:                   NewKeyPair(c.GetEthAuthKeyPair()),
 	}, nil
 }
+
+// TempTenantConfig creates a new TenantConfig without id validation, Must only be used for tenant creation.
+func TempTenantConfig(ethAccountName string, c config.Configuration) (*TenantConfig, error) {
+	acc, err := c.GetEthereumAccount(ethAccountName)
+	if err != nil && ethAccountName != "" {
+		return nil, err
+	}
+	return &TenantConfig{
+		EthereumAccount:                  acc,
+		EthereumDefaultAccountName:       c.GetEthereumDefaultAccountName(),
+		IdentityID:                       []byte{},
+		ReceiveEventNotificationEndpoint: c.GetReceiveEventNotificationEndpoint(),
+		SigningKeyPair:                   NewKeyPair(c.GetSigningKeyPair()),
+		EthAuthKeyPair:                   NewKeyPair(c.GetEthAuthKeyPair()),
+	}, nil
+}
