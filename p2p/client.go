@@ -42,6 +42,8 @@ func (s *p2pServer) SendAnchoredDocument(ctx context.Context, id identity.Identi
 	if err != nil {
 		return nil, err
 	}
+
+	// TODO [multi-tenancy] modify the protocol id here to include the centID of the receiving node
 	recv, err := s.mes.sendMessage(ctx, pid, &protocolpb.P2PEnvelope{Type: protocolpb.MessageType_MESSAGE_TYPE_SEND_ANCHORED_DOC, Body: marshalledRequest}, CentrifugeProtocol)
 	if err != nil {
 		return nil, err

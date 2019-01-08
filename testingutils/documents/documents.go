@@ -15,22 +15,22 @@ type MockService struct {
 	mock.Mock
 }
 
-func (m *MockService) GetCurrentVersion(documentID []byte) (documents.Model, error) {
+func (m *MockService) GetCurrentVersion(ctx context.Context, documentID []byte) (documents.Model, error) {
 	args := m.Called(documentID)
 	return args.Get(0).(documents.Model), args.Error(1)
 }
 
-func (m *MockService) GetVersion(documentID []byte, version []byte) (documents.Model, error) {
+func (m *MockService) GetVersion(ctx context.Context, documentID []byte, version []byte) (documents.Model, error) {
 	args := m.Called(documentID, version)
 	return args.Get(0).(documents.Model), args.Error(1)
 }
 
-func (m *MockService) CreateProofs(documentID []byte, fields []string) (*documents.DocumentProof, error) {
+func (m *MockService) CreateProofs(ctx context.Context, documentID []byte, fields []string) (*documents.DocumentProof, error) {
 	args := m.Called(documentID, fields)
 	return args.Get(0).(*documents.DocumentProof), args.Error(1)
 }
 
-func (m *MockService) CreateProofsForVersion(documentID, version []byte, fields []string) (*documents.DocumentProof, error) {
+func (m *MockService) CreateProofsForVersion(ctx context.Context, documentID, version []byte, fields []string) (*documents.DocumentProof, error) {
 	args := m.Called(documentID, version, fields)
 	return args.Get(0).(*documents.DocumentProof), args.Error(1)
 }
@@ -45,12 +45,12 @@ func (m *MockService) RequestDocumentSignature(ctx context.Context, model docume
 	return args.Get(0).(*coredocumentpb.Signature), args.Error(1)
 }
 
-func (m *MockService) ReceiveAnchoredDocument(model documents.Model, headers *p2ppb.CentrifugeHeader) error {
+func (m *MockService) ReceiveAnchoredDocument(ctx context.Context, model documents.Model, headers *p2ppb.CentrifugeHeader) error {
 	args := m.Called()
 	return args.Error(0)
 }
 
-func (m *MockService) Exists(documentID []byte) bool {
+func (m *MockService) Exists(ctx context.Context, documentID []byte) bool {
 	args := m.Called()
 	return args.Get(0).(bool)
 }

@@ -234,7 +234,7 @@ func (dp defaultProcessor) AnchorDocument(ctx context.Context, model documents.M
 	}
 
 	log.Infof("Anchoring document with identifiers: [document: %#x, current: %#x, next: %#x], rootHash: %#x", cd.DocumentIdentifier, cd.CurrentVersion, cd.NextVersion, cd.DocumentRoot)
-	confirmations, err := dp.anchorRepository.CommitAnchor(anchorID, rootHash, centID, [][anchors.DocumentProofLength]byte{utils.RandomByte32()}, mac)
+	confirmations, err := dp.anchorRepository.CommitAnchor(ctx, anchorID, rootHash, centID, [][anchors.DocumentProofLength]byte{utils.RandomByte32()}, mac)
 	if err != nil {
 		return errors.New("failed to commit anchor: %v", err)
 	}

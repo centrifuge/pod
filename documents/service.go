@@ -8,13 +8,6 @@ import (
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 )
 
-// Config specified configs required by documents package
-type Config interface {
-
-	// GetIdentityID retrieves the centID(TenentID) configured
-	GetIdentityID() ([]byte, error)
-}
-
 // DocumentProof is a value to represent a document and its field proofs
 type DocumentProof struct {
 	DocumentID  []byte
@@ -27,26 +20,26 @@ type DocumentProof struct {
 type Service interface {
 
 	// GetCurrentVersion reads a document from the database
-	GetCurrentVersion(documentID []byte) (Model, error)
+	GetCurrentVersion(ctx context.Context, documentID []byte) (Model, error)
 
 	// Exists checks if a document exists
-	Exists(documentID []byte) bool
+	Exists(ctx context.Context, documentID []byte) bool
 
 	// GetVersion reads a document from the database
-	GetVersion(documentID []byte, version []byte) (Model, error)
+	GetVersion(ctx context.Context, documentID []byte, version []byte) (Model, error)
 
 	// DeriveFromCoreDocument derives a model given the core document
 	DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (Model, error)
 
 	// CreateProofs creates proofs for the latest version document given the fields
-	CreateProofs(documentID []byte, fields []string) (*DocumentProof, error)
+	CreateProofs(ctx context.Context, documentID []byte, fields []string) (*DocumentProof, error)
 
 	// CreateProofsForVersion creates proofs for a particular version of the document given the fields
-	CreateProofsForVersion(documentID, version []byte, fields []string) (*DocumentProof, error)
+	CreateProofsForVersion(ctx context.Context, documentID, version []byte, fields []string) (*DocumentProof, error)
 
 	// RequestDocumentSignature Validates and Signs document received over the p2p layer
 	RequestDocumentSignature(ctx context.Context, model Model) (*coredocumentpb.Signature, error)
 
 	// ReceiveAnchoredDocument receives a new anchored document over the p2p layer, validates and updates the document in DB
-	ReceiveAnchoredDocument(model Model, headers *p2ppb.CentrifugeHeader) error
+	ReceiveAnchoredDocument(ctx context.Context, model Model, headers *p2ppb.CentrifugeHeader) error
 }

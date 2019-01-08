@@ -8,6 +8,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
+
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 
 	"github.com/centrifuge/go-centrifuge/identity/ethid"
@@ -41,6 +43,7 @@ import (
 
 var ctx = map[string]interface{}{}
 var cfg config.Configuration
+var configService configstore.Service
 
 func TestMain(m *testing.M) {
 	ethClient := &testingcommons.MockEthClient{}
@@ -57,12 +60,15 @@ func TestMain(m *testing.M) {
 		&ethid.Bootstrapper{},
 		anchors.Bootstrapper{},
 		documents.Bootstrapper{},
+		&genericdoc.Bootstrapper{},
 		p2p.Bootstrapper{},
 		&Bootstrapper{},
 		&queue.Starter{},
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
+	cfg.Set("identityId", cid.String())
+	configService = ctx[configstore.BootstrappedConfigStorage].(configstore.Service)
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)

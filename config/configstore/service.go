@@ -64,7 +64,7 @@ func (s service) DeleteTenant(identifier []byte) error {
 	return s.repo.DeleteTenant(identifier)
 }
 
-// RetrieveConfig retrieves system config giving priority to db store config
+// RetrieveConfig retrieves system config giving priority to db stored config
 func RetrieveConfig(dbOnly bool, ctx map[string]interface{}) (config.Configuration, error) {
 	var cfg config.Configuration
 	var err error
