@@ -1,7 +1,6 @@
 package genericdoc
 
 import (
-	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity/ethid"
 
@@ -18,11 +17,6 @@ const BootstrappedGenService = "BootstrappedGenService "
 
 // Bootstrap sets the required storage and registers
 func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
-	cfg, err := configstore.RetrieveConfig(true, ctx)
-	if err != nil {
-		return err
-	}
-
 	anchorRepo, ok := ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
 	if !ok {
 		return errors.New("anchor repository not initialised")
@@ -38,7 +32,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("document db repository not initialised")
 	}
 
-	ctx[BootstrappedGenService] = DefaultService(cfg, repo, anchorRepo, idService)
+	ctx[BootstrappedGenService] = DefaultService(repo, anchorRepo, idService)
 	return nil
 
 }

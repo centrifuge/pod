@@ -56,7 +56,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	}
 
 	// register service
-	srv := DefaultService(repo, anchorRepo, idService, queueSrv, txService,genService)
+	srv := DefaultService(repo, anchorRepo, idService, queueSrv, txService, genService)
 	err := registry.Register(documenttypes.PurchaseOrderDataTypeUrl, srv)
 	if err != nil {
 		return errors.New("failed to register purchase order service")

@@ -11,7 +11,6 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 
-	"github.com/centrifuge/go-centrifuge/common"
 	"github.com/centrifuge/go-centrifuge/identity/ethid"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -63,7 +62,7 @@ func TestMain(m *testing.M) {
 func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	poSrv := genericdoc.DefaultService(nil, nil, nil)
 	ctxh := testingconfig.CreateTenantContext(t, cfg)
-	err := poSrv.ReceiveAnchoredDocument(ctxh,nil, nil)
+	err := poSrv.ReceiveAnchoredDocument(ctxh, nil, nil)
 	assert.Error(t, err)
 }
 
@@ -72,7 +71,7 @@ func getServiceWithMockedLayers() (genericdoc.Service, testingcommons.MockIDServ
 	idService := testingcommons.MockIDService{}
 	idService.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
 	mockAnchor = &mockAnchorRepo{}
-	return genericdoc.DefaultService( repo, mockAnchor, &idService), idService
+	return genericdoc.DefaultService(repo, mockAnchor, &idService), idService
 }
 
 type mockAnchorRepo struct {

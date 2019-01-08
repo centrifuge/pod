@@ -29,16 +29,16 @@ type Service interface {
 	GetCurrentVersion(ctx context.Context, documentID []byte) (documents.Model, error)
 
 	// Exists checks if a document exists
-	Exists(ctx context.Context,documentID []byte) bool
+	Exists(ctx context.Context, documentID []byte) bool
 
 	// GetVersion reads a document from the database
-	GetVersion(ctx context.Context,documentID []byte, version []byte) (documents.Model, error)
+	GetVersion(ctx context.Context, documentID []byte, version []byte) (documents.Model, error)
 
 	// CreateProofs creates proofs for the latest version document given the fields
 	CreateProofs(ctx context.Context, documentID []byte, fields []string) (*documents.DocumentProof, error)
 
 	// CreateProofsForVersion creates proofs for a particular version of the document given the fields
-	CreateProofsForVersion(ctx context.Context,documentID, version []byte, fields []string) (*documents.DocumentProof, error)
+	CreateProofsForVersion(ctx context.Context, documentID, version []byte, fields []string) (*documents.DocumentProof, error)
 
 	// RequestDocumentSignature Validates and Signs document received over the p2p layer
 	RequestDocumentSignature(ctx context.Context, model documents.Model) (*coredocumentpb.Signature, error)
