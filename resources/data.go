@@ -84,7 +84,7 @@ func goCentrifugeBuildConfigsDefault_configYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "go-centrifuge/build/configs/default_config.yaml", size: 4668, mode: os.FileMode(420), modTime: time.Unix(1545125814, 0)}
+	info := bindataFileInfo{name: "go-centrifuge/build/configs/default_config.yaml", size: 4668, mode: os.FileMode(420), modTime: time.Unix(1545075267, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -104,7 +104,7 @@ func goCentrifugeBuildConfigsTesting_configYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "go-centrifuge/build/configs/testing_config.yaml", size: 965, mode: os.FileMode(420), modTime: time.Unix(1546855793, 0)}
+	info := bindataFileInfo{name: "go-centrifuge/build/configs/testing_config.yaml", size: 965, mode: os.FileMode(420), modTime: time.Unix(1545556716, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
