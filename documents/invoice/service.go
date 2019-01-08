@@ -85,44 +85,14 @@ func DefaultService(
 
 // CreateProofs creates proofs for the latest version document given the fields
 func (s service) CreateProofs(ctx context.Context, documentID []byte, fields []string) (*documents.DocumentProof, error) {
-	model, err := s.GetCurrentVersion(ctx, documentID)
-	if err != nil {
-		return nil, err
-	}
-
-	return s.invoiceProof(model, fields)
+	return s.genService.CreateProofs(ctx,documentID,fields)
 }
 
 // CreateProofsForVersion creates proofs for a particular version of the document given the fields
 func (s service) CreateProofsForVersion(ctx context.Context, documentID, version []byte, fields []string) (*documents.DocumentProof, error) {
-	model, err := s.GetVersion(ctx, documentID, version)
-	if err != nil {
-		return nil, err
-	}
-
-	return s.invoiceProof(model, fields)
+	return s.genService.CreateProofsForVersion(ctx,documentID,version,fields)
 }
 
-// invoiceProof creates proofs for invoice model fields
-func (s service) invoiceProof(model documents.Model, fields []string) (*documents.DocumentProof, error) {
-	inv, ok := model.(*Invoice)
-	if !ok {
-		return nil, documents.ErrDocumentInvalidType
-	}
-
-	if err := coredocument.PostAnchoredValidator(s.identityService, s.anchorRepository).Validate(nil, inv); err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
-	}
-	coreDoc, proofs, err := inv.CreateProofs(fields)
-	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentProof, err)
-	}
-	return &documents.DocumentProof{
-		DocumentID:  coreDoc.DocumentIdentifier,
-		VersionID:   coreDoc.CurrentVersion,
-		FieldProofs: proofs,
-	}, nil
-}
 
 // DeriveFromCoreDocument unpacks the core document into a model
 func (s service) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (documents.Model, error) {
