@@ -49,7 +49,7 @@ func TestMain(m *testing.M) {
 
 func TestCentP2PServer_StartContextCancel(t *testing.T) {
 	cfg.Set("p2p.port", 38203)
-	cp2p := &p2pServer{config: cfg, handlerCreator: func() *receiver.Handler {
+	cp2p := &centPeer{config: cfg, handlerCreator: func() *receiver.Handler {
 		return receiver.New(cfg, nil)
 	}}
 	ctx, canc := context.WithCancel(context.Background())
@@ -67,7 +67,7 @@ func TestCentP2PServer_StartContextCancel(t *testing.T) {
 func TestCentP2PServer_StartListenError(t *testing.T) {
 	// cause an error by using an invalid port
 	cfg.Set("p2p.port", 100000000)
-	cp2p := &p2pServer{config: cfg}
+	cp2p := &centPeer{config: cfg}
 	ctx, _ := context.WithCancel(context.Background())
 	startErr := make(chan error)
 	var wg sync.WaitGroup
@@ -81,7 +81,7 @@ func TestCentP2PServer_StartListenError(t *testing.T) {
 
 func TestCentP2PServer_makeBasicHostNoExternalIP(t *testing.T) {
 	listenPort := 38202
-	cp2p := &p2pServer{config: cfg}
+	cp2p := &centPeer{config: cfg}
 	priv, pub, err := cp2p.createSigningKey()
 	h, err := makeBasicHost(priv, pub, "", listenPort)
 	assert.Nil(t, err)
@@ -91,7 +91,7 @@ func TestCentP2PServer_makeBasicHostNoExternalIP(t *testing.T) {
 func TestCentP2PServer_makeBasicHostWithExternalIP(t *testing.T) {
 	externalIP := "100.100.100.100"
 	listenPort := 38202
-	cp2p := &p2pServer{config: cfg}
+	cp2p := &centPeer{config: cfg}
 	priv, pub, err := cp2p.createSigningKey()
 	h, err := makeBasicHost(priv, pub, externalIP, listenPort)
 	assert.Nil(t, err)
@@ -105,7 +105,7 @@ func TestCentP2PServer_makeBasicHostWithExternalIP(t *testing.T) {
 func TestCentP2PServer_makeBasicHostWithWrongExternalIP(t *testing.T) {
 	externalIP := "100.200.300.400"
 	listenPort := 38202
-	cp2p := &p2pServer{config: cfg}
+	cp2p := &centPeer{config: cfg}
 	priv, pub, err := cp2p.createSigningKey()
 	h, err := makeBasicHost(priv, pub, externalIP, listenPort)
 	assert.NotNil(t, err)

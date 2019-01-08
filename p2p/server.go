@@ -53,8 +53,8 @@ type messenger interface {
 	sendMessage(ctx context.Context, p peer.ID, pmes *pb.P2PEnvelope, protoc protocol.ID) (*pb.P2PEnvelope, error)
 }
 
-// p2pServer implements api.Server
-type p2pServer struct {
+// centPeer implements api.Server
+type centPeer struct {
 	// TODO [multi-tenancy] replace this with config service
 	config         Config
 	host           host.Host
@@ -63,12 +63,12 @@ type p2pServer struct {
 }
 
 // Name returns the P2PServer
-func (*p2pServer) Name() string {
+func (*centPeer) Name() string {
 	return "P2PServer"
 }
 
 // Start starts the DHT and libp2p host
-func (s *p2pServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- error) {
+func (s *centPeer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- error) {
 	defer wg.Done()
 
 	if s.config.GetP2PPort() == 0 {
@@ -101,7 +101,7 @@ func (s *p2pServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr ch
 
 }
 
-func (s *p2pServer) createSigningKey() (priv crypto.PrivKey, pub crypto.PubKey, err error) {
+func (s *centPeer) createSigningKey() (priv crypto.PrivKey, pub crypto.PubKey, err error) {
 	// Create the signing key for the host
 	publicKey, privateKey, err := cented25519.GetSigningKeyPair(s.config.GetSigningKeyPair())
 	if err != nil {

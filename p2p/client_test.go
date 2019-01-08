@@ -44,7 +44,7 @@ func (mm *MockMessenger) sendMessage(ctx context.Context, p peer.ID, pmes *proto
 
 func TestGetSignatureForDocument_fail_connect(t *testing.T) {
 	m := &MockMessenger{}
-	testClient := &p2pServer{config: cfg, mes: m}
+	testClient := &centPeer{config: cfg, mes: m}
 	coreDoc := testingcoredocument.GenerateCoreDocument()
 	ctx := context.Background()
 
@@ -65,7 +65,7 @@ func TestGetSignatureForDocument_fail_connect(t *testing.T) {
 
 func TestGetSignatureForDocument_fail_version_check(t *testing.T) {
 	m := &MockMessenger{}
-	testClient := &p2pServer{config: cfg, mes: m}
+	testClient := &centPeer{config: cfg, mes: m}
 	coreDoc := testingcoredocument.GenerateCoreDocument()
 	ctx := context.Background()
 	resp := &p2ppb.SignatureResponse{CentNodeVersion: "1.0.0"}
@@ -88,7 +88,7 @@ func TestGetSignatureForDocument_fail_version_check(t *testing.T) {
 
 func TestGetSignatureForDocument_fail_centrifugeId(t *testing.T) {
 	m := &MockMessenger{}
-	testClient := &p2pServer{config: cfg, mes: m}
+	testClient := &centPeer{config: cfg, mes: m}
 	coreDoc := testingcoredocument.GenerateCoreDocument()
 	ctx := context.Background()
 
@@ -113,7 +113,7 @@ func TestGetSignatureForDocument_fail_centrifugeId(t *testing.T) {
 
 }
 
-func (s *p2pServer) createSignatureResp(centNodeVer string, signature *coredocumentpb.Signature) *protocolpb.P2PEnvelope {
+func (s *centPeer) createSignatureResp(centNodeVer string, signature *coredocumentpb.Signature) *protocolpb.P2PEnvelope {
 	req := &p2ppb.SignatureResponse{
 		CentNodeVersion: centNodeVer,
 		Signature:       signature,

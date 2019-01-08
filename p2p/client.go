@@ -33,7 +33,7 @@ type Client interface {
 	SendAnchoredDocument(ctx context.Context, id identity.Identity, in *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error)
 }
 
-func (s *p2pServer) SendAnchoredDocument(ctx context.Context, id identity.Identity, in *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error) {
+func (s *centPeer) SendAnchoredDocument(ctx context.Context, id identity.Identity, in *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error) {
 	pid, err := s.getPeerID(id)
 	if err != nil {
 		return nil, err
@@ -66,7 +66,7 @@ func (s *p2pServer) SendAnchoredDocument(ctx context.Context, id identity.Identi
 }
 
 // OpenClient returns P2PServiceClient to contact the remote peer
-func (s *p2pServer) getPeerID(id identity.Identity) (peer.ID, error) {
+func (s *centPeer) getPeerID(id identity.Identity) (peer.ID, error) {
 	lastB58Key, err := id.CurrentP2PKey()
 	if err != nil {
 		return "", errors.New("error fetching p2p key: %v", err)
@@ -101,7 +101,7 @@ func (s *p2pServer) getPeerID(id identity.Identity) (peer.ID, error) {
 }
 
 // getSignatureForDocument requests the target node to sign the document
-func (s *p2pServer) getSignatureForDocument(ctx context.Context, identityService identity.Service, doc coredocumentpb.CoreDocument, receiverPeer peer.ID, receiverCentID identity.CentID) (*p2ppb.SignatureResponse, error) {
+func (s *centPeer) getSignatureForDocument(ctx context.Context, identityService identity.Service, doc coredocumentpb.CoreDocument, receiverPeer peer.ID, receiverCentID identity.CentID) (*p2ppb.SignatureResponse, error) {
 	senderID, err := s.config.GetIdentityID()
 	if err != nil {
 		return nil, err
@@ -156,7 +156,7 @@ type signatureResponseWrap struct {
 	err  error
 }
 
-func (s *p2pServer) getSignatureAsync(ctx context.Context, identityService identity.Service, doc coredocumentpb.CoreDocument, receiverPeer peer.ID, receiverCentID identity.CentID, out chan<- signatureResponseWrap) {
+func (s *centPeer) getSignatureAsync(ctx context.Context, identityService identity.Service, doc coredocumentpb.CoreDocument, receiverPeer peer.ID, receiverCentID identity.CentID, out chan<- signatureResponseWrap) {
 	resp, err := s.getSignatureForDocument(ctx, identityService, doc, receiverPeer, receiverCentID)
 	out <- signatureResponseWrap{
 		resp: resp,
@@ -165,7 +165,7 @@ func (s *p2pServer) getSignatureAsync(ctx context.Context, identityService ident
 }
 
 // GetSignaturesForDocument requests peer nodes for the signature and verifies them
-func (s *p2pServer) GetSignaturesForDocument(ctx context.Context, identityService identity.Service, doc *coredocumentpb.CoreDocument) error {
+func (s *centPeer) GetSignaturesForDocument(ctx context.Context, identityService identity.Service, doc *coredocumentpb.CoreDocument) error {
 	in := make(chan signatureResponseWrap)
 	defer close(in)
 
@@ -220,7 +220,7 @@ func (s *p2pServer) GetSignaturesForDocument(ctx context.Context, identityServic
 	return nil
 }
 
-func (s *p2pServer) createSignatureRequest(senderID []byte, doc *coredocumentpb.CoreDocument) (*protocolpb.P2PEnvelope, error) {
+func (s *centPeer) createSignatureRequest(senderID []byte, doc *coredocumentpb.CoreDocument) (*protocolpb.P2PEnvelope, error) {
 	h := p2ppb.CentrifugeHeader{
 		NetworkIdentifier:  s.config.GetNetworkID(),
 		CentNodeVersion:    version.GetVersion().String(),

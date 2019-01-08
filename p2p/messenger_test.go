@@ -62,8 +62,8 @@ func TestHandleNewMessage(t *testing.T) {
 	m2.init(MessengerDummyProtocol2)
 
 	// 1. happy path
-	// from h1 to h2
-	msg, err := m1.sendMessage(c, h2.ID(), &pb.P2PEnvelope{Type: pb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE, Body: utils.RandomSlice(3)}, MessengerDummyProtocol)
+	// from h1 to h2 (with a message size ~ 30MB)
+	msg, err := m1.sendMessage(c, h2.ID(), &pb.P2PEnvelope{Type: pb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE, Body: utils.RandomSlice(33554425)}, MessengerDummyProtocol)
 	assert.NoError(t, err)
 	assert.Equal(t, pb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE_REP, msg.Type)
 	// from h1 to h2 different protocol - intentionally setting reply-response in opposite for differentiation
