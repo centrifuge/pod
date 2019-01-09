@@ -36,37 +36,52 @@ type Client interface {
 }
 
 func (s *peer) SendAnchoredDocument(ctx context.Context, id identity.Identity, in *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error) {
-	pid, err := s.getPeerID(id)
-	if err != nil {
-		return nil, err
-	}
-	marshalledRequest, err := proto.Marshal(in)
-	if err != nil {
-		return nil, err
+	cid := id.CentID()
+	tc, err := s.config.GetTenant(cid[:])
+	if err == nil {
+		// this is a local tenant
+		h := s.handlerCreator()
+		// the following context has to be different from the parent context since its initiating a local peer call
+		peerCtx, err := contextutil.NewCentrifugeContext(context.Background(), tc)
+		if err != nil {
+			return nil, err
+		}
+		return h.SendAnchoredDocument(peerCtx, in)
+	} else {
+		// this is a remote tenant
+		pid, err := s.getPeerID(id)
+		if err != nil {
+			return nil, err
+		}
+		marshalledRequest, err := proto.Marshal(in)
+		if err != nil {
+			return nil, err
+		}
+
+		recv, err := s.mes.sendMessage(
+			ctx, pid,
+			&protocolpb.P2PEnvelope{Type: protocolpb.MessageType_MESSAGE_TYPE_SEND_ANCHORED_DOC, Body: marshalledRequest},
+			receiver.ProtocolForCID(id.CentID()))
+		if err != nil {
+			return nil, err
+		}
+
+		// handle client error
+		if recv.Type == protocolpb.MessageType_MESSAGE_TYPE_ERROR {
+			return nil, convertClientError(recv)
+		}
+
+		if recv.Type != protocolpb.MessageType_MESSAGE_TYPE_SEND_ANCHORED_DOC_REP {
+			return nil, errors.New("the received send anchored document response is incorrect")
+		}
+		r := new(p2ppb.AnchorDocumentResponse)
+		err = proto.Unmarshal(recv.Body, r)
+		if err != nil {
+			return nil, err
+		}
+		return r, nil
 	}
 
-	recv, err := s.mes.sendMessage(
-		ctx, pid,
-		&protocolpb.P2PEnvelope{Type: protocolpb.MessageType_MESSAGE_TYPE_SEND_ANCHORED_DOC, Body: marshalledRequest},
-		receiver.ProtocolForCID(id.CentID()))
-	if err != nil {
-		return nil, err
-	}
-
-	// handle client error
-	if recv.Type == protocolpb.MessageType_MESSAGE_TYPE_ERROR {
-		return nil, convertClientError(recv)
-	}
-
-	if recv.Type != protocolpb.MessageType_MESSAGE_TYPE_SEND_ANCHORED_DOC_REP {
-		return nil, errors.New("the received send anchored document response is incorrect")
-	}
-	r := new(p2ppb.AnchorDocumentResponse)
-	err = proto.Unmarshal(recv.Body, r)
-	if err != nil {
-		return nil, err
-	}
-	return r, nil
 }
 
 // OpenClient returns P2PServiceClient to contact the remote peer
@@ -194,22 +209,45 @@ func (s *peer) GetSignaturesForDocument(ctx context.Context, identityService ide
 		if err != nil {
 			return centerrors.Wrap(err, "failed to convert to CentID")
 		}
-		id, err := identityService.LookupIdentityForID(collaboratorID)
-		if err != nil {
-			return centerrors.Wrap(err, "error fetching collaborator identity")
-		}
+		tc, err := s.config.GetTenant(collaboratorID[:])
+		if err == nil {
+			// this is a local tenant
+			h := s.handlerCreator()
+			// the following context has to be different from the parent context since its initiating a local peer call
+			peerCtx, err := contextutil.NewCentrifugeContext(context.Background(), tc)
+			if err != nil {
+				return err
+			}
+			req, err := s.sigRequest(self.ID[:], doc)
+			if err != nil {
+				return err
+			}
+			go func() {
+				res, err := h.RequestDocumentSignature(peerCtx, req)
+				in <- signatureResponseWrap{
+					resp: res,
+					err:  err,
+				}
+			}()
+		} else {
+			// this is a remote tenant
+			id, err := identityService.LookupIdentityForID(collaboratorID)
+			if err != nil {
+				return centerrors.Wrap(err, "error fetching collaborator identity")
+			}
 
-		receiverPeer, err := s.getPeerID(id)
-		if err != nil {
-			log.Error(centerrors.Wrap(err, "failed to connect to target"))
-			continue
-		}
+			receiverPeer, err := s.getPeerID(id)
+			if err != nil {
+				log.Error(centerrors.Wrap(err, "failed to connect to target"))
+				continue
+			}
 
-		// for now going with context.background, once we have a timeout for request
-		// we can use context.Timeout for that
-		count++
-		c, _ := context.WithTimeout(ctx, nc.GetP2PConnectionTimeout())
-		go s.getSignatureAsync(c, identityService, *doc, receiverPeer, collaboratorID, in)
+			// for now going with context.background, once we have a timeout for request
+			// we can use context.Timeout for that
+			count++
+			c, _ := context.WithTimeout(ctx, nc.GetP2PConnectionTimeout())
+			go s.getSignatureAsync(c, identityService, *doc, receiverPeer, collaboratorID, in)
+		}
 	}
 
 	var responses []signatureResponseWrap
@@ -230,11 +268,22 @@ func (s *peer) GetSignaturesForDocument(ctx context.Context, identityService ide
 }
 
 func (s *peer) createSignatureRequest(senderID []byte, doc *coredocumentpb.CoreDocument) (*protocolpb.P2PEnvelope, error) {
+	req, err := s.sigRequest(senderID, doc)
+	if err != nil {
+		return nil, err
+	}
+	reqB, err := proto.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+	return &protocolpb.P2PEnvelope{Type: protocolpb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE, Body: reqB}, nil
+}
+
+func (s *peer) sigRequest(senderID []byte, doc *coredocumentpb.CoreDocument) (*p2ppb.SignatureRequest, error) {
 	nc, err := s.config.GetConfig()
 	if err != nil {
 		return nil, err
 	}
-
 	h := p2ppb.CentrifugeHeader{
 		NetworkIdentifier:  nc.GetNetworkID(),
 		CentNodeVersion:    version.GetVersion().String(),
@@ -244,12 +293,7 @@ func (s *peer) createSignatureRequest(senderID []byte, doc *coredocumentpb.CoreD
 		Header:   &h,
 		Document: doc,
 	}
-
-	reqB, err := proto.Marshal(req)
-	if err != nil {
-		return nil, err
-	}
-	return &protocolpb.P2PEnvelope{Type: protocolpb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE, Body: reqB}, nil
+	return req, nil
 }
 
 func convertClientError(recv *protocolpb.P2PEnvelope) error {
