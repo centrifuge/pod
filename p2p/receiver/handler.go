@@ -85,7 +85,7 @@ func (srv *Handler) HandleInterceptor(ctx context.Context, peer peer.ID, protoc 
 }
 
 // HandleRequestDocumentSignature handles the RequestDocumentSignature message
-func (srv *Handler) HandleRequestDocumentSignature(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *p2ppb.CentrifugeEnvelope) (*pb.P2PEnvelope, error) {
+func (srv *Handler) HandleRequestDocumentSignature(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *p2ppb.Envelope) (*pb.P2PEnvelope, error) {
 	req := new(p2ppb.SignatureRequest)
 	err := proto.Unmarshal(msg.Body, req)
 	if err != nil {
@@ -131,14 +131,14 @@ func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.
 }
 
 // HandleSendAnchoredDocument handles the SendAnchoredDocument message
-func (srv *Handler) HandleSendAnchoredDocument(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *p2ppb.CentrifugeEnvelope) (*pb.P2PEnvelope, error) {
+func (srv *Handler) HandleSendAnchoredDocument(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *p2ppb.Envelope) (*pb.P2PEnvelope, error) {
 	m := new(p2ppb.AnchorDocumentRequest)
 	err := proto.Unmarshal(msg.Body, m)
 	if err != nil {
 		return nil, err
 	}
 
-	res, err := srv.SendAnchoredDocument(ctx, m, msg.Header.SenderCentrifugeId)
+	res, err := srv.SendAnchoredDocument(ctx, m, msg.Header.SenderId)
 	if err != nil {
 		return convertToErrorEnvelop(err)
 	}
@@ -183,8 +183,8 @@ func convertToErrorEnvelop(err error) (*pb.P2PEnvelope, error) {
 		return nil, err
 	}
 
-	envelope := &p2ppb.CentrifugeEnvelope{
-		Header: &p2ppb.CentrifugeHeader{
+	envelope := &p2ppb.Envelope{
+		Header: &p2ppb.Header{
 			Type: p2pcommon.MessageTypeError.String(),
 		},
 		Body: errBytes,

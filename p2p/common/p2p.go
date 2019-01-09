@@ -48,12 +48,12 @@ func MessageTypeFromString(mt string) MessageType {
 }
 
 
-func ResolveDataEnvelope(mes proto.Message) (*p2ppb.CentrifugeEnvelope, error) {
+func ResolveDataEnvelope(mes proto.Message) (*p2ppb.Envelope, error) {
 	recv, ok := mes.(*protocolpb.P2PEnvelope)
 	if !ok {
 		return nil, errors.New("cannot unmarshall response payload: %v", recv)
 	}
-	recvEnvelope := new(p2ppb.CentrifugeEnvelope)
+	recvEnvelope := new(p2ppb.Envelope)
 	err := proto.Unmarshal(recv.Body, recvEnvelope)
 	if err != nil {
 		return nil, err
@@ -74,9 +74,9 @@ func PrepareP2PEnvelope(ctx context.Context, networkID uint32, messageType Messa
 	}
 
 	centIDBytes := self.ID[:]
-	p2pheader := &p2ppb.CentrifugeHeader{
-		SenderCentrifugeId: centIDBytes,
-		CentNodeVersion:    version.GetVersion().String(),
+	p2pheader := &p2ppb.Header{
+		SenderId: centIDBytes,
+		NodeVersion:    version.GetVersion().String(),
 		NetworkIdentifier:  networkID,
 		Type: messageType.String(),
 	}
@@ -86,7 +86,7 @@ func PrepareP2PEnvelope(ctx context.Context, networkID uint32, messageType Messa
 		return nil, err
 	}
 
-	envelope := &p2ppb.CentrifugeEnvelope{
+	envelope := &p2ppb.Envelope{
 		Header: p2pheader,
 		Body: body,
 	}

@@ -13,14 +13,14 @@ import (
 // Validator defines method that must be implemented by any validator type.
 type Validator interface {
 	// Validate validates p2p requests
-	Validate(header *p2ppb.CentrifugeHeader) error
+	Validate(header *p2ppb.Header) error
 }
 
 // ValidatorGroup implements Validator for validating a set of validators.
 type ValidatorGroup []Validator
 
 // Validate will execute all group specific atomic validations
-func (group ValidatorGroup) Validate(header *p2ppb.CentrifugeHeader) (errs error) {
+func (group ValidatorGroup) Validate(header *p2ppb.Header) (errs error) {
 	for _, v := range group {
 		if err := v.Validate(header); err != nil {
 			errs = errors.AppendError(errs, err)
@@ -31,28 +31,28 @@ func (group ValidatorGroup) Validate(header *p2ppb.CentrifugeHeader) (errs error
 
 // ValidatorFunc implements Validator and can be used as a adaptor for functions
 // with specific function signature
-type ValidatorFunc func(header *p2ppb.CentrifugeHeader) error
+type ValidatorFunc func(header *p2ppb.Header) error
 
 // Validate passes the arguments to the underlying validator
 // function and returns the results
-func (vf ValidatorFunc) Validate(header *p2ppb.CentrifugeHeader) error {
+func (vf ValidatorFunc) Validate(header *p2ppb.Header) error {
 	return vf(header)
 }
 
 func versionValidator() Validator {
-	return ValidatorFunc(func(header *p2ppb.CentrifugeHeader) error {
+	return ValidatorFunc(func(header *p2ppb.Header) error {
 		if header == nil {
 			return errors.New("nil header")
 		}
-		if !version.CheckVersion(header.CentNodeVersion) {
-			return version.IncompatibleVersionError(header.CentNodeVersion)
+		if !version.CheckVersion(header.NodeVersion) {
+			return version.IncompatibleVersionError(header.NodeVersion)
 		}
 		return nil
 	})
 }
 
 func networkValidator(networkID uint32) Validator {
-	return ValidatorFunc(func(header *p2ppb.CentrifugeHeader) error {
+	return ValidatorFunc(func(header *p2ppb.Header) error {
 		if header == nil {
 			return errors.New("nil header")
 		}

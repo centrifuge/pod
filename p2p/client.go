@@ -140,9 +140,9 @@ func (s *p2pServer) getSignatureForDocument(ctx context.Context, identityService
 		return nil, err
 	}
 
-	compatible := version.CheckVersion(recvEnvelope.Header.CentNodeVersion)
+	compatible := version.CheckVersion(recvEnvelope.Header.NodeVersion)
 	if !compatible {
-		return nil, version.IncompatibleVersionError(recvEnvelope.Header.CentNodeVersion)
+		return nil, version.IncompatibleVersionError(recvEnvelope.Header.NodeVersion)
 	}
 
 	err = identity.ValidateCentrifugeIDBytes(resp.Signature.EntityId, receiverCentID)
@@ -228,7 +228,7 @@ func (s *p2pServer) GetSignaturesForDocument(ctx context.Context, identityServic
 	return nil
 }
 
-func convertClientError(recv *p2ppb.CentrifugeEnvelope) error {
+func convertClientError(recv *p2ppb.Envelope) error {
 	resp := new(errorspb.Error)
 	err := proto.Unmarshal(recv.Body, resp)
 	if err != nil {
