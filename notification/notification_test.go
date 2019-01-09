@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
+
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -23,12 +25,16 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var cfg config.Configuration
+
 func TestMain(m *testing.M) {
 	ibootstappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
 	}
-	bootstrap.RunTestBootstrappers(ibootstappers, nil)
+	ctx := make(map[string]interface{})
+	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
+	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)
@@ -74,7 +80,7 @@ func TestWebhookSender_Send(t *testing.T) {
 	go server.ListenAndServe()
 	defer server.Close()
 
-	wb := NewWebhookSender(mockConfig{url: "http://localhost:8090/webhook"})
+	wb := NewWebhookSender()
 	notif := &notificationpb.NotificationMessage{
 		DocumentId:   hexutil.Encode(docID),
 		DocumentType: documenttypes.InvoiceDataTypeUrl,
@@ -83,7 +89,8 @@ func TestWebhookSender_Send(t *testing.T) {
 		Recorded:     ts,
 	}
 
-	status, err := wb.Send(notif)
+	cfg.Set("notifications.endpoint", "http://localhost:8090/webhook")
+	status, err := wb.Send(testingconfig.CreateTenantContext(t, cfg), notif)
 	assert.NoError(t, err)
 	assert.Equal(t, status, Success)
 	wg.Wait()
