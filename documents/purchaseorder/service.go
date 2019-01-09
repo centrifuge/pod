@@ -3,17 +3,12 @@ package purchaseorder
 import (
 	"bytes"
 	"context"
-	"time"
-
 	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/coredocument"
-	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -21,9 +16,7 @@ import (
 	clientpopb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/transactions"
-	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/golang/protobuf/ptypes"
 	logging "github.com/ipfs/go-log"
 	"github.com/satori/go.uuid"
 )
@@ -62,7 +55,7 @@ type service struct {
 	identityService  identity.Service
 	queueSrv         queue.TaskQueuer
 	txService        transactions.Service
-	genService       genericdoc.Service
+	genericdoc.Service
 }
 
 // DefaultService returns the default implementation of the service
@@ -72,7 +65,8 @@ func DefaultService(
 	identityService identity.Service,
 	queueSrv queue.TaskQueuer,
 	txService transactions.Service,
-	genService genericdoc.Service) Service {
+	genService genericdoc.Service,
+) Service {
 	return service{
 		repo:             repo,
 		notifier:         notification.NewWebhookSender(),
@@ -80,7 +74,7 @@ func DefaultService(
 		identityService:  identityService,
 		queueSrv:         queueSrv,
 		txService:        txService,
-		genService:       genService,
+		Service:       genService,
 	}
 }
 
@@ -338,130 +332,6 @@ func (s service) GetVersion(ctx context.Context, documentID []byte, version []by
 	}
 	return po, nil
 
-}
-
-// purchaseOrderProof creates proofs for purchaseOrder model fields
-func (s service) purchaseOrderProof(model documents.Model, fields []string) (*documents.DocumentProof, error) {
-	po, ok := model.(*PurchaseOrder)
-	if !ok {
-		return nil, documents.ErrDocumentInvalidType
-	}
-	if err := coredocument.PostAnchoredValidator(s.identityService, s.anchorRepository).Validate(nil, po); err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
-	}
-	coreDoc, proofs, err := po.CreateProofs(fields)
-	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentProof, err)
-	}
-	return &documents.DocumentProof{
-		DocumentID:  coreDoc.DocumentIdentifier,
-		VersionID:   coreDoc.CurrentVersion,
-		FieldProofs: proofs,
-	}, nil
-}
-
-// CreateProofs generates proofs for given document
-func (s service) CreateProofs(ctx context.Context, documentID []byte, fields []string) (*documents.DocumentProof, error) {
-	model, err := s.GetCurrentVersion(ctx, documentID)
-	if err != nil {
-		return nil, err
-	}
-	return s.purchaseOrderProof(model, fields)
-}
-
-// CreateProofsForVersion generates proofs for specific version of the document
-func (s service) CreateProofsForVersion(ctx context.Context, documentID, version []byte, fields []string) (*documents.DocumentProof, error) {
-	model, err := s.GetVersion(ctx, documentID, version)
-	if err != nil {
-		return nil, err
-	}
-	return s.purchaseOrderProof(model, fields)
-}
-
-// RequestDocumentSignature validates the document and returns the signature
-// Note: this is document agnostic. But since we do not have a common implementation, adding it here.
-// will remove this once we have a common implementation for documents.Service
-func (s service) RequestDocumentSignature(ctx context.Context, model documents.Model) (*coredocumentpb.Signature, error) {
-	if err := coredocument.SignatureRequestValidator(s.identityService).Validate(nil, model); err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
-	}
-
-	cd, err := model.PackCoreDocument()
-	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
-	}
-
-	srvLog.Infof("coredoc received %x with signing root %x", cd.DocumentIdentifier, cd.SigningRoot)
-
-	idConf, err := contextutil.Self(ctx)
-	if err != nil {
-		return nil, documents.ErrDocumentConfigTenantID
-	}
-
-	idKeys, ok := idConf.Keys[identity.KeyPurposeSigning]
-	if !ok {
-		return nil, errors.NewTypedError(documents.ErrDocumentSigning, errors.New("missing signing key"))
-	}
-	sig := crypto.Sign(idConf.ID[:], idKeys.PrivateKey, idKeys.PublicKey, cd.SigningRoot)
-	cd.Signatures = append(cd.Signatures, sig)
-	err = model.UnpackCoreDocument(cd)
-	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentUnPackingCoreDocument, err)
-	}
-
-	tenantID := idConf.ID[:]
-	// Logic for receiving version n (n > 1) of the document for the first time
-	if !s.repo.Exists(tenantID, cd.DocumentIdentifier) && !utils.IsSameByteSlice(cd.DocumentIdentifier, cd.CurrentVersion) {
-		err = s.repo.Create(tenantID, cd.DocumentIdentifier, model)
-		if err != nil {
-			return nil, errors.NewTypedError(documents.ErrDocumentPersistence, err)
-		}
-	}
-
-	err = s.repo.Create(tenantID, cd.CurrentVersion, model)
-	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentPersistence, err)
-	}
-
-	srvLog.Infof("signed coredoc %x with version %x", cd.DocumentIdentifier, cd.CurrentVersion)
-	return sig, nil
-}
-
-// ReceiveAnchoredDocument validates the anchored document and updates it on DB
-// Note: this is document agnostic. But since we do not have a common implementation, adding it here.
-// will remove this once we have a common implementation for documents.Service
-func (s service) ReceiveAnchoredDocument(ctx context.Context, model documents.Model, headers *p2ppb.CentrifugeHeader) error {
-	self, err := contextutil.Self(ctx)
-	if err != nil {
-		return errors.NewTypedError(documents.ErrDocumentConfigTenantID, err)
-	}
-	if err := coredocument.PostAnchoredValidator(s.identityService, s.anchorRepository).Validate(nil, model); err != nil {
-		return errors.NewTypedError(documents.ErrDocumentInvalid, err)
-	}
-
-	doc, err := model.PackCoreDocument()
-	if err != nil {
-		return errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
-	}
-
-	err = s.repo.Update(self.ID[:], doc.CurrentVersion, model)
-	if err != nil {
-		return errors.NewTypedError(documents.ErrDocumentPersistence, err)
-	}
-
-	ts, _ := ptypes.TimestampProto(time.Now().UTC())
-	notificationMsg := &notificationpb.NotificationMessage{
-		EventType:    uint32(notification.ReceivedPayload),
-		CentrifugeId: hexutil.Encode(headers.SenderCentrifugeId),
-		Recorded:     ts,
-		DocumentType: doc.EmbeddedData.TypeUrl,
-		DocumentId:   hexutil.Encode(doc.DocumentIdentifier),
-	}
-
-	// Async until we add queuing
-	go s.notifier.Send(ctx, notificationMsg)
-
-	return nil
 }
 
 // Exists checks if an purchase order exists

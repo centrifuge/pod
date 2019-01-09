@@ -8,7 +8,6 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/p2p/receiver"
 
-	pb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
 	"github.com/libp2p/go-libp2p-protocol"
 
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -42,15 +41,6 @@ type Config interface {
 	GetNetworkID() uint32
 	GetIdentityID() ([]byte, error)
 	GetSigningKeyPair() (pub, priv string)
-}
-
-// messenger is an interface to wrap p2p messaging implementation
-type messenger interface {
-	addHandler(mType pb.MessageType, handler func(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (*pb.P2PEnvelope, error))
-
-	init(protocols ...protocol.ID)
-
-	sendMessage(ctx context.Context, p peer.ID, pmes *pb.P2PEnvelope, protoc protocol.ID) (*pb.P2PEnvelope, error)
 }
 
 // p2pServer implements api.Server
@@ -89,10 +79,7 @@ func (s *p2pServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr ch
 		return
 	}
 
-	s.mes = newP2PMessenger(ctx, s.host, s.config.GetP2PConnectionTimeout())
-	handler := s.handlerCreator()
-	s.mes.addHandler(pb.MessageType_MESSAGE_TYPE_SEND_ANCHORED_DOC, handler.HandleSendAnchoredDocument)
-	s.mes.addHandler(pb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE, handler.HandleRequestDocumentSignature)
+	s.mes = newP2PMessenger(ctx, s.host, s.config.GetP2PConnectionTimeout(), s.handlerCreator().HandleInterceptor)
 	s.mes.init(CentrifugeProtocol)
 
 	// Start DHT and properly ignore errors :)

@@ -3,8 +3,8 @@ package p2p
 import (
 	"context"
 	"fmt"
+	"github.com/centrifuge/go-centrifuge/p2p/common"
 
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
 	"github.com/golang/protobuf/proto"
 
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -38,30 +38,38 @@ func (s *p2pServer) SendAnchoredDocument(ctx context.Context, id identity.Identi
 	if err != nil {
 		return nil, err
 	}
-	marshalledRequest, err := proto.Marshal(in)
+
+	envelope, err := p2pcommon.PrepareP2PEnvelope(ctx, s.config.GetNetworkID(), p2pcommon.MessageTypeSendAnchoredDoc, in)
 	if err != nil {
 		return nil, err
 	}
 
 	// TODO [multi-tenancy] modify the protocol id here to include the centID of the receiving node
-	recv, err := s.mes.sendMessage(ctx, pid, &protocolpb.P2PEnvelope{Type: protocolpb.MessageType_MESSAGE_TYPE_SEND_ANCHORED_DOC, Body: marshalledRequest}, CentrifugeProtocol)
+	recv, err := s.mes.sendMessage(ctx, pid, envelope, CentrifugeProtocol)
+	if err != nil {
+		return nil, err
+	}
+
+	recvEnvelope, err := p2pcommon.ResolveDataEnvelope(recv)
 	if err != nil {
 		return nil, err
 	}
 
 	// handle client error
-	if recv.Type == protocolpb.MessageType_MESSAGE_TYPE_ERROR {
-		return nil, convertClientError(recv)
+	if !p2pcommon.MessageTypeError.Equals(recvEnvelope.Header.Type) {
+		return nil, convertClientError(recvEnvelope)
 	}
 
-	if recv.Type != protocolpb.MessageType_MESSAGE_TYPE_SEND_ANCHORED_DOC_REP {
+	if !p2pcommon.MessageTypeSendAnchoredDocRep.Equals(recvEnvelope.Header.Type) {
 		return nil, errors.New("the received send anchored document response is incorrect")
 	}
+
 	r := new(p2ppb.AnchorDocumentResponse)
-	err = proto.Unmarshal(recv.Body, r)
+	err = proto.Unmarshal(recvEnvelope.Body, r)
 	if err != nil {
 		return nil, err
 	}
+
 	return r, nil
 }
 
@@ -102,39 +110,39 @@ func (s *p2pServer) getPeerID(id identity.Identity) (peer.ID, error) {
 
 // getSignatureForDocument requests the target node to sign the document
 func (s *p2pServer) getSignatureForDocument(ctx context.Context, identityService identity.Service, doc coredocumentpb.CoreDocument, receiverPeer peer.ID, receiverCentID identity.CentID) (*p2ppb.SignatureResponse, error) {
-	senderID, err := s.config.GetIdentityID()
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := s.createSignatureRequest(senderID, &doc)
+	envelope, err := p2pcommon.PrepareP2PEnvelope(ctx, s.config.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: &doc})
 	if err != nil {
 		return nil, err
 	}
 
 	log.Infof("Requesting signature from %s\n", receiverCentID)
-	recv, err := s.mes.sendMessage(ctx, receiverPeer, req, CentrifugeProtocol)
+	recv, err := s.mes.sendMessage(ctx, receiverPeer, envelope, CentrifugeProtocol)
+	if err != nil {
+		return nil, err
+	}
+
+	recvEnvelope, err := p2pcommon.ResolveDataEnvelope(recv)
 	if err != nil {
 		return nil, err
 	}
 
 	// handle client error
-	if recv.Type == protocolpb.MessageType_MESSAGE_TYPE_ERROR {
-		return nil, convertClientError(recv)
+	if !p2pcommon.MessageTypeError.Equals(recvEnvelope.Header.Type) {
+		return nil, convertClientError(recvEnvelope)
 	}
 
-	if recv.Type != protocolpb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE_REP {
+	if !p2pcommon.MessageTypeRequestSignatureRep.Equals(recvEnvelope.Header.Type) {
 		return nil, errors.New("the received request signature response is incorrect")
 	}
 	resp := new(p2ppb.SignatureResponse)
-	err = proto.Unmarshal(recv.Body, resp)
+	err = proto.Unmarshal(recvEnvelope.Body, resp)
 	if err != nil {
 		return nil, err
 	}
 
-	compatible := version.CheckVersion(resp.CentNodeVersion)
+	compatible := version.CheckVersion(recvEnvelope.Header.CentNodeVersion)
 	if !compatible {
-		return nil, version.IncompatibleVersionError(resp.CentNodeVersion)
+		return nil, version.IncompatibleVersionError(recvEnvelope.Header.CentNodeVersion)
 	}
 
 	err = identity.ValidateCentrifugeIDBytes(resp.Signature.EntityId, receiverCentID)
@@ -220,25 +228,7 @@ func (s *p2pServer) GetSignaturesForDocument(ctx context.Context, identityServic
 	return nil
 }
 
-func (s *p2pServer) createSignatureRequest(senderID []byte, doc *coredocumentpb.CoreDocument) (*protocolpb.P2PEnvelope, error) {
-	h := p2ppb.CentrifugeHeader{
-		NetworkIdentifier:  s.config.GetNetworkID(),
-		CentNodeVersion:    version.GetVersion().String(),
-		SenderCentrifugeId: senderID,
-	}
-	req := &p2ppb.SignatureRequest{
-		Header:   &h,
-		Document: doc,
-	}
-
-	reqB, err := proto.Marshal(req)
-	if err != nil {
-		return nil, err
-	}
-	return &protocolpb.P2PEnvelope{Type: protocolpb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE, Body: reqB}, nil
-}
-
-func convertClientError(recv *protocolpb.P2PEnvelope) error {
+func convertClientError(recv *p2ppb.CentrifugeEnvelope) error {
 	resp := new(errorspb.Error)
 	err := proto.Unmarshal(recv.Body, resp)
 	if err != nil {

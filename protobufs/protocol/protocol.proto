@@ -17,8 +17,6 @@ enum MessageType {
 }
 
 message P2PEnvelope {
-  // defines what type of message it is. (if we modify centrifuge-protobufs we can use type any with typeURL here)
-  MessageType type = 1;
   // serialized protobuf for the actual message
   bytes body = 2;
 }

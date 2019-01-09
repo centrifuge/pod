@@ -3,6 +3,7 @@ package p2p
 import (
 	"bufio"
 	"context"
+	"github.com/golang/protobuf/proto"
 	"io"
 	"sync"
 	"time"
@@ -50,6 +51,13 @@ func (w *bufferedDelimitedWriter) Flush() error {
 	return w.Writer.Flush()
 }
 
+// messenger is an interface to wrap p2p messaging implementation
+type messenger interface {
+	init(protocols ...protocol.ID)
+
+	sendMessage(ctx context.Context, p peer.ID, pmes *pb.P2PEnvelope, protoc protocol.ID) (*pb.P2PEnvelope, error)
+}
+
 type p2pMessenger struct {
 	host host.Host // the network services we need
 	self peer.ID   // Local peer (yourself)
@@ -62,17 +70,19 @@ type p2pMessenger struct {
 
 	plk sync.Mutex
 
-	msgHandlers map[pb.MessageType]func(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (*pb.P2PEnvelope, error)
+	handler func(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (*pb.P2PEnvelope, error)
 }
 
-func newP2PMessenger(ctx context.Context, host host.Host, p2pTimeout time.Duration) *p2pMessenger {
+func newP2PMessenger(ctx context.Context, host host.Host, p2pTimeout time.Duration,
+	handler func(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (*pb.P2PEnvelope, error)) *p2pMessenger {
 	return &p2pMessenger{
-		ctx:         ctx,
-		host:        host,
-		self:        host.ID(),
-		timout:      p2pTimeout,
-		strmap:      make(map[peer.ID]map[protocol.ID]*messageSender),
-		msgHandlers: make(map[pb.MessageType]func(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (*pb.P2PEnvelope, error))}
+		ctx:    ctx,
+		host:   host,
+		self:   host.ID(),
+		timout: p2pTimeout,
+		strmap: make(map[peer.ID]map[protocol.ID]*messageSender),
+		handler: handler,
+	}
 }
 
 // init initiates listening to given set of protocol streams
@@ -80,11 +90,6 @@ func (mes *p2pMessenger) init(protocols ...protocol.ID) {
 	for _, p := range protocols {
 		mes.host.SetStreamHandler(p, mes.handleNewStream)
 	}
-}
-
-// addHandler adds a message handler for a specific message type
-func (mes *p2pMessenger) addHandler(mType pb.MessageType, handler func(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (*pb.P2PEnvelope, error)) {
-	mes.msgHandlers[mType] = handler
 }
 
 // handleNewStream implements the inet.StreamHandler
@@ -117,16 +122,14 @@ func (mes *p2pMessenger) handleNewMessage(s inet.Stream) {
 			return
 		}
 
-		// get handler for this msg type.
-		handler := mes.msgHandlers[pmes.GetType()]
-		if handler == nil {
+		if mes.handler == nil {
 			s.Reset()
 			log.Warning("got back nil handler from handlerForMsgType")
 			return
 		}
 
 		// dispatch handler.
-		rpmes, err := handler(ctx, mPeer, s.Protocol(), pmes)
+		rpmes, err := mes.handler(ctx, mPeer, s.Protocol(), pmes)
 		if err != nil {
 			s.Reset()
 			log.Errorf("handle message error: %s", err)
@@ -315,7 +318,7 @@ func (ms *messageSender) sendMessage(ctx context.Context, pmes *pb.P2PEnvelope) 
 	}
 }
 
-func (ms *messageSender) writeMsg(pmes *pb.P2PEnvelope) error {
+func (ms *messageSender) writeMsg(pmes proto.Message) error {
 	if err := ms.w.WriteMsg(pmes); err != nil {
 		return err
 	}
