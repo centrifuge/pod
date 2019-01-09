@@ -8,6 +8,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/config/configstore"
+
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 
 	"github.com/centrifuge/go-centrifuge/identity/ethid"
@@ -38,7 +40,7 @@ import (
 )
 
 var (
-	handler    p2ppb.P2PServiceServer
+	handler    *receiver.Handler
 	anchorRepo anchors.AnchorRepository
 	cfg        config.Configuration
 	idService  identity.Service
@@ -48,10 +50,11 @@ func TestMain(m *testing.M) {
 	flag.Parse()
 	ctx := cc.TestFunctionalEthereumBootstrap()
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
+	cfgService := ctx[configstore.BootstrappedConfigStorage].(configstore.Service)
 	registry := ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
 	anchorRepo = ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
 	idService = ctx[ethid.BootstrappedIDService].(identity.Service)
-	handler = receiver.New(cfg, registry)
+	handler = receiver.New(cfgService, registry, receiver.HandshakeValidator(cfg.GetNetworkID()))
 	testingidentity.CreateIdentityWithKeys(cfg, idService)
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()
@@ -59,10 +62,11 @@ func TestMain(m *testing.M) {
 }
 
 func TestHandler_RequestDocumentSignature_verification_fail(t *testing.T) {
+	ctxh := testingconfig.CreateTenantContext(t, cfg)
 	doc := prepareDocumentForP2PHandler(t, nil)
 	doc.SigningRoot = nil
 	req := getSignatureRequest(doc)
-	resp, err := handler.RequestDocumentSignature(context.Background(), req)
+	resp, err := handler.RequestDocumentSignature(ctxh, req)
 	assert.NotNil(t, err, "must be non nil")
 	assert.Nil(t, resp, "must be nil")
 	assert.Contains(t, err.Error(), "signing root missing")
@@ -71,20 +75,22 @@ func TestHandler_RequestDocumentSignature_verification_fail(t *testing.T) {
 func TestHandler_RequestDocumentSignature_AlreadyExists(t *testing.T) {
 	doc := prepareDocumentForP2PHandler(t, nil)
 	req := getSignatureRequest(doc)
-	resp, err := handler.RequestDocumentSignature(context.Background(), req)
+	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	resp, err := handler.RequestDocumentSignature(ctxh, req)
 	assert.Nil(t, err, "must be nil")
 	assert.NotNil(t, resp, "must be non nil")
 
 	req = getSignatureRequest(doc)
-	resp, err = handler.RequestDocumentSignature(context.Background(), req)
+	resp, err = handler.RequestDocumentSignature(ctxh, req)
 	assert.NotNil(t, err, "must not be nil")
 	assert.Contains(t, err.Error(), storage.ErrRepositoryModelCreateKeyExists.Error())
 }
 
 func TestHandler_RequestDocumentSignature_UpdateSucceeds(t *testing.T) {
+	ctxh := testingconfig.CreateTenantContext(t, cfg)
 	doc := prepareDocumentForP2PHandler(t, nil)
 	req := getSignatureRequest(doc)
-	resp, err := handler.RequestDocumentSignature(context.Background(), req)
+	resp, err := handler.RequestDocumentSignature(ctxh, req)
 	assert.Nil(t, err, "must be nil")
 	assert.NotNil(t, resp, "must be non nil")
 	assert.NotNil(t, resp.Signature.Signature, "must be non nil")
@@ -96,7 +102,7 @@ func TestHandler_RequestDocumentSignature_UpdateSucceeds(t *testing.T) {
 	updateDocumentForP2Phandler(t, newDoc)
 	newDoc = prepareDocumentForP2PHandler(t, newDoc)
 	req = getSignatureRequest(newDoc)
-	resp, err = handler.RequestDocumentSignature(context.Background(), req)
+	resp, err = handler.RequestDocumentSignature(ctxh, req)
 	assert.Nil(t, err, "must be nil")
 	assert.NotNil(t, resp, "must be non nil")
 	assert.NotNil(t, resp.Signature.Signature, "must be non nil")
@@ -105,6 +111,7 @@ func TestHandler_RequestDocumentSignature_UpdateSucceeds(t *testing.T) {
 }
 
 func TestHandler_RequestDocumentSignatureFirstTimeOnUpdatedDocument(t *testing.T) {
+	ctxh := testingconfig.CreateTenantContext(t, cfg)
 	doc := prepareDocumentForP2PHandler(t, nil)
 	newDoc, err := coredocument.PrepareNewVersion(*doc, nil)
 	assert.Nil(t, err)
@@ -112,7 +119,7 @@ func TestHandler_RequestDocumentSignatureFirstTimeOnUpdatedDocument(t *testing.T
 	updateDocumentForP2Phandler(t, newDoc)
 	newDoc = prepareDocumentForP2PHandler(t, newDoc)
 	req := getSignatureRequest(newDoc)
-	resp, err := handler.RequestDocumentSignature(context.Background(), req)
+	resp, err := handler.RequestDocumentSignature(ctxh, req)
 	assert.Nil(t, err, "must be nil")
 	assert.NotNil(t, resp, "must be non nil")
 	assert.NotNil(t, resp.Signature.Signature, "must be non nil")
@@ -121,9 +128,10 @@ func TestHandler_RequestDocumentSignatureFirstTimeOnUpdatedDocument(t *testing.T
 }
 
 func TestHandler_RequestDocumentSignature(t *testing.T) {
+	ctxh := testingconfig.CreateTenantContext(t, cfg)
 	doc := prepareDocumentForP2PHandler(t, nil)
 	req := getSignatureRequest(doc)
-	resp, err := handler.RequestDocumentSignature(context.Background(), req)
+	resp, err := handler.RequestDocumentSignature(ctxh, req)
 	assert.Nil(t, err, "must be nil")
 	assert.NotNil(t, resp, "must be non nil")
 	assert.NotNil(t, resp.Signature.Signature, "must be non nil")
@@ -150,27 +158,29 @@ func TestHandler_SendAnchoredDocument_update_fail(t *testing.T) {
 	assert.Nil(t, watchCommittedAnchor.Error, "No error should be thrown by context")
 
 	anchorReq := getAnchoredRequest(doc)
-	anchorResp, err := handler.SendAnchoredDocument(context.Background(), anchorReq)
+	anchorResp, err := handler.SendAnchoredDocument(ctx, anchorReq)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), storage.ErrRepositoryModelUpdateKeyNotFound.Error())
 	assert.Nil(t, anchorResp)
 }
 
 func TestHandler_SendAnchoredDocument_EmptyDocument(t *testing.T) {
+	ctxh := testingconfig.CreateTenantContext(t, cfg)
 	doc := prepareDocumentForP2PHandler(t, nil)
 	req := getAnchoredRequest(doc)
 	req.Document = nil
-	resp, err := handler.SendAnchoredDocument(context.Background(), req)
+	resp, err := handler.SendAnchoredDocument(ctxh, req)
 	assert.NotNil(t, err)
 	assert.Nil(t, resp, "must be nil")
 }
 
 func TestHandler_SendAnchoredDocument(t *testing.T) {
+	ctxh := testingconfig.CreateTenantContext(t, cfg)
 	centrifugeId := createIdentity(t)
 
 	doc := prepareDocumentForP2PHandler(t, nil)
 	req := getSignatureRequest(doc)
-	resp, err := handler.RequestDocumentSignature(context.Background(), req)
+	resp, err := handler.RequestDocumentSignature(ctxh, req)
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
 
@@ -185,15 +195,14 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 	docRootTyped, _ := anchors.ToDocumentRoot(doc.DocumentRoot)
 	messageToSign := anchors.GenerateCommitHash(anchorIDTyped, centrifugeId, docRootTyped)
 	signature, _ := secp256k1.SignEthereum(messageToSign, idConfig.Keys[identity.KeyPurposeEthMsgAuth].PrivateKey)
-	ctx := testingconfig.CreateTenantContext(t, cfg)
-	anchorConfirmations, err := anchorRepo.CommitAnchor(ctx, anchorIDTyped, docRootTyped, centrifugeId, [][anchors.DocumentProofLength]byte{utils.RandomByte32()}, signature)
+	anchorConfirmations, err := anchorRepo.CommitAnchor(ctxh, anchorIDTyped, docRootTyped, centrifugeId, [][anchors.DocumentProofLength]byte{utils.RandomByte32()}, signature)
 	assert.Nil(t, err)
 
 	watchCommittedAnchor := <-anchorConfirmations
 	assert.Nil(t, watchCommittedAnchor.Error, "No error should be thrown by context")
 
 	anchorReq := getAnchoredRequest(doc)
-	anchorResp, err := handler.SendAnchoredDocument(context.Background(), anchorReq)
+	anchorResp, err := handler.SendAnchoredDocument(ctxh, anchorReq)
 	assert.Nil(t, err)
 	assert.NotNil(t, anchorResp, "must be non nil")
 	assert.True(t, anchorResp.Accepted)

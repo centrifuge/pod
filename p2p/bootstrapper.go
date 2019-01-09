@@ -18,13 +18,18 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return err
 	}
 
+	cfgService, ok := ctx[configstore.BootstrappedConfigStorage].(configstore.Service)
+	if !ok {
+		return errors.New("configstore not initialised")
+	}
+
 	registry, ok := ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
 	if !ok {
 		return errors.New("registry not initialised")
 	}
 
-	srv := &peer{config: cfg, handlerCreator: func() *receiver.Handler {
-		return receiver.New(cfg, registry)
+	srv := &peer{config: cfgService, handlerCreator: func() *receiver.Handler {
+		return receiver.New(cfgService, registry, receiver.HandshakeValidator(cfg.GetNetworkID()))
 	}}
 	ctx[bootstrap.BootstrappedP2PServer] = srv
 	ctx[bootstrap.BootstrappedP2PClient] = srv
