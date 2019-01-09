@@ -23,7 +23,7 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("registry not initialised")
 	}
 
-	srv := &centPeer{config: cfg, handlerCreator: func() *receiver.Handler {
+	srv := &peer{config: cfg, handlerCreator: func() *receiver.Handler {
 		return receiver.New(cfg, registry)
 	}}
 	ctx[bootstrap.BootstrappedP2PServer] = srv

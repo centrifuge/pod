@@ -16,7 +16,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/libp2p/go-libp2p-crypto"
 	"github.com/libp2p/go-libp2p-host"
-	"github.com/libp2p/go-libp2p-peer"
+	libp2pPeer "github.com/libp2p/go-libp2p-peer"
 	"github.com/libp2p/go-libp2p-protocol"
 	"github.com/stretchr/testify/assert"
 )
@@ -38,22 +38,22 @@ func TestHandleNewMessage(t *testing.T) {
 	_ = runDHT(c, h1, []string{fmt.Sprintf("/ip4/127.0.0.1/tcp/%d/ipfs/%s", p2, h2.ID().Pretty())})
 
 	m1 := newP2PMessenger(c, h1, 1*time.Second)
-	m1.addHandler(pb.MessageType_MESSAGE_TYPE_SEND_ANCHORED_DOC, func(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (envelope *pb.P2PEnvelope, e error) {
+	m1.addHandler(pb.MessageType_MESSAGE_TYPE_SEND_ANCHORED_DOC, func(ctx context.Context, peer libp2pPeer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (envelope *pb.P2PEnvelope, e error) {
 		return &pb.P2PEnvelope{Type: pb.MessageType_MESSAGE_TYPE_SEND_ANCHORED_DOC_REP}, nil
 	})
 	m2 := newP2PMessenger(c, h2, 1*time.Second)
-	m2.addHandler(pb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE, func(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (envelope *pb.P2PEnvelope, e error) {
+	m2.addHandler(pb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE, func(ctx context.Context, peer libp2pPeer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (envelope *pb.P2PEnvelope, e error) {
 		return &pb.P2PEnvelope{Type: pb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE_REP}, nil
 	})
-	m2.addHandler(pb.MessageType_MESSAGE_TYPE_SEND_ANCHORED_DOC_REP, func(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (envelope *pb.P2PEnvelope, e error) {
+	m2.addHandler(pb.MessageType_MESSAGE_TYPE_SEND_ANCHORED_DOC_REP, func(ctx context.Context, peer libp2pPeer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (envelope *pb.P2PEnvelope, e error) {
 		return &pb.P2PEnvelope{Type: pb.MessageType_MESSAGE_TYPE_SEND_ANCHORED_DOC}, nil
 	})
 	// error
-	m2.addHandler(pb.MessageType_MESSAGE_TYPE_ERROR, func(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (envelope *pb.P2PEnvelope, e error) {
+	m2.addHandler(pb.MessageType_MESSAGE_TYPE_ERROR, func(ctx context.Context, peer libp2pPeer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (envelope *pb.P2PEnvelope, e error) {
 		return nil, errors.New("dummy error")
 	})
 	// nil response - message type here is irrelevant using the reply type for convenience
-	m2.addHandler(pb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE_REP, func(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (envelope *pb.P2PEnvelope, e error) {
+	m2.addHandler(pb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE_REP, func(ctx context.Context, peer libp2pPeer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (envelope *pb.P2PEnvelope, e error) {
 		return nil, nil
 	})
 
