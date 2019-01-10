@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/config/configstore"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -40,6 +42,7 @@ func TestMain(m *testing.M) {
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
 		&storage.Bootstrapper{},
+		&configstore.Bootstrapper{},
 		&queue.Bootstrapper{},
 		transactions.Bootstrapper{},
 		documents.Bootstrapper{},
@@ -47,12 +50,9 @@ func TestMain(m *testing.M) {
 	ctx := make(map[string]interface{})
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-	cfg.Set("keys.signing.publicKey", "../../build/resources/signingKey.pub.pem")
-	cfg.Set("keys.signing.privateKey", "../../build/resources/signingKey.key.pem")
-	cfg.Set("keys.ethauth.publicKey", "../../build/resources/ethauth.pub.pem")
-	cfg.Set("keys.ethauth.privateKey", "../../build/resources/ethauth.key.pem")
+	cfgService := ctx[configstore.BootstrappedConfigStorage].(configstore.Service)
 	registry = ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
-	grpcHandler = New(cfg, registry)
+	grpcHandler = New(cfgService, registry, HandshakeValidator(cfg.GetNetworkID()))
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)
@@ -150,7 +150,7 @@ func TestP2PService_basicChecks(t *testing.T) {
 	}
 
 	for _, c := range tests {
-		err := handshakeValidator(cfg.GetNetworkID()).Validate(c.header)
+		err := HandshakeValidator(cfg.GetNetworkID()).Validate(c.header)
 		if err != nil {
 			if c.err == nil {
 				t.Fatalf("unexpected error: %v\n", err)

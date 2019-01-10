@@ -6,6 +6,10 @@ import (
 	"context"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
+
+	"github.com/centrifuge/go-centrifuge/p2p/receiver"
+
 	"github.com/golang/protobuf/proto"
 
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -46,17 +50,20 @@ func TestGetSignatureForDocument_fail_connect(t *testing.T) {
 	m := &MockMessenger{}
 	testClient := &peer{config: cfg, mes: m}
 	coreDoc := testingcoredocument.GenerateCoreDocument()
-	ctx := context.Background()
+	c, err := cfg.GetConfig()
+	assert.NoError(t, err)
+	ctx := testingconfig.CreateTenantContext(t, c)
 
 	centrifugeId, err := identity.ToCentID(utils.RandomSlice(identity.CentIDLength))
 	assert.Nil(t, err, "centrifugeId not initialized correctly ")
 
-	sender, err := cfg.GetIdentityID()
+	assert.NoError(t, err)
+	sender, err := c.GetIdentityID()
 	assert.Nil(t, err, "sender centrifugeId not initialized correctly ")
 	r, err := testClient.createSignatureRequest(sender, coreDoc)
 	assert.Nil(t, err, "signature request could not be created")
 
-	m.On("sendMessage", ctx, libp2pPeer.ID("peerID"), r, CentrifugeProtocol).Return(nil, errors.New("some error"))
+	m.On("sendMessage", ctx, libp2pPeer.ID("peerID"), r, receiver.ProtocolForCID(centrifugeId)).Return(nil, errors.New("some error"))
 	resp, err := testClient.getSignatureForDocument(ctx, nil, *coreDoc, "peerID", centrifugeId)
 	m.AssertExpectations(t)
 	assert.Error(t, err, "must fail")
@@ -67,18 +74,21 @@ func TestGetSignatureForDocument_fail_version_check(t *testing.T) {
 	m := &MockMessenger{}
 	testClient := &peer{config: cfg, mes: m}
 	coreDoc := testingcoredocument.GenerateCoreDocument()
-	ctx := context.Background()
+	c, err := cfg.GetConfig()
+	assert.NoError(t, err)
+	ctx := testingconfig.CreateTenantContext(t, c)
 	resp := &p2ppb.SignatureResponse{CentNodeVersion: "1.0.0"}
 
 	centrifugeId, err := identity.ToCentID(utils.RandomSlice(identity.CentIDLength))
 	assert.Nil(t, err, "centrifugeId not initialized correctly ")
 
-	sender, err := cfg.GetIdentityID()
+	assert.NoError(t, err)
+	sender, err := c.GetIdentityID()
 	assert.Nil(t, err, "sender centrifugeId not initialized correctly ")
 	r, err := testClient.createSignatureRequest(sender, coreDoc)
 	assert.Nil(t, err, "signature request could not be created")
 
-	m.On("sendMessage", ctx, libp2pPeer.ID("peerID"), r, CentrifugeProtocol).Return(testClient.createSignatureResp("", nil), nil)
+	m.On("sendMessage", ctx, libp2pPeer.ID("peerID"), r, receiver.ProtocolForCID(centrifugeId)).Return(testClient.createSignatureResp("", nil), nil)
 	resp, err = testClient.getSignatureForDocument(ctx, nil, *coreDoc, "peerID", centrifugeId)
 	m.AssertExpectations(t)
 	assert.Error(t, err, "must fail")
@@ -90,19 +100,22 @@ func TestGetSignatureForDocument_fail_centrifugeId(t *testing.T) {
 	m := &MockMessenger{}
 	testClient := &peer{config: cfg, mes: m}
 	coreDoc := testingcoredocument.GenerateCoreDocument()
-	ctx := context.Background()
+	c, err := cfg.GetConfig()
+	assert.NoError(t, err)
+	ctx := testingconfig.CreateTenantContext(t, c)
 
 	centrifugeId, err := identity.ToCentID(utils.RandomSlice(identity.CentIDLength))
 	assert.Nil(t, err, "centrifugeId not initialized correctly ")
 
-	sender, err := cfg.GetIdentityID()
+	assert.NoError(t, err)
+	sender, err := c.GetIdentityID()
 	assert.Nil(t, err, "sender centrifugeId not initialized correctly ")
 	r, err := testClient.createSignatureRequest(sender, coreDoc)
 	assert.Nil(t, err, "signature request could not be created")
 
 	randomBytes := utils.RandomSlice(identity.CentIDLength)
 	signature := &coredocumentpb.Signature{EntityId: randomBytes, PublicKey: utils.RandomSlice(32)}
-	m.On("sendMessage", ctx, libp2pPeer.ID("peerID"), r, CentrifugeProtocol).Return(testClient.createSignatureResp(version.GetVersion().String(), signature), nil)
+	m.On("sendMessage", ctx, libp2pPeer.ID("peerID"), r, receiver.ProtocolForCID(centrifugeId)).Return(testClient.createSignatureResp(version.GetVersion().String(), signature), nil)
 
 	resp, err := testClient.getSignatureForDocument(ctx, nil, *coreDoc, "peerID", centrifugeId)
 

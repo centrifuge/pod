@@ -61,7 +61,7 @@ func TestValidate_networkValidator(t *testing.T) {
 }
 
 func TestValidate_handshakeValidator(t *testing.T) {
-	hv := handshakeValidator(cfg.GetNetworkID())
+	hv := HandshakeValidator(cfg.GetNetworkID())
 
 	// Incompatible version and network
 	header := &p2ppb.CentrifugeHeader{

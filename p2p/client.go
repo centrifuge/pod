@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/centrifuge/go-centrifuge/p2p/receiver"
+
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
 	"github.com/golang/protobuf/proto"
 
@@ -43,8 +45,10 @@ func (s *peer) SendAnchoredDocument(ctx context.Context, id identity.Identity, i
 		return nil, err
 	}
 
-	// TODO [multi-tenancy] modify the protocol id here to include the centID of the receiving node
-	recv, err := s.mes.sendMessage(ctx, pid, &protocolpb.P2PEnvelope{Type: protocolpb.MessageType_MESSAGE_TYPE_SEND_ANCHORED_DOC, Body: marshalledRequest}, CentrifugeProtocol)
+	recv, err := s.mes.sendMessage(
+		ctx, pid,
+		&protocolpb.P2PEnvelope{Type: protocolpb.MessageType_MESSAGE_TYPE_SEND_ANCHORED_DOC, Body: marshalledRequest},
+		receiver.ProtocolForCID(id.CentID()))
 	if err != nil {
 		return nil, err
 	}
@@ -102,18 +106,18 @@ func (s *peer) getPeerID(id identity.Identity) (libp2pPeer.ID, error) {
 
 // getSignatureForDocument requests the target node to sign the document
 func (s *peer) getSignatureForDocument(ctx context.Context, identityService identity.Service, doc coredocumentpb.CoreDocument, receiverPeer libp2pPeer.ID, receiverCentID identity.CentID) (*p2ppb.SignatureResponse, error) {
-	senderID, err := s.config.GetIdentityID()
+	self, err := contextutil.Self(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	req, err := s.createSignatureRequest(senderID, &doc)
+	req, err := s.createSignatureRequest(self.ID[:], &doc)
 	if err != nil {
 		return nil, err
 	}
 
 	log.Infof("Requesting signature from %s\n", receiverCentID)
-	recv, err := s.mes.sendMessage(ctx, receiverPeer, req, CentrifugeProtocol)
+	recv, err := s.mes.sendMessage(ctx, receiverPeer, req, receiver.ProtocolForCID(receiverCentID))
 	if err != nil {
 		return nil, err
 	}
@@ -169,6 +173,11 @@ func (s *peer) GetSignaturesForDocument(ctx context.Context, identityService ide
 	in := make(chan signatureResponseWrap)
 	defer close(in)
 
+	nc, err := s.config.GetConfig()
+	if err != nil {
+		return err
+	}
+
 	self, err := contextutil.Self(ctx)
 	if err != nil {
 		return centerrors.Wrap(err, "failed to get self")
@@ -199,7 +208,7 @@ func (s *peer) GetSignaturesForDocument(ctx context.Context, identityService ide
 		// for now going with context.background, once we have a timeout for request
 		// we can use context.Timeout for that
 		count++
-		c, _ := context.WithTimeout(ctx, s.config.GetP2PConnectionTimeout())
+		c, _ := context.WithTimeout(ctx, nc.GetP2PConnectionTimeout())
 		go s.getSignatureAsync(c, identityService, *doc, receiverPeer, collaboratorID, in)
 	}
 
@@ -221,8 +230,13 @@ func (s *peer) GetSignaturesForDocument(ctx context.Context, identityService ide
 }
 
 func (s *peer) createSignatureRequest(senderID []byte, doc *coredocumentpb.CoreDocument) (*protocolpb.P2PEnvelope, error) {
+	nc, err := s.config.GetConfig()
+	if err != nil {
+		return nil, err
+	}
+
 	h := p2ppb.CentrifugeHeader{
-		NetworkIdentifier:  s.config.GetNetworkID(),
+		NetworkIdentifier:  nc.GetNetworkID(),
 		CentNodeVersion:    version.GetVersion().String(),
 		SenderCentrifugeId: senderID,
 	}
