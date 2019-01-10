@@ -47,41 +47,41 @@ func (s *peer) SendAnchoredDocument(ctx context.Context, id identity.Identity, i
 			return nil, err
 		}
 		return h.SendAnchoredDocument(peerCtx, in)
-	} else {
-		// this is a remote tenant
-		pid, err := s.getPeerID(id)
-		if err != nil {
-			return nil, err
-		}
-		marshalledRequest, err := proto.Marshal(in)
-		if err != nil {
-			return nil, err
-		}
-
-		recv, err := s.mes.sendMessage(
-			ctx, pid,
-			&protocolpb.P2PEnvelope{Type: protocolpb.MessageType_MESSAGE_TYPE_SEND_ANCHORED_DOC, Body: marshalledRequest},
-			receiver.ProtocolForCID(id.CentID()))
-		if err != nil {
-			return nil, err
-		}
-
-		// handle client error
-		if recv.Type == protocolpb.MessageType_MESSAGE_TYPE_ERROR {
-			return nil, convertClientError(recv)
-		}
-
-		if recv.Type != protocolpb.MessageType_MESSAGE_TYPE_SEND_ANCHORED_DOC_REP {
-			return nil, errors.New("the received send anchored document response is incorrect")
-		}
-		r := new(p2ppb.AnchorDocumentResponse)
-		err = proto.Unmarshal(recv.Body, r)
-		if err != nil {
-			return nil, err
-		}
-		return r, nil
 	}
 
+	// this is a remote tenant
+	pid, err := s.getPeerID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	marshalledRequest, err := proto.Marshal(in)
+	if err != nil {
+		return nil, err
+	}
+
+	recv, err := s.mes.sendMessage(
+		ctx, pid,
+		&protocolpb.P2PEnvelope{Type: protocolpb.MessageType_MESSAGE_TYPE_SEND_ANCHORED_DOC, Body: marshalledRequest},
+		receiver.ProtocolForCID(id.CentID()))
+	if err != nil {
+		return nil, err
+	}
+
+	// handle client error
+	if recv.Type == protocolpb.MessageType_MESSAGE_TYPE_ERROR {
+		return nil, convertClientError(recv)
+	}
+
+	if recv.Type != protocolpb.MessageType_MESSAGE_TYPE_SEND_ANCHORED_DOC_REP {
+		return nil, errors.New("the received send anchored document response is incorrect")
+	}
+	r := new(p2ppb.AnchorDocumentResponse)
+	err = proto.Unmarshal(recv.Body, r)
+	if err != nil {
+		return nil, err
+	}
+	return r, nil
 }
 
 // OpenClient returns P2PServiceClient to contact the remote peer
@@ -222,6 +222,7 @@ func (s *peer) GetSignaturesForDocument(ctx context.Context, identityService ide
 			if err != nil {
 				return err
 			}
+			count++
 			go func() {
 				res, err := h.RequestDocumentSignature(peerCtx, req)
 				in <- signatureResponseWrap{
