@@ -6,6 +6,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/identity"
+
+	"github.com/centrifuge/go-centrifuge/config/configstore"
+
 	"github.com/centrifuge/go-centrifuge/p2p/receiver"
 
 	pb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
@@ -22,7 +26,7 @@ import (
 	"github.com/libp2p/go-libp2p-crypto"
 	"github.com/libp2p/go-libp2p-host"
 	"github.com/libp2p/go-libp2p-kad-dht"
-	"github.com/libp2p/go-libp2p-peer"
+	libp2pPeer "github.com/libp2p/go-libp2p-peer"
 	pstore "github.com/libp2p/go-libp2p-peerstore"
 	ma "github.com/multiformats/go-multiaddr"
 	mh "github.com/multiformats/go-multihash"
@@ -30,80 +34,86 @@ import (
 
 var log = logging.Logger("p2p-server")
 
-// CentrifugeProtocol is the centrifuge wire protocol
-const CentrifugeProtocol protocol.ID = "/centrifuge/0.0.1"
-
-// Config defines methods that are required for the package p2p.
-type Config interface {
-	GetP2PExternalIP() string
-	GetP2PPort() int
-	GetBootstrapPeers() []string
-	GetP2PConnectionTimeout() time.Duration
-	GetNetworkID() uint32
-	GetIdentityID() ([]byte, error)
-	GetSigningKeyPair() (pub, priv string)
-}
-
 // messenger is an interface to wrap p2p messaging implementation
 type messenger interface {
-	addHandler(mType pb.MessageType, handler func(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (*pb.P2PEnvelope, error))
+	addHandler(mType pb.MessageType, handler func(ctx context.Context, peer libp2pPeer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (*pb.P2PEnvelope, error))
 
 	init(protocols ...protocol.ID)
 
-	sendMessage(ctx context.Context, p peer.ID, pmes *pb.P2PEnvelope, protoc protocol.ID) (*pb.P2PEnvelope, error)
+	sendMessage(ctx context.Context, p libp2pPeer.ID, pmes *pb.P2PEnvelope, protoc protocol.ID) (*pb.P2PEnvelope, error)
 }
 
-// p2pServer implements api.Server
-type p2pServer struct {
-	// TODO [multi-tenancy] replace this with config service
-	config         Config
+// peer implements node.Server
+type peer struct {
+	config         configstore.Service
 	host           host.Host
 	handlerCreator func() *receiver.Handler
 	mes            messenger
 }
 
 // Name returns the P2PServer
-func (*p2pServer) Name() string {
+func (*peer) Name() string {
 	return "P2PServer"
 }
 
 // Start starts the DHT and libp2p host
-func (s *p2pServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- error) {
+func (s *peer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- error) {
 	defer wg.Done()
 
-	if s.config.GetP2PPort() == 0 {
+	nc, err := s.config.GetConfig()
+	if err != nil {
+		startupErr <- err
+		return
+	}
+
+	if nc.GetP2PPort() == 0 {
 		startupErr <- errors.New("please provide a port to bind on")
 		return
 	}
 
 	// Make a host that listens on the given multiaddress
 	// first obtain the keys configured
-	priv, pub, err := s.createSigningKey()
+	priv, pub, err := s.createSigningKey(nc.GetSigningKeyPair())
 	if err != nil {
 		startupErr <- err
 		return
 	}
-	s.host, err = makeBasicHost(priv, pub, s.config.GetP2PExternalIP(), s.config.GetP2PPort())
+	s.host, err = makeBasicHost(priv, pub, nc.GetP2PExternalIP(), nc.GetP2PPort())
 	if err != nil {
 		startupErr <- err
 		return
 	}
 
-	s.mes = newP2PMessenger(ctx, s.host, s.config.GetP2PConnectionTimeout())
+	s.mes = newP2PMessenger(ctx, s.host, nc.GetP2PConnectionTimeout())
 	handler := s.handlerCreator()
 	s.mes.addHandler(pb.MessageType_MESSAGE_TYPE_SEND_ANCHORED_DOC, handler.HandleSendAnchoredDocument)
 	s.mes.addHandler(pb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE, handler.HandleRequestDocumentSignature)
-	s.mes.init(CentrifugeProtocol)
+
+	tcs, err := s.config.GetAllTenants()
+	if err != nil {
+		startupErr <- err
+		return
+	}
+	var protocols []protocol.ID
+	for _, t := range tcs {
+		CID, err := identity.ToCentID(t.IdentityID)
+		if err != nil {
+			startupErr <- err
+			return
+		}
+		protocols = append(protocols, receiver.ProtocolForCID(CID))
+	}
+	s.mes.init(protocols...)
 
 	// Start DHT and properly ignore errors :)
-	_ = runDHT(ctx, s.host, s.config.GetBootstrapPeers())
+	_ = runDHT(ctx, s.host, nc.GetBootstrapPeers())
 	<-ctx.Done()
 
 }
 
-func (s *p2pServer) createSigningKey() (priv crypto.PrivKey, pub crypto.PubKey, err error) {
+func (s *peer) createSigningKey(pubKey, privKey string) (priv crypto.PrivKey, pub crypto.PubKey, err error) {
 	// Create the signing key for the host
-	publicKey, privateKey, err := cented25519.GetSigningKeyPair(s.config.GetSigningKeyPair())
+	publicKey, privateKey, err := cented25519.GetSigningKeyPair(pubKey, privKey)
 	if err != nil {
 		return nil, nil, errors.New("failed to get keys: %v", err)
 	}
@@ -128,7 +138,7 @@ func makeBasicHost(priv crypto.PrivKey, pub crypto.PubKey, externalIP string, li
 	// secio when adding the pub and pvt keys, fail as id+pub/pvt key is checked to match and method defaults to
 	// IDFromPublicKey(pk)
 	//pid, err := peer.IDFromEd25519PublicKey(pub)
-	pid, err := peer.IDFromPublicKey(pub)
+	pid, err := libp2pPeer.IDFromPublicKey(pub)
 	if err != nil {
 		return nil, err
 	}
