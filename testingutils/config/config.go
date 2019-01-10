@@ -160,10 +160,13 @@ func (m *MockConfig) GetEthAuthKeyPair() (pub, priv string) {
 	return args.Get(0).(string), args.Get(1).(string)
 }
 
-func CreateTenantContext(t *testing.T, cfg config.Configuration) context.Context {
+func CreateTenantContext(t *testing.T, ctx context.Context, cfg config.Configuration) context.Context {
 	tc, err := configstore.NewTenantConfig("", cfg)
 	assert.Nil(t, err)
-	contextHeader, err := contextutil.NewCentrifugeContext(context.Background(), tc)
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	contextHeader, err := contextutil.NewCentrifugeContext(ctx, tc)
 	assert.Nil(t, err)
 	return contextHeader
 }

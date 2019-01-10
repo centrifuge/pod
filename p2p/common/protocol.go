@@ -2,23 +2,31 @@ package p2pcommon
 
 import (
 	"context"
+	"fmt"
+	"strings"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/golang/protobuf/proto"
+	"github.com/libp2p/go-libp2p-protocol"
 )
 
 type MessageType string
 
 const (
-	MessageTypeError MessageType = "MessageTypeError"
-	MessageTypeInvalid MessageType = "MessageTypeInvalid"
-	MessageTypeRequestSignature MessageType = "MessageTypeRequestSignature"
+	// CentrifugeProtocol is the centrifuge wire protocol
+	CentrifugeProtocol protocol.ID = "/centrifuge/0.0.1"
+
+	MessageTypeError               MessageType = "MessageTypeError"
+	MessageTypeInvalid             MessageType = "MessageTypeInvalid"
+	MessageTypeRequestSignature    MessageType = "MessageTypeRequestSignature"
 	MessageTypeRequestSignatureRep MessageType = "MessageTypeRequestSignatureRep"
-	MessageTypeSendAnchoredDoc MessageType = "MessageTypeSendAnchoredDoc"
-	MessageTypeSendAnchoredDocRep MessageType = "MessageTypeSendAnchoredDocRep"
+	MessageTypeSendAnchoredDoc     MessageType = "MessageTypeSendAnchoredDoc"
+	MessageTypeSendAnchoredDocRep  MessageType = "MessageTypeSendAnchoredDocRep"
 )
 
 func (mt MessageType) Equals(mt2 string) bool {
@@ -47,11 +55,22 @@ func MessageTypeFromString(mt string) MessageType {
 	return found
 }
 
+// ProtocolForCID creates the protocol string for the given CID
+func ProtocolForCID(CID identity.CentID) protocol.ID {
+	return protocol.ID(fmt.Sprintf("%s/%s", CentrifugeProtocol, CID.String()))
+}
+
+// ExtractCID extracts CID from a protocol string
+func ExtractCID(id protocol.ID) (identity.CentID, error) {
+	parts := strings.Split(string(id), "/")
+	cidHexStr := parts[len(parts)-1]
+	return identity.CentIDFromString(cidHexStr)
+}
 
 func ResolveDataEnvelope(mes proto.Message) (*p2ppb.Envelope, error) {
 	recv, ok := mes.(*protocolpb.P2PEnvelope)
 	if !ok {
-		return nil, errors.New("cannot unmarshall response payload: %v", recv)
+		return nil, errors.New("cannot cast proto.Message to protocolpb.P2PEnvelope: %v", recv)
 	}
 	recvEnvelope := new(p2ppb.Envelope)
 	err := proto.Unmarshal(recv.Body, recvEnvelope)
@@ -75,10 +94,10 @@ func PrepareP2PEnvelope(ctx context.Context, networkID uint32, messageType Messa
 
 	centIDBytes := self.ID[:]
 	p2pheader := &p2ppb.Header{
-		SenderId: centIDBytes,
-		NodeVersion:    version.GetVersion().String(),
-		NetworkIdentifier:  networkID,
-		Type: messageType.String(),
+		SenderId:          centIDBytes,
+		NodeVersion:       version.GetVersion().String(),
+		NetworkIdentifier: networkID,
+		Type:              messageType.String(),
 	}
 
 	body, err := proto.Marshal(mes)
@@ -88,7 +107,7 @@ func PrepareP2PEnvelope(ctx context.Context, networkID uint32, messageType Messa
 
 	envelope := &p2ppb.Envelope{
 		Header: p2pheader,
-		Body: body,
+		Body:   body,
 	}
 
 	marshalledRequest, err := proto.Marshal(envelope)

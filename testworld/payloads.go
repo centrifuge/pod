@@ -57,12 +57,11 @@ func invoiceNFTPayload(collaborators []string) map[string]interface{} {
 
 }
 
-func pONFTPayload(collaborators []string) map[string]interface{} {
+func poNFTPayload(collaborators []string) map[string]interface{} {
 	return map[string]interface{}{
 		"data": map[string]interface{}{
 			"po_number":     "123245",
 			"due_date":      "2018-09-26T23:12:37.902198664Z",
-			"gross_amount":  "40",
 			"currency":      "USD",
 			"net_amount":    "40",
 			"document_type": "po",
@@ -78,7 +77,7 @@ func defaultNFTPayload(documentType string, collaborators []string) map[string]i
 	case typeInvoice:
 		return invoiceNFTPayload(collaborators)
 	case typePO:
-		return pONFTPayload(collaborators)
+		return poNFTPayload(collaborators)
 	default:
 		return invoiceNFTPayload(collaborators)
 	}
@@ -99,11 +98,10 @@ func updatedDocumentPayload(documentType string, collaborators []string) map[str
 func updatedPOPayload(collaborators []string) map[string]interface{} {
 	return map[string]interface{}{
 		"data": map[string]interface{}{
-			"po_number":    "12324",
-			"due_date":     "2018-09-26T23:12:37.902198664Z",
-			"gross_amount": "40",
-			"currency":     "EUR",
-			"net_amount":   "42",
+			"po_number":  "12324",
+			"due_date":   "2018-09-26T23:12:37.902198664Z",
+			"currency":   "EUR",
+			"net_amount": "42",
 		},
 		"collaborators": collaborators,
 	}

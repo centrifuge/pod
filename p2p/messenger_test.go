@@ -6,6 +6,9 @@ import (
 	"context"
 	"crypto/rand"
 	"fmt"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	"github.com/centrifuge/go-centrifuge/p2p/common"
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"io"
 	"testing"
 	"time"
@@ -16,7 +19,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/libp2p/go-libp2p-crypto"
 	"github.com/libp2p/go-libp2p-host"
-	"github.com/libp2p/go-libp2p-peer"
+	libp2pPeer "github.com/libp2p/go-libp2p-peer"
 	"github.com/libp2p/go-libp2p-protocol"
 	"github.com/stretchr/testify/assert"
 )
@@ -24,9 +27,34 @@ import (
 const MessengerDummyProtocol protocol.ID = "/messeger/dummy/0.0.1"
 const MessengerDummyProtocol2 protocol.ID = "/messeger/dummy/0.0.2"
 
+var mockedHandler = func(ctx context.Context, peer libp2pPeer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (envelope *pb.P2PEnvelope, e error) {
+	dataEnv, err := p2pcommon.ResolveDataEnvelope(msg)
+	if err != nil {
+		return nil, err
+	}
+	if p2pcommon.MessageTypeSendAnchoredDoc.Equals(dataEnv.Header.Type) {
+		dataEnv.Header.Type = p2pcommon.MessageTypeSendAnchoredDocRep.String()
+	} else if p2pcommon.MessageTypeRequestSignature.Equals(dataEnv.Header.Type) {
+		dataEnv.Header.Type = p2pcommon.MessageTypeRequestSignatureRep.String()
+	} else if p2pcommon.MessageTypeSendAnchoredDocRep.Equals(dataEnv.Header.Type) {
+		dataEnv.Header.Type = p2pcommon.MessageTypeSendAnchoredDoc.String()
+	} else if p2pcommon.MessageTypeError.Equals(dataEnv.Header.Type) {
+		return nil, errors.New("dummy error")
+	} else if p2pcommon.MessageTypeRequestSignatureRep.Equals(dataEnv.Header.Type) {
+		return nil, nil
+	} else if p2pcommon.MessageTypeInvalid.Equals(dataEnv.Header.Type) {
+		return nil, errors.New("invalid data")
+	}
+
+	return p2pcommon.PrepareP2PEnvelope(ctx, uint32(0), p2pcommon.MessageTypeFromString(dataEnv.Header.Type), dataEnv)
+}
+
 // Using a single test for all cases to use the same hosts in a synchronous way
 func TestHandleNewMessage(t *testing.T) {
-	c, canc := context.WithCancel(context.Background())
+	cfg, err := cfg.GetConfig()
+	assert.NoError(t, err)
+	ctx, canc := context.WithCancel(context.Background())
+	c := testingconfig.CreateTenantContext(t, ctx, cfg)
 	r := rand.Reader
 	p1 := 35000
 	p2 := 35001
@@ -37,72 +65,88 @@ func TestHandleNewMessage(t *testing.T) {
 	// set h2 as the bootnode for h1
 	_ = runDHT(c, h1, []string{fmt.Sprintf("/ip4/127.0.0.1/tcp/%d/ipfs/%s", p2, h2.ID().Pretty())})
 
-	m1 := newP2PMessenger(c, h1, 1*time.Second)
-	m1.addHandler(pb.MessageType_MESSAGE_TYPE_SEND_ANCHORED_DOC, func(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (envelope *pb.P2PEnvelope, e error) {
-		return &pb.P2PEnvelope{Type: pb.MessageType_MESSAGE_TYPE_SEND_ANCHORED_DOC_REP}, nil
-	})
-	m2 := newP2PMessenger(c, h2, 1*time.Second)
-	m2.addHandler(pb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE, func(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (envelope *pb.P2PEnvelope, e error) {
-		return &pb.P2PEnvelope{Type: pb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE_REP}, nil
-	})
-	m2.addHandler(pb.MessageType_MESSAGE_TYPE_SEND_ANCHORED_DOC_REP, func(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (envelope *pb.P2PEnvelope, e error) {
-		return &pb.P2PEnvelope{Type: pb.MessageType_MESSAGE_TYPE_SEND_ANCHORED_DOC}, nil
-	})
-	// error
-	m2.addHandler(pb.MessageType_MESSAGE_TYPE_ERROR, func(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (envelope *pb.P2PEnvelope, e error) {
-		return nil, errors.New("dummy error")
-	})
-	// nil response - message type here is irrelevant using the reply type for convenience
-	m2.addHandler(pb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE_REP, func(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (envelope *pb.P2PEnvelope, e error) {
-		return nil, nil
-	})
+	m1 := newP2PMessenger(c, h1, 3*time.Second, mockedHandler)
+	m2 := newP2PMessenger(c, h2, 3*time.Second, mockedHandler)
 
 	m1.init(MessengerDummyProtocol)
 	m2.init(MessengerDummyProtocol)
 	m2.init(MessengerDummyProtocol2)
 
 	// 1. happy path
-	// from h1 to h2
-	msg, err := m1.sendMessage(c, h2.ID(), &pb.P2PEnvelope{Type: pb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE, Body: utils.RandomSlice(3)}, MessengerDummyProtocol)
+	// from h1 to h2 (with a message size ~ MessageSizeMax, has to be less because of the length bytes)
+	p2pEnv, err := p2pcommon.PrepareP2PEnvelope(c, uint32(0), p2pcommon.MessageTypeRequestSignature, &p2ppb.Envelope{Body: utils.RandomSlice(MessageSizeMax - 200)})
 	assert.NoError(t, err)
-	assert.Equal(t, pb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE_REP, msg.Type)
+	msg, err := m1.sendMessage(c, h2.ID(), p2pEnv, MessengerDummyProtocol)
+	assert.NoError(t, err)
+	dataEnv, err := p2pcommon.ResolveDataEnvelope(msg)
+	assert.NoError(t, err)
+	assert.True(t, p2pcommon.MessageTypeRequestSignatureRep.Equals(dataEnv.Header.Type))
+
 	// from h1 to h2 different protocol - intentionally setting reply-response in opposite for differentiation
-	msg, err = m1.sendMessage(c, h2.ID(), &pb.P2PEnvelope{Type: pb.MessageType_MESSAGE_TYPE_SEND_ANCHORED_DOC_REP, Body: utils.RandomSlice(3)}, MessengerDummyProtocol2)
+	p2pEnv, err = p2pcommon.PrepareP2PEnvelope(c, uint32(0), p2pcommon.MessageTypeSendAnchoredDocRep, &p2ppb.Envelope{Body: utils.RandomSlice(3)})
 	assert.NoError(t, err)
-	assert.Equal(t, pb.MessageType_MESSAGE_TYPE_SEND_ANCHORED_DOC, msg.Type)
+	msg, err = m1.sendMessage(c, h2.ID(), p2pEnv, MessengerDummyProtocol2)
+	assert.NoError(t, err)
+	dataEnv, err = p2pcommon.ResolveDataEnvelope(msg)
+	assert.NoError(t, err)
+	assert.True(t, p2pcommon.MessageTypeSendAnchoredDoc.Equals(dataEnv.Header.Type))
+
 	// from h2 to h1
-	msg, err = m2.sendMessage(c, h1.ID(), &pb.P2PEnvelope{Type: pb.MessageType_MESSAGE_TYPE_SEND_ANCHORED_DOC, Body: utils.RandomSlice(3)}, MessengerDummyProtocol)
+	p2pEnv, err = p2pcommon.PrepareP2PEnvelope(c, uint32(0), p2pcommon.MessageTypeSendAnchoredDoc, &p2ppb.Envelope{Body: utils.RandomSlice(3)})
 	assert.NoError(t, err)
-	assert.Equal(t, pb.MessageType_MESSAGE_TYPE_SEND_ANCHORED_DOC_REP, msg.Type)
+	msg, err = m2.sendMessage(c, h1.ID(), p2pEnv, MessengerDummyProtocol)
+	assert.NoError(t, err)
+	dataEnv, err = p2pcommon.ResolveDataEnvelope(msg)
+	assert.NoError(t, err)
+	assert.True(t, p2pcommon.MessageTypeSendAnchoredDocRep.Equals(dataEnv.Header.Type))
 
 	// 2. unrecognized  protocol
-	msg, err = m1.sendMessage(c, h2.ID(), &pb.P2PEnvelope{Type: pb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE, Body: utils.RandomSlice(3)}, "wrong")
+	p2pEnv, err = p2pcommon.PrepareP2PEnvelope(c, uint32(0), p2pcommon.MessageTypeRequestSignature, &p2ppb.Envelope{Body: utils.RandomSlice(3)})
+	assert.NoError(t, err)
+	msg, err = m1.sendMessage(c, h2.ID(), p2pEnv, "wrong")
 	if assert.Error(t, err) {
 		assert.Equal(t, "protocol not supported", err.Error())
 	}
 
 	// 3. unrecognized message type - stream would be reset by the peer
-	msg, err = m1.sendMessage(c, h2.ID(), &pb.P2PEnvelope{Type: pb.MessageType_MESSAGE_TYPE_INVALID, Body: utils.RandomSlice(3)}, MessengerDummyProtocol)
+	p2pEnv, err = p2pcommon.PrepareP2PEnvelope(c, uint32(0), p2pcommon.MessageTypeInvalid, &p2ppb.Envelope{Body: utils.RandomSlice(3)})
+	assert.NoError(t, err)
+	msg, err = m1.sendMessage(c, h2.ID(), p2pEnv, MessengerDummyProtocol)
 	if assert.Error(t, err) {
 		assert.Equal(t, "stream reset", err.Error())
 	}
 
 	// 4. handler error
-	msg, err = m1.sendMessage(c, h2.ID(), &pb.P2PEnvelope{Type: pb.MessageType_MESSAGE_TYPE_ERROR, Body: utils.RandomSlice(3)}, MessengerDummyProtocol)
+	p2pEnv, err = p2pcommon.PrepareP2PEnvelope(c, uint32(0), p2pcommon.MessageTypeError, &p2ppb.Envelope{Body: utils.RandomSlice(3)})
+	assert.NoError(t, err)
+	msg, err = m1.sendMessage(c, h2.ID(), p2pEnv, MessengerDummyProtocol)
 	if assert.Error(t, err) {
 		assert.Equal(t, "stream reset", err.Error())
 	}
 
 	// 5. can't find host - h3
-	msg, err = m1.sendMessage(c, h3.ID(), &pb.P2PEnvelope{Type: pb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE, Body: utils.RandomSlice(3)}, MessengerDummyProtocol)
+	p2pEnv, err = p2pcommon.PrepareP2PEnvelope(c, uint32(0), p2pcommon.MessageTypeRequestSignature, &p2ppb.Envelope{Body: utils.RandomSlice(3)})
+	assert.NoError(t, err)
+	msg, err = m1.sendMessage(c, h3.ID(), p2pEnv, MessengerDummyProtocol)
 	if assert.Error(t, err) {
 		assert.Contains(t, err.Error(), "dial attempt failed: failed to dial <peer.ID")
 	}
 
 	// 6. handler nil response
-	msg, err = m1.sendMessage(c, h2.ID(), &pb.P2PEnvelope{Type: pb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE_REP, Body: utils.RandomSlice(3)}, MessengerDummyProtocol)
+	p2pEnv, err = p2pcommon.PrepareP2PEnvelope(c, uint32(0), p2pcommon.MessageTypeRequestSignatureRep, &p2ppb.Envelope{Body: utils.RandomSlice(3)})
+	assert.NoError(t, err)
+	msg, err = m1.sendMessage(c, h2.ID(), p2pEnv, MessengerDummyProtocol)
 	if assert.Error(t, err) {
 		assert.Equal(t, "timed out reading response", err.Error())
+	}
+
+	// 7. message size more than the max
+	// from h1 to h2 (with a message size > MessageSizeMax)
+	p2pEnv, err = p2pcommon.PrepareP2PEnvelope(c, uint32(0), p2pcommon.MessageTypeRequestSignature, &p2ppb.Envelope{Body: utils.RandomSlice(MessageSizeMax)})
+	assert.NoError(t, err)
+	msg, err = m1.sendMessage(c, h2.ID(), p2pEnv, MessengerDummyProtocol)
+	if assert.Error(t, err) {
+		assert.Equal(t, "stream reset", err.Error())
 	}
 	canc()
 }

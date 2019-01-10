@@ -53,7 +53,7 @@ func TestPaymentObligationService_mint(t *testing.T) {
 	// create invoice (anchor)
 	service, err := registry.LocateService(documenttypes.InvoiceDataTypeUrl)
 	assert.Nil(t, err, "should not error out when getting invoice service")
-	contextHeader := testingconfig.CreateTenantContext(t, cfg)
+	contextHeader := testingconfig.CreateTenantContext(t, nil, cfg)
 	invoiceService := service.(invoice.Service)
 	dueDate := time.Now().Add(4 * 24 * time.Hour)
 	model, err := invoiceService.DeriveFromCreatePayload(contextHeader, &invoicepb.InvoiceCreatePayload{

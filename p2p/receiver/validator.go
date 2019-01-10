@@ -63,7 +63,8 @@ func networkValidator(networkID uint32) Validator {
 	})
 }
 
-func handshakeValidator(networkID uint32) ValidatorGroup {
+// HandshakeValidator validates the p2p handshake details
+func HandshakeValidator(networkID uint32) ValidatorGroup {
 	return ValidatorGroup{
 		versionValidator(),
 		networkValidator(networkID),

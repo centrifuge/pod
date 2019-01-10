@@ -2,30 +2,25 @@ package receiver
 
 import (
 	"context"
-	"fmt"
+
 	"github.com/centrifuge/go-centrifuge/p2p/common"
 
 	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/libp2p/go-libp2p-protocol"
 
-	"github.com/centrifuge/go-centrifuge/contextutil"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/code"
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	pb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
-	logging "github.com/ipfs/go-log"
 )
-
-var log = logging.Logger("grpc")
 
 // getService looks up the specific registry, derives service from core document
 func getServiceAndModel(registry *documents.ServiceRegistry, cd *coredocumentpb.CoreDocument) (documents.Service, documents.Model, error) {
@@ -50,27 +45,46 @@ func getServiceAndModel(registry *documents.ServiceRegistry, cd *coredocumentpb.
 	return srv, model, nil
 }
 
-// Handler implements the grpc interface
+// Handler implements protocol message handlers
 type Handler struct {
-	registry *documents.ServiceRegistry
-	config   config.Configuration
+	registry           *documents.ServiceRegistry
+	config             configstore.Service
+	handshakeValidator ValidatorGroup
 }
 
 // New returns an implementation of P2PServiceServer
-func New(config config.Configuration, registry *documents.ServiceRegistry) *Handler {
-	return &Handler{registry: registry, config: config}
+func New(config configstore.Service, registry *documents.ServiceRegistry, handshakeValidator ValidatorGroup) *Handler {
+	return &Handler{registry: registry, config: config, handshakeValidator: handshakeValidator}
 }
 
 // HandleInterceptor acts as main entry point for all message types, routes the request to the correct handler
 func (srv *Handler) HandleInterceptor(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (*pb.P2PEnvelope, error) {
+	if msg == nil {
+		return convertToErrorEnvelop(errors.New("nil payload provided"))
+	}
 	envelope, err := p2pcommon.ResolveDataEnvelope(msg)
 	if err != nil {
-		return nil, err
+		return convertToErrorEnvelop(err)
 	}
 
-	err = handshakeValidator(srv.config.GetNetworkID()).Validate(envelope.Header)
+	cid, err := p2pcommon.ExtractCID(protoc)
 	if err != nil {
-		return nil, err
+		return convertToErrorEnvelop(err)
+	}
+
+	tc, err := srv.config.GetTenant(cid[:])
+	if err != nil {
+		return convertToErrorEnvelop(err)
+	}
+
+	ctx, err = contextutil.NewCentrifugeContext(ctx, tc)
+	if err != nil {
+		return convertToErrorEnvelop(err)
+	}
+
+	err = srv.handshakeValidator.Validate(envelope.Header)
+	if err != nil {
+		return convertToErrorEnvelop(err)
 	}
 
 	switch p2pcommon.MessageTypeFromString(envelope.Header.Type) {
@@ -79,7 +93,7 @@ func (srv *Handler) HandleInterceptor(ctx context.Context, peer peer.ID, protoc 
 	case p2pcommon.MessageTypeSendAnchoredDoc:
 		return srv.HandleSendAnchoredDocument(ctx, peer, protoc, envelope)
 	default:
-		return nil, errors.New("MessageType [%s] not found", envelope.Header.Type)
+		return convertToErrorEnvelop(errors.New("MessageType [%s] not found", envelope.Header.Type))
 	}
 
 }
@@ -89,7 +103,7 @@ func (srv *Handler) HandleRequestDocumentSignature(ctx context.Context, peer pee
 	req := new(p2ppb.SignatureRequest)
 	err := proto.Unmarshal(msg.Body, req)
 	if err != nil {
-		return nil, err
+		return convertToErrorEnvelop(err)
 	}
 
 	res, err := srv.RequestDocumentSignature(ctx, req)
@@ -97,7 +111,12 @@ func (srv *Handler) HandleRequestDocumentSignature(ctx context.Context, peer pee
 		return convertToErrorEnvelop(err)
 	}
 
-	return p2pcommon.PrepareP2PEnvelope(ctx, srv.config.GetNetworkID(), p2pcommon.MessageTypeRequestSignatureRep, res)
+	nc, err := srv.config.GetConfig()
+	if err != nil {
+		return convertToErrorEnvelop(err)
+	}
+
+	return p2pcommon.PrepareP2PEnvelope(ctx, nc.NetworkID, p2pcommon.MessageTypeRequestSignatureRep, res)
 }
 
 // RequestDocumentSignature signs the received document and returns the signature of the signingRoot
@@ -105,24 +124,12 @@ func (srv *Handler) HandleRequestDocumentSignature(ctx context.Context, peer pee
 // Existing signatures on the document will be verified
 // Document will be stored to the repository for state management
 func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.SignatureRequest) (*p2ppb.SignatureResponse, error) {
-	// TODO [multi-tenancy] remove following and read the config from the context
-	tc, err := configstore.NewTenantConfig("", srv.config)
-	if err != nil {
-		log.Error(err)
-		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
-	}
-	ctxHeader, err := contextutil.NewCentrifugeContext(ctx, tc)
-	if err != nil {
-		log.Error(err)
-		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
-	}
-
 	svc, model, err := getServiceAndModel(srv.registry, sigReq.Document)
 	if err != nil {
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
 	}
 
-	signature, err := svc.RequestDocumentSignature(ctxHeader, model)
+	signature, err := svc.RequestDocumentSignature(ctx, model)
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
@@ -135,7 +142,7 @@ func (srv *Handler) HandleSendAnchoredDocument(ctx context.Context, peer peer.ID
 	m := new(p2ppb.AnchorDocumentRequest)
 	err := proto.Unmarshal(msg.Body, m)
 	if err != nil {
-		return nil, err
+		return convertToErrorEnvelop(err)
 	}
 
 	res, err := srv.SendAnchoredDocument(ctx, m, msg.Header.SenderId)
@@ -143,34 +150,27 @@ func (srv *Handler) HandleSendAnchoredDocument(ctx context.Context, peer peer.ID
 		return convertToErrorEnvelop(err)
 	}
 
-	return p2pcommon.PrepareP2PEnvelope(ctx, srv.config.GetNetworkID(), p2pcommon.MessageTypeSendAnchoredDocRep, res)
+	nc, err := srv.config.GetConfig()
+	if err != nil {
+		return convertToErrorEnvelop(err)
+	}
+
+	return p2pcommon.PrepareP2PEnvelope(ctx, nc.NetworkID, p2pcommon.MessageTypeSendAnchoredDocRep, res)
 }
 
 // SendAnchoredDocument receives a new anchored document, validates and updates the document in DB
 func (srv *Handler) SendAnchoredDocument(ctx context.Context, docReq *p2ppb.AnchorDocumentRequest, senderID []byte) (*p2ppb.AnchorDocumentResponse, error) {
-	// TODO [multi-tenancy] remove following and read the config from the context
-	tc, err := configstore.NewTenantConfig("", srv.config)
-	if err != nil {
-		log.Error(err)
-		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
-	}
-	ctxHeader, err := contextutil.NewCentrifugeContext(ctx, tc)
-	if err != nil {
-		log.Error(err)
-		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
-	}
-
 	svc, model, err := getServiceAndModel(srv.registry, docReq.Document)
 	if err != nil {
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
 	}
 
-	err = svc.ReceiveAnchoredDocument(ctxHeader, model, senderID)
+	err = svc.ReceiveAnchoredDocument(ctx, model, senderID)
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
 
-	return &p2ppb.AnchorDocumentResponse{ Accepted: true}, nil
+	return &p2ppb.AnchorDocumentResponse{Accepted: true}, nil
 }
 
 func convertToErrorEnvelop(err error) (*pb.P2PEnvelope, error) {

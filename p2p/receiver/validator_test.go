@@ -18,22 +18,22 @@ func TestValidate_versionValidator(t *testing.T) {
 	assert.NotNil(t, err)
 
 	// Empty header
-	header := &p2ppb.CentrifugeHeader{}
+	header := &p2ppb.Header{}
 	err = vv.Validate(header)
 	assert.NotNil(t, err)
 
 	// Incompatible Major
-	header.CentNodeVersion = "1.1.1"
+	header.NodeVersion = "1.1.1"
 	err = vv.Validate(header)
 	assert.NotNil(t, err)
 
 	// Compatible Minor
-	header.CentNodeVersion = "0.1.1"
+	header.NodeVersion = "0.1.1"
 	err = vv.Validate(header)
 	assert.Nil(t, err)
 
 	//Same version
-	header.CentNodeVersion = version.GetVersion().String()
+	header.NodeVersion = version.GetVersion().String()
 	err = vv.Validate(header)
 	assert.Nil(t, err)
 }
@@ -45,7 +45,7 @@ func TestValidate_networkValidator(t *testing.T) {
 	err := nv.Validate(nil)
 	assert.NotNil(t, err)
 
-	header := &p2ppb.CentrifugeHeader{}
+	header := &p2ppb.Header{}
 	err = nv.Validate(header)
 	assert.NotNil(t, err)
 
@@ -61,11 +61,11 @@ func TestValidate_networkValidator(t *testing.T) {
 }
 
 func TestValidate_handshakeValidator(t *testing.T) {
-	hv := handshakeValidator(cfg.GetNetworkID())
+	hv := HandshakeValidator(cfg.GetNetworkID())
 
 	// Incompatible version and network
-	header := &p2ppb.CentrifugeHeader{
-		CentNodeVersion:   "version",
+	header := &p2ppb.Header{
+		NodeVersion:   "version",
 		NetworkIdentifier: 52,
 	}
 	err := hv.Validate(header)
@@ -78,7 +78,7 @@ func TestValidate_handshakeValidator(t *testing.T) {
 
 	// Compatible version, incorrect network
 	header.NetworkIdentifier = 52
-	header.CentNodeVersion = version.GetVersion().String()
+	header.NodeVersion = version.GetVersion().String()
 	err = hv.Validate(header)
 	assert.NotNil(t, err)
 

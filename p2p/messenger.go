@@ -3,10 +3,11 @@ package p2p
 import (
 	"bufio"
 	"context"
-	"github.com/golang/protobuf/proto"
 	"io"
 	"sync"
 	"time"
+
+	"github.com/golang/protobuf/proto"
 
 	"github.com/centrifuge/go-centrifuge/errors"
 
@@ -17,14 +18,20 @@ import (
 	ggio "github.com/gogo/protobuf/io"
 	"github.com/jbenet/go-context/io"
 	inet "github.com/libp2p/go-libp2p-net"
-	"github.com/libp2p/go-libp2p-peer"
+	libp2pPeer "github.com/libp2p/go-libp2p-peer"
 )
 
-// ErrReadTimeout must be used when receiving timeout while reading
-const ErrReadTimeout = errors.Error("timed out reading response")
+const (
 
-// ErrInvalidatedMessageSender must be used when the message sender object created is no longer valid (connection has dropped)
-const ErrInvalidatedMessageSender = errors.Error("message sender has been invalidated")
+	// MessageSizeMax is a soft maximum for network messages.
+	MessageSizeMax = 1 << 25 // 32 MB
+
+	// ErrReadTimeout must be used when receiving timeout while reading
+	ErrReadTimeout = errors.Error("timed out reading response")
+
+	// ErrInvalidatedMessageSender must be used when the message sender object created is no longer valid (connection has dropped)
+	ErrInvalidatedMessageSender = errors.Error("message sender has been invalidated")
+)
 
 type bufferedWriteCloser interface {
 	ggio.WriteCloser
@@ -55,32 +62,32 @@ func (w *bufferedDelimitedWriter) Flush() error {
 type messenger interface {
 	init(protocols ...protocol.ID)
 
-	sendMessage(ctx context.Context, p peer.ID, pmes *pb.P2PEnvelope, protoc protocol.ID) (*pb.P2PEnvelope, error)
+	sendMessage(ctx context.Context, p libp2pPeer.ID, pmes *pb.P2PEnvelope, protoc protocol.ID) (*pb.P2PEnvelope, error)
 }
 
 type p2pMessenger struct {
-	host host.Host // the network services we need
-	self peer.ID   // Local peer (yourself)
+	host host.Host     // the network services we need
+	self libp2pPeer.ID // Local peer (yourself)
 
-	timout time.Duration
-	ctx    context.Context
+	timeout time.Duration
+	ctx     context.Context
 
-	strmap map[peer.ID]map[protocol.ID]*messageSender
+	strmap map[libp2pPeer.ID]map[protocol.ID]*messageSender
 	smlk   sync.Mutex
 
 	plk sync.Mutex
 
-	handler func(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (*pb.P2PEnvelope, error)
+	handler func(ctx context.Context, peer libp2pPeer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (*pb.P2PEnvelope, error)
 }
 
 func newP2PMessenger(ctx context.Context, host host.Host, p2pTimeout time.Duration,
-	handler func(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (*pb.P2PEnvelope, error)) *p2pMessenger {
+	handler func(ctx context.Context, peer libp2pPeer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (*pb.P2PEnvelope, error)) *p2pMessenger {
 	return &p2pMessenger{
-		ctx:    ctx,
-		host:   host,
-		self:   host.ID(),
-		timout: p2pTimeout,
-		strmap: make(map[peer.ID]map[protocol.ID]*messageSender),
+		ctx:     ctx,
+		host:    host,
+		self:    host.ID(),
+		timeout: p2pTimeout,
+		strmap:  make(map[libp2pPeer.ID]map[protocol.ID]*messageSender),
 		handler: handler,
 	}
 }
@@ -104,7 +111,7 @@ func (mes *p2pMessenger) handleNewMessage(s inet.Stream) {
 	cw := ctxio.NewWriter(ctx, s)
 
 	// delimited readers and writers to set length of the protobuf messages to the stream
-	r := ggio.NewDelimitedReader(cr, inet.MessageSizeMax)
+	r := ggio.NewDelimitedReader(cr, MessageSizeMax)
 	w := newBufferedDelimitedWriter(cw)
 	mPeer := s.Conn().RemotePeer()
 
@@ -156,7 +163,7 @@ func (mes *p2pMessenger) handleNewMessage(s inet.Stream) {
 }
 
 // sendMessage sends out a request
-func (mes *p2pMessenger) sendMessage(ctx context.Context, p peer.ID, pmes *pb.P2PEnvelope, protoc protocol.ID) (*pb.P2PEnvelope, error) {
+func (mes *p2pMessenger) sendMessage(ctx context.Context, p libp2pPeer.ID, pmes *pb.P2PEnvelope, protoc protocol.ID) (*pb.P2PEnvelope, error) {
 	ms, err := mes.messageSenderForPeerAndProto(p, protoc)
 	if err != nil {
 		return nil, err
@@ -170,7 +177,7 @@ func (mes *p2pMessenger) sendMessage(ctx context.Context, p peer.ID, pmes *pb.P2
 	return rpmes, nil
 }
 
-func (mes *p2pMessenger) messageSenderForPeerAndProto(p peer.ID, protoc protocol.ID) (*messageSender, error) {
+func (mes *p2pMessenger) messageSenderForPeerAndProto(p libp2pPeer.ID, protoc protocol.ID) (*messageSender, error) {
 	mes.smlk.Lock()
 	ms, ok := mes.strmap[p][protoc]
 	if ok {
@@ -212,7 +219,7 @@ type messageSender struct {
 	r      ggio.ReadCloser
 	w      bufferedWriteCloser
 	lk     sync.Mutex
-	p      peer.ID
+	p      libp2pPeer.ID
 	protoc protocol.ID
 	mes    *p2pMessenger
 
@@ -250,14 +257,14 @@ func (ms *messageSender) prep() error {
 	}
 
 	// set the p2p timeout as the connection timeout
-	timeoutCtx, canc := context.WithTimeout(ms.mes.ctx, ms.mes.timout)
+	timeoutCtx, canc := context.WithTimeout(ms.mes.ctx, ms.mes.timeout)
 	nstr, err := ms.mes.host.NewStream(timeoutCtx, ms.p, ms.protoc)
 	if err != nil {
 		canc()
 		return err
 	}
 
-	ms.r = ggio.NewDelimitedReader(nstr, inet.MessageSizeMax)
+	ms.r = ggio.NewDelimitedReader(nstr, MessageSizeMax)
 	ms.w = newBufferedDelimitedWriter(nstr)
 	ms.s = nstr
 
@@ -331,7 +338,7 @@ func (ms *messageSender) ctxReadMsg(ctx context.Context, mes *pb.P2PEnvelope) er
 		errc <- r.ReadMsg(mes)
 	}(ms.r)
 
-	t := time.NewTimer(ms.mes.timout)
+	t := time.NewTimer(ms.mes.timeout)
 	defer t.Stop()
 
 	select {

@@ -3,6 +3,7 @@ package p2p
 import (
 	"context"
 	"fmt"
+
 	"github.com/centrifuge/go-centrifuge/p2p/common"
 
 	"github.com/golang/protobuf/proto"
@@ -18,7 +19,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/version"
-	"github.com/libp2p/go-libp2p-peer"
+	libp2pPeer "github.com/libp2p/go-libp2p-peer"
 	pstore "github.com/libp2p/go-libp2p-peerstore"
 	ma "github.com/multiformats/go-multiaddr"
 )
@@ -33,19 +34,26 @@ type Client interface {
 	SendAnchoredDocument(ctx context.Context, id identity.Identity, in *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error)
 }
 
-func (s *p2pServer) SendAnchoredDocument(ctx context.Context, id identity.Identity, in *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error) {
+func (s *peer) SendAnchoredDocument(ctx context.Context, id identity.Identity, in *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error) {
 	pid, err := s.getPeerID(id)
 	if err != nil {
 		return nil, err
 	}
 
-	envelope, err := p2pcommon.PrepareP2PEnvelope(ctx, s.config.GetNetworkID(), p2pcommon.MessageTypeSendAnchoredDoc, in)
+	nc, err := s.config.GetConfig()
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO [multi-tenancy] modify the protocol id here to include the centID of the receiving node
-	recv, err := s.mes.sendMessage(ctx, pid, envelope, CentrifugeProtocol)
+	envelope, err := p2pcommon.PrepareP2PEnvelope(ctx, nc.NetworkID, p2pcommon.MessageTypeSendAnchoredDoc, in)
+	if err != nil {
+		return nil, err
+	}
+
+	recv, err := s.mes.sendMessage(
+		ctx, pid,
+		envelope,
+		p2pcommon.ProtocolForCID(id.CentID()))
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +82,7 @@ func (s *p2pServer) SendAnchoredDocument(ctx context.Context, id identity.Identi
 }
 
 // OpenClient returns P2PServiceClient to contact the remote peer
-func (s *p2pServer) getPeerID(id identity.Identity) (peer.ID, error) {
+func (s *peer) getPeerID(id identity.Identity) (libp2pPeer.ID, error) {
 	lastB58Key, err := id.CurrentP2PKey()
 	if err != nil {
 		return "", errors.New("error fetching p2p key: %v", err)
@@ -91,7 +99,7 @@ func (s *p2pServer) getPeerID(id identity.Identity) (peer.ID, error) {
 		return "", err
 	}
 
-	peerID, err := peer.IDB58Decode(pid)
+	peerID, err := libp2pPeer.IDB58Decode(pid)
 	if err != nil {
 		return "", err
 	}
@@ -109,28 +117,28 @@ func (s *p2pServer) getPeerID(id identity.Identity) (peer.ID, error) {
 }
 
 // getSignatureForDocument requests the target node to sign the document
-func (s *p2pServer) getSignatureForDocument(ctx context.Context, identityService identity.Service, doc coredocumentpb.CoreDocument, receiverPeer peer.ID, receiverCentID identity.CentID) (*p2ppb.SignatureResponse, error) {
-	envelope, err := p2pcommon.PrepareP2PEnvelope(ctx, s.config.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: &doc})
+func (s *peer) getSignatureForDocument(ctx context.Context, identityService identity.Service, doc coredocumentpb.CoreDocument, receiverPeer libp2pPeer.ID, receiverCentID identity.CentID) (*p2ppb.SignatureResponse, error) {
+	nc, err := s.config.GetConfig()
 	if err != nil {
 		return nil, err
 	}
-
+	envelope, err := p2pcommon.PrepareP2PEnvelope(ctx, nc.NetworkID, p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: &doc})
+	if err != nil {
+		return nil, err
+	}
 	log.Infof("Requesting signature from %s\n", receiverCentID)
-	recv, err := s.mes.sendMessage(ctx, receiverPeer, envelope, CentrifugeProtocol)
+	recv, err := s.mes.sendMessage(ctx, receiverPeer, envelope, p2pcommon.ProtocolForCID(receiverCentID))
 	if err != nil {
 		return nil, err
 	}
-
 	recvEnvelope, err := p2pcommon.ResolveDataEnvelope(recv)
 	if err != nil {
 		return nil, err
 	}
-
 	// handle client error
-	if !p2pcommon.MessageTypeError.Equals(recvEnvelope.Header.Type) {
+	if p2pcommon.MessageTypeError.Equals(recvEnvelope.Header.Type) {
 		return nil, convertClientError(recvEnvelope)
 	}
-
 	if !p2pcommon.MessageTypeRequestSignatureRep.Equals(recvEnvelope.Header.Type) {
 		return nil, errors.New("the received request signature response is incorrect")
 	}
@@ -139,22 +147,18 @@ func (s *p2pServer) getSignatureForDocument(ctx context.Context, identityService
 	if err != nil {
 		return nil, err
 	}
-
 	compatible := version.CheckVersion(recvEnvelope.Header.NodeVersion)
 	if !compatible {
 		return nil, version.IncompatibleVersionError(recvEnvelope.Header.NodeVersion)
 	}
-
 	err = identity.ValidateCentrifugeIDBytes(resp.Signature.EntityId, receiverCentID)
 	if err != nil {
 		return nil, centerrors.New(code.AuthenticationFailed, err.Error())
 	}
-
 	err = identityService.ValidateSignature(resp.Signature, doc.SigningRoot)
 	if err != nil {
 		return nil, centerrors.New(code.AuthenticationFailed, "signature invalid")
 	}
-
 	log.Infof("Signature successfully received from %s\n", receiverCentID)
 	return resp, nil
 }
@@ -164,7 +168,7 @@ type signatureResponseWrap struct {
 	err  error
 }
 
-func (s *p2pServer) getSignatureAsync(ctx context.Context, identityService identity.Service, doc coredocumentpb.CoreDocument, receiverPeer peer.ID, receiverCentID identity.CentID, out chan<- signatureResponseWrap) {
+func (s *peer) getSignatureAsync(ctx context.Context, identityService identity.Service, doc coredocumentpb.CoreDocument, receiverPeer libp2pPeer.ID, receiverCentID identity.CentID, out chan<- signatureResponseWrap) {
 	resp, err := s.getSignatureForDocument(ctx, identityService, doc, receiverPeer, receiverCentID)
 	out <- signatureResponseWrap{
 		resp: resp,
@@ -173,9 +177,14 @@ func (s *p2pServer) getSignatureAsync(ctx context.Context, identityService ident
 }
 
 // GetSignaturesForDocument requests peer nodes for the signature and verifies them
-func (s *p2pServer) GetSignaturesForDocument(ctx context.Context, identityService identity.Service, doc *coredocumentpb.CoreDocument) error {
+func (s *peer) GetSignaturesForDocument(ctx context.Context, identityService identity.Service, doc *coredocumentpb.CoreDocument) error {
 	in := make(chan signatureResponseWrap)
 	defer close(in)
+
+	nc, err := s.config.GetConfig()
+	if err != nil {
+		return err
+	}
 
 	self, err := contextutil.Self(ctx)
 	if err != nil {
@@ -207,7 +216,7 @@ func (s *p2pServer) GetSignaturesForDocument(ctx context.Context, identityServic
 		// for now going with context.background, once we have a timeout for request
 		// we can use context.Timeout for that
 		count++
-		c, _ := context.WithTimeout(ctx, s.config.GetP2PConnectionTimeout())
+		c, _ := context.WithTimeout(ctx, nc.GetP2PConnectionTimeout())
 		go s.getSignatureAsync(c, identityService, *doc, receiverPeer, collaboratorID, in)
 	}
 

@@ -45,7 +45,7 @@ func TestCreateAndLookupIdentity_Integration(t *testing.T) {
 	wrongCentrifugeIdTyped, _ := identity.ToCentID(wrongCentrifugeId)
 
 	cfg.Set("identityId", centrifugeId.String())
-	id, confirmations, err := identityService.CreateIdentity(testingconfig.CreateTenantContext(t, cfg), centrifugeId)
+	id, confirmations, err := identityService.CreateIdentity(testingconfig.CreateTenantContext(t, nil, cfg), centrifugeId)
 	assert.Nil(t, err, "should not error out when creating identity")
 
 	watchRegisteredIdentity := <-confirmations
@@ -87,7 +87,7 @@ func TestAddKeyFromConfig(t *testing.T) {
 	cfg.Set("identityId", centrifugeId.String())
 	cfg.Set("keys.ethauth.publicKey", "../../build/resources/ethauth.pub.pem")
 	cfg.Set("keys.ethauth.privateKey", "../../build/resources/ethauth.key.pem")
-	_, confirmations, err := identityService.CreateIdentity(testingconfig.CreateTenantContext(t, cfg), centrifugeId)
+	_, confirmations, err := identityService.CreateIdentity(testingconfig.CreateTenantContext(t, nil, cfg), centrifugeId)
 	assert.Nil(t, err, "should not error out when creating identity")
 
 	watchRegisteredIdentity := <-confirmations
@@ -121,7 +121,7 @@ func TestCreateAndLookupIdentity_Integration_Concurrent(t *testing.T) {
 		centId, _ := identity.ToCentID(utils.RandomSlice(identity.CentIDLength))
 		cfg.Set("identityId", centId.String())
 		centIds[ix] = centId
-		_, identityConfirmations[ix], err = identityService.CreateIdentity(testingconfig.CreateTenantContext(t, cfg), centId)
+		_, identityConfirmations[ix], err = identityService.CreateIdentity(testingconfig.CreateTenantContext(t, nil, cfg), centId)
 		assert.Nil(t, err, "should not error out upon identity creation")
 	}
 
@@ -136,7 +136,7 @@ func TestCreateAndLookupIdentity_Integration_Concurrent(t *testing.T) {
 func TestEthereumIdentityService_GetIdentityAddress(t *testing.T) {
 	centrifugeId, _ := identity.ToCentID(utils.RandomSlice(identity.CentIDLength))
 	cfg.Set("identityId", centrifugeId.String())
-	_, confirmations, err := identityService.CreateIdentity(testingconfig.CreateTenantContext(t, cfg), centrifugeId)
+	_, confirmations, err := identityService.CreateIdentity(testingconfig.CreateTenantContext(t, nil, cfg), centrifugeId)
 	assert.Nil(t, err, "should not error out when creating identity")
 	<-confirmations
 	addr, err := identityService.GetIdentityAddress(centrifugeId)

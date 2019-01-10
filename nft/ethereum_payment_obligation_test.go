@@ -155,7 +155,6 @@ func TestPaymentObligationService(t *testing.T) {
 				docServiceMock := testingdocuments.MockService{}
 				docServiceMock.On("GetCurrentVersion", decodeHex("0x1212")).Return(&invoice.Invoice{InvoiceNumber: "1232", CoreDocument: coreDoc}, nil)
 				docServiceMock.On("CreateProofs", decodeHex("0x1212"), []string{"collaborators[0]"}).Return(proof, nil)
-				docServiceMock.On("Exists").Return(true)
 				paymentObligationMock := &MockPaymentObligation{}
 				idServiceMock := testingcommons.MockIDService{}
 				ethClientMock := testingcommons.MockEthClient{}
@@ -192,10 +191,10 @@ func TestPaymentObligationService(t *testing.T) {
 			docService, paymentOb, idService, ethClient, mockCfg, queueSrv := test.mocker()
 			// with below config the documentType has to be test.name to avoid conflicts since registry is a singleton
 			registry.Register(test.name, &docService)
-			service := newEthereumPaymentObligation(registry, &idService, &ethClient, queueSrv, func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error) {
+			service := newEthereumPaymentObligation(registry, &idService, &ethClient, queueSrv, &docService, func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error) {
 				return &EthereumPaymentObligationContract{}, nil
 			}, txService, func() (uint64, error) { return 10, nil })
-			ctxh := testingconfig.CreateTenantContext(t, &mockCfg)
+			ctxh := testingconfig.CreateTenantContext(t, nil, &mockCfg)
 			_, err := service.MintNFT(ctxh, decodeHex(test.request.Identifier), test.request.RegistryAddress, test.request.DepositAddress, test.request.ProofFields)
 			if test.err != nil {
 				assert.Equal(t, test.err.Error(), err.Error())

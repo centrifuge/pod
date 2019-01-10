@@ -3,10 +3,10 @@
 package purchaseorder
 
 import (
-	"math/big"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/identity/ethid"
+	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
+	"github.com/centrifuge/go-centrifuge/documents/invoice"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -54,14 +54,18 @@ func getServiceWithMockedLayers() (*testingcommons.MockIDService, Service) {
 	queueSrv := new(testingutils.MockQueue)
 	queueSrv.On("EnqueueJob", mock.Anything, mock.Anything).Return(&gocelery.AsyncResult{}, nil)
 	txService := ctx[transactions.BootstrappedService].(transactions.Service)
-	return idService, DefaultService(testRepo(), &mockAnchorRepo{}, idService, queueSrv, txService, nil)
+	repo := testRepo()
+	mockAnchor := &mockAnchorRepo{}
+	genService := genericdoc.DefaultService(repo, mockAnchor, idService)
+
+	return idService, DefaultService(repo, mockAnchor, idService, queueSrv, txService, genService)
 }
 
 func TestService_Update(t *testing.T) {
 	c := &testingconfig.MockConfig{}
 	c.On("GetIdentityID").Return(centIDBytes, nil)
 	_, poSrv := getServiceWithMockedLayers()
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	ctxh := testingconfig.CreateTenantContext(t, nil, cfg)
 
 	// pack failed
 	model := &testingdocuments.MockModel{}
@@ -131,8 +135,8 @@ func TestService_Update(t *testing.T) {
 func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	c := &testingconfig.MockConfig{}
 	c.On("GetIdentityID").Return(centIDBytes, nil)
-	poSrv := service{repo: testRepo()}
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	_, poSrv := getServiceWithMockedLayers()
+	ctxh := testingconfig.CreateTenantContext(t, nil, cfg)
 
 	// nil payload
 	doc, err := poSrv.DeriveFromUpdatePayload(ctxh, nil)
@@ -147,7 +151,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.Nil(t, doc)
 
 	// messed up identifier
-	contextHeader := testingconfig.CreateTenantContext(t, cfg)
+	contextHeader := testingconfig.CreateTenantContext(t, nil, cfg)
 	payload := &clientpurchaseorderpb.PurchaseOrderUpdatePayload{Identifier: "some identifier", Data: &clientpurchaseorderpb.PurchaseOrderData{}}
 	doc, err = poSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Error(t, err)
@@ -213,7 +217,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 func TestService_DeriveFromCreatePayload(t *testing.T) {
 	poSrv := service{}
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	ctxh := testingconfig.CreateTenantContext(t, nil, cfg)
 
 	// nil payload
 	m, err := poSrv.DeriveFromCreatePayload(ctxh, nil)
@@ -267,7 +271,7 @@ func TestService_DeriveFromCoreDocument(t *testing.T) {
 }
 
 func TestService_Create(t *testing.T) {
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	ctxh := testingconfig.CreateTenantContext(t, nil, cfg)
 	c := &testingconfig.MockConfig{}
 	c.On("GetIdentityID").Return(centIDBytes, nil)
 	_, poSrv := getServiceWithMockedLayers()
@@ -291,191 +295,6 @@ func TestService_Create(t *testing.T) {
 	assert.True(t, testRepo().Exists(tenantID, newCD.CurrentVersion))
 }
 
-func createAnchoredMockDocument(t *testing.T, skipSave bool) (*PurchaseOrder, error) {
-	i := &PurchaseOrder{
-		PoNumber:     "test_po",
-		OrderAmount:  42,
-		CoreDocument: coredocument.New(),
-	}
-	err := i.calculateDataRoot()
-	if err != nil {
-		return nil, err
-	}
-	// get the coreDoc for the purchase order
-	corDoc, err := i.PackCoreDocument()
-	if err != nil {
-		return nil, err
-	}
-	assert.Nil(t, coredocument.FillSalts(corDoc))
-	err = coredocument.CalculateSigningRoot(corDoc)
-	if err != nil {
-		return nil, err
-	}
-
-	centID, err := identity.ToCentID(centIDBytes)
-	assert.Nil(t, err)
-	signKey := identity.IDKey{
-		PublicKey:  key1Pub[:],
-		PrivateKey: key1,
-	}
-	idConfig := &identity.IDConfig{
-		ID: centID,
-		Keys: map[int]identity.IDKey{
-			identity.KeyPurposeSigning: signKey,
-		},
-	}
-
-	sig := identity.Sign(idConfig, identity.KeyPurposeSigning, corDoc.SigningRoot)
-
-	corDoc.Signatures = append(corDoc.Signatures, sig)
-
-	err = coredocument.CalculateDocumentRoot(corDoc)
-	if err != nil {
-		return nil, err
-	}
-	err = i.UnpackCoreDocument(corDoc)
-	if err != nil {
-		return nil, err
-	}
-
-	if !skipSave {
-		err = testRepo().Create(tenantID, i.CoreDocument.CurrentVersion, i)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return i, nil
-}
-
-// Functions returns service mocks
-func mockSignatureCheck(i *PurchaseOrder, srv *testingcommons.MockIDService, poSrv Service) *testingcommons.MockIDService {
-	idkey := &ethid.EthereumIdentityKey{
-		Key:       key1Pub,
-		Purposes:  []*big.Int{big.NewInt(identity.KeyPurposeSigning)},
-		RevokedAt: big.NewInt(0),
-	}
-	anchorID, _ := anchors.ToAnchorID(i.CoreDocument.DocumentIdentifier)
-	docRoot, _ := anchors.ToDocumentRoot(i.CoreDocument.DocumentRoot)
-	mockRepo := poSrv.(service).anchorRepository.(*mockAnchorRepo)
-	mockRepo.On("GetDocumentRootOf", anchorID).Return(docRoot, nil).Once()
-	id := &testingcommons.MockID{}
-	centID, _ := identity.ToCentID(centIDBytes)
-	srv.On("LookupIdentityForID", centID).Return(id, nil).Once()
-	id.On("FetchKey", key1Pub[:]).Return(idkey, nil).Once()
-	return srv
-}
-
-func TestService_CreateProofs(t *testing.T) {
-	idService, poSrv := getServiceWithMockedLayers()
-	i, err := createAnchoredMockDocument(t, false)
-	assert.Nil(t, err)
-	idService = mockSignatureCheck(i, idService, poSrv)
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
-	proof, err := poSrv.CreateProofs(ctxh, i.CoreDocument.DocumentIdentifier, []string{"po.po_number"})
-	assert.Nil(t, err)
-	assert.Equal(t, i.CoreDocument.DocumentIdentifier, proof.DocumentID)
-	assert.Equal(t, i.CoreDocument.DocumentIdentifier, proof.VersionID)
-	assert.Equal(t, len(proof.FieldProofs), 1)
-	assert.Equal(t, proof.FieldProofs[0].GetReadableName(), "po.po_number")
-}
-
-func TestService_CreateProofsValidationFails(t *testing.T) {
-	idService, poSrv := getServiceWithMockedLayers()
-	i, err := createAnchoredMockDocument(t, false)
-	assert.Nil(t, err)
-	i.CoreDocument.SigningRoot = nil
-	err = testRepo().Update(tenantID, i.CoreDocument.CurrentVersion, i)
-	assert.Nil(t, err)
-	idService = mockSignatureCheck(i, idService, poSrv)
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
-	_, err = poSrv.CreateProofs(ctxh, i.CoreDocument.DocumentIdentifier, []string{"po.po_number"})
-	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "signing root missing")
-}
-
-func TestService_CreateProofsInvalidField(t *testing.T) {
-	idService, poSrv := getServiceWithMockedLayers()
-	i, err := createAnchoredMockDocument(t, false)
-	assert.Nil(t, err)
-	idService = mockSignatureCheck(i, idService, poSrv)
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
-	_, err = poSrv.CreateProofs(ctxh, i.CoreDocument.DocumentIdentifier, []string{"invalid_field"})
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(documents.ErrDocumentProof, err))
-}
-
-func TestService_CreateProofsDocumentDoesntExist(t *testing.T) {
-	_, poSrv := getServiceWithMockedLayers()
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
-	_, err := poSrv.CreateProofs(ctxh, utils.RandomSlice(32), []string{"po.po_number"})
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
-}
-
-func updatedAnchoredMockDocument(t *testing.T, model *PurchaseOrder) (*PurchaseOrder, error) {
-	model.OrderAmount = 50
-	err := model.calculateDataRoot()
-	if err != nil {
-		return nil, err
-	}
-	// get the coreDoc for the purchase order
-	corDoc, err := model.PackCoreDocument()
-	if err != nil {
-		return nil, err
-	}
-	// hacky update to version
-	corDoc.CurrentVersion = corDoc.NextVersion
-	corDoc.NextVersion = utils.RandomSlice(32)
-	if err != nil {
-		return nil, err
-	}
-	err = coredocument.CalculateSigningRoot(corDoc)
-	if err != nil {
-		return nil, err
-	}
-	err = coredocument.CalculateDocumentRoot(corDoc)
-	if err != nil {
-		return nil, err
-	}
-	err = model.UnpackCoreDocument(corDoc)
-	if err != nil {
-		return nil, err
-	}
-	err = testRepo().Create(tenantID, model.CoreDocument.CurrentVersion, model)
-	if err != nil {
-		return nil, err
-	}
-	return model, nil
-}
-
-func TestService_CreateProofsForVersion(t *testing.T) {
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
-	idService, poSrv := getServiceWithMockedLayers()
-	i, err := createAnchoredMockDocument(t, false)
-	assert.Nil(t, err)
-	idService = mockSignatureCheck(i, idService, poSrv)
-	olderVersion := i.CoreDocument.CurrentVersion
-	i, err = updatedAnchoredMockDocument(t, i)
-	assert.Nil(t, err)
-	proof, err := poSrv.CreateProofsForVersion(ctxh, i.CoreDocument.DocumentIdentifier, olderVersion, []string{"po.po_number"})
-	assert.Nil(t, err)
-	assert.Equal(t, i.CoreDocument.DocumentIdentifier, proof.DocumentID)
-	assert.Equal(t, olderVersion, proof.VersionID)
-	assert.Equal(t, len(proof.FieldProofs), 1)
-	assert.Equal(t, proof.FieldProofs[0].GetReadableName(), "po.po_number")
-}
-
-func TestService_CreateProofsForVersionDocumentDoesntExist(t *testing.T) {
-	i, err := createAnchoredMockDocument(t, false)
-	_, poSrv := getServiceWithMockedLayers()
-	assert.Nil(t, err)
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
-	_, err = poSrv.CreateProofsForVersion(ctxh, i.CoreDocument.DocumentIdentifier, utils.RandomSlice(32), []string{"po.po_number"})
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(documents.ErrDocumentVersionNotFound, err))
-}
-
 func TestService_DerivePurchaseOrderData(t *testing.T) {
 	var m documents.Model
 	_, poSrv := getServiceWithMockedLayers()
@@ -489,7 +308,7 @@ func TestService_DerivePurchaseOrderData(t *testing.T) {
 
 	// success
 	payload := testingdocuments.CreatePOPayload()
-	m, err = poSrv.DeriveFromCreatePayload(testingconfig.CreateTenantContext(t, cfg), payload)
+	m, err = poSrv.DeriveFromCreatePayload(testingconfig.CreateTenantContext(t, nil, cfg), payload)
 	assert.Nil(t, err)
 	d, err = poSrv.DerivePurchaseOrderData(m)
 	assert.Nil(t, err)
@@ -531,7 +350,7 @@ func TestService_DerivePurchaseOrderResponse(t *testing.T) {
 
 	// success
 	payload := testingdocuments.CreatePOPayload()
-	po, err := poSrv.DeriveFromCreatePayload(testingconfig.CreateTenantContext(t, cfg), payload)
+	po, err := poSrv.DeriveFromCreatePayload(testingconfig.CreateTenantContext(t, nil, cfg), payload)
 	assert.Nil(t, err)
 	r, err = poSrv.DerivePurchaseOrderResponse(po)
 	assert.Nil(t, err)
@@ -556,14 +375,36 @@ func createMockDocument() (*PurchaseOrder, error) {
 	return model, err
 }
 
+func TestService_GetVersion_wrongTyp(t *testing.T) {
+	_, poSrv := getServiceWithMockedLayers()
+	currentVersion := utils.RandomSlice(32)
+	documentIdentifier := utils.RandomSlice(32)
+
+	//should be an po
+	po := &invoice.Invoice{
+		GrossAmount: 60,
+		CoreDocument: &coredocumentpb.CoreDocument{
+			DocumentIdentifier: documentIdentifier,
+			CurrentVersion:     currentVersion,
+		},
+	}
+	err := testRepo().Create(tenantID, currentVersion, po)
+	assert.Nil(t, err)
+
+	ctxh := testingconfig.CreateTenantContext(t, nil, cfg)
+	_, err = poSrv.GetVersion(ctxh, documentIdentifier, currentVersion)
+	assert.Error(t, err)
+
+}
+
 func TestService_GetCurrentVersion(t *testing.T) {
 	c := &testingconfig.MockConfig{}
 	c.On("GetIdentityID").Return(centIDBytes, nil)
-	poSrv := service{repo: testRepo()}
+	_, poSrv := getServiceWithMockedLayers()
 	thirdIdentifier := utils.RandomSlice(32)
 	doc, err := createMockDocument()
 	assert.Nil(t, err)
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	ctxh := testingconfig.CreateTenantContext(t, nil, cfg)
 
 	mod1, err := poSrv.GetCurrentVersion(ctxh, doc.CoreDocument.DocumentIdentifier)
 	assert.Nil(t, err)
@@ -591,32 +432,10 @@ func TestService_GetCurrentVersion(t *testing.T) {
 	assert.Equal(t, poLoad2.CoreDocument.NextVersion, thirdIdentifier)
 }
 
-func TestService_GetVersion_invalid_version(t *testing.T) {
-	c := &testingconfig.MockConfig{}
-	c.On("GetIdentityID").Return(centIDBytes, nil)
-	poSrv := service{repo: testRepo()}
-	currentVersion := utils.RandomSlice(32)
-
-	po := &PurchaseOrder{
-		OrderAmount: 42,
-		CoreDocument: &coredocumentpb.CoreDocument{
-			DocumentIdentifier: utils.RandomSlice(32),
-			CurrentVersion:     currentVersion,
-		},
-	}
-	err := testRepo().Create(tenantID, currentVersion, po)
-	assert.Nil(t, err)
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
-
-	mod, err := poSrv.GetVersion(ctxh, utils.RandomSlice(32), currentVersion)
-	assert.True(t, errors.IsOfType(documents.ErrDocumentVersionNotFound, err))
-	assert.Nil(t, mod)
-}
-
 func TestService_GetVersion(t *testing.T) {
 	c := &testingconfig.MockConfig{}
 	c.On("GetIdentityID").Return(centIDBytes, nil)
-	poSrv := service{repo: testRepo()}
+	_, poSrv := getServiceWithMockedLayers()
 	documentIdentifier := utils.RandomSlice(32)
 	currentVersion := utils.RandomSlice(32)
 
@@ -630,7 +449,7 @@ func TestService_GetVersion(t *testing.T) {
 	err := testRepo().Create(tenantID, currentVersion, po)
 	assert.Nil(t, err)
 
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	ctxh := testingconfig.CreateTenantContext(t, nil, cfg)
 	mod, err := poSrv.GetVersion(ctxh, documentIdentifier, currentVersion)
 	assert.Nil(t, err)
 	loadpo, _ := mod.(*PurchaseOrder)
@@ -654,7 +473,7 @@ func TestService_Exists(t *testing.T) {
 	err := testRepo().Create(tenantID, documentIdentifier, po)
 	assert.Nil(t, err)
 
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	ctxh := testingconfig.CreateTenantContext(t, nil, cfg)
 	exists := poSrv.Exists(ctxh, documentIdentifier)
 	assert.True(t, exists, "purchase order should exist")
 
@@ -663,25 +482,11 @@ func TestService_Exists(t *testing.T) {
 
 }
 
-func TestService_ReceiveAnchoredDocument(t *testing.T) {
-	poSrv := service{}
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
-	err := poSrv.ReceiveAnchoredDocument(ctxh, nil, nil)
-	assert.Error(t, err)
-}
-
-func TestService_RequestDocumentSignature(t *testing.T) {
-	poSrv := service{}
-	s, err := poSrv.RequestDocumentSignature(testingconfig.CreateTenantContext(t, cfg), nil)
-	assert.Nil(t, s)
-	assert.Error(t, err)
-}
-
 func TestService_calculateDataRoot(t *testing.T) {
 	c := &testingconfig.MockConfig{}
 	c.On("GetIdentityID").Return(centIDBytes, nil)
 	poSrv := service{repo: testRepo()}
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	ctxh := testingconfig.CreateTenantContext(t, nil, cfg)
 
 	// type mismatch
 	po, err := poSrv.calculateDataRoot(ctxh, nil, &testingdocuments.MockModel{}, nil)

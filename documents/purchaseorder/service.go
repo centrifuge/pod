@@ -1,8 +1,8 @@
 package purchaseorder
 
 import (
-	"bytes"
 	"context"
+
 	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -74,7 +74,7 @@ func DefaultService(
 		identityService:  identityService,
 		queueSrv:         queueSrv,
 		txService:        txService,
-		Service:       genService,
+		Service:          genService,
 	}
 }
 
@@ -284,61 +284,41 @@ func (s service) DerivePurchaseOrderResponse(doc documents.Model) (*clientpopb.P
 	}, nil
 }
 
-func (s service) getPurchaseOrderVersion(ctx context.Context, documentID, version []byte) (model *PurchaseOrder, err error) {
-	self, err := contextutil.Self(ctx)
-	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentConfigTenantID, err)
-	}
-	doc, err := s.repo.Get(self.ID[:], version)
-	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentVersionNotFound, err)
-	}
-	model, ok := doc.(*PurchaseOrder)
+func (s service) checkType(model documents.Model) (documents.Model, error) {
+	_, ok := model.(*PurchaseOrder)
 	if !ok {
 		return nil, documents.ErrDocumentInvalidType
-	}
-
-	if !bytes.Equal(model.CoreDocument.DocumentIdentifier, documentID) {
-		return nil, errors.NewTypedError(documents.ErrDocumentVersionNotFound, errors.New("version is not valid for this identifier"))
 	}
 	return model, nil
 }
 
 // GetLastVersion returns the latest version of the document
-func (s service) GetCurrentVersion(ctx context.Context, documentID []byte) (documents.Model, error) {
-	model, err := s.getPurchaseOrderVersion(ctx, documentID, documentID)
-	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
-	}
-	nextVersion := model.CoreDocument.NextVersion
-	for nextVersion != nil {
-		temp, err := s.getPurchaseOrderVersion(ctx, documentID, nextVersion)
-		if err != nil {
-			// here the err is returned as nil because it is expected that the nextVersion is not available in the db at some stage of the iteration
-			return model, nil
-		}
-
-		model = temp
-		nextVersion = model.CoreDocument.NextVersion
-	}
-	return model, nil
-}
-
-// GetVersion returns the specific version of the document
-func (s service) GetVersion(ctx context.Context, documentID []byte, version []byte) (documents.Model, error) {
-	po, err := s.getPurchaseOrderVersion(ctx, documentID, version)
+func (s service) GetCurrentVersion(ctx context.Context, documentID []byte) (model documents.Model, err error) {
+	model, err = s.Service.GetCurrentVersion(ctx, documentID)
 	if err != nil {
 		return nil, err
 	}
-	return po, nil
+	return s.checkType(model)
+}
+
+// GetVersion returns the specific version of the document
+func (s service) GetVersion(ctx context.Context, documentID []byte, version []byte) (model documents.Model, err error) {
+	model, err = s.Service.GetVersion(ctx, documentID, version)
+	if err != nil {
+		return nil, err
+	}
+	return s.checkType(model)
 
 }
 
 // Exists checks if an purchase order exists
 func (s service) Exists(ctx context.Context, documentID []byte) bool {
-	self, err := contextutil.Self(ctx)
-	if err != nil {
-		return false
+	if s.Service.Exists(ctx, documentID) {
+		// check if document is an po
+		_, err := s.Service.GetCurrentVersion(ctx, documentID)
+		if err == nil {
+			return true
+		}
 	}
-	return s.repo.Exists(self.ID[:], documentID)
+	return false
 }
