@@ -48,30 +48,16 @@ func TestMain(m *testing.M) {
 }
 
 func TestClient_GetSignaturesForDocument(t *testing.T) {
-	// local collaborator
-	tcID := identity.RandomCentID()
-	tc, err := configstore.TempTenantConfig("", cfg)
-	assert.NoError(t, err)
-	tc.IdentityID = tcID[:]
-	tc, err = cfgStore.CreateTenant(tc)
-	assert.NoError(t, err)
-	testingidentity.CreateTenantIDWithKeys(cfg.GetEthereumContextWaitTimeout(), tc, idService)
+	tc, _, err := createLocalCollaborator(t)
 	ctxh := testingconfig.CreateTenantContext(t, cfg)
 	doc := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID})
 	err = client.GetSignaturesForDocument(ctxh, idService, doc)
 	assert.NoError(t, err)
-	assert.Equal(t, 2, len(doc.Collaborators))
+	assert.Equal(t, 2, len(doc.Signatures))
 }
 
 func TestClient_SendAnchoredDocument(t *testing.T) {
-	// local collaborator
-	tcID := identity.RandomCentID()
-	tc, err := configstore.TempTenantConfig("", cfg)
-	assert.NoError(t, err)
-	tc.IdentityID = tcID[:]
-	tc, err = cfgStore.CreateTenant(tc)
-	assert.NoError(t, err)
-	cid := testingidentity.CreateTenantIDWithKeys(cfg.GetEthereumContextWaitTimeout(), tc, idService)
+	tc, cid, err := createLocalCollaborator(t)
 	ctxh := testingconfig.CreateTenantContext(t, cfg)
 	doc := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID})
 	self, err := cfg.GetIdentityID()
@@ -85,6 +71,17 @@ func TestClient_SendAnchoredDocument(t *testing.T) {
 	if assert.Error(t, err) {
 		assert.Equal(t, "[1]document is invalid: [mismatched document roots]", err.Error())
 	}
+}
+
+func createLocalCollaborator(t *testing.T) (*configstore.TenantConfig, identity.Identity, error) {
+	tcID := identity.RandomCentID()
+	tc, err := configstore.TempTenantConfig("", cfg)
+	assert.NoError(t, err)
+	tc.IdentityID = tcID[:]
+	tc, err = cfgStore.CreateTenant(tc)
+	assert.NoError(t, err)
+	id := testingidentity.CreateTenantIDWithKeys(cfg.GetEthereumContextWaitTimeout(), tc, idService)
+	return tc, id, err
 }
 
 func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte) *coredocumentpb.CoreDocument {
