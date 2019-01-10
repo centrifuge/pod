@@ -87,14 +87,14 @@
   revision = "80f35a18b9a0c632d7843e7e536873b0536f0040"
 
 [[projects]]
-  digest = "1:62047d648a2c438bdeba95665c6a84397508e91d29e8d687c73a223c10688ae7"
+  digest = "1:0b0f15159212d78d00125ea9aa317256ad6724e849f1bcf1adf40ee6a623526f"
   name = "github.com/centrifuge/precise-proofs"
   packages = [
     "proofs",
     "proofs/proto",
   ]
   pruneopts = "UT"
-  revision = "0584aa4dec1c16d6aa2b287291bb9d2025b4d71a"
+  revision = "455afe8bb21e4b882a2f7bf0b851ff0599a7c1f6"
 
 [[projects]]
   digest = "1:0ef770954bca104ee99b3b6b7f9b240605ac03517d9f98cbc1893daa03f3c038"
