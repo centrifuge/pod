@@ -2,30 +2,24 @@ package receiver
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/libp2p/go-libp2p-protocol"
 
-	"github.com/centrifuge/go-centrifuge/contextutil"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/code"
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	pb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/version"
-	logging "github.com/ipfs/go-log"
 )
-
-var log = logging.Logger("grpc")
 
 // getService looks up the specific registry, derives service from core document
 func getServiceAndModel(registry *documents.ServiceRegistry, cd *coredocumentpb.CoreDocument) (documents.Service, documents.Model, error) {
@@ -50,15 +44,16 @@ func getServiceAndModel(registry *documents.ServiceRegistry, cd *coredocumentpb.
 	return srv, model, nil
 }
 
-// Handler implements the grpc interface
+// Handler implements protocol message handlers
 type Handler struct {
-	registry *documents.ServiceRegistry
-	config   config.Configuration
+	registry           *documents.ServiceRegistry
+	config             configstore.Service
+	handshakeValidator ValidatorGroup
 }
 
 // New returns an implementation of P2PServiceServer
-func New(config config.Configuration, registry *documents.ServiceRegistry) *Handler {
-	return &Handler{registry: registry, config: config}
+func New(config configstore.Service, registry *documents.ServiceRegistry, handshakeValidator ValidatorGroup) *Handler {
+	return &Handler{registry: registry, config: config, handshakeValidator: handshakeValidator}
 }
 
 // HandleRequestDocumentSignature handles the RequestDocumentSignature message
@@ -66,7 +61,22 @@ func (srv *Handler) HandleRequestDocumentSignature(ctx context.Context, peer pee
 	m := new(p2ppb.SignatureRequest)
 	err := proto.Unmarshal(msg.Body, m)
 	if err != nil {
-		return nil, err
+		return convertToErrorEnvelop(err)
+	}
+
+	cid, err := ExtractCID(protoc)
+	if err != nil {
+		return convertToErrorEnvelop(err)
+	}
+
+	tc, err := srv.config.GetTenant(cid[:])
+	if err != nil {
+		return convertToErrorEnvelop(err)
+	}
+
+	ctx, err = contextutil.NewCentrifugeContext(ctx, tc)
+	if err != nil {
+		return convertToErrorEnvelop(err)
 	}
 
 	res, err := srv.RequestDocumentSignature(ctx, m)
@@ -76,7 +86,7 @@ func (srv *Handler) HandleRequestDocumentSignature(ctx context.Context, peer pee
 
 	resp, err := proto.Marshal(res)
 	if err != nil {
-		return nil, err
+		return convertToErrorEnvelop(err)
 	}
 	return &pb.P2PEnvelope{Type: pb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE_REP, Body: resp}, nil
 }
@@ -86,18 +96,7 @@ func (srv *Handler) HandleRequestDocumentSignature(ctx context.Context, peer pee
 // Existing signatures on the document will be verified
 // Document will be stored to the repository for state management
 func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.SignatureRequest) (*p2ppb.SignatureResponse, error) {
-	// TODO [multi-tenancy] remove following and read the config from the context
-	tc, err := configstore.NewTenantConfig("", srv.config)
-	if err != nil {
-		log.Error(err)
-		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
-	}
-	ctxHeader, err := contextutil.NewCentrifugeContext(ctx, tc)
-	if err != nil {
-		log.Error(err)
-		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
-	}
-	err = handshakeValidator(srv.config.GetNetworkID()).Validate(sigReq.Header)
+	err := srv.handshakeValidator.Validate(sigReq.Header)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +106,7 @@ func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
 	}
 
-	signature, err := svc.RequestDocumentSignature(ctxHeader, model)
+	signature, err := svc.RequestDocumentSignature(ctx, model)
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
@@ -123,7 +122,22 @@ func (srv *Handler) HandleSendAnchoredDocument(ctx context.Context, peer peer.ID
 	m := new(p2ppb.AnchorDocumentRequest)
 	err := proto.Unmarshal(msg.Body, m)
 	if err != nil {
-		return nil, err
+		return convertToErrorEnvelop(err)
+	}
+
+	cid, err := ExtractCID(protoc)
+	if err != nil {
+		return convertToErrorEnvelop(err)
+	}
+
+	tc, err := srv.config.GetTenant(cid[:])
+	if err != nil {
+		return convertToErrorEnvelop(err)
+	}
+
+	ctx, err = contextutil.NewCentrifugeContext(ctx, tc)
+	if err != nil {
+		return convertToErrorEnvelop(err)
 	}
 
 	res, err := srv.SendAnchoredDocument(ctx, m)
@@ -133,25 +147,14 @@ func (srv *Handler) HandleSendAnchoredDocument(ctx context.Context, peer peer.ID
 
 	resp, err := proto.Marshal(res)
 	if err != nil {
-		return nil, err
+		return convertToErrorEnvelop(err)
 	}
 	return &pb.P2PEnvelope{Type: pb.MessageType_MESSAGE_TYPE_SEND_ANCHORED_DOC_REP, Body: resp}, nil
 }
 
 // SendAnchoredDocument receives a new anchored document, validates and updates the document in DB
 func (srv *Handler) SendAnchoredDocument(ctx context.Context, docReq *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error) {
-	// TODO [multi-tenancy] remove following and read the config from the context
-	tc, err := configstore.NewTenantConfig("", srv.config)
-	if err != nil {
-		log.Error(err)
-		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
-	}
-	ctxHeader, err := contextutil.NewCentrifugeContext(ctx, tc)
-	if err != nil {
-		log.Error(err)
-		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
-	}
-	err = handshakeValidator(srv.config.GetNetworkID()).Validate(docReq.Header)
+	err := srv.handshakeValidator.Validate(docReq.Header)
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +164,7 @@ func (srv *Handler) SendAnchoredDocument(ctx context.Context, docReq *p2ppb.Anch
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
 	}
 
-	err = svc.ReceiveAnchoredDocument(ctxHeader, model, docReq.Header)
+	err = svc.ReceiveAnchoredDocument(ctx, model, docReq.Header)
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
