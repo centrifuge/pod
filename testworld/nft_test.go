@@ -9,8 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const tokenIdLength = 77
-
 func TestPaymentObligationMint_invoice_successful(t *testing.T) {
 	t.Parallel()
 	paymentObligationMint(t, typeInvoice)
@@ -68,8 +66,11 @@ func paymentObligationMint(t *testing.T, documentType string) {
 	}
 
 	response, err := alice.host.mintNFT(alice.httpExpect, test.httpStatus, test.payload)
+	txID = getTransactionID(t, res)
+	waitTillSuccess(t, alice.httpExpect, txID)
+
 	assert.Nil(t, err, "mintNFT should be successful")
-	assert.True(t, len(response.Value("token_id").String().Raw()) >= tokenIdLength, "successful tokenId should have length 77")
+	assert.True(t, len(response.Value("token_id").String().Raw()) > 0, "successful tokenId should have length 77")
 
 }
 
