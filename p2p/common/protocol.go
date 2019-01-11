@@ -15,18 +15,25 @@ import (
 	"github.com/libp2p/go-libp2p-protocol"
 )
 
+// MessageType holds the protocol message type
 type MessageType string
 
 const (
 	// CentrifugeProtocol is the centrifuge wire protocol
 	CentrifugeProtocol protocol.ID = "/centrifuge/0.0.1"
 
-	MessageTypeError               MessageType = "MessageTypeError"
-	MessageTypeInvalid             MessageType = "MessageTypeInvalid"
-	MessageTypeRequestSignature    MessageType = "MessageTypeRequestSignature"
+	// MessageTypeError defines any protocol error
+	MessageTypeError MessageType = "MessageTypeError"
+	// MessageTypeInvalid defines invalid protocol type
+	MessageTypeInvalid MessageType = "MessageTypeInvalid"
+	// MessageTypeRequestSignature defines RequestSignature type
+	MessageTypeRequestSignature MessageType = "MessageTypeRequestSignature"
+	// MessageTypeRequestSignatureRep defines RequestSignature response type
 	MessageTypeRequestSignatureRep MessageType = "MessageTypeRequestSignatureRep"
-	MessageTypeSendAnchoredDoc     MessageType = "MessageTypeSendAnchoredDoc"
-	MessageTypeSendAnchoredDocRep  MessageType = "MessageTypeSendAnchoredDocRep"
+	// MessageTypeSendAnchoredDoc defines SendAnchored type
+	MessageTypeSendAnchoredDoc MessageType = "MessageTypeSendAnchoredDoc"
+	// MessageTypeSendAnchoredDocRep defines SendAnchored response type
+	MessageTypeSendAnchoredDocRep MessageType = "MessageTypeSendAnchoredDocRep"
 )
 
 // Equals compares if string is of a particular MessageType

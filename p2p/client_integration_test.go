@@ -21,7 +21,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
@@ -49,7 +48,7 @@ func TestMain(m *testing.M) {
 
 func TestClient_GetSignaturesForDocument(t *testing.T) {
 	tc, _, err := createLocalCollaborator(t)
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	ctxh := testingconfig.CreateTenantContext(t, nil, cfg)
 	doc := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID})
 	err = client.GetSignaturesForDocument(ctxh, idService, doc)
 	assert.NoError(t, err)
@@ -58,16 +57,10 @@ func TestClient_GetSignaturesForDocument(t *testing.T) {
 
 func TestClient_SendAnchoredDocument(t *testing.T) {
 	tc, cid, err := createLocalCollaborator(t)
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	ctxh := testingconfig.CreateTenantContext(t, nil, cfg)
 	doc := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID})
-	self, err := cfg.GetIdentityID()
-	assert.NoError(t, err)
-	p2pheader := &p2ppb.CentrifugeHeader{
-		SenderCentrifugeId: self,
-		CentNodeVersion:    version.GetVersion().String(),
-		NetworkIdentifier:  cfg.GetNetworkID(),
-	}
-	_, err = client.SendAnchoredDocument(ctxh, cid, &p2ppb.AnchorDocumentRequest{Document: doc, Header: p2pheader})
+
+	_, err = client.SendAnchoredDocument(ctxh, cid, &p2ppb.AnchorDocumentRequest{Document: doc})
 	if assert.Error(t, err) {
 		assert.Equal(t, "[1]document is invalid: [mismatched document roots]", err.Error())
 	}

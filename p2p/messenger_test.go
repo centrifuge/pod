@@ -66,8 +66,8 @@ func TestHandleNewMessage(t *testing.T) {
 	// set h2 as the bootnode for h1
 	_ = runDHT(c, h1, []string{fmt.Sprintf("/ip4/127.0.0.1/tcp/%d/ipfs/%s", p2, h2.ID().Pretty())})
 
-	m1 := newP2PMessenger(c, h1, 3*time.Second, mockedHandler)
-	m2 := newP2PMessenger(c, h2, 3*time.Second, mockedHandler)
+	m1 := newP2PMessenger(c, h1, 5*time.Second, mockedHandler)
+	m2 := newP2PMessenger(c, h2, 5*time.Second, mockedHandler)
 
 	m1.init(MessengerDummyProtocol)
 	m2.init(MessengerDummyProtocol)
