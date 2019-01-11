@@ -3,9 +3,10 @@
 package testworld
 
 import (
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestPaymentObligationMint_invoice_successful(t *testing.T) {

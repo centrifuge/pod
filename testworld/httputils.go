@@ -2,7 +2,6 @@ package testworld
 
 import (
 	"crypto/tls"
-	"fmt"
 	"net/http"
 	"testing"
 	"time"
@@ -131,10 +130,6 @@ func waitTillSuccess(t *testing.T, e *httpexpect.Expect, txID string) {
 	for {
 		resp := e.GET("/transactions/" + txID).Expect().Status(200).JSON().Object()
 		status := resp.Path("$.status").String().Raw()
-
-		fmt.Println("Centrifuge Transaction Status")
-		fmt.Println(txID)
-		fmt.Println(status)
 
 		if status == "pending" {
 			time.Sleep(1 * time.Second)
