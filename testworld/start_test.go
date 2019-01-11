@@ -15,7 +15,7 @@ var isRunningOnCI = len(os.Getenv("TRAVIS")) != 0
 
 // Adjust these based on local testing requirments, please revert for CI server
 var configFile = "configs/local.json"
-var runPOAGeth = !isRunningOnCI
+var runPOAGeth = false
 
 // make this true this when running for the first time in local env
 var createHostConfigs = false

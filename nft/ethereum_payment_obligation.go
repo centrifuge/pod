@@ -2,7 +2,6 @@ package nft
 
 import (
 	"context"
-	"encoding/hex"
 	"fmt"
 	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 	"math/big"
@@ -132,14 +131,12 @@ func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, documentID []by
 		return nil, err
 	}
 
-	txID, err := s.queueTask(cid, requestData.TokenID, registryAddress)
+	txHash, err := s.sendMintTransaction(contract, opts, requestData)
 	if err != nil {
-		return nil, errors.New("failed to queue task: %v", err)
-	}
+		return nil, errors.New("failed to send transaction: %v", err)
+		}
 
-	s.sendMintTransaction(contract, opts, requestData)
-
-	//txID, err := s.queueTaskTransaction(cid, txHash)
+	txID, err := s.queueTaskTransaction(cid, txHash)
 
 	if err != nil {
 		return nil, err
@@ -150,27 +147,6 @@ func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, documentID []by
 		TransactionID: txID.String(),
 		TokenID:       requestData.TokenID.String(),
 	}, nil
-}
-
-func (s *ethereumPaymentObligation) queueTask(tenantID identity.CentID, tokenID *big.Int, registryAddress string) (txID uuid.UUID, err error) {
-	height, err := s.blockHeightFunc()
-	if err != nil {
-		return txID, err
-	}
-	tx, err := s.txService.CreateTransaction(tenantID, "Mint NFT")
-	if err != nil {
-		return txID, err
-	}
-
-	_, err = s.queue.EnqueueJob(mintingConfirmationTaskName, map[string]interface{}{
-		transactions.TxIDParam: tx.ID.String(),
-		tenantIDParam:          tenantID.String(),
-		tokenIDParam:           hex.EncodeToString(tokenID.Bytes()),
-		queue.BlockHeightParam: height,
-		registryAddressParam:   registryAddress,
-	})
-
-	return tx.ID, err
 }
 
 func (s *ethereumPaymentObligation) queueTaskTransaction(tenantID identity.CentID, txHash string) (txID uuid.UUID, err error) {
