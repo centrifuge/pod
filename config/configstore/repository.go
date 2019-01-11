@@ -64,8 +64,8 @@ func getConfigKey() []byte {
 	return []byte(configPrefix)
 }
 
-// NewDBRepository creates instance of Config repository
-func NewDBRepository(db storage.Repository) repository {
+// newDBRepository creates instance of Config repository
+func newDBRepository(db storage.Repository) repository {
 	return &repo{db: db}
 }
 

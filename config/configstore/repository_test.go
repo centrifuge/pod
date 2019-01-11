@@ -195,5 +195,5 @@ func getRandomStorage() (repository, string, error) {
 		return nil, "", err
 	}
 	dbFiles = append(dbFiles, randomPath)
-	return NewDBRepository(leveldb.NewLevelDBRepository(db)), randomPath, nil
+	return newDBRepository(leveldb.NewLevelDBRepository(db)), randomPath, nil
 }
