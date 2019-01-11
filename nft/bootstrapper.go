@@ -80,6 +80,6 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 
 	ethTransTask := ethereum.NewTransactionStatusTask(cfg.GetEthereumContextWaitTimeout(), txService, ethereum.DefaultWaitForTransactionMiningContext)
 
-	queueSrv.RegisterTaskType(ethTransTask.TaskTypeName(),ethTransTask)
+	queueSrv.RegisterTaskType(ethTransTask.TaskTypeName(), ethTransTask)
 	return nil
 }

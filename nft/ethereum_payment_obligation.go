@@ -2,8 +2,9 @@ package nft
 
 import (
 	"context"
-	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 	"math/big"
+
+	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -133,14 +134,13 @@ func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, documentID []by
 	txHash, err := s.sendMintTransaction(contract, opts, requestData)
 	if err != nil {
 		return nil, errors.New("failed to send transaction: %v", err)
-		}
+	}
 
 	txID, err := s.queueTaskTransaction(cid, txHash)
 
 	if err != nil {
 		return nil, err
 	}
-
 
 	return &MintNFTResponse{
 		TransactionID: txID.String(),
@@ -149,26 +149,18 @@ func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, documentID []by
 }
 
 func (s *ethereumPaymentObligation) queueTaskTransaction(tenantID identity.CentID, txHash string) (txID uuid.UUID, err error) {
-	height, err := s.blockHeightFunc()
-	if err != nil {
-		return txID, err
-	}
 	tx, err := s.txService.CreateTransaction(tenantID, "Mint NFT")
 	if err != nil {
 		return txID, err
 	}
-
 	_, err = s.queue.EnqueueJob(ethereum.TransactionStatusTaskName, map[string]interface{}{
-		transactions.TxIDParam: tx.ID.String(),
-		ethereum.TransactionTenantIDParam:          tenantID.String(),
-		ethereum.TransactionTxHashParam: txHash,
-		queue.BlockHeightParam: height,
-
+		transactions.TxIDParam:            tx.ID.String(),
+		ethereum.TransactionTenantIDParam: tenantID.String(),
+		ethereum.TransactionTxHashParam:   txHash,
 	})
 
 	return tx.ID, err
 }
-
 
 // sendMintTransaction sends the actual transaction to mint the NFT
 func (s *ethereumPaymentObligation) sendMintTransaction(contract ethereumPaymentObligationContract, opts *bind.TransactOpts, requestData *MintRequest) (string, error) {
@@ -183,7 +175,7 @@ func (s *ethereumPaymentObligation) sendMintTransaction(contract ethereumPayment
 	log.Infof("Sent off tx to mint [tokenID: %x, anchor: %x, registry: %x] to payment obligation contract. Ethereum transaction hash [%x] and Nonce [%v] and Check [%v]",
 		requestData.TokenID, requestData.AnchorID, requestData.To, tx.Hash(), tx.Nonce(), tx.CheckNonce())
 	log.Infof("Transfer pending: 0x%x\n", tx.Hash())
-	return txHash.String(),nil
+	return txHash.String(), nil
 }
 
 // MintRequest holds the data needed to mint and NFT from a Centrifuge document
