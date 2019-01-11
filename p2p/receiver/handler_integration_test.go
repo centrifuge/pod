@@ -22,7 +22,7 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/anchors"
-	cc "github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testingbootstrap"
+	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
@@ -47,7 +47,7 @@ var (
 
 func TestMain(m *testing.M) {
 	flag.Parse()
-	ctx := cc.TestFunctionalEthereumBootstrap()
+	ctx := testingbootstrap.TestFunctionalEthereumBootstrap()
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfgService := ctx[configstore.BootstrappedConfigStorage].(configstore.Service)
 	registry := ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
@@ -56,7 +56,7 @@ func TestMain(m *testing.M) {
 	handler = receiver.New(cfgService, registry, receiver.HandshakeValidator(cfg.GetNetworkID()))
 	testingidentity.CreateIdentityWithKeys(cfg, idService)
 	result := m.Run()
-	cc.TestFunctionalEthereumTearDown()
+	testingbootstrap.TestFunctionalEthereumTearDown()
 	os.Exit(result)
 }
 

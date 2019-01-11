@@ -36,10 +36,11 @@ var log = logging.Logger("p2p-server")
 
 // peer implements node.Server
 type peer struct {
-	config         configstore.Service
-	host           host.Host
-	handlerCreator func() *receiver.Handler
-	mes            messenger
+	disablePeerStore bool
+	config           configstore.Service
+	host             host.Host
+	handlerCreator   func() *receiver.Handler
+	mes              messenger
 }
 
 // Name returns the P2PServer
