@@ -170,7 +170,7 @@ func PrepareNewVersion(oldCD coredocumentpb.CoreDocument, collaborators []string
 	// copy read rules and roles
 	ncd.Roles = oldCD.Roles
 	ncd.ReadRules = oldCD.ReadRules
-	addCollaboratorsToReadRules(ncd, ucs)
+	addCollaboratorsToReadSignRules(ncd, ucs)
 
 	err = FillSalts(ncd)
 	if err != nil {

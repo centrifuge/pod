@@ -41,7 +41,7 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
 
 [[override]]
   name = "github.com/centrifuge/precise-proofs"
-  revision = "455afe8bb21e4b882a2f7bf0b851ff0599a7c1f6"
+  revision = "8c3b6a26b7929ec269302dc50d17c9ceb9772dda"
 
 [[constraint]]
   name = "github.com/centrifuge/gocelery"

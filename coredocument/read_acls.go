@@ -7,7 +7,7 @@ import (
 )
 
 // ErrZeroCollaborators error when no collaborators are passed
-const ErrZeroCollaborators = errors.Error("require atleast one collaborator.")
+const ErrZeroCollaborators = errors.Error("require at least one collaborator")
 
 // initReadRules initiates the read rules for a given coredocument.
 // Collaborators are given Read_Sign action.
@@ -21,11 +21,11 @@ func initReadRules(cd *coredocumentpb.CoreDocument, collabs []identity.CentID) e
 		return ErrZeroCollaborators
 	}
 
-	addCollaboratorsToReadRules(cd, collabs)
+	addCollaboratorsToReadSignRules(cd, collabs)
 	return nil
 }
 
-func addCollaboratorsToReadRules(cd *coredocumentpb.CoreDocument, collabs []identity.CentID) {
+func addCollaboratorsToReadSignRules(cd *coredocumentpb.CoreDocument, collabs []identity.CentID) {
 	if len(collabs) == 0 {
 		return
 	}
