@@ -60,13 +60,13 @@ func (s *peer) SendAnchoredDocument(ctx context.Context, id identity.Identity, i
 		return nil, err
 	}
 
-	envelope, err := p2pcommon.PrepareP2PEnvelope(peerCtx, nc.NetworkID, p2pcommon.MessageTypeSendAnchoredDoc, in)
+	envelope, err := p2pcommon.PrepareP2PEnvelope(ctx, nc.NetworkID, p2pcommon.MessageTypeSendAnchoredDoc, in)
 	if err != nil {
 		return nil, err
 	}
 
 	recv, err := s.mes.sendMessage(
-		peerCtx, pid,
+		ctx, pid,
 		envelope,
 		p2pcommon.ProtocolForCID(id.CentID()))
 	if err != nil {
@@ -79,7 +79,7 @@ func (s *peer) SendAnchoredDocument(ctx context.Context, id identity.Identity, i
 	}
 
 	// handle client error
-	if !p2pcommon.MessageTypeError.Equals(recvEnvelope.Header.Type) {
+	if p2pcommon.MessageTypeError.Equals(recvEnvelope.Header.Type) {
 		return nil, convertClientError(recvEnvelope)
 	}
 

@@ -116,7 +116,12 @@ func (srv *Handler) HandleRequestDocumentSignature(ctx context.Context, peer pee
 		return convertToErrorEnvelop(err)
 	}
 
-	return p2pcommon.PrepareP2PEnvelope(ctx, nc.NetworkID, p2pcommon.MessageTypeRequestSignatureRep, res)
+	p2pEnv, err := p2pcommon.PrepareP2PEnvelope(ctx, nc.NetworkID, p2pcommon.MessageTypeRequestSignatureRep, res)
+	if err != nil {
+		return convertToErrorEnvelop(err)
+	}
+
+	return p2pEnv, nil
 }
 
 // RequestDocumentSignature signs the received document and returns the signature of the signingRoot
@@ -155,7 +160,12 @@ func (srv *Handler) HandleSendAnchoredDocument(ctx context.Context, peer peer.ID
 		return convertToErrorEnvelop(err)
 	}
 
-	return p2pcommon.PrepareP2PEnvelope(ctx, nc.NetworkID, p2pcommon.MessageTypeSendAnchoredDocRep, res)
+	p2pEnv, err := p2pcommon.PrepareP2PEnvelope(ctx, nc.NetworkID, p2pcommon.MessageTypeSendAnchoredDocRep, res)
+	if err != nil {
+		return convertToErrorEnvelop(err)
+	}
+
+	return p2pEnv, nil
 }
 
 // SendAnchoredDocument receives a new anchored document, validates and updates the document in DB
