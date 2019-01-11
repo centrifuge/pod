@@ -2,7 +2,6 @@ package nft
 
 import (
 	"context"
-	"fmt"
 	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 	"math/big"
 
@@ -154,7 +153,7 @@ func (s *ethereumPaymentObligation) queueTaskTransaction(tenantID identity.CentI
 	if err != nil {
 		return txID, err
 	}
-	tx, err := s.txService.CreateTransaction(tenantID, "Mint NFTewfhiksdijlf")
+	tx, err := s.txService.CreateTransaction(tenantID, "Mint NFT")
 	if err != nil {
 		return txID, err
 	}
@@ -180,10 +179,6 @@ func (s *ethereumPaymentObligation) sendMintTransaction(contract ethereumPayment
 	}
 
 	txHash := tx.Hash()
-	fmt.Println("Transaction Hash")
-	fmt.Println(txHash)
-
-
 
 	log.Infof("Sent off tx to mint [tokenID: %x, anchor: %x, registry: %x] to payment obligation contract. Ethereum transaction hash [%x] and Nonce [%v] and Check [%v]",
 		requestData.TokenID, requestData.AnchorID, requestData.To, tx.Hash(), tx.Nonce(), tx.CheckNonce())

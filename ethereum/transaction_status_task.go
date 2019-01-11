@@ -2,7 +2,6 @@ package ethereum
 
 import (
 	"context"
-	"fmt"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/queue"
@@ -16,7 +15,10 @@ const (
 	TransactionStatusTaskName string = "TransactionMintingTask"
 	TransactionTxHashParam                string = "TxHashParam"
 	TransactionTenantIDParam               string = "Tenant ID"
+	TransactionStatusSuccess uint64 = 1
 )
+
+
 
 type transactionStatusTask struct {
 	transactions.BaseTask
@@ -109,22 +111,19 @@ func (nftc *transactionStatusTask) ParseKwargs(kwargs map[string]interface{}) (e
 }
 
 
-
 func getTransactionStatus(ctx context.Context, txHash string) (bool, error) {
 	client := GetClient()
 	receipt, err := client.GetEthClient().TransactionReceipt(ctx,common.HexToHash(txHash))
+
 	if err != nil {
 		return false, err
 	}
 
-	json, err := receipt.MarshalJSON()
-	if err != nil {
-		return false, err
+	if receipt.Status == TransactionStatusSuccess {
+		return true, nil
 	}
-	jsonReceipt := string(json)
-	fmt.Println(jsonReceipt)
 
-	return true, nil
+	return false, errors.New("Transaction failed")
 
 }
 
@@ -132,7 +131,6 @@ func getTransactionStatus(ctx context.Context, txHash string) (bool, error) {
 
 // RunTask calls listens to events from geth related to MintingConfirmationTask#TokenID and records result.
 func (nftc *transactionStatusTask) RunTask() (resp interface{}, err error) {
-
 	ctx, cancelF := nftc.ethContextInitializer(nftc.timeout)
 	defer cancelF()
 	defer func() {
@@ -146,25 +144,27 @@ func (nftc *transactionStatusTask) RunTask() (resp interface{}, err error) {
 	}()
 
 	isPending := true
+	client := GetClient()
 	for isPending {
-		client := GetClient()
-
-
 		_, isPending, err = client.GetEthClient().TransactionByHash(ctx,common.HexToHash(nftc.txHash))
-
-		if isPending == false {
-
-
-			successful, _ := getTransactionStatus(ctx,nftc.txHash)
-			fmt.Println(successful)
-
-		}
-
-
 		if err != nil {
 			return nil, err
 		}
 
+		if isPending == false {
+
+
+			successful, err := getTransactionStatus(ctx,nftc.txHash)
+			if err != nil {
+				return nil, err
+			}
+
+			if successful {
+				return nil, nil
+
+			}
+
+		}
 		time.Sleep(100 * time.Millisecond)
 	}
 
