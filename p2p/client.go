@@ -132,6 +132,8 @@ func (s *peer) getSignatureForDocument(ctx context.Context, identityService iden
 	if err != nil {
 		return nil, err
 	}
+
+	var resp *p2ppb.SignatureResponse
 	tc, err := s.config.GetTenant(receiverCentID[:])
 	if err == nil {
 		// this is a local tenant
@@ -146,58 +148,51 @@ func (s *peer) getSignatureForDocument(ctx context.Context, identityService iden
 			return nil, err
 		}
 
-		return h.RequestDocumentSignature(localPeerCtx, req)
+		resp, err = h.RequestDocumentSignature(localPeerCtx, req)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// this is a remote tenant
+		id, err := identityService.LookupIdentityForID(receiverCentID)
+		if err != nil {
+			return nil, err
+		}
+
+		receiverPeer, err := s.getPeerID(id)
+		if err != nil {
+			return nil, err
+		}
+
+		req, err := s.createSignatureRequest(self.ID[:], doc)
+		if err != nil {
+			return nil, err
+		}
+
+		log.Infof("Requesting signature from %s\n", receiverCentID)
+		recv, err := s.mes.sendMessage(ctx, receiverPeer, req, receiver.ProtocolForCID(receiverCentID))
+		if err != nil {
+			return nil, err
+		}
+
+		// handle client error
+		if recv.Type == protocolpb.MessageType_MESSAGE_TYPE_ERROR {
+			return nil, convertClientError(recv)
+		}
+
+		if recv.Type != protocolpb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE_REP {
+			return nil, errors.New("the received request signature response is incorrect")
+		}
+		resp = new(p2ppb.SignatureResponse)
+		err = proto.Unmarshal(recv.Body, resp)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	// this is a remote tenant
-	id, err := identityService.LookupIdentityForID(receiverCentID)
+	err = validateSignatureResp(identityService, receiverCentID, doc, resp)
 	if err != nil {
 		return nil, err
-	}
-
-	receiverPeer, err := s.getPeerID(id)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := s.createSignatureRequest(self.ID[:], doc)
-	if err != nil {
-		return nil, err
-	}
-
-	log.Infof("Requesting signature from %s\n", receiverCentID)
-	recv, err := s.mes.sendMessage(ctx, receiverPeer, req, receiver.ProtocolForCID(receiverCentID))
-	if err != nil {
-		return nil, err
-	}
-
-	// handle client error
-	if recv.Type == protocolpb.MessageType_MESSAGE_TYPE_ERROR {
-		return nil, convertClientError(recv)
-	}
-
-	if recv.Type != protocolpb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE_REP {
-		return nil, errors.New("the received request signature response is incorrect")
-	}
-	resp := new(p2ppb.SignatureResponse)
-	err = proto.Unmarshal(recv.Body, resp)
-	if err != nil {
-		return nil, err
-	}
-
-	compatible := version.CheckVersion(resp.CentNodeVersion)
-	if !compatible {
-		return nil, version.IncompatibleVersionError(resp.CentNodeVersion)
-	}
-
-	err = identity.ValidateCentrifugeIDBytes(resp.Signature.EntityId, receiverCentID)
-	if err != nil {
-		return nil, centerrors.New(code.AuthenticationFailed, err.Error())
-	}
-
-	err = identityService.ValidateSignature(resp.Signature, doc.SigningRoot)
-	if err != nil {
-		return nil, centerrors.New(code.AuthenticationFailed, "signature invalid")
 	}
 
 	log.Infof("Signature successfully received from %s\n", receiverCentID)
@@ -255,6 +250,7 @@ func (s *peer) GetSignaturesForDocument(ctx context.Context, identityService ide
 
 	for _, resp := range responses {
 		if resp.err != nil {
+			// this error is ignored since we would still anchor the document
 			log.Error(resp.err)
 			continue
 		}
@@ -301,4 +297,22 @@ func convertClientError(recv *protocolpb.P2PEnvelope) error {
 		return err
 	}
 	return errors.New(resp.Message)
+}
+
+func validateSignatureResp(identityService identity.Service, receiver identity.CentID, doc *coredocumentpb.CoreDocument, resp *p2ppb.SignatureResponse) error {
+	compatible := version.CheckVersion(resp.CentNodeVersion)
+	if !compatible {
+		return version.IncompatibleVersionError(resp.CentNodeVersion)
+	}
+
+	err := identity.ValidateCentrifugeIDBytes(resp.Signature.EntityId, receiver)
+	if err != nil {
+		return centerrors.New(code.AuthenticationFailed, err.Error())
+	}
+
+	err = identityService.ValidateSignature(resp.Signature, doc.SigningRoot)
+	if err != nil {
+		return centerrors.New(code.AuthenticationFailed, "signature invalid")
+	}
+	return nil
 }
