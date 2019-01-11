@@ -101,7 +101,7 @@ func GetDocumentRootTree(document *coredocumentpb.CoreDocument) (tree *proofs.Do
 		leaf := proofs.LeafNode{
 			Hash:     payload[:],
 			Hashed:   true,
-			Property: sigProperty.SliceElemProp(proofs.FieldNum(i)),
+			Property: sigProperty.SliceElemProp(proofs.FieldNumForSliceLength(i)),
 		}
 		leaf.HashNode(h, false)
 		sigLeafList[i+1] = leaf
