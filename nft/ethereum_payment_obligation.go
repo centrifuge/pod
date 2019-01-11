@@ -4,9 +4,8 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"math/big"
-
 	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
+	"math/big"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -133,21 +132,22 @@ func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, documentID []by
 		return nil, err
 	}
 
-	/*txID, err := s.queueTask(cid, requestData.TokenID, registryAddress)
+	txID, err := s.queueTask(cid, requestData.TokenID, registryAddress)
 	if err != nil {
 		return nil, errors.New("failed to queue task: %v", err)
-	}*/
+	}
 
-	txHash, err := s.sendMintTransaction(contract, opts, requestData)
+	s.sendMintTransaction(contract, opts, requestData)
 
-	s.queueTaskTransaction(cid, txHash)
+	//txID, err := s.queueTaskTransaction(cid, txHash)
 
 	if err != nil {
 		return nil, err
 	}
 
+
 	return &MintNFTResponse{
-		TransactionID: "TODO",
+		TransactionID: txID.String(),
 		TokenID:       requestData.TokenID.String(),
 	}, nil
 }
@@ -178,7 +178,7 @@ func (s *ethereumPaymentObligation) queueTaskTransaction(tenantID identity.CentI
 	if err != nil {
 		return txID, err
 	}
-	tx, err := s.txService.CreateTransaction(tenantID, "Mint NFT")
+	tx, err := s.txService.CreateTransaction(tenantID, "Mint NFTewfhiksdijlf")
 	if err != nil {
 		return txID, err
 	}

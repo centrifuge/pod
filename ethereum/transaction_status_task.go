@@ -3,14 +3,13 @@ package ethereum
 import (
 	"context"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"time"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/gocelery"
+	"github.com/ethereum/go-ethereum/common"
+	"time"
 )
 
 const (
@@ -22,6 +21,8 @@ const (
 type transactionStatusTask struct {
 	transactions.BaseTask
 	timeout         time.Duration
+	//state
+	ethContextInitializer func(d time.Duration) (ctx context.Context, cancelFunc context.CancelFunc)
 
 	//task parameter
 	txHash			string
@@ -34,10 +35,13 @@ type transactionStatusTask struct {
 func NewTransactionStatusTask(
 	timeout time.Duration,
 	txService transactions.Service,
+	ethContextInitializer func(d time.Duration) (ctx context.Context, cancelFunc context.CancelFunc),
+
 ) *transactionStatusTask {
 	return &transactionStatusTask{
 		timeout:               timeout,
 		BaseTask:              transactions.BaseTask{TxService: txService},
+		ethContextInitializer: ethContextInitializer,
 	}
 }
 
@@ -53,6 +57,7 @@ func (nftc *transactionStatusTask) Copy() (gocelery.CeleryTask, error) {
 		txHash: nftc.txHash,
 		tenantID: nftc.tenantID,
 		blockHeight: nftc.blockHeight,
+		ethContextInitializer: nftc.ethContextInitializer,
 		BaseTask:              transactions.BaseTask{TxService: nftc.TxService},
 	}, nil
 }
@@ -103,27 +108,66 @@ func (nftc *transactionStatusTask) ParseKwargs(kwargs map[string]interface{}) (e
 	return nil
 }
 
+
+
+func getTransactionStatus(ctx context.Context, txHash string) (bool, error) {
+	client := GetClient()
+	receipt, err := client.GetEthClient().TransactionReceipt(ctx,common.HexToHash(txHash))
+	if err != nil {
+		return false, err
+	}
+
+	json, err := receipt.MarshalJSON()
+	if err != nil {
+		return false, err
+	}
+	jsonReceipt := string(json)
+	fmt.Println(jsonReceipt)
+
+	return true, nil
+
+}
+
+
+
 // RunTask calls listens to events from geth related to MintingConfirmationTask#TokenID and records result.
 func (nftc *transactionStatusTask) RunTask() (resp interface{}, err error) {
 
+	ctx, cancelF := nftc.ethContextInitializer(nftc.timeout)
+	defer cancelF()
+	defer func() {
+		if err != nil {
+			log.Infof("Transaction failed: %v\n", nftc.txHash)
+		} else {
+			log.Infof("Transaction successful:%v\n" ,nftc.txHash)
+		}
+
+		err = nftc.UpdateTransaction(nftc.tenantID, nftc.TaskTypeName(), err)
+	}()
+
 	isPending := true
-	var tx *types.Transaction
-
 	for isPending {
+		client := GetClient()
 
-		fmt.Println("fuu")
 
-	client := GetClient()
-	tx, isPending, err = client.GetEthClient().TransactionByHash(context.Background(),common.HexToHash(nftc.txHash))
+		_, isPending, err = client.GetEthClient().TransactionByHash(ctx,common.HexToHash(nftc.txHash))
 
-	if err != nil {
-		return nil, err
+		if isPending == false {
+
+
+			successful, _ := getTransactionStatus(ctx,nftc.txHash)
+			fmt.Println(successful)
+
+		}
+
+
+		if err != nil {
+			return nil, err
+		}
+
+		time.Sleep(100 * time.Millisecond)
 	}
-	}
 
-
-	fmt.Println("I am a task to check a successful transaction")
-	fmt.Println(tx)
 	return nil, nil
 
 }

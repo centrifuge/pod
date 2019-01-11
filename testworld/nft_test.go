@@ -3,16 +3,14 @@
 package testworld
 
 import (
+	"github.com/stretchr/testify/assert"
 	"net/http"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestPaymentObligationMint_invoice_successful(t *testing.T) {
 	t.Parallel()
 	paymentObligationMint(t, typeInvoice)
-
 }
 
 /* TODO: testcase not stable
@@ -31,6 +29,7 @@ func paymentObligationMint(t *testing.T, documentType string) {
 	// Alice shares document with Bob
 	res := createDocument(alice.httpExpect, documentType, http.StatusOK, defaultNFTPayload(documentType, []string{bob.id.String()}))
 	txID := getTransactionID(t, res)
+
 	waitTillSuccess(t, alice.httpExpect, txID)
 
 	docIdentifier := getDocumentIdentifier(t, res)
@@ -66,7 +65,7 @@ func paymentObligationMint(t *testing.T, documentType string) {
 	}
 
 	response, err := alice.host.mintNFT(alice.httpExpect, test.httpStatus, test.payload)
-	txID = getTransactionID(t, res)
+	txID = getTransactionID(t, response)
 	waitTillSuccess(t, alice.httpExpect, txID)
 
 	assert.Nil(t, err, "mintNFT should be successful")
