@@ -10,8 +10,8 @@ const (
 	tenantPrefix string = "tenant-"
 )
 
-// Repository defines the required methods for the config repository.
-type Repository interface {
+// repository defines the required methods for the config repository.
+type repository interface {
 	// RegisterTenant registers tenant config in DB
 	RegisterTenant(config config.TenantConfiguration)
 
@@ -64,8 +64,8 @@ func getConfigKey() []byte {
 	return []byte(configPrefix)
 }
 
-// NewDBRepository creates instance of Config Repository
-func NewDBRepository(db storage.Repository) Repository {
+// NewDBRepository creates instance of Config repository
+func NewDBRepository(db storage.Repository) repository {
 	return &repo{db: db}
 }
 

@@ -7,11 +7,11 @@ import (
 )
 
 type service struct {
-	repo Repository
+	repo repository
 }
 
 // DefaultService returns an implementation of the config.Service
-func DefaultService(repository Repository) config.Service {
+func DefaultService(repository repository) config.Service {
 	return &service{repo: repository}
 }
 
