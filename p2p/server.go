@@ -45,10 +45,11 @@ type messenger interface {
 
 // peer implements node.Server
 type peer struct {
-	config         configstore.Service
-	host           host.Host
-	handlerCreator func() *receiver.Handler
-	mes            messenger
+	disablePeerStore bool
+	config           configstore.Service
+	host             host.Host
+	handlerCreator   func() *receiver.Handler
+	mes              messenger
 }
 
 // Name returns the P2PServer
