@@ -13,13 +13,17 @@ import (
 )
 
 const (
-	TransactionStatusTaskName string = "TransactionMintingTask"
-	TransactionTxHashParam    string = "TxHashParam"
-	TransactionTenantIDParam  string = "Tenant ID"
-	TransactionStatusSuccess  uint64 = 1
+	// TransactionStatusTaskName contains the name of the task
+	TransactionStatusTaskName string = "TransactionStatusTask"
+	// TransactionTxHashParam contains the name  of the parameter
+	TransactionTxHashParam string = "TxHashParam"
+	// TransactionAccountParam contains the name  of the account
+	TransactionAccountParam  string = "Account ID"
+	transactionStatusSuccess uint64 = 1
 )
 
-type transactionStatusTask struct {
+// TransactionStatusTask is struct for the task to check an Ethereum transaction
+type TransactionStatusTask struct {
 	transactions.BaseTask
 	timeout time.Duration
 	//state
@@ -30,13 +34,14 @@ type transactionStatusTask struct {
 	tenantID identity.CentID
 }
 
+// NewTransactionStatusTask returns a the struct for the task
 func NewTransactionStatusTask(
 	timeout time.Duration,
 	txService transactions.Service,
 	ethContextInitializer func(d time.Duration) (ctx context.Context, cancelFunc context.CancelFunc),
 
-) *transactionStatusTask {
-	return &transactionStatusTask{
+) *TransactionStatusTask {
+	return &TransactionStatusTask{
 		timeout:               timeout,
 		BaseTask:              transactions.BaseTask{TxService: txService},
 		ethContextInitializer: ethContextInitializer,
@@ -44,13 +49,13 @@ func NewTransactionStatusTask(
 }
 
 // TaskTypeName returns mintingConfirmationTaskName
-func (nftc *transactionStatusTask) TaskTypeName() string {
+func (nftc *TransactionStatusTask) TaskTypeName() string {
 	return TransactionStatusTaskName
 }
 
 // Copy returns a new instance of mintingConfirmationTask
-func (nftc *transactionStatusTask) Copy() (gocelery.CeleryTask, error) {
-	return &transactionStatusTask{
+func (nftc *TransactionStatusTask) Copy() (gocelery.CeleryTask, error) {
+	return &TransactionStatusTask{
 		timeout:               nftc.timeout,
 		txHash:                nftc.txHash,
 		tenantID:              nftc.tenantID,
@@ -60,13 +65,13 @@ func (nftc *transactionStatusTask) Copy() (gocelery.CeleryTask, error) {
 }
 
 // ParseKwargs - define a method to parse CentID
-func (nftc *transactionStatusTask) ParseKwargs(kwargs map[string]interface{}) (err error) {
+func (nftc *TransactionStatusTask) ParseKwargs(kwargs map[string]interface{}) (err error) {
 	err = nftc.ParseTransactionID(kwargs)
 	if err != nil {
 		return err
 	}
 
-	tenantID, ok := kwargs[TransactionTenantIDParam].(string)
+	tenantID, ok := kwargs[TransactionAccountParam].(string)
 	if !ok {
 		return errors.New("missing tenant ID")
 	}
@@ -99,15 +104,14 @@ func (nftc *transactionStatusTask) ParseKwargs(kwargs map[string]interface{}) (e
 	return nil
 }
 
-func getTransactionStatus(ctx context.Context, txHash string) (bool, error) {
-	client := GetClient()
+func getTransactionStatus(ctx context.Context, client Client, txHash string) (bool, error) {
 	receipt, err := client.GetEthClient().TransactionReceipt(ctx, common.HexToHash(txHash))
 
 	if err != nil {
 		return false, err
 	}
 
-	if receipt.Status == TransactionStatusSuccess {
+	if receipt.Status == transactionStatusSuccess {
 		return true, nil
 	}
 
@@ -116,7 +120,7 @@ func getTransactionStatus(ctx context.Context, txHash string) (bool, error) {
 }
 
 // RunTask calls listens to events from geth related to MintingConfirmationTask#TokenID and records result.
-func (nftc *transactionStatusTask) RunTask() (resp interface{}, err error) {
+func (nftc *TransactionStatusTask) RunTask() (resp interface{}, err error) {
 	ctx, cancelF := nftc.ethContextInitializer(nftc.timeout)
 	defer cancelF()
 	defer func() {
@@ -138,7 +142,7 @@ func (nftc *transactionStatusTask) RunTask() (resp interface{}, err error) {
 		}
 
 		if isPending == false {
-			successful, err := getTransactionStatus(ctx, nftc.txHash)
+			successful, err := getTransactionStatus(ctx, GetClient(), nftc.txHash)
 			if err != nil {
 				return nil, err
 			}
