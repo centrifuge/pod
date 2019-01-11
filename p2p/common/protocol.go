@@ -29,14 +29,17 @@ const (
 	MessageTypeSendAnchoredDocRep  MessageType = "MessageTypeSendAnchoredDocRep"
 )
 
+// Equals compares if string is of a particular MessageType
 func (mt MessageType) Equals(mt2 string) bool {
 	return mt.String() == mt2
 }
 
+// String representation
 func (mt MessageType) String() string {
 	return string(mt)
 }
 
+// MessageTypeFromString Resolves MessageType out of string
 func MessageTypeFromString(mt string) MessageType {
 	var found MessageType
 	if MessageTypeError.Equals(mt) {
@@ -67,6 +70,7 @@ func ExtractCID(id protocol.ID) (identity.CentID, error) {
 	return identity.CentIDFromString(cidHexStr)
 }
 
+// ResolveDataEnvelope unwraps Content Envelope out of p2pEnvelope
 func ResolveDataEnvelope(mes proto.Message) (*p2ppb.Envelope, error) {
 	recv, ok := mes.(*protocolpb.P2PEnvelope)
 	if !ok {
@@ -86,6 +90,7 @@ func ResolveDataEnvelope(mes proto.Message) (*p2ppb.Envelope, error) {
 	return recvEnvelope, nil
 }
 
+// PrepareP2PEnvelope wraps content message into p2p envelope
 func PrepareP2PEnvelope(ctx context.Context, networkID uint32, messageType MessageType, mes proto.Message) (*protocolpb.P2PEnvelope, error) {
 	self, err := contextutil.Self(ctx)
 	if err != nil {

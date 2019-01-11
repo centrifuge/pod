@@ -32,7 +32,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/coredocument"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
@@ -158,7 +157,7 @@ func TestHandler_SendAnchoredDocument_update_fail(t *testing.T) {
 	assert.Nil(t, watchCommittedAnchor.Error, "No error should be thrown by context")
 
 	anchorReq := getAnchoredRequest(doc)
-	anchorResp, err := handler.SendAnchoredDocument(ctx, anchorReq)
+	anchorResp, err := handler.SendAnchoredDocument(ctx, anchorReq, idConfig.ID[:])
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), storage.ErrRepositoryModelUpdateKeyNotFound.Error())
 	assert.Nil(t, anchorResp)
@@ -169,7 +168,8 @@ func TestHandler_SendAnchoredDocument_EmptyDocument(t *testing.T) {
 	doc := prepareDocumentForP2PHandler(t, nil)
 	req := getAnchoredRequest(doc)
 	req.Document = nil
-	resp, err := handler.SendAnchoredDocument(ctxh, req)
+	id, _ := cfg.GetIdentityID()
+	resp, err := handler.SendAnchoredDocument(ctxh, req, id)
 	assert.NotNil(t, err)
 	assert.Nil(t, resp, "must be nil")
 }
@@ -202,11 +202,10 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 	assert.Nil(t, watchCommittedAnchor.Error, "No error should be thrown by context")
 
 	anchorReq := getAnchoredRequest(doc)
-	anchorResp, err := handler.SendAnchoredDocument(ctxh, anchorReq)
+	anchorResp, err := handler.SendAnchoredDocument(ctxh, anchorReq, idConfig.ID[:])
 	assert.Nil(t, err)
 	assert.NotNil(t, anchorResp, "must be non nil")
 	assert.True(t, anchorResp.Accepted)
-	assert.Equal(t, anchorResp.CentNodeVersion, anchorReq.Header.CentNodeVersion)
 }
 
 func createIdentity(t *testing.T) identity.CentID {
@@ -268,16 +267,9 @@ func updateDocumentForP2Phandler(t *testing.T, doc *coredocumentpb.CoreDocument)
 }
 
 func getAnchoredRequest(doc *coredocumentpb.CoreDocument) *p2ppb.AnchorDocumentRequest {
-	return &p2ppb.AnchorDocumentRequest{
-		Header: &p2ppb.CentrifugeHeader{
-			CentNodeVersion:   version.GetVersion().String(),
-			NetworkIdentifier: cfg.GetNetworkID(),
-		}, Document: doc,
-	}
+	return &p2ppb.AnchorDocumentRequest{Document: doc}
 }
 
 func getSignatureRequest(doc *coredocumentpb.CoreDocument) *p2ppb.SignatureRequest {
-	return &p2ppb.SignatureRequest{Header: &p2ppb.CentrifugeHeader{
-		CentNodeVersion: version.GetVersion().String(), NetworkIdentifier: cfg.GetNetworkID(),
-	}, Document: doc}
+	return &p2ppb.SignatureRequest{Document: doc}
 }

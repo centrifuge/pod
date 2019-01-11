@@ -65,7 +65,7 @@ func TestValidate_handshakeValidator(t *testing.T) {
 
 	// Incompatible version and network
 	header := &p2ppb.Header{
-		NodeVersion:   "version",
+		NodeVersion:       "version",
 		NetworkIdentifier: 52,
 	}
 	err := hv.Validate(header)

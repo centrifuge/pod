@@ -4,6 +4,9 @@ package p2pcommon
 
 import (
 	"context"
+	"os"
+	"testing"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
@@ -13,8 +16,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/golang/protobuf/proto"
-	"os"
-	"testing"
 
 	"github.com/centrifuge/go-centrifuge/identity"
 
@@ -71,7 +72,7 @@ func TestResolveDataEnvelope(t *testing.T) {
 	assert.Contains(t, err.Error(), "Header field is empty")
 
 	// Success
-	body, err = proto.Marshal(&p2ppb.Envelope{Header:&p2ppb.Header{Type: "messageType"}})
+	body, err = proto.Marshal(&p2ppb.Envelope{Header: &p2ppb.Header{Type: "messageType"}})
 	msg = &protocolpb.P2PEnvelope{
 		Body: body,
 	}
@@ -92,11 +93,11 @@ func TestPrepareP2PEnvelope(t *testing.T) {
 		IdentityID: id,
 		SigningKeyPair: configstore.KeyPair{
 			Priv: ssk,
-			Pub: spk,
+			Pub:  spk,
 		},
 		EthAuthKeyPair: configstore.KeyPair{
 			Priv: ssk,
-			Pub: spk,
+			Pub:  spk,
 		},
 	}
 	ctx, _ := contextutil.NewCentrifugeContext(context.Background(), tc)

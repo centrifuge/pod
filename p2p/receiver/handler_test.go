@@ -4,6 +4,9 @@ package receiver
 
 import (
 	"context"
+	"os"
+	"testing"
+
 	"github.com/centrifuge/go-centrifuge/p2p/common"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
@@ -11,8 +14,6 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/proto"
 	"github.com/libp2p/go-libp2p-protocol"
-	"os"
-	"testing"
 
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 
@@ -35,10 +36,10 @@ import (
 )
 
 var (
-	handler *Handler
-	registry    *documents.ServiceRegistry
-	coreDoc     = testingcoredocument.GenerateCoreDocument()
-	cfg         config.Configuration
+	handler  *Handler
+	registry *documents.ServiceRegistry
+	coreDoc  = testingcoredocument.GenerateCoreDocument()
+	cfg      config.Configuration
 )
 
 func TestMain(m *testing.M) {

@@ -4,8 +4,9 @@ package p2p
 
 import (
 	"context"
-	"github.com/centrifuge/go-centrifuge/p2p/common"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/p2p/common"
 
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 
@@ -120,7 +121,7 @@ func (s *peer) createSignatureResp(centNodeVer string, signature *coredocumentpb
 	dataReq := &p2ppb.Envelope{
 		Header: &p2ppb.Header{
 			NodeVersion: centNodeVer,
-			Type: p2pcommon.MessageTypeRequestSignatureRep.String(),
+			Type:        p2pcommon.MessageTypeRequestSignatureRep.String(),
 		},
 		Body: req,
 	}
