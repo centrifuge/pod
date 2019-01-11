@@ -117,7 +117,7 @@ func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, documentID []by
 		return nil, errors.New("failed to prepare mint request: %v", err)
 	}
 
-	opts, err := s.ethClient.GetTxOpts(tc.EthereumDefaultAccountName)
+	opts, err := s.ethClient.GetTxOpts(tc.GetEthereumDefaultAccountName())
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +127,12 @@ func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, documentID []by
 		return nil, err
 	}
 
-	cid, err := identity.ToCentID(tc.IdentityID)
+	cidBytes, err := tc.GetIdentityID()
+	if err != nil {
+		return nil, err
+	}
+
+	cid, err := identity.ToCentID(cidBytes)
 	if err != nil {
 		return nil, err
 	}

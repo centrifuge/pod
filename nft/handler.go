@@ -3,9 +3,9 @@ package nft
 import (
 	"context"
 
-	"github.com/centrifuge/go-centrifuge/contextutil"
+	"github.com/centrifuge/go-centrifuge/config"
 
-	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/code"
@@ -18,12 +18,12 @@ import (
 var apiLog = logging.Logger("nft-api")
 
 type grpcHandler struct {
-	config  configstore.Service
+	config  config.Service
 	service PaymentObligation
 }
 
 // GRPCHandler returns an implementation of invoice.DocumentServiceServer
-func GRPCHandler(config configstore.Service, payOb PaymentObligation) nftpb.NFTServiceServer {
+func GRPCHandler(config config.Service, payOb PaymentObligation) nftpb.NFTServiceServer {
 	return &grpcHandler{config: config, service: payOb}
 }
 

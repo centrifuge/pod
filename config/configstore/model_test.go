@@ -3,7 +3,10 @@
 package configstore
 
 import (
+	"reflect"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/config"
 
 	"github.com/centrifuge/go-centrifuge/config"
 
@@ -20,6 +23,26 @@ import (
 
 type mockConfig struct {
 	mock.Mock
+}
+
+func (m *mockConfig) Type() reflect.Type {
+	args := m.Called()
+	return args.Get(0).(reflect.Type)
+}
+
+func (m *mockConfig) JSON() ([]byte, error) {
+	args := m.Called()
+	return args.Get(0).([]byte), args.Error(0)
+}
+
+func (m *mockConfig) FromJSON(json []byte) error {
+	args := m.Called(json)
+	return args.Error(0)
+}
+
+func (m *mockConfig) CreateProtobuf() *configpb.ConfigData {
+	args := m.Called()
+	return args.Get(0).(*configpb.ConfigData)
 }
 
 func (m *mockConfig) IsSet(key string) bool {
@@ -238,10 +261,12 @@ func TestNodeConfigProtobuf(t *testing.T) {
 	nc := NewNodeConfig(c)
 	c.AssertExpectations(t)
 
-	ncpb := nc.createProtobuf()
-	assert.Equal(t, nc.StoragePath, ncpb.StoragePath)
-	assert.Equal(t, nc.ServerPort, int(ncpb.ServerPort))
-	assert.Equal(t, hexutil.Encode(nc.MainIdentity.IdentityID), ncpb.MainIdentity.IdentityId)
+	ncpb := nc.CreateProtobuf()
+	assert.Equal(t, nc.GetStoragePath(), ncpb.StoragePath)
+	assert.Equal(t, nc.GetServerPort(), int(ncpb.ServerPort))
+	i, err := nc.GetIdentityID()
+	assert.Nil(t, err)
+	assert.Equal(t, hexutil.Encode(i), ncpb.MainIdentity.IdentityId)
 
 	ncCopy := new(NodeConfig)
 	ncCopy.loadFromProtobuf(ncpb)
@@ -262,10 +287,13 @@ func TestTenantConfigProtobuf(t *testing.T) {
 	assert.Nil(t, err)
 	c.AssertExpectations(t)
 
-	tcpb := tc.createProtobuf()
-	assert.Equal(t, tc.ReceiveEventNotificationEndpoint, tcpb.ReceiveEventNotificationEndpoint)
-	assert.Equal(t, hexutil.Encode(tc.IdentityID), tcpb.IdentityId)
-	assert.Equal(t, tc.SigningKeyPair.Priv, tcpb.SigningKeyPair.Pvt)
+	tcpb := tc.CreateProtobuf()
+	assert.Equal(t, tc.GetReceiveEventNotificationEndpoint(), tcpb.ReceiveEventNotificationEndpoint)
+	i, err := tc.GetIdentityID()
+	assert.Nil(t, err)
+	assert.Equal(t, hexutil.Encode(i), tcpb.IdentityId)
+	_, priv := tc.GetSigningKeyPair()
+	assert.Equal(t, priv, tcpb.SigningKeyPair.Pvt)
 
 	tcCopy := new(TenantConfig)
 	tcCopy.loadFromProtobuf(tcpb)

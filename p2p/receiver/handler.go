@@ -3,7 +3,8 @@ package receiver
 import (
 	"context"
 
-	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/config"
+
 	"github.com/centrifuge/go-centrifuge/contextutil"
 
 	"github.com/golang/protobuf/proto"
@@ -47,12 +48,12 @@ func getServiceAndModel(registry *documents.ServiceRegistry, cd *coredocumentpb.
 // Handler implements protocol message handlers
 type Handler struct {
 	registry           *documents.ServiceRegistry
-	config             configstore.Service
+	config             config.Service
 	handshakeValidator ValidatorGroup
 }
 
 // New returns an implementation of P2PServiceServer
-func New(config configstore.Service, registry *documents.ServiceRegistry, handshakeValidator ValidatorGroup) *Handler {
+func New(config config.Service, registry *documents.ServiceRegistry, handshakeValidator ValidatorGroup) *Handler {
 	return &Handler{registry: registry, config: config, handshakeValidator: handshakeValidator}
 }
 

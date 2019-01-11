@@ -3,7 +3,7 @@ package documents
 import (
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/code"
-	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/documents"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -17,12 +17,12 @@ var apiLog = logging.Logger("document-api")
 
 // grpcHandler handles all the common document related actions: proof generation
 type grpcHandler struct {
-	config   configstore.Service
+	config   config.Service
 	registry *ServiceRegistry
 }
 
 // GRPCHandler returns an implementation of documentpb.DocumentServiceServer
-func GRPCHandler(config configstore.Service, registry *ServiceRegistry) documentpb.DocumentServiceServer {
+func GRPCHandler(config config.Service, registry *ServiceRegistry) documentpb.DocumentServiceServer {
 	return grpcHandler{config: config, registry: registry}
 }
 

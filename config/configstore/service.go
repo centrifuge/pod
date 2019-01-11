@@ -6,54 +6,49 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 )
 
-// Service exposes functions over the config objects
-type Service interface {
-	GetConfig() (*NodeConfig, error)
-	GetTenant(identifier []byte) (*TenantConfig, error)
-	GetAllTenants() ([]*TenantConfig, error)
-	CreateConfig(data *NodeConfig) (*NodeConfig, error)
-	CreateTenant(data *TenantConfig) (*TenantConfig, error)
-	UpdateConfig(data *NodeConfig) (*NodeConfig, error)
-	UpdateTenant(data *TenantConfig) (*TenantConfig, error)
-	DeleteConfig() error
-	DeleteTenant(identifier []byte) error
-}
-
 type service struct {
 	repo Repository
 }
 
 // DefaultService returns an implementation of the config.Service
-func DefaultService(repository Repository) Service {
+func DefaultService(repository Repository) config.Service {
 	return &service{repo: repository}
 }
 
-func (s service) GetConfig() (*NodeConfig, error) {
+func (s service) GetConfig() (config.Configuration, error) {
 	return s.repo.GetConfig()
 }
 
-func (s service) GetTenant(identifier []byte) (*TenantConfig, error) {
+func (s service) GetTenant(identifier []byte) (config.TenantConfiguration, error) {
 	return s.repo.GetTenant(identifier)
 }
 
-func (s service) GetAllTenants() ([]*TenantConfig, error) {
+func (s service) GetAllTenants() ([]config.TenantConfiguration, error) {
 	return s.repo.GetAllTenants()
 }
 
-func (s service) CreateConfig(data *NodeConfig) (*NodeConfig, error) {
+func (s service) CreateConfig(data config.Configuration) (config.Configuration, error) {
 	return data, s.repo.CreateConfig(data)
 }
 
-func (s service) CreateTenant(data *TenantConfig) (*TenantConfig, error) {
-	return data, s.repo.CreateTenant(data.IdentityID, data)
+func (s service) CreateTenant(data config.TenantConfiguration) (config.TenantConfiguration, error) {
+	id, err := data.GetIdentityID()
+	if err != nil {
+		return nil, err
+	}
+	return data, s.repo.CreateTenant(id, data)
 }
 
-func (s service) UpdateConfig(data *NodeConfig) (*NodeConfig, error) {
+func (s service) UpdateConfig(data config.Configuration) (config.Configuration, error) {
 	return data, s.repo.UpdateConfig(data)
 }
 
-func (s service) UpdateTenant(data *TenantConfig) (*TenantConfig, error) {
-	return data, s.repo.UpdateTenant(data.IdentityID, data)
+func (s service) UpdateTenant(data config.TenantConfiguration) (config.TenantConfiguration, error) {
+	id, err := data.GetIdentityID()
+	if err != nil {
+		return nil, err
+	}
+	return data, s.repo.UpdateTenant(id, data)
 }
 
 func (s service) DeleteConfig() error {
@@ -68,7 +63,7 @@ func (s service) DeleteTenant(identifier []byte) error {
 func RetrieveConfig(dbOnly bool, ctx map[string]interface{}) (config.Configuration, error) {
 	var cfg config.Configuration
 	var err error
-	if cfgService, ok := ctx[BootstrappedConfigStorage].(Service); ok {
+	if cfgService, ok := ctx[BootstrappedConfigStorage].(config.Service); ok {
 		// may be we need a way to detect a corrupted db here
 		cfg, err = cfgService.GetConfig()
 		if err != nil {

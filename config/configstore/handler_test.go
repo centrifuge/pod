@@ -29,7 +29,7 @@ func TestGrpcHandler_GetConfig(t *testing.T) {
 	svc := DefaultService(repo)
 	h := GRPCHandler(svc)
 	nodeCfg := NewNodeConfig(cfg)
-	_, err = h.CreateConfig(context.Background(), nodeCfg.createProtobuf())
+	_, err = h.CreateConfig(context.Background(), nodeCfg.CreateProtobuf())
 	assert.Nil(t, err)
 	readCfg, err := h.GetConfig(context.Background(), nil)
 	assert.Nil(t, err)
@@ -53,11 +53,13 @@ func TestGrpcHandler_GetTenant(t *testing.T) {
 	repo.RegisterTenant(&TenantConfig{})
 	svc := DefaultService(repo)
 	h := GRPCHandler(svc)
-	nodeCfg, err := NewTenantConfig("main", cfg)
+	tenantCfg, err := NewTenantConfig("main", cfg)
 	assert.Nil(t, err)
-	_, err = h.CreateTenant(context.Background(), nodeCfg.createProtobuf())
+	_, err = h.CreateTenant(context.Background(), tenantCfg.CreateProtobuf())
 	assert.Nil(t, err)
-	readCfg, err := h.GetTenant(context.Background(), &configpb.GetTenantRequest{Identifier: hexutil.Encode(nodeCfg.IdentityID)})
+	tid, err := tenantCfg.GetIdentityID()
+	assert.Nil(t, err)
+	readCfg, err := h.GetTenant(context.Background(), &configpb.GetTenantRequest{Identifier: hexutil.Encode(tid)})
 	assert.Nil(t, err)
 	assert.NotNil(t, readCfg)
 }
@@ -68,12 +70,13 @@ func TestGrpcHandler_GetAllTenants(t *testing.T) {
 	repo.RegisterTenant(&TenantConfig{})
 	svc := DefaultService(repo)
 	h := GRPCHandler(svc)
-	nodeCfg1, err := NewTenantConfig("main", cfg)
-	nodeCfg2, err := NewTenantConfig("main", cfg)
-	nodeCfg2.IdentityID = []byte("0x123456789")
-	_, err = h.CreateTenant(context.Background(), nodeCfg1.createProtobuf())
+	tenantCfg1, err := NewTenantConfig("main", cfg)
+	tenantCfg2, err := NewTenantConfig("main", cfg)
+	tc := tenantCfg2.(*TenantConfig)
+	tc.IdentityID = []byte("0x123456789")
+	_, err = h.CreateTenant(context.Background(), tenantCfg1.CreateProtobuf())
 	assert.Nil(t, err)
-	_, err = h.CreateTenant(context.Background(), nodeCfg2.createProtobuf())
+	_, err = h.CreateTenant(context.Background(), tc.CreateProtobuf())
 	assert.Nil(t, err)
 
 	resp, err := h.GetAllTenants(context.Background(), nil)
@@ -88,11 +91,11 @@ func TestGrpcHandler_CreateConfig(t *testing.T) {
 	svc := DefaultService(repo)
 	h := GRPCHandler(svc)
 	nodeCfg := NewNodeConfig(cfg)
-	_, err = h.CreateConfig(context.Background(), nodeCfg.createProtobuf())
+	_, err = h.CreateConfig(context.Background(), nodeCfg.CreateProtobuf())
 	assert.Nil(t, err)
 
 	// Already exists
-	_, err = h.CreateConfig(context.Background(), nodeCfg.createProtobuf())
+	_, err = h.CreateConfig(context.Background(), nodeCfg.CreateProtobuf())
 	assert.NotNil(t, err)
 }
 
@@ -104,11 +107,11 @@ func TestGrpcHandler_CreateTenant(t *testing.T) {
 	h := GRPCHandler(svc)
 	nodeCfg, err := NewTenantConfig("main", cfg)
 	assert.Nil(t, err)
-	_, err = h.CreateTenant(context.Background(), nodeCfg.createProtobuf())
+	_, err = h.CreateTenant(context.Background(), nodeCfg.CreateProtobuf())
 	assert.Nil(t, err)
 
 	// Already exists
-	_, err = h.CreateTenant(context.Background(), nodeCfg.createProtobuf())
+	_, err = h.CreateTenant(context.Background(), nodeCfg.CreateProtobuf())
 	assert.NotNil(t, err)
 }
 
@@ -121,18 +124,19 @@ func TestGrpcHandler_UpdateConfig(t *testing.T) {
 	nodeCfg := NewNodeConfig(cfg)
 
 	// Config doesn't exist
-	_, err = h.UpdateConfig(context.Background(), nodeCfg.createProtobuf())
+	_, err = h.UpdateConfig(context.Background(), nodeCfg.CreateProtobuf())
 	assert.NotNil(t, err)
 
-	_, err = h.CreateConfig(context.Background(), nodeCfg.createProtobuf())
+	_, err = h.CreateConfig(context.Background(), nodeCfg.CreateProtobuf())
 	assert.Nil(t, err)
-	nodeCfg.NetworkString = "other"
-	_, err = h.UpdateConfig(context.Background(), nodeCfg.createProtobuf())
+	n := nodeCfg.(*NodeConfig)
+	n.NetworkString = "other"
+	_, err = h.UpdateConfig(context.Background(), n.CreateProtobuf())
 	assert.Nil(t, err)
 
 	readCfg, err := h.GetConfig(context.Background(), nil)
 	assert.Nil(t, err)
-	assert.Equal(t, nodeCfg.NetworkString, readCfg.Network)
+	assert.Equal(t, n.GetNetworkString(), readCfg.Network)
 }
 
 func TestGrpcHandler_UpdateTenant(t *testing.T) {
@@ -144,19 +148,24 @@ func TestGrpcHandler_UpdateTenant(t *testing.T) {
 	nodeCfg, err := NewTenantConfig("main", cfg)
 	assert.Nil(t, err)
 
+	tid, err := nodeCfg.GetIdentityID()
+	assert.Nil(t, err)
+
+	tc := nodeCfg.(*TenantConfig)
+
 	// Config doesn't exist
-	_, err = h.UpdateTenant(context.Background(), &configpb.UpdateTenantRequest{Identifier: hexutil.Encode(nodeCfg.IdentityID), Data: nodeCfg.createProtobuf()})
+	_, err = h.UpdateTenant(context.Background(), &configpb.UpdateTenantRequest{Identifier: hexutil.Encode(tid), Data: nodeCfg.CreateProtobuf()})
 	assert.NotNil(t, err)
 
-	_, err = h.CreateTenant(context.Background(), nodeCfg.createProtobuf())
+	_, err = h.CreateTenant(context.Background(), nodeCfg.CreateProtobuf())
 	assert.Nil(t, err)
-	nodeCfg.EthereumDefaultAccountName = "other"
-	_, err = h.UpdateTenant(context.Background(), &configpb.UpdateTenantRequest{Identifier: hexutil.Encode(nodeCfg.IdentityID), Data: nodeCfg.createProtobuf()})
+	tc.EthereumDefaultAccountName = "other"
+	_, err = h.UpdateTenant(context.Background(), &configpb.UpdateTenantRequest{Identifier: hexutil.Encode(tid), Data: tc.CreateProtobuf()})
 	assert.Nil(t, err)
 
-	readCfg, err := h.GetTenant(context.Background(), &configpb.GetTenantRequest{Identifier: hexutil.Encode(nodeCfg.IdentityID)})
+	readCfg, err := h.GetTenant(context.Background(), &configpb.GetTenantRequest{Identifier: hexutil.Encode(tid)})
 	assert.Nil(t, err)
-	assert.Equal(t, nodeCfg.EthereumDefaultAccountName, readCfg.EthDefaultAccountName)
+	assert.Equal(t, tc.EthereumDefaultAccountName, readCfg.EthDefaultAccountName)
 }
 
 func TestGrpcHandler_DeleteConfig(t *testing.T) {
@@ -171,7 +180,7 @@ func TestGrpcHandler_DeleteConfig(t *testing.T) {
 	assert.Nil(t, err)
 
 	nodeCfg := NewNodeConfig(cfg)
-	_, err = h.CreateConfig(context.Background(), nodeCfg.createProtobuf())
+	_, err = h.CreateConfig(context.Background(), nodeCfg.CreateProtobuf())
 	assert.Nil(t, err)
 	_, err = h.DeleteConfig(context.Background(), nil)
 	assert.Nil(t, err)
@@ -194,12 +203,14 @@ func TestGrpcHandler_DeleteTenant(t *testing.T) {
 
 	nodeCfg, err := NewTenantConfig("main", cfg)
 	assert.Nil(t, err)
-	_, err = h.CreateTenant(context.Background(), nodeCfg.createProtobuf())
+	_, err = h.CreateTenant(context.Background(), nodeCfg.CreateProtobuf())
 	assert.Nil(t, err)
-	_, err = h.DeleteTenant(context.Background(), &configpb.GetTenantRequest{Identifier: hexutil.Encode(nodeCfg.IdentityID)})
+	tid, err := nodeCfg.GetIdentityID()
+	assert.Nil(t, err)
+	_, err = h.DeleteTenant(context.Background(), &configpb.GetTenantRequest{Identifier: hexutil.Encode(tid)})
 	assert.Nil(t, err)
 
-	readCfg, err := h.GetTenant(context.Background(), &configpb.GetTenantRequest{Identifier: hexutil.Encode(nodeCfg.IdentityID)})
+	readCfg, err := h.GetTenant(context.Background(), &configpb.GetTenantRequest{Identifier: hexutil.Encode(tid)})
 	assert.NotNil(t, err)
 	assert.Nil(t, readCfg)
 }

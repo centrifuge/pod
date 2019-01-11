@@ -48,9 +48,10 @@ func TestService_GetTenant(t *testing.T) {
 	svc := DefaultService(repo)
 	tenantCfg, err := NewTenantConfig("main", cfg)
 	assert.Nil(t, err)
-	err = repo.CreateTenant(tenantCfg.IdentityID, tenantCfg)
+	tid, _ := tenantCfg.GetIdentityID()
+	err = repo.CreateTenant(tid, tenantCfg)
 	assert.Nil(t, err)
-	cfg, err := svc.GetTenant(tenantCfg.IdentityID)
+	cfg, err := svc.GetTenant(tid)
 	assert.Nil(t, err)
 	assert.NotNil(t, cfg)
 }
@@ -63,7 +64,7 @@ func TestService_CreateConfig(t *testing.T) {
 	nodeCfg := NewNodeConfig(cfg)
 	cfgpb, err := svc.CreateConfig(nodeCfg)
 	assert.Nil(t, err)
-	assert.Equal(t, nodeCfg.StoragePath, cfgpb.StoragePath)
+	assert.Equal(t, nodeCfg.GetStoragePath(), cfgpb.GetStoragePath())
 
 	//Config already exists
 	_, err = svc.CreateConfig(nodeCfg)
@@ -79,7 +80,11 @@ func TestService_CreateTenant(t *testing.T) {
 	assert.Nil(t, err)
 	newCfg, err := svc.CreateTenant(tenantCfg)
 	assert.Nil(t, err)
-	assert.Equal(t, tenantCfg.IdentityID, newCfg.IdentityID)
+	i, err := newCfg.GetIdentityID()
+	assert.Nil(t, err)
+	tid, err := tenantCfg.GetIdentityID()
+	assert.Nil(t, err)
+	assert.Equal(t, tid, i)
 
 	//Tenant already exists
 	_, err = svc.CreateTenant(tenantCfg)
@@ -99,12 +104,13 @@ func TestService_UpdateConfig(t *testing.T) {
 
 	newCfg, err := svc.CreateConfig(nodeCfg)
 	assert.Nil(t, err)
-	assert.Equal(t, nodeCfg.StoragePath, newCfg.StoragePath)
+	assert.Equal(t, nodeCfg.GetStoragePath(), newCfg.GetStoragePath())
 
-	nodeCfg.NetworkString = "something"
-	newCfg, err = svc.UpdateConfig(nodeCfg)
+	n := nodeCfg.(*NodeConfig)
+	n.NetworkString = "something"
+	newCfg, err = svc.UpdateConfig(n)
 	assert.Nil(t, err)
-	assert.Equal(t, nodeCfg.NetworkString, newCfg.NetworkString)
+	assert.Equal(t, n.GetNetworkString(), newCfg.GetNetworkString())
 }
 
 func TestService_UpdateTenant(t *testing.T) {
@@ -120,12 +126,17 @@ func TestService_UpdateTenant(t *testing.T) {
 
 	newCfg, err = svc.CreateTenant(tenantCfg)
 	assert.Nil(t, err)
-	assert.Equal(t, tenantCfg.IdentityID, newCfg.IdentityID)
+	i, err := newCfg.GetIdentityID()
+	assert.Nil(t, err)
+	tid, err := tenantCfg.GetIdentityID()
+	assert.Nil(t, err)
+	assert.Equal(t, tid, i)
 
-	tenantCfg.EthereumDefaultAccountName = "other"
+	tc := tenantCfg.(*TenantConfig)
+	tc.EthereumDefaultAccountName = "other"
 	newCfg, err = svc.UpdateTenant(tenantCfg)
 	assert.Nil(t, err)
-	assert.Equal(t, tenantCfg.EthereumDefaultAccountName, newCfg.EthereumDefaultAccountName)
+	assert.Equal(t, tc.EthereumDefaultAccountName, newCfg.GetEthereumDefaultAccountName())
 }
 
 func TestService_DeleteConfig(t *testing.T) {
@@ -156,17 +167,19 @@ func TestService_DeleteTenant(t *testing.T) {
 	svc := DefaultService(repo)
 	tenantCfg, err := NewTenantConfig("main", cfg)
 	assert.Nil(t, err)
+	tid, err := tenantCfg.GetIdentityID()
+	assert.Nil(t, err)
 
 	//No config, no error
-	err = svc.DeleteTenant(tenantCfg.IdentityID)
+	err = svc.DeleteTenant(tid)
 	assert.Nil(t, err)
 
 	_, err = svc.CreateTenant(tenantCfg)
 	assert.Nil(t, err)
 
-	err = svc.DeleteTenant(tenantCfg.IdentityID)
+	err = svc.DeleteTenant(tid)
 	assert.Nil(t, err)
 
-	_, err = svc.GetTenant(tenantCfg.IdentityID)
+	_, err = svc.GetTenant(tid)
 	assert.NotNil(t, err)
 }

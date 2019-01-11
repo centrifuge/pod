@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/storage/leveldb"
+
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -18,21 +20,20 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/p2p/receiver"
 	"github.com/centrifuge/go-centrifuge/queue"
-	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/stretchr/testify/assert"
 )
 
 var (
-	cfg configstore.Service
+	cfg config.Service
 )
 
 func TestMain(m *testing.M) {
 	ibootstappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
-		&storage.Bootstrapper{},
+		&leveldb.Bootstrapper{},
 		&configstore.Bootstrapper{},
 		&queue.Bootstrapper{},
 		transactions.Bootstrapper{},
@@ -40,12 +41,13 @@ func TestMain(m *testing.M) {
 	}
 	ctx := make(map[string]interface{})
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
-	cfg = ctx[configstore.BootstrappedConfigStorage].(configstore.Service)
+	cfg = ctx[configstore.BootstrappedConfigStorage].(config.Service)
 	c, _ := cfg.GetConfig()
-	c.MainIdentity.SigningKeyPair.Pub = "../build/resources/signingKey.pub.pem"
-	c.MainIdentity.SigningKeyPair.Priv = "../build/resources/signingKey.key.pem"
-	c.MainIdentity.EthAuthKeyPair.Pub = "../build/resources/ethauth.pub.pem"
-	c.MainIdentity.EthAuthKeyPair.Priv = "../build/resources/ethauth.key.pem"
+	n := c.(*configstore.NodeConfig)
+	n.MainIdentity.SigningKeyPair.Pub = "../build/resources/signingKey.pub.pem"
+	n.MainIdentity.SigningKeyPair.Priv = "../build/resources/signingKey.key.pem"
+	n.MainIdentity.EthAuthKeyPair.Pub = "../build/resources/ethauth.pub.pem"
+	n.MainIdentity.EthAuthKeyPair.Priv = "../build/resources/ethauth.key.pem"
 	cfg.UpdateConfig(c)
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
@@ -55,11 +57,12 @@ func TestMain(m *testing.M) {
 func TestCentP2PServer_StartContextCancel(t *testing.T) {
 	c, err := cfg.GetConfig()
 	assert.NoError(t, err)
-	c.P2PPort = 38203
+	n := c.(*configstore.NodeConfig)
+	n.P2PPort = 38203
 	_, err = cfg.UpdateConfig(c)
 	assert.NoError(t, err)
 	cp2p := &peer{config: cfg, handlerCreator: func() *receiver.Handler {
-		return receiver.New(cfg, nil, receiver.HandshakeValidator(c.NetworkID))
+		return receiver.New(cfg, nil, receiver.HandshakeValidator(n.NetworkID))
 	}}
 	ctx, canc := context.WithCancel(context.Background())
 	startErr := make(chan error, 1)
@@ -77,8 +80,9 @@ func TestCentP2PServer_StartListenError(t *testing.T) {
 	// cause an error by using an invalid port
 	c, err := cfg.GetConfig()
 	assert.NoError(t, err)
-	c.P2PPort = 100000000
-	_, err = cfg.UpdateConfig(c)
+	n := c.(*configstore.NodeConfig)
+	n.P2PPort = 100000000
+	_, err = cfg.UpdateConfig(n)
 	assert.NoError(t, err)
 	cp2p := &peer{config: cfg}
 	ctx, _ := context.WithCancel(context.Background())
@@ -97,7 +101,8 @@ func TestCentP2PServer_makeBasicHostNoExternalIP(t *testing.T) {
 	assert.NoError(t, err)
 	listenPort := 38202
 	cp2p := &peer{config: cfg}
-	priv, pub, err := cp2p.createSigningKey(c.MainIdentity.SigningKeyPair.Pub, c.MainIdentity.SigningKeyPair.Priv)
+	pu, pr := c.GetSigningKeyPair()
+	priv, pub, err := cp2p.createSigningKey(pu, pr)
 	h, err := makeBasicHost(priv, pub, "", listenPort)
 	assert.Nil(t, err)
 	assert.NotNil(t, h)
@@ -109,7 +114,8 @@ func TestCentP2PServer_makeBasicHostWithExternalIP(t *testing.T) {
 	externalIP := "100.100.100.100"
 	listenPort := 38202
 	cp2p := &peer{config: cfg}
-	priv, pub, err := cp2p.createSigningKey(c.MainIdentity.SigningKeyPair.Pub, c.MainIdentity.SigningKeyPair.Priv)
+	pu, pr := c.GetSigningKeyPair()
+	priv, pub, err := cp2p.createSigningKey(pu, pr)
 	h, err := makeBasicHost(priv, pub, externalIP, listenPort)
 	assert.Nil(t, err)
 	assert.NotNil(t, h)
@@ -125,7 +131,8 @@ func TestCentP2PServer_makeBasicHostWithWrongExternalIP(t *testing.T) {
 	externalIP := "100.200.300.400"
 	listenPort := 38202
 	cp2p := &peer{config: cfg}
-	priv, pub, err := cp2p.createSigningKey(c.MainIdentity.SigningKeyPair.Pub, c.MainIdentity.SigningKeyPair.Priv)
+	pu, pr := c.GetSigningKeyPair()
+	priv, pub, err := cp2p.createSigningKey(pu, pr)
 	h, err := makeBasicHost(priv, pub, externalIP, listenPort)
 	assert.NotNil(t, err)
 	assert.Nil(t, h)

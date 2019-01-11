@@ -6,9 +6,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/config"
 
-	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/identity"
 
 	"github.com/centrifuge/go-centrifuge/p2p/receiver"
 
@@ -46,7 +46,7 @@ type messenger interface {
 // peer implements node.Server
 type peer struct {
 	disablePeerStore bool
-	config           configstore.Service
+	config           config.Service
 	host             host.Host
 	handlerCreator   func() *receiver.Handler
 	mes              messenger
@@ -97,7 +97,12 @@ func (s *peer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- 
 	}
 	var protocols []protocol.ID
 	for _, t := range tcs {
-		CID, err := identity.ToCentID(t.IdentityID)
+		tid, err := t.GetIdentityID()
+		if err != nil {
+			startupErr <- err
+			return
+		}
+		CID, err := identity.ToCentID(tid)
 		if err != nil {
 			startupErr <- err
 			return

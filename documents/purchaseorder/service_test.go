@@ -5,6 +5,8 @@ package purchaseorder
 import (
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/storage/leveldb"
+
 	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 
@@ -531,11 +533,11 @@ var testRepoGlobal documents.Repository
 
 func testRepo() documents.Repository {
 	if testRepoGlobal == nil {
-		ldb, err := storage.NewLevelDBStorage(storage.GetRandomTestStoragePath())
+		ldb, err := leveldb.NewLevelDBStorage(leveldb.GetRandomTestStoragePath())
 		if err != nil {
 			panic(err)
 		}
-		testRepoGlobal = documents.NewDBRepository(storage.NewLevelDBRepository(ldb))
+		testRepoGlobal = documents.NewDBRepository(leveldb.NewLevelDBRepository(ldb))
 		testRepoGlobal.Register(&PurchaseOrder{})
 	}
 	return testRepoGlobal
