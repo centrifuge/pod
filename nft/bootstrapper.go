@@ -77,7 +77,9 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		})
 
 	// queue task
-	task := newMintingConfirmationTask(cfg.GetEthereumContextWaitTimeout(), ethereum.DefaultWaitForTransactionMiningContext, txService)
-	queueSrv.RegisterTaskType(task.TaskTypeName(), task)
+
+	ethTransTask := ethereum.NewTransactionStatusTask(cfg.GetEthereumContextWaitTimeout(), txService, ethereum.DefaultWaitForTransactionMiningContext)
+
+	queueSrv.RegisterTaskType(ethTransTask.TaskTypeName(), ethTransTask)
 	return nil
 }
