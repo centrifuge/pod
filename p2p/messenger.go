@@ -58,13 +58,6 @@ func (w *bufferedDelimitedWriter) Flush() error {
 	return w.Writer.Flush()
 }
 
-// messenger is an interface to wrap p2p messaging implementation
-type messenger interface {
-	init(protocols ...protocol.ID)
-
-	sendMessage(ctx context.Context, p libp2pPeer.ID, pmes *pb.P2PEnvelope, protoc protocol.ID) (*pb.P2PEnvelope, error)
-}
-
 type p2pMessenger struct {
 	host host.Host     // the network services we need
 	self libp2pPeer.ID // Local peer (yourself)

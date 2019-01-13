@@ -194,7 +194,7 @@ func TestPaymentObligationService(t *testing.T) {
 			service := newEthereumPaymentObligation(registry, &idService, &ethClient, queueSrv, &docService, func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error) {
 				return &EthereumPaymentObligationContract{}, nil
 			}, txService, func() (uint64, error) { return 10, nil })
-			ctxh := testingconfig.CreateTenantContext(t, nil, &mockCfg)
+			ctxh := testingconfig.CreateTenantContext(t, &mockCfg)
 			_, err := service.MintNFT(ctxh, decodeHex(test.request.Identifier), test.request.RegistryAddress, test.request.DepositAddress, test.request.ProofFields)
 			if test.err != nil {
 				assert.Equal(t, test.err.Error(), err.Error())

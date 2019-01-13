@@ -125,7 +125,7 @@ func TestService_DeriveFromPayload(t *testing.T) {
 	_, err = invSrv.DeriveFromCreatePayload(nil, &clientinvoicepb.InvoiceCreatePayload{})
 	assert.Error(t, err, "DeriveWithInvoiceInput should produce an error if invoiceInput equals nil")
 
-	model, err = invSrv.DeriveFromCreatePayload(testingconfig.CreateTenantContext(t, nil, cfg), payload)
+	model, err = invSrv.DeriveFromCreatePayload(testingconfig.CreateTenantContext(t, cfg), payload)
 	assert.Nil(t, err, "valid invoiceData shouldn't produce an error")
 
 	receivedCoreDocument, err := model.PackCoreDocument()
@@ -139,7 +139,7 @@ func TestService_GetLastVersion(t *testing.T) {
 	doc, err := createMockDocument()
 	assert.Nil(t, err)
 
-	ctxh := testingconfig.CreateTenantContext(t, nil, cfg)
+	ctxh := testingconfig.CreateTenantContext(t, cfg)
 	mod1, err := invSrv.GetCurrentVersion(ctxh, doc.CoreDocument.DocumentIdentifier)
 	assert.Nil(t, err)
 
@@ -182,7 +182,7 @@ func TestService_GetVersion_wrongTyp(t *testing.T) {
 	err := testRepo().Create(tenantID, currentVersion, po)
 	assert.Nil(t, err)
 
-	ctxh := testingconfig.CreateTenantContext(t, nil, cfg)
+	ctxh := testingconfig.CreateTenantContext(t, cfg)
 	_, err = invSrv.GetVersion(ctxh, documentIdentifier, currentVersion)
 	assert.Error(t, err)
 
@@ -202,7 +202,7 @@ func TestService_GetVersion(t *testing.T) {
 	err := testRepo().Create(tenantID, currentVersion, inv)
 	assert.Nil(t, err)
 
-	ctxh := testingconfig.CreateTenantContext(t, nil, cfg)
+	ctxh := testingconfig.CreateTenantContext(t, cfg)
 	mod, err := invSrv.GetVersion(ctxh, documentIdentifier, currentVersion)
 	assert.Nil(t, err)
 	loadInv, _ := mod.(*Invoice)
@@ -226,7 +226,7 @@ func TestService_Exists(t *testing.T) {
 	err := testRepo().Create(tenantID, documentIdentifier, inv)
 	assert.Nil(t, err)
 
-	ctxh := testingconfig.CreateTenantContext(t, nil, cfg)
+	ctxh := testingconfig.CreateTenantContext(t, cfg)
 	exists := invSrv.Exists(ctxh, documentIdentifier)
 	assert.True(t, exists, "invoice should exist")
 
@@ -236,7 +236,7 @@ func TestService_Exists(t *testing.T) {
 }
 
 func TestService_Create(t *testing.T) {
-	ctxh := testingconfig.CreateTenantContext(t, nil, cfg)
+	ctxh := testingconfig.CreateTenantContext(t, cfg)
 	_, srv := getServiceWithMockedLayers()
 	invSrv := srv.(service)
 
@@ -266,7 +266,7 @@ func TestService_DeriveInvoiceData(t *testing.T) {
 
 	// success
 	payload := testingdocuments.CreateInvoicePayload()
-	inv, err := invSrv.DeriveFromCreatePayload(testingconfig.CreateTenantContext(t, nil, cfg), payload)
+	inv, err := invSrv.DeriveFromCreatePayload(testingconfig.CreateTenantContext(t, cfg), payload)
 	assert.Nil(t, err, "must be non nil")
 	data, err := invSrv.DeriveInvoiceData(inv)
 	assert.Nil(t, err, "Derive must succeed")
@@ -277,7 +277,7 @@ func TestService_DeriveInvoiceResponse(t *testing.T) {
 	// success
 	invSrv := service{repo: testRepo()}
 	payload := testingdocuments.CreateInvoicePayload()
-	inv1, err := invSrv.DeriveFromCreatePayload(testingconfig.CreateTenantContext(t, nil, cfg), payload)
+	inv1, err := invSrv.DeriveFromCreatePayload(testingconfig.CreateTenantContext(t, cfg), payload)
 	assert.Nil(t, err, "must be non nil")
 	inv, ok := inv1.(*Invoice)
 	assert.True(t, ok)
@@ -305,7 +305,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.Nil(t, doc)
 
 	// messed up identifier
-	contextHeader := testingconfig.CreateTenantContext(t, nil, cfg)
+	contextHeader := testingconfig.CreateTenantContext(t, cfg)
 	payload := &clientinvoicepb.InvoiceUpdatePayload{Identifier: "some identifier", Data: &clientinvoicepb.InvoiceData{}}
 	doc, err = invSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Error(t, err)
@@ -375,7 +375,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 func TestService_Update(t *testing.T) {
 	_, srv := getServiceWithMockedLayers()
 	invSrv := srv.(service)
-	ctxh := testingconfig.CreateTenantContext(t, nil, cfg)
+	ctxh := testingconfig.CreateTenantContext(t, cfg)
 
 	// pack failed
 	model := &mockModel{}
@@ -444,7 +444,7 @@ func TestService_Update(t *testing.T) {
 func TestService_calculateDataRoot(t *testing.T) {
 	_, srv := getServiceWithMockedLayers()
 	invSrv := srv.(service)
-	ctxh := testingconfig.CreateTenantContext(t, nil, cfg)
+	ctxh := testingconfig.CreateTenantContext(t, cfg)
 
 	// type mismatch
 	inv, err := invSrv.calculateDataRoot(ctxh, nil, &testingdocuments.MockModel{}, nil)

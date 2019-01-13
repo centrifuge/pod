@@ -55,7 +55,7 @@ func TestHandleNewMessage(t *testing.T) {
 	cfg, err := cfg.GetConfig()
 	assert.NoError(t, err)
 	ctx, canc := context.WithCancel(context.Background())
-	c := testingconfig.CreateTenantContext(t, ctx, cfg)
+	c := testingconfig.CreateTenantContextWithContext(t, ctx, cfg)
 	r := rand.Reader
 	p1 := 35000
 	p2 := 35001

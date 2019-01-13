@@ -49,7 +49,7 @@ func TestFieldValidator_Validate(t *testing.T) {
 
 func TestDataRootValidation_Validate(t *testing.T) {
 	drv := dataRootValidator()
-	contextHeader := testingconfig.CreateTenantContext(t, nil, cfg)
+	contextHeader := testingconfig.CreateTenantContext(t, cfg)
 
 	// nil error
 	err := drv.Validate(nil, nil)

@@ -12,6 +12,7 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/p2p/common"
 	"github.com/centrifuge/go-centrifuge/p2p/receiver"
+	pb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
 
 	"github.com/libp2p/go-libp2p-protocol"
 
@@ -33,6 +34,13 @@ import (
 )
 
 var log = logging.Logger("p2p-server")
+
+// messenger is an interface to wrap p2p messaging implementation
+type messenger interface {
+	init(protocols ...protocol.ID)
+
+	sendMessage(ctx context.Context, p libp2pPeer.ID, pmes *pb.P2PEnvelope, protoc protocol.ID) (*pb.P2PEnvelope, error)
+}
 
 // peer implements node.Server
 type peer struct {

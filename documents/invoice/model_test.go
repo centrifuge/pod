@@ -199,7 +199,7 @@ func TestInvoiceModel_getClientData(t *testing.T) {
 }
 
 func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
-	id, _ := contextutil.Self(testingconfig.CreateTenantContext(t, nil, cfg))
+	id, _ := contextutil.Self(testingconfig.CreateTenantContext(t, cfg))
 	// fail recipient
 	data := &clientinvoicepb.InvoiceData{
 		Sender:    "some number",
@@ -257,7 +257,7 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 }
 
 func TestInvoiceModel_calculateDataRoot(t *testing.T) {
-	id, _ := contextutil.Self(testingconfig.CreateTenantContext(t, nil, cfg))
+	id, _ := contextutil.Self(testingconfig.CreateTenantContext(t, cfg))
 	m := new(Invoice)
 	err := m.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), id.ID.String())
 	assert.Nil(t, err, "Init must pass")

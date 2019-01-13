@@ -51,7 +51,7 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 	// pack failed
 	model := mockModel{}
 	model.On("PackCoreDocument").Return(nil, errors.New("error")).Once()
-	ctxh := testingconfig.CreateTenantContext(t, nil, cfg)
+	ctxh := testingconfig.CreateTenantContext(t, cfg)
 	err := dp.PrepareForSignatureRequests(ctxh, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
@@ -73,7 +73,7 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
 	cfg.Set("keys.signing.publicKey", pub)
-	ctxh = testingconfig.CreateTenantContext(t, nil, cfg)
+	ctxh = testingconfig.CreateTenantContext(t, cfg)
 
 	// failed unpack
 	model = mockModel{}
@@ -112,7 +112,7 @@ func (p p2pClient) GetSignaturesForDocument(ctx context.Context, identityService
 func TestDefaultProcessor_RequestSignatures(t *testing.T) {
 	srv := &testingcommons.MockIDService{}
 	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
-	ctxh := testingconfig.CreateTenantContext(t, nil, cfg)
+	ctxh := testingconfig.CreateTenantContext(t, cfg)
 	// pack failed
 	model := mockModel{}
 	model.On("PackCoreDocument").Return(nil, errors.New("error")).Once()
@@ -258,7 +258,7 @@ func (m mockRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.Document
 func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	srv := &testingcommons.MockIDService{}
 	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
-	ctxh := testingconfig.CreateTenantContext(t, nil, cfg)
+	ctxh := testingconfig.CreateTenantContext(t, cfg)
 
 	// pack failed
 	model := mockModel{}
@@ -352,7 +352,7 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	srv := &testingcommons.MockIDService{}
 	srv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
 	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
-	ctxh := testingconfig.CreateTenantContext(t, nil, cfg)
+	ctxh := testingconfig.CreateTenantContext(t, cfg)
 	// pack failed
 	model := mockModel{}
 	model.On("PackCoreDocument").Return(nil, errors.New("error")).Once()

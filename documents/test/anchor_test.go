@@ -34,7 +34,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestAnchorDocument(t *testing.T) {
-	ctxh := testingconfig.CreateTenantContext(t, nil, cfg)
+	ctxh := testingconfig.CreateTenantContext(t, cfg)
 	updater := func(id []byte, model documents.Model) error {
 		return nil
 	}

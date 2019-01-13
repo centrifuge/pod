@@ -50,7 +50,7 @@ func TestGetSignatureForDocument_fail_connect(t *testing.T) {
 	coreDoc := testingcoredocument.GenerateCoreDocument()
 	c, err := cfg.GetConfig()
 	assert.NoError(t, err)
-	ctx := testingconfig.CreateTenantContext(t, nil, c)
+	ctx := testingconfig.CreateTenantContext(t, c)
 
 	centrifugeId, err := identity.ToCentID(utils.RandomSlice(identity.CentIDLength))
 	idService := getIDMocks(centrifugeId)
@@ -76,7 +76,7 @@ func TestGetSignatureForDocument_fail_version_check(t *testing.T) {
 	coreDoc := testingcoredocument.GenerateCoreDocument()
 	c, err := cfg.GetConfig()
 	assert.NoError(t, err)
-	ctx := testingconfig.CreateTenantContext(t, nil, c)
+	ctx := testingconfig.CreateTenantContext(t, c)
 
 	envelope, err := p2pcommon.PrepareP2PEnvelope(ctx, c.NetworkID, p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: coreDoc})
 	assert.NoError(t, err, "signature request could not be created")
@@ -95,7 +95,7 @@ func TestGetSignatureForDocument_fail_centrifugeId(t *testing.T) {
 	coreDoc := testingcoredocument.GenerateCoreDocument()
 	c, err := cfg.GetConfig()
 	assert.NoError(t, err)
-	ctx := testingconfig.CreateTenantContext(t, nil, c)
+	ctx := testingconfig.CreateTenantContext(t, c)
 
 	centrifugeId, err := identity.ToCentID(utils.RandomSlice(identity.CentIDLength))
 	idService := getIDMocks(centrifugeId)

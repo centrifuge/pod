@@ -86,7 +86,7 @@ func TestHandler_HandleInterceptor_HeaderEmpty(t *testing.T) {
 }
 
 func TestHandler_HandleInterceptor_CentIDNotHex(t *testing.T) {
-	ctx := testingconfig.CreateTenantContext(t, nil, cfg)
+	ctx := testingconfig.CreateTenantContext(t, cfg)
 	p2pEnv, err := p2pcommon.PrepareP2PEnvelope(ctx, cfg.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &protocolpb.P2PEnvelope{})
 	assert.NoError(t, err)
 	resp, err := handler.HandleInterceptor(context.Background(), libp2pPeer.ID("SomePeer"), protocol.ID("protocolX"), p2pEnv)
@@ -96,7 +96,7 @@ func TestHandler_HandleInterceptor_CentIDNotHex(t *testing.T) {
 }
 
 func TestHandler_HandleInterceptor_TenantNotFound(t *testing.T) {
-	ctx := testingconfig.CreateTenantContext(t, nil, cfg)
+	ctx := testingconfig.CreateTenantContext(t, cfg)
 	p2pEnv, err := p2pcommon.PrepareP2PEnvelope(ctx, cfg.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &protocolpb.P2PEnvelope{})
 	assert.NoError(t, err)
 	resp, err := handler.HandleInterceptor(context.Background(), libp2pPeer.ID("SomePeer"), protocol.ID("0x001100110011"), p2pEnv)
@@ -106,7 +106,7 @@ func TestHandler_HandleInterceptor_TenantNotFound(t *testing.T) {
 }
 
 func TestHandler_HandleInterceptor_HandshakeValidationFail(t *testing.T) {
-	ctx := testingconfig.CreateTenantContext(t, nil, cfg)
+	ctx := testingconfig.CreateTenantContext(t, cfg)
 	p2pEnv, err := p2pcommon.PrepareP2PEnvelope(ctx, cfg.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &protocolpb.P2PEnvelope{})
 	assert.NoError(t, err)
 
@@ -134,7 +134,7 @@ func TestHandler_HandleInterceptor_HandshakeValidationFail(t *testing.T) {
 }
 
 func TestHandler_HandleInterceptor_UnsupportedMessageType(t *testing.T) {
-	ctx := testingconfig.CreateTenantContext(t, nil, cfg)
+	ctx := testingconfig.CreateTenantContext(t, cfg)
 	p2pEnv, err := p2pcommon.PrepareP2PEnvelope(ctx, cfg.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &protocolpb.P2PEnvelope{})
 	assert.NoError(t, err)
 
@@ -153,7 +153,7 @@ func TestHandler_HandleInterceptor_UnsupportedMessageType(t *testing.T) {
 }
 
 func TestHandler_HandleInterceptor_NilDocument(t *testing.T) {
-	ctx := testingconfig.CreateTenantContext(t, nil, cfg)
+	ctx := testingconfig.CreateTenantContext(t, cfg)
 	p2pEnv, err := p2pcommon.PrepareP2PEnvelope(ctx, cfg.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &protocolpb.P2PEnvelope{})
 	assert.NoError(t, err)
 
@@ -165,7 +165,7 @@ func TestHandler_HandleInterceptor_NilDocument(t *testing.T) {
 }
 
 func TestHandler_HandleInterceptor_getServiceAndModel_fail(t *testing.T) {
-	ctx := testingconfig.CreateTenantContext(t, nil, cfg)
+	ctx := testingconfig.CreateTenantContext(t, cfg)
 	req := &p2ppb.AnchorDocumentRequest{Document: coredocument.New()}
 	p2pEnv, err := p2pcommon.PrepareP2PEnvelope(ctx, cfg.GetNetworkID(), p2pcommon.MessageTypeSendAnchoredDoc, req)
 	assert.NoError(t, err)
