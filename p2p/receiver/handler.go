@@ -3,8 +3,8 @@ package receiver
 import (
 	"context"
 
-	"github.com/centrifuge/go-centrifuge/p2p/common"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/p2p/common"
 
 	"github.com/centrifuge/go-centrifuge/contextutil"
 
@@ -116,7 +116,7 @@ func (srv *Handler) HandleRequestDocumentSignature(ctx context.Context, peer pee
 		return convertToErrorEnvelop(err)
 	}
 
-	p2pEnv, err := p2pcommon.PrepareP2PEnvelope(ctx, nc.NetworkID, p2pcommon.MessageTypeRequestSignatureRep, res)
+	p2pEnv, err := p2pcommon.PrepareP2PEnvelope(ctx, nc.GetNetworkID(), p2pcommon.MessageTypeRequestSignatureRep, res)
 	if err != nil {
 		return convertToErrorEnvelop(err)
 	}
@@ -160,7 +160,7 @@ func (srv *Handler) HandleSendAnchoredDocument(ctx context.Context, peer peer.ID
 		return convertToErrorEnvelop(err)
 	}
 
-	p2pEnv, err := p2pcommon.PrepareP2PEnvelope(ctx, nc.NetworkID, p2pcommon.MessageTypeSendAnchoredDocRep, res)
+	p2pEnv, err := p2pcommon.PrepareP2PEnvelope(ctx, nc.GetNetworkID(), p2pcommon.MessageTypeSendAnchoredDocRep, res)
 	if err != nil {
 		return convertToErrorEnvelop(err)
 	}

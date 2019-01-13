@@ -84,7 +84,7 @@ func (s *peer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- 
 		return
 	}
 
-	s.mes = newP2PMessenger(ctx, s.host, nc.P2PConnectionTimeout, s.handlerCreator().HandleInterceptor)
+	s.mes = newP2PMessenger(ctx, s.host, nc.GetP2PConnectionTimeout(), s.handlerCreator().HandleInterceptor)
 	tcs, err := s.config.GetAllTenants()
 	if err != nil {
 		startupErr <- err
