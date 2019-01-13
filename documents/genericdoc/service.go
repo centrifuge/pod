@@ -7,7 +7,6 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/coredocument"
@@ -44,7 +43,7 @@ type Service interface {
 	RequestDocumentSignature(ctx context.Context, model documents.Model) (*coredocumentpb.Signature, error)
 
 	// ReceiveAnchoredDocument receives a new anchored document over the p2p layer, validates and updates the document in DB
-	ReceiveAnchoredDocument(ctx context.Context, model documents.Model, headers *p2ppb.CentrifugeHeader) error
+	ReceiveAnchoredDocument(ctx context.Context, model documents.Model, senderID []byte) error
 }
 
 // service implements Service
@@ -190,7 +189,7 @@ func (s service) RequestDocumentSignature(ctx context.Context, model documents.M
 	return sig, nil
 }
 
-func (s service) ReceiveAnchoredDocument(ctx context.Context, model documents.Model, headers *p2ppb.CentrifugeHeader) error {
+func (s service) ReceiveAnchoredDocument(ctx context.Context, model documents.Model, senderID []byte) error {
 	idConf, err := contextutil.Self(ctx)
 	if err != nil {
 		return documents.ErrDocumentConfigTenantID
@@ -213,7 +212,7 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, model documents.Mo
 	ts, _ := ptypes.TimestampProto(time.Now().UTC())
 	notificationMsg := &notificationpb.NotificationMessage{
 		EventType:    uint32(notification.ReceivedPayload),
-		CentrifugeId: hexutil.Encode(headers.SenderCentrifugeId),
+		CentrifugeId: hexutil.Encode(senderID),
 		Recorded:     ts,
 		DocumentType: doc.EmbeddedData.TypeUrl,
 		DocumentId:   hexutil.Encode(doc.DocumentIdentifier),
