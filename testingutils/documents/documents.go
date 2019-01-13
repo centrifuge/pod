@@ -6,7 +6,6 @@ import (
 	"context"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/stretchr/testify/mock"
 )
@@ -45,7 +44,7 @@ func (m *MockService) RequestDocumentSignature(ctx context.Context, model docume
 	return args.Get(0).(*coredocumentpb.Signature), args.Error(1)
 }
 
-func (m *MockService) ReceiveAnchoredDocument(ctx context.Context, model documents.Model, headers *p2ppb.CentrifugeHeader) error {
+func (m *MockService) ReceiveAnchoredDocument(ctx context.Context, model documents.Model, senderID []byte) error {
 	args := m.Called()
 	return args.Error(0)
 }

@@ -65,7 +65,8 @@ func DefaultService(
 	identityService identity.Service,
 	queueSrv queue.TaskQueuer,
 	txService transactions.Service,
-	genService genericdoc.Service) Service {
+	genService genericdoc.Service,
+) Service {
 	return service{
 		repo:             repo,
 		notifier:         notification.NewWebhookSender(),
