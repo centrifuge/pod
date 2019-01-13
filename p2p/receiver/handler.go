@@ -3,9 +3,9 @@ package receiver
 import (
 	"context"
 
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/p2p/common"
 
-	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 
 	"github.com/golang/protobuf/proto"
@@ -48,12 +48,12 @@ func getServiceAndModel(registry *documents.ServiceRegistry, cd *coredocumentpb.
 // Handler implements protocol message handlers
 type Handler struct {
 	registry           *documents.ServiceRegistry
-	config             configstore.Service
+	config             config.Service
 	handshakeValidator ValidatorGroup
 }
 
 // New returns an implementation of P2PServiceServer
-func New(config configstore.Service, registry *documents.ServiceRegistry, handshakeValidator ValidatorGroup) *Handler {
+func New(config config.Service, registry *documents.ServiceRegistry, handshakeValidator ValidatorGroup) *Handler {
 	return &Handler{registry: registry, config: config, handshakeValidator: handshakeValidator}
 }
 
@@ -116,7 +116,7 @@ func (srv *Handler) HandleRequestDocumentSignature(ctx context.Context, peer pee
 		return convertToErrorEnvelop(err)
 	}
 
-	p2pEnv, err := p2pcommon.PrepareP2PEnvelope(ctx, nc.NetworkID, p2pcommon.MessageTypeRequestSignatureRep, res)
+	p2pEnv, err := p2pcommon.PrepareP2PEnvelope(ctx, nc.GetNetworkID(), p2pcommon.MessageTypeRequestSignatureRep, res)
 	if err != nil {
 		return convertToErrorEnvelop(err)
 	}
@@ -160,7 +160,7 @@ func (srv *Handler) HandleSendAnchoredDocument(ctx context.Context, peer peer.ID
 		return convertToErrorEnvelop(err)
 	}
 
-	p2pEnv, err := p2pcommon.PrepareP2PEnvelope(ctx, nc.NetworkID, p2pcommon.MessageTypeSendAnchoredDocRep, res)
+	p2pEnv, err := p2pcommon.PrepareP2PEnvelope(ctx, nc.GetNetworkID(), p2pcommon.MessageTypeSendAnchoredDocRep, res)
 	if err != nil {
 		return convertToErrorEnvelop(err)
 	}

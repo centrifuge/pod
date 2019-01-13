@@ -3,7 +3,8 @@ package transactions
 import (
 	"context"
 
-	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/config"
+
 	"github.com/centrifuge/go-centrifuge/identity"
 
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -18,14 +19,14 @@ const ErrInvalidTransactionID = errors.Error("Invalid Transaction ID")
 const ErrInvalidTenantID = errors.Error("Invalid Tenant ID")
 
 // GRPCHandler returns an implementation of the TransactionServiceServer
-func GRPCHandler(srv Service, configService configstore.Service) transactionspb.TransactionServiceServer {
+func GRPCHandler(srv Service, configService config.Service) transactionspb.TransactionServiceServer {
 	return grpcHandler{srv: srv, configService: configService}
 }
 
 // grpcHandler implements transactionspb.TransactionServiceServer
 type grpcHandler struct {
 	srv           Service
-	configService configstore.Service
+	configService config.Service
 }
 
 // GetTransactionStatus returns transaction status of the given transaction id.
@@ -40,7 +41,11 @@ func (h grpcHandler) GetTransactionStatus(ctx context.Context, req *transactions
 		return nil, ErrInvalidTransactionID
 	}
 
-	cid, err := identity.ToCentID(tcs[0].IdentityID)
+	tid, err := tcs[0].GetIdentityID()
+	if err != nil {
+		return nil, ErrInvalidTenantID
+	}
+	cid, err := identity.ToCentID(tid)
 	if err != nil || len(tcs) == 0 {
 		return nil, ErrInvalidTenantID
 	}

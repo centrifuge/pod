@@ -6,6 +6,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/config"
+
 	"github.com/centrifuge/go-centrifuge/identity"
 
 	"github.com/centrifuge/go-centrifuge/config/configstore"
@@ -16,7 +18,7 @@ import (
 )
 
 func TestGRPCHandler_GetTransactionStatus(t *testing.T) {
-	cService := ctx[configstore.BootstrappedConfigStorage].(configstore.Service)
+	cService := ctx[configstore.BootstrappedConfigStorage].(config.Service)
 	h := GRPCHandler(ctx[BootstrappedService].(Service), cService)
 	req := new(transactionspb.TransactionStatusRequest)
 	ctxl := context.Background()
@@ -36,7 +38,8 @@ func TestGRPCHandler_GetTransactionStatus(t *testing.T) {
 
 	// missing err
 	tcs, _ := cService.GetAllTenants()
-	cid, err := identity.ToCentID(tcs[0].IdentityID)
+	tid, _ := tcs[0].GetIdentityID()
+	cid, err := identity.ToCentID(tid)
 	tx := NewTransaction(cid, "")
 	req.TransactionId = tx.ID.String()
 	res, err = h.GetTransactionStatus(ctxl, req)

@@ -1,7 +1,7 @@
 package invoice
 
 import (
-	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
@@ -19,11 +19,11 @@ var apiLog = logging.Logger("invoice-api")
 // anchoring, sending, finding stored invoice document
 type grpcHandler struct {
 	service Service
-	config  configstore.Service
+	config  config.Service
 }
 
 // GRPCHandler returns an implementation of invoice.DocumentServiceServer
-func GRPCHandler(config configstore.Service, registry *documents.ServiceRegistry) (clientinvoicepb.DocumentServiceServer, error) {
+func GRPCHandler(config config.Service, registry *documents.ServiceRegistry) (clientinvoicepb.DocumentServiceServer, error) {
 	srv, err := registry.LocateService(documenttypes.InvoiceDataTypeUrl)
 	if err != nil {
 		return nil, err

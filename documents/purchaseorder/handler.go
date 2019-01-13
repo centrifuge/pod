@@ -1,7 +1,7 @@
 package purchaseorder
 
 import (
-	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
@@ -20,11 +20,11 @@ var apiLog = logging.Logger("purchaseorder-api")
 // anchoring, sending, finding stored purchase order document
 type grpcHandler struct {
 	service Service
-	config  configstore.Service
+	config  config.Service
 }
 
 // GRPCHandler returns an implementation of the purchaseorder DocumentServiceServer
-func GRPCHandler(config configstore.Service, registry *documents.ServiceRegistry) (clientpurchaseorderpb.DocumentServiceServer, error) {
+func GRPCHandler(config config.Service, registry *documents.ServiceRegistry) (clientpurchaseorderpb.DocumentServiceServer, error) {
 	srv, err := registry.LocateService(documenttypes.PurchaseOrderDataTypeUrl)
 	if err != nil {
 		return nil, errors.New("failed to fetch purchase order service")

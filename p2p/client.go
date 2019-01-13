@@ -60,7 +60,7 @@ func (s *peer) SendAnchoredDocument(ctx context.Context, id identity.Identity, i
 		return nil, err
 	}
 
-	envelope, err := p2pcommon.PrepareP2PEnvelope(ctx, nc.NetworkID, p2pcommon.MessageTypeSendAnchoredDoc, in)
+	envelope, err := p2pcommon.PrepareP2PEnvelope(ctx, nc.GetNetworkID(), p2pcommon.MessageTypeSendAnchoredDoc, in)
 	if err != nil {
 		return nil, err
 	}
@@ -168,7 +168,7 @@ func (s *peer) getSignatureForDocument(ctx context.Context, identityService iden
 		if err != nil {
 			return nil, err
 		}
-		envelope, err := p2pcommon.PrepareP2PEnvelope(ctx, nc.NetworkID, p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: &doc})
+		envelope, err := p2pcommon.PrepareP2PEnvelope(ctx, nc.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: &doc})
 		if err != nil {
 			return nil, err
 		}

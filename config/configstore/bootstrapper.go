@@ -38,12 +38,16 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 			return errors.NewTypedError(ErrConfigStorageBootstrap, errors.New("%v", err))
 		}
 	}
-	tc, err := NewTenantConfig(nc.MainIdentity.EthereumDefaultAccountName, cfg)
+	tc, err := NewTenantConfig(nc.GetEthereumDefaultAccountName(), cfg)
 	if err != nil {
 		return errors.NewTypedError(ErrConfigStorageBootstrap, errors.New("%v", err))
 	}
 	configdb.Register(tc)
-	_, err = service.GetTenant(nc.MainIdentity.ID())
+	i, err := nc.GetIdentityID()
+	if err != nil {
+		return errors.NewTypedError(ErrConfigStorageBootstrap, errors.New("%v", err))
+	}
+	_, err = service.GetTenant(i)
 	// if main tenant config doesn't exist in the db, add it
 	// Another additional check we can do is check if there are more than 0 tenant configs in the db but main tenant is not, then it might indicate a problem
 	if err != nil {

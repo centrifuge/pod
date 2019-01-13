@@ -56,7 +56,7 @@ func TestGetSignatureForDocument_fail_connect(t *testing.T) {
 	idService := getIDMocks(centrifugeId)
 	assert.Nil(t, err, "centrifugeId not initialized correctly ")
 
-	envelope, err := p2pcommon.PrepareP2PEnvelope(ctx, c.NetworkID, p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: coreDoc})
+	envelope, err := p2pcommon.PrepareP2PEnvelope(ctx, c.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: coreDoc})
 	assert.NoError(t, err, "signature request could not be created")
 
 	m.On("sendMessage", ctx, mock.Anything, envelope, p2pcommon.ProtocolForCID(centrifugeId)).Return(nil, errors.New("some error"))
@@ -78,7 +78,7 @@ func TestGetSignatureForDocument_fail_version_check(t *testing.T) {
 	assert.NoError(t, err)
 	ctx := testingconfig.CreateTenantContext(t, c)
 
-	envelope, err := p2pcommon.PrepareP2PEnvelope(ctx, c.NetworkID, p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: coreDoc})
+	envelope, err := p2pcommon.PrepareP2PEnvelope(ctx, c.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: coreDoc})
 	assert.NoError(t, err, "signature request could not be created")
 
 	m.On("sendMessage", ctx, mock.Anything, envelope, p2pcommon.ProtocolForCID(centrifugeId)).Return(testClient.createSignatureResp("", nil), nil)
@@ -101,7 +101,7 @@ func TestGetSignatureForDocument_fail_centrifugeId(t *testing.T) {
 	idService := getIDMocks(centrifugeId)
 	assert.Nil(t, err, "centrifugeId not initialized correctly ")
 
-	envelope, err := p2pcommon.PrepareP2PEnvelope(ctx, c.NetworkID, p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: coreDoc})
+	envelope, err := p2pcommon.PrepareP2PEnvelope(ctx, c.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: coreDoc})
 	assert.NoError(t, err, "signature request could not be created")
 
 	randomBytes := utils.RandomSlice(identity.CentIDLength)

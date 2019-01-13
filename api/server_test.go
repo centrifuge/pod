@@ -9,6 +9,8 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/storage/leveldb"
+
 	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 
 	"github.com/centrifuge/go-centrifuge/identity/ethid"
@@ -28,7 +30,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/p2p"
 	"github.com/centrifuge/go-centrifuge/queue"
-	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/stretchr/testify/assert"
@@ -48,7 +49,7 @@ func TestMain(m *testing.M) {
 	ibootstappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
-		&storage.Bootstrapper{},
+		&leveldb.Bootstrapper{},
 		&configstore.Bootstrapper{},
 		transactions.Bootstrapper{},
 		&queue.Bootstrapper{},

@@ -5,6 +5,8 @@ package invoice
 import (
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/storage/leveldb"
+
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 
 	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
@@ -20,7 +22,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
-	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
@@ -489,11 +490,11 @@ var testRepoGlobal documents.Repository
 
 func testRepo() documents.Repository {
 	if testRepoGlobal == nil {
-		ldb, err := storage.NewLevelDBStorage(storage.GetRandomTestStoragePath())
+		ldb, err := leveldb.NewLevelDBStorage(leveldb.GetRandomTestStoragePath())
 		if err != nil {
 			panic(err)
 		}
-		testRepoGlobal = documents.NewDBRepository(storage.NewLevelDBRepository(ldb))
+		testRepoGlobal = documents.NewDBRepository(leveldb.NewLevelDBRepository(ldb))
 		testRepoGlobal.Register(&Invoice{})
 	}
 	return testRepoGlobal

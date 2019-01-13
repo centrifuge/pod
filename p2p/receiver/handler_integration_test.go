@@ -49,7 +49,7 @@ func TestMain(m *testing.M) {
 	flag.Parse()
 	ctx := testingbootstrap.TestFunctionalEthereumBootstrap()
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-	cfgService := ctx[configstore.BootstrappedConfigStorage].(configstore.Service)
+	cfgService := ctx[configstore.BootstrappedConfigStorage].(config.Service)
 	registry := ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
 	anchorRepo = ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
 	idService = ctx[ethid.BootstrappedIDService].(identity.Service)

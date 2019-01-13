@@ -269,7 +269,8 @@ func (nc *NodeConfig) FromJSON(data []byte) error {
 	return json.Unmarshal(data, nc)
 }
 
-func (nc *NodeConfig) createProtobuf() *configpb.ConfigData {
+// CreateProtobuf creates protobuf for config
+func (nc *NodeConfig) CreateProtobuf() *configpb.ConfigData {
 	return &configpb.ConfigData{
 		MainIdentity: &configpb.TenantData{
 			EthAccount: &configpb.EthereumAccount{
@@ -380,7 +381,7 @@ func convertStringMapToSmartContractAddresses(addrs map[string]string) (map[conf
 }
 
 // NewNodeConfig creates a new NodeConfig instance with configs
-func NewNodeConfig(c config.Configuration) *NodeConfig {
+func NewNodeConfig(c config.Configuration) config.Configuration {
 	mainAccount, _ := c.GetEthereumAccount(c.GetEthereumDefaultAccountName())
 	mainIdentity, _ := c.GetIdentityID()
 	signPub, signPriv := c.GetSigningKeyPair()
@@ -448,9 +449,19 @@ type TenantConfig struct {
 	EthAuthKeyPair                   KeyPair
 }
 
+// GetEthereumAccount gets EthereumAccount
+func (tc *TenantConfig) GetEthereumAccount() *config.AccountConfig {
+	return tc.EthereumAccount
+}
+
 // GetEthereumDefaultAccountName gets EthereumDefaultAccountName
 func (tc *TenantConfig) GetEthereumDefaultAccountName() string {
 	return tc.EthereumDefaultAccountName
+}
+
+// GetReceiveEventNotificationEndpoint gets ReceiveEventNotificationEndpoint
+func (tc *TenantConfig) GetReceiveEventNotificationEndpoint() string {
+	return tc.ReceiveEventNotificationEndpoint
 }
 
 // GetIdentityID gets IdentityID
@@ -493,7 +504,8 @@ func (tc *TenantConfig) FromJSON(data []byte) error {
 	return json.Unmarshal(data, tc)
 }
 
-func (tc *TenantConfig) createProtobuf() *configpb.TenantData {
+// CreateProtobuf creates protobuf for config
+func (tc *TenantConfig) CreateProtobuf() *configpb.TenantData {
 	return &configpb.TenantData{
 		EthAccount: &configpb.EthereumAccount{
 			Address:  tc.EthereumAccount.Address,
@@ -534,7 +546,7 @@ func (tc *TenantConfig) loadFromProtobuf(data *configpb.TenantData) {
 }
 
 // NewTenantConfig creates a new TenantConfig instance with configs
-func NewTenantConfig(ethAccountName string, c config.Configuration) (*TenantConfig, error) {
+func NewTenantConfig(ethAccountName string, c config.Configuration) (config.TenantConfiguration, error) {
 	id, err := c.GetIdentityID()
 	if err != nil {
 		return nil, err
@@ -554,7 +566,7 @@ func NewTenantConfig(ethAccountName string, c config.Configuration) (*TenantConf
 }
 
 // TempTenantConfig creates a new TenantConfig without id validation, Must only be used for tenant creation.
-func TempTenantConfig(ethAccountName string, c config.Configuration) (*TenantConfig, error) {
+func TempTenantConfig(ethAccountName string, c config.Configuration) (config.TenantConfiguration, error) {
 	acc, err := c.GetEthereumAccount(ethAccountName)
 	if err != nil && ethAccountName != "" {
 		return nil, err

@@ -2,6 +2,7 @@ package p2p
 
 import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -18,7 +19,7 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return err
 	}
 
-	cfgService, ok := ctx[configstore.BootstrappedConfigStorage].(configstore.Service)
+	cfgService, ok := ctx[configstore.BootstrappedConfigStorage].(config.Service)
 	if !ok {
 		return errors.New("configstore not initialised")
 	}

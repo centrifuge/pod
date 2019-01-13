@@ -15,12 +15,14 @@ func TestBootstrapper_BootstrapHappy(t *testing.T) {
 	b := Bootstrapper{}
 	err := b.Bootstrap(ctx)
 	assert.NoError(t, err)
-	configService, ok := ctx[BootstrappedConfigStorage].(Service)
+	configService, ok := ctx[BootstrappedConfigStorage].(config.Service)
 	assert.True(t, ok)
 	_, err = configService.GetConfig()
 	assert.NoError(t, err)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	nc := NewNodeConfig(cfg)
-	_, err = configService.GetTenant(nc.MainIdentity.IdentityID)
+	i, err := nc.GetIdentityID()
+	assert.NoError(t, err)
+	_, err = configService.GetTenant(i)
 	assert.NoError(t, err)
 }

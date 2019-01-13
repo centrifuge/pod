@@ -2,6 +2,7 @@ package api
 
 import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
@@ -36,7 +37,7 @@ func registerServices(ctx context.Context, cfg Config, grpcServer *grpc.Server, 
 		return errors.New("failed to get %s", documents.BootstrappedRegistry)
 	}
 
-	configService, ok := nodeObjReg[configstore.BootstrappedConfigStorage].(configstore.Service)
+	configService, ok := nodeObjReg[configstore.BootstrappedConfigStorage].(config.Service)
 	if !ok {
 		return errors.New("failed to get %s", configstore.BootstrappedConfigStorage)
 	}

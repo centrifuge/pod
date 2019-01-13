@@ -30,14 +30,14 @@ var (
 	client    p2p.Client
 	cfg       config.Configuration
 	idService identity.Service
-	cfgStore  configstore.Service
+	cfgStore  config.Service
 )
 
 func TestMain(m *testing.M) {
 	flag.Parse()
 	ctx := testingbootstrap.TestFunctionalEthereumBootstrap()
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-	cfgStore = ctx[configstore.BootstrappedConfigStorage].(configstore.Service)
+	cfgStore = ctx[configstore.BootstrappedConfigStorage].(config.Service)
 	idService = ctx[ethid.BootstrappedIDService].(identity.Service)
 	client = ctx[bootstrap.BootstrappedP2PClient].(p2p.Client)
 	testingidentity.CreateIdentityWithKeys(cfg, idService)
@@ -80,14 +80,15 @@ func createLocalCollaborator(t *testing.T, corruptID bool) (*configstore.TenantC
 	tcID := identity.RandomCentID()
 	tc, err := configstore.TempTenantConfig("", cfg)
 	assert.NoError(t, err)
-	tc.IdentityID = tcID[:]
-	id := testingidentity.CreateTenantIDWithKeys(cfg.GetEthereumContextWaitTimeout(), tc, idService)
+	tcr := tc.(*configstore.TenantConfig)
+	tcr.IdentityID = tcID[:]
+	id := testingidentity.CreateTenantIDWithKeys(cfg.GetEthereumContextWaitTimeout(), tcr, idService)
 	if corruptID {
-		tc.IdentityID = utils.RandomSlice(identity.CentIDLength)
+		tcr.IdentityID = utils.RandomSlice(identity.CentIDLength)
 	}
-	tc, err = cfgStore.CreateTenant(tc)
+	tc, err = cfgStore.CreateTenant(tcr)
 	assert.NoError(t, err)
-	return tc, id, err
+	return tcr, id, err
 }
 
 func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte) *coredocumentpb.CoreDocument {

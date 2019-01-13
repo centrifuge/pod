@@ -49,7 +49,7 @@ func (wh webhookSender) Send(ctx context.Context, notification *notificationpb.N
 	if err != nil {
 		return Failure, err
 	}
-	url := tc.ReceiveEventNotificationEndpoint
+	url := tc.GetReceiveEventNotificationEndpoint()
 	if url == "" {
 		log.Warningf("Webhook URL not defined, manually fetch received document")
 		return Success, nil
