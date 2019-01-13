@@ -47,7 +47,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestClient_GetSignaturesForDocument(t *testing.T) {
-	tc, _, err := createLocalCollaborator(t)
+	tc, _, err := createLocalCollaborator(t, false)
 	ctxh := testingconfig.CreateTenantContext(t, nil, cfg)
 	doc := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID})
 	err = client.GetSignaturesForDocument(ctxh, idService, doc)
@@ -55,8 +55,18 @@ func TestClient_GetSignaturesForDocument(t *testing.T) {
 	assert.Equal(t, 2, len(doc.Signatures))
 }
 
+func TestClient_GetSignaturesForDocumentValidationCheck(t *testing.T) {
+	tc, _, err := createLocalCollaborator(t, true)
+	ctxh := testingconfig.CreateTenantContext(t, nil, cfg)
+	doc := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID})
+	err = client.GetSignaturesForDocument(ctxh, idService, doc)
+	assert.NoError(t, err)
+	// one signature would be missing
+	assert.Equal(t, 1, len(doc.Signatures))
+}
+
 func TestClient_SendAnchoredDocument(t *testing.T) {
-	tc, cid, err := createLocalCollaborator(t)
+	tc, cid, err := createLocalCollaborator(t, false)
 	ctxh := testingconfig.CreateTenantContext(t, nil, cfg)
 	doc := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID})
 
@@ -66,14 +76,17 @@ func TestClient_SendAnchoredDocument(t *testing.T) {
 	}
 }
 
-func createLocalCollaborator(t *testing.T) (*configstore.TenantConfig, identity.Identity, error) {
+func createLocalCollaborator(t *testing.T, corruptID bool) (*configstore.TenantConfig, identity.Identity, error) {
 	tcID := identity.RandomCentID()
 	tc, err := configstore.TempTenantConfig("", cfg)
 	assert.NoError(t, err)
 	tc.IdentityID = tcID[:]
+	id := testingidentity.CreateTenantIDWithKeys(cfg.GetEthereumContextWaitTimeout(), tc, idService)
+	if corruptID {
+		tc.IdentityID = utils.RandomSlice(identity.CentIDLength)
+	}
 	tc, err = cfgStore.CreateTenant(tc)
 	assert.NoError(t, err)
-	id := testingidentity.CreateTenantIDWithKeys(cfg.GetEthereumContextWaitTimeout(), tc, idService)
 	return tc, id, err
 }
 

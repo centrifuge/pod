@@ -139,6 +139,9 @@ func (s *peer) getSignatureForDocument(ctx context.Context, identityService iden
 		return nil, err
 	}
 
+	var resp *p2ppb.SignatureResponse
+	var header *p2ppb.Header
+
 	tc, err := s.config.GetTenant(receiverCentID[:])
 	if err == nil {
 		// this is a local tenant
@@ -149,56 +152,55 @@ func (s *peer) getSignatureForDocument(ctx context.Context, identityService iden
 			return nil, err
 		}
 
-		return h.RequestDocumentSignature(localPeerCtx, &p2ppb.SignatureRequest{Document: &doc})
+		resp, err = h.RequestDocumentSignature(localPeerCtx, &p2ppb.SignatureRequest{Document: &doc})
+		if err != nil {
+			return nil, err
+		}
+		header = &p2ppb.Header{NodeVersion: version.GetVersion().String()}
+	} else {
+		// this is a remote tenant
+		id, err := identityService.LookupIdentityForID(receiverCentID)
+		if err != nil {
+			return nil, err
+		}
+
+		receiverPeer, err := s.getPeerID(id)
+		if err != nil {
+			return nil, err
+		}
+		envelope, err := p2pcommon.PrepareP2PEnvelope(ctx, nc.NetworkID, p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: &doc})
+		if err != nil {
+			return nil, err
+		}
+		log.Infof("Requesting signature from %s\n", receiverPeer)
+		recv, err := s.mes.sendMessage(ctx, receiverPeer, envelope, p2pcommon.ProtocolForCID(receiverCentID))
+		if err != nil {
+			return nil, err
+		}
+		recvEnvelope, err := p2pcommon.ResolveDataEnvelope(recv)
+		if err != nil {
+			return nil, err
+		}
+		// handle client error
+		if p2pcommon.MessageTypeError.Equals(recvEnvelope.Header.Type) {
+			return nil, convertClientError(recvEnvelope)
+		}
+		if !p2pcommon.MessageTypeRequestSignatureRep.Equals(recvEnvelope.Header.Type) {
+			return nil, errors.New("the received request signature response is incorrect")
+		}
+		resp = new(p2ppb.SignatureResponse)
+		err = proto.Unmarshal(recvEnvelope.Body, resp)
+		if err != nil {
+			return nil, err
+		}
+		header = recvEnvelope.Header
 	}
 
-	// this is a remote tenant
-	id, err := identityService.LookupIdentityForID(receiverCentID)
+	err = validateSignatureResp(identityService, receiverCentID, &doc, header, resp)
 	if err != nil {
 		return nil, err
 	}
 
-	receiverPeer, err := s.getPeerID(id)
-	if err != nil {
-		return nil, err
-	}
-	envelope, err := p2pcommon.PrepareP2PEnvelope(ctx, nc.NetworkID, p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: &doc})
-	if err != nil {
-		return nil, err
-	}
-	log.Infof("Requesting signature from %s\n", receiverPeer)
-	recv, err := s.mes.sendMessage(ctx, receiverPeer, envelope, p2pcommon.ProtocolForCID(receiverCentID))
-	if err != nil {
-		return nil, err
-	}
-	recvEnvelope, err := p2pcommon.ResolveDataEnvelope(recv)
-	if err != nil {
-		return nil, err
-	}
-	// handle client error
-	if p2pcommon.MessageTypeError.Equals(recvEnvelope.Header.Type) {
-		return nil, convertClientError(recvEnvelope)
-	}
-	if !p2pcommon.MessageTypeRequestSignatureRep.Equals(recvEnvelope.Header.Type) {
-		return nil, errors.New("the received request signature response is incorrect")
-	}
-	resp := new(p2ppb.SignatureResponse)
-	err = proto.Unmarshal(recvEnvelope.Body, resp)
-	if err != nil {
-		return nil, err
-	}
-	compatible := version.CheckVersion(recvEnvelope.Header.NodeVersion)
-	if !compatible {
-		return nil, version.IncompatibleVersionError(recvEnvelope.Header.NodeVersion)
-	}
-	err = identity.ValidateCentrifugeIDBytes(resp.Signature.EntityId, receiverCentID)
-	if err != nil {
-		return nil, centerrors.New(code.AuthenticationFailed, err.Error())
-	}
-	err = identityService.ValidateSignature(resp.Signature, doc.SigningRoot)
-	if err != nil {
-		return nil, centerrors.New(code.AuthenticationFailed, "signature invalid")
-	}
 	log.Infof("Signature successfully received from %s\n", receiverCentID)
 	return resp, nil
 }
@@ -254,6 +256,7 @@ func (s *peer) GetSignaturesForDocument(ctx context.Context, identityService ide
 
 	for _, resp := range responses {
 		if resp.err != nil {
+			// this error is ignored since we would still anchor the document
 			log.Error(resp.err)
 			continue
 		}
@@ -271,4 +274,22 @@ func convertClientError(recv *p2ppb.Envelope) error {
 		return err
 	}
 	return errors.New(resp.Message)
+}
+
+func validateSignatureResp(identityService identity.Service, receiver identity.CentID, doc *coredocumentpb.CoreDocument, header *p2ppb.Header, resp *p2ppb.SignatureResponse) error {
+	compatible := version.CheckVersion(header.NodeVersion)
+	if !compatible {
+		return version.IncompatibleVersionError(header.NodeVersion)
+	}
+
+	err := identity.ValidateCentrifugeIDBytes(resp.Signature.EntityId, receiver)
+	if err != nil {
+		return centerrors.New(code.AuthenticationFailed, err.Error())
+	}
+
+	err = identityService.ValidateSignature(resp.Signature, doc.SigningRoot)
+	if err != nil {
+		return centerrors.New(code.AuthenticationFailed, "signature invalid")
+	}
+	return nil
 }
