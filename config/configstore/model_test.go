@@ -229,8 +229,43 @@ func TestNewTenantConfig(t *testing.T) {
 	c.On("GetIdentityID").Return(utils.RandomSlice(6), nil).Once()
 	c.On("GetSigningKeyPair").Return("pub", "priv").Once()
 	c.On("GetEthAuthKeyPair").Return("pub", "priv").Once()
-	NewTenantConfig("name", c)
+	_, err := NewTenantConfig("name", c)
+	assert.NoError(t, err)
 	c.AssertExpectations(t)
+}
+
+func TestNodeConfig_NilFields(t *testing.T) {
+	c := createMockConfig()
+	nc := NewNodeConfig(c)
+	c.AssertExpectations(t)
+
+	// Empty node config
+	emptyNC := NodeConfig{}
+	epb := emptyNC.createProtobuf()
+	assert.NotNil(t, epb)
+
+	// Nil big.Int struct value
+	nc.EthereumGasPrice = nil
+	nc.MainIdentity = TenantConfig{}
+	ncpb := nc.createProtobuf()
+	assert.Equal(t, nc.StoragePath, ncpb.StoragePath)
+	assert.Equal(t, nc.ServerPort, int(ncpb.ServerPort))
+
+	ncCopy := new(NodeConfig)
+	// Nil TenantConfig and duration.Interval value
+	ncpb.MainIdentity = nil
+	ncpb.EthIntervalRetry = nil
+	err := ncCopy.loadFromProtobuf(ncpb)
+	assert.NoError(t, err)
+	assert.Equal(t, ncpb.StoragePath, ncCopy.StoragePath)
+	assert.Equal(t, int(ncpb.ServerPort), ncCopy.ServerPort)
+	assert.NotNil(t, ncCopy.MainIdentity)
+	assert.Equal(t, time.Duration(0), ncCopy.EthereumIntervalRetry)
+
+	// All proto nil
+	err = ncCopy.loadFromProtobuf(nil)
+	assert.NoError(t, err)
+	assert.Equal(t, time.Duration(0), ncCopy.EthereumIntervalRetry)
 }
 
 func TestNodeConfigProtobuf(t *testing.T) {
@@ -244,10 +279,23 @@ func TestNodeConfigProtobuf(t *testing.T) {
 	assert.Equal(t, hexutil.Encode(nc.MainIdentity.IdentityID), ncpb.MainIdentity.IdentityId)
 
 	ncCopy := new(NodeConfig)
-	ncCopy.loadFromProtobuf(ncpb)
+	err := ncCopy.loadFromProtobuf(ncpb)
+	assert.NoError(t, err)
 	assert.Equal(t, ncpb.StoragePath, ncCopy.StoragePath)
 	assert.Equal(t, int(ncpb.ServerPort), ncCopy.ServerPort)
 	assert.Equal(t, ncpb.MainIdentity.IdentityId, hexutil.Encode(ncCopy.MainIdentity.IdentityID))
+}
+
+func TestTenantConfig_NilFields(t *testing.T) {
+	// empty tenant config
+	emptyTC := TenantConfig{}
+	etd := emptyTC.createProtobuf()
+	assert.NotNil(t, etd)
+
+	// All proto nil
+	tcCopy := new(TenantConfig)
+	tcCopy.loadFromProtobuf(nil)
+	assert.NotNil(t, tcCopy.EthereumAccount)
 }
 
 func TestTenantConfigProtobuf(t *testing.T) {

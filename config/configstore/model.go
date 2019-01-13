@@ -270,6 +270,14 @@ func (nc *NodeConfig) FromJSON(data []byte) error {
 }
 
 func (nc *NodeConfig) createProtobuf() *configpb.ConfigData {
+	//Nil safe checks
+	if nc.EthereumGasPrice == nil {
+		nc.EthereumGasPrice = big.NewInt(0)
+	}
+	if nc.MainIdentity.EthereumAccount == nil {
+		nc.MainIdentity.EthereumAccount = new(config.AccountConfig)
+	}
+
 	return &configpb.ConfigData{
 		MainIdentity: &configpb.TenantData{
 			EthAccount: &configpb.EthereumAccount{
@@ -319,6 +327,29 @@ func convertAddressesToStringMap(addresses map[config.ContractName]common.Addres
 }
 
 func (nc *NodeConfig) loadFromProtobuf(data *configpb.ConfigData) error {
+	// Nil checks
+	if data == nil {
+		data = new(configpb.ConfigData)
+	}
+	if data.MainIdentity == nil {
+		data.MainIdentity = new(configpb.TenantData)
+		data.MainIdentity.SigningKeyPair = new(configpb.KeyPair)
+		data.MainIdentity.EthauthKeyPair = new(configpb.KeyPair)
+		data.MainIdentity.EthAccount = new(configpb.EthereumAccount)
+	}
+	if data.P2PConnectionTimeout == nil {
+		data.P2PConnectionTimeout = new(duration.Duration)
+	}
+	if data.EthIntervalRetry == nil {
+		data.EthIntervalRetry = new(duration.Duration)
+	}
+	if data.EthContextWaitTimeout == nil {
+		data.EthContextWaitTimeout = new(duration.Duration)
+	}
+	if data.EthContextReadWaitTimeout == nil {
+		data.EthContextReadWaitTimeout = new(duration.Duration)
+	}
+
 	identityID, _ := hexutil.Decode(data.MainIdentity.IdentityId)
 
 	nc.MainIdentity = TenantConfig{
@@ -494,6 +525,11 @@ func (tc *TenantConfig) FromJSON(data []byte) error {
 }
 
 func (tc *TenantConfig) createProtobuf() *configpb.TenantData {
+	// Nil checks
+	if tc.EthereumAccount == nil {
+		tc.EthereumAccount = new(config.AccountConfig)
+	}
+
 	return &configpb.TenantData{
 		EthAccount: &configpb.EthereumAccount{
 			Address:  tc.EthereumAccount.Address,
@@ -515,6 +551,20 @@ func (tc *TenantConfig) createProtobuf() *configpb.TenantData {
 }
 
 func (tc *TenantConfig) loadFromProtobuf(data *configpb.TenantData) {
+	// Nil checks
+	if data == nil {
+		data = new(configpb.TenantData)
+	}
+	if data.EthAccount == nil {
+		data.EthAccount = new(configpb.EthereumAccount)
+	}
+	if data.SigningKeyPair == nil {
+		data.SigningKeyPair = new(configpb.KeyPair)
+	}
+	if data.EthauthKeyPair == nil {
+		data.EthauthKeyPair = new(configpb.KeyPair)
+	}
+
 	tc.EthereumAccount = &config.AccountConfig{
 		Address:  data.EthAccount.Address,
 		Key:      data.EthAccount.Key,
