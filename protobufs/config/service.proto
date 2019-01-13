@@ -56,6 +56,14 @@ service ConfigService {
       description: "Creates tenant config data"
     };
   }
+  rpc GenerateTenant(google.protobuf.Empty) returns (TenantData) {
+    option (google.api.http) = {
+      post: "/config/tenants/generate"
+    };
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "Generates tenant config data taking defaults based on the main tenant"
+    };
+  }
   rpc UpdateConfig(ConfigData) returns (ConfigData) {
     option (google.api.http) = {
       put: "/config/node"

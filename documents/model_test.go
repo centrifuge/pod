@@ -31,7 +31,7 @@ func TestMain(m *testing.M) {
 		&Bootstrapper{},
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
-	ConfigService = ctx[configstore.BootstrappedConfigStorage].(config.Service)
+	ConfigService = ctx[config.BootstrappedConfigStorage].(config.Service)
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)

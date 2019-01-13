@@ -56,7 +56,7 @@ func TestMain(m *testing.M) {
 	ctx := make(map[string]interface{})
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-	cfgService := ctx[configstore.BootstrappedConfigStorage].(config.Service)
+	cfgService := ctx[config.BootstrappedConfigStorage].(config.Service)
 	registry = ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
 	handler = New(cfgService, registry, HandshakeValidator(cfg.GetNetworkID()))
 	result := m.Run()

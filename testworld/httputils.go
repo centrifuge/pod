@@ -117,6 +117,14 @@ func getAllTenantConfigs(e *httpexpect.Expect, httpStatus int) *httpexpect.Objec
 	return resp.JSON().Object()
 }
 
+func generateTenant(e *httpexpect.Expect, httpStatus int) *httpexpect.Object {
+	resp := e.POST("/config/tenants/generate").
+		WithHeader("accept", "application/json").
+		WithHeader("Content-Type", "application/json").
+		Expect().Status(httpStatus)
+	return resp.JSON().Object()
+}
+
 // TODO add rest of the endpoints for config
 
 func createInsecureClient() *http.Client {

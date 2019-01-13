@@ -6,16 +6,19 @@ import (
 	"context"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/config"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestGrpcHandler_GetConfigNoConfig(t *testing.T) {
+	idService := &testingcommons.MockIDService{}
 	repo, _, err := getRandomStorage()
 	assert.Nil(t, err)
 	repo.RegisterConfig(&NodeConfig{})
-	svc := DefaultService(repo)
+	svc := DefaultService(repo, idService)
 	h := GRPCHandler(svc)
 	readCfg, err := h.GetConfig(context.Background(), nil)
 	assert.NotNil(t, err)
@@ -23,10 +26,11 @@ func TestGrpcHandler_GetConfigNoConfig(t *testing.T) {
 }
 
 func TestGrpcHandler_GetConfig(t *testing.T) {
+	idService := &testingcommons.MockIDService{}
 	repo, _, err := getRandomStorage()
 	assert.Nil(t, err)
 	repo.RegisterConfig(&NodeConfig{})
-	svc := DefaultService(repo)
+	svc := DefaultService(repo, idService)
 	h := GRPCHandler(svc)
 	nodeCfg := NewNodeConfig(cfg)
 	_, err = h.CreateConfig(context.Background(), nodeCfg.CreateProtobuf())
@@ -37,10 +41,11 @@ func TestGrpcHandler_GetConfig(t *testing.T) {
 }
 
 func TestGrpcHandler_GetTenantNoConfig(t *testing.T) {
+	idService := &testingcommons.MockIDService{}
 	repo, _, err := getRandomStorage()
 	assert.Nil(t, err)
 	repo.RegisterTenant(&TenantConfig{})
-	svc := DefaultService(repo)
+	svc := DefaultService(repo, idService)
 	h := GRPCHandler(svc)
 	readCfg, err := h.GetTenant(context.Background(), &configpb.GetTenantRequest{Identifier: "0x123456789"})
 	assert.NotNil(t, err)
@@ -48,10 +53,11 @@ func TestGrpcHandler_GetTenantNoConfig(t *testing.T) {
 }
 
 func TestGrpcHandler_GetTenant(t *testing.T) {
+	idService := &testingcommons.MockIDService{}
 	repo, _, err := getRandomStorage()
 	assert.Nil(t, err)
 	repo.RegisterTenant(&TenantConfig{})
-	svc := DefaultService(repo)
+	svc := DefaultService(repo, idService)
 	h := GRPCHandler(svc)
 	tenantCfg, err := NewTenantConfig("main", cfg)
 	assert.Nil(t, err)
@@ -65,10 +71,11 @@ func TestGrpcHandler_GetTenant(t *testing.T) {
 }
 
 func TestGrpcHandler_GetAllTenants(t *testing.T) {
+	idService := &testingcommons.MockIDService{}
 	repo, _, err := getRandomStorage()
 	assert.Nil(t, err)
 	repo.RegisterTenant(&TenantConfig{})
-	svc := DefaultService(repo)
+	svc := DefaultService(repo, idService)
 	h := GRPCHandler(svc)
 	tenantCfg1, err := NewTenantConfig("main", cfg)
 	tenantCfg2, err := NewTenantConfig("main", cfg)
@@ -85,10 +92,11 @@ func TestGrpcHandler_GetAllTenants(t *testing.T) {
 }
 
 func TestGrpcHandler_CreateConfig(t *testing.T) {
+	idService := &testingcommons.MockIDService{}
 	repo, _, err := getRandomStorage()
 	assert.Nil(t, err)
 	repo.RegisterConfig(&NodeConfig{})
-	svc := DefaultService(repo)
+	svc := DefaultService(repo, idService)
 	h := GRPCHandler(svc)
 	nodeCfg := NewNodeConfig(cfg)
 	_, err = h.CreateConfig(context.Background(), nodeCfg.CreateProtobuf())
@@ -100,10 +108,11 @@ func TestGrpcHandler_CreateConfig(t *testing.T) {
 }
 
 func TestGrpcHandler_CreateTenant(t *testing.T) {
+	idService := &testingcommons.MockIDService{}
 	repo, _, err := getRandomStorage()
 	assert.Nil(t, err)
 	repo.RegisterTenant(&TenantConfig{})
-	svc := DefaultService(repo)
+	svc := DefaultService(repo, idService)
 	h := GRPCHandler(svc)
 	nodeCfg, err := NewTenantConfig("main", cfg)
 	assert.Nil(t, err)
@@ -115,11 +124,22 @@ func TestGrpcHandler_CreateTenant(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
+func TestGrpcHandler_GenerateTenant(t *testing.T) {
+	s := MockService{}
+	t1, _ := NewTenantConfig(cfg.GetEthereumDefaultAccountName(), cfg)
+	s.On("GenerateTenant").Return(t1, nil)
+	h := GRPCHandler(s)
+	tc, err := h.GenerateTenant(context.Background(), nil)
+	assert.NoError(t, err)
+	assert.NotNil(t, tc)
+}
+
 func TestGrpcHandler_UpdateConfig(t *testing.T) {
+	idService := &testingcommons.MockIDService{}
 	repo, _, err := getRandomStorage()
 	assert.Nil(t, err)
 	repo.RegisterConfig(&NodeConfig{})
-	svc := DefaultService(repo)
+	svc := DefaultService(repo, idService)
 	h := GRPCHandler(svc)
 	nodeCfg := NewNodeConfig(cfg)
 
@@ -140,10 +160,11 @@ func TestGrpcHandler_UpdateConfig(t *testing.T) {
 }
 
 func TestGrpcHandler_UpdateTenant(t *testing.T) {
+	idService := &testingcommons.MockIDService{}
 	repo, _, err := getRandomStorage()
 	assert.Nil(t, err)
 	repo.RegisterTenant(&TenantConfig{})
-	svc := DefaultService(repo)
+	svc := DefaultService(repo, idService)
 	h := GRPCHandler(svc)
 	nodeCfg, err := NewTenantConfig("main", cfg)
 	assert.Nil(t, err)
@@ -169,10 +190,11 @@ func TestGrpcHandler_UpdateTenant(t *testing.T) {
 }
 
 func TestGrpcHandler_DeleteConfig(t *testing.T) {
+	idService := &testingcommons.MockIDService{}
 	repo, _, err := getRandomStorage()
 	assert.Nil(t, err)
 	repo.RegisterConfig(&NodeConfig{})
-	svc := DefaultService(repo)
+	svc := DefaultService(repo, idService)
 	h := GRPCHandler(svc)
 
 	//No error when no config
@@ -191,10 +213,11 @@ func TestGrpcHandler_DeleteConfig(t *testing.T) {
 }
 
 func TestGrpcHandler_DeleteTenant(t *testing.T) {
+	idService := &testingcommons.MockIDService{}
 	repo, _, err := getRandomStorage()
 	assert.Nil(t, err)
 	repo.RegisterTenant(&TenantConfig{})
-	svc := DefaultService(repo)
+	svc := DefaultService(repo, idService)
 	h := GRPCHandler(svc)
 
 	//No error when no config

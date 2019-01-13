@@ -6,8 +6,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 
-	"github.com/centrifuge/go-centrifuge/identity/ethid"
-
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers"
 
 	"github.com/centrifuge/go-centrifuge/storage"
@@ -38,7 +36,6 @@ func createIdentity(ctx context.Context, idService identity.Service) (identity.C
 func generateKeys(config config.Configuration) {
 	p2pPub, p2pPvt := config.GetSigningKeyPair()
 	ethAuthPub, ethAuthPvt := config.GetEthAuthKeyPair()
-	crypto.GenerateSigningKeyPair(p2pPub, p2pPvt, "ed25519")
 	crypto.GenerateSigningKeyPair(p2pPub, p2pPvt, "ed25519")
 	crypto.GenerateSigningKeyPair(ethAuthPub, ethAuthPvt, "secp256k1")
 }
@@ -102,7 +99,7 @@ func CreateConfig(
 		return err
 	}
 
-	idService := ctx[ethid.BootstrappedIDService].(identity.Service)
+	idService := ctx[identity.BootstrappedIDService].(identity.Service)
 	id, err := createIdentity(tctx, idService)
 	if err != nil {
 		return err

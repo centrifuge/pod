@@ -16,14 +16,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/storage"
-
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/config"
-
-	"github.com/centrifuge/go-centrifuge/errors"
-
 	"github.com/centrifuge/go-centrifuge/centerrors"
+	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/config"
 	"github.com/centrifuge/go-centrifuge/resources"
+	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	logging "github.com/ipfs/go-log"
@@ -75,6 +72,7 @@ type Configuration interface {
 
 	GetStoragePath() string
 	GetConfigStoragePath() string
+	GetTenantsKeystore() string
 	GetP2PPort() int
 	GetP2PExternalIP() string
 	GetP2PConnectionTimeout() time.Duration
@@ -135,6 +133,7 @@ type Service interface {
 	GetAllTenants() ([]TenantConfiguration, error)
 	CreateConfig(data Configuration) (Configuration, error)
 	CreateTenant(data TenantConfiguration) (TenantConfiguration, error)
+	GenerateTenant() (TenantConfiguration, error)
 	UpdateConfig(data Configuration) (Configuration, error)
 	UpdateTenant(data TenantConfiguration) (TenantConfiguration, error)
 	DeleteConfig() error
@@ -231,6 +230,11 @@ func (c *configuration) GetStoragePath() string {
 // GetConfigStoragePath returns the config storage backend.
 func (c *configuration) GetConfigStoragePath() string {
 	return c.GetString("configStorage.path")
+}
+
+// GetTenantsKeystore returns the tenants keystore location.
+func (c *configuration) GetTenantsKeystore() string {
+	return c.GetString("tenants.keystore")
 }
 
 // GetP2PPort returns P2P Port.

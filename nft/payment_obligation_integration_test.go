@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/identity/ethid"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
@@ -36,7 +35,7 @@ func TestMain(m *testing.M) {
 	log.Debug("Test PreSetup for NFT")
 	ctx := cc.TestFunctionalEthereumBootstrap()
 	registry = ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
-	idService = ctx[ethid.BootstrappedIDService].(identity.Service)
+	idService = ctx[identity.BootstrappedIDService].(identity.Service)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	payOb = ctx[nft.BootstrappedPayObService].(nft.PaymentObligation)
 	txService = ctx[transactions.BootstrappedService].(transactions.Service)

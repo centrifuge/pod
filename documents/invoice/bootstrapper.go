@@ -1,14 +1,12 @@
 package invoice
 
 import (
-	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
-	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity/ethid"
-
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/transactions"
@@ -29,7 +27,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("anchor repository not initialised")
 	}
 
-	idService, ok := ctx[ethid.BootstrappedIDService].(identity.Service)
+	idService, ok := ctx[identity.BootstrappedIDService].(identity.Service)
 	if !ok {
 		return errors.New("identity service not initialised")
 	}

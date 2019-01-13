@@ -41,7 +41,7 @@ func TestMain(m *testing.M) {
 	}
 	ctx := make(map[string]interface{})
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
-	cfg = ctx[configstore.BootstrappedConfigStorage].(config.Service)
+	cfg = ctx[config.BootstrappedConfigStorage].(config.Service)
 	c, _ := cfg.GetConfig()
 	n := c.(*configstore.NodeConfig)
 	n.MainIdentity.SigningKeyPair.Pub = "../build/resources/signingKey.pub.pem"

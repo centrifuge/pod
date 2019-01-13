@@ -37,9 +37,9 @@ func registerServices(ctx context.Context, cfg Config, grpcServer *grpc.Server, 
 		return errors.New("failed to get %s", documents.BootstrappedRegistry)
 	}
 
-	configService, ok := nodeObjReg[configstore.BootstrappedConfigStorage].(config.Service)
+	configService, ok := nodeObjReg[config.BootstrappedConfigStorage].(config.Service)
 	if !ok {
-		return errors.New("failed to get %s", configstore.BootstrappedConfigStorage)
+		return errors.New("failed to get %s", config.BootstrappedConfigStorage)
 	}
 
 	payObService, ok := nodeObjReg[nft.BootstrappedPayObService].(nft.PaymentObligation)
