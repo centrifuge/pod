@@ -5,6 +5,8 @@ package testworld
 import (
 	"net/http"
 	"testing"
+
+	"github.com/gavv/httpexpect"
 )
 
 func TestConfig_Happy(t *testing.T) {
@@ -24,11 +26,22 @@ func TestConfig_Happy(t *testing.T) {
 	// check charlies all tenant configs
 	res = getAllTenantConfigs(charlie.httpExpect, charlie.id.String(), http.StatusOK)
 	tenants := res.Value("data").Array()
-	tenants.Length().Equal(1)
-	tenants.Element(0).Path("$.identity_id").String().NotEmpty().Equal(charlie.id.String())
+	tids := getAccounts(tenants)
+	if _, ok := tids[charlie.id.String()]; !ok {
+		t.Error("Charlies id needs to exist in the accounts list")
+	}
 
 	// generate a tenant within Charlie
 	res = generateTenant(charlie.httpExpect, charlie.id.String(), http.StatusOK)
 	tcID := res.Value("identity_id").String().NotEmpty()
 	tcID.NotEqual(charlie.id.String())
+}
+
+func getAccounts(accounts *httpexpect.Array) map[string]string {
+	tids := make(map[string]string)
+	for i := 0; i < int(accounts.Length().Raw()); i++ {
+		val := accounts.Element(i).Path("$.identity_id").String().NotEmpty().Raw()
+		tids[val] = val
+	}
+	return tids
 }
