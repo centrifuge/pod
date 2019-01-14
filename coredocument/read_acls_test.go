@@ -40,11 +40,8 @@ func TestReadAccessValidator_PeerCanRead(t *testing.T) {
 
 	// peer who cant access
 	rcid := identity.RandomCentID()
-	err = pv.PeerCanRead(cd, rcid)
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(ErrPeerNotFound, err))
+	assert.False(t, pv.PeerCanRead(cd, rcid))
 
 	// peer can access
-	err = pv.PeerCanRead(cd, peer)
-	assert.NoError(t, err)
+	assert.True(t, pv.PeerCanRead(cd, peer))
 }

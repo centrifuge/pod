@@ -11,9 +11,6 @@ import (
 const (
 	// ErrZeroCollaborators error when no collaborators are passed
 	ErrZeroCollaborators = errors.Error("require at least one collaborator")
-
-	// ErrPeerNotFound error when peer is not listed in the access list
-	ErrPeerNotFound = errors.Error("peer not found in the access list")
 )
 
 // initReadRules initiates the read rules for a given coredocument.
@@ -64,7 +61,7 @@ func appendRole(roles []*coredocumentpb.RoleEntry, role *coredocumentpb.Role) []
 
 // ReadAccessValidator defines validator functions for peer.
 type ReadAccessValidator interface {
-	PeerCanRead(cd *coredocumentpb.CoreDocument, peer identity.CentID) error
+	PeerCanRead(cd *coredocumentpb.CoreDocument, peer identity.CentID) bool
 }
 
 // readAccessValidator implements ReadAccessValidator.
@@ -72,7 +69,7 @@ type readAccessValidator struct{}
 
 // PeerCanRead validate if the core document can be read by the peer.
 // Returns an error if not.
-func (r readAccessValidator) PeerCanRead(cd *coredocumentpb.CoreDocument, peer identity.CentID) error {
+func (r readAccessValidator) PeerCanRead(cd *coredocumentpb.CoreDocument, peer identity.CentID) bool {
 	// lets loop though read rules
 	for _, rule := range cd.ReadRules {
 		for _, rk := range rule.Roles {
@@ -84,12 +81,12 @@ func (r readAccessValidator) PeerCanRead(cd *coredocumentpb.CoreDocument, peer i
 			}
 
 			if isPeerInRole(role, peer) {
-				return nil
+				return true
 			}
 		}
 	}
 
-	return ErrPeerNotFound
+	return false
 }
 
 func getRole(key uint32, roles []*coredocumentpb.RoleEntry) (*coredocumentpb.Role, error) {
