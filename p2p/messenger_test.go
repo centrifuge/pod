@@ -75,7 +75,7 @@ func TestHandleNewMessage(t *testing.T) {
 
 	// 1. happy path
 	// from h1 to h2 (with a message size ~ MessageSizeMax, has to be less because of the length bytes)
-	p2pEnv, err := p2pcommon.PrepareP2PEnvelope(c, uint32(0), p2pcommon.MessageTypeRequestSignature, &p2ppb.Envelope{Body: utils.RandomSlice(MessageSizeMax - 200)})
+	p2pEnv, err := p2pcommon.PrepareP2PEnvelope(c, uint32(0), p2pcommon.MessageTypeRequestSignature, &p2ppb.Envelope{Body: utils.RandomSlice(MessageSizeMax - 400)})
 	assert.NoError(t, err)
 	msg, err := m1.sendMessage(c, h2.ID(), p2pEnv, MessengerDummyProtocol)
 	assert.NoError(t, err)

@@ -7,13 +7,17 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/version"
+
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+
+	"github.com/centrifuge/go-centrifuge/contextutil"
+	"github.com/centrifuge/go-centrifuge/crypto"
 
 	"github.com/centrifuge/go-centrifuge/p2p/common"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
-	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/proto"
 	"github.com/libp2p/go-libp2p-protocol"
@@ -40,10 +44,11 @@ import (
 )
 
 var (
-	handler  *Handler
-	registry *documents.ServiceRegistry
-	coreDoc  = testingcoredocument.GenerateCoreDocument()
-	cfg      config.Configuration
+	handler       *Handler
+	registry      *documents.ServiceRegistry
+	coreDoc       = testingcoredocument.GenerateCoreDocument()
+	cfg           config.Configuration
+	mockIDService *testingcommons.MockIDService
 )
 
 func TestMain(m *testing.M) {
@@ -62,7 +67,9 @@ func TestMain(m *testing.M) {
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfgService := ctx[config.BootstrappedConfigStorage].(config.Service)
 	registry = ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
-	handler = New(cfgService, registry, HandshakeValidator(cfg.GetNetworkID()))
+	mockIDService = &testingcommons.MockIDService{}
+	mockIDService.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	handler = New(cfgService, registry, HandshakeValidator(cfg.GetNetworkID(), mockIDService))
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)
@@ -143,9 +150,16 @@ func TestHandler_HandleInterceptor_UnsupportedMessageType(t *testing.T) {
 	p2pEnv, err := p2pcommon.PrepareP2PEnvelope(ctx, cfg.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &protocolpb.P2PEnvelope{})
 	assert.NoError(t, err)
 
-	// Manipulate message type in Header
+	// Manipulate message type in Header + Signature
 	dataEnv, _ := p2pcommon.ResolveDataEnvelope(p2pEnv)
 	dataEnv.Header.Type = "UnsupportedType"
+	dataEnv.Header.Signature = nil
+	signRequest, err := proto.Marshal(dataEnv)
+	assert.NoError(t, err)
+	self, err := contextutil.Self(ctx)
+	assert.NoError(t, err)
+	signKeys := self.Keys[identity.KeyPurposeSigning]
+	dataEnv.Header.Signature = crypto.Sign(self.ID[:], signKeys.PrivateKey, signKeys.PublicKey, signRequest)
 	marshalledRequest, err := proto.Marshal(dataEnv)
 	assert.NoError(t, err)
 	p2pEnv = &protocolpb.P2PEnvelope{Body: marshalledRequest}
@@ -184,31 +198,28 @@ func TestHandler_HandleInterceptor_getServiceAndModel_fail(t *testing.T) {
 
 func TestP2PService_basicChecks(t *testing.T) {
 	tests := []struct {
-		header *p2ppb.Header
-		err    error
+		envelope *p2ppb.Envelope
+		err      error
 	}{
 		{
-			header: &p2ppb.Header{NodeVersion: "someversion", NetworkIdentifier: 12},
-			err:    errors.AppendError(version.IncompatibleVersionError("someversion"), incompatibleNetworkError(cfg.GetNetworkID(), 12)),
+			envelope: &p2ppb.Envelope{Header: &p2ppb.Header{NodeVersion: "someversion", NetworkIdentifier: 12}},
+			err:      errors.AppendError(errors.AppendError(version.IncompatibleVersionError("someversion"), incompatibleNetworkError(cfg.GetNetworkID(), 12)), errors.New("signature header missing")),
 		},
 
 		{
-			header: &p2ppb.Header{NodeVersion: "0.0.1", NetworkIdentifier: 12},
-			err:    errors.AppendError(incompatibleNetworkError(cfg.GetNetworkID(), 12), nil),
+			envelope: &p2ppb.Envelope{Header: &p2ppb.Header{NodeVersion: "0.0.1", NetworkIdentifier: 12}},
+			err:      errors.AppendError(incompatibleNetworkError(cfg.GetNetworkID(), 12), errors.New("signature header missing")),
 		},
 
 		{
-			header: &p2ppb.Header{NodeVersion: version.GetVersion().String(), NetworkIdentifier: cfg.GetNetworkID()},
+			envelope: &p2ppb.Envelope{Header: &p2ppb.Header{NodeVersion: version.GetVersion().String(), NetworkIdentifier: cfg.GetNetworkID()}},
+			err:      errors.AppendError(errors.New("signature header missing"), nil),
 		},
 	}
 
 	for _, c := range tests {
-		err := HandshakeValidator(cfg.GetNetworkID()).Validate(c.header)
+		err := HandshakeValidator(cfg.GetNetworkID(), mockIDService).Validate(c.envelope)
 		if err != nil {
-			if c.err == nil {
-				t.Fatalf("unexpected error: %v\n", err)
-			}
-
 			assert.EqualError(t, err, c.err.Error(), "error mismatch")
 		}
 	}

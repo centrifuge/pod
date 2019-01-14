@@ -112,4 +112,7 @@ func TestPrepareP2PEnvelope(t *testing.T) {
 	p2pEnv, err = PrepareP2PEnvelope(ctx, uint32(0), MessageTypeRequestSignature, msg)
 	assert.NoError(t, err)
 	assert.NotNil(t, p2pEnv)
+	dataEnv, err := ResolveDataEnvelope(p2pEnv)
+	assert.NoError(t, err)
+	assert.NotNil(t, dataEnv.Header.Signature)
 }
