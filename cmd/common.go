@@ -123,6 +123,7 @@ func CreateConfig(
 	dbCfg := ctx[storage.BootstrappedConfigDB].(storage.Repository)
 	db.Close()
 	dbCfg.Close()
+	log.Infof("---------Centrifuge node configuration file successfully created!---------")
 	return nil
 }
 
