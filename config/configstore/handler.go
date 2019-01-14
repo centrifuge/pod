@@ -84,6 +84,15 @@ func (h grpcHandler) CreateTenant(ctx context.Context, data *configpb.TenantData
 	return tc.CreateProtobuf(), nil
 }
 
+func (h grpcHandler) GenerateTenant(context.Context, *empty.Empty) (*configpb.TenantData, error) {
+	apiLog.Infof("Generating tenant config")
+	tc, err := h.service.GenerateTenant()
+	if err != nil {
+		return nil, err
+	}
+	return tc.CreateProtobuf(), nil
+}
+
 func (h grpcHandler) UpdateConfig(ctx context.Context, data *configpb.ConfigData) (*configpb.ConfigData, error) {
 	apiLog.Infof("Updating node config: %v", data)
 	nodeConfig := new(NodeConfig)

@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -30,6 +32,7 @@ func TestMain(m *testing.M) {
 		&configstore.Bootstrapper{},
 		Bootstrapper{},
 	}
+	ctx[identity.BootstrappedIDService] = &testingcommons.MockIDService{}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)

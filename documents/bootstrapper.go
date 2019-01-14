@@ -3,7 +3,6 @@ package documents
 import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage"
@@ -37,7 +36,7 @@ type PostBootstrapper struct{}
 
 // Bootstrap register task to the queue.
 func (PostBootstrapper) Bootstrap(ctx map[string]interface{}) error {
-	cfgService, ok := ctx[configstore.BootstrappedConfigStorage].(config.Service)
+	cfgService, ok := ctx[config.BootstrappedConfigStorage].(config.Service)
 	if !ok {
 		return errors.New("config service not initialised")
 	}

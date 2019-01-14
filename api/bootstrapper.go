@@ -18,7 +18,7 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return err
 	}
 
-	_, ok := ctx[configstore.BootstrappedConfigStorage].(config.Service)
+	_, ok := ctx[config.BootstrappedConfigStorage].(config.Service)
 	if !ok {
 		return errors.New("config store not initialised")
 	}

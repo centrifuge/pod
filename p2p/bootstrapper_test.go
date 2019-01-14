@@ -5,6 +5,8 @@ package p2p
 import (
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/config"
+
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -25,7 +27,7 @@ func TestBootstrapper_Bootstrap(t *testing.T) {
 	// config
 	cs := new(configstore.MockService)
 	m[bootstrap.BootstrappedConfig] = new(testingconfig.MockConfig)
-	m[configstore.BootstrappedConfigStorage] = cs
+	m[config.BootstrappedConfigStorage] = cs
 	cs.On("GetConfig").Return(&configstore.NodeConfig{}, nil)
 	m[documents.BootstrappedRegistry] = documents.NewServiceRegistry()
 	err = b.Bootstrap(m)

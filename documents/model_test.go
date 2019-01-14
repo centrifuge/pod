@@ -6,6 +6,9 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 
 	"github.com/centrifuge/go-centrifuge/config/configstore"
@@ -30,8 +33,9 @@ func TestMain(m *testing.M) {
 		&queue.Bootstrapper{},
 		&Bootstrapper{},
 	}
+	ctx[identity.BootstrappedIDService] = &testingcommons.MockIDService{}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
-	ConfigService = ctx[configstore.BootstrappedConfigStorage].(config.Service)
+	ConfigService = ctx[config.BootstrappedConfigStorage].(config.Service)
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)

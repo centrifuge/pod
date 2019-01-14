@@ -8,14 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/testingutils/config"
-
-	"github.com/centrifuge/go-centrifuge/identity/ethid"
-
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-	cc "github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testingbootstrap"
+	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
@@ -27,11 +24,11 @@ var cfg config.Configuration
 func TestMain(m *testing.M) {
 	// Adding delay to startup (concurrency hack)
 	time.Sleep(time.Second + 2)
-	ctx := cc.TestFunctionalEthereumBootstrap()
+	ctx := testingbootstrap.TestFunctionalEthereumBootstrap()
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-	identityService = ctx[ethid.BootstrappedIDService].(identity.Service)
+	identityService = ctx[identity.BootstrappedIDService].(identity.Service)
 	result := m.Run()
-	cc.TestFunctionalEthereumTearDown()
+	testingbootstrap.TestFunctionalEthereumTearDown()
 	os.Exit(result)
 }
 

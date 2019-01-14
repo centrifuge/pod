@@ -139,6 +139,23 @@
         ]
       }
     },
+    "/config/tenants/generate": {
+      "post": {
+        "description": "Generates tenant config data taking defaults based on the main tenant",
+        "operationId": "GenerateTenant",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/configTenantData"
+            }
+          }
+        },
+        "tags": [
+          "ConfigService"
+        ]
+      }
+    },
     "/config/tenants/{identifier}": {
       "get": {
         "description": "Get Tenant Config",

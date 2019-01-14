@@ -10,6 +10,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 
 	"github.com/centrifuge/go-centrifuge/config/configstore"
@@ -40,8 +43,9 @@ func TestMain(m *testing.M) {
 		documents.Bootstrapper{},
 	}
 	ctx := make(map[string]interface{})
+	ctx[identity.BootstrappedIDService] = &testingcommons.MockIDService{}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
-	cfg = ctx[configstore.BootstrappedConfigStorage].(config.Service)
+	cfg = ctx[config.BootstrappedConfigStorage].(config.Service)
 	c, _ := cfg.GetConfig()
 	n := c.(*configstore.NodeConfig)
 	n.MainIdentity.SigningKeyPair.Pub = "../build/resources/signingKey.pub.pem"

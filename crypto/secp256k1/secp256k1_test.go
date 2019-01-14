@@ -34,7 +34,7 @@ func TestGenerateSigningKeyPair(t *testing.T) {
 
 	const PublicKeyLen = 65
 	const PrivateKeyLen = 32
-	publicKey, privateKey := GenerateSigningKeyPair()
+	publicKey, privateKey, _ := GenerateSigningKeyPair()
 	assert.Equal(t, len(publicKey), PublicKeyLen, "secp256k1 public key not correct")
 	assert.Equal(t, len(privateKey), PrivateKeyLen, "secp256k1 private key not correct")
 
@@ -45,7 +45,7 @@ func TestSigningMsg(t *testing.T) {
 	testMsg := make([]byte, MaxMsgLen)
 	copy(testMsg, "test123")
 
-	publicKey, privateKey := GenerateSigningKeyPair()
+	publicKey, privateKey, _ := GenerateSigningKeyPair()
 
 	signature, err := Sign(testMsg, privateKey)
 	assert.Nil(t, err)
@@ -63,7 +63,7 @@ func TestVerifyFalseMsg(t *testing.T) {
 	falseMsg := make([]byte, MaxMsgLen)
 	copy(falseMsg, "false")
 
-	publicKey, privateKey := GenerateSigningKeyPair()
+	publicKey, privateKey, _ := GenerateSigningKeyPair()
 
 	signature, err := Sign(testMsg, privateKey)
 	assert.Nil(t, err)
@@ -78,9 +78,9 @@ func TestVerifyFalsePublicKey(t *testing.T) {
 	testMsg := make([]byte, MaxMsgLen)
 	copy(testMsg, "test123")
 
-	_, privateKey := GenerateSigningKeyPair()
+	_, privateKey, _ := GenerateSigningKeyPair()
 
-	falsePublicKey, _ := GenerateSigningKeyPair()
+	falsePublicKey, _, _ := GenerateSigningKeyPair()
 
 	signature, err := Sign(testMsg, privateKey)
 	assert.Nil(t, err)

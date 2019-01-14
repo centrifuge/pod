@@ -7,6 +7,9 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+
 	"github.com/centrifuge/go-centrifuge/p2p/common"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
@@ -54,9 +57,10 @@ func TestMain(m *testing.M) {
 		documents.Bootstrapper{},
 	}
 	ctx := make(map[string]interface{})
+	ctx[identity.BootstrappedIDService] = &testingcommons.MockIDService{}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-	cfgService := ctx[configstore.BootstrappedConfigStorage].(config.Service)
+	cfgService := ctx[config.BootstrappedConfigStorage].(config.Service)
 	registry = ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
 	handler = New(cfgService, registry, HandshakeValidator(cfg.GetNetworkID()))
 	result := m.Run()

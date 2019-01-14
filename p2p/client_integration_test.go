@@ -16,7 +16,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/identity/ethid"
 	"github.com/centrifuge/go-centrifuge/p2p"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
@@ -37,8 +36,8 @@ func TestMain(m *testing.M) {
 	flag.Parse()
 	ctx := testingbootstrap.TestFunctionalEthereumBootstrap()
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-	cfgStore = ctx[configstore.BootstrappedConfigStorage].(config.Service)
-	idService = ctx[ethid.BootstrappedIDService].(identity.Service)
+	cfgStore = ctx[config.BootstrappedConfigStorage].(config.Service)
+	idService = ctx[identity.BootstrappedIDService].(identity.Service)
 	client = ctx[bootstrap.BootstrappedP2PClient].(p2p.Client)
 	testingidentity.CreateIdentityWithKeys(cfg, idService)
 	result := m.Run()

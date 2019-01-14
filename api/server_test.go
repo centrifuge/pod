@@ -9,13 +9,12 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/identity/ethid"
+
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 
 	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
-
-	"github.com/centrifuge/go-centrifuge/identity/ethid"
-
-	"github.com/centrifuge/go-centrifuge/config/configstore"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -50,11 +49,11 @@ func TestMain(m *testing.M) {
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
 		&leveldb.Bootstrapper{},
-		&configstore.Bootstrapper{},
 		transactions.Bootstrapper{},
 		&queue.Bootstrapper{},
-		anchors.Bootstrapper{},
 		&ethid.Bootstrapper{},
+		&configstore.Bootstrapper{},
+		anchors.Bootstrapper{},
 		documents.Bootstrapper{},
 		p2p.Bootstrapper{},
 		&genericdoc.Bootstrapper{},
