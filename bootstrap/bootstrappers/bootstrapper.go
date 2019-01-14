@@ -36,7 +36,6 @@ func (m *MainBootstrapper) PopulateBaseBootstrappers() {
 		&version.Bootstrapper{},
 		&config.Bootstrapper{},
 		&leveldb.Bootstrapper{},
-		&configstore.Bootstrapper{},
 		transactions.Bootstrapper{},
 		ethereum.Bootstrapper{},
 		&queue.Bootstrapper{},
