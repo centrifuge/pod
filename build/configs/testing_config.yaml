@@ -8,6 +8,10 @@ ethereum:
 
 identityId: "0x010101010101"
 
+# Tenant key storage
+tenants:
+  keystore: /tmp/tenants
+
 queue:
   numWorkers: 2
   workerWaitTimeMS: 1

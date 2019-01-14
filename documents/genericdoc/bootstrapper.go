@@ -2,7 +2,6 @@ package genericdoc
 
 import (
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity/ethid"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -22,7 +21,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("anchor repository not initialised")
 	}
 
-	idService, ok := ctx[ethid.BootstrappedIDService].(identity.Service)
+	idService, ok := ctx[identity.BootstrappedIDService].(identity.Service)
 	if !ok {
 		return errors.New("identity service not initialised")
 	}

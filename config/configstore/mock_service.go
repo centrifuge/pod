@@ -11,6 +11,11 @@ type MockService struct {
 	mock.Mock
 }
 
+func (m MockService) GenerateTenant() (config.TenantConfiguration, error) {
+	args := m.Called()
+	return args.Get(0).(config.TenantConfiguration), args.Error(1)
+}
+
 func (m MockService) GetConfig() (config.Configuration, error) {
 	args := m.Called()
 	return args.Get(0).(*NodeConfig), args.Error(1)

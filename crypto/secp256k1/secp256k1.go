@@ -25,11 +25,11 @@ const (
 )
 
 // GenerateSigningKeyPair generates secp2562k1 based keys.
-func GenerateSigningKeyPair() (publicKey, privateKey []byte) {
+func GenerateSigningKeyPair() (publicKey, privateKey []byte, err error) {
 	log.Debug("generate secp256k1 keys")
 	key, err := ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
 	if err != nil {
-		log.Fatal(err)
+		return []byte{}, []byte{}, nil
 	}
 	publicKey = elliptic.Marshal(secp256k1.S256(), key.X, key.Y)
 
@@ -37,7 +37,7 @@ func GenerateSigningKeyPair() (publicKey, privateKey []byte) {
 	blob := key.D.Bytes()
 	copy(privateKey[privateKeyLen-len(blob):], blob)
 
-	return publicKey, privateKey
+	return publicKey, privateKey, nil
 }
 
 // Sign signs the message using private key

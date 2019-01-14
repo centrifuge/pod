@@ -10,15 +10,13 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/identity"
 
-	"github.com/centrifuge/go-centrifuge/config/configstore"
-
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/transactions"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestGRPCHandler_GetTransactionStatus(t *testing.T) {
-	cService := ctx[configstore.BootstrappedConfigStorage].(config.Service)
+	cService := ctx[config.BootstrappedConfigStorage].(config.Service)
 	h := GRPCHandler(ctx[BootstrappedService].(Service), cService)
 	req := new(transactionspb.TransactionStatusRequest)
 	ctxl := context.Background()

@@ -102,6 +102,11 @@ func (m *mockConfig) GetConfigStoragePath() string {
 	return args.Get(0).(string)
 }
 
+func (m *mockConfig) GetTenantsKeystore() string {
+	args := m.Called()
+	return args.Get(0).(string)
+}
+
 func (m *mockConfig) GetP2PPort() int {
 	args := m.Called()
 	return args.Get(0).(int)
@@ -252,6 +257,7 @@ func TestNewTenantConfig(t *testing.T) {
 	c.On("GetIdentityID").Return(utils.RandomSlice(6), nil).Once()
 	c.On("GetSigningKeyPair").Return("pub", "priv").Once()
 	c.On("GetEthAuthKeyPair").Return("pub", "priv").Once()
+	c.On("GetEthereumContextWaitTimeout").Return(time.Second).Once()
 	NewTenantConfig("name", c)
 	c.AssertExpectations(t)
 }
@@ -283,6 +289,7 @@ func TestTenantConfigProtobuf(t *testing.T) {
 	c.On("GetIdentityID").Return(utils.RandomSlice(6), nil).Once()
 	c.On("GetSigningKeyPair").Return("pub", "priv").Once()
 	c.On("GetEthAuthKeyPair").Return("pub", "priv").Once()
+	c.On("GetEthereumContextWaitTimeout").Return(time.Second).Once()
 	tc, err := NewTenantConfig("name", c)
 	assert.Nil(t, err)
 	c.AssertExpectations(t)
@@ -305,6 +312,7 @@ func TestTenantConfigProtobuf(t *testing.T) {
 func createMockConfig() *mockConfig {
 	c := &mockConfig{}
 	c.On("GetStoragePath").Return("dummyStorage").Once()
+	c.On("GetTenantsKeystore").Return("dummyKeyStorage").Once()
 	c.On("GetP2PPort").Return(30000).Once()
 	c.On("GetP2PExternalIP").Return("ip").Once()
 	c.On("GetP2PConnectionTimeout").Return(time.Second).Once()

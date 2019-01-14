@@ -8,11 +8,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/config/configstore"
-
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
-
-	"github.com/centrifuge/go-centrifuge/identity/ethid"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 
@@ -49,10 +45,10 @@ func TestMain(m *testing.M) {
 	flag.Parse()
 	ctx := testingbootstrap.TestFunctionalEthereumBootstrap()
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-	cfgService := ctx[configstore.BootstrappedConfigStorage].(config.Service)
+	cfgService := ctx[config.BootstrappedConfigStorage].(config.Service)
 	registry := ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
 	anchorRepo = ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
-	idService = ctx[ethid.BootstrappedIDService].(identity.Service)
+	idService = ctx[identity.BootstrappedIDService].(identity.Service)
 	handler = receiver.New(cfgService, registry, receiver.HandshakeValidator(cfg.GetNetworkID()))
 	testingidentity.CreateIdentityWithKeys(cfg, idService)
 	result := m.Run()

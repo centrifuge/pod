@@ -6,15 +6,11 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/errors"
-
-	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/centrifuge/go-centrifuge/config"
-
-	"github.com/ethereum/go-ethereum/common/hexutil"
-
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/config"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/duration"
 )
 
@@ -32,6 +28,7 @@ func NewKeyPair(pub, priv string) KeyPair {
 type NodeConfig struct {
 	MainIdentity                   TenantConfig
 	StoragePath                    string
+	TenantsKeystore                string
 	P2PPort                        int
 	P2PExternalIP                  string
 	P2PConnectionTimeout           time.Duration
@@ -107,6 +104,11 @@ func (nc *NodeConfig) GetStoragePath() string {
 // GetConfigStoragePath refer the interface
 func (nc *NodeConfig) GetConfigStoragePath() string {
 	panic("irrelevant, NodeConfig#GetConfigStoragePath must not be used")
+}
+
+// GetTenantsKeystore returns the tenant keystore path.
+func (nc *NodeConfig) GetTenantsKeystore() string {
+	return nc.TenantsKeystore
 }
 
 // GetP2PPort refer the interface
@@ -407,6 +409,7 @@ func NewNodeConfig(c config.Configuration) config.Configuration {
 			},
 		},
 		StoragePath:                    c.GetStoragePath(),
+		TenantsKeystore:                c.GetTenantsKeystore(),
 		P2PPort:                        c.GetP2PPort(),
 		P2PExternalIP:                  c.GetP2PExternalIP(),
 		P2PConnectionTimeout:           c.GetP2PConnectionTimeout(),
@@ -443,6 +446,7 @@ func extractSmartContractAddresses(c config.Configuration) map[config.ContractNa
 type TenantConfig struct {
 	EthereumAccount                  *config.AccountConfig
 	EthereumDefaultAccountName       string
+	EthereumContextWaitTimeout       time.Duration
 	ReceiveEventNotificationEndpoint string
 	IdentityID                       []byte
 	SigningKeyPair                   KeyPair
@@ -481,7 +485,7 @@ func (tc *TenantConfig) GetEthAuthKeyPair() (pub, priv string) {
 
 // GetEthereumContextWaitTimeout gets EthereumContextWaitTimeout
 func (tc *TenantConfig) GetEthereumContextWaitTimeout() time.Duration {
-	panic("irrelevant, TenantConfig#GetEthereumContextWaitTimeout must not be used")
+	return tc.EthereumContextWaitTimeout
 }
 
 // ID Get the ID of the document represented by this model
@@ -558,6 +562,7 @@ func NewTenantConfig(ethAccountName string, c config.Configuration) (config.Tena
 	return &TenantConfig{
 		EthereumAccount:                  acc,
 		EthereumDefaultAccountName:       c.GetEthereumDefaultAccountName(),
+		EthereumContextWaitTimeout:       c.GetEthereumContextWaitTimeout(),
 		IdentityID:                       id,
 		ReceiveEventNotificationEndpoint: c.GetReceiveEventNotificationEndpoint(),
 		SigningKeyPair:                   NewKeyPair(c.GetSigningKeyPair()),
