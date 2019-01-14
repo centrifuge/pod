@@ -31,11 +31,12 @@ var log = logging.Logger("host")
 var hostConfig = []struct {
 	name             string
 	apiPort, p2pPort int64
+	multiAccount     bool
 }{
-	{"Alice", 8084, 38204},
-	{"Bob", 8085, 38205},
-	{"Charlie", 8086, 38206},
-	{"Kenny", 8087, 38207},
+	{"Alice", 8084, 38204, false},
+	{"Bob", 8085, 38205, true},
+	{"Charlie", 8086, 38206, true},
+	{"Kenny", 8087, 38207, false},
 }
 
 const defaultP2PTimeout = "10s"
@@ -108,7 +109,7 @@ func (r *hostManager) startHost(name string) {
 
 func (r *hostManager) init(createConfig bool) error {
 	r.cancCtx, r.canc = context.WithCancel(context.Background())
-	r.bernard = r.createHost("Bernard", defaultP2PTimeout, 8081, 38201, createConfig, nil)
+	r.bernard = r.createHost("Bernard", defaultP2PTimeout, 8081, 38201, createConfig, false, nil)
 	err := r.bernard.init()
 	if err != nil {
 		return err
@@ -128,7 +129,7 @@ func (r *hostManager) init(createConfig bool) error {
 
 	// start hosts
 	for _, h := range hostConfig {
-		r.niceHosts[h.name] = r.createHost(h.name, defaultP2PTimeout, h.apiPort, h.p2pPort, createConfig, []string{bootnode})
+		r.niceHosts[h.name] = r.createHost(h.name, defaultP2PTimeout, h.apiPort, h.p2pPort, createConfig, h.multiAccount, []string{bootnode})
 
 		err := r.niceHosts[h.name].init()
 		if err != nil {
@@ -148,6 +149,10 @@ func (r *hostManager) init(createConfig bool) error {
 			return err
 		}
 		fmt.Printf("CentID for %s is %s \n", name, i)
+		if createConfig {
+			_ = host.createAccounts(r.getHostTestSuite(&testing.T{}, host.name).httpExpect)
+		}
+		_ = host.loadAccounts(r.getHostTestSuite(&testing.T{}, host.name).httpExpect)
 	}
 	return nil
 }
@@ -163,7 +168,7 @@ func (r *hostManager) stop() {
 	r.canc()
 }
 
-func (r *hostManager) createHost(name, p2pTimeout string, apiPort, p2pPort int64, createConfig bool, bootstraps []string) *host {
+func (r *hostManager) createHost(name, p2pTimeout string, apiPort, p2pPort int64, createConfig, multiAccount bool, bootstraps []string) *host {
 	return newHost(
 		name,
 		r.ethNodeUrl,
@@ -174,6 +179,7 @@ func (r *hostManager) createHost(name, p2pTimeout string, apiPort, p2pPort int64
 		apiPort, p2pPort, bootstraps,
 		r.txPoolAccess,
 		createConfig,
+		multiAccount,
 		r.contractAddresses,
 	)
 }
@@ -202,13 +208,15 @@ type host struct {
 	node               *node.Node
 	canc               context.CancelFunc
 	createConfig       bool
+	multiAccount       bool
+	accounts           []string
 }
 
 func newHost(
 	name, ethNodeUrl, accountKeyPath, accountPassword, network, p2pTimeout string,
 	apiPort, p2pPort int64,
 	bootstraps []string,
-	txPoolAccess, createConfig bool,
+	txPoolAccess, createConfig, multiAccount bool,
 	smartContractAddrs *config.SmartContractAddresses,
 ) *host {
 	return &host{
@@ -225,6 +233,7 @@ func newHost(
 		smartContractAddrs: smartContractAddrs,
 		dir:                "peerconfigs/" + name,
 		createConfig:       createConfig,
+		multiAccount:       multiAccount,
 	}
 }
 
@@ -331,6 +340,30 @@ func (h *host) isLive(softTimeOut time.Duration) (bool, error) {
 
 func (h *host) mintNFT(e *httpexpect.Expect, auth string, status int, inv map[string]interface{}) (*httpexpect.Object, error) {
 	return mintNFT(e, auth, status, inv), nil
+}
+
+func (h *host) createAccounts(e *httpexpect.Expect) error {
+	if !h.multiAccount {
+		return nil
+	}
+	// create 3 accounts
+	for i := 0; i < 3; i++ {
+		res := generateAccount(e, h.identity.CentID().String(), http.StatusOK)
+		res.Value("identity_id").String().NotEmpty()
+	}
+	return nil
+}
+
+func (h *host) loadAccounts(e *httpexpect.Expect) error {
+	res := getAllAccounts(e, h.identity.CentID().String(), http.StatusOK)
+	tenants := res.Value("data").Array()
+	tids := getAccounts(tenants)
+	keys := make([]string, 0, len(tids))
+	for k := range tids {
+		keys = append(keys, k)
+	}
+	h.accounts = keys
+	return nil
 }
 
 func (h *host) createHttpExpectation(t *testing.T) *httpexpect.Expect {

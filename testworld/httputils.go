@@ -89,19 +89,19 @@ func getNodeConfig(e *httpexpect.Expect, auth string, httpStatus int) *httpexpec
 	return resp.JSON().Object()
 }
 
-func getTenantConfig(e *httpexpect.Expect, auth string, httpStatus int, identifier string) *httpexpect.Object {
+func getAccount(e *httpexpect.Expect, auth string, httpStatus int, identifier string) *httpexpect.Object {
 	resp := addCommonHeaders(e.GET("/config/tenants/"+identifier), auth).
 		Expect().Status(httpStatus)
 	return resp.JSON().Object()
 }
 
-func getAllTenantConfigs(e *httpexpect.Expect, auth string, httpStatus int) *httpexpect.Object {
+func getAllAccounts(e *httpexpect.Expect, auth string, httpStatus int) *httpexpect.Object {
 	resp := addCommonHeaders(e.GET("/config/tenants"), auth).
 		Expect().Status(httpStatus)
 	return resp.JSON().Object()
 }
 
-func generateTenant(e *httpexpect.Expect, auth string, httpStatus int) *httpexpect.Object {
+func generateAccount(e *httpexpect.Expect, auth string, httpStatus int) *httpexpect.Object {
 	resp := addCommonHeaders(e.POST("/config/tenants/generate"), auth).
 		Expect().Status(httpStatus)
 	return resp.JSON().Object()
@@ -141,4 +141,13 @@ func addCommonHeaders(req *httpexpect.Request, auth string) *httpexpect.Request 
 		WithHeader("accept", "application/json").
 		WithHeader("Content-Type", "application/json").
 		WithHeader("authorization", auth)
+}
+
+func getAccounts(accounts *httpexpect.Array) map[string]string {
+	tids := make(map[string]string)
+	for i := 0; i < int(accounts.Length().Raw()); i++ {
+		val := accounts.Element(i).Path("$.identity_id").String().NotEmpty().Raw()
+		tids[val] = val
+	}
+	return tids
 }
