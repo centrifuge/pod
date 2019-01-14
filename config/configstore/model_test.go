@@ -257,6 +257,7 @@ func TestNewTenantConfig(t *testing.T) {
 	c.On("GetIdentityID").Return(utils.RandomSlice(6), nil).Once()
 	c.On("GetSigningKeyPair").Return("pub", "priv").Once()
 	c.On("GetEthAuthKeyPair").Return("pub", "priv").Once()
+	c.On("GetEthereumContextWaitTimeout").Return(time.Second).Once()
 	NewTenantConfig("name", c)
 	c.AssertExpectations(t)
 }
@@ -288,6 +289,7 @@ func TestTenantConfigProtobuf(t *testing.T) {
 	c.On("GetIdentityID").Return(utils.RandomSlice(6), nil).Once()
 	c.On("GetSigningKeyPair").Return("pub", "priv").Once()
 	c.On("GetEthAuthKeyPair").Return("pub", "priv").Once()
+	c.On("GetEthereumContextWaitTimeout").Return(time.Second).Once()
 	tc, err := NewTenantConfig("name", c)
 	assert.Nil(t, err)
 	c.AssertExpectations(t)
