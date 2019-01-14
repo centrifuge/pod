@@ -27,3 +27,21 @@ func TestReadACLs_initReadRules(t *testing.T) {
 	assert.Len(t, cd.ReadRules, 1)
 	assert.Len(t, cd.Roles, 1)
 }
+
+func TestReadAccessValidator_PeerCanRead(t *testing.T) {
+	pv := peerValidator()
+	peer, err := identity.CentIDFromString("0x010203040506")
+	assert.NoError(t, err)
+
+	cd, err := NewWithCollaborators([]string{peer.String()})
+	assert.NoError(t, err)
+	assert.NotNil(t, cd.ReadRules)
+	assert.NotNil(t, cd.Roles)
+
+	// peer who cant access
+	rcid := identity.RandomCentID()
+	assert.False(t, pv.PeerCanRead(cd, rcid))
+
+	// peer can access
+	assert.True(t, pv.PeerCanRead(cd, peer))
+}
