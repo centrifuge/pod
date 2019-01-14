@@ -64,3 +64,8 @@ func PublicKeyToP2PKey(publicKey [32]byte) (p2pID peer.ID, err error) {
 
 	return peer.IDFromPublicKey(pk)
 }
+
+// VerifySignature validates signature with payload message
+func VerifySignature(publicKey, message, sign []byte) bool {
+	return ed25519.Verify(ed25519.PublicKey(publicKey), message, sign)
+}

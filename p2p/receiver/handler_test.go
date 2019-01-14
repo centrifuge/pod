@@ -180,31 +180,28 @@ func TestHandler_HandleInterceptor_getServiceAndModel_fail(t *testing.T) {
 
 func TestP2PService_basicChecks(t *testing.T) {
 	tests := []struct {
-		header *p2ppb.Header
-		err    error
+		envelope *p2ppb.Envelope
+		err      error
 	}{
 		{
-			header: &p2ppb.Header{NodeVersion: "someversion", NetworkIdentifier: 12},
-			err:    errors.AppendError(version.IncompatibleVersionError("someversion"), incompatibleNetworkError(cfg.GetNetworkID(), 12)),
+			envelope: &p2ppb.Envelope{Header: &p2ppb.Header{NodeVersion: "someversion", NetworkIdentifier: 12}},
+			err:      errors.AppendError(errors.AppendError(version.IncompatibleVersionError("someversion"), incompatibleNetworkError(cfg.GetNetworkID(), 12)), errors.New("Signature header missing")),
 		},
 
 		{
-			header: &p2ppb.Header{NodeVersion: "0.0.1", NetworkIdentifier: 12},
-			err:    errors.AppendError(incompatibleNetworkError(cfg.GetNetworkID(), 12), nil),
+			envelope: &p2ppb.Envelope{Header: &p2ppb.Header{NodeVersion: "0.0.1", NetworkIdentifier: 12}},
+			err:      errors.AppendError(incompatibleNetworkError(cfg.GetNetworkID(), 12), errors.New("Signature header missing")),
 		},
 
 		{
-			header: &p2ppb.Header{NodeVersion: version.GetVersion().String(), NetworkIdentifier: cfg.GetNetworkID()},
+			envelope: &p2ppb.Envelope{Header: &p2ppb.Header{NodeVersion: version.GetVersion().String(), NetworkIdentifier: cfg.GetNetworkID()}},
+			err:      errors.AppendError(errors.New("Signature header missing"), nil),
 		},
 	}
 
 	for _, c := range tests {
-		err := HandshakeValidator(cfg.GetNetworkID()).Validate(c.header)
+		err := HandshakeValidator(cfg.GetNetworkID()).Validate(c.envelope)
 		if err != nil {
-			if c.err == nil {
-				t.Fatalf("unexpected error: %v\n", err)
-			}
-
 			assert.EqualError(t, err, c.err.Error(), "error mismatch")
 		}
 	}
