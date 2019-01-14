@@ -40,9 +40,9 @@ func addExternalCollaborator(t *testing.T, documentType string) {
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 
 	// Alice shares document with Bob first
-	res := createDocument(alice.httpExpect, documentType, http.StatusOK, defaultDocumentPayload(documentType, []string{bob.id.String()}))
+	res := createDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusOK, defaultDocumentPayload(documentType, []string{bob.id.String()}))
 	txID := getTransactionID(t, res)
-	waitTillSuccess(t, alice.httpExpect, txID)
+	waitTillStatus(t, alice.httpExpect, alice.id.String(), txID, "success")
 
 	docIdentifier := getDocumentIdentifier(t, res)
 	if docIdentifier == "" {
@@ -53,22 +53,22 @@ func addExternalCollaborator(t *testing.T, documentType string) {
 		"document_id": docIdentifier,
 		"currency":    "USD",
 	}
-	getDocumentAndCheck(alice.httpExpect, documentType, params)
-	getDocumentAndCheck(bob.httpExpect, documentType, params)
+	getDocumentAndCheck(alice.httpExpect, alice.id.String(), documentType, params)
+	getDocumentAndCheck(bob.httpExpect, bob.id.String(), documentType, params)
 
 	// Bob updates invoice and shares with Charlie as well
-	res = updateDocument(bob.httpExpect, documentType, http.StatusOK, docIdentifier, updatedDocumentPayload(documentType, []string{alice.id.String(), charlie.id.String()}))
+	res = updateDocument(bob.httpExpect, bob.id.String(), documentType, http.StatusOK, docIdentifier, updatedDocumentPayload(documentType, []string{alice.id.String(), charlie.id.String()}))
 	txID = getTransactionID(t, res)
-	waitTillSuccess(t, bob.httpExpect, txID)
+	waitTillStatus(t, bob.httpExpect, bob.id.String(), txID, "success")
 
 	docIdentifier = getDocumentIdentifier(t, res)
 	if docIdentifier == "" {
 		t.Error("docIdentifier empty")
 	}
 	params["currency"] = "EUR"
-	getDocumentAndCheck(alice.httpExpect, documentType, params)
-	getDocumentAndCheck(bob.httpExpect, documentType, params)
-	getDocumentAndCheck(charlie.httpExpect, documentType, params)
+	getDocumentAndCheck(alice.httpExpect, alice.id.String(), documentType, params)
+	getDocumentAndCheck(bob.httpExpect, bob.id.String(), documentType, params)
+	getDocumentAndCheck(charlie.httpExpect, charlie.id.String(), documentType, params)
 }
 
 func TestHost_CollaboratorTimeOut(t *testing.T) {
@@ -87,9 +87,9 @@ func collaboratorTimeOut(t *testing.T, documentType string) {
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 
 	// Kenny shares a document with Bob
-	response := createDocument(kenny.httpExpect, documentType, http.StatusOK, defaultInvoicePayload([]string{bob.id.String()}))
+	response := createDocument(kenny.httpExpect, kenny.id.String(), documentType, http.StatusOK, defaultInvoicePayload([]string{bob.id.String()}))
 	txID := getTransactionID(t, response)
-	waitTillSuccess(t, kenny.httpExpect, txID)
+	waitTillStatus(t, kenny.httpExpect, kenny.id.String(), txID, "success")
 
 	// check if Bob and Kenny received the document
 	docIdentifier := getDocumentIdentifier(t, response)
@@ -97,31 +97,31 @@ func collaboratorTimeOut(t *testing.T, documentType string) {
 		"document_id": docIdentifier,
 		"currency":    "USD",
 	}
-	getDocumentAndCheck(kenny.httpExpect, documentType, paramsV1)
-	getDocumentAndCheck(bob.httpExpect, documentType, paramsV1)
+	getDocumentAndCheck(kenny.httpExpect, kenny.id.String(), documentType, paramsV1)
+	getDocumentAndCheck(bob.httpExpect, bob.id.String(), documentType, paramsV1)
 
 	// Kenny gets killed
 	kenny.host.kill()
 
-	// Bob updates and sends to Alice
+	// Bob updates and sends to Kenny
 	updatedPayload := updatedDocumentPayload(documentType, []string{kenny.id.String()})
 
-	// Bob will anchor the document without Alice signature but will receive an error because kenny is dead
-	response = updateDocument(bob.httpExpect, documentType, http.StatusInternalServerError, docIdentifier, updatedPayload)
+	// Bob will anchor the document without Kennys signature
+	response = updateDocument(bob.httpExpect, bob.id.String(), documentType, http.StatusOK, docIdentifier, updatedPayload)
 	txID = getTransactionID(t, response)
-	waitTillSuccess(t, bob.httpExpect, txID)
+	waitTillStatus(t, bob.httpExpect, bob.id.String(), txID, "failed")
 
 	// check if bob saved the updated document
 	paramsV2 := map[string]interface{}{
 		"document_id": docIdentifier,
 		"currency":    "EUR",
 	}
-	getDocumentAndCheck(bob.httpExpect, documentType, paramsV2)
+	getDocumentAndCheck(bob.httpExpect, bob.id.String(), documentType, paramsV2)
 
 	// bring Kenny back to life
 	doctorFord.reLive(t, kenny.name)
 
 	// Kenny should NOT have latest version
-	getDocumentAndCheck(kenny.httpExpect, documentType, paramsV1)
+	getDocumentAndCheck(kenny.httpExpect, kenny.id.String(), documentType, paramsV1)
 
 }

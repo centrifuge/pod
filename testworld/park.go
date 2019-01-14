@@ -329,8 +329,8 @@ func (h *host) isLive(softTimeOut time.Duration) (bool, error) {
 	}
 }
 
-func (h *host) mintNFT(e *httpexpect.Expect, status int, inv map[string]interface{}) (*httpexpect.Object, error) {
-	return mintNFT(e, status, inv), nil
+func (h *host) mintNFT(e *httpexpect.Expect, auth string, status int, inv map[string]interface{}) (*httpexpect.Object, error) {
+	return mintNFT(e, auth, status, inv), nil
 }
 
 func (h *host) createHttpExpectation(t *testing.T) *httpexpect.Expect {
