@@ -16,7 +16,7 @@ type testType string
 const (
 	withinHost            testType = "withinHost"
 	multiHost             testType = "multiHost"
-	multiHostMultiAccount          = "multiHostMultiAccount"
+	multiHostMultiAccount testType = "multiHostMultiAccount"
 )
 
 var isRunningOnCI = len(os.Getenv("TRAVIS")) != 0
