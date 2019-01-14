@@ -87,10 +87,13 @@ func signatureValidator() Validator {
 		}
 
 		if envelope.Header.Signature == nil {
-			return errors.New("Signature header missing")
+			return errors.New("signature header missing")
 		}
 
-		crypto.VerifyMessage(envelope.Header.Signature.PublicKey, data, envelope.Header.Signature.Signature, crypto.CurveEd25519, false)
+		valid := crypto.VerifyMessage(envelope.Header.Signature.PublicKey, data, envelope.Header.Signature.Signature, crypto.CurveEd25519, false)
+		if !valid {
+			return errors.New("signature validation failure")
+		}
 		return nil
 	})
 }

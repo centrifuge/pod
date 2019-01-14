@@ -5,6 +5,8 @@ package receiver
 import (
 	"testing"
 
+	"github.com/golang/protobuf/proto"
+
 	"github.com/centrifuge/go-centrifuge/crypto"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
@@ -71,13 +73,14 @@ func TestValidate_networkValidator(t *testing.T) {
 func TestValidate_handshakeValidator(t *testing.T) {
 	hv := HandshakeValidator(cfg.GetNetworkID())
 
-	// Incompatible version and network
+	// Incompatible version network and wrong signature
 	envelope := &p2ppb.Envelope{
 		Header: &p2ppb.Header{
 			NodeVersion:       "version",
 			NetworkIdentifier: 52,
 			Signature:         crypto.Sign(id1, key1, key1Pub, key1Pub),
 		},
+		Body: key1Pub,
 	}
 	err := hv.Validate(envelope)
 	assert.NotNil(t, err)
@@ -93,8 +96,17 @@ func TestValidate_handshakeValidator(t *testing.T) {
 	err = hv.Validate(envelope)
 	assert.NotNil(t, err)
 
-	// Compatible version, network and signature
+	// Compatible version, network and wrong signature
 	envelope.Header.NetworkIdentifier = cfg.GetNetworkID()
+	err = hv.Validate(envelope)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "signature validation failure")
+
+	// Compatible version, network and signature
+	envelope.Header.Signature = nil
+	data, err := proto.Marshal(envelope)
+	assert.NoError(t, err)
+	envelope.Header.Signature = crypto.Sign(id1, key1, key1Pub, data)
 	err = hv.Validate(envelope)
 	assert.Nil(t, err)
 }

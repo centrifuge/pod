@@ -7,6 +7,10 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/contextutil"
+	"github.com/centrifuge/go-centrifuge/crypto"
+	"github.com/centrifuge/go-centrifuge/identity"
+
 	"github.com/centrifuge/go-centrifuge/p2p/common"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
@@ -139,9 +143,16 @@ func TestHandler_HandleInterceptor_UnsupportedMessageType(t *testing.T) {
 	p2pEnv, err := p2pcommon.PrepareP2PEnvelope(ctx, cfg.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &protocolpb.P2PEnvelope{})
 	assert.NoError(t, err)
 
-	// Manipulate message type in Header
+	// Manipulate message type in Header + Signature
 	dataEnv, _ := p2pcommon.ResolveDataEnvelope(p2pEnv)
 	dataEnv.Header.Type = "UnsupportedType"
+	dataEnv.Header.Signature = nil
+	signRequest, err := proto.Marshal(dataEnv)
+	assert.NoError(t, err)
+	self, err := contextutil.Self(ctx)
+	assert.NoError(t, err)
+	signKeys := self.Keys[identity.KeyPurposeSigning]
+	dataEnv.Header.Signature = crypto.Sign(self.ID[:], signKeys.PrivateKey, signKeys.PublicKey, signRequest)
 	marshalledRequest, err := proto.Marshal(dataEnv)
 	assert.NoError(t, err)
 	p2pEnv = &protocolpb.P2PEnvelope{Body: marshalledRequest}
@@ -185,17 +196,17 @@ func TestP2PService_basicChecks(t *testing.T) {
 	}{
 		{
 			envelope: &p2ppb.Envelope{Header: &p2ppb.Header{NodeVersion: "someversion", NetworkIdentifier: 12}},
-			err:      errors.AppendError(errors.AppendError(version.IncompatibleVersionError("someversion"), incompatibleNetworkError(cfg.GetNetworkID(), 12)), errors.New("Signature header missing")),
+			err:      errors.AppendError(errors.AppendError(version.IncompatibleVersionError("someversion"), incompatibleNetworkError(cfg.GetNetworkID(), 12)), errors.New("signature header missing")),
 		},
 
 		{
 			envelope: &p2ppb.Envelope{Header: &p2ppb.Header{NodeVersion: "0.0.1", NetworkIdentifier: 12}},
-			err:      errors.AppendError(incompatibleNetworkError(cfg.GetNetworkID(), 12), errors.New("Signature header missing")),
+			err:      errors.AppendError(incompatibleNetworkError(cfg.GetNetworkID(), 12), errors.New("signature header missing")),
 		},
 
 		{
 			envelope: &p2ppb.Envelope{Header: &p2ppb.Header{NodeVersion: version.GetVersion().String(), NetworkIdentifier: cfg.GetNetworkID()}},
-			err:      errors.AppendError(errors.New("Signature header missing"), nil),
+			err:      errors.AppendError(errors.New("signature header missing"), nil),
 		},
 	}
 
