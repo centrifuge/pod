@@ -71,23 +71,18 @@ func signatureValidator() Validator {
 		if envelope == nil || envelope.Header == nil {
 			return errors.New("nil envelope/header")
 		}
-		envData := &p2ppb.Envelope{
-			Header: &p2ppb.Header{
-				NetworkIdentifier: envelope.Header.NetworkIdentifier,
-				NodeVersion:       envelope.Header.NodeVersion,
-				Type:              envelope.Header.Type,
-				SenderId:          envelope.Header.SenderId,
-			},
-			Body: envelope.Body,
+
+		if envelope.Header.Signature == nil {
+			return errors.New("signature header missing")
 		}
+
+		envData := proto.Clone(envelope).(*p2ppb.Envelope)
+		// Remove Signature header so we can verify the message signed
+		envData.Header.Signature = nil
 
 		data, err := proto.Marshal(envData)
 		if err != nil {
 			return err
-		}
-
-		if envelope.Header.Signature == nil {
-			return errors.New("signature header missing")
 		}
 
 		valid := crypto.VerifyMessage(envelope.Header.Signature.PublicKey, data, envelope.Header.Signature.Signature, crypto.CurveEd25519, false)

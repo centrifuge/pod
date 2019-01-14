@@ -70,6 +70,37 @@ func TestValidate_networkValidator(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+func TestValidate_signatureValidator(t *testing.T) {
+	sv := signatureValidator()
+
+	// Nil envelope
+	err := sv.Validate(nil)
+	assert.Error(t, err)
+
+	// Nil Header
+	envelope := &p2ppb.Envelope{}
+	err = sv.Validate(envelope)
+	assert.Error(t, err)
+
+	// Nil Signature
+	envelope.Header = &p2ppb.Header{}
+	err = sv.Validate(envelope)
+	assert.Error(t, err)
+
+	// Signature validation failure
+	envelope.Header.Signature = crypto.Sign(id1, key1, key1Pub, key1Pub)
+	err = sv.Validate(envelope)
+	assert.Error(t, err)
+
+	// Success
+	envelope.Header.Signature = nil
+	data, err := proto.Marshal(envelope)
+	assert.NoError(t, err)
+	envelope.Header.Signature = crypto.Sign(id1, key1, key1Pub, data)
+	err = sv.Validate(envelope)
+	assert.NoError(t, err)
+}
+
 func TestValidate_handshakeValidator(t *testing.T) {
 	hv := HandshakeValidator(cfg.GetNetworkID())
 
