@@ -29,7 +29,8 @@ import (
 )
 
 var (
-	cfg config.Service
+	cfg       config.Service
+	idService identity.Service
 )
 
 func TestMain(m *testing.M) {
@@ -43,7 +44,8 @@ func TestMain(m *testing.M) {
 		documents.Bootstrapper{},
 	}
 	ctx := make(map[string]interface{})
-	ctx[identity.BootstrappedIDService] = &testingcommons.MockIDService{}
+	idService = &testingcommons.MockIDService{}
+	ctx[identity.BootstrappedIDService] = idService
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 	cfg = ctx[config.BootstrappedConfigStorage].(config.Service)
 	c, _ := cfg.GetConfig()
@@ -66,7 +68,7 @@ func TestCentP2PServer_StartContextCancel(t *testing.T) {
 	_, err = cfg.UpdateConfig(c)
 	assert.NoError(t, err)
 	cp2p := &peer{config: cfg, handlerCreator: func() *receiver.Handler {
-		return receiver.New(cfg, nil, receiver.HandshakeValidator(n.NetworkID))
+		return receiver.New(cfg, nil, receiver.HandshakeValidator(n.NetworkID, idService))
 	}}
 	ctx, canc := context.WithCancel(context.Background())
 	startErr := make(chan error, 1)

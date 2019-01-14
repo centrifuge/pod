@@ -5,6 +5,10 @@ package receiver
 import (
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/stretchr/testify/mock"
+
 	"github.com/golang/protobuf/proto"
 
 	"github.com/centrifuge/go-centrifuge/crypto"
@@ -71,7 +75,8 @@ func TestValidate_networkValidator(t *testing.T) {
 }
 
 func TestValidate_signatureValidator(t *testing.T) {
-	sv := signatureValidator()
+	idService := &testingcommons.MockIDService{}
+	sv := signatureValidator(idService)
 
 	// Nil envelope
 	err := sv.Validate(nil)
@@ -92,17 +97,25 @@ func TestValidate_signatureValidator(t *testing.T) {
 	err = sv.Validate(envelope)
 	assert.Error(t, err)
 
-	// Success
+	// Ethereum Identity validation failure
 	envelope.Header.Signature = nil
 	data, err := proto.Marshal(envelope)
 	assert.NoError(t, err)
 	envelope.Header.Signature = crypto.Sign(id1, key1, key1Pub, data)
+	idService.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything).Return(errors.New("key not linked to identity")).Once()
+	err = sv.Validate(envelope)
+	assert.Error(t, err)
+
+	// Success
+	idService.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 	err = sv.Validate(envelope)
 	assert.NoError(t, err)
 }
 
 func TestValidate_handshakeValidator(t *testing.T) {
-	hv := HandshakeValidator(cfg.GetNetworkID())
+	idService := &testingcommons.MockIDService{}
+	idService.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
+	hv := HandshakeValidator(cfg.GetNetworkID(), idService)
 
 	// Incompatible version network and wrong signature
 	envelope := &p2ppb.Envelope{

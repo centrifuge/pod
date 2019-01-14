@@ -7,6 +7,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/version"
+
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 
@@ -16,7 +18,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/p2p/common"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
-	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/proto"
 	"github.com/libp2p/go-libp2p-protocol"
@@ -43,10 +44,11 @@ import (
 )
 
 var (
-	handler  *Handler
-	registry *documents.ServiceRegistry
-	coreDoc  = testingcoredocument.GenerateCoreDocument()
-	cfg      config.Configuration
+	handler       *Handler
+	registry      *documents.ServiceRegistry
+	coreDoc       = testingcoredocument.GenerateCoreDocument()
+	cfg           config.Configuration
+	mockIDService *testingcommons.MockIDService
 )
 
 func TestMain(m *testing.M) {
@@ -65,7 +67,9 @@ func TestMain(m *testing.M) {
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfgService := ctx[config.BootstrappedConfigStorage].(config.Service)
 	registry = ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
-	handler = New(cfgService, registry, HandshakeValidator(cfg.GetNetworkID()))
+	mockIDService = &testingcommons.MockIDService{}
+	mockIDService.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	handler = New(cfgService, registry, HandshakeValidator(cfg.GetNetworkID(), mockIDService))
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)
@@ -214,7 +218,7 @@ func TestP2PService_basicChecks(t *testing.T) {
 	}
 
 	for _, c := range tests {
-		err := HandshakeValidator(cfg.GetNetworkID()).Validate(c.envelope)
+		err := HandshakeValidator(cfg.GetNetworkID(), mockIDService).Validate(c.envelope)
 		if err != nil {
 			assert.EqualError(t, err, c.err.Error(), "error mismatch")
 		}

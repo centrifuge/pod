@@ -3,6 +3,8 @@ package receiver
 import (
 	"fmt"
 
+	"github.com/centrifuge/go-centrifuge/identity"
+
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/golang/protobuf/proto"
 
@@ -66,7 +68,7 @@ func networkValidator(networkID uint32) Validator {
 	})
 }
 
-func signatureValidator() Validator {
+func signatureValidator(idService identity.Service) Validator {
 	return ValidatorFunc(func(envelope *p2ppb.Envelope) error {
 		if envelope == nil || envelope.Header == nil {
 			return errors.New("nil envelope/header")
@@ -89,16 +91,21 @@ func signatureValidator() Validator {
 		if !valid {
 			return errors.New("signature validation failure")
 		}
-		return nil
+
+		centID, err := identity.ToCentID(envelope.Header.Signature.EntityId)
+		if err != nil {
+			return err
+		}
+		return idService.ValidateKey(centID, envelope.Header.Signature.PublicKey, identity.KeyPurposeSigning)
 	})
 }
 
 // HandshakeValidator validates the p2p handshake details
-func HandshakeValidator(networkID uint32) ValidatorGroup {
+func HandshakeValidator(networkID uint32, idService identity.Service) ValidatorGroup {
 	return ValidatorGroup{
 		versionValidator(),
 		networkValidator(networkID),
-		signatureValidator(),
+		signatureValidator(idService),
 	}
 }
 
