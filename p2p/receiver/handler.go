@@ -195,7 +195,7 @@ func (srv *Handler) HandleGetDocument(ctx context.Context, peer peer.ID, protoc 
 		return convertToErrorEnvelop(err)
 	}
 
-	res, err := srv.GetDocument(ctx, m, msg.Header.SenderId)
+	res, err := srv.GetDocument(ctx, m)
 	if err != nil {
 		return convertToErrorEnvelop(err)
 	}
@@ -214,7 +214,7 @@ func (srv *Handler) HandleGetDocument(ctx context.Context, peer peer.ID, protoc 
 }
 
 // GetDocument receives document identifier and retrieves the corresponding CoreDocument from the repository
-func (srv *Handler) GetDocument(ctx context.Context, docReq *p2ppb.GetDocumentRequest, senderID []byte) (*p2ppb.GetDocumentResponse, error) {
+func (srv *Handler) GetDocument(ctx context.Context, docReq *p2ppb.GetDocumentRequest) (*p2ppb.GetDocumentResponse, error) {
 	model, err := srv.genericService.GetCurrentVersion(ctx, docReq.DocumentIdentifier)
 	if err != nil {
 		return nil, err
