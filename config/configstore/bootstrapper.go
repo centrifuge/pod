@@ -29,22 +29,12 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	repo := &repo{configdb}
 	service := &service{repo, idService}
 
-	nc := NewNodeConfig(cfg)
-	configdb.Register(nc)
-	_, err := service.GetConfig()
-	// if node config doesn't exist in the db, add it
-	if err != nil {
-		nc, err = service.CreateConfig(NewNodeConfig(cfg))
-		if err != nil {
-			return errors.NewTypedError(config.ErrConfigBootstrap, errors.New("%v", err))
-		}
-	}
-	tc, err := NewTenantConfig(nc.GetEthereumDefaultAccountName(), cfg)
+	tc, err := NewTenantConfig(cfg.GetEthereumDefaultAccountName(), cfg)
 	if err != nil {
 		return errors.NewTypedError(config.ErrConfigBootstrap, errors.New("%v", err))
 	}
 	configdb.Register(tc)
-	i, err := nc.GetIdentityID()
+	i, err := cfg.GetIdentityID()
 	if err != nil {
 		return errors.NewTypedError(config.ErrConfigBootstrap, errors.New("%v", err))
 	}

@@ -19,7 +19,7 @@ type Bootstrapper struct{}
 // Bootstrap initializes the anchorRepositoryContract as well as the anchorConfirmationTask that depends on it.
 // the anchorConfirmationTask is added to be registered on the Queue at queue.Bootstrapper.
 func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
-	cfg, err := configstore.RetrieveConfig(false, ctx)
+	cfg, err := configstore.RetrieveConfig(ctx)
 	if err != nil {
 		return err
 	}

@@ -24,7 +24,7 @@ type Bootstrapper struct{}
 
 // Bootstrap initializes the payment obligation contract
 func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
-	cfg, err := configstore.RetrieveConfig(true, ctx)
+	cfg, err := configstore.RetrieveConfig(ctx)
 	if err != nil {
 		return err
 	}

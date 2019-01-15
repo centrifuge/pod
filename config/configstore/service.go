@@ -10,7 +10,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
-	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 )
 
@@ -177,23 +176,12 @@ func (s service) DeleteTenant(identifier []byte) error {
 }
 
 // RetrieveConfig retrieves system config giving priority to db stored config
-func RetrieveConfig(dbOnly bool, ctx map[string]interface{}) (config.Configuration, error) {
-	var cfg config.Configuration
-	var err error
-	if cfgService, ok := ctx[config.BootstrappedConfigStorage].(config.Service); ok {
-		// may be we need a way to detect a corrupted db here
-		cfg, err = cfgService.GetConfig()
-		if err != nil {
-			apiLog.Warningf("could not load config from db: %v", err)
-		}
-		return cfg, nil
-	}
-
+func RetrieveConfig(ctx map[string]interface{}) (config.Configuration, error) {
 	// we have to allow loading from file in case this is coming from create config cmd where we don't add configs to db
-	if _, ok := ctx[bootstrap.BootstrappedConfig]; ok && cfg == nil && !dbOnly {
-		cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
+	if _, ok := ctx[bootstrap.BootstrappedConfig]; ok {
+		cfg := ctx[bootstrap.BootstrappedConfig].(config.Configuration)
+		return cfg, nil
 	} else {
-		return nil, errors.NewTypedError(config.ErrConfigRetrieve, err)
+		return nil, config.ErrConfigRetrieve
 	}
-	return cfg, nil
 }

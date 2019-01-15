@@ -13,7 +13,7 @@ type Bootstrapper struct{}
 
 // Bootstrap adds processor to the context.
 func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
-	cfg, err := configstore.RetrieveConfig(true, ctx)
+	cfg, err := configstore.RetrieveConfig(ctx)
 	if err != nil {
 		return err
 	}

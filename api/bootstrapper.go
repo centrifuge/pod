@@ -13,7 +13,7 @@ type Bootstrapper struct{}
 
 // Bootstrap initiates api server
 func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
-	cfg, err := configstore.RetrieveConfig(true, ctx)
+	cfg, err := configstore.RetrieveConfig(ctx)
 	if err != nil {
 		return err
 	}

@@ -20,7 +20,7 @@ type Bootstrapper struct{}
 // the idRegistrationConfirmationTask is added to be registered on the queue at queue.Bootstrapper
 func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	// we have to allow loading from file in case this is coming from create config cmd where we don't add configs to db
-	cfg, err := configstore.RetrieveConfig(false, context)
+	cfg, err := configstore.RetrieveConfig(context)
 	if err != nil {
 		return err
 	}

@@ -12,7 +12,7 @@ type Bootstrapper struct {
 
 // Bootstrap initiates the queue.
 func (b *Bootstrapper) Bootstrap(context map[string]interface{}) error {
-	cfg, err := configstore.RetrieveConfig(false, context)
+	cfg, err := configstore.RetrieveConfig(context)
 	if err != nil {
 		return err
 	}

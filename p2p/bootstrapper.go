@@ -15,7 +15,7 @@ type Bootstrapper struct{}
 
 // Bootstrap initiates p2p server and client into context
 func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
-	cfg, err := configstore.RetrieveConfig(true, ctx)
+	cfg, err := configstore.RetrieveConfig(ctx)
 	if err != nil {
 		return err
 	}

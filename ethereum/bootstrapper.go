@@ -10,7 +10,7 @@ type Bootstrapper struct{}
 
 // Bootstrap initialises ethereum client.
 func (Bootstrapper) Bootstrap(context map[string]interface{}) error {
-	cfg, err := configstore.RetrieveConfig(false, context)
+	cfg, err := configstore.RetrieveConfig(context)
 	if err != nil {
 		return err
 	}
