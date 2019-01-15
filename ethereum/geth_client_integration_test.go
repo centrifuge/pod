@@ -3,10 +3,11 @@
 package ethereum_test
 
 import (
-	"github.com/centrifuge/go-centrifuge/identity/ethid"
-	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"os"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/identity/ethid"
+	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
@@ -34,7 +35,6 @@ func TestMain(m *testing.M) {
 		&queue.Bootstrapper{},
 		&ethid.Bootstrapper{},
 		&configstore.Bootstrapper{},
-
 	}
 
 	bootstrap.RunTestBootstrappers(bootstappers, ctx)
