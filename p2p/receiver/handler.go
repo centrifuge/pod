@@ -93,8 +93,8 @@ func (srv *Handler) HandleInterceptor(ctx context.Context, peer peer.ID, protoc 
 		return srv.HandleRequestDocumentSignature(ctx, peer, protoc, envelope)
 	case p2pcommon.MessageTypeSendAnchoredDoc:
 		return srv.HandleSendAnchoredDocument(ctx, peer, protoc, envelope)
-	//new case p2pcommon.MessageTypeGetAnchoredDoc:
-		//return srv.HandleGetAnchoredDocument(ctx, peer, protoc, envelop)
+	//new case p2pcommon.MessageTypeGetDoc:
+		//return srv.HandleGetDocument(ctx, peer, protoc, envelop)
 	default:
 		return convertToErrorEnvelop(errors.New("MessageType [%s] not found", envelope.Header.Type))
 	}
@@ -186,8 +186,8 @@ func (srv *Handler) SendAnchoredDocument(ctx context.Context, docReq *p2ppb.Anch
 	return &p2ppb.AnchorDocumentResponse{Accepted: true}, nil
 }
 
-//METHOD HandleGetAnchoredDocument handles HandleGetAnchoredDocument message
-//METHOD GetAnchoredDocument
+//METHOD HandleGetDocument handles HandleGetDocument message
+//METHOD GetDocument
 
 func convertToErrorEnvelop(err error) (*pb.P2PEnvelope, error) {
 	errPb, ok := err.(proto.Message)
