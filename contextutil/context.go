@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/common/hexutil"
+
 	"github.com/centrifuge/go-centrifuge/config"
 
 	"github.com/centrifuge/go-centrifuge/centerrors"
@@ -47,13 +49,19 @@ func Tenant(ctx context.Context) (config.TenantConfiguration, error) {
 }
 
 // CentContext updates a context with tenant info using the configstore, must only be used for api handlers
-func CentContext(ctx context.Context, config config.Service) (context.Context, error) {
-	// TODO [multi-tenancy] remove following and read the tenantID from the context
-	tc, err := config.GetAllTenants()
+func CentContext(ctx context.Context, cs config.Service) (context.Context, error) {
+	tcIDHex := ctx.Value(config.TenantKey).(string)
+	tcID, err := hexutil.Decode(tcIDHex)
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
 	}
-	ctxHeader, err := NewCentrifugeContext(ctx, tc[0])
+
+	tc, err := cs.GetTenant(tcID)
+	if err != nil {
+		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
+	}
+
+	ctxHeader, err := NewCentrifugeContext(ctx, tc)
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
 	}
