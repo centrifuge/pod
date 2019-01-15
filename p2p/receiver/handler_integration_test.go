@@ -5,6 +5,13 @@ package receiver_test
 import (
 	"context"
 	"flag"
+
+	"github.com/centrifuge/go-centrifuge/contextutil"
+	cented25519 "github.com/centrifuge/go-centrifuge/crypto/ed25519"
+	"github.com/centrifuge/go-centrifuge/p2p/common"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
+	"github.com/golang/protobuf/proto"
+
 	"os"
 	"testing"
 
@@ -39,13 +46,14 @@ var (
 	anchorRepo anchors.AnchorRepository
 	cfg        config.Configuration
 	idService  identity.Service
+	cfgService config.Service
 )
 
 func TestMain(m *testing.M) {
 	flag.Parse()
 	ctx := testingbootstrap.TestFunctionalEthereumBootstrap()
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-	cfgService := ctx[config.BootstrappedConfigStorage].(config.Service)
+	cfgService = ctx[config.BootstrappedConfigStorage].(config.Service)
 	registry := ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
 	anchorRepo = ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
 	idService = ctx[identity.BootstrappedIDService].(identity.Service)
@@ -54,6 +62,33 @@ func TestMain(m *testing.M) {
 	result := m.Run()
 	testingbootstrap.TestFunctionalEthereumTearDown()
 	os.Exit(result)
+}
+
+func TestHandler_HandleInterceptorReqSignature(t *testing.T) {
+	centID := createIdentity(t)
+	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	tc, err := contextutil.Tenant(ctxh)
+	_, err = cfgService.CreateTenant(tc)
+	assert.NoError(t, err)
+	doc := prepareDocumentForP2PHandler(t, nil)
+	req := getSignatureRequest(doc)
+	p2pEnv, err := p2pcommon.PrepareP2PEnvelope(ctxh, cfg.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, req)
+
+	pub, _ := cfg.GetSigningKeyPair()
+	publicKey, err := cented25519.GetPublicSigningKey(pub)
+	assert.NoError(t, err)
+	var bPk [32]byte
+	copy(bPk[:], publicKey)
+	peerID, err := cented25519.PublicKeyToP2PKey(bPk)
+	assert.NoError(t, err)
+
+	p2pResp, err := handler.HandleInterceptor(ctxh, peerID, p2pcommon.ProtocolForCID(centID), p2pEnv)
+	assert.Nil(t, err, "must be nil")
+	assert.NotNil(t, p2pResp, "must be non nil")
+	resp := resolveSignatureResponse(t, p2pResp)
+	assert.NotNil(t, resp.Signature.Signature, "must be non nil")
+	sig := resp.Signature
+	assert.True(t, ed25519.Verify(sig.PublicKey, doc.SigningRoot, sig.Signature), "signature must be valid")
 }
 
 func TestHandler_RequestDocumentSignature_verification_fail(t *testing.T) {
@@ -268,4 +303,13 @@ func getAnchoredRequest(doc *coredocumentpb.CoreDocument) *p2ppb.AnchorDocumentR
 
 func getSignatureRequest(doc *coredocumentpb.CoreDocument) *p2ppb.SignatureRequest {
 	return &p2ppb.SignatureRequest{Document: doc}
+}
+
+func resolveSignatureResponse(t *testing.T, p2pEnv *protocolpb.P2PEnvelope) *p2ppb.SignatureResponse {
+	signResp := new(p2ppb.SignatureResponse)
+	dataEnv, err := p2pcommon.ResolveDataEnvelope(p2pEnv)
+	assert.NoError(t, err)
+	err = proto.Unmarshal(dataEnv.Body, signResp)
+	assert.NoError(t, err)
+	return signResp
 }
