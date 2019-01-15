@@ -75,7 +75,7 @@ func (c apiServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr cha
 
 	opts := []grpc.ServerOption{
 		grpc.Creds(creds),
-		grpcInterceptor(), // enable this once we start requiring the tenant id to passed as header
+		grpcInterceptor(),
 	}
 
 	grpcServer := grpc.NewServer(opts...)
