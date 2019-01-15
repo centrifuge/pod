@@ -67,10 +67,10 @@ func MessageTypeFromString(mt string) MessageType {
 		found = MessageTypeSendAnchoredDoc
 	} else if MessageTypeSendAnchoredDocRep.Equals(mt) {
 		found = MessageTypeSendAnchoredDocRep
-	} else if MessageTypeGetDoc.Equals(mt) {
-		found = MessageTypeGetDoc
-	} else if MessageTypeGetDocRep.Equals(mt) {
-		found = MessageTypeGetDocRep
+	//} else if MessageTypeGetDoc.Equals(mt) {
+	//	found = MessageTypeGetDoc
+	//} else if MessageTypeGetDocRep.Equals(mt) {
+	//	found = MessageTypeGetDocRep
 	}
 	return found
 }

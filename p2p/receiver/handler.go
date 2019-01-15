@@ -3,7 +3,6 @@ package receiver
 import (
 	"context"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 	"github.com/centrifuge/go-centrifuge/p2p/common"
 
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -50,12 +49,11 @@ type Handler struct {
 	registry           *documents.ServiceRegistry
 	config             config.Service
 	handshakeValidator ValidatorGroup
-	genericService 	   genericdoc.Service
 }
 
 // New returns an implementation of P2PServiceServer
-func New(config config.Service, registry *documents.ServiceRegistry, handshakeValidator ValidatorGroup, genericService genericdoc.Service) *Handler {
-	return &Handler{registry: registry, config: config, handshakeValidator: handshakeValidator, genericService: genericService}
+func New(config config.Service, registry *documents.ServiceRegistry, handshakeValidator ValidatorGroup) *Handler {
+	return &Handler{registry: registry, config: config, handshakeValidator: handshakeValidator}
 }
 
 // HandleInterceptor acts as main entry point for all message types, routes the request to the correct handler
@@ -93,8 +91,8 @@ func (srv *Handler) HandleInterceptor(ctx context.Context, peer peer.ID, protoc 
 		return srv.HandleRequestDocumentSignature(ctx, peer, protoc, envelope)
 	case p2pcommon.MessageTypeSendAnchoredDoc:
 		return srv.HandleSendAnchoredDocument(ctx, peer, protoc, envelope)
-	//new case p2pcommon.MessageTypeGetDoc:
-		//return srv.HandleGetDocument(ctx, peer, protoc, envelop)
+	//case p2pcommon.MessageTypeGetDoc:
+	//	return srv.HandleGetDocument(ctx, peer, protoc, envelope)
 	default:
 		return convertToErrorEnvelop(errors.New("MessageType [%s] not found", envelope.Header.Type))
 	}
@@ -186,8 +184,47 @@ func (srv *Handler) SendAnchoredDocument(ctx context.Context, docReq *p2ppb.Anch
 	return &p2ppb.AnchorDocumentResponse{Accepted: true}, nil
 }
 
-//METHOD HandleGetDocument handles HandleGetDocument message
-//METHOD GetDocument
+// HandleGetDocument handles HandleGetDocument message
+
+func (srv *Handler) HandleGetDocument(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *p2ppb.Envelope) (*pb.P2PEnvelope, error) {
+	m := new(p2ppb.AnchorDocumentRequest)
+	err := proto.Unmarshal(msg.Body, m)
+	if err != nil {
+		return convertToErrorEnvelop(err)
+	}
+
+	res, err := srv.SendAnchoredDocument(ctx, m, msg.Header.SenderId)
+	if err != nil {
+		return convertToErrorEnvelop(err)
+	}
+
+	nc, err := srv.config.GetConfig()
+	if err != nil {
+		return convertToErrorEnvelop(err)
+	}
+
+	p2pEnv, err := p2pcommon.PrepareP2PEnvelope(ctx, nc.GetNetworkID(), p2pcommon.MessageTypeSendAnchoredDocRep, res)
+	if err != nil {
+		return convertToErrorEnvelop(err)
+	}
+
+	return p2pEnv, nil
+}
+
+// GetDocument receives document identifier and retrieves the corresponding CoreDocument from the repository
+func (srv *Handler) GetDocument(ctx context.Context, docReq *p2ppb.AnchorDocumentRequest, senderID []byte) (*p2ppb.AnchorDocumentResponse, error) {
+	svc, model, err := getServiceAndModel(srv.registry, docReq.Document)
+	if err != nil {
+		return nil, centerrors.New(code.DocumentInvalid, err.Error())
+	}
+
+	err = svc.ReceiveAnchoredDocument(ctx, model, senderID)
+	if err != nil {
+		return nil, centerrors.New(code.Unknown, err.Error())
+	}
+
+	return &p2ppb.AnchorDocumentResponse{Accepted: true}, nil
+}
 
 func convertToErrorEnvelop(err error) (*pb.P2PEnvelope, error) {
 	errPb, ok := err.(proto.Message)
