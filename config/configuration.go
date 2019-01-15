@@ -527,7 +527,6 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	if err != nil {
 		log.Fatalf("error: %v", err)
 	}
-
 	return v, nil
 }
 

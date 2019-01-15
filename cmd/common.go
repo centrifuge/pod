@@ -120,6 +120,8 @@ func CreateConfig(
 	dbCfg := ctx[storage.BootstrappedConfigDB].(storage.Repository)
 	db.Close()
 	dbCfg.Close()
+	log.Infof("---------Centrifuge node configuration file successfully created!---------")
+	log.Infof("Please run the Centrifuge node using the following command: centrifuge run -c %s\n", v.ConfigFileUsed())
 	return nil
 }
 
