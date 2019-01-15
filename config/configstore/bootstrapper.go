@@ -27,8 +27,8 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	}
 
 	repo := &repo{configdb}
-	service := &service{repo, idService, func() protocolSetter {
-		return context[bootstrap.BootstrappedP2PServer].(protocolSetter)
+	service := &service{repo, idService, func() ProtocolSetter {
+		return context[bootstrap.BootstrappedP2PServer].(ProtocolSetter)
 	}}
 
 	nc := NewNodeConfig(cfg)

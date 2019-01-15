@@ -6,6 +6,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -75,7 +77,7 @@ func (m mockService) DeriveFromUpdatePayload(ctx context.Context, payload *clien
 func TestGRPCHandler_Create(t *testing.T) {
 	h := getHandler()
 	req := testingdocuments.CreatePOPayload()
-	ctx := context.Background()
+	ctx := testingconfig.HandlerContext(configService)
 	model := &testingdocuments.MockModel{}
 
 	// derive fails
@@ -129,7 +131,7 @@ func TestGrpcHandler_Update(t *testing.T) {
 		Data:          p.Data,
 		Collaborators: p.Collaborators,
 	}
-	ctx := context.Background()
+	ctx := testingconfig.HandlerContext(configService)
 	model := &testingdocuments.MockModel{}
 
 	// derive fails
@@ -196,7 +198,7 @@ func TestGrpcHandler_Get(t *testing.T) {
 	response := &clientpopb.PurchaseOrderResponse{}
 	srv.On("GetCurrentVersion", mock.Anything, identifierBytes).Return(model, nil)
 	srv.On("DerivePurchaseOrderResponse", model).Return(response, nil)
-	res, err := h.Get(context.Background(), payload)
+	res, err := h.Get(testingconfig.HandlerContext(configService), payload)
 	model.AssertExpectations(t)
 	srv.AssertExpectations(t)
 	assert.Nil(t, err, "must be nil")
@@ -208,19 +210,19 @@ func TestGrpcHandler_GetVersion_invalid_input(t *testing.T) {
 	h := getHandler()
 	srv := h.service.(*mockService)
 	payload := &clientpopb.GetVersionRequest{Identifier: "0x0x", Version: "0x00"}
-	res, err := h.GetVersion(context.Background(), payload)
+	res, err := h.GetVersion(testingconfig.HandlerContext(configService), payload)
 	assert.EqualError(t, err, "identifier is invalid: invalid hex string")
 	payload.Version = "0x0x"
 	payload.Identifier = "0x01"
 
-	res, err = h.GetVersion(context.Background(), payload)
+	res, err = h.GetVersion(testingconfig.HandlerContext(configService), payload)
 	assert.EqualError(t, err, "version is invalid: invalid hex string")
 	payload.Version = "0x00"
 	payload.Identifier = "0x01"
 
 	mockErr := errors.New("not found")
 	srv.On("GetVersion", mock.Anything, []byte{0x01}, []byte{0x00}).Return(nil, mockErr)
-	res, err = h.GetVersion(context.Background(), payload)
+	res, err = h.GetVersion(testingconfig.HandlerContext(configService), payload)
 	srv.AssertExpectations(t)
 	assert.EqualError(t, err, "document not found: not found")
 	assert.Nil(t, res)
@@ -235,7 +237,7 @@ func TestGrpcHandler_GetVersion(t *testing.T) {
 	response := &clientpopb.PurchaseOrderResponse{}
 	srv.On("GetVersion", mock.Anything, []byte{0x01}, []byte{0x00}).Return(model, nil)
 	srv.On("DerivePurchaseOrderResponse", model).Return(response, nil)
-	res, err := h.GetVersion(context.Background(), payload)
+	res, err := h.GetVersion(testingconfig.HandlerContext(configService), payload)
 	model.AssertExpectations(t)
 	srv.AssertExpectations(t)
 	assert.Nil(t, err)

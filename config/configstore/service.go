@@ -21,14 +21,14 @@ const (
 	ethAuthPrivKeyName = "ethauth.key.pem"
 )
 
-type protocolSetter interface {
+type ProtocolSetter interface {
 	InitProtocolForCID(CID identity.CentID)
 }
 
 type service struct {
 	repo                 repository
 	idService            identity.Service
-	protocolSetterFinder func() protocolSetter
+	protocolSetterFinder func() ProtocolSetter
 }
 
 // DefaultService returns an implementation of the config.Service

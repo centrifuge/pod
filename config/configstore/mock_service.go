@@ -23,7 +23,7 @@ func (m MockService) GetConfig() (config.Configuration, error) {
 
 func (m MockService) GetTenant(identifier []byte) (config.TenantConfiguration, error) {
 	args := m.Called(identifier)
-	return args.Get(0).(*TenantConfig), args.Error(0)
+	return args.Get(0).(config.TenantConfiguration), args.Error(1)
 }
 
 func (m MockService) GetAllTenants() ([]config.TenantConfiguration, error) {
