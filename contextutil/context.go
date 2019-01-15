@@ -48,8 +48,8 @@ func Tenant(ctx context.Context) (config.TenantConfiguration, error) {
 	return tc, nil
 }
 
-// CentContext updates a context with tenant info using the configstore, must only be used for api handlers
-func CentContext(ctx context.Context, cs config.Service) (context.Context, error) {
+// NodeContext updates a context with tenant info using the configstore, must only be used for api handlers
+func NodeContext(ctx context.Context, cs config.Service) (context.Context, error) {
 	tcIDHex := ctx.Value(config.TenantKey).(string)
 	tcID, err := hexutil.Decode(tcIDHex)
 	if err != nil {

@@ -39,7 +39,7 @@ func GRPCHandler(config config.Service, registry *documents.ServiceRegistry) (cl
 // Create validates the purchase order, persists it to DB, and anchors it the chain
 func (h grpcHandler) Create(ctx context.Context, req *clientpurchaseorderpb.PurchaseOrderCreatePayload) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
 	apiLog.Debugf("Create request %v", req)
-	ctxh, err := contextutil.CentContext(ctx, h.config)
+	ctxh, err := contextutil.NodeContext(ctx, h.config)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, err
@@ -71,7 +71,7 @@ func (h grpcHandler) Create(ctx context.Context, req *clientpurchaseorderpb.Purc
 // Update handles the document update and anchoring
 func (h grpcHandler) Update(ctx context.Context, payload *clientpurchaseorderpb.PurchaseOrderUpdatePayload) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
 	apiLog.Debugf("Update request %v", payload)
-	ctxHeader, err := contextutil.CentContext(ctx, h.config)
+	ctxHeader, err := contextutil.NodeContext(ctx, h.config)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, err
@@ -102,7 +102,7 @@ func (h grpcHandler) Update(ctx context.Context, payload *clientpurchaseorderpb.
 // GetVersion returns the requested version of a purchase order
 func (h grpcHandler) GetVersion(ctx context.Context, req *clientpurchaseorderpb.GetVersionRequest) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
 	apiLog.Debugf("GetVersion request %v", req)
-	ctxHeader, err := contextutil.CentContext(ctx, h.config)
+	ctxHeader, err := contextutil.NodeContext(ctx, h.config)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, err
@@ -138,7 +138,7 @@ func (h grpcHandler) GetVersion(ctx context.Context, req *clientpurchaseorderpb.
 // Get returns the purchase order the latest version of the document with given identifier
 func (h grpcHandler) Get(ctx context.Context, getRequest *clientpurchaseorderpb.GetRequest) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
 	apiLog.Debugf("Get request %v", getRequest)
-	ctxHeader, err := contextutil.CentContext(ctx, h.config)
+	ctxHeader, err := contextutil.NodeContext(ctx, h.config)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, err
