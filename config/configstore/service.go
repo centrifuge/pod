@@ -21,9 +21,15 @@ const (
 	ethAuthPrivKeyName = "ethauth.key.pem"
 )
 
+// ProtocolSetter sets the protocol on host for the centID
+type ProtocolSetter interface {
+	InitProtocolForCID(CID identity.CentID)
+}
+
 type service struct {
-	repo      repository
-	idService identity.Service
+	repo                 repository
+	idService            identity.Service
+	protocolSetterFinder func() ProtocolSetter
 }
 
 // DefaultService returns an implementation of the config.Service
@@ -89,6 +95,14 @@ func (s service) GenerateTenant() (config.TenantConfiguration, error) {
 		return nil, err
 	}
 
+	// minor hack to set same p2p keys as node to tenant: Set the new tenant ID to copy of main tenant and create p2p keys
+	mtcc := mtc.(*TenantConfig)
+	mtcc.IdentityID = CID[:]
+	err = s.idService.AddKeyFromConfig(mtcc, identity.KeyPurposeP2P)
+	if err != nil {
+		return nil, err
+	}
+
 	err = s.idService.AddKeyFromConfig(tc, identity.KeyPurposeSigning)
 	if err != nil {
 		return nil, err
@@ -104,6 +118,8 @@ func (s service) GenerateTenant() (config.TenantConfiguration, error) {
 		return nil, err
 	}
 
+	// initiate network handling
+	s.protocolSetterFinder().InitProtocolForCID(CID)
 	return tc, nil
 }
 

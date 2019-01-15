@@ -85,31 +85,42 @@ func (s *peer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- 
 	}
 
 	s.mes = newP2PMessenger(ctx, s.host, nc.GetP2PConnectionTimeout(), s.handlerCreator().HandleInterceptor)
-	tcs, err := s.config.GetAllTenants()
+	err = s.initProtocols()
 	if err != nil {
 		startupErr <- err
 		return
 	}
-	var protocols []protocol.ID
-	for _, t := range tcs {
-		tid, err := t.GetIdentityID()
-		if err != nil {
-			startupErr <- err
-			return
-		}
-		CID, err := identity.ToCentID(tid)
-		if err != nil {
-			startupErr <- err
-			return
-		}
-		protocols = append(protocols, p2pcommon.ProtocolForCID(CID))
-	}
-	s.mes.init(protocols...)
 
 	// Start DHT and properly ignore errors :)
 	_ = runDHT(ctx, s.host, nc.GetBootstrapPeers())
 	<-ctx.Done()
 
+}
+
+func (s *peer) initProtocols() error {
+	tcs, err := s.config.GetAllTenants()
+	if err != nil {
+		return err
+	}
+	var protocols []protocol.ID
+	for _, t := range tcs {
+		tid, err := t.GetIdentityID()
+		if err != nil {
+			return err
+		}
+		CID, err := identity.ToCentID(tid)
+		if err != nil {
+			return err
+		}
+		protocols = append(protocols, p2pcommon.ProtocolForCID(CID))
+	}
+	s.mes.init(protocols...)
+	return nil
+}
+
+func (s *peer) InitProtocolForCID(CID identity.CentID) {
+	p := p2pcommon.ProtocolForCID(CID)
+	s.mes.init(p)
 }
 
 func (s *peer) createSigningKey(pubKey, privKey string) (priv crypto.PrivKey, pub crypto.PubKey, err error) {

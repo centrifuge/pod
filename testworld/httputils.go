@@ -25,12 +25,10 @@ func createInsecureClientWithExpect(t *testing.T, baseURL string) *httpexpect.Ex
 	return httpexpect.WithConfig(config)
 }
 
-func getDocumentAndCheck(e *httpexpect.Expect, documentType string, params map[string]interface{}) *httpexpect.Value {
+func getDocumentAndCheck(e *httpexpect.Expect, auth string, documentType string, params map[string]interface{}) *httpexpect.Value {
 	docIdentifier := params["document_id"].(string)
 
-	objGet := e.GET("/"+documentType+"/"+docIdentifier).
-		WithHeader("accept", "application/json").
-		WithHeader("Content-Type", "application/json").
+	objGet := addCommonHeaders(e.GET("/"+documentType+"/"+docIdentifier), auth).
 		Expect().Status(http.StatusOK).JSON().NotNull()
 	objGet.Path("$.header.document_id").String().Equal(docIdentifier)
 	objGet.Path("$.data.currency").String().Equal(params["currency"].(string))
@@ -38,19 +36,23 @@ func getDocumentAndCheck(e *httpexpect.Expect, documentType string, params map[s
 	return objGet
 }
 
-func createDocument(e *httpexpect.Expect, documentType string, status int, payload map[string]interface{}) *httpexpect.Object {
-	obj := e.POST("/"+documentType).
-		WithHeader("accept", "application/json").
-		WithHeader("Content-Type", "application/json").
+func nonExistingDocumentCheck(e *httpexpect.Expect, auth string, documentType string, params map[string]interface{}) *httpexpect.Value {
+	docIdentifier := params["document_id"].(string)
+
+	objGet := addCommonHeaders(e.GET("/"+documentType+"/"+docIdentifier), auth).
+		Expect().Status(500).JSON().NotNull()
+	return objGet
+}
+
+func createDocument(e *httpexpect.Expect, auth string, documentType string, status int, payload map[string]interface{}) *httpexpect.Object {
+	obj := addCommonHeaders(e.POST("/"+documentType), auth).
 		WithJSON(payload).
 		Expect().Status(status).JSON().Object()
 	return obj
 }
 
-func updateDocument(e *httpexpect.Expect, documentType string, status int, docIdentifier string, payload map[string]interface{}) *httpexpect.Object {
-	obj := e.PUT("/"+documentType+"/"+docIdentifier).
-		WithHeader("accept", "application/json").
-		WithHeader("Content-Type", "application/json").
+func updateDocument(e *httpexpect.Expect, auth string, documentType string, status int, docIdentifier string, payload map[string]interface{}) *httpexpect.Object {
+	obj := addCommonHeaders(e.PUT("/"+documentType+"/"+docIdentifier), auth).
 		WithJSON(payload).
 		Expect().Status(status).JSON().Object()
 	return obj
@@ -73,10 +75,8 @@ func getTransactionID(t *testing.T, resp *httpexpect.Object) string {
 	return txID
 }
 
-func mintNFT(e *httpexpect.Expect, httpStatus int, payload map[string]interface{}) *httpexpect.Object {
-	resp := e.POST("/token/mint").
-		WithHeader("accept", "application/json").
-		WithHeader("Content-Type", "application/json").
+func mintNFT(e *httpexpect.Expect, auth string, httpStatus int, payload map[string]interface{}) *httpexpect.Object {
+	resp := addCommonHeaders(e.POST("/token/mint"), auth).
 		WithJSON(payload).
 		Expect().Status(httpStatus)
 
@@ -84,43 +84,33 @@ func mintNFT(e *httpexpect.Expect, httpStatus int, payload map[string]interface{
 	return httpObj
 }
 
-func getProof(e *httpexpect.Expect, httpStatus int, documentID string, payload map[string]interface{}) *httpexpect.Object {
-	resp := e.POST("/document/"+documentID+"/proof").
-		WithHeader("accept", "application/json").
-		WithHeader("Content-Type", "application/json").
+func getProof(e *httpexpect.Expect, auth string, httpStatus int, documentID string, payload map[string]interface{}) *httpexpect.Object {
+	resp := addCommonHeaders(e.POST("/document/"+documentID+"/proof"), auth).
 		WithJSON(payload).
 		Expect().Status(httpStatus)
 	return resp.JSON().Object()
 }
 
-func getNodeConfig(e *httpexpect.Expect, httpStatus int) *httpexpect.Object {
-	resp := e.GET("/config/node").
-		WithHeader("accept", "application/json").
-		WithHeader("Content-Type", "application/json").
+func getNodeConfig(e *httpexpect.Expect, auth string, httpStatus int) *httpexpect.Object {
+	resp := addCommonHeaders(e.GET("/config/node"), auth).
 		Expect().Status(httpStatus)
 	return resp.JSON().Object()
 }
 
-func getTenantConfig(e *httpexpect.Expect, httpStatus int, identifier string) *httpexpect.Object {
-	resp := e.GET("/config/tenants/"+identifier).
-		WithHeader("accept", "application/json").
-		WithHeader("Content-Type", "application/json").
+func getAccount(e *httpexpect.Expect, auth string, httpStatus int, identifier string) *httpexpect.Object {
+	resp := addCommonHeaders(e.GET("/config/tenants/"+identifier), auth).
 		Expect().Status(httpStatus)
 	return resp.JSON().Object()
 }
 
-func getAllTenantConfigs(e *httpexpect.Expect, httpStatus int) *httpexpect.Object {
-	resp := e.GET("/config/tenants").
-		WithHeader("accept", "application/json").
-		WithHeader("Content-Type", "application/json").
+func getAllAccounts(e *httpexpect.Expect, auth string, httpStatus int) *httpexpect.Object {
+	resp := addCommonHeaders(e.GET("/config/tenants"), auth).
 		Expect().Status(httpStatus)
 	return resp.JSON().Object()
 }
 
-func generateTenant(e *httpexpect.Expect, httpStatus int) *httpexpect.Object {
-	resp := e.POST("/config/tenants/generate").
-		WithHeader("accept", "application/json").
-		WithHeader("Content-Type", "application/json").
+func generateAccount(e *httpexpect.Expect, auth string, httpStatus int) *httpexpect.Object {
+	resp := addCommonHeaders(e.POST("/config/tenants/generate"), auth).
 		Expect().Status(httpStatus)
 	return resp.JSON().Object()
 }
@@ -134,9 +124,9 @@ func createInsecureClient() *http.Client {
 	return &http.Client{Transport: tr}
 }
 
-func waitTillSuccess(t *testing.T, e *httpexpect.Expect, txID string) {
+func waitTillStatus(t *testing.T, e *httpexpect.Expect, auth string, txID string, expectedStatus string) {
 	for {
-		resp := e.GET("/transactions/" + txID).Expect().Status(200).JSON().Object()
+		resp := addCommonHeaders(e.GET("/transactions/"+txID), auth).Expect().Status(200).JSON().Object()
 		status := resp.Path("$.status").String().Raw()
 
 		if status == "pending" {
@@ -144,10 +134,28 @@ func waitTillSuccess(t *testing.T, e *httpexpect.Expect, txID string) {
 			continue
 		}
 
-		if status == "failed" {
+		if status == expectedStatus {
+			break
+		} else {
 			t.Error(resp.Path("$.message").String().Raw())
 		}
 
 		break
 	}
+}
+
+func addCommonHeaders(req *httpexpect.Request, auth string) *httpexpect.Request {
+	return req.
+		WithHeader("accept", "application/json").
+		WithHeader("Content-Type", "application/json").
+		WithHeader("authorization", auth)
+}
+
+func getAccounts(accounts *httpexpect.Array) map[string]string {
+	tids := make(map[string]string)
+	for i := 0; i < int(accounts.Length().Raw()); i++ {
+		val := accounts.Element(i).Path("$.identity_id").String().NotEmpty().Raw()
+		tids[val] = val
+	}
+	return tids
 }

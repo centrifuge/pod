@@ -11,6 +11,14 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 )
 
+type testType string
+
+const (
+	withinHost            testType = "withinHost"
+	multiHost             testType = "multiHost"
+	multiHostMultiAccount testType = "multiHostMultiAccount"
+)
+
 var isRunningOnCI = len(os.Getenv("TRAVIS")) != 0
 
 // Adjust these based on local testing requirments, please revert for CI server

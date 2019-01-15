@@ -451,6 +451,7 @@ type TenantConfig struct {
 	IdentityID                       []byte
 	SigningKeyPair                   KeyPair
 	EthAuthKeyPair                   KeyPair
+	P2PKeyPair                       KeyPair
 }
 
 // GetEthereumAccount gets EthereumAccount
