@@ -81,9 +81,8 @@ func peerValidator(idService identity.Service) Validator {
 		if err != nil {
 			return err
 		}
-
 		if pk == nil {
-			return errors.New("cannot extract public key our of peer ID")
+			return errors.New("cannot extract public key out of peer ID")
 		}
 
 		idKey, err := pk.Bytes()
