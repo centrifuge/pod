@@ -21,6 +21,7 @@ const (
 	ethAuthPrivKeyName = "ethauth.key.pem"
 )
 
+// ProtocolSetter sets the protocol on host for the centID
 type ProtocolSetter interface {
 	InitProtocolForCID(CID identity.CentID)
 }
