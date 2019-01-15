@@ -48,7 +48,7 @@ var (
 	coreDoc       = testingcoredocument.GenerateCoreDocument()
 	cfg           config.Configuration
 	mockIDService *testingcommons.MockIDService
-	defaultPID   libp2pPeer.ID
+	defaultPID    libp2pPeer.ID
 )
 
 func TestMain(m *testing.M) {
@@ -194,16 +194,16 @@ func TestHandler_HandleInterceptor_getServiceAndModel_fail(t *testing.T) {
 func TestP2PService_basicChecks(t *testing.T) {
 	tests := []struct {
 		header *p2ppb.Header
-		err      error
+		err    error
 	}{
 		{
 			header: &p2ppb.Header{NodeVersion: "someversion", NetworkIdentifier: 12},
-			err:      errors.AppendError(version.IncompatibleVersionError("someversion"), incompatibleNetworkError(cfg.GetNetworkID(), 12)),
+			err:    errors.AppendError(version.IncompatibleVersionError("someversion"), incompatibleNetworkError(cfg.GetNetworkID(), 12)),
 		},
 
 		{
 			header: &p2ppb.Header{NodeVersion: "0.0.1", NetworkIdentifier: 12},
-			err:      errors.AppendError(incompatibleNetworkError(cfg.GetNetworkID(), 12), nil),
+			err:    errors.AppendError(incompatibleNetworkError(cfg.GetNetworkID(), 12), nil),
 		},
 
 		{

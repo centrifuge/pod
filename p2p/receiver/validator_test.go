@@ -3,8 +3,9 @@
 package receiver
 
 import (
-	"github.com/centrifuge/go-centrifuge/identity"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/identity"
 
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
@@ -30,7 +31,7 @@ func TestValidate_versionValidator(t *testing.T) {
 
 	// Empty header
 	header := &p2ppb.Header{}
-	err = vv.Validate(header, nil , nil)
+	err = vv.Validate(header, nil, nil)
 	assert.NotNil(t, err)
 
 	// Incompatible Major
