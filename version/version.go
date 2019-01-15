@@ -10,7 +10,7 @@ import (
 var gitCommit = "master"
 
 // CentrifugeNodeVersion is the current version of the app
-const CentrifugeNodeVersion = "0.0.1-alpha"
+const CentrifugeNodeVersion = "v.0.0.2-alpha3" // this makes the createconfig and the run command very very confusing if not up to date !
 
 // GetVersion returns current cent node version in semvar format.
 func GetVersion() *semver.Version {
