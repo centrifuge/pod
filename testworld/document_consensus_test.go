@@ -77,6 +77,7 @@ func addExternalCollaborator_withinHost(t *testing.T, documentType string) {
 	}
 	getDocumentAndCheck(bob.httpExpect, a, documentType, params)
 	getDocumentAndCheck(bob.httpExpect, b, documentType, params)
+	nonExistingDocumentCheck(bob.httpExpect, c, documentType, params)
 
 	// Bob updates invoice and shares with Charlie as well
 	res = updateDocument(bob.httpExpect, bob.id.String(), documentType, http.StatusOK, docIdentifier, updatedDocumentPayload(documentType, []string{a, c}))
@@ -106,7 +107,7 @@ func addExternalCollaborator_multiHostMultiAccount(t *testing.T, documentType st
 	accounts2 := doctorFord.getHost("Charlie").accounts
 	d := accounts2[0]
 	e := accounts2[1]
-	//f := accounts2[2]
+	f := accounts2[2]
 
 	// Alice shares document with Bobs accounts a and b
 	res := createDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusOK, defaultDocumentPayload(documentType, []string{a, b}))
@@ -125,6 +126,7 @@ func addExternalCollaborator_multiHostMultiAccount(t *testing.T, documentType st
 	getDocumentAndCheck(alice.httpExpect, alice.id.String(), documentType, params)
 	getDocumentAndCheck(bob.httpExpect, a, documentType, params)
 	getDocumentAndCheck(bob.httpExpect, b, documentType, params)
+	nonExistingDocumentCheck(bob.httpExpect, c, documentType, params)
 
 	// Bob updates invoice and shares with bobs account c as well using account a and to accounts d and e of Charlie
 	res = updateDocument(bob.httpExpect, a, documentType, http.StatusOK, docIdentifier, updatedDocumentPayload(documentType, []string{alice.id.String(), b, c, d, e}))
@@ -143,6 +145,7 @@ func addExternalCollaborator_multiHostMultiAccount(t *testing.T, documentType st
 	getDocumentAndCheck(bob.httpExpect, c, documentType, params)
 	getDocumentAndCheck(charlie.httpExpect, d, documentType, params)
 	getDocumentAndCheck(charlie.httpExpect, e, documentType, params)
+	nonExistingDocumentCheck(charlie.httpExpect, f, documentType, params)
 }
 
 func addExternalCollaborator(t *testing.T, documentType string) {
@@ -168,6 +171,7 @@ func addExternalCollaborator(t *testing.T, documentType string) {
 	}
 	getDocumentAndCheck(alice.httpExpect, alice.id.String(), documentType, params)
 	getDocumentAndCheck(bob.httpExpect, bob.id.String(), documentType, params)
+	nonExistingDocumentCheck(charlie.httpExpect, charlie.id.String(), documentType, params)
 
 	// Bob updates invoice and shares with Charlie as well
 	res = updateDocument(bob.httpExpect, bob.id.String(), documentType, http.StatusOK, docIdentifier, updatedDocumentPayload(documentType, []string{alice.id.String(), charlie.id.String()}))

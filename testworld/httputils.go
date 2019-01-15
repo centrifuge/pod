@@ -36,6 +36,14 @@ func getDocumentAndCheck(e *httpexpect.Expect, auth string, documentType string,
 	return objGet
 }
 
+func nonExistingDocumentCheck(e *httpexpect.Expect, auth string, documentType string, params map[string]interface{}) *httpexpect.Value {
+	docIdentifier := params["document_id"].(string)
+
+	objGet := addCommonHeaders(e.GET("/"+documentType+"/"+docIdentifier), auth).
+		Expect().Status(500).JSON().NotNull()
+	return objGet
+}
+
 func createDocument(e *httpexpect.Expect, auth string, documentType string, status int, payload map[string]interface{}) *httpexpect.Object {
 	obj := addCommonHeaders(e.POST("/"+documentType), auth).
 		WithJSON(payload).
