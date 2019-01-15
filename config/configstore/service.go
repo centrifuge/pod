@@ -181,7 +181,6 @@ func RetrieveConfig(ctx map[string]interface{}) (config.Configuration, error) {
 	if _, ok := ctx[bootstrap.BootstrappedConfig]; ok {
 		cfg := ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 		return cfg, nil
-	} else {
-		return nil, config.ErrConfigRetrieve
 	}
+	return nil, config.ErrConfigRetrieve
 }
