@@ -3,15 +3,12 @@
 package receiver
 
 import (
+	"github.com/centrifuge/go-centrifuge/identity"
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/stretchr/testify/mock"
-
-	"github.com/golang/protobuf/proto"
-
-	"github.com/centrifuge/go-centrifuge/crypto"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/version"
@@ -28,27 +25,27 @@ func TestValidate_versionValidator(t *testing.T) {
 	vv := versionValidator()
 
 	// Nil header
-	err := vv.Validate(nil)
+	err := vv.Validate(nil, nil, nil)
 	assert.NotNil(t, err)
 
 	// Empty header
-	envelope := &p2ppb.Envelope{Header: &p2ppb.Header{}}
-	err = vv.Validate(envelope)
+	header := &p2ppb.Header{}
+	err = vv.Validate(header, nil , nil)
 	assert.NotNil(t, err)
 
 	// Incompatible Major
-	envelope.Header.NodeVersion = "1.1.1"
-	err = vv.Validate(envelope)
+	header.NodeVersion = "1.1.1"
+	err = vv.Validate(header, nil, nil)
 	assert.NotNil(t, err)
 
 	// Compatible Minor
-	envelope.Header.NodeVersion = "0.1.1"
-	err = vv.Validate(envelope)
+	header.NodeVersion = "0.1.1"
+	err = vv.Validate(header, nil, nil)
 	assert.Nil(t, err)
 
 	//Same version
-	envelope.Header.NodeVersion = version.GetVersion().String()
-	err = vv.Validate(envelope)
+	header.NodeVersion = version.GetVersion().String()
+	err = vv.Validate(header, nil, nil)
 	assert.Nil(t, err)
 }
 
@@ -56,101 +53,87 @@ func TestValidate_networkValidator(t *testing.T) {
 	nv := networkValidator(cfg.GetNetworkID())
 
 	// Nil header
-	err := nv.Validate(nil)
+	err := nv.Validate(nil, nil, nil)
 	assert.NotNil(t, err)
 
-	envelope := &p2ppb.Envelope{Header: &p2ppb.Header{}}
-	err = nv.Validate(envelope)
+	header := &p2ppb.Header{}
+	err = nv.Validate(header, nil, nil)
 	assert.NotNil(t, err)
 
 	// Incompatible network
-	envelope.Header.NetworkIdentifier = 12
-	err = nv.Validate(envelope)
+	header.NetworkIdentifier = 12
+	err = nv.Validate(header, nil, nil)
 	assert.NotNil(t, err)
 
 	// Compatible network
-	envelope.Header.NetworkIdentifier = cfg.GetNetworkID()
-	err = nv.Validate(envelope)
+	header.NetworkIdentifier = cfg.GetNetworkID()
+	err = nv.Validate(header, nil, nil)
 	assert.Nil(t, err)
 }
 
-func TestValidate_signatureValidator(t *testing.T) {
+func TestValidate_peerValidator(t *testing.T) {
+	cID, _ := identity.ToCentID(id1)
+
 	idService := &testingcommons.MockIDService{}
-	sv := signatureValidator(idService)
+	sv := peerValidator(idService)
 
-	// Nil envelope
-	err := sv.Validate(nil)
+	// Nil headers
+	err := sv.Validate(nil, nil, nil)
 	assert.Error(t, err)
 
-	// Nil Header
-	envelope := &p2ppb.Envelope{}
-	err = sv.Validate(envelope)
+	// Nil centID
+	header := &p2ppb.Header{}
+	err = sv.Validate(header, nil, nil)
 	assert.Error(t, err)
 
-	// Nil Signature
-	envelope.Header = &p2ppb.Header{}
-	err = sv.Validate(envelope)
+	// Nil peerID
+	err = sv.Validate(header, &cID, nil)
 	assert.Error(t, err)
 
-	// Signature validation failure
-	envelope.Header.Signature = crypto.Sign(id1, key1, key1Pub, key1Pub)
-	err = sv.Validate(envelope)
-	assert.Error(t, err)
-
-	// Ethereum Identity validation failure
-	envelope.Header.Signature = nil
-	data, err := proto.Marshal(envelope)
-	assert.NoError(t, err)
-	envelope.Header.Signature = crypto.Sign(id1, key1, key1Pub, data)
+	// Identity validation failure
 	idService.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything).Return(errors.New("key not linked to identity")).Once()
-	err = sv.Validate(envelope)
+	err = sv.Validate(header, &cID, &defaultPID)
 	assert.Error(t, err)
 
 	// Success
 	idService.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
-	err = sv.Validate(envelope)
+	err = sv.Validate(header, &cID, &defaultPID)
 	assert.NoError(t, err)
 }
 
 func TestValidate_handshakeValidator(t *testing.T) {
+	cID, _ := identity.ToCentID(id1)
 	idService := &testingcommons.MockIDService{}
-	idService.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 	hv := HandshakeValidator(cfg.GetNetworkID(), idService)
 
 	// Incompatible version network and wrong signature
-	envelope := &p2ppb.Envelope{
-		Header: &p2ppb.Header{
-			NodeVersion:       "version",
-			NetworkIdentifier: 52,
-			Signature:         crypto.Sign(id1, key1, key1Pub, key1Pub),
-		},
-		Body: key1Pub,
+	header := &p2ppb.Header{
+		NodeVersion:       "version",
+		NetworkIdentifier: 52,
 	}
-	err := hv.Validate(envelope)
+	err := hv.Validate(header, nil, nil)
 	assert.NotNil(t, err)
 
 	// Incompatible version, correct network
-	envelope.Header.NetworkIdentifier = cfg.GetNetworkID()
-	err = hv.Validate(envelope)
+	header.NetworkIdentifier = cfg.GetNetworkID()
+	err = hv.Validate(header, nil, nil)
 	assert.NotNil(t, err)
 
 	// Compatible version, incorrect network
-	envelope.Header.NetworkIdentifier = 52
-	envelope.Header.NodeVersion = version.GetVersion().String()
-	err = hv.Validate(envelope)
+	header.NetworkIdentifier = 52
+	header.NodeVersion = version.GetVersion().String()
+	err = hv.Validate(header, nil, nil)
 	assert.NotNil(t, err)
 
-	// Compatible version, network and wrong signature
-	envelope.Header.NetworkIdentifier = cfg.GetNetworkID()
-	err = hv.Validate(envelope)
+	// Compatible version, network and wrong eth key
+	idService.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything).Return(errors.New("key not linked to identity")).Once()
+	header.NetworkIdentifier = cfg.GetNetworkID()
+	err = hv.Validate(header, &cID, &defaultPID)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "signature validation failure")
+	assert.Contains(t, err.Error(), "key not linked to identity")
 
 	// Compatible version, network and signature
-	envelope.Header.Signature = nil
-	data, err := proto.Marshal(envelope)
+	idService.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
+	err = hv.Validate(header, &cID, &defaultPID)
 	assert.NoError(t, err)
-	envelope.Header.Signature = crypto.Sign(id1, key1, key1Pub, data)
-	err = hv.Validate(envelope)
-	assert.Nil(t, err)
 }

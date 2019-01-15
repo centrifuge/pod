@@ -5,29 +5,27 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/identity"
 
-	"github.com/centrifuge/go-centrifuge/crypto"
-	"github.com/golang/protobuf/proto"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/version"
+	libp2pPeer "github.com/libp2p/go-libp2p-peer"
 )
 
 // Validator defines method that must be implemented by any validator type.
 type Validator interface {
 	// Validate validates p2p requests
-	Validate(envelope *p2ppb.Envelope) error
+	Validate(header *p2ppb.Header, centID *identity.CentID, peerID *libp2pPeer.ID) error
 }
 
 // ValidatorGroup implements Validator for validating a set of validators.
 type ValidatorGroup []Validator
 
 // Validate will execute all group specific atomic validations
-func (group ValidatorGroup) Validate(envelope *p2ppb.Envelope) (errs error) {
+func (group ValidatorGroup) Validate(header *p2ppb.Header, centID *identity.CentID, peerID *libp2pPeer.ID) (errs error) {
 	for _, v := range group {
-		if err := v.Validate(envelope); err != nil {
+		if err := v.Validate(header, centID, peerID); err != nil {
 			errs = errors.AppendError(errs, err)
 		}
 	}
@@ -36,67 +34,64 @@ func (group ValidatorGroup) Validate(envelope *p2ppb.Envelope) (errs error) {
 
 // ValidatorFunc implements Validator and can be used as a adaptor for functions
 // with specific function signature
-type ValidatorFunc func(envelope *p2ppb.Envelope) error
+type ValidatorFunc func(header *p2ppb.Header, centID *identity.CentID, peerID *libp2pPeer.ID) error
 
 // Validate passes the arguments to the underlying validator
 // function and returns the results
-func (vf ValidatorFunc) Validate(envelope *p2ppb.Envelope) error {
-	return vf(envelope)
+func (vf ValidatorFunc) Validate(header *p2ppb.Header, centID *identity.CentID, peerID *libp2pPeer.ID) error {
+	return vf(header, centID, peerID)
 }
 
 func versionValidator() Validator {
-	return ValidatorFunc(func(envelope *p2ppb.Envelope) error {
-		if envelope == nil || envelope.Header == nil {
-			return errors.New("nil envelope/header")
+	return ValidatorFunc(func(header *p2ppb.Header, centID *identity.CentID, peerID *libp2pPeer.ID) error {
+		if header == nil {
+			return errors.New("nil header")
 		}
-		if !version.CheckVersion(envelope.Header.NodeVersion) {
-			return version.IncompatibleVersionError(envelope.Header.NodeVersion)
+		if !version.CheckVersion(header.NodeVersion) {
+			return version.IncompatibleVersionError(header.NodeVersion)
 		}
 		return nil
 	})
 }
 
 func networkValidator(networkID uint32) Validator {
-	return ValidatorFunc(func(envelope *p2ppb.Envelope) error {
-		if envelope == nil || envelope.Header == nil {
-			return errors.New("nil envelope/header")
+	return ValidatorFunc(func(header *p2ppb.Header, centID *identity.CentID, peerID *libp2pPeer.ID) error {
+		if header == nil {
+			return errors.New("nil header")
 		}
-		if networkID != envelope.Header.NetworkIdentifier {
-			return incompatibleNetworkError(networkID, envelope.Header.NetworkIdentifier)
+		if networkID != header.NetworkIdentifier {
+			return incompatibleNetworkError(networkID, header.NetworkIdentifier)
 		}
 		return nil
 	})
 }
 
-func signatureValidator(idService identity.Service) Validator {
-	return ValidatorFunc(func(envelope *p2ppb.Envelope) error {
-		if envelope == nil || envelope.Header == nil {
-			return errors.New("nil envelope/header")
+func peerValidator(idService identity.Service) Validator {
+	return ValidatorFunc(func(header *p2ppb.Header, centID *identity.CentID, peerID *libp2pPeer.ID) error {
+		if header == nil {
+			return errors.New("nil header")
 		}
-
-		if envelope.Header.Signature == nil {
-			return errors.New("signature header missing")
+		if centID == nil {
+			return errors.New("nil centID")
 		}
-
-		envData := proto.Clone(envelope).(*p2ppb.Envelope)
-		// Remove Signature header so we can verify the message signed
-		envData.Header.Signature = nil
-
-		data, err := proto.Marshal(envData)
+		if peerID == nil {
+			return errors.New("nil peerID")
+		}
+		pk, err := peerID.ExtractPublicKey()
 		if err != nil {
 			return err
 		}
 
-		valid := crypto.VerifyMessage(envelope.Header.Signature.PublicKey, data, envelope.Header.Signature.Signature, crypto.CurveEd25519, false)
-		if !valid {
-			return errors.New("signature validation failure")
+		if pk == nil {
+			return errors.New("cannot extract public key our of peer ID")
 		}
 
-		centID, err := identity.ToCentID(envelope.Header.Signature.EntityId)
+		idKey, err := pk.Bytes()
 		if err != nil {
 			return err
 		}
-		return idService.ValidateKey(centID, envelope.Header.Signature.PublicKey, identity.KeyPurposeSigning)
+
+		return idService.ValidateKey(*centID, idKey, identity.KeyPurposeSigning)
 	})
 }
 
@@ -105,7 +100,7 @@ func HandshakeValidator(networkID uint32, idService identity.Service) ValidatorG
 	return ValidatorGroup{
 		versionValidator(),
 		networkValidator(networkID),
-		signatureValidator(idService),
+		peerValidator(idService),
 	}
 }
 

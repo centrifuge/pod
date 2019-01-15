@@ -82,7 +82,7 @@ func (srv *Handler) HandleInterceptor(ctx context.Context, peer peer.ID, protoc 
 		return convertToErrorEnvelop(err)
 	}
 
-	err = srv.handshakeValidator.Validate(envelope)
+	err = srv.handshakeValidator.Validate(envelope.Header, &cid, &peer)
 	if err != nil {
 		return convertToErrorEnvelop(err)
 	}
