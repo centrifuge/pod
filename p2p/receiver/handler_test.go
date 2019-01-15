@@ -9,11 +9,9 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/version"
 
-	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
-
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/crypto"
+	"github.com/centrifuge/go-centrifuge/identity"
 
 	"github.com/centrifuge/go-centrifuge/p2p/common"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
@@ -292,3 +290,5 @@ func Test_getServiceAndModel(t *testing.T) {
 	assert.NotNil(t, m)
 	assert.Equal(t, model, m)
 }
+
+
