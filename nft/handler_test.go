@@ -51,7 +51,6 @@ func TestNFTMint_success(t *testing.T) {
 
 func mockmockConfigStore() *configstore.MockService {
 	mockConfigStore := &configstore.MockService{}
-	//var tc config.TenantConfiguration = &configstore.TenantConfig{}
 	mockConfigStore.On("GetTenant", mock.Anything).Return(&configstore.TenantConfig{}, nil)
 	mockConfigStore.On("GetAllTenants").Return([]config.TenantConfiguration{&configstore.TenantConfig{}}, nil)
 	return mockConfigStore
