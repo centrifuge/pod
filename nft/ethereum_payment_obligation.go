@@ -30,6 +30,9 @@ type ethereumPaymentObligationContract interface {
 
 	// Mint method abstracts Mint method on the contract
 	Mint(opts *bind.TransactOpts, to common.Address, tokenID *big.Int, tokenURI string, anchorID *big.Int, merkleRoot [32]byte, values []string, salts [][32]byte, proofs [][][32]byte) (*types.Transaction, error)
+
+	// OwnerOf to retrieve owner of the tokenID
+	OwnerOf(opts *bind.CallOpts, tokenID *big.Int) (common.Address, error)
 }
 
 // ethereumPaymentObligation handles all interactions related to minting of NFTs for payment obligations on Ethereum
@@ -39,7 +42,7 @@ type ethereumPaymentObligation struct {
 	ethClient       ethereum.Client
 	queue           queue.TaskQueuer
 	genService      genericdoc.Service
-	bindContract    func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error)
+	bindContract    func(address common.Address, client ethereum.Client) (ethereumPaymentObligationContract, error)
 	txService       transactions.Service
 	blockHeightFunc func() (height uint64, err error)
 }
@@ -51,7 +54,7 @@ func newEthereumPaymentObligation(
 	ethClient ethereum.Client,
 	queue queue.TaskQueuer,
 	genService genericdoc.Service,
-	bindContract func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error),
+	bindContract func(address common.Address, client ethereum.Client) (ethereumPaymentObligationContract, error),
 	txService transactions.Service,
 	blockHeightFunc func() (uint64, error)) *ethereumPaymentObligation {
 	return &ethereumPaymentObligation{
@@ -151,6 +154,19 @@ func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, documentID []by
 		TransactionID: txID.String(),
 		TokenID:       requestData.TokenID.String(),
 	}, nil
+}
+
+// OwnerOf returns the owner of the NFT token on ethereum chain
+func (s *ethereumPaymentObligation) OwnerOf(registry common.Address, tokenID []byte) (owner common.Address, err error) {
+	contract, err := s.bindContract(registry, s.ethClient)
+	if err != nil {
+		return owner, errors.New("failed to bind the registry contract: %v", err)
+	}
+
+	opts, cancF := s.ethClient.GetGethCallOpts()
+	defer cancF()
+
+	return contract.OwnerOf(opts, utils.ByteSliceToBigInt(tokenID))
 }
 
 func (s *ethereumPaymentObligation) queueTaskTransaction(tenantID identity.CentID, txHash string) (txID uuid.UUID, err error) {
@@ -276,6 +292,6 @@ func convertProofProperty(sortedHashes [][]byte) ([][32]byte, error) {
 	return property, nil
 }
 
-func bindContract(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error) {
+func bindContract(address common.Address, client ethereum.Client) (ethereumPaymentObligationContract, error) {
 	return NewEthereumPaymentObligationContract(address, client.GetEthClient())
 }

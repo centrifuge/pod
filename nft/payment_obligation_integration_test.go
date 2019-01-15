@@ -7,6 +7,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+
+	"github.com/satori/go.uuid"
+
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
@@ -30,6 +35,7 @@ var cfg config.Configuration
 var idService identity.Service
 var payOb nft.PaymentObligation
 var txService transactions.Service
+var tokenRegistry nft.TokenRegistry
 
 func TestMain(m *testing.M) {
 	log.Debug("Test PreSetup for NFT")
@@ -39,6 +45,7 @@ func TestMain(m *testing.M) {
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	payOb = ctx[nft.BootstrappedPayObService].(nft.PaymentObligation)
 	txService = ctx[transactions.BootstrappedService].(transactions.Service)
+	tokenRegistry = ctx[nft.BootstrappedTokenRegistry].(nft.TokenRegistry)
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()
 	os.Exit(result)
@@ -75,13 +82,21 @@ func TestPaymentObligationService_mint(t *testing.T) {
 	assert.Nil(t, err, "should not error out when getting invoice ID")
 	// call mint
 	// assert no error
+	depositAddr := "0xf72855759a39fb75fc7341139f5d7a3974d4da08"
+	registry := cfg.GetContractAddress(config.PaymentObligation).String()
 	resp, err := payOb.MintNFT(
 		contextHeader,
 		ID,
-		cfg.GetContractAddress(config.PaymentObligation).String(),
-		"0xf72855759a39fb75fc7341139f5d7a3974d4da08",
+		registry,
+		depositAddr,
 		[]string{"invoice.gross_amount", "invoice.currency", "invoice.due_date", "collaborators[0]"},
 	)
 	assert.Nil(t, err, "should not error out when minting an invoice")
 	assert.NotNil(t, resp.TokenID, "token id should be present")
+	assert.NoError(t, txService.WaitForTransaction(cid, uuid.Must(uuid.FromString(resp.TransactionID))))
+	tokenID, err := hexutil.Decode(resp.TokenID)
+	assert.NoError(t, err)
+	owner, err := tokenRegistry.OwnerOf(common.HexToAddress(registry), tokenID)
+	assert.NoError(t, err)
+	assert.Equal(t, common.HexToAddress(depositAddr), owner)
 }

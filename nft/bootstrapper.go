@@ -16,8 +16,13 @@ import (
 	"github.com/centrifuge/go-centrifuge/queue"
 )
 
-// BootstrappedPayObService is the key to PaymentObligationService in bootstrap context.
-const BootstrappedPayObService = "BootstrappedPayObService"
+const (
+	// BootstrappedPayObService is the key to PaymentObligationService in bootstrap context.
+	BootstrappedPayObService = "BootstrappedPayObService"
+
+	// BootstrappedTokenRegistry is the key to PaymentObligationService in bootstrap context.
+	BootstrappedTokenRegistry = "BootstrappedTokenRegistry"
+)
 
 // Bootstrapper implements bootstrap.Bootstrapper.
 type Bootstrapper struct{}
@@ -59,7 +64,7 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	}
 
 	client := ethereum.GetClient()
-	ctx[BootstrappedPayObService] = newEthereumPaymentObligation(
+	payOb := newEthereumPaymentObligation(
 		registry,
 		idService,
 		client,
@@ -74,9 +79,10 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 
 			return h.Number.Uint64(), nil
 		})
+	ctx[BootstrappedPayObService] = payOb
+	ctx[BootstrappedTokenRegistry] = payOb
 
 	// queue task
-
 	ethTransTask := ethereum.NewTransactionStatusTask(cfg.GetEthereumContextWaitTimeout(), txService, ethereum.DefaultWaitForTransactionMiningContext)
 
 	queueSrv.RegisterTaskType(ethTransTask.TaskTypeName(), ethTransTask)
