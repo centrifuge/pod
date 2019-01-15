@@ -79,11 +79,11 @@
   revision = "1a7c385dace67bd54096f2c8379fab514f2a41d3"
 
 [[projects]]
-  digest = "1:c925cd40d25fe72f5916e010b79b5d9f6e0e97ec9b190fa658c6c67b913229ea"
+  digest = "1:6c7200e9917373ebe3c248ca47f9ee8a7924aa003c137cbfee2c763d7bc0643f"
   name = "github.com/centrifuge/gocelery"
   packages = ["."]
   pruneopts = "UT"
-  revision = "80f35a18b9a0c632d7843e7e536873b0536f0040"
+  revision = "fb11151a227ae41660e15f6c10e2e22eb1556531"
 
 [[projects]]
   digest = "1:a145dca8eb072174d0bce9c21771ec19885bdaa04fe2f9026de4664811b1caf7"
@@ -1111,14 +1111,6 @@
   pruneopts = "UT"
   revision = "8fb642006536c8d3760c99d4fa2389f5e2205631"
   version = "v1.2.0"
-
-[[projects]]
-  branch = "master"
-  digest = "1:0c088044c1c1ee83e723692442df4fec9b3f2e57f7a99773485c97adfbc31695"
-  name = "github.com/streadway/amqp"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "70e15c650864f4fc47f5d3c82ea117285480895d"
 
 [[projects]]
   digest = "1:ac83cf90d08b63ad5f7e020ef480d319ae890c208f8524622a2f3136e2686b02"

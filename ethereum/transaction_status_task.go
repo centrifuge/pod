@@ -20,6 +20,9 @@ const (
 	// TransactionAccountParam contains the name  of the account
 	TransactionAccountParam  string = "Account ID"
 	transactionStatusSuccess uint64 = 1
+
+	// ErrTransactionFailed error when transaction failed
+	ErrTransactionFailed = errors.Error("Transaction failed")
 )
 
 // TransactionStatusTask is struct for the task to check an Ethereum transaction
@@ -104,19 +107,17 @@ func (nftc *TransactionStatusTask) ParseKwargs(kwargs map[string]interface{}) (e
 	return nil
 }
 
-func getTransactionStatus(ctx context.Context, client Client, txHash string) (bool, error) {
+func getTransactionStatus(ctx context.Context, client Client, txHash string) error {
 	receipt, err := client.GetEthClient().TransactionReceipt(ctx, common.HexToHash(txHash))
-
 	if err != nil {
-		return false, err
+		return err
 	}
 
-	if receipt.Status == transactionStatusSuccess {
-		return true, nil
+	if receipt.Status != transactionStatusSuccess {
+		return ErrTransactionFailed
 	}
 
-	return false, errors.New("Transaction failed")
-
+	return nil
 }
 
 // RunTask calls listens to events from geth related to MintingConfirmationTask#TokenID and records result.
@@ -135,26 +136,14 @@ func (nftc *TransactionStatusTask) RunTask() (resp interface{}, err error) {
 
 	isPending := true
 	client := GetClient()
-	for isPending {
-		_, isPending, err = client.GetEthClient().TransactionByHash(ctx, common.HexToHash(nftc.txHash))
-		if err != nil {
-			return nil, err
-		}
-
-		if isPending == false {
-			successful, err := getTransactionStatus(ctx, GetClient(), nftc.txHash)
-			if err != nil {
-				return nil, err
-			}
-
-			if successful {
-				return nil, nil
-
-			}
-		}
-		time.Sleep(100 * time.Millisecond)
+	_, isPending, err = client.GetEthClient().TransactionByHash(ctx, common.HexToHash(nftc.txHash))
+	if err != nil {
+		return nil, err
 	}
 
-	return nil, nil
+	if isPending {
+		return nil, gocelery.ErrTaskRetryable
+	}
 
+	return nil, getTransactionStatus(ctx, GetClient(), nftc.txHash)
 }
