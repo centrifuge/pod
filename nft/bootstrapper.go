@@ -3,9 +3,8 @@ package nft
 import (
 	"context"
 
-	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
-
 	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/transactions"
 
@@ -19,9 +18,6 @@ import (
 const (
 	// BootstrappedPayObService is the key to PaymentObligationService in bootstrap context.
 	BootstrappedPayObService = "BootstrappedPayObService"
-
-	// BootstrappedTokenRegistry is the key to PaymentObligationService in bootstrap context.
-	BootstrappedTokenRegistry = "BootstrappedTokenRegistry"
 )
 
 // Bootstrapper implements bootstrap.Bootstrapper.
@@ -80,7 +76,6 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 			return h.Number.Uint64(), nil
 		})
 	ctx[BootstrappedPayObService] = payOb
-	ctx[BootstrappedTokenRegistry] = payOb
 
 	// queue task
 	ethTransTask := ethereum.NewTransactionStatusTask(cfg.GetEthereumContextWaitTimeout(), txService, ethereum.DefaultWaitForTransactionMiningContext)

@@ -42,7 +42,7 @@ type ethereumPaymentObligation struct {
 	ethClient       ethereum.Client
 	queue           queue.TaskQueuer
 	genService      genericdoc.Service
-	bindContract    func(address common.Address, client ethereum.Client) (ethereumPaymentObligationContract, error)
+	bindContract    func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error)
 	txService       transactions.Service
 	blockHeightFunc func() (height uint64, err error)
 }
@@ -54,7 +54,7 @@ func newEthereumPaymentObligation(
 	ethClient ethereum.Client,
 	queue queue.TaskQueuer,
 	genService genericdoc.Service,
-	bindContract func(address common.Address, client ethereum.Client) (ethereumPaymentObligationContract, error),
+	bindContract func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error),
 	txService transactions.Service,
 	blockHeightFunc func() (uint64, error)) *ethereumPaymentObligation {
 	return &ethereumPaymentObligation{
@@ -292,6 +292,6 @@ func convertProofProperty(sortedHashes [][]byte) ([][32]byte, error) {
 	return property, nil
 }
 
-func bindContract(address common.Address, client ethereum.Client) (ethereumPaymentObligationContract, error) {
+func bindContract(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error) {
 	return NewEthereumPaymentObligationContract(address, client.GetEthClient())
 }

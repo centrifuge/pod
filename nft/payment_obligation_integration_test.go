@@ -7,26 +7,24 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-
-	"github.com/satori/go.uuid"
-
-	"github.com/centrifuge/go-centrifuge/testingutils/config"
-
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	cc "github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/transactions"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/golang/protobuf/ptypes/timestamp"
+	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -35,7 +33,7 @@ var cfg config.Configuration
 var idService identity.Service
 var payOb nft.PaymentObligation
 var txService transactions.Service
-var tokenRegistry nft.TokenRegistry
+var tokenRegistry coredocument.TokenRegistry
 
 func TestMain(m *testing.M) {
 	log.Debug("Test PreSetup for NFT")
@@ -45,7 +43,7 @@ func TestMain(m *testing.M) {
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	payOb = ctx[nft.BootstrappedPayObService].(nft.PaymentObligation)
 	txService = ctx[transactions.BootstrappedService].(transactions.Service)
-	tokenRegistry = ctx[nft.BootstrappedTokenRegistry].(nft.TokenRegistry)
+	tokenRegistry = ctx[nft.BootstrappedPayObService].(coredocument.TokenRegistry)
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()
 	os.Exit(result)
