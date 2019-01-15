@@ -2,8 +2,8 @@ package receiver
 
 import (
 	"context"
-
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 	"github.com/centrifuge/go-centrifuge/p2p/common"
 
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -50,11 +50,12 @@ type Handler struct {
 	registry           *documents.ServiceRegistry
 	config             config.Service
 	handshakeValidator ValidatorGroup
+	genericService 	   genericdoc.Service
 }
 
 // New returns an implementation of P2PServiceServer
-func New(config config.Service, registry *documents.ServiceRegistry, handshakeValidator ValidatorGroup) *Handler {
-	return &Handler{registry: registry, config: config, handshakeValidator: handshakeValidator}
+func New(config config.Service, registry *documents.ServiceRegistry, handshakeValidator ValidatorGroup, genericService genericdoc.Service) *Handler {
+	return &Handler{registry: registry, config: config, handshakeValidator: handshakeValidator, genericService: genericService}
 }
 
 // HandleInterceptor acts as main entry point for all message types, routes the request to the correct handler
@@ -92,6 +93,8 @@ func (srv *Handler) HandleInterceptor(ctx context.Context, peer peer.ID, protoc 
 		return srv.HandleRequestDocumentSignature(ctx, peer, protoc, envelope)
 	case p2pcommon.MessageTypeSendAnchoredDoc:
 		return srv.HandleSendAnchoredDocument(ctx, peer, protoc, envelope)
+	//new case p2pcommon.MessageTypeGetAnchoredDoc:
+		//return srv.HandleGetAnchoredDocument(ctx, peer, protoc, envelop)
 	default:
 		return convertToErrorEnvelop(errors.New("MessageType [%s] not found", envelope.Header.Type))
 	}
@@ -182,6 +185,9 @@ func (srv *Handler) SendAnchoredDocument(ctx context.Context, docReq *p2ppb.Anch
 
 	return &p2ppb.AnchorDocumentResponse{Accepted: true}, nil
 }
+
+//METHOD HandleGetAnchoredDocument handles HandleGetAnchoredDocument message
+//METHOD GetAnchoredDocument
 
 func convertToErrorEnvelop(err error) (*pb.P2PEnvelope, error) {
 	errPb, ok := err.(proto.Message)
