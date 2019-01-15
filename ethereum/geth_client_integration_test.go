@@ -6,21 +6,48 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
+	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/queue"
+	"github.com/centrifuge/go-centrifuge/storage"
+	"github.com/centrifuge/go-centrifuge/transactions"
+
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-	cc "github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/stretchr/testify/assert"
 )
 
 var cfg config.Configuration
+var ctx = map[string]interface{}{}
+
+var queueStartBootstrap bootstrap.TestBootstrapper
 
 func TestMain(m *testing.M) {
-	ctx := cc.TestFunctionalEthereumBootstrap()
+	var bootstappers = []bootstrap.TestBootstrapper{
+		&testlogging.TestLoggingBootstrapper{},
+		&config.Bootstrapper{},
+		&storage.Bootstrapper{},
+		transactions.Bootstrapper{},
+		&configstore.Bootstrapper{},
+		&ethereum.Bootstrapper{},
+		&queue.Bootstrapper{},
+	}
+
+	bootstrap.RunTestBootstrappers(bootstappers, ctx)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
+
+	queueStartBootstrap = &queue.Starter{}
+	bootstappers = append(bootstappers, queueStartBootstrap)
+
 	result := m.Run()
-	cc.TestFunctionalEthereumTearDown()
+	bootstrap.RunTestTeardown(bootstappers)
 	os.Exit(result)
+}
+
+func bootstrapQueueStart() {
+	queueStartBootstrap.TestBootstrap(ctx)
+
 }
 
 func TestGetConnection_returnsSameConnection(t *testing.T) {

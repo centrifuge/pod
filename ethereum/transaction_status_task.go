@@ -28,8 +28,9 @@ type TransactionStatusTask struct {
 	timeout time.Duration
 	//state
 	ethContextInitializer func(d time.Duration) (ctx context.Context, cancelFunc context.CancelFunc)
+	client                Client
 
-	//task parameter
+	//txHash is the id of an Ethereum transaction
 	txHash   string
 	tenantID identity.CentID
 }
@@ -38,6 +39,7 @@ type TransactionStatusTask struct {
 func NewTransactionStatusTask(
 	timeout time.Duration,
 	txService transactions.Service,
+	client Client,
 	ethContextInitializer func(d time.Duration) (ctx context.Context, cancelFunc context.CancelFunc),
 
 ) *TransactionStatusTask {
@@ -45,6 +47,7 @@ func NewTransactionStatusTask(
 		timeout:               timeout,
 		BaseTask:              transactions.BaseTask{TxService: txService},
 		ethContextInitializer: ethContextInitializer,
+		client:                client,
 	}
 }
 
@@ -60,6 +63,7 @@ func (nftc *TransactionStatusTask) Copy() (gocelery.CeleryTask, error) {
 		txHash:                nftc.txHash,
 		tenantID:              nftc.tenantID,
 		ethContextInitializer: nftc.ethContextInitializer,
+		client:                nftc.client,
 		BaseTask:              transactions.BaseTask{TxService: nftc.TxService},
 	}, nil
 }
@@ -105,7 +109,7 @@ func (nftc *TransactionStatusTask) ParseKwargs(kwargs map[string]interface{}) (e
 }
 
 func getTransactionStatus(ctx context.Context, client Client, txHash string) (bool, error) {
-	receipt, err := client.GetEthClient().TransactionReceipt(ctx, common.HexToHash(txHash))
+	receipt, err := client.TransactionReceipt(ctx, common.HexToHash(txHash))
 
 	if err != nil {
 		return false, err
@@ -134,15 +138,14 @@ func (nftc *TransactionStatusTask) RunTask() (resp interface{}, err error) {
 	}()
 
 	isPending := true
-	client := GetClient()
 	for isPending {
-		_, isPending, err = client.GetEthClient().TransactionByHash(ctx, common.HexToHash(nftc.txHash))
+		_, isPending, err = nftc.client.TransactionByHash(ctx, common.HexToHash(nftc.txHash))
 		if err != nil {
 			return nil, err
 		}
 
 		if isPending == false {
-			successful, err := getTransactionStatus(ctx, GetClient(), nftc.txHash)
+			successful, err := getTransactionStatus(ctx, nftc.client, nftc.txHash)
 			if err != nil {
 				return nil, err
 			}

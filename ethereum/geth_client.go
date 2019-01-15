@@ -71,6 +71,12 @@ type Client interface {
 
 	// GetGethCallOpts returns the Call options with default
 	GetGethCallOpts() (*bind.CallOpts, context.CancelFunc)
+
+	// TransactionByHash returns a Ethereum transaction
+	TransactionByHash(ctx context.Context, hash common.Hash) (tx *types.Transaction, isPending bool, err error)
+
+	// TransactionReceipt return receipt of a transaction
+	TransactionReceipt(ctx context.Context, txHash common.Hash) (*types.Receipt, error)
 }
 
 // gethClient implements Client for Ethereum
@@ -158,6 +164,16 @@ func (gc *gethClient) GetEthClient() *ethclient.Client {
 // GetNodeURL returns the node url
 func (gc *gethClient) GetNodeURL() *url.URL {
 	return gc.host
+}
+
+// TransactionByHash returns a Ethereum transaction
+func (gc *gethClient) TransactionByHash(ctx context.Context, hash common.Hash) (tx *types.Transaction, isPending bool, err error) {
+	return gc.client.TransactionByHash(ctx, hash)
+}
+
+// TransactionReceipt return receipt of a transaction
+func (gc *gethClient) TransactionReceipt(ctx context.Context, txHash common.Hash) (*types.Receipt, error) {
+	return gc.client.TransactionReceipt(ctx, txHash)
 }
 
 // getGethTxOpts retrieves the geth transaction options for the given account name. The account name influences which configuration
