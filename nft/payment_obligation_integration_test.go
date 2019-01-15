@@ -3,6 +3,7 @@
 package nft_test
 
 import (
+	"math/big"
 	"os"
 	"testing"
 	"time"
@@ -21,7 +22,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/satori/go.uuid"
@@ -92,9 +92,9 @@ func TestPaymentObligationService_mint(t *testing.T) {
 	assert.Nil(t, err, "should not error out when minting an invoice")
 	assert.NotNil(t, resp.TokenID, "token id should be present")
 	assert.NoError(t, txService.WaitForTransaction(cid, uuid.Must(uuid.FromString(resp.TransactionID))))
-	tokenID, err := hexutil.Decode(resp.TokenID)
-	assert.NoError(t, err)
-	owner, err := tokenRegistry.OwnerOf(common.HexToAddress(registry), tokenID)
+	b := new(big.Int)
+	b.SetString(resp.TokenID, 10)
+	owner, err := tokenRegistry.OwnerOf(common.HexToAddress(registry), b.Bytes())
 	assert.NoError(t, err)
 	assert.Equal(t, common.HexToAddress(depositAddr), owner)
 }
