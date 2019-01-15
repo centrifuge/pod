@@ -7,18 +7,7 @@ option java_multiple_files = true;
 option java_outer_classname = "ProtocolProto";
 option java_package = "com.protocol";
 
-enum MessageType {
-  MESSAGE_TYPE_INVALID = 0;
-  MESSAGE_TYPE_REQUEST_SIGNATURE = 1;
-  MESSAGE_TYPE_REQUEST_SIGNATURE_REP = 2;
-  MESSAGE_TYPE_SEND_ANCHORED_DOC = 3;
-  MESSAGE_TYPE_SEND_ANCHORED_DOC_REP = 4;
-  MESSAGE_TYPE_ERROR = 5;
-}
-
 message P2PEnvelope {
-  // defines what type of message it is. (if we modify centrifuge-protobufs we can use type any with typeURL here)
-  MessageType type = 1;
   // serialized protobuf for the actual message
   bytes body = 2;
 }

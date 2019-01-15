@@ -5,6 +5,8 @@ package purchaseorder
 import (
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/storage/leveldb"
+
 	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 
@@ -203,8 +205,8 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.NotNil(t, doc)
 	cd, err := doc.PackCoreDocument()
 	assert.Nil(t, err)
-	assert.Equal(t, wantCollab, cd.Collaborators[1])
-	assert.Len(t, cd.Collaborators, 2)
+	assert.Equal(t, wantCollab, cd.Collaborators[2])
+	assert.Len(t, cd.Collaborators, 3)
 	oldCD, err := old.PackCoreDocument()
 	assert.Nil(t, err)
 	assert.Equal(t, oldCD.DocumentIdentifier, cd.DocumentIdentifier)
@@ -531,11 +533,11 @@ var testRepoGlobal documents.Repository
 
 func testRepo() documents.Repository {
 	if testRepoGlobal == nil {
-		ldb, err := storage.NewLevelDBStorage(storage.GetRandomTestStoragePath())
+		ldb, err := leveldb.NewLevelDBStorage(leveldb.GetRandomTestStoragePath())
 		if err != nil {
 			panic(err)
 		}
-		testRepoGlobal = documents.NewDBRepository(storage.NewLevelDBRepository(ldb))
+		testRepoGlobal = documents.NewDBRepository(leveldb.NewLevelDBRepository(ldb))
 		testRepoGlobal.Register(&PurchaseOrder{})
 	}
 	return testRepoGlobal

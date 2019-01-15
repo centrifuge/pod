@@ -1,16 +1,16 @@
 // +build unit
 
-package storage
+package leveldb
 
 import (
 	"encoding/json"
 	"reflect"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/storage"
+
 	"github.com/centrifuge/go-centrifuge/errors"
-
 	"github.com/centrifuge/go-centrifuge/utils"
-
 	"github.com/stretchr/testify/assert"
 )
 
@@ -35,7 +35,7 @@ func (m *doc) Type() reflect.Type {
 	return reflect.TypeOf(m)
 }
 
-func getRandomRepository() (Repository, string, error) {
+func getRandomRepository() (storage.Repository, string, error) {
 	randomPath := GetRandomTestStoragePath()
 	db, err := NewLevelDBStorage(randomPath)
 	if err != nil {
@@ -61,7 +61,7 @@ func TestLevelDBRepo_Register(t *testing.T) {
 	d := &doc{SomeString: "Hello, Repo!"}
 	repo.Register(d)
 	assert.Len(t, repo.(*levelDBRepo).models, 1, "should be not empty")
-	assert.Contains(t, repo.(*levelDBRepo).models, "storage.doc")
+	assert.Contains(t, repo.(*levelDBRepo).models, "leveldb.doc")
 }
 
 func TestLevelDBRepo_Exists(t *testing.T) {
@@ -87,7 +87,7 @@ func TestLevelDBRepo_Get(t *testing.T) {
 
 	// Key doesnt exist
 	_, err = repo.Get(id)
-	assert.True(t, errors.IsOfType(ErrModelRepositoryNotFound, err))
+	assert.True(t, errors.IsOfType(storage.ErrModelRepositoryNotFound, err))
 
 	d := &doc{SomeString: "Hello, Repo!"}
 	err = repo.Create(id, d)
@@ -95,7 +95,7 @@ func TestLevelDBRepo_Get(t *testing.T) {
 
 	// Model not registered
 	_, err = repo.Get(id)
-	assert.True(t, errors.IsOfType(ErrModelTypeNotRegistered, err))
+	assert.True(t, errors.IsOfType(storage.ErrModelTypeNotRegistered, err))
 
 	// Success
 	repo.Register(&doc{})
@@ -140,7 +140,7 @@ func TestLevelDBRepo_Create(t *testing.T) {
 
 	//Already exists
 	err = repo.Create(id, d)
-	assert.True(t, errors.IsOfType(ErrRepositoryModelCreateKeyExists, err))
+	assert.True(t, errors.IsOfType(storage.ErrRepositoryModelCreateKeyExists, err))
 }
 
 func TestLevelDBRepo_Update(t *testing.T) {
@@ -152,7 +152,7 @@ func TestLevelDBRepo_Update(t *testing.T) {
 
 	// Doesn't exist
 	err = repo.Update(id, d)
-	assert.True(t, errors.IsOfType(ErrRepositoryModelUpdateKeyNotFound, err))
+	assert.True(t, errors.IsOfType(storage.ErrRepositoryModelUpdateKeyNotFound, err))
 
 	err = repo.Create(id, d)
 	assert.Nil(t, err)
@@ -187,5 +187,5 @@ func TestLevelDBRepo_Delete(t *testing.T) {
 
 	// Entry doesnt exist
 	_, err = repo.Get(id)
-	assert.True(t, errors.IsOfType(ErrModelRepositoryNotFound, err))
+	assert.True(t, errors.IsOfType(storage.ErrModelRepositoryNotFound, err))
 }

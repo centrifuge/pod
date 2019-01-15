@@ -10,8 +10,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 
-	"github.com/centrifuge/go-centrifuge/identity/ethid"
-
 	"github.com/centrifuge/go-centrifuge/cmd"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/spf13/cobra"
@@ -49,7 +47,7 @@ var createIdentityCmd = &cobra.Command{
 			panic(err)
 		}
 
-		idService := ctx[ethid.BootstrappedIDService].(identity.Service)
+		idService := ctx[identity.BootstrappedIDService].(identity.Service)
 		_, confirmations, err := idService.CreateIdentity(tctx, centID)
 		if err != nil {
 			panic(err)
@@ -91,7 +89,7 @@ var addKeyCmd = &cobra.Command{
 		}
 
 		cfg := ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-		idService := ctx[ethid.BootstrappedIDService].(identity.Service)
+		idService := ctx[identity.BootstrappedIDService].(identity.Service)
 		err := idService.AddKeyFromConfig(cfg, purposeInt)
 		if err != nil {
 			panic(err)

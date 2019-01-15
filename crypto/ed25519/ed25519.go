@@ -47,12 +47,12 @@ func GetSigningKeyPair(pub, priv string) (publicKey ed25519.PublicKey, privateKe
 }
 
 // GenerateSigningKeyPair generates ed25519 key pair
-func GenerateSigningKeyPair() (publicKey ed25519.PublicKey, privateKey ed25519.PrivateKey) {
-	publicKey, privateKey, err := ed25519.GenerateKey(nil)
+func GenerateSigningKeyPair() (publicKey ed25519.PublicKey, privateKey ed25519.PrivateKey, err error) {
+	publicKey, privateKey, err = ed25519.GenerateKey(nil)
 	if err != nil {
-		log.Fatal(err)
+		return []byte{}, []byte{}, err
 	}
-	return publicKey, privateKey
+	return publicKey, privateKey, nil
 }
 
 // PublicKeyToP2PKey returns p2pId from the public key
@@ -63,4 +63,9 @@ func PublicKeyToP2PKey(publicKey [32]byte) (p2pID peer.ID, err error) {
 	}
 
 	return peer.IDFromPublicKey(pk)
+}
+
+// VerifySignature validates signature with payload message
+func VerifySignature(publicKey, message, sign []byte) bool {
+	return ed25519.Verify(ed25519.PublicKey(publicKey), message, sign)
 }

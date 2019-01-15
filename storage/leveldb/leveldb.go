@@ -1,9 +1,11 @@
-package storage
+package leveldb
 
 import (
 	"encoding/json"
 	"reflect"
 	"sync"
+
+	"github.com/centrifuge/go-centrifuge/storage"
 
 	"github.com/centrifuge/go-centrifuge/errors"
 	logging "github.com/ipfs/go-log"
@@ -36,7 +38,7 @@ type value struct {
 }
 
 // NewLevelDBRepository returns levelDb implementation of Repository
-func NewLevelDBRepository(db *leveldb.DB) Repository {
+func NewLevelDBRepository(db *leveldb.DB) storage.Repository {
 	return &levelDBRepo{
 		db:     db,
 		models: make(map[string]reflect.Type),
@@ -44,7 +46,7 @@ func NewLevelDBRepository(db *leveldb.DB) Repository {
 }
 
 // Register registers the model so that the DB can return the model without knowing the type
-func (l *levelDBRepo) Register(model Model) {
+func (l *levelDBRepo) Register(model storage.Model) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	tp := getTypeIndirect(model.Type())
@@ -61,20 +63,20 @@ func (l *levelDBRepo) Exists(key []byte) bool {
 }
 
 // getModel returns a new instance of the type mt.
-func (l *levelDBRepo) getModel(mt string) (Model, error) {
+func (l *levelDBRepo) getModel(mt string) (storage.Model, error) {
 	tp, ok := l.models[mt]
 	if !ok {
-		return nil, errors.NewTypedError(ErrModelTypeNotRegistered, errors.New("%s", mt))
+		return nil, errors.NewTypedError(storage.ErrModelTypeNotRegistered, errors.New("%s", mt))
 	}
 
-	return reflect.New(tp).Interface().(Model), nil
+	return reflect.New(tp).Interface().(storage.Model), nil
 }
 
-func (l *levelDBRepo) parseModel(data []byte) (Model, error) {
+func (l *levelDBRepo) parseModel(data []byte) (storage.Model, error) {
 	v := new(value)
 	err := json.Unmarshal(data, v)
 	if err != nil {
-		return nil, errors.NewTypedError(ErrModelRepositorySerialisation, errors.New("failed to unmarshal to value: %v", err))
+		return nil, errors.NewTypedError(storage.ErrModelRepositorySerialisation, errors.New("failed to unmarshal to value: %v", err))
 	}
 
 	nm, err := l.getModel(v.Type)
@@ -84,19 +86,19 @@ func (l *levelDBRepo) parseModel(data []byte) (Model, error) {
 
 	err = nm.FromJSON([]byte(v.Data))
 	if err != nil {
-		return nil, errors.NewTypedError(ErrModelRepositorySerialisation, errors.New("failed to unmarshal to model: %v", err))
+		return nil, errors.NewTypedError(storage.ErrModelRepositorySerialisation, errors.New("failed to unmarshal to model: %v", err))
 	}
 
 	return nm, nil
 }
 
 // Get retrieves model by key, otherwise returns error
-func (l *levelDBRepo) Get(key []byte) (Model, error) {
+func (l *levelDBRepo) Get(key []byte) (storage.Model, error) {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
 	data, err := l.db.Get(key, nil)
 	if err != nil {
-		return nil, errors.NewTypedError(ErrModelRepositoryNotFound, err)
+		return nil, errors.NewTypedError(storage.ErrModelRepositoryNotFound, err)
 	}
 
 	return l.parseModel(data)
@@ -104,8 +106,8 @@ func (l *levelDBRepo) Get(key []byte) (Model, error) {
 
 // GetAllByPrefix returns all models which keys match the provided prefix
 // If an error is found parsing one of the matched models, logs warning and continues
-func (l *levelDBRepo) GetAllByPrefix(prefix string) ([]Model, error) {
-	var models []Model
+func (l *levelDBRepo) GetAllByPrefix(prefix string) ([]storage.Model, error) {
+	var models []storage.Model
 	l.mu.RLock()
 	defer l.mu.RUnlock()
 	iter := l.db.NewIterator(util.BytesPrefix([]byte(prefix)), nil)
@@ -122,10 +124,10 @@ func (l *levelDBRepo) GetAllByPrefix(prefix string) ([]Model, error) {
 	return models, iter.Error()
 }
 
-func (l *levelDBRepo) save(key []byte, model Model) error {
+func (l *levelDBRepo) save(key []byte, model storage.Model) error {
 	data, err := model.JSON()
 	if err != nil {
-		return errors.NewTypedError(ErrModelRepositorySerialisation, errors.New("failed to marshall model: %v", err))
+		return errors.NewTypedError(storage.ErrModelRepositorySerialisation, errors.New("failed to marshall model: %v", err))
 	}
 
 	tp := getTypeIndirect(model.Type())
@@ -136,12 +138,12 @@ func (l *levelDBRepo) save(key []byte, model Model) error {
 
 	data, err = json.Marshal(v)
 	if err != nil {
-		return errors.NewTypedError(ErrModelRepositorySerialisation, errors.New("failed to marshall value: %v", err))
+		return errors.NewTypedError(storage.ErrModelRepositorySerialisation, errors.New("failed to marshall value: %v", err))
 	}
 
 	err = l.db.Put(key, data, nil)
 	if err != nil {
-		return errors.NewTypedError(ErrRepositoryModelSave, errors.New("%v", err))
+		return errors.NewTypedError(storage.ErrRepositoryModelSave, errors.New("%v", err))
 	}
 
 	return nil
@@ -149,18 +151,18 @@ func (l *levelDBRepo) save(key []byte, model Model) error {
 
 // Create creates a model indexed by the key provided
 // errors out if key already exists
-func (l *levelDBRepo) Create(key []byte, model Model) error {
+func (l *levelDBRepo) Create(key []byte, model storage.Model) error {
 	if l.Exists(key) {
-		return ErrRepositoryModelCreateKeyExists
+		return storage.ErrRepositoryModelCreateKeyExists
 	}
 	return l.save(key, model)
 }
 
 // Update updates a model indexed by the key provided
 // errors out if key doesn't exists
-func (l *levelDBRepo) Update(key []byte, model Model) error {
+func (l *levelDBRepo) Update(key []byte, model storage.Model) error {
 	if !l.Exists(key) {
-		return ErrRepositoryModelUpdateKeyNotFound
+		return storage.ErrRepositoryModelUpdateKeyNotFound
 	}
 	return l.save(key, model)
 }

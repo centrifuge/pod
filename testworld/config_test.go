@@ -26,4 +26,9 @@ func TestConfig_Happy(t *testing.T) {
 	tenants := res.Value("data").Array()
 	tenants.Length().Equal(1)
 	tenants.Element(0).Path("$.identity_id").String().NotEmpty().Equal(charlie.id.String())
+
+	// generate a tenant within Charlie
+	res = generateTenant(charlie.httpExpect, http.StatusOK)
+	tcID := res.Value("identity_id").String().NotEmpty()
+	tcID.NotEqual(charlie.id.String())
 }

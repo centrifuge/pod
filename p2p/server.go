@@ -6,13 +6,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/config"
+
 	"github.com/centrifuge/go-centrifuge/identity"
 
-	"github.com/centrifuge/go-centrifuge/config/configstore"
-
+	"github.com/centrifuge/go-centrifuge/p2p/common"
 	"github.com/centrifuge/go-centrifuge/p2p/receiver"
-
 	pb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
+
 	"github.com/libp2p/go-libp2p-protocol"
 
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -36,8 +37,6 @@ var log = logging.Logger("p2p-server")
 
 // messenger is an interface to wrap p2p messaging implementation
 type messenger interface {
-	addHandler(mType pb.MessageType, handler func(ctx context.Context, peer libp2pPeer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (*pb.P2PEnvelope, error))
-
 	init(protocols ...protocol.ID)
 
 	sendMessage(ctx context.Context, p libp2pPeer.ID, pmes *pb.P2PEnvelope, protoc protocol.ID) (*pb.P2PEnvelope, error)
@@ -45,10 +44,11 @@ type messenger interface {
 
 // peer implements node.Server
 type peer struct {
-	config         configstore.Service
-	host           host.Host
-	handlerCreator func() *receiver.Handler
-	mes            messenger
+	disablePeerStore bool
+	config           config.Service
+	host             host.Host
+	handlerCreator   func() *receiver.Handler
+	mes              messenger
 }
 
 // Name returns the P2PServer
@@ -84,11 +84,7 @@ func (s *peer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- 
 		return
 	}
 
-	s.mes = newP2PMessenger(ctx, s.host, nc.GetP2PConnectionTimeout())
-	handler := s.handlerCreator()
-	s.mes.addHandler(pb.MessageType_MESSAGE_TYPE_SEND_ANCHORED_DOC, handler.HandleSendAnchoredDocument)
-	s.mes.addHandler(pb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE, handler.HandleRequestDocumentSignature)
-
+	s.mes = newP2PMessenger(ctx, s.host, nc.GetP2PConnectionTimeout(), s.handlerCreator().HandleInterceptor)
 	tcs, err := s.config.GetAllTenants()
 	if err != nil {
 		startupErr <- err
@@ -96,12 +92,17 @@ func (s *peer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- 
 	}
 	var protocols []protocol.ID
 	for _, t := range tcs {
-		CID, err := identity.ToCentID(t.IdentityID)
+		tid, err := t.GetIdentityID()
 		if err != nil {
 			startupErr <- err
 			return
 		}
-		protocols = append(protocols, receiver.ProtocolForCID(CID))
+		CID, err := identity.ToCentID(tid)
+		if err != nil {
+			startupErr <- err
+			return
+		}
+		protocols = append(protocols, p2pcommon.ProtocolForCID(CID))
 	}
 	s.mes.init(protocols...)
 

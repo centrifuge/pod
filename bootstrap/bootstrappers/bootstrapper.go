@@ -17,7 +17,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/node"
 	"github.com/centrifuge/go-centrifuge/p2p"
 	"github.com/centrifuge/go-centrifuge/queue"
-	"github.com/centrifuge/go-centrifuge/storage"
+	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/version"
 	log2 "github.com/ipfs/go-log"
@@ -35,13 +35,13 @@ func (m *MainBootstrapper) PopulateBaseBootstrappers() {
 	m.Bootstrappers = []bootstrap.Bootstrapper{
 		&version.Bootstrapper{},
 		&config.Bootstrapper{},
-		&storage.Bootstrapper{},
-		&configstore.Bootstrapper{},
+		&leveldb.Bootstrapper{},
 		transactions.Bootstrapper{},
 		ethereum.Bootstrapper{},
 		&queue.Bootstrapper{},
-		&anchors.Bootstrapper{},
 		&ethid.Bootstrapper{},
+		&configstore.Bootstrapper{},
+		&anchors.Bootstrapper{},
 		documents.Bootstrapper{},
 		p2p.Bootstrapper{},
 		api.Bootstrapper{},
@@ -59,7 +59,7 @@ func (m *MainBootstrapper) PopulateCommandBootstrappers() {
 	m.Bootstrappers = []bootstrap.Bootstrapper{
 		&version.Bootstrapper{},
 		&config.Bootstrapper{},
-		&storage.Bootstrapper{},
+		&leveldb.Bootstrapper{},
 		transactions.Bootstrapper{},
 		ethereum.Bootstrapper{},
 		&queue.Bootstrapper{},

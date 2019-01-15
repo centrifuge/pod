@@ -7,6 +7,8 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/config"
+
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -47,7 +49,7 @@ func TestNFTMint_success(t *testing.T) {
 
 func mockConfigService() *configstore.MockService {
 	mockConfigStore := &configstore.MockService{}
-	mockConfigStore.On("GetAllTenants").Return([]*configstore.TenantConfig{&configstore.TenantConfig{}}, nil)
+	mockConfigStore.On("GetAllTenants").Return([]config.TenantConfiguration{&configstore.TenantConfig{}}, nil)
 	return mockConfigStore
 }
 

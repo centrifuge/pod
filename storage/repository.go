@@ -4,6 +4,13 @@ import (
 	"reflect"
 )
 
+const (
+	// BootstrappedDB is a key mapped to DB at boot
+	BootstrappedDB string = "BootstrappedDB"
+	// BootstrappedConfigDB is a key mapped to DB for configs at boot
+	BootstrappedConfigDB string = "BootstrappedConfigDB"
+)
+
 // Model is an interface to abstract away storage model specificness
 type Model interface {
 	//Returns the underlying type of the Model

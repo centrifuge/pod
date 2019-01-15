@@ -1,8 +1,7 @@
 package documents
 
 import (
-	"reflect"
-
+	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -11,6 +10,7 @@ import (
 // Model is an interface to abstract away model specificness like invoice or purchaseOrder
 // The interface can cast into the type specified by the model if required
 type Model interface {
+	storage.Model
 
 	// Get the ID of the document represented by this model
 	ID() ([]byte, error)
@@ -22,15 +22,6 @@ type Model interface {
 	// UnpackCoreDocument must return the document.Model
 	// assumes that core document has valid identifiers set
 	UnpackCoreDocument(cd *coredocumentpb.CoreDocument) error
-
-	//Returns the underlying type of the Model
-	Type() reflect.Type
-
-	// JSON return the json representation of the model
-	JSON() ([]byte, error)
-
-	// FromJSON initialize the model with a json
-	FromJSON(json []byte) error
 
 	// CreateProofs creates precise-proofs for given fields
 	CreateProofs(fields []string) (coreDoc *coredocumentpb.CoreDocument, proofs []*proofspb.Proof, err error)

@@ -18,7 +18,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/p2p"
 	"github.com/centrifuge/go-centrifuge/queue"
-	"github.com/centrifuge/go-centrifuge/storage"
+	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	logging "github.com/ipfs/go-log"
@@ -29,13 +29,13 @@ var log = logging.Logger("context")
 var bootstappers = []bootstrap.TestBootstrapper{
 	&testlogging.TestLoggingBootstrapper{},
 	&config.Bootstrapper{},
-	&storage.Bootstrapper{},
+	&leveldb.Bootstrapper{},
 	transactions.Bootstrapper{},
-	&configstore.Bootstrapper{},
 	ethereum.Bootstrapper{},
 	&queue.Bootstrapper{},
-	anchors.Bootstrapper{},
 	&ethid.Bootstrapper{},
+	&configstore.Bootstrapper{},
+	anchors.Bootstrapper{},
 	documents.Bootstrapper{},
 	p2p.Bootstrapper{},
 	&genericdoc.Bootstrapper{},
