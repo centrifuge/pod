@@ -193,7 +193,7 @@ func TestPaymentObligationService(t *testing.T) {
 			docService, paymentOb, idService, ethClient, mockCfg, queueSrv := test.mocker()
 			// with below config the documentType has to be test.name to avoid conflicts since registry is a singleton
 			registry.Register(test.name, &docService)
-			service := newEthereumPaymentObligation(registry, &idService, &ethClient, queueSrv, &docService, func(address common.Address, client ethereum.Client) (ethereumPaymentObligationContract, error) {
+			service := newEthereumPaymentObligation(registry, &idService, &ethClient, queueSrv, &docService, func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error) {
 				return &EthereumPaymentObligationContract{}, nil
 			}, txService, func() (uint64, error) { return 10, nil })
 			ctxh := testingconfig.CreateTenantContext(t, &mockCfg)
