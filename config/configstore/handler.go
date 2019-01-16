@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/accounts"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/config"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/empty"
@@ -22,7 +22,7 @@ func GRPCHandler(svc config.Service) configpb.ConfigServiceServer {
 	return &grpcHandler{service: svc}
 }
 
-// GRPCAccountHandler returns an implementation of configpb.ConfigServiceServer
+// GRPCAccountHandler returns an implementation of accountpb.AccountServiceServer
 func GRPCAccountHandler(svc config.Service) accountpb.AccountServiceServer {
 	return &grpcHandler{service: svc}
 }

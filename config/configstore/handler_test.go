@@ -6,7 +6,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/accounts"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"

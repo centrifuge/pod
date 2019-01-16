@@ -1,7 +1,7 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "accounts/service.proto",
+    "title": "account/service.proto",
     "version": "version not set"
   },
   "schemes": [

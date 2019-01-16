@@ -7,13 +7,13 @@ option java_multiple_files = true;
 option java_outer_classname = "ServiceProto";
 option java_package = "com.config";
 
-import "accounts/service.proto";
+import "account/service.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/empty.proto";
 import "protoc-gen-swagger/options/annotations.proto";
 
-// ConfigService allows to manage the node and tenant configuration of the node
+// ConfigService allows to see the node configuration
 service ConfigService {
   rpc GetConfig(google.protobuf.Empty) returns (ConfigData) {
     option (google.api.http) = {
