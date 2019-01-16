@@ -3,7 +3,6 @@
 package coredocument
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -134,5 +133,4 @@ func TestReadAccessValidator_NFTOwnerCanRead(t *testing.T) {
 	validator = nftValidator(tr)
 	err = validator.NFTOwnerCanRead(cd, registry, tokenID, hexutil.Encode(sig), peer)
 	assert.NoError(t, err)
-	fmt.Println(acc.Address)
 }
