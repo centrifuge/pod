@@ -5,10 +5,13 @@ package receiver
 import (
 	"context"
 	"crypto/rand"
+	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 	"os"
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+
 	"github.com/centrifuge/go-centrifuge/p2p/common"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
@@ -46,6 +49,7 @@ var (
 	cfg           config.Configuration
 	mockIDService *testingcommons.MockIDService
 	defaultPID    libp2pPeer.ID
+	genericService genericdoc.Service
 )
 
 func TestMain(m *testing.M) {
@@ -68,7 +72,7 @@ func TestMain(m *testing.M) {
 	_, pub, _ := crypto.GenerateEd25519Key(rand.Reader)
 	defaultPID, _ = libp2pPeer.IDFromPublicKey(pub)
 	mockIDService.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything).Return(nil)
-	handler = New(cfgService, registry, HandshakeValidator(cfg.GetNetworkID(), mockIDService))
+	handler = New(cfgService, registry, HandshakeValidator(cfg.GetNetworkID(), mockIDService), genericService)
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)
