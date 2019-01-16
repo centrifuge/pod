@@ -3,6 +3,7 @@ package transactions
 import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/gocelery"
 	"github.com/satori/go.uuid"
 )
 
@@ -36,6 +37,10 @@ func (b *BaseTask) ParseTransactionID(kwargs map[string]interface{}) error {
 
 // UpdateTransaction add a new log and updates the status of the transaction based on the error.
 func (b *BaseTask) UpdateTransaction(tenantID identity.CentID, name string, err error) error {
+	if err == gocelery.ErrTaskRetryable {
+		return err
+	}
+
 	tx, erri := b.TxService.GetTransaction(tenantID, b.TxID)
 	if erri != nil {
 		return errors.AppendError(err, erri)
