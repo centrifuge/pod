@@ -3,19 +3,18 @@
 package ethereum_test
 
 import (
+	"testing"
+	"time"
+
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
 )
 
-
-
-func enqueueJob(t *testing.T,txHash string) (transactions.Service, identity.CentID, *transactions.Transaction) {
+func enqueueJob(t *testing.T, txHash string) (transactions.Service, identity.CentID, *transactions.Transaction) {
 	queueSrv := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
 	txService := ctx[transactions.BootstrappedService].(transactions.Service)
 
@@ -36,7 +35,7 @@ func enqueueJob(t *testing.T,txHash string) (transactions.Service, identity.Cent
 }
 
 func TestTransactionStatusTask_successful(t *testing.T) {
-	txService, cid, tx := enqueueJob(t,"0x1")
+	txService, cid, tx := enqueueJob(t, "0x1")
 
 	trans, err := txService.GetTransaction(cid, tx.ID)
 	assert.Nil(t, err, "a transaction should be returned")
@@ -45,7 +44,7 @@ func TestTransactionStatusTask_successful(t *testing.T) {
 }
 
 func TestTransactionStatusTask_failed(t *testing.T) {
-	txService, cid, tx := enqueueJob(t,"0x2")
+	txService, cid, tx := enqueueJob(t, "0x2")
 
 	trans, err := txService.GetTransaction(cid, tx.ID)
 	assert.Nil(t, err, "a  centrifuge transaction should be  returned")
@@ -54,11 +53,10 @@ func TestTransactionStatusTask_failed(t *testing.T) {
 }
 
 func TestTransactionStatusTask_timeout_failed(t *testing.T) {
-	txService, cid, tx := enqueueJob(t,"0x3")
+	txService, cid, tx := enqueueJob(t, "0x3")
 
 	trans, err := txService.GetTransaction(cid, tx.ID)
 	assert.Nil(t, err, "a centrifuge transaction should be returned")
 	assert.Equal(t, string(transactions.Pending), string(trans.Status), "transaction should fail")
 
 }
-

@@ -2,8 +2,9 @@ package ethereum
 
 import (
 	"context"
-	"github.com/ethereum/go-ethereum/core/types"
 	"time"
+
+	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -29,8 +30,8 @@ type TransactionStatusTask struct {
 	timeout time.Duration
 	//state
 	ethContextInitializer func(d time.Duration) (ctx context.Context, cancelFunc context.CancelFunc)
-	transactionByHash func (ctx context.Context, hash common.Hash) (tx *types.Transaction, isPending bool, err error)
-	transactionReceipt func (ctx context.Context, txHash common.Hash) (*types.Receipt, error)
+	transactionByHash     func(ctx context.Context, hash common.Hash) (tx *types.Transaction, isPending bool, err error)
+	transactionReceipt    func(ctx context.Context, txHash common.Hash) (*types.Receipt, error)
 
 	//txHash is the id of an Ethereum transaction
 	txHash   string
@@ -41,9 +42,8 @@ type TransactionStatusTask struct {
 func NewTransactionStatusTask(
 	timeout time.Duration,
 	txService transactions.Service,
-	client Client,
-	transactionByHash func (ctx context.Context, hash common.Hash) (tx *types.Transaction, isPending bool, err error),
-	transactionReceipt func (ctx context.Context, txHash common.Hash) (*types.Receipt, error),
+	transactionByHash func(ctx context.Context, hash common.Hash) (tx *types.Transaction, isPending bool, err error),
+	transactionReceipt func(ctx context.Context, txHash common.Hash) (*types.Receipt, error),
 	ethContextInitializer func(d time.Duration) (ctx context.Context, cancelFunc context.CancelFunc),
 
 ) *TransactionStatusTask {
@@ -51,8 +51,8 @@ func NewTransactionStatusTask(
 		timeout:               timeout,
 		BaseTask:              transactions.BaseTask{TxService: txService},
 		ethContextInitializer: ethContextInitializer,
-		transactionByHash: transactionByHash,
-		transactionReceipt: transactionReceipt,
+		transactionByHash:     transactionByHash,
+		transactionReceipt:    transactionReceipt,
 	}
 }
 
@@ -67,8 +67,8 @@ func (nftc *TransactionStatusTask) Copy() (gocelery.CeleryTask, error) {
 		timeout:               nftc.timeout,
 		txHash:                nftc.txHash,
 		tenantID:              nftc.tenantID,
-		transactionByHash: nftc.transactionByHash,
-		transactionReceipt: nftc.transactionReceipt,
+		transactionByHash:     nftc.transactionByHash,
+		transactionReceipt:    nftc.transactionReceipt,
 		ethContextInitializer: nftc.ethContextInitializer,
 		BaseTask:              transactions.BaseTask{TxService: nftc.TxService},
 	}, nil

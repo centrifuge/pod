@@ -76,8 +76,8 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		})
 
 	// queue task
-
-	ethTransTask := ethereum.NewTransactionStatusTask(cfg.GetEthereumContextWaitTimeout(), txService, ethereum.GetClient(), ethereum.DefaultWaitForTransactionMiningContext)
+	ethereumClient := ethereum.GetClient()
+	ethTransTask := ethereum.NewTransactionStatusTask(cfg.GetEthereumContextWaitTimeout(), txService, ethereumClient.TransactionByHash, ethereumClient.TransactionReceipt, ethereum.DefaultWaitForTransactionMiningContext)
 
 	queueSrv.RegisterTaskType(ethTransTask.TaskTypeName(), ethTransTask)
 	return nil

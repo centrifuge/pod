@@ -3,13 +3,14 @@
 package ethereum_test
 
 import (
+	"os"
+	"testing"
+	"time"
+
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/mock"
-	"os"
-	"testing"
-	"time"
 
 	"github.com/centrifuge/go-centrifuge/identity/ethid"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
@@ -28,7 +29,6 @@ import (
 var cfg config.Configuration
 var ctx = map[string]interface{}{}
 
-
 func registerMockedTransactionTask() {
 	queueSrv := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
 	txService := ctx[transactions.BootstrappedService].(transactions.Service)
@@ -46,12 +46,10 @@ func registerMockedTransactionTask() {
 	// txHash: 0x3 -> pending
 	mockClient.On("TransactionByHash", mock.Anything, common.HexToHash("0x3")).Return(&types.Transaction{}, true, nil).Maybe()
 
-
-	ethTransTask := ethereum.NewTransactionStatusTask(1000 * time.Millisecond, txService, mockClient, mockClient.TransactionByHash,mockClient.TransactionReceipt, ethereum.DefaultWaitForTransactionMiningContext)
+	ethTransTask := ethereum.NewTransactionStatusTask(1000*time.Millisecond, txService, mockClient.TransactionByHash, mockClient.TransactionReceipt, ethereum.DefaultWaitForTransactionMiningContext)
 	queueSrv.RegisterTaskType(ethereum.TransactionStatusTaskName, ethTransTask)
 
 }
-
 
 func TestMain(m *testing.M) {
 	var bootstappers = []bootstrap.TestBootstrapper{
@@ -79,8 +77,6 @@ func TestMain(m *testing.M) {
 	bootstrap.RunTestTeardown(bootstappers)
 	os.Exit(result)
 }
-
-
 
 func TestGetConnection_returnsSameConnection(t *testing.T) {
 	howMany := 5
