@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/centrifuge/go-centrifuge/crypto"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -123,14 +121,6 @@ func PrepareP2PEnvelope(ctx context.Context, networkID uint32, messageType Messa
 		Header: p2pheader,
 		Body:   body,
 	}
-
-	signRequest, err := proto.Marshal(envelope)
-	if err != nil {
-		return nil, err
-	}
-
-	signKeys := self.Keys[identity.KeyPurposeSigning]
-	envelope.Header.Signature = crypto.Sign(self.ID[:], signKeys.PrivateKey, signKeys.PublicKey, signRequest)
 
 	marshalledRequest, err := proto.Marshal(envelope)
 	if err != nil {
