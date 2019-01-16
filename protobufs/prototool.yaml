@@ -84,7 +84,7 @@ gen:
   go_options:
     # The base import path. This should be the go path of the prototool.yaml file.
     # This is required if you have any go plugins.
-    import_path: github.com/centrifuge/go-centrifuge/centrifuge/protobufs
+    import_path: github.com/centrifuge/go-centrifuge/protobufs
 
     # Do not include default modifiers with Mfile=package.
     # By default, modifiers are included for the Well-Known Types if
