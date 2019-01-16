@@ -34,9 +34,9 @@ const (
 	MessageTypeSendAnchoredDoc MessageType = "MessageTypeSendAnchoredDoc"
 	// MessageTypeSendAnchoredDocRep defines SendAnchored response type
 	MessageTypeSendAnchoredDocRep MessageType = "MessageTypeSendAnchoredDocRep"
-	//MessageTypeGetAnchoredDoc defines GetAnchoredDoc type
+	//MessageTypeGetDoc defines GetAnchoredDoc type
 	MessageTypeGetDoc MessageType = "MessageTypeGetDoc"
-	//MessageTypeGetAnchoredDocRep defines GetAnchoredDoc response type
+	//MessageTypeGetDocRep defines GetAnchoredDoc response type
 	MessageTypeGetDocRep MessageType = "MessageTypeGetDocRep"
 )
 

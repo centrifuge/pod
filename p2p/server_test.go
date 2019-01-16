@@ -5,17 +5,18 @@ package p2p
 import (
 	"context"
 	"fmt"
-	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 	"os"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
+
 	"github.com/centrifuge/go-centrifuge/utils"
 
 	"github.com/centrifuge/go-centrifuge/identity"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 
@@ -31,8 +32,8 @@ import (
 )
 
 var (
-	cfg       config.Service
-	idService identity.Service
+	cfg            config.Service
+	idService      identity.Service
 	genericService genericdoc.Service
 )
 

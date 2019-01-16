@@ -5,9 +5,10 @@ package receiver
 import (
 	"context"
 	"crypto/rand"
-	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 	"os"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
@@ -43,12 +44,12 @@ import (
 )
 
 var (
-	handler       *Handler
-	registry      *documents.ServiceRegistry
-	coreDoc       = testingcoredocument.GenerateCoreDocument()
-	cfg           config.Configuration
-	mockIDService *testingcommons.MockIDService
-	defaultPID    libp2pPeer.ID
+	handler        *Handler
+	registry       *documents.ServiceRegistry
+	coreDoc        = testingcoredocument.GenerateCoreDocument()
+	cfg            config.Configuration
+	mockIDService  *testingcommons.MockIDService
+	defaultPID     libp2pPeer.ID
 	genericService genericdoc.Service
 )
 

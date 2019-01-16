@@ -194,7 +194,6 @@ func (srv *Handler) SendAnchoredDocument(ctx context.Context, docReq *p2ppb.Anch
 }
 
 // HandleGetDocument handles HandleGetDocument message
-
 func (srv *Handler) HandleGetDocument(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *p2ppb.Envelope) (*pb.P2PEnvelope, error) {
 	m := new(p2ppb.GetDocumentRequest)
 	err := proto.Unmarshal(msg.Body, m)

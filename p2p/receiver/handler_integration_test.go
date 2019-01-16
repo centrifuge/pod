@@ -5,6 +5,7 @@ package receiver_test
 import (
 	"context"
 	"flag"
+
 	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 
 	"github.com/centrifuge/go-centrifuge/contextutil"
