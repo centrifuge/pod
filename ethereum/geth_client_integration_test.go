@@ -46,7 +46,7 @@ func registerMockedTransactionTask() {
 	// txHash: 0x3 -> pending
 	mockClient.On("TransactionByHash", mock.Anything, common.HexToHash("0x3")).Return(&types.Transaction{}, true, nil).Maybe()
 
-	ethTransTask := ethereum.NewTransactionStatusTask(1000*time.Millisecond, txService, mockClient.TransactionByHash, mockClient.TransactionReceipt, ethereum.DefaultWaitForTransactionMiningContext)
+	ethTransTask := ethereum.NewTransactionStatusTask(200*time.Millisecond, txService, mockClient.TransactionByHash, mockClient.TransactionReceipt, ethereum.DefaultWaitForTransactionMiningContext)
 	queueSrv.RegisterTaskType(ethereum.TransactionStatusTaskName, ethTransTask)
 
 }

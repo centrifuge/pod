@@ -158,7 +158,7 @@ func (s *ethereumPaymentObligation) queueTaskTransaction(tenantID identity.CentI
 	if err != nil {
 		return txID, err
 	}
-	_, err = s.queue.EnqueueJob(ethereum.TransactionStatusTaskName, map[string]interface{}{
+	_, err = s.queue.EnqueueJobWithMaxTries(ethereum.TransactionStatusTaskName, map[string]interface{}{
 		transactions.TxIDParam:           tx.ID.String(),
 		ethereum.TransactionAccountParam: tenantID.String(),
 		ethereum.TransactionTxHashParam:  txHash,
