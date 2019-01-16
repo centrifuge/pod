@@ -8,12 +8,11 @@ import (
 	"os"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/p2p/common"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
+	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/proto"
 	"github.com/libp2p/go-libp2p-protocol"
@@ -289,5 +288,3 @@ func Test_getServiceAndModel(t *testing.T) {
 	assert.NotNil(t, m)
 	assert.Equal(t, model, m)
 }
-
-
