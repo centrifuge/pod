@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/centrifuge/go-centrifuge/queue"
+
 	"github.com/centrifuge/go-centrifuge/config"
 
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -12,7 +14,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -123,13 +124,8 @@ func (d *documentAnchorTask) RunTask() (res interface{}, err error) {
 	return true, nil
 }
 
-// taskQueuer can be implemented by any queueing system
-type taskQueuer interface {
-	EnqueueJob(taskTypeName string, params map[string]interface{}) (queue.TaskResult, error)
-}
-
 // InitDocumentAnchorTask enqueues a new document anchor task and returns the txID.
-func InitDocumentAnchorTask(tq taskQueuer, txService transactions.Service, tenantID identity.CentID, modelID []byte) (uuid.UUID, error) {
+func InitDocumentAnchorTask(tq queue.TaskQueuer, txService transactions.Service, tenantID identity.CentID, modelID []byte) (uuid.UUID, error) {
 	tx, err := txService.CreateTransaction(tenantID, documentAnchorTaskName)
 	if err != nil {
 		return uuid.Nil, err

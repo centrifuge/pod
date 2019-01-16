@@ -35,3 +35,9 @@ func (m *MockQueue) EnqueueJob(taskTypeName string, params map[string]interface{
 	res, _ := args.Get(0).(queue.TaskResult)
 	return res, args.Error(1)
 }
+
+func (m *MockQueue) EnqueueJobWithMaxTries(taskTypeName string, params map[string]interface{}) (queue.TaskResult, error) {
+	args := m.Called(taskTypeName, params)
+	res, _ := args.Get(0).(queue.TaskResult)
+	return res, args.Error(1)
+}
