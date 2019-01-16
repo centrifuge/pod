@@ -3,17 +3,15 @@
 package p2p
 
 import (
+	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
-
-	"github.com/centrifuge/go-centrifuge/config"
-
-	"github.com/centrifuge/go-centrifuge/config/configstore"
-
 	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/identity"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/node"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/stretchr/testify/assert"
@@ -35,8 +33,10 @@ func TestBootstrapper_Bootstrap(t *testing.T) {
 	m[documents.BootstrappedRegistry] = documents.NewServiceRegistry()
 	ids := new(testingcommons.MockIDService)
 	m[identity.BootstrappedIDService] = ids
+	m[genericdoc.BootstrappedGenService] = genericdoc.DefaultService(nil,nil,nil)
+
 	err = b.Bootstrap(m)
-	assert.Nil(t, err)
+ 	assert.Nil(t, err)
 
 	assert.NotNil(t, m[bootstrap.BootstrappedP2PServer])
 	_, ok := m[bootstrap.BootstrappedP2PServer].(node.Server)
