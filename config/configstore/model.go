@@ -323,29 +323,6 @@ func convertAddressesToStringMap(addresses map[config.ContractName]common.Addres
 }
 
 func (nc *NodeConfig) loadFromProtobuf(data *configpb.ConfigData) error {
-	// Nil checks
-	if data == nil {
-		data = new(configpb.ConfigData)
-	}
-	if data.MainIdentity == nil {
-		data.MainIdentity = new(accountpb.AccountData)
-		data.MainIdentity.SigningKeyPair = new(accountpb.KeyPair)
-		data.MainIdentity.EthauthKeyPair = new(accountpb.KeyPair)
-		data.MainIdentity.EthAccount = new(accountpb.EthereumAccount)
-	}
-	if data.P2PConnectionTimeout == nil {
-		data.P2PConnectionTimeout = new(duration.Duration)
-	}
-	if data.EthIntervalRetry == nil {
-		data.EthIntervalRetry = new(duration.Duration)
-	}
-	if data.EthContextWaitTimeout == nil {
-		data.EthContextWaitTimeout = new(duration.Duration)
-	}
-	if data.EthContextReadWaitTimeout == nil {
-		data.EthContextReadWaitTimeout = new(duration.Duration)
-	}
-
 	identityID, _ := hexutil.Decode(data.MainIdentity.IdentityId)
 
 	nc.MainIdentity = TenantConfig{
