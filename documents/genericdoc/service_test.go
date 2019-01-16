@@ -7,6 +7,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/storage/leveldb"
+
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 
 	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
@@ -25,7 +27,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
@@ -414,11 +415,11 @@ func TestService_GetVersion_error(t *testing.T) {
 
 func testRepo() documents.Repository {
 	if testRepoGlobal == nil {
-		ldb, err := storage.NewLevelDBStorage(storage.GetRandomTestStoragePath())
+		ldb, err := leveldb.NewLevelDBStorage(leveldb.GetRandomTestStoragePath())
 		if err != nil {
 			panic(err)
 		}
-		testRepoGlobal = documents.NewDBRepository(storage.NewLevelDBRepository(ldb))
+		testRepoGlobal = documents.NewDBRepository(leveldb.NewLevelDBRepository(ldb))
 		testRepoGlobal.Register(&invoice.Invoice{})
 	}
 	return testRepoGlobal

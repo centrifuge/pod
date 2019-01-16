@@ -10,6 +10,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/utils"
+
+	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+
+	"github.com/centrifuge/go-centrifuge/storage/leveldb"
+
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -18,35 +25,31 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/p2p/receiver"
 	"github.com/centrifuge/go-centrifuge/queue"
-	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/stretchr/testify/assert"
 )
 
 var (
-	cfg configstore.Service
+	cfg       config.Service
+	idService identity.Service
 )
 
 func TestMain(m *testing.M) {
 	ibootstappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
-		&storage.Bootstrapper{},
+		&leveldb.Bootstrapper{},
 		&configstore.Bootstrapper{},
 		&queue.Bootstrapper{},
 		transactions.Bootstrapper{},
 		documents.Bootstrapper{},
 	}
 	ctx := make(map[string]interface{})
+	idService = &testingcommons.MockIDService{}
+	ctx[identity.BootstrappedIDService] = idService
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
-	cfg = ctx[configstore.BootstrappedConfigStorage].(configstore.Service)
-	c, _ := cfg.GetConfig()
-	c.MainIdentity.SigningKeyPair.Pub = "../build/resources/signingKey.pub.pem"
-	c.MainIdentity.SigningKeyPair.Priv = "../build/resources/signingKey.key.pem"
-	c.MainIdentity.EthAuthKeyPair.Pub = "../build/resources/ethauth.pub.pem"
-	c.MainIdentity.EthAuthKeyPair.Priv = "../build/resources/ethauth.key.pem"
-	cfg.UpdateConfig(c)
+	cfg = ctx[config.BootstrappedConfigStorage].(config.Service)
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)
@@ -55,11 +58,13 @@ func TestMain(m *testing.M) {
 func TestCentP2PServer_StartContextCancel(t *testing.T) {
 	c, err := cfg.GetConfig()
 	assert.NoError(t, err)
-	c.P2PPort = 38203
-	_, err = cfg.UpdateConfig(c)
+	c = updateKeys(c)
+	n := c.(*configstore.NodeConfig)
+	n.P2PPort = 38203
+	cfgMock := mockmockConfigStore(n)
 	assert.NoError(t, err)
-	cp2p := &peer{config: cfg, handlerCreator: func() *receiver.Handler {
-		return receiver.New(cfg, nil, receiver.HandshakeValidator(c.NetworkID))
+	cp2p := &peer{config: cfgMock, handlerCreator: func() *receiver.Handler {
+		return receiver.New(cfgMock, nil, receiver.HandshakeValidator(n.NetworkID, idService))
 	}}
 	ctx, canc := context.WithCancel(context.Background())
 	startErr := make(chan error, 1)
@@ -77,10 +82,12 @@ func TestCentP2PServer_StartListenError(t *testing.T) {
 	// cause an error by using an invalid port
 	c, err := cfg.GetConfig()
 	assert.NoError(t, err)
-	c.P2PPort = 100000000
-	_, err = cfg.UpdateConfig(c)
+	c = updateKeys(c)
+	n := c.(*configstore.NodeConfig)
+	n.P2PPort = 100000000
+	cfgMock := mockmockConfigStore(n)
 	assert.NoError(t, err)
-	cp2p := &peer{config: cfg}
+	cp2p := &peer{config: cfgMock}
 	ctx, _ := context.WithCancel(context.Background())
 	startErr := make(chan error)
 	var wg sync.WaitGroup
@@ -95,9 +102,11 @@ func TestCentP2PServer_StartListenError(t *testing.T) {
 func TestCentP2PServer_makeBasicHostNoExternalIP(t *testing.T) {
 	c, err := cfg.GetConfig()
 	assert.NoError(t, err)
+	c = updateKeys(c)
 	listenPort := 38202
 	cp2p := &peer{config: cfg}
-	priv, pub, err := cp2p.createSigningKey(c.MainIdentity.SigningKeyPair.Pub, c.MainIdentity.SigningKeyPair.Priv)
+	pu, pr := c.GetSigningKeyPair()
+	priv, pub, err := cp2p.createSigningKey(pu, pr)
 	h, err := makeBasicHost(priv, pub, "", listenPort)
 	assert.Nil(t, err)
 	assert.NotNil(t, h)
@@ -106,10 +115,12 @@ func TestCentP2PServer_makeBasicHostNoExternalIP(t *testing.T) {
 func TestCentP2PServer_makeBasicHostWithExternalIP(t *testing.T) {
 	c, err := cfg.GetConfig()
 	assert.NoError(t, err)
+	c = updateKeys(c)
 	externalIP := "100.100.100.100"
 	listenPort := 38202
 	cp2p := &peer{config: cfg}
-	priv, pub, err := cp2p.createSigningKey(c.MainIdentity.SigningKeyPair.Pub, c.MainIdentity.SigningKeyPair.Priv)
+	pu, pr := c.GetSigningKeyPair()
+	priv, pub, err := cp2p.createSigningKey(pu, pr)
 	h, err := makeBasicHost(priv, pub, externalIP, listenPort)
 	assert.Nil(t, err)
 	assert.NotNil(t, h)
@@ -122,11 +133,29 @@ func TestCentP2PServer_makeBasicHostWithExternalIP(t *testing.T) {
 func TestCentP2PServer_makeBasicHostWithWrongExternalIP(t *testing.T) {
 	c, err := cfg.GetConfig()
 	assert.NoError(t, err)
+	c = updateKeys(c)
 	externalIP := "100.200.300.400"
 	listenPort := 38202
 	cp2p := &peer{config: cfg}
-	priv, pub, err := cp2p.createSigningKey(c.MainIdentity.SigningKeyPair.Pub, c.MainIdentity.SigningKeyPair.Priv)
+	pu, pr := c.GetSigningKeyPair()
+	priv, pub, err := cp2p.createSigningKey(pu, pr)
 	h, err := makeBasicHost(priv, pub, externalIP, listenPort)
 	assert.NotNil(t, err)
 	assert.Nil(t, h)
+}
+
+func updateKeys(c config.Configuration) config.Configuration {
+	n := c.(*configstore.NodeConfig)
+	n.MainIdentity.SigningKeyPair.Pub = "../build/resources/signingKey.pub.pem"
+	n.MainIdentity.SigningKeyPair.Priv = "../build/resources/signingKey.key.pem"
+	n.MainIdentity.EthAuthKeyPair.Pub = "../build/resources/ethauth.pub.pem"
+	n.MainIdentity.EthAuthKeyPair.Priv = "../build/resources/ethauth.key.pem"
+	return c
+}
+
+func mockmockConfigStore(n config.Configuration) *configstore.MockService {
+	mockConfigStore := &configstore.MockService{}
+	mockConfigStore.On("GetConfig").Return(n, nil)
+	mockConfigStore.On("GetAllTenants").Return([]config.TenantConfiguration{&configstore.TenantConfig{IdentityID: utils.RandomSlice(identity.CentIDLength)}}, nil)
+	return mockConfigStore
 }

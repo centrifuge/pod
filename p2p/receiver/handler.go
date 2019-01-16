@@ -3,7 +3,11 @@ package receiver
 import (
 	"context"
 
-	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/identity"
+
+	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/p2p/common"
+
 	"github.com/centrifuge/go-centrifuge/contextutil"
 
 	"github.com/golang/protobuf/proto"
@@ -18,7 +22,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	pb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
-	"github.com/centrifuge/go-centrifuge/version"
 )
 
 // getService looks up the specific registry, derives service from core document
@@ -47,24 +50,26 @@ func getServiceAndModel(registry *documents.ServiceRegistry, cd *coredocumentpb.
 // Handler implements protocol message handlers
 type Handler struct {
 	registry           *documents.ServiceRegistry
-	config             configstore.Service
+	config             config.Service
 	handshakeValidator ValidatorGroup
 }
 
 // New returns an implementation of P2PServiceServer
-func New(config configstore.Service, registry *documents.ServiceRegistry, handshakeValidator ValidatorGroup) *Handler {
+func New(config config.Service, registry *documents.ServiceRegistry, handshakeValidator ValidatorGroup) *Handler {
 	return &Handler{registry: registry, config: config, handshakeValidator: handshakeValidator}
 }
 
-// HandleRequestDocumentSignature handles the RequestDocumentSignature message
-func (srv *Handler) HandleRequestDocumentSignature(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (*pb.P2PEnvelope, error) {
-	m := new(p2ppb.SignatureRequest)
-	err := proto.Unmarshal(msg.Body, m)
+// HandleInterceptor acts as main entry point for all message types, routes the request to the correct handler
+func (srv *Handler) HandleInterceptor(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (*pb.P2PEnvelope, error) {
+	if msg == nil {
+		return convertToErrorEnvelop(errors.New("nil payload provided"))
+	}
+	envelope, err := p2pcommon.ResolveDataEnvelope(msg)
 	if err != nil {
 		return convertToErrorEnvelop(err)
 	}
 
-	cid, err := ExtractCID(protoc)
+	cid, err := p2pcommon.ExtractCID(protoc)
 	if err != nil {
 		return convertToErrorEnvelop(err)
 	}
@@ -79,16 +84,51 @@ func (srv *Handler) HandleRequestDocumentSignature(ctx context.Context, peer pee
 		return convertToErrorEnvelop(err)
 	}
 
-	res, err := srv.RequestDocumentSignature(ctx, m)
+	fromID, err := identity.ToCentID(envelope.Header.SenderId)
 	if err != nil {
 		return convertToErrorEnvelop(err)
 	}
 
-	resp, err := proto.Marshal(res)
+	err = srv.handshakeValidator.Validate(envelope.Header, &fromID, &peer)
 	if err != nil {
 		return convertToErrorEnvelop(err)
 	}
-	return &pb.P2PEnvelope{Type: pb.MessageType_MESSAGE_TYPE_REQUEST_SIGNATURE_REP, Body: resp}, nil
+
+	switch p2pcommon.MessageTypeFromString(envelope.Header.Type) {
+	case p2pcommon.MessageTypeRequestSignature:
+		return srv.HandleRequestDocumentSignature(ctx, peer, protoc, envelope)
+	case p2pcommon.MessageTypeSendAnchoredDoc:
+		return srv.HandleSendAnchoredDocument(ctx, peer, protoc, envelope)
+	default:
+		return convertToErrorEnvelop(errors.New("MessageType [%s] not found", envelope.Header.Type))
+	}
+
+}
+
+// HandleRequestDocumentSignature handles the RequestDocumentSignature message
+func (srv *Handler) HandleRequestDocumentSignature(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *p2ppb.Envelope) (*pb.P2PEnvelope, error) {
+	req := new(p2ppb.SignatureRequest)
+	err := proto.Unmarshal(msg.Body, req)
+	if err != nil {
+		return convertToErrorEnvelop(err)
+	}
+
+	res, err := srv.RequestDocumentSignature(ctx, req)
+	if err != nil {
+		return convertToErrorEnvelop(err)
+	}
+
+	nc, err := srv.config.GetConfig()
+	if err != nil {
+		return convertToErrorEnvelop(err)
+	}
+
+	p2pEnv, err := p2pcommon.PrepareP2PEnvelope(ctx, nc.GetNetworkID(), p2pcommon.MessageTypeRequestSignatureRep, res)
+	if err != nil {
+		return convertToErrorEnvelop(err)
+	}
+
+	return p2pEnv, nil
 }
 
 // RequestDocumentSignature signs the received document and returns the signature of the signingRoot
@@ -96,11 +136,6 @@ func (srv *Handler) HandleRequestDocumentSignature(ctx context.Context, peer pee
 // Existing signatures on the document will be verified
 // Document will be stored to the repository for state management
 func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.SignatureRequest) (*p2ppb.SignatureResponse, error) {
-	err := srv.handshakeValidator.Validate(sigReq.Header)
-	if err != nil {
-		return nil, err
-	}
-
 	svc, model, err := getServiceAndModel(srv.registry, sigReq.Document)
 	if err != nil {
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
@@ -111,68 +146,48 @@ func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
 
-	return &p2ppb.SignatureResponse{
-		CentNodeVersion: version.GetVersion().String(),
-		Signature:       signature,
-	}, nil
+	return &p2ppb.SignatureResponse{Signature: signature}, nil
 }
 
 // HandleSendAnchoredDocument handles the SendAnchoredDocument message
-func (srv *Handler) HandleSendAnchoredDocument(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (*pb.P2PEnvelope, error) {
+func (srv *Handler) HandleSendAnchoredDocument(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *p2ppb.Envelope) (*pb.P2PEnvelope, error) {
 	m := new(p2ppb.AnchorDocumentRequest)
 	err := proto.Unmarshal(msg.Body, m)
 	if err != nil {
 		return convertToErrorEnvelop(err)
 	}
 
-	cid, err := ExtractCID(protoc)
+	res, err := srv.SendAnchoredDocument(ctx, m, msg.Header.SenderId)
 	if err != nil {
 		return convertToErrorEnvelop(err)
 	}
 
-	tc, err := srv.config.GetTenant(cid[:])
+	nc, err := srv.config.GetConfig()
 	if err != nil {
 		return convertToErrorEnvelop(err)
 	}
 
-	ctx, err = contextutil.NewCentrifugeContext(ctx, tc)
+	p2pEnv, err := p2pcommon.PrepareP2PEnvelope(ctx, nc.GetNetworkID(), p2pcommon.MessageTypeSendAnchoredDocRep, res)
 	if err != nil {
 		return convertToErrorEnvelop(err)
 	}
 
-	res, err := srv.SendAnchoredDocument(ctx, m)
-	if err != nil {
-		return convertToErrorEnvelop(err)
-	}
-
-	resp, err := proto.Marshal(res)
-	if err != nil {
-		return convertToErrorEnvelop(err)
-	}
-	return &pb.P2PEnvelope{Type: pb.MessageType_MESSAGE_TYPE_SEND_ANCHORED_DOC_REP, Body: resp}, nil
+	return p2pEnv, nil
 }
 
 // SendAnchoredDocument receives a new anchored document, validates and updates the document in DB
-func (srv *Handler) SendAnchoredDocument(ctx context.Context, docReq *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error) {
-	err := srv.handshakeValidator.Validate(docReq.Header)
-	if err != nil {
-		return nil, err
-	}
-
+func (srv *Handler) SendAnchoredDocument(ctx context.Context, docReq *p2ppb.AnchorDocumentRequest, senderID []byte) (*p2ppb.AnchorDocumentResponse, error) {
 	svc, model, err := getServiceAndModel(srv.registry, docReq.Document)
 	if err != nil {
 		return nil, centerrors.New(code.DocumentInvalid, err.Error())
 	}
 
-	err = svc.ReceiveAnchoredDocument(ctx, model, docReq.Header)
+	err = svc.ReceiveAnchoredDocument(ctx, model, senderID)
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
 
-	return &p2ppb.AnchorDocumentResponse{
-		CentNodeVersion: version.GetVersion().String(),
-		Accepted:        true,
-	}, nil
+	return &p2ppb.AnchorDocumentResponse{Accepted: true}, nil
 }
 
 func convertToErrorEnvelop(err error) (*pb.P2PEnvelope, error) {
@@ -184,6 +199,19 @@ func convertToErrorEnvelop(err error) (*pb.P2PEnvelope, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	envelope := &p2ppb.Envelope{
+		Header: &p2ppb.Header{
+			Type: p2pcommon.MessageTypeError.String(),
+		},
+		Body: errBytes,
+	}
+
+	marshalledOut, err := proto.Marshal(envelope)
+	if err != nil {
+		return nil, err
+	}
+
 	// an error for the client
-	return &pb.P2PEnvelope{Type: pb.MessageType_MESSAGE_TYPE_ERROR, Body: errBytes}, nil
+	return &pb.P2PEnvelope{Body: marshalledOut}, nil
 }

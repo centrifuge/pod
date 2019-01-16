@@ -1,6 +1,7 @@
 package crypto
 
 import (
+	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
@@ -22,7 +23,7 @@ func VerifyMessage(publicKey, message []byte, signature []byte, curveType string
 
 		return secp256k1.VerifySignature(publicKey, msg, signatureBytes)
 	case CurveEd25519:
-		return false
+		return ed25519.VerifySignature(publicKey, message, signature)
 	default:
 		return false
 	}

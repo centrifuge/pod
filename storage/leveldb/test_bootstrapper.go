@@ -1,11 +1,12 @@
 // +build integration unit
 
-package storage
+package leveldb
 
 import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
@@ -22,7 +23,7 @@ func (*Bootstrapper) TestBootstrap(context map[string]interface{}) (err error) {
 	if err != nil {
 		return errors.New("failed to init config level db: %v", err)
 	}
-	context[BootstrappedConfigDB] = NewLevelDBRepository(configdb)
+	context[storage.BootstrappedConfigDB] = NewLevelDBRepository(configdb)
 
 	rs := GetRandomTestStoragePath()
 	cfg.Set("storage.Path", rs)
@@ -32,7 +33,7 @@ func (*Bootstrapper) TestBootstrap(context map[string]interface{}) (err error) {
 		return errors.New("failed to init level db: %v", err)
 	}
 	log.Infof("Setting levelDb at: %s", cfg.GetStoragePath())
-	context[BootstrappedDB] = NewLevelDBRepository(db)
+	context[storage.BootstrappedDB] = NewLevelDBRepository(db)
 	return nil
 }
 

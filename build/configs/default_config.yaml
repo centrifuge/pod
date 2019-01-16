@@ -65,6 +65,10 @@ configStorage:
   # Path for levelDB file
   path: /tmp/centrifuge_config_data.leveldb
 
+# Tenant key storage
+tenants:
+  keystore: /tmp/tenants
+
 # Interface where the API and P2P Server listens to
 nodeHostname: 0.0.0.0
 # Port where API Server listens to

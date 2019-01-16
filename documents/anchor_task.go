@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/centrifuge/go-centrifuge/config"
+
 	"github.com/centrifuge/go-centrifuge/identity"
 
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/code"
-	"github.com/centrifuge/go-centrifuge/config/configstore"
-
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/queue"
@@ -35,7 +35,7 @@ type documentAnchorTask struct {
 	tenantID identity.CentID
 
 	// state
-	config        configstore.Service
+	config        config.Service
 	processor     anchorProcessor
 	modelGetFunc  func(tenantID, id []byte) (Model, error)
 	modelSaveFunc func(tenantID, id []byte, model Model) error

@@ -5,6 +5,7 @@ package nft
 import (
 	"math/big"
 	"testing"
+	"time"
 
 	"github.com/centrifuge/go-centrifuge/config"
 
@@ -169,6 +170,7 @@ func TestPaymentObligationService(t *testing.T) {
 				cid := identity.RandomCentID()
 				configMock.On("GetIdentityID").Return(cid[:], nil)
 				configMock.On("GetEthereumAccount").Return(&config.AccountConfig{}, nil)
+				configMock.On("GetEthereumContextWaitTimeout").Return(time.Second)
 				configMock.On("GetReceiveEventNotificationEndpoint").Return("")
 				configMock.On("GetSigningKeyPair").Return("", "")
 				configMock.On("GetEthAuthKeyPair").Return("", "")

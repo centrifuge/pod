@@ -3,8 +3,10 @@
 package testworld
 
 import (
+	"math/rand"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -18,20 +20,20 @@ func TestPaymentObligationMint_invoice_successful(t *testing.T) {
 func TestPaymentObligationMint_po_successful(t *testing.T) {
 	t.Parallel()
 	paymentObligationMint(t, typePO)
-
 }
 */
 
 func paymentObligationMint(t *testing.T, documentType string) {
-
+	// TODO remove this when we have retry for tasks
+	time.Sleep(time.Duration(rand.Intn(5)) * time.Second)
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 
 	// Alice shares document with Bob
-	res := createDocument(alice.httpExpect, documentType, http.StatusOK, defaultNFTPayload(documentType, []string{bob.id.String()}))
+	res := createDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusOK, defaultNFTPayload(documentType, []string{bob.id.String()}))
 	txID := getTransactionID(t, res)
 
-	waitTillSuccess(t, alice.httpExpect, txID)
+	waitTillStatus(t, alice.httpExpect, alice.id.String(), txID, "success")
 
 	docIdentifier := getDocumentIdentifier(t, res)
 	if docIdentifier == "" {
@@ -42,8 +44,8 @@ func paymentObligationMint(t *testing.T, documentType string) {
 		"document_id": docIdentifier,
 		"currency":    "USD",
 	}
-	getDocumentAndCheck(alice.httpExpect, documentType, params)
-	getDocumentAndCheck(bob.httpExpect, documentType, params)
+	getDocumentAndCheck(alice.httpExpect, alice.id.String(), documentType, params)
+	getDocumentAndCheck(bob.httpExpect, bob.id.String(), documentType, params)
 
 	proofPrefix := documentType
 	if proofPrefix == typePO {
@@ -65,9 +67,9 @@ func paymentObligationMint(t *testing.T, documentType string) {
 		},
 	}
 
-	response, err := alice.host.mintNFT(alice.httpExpect, test.httpStatus, test.payload)
+	response, err := alice.host.mintNFT(alice.httpExpect, alice.id.String(), test.httpStatus, test.payload)
 	txID = getTransactionID(t, response)
-	waitTillSuccess(t, alice.httpExpect, txID)
+	waitTillStatus(t, alice.httpExpect, alice.id.String(), txID, "success")
 
 	assert.Nil(t, err, "mintNFT should be successful")
 	assert.True(t, len(response.Value("token_id").String().Raw()) > 0, "successful tokenId should have length 77")
@@ -114,7 +116,7 @@ func TestPaymentObligationMint_errors(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.errorMsg, func(t *testing.T) {
 			t.Parallel()
-			response, err := alice.host.mintNFT(alice.httpExpect, test.httpStatus, test.payload)
+			response, err := alice.host.mintNFT(alice.httpExpect, alice.id.String(), test.httpStatus, test.payload)
 			assert.Nil(t, err, "it should be possible to call the API endpoint")
 			response.Value("error").String().Contains(test.errorMsg)
 		})

@@ -1,6 +1,6 @@
 // +build unit
 
-package storage
+package leveldb
 
 import (
 	"testing"

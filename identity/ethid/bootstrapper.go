@@ -4,6 +4,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/identity"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/ethereum"
@@ -11,9 +12,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
-
-// BootstrappedIDService is used as a key to map the configured ID Service through context.
-const BootstrappedIDService string = "BootstrappedIDService"
 
 // Bootstrapper implements bootstrap.Bootstrapper.
 type Bootstrapper struct{}
@@ -47,7 +45,7 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	}
 	queueSrv := context[bootstrap.BootstrappedQueueServer].(*queue.Server)
 
-	context[BootstrappedIDService] = NewEthereumIdentityService(cfg, idFactory, registryContract, queueSrv, ethereum.GetClient,
+	context[identity.BootstrappedIDService] = NewEthereumIdentityService(cfg, idFactory, registryContract, queueSrv, ethereum.GetClient,
 		func(address common.Address, backend bind.ContractBackend) (contract, error) {
 			return NewEthereumIdentityContract(address, backend)
 		})

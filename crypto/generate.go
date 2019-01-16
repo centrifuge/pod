@@ -9,17 +9,28 @@ import (
 )
 
 // GenerateSigningKeyPair generates based on the curveType and writes keys to file paths given.
-func GenerateSigningKeyPair(publicFileName, privateFileName, curveType string) {
+func GenerateSigningKeyPair(publicFileName, privateFileName, curveType string) (err error) {
 	var publicKey, privateKey []byte
 	switch strings.ToLower(curveType) {
 	case CurveSecp256K1:
-		publicKey, privateKey = secp256k1.GenerateSigningKeyPair()
+		publicKey, privateKey, err = secp256k1.GenerateSigningKeyPair()
 	case CurveEd25519:
-		publicKey, privateKey = ed25519.GenerateSigningKeyPair()
+		publicKey, privateKey, err = ed25519.GenerateSigningKeyPair()
 	default:
-		publicKey, privateKey = ed25519.GenerateSigningKeyPair()
+		publicKey, privateKey, err = ed25519.GenerateSigningKeyPair()
+	}
+	if err != nil {
+		return err
 	}
 
-	utils.WriteKeyToPemFile(privateFileName, utils.PrivateKey, privateKey)
-	utils.WriteKeyToPemFile(publicFileName, utils.PublicKey, publicKey)
+	err = utils.WriteKeyToPemFile(privateFileName, utils.PrivateKey, privateKey)
+	if err != nil {
+		return err
+	}
+
+	err = utils.WriteKeyToPemFile(publicFileName, utils.PublicKey, publicKey)
+	if err != nil {
+		return err
+	}
+	return nil
 }

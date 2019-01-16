@@ -6,10 +6,11 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/storage/leveldb"
+
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/stretchr/testify/assert"
 )
@@ -20,7 +21,7 @@ func TestMain(m *testing.M) {
 	ibootstappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
-		&storage.Bootstrapper{},
+		&leveldb.Bootstrapper{},
 		transactions.Bootstrapper{},
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)

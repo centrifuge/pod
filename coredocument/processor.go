@@ -14,7 +14,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/centrifuge/go-centrifuge/version"
 	logging "github.com/ipfs/go-log"
 )
 
@@ -50,8 +49,7 @@ type defaultProcessor struct {
 	identityService  identity.Service
 	p2pClient        client
 	anchorRepository anchors.AnchorRepository
-	// TODO [multi-tenancy] replace this with config service
-	config Config
+	config           Config
 }
 
 // DefaultProcessor returns the default implementation of CoreDocument Processor
@@ -75,24 +73,13 @@ func (dp defaultProcessor) Send(ctx context.Context, coreDocument *coredocumentp
 		return errors.New("error fetching receiver identity: %v", err)
 	}
 
-	self, err := contextutil.Self(ctx)
-	if err != nil {
-		return err
-	}
-
-	log.Infof("Done opening connection against recipient [%x]\n", recipient)
-	centIDBytes := self.ID[:]
-	p2pheader := &p2ppb.CentrifugeHeader{
-		SenderCentrifugeId: centIDBytes,
-		CentNodeVersion:    version.GetVersion().String(),
-		NetworkIdentifier:  dp.config.GetNetworkID(),
-	}
-
 	c, _ := context.WithTimeout(ctx, dp.config.GetP2PConnectionTimeout())
-	resp, err := dp.p2pClient.SendAnchoredDocument(c, id, &p2ppb.AnchorDocumentRequest{Document: coreDocument, Header: p2pheader})
+	resp, err := dp.p2pClient.SendAnchoredDocument(c, id, &p2ppb.AnchorDocumentRequest{Document: coreDocument})
 	if err != nil || !resp.Accepted {
 		return errors.New("failed to send document to the node: %v", err)
 	}
+
+	log.Infof("Done opening connection against recipient [%x]\n", recipient)
 
 	return nil
 }

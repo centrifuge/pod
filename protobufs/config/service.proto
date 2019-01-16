@@ -7,122 +7,22 @@ option java_multiple_files = true;
 option java_outer_classname = "ServiceProto";
 option java_package = "com.config";
 
+import "account/service.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/empty.proto";
 import "protoc-gen-swagger/options/annotations.proto";
 
-// ConfigService allows to manage the node and tenant configuration of the node
+// ConfigService allows to see the node configuration
 service ConfigService {
   rpc GetConfig(google.protobuf.Empty) returns (ConfigData) {
     option (google.api.http) = {
-      get: "/config/node"
+      get: "/config"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
       description: "Get Node Config"
     };
   }
-  rpc GetTenant(GetTenantRequest) returns (TenantData) {
-    option (google.api.http) = {
-      get: "/config/tenants/{identifier}"
-    };
-    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Get Tenant Config"
-    };
-  }
-  rpc GetAllTenants(google.protobuf.Empty) returns (GetAllTenantResponse) {
-    option (google.api.http) = {
-      get: "/config/tenants"
-    };
-    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Get All Tenant Configs"
-    };
-  }
-  rpc CreateConfig(ConfigData) returns (ConfigData) {
-    option (google.api.http) = {
-      post: "/config/node"
-      body: "*"
-    };
-    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Creates node config data"
-    };
-  }
-  rpc CreateTenant(TenantData) returns (TenantData) {
-    option (google.api.http) = {
-      post: "/config/tenants"
-      body: "*"
-    };
-    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Creates tenant config data"
-    };
-  }
-  rpc UpdateConfig(ConfigData) returns (ConfigData) {
-    option (google.api.http) = {
-      put: "/config/node"
-      body: "*"
-    };
-    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Updates node config"
-    };
-  }
-  rpc UpdateTenant(UpdateTenantRequest) returns (TenantData) {
-    option (google.api.http) = {
-      put: "/config/tenants/{identifier}"
-      body: "*"
-    };
-    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Updates tenant config"
-    };
-  }
-  rpc DeleteConfig(google.protobuf.Empty) returns (google.protobuf.Empty) {
-    option (google.api.http) = {
-      delete: "/config/node"
-    };
-    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Deletes node config"
-    };
-  }
-  rpc DeleteTenant(GetTenantRequest) returns (google.protobuf.Empty) {
-    option (google.api.http) = {
-      delete: "/config/tenants/{identifier}"
-    };
-    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Deletes tenant config"
-    };
-  }
-}
-
-message GetTenantRequest {
-  string identifier = 1;
-}
-
-message GetAllTenantResponse {
-  repeated TenantData data = 1;
-}
-
-message UpdateTenantRequest {
-  string identifier = 1;
-  TenantData data = 2;
-}
-
-message EthereumAccount {
-  string address = 1;
-  string key = 2;
-  string password = 3;
-}
-
-message KeyPair {
-  string pub = 1;
-  string pvt = 2;
-}
-
-message TenantData {
-  EthereumAccount eth_account = 1;
-  string eth_default_account_name = 2;
-  string receive_event_notification_endpoint = 3;
-  string identity_id = 4;
-  KeyPair signing_key_pair = 5;
-  KeyPair ethauth_key_pair = 6;
 }
 
 message ConfigData {
@@ -145,7 +45,7 @@ message ConfigData {
   string network = 17;
   repeated string bootstrap_peers = 18;
   uint32 network_id = 19;
-  TenantData main_identity = 20;
+  account.AccountData main_identity = 20;
   map<string, string> smart_contract_addresses = 21;
   bool pprof_enabled = 22;
 }

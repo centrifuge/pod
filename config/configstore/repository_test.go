@@ -7,6 +7,11 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+
+	"github.com/centrifuge/go-centrifuge/storage/leveldb"
+
 	"github.com/centrifuge/go-centrifuge/config"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -25,15 +30,17 @@ func TestMain(m *testing.M) {
 	ibootstappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
-		&storage.Bootstrapper{},
+		&leveldb.Bootstrapper{},
 	}
+	ctx[identity.BootstrappedIDService] = &testingcommons.MockIDService{}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 	configdb := ctx[storage.BootstrappedConfigDB].(storage.Repository)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	nc := NewNodeConfig(cfg)
 	// clean db
 	_ = configdb.Delete(getConfigKey())
-	_ = configdb.Delete(getTenantKey(nc.MainIdentity.IdentityID))
+	i, _ := nc.GetIdentityID()
+	_ = configdb.Delete(getTenantKey(i))
 	result := m.Run()
 	cleanupDBFiles()
 	os.Exit(result)
@@ -84,7 +91,9 @@ func TestTenantOperations(t *testing.T) {
 	readTenant, err := repo.GetTenant(id)
 	assert.Nil(t, err)
 	assert.Equal(t, reflect.TypeOf(newTenant), readTenant.Type())
-	assert.Equal(t, newTenant.IdentityID, readTenant.IdentityID)
+	i, err := readTenant.GetIdentityID()
+	assert.Nil(t, err)
+	assert.Equal(t, newTenant.IdentityID, i)
 
 	// Update tenant
 	newTenant.EthereumDefaultAccountName = "secondary"
@@ -120,7 +129,7 @@ func TestConfigOperations(t *testing.T) {
 	readDoc, err := repo.GetConfig()
 	assert.Nil(t, err)
 	assert.Equal(t, reflect.TypeOf(newConfig), readDoc.Type())
-	assert.Equal(t, newConfig.NetworkID, readDoc.NetworkID)
+	assert.Equal(t, newConfig.NetworkID, readDoc.GetNetworkID())
 
 	// Update config
 	newConfig.NetworkID = 42
@@ -166,9 +175,9 @@ func TestLevelDBRepo_GetAllTenants(t *testing.T) {
 	tenants, err := repo.GetAllTenants()
 	assert.Nil(t, err)
 	assert.Equal(t, 3, len(tenants))
-	t0Id := tenants[0].ID()
-	t1Id := tenants[1].ID()
-	t2Id := tenants[2].ID()
+	t0Id, _ := tenants[0].GetIdentityID()
+	t1Id, _ := tenants[1].GetIdentityID()
+	t2Id, _ := tenants[2].GetIdentityID()
 	assert.Contains(t, ids, t0Id)
 	assert.Contains(t, ids, t1Id)
 	assert.Contains(t, ids, t2Id)
@@ -183,12 +192,12 @@ func cleanupDBFiles() {
 	}
 }
 
-func getRandomStorage() (Repository, string, error) {
-	randomPath := storage.GetRandomTestStoragePath()
-	db, err := storage.NewLevelDBStorage(randomPath)
+func getRandomStorage() (repository, string, error) {
+	randomPath := leveldb.GetRandomTestStoragePath()
+	db, err := leveldb.NewLevelDBStorage(randomPath)
 	if err != nil {
 		return nil, "", err
 	}
 	dbFiles = append(dbFiles, randomPath)
-	return NewDBRepository(storage.NewLevelDBRepository(db)), randomPath, nil
+	return newDBRepository(leveldb.NewLevelDBRepository(db)), randomPath, nil
 }

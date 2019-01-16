@@ -39,11 +39,10 @@ type keyRegistrationConfirmationTask struct {
 	ctx                context.Context
 	filterer           keyRegisteredFilterer
 	contract           *EthereumIdentityRegistryContract
-	// TODO [multi-tenancy] replace this with config service
-	config           identity.Config
-	gethClientFinder func() ethereum.Client
-	contractProvider func(address common.Address, backend bind.ContractBackend) (contract, error)
-	queue            *queue.Server
+	config             identity.Config
+	gethClientFinder   func() ethereum.Client
+	contractProvider   func(address common.Address, backend bind.ContractBackend) (contract, error)
+	queue              *queue.Server
 }
 
 func newKeyRegistrationConfirmationTask(

@@ -5,14 +5,17 @@ package receiver_test
 import (
 	"context"
 	"flag"
+
+	"github.com/centrifuge/go-centrifuge/contextutil"
+	cented25519 "github.com/centrifuge/go-centrifuge/crypto/ed25519"
+	"github.com/centrifuge/go-centrifuge/p2p/common"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
+	"github.com/golang/protobuf/proto"
+
 	"os"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/config/configstore"
-
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
-
-	"github.com/centrifuge/go-centrifuge/identity/ethid"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 
@@ -32,7 +35,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/coredocument"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
@@ -44,21 +46,49 @@ var (
 	anchorRepo anchors.AnchorRepository
 	cfg        config.Configuration
 	idService  identity.Service
+	cfgService config.Service
 )
 
 func TestMain(m *testing.M) {
 	flag.Parse()
 	ctx := testingbootstrap.TestFunctionalEthereumBootstrap()
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-	cfgService := ctx[configstore.BootstrappedConfigStorage].(configstore.Service)
+	cfgService = ctx[config.BootstrappedConfigStorage].(config.Service)
 	registry := ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
 	anchorRepo = ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
-	idService = ctx[ethid.BootstrappedIDService].(identity.Service)
-	handler = receiver.New(cfgService, registry, receiver.HandshakeValidator(cfg.GetNetworkID()))
+	idService = ctx[identity.BootstrappedIDService].(identity.Service)
+	handler = receiver.New(cfgService, registry, receiver.HandshakeValidator(cfg.GetNetworkID(), idService))
 	testingidentity.CreateIdentityWithKeys(cfg, idService)
 	result := m.Run()
 	testingbootstrap.TestFunctionalEthereumTearDown()
 	os.Exit(result)
+}
+
+func TestHandler_HandleInterceptorReqSignature(t *testing.T) {
+	centID := createIdentity(t)
+	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	tc, err := contextutil.Tenant(ctxh)
+	_, err = cfgService.CreateTenant(tc)
+	assert.NoError(t, err)
+	doc := prepareDocumentForP2PHandler(t, nil)
+	req := getSignatureRequest(doc)
+	p2pEnv, err := p2pcommon.PrepareP2PEnvelope(ctxh, cfg.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, req)
+
+	pub, _ := cfg.GetSigningKeyPair()
+	publicKey, err := cented25519.GetPublicSigningKey(pub)
+	assert.NoError(t, err)
+	var bPk [32]byte
+	copy(bPk[:], publicKey)
+	peerID, err := cented25519.PublicKeyToP2PKey(bPk)
+	assert.NoError(t, err)
+
+	p2pResp, err := handler.HandleInterceptor(ctxh, peerID, p2pcommon.ProtocolForCID(centID), p2pEnv)
+	assert.Nil(t, err, "must be nil")
+	assert.NotNil(t, p2pResp, "must be non nil")
+	resp := resolveSignatureResponse(t, p2pResp)
+	assert.NotNil(t, resp.Signature.Signature, "must be non nil")
+	sig := resp.Signature
+	assert.True(t, ed25519.Verify(sig.PublicKey, doc.SigningRoot, sig.Signature), "signature must be valid")
 }
 
 func TestHandler_RequestDocumentSignature_verification_fail(t *testing.T) {
@@ -158,7 +188,7 @@ func TestHandler_SendAnchoredDocument_update_fail(t *testing.T) {
 	assert.Nil(t, watchCommittedAnchor.Error, "No error should be thrown by context")
 
 	anchorReq := getAnchoredRequest(doc)
-	anchorResp, err := handler.SendAnchoredDocument(ctx, anchorReq)
+	anchorResp, err := handler.SendAnchoredDocument(ctx, anchorReq, idConfig.ID[:])
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), storage.ErrRepositoryModelUpdateKeyNotFound.Error())
 	assert.Nil(t, anchorResp)
@@ -169,7 +199,8 @@ func TestHandler_SendAnchoredDocument_EmptyDocument(t *testing.T) {
 	doc := prepareDocumentForP2PHandler(t, nil)
 	req := getAnchoredRequest(doc)
 	req.Document = nil
-	resp, err := handler.SendAnchoredDocument(ctxh, req)
+	id, _ := cfg.GetIdentityID()
+	resp, err := handler.SendAnchoredDocument(ctxh, req, id)
 	assert.NotNil(t, err)
 	assert.Nil(t, resp, "must be nil")
 }
@@ -202,11 +233,10 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 	assert.Nil(t, watchCommittedAnchor.Error, "No error should be thrown by context")
 
 	anchorReq := getAnchoredRequest(doc)
-	anchorResp, err := handler.SendAnchoredDocument(ctxh, anchorReq)
+	anchorResp, err := handler.SendAnchoredDocument(ctxh, anchorReq, idConfig.ID[:])
 	assert.Nil(t, err)
 	assert.NotNil(t, anchorResp, "must be non nil")
 	assert.True(t, anchorResp.Accepted)
-	assert.Equal(t, anchorResp.CentNodeVersion, anchorReq.Header.CentNodeVersion)
 }
 
 func createIdentity(t *testing.T) identity.CentID {
@@ -268,16 +298,18 @@ func updateDocumentForP2Phandler(t *testing.T, doc *coredocumentpb.CoreDocument)
 }
 
 func getAnchoredRequest(doc *coredocumentpb.CoreDocument) *p2ppb.AnchorDocumentRequest {
-	return &p2ppb.AnchorDocumentRequest{
-		Header: &p2ppb.CentrifugeHeader{
-			CentNodeVersion:   version.GetVersion().String(),
-			NetworkIdentifier: cfg.GetNetworkID(),
-		}, Document: doc,
-	}
+	return &p2ppb.AnchorDocumentRequest{Document: doc}
 }
 
 func getSignatureRequest(doc *coredocumentpb.CoreDocument) *p2ppb.SignatureRequest {
-	return &p2ppb.SignatureRequest{Header: &p2ppb.CentrifugeHeader{
-		CentNodeVersion: version.GetVersion().String(), NetworkIdentifier: cfg.GetNetworkID(),
-	}, Document: doc}
+	return &p2ppb.SignatureRequest{Document: doc}
+}
+
+func resolveSignatureResponse(t *testing.T, p2pEnv *protocolpb.P2PEnvelope) *p2ppb.SignatureResponse {
+	signResp := new(p2ppb.SignatureResponse)
+	dataEnv, err := p2pcommon.ResolveDataEnvelope(p2pEnv)
+	assert.NoError(t, err)
+	err = proto.Unmarshal(dataEnv.Body, signResp)
+	assert.NoError(t, err)
+	return signResp
 }

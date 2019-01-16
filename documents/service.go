@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 )
 
@@ -41,5 +40,5 @@ type Service interface {
 	RequestDocumentSignature(ctx context.Context, model Model) (*coredocumentpb.Signature, error)
 
 	// ReceiveAnchoredDocument receives a new anchored document over the p2p layer, validates and updates the document in DB
-	ReceiveAnchoredDocument(ctx context.Context, model Model, headers *p2ppb.CentrifugeHeader) error
+	ReceiveAnchoredDocument(ctx context.Context, model Model, senderID []byte) error
 }

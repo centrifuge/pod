@@ -1,7 +1,7 @@
 package invoice
 
 import (
-	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
@@ -19,11 +19,11 @@ var apiLog = logging.Logger("invoice-api")
 // anchoring, sending, finding stored invoice document
 type grpcHandler struct {
 	service Service
-	config  configstore.Service
+	config  config.Service
 }
 
 // GRPCHandler returns an implementation of invoice.DocumentServiceServer
-func GRPCHandler(config configstore.Service, registry *documents.ServiceRegistry) (clientinvoicepb.DocumentServiceServer, error) {
+func GRPCHandler(config config.Service, registry *documents.ServiceRegistry) (clientinvoicepb.DocumentServiceServer, error) {
 	srv, err := registry.LocateService(documenttypes.InvoiceDataTypeUrl)
 	if err != nil {
 		return nil, err
@@ -38,7 +38,7 @@ func GRPCHandler(config configstore.Service, registry *documents.ServiceRegistry
 // Create handles the creation of the invoices and anchoring the documents on chain
 func (h *grpcHandler) Create(ctx context.Context, req *clientinvoicepb.InvoiceCreatePayload) (*clientinvoicepb.InvoiceResponse, error) {
 	apiLog.Debugf("Create request %v", req)
-	cctx, err := contextutil.CentContext(ctx, h.config)
+	cctx, err := contextutil.Context(ctx, h.config)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, err
@@ -70,7 +70,7 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientinvoicepb.InvoiceCr
 // Update handles the document update and anchoring
 func (h *grpcHandler) Update(ctx context.Context, payload *clientinvoicepb.InvoiceUpdatePayload) (*clientinvoicepb.InvoiceResponse, error) {
 	apiLog.Debugf("Update request %v", payload)
-	ctxHeader, err := contextutil.CentContext(ctx, h.config)
+	ctxHeader, err := contextutil.Context(ctx, h.config)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, err
@@ -101,7 +101,7 @@ func (h *grpcHandler) Update(ctx context.Context, payload *clientinvoicepb.Invoi
 // GetVersion returns the requested version of the document
 func (h *grpcHandler) GetVersion(ctx context.Context, getVersionRequest *clientinvoicepb.GetVersionRequest) (*clientinvoicepb.InvoiceResponse, error) {
 	apiLog.Debugf("Get version request %v", getVersionRequest)
-	ctxHeader, err := contextutil.CentContext(ctx, h.config)
+	ctxHeader, err := contextutil.Context(ctx, h.config)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, err
@@ -137,7 +137,7 @@ func (h *grpcHandler) GetVersion(ctx context.Context, getVersionRequest *clienti
 // Get returns the invoice the latest version of the document with given identifier
 func (h *grpcHandler) Get(ctx context.Context, getRequest *clientinvoicepb.GetRequest) (*clientinvoicepb.InvoiceResponse, error) {
 	apiLog.Debugf("Get request %v", getRequest)
-	ctxHeader, err := contextutil.CentContext(ctx, h.config)
+	ctxHeader, err := contextutil.Context(ctx, h.config)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, err

@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
+	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 
@@ -31,7 +32,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/p2p"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/queue"
-	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/transactions"
@@ -43,7 +43,7 @@ import (
 
 var ctx = map[string]interface{}{}
 var cfg config.Configuration
-var configService configstore.Service
+var configService config.Service
 
 func TestMain(m *testing.M) {
 	ethClient := &testingcommons.MockEthClient{}
@@ -53,11 +53,11 @@ func TestMain(m *testing.M) {
 	ibootstappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
-		&storage.Bootstrapper{},
-		&configstore.Bootstrapper{},
+		&leveldb.Bootstrapper{},
 		&queue.Bootstrapper{},
 		transactions.Bootstrapper{},
 		&ethid.Bootstrapper{},
+		&configstore.Bootstrapper{},
 		anchors.Bootstrapper{},
 		documents.Bootstrapper{},
 		p2p.Bootstrapper{},
@@ -68,7 +68,7 @@ func TestMain(m *testing.M) {
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfg.Set("identityId", cid.String())
-	configService = ctx[configstore.BootstrappedConfigStorage].(configstore.Service)
+	configService = ctx[config.BootstrappedConfigStorage].(config.Service)
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)

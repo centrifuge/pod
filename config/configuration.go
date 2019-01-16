@@ -11,14 +11,17 @@ import (
 	"io/ioutil"
 	"math/big"
 	"os"
+	"reflect"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/errors"
-
 	"github.com/centrifuge/go-centrifuge/centerrors"
+	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/config"
 	"github.com/centrifuge/go-centrifuge/resources"
+	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	logging "github.com/ipfs/go-log"
@@ -55,6 +58,8 @@ func ContractNames() [4]ContractName {
 
 // Configuration defines the methods that a config type should implement.
 type Configuration interface {
+	storage.Model
+
 	// generic methods
 	IsSet(key string) bool
 	Set(key string, value interface{})
@@ -68,6 +73,7 @@ type Configuration interface {
 
 	GetStoragePath() string
 	GetConfigStoragePath() string
+	GetTenantsKeystore() string
 	GetP2PPort() int
 	GetP2PExternalIP() string
 	GetP2PConnectionTimeout() time.Duration
@@ -100,6 +106,37 @@ type Configuration interface {
 
 	// debug specific methods
 	IsPProfEnabled() bool
+
+	// CreateProtobuf creates protobuf
+	CreateProtobuf() *configpb.ConfigData
+}
+
+// TenantConfiguration exposes tenant specific config options
+type TenantConfiguration interface {
+	storage.Model
+
+	GetEthereumAccount() *AccountConfig
+	GetEthereumDefaultAccountName() string
+	GetReceiveEventNotificationEndpoint() string
+	GetIdentityID() ([]byte, error)
+	GetSigningKeyPair() (pub, priv string)
+	GetEthAuthKeyPair() (pub, priv string)
+	GetEthereumContextWaitTimeout() time.Duration
+
+	// CreateProtobuf creates protobuf
+	CreateProtobuf() (*accountpb.AccountData, error)
+}
+
+// Service exposes functions over the config objects
+type Service interface {
+	GetConfig() (Configuration, error)
+	GetTenant(identifier []byte) (TenantConfiguration, error)
+	GetAllTenants() ([]TenantConfiguration, error)
+	CreateConfig(data Configuration) (Configuration, error)
+	CreateTenant(data TenantConfiguration) (TenantConfiguration, error)
+	GenerateTenant() (TenantConfiguration, error)
+	UpdateTenant(data TenantConfiguration) (TenantConfiguration, error)
+	DeleteTenant(identifier []byte) error
 }
 
 // configuration holds the configuration details for the node.
@@ -107,6 +144,22 @@ type configuration struct {
 	mu         sync.RWMutex
 	configFile string
 	v          *viper.Viper
+}
+
+func (c *configuration) Type() reflect.Type {
+	panic("irrelevant, configuration#Type must not be used")
+}
+
+func (c *configuration) JSON() ([]byte, error) {
+	panic("irrelevant, configuration#JSON must not be used")
+}
+
+func (c *configuration) FromJSON(json []byte) error {
+	panic("irrelevant, configuration#FromJSON must not be used")
+}
+
+func (c *configuration) CreateProtobuf() *configpb.ConfigData {
+	panic("irrelevant, configuration#CreateProtobuf must not be used")
 }
 
 // AccountConfig holds the account details.
@@ -176,6 +229,11 @@ func (c *configuration) GetStoragePath() string {
 // GetConfigStoragePath returns the config storage backend.
 func (c *configuration) GetConfigStoragePath() string {
 	return c.GetString("configStorage.path")
+}
+
+// GetTenantsKeystore returns the tenants keystore location.
+func (c *configuration) GetTenantsKeystore() string {
+	return c.GetString("tenants.keystore")
 }
 
 // GetP2PPort returns P2P Port.
@@ -431,6 +489,7 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	v.SetConfigType("yaml")
 	v.Set("storage.path", targetDataDir+"/db/centrifuge_data.leveldb")
 	v.Set("configStorage.path", targetDataDir+"/db/centrifuge_config_data.leveldb")
+	v.Set("tenants.keystore", targetDataDir+"/tenants")
 	v.Set("identityId", "")
 	v.Set("centrifugeNetwork", network)
 	v.Set("nodeHostname", "0.0.0.0")
@@ -467,7 +526,6 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	if err != nil {
 		log.Fatalf("error: %v", err)
 	}
-
 	return v, nil
 }
 

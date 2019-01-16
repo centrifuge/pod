@@ -4,7 +4,11 @@ import "github.com/centrifuge/go-centrifuge/bootstrap"
 
 // Bootstrap constants are keys to the value mappings in context bootstrap.
 const (
+	// BootstrappedConfigFile points to the config file the node is bootstrapped with
 	BootstrappedConfigFile string = "BootstrappedConfigFile"
+
+	// BootstrappedConfigStorage indicates that config storage has been bootstrapped and its the key for config storage service in the bootstrap context
+	BootstrappedConfigStorage string = "BootstrappedConfigStorage"
 )
 
 // Bootstrapper implements bootstrap.Bootstrapper to initialise config package.
