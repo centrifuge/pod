@@ -3,8 +3,13 @@
 package ethereum_test
 
 import (
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/stretchr/testify/mock"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/centrifuge/go-centrifuge/identity/ethid"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
@@ -23,7 +28,30 @@ import (
 var cfg config.Configuration
 var ctx = map[string]interface{}{}
 
-var queueStartBootstrap bootstrap.TestBootstrapper
+
+func registerMockedTransactionTask() {
+	queueSrv := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
+	txService := ctx[transactions.BootstrappedService].(transactions.Service)
+
+	mockClient := &testingcommons.MockEthClient{}
+
+	// txHash: 0x1 -> successful
+	mockClient.On("TransactionByHash", mock.Anything, common.HexToHash("0x1")).Return(&types.Transaction{}, false, nil).Once()
+	mockClient.On("TransactionReceipt", mock.Anything, common.HexToHash("0x1")).Return(&types.Receipt{Status: 1}, nil).Once()
+
+	// txHash: 0x2 -> fail
+	mockClient.On("TransactionByHash", mock.Anything, common.HexToHash("0x2")).Return(&types.Transaction{}, false, nil).Once()
+	mockClient.On("TransactionReceipt", mock.Anything, common.HexToHash("0x2")).Return(&types.Receipt{Status: 0}, nil).Once()
+
+	// txHash: 0x3 -> pending
+	mockClient.On("TransactionByHash", mock.Anything, common.HexToHash("0x3")).Return(&types.Transaction{}, true, nil).Maybe()
+
+
+	ethTransTask := ethereum.NewTransactionStatusTask(1000 * time.Millisecond, txService, mockClient, mockClient.TransactionByHash,mockClient.TransactionReceipt, ethereum.DefaultWaitForTransactionMiningContext)
+	queueSrv.RegisterTaskType(ethereum.TransactionStatusTaskName, ethTransTask)
+
+}
+
 
 func TestMain(m *testing.M) {
 	var bootstappers = []bootstrap.TestBootstrapper{
@@ -40,18 +68,19 @@ func TestMain(m *testing.M) {
 	bootstrap.RunTestBootstrappers(bootstappers, ctx)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 
-	queueStartBootstrap = &queue.Starter{}
+	queueStartBootstrap := &queue.Starter{}
 	bootstappers = append(bootstappers, queueStartBootstrap)
+	// register queue task
+	registerMockedTransactionTask()
+	//start queue
+	queueStartBootstrap.TestBootstrap(ctx)
 
 	result := m.Run()
 	bootstrap.RunTestTeardown(bootstappers)
 	os.Exit(result)
 }
 
-func bootstrapQueueStart() {
-	queueStartBootstrap.TestBootstrap(ctx)
 
-}
 
 func TestGetConnection_returnsSameConnection(t *testing.T) {
 	howMany := 5

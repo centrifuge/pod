@@ -2,6 +2,7 @@ package ethereum
 
 import (
 	"context"
+	"github.com/ethereum/go-ethereum/core/types"
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -28,7 +29,8 @@ type TransactionStatusTask struct {
 	timeout time.Duration
 	//state
 	ethContextInitializer func(d time.Duration) (ctx context.Context, cancelFunc context.CancelFunc)
-	client                Client
+	transactionByHash func (ctx context.Context, hash common.Hash) (tx *types.Transaction, isPending bool, err error)
+	transactionReceipt func (ctx context.Context, txHash common.Hash) (*types.Receipt, error)
 
 	//txHash is the id of an Ethereum transaction
 	txHash   string
@@ -40,6 +42,8 @@ func NewTransactionStatusTask(
 	timeout time.Duration,
 	txService transactions.Service,
 	client Client,
+	transactionByHash func (ctx context.Context, hash common.Hash) (tx *types.Transaction, isPending bool, err error),
+	transactionReceipt func (ctx context.Context, txHash common.Hash) (*types.Receipt, error),
 	ethContextInitializer func(d time.Duration) (ctx context.Context, cancelFunc context.CancelFunc),
 
 ) *TransactionStatusTask {
@@ -47,7 +51,8 @@ func NewTransactionStatusTask(
 		timeout:               timeout,
 		BaseTask:              transactions.BaseTask{TxService: txService},
 		ethContextInitializer: ethContextInitializer,
-		client:                client,
+		transactionByHash: transactionByHash,
+		transactionReceipt: transactionReceipt,
 	}
 }
 
@@ -62,8 +67,9 @@ func (nftc *TransactionStatusTask) Copy() (gocelery.CeleryTask, error) {
 		timeout:               nftc.timeout,
 		txHash:                nftc.txHash,
 		tenantID:              nftc.tenantID,
+		transactionByHash: nftc.transactionByHash,
+		transactionReceipt: nftc.transactionReceipt,
 		ethContextInitializer: nftc.ethContextInitializer,
-		client:                nftc.client,
 		BaseTask:              transactions.BaseTask{TxService: nftc.TxService},
 	}, nil
 }
@@ -108,8 +114,8 @@ func (nftc *TransactionStatusTask) ParseKwargs(kwargs map[string]interface{}) (e
 	return nil
 }
 
-func getTransactionStatus(ctx context.Context, client Client, txHash string) (bool, error) {
-	receipt, err := client.TransactionReceipt(ctx, common.HexToHash(txHash))
+func (nftc *TransactionStatusTask) getTransactionStatus(ctx context.Context, txHash string) (bool, error) {
+	receipt, err := nftc.transactionReceipt(ctx, common.HexToHash(txHash))
 
 	if err != nil {
 		return false, err
@@ -127,6 +133,7 @@ func getTransactionStatus(ctx context.Context, client Client, txHash string) (bo
 func (nftc *TransactionStatusTask) RunTask() (resp interface{}, err error) {
 	ctx, cancelF := nftc.ethContextInitializer(nftc.timeout)
 	defer cancelF()
+
 	defer func() {
 		if err != nil {
 			log.Infof("Transaction failed: %v\n", nftc.txHash)
@@ -139,20 +146,19 @@ func (nftc *TransactionStatusTask) RunTask() (resp interface{}, err error) {
 
 	isPending := true
 	for isPending {
-		_, isPending, err = nftc.client.TransactionByHash(ctx, common.HexToHash(nftc.txHash))
+		_, isPending, err = nftc.transactionByHash(ctx, common.HexToHash(nftc.txHash))
 		if err != nil {
 			return nil, err
 		}
 
 		if isPending == false {
-			successful, err := getTransactionStatus(ctx, nftc.client, nftc.txHash)
+			successful, err := nftc.getTransactionStatus(ctx, nftc.txHash)
 			if err != nil {
 				return nil, err
 			}
 
 			if successful {
 				return nil, nil
-
 			}
 		}
 		time.Sleep(100 * time.Millisecond)
