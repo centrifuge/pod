@@ -54,6 +54,7 @@ var mockedHandler = func(ctx context.Context, peer libp2pPeer.ID, protoc protoco
 func TestHandleNewMessage(t *testing.T) {
 	cfg, err := cfg.GetConfig()
 	assert.NoError(t, err)
+	cfg = updateKeys(cfg)
 	ctx, canc := context.WithCancel(context.Background())
 	c := testingconfig.CreateTenantContextWithContext(t, ctx, cfg)
 	r := rand.Reader
