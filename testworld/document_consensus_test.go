@@ -3,10 +3,8 @@
 package testworld
 
 import (
-	"math/rand"
 	"net/http"
 	"testing"
-	"time"
 )
 
 func TestHost_AddExternalCollaborator(t *testing.T) {
@@ -93,8 +91,6 @@ func addExternalCollaborator_withinHost(t *testing.T, documentType string) {
 }
 
 func addExternalCollaborator_multiHostMultiAccount(t *testing.T, documentType string) {
-	// TODO remove this when we have retry for tasks
-	time.Sleep(time.Duration(rand.Intn(10)) * time.Second)
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	accounts := doctorFord.getHost("Bob").accounts
