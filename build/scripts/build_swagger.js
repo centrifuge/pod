@@ -9,7 +9,7 @@ const swaggerConfig = require(path.resolve(__dirname, '../swagger_config'));
 let authHeader = {
   "name": "authorization",
   "in": "header",
-  "description": "Authorization Header",
+  "description": "Hex encoded centrifuge ID of the account for the intended API action",
   "required": true,
   "type": "string"
 };
