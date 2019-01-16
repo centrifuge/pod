@@ -33,7 +33,7 @@ type grpcHandler struct {
 
 // GetTransactionStatus returns transaction status of the given transaction id.
 func (h grpcHandler) GetTransactionStatus(ctx context.Context, req *transactionspb.TransactionStatusRequest) (*transactionspb.TransactionStatusResponse, error) {
-	ctxHeader, err := contextutil.NodeContext(ctx, h.configService)
+	ctxHeader, err := contextutil.Context(ctx, h.configService)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, err

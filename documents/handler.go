@@ -29,7 +29,7 @@ func GRPCHandler(config config.Service, registry *ServiceRegistry) documentpb.Do
 // CreateDocumentProof creates precise proofs for the given fields
 func (h grpcHandler) CreateDocumentProof(ctx context.Context, createDocumentProofEnvelope *documentpb.CreateDocumentProofRequest) (*documentpb.DocumentProof, error) {
 	apiLog.Infof("Document proof request %v", createDocumentProofEnvelope)
-	cctx, err := contextutil.NodeContext(ctx, h.config)
+	cctx, err := contextutil.Context(ctx, h.config)
 	if err != nil {
 		return &documentpb.DocumentProof{}, err
 	}
@@ -54,7 +54,7 @@ func (h grpcHandler) CreateDocumentProof(ctx context.Context, createDocumentProo
 // CreateDocumentProofForVersion creates precise proofs for the given fields for the given version of the document
 func (h grpcHandler) CreateDocumentProofForVersion(ctx context.Context, createDocumentProofForVersionEnvelope *documentpb.CreateDocumentProofForVersionRequest) (*documentpb.DocumentProof, error) {
 	apiLog.Infof("Document proof request %v", createDocumentProofForVersionEnvelope)
-	cctx, err := contextutil.NodeContext(ctx, h.config)
+	cctx, err := contextutil.Context(ctx, h.config)
 	if err != nil {
 		return &documentpb.DocumentProof{}, err
 	}
