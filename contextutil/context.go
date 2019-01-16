@@ -48,9 +48,13 @@ func Tenant(ctx context.Context) (config.TenantConfiguration, error) {
 	return tc, nil
 }
 
-// CentContext updates a context with tenant info using the configstore, must only be used for api handlers
-func CentContext(ctx context.Context, cs config.Service) (context.Context, error) {
-	tcIDHex := ctx.Value(config.TenantKey).(string)
+// Context updates a context with tenant info using the configstore, must only be used for api handlers
+func Context(ctx context.Context, cs config.Service) (context.Context, error) {
+	tcIDHex, ok := ctx.Value(config.TenantKey).(string)
+	if !ok {
+		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header %v", config.TenantKey))
+	}
+
 	tcID, err := hexutil.Decode(tcIDHex)
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))

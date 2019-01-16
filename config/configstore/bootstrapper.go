@@ -33,14 +33,12 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 
 	nc := NewNodeConfig(cfg)
 	configdb.Register(nc)
-	_, err := service.GetConfig()
-	// if node config doesn't exist in the db, add it
+	// install the file based config everytime so that file updates are reflected in the db, direct updates to db are not allowed
+	nc, err := service.CreateConfig(NewNodeConfig(cfg))
 	if err != nil {
-		nc, err = service.CreateConfig(NewNodeConfig(cfg))
-		if err != nil {
-			return errors.NewTypedError(config.ErrConfigBootstrap, errors.New("%v", err))
-		}
+		return errors.NewTypedError(config.ErrConfigBootstrap, errors.New("%v", err))
 	}
+
 	tc, err := NewTenantConfig(nc.GetEthereumDefaultAccountName(), cfg)
 	if err != nil {
 		return errors.NewTypedError(config.ErrConfigBootstrap, errors.New("%v", err))

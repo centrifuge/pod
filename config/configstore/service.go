@@ -50,7 +50,11 @@ func (s service) GetAllTenants() ([]config.TenantConfiguration, error) {
 }
 
 func (s service) CreateConfig(data config.Configuration) (config.Configuration, error) {
-	return data, s.repo.CreateConfig(data)
+	_, err := s.repo.GetConfig()
+	if err != nil {
+		return data, s.repo.CreateConfig(data)
+	}
+	return data, s.repo.UpdateConfig(data)
 }
 
 func (s service) CreateTenant(data config.TenantConfiguration) (config.TenantConfiguration, error) {
@@ -172,20 +176,12 @@ func createKeyPath(keyStorepath string, CID identity.CentID, keyName string) (st
 	return fmt.Sprintf("%s/%s", tdir, keyName), nil
 }
 
-func (s service) UpdateConfig(data config.Configuration) (config.Configuration, error) {
-	return data, s.repo.UpdateConfig(data)
-}
-
 func (s service) UpdateTenant(data config.TenantConfiguration) (config.TenantConfiguration, error) {
 	id, err := data.GetIdentityID()
 	if err != nil {
 		return nil, err
 	}
 	return data, s.repo.UpdateTenant(id, data)
-}
-
-func (s service) DeleteConfig() error {
-	return s.repo.DeleteConfig()
 }
 
 func (s service) DeleteTenant(identifier []byte) error {
