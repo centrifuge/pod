@@ -38,15 +38,6 @@ service ConfigService {
       description: "Get All Tenant Configs"
     };
   }
-  rpc CreateConfig(ConfigData) returns (ConfigData) {
-    option (google.api.http) = {
-      post: "/config/node"
-      body: "*"
-    };
-    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Creates node config data"
-    };
-  }
   rpc CreateTenant(TenantData) returns (TenantData) {
     option (google.api.http) = {
       post: "/config/tenants"
@@ -64,15 +55,6 @@ service ConfigService {
       description: "Generates tenant config data taking defaults based on the main tenant"
     };
   }
-  rpc UpdateConfig(ConfigData) returns (ConfigData) {
-    option (google.api.http) = {
-      put: "/config/node"
-      body: "*"
-    };
-    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Updates node config"
-    };
-  }
   rpc UpdateTenant(UpdateTenantRequest) returns (TenantData) {
     option (google.api.http) = {
       put: "/config/tenants/{identifier}"
@@ -80,14 +62,6 @@ service ConfigService {
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
       description: "Updates tenant config"
-    };
-  }
-  rpc DeleteConfig(google.protobuf.Empty) returns (google.protobuf.Empty) {
-    option (google.api.http) = {
-      delete: "/config/node"
-    };
-    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Deletes node config"
     };
   }
   rpc DeleteTenant(GetTenantRequest) returns (google.protobuf.Empty) {

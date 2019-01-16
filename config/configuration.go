@@ -134,9 +134,7 @@ type Service interface {
 	CreateConfig(data Configuration) (Configuration, error)
 	CreateTenant(data TenantConfiguration) (TenantConfiguration, error)
 	GenerateTenant() (TenantConfiguration, error)
-	UpdateConfig(data Configuration) (Configuration, error)
 	UpdateTenant(data TenantConfiguration) (TenantConfiguration, error)
-	DeleteConfig() error
 	DeleteTenant(identifier []byte) error
 }
 

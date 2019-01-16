@@ -42,19 +42,9 @@ func (m MockService) CreateTenant(data config.TenantConfiguration) (config.Tenan
 	return args.Get(0).(*TenantConfig), args.Error(0)
 }
 
-func (m MockService) UpdateConfig(data config.Configuration) (config.Configuration, error) {
-	args := m.Called()
-	return args.Get(0).(*NodeConfig), args.Error(0)
-}
-
 func (m MockService) UpdateTenant(data config.TenantConfiguration) (config.TenantConfiguration, error) {
 	args := m.Called(data)
 	return args.Get(0).(*TenantConfig), args.Error(0)
-}
-
-func (m MockService) DeleteConfig() error {
-	args := m.Called()
-	return args.Error(0)
 }
 
 func (m MockService) DeleteTenant(identifier []byte) error {
