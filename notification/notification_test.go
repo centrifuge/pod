@@ -50,7 +50,8 @@ func (m mockConfig) GetReceiveEventNotificationEndpoint() string {
 
 func TestWebhookSender_Send(t *testing.T) {
 	docID := utils.RandomSlice(32)
-	cid := utils.RandomSlice(32)
+	accountID := utils.RandomSlice(6)
+	senderID := utils.RandomSlice(6)
 	ts, err := ptypes.TimestampProto(time.Now().UTC())
 	assert.Nil(t, err, "Should not error out")
 	var wg sync.WaitGroup
@@ -59,7 +60,9 @@ func TestWebhookSender_Send(t *testing.T) {
 	mux.HandleFunc("/webhook", func(writer http.ResponseWriter, request *http.Request) {
 		var resp struct {
 			EventType    uint32               `json:"event_type,omitempty"`
-			CentrifugeId string               `json:"centrifuge_id,omitempty"`
+			AccountId    string               `json:"account_id,omitempty"`
+			FromId       string               `json:"from_id,omitempty"`
+			ToId         string               `json:"to_id,omitempty"`
 			Recorded     *timestamp.Timestamp `json:"recorded,omitempty"`
 			DocumentType string               `json:"document_type,omitempty"`
 			DocumentId   string               `json:"document_id,omitempty"`
@@ -72,7 +75,8 @@ func TestWebhookSender_Send(t *testing.T) {
 		assert.NoError(t, err)
 		writer.Write([]byte("success"))
 		assert.Equal(t, hexutil.Encode(docID), resp.DocumentId)
-		assert.Equal(t, hexutil.Encode(cid), resp.CentrifugeId)
+		assert.Equal(t, hexutil.Encode(accountID), resp.AccountId)
+		assert.Equal(t, hexutil.Encode(senderID), resp.FromId)
 		wg.Done()
 	})
 
@@ -84,7 +88,9 @@ func TestWebhookSender_Send(t *testing.T) {
 	notif := &notificationpb.NotificationMessage{
 		DocumentId:   hexutil.Encode(docID),
 		DocumentType: documenttypes.InvoiceDataTypeUrl,
-		CentrifugeId: hexutil.Encode(cid),
+		AccountId:    hexutil.Encode(accountID),
+		FromId:       hexutil.Encode(senderID),
+		ToId:         hexutil.Encode(accountID),
 		EventType:    uint32(ReceivedPayload),
 		Recorded:     ts,
 	}
