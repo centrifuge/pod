@@ -5,6 +5,7 @@ package receiver_test
 import (
 	"context"
 	"flag"
+	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	cented25519 "github.com/centrifuge/go-centrifuge/crypto/ed25519"
@@ -57,7 +58,8 @@ func TestMain(m *testing.M) {
 	registry := ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
 	anchorRepo = ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
 	idService = ctx[identity.BootstrappedIDService].(identity.Service)
-	handler = receiver.New(cfgService, registry, receiver.HandshakeValidator(cfg.GetNetworkID(), idService))
+	genService = ctx[genericdoc.BootstrappedGenService].(genericdoc.Service)
+	handler = receiver.New(cfgService, registry, receiver.HandshakeValidator(cfg.GetNetworkID(), idService), genService)
 	testingidentity.CreateIdentityWithKeys(cfg, idService)
 	result := m.Run()
 	testingbootstrap.TestFunctionalEthereumTearDown()

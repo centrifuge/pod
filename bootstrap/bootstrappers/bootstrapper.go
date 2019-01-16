@@ -42,6 +42,7 @@ func (m *MainBootstrapper) PopulateBaseBootstrappers() {
 		&ethid.Bootstrapper{},
 		&configstore.Bootstrapper{},
 		&anchors.Bootstrapper{},
+		documents.Bootstrapper{},
 		&genericdoc.Bootstrapper{},
 		p2p.Bootstrapper{},
 		api.Bootstrapper{},
