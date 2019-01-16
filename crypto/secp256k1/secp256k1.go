@@ -147,22 +147,3 @@ func GetPublicEthAuthKey(fileName string) (key []byte, err error) {
 	}
 	return key, nil
 }
-
-// EcRecover returns the address of the signer who signed the message
-// Copied from: ethereum/internal/ethapi.PrivateSigner
-func EcRecover(data, signature []byte) (common.Address, error) {
-	// PrivateAccountAPI has a EcRecover function that we can reuse to fetch the owner address from the signature
-	if len(signature) != 65 {
-		return common.Address{}, fmt.Errorf("signature must be 65 bytes long")
-	}
-	if signature[64] != 27 && signature[64] != 28 {
-		return common.Address{}, fmt.Errorf("invalid Ethereum signature (V is not 27 or 28)")
-	}
-	signature[64] -= 27 // Transform yellow paper V from 27/28 to 0/1
-
-	rpk, err := crypto.SigToPub(SignHash(data), signature)
-	if err != nil {
-		return common.Address{}, err
-	}
-	return crypto.PubkeyToAddress(*rpk), nil
-}

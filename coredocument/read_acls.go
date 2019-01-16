@@ -107,9 +107,8 @@ type ReadAccessValidator interface {
 	NFTOwnerCanRead(
 		cd *coredocumentpb.CoreDocument,
 		registry common.Address,
-		tokenID,
-		message,
-		signature []byte,
+		tokenID []byte,
+		signature string,
 		peer identity.CentID) error
 }
 
@@ -170,8 +169,7 @@ func (r readAccessValidator) NFTOwnerCanRead(
 	cd *coredocumentpb.CoreDocument,
 	registry common.Address,
 	tokenID []byte,
-	message []byte,
-	signature []byte,
+	signature string,
 	peer identity.CentID) error {
 
 	// check if the peer can read the doc
@@ -198,14 +196,13 @@ func (r readAccessValidator) NFTOwnerCanRead(
 		return errors.New("failed to get NFT owner: %v", err)
 	}
 
-	// recover owner from the signature
-	rowner, err := secp256k1.EcRecover(message, signature)
+	msg, err := constructNFT(registry, tokenID)
 	if err != nil {
-		return errors.New("failed to get owner from signature: %v", err)
+		return err
 	}
 
-	if !bytes.Equal(owner.Bytes(), rowner.Bytes()) {
-		return errors.New("identity(%v) doesn't own NFT", rowner.String())
+	if !secp256k1.VerifySignatureWithAddress(owner.String(), signature, msg) {
+		return errors.New("peer(%s) doesn't own NFT", peer.String())
 	}
 
 	return nil
