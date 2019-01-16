@@ -5,6 +5,7 @@ package p2p
 import (
 	"context"
 	"fmt"
+	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 	"os"
 	"sync"
 	"testing"
@@ -13,8 +14,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils"
 
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
-
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 
 	"github.com/centrifuge/go-centrifuge/config/configstore"
@@ -33,6 +33,7 @@ import (
 var (
 	cfg       config.Service
 	idService identity.Service
+	genericService genericdoc.Service
 )
 
 func TestMain(m *testing.M) {
@@ -64,7 +65,7 @@ func TestCentP2PServer_StartContextCancel(t *testing.T) {
 	cfgMock := mockmockConfigStore(n)
 	assert.NoError(t, err)
 	cp2p := &peer{config: cfgMock, handlerCreator: func() *receiver.Handler {
-		return receiver.New(cfgMock, nil, receiver.HandshakeValidator(n.NetworkID, idService))
+		return receiver.New(cfgMock, nil, receiver.HandshakeValidator(n.NetworkID, idService), genericService)
 	}}
 	ctx, canc := context.WithCancel(context.Background())
 	startErr := make(chan error, 1)
