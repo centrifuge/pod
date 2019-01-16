@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common/hexutil"
+
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/stretchr/testify/assert"
@@ -171,4 +173,12 @@ func CreateTenantContextWithContext(t *testing.T, ctx context.Context, cfg confi
 	contextHeader, err := contextutil.NewCentrifugeContext(ctx, tc)
 	assert.Nil(t, err)
 	return contextHeader
+}
+
+func HandlerContext(service config.Service) context.Context {
+	tcs, _ := service.GetAllTenants()
+	cid, _ := tcs[0].GetIdentityID()
+	cidHex := hexutil.Encode(cid)
+	ctx := context.WithValue(context.Background(), config.TenantKey, cidHex)
+	return ctx
 }

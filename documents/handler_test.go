@@ -3,8 +3,9 @@
 package documents_test
 
 import (
-	"context"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
 
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/documents"
@@ -30,7 +31,7 @@ func TestGrpcHandler_CreateDocumentProof(t *testing.T) {
 	doc := &documents.DocumentProof{}
 	service.On("CreateProofs", id, req.Fields).Return(doc, nil)
 	grpcHandler := documents.GRPCHandler(documents.ConfigService, registry)
-	retDoc, _ := grpcHandler.CreateDocumentProof(context.TODO(), req)
+	retDoc, _ := grpcHandler.CreateDocumentProof(testingconfig.HandlerContext(documents.ConfigService), req)
 	service.AssertExpectations(t)
 	conv, _ := documents.ConvertDocProofToClientFormat(doc)
 	assert.Equal(t, conv, retDoc)
@@ -47,7 +48,7 @@ func TestGrpcHandler_CreateDocumentProofUnableToLocateService(t *testing.T) {
 		Fields:     []string{"field1"},
 	}
 	grpcHandler := documents.GRPCHandler(documents.ConfigService, registry)
-	_, err := grpcHandler.CreateDocumentProof(context.TODO(), req)
+	_, err := grpcHandler.CreateDocumentProof(testingconfig.HandlerContext(documents.ConfigService), req)
 	assert.NotNil(t, err)
 	service.AssertNotCalled(t, "CreateProofs")
 }
@@ -63,7 +64,7 @@ func TestGrpcHandler_CreateDocumentProofInvalidHex(t *testing.T) {
 		Fields:     []string{"field1"},
 	}
 	grpcHandler := documents.GRPCHandler(documents.ConfigService, registry)
-	_, err := grpcHandler.CreateDocumentProof(context.TODO(), req)
+	_, err := grpcHandler.CreateDocumentProof(testingconfig.HandlerContext(documents.ConfigService), req)
 	assert.NotNil(t, err)
 	service.AssertNotCalled(t, "CreateProofs")
 }
@@ -84,7 +85,7 @@ func TestGrpcHandler_CreateDocumentProofForVersion(t *testing.T) {
 	doc := &documents.DocumentProof{DocumentID: utils.RandomSlice(32)}
 	service.On("CreateProofsForVersion", id, version, req.Fields).Return(doc, nil)
 	grpcHandler := documents.GRPCHandler(documents.ConfigService, registry)
-	retDoc, _ := grpcHandler.CreateDocumentProofForVersion(context.TODO(), req)
+	retDoc, _ := grpcHandler.CreateDocumentProofForVersion(testingconfig.HandlerContext(documents.ConfigService), req)
 	service.AssertExpectations(t)
 	conv, _ := documents.ConvertDocProofToClientFormat(doc)
 	assert.Equal(t, conv, retDoc)
@@ -102,7 +103,7 @@ func TestGrpcHandler_CreateDocumentProofForVersionUnableToLocateService(t *testi
 		Fields:     []string{"field1"},
 	}
 	grpcHandler := documents.GRPCHandler(documents.ConfigService, registry)
-	_, err := grpcHandler.CreateDocumentProofForVersion(context.TODO(), req)
+	_, err := grpcHandler.CreateDocumentProofForVersion(testingconfig.HandlerContext(documents.ConfigService), req)
 	assert.NotNil(t, err)
 	service.AssertNotCalled(t, "CreateProofsForVersion")
 }
@@ -119,7 +120,7 @@ func TestGrpcHandler_CreateDocumentProofForVersionInvalidHexForId(t *testing.T) 
 		Fields:     []string{"field1"},
 	}
 	grpcHandler := documents.GRPCHandler(documents.ConfigService, registry)
-	_, err := grpcHandler.CreateDocumentProofForVersion(context.TODO(), req)
+	_, err := grpcHandler.CreateDocumentProofForVersion(testingconfig.HandlerContext(documents.ConfigService), req)
 	assert.NotNil(t, err)
 	service.AssertNotCalled(t, "CreateProofsForVersion")
 }
@@ -136,7 +137,7 @@ func TestGrpcHandler_CreateDocumentProofForVersionInvalidHexForVersion(t *testin
 		Fields:     []string{"field1"},
 	}
 	grpcHandler := documents.GRPCHandler(documents.ConfigService, registry)
-	_, err := grpcHandler.CreateDocumentProofForVersion(context.TODO(), req)
+	_, err := grpcHandler.CreateDocumentProofForVersion(testingconfig.HandlerContext(documents.ConfigService), req)
 	assert.NotNil(t, err)
 	service.AssertNotCalled(t, "CreateProofsForVersion")
 }
