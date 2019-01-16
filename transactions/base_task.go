@@ -41,6 +41,12 @@ func (b *BaseTask) UpdateTransaction(tenantID identity.CentID, name string, err 
 		return err
 	}
 
+	if err != nil {
+		log.Infof("Transaction failed: %v\n", nftc.txHash)
+	} else {
+		log.Infof("Transaction successful:%v\n", nftc.txHash)
+	}
+
 	tx, erri := b.TxService.GetTransaction(tenantID, b.TxID)
 	if erri != nil {
 		return errors.AppendError(err, erri)

@@ -141,12 +141,6 @@ func (nftc *mintingConfirmationTask) RunTask() (resp interface{}, err error) {
 	}
 
 	defer func() {
-		if err != nil {
-			log.Infof("failed to mint NFT: %v\n", err)
-		} else {
-			log.Infof("NFT minted successfully: %v\n", nftc.tokenID)
-		}
-
 		err = nftc.UpdateTransaction(nftc.tenantID, nftc.TaskTypeName(), err)
 	}()
 

@@ -91,12 +91,6 @@ func (d *documentAnchorTask) Copy() (gocelery.CeleryTask, error) {
 func (d *documentAnchorTask) RunTask() (res interface{}, err error) {
 	log.Infof("starting anchor task: %v\n", d.TxID.String())
 	defer func() {
-		if err == nil {
-			log.Infof("anchor task successful: %v\n", d.TxID.String())
-		} else {
-			log.Infof("anchor task failed: %v\n", err)
-		}
-
 		err = d.UpdateTransaction(d.tenantID, d.TaskTypeName(), err)
 	}()
 

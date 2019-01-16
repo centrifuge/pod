@@ -135,12 +135,6 @@ func (nftc *TransactionStatusTask) RunTask() (resp interface{}, err error) {
 	ctx, cancelF := nftc.ethContextInitializer(nftc.timeout)
 	defer cancelF()
 	defer func() {
-		if err != nil && err != gocelery.ErrTaskRetryable {
-			log.Infof("Transaction failed: %v\n", nftc.txHash)
-		} else {
-			log.Infof("Transaction successful:%v\n", nftc.txHash)
-		}
-
 		err = nftc.UpdateTransaction(nftc.tenantID, nftc.TaskTypeName(), err)
 	}()
 

@@ -40,7 +40,6 @@ func TestTransactionStatusTask_successful(t *testing.T) {
 	trans, err := txService.GetTransaction(cid, tx.ID)
 	assert.Nil(t, err, "a transaction should be returned")
 	assert.Equal(t, string(transactions.Success), string(trans.Status), "transaction should be successful")
-
 }
 
 func TestTransactionStatusTask_failed(t *testing.T) {
@@ -48,19 +47,5 @@ func TestTransactionStatusTask_failed(t *testing.T) {
 
 	trans, err := txService.GetTransaction(cid, tx.ID)
 	assert.Nil(t, err, "a  centrifuge transaction should be  returned")
-	assert.Equal(t, string(transactions.Failed), string(trans.Status), "transaction should fail")
-
-}
-
-func TestTransactionStatusTask_timeout_failed(t *testing.T) {
-	txService, cid, tx := enqueueJob(t, "0x3")
-
-	trans, err := txService.GetTransaction(cid, tx.ID)
-	assert.Nil(t, err, "a centrifuge transaction should be returned")
-	assert.Equal(t, string(transactions.Pending), string(trans.Status), "transaction should be pending")
-
-	time.Sleep(time.Second)
-	trans, err = txService.GetTransaction(cid, tx.ID)
-	assert.Nil(t, err, "a centrifuge transaction should be returned")
 	assert.Equal(t, string(transactions.Failed), string(trans.Status), "transaction should fail")
 }
