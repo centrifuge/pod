@@ -21,9 +21,15 @@ const (
 	ethAuthPrivKeyName = "ethauth.key.pem"
 )
 
+// ProtocolSetter sets the protocol on host for the centID
+type ProtocolSetter interface {
+	InitProtocolForCID(CID identity.CentID)
+}
+
 type service struct {
-	repo      repository
-	idService identity.Service
+	repo                 repository
+	idService            identity.Service
+	protocolSetterFinder func() ProtocolSetter
 }
 
 // DefaultService returns an implementation of the config.Service
@@ -44,7 +50,11 @@ func (s service) GetAllTenants() ([]config.TenantConfiguration, error) {
 }
 
 func (s service) CreateConfig(data config.Configuration) (config.Configuration, error) {
-	return data, s.repo.CreateConfig(data)
+	_, err := s.repo.GetConfig()
+	if err != nil {
+		return data, s.repo.CreateConfig(data)
+	}
+	return data, s.repo.UpdateConfig(data)
 }
 
 func (s service) CreateTenant(data config.TenantConfiguration) (config.TenantConfiguration, error) {
@@ -89,6 +99,14 @@ func (s service) GenerateTenant() (config.TenantConfiguration, error) {
 		return nil, err
 	}
 
+	// minor hack to set same p2p keys as node to tenant: Set the new tenant ID to copy of main tenant and create p2p keys
+	mtcc := mtc.(*TenantConfig)
+	mtcc.IdentityID = CID[:]
+	err = s.idService.AddKeyFromConfig(mtcc, identity.KeyPurposeP2P)
+	if err != nil {
+		return nil, err
+	}
+
 	err = s.idService.AddKeyFromConfig(tc, identity.KeyPurposeSigning)
 	if err != nil {
 		return nil, err
@@ -104,6 +122,8 @@ func (s service) GenerateTenant() (config.TenantConfiguration, error) {
 		return nil, err
 	}
 
+	// initiate network handling
+	s.protocolSetterFinder().InitProtocolForCID(CID)
 	return tc, nil
 }
 
@@ -156,20 +176,12 @@ func createKeyPath(keyStorepath string, CID identity.CentID, keyName string) (st
 	return fmt.Sprintf("%s/%s", tdir, keyName), nil
 }
 
-func (s service) UpdateConfig(data config.Configuration) (config.Configuration, error) {
-	return data, s.repo.UpdateConfig(data)
-}
-
 func (s service) UpdateTenant(data config.TenantConfiguration) (config.TenantConfiguration, error) {
 	id, err := data.GetIdentityID()
 	if err != nil {
 		return nil, err
 	}
 	return data, s.repo.UpdateTenant(id, data)
-}
-
-func (s service) DeleteConfig() error {
-	return s.repo.DeleteConfig()
 }
 
 func (s service) DeleteTenant(identifier []byte) error {

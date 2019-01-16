@@ -78,7 +78,7 @@ func TestService_CreateConfig(t *testing.T) {
 
 	//Config already exists
 	_, err = svc.CreateConfig(nodeCfg)
-	assert.NotNil(t, err)
+	assert.Nil(t, err)
 }
 
 func TestService_CreateTenant(t *testing.T) {
@@ -100,29 +100,6 @@ func TestService_CreateTenant(t *testing.T) {
 	//Tenant already exists
 	_, err = svc.CreateTenant(tenantCfg)
 	assert.NotNil(t, err)
-}
-
-func TestService_UpdateConfig(t *testing.T) {
-	idService := &testingcommons.MockIDService{}
-	repo, _, err := getRandomStorage()
-	assert.Nil(t, err)
-	repo.RegisterConfig(&NodeConfig{})
-	svc := DefaultService(repo, idService)
-	nodeCfg := NewNodeConfig(cfg)
-
-	//Config doesn't exists
-	_, err = svc.UpdateConfig(nodeCfg)
-	assert.NotNil(t, err)
-
-	newCfg, err := svc.CreateConfig(nodeCfg)
-	assert.Nil(t, err)
-	assert.Equal(t, nodeCfg.GetStoragePath(), newCfg.GetStoragePath())
-
-	n := nodeCfg.(*NodeConfig)
-	n.NetworkString = "something"
-	newCfg, err = svc.UpdateConfig(n)
-	assert.Nil(t, err)
-	assert.Equal(t, n.GetNetworkString(), newCfg.GetNetworkString())
 }
 
 func TestService_UpdateTenant(t *testing.T) {
@@ -150,28 +127,6 @@ func TestService_UpdateTenant(t *testing.T) {
 	newCfg, err = svc.UpdateTenant(tenantCfg)
 	assert.Nil(t, err)
 	assert.Equal(t, tc.EthereumDefaultAccountName, newCfg.GetEthereumDefaultAccountName())
-}
-
-func TestService_DeleteConfig(t *testing.T) {
-	idService := &testingcommons.MockIDService{}
-	repo, _, err := getRandomStorage()
-	assert.Nil(t, err)
-	repo.RegisterConfig(&NodeConfig{})
-	svc := DefaultService(repo, idService)
-
-	//No config, no error
-	err = svc.DeleteConfig()
-	assert.Nil(t, err)
-
-	nodeCfg := NewNodeConfig(cfg)
-	_, err = svc.CreateConfig(nodeCfg)
-	assert.Nil(t, err)
-
-	err = svc.DeleteConfig()
-	assert.Nil(t, err)
-
-	_, err = svc.GetConfig()
-	assert.NotNil(t, err)
 }
 
 func TestService_DeleteTenant(t *testing.T) {

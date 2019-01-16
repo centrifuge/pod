@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/bootstrap"
+
 	"github.com/stretchr/testify/assert"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testingbootstrap"
@@ -17,11 +19,18 @@ import (
 var identityService identity.Service
 var cfg config.Service
 
+type MockProtocolSetter struct{}
+
+func (MockProtocolSetter) InitProtocolForCID(CID identity.CentID) {
+	// do nothing
+}
+
 func TestMain(m *testing.M) {
 	// Adding delay to startup (concurrency hack)
 	time.Sleep(time.Second + 2)
 	ctx := testingbootstrap.TestFunctionalEthereumBootstrap()
 	cfg = ctx[config.BootstrappedConfigStorage].(config.Service)
+	ctx[bootstrap.BootstrappedP2PServer] = &MockProtocolSetter{}
 	identityService = ctx[identity.BootstrappedIDService].(identity.Service)
 	result := m.Run()
 	testingbootstrap.TestFunctionalEthereumTearDown()
