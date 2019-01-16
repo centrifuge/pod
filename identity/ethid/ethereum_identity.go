@@ -83,7 +83,6 @@ type ethereumIdentity struct {
 	contract         contract
 	contractProvider func(address common.Address, backend bind.ContractBackend) (contract, error)
 	registryContract registry
-	// TODO [multi-tenancy] replace this with config service
 	config           identity.Config
 	gethClientFinder func() ethereum.Client
 	queue            *queue.Server
@@ -352,7 +351,6 @@ func waitAndRouteIdentityRegistrationEvent(timeout time.Duration, asyncRes queue
 
 // ethereumIdentityService implements `Service`
 type ethereumIdentityService struct {
-	// TODO [multi-tenancy] replace this with config service
 	config           identity.Config
 	factoryContract  factory
 	registryContract registry

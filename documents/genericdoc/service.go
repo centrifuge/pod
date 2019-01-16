@@ -212,7 +212,9 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, model documents.Mo
 	ts, _ := ptypes.TimestampProto(time.Now().UTC())
 	notificationMsg := &notificationpb.NotificationMessage{
 		EventType:    uint32(notification.ReceivedPayload),
-		CentrifugeId: hexutil.Encode(senderID),
+		AccountId:    idConf.ID.String(),
+		FromId:       hexutil.Encode(senderID),
+		ToId:         idConf.ID.String(),
 		Recorded:     ts,
 		DocumentType: doc.EmbeddedData.TypeUrl,
 		DocumentId:   hexutil.Encode(doc.DocumentIdentifier),

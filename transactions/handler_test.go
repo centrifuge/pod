@@ -3,8 +3,9 @@
 package transactions
 
 import (
-	"context"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
 
 	"github.com/centrifuge/go-centrifuge/config"
 
@@ -19,7 +20,7 @@ func TestGRPCHandler_GetTransactionStatus(t *testing.T) {
 	cService := ctx[config.BootstrappedConfigStorage].(config.Service)
 	h := GRPCHandler(ctx[BootstrappedService].(Service), cService)
 	req := new(transactionspb.TransactionStatusRequest)
-	ctxl := context.Background()
+	ctxl := testingconfig.HandlerContext(cService)
 
 	// empty ID
 	res, err := h.GetTransactionStatus(ctxl, req)

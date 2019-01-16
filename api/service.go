@@ -10,6 +10,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/healthcheck"
 	"github.com/centrifuge/go-centrifuge/nft"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/config"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/documents"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/health"
@@ -95,6 +96,13 @@ func registerServices(ctx context.Context, cfg Config, grpcServer *grpc.Server, 
 	// config api
 	configpb.RegisterConfigServiceServer(grpcServer, configstore.GRPCHandler(configService))
 	err = configpb.RegisterConfigServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
+	if err != nil {
+		return err
+	}
+
+	// account api
+	accountpb.RegisterAccountServiceServer(grpcServer, configstore.GRPCAccountHandler(configService))
+	err = accountpb.RegisterAccountServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
 	if err != nil {
 		return err
 	}

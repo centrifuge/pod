@@ -8,6 +8,7 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/config"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -274,8 +275,8 @@ func (nc *NodeConfig) FromJSON(data []byte) error {
 // CreateProtobuf creates protobuf for config
 func (nc *NodeConfig) CreateProtobuf() *configpb.ConfigData {
 	return &configpb.ConfigData{
-		MainIdentity: &configpb.TenantData{
-			EthAccount: &configpb.EthereumAccount{
+		MainIdentity: &accountpb.AccountData{
+			EthAccount: &accountpb.EthereumAccount{
 				Address:  nc.MainIdentity.EthereumAccount.Address,
 				Key:      nc.MainIdentity.EthereumAccount.Key,
 				Password: nc.MainIdentity.EthereumAccount.Password,
@@ -283,11 +284,11 @@ func (nc *NodeConfig) CreateProtobuf() *configpb.ConfigData {
 			EthDefaultAccountName:            nc.MainIdentity.EthereumDefaultAccountName,
 			IdentityId:                       hexutil.Encode(nc.MainIdentity.IdentityID),
 			ReceiveEventNotificationEndpoint: nc.MainIdentity.ReceiveEventNotificationEndpoint,
-			EthauthKeyPair: &configpb.KeyPair{
+			EthauthKeyPair: &accountpb.KeyPair{
 				Pub: nc.MainIdentity.EthAuthKeyPair.Pub,
 				Pvt: nc.MainIdentity.EthAuthKeyPair.Priv,
 			},
-			SigningKeyPair: &configpb.KeyPair{
+			SigningKeyPair: &accountpb.KeyPair{
 				Pub: nc.MainIdentity.SigningKeyPair.Pub,
 				Pvt: nc.MainIdentity.SigningKeyPair.Priv,
 			},
@@ -451,6 +452,7 @@ type TenantConfig struct {
 	IdentityID                       []byte
 	SigningKeyPair                   KeyPair
 	EthAuthKeyPair                   KeyPair
+	P2PKeyPair                       KeyPair
 }
 
 // GetEthereumAccount gets EthereumAccount
@@ -509,9 +511,9 @@ func (tc *TenantConfig) FromJSON(data []byte) error {
 }
 
 // CreateProtobuf creates protobuf for config
-func (tc *TenantConfig) CreateProtobuf() *configpb.TenantData {
-	return &configpb.TenantData{
-		EthAccount: &configpb.EthereumAccount{
+func (tc *TenantConfig) CreateProtobuf() *accountpb.AccountData {
+	return &accountpb.AccountData{
+		EthAccount: &accountpb.EthereumAccount{
 			Address:  tc.EthereumAccount.Address,
 			Key:      tc.EthereumAccount.Key,
 			Password: tc.EthereumAccount.Password,
@@ -519,18 +521,18 @@ func (tc *TenantConfig) CreateProtobuf() *configpb.TenantData {
 		EthDefaultAccountName:            tc.EthereumDefaultAccountName,
 		ReceiveEventNotificationEndpoint: tc.ReceiveEventNotificationEndpoint,
 		IdentityId:                       hexutil.Encode(tc.IdentityID),
-		SigningKeyPair: &configpb.KeyPair{
+		SigningKeyPair: &accountpb.KeyPair{
 			Pub: tc.SigningKeyPair.Pub,
 			Pvt: tc.SigningKeyPair.Priv,
 		},
-		EthauthKeyPair: &configpb.KeyPair{
+		EthauthKeyPair: &accountpb.KeyPair{
 			Pub: tc.EthAuthKeyPair.Pub,
 			Pvt: tc.EthAuthKeyPair.Priv,
 		},
 	}
 }
 
-func (tc *TenantConfig) loadFromProtobuf(data *configpb.TenantData) {
+func (tc *TenantConfig) loadFromProtobuf(data *accountpb.AccountData) {
 	tc.EthereumAccount = &config.AccountConfig{
 		Address:  data.EthAccount.Address,
 		Key:      data.EthAccount.Key,

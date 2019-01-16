@@ -3,8 +3,10 @@
 package testworld
 
 import (
+	"math/rand"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/gavv/httpexpect"
 )
@@ -22,13 +24,15 @@ func TestProofWithMultipleFields_po_successful(t *testing.T) {
 }
 
 func proofWithMultipleFields_successful(t *testing.T, documentType string) {
+	// TODO remove this when we have retry for tasks
+	time.Sleep(time.Duration(rand.Intn(5)) * time.Second)
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 
 	// Alice shares a document with Bob
-	res := createDocument(alice.httpExpect, documentType, http.StatusOK, defaultDocumentPayload(documentType, []string{bob.id.String()}))
+	res := createDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusOK, defaultDocumentPayload(documentType, []string{bob.id.String()}))
 	txID := getTransactionID(t, res)
-	waitTillSuccess(t, alice.httpExpect, txID)
+	waitTillStatus(t, alice.httpExpect, alice.id.String(), txID, "success")
 
 	docIdentifier := getDocumentIdentifier(t, res)
 	if docIdentifier == "" {
@@ -37,8 +41,8 @@ func proofWithMultipleFields_successful(t *testing.T, documentType string) {
 
 	proofPayload := defaultProofPayload(documentType)
 
-	proofFromAlice := getProof(alice.httpExpect, http.StatusOK, docIdentifier, proofPayload)
-	proofFromBob := getProof(bob.httpExpect, http.StatusOK, docIdentifier, proofPayload)
+	proofFromAlice := getProof(alice.httpExpect, alice.id.String(), http.StatusOK, docIdentifier, proofPayload)
+	proofFromBob := getProof(bob.httpExpect, bob.id.String(), http.StatusOK, docIdentifier, proofPayload)
 
 	checkProof(proofFromAlice, documentType, docIdentifier)
 	checkProof(proofFromBob, documentType, docIdentifier)
