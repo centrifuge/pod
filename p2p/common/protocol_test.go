@@ -114,5 +114,5 @@ func TestPrepareP2PEnvelope(t *testing.T) {
 	assert.NotNil(t, p2pEnv)
 	dataEnv, err := ResolveDataEnvelope(p2pEnv)
 	assert.NoError(t, err)
-	assert.NotNil(t, dataEnv.Header.Signature)
+	assert.NotNil(t, dataEnv)
 }

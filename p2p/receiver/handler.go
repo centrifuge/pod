@@ -2,8 +2,10 @@ package receiver
 
 import (
 	"context"
+
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/p2p/common"
 
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -83,7 +85,12 @@ func (srv *Handler) HandleInterceptor(ctx context.Context, peer peer.ID, protoc 
 		return convertToErrorEnvelop(err)
 	}
 
-	err = srv.handshakeValidator.Validate(envelope)
+	fromID, err := identity.ToCentID(envelope.Header.SenderId)
+	if err != nil {
+		return convertToErrorEnvelop(err)
+	}
+
+	err = srv.handshakeValidator.Validate(envelope.Header, &fromID, &peer)
 	if err != nil {
 		return convertToErrorEnvelop(err)
 	}
