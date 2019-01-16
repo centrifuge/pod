@@ -4,8 +4,11 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/gocelery"
+	logging "github.com/ipfs/go-log"
 	"github.com/satori/go.uuid"
 )
+
+var log = logging.Logger("transaction")
 
 const (
 	// TxIDParam maps transaction ID in the kwargs.
@@ -42,9 +45,9 @@ func (b *BaseTask) UpdateTransaction(tenantID identity.CentID, name string, err 
 	}
 
 	if err != nil {
-		log.Infof("Transaction failed: %v\n", nftc.txHash)
+		log.Infof("Transaction failed: %v\n", b.TxID.String())
 	} else {
-		log.Infof("Transaction successful:%v\n", nftc.txHash)
+		log.Infof("Transaction successful:%v\n", b.TxID.String())
 	}
 
 	tx, erri := b.TxService.GetTransaction(tenantID, b.TxID)
