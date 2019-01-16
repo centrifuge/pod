@@ -15,7 +15,7 @@
     "application/json"
   ],
   "paths": {
-    "/config/node": {
+    "/config": {
       "get": {
         "description": "Get Node Config",
         "operationId": "GetConfig",
@@ -31,147 +31,57 @@
           "ConfigService"
         ]
       }
-    },
-    "/config/tenants": {
-      "get": {
-        "description": "Get All Tenant Configs",
-        "operationId": "GetAllTenants",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/configGetAllTenantResponse"
-            }
-          }
-        },
-        "tags": [
-          "ConfigService"
-        ]
-      },
-      "post": {
-        "description": "Creates tenant config data",
-        "operationId": "CreateTenant",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/configTenantData"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/configTenantData"
-            }
-          }
-        ],
-        "tags": [
-          "ConfigService"
-        ]
-      }
-    },
-    "/config/tenants/generate": {
-      "post": {
-        "description": "Generates tenant config data taking defaults based on the main tenant",
-        "operationId": "GenerateTenant",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/configTenantData"
-            }
-          }
-        },
-        "tags": [
-          "ConfigService"
-        ]
-      }
-    },
-    "/config/tenants/{identifier}": {
-      "get": {
-        "description": "Get Tenant Config",
-        "operationId": "GetTenant",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/configTenantData"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "identifier",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "ConfigService"
-        ]
-      },
-      "delete": {
-        "description": "Deletes tenant config",
-        "operationId": "DeleteTenant",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/protobufEmpty"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "identifier",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "ConfigService"
-        ]
-      },
-      "put": {
-        "description": "Updates tenant config",
-        "operationId": "UpdateTenant",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/configTenantData"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "identifier",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/configUpdateTenantRequest"
-            }
-          }
-        ],
-        "tags": [
-          "ConfigService"
-        ]
-      }
     }
   },
   "definitions": {
+    "accountAccountData": {
+      "type": "object",
+      "properties": {
+        "eth_account": {
+          "$ref": "#/definitions/accountEthereumAccount"
+        },
+        "eth_default_account_name": {
+          "type": "string"
+        },
+        "receive_event_notification_endpoint": {
+          "type": "string"
+        },
+        "identity_id": {
+          "type": "string"
+        },
+        "signing_key_pair": {
+          "$ref": "#/definitions/accountKeyPair"
+        },
+        "ethauth_key_pair": {
+          "$ref": "#/definitions/accountKeyPair"
+        }
+      }
+    },
+    "accountEthereumAccount": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string"
+        },
+        "key": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string"
+        }
+      }
+    },
+    "accountKeyPair": {
+      "type": "object",
+      "properties": {
+        "pub": {
+          "type": "string"
+        },
+        "pvt": {
+          "type": "string"
+        }
+      }
+    },
     "configConfigData": {
       "type": "object",
       "properties": {
@@ -245,7 +155,7 @@
           "format": "int64"
         },
         "main_identity": {
-          "$ref": "#/definitions/configTenantData"
+          "$ref": "#/definitions/accountAccountData"
         },
         "smart_contract_addresses": {
           "type": "object",
@@ -258,81 +168,6 @@
           "format": "boolean"
         }
       }
-    },
-    "configEthereumAccount": {
-      "type": "object",
-      "properties": {
-        "address": {
-          "type": "string"
-        },
-        "key": {
-          "type": "string"
-        },
-        "password": {
-          "type": "string"
-        }
-      }
-    },
-    "configGetAllTenantResponse": {
-      "type": "object",
-      "properties": {
-        "data": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/configTenantData"
-          }
-        }
-      }
-    },
-    "configKeyPair": {
-      "type": "object",
-      "properties": {
-        "pub": {
-          "type": "string"
-        },
-        "pvt": {
-          "type": "string"
-        }
-      }
-    },
-    "configTenantData": {
-      "type": "object",
-      "properties": {
-        "eth_account": {
-          "$ref": "#/definitions/configEthereumAccount"
-        },
-        "eth_default_account_name": {
-          "type": "string"
-        },
-        "receive_event_notification_endpoint": {
-          "type": "string"
-        },
-        "identity_id": {
-          "type": "string"
-        },
-        "signing_key_pair": {
-          "$ref": "#/definitions/configKeyPair"
-        },
-        "ethauth_key_pair": {
-          "$ref": "#/definitions/configKeyPair"
-        }
-      }
-    },
-    "configUpdateTenantRequest": {
-      "type": "object",
-      "properties": {
-        "identifier": {
-          "type": "string"
-        },
-        "data": {
-          "$ref": "#/definitions/configTenantData"
-        }
-      }
-    },
-    "protobufEmpty": {
-      "type": "object",
-      "description": "service Foo {\n      rpc Bar(google.protobuf.Empty) returns (google.protobuf.Empty);\n    }\n\nThe JSON representation for `Empty` is empty JSON object `{}`.",
-      "title": "A generic empty message that you can re-use to avoid defining duplicated\nempty messages in your APIs. A typical example is to use it as the request\nor the response type of an API method. For instance:"
     }
   }
 }

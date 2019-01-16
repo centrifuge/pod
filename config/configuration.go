@@ -18,6 +18,7 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/config"
 	"github.com/centrifuge/go-centrifuge/resources"
 	"github.com/centrifuge/go-centrifuge/storage"
@@ -123,7 +124,7 @@ type TenantConfiguration interface {
 	GetEthereumContextWaitTimeout() time.Duration
 
 	// CreateProtobuf creates protobuf
-	CreateProtobuf() *configpb.TenantData
+	CreateProtobuf() *accountpb.AccountData
 }
 
 // Service exposes functions over the config objects
