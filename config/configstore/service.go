@@ -50,7 +50,11 @@ func (s service) GetAllTenants() ([]config.TenantConfiguration, error) {
 }
 
 func (s service) CreateConfig(data config.Configuration) (config.Configuration, error) {
-	return data, s.repo.CreateConfig(data)
+	_, err := s.repo.GetConfig()
+	if err != nil {
+		return data, s.repo.CreateConfig(data)
+	}
+	return data, s.repo.UpdateConfig(data)
 }
 
 func (s service) CreateTenant(data config.TenantConfiguration) (config.TenantConfiguration, error) {

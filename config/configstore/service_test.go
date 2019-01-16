@@ -78,7 +78,7 @@ func TestService_CreateConfig(t *testing.T) {
 
 	//Config already exists
 	_, err = svc.CreateConfig(nodeCfg)
-	assert.NotNil(t, err)
+	assert.Nil(t, err)
 }
 
 func TestService_CreateTenant(t *testing.T) {
