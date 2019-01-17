@@ -107,8 +107,8 @@ func (r *repo) GetAllAccounts() ([]config.Account, error) {
 	if err != nil {
 		return nil, err
 	}
-	for _, tc := range models {
-		accountConfigs = append(accountConfigs, tc.(*Account))
+	for _, acc := range models {
+		accountConfigs = append(accountConfigs, acc.(*Account))
 	}
 	return accountConfigs, nil
 }

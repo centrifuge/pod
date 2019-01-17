@@ -62,9 +62,9 @@ func TestGrpcHandler_GetAccount(t *testing.T) {
 	h := GRPCAccountHandler(svc)
 	accountCfg, err := NewAccount("main", cfg)
 	assert.Nil(t, err)
-	tcpb, err := accountCfg.CreateProtobuf()
+	accpb, err := accountCfg.CreateProtobuf()
 	assert.NoError(t, err)
-	_, err = h.CreateAccount(context.Background(), tcpb)
+	_, err = h.CreateAccount(context.Background(), accpb)
 	assert.Nil(t, err)
 	tid, err := accountCfg.GetIdentityID()
 	assert.Nil(t, err)
@@ -100,15 +100,15 @@ func TestGrpcHandler_GetAllAccounts(t *testing.T) {
 	h := GRPCAccountHandler(svc)
 	accountCfg1, err := NewAccount("main", cfg)
 	accountCfg2, err := NewAccount("main", cfg)
-	tc := accountCfg2.(*Account)
-	tc.IdentityID = []byte("0x123456789")
+	acc := accountCfg2.(*Account)
+	acc.IdentityID = []byte("0x123456789")
 	tc1pb, err := accountCfg1.CreateProtobuf()
 	assert.NoError(t, err)
 	_, err = h.CreateAccount(context.Background(), tc1pb)
 	assert.Nil(t, err)
-	tcpb, err := tc.CreateProtobuf()
+	accpb, err := acc.CreateProtobuf()
 	assert.NoError(t, err)
-	_, err = h.CreateAccount(context.Background(), tcpb)
+	_, err = h.CreateAccount(context.Background(), accpb)
 	assert.Nil(t, err)
 
 	resp, err := h.GetAllAccounts(context.Background(), nil)
@@ -125,15 +125,15 @@ func TestGrpcHandler_CreateAccount(t *testing.T) {
 	h := GRPCAccountHandler(svc)
 	tc, err := NewAccount("main", cfg)
 	assert.Nil(t, err)
-	tcpb, err := tc.CreateProtobuf()
+	accpb, err := tc.CreateProtobuf()
 	assert.NoError(t, err)
-	_, err = h.CreateAccount(context.Background(), tcpb)
+	_, err = h.CreateAccount(context.Background(), accpb)
 	assert.Nil(t, err)
 
 	// Already exists
-	tcpb, err = tc.CreateProtobuf()
+	accpb, err = tc.CreateProtobuf()
 	assert.NoError(t, err)
-	_, err = h.CreateAccount(context.Background(), tcpb)
+	_, err = h.CreateAccount(context.Background(), accpb)
 	assert.NotNil(t, err)
 }
 
@@ -160,25 +160,25 @@ func TestGrpcHandler_UpdateAccount(t *testing.T) {
 	tid, err := tcfg.GetIdentityID()
 	assert.Nil(t, err)
 
-	tc := tcfg.(*Account)
+	acc := tcfg.(*Account)
 
 	// Config doesn't exist
-	tcpb, err := tcfg.CreateProtobuf()
+	accpb, err := tcfg.CreateProtobuf()
 	assert.NoError(t, err)
-	_, err = h.UpdateAccount(context.Background(), &accountpb.UpdateAccountRequest{Identifier: hexutil.Encode(tid), Data: tcpb})
+	_, err = h.UpdateAccount(context.Background(), &accountpb.UpdateAccountRequest{Identifier: hexutil.Encode(tid), Data: accpb})
 	assert.NotNil(t, err)
 
-	tcpb, err = tcfg.CreateProtobuf()
+	accpb, err = tcfg.CreateProtobuf()
 	assert.NoError(t, err)
-	_, err = h.CreateAccount(context.Background(), tcpb)
+	_, err = h.CreateAccount(context.Background(), accpb)
 	assert.Nil(t, err)
-	tc.EthereumDefaultAccountName = "other"
-	tccpb, err := tc.CreateProtobuf()
+	acc.EthereumDefaultAccountName = "other"
+	tccpb, err := acc.CreateProtobuf()
 	assert.NoError(t, err)
 	_, err = h.UpdateAccount(context.Background(), &accountpb.UpdateAccountRequest{Identifier: hexutil.Encode(tid), Data: tccpb})
 	assert.Nil(t, err)
 
 	readCfg, err := h.GetAccount(context.Background(), &accountpb.GetAccountRequest{Identifier: hexutil.Encode(tid)})
 	assert.Nil(t, err)
-	assert.Equal(t, tc.EthereumDefaultAccountName, readCfg.EthDefaultAccountName)
+	assert.Equal(t, acc.EthereumDefaultAccountName, readCfg.EthDefaultAccountName)
 }

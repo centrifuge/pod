@@ -122,11 +122,11 @@ func TestService_Updateaccount(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, tid, i)
 
-	tc := accountCfg.(*Account)
-	tc.EthereumDefaultAccountName = "other"
+	acc := accountCfg.(*Account)
+	acc.EthereumDefaultAccountName = "other"
 	newCfg, err = svc.UpdateAccount(accountCfg)
 	assert.Nil(t, err)
-	assert.Equal(t, tc.EthereumDefaultAccountName, newCfg.GetEthereumDefaultAccountName())
+	assert.Equal(t, acc.EthereumDefaultAccountName, newCfg.GetEthereumDefaultAccountName())
 }
 
 func TestService_Deleteaccount(t *testing.T) {

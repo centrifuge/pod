@@ -297,39 +297,39 @@ func TestAccountProtobuf_validationFailures(t *testing.T) {
 	// Nil EthAccount
 	tco := tc.(*Account)
 	tco.EthereumAccount = nil
-	tcpb, err := tco.CreateProtobuf()
+	accpb, err := tco.CreateProtobuf()
 	assert.Error(t, err)
-	assert.Nil(t, tcpb)
+	assert.Nil(t, accpb)
 
 	// Nil payload
 	tc, err = NewAccount("name", c)
 	assert.Nil(t, err)
-	tcpb, err = tc.CreateProtobuf()
+	accpb, err = tc.CreateProtobuf()
 	assert.NoError(t, err)
 	tco = tc.(*Account)
 	err = tco.loadFromProtobuf(nil)
 	assert.Error(t, err)
 
 	// Nil EthAccount
-	ethacc := proto.Clone(tcpb.EthAccount)
-	tcpb.EthAccount = nil
-	err = tco.loadFromProtobuf(tcpb)
+	ethacc := proto.Clone(accpb.EthAccount)
+	accpb.EthAccount = nil
+	err = tco.loadFromProtobuf(accpb)
 	assert.Error(t, err)
-	tcpb.EthAccount = ethacc.(*accountpb.EthereumAccount)
+	accpb.EthAccount = ethacc.(*accountpb.EthereumAccount)
 
 	// Nil SigningKeyPair
-	signKey := proto.Clone(tcpb.SigningKeyPair)
-	tcpb.SigningKeyPair = nil
-	err = tco.loadFromProtobuf(tcpb)
+	signKey := proto.Clone(accpb.SigningKeyPair)
+	accpb.SigningKeyPair = nil
+	err = tco.loadFromProtobuf(accpb)
 	assert.Error(t, err)
-	tcpb.SigningKeyPair = signKey.(*accountpb.KeyPair)
+	accpb.SigningKeyPair = signKey.(*accountpb.KeyPair)
 
 	// Nil EthauthKeyPair
-	ethAuthKey := proto.Clone(tcpb.EthauthKeyPair)
-	tcpb.EthauthKeyPair = nil
-	err = tco.loadFromProtobuf(tcpb)
+	ethAuthKey := proto.Clone(accpb.EthauthKeyPair)
+	accpb.EthauthKeyPair = nil
+	err = tco.loadFromProtobuf(accpb)
 	assert.Error(t, err)
-	tcpb.EthauthKeyPair = ethAuthKey.(*accountpb.KeyPair)
+	accpb.EthauthKeyPair = ethAuthKey.(*accountpb.KeyPair)
 }
 
 func TestAccountConfigProtobuf(t *testing.T) {
@@ -345,21 +345,21 @@ func TestAccountConfigProtobuf(t *testing.T) {
 	assert.Nil(t, err)
 	c.AssertExpectations(t)
 
-	tcpb, err := tc.CreateProtobuf()
+	accpb, err := tc.CreateProtobuf()
 	assert.NoError(t, err)
-	assert.Equal(t, tc.GetReceiveEventNotificationEndpoint(), tcpb.ReceiveEventNotificationEndpoint)
+	assert.Equal(t, tc.GetReceiveEventNotificationEndpoint(), accpb.ReceiveEventNotificationEndpoint)
 	i, err := tc.GetIdentityID()
 	assert.Nil(t, err)
-	assert.Equal(t, hexutil.Encode(i), tcpb.IdentityId)
+	assert.Equal(t, hexutil.Encode(i), accpb.IdentityId)
 	_, priv := tc.GetSigningKeyPair()
-	assert.Equal(t, priv, tcpb.SigningKeyPair.Pvt)
+	assert.Equal(t, priv, accpb.SigningKeyPair.Pvt)
 
 	tcCopy := new(Account)
-	err = tcCopy.loadFromProtobuf(tcpb)
+	err = tcCopy.loadFromProtobuf(accpb)
 	assert.NoError(t, err)
-	assert.Equal(t, tcpb.ReceiveEventNotificationEndpoint, tcCopy.ReceiveEventNotificationEndpoint)
-	assert.Equal(t, tcpb.IdentityId, hexutil.Encode(tcCopy.IdentityID))
-	assert.Equal(t, tcpb.SigningKeyPair.Pvt, tcCopy.SigningKeyPair.Priv)
+	assert.Equal(t, accpb.ReceiveEventNotificationEndpoint, tcCopy.ReceiveEventNotificationEndpoint)
+	assert.Equal(t, accpb.IdentityId, hexutil.Encode(tcCopy.IdentityID))
+	assert.Equal(t, accpb.SigningKeyPair.Pvt, tcCopy.SigningKeyPair.Priv)
 }
 
 func createMockConfig() *mockConfig {

@@ -88,13 +88,13 @@ func (s service) GenerateAccount() (config.Account, error) {
 	<-confirmations
 
 	// copy the main account again to create the new account
-	tc, err := NewAccount(nc.GetEthereumDefaultAccountName(), nc)
+	acc, err := NewAccount(nc.GetEthereumDefaultAccountName(), nc)
 	if err != nil {
 		return nil, err
 	}
 
 	CID := id.CentID()
-	tc, err = generateAccountKeys(nc.GetAccountsKeystore(), tc.(*Account), CID)
+	acc, err = generateAccountKeys(nc.GetAccountsKeystore(), acc.(*Account), CID)
 	if err != nil {
 		return nil, err
 	}
@@ -107,28 +107,28 @@ func (s service) GenerateAccount() (config.Account, error) {
 		return nil, err
 	}
 
-	err = s.idService.AddKeyFromConfig(tc, identity.KeyPurposeSigning)
+	err = s.idService.AddKeyFromConfig(acc, identity.KeyPurposeSigning)
 	if err != nil {
 		return nil, err
 	}
 
-	err = s.idService.AddKeyFromConfig(tc, identity.KeyPurposeEthMsgAuth)
+	err = s.idService.AddKeyFromConfig(acc, identity.KeyPurposeEthMsgAuth)
 	if err != nil {
 		return nil, err
 	}
 
-	err = s.repo.CreateAccount(CID[:], tc)
+	err = s.repo.CreateAccount(CID[:], acc)
 	if err != nil {
 		return nil, err
 	}
 
 	// initiate network handling
 	s.protocolSetterFinder().InitProtocolForCID(CID)
-	return tc, nil
+	return acc, nil
 }
 
-func generateAccountKeys(keystore string, tc *Account, CID identity.CentID) (*Account, error) {
-	tc.IdentityID = CID[:]
+func generateAccountKeys(keystore string, acc *Account, CID identity.CentID) (*Account, error) {
+	acc.IdentityID = CID[:]
 	Pub, err := createKeyPath(keystore, CID, signingPubKeyName)
 	if err != nil {
 		return nil, err
@@ -137,7 +137,7 @@ func generateAccountKeys(keystore string, tc *Account, CID identity.CentID) (*Ac
 	if err != nil {
 		return nil, err
 	}
-	tc.SigningKeyPair = KeyPair{
+	acc.SigningKeyPair = KeyPair{
 		Pub:  Pub,
 		Priv: Priv,
 	}
@@ -149,19 +149,19 @@ func generateAccountKeys(keystore string, tc *Account, CID identity.CentID) (*Ac
 	if err != nil {
 		return nil, err
 	}
-	tc.EthAuthKeyPair = KeyPair{
+	acc.EthAuthKeyPair = KeyPair{
 		Pub:  ePub,
 		Priv: ePriv,
 	}
-	err = crypto.GenerateSigningKeyPair(tc.SigningKeyPair.Pub, tc.SigningKeyPair.Priv, "ed25519")
+	err = crypto.GenerateSigningKeyPair(acc.SigningKeyPair.Pub, acc.SigningKeyPair.Priv, "ed25519")
 	if err != nil {
 		return nil, err
 	}
-	err = crypto.GenerateSigningKeyPair(tc.EthAuthKeyPair.Pub, tc.EthAuthKeyPair.Priv, "secp256k1")
+	err = crypto.GenerateSigningKeyPair(acc.EthAuthKeyPair.Pub, acc.EthAuthKeyPair.Priv, "secp256k1")
 	if err != nil {
 		return nil, err
 	}
-	return tc, nil
+	return acc, nil
 }
 
 func createKeyPath(keyStorepath string, CID identity.CentID, keyName string) (string, error) {

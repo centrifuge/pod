@@ -459,86 +459,86 @@ type Account struct {
 }
 
 // GetEthereumAccount gets EthereumAccount
-func (tc *Account) GetEthereumAccount() *config.AccountConfig {
-	return tc.EthereumAccount
+func (acc *Account) GetEthereumAccount() *config.AccountConfig {
+	return acc.EthereumAccount
 }
 
 // GetEthereumDefaultAccountName gets EthereumDefaultAccountName
-func (tc *Account) GetEthereumDefaultAccountName() string {
-	return tc.EthereumDefaultAccountName
+func (acc *Account) GetEthereumDefaultAccountName() string {
+	return acc.EthereumDefaultAccountName
 }
 
 // GetReceiveEventNotificationEndpoint gets ReceiveEventNotificationEndpoint
-func (tc *Account) GetReceiveEventNotificationEndpoint() string {
-	return tc.ReceiveEventNotificationEndpoint
+func (acc *Account) GetReceiveEventNotificationEndpoint() string {
+	return acc.ReceiveEventNotificationEndpoint
 }
 
 // GetIdentityID gets IdentityID
-func (tc *Account) GetIdentityID() ([]byte, error) {
-	return tc.IdentityID, nil
+func (acc *Account) GetIdentityID() ([]byte, error) {
+	return acc.IdentityID, nil
 }
 
 // GetSigningKeyPair gets SigningKeyPair
-func (tc *Account) GetSigningKeyPair() (pub, priv string) {
-	return tc.SigningKeyPair.Pub, tc.SigningKeyPair.Priv
+func (acc *Account) GetSigningKeyPair() (pub, priv string) {
+	return acc.SigningKeyPair.Pub, acc.SigningKeyPair.Priv
 }
 
 // GetEthAuthKeyPair gets EthAuthKeyPair
-func (tc *Account) GetEthAuthKeyPair() (pub, priv string) {
-	return tc.EthAuthKeyPair.Pub, tc.EthAuthKeyPair.Priv
+func (acc *Account) GetEthAuthKeyPair() (pub, priv string) {
+	return acc.EthAuthKeyPair.Pub, acc.EthAuthKeyPair.Priv
 }
 
 // GetEthereumContextWaitTimeout gets EthereumContextWaitTimeout
-func (tc *Account) GetEthereumContextWaitTimeout() time.Duration {
-	return tc.EthereumContextWaitTimeout
+func (acc *Account) GetEthereumContextWaitTimeout() time.Duration {
+	return acc.EthereumContextWaitTimeout
 }
 
 // ID Get the ID of the document represented by this model
-func (tc *Account) ID() []byte {
-	return tc.IdentityID
+func (acc *Account) ID() []byte {
+	return acc.IdentityID
 }
 
 // Type Returns the underlying type of the Model
-func (tc *Account) Type() reflect.Type {
-	return reflect.TypeOf(tc)
+func (acc *Account) Type() reflect.Type {
+	return reflect.TypeOf(acc)
 }
 
 // JSON return the json representation of the model
-func (tc *Account) JSON() ([]byte, error) {
-	return json.Marshal(tc)
+func (acc *Account) JSON() ([]byte, error) {
+	return json.Marshal(acc)
 }
 
 // FromJSON initialize the model with a json
-func (tc *Account) FromJSON(data []byte) error {
-	return json.Unmarshal(data, tc)
+func (acc *Account) FromJSON(data []byte) error {
+	return json.Unmarshal(data, acc)
 }
 
 // CreateProtobuf creates protobuf for config
-func (tc *Account) CreateProtobuf() (*accountpb.AccountData, error) {
-	if tc.EthereumAccount == nil {
+func (acc *Account) CreateProtobuf() (*accountpb.AccountData, error) {
+	if acc.EthereumAccount == nil {
 		return nil, errors.New("nil EthereumAccount field")
 	}
 	return &accountpb.AccountData{
 		EthAccount: &accountpb.EthereumAccount{
-			Address:  tc.EthereumAccount.Address,
-			Key:      tc.EthereumAccount.Key,
-			Password: tc.EthereumAccount.Password,
+			Address:  acc.EthereumAccount.Address,
+			Key:      acc.EthereumAccount.Key,
+			Password: acc.EthereumAccount.Password,
 		},
-		EthDefaultAccountName:            tc.EthereumDefaultAccountName,
-		ReceiveEventNotificationEndpoint: tc.ReceiveEventNotificationEndpoint,
-		IdentityId:                       hexutil.Encode(tc.IdentityID),
+		EthDefaultAccountName:            acc.EthereumDefaultAccountName,
+		ReceiveEventNotificationEndpoint: acc.ReceiveEventNotificationEndpoint,
+		IdentityId:                       hexutil.Encode(acc.IdentityID),
 		SigningKeyPair: &accountpb.KeyPair{
-			Pub: tc.SigningKeyPair.Pub,
-			Pvt: tc.SigningKeyPair.Priv,
+			Pub: acc.SigningKeyPair.Pub,
+			Pvt: acc.SigningKeyPair.Priv,
 		},
 		EthauthKeyPair: &accountpb.KeyPair{
-			Pub: tc.EthAuthKeyPair.Pub,
-			Pvt: tc.EthAuthKeyPair.Priv,
+			Pub: acc.EthAuthKeyPair.Pub,
+			Pvt: acc.EthAuthKeyPair.Priv,
 		},
 	}, nil
 }
 
-func (tc *Account) loadFromProtobuf(data *accountpb.AccountData) error {
+func (acc *Account) loadFromProtobuf(data *accountpb.AccountData) error {
 	if data == nil {
 		return errors.NewTypedError(ErrNilParameter, errors.New("nil data"))
 	}
@@ -551,19 +551,19 @@ func (tc *Account) loadFromProtobuf(data *accountpb.AccountData) error {
 	if data.EthauthKeyPair == nil {
 		return errors.NewTypedError(ErrNilParameter, errors.New("nil EthauthKeyPair field"))
 	}
-	tc.EthereumAccount = &config.AccountConfig{
+	acc.EthereumAccount = &config.AccountConfig{
 		Address:  data.EthAccount.Address,
 		Key:      data.EthAccount.Key,
 		Password: data.EthAccount.Password,
 	}
-	tc.EthereumDefaultAccountName = data.EthDefaultAccountName
-	tc.IdentityID, _ = hexutil.Decode(data.IdentityId)
-	tc.ReceiveEventNotificationEndpoint = data.ReceiveEventNotificationEndpoint
-	tc.SigningKeyPair = KeyPair{
+	acc.EthereumDefaultAccountName = data.EthDefaultAccountName
+	acc.IdentityID, _ = hexutil.Decode(data.IdentityId)
+	acc.ReceiveEventNotificationEndpoint = data.ReceiveEventNotificationEndpoint
+	acc.SigningKeyPair = KeyPair{
 		Pub:  data.SigningKeyPair.Pub,
 		Priv: data.SigningKeyPair.Pvt,
 	}
-	tc.EthAuthKeyPair = KeyPair{
+	acc.EthAuthKeyPair = KeyPair{
 		Pub:  data.EthauthKeyPair.Pub,
 		Priv: data.EthauthKeyPair.Pvt,
 	}
