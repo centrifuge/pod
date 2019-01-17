@@ -37,11 +37,11 @@ func TestMain(m *testing.M) {
 	os.Exit(result)
 }
 
-func TestService_GenerateTenantHappy(t *testing.T) {
-	tct, err := cfg.GenerateTenant()
+func TestService_GenerateAccountHappy(t *testing.T) {
+	tct, err := cfg.GenerateAccount()
 	assert.NoError(t, err)
 	i, _ := tct.GetIdentityID()
-	tc, err := cfg.GetTenant(i)
+	tc, err := cfg.GetAccount(i)
 	assert.NoError(t, err)
 	assert.NotNil(t, tc)
 	i, _ = tc.GetIdentityID()

@@ -32,8 +32,8 @@ func GRPCAccountHandler(svc config.Service) accountpb.AccountServiceServer {
 	return &grpcHandler{service: svc}
 }
 
-// deriveAllTenantResponse derives all valid accounts, will not return accounts that fail at load time
-func (h grpcHandler) deriveAllTenantResponse(cfgs []config.TenantConfiguration) (*accountpb.GetAllAccountResponse, error) {
+// deriveAllAccountResponse derives all valid accounts, will not return accounts that fail at load time
+func (h grpcHandler) deriveAllAccountResponse(cfgs []config.Account) (*accountpb.GetAllAccountResponse, error) {
 	response := new(accountpb.GetAllAccountResponse)
 	for _, t := range cfgs {
 		tpb, err := t.CreateProtobuf()
@@ -63,29 +63,29 @@ func (h grpcHandler) GetAccount(ctx context.Context, req *accountpb.GetAccountRe
 	if err != nil {
 		return nil, err
 	}
-	tenantConfig, err := h.service.GetTenant(id)
+	accountConfig, err := h.service.GetAccount(id)
 	if err != nil {
 		return nil, err
 	}
-	return tenantConfig.CreateProtobuf()
+	return accountConfig.CreateProtobuf()
 }
 
 func (h grpcHandler) GetAllAccounts(ctx context.Context, req *empty.Empty) (*accountpb.GetAllAccountResponse, error) {
-	cfgs, err := h.service.GetAllTenants()
+	cfgs, err := h.service.GetAllAccounts()
 	if err != nil {
 		return nil, err
 	}
-	return h.deriveAllTenantResponse(cfgs)
+	return h.deriveAllAccountResponse(cfgs)
 }
 
 func (h grpcHandler) CreateAccount(ctx context.Context, data *accountpb.AccountData) (*accountpb.AccountData, error) {
 	apiLog.Infof("Creating account: %v", data)
-	tenantConfig := new(TenantConfig)
-	err := tenantConfig.loadFromProtobuf(data)
+	accountConfig := new(Account)
+	err := accountConfig.loadFromProtobuf(data)
 	if err != nil {
 		return nil, err
 	}
-	tc, err := h.service.CreateTenant(tenantConfig)
+	tc, err := h.service.CreateAccount(accountConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +94,7 @@ func (h grpcHandler) CreateAccount(ctx context.Context, data *accountpb.AccountD
 
 func (h grpcHandler) GenerateAccount(ctx context.Context, req *empty.Empty) (*accountpb.AccountData, error) {
 	apiLog.Infof("Generating account")
-	tc, err := h.service.GenerateTenant()
+	tc, err := h.service.GenerateAccount()
 	if err != nil {
 		return nil, err
 	}
@@ -103,12 +103,12 @@ func (h grpcHandler) GenerateAccount(ctx context.Context, req *empty.Empty) (*ac
 
 func (h grpcHandler) UpdateAccount(ctx context.Context, req *accountpb.UpdateAccountRequest) (*accountpb.AccountData, error) {
 	apiLog.Infof("Updating account: %v", req)
-	tenantConfig := new(TenantConfig)
-	err := tenantConfig.loadFromProtobuf(req.Data)
+	accountConfig := new(Account)
+	err := accountConfig.loadFromProtobuf(req.Data)
 	if err != nil {
 		return nil, err
 	}
-	tc, err := h.service.UpdateTenant(tenantConfig)
+	tc, err := h.service.UpdateAccount(accountConfig)
 	if err != nil {
 		return nil, err
 	}

@@ -31,8 +31,8 @@ import (
 
 var log = logging.Logger("config")
 
-// TenantKey is used as key for the tenant identity in the context.ContextWithValue.
-var TenantKey struct{}
+// AccountHeaderKey is used as key for the account identity in the context.ContextWithValue.
+var AccountHeaderKey struct{}
 
 // ContractName is a type to indicate a contract name parameter
 type ContractName string
@@ -73,7 +73,7 @@ type Configuration interface {
 
 	GetStoragePath() string
 	GetConfigStoragePath() string
-	GetTenantsKeystore() string
+	GetAccountsKeystore() string
 	GetP2PPort() int
 	GetP2PExternalIP() string
 	GetP2PConnectionTimeout() time.Duration
@@ -111,8 +111,8 @@ type Configuration interface {
 	CreateProtobuf() *configpb.ConfigData
 }
 
-// TenantConfiguration exposes tenant specific config options
-type TenantConfiguration interface {
+// Account exposes account options
+type Account interface {
 	storage.Model
 
 	GetEthereumAccount() *AccountConfig
@@ -130,13 +130,13 @@ type TenantConfiguration interface {
 // Service exposes functions over the config objects
 type Service interface {
 	GetConfig() (Configuration, error)
-	GetTenant(identifier []byte) (TenantConfiguration, error)
-	GetAllTenants() ([]TenantConfiguration, error)
+	GetAccount(identifier []byte) (Account, error)
+	GetAllAccounts() ([]Account, error)
 	CreateConfig(data Configuration) (Configuration, error)
-	CreateTenant(data TenantConfiguration) (TenantConfiguration, error)
-	GenerateTenant() (TenantConfiguration, error)
-	UpdateTenant(data TenantConfiguration) (TenantConfiguration, error)
-	DeleteTenant(identifier []byte) error
+	CreateAccount(data Account) (Account, error)
+	GenerateAccount() (Account, error)
+	UpdateAccount(data Account) (Account, error)
+	DeleteAccount(identifier []byte) error
 }
 
 // configuration holds the configuration details for the node.
@@ -231,9 +231,9 @@ func (c *configuration) GetConfigStoragePath() string {
 	return c.GetString("configStorage.path")
 }
 
-// GetTenantsKeystore returns the tenants keystore location.
-func (c *configuration) GetTenantsKeystore() string {
-	return c.GetString("tenants.keystore")
+// GetAccountsKeystore returns the accounts keystore location.
+func (c *configuration) GetAccountsKeystore() string {
+	return c.GetString("accounts.keystore")
 }
 
 // GetP2PPort returns P2P Port.
@@ -489,7 +489,7 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	v.SetConfigType("yaml")
 	v.Set("storage.path", targetDataDir+"/db/centrifuge_data.leveldb")
 	v.Set("configStorage.path", targetDataDir+"/db/centrifuge_config_data.leveldb")
-	v.Set("tenants.keystore", targetDataDir+"/tenants")
+	v.Set("accounts.keystore", targetDataDir+"/accounts")
 	v.Set("identityId", "")
 	v.Set("centrifugeNetwork", network)
 	v.Set("nodeHostname", "0.0.0.0")

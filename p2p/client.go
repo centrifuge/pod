@@ -42,7 +42,7 @@ func (s *peer) SendAnchoredDocument(ctx context.Context, id identity.Identity, i
 
 	peerCtx, _ := context.WithTimeout(ctx, nc.GetP2PConnectionTimeout())
 	cid := id.CentID()
-	tc, err := s.config.GetTenant(cid[:])
+	tc, err := s.config.GetAccount(cid[:])
 	if err == nil {
 		// this is a local tenant
 		h := s.handlerCreator()
@@ -142,7 +142,7 @@ func (s *peer) getSignatureForDocument(ctx context.Context, identityService iden
 	var resp *p2ppb.SignatureResponse
 	var header *p2ppb.Header
 
-	tc, err := s.config.GetTenant(receiverCentID[:])
+	tc, err := s.config.GetAccount(receiverCentID[:])
 	if err == nil {
 		// this is a local tenant
 		h := s.handlerCreator()

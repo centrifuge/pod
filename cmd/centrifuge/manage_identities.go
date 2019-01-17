@@ -37,7 +37,7 @@ var createIdentityCmd = &cobra.Command{
 			}
 		}
 		cfg := ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-		tc, err := configstore.TempTenantConfig(cfg.GetEthereumDefaultAccountName(), cfg)
+		tc, err := configstore.TempAccount(cfg.GetEthereumDefaultAccountName(), cfg)
 		if err != nil {
 			panic(err)
 		}

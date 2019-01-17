@@ -74,7 +74,7 @@ func (srv *Handler) HandleInterceptor(ctx context.Context, peer peer.ID, protoc 
 		return convertToErrorEnvelop(err)
 	}
 
-	tc, err := srv.config.GetTenant(cid[:])
+	tc, err := srv.config.GetAccount(cid[:])
 	if err != nil {
 		return convertToErrorEnvelop(err)
 	}

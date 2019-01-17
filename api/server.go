@@ -193,7 +193,7 @@ func grpcInterceptor() grpc.ServerOption {
 // at this point we are going with one interceptor. Once we have more than one interceptor,
 // we can write a wrapper interceptor that will call the chain of interceptor
 //
-// Note: each handler can access tenantID from the context: ctx.Value(api.TenantKey)
+// Note: each handler can access tenantID from the context: ctx.Value(api.AccountHeaderKey)
 func auth(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 	// if this request is for ping
 	if utils.ContainsString(noAuthPaths[:], info.FullMethod) {
@@ -211,7 +211,7 @@ func auth(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, hand
 		return nil, err
 	}
 
-	ctx = context.WithValue(ctx, config.TenantKey, auth[0])
+	ctx = context.WithValue(ctx, config.AccountHeaderKey, auth[0])
 	return handler(ctx, req)
 }
 

@@ -89,7 +89,7 @@ func CreateConfig(
 	cfg := ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	generateKeys(cfg)
 
-	tc, err := configstore.TempTenantConfig(cfg.GetEthereumDefaultAccountName(), cfg)
+	tc, err := configstore.TempAccount(cfg.GetEthereumDefaultAccountName(), cfg)
 	if err != nil {
 		return err
 	}
