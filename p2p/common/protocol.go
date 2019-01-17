@@ -51,26 +51,25 @@ func (mt MessageType) String() string {
 }
 
 // MessageTypeFromString Resolves MessageType out of string
-func MessageTypeFromString(mt string) MessageType {
-	var found MessageType
-	if MessageTypeError.Equals(mt) {
-		found = MessageTypeError
-	} else if MessageTypeInvalid.Equals(mt) {
-		found = MessageTypeInvalid
-	} else if MessageTypeRequestSignature.Equals(mt) {
-		found = MessageTypeRequestSignature
-	} else if MessageTypeRequestSignatureRep.Equals(mt) {
-		found = MessageTypeRequestSignatureRep
-	} else if MessageTypeSendAnchoredDoc.Equals(mt) {
-		found = MessageTypeSendAnchoredDoc
-	} else if MessageTypeSendAnchoredDocRep.Equals(mt) {
-		found = MessageTypeSendAnchoredDocRep
-	} else if MessageTypeGetDoc.Equals(mt) {
-		found = MessageTypeGetDoc
-	} else if MessageTypeGetDocRep.Equals(mt) {
-		found = MessageTypeGetDocRep
+func MessageTypeFromString(ht string) MessageType {
+
+	var messageType MessageType
+
+	messageTypes := map[string]MessageType{
+		"MessageTypeError": "MessageTypeError",
+		"MessageTypeInvalid": "MessageTypeInvalid",
+		"MessageTypeRequestSignature": "MessageTypeRequestSignature",
+		"MessageTypeRequestSignatureRep": "MessageTypeRequestSignatureRep",
+		"MessageTypeSendAnchoredDoc": "MessageTypeSendAnchoredDoc",
+		"MessageTypeSendAnchoredDocRep": "MessageTypeSendAnchoredDocRep",
+		"MessageTypeGetDoc": "MessageTypeGetDoc",
+		"MessageTypeGetDocRep": "MessageTypeGetDocRep",
 	}
-	return found
+
+	if mt, exists := messageTypes[ht]; exists {
+		messageType = mt
+	}
+	return messageType
 }
 
 // ProtocolForCID creates the protocol string for the given CID
