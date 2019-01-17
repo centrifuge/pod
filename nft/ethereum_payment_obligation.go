@@ -4,8 +4,6 @@ import (
 	"context"
 	"math/big"
 
-	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
-
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -41,7 +39,7 @@ type ethereumPaymentObligation struct {
 	identityService identity.Service
 	ethClient       ethereum.Client
 	queue           queue.TaskQueuer
-	genService      genericdoc.Service
+	docSrv          documents.Service
 	bindContract    func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error)
 	txService       transactions.Service
 	blockHeightFunc func() (height uint64, err error)
@@ -49,21 +47,19 @@ type ethereumPaymentObligation struct {
 
 // newEthereumPaymentObligation creates ethereumPaymentObligation given the parameters
 func newEthereumPaymentObligation(
-	registry *documents.ServiceRegistry,
 	identityService identity.Service,
 	ethClient ethereum.Client,
 	queue queue.TaskQueuer,
-	genService genericdoc.Service,
+	docSrv documents.Service,
 	bindContract func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error),
 	txService transactions.Service,
 	blockHeightFunc func() (uint64, error)) *ethereumPaymentObligation {
 	return &ethereumPaymentObligation{
-		registry:        registry,
 		identityService: identityService,
 		ethClient:       ethClient,
 		bindContract:    bindContract,
 		queue:           queue,
-		genService:      genService,
+		docSrv:          docSrv,
 		txService:       txService,
 		blockHeightFunc: blockHeightFunc,
 	}
@@ -71,7 +67,7 @@ func newEthereumPaymentObligation(
 
 func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, documentID []byte, depositAddress string, proofFields []string) (*MintRequest, error) {
 
-	model, err := s.genService.GetCurrentVersion(ctx, documentID)
+	model, err := s.docSrv.GetCurrentVersion(ctx, documentID)
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +77,7 @@ func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, docu
 		return nil, err
 	}
 
-	proofs, err := s.genService.CreateProofs(ctx, documentID, proofFields)
+	proofs, err := s.docSrv.CreateProofs(ctx, documentID, proofFields)
 	if err != nil {
 		return nil, err
 	}

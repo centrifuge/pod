@@ -24,16 +24,6 @@ import (
 	ma "github.com/multiformats/go-multiaddr"
 )
 
-// Client defines methods that can be implemented by any type handling p2p communications.
-type Client interface {
-
-	// GetSignaturesForDocument gets the signatures for document
-	GetSignaturesForDocument(ctx context.Context, identityService identity.Service, doc *coredocumentpb.CoreDocument) error
-
-	// after all signatures are collected the sender sends the document including the signatures
-	SendAnchoredDocument(ctx context.Context, id identity.Identity, in *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error)
-}
-
 func (s *peer) SendAnchoredDocument(ctx context.Context, id identity.Identity, in *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error) {
 	nc, err := s.config.GetConfig()
 	if err != nil {

@@ -1,21 +1,19 @@
 // +build unit
 
-package coredocument
+package documents
 
 import (
 	"context"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/testingutils/config"
-
-	"github.com/centrifuge/go-centrifuge/contextutil"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
-	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/contextutil"
+	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
@@ -31,7 +29,7 @@ func TestCoreDocumentProcessor_SendNilDocument(t *testing.T) {
 
 type mockModel struct {
 	mock.Mock
-	documents.Model
+	Model
 }
 
 func (m mockModel) PackCoreDocument() (*coredocumentpb.CoreDocument, error) {
@@ -63,13 +61,13 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 	// failed to get id
 	pub, _ := cfg.GetSigningKeyPair()
 	cfg.Set("keys.signing.publicKey", "wrong path")
-	cd = New()
+	cd = coredocument.New()
 	cd.DataRoot = utils.RandomSlice(32)
 	cd.EmbeddedData = &any.Any{
 		TypeUrl: "some type",
 		Value:   []byte("some data"),
 	}
-	assert.Nil(t, FillSalts(cd))
+	assert.Nil(t, coredocument.FillSalts(cd))
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
 	cfg.Set("keys.signing.publicKey", pub)
@@ -101,7 +99,7 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 
 type p2pClient struct {
 	mock.Mock
-	client
+	Client
 }
 
 func (p p2pClient) GetSignaturesForDocument(ctx context.Context, identityService identity.Service, doc *coredocumentpb.CoreDocument) error {
@@ -131,13 +129,13 @@ func TestDefaultProcessor_RequestSignatures(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to validate model for signature request")
 
 	// failed signature collection
-	cd = New()
+	cd = coredocument.New()
 	cd.DataRoot = utils.RandomSlice(32)
 	cd.EmbeddedData = &any.Any{
 		TypeUrl: "some type",
 		Value:   []byte("some data"),
 	}
-	assert.Nil(t, FillSalts(cd))
+	assert.Nil(t, coredocument.FillSalts(cd))
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
 	model.On("UnpackCoreDocument", cd).Return(nil).Once()
@@ -202,14 +200,14 @@ func TestDefaultProcessor_PrepareForAnchoring(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to validate signatures")
 
 	// failed unpack
-	cd = New()
+	cd = coredocument.New()
 	cd.DataRoot = utils.RandomSlice(32)
 	cd.EmbeddedData = &any.Any{
 		TypeUrl: "some type",
 		Value:   []byte("some data"),
 	}
-	assert.Nil(t, FillSalts(cd))
-	err = CalculateSigningRoot(cd)
+	assert.Nil(t, coredocument.FillSalts(cd))
+	err = coredocument.CalculateSigningRoot(cd)
 	assert.Nil(t, err)
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Times(4)
@@ -278,21 +276,21 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	assert.Contains(t, err.Error(), "pre anchor validation failed")
 
 	// get ID failed
-	cd = New()
+	cd = coredocument.New()
 	cd.DataRoot = utils.RandomSlice(32)
 	cd.EmbeddedData = &any.Any{
 		TypeUrl: "some type",
 		Value:   []byte("some data"),
 	}
-	assert.Nil(t, FillSalts(cd))
-	assert.Nil(t, CalculateSigningRoot(cd))
+	assert.Nil(t, coredocument.FillSalts(cd))
+	assert.Nil(t, coredocument.CalculateSigningRoot(cd))
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Times(5)
 	c, err := identity.GetIdentityConfig(cfg)
 	assert.Nil(t, err)
 	s := identity.Sign(c, identity.KeyPurposeSigning, cd.SigningRoot)
 	cd.Signatures = []*coredocumentpb.Signature{s}
-	assert.Nil(t, CalculateDocumentRoot(cd))
+	assert.Nil(t, coredocument.CalculateDocumentRoot(cd))
 	assert.Nil(t, err)
 	srv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil).Once()
 	oldID := cfg.GetString("identityId")
@@ -371,22 +369,22 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	assert.Contains(t, err.Error(), "post anchor validations failed")
 
 	// failed send
-	cd = New()
+	cd = coredocument.New()
 	cd.DataRoot = utils.RandomSlice(32)
 	cd.EmbeddedData = &any.Any{
 		TypeUrl: "some type",
 		Value:   []byte("some data"),
 	}
 	cd.Collaborators = [][]byte{[]byte("some id")}
-	assert.Nil(t, FillSalts(cd))
-	assert.Nil(t, CalculateSigningRoot(cd))
+	assert.Nil(t, coredocument.FillSalts(cd))
+	assert.Nil(t, coredocument.CalculateSigningRoot(cd))
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Times(6)
 	c, err := identity.GetIdentityConfig(cfg)
 	assert.Nil(t, err)
 	s := identity.Sign(c, identity.KeyPurposeSigning, cd.SigningRoot)
 	cd.Signatures = []*coredocumentpb.Signature{s}
-	assert.Nil(t, CalculateDocumentRoot(cd))
+	assert.Nil(t, coredocument.CalculateDocumentRoot(cd))
 	docRoot, err := anchors.ToDocumentRoot(cd.DocumentRoot)
 	assert.Nil(t, err)
 	repo := mockRepo{}

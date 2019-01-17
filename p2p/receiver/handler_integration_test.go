@@ -8,7 +8,6 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	cented25519 "github.com/centrifuge/go-centrifuge/crypto/ed25519"
-	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 	"github.com/centrifuge/go-centrifuge/p2p/common"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
 	"github.com/golang/protobuf/proto"
@@ -55,11 +54,10 @@ func TestMain(m *testing.M) {
 	ctx := testingbootstrap.TestFunctionalEthereumBootstrap()
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfgService = ctx[config.BootstrappedConfigStorage].(config.Service)
-	registry := ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
+	docSrv := ctx[documents.BootstrappedDocumentService].(documents.Service)
 	anchorRepo = ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
 	idService = ctx[identity.BootstrappedIDService].(identity.Service)
-	genService := ctx[genericdoc.BootstrappedGenService].(genericdoc.Service)
-	handler = receiver.New(cfgService, registry, receiver.HandshakeValidator(cfg.GetNetworkID(), idService), genService)
+	handler = receiver.New(cfgService, receiver.HandshakeValidator(cfg.GetNetworkID(), idService), docSrv)
 	testingidentity.CreateIdentityWithKeys(cfg, idService)
 	result := m.Run()
 	testingbootstrap.TestFunctionalEthereumTearDown()
