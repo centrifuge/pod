@@ -6,6 +6,9 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
+	"github.com/golang/protobuf/proto"
+
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/config"
 
 	"github.com/centrifuge/go-centrifuge/config"
@@ -258,7 +261,8 @@ func TestNewTenantConfig(t *testing.T) {
 	c.On("GetSigningKeyPair").Return("pub", "priv").Once()
 	c.On("GetEthAuthKeyPair").Return("pub", "priv").Once()
 	c.On("GetEthereumContextWaitTimeout").Return(time.Second).Once()
-	NewTenantConfig("name", c)
+	_, err := NewTenantConfig("name", c)
+	assert.NoError(t, err)
 	c.AssertExpectations(t)
 }
 
@@ -275,10 +279,62 @@ func TestNodeConfigProtobuf(t *testing.T) {
 	assert.Equal(t, hexutil.Encode(i), ncpb.MainIdentity.IdentityId)
 
 	ncCopy := new(NodeConfig)
-	ncCopy.loadFromProtobuf(ncpb)
+	err = ncCopy.loadFromProtobuf(ncpb)
+	assert.NoError(t, err)
 	assert.Equal(t, ncpb.StoragePath, ncCopy.StoragePath)
 	assert.Equal(t, int(ncpb.ServerPort), ncCopy.ServerPort)
 	assert.Equal(t, ncpb.MainIdentity.IdentityId, hexutil.Encode(ncCopy.MainIdentity.IdentityID))
+}
+
+func TestTenantConfigProtobuf_validationFailures(t *testing.T) {
+	c := &mockConfig{}
+	c.On("GetEthereumAccount", "name").Return(&config.AccountConfig{}, nil)
+	c.On("GetEthereumDefaultAccountName").Return("dummyAcc")
+	c.On("GetReceiveEventNotificationEndpoint").Return("dummyNotifier")
+	c.On("GetIdentityID").Return(utils.RandomSlice(6), nil)
+	c.On("GetSigningKeyPair").Return("pub", "priv")
+	c.On("GetEthAuthKeyPair").Return("pub", "priv")
+	c.On("GetEthereumContextWaitTimeout").Return(time.Second)
+	tc, err := NewTenantConfig("name", c)
+	assert.Nil(t, err)
+	c.AssertExpectations(t)
+
+	// Nil EthAccount
+	tco := tc.(*TenantConfig)
+	tco.EthereumAccount = nil
+	tcpb, err := tco.CreateProtobuf()
+	assert.Error(t, err)
+	assert.Nil(t, tcpb)
+
+	// Nil payload
+	tc, err = NewTenantConfig("name", c)
+	assert.Nil(t, err)
+	tcpb, err = tc.CreateProtobuf()
+	assert.NoError(t, err)
+	tco = tc.(*TenantConfig)
+	err = tco.loadFromProtobuf(nil)
+	assert.Error(t, err)
+
+	// Nil EthAccount
+	ethacc := proto.Clone(tcpb.EthAccount)
+	tcpb.EthAccount = nil
+	err = tco.loadFromProtobuf(tcpb)
+	assert.Error(t, err)
+	tcpb.EthAccount = ethacc.(*accountpb.EthereumAccount)
+
+	// Nil SigningKeyPair
+	signKey := proto.Clone(tcpb.SigningKeyPair)
+	tcpb.SigningKeyPair = nil
+	err = tco.loadFromProtobuf(tcpb)
+	assert.Error(t, err)
+	tcpb.SigningKeyPair = signKey.(*accountpb.KeyPair)
+
+	// Nil EthauthKeyPair
+	ethAuthKey := proto.Clone(tcpb.EthauthKeyPair)
+	tcpb.EthauthKeyPair = nil
+	err = tco.loadFromProtobuf(tcpb)
+	assert.Error(t, err)
+	tcpb.EthauthKeyPair = ethAuthKey.(*accountpb.KeyPair)
 }
 
 func TestTenantConfigProtobuf(t *testing.T) {
@@ -294,7 +350,8 @@ func TestTenantConfigProtobuf(t *testing.T) {
 	assert.Nil(t, err)
 	c.AssertExpectations(t)
 
-	tcpb := tc.CreateProtobuf()
+	tcpb, err := tc.CreateProtobuf()
+	assert.NoError(t, err)
 	assert.Equal(t, tc.GetReceiveEventNotificationEndpoint(), tcpb.ReceiveEventNotificationEndpoint)
 	i, err := tc.GetIdentityID()
 	assert.Nil(t, err)
@@ -303,7 +360,8 @@ func TestTenantConfigProtobuf(t *testing.T) {
 	assert.Equal(t, priv, tcpb.SigningKeyPair.Pvt)
 
 	tcCopy := new(TenantConfig)
-	tcCopy.loadFromProtobuf(tcpb)
+	err = tcCopy.loadFromProtobuf(tcpb)
+	assert.NoError(t, err)
 	assert.Equal(t, tcpb.ReceiveEventNotificationEndpoint, tcCopy.ReceiveEventNotificationEndpoint)
 	assert.Equal(t, tcpb.IdentityId, hexutil.Encode(tcCopy.IdentityID))
 	assert.Equal(t, tcpb.SigningKeyPair.Pvt, tcCopy.SigningKeyPair.Priv)

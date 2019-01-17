@@ -22,6 +22,9 @@ const (
 	// TransactionAccountParam contains the name  of the account
 	TransactionAccountParam  string = "Account ID"
 	transactionStatusSuccess uint64 = 1
+
+	// ErrTransactionFailed error when transaction failed
+	ErrTransactionFailed = errors.Error("Transaction failed")
 )
 
 // TransactionStatusTask is struct for the task to check an Ethereum transaction
@@ -114,56 +117,44 @@ func (nftc *TransactionStatusTask) ParseKwargs(kwargs map[string]interface{}) (e
 	return nil
 }
 
-func (nftc *TransactionStatusTask) getTransactionStatus(ctx context.Context, txHash string) (bool, error) {
+func (nftc *TransactionStatusTask) isTransactionSuccessful(ctx context.Context, txHash string) error {
 	receipt, err := nftc.transactionReceipt(ctx, common.HexToHash(txHash))
-
 	if err != nil {
-		return false, err
+		return err
 	}
 
-	if receipt.Status == transactionStatusSuccess {
-		return true, nil
+	if receipt.Status != transactionStatusSuccess {
+		return ErrTransactionFailed
 	}
 
-	return false, errors.New("Transaction failed")
-
+	return nil
 }
 
 // RunTask calls listens to events from geth related to MintingConfirmationTask#TokenID and records result.
 func (nftc *TransactionStatusTask) RunTask() (resp interface{}, err error) {
 	ctx, cancelF := nftc.ethContextInitializer(nftc.timeout)
 	defer cancelF()
-
 	defer func() {
-		if err != nil {
-			log.Infof("Transaction failed: %v\n", nftc.txHash)
-		} else {
-			log.Infof("Transaction successful:%v\n", nftc.txHash)
-		}
-
 		err = nftc.UpdateTransaction(nftc.tenantID, nftc.TaskTypeName(), err)
 	}()
 
-	isPending := true
-	for isPending {
-		_, isPending, err = nftc.transactionByHash(ctx, common.HexToHash(nftc.txHash))
-		if err != nil {
-			return nil, err
-		}
-
-		if isPending == false {
-			successful, err := nftc.getTransactionStatus(ctx, nftc.txHash)
-			if err != nil {
-				return nil, err
-			}
-
-			if successful {
-				return nil, nil
-			}
-		}
-		time.Sleep(100 * time.Millisecond)
+	_, isPending, err := nftc.transactionByHash(ctx, common.HexToHash(nftc.txHash))
+	if err != nil {
+		return nil, err
 	}
 
-	return nil, nil
+	if isPending {
+		return nil, gocelery.ErrTaskRetryable
+	}
 
+	err = nftc.isTransactionSuccessful(ctx, nftc.txHash)
+	if err == nil {
+		return nil, nil
+	}
+
+	if err != ErrTransactionFailed {
+		return nil, gocelery.ErrTaskRetryable
+	}
+
+	return nil, err
 }

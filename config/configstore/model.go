@@ -15,6 +15,9 @@ import (
 	"github.com/golang/protobuf/ptypes/duration"
 )
 
+// ErrNilParameter used as nil parameter type
+const ErrNilParameter = errors.Error("nil parameter")
+
 // KeyPair represents a key pair config
 type KeyPair struct {
 	Pub, Priv string
@@ -511,7 +514,10 @@ func (tc *TenantConfig) FromJSON(data []byte) error {
 }
 
 // CreateProtobuf creates protobuf for config
-func (tc *TenantConfig) CreateProtobuf() *accountpb.AccountData {
+func (tc *TenantConfig) CreateProtobuf() (*accountpb.AccountData, error) {
+	if tc.EthereumAccount == nil {
+		return nil, errors.New("nil EthereumAccount field")
+	}
 	return &accountpb.AccountData{
 		EthAccount: &accountpb.EthereumAccount{
 			Address:  tc.EthereumAccount.Address,
@@ -529,10 +535,22 @@ func (tc *TenantConfig) CreateProtobuf() *accountpb.AccountData {
 			Pub: tc.EthAuthKeyPair.Pub,
 			Pvt: tc.EthAuthKeyPair.Priv,
 		},
-	}
+	}, nil
 }
 
-func (tc *TenantConfig) loadFromProtobuf(data *accountpb.AccountData) {
+func (tc *TenantConfig) loadFromProtobuf(data *accountpb.AccountData) error {
+	if data == nil {
+		return errors.NewTypedError(ErrNilParameter, errors.New("nil data"))
+	}
+	if data.EthAccount == nil {
+		return errors.NewTypedError(ErrNilParameter, errors.New("nil EthAccount field"))
+	}
+	if data.SigningKeyPair == nil {
+		return errors.NewTypedError(ErrNilParameter, errors.New("nil SigningKeyPair field"))
+	}
+	if data.EthauthKeyPair == nil {
+		return errors.NewTypedError(ErrNilParameter, errors.New("nil EthauthKeyPair field"))
+	}
 	tc.EthereumAccount = &config.AccountConfig{
 		Address:  data.EthAccount.Address,
 		Key:      data.EthAccount.Key,
@@ -549,6 +567,7 @@ func (tc *TenantConfig) loadFromProtobuf(data *accountpb.AccountData) {
 		Pub:  data.EthauthKeyPair.Pub,
 		Priv: data.EthauthKeyPair.Pvt,
 	}
+	return nil
 }
 
 // NewTenantConfig creates a new TenantConfig instance with configs
