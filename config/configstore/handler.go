@@ -3,6 +3,8 @@ package configstore
 import (
 	"context"
 
+	"github.com/centrifuge/go-centrifuge/errors"
+
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/config"
@@ -10,6 +12,8 @@ import (
 	"github.com/golang/protobuf/ptypes/empty"
 	logging "github.com/ipfs/go-log"
 )
+
+const ErrDerivingAccount = errors.Error("error deriving account")
 
 var apiLog = logging.Logger("account-api")
 
@@ -33,7 +37,11 @@ func (h grpcHandler) deriveAllTenantResponse(cfgs []config.TenantConfiguration) 
 	for _, t := range cfgs {
 		tpb, err := t.CreateProtobuf()
 		if err != nil {
-			apiLog.Errorf("Deriving account: %v", err)
+			bID, err := t.GetIdentityID()
+			if err != nil {
+				apiLog.Errorf("%v", errors.NewTypedError(ErrDerivingAccount, errors.New("error getting ID: %v", err)))
+			}
+			apiLog.Errorf("%v", errors.NewTypedError(ErrDerivingAccount, errors.New("account [%s]: %v", hexutil.Encode(bID), err)))
 			continue
 		}
 		response.Data = append(response.Data, tpb)

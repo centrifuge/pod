@@ -15,6 +15,8 @@ import (
 	"github.com/golang/protobuf/ptypes/duration"
 )
 
+const ErrNilParameter = errors.Error("nil parameter")
+
 // KeyPair represents a key pair config
 type KeyPair struct {
 	Pub, Priv string
@@ -537,16 +539,16 @@ func (tc *TenantConfig) CreateProtobuf() (*accountpb.AccountData, error) {
 
 func (tc *TenantConfig) loadFromProtobuf(data *accountpb.AccountData) error {
 	if data == nil {
-		return errors.New("nil data")
+		return errors.NewTypedError(ErrNilParameter, errors.New("nil data"))
 	}
 	if data.EthAccount == nil {
-		return errors.New("nil EthAccount field")
+		return errors.NewTypedError(ErrNilParameter, errors.New("nil EthAccount field"))
 	}
 	if data.SigningKeyPair == nil {
-		return errors.New("nil SigningKeyPair field")
+		return errors.NewTypedError(ErrNilParameter, errors.New("nil SigningKeyPair field"))
 	}
 	if data.EthauthKeyPair == nil {
-		return errors.New("nil EthauthKeyPair field")
+		return errors.NewTypedError(ErrNilParameter, errors.New("nil EthauthKeyPair field"))
 	}
 	tc.EthereumAccount = &config.AccountConfig{
 		Address:  data.EthAccount.Address,
