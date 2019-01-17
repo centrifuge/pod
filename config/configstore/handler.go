@@ -13,6 +13,7 @@ import (
 	logging "github.com/ipfs/go-log"
 )
 
+// ErrDerivingAccount used as generic account deriver type
 const ErrDerivingAccount = errors.Error("error deriving account")
 
 var apiLog = logging.Logger("account-api")

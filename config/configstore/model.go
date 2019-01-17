@@ -15,6 +15,7 @@ import (
 	"github.com/golang/protobuf/ptypes/duration"
 )
 
+// ErrNilParameter used as nil parameter type
 const ErrNilParameter = errors.Error("nil parameter")
 
 // KeyPair represents a key pair config
