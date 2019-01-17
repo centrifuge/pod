@@ -147,20 +147,6 @@ func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, documentID []by
 	}, nil
 }
 
-func (s *ethereumPaymentObligation) queueTaskTransaction(tenantID identity.CentID, txHash string) (txID uuid.UUID, err error) {
-	tx, err := s.txService.CreateTransaction(tenantID, "Mint NFT")
-	if err != nil {
-		return txID, err
-	}
-	_, err = s.queue.EnqueueJobWithMaxTries(ethereum.TransactionStatusTaskName, map[string]interface{}{
-		transactions.TxIDParam:           tx.ID.String(),
-		ethereum.TransactionAccountParam: tenantID.String(),
-		ethereum.TransactionTxHashParam:  txHash,
-	})
-
-	return tx.ID, err
-}
-
 // sendMintTransaction sends the actual transaction to mint the NFT
 func (s *ethereumPaymentObligation) sendMintTransaction(cid identity.CentID, contract ethereumPaymentObligationContract, opts *bind.TransactOpts, requestData *MintRequest) (*uuid.UUID, *types.Transaction, error) {
 	tx, ethTx, err := s.ethClient.SubmitTransaction(cid, contract.Mint, opts, requestData.To, requestData.TokenID, requestData.TokenURI, requestData.AnchorID,
