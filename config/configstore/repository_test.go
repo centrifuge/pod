@@ -40,7 +40,7 @@ func TestMain(m *testing.M) {
 	// clean db
 	_ = configdb.Delete(getConfigKey())
 	i, _ := nc.GetIdentityID()
-	_ = configdb.Delete(getTenantKey(i))
+	_ = configdb.Delete(getAccountKey(i))
 	result := m.Run()
 	cleanupDBFiles()
 	os.Exit(result)
@@ -55,60 +55,60 @@ func TestUnregisteredModel(t *testing.T) {
 	repo, _, _ := getRandomStorage()
 	assert.NotNil(t, repo)
 	id := utils.RandomSlice(32)
-	newTenant := &TenantConfig{
+	newaccount := &Account{
 		IdentityID:                 id,
 		EthereumDefaultAccountName: "main",
 	}
-	err := repo.CreateTenant(id, newTenant)
+	err := repo.CreateAccount(id, newaccount)
 	assert.Nil(t, err)
 
 	// Error on non registered model
-	_, err = repo.GetTenant(id)
+	_, err = repo.GetAccount(id)
 	assert.NotNil(t, err)
 
-	repo.RegisterTenant(&TenantConfig{})
+	repo.RegisterAccount(&Account{})
 
-	_, err = repo.GetTenant(id)
+	_, err = repo.GetAccount(id)
 	assert.Nil(t, err)
 }
 
-func TestTenantOperations(t *testing.T) {
+func TestaccountOperations(t *testing.T) {
 	repo, _, _ := getRandomStorage()
 	assert.NotNil(t, repo)
 	id := utils.RandomSlice(32)
-	newTenant := &TenantConfig{
+	newaccount := &Account{
 		IdentityID:                 id,
 		EthereumDefaultAccountName: "main",
 	}
-	repo.RegisterTenant(&TenantConfig{})
-	err := repo.CreateTenant(id, newTenant)
+	repo.RegisterAccount(&Account{})
+	err := repo.CreateAccount(id, newaccount)
 	assert.Nil(t, err)
 
-	// Create tenant already exist
-	err = repo.CreateTenant(id, newTenant)
+	// Create account already exist
+	err = repo.CreateAccount(id, newaccount)
 	assert.NotNil(t, err)
 
-	readTenant, err := repo.GetTenant(id)
+	readaccount, err := repo.GetAccount(id)
 	assert.Nil(t, err)
-	assert.Equal(t, reflect.TypeOf(newTenant), readTenant.Type())
-	i, err := readTenant.GetIdentityID()
+	assert.Equal(t, reflect.TypeOf(newaccount), readaccount.Type())
+	i, err := readaccount.GetIdentityID()
 	assert.Nil(t, err)
-	assert.Equal(t, newTenant.IdentityID, i)
+	assert.Equal(t, newaccount.IdentityID, i)
 
-	// Update tenant
-	newTenant.EthereumDefaultAccountName = "secondary"
-	err = repo.UpdateTenant(id, newTenant)
+	// Update account
+	newaccount.EthereumDefaultAccountName = "secondary"
+	err = repo.UpdateAccount(id, newaccount)
 	assert.Nil(t, err)
 
-	// Update tenant does not exist
+	// Update account does not exist
 	newId := utils.RandomSlice(32)
-	err = repo.UpdateTenant(newId, newTenant)
+	err = repo.UpdateAccount(newId, newaccount)
 	assert.NotNil(t, err)
 
-	// Delete tenant
-	err = repo.DeleteTenant(id)
+	// Delete account
+	err = repo.DeleteAccount(id)
 	assert.Nil(t, err)
-	_, err = repo.GetTenant(id)
+	_, err = repo.GetAccount(id)
 	assert.NotNil(t, err)
 }
 
@@ -147,37 +147,37 @@ func TestConfigOperations(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-func TestLevelDBRepo_GetAllTenants(t *testing.T) {
+func TestLevelDBRepo_GetAllaccounts(t *testing.T) {
 	repo, _, _ := getRandomStorage()
 	assert.NotNil(t, repo)
-	repo.RegisterTenant(&TenantConfig{})
+	repo.RegisterAccount(&Account{})
 	ids := [][]byte{utils.RandomSlice(32), utils.RandomSlice(32), utils.RandomSlice(32)}
-	ten1 := &TenantConfig{
+	ten1 := &Account{
 		IdentityID:                 ids[0],
 		EthereumDefaultAccountName: "main",
 	}
-	ten2 := &TenantConfig{
+	ten2 := &Account{
 		IdentityID:                 ids[1],
 		EthereumDefaultAccountName: "main",
 	}
-	ten3 := &TenantConfig{
+	ten3 := &Account{
 		IdentityID:                 ids[2],
 		EthereumDefaultAccountName: "main",
 	}
 
-	err := repo.CreateTenant(ids[0], ten1)
+	err := repo.CreateAccount(ids[0], ten1)
 	assert.Nil(t, err)
-	err = repo.CreateTenant(ids[1], ten2)
+	err = repo.CreateAccount(ids[1], ten2)
 	assert.Nil(t, err)
-	err = repo.CreateTenant(ids[2], ten3)
+	err = repo.CreateAccount(ids[2], ten3)
 	assert.Nil(t, err)
 
-	tenants, err := repo.GetAllTenants()
+	accounts, err := repo.GetAllAccounts()
 	assert.Nil(t, err)
-	assert.Equal(t, 3, len(tenants))
-	t0Id, _ := tenants[0].GetIdentityID()
-	t1Id, _ := tenants[1].GetIdentityID()
-	t2Id, _ := tenants[2].GetIdentityID()
+	assert.Equal(t, 3, len(accounts))
+	t0Id, _ := accounts[0].GetIdentityID()
+	t1Id, _ := accounts[1].GetIdentityID()
+	t2Id, _ := accounts[2].GetIdentityID()
 	assert.Contains(t, ids, t0Id)
 	assert.Contains(t, ids, t1Id)
 	assert.Contains(t, ids, t2Id)

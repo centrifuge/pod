@@ -8,9 +8,9 @@ ethereum:
 
 identityId: "0x010101010101"
 
-# Tenant key storage
-tenants:
-  keystore: /tmp/tenants
+# Accounts key storage
+accounts:
+  keystore: /tmp/accounts
 
 queue:
   numWorkers: 2

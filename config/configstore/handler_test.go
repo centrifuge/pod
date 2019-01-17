@@ -43,7 +43,7 @@ func TestGrpcHandler_GetAccountNotExist(t *testing.T) {
 	idService := &testingcommons.MockIDService{}
 	repo, _, err := getRandomStorage()
 	assert.Nil(t, err)
-	repo.RegisterTenant(&TenantConfig{})
+	repo.RegisterAccount(&Account{})
 	svc := DefaultService(repo, idService)
 	h := GRPCAccountHandler(svc)
 	readCfg, err := h.GetAccount(context.Background(), &accountpb.GetAccountRequest{Identifier: "0x123456789"})
@@ -55,10 +55,10 @@ func TestGrpcHandler_GetTenant(t *testing.T) {
 	idService := &testingcommons.MockIDService{}
 	repo, _, err := getRandomStorage()
 	assert.Nil(t, err)
-	repo.RegisterTenant(&TenantConfig{})
+	repo.RegisterAccount(&Account{})
 	svc := DefaultService(repo, idService)
 	h := GRPCAccountHandler(svc)
-	tenantCfg, err := NewTenantConfig("main", cfg)
+	tenantCfg, err := NewAccount("main", cfg)
 	assert.Nil(t, err)
 	_, err = h.CreateAccount(context.Background(), tenantCfg.CreateProtobuf())
 	assert.Nil(t, err)
@@ -73,12 +73,12 @@ func TestGrpcHandler_GetAllTenants(t *testing.T) {
 	idService := &testingcommons.MockIDService{}
 	repo, _, err := getRandomStorage()
 	assert.Nil(t, err)
-	repo.RegisterTenant(&TenantConfig{})
+	repo.RegisterAccount(&Account{})
 	svc := DefaultService(repo, idService)
 	h := GRPCAccountHandler(svc)
-	tenantCfg1, err := NewTenantConfig("main", cfg)
-	tenantCfg2, err := NewTenantConfig("main", cfg)
-	tc := tenantCfg2.(*TenantConfig)
+	tenantCfg1, err := NewAccount("main", cfg)
+	tenantCfg2, err := NewAccount("main", cfg)
+	tc := tenantCfg2.(*Account)
 	tc.IdentityID = []byte("0x123456789")
 	_, err = h.CreateAccount(context.Background(), tenantCfg1.CreateProtobuf())
 	assert.Nil(t, err)
@@ -94,10 +94,10 @@ func TestGrpcHandler_CreateTenant(t *testing.T) {
 	idService := &testingcommons.MockIDService{}
 	repo, _, err := getRandomStorage()
 	assert.Nil(t, err)
-	repo.RegisterTenant(&TenantConfig{})
+	repo.RegisterAccount(&Account{})
 	svc := DefaultService(repo, idService)
 	h := GRPCAccountHandler(svc)
-	nodeCfg, err := NewTenantConfig("main", cfg)
+	nodeCfg, err := NewAccount("main", cfg)
 	assert.Nil(t, err)
 	_, err = h.CreateAccount(context.Background(), nodeCfg.CreateProtobuf())
 	assert.Nil(t, err)
@@ -109,8 +109,8 @@ func TestGrpcHandler_CreateTenant(t *testing.T) {
 
 func TestGrpcHandler_GenerateTenant(t *testing.T) {
 	s := MockService{}
-	t1, _ := NewTenantConfig(cfg.GetEthereumDefaultAccountName(), cfg)
-	s.On("GenerateTenant").Return(t1, nil)
+	t1, _ := NewAccount(cfg.GetEthereumDefaultAccountName(), cfg)
+	s.On("GenerateAccount").Return(t1, nil)
 	h := GRPCAccountHandler(s)
 	tc, err := h.GenerateAccount(context.Background(), nil)
 	assert.NoError(t, err)
@@ -121,16 +121,16 @@ func TestGrpcHandler_UpdateTenant(t *testing.T) {
 	idService := &testingcommons.MockIDService{}
 	repo, _, err := getRandomStorage()
 	assert.Nil(t, err)
-	repo.RegisterTenant(&TenantConfig{})
+	repo.RegisterAccount(&Account{})
 	svc := DefaultService(repo, idService)
 	h := GRPCAccountHandler(svc)
-	nodeCfg, err := NewTenantConfig("main", cfg)
+	nodeCfg, err := NewAccount("main", cfg)
 	assert.Nil(t, err)
 
 	tid, err := nodeCfg.GetIdentityID()
 	assert.Nil(t, err)
 
-	tc := nodeCfg.(*TenantConfig)
+	tc := nodeCfg.(*Account)
 
 	// Config doesn't exist
 	_, err = h.UpdateAccount(context.Background(), &accountpb.UpdateAccountRequest{Identifier: hexutil.Encode(tid), Data: nodeCfg.CreateProtobuf()})

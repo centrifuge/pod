@@ -27,9 +27,9 @@ func NewKeyPair(pub, priv string) KeyPair {
 
 // NodeConfig exposes configs specific to the node
 type NodeConfig struct {
-	MainIdentity                   TenantConfig
+	MainIdentity                   Account
 	StoragePath                    string
-	TenantsKeystore                string
+	AccountsKeystore               string
 	P2PPort                        int
 	P2PExternalIP                  string
 	P2PConnectionTimeout           time.Duration
@@ -107,9 +107,9 @@ func (nc *NodeConfig) GetConfigStoragePath() string {
 	panic("irrelevant, NodeConfig#GetConfigStoragePath must not be used")
 }
 
-// GetTenantsKeystore returns the tenant keystore path.
-func (nc *NodeConfig) GetTenantsKeystore() string {
-	return nc.TenantsKeystore
+// GetAccountsKeystore returns the accounts keystore path.
+func (nc *NodeConfig) GetAccountsKeystore() string {
+	return nc.AccountsKeystore
 }
 
 // GetP2PPort refer the interface
@@ -325,7 +325,7 @@ func convertAddressesToStringMap(addresses map[config.ContractName]common.Addres
 func (nc *NodeConfig) loadFromProtobuf(data *configpb.ConfigData) error {
 	identityID, _ := hexutil.Decode(data.MainIdentity.IdentityId)
 
-	nc.MainIdentity = TenantConfig{
+	nc.MainIdentity = Account{
 		EthereumAccount: &config.AccountConfig{
 			Address:  data.MainIdentity.EthAccount.Address,
 			Key:      data.MainIdentity.EthAccount.Key,
@@ -391,7 +391,7 @@ func NewNodeConfig(c config.Configuration) config.Configuration {
 	ethAuthPub, ethAuthPriv := c.GetEthAuthKeyPair()
 
 	return &NodeConfig{
-		MainIdentity: TenantConfig{
+		MainIdentity: Account{
 			EthereumAccount: &config.AccountConfig{
 				Address:  mainAccount.Address,
 				Key:      mainAccount.Key,
@@ -410,7 +410,7 @@ func NewNodeConfig(c config.Configuration) config.Configuration {
 			},
 		},
 		StoragePath:                    c.GetStoragePath(),
-		TenantsKeystore:                c.GetTenantsKeystore(),
+		AccountsKeystore:               c.GetAccountsKeystore(),
 		P2PPort:                        c.GetP2PPort(),
 		P2PExternalIP:                  c.GetP2PExternalIP(),
 		P2PConnectionTimeout:           c.GetP2PConnectionTimeout(),
@@ -443,8 +443,8 @@ func extractSmartContractAddresses(c config.Configuration) map[config.ContractNa
 	return sms
 }
 
-// TenantConfig exposes configs specific to a tenant in the node
-type TenantConfig struct {
+// Account exposes options specific to an account in the node
+type Account struct {
 	EthereumAccount                  *config.AccountConfig
 	EthereumDefaultAccountName       string
 	EthereumContextWaitTimeout       time.Duration
@@ -456,62 +456,62 @@ type TenantConfig struct {
 }
 
 // GetEthereumAccount gets EthereumAccount
-func (tc *TenantConfig) GetEthereumAccount() *config.AccountConfig {
+func (tc *Account) GetEthereumAccount() *config.AccountConfig {
 	return tc.EthereumAccount
 }
 
 // GetEthereumDefaultAccountName gets EthereumDefaultAccountName
-func (tc *TenantConfig) GetEthereumDefaultAccountName() string {
+func (tc *Account) GetEthereumDefaultAccountName() string {
 	return tc.EthereumDefaultAccountName
 }
 
 // GetReceiveEventNotificationEndpoint gets ReceiveEventNotificationEndpoint
-func (tc *TenantConfig) GetReceiveEventNotificationEndpoint() string {
+func (tc *Account) GetReceiveEventNotificationEndpoint() string {
 	return tc.ReceiveEventNotificationEndpoint
 }
 
 // GetIdentityID gets IdentityID
-func (tc *TenantConfig) GetIdentityID() ([]byte, error) {
+func (tc *Account) GetIdentityID() ([]byte, error) {
 	return tc.IdentityID, nil
 }
 
 // GetSigningKeyPair gets SigningKeyPair
-func (tc *TenantConfig) GetSigningKeyPair() (pub, priv string) {
+func (tc *Account) GetSigningKeyPair() (pub, priv string) {
 	return tc.SigningKeyPair.Pub, tc.SigningKeyPair.Priv
 }
 
 // GetEthAuthKeyPair gets EthAuthKeyPair
-func (tc *TenantConfig) GetEthAuthKeyPair() (pub, priv string) {
+func (tc *Account) GetEthAuthKeyPair() (pub, priv string) {
 	return tc.EthAuthKeyPair.Pub, tc.EthAuthKeyPair.Priv
 }
 
 // GetEthereumContextWaitTimeout gets EthereumContextWaitTimeout
-func (tc *TenantConfig) GetEthereumContextWaitTimeout() time.Duration {
+func (tc *Account) GetEthereumContextWaitTimeout() time.Duration {
 	return tc.EthereumContextWaitTimeout
 }
 
 // ID Get the ID of the document represented by this model
-func (tc *TenantConfig) ID() []byte {
+func (tc *Account) ID() []byte {
 	return tc.IdentityID
 }
 
 // Type Returns the underlying type of the Model
-func (tc *TenantConfig) Type() reflect.Type {
+func (tc *Account) Type() reflect.Type {
 	return reflect.TypeOf(tc)
 }
 
 // JSON return the json representation of the model
-func (tc *TenantConfig) JSON() ([]byte, error) {
+func (tc *Account) JSON() ([]byte, error) {
 	return json.Marshal(tc)
 }
 
 // FromJSON initialize the model with a json
-func (tc *TenantConfig) FromJSON(data []byte) error {
+func (tc *Account) FromJSON(data []byte) error {
 	return json.Unmarshal(data, tc)
 }
 
 // CreateProtobuf creates protobuf for config
-func (tc *TenantConfig) CreateProtobuf() *accountpb.AccountData {
+func (tc *Account) CreateProtobuf() *accountpb.AccountData {
 	return &accountpb.AccountData{
 		EthAccount: &accountpb.EthereumAccount{
 			Address:  tc.EthereumAccount.Address,
@@ -532,7 +532,7 @@ func (tc *TenantConfig) CreateProtobuf() *accountpb.AccountData {
 	}
 }
 
-func (tc *TenantConfig) loadFromProtobuf(data *accountpb.AccountData) {
+func (tc *Account) loadFromProtobuf(data *accountpb.AccountData) {
 	tc.EthereumAccount = &config.AccountConfig{
 		Address:  data.EthAccount.Address,
 		Key:      data.EthAccount.Key,
@@ -551,8 +551,8 @@ func (tc *TenantConfig) loadFromProtobuf(data *accountpb.AccountData) {
 	}
 }
 
-// NewTenantConfig creates a new TenantConfig instance with configs
-func NewTenantConfig(ethAccountName string, c config.Configuration) (config.TenantConfiguration, error) {
+// NewAccount creates a new Account instance with configs
+func NewAccount(ethAccountName string, c config.Configuration) (config.Account, error) {
 	id, err := c.GetIdentityID()
 	if err != nil {
 		return nil, err
@@ -561,7 +561,7 @@ func NewTenantConfig(ethAccountName string, c config.Configuration) (config.Tena
 	if err != nil && ethAccountName != "" {
 		return nil, err
 	}
-	return &TenantConfig{
+	return &Account{
 		EthereumAccount:                  acc,
 		EthereumDefaultAccountName:       c.GetEthereumDefaultAccountName(),
 		EthereumContextWaitTimeout:       c.GetEthereumContextWaitTimeout(),
@@ -572,13 +572,13 @@ func NewTenantConfig(ethAccountName string, c config.Configuration) (config.Tena
 	}, nil
 }
 
-// TempTenantConfig creates a new TenantConfig without id validation, Must only be used for tenant creation.
-func TempTenantConfig(ethAccountName string, c config.Configuration) (config.TenantConfiguration, error) {
+// TempAccount creates a new Account without id validation, Must only be used for account creation.
+func TempAccount(ethAccountName string, c config.Configuration) (config.Account, error) {
 	acc, err := c.GetEthereumAccount(ethAccountName)
 	if err != nil && ethAccountName != "" {
 		return nil, err
 	}
-	return &TenantConfig{
+	return &Account{
 		EthereumAccount:                  acc,
 		EthereumDefaultAccountName:       c.GetEthereumDefaultAccountName(),
 		IdentityID:                       []byte{},

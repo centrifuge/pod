@@ -167,7 +167,7 @@ func CreateTenantContext(t *testing.T, cfg config.Configuration) context.Context
 }
 
 func CreateTenantContextWithContext(t *testing.T, ctx context.Context, cfg config.Configuration) context.Context {
-	tc, err := configstore.NewTenantConfig("", cfg)
+	tc, err := configstore.NewAccount("", cfg)
 	assert.Nil(t, err)
 
 	contextHeader, err := contextutil.NewCentrifugeContext(ctx, tc)
@@ -176,9 +176,9 @@ func CreateTenantContextWithContext(t *testing.T, ctx context.Context, cfg confi
 }
 
 func HandlerContext(service config.Service) context.Context {
-	tcs, _ := service.GetAllTenants()
+	tcs, _ := service.GetAllAccounts()
 	cid, _ := tcs[0].GetIdentityID()
 	cidHex := hexutil.Encode(cid)
-	ctx := context.WithValue(context.Background(), config.TenantKey, cidHex)
+	ctx := context.WithValue(context.Background(), config.AccountHeaderKey, cidHex)
 	return ctx
 }

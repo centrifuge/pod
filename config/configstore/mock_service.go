@@ -11,9 +11,9 @@ type MockService struct {
 	mock.Mock
 }
 
-func (m MockService) GenerateTenant() (config.TenantConfiguration, error) {
+func (m MockService) GenerateAccount() (config.Account, error) {
 	args := m.Called()
-	return args.Get(0).(config.TenantConfiguration), args.Error(1)
+	return args.Get(0).(config.Account), args.Error(1)
 }
 
 func (m MockService) GetConfig() (config.Configuration, error) {
@@ -21,14 +21,14 @@ func (m MockService) GetConfig() (config.Configuration, error) {
 	return args.Get(0).(*NodeConfig), args.Error(1)
 }
 
-func (m MockService) GetTenant(identifier []byte) (config.TenantConfiguration, error) {
+func (m MockService) GetAccount(identifier []byte) (config.Account, error) {
 	args := m.Called(identifier)
-	return args.Get(0).(config.TenantConfiguration), args.Error(1)
+	return args.Get(0).(config.Account), args.Error(1)
 }
 
-func (m MockService) GetAllTenants() ([]config.TenantConfiguration, error) {
+func (m MockService) GetAllAccounts() ([]config.Account, error) {
 	args := m.Called()
-	v, _ := args.Get(0).([]config.TenantConfiguration)
+	v, _ := args.Get(0).([]config.Account)
 	return v, nil
 }
 
@@ -37,17 +37,17 @@ func (m MockService) CreateConfig(data config.Configuration) (config.Configurati
 	return args.Get(0).(*NodeConfig), args.Error(0)
 }
 
-func (m MockService) CreateTenant(data config.TenantConfiguration) (config.TenantConfiguration, error) {
+func (m MockService) CreateAccount(data config.Account) (config.Account, error) {
 	args := m.Called(data)
-	return args.Get(0).(*TenantConfig), args.Error(0)
+	return args.Get(0).(*Account), args.Error(0)
 }
 
-func (m MockService) UpdateTenant(data config.TenantConfiguration) (config.TenantConfiguration, error) {
+func (m MockService) UpdateAccount(data config.Account) (config.Account, error) {
 	args := m.Called(data)
-	return args.Get(0).(*TenantConfig), args.Error(0)
+	return args.Get(0).(*Account), args.Error(0)
 }
 
-func (m MockService) DeleteTenant(identifier []byte) error {
+func (m MockService) DeleteAccount(identifier []byte) error {
 	args := m.Called(identifier)
 	return args.Error(0)
 }

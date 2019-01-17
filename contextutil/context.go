@@ -26,13 +26,13 @@ const (
 )
 
 // NewCentrifugeContext creates new instance of the request headers.
-func NewCentrifugeContext(ctx context.Context, cfg config.TenantConfiguration) (context.Context, error) {
+func NewCentrifugeContext(ctx context.Context, cfg config.Account) (context.Context, error) {
 	return context.WithValue(ctx, self, cfg), nil
 }
 
 // Self returns Self CentID.
 func Self(ctx context.Context) (*identity.IDConfig, error) {
-	tc, ok := ctx.Value(self).(config.TenantConfiguration)
+	tc, ok := ctx.Value(self).(config.Account)
 	if !ok {
 		return nil, ErrSelfNotFound
 	}
@@ -40,8 +40,8 @@ func Self(ctx context.Context) (*identity.IDConfig, error) {
 }
 
 // Tenant extracts the TenanConfig from the given context value
-func Tenant(ctx context.Context) (config.TenantConfiguration, error) {
-	tc, ok := ctx.Value(self).(config.TenantConfiguration)
+func Tenant(ctx context.Context) (config.Account, error) {
+	tc, ok := ctx.Value(self).(config.Account)
 	if !ok {
 		return nil, ErrSelfNotFound
 	}
@@ -50,9 +50,9 @@ func Tenant(ctx context.Context) (config.TenantConfiguration, error) {
 
 // Context updates a context with tenant info using the configstore, must only be used for api handlers
 func Context(ctx context.Context, cs config.Service) (context.Context, error) {
-	tcIDHex, ok := ctx.Value(config.TenantKey).(string)
+	tcIDHex, ok := ctx.Value(config.AccountHeaderKey).(string)
 	if !ok {
-		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header %v", config.TenantKey))
+		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header %v", config.AccountHeaderKey))
 	}
 
 	tcID, err := hexutil.Decode(tcIDHex)
@@ -60,7 +60,7 @@ func Context(ctx context.Context, cs config.Service) (context.Context, error) {
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
 	}
 
-	tc, err := cs.GetTenant(tcID)
+	tc, err := cs.GetAccount(tcID)
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
 	}

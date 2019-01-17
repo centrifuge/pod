@@ -38,29 +38,29 @@ func TestService_GetConfig(t *testing.T) {
 	assert.NotNil(t, cfg)
 }
 
-func TestService_GetTenant_NoTenant(t *testing.T) {
+func TestService_Getaccount_Noaccount(t *testing.T) {
 	idService := &testingcommons.MockIDService{}
 	repo, _, err := getRandomStorage()
 	assert.Nil(t, err)
-	repo.RegisterTenant(&TenantConfig{})
+	repo.RegisterAccount(&Account{})
 	svc := DefaultService(repo, idService)
-	cfg, err := svc.GetTenant([]byte("0x123456789"))
+	cfg, err := svc.GetAccount([]byte("0x123456789"))
 	assert.NotNil(t, err)
 	assert.Nil(t, cfg)
 }
 
-func TestService_GetTenant(t *testing.T) {
+func TestService_Getaccount(t *testing.T) {
 	idService := &testingcommons.MockIDService{}
 	repo, _, err := getRandomStorage()
 	assert.Nil(t, err)
-	repo.RegisterTenant(&TenantConfig{})
+	repo.RegisterAccount(&Account{})
 	svc := DefaultService(repo, idService)
-	tenantCfg, err := NewTenantConfig("main", cfg)
+	accountCfg, err := NewAccount("main", cfg)
 	assert.Nil(t, err)
-	tid, _ := tenantCfg.GetIdentityID()
-	err = repo.CreateTenant(tid, tenantCfg)
+	tid, _ := accountCfg.GetIdentityID()
+	err = repo.CreateAccount(tid, accountCfg)
 	assert.Nil(t, err)
-	cfg, err := svc.GetTenant(tid)
+	cfg, err := svc.GetAccount(tid)
 	assert.Nil(t, err)
 	assert.NotNil(t, cfg)
 }
@@ -81,81 +81,81 @@ func TestService_CreateConfig(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestService_CreateTenant(t *testing.T) {
+func TestService_Createaccount(t *testing.T) {
 	idService := &testingcommons.MockIDService{}
 	repo, _, err := getRandomStorage()
 	assert.Nil(t, err)
-	repo.RegisterTenant(&TenantConfig{})
+	repo.RegisterAccount(&Account{})
 	svc := DefaultService(repo, idService)
-	tenantCfg, err := NewTenantConfig("main", cfg)
+	accountCfg, err := NewAccount("main", cfg)
 	assert.Nil(t, err)
-	newCfg, err := svc.CreateTenant(tenantCfg)
+	newCfg, err := svc.CreateAccount(accountCfg)
 	assert.Nil(t, err)
 	i, err := newCfg.GetIdentityID()
 	assert.Nil(t, err)
-	tid, err := tenantCfg.GetIdentityID()
+	tid, err := accountCfg.GetIdentityID()
 	assert.Nil(t, err)
 	assert.Equal(t, tid, i)
 
-	//Tenant already exists
-	_, err = svc.CreateTenant(tenantCfg)
+	//account already exists
+	_, err = svc.CreateAccount(accountCfg)
 	assert.NotNil(t, err)
 }
 
-func TestService_UpdateTenant(t *testing.T) {
+func TestService_Updateaccount(t *testing.T) {
 	idService := &testingcommons.MockIDService{}
 	repo, _, err := getRandomStorage()
 	assert.Nil(t, err)
-	repo.RegisterTenant(&TenantConfig{})
+	repo.RegisterAccount(&Account{})
 	svc := DefaultService(repo, idService)
-	tenantCfg, err := NewTenantConfig("main", cfg)
+	accountCfg, err := NewAccount("main", cfg)
 
-	// Tenant doesn't exist
-	newCfg, err := svc.UpdateTenant(tenantCfg)
+	// account doesn't exist
+	newCfg, err := svc.UpdateAccount(accountCfg)
 	assert.NotNil(t, err)
 
-	newCfg, err = svc.CreateTenant(tenantCfg)
+	newCfg, err = svc.CreateAccount(accountCfg)
 	assert.Nil(t, err)
 	i, err := newCfg.GetIdentityID()
 	assert.Nil(t, err)
-	tid, err := tenantCfg.GetIdentityID()
+	tid, err := accountCfg.GetIdentityID()
 	assert.Nil(t, err)
 	assert.Equal(t, tid, i)
 
-	tc := tenantCfg.(*TenantConfig)
+	tc := accountCfg.(*Account)
 	tc.EthereumDefaultAccountName = "other"
-	newCfg, err = svc.UpdateTenant(tenantCfg)
+	newCfg, err = svc.UpdateAccount(accountCfg)
 	assert.Nil(t, err)
 	assert.Equal(t, tc.EthereumDefaultAccountName, newCfg.GetEthereumDefaultAccountName())
 }
 
-func TestService_DeleteTenant(t *testing.T) {
+func TestService_Deleteaccount(t *testing.T) {
 	idService := &testingcommons.MockIDService{}
 	repo, _, err := getRandomStorage()
 	assert.Nil(t, err)
-	repo.RegisterTenant(&TenantConfig{})
+	repo.RegisterAccount(&Account{})
 	svc := DefaultService(repo, idService)
-	tenantCfg, err := NewTenantConfig("main", cfg)
+	accountCfg, err := NewAccount("main", cfg)
 	assert.Nil(t, err)
-	tid, err := tenantCfg.GetIdentityID()
+	tid, err := accountCfg.GetIdentityID()
 	assert.Nil(t, err)
 
 	//No config, no error
-	err = svc.DeleteTenant(tid)
+	err = svc.DeleteAccount(tid)
 	assert.Nil(t, err)
 
-	_, err = svc.CreateTenant(tenantCfg)
+	_, err = svc.CreateAccount(accountCfg)
 	assert.Nil(t, err)
 
-	err = svc.DeleteTenant(tid)
+	err = svc.DeleteAccount(tid)
 	assert.Nil(t, err)
 
-	_, err = svc.GetTenant(tid)
+	_, err = svc.GetAccount(tid)
 	assert.NotNil(t, err)
 }
 
-func TestGenerateTenantKeys(t *testing.T) {
-	tc, err := generateTenantKeys("/tmp/tenants/", &TenantConfig{}, identity.RandomCentID())
+func TestGenerateaccountKeys(t *testing.T) {
+	tc, err := generateAccountKeys("/tmp/accounts/", &Account{}, identity.RandomCentID())
 	assert.Nil(t, err)
 	assert.NotNil(t, tc.SigningKeyPair)
 	assert.NotNil(t, tc.EthAuthKeyPair)

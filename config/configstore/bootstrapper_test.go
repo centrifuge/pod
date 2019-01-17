@@ -23,6 +23,6 @@ func TestBootstrapper_BootstrapHappy(t *testing.T) {
 	nc := NewNodeConfig(cfg)
 	i, err := nc.GetIdentityID()
 	assert.NoError(t, err)
-	_, err = configService.GetTenant(i)
+	_, err = configService.GetAccount(i)
 	assert.NoError(t, err)
 }

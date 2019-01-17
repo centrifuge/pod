@@ -3,20 +3,16 @@
 package configstore
 
 import (
+	"math/big"
 	"reflect"
 	"testing"
-
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/config"
-
-	"github.com/centrifuge/go-centrifuge/config"
-
-	"github.com/ethereum/go-ethereum/common/hexutil"
-
-	"math/big"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/config"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -102,7 +98,7 @@ func (m *mockConfig) GetConfigStoragePath() string {
 	return args.Get(0).(string)
 }
 
-func (m *mockConfig) GetTenantsKeystore() string {
+func (m *mockConfig) GetAccountsKeystore() string {
 	args := m.Called()
 	return args.Get(0).(string)
 }
@@ -249,7 +245,7 @@ func TestNewNodeConfig(t *testing.T) {
 	c.AssertExpectations(t)
 }
 
-func TestNewTenantConfig(t *testing.T) {
+func TestNewAccountConfig(t *testing.T) {
 	c := &mockConfig{}
 	c.On("GetEthereumAccount", "name").Return(&config.AccountConfig{}, nil).Once()
 	c.On("GetEthereumDefaultAccountName").Return("dummyAcc").Once()
@@ -258,7 +254,7 @@ func TestNewTenantConfig(t *testing.T) {
 	c.On("GetSigningKeyPair").Return("pub", "priv").Once()
 	c.On("GetEthAuthKeyPair").Return("pub", "priv").Once()
 	c.On("GetEthereumContextWaitTimeout").Return(time.Second).Once()
-	NewTenantConfig("name", c)
+	NewAccount("name", c)
 	c.AssertExpectations(t)
 }
 
@@ -281,7 +277,7 @@ func TestNodeConfigProtobuf(t *testing.T) {
 	assert.Equal(t, ncpb.MainIdentity.IdentityId, hexutil.Encode(ncCopy.MainIdentity.IdentityID))
 }
 
-func TestTenantConfigProtobuf(t *testing.T) {
+func TestAccountConfigProtobuf(t *testing.T) {
 	c := &mockConfig{}
 	c.On("GetEthereumAccount", "name").Return(&config.AccountConfig{}, nil).Once()
 	c.On("GetEthereumDefaultAccountName").Return("dummyAcc").Once()
@@ -290,7 +286,7 @@ func TestTenantConfigProtobuf(t *testing.T) {
 	c.On("GetSigningKeyPair").Return("pub", "priv").Once()
 	c.On("GetEthAuthKeyPair").Return("pub", "priv").Once()
 	c.On("GetEthereumContextWaitTimeout").Return(time.Second).Once()
-	tc, err := NewTenantConfig("name", c)
+	tc, err := NewAccount("name", c)
 	assert.Nil(t, err)
 	c.AssertExpectations(t)
 
@@ -302,7 +298,7 @@ func TestTenantConfigProtobuf(t *testing.T) {
 	_, priv := tc.GetSigningKeyPair()
 	assert.Equal(t, priv, tcpb.SigningKeyPair.Pvt)
 
-	tcCopy := new(TenantConfig)
+	tcCopy := new(Account)
 	tcCopy.loadFromProtobuf(tcpb)
 	assert.Equal(t, tcpb.ReceiveEventNotificationEndpoint, tcCopy.ReceiveEventNotificationEndpoint)
 	assert.Equal(t, tcpb.IdentityId, hexutil.Encode(tcCopy.IdentityID))
@@ -312,7 +308,7 @@ func TestTenantConfigProtobuf(t *testing.T) {
 func createMockConfig() *mockConfig {
 	c := &mockConfig{}
 	c.On("GetStoragePath").Return("dummyStorage").Once()
-	c.On("GetTenantsKeystore").Return("dummyKeyStorage").Once()
+	c.On("GetAccountsKeystore").Return("dummyKeyStorage").Once()
 	c.On("GetP2PPort").Return(30000).Once()
 	c.On("GetP2PExternalIP").Return("ip").Once()
 	c.On("GetP2PConnectionTimeout").Return(time.Second).Once()

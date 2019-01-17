@@ -46,7 +46,7 @@ func CreateIdentityWithKeys(cfg config.Configuration, idService identity.Service
 	return idConfig.ID
 }
 
-func CreateTenantIDWithKeys(contextTimeout time.Duration, cfg *configstore.TenantConfig, idService identity.Service) identity.Identity {
+func CreateTenantIDWithKeys(contextTimeout time.Duration, cfg *configstore.Account, idService identity.Service) identity.Identity {
 	ctxh, _ := contextutil.NewCentrifugeContext(context.Background(), cfg)
 	idConfig, _ := identity.GetIdentityConfig(cfg)
 	// only create identity if it doesn't exist

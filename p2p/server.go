@@ -98,7 +98,7 @@ func (s *peer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- 
 }
 
 func (s *peer) initProtocols() error {
-	tcs, err := s.config.GetAllTenants()
+	tcs, err := s.config.GetAllAccounts()
 	if err != nil {
 		return err
 	}

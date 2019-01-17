@@ -156,6 +156,6 @@ func updateKeys(c config.Configuration) config.Configuration {
 func mockmockConfigStore(n config.Configuration) *configstore.MockService {
 	mockConfigStore := &configstore.MockService{}
 	mockConfigStore.On("GetConfig").Return(n, nil)
-	mockConfigStore.On("GetAllTenants").Return([]config.TenantConfiguration{&configstore.TenantConfig{IdentityID: utils.RandomSlice(identity.CentIDLength)}}, nil)
+	mockConfigStore.On("GetAllAccounts").Return([]config.Account{&configstore.Account{IdentityID: utils.RandomSlice(identity.CentIDLength)}}, nil)
 	return mockConfigStore
 }
