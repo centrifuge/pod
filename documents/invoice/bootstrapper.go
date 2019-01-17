@@ -5,7 +5,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/queue"
@@ -20,6 +19,11 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	registry, ok := ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
 	if !ok {
 		return errors.New("service registry not initialised")
+	}
+
+	docSrv, ok := ctx[documents.BootstrappedDocumentService].(documents.Service)
+	if !ok {
+		return errors.New("document service not initialised")
 	}
 
 	anchorRepo, ok := ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
@@ -48,15 +52,13 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("transaction service not initialised")
 	}
 
-	genService, ok := ctx[genericdoc.BootstrappedGenService].(genericdoc.Service)
-	if !ok {
-		return errors.New("generic service is not initialised")
-	}
 	// register service
 	srv := DefaultService(
+		docSrv,
 		repo,
 		anchorRepo,
-		idService, queueSrv, txService, genService)
+		idService, queueSrv, txService)
+
 	err := registry.Register(documenttypes.InvoiceDataTypeUrl, srv)
 	if err != nil {
 		return errors.New("failed to register invoice service: %v", err)

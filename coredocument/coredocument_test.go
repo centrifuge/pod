@@ -23,14 +23,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var (
-	id1 = utils.RandomSlice(32)
-	id2 = utils.RandomSlice(32)
-	id3 = utils.RandomSlice(32)
-	id4 = utils.RandomSlice(32)
-	id5 = utils.RandomSlice(32)
-)
-
 var ctx = map[string]interface{}{}
 var cfg config.Configuration
 

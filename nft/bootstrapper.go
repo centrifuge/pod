@@ -5,7 +5,6 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -27,9 +26,9 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("ethereum client hasn't been initialized")
 	}
 
-	registry, ok := ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
+	docSrv, ok := ctx[documents.BootstrappedDocumentService].(documents.Service)
 	if !ok {
-		return errors.New("service registry not initialised")
+		return errors.New("document service not initialised")
 	}
 
 	idService, ok := ctx[identity.BootstrappedIDService].(identity.Service)
@@ -47,18 +46,12 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("transactions repository not initialised")
 	}
 
-	genService, ok := ctx[genericdoc.BootstrappedGenService].(genericdoc.Service)
-	if !ok {
-		return errors.New("generic service is not initialised")
-	}
-
 	client := ethereum.GetClient()
 	payOb := newEthereumPaymentObligation(
-		registry,
 		idService,
 		client,
 		queueSrv,
-		genService,
+		docSrv,
 		bindContract,
 		txService, func() (uint64, error) {
 			h, err := client.GetEthClient().HeaderByNumber(context.Background(), nil)

@@ -1,9 +1,11 @@
 package documents
 
 import (
+	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/transactions"
@@ -15,6 +17,9 @@ const (
 
 	// BootstrappedDocumentRepository is the key to the database repository of documents
 	BootstrappedDocumentRepository = "BootstrappedDocumentRepository"
+
+	// BootstrappedDocumentService is the key to bootstrapped document service
+	BootstrappedDocumentService = "BootstrappedDocumentService"
 )
 
 // Bootstrapper implements bootstrap.Bootstrapper.
@@ -41,14 +46,14 @@ func (PostBootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("config service not initialised")
 	}
 
+	config, ok := ctx[bootstrap.BootstrappedConfig].(Config)
+	if !ok {
+		return errors.New("documents config not initialised")
+	}
+
 	queueSrv, ok := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
 	if !ok {
 		return errors.New("queue not initialised")
-	}
-
-	coreDocProc, ok := ctx[bootstrap.BootstrappedCoreDocProc].(anchorProcessor)
-	if !ok {
-		return errors.New("coredoc processor not initialised")
 	}
 
 	repo, ok := ctx[BootstrappedDocumentRepository].(Repository)
@@ -56,12 +61,33 @@ func (PostBootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("document repository not initialised")
 	}
 
+	idService, ok := ctx[identity.BootstrappedIDService].(identity.Service)
+	if !ok {
+		return errors.New("identity service not initialised")
+	}
+
+	anchorRepo, ok := ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
+	if !ok {
+		return errors.New("anchor repository not initialised")
+	}
+
+	registry, ok := ctx[BootstrappedRegistry].(*ServiceRegistry)
+	if !ok {
+		return errors.New("service registry no initialised")
+	}
+
+	p2pClient, ok := ctx[bootstrap.BootstrappedPeer].(Client)
+	if !ok {
+		return errors.New("p2p client not initialised")
+	}
+
+	ctx[BootstrappedDocumentService] = DefaultService(repo, idService, anchorRepo, registry)
 	task := &documentAnchorTask{
 		BaseTask: transactions.BaseTask{
 			TxService: ctx[transactions.BootstrappedService].(transactions.Service),
 		},
 		config:        cfgService,
-		processor:     coreDocProc,
+		processor:     DefaultProcessor(idService, p2pClient, anchorRepo, config),
 		modelGetFunc:  repo.Get,
 		modelSaveFunc: repo.Update,
 	}

@@ -8,36 +8,28 @@ import (
 	"os"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
-
-	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/p2p/common"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
-	"github.com/centrifuge/go-centrifuge/testingutils/config"
-	"github.com/centrifuge/go-centrifuge/version"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/golang/protobuf/proto"
-	"github.com/libp2p/go-libp2p-protocol"
-
-	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-
-	"github.com/centrifuge/go-centrifuge/config/configstore"
-
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/p2p/common"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/queue"
-	"github.com/centrifuge/go-centrifuge/testingutils/coredocument"
+	"github.com/centrifuge/go-centrifuge/storage/leveldb"
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/transactions"
-	"github.com/golang/protobuf/ptypes/any"
+	"github.com/centrifuge/go-centrifuge/version"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/golang/protobuf/proto"
 	"github.com/libp2p/go-libp2p-crypto"
 	libp2pPeer "github.com/libp2p/go-libp2p-peer"
+	"github.com/libp2p/go-libp2p-protocol"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -45,7 +37,6 @@ import (
 var (
 	handler       *Handler
 	registry      *documents.ServiceRegistry
-	coreDoc       = testingcoredocument.GenerateCoreDocument()
 	cfg           config.Configuration
 	mockIDService *testingcommons.MockIDService
 	defaultPID    libp2pPeer.ID
@@ -67,12 +58,12 @@ func TestMain(m *testing.M) {
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfgService := ctx[config.BootstrappedConfigStorage].(config.Service)
 	registry = ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
-	genService := genericdoc.DefaultService(nil, nil, nil)
+	docSrv := documents.DefaultService(nil, nil, nil, registry)
 	mockIDService = &testingcommons.MockIDService{}
 	_, pub, _ := crypto.GenerateEd25519Key(rand.Reader)
 	defaultPID, _ = libp2pPeer.IDFromPublicKey(pub)
 	mockIDService.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything).Return(nil)
-	handler = New(cfgService, registry, HandshakeValidator(cfg.GetNetworkID(), mockIDService), genService)
+	handler = New(cfgService, HandshakeValidator(cfg.GetNetworkID(), mockIDService), docSrv)
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)
@@ -224,71 +215,4 @@ func TestP2PService_basicChecks(t *testing.T) {
 		}
 	}
 
-}
-
-type mockModel struct {
-	mock.Mock
-	documents.Model
-}
-
-type mockService struct {
-	mock.Mock
-	documents.Service
-}
-
-func (s mockService) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (documents.Model, error) {
-	args := s.Called(cd)
-	m, _ := args.Get(0).(documents.Model)
-	return m, args.Error(1)
-}
-
-func Test_getServiceAndModel(t *testing.T) {
-	// document nil fail
-	s, m, err := getServiceAndModel(registry, nil)
-	assert.Error(t, err)
-
-	// docType fetch fail
-	cd := coredocument.New()
-	s, m, err = getServiceAndModel(registry, cd)
-	assert.Error(t, err)
-	assert.Nil(t, s)
-	assert.Nil(t, m)
-	assert.Contains(t, err.Error(), "failed to get type of the document")
-
-	// missing service
-	cd.EmbeddedData = &any.Any{
-		TypeUrl: "model_type_fail",
-		Value:   []byte("some data"),
-	}
-	s, m, err = getServiceAndModel(registry, cd)
-	assert.Error(t, err)
-	assert.Nil(t, s)
-	assert.Nil(t, m)
-	assert.Contains(t, err.Error(), "failed to locate the service")
-
-	// derive fails
-	srv := mockService{}
-	srv.On("DeriveFromCoreDocument", cd).Return(nil, errors.New("error")).Once()
-	err = registry.Register(cd.EmbeddedData.TypeUrl, srv)
-	assert.Nil(t, err)
-	s, m, err = getServiceAndModel(registry, cd)
-	srv.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Nil(t, s)
-	assert.Nil(t, m)
-	assert.Contains(t, err.Error(), "failed to derive model from core document")
-
-	// success
-	model := &mockModel{}
-	cd.EmbeddedData.TypeUrl = "get_model_type"
-	srv = mockService{}
-	srv.On("DeriveFromCoreDocument", cd).Return(model, nil).Once()
-	err = registry.Register(cd.EmbeddedData.TypeUrl, srv)
-	assert.Nil(t, err)
-	s, m, err = getServiceAndModel(registry, cd)
-	srv.AssertExpectations(t)
-	assert.Nil(t, err)
-	assert.NotNil(t, s)
-	assert.NotNil(t, m)
-	assert.Equal(t, model, m)
 }
