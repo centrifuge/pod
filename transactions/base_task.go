@@ -13,13 +13,20 @@ var log = logging.Logger("transaction")
 const (
 	// TxIDParam maps transaction ID in the kwargs.
 	TxIDParam = "transactionID"
+
+	// NextTaskParam maps next task name in the kwargs
+	NextTaskParam = "nextTask"
 )
 
 // BaseTask holds the required details and helper functions for tasks to update transactions.
 // should be embedded into the task
 type BaseTask struct {
-	TxID      uuid.UUID
+	TxID     uuid.UUID
+	NextTask string
+
+	// state
 	TxService Service
+	ChainTask func(task string, txID uuid.UUID)
 }
 
 // ParseTransactionID parses txID.
@@ -35,6 +42,19 @@ func (b *BaseTask) ParseTransactionID(kwargs map[string]interface{}) error {
 		return errors.New("invalid transaction ID")
 	}
 
+	rn, ok := kwargs[NextTaskParam]
+	if !ok {
+		return nil
+	}
+
+	if b.NextTask, ok = rn.(string); !ok {
+		return errors.New("failed to read next task: %v", rn)
+	}
+
+	if b.ChainTask == nil {
+		return errors.New("chain task func is nil but next task exists")
+	}
+
 	return nil
 }
 
@@ -46,22 +66,30 @@ func (b *BaseTask) UpdateTransaction(tenantID identity.CentID, name string, err 
 
 	if err != nil {
 		log.Infof("Transaction failed: %v\n", b.TxID.String())
-	} else {
-		log.Infof("Transaction successful:%v\n", b.TxID.String())
+		return errors.AppendError(err, b.updateStatus(tenantID, Failed, NewLog(name, err.Error())))
 	}
 
-	tx, erri := b.TxService.GetTransaction(tenantID, b.TxID)
-	if erri != nil {
-		return errors.AppendError(err, erri)
+	if b.NextTask != "" {
+		err = b.updateStatus(tenantID, Pending, NewLog(name, ""))
+		if err != nil {
+			return err
+		}
+
+		b.ChainTask(b.NextTask, b.TxID)
+		return nil
 	}
 
-	if err == nil {
-		tx.Status = Success
-		tx.Logs = append(tx.Logs, NewLog(name, ""))
-		return b.TxService.SaveTransaction(tx)
+	log.Infof("Transaction successful:%v\n", b.TxID.String())
+	return errors.AppendError(err, b.updateStatus(tenantID, Success, NewLog(name, "")))
+}
+
+func (b *BaseTask) updateStatus(tenantID identity.CentID, status Status, log Log) error {
+	tx, err := b.TxService.GetTransaction(tenantID, b.TxID)
+	if err != nil {
+		return err
 	}
 
-	tx.Status = Failed
-	tx.Logs = append(tx.Logs, NewLog(name, err.Error()))
-	return errors.AppendError(err, b.TxService.SaveTransaction(tx))
+	tx.Status = status
+	tx.Logs = append(tx.Logs, log)
+	return b.TxService.SaveTransaction(tx)
 }
