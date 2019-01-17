@@ -53,56 +53,56 @@ func TestGrpcHandler_GetAccountNotExist(t *testing.T) {
 	assert.Nil(t, readCfg)
 }
 
-func TestGrpcHandler_GetTenant(t *testing.T) {
+func TestGrpcHandler_GetAccount(t *testing.T) {
 	idService := &testingcommons.MockIDService{}
 	repo, _, err := getRandomStorage()
 	assert.Nil(t, err)
 	repo.RegisterAccount(&Account{})
 	svc := DefaultService(repo, idService)
 	h := GRPCAccountHandler(svc)
-	tenantCfg, err := NewAccount("main", cfg)
+	accountCfg, err := NewAccount("main", cfg)
 	assert.Nil(t, err)
-	tcpb, err := tenantCfg.CreateProtobuf()
+	tcpb, err := accountCfg.CreateProtobuf()
 	assert.NoError(t, err)
 	_, err = h.CreateAccount(context.Background(), tcpb)
 	assert.Nil(t, err)
-	tid, err := tenantCfg.GetIdentityID()
+	tid, err := accountCfg.GetIdentityID()
 	assert.Nil(t, err)
 	readCfg, err := h.GetAccount(context.Background(), &accountpb.GetAccountRequest{Identifier: hexutil.Encode(tid)})
 	assert.Nil(t, err)
 	assert.NotNil(t, readCfg)
 }
 
-func TestGrpcHandler_deriveAllTenantResponseFailure(t *testing.T) {
-	idService := &testingcommons.MockIDService{}
-	repo, _, err := getRandomStorage()
-	assert.Nil(t, err)
-	repo.RegisterTenant(&TenantConfig{})
-	svc := DefaultService(repo, idService)
-	h := GRPCAccountHandler(svc)
-	tenantCfg1, err := NewTenantConfig("main", cfg)
-	tenantCfg2, err := NewTenantConfig("main", cfg)
-	tco := tenantCfg1.(*TenantConfig)
-	tco.EthereumAccount = nil
-	tcs := []config.TenantConfiguration{tco, tenantCfg2}
-	hc := h.(*grpcHandler)
-	resp, err := hc.deriveAllTenantResponse(tcs)
-	assert.NoError(t, err)
-	assert.Equal(t, 1, len(resp.Data))
-}
-
-func TestGrpcHandler_GetAllTenants(t *testing.T) {
+func TestGrpcHandler_deriveAllAccountResponseFailure(t *testing.T) {
 	idService := &testingcommons.MockIDService{}
 	repo, _, err := getRandomStorage()
 	assert.Nil(t, err)
 	repo.RegisterAccount(&Account{})
 	svc := DefaultService(repo, idService)
 	h := GRPCAccountHandler(svc)
-	tenantCfg1, err := NewAccount("main", cfg)
-	tenantCfg2, err := NewAccount("main", cfg)
-	tc := tenantCfg2.(*Account)
+	accountCfg1, err := NewAccount("main", cfg)
+	accountCfg2, err := NewAccount("main", cfg)
+	tco := accountCfg1.(*Account)
+	tco.EthereumAccount = nil
+	tcs := []config.Account{tco, accountCfg2}
+	hc := h.(*grpcHandler)
+	resp, err := hc.deriveAllAccountResponse(tcs)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(resp.Data))
+}
+
+func TestGrpcHandler_GetAllAccounts(t *testing.T) {
+	idService := &testingcommons.MockIDService{}
+	repo, _, err := getRandomStorage()
+	assert.Nil(t, err)
+	repo.RegisterAccount(&Account{})
+	svc := DefaultService(repo, idService)
+	h := GRPCAccountHandler(svc)
+	accountCfg1, err := NewAccount("main", cfg)
+	accountCfg2, err := NewAccount("main", cfg)
+	tc := accountCfg2.(*Account)
 	tc.IdentityID = []byte("0x123456789")
-	tc1pb, err := tenantCfg1.CreateProtobuf()
+	tc1pb, err := accountCfg1.CreateProtobuf()
 	assert.NoError(t, err)
 	_, err = h.CreateAccount(context.Background(), tc1pb)
 	assert.Nil(t, err)
@@ -116,7 +116,7 @@ func TestGrpcHandler_GetAllTenants(t *testing.T) {
 	assert.Equal(t, 2, len(resp.Data))
 }
 
-func TestGrpcHandler_CreateTenant(t *testing.T) {
+func TestGrpcHandler_CreateAccount(t *testing.T) {
 	idService := &testingcommons.MockIDService{}
 	repo, _, err := getRandomStorage()
 	assert.Nil(t, err)
@@ -137,7 +137,7 @@ func TestGrpcHandler_CreateTenant(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-func TestGrpcHandler_GenerateTenant(t *testing.T) {
+func TestGrpcHandler_GenerateAccount(t *testing.T) {
 	s := MockService{}
 	t1, _ := NewAccount(cfg.GetEthereumDefaultAccountName(), cfg)
 	s.On("GenerateAccount").Return(t1, nil)
@@ -147,7 +147,7 @@ func TestGrpcHandler_GenerateTenant(t *testing.T) {
 	assert.NotNil(t, tc)
 }
 
-func TestGrpcHandler_UpdateTenant(t *testing.T) {
+func TestGrpcHandler_UpdateAccount(t *testing.T) {
 	idService := &testingcommons.MockIDService{}
 	repo, _, err := getRandomStorage()
 	assert.Nil(t, err)

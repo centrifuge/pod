@@ -147,7 +147,7 @@ func TestConfigOperations(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-func TestLevelDBRepo_GetAllaccounts(t *testing.T) {
+func TestLevelDBRepo_GetAllAccounts(t *testing.T) {
 	repo, _, _ := getRandomStorage()
 	assert.NotNil(t, repo)
 	repo.RegisterAccount(&Account{})

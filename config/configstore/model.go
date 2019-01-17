@@ -514,7 +514,7 @@ func (tc *Account) FromJSON(data []byte) error {
 }
 
 // CreateProtobuf creates protobuf for config
-func (tc *Account) CreateProtobuf()  (*accountpb.AccountData, error) {
+func (tc *Account) CreateProtobuf() (*accountpb.AccountData, error) {
 	if tc.EthereumAccount == nil {
 		return nil, errors.New("nil EthereumAccount field")
 	}

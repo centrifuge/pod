@@ -67,7 +67,7 @@ func TestMain(m *testing.M) {
 func TestHandler_HandleInterceptorReqSignature(t *testing.T) {
 	centID := createIdentity(t)
 	ctxh := testingconfig.CreateTenantContext(t, cfg)
-	tc, err := contextutil.Tenant(ctxh)
+	tc, err := contextutil.Account(ctxh)
 	_, err = cfgService.CreateAccount(tc)
 	assert.NoError(t, err)
 	doc := prepareDocumentForP2PHandler(t, nil)

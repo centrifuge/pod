@@ -49,8 +49,8 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		return errors.NewTypedError(config.ErrConfigBootstrap, errors.New("%v", err))
 	}
 	_, err = service.GetAccount(i)
-	// if main tenant config doesn't exist in the db, add it
-	// Another additional check we can do is check if there are more than 0 tenant configs in the db but main tenant is not, then it might indicate a problem
+	// if main account doesn't exist in the db, add it
+	// Another additional check we can do is check if there are more than 0 accouns in the db but main account is not, then it might indicate a problem
 	if err != nil {
 		_, err = service.CreateAccount(tc)
 		if err != nil {

@@ -39,8 +39,8 @@ func Self(ctx context.Context) (*identity.IDConfig, error) {
 	return identity.GetIdentityConfig(tc)
 }
 
-// Tenant extracts the TenanConfig from the given context value
-func Tenant(ctx context.Context) (config.Account, error) {
+// Account extracts the TenanConfig from the given context value
+func Account(ctx context.Context) (config.Account, error) {
 	tc, ok := ctx.Value(self).(config.Account)
 	if !ok {
 		return nil, ErrSelfNotFound
@@ -48,7 +48,7 @@ func Tenant(ctx context.Context) (config.Account, error) {
 	return tc, nil
 }
 
-// Context updates a context with tenant info using the configstore, must only be used for api handlers
+// Context updates a context with account info using the configstore, must only be used for api handlers
 func Context(ctx context.Context, cs config.Service) (context.Context, error) {
 	tcIDHex, ok := ctx.Value(config.AccountHeaderKey).(string)
 	if !ok {

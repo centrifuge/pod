@@ -38,7 +38,7 @@ func TestService_GetConfig(t *testing.T) {
 	assert.NotNil(t, cfg)
 }
 
-func TestService_Getaccount_Noaccount(t *testing.T) {
+func TestService_GetAccount_NoAccount(t *testing.T) {
 	idService := &testingcommons.MockIDService{}
 	repo, _, err := getRandomStorage()
 	assert.Nil(t, err)
@@ -49,7 +49,7 @@ func TestService_Getaccount_Noaccount(t *testing.T) {
 	assert.Nil(t, cfg)
 }
 
-func TestService_Getaccount(t *testing.T) {
+func TestService_GetAccount(t *testing.T) {
 	idService := &testingcommons.MockIDService{}
 	repo, _, err := getRandomStorage()
 	assert.Nil(t, err)

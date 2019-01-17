@@ -6,24 +6,15 @@ import (
 	"math/big"
 	"reflect"
 	"testing"
-
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
-	"github.com/golang/protobuf/proto"
-
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/config"
-
-	"github.com/centrifuge/go-centrifuge/config"
-
-	"github.com/ethereum/go-ethereum/common/hexutil"
-
-	"math/big"
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/config"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -290,7 +281,7 @@ func TestNodeConfigProtobuf(t *testing.T) {
 	assert.Equal(t, ncpb.MainIdentity.IdentityId, hexutil.Encode(ncCopy.MainIdentity.IdentityID))
 }
 
-func TestTenantConfigProtobuf_validationFailures(t *testing.T) {
+func TestAccountProtobuf_validationFailures(t *testing.T) {
 	c := &mockConfig{}
 	c.On("GetEthereumAccount", "name").Return(&config.AccountConfig{}, nil)
 	c.On("GetEthereumDefaultAccountName").Return("dummyAcc")

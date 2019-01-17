@@ -45,7 +45,7 @@ type webhookSender struct {
 
 // Send sends notification to the defined webhook.
 func (wh webhookSender) Send(ctx context.Context, notification *notificationpb.NotificationMessage) (Status, error) {
-	tc, err := contextutil.Tenant(ctx)
+	tc, err := contextutil.Account(ctx)
 	if err != nil {
 		return Failure, err
 	}

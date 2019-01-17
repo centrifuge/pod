@@ -106,7 +106,7 @@ func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, docu
 
 // MintNFT mints an NFT
 func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, documentID []byte, registryAddress, depositAddress string, proofFields []string) (*MintNFTResponse, error) {
-	tc, err := contextutil.Tenant(ctx)
+	tc, err := contextutil.Account(ctx)
 	if err != nil {
 		return nil, err
 	}
