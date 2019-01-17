@@ -51,8 +51,8 @@ func TestNFTMint_success(t *testing.T) {
 
 func mockmockConfigStore() *configstore.MockService {
 	mockConfigStore := &configstore.MockService{}
-	mockConfigStore.On("GetTenant", mock.Anything).Return(&configstore.TenantConfig{}, nil)
-	mockConfigStore.On("GetAllTenants").Return([]config.TenantConfiguration{&configstore.TenantConfig{}}, nil)
+	mockConfigStore.On("GetAccount", mock.Anything).Return(&configstore.Account{}, nil)
+	mockConfigStore.On("GetAllAccounts").Return([]config.Account{&configstore.Account{}}, nil)
 	return mockConfigStore
 }
 
@@ -60,7 +60,7 @@ func TestNFTMint_InvalidIdentifier(t *testing.T) {
 	nftMintRequest := getTestSetupData()
 	nftMintRequest.Identifier = "32321"
 	mockConfigStore := mockmockConfigStore()
-	mockConfigStore.On("GetAllTenants").Return(testingconfig.HandlerContext(mockConfigStore))
+	mockConfigStore.On("GetAllAccounts").Return(testingconfig.HandlerContext(mockConfigStore))
 	handler := grpcHandler{mockConfigStore, &mockPaymentObligationService{}}
 	_, err := handler.MintNFT(testingconfig.HandlerContext(mockConfigStore), nftMintRequest)
 	assert.Error(t, err, "invalid identifier should throw an error")

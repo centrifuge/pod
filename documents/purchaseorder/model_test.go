@@ -60,8 +60,8 @@ func TestMain(m *testing.M) {
 		&configstore.Bootstrapper{},
 		anchors.Bootstrapper{},
 		documents.Bootstrapper{},
-		p2p.Bootstrapper{},
 		&genericdoc.Bootstrapper{},
+		p2p.Bootstrapper{},
 		&Bootstrapper{},
 		&queue.Starter{},
 	}

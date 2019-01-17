@@ -44,7 +44,7 @@ func (h grpcHandler) GetTransactionStatus(ctx context.Context, req *transactions
 		return nil, ErrInvalidTransactionID
 	}
 
-	tc, err := contextutil.Tenant(ctxHeader)
+	tc, err := contextutil.Account(ctxHeader)
 	if err != nil {
 		return nil, ErrInvalidTenantID
 	}

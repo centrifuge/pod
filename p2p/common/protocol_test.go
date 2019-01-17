@@ -89,7 +89,7 @@ func TestPrepareP2PEnvelope(t *testing.T) {
 
 	id, _ := cfg.GetIdentityID()
 	spk, ssk := cfg.GetSigningKeyPair()
-	tc := &configstore.TenantConfig{
+	tc := &configstore.Account{
 		IdentityID: id,
 		SigningKeyPair: configstore.KeyPair{
 			Priv: ssk,

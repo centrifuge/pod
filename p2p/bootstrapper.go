@@ -5,6 +5,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/p2p/receiver"
@@ -35,8 +36,13 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("identity service not initialised")
 	}
 
+	genService, ok := ctx[genericdoc.BootstrappedGenService].(genericdoc.Service)
+	if !ok {
+		return errors.New("generic service is not initialised")
+	}
+
 	srv := &peer{config: cfgService, handlerCreator: func() *receiver.Handler {
-		return receiver.New(cfgService, registry, receiver.HandshakeValidator(cfg.GetNetworkID(), idService))
+		return receiver.New(cfgService, registry, receiver.HandshakeValidator(cfg.GetNetworkID(), idService), genService)
 	}}
 	ctx[bootstrap.BootstrappedP2PServer] = srv
 	ctx[bootstrap.BootstrappedP2PClient] = srv

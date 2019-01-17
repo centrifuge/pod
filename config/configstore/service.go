@@ -41,12 +41,12 @@ func (s service) GetConfig() (config.Configuration, error) {
 	return s.repo.GetConfig()
 }
 
-func (s service) GetTenant(identifier []byte) (config.TenantConfiguration, error) {
-	return s.repo.GetTenant(identifier)
+func (s service) GetAccount(identifier []byte) (config.Account, error) {
+	return s.repo.GetAccount(identifier)
 }
 
-func (s service) GetAllTenants() ([]config.TenantConfiguration, error) {
-	return s.repo.GetAllTenants()
+func (s service) GetAllAccounts() ([]config.Account, error) {
+	return s.repo.GetAllAccounts()
 }
 
 func (s service) CreateConfig(data config.Configuration) (config.Configuration, error) {
@@ -57,22 +57,22 @@ func (s service) CreateConfig(data config.Configuration) (config.Configuration, 
 	return data, s.repo.UpdateConfig(data)
 }
 
-func (s service) CreateTenant(data config.TenantConfiguration) (config.TenantConfiguration, error) {
+func (s service) CreateAccount(data config.Account) (config.Account, error) {
 	id, err := data.GetIdentityID()
 	if err != nil {
 		return nil, err
 	}
-	return data, s.repo.CreateTenant(id, data)
+	return data, s.repo.CreateAccount(id, data)
 }
 
-func (s service) GenerateTenant() (config.TenantConfiguration, error) {
+func (s service) GenerateAccount() (config.Account, error) {
 	nc, err := s.GetConfig()
 	if err != nil {
 		return nil, err
 	}
 
-	// copy the main tenant for basic settings
-	mtc, err := NewTenantConfig(nc.GetEthereumDefaultAccountName(), nc)
+	// copy the main account for basic settings
+	mtc, err := NewAccount(nc.GetEthereumDefaultAccountName(), nc)
 	if nil != err {
 		return nil, err
 	}
@@ -87,48 +87,48 @@ func (s service) GenerateTenant() (config.TenantConfiguration, error) {
 	}
 	<-confirmations
 
-	// copy the main tenant again to create the new tenant
-	tc, err := NewTenantConfig(nc.GetEthereumDefaultAccountName(), nc)
+	// copy the main account again to create the new account
+	acc, err := NewAccount(nc.GetEthereumDefaultAccountName(), nc)
 	if err != nil {
 		return nil, err
 	}
 
 	CID := id.CentID()
-	tc, err = generateTenantKeys(nc.GetTenantsKeystore(), tc.(*TenantConfig), CID)
+	acc, err = generateAccountKeys(nc.GetAccountsKeystore(), acc.(*Account), CID)
 	if err != nil {
 		return nil, err
 	}
 
-	// minor hack to set same p2p keys as node to tenant: Set the new tenant ID to copy of main tenant and create p2p keys
-	mtcc := mtc.(*TenantConfig)
+	// minor hack to set same p2p keys as node to account: Set the new account ID to copy of main account and create p2p keys
+	mtcc := mtc.(*Account)
 	mtcc.IdentityID = CID[:]
 	err = s.idService.AddKeyFromConfig(mtcc, identity.KeyPurposeP2P)
 	if err != nil {
 		return nil, err
 	}
 
-	err = s.idService.AddKeyFromConfig(tc, identity.KeyPurposeSigning)
+	err = s.idService.AddKeyFromConfig(acc, identity.KeyPurposeSigning)
 	if err != nil {
 		return nil, err
 	}
 
-	err = s.idService.AddKeyFromConfig(tc, identity.KeyPurposeEthMsgAuth)
+	err = s.idService.AddKeyFromConfig(acc, identity.KeyPurposeEthMsgAuth)
 	if err != nil {
 		return nil, err
 	}
 
-	err = s.repo.CreateTenant(CID[:], tc)
+	err = s.repo.CreateAccount(CID[:], acc)
 	if err != nil {
 		return nil, err
 	}
 
 	// initiate network handling
 	s.protocolSetterFinder().InitProtocolForCID(CID)
-	return tc, nil
+	return acc, nil
 }
 
-func generateTenantKeys(keystore string, tc *TenantConfig, CID identity.CentID) (*TenantConfig, error) {
-	tc.IdentityID = CID[:]
+func generateAccountKeys(keystore string, acc *Account, CID identity.CentID) (*Account, error) {
+	acc.IdentityID = CID[:]
 	Pub, err := createKeyPath(keystore, CID, signingPubKeyName)
 	if err != nil {
 		return nil, err
@@ -137,7 +137,7 @@ func generateTenantKeys(keystore string, tc *TenantConfig, CID identity.CentID) 
 	if err != nil {
 		return nil, err
 	}
-	tc.SigningKeyPair = KeyPair{
+	acc.SigningKeyPair = KeyPair{
 		Pub:  Pub,
 		Priv: Priv,
 	}
@@ -149,24 +149,24 @@ func generateTenantKeys(keystore string, tc *TenantConfig, CID identity.CentID) 
 	if err != nil {
 		return nil, err
 	}
-	tc.EthAuthKeyPair = KeyPair{
+	acc.EthAuthKeyPair = KeyPair{
 		Pub:  ePub,
 		Priv: ePriv,
 	}
-	err = crypto.GenerateSigningKeyPair(tc.SigningKeyPair.Pub, tc.SigningKeyPair.Priv, "ed25519")
+	err = crypto.GenerateSigningKeyPair(acc.SigningKeyPair.Pub, acc.SigningKeyPair.Priv, "ed25519")
 	if err != nil {
 		return nil, err
 	}
-	err = crypto.GenerateSigningKeyPair(tc.EthAuthKeyPair.Pub, tc.EthAuthKeyPair.Priv, "secp256k1")
+	err = crypto.GenerateSigningKeyPair(acc.EthAuthKeyPair.Pub, acc.EthAuthKeyPair.Priv, "secp256k1")
 	if err != nil {
 		return nil, err
 	}
-	return tc, nil
+	return acc, nil
 }
 
 func createKeyPath(keyStorepath string, CID identity.CentID, keyName string) (string, error) {
 	tdir := fmt.Sprintf("%s/%s", keyStorepath, CID.String())
-	// create tenant specific key dir
+	// create account specific key dir
 	if _, err := os.Stat(tdir); os.IsNotExist(err) {
 		err := os.MkdirAll(tdir, os.ModePerm)
 		if err != nil {
@@ -176,16 +176,16 @@ func createKeyPath(keyStorepath string, CID identity.CentID, keyName string) (st
 	return fmt.Sprintf("%s/%s", tdir, keyName), nil
 }
 
-func (s service) UpdateTenant(data config.TenantConfiguration) (config.TenantConfiguration, error) {
+func (s service) UpdateAccount(data config.Account) (config.Account, error) {
 	id, err := data.GetIdentityID()
 	if err != nil {
 		return nil, err
 	}
-	return data, s.repo.UpdateTenant(id, data)
+	return data, s.repo.UpdateAccount(id, data)
 }
 
-func (s service) DeleteTenant(identifier []byte) error {
-	return s.repo.DeleteTenant(identifier)
+func (s service) DeleteAccount(identifier []byte) error {
+	return s.repo.DeleteAccount(identifier)
 }
 
 // RetrieveConfig retrieves system config giving priority to db stored config

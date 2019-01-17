@@ -3,16 +3,14 @@ package nft
 import (
 	"context"
 
-	"github.com/centrifuge/go-centrifuge/config/configstore"
-	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
-	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/transactions"
-
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/queue"
+	"github.com/centrifuge/go-centrifuge/transactions"
 )
 
 const (
@@ -25,11 +23,6 @@ type Bootstrapper struct{}
 
 // Bootstrap initializes the payment obligation contract
 func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
-	cfg, err := configstore.RetrieveConfig(true, ctx)
-	if err != nil {
-		return err
-	}
-
 	if _, ok := ctx[ethereum.BootstrappedEthereumClient]; !ok {
 		return errors.New("ethereum client hasn't been initialized")
 	}
@@ -76,10 +69,5 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 			return h.Number.Uint64(), nil
 		})
 	ctx[BootstrappedPayObService] = payOb
-
-	// queue task
-	ethereumClient := ethereum.GetClient()
-	ethTransTask := ethereum.NewTransactionStatusTask(cfg.GetEthereumContextWaitTimeout(), txService, ethereumClient.TransactionByHash, ethereumClient.TransactionReceipt, ethereum.DefaultWaitForTransactionMiningContext)
-	queueSrv.RegisterTaskType(ethTransTask.TaskTypeName(), ethTransTask)
 	return nil
 }

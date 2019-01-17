@@ -6,6 +6,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/config"
+
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -43,7 +45,7 @@ func TestGrpcHandler_GetAccountNotExist(t *testing.T) {
 	idService := &testingcommons.MockIDService{}
 	repo, _, err := getRandomStorage()
 	assert.Nil(t, err)
-	repo.RegisterTenant(&TenantConfig{})
+	repo.RegisterAccount(&Account{})
 	svc := DefaultService(repo, idService)
 	h := GRPCAccountHandler(svc)
 	readCfg, err := h.GetAccount(context.Background(), &accountpb.GetAccountRequest{Identifier: "0x123456789"})
@@ -51,38 +53,62 @@ func TestGrpcHandler_GetAccountNotExist(t *testing.T) {
 	assert.Nil(t, readCfg)
 }
 
-func TestGrpcHandler_GetTenant(t *testing.T) {
+func TestGrpcHandler_GetAccount(t *testing.T) {
 	idService := &testingcommons.MockIDService{}
 	repo, _, err := getRandomStorage()
 	assert.Nil(t, err)
-	repo.RegisterTenant(&TenantConfig{})
+	repo.RegisterAccount(&Account{})
 	svc := DefaultService(repo, idService)
 	h := GRPCAccountHandler(svc)
-	tenantCfg, err := NewTenantConfig("main", cfg)
+	accountCfg, err := NewAccount("main", cfg)
 	assert.Nil(t, err)
-	_, err = h.CreateAccount(context.Background(), tenantCfg.CreateProtobuf())
+	accpb, err := accountCfg.CreateProtobuf()
+	assert.NoError(t, err)
+	_, err = h.CreateAccount(context.Background(), accpb)
 	assert.Nil(t, err)
-	tid, err := tenantCfg.GetIdentityID()
+	tid, err := accountCfg.GetIdentityID()
 	assert.Nil(t, err)
 	readCfg, err := h.GetAccount(context.Background(), &accountpb.GetAccountRequest{Identifier: hexutil.Encode(tid)})
 	assert.Nil(t, err)
 	assert.NotNil(t, readCfg)
 }
 
-func TestGrpcHandler_GetAllTenants(t *testing.T) {
+func TestGrpcHandler_deriveAllAccountResponseFailure(t *testing.T) {
 	idService := &testingcommons.MockIDService{}
 	repo, _, err := getRandomStorage()
 	assert.Nil(t, err)
-	repo.RegisterTenant(&TenantConfig{})
+	repo.RegisterAccount(&Account{})
 	svc := DefaultService(repo, idService)
 	h := GRPCAccountHandler(svc)
-	tenantCfg1, err := NewTenantConfig("main", cfg)
-	tenantCfg2, err := NewTenantConfig("main", cfg)
-	tc := tenantCfg2.(*TenantConfig)
-	tc.IdentityID = []byte("0x123456789")
-	_, err = h.CreateAccount(context.Background(), tenantCfg1.CreateProtobuf())
+	accountCfg1, err := NewAccount("main", cfg)
+	accountCfg2, err := NewAccount("main", cfg)
+	tco := accountCfg1.(*Account)
+	tco.EthereumAccount = nil
+	tcs := []config.Account{tco, accountCfg2}
+	hc := h.(*grpcHandler)
+	resp, err := hc.deriveAllAccountResponse(tcs)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(resp.Data))
+}
+
+func TestGrpcHandler_GetAllAccounts(t *testing.T) {
+	idService := &testingcommons.MockIDService{}
+	repo, _, err := getRandomStorage()
 	assert.Nil(t, err)
-	_, err = h.CreateAccount(context.Background(), tc.CreateProtobuf())
+	repo.RegisterAccount(&Account{})
+	svc := DefaultService(repo, idService)
+	h := GRPCAccountHandler(svc)
+	accountCfg1, err := NewAccount("main", cfg)
+	accountCfg2, err := NewAccount("main", cfg)
+	acc := accountCfg2.(*Account)
+	acc.IdentityID = []byte("0x123456789")
+	tc1pb, err := accountCfg1.CreateProtobuf()
+	assert.NoError(t, err)
+	_, err = h.CreateAccount(context.Background(), tc1pb)
+	assert.Nil(t, err)
+	accpb, err := acc.CreateProtobuf()
+	assert.NoError(t, err)
+	_, err = h.CreateAccount(context.Background(), accpb)
 	assert.Nil(t, err)
 
 	resp, err := h.GetAllAccounts(context.Background(), nil)
@@ -90,59 +116,69 @@ func TestGrpcHandler_GetAllTenants(t *testing.T) {
 	assert.Equal(t, 2, len(resp.Data))
 }
 
-func TestGrpcHandler_CreateTenant(t *testing.T) {
+func TestGrpcHandler_CreateAccount(t *testing.T) {
 	idService := &testingcommons.MockIDService{}
 	repo, _, err := getRandomStorage()
 	assert.Nil(t, err)
-	repo.RegisterTenant(&TenantConfig{})
+	repo.RegisterAccount(&Account{})
 	svc := DefaultService(repo, idService)
 	h := GRPCAccountHandler(svc)
-	nodeCfg, err := NewTenantConfig("main", cfg)
+	tc, err := NewAccount("main", cfg)
 	assert.Nil(t, err)
-	_, err = h.CreateAccount(context.Background(), nodeCfg.CreateProtobuf())
+	accpb, err := tc.CreateProtobuf()
+	assert.NoError(t, err)
+	_, err = h.CreateAccount(context.Background(), accpb)
 	assert.Nil(t, err)
 
 	// Already exists
-	_, err = h.CreateAccount(context.Background(), nodeCfg.CreateProtobuf())
+	accpb, err = tc.CreateProtobuf()
+	assert.NoError(t, err)
+	_, err = h.CreateAccount(context.Background(), accpb)
 	assert.NotNil(t, err)
 }
 
-func TestGrpcHandler_GenerateTenant(t *testing.T) {
+func TestGrpcHandler_GenerateAccount(t *testing.T) {
 	s := MockService{}
-	t1, _ := NewTenantConfig(cfg.GetEthereumDefaultAccountName(), cfg)
-	s.On("GenerateTenant").Return(t1, nil)
+	t1, _ := NewAccount(cfg.GetEthereumDefaultAccountName(), cfg)
+	s.On("GenerateAccount").Return(t1, nil)
 	h := GRPCAccountHandler(s)
 	tc, err := h.GenerateAccount(context.Background(), nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, tc)
 }
 
-func TestGrpcHandler_UpdateTenant(t *testing.T) {
+func TestGrpcHandler_UpdateAccount(t *testing.T) {
 	idService := &testingcommons.MockIDService{}
 	repo, _, err := getRandomStorage()
 	assert.Nil(t, err)
-	repo.RegisterTenant(&TenantConfig{})
+	repo.RegisterAccount(&Account{})
 	svc := DefaultService(repo, idService)
 	h := GRPCAccountHandler(svc)
-	nodeCfg, err := NewTenantConfig("main", cfg)
+	tcfg, err := NewAccount("main", cfg)
 	assert.Nil(t, err)
 
-	tid, err := nodeCfg.GetIdentityID()
+	tid, err := tcfg.GetIdentityID()
 	assert.Nil(t, err)
 
-	tc := nodeCfg.(*TenantConfig)
+	acc := tcfg.(*Account)
 
 	// Config doesn't exist
-	_, err = h.UpdateAccount(context.Background(), &accountpb.UpdateAccountRequest{Identifier: hexutil.Encode(tid), Data: nodeCfg.CreateProtobuf()})
+	accpb, err := tcfg.CreateProtobuf()
+	assert.NoError(t, err)
+	_, err = h.UpdateAccount(context.Background(), &accountpb.UpdateAccountRequest{Identifier: hexutil.Encode(tid), Data: accpb})
 	assert.NotNil(t, err)
 
-	_, err = h.CreateAccount(context.Background(), nodeCfg.CreateProtobuf())
+	accpb, err = tcfg.CreateProtobuf()
+	assert.NoError(t, err)
+	_, err = h.CreateAccount(context.Background(), accpb)
 	assert.Nil(t, err)
-	tc.EthereumDefaultAccountName = "other"
-	_, err = h.UpdateAccount(context.Background(), &accountpb.UpdateAccountRequest{Identifier: hexutil.Encode(tid), Data: tc.CreateProtobuf()})
+	acc.EthereumDefaultAccountName = "other"
+	tccpb, err := acc.CreateProtobuf()
+	assert.NoError(t, err)
+	_, err = h.UpdateAccount(context.Background(), &accountpb.UpdateAccountRequest{Identifier: hexutil.Encode(tid), Data: tccpb})
 	assert.Nil(t, err)
 
 	readCfg, err := h.GetAccount(context.Background(), &accountpb.GetAccountRequest{Identifier: hexutil.Encode(tid)})
 	assert.Nil(t, err)
-	assert.Equal(t, tc.EthereumDefaultAccountName, readCfg.EthDefaultAccountName)
+	assert.Equal(t, acc.EthereumDefaultAccountName, readCfg.EthDefaultAccountName)
 }

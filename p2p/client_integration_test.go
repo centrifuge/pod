@@ -75,17 +75,17 @@ func TestClient_SendAnchoredDocument(t *testing.T) {
 	}
 }
 
-func createLocalCollaborator(t *testing.T, corruptID bool) (*configstore.TenantConfig, identity.Identity, error) {
+func createLocalCollaborator(t *testing.T, corruptID bool) (*configstore.Account, identity.Identity, error) {
 	tcID := identity.RandomCentID()
-	tc, err := configstore.TempTenantConfig("", cfg)
+	tc, err := configstore.TempAccount("", cfg)
 	assert.NoError(t, err)
-	tcr := tc.(*configstore.TenantConfig)
+	tcr := tc.(*configstore.Account)
 	tcr.IdentityID = tcID[:]
 	id := testingidentity.CreateTenantIDWithKeys(cfg.GetEthereumContextWaitTimeout(), tcr, idService)
 	if corruptID {
 		tcr.IdentityID = utils.RandomSlice(identity.CentIDLength)
 	}
-	tc, err = cfgStore.CreateTenant(tcr)
+	tc, err = cfgStore.CreateAccount(tcr)
 	assert.NoError(t, err)
 	return tcr, id, err
 }

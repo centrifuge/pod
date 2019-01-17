@@ -394,7 +394,7 @@ func (ids *ethereumIdentityService) CheckIdentityExists(centrifugeID identity.Ce
 // CreateIdentity creates an identity representing the id on ethereum
 func (ids *ethereumIdentityService) CreateIdentity(ctx context.Context, centrifugeID identity.CentID) (id identity.Identity, confirmations chan *identity.WatchIdentity, err error) {
 	log.Infof("Creating Identity [%x]", centrifugeID)
-	tc, err := contextutil.Tenant(ctx)
+	tc, err := contextutil.Account(ctx)
 	if err != nil {
 		return nil, confirmations, err
 	}
