@@ -6,10 +6,9 @@ import (
 	"context"
 	"flag"
 
-	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
-
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	cented25519 "github.com/centrifuge/go-centrifuge/crypto/ed25519"
+	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 	"github.com/centrifuge/go-centrifuge/p2p/common"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
 	"github.com/golang/protobuf/proto"
@@ -65,6 +64,53 @@ func TestMain(m *testing.M) {
 	result := m.Run()
 	testingbootstrap.TestFunctionalEthereumTearDown()
 	os.Exit(result)
+}
+
+func TestHandler_GetDocument_nonexistentIdentifier(t *testing.T) {
+	b := utils.RandomSlice(32)
+	req := &p2ppb.GetDocumentRequest{DocumentIdentifier: b}
+	resp, err := handler.GetDocument(context.Background(), req)
+	assert.Error(t, err, "must return error")
+	assert.Nil(t, resp, "must be nil")
+}
+
+func TestHandler_GetDocumentSucceeds(t *testing.T) {
+	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	centrifugeId := createIdentity(t)
+
+	doc := prepareDocumentForP2PHandler(t, nil)
+	req := getSignatureRequest(doc)
+	resp, err := handler.RequestDocumentSignature(ctxh, req)
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+
+	// Add signature received
+	doc.Signatures = append(doc.Signatures, resp.Signature)
+	tree, _ := coredocument.GetDocumentRootTree(doc)
+	doc.DocumentRoot = tree.RootHash()
+
+	// Anchor document
+	idConfig, err := identity.GetIdentityConfig(cfg)
+	anchorIDTyped, _ := anchors.ToAnchorID(doc.CurrentVersion)
+	docRootTyped, _ := anchors.ToDocumentRoot(doc.DocumentRoot)
+	messageToSign := anchors.GenerateCommitHash(anchorIDTyped, centrifugeId, docRootTyped)
+	signature, _ := secp256k1.SignEthereum(messageToSign, idConfig.Keys[identity.KeyPurposeEthMsgAuth].PrivateKey)
+	anchorConfirmations, err := anchorRepo.CommitAnchor(ctxh, anchorIDTyped, docRootTyped, centrifugeId, [][anchors.DocumentProofLength]byte{utils.RandomByte32()}, signature)
+	assert.Nil(t, err)
+
+	watchCommittedAnchor := <-anchorConfirmations
+	assert.Nil(t, watchCommittedAnchor.Error, "No error should be thrown by context")
+
+	anchorReq := getAnchoredRequest(doc)
+	anchorResp, err := handler.SendAnchoredDocument(ctxh, anchorReq, idConfig.ID[:])
+	assert.Nil(t, err)
+	assert.NotNil(t, anchorResp, "must be non nil")
+
+	// Retrieve document from anchor repository with document_identifier
+	getReq := getGetDocumentRequest(doc)
+	getDocResp, err := handler.GetDocument(ctxh, getReq)
+	assert.Nil(t, err)
+	assert.ObjectsAreEqual(getDocResp.Document, doc)
 }
 
 func TestHandler_HandleInterceptorReqSignature(t *testing.T) {
@@ -306,6 +352,10 @@ func getAnchoredRequest(doc *coredocumentpb.CoreDocument) *p2ppb.AnchorDocumentR
 
 func getSignatureRequest(doc *coredocumentpb.CoreDocument) *p2ppb.SignatureRequest {
 	return &p2ppb.SignatureRequest{Document: doc}
+}
+
+func getGetDocumentRequest(doc *coredocumentpb.CoreDocument) *p2ppb.GetDocumentRequest {
+	return &p2ppb.GetDocumentRequest{DocumentIdentifier: doc.DocumentIdentifier}
 }
 
 func resolveSignatureResponse(t *testing.T, p2pEnv *protocolpb.P2PEnvelope) *p2ppb.SignatureResponse {

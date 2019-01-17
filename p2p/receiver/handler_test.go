@@ -11,10 +11,9 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
-
 	"github.com/centrifuge/go-centrifuge/p2p/common"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -44,13 +43,12 @@ import (
 )
 
 var (
-	handler        *Handler
-	registry       *documents.ServiceRegistry
-	coreDoc        = testingcoredocument.GenerateCoreDocument()
-	cfg            config.Configuration
-	mockIDService  *testingcommons.MockIDService
-	defaultPID     libp2pPeer.ID
-	genericService genericdoc.Service
+	handler       *Handler
+	registry      *documents.ServiceRegistry
+	coreDoc       = testingcoredocument.GenerateCoreDocument()
+	cfg           config.Configuration
+	mockIDService *testingcommons.MockIDService
+	defaultPID    libp2pPeer.ID
 )
 
 func TestMain(m *testing.M) {
@@ -61,6 +59,7 @@ func TestMain(m *testing.M) {
 		&configstore.Bootstrapper{},
 		&queue.Bootstrapper{},
 		transactions.Bootstrapper{},
+		&genericdoc.Bootstrapper{},
 		documents.Bootstrapper{},
 	}
 	ctx := make(map[string]interface{})
@@ -69,11 +68,12 @@ func TestMain(m *testing.M) {
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfgService := ctx[config.BootstrappedConfigStorage].(config.Service)
 	registry = ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
+	genService := ctx[genericdoc.BootstrappedGenService].(genericdoc.Service)
 	mockIDService = &testingcommons.MockIDService{}
 	_, pub, _ := crypto.GenerateEd25519Key(rand.Reader)
 	defaultPID, _ = libp2pPeer.IDFromPublicKey(pub)
 	mockIDService.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything).Return(nil)
-	handler = New(cfgService, registry, HandshakeValidator(cfg.GetNetworkID(), mockIDService), genericService)
+	handler = New(cfgService, registry, HandshakeValidator(cfg.GetNetworkID(), mockIDService), genService)
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)
