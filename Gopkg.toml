@@ -44,7 +44,7 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
 
 [[constraint]]
   name = "github.com/centrifuge/gocelery"
-  revision = "80f35a18b9a0c632d7843e7e536873b0536f0040"
+  revision = "fb11151a227ae41660e15f6c10e2e22eb1556531"
 
 [[override]]
   name = "github.com/xsleonard/go-merkle"
@@ -226,7 +226,7 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
   name = "github.com/stretchr/testify"
   version = "1.2.2"
 
-[[constraint]]
+[[override]]
   name = "github.com/syndtr/goleveldb"
   revision = "ae2bd5eed72d46b28834ec3f60db3a3ebedd8dbd"
 
