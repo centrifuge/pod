@@ -94,7 +94,7 @@ func (d *documentAnchorTask) RunTask() (res interface{}, err error) {
 		err = d.UpdateTransaction(d.tenantID, d.TaskTypeName(), err)
 	}()
 
-	tc, err := d.config.GetTenant(d.tenantID[:])
+	tc, err := d.config.GetAccount(d.tenantID[:])
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))

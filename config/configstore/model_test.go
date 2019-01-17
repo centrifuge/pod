@@ -3,23 +3,18 @@
 package configstore
 
 import (
+	"math/big"
 	"reflect"
 	"testing"
-
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
-	"github.com/golang/protobuf/proto"
-
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/config"
-
-	"github.com/centrifuge/go-centrifuge/config"
-
-	"github.com/ethereum/go-ethereum/common/hexutil"
-
-	"math/big"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/config"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -105,7 +100,7 @@ func (m *mockConfig) GetConfigStoragePath() string {
 	return args.Get(0).(string)
 }
 
-func (m *mockConfig) GetTenantsKeystore() string {
+func (m *mockConfig) GetAccountsKeystore() string {
 	args := m.Called()
 	return args.Get(0).(string)
 }
@@ -252,7 +247,7 @@ func TestNewNodeConfig(t *testing.T) {
 	c.AssertExpectations(t)
 }
 
-func TestNewTenantConfig(t *testing.T) {
+func TestNewAccountConfig(t *testing.T) {
 	c := &mockConfig{}
 	c.On("GetEthereumAccount", "name").Return(&config.AccountConfig{}, nil).Once()
 	c.On("GetEthereumDefaultAccountName").Return("dummyAcc").Once()
@@ -261,7 +256,7 @@ func TestNewTenantConfig(t *testing.T) {
 	c.On("GetSigningKeyPair").Return("pub", "priv").Once()
 	c.On("GetEthAuthKeyPair").Return("pub", "priv").Once()
 	c.On("GetEthereumContextWaitTimeout").Return(time.Second).Once()
-	_, err := NewTenantConfig("name", c)
+	_, err := NewAccount("name", c)
 	assert.NoError(t, err)
 	c.AssertExpectations(t)
 }
@@ -286,7 +281,7 @@ func TestNodeConfigProtobuf(t *testing.T) {
 	assert.Equal(t, ncpb.MainIdentity.IdentityId, hexutil.Encode(ncCopy.MainIdentity.IdentityID))
 }
 
-func TestTenantConfigProtobuf_validationFailures(t *testing.T) {
+func TestAccountProtobuf_validationFailures(t *testing.T) {
 	c := &mockConfig{}
 	c.On("GetEthereumAccount", "name").Return(&config.AccountConfig{}, nil)
 	c.On("GetEthereumDefaultAccountName").Return("dummyAcc")
@@ -295,49 +290,49 @@ func TestTenantConfigProtobuf_validationFailures(t *testing.T) {
 	c.On("GetSigningKeyPair").Return("pub", "priv")
 	c.On("GetEthAuthKeyPair").Return("pub", "priv")
 	c.On("GetEthereumContextWaitTimeout").Return(time.Second)
-	tc, err := NewTenantConfig("name", c)
+	tc, err := NewAccount("name", c)
 	assert.Nil(t, err)
 	c.AssertExpectations(t)
 
 	// Nil EthAccount
-	tco := tc.(*TenantConfig)
+	tco := tc.(*Account)
 	tco.EthereumAccount = nil
-	tcpb, err := tco.CreateProtobuf()
+	accpb, err := tco.CreateProtobuf()
 	assert.Error(t, err)
-	assert.Nil(t, tcpb)
+	assert.Nil(t, accpb)
 
 	// Nil payload
-	tc, err = NewTenantConfig("name", c)
+	tc, err = NewAccount("name", c)
 	assert.Nil(t, err)
-	tcpb, err = tc.CreateProtobuf()
+	accpb, err = tc.CreateProtobuf()
 	assert.NoError(t, err)
-	tco = tc.(*TenantConfig)
+	tco = tc.(*Account)
 	err = tco.loadFromProtobuf(nil)
 	assert.Error(t, err)
 
 	// Nil EthAccount
-	ethacc := proto.Clone(tcpb.EthAccount)
-	tcpb.EthAccount = nil
-	err = tco.loadFromProtobuf(tcpb)
+	ethacc := proto.Clone(accpb.EthAccount)
+	accpb.EthAccount = nil
+	err = tco.loadFromProtobuf(accpb)
 	assert.Error(t, err)
-	tcpb.EthAccount = ethacc.(*accountpb.EthereumAccount)
+	accpb.EthAccount = ethacc.(*accountpb.EthereumAccount)
 
 	// Nil SigningKeyPair
-	signKey := proto.Clone(tcpb.SigningKeyPair)
-	tcpb.SigningKeyPair = nil
-	err = tco.loadFromProtobuf(tcpb)
+	signKey := proto.Clone(accpb.SigningKeyPair)
+	accpb.SigningKeyPair = nil
+	err = tco.loadFromProtobuf(accpb)
 	assert.Error(t, err)
-	tcpb.SigningKeyPair = signKey.(*accountpb.KeyPair)
+	accpb.SigningKeyPair = signKey.(*accountpb.KeyPair)
 
 	// Nil EthauthKeyPair
-	ethAuthKey := proto.Clone(tcpb.EthauthKeyPair)
-	tcpb.EthauthKeyPair = nil
-	err = tco.loadFromProtobuf(tcpb)
+	ethAuthKey := proto.Clone(accpb.EthauthKeyPair)
+	accpb.EthauthKeyPair = nil
+	err = tco.loadFromProtobuf(accpb)
 	assert.Error(t, err)
-	tcpb.EthauthKeyPair = ethAuthKey.(*accountpb.KeyPair)
+	accpb.EthauthKeyPair = ethAuthKey.(*accountpb.KeyPair)
 }
 
-func TestTenantConfigProtobuf(t *testing.T) {
+func TestAccountConfigProtobuf(t *testing.T) {
 	c := &mockConfig{}
 	c.On("GetEthereumAccount", "name").Return(&config.AccountConfig{}, nil).Once()
 	c.On("GetEthereumDefaultAccountName").Return("dummyAcc").Once()
@@ -346,31 +341,31 @@ func TestTenantConfigProtobuf(t *testing.T) {
 	c.On("GetSigningKeyPair").Return("pub", "priv").Once()
 	c.On("GetEthAuthKeyPair").Return("pub", "priv").Once()
 	c.On("GetEthereumContextWaitTimeout").Return(time.Second).Once()
-	tc, err := NewTenantConfig("name", c)
+	tc, err := NewAccount("name", c)
 	assert.Nil(t, err)
 	c.AssertExpectations(t)
 
-	tcpb, err := tc.CreateProtobuf()
+	accpb, err := tc.CreateProtobuf()
 	assert.NoError(t, err)
-	assert.Equal(t, tc.GetReceiveEventNotificationEndpoint(), tcpb.ReceiveEventNotificationEndpoint)
+	assert.Equal(t, tc.GetReceiveEventNotificationEndpoint(), accpb.ReceiveEventNotificationEndpoint)
 	i, err := tc.GetIdentityID()
 	assert.Nil(t, err)
-	assert.Equal(t, hexutil.Encode(i), tcpb.IdentityId)
+	assert.Equal(t, hexutil.Encode(i), accpb.IdentityId)
 	_, priv := tc.GetSigningKeyPair()
-	assert.Equal(t, priv, tcpb.SigningKeyPair.Pvt)
+	assert.Equal(t, priv, accpb.SigningKeyPair.Pvt)
 
-	tcCopy := new(TenantConfig)
-	err = tcCopy.loadFromProtobuf(tcpb)
+	tcCopy := new(Account)
+	err = tcCopy.loadFromProtobuf(accpb)
 	assert.NoError(t, err)
-	assert.Equal(t, tcpb.ReceiveEventNotificationEndpoint, tcCopy.ReceiveEventNotificationEndpoint)
-	assert.Equal(t, tcpb.IdentityId, hexutil.Encode(tcCopy.IdentityID))
-	assert.Equal(t, tcpb.SigningKeyPair.Pvt, tcCopy.SigningKeyPair.Priv)
+	assert.Equal(t, accpb.ReceiveEventNotificationEndpoint, tcCopy.ReceiveEventNotificationEndpoint)
+	assert.Equal(t, accpb.IdentityId, hexutil.Encode(tcCopy.IdentityID))
+	assert.Equal(t, accpb.SigningKeyPair.Pvt, tcCopy.SigningKeyPair.Priv)
 }
 
 func createMockConfig() *mockConfig {
 	c := &mockConfig{}
 	c.On("GetStoragePath").Return("dummyStorage").Once()
-	c.On("GetTenantsKeystore").Return("dummyKeyStorage").Once()
+	c.On("GetAccountsKeystore").Return("dummyKeyStorage").Once()
 	c.On("GetP2PPort").Return(30000).Once()
 	c.On("GetP2PExternalIP").Return("ip").Once()
 	c.On("GetP2PConnectionTimeout").Return(time.Second).Once()

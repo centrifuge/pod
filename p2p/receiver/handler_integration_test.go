@@ -116,8 +116,8 @@ func TestHandler_GetDocumentSucceeds(t *testing.T) {
 func TestHandler_HandleInterceptorReqSignature(t *testing.T) {
 	centID := createIdentity(t)
 	ctxh := testingconfig.CreateTenantContext(t, cfg)
-	tc, err := contextutil.Tenant(ctxh)
-	_, err = cfgService.CreateTenant(tc)
+	tc, err := contextutil.Account(ctxh)
+	_, err = cfgService.CreateAccount(tc)
 	assert.NoError(t, err)
 	doc := prepareDocumentForP2PHandler(t, nil)
 	req := getSignatureRequest(doc)
