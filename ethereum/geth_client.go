@@ -11,6 +11,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/queue"
+	"github.com/centrifuge/go-centrifuge/transactions"
+
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -19,6 +23,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 	logging "github.com/ipfs/go-log"
+	"github.com/satori/go.uuid"
 )
 
 const (
@@ -77,6 +82,9 @@ type Client interface {
 
 	// TransactionReceipt return receipt of a transaction
 	TransactionReceipt(ctx context.Context, txHash common.Hash) (*types.Receipt, error)
+
+	// SubmitTransaction creates an Ethereum transactions with retries
+	SubmitTransaction(tendantID identity.CentID, contractMethod interface{}, opts *bind.TransactOpts, params ...interface{}) (*uuid.UUID, *types.Transaction, error)
 }
 
 // gethClient implements Client for Ethereum
@@ -87,13 +95,15 @@ type gethClient struct {
 	accounts  map[string]*bind.TransactOpts
 	accMu     sync.Mutex // accMu to protect accounts
 	config    Config
+	txService transactions.Service
+	queue     *queue.Server
 
 	// txMu to ensure one transaction at a time per client
 	txMu sync.Mutex
 }
 
 // NewGethClient returns an gethClient which implements Client
-func NewGethClient(config Config) (Client, error) {
+func NewGethClient(config Config, transService transactions.Service, queue *queue.Server) (Client, error) {
 	log.Info("Opening connection to Ethereum:", config.GetEthereumNodeURL())
 	u, err := url.Parse(config.GetEthereumNodeURL())
 	if err != nil {
@@ -113,6 +123,8 @@ func NewGethClient(config Config) (Client, error) {
 		txMu:      sync.Mutex{},
 		accMu:     sync.Mutex{},
 		config:    config,
+		txService: transService,
+		queue:     queue,
 	}, nil
 }
 
@@ -192,6 +204,37 @@ func (gc *gethClient) getGethTxOpts(accountName string) (*bind.TransactOpts, err
 	opts.GasLimit = gc.config.GetEthereumGasLimit()
 	opts.Context = context.Background()
 	return opts, nil
+}
+
+func (gc *gethClient) queueTaskTransactionStatus(tenantID identity.CentID, txHash string) (txID uuid.UUID, err error) {
+	tx, err := gc.txService.CreateTransaction(tenantID, "polling Ethereum transaction status")
+	if err != nil {
+		return txID, err
+	}
+	_, err = gc.queue.EnqueueJob(TransactionStatusTaskName, map[string]interface{}{
+		transactions.TxIDParam:  tx.ID.String(),
+		TransactionAccountParam: tenantID.String(),
+		TransactionTxHashParam:  txHash,
+	})
+
+	return tx.ID, err
+}
+
+// SubmitTransaction creates an Ethereum transactions with retries
+func (gc *gethClient) SubmitTransaction(account identity.CentID, contractMethod interface{}, opts *bind.TransactOpts, params ...interface{}) (*uuid.UUID, *types.Transaction, error) {
+	tx, err := gc.SubmitTransactionWithRetries(contractMethod, opts, params...)
+	if err != nil {
+		return nil, nil, errors.New("Submit Ethereum transaction failed: %v", err)
+	}
+
+	txHash := tx.Hash()
+	txID, err := gc.queueTaskTransactionStatus(account, txHash.String())
+
+	if err != nil {
+		return nil, nil, errors.New("Failed to generated a queue task to poll the Ethereum transaction status: %v", err)
+	}
+	return &txID, tx, nil
+
 }
 
 /**
