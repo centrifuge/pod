@@ -3,6 +3,8 @@ package configstore
 import (
 	"context"
 
+	"github.com/centrifuge/go-centrifuge/errors"
+
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/config"
@@ -10,6 +12,9 @@ import (
 	"github.com/golang/protobuf/ptypes/empty"
 	logging "github.com/ipfs/go-log"
 )
+
+// ErrDerivingAccount used as generic account deriver type
+const ErrDerivingAccount = errors.Error("error deriving account")
 
 var apiLog = logging.Logger("account-api")
 
@@ -27,10 +32,20 @@ func GRPCAccountHandler(svc config.Service) accountpb.AccountServiceServer {
 	return &grpcHandler{service: svc}
 }
 
+// deriveAllAccountResponse derives all valid accounts, will not return accounts that fail at load time
 func (h grpcHandler) deriveAllAccountResponse(cfgs []config.Account) (*accountpb.GetAllAccountResponse, error) {
 	response := new(accountpb.GetAllAccountResponse)
 	for _, t := range cfgs {
-		response.Data = append(response.Data, t.CreateProtobuf())
+		tpb, err := t.CreateProtobuf()
+		if err != nil {
+			bID, err := t.GetIdentityID()
+			if err != nil {
+				apiLog.Errorf("%v", errors.NewTypedError(ErrDerivingAccount, errors.New("error getting ID: %v", err)))
+			}
+			apiLog.Errorf("%v", errors.NewTypedError(ErrDerivingAccount, errors.New("account [%s]: %v", hexutil.Encode(bID), err)))
+			continue
+		}
+		response.Data = append(response.Data, tpb)
 	}
 	return response, nil
 }
@@ -52,7 +67,7 @@ func (h grpcHandler) GetAccount(ctx context.Context, req *accountpb.GetAccountRe
 	if err != nil {
 		return nil, err
 	}
-	return accountConfig.CreateProtobuf(), nil
+	return accountConfig.CreateProtobuf()
 }
 
 func (h grpcHandler) GetAllAccounts(ctx context.Context, req *empty.Empty) (*accountpb.GetAllAccountResponse, error) {
@@ -66,12 +81,15 @@ func (h grpcHandler) GetAllAccounts(ctx context.Context, req *empty.Empty) (*acc
 func (h grpcHandler) CreateAccount(ctx context.Context, data *accountpb.AccountData) (*accountpb.AccountData, error) {
 	apiLog.Infof("Creating account: %v", data)
 	accountConfig := new(Account)
-	accountConfig.loadFromProtobuf(data)
+	err := accountConfig.loadFromProtobuf(data)
+	if err != nil {
+		return nil, err
+	}
 	tc, err := h.service.CreateAccount(accountConfig)
 	if err != nil {
 		return nil, err
 	}
-	return tc.CreateProtobuf(), nil
+	return tc.CreateProtobuf()
 }
 
 func (h grpcHandler) GenerateAccount(ctx context.Context, req *empty.Empty) (*accountpb.AccountData, error) {
@@ -80,16 +98,19 @@ func (h grpcHandler) GenerateAccount(ctx context.Context, req *empty.Empty) (*ac
 	if err != nil {
 		return nil, err
 	}
-	return tc.CreateProtobuf(), nil
+	return tc.CreateProtobuf()
 }
 
 func (h grpcHandler) UpdateAccount(ctx context.Context, req *accountpb.UpdateAccountRequest) (*accountpb.AccountData, error) {
 	apiLog.Infof("Updating account: %v", req)
 	accountConfig := new(Account)
-	accountConfig.loadFromProtobuf(req.Data)
+	err := accountConfig.loadFromProtobuf(req.Data)
+	if err != nil {
+		return nil, err
+	}
 	tc, err := h.service.UpdateAccount(accountConfig)
 	if err != nil {
 		return nil, err
 	}
-	return tc.CreateProtobuf(), nil
+	return tc.CreateProtobuf()
 }
