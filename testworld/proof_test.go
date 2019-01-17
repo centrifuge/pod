@@ -3,10 +3,8 @@
 package testworld
 
 import (
-	"math/rand"
 	"net/http"
 	"testing"
-	"time"
 
 	"github.com/gavv/httpexpect"
 )
@@ -24,8 +22,6 @@ func TestProofWithMultipleFields_po_successful(t *testing.T) {
 }
 
 func proofWithMultipleFields_successful(t *testing.T, documentType string) {
-	// TODO remove this when we have retry for tasks
-	time.Sleep(time.Duration(rand.Intn(5)) * time.Second)
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 
