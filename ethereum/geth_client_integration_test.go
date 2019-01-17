@@ -57,8 +57,8 @@ func TestMain(m *testing.M) {
 		&config.Bootstrapper{},
 		&leveldb.Bootstrapper{},
 		transactions.Bootstrapper{},
-		ethereum.Bootstrapper{},
 		&queue.Bootstrapper{},
+		ethereum.Bootstrapper{},
 		&ethid.Bootstrapper{},
 		&configstore.Bootstrapper{},
 	}
@@ -93,7 +93,7 @@ func TestGetConnection_returnsSameConnection(t *testing.T) {
 }
 
 func TestNewGethClient(t *testing.T) {
-	gc, err := ethereum.NewGethClient(cfg)
+	gc, err := ethereum.NewGethClient(cfg, nil, nil)
 	assert.Nil(t, err)
 	assert.NotNil(t, gc)
 }

@@ -136,15 +136,9 @@ func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, documentID []by
 		return nil, err
 	}
 
-	txHash, err := s.sendMintTransaction(contract, opts, requestData)
+	txID, _, err := s.sendMintTransaction(cid, contract, opts, requestData)
 	if err != nil {
 		return nil, errors.New("failed to send transaction: %v", err)
-	}
-
-	txID, err := s.queueTaskTransaction(cid, txHash)
-
-	if err != nil {
-		return nil, err
 	}
 
 	return &MintNFTResponse{
@@ -153,34 +147,19 @@ func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, documentID []by
 	}, nil
 }
 
-func (s *ethereumPaymentObligation) queueTaskTransaction(tenantID identity.CentID, txHash string) (txID uuid.UUID, err error) {
-	tx, err := s.txService.CreateTransaction(tenantID, "Mint NFT")
-	if err != nil {
-		return txID, err
-	}
-	_, err = s.queue.EnqueueJobWithMaxTries(ethereum.TransactionStatusTaskName, map[string]interface{}{
-		transactions.TxIDParam:           tx.ID.String(),
-		ethereum.TransactionAccountParam: tenantID.String(),
-		ethereum.TransactionTxHashParam:  txHash,
-	})
-
-	return tx.ID, err
-}
-
 // sendMintTransaction sends the actual transaction to mint the NFT
-func (s *ethereumPaymentObligation) sendMintTransaction(contract ethereumPaymentObligationContract, opts *bind.TransactOpts, requestData *MintRequest) (string, error) {
-	tx, err := s.ethClient.SubmitTransactionWithRetries(contract.Mint, opts, requestData.To, requestData.TokenID, requestData.TokenURI, requestData.AnchorID,
+func (s *ethereumPaymentObligation) sendMintTransaction(cid identity.CentID, contract ethereumPaymentObligationContract, opts *bind.TransactOpts, requestData *MintRequest) (*uuid.UUID, *types.Transaction, error) {
+	tx, ethTx, err := s.ethClient.SubmitTransaction(cid, contract.Mint, opts, requestData.To, requestData.TokenID, requestData.TokenURI, requestData.AnchorID,
 		requestData.MerkleRoot, requestData.Values, requestData.Salts, requestData.Proofs)
-	if err != nil {
-		return "", err
-	}
 
-	txHash := tx.Hash()
+	if err != nil {
+		return nil, nil, err
+	}
 
 	log.Infof("Sent off tx to mint [tokenID: %x, anchor: %x, registry: %x] to payment obligation contract. Ethereum transaction hash [%x] and Nonce [%v] and Check [%v]",
-		requestData.TokenID, requestData.AnchorID, requestData.To, tx.Hash(), tx.Nonce(), tx.CheckNonce())
-	log.Infof("Transfer pending: 0x%x\n", tx.Hash())
-	return txHash.String(), nil
+		requestData.TokenID, requestData.AnchorID, requestData.To, ethTx.Hash(), ethTx.Nonce(), ethTx.CheckNonce())
+	log.Infof("Transfer pending: 0x%x\n", ethTx.Hash())
+	return tx, ethTx, nil
 }
 
 // MintRequest holds the data needed to mint and NFT from a Centrifuge document
