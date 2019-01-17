@@ -6,6 +6,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/config"
+
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -60,13 +62,33 @@ func TestGrpcHandler_GetTenant(t *testing.T) {
 	h := GRPCAccountHandler(svc)
 	tenantCfg, err := NewTenantConfig("main", cfg)
 	assert.Nil(t, err)
-	_, err = h.CreateAccount(context.Background(), tenantCfg.CreateProtobuf())
+	tcpb, err := tenantCfg.CreateProtobuf()
+	assert.NoError(t, err)
+	_, err = h.CreateAccount(context.Background(), tcpb)
 	assert.Nil(t, err)
 	tid, err := tenantCfg.GetIdentityID()
 	assert.Nil(t, err)
 	readCfg, err := h.GetAccount(context.Background(), &accountpb.GetAccountRequest{Identifier: hexutil.Encode(tid)})
 	assert.Nil(t, err)
 	assert.NotNil(t, readCfg)
+}
+
+func TestGrpcHandler_deriveAllTenantResponseFailure(t *testing.T) {
+	idService := &testingcommons.MockIDService{}
+	repo, _, err := getRandomStorage()
+	assert.Nil(t, err)
+	repo.RegisterTenant(&TenantConfig{})
+	svc := DefaultService(repo, idService)
+	h := GRPCAccountHandler(svc)
+	tenantCfg1, err := NewTenantConfig("main", cfg)
+	tenantCfg2, err := NewTenantConfig("main", cfg)
+	tco := tenantCfg1.(*TenantConfig)
+	tco.EthereumAccount = nil
+	tcs := []config.TenantConfiguration{tco, tenantCfg2}
+	hc := h.(*grpcHandler)
+	resp, err := hc.deriveAllTenantResponse(tcs)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(resp.Data))
 }
 
 func TestGrpcHandler_GetAllTenants(t *testing.T) {
@@ -80,9 +102,13 @@ func TestGrpcHandler_GetAllTenants(t *testing.T) {
 	tenantCfg2, err := NewTenantConfig("main", cfg)
 	tc := tenantCfg2.(*TenantConfig)
 	tc.IdentityID = []byte("0x123456789")
-	_, err = h.CreateAccount(context.Background(), tenantCfg1.CreateProtobuf())
+	tc1pb, err := tenantCfg1.CreateProtobuf()
+	assert.NoError(t, err)
+	_, err = h.CreateAccount(context.Background(), tc1pb)
 	assert.Nil(t, err)
-	_, err = h.CreateAccount(context.Background(), tc.CreateProtobuf())
+	tcpb, err := tc.CreateProtobuf()
+	assert.NoError(t, err)
+	_, err = h.CreateAccount(context.Background(), tcpb)
 	assert.Nil(t, err)
 
 	resp, err := h.GetAllAccounts(context.Background(), nil)
@@ -97,13 +123,17 @@ func TestGrpcHandler_CreateTenant(t *testing.T) {
 	repo.RegisterTenant(&TenantConfig{})
 	svc := DefaultService(repo, idService)
 	h := GRPCAccountHandler(svc)
-	nodeCfg, err := NewTenantConfig("main", cfg)
+	tc, err := NewTenantConfig("main", cfg)
 	assert.Nil(t, err)
-	_, err = h.CreateAccount(context.Background(), nodeCfg.CreateProtobuf())
+	tcpb, err := tc.CreateProtobuf()
+	assert.NoError(t, err)
+	_, err = h.CreateAccount(context.Background(), tcpb)
 	assert.Nil(t, err)
 
 	// Already exists
-	_, err = h.CreateAccount(context.Background(), nodeCfg.CreateProtobuf())
+	tcpb, err = tc.CreateProtobuf()
+	assert.NoError(t, err)
+	_, err = h.CreateAccount(context.Background(), tcpb)
 	assert.NotNil(t, err)
 }
 
@@ -124,22 +154,28 @@ func TestGrpcHandler_UpdateTenant(t *testing.T) {
 	repo.RegisterTenant(&TenantConfig{})
 	svc := DefaultService(repo, idService)
 	h := GRPCAccountHandler(svc)
-	nodeCfg, err := NewTenantConfig("main", cfg)
+	tcfg, err := NewTenantConfig("main", cfg)
 	assert.Nil(t, err)
 
-	tid, err := nodeCfg.GetIdentityID()
+	tid, err := tcfg.GetIdentityID()
 	assert.Nil(t, err)
 
-	tc := nodeCfg.(*TenantConfig)
+	tc := tcfg.(*TenantConfig)
 
 	// Config doesn't exist
-	_, err = h.UpdateAccount(context.Background(), &accountpb.UpdateAccountRequest{Identifier: hexutil.Encode(tid), Data: nodeCfg.CreateProtobuf()})
+	tcpb, err := tcfg.CreateProtobuf()
+	assert.NoError(t, err)
+	_, err = h.UpdateAccount(context.Background(), &accountpb.UpdateAccountRequest{Identifier: hexutil.Encode(tid), Data: tcpb})
 	assert.NotNil(t, err)
 
-	_, err = h.CreateAccount(context.Background(), nodeCfg.CreateProtobuf())
+	tcpb, err = tcfg.CreateProtobuf()
+	assert.NoError(t, err)
+	_, err = h.CreateAccount(context.Background(), tcpb)
 	assert.Nil(t, err)
 	tc.EthereumDefaultAccountName = "other"
-	_, err = h.UpdateAccount(context.Background(), &accountpb.UpdateAccountRequest{Identifier: hexutil.Encode(tid), Data: tc.CreateProtobuf()})
+	tccpb, err := tc.CreateProtobuf()
+	assert.NoError(t, err)
+	_, err = h.UpdateAccount(context.Background(), &accountpb.UpdateAccountRequest{Identifier: hexutil.Encode(tid), Data: tccpb})
 	assert.Nil(t, err)
 
 	readCfg, err := h.GetAccount(context.Background(), &accountpb.GetAccountRequest{Identifier: hexutil.Encode(tid)})

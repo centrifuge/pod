@@ -124,7 +124,7 @@ type TenantConfiguration interface {
 	GetEthereumContextWaitTimeout() time.Duration
 
 	// CreateProtobuf creates protobuf
-	CreateProtobuf() *accountpb.AccountData
+	CreateProtobuf() (*accountpb.AccountData, error)
 }
 
 // Service exposes functions over the config objects
