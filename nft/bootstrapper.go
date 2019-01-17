@@ -3,20 +3,20 @@ package nft
 import (
 	"context"
 
-	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
-
-	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/transactions"
-
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/queue"
+	"github.com/centrifuge/go-centrifuge/transactions"
 )
 
-// BootstrappedPayObService is the key to PaymentObligationService in bootstrap context.
-const BootstrappedPayObService = "BootstrappedPayObService"
+const (
+	// BootstrappedPayObService is the key to PaymentObligationService in bootstrap context.
+	BootstrappedPayObService = "BootstrappedPayObService"
+)
 
 // Bootstrapper implements bootstrap.Bootstrapper.
 type Bootstrapper struct{}
@@ -53,7 +53,7 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	}
 
 	client := ethereum.GetClient()
-	ctx[BootstrappedPayObService] = newEthereumPaymentObligation(
+	payOb := newEthereumPaymentObligation(
 		registry,
 		idService,
 		client,
@@ -68,5 +68,6 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 
 			return h.Number.Uint64(), nil
 		})
+	ctx[BootstrappedPayObService] = payOb
 	return nil
 }

@@ -5,11 +5,10 @@ import (
 	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/utils"
-	"golang.org/x/crypto/ed25519"
-
 	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/utils"
+	"golang.org/x/crypto/ed25519"
 )
 
 // SignMessage signs the message using the private key as the curveType provided.

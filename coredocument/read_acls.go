@@ -4,14 +4,25 @@ import (
 	"bytes"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 const (
 	// ErrZeroCollaborators error when no collaborators are passed
 	ErrZeroCollaborators = errors.Error("require at least one collaborator")
+
+	// nftByteCount is the length of combined bytes of registry and tokenID
+	nftByteCount = 52
 )
+
+// TokenRegistry defines NFT retrieval functions.
+type TokenRegistry interface {
+	// OwnerOf to retrieve owner of the tokenID
+	OwnerOf(registry common.Address, tokenID []byte) (common.Address, error)
+}
 
 // initReadRules initiates the read rules for a given coredocument.
 // Collaborators are given Read_Sign action.
@@ -41,52 +52,75 @@ func addCollaboratorsToReadSignRules(cd *coredocumentpb.CoreDocument, collabs []
 		role.Collaborators = append(role.Collaborators, c[:])
 	}
 
-	// add the role to Roles
-	cd.Roles = appendRole(cd.Roles, role)
+	addNewRule(cd, role, coredocumentpb.Action_ACTION_READ_SIGN)
+}
 
-	// create a rule
+// addNewRule creates a new rule as per the role and action.
+func addNewRule(cd *coredocumentpb.CoreDocument, role *coredocumentpb.Role, action coredocumentpb.Action) {
+	roleKey := uint32(len(cd.Roles))
+	cd.Roles = append(cd.Roles, &coredocumentpb.RoleEntry{
+		RoleKey: roleKey,
+		Role:    role,
+	})
+
 	rule := new(coredocumentpb.ReadRule)
-	rule.Roles = append(rule.Roles, cd.Roles[len(cd.Roles)-1].RoleKey)
-	rule.Action = coredocumentpb.Action_ACTION_READ_SIGN
+	rule.Roles = append(rule.Roles, roleKey)
+	rule.Action = action
 	cd.ReadRules = append(cd.ReadRules, rule)
 }
 
-// appendRole appends the roles to role entry
-func appendRole(roles []*coredocumentpb.RoleEntry, role *coredocumentpb.Role) []*coredocumentpb.RoleEntry {
-	return append(roles, &coredocumentpb.RoleEntry{
-		RoleKey: uint32(len(roles)),
-		Role:    role,
-	})
+// addNFTToReadRules adds NFT token to the read rules of core document.
+func addNFTToReadRules(cd *coredocumentpb.CoreDocument, registry common.Address, tokenID []byte) error {
+	nft, err := constructNFT(registry, tokenID)
+	if err != nil {
+		return errors.New("failed to construct NFT: %v", err)
+	}
+
+	role := new(coredocumentpb.Role)
+	role.Nfts = append(role.Nfts, nft)
+	addNewRule(cd, role, coredocumentpb.Action_ACTION_READ)
+	return nil
+}
+
+// constructNFT appends registry and tokenID to byte slice
+func constructNFT(registry common.Address, tokenID []byte) ([]byte, error) {
+	var nft []byte
+	// first 20 bytes of registry
+	nft = append(nft, registry.Bytes()...)
+
+	// next 32 bytes of the tokenID
+	nft = append(nft, tokenID...)
+
+	if len(nft) != nftByteCount {
+		return nil, errors.New("byte length mismatch")
+	}
+
+	return nft, nil
 }
 
 // ReadAccessValidator defines validator functions for peer.
 type ReadAccessValidator interface {
 	PeerCanRead(cd *coredocumentpb.CoreDocument, peer identity.CentID) bool
+	NFTOwnerCanRead(
+		cd *coredocumentpb.CoreDocument,
+		registry common.Address,
+		tokenID []byte,
+		signature string,
+		peer identity.CentID) error
 }
 
 // readAccessValidator implements ReadAccessValidator.
-type readAccessValidator struct{}
+type readAccessValidator struct {
+	tokenRegistry TokenRegistry
+}
 
 // PeerCanRead validate if the core document can be read by the peer.
 // Returns an error if not.
 func (r readAccessValidator) PeerCanRead(cd *coredocumentpb.CoreDocument, peer identity.CentID) bool {
-	// lets loop though read rules
-	for _, rule := range cd.ReadRules {
-		for _, rk := range rule.Roles {
-			role, err := getRole(rk, cd.Roles)
-			if err != nil {
-				// seems like roles and rules are not in sync
-				// skip to next one
-				continue
-			}
-
-			if isPeerInRole(role, peer) {
-				return true
-			}
-		}
-	}
-
-	return false
+	// loop though read rules
+	return findRole(cd, coredocumentpb.Action_ACTION_READ_SIGN, func(role *coredocumentpb.Role) bool {
+		return isPeerInRole(role, peer)
+	})
 }
 
 func getRole(key uint32, roles []*coredocumentpb.RoleEntry) (*coredocumentpb.Role, error) {
@@ -110,7 +144,100 @@ func isPeerInRole(role *coredocumentpb.Role, peer identity.CentID) bool {
 	return false
 }
 
-// peerValidator return the
+// peerValidator returns the ReadAccessValidator tp verify peer.
 func peerValidator() ReadAccessValidator {
 	return readAccessValidator{}
+}
+
+// nftValidator returns the ReadAccessValidator for nft owner verification.
+func nftValidator(tr TokenRegistry) ReadAccessValidator {
+	return readAccessValidator{tokenRegistry: tr}
+}
+
+// NFTOwnerCanRead checks if the nft owner/peer can read the document
+// Note: signature should be calculated from the hash which is calculated as
+// keccak256("\x19Ethereum Signed Message:\n"${message length}${message}).
+func (r readAccessValidator) NFTOwnerCanRead(
+	cd *coredocumentpb.CoreDocument,
+	registry common.Address,
+	tokenID []byte,
+	signature string,
+	peer identity.CentID) error {
+
+	// check if the peer can read the doc
+	if r.PeerCanRead(cd, peer) {
+		return nil
+	}
+
+	// check if the nft is present in read rules
+	found := findRole(cd, coredocumentpb.Action_ACTION_READ, func(role *coredocumentpb.Role) bool {
+		return isNFTInRole(role, registry, tokenID)
+	})
+
+	if !found {
+		return errors.New("nft missing")
+	}
+
+	// get the owner of the NFT
+	owner, err := r.tokenRegistry.OwnerOf(registry, tokenID)
+	if err != nil {
+		return errors.New("failed to get NFT owner: %v", err)
+	}
+
+	msg, err := constructNFT(registry, tokenID)
+	if err != nil {
+		return err
+	}
+
+	if !secp256k1.VerifySignatureWithAddress(owner.String(), signature, msg) {
+		return errors.New("peer(%s) doesn't own NFT", peer.String())
+	}
+
+	return nil
+}
+
+// findRole calls OnRole for every role,
+// if onRole returns true, returns true
+// else returns false
+func findRole(
+	cd *coredocumentpb.CoreDocument,
+	action coredocumentpb.Action,
+	onRole func(role *coredocumentpb.Role) bool) bool {
+	for _, rule := range cd.ReadRules {
+		if rule.Action != action {
+			continue
+		}
+
+		for _, rk := range rule.Roles {
+			role, err := getRole(rk, cd.Roles)
+			if err != nil {
+				// seems like roles and rules are not in sync
+				// skip to next one
+				continue
+			}
+
+			if onRole(role) {
+				return true
+			}
+
+		}
+	}
+
+	return false
+}
+
+// isNFTInRole checks if the given nft(registry + token) is part of the core document role.
+func isNFTInRole(role *coredocumentpb.Role, registry common.Address, tokenID []byte) bool {
+	enft, err := constructNFT(registry, tokenID)
+	if err != nil {
+		return false
+	}
+
+	for _, n := range role.Nfts {
+		if bytes.Equal(n, enft) {
+			return true
+		}
+	}
+
+	return false
 }

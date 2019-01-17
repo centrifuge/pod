@@ -6,7 +6,6 @@ import (
 
 // PaymentObligation handles transactions related to minting of NFTs
 type PaymentObligation interface {
-
 	// MintNFT mints an NFT
 	MintNFT(ctx context.Context, documentID []byte, registryAddress, depositAddress string, proofFields []string) (*MintNFTResponse, error)
 }
