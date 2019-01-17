@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/satori/go.uuid"
+
 	"github.com/centrifuge/go-centrifuge/config"
 
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -24,7 +26,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/centrifuge/gocelery"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -160,11 +161,11 @@ func TestPaymentObligationService(t *testing.T) {
 				idServiceMock := testingcommons.MockIDService{}
 				ethClientMock := testingcommons.MockEthClient{}
 				ethClientMock.On("GetTxOpts", "ethacc").Return(&bind.TransactOpts{}, nil)
-				ethClientMock.On("SubmitTransactionWithRetries",
+				ethClientMock.On("SubmitTransaction",
 					mock.Anything, mock.Anything, mock.Anything, mock.Anything,
 					mock.Anything, mock.Anything, mock.Anything, mock.Anything,
-					mock.Anything, mock.Anything, mock.Anything,
-				).Return(&types.Transaction{}, nil)
+					mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+				).Return(&uuid.UUID{}, &types.Transaction{}, nil)
 				configMock := testingconfig.MockConfig{}
 				configMock.On("GetEthereumDefaultAccountName").Return("ethacc")
 				cid := identity.RandomCentID()
@@ -175,7 +176,6 @@ func TestPaymentObligationService(t *testing.T) {
 				configMock.On("GetSigningKeyPair").Return("", "")
 				configMock.On("GetEthAuthKeyPair").Return("", "")
 				queueSrv := new(testingutils.MockQueue)
-				queueSrv.On("EnqueueJobWithMaxTries", mock.Anything, mock.Anything).Return(&gocelery.AsyncResult{}, nil)
 				return docServiceMock, paymentObligationMock, idServiceMock, ethClientMock, configMock, queueSrv
 			},
 			&nftpb.NFTMintRequest{Identifier: "0x1212", ProofFields: []string{"collaborators[0]"}, DepositAddress: "0xf72855759a39fb75fc7341139f5d7a3974d4da08"},

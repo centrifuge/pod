@@ -26,13 +26,12 @@ func (Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		return errors.New("transactions repository not initialised")
 	}
 
-
 	if _, ok := context[bootstrap.BootstrappedQueueServer]; !ok {
 		return errors.New("queue hasn't been initialized")
 	}
 	queueSrv := context[bootstrap.BootstrappedQueueServer].(*queue.Server)
 
-	client, err := NewGethClient(cfg,txService,queueSrv)
+	client, err := NewGethClient(cfg, txService, queueSrv)
 	if err != nil {
 		return err
 	}
