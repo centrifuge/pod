@@ -5,8 +5,6 @@ package p2p
 import (
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
-
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
@@ -34,7 +32,6 @@ func TestBootstrapper_Bootstrap(t *testing.T) {
 	m[documents.BootstrappedRegistry] = documents.NewServiceRegistry()
 	ids := new(testingcommons.MockIDService)
 	m[identity.BootstrappedIDService] = ids
-	m[genericdoc.BootstrappedGenService] = genericdoc.DefaultService(nil, nil, nil)
 
 	err = b.Bootstrap(m)
 	assert.Nil(t, err)
