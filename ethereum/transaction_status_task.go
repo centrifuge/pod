@@ -31,6 +31,7 @@ const (
 type TransactionStatusTask struct {
 	transactions.BaseTask
 	timeout time.Duration
+
 	//state
 	ethContextInitializer func(d time.Duration) (ctx context.Context, cancelFunc context.CancelFunc)
 	transactionByHash     func(ctx context.Context, hash common.Hash) (tx *types.Transaction, isPending bool, err error)

@@ -5,9 +5,8 @@ package transactions
 import (
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/identity"
-
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
@@ -50,5 +49,21 @@ func TestDocumentAnchorTask_updateTransaction(t *testing.T) {
 	tx, err = task.TxService.GetTransaction(tenantID, task.TxID)
 	assert.NoError(t, err)
 	assert.Equal(t, tx.Status, Failed)
+	assert.Len(t, tx.Logs, 1)
+
+	// chain task when success
+	tx = NewTransaction(tenantID, "")
+	assert.NoError(t, task.TxService.SaveTransaction(tx))
+	task.TxID = tx.ID
+	chainTask := "next task"
+	task.NextTask = chainTask
+	task.ChainTask = func(task string, txID uuid.UUID) {
+		assert.Equal(t, chainTask, task)
+		assert.Equal(t, tx.ID, txID)
+	}
+	err = task.UpdateTransaction(tenantID, name, nil)
+	tx, err = task.TxService.GetTransaction(tenantID, task.TxID)
+	assert.NoError(t, err)
+	assert.Equal(t, tx.Status, Pending)
 	assert.Len(t, tx.Logs, 1)
 }
