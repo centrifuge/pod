@@ -88,7 +88,7 @@ func addNFTToReadRules(cd *coredocumentpb.CoreDocument, registry common.Address,
 // constructNFT appends registry and tokenID to byte slice
 func constructNFT(registry common.Address, tokenID []byte) ([]byte, error) {
 	var nft []byte
-	// firs 20 bytes of registry
+	// first 20 bytes of registry
 	nft = append(nft, registry.Bytes()...)
 
 	// next 32 bytes of the tokenID
