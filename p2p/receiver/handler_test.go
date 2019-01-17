@@ -59,6 +59,7 @@ func TestMain(m *testing.M) {
 		&configstore.Bootstrapper{},
 		&queue.Bootstrapper{},
 		transactions.Bootstrapper{},
+		&genericdoc.Bootstrapper{},
 		documents.Bootstrapper{},
 	}
 	ctx := make(map[string]interface{})
@@ -67,7 +68,7 @@ func TestMain(m *testing.M) {
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfgService := ctx[config.BootstrappedConfigStorage].(config.Service)
 	registry = ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
-	genService := genericdoc.DefaultService(repo, mockAnchor, &idService)
+	genService := ctx[genericdoc.BootstrappedGenService].(genericdoc.Service)
 	mockIDService = &testingcommons.MockIDService{}
 	_, pub, _ := crypto.GenerateEd25519Key(rand.Reader)
 	defaultPID, _ = libp2pPeer.IDFromPublicKey(pub)
