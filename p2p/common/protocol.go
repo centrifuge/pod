@@ -34,6 +34,10 @@ const (
 	MessageTypeSendAnchoredDoc MessageType = "MessageTypeSendAnchoredDoc"
 	// MessageTypeSendAnchoredDocRep defines SendAnchored response type
 	MessageTypeSendAnchoredDocRep MessageType = "MessageTypeSendAnchoredDocRep"
+	//MessageTypeGetDoc defines GetAnchoredDoc type
+	MessageTypeGetDoc MessageType = "MessageTypeGetDoc"
+	//MessageTypeGetDocRep defines GetAnchoredDoc response type
+	MessageTypeGetDocRep MessageType = "MessageTypeGetDocRep"
 )
 
 // Equals compares if string is of a particular MessageType
@@ -61,6 +65,10 @@ func MessageTypeFromString(mt string) MessageType {
 		found = MessageTypeSendAnchoredDoc
 	} else if MessageTypeSendAnchoredDocRep.Equals(mt) {
 		found = MessageTypeSendAnchoredDocRep
+	} else if MessageTypeGetDoc.Equals(mt) {
+		found = MessageTypeGetDoc
+	} else if MessageTypeGetDocRep.Equals(mt) {
+		found = MessageTypeGetDocRep
 	}
 	return found
 }
