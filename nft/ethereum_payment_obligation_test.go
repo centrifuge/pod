@@ -175,7 +175,7 @@ func TestPaymentObligationService(t *testing.T) {
 				configMock.On("GetSigningKeyPair").Return("", "")
 				configMock.On("GetEthAuthKeyPair").Return("", "")
 				queueSrv := new(testingutils.MockQueue)
-				queueSrv.On("EnqueueJob", mock.Anything, mock.Anything).Return(&gocelery.AsyncResult{}, nil)
+				queueSrv.On("EnqueueJobWithMaxTries", mock.Anything, mock.Anything).Return(&gocelery.AsyncResult{}, nil)
 				return docServiceMock, paymentObligationMock, idServiceMock, ethClientMock, configMock, queueSrv
 			},
 			&nftpb.NFTMintRequest{Identifier: "0x1212", ProofFields: []string{"collaborators[0]"}, DepositAddress: "0xf72855759a39fb75fc7341139f5d7a3974d4da08"},

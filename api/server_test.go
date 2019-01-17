@@ -59,6 +59,7 @@ func TestMain(m *testing.M) {
 		p2p.Bootstrapper{},
 		&invoice.Bootstrapper{},
 		&purchaseorder.Bootstrapper{},
+		&ethereum.Bootstrapper{},
 		&nft.Bootstrapper{},
 		&queue.Starter{},
 	}
