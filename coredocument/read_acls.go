@@ -14,9 +14,6 @@ const (
 	// ErrZeroCollaborators error when no collaborators are passed
 	ErrZeroCollaborators = errors.Error("require at least one collaborator")
 
-	// ErrPeerNotFound error when peer is not found in the read rules
-	ErrPeerNotFound = errors.Error("peer not found")
-
 	// nftByteCount is the length of combined bytes of registry and tokenID
 	nftByteCount = 52
 )
@@ -103,7 +100,7 @@ func constructNFT(registry common.Address, tokenID []byte) ([]byte, error) {
 
 // ReadAccessValidator defines validator functions for peer.
 type ReadAccessValidator interface {
-	PeerCanRead(cd *coredocumentpb.CoreDocument, peer identity.CentID) error
+	PeerCanRead(cd *coredocumentpb.CoreDocument, peer identity.CentID) bool
 	NFTOwnerCanRead(
 		cd *coredocumentpb.CoreDocument,
 		registry common.Address,
@@ -119,16 +116,11 @@ type readAccessValidator struct {
 
 // PeerCanRead validate if the core document can be read by the peer.
 // Returns an error if not.
-func (r readAccessValidator) PeerCanRead(cd *coredocumentpb.CoreDocument, peer identity.CentID) error {
+func (r readAccessValidator) PeerCanRead(cd *coredocumentpb.CoreDocument, peer identity.CentID) bool {
 	// loop though read rules
-	ch := roleIterator(cd, coredocumentpb.Action_ACTION_READ_SIGN)
-	for role := range ch {
-		if isPeerInRole(role, peer) {
-			return nil
-		}
-	}
-
-	return ErrPeerNotFound
+	return findRole(cd, coredocumentpb.Action_ACTION_READ_SIGN, func(role *coredocumentpb.Role) bool {
+		return isPeerInRole(role, peer)
+	})
 }
 
 func getRole(key uint32, roles []*coredocumentpb.RoleEntry) (*coredocumentpb.Role, error) {
@@ -173,18 +165,14 @@ func (r readAccessValidator) NFTOwnerCanRead(
 	peer identity.CentID) error {
 
 	// check if the peer can read the doc
-	if err := r.PeerCanRead(cd, peer); err == nil {
+	if r.PeerCanRead(cd, peer) {
 		return nil
 	}
 
 	// check if the nft is present in read rules
-	ch := roleIterator(cd, coredocumentpb.Action_ACTION_READ)
-	found := false
-	for role := range ch {
-		if isNFTInRole(role, registry, tokenID) {
-			found = true
-		}
-	}
+	found := findRole(cd, coredocumentpb.Action_ACTION_READ, func(role *coredocumentpb.Role) bool {
+		return isNFTInRole(role, registry, tokenID)
+	})
 
 	if !found {
 		return errors.New("nft missing")
@@ -208,31 +196,34 @@ func (r readAccessValidator) NFTOwnerCanRead(
 	return nil
 }
 
-// roleIterator iterates through each role present in read rule
-func roleIterator(cd *coredocumentpb.CoreDocument, action coredocumentpb.Action) <-chan *coredocumentpb.Role {
-	ch := make(chan *coredocumentpb.Role)
-	go func() {
-		for _, rule := range cd.ReadRules {
-			if rule.Action != action {
+// findRole calls OnRole for every role,
+// if onRole returns true, returns true
+// else returns false
+func findRole(
+	cd *coredocumentpb.CoreDocument,
+	action coredocumentpb.Action,
+	onRole func(role *coredocumentpb.Role) bool) bool {
+	for _, rule := range cd.ReadRules {
+		if rule.Action != action {
+			continue
+		}
+
+		for _, rk := range rule.Roles {
+			role, err := getRole(rk, cd.Roles)
+			if err != nil {
+				// seems like roles and rules are not in sync
+				// skip to next one
 				continue
 			}
 
-			for _, rk := range rule.Roles {
-				role, err := getRole(rk, cd.Roles)
-				if err != nil {
-					// seems like roles and rules are not in sync
-					// skip to next one
-					continue
-				}
-
-				ch <- role
+			if onRole(role) {
+				return true
 			}
+
 		}
+	}
 
-		close(ch)
-	}()
-
-	return ch
+	return false
 }
 
 // isNFTInRole checks if the given nft(registry + token) is part of the core document role.
