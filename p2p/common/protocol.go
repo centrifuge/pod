@@ -40,6 +40,18 @@ const (
 	MessageTypeGetDocRep MessageType = "MessageTypeGetDocRep"
 )
 
+//MessageTypes map for MessageTypeFromString function
+var messageTypes = map[string]MessageType{
+	"MessageTypeError":               "MessageTypeError",
+	"MessageTypeInvalid":             "MessageTypeInvalid",
+	"MessageTypeRequestSignature":    "MessageTypeRequestSignature",
+	"MessageTypeRequestSignatureRep": "MessageTypeRequestSignatureRep",
+	"MessageTypeSendAnchoredDoc":     "MessageTypeSendAnchoredDoc",
+	"MessageTypeSendAnchoredDocRep":  "MessageTypeSendAnchoredDocRep",
+	"MessageTypeGetDoc":              "MessageTypeGetDoc",
+	"MessageTypeGetDocRep":           "MessageTypeGetDocRep",
+}
+
 // Equals compares if string is of a particular MessageType
 func (mt MessageType) Equals(mt2 string) bool {
 	return mt.String() == mt2
@@ -54,17 +66,6 @@ func (mt MessageType) String() string {
 func MessageTypeFromString(ht string) MessageType {
 
 	var messageType MessageType
-
-	messageTypes := map[string]MessageType{
-		"MessageTypeError":               "MessageTypeError",
-		"MessageTypeInvalid":             "MessageTypeInvalid",
-		"MessageTypeRequestSignature":    "MessageTypeRequestSignature",
-		"MessageTypeRequestSignatureRep": "MessageTypeRequestSignatureRep",
-		"MessageTypeSendAnchoredDoc":     "MessageTypeSendAnchoredDoc",
-		"MessageTypeSendAnchoredDocRep":  "MessageTypeSendAnchoredDocRep",
-		"MessageTypeGetDoc":              "MessageTypeGetDoc",
-		"MessageTypeGetDocRep":           "MessageTypeGetDocRep",
-	}
 
 	if mt, exists := messageTypes[ht]; exists {
 		messageType = mt
