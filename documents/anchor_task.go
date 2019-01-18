@@ -4,16 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/centrifuge/go-centrifuge/queue"
-
-	"github.com/centrifuge/go-centrifuge/config"
-
-	"github.com/centrifuge/go-centrifuge/identity"
-
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/code"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -37,9 +34,9 @@ type documentAnchorTask struct {
 
 	// state
 	config        config.Service
-	processor     anchorProcessor
-	modelGetFunc  func(accountID, id []byte) (Model, error)
-	modelSaveFunc func(accountID, id []byte, model Model) error
+	processor     AnchorProcessor
+	modelGetFunc  func(tenantID, id []byte) (Model, error)
+	modelSaveFunc func(tenantID, id []byte, model Model) error
 }
 
 // TaskTypeName returns the name of the task.

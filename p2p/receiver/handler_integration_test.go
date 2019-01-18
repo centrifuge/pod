@@ -5,38 +5,32 @@ package receiver_test
 import (
 	"context"
 	"flag"
-
-	"github.com/centrifuge/go-centrifuge/contextutil"
-	cented25519 "github.com/centrifuge/go-centrifuge/crypto/ed25519"
-	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
-	"github.com/centrifuge/go-centrifuge/p2p/common"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
-	"github.com/golang/protobuf/proto"
-
 	"os"
 	"testing"
-
-	"github.com/centrifuge/go-centrifuge/testingutils/config"
-
-	"github.com/centrifuge/go-centrifuge/bootstrap"
-
-	"github.com/centrifuge/go-centrifuge/p2p/receiver"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/anchors"
+	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/coredocument"
+	cented25519 "github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/p2p/common"
+	"github.com/centrifuge/go-centrifuge/p2p/receiver"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/storage"
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/coredocument"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
+	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/crypto/ed25519"
@@ -55,11 +49,10 @@ func TestMain(m *testing.M) {
 	ctx := testingbootstrap.TestFunctionalEthereumBootstrap()
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfgService = ctx[config.BootstrappedConfigStorage].(config.Service)
-	registry := ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
+	docSrv := ctx[documents.BootstrappedDocumentService].(documents.Service)
 	anchorRepo = ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
 	idService = ctx[identity.BootstrappedIDService].(identity.Service)
-	genService := ctx[genericdoc.BootstrappedGenService].(genericdoc.Service)
-	handler = receiver.New(cfgService, registry, receiver.HandshakeValidator(cfg.GetNetworkID(), idService), genService)
+	handler = receiver.New(cfgService, receiver.HandshakeValidator(cfg.GetNetworkID(), idService), docSrv)
 	testingidentity.CreateIdentityWithKeys(cfg, idService)
 	result := m.Run()
 	testingbootstrap.TestFunctionalEthereumTearDown()
@@ -248,7 +241,8 @@ func TestHandler_SendAnchoredDocument_EmptyDocument(t *testing.T) {
 	doc := prepareDocumentForP2PHandler(t, nil)
 	req := getAnchoredRequest(doc)
 	req.Document = nil
-	id, _ := cfg.GetIdentityID()
+	id, err := cfg.GetIdentityID()
+	assert.NoError(t, err)
 	resp, err := handler.SendAnchoredDocument(ctxh, req, id)
 	assert.NotNil(t, err)
 	assert.Nil(t, resp, "must be nil")
@@ -323,11 +317,13 @@ func prepareDocumentForP2PHandler(t *testing.T, doc *coredocumentpb.CoreDocument
 	if doc == nil {
 		doc = testingcoredocument.GenerateCoreDocument()
 	}
-	tree, _ := coredocument.GetDocumentSigningTree(doc)
+	tree, err := coredocument.GetDocumentSigningTree(doc)
+	assert.NoError(t, err)
 	doc.SigningRoot = tree.RootHash()
 	sig := identity.Sign(idConfig, identity.KeyPurposeSigning, doc.SigningRoot)
 	doc.Signatures = append(doc.Signatures, sig)
-	tree, _ = coredocument.GetDocumentRootTree(doc)
+	tree, err = coredocument.GetDocumentRootTree(doc)
+	assert.NoError(t, err)
 	doc.DocumentRoot = tree.RootHash()
 	return doc
 }

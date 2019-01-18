@@ -3,25 +3,18 @@ package purchaseorder
 import (
 	"context"
 
-	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/notification"
 	clientpopb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	logging "github.com/ipfs/go-log"
 	"github.com/satori/go.uuid"
 )
-
-var srvLog = logging.Logger("po-service")
 
 // Service defines specific functions for purchase order
 type Service interface {
@@ -33,12 +26,6 @@ type Service interface {
 	// DeriveFromUpdatePayload derives purchase order from update payload
 	DeriveFromUpdatePayload(ctx context.Context, payload *clientpopb.PurchaseOrderUpdatePayload) (documents.Model, error)
 
-	// Create validates and persists purchase order and returns a Updated model
-	Create(ctx context.Context, po documents.Model) (documents.Model, uuid.UUID, error)
-
-	// Update validates and updates the purchase order and return the updated model
-	Update(ctx context.Context, po documents.Model) (documents.Model, uuid.UUID, error)
-
 	// DerivePurchaseOrderData returns the purchase order data as client data
 	DerivePurchaseOrderData(po documents.Model) (*clientpopb.PurchaseOrderData, error)
 
@@ -49,32 +36,24 @@ type Service interface {
 // service implements Service and handles all purchase order related persistence and validations
 // service always returns errors of type `errors.Error` or `errors.TypedError`
 type service struct {
-	repo             documents.Repository
-	notifier         notification.Sender
-	anchorRepository anchors.AnchorRepository
-	identityService  identity.Service
-	queueSrv         queue.TaskQueuer
-	txService        transactions.Service
-	genericdoc.Service
+	documents.Service
+	repo      documents.Repository
+	queueSrv  queue.TaskQueuer
+	txService transactions.Service
 }
 
 // DefaultService returns the default implementation of the service
 func DefaultService(
+	srv documents.Service,
 	repo documents.Repository,
-	anchorRepository anchors.AnchorRepository,
-	identityService identity.Service,
 	queueSrv queue.TaskQueuer,
 	txService transactions.Service,
-	genService genericdoc.Service,
 ) Service {
 	return service{
-		repo:             repo,
-		notifier:         notification.NewWebhookSender(),
-		anchorRepository: anchorRepository,
-		identityService:  identityService,
-		queueSrv:         queueSrv,
-		txService:        txService,
-		Service:          genService,
+		repo:      repo,
+		queueSrv:  queueSrv,
+		txService: txService,
+		Service:   srv,
 	}
 }
 
@@ -282,43 +261,4 @@ func (s service) DerivePurchaseOrderResponse(doc documents.Model) (*clientpopb.P
 		Header: h,
 		Data:   data,
 	}, nil
-}
-
-func (s service) checkType(model documents.Model) (documents.Model, error) {
-	_, ok := model.(*PurchaseOrder)
-	if !ok {
-		return nil, documents.ErrDocumentInvalidType
-	}
-	return model, nil
-}
-
-// GetLastVersion returns the latest version of the document
-func (s service) GetCurrentVersion(ctx context.Context, documentID []byte) (model documents.Model, err error) {
-	model, err = s.Service.GetCurrentVersion(ctx, documentID)
-	if err != nil {
-		return nil, err
-	}
-	return s.checkType(model)
-}
-
-// GetVersion returns the specific version of the document
-func (s service) GetVersion(ctx context.Context, documentID []byte, version []byte) (model documents.Model, err error) {
-	model, err = s.Service.GetVersion(ctx, documentID, version)
-	if err != nil {
-		return nil, err
-	}
-	return s.checkType(model)
-
-}
-
-// Exists checks if an purchase order exists
-func (s service) Exists(ctx context.Context, documentID []byte) bool {
-	if s.Service.Exists(ctx, documentID) {
-		// check if document is an po
-		_, err := s.Service.GetCurrentVersion(ctx, documentID)
-		if err == nil {
-			return true
-		}
-	}
-	return false
 }

@@ -3,25 +3,18 @@ package invoice
 import (
 	"context"
 
-	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/notification"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	logging "github.com/ipfs/go-log"
 	"github.com/satori/go.uuid"
 )
-
-var srvLog = logging.Logger("invoice-service")
 
 // Service defines specific functions for invoice
 type Service interface {
@@ -33,12 +26,6 @@ type Service interface {
 	// DeriveFromUpdatePayload derives invoice model from update payload
 	DeriveFromUpdatePayload(ctx context.Context, payload *clientinvoicepb.InvoiceUpdatePayload) (documents.Model, error)
 
-	// Create validates and persists invoice Model and returns a Updated model
-	Create(ctx context.Context, inv documents.Model) (documents.Model, uuid.UUID, error)
-
-	// Update validates and updates the invoice model and return the updated model
-	Update(ctx context.Context, inv documents.Model) (documents.Model, uuid.UUID, error)
-
 	// DeriveInvoiceData returns the invoice data as client data
 	DeriveInvoiceData(inv documents.Model) (*clientinvoicepb.InvoiceData, error)
 
@@ -49,32 +36,24 @@ type Service interface {
 // service implements Service and handles all invoice related persistence and validations
 // service always returns errors of type `errors.Error` or `errors.TypedError`
 type service struct {
-	repo             documents.Repository
-	notifier         notification.Sender
-	anchorRepository anchors.AnchorRepository
-	identityService  identity.Service
-	queueSrv         queue.TaskQueuer
-	txService        transactions.Service
-	genericdoc.Service
+	documents.Service
+	repo      documents.Repository
+	queueSrv  queue.TaskQueuer
+	txService transactions.Service
 }
 
 // DefaultService returns the default implementation of the service.
 func DefaultService(
+	srv documents.Service,
 	repo documents.Repository,
-	anchorRepository anchors.AnchorRepository,
-	identityService identity.Service,
 	queueSrv queue.TaskQueuer,
 	txService transactions.Service,
-	genService genericdoc.Service,
 ) Service {
 	return service{
-		repo:             repo,
-		notifier:         notification.NewWebhookSender(),
-		anchorRepository: anchorRepository,
-		identityService:  identityService,
-		queueSrv:         queueSrv,
-		txService:        txService,
-		Service:          genService,
+		repo:      repo,
+		queueSrv:  queueSrv,
+		txService: txService,
+		Service:   srv,
 	}
 }
 
@@ -205,34 +184,6 @@ func (s service) Update(ctx context.Context, inv documents.Model) (documents.Mod
 	return inv, txID, nil
 }
 
-func (s service) checkType(model documents.Model) (documents.Model, error) {
-	_, ok := model.(*Invoice)
-	if !ok {
-		return nil, documents.ErrDocumentInvalidType
-	}
-	return model, nil
-}
-
-// GetVersion returns an invoice for a given version
-func (s service) GetVersion(ctx context.Context, documentID []byte, version []byte) (model documents.Model, err error) {
-	model, err = s.Service.GetVersion(ctx, documentID, version)
-	if err != nil {
-		return nil, err
-	}
-	return s.checkType(model)
-
-}
-
-// GetCurrentVersion returns the last known version of an invoice
-func (s service) GetCurrentVersion(ctx context.Context, documentID []byte) (model documents.Model, err error) {
-	model, err = s.Service.GetCurrentVersion(ctx, documentID)
-	if err != nil {
-		return nil, err
-	}
-	return s.checkType(model)
-
-}
-
 // DeriveInvoiceResponse returns create response from invoice model
 func (s service) DeriveInvoiceResponse(doc documents.Model) (*clientinvoicepb.InvoiceResponse, error) {
 	cd, err := doc.PackCoreDocument()
@@ -319,16 +270,4 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *clientinv
 	}
 
 	return inv, nil
-}
-
-// Exists checks if an invoice exists
-func (s service) Exists(ctx context.Context, documentID []byte) bool {
-	if s.Service.Exists(ctx, documentID) {
-		// check if document is an invoice
-		_, err := s.Service.GetCurrentVersion(ctx, documentID)
-		if err == nil {
-			return true
-		}
-	}
-	return false
 }

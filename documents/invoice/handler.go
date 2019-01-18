@@ -4,9 +4,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 
-	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/centerrors"
-	"github.com/centrifuge/go-centrifuge/documents"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	logging "github.com/ipfs/go-log"
@@ -23,16 +21,11 @@ type grpcHandler struct {
 }
 
 // GRPCHandler returns an implementation of invoice.DocumentServiceServer
-func GRPCHandler(config config.Service, registry *documents.ServiceRegistry) (clientinvoicepb.DocumentServiceServer, error) {
-	srv, err := registry.LocateService(documenttypes.InvoiceDataTypeUrl)
-	if err != nil {
-		return nil, err
-	}
-
+func GRPCHandler(config config.Service, srv Service) clientinvoicepb.DocumentServiceServer {
 	return &grpcHandler{
-		service: srv.(Service),
+		service: srv,
 		config:  config,
-	}, nil
+	}
 }
 
 // Create handles the creation of the invoices and anchoring the documents on chain
