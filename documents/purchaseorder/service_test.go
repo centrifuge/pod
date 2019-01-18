@@ -54,7 +54,7 @@ func getServiceWithMockedLayers() (*testingcommons.MockIDService, Service) {
 	repo := testRepo()
 	mockAnchor := &mockAnchorRepo{}
 	docSrv := documents.DefaultService(repo, idService, mockAnchor, documents.NewServiceRegistry())
-	return idService, DefaultService(docSrv, repo, mockAnchor, idService, queueSrv, txService)
+	return idService, DefaultService(docSrv, repo, queueSrv, txService)
 }
 
 func TestService_Update(t *testing.T) {

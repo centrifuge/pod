@@ -78,9 +78,9 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 	model.On("PackCoreDocument").Return(cd, nil).Once()
 	model.On("UnpackCoreDocument", cd).Return(errors.New("error")).Once()
 	err = dp.PrepareForSignatureRequests(ctxh, model)
-	model.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to unpack the core document")
+	model.AssertExpectations(t)
 
 	// success
 	cd.Signatures = nil

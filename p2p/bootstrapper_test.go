@@ -40,7 +40,7 @@ func TestBootstrapper_Bootstrap(t *testing.T) {
 	_, ok := m[bootstrap.BootstrappedPeer].(node.Server)
 	assert.True(t, ok)
 
-	assert.NotNil(t, m[bootstrap.BootstrappedP2PClient])
-	_, ok = m[bootstrap.BootstrappedP2PClient].(Client)
+	assert.NotNil(t, m[bootstrap.BootstrappedPeer])
+	_, ok = m[bootstrap.BootstrappedPeer].(documents.Client)
 	assert.True(t, ok)
 }
