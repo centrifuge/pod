@@ -24,7 +24,7 @@ type Service interface {
 
 // NewService returns a Service implementation.
 func NewService(repo Repository) Service {
-	return service{repo: repo, handlers: make(map[uuid.UUID][]func(status Status) error)}
+	return &service{repo: repo, handlers: make(map[uuid.UUID][]func(status Status) error)}
 }
 
 // service implements Service.
@@ -35,7 +35,7 @@ type service struct {
 }
 
 // SaveTransaction saves the transaction.
-func (s service) SaveTransaction(tx *Transaction) error {
+func (s *service) SaveTransaction(tx *Transaction) error {
 	err := s.repo.Save(tx)
 	if err != nil {
 		return err
@@ -68,19 +68,19 @@ func (s service) SaveTransaction(tx *Transaction) error {
 }
 
 // GetTransaction returns the transaction associated with identity and id.
-func (s service) GetTransaction(accountID identity.CentID, id uuid.UUID) (*Transaction, error) {
+func (s *service) GetTransaction(accountID identity.CentID, id uuid.UUID) (*Transaction, error) {
 	return s.repo.Get(accountID, id)
 }
 
 // CreateTransaction creates a new transaction and saves it to the DB.
-func (s service) CreateTransaction(accountID identity.CentID, desc string) (*Transaction, error) {
+func (s *service) CreateTransaction(accountID identity.CentID, desc string) (*Transaction, error) {
 	tx := NewTransaction(accountID, desc)
 	return tx, s.SaveTransaction(tx)
 }
 
 // WaitForTransaction blocks until transaction status is moved from pending state.
 // Note: use it with caution as this will block.
-func (s service) WaitForTransaction(accountID identity.CentID, txID uuid.UUID) error {
+func (s *service) WaitForTransaction(accountID identity.CentID, txID uuid.UUID) error {
 	for {
 		resp, err := s.GetTransactionStatus(accountID, txID)
 		if err != nil {
@@ -100,7 +100,7 @@ func (s service) WaitForTransaction(accountID identity.CentID, txID uuid.UUID) e
 }
 
 // GetTransactionStatus returns the transaction status associated with identity and id.
-func (s service) GetTransactionStatus(identity identity.CentID, id uuid.UUID) (*transactionspb.TransactionStatusResponse, error) {
+func (s *service) GetTransactionStatus(identity identity.CentID, id uuid.UUID) (*transactionspb.TransactionStatusResponse, error) {
 	tx, err := s.GetTransaction(identity, id)
 	if err != nil {
 		return nil, err
@@ -124,7 +124,7 @@ func (s service) GetTransactionStatus(identity identity.CentID, id uuid.UUID) (*
 
 // RegisterHandler registers the handler to be triggered on transaction update.
 // Handler is removed once triggered.
-func (s service) RegisterHandler(txID uuid.UUID, onUpdate func(status Status) error) {
+func (s *service) RegisterHandler(txID uuid.UUID, onUpdate func(status Status) error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.handlers[txID] = append(s.handlers[txID], onUpdate)
