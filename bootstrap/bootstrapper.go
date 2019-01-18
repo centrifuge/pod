@@ -9,7 +9,6 @@ const (
 	BootstrappedAPIServer   string = "BootstrappedAPIServer"
 	BootstrappedQueueServer string = "BootstrappedQueueServer"
 	NodeObjRegistry         string = "NodeObjRegistry"
-	BootstrappedCoreDocProc string = "BootstrappedCoreDocProc"
 )
 
 // Bootstrapper must be implemented by all packages that needs bootstrapping at application start

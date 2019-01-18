@@ -10,6 +10,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/anchors"
+
+	"github.com/centrifuge/go-centrifuge/ethereum"
+
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
@@ -32,6 +36,10 @@ var (
 )
 
 func TestMain(m *testing.M) {
+	ctx := make(map[string]interface{})
+	ethClient := &testingcommons.MockEthClient{}
+	ethClient.On("GetEthClient").Return(nil)
+	ctx[ethereum.BootstrappedEthereumClient] = ethClient
 	ibootstappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
@@ -39,9 +47,9 @@ func TestMain(m *testing.M) {
 		&configstore.Bootstrapper{},
 		&queue.Bootstrapper{},
 		transactions.Bootstrapper{},
+		&anchors.Bootstrapper{},
 		documents.Bootstrapper{},
 	}
-	ctx := make(map[string]interface{})
 	idService = &testingcommons.MockIDService{}
 	ctx[identity.BootstrappedIDService] = idService
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)

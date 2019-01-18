@@ -59,7 +59,6 @@ func TestMain(m *testing.M) {
 		&configstore.Bootstrapper{},
 		anchors.Bootstrapper{},
 		documents.Bootstrapper{},
-		documents.DocumentServiceBootstrapper{},
 		p2p.Bootstrapper{},
 		documents.PostBootstrapper{},
 		&Bootstrapper{},
