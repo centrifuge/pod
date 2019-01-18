@@ -102,7 +102,7 @@ func (s service) calculateDataRoot(ctx context.Context, old, new documents.Model
 }
 
 // Create validates, persists, and anchors a purchase order
-func (s service) Create(ctx context.Context, po documents.Model) (documents.Model, uuid.UUID, error) {
+func (s service) Create(ctx context.Context, po documents.Model, txID uuid.UUID) (documents.Model, uuid.UUID, error) {
 	self, err := contextutil.Self(ctx)
 	if err != nil {
 		return nil, uuid.Nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
@@ -118,7 +118,7 @@ func (s service) Create(ctx context.Context, po documents.Model) (documents.Mode
 		return nil, uuid.Nil, err
 	}
 
-	txID, err := documents.InitDocumentAnchorTask(s.queueSrv, s.txService, self.ID, cd.CurrentVersion)
+	txID, err = documents.InitDocumentAnchorTask(s.queueSrv, s.txService, self.ID, cd.CurrentVersion, txID)
 	if err != nil {
 		return nil, uuid.Nil, err
 	}
@@ -127,7 +127,7 @@ func (s service) Create(ctx context.Context, po documents.Model) (documents.Mode
 }
 
 // Update validates, persists, and anchors a new version of purchase order
-func (s service) Update(ctx context.Context, po documents.Model) (documents.Model, uuid.UUID, error) {
+func (s service) Update(ctx context.Context, po documents.Model, txID uuid.UUID) (documents.Model, uuid.UUID, error) {
 	self, err := contextutil.Self(ctx)
 	if err != nil {
 		return nil, uuid.Nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
@@ -148,7 +148,7 @@ func (s service) Update(ctx context.Context, po documents.Model) (documents.Mode
 		return nil, uuid.Nil, err
 	}
 
-	txID, err := documents.InitDocumentAnchorTask(s.queueSrv, s.txService, self.ID, cd.CurrentVersion)
+	txID, err = documents.InitDocumentAnchorTask(s.queueSrv, s.txService, self.ID, cd.CurrentVersion, txID)
 	if err != nil {
 		return nil, uuid.Nil, err
 	}

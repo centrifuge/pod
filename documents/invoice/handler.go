@@ -3,6 +3,7 @@ package invoice
 import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
+	"github.com/satori/go.uuid"
 
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
@@ -44,7 +45,7 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientinvoicepb.InvoiceCr
 	}
 
 	// validate and persist
-	doc, txID, err := h.service.Create(cctx, doc)
+	doc, txID, err := h.service.Create(cctx, doc, uuid.Nil)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "could not create document")
@@ -75,7 +76,7 @@ func (h *grpcHandler) Update(ctx context.Context, payload *clientinvoicepb.Invoi
 		return nil, centerrors.Wrap(err, "could not derive update payload")
 	}
 
-	doc, txID, err := h.service.Update(ctxHeader, doc)
+	doc, txID, err := h.service.Update(ctxHeader, doc, uuid.Nil)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "could not update document")

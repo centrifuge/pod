@@ -29,7 +29,7 @@ type nftCreatedTask struct {
 	tokenID       []byte
 
 	// state
-	serviceRegistry *ServiceRegistry
+	docSrv Service
 }
 
 func (t *nftCreatedTask) ParseKwargs(kwargs map[string]interface{}) error {
@@ -70,12 +70,13 @@ func (t *nftCreatedTask) ParseKwargs(kwargs map[string]interface{}) error {
 
 func (t *nftCreatedTask) Copy() (gocelery.CeleryTask, error) {
 	return &nftCreatedTask{
-		BaseTask:        t.BaseTask,
-		serviceRegistry: t.serviceRegistry,
+		BaseTask: t.BaseTask,
+		docSrv:   t.docSrv,
 	}, nil
 }
 
 func (t *nftCreatedTask) RunTask() (interface{}, error) {
+
 	return nil, nil
 }
 

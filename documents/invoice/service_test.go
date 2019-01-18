@@ -23,6 +23,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -31,8 +32,6 @@ var (
 	cid         = identity.RandomCentID()
 	centIDBytes = cid[:]
 	accountID   = cid[:]
-	key1Pub     = [...]byte{230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
-	key1        = []byte{102, 109, 71, 239, 130, 229, 128, 189, 37, 96, 223, 5, 189, 91, 210, 47, 89, 4, 165, 6, 188, 53, 49, 250, 109, 151, 234, 139, 57, 205, 231, 253, 230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
 )
 
 type mockAnchorRepo struct {
@@ -237,7 +236,7 @@ func TestService_Create(t *testing.T) {
 	invSrv := srv.(service)
 
 	// calculate data root fails
-	m, _, err := invSrv.Create(ctxh, &testingdocuments.MockModel{})
+	m, _, err := invSrv.Create(ctxh, &testingdocuments.MockModel{}, uuid.Nil)
 	assert.Nil(t, m)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "unknown document type")
@@ -245,7 +244,7 @@ func TestService_Create(t *testing.T) {
 	// anchor success
 	po, err := invSrv.DeriveFromCreatePayload(ctxh, testingdocuments.CreateInvoicePayload())
 	assert.Nil(t, err)
-	m, _, err = invSrv.Create(ctxh, po)
+	m, _, err = invSrv.Create(ctxh, po, uuid.Nil)
 	assert.Nil(t, err)
 	newCD, err := m.PackCoreDocument()
 	assert.Nil(t, err)
@@ -376,7 +375,7 @@ func TestService_Update(t *testing.T) {
 	// pack failed
 	model := &mockModel{}
 	model.On("PackCoreDocument").Return(nil, errors.New("pack error")).Once()
-	_, _, err := invSrv.Update(ctxh, model)
+	_, _, err := invSrv.Update(ctxh, model, uuid.Nil)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "pack error")
@@ -385,7 +384,7 @@ func TestService_Update(t *testing.T) {
 	model = &mockModel{}
 	cd := coredocument.New()
 	model.On("PackCoreDocument").Return(cd, nil).Once()
-	_, _, err = invSrv.Update(ctxh, model)
+	_, _, err = invSrv.Update(ctxh, model, uuid.Nil)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "document not found")
@@ -403,7 +402,7 @@ func TestService_Update(t *testing.T) {
 	// calculate data root fails
 	model = &mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
-	_, _, err = invSrv.Update(ctxh, model)
+	_, _, err = invSrv.Update(ctxh, model, uuid.Nil)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "unknown document type")
@@ -423,7 +422,7 @@ func TestService_Update(t *testing.T) {
 	newData, err := invSrv.DeriveInvoiceData(newInv)
 	assert.Nil(t, err)
 	assert.Equal(t, data, newData)
-	inv, _, err = invSrv.Update(ctxh, newInv)
+	inv, _, err = invSrv.Update(ctxh, newInv, uuid.Nil)
 	assert.Nil(t, err)
 	assert.NotNil(t, inv)
 	newCD, err := inv.PackCoreDocument()

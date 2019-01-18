@@ -122,7 +122,7 @@ func (s service) calculateDataRoot(ctx context.Context, old, new documents.Model
 }
 
 // Create takes and invoice model and does required validation checks, tries to persist to DB
-func (s service) Create(ctx context.Context, inv documents.Model) (documents.Model, uuid.UUID, error) {
+func (s service) Create(ctx context.Context, inv documents.Model, txID uuid.UUID) (documents.Model, uuid.UUID, error) {
 	self, err := contextutil.Self(ctx)
 	if err != nil {
 		return nil, uuid.Nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
@@ -138,11 +138,11 @@ func (s service) Create(ctx context.Context, inv documents.Model) (documents.Mod
 		return nil, uuid.Nil, err
 	}
 
-	txID, err := documents.InitDocumentAnchorTask(
+	txID, err = documents.InitDocumentAnchorTask(
 		s.queueSrv,
 		s.txService,
 		self.ID,
-		cd.CurrentVersion)
+		cd.CurrentVersion, txID)
 	if err != nil {
 		return nil, uuid.Nil, err
 	}
@@ -151,7 +151,7 @@ func (s service) Create(ctx context.Context, inv documents.Model) (documents.Mod
 }
 
 // Update finds the old document, validates the new version and persists the updated document
-func (s service) Update(ctx context.Context, inv documents.Model) (documents.Model, uuid.UUID, error) {
+func (s service) Update(ctx context.Context, inv documents.Model, txID uuid.UUID) (documents.Model, uuid.UUID, error) {
 	self, err := contextutil.Self(ctx)
 	if err != nil {
 		return nil, uuid.Nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
@@ -172,11 +172,11 @@ func (s service) Update(ctx context.Context, inv documents.Model) (documents.Mod
 		return nil, uuid.Nil, err
 	}
 
-	txID, err := documents.InitDocumentAnchorTask(
+	txID, err = documents.InitDocumentAnchorTask(
 		s.queueSrv,
 		s.txService,
 		self.ID,
-		cd.CurrentVersion)
+		cd.CurrentVersion, txID)
 	if err != nil {
 		return nil, uuid.Nil, err
 	}
