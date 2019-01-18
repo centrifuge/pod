@@ -6,6 +6,9 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/anchors"
+
+	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 
@@ -20,11 +23,15 @@ import (
 	"github.com/centrifuge/go-centrifuge/transactions"
 )
 
-var ctx = map[string]interface{}{}
+var ctx map[string]interface{}
 var ConfigService config.Service
 var cfg config.Configuration
 
 func TestMain(m *testing.M) {
+	ctx = make(map[string]interface{})
+	ethClient := &testingcommons.MockEthClient{}
+	ethClient.On("GetEthClient").Return(nil)
+	ctx[ethereum.BootstrappedEthereumClient] = ethClient
 	ibootstappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
@@ -32,6 +39,7 @@ func TestMain(m *testing.M) {
 		&configstore.Bootstrapper{},
 		transactions.Bootstrapper{},
 		&queue.Bootstrapper{},
+		&anchors.Bootstrapper{},
 		&Bootstrapper{},
 	}
 	ctx[identity.BootstrappedIDService] = &testingcommons.MockIDService{}

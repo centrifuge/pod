@@ -20,9 +20,6 @@ const (
 
 	// BootstrappedDocumentService is the key to bootstrapped document service
 	BootstrappedDocumentService = "BootstrappedDocumentService"
-
-	// BootstrappedAnchorProcessor is the key to bootstrapped anchor processor
-	BootstrappedAnchorProcessor = "BootstrappedAnchorProcessor"
 )
 
 // Bootstrapper implements bootstrap.Bootstrapper.
@@ -30,23 +27,14 @@ type Bootstrapper struct{}
 
 // Bootstrap sets the required storage and registers
 func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
-	ctx[BootstrappedRegistry] = NewServiceRegistry()
+	registry := NewServiceRegistry()
+
 	ldb, ok := ctx[storage.BootstrappedDB].(storage.Repository)
 	if !ok {
 		return ErrDocumentBootstrap
 	}
-	ctx[BootstrappedDocumentRepository] = NewDBRepository(ldb)
-	return nil
-}
 
-type DocumentServiceBootstrapper struct{}
-
-func (DocumentServiceBootstrapper) Bootstrap(ctx map[string]interface{}) error {
-	repo, ok := ctx[BootstrappedDocumentRepository].(Repository)
-	if !ok {
-		return errors.New("document repository not initialised")
-	}
-
+	repo := NewDBRepository(ldb)
 	idService, ok := ctx[identity.BootstrappedIDService].(identity.Service)
 	if !ok {
 		return errors.New("identity service not initialised")
@@ -57,12 +45,9 @@ func (DocumentServiceBootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("anchor repository not initialised")
 	}
 
-	registry, ok := ctx[BootstrappedRegistry].(*ServiceRegistry)
-	if !ok {
-		return errors.New("service registry no initialised")
-	}
-
 	ctx[BootstrappedDocumentService] = DefaultService(repo, idService, anchorRepo, registry)
+	ctx[BootstrappedRegistry] = registry
+	ctx[BootstrappedDocumentRepository] = repo
 	return nil
 }
 
