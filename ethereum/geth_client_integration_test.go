@@ -93,7 +93,7 @@ func TestGetConnection_returnsSameConnection(t *testing.T) {
 }
 
 func TestNewGethClient(t *testing.T) {
-	gc, err := ethereum.NewGethClient(cfg, nil, nil)
+	gc, err := ethereum.NewGethClient(cfg)
 	assert.Nil(t, err)
 	assert.NotNil(t, gc)
 }

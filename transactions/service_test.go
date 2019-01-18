@@ -82,3 +82,36 @@ func TestService_WaitForTransaction(t *testing.T) {
 	assert.NoError(t, repo.Save(tx))
 	assert.NoError(t, srv.WaitForTransaction(cid, tx.ID))
 }
+
+func TestService_RegisterHandler(t *testing.T) {
+	srv := ctx[BootstrappedService].(Service)
+	cid := identity.RandomCentID()
+	tx, err := srv.CreateTransaction(cid, "")
+	assert.NoError(t, err)
+	var called int
+	srv.RegisterHandler(tx.ID, func(status Status) error {
+		assert.Equal(t, Success, status)
+		called++
+		return nil
+	})
+
+	tx.Logs = append(tx.Logs, NewLog("", ""))
+	tx.Status = Success
+	assert.NoError(t, srv.SaveTransaction(tx))
+	assert.Equal(t, 1, called)
+	assert.NoError(t, srv.SaveTransaction(tx))
+	assert.Equal(t, 1, called)
+
+	// errors
+	srv.RegisterHandler(tx.ID, func(status Status) error {
+		assert.Equal(t, Success, status)
+		return errors.New("failed handler")
+	})
+
+	assert.Len(t, tx.Logs, 1)
+	assert.NoError(t, srv.SaveTransaction(tx))
+	tx, err = srv.GetTransaction(cid, tx.ID)
+	assert.NoError(t, err)
+	assert.Len(t, tx.Logs, 2)
+	assert.Contains(t, tx.Logs[1].Message, "failed handler")
+}

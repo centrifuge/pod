@@ -71,7 +71,7 @@ func TestPaymentObligationService_mint(t *testing.T) {
 		},
 	})
 	assert.Nil(t, err, "should not error out when creating invoice model")
-	modelUpdated, txID, err := invoiceService.Create(contextHeader, model)
+	modelUpdated, txID, err := invoiceService.Create(contextHeader, model, uuid.Nil)
 	err = txService.WaitForTransaction(cid, txID)
 	assert.Nil(t, err)
 
@@ -81,11 +81,11 @@ func TestPaymentObligationService_mint(t *testing.T) {
 	// call mint
 	// assert no error
 	depositAddr := "0xf72855759a39fb75fc7341139f5d7a3974d4da08"
-	registry := cfg.GetContractAddress(config.PaymentObligation).String()
+	registry := cfg.GetContractAddress(config.PaymentObligation)
 	resp, err := payOb.MintNFT(
 		contextHeader,
 		ID,
-		registry,
+		registry.String(),
 		depositAddr,
 		[]string{"invoice.gross_amount", "invoice.currency", "invoice.due_date", "collaborators[0]"},
 	)
@@ -94,7 +94,17 @@ func TestPaymentObligationService_mint(t *testing.T) {
 	assert.NoError(t, txService.WaitForTransaction(cid, uuid.Must(uuid.FromString(resp.TransactionID))))
 	b := new(big.Int)
 	b.SetString(resp.TokenID, 10)
-	owner, err := tokenRegistry.OwnerOf(common.HexToAddress(registry), b.Bytes())
+	owner, err := tokenRegistry.OwnerOf(registry, b.Bytes())
 	assert.NoError(t, err)
 	assert.Equal(t, common.HexToAddress(depositAddr), owner)
+	doc, err := invoiceService.GetCurrentVersion(contextHeader, ID)
+	assert.NoError(t, err)
+	cd, err := doc.PackCoreDocument()
+	assert.NoError(t, err)
+	assert.Len(t, cd.Roles, 2)
+	assert.Len(t, cd.Roles[1].Role.Nfts, 1)
+	nft := cd.Roles[1].Role.Nfts[0]
+	enft, err := coredocument.ConstructNFT(registry, b.Bytes())
+	assert.NoError(t, err)
+	assert.Equal(t, enft, nft)
 }

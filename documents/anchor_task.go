@@ -19,8 +19,12 @@ import (
 )
 
 const (
-	modelIDParam           = "modelID"
-	accountIDParam         = "accountID"
+	// DocumentIDParam maps to model ID in the kwargs
+	DocumentIDParam = "documentID"
+
+	// AccountIDParam maps to account ID in the kwargs
+	AccountIDParam = "accountID"
+
 	documentAnchorTaskName = "Document Anchoring"
 )
 
@@ -51,7 +55,7 @@ func (d *documentAnchorTask) ParseKwargs(kwargs map[string]interface{}) error {
 		return err
 	}
 
-	modelID, ok := kwargs[modelIDParam].(string)
+	modelID, ok := kwargs[DocumentIDParam].(string)
 	if !ok {
 		return errors.New("missing model ID")
 	}
@@ -61,7 +65,7 @@ func (d *documentAnchorTask) ParseKwargs(kwargs map[string]interface{}) error {
 		return errors.New("invalid model ID")
 	}
 
-	accountID, ok := kwargs[accountIDParam].(string)
+	accountID, ok := kwargs[AccountIDParam].(string)
 	if !ok {
 		return errors.New("missing account ID")
 	}
@@ -88,7 +92,7 @@ func (d *documentAnchorTask) Copy() (gocelery.CeleryTask, error) {
 func (d *documentAnchorTask) RunTask() (res interface{}, err error) {
 	log.Infof("starting anchor task: %v\n", d.TxID.String())
 	defer func() {
-		err = d.UpdateTransaction(d.accountID, d.TaskTypeName(), err)
+		err = d.UpdateTransaction(d.accountID, d.TaskTypeName(), err, false)
 	}()
 
 	tc, err := d.config.GetAccount(d.accountID[:])
@@ -131,8 +135,8 @@ func InitDocumentAnchorTask(tq queue.TaskQueuer, txService transactions.Service,
 
 	params := map[string]interface{}{
 		transactions.TxIDParam: tx.ID.String(),
-		modelIDParam:           hexutil.Encode(modelID),
-		accountIDParam:         accountID.String(),
+		DocumentIDParam:        hexutil.Encode(modelID),
+		AccountIDParam:         accountID.String(),
 	}
 
 	_, err = tq.EnqueueJob(documentAnchorTaskName, params)

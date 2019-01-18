@@ -17,10 +17,16 @@ import (
 const (
 	// TransactionStatusTaskName contains the name of the task
 	TransactionStatusTaskName string = "TransactionStatusTask"
+
 	// TransactionTxHashParam contains the name  of the parameter
 	TransactionTxHashParam string = "TxHashParam"
+
 	// TransactionAccountParam contains the name  of the account
-	TransactionAccountParam  string = "Account ID"
+	TransactionAccountParam string = "Account ID"
+
+	// TransactionNextTaskParam maps to the next task value
+	TransactionNextTaskParam string = "Next Task"
+
 	transactionStatusSuccess uint64 = 1
 
 	// ErrTransactionFailed error when transaction failed
@@ -31,6 +37,7 @@ const (
 type TransactionStatusTask struct {
 	transactions.BaseTask
 	timeout time.Duration
+	next    bool
 
 	//state
 	ethContextInitializer func(d time.Duration) (ctx context.Context, cancelFunc context.CancelFunc)
@@ -95,6 +102,10 @@ func (nftc *TransactionStatusTask) ParseKwargs(kwargs map[string]interface{}) (e
 		return err
 	}
 
+	if nftc.next, ok = kwargs[TransactionNextTaskParam].(bool); !ok {
+		nftc.next = false
+	}
+
 	// parse txHash
 	txHash, ok := kwargs[TransactionTxHashParam]
 	if !ok {
@@ -136,7 +147,7 @@ func (nftc *TransactionStatusTask) RunTask() (resp interface{}, err error) {
 	ctx, cancelF := nftc.ethContextInitializer(nftc.timeout)
 	defer cancelF()
 	defer func() {
-		err = nftc.UpdateTransaction(nftc.accountID, nftc.TaskTypeName(), err)
+		err = nftc.UpdateTransaction(nftc.accountID, nftc.TaskTypeName(), err, nftc.next)
 	}()
 
 	_, isPending, err := nftc.transactionByHash(ctx, common.HexToHash(nftc.txHash))
