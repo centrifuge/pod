@@ -6,15 +6,10 @@ import (
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -98,37 +93,31 @@ func TestReadAccessValidator_NFTOwnerCanRead(t *testing.T) {
 
 	// peer can read
 	validator := nftValidator(nil)
-	err = validator.NFTOwnerCanRead(cd, registry, nil, "", peer)
+	err = validator.NFTOwnerCanRead(cd, registry, nil, peer)
 	assert.NoError(t, err)
 
 	// peer not in read rules and nft missing
 	peer, err = identity.CentIDFromString("0x010203040505")
 	assert.NoError(t, err)
 	tokenID := utils.RandomSlice(32)
-	err = validator.NFTOwnerCanRead(cd, registry, tokenID, "", peer)
+	err = validator.NFTOwnerCanRead(cd, registry, tokenID, peer)
 	assert.Error(t, err)
 
 	tr := mockRegistry{}
 	tr.On("OwnerOf", registry, tokenID).Return(nil, errors.New("failed to get owner of")).Once()
 	addNFTToReadRules(cd, registry, tokenID)
 	validator = nftValidator(tr)
-	err = validator.NFTOwnerCanRead(cd, registry, tokenID, "", peer)
+	err = validator.NFTOwnerCanRead(cd, registry, tokenID, peer)
 	assert.Error(t, err)
 	assert.Contains(t, err, "failed to get owner of")
 	tr.AssertExpectations(t)
 
-	c := ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-	acc, err := c.GetEthereumAccount("main")
-	assert.NoError(t, err)
-	key, err := keystore.DecryptKey([]byte(acc.Key), "")
-	assert.NoError(t, err)
-	msg, err := constructNFT(registry, tokenID)
-	assert.NoError(t, err)
-	sig, err := secp256k1.SignEthereum(msg, key.PrivateKey.D.Bytes())
-	assert.NoError(t, err)
+	// not the same owner
+	owner := common.BytesToAddress(utils.RandomSlice(20))
 	tr = mockRegistry{}
-	tr.On("OwnerOf", registry, tokenID).Return(key.Address, nil).Once()
+	tr.On("OwnerOf", registry, tokenID).Return(owner, nil).Once()
 	validator = nftValidator(tr)
-	err = validator.NFTOwnerCanRead(cd, registry, tokenID, hexutil.Encode(sig), peer)
-	assert.NoError(t, err)
+	err = validator.NFTOwnerCanRead(cd, registry, tokenID, peer)
+	assert.Error(t, err)
+	tr.AssertExpectations(t)
 }

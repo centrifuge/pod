@@ -1,7 +1,6 @@
 package invoice
 
 import (
-	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -80,6 +79,6 @@ func UpdateValidator() documents.ValidatorGroup {
 	return documents.ValidatorGroup{
 		fieldValidator(),
 		dataRootValidator(),
-		coredocument.UpdateVersionValidator(),
+		documents.UpdateVersionValidator(),
 	}
 }

@@ -51,7 +51,7 @@ func cleanUp(c map[string]interface{}) {
 
 // GetServers gets the long running background services in the node as a list
 func GetServers(ctx map[string]interface{}) ([]Server, error) {
-	p2pSrv, ok := ctx[bootstrap.BootstrappedP2PServer]
+	p2pSrv, ok := ctx[bootstrap.BootstrappedPeer]
 	if !ok {
 		return nil, errors.New("p2p server not initialized")
 	}

@@ -59,18 +59,18 @@ func (b *BaseTask) ParseTransactionID(kwargs map[string]interface{}) error {
 }
 
 // UpdateTransaction add a new log and updates the status of the transaction based on the error.
-func (b *BaseTask) UpdateTransaction(tenantID identity.CentID, name string, err error) error {
+func (b *BaseTask) UpdateTransaction(accountID identity.CentID, name string, err error) error {
 	if err == gocelery.ErrTaskRetryable {
 		return err
 	}
 
 	if err != nil {
 		log.Infof("Transaction failed: %v\n", b.TxID.String())
-		return errors.AppendError(err, b.updateStatus(tenantID, Failed, NewLog(name, err.Error())))
+		return errors.AppendError(err, b.updateStatus(accountID, Failed, NewLog(name, err.Error())))
 	}
 
 	if b.NextTask != "" {
-		err = b.updateStatus(tenantID, Pending, NewLog(name, ""))
+		err = b.updateStatus(accountID, Pending, NewLog(name, ""))
 		if err != nil {
 			return err
 		}
@@ -80,11 +80,11 @@ func (b *BaseTask) UpdateTransaction(tenantID identity.CentID, name string, err 
 	}
 
 	log.Infof("Transaction successful:%v\n", b.TxID.String())
-	return errors.AppendError(err, b.updateStatus(tenantID, Success, NewLog(name, "")))
+	return errors.AppendError(err, b.updateStatus(accountID, Success, NewLog(name, "")))
 }
 
-func (b *BaseTask) updateStatus(tenantID identity.CentID, status Status, log Log) error {
-	tx, err := b.TxService.GetTransaction(tenantID, b.TxID)
+func (b *BaseTask) updateStatus(accountID identity.CentID, status Status, log Log) error {
+	tx, err := b.TxService.GetTransaction(accountID, b.TxID)
 	if err != nil {
 		return err
 	}

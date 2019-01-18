@@ -15,8 +15,8 @@ import (
 // ErrInvalidTransactionID error for Invalid transaction ID.
 const ErrInvalidTransactionID = errors.Error("Invalid Transaction ID")
 
-// ErrInvalidTenantID error for Invalid tenant ID.
-const ErrInvalidTenantID = errors.Error("Invalid Tenant ID")
+// ErrInvalidAccountID error for Invalid account ID.
+const ErrInvalidAccountID = errors.Error("Invalid Tenant ID")
 
 var apiLog = logging.Logger("transaction-api")
 
@@ -46,16 +46,16 @@ func (h grpcHandler) GetTransactionStatus(ctx context.Context, req *transactions
 
 	tc, err := contextutil.Account(ctxHeader)
 	if err != nil {
-		return nil, ErrInvalidTenantID
+		return nil, ErrInvalidAccountID
 	}
 
-	tid, err := tc.GetIdentityID()
+	accID, err := tc.GetIdentityID()
 	if err != nil {
-		return nil, ErrInvalidTenantID
+		return nil, ErrInvalidAccountID
 	}
-	cid, err := identity.ToCentID(tid)
+	cid, err := identity.ToCentID(accID)
 	if err != nil {
-		return nil, ErrInvalidTenantID
+		return nil, ErrInvalidAccountID
 	}
 
 	return h.srv.GetTransactionStatus(cid, id)

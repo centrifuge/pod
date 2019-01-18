@@ -356,10 +356,10 @@ func (h *host) createAccounts(e *httpexpect.Expect) error {
 
 func (h *host) loadAccounts(e *httpexpect.Expect) error {
 	res := getAllAccounts(e, h.identity.CentID().String(), http.StatusOK)
-	tenants := res.Value("data").Array()
-	tids := getAccounts(tenants)
-	keys := make([]string, 0, len(tids))
-	for k := range tids {
+	accounts := res.Value("data").Array()
+	accIDs := getAccounts(accounts)
+	keys := make([]string, 0, len(accIDs))
+	for k := range accIDs {
 		keys = append(keys, k)
 	}
 	h.accounts = keys

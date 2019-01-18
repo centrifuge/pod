@@ -24,16 +24,6 @@ import (
 	ma "github.com/multiformats/go-multiaddr"
 )
 
-// Client defines methods that can be implemented by any type handling p2p communications.
-type Client interface {
-
-	// GetSignaturesForDocument gets the signatures for document
-	GetSignaturesForDocument(ctx context.Context, identityService identity.Service, doc *coredocumentpb.CoreDocument) error
-
-	// after all signatures are collected the sender sends the document including the signatures
-	SendAnchoredDocument(ctx context.Context, id identity.Identity, in *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error)
-}
-
 func (s *peer) SendAnchoredDocument(ctx context.Context, id identity.Identity, in *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error) {
 	nc, err := s.config.GetConfig()
 	if err != nil {
@@ -44,17 +34,17 @@ func (s *peer) SendAnchoredDocument(ctx context.Context, id identity.Identity, i
 	cid := id.CentID()
 	tc, err := s.config.GetAccount(cid[:])
 	if err == nil {
-		// this is a local tenant
+		// this is a local account
 		h := s.handlerCreator()
 		// the following context has to be different from the parent context since its initiating a local peer call
-		localCtx, err := contextutil.NewCentrifugeContext(peerCtx, tc)
+		localCtx, err := contextutil.New(peerCtx, tc)
 		if err != nil {
 			return nil, err
 		}
 		return h.SendAnchoredDocument(localCtx, in, cid[:])
 	}
 
-	// this is a remote tenant
+	// this is a remote account
 	pid, err := s.getPeerID(id)
 	if err != nil {
 		return nil, err
@@ -144,10 +134,10 @@ func (s *peer) getSignatureForDocument(ctx context.Context, identityService iden
 
 	tc, err := s.config.GetAccount(receiverCentID[:])
 	if err == nil {
-		// this is a local tenant
+		// this is a local account
 		h := s.handlerCreator()
-		// create a context with receiving tenant value
-		localPeerCtx, err := contextutil.NewCentrifugeContext(ctx, tc)
+		// create a context with receiving account value
+		localPeerCtx, err := contextutil.New(ctx, tc)
 		if err != nil {
 			return nil, err
 		}
@@ -158,7 +148,7 @@ func (s *peer) getSignatureForDocument(ctx context.Context, identityService iden
 		}
 		header = &p2ppb.Header{NodeVersion: version.GetVersion().String()}
 	} else {
-		// this is a remote tenant
+		// this is a remote account
 		id, err := identityService.LookupIdentityForID(receiverCentID)
 		if err != nil {
 			return nil, err

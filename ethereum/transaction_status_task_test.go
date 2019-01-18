@@ -29,7 +29,7 @@ func TestMintingConfirmationTask_ParseKwargs_success(t *testing.T) {
 	err = task.ParseKwargs(decoded)
 	assert.Nil(t, err, "parsing should be successful")
 
-	assert.Equal(t, cid, task.tenantID, "tenantID should be parsed correctly")
+	assert.Equal(t, cid, task.accountID, "accountID should be parsed correctly")
 	assert.Equal(t, txID, task.TxID.String(), "txID should be parsed correctly")
 	assert.Equal(t, txHash, task.txHash, "txHash should be parsed correctly")
 

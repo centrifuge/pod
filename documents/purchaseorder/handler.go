@@ -1,13 +1,9 @@
 package purchaseorder
 
 import (
+	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
-
-	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
-	"github.com/centrifuge/go-centrifuge/centerrors"
-	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/errors"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	logging "github.com/ipfs/go-log"
@@ -24,16 +20,11 @@ type grpcHandler struct {
 }
 
 // GRPCHandler returns an implementation of the purchaseorder DocumentServiceServer
-func GRPCHandler(config config.Service, registry *documents.ServiceRegistry) (clientpurchaseorderpb.DocumentServiceServer, error) {
-	srv, err := registry.LocateService(documenttypes.PurchaseOrderDataTypeUrl)
-	if err != nil {
-		return nil, errors.New("failed to fetch purchase order service")
-	}
-
+func GRPCHandler(config config.Service, srv Service) clientpurchaseorderpb.DocumentServiceServer {
 	return grpcHandler{
-		service: srv.(Service),
+		service: srv,
 		config:  config,
-	}, nil
+	}
 }
 
 // Create validates the purchase order, persists it to DB, and anchors it the chain
