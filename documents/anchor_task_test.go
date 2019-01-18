@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/identity"
-
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"

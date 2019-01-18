@@ -47,7 +47,7 @@ func (r *mockAnchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.D
 func TestDefaultService(t *testing.T) {
 	c := &testingconfig.MockConfig{}
 	c.On("GetIdentityID").Return(centIDBytes, nil).Once()
-	srv := DefaultService(nil, testRepo(), nil, nil, nil, nil)
+	srv := DefaultService(nil, testRepo(), nil, nil)
 	assert.NotNil(t, srv, "must be non-nil")
 }
 
@@ -65,7 +65,6 @@ func getServiceWithMockedLayers() (testingcommons.MockIDService, Service) {
 	return idService, DefaultService(
 		docSrv,
 		repo,
-		mockAnchor, &idService,
 		queueSrv,
 		ctx[transactions.BootstrappedService].(transactions.Service))
 }

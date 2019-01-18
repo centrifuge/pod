@@ -410,19 +410,8 @@ func TestPreAnchorValidator(t *testing.T) {
 	assert.Len(t, pav, 2)
 }
 
-type repo struct {
-	mock.Mock
-	anchors.AnchorRepository
-}
-
-func (r repo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.DocumentRoot, error) {
-	args := r.Called(anchorID)
-	docRoot, _ := args.Get(0).(anchors.DocumentRoot)
-	return docRoot, args.Error(1)
-}
-
 func TestValidator_anchoredValidator(t *testing.T) {
-	av := anchoredValidator(repo{})
+	av := anchoredValidator(mockRepo{})
 
 	// fail get core document
 	err := av.Validate(nil, nil)
@@ -450,7 +439,7 @@ func TestValidator_anchoredValidator(t *testing.T) {
 	// failed to get docRoot from chain
 	anchorID, err := anchors.ToAnchorID(utils.RandomSlice(32))
 	assert.Nil(t, err)
-	r := &repo{}
+	r := &mockRepo{}
 	av = anchoredValidator(r)
 	cd.CurrentVersion = anchorID[:]
 	r.On("GetDocumentRootOf", anchorID).Return(nil, errors.New("error")).Once()
@@ -465,7 +454,7 @@ func TestValidator_anchoredValidator(t *testing.T) {
 
 	// mismatched doc roots
 	docRoot := anchors.RandomDocumentRoot()
-	r = &repo{}
+	r = &mockRepo{}
 	av = anchoredValidator(r)
 	r.On("GetDocumentRootOf", anchorID).Return(docRoot, nil).Once()
 	cd.DocumentRoot = utils.RandomSlice(32)
@@ -478,7 +467,7 @@ func TestValidator_anchoredValidator(t *testing.T) {
 	assert.Contains(t, err.Error(), "mismatched document roots")
 
 	// success
-	r = &repo{}
+	r = &mockRepo{}
 	av = anchoredValidator(r)
 	r.On("GetDocumentRootOf", anchorID).Return(docRoot, nil).Once()
 	cd.DocumentRoot = docRoot[:]

@@ -1,6 +1,6 @@
 // +build unit
 
-package documents
+package documents_test
 
 import (
 	"math/big"
@@ -13,6 +13,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/coredocument"
+	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
@@ -21,7 +22,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
-	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -56,18 +56,18 @@ func TestMain(m *testing.M) {
 }
 
 func TestService_ReceiveAnchoredDocument(t *testing.T) {
-	poSrv := DefaultService(nil, nil, nil, NewServiceRegistry())
+	poSrv := documents.DefaultService(nil, nil, nil, documents.NewServiceRegistry())
 	ctxh := testingconfig.CreateTenantContext(t, cfg)
 	err := poSrv.ReceiveAnchoredDocument(ctxh, nil, nil)
 	assert.Error(t, err)
 }
 
-func getServiceWithMockedLayers() (Service, testingcommons.MockIDService) {
+func getServiceWithMockedLayers() (documents.Service, testingcommons.MockIDService) {
 	repo := testRepo()
 	idService := testingcommons.MockIDService{}
 	idService.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
 	mockAnchor = &mockAnchorRepo{}
-	return DefaultService(repo, &idService, mockAnchor, NewServiceRegistry()), idService
+	return documents.DefaultService(repo, &idService, mockAnchor, documents.NewServiceRegistry()), idService
 }
 
 type mockAnchorRepo struct {
@@ -177,7 +177,7 @@ func updatedAnchoredMockDocument(t *testing.T, i *invoice.Invoice) (*invoice.Inv
 }
 
 // Functions returns service mocks
-func mockSignatureCheck(i *invoice.Invoice, idService testingcommons.MockIDService, s Service) testingcommons.MockIDService {
+func mockSignatureCheck(i *invoice.Invoice, idService testingcommons.MockIDService, s documents.Service) testingcommons.MockIDService {
 	idkey := &ethid.EthereumIdentityKey{
 		Key:       key1Pub,
 		Purposes:  []*big.Int{big.NewInt(identity.KeyPurposeSigning)},
