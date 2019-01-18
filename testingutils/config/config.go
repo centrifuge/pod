@@ -170,7 +170,7 @@ func CreateTenantContextWithContext(t *testing.T, ctx context.Context, cfg confi
 	tc, err := configstore.NewAccount("", cfg)
 	assert.Nil(t, err)
 
-	contextHeader, err := contextutil.NewCentrifugeContext(ctx, tc)
+	contextHeader, err := contextutil.New(ctx, tc)
 	assert.Nil(t, err)
 	return contextHeader
 }

@@ -13,19 +13,19 @@ func TestConfig_Happy(t *testing.T) {
 
 	// check charlies node config
 	res := getNodeConfig(charlie.httpExpect, charlie.id.String(), http.StatusOK)
-	tenantID := res.Value("main_identity").Path("$.identity_id").String().NotEmpty()
-	tenantID.Equal(charlie.id.String())
+	accountID := res.Value("main_identity").Path("$.identity_id").String().NotEmpty()
+	accountID.Equal(charlie.id.String())
 
-	// check charlies main tenant config
+	// check charlies main account
 	res = getAccount(charlie.httpExpect, charlie.id.String(), http.StatusOK, charlie.id.String())
-	tenantID2 := res.Value("identity_id").String().NotEmpty()
-	tenantID2.Equal(charlie.id.String())
+	accountID2 := res.Value("identity_id").String().NotEmpty()
+	accountID2.Equal(charlie.id.String())
 
-	// check charlies all tenant configs
+	// check charlies all accounts
 	res = getAllAccounts(charlie.httpExpect, charlie.id.String(), http.StatusOK)
 	tenants := res.Value("data").Array()
-	tids := getAccounts(tenants)
-	if _, ok := tids[charlie.id.String()]; !ok {
+	accIDs := getAccounts(tenants)
+	if _, ok := accIDs[charlie.id.String()]; !ok {
 		t.Error("Charlies id needs to exist in the accounts list")
 	}
 

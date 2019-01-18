@@ -145,7 +145,7 @@ func (s service) CreateProofsForVersion(ctx context.Context, documentID, version
 func (s service) RequestDocumentSignature(ctx context.Context, model documents.Model) (*coredocumentpb.Signature, error) {
 	idConf, err := contextutil.Self(ctx)
 	if err != nil {
-		return nil, documents.ErrDocumentConfigTenantID
+		return nil, documents.ErrDocumentConfigAccountID
 	}
 
 	if err := coredocument.SignatureRequestValidator(s.identityService).Validate(nil, model); err != nil {
@@ -170,17 +170,17 @@ func (s service) RequestDocumentSignature(ctx context.Context, model documents.M
 		return nil, errors.NewTypedError(documents.ErrDocumentUnPackingCoreDocument, err)
 	}
 
-	tenantID := idConf.ID[:]
+	accountID := idConf.ID[:]
 
 	// Logic for receiving version n (n > 1) of the document for the first time
-	if !s.repo.Exists(tenantID, doc.DocumentIdentifier) && !utils.IsSameByteSlice(doc.DocumentIdentifier, doc.CurrentVersion) {
-		err = s.repo.Create(tenantID, doc.DocumentIdentifier, model)
+	if !s.repo.Exists(accountID, doc.DocumentIdentifier) && !utils.IsSameByteSlice(doc.DocumentIdentifier, doc.CurrentVersion) {
+		err = s.repo.Create(accountID, doc.DocumentIdentifier, model)
 		if err != nil {
 			return nil, errors.NewTypedError(documents.ErrDocumentPersistence, err)
 		}
 	}
 
-	err = s.repo.Create(tenantID, doc.CurrentVersion, model)
+	err = s.repo.Create(accountID, doc.CurrentVersion, model)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentPersistence, err)
 	}
@@ -192,7 +192,7 @@ func (s service) RequestDocumentSignature(ctx context.Context, model documents.M
 func (s service) ReceiveAnchoredDocument(ctx context.Context, model documents.Model, senderID []byte) error {
 	idConf, err := contextutil.Self(ctx)
 	if err != nil {
-		return documents.ErrDocumentConfigTenantID
+		return documents.ErrDocumentConfigAccountID
 	}
 
 	if err := coredocument.PostAnchoredValidator(s.identityService, s.anchorRepository).Validate(nil, model); err != nil {
@@ -237,7 +237,7 @@ func (s service) Exists(ctx context.Context, documentID []byte) bool {
 func (s service) getVersion(ctx context.Context, documentID, version []byte) (documents.Model, error) {
 	idConf, err := contextutil.Self(ctx)
 	if err != nil {
-		return nil, documents.ErrDocumentConfigTenantID
+		return nil, documents.ErrDocumentConfigAccountID
 	}
 	model, err := s.repo.Get(idConf.ID[:], version)
 	if err != nil {

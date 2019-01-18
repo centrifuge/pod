@@ -35,7 +35,7 @@ import (
 var (
 	cid         = identity.RandomCentID()
 	centIDBytes = cid[:]
-	tenantID    = cid[:]
+	accountID   = cid[:]
 	key1Pub     = [...]byte{230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
 	key1        = []byte{102, 109, 71, 239, 130, 229, 128, 189, 37, 96, 223, 5, 189, 91, 210, 47, 89, 4, 165, 6, 188, 53, 49, 250, 109, 151, 234, 139, 57, 205, 231, 253, 230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
 )
@@ -88,7 +88,7 @@ func createMockDocument() (*Invoice, error) {
 			NextVersion:        nextIdentifier,
 		},
 	}
-	err := testRepo().Create(tenantID, documentIdentifier, inv1)
+	err := testRepo().Create(accountID, documentIdentifier, inv1)
 	return inv1, err
 }
 
@@ -156,7 +156,7 @@ func TestService_GetLastVersion(t *testing.T) {
 		},
 	}
 
-	err = testRepo().Create(tenantID, doc.CoreDocument.NextVersion, inv2)
+	err = testRepo().Create(accountID, doc.CoreDocument.NextVersion, inv2)
 	assert.Nil(t, err)
 
 	mod2, err := invSrv.GetCurrentVersion(ctxh, doc.CoreDocument.DocumentIdentifier)
@@ -180,7 +180,7 @@ func TestService_GetVersion_wrongTyp(t *testing.T) {
 			CurrentVersion:     currentVersion,
 		},
 	}
-	err := testRepo().Create(tenantID, currentVersion, po)
+	err := testRepo().Create(accountID, currentVersion, po)
 	assert.Nil(t, err)
 
 	ctxh := testingconfig.CreateTenantContext(t, cfg)
@@ -200,7 +200,7 @@ func TestService_GetVersion(t *testing.T) {
 			CurrentVersion:     currentVersion,
 		},
 	}
-	err := testRepo().Create(tenantID, currentVersion, inv)
+	err := testRepo().Create(accountID, currentVersion, inv)
 	assert.Nil(t, err)
 
 	ctxh := testingconfig.CreateTenantContext(t, cfg)
@@ -224,7 +224,7 @@ func TestService_Exists(t *testing.T) {
 			CurrentVersion:     documentIdentifier,
 		},
 	}
-	err := testRepo().Create(tenantID, documentIdentifier, inv)
+	err := testRepo().Create(accountID, documentIdentifier, inv)
 	assert.Nil(t, err)
 
 	ctxh := testingconfig.CreateTenantContext(t, cfg)
@@ -254,8 +254,8 @@ func TestService_Create(t *testing.T) {
 	assert.Nil(t, err)
 	newCD, err := m.PackCoreDocument()
 	assert.Nil(t, err)
-	assert.True(t, testRepo().Exists(tenantID, newCD.DocumentIdentifier))
-	assert.True(t, testRepo().Exists(tenantID, newCD.CurrentVersion))
+	assert.True(t, testRepo().Exists(accountID, newCD.DocumentIdentifier))
+	assert.True(t, testRepo().Exists(accountID, newCD.CurrentVersion))
 }
 
 func TestService_DeriveInvoiceData(t *testing.T) {
@@ -330,7 +330,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	old.CoreDocument.DocumentIdentifier = id
 	old.CoreDocument.CurrentVersion = id
 	old.CoreDocument.DocumentRoot = utils.RandomSlice(32)
-	err = testRepo().Create(tenantID, id, old)
+	err = testRepo().Create(accountID, id, old)
 	assert.Nil(t, err)
 	payload.Data = &clientinvoicepb.InvoiceData{
 		Sender:      "0x010101010101",
@@ -403,7 +403,7 @@ func TestService_Update(t *testing.T) {
 	assert.Nil(t, err)
 	cd.DocumentRoot = utils.RandomSlice(32)
 	inv.(*Invoice).CoreDocument = cd
-	testRepo().Create(tenantID, cd.CurrentVersion, inv)
+	testRepo().Create(accountID, cd.CurrentVersion, inv)
 
 	// calculate data root fails
 	model = &mockModel{}
@@ -433,9 +433,9 @@ func TestService_Update(t *testing.T) {
 	assert.NotNil(t, inv)
 	newCD, err := inv.PackCoreDocument()
 	assert.Nil(t, err)
-	assert.True(t, testRepo().Exists(tenantID, newCD.DocumentIdentifier))
-	assert.True(t, testRepo().Exists(tenantID, newCD.CurrentVersion))
-	assert.True(t, testRepo().Exists(tenantID, newCD.PreviousVersion))
+	assert.True(t, testRepo().Exists(accountID, newCD.DocumentIdentifier))
+	assert.True(t, testRepo().Exists(accountID, newCD.CurrentVersion))
+	assert.True(t, testRepo().Exists(accountID, newCD.PreviousVersion))
 	newData, err = invSrv.DeriveInvoiceData(inv)
 	assert.Nil(t, err)
 	assert.Equal(t, data, newData)
@@ -469,7 +469,7 @@ func TestService_calculateDataRoot(t *testing.T) {
 	inv, err = invSrv.DeriveFromCreatePayload(ctxh, testingdocuments.CreateInvoicePayload())
 	assert.Nil(t, err)
 	assert.Nil(t, inv.(*Invoice).CoreDocument.DataRoot)
-	err = invSrv.repo.Create(tenantID, inv.(*Invoice).CoreDocument.CurrentVersion, inv)
+	err = invSrv.repo.Create(accountID, inv.(*Invoice).CoreDocument.CurrentVersion, inv)
 	assert.Nil(t, err)
 	inv, err = invSrv.calculateDataRoot(ctxh, nil, inv, CreateValidator())
 	assert.Nil(t, inv)

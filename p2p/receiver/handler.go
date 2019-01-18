@@ -80,7 +80,7 @@ func (srv *Handler) HandleInterceptor(ctx context.Context, peer peer.ID, protoc 
 		return convertToErrorEnvelop(err)
 	}
 
-	ctx, err = contextutil.NewCentrifugeContext(ctx, tc)
+	ctx, err = contextutil.New(ctx, tc)
 	if err != nil {
 		return convertToErrorEnvelop(err)
 	}
