@@ -37,7 +37,7 @@ var testRepoGlobal documents.Repository
 var (
 	cid         = identity.RandomCentID()
 	centIDBytes = cid[:]
-	tenantID    = cid[:]
+	accountID   = cid[:]
 	key1Pub     = [...]byte{230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
 	key1        = []byte{102, 109, 71, 239, 130, 229, 128, 189, 37, 96, 223, 5, 189, 91, 210, 47, 89, 4, 165, 6, 188, 53, 49, 250, 109, 151, 234, 139, 57, 205, 231, 253, 230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
 )
@@ -137,7 +137,7 @@ func createAnchoredMockDocument(t *testing.T, skipSave bool) (*invoice.Invoice, 
 	}
 
 	if !skipSave {
-		err = testRepo().Create(tenantID, i.CoreDocument.CurrentVersion, i)
+		err = testRepo().Create(accountID, i.CoreDocument.CurrentVersion, i)
 		if err != nil {
 			return nil, err
 		}
@@ -175,7 +175,7 @@ func updatedAnchoredMockDocument(t *testing.T, i *invoice.Invoice) (*invoice.Inv
 	if err != nil {
 		return nil, err
 	}
-	err = testRepo().Create(tenantID, i.CoreDocument.CurrentVersion, i)
+	err = testRepo().Create(accountID, i.CoreDocument.CurrentVersion, i)
 	if err != nil {
 		return nil, err
 	}
@@ -217,7 +217,7 @@ func TestService_CreateProofsValidationFails(t *testing.T) {
 	i, err := createAnchoredMockDocument(t, false)
 	assert.Nil(t, err)
 	i.CoreDocument.SigningRoot = nil
-	err = testRepo().Update(tenantID, i.CoreDocument.CurrentVersion, i)
+	err = testRepo().Update(accountID, i.CoreDocument.CurrentVersion, i)
 	assert.Nil(t, err)
 	idService = mockSignatureCheck(i, idService, service)
 	ctxh := testingconfig.CreateTenantContext(t, cfg)
@@ -313,7 +313,7 @@ func TestService_GetCurrentVersion_successful(t *testing.T) {
 			},
 		}
 
-		err := testRepo().Create(tenantID, version, inv)
+		err := testRepo().Create(accountID, version, inv)
 		currentVersion = version
 		version = next
 		assert.Nil(t, err)
@@ -345,7 +345,7 @@ func TestService_GetVersion_successful(t *testing.T) {
 	}
 
 	ctxh := testingconfig.CreateTenantContext(t, cfg)
-	err := testRepo().Create(tenantID, currentVersion, inv)
+	err := testRepo().Create(accountID, currentVersion, inv)
 	assert.Nil(t, err)
 
 	mod, err := service.GetVersion(ctxh, documentIdentifier, currentVersion)
@@ -375,7 +375,7 @@ func TestService_GetCurrentVersion_error(t *testing.T) {
 		},
 	}
 
-	err = testRepo().Create(tenantID, documentIdentifier, inv)
+	err = testRepo().Create(accountID, documentIdentifier, inv)
 	assert.Nil(t, err)
 
 	_, err = service.GetCurrentVersion(ctxh, documentIdentifier)
@@ -401,7 +401,7 @@ func TestService_GetVersion_error(t *testing.T) {
 			CurrentVersion:     currentVersion,
 		},
 	}
-	err = testRepo().Create(tenantID, currentVersion, inv)
+	err = testRepo().Create(accountID, currentVersion, inv)
 	assert.Nil(t, err)
 
 	//random version
@@ -442,7 +442,7 @@ func TestService_Exists(t *testing.T) {
 		},
 	}
 
-	err = testRepo().Create(tenantID, documentIdentifier, inv)
+	err = testRepo().Create(accountID, documentIdentifier, inv)
 
 	exists := service.Exists(ctxh, documentIdentifier)
 	assert.True(t, exists, "document should exist")

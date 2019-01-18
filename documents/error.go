@@ -8,8 +8,8 @@ import (
 
 const (
 
-	// ErrDocumentConfigTenantID must be used for errors related to tenantID operations
-	ErrDocumentConfigTenantID = errors.Error("error with tenantID operations")
+	// ErrDocumentConfigTenantID must be used for errors related to accountID operations
+	ErrDocumentConfigTenantID = errors.Error("error with accountID operations")
 
 	// ErrDocumentBootstrap must be used for errors related to documents package bootstrapping
 	ErrDocumentBootstrap = errors.Error("error when bootstrapping document package")

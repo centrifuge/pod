@@ -187,13 +187,13 @@ func grpcInterceptor() grpc.ServerOption {
 	return grpc.UnaryInterceptor(auth)
 }
 
-// auth is the grpc unary interceptor to to check if the tenant ID is passed in the header.
+// auth is the grpc unary interceptor to to check if the account ID is passed in the header.
 // interceptor will check "authorisation" header. If not set, we return an error.
 //
 // at this point we are going with one interceptor. Once we have more than one interceptor,
 // we can write a wrapper interceptor that will call the chain of interceptor
 //
-// Note: each handler can access tenantID from the context: ctx.Value(api.AccountHeaderKey)
+// Note: each handler can access accountID from the context: ctx.Value(api.AccountHeaderKey)
 func auth(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 	// if this request is for ping
 	if utils.ContainsString(noAuthPaths[:], info.FullMethod) {

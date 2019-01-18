@@ -23,7 +23,7 @@ import (
 
 const (
 	modelIDParam           = "modelID"
-	tenantIDParam          = "tenantID"
+	accountIDParam         = "accountID"
 	documentAnchorTaskName = "Document Anchoring"
 )
 
@@ -32,14 +32,14 @@ var log = logging.Logger("anchor_task")
 type documentAnchorTask struct {
 	transactions.BaseTask
 
-	id       []byte
-	tenantID identity.CentID
+	id        []byte
+	accountID identity.CentID
 
 	// state
 	config        config.Service
 	processor     anchorProcessor
-	modelGetFunc  func(tenantID, id []byte) (Model, error)
-	modelSaveFunc func(tenantID, id []byte, model Model) error
+	modelGetFunc  func(accountID, id []byte) (Model, error)
+	modelSaveFunc func(accountID, id []byte, model Model) error
 }
 
 // TaskTypeName returns the name of the task.
@@ -64,12 +64,12 @@ func (d *documentAnchorTask) ParseKwargs(kwargs map[string]interface{}) error {
 		return errors.New("invalid model ID")
 	}
 
-	tenantID, ok := kwargs[tenantIDParam].(string)
+	accountID, ok := kwargs[accountIDParam].(string)
 	if !ok {
-		return errors.New("missing tenant ID")
+		return errors.New("missing account ID")
 	}
 
-	d.tenantID, err = identity.CentIDFromString(tenantID)
+	d.accountID, err = identity.CentIDFromString(accountID)
 	if err != nil {
 		return errors.New("invalid cent ID")
 	}
@@ -91,26 +91,26 @@ func (d *documentAnchorTask) Copy() (gocelery.CeleryTask, error) {
 func (d *documentAnchorTask) RunTask() (res interface{}, err error) {
 	log.Infof("starting anchor task: %v\n", d.TxID.String())
 	defer func() {
-		err = d.UpdateTransaction(d.tenantID, d.TaskTypeName(), err)
+		err = d.UpdateTransaction(d.accountID, d.TaskTypeName(), err)
 	}()
 
-	tc, err := d.config.GetAccount(d.tenantID[:])
+	tc, err := d.config.GetAccount(d.accountID[:])
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
 	}
-	ctxh, err := contextutil.NewCentrifugeContext(context.Background(), tc)
+	ctxh, err := contextutil.New(context.Background(), tc)
 	if err != nil {
 		return false, errors.New("failed to get context header: %v", err)
 	}
 
-	model, err := d.modelGetFunc(d.tenantID[:], d.id)
+	model, err := d.modelGetFunc(d.accountID[:], d.id)
 	if err != nil {
 		return false, errors.New("failed to get model: %v", err)
 	}
 
 	if _, err = AnchorDocument(ctxh, model, d.processor, func(id []byte, model Model) error {
-		return d.modelSaveFunc(d.tenantID[:], id, model)
+		return d.modelSaveFunc(d.accountID[:], id, model)
 	}); err != nil {
 		return false, errors.New("failed to anchor document: %v", err)
 	}
@@ -119,8 +119,8 @@ func (d *documentAnchorTask) RunTask() (res interface{}, err error) {
 }
 
 // InitDocumentAnchorTask enqueues a new document anchor task and returns the txID.
-func InitDocumentAnchorTask(tq queue.TaskQueuer, txService transactions.Service, tenantID identity.CentID, modelID []byte) (uuid.UUID, error) {
-	tx, err := txService.CreateTransaction(tenantID, documentAnchorTaskName)
+func InitDocumentAnchorTask(tq queue.TaskQueuer, txService transactions.Service, accountID identity.CentID, modelID []byte) (uuid.UUID, error) {
+	tx, err := txService.CreateTransaction(accountID, documentAnchorTaskName)
 	if err != nil {
 		return uuid.Nil, err
 	}
@@ -128,7 +128,7 @@ func InitDocumentAnchorTask(tq queue.TaskQueuer, txService transactions.Service,
 	params := map[string]interface{}{
 		transactions.TxIDParam: tx.ID.String(),
 		modelIDParam:           hexutil.Encode(modelID),
-		tenantIDParam:          tenantID.String(),
+		accountIDParam:         accountID.String(),
 	}
 
 	_, err = tq.EnqueueJob(documentAnchorTaskName, params)

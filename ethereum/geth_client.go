@@ -206,14 +206,14 @@ func (gc *gethClient) getGethTxOpts(accountName string) (*bind.TransactOpts, err
 	return opts, nil
 }
 
-func (gc *gethClient) queueTaskTransactionStatus(tenantID identity.CentID, txHash string) (txID uuid.UUID, err error) {
-	tx, err := gc.txService.CreateTransaction(tenantID, "polling Ethereum transaction status")
+func (gc *gethClient) queueTaskTransactionStatus(accountID identity.CentID, txHash string) (txID uuid.UUID, err error) {
+	tx, err := gc.txService.CreateTransaction(accountID, "polling Ethereum transaction status")
 	if err != nil {
 		return txID, err
 	}
 	_, err = gc.queue.EnqueueJob(TransactionStatusTaskName, map[string]interface{}{
 		transactions.TxIDParam:  tx.ID.String(),
-		TransactionAccountParam: tenantID.String(),
+		TransactionAccountParam: accountID.String(),
 		TransactionTxHashParam:  txHash,
 	})
 

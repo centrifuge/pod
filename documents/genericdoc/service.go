@@ -170,17 +170,17 @@ func (s service) RequestDocumentSignature(ctx context.Context, model documents.M
 		return nil, errors.NewTypedError(documents.ErrDocumentUnPackingCoreDocument, err)
 	}
 
-	tenantID := idConf.ID[:]
+	accountID := idConf.ID[:]
 
 	// Logic for receiving version n (n > 1) of the document for the first time
-	if !s.repo.Exists(tenantID, doc.DocumentIdentifier) && !utils.IsSameByteSlice(doc.DocumentIdentifier, doc.CurrentVersion) {
-		err = s.repo.Create(tenantID, doc.DocumentIdentifier, model)
+	if !s.repo.Exists(accountID, doc.DocumentIdentifier) && !utils.IsSameByteSlice(doc.DocumentIdentifier, doc.CurrentVersion) {
+		err = s.repo.Create(accountID, doc.DocumentIdentifier, model)
 		if err != nil {
 			return nil, errors.NewTypedError(documents.ErrDocumentPersistence, err)
 		}
 	}
 
-	err = s.repo.Create(tenantID, doc.CurrentVersion, model)
+	err = s.repo.Create(accountID, doc.CurrentVersion, model)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentPersistence, err)
 	}

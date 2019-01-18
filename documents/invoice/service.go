@@ -97,7 +97,7 @@ func (s service) DeriveFromCreatePayload(ctx context.Context, payload *clientinv
 
 	id, err := contextutil.Self(ctx)
 	if err != nil {
-		return nil, documents.ErrDocumentConfigTenantID
+		return nil, documents.ErrDocumentConfigAccountID
 	}
 
 	invoiceModel := new(Invoice)
@@ -113,7 +113,7 @@ func (s service) DeriveFromCreatePayload(ctx context.Context, payload *clientinv
 func (s service) calculateDataRoot(ctx context.Context, old, new documents.Model, validator documents.Validator) (documents.Model, error) {
 	self, err := contextutil.Self(ctx)
 	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentConfigTenantID, err)
+		return nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
 	}
 
 	inv, ok := new.(*Invoice)
@@ -146,7 +146,7 @@ func (s service) calculateDataRoot(ctx context.Context, old, new documents.Model
 func (s service) Create(ctx context.Context, inv documents.Model) (documents.Model, uuid.UUID, error) {
 	self, err := contextutil.Self(ctx)
 	if err != nil {
-		return nil, uuid.Nil, errors.NewTypedError(documents.ErrDocumentConfigTenantID, err)
+		return nil, uuid.Nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
 	}
 
 	inv, err = s.calculateDataRoot(ctx, nil, inv, CreateValidator())
@@ -175,7 +175,7 @@ func (s service) Create(ctx context.Context, inv documents.Model) (documents.Mod
 func (s service) Update(ctx context.Context, inv documents.Model) (documents.Model, uuid.UUID, error) {
 	self, err := contextutil.Self(ctx)
 	if err != nil {
-		return nil, uuid.Nil, errors.NewTypedError(documents.ErrDocumentConfigTenantID, err)
+		return nil, uuid.Nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
 	}
 
 	cd, err := inv.PackCoreDocument()
@@ -309,7 +309,7 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *clientinv
 
 	idConf, err := contextutil.Self(ctx)
 	if err != nil {
-		return nil, documents.ErrDocumentConfigTenantID
+		return nil, documents.ErrDocumentConfigAccountID
 	}
 
 	collaborators := append([]string{idConf.ID.String()}, payload.Collaborators...)

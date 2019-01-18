@@ -81,7 +81,7 @@ func createLocalCollaborator(t *testing.T, corruptID bool) (*configstore.Account
 	assert.NoError(t, err)
 	tcr := tc.(*configstore.Account)
 	tcr.IdentityID = tcID[:]
-	id := testingidentity.CreateTenantIDWithKeys(cfg.GetEthereumContextWaitTimeout(), tcr, idService)
+	id := testingidentity.CreateAccountIDWithKeys(cfg.GetEthereumContextWaitTimeout(), tcr, idService)
 	if corruptID {
 		tcr.IdentityID = utils.RandomSlice(identity.CentIDLength)
 	}

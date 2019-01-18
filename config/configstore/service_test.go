@@ -57,10 +57,10 @@ func TestService_GetAccount(t *testing.T) {
 	svc := DefaultService(repo, idService)
 	accountCfg, err := NewAccount("main", cfg)
 	assert.Nil(t, err)
-	tid, _ := accountCfg.GetIdentityID()
-	err = repo.CreateAccount(tid, accountCfg)
+	accID, _ := accountCfg.GetIdentityID()
+	err = repo.CreateAccount(accID, accountCfg)
 	assert.Nil(t, err)
-	cfg, err := svc.GetAccount(tid)
+	cfg, err := svc.GetAccount(accID)
 	assert.Nil(t, err)
 	assert.NotNil(t, cfg)
 }
@@ -93,9 +93,9 @@ func TestService_Createaccount(t *testing.T) {
 	assert.Nil(t, err)
 	i, err := newCfg.GetIdentityID()
 	assert.Nil(t, err)
-	tid, err := accountCfg.GetIdentityID()
+	accID, err := accountCfg.GetIdentityID()
 	assert.Nil(t, err)
-	assert.Equal(t, tid, i)
+	assert.Equal(t, accID, i)
 
 	//account already exists
 	_, err = svc.CreateAccount(accountCfg)
@@ -118,9 +118,9 @@ func TestService_Updateaccount(t *testing.T) {
 	assert.Nil(t, err)
 	i, err := newCfg.GetIdentityID()
 	assert.Nil(t, err)
-	tid, err := accountCfg.GetIdentityID()
+	accID, err := accountCfg.GetIdentityID()
 	assert.Nil(t, err)
-	assert.Equal(t, tid, i)
+	assert.Equal(t, accID, i)
 
 	acc := accountCfg.(*Account)
 	acc.EthereumDefaultAccountName = "other"
@@ -137,20 +137,20 @@ func TestService_Deleteaccount(t *testing.T) {
 	svc := DefaultService(repo, idService)
 	accountCfg, err := NewAccount("main", cfg)
 	assert.Nil(t, err)
-	tid, err := accountCfg.GetIdentityID()
+	accID, err := accountCfg.GetIdentityID()
 	assert.Nil(t, err)
 
 	//No config, no error
-	err = svc.DeleteAccount(tid)
+	err = svc.DeleteAccount(accID)
 	assert.Nil(t, err)
 
 	_, err = svc.CreateAccount(accountCfg)
 	assert.Nil(t, err)
 
-	err = svc.DeleteAccount(tid)
+	err = svc.DeleteAccount(accID)
 	assert.Nil(t, err)
 
-	_, err = svc.GetAccount(tid)
+	_, err = svc.GetAccount(accID)
 	assert.NotNil(t, err)
 }
 

@@ -104,11 +104,11 @@ func (s *peer) initProtocols() error {
 	}
 	var protocols []protocol.ID
 	for _, t := range tcs {
-		tid, err := t.GetIdentityID()
+		accID, err := t.GetIdentityID()
 		if err != nil {
 			return err
 		}
-		CID, err := identity.ToCentID(tid)
+		CID, err := identity.ToCentID(accID)
 		if err != nil {
 			return err
 		}

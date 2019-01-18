@@ -42,7 +42,7 @@ var createIdentityCmd = &cobra.Command{
 			panic(err)
 		}
 
-		tctx, err := contextutil.NewCentrifugeContext(context.Background(), tc)
+		tctx, err := contextutil.New(context.Background(), tc)
 		if err != nil {
 			panic(err)
 		}

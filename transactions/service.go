@@ -13,11 +13,11 @@ import (
 
 // Service wraps the repository and exposes specific functions.
 type Service interface {
-	CreateTransaction(tenantID identity.CentID, desc string) (*Transaction, error)
-	GetTransaction(tenantID identity.CentID, id uuid.UUID) (*Transaction, error)
+	CreateTransaction(accountID identity.CentID, desc string) (*Transaction, error)
+	GetTransaction(accountID identity.CentID, id uuid.UUID) (*Transaction, error)
 	SaveTransaction(tx *Transaction) error
 	GetTransactionStatus(identity identity.CentID, id uuid.UUID) (*transactionspb.TransactionStatusResponse, error)
-	WaitForTransaction(tenantID identity.CentID, txID uuid.UUID) error
+	WaitForTransaction(accountID identity.CentID, txID uuid.UUID) error
 }
 
 // NewService returns a Service implementation.
@@ -36,21 +36,21 @@ func (s service) SaveTransaction(tx *Transaction) error {
 }
 
 // GetTransaction returns the transaction associated with identity and id.
-func (s service) GetTransaction(tenantID identity.CentID, id uuid.UUID) (*Transaction, error) {
-	return s.repo.Get(tenantID, id)
+func (s service) GetTransaction(accountID identity.CentID, id uuid.UUID) (*Transaction, error) {
+	return s.repo.Get(accountID, id)
 }
 
 // CreateTransaction creates a new transaction and saves it to the DB.
-func (s service) CreateTransaction(tenantID identity.CentID, desc string) (*Transaction, error) {
-	tx := NewTransaction(tenantID, desc)
+func (s service) CreateTransaction(accountID identity.CentID, desc string) (*Transaction, error) {
+	tx := NewTransaction(accountID, desc)
 	return tx, s.SaveTransaction(tx)
 }
 
 // WaitForTransaction blocks until transaction status is moved from pending state.
 // Note: use it with caution as this will block.
-func (s service) WaitForTransaction(tenantID identity.CentID, txID uuid.UUID) error {
+func (s service) WaitForTransaction(accountID identity.CentID, txID uuid.UUID) error {
 	for {
-		resp, err := s.GetTransactionStatus(tenantID, txID)
+		resp, err := s.GetTransactionStatus(accountID, txID)
 		if err != nil {
 			return err
 		}
