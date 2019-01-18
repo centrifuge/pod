@@ -64,9 +64,7 @@ func (mt MessageType) String() string {
 
 // MessageTypeFromString Resolves MessageType out of string
 func MessageTypeFromString(ht string) MessageType {
-
 	var messageType MessageType
-
 	if mt, exists := messageTypes[ht]; exists {
 		messageType = mt
 	}
