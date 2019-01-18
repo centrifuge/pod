@@ -4,7 +4,6 @@ import (
 	"bytes"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/ethereum/go-ethereum/common"
@@ -105,7 +104,6 @@ type ReadAccessValidator interface {
 		cd *coredocumentpb.CoreDocument,
 		registry common.Address,
 		tokenID []byte,
-		signature string,
 		peer identity.CentID) error
 }
 
@@ -161,7 +159,6 @@ func (r readAccessValidator) NFTOwnerCanRead(
 	cd *coredocumentpb.CoreDocument,
 	registry common.Address,
 	tokenID []byte,
-	signature string,
 	peer identity.CentID) error {
 
 	// check if the peer can read the doc
@@ -184,13 +181,9 @@ func (r readAccessValidator) NFTOwnerCanRead(
 		return errors.New("failed to get NFT owner: %v", err)
 	}
 
-	msg, err := constructNFT(registry, tokenID)
-	if err != nil {
-		return err
-	}
-
-	if !secp256k1.VerifySignatureWithAddress(owner.String(), signature, msg) {
-		return errors.New("peer(%s) doesn't own NFT", peer.String())
+	// TODO(ved): this will always fail until we roll out identity v2 with CentID type as common.Address
+	if !bytes.Equal(owner.Bytes(), peer[:]) {
+		return errors.New("peer(%v) not owner of the NFT", peer.String())
 	}
 
 	return nil
