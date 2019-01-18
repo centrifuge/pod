@@ -26,10 +26,10 @@ type Config interface {
 type Client interface {
 
 	// GetSignaturesForDocument gets the signatures for document
-	GetSignaturesForDocument(ctx context.Context, identityService identity.Service, doc *coredocumentpb.CoreDocument) error
+	GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocument) error
 
 	// after all signatures are collected the sender sends the document including the signatures
-	SendAnchoredDocument(ctx context.Context, id identity.Identity, in *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error)
+	SendAnchoredDocument(ctx context.Context, receiverID identity.CentID, in *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error)
 }
 
 // defaultProcessor implements AnchorProcessor interface
@@ -56,13 +56,9 @@ func (dp defaultProcessor) Send(ctx context.Context, coreDocument *coredocumentp
 		return errors.New("passed coreDoc is nil")
 	}
 	log.Infof("sending coredocument %x to recipient %x", coreDocument.DocumentIdentifier, recipient)
-	id, err := dp.identityService.LookupIdentityForID(recipient)
-	if err != nil {
-		return errors.New("error fetching receiver identity: %v", err)
-	}
 
 	c, _ := context.WithTimeout(ctx, dp.config.GetP2PConnectionTimeout())
-	resp, err := dp.p2pClient.SendAnchoredDocument(c, id, &p2ppb.AnchorDocumentRequest{Document: coreDocument})
+	resp, err := dp.p2pClient.SendAnchoredDocument(c, recipient, &p2ppb.AnchorDocumentRequest{Document: coreDocument})
 	if err != nil || !resp.Accepted {
 		return errors.New("failed to send document to the node: %v", err)
 	}
@@ -125,7 +121,7 @@ func (dp defaultProcessor) RequestSignatures(ctx context.Context, model Model) e
 		return errors.New("failed to validate model for signature request: %v", err)
 	}
 
-	err = dp.p2pClient.GetSignaturesForDocument(ctx, dp.identityService, cd)
+	err = dp.p2pClient.GetSignaturesForDocument(ctx, cd)
 	if err != nil {
 		return errors.New("failed to collect signatures from the collaborators: %v", err)
 	}

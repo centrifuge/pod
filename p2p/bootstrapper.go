@@ -35,7 +35,7 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("identity service not initialised")
 	}
 
-	ctx[bootstrap.BootstrappedPeer] = &peer{config: cfgService, handlerCreator: func() *receiver.Handler {
+	ctx[bootstrap.BootstrappedPeer] = &peer{config: cfgService, idService: idService, handlerCreator: func() *receiver.Handler {
 		return receiver.New(cfgService, receiver.HandshakeValidator(cfg.GetNetworkID(), idService), docSrv)
 	}}
 	return nil

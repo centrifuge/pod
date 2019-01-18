@@ -49,7 +49,7 @@ func TestClient_GetSignaturesForDocument(t *testing.T) {
 	tc, _, err := createLocalCollaborator(t, false)
 	ctxh := testingconfig.CreateTenantContext(t, cfg)
 	doc := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID})
-	err = client.GetSignaturesForDocument(ctxh, idService, doc)
+	err = client.GetSignaturesForDocument(ctxh, doc)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(doc.Signatures))
 }
@@ -58,7 +58,7 @@ func TestClient_GetSignaturesForDocumentValidationCheck(t *testing.T) {
 	tc, _, err := createLocalCollaborator(t, true)
 	ctxh := testingconfig.CreateTenantContext(t, cfg)
 	doc := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID})
-	err = client.GetSignaturesForDocument(ctxh, idService, doc)
+	err = client.GetSignaturesForDocument(ctxh, doc)
 	assert.NoError(t, err)
 	// one signature would be missing
 	assert.Equal(t, 1, len(doc.Signatures))
@@ -69,7 +69,7 @@ func TestClient_SendAnchoredDocument(t *testing.T) {
 	ctxh := testingconfig.CreateTenantContext(t, cfg)
 	doc := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID})
 
-	_, err = client.SendAnchoredDocument(ctxh, cid, &p2ppb.AnchorDocumentRequest{Document: doc})
+	_, err = client.SendAnchoredDocument(ctxh, cid.CentID(), &p2ppb.AnchorDocumentRequest{Document: doc})
 	if assert.Error(t, err) {
 		assert.Equal(t, "[1]document is invalid: [mismatched document roots]", err.Error())
 	}
