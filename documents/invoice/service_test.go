@@ -5,28 +5,23 @@ package invoice
 import (
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-
-	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
-
-	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
-
-	"github.com/centrifuge/go-centrifuge/testingutils"
-	"github.com/centrifuge/gocelery"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
+	"github.com/centrifuge/go-centrifuge/storage/leveldb"
+	"github.com/centrifuge/go-centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -36,8 +31,6 @@ var (
 	cid         = identity.RandomCentID()
 	centIDBytes = cid[:]
 	tenantID    = cid[:]
-	key1Pub     = [...]byte{230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
-	key1        = []byte{102, 109, 71, 239, 130, 229, 128, 189, 37, 96, 223, 5, 189, 91, 210, 47, 89, 4, 165, 6, 188, 53, 49, 250, 109, 151, 234, 139, 57, 205, 231, 253, 230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
 )
 
 type mockAnchorRepo struct {
@@ -54,7 +47,7 @@ func (r *mockAnchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.D
 func TestDefaultService(t *testing.T) {
 	c := &testingconfig.MockConfig{}
 	c.On("GetIdentityID").Return(centIDBytes, nil).Once()
-	srv := DefaultService(testRepo(), nil, nil, nil, nil, nil)
+	srv := DefaultService(nil, testRepo(), nil, nil, nil, nil)
 	assert.NotNil(t, srv, "must be non-nil")
 }
 
@@ -68,12 +61,13 @@ func getServiceWithMockedLayers() (testingcommons.MockIDService, Service) {
 
 	repo := testRepo()
 	mockAnchor := &mockAnchorRepo{}
-	genService := genericdoc.DefaultService(repo, mockAnchor, &idService)
+	docSrv := documents.DefaultService(repo, &idService, mockAnchor, documents.NewServiceRegistry())
 	return idService, DefaultService(
+		docSrv,
 		repo,
 		mockAnchor, &idService,
 		queueSrv,
-		ctx[transactions.BootstrappedService].(transactions.Service), genService)
+		ctx[transactions.BootstrappedService].(transactions.Service))
 }
 
 func createMockDocument() (*Invoice, error) {

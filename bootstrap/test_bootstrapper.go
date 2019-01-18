@@ -2,6 +2,8 @@
 
 package bootstrap
 
+import "fmt"
+
 // TestBootstrapper must be implemented by all packages that needs bootstrapping at the start of testing suite
 type TestBootstrapper interface {
 
@@ -16,9 +18,11 @@ func RunTestBootstrappers(bootstrappers []TestBootstrapper, ctx map[string]inter
 	if ctx == nil {
 		ctx = map[string]interface{}{}
 	}
-	for _, b := range bootstrappers {
+	for i, b := range bootstrappers {
 		err := b.TestBootstrap(ctx)
 		if err != nil {
+			// TODO remove this
+			fmt.Println(i)
 			panic(err)
 		}
 	}

@@ -186,14 +186,12 @@ func TestPaymentObligationService(t *testing.T) {
 
 	txService := ctx[transactions.BootstrappedService].(transactions.Service)
 
-	registry := documents.NewServiceRegistry()
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			// get mocks
 			docService, paymentOb, idService, ethClient, mockCfg, queueSrv := test.mocker()
 			// with below config the documentType has to be test.name to avoid conflicts since registry is a singleton
-			registry.Register(test.name, &docService)
-			service := newEthereumPaymentObligation(registry, &idService, &ethClient, queueSrv, &docService, func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error) {
+			service := newEthereumPaymentObligation(&idService, &ethClient, queueSrv, &docService, func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error) {
 				return &EthereumPaymentObligationContract{}, nil
 			}, txService, func() (uint64, error) { return 10, nil })
 			ctxh := testingconfig.CreateTenantContext(t, &mockCfg)

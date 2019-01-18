@@ -56,23 +56,23 @@ func registerServices(ctx context.Context, cfg Config, grpcServer *grpc.Server, 
 	}
 
 	// invoice
-	handler, err := invoice.GRPCHandler(configService, registry)
-	if err != nil {
-		return err
+	invHandler, ok := nodeObjReg[invoice.BootstrappedInvoiceHandler].(invoicepb.DocumentServiceServer)
+	if !ok {
+		return errors.New("invoice grpc handler not registered")
 	}
-	invoicepb.RegisterDocumentServiceServer(grpcServer, handler)
+
+	invoicepb.RegisterDocumentServiceServer(grpcServer, invHandler)
 	err = invoicepb.RegisterDocumentServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
 	if err != nil {
 		return err
 	}
 
-	// purchase orders
-	srv, err := purchaseorder.GRPCHandler(configService, registry)
-	if err != nil {
-		return errors.New("failed to get purchase order handler: %v", err)
+	poHandler, ok := nodeObjReg[purchaseorder.BootstrappedPOHandler].(purchaseorderpb.DocumentServiceServer)
+	if !ok {
+		return errors.New("purchase order grpc handler not registered")
 	}
 
-	purchaseorderpb.RegisterDocumentServiceServer(grpcServer, srv)
+	purchaseorderpb.RegisterDocumentServiceServer(grpcServer, poHandler)
 	err = purchaseorderpb.RegisterDocumentServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
 	if err != nil {
 		return err

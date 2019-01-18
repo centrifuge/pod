@@ -179,7 +179,7 @@ func TestHandler_HandleInterceptor_getServiceAndModel_fail(t *testing.T) {
 	id, _ := cfg.GetIdentityID()
 	resp, err := handler.HandleInterceptor(context.Background(), defaultPID, protocol.ID(hexutil.Encode(id)), p2pEnv)
 	assert.Error(t, err, "must return error")
-	assert.Contains(t, err.Error(), "failed to get type of the document")
+	assert.Contains(t, err.Error(), "core document data is nil")
 	assert.Nil(t, resp, "must be nil")
 }
 

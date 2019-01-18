@@ -4,13 +4,11 @@ import (
 	"context"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/notification"
 	clientpopb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/transactions"
@@ -39,31 +37,23 @@ type Service interface {
 // service always returns errors of type `errors.Error` or `errors.TypedError`
 type service struct {
 	documents.Service
-	repo             documents.Repository
-	notifier         notification.Sender
-	anchorRepository anchors.AnchorRepository
-	identityService  identity.Service
-	queueSrv         queue.TaskQueuer
-	txService        transactions.Service
+	repo      documents.Repository
+	queueSrv  queue.TaskQueuer
+	txService transactions.Service
 }
 
 // DefaultService returns the default implementation of the service
 func DefaultService(
 	srv documents.Service,
 	repo documents.Repository,
-	anchorRepository anchors.AnchorRepository,
-	identityService identity.Service,
 	queueSrv queue.TaskQueuer,
 	txService transactions.Service,
 ) Service {
 	return service{
-		repo:             repo,
-		notifier:         notification.NewWebhookSender(),
-		anchorRepository: anchorRepository,
-		identityService:  identityService,
-		queueSrv:         queueSrv,
-		txService:        txService,
-		Service:          srv,
+		repo:      repo,
+		queueSrv:  queueSrv,
+		txService: txService,
+		Service:   srv,
 	}
 }
 

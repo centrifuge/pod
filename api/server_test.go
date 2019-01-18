@@ -9,21 +9,20 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
+	"github.com/centrifuge/go-centrifuge/p2p"
+
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity/ethid"
 	"github.com/centrifuge/go-centrifuge/nft"
-	"github.com/centrifuge/go-centrifuge/p2p"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
@@ -35,7 +34,6 @@ import (
 
 var ctx = map[string]interface{}{}
 var cfg config.Configuration
-var registry *documents.ServiceRegistry
 
 func TestMain(m *testing.M) {
 	ethClient := &testingcommons.MockEthClient{}
@@ -52,8 +50,9 @@ func TestMain(m *testing.M) {
 		&configstore.Bootstrapper{},
 		anchors.Bootstrapper{},
 		documents.Bootstrapper{},
-		&genericdoc.Bootstrapper{},
+		documents.DocumentServiceBootstrapper{},
 		p2p.Bootstrapper{},
+		documents.PostBootstrapper{},
 		&invoice.Bootstrapper{},
 		&purchaseorder.Bootstrapper{},
 		&ethereum.Bootstrapper{},
@@ -63,7 +62,6 @@ func TestMain(m *testing.M) {
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-	registry = ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
 	flag.Parse()
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
@@ -74,7 +72,6 @@ func TestCentAPIServer_StartContextCancel(t *testing.T) {
 	cfg.Set("nodeHostname", "0.0.0.0")
 	cfg.Set("nodePort", 9000)
 	cfg.Set("centrifugeNetwork", "")
-	registry.Register(documenttypes.InvoiceDataTypeUrl, invoice.DefaultService(nil, nil, nil, nil, nil, nil))
 	capi := apiServer{config: cfg}
 	ctx, canc := context.WithCancel(context.WithValue(context.Background(), bootstrap.NodeObjRegistry, ctx))
 	startErr := make(chan error)
