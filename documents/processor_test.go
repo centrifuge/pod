@@ -102,7 +102,7 @@ type p2pClient struct {
 	Client
 }
 
-func (p p2pClient) GetSignaturesForDocument(ctx context.Context, identityService identity.Service, doc *coredocumentpb.CoreDocument) error {
+func (p p2pClient) GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocument) error {
 	args := p.Called(ctx, doc)
 	return args.Error(0)
 }

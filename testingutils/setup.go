@@ -135,7 +135,7 @@ func SetupSmartContractAddresses(cfg config.Configuration, sca *config.SmartCont
 func BuildIntegrationTestingContext() map[string]interface{} {
 	projDir := getProjectDir()
 	StartPOAGeth()
-	//RunSmartContractMigrations()
+	RunSmartContractMigrations()
 	addresses := GetSmartContractAddresses()
 	cfg := LoadTestConfig()
 	cfg.Set("keys.signing.publicKey", fmt.Sprintf("%s/build/resources/signingKey.pub.pem", projDir))
