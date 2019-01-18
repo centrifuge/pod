@@ -241,7 +241,8 @@ func TestHandler_SendAnchoredDocument_EmptyDocument(t *testing.T) {
 	doc := prepareDocumentForP2PHandler(t, nil)
 	req := getAnchoredRequest(doc)
 	req.Document = nil
-	id, _ := cfg.GetIdentityID()
+	id, err := cfg.GetIdentityID()
+	assert.NoError(t, err)
 	resp, err := handler.SendAnchoredDocument(ctxh, req, id)
 	assert.NotNil(t, err)
 	assert.Nil(t, resp, "must be nil")
@@ -316,11 +317,13 @@ func prepareDocumentForP2PHandler(t *testing.T, doc *coredocumentpb.CoreDocument
 	if doc == nil {
 		doc = testingcoredocument.GenerateCoreDocument()
 	}
-	tree, _ := coredocument.GetDocumentSigningTree(doc)
+	tree, err := coredocument.GetDocumentSigningTree(doc)
+	assert.NoError(t, err)
 	doc.SigningRoot = tree.RootHash()
 	sig := identity.Sign(idConfig, identity.KeyPurposeSigning, doc.SigningRoot)
 	doc.Signatures = append(doc.Signatures, sig)
-	tree, _ = coredocument.GetDocumentRootTree(doc)
+	tree, err = coredocument.GetDocumentRootTree(doc)
+	assert.NoError(t, err)
 	doc.DocumentRoot = tree.RootHash()
 	return doc
 }

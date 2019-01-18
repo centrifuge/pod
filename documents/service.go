@@ -278,8 +278,8 @@ func (s service) getVersion(ctx context.Context, documentID, version []byte) (Mo
 }
 
 func (s service) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (Model, error) {
-	if cd.EmbeddedData == nil {
-		return nil, errors.New("core document data is nil")
+	if cd == nil || cd.EmbeddedData == nil {
+		return nil, errors.New("core document is nil")
 	}
 
 	srv, err := s.registry.LocateService(cd.EmbeddedData.TypeUrl)
