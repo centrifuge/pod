@@ -11,6 +11,7 @@ import (
 )
 
 type MockService struct {
+	documents.Service
 	mock.Mock
 }
 

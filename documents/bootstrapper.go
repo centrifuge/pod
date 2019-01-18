@@ -20,6 +20,9 @@ const (
 
 	// BootstrappedDocumentService is the key to bootstrapped document service
 	BootstrappedDocumentService = "BootstrappedDocumentService"
+
+	// BootstrappedAnchorProcessor is the key to bootstrapped anchor processor
+	BootstrappedAnchorProcessor = "BootstrappedAnchorProcessor"
 )
 
 // Bootstrapper implements bootstrap.Bootstrapper.
@@ -36,6 +39,33 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	return nil
 }
 
+type DocumentServiceBootstrapper struct{}
+
+func (DocumentServiceBootstrapper) Bootstrap(ctx map[string]interface{}) error {
+	repo, ok := ctx[BootstrappedDocumentRepository].(Repository)
+	if !ok {
+		return errors.New("document repository not initialised")
+	}
+
+	idService, ok := ctx[identity.BootstrappedIDService].(identity.Service)
+	if !ok {
+		return errors.New("identity service not initialised")
+	}
+
+	anchorRepo, ok := ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
+	if !ok {
+		return errors.New("anchor repository not initialised")
+	}
+
+	registry, ok := ctx[BootstrappedRegistry].(*ServiceRegistry)
+	if !ok {
+		return errors.New("service registry no initialised")
+	}
+
+	ctx[BootstrappedDocumentService] = DefaultService(repo, idService, anchorRepo, registry)
+	return nil
+}
+
 // PostBootstrapper to run the post after all bootstrappers.
 type PostBootstrapper struct{}
 
@@ -46,7 +76,7 @@ func (PostBootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("config service not initialised")
 	}
 
-	config, ok := ctx[bootstrap.BootstrappedConfig].(Config)
+	cfg, ok := ctx[bootstrap.BootstrappedConfig].(Config)
 	if !ok {
 		return errors.New("documents config not initialised")
 	}
@@ -71,23 +101,17 @@ func (PostBootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("anchor repository not initialised")
 	}
 
-	registry, ok := ctx[BootstrappedRegistry].(*ServiceRegistry)
-	if !ok {
-		return errors.New("service registry no initialised")
-	}
-
 	p2pClient, ok := ctx[bootstrap.BootstrappedPeer].(Client)
 	if !ok {
 		return errors.New("p2p client not initialised")
 	}
 
-	ctx[BootstrappedDocumentService] = DefaultService(repo, idService, anchorRepo, registry)
 	task := &documentAnchorTask{
 		BaseTask: transactions.BaseTask{
 			TxService: ctx[transactions.BootstrappedService].(transactions.Service),
 		},
 		config:        cfgService,
-		processor:     DefaultProcessor(idService, p2pClient, anchorRepo, config),
+		processor:     DefaultProcessor(idService, p2pClient, anchorRepo, cfg),
 		modelGetFunc:  repo.Get,
 		modelSaveFunc: repo.Update,
 	}

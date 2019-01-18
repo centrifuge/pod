@@ -8,7 +8,6 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
@@ -60,9 +59,8 @@ func TestMain(m *testing.M) {
 		&configstore.Bootstrapper{},
 		anchors.Bootstrapper{},
 		documents.Bootstrapper{},
-		&genericdoc.Bootstrapper{},
 		p2p.Bootstrapper{},
-		&genericdoc.Bootstrapper{},
+		documents.PostBootstrapper{},
 		&Bootstrapper{},
 		&queue.Starter{},
 	}
