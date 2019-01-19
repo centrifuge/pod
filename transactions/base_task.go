@@ -13,12 +13,16 @@ var log = logging.Logger("transaction")
 const (
 	// TxIDParam maps transaction ID in the kwargs.
 	TxIDParam = "transactionID"
+
+	// TxNextTask indicates if there is next task
+	TxNextTask = "next task"
 )
 
 // BaseTask holds the required details and helper functions for tasks to update transactions.
 // should be embedded into the task
 type BaseTask struct {
 	TxID uuid.UUID
+	Next bool
 
 	// state
 	TxService Service
@@ -37,11 +41,16 @@ func (b *BaseTask) ParseTransactionID(kwargs map[string]interface{}) error {
 		return errors.New("invalid transaction ID")
 	}
 
+	if b.Next, ok = kwargs[TxNextTask].(bool); !ok {
+		b.Next = false
+	}
+
+	log.Infof("Task %v has next task: %v\n", b.TxID.String(), b.Next)
 	return nil
 }
 
 // UpdateTransaction add a new log and updates the status of the transaction based on the error.
-func (b *BaseTask) UpdateTransaction(accountID identity.CentID, name string, err error, next bool) error {
+func (b *BaseTask) UpdateTransaction(accountID identity.CentID, name string, err error) error {
 	if err == gocelery.ErrTaskRetryable {
 		return err
 	}
@@ -51,7 +60,7 @@ func (b *BaseTask) UpdateTransaction(accountID identity.CentID, name string, err
 		return errors.AppendError(err, b.updateStatus(accountID, Failed, NewLog(name, err.Error())))
 	}
 
-	if next {
+	if b.Next {
 		err = b.updateStatus(accountID, Pending, NewLog(name, ""))
 		if err != nil {
 			return err
@@ -61,7 +70,7 @@ func (b *BaseTask) UpdateTransaction(accountID identity.CentID, name string, err
 	}
 
 	log.Infof("Transaction successful:%v\n", b.TxID.String())
-	return errors.AppendError(err, b.updateStatus(accountID, Success, NewLog(name, "")))
+	return b.updateStatus(accountID, Success, NewLog(name, ""))
 }
 
 func (b *BaseTask) updateStatus(accountID identity.CentID, status Status, log Log) error {

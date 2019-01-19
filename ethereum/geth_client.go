@@ -211,12 +211,17 @@ func QueueTransactionStatusTask(
 		return txID, err
 	}
 
-	txService.RegisterHandler(tx.ID, updateHandler)
+	var next bool
+	if updateHandler != nil {
+		next = true
+		txService.RegisterHandler(tx.ID, updateHandler)
+	}
+
 	_, err = queuer.EnqueueJobWithMaxTries(TransactionStatusTaskName, map[string]interface{}{
-		transactions.TxIDParam:   tx.ID.String(),
-		TransactionAccountParam:  accountID.String(),
-		TransactionTxHashParam:   txHash.String(),
-		TransactionNextTaskParam: updateHandler == nil,
+		transactions.TxIDParam:  tx.ID.String(),
+		TransactionAccountParam: accountID.String(),
+		TransactionTxHashParam:  txHash.String(),
+		transactions.TxNextTask: next,
 	})
 
 	return tx.ID, err

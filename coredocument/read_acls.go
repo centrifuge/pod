@@ -78,7 +78,7 @@ func AddNFTToReadRules(cd *coredocumentpb.CoreDocument, registry common.Address,
 	role := new(coredocumentpb.Role)
 	role.Nfts = append(role.Nfts, nft)
 	addNewRule(cd, role, coredocumentpb.Action_ACTION_READ)
-	return nil
+	return FillSalts(cd)
 }
 
 // ConstructNFT appends registry and tokenID to byte slice

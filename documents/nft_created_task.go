@@ -40,10 +40,6 @@ type nftCreatedTask struct {
 }
 
 func (t *nftCreatedTask) ParseKwargs(kwargs map[string]interface{}) (err error) {
-	defer func() {
-		log.Error(err)
-	}()
-
 	err = t.ParseTransactionID(kwargs)
 	if err != nil {
 		return err
@@ -99,14 +95,11 @@ func (t *nftCreatedTask) Copy() (gocelery.CeleryTask, error) {
 
 func (t *nftCreatedTask) RunTask() (result interface{}, err error) {
 	defer func() {
-		log.Error(err)
+		err = t.UpdateTransaction(t.accountID, t.TaskTypeName(), err)
 	}()
 
-	defer func() {
-		err = t.UpdateTransaction(t.accountID, t.TaskTypeName(), err, false)
-	}()
-
-	ctx, err := contextutil.Context(context.Background(), t.cfgSrv)
+	ctx := context.WithValue(context.Background(), config.AccountHeaderKey, t.accountID.String())
+	ctx, err = contextutil.Context(ctx, t.cfgSrv)
 	if err != nil {
 		return nil, err
 	}
@@ -121,11 +114,13 @@ func (t *nftCreatedTask) RunTask() (result interface{}, err error) {
 		return nil, err
 	}
 
+	data := cd.EmbeddedData
 	cd, err = coredocument.PrepareNewVersion(*cd, nil)
 	if err != nil {
 		return nil, err
 	}
 
+	cd.EmbeddedData = data
 	err = coredocument.AddNFTToReadRules(cd, t.tokenRegistry, t.tokenID)
 	if err != nil {
 		return nil, err
@@ -159,10 +154,11 @@ func InitNFTCreatedTask(
 ) (queue.TaskResult, error) {
 	log.Infof("Starting NFT created task: %v\n", txID.String())
 	return queuer.EnqueueJob(nftCreatedTaskName, map[string]interface{}{
-		transactions.TxIDParam: txID.String(),
-		AccountIDParam:         cid.String(),
-		DocumentIDParam:        hexutil.Encode(documentID),
-		TokenRegistryParam:     registry.String(),
-		TokenIDParam:           hexutil.Encode(tokenID),
+		transactions.TxIDParam:  txID.String(),
+		transactions.TxNextTask: true,
+		AccountIDParam:          cid.String(),
+		DocumentIDParam:         hexutil.Encode(documentID),
+		TokenRegistryParam:      registry.String(),
+		TokenIDParam:            hexutil.Encode(tokenID),
 	})
 }

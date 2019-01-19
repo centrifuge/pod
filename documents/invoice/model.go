@@ -307,9 +307,7 @@ func (i *Invoice) UnpackCoreDocument(coreDoc *coredocumentpb.CoreDocument) error
 	}
 
 	if coreDoc.EmbeddedData == nil ||
-		coreDoc.EmbeddedData.TypeUrl != documenttypes.InvoiceDataTypeUrl ||
-		coreDoc.EmbeddedDataSalts == nil ||
-		coreDoc.EmbeddedDataSalts.TypeUrl != documenttypes.InvoiceSaltsTypeUrl {
+		coreDoc.EmbeddedData.TypeUrl != documenttypes.InvoiceDataTypeUrl {
 		return errors.New("trying to convert document with incorrect schema")
 	}
 
@@ -320,13 +318,18 @@ func (i *Invoice) UnpackCoreDocument(coreDoc *coredocumentpb.CoreDocument) error
 	}
 
 	i.loadFromP2PProtobuf(invoiceData)
-	invoiceSalts := &invoicepb.InvoiceDataSalts{}
-	err = proto.Unmarshal(coreDoc.EmbeddedDataSalts.Value, invoiceSalts)
-	if err != nil {
-		return err
-	}
 
-	i.InvoiceSalts = invoiceSalts
+	if coreDoc.EmbeddedDataSalts == nil {
+		i.InvoiceSalts = i.getInvoiceSalts(invoiceData)
+	} else {
+		invoiceSalts := new(invoicepb.InvoiceDataSalts)
+		err = proto.Unmarshal(coreDoc.EmbeddedDataSalts.Value, invoiceSalts)
+		if err != nil {
+			return err
+		}
+
+		i.InvoiceSalts = invoiceSalts
+	}
 
 	i.CoreDocument = new(coredocumentpb.CoreDocument)
 	proto.Merge(i.CoreDocument, coreDoc)
