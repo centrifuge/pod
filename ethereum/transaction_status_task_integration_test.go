@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func enqueueJob(t *testing.T, txHash string) (transactions.Service, identity.CentID, *transactions.Transaction) {
+func enqueueJob(t *testing.T, txHash string) (transactions.Service, identity.CentID, *transactions.Transaction, queue.TaskResult) {
 	queueSrv := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
 	txService := ctx[transactions.BootstrappedService].(transactions.Service)
 
@@ -23,28 +23,30 @@ func enqueueJob(t *testing.T, txHash string) (transactions.Service, identity.Cen
 
 	assert.Nil(t, err, "toCentID shouldn't throw an error")
 
-	_, err = queueSrv.EnqueueJob(ethereum.TransactionStatusTaskName, map[string]interface{}{
+	result, err := queueSrv.EnqueueJob(ethereum.TransactionStatusTaskName, map[string]interface{}{
 		transactions.TxIDParam:           tx.ID.String(),
 		ethereum.TransactionAccountParam: cid.String(),
 		ethereum.TransactionTxHashParam:  txHash,
 	})
 
-	time.Sleep(100 * time.Millisecond)
-	return txService, cid, tx
-
+	return txService, cid, tx, result
 }
 
 func TestTransactionStatusTask_successful(t *testing.T) {
-	txService, cid, tx := enqueueJob(t, "0x1")
+	txService, cid, tx, result := enqueueJob(t, "0x1")
 
+	_, err := result.Get(time.Second)
+	assert.NoError(t, err)
 	trans, err := txService.GetTransaction(cid, tx.ID)
 	assert.Nil(t, err, "a transaction should be returned")
 	assert.Equal(t, string(transactions.Success), string(trans.Status), "transaction should be successful")
 }
 
 func TestTransactionStatusTask_failed(t *testing.T) {
-	txService, cid, tx := enqueueJob(t, "0x2")
+	txService, cid, tx, result := enqueueJob(t, "0x2")
 
+	_, err := result.Get(time.Second)
+	assert.Error(t, err)
 	trans, err := txService.GetTransaction(cid, tx.ID)
 	assert.Nil(t, err, "a  centrifuge transaction should be  returned")
 	assert.Equal(t, string(transactions.Failed), string(trans.Status), "transaction should fail")

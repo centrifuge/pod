@@ -5,9 +5,6 @@ package testingcommons
 import (
 	"net/url"
 
-	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/satori/go.uuid"
-
 	"github.com/ethereum/go-ethereum/common"
 
 	"context"
@@ -57,10 +54,4 @@ func (m *MockEthClient) TransactionByHash(ctx context.Context, txHash common.Has
 func (m *MockEthClient) TransactionReceipt(ctx context.Context, txHash common.Hash) (*types.Receipt, error) {
 	args := m.Called(ctx, txHash)
 	return args.Get(0).(*types.Receipt), args.Error(1)
-}
-
-// SubmitTransaction creates an Ethereum transactions with retries
-func (m *MockEthClient) SubmitTransaction(tendantID identity.CentID, contractMethod interface{}, opts *bind.TransactOpts, params ...interface{}) (*uuid.UUID, *types.Transaction, error) {
-	args := m.Called(tendantID, contractMethod, opts, params)
-	return args.Get(0).(*uuid.UUID), args.Get(1).(*types.Transaction), args.Error(2)
 }

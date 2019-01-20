@@ -7,18 +7,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/satori/go.uuid"
-
-	"github.com/centrifuge/go-centrifuge/config"
-
-	"github.com/centrifuge/go-centrifuge/identity"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/nft"
 	"github.com/centrifuge/go-centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
@@ -161,11 +157,11 @@ func TestPaymentObligationService(t *testing.T) {
 				idServiceMock := testingcommons.MockIDService{}
 				ethClientMock := testingcommons.MockEthClient{}
 				ethClientMock.On("GetTxOpts", "ethacc").Return(&bind.TransactOpts{}, nil)
-				ethClientMock.On("SubmitTransaction",
+				ethClientMock.On("SubmitTransactionWithRetries",
 					mock.Anything, mock.Anything, mock.Anything, mock.Anything,
 					mock.Anything, mock.Anything, mock.Anything, mock.Anything,
-					mock.Anything, mock.Anything, mock.Anything, mock.Anything,
-				).Return(&uuid.UUID{}, &types.Transaction{}, nil)
+					mock.Anything, mock.Anything,
+				).Return(&types.Transaction{}, nil)
 				configMock := testingconfig.MockConfig{}
 				configMock.On("GetEthereumDefaultAccountName").Return("ethacc")
 				cid := identity.RandomCentID()
@@ -191,6 +187,7 @@ func TestPaymentObligationService(t *testing.T) {
 			// get mocks
 			docService, paymentOb, idService, ethClient, mockCfg, queueSrv := test.mocker()
 			// with below config the documentType has to be test.name to avoid conflicts since registry is a singleton
+			queueSrv.On("EnqueueJobWithMaxTries", mock.Anything, mock.Anything).Return(nil, nil).Once()
 			service := newEthereumPaymentObligation(&idService, &ethClient, queueSrv, &docService, func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error) {
 				return &EthereumPaymentObligationContract{}, nil
 			}, txService, func() (uint64, error) { return 10, nil })

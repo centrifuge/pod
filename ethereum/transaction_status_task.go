@@ -160,5 +160,5 @@ func (nftc *TransactionStatusTask) RunTask() (resp interface{}, err error) {
 		return nil, gocelery.ErrTaskRetryable
 	}
 
-	return nil, nil
+	return nil, err
 }

@@ -21,12 +21,12 @@ func TestDocumentAnchorTask_updateTransaction(t *testing.T) {
 	task.TxService = NewService(NewRepository(ctx[storage.BootstrappedDB].(storage.Repository)))
 
 	// missing transaction with nil error
-	err := task.UpdateTransaction(accountID, name, nil, false)
+	err := task.UpdateTransaction(accountID, name, nil)
 	err = errors.GetErrs(err)[0]
 	assert.True(t, errors.IsOfType(ErrTransactionMissing, err))
 
 	// missing transaction with error
-	err = task.UpdateTransaction(accountID, name, errors.New("anchor error"), false)
+	err = task.UpdateTransaction(accountID, name, errors.New("anchor error"))
 	err = errors.GetErrs(err)[1]
 	assert.True(t, errors.IsOfType(ErrTransactionMissing, err))
 
@@ -34,7 +34,7 @@ func TestDocumentAnchorTask_updateTransaction(t *testing.T) {
 	tx := NewTransaction(accountID, "")
 	assert.NoError(t, task.TxService.SaveTransaction(tx))
 	task.TxID = tx.ID
-	assert.NoError(t, task.UpdateTransaction(accountID, name, nil, false))
+	assert.NoError(t, task.UpdateTransaction(accountID, name, nil))
 	tx, err = task.TxService.GetTransaction(accountID, task.TxID)
 	assert.NoError(t, err)
 	assert.Equal(t, tx.Status, Success)
@@ -44,7 +44,7 @@ func TestDocumentAnchorTask_updateTransaction(t *testing.T) {
 	tx = NewTransaction(accountID, "")
 	assert.NoError(t, task.TxService.SaveTransaction(tx))
 	task.TxID = tx.ID
-	err = task.UpdateTransaction(accountID, name, errors.New("anchor error"), false)
+	err = task.UpdateTransaction(accountID, name, errors.New("anchor error"))
 	assert.EqualError(t, errors.GetErrs(err)[0], "anchor error")
 	tx, err = task.TxService.GetTransaction(accountID, task.TxID)
 	assert.NoError(t, err)
@@ -55,7 +55,8 @@ func TestDocumentAnchorTask_updateTransaction(t *testing.T) {
 	tx = NewTransaction(accountID, "")
 	assert.NoError(t, task.TxService.SaveTransaction(tx))
 	task.TxID = tx.ID
-	err = task.UpdateTransaction(accountID, name, nil, true)
+	task.Next = true
+	err = task.UpdateTransaction(accountID, name, nil)
 	tx, err = task.TxService.GetTransaction(accountID, task.TxID)
 	assert.NoError(t, err)
 	assert.Equal(t, tx.Status, Pending)
