@@ -3,18 +3,15 @@
 package identity
 
 import (
-	"context"
 	"os"
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/signatures"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
 var ctx = map[string]interface{}{}
@@ -33,83 +30,6 @@ func TestMain(m *testing.M) {
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)
-}
-
-// mockID implements Identity
-type mockID struct {
-	mock.Mock
-}
-
-func (i *mockID) String() string {
-	args := i.Called()
-	return args.String(0)
-}
-
-func (i *mockID) CentID() CentID {
-	args := i.Called()
-	return args.Get(0).(CentID)
-}
-
-func (i *mockID) SetCentrifugeID(centId CentID) {
-	i.Called(centId)
-}
-
-func (i *mockID) CurrentP2PKey() (ret string, err error) {
-	args := i.Called()
-	return args.String(0), args.Error(1)
-}
-
-func (i *mockID) LastKeyForPurpose(keyPurpose int) (key []byte, err error) {
-	args := i.Called(keyPurpose)
-	return args.Get(0).([]byte), args.Error(1)
-}
-
-func (i *mockID) AddKeyToIdentity(ctx context.Context, keyPurpose int, key []byte) (confirmations chan *WatchIdentity, err error) {
-	args := i.Called(ctx, keyPurpose, key)
-	return args.Get(0).(chan *WatchIdentity), args.Error(1)
-}
-
-func (i *mockID) FetchKey(key []byte) (Key, error) {
-	args := i.Called(key)
-	idKey := args.Get(0)
-	if idKey != nil {
-		if k, ok := idKey.(Key); ok {
-			return k, args.Error(1)
-		}
-	}
-	return nil, args.Error(1)
-}
-
-// mockIDService implements Service
-type mockIDService struct {
-	mock.Mock
-}
-
-func (srv *mockIDService) GetIdentityAddress(centID CentID) (common.Address, error) {
-	args := srv.Called(centID)
-	id := args.Get(0).(common.Address)
-	return id, args.Error(1)
-}
-
-func (srv *mockIDService) LookupIdentityForID(centID CentID) (Identity, error) {
-	args := srv.Called(centID)
-	id := args.Get(0)
-	if id != nil {
-		return id.(Identity), args.Error(1)
-	}
-	return nil, args.Error(1)
-
-}
-
-func (srv *mockIDService) CreateIdentity(centID CentID) (Identity, chan *WatchIdentity, error) {
-	args := srv.Called(centID)
-	id := args.Get(0).(Identity)
-	return id, args.Get(1).(chan *WatchIdentity), args.Error(2)
-}
-
-func (srv *mockIDService) CheckIdentityExists(centID CentID) (exists bool, err error) {
-	args := srv.Called(centID)
-	return args.Bool(0), args.Error(1)
 }
 
 func TestGetIdentityConfig_Success(t *testing.T) {
@@ -281,6 +201,6 @@ func TestSign(t *testing.T) {
 	msg := utils.RandomSlice(100)
 	sig := Sign(&IDConfig{c, map[int]IDKey{KeyPurposeSigning: {PrivateKey: key1, PublicKey: key1Pub}}}, KeyPurposeSigning, msg)
 
-	err := signatures.VerifySignature(key1Pub, msg, sig.Signature)
+	err := crypto.VerifySignature(key1Pub, msg, sig.Signature)
 	assert.True(t, err == nil)
 }

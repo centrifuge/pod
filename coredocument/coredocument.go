@@ -11,6 +11,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 // getDataProofHashes returns the hashes needed to create a proof from DataRoot to SigningRoot. This method is used
@@ -100,7 +101,7 @@ func GetDocumentRootTree(document *coredocumentpb.CoreDocument) (tree *proofs.Do
 		leaf := proofs.LeafNode{
 			Hash:     payload[:],
 			Hashed:   true,
-			Property: sigProperty.ElemProp(proofs.FieldNum(i)),
+			Property: sigProperty.SliceElemProp(proofs.FieldNumForSliceLength(i)),
 		}
 		leaf.HashNode(h, false)
 		sigLeafList[i+1] = leaf
@@ -150,9 +151,28 @@ func GetDocumentSigningTree(document *coredocumentpb.CoreDocument) (tree *proofs
 
 // PrepareNewVersion creates a copy of the passed coreDocument with the version fields updated
 // Adds collaborators and fills salts
-// Note: ignores any collaborators in the oldCD
+// Note: new collaborators are added to the list with old collaborators.
 func PrepareNewVersion(oldCD coredocumentpb.CoreDocument, collaborators []string) (*coredocumentpb.CoreDocument, error) {
-	newCD, err := NewWithCollaborators(collaborators)
+	ncd := New()
+	ucs, err := fetchUniqueCollaborators(oldCD.Collaborators, collaborators)
+	if err != nil {
+		return nil, errors.New("failed to decode collaborator: %v", err)
+	}
+
+	cs := oldCD.Collaborators
+	for _, c := range ucs {
+		c := c
+		cs = append(cs, c[:])
+	}
+
+	ncd.Collaborators = cs
+
+	// copy read rules and roles
+	ncd.Roles = oldCD.Roles
+	ncd.ReadRules = oldCD.ReadRules
+	addCollaboratorsToReadSignRules(ncd, ucs)
+
+	err = FillSalts(ncd)
 	if err != nil {
 		return nil, err
 	}
@@ -160,23 +180,23 @@ func PrepareNewVersion(oldCD coredocumentpb.CoreDocument, collaborators []string
 	if oldCD.DocumentIdentifier == nil {
 		return nil, errors.New("coredocument.DocumentIdentifier is nil")
 	}
-	newCD.DocumentIdentifier = oldCD.DocumentIdentifier
+	ncd.DocumentIdentifier = oldCD.DocumentIdentifier
 
 	if oldCD.CurrentVersion == nil {
 		return nil, errors.New("coredocument.CurrentVersion is nil")
 	}
-	newCD.PreviousVersion = oldCD.CurrentVersion
+	ncd.PreviousVersion = oldCD.CurrentVersion
 
 	if oldCD.NextVersion == nil {
 		return nil, errors.New("coredocument.NextVersion is nil")
 	}
-	newCD.CurrentVersion = oldCD.NextVersion
-	newCD.NextVersion = utils.RandomSlice(32)
+	ncd.CurrentVersion = oldCD.NextVersion
+	ncd.NextVersion = utils.RandomSlice(32)
 	if oldCD.DocumentRoot == nil {
 		return nil, errors.New("coredocument.DocumentRoot is nil")
 	}
-	newCD.PreviousRoot = oldCD.DocumentRoot
-	return newCD, nil
+	ncd.PreviousRoot = oldCD.DocumentRoot
+	return ncd, nil
 }
 
 // New returns a new core document
@@ -190,7 +210,7 @@ func New() *coredocumentpb.CoreDocument {
 	}
 }
 
-// NewWithCollaborators generates new core document, adds collaborators, and fills salts
+// NewWithCollaborators generates new core document, adds collaborators, adds read rules and fills salts
 func NewWithCollaborators(collaborators []string) (*coredocumentpb.CoreDocument, error) {
 	cd := New()
 	ids, err := identity.CentIDsFromStrings(collaborators)
@@ -200,6 +220,11 @@ func NewWithCollaborators(collaborators []string) (*coredocumentpb.CoreDocument,
 
 	for i := range ids {
 		cd.Collaborators = append(cd.Collaborators, ids[i][:])
+	}
+
+	err = initReadRules(cd, ids)
+	if err != nil {
+		return nil, errors.New("failed to init read rules: %v", err)
 	}
 
 	err = FillSalts(cd)
@@ -229,7 +254,7 @@ func GetExternalCollaborators(selfCentID identity.CentID, doc *coredocumentpb.Co
 
 // FillSalts creates a new coredocument.Salts and fills it
 func FillSalts(doc *coredocumentpb.CoreDocument) error {
-	salts := &coredocumentpb.CoreDocumentSalts{}
+	salts := new(coredocumentpb.CoreDocumentSalts)
 	err := proofs.FillSalts(doc, salts)
 	if err != nil {
 		return errors.New("failed to fill coredocument salts: %v", err)
@@ -294,4 +319,31 @@ func CreateProofs(dataTree *proofs.DocumentTree, coreDoc *coredocumentpb.CoreDoc
 	}
 
 	return proofs, nil
+}
+
+func fetchUniqueCollaborators(oldCollabs [][]byte, newCollabs []string) (ids []identity.CentID, err error) {
+	ocsm := make(map[string]struct{})
+	for _, c := range oldCollabs {
+		ocsm[hexutil.Encode(c)] = struct{}{}
+	}
+
+	var uc []string
+	for _, c := range newCollabs {
+		if _, ok := ocsm[c]; ok {
+			continue
+		}
+
+		uc = append(uc, c)
+	}
+
+	for _, c := range uc {
+		id, err := identity.CentIDFromString(c)
+		if err != nil {
+			return nil, err
+		}
+
+		ids = append(ids, id)
+	}
+
+	return ids, nil
 }

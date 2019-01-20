@@ -1,12 +1,15 @@
 package notification
 
 import (
+	"context"
+	"encoding/json"
 	"net/http"
+
+	"github.com/centrifuge/go-centrifuge/contextutil"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/golang/protobuf/jsonpb"
 	logging "github.com/ipfs/go-log"
 )
 
@@ -25,36 +28,34 @@ const (
 	Success         Status    = 1
 )
 
-// Config defines methods required for this package.
-type Config interface {
-	GetReceiveEventNotificationEndpoint() string
-}
-
 // Sender defines methods that can handle a notification.
 type Sender interface {
-	Send(notification *notificationpb.NotificationMessage) (Status, error)
+	Send(ctx context.Context, notification *notificationpb.NotificationMessage) (Status, error)
 }
 
 // NewWebhookSender returns an implementation of a Sender that sends notifications through webhooks.
-func NewWebhookSender(config Config) Sender {
-	return webhookSender{config}
+func NewWebhookSender() Sender {
+	return webhookSender{}
 }
 
 // NewWebhookSender implements Sender.
 // Sends notification through a webhook defined.
 type webhookSender struct {
-	config Config
 }
 
 // Send sends notification to the defined webhook.
-func (wh webhookSender) Send(notification *notificationpb.NotificationMessage) (Status, error) {
-	url := wh.config.GetReceiveEventNotificationEndpoint()
+func (wh webhookSender) Send(ctx context.Context, notification *notificationpb.NotificationMessage) (Status, error) {
+	tc, err := contextutil.Account(ctx)
+	if err != nil {
+		return Failure, err
+	}
+	url := tc.GetReceiveEventNotificationEndpoint()
 	if url == "" {
 		log.Warningf("Webhook URL not defined, manually fetch received document")
 		return Success, nil
 	}
 
-	payload, err := wh.constructPayload(notification)
+	payload, err := json.Marshal(notification)
 	if err != nil {
 		return Failure, err
 	}
@@ -71,14 +72,4 @@ func (wh webhookSender) Send(notification *notificationpb.NotificationMessage) (
 	log.Infof("Sent Webhook Notification with Payload [%v] to [%s]", notification, url)
 
 	return Success, nil
-}
-
-func (wh webhookSender) constructPayload(notification *notificationpb.NotificationMessage) ([]byte, error) {
-	marshaler := jsonpb.Marshaler{}
-	payload, err := marshaler.MarshalToString(notification)
-	if err != nil {
-		log.Error(err)
-		return nil, err
-	}
-	return []byte(payload), nil
 }

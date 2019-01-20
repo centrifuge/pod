@@ -11,14 +11,17 @@ import (
 	"io/ioutil"
 	"math/big"
 	"os"
+	"reflect"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/errors"
-
 	"github.com/centrifuge/go-centrifuge/centerrors"
+	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/config"
 	"github.com/centrifuge/go-centrifuge/resources"
+	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	logging "github.com/ipfs/go-log"
@@ -28,12 +31,40 @@ import (
 
 var log = logging.Logger("config")
 
+// AccountHeaderKey is used as key for the account identity in the context.ContextWithValue.
+var AccountHeaderKey struct{}
+
+// ContractName is a type to indicate a contract name parameter
+type ContractName string
+
+const (
+	// AnchorRepo is the contract name for AnchorRepo
+	AnchorRepo ContractName = "anchorRepository"
+
+	// IdentityFactory is the contract name for IdentityFactory
+	IdentityFactory ContractName = "identityFactory"
+
+	// IdentityRegistry is the contract name for IdentityRegistry
+	IdentityRegistry ContractName = "identityRegistry"
+
+	// PaymentObligation is the contract name for PaymentObligation
+	PaymentObligation ContractName = "paymentObligation"
+)
+
+// ContractNames returns the list of smart contract names currently used in the system, please update this when adding new contracts
+func ContractNames() [4]ContractName {
+	return [4]ContractName{AnchorRepo, IdentityFactory, IdentityRegistry, PaymentObligation}
+}
+
 // Configuration defines the methods that a config type should implement.
 type Configuration interface {
+	storage.Model
+
 	// generic methods
 	IsSet(key string) bool
 	Set(key string, value interface{})
 	SetDefault(key string, value interface{})
+	SetupSmartContractAddresses(network string, smartContractAddresses *SmartContractAddresses)
 	Get(key string) interface{}
 	GetString(key string) string
 	GetBool(key string) bool
@@ -42,6 +73,7 @@ type Configuration interface {
 
 	GetStoragePath() string
 	GetConfigStoragePath() string
+	GetAccountsKeystore() string
 	GetP2PPort() int
 	GetP2PExternalIP() string
 	GetP2PConnectionTimeout() time.Duration
@@ -60,7 +92,7 @@ type Configuration interface {
 	GetNetworkString() string
 	GetNetworkKey(k string) string
 	GetContractAddressString(address string) string
-	GetContractAddress(address string) common.Address
+	GetContractAddress(contractName ContractName) common.Address
 	GetBootstrapPeers() []string
 	GetNetworkID() uint32
 
@@ -74,6 +106,37 @@ type Configuration interface {
 
 	// debug specific methods
 	IsPProfEnabled() bool
+
+	// CreateProtobuf creates protobuf
+	CreateProtobuf() *configpb.ConfigData
+}
+
+// Account exposes account options
+type Account interface {
+	storage.Model
+
+	GetEthereumAccount() *AccountConfig
+	GetEthereumDefaultAccountName() string
+	GetReceiveEventNotificationEndpoint() string
+	GetIdentityID() ([]byte, error)
+	GetSigningKeyPair() (pub, priv string)
+	GetEthAuthKeyPair() (pub, priv string)
+	GetEthereumContextWaitTimeout() time.Duration
+
+	// CreateProtobuf creates protobuf
+	CreateProtobuf() (*accountpb.AccountData, error)
+}
+
+// Service exposes functions over the config objects
+type Service interface {
+	GetConfig() (Configuration, error)
+	GetAccount(identifier []byte) (Account, error)
+	GetAllAccounts() ([]Account, error)
+	CreateConfig(data Configuration) (Configuration, error)
+	CreateAccount(data Account) (Account, error)
+	GenerateAccount() (Account, error)
+	UpdateAccount(data Account) (Account, error)
+	DeleteAccount(identifier []byte) error
 }
 
 // configuration holds the configuration details for the node.
@@ -81,6 +144,22 @@ type configuration struct {
 	mu         sync.RWMutex
 	configFile string
 	v          *viper.Viper
+}
+
+func (c *configuration) Type() reflect.Type {
+	panic("irrelevant, configuration#Type must not be used")
+}
+
+func (c *configuration) JSON() ([]byte, error) {
+	panic("irrelevant, configuration#JSON must not be used")
+}
+
+func (c *configuration) FromJSON(json []byte) error {
+	panic("irrelevant, configuration#FromJSON must not be used")
+}
+
+func (c *configuration) CreateProtobuf() *configpb.ConfigData {
+	panic("irrelevant, configuration#CreateProtobuf must not be used")
 }
 
 // AccountConfig holds the account details.
@@ -150,6 +229,11 @@ func (c *configuration) GetStoragePath() string {
 // GetConfigStoragePath returns the config storage backend.
 func (c *configuration) GetConfigStoragePath() string {
 	return c.GetString("configStorage.path")
+}
+
+// GetAccountsKeystore returns the accounts keystore location.
+func (c *configuration) GetAccountsKeystore() string {
+	return c.GetString("accounts.keystore")
 }
 
 // GetP2PPort returns P2P Port.
@@ -272,8 +356,8 @@ func (c *configuration) GetContractAddressString(contract string) (address strin
 }
 
 // GetContractAddress returns the deployed contract address for a given contract.
-func (c *configuration) GetContractAddress(contract string) (address common.Address) {
-	return common.HexToAddress(c.GetContractAddressString(contract))
+func (c *configuration) GetContractAddress(contractName ContractName) common.Address {
+	return common.HexToAddress(c.GetContractAddressString(string(contractName)))
 }
 
 // GetBootstrapPeers returns the list of configured bootstrap nodes for the given network.
@@ -389,7 +473,7 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	}
 
 	if _, err := os.Stat(accountKeyPath); os.IsNotExist(err) {
-		return nil, errors.New("account Key Path does not exist")
+		return nil, errors.New("account Key Path [%s] does not exist", accountKeyPath)
 	}
 
 	bfile, err := ioutil.ReadFile(accountKeyPath)
@@ -405,6 +489,7 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	v.SetConfigType("yaml")
 	v.Set("storage.path", targetDataDir+"/db/centrifuge_data.leveldb")
 	v.Set("configStorage.path", targetDataDir+"/db/centrifuge_config_data.leveldb")
+	v.Set("accounts.keystore", targetDataDir+"/accounts")
 	v.Set("identityId", "")
 	v.Set("centrifugeNetwork", network)
 	v.Set("nodeHostname", "0.0.0.0")
@@ -441,6 +526,12 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	if err != nil {
 		log.Fatalf("error: %v", err)
 	}
-
 	return v, nil
+}
+
+func (c *configuration) SetupSmartContractAddresses(network string, smartContractAddresses *SmartContractAddresses) {
+	c.v.Set("networks."+network+".contractAddresses.identityFactory", smartContractAddresses.IdentityFactoryAddr)
+	c.v.Set("networks."+network+".contractAddresses.identityRegistry", smartContractAddresses.IdentityRegistryAddr)
+	c.v.Set("networks."+network+".contractAddresses.anchorRepository", smartContractAddresses.AnchorRepositoryAddr)
+	c.v.Set("networks."+network+".contractAddresses.paymentObligation", smartContractAddresses.PaymentObligationAddr)
 }

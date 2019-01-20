@@ -10,7 +10,6 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/header"
 	"github.com/centrifuge/go-centrifuge/identity"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/precise-proofs/proofs"
@@ -148,13 +147,13 @@ func (i *Invoice) createP2PProtobuf() *invoicepb.InvoiceData {
 }
 
 // InitInvoiceInput initialize the model based on the received parameters from the rest api call
-func (i *Invoice) InitInvoiceInput(payload *clientinvoicepb.InvoiceCreatePayload, contextHeader *header.ContextHeader) error {
+func (i *Invoice) InitInvoiceInput(payload *clientinvoicepb.InvoiceCreatePayload, self string) error {
 	err := i.initInvoiceFromData(payload.Data)
 	if err != nil {
 		return err
 	}
 
-	collaborators := append([]string{contextHeader.Self().ID.String()}, payload.Collaborators...)
+	collaborators := append([]string{self}, payload.Collaborators...)
 
 	i.CoreDocument, err = coredocument.NewWithCollaborators(collaborators)
 	if err != nil {
@@ -351,8 +350,8 @@ func (i *Invoice) Type() reflect.Type {
 	return reflect.TypeOf(i)
 }
 
-// calculateDataRoot calculates the data root and sets the root to core document
-func (i *Invoice) calculateDataRoot() error {
+// CalculateDataRoot calculates the data root and sets the root to core document
+func (i *Invoice) CalculateDataRoot() error {
 	t, err := i.getDocumentDataTree()
 	if err != nil {
 		return errors.New("calculateDataRoot error %v", err)
@@ -364,7 +363,7 @@ func (i *Invoice) calculateDataRoot() error {
 // getDocumentDataTree creates precise-proofs data tree for the model
 func (i *Invoice) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
 	prop := proofs.NewProperty(prefix)
-	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: sha256.New(), ParentPrefix: &prop})
+	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: sha256.New(), ParentPrefix: prop})
 	invoiceData := i.createP2PProtobuf()
 	err = t.AddLeavesFromDocument(invoiceData, i.getInvoiceSalts(invoiceData))
 	if err != nil {
@@ -378,7 +377,7 @@ func (i *Invoice) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
 }
 
 // CreateProofs generates proofs for given fields
-func (i *Invoice) createProofs(fields []string) (coreDoc *coredocumentpb.CoreDocument, proofs []*proofspb.Proof, err error) {
+func (i *Invoice) CreateProofs(fields []string) (coreDoc *coredocumentpb.CoreDocument, proofs []*proofspb.Proof, err error) {
 	// There can be failure scenarios where the core doc for the particular document
 	// is still not saved with roots in db due to failures during getting signatures.
 	coreDoc, err = i.PackCoreDocument()

@@ -92,13 +92,33 @@ func (qs *Server) RegisterTaskType(name string, task interface{}) {
 }
 
 // EnqueueJob enqueues a job on the queue server for the given taskTypeName
-func (qs *Server) EnqueueJob(taskTypeName string, params map[string]interface{}) (TaskResult, error) {
+func (qs *Server) EnqueueJob(taskName string, params map[string]interface{}) (TaskResult, error) {
 	qs.lock.RLock()
 	defer qs.lock.RUnlock()
+
+	return qs.enqueueJob(taskName, params, gocelery.DefaultSettings())
+}
+
+func (qs *Server) enqueueJob(name string, params map[string]interface{}, settings *gocelery.TaskSettings) (TaskResult, error) {
 	if qs.queue == nil {
 		return nil, errors.New("queue hasn't been initialised")
 	}
-	return qs.queue.DelayKwargs(taskTypeName, params)
+
+	return qs.queue.Delay(gocelery.Task{
+		Name:     name,
+		Kwargs:   params,
+		Settings: settings,
+	})
+}
+
+// EnqueueJobWithMaxTries enqueues a job on the queue server for the given taskTypeName with maximum tries
+func (qs *Server) EnqueueJobWithMaxTries(taskName string, params map[string]interface{}) (TaskResult, error) {
+	qs.lock.RLock()
+	defer qs.lock.RUnlock()
+
+	return qs.enqueueJob(taskName, params, &gocelery.TaskSettings{
+		MaxTries: gocelery.MaxRetries,
+	})
 }
 
 // GetDuration parses key parameter to time.Duration type
@@ -119,4 +139,10 @@ func ParseBlockHeight(valMap map[string]interface{}) (uint64, error) {
 		}
 	}
 	return 0, errors.New("value can not be parsed")
+}
+
+// TaskQueuer can be implemented by any queueing system
+type TaskQueuer interface {
+	EnqueueJob(taskTypeName string, params map[string]interface{}) (TaskResult, error)
+	EnqueueJobWithMaxTries(taskName string, params map[string]interface{}) (TaskResult, error)
 }

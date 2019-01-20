@@ -13,7 +13,7 @@ func TestBootstrapper_Bootstrap(t *testing.T) {
 
 func TestBootstrapper_registerInvoiceService(t *testing.T) {
 	//context := map[string]interface{}{}
-	//context[bootstrap.BootstrappedLevelDb] = true
+	//context[bootstrap.BootstrappedDb] = true
 	//err := (&Bootstrapper{}).Bootstrap(context)
 	//assert.Nil(t, err, "Should throw because context is passed")
 	//

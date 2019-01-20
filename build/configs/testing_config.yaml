@@ -1,3 +1,4 @@
+centrifugeNetwork: testing
 ethereum:
   accounts:
     main: 
@@ -6,6 +7,10 @@ ethereum:
       address: 89b0a86583c4444acfd71b463e0d3c55ae1412a5
 
 identityId: "0x010101010101"
+
+# Accounts key storage
+accounts:
+  keystore: /tmp/accounts
 
 queue:
   numWorkers: 2

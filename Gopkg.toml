@@ -28,7 +28,7 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
 
 [[constraint]]
   name = "github.com/centrifuge/centrifuge-protobufs"
-  revision = "34ce7eaff0b89ac4a34e60654d34297747e5a7b4"
+  revision = "f93686ceaf40283c7dc496c62fcc69b1c1a272e3"
 
 [[override]]
   name = "github.com/centrifuge/centrifuge-ethereum-contracts"
@@ -40,11 +40,11 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
 
 [[override]]
   name = "github.com/centrifuge/precise-proofs"
-  revision = "d0df6e2ed059de47375ef8281529a500cd920261"
+  revision = "8c3b6a26b7929ec269302dc50d17c9ceb9772dda"
 
 [[constraint]]
   name = "github.com/centrifuge/gocelery"
-  revision = "80f35a18b9a0c632d7843e7e536873b0536f0040"
+  revision = "fb11151a227ae41660e15f6c10e2e22eb1556531"
 
 [[override]]
   name = "github.com/xsleonard/go-merkle"
@@ -215,11 +215,6 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
   version = "1.0.8"
 
 [[constraint]]
-  name = "github.com/paralin/go-libp2p-grpc"
-  source = "github.com/vedhavyas/go-libp2p-grpc"
-  revision = "04711f07389ecbca09d7999474dda4a88c955c73"
-
-[[constraint]]
   name = "github.com/spf13/cobra"
   version = "0.0.3"
 
@@ -231,7 +226,7 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
   name = "github.com/stretchr/testify"
   version = "1.2.2"
 
-[[constraint]]
+[[override]]
   name = "github.com/syndtr/goleveldb"
   revision = "ae2bd5eed72d46b28834ec3f60db3a3ebedd8dbd"
 

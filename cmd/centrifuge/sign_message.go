@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/centrifuge/go-centrifuge/keytools"
+	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/spf13/cobra"
@@ -27,7 +27,7 @@ func init() {
 			if err != nil {
 				log.Fatal(err)
 			}
-			signature, err := keytools.SignMessage(privateKey, []byte(messageParam), curveTypeParam, ethereumSignFlag)
+			signature, err := crypto.SignMessage(privateKey, []byte(messageParam), curveTypeParam, ethereumSignFlag)
 			if err != nil {
 				log.Fatal(err)
 			}

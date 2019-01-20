@@ -3,9 +3,13 @@
 package errors
 
 import (
+	"net/http"
 	"testing"
 
+	"google.golang.org/grpc/status"
+
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/grpc/codes"
 )
 
 func TestNew(t *testing.T) {
@@ -109,4 +113,25 @@ func TestIsOfType(t *testing.T) {
 	assert.False(t, IsOfType(errBadErr, lerr))
 	terr = NewTypedError(errBadErr, lerr)
 	assert.True(t, IsOfType(errBadErr, terr))
+
+	// status err
+	serr = status.Error(codes.Unknown, errBadErr.Error())
+	assert.True(t, IsOfType(errBadErr, serr))
+}
+
+func TestGetHTTPCode(t *testing.T) {
+	err := New("some error")
+	code, msg := GetHTTPDetails(err)
+	assert.Equal(t, http.StatusInternalServerError, code)
+	assert.Equal(t, "some error", msg)
+
+	err = NewHTTPError(http.StatusBadRequest, err)
+	code, msg = GetHTTPDetails(err)
+	assert.Equal(t, http.StatusBadRequest, code)
+	assert.Equal(t, "some error", msg)
+
+	err = NewHTTPError(int(codes.AlreadyExists), New("some error"))
+	code, msg = GetHTTPDetails(err)
+	assert.Equal(t, http.StatusConflict, code)
+	assert.Equal(t, "some error", msg)
 }

@@ -23,6 +23,10 @@ service NFTService {
   }
 }
 
+message ResponseHeader {
+  string transaction_id = 5;
+}
+
 message NFTMintRequest {
   // Document identifier
   string identifier = 1;
@@ -33,5 +37,6 @@ message NFTMintRequest {
 }
 
 message NFTMintResponse {
-  string token_id = 1;
+  ResponseHeader header = 1;
+  string token_id = 2;
 }

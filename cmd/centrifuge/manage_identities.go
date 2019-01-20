@@ -1,7 +1,14 @@
 package main
 
 import (
+	"context"
 	"io/ioutil"
+
+	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/contextutil"
+
+	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/config"
 
 	"github.com/centrifuge/go-centrifuge/cmd"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -29,9 +36,19 @@ var createIdentityCmd = &cobra.Command{
 				panic(err)
 			}
 		}
+		cfg := ctx[bootstrap.BootstrappedConfig].(config.Configuration)
+		tc, err := configstore.TempAccount(cfg.GetEthereumDefaultAccountName(), cfg)
+		if err != nil {
+			panic(err)
+		}
+
+		tctx, err := contextutil.New(context.Background(), tc)
+		if err != nil {
+			panic(err)
+		}
 
 		idService := ctx[identity.BootstrappedIDService].(identity.Service)
-		_, confirmations, err := idService.CreateIdentity(centID)
+		_, confirmations, err := idService.CreateIdentity(tctx, centID)
 		if err != nil {
 			panic(err)
 		}
@@ -71,8 +88,9 @@ var addKeyCmd = &cobra.Command{
 			panic("Option not supported")
 		}
 
+		cfg := ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 		idService := ctx[identity.BootstrappedIDService].(identity.Service)
-		err := idService.AddKeyFromConfig(purposeInt)
+		err := idService.AddKeyFromConfig(cfg, purposeInt)
 		if err != nil {
 			panic(err)
 		}

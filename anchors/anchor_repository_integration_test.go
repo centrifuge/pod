@@ -8,10 +8,13 @@ import (
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
-	cc "github.com/centrifuge/go-centrifuge/context/testingbootstrap"
+	"github.com/centrifuge/go-centrifuge/bootstrap"
+	cc "github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testingbootstrap"
+	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/keytools/secp256k1"
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
@@ -20,12 +23,14 @@ import (
 var (
 	identityService identity.Service
 	anchorRepo      anchors.AnchorRepository
+	cfg             config.Configuration
 )
 
 func TestMain(m *testing.M) {
 	ctx := cc.TestFunctionalEthereumBootstrap()
 	anchorRepo = ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
 	identityService = ctx[identity.BootstrappedIDService].(identity.Service)
+	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()
 	os.Exit(result)
@@ -33,7 +38,8 @@ func TestMain(m *testing.M) {
 
 func createIdentityWithKeys(t *testing.T, centrifugeId []byte) []byte {
 	centIdTyped, _ := identity.ToCentID(centrifugeId)
-	id, confirmations, err := identityService.CreateIdentity(centIdTyped)
+	cfg.Set("identityId", centIdTyped.String())
+	id, confirmations, err := identityService.CreateIdentity(testingconfig.CreateTenantContext(t, cfg), centIdTyped)
 	assert.Nil(t, err, "should not error out when creating identity")
 	watchRegisteredIdentity := <-confirmations
 	assert.Nil(t, watchRegisteredIdentity.Error, "No error thrown by context")
@@ -74,7 +80,9 @@ func commitAnchor(t *testing.T, anchorID, centrifugeId, documentRoot, signature 
 	docRootTyped, _ := anchors.ToDocumentRoot(documentRoot)
 	centIdFixed, _ := identity.ToCentID(centrifugeId)
 
-	confirmations, err := anchorRepo.CommitAnchor(anchorIDTyped, docRootTyped, centIdFixed, documentProofs, signature)
+	cfg.Set("identityId", centIdFixed.String())
+	ctx := testingconfig.CreateTenantContext(t, cfg)
+	confirmations, err := anchorRepo.CommitAnchor(ctx, anchorIDTyped, docRootTyped, centIdFixed, documentProofs, signature)
 	if err != nil {
 		t.Fatalf("Error commit Anchor %v", err)
 	}
@@ -102,7 +110,9 @@ func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
 		h, err := ethereum.GetClient().GetEthClient().HeaderByNumber(context.Background(), nil)
 		assert.Nil(t, err, " error must be nil")
 		commitDataList[ix] = anchors.NewCommitData(h.Number.Uint64(), currentAnchorId, currentDocumentRoot, centIdFixed, documentProofs, signature)
-		confirmationList[ix], err = anchorRepo.CommitAnchor(currentAnchorId, currentDocumentRoot, centIdFixed, documentProofs, signature)
+		cfg.Set("identityId", centIdFixed.String())
+		ctx := testingconfig.CreateTenantContext(t, cfg)
+		confirmationList[ix], err = anchorRepo.CommitAnchor(ctx, currentAnchorId, currentDocumentRoot, centIdFixed, documentProofs, signature)
 		if err != nil {
 			t.Fatalf("Error commit Anchor %v", err)
 		}
