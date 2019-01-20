@@ -3,11 +3,14 @@ package nft
 import (
 	"context"
 
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/centrifuge/go-centrifuge/config"
+
+	"github.com/centrifuge/go-centrifuge/contextutil"
 
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/nft"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	logging "github.com/ipfs/go-log"
 )
@@ -15,39 +18,48 @@ import (
 var apiLog = logging.Logger("nft-api")
 
 type grpcHandler struct {
+	config  config.Service
 	service PaymentObligation
 }
 
 // GRPCHandler returns an implementation of invoice.DocumentServiceServer
-func GRPCHandler(payOb PaymentObligation) nftpb.NFTServiceServer {
-	return &grpcHandler{service: payOb}
+func GRPCHandler(config config.Service, payOb PaymentObligation) nftpb.NFTServiceServer {
+	return &grpcHandler{config: config, service: payOb}
 }
 
 // MintNFT will be called from the client API to mint an NFT
-func (g grpcHandler) MintNFT(context context.Context, request *nftpb.NFTMintRequest) (*nftpb.NFTMintResponse, error) {
+func (g grpcHandler) MintNFT(ctx context.Context, request *nftpb.NFTMintRequest) (*nftpb.NFTMintResponse, error) {
 	apiLog.Infof("Received request to Mint an NFT with  %s with proof fields %s", request.Identifier, request.ProofFields)
+	ctxHeader, err := contextutil.Context(ctx, g.config)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, err
+	}
 
-	err := validateParameters(request)
+	err = validateParameters(request)
 	if err != nil {
 		return nil, err
 	}
 	identifier, err := hexutil.Decode(request.Identifier)
 	if err != nil {
-		return &nftpb.NFTMintResponse{}, centerrors.New(code.Unknown, err.Error())
+		return nil, centerrors.New(code.Unknown, err.Error())
 	}
 
-	confirmation, err := g.service.MintNFT(identifier, request.RegistryAddress, request.DepositAddress, request.ProofFields)
+	resp, err := g.service.MintNFT(ctxHeader, identifier, request.RegistryAddress, request.DepositAddress, request.ProofFields)
 	if err != nil {
-		return &nftpb.NFTMintResponse{}, centerrors.New(code.Unknown, err.Error())
+		return nil, centerrors.New(code.Unknown, err.Error())
 	}
-	watchToken := <-confirmation
-	return &nftpb.NFTMintResponse{TokenId: watchToken.TokenID.String()}, watchToken.Err
+
+	return &nftpb.NFTMintResponse{
+		TokenId: resp.TokenID,
+		Header:  &nftpb.ResponseHeader{TransactionId: resp.TransactionID},
+	}, nil
 }
 
 func validateParameters(request *nftpb.NFTMintRequest) error {
 
 	if !common.IsHexAddress(request.RegistryAddress) {
-		return centerrors.New(code.Unknown, "RegistryAddress is not a valid Ethereum address")
+		return centerrors.New(code.Unknown, "registryAddress is not a valid Ethereum address")
 	}
 
 	if !common.IsHexAddress(request.DepositAddress) {

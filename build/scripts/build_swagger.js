@@ -6,6 +6,14 @@ const swaggerFilesPath = path.resolve(__dirname, '../../protobufs/gen/swagger');
 const swaggerJsonPath = path.resolve(__dirname, '../../protobufs/gen/swagger.json');
 const swaggerConfig = require(path.resolve(__dirname, '../swagger_config'));
 
+let authHeader = {
+  "name": "authorization",
+  "in": "header",
+  "description": "Hex encoded centrifuge ID of the account for the intended API action",
+  "required": true,
+  "type": "string"
+};
+
 /* # build_swagger.js
  *
  * This script recursively searches the swaggerFilesPath for any file ending in .swagger.json
@@ -34,6 +42,15 @@ let getSwaggerFiles = function(dir, filelist) {
     return filelist;
 };
 
+// Append auth header function
+let addAuthHeader = function(obj) {
+  if (!obj.hasOwnProperty("parameters")) {
+    obj.parameters = []
+  }
+
+  obj.parameters.push(authHeader);
+};
+
 let files = getSwaggerFiles(swaggerFilesPath);
 // There is a default swagger definition in swaggerConfig.defaultSwagger which we add first
 swaggerModules = [swaggerConfig.defaultSwagger,];
@@ -51,6 +68,16 @@ swaggermerge.on('err', function (msg) {
 });
 
 let merged = swaggermerge.merge(swaggerModules, swaggerConfig.info, swaggerConfig.pathPrefix, swaggerConfig.host, swaggerConfig.schemes);
+
+let keys = Object.keys(merged.paths);
+
+keys.forEach(function (item) {
+  let itemKeys = Object.keys(merged.paths[item]);
+  itemKeys.forEach(function (valueItem) {
+    addAuthHeader(merged.paths[item][valueItem])
+  })
+});
+
 let json = JSON.stringify(merged);
 console.log("Merged swagger.json, writing to:", swaggerJsonPath);
 fs.writeFileSync(swaggerJsonPath, json);

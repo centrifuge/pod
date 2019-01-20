@@ -64,7 +64,7 @@
   revision = "978840734a4a2fccd5d8dc7e462d9108079c5b5d"
 
 [[projects]]
-  digest = "1:d12e66a9500785cff8a8245bd8a138efff96ed3c1d0551b845cecdc25af57f90"
+  digest = "1:55060176e56680808b3d9be771d0baa31512b7743ffbaea4f61471dbba649be7"
   name = "github.com/centrifuge/centrifuge-protobufs"
   packages = [
     "documenttypes",
@@ -76,24 +76,24 @@
     "gen/go/purchaseorder",
   ]
   pruneopts = "T"
-  revision = "34ce7eaff0b89ac4a34e60654d34297747e5a7b4"
+  revision = "f93686ceaf40283c7dc496c62fcc69b1c1a272e3"
 
 [[projects]]
-  digest = "1:c925cd40d25fe72f5916e010b79b5d9f6e0e97ec9b190fa658c6c67b913229ea"
+  digest = "1:6c7200e9917373ebe3c248ca47f9ee8a7924aa003c137cbfee2c763d7bc0643f"
   name = "github.com/centrifuge/gocelery"
   packages = ["."]
   pruneopts = "UT"
-  revision = "80f35a18b9a0c632d7843e7e536873b0536f0040"
+  revision = "fb11151a227ae41660e15f6c10e2e22eb1556531"
 
 [[projects]]
-  digest = "1:f84321c62605dab82f35a0795dfe30981199e28ea8a0652e5e7ba9af66575fef"
+  digest = "1:a145dca8eb072174d0bce9c21771ec19885bdaa04fe2f9026de4664811b1caf7"
   name = "github.com/centrifuge/precise-proofs"
   packages = [
     "proofs",
     "proofs/proto",
   ]
   pruneopts = "UT"
-  revision = "d0df6e2ed059de47375ef8281529a500cd920261"
+  revision = "8c3b6a26b7929ec269302dc50d17c9ceb9772dda"
 
 [[projects]]
   digest = "1:0ef770954bca104ee99b3b6b7f9b240605ac03517d9f98cbc1893daa03f3c038"
@@ -972,14 +972,6 @@
   version = "v1.0.2"
 
 [[projects]]
-  digest = "1:317c23d0134d82f8158538d6d61ec0b5425319bcd6af716cda898636e51fb757"
-  name = "github.com/paralin/go-libp2p-grpc"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "04711f07389ecbca09d7999474dda4a88c955c73"
-  source = "github.com/vedhavyas/go-libp2p-grpc"
-
-[[projects]]
   digest = "1:e5d0bd87abc2781d14e274807a470acd180f0499f8bf5bb18606e9ec22ad9de9"
   name = "github.com/pborman/uuid"
   packages = ["."]
@@ -1119,14 +1111,6 @@
   pruneopts = "UT"
   revision = "8fb642006536c8d3760c99d4fa2389f5e2205631"
   version = "v1.2.0"
-
-[[projects]]
-  branch = "master"
-  digest = "1:0c088044c1c1ee83e723692442df4fec9b3f2e57f7a99773485c97adfbc31695"
-  name = "github.com/streadway/amqp"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "70e15c650864f4fc47f5d3c82ea117285480895d"
 
 [[projects]]
   digest = "1:ac83cf90d08b63ad5f7e020ef480d319ae890c208f8524622a2f3136e2686b02"
@@ -1526,11 +1510,12 @@
     "github.com/ethereum/go-ethereum/rpc",
     "github.com/gavv/httpexpect",
     "github.com/go-errors/errors",
-    "github.com/golang/protobuf/jsonpb",
+    "github.com/gogo/protobuf/io",
     "github.com/golang/protobuf/proto",
     "github.com/golang/protobuf/protoc-gen-go",
     "github.com/golang/protobuf/ptypes",
     "github.com/golang/protobuf/ptypes/any",
+    "github.com/golang/protobuf/ptypes/duration",
     "github.com/golang/protobuf/ptypes/empty",
     "github.com/golang/protobuf/ptypes/timestamp",
     "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway",
@@ -1541,18 +1526,21 @@
     "github.com/ipfs/go-datastore",
     "github.com/ipfs/go-ipfs-addr",
     "github.com/ipfs/go-log",
+    "github.com/jbenet/go-context/io",
     "github.com/libp2p/go-libp2p",
     "github.com/libp2p/go-libp2p-crypto",
     "github.com/libp2p/go-libp2p-host",
     "github.com/libp2p/go-libp2p-kad-dht",
+    "github.com/libp2p/go-libp2p-net",
     "github.com/libp2p/go-libp2p-peer",
     "github.com/libp2p/go-libp2p-peerstore",
+    "github.com/libp2p/go-libp2p-protocol",
     "github.com/magiconair/properties/assert",
     "github.com/mitchellh/go-homedir",
     "github.com/multiformats/go-multiaddr",
     "github.com/multiformats/go-multihash",
-    "github.com/paralin/go-libp2p-grpc",
     "github.com/roboll/go-vendorinstall",
+    "github.com/satori/go.uuid",
     "github.com/savaki/jq",
     "github.com/spf13/cast",
     "github.com/spf13/cobra",
@@ -1570,6 +1558,7 @@
     "google.golang.org/grpc/codes",
     "google.golang.org/grpc/credentials",
     "google.golang.org/grpc/grpclog",
+    "google.golang.org/grpc/metadata",
     "google.golang.org/grpc/status",
     "gopkg.in/resty.v1",
   ]

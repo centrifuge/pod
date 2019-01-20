@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+package config;
+
+option go_package = "configpb";
+option java_multiple_files = true;
+option java_outer_classname = "ServiceProto";
+option java_package = "com.config";
+
+import "account/service.proto";
+import "google/api/annotations.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/empty.proto";
+import "protoc-gen-swagger/options/annotations.proto";
+
+// ConfigService allows to see the node configuration
+service ConfigService {
+  rpc GetConfig(google.protobuf.Empty) returns (ConfigData) {
+    option (google.api.http) = {
+      get: "/config"
+    };
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "Get Node Config"
+    };
+  }
+}
+
+message ConfigData {
+  string storage_path = 1;
+  int32 p2p_port = 2;
+  string p2p_external_ip = 3;
+  google.protobuf.Duration p2p_connection_timeout = 4;
+  int32 server_port = 5;
+  string server_address = 6;
+  int32 num_workers = 7;
+  int32 worker_wait_time_ms = 8;
+  string eth_node_url = 9;
+  google.protobuf.Duration eth_context_read_wait_timeout = 10;
+  google.protobuf.Duration eth_context_wait_timeout = 11;
+  google.protobuf.Duration eth_interval_retry = 12;
+  uint32 eth_max_retries = 13;
+  uint64 eth_gas_price = 14;
+  uint64 eth_gas_limit = 15;
+  bool tx_pool_enabled = 16;
+  string network = 17;
+  repeated string bootstrap_peers = 18;
+  uint32 network_id = 19;
+  account.AccountData main_identity = 20;
+  map<string, string> smart_contract_addresses = 21;
+  bool pprof_enabled = 22;
+}

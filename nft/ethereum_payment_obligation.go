@@ -2,76 +2,72 @@ package nft
 
 import (
 	"context"
-	"encoding/hex"
 	"math/big"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/queue"
+	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-
-	"time"
-
 	logging "github.com/ipfs/go-log"
+	"github.com/satori/go.uuid"
 )
 
 var log = logging.Logger("nft")
-
-// Config is an interface to configurations required by nft package
-type Config interface {
-	GetIdentityID() ([]byte, error)
-	GetEthereumDefaultAccountName() string
-	GetContractAddress(address string) common.Address
-	GetEthereumContextWaitTimeout() time.Duration
-}
 
 // ethereumPaymentObligationContract is an abstraction over the contract code to help in mocking it out
 type ethereumPaymentObligationContract interface {
 
 	// Mint method abstracts Mint method on the contract
 	Mint(opts *bind.TransactOpts, to common.Address, tokenID *big.Int, tokenURI string, anchorID *big.Int, merkleRoot [32]byte, values []string, salts [][32]byte, proofs [][][32]byte) (*types.Transaction, error)
+
+	// OwnerOf to retrieve owner of the tokenID
+	OwnerOf(opts *bind.CallOpts, tokenID *big.Int) (common.Address, error)
 }
 
 // ethereumPaymentObligation handles all interactions related to minting of NFTs for payment obligations on Ethereum
 type ethereumPaymentObligation struct {
-	registry          *documents.ServiceRegistry
-	identityService   identity.Service
-	ethClient         ethereum.Client
-	config            Config
-	queue             *queue.Server
-	setupMintListener func(config Config, queue *queue.Server, tokenID *big.Int, registryAddress string) (confirmations chan *watchTokenMinted, err error)
-	bindContract      func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error)
+	registry        *documents.ServiceRegistry
+	identityService identity.Service
+	ethClient       ethereum.Client
+	queue           queue.TaskQueuer
+	docSrv          documents.Service
+	bindContract    func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error)
+	txService       transactions.Service
+	blockHeightFunc func() (height uint64, err error)
 }
 
 // newEthereumPaymentObligation creates ethereumPaymentObligation given the parameters
-func newEthereumPaymentObligation(registry *documents.ServiceRegistry, identityService identity.Service, ethClient ethereum.Client, config Config,
-	queue *queue.Server,
-	setupMintListener func(config Config, queue *queue.Server, tokenID *big.Int, registryAddress string) (confirmations chan *watchTokenMinted, err error), bindContract func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error)) *ethereumPaymentObligation {
+func newEthereumPaymentObligation(
+	identityService identity.Service,
+	ethClient ethereum.Client,
+	queue queue.TaskQueuer,
+	docSrv documents.Service,
+	bindContract func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error),
+	txService transactions.Service,
+	blockHeightFunc func() (uint64, error)) *ethereumPaymentObligation {
 	return &ethereumPaymentObligation{
-		registry:          registry,
-		identityService:   identityService,
-		ethClient:         ethClient,
-		config:            config,
-		setupMintListener: setupMintListener,
-		bindContract:      bindContract,
-		queue:             queue,
+		identityService: identityService,
+		ethClient:       ethClient,
+		bindContract:    bindContract,
+		queue:           queue,
+		docSrv:          docSrv,
+		txService:       txService,
+		blockHeightFunc: blockHeightFunc,
 	}
 }
 
-func (s *ethereumPaymentObligation) prepareMintRequest(documentID []byte, depositAddress string, proofFields []string) (*MintRequest, error) {
-	docService, err := s.registry.FindService(documentID)
-	if err != nil {
-		return nil, err
-	}
+func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, documentID []byte, depositAddress string, proofFields []string) (*MintRequest, error) {
 
-	model, err := docService.GetCurrentVersion(documentID)
+	model, err := s.docSrv.GetCurrentVersion(ctx, documentID)
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +77,7 @@ func (s *ethereumPaymentObligation) prepareMintRequest(documentID []byte, deposi
 		return nil, err
 	}
 
-	proofs, err := docService.CreateProofs(documentID, proofFields)
+	proofs, err := s.docSrv.CreateProofs(ctx, documentID, proofFields)
 	if err != nil {
 		return nil, err
 	}
@@ -108,95 +104,74 @@ func (s *ethereumPaymentObligation) prepareMintRequest(documentID []byte, deposi
 }
 
 // MintNFT mints an NFT
-func (s *ethereumPaymentObligation) MintNFT(documentID []byte, registryAddress, depositAddress string, proofFields []string) (<-chan *watchTokenMinted, error) {
+func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, documentID []byte, registryAddress, depositAddress string, proofFields []string) (*MintNFTResponse, error) {
+	tc, err := contextutil.Account(ctx)
+	if err != nil {
+		return nil, err
+	}
 
-	requestData, err := s.prepareMintRequest(documentID, depositAddress, proofFields)
+	requestData, err := s.prepareMintRequest(ctx, documentID, depositAddress, proofFields)
 	if err != nil {
 		return nil, errors.New("failed to prepare mint request: %v", err)
 	}
 
-	opts, err := s.ethClient.GetTxOpts(s.config.GetEthereumDefaultAccountName())
+	opts, err := s.ethClient.GetTxOpts(tc.GetEthereumDefaultAccountName())
 	if err != nil {
 		return nil, err
 	}
 
 	contract, err := s.bindContract(common.HexToAddress(registryAddress), s.ethClient)
-
 	if err != nil {
 		return nil, err
 	}
 
-	watch, err := s.setupMintListener(s.config, s.queue, requestData.TokenID, registryAddress)
+	cidBytes, err := tc.GetIdentityID()
 	if err != nil {
 		return nil, err
 	}
 
-	err = s.sendMintTransaction(contract, opts, requestData)
+	cid, err := identity.ToCentID(cidBytes)
 	if err != nil {
 		return nil, err
 	}
 
-	return watch, nil
+	txID, _, err := s.sendMintTransaction(cid, contract, opts, requestData)
+	if err != nil {
+		return nil, errors.New("failed to send transaction: %v", err)
+	}
+
+	return &MintNFTResponse{
+		TransactionID: txID.String(),
+		TokenID:       requestData.TokenID.String(),
+	}, nil
 }
 
-// setUpMintEventListener sets up the listened for the "PaymentObligationMinted" event to notify the upstream code
-// about successful minting of an NFt
-func setupMintListener(config Config, qs *queue.Server, tokenID *big.Int, registryAddress string) (confirmations chan *watchTokenMinted, err error) {
-	confirmations = make(chan *watchTokenMinted)
-	conn := ethereum.GetClient()
-
-	h, err := conn.GetEthClient().HeaderByNumber(context.Background(), nil)
+// OwnerOf returns the owner of the NFT token on ethereum chain
+func (s *ethereumPaymentObligation) OwnerOf(registry common.Address, tokenID []byte) (owner common.Address, err error) {
+	contract, err := s.bindContract(registry, s.ethClient)
 	if err != nil {
-		return nil, err
-	}
-	asyncRes, err := qs.EnqueueJob(mintingConfirmationTaskName, map[string]interface{}{
-		tokenIDParam:           hex.EncodeToString(tokenID.Bytes()),
-		queue.BlockHeightParam: h.Number.Uint64(),
-		registryAddressParam:   registryAddress,
-	})
-	if err != nil {
-		return nil, err
+		return owner, errors.New("failed to bind the registry contract: %v", err)
 	}
 
-	go waitAndRouteNFTApprovedEvent(config.GetEthereumContextWaitTimeout(), asyncRes, tokenID, confirmations)
-	return confirmations, nil
-}
+	opts, cancF := s.ethClient.GetGethCallOpts()
+	defer cancF()
 
-// waitAndRouteNFTApprovedEvent notifies the confirmations channel whenever the key has been added to the identity and has been noted as Ethereum event
-func waitAndRouteNFTApprovedEvent(timeout time.Duration, asyncRes queue.TaskResult, tokenID *big.Int, confirmations chan<- *watchTokenMinted) {
-	_, err := asyncRes.Get(timeout)
-	confirmations <- &watchTokenMinted{tokenID, err}
+	return contract.OwnerOf(opts, utils.ByteSliceToBigInt(tokenID))
 }
 
 // sendMintTransaction sends the actual transaction to mint the NFT
-func (s *ethereumPaymentObligation) sendMintTransaction(contract ethereumPaymentObligationContract, opts *bind.TransactOpts, requestData *MintRequest) error {
-	tx, err := s.ethClient.SubmitTransactionWithRetries(contract.Mint, opts, requestData.To, requestData.TokenID, requestData.TokenURI, requestData.AnchorID,
+func (s *ethereumPaymentObligation) sendMintTransaction(cid identity.CentID, contract ethereumPaymentObligationContract, opts *bind.TransactOpts, requestData *MintRequest) (*uuid.UUID, *types.Transaction, error) {
+	tx, ethTx, err := s.ethClient.SubmitTransaction(cid, contract.Mint, opts, requestData.To, requestData.TokenID, requestData.TokenURI, requestData.AnchorID,
 		requestData.MerkleRoot, requestData.Values, requestData.Salts, requestData.Proofs)
+
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
+
 	log.Infof("Sent off tx to mint [tokenID: %x, anchor: %x, registry: %x] to payment obligation contract. Ethereum transaction hash [%x] and Nonce [%v] and Check [%v]",
-		requestData.TokenID, requestData.AnchorID, requestData.To, tx.Hash(), tx.Nonce(), tx.CheckNonce())
-	log.Infof("Transfer pending: 0x%x\n", tx.Hash())
-	return nil
-}
-
-func (s *ethereumPaymentObligation) getIdentityAddress() (common.Address, error) {
-	centIDBytes, err := s.config.GetIdentityID()
-	if err != nil {
-		return common.Address{}, err
-	}
-
-	centID, err := identity.ToCentID(centIDBytes)
-	if err != nil {
-		return common.Address{}, err
-	}
-
-	address, err := s.identityService.GetIdentityAddress(centID)
-	if err != nil {
-		return common.Address{}, err
-	}
-	return address, nil
+		requestData.TokenID, requestData.AnchorID, requestData.To, ethTx.Hash(), ethTx.Nonce(), ethTx.CheckNonce())
+	log.Infof("Transfer pending: 0x%x\n", ethTx.Hash())
+	return tx, ethTx, nil
 }
 
 // MintRequest holds the data needed to mint and NFT from a Centrifuge document

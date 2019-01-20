@@ -2,14 +2,11 @@ package anchors
 
 import (
 	"math/big"
-
-	"github.com/centrifuge/go-centrifuge/errors"
-
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
@@ -32,9 +29,7 @@ type AnchorID [AnchorIDLength]byte
 
 // Config defines required functions for the package Anchors
 type Config interface {
-	GetEthereumDefaultAccountName() string
 	GetEthereumContextWaitTimeout() time.Duration
-	GetContractAddress(address string) common.Address
 }
 
 // ToAnchorID convert the bytes into AnchorID type

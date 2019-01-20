@@ -1,35 +1,34 @@
 package nft
 
 import (
-	"github.com/centrifuge/go-centrifuge/errors"
+	"context"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/queue"
+	"github.com/centrifuge/go-centrifuge/transactions"
 )
 
-// BootstrappedPayObService is the key to PaymentObligationService in bootstrap context.
-const BootstrappedPayObService = "BootstrappedPayObService"
+const (
+	// BootstrappedPayObService is the key to PaymentObligationService in bootstrap context.
+	BootstrappedPayObService = "BootstrappedPayObService"
+)
 
 // Bootstrapper implements bootstrap.Bootstrapper.
 type Bootstrapper struct{}
 
 // Bootstrap initializes the payment obligation contract
 func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
-	if _, ok := ctx[bootstrap.BootstrappedConfig]; !ok {
-		return errors.New("config hasn't been initialized")
-	}
-	cfg := ctx[bootstrap.BootstrappedConfig].(Config)
-
 	if _, ok := ctx[ethereum.BootstrappedEthereumClient]; !ok {
 		return errors.New("ethereum client hasn't been initialized")
 	}
 
-	registry, ok := ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
+	docSrv, ok := ctx[documents.BootstrappedDocumentService].(documents.Service)
 	if !ok {
-		return errors.New("service registry not initialised")
+		return errors.New("document service not initialised")
 	}
 
 	idService, ok := ctx[identity.BootstrappedIDService].(identity.Service)
@@ -42,9 +41,26 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	}
 	queueSrv := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
 
-	ctx[BootstrappedPayObService] = newEthereumPaymentObligation(registry, idService, ethereum.GetClient(), cfg, queueSrv, setupMintListener, bindContract)
-	// queue task
-	task := newMintingConfirmationTask(cfg.GetEthereumContextWaitTimeout(), ethereum.DefaultWaitForTransactionMiningContext)
-	queueSrv.RegisterTaskType(task.TaskTypeName(), task)
+	txService, ok := ctx[transactions.BootstrappedService].(transactions.Service)
+	if !ok {
+		return errors.New("transactions repository not initialised")
+	}
+
+	client := ethereum.GetClient()
+	payOb := newEthereumPaymentObligation(
+		idService,
+		client,
+		queueSrv,
+		docSrv,
+		bindContract,
+		txService, func() (uint64, error) {
+			h, err := client.GetEthClient().HeaderByNumber(context.Background(), nil)
+			if err != nil {
+				return 0, err
+			}
+
+			return h.Number.Uint64(), nil
+		})
+	ctx[BootstrappedPayObService] = payOb
 	return nil
 }

@@ -3,25 +3,28 @@ package cmd
 import (
 	"context"
 
+	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/contextutil"
+
+	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers"
+
 	"github.com/centrifuge/go-centrifuge/storage"
 
 	logging "github.com/ipfs/go-log"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
-	c "github.com/centrifuge/go-centrifuge/context"
+	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/keytools"
 	"github.com/centrifuge/go-centrifuge/node"
 	"github.com/centrifuge/go-centrifuge/queue"
-	"github.com/syndtr/goleveldb/leveldb"
 )
 
 var log = logging.Logger("centrifuge-cmd")
 
-func createIdentity(idService identity.Service) (identity.CentID, error) {
+func createIdentity(ctx context.Context, idService identity.Service) (identity.CentID, error) {
 	centID := identity.RandomCentID()
-	_, confirmations, err := idService.CreateIdentity(centID)
+	_, confirmations, err := idService.CreateIdentity(ctx, centID)
 	if err != nil {
 		return [identity.CentIDLength]byte{}, err
 	}
@@ -33,21 +36,20 @@ func createIdentity(idService identity.Service) (identity.CentID, error) {
 func generateKeys(config config.Configuration) {
 	p2pPub, p2pPvt := config.GetSigningKeyPair()
 	ethAuthPub, ethAuthPvt := config.GetEthAuthKeyPair()
-	keytools.GenerateSigningKeyPair(p2pPub, p2pPvt, "ed25519")
-	keytools.GenerateSigningKeyPair(p2pPub, p2pPvt, "ed25519")
-	keytools.GenerateSigningKeyPair(ethAuthPub, ethAuthPvt, "secp256k1")
+	crypto.GenerateSigningKeyPair(p2pPub, p2pPvt, "ed25519")
+	crypto.GenerateSigningKeyPair(ethAuthPub, ethAuthPvt, "secp256k1")
 }
 
-func addKeys(idService identity.Service) error {
-	err := idService.AddKeyFromConfig(identity.KeyPurposeP2P)
+func addKeys(config config.Configuration, idService identity.Service) error {
+	err := idService.AddKeyFromConfig(config, identity.KeyPurposeP2P)
 	if err != nil {
 		panic(err)
 	}
-	err = idService.AddKeyFromConfig(identity.KeyPurposeSigning)
+	err = idService.AddKeyFromConfig(config, identity.KeyPurposeSigning)
 	if err != nil {
 		panic(err)
 	}
-	err = idService.AddKeyFromConfig(identity.KeyPurposeEthMsgAuth)
+	err = idService.AddKeyFromConfig(config, identity.KeyPurposeEthMsgAuth)
 	if err != nil {
 		panic(err)
 	}
@@ -87,8 +89,18 @@ func CreateConfig(
 	cfg := ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	generateKeys(cfg)
 
+	tc, err := configstore.TempAccount(cfg.GetEthereumDefaultAccountName(), cfg)
+	if err != nil {
+		return err
+	}
+
+	tctx, err := contextutil.New(context.Background(), tc)
+	if err != nil {
+		return err
+	}
+
 	idService := ctx[identity.BootstrappedIDService].(identity.Service)
-	id, err := createIdentity(idService)
+	id, err := createIdentity(tctx, idService)
 	if err != nil {
 		return err
 	}
@@ -99,21 +111,23 @@ func CreateConfig(
 	}
 	cfg.Set("identityId", id.String())
 	log.Infof("Identity created [%s] [%x]", id.String(), id)
-	err = addKeys(idService)
+	err = addKeys(cfg, idService)
 	if err != nil {
 		return err
 	}
 	canc()
-	db := ctx[storage.BootstrappedLevelDB].(*leveldb.DB)
-	dbCfg := ctx[storage.BootstrappedConfigLevelDB].(*leveldb.DB)
+	db := ctx[storage.BootstrappedDB].(storage.Repository)
+	dbCfg := ctx[storage.BootstrappedConfigDB].(storage.Repository)
 	db.Close()
 	dbCfg.Close()
+	log.Infof("---------Centrifuge node configuration file successfully created!---------")
+	log.Infof("Please run the Centrifuge node using the following command: centrifuge run -c %s\n", v.ConfigFileUsed())
 	return nil
 }
 
 // RunBootstrap bootstraps the node for running
 func RunBootstrap(cfgFile string) {
-	mb := c.MainBootstrapper{}
+	mb := bootstrappers.MainBootstrapper{}
 	mb.PopulateRunBootstrappers()
 	ctx := map[string]interface{}{}
 	ctx[config.BootstrappedConfigFile] = cfgFile
@@ -124,10 +138,10 @@ func RunBootstrap(cfgFile string) {
 	}
 }
 
-// BaseBootstrap bootstraps the node for testing purposes mainly
-func BaseBootstrap(cfgFile string) map[string]interface{} {
-	mb := c.MainBootstrapper{}
-	mb.PopulateBaseBootstrappers()
+// ExecCmdBootstrap bootstraps the node for command line and testing purposes
+func ExecCmdBootstrap(cfgFile string) map[string]interface{} {
+	mb := bootstrappers.MainBootstrapper{}
+	mb.PopulateCommandBootstrappers()
 	ctx := map[string]interface{}{}
 	ctx[config.BootstrappedConfigFile] = cfgFile
 	err := mb.Bootstrap(ctx)
@@ -140,7 +154,7 @@ func BaseBootstrap(cfgFile string) map[string]interface{} {
 
 // CommandBootstrap bootstraps the node for one time commands
 func CommandBootstrap(cfgFile string) (map[string]interface{}, context.CancelFunc, error) {
-	ctx := BaseBootstrap(cfgFile)
+	ctx := ExecCmdBootstrap(cfgFile)
 	queueSrv := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
 	// init node with only the queue server which is needed by commands
 	n := node.New([]node.Server{queueSrv})

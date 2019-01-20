@@ -26,7 +26,9 @@ func proofWithMultipleFields_successful(t *testing.T, documentType string) {
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 
 	// Alice shares a document with Bob
-	res := createDocument(alice.httpExpect, documentType, http.StatusOK, defaultDocumentPayload(documentType, []string{bob.id.String()}))
+	res := createDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusOK, defaultDocumentPayload(documentType, []string{bob.id.String()}))
+	txID := getTransactionID(t, res)
+	waitTillStatus(t, alice.httpExpect, alice.id.String(), txID, "success")
 
 	docIdentifier := getDocumentIdentifier(t, res)
 	if docIdentifier == "" {
@@ -35,8 +37,8 @@ func proofWithMultipleFields_successful(t *testing.T, documentType string) {
 
 	proofPayload := defaultProofPayload(documentType)
 
-	proofFromAlice := getProof(alice.httpExpect, http.StatusOK, docIdentifier, proofPayload)
-	proofFromBob := getProof(bob.httpExpect, http.StatusOK, docIdentifier, proofPayload)
+	proofFromAlice := getProof(alice.httpExpect, alice.id.String(), http.StatusOK, docIdentifier, proofPayload)
+	proofFromBob := getProof(bob.httpExpect, bob.id.String(), http.StatusOK, docIdentifier, proofPayload)
 
 	checkProof(proofFromAlice, documentType, docIdentifier)
 	checkProof(proofFromBob, documentType, docIdentifier)

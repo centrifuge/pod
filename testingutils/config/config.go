@@ -1,8 +1,16 @@
 package testingconfig
 
 import (
+	"context"
 	"math/big"
+	"testing"
 	"time"
+
+	"github.com/ethereum/go-ethereum/common/hexutil"
+
+	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/contextutil"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/ethereum/go-ethereum/common"
@@ -124,7 +132,7 @@ func (m *MockConfig) GetContractAddressString(address string) string {
 	return args.Get(0).(string)
 }
 
-func (m *MockConfig) GetContractAddress(address string) common.Address {
+func (m *MockConfig) GetContractAddress(contractName config.ContractName) common.Address {
 	args := m.Called()
 	return args.Get(0).(common.Address)
 }
@@ -152,4 +160,25 @@ func (m *MockConfig) GetSigningKeyPair() (pub, priv string) {
 func (m *MockConfig) GetEthAuthKeyPair() (pub, priv string) {
 	args := m.Called()
 	return args.Get(0).(string), args.Get(1).(string)
+}
+
+func CreateTenantContext(t *testing.T, cfg config.Configuration) context.Context {
+	return CreateTenantContextWithContext(t, context.Background(), cfg)
+}
+
+func CreateTenantContextWithContext(t *testing.T, ctx context.Context, cfg config.Configuration) context.Context {
+	tc, err := configstore.NewAccount("", cfg)
+	assert.Nil(t, err)
+
+	contextHeader, err := contextutil.New(ctx, tc)
+	assert.Nil(t, err)
+	return contextHeader
+}
+
+func HandlerContext(service config.Service) context.Context {
+	tcs, _ := service.GetAllAccounts()
+	cid, _ := tcs[0].GetIdentityID()
+	cidHex := hexutil.Encode(cid)
+	ctx := context.WithValue(context.Background(), config.AccountHeaderKey, cidHex)
+	return ctx
 }

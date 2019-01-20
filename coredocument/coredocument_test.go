@@ -3,7 +3,6 @@
 package coredocument
 
 import (
-	"context"
 	"crypto/sha256"
 	"flag"
 	"os"
@@ -13,21 +12,15 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/header"
+	"github.com/centrifuge/go-centrifuge/contextutil"
+	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/coredocument"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
-)
-
-var (
-	id1 = utils.RandomSlice(32)
-	id2 = utils.RandomSlice(32)
-	id3 = utils.RandomSlice(32)
-	id4 = utils.RandomSlice(32)
-	id5 = utils.RandomSlice(32)
 )
 
 var ctx = map[string]interface{}{}
@@ -39,11 +32,11 @@ func TestMain(m *testing.M) {
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-	flag.Parse()
 	cfg.Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
 	cfg.Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
 	cfg.Set("keys.ethauth.publicKey", "../build/resources/ethauth.pub.pem")
 	cfg.Set("keys.ethauth.privateKey", "../build/resources/ethauth.key.pem")
+	flag.Parse()
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)
@@ -99,7 +92,7 @@ func TestGetDataProofHashes(t *testing.T) {
 
 	hashes, err := getDataProofHashes(cd)
 	assert.Nil(t, err)
-	assert.Equal(t, 4, len(hashes))
+	assert.Equal(t, 5, len(hashes))
 
 	valid, err := proofs.ValidateProofSortedHashes(cd.DataRoot, hashes, cd.DocumentRoot, sha256.New())
 	assert.True(t, valid)
@@ -244,9 +237,9 @@ func TestGetExternalCollaborators(t *testing.T) {
 	c := []string{hexutil.Encode(c1), hexutil.Encode(c2)}
 	cd, err := NewWithCollaborators(c)
 	assert.Equal(t, [][]byte{c1, c2}, cd.Collaborators)
-	ctxh, err := header.NewContextHeader(context.Background(), cfg)
-	assert.Nil(t, err)
-	collaborators, err := GetExternalCollaborators(ctxh.Self().ID, cd)
+	self, err := contextutil.Self(testingconfig.CreateTenantContext(t, cfg))
+	assert.NoError(t, err)
+	collaborators, err := GetExternalCollaborators(self.ID, cd)
 	assert.Nil(t, err)
 	assert.NotNil(t, collaborators)
 	assert.Equal(t, [][]byte{c1, c2}, collaborators)
@@ -259,8 +252,91 @@ func TestGetExternalCollaborators_WrongIDFormat(t *testing.T) {
 	cd, err := NewWithCollaborators(c)
 	assert.Equal(t, [][]byte{c1, c2}, cd.Collaborators)
 	cd.Collaborators[1] = utils.RandomSlice(5)
-	ctxh, err := header.NewContextHeader(context.Background(), cfg)
-	assert.Nil(t, err)
-	_, err = GetExternalCollaborators(ctxh.Self().ID, cd)
+	self, _ := contextutil.Self(testingconfig.CreateTenantContext(t, cfg))
+	_, err = GetExternalCollaborators(self.ID, cd)
 	assert.NotNil(t, err)
+}
+
+func Test_fetchUniqueCollaborators(t *testing.T) {
+	tests := []struct {
+		old    [][]byte
+		new    []string
+		result []identity.CentID
+		err    bool
+	}{
+		{
+			new:    []string{"0x010203040506"},
+			result: []identity.CentID{{1, 2, 3, 4, 5, 6}},
+		},
+
+		{
+			old:    [][]byte{{1, 2, 3, 2, 3, 1}},
+			new:    []string{"0x010203040506"},
+			result: []identity.CentID{{1, 2, 3, 4, 5, 6}},
+		},
+
+		{
+			old: [][]byte{{1, 2, 3, 2, 3, 1}, {1, 2, 3, 4, 5, 6}},
+			new: []string{"0x010203040506"},
+		},
+
+		{
+			old: [][]byte{{1, 2, 3, 2, 3, 1}, {1, 2, 3, 4, 5, 6}},
+		},
+
+		// new collaborator with wrong format
+		{
+			old: [][]byte{{1, 2, 3, 2, 3, 1}, {1, 2, 3, 4, 5, 6}},
+			new: []string{"0x0102030405"},
+			err: true,
+		},
+	}
+
+	for _, c := range tests {
+		uc, err := fetchUniqueCollaborators(c.old, c.new)
+		if err != nil {
+			if c.err {
+				continue
+			}
+
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, c.result, uc)
+	}
+}
+
+func TestPrepareNewVersion_read_rules(t *testing.T) {
+	cd, err := NewWithCollaborators([]string{"0x010203040506"})
+	assert.NoError(t, err)
+	assert.Len(t, cd.ReadRules, 1)
+	assert.Len(t, cd.Roles, 1)
+	assert.Equal(t, cd.Roles[0].Role.Collaborators, [][]byte{{1, 2, 3, 4, 5, 6}})
+	cd.DocumentRoot = utils.RandomSlice(32)
+
+	// prepare with zero collaborators
+	ncd, err := PrepareNewVersion(*cd, nil)
+	assert.NoError(t, err)
+	assert.NotNil(t, ncd)
+	assert.Len(t, ncd.ReadRules, 1)
+	assert.Len(t, ncd.Roles, 1)
+	assert.Equal(t, ncd.Roles[0].Role.Collaborators, [][]byte{{1, 2, 3, 4, 5, 6}})
+
+	// prepare with no unique one
+	ncd, err = PrepareNewVersion(*cd, []string{"0x010203040506"})
+	assert.NoError(t, err)
+	assert.NotNil(t, ncd)
+	assert.Len(t, ncd.ReadRules, 1)
+	assert.Len(t, ncd.Roles, 1)
+	assert.Equal(t, ncd.Roles[0].Role.Collaborators, [][]byte{{1, 2, 3, 4, 5, 6}})
+
+	// prepare with unique collaborators
+	ncd, err = PrepareNewVersion(*cd, []string{"0x010202030203", "0x020301020304"})
+	assert.NoError(t, err)
+	assert.NotNil(t, ncd)
+	assert.Len(t, ncd.ReadRules, 2)
+	assert.Len(t, ncd.Roles, 2)
+	assert.Equal(t, ncd.Collaborators, [][]byte{{1, 2, 3, 4, 5, 6}, {1, 2, 2, 3, 2, 3}, {2, 3, 1, 2, 3, 4}})
+	assert.Equal(t, ncd.Roles[0].Role.Collaborators, [][]byte{{1, 2, 3, 4, 5, 6}})
+	assert.Equal(t, ncd.Roles[1].Role.Collaborators, [][]byte{{1, 2, 2, 3, 2, 3}, {2, 3, 1, 2, 3, 4}})
 }

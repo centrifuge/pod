@@ -5,19 +5,26 @@ package nft
 import (
 	"math/big"
 	"testing"
+	"time"
 
-	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/satori/go.uuid"
+
+	"github.com/centrifuge/go-centrifuge/config"
+
+	"github.com/centrifuge/go-centrifuge/identity"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/nft"
-	"github.com/centrifuge/go-centrifuge/queue"
+	"github.com/centrifuge/go-centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
+	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
@@ -136,34 +143,40 @@ func (m *MockPaymentObligation) Mint(opts *bind.TransactOpts, _to common.Address
 func TestPaymentObligationService(t *testing.T) {
 	tests := []struct {
 		name    string
-		mocker  func() (testingdocuments.MockService, *MockPaymentObligation, testingcommons.MockIDService, testingcommons.MockEthClient, testingconfig.MockConfig)
+		mocker  func() (testingdocuments.MockService, *MockPaymentObligation, testingcommons.MockIDService, testingcommons.MockEthClient, testingconfig.MockConfig, *testingutils.MockQueue)
 		request *nftpb.NFTMintRequest
 		err     error
 		result  string
 	}{
 		{
 			"happypath",
-			func() (testingdocuments.MockService, *MockPaymentObligation, testingcommons.MockIDService, testingcommons.MockEthClient, testingconfig.MockConfig) {
+			func() (testingdocuments.MockService, *MockPaymentObligation, testingcommons.MockIDService, testingcommons.MockEthClient, testingconfig.MockConfig, *testingutils.MockQueue) {
 				coreDoc := coredocument.New()
 				coreDoc.DocumentRoot = utils.RandomSlice(32)
 				proof := getDummyProof(coreDoc)
 				docServiceMock := testingdocuments.MockService{}
 				docServiceMock.On("GetCurrentVersion", decodeHex("0x1212")).Return(&invoice.Invoice{InvoiceNumber: "1232", CoreDocument: coreDoc}, nil)
 				docServiceMock.On("CreateProofs", decodeHex("0x1212"), []string{"collaborators[0]"}).Return(proof, nil)
-				docServiceMock.On("Exists").Return(true)
 				paymentObligationMock := &MockPaymentObligation{}
 				idServiceMock := testingcommons.MockIDService{}
 				ethClientMock := testingcommons.MockEthClient{}
 				ethClientMock.On("GetTxOpts", "ethacc").Return(&bind.TransactOpts{}, nil)
-				ethClientMock.On("SubmitTransactionWithRetries",
+				ethClientMock.On("SubmitTransaction",
 					mock.Anything, mock.Anything, mock.Anything, mock.Anything,
 					mock.Anything, mock.Anything, mock.Anything, mock.Anything,
-					mock.Anything, mock.Anything, mock.Anything,
-				).Return(&types.Transaction{}, nil)
+					mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+				).Return(&uuid.UUID{}, &types.Transaction{}, nil)
 				configMock := testingconfig.MockConfig{}
 				configMock.On("GetEthereumDefaultAccountName").Return("ethacc")
-
-				return docServiceMock, paymentObligationMock, idServiceMock, ethClientMock, configMock
+				cid := identity.RandomCentID()
+				configMock.On("GetIdentityID").Return(cid[:], nil)
+				configMock.On("GetEthereumAccount").Return(&config.AccountConfig{}, nil)
+				configMock.On("GetEthereumContextWaitTimeout").Return(time.Second)
+				configMock.On("GetReceiveEventNotificationEndpoint").Return("")
+				configMock.On("GetSigningKeyPair").Return("", "")
+				configMock.On("GetEthAuthKeyPair").Return("", "")
+				queueSrv := new(testingutils.MockQueue)
+				return docServiceMock, paymentObligationMock, idServiceMock, ethClientMock, configMock, queueSrv
 			},
 			&nftpb.NFTMintRequest{Identifier: "0x1212", ProofFields: []string{"collaborators[0]"}, DepositAddress: "0xf72855759a39fb75fc7341139f5d7a3974d4da08"},
 			nil,
@@ -171,20 +184,18 @@ func TestPaymentObligationService(t *testing.T) {
 		},
 	}
 
-	registry := documents.NewServiceRegistry()
+	txService := ctx[transactions.BootstrappedService].(transactions.Service)
+
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			// get mocks
-			docService, paymentOb, idService, ethClient, mockCfg := test.mocker()
+			docService, paymentOb, idService, ethClient, mockCfg, queueSrv := test.mocker()
 			// with below config the documentType has to be test.name to avoid conflicts since registry is a singleton
-			registry.Register(test.name, &docService)
-			confirmations := make(chan *watchTokenMinted)
-			service := newEthereumPaymentObligation(registry, &idService, &ethClient, &mockCfg, nil, func(config Config, qs *queue.Server, tokenID *big.Int, registryAddress string) (chan *watchTokenMinted, error) {
-				return confirmations, nil
-			}, func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error) {
+			service := newEthereumPaymentObligation(&idService, &ethClient, queueSrv, &docService, func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error) {
 				return &EthereumPaymentObligationContract{}, nil
-			})
-			_, err := service.MintNFT(decodeHex(test.request.Identifier), test.request.RegistryAddress, test.request.DepositAddress, test.request.ProofFields)
+			}, txService, func() (uint64, error) { return 10, nil })
+			ctxh := testingconfig.CreateTenantContext(t, &mockCfg)
+			_, err := service.MintNFT(ctxh, decodeHex(test.request.Identifier), test.request.RegistryAddress, test.request.DepositAddress, test.request.ProofFields)
 			if test.err != nil {
 				assert.Equal(t, test.err.Error(), err.Error())
 			} else if err != nil {
@@ -195,6 +206,7 @@ func TestPaymentObligationService(t *testing.T) {
 			idService.AssertExpectations(t)
 			ethClient.AssertExpectations(t)
 			mockCfg.AssertExpectations(t)
+			queueSrv.AssertExpectations(t)
 		})
 	}
 }

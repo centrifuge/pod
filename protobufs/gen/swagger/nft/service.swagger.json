@@ -69,7 +69,18 @@
     "nftNFTMintResponse": {
       "type": "object",
       "properties": {
+        "header": {
+          "$ref": "#/definitions/nftResponseHeader"
+        },
         "token_id": {
+          "type": "string"
+        }
+      }
+    },
+    "nftResponseHeader": {
+      "type": "object",
+      "properties": {
+        "transaction_id": {
           "type": "string"
         }
       }

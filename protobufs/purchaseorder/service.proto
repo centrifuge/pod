@@ -80,6 +80,7 @@ message ResponseHeader {
   string version_id = 2;
   string state = 3;
   repeated string collaborators = 4;
+  string transaction_id = 5;
 }
 
 message PurchaseOrderData {
