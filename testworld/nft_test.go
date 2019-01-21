@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/config"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -57,8 +59,8 @@ func paymentObligationMint(t *testing.T, documentType string) {
 		map[string]interface{}{
 
 			"identifier":      docIdentifier,
-			"registryAddress": doctorFord.contractAddresses.PaymentObligationAddr,
-			"depositAddress":  "0xf72855759a39fb75fc7341139f5d7a3974d4da08", // dummy address
+			"registryAddress": doctorFord.getHost("Alice").config.GetContractAddress(config.PaymentObligation).String(),
+			"depositAddress":  "0x186158a678f4623ca1620bc933874dda6b8f7ed8", // dummy address
 			"proofFields":     []string{proofPrefix + ".gross_amount", proofPrefix + ".currency", proofPrefix + ".due_date", "collaborators[0]"},
 		},
 	}
