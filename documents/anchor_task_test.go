@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/identity"
-
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -40,14 +39,14 @@ func TestDocumentAnchorTask_ParseKwargs(t *testing.T) {
 			err: "missing model ID",
 		},
 
-		// missing tenantID
+		// missing accountID
 		{
 			kwargs: map[string]interface{}{
 				transactions.TxIDParam: uuid.Must(uuid.NewV4()).String(),
 				modelIDParam:           hexutil.Encode(utils.RandomSlice(32)),
 			},
 
-			err: "missing tenant ID",
+			err: "missing account ID",
 		},
 
 		// all good
@@ -56,7 +55,7 @@ func TestDocumentAnchorTask_ParseKwargs(t *testing.T) {
 			kwargs: map[string]interface{}{
 				transactions.TxIDParam: uuid.Must(uuid.NewV4()).String(),
 				modelIDParam:           hexutil.Encode(utils.RandomSlice(32)),
-				tenantIDParam:          identity.RandomCentID().String(),
+				accountIDParam:         identity.RandomCentID().String(),
 			},
 		},
 	}
@@ -78,7 +77,7 @@ func TestDocumentAnchorTask_ParseKwargs(t *testing.T) {
 			if c.err == "" {
 				assert.Equal(t, task.TxID.String(), c.kwargs[transactions.TxIDParam])
 				assert.Equal(t, hexutil.Encode(task.id), c.kwargs[modelIDParam])
-				assert.Equal(t, task.tenantID.String(), c.kwargs[tenantIDParam])
+				assert.Equal(t, task.accountID.String(), c.kwargs[accountIDParam])
 				return
 			}
 

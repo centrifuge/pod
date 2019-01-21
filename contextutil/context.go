@@ -25,8 +25,8 @@ const (
 	self = contextKey("self")
 )
 
-// NewCentrifugeContext creates new instance of the request headers.
-func NewCentrifugeContext(ctx context.Context, cfg config.Account) (context.Context, error) {
+// New creates new instance of the request headers.
+func New(ctx context.Context, cfg config.Account) (context.Context, error) {
 	return context.WithValue(ctx, self, cfg), nil
 }
 
@@ -65,7 +65,7 @@ func Context(ctx context.Context, cs config.Service) (context.Context, error) {
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
 	}
 
-	ctxHeader, err := NewCentrifugeContext(ctx, tc)
+	ctxHeader, err := New(ctx, tc)
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
 	}

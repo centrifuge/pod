@@ -15,8 +15,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/coredocument"
+	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/p2p"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -26,7 +26,7 @@ import (
 )
 
 var (
-	client    p2p.Client
+	client    documents.Client
 	cfg       config.Configuration
 	idService identity.Service
 	cfgStore  config.Service
@@ -38,7 +38,7 @@ func TestMain(m *testing.M) {
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfgStore = ctx[config.BootstrappedConfigStorage].(config.Service)
 	idService = ctx[identity.BootstrappedIDService].(identity.Service)
-	client = ctx[bootstrap.BootstrappedP2PClient].(p2p.Client)
+	client = ctx[bootstrap.BootstrappedPeer].(documents.Client)
 	testingidentity.CreateIdentityWithKeys(cfg, idService)
 	result := m.Run()
 	testingbootstrap.TestFunctionalEthereumTearDown()
@@ -49,7 +49,7 @@ func TestClient_GetSignaturesForDocument(t *testing.T) {
 	tc, _, err := createLocalCollaborator(t, false)
 	ctxh := testingconfig.CreateTenantContext(t, cfg)
 	doc := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID})
-	err = client.GetSignaturesForDocument(ctxh, idService, doc)
+	err = client.GetSignaturesForDocument(ctxh, doc)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(doc.Signatures))
 }
@@ -58,7 +58,7 @@ func TestClient_GetSignaturesForDocumentValidationCheck(t *testing.T) {
 	tc, _, err := createLocalCollaborator(t, true)
 	ctxh := testingconfig.CreateTenantContext(t, cfg)
 	doc := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID})
-	err = client.GetSignaturesForDocument(ctxh, idService, doc)
+	err = client.GetSignaturesForDocument(ctxh, doc)
 	assert.NoError(t, err)
 	// one signature would be missing
 	assert.Equal(t, 1, len(doc.Signatures))
@@ -69,7 +69,7 @@ func TestClient_SendAnchoredDocument(t *testing.T) {
 	ctxh := testingconfig.CreateTenantContext(t, cfg)
 	doc := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID})
 
-	_, err = client.SendAnchoredDocument(ctxh, cid, &p2ppb.AnchorDocumentRequest{Document: doc})
+	_, err = client.SendAnchoredDocument(ctxh, cid.CentID(), &p2ppb.AnchorDocumentRequest{Document: doc})
 	if assert.Error(t, err) {
 		assert.Equal(t, "[1]document is invalid: [mismatched document roots]", err.Error())
 	}
@@ -81,7 +81,7 @@ func createLocalCollaborator(t *testing.T, corruptID bool) (*configstore.Account
 	assert.NoError(t, err)
 	tcr := tc.(*configstore.Account)
 	tcr.IdentityID = tcID[:]
-	id := testingidentity.CreateTenantIDWithKeys(cfg.GetEthereumContextWaitTimeout(), tcr, idService)
+	id := testingidentity.CreateAccountIDWithKeys(cfg.GetEthereumContextWaitTimeout(), tcr, idService)
 	if corruptID {
 		tcr.IdentityID = utils.RandomSlice(identity.CentIDLength)
 	}

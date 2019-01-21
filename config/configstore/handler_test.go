@@ -66,9 +66,9 @@ func TestGrpcHandler_GetAccount(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = h.CreateAccount(context.Background(), accpb)
 	assert.Nil(t, err)
-	tid, err := accountCfg.GetIdentityID()
+	accID, err := accountCfg.GetIdentityID()
 	assert.Nil(t, err)
-	readCfg, err := h.GetAccount(context.Background(), &accountpb.GetAccountRequest{Identifier: hexutil.Encode(tid)})
+	readCfg, err := h.GetAccount(context.Background(), &accountpb.GetAccountRequest{Identifier: hexutil.Encode(accID)})
 	assert.Nil(t, err)
 	assert.NotNil(t, readCfg)
 }
@@ -157,7 +157,7 @@ func TestGrpcHandler_UpdateAccount(t *testing.T) {
 	tcfg, err := NewAccount("main", cfg)
 	assert.Nil(t, err)
 
-	tid, err := tcfg.GetIdentityID()
+	accID, err := tcfg.GetIdentityID()
 	assert.Nil(t, err)
 
 	acc := tcfg.(*Account)
@@ -165,7 +165,7 @@ func TestGrpcHandler_UpdateAccount(t *testing.T) {
 	// Config doesn't exist
 	accpb, err := tcfg.CreateProtobuf()
 	assert.NoError(t, err)
-	_, err = h.UpdateAccount(context.Background(), &accountpb.UpdateAccountRequest{Identifier: hexutil.Encode(tid), Data: accpb})
+	_, err = h.UpdateAccount(context.Background(), &accountpb.UpdateAccountRequest{Identifier: hexutil.Encode(accID), Data: accpb})
 	assert.NotNil(t, err)
 
 	accpb, err = tcfg.CreateProtobuf()
@@ -175,10 +175,10 @@ func TestGrpcHandler_UpdateAccount(t *testing.T) {
 	acc.EthereumDefaultAccountName = "other"
 	tccpb, err := acc.CreateProtobuf()
 	assert.NoError(t, err)
-	_, err = h.UpdateAccount(context.Background(), &accountpb.UpdateAccountRequest{Identifier: hexutil.Encode(tid), Data: tccpb})
+	_, err = h.UpdateAccount(context.Background(), &accountpb.UpdateAccountRequest{Identifier: hexutil.Encode(accID), Data: tccpb})
 	assert.Nil(t, err)
 
-	readCfg, err := h.GetAccount(context.Background(), &accountpb.GetAccountRequest{Identifier: hexutil.Encode(tid)})
+	readCfg, err := h.GetAccount(context.Background(), &accountpb.GetAccountRequest{Identifier: hexutil.Encode(accID)})
 	assert.Nil(t, err)
 	assert.Equal(t, acc.EthereumDefaultAccountName, readCfg.EthDefaultAccountName)
 }

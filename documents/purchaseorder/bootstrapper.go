@@ -2,14 +2,17 @@ package purchaseorder
 
 import (
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
-	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/transactions"
+)
+
+const (
+	// BootstrappedPOHandler maps to grc handler for PO
+	BootstrappedPOHandler = "BootstrappedPOHandler"
 )
 
 // Bootstrapper implements bootstrap.Bootstrapper.
@@ -17,19 +20,14 @@ type Bootstrapper struct{}
 
 // Bootstrap initialises required services for purchaseorder.
 func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
+	docSrv, ok := ctx[documents.BootstrappedDocumentService].(documents.Service)
+	if !ok {
+		return errors.New("document service not initialised")
+	}
+
 	registry, ok := ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
 	if !ok {
 		return errors.New("service registry not initialised")
-	}
-
-	anchorRepo, ok := ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
-	if !ok {
-		return errors.New("anchor repository not initialised")
-	}
-
-	idService, ok := ctx[identity.BootstrappedIDService].(identity.Service)
-	if !ok {
-		return errors.New("identity service not initialised")
 	}
 
 	repo, ok := ctx[documents.BootstrappedDocumentRepository].(documents.Repository)
@@ -48,17 +46,19 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("transaction service not initialised")
 	}
 
-	genService, ok := ctx[genericdoc.BootstrappedGenService].(genericdoc.Service)
+	cfgSrv, ok := ctx[config.BootstrappedConfigStorage].(config.Service)
 	if !ok {
-		return errors.New("generic service is not initialised")
+		return errors.New("config service not initialised")
 	}
 
 	// register service
-	srv := DefaultService(repo, anchorRepo, idService, queueSrv, txService, genService)
+	srv := DefaultService(docSrv, repo, queueSrv, txService)
 	err := registry.Register(documenttypes.PurchaseOrderDataTypeUrl, srv)
 	if err != nil {
 		return errors.New("failed to register purchase order service")
 	}
+
+	ctx[BootstrappedPOHandler] = GRPCHandler(cfgSrv, srv)
 
 	return nil
 }

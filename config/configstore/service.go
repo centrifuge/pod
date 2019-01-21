@@ -76,7 +76,7 @@ func (s service) GenerateAccount() (config.Account, error) {
 	if nil != err {
 		return nil, err
 	}
-	ctx, err := contextutil.NewCentrifugeContext(context.Background(), mtc)
+	ctx, err := contextutil.New(context.Background(), mtc)
 	if err != nil {
 		return nil, err
 	}

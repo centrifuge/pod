@@ -1,4 +1,4 @@
-// +build integration unit
+// +build integration unit cmd
 
 package testingutils
 
@@ -25,7 +25,7 @@ func StartPOAGeth() {
 	if IsPOAGethRunning() {
 		return
 	}
-	projDir := getProjectDir()
+	projDir := GetProjectDir()
 	gethRunScript := path.Join(projDir, "build", "scripts", "docker", "run.sh")
 	o, err := exec.Command(gethRunScript, "dev").Output()
 	if err != nil {
@@ -39,7 +39,7 @@ func RunSmartContractMigrations() {
 	if isRunningOnCI {
 		return
 	}
-	projDir := getProjectDir()
+	projDir := GetProjectDir()
 	migrationScript := path.Join(projDir, "build", "scripts", "migrate.sh")
 	_, err := exec.Command(migrationScript, projDir).Output()
 	if err != nil {
@@ -66,7 +66,7 @@ func GetSmartContractAddresses() *config.SmartContractAddresses {
 }
 
 func findContractDeployJSON() ([]byte, error) {
-	projDir := getProjectDir()
+	projDir := GetProjectDir()
 	deployJSONFile := path.Join(projDir, "vendor", "github.com", "centrifuge", "centrifuge-ethereum-contracts", "deployments", "localgeth.json")
 	dat, err := ioutil.ReadFile(deployJSONFile)
 	if err != nil {
@@ -100,9 +100,15 @@ func getOpForContract(selector string) jq.Op {
 	return addrOp
 }
 
-func getProjectDir() string {
+func GetProjectDir() string {
 	gp := os.Getenv("GOPATH")
 	projDir := path.Join(gp, "src", "github.com", "centrifuge", "go-centrifuge")
+	return projDir
+}
+
+func GetBinaryPath() string {
+	gp := os.Getenv("GOPATH")
+	projDir := path.Join(gp, "bin", "centrifuge")
 	return projDir
 }
 
@@ -119,7 +125,7 @@ func IsPOAGethRunning() bool {
 // LoadTestConfig loads configuration for integration tests
 func LoadTestConfig() config.Configuration {
 	// To get the config location, we need to traverse the path to find the `go-centrifuge` folder
-	projDir := getProjectDir()
+	projDir := GetProjectDir()
 	c := config.LoadConfiguration(fmt.Sprintf("%s/build/configs/testing_config.yaml", projDir))
 	return c
 }
@@ -133,9 +139,9 @@ func SetupSmartContractAddresses(cfg config.Configuration, sca *config.SmartCont
 
 // BuildIntegrationTestingContext sets up configuration for integration tests
 func BuildIntegrationTestingContext() map[string]interface{} {
-	projDir := getProjectDir()
+	projDir := GetProjectDir()
 	StartPOAGeth()
-	//RunSmartContractMigrations()
+	RunSmartContractMigrations()
 	addresses := GetSmartContractAddresses()
 	cfg := LoadTestConfig()
 	cfg.Set("keys.signing.publicKey", fmt.Sprintf("%s/build/resources/signingKey.pub.pem", projDir))

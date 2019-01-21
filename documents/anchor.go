@@ -3,13 +3,15 @@ package documents
 import (
 	"context"
 
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/identity"
 )
 
-// anchorProcessor has same methods to coredoc processor
-// this is to avoid import cycles
-// this will disappear once we have queueing logic in place
-type anchorProcessor interface {
+// AnchorProcessor identifies an implementation, which can do a bunch of things with a CoreDocument.
+// E.g. send, anchor, etc.
+type AnchorProcessor interface {
+	Send(ctx context.Context, coreDocument *coredocumentpb.CoreDocument, recipient identity.CentID) (err error)
 	PrepareForSignatureRequests(ctx context.Context, model Model) error
 	RequestSignatures(ctx context.Context, model Model) error
 	PrepareForAnchoring(model Model) error
@@ -22,7 +24,7 @@ type updaterFunc func(id []byte, model Model) error
 
 // AnchorDocument add signature, requests signatures, anchors document, and sends the anchored document
 // to collaborators
-func AnchorDocument(ctx context.Context, model Model, proc anchorProcessor, updater updaterFunc) (Model, error) {
+func AnchorDocument(ctx context.Context, model Model, proc AnchorProcessor, updater updaterFunc) (Model, error) {
 	cd, err := model.PackCoreDocument()
 	if err != nil {
 		return nil, err
