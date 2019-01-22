@@ -25,7 +25,7 @@ var isRunningOnCI = len(os.Getenv("TRAVIS")) != 0
 var doctorFord *hostManager
 
 func TestMain(m *testing.M) {
-	c, err := loadConfig(!isRunningOnCI)
+	c, configName, err := loadConfig(!isRunningOnCI)
 	if err != nil {
 		panic(err)
 	}
@@ -40,7 +40,7 @@ func TestMain(m *testing.M) {
 	if c.Network == "testing" {
 		contractAddresses = getSmartContractAddresses()
 	}
-	doctorFord = newHostManager(c.EthNodeURL, c.AccountKeyPath, c.AccountPassword, c.Network, c.TxPoolAccess, contractAddresses)
+	doctorFord = newHostManager(c.EthNodeURL, c.AccountKeyPath, c.AccountPassword, c.Network, configName, c.TxPoolAccess, contractAddresses)
 	err = doctorFord.init(c.CreateHostConfigs)
 	if err != nil {
 		panic(err)
