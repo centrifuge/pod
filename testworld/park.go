@@ -231,7 +231,7 @@ func newHost(
 		bootstrapNodes:     bootstraps,
 		txPoolAccess:       txPoolAccess,
 		smartContractAddrs: smartContractAddrs,
-		dir:                "peerconfigs/" + name,
+		dir:                "hostconfigs/" + name,
 		createConfig:       createConfig,
 		multiAccount:       multiAccount,
 	}

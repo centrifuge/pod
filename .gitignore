@@ -10,4 +10,5 @@ coverage/
 coverage.txt
 *.swp
 *.swo
-testworld/peerconfigs/*
+testworld/hostconfigs/testing
+#testworld/hostconfigs/*
