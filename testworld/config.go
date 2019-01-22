@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 )
 
 // configFile is the main configuration file, used mainly on CI
@@ -41,7 +43,7 @@ type testConfig struct {
 	TxPoolAccess    bool   `json:"txPoolAccess"`
 }
 
-func loadConfig(isLocal bool) (testConfig, error) {
+func loadConfig(isLocal bool) (testConfig, string, error) {
 	c := configFile
 	if isLocal {
 		c = localConfigFile
@@ -56,7 +58,7 @@ func loadConfig(isLocal bool) (testConfig, error) {
 			return loadConfig(false)
 		} else {
 			fmt.Println(err.Error())
-			return config, err
+			return config, "", err
 		}
 	}
 	defer conf.Close()
@@ -64,7 +66,7 @@ func loadConfig(isLocal bool) (testConfig, error) {
 	err = jsonParser.Decode(&config)
 	if err != nil {
 		fmt.Println(err.Error())
-		return config, err
+		return config, "", err
 	}
 
 	// load custom config specified in OtherLocalConfig, if this is local
@@ -73,15 +75,16 @@ func loadConfig(isLocal bool) (testConfig, error) {
 		if err != nil {
 			// use the default local config
 			fmt.Printf("Testworld using config %s\n", localConfigFile)
-			return config, nil
+			return config, extractConfigName(localConfigFile), nil
 		}
 		fmt.Printf("Testworld using config %s\n", config.OtherLocalConfig)
-		return customConfig, nil
+		return customConfig, extractConfigName(config.OtherLocalConfig), nil
 	} else if isLocal {
 		// using the default local config
 		fmt.Printf("Testworld using config %s\n", localConfigFile)
+		return config, extractConfigName(localConfigFile), nil
 	}
-	return config, nil
+	return config, extractConfigName(configFile), nil
 }
 
 func loadCustomLocalConfig(customConfigFile string) (testConfig, error) {
@@ -99,4 +102,10 @@ func loadCustomLocalConfig(customConfigFile string) (testConfig, error) {
 		return config, err
 	}
 	return config, nil
+}
+
+func extractConfigName(path string) string {
+	filename := filepath.Base(path)
+	parts := strings.Split(filename, ".")
+	return parts[0]
 }
