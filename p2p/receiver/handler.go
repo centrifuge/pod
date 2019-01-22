@@ -2,17 +2,18 @@ package receiver
 
 import (
 	"context"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
+	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/p2p/common"
 	pb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/protobuf/proto"
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/libp2p/go-libp2p-protocol"
@@ -210,18 +211,27 @@ func (srv *Handler) GetDocument(ctx context.Context, docReq *p2ppb.GetDocumentRe
 	if err != nil {
 		return nil, err
 	}
-	////check GetDocumentRequest for AccessType
-	////switch case block with AccessTypes
-	////case RequesterValidation
-	//if coredocument.ReadAccessValidator.PeerCanRead(ctx, doc, requesterCentId) {
-	//	return &p2ppb.GetDocumentResponse{Document: doc}, nil
-	//}
-	////case NFTValidation
-	//if coredocument.ReadAccessValidator.NFTOwnerCanRead(ctx, doc, registry, tokenId, requesterCentId) {
-	//	return &p2ppb.GetDocumentResponse{Document: doc}, nil
-	//}
+
+	//checks which access type is relevant for the request
+	if docReq.AccessType.String() == "ACCESS_TYPE_REQUESTER_VERIFICATION" {
+		if !coredocument.ReadAccessValidator.PeerCanRead(ctx, doc, requesterCentId) {
+			return nil, errors.New("Requester does not have access.")
+		}
+	}
+	if docReq.AccessType.String() == "ACCESS_TYPE_NFT_OWNER_VERIFICATION" {
+		registry := common.BytesToAddress(docReq.NftRegistryAddress)
+		if coredocument.ReadAccessValidator.NFTOwnerCanRead(ctx, doc, registry, docReq.NftTokenId, requesterCentId) != nil {
+			return nil, errors.New("Requester does not have access.")
+		}
+	}
 	////case AccessTokenValidation
 	////case Invalid
+	//if docReq.AccessType.String() == "ACCESS_TYPE_INVALID" {
+	//
+	//	if coredocument.ReadAccessValidator.NFTOwnerCanRead(ctx, doc, docReq.NftRegistryAddress, docReq.NftTokenId, requesterCentId) != nil {
+	//		return nil, errors.New("Requester does not have access.")
+	//	}
+	//}
 	return &p2ppb.GetDocumentResponse{Document: doc}, nil
 }
 
