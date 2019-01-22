@@ -1,3 +1,5 @@
+// +build testworld
+
 package testworld
 
 import (
