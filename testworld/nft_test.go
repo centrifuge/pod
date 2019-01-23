@@ -60,7 +60,7 @@ func paymentObligationMint(t *testing.T, documentType string) {
 
 			"identifier":      docIdentifier,
 			"registryAddress": doctorFord.getHost("Alice").config.GetContractAddress(config.PaymentObligation).String(),
-			"depositAddress":  "0x186158a678f4623ca1620bc933874dda6b8f7ed8", // dummy address
+			"depositAddress":  "0x44a0579754d6c94e7bb2c26bfa7394311cc50ccb", // Centrifuge address
 			"proofFields":     []string{proofPrefix + ".gross_amount", proofPrefix + ".currency", proofPrefix + ".due_date", "collaborators[0]"},
 		},
 	}
