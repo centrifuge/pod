@@ -15,7 +15,7 @@ networks:
       anchorRepository: ""
       paymentObligation: ""
 
-  # Main development testnet network
+  # Main development testnet network (Rinkeby)
   russianhill:
     # Numeric ID of the Centrifuge network
     id: 51
@@ -32,6 +32,7 @@ networks:
       anchorRepository: "0x7f854dfa98012d7fa55c803bba2260bcdee4b5ed"
       paymentObligation: "0xdb0581A9328664855328AdDb0E251184640f9e5D"
 
+  # Kovan test network
   bernalheights:
     ###
     # Kovan FAQ
@@ -54,6 +55,23 @@ networks:
       identityRegistry: "0x54ae373f096faf2db6b8a46717c0b98ecfa075dd"
       anchorRepository: "0x444f649e307442e76ccf737466e52f1609b98260"
       paymentObligation: "0x0417eb37941164368401D666984cED7694ABcBb1"
+
+  # Ropsten test network
+  doloresheights:
+    # Numeric ID of the Centrifuge network
+    id: 53
+    # Bootstrap list of nodes that Centrifuge provides to the doloresheights (TODO create ropsten bootnodes)
+    bootstrapPeers:
+      - "/ip4/35.225.200.42/tcp/38202/ipfs/12D3KooWLiicQVwThTBY6xKcPoLf6RQYJFpwf1r75wLx2ZR3pCd1"
+      - "/ip4/35.225.86.210/tcp/38202/ipfs/12D3KooWQZMA8GPHrvEZB9wdkoUcAAmCZHp9eyyZ4SE8gFr3hTNX"
+    # Ethereum network ID - Ropsten
+    ethereumNetworkId: 3
+    # Latest deployed Smart Contracts for the given testnet
+    contractAddresses:
+      identityFactory: "0x47d3194f858d1Fa26C51a93631CEA6eFa570E833"
+      identityRegistry: "0x9660c039d311453af0d58c5666723d9c2fa7d6ec"
+      anchorRepository: "0xE3228070377Be6DD03f29661AD194Ed038f2830f"
+      paymentObligation: "0x5820c05E8eE7d63720DF8D5e6C5987Ac6D998C42"
 
 # Data Storage
 storage:
