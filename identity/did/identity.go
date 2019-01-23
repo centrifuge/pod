@@ -1,6 +1,10 @@
 package did
 
-import "github.com/ethereum/go-ethereum/common"
+import (
+	"github.com/centrifuge/go-centrifuge/ethereum"
+	"github.com/ethereum/go-ethereum/common"
+	id "github.com/centrifuge/go-centrifuge/identity"
+)
 
 // DID stores the identity address of the user
 type DID common.Address
@@ -18,3 +22,25 @@ func NewDID(address common.Address) DID {
 func NewDIDFromString(address string) DID {
 	return DID(common.HexToAddress(address))
 }
+
+
+type Identity interface {
+
+}
+
+type contract interface {
+
+}
+
+
+type identity struct  {
+	contract contract
+	config id.Config
+	client ethereum.Client
+}
+
+func NewIdentity(config id.Config, client ethereum.Client) identity {
+	return identity{config:config,client:client}
+}
+
+
