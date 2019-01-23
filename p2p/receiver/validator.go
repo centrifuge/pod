@@ -1,7 +1,11 @@
 package receiver
 
 import (
+	"context"
 	"fmt"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/coredocument"
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/centrifuge/go-centrifuge/identity"
 
@@ -99,6 +103,25 @@ func HandshakeValidator(networkID uint32, idService identity.Service) ValidatorG
 		networkValidator(networkID),
 		peerValidator(idService),
 	}
+}
+
+func AccessValidator(ctx context.Context, doc *coredocumentpb.CoreDocument,  docReq *p2ppb.GetDocumentRequest, requesterCentId identity.CentID) error {
+
+	//checks which access type is relevant for the request
+	switch docReq.AccessType.String() {
+	case "ACCESS_TYPE_REQUESTER_VERIFICATION":
+		if !coredocument.ReadAccessValidator.PeerCanRead(ctx, doc, requesterCentId) {
+			return errors.New("Requester does not have access.")
+		}
+	case "ACCESS_TYPE_NFT_OWNER_VERIFICATION":
+		registry := common.BytesToAddress(docReq.NftRegistryAddress)
+		if coredocument.ReadAccessValidator.NFTOwnerCanRead(ctx, doc, registry, docReq.NftTokenId, requesterCentId) != nil {
+			return errors.New("Requester does not have access.")
+		}
+	////case AccessTokenValidation
+	////case Invalid
+	}
+	return nil
 }
 
 func incompatibleNetworkError(configNetwork uint32, nodeNetwork uint32) error {
