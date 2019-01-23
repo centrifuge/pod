@@ -848,6 +848,13 @@
   version = "v1.8.0"
 
 [[projects]]
+  digest = "1:bedc0b304fccce285e74ebae57d61c4b190b1a420b0c07afb1d4c2da56d164b8"
+  name = "github.com/manuelpolzhofer/centrifuge-ethereum-contracts"
+  packages = ["."]
+  pruneopts = "T"
+  revision = "33c46d6fffa366e64fc48aff3a8a173a86eaebf6"
+
+[[projects]]
   digest = "1:c658e84ad3916da105a761660dcaeb01e63416c8ec7bc62256a9b411a05fcd67"
   name = "github.com/mattn/go-colorable"
   packages = ["."]
@@ -1536,6 +1543,7 @@
     "github.com/libp2p/go-libp2p-peerstore",
     "github.com/libp2p/go-libp2p-protocol",
     "github.com/magiconair/properties/assert",
+    "github.com/manuelpolzhofer/centrifuge-ethereum-contracts",
     "github.com/mitchellh/go-homedir",
     "github.com/multiformats/go-multiaddr",
     "github.com/multiformats/go-multihash",
