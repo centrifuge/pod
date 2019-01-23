@@ -39,7 +39,7 @@ func (b *BaseTask) ParseTransactionID(kwargs map[string]interface{}) error {
 }
 
 // UpdateTransaction add a new log and updates the status of the transaction based on the error.
-func (b *BaseTask) UpdateTransaction(tenantID identity.CentID, name string, err error) error {
+func (b *BaseTask) UpdateTransaction(accountID identity.CentID, name string, err error) error {
 	if err == gocelery.ErrTaskRetryable {
 		return err
 	}
@@ -50,7 +50,7 @@ func (b *BaseTask) UpdateTransaction(tenantID identity.CentID, name string, err 
 		log.Infof("Transaction successful:%v\n", b.TxID.String())
 	}
 
-	tx, erri := b.TxService.GetTransaction(tenantID, b.TxID)
+	tx, erri := b.TxService.GetTransaction(accountID, b.TxID)
 	if erri != nil {
 		return errors.AppendError(err, erri)
 	}

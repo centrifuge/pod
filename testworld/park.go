@@ -53,7 +53,7 @@ type hostTestSuite struct {
 type hostManager struct {
 
 	// network settings
-	ethNodeUrl, accountKeyPath, accountPassword, network string
+	ethNodeUrl, accountKeyPath, accountPassword, network, twConfigName string
 
 	txPoolAccess bool
 
@@ -78,13 +78,14 @@ type hostManager struct {
 }
 
 func newHostManager(
-	ethNodeUrl, accountKeyPath, accountPassword, network string,
+	ethNodeUrl, accountKeyPath, accountPassword, network, twConfigName string,
 	txPoolAccess bool,
 	smartContractAddrs *config.SmartContractAddresses) *hostManager {
 	return &hostManager{
 		ethNodeUrl:        ethNodeUrl,
 		accountKeyPath:    accountKeyPath,
 		accountPassword:   accountPassword,
+		twConfigName:      twConfigName,
 		network:           network,
 		txPoolAccess:      txPoolAccess,
 		contractAddresses: smartContractAddrs,
@@ -109,7 +110,7 @@ func (r *hostManager) startHost(name string) {
 
 func (r *hostManager) init(createConfig bool) error {
 	r.cancCtx, r.canc = context.WithCancel(context.Background())
-	r.bernard = r.createHost("Bernard", defaultP2PTimeout, 8081, 38201, createConfig, false, nil)
+	r.bernard = r.createHost("Bernard", r.twConfigName, defaultP2PTimeout, 8081, 38201, createConfig, false, nil)
 	err := r.bernard.init()
 	if err != nil {
 		return err
@@ -129,7 +130,7 @@ func (r *hostManager) init(createConfig bool) error {
 
 	// start hosts
 	for _, h := range hostConfig {
-		r.niceHosts[h.name] = r.createHost(h.name, defaultP2PTimeout, h.apiPort, h.p2pPort, createConfig, h.multiAccount, []string{bootnode})
+		r.niceHosts[h.name] = r.createHost(h.name, r.twConfigName, defaultP2PTimeout, h.apiPort, h.p2pPort, createConfig, h.multiAccount, []string{bootnode})
 
 		err := r.niceHosts[h.name].init()
 		if err != nil {
@@ -168,13 +169,14 @@ func (r *hostManager) stop() {
 	r.canc()
 }
 
-func (r *hostManager) createHost(name, p2pTimeout string, apiPort, p2pPort int64, createConfig, multiAccount bool, bootstraps []string) *host {
+func (r *hostManager) createHost(name, twConfigName, p2pTimeout string, apiPort, p2pPort int64, createConfig, multiAccount bool, bootstraps []string) *host {
 	return newHost(
 		name,
 		r.ethNodeUrl,
 		r.accountKeyPath,
 		r.accountPassword,
 		r.network,
+		twConfigName,
 		p2pTimeout,
 		apiPort, p2pPort, bootstraps,
 		r.txPoolAccess,
@@ -213,7 +215,7 @@ type host struct {
 }
 
 func newHost(
-	name, ethNodeUrl, accountKeyPath, accountPassword, network, p2pTimeout string,
+	name, ethNodeUrl, accountKeyPath, accountPassword, network, twConfigName, p2pTimeout string,
 	apiPort, p2pPort int64,
 	bootstraps []string,
 	txPoolAccess, createConfig, multiAccount bool,
@@ -231,7 +233,7 @@ func newHost(
 		bootstrapNodes:     bootstraps,
 		txPoolAccess:       txPoolAccess,
 		smartContractAddrs: smartContractAddrs,
-		dir:                "peerconfigs/" + name,
+		dir:                fmt.Sprintf("hostconfigs/%s/%s", twConfigName, name),
 		createConfig:       createConfig,
 		multiAccount:       multiAccount,
 	}
@@ -356,10 +358,10 @@ func (h *host) createAccounts(e *httpexpect.Expect) error {
 
 func (h *host) loadAccounts(e *httpexpect.Expect) error {
 	res := getAllAccounts(e, h.identity.CentID().String(), http.StatusOK)
-	tenants := res.Value("data").Array()
-	tids := getAccounts(tenants)
-	keys := make([]string, 0, len(tids))
-	for k := range tids {
+	accounts := res.Value("data").Array()
+	accIDs := getAccounts(accounts)
+	keys := make([]string, 0, len(accIDs))
+	for k := range accIDs {
 		keys = append(keys, k)
 	}
 	h.accounts = keys

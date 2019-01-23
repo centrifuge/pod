@@ -2,14 +2,17 @@ package invoice
 
 import (
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
-	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/documents/genericdoc"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/transactions"
+)
+
+const (
+	// BootstrappedInvoiceHandler maps to grpc handler for invoices
+	BootstrappedInvoiceHandler string = "BootstrappedInvoiceHandler"
 )
 
 // Bootstrapper implements bootstrap.Bootstrapper.
@@ -22,14 +25,9 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("service registry not initialised")
 	}
 
-	anchorRepo, ok := ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
+	docSrv, ok := ctx[documents.BootstrappedDocumentService].(documents.Service)
 	if !ok {
-		return errors.New("anchor repository not initialised")
-	}
-
-	idService, ok := ctx[identity.BootstrappedIDService].(identity.Service)
-	if !ok {
-		return errors.New("identity service not initialised")
+		return errors.New("document service not initialised")
 	}
 
 	repo, ok := ctx[documents.BootstrappedDocumentRepository].(documents.Repository)
@@ -48,19 +46,22 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("transaction service not initialised")
 	}
 
-	genService, ok := ctx[genericdoc.BootstrappedGenService].(genericdoc.Service)
+	cfgSrv, ok := ctx[config.BootstrappedConfigStorage].(config.Service)
 	if !ok {
-		return errors.New("generic service is not initialised")
+		return errors.New("config service not initialised")
 	}
+
 	// register service
 	srv := DefaultService(
+		docSrv,
 		repo,
-		anchorRepo,
-		idService, queueSrv, txService, genService)
+		queueSrv, txService)
+
 	err := registry.Register(documenttypes.InvoiceDataTypeUrl, srv)
 	if err != nil {
 		return errors.New("failed to register invoice service: %v", err)
 	}
 
+	ctx[BootstrappedInvoiceHandler] = GRPCHandler(cfgSrv, srv)
 	return nil
 }

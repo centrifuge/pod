@@ -89,7 +89,7 @@ func TestPrepareP2PEnvelope(t *testing.T) {
 
 	id, _ := cfg.GetIdentityID()
 	spk, ssk := cfg.GetSigningKeyPair()
-	tc := &configstore.Account{
+	acc := &configstore.Account{
 		IdentityID: id,
 		SigningKeyPair: configstore.KeyPair{
 			Priv: ssk,
@@ -100,7 +100,7 @@ func TestPrepareP2PEnvelope(t *testing.T) {
 			Pub:  spk,
 		},
 	}
-	ctx, _ := contextutil.NewCentrifugeContext(context.Background(), tc)
+	ctx, _ := contextutil.New(context.Background(), acc)
 	assert.NotNil(t, ctx)
 
 	// Nil proto.Message

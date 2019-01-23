@@ -23,14 +23,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var (
-	id1 = utils.RandomSlice(32)
-	id2 = utils.RandomSlice(32)
-	id3 = utils.RandomSlice(32)
-	id4 = utils.RandomSlice(32)
-	id5 = utils.RandomSlice(32)
-)
-
 var ctx = map[string]interface{}{}
 var cfg config.Configuration
 
@@ -40,11 +32,11 @@ func TestMain(m *testing.M) {
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-	flag.Parse()
 	cfg.Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
 	cfg.Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
 	cfg.Set("keys.ethauth.publicKey", "../build/resources/ethauth.pub.pem")
 	cfg.Set("keys.ethauth.privateKey", "../build/resources/ethauth.key.pem")
+	flag.Parse()
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)
@@ -245,7 +237,8 @@ func TestGetExternalCollaborators(t *testing.T) {
 	c := []string{hexutil.Encode(c1), hexutil.Encode(c2)}
 	cd, err := NewWithCollaborators(c)
 	assert.Equal(t, [][]byte{c1, c2}, cd.Collaborators)
-	self, _ := contextutil.Self(testingconfig.CreateTenantContext(t, cfg))
+	self, err := contextutil.Self(testingconfig.CreateTenantContext(t, cfg))
+	assert.NoError(t, err)
 	collaborators, err := GetExternalCollaborators(self.ID, cd)
 	assert.Nil(t, err)
 	assert.NotNil(t, collaborators)

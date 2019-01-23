@@ -37,8 +37,8 @@ type TransactionStatusTask struct {
 	transactionReceipt    func(ctx context.Context, txHash common.Hash) (*types.Receipt, error)
 
 	//txHash is the id of an Ethereum transaction
-	txHash   string
-	tenantID identity.CentID
+	txHash    string
+	accountID identity.CentID
 }
 
 // NewTransactionStatusTask returns a the struct for the task
@@ -69,7 +69,7 @@ func (nftc *TransactionStatusTask) Copy() (gocelery.CeleryTask, error) {
 	return &TransactionStatusTask{
 		timeout:               nftc.timeout,
 		txHash:                nftc.txHash,
-		tenantID:              nftc.tenantID,
+		accountID:             nftc.accountID,
 		transactionByHash:     nftc.transactionByHash,
 		transactionReceipt:    nftc.transactionReceipt,
 		ethContextInitializer: nftc.ethContextInitializer,
@@ -84,12 +84,12 @@ func (nftc *TransactionStatusTask) ParseKwargs(kwargs map[string]interface{}) (e
 		return err
 	}
 
-	tenantID, ok := kwargs[TransactionAccountParam].(string)
+	accountID, ok := kwargs[TransactionAccountParam].(string)
 	if !ok {
-		return errors.New("missing tenant ID")
+		return errors.New("missing account ID")
 	}
 
-	nftc.tenantID, err = identity.CentIDFromString(tenantID)
+	nftc.accountID, err = identity.CentIDFromString(accountID)
 	if err != nil {
 		return err
 	}
@@ -135,7 +135,7 @@ func (nftc *TransactionStatusTask) RunTask() (resp interface{}, err error) {
 	ctx, cancelF := nftc.ethContextInitializer(nftc.timeout)
 	defer cancelF()
 	defer func() {
-		err = nftc.UpdateTransaction(nftc.tenantID, nftc.TaskTypeName(), err)
+		err = nftc.UpdateTransaction(nftc.accountID, nftc.TaskTypeName(), err)
 	}()
 
 	_, isPending, err := nftc.transactionByHash(ctx, common.HexToHash(nftc.txHash))

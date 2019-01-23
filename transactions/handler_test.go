@@ -37,8 +37,8 @@ func TestGRPCHandler_GetTransactionStatus(t *testing.T) {
 
 	// missing err
 	tcs, _ := cService.GetAllAccounts()
-	tid, _ := tcs[0].GetIdentityID()
-	cid, err := identity.ToCentID(tid)
+	accID, _ := tcs[0].GetIdentityID()
+	cid, err := identity.ToCentID(accID)
 	tx := NewTransaction(cid, "")
 	req.TransactionId = tx.ID.String()
 	res, err = h.GetTransactionStatus(ctxl, req)

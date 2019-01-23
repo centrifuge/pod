@@ -469,11 +469,14 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 		return nil, errors.New("targetDataDir not provided")
 	}
 	if _, err := os.Stat(targetDataDir); os.IsNotExist(err) {
-		os.Mkdir(targetDataDir, os.ModePerm)
+		err := os.MkdirAll(targetDataDir, os.ModePerm)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if _, err := os.Stat(accountKeyPath); os.IsNotExist(err) {
-		return nil, errors.New("account Key Path does not exist")
+		return nil, errors.New("account Key Path [%s] does not exist", accountKeyPath)
 	}
 
 	bfile, err := ioutil.ReadFile(accountKeyPath)

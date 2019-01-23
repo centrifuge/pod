@@ -36,7 +36,7 @@ type PurchaseOrder struct {
 	RecipientStreet   string
 	RecipientCity     string
 	RecipientZipcode  string
-	RecipientCountry  string // country ISO code of the receipient of this purchase order
+	RecipientCountry  string // country ISO code of the recipient of this purchase order
 	Currency          string // ISO currency code
 	OrderAmount       int64  // ordering gross amount including tax
 	NetAmount         int64  // invoice amount excluding tax

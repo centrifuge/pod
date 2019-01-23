@@ -1,3 +1,5 @@
+// +build testworld
+
 package testworld
 
 import (
@@ -152,10 +154,10 @@ func addCommonHeaders(req *httpexpect.Request, auth string) *httpexpect.Request 
 }
 
 func getAccounts(accounts *httpexpect.Array) map[string]string {
-	tids := make(map[string]string)
+	accIDs := make(map[string]string)
 	for i := 0; i < int(accounts.Length().Raw()); i++ {
 		val := accounts.Element(i).Path("$.identity_id").String().NotEmpty().Raw()
-		tids[val] = val
+		accIDs[val] = val
 	}
-	return tids
+	return accIDs
 }

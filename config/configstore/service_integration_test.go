@@ -30,7 +30,7 @@ func TestMain(m *testing.M) {
 	time.Sleep(time.Second + 2)
 	ctx := testingbootstrap.TestFunctionalEthereumBootstrap()
 	cfg = ctx[config.BootstrappedConfigStorage].(config.Service)
-	ctx[bootstrap.BootstrappedP2PServer] = &MockProtocolSetter{}
+	ctx[bootstrap.BootstrappedPeer] = &MockProtocolSetter{}
 	identityService = ctx[identity.BootstrappedIDService].(identity.Service)
 	result := m.Run()
 	testingbootstrap.TestFunctionalEthereumTearDown()
