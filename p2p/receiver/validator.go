@@ -105,21 +105,25 @@ func HandshakeValidator(networkID uint32, idService identity.Service) ValidatorG
 	}
 }
 
-func AccessValidator(ctx context.Context, doc *coredocumentpb.CoreDocument,  docReq *p2ppb.GetDocumentRequest, requesterCentId identity.CentID) error {
+func DocumentAccessValidator(ctx context.Context, doc *coredocumentpb.CoreDocument,  docReq *p2ppb.GetDocumentRequest, requesterCentId identity.CentID) error {
 
 	//checks which access type is relevant for the request
-	switch docReq.AccessType.String() {
-	case "ACCESS_TYPE_REQUESTER_VERIFICATION":
+	switch docReq.GetAccessType() {
+	case p2ppb.AccessType_ACCESS_TYPE_REQUESTER_VERIFICATION:
 		if !coredocument.ReadAccessValidator.PeerCanRead(ctx, doc, requesterCentId) {
 			return errors.New("Requester does not have access.")
 		}
-	case "ACCESS_TYPE_NFT_OWNER_VERIFICATION":
+	case p2ppb.AccessType_ACCESS_TYPE_NFT_OWNER_VERIFICATION:
 		registry := common.BytesToAddress(docReq.NftRegistryAddress)
 		if coredocument.ReadAccessValidator.NFTOwnerCanRead(ctx, doc, registry, docReq.NftTokenId, requesterCentId) != nil {
 			return errors.New("Requester does not have access.")
 		}
 	////case AccessTokenValidation
-	////case Invalid
+	case p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION:
+
+	case p2ppb.AccessType_ACCESS_TYPE_INVALID:
+	default:
+		return errors.New("Invalid access type.")
 	}
 	return nil
 }

@@ -76,7 +76,7 @@ func (srv *Handler) HandleInterceptor(ctx context.Context, peer peer.ID, protoc 
 	case p2pcommon.MessageTypeSendAnchoredDoc:
 		return srv.HandleSendAnchoredDocument(ctx, peer, protoc, envelope)
 	case p2pcommon.MessageTypeGetDoc:
-		return srv.HandleGetDocument(ctx, peer, protoc, envelope, fromID)
+		return srv.HandleGetDocument(ctx, peer, protoc, envelope)
 	default:
 		return convertToErrorEnvelop(errors.New("MessageType [%s] not found", envelope.Header.Type))
 	}
@@ -173,9 +173,14 @@ func (srv *Handler) SendAnchoredDocument(ctx context.Context, docReq *p2ppb.Anch
 }
 
 // HandleGetDocument handles HandleGetDocument message
-func (srv *Handler) HandleGetDocument(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *p2ppb.Envelope, requesterCentId identity.CentID) (*pb.P2PEnvelope, error) {
+func (srv *Handler) HandleGetDocument(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *p2ppb.Envelope) (*pb.P2PEnvelope, error) {
 	m := new(p2ppb.GetDocumentRequest)
 	err := proto.Unmarshal(msg.Body, m)
+	if err != nil {
+		return convertToErrorEnvelop(err)
+	}
+
+	requesterCentId, err := identity.ToCentID(msg.Header.SenderId)
 	if err != nil {
 		return convertToErrorEnvelop(err)
 	}
@@ -210,7 +215,7 @@ func (srv *Handler) GetDocument(ctx context.Context, docReq *p2ppb.GetDocumentRe
 		return nil, err
 	}
 
-	err = AccessValidator(ctx, doc, docReq, requesterCentId)
+	err = DocumentAccessValidator(ctx, doc, docReq, requesterCentId)
 	if err != nil {
 		return &p2ppb.GetDocumentResponse{Document: doc}, nil
 	} else {
