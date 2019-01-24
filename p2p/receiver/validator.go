@@ -1,8 +1,8 @@
 package receiver
 
 import (
-	"context"
 	"fmt"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/ethereum/go-ethereum/common"
@@ -105,25 +105,28 @@ func HandshakeValidator(networkID uint32, idService identity.Service) ValidatorG
 	}
 }
 
-func DocumentAccessValidator(ctx context.Context, doc *coredocumentpb.CoreDocument,  docReq *p2ppb.GetDocumentRequest, requesterCentId identity.CentID) error {
+// DocumentAccessValidator validates the GetDocument request against the AccessType indicated in the request
+func DocumentAccessValidator(doc *coredocumentpb.CoreDocument, docReq *p2ppb.GetDocumentRequest, requesterCentID identity.CentID) error {
 
-	//checks which access type is relevant for the request
+	rv := coredocument.ReadAccessValidator(nil)
+
+	// checks which access type is relevant for the request
 	switch docReq.GetAccessType() {
 	case p2ppb.AccessType_ACCESS_TYPE_REQUESTER_VERIFICATION:
-		if !coredocument.ReadAccessValidator.PeerCanRead(ctx, doc, requesterCentId) {
-			return errors.New("Requester does not have access.")
+		if !rv.PeerCanRead(doc, requesterCentID) {
+			return errors.New("requester does not have access")
 		}
 	case p2ppb.AccessType_ACCESS_TYPE_NFT_OWNER_VERIFICATION:
 		registry := common.BytesToAddress(docReq.NftRegistryAddress)
-		if coredocument.ReadAccessValidator.NFTOwnerCanRead(ctx, doc, registry, docReq.NftTokenId, requesterCentId) != nil {
-			return errors.New("Requester does not have access.")
+		if rv.NFTOwnerCanRead(doc, registry, docReq.NftTokenId, requesterCentID) != nil {
+			return errors.New("requester does not have access")
 		}
-	////case AccessTokenValidation
-	case p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION:
-
-	case p2ppb.AccessType_ACCESS_TYPE_INVALID:
+	//// case AccessTokenValidation
+	// case p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION:
+	//
+	// case p2ppb.AccessType_ACCESS_TYPE_INVALID:
 	default:
-		return errors.New("Invalid access type.")
+		return errors.New("invalid access type ")
 	}
 	return nil
 }
