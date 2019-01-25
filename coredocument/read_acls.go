@@ -3,6 +3,8 @@ package coredocument
 import (
 	"bytes"
 
+	"github.com/centrifuge/go-centrifuge/utils"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -35,35 +37,37 @@ func initReadRules(cd *coredocumentpb.CoreDocument, collabs []identity.CentID) e
 		return ErrZeroCollaborators
 	}
 
-	addCollaboratorsToReadSignRules(cd, collabs)
-	return nil
+	return addCollaboratorsToReadSignRules(cd, collabs)
 }
 
-func addCollaboratorsToReadSignRules(cd *coredocumentpb.CoreDocument, collabs []identity.CentID) {
+func addCollaboratorsToReadSignRules(cd *coredocumentpb.CoreDocument, collabs []identity.CentID) error {
 	if len(collabs) == 0 {
-		return
+		return nil
 	}
 
 	// create a role for given collaborators
 	role := new(coredocumentpb.Role)
+	rk, err := utils.ConvertIntToByte32(len(cd.Roles))
+	if err != nil {
+		return err
+	}
+	role.RoleKey = rk[:]
 	for _, c := range collabs {
 		c := c
 		role.Collaborators = append(role.Collaborators, c[:])
 	}
 
 	addNewRule(cd, role, coredocumentpb.Action_ACTION_READ_SIGN)
+
+	return nil
 }
 
 // addNewRule creates a new rule as per the role and action.
 func addNewRule(cd *coredocumentpb.CoreDocument, role *coredocumentpb.Role, action coredocumentpb.Action) {
-	roleKey := uint32(len(cd.Roles))
-	cd.Roles = append(cd.Roles, &coredocumentpb.RoleEntry{
-		RoleKey: roleKey,
-		Role:    role,
-	})
+	cd.Roles = append(cd.Roles, role)
 
 	rule := new(coredocumentpb.ReadRule)
-	rule.Roles = append(rule.Roles, roleKey)
+	rule.Roles = append(rule.Roles, role.RoleKey)
 	rule.Action = action
 	cd.ReadRules = append(cd.ReadRules, rule)
 }
@@ -97,14 +101,14 @@ func constructNFT(registry common.Address, tokenID []byte) ([]byte, error) {
 	return nft, nil
 }
 
-// ReadAccessValidator defines validator functions for peer.
+// ReadAccessValidator defines validator functions for account .
 type ReadAccessValidator interface {
-	PeerCanRead(cd *coredocumentpb.CoreDocument, peer identity.CentID) bool
+	AccountCanRead(cd *coredocumentpb.CoreDocument, account identity.CentID) bool
 	NFTOwnerCanRead(
 		cd *coredocumentpb.CoreDocument,
 		registry common.Address,
 		tokenID []byte,
-		peer identity.CentID) error
+		account identity.CentID) error
 }
 
 // readAccessValidator implements ReadAccessValidator.
@@ -112,29 +116,29 @@ type readAccessValidator struct {
 	tokenRegistry TokenRegistry
 }
 
-// PeerCanRead validate if the core document can be read by the peer.
+// AccountCanRead validate if the core document can be read by the account .
 // Returns an error if not.
-func (r readAccessValidator) PeerCanRead(cd *coredocumentpb.CoreDocument, peer identity.CentID) bool {
+func (r readAccessValidator) AccountCanRead(cd *coredocumentpb.CoreDocument, account identity.CentID) bool {
 	// loop though read rules
 	return findRole(cd, coredocumentpb.Action_ACTION_READ_SIGN, func(role *coredocumentpb.Role) bool {
-		return isPeerInRole(role, peer)
+		return isAccountInRole(role, account)
 	})
 }
 
-func getRole(key uint32, roles []*coredocumentpb.RoleEntry) (*coredocumentpb.Role, error) {
-	for _, roleEntry := range roles {
-		if roleEntry.RoleKey == key {
-			return roleEntry.Role, nil
+func getRole(key []byte, roles []*coredocumentpb.Role) (*coredocumentpb.Role, error) {
+	for _, role := range roles {
+		if utils.IsSameByteSlice(role.RoleKey, key) {
+			return role, nil
 		}
 	}
 
 	return nil, errors.New("role %d not found", key)
 }
 
-// isPeerInRole returns true if peer is in the given role as collaborators.
-func isPeerInRole(role *coredocumentpb.Role, peer identity.CentID) bool {
+// isAccountInRole returns true if account is in the given role as collaborators.
+func isAccountInRole(role *coredocumentpb.Role, account identity.CentID) bool {
 	for _, id := range role.Collaborators {
-		if bytes.Equal(id, peer[:]) {
+		if bytes.Equal(id, account[:]) {
 			return true
 		}
 	}
@@ -142,8 +146,8 @@ func isPeerInRole(role *coredocumentpb.Role, peer identity.CentID) bool {
 	return false
 }
 
-// peerValidator returns the ReadAccessValidator tp verify peer.
-func peerValidator() ReadAccessValidator {
+// account returns the ReadAccessValidator tp verify account .
+func accountValidator() ReadAccessValidator {
 	return readAccessValidator{}
 }
 
@@ -152,17 +156,17 @@ func nftValidator(tr TokenRegistry) ReadAccessValidator {
 	return readAccessValidator{tokenRegistry: tr}
 }
 
-// NFTOwnerCanRead checks if the nft owner/peer can read the document
+// NFTOwnerCanRead checks if the nft owner/account can read the document
 // Note: signature should be calculated from the hash which is calculated as
 // keccak256("\x19Ethereum Signed Message:\n"${message length}${message}).
 func (r readAccessValidator) NFTOwnerCanRead(
 	cd *coredocumentpb.CoreDocument,
 	registry common.Address,
 	tokenID []byte,
-	peer identity.CentID) error {
+	account identity.CentID) error {
 
-	// check if the peer can read the doc
-	if r.PeerCanRead(cd, peer) {
+	// check if the account can read the doc
+	if r.AccountCanRead(cd, account) {
 		return nil
 	}
 
@@ -182,8 +186,8 @@ func (r readAccessValidator) NFTOwnerCanRead(
 	}
 
 	// TODO(ved): this will always fail until we roll out identity v2 with CentID type as common.Address
-	if !bytes.Equal(owner.Bytes(), peer[:]) {
-		return errors.New("peer(%v) not owner of the NFT", peer.String())
+	if !bytes.Equal(owner.Bytes(), account[:]) {
+		return errors.New("account (%v) not owner of the NFT", account.String())
 	}
 
 	return nil

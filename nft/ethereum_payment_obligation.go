@@ -153,7 +153,7 @@ func (s *ethereumPaymentObligation) OwnerOf(registry common.Address, tokenID []b
 		return owner, errors.New("failed to bind the registry contract: %v", err)
 	}
 
-	opts, cancF := s.ethClient.GetGethCallOpts()
+	opts, cancF := s.ethClient.GetGethCallOpts(false)
 	defer cancF()
 
 	return contract.OwnerOf(opts, utils.ByteSliceToBigInt(tokenID))

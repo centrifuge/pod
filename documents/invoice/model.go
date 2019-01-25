@@ -104,7 +104,6 @@ func (i *Invoice) getClientData() *clientinvoicepb.InvoiceData {
 
 // createP2PProtobuf returns centrifuge protobuf specific invoiceData
 func (i *Invoice) createP2PProtobuf() *invoicepb.InvoiceData {
-
 	var recipient, sender, payee []byte
 	if i.Recipient != nil {
 		recipient = i.Recipient[:]

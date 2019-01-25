@@ -22,7 +22,7 @@ type MockEthClient struct {
 	mock.Mock
 }
 
-func (m *MockEthClient) GetGethCallOpts() (*bind.CallOpts, context.CancelFunc) {
+func (m *MockEthClient) GetGethCallOpts(pending bool) (*bind.CallOpts, context.CancelFunc) {
 	args := m.Called()
 	c, _ := args.Get(0).(*bind.CallOpts)
 	return c, func() {}

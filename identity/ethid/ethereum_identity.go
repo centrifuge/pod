@@ -131,7 +131,7 @@ func (id *ethereumIdentity) FetchKey(key []byte) (identity.Key, error) {
 		return nil, err
 	}
 	// Ignoring cancelFunc as code will block until response or timeout is triggered
-	opts, _ := id.gethClientFinder().GetGethCallOpts()
+	opts, _ := id.gethClientFinder().GetGethCallOpts(false)
 	key32, _ := utils.SliceToByte32(key)
 	keyInstance, err := contract.GetKey(opts, key32)
 	if err != nil {
@@ -168,7 +168,7 @@ func (id *ethereumIdentity) findContract() (exists bool, err error) {
 
 	client := id.gethClientFinder()
 	// Ignoring cancelFunc as code will block until response or timeout is triggered
-	opts, _ := client.GetGethCallOpts()
+	opts, _ := client.GetGethCallOpts(false)
 	idAddress, err := id.registryContract.GetIdentityByCentrifugeId(opts, id.centID.BigInt())
 	if err != nil {
 		return false, err
@@ -249,7 +249,7 @@ func (id *ethereumIdentity) fetchKeysByPurpose(keyPurpose int) ([]EthereumIdenti
 		return nil, err
 	}
 	// Ignoring cancelFunc as code will block until response or timeout is triggered
-	opts, _ := id.gethClientFinder().GetGethCallOpts()
+	opts, _ := id.gethClientFinder().GetGethCallOpts(false)
 	bigInt := big.NewInt(int64(keyPurpose))
 	keys, err := contract.GetKeysByPurpose(opts, bigInt)
 	if err != nil {
@@ -371,7 +371,7 @@ func NewEthereumIdentityService(config identity.Config, factoryContract factory,
 func (ids *ethereumIdentityService) CheckIdentityExists(centrifugeID identity.CentID) (exists bool, err error) {
 	client := ids.gethClientFinder()
 	// Ignoring cancelFunc as code will block until response or timeout is triggered
-	opts, _ := client.GetGethCallOpts()
+	opts, _ := client.GetGethCallOpts(false)
 	idAddress, err := ids.registryContract.GetIdentityByCentrifugeId(opts, centrifugeID.BigInt())
 	if err != nil {
 		return false, err
@@ -430,7 +430,7 @@ func (ids *ethereumIdentityService) CreateIdentity(ctx context.Context, centrifu
 // GetIdentityAddress gets the address of the ethereum identity contract for the given CentID
 func (ids *ethereumIdentityService) GetIdentityAddress(centID identity.CentID) (common.Address, error) {
 	// Ignoring cancelFunc as code will block until response or timeout is triggered
-	opts, _ := ethereum.GetClient().GetGethCallOpts()
+	opts, _ := ethereum.GetClient().GetGethCallOpts(false)
 	address, err := ids.registryContract.GetIdentityByCentrifugeId(opts, centID.BigInt())
 	if err != nil {
 		return common.Address{}, err
