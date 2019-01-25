@@ -4,7 +4,6 @@ package utils
 
 import (
 	"encoding/binary"
-	"fmt"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -229,7 +228,6 @@ func TestSliceOfByteSlicesToHexStringSlice(t *testing.T) {
 func TestConvertIntToBytes(t *testing.T) {
 	n := 5
 	nb, err := ConvertIntToByte32(n)
-	fmt.Println(nb)
 	assert.NoError(t, err)
 	ni, err := ConvertByte32ToInt(nb)
 	assert.NoError(t, err)
