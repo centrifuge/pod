@@ -25,6 +25,9 @@ type Config interface {
 	// GetNumWorkers gets the number of background workers to initiate
 	GetNumWorkers() int
 
+	// GetTaskRetries returns the number of retries allowed for a queued task
+	GetTaskRetries() int
+
 	// GetWorkerWaitTime gets the worker wait time for a task to be available while polling
 	// increasing this may slow down task execution while reducing it may consume a lot of CPU cycles
 	GetWorkerWaitTimeMS() int
@@ -96,7 +99,10 @@ func (qs *Server) EnqueueJob(taskName string, params map[string]interface{}) (Ta
 	qs.lock.RLock()
 	defer qs.lock.RUnlock()
 
-	return qs.enqueueJob(taskName, params, gocelery.DefaultSettings())
+	return qs.enqueueJob(taskName, params, &gocelery.TaskSettings{
+		MaxTries: uint(qs.config.GetTaskRetries()),
+		Delay:    time.Now().UTC(),
+	})
 }
 
 func (qs *Server) enqueueJob(name string, params map[string]interface{}, settings *gocelery.TaskSettings) (TaskResult, error) {

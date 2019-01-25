@@ -76,7 +76,7 @@ type Client interface {
 	SubmitTransactionWithRetries(contractMethod interface{}, opts *bind.TransactOpts, params ...interface{}) (tx *types.Transaction, err error)
 
 	// GetGethCallOpts returns the Call options with default
-	GetGethCallOpts() (*bind.CallOpts, context.CancelFunc)
+	GetGethCallOpts(pending bool) (*bind.CallOpts, context.CancelFunc)
 
 	// TransactionByHash returns a Ethereum transaction
 	TransactionByHash(ctx context.Context, hash common.Hash) (tx *types.Transaction, isPending bool, err error)
@@ -293,12 +293,12 @@ func (gc *gethClient) SubmitTransactionWithRetries(contractMethod interface{}, o
 }
 
 // GetGethCallOpts returns the Call options with default
-func (gc *gethClient) GetGethCallOpts() (*bind.CallOpts, context.CancelFunc) {
+func (gc *gethClient) GetGethCallOpts(pending bool) (*bind.CallOpts, context.CancelFunc) {
 	// Assuring that pending transactions are taken into account by go-ethereum when asking for things like
 	// specific transactions and client's nonce
 	// with timeout context, in case eth node is not in sync
 	ctx, cancel := gc.defaultReadContext()
-	return &bind.CallOpts{Pending: true, Context: ctx}, cancel
+	return &bind.CallOpts{Pending: pending, Context: ctx}, cancel
 }
 
 // noncer defines functions to get the next nonce

@@ -46,6 +46,7 @@ type messenger interface {
 type peer struct {
 	disablePeerStore bool
 	config           config.Service
+	idService        identity.Service
 	host             host.Host
 	handlerCreator   func() *receiver.Handler
 	mes              messenger

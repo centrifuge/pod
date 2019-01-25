@@ -81,6 +81,7 @@ type Configuration interface {
 	GetServerAddress() string
 	GetNumWorkers() int
 	GetWorkerWaitTimeMS() int
+	GetTaskRetries() int
 	GetEthereumNodeURL() string
 	GetEthereumContextReadWaitTimeout() time.Duration
 	GetEthereumContextWaitTimeout() time.Duration
@@ -269,6 +270,11 @@ func (c *configuration) GetServerAddress() string {
 // GetNumWorkers returns number of queue workers defined in the config.
 func (c *configuration) GetNumWorkers() int {
 	return c.GetInt("queue.numWorkers")
+}
+
+// GetTaskRetries returns the number of retries allowed for a queued task
+func (c *configuration) GetTaskRetries() int {
+	return c.GetInt("queue.taskRetries")
 }
 
 // GetWorkerWaitTimeMS returns the queue worker sleep time between cycles.
@@ -469,11 +475,14 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 		return nil, errors.New("targetDataDir not provided")
 	}
 	if _, err := os.Stat(targetDataDir); os.IsNotExist(err) {
-		os.Mkdir(targetDataDir, os.ModePerm)
+		err := os.MkdirAll(targetDataDir, os.ModePerm)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if _, err := os.Stat(accountKeyPath); os.IsNotExist(err) {
-		return nil, errors.New("account Key Path does not exist")
+		return nil, errors.New("account Key Path [%s] does not exist", accountKeyPath)
 	}
 
 	bfile, err := ioutil.ReadFile(accountKeyPath)
