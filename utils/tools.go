@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"bytes"
 	"crypto/rand"
 	"encoding/binary"
 	"math/big"
@@ -161,23 +160,14 @@ func IsValidByteSliceForLength(slice []byte, length int) bool {
 	return len(slice) == length
 }
 
-// ConvertIntToByte32 converts an integer into a fixed length byte array with LittleEndian order
+// ConvertIntToByte32 converts an integer into a fixed length byte array with BigEndian order
 func ConvertIntToByte32(n int) ([32]byte, error) {
-	buf := new(bytes.Buffer)
-	err := binary.Write(buf, binary.LittleEndian, int64(n))
-	if err != nil {
-		return [32]byte{0}, err
-	}
-	return SliceToByte32(buf.Bytes())
+	buf := make([]byte, 32)
+	binary.BigEndian.PutUint64(buf, uint64(n))
+	return SliceToByte32(buf)
 }
 
-// ConvertByte32ToInt converts a fixed length byte array into int with LittleEndian order
-func ConvertByte32ToInt(nb [32]byte) (int, error) {
-	var n int64
-	buf := bytes.NewReader(nb[:])
-	err := binary.Read(buf, binary.LittleEndian, &n)
-	if err != nil {
-		return 0, err
-	}
-	return int(n), nil
+// ConvertByte32ToInt converts a fixed length byte array into int with BigEndian order
+func ConvertByte32ToInt(nb [32]byte) int {
+	return int(binary.BigEndian.Uint64(nb[:]))
 }

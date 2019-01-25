@@ -37,8 +37,7 @@ func initReadRules(cd *coredocumentpb.CoreDocument, collabs []identity.CentID) e
 		return ErrZeroCollaborators
 	}
 
-	addCollaboratorsToReadSignRules(cd, collabs)
-	return nil
+	return addCollaboratorsToReadSignRules(cd, collabs)
 }
 
 func addCollaboratorsToReadSignRules(cd *coredocumentpb.CoreDocument, collabs []identity.CentID) error {

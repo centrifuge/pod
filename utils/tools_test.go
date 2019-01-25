@@ -229,8 +229,7 @@ func TestConvertIntToBytes(t *testing.T) {
 	n := 5
 	nb, err := ConvertIntToByte32(n)
 	assert.NoError(t, err)
-	ni, err := ConvertByte32ToInt(nb)
-	assert.NoError(t, err)
+	ni := ConvertByte32ToInt(nb)
 	assert.Equal(t, n, ni)
 }
 
