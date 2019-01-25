@@ -225,6 +225,14 @@ func TestSliceOfByteSlicesToHexStringSlice(t *testing.T) {
 	}
 }
 
+func TestConvertIntToBytes(t *testing.T) {
+	n := 5
+	nb, err := ConvertIntToByte32(n)
+	assert.NoError(t, err)
+	ni := ConvertByte32ToInt(nb)
+	assert.Equal(t, n, ni)
+}
+
 func verifyHex(t *testing.T, val string) {
 	_, err := hexutil.Decode(val)
 	assert.Nil(t, err)
