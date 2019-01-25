@@ -3,6 +3,8 @@ package coredocument
 import (
 	"bytes"
 
+	"github.com/centrifuge/go-centrifuge/utils"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -39,31 +41,34 @@ func initReadRules(cd *coredocumentpb.CoreDocument, collabs []identity.CentID) e
 	return nil
 }
 
-func addCollaboratorsToReadSignRules(cd *coredocumentpb.CoreDocument, collabs []identity.CentID) {
+func addCollaboratorsToReadSignRules(cd *coredocumentpb.CoreDocument, collabs []identity.CentID) error {
 	if len(collabs) == 0 {
-		return
+		return nil
 	}
 
 	// create a role for given collaborators
 	role := new(coredocumentpb.Role)
+	rk, err := utils.ConvertIntToByte32(len(cd.Roles))
+	if err != nil {
+		return err
+	}
+	role.RoleKey = rk[:]
 	for _, c := range collabs {
 		c := c
 		role.Collaborators = append(role.Collaborators, c[:])
 	}
 
 	addNewRule(cd, role, coredocumentpb.Action_ACTION_READ_SIGN)
+
+	return nil
 }
 
 // addNewRule creates a new rule as per the role and action.
 func addNewRule(cd *coredocumentpb.CoreDocument, role *coredocumentpb.Role, action coredocumentpb.Action) {
-	roleKey := uint32(len(cd.Roles))
-	cd.Roles = append(cd.Roles, &coredocumentpb.RoleEntry{
-		RoleKey: roleKey,
-		Role:    role,
-	})
+	cd.Roles = append(cd.Roles, role)
 
 	rule := new(coredocumentpb.ReadRule)
-	rule.Roles = append(rule.Roles, roleKey)
+	rule.Roles = append(rule.Roles, role.RoleKey)
 	rule.Action = action
 	cd.ReadRules = append(cd.ReadRules, rule)
 }
@@ -121,10 +126,10 @@ func (r readAccessValidator) AccountCanRead(cd *coredocumentpb.CoreDocument, acc
 	})
 }
 
-func getRole(key uint32, roles []*coredocumentpb.RoleEntry) (*coredocumentpb.Role, error) {
-	for _, roleEntry := range roles {
-		if roleEntry.RoleKey == key {
-			return roleEntry.Role, nil
+func getRole(key []byte, roles []*coredocumentpb.Role) (*coredocumentpb.Role, error) {
+	for _, role := range roles {
+		if utils.IsSameByteSlice(role.RoleKey, key) {
+			return role, nil
 		}
 	}
 
