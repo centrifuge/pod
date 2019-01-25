@@ -34,13 +34,13 @@ type ethereumPaymentObligationContract interface {
 	OwnerOf(opts *bind.CallOpts, tokenID *big.Int) (common.Address, error)
 }
 
-type config interface {
+type Config interface {
 	GetEthereumContextWaitTimeout() time.Duration
 }
 
 // ethereumPaymentObligation handles all interactions related to minting of NFTs for payment obligations on Ethereum
 type ethereumPaymentObligation struct {
-	cfg             config
+	cfg             Config
 	identityService identity.Service
 	ethClient       ethereum.Client
 	queue           queue.TaskQueuer
@@ -52,7 +52,7 @@ type ethereumPaymentObligation struct {
 
 // newEthereumPaymentObligation creates ethereumPaymentObligation given the parameters
 func newEthereumPaymentObligation(
-	cfg config,
+	cfg Config,
 	identityService identity.Service,
 	ethClient ethereum.Client,
 	queue queue.TaskQueuer,
