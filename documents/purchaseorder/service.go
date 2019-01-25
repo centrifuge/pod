@@ -39,7 +39,7 @@ type service struct {
 	documents.Service
 	repo      documents.Repository
 	queueSrv  queue.TaskQueuer
-	txService transactions.Service
+	txService transactions.Manager
 }
 
 // DefaultService returns the default implementation of the service
@@ -47,7 +47,7 @@ func DefaultService(
 	srv documents.Service,
 	repo documents.Repository,
 	queueSrv queue.TaskQueuer,
-	txService transactions.Service,
+	txService transactions.Manager,
 ) Service {
 	return service{
 		repo:      repo,
@@ -102,7 +102,7 @@ func (s service) calculateDataRoot(ctx context.Context, old, new documents.Model
 }
 
 // Create validates, persists, and anchors a purchase order
-func (s service) Create(ctx context.Context, po documents.Model, txID uuid.UUID) (documents.Model, uuid.UUID, error) {
+func (s service) Create(ctx context.Context, po documents.Model) (documents.Model, uuid.UUID, error) {
 	self, err := contextutil.Self(ctx)
 	if err != nil {
 		return nil, uuid.Nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
@@ -118,6 +118,7 @@ func (s service) Create(ctx context.Context, po documents.Model, txID uuid.UUID)
 		return nil, uuid.Nil, err
 	}
 
+	txID := contextutil.TX(ctx)
 	txID, err = documents.InitDocumentAnchorTask(s.queueSrv, s.txService, self.ID, cd.CurrentVersion, txID)
 	if err != nil {
 		return nil, uuid.Nil, err
@@ -127,7 +128,7 @@ func (s service) Create(ctx context.Context, po documents.Model, txID uuid.UUID)
 }
 
 // Update validates, persists, and anchors a new version of purchase order
-func (s service) Update(ctx context.Context, po documents.Model, txID uuid.UUID) (documents.Model, uuid.UUID, error) {
+func (s service) Update(ctx context.Context, po documents.Model) (documents.Model, uuid.UUID, error) {
 	self, err := contextutil.Self(ctx)
 	if err != nil {
 		return nil, uuid.Nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
@@ -148,6 +149,7 @@ func (s service) Update(ctx context.Context, po documents.Model, txID uuid.UUID)
 		return nil, uuid.Nil, err
 	}
 
+	txID := contextutil.TX(ctx)
 	txID, err = documents.InitDocumentAnchorTask(s.queueSrv, s.txService, self.ID, cd.CurrentVersion, txID)
 	if err != nil {
 		return nil, uuid.Nil, err

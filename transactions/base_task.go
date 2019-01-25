@@ -22,10 +22,12 @@ const (
 // should be embedded into the task
 type BaseTask struct {
 	TxID uuid.UUID
+
+	// TODO [TXManager] remove this update once TX Manager update is complete, i.e. Individual tasks must not be responsible for updating a transactions status
 	Next bool
 
 	// state
-	TxService Service
+	TxService Manager
 }
 
 // ParseTransactionID parses txID.
@@ -50,18 +52,18 @@ func (b *BaseTask) ParseTransactionID(kwargs map[string]interface{}) error {
 }
 
 // UpdateTransaction add a new log and updates the status of the transaction based on the error.
-func (b *BaseTask) UpdateTransaction(accountID identity.CentID, name string, err error) error {
+func (b *BaseTask) UpdateTransaction(accountID identity.CentID, taskTypeName string, err error) error {
 	if err == gocelery.ErrTaskRetryable {
 		return err
 	}
 
 	if err != nil {
 		log.Infof("Transaction failed: %v\n", b.TxID.String())
-		return errors.AppendError(err, b.updateStatus(accountID, Failed, NewLog(name, err.Error())))
+		return errors.AppendError(err, b.updateStatus(accountID, Failed, taskTypeName, err.Error()))
 	}
 
 	if b.Next {
-		err = b.updateStatus(accountID, Pending, NewLog(name, ""))
+		err = b.updateStatus(accountID, Pending, taskTypeName, "")
 		if err != nil {
 			return err
 		}
@@ -70,16 +72,19 @@ func (b *BaseTask) UpdateTransaction(accountID identity.CentID, name string, err
 	}
 
 	log.Infof("Transaction successful:%v\n", b.TxID.String())
-	return b.updateStatus(accountID, Success, NewLog(name, ""))
+	return b.updateStatus(accountID, Success, taskTypeName, "")
 }
 
-func (b *BaseTask) updateStatus(accountID identity.CentID, status Status, log Log) error {
+func (b *BaseTask) updateStatus(accountID identity.CentID, status Status, taskTypeName, message string) error {
 	tx, err := b.TxService.GetTransaction(accountID, b.TxID)
 	if err != nil {
 		return err
 	}
 
+	// TODO [TXManager] remove this update once TX Manager update is complete, i.e. Individual tasks must not be responsible for updating a transactions status
 	tx.Status = status
-	tx.Logs = append(tx.Logs, log)
-	return b.TxService.SaveTransaction(tx)
+	// status particular to the task
+	tx.TaskStatus[taskTypeName] = status
+	tx.Logs = append(tx.Logs, NewLog(taskTypeName, message))
+	return b.TxService.saveTransaction(tx)
 }

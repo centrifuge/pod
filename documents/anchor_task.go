@@ -120,7 +120,8 @@ func (d *documentAnchorTask) RunTask() (res interface{}, err error) {
 }
 
 // InitDocumentAnchorTask enqueues a new document anchor task and returns the txID.
-func InitDocumentAnchorTask(tq queue.TaskQueuer, txService transactions.Service, accountID identity.CentID, modelID []byte, txID uuid.UUID) (uuid.UUID, error) {
+// TODO [TXManager] migrate this to use TxManager
+func InitDocumentAnchorTask(tq queue.TaskQueuer, txService transactions.Manager, accountID identity.CentID, modelID []byte, txID uuid.UUID) (uuid.UUID, error) {
 	var tx *transactions.Transaction
 	var err error
 	if txID != uuid.Nil {

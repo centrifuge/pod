@@ -58,10 +58,10 @@ type Service interface {
 	ReceiveAnchoredDocument(ctx context.Context, model Model, senderID []byte) error
 
 	// Create validates and persists Model and returns a Updated model
-	Create(ctx context.Context, model Model, txID uuid.UUID) (Model, uuid.UUID, error)
+	Create(ctx context.Context, model Model) (Model, uuid.UUID, error)
 
 	// Update validates and updates the model and return the updated model
-	Update(ctx context.Context, model Model, txID uuid.UUID) (Model, uuid.UUID, error)
+	Update(ctx context.Context, model Model) (Model, uuid.UUID, error)
 }
 
 // service implements Service
@@ -289,22 +289,22 @@ func (s service) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (Model,
 	return srv.DeriveFromCoreDocument(cd)
 }
 
-func (s service) Create(ctx context.Context, model Model, txID uuid.UUID) (Model, uuid.UUID, error) {
+func (s service) Create(ctx context.Context, model Model) (Model, uuid.UUID, error) {
 	srv, err := s.getService(model)
 	if err != nil {
 		return nil, uuid.Nil, errors.New("failed to get service: %v", err)
 	}
 
-	return srv.Create(ctx, model, txID)
+	return srv.Create(ctx, model)
 }
 
-func (s service) Update(ctx context.Context, model Model, txID uuid.UUID) (Model, uuid.UUID, error) {
+func (s service) Update(ctx context.Context, model Model) (Model, uuid.UUID, error) {
 	srv, err := s.getService(model)
 	if err != nil {
 		return nil, uuid.Nil, errors.New("failed to get service: %v", err)
 	}
 
-	return srv.Update(ctx, model, txID)
+	return srv.Update(ctx, model)
 }
 
 func (s service) getService(model Model) (Service, error) {

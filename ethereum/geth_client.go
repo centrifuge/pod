@@ -200,31 +200,19 @@ func (gc *gethClient) getGethTxOpts(accountName string) (*bind.TransactOpts, err
 	return opts, nil
 }
 
-// QueueTransactionStatusTask starts a new queuing transaction check task.
-func QueueTransactionStatusTask(
+// QueueEthTXStatusTask starts a new queuing transaction check task.
+func QueueEthTXStatusTask(
 	accountID identity.CentID,
+	txID uuid.UUID,
 	txHash common.Hash,
-	txService transactions.Service,
-	queuer queue.TaskQueuer, updateHandler func(status transactions.Status) error) (txID uuid.UUID, err error) {
-	tx, err := txService.CreateTransaction(accountID, "Polling Ethereum transaction status")
-	if err != nil {
-		return txID, err
-	}
-
-	var next bool
-	if updateHandler != nil {
-		next = true
-		txService.RegisterHandler(tx.ID, updateHandler)
-	}
-
-	_, err = queuer.EnqueueJobWithMaxTries(TransactionStatusTaskName, map[string]interface{}{
-		transactions.TxIDParam:  tx.ID.String(),
+	next bool,
+	queuer queue.TaskQueuer) (res queue.TaskResult, err error) {
+	return queuer.EnqueueJobWithMaxTries(EthTXStatusTaskName, map[string]interface{}{
+		transactions.TxIDParam:  txID.String(),
 		TransactionAccountParam: accountID.String(),
 		TransactionTxHashParam:  txHash.String(),
 		transactions.TxNextTask: next,
 	})
-
-	return tx.ID, err
 }
 
 /**

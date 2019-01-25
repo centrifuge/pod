@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/satori/go.uuid"
+
 	"github.com/ethereum/go-ethereum/common/hexutil"
 
 	"github.com/centrifuge/go-centrifuge/config"
@@ -23,11 +25,18 @@ const (
 	ErrSelfNotFound = errors.Error("self value not found in the context")
 
 	self = contextKey("self")
+
+	tx = contextKey("tx")
 )
 
 // New creates new instance of the request headers.
 func New(ctx context.Context, cfg config.Account) (context.Context, error) {
 	return context.WithValue(ctx, self, cfg), nil
+}
+
+// WithTX returns a context with TX ID
+func WithTX(ctx context.Context, txID uuid.UUID) context.Context {
+	return context.WithValue(ctx, self, txID)
 }
 
 // Self returns Self CentID.
@@ -37,6 +46,15 @@ func Self(ctx context.Context) (*identity.IDConfig, error) {
 		return nil, ErrSelfNotFound
 	}
 	return identity.GetIdentityConfig(tc)
+}
+
+// TX returns current txID
+func TX(ctx context.Context) uuid.UUID {
+	tid, ok := ctx.Value(tx).(uuid.UUID)
+	if !ok {
+		return uuid.Nil
+	}
+	return tid
 }
 
 // Account extracts the TenanConfig from the given context value

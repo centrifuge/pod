@@ -180,7 +180,7 @@ func TestPaymentObligationService(t *testing.T) {
 		},
 	}
 
-	txService := ctx[transactions.BootstrappedService].(transactions.Service)
+	txService := ctx[transactions.BootstrappedService].(transactions.Manager)
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

@@ -18,7 +18,7 @@ func TestDocumentAnchorTask_updateTransaction(t *testing.T) {
 	accountID := identity.RandomCentID()
 	name := "some task"
 	task.TxID = uuid.Must(uuid.NewV4())
-	task.TxService = NewService(NewRepository(ctx[storage.BootstrappedDB].(storage.Repository)))
+	task.TxService = NewManager(NewRepository(ctx[storage.BootstrappedDB].(storage.Repository)))
 
 	// missing transaction with nil error
 	err := task.UpdateTransaction(accountID, name, nil)
@@ -31,8 +31,8 @@ func TestDocumentAnchorTask_updateTransaction(t *testing.T) {
 	assert.True(t, errors.IsOfType(ErrTransactionMissing, err))
 
 	// no error and success
-	tx := NewTransaction(accountID, "")
-	assert.NoError(t, task.TxService.SaveTransaction(tx))
+	tx := newTransaction(accountID, "")
+	assert.NoError(t, task.TxService.saveTransaction(tx))
 	task.TxID = tx.ID
 	assert.NoError(t, task.UpdateTransaction(accountID, name, nil))
 	tx, err = task.TxService.GetTransaction(accountID, task.TxID)
@@ -41,8 +41,8 @@ func TestDocumentAnchorTask_updateTransaction(t *testing.T) {
 	assert.Len(t, tx.Logs, 1)
 
 	// failed task
-	tx = NewTransaction(accountID, "")
-	assert.NoError(t, task.TxService.SaveTransaction(tx))
+	tx = newTransaction(accountID, "")
+	assert.NoError(t, task.TxService.saveTransaction(tx))
 	task.TxID = tx.ID
 	err = task.UpdateTransaction(accountID, name, errors.New("anchor error"))
 	assert.EqualError(t, errors.GetErrs(err)[0], "anchor error")
@@ -52,8 +52,8 @@ func TestDocumentAnchorTask_updateTransaction(t *testing.T) {
 	assert.Len(t, tx.Logs, 1)
 
 	// success but pending
-	tx = NewTransaction(accountID, "")
-	assert.NoError(t, task.TxService.SaveTransaction(tx))
+	tx = newTransaction(accountID, "")
+	assert.NoError(t, task.TxService.saveTransaction(tx))
 	task.TxID = tx.ID
 	task.Next = true
 	err = task.UpdateTransaction(accountID, name, nil)

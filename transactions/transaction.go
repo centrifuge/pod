@@ -41,10 +41,16 @@ type Transaction struct {
 	ID          uuid.UUID
 	CID         identity.CentID
 	Description string
-	Status      Status
-	Logs        []Log
-	Metadata    map[string]string
-	CreatedAt   time.Time
+
+	// Status is the overall status of the transaction
+	Status Status
+
+	// TaskStatus tracks the status of individual tasks running in the system for this transaction
+	TaskStatus map[string]Status
+
+	// Logs are transaction log messages
+	Logs      []Log
+	CreatedAt time.Time
 }
 
 // JSON returns json marshaled transaction.
@@ -62,14 +68,14 @@ func (t *Transaction) Type() reflect.Type {
 	return reflect.TypeOf(t)
 }
 
-// NewTransaction returns a new transaction with a pending state
-func NewTransaction(identity identity.CentID, description string) *Transaction {
+// newTransaction returns a new transaction with a pending state
+func newTransaction(identity identity.CentID, description string) *Transaction {
 	return &Transaction{
 		ID:          uuid.Must(uuid.NewV4()),
 		CID:         identity,
 		Description: description,
 		Status:      Pending,
-		Metadata:    make(map[string]string),
+		TaskStatus:  make(map[string]Status),
 		CreatedAt:   time.Now().UTC(),
 	}
 }

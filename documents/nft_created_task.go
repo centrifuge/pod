@@ -131,7 +131,7 @@ func (t *nftCreatedTask) RunTask() (result interface{}, err error) {
 		return nil, err
 	}
 
-	_, _, err = t.docSrv.Update(ctx, model, t.TxID)
+	_, _, err = t.docSrv.Update(contextutil.WithTX(ctx, t.TxID), model)
 	if err != nil {
 		return nil, err
 	}

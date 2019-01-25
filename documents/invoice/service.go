@@ -39,7 +39,7 @@ type service struct {
 	documents.Service
 	repo      documents.Repository
 	queueSrv  queue.TaskQueuer
-	txService transactions.Service
+	txService transactions.Manager
 }
 
 // DefaultService returns the default implementation of the service.
@@ -47,7 +47,7 @@ func DefaultService(
 	srv documents.Service,
 	repo documents.Repository,
 	queueSrv queue.TaskQueuer,
-	txService transactions.Service,
+	txService transactions.Manager,
 ) Service {
 	return service{
 		repo:      repo,
@@ -122,7 +122,7 @@ func (s service) calculateDataRoot(ctx context.Context, old, new documents.Model
 }
 
 // Create takes and invoice model and does required validation checks, tries to persist to DB
-func (s service) Create(ctx context.Context, inv documents.Model, txID uuid.UUID) (documents.Model, uuid.UUID, error) {
+func (s service) Create(ctx context.Context, inv documents.Model) (documents.Model, uuid.UUID, error) {
 	self, err := contextutil.Self(ctx)
 	if err != nil {
 		return nil, uuid.Nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
@@ -138,6 +138,7 @@ func (s service) Create(ctx context.Context, inv documents.Model, txID uuid.UUID
 		return nil, uuid.Nil, err
 	}
 
+	txID := contextutil.TX(ctx)
 	txID, err = documents.InitDocumentAnchorTask(
 		s.queueSrv,
 		s.txService,
@@ -151,7 +152,7 @@ func (s service) Create(ctx context.Context, inv documents.Model, txID uuid.UUID
 }
 
 // Update finds the old document, validates the new version and persists the updated document
-func (s service) Update(ctx context.Context, inv documents.Model, txID uuid.UUID) (documents.Model, uuid.UUID, error) {
+func (s service) Update(ctx context.Context, inv documents.Model) (documents.Model, uuid.UUID, error) {
 	self, err := contextutil.Self(ctx)
 	if err != nil {
 		return nil, uuid.Nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
@@ -172,6 +173,7 @@ func (s service) Update(ctx context.Context, inv documents.Model, txID uuid.UUID
 		return nil, uuid.Nil, err
 	}
 
+	txID := contextutil.TX(ctx)
 	txID, err = documents.InitDocumentAnchorTask(
 		s.queueSrv,
 		s.txService,

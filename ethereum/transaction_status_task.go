@@ -15,8 +15,8 @@ import (
 )
 
 const (
-	// TransactionStatusTaskName contains the name of the task
-	TransactionStatusTaskName string = "TransactionStatusTask"
+	// EthTXStatusTaskName contains the name of the task
+	EthTXStatusTaskName string = "EthTXStatusTaskName"
 
 	// TransactionTxHashParam contains the name  of the parameter
 	TransactionTxHashParam string = "TxHashParam"
@@ -48,7 +48,7 @@ type TransactionStatusTask struct {
 // NewTransactionStatusTask returns a the struct for the task
 func NewTransactionStatusTask(
 	timeout time.Duration,
-	txService transactions.Service,
+	txService transactions.Manager,
 	transactionByHash func(ctx context.Context, hash common.Hash) (tx *types.Transaction, isPending bool, err error),
 	transactionReceipt func(ctx context.Context, txHash common.Hash) (*types.Receipt, error),
 	ethContextInitializer func(d time.Duration) (ctx context.Context, cancelFunc context.CancelFunc),
@@ -64,26 +64,26 @@ func NewTransactionStatusTask(
 }
 
 // TaskTypeName returns mintingConfirmationTaskName
-func (nftc *TransactionStatusTask) TaskTypeName() string {
-	return TransactionStatusTaskName
+func (tst *TransactionStatusTask) TaskTypeName() string {
+	return EthTXStatusTaskName
 }
 
 // Copy returns a new instance of mintingConfirmationTask
-func (nftc *TransactionStatusTask) Copy() (gocelery.CeleryTask, error) {
+func (tst *TransactionStatusTask) Copy() (gocelery.CeleryTask, error) {
 	return &TransactionStatusTask{
-		timeout:               nftc.timeout,
-		txHash:                nftc.txHash,
-		accountID:             nftc.accountID,
-		transactionByHash:     nftc.transactionByHash,
-		transactionReceipt:    nftc.transactionReceipt,
-		ethContextInitializer: nftc.ethContextInitializer,
-		BaseTask:              transactions.BaseTask{TxService: nftc.TxService},
+		timeout:               tst.timeout,
+		txHash:                tst.txHash,
+		accountID:             tst.accountID,
+		transactionByHash:     tst.transactionByHash,
+		transactionReceipt:    tst.transactionReceipt,
+		ethContextInitializer: tst.ethContextInitializer,
+		BaseTask:              transactions.BaseTask{TxService: tst.TxService},
 	}, nil
 }
 
 // ParseKwargs - define a method to parse CentID
-func (nftc *TransactionStatusTask) ParseKwargs(kwargs map[string]interface{}) (err error) {
-	err = nftc.ParseTransactionID(kwargs)
+func (tst *TransactionStatusTask) ParseKwargs(kwargs map[string]interface{}) (err error) {
+	err = tst.ParseTransactionID(kwargs)
 	if err != nil {
 		return err
 	}
@@ -93,7 +93,7 @@ func (nftc *TransactionStatusTask) ParseKwargs(kwargs map[string]interface{}) (e
 		return errors.New("missing account ID")
 	}
 
-	nftc.accountID, err = identity.CentIDFromString(accountID)
+	tst.accountID, err = identity.CentIDFromString(accountID)
 	if err != nil {
 		return err
 	}
@@ -103,7 +103,7 @@ func (nftc *TransactionStatusTask) ParseKwargs(kwargs map[string]interface{}) (e
 	if !ok {
 		return errors.New("undefined kwarg " + TransactionTxHashParam)
 	}
-	nftc.txHash, ok = txHash.(string)
+	tst.txHash, ok = txHash.(string)
 	if !ok {
 		return errors.New("malformed kwarg [%s]", TransactionTxHashParam)
 	}
@@ -115,14 +115,14 @@ func (nftc *TransactionStatusTask) ParseKwargs(kwargs map[string]interface{}) (e
 		if err != nil {
 			return errors.New("malformed kwarg [%s] because [%s]", queue.TimeoutParam, err.Error())
 		}
-		nftc.timeout = td
+		tst.timeout = td
 	}
 
 	return nil
 }
 
-func (nftc *TransactionStatusTask) isTransactionSuccessful(ctx context.Context, txHash string) error {
-	receipt, err := nftc.transactionReceipt(ctx, common.HexToHash(txHash))
+func (tst *TransactionStatusTask) isTransactionSuccessful(ctx context.Context, txHash string) error {
+	receipt, err := tst.transactionReceipt(ctx, common.HexToHash(txHash))
 	if err != nil {
 		return err
 	}
@@ -135,14 +135,14 @@ func (nftc *TransactionStatusTask) isTransactionSuccessful(ctx context.Context, 
 }
 
 // RunTask calls listens to events from geth related to MintingConfirmationTask#TokenID and records result.
-func (nftc *TransactionStatusTask) RunTask() (resp interface{}, err error) {
-	ctx, cancelF := nftc.ethContextInitializer(nftc.timeout)
+func (tst *TransactionStatusTask) RunTask() (resp interface{}, err error) {
+	ctx, cancelF := tst.ethContextInitializer(tst.timeout)
 	defer cancelF()
 	defer func() {
-		err = nftc.UpdateTransaction(nftc.accountID, nftc.TaskTypeName(), err)
+		err = tst.UpdateTransaction(tst.accountID, tst.TaskTypeName(), err)
 	}()
 
-	_, isPending, err := nftc.transactionByHash(ctx, common.HexToHash(nftc.txHash))
+	_, isPending, err := tst.transactionByHash(ctx, common.HexToHash(tst.txHash))
 	if err != nil {
 		return nil, err
 	}
@@ -151,7 +151,7 @@ func (nftc *TransactionStatusTask) RunTask() (resp interface{}, err error) {
 		return nil, gocelery.ErrTaskRetryable
 	}
 
-	err = nftc.isTransactionSuccessful(ctx, nftc.txHash)
+	err = tst.isTransactionSuccessful(ctx, tst.txHash)
 	if err == nil {
 		return nil, nil
 	}

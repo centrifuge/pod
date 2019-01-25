@@ -7,7 +7,6 @@ import (
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	logging "github.com/ipfs/go-log"
-	"github.com/satori/go.uuid"
 	"golang.org/x/net/context"
 )
 
@@ -44,7 +43,7 @@ func (h grpcHandler) Create(ctx context.Context, req *clientpurchaseorderpb.Purc
 	}
 
 	// validate, persist, and anchor
-	doc, txID, err := h.service.Create(ctxh, doc, uuid.Nil)
+	doc, txID, err := h.service.Create(ctxh, doc)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "could not create document")
@@ -75,7 +74,7 @@ func (h grpcHandler) Update(ctx context.Context, payload *clientpurchaseorderpb.
 		return nil, centerrors.Wrap(err, "could not derive update payload")
 	}
 
-	doc, txID, err := h.service.Update(ctxHeader, doc, uuid.Nil)
+	doc, txID, err := h.service.Update(ctxHeader, doc)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "could not update document")

@@ -14,16 +14,16 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func enqueueJob(t *testing.T, txHash string) (transactions.Service, identity.CentID, *transactions.Transaction, queue.TaskResult) {
+func enqueueJob(t *testing.T, txHash string) (transactions.Manager, identity.CentID, *transactions.Transaction, queue.TaskResult) {
 	queueSrv := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
-	txService := ctx[transactions.BootstrappedService].(transactions.Service)
+	txService := ctx[transactions.BootstrappedService].(transactions.Manager)
 
 	cid := identity.RandomCentID()
 	tx, err := txService.CreateTransaction(cid, "Mint NFT")
 
 	assert.Nil(t, err, "toCentID shouldn't throw an error")
 
-	result, err := queueSrv.EnqueueJob(ethereum.TransactionStatusTaskName, map[string]interface{}{
+	result, err := queueSrv.EnqueueJob(ethereum.EthTXStatusTaskName, map[string]interface{}{
 		transactions.TxIDParam:           tx.ID.String(),
 		ethereum.TransactionAccountParam: cid.String(),
 		ethereum.TransactionTxHashParam:  txHash,

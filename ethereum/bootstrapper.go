@@ -21,7 +21,7 @@ func (Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		return err
 	}
 
-	txService, ok := context[transactions.BootstrappedService].(transactions.Service)
+	txService, ok := context[transactions.BootstrappedService].(transactions.Manager)
 	if !ok {
 		return errors.New("transactions repository not initialised")
 	}

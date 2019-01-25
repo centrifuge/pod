@@ -1,7 +1,6 @@
 package transactions
 
 import (
-	"sync"
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -12,58 +11,56 @@ import (
 	"github.com/satori/go.uuid"
 )
 
-// Service wraps the repository and exposes specific functions.
-type Service interface {
+// Manager wraps the repository and exposes specific functions.
+type Manager interface {
+	ExecuteWithinTX(accountID identity.CentID, existingTxID uuid.UUID, desc string, work func(accountID identity.CentID, txID uuid.UUID, txMan Manager) error) (txID uuid.UUID, err error)
 	CreateTransaction(accountID identity.CentID, desc string) (*Transaction, error)
 	GetTransaction(accountID identity.CentID, id uuid.UUID) (*Transaction, error)
-	SaveTransaction(tx *Transaction) error
-	GetTransactionStatus(identity identity.CentID, id uuid.UUID) (*transactionspb.TransactionStatusResponse, error)
+	saveTransaction(tx *Transaction) error
+	GetTransactionStatus(accountID identity.CentID, id uuid.UUID) (*transactionspb.TransactionStatusResponse, error)
 	WaitForTransaction(accountID identity.CentID, txID uuid.UUID) error
-	RegisterHandler(txID uuid.UUID, onUpdate func(status Status) error)
 }
 
-// NewService returns a Service implementation.
-func NewService(repo Repository) Service {
-	return &service{repo: repo, handlers: make(map[uuid.UUID][]func(status Status) error)}
+// NewManager returns a Manager implementation.
+func NewManager(repo Repository) Manager {
+	return &service{repo: repo}
 }
 
-// service implements Service.
+// service implements Manager.
 type service struct {
-	repo     Repository
-	handlers map[uuid.UUID][]func(status Status) error
-	mu       sync.Mutex
+	repo Repository
 }
 
-// SaveTransaction saves the transaction.
-func (s *service) SaveTransaction(tx *Transaction) error {
+func (s *service) ExecuteWithinTX(accountID identity.CentID, existingTxID uuid.UUID, desc string, work func(accountID identity.CentID, txID uuid.UUID, txMan Manager) error) (txID uuid.UUID, err error) {
+	t, err := s.repo.Get(accountID, existingTxID)
+	if err != nil {
+		t = newTransaction(accountID, desc)
+		err := s.saveTransaction(t)
+		if err != nil {
+			return uuid.Nil, err
+		}
+	}
+	go func() {
+		err = work(accountID, t.ID, s)
+		if err != nil {
+			t.Status = Failed
+		}
+		t.Status = Success
+		err = s.saveTransaction(t)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+	}()
+	return t.ID, nil
+}
+
+// saveTransaction saves the transaction.
+func (s *service) saveTransaction(tx *Transaction) error {
 	err := s.repo.Save(tx)
 	if err != nil {
 		return err
 	}
-
-	if len(tx.Logs) < 1 {
-		return nil
-	}
-
-	s.mu.Lock()
-
-	for _, h := range s.handlers[tx.ID] {
-		err = h(tx.Status)
-		if err != nil {
-			break
-		}
-	}
-	delete(s.handlers, tx.ID)
-	s.mu.Unlock()
-
-	// add the handler error as log and save it again
-	if err != nil {
-		log := tx.Logs[len(tx.Logs)-1]
-		tx.Logs = append(tx.Logs, NewLog(log.Action, err.Error()))
-		tx.Status = Failed
-		return s.SaveTransaction(tx)
-	}
-
 	return nil
 }
 
@@ -74,8 +71,8 @@ func (s *service) GetTransaction(accountID identity.CentID, id uuid.UUID) (*Tran
 
 // CreateTransaction creates a new transaction and saves it to the DB.
 func (s *service) CreateTransaction(accountID identity.CentID, desc string) (*Transaction, error) {
-	tx := NewTransaction(accountID, desc)
-	return tx, s.SaveTransaction(tx)
+	tx := newTransaction(accountID, desc)
+	return tx, s.saveTransaction(tx)
 }
 
 // WaitForTransaction blocks until transaction status is moved from pending state.
@@ -120,12 +117,4 @@ func (s *service) GetTransactionStatus(identity identity.CentID, id uuid.UUID) (
 		Message:       msg,
 		LastUpdated:   utils.ToTimestamp(lastUpdated),
 	}, nil
-}
-
-// RegisterHandler registers the handler to be triggered on transaction update.
-// Handler is removed once triggered.
-func (s *service) RegisterHandler(txID uuid.UUID, onUpdate func(status Status) error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.handlers[txID] = append(s.handlers[txID], onUpdate)
 }

@@ -91,9 +91,10 @@ func (PostBootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("p2p client not initialised")
 	}
 
+	txMan := ctx[transactions.BootstrappedService].(transactions.Manager)
 	anchorTask := &documentAnchorTask{
 		BaseTask: transactions.BaseTask{
-			TxService: ctx[transactions.BootstrappedService].(transactions.Service),
+			TxService: txMan,
 		},
 		config:        cfgService,
 		processor:     DefaultProcessor(idService, p2pClient, anchorRepo, cfg),
@@ -103,7 +104,7 @@ func (PostBootstrapper) Bootstrap(ctx map[string]interface{}) error {
 
 	nftTask := &nftCreatedTask{
 		BaseTask: transactions.BaseTask{
-			TxService: ctx[transactions.BootstrappedService].(transactions.Service),
+			TxService: txMan,
 		},
 		docSrv: ctx[BootstrappedDocumentService].(Service),
 		cfgSrv: cfgService,

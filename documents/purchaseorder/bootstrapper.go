@@ -41,7 +41,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("queue server not initialised")
 	}
 
-	txService, ok := ctx[transactions.BootstrappedService].(transactions.Service)
+	txService, ok := ctx[transactions.BootstrappedService].(transactions.Manager)
 	if !ok {
 		return errors.New("transaction service not initialised")
 	}
