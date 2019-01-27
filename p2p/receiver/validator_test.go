@@ -3,8 +3,9 @@
 package receiver
 
 import (
-	"github.com/centrifuge/go-centrifuge/coredocument"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/coredocument"
 
 	"github.com/centrifuge/go-centrifuge/identity"
 
