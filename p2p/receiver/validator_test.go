@@ -3,17 +3,19 @@
 package receiver
 
 import (
+	"github.com/centrifuge/go-centrifuge/coredocument"
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/identity"
 
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/version"
+
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
-	"github.com/centrifuge/go-centrifuge/version"
-	"github.com/stretchr/testify/assert"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 )
 
 var (
@@ -137,4 +139,20 @@ func TestValidate_handshakeValidator(t *testing.T) {
 	idService.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 	err = hv.Validate(header, &cID, &defaultPID)
 	assert.NoError(t, err)
+}
+
+func TestDocumentAccessValidator_Collaborator(t *testing.T) {
+	account1, err := identity.CentIDFromString("0x010203040506")
+	assert.NoError(t, err)
+	cd, err := coredocument.NewWithCollaborators([]string{account1.String()})
+	assert.NotNil(t, cd.Collaborators)
+
+	docId := cd.DocumentIdentifier
+	req := &p2ppb.GetDocumentRequest{DocumentIdentifier: docId, AccessType: p2ppb.AccessType_ACCESS_TYPE_REQUESTER_VERIFICATION}
+	err = DocumentAccessValidator(cd, req, account1)
+	assert.NoError(t, err)
+
+	account2, err := identity.CentIDFromString("0x012345678910")
+	err = DocumentAccessValidator(cd, req, account2)
+	assert.Error(t, err, "requester does not have access")
 }

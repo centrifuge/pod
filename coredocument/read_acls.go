@@ -147,12 +147,12 @@ func isAccountInRole(role *coredocumentpb.Role, account identity.CentID) bool {
 }
 
 // account returns the ReadAccessValidator tp verify account .
-func accountValidator() ReadAccessValidator {
+func AccountValidator() ReadAccessValidator {
 	return readAccessValidator{}
 }
 
 // nftValidator returns the ReadAccessValidator for nft owner verification.
-func nftValidator(tr TokenRegistry) ReadAccessValidator {
+func NftValidator(tr TokenRegistry) ReadAccessValidator {
 	return readAccessValidator{tokenRegistry: tr}
 }
 

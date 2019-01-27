@@ -33,7 +33,7 @@ func TestReadACLs_initReadRules(t *testing.T) {
 }
 
 func TestReadAccessValidator_AccountCanRead(t *testing.T) {
-	pv := accountValidator()
+	pv := AccountValidator()
 	account, err := identity.CentIDFromString("0x010203040506")
 	assert.NoError(t, err)
 
@@ -92,7 +92,7 @@ func TestReadAccessValidator_NFTOwnerCanRead(t *testing.T) {
 	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
 
 	// account can read
-	validator := nftValidator(nil)
+	validator := NftValidator(nil)
 	err = validator.NFTOwnerCanRead(cd, registry, nil, account)
 	assert.NoError(t, err)
 
@@ -106,7 +106,7 @@ func TestReadAccessValidator_NFTOwnerCanRead(t *testing.T) {
 	tr := mockRegistry{}
 	tr.On("OwnerOf", registry, tokenID).Return(nil, errors.New("failed to get owner of")).Once()
 	addNFTToReadRules(cd, registry, tokenID)
-	validator = nftValidator(tr)
+	validator = NftValidator(tr)
 	err = validator.NFTOwnerCanRead(cd, registry, tokenID, account)
 	assert.Error(t, err)
 	assert.Contains(t, err, "failed to get owner of")
@@ -116,7 +116,7 @@ func TestReadAccessValidator_NFTOwnerCanRead(t *testing.T) {
 	owner := common.BytesToAddress(utils.RandomSlice(20))
 	tr = mockRegistry{}
 	tr.On("OwnerOf", registry, tokenID).Return(owner, nil).Once()
-	validator = nftValidator(tr)
+	validator = NftValidator(tr)
 	err = validator.NFTOwnerCanRead(cd, registry, tokenID, account)
 	assert.Error(t, err)
 	tr.AssertExpectations(t)

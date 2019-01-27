@@ -107,18 +107,16 @@ func HandshakeValidator(networkID uint32, idService identity.Service) ValidatorG
 
 // DocumentAccessValidator validates the GetDocument request against the AccessType indicated in the request
 func DocumentAccessValidator(doc *coredocumentpb.CoreDocument, docReq *p2ppb.GetDocumentRequest, requesterCentID identity.CentID) error {
-
-	rv := coredocument.ReadAccessValidator(nil)
-
+	av := coredocument.AccountValidator()
 	// checks which access type is relevant for the request
 	switch docReq.GetAccessType() {
 	case p2ppb.AccessType_ACCESS_TYPE_REQUESTER_VERIFICATION:
-		if !rv.PeerCanRead(doc, requesterCentID) {
+		if !av.AccountCanRead(doc, requesterCentID) {
 			return errors.New("requester does not have access")
 		}
 	case p2ppb.AccessType_ACCESS_TYPE_NFT_OWNER_VERIFICATION:
 		registry := common.BytesToAddress(docReq.NftRegistryAddress)
-		if rv.NFTOwnerCanRead(doc, registry, docReq.NftTokenId, requesterCentID) != nil {
+		if av.NFTOwnerCanRead(doc, registry, docReq.NftTokenId, requesterCentID) != nil {
 			return errors.New("requester does not have access")
 		}
 	//// case AccessTokenValidation
