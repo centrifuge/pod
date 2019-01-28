@@ -311,7 +311,7 @@ func TestPrepareNewVersion_read_rules(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, cd.ReadRules, 1)
 	assert.Len(t, cd.Roles, 1)
-	assert.Equal(t, cd.Roles[0].Role.Collaborators, [][]byte{{1, 2, 3, 4, 5, 6}})
+	assert.Equal(t, cd.Roles[0].Collaborators, [][]byte{{1, 2, 3, 4, 5, 6}})
 	cd.DocumentRoot = utils.RandomSlice(32)
 
 	// prepare with zero collaborators
@@ -320,7 +320,7 @@ func TestPrepareNewVersion_read_rules(t *testing.T) {
 	assert.NotNil(t, ncd)
 	assert.Len(t, ncd.ReadRules, 1)
 	assert.Len(t, ncd.Roles, 1)
-	assert.Equal(t, ncd.Roles[0].Role.Collaborators, [][]byte{{1, 2, 3, 4, 5, 6}})
+	assert.Equal(t, ncd.Roles[0].Collaborators, [][]byte{{1, 2, 3, 4, 5, 6}})
 
 	// prepare with no unique one
 	ncd, err = PrepareNewVersion(*cd, []string{"0x010203040506"})
@@ -328,7 +328,7 @@ func TestPrepareNewVersion_read_rules(t *testing.T) {
 	assert.NotNil(t, ncd)
 	assert.Len(t, ncd.ReadRules, 1)
 	assert.Len(t, ncd.Roles, 1)
-	assert.Equal(t, ncd.Roles[0].Role.Collaborators, [][]byte{{1, 2, 3, 4, 5, 6}})
+	assert.Equal(t, ncd.Roles[0].Collaborators, [][]byte{{1, 2, 3, 4, 5, 6}})
 
 	// prepare with unique collaborators
 	ncd, err = PrepareNewVersion(*cd, []string{"0x010202030203", "0x020301020304"})
@@ -337,6 +337,6 @@ func TestPrepareNewVersion_read_rules(t *testing.T) {
 	assert.Len(t, ncd.ReadRules, 2)
 	assert.Len(t, ncd.Roles, 2)
 	assert.Equal(t, ncd.Collaborators, [][]byte{{1, 2, 3, 4, 5, 6}, {1, 2, 2, 3, 2, 3}, {2, 3, 1, 2, 3, 4}})
-	assert.Equal(t, ncd.Roles[0].Role.Collaborators, [][]byte{{1, 2, 3, 4, 5, 6}})
-	assert.Equal(t, ncd.Roles[1].Role.Collaborators, [][]byte{{1, 2, 2, 3, 2, 3}, {2, 3, 1, 2, 3, 4}})
+	assert.Equal(t, ncd.Roles[0].Collaborators, [][]byte{{1, 2, 3, 4, 5, 6}})
+	assert.Equal(t, ncd.Roles[1].Collaborators, [][]byte{{1, 2, 2, 3, 2, 3}, {2, 3, 1, 2, 3, 4}})
 }

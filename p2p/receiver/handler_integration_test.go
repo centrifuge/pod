@@ -61,8 +61,9 @@ func TestMain(m *testing.M) {
 
 func TestHandler_GetDocument_nonexistentIdentifier(t *testing.T) {
 	b := utils.RandomSlice(32)
+	centrifugeId := createIdentity(t)
 	req := &p2ppb.GetDocumentRequest{DocumentIdentifier: b}
-	resp, err := handler.GetDocument(context.Background(), req)
+	resp, err := handler.GetDocument(context.Background(), req, centrifugeId)
 	assert.Error(t, err, "must return error")
 	assert.Nil(t, resp, "must be nil")
 }
@@ -101,7 +102,7 @@ func TestHandler_GetDocumentSucceeds(t *testing.T) {
 
 	// Retrieve document from anchor repository with document_identifier
 	getReq := getGetDocumentRequest(doc)
-	getDocResp, err := handler.GetDocument(ctxh, getReq)
+	getDocResp, err := handler.GetDocument(ctxh, getReq, centrifugeId)
 	assert.Nil(t, err)
 	assert.ObjectsAreEqual(getDocResp.Document, doc)
 }

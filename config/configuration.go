@@ -81,6 +81,7 @@ type Configuration interface {
 	GetServerAddress() string
 	GetNumWorkers() int
 	GetWorkerWaitTimeMS() int
+	GetTaskRetries() int
 	GetEthereumNodeURL() string
 	GetEthereumContextReadWaitTimeout() time.Duration
 	GetEthereumContextWaitTimeout() time.Duration
@@ -269,6 +270,11 @@ func (c *configuration) GetServerAddress() string {
 // GetNumWorkers returns number of queue workers defined in the config.
 func (c *configuration) GetNumWorkers() int {
 	return c.GetInt("queue.numWorkers")
+}
+
+// GetTaskRetries returns the number of retries allowed for a queued task
+func (c *configuration) GetTaskRetries() int {
+	return c.GetInt("queue.taskRetries")
 }
 
 // GetWorkerWaitTimeMS returns the queue worker sleep time between cycles.

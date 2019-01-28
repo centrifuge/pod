@@ -107,6 +107,8 @@ queue:
   numWorkers: 2
   # Frees up CPU cycles when worker is waiting for events
   workerWaitTimeMS: 1
+  # Number of retries allowed for a task
+  taskRetries: 10
 
 # Ethereum specific configuration
 ethereum:
