@@ -52,9 +52,8 @@ type contract interface {
 }
 
 type identity struct {
-	contract contract
-	config   id.Config
-	client   ethereum.Client
+	config id.Config
+	client ethereum.Client
 }
 
 func (i identity) prepareTransaction(did DID) (contract, *bind.TransactOpts, error) {
@@ -74,7 +73,7 @@ func (i identity) prepareTransaction(did DID) (contract, *bind.TransactOpts, err
 }
 
 func (i identity) prepareCall(did DID) (contract, *bind.CallOpts, context.CancelFunc, error) {
-	opts, cancelFunc := i.client.GetGethCallOpts()
+	opts, cancelFunc := i.client.GetGethCallOpts(false)
 
 	contract, err := i.bindContract(did)
 	if err != nil {
@@ -112,12 +111,11 @@ func waitForTransaction(client ethereum.Client, txHash common.Hash, txStatus cha
 }
 
 func logTxHash(tx *types.Transaction) {
-	log.Infof("Sent off identity creation Ethereum transaction hash [%x] and Nonce [%v] and Check [%v]", tx.Hash(), tx.Nonce(), tx.CheckNonce())
+	log.Infof("Ethereum transaction created. Hash [%x] and Nonce [%v] and Check [%v]", tx.Hash(), tx.Nonce(), tx.CheckNonce())
 	log.Infof("Transfer pending: 0x%x\n", tx.Hash())
 }
 
 func (i identity) AddKey(did *DID, key Key) (chan *ethereum.WatchTransaction, error) {
-
 	contract, opts, err := i.prepareTransaction(*did)
 	if err != nil {
 		return nil, err

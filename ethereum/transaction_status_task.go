@@ -20,7 +20,7 @@ const (
 	// TransactionTxHashParam contains the name  of the parameter
 	TransactionTxHashParam string = "TxHashParam"
 	// TransactionAccountParam contains the name  of the account
-	TransactionAccountParam  string = "Account ID"
+	TransactionAccountParam string = "Account ID"
 	// TransactionStatusSuccess contains the flag for a successful receipt.status
 	TransactionStatusSuccess uint64 = 1
 
