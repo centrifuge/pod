@@ -63,6 +63,10 @@ func getFactoryAddress() common.Address {
 
 }
 
+func getAnchorAddress() common.Address {
+	return common.HexToAddress(smartContractAddresses.AnchorRepositoryAddr)
+}
+
 // Note: this block will be removed after the identity migration is done
 // currently we are using two versions of centrifuge contracts to not break the compatiblitiy
 // ---------------------------------------------------------------------------------------------------------------------
