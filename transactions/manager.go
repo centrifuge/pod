@@ -1,11 +1,12 @@
 package transactions
 
 import (
+	"context"
+	"fmt"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/identity"
-
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/satori/go.uuid"
@@ -13,7 +14,12 @@ import (
 
 // Manager wraps the repository and exposes specific functions.
 type Manager interface {
-	ExecuteWithinTX(accountID identity.CentID, existingTxID uuid.UUID, desc string, work func(accountID identity.CentID, txID uuid.UUID, txMan Manager) error) (txID uuid.UUID, err error)
+
+	// ExecuteWithinTX executes a transaction within a transaction
+	ExecuteWithinTX(ctx context.Context, accountID identity.CentID, existingTxID uuid.UUID, desc string, work func(accountID identity.CentID, txID uuid.UUID, txMan Manager, err chan<- error)) (txID uuid.UUID, done chan bool, err error)
+
+	// CreateTransaction
+	// TODO [TXManager] remove this once TX Manager update is complete
 	CreateTransaction(accountID identity.CentID, desc string) (*Transaction, error)
 	GetTransaction(accountID identity.CentID, id uuid.UUID) (*Transaction, error)
 	saveTransaction(tx *Transaction) error
@@ -27,32 +33,49 @@ func NewManager(repo Repository) Manager {
 }
 
 // service implements Manager.
+// TODO [TXManager] convert this into an implementation of node.Server and start it at node start so that we can bring down transaction go routines cleanly
 type service struct {
 	repo Repository
 }
 
-func (s *service) ExecuteWithinTX(accountID identity.CentID, existingTxID uuid.UUID, desc string, work func(accountID identity.CentID, txID uuid.UUID, txMan Manager) error) (txID uuid.UUID, err error) {
+// ExecuteWithinTX executes a transaction within a transaction.
+func (s *service) ExecuteWithinTX(ctx context.Context, accountID identity.CentID, existingTxID uuid.UUID, desc string, work func(accountID identity.CentID, txID uuid.UUID, txMan Manager, err chan<- error)) (txID uuid.UUID, done chan bool, err error) {
 	t, err := s.repo.Get(accountID, existingTxID)
 	if err != nil {
 		t = newTransaction(accountID, desc)
 		err := s.saveTransaction(t)
 		if err != nil {
-			return uuid.Nil, err
+			return uuid.Nil, nil, err
 		}
 	}
-	go func() {
-		err = work(accountID, t.ID, s)
-		if err != nil {
-			t.Status = Failed
+	done = make(chan bool)
+	go func(ctx context.Context) {
+		err := make(chan error)
+		go work(accountID, t.ID, s, err)
+
+		select {
+		case e := <-err:
+			if e != nil {
+				t.Status = Failed
+			} else {
+				t.Status = Success
+			}
+			e = s.saveTransaction(t)
+			if e != nil {
+				log.Error(e)
+			}
+		case <-ctx.Done():
+			msg := fmt.Sprintf("Transaction %x for account %s with description %s is stopped because of context close", t.ID, t.CID, t.Description)
+			log.Warningf(msg)
+			t.Logs = append(t.Logs, NewLog("context closed", msg))
+			e := s.saveTransaction(t)
+			if e != nil {
+				log.Error(e)
+			}
 		}
-		t.Status = Success
-		err = s.saveTransaction(t)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-	}()
-	return t.ID, nil
+		done <- true
+	}(ctx)
+	return t.ID, done, nil
 }
 
 // saveTransaction saves the transaction.

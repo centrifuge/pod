@@ -225,12 +225,12 @@ gas prices that means that a concurrent transaction race condition event has hap
 Note: contractMethod must always return "*types.Transaction, error"
 */
 func (gc *gethClient) SubmitTransactionWithRetries(contractMethod interface{}, opts *bind.TransactOpts, params ...interface{}) (*types.Transaction, error) {
+	gc.txMu.Lock()
+	defer gc.txMu.Unlock()
+
 	var current int
 	f := reflect.ValueOf(contractMethod)
 	maxTries := gc.config.GetEthereumMaxRetries()
-
-	gc.txMu.Lock()
-	defer gc.txMu.Unlock()
 
 	var err error
 	for {

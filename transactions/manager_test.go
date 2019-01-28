@@ -3,7 +3,10 @@
 package transactions
 
 import (
+	"context"
 	"testing"
+
+	"github.com/satori/go.uuid"
 
 	"github.com/centrifuge/go-centrifuge/identity"
 
@@ -11,6 +14,51 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestService_ExecuteWithinTX_happy(t *testing.T) {
+	cid := identity.RandomCentID()
+	srv := ctx[BootstrappedService].(Manager)
+	tid, done, err := srv.ExecuteWithinTX(context.Background(), cid, uuid.Nil, "", func(accountID identity.CentID, txID uuid.UUID, txMan Manager, err chan<- error) {
+		err <- nil
+	})
+	<-done
+	assert.NoError(t, err)
+	assert.NotNil(t, tid)
+	trn, err := srv.GetTransaction(cid, tid)
+	assert.NoError(t, err)
+	assert.Equal(t, Success, trn.Status)
+}
+
+func TestService_ExecuteWithinTX_err(t *testing.T) {
+	cid := identity.RandomCentID()
+	srv := ctx[BootstrappedService].(Manager)
+	tid, done, err := srv.ExecuteWithinTX(context.Background(), cid, uuid.Nil, "", func(accountID identity.CentID, txID uuid.UUID, txMan Manager, err chan<- error) {
+		err <- errors.New("dummy")
+	})
+	<-done
+	assert.NoError(t, err)
+	assert.NotNil(t, tid)
+	trn, err := srv.GetTransaction(cid, tid)
+	assert.NoError(t, err)
+	assert.Equal(t, Failed, trn.Status)
+}
+
+func TestService_ExecuteWithinTX_ctxDone(t *testing.T) {
+	cid := identity.RandomCentID()
+	srv := ctx[BootstrappedService].(Manager)
+	ctx, canc := context.WithCancel(context.Background())
+	tid, done, err := srv.ExecuteWithinTX(ctx, cid, uuid.Nil, "", func(accountID identity.CentID, txID uuid.UUID, txMan Manager, err chan<- error) {
+		// doing nothing
+	})
+	canc()
+	<-done
+	assert.NoError(t, err)
+	assert.NotNil(t, tid)
+	trn, err := srv.GetTransaction(cid, tid)
+	assert.NoError(t, err)
+	assert.Equal(t, Pending, trn.Status)
+	assert.Contains(t, trn.Logs[0].Message, "stopped because of context close")
+}
 
 func TestService_GetTransaction(t *testing.T) {
 	repo := ctx[BootstrappedRepo].(Repository)

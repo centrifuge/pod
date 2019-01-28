@@ -177,11 +177,12 @@ func (s *ethereumPaymentObligation) sendMintTransaction(
 	documentID []byte) (uuid.UUID, error) {
 
 	// Run within transaction
-	txID, err := s.txService.ExecuteWithinTX(cid, uuid.Nil, "Minting NFT", func(accountID identity.CentID, txID uuid.UUID, txMan transactions.Manager) error {
+	// We use context.Background() for now so that the transaction is only limited by ethereum timeouts
+	txID, _, err := s.txService.ExecuteWithinTX(context.Background(), cid, uuid.Nil, "Minting NFT", func(accountID identity.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
 		ethTX, err := s.ethClient.SubmitTransactionWithRetries(contract.Mint, opts, requestData.To, requestData.TokenID, requestData.TokenURI, requestData.AnchorID,
 			requestData.MerkleRoot, requestData.Values, requestData.Salts, requestData.Proofs)
 		if err != nil {
-			return err
+			errOut <- err
 		}
 
 		log.Infof("Sent off ethTX to mint [tokenID: %x, anchor: %x, registry: %x] to payment obligation contract. Ethereum transaction hash [%x] and Nonce [%v] and Check [%v]",
@@ -190,26 +191,26 @@ func (s *ethereumPaymentObligation) sendMintTransaction(
 
 		res, err := ethereum.QueueEthTXStatusTask(accountID, txID, ethTX.Hash(), true, s.queue)
 		if err != nil {
-			return err
+			errOut <- err
 		}
 
 		_, err = res.Get(s.cfg.GetEthereumContextWaitTimeout())
 		if err != nil {
-			return err
+			errOut <- err
 		}
 
 		res, err = documents.InitNFTCreatedTask(
 			s.queue, txID, accountID, documentID, registry, requestData.TokenID.Bytes())
 		if err != nil {
-			return err
+			errOut <- err
 		}
 
 		_, err = res.Get(s.cfg.GetEthereumContextWaitTimeout())
 		if err != nil {
-			return err
+			errOut <- err
 		}
 
-		return nil
+		errOut <- nil
 	})
 
 	return txID, err
