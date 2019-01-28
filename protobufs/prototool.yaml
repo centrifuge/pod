@@ -98,7 +98,6 @@ gen:
       google/api/annotations.proto: google.golang.org/genproto/googleapis/api/annotations
       google/api/http.proto: google.golang.org/genproto/googleapis/api/annotations
       protoc-gen-swagger/options/annotations.proto: github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger/options
-      document/service.proto: github.com/centrifuge/go-centrifuge/protobufs/gen/go/document
       coredocument/coredocument.proto: github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument
       precise-proofs/proofs/proto/proof.proto: github.com/centrifuge/precise-proofs/proofs/proto
       invoice/invoice.proto: github.com/centrifuge/centrifuge-protobufs/gen/go/invoice
