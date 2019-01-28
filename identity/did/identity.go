@@ -2,10 +2,11 @@ package did
 
 import (
 	"context"
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	"math/big"
 	"strings"
 	"time"
+
+	"github.com/ethereum/go-ethereum/accounts/abi"
 
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
@@ -41,11 +42,10 @@ type Identity interface {
 	GetKey(did *DID, key [32]byte) (*KeyResponse, error)
 
 	// RawExecute calls the execute method on the identity contract
-	RawExecute(did *DID,to common.Address, data []byte) (chan *ethereum.WatchTransaction, error)
+	RawExecute(did *DID, to common.Address, data []byte) (chan *ethereum.WatchTransaction, error)
 
 	// Execute encodes the arguments and calls the execute methods
-	Execute(did *DID,to common.Address,contractAbi, methodName string, args ...interface{}) (chan *ethereum.WatchTransaction, error)
-
+	Execute(did *DID, to common.Address, contractAbi, methodName string, args ...interface{}) (chan *ethereum.WatchTransaction, error)
 }
 
 type contract interface {
@@ -165,8 +165,7 @@ func (i identity) GetKey(did *DID, key [32]byte) (*KeyResponse, error) {
 
 }
 
-
-func (i identity) RawExecute(did *DID,to common.Address, data []byte) (chan *ethereum.WatchTransaction, error)  {
+func (i identity) RawExecute(did *DID, to common.Address, data []byte) (chan *ethereum.WatchTransaction, error) {
 	contract, opts, err := i.prepareTransaction(*did)
 	if err != nil {
 		return nil, err
@@ -175,9 +174,9 @@ func (i identity) RawExecute(did *DID,to common.Address, data []byte) (chan *eth
 	// send ether currently not needed
 	value := big.NewInt(0)
 
-	tx, err := i.client.SubmitTransactionWithRetries(contract.Execute,opts,to,value,data)
+	tx, err := i.client.SubmitTransactionWithRetries(contract.Execute, opts, to, value, data)
 	if err != nil {
-		log.Infof("could not execute to identity contract: %v[txHash: %s] toAddress: %s : %v", tx.Hash(),to.String(), err)
+		log.Infof("could not execute to identity contract: %v[txHash: %s] toAddress: %s : %v", tx.Hash(), to.String(), err)
 		return nil, errors.New("could not execute to identity contract: %v", err)
 	}
 	logTxHash(tx)
@@ -190,14 +189,14 @@ func (i identity) RawExecute(did *DID,to common.Address, data []byte) (chan *eth
 
 }
 
-func (i identity) Execute(did *DID,to common.Address,contractAbi, methodName string, args ...interface{}) (chan *ethereum.WatchTransaction, error) {
+func (i identity) Execute(did *DID, to common.Address, contractAbi, methodName string, args ...interface{}) (chan *ethereum.WatchTransaction, error) {
 	abi, err := abi.JSON(strings.NewReader(contractAbi))
 	if err != nil {
 		return nil, err
 	}
-	data, err := abi.Pack(methodName,args...)
+	data, err := abi.Pack(methodName, args...)
 	if err != nil {
 		return nil, err
 	}
-	return i.RawExecute(did,to,data)
+	return i.RawExecute(did, to, data)
 }

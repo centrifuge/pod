@@ -67,6 +67,3 @@ func TestAddKey_fail(t *testing.T) {
 	assert.Error(t, err, "no contract code at given address")
 
 }
-
-
-
