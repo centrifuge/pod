@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/centrifuge/go-centrifuge/ethereum"
-	"github.com/centrifuge/go-centrifuge/identity"
+	id "github.com/centrifuge/go-centrifuge/identity"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	logging "github.com/ipfs/go-log"
@@ -14,17 +14,17 @@ var log = logging.Logger("identity")
 
 // Service is the interface for identity related interactions
 type Service interface {
-	CreateIdentity(ctx context.Context) (id *DID, confirmations chan *identity.WatchIdentity, err error)
+	CreateIdentity(ctx context.Context) (id *DID, confirmations chan *id.WatchIdentity, err error)
 }
 
 type service struct {
-	config          identity.Config
+	config          id.Config
 	factoryContract *FactoryContract
 	client          ethereum.Client
 }
 
 // NewService returns a new identity service
-func NewService(config identity.Config, factoryContract *FactoryContract, client ethereum.Client) Service {
+func NewService(config id.Config, factoryContract *FactoryContract, client ethereum.Client) Service {
 
 	return &service{config: config, factoryContract: factoryContract, client: client}
 }
@@ -41,7 +41,7 @@ func CalculateCreatedAddress(address common.Address, nonce uint64) common.Addres
 	return crypto.CreateAddress(address, nonce)
 }
 
-func (s *service) CreateIdentity(ctx context.Context) (id *DID, confirmations chan *identity.WatchIdentity, err error) {
+func (s *service) CreateIdentity(ctx context.Context) (id *DID, confirmations chan *id.WatchIdentity, err error) {
 	opts, err := s.client.GetTxOpts(s.config.GetEthereumDefaultAccountName())
 	if err != nil {
 		log.Infof("Failed to get txOpts from Ethereum client: %v", err)
