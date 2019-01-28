@@ -31,6 +31,43 @@ service DocumentService {
       description: "Creates a list of precise proofs for the specified fields of the given version of the document given by ID"
     };
   }
+  rpc UpdateDocumentAccessToken(UpdateDocumentAccessTokenRequest) returns (UpdateDocumentAccessTokenResponse) {
+    option (google.api.http) = {
+      post: "/document/{delegating_document_identifier}/update_access_token"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "Appends an access token to the indicated delegating document"
+    };
+  }
+}
+
+message UpdateDocumentAccessTokenRequest {
+  // The document which should contain the access token referenced below
+  bytes delegating_document_identifier = 1;
+  // The access token to be appended to the indicated document above
+  AccessToken access_token = 2;
+}
+
+message UpdateDocumentAccessTokenResponse{
+  bool accepted = 1;
+}
+
+message AccessToken {
+  // The identifier is an internal 256bit word
+  bytes identifier = 1;
+  // The identity granting access to the document
+  bytes granter = 3;
+  // The identity being granted access to the document
+  bytes grantee = 4;
+  // Role identifier is the identifier on the read rule that this token should be mapped to
+  bytes role_identifier = 5;
+  // Original identifier of the document
+  bytes document_identifier = 2;
+  // Cryptographic signature that an access token is valid
+  bytes signature = 6;
+  // The public key of the signed message
+  bytes key = 7;
 }
 
 message CreateDocumentProofRequest {
