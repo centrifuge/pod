@@ -73,37 +73,37 @@ func newEthereumPaymentObligation(
 	}
 }
 
-func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, documentID []byte, depositAddress string, proofFields []string) (*MintRequest, error) {
+func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, documentID []byte, depositAddress string, proofFields []string) (MintRequest, error) {
 	model, err := s.docSrv.GetCurrentVersion(ctx, documentID)
 	if err != nil {
-		return nil, err
+		return MintRequest{}, err
 	}
 
 	corDoc, err := model.PackCoreDocument()
 	if err != nil {
-		return nil, err
+		return MintRequest{}, err
 	}
 
 	proofs, err := s.docSrv.CreateProofs(ctx, documentID, proofFields)
 	if err != nil {
-		return nil, err
+		return MintRequest{}, err
 	}
 
 	toAddress := common.HexToAddress(depositAddress)
 
 	anchorID, err := anchors.ToAnchorID(corDoc.CurrentVersion)
 	if err != nil {
-		return nil, nil
+		return MintRequest{}, nil
 	}
 
 	rootHash, err := anchors.ToDocumentRoot(corDoc.DocumentRoot)
 	if err != nil {
-		return nil, nil
+		return MintRequest{}, nil
 	}
 
 	requestData, err := NewMintRequest(toAddress, anchorID, proofs.FieldProofs, rootHash)
 	if err != nil {
-		return nil, err
+		return MintRequest{}, err
 	}
 
 	return requestData, nil
@@ -172,7 +172,7 @@ func (s *ethereumPaymentObligation) sendMintTransaction(
 	cid identity.CentID,
 	contract ethereumPaymentObligationContract,
 	opts *bind.TransactOpts,
-	requestData *MintRequest,
+	requestData MintRequest,
 	registry common.Address,
 	documentID []byte) (uuid.UUID, error) {
 
@@ -245,7 +245,7 @@ type MintRequest struct {
 }
 
 // NewMintRequest converts the parameters and returns a struct with needed parameter for minting
-func NewMintRequest(to common.Address, anchorID anchors.AnchorID, proofs []*proofspb.Proof, rootHash [32]byte) (*MintRequest, error) {
+func NewMintRequest(to common.Address, anchorID anchors.AnchorID, proofs []*proofspb.Proof, rootHash [32]byte) (MintRequest, error) {
 
 	// tokenID is uint256 in Solidity (256 bits | max value is 2^256-1)
 	// tokenID should be random 32 bytes (32 byte = 256 bits)
@@ -253,10 +253,10 @@ func NewMintRequest(to common.Address, anchorID anchors.AnchorID, proofs []*proo
 	tokenURI := "http:=//www.centrifuge.io/DUMMY_URI_SERVICE"
 	proofData, err := createProofData(proofs)
 	if err != nil {
-		return nil, err
+		return MintRequest{}, err
 	}
 
-	return &MintRequest{
+	return MintRequest{
 		To:         to,
 		TokenID:    tokenID,
 		TokenURI:   tokenURI,

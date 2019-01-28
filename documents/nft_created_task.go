@@ -2,6 +2,10 @@ package documents
 
 import (
 	"context"
+	"fmt"
+
+	"github.com/centrifuge/go-centrifuge/centerrors"
+	"github.com/centrifuge/go-centrifuge/code"
 
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -98,10 +102,15 @@ func (t *nftCreatedTask) RunTask() (result interface{}, err error) {
 		err = t.UpdateTransaction(t.accountID, t.TaskTypeName(), err)
 	}()
 
-	ctx := context.WithValue(context.Background(), config.AccountHeaderKey, t.accountID.String())
-	ctx, err = contextutil.Context(ctx, t.cfgSrv)
+	tc, err := t.cfgSrv.GetAccount(t.accountID[:])
 	if err != nil {
-		return nil, err
+		apiLog.Error(err)
+		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
+	}
+
+	ctx, err := contextutil.New(context.Background(), tc)
+	if err != nil {
+		return false, errors.New("failed to get context header: %v", err)
 	}
 
 	model, err := t.docSrv.GetCurrentVersion(ctx, t.documentID)

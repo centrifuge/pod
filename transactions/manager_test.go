@@ -6,12 +6,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/satori/go.uuid"
-
-	"github.com/centrifuge/go-centrifuge/identity"
-
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 )
 

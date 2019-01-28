@@ -36,7 +36,7 @@ func New(ctx context.Context, cfg config.Account) (context.Context, error) {
 
 // WithTX returns a context with TX ID
 func WithTX(ctx context.Context, txID uuid.UUID) context.Context {
-	return context.WithValue(ctx, self, txID)
+	return context.WithValue(ctx, tx, txID)
 }
 
 // Self returns Self CentID.

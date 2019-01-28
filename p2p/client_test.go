@@ -53,7 +53,7 @@ func TestGetSignatureForDocument_fail_connect(t *testing.T) {
 	c, err := cfg.GetConfig()
 	assert.NoError(t, err)
 	c = updateKeys(c)
-	ctx := testingconfig.CreateTenantContext(t, c)
+	ctx := testingconfig.CreateAccountContext(t, c)
 
 	assert.Nil(t, err, "centrifugeId not initialized correctly ")
 
@@ -78,7 +78,7 @@ func TestGetSignatureForDocument_fail_version_check(t *testing.T) {
 	c, err := cfg.GetConfig()
 	assert.NoError(t, err)
 	c = updateKeys(c)
-	ctx := testingconfig.CreateTenantContext(t, c)
+	ctx := testingconfig.CreateAccountContext(t, c)
 
 	_, err = p2pcommon.PrepareP2PEnvelope(ctx, c.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: coreDoc})
 	assert.NoError(t, err, "signature request could not be created")
@@ -100,7 +100,7 @@ func TestGetSignatureForDocument_fail_centrifugeId(t *testing.T) {
 	c, err := cfg.GetConfig()
 	assert.NoError(t, err)
 	c = updateKeys(c)
-	ctx := testingconfig.CreateTenantContext(t, c)
+	ctx := testingconfig.CreateAccountContext(t, c)
 
 	assert.Nil(t, err, "centrifugeId not initialized correctly ")
 
