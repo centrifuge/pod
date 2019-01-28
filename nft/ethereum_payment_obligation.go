@@ -176,11 +176,13 @@ func (s *ethereumPaymentObligation) sendMintTransaction(
 	registry common.Address,
 	documentID []byte) (uuid.UUID, error) {
 
+	r := requestData.copy()
+
 	// Run within transaction
 	// We use context.Background() for now so that the transaction is only limited by ethereum timeouts
 	txID, _, err := s.txService.ExecuteWithinTX(context.Background(), cid, uuid.Nil, "Minting NFT", func(accountID identity.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
-		ethTX, err := s.ethClient.SubmitTransactionWithRetries(contract.Mint, opts, requestData.To, requestData.TokenID, requestData.TokenURI, requestData.AnchorID,
-			requestData.MerkleRoot, requestData.Values, requestData.Salts, requestData.Proofs)
+		ethTX, err := s.ethClient.SubmitTransactionWithRetries(contract.Mint, opts, r.To, r.TokenID, r.TokenURI, r.AnchorID,
+			r.MerkleRoot, r.Values, r.Salts, r.Proofs)
 		if err != nil {
 			errOut <- err
 		}
@@ -265,6 +267,19 @@ func NewMintRequest(to common.Address, anchorID anchors.AnchorID, proofs []*proo
 		Values:     proofData.Values,
 		Salts:      proofData.Salts,
 		Proofs:     proofData.Proofs}, nil
+}
+
+func (m MintRequest) copy() MintRequest {
+	return MintRequest{
+		m.To,
+		new(big.Int).Set(m.TokenID),
+		m.TokenURI,
+		new(big.Int).Set(m.AnchorID),
+		m.MerkleRoot,
+		m.Values,
+		m.Salts,
+		m.Proofs,
+	}
 }
 
 type proofData struct {
