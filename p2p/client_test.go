@@ -34,11 +34,11 @@ type MockMessenger struct {
 	mock.Mock
 }
 
-func (mm *MockMessenger) init(id ...protocol.ID) {
+func (mm *MockMessenger) Init(id ...protocol.ID) {
 	mm.Called(id)
 }
 
-func (mm *MockMessenger) sendMessage(ctx context.Context, p libp2pPeer.ID, pmes *protocolpb.P2PEnvelope, protoc protocol.ID) (*protocolpb.P2PEnvelope, error) {
+func (mm *MockMessenger) SendMessage(ctx context.Context, p libp2pPeer.ID, pmes *protocolpb.P2PEnvelope, protoc protocol.ID) (*protocolpb.P2PEnvelope, error) {
 	args := mm.Called(ctx, p, pmes, protoc)
 	resp, _ := args.Get(0).(*protocolpb.P2PEnvelope)
 	return resp, args.Error(1)
@@ -60,7 +60,7 @@ func TestGetSignatureForDocument_fail_connect(t *testing.T) {
 	_, err = p2pcommon.PrepareP2PEnvelope(ctx, c.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: coreDoc})
 	assert.NoError(t, err, "signature request could not be created")
 
-	m.On("sendMessage", ctx, mock.Anything, mock.Anything, p2pcommon.ProtocolForCID(centrifugeId)).Return(nil, errors.New("some error"))
+	m.On("SendMessage", ctx, mock.Anything, mock.Anything, p2pcommon.ProtocolForCID(centrifugeId)).Return(nil, errors.New("some error"))
 	resp, err := testClient.getSignatureForDocument(ctx, *coreDoc, centrifugeId)
 	m.AssertExpectations(t)
 	assert.Error(t, err, "must fail")
@@ -83,7 +83,7 @@ func TestGetSignatureForDocument_fail_version_check(t *testing.T) {
 	_, err = p2pcommon.PrepareP2PEnvelope(ctx, c.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: coreDoc})
 	assert.NoError(t, err, "signature request could not be created")
 
-	m.On("sendMessage", ctx, mock.Anything, mock.Anything, p2pcommon.ProtocolForCID(centrifugeId)).Return(testClient.createSignatureResp("", nil), nil)
+	m.On("SendMessage", ctx, mock.Anything, mock.Anything, p2pcommon.ProtocolForCID(centrifugeId)).Return(testClient.createSignatureResp("", nil), nil)
 	resp, err := testClient.getSignatureForDocument(ctx, *coreDoc, centrifugeId)
 	m.AssertExpectations(t)
 	assert.Error(t, err, "must fail")
@@ -109,7 +109,7 @@ func TestGetSignatureForDocument_fail_centrifugeId(t *testing.T) {
 
 	randomBytes := utils.RandomSlice(identity.CentIDLength)
 	signature := &coredocumentpb.Signature{EntityId: randomBytes, PublicKey: utils.RandomSlice(32)}
-	m.On("sendMessage", ctx, mock.Anything, mock.Anything, p2pcommon.ProtocolForCID(centrifugeId)).Return(testClient.createSignatureResp(version.GetVersion().String(), signature), nil)
+	m.On("SendMessage", ctx, mock.Anything, mock.Anything, p2pcommon.ProtocolForCID(centrifugeId)).Return(testClient.createSignatureResp(version.GetVersion().String(), signature), nil)
 
 	resp, err := testClient.getSignatureForDocument(ctx, *coreDoc, centrifugeId)
 
