@@ -32,7 +32,7 @@ func TestDocumentAnchorTask_updateTransaction(t *testing.T) {
 
 	// no error and success
 	tx := newTransaction(accountID, "")
-	assert.NoError(t, task.TxService.saveTransaction(tx))
+	assert.NoError(t, task.TxService.SaveTransaction(tx))
 	task.TxID = tx.ID
 	assert.NoError(t, task.UpdateTransaction(accountID, name, nil))
 	tx, err = task.TxService.GetTransaction(accountID, task.TxID)
@@ -42,7 +42,7 @@ func TestDocumentAnchorTask_updateTransaction(t *testing.T) {
 
 	// failed task
 	tx = newTransaction(accountID, "")
-	assert.NoError(t, task.TxService.saveTransaction(tx))
+	assert.NoError(t, task.TxService.SaveTransaction(tx))
 	task.TxID = tx.ID
 	err = task.UpdateTransaction(accountID, name, errors.New("anchor error"))
 	assert.EqualError(t, errors.GetErrs(err)[0], "anchor error")
@@ -53,7 +53,7 @@ func TestDocumentAnchorTask_updateTransaction(t *testing.T) {
 
 	// success but pending
 	tx = newTransaction(accountID, "")
-	assert.NoError(t, task.TxService.saveTransaction(tx))
+	assert.NoError(t, task.TxService.SaveTransaction(tx))
 	task.TxID = tx.ID
 	task.Next = true
 	err = task.UpdateTransaction(accountID, name, nil)

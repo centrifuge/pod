@@ -22,7 +22,7 @@ type Manager interface {
 	// TODO [TXManager] remove this once TX Manager update is complete
 	CreateTransaction(accountID identity.CentID, desc string) (*Transaction, error)
 	GetTransaction(accountID identity.CentID, id uuid.UUID) (*Transaction, error)
-	saveTransaction(tx *Transaction) error
+	SaveTransaction(tx *Transaction) error
 	GetTransactionStatus(accountID identity.CentID, id uuid.UUID) (*transactionspb.TransactionStatusResponse, error)
 	WaitForTransaction(accountID identity.CentID, txID uuid.UUID) error
 }
@@ -43,7 +43,7 @@ func (s *service) ExecuteWithinTX(ctx context.Context, accountID identity.CentID
 	t, err := s.repo.Get(accountID, existingTxID)
 	if err != nil {
 		t = newTransaction(accountID, desc)
-		err := s.saveTransaction(t)
+		err := s.SaveTransaction(t)
 		if err != nil {
 			return uuid.Nil, nil, err
 		}
@@ -60,7 +60,7 @@ func (s *service) ExecuteWithinTX(ctx context.Context, accountID identity.CentID
 			} else {
 				t.Status = Success
 			}
-			e = s.saveTransaction(t)
+			e = s.SaveTransaction(t)
 			if e != nil {
 				log.Error(e)
 			}
@@ -68,7 +68,7 @@ func (s *service) ExecuteWithinTX(ctx context.Context, accountID identity.CentID
 			msg := fmt.Sprintf("Transaction %s for account %s with description \"%s\" is stopped because of context close", t.ID.String(), t.CID, t.Description)
 			log.Warningf(msg)
 			t.Logs = append(t.Logs, NewLog("context closed", msg))
-			e := s.saveTransaction(t)
+			e := s.SaveTransaction(t)
 			if e != nil {
 				log.Error(e)
 			}
@@ -78,8 +78,8 @@ func (s *service) ExecuteWithinTX(ctx context.Context, accountID identity.CentID
 	return t.ID, done, nil
 }
 
-// saveTransaction saves the transaction.
-func (s *service) saveTransaction(tx *Transaction) error {
+// SaveTransaction saves the transaction.
+func (s *service) SaveTransaction(tx *Transaction) error {
 	err := s.repo.Save(tx)
 	if err != nil {
 		return err
@@ -95,7 +95,7 @@ func (s *service) GetTransaction(accountID identity.CentID, id uuid.UUID) (*Tran
 // CreateTransaction creates a new transaction and saves it to the DB.
 func (s *service) CreateTransaction(accountID identity.CentID, desc string) (*Transaction, error) {
 	tx := newTransaction(accountID, desc)
-	return tx, s.saveTransaction(tx)
+	return tx, s.SaveTransaction(tx)
 }
 
 // WaitForTransaction blocks until transaction status is moved from pending state.

@@ -81,5 +81,5 @@ func (b *BaseTask) updateStatus(accountID identity.CentID, status Status, taskTy
 	// status particular to the task
 	tx.TaskStatus[taskTypeName] = status
 	tx.Logs = append(tx.Logs, NewLog(taskTypeName, message))
-	return b.TxService.saveTransaction(tx)
+	return b.TxService.SaveTransaction(tx)
 }
