@@ -34,8 +34,13 @@ func NewDIDFromString(address string) DID {
 type Identity interface {
 	// AddKey adds a key to identity contract
 	AddKey(did *DID, key Key) (chan *ethereum.WatchTransaction, error)
+
 	// GetKey return a key from the identity contract
 	GetKey(did *DID, key [32]byte) (*KeyResponse, error)
+
+	// Execute calls the execute method on the identity contract
+	Execute(did *DID,to common.Address, data []byte)
+
 }
 
 type contract interface {
@@ -49,6 +54,8 @@ type contract interface {
 
 	// transactions
 	AddKey(opts *bind.TransactOpts, _key [32]byte, _purpose *big.Int, _keyType *big.Int) (*types.Transaction, error)
+
+	Execute(opts *bind.TransactOpts, _to common.Address, _value *big.Int, _data []byte) (*types.Transaction, error)
 }
 
 type identity struct {
@@ -150,5 +157,30 @@ func (i identity) GetKey(did *DID, key [32]byte) (*KeyResponse, error) {
 	}
 
 	return &KeyResponse{result.Key, result.Purposes, result.RevokedAt}, nil
+
+}
+
+
+func (i identity) Execute(did *DID,to common.Address, data []byte) (chan *ethereum.WatchTransaction, error)  {
+	contract, opts, err := i.prepareTransaction(*did)
+	if err != nil {
+		return nil, err
+	}
+
+	// send ether currently not needed
+	value := big.NewInt(0)
+
+	tx, err := i.client.SubmitTransactionWithRetries(contract.Execute,opts,to,value,data)
+	if err != nil {
+		log.Infof("could not execute to identity contract: %v[txHash: %s] toAddress: %s : %v", tx.Hash(),to.String(), err)
+		return nil, errors.New("could not execute to identity contract: %v", err)
+	}
+	logTxHash(tx)
+
+	txStatus := make(chan *ethereum.WatchTransaction)
+	// TODO will be replaced with transaction Status task
+	go waitForTransaction(i.client, tx.Hash(), txStatus)
+
+	return txStatus, nil
 
 }
