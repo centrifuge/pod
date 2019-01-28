@@ -1,4 +1,4 @@
-package p2p
+package messenger
 
 import (
 	"bufio"
@@ -7,18 +7,16 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/protobuf/proto"
-
 	"github.com/centrifuge/go-centrifuge/errors"
-
-	"github.com/libp2p/go-libp2p-host"
-	"github.com/libp2p/go-libp2p-protocol"
-
 	pb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
 	ggio "github.com/gogo/protobuf/io"
+	"github.com/golang/protobuf/proto"
+	logging "github.com/ipfs/go-log"
 	"github.com/jbenet/go-context/io"
+	"github.com/libp2p/go-libp2p-host"
 	inet "github.com/libp2p/go-libp2p-net"
 	libp2pPeer "github.com/libp2p/go-libp2p-peer"
+	"github.com/libp2p/go-libp2p-protocol"
 )
 
 const (
@@ -32,6 +30,8 @@ const (
 	// ErrInvalidatedMessageSender must be used when the message sender object created is no longer valid (connection has dropped)
 	ErrInvalidatedMessageSender = errors.Error("message sender has been invalidated")
 )
+
+var log = logging.Logger("p2p-messenger")
 
 type bufferedWriteCloser interface {
 	ggio.WriteCloser
@@ -58,7 +58,8 @@ func (w *bufferedDelimitedWriter) Flush() error {
 	return w.Writer.Flush()
 }
 
-type p2pMessenger struct {
+// P2PMessenger is a libp2p messenger using protobufs and length delimited encoding
+type P2PMessenger struct {
 	host host.Host     // the network services we need
 	self libp2pPeer.ID // Local peer (yourself)
 
@@ -73,9 +74,10 @@ type p2pMessenger struct {
 	handler func(ctx context.Context, peer libp2pPeer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (*pb.P2PEnvelope, error)
 }
 
-func newP2PMessenger(ctx context.Context, host host.Host, p2pTimeout time.Duration,
-	handler func(ctx context.Context, peer libp2pPeer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (*pb.P2PEnvelope, error)) *p2pMessenger {
-	return &p2pMessenger{
+// NewP2PMessenger returns a libp2p-messenger
+func NewP2PMessenger(ctx context.Context, host host.Host, p2pTimeout time.Duration,
+	handler func(ctx context.Context, peer libp2pPeer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (*pb.P2PEnvelope, error)) *P2PMessenger {
+	return &P2PMessenger{
 		ctx:     ctx,
 		host:    host,
 		self:    host.ID(),
@@ -85,19 +87,19 @@ func newP2PMessenger(ctx context.Context, host host.Host, p2pTimeout time.Durati
 	}
 }
 
-// init initiates listening to given set of protocol streams
-func (mes *p2pMessenger) init(protocols ...protocol.ID) {
+// Init initiates listening to given set of protocol streams
+func (mes *P2PMessenger) Init(protocols ...protocol.ID) {
 	for _, p := range protocols {
 		mes.host.SetStreamHandler(p, mes.handleNewStream)
 	}
 }
 
 // handleNewStream implements the inet.StreamHandler
-func (mes *p2pMessenger) handleNewStream(s inet.Stream) {
+func (mes *P2PMessenger) handleNewStream(s inet.Stream) {
 	go mes.handleNewMessage(s)
 }
 
-func (mes *p2pMessenger) handleNewMessage(s inet.Stream) {
+func (mes *P2PMessenger) handleNewMessage(s inet.Stream) {
 	ctx := mes.ctx
 	// ok to use. we defer close stream in this func
 	cr := ctxio.NewReader(ctx, s)
@@ -155,8 +157,8 @@ func (mes *p2pMessenger) handleNewMessage(s inet.Stream) {
 	}
 }
 
-// sendMessage sends out a request
-func (mes *p2pMessenger) sendMessage(ctx context.Context, p libp2pPeer.ID, pmes *pb.P2PEnvelope, protoc protocol.ID) (*pb.P2PEnvelope, error) {
+// SendMessage sends out a request
+func (mes *P2PMessenger) SendMessage(ctx context.Context, p libp2pPeer.ID, pmes *pb.P2PEnvelope, protoc protocol.ID) (*pb.P2PEnvelope, error) {
 	ms, err := mes.messageSenderForPeerAndProto(p, protoc)
 	if err != nil {
 		return nil, err
@@ -170,7 +172,7 @@ func (mes *p2pMessenger) sendMessage(ctx context.Context, p libp2pPeer.ID, pmes 
 	return rpmes, nil
 }
 
-func (mes *p2pMessenger) messageSenderForPeerAndProto(p libp2pPeer.ID, protoc protocol.ID) (*messageSender, error) {
+func (mes *P2PMessenger) messageSenderForPeerAndProto(p libp2pPeer.ID, protoc protocol.ID) (*messageSender, error) {
 	mes.smlk.Lock()
 	ms, ok := mes.strmap[p][protoc]
 	if ok {
@@ -214,7 +216,7 @@ type messageSender struct {
 	lk     sync.Mutex
 	p      libp2pPeer.ID
 	protoc protocol.ID
-	mes    *p2pMessenger
+	mes    *P2PMessenger
 
 	invalid   bool
 	singleMes int
