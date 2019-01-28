@@ -2,6 +2,7 @@ package utils
 
 import (
 	"crypto/rand"
+	"encoding/binary"
 	"math/big"
 
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -157,4 +158,16 @@ func SimulateJSONDecodeForGocelery(kwargs map[string]interface{}) (map[string]in
 // IsValidByteSliceForLength checks if the len(slice) == length.
 func IsValidByteSliceForLength(slice []byte, length int) bool {
 	return len(slice) == length
+}
+
+// ConvertIntToByte32 converts an integer into a fixed length byte array with BigEndian order
+func ConvertIntToByte32(n int) ([32]byte, error) {
+	buf := make([]byte, 32)
+	binary.BigEndian.PutUint64(buf, uint64(n))
+	return SliceToByte32(buf)
+}
+
+// ConvertByte32ToInt converts a fixed length byte array into int with BigEndian order
+func ConvertByte32ToInt(nb [32]byte) int {
+	return int(binary.BigEndian.Uint64(nb[:]))
 }

@@ -7,18 +7,13 @@ import (
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/config"
-
+	cented25519 "github.com/centrifuge/go-centrifuge/crypto/ed25519"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-
 	"github.com/centrifuge/go-centrifuge/p2p/common"
+	ms "github.com/centrifuge/go-centrifuge/p2p/messenger"
 	"github.com/centrifuge/go-centrifuge/p2p/receiver"
 	pb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
-
-	"github.com/libp2p/go-libp2p-protocol"
-
-	"github.com/centrifuge/go-centrifuge/errors"
-
-	cented25519 "github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	"github.com/ipfs/go-cid"
 	ds "github.com/ipfs/go-datastore"
 	"github.com/ipfs/go-ipfs-addr"
@@ -29,6 +24,7 @@ import (
 	"github.com/libp2p/go-libp2p-kad-dht"
 	libp2pPeer "github.com/libp2p/go-libp2p-peer"
 	pstore "github.com/libp2p/go-libp2p-peerstore"
+	"github.com/libp2p/go-libp2p-protocol"
 	ma "github.com/multiformats/go-multiaddr"
 	mh "github.com/multiformats/go-multihash"
 )
@@ -37,9 +33,12 @@ var log = logging.Logger("p2p-server")
 
 // messenger is an interface to wrap p2p messaging implementation
 type messenger interface {
-	init(protocols ...protocol.ID)
 
-	sendMessage(ctx context.Context, p libp2pPeer.ID, pmes *pb.P2PEnvelope, protoc protocol.ID) (*pb.P2PEnvelope, error)
+	// Init inits the messenger
+	Init(protocols ...protocol.ID)
+
+	// SendMessage sends a message through messenger
+	SendMessage(ctx context.Context, p libp2pPeer.ID, pmes *pb.P2PEnvelope, protoc protocol.ID) (*pb.P2PEnvelope, error)
 }
 
 // peer implements node.Server
@@ -85,7 +84,7 @@ func (s *peer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- 
 		return
 	}
 
-	s.mes = newP2PMessenger(ctx, s.host, nc.GetP2PConnectionTimeout(), s.handlerCreator().HandleInterceptor)
+	s.mes = ms.NewP2PMessenger(ctx, s.host, nc.GetP2PConnectionTimeout(), s.handlerCreator().HandleInterceptor)
 	err = s.initProtocols()
 	if err != nil {
 		startupErr <- err
@@ -115,13 +114,13 @@ func (s *peer) initProtocols() error {
 		}
 		protocols = append(protocols, p2pcommon.ProtocolForCID(CID))
 	}
-	s.mes.init(protocols...)
+	s.mes.Init(protocols...)
 	return nil
 }
 
 func (s *peer) InitProtocolForCID(CID identity.CentID) {
 	p := p2pcommon.ProtocolForCID(CID)
-	s.mes.init(p)
+	s.mes.Init(p)
 }
 
 func (s *peer) createSigningKey(pubKey, privKey string) (priv crypto.PrivKey, pub crypto.PubKey, err error) {

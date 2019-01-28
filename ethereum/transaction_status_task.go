@@ -23,12 +23,19 @@ const (
 
 	// TransactionAccountParam contains the name  of the account
 	TransactionAccountParam string = "Account ID"
-
-	transactionStatusSuccess uint64 = 1
+	// TransactionStatusSuccess contains the flag for a successful receipt.status
+	TransactionStatusSuccess uint64 = 1
 
 	// ErrTransactionFailed error when transaction failed
 	ErrTransactionFailed = errors.Error("Transaction failed")
 )
+
+// WatchTransaction holds the transaction status received form chain event
+type WatchTransaction struct {
+	Status uint64
+	txHash string
+	Error  error
+}
 
 // TransactionStatusTask is struct for the task to check an Ethereum transaction
 type TransactionStatusTask struct {
@@ -127,7 +134,7 @@ func (tst *TransactionStatusTask) isTransactionSuccessful(ctx context.Context, t
 		return err
 	}
 
-	if receipt.Status != transactionStatusSuccess {
+	if receipt.Status != TransactionStatusSuccess {
 		return ErrTransactionFailed
 	}
 
