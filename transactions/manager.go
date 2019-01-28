@@ -65,7 +65,7 @@ func (s *service) ExecuteWithinTX(ctx context.Context, accountID identity.CentID
 				log.Error(e)
 			}
 		case <-ctx.Done():
-			msg := fmt.Sprintf("Transaction %x for account %s with description %s is stopped because of context close", t.ID, t.CID, t.Description)
+			msg := fmt.Sprintf("Transaction %s for account %s with description \"%s\" is stopped because of context close", t.ID.String(), t.CID, t.Description)
 			log.Warningf(msg)
 			t.Logs = append(t.Logs, NewLog("context closed", msg))
 			e := s.saveTransaction(t)
