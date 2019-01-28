@@ -15,7 +15,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils"
 )
 
-// Config defines required methods required for the documents package.
+// Config defines required methods required for the document package.
 type Config interface {
 	GetNetworkID() uint32
 	GetIdentityID() ([]byte, error)

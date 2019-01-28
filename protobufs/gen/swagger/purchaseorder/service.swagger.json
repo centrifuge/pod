@@ -290,7 +290,7 @@
           "type": "string"
         }
       },
-      "title": "ResponseHeader contains a set of common fields for most documents"
+      "title": "ResponseHeader contains a set of common fields for most document"
     }
   }
 }

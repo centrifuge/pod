@@ -37,7 +37,7 @@ func (m *GetRequest) Reset()         { *m = GetRequest{} }
 func (m *GetRequest) String() string { return proto.CompactTextString(m) }
 func (*GetRequest) ProtoMessage()    {}
 func (*GetRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_393a7cd179a9d71e, []int{0}
+	return fileDescriptor_service_21a9eec553bc4305, []int{0}
 }
 func (m *GetRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetRequest.Unmarshal(m, b)
@@ -76,7 +76,7 @@ func (m *GetVersionRequest) Reset()         { *m = GetVersionRequest{} }
 func (m *GetVersionRequest) String() string { return proto.CompactTextString(m) }
 func (*GetVersionRequest) ProtoMessage()    {}
 func (*GetVersionRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_393a7cd179a9d71e, []int{1}
+	return fileDescriptor_service_21a9eec553bc4305, []int{1}
 }
 func (m *GetVersionRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetVersionRequest.Unmarshal(m, b)
@@ -122,7 +122,7 @@ func (m *PurchaseOrderCreatePayload) Reset()         { *m = PurchaseOrderCreateP
 func (m *PurchaseOrderCreatePayload) String() string { return proto.CompactTextString(m) }
 func (*PurchaseOrderCreatePayload) ProtoMessage()    {}
 func (*PurchaseOrderCreatePayload) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_393a7cd179a9d71e, []int{2}
+	return fileDescriptor_service_21a9eec553bc4305, []int{2}
 }
 func (m *PurchaseOrderCreatePayload) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_PurchaseOrderCreatePayload.Unmarshal(m, b)
@@ -169,7 +169,7 @@ func (m *PurchaseOrderUpdatePayload) Reset()         { *m = PurchaseOrderUpdateP
 func (m *PurchaseOrderUpdatePayload) String() string { return proto.CompactTextString(m) }
 func (*PurchaseOrderUpdatePayload) ProtoMessage()    {}
 func (*PurchaseOrderUpdatePayload) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_393a7cd179a9d71e, []int{3}
+	return fileDescriptor_service_21a9eec553bc4305, []int{3}
 }
 func (m *PurchaseOrderUpdatePayload) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_PurchaseOrderUpdatePayload.Unmarshal(m, b)
@@ -222,7 +222,7 @@ func (m *PurchaseOrderResponse) Reset()         { *m = PurchaseOrderResponse{} }
 func (m *PurchaseOrderResponse) String() string { return proto.CompactTextString(m) }
 func (*PurchaseOrderResponse) ProtoMessage()    {}
 func (*PurchaseOrderResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_393a7cd179a9d71e, []int{4}
+	return fileDescriptor_service_21a9eec553bc4305, []int{4}
 }
 func (m *PurchaseOrderResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_PurchaseOrderResponse.Unmarshal(m, b)
@@ -256,7 +256,7 @@ func (m *PurchaseOrderResponse) GetData() *PurchaseOrderData {
 	return nil
 }
 
-// ResponseHeader contains a set of common fields for most documents
+// ResponseHeader contains a set of common fields for most document
 type ResponseHeader struct {
 	DocumentId           string   `protobuf:"bytes,1,opt,name=document_id,json=documentId,proto3" json:"document_id,omitempty"`
 	VersionId            string   `protobuf:"bytes,2,opt,name=version_id,json=versionId,proto3" json:"version_id,omitempty"`
@@ -272,7 +272,7 @@ func (m *ResponseHeader) Reset()         { *m = ResponseHeader{} }
 func (m *ResponseHeader) String() string { return proto.CompactTextString(m) }
 func (*ResponseHeader) ProtoMessage()    {}
 func (*ResponseHeader) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_393a7cd179a9d71e, []int{5}
+	return fileDescriptor_service_21a9eec553bc4305, []int{5}
 }
 func (m *ResponseHeader) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ResponseHeader.Unmarshal(m, b)
@@ -373,7 +373,7 @@ func (m *PurchaseOrderData) Reset()         { *m = PurchaseOrderData{} }
 func (m *PurchaseOrderData) String() string { return proto.CompactTextString(m) }
 func (*PurchaseOrderData) ProtoMessage()    {}
 func (*PurchaseOrderData) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_393a7cd179a9d71e, []int{6}
+	return fileDescriptor_service_21a9eec553bc4305, []int{6}
 }
 func (m *PurchaseOrderData) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_PurchaseOrderData.Unmarshal(m, b)
@@ -743,10 +743,10 @@ var _DocumentService_serviceDesc = grpc.ServiceDesc{
 }
 
 func init() {
-	proto.RegisterFile("purchaseorder/service.proto", fileDescriptor_service_393a7cd179a9d71e)
+	proto.RegisterFile("purchaseorder/service.proto", fileDescriptor_service_21a9eec553bc4305)
 }
 
-var fileDescriptor_service_393a7cd179a9d71e = []byte{
+var fileDescriptor_service_21a9eec553bc4305 = []byte{
 	// 963 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x55, 0x5f, 0x6f, 0x1b, 0x45,
 	0x10, 0xd7, 0xe5, 0x8f, 0x63, 0xaf, 0xed, 0xa4, 0xde, 0xb6, 0x70, 0xbd, 0x34, 0xf4, 0x30, 0xad,

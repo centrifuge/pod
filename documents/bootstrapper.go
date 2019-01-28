@@ -15,7 +15,7 @@ const (
 	// BootstrappedRegistry is the key to ServiceRegistry in Bootstrap context
 	BootstrappedRegistry = "BootstrappedRegistry"
 
-	// BootstrappedDocumentRepository is the key to the database repository of documents
+	// BootstrappedDocumentRepository is the key to the database repository of document
 	BootstrappedDocumentRepository = "BootstrappedDocumentRepository"
 
 	// BootstrappedDocumentService is the key to bootstrapped document service
@@ -63,7 +63,7 @@ func (PostBootstrapper) Bootstrap(ctx map[string]interface{}) error {
 
 	cfg, ok := ctx[bootstrap.BootstrappedConfig].(Config)
 	if !ok {
-		return errors.New("documents config not initialised")
+		return errors.New("document config not initialised")
 	}
 
 	queueSrv, ok := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)

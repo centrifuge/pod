@@ -17,7 +17,7 @@ func init() {
 	// generateSigningKeyCmd represents the generateSigningKey command
 	var generateSigningKeyCmd = &cobra.Command{
 		Use:   "generatekeys",
-		Short: "generate key for use with centrifuge documents",
+		Short: "generate key for use with centrifuge document",
 		Long:  ``,
 		Run: func(cmd *cobra.Command, args []string) {
 			if createSigningKeyParam {

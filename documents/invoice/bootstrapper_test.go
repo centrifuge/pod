@@ -19,7 +19,7 @@ func TestBootstrapper_registerInvoiceService(t *testing.T) {
 	//
 	////coreDocument embeds a invoice
 	//coreDocument := testingutils.GenerateCoreDocument()
-	//registry := documents.GetRegistryInstance()
+	//registry := document.GetRegistryInstance()
 	//
 	//documentType, err := cd.GetTypeUrl(coreDocument)
 	//assert.Nil(t, err, "should not throw an error because document contains a type")

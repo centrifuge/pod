@@ -5,7 +5,7 @@ import (
 )
 
 // Repository defines the required methods for a document repository.
-// Can be implemented by any type that stores the documents. Ex: levelDB, sql etc...
+// Can be implemented by any type that stores the document. Ex: levelDB, sql etc...
 type Repository interface {
 	// Exists checks if the id, owned by accountID, exists in DB
 	Exists(accountID, id []byte) bool
@@ -25,7 +25,7 @@ type Repository interface {
 	Register(model Model)
 }
 
-// NewDBRepository creates an instance of the documents Repository
+// NewDBRepository creates an instance of the document Repository
 func NewDBRepository(db storage.Repository) Repository {
 	return &repo{db: db}
 }

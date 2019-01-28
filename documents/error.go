@@ -11,7 +11,7 @@ const (
 	// ErrDocumentConfigAccountID must be used for errors related to accountID operations
 	ErrDocumentConfigAccountID = errors.Error("error with accountID operations")
 
-	// ErrDocumentBootstrap must be used for errors related to documents package bootstrapping
+	// ErrDocumentBootstrap must be used for errors related to document package bootstrapping
 	ErrDocumentBootstrap = errors.Error("error when bootstrapping document package")
 
 	// ErrDocumentIdentifier must be used for errors caused by document identifier problems

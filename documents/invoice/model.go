@@ -22,7 +22,7 @@ import (
 
 const prefix string = "invoice"
 
-// Invoice implements the documents.Model keeps track of invoice related fields and state
+// Invoice implements the document.Model keeps track of invoice related fields and state
 type Invoice struct {
 	InvoiceNumber    string // invoice number or reference number
 	SenderName       string // name of the sender company
