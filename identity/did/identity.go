@@ -44,7 +44,7 @@ type Identity interface {
 	// RawExecute calls the execute method on the identity contract
 	RawExecute(did *DID, to common.Address, data []byte) (chan *ethereum.WatchTransaction, error)
 
-	// Execute encodes the arguments and calls the execute methods
+	// Execute creates the abi encoding an calls the execute method on the identity contract
 	Execute(did *DID, to common.Address, contractAbi, methodName string, args ...interface{}) (chan *ethereum.WatchTransaction, error)
 }
 
@@ -171,12 +171,12 @@ func (i identity) RawExecute(did *DID, to common.Address, data []byte) (chan *et
 		return nil, err
 	}
 
-	// send ether currently not needed
+	// default: no ether should be send
 	value := big.NewInt(0)
 
 	tx, err := i.client.SubmitTransactionWithRetries(contract.Execute, opts, to, value, data)
 	if err != nil {
-		log.Infof("could not execute to identity contract: %v[txHash: %s] toAddress: %s : %v", tx.Hash(), to.String(), err)
+		log.Infof("could not call execute method on identity contract: %v[txHash: %s] toAddress: %s : %v", tx.Hash(), to.String(), err)
 		return nil, errors.New("could not execute to identity contract: %v", err)
 	}
 	logTxHash(tx)
@@ -194,6 +194,8 @@ func (i identity) Execute(did *DID, to common.Address, contractAbi, methodName s
 	if err != nil {
 		return nil, err
 	}
+
+	// Pack encodes the parameters and additionally checks if the method and arguments are defined correctly
 	data, err := abi.Pack(methodName, args...)
 	if err != nil {
 		return nil, err

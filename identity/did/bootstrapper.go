@@ -71,7 +71,7 @@ func getAnchorAddress() common.Address {
 // currently we are using two versions of centrifuge contracts to not break the compatiblitiy
 // ---------------------------------------------------------------------------------------------------------------------
 func migrateNewIdentityContracts() {
-	//runNewSmartContractMigrations()
+	runNewSmartContractMigrations()
 	smartContractAddresses = getSmartContractAddresses()
 
 }

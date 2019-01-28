@@ -30,10 +30,10 @@ func TestExecute_successful(t *testing.T) {
 	did := deployIdentityContract(t)
 	anchorAddress := getAnchorAddress()
 
+	// init params
 	testAnchorId, _ := anchors.ToAnchorID(utils.RandomSlice(32))
 	rootHash := utils.RandomSlice(32)
 	testRootHash, _ := anchors.ToDocumentRoot(rootHash)
-
 	proofs := [][anchors.DocumentProofLength]byte{utils.RandomByte32()}
 
 	watchTrans, err := idSrv.Execute(did, anchorAddress, anchors.AnchorContractABI, "commit", testAnchorId.BigInt(), testRootHash, proofs)
