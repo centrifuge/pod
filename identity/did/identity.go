@@ -2,7 +2,9 @@ package did
 
 import (
 	"context"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"math/big"
+	"strings"
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -38,8 +40,11 @@ type Identity interface {
 	// GetKey return a key from the identity contract
 	GetKey(did *DID, key [32]byte) (*KeyResponse, error)
 
-	// Execute calls the execute method on the identity contract
-	Execute(did *DID,to common.Address, data []byte)
+	// RawExecute calls the execute method on the identity contract
+	RawExecute(did *DID,to common.Address, data []byte) (chan *ethereum.WatchTransaction, error)
+
+	// Execute encodes the arguments and calls the execute methods
+	Execute(did *DID,to common.Address,contractAbi, methodName string, args ...interface{}) (chan *ethereum.WatchTransaction, error)
 
 }
 
@@ -161,7 +166,7 @@ func (i identity) GetKey(did *DID, key [32]byte) (*KeyResponse, error) {
 }
 
 
-func (i identity) Execute(did *DID,to common.Address, data []byte) (chan *ethereum.WatchTransaction, error)  {
+func (i identity) RawExecute(did *DID,to common.Address, data []byte) (chan *ethereum.WatchTransaction, error)  {
 	contract, opts, err := i.prepareTransaction(*did)
 	if err != nil {
 		return nil, err
@@ -183,4 +188,16 @@ func (i identity) Execute(did *DID,to common.Address, data []byte) (chan *ethere
 
 	return txStatus, nil
 
+}
+
+func (i identity) Execute(did *DID,to common.Address,contractAbi, methodName string, args ...interface{}) (chan *ethereum.WatchTransaction, error) {
+	abi, err := abi.JSON(strings.NewReader(contractAbi))
+	if err != nil {
+		return nil, err
+	}
+	data, err := abi.Pack(methodName,args...)
+	if err != nil {
+		return nil, err
+	}
+	return i.RawExecute(did,to,data)
 }

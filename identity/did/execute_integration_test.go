@@ -35,6 +35,34 @@ func bindAnchorContract(t *testing.T, address common.Address) *anchors.AnchorCon
 }
 
 
+func TestExecute_successful(t *testing.T) {
+	client := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
+	idSrv := ctx[BootstrappedDID].(Identity)
+	did := deployIdentityContract(t)
+	anchorAddress := getAnchorAddress()
+
+
+	testAnchorId, _ := anchors.ToAnchorID(utils.RandomSlice(32))
+	rootHash := utils.RandomSlice(32)
+	testRootHash, _ := anchors.ToDocumentRoot(rootHash)
+
+	proofs := [][anchors.DocumentProofLength]byte{utils.RandomByte32()}
+
+	watchTrans, err := idSrv.Execute(did, anchorAddress,anchors.AnchorContractABI,"commit", testAnchorId.BigInt(),testRootHash,proofs)
+	assert.Nil(t, err, "Execute method calls should be successful")
+
+	txStatus := <-watchTrans
+	assert.Equal(t, ethereum.TransactionStatusSuccess, txStatus.Status, "transaction should be successful")
+
+	// check if anchor has been added
+	opts, _ := client.GetGethCallOpts(false)
+	anchorContract := bindAnchorContract(t, anchorAddress)
+	result, err := anchorContract.GetAnchorById(opts,testAnchorId.BigInt())
+	assert.Nil(t, err, "get anchor should be successful")
+	assert.Equal(t, rootHash[:],result.DocumentRoot[:], "committed anchor should be the same")
+
+}
+
 func TestExecute_withAnchor_successful(t *testing.T) {
 	client := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
 	anchorAddress := getAnchorAddress()
@@ -46,10 +74,12 @@ func TestExecute_withAnchor_successful(t *testing.T) {
 
 	//commit without execute method
 	txStatus := commitAnchorDirect(t,anchorContract, testAnchorId,testRootHash)
-	assert.Equal(t, ethereum.TransactionStatusSuccess, txStatus.Status, "transactions")
+	assert.Equal(t, ethereum.TransactionStatusSuccess, txStatus.Status, "transaction should be successful")
 
 	opts, _ := client.GetGethCallOpts(false)
 	result, err := anchorContract.GetAnchorById(opts,testAnchorId.BigInt())
 	assert.Nil(t, err, "get anchor should be successful")
 	assert.Equal(t, rootHash[:],result.DocumentRoot[:], "committed anchor should be the same")
+
+
 }
