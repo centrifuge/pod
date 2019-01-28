@@ -6,7 +6,9 @@ Models
 The idea of having a model is to make the business functions of the document clearer and more readable. This also enables proper types and validations on the fields that require them. When an API call is received, the following list of transformations/steps needs to be executed on the request object.
 
 1. Model conversion: this would ensure that proper types are created for each of the fields of the input document plus handling basic level validations that does not require business level understanding of the document. eg: telephone numbers, IDs
+
 2. The converted model is updated using the existing document. After this there would be two versions of the document in the system old and the new
+
 3. The two versions of the document are passed through a purpose specific validator chain that implements the following interface. (see chapter on validation)
 
 Model Storage
@@ -19,15 +21,11 @@ would depend on database access such as BI (Although we do NOT recommend directl
 	// all invoice fields with proper types here
 	}
 
-	func (i *InvoiceModel) RecordTransition(action Action) error {
+	func (i *InvoiceModel) PackCoreDocument() *coredocumentpb.CoreDocument {
 	panic("implement me")
 	}
 
-	func (i *InvoiceModel) CoreDocument() *coredocumentpb.CoreDocument {
-	panic("implement me")
-	}
-
-	func (i *InvoiceModel) SetCoreDocument(cd *coredocumentpb.CoreDocument) error {
+	func (i *InvoiceModel) UnpackCoreDocument(cd *coredocumentpb.CoreDocument) error {
 	panic("implement me")
 	}
 
@@ -115,24 +113,10 @@ Controllers are generally the first contact point between an external request an
 
 Services in the CentNode must deal with only specific Model object plus its related objects. Eg: InvoiceService would only deal with InvoiceModel. Since in many cases a model object may need to be created based on some external input such as a coredocument, the following are some good base interfaces for a service to implement,
 
-	type ModelDeriver interface {
-	DeriveWithCD(cd *coredocument.CoreDocument) (Model, error)
-
-	}
-
-	// InvoiceModel specific deriver
-	type InvoiceModelDeriver interface {
-	// Embedded ModelDeriver
-	ModelDeriver
-
-	DeriveWithCreateInvoiceInput(*CreateInvoiceInput) (Model, error)
-	}
-
-
-	// Implementation of InvoiceModelDeriver
+	// Implementation of deriving model objects
 	type InvoiceService struct { }
 
-	func (srv *InvoiceService) DeriveWithCD(cd *coredocument.CoreDocument) (*InvoiceModel, error) {
+	func (srv *InvoiceService) DeriveFromCoreDocument(cd *coredocument.CoreDocument) (*InvoiceModel, error) {
 	panic("Implement me");
 	}
 
