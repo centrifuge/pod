@@ -34,6 +34,7 @@ type ethereumPaymentObligationContract interface {
 	OwnerOf(opts *bind.CallOpts, tokenID *big.Int) (common.Address, error)
 }
 
+// Config is the config interface for nft package
 type Config interface {
 	GetEthereumContextWaitTimeout() time.Duration
 }

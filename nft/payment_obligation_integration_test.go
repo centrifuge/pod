@@ -102,8 +102,8 @@ func TestPaymentObligationService_mint(t *testing.T) {
 	cd, err := doc.PackCoreDocument()
 	assert.NoError(t, err)
 	assert.Len(t, cd.Roles, 2)
-	assert.Len(t, cd.Roles[1].Role.Nfts, 1)
-	nft := cd.Roles[1].Role.Nfts[0]
+	assert.Len(t, cd.Roles[1].Nfts, 1)
+	nft := cd.Roles[1].Nfts[0]
 	enft, err := coredocument.ConstructNFT(registry, b.Bytes())
 	assert.NoError(t, err)
 	assert.Equal(t, enft, nft)
