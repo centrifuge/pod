@@ -63,12 +63,7 @@ func (b *BaseTask) UpdateTransaction(accountID identity.CentID, taskTypeName str
 	}
 
 	if b.Next {
-		err = b.updateStatus(accountID, Pending, taskTypeName, "")
-		if err != nil {
-			return err
-		}
-
-		return nil
+		return b.updateStatus(accountID, Pending, taskTypeName, "")
 	}
 
 	log.Infof("Transaction successful:%v\n", b.TxID.String())
