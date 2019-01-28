@@ -80,6 +80,11 @@ func AddNFTToReadRules(cd *coredocumentpb.CoreDocument, registry common.Address,
 	}
 
 	role := new(coredocumentpb.Role)
+	rk, err := utils.ConvertIntToByte32(len(cd.Roles))
+	if err != nil {
+		return err
+	}
+	role.RoleKey = rk[:]
 	role.Nfts = append(role.Nfts, nft)
 	addNewRule(cd, role, coredocumentpb.Action_ACTION_READ)
 	return FillSalts(cd)
