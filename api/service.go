@@ -48,7 +48,7 @@ func registerServices(ctx context.Context, cfg Config, grpcServer *grpc.Server, 
 		return errors.New("failed to get %s", nft.BootstrappedPayObService)
 	}
 
-	// document (common)
+	// documents (common)
 	documentpb.RegisterDocumentServiceServer(grpcServer, documents.GRPCHandler(configService, registry))
 	err := documentpb.RegisterDocumentServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
 	if err != nil {

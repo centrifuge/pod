@@ -12,7 +12,7 @@ import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 import "protoc-gen-swagger/options/annotations.proto";
 
-// PurchaseOrderDocumentService contains all common interactions for purchaseorder document
+// PurchaseOrderDocumentService contains all common interactions for purchaseorder documents
 service DocumentService {
   rpc Create(PurchaseOrderCreatePayload) returns (PurchaseOrderResponse) {
     option (google.api.http) = {
@@ -76,7 +76,7 @@ message PurchaseOrderResponse {
   PurchaseOrderData data = 2;
 }
 
-// ResponseHeader contains a set of common fields for most document
+// ResponseHeader contains a set of common fields for most documents
 message ResponseHeader {
   string document_id = 1;
   string version_id = 2;

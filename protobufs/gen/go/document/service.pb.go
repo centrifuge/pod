@@ -40,7 +40,7 @@ func (m *UpdateAccessTokenPayload) Reset()         { *m = UpdateAccessTokenPaylo
 func (m *UpdateAccessTokenPayload) String() string { return proto.CompactTextString(m) }
 func (*UpdateAccessTokenPayload) ProtoMessage()    {}
 func (*UpdateAccessTokenPayload) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_ea0c2d887e0bc764, []int{0}
+	return fileDescriptor_service_6db8efe3c4a04f30, []int{0}
 }
 func (m *UpdateAccessTokenPayload) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_UpdateAccessTokenPayload.Unmarshal(m, b)
@@ -88,7 +88,7 @@ func (m *AccessTokenParams) Reset()         { *m = AccessTokenParams{} }
 func (m *AccessTokenParams) String() string { return proto.CompactTextString(m) }
 func (*AccessTokenParams) ProtoMessage()    {}
 func (*AccessTokenParams) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_ea0c2d887e0bc764, []int{1}
+	return fileDescriptor_service_6db8efe3c4a04f30, []int{1}
 }
 func (m *AccessTokenParams) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_AccessTokenParams.Unmarshal(m, b)
@@ -135,7 +135,7 @@ func (m *CreateDocumentProofRequest) Reset()         { *m = CreateDocumentProofR
 func (m *CreateDocumentProofRequest) String() string { return proto.CompactTextString(m) }
 func (*CreateDocumentProofRequest) ProtoMessage()    {}
 func (*CreateDocumentProofRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_ea0c2d887e0bc764, []int{2}
+	return fileDescriptor_service_6db8efe3c4a04f30, []int{2}
 }
 func (m *CreateDocumentProofRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CreateDocumentProofRequest.Unmarshal(m, b)
@@ -176,7 +176,7 @@ func (m *CreateDocumentProofRequest) GetFields() []string {
 	return nil
 }
 
-// ResponseHeader contains a set of common fields for most document
+// ResponseHeader contains a set of common fields for most documents
 type ResponseHeader struct {
 	DocumentId           string   `protobuf:"bytes,1,opt,name=document_id,json=documentId,proto3" json:"document_id,omitempty"`
 	VersionId            string   `protobuf:"bytes,2,opt,name=version_id,json=versionId,proto3" json:"version_id,omitempty"`
@@ -190,7 +190,7 @@ func (m *ResponseHeader) Reset()         { *m = ResponseHeader{} }
 func (m *ResponseHeader) String() string { return proto.CompactTextString(m) }
 func (*ResponseHeader) ProtoMessage()    {}
 func (*ResponseHeader) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_ea0c2d887e0bc764, []int{3}
+	return fileDescriptor_service_6db8efe3c4a04f30, []int{3}
 }
 func (m *ResponseHeader) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ResponseHeader.Unmarshal(m, b)
@@ -243,7 +243,7 @@ func (m *DocumentProof) Reset()         { *m = DocumentProof{} }
 func (m *DocumentProof) String() string { return proto.CompactTextString(m) }
 func (*DocumentProof) ProtoMessage()    {}
 func (*DocumentProof) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_ea0c2d887e0bc764, []int{4}
+	return fileDescriptor_service_6db8efe3c4a04f30, []int{4}
 }
 func (m *DocumentProof) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DocumentProof.Unmarshal(m, b)
@@ -293,7 +293,7 @@ func (m *Proof) Reset()         { *m = Proof{} }
 func (m *Proof) String() string { return proto.CompactTextString(m) }
 func (*Proof) ProtoMessage()    {}
 func (*Proof) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_ea0c2d887e0bc764, []int{5}
+	return fileDescriptor_service_6db8efe3c4a04f30, []int{5}
 }
 func (m *Proof) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Proof.Unmarshal(m, b)
@@ -362,7 +362,7 @@ func (m *CreateDocumentProofForVersionRequest) Reset()         { *m = CreateDocu
 func (m *CreateDocumentProofForVersionRequest) String() string { return proto.CompactTextString(m) }
 func (*CreateDocumentProofForVersionRequest) ProtoMessage()    {}
 func (*CreateDocumentProofForVersionRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_ea0c2d887e0bc764, []int{6}
+	return fileDescriptor_service_6db8efe3c4a04f30, []int{6}
 }
 func (m *CreateDocumentProofForVersionRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CreateDocumentProofForVersionRequest.Unmarshal(m, b)
@@ -525,9 +525,9 @@ var _DocumentService_serviceDesc = grpc.ServiceDesc{
 	Metadata: "document/service.proto",
 }
 
-func init() { proto.RegisterFile("document/service.proto", fileDescriptor_service_ea0c2d887e0bc764) }
+func init() { proto.RegisterFile("document/service.proto", fileDescriptor_service_6db8efe3c4a04f30) }
 
-var fileDescriptor_service_ea0c2d887e0bc764 = []byte{
+var fileDescriptor_service_6db8efe3c4a04f30 = []byte{
 	// 699 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x54, 0xcd, 0x6e, 0x13, 0x49,
 	0x10, 0xd6, 0xd8, 0xf9, 0x2d, 0x3b, 0x1b, 0xa5, 0xb3, 0xca, 0x8e, 0xbc, 0x49, 0xb6, 0x77, 0x36,

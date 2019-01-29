@@ -11,7 +11,7 @@ import "google/api/annotations.proto";
 import "precise-proofs/proofs/proto/proof.proto";
 import "protoc-gen-swagger/options/annotations.proto";
 
-// DocumentService contains all common interactions for document
+// DocumentService contains all common interactions for documents
 service DocumentService {
   rpc CreateDocumentProof(CreateDocumentProofRequest) returns (DocumentProof) {
     option (google.api.http) = {
@@ -53,7 +53,7 @@ message CreateDocumentProofRequest {
   repeated string fields = 3;
 }
 
-// ResponseHeader contains a set of common fields for most document
+// ResponseHeader contains a set of common fields for most documents
 message ResponseHeader {
   string document_id = 1;
   string version_id = 2;
