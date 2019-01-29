@@ -54,5 +54,5 @@ Here you can create, run and test nodes with various behaviours to observe how t
 #### Speed improvements for local testing
 At `configs/local/local.json`,
 - Set `runMigrations` to `false` after the contracts are deployed once at the local geth node.
-- Set `createHostConfigs` to `false` after configs have been generated in `peerconfigs` dir, note that if you add new hosts using `hostConfig` you would need this to be set to `true` again to generate the config for the new host.
+- Set `createHostConfigs` to `false` after configs have been generated in `hostconfigs` dir, note that if you add new hosts using `hostConfig` you would need this to be set to `true` again to generate the config for the new host.
 
