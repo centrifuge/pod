@@ -293,9 +293,7 @@ func (p *PurchaseOrder) UnpackCoreDocument(coreDoc *coredocumentpb.CoreDocument)
 	}
 
 	if coreDoc.EmbeddedData == nil ||
-		coreDoc.EmbeddedData.TypeUrl != documenttypes.PurchaseOrderDataTypeUrl ||
-		coreDoc.EmbeddedDataSalts == nil ||
-		coreDoc.EmbeddedDataSalts.TypeUrl != documenttypes.PurchaseOrderSaltsTypeUrl {
+		coreDoc.EmbeddedData.TypeUrl != documenttypes.PurchaseOrderDataTypeUrl {
 		return errors.New("trying to convert document with incorrect schema")
 	}
 
@@ -306,13 +304,18 @@ func (p *PurchaseOrder) UnpackCoreDocument(coreDoc *coredocumentpb.CoreDocument)
 	}
 
 	p.loadFromP2PProtobuf(poData)
-	poSalt := &purchaseorderpb.PurchaseOrderDataSalts{}
-	err = proto.Unmarshal(coreDoc.EmbeddedDataSalts.Value, poSalt)
-	if err != nil {
-		return err
-	}
 
-	p.PurchaseOrderSalt = poSalt
+	if coreDoc.EmbeddedDataSalts == nil {
+		p.PurchaseOrderSalt = p.getPurchaseOrderSalts(poData)
+	} else {
+		poSalt := &purchaseorderpb.PurchaseOrderDataSalts{}
+		err = proto.Unmarshal(coreDoc.EmbeddedDataSalts.Value, poSalt)
+		if err != nil {
+			return err
+		}
+
+		p.PurchaseOrderSalt = poSalt
+	}
 
 	p.CoreDocument = new(coredocumentpb.CoreDocument)
 	proto.Merge(p.CoreDocument, coreDoc)

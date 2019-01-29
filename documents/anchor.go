@@ -61,6 +61,7 @@ func AnchorDocument(ctx context.Context, model Model, proc AnchorProcessor, upda
 		return nil, err
 	}
 
+	// TODO [TXManager] this function creates a child task in the queue which should be removed and called from the TxManger function
 	err = proc.AnchorDocument(ctx, model)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrDocumentAnchoring, errors.New("failed to anchor document: %v", err))

@@ -3,6 +3,8 @@ package nft
 import (
 	"context"
 
+	"github.com/centrifuge/go-centrifuge/config/configstore"
+
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -22,6 +24,11 @@ type Bootstrapper struct{}
 
 // Bootstrap initializes the payment obligation contract
 func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
+	cfg, err := configstore.RetrieveConfig(false, ctx)
+	if err != nil {
+		return err
+	}
+
 	if _, ok := ctx[ethereum.BootstrappedEthereumClient]; !ok {
 		return errors.New("ethereum client hasn't been initialized")
 	}
@@ -41,19 +48,20 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	}
 	queueSrv := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
 
-	txService, ok := ctx[transactions.BootstrappedService].(transactions.Service)
+	txManager, ok := ctx[transactions.BootstrappedService].(transactions.Manager)
 	if !ok {
 		return errors.New("transactions repository not initialised")
 	}
 
 	client := ethereum.GetClient()
 	payOb := newEthereumPaymentObligation(
+		cfg,
 		idService,
 		client,
 		queueSrv,
 		docSrv,
 		bindContract,
-		txService, func() (uint64, error) {
+		txManager, func() (uint64, error) {
 			h, err := client.GetEthClient().HeaderByNumber(context.Background(), nil)
 			if err != nil {
 				return 0, err

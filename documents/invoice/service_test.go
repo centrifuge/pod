@@ -31,8 +31,6 @@ var (
 	cid         = identity.RandomCentID()
 	centIDBytes = cid[:]
 	accountID   = cid[:]
-	key1Pub     = [...]byte{230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
-	key1        = []byte{102, 109, 71, 239, 130, 229, 128, 189, 37, 96, 223, 5, 189, 91, 210, 47, 89, 4, 165, 6, 188, 53, 49, 250, 109, 151, 234, 139, 57, 205, 231, 253, 230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
 )
 
 type mockAnchorRepo struct {
@@ -68,7 +66,7 @@ func getServiceWithMockedLayers() (testingcommons.MockIDService, Service) {
 		docSrv,
 		repo,
 		queueSrv,
-		ctx[transactions.BootstrappedService].(transactions.Service))
+		ctx[transactions.BootstrappedService].(transactions.Manager))
 }
 
 func createMockDocument() (*Invoice, error) {
@@ -121,7 +119,7 @@ func TestService_DeriveFromPayload(t *testing.T) {
 	_, err = invSrv.DeriveFromCreatePayload(nil, &clientinvoicepb.InvoiceCreatePayload{})
 	assert.Error(t, err, "DeriveWithInvoiceInput should produce an error if invoiceInput equals nil")
 
-	model, err = invSrv.DeriveFromCreatePayload(testingconfig.CreateTenantContext(t, cfg), payload)
+	model, err = invSrv.DeriveFromCreatePayload(testingconfig.CreateAccountContext(t, cfg), payload)
 	assert.Nil(t, err, "valid invoiceData shouldn't produce an error")
 
 	receivedCoreDocument, err := model.PackCoreDocument()
@@ -135,7 +133,7 @@ func TestService_GetLastVersion(t *testing.T) {
 	doc, err := createMockDocument()
 	assert.Nil(t, err)
 
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	mod1, err := invSrv.GetCurrentVersion(ctxh, doc.CoreDocument.DocumentIdentifier)
 	assert.Nil(t, err)
 
@@ -178,7 +176,7 @@ func TestService_GetVersion_wrongTyp(t *testing.T) {
 	err := testRepo().Create(accountID, currentVersion, po)
 	assert.Nil(t, err)
 
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	_, err = invSrv.GetVersion(ctxh, documentIdentifier, currentVersion)
 	assert.Error(t, err)
 
@@ -198,7 +196,7 @@ func TestService_GetVersion(t *testing.T) {
 	err := testRepo().Create(accountID, currentVersion, inv)
 	assert.Nil(t, err)
 
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	mod, err := invSrv.GetVersion(ctxh, documentIdentifier, currentVersion)
 	assert.Nil(t, err)
 	loadInv, _ := mod.(*Invoice)
@@ -222,7 +220,7 @@ func TestService_Exists(t *testing.T) {
 	err := testRepo().Create(accountID, documentIdentifier, inv)
 	assert.Nil(t, err)
 
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	exists := invSrv.Exists(ctxh, documentIdentifier)
 	assert.True(t, exists, "invoice should exist")
 
@@ -232,7 +230,7 @@ func TestService_Exists(t *testing.T) {
 }
 
 func TestService_Create(t *testing.T) {
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	_, srv := getServiceWithMockedLayers()
 	invSrv := srv.(service)
 
@@ -262,7 +260,7 @@ func TestService_DeriveInvoiceData(t *testing.T) {
 
 	// success
 	payload := testingdocuments.CreateInvoicePayload()
-	inv, err := invSrv.DeriveFromCreatePayload(testingconfig.CreateTenantContext(t, cfg), payload)
+	inv, err := invSrv.DeriveFromCreatePayload(testingconfig.CreateAccountContext(t, cfg), payload)
 	assert.Nil(t, err, "must be non nil")
 	data, err := invSrv.DeriveInvoiceData(inv)
 	assert.Nil(t, err, "Derive must succeed")
@@ -273,7 +271,7 @@ func TestService_DeriveInvoiceResponse(t *testing.T) {
 	// success
 	invSrv := service{repo: testRepo()}
 	payload := testingdocuments.CreateInvoicePayload()
-	inv1, err := invSrv.DeriveFromCreatePayload(testingconfig.CreateTenantContext(t, cfg), payload)
+	inv1, err := invSrv.DeriveFromCreatePayload(testingconfig.CreateAccountContext(t, cfg), payload)
 	assert.Nil(t, err, "must be non nil")
 	inv, ok := inv1.(*Invoice)
 	assert.True(t, ok)
@@ -301,7 +299,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.Nil(t, doc)
 
 	// messed up identifier
-	contextHeader := testingconfig.CreateTenantContext(t, cfg)
+	contextHeader := testingconfig.CreateAccountContext(t, cfg)
 	payload := &clientinvoicepb.InvoiceUpdatePayload{Identifier: "some identifier", Data: &clientinvoicepb.InvoiceData{}}
 	doc, err = invSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Error(t, err)
@@ -371,7 +369,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 func TestService_Update(t *testing.T) {
 	_, srv := getServiceWithMockedLayers()
 	invSrv := srv.(service)
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
 
 	// pack failed
 	model := &mockModel{}
@@ -440,7 +438,7 @@ func TestService_Update(t *testing.T) {
 func TestService_calculateDataRoot(t *testing.T) {
 	_, srv := getServiceWithMockedLayers()
 	invSrv := srv.(service)
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
 
 	// type mismatch
 	inv, err := invSrv.calculateDataRoot(ctxh, nil, &testingdocuments.MockModel{}, nil)

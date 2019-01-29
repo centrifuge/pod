@@ -108,7 +108,7 @@ func registerServices(ctx context.Context, cfg Config, grpcServer *grpc.Server, 
 	}
 
 	// transactions
-	txSrv := nodeObjReg[transactions.BootstrappedService].(transactions.Service)
+	txSrv := nodeObjReg[transactions.BootstrappedService].(transactions.Manager)
 	h := transactions.GRPCHandler(txSrv, configService)
 	transactionspb.RegisterTransactionServiceServer(grpcServer, h)
 	if err := transactionspb.RegisterTransactionServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts); err != nil {

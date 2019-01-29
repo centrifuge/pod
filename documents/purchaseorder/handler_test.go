@@ -6,12 +6,13 @@ import (
 	"context"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/testingutils/config"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	clientpopb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/satori/go.uuid"
@@ -24,18 +25,16 @@ type mockService struct {
 	mock.Mock
 }
 
-func (m mockService) Create(ctx context.Context, doc documents.Model) (documents.Model, uuid.UUID, error) {
-	args := m.Called(ctx, doc)
-	model, _ := args.Get(0).(documents.Model)
-	txID, _ := uuid.FromString(args.Get(1).(string))
-	return model, txID, args.Error(2)
+func (m mockService) Create(ctx context.Context, model documents.Model) (documents.Model, uuid.UUID, error) {
+	args := m.Called(ctx, model)
+	model, _ = args.Get(0).(documents.Model)
+	return model, contextutil.TX(ctx), args.Error(2)
 }
 
-func (m mockService) Update(ctx context.Context, doc documents.Model) (documents.Model, uuid.UUID, error) {
-	args := m.Called(ctx, doc)
-	model, _ := args.Get(0).(documents.Model)
-	txID, _ := uuid.FromString(args.Get(1).(string))
-	return model, txID, args.Error(2)
+func (m mockService) Update(ctx context.Context, model documents.Model) (documents.Model, uuid.UUID, error) {
+	args := m.Called(ctx, model)
+	model, _ = args.Get(0).(documents.Model)
+	return model, contextutil.TX(ctx), args.Error(2)
 }
 
 func (m mockService) DeriveFromCreatePayload(ctx context.Context, payload *clientpopb.PurchaseOrderCreatePayload) (documents.Model, error) {

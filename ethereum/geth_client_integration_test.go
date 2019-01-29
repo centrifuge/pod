@@ -31,7 +31,7 @@ var ctx = map[string]interface{}{}
 
 func registerMockedTransactionTask() {
 	queueSrv := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
-	txService := ctx[transactions.BootstrappedService].(transactions.Service)
+	txManager := ctx[transactions.BootstrappedService].(transactions.Manager)
 
 	mockClient := &testingcommons.MockEthClient{}
 
@@ -46,8 +46,8 @@ func registerMockedTransactionTask() {
 	// txHash: 0x3 -> pending
 	mockClient.On("TransactionByHash", mock.Anything, common.HexToHash("0x3")).Return(&types.Transaction{}, true, nil).Maybe()
 
-	ethTransTask := ethereum.NewTransactionStatusTask(200*time.Millisecond, txService, mockClient.TransactionByHash, mockClient.TransactionReceipt, ethereum.DefaultWaitForTransactionMiningContext)
-	queueSrv.RegisterTaskType(ethereum.TransactionStatusTaskName, ethTransTask)
+	ethTransTask := ethereum.NewTransactionStatusTask(200*time.Millisecond, txManager, mockClient.TransactionByHash, mockClient.TransactionReceipt, ethereum.DefaultWaitForTransactionMiningContext)
+	queueSrv.RegisterTaskType(ethereum.EthTXStatusTaskName, ethTransTask)
 
 }
 
@@ -93,7 +93,7 @@ func TestGetConnection_returnsSameConnection(t *testing.T) {
 }
 
 func TestNewGethClient(t *testing.T) {
-	gc, err := ethereum.NewGethClient(cfg, nil, nil)
+	gc, err := ethereum.NewGethClient(cfg)
 	assert.Nil(t, err)
 	assert.NotNil(t, gc)
 }

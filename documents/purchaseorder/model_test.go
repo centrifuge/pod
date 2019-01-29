@@ -193,7 +193,7 @@ func TestPOModel_getClientData(t *testing.T) {
 }
 
 func TestPOOrderModel_InitPOInput(t *testing.T) {
-	id, _ := contextutil.Self(testingconfig.CreateTenantContext(t, cfg))
+	id, _ := contextutil.Self(testingconfig.CreateAccountContext(t, cfg))
 	// fail recipient
 	data := &clientpurchaseorderpb.PurchaseOrderData{
 		Recipient: "some recipient",
@@ -230,7 +230,7 @@ func TestPOOrderModel_InitPOInput(t *testing.T) {
 }
 
 func TestPOModel_calculateDataRoot(t *testing.T) {
-	id, _ := contextutil.Self(testingconfig.CreateTenantContext(t, cfg))
+	id, _ := contextutil.Self(testingconfig.CreateAccountContext(t, cfg))
 	poModel := new(PurchaseOrder)
 	err := poModel.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), id.ID.String())
 	assert.Nil(t, err, "Init must pass")
