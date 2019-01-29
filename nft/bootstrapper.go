@@ -48,7 +48,7 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	}
 	queueSrv := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
 
-	txService, ok := ctx[transactions.BootstrappedService].(transactions.Manager)
+	txManager, ok := ctx[transactions.BootstrappedService].(transactions.Manager)
 	if !ok {
 		return errors.New("transactions repository not initialised")
 	}
@@ -61,7 +61,7 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		queueSrv,
 		docSrv,
 		bindContract,
-		txService, func() (uint64, error) {
+		txManager, func() (uint64, error) {
 			h, err := client.GetEthClient().HeaderByNumber(context.Background(), nil)
 			if err != nil {
 				return 0, err

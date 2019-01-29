@@ -39,7 +39,7 @@ type service struct {
 	documents.Service
 	repo      documents.Repository
 	queueSrv  queue.TaskQueuer
-	txService transactions.Manager
+	txManager transactions.Manager
 }
 
 // DefaultService returns the default implementation of the service
@@ -47,12 +47,12 @@ func DefaultService(
 	srv documents.Service,
 	repo documents.Repository,
 	queueSrv queue.TaskQueuer,
-	txService transactions.Manager,
+	txManager transactions.Manager,
 ) Service {
 	return service{
 		repo:      repo,
 		queueSrv:  queueSrv,
-		txService: txService,
+		txManager: txManager,
 		Service:   srv,
 	}
 }
@@ -119,7 +119,7 @@ func (s service) Create(ctx context.Context, po documents.Model) (documents.Mode
 	}
 
 	txID := contextutil.TX(ctx)
-	txID, err = documents.InitDocumentAnchorTask(s.queueSrv, s.txService, self.ID, cd.CurrentVersion, txID)
+	txID, err = documents.InitDocumentAnchorTask(s.queueSrv, s.txManager, self.ID, cd.CurrentVersion, txID)
 	if err != nil {
 		return nil, uuid.Nil, err
 	}
@@ -150,7 +150,7 @@ func (s service) Update(ctx context.Context, po documents.Model) (documents.Mode
 	}
 
 	txID := contextutil.TX(ctx)
-	txID, err = documents.InitDocumentAnchorTask(s.queueSrv, s.txService, self.ID, cd.CurrentVersion, txID)
+	txID, err = documents.InitDocumentAnchorTask(s.queueSrv, s.txManager, self.ID, cd.CurrentVersion, txID)
 	if err != nil {
 		return nil, uuid.Nil, err
 	}

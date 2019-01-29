@@ -63,7 +63,7 @@ func NewTransactionStatusTask(
 ) *TransactionStatusTask {
 	return &TransactionStatusTask{
 		timeout:               timeout,
-		BaseTask:              transactions.BaseTask{TxService: txService},
+		BaseTask:              transactions.BaseTask{TxManager: txService},
 		ethContextInitializer: ethContextInitializer,
 		transactionByHash:     transactionByHash,
 		transactionReceipt:    transactionReceipt,
@@ -84,7 +84,7 @@ func (tst *TransactionStatusTask) Copy() (gocelery.CeleryTask, error) {
 		transactionByHash:     tst.transactionByHash,
 		transactionReceipt:    tst.transactionReceipt,
 		ethContextInitializer: tst.ethContextInitializer,
-		BaseTask:              transactions.BaseTask{TxService: tst.TxService},
+		BaseTask:              transactions.BaseTask{TxManager: tst.TxManager},
 	}, nil
 }
 

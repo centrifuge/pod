@@ -50,11 +50,11 @@ func getServiceWithMockedLayers() (*testingcommons.MockIDService, Service) {
 	idService.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
 	queueSrv := new(testingutils.MockQueue)
 	queueSrv.On("EnqueueJob", mock.Anything, mock.Anything).Return(&gocelery.AsyncResult{}, nil)
-	txService := ctx[transactions.BootstrappedService].(transactions.Manager)
+	txManager := ctx[transactions.BootstrappedService].(transactions.Manager)
 	repo := testRepo()
 	mockAnchor := &mockAnchorRepo{}
 	docSrv := documents.DefaultService(repo, idService, mockAnchor, documents.NewServiceRegistry())
-	return idService, DefaultService(docSrv, repo, queueSrv, txService)
+	return idService, DefaultService(docSrv, repo, queueSrv, txManager)
 }
 
 func TestService_Update(t *testing.T) {

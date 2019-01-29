@@ -21,7 +21,7 @@ func (Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		return err
 	}
 
-	txService, ok := context[transactions.BootstrappedService].(transactions.Manager)
+	txManager, ok := context[transactions.BootstrappedService].(transactions.Manager)
 	if !ok {
 		return errors.New("transactions repository not initialised")
 	}
@@ -37,7 +37,7 @@ func (Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	}
 
 	SetClient(client)
-	ethTransTask := NewTransactionStatusTask(cfg.GetEthereumContextWaitTimeout(), txService, client.TransactionByHash, client.TransactionReceipt, DefaultWaitForTransactionMiningContext)
+	ethTransTask := NewTransactionStatusTask(cfg.GetEthereumContextWaitTimeout(), txManager, client.TransactionByHash, client.TransactionReceipt, DefaultWaitForTransactionMiningContext)
 	queueSrv.RegisterTaskType(ethTransTask.TaskTypeName(), ethTransTask)
 	context[BootstrappedEthereumClient] = client
 	return nil

@@ -80,7 +80,7 @@ func (d *documentAnchorTask) ParseKwargs(kwargs map[string]interface{}) error {
 // Copy returns a new task with state.
 func (d *documentAnchorTask) Copy() (gocelery.CeleryTask, error) {
 	return &documentAnchorTask{
-		BaseTask:      transactions.BaseTask{TxService: d.TxService},
+		BaseTask:      transactions.BaseTask{TxManager: d.TxManager},
 		config:        d.config,
 		processor:     d.processor,
 		modelGetFunc:  d.modelGetFunc,

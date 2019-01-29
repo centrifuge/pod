@@ -27,7 +27,7 @@ type BaseTask struct {
 	Next bool
 
 	// state
-	TxService Manager
+	TxManager Manager
 }
 
 // ParseTransactionID parses txID.
@@ -71,7 +71,7 @@ func (b *BaseTask) UpdateTransaction(accountID identity.CentID, taskTypeName str
 }
 
 func (b *BaseTask) updateStatus(accountID identity.CentID, status Status, taskTypeName, message string) error {
-	tx, err := b.TxService.GetTransaction(accountID, b.TxID)
+	tx, err := b.TxManager.GetTransaction(accountID, b.TxID)
 	if err != nil {
 		return err
 	}
@@ -81,5 +81,5 @@ func (b *BaseTask) updateStatus(accountID identity.CentID, status Status, taskTy
 	// status particular to the task
 	tx.TaskStatus[taskTypeName] = status
 	tx.Logs = append(tx.Logs, NewLog(taskTypeName, message))
-	return b.TxService.SaveTransaction(tx)
+	return b.TxManager.SaveTransaction(tx)
 }

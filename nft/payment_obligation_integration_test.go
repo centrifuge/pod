@@ -32,7 +32,7 @@ var registry *documents.ServiceRegistry
 var cfg config.Configuration
 var idService identity.Service
 var payOb nft.PaymentObligation
-var txService transactions.Manager
+var txManager transactions.Manager
 var tokenRegistry coredocument.TokenRegistry
 
 func TestMain(m *testing.M) {
@@ -42,7 +42,7 @@ func TestMain(m *testing.M) {
 	idService = ctx[identity.BootstrappedIDService].(identity.Service)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	payOb = ctx[nft.BootstrappedPayObService].(nft.PaymentObligation)
-	txService = ctx[transactions.BootstrappedService].(transactions.Manager)
+	txManager = ctx[transactions.BootstrappedService].(transactions.Manager)
 	tokenRegistry = ctx[nft.BootstrappedPayObService].(coredocument.TokenRegistry)
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()
@@ -72,7 +72,7 @@ func TestPaymentObligationService_mint(t *testing.T) {
 	})
 	assert.Nil(t, err, "should not error out when creating invoice model")
 	modelUpdated, txID, err := invoiceService.Create(contextHeader, model)
-	err = txService.WaitForTransaction(cid, txID)
+	err = txManager.WaitForTransaction(cid, txID)
 	assert.Nil(t, err)
 
 	// get ID
@@ -91,7 +91,7 @@ func TestPaymentObligationService_mint(t *testing.T) {
 	)
 	assert.Nil(t, err, "should not error out when minting an invoice")
 	assert.NotNil(t, resp.TokenID, "token id should be present")
-	assert.NoError(t, txService.WaitForTransaction(cid, uuid.Must(uuid.FromString(resp.TransactionID))))
+	assert.NoError(t, txManager.WaitForTransaction(cid, uuid.Must(uuid.FromString(resp.TransactionID))))
 	b := new(big.Int)
 	b.SetString(resp.TokenID, 10)
 	owner, err := tokenRegistry.OwnerOf(registry, b.Bytes())

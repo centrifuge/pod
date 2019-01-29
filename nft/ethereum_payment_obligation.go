@@ -47,7 +47,7 @@ type ethereumPaymentObligation struct {
 	queue           queue.TaskQueuer
 	docSrv          documents.Service
 	bindContract    func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error)
-	txService       transactions.Manager
+	txManager       transactions.Manager
 	blockHeightFunc func() (height uint64, err error)
 }
 
@@ -59,7 +59,7 @@ func newEthereumPaymentObligation(
 	queue queue.TaskQueuer,
 	docSrv documents.Service,
 	bindContract func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error),
-	txService transactions.Manager,
+	txManager transactions.Manager,
 	blockHeightFunc func() (uint64, error)) *ethereumPaymentObligation {
 	return &ethereumPaymentObligation{
 		cfg:             cfg,
@@ -68,7 +68,7 @@ func newEthereumPaymentObligation(
 		bindContract:    bindContract,
 		queue:           queue,
 		docSrv:          docSrv,
-		txService:       txService,
+		txManager:       txManager,
 		blockHeightFunc: blockHeightFunc,
 	}
 }
@@ -93,12 +93,12 @@ func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, docu
 
 	anchorID, err := anchors.ToAnchorID(corDoc.CurrentVersion)
 	if err != nil {
-		return MintRequest{}, nil
+		return MintRequest{}, err
 	}
 
 	rootHash, err := anchors.ToDocumentRoot(corDoc.DocumentRoot)
 	if err != nil {
-		return MintRequest{}, nil
+		return MintRequest{}, err
 	}
 
 	requestData, err := NewMintRequest(toAddress, anchorID, proofs.FieldProofs, rootHash)
@@ -180,7 +180,7 @@ func (s *ethereumPaymentObligation) sendMintTransaction(
 
 	// Run within transaction
 	// We use context.Background() for now so that the transaction is only limited by ethereum timeouts
-	txID, _, err := s.txService.ExecuteWithinTX(context.Background(), cid, uuid.Nil, "Minting NFT", func(accountID identity.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
+	txID, _, err := s.txManager.ExecuteWithinTX(context.Background(), cid, uuid.Nil, "Minting NFT", func(accountID identity.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
 		ethTX, err := s.ethClient.SubmitTransactionWithRetries(contract.Mint, opts, r.To, r.TokenID, r.TokenURI, r.AnchorID,
 			r.MerkleRoot, r.Values, r.Salts, r.Proofs)
 		if err != nil {
