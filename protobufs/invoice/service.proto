@@ -68,7 +68,7 @@ message InvoiceUpdatePayload {
   string identifier = 1;
   repeated string collaborators = 2;
   InvoiceData data = 3;
-  document.UpdateAccessTokenPayload access_token_payload = 4;
+  repeated document.UpdateAccessTokenPayload access_token_payload = 4;
 }
 
 message InvoiceResponse {

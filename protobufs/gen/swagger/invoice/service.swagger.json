@@ -290,7 +290,10 @@
           "$ref": "#/definitions/invoiceInvoiceData"
         },
         "access_token_payload": {
-          "$ref": "#/definitions/documentUpdateAccessTokenPayload"
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/documentUpdateAccessTokenPayload"
+          }
         }
       }
     },
