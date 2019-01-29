@@ -43,7 +43,7 @@ func TestDocumentAnchorTask_ParseKwargs(t *testing.T) {
 		{
 			kwargs: map[string]interface{}{
 				transactions.TxIDParam: uuid.Must(uuid.NewV4()).String(),
-				modelIDParam:           hexutil.Encode(utils.RandomSlice(32)),
+				DocumentIDParam:        hexutil.Encode(utils.RandomSlice(32)),
 			},
 
 			err: "missing account ID",
@@ -54,8 +54,8 @@ func TestDocumentAnchorTask_ParseKwargs(t *testing.T) {
 			name: "success",
 			kwargs: map[string]interface{}{
 				transactions.TxIDParam: uuid.Must(uuid.NewV4()).String(),
-				modelIDParam:           hexutil.Encode(utils.RandomSlice(32)),
-				accountIDParam:         identity.RandomCentID().String(),
+				DocumentIDParam:        hexutil.Encode(utils.RandomSlice(32)),
+				AccountIDParam:         identity.RandomCentID().String(),
 			},
 		},
 	}
@@ -76,8 +76,8 @@ func TestDocumentAnchorTask_ParseKwargs(t *testing.T) {
 			err = task.ParseKwargs(d)
 			if c.err == "" {
 				assert.Equal(t, task.TxID.String(), c.kwargs[transactions.TxIDParam])
-				assert.Equal(t, hexutil.Encode(task.id), c.kwargs[modelIDParam])
-				assert.Equal(t, task.accountID.String(), c.kwargs[accountIDParam])
+				assert.Equal(t, hexutil.Encode(task.id), c.kwargs[DocumentIDParam])
+				assert.Equal(t, task.accountID.String(), c.kwargs[AccountIDParam])
 				return
 			}
 

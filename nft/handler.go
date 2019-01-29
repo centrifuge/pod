@@ -3,12 +3,10 @@ package nft
 import (
 	"context"
 
-	"github.com/centrifuge/go-centrifuge/config"
-
-	"github.com/centrifuge/go-centrifuge/contextutil"
-
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/code"
+	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/nft"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"

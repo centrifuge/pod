@@ -19,8 +19,12 @@ import (
 )
 
 const (
-	modelIDParam           = "modelID"
-	accountIDParam         = "accountID"
+	// DocumentIDParam maps to model ID in the kwargs
+	DocumentIDParam = "documentID"
+
+	// AccountIDParam maps to account ID in the kwargs
+	AccountIDParam = "accountID"
+
 	documentAnchorTaskName = "Document Anchoring"
 )
 
@@ -51,7 +55,7 @@ func (d *documentAnchorTask) ParseKwargs(kwargs map[string]interface{}) error {
 		return err
 	}
 
-	modelID, ok := kwargs[modelIDParam].(string)
+	modelID, ok := kwargs[DocumentIDParam].(string)
 	if !ok {
 		return errors.New("missing model ID")
 	}
@@ -61,7 +65,7 @@ func (d *documentAnchorTask) ParseKwargs(kwargs map[string]interface{}) error {
 		return errors.New("invalid model ID")
 	}
 
-	accountID, ok := kwargs[accountIDParam].(string)
+	accountID, ok := kwargs[AccountIDParam].(string)
 	if !ok {
 		return errors.New("missing account ID")
 	}
@@ -76,7 +80,7 @@ func (d *documentAnchorTask) ParseKwargs(kwargs map[string]interface{}) error {
 // Copy returns a new task with state.
 func (d *documentAnchorTask) Copy() (gocelery.CeleryTask, error) {
 	return &documentAnchorTask{
-		BaseTask:      transactions.BaseTask{TxService: d.TxService},
+		BaseTask:      transactions.BaseTask{TxManager: d.TxManager},
 		config:        d.config,
 		processor:     d.processor,
 		modelGetFunc:  d.modelGetFunc,
@@ -116,16 +120,24 @@ func (d *documentAnchorTask) RunTask() (res interface{}, err error) {
 }
 
 // InitDocumentAnchorTask enqueues a new document anchor task and returns the txID.
-func InitDocumentAnchorTask(tq queue.TaskQueuer, txService transactions.Service, accountID identity.CentID, modelID []byte) (uuid.UUID, error) {
-	tx, err := txService.CreateTransaction(accountID, documentAnchorTaskName)
+// TODO [TXManager] migrate this to use TxManager
+func InitDocumentAnchorTask(tq queue.TaskQueuer, txService transactions.Manager, accountID identity.CentID, modelID []byte, txID uuid.UUID) (uuid.UUID, error) {
+	var tx *transactions.Transaction
+	var err error
+	if txID != uuid.Nil {
+		tx, err = txService.GetTransaction(accountID, txID)
+	} else {
+		tx, err = txService.CreateTransaction(accountID, documentAnchorTaskName)
+	}
+
 	if err != nil {
 		return uuid.Nil, err
 	}
 
 	params := map[string]interface{}{
 		transactions.TxIDParam: tx.ID.String(),
-		modelIDParam:           hexutil.Encode(modelID),
-		accountIDParam:         accountID.String(),
+		DocumentIDParam:        hexutil.Encode(modelID),
+		AccountIDParam:         accountID.String(),
 	}
 
 	_, err = tq.EnqueueJob(documentAnchorTaskName, params)

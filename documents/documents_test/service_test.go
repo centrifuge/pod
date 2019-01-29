@@ -57,7 +57,7 @@ func TestMain(m *testing.M) {
 
 func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	poSrv := documents.DefaultService(nil, nil, nil, documents.NewServiceRegistry())
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	err := poSrv.ReceiveAnchoredDocument(ctxh, nil, nil)
 	assert.Error(t, err)
 }
@@ -197,7 +197,7 @@ func TestService_CreateProofs(t *testing.T) {
 	service, idService := getServiceWithMockedLayers()
 	i, err := createAnchoredMockDocument(t, false)
 	assert.Nil(t, err)
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	idService = mockSignatureCheck(i, idService, service)
 	proof, err := service.CreateProofs(ctxh, i.CoreDocument.DocumentIdentifier, []string{"invoice.invoice_number"})
 	assert.Nil(t, err)
@@ -214,7 +214,7 @@ func TestService_CreateProofsValidationFails(t *testing.T) {
 	err = testRepo().Update(tenantID, i.CoreDocument.CurrentVersion, i)
 	assert.Nil(t, err)
 	idService = mockSignatureCheck(i, idService, service)
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	_, err = service.CreateProofs(ctxh, i.CoreDocument.DocumentIdentifier, []string{"invoice.invoice_number"})
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "signing root missing")
@@ -225,7 +225,7 @@ func TestService_CreateProofsInvalidField(t *testing.T) {
 	i, err := createAnchoredMockDocument(t, false)
 	assert.Nil(t, err)
 	idService = mockSignatureCheck(i, idService, service)
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	_, err = service.CreateProofs(ctxh, i.CoreDocument.DocumentIdentifier, []string{"invalid_field"})
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentProof, err))
@@ -233,7 +233,7 @@ func TestService_CreateProofsInvalidField(t *testing.T) {
 
 func TestService_CreateProofsDocumentDoesntExist(t *testing.T) {
 	service, _ := getServiceWithMockedLayers()
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	_, err := service.CreateProofs(ctxh, utils.RandomSlice(32), []string{"invoice.invoice_number"})
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
@@ -247,7 +247,7 @@ func TestService_CreateProofsForVersion(t *testing.T) {
 	olderVersion := i.CoreDocument.CurrentVersion
 	i, err = updatedAnchoredMockDocument(t, i)
 	assert.Nil(t, err)
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	proof, err := service.CreateProofsForVersion(ctxh, i.CoreDocument.DocumentIdentifier, olderVersion, []string{"invoice.invoice_number"})
 	assert.Nil(t, err)
 	assert.Equal(t, i.CoreDocument.DocumentIdentifier, proof.DocumentID)
@@ -262,7 +262,7 @@ func TestService_RequestDocumentSignature_SigningRootNil(t *testing.T) {
 	assert.Nil(t, err)
 	idService = mockSignatureCheck(i, idService, service)
 	i.CoreDocument.SigningRoot = nil
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	signature, err := service.RequestDocumentSignature(ctxh, i)
 	assert.NotNil(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
@@ -273,7 +273,7 @@ func TestService_CreateProofsForVersionDocumentDoesntExist(t *testing.T) {
 	i, err := createAnchoredMockDocument(t, false)
 	s, _ := getServiceWithMockedLayers()
 	assert.Nil(t, err)
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	_, err = s.CreateProofsForVersion(ctxh, i.CoreDocument.DocumentIdentifier, utils.RandomSlice(32), []string{"invoice.invoice_number"})
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentVersionNotFound, err))
@@ -314,7 +314,7 @@ func TestService_GetCurrentVersion_successful(t *testing.T) {
 
 	}
 
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	model, err := service.GetCurrentVersion(ctxh, documentIdentifier)
 	assert.Nil(t, err)
 
@@ -338,7 +338,7 @@ func TestService_GetVersion_successful(t *testing.T) {
 		},
 	}
 
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	err := testRepo().Create(tenantID, currentVersion, inv)
 	assert.Nil(t, err)
 
@@ -357,7 +357,7 @@ func TestService_GetCurrentVersion_error(t *testing.T) {
 	documentIdentifier := utils.RandomSlice(32)
 
 	//document is not existing
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	_, err := service.GetCurrentVersion(ctxh, documentIdentifier)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentVersionNotFound, err))
 
@@ -384,7 +384,7 @@ func TestService_GetVersion_error(t *testing.T) {
 	currentVersion := utils.RandomSlice(32)
 
 	//document is not existing
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	_, err := service.GetVersion(ctxh, documentIdentifier, currentVersion)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentVersionNotFound, err))
 
@@ -422,7 +422,7 @@ func testRepo() documents.Repository {
 func TestService_Exists(t *testing.T) {
 	service, _ := getServiceWithMockedLayers()
 	documentIdentifier := utils.RandomSlice(32)
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
 
 	//document is not existing
 	_, err := service.GetCurrentVersion(ctxh, documentIdentifier)

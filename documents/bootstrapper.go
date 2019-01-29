@@ -91,15 +91,25 @@ func (PostBootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("p2p client not initialised")
 	}
 
-	task := &documentAnchorTask{
+	txMan := ctx[transactions.BootstrappedService].(transactions.Manager)
+	anchorTask := &documentAnchorTask{
 		BaseTask: transactions.BaseTask{
-			TxService: ctx[transactions.BootstrappedService].(transactions.Service),
+			TxManager: txMan,
 		},
 		config:        cfgService,
 		processor:     DefaultProcessor(idService, p2pClient, anchorRepo, cfg),
 		modelGetFunc:  repo.Get,
 		modelSaveFunc: repo.Update,
 	}
-	queueSrv.RegisterTaskType(documentAnchorTaskName, task)
+
+	nftTask := &nftCreatedTask{
+		BaseTask: transactions.BaseTask{
+			TxManager: txMan,
+		},
+		docSrv: ctx[BootstrappedDocumentService].(Service),
+		cfgSrv: cfgService,
+	}
+	queueSrv.RegisterTaskType(documentAnchorTaskName, anchorTask)
+	queueSrv.RegisterTaskType(nftCreatedTaskName, nftTask)
 	return nil
 }

@@ -60,7 +60,7 @@ func TestRepository(t *testing.T) {
 	assert.Equal(t, identity.CentIDLength, copy(cid[:], bytes))
 
 	repo := ctx[BootstrappedRepo].(Repository)
-	tx := NewTransaction(cid, "Some transaction")
+	tx := newTransaction(cid, "Some transaction")
 	assert.NotNil(t, tx.ID)
 	assert.NotNil(t, tx.CID)
 	assert.Equal(t, Pending, tx.Status)

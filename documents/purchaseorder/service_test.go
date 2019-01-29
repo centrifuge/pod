@@ -50,18 +50,18 @@ func getServiceWithMockedLayers() (*testingcommons.MockIDService, Service) {
 	idService.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
 	queueSrv := new(testingutils.MockQueue)
 	queueSrv.On("EnqueueJob", mock.Anything, mock.Anything).Return(&gocelery.AsyncResult{}, nil)
-	txService := ctx[transactions.BootstrappedService].(transactions.Service)
+	txManager := ctx[transactions.BootstrappedService].(transactions.Manager)
 	repo := testRepo()
 	mockAnchor := &mockAnchorRepo{}
 	docSrv := documents.DefaultService(repo, idService, mockAnchor, documents.NewServiceRegistry())
-	return idService, DefaultService(docSrv, repo, queueSrv, txService)
+	return idService, DefaultService(docSrv, repo, queueSrv, txManager)
 }
 
 func TestService_Update(t *testing.T) {
 	c := &testingconfig.MockConfig{}
 	c.On("GetIdentityID").Return(centIDBytes, nil)
 	_, poSrv := getServiceWithMockedLayers()
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
 
 	// pack failed
 	model := &testingdocuments.MockModel{}
@@ -132,7 +132,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	c := &testingconfig.MockConfig{}
 	c.On("GetIdentityID").Return(centIDBytes, nil)
 	_, poSrv := getServiceWithMockedLayers()
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
 
 	// nil payload
 	doc, err := poSrv.DeriveFromUpdatePayload(ctxh, nil)
@@ -147,7 +147,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.Nil(t, doc)
 
 	// messed up identifier
-	contextHeader := testingconfig.CreateTenantContext(t, cfg)
+	contextHeader := testingconfig.CreateAccountContext(t, cfg)
 	payload := &clientpurchaseorderpb.PurchaseOrderUpdatePayload{Identifier: "some identifier", Data: &clientpurchaseorderpb.PurchaseOrderData{}}
 	doc, err = poSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Error(t, err)
@@ -213,7 +213,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 func TestService_DeriveFromCreatePayload(t *testing.T) {
 	poSrv := service{}
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
 
 	// nil payload
 	m, err := poSrv.DeriveFromCreatePayload(ctxh, nil)
@@ -267,7 +267,7 @@ func TestService_DeriveFromCoreDocument(t *testing.T) {
 }
 
 func TestService_Create(t *testing.T) {
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	c := &testingconfig.MockConfig{}
 	c.On("GetIdentityID").Return(centIDBytes, nil)
 	_, poSrv := getServiceWithMockedLayers()
@@ -304,7 +304,7 @@ func TestService_DerivePurchaseOrderData(t *testing.T) {
 
 	// success
 	payload := testingdocuments.CreatePOPayload()
-	m, err = poSrv.DeriveFromCreatePayload(testingconfig.CreateTenantContext(t, cfg), payload)
+	m, err = poSrv.DeriveFromCreatePayload(testingconfig.CreateAccountContext(t, cfg), payload)
 	assert.Nil(t, err)
 	d, err = poSrv.DerivePurchaseOrderData(m)
 	assert.Nil(t, err)
@@ -346,7 +346,7 @@ func TestService_DerivePurchaseOrderResponse(t *testing.T) {
 
 	// success
 	payload := testingdocuments.CreatePOPayload()
-	po, err := poSrv.DeriveFromCreatePayload(testingconfig.CreateTenantContext(t, cfg), payload)
+	po, err := poSrv.DeriveFromCreatePayload(testingconfig.CreateAccountContext(t, cfg), payload)
 	assert.Nil(t, err)
 	r, err = poSrv.DerivePurchaseOrderResponse(po)
 	assert.Nil(t, err)
@@ -387,7 +387,7 @@ func TestService_GetVersion_wrongTyp(t *testing.T) {
 	err := testRepo().Create(accountID, currentVersion, po)
 	assert.Nil(t, err)
 
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	_, err = poSrv.GetVersion(ctxh, documentIdentifier, currentVersion)
 	assert.Error(t, err)
 
@@ -400,7 +400,7 @@ func TestService_GetCurrentVersion(t *testing.T) {
 	thirdIdentifier := utils.RandomSlice(32)
 	doc, err := createMockDocument()
 	assert.Nil(t, err)
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
 
 	mod1, err := poSrv.GetCurrentVersion(ctxh, doc.CoreDocument.DocumentIdentifier)
 	assert.Nil(t, err)
@@ -445,7 +445,7 @@ func TestService_GetVersion(t *testing.T) {
 	err := testRepo().Create(accountID, currentVersion, po)
 	assert.Nil(t, err)
 
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	mod, err := poSrv.GetVersion(ctxh, documentIdentifier, currentVersion)
 	assert.Nil(t, err)
 	loadpo, _ := mod.(*PurchaseOrder)
@@ -469,7 +469,7 @@ func TestService_Exists(t *testing.T) {
 	err := testRepo().Create(accountID, documentIdentifier, po)
 	assert.Nil(t, err)
 
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	exists := poSrv.Exists(ctxh, documentIdentifier)
 	assert.True(t, exists, "purchase order should exist")
 
@@ -482,7 +482,7 @@ func TestService_calculateDataRoot(t *testing.T) {
 	c := &testingconfig.MockConfig{}
 	c.On("GetIdentityID").Return(centIDBytes, nil)
 	poSrv := service{repo: testRepo()}
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
 
 	// type mismatch
 	po, err := poSrv.calculateDataRoot(ctxh, nil, &testingdocuments.MockModel{}, nil)

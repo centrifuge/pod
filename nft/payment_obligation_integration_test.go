@@ -32,7 +32,7 @@ var registry *documents.ServiceRegistry
 var cfg config.Configuration
 var idService identity.Service
 var payOb nft.PaymentObligation
-var txService transactions.Service
+var txManager transactions.Manager
 var tokenRegistry coredocument.TokenRegistry
 
 func TestMain(m *testing.M) {
@@ -42,7 +42,7 @@ func TestMain(m *testing.M) {
 	idService = ctx[identity.BootstrappedIDService].(identity.Service)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	payOb = ctx[nft.BootstrappedPayObService].(nft.PaymentObligation)
-	txService = ctx[transactions.BootstrappedService].(transactions.Service)
+	txManager = ctx[transactions.BootstrappedService].(transactions.Manager)
 	tokenRegistry = ctx[nft.BootstrappedPayObService].(coredocument.TokenRegistry)
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()
@@ -57,7 +57,7 @@ func TestPaymentObligationService_mint(t *testing.T) {
 	// create invoice (anchor)
 	service, err := registry.LocateService(documenttypes.InvoiceDataTypeUrl)
 	assert.Nil(t, err, "should not error out when getting invoice service")
-	contextHeader := testingconfig.CreateTenantContext(t, cfg)
+	contextHeader := testingconfig.CreateAccountContext(t, cfg)
 	invoiceService := service.(invoice.Service)
 	dueDate := time.Now().Add(4 * 24 * time.Hour)
 	model, err := invoiceService.DeriveFromCreatePayload(contextHeader, &invoicepb.InvoiceCreatePayload{
@@ -72,7 +72,7 @@ func TestPaymentObligationService_mint(t *testing.T) {
 	})
 	assert.Nil(t, err, "should not error out when creating invoice model")
 	modelUpdated, txID, err := invoiceService.Create(contextHeader, model)
-	err = txService.WaitForTransaction(cid, txID)
+	err = txManager.WaitForTransaction(cid, txID)
 	assert.Nil(t, err)
 
 	// get ID
@@ -81,20 +81,30 @@ func TestPaymentObligationService_mint(t *testing.T) {
 	// call mint
 	// assert no error
 	depositAddr := "0xf72855759a39fb75fc7341139f5d7a3974d4da08"
-	registry := cfg.GetContractAddress(config.PaymentObligation).String()
+	registry := cfg.GetContractAddress(config.PaymentObligation)
 	resp, err := payOb.MintNFT(
 		contextHeader,
 		ID,
-		registry,
+		registry.String(),
 		depositAddr,
 		[]string{"invoice.gross_amount", "invoice.currency", "invoice.due_date", "collaborators[0]"},
 	)
 	assert.Nil(t, err, "should not error out when minting an invoice")
 	assert.NotNil(t, resp.TokenID, "token id should be present")
-	assert.NoError(t, txService.WaitForTransaction(cid, uuid.Must(uuid.FromString(resp.TransactionID))))
+	assert.NoError(t, txManager.WaitForTransaction(cid, uuid.Must(uuid.FromString(resp.TransactionID))))
 	b := new(big.Int)
 	b.SetString(resp.TokenID, 10)
-	owner, err := tokenRegistry.OwnerOf(common.HexToAddress(registry), b.Bytes())
+	owner, err := tokenRegistry.OwnerOf(registry, b.Bytes())
 	assert.NoError(t, err)
 	assert.Equal(t, common.HexToAddress(depositAddr), owner)
+	doc, err := invoiceService.GetCurrentVersion(contextHeader, ID)
+	assert.NoError(t, err)
+	cd, err := doc.PackCoreDocument()
+	assert.NoError(t, err)
+	assert.Len(t, cd.Roles, 2)
+	assert.Len(t, cd.Roles[1].Nfts, 1)
+	nft := cd.Roles[1].Nfts[0]
+	enft, err := coredocument.ConstructNFT(registry, b.Bytes())
+	assert.NoError(t, err)
+	assert.Equal(t, enft, nft)
 }

@@ -71,7 +71,7 @@ func (m *mockAnchorProcessor) GetDataProofHashes(coreDocument *coredocumentpb.Co
 }
 
 func TestAnchorDocument(t *testing.T) {
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	updater := func(id []byte, model documents.Model) error {
 		return nil
 	}
