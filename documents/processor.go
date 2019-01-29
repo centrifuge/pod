@@ -2,7 +2,6 @@ package documents
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -86,14 +85,7 @@ func (dp defaultProcessor) PrepareForSignatureRequests(ctx context.Context, mode
 	if err != nil {
 		return err
 	}
-	acc, err := contextutil.Account(ctx)
-	if err != nil {
-		return err
-	}
-	k, p := acc.GetEthAuthKeyPair()
-	k1, p1 := acc.GetSigningKeyPair()
-	fmt.Printf("ETH: %s %s\n", k, p)
-	fmt.Printf("SIGN: %s %s\n", k1, p1)
+
 	sig := identity.Sign(self, identity.KeyPurposeSigning, cd.SigningRoot)
 	cd.Signatures = append(cd.Signatures, sig)
 

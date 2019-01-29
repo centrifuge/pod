@@ -57,8 +57,6 @@ func addExternalCollaborator_withinHost(t *testing.T, documentType string) {
 	b := accounts[1]
 	c := accounts[2]
 
-	// Give some time to hosts to be up
-	//time.Sleep(5*time.Second)
 	// a shares document with b first
 	res := createDocument(bob.httpExpect, a, documentType, http.StatusOK, defaultDocumentPayload(documentType, []string{b}))
 	txID := getTransactionID(t, res)
