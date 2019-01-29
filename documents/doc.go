@@ -1,5 +1,5 @@
 /*
-Package document implements Centrifuge document models.
+Package documents implements Centrifuge document models.
 
 Models
 
