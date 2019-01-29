@@ -3,7 +3,10 @@ package did
 import (
 	"context"
 	"math/big"
+	"strings"
 	"time"
+
+	"github.com/ethereum/go-ethereum/accounts/abi"
 
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
@@ -34,8 +37,15 @@ func NewDIDFromString(address string) DID {
 type Identity interface {
 	// AddKey adds a key to identity contract
 	AddKey(did *DID, key Key) (chan *ethereum.WatchTransaction, error)
+
 	// GetKey return a key from the identity contract
 	GetKey(did *DID, key [32]byte) (*KeyResponse, error)
+
+	// RawExecute calls the execute method on the identity contract
+	RawExecute(did *DID, to common.Address, data []byte) (chan *ethereum.WatchTransaction, error)
+
+	// Execute creates the abi encoding an calls the execute method on the identity contract
+	Execute(did *DID, to common.Address, contractAbi, methodName string, args ...interface{}) (chan *ethereum.WatchTransaction, error)
 }
 
 type contract interface {
@@ -49,6 +59,8 @@ type contract interface {
 
 	// transactions
 	AddKey(opts *bind.TransactOpts, _key [32]byte, _purpose *big.Int, _keyType *big.Int) (*types.Transaction, error)
+
+	Execute(opts *bind.TransactOpts, _to common.Address, _value *big.Int, _data []byte) (*types.Transaction, error)
 }
 
 type identity struct {
@@ -151,4 +163,42 @@ func (i identity) GetKey(did *DID, key [32]byte) (*KeyResponse, error) {
 
 	return &KeyResponse{result.Key, result.Purposes, result.RevokedAt}, nil
 
+}
+
+func (i identity) RawExecute(did *DID, to common.Address, data []byte) (chan *ethereum.WatchTransaction, error) {
+	contract, opts, err := i.prepareTransaction(*did)
+	if err != nil {
+		return nil, err
+	}
+
+	// default: no ether should be send
+	value := big.NewInt(0)
+
+	tx, err := i.client.SubmitTransactionWithRetries(contract.Execute, opts, to, value, data)
+	if err != nil {
+		log.Infof("could not call execute method on identity contract: %v[txHash: %s] toAddress: %s : %v", tx.Hash(), to.String(), err)
+		return nil, errors.New("could not execute to identity contract: %v", err)
+	}
+	logTxHash(tx)
+
+	txStatus := make(chan *ethereum.WatchTransaction)
+	// TODO will be replaced with transaction Status task
+	go waitForTransaction(i.client, tx.Hash(), txStatus)
+
+	return txStatus, nil
+
+}
+
+func (i identity) Execute(did *DID, to common.Address, contractAbi, methodName string, args ...interface{}) (chan *ethereum.WatchTransaction, error) {
+	abi, err := abi.JSON(strings.NewReader(contractAbi))
+	if err != nil {
+		return nil, err
+	}
+
+	// Pack encodes the parameters and additionally checks if the method and arguments are defined correctly
+	data, err := abi.Pack(methodName, args...)
+	if err != nil {
+		return nil, err
+	}
+	return i.RawExecute(did, to, data)
 }
