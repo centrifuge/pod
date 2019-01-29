@@ -35,7 +35,7 @@ service DocumentService {
 
 message UpdateAccessTokenPayload {
   // The document which should contain the access token referenced below
-  bytes delegating_document_identifier = 1;
+  string delegating_document_identifier = 1;
   // The access token to be appended to the indicated document above
   AccessTokenParams access_token_params = 2;
 }

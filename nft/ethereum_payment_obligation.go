@@ -198,7 +198,7 @@ type MintRequest struct {
 	// salts are the salts for the field that is being proved Will be concatenated for proof verification as outlined in precise-proofs library.
 	Salts [][32]byte
 
-	// Proofs are the document proofs that are needed
+	// Proofs are the documents proofs that are needed
 	Proofs [][][32]byte
 }
 

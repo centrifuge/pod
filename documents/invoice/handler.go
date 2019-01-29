@@ -28,7 +28,7 @@ func GRPCHandler(config config.Service, srv Service) clientinvoicepb.DocumentSer
 	}
 }
 
-// Create handles the creation of the invoices and anchoring the document on chain
+// Create handles the creation of the invoices and anchoring the documents on chain
 func (h *grpcHandler) Create(ctx context.Context, req *clientinvoicepb.InvoiceCreatePayload) (*clientinvoicepb.InvoiceResponse, error) {
 	apiLog.Debugf("Create request %v", req)
 	cctx, err := contextutil.Context(ctx, h.config)

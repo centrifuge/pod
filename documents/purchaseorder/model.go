@@ -23,7 +23,7 @@ import (
 
 const prefix string = "po"
 
-// PurchaseOrder implements the document.Model keeps track of purchase order related fields and state
+// PurchaseOrder implements the documents.Model keeps track of purchase order related fields and state
 type PurchaseOrder struct {
 	Status            string // status of the Purchase Order
 	PoNumber          string // purchase order number or reference number

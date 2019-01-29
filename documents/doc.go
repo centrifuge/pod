@@ -40,9 +40,9 @@ would depend on database access such as BI (Although we do NOT recommend directl
 
 Model Package Hierarchy Specification
 
-In the new package structure the package `document` includes all model relevant implementations and interfaces.
+In the new package structure the package `documents` includes all model relevant implementations and interfaces.
 The actual implementation can be found at the package `invoice` or `purchaseorder`.
-The package `document` should not include any of the actual implementations to avoid cycle dependencies.
+The package `documents` should not include any of the actual implementations to avoid cycle dependencies.
 
 Validation
 
@@ -131,7 +131,7 @@ Service Registry
 To locate a service that could handle operations for a given CoreDocument object a service registry needs to be developed. This would use the `coreDocument.EmbeddedData.TypeUrl` to map the document to the relevant service.
 
 
-	// in document/registry.go
+	// in documents/registry.go
 
 	func LocateService(cd *coredocument.CoreDocument) (ModelDeriver, error) {
 	....
