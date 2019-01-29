@@ -149,7 +149,6 @@
       "properties": {
         "delegating_document_identifier": {
           "type": "string",
-          "format": "byte",
           "title": "The document which should contain the access token referenced below"
         },
         "access_token_params": {
