@@ -293,48 +293,18 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	assert.Nil(t, coredocument.CalculateDocumentRoot(cd))
 	assert.Nil(t, err)
 	srv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil).Once()
-	oldID := cfg.GetString("identityId")
-	cfg.Set("identityId", "wrong id")
-	err = dp.AnchorDocument(ctxh, model)
+	err = dp.AnchorDocument(context.Background(), model)
 	model.AssertExpectations(t)
 	srv.AssertExpectations(t)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to get self cent ID")
-	cfg.Set("identityId", "0x0102030405060708")
-
-	// wrong ID
-	model = mockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Times(5)
-	srv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil).Once()
-
-	err = dp.AnchorDocument(ctxh, model)
-	model.AssertExpectations(t)
-	srv.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "centID invalid")
-	cfg.Set("identityId", oldID)
-
-	// failed anchor commit
-	model = mockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Times(5)
-	srv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil).Once()
-
-	repo := mockRepo{}
-	repo.On("CommitAnchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("error")).Once()
-	dp.anchorRepository = repo
-	err = dp.AnchorDocument(ctxh, model)
-	model.AssertExpectations(t)
-	srv.AssertExpectations(t)
-	repo.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to commit anchor")
+	assert.Contains(t, err.Error(), "self value not found in the context")
 
 	// success
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Times(5)
 	srv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil).Once()
 
-	repo = mockRepo{}
+	repo := mockRepo{}
 	ch := make(chan *anchors.WatchCommit, 1)
 	ch <- new(anchors.WatchCommit)
 	repo.On("CommitAnchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(ch, nil).Once()

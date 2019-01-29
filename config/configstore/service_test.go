@@ -157,12 +157,7 @@ func TestService_Deleteaccount(t *testing.T) {
 func TestGenerateaccountKeys(t *testing.T) {
 	tc, err := generateAccountKeys("/tmp/accounts/", &Account{}, identity.RandomCentID())
 	assert.Nil(t, err)
-	assert.NotNil(t, tc.SigningKeyPair)
 	assert.NotNil(t, tc.EthAuthKeyPair)
-	_, err = os.Stat(tc.SigningKeyPair.Pub)
-	assert.False(t, os.IsNotExist(err))
-	_, err = os.Stat(tc.SigningKeyPair.Priv)
-	assert.False(t, os.IsNotExist(err))
 	_, err = os.Stat(tc.EthAuthKeyPair.Pub)
 	assert.False(t, os.IsNotExist(err))
 	_, err = os.Stat(tc.EthAuthKeyPair.Priv)
