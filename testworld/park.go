@@ -397,8 +397,7 @@ func (h *host) loadAccounts(e *httpexpect.Expect) error {
 }
 
 func (h *host) createHttpExpectation(t *testing.T) *httpexpect.Expect {
-	str := fmt.Sprintf("https://localhost:%d", h.config.GetServerPort())
-	return createInsecureClientWithExpect(t, str)
+	return createInsecureClientWithExpect(t, fmt.Sprintf("https://localhost:%d", h.config.GetServerPort()))
 }
 
 func (h *host) id() (identity.CentID, error) {
