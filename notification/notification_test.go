@@ -98,7 +98,7 @@ func TestWebhookSender_Send(t *testing.T) {
 	}
 
 	cfg.Set("notifications.endpoint", "http://localhost:8090/webhook")
-	status, err := wb.Send(testingconfig.CreateTenantContext(t, cfg), notif)
+	status, err := wb.Send(testingconfig.CreateAccountContext(t, cfg), notif)
 	assert.NoError(t, err)
 	assert.Equal(t, status, Success)
 	wg.Wait()

@@ -21,13 +21,13 @@ const ErrInvalidAccountID = errors.Error("Invalid Tenant ID")
 var apiLog = logging.Logger("transaction-api")
 
 // GRPCHandler returns an implementation of the TransactionServiceServer
-func GRPCHandler(srv Service, configService config.Service) transactionspb.TransactionServiceServer {
+func GRPCHandler(srv Manager, configService config.Service) transactionspb.TransactionServiceServer {
 	return grpcHandler{srv: srv, configService: configService}
 }
 
 // grpcHandler implements transactionspb.TransactionServiceServer
 type grpcHandler struct {
-	srv           Service
+	srv           Manager
 	configService config.Service
 }
 

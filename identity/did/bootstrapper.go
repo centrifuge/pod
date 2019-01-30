@@ -17,8 +17,11 @@ import (
 // Bootstrapper implements bootstrap.Bootstrapper.
 type Bootstrapper struct{}
 
-// BootstrappedDIDService stores the id of the bootstrapper
+// BootstrappedDIDService stores the id of the service
 const BootstrappedDIDService string = "BootstrappedDIDService"
+
+// BootstrappedDID stores the id of the identity
+const BootstrappedDID string = "BootstrappedDID"
 
 var smartContractAddresses *config.SmartContractAddresses
 
@@ -43,8 +46,10 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	}
 
 	service := NewService(cfg, factoryContract, client)
-
 	context[BootstrappedDIDService] = service
+
+	identity := NewIdentity(cfg, client)
+	context[BootstrappedDID] = identity
 
 	return nil
 }
@@ -56,6 +61,10 @@ func bindFactory(factoryAddress common.Address, client ethereum.Client) (*Factor
 func getFactoryAddress() common.Address {
 	return common.HexToAddress(smartContractAddresses.IdentityFactoryAddr)
 
+}
+
+func getAnchorAddress() common.Address {
+	return common.HexToAddress(smartContractAddresses.AnchorRepositoryAddr)
 }
 
 // Note: this block will be removed after the identity migration is done

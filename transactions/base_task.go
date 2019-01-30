@@ -13,13 +13,21 @@ var log = logging.Logger("transaction")
 const (
 	// TxIDParam maps transaction ID in the kwargs.
 	TxIDParam = "transactionID"
+
+	// TxNextTask indicates if there is next task
+	TxNextTask = "next task"
 )
 
 // BaseTask holds the required details and helper functions for tasks to update transactions.
 // should be embedded into the task
 type BaseTask struct {
-	TxID      uuid.UUID
-	TxService Service
+	TxID uuid.UUID
+
+	// TODO [TXManager] remove this update once TX Manager update is complete, i.e. Individual tasks must not be responsible for updating a transactions status
+	Next bool
+
+	// state
+	TxManager Manager
 }
 
 // ParseTransactionID parses txID.
@@ -35,33 +43,43 @@ func (b *BaseTask) ParseTransactionID(kwargs map[string]interface{}) error {
 		return errors.New("invalid transaction ID")
 	}
 
+	if b.Next, ok = kwargs[TxNextTask].(bool); !ok {
+		b.Next = false
+	}
+
+	log.Infof("Task %v has next task: %v\n", b.TxID.String(), b.Next)
 	return nil
 }
 
 // UpdateTransaction add a new log and updates the status of the transaction based on the error.
-func (b *BaseTask) UpdateTransaction(accountID identity.CentID, name string, err error) error {
+func (b *BaseTask) UpdateTransaction(accountID identity.CentID, taskTypeName string, err error) error {
 	if err == gocelery.ErrTaskRetryable {
 		return err
 	}
 
 	if err != nil {
 		log.Infof("Transaction failed: %v\n", b.TxID.String())
-	} else {
-		log.Infof("Transaction successful:%v\n", b.TxID.String())
+		return errors.AppendError(err, b.updateStatus(accountID, Failed, taskTypeName, err.Error()))
 	}
 
-	tx, erri := b.TxService.GetTransaction(accountID, b.TxID)
-	if erri != nil {
-		return errors.AppendError(err, erri)
+	if b.Next {
+		return b.updateStatus(accountID, Pending, taskTypeName, "")
 	}
 
-	if err == nil {
-		tx.Status = Success
-		tx.Logs = append(tx.Logs, NewLog(name, ""))
-		return b.TxService.SaveTransaction(tx)
+	log.Infof("Transaction successful:%v\n", b.TxID.String())
+	return b.updateStatus(accountID, Success, taskTypeName, "")
+}
+
+func (b *BaseTask) updateStatus(accountID identity.CentID, status Status, taskTypeName, message string) error {
+	tx, err := b.TxManager.GetTransaction(accountID, b.TxID)
+	if err != nil {
+		return err
 	}
 
-	tx.Status = Failed
-	tx.Logs = append(tx.Logs, NewLog(name, err.Error()))
-	return errors.AppendError(err, b.TxService.SaveTransaction(tx))
+	// TODO [TXManager] remove this update once TX Manager update is complete, i.e. Individual tasks must not be responsible for updating a transactions status
+	tx.Status = status
+	// status particular to the task
+	tx.TaskStatus[taskTypeName] = status
+	tx.Logs = append(tx.Logs, NewLog(taskTypeName, message))
+	return b.TxManager.SaveTransaction(tx)
 }

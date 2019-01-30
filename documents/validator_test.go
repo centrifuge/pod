@@ -311,7 +311,7 @@ func TestValidator_documentRootValidator(t *testing.T) {
 }
 
 func TestValidator_selfSignatureValidator(t *testing.T) {
-	self, _ := contextutil.Self(testingconfig.CreateTenantContext(t, cfg))
+	self, _ := contextutil.Self(testingconfig.CreateAccountContext(t, cfg))
 	idKeys := self.Keys[identity.KeyPurposeSigning]
 	rfsv := readyForSignaturesValidator(self.ID[:], idKeys.PrivateKey, idKeys.PublicKey)
 
@@ -638,7 +638,7 @@ func TestPostAnchoredValidator(t *testing.T) {
 }
 
 func TestPreSignatureRequestValidator(t *testing.T) {
-	self, _ := contextutil.Self(testingconfig.CreateTenantContext(t, cfg))
+	self, _ := contextutil.Self(testingconfig.CreateAccountContext(t, cfg))
 	idKeys := self.Keys[identity.KeyPurposeSigning]
 	psv := PreSignatureRequestValidator(self.ID[:], idKeys.PrivateKey, idKeys.PublicKey)
 	assert.Len(t, psv, 3)

@@ -124,7 +124,6 @@ func (s service) GetCurrentVersion(ctx context.Context, documentID []byte) (Mode
 		return nil, errors.NewTypedError(ErrDocumentNotFound, err)
 	}
 	return s.searchVersion(ctx, model)
-
 }
 
 func (s service) GetVersion(ctx context.Context, documentID []byte, version []byte) (Model, error) {

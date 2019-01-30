@@ -6,6 +6,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/contextutil"
+
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -29,11 +31,10 @@ func (m *mockService) DeriveFromCreatePayload(ctx context.Context, payload *clie
 	return model, args.Error(1)
 }
 
-func (m *mockService) Create(ctx context.Context, inv documents.Model) (documents.Model, uuid.UUID, error) {
-	args := m.Called(ctx, inv)
-	model, _ := args.Get(0).(documents.Model)
-	txID, _ := uuid.FromString(args.Get(1).(string))
-	return model, txID, args.Error(2)
+func (m *mockService) Create(ctx context.Context, model documents.Model) (documents.Model, uuid.UUID, error) {
+	args := m.Called(ctx, model)
+	model, _ = args.Get(0).(documents.Model)
+	return model, contextutil.TX(ctx), args.Error(2)
 }
 
 func (m *mockService) GetCurrentVersion(ctx context.Context, documentID []byte) (documents.Model, error) {
@@ -60,11 +61,10 @@ func (m *mockService) DeriveInvoiceResponse(doc documents.Model) (*clientinvoice
 	return data, args.Error(1)
 }
 
-func (m *mockService) Update(ctx context.Context, doc documents.Model) (documents.Model, uuid.UUID, error) {
-	args := m.Called(ctx, doc)
+func (m *mockService) Update(ctx context.Context, model documents.Model) (documents.Model, uuid.UUID, error) {
+	args := m.Called(ctx, model)
 	doc1, _ := args.Get(0).(documents.Model)
-	txID, _ := uuid.FromString(args.Get(1).(string))
-	return doc1, txID, args.Error(2)
+	return doc1, contextutil.TX(ctx), args.Error(2)
 }
 
 func (m *mockService) DeriveFromUpdatePayload(ctx context.Context, payload *clientinvoicepb.InvoiceUpdatePayload) (documents.Model, error) {

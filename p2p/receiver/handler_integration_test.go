@@ -61,14 +61,15 @@ func TestMain(m *testing.M) {
 
 func TestHandler_GetDocument_nonexistentIdentifier(t *testing.T) {
 	b := utils.RandomSlice(32)
+	centrifugeId := createIdentity(t)
 	req := &p2ppb.GetDocumentRequest{DocumentIdentifier: b}
-	resp, err := handler.GetDocument(context.Background(), req)
+	resp, err := handler.GetDocument(context.Background(), req, centrifugeId)
 	assert.Error(t, err, "must return error")
 	assert.Nil(t, resp, "must be nil")
 }
 
 func TestHandler_GetDocumentSucceeds(t *testing.T) {
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	centrifugeId := createIdentity(t)
 
 	doc := prepareDocumentForP2PHandler(t, nil)
@@ -101,14 +102,14 @@ func TestHandler_GetDocumentSucceeds(t *testing.T) {
 
 	// Retrieve document from anchor repository with document_identifier
 	getReq := getGetDocumentRequest(doc)
-	getDocResp, err := handler.GetDocument(ctxh, getReq)
+	getDocResp, err := handler.GetDocument(ctxh, getReq, centrifugeId)
 	assert.Nil(t, err)
 	assert.ObjectsAreEqual(getDocResp.Document, doc)
 }
 
 func TestHandler_HandleInterceptorReqSignature(t *testing.T) {
 	centID := createIdentity(t)
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	tc, err := contextutil.Account(ctxh)
 	_, err = cfgService.CreateAccount(tc)
 	assert.NoError(t, err)
@@ -134,7 +135,7 @@ func TestHandler_HandleInterceptorReqSignature(t *testing.T) {
 }
 
 func TestHandler_RequestDocumentSignature_verification_fail(t *testing.T) {
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	doc := prepareDocumentForP2PHandler(t, nil)
 	doc.SigningRoot = nil
 	req := getSignatureRequest(doc)
@@ -147,7 +148,7 @@ func TestHandler_RequestDocumentSignature_verification_fail(t *testing.T) {
 func TestHandler_RequestDocumentSignature_AlreadyExists(t *testing.T) {
 	doc := prepareDocumentForP2PHandler(t, nil)
 	req := getSignatureRequest(doc)
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	resp, err := handler.RequestDocumentSignature(ctxh, req)
 	assert.Nil(t, err, "must be nil")
 	assert.NotNil(t, resp, "must be non nil")
@@ -159,7 +160,7 @@ func TestHandler_RequestDocumentSignature_AlreadyExists(t *testing.T) {
 }
 
 func TestHandler_RequestDocumentSignature_UpdateSucceeds(t *testing.T) {
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	doc := prepareDocumentForP2PHandler(t, nil)
 	req := getSignatureRequest(doc)
 	resp, err := handler.RequestDocumentSignature(ctxh, req)
@@ -183,7 +184,7 @@ func TestHandler_RequestDocumentSignature_UpdateSucceeds(t *testing.T) {
 }
 
 func TestHandler_RequestDocumentSignatureFirstTimeOnUpdatedDocument(t *testing.T) {
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	doc := prepareDocumentForP2PHandler(t, nil)
 	newDoc, err := coredocument.PrepareNewVersion(*doc, nil)
 	assert.Nil(t, err)
@@ -200,7 +201,7 @@ func TestHandler_RequestDocumentSignatureFirstTimeOnUpdatedDocument(t *testing.T
 }
 
 func TestHandler_RequestDocumentSignature(t *testing.T) {
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	doc := prepareDocumentForP2PHandler(t, nil)
 	req := getSignatureRequest(doc)
 	resp, err := handler.RequestDocumentSignature(ctxh, req)
@@ -222,7 +223,7 @@ func TestHandler_SendAnchoredDocument_update_fail(t *testing.T) {
 	docRootTyped, _ := anchors.ToDocumentRoot(doc.DocumentRoot)
 	messageToSign := anchors.GenerateCommitHash(anchorIDTyped, centrifugeId, docRootTyped)
 	signature, _ := secp256k1.SignEthereum(messageToSign, idConfig.Keys[identity.KeyPurposeEthMsgAuth].PrivateKey)
-	ctx := testingconfig.CreateTenantContext(t, cfg)
+	ctx := testingconfig.CreateAccountContext(t, cfg)
 	anchorConfirmations, err := anchorRepo.CommitAnchor(ctx, anchorIDTyped, docRootTyped, centrifugeId, [][anchors.DocumentProofLength]byte{utils.RandomByte32()}, signature)
 	assert.Nil(t, err)
 
@@ -237,7 +238,7 @@ func TestHandler_SendAnchoredDocument_update_fail(t *testing.T) {
 }
 
 func TestHandler_SendAnchoredDocument_EmptyDocument(t *testing.T) {
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	doc := prepareDocumentForP2PHandler(t, nil)
 	req := getAnchoredRequest(doc)
 	req.Document = nil
@@ -249,7 +250,7 @@ func TestHandler_SendAnchoredDocument_EmptyDocument(t *testing.T) {
 }
 
 func TestHandler_SendAnchoredDocument(t *testing.T) {
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	centrifugeId := createIdentity(t)
 
 	doc := prepareDocumentForP2PHandler(t, nil)
@@ -286,7 +287,7 @@ func createIdentity(t *testing.T) identity.CentID {
 	// Create Identity
 	centrifugeId, _ := identity.ToCentID(utils.RandomSlice(identity.CentIDLength))
 	cfg.Set("identityId", centrifugeId.String())
-	id, confirmations, err := idService.CreateIdentity(testingconfig.CreateTenantContext(t, cfg), centrifugeId)
+	id, confirmations, err := idService.CreateIdentity(testingconfig.CreateAccountContext(t, cfg), centrifugeId)
 	assert.Nil(t, err, "should not error out when creating identity")
 	watchRegisteredIdentity := <-confirmations
 	assert.Nil(t, watchRegisteredIdentity.Error, "No error thrown by context")

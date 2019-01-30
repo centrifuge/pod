@@ -18,7 +18,7 @@ import (
 
 func TestGRPCHandler_GetTransactionStatus(t *testing.T) {
 	cService := ctx[config.BootstrappedConfigStorage].(config.Service)
-	h := GRPCHandler(ctx[BootstrappedService].(Service), cService)
+	h := GRPCHandler(ctx[BootstrappedService].(Manager), cService)
 	req := new(transactionspb.TransactionStatusRequest)
 	ctxl := testingconfig.HandlerContext(cService)
 
@@ -39,7 +39,7 @@ func TestGRPCHandler_GetTransactionStatus(t *testing.T) {
 	tcs, _ := cService.GetAllAccounts()
 	accID, _ := tcs[0].GetIdentityID()
 	cid, err := identity.ToCentID(accID)
-	tx := NewTransaction(cid, "")
+	tx := newTransaction(cid, "")
 	req.TransactionId = tx.ID.String()
 	res, err = h.GetTransactionStatus(ctxl, req)
 	assert.Nil(t, res)

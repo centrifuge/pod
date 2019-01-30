@@ -39,7 +39,7 @@ func TestMain(m *testing.M) {
 func createIdentityWithKeys(t *testing.T, centrifugeId []byte) []byte {
 	centIdTyped, _ := identity.ToCentID(centrifugeId)
 	cfg.Set("identityId", centIdTyped.String())
-	id, confirmations, err := identityService.CreateIdentity(testingconfig.CreateTenantContext(t, cfg), centIdTyped)
+	id, confirmations, err := identityService.CreateIdentity(testingconfig.CreateAccountContext(t, cfg), centIdTyped)
 	assert.Nil(t, err, "should not error out when creating identity")
 	watchRegisteredIdentity := <-confirmations
 	assert.Nil(t, watchRegisteredIdentity.Error, "No error thrown by context")
@@ -81,7 +81,7 @@ func commitAnchor(t *testing.T, anchorID, centrifugeId, documentRoot, signature 
 	centIdFixed, _ := identity.ToCentID(centrifugeId)
 
 	cfg.Set("identityId", centIdFixed.String())
-	ctx := testingconfig.CreateTenantContext(t, cfg)
+	ctx := testingconfig.CreateAccountContext(t, cfg)
 	confirmations, err := anchorRepo.CommitAnchor(ctx, anchorIDTyped, docRootTyped, centIdFixed, documentProofs, signature)
 	if err != nil {
 		t.Fatalf("Error commit Anchor %v", err)
@@ -111,7 +111,7 @@ func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
 		assert.Nil(t, err, " error must be nil")
 		commitDataList[ix] = anchors.NewCommitData(h.Number.Uint64(), currentAnchorId, currentDocumentRoot, centIdFixed, documentProofs, signature)
 		cfg.Set("identityId", centIdFixed.String())
-		ctx := testingconfig.CreateTenantContext(t, cfg)
+		ctx := testingconfig.CreateAccountContext(t, cfg)
 		confirmationList[ix], err = anchorRepo.CommitAnchor(ctx, currentAnchorId, currentDocumentRoot, centIdFixed, documentProofs, signature)
 		if err != nil {
 			t.Fatalf("Error commit Anchor %v", err)

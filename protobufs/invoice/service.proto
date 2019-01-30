@@ -7,11 +7,12 @@ option java_multiple_files = true;
 option java_outer_classname = "ServiceProto";
 option java_package = "com.invoice";
 
+import "document/service.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 import "protoc-gen-swagger/options/annotations.proto";
 
-// DocumentService contains all common interactions for invoice documents
+// DocumentService contains all common interactions for invoice document
 service DocumentService {
   rpc Create(InvoiceCreatePayload) returns (InvoiceResponse) {
     option (google.api.http) = {
@@ -67,6 +68,7 @@ message InvoiceUpdatePayload {
   string identifier = 1;
   repeated string collaborators = 2;
   InvoiceData data = 3;
+  document.UpdateAccessTokenPayload access_token_payload = 4;
 }
 
 message InvoiceResponse {
@@ -74,7 +76,7 @@ message InvoiceResponse {
   InvoiceData data = 2;
 }
 
-// ResponseHeader contains a set of common fields for most documents
+// ResponseHeader contains a set of common fields for most document
 message ResponseHeader {
   string document_id = 1;
   string version_id = 2;

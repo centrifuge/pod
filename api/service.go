@@ -12,7 +12,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/config"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/documents"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/health"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/nft"
@@ -108,7 +108,7 @@ func registerServices(ctx context.Context, cfg Config, grpcServer *grpc.Server, 
 	}
 
 	// transactions
-	txSrv := nodeObjReg[transactions.BootstrappedService].(transactions.Service)
+	txSrv := nodeObjReg[transactions.BootstrappedService].(transactions.Manager)
 	h := transactions.GRPCHandler(txSrv, configService)
 	transactionspb.RegisterTransactionServiceServer(grpcServer, h)
 	if err := transactionspb.RegisterTransactionServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts); err != nil {

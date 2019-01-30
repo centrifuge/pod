@@ -72,21 +72,26 @@ func addNewRule(cd *coredocumentpb.CoreDocument, role *coredocumentpb.Role, acti
 	cd.ReadRules = append(cd.ReadRules, rule)
 }
 
-// addNFTToReadRules adds NFT token to the read rules of core document.
-func addNFTToReadRules(cd *coredocumentpb.CoreDocument, registry common.Address, tokenID []byte) error {
-	nft, err := constructNFT(registry, tokenID)
+// AddNFTToReadRules adds NFT token to the read rules of core document.
+func AddNFTToReadRules(cd *coredocumentpb.CoreDocument, registry common.Address, tokenID []byte) error {
+	nft, err := ConstructNFT(registry, tokenID)
 	if err != nil {
 		return errors.New("failed to construct NFT: %v", err)
 	}
 
 	role := new(coredocumentpb.Role)
+	rk, err := utils.ConvertIntToByte32(len(cd.Roles))
+	if err != nil {
+		return err
+	}
+	role.RoleKey = rk[:]
 	role.Nfts = append(role.Nfts, nft)
 	addNewRule(cd, role, coredocumentpb.Action_ACTION_READ)
-	return nil
+	return FillSalts(cd)
 }
 
-// constructNFT appends registry and tokenID to byte slice
-func constructNFT(registry common.Address, tokenID []byte) ([]byte, error) {
+// ConstructNFT appends registry and tokenID to byte slice
+func ConstructNFT(registry common.Address, tokenID []byte) ([]byte, error) {
 	var nft []byte
 	// first 20 bytes of registry
 	nft = append(nft, registry.Bytes()...)
@@ -146,13 +151,13 @@ func isAccountInRole(role *coredocumentpb.Role, account identity.CentID) bool {
 	return false
 }
 
-// account returns the ReadAccessValidator tp verify account .
-func accountValidator() ReadAccessValidator {
+// AccountValidator returns the ReadAccessValidator to verify account .
+func AccountValidator() ReadAccessValidator {
 	return readAccessValidator{}
 }
 
-// nftValidator returns the ReadAccessValidator for nft owner verification.
-func nftValidator(tr TokenRegistry) ReadAccessValidator {
+// NftValidator returns the ReadAccessValidator for nft owner verification.
+func NftValidator(tr TokenRegistry) ReadAccessValidator {
 	return readAccessValidator{tokenRegistry: tr}
 }
 
@@ -225,7 +230,7 @@ func findRole(
 
 // isNFTInRole checks if the given nft(registry + token) is part of the core document role.
 func isNFTInRole(role *coredocumentpb.Role, registry common.Address, tokenID []byte) bool {
-	enft, err := constructNFT(registry, tokenID)
+	enft, err := ConstructNFT(registry, tokenID)
 	if err != nil {
 		return false
 	}

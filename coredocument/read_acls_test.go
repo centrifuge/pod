@@ -33,7 +33,7 @@ func TestReadACLs_initReadRules(t *testing.T) {
 }
 
 func TestReadAccessValidator_AccountCanRead(t *testing.T) {
-	pv := accountValidator()
+	pv := AccountValidator()
 	account, err := identity.CentIDFromString("0x010203040506")
 	assert.NoError(t, err)
 
@@ -55,7 +55,7 @@ func Test_addNFTToReadRules(t *testing.T) {
 	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
 	tokenID := utils.RandomSlice(34)
 
-	err := addNFTToReadRules(nil, registry, tokenID)
+	err := AddNFTToReadRules(nil, registry, tokenID)
 	assert.Error(t, err)
 
 	cd, err := NewWithCollaborators([]string{"0x010203040506"})
@@ -65,7 +65,7 @@ func Test_addNFTToReadRules(t *testing.T) {
 	assert.Len(t, cd.Roles, 1)
 
 	tokenID = utils.RandomSlice(32)
-	err = addNFTToReadRules(cd, registry, tokenID)
+	err = AddNFTToReadRules(cd, registry, tokenID)
 	assert.NoError(t, err)
 	assert.Len(t, cd.ReadRules, 2)
 	assert.Equal(t, cd.ReadRules[1].Action, coredocumentpb.Action_ACTION_READ)
@@ -92,7 +92,7 @@ func TestReadAccessValidator_NFTOwnerCanRead(t *testing.T) {
 	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
 
 	// account can read
-	validator := nftValidator(nil)
+	validator := NftValidator(nil)
 	err = validator.NFTOwnerCanRead(cd, registry, nil, account)
 	assert.NoError(t, err)
 
@@ -105,8 +105,8 @@ func TestReadAccessValidator_NFTOwnerCanRead(t *testing.T) {
 
 	tr := mockRegistry{}
 	tr.On("OwnerOf", registry, tokenID).Return(nil, errors.New("failed to get owner of")).Once()
-	addNFTToReadRules(cd, registry, tokenID)
-	validator = nftValidator(tr)
+	AddNFTToReadRules(cd, registry, tokenID)
+	validator = NftValidator(tr)
 	err = validator.NFTOwnerCanRead(cd, registry, tokenID, account)
 	assert.Error(t, err)
 	assert.Contains(t, err, "failed to get owner of")
@@ -116,7 +116,7 @@ func TestReadAccessValidator_NFTOwnerCanRead(t *testing.T) {
 	owner := common.BytesToAddress(utils.RandomSlice(20))
 	tr = mockRegistry{}
 	tr.On("OwnerOf", registry, tokenID).Return(owner, nil).Once()
-	validator = nftValidator(tr)
+	validator = NftValidator(tr)
 	err = validator.NFTOwnerCanRead(cd, registry, tokenID, account)
 	assert.Error(t, err)
 	tr.AssertExpectations(t)
