@@ -69,6 +69,9 @@ func TestHost_RestartWithAccounts(t *testing.T) {
 
 	// Start host
 	doctorFord.reLive(t, tempHostName)
+	up, err = sleepyHost.isLive(10 * time.Second)
+	assert.NoError(t, err)
+	assert.True(t, up)
 
 	// Verify accounts are available after restart
 	res = getAccount(sleepyTS.httpExpect, sleepyTS.id.String(), http.StatusOK, acc1)
