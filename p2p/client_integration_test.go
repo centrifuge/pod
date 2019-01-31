@@ -111,7 +111,9 @@ func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte) *coredoc
 	}
 	err = proofs.FillSalts(doc, salts)
 	assert.Nil(t, err)
-	tree, _ := coredocument.GetDocumentSigningTree(doc)
+	tree, _ := coredocument.GetDocumentSigningTree(doc, func() (bytes []byte, e error) {
+		return doc.DataRoot, nil
+	})
 	doc.SigningRoot = tree.RootHash()
 	sig := identity.Sign(idConfig, identity.KeyPurposeSigning, doc.SigningRoot)
 	doc.Signatures = append(doc.Signatures, sig)

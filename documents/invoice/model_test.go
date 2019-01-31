@@ -261,11 +261,10 @@ func TestInvoiceModel_calculateDataRoot(t *testing.T) {
 	assert.Nil(t, err, "Init must pass")
 	assert.Nil(t, m.InvoiceSalts, "salts must be nil")
 
-	err = m.CalculateDataRoot()
+	dr, err := m.CalculateDataRoot()
 	assert.Nil(t, err, "calculate must pass")
-	assert.NotNil(t, m.CoreDocument, "coredoc must be created")
+	assert.False(t, utils.IsEmptyByteSlice(dr))
 	assert.NotNil(t, m.InvoiceSalts, "salts must be created")
-	assert.NotNil(t, m.CoreDocument.DataRoot, "data root must be filled")
 }
 
 func TestInvoiceModel_createProofs(t *testing.T) {
@@ -322,7 +321,7 @@ func TestInvoiceModel_getDocumentDataTree(t *testing.T) {
 func createMockInvoice(t *testing.T) (*Invoice, *coredocumentpb.CoreDocument, error) {
 	i := &Invoice{InvoiceNumber: "3213121", NetAmount: 2, GrossAmount: 2, Currency: "USD", CoreDocument: coredocument.New()}
 	i.CoreDocument.Collaborators = [][]byte{{1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}}
-	err := i.CalculateDataRoot()
+	_, err := i.CalculateDataRoot()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -332,7 +331,7 @@ func createMockInvoice(t *testing.T) (*Invoice, *coredocumentpb.CoreDocument, er
 		return nil, nil, err
 	}
 	assert.Nil(t, coredocument.FillSalts(corDoc))
-	err = coredocument.CalculateSigningRoot(corDoc)
+	err = coredocument.CalculateSigningRoot(corDoc, i.CalculateDataRoot)
 	if err != nil {
 		return nil, nil, err
 	}

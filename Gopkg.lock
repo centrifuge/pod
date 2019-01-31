@@ -64,7 +64,7 @@
   revision = "978840734a4a2fccd5d8dc7e462d9108079c5b5d"
 
 [[projects]]
-  digest = "1:5616d244073fc94efbff79cd244cb3553a8bcf130f97e0e84d94ee6a68073fc1"
+  digest = "1:6a19abcefc536d40f5fdc9d94d304cbd96781ba96f54298b057e567e1fa80505"
   name = "github.com/centrifuge/centrifuge-protobufs"
   packages = [
     "documenttypes",
@@ -76,7 +76,8 @@
     "gen/go/purchaseorder",
   ]
   pruneopts = "T"
-  revision = "4b3f2f725dbef3290b1cd95620b955a771c38da4"
+  revision = "265db6035a7517a13165cc7bd1a38125b17cd983"
+  source = "github.com/vimukthi-git/centrifuge-protobufs"
 
 [[projects]]
   digest = "1:6c7200e9917373ebe3c248ca47f9ee8a7924aa003c137cbfee2c763d7bc0643f"

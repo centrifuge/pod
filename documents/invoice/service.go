@@ -101,7 +101,7 @@ func (s service) calculateDataRoot(ctx context.Context, old, new documents.Model
 	}
 
 	// create data root, has to be done at the model level to access fields
-	err = inv.CalculateDataRoot()
+	_, err = inv.CalculateDataRoot()
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}

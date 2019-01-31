@@ -55,7 +55,7 @@ func TestGetSigningProofHashes(t *testing.T) {
 	assert.Nil(t, err)
 
 	cd.CoredocumentSalts = cds
-	err = CalculateSigningRoot(cd)
+	err = CalculateSigningRoot(cd, nil)
 	assert.Nil(t, err)
 
 	err = CalculateDocumentRoot(cd)
@@ -84,15 +84,17 @@ func TestGetDataProofHashes(t *testing.T) {
 
 	cd.CoredocumentSalts = cds
 
-	err = CalculateSigningRoot(cd)
+	err = CalculateSigningRoot(cd, nil)
 	assert.Nil(t, err)
 
 	err = CalculateDocumentRoot(cd)
 	assert.Nil(t, err)
 
-	hashes, err := getDataProofHashes(cd)
+	hashes, err := getDataProofHashes(cd, func() (bytes []byte, e error) {
+		return cd.DataRoot, nil
+	})
 	assert.Nil(t, err)
-	assert.Equal(t, 5, len(hashes))
+	assert.Equal(t, 2, len(hashes))
 
 	valid, err := proofs.ValidateProofSortedHashes(cd.DataRoot, hashes, cd.DocumentRoot, sha256.New())
 	assert.True(t, valid)
@@ -109,11 +111,16 @@ func TestGetDocumentSigningTree(t *testing.T) {
 	cds := &coredocumentpb.CoreDocumentSalts{}
 	proofs.FillSalts(cd, cds)
 	cd.CoredocumentSalts = cds
-	tree, err := GetDocumentSigningTree(cd)
+	tree, err := GetDocumentSigningTree(cd, func() (bytes []byte, e error) {
+		return cd.DataRoot, nil
+	})
 	assert.Nil(t, err)
 	assert.NotNil(t, tree)
 
-	_, leaf := tree.GetLeafByProperty("document_type")
+	_, leaf := tree.GetLeafByProperty("data_root")
+	assert.NotNil(t, leaf)
+
+	_, leaf = tree.GetLeafByProperty("cd_root")
 	assert.NotNil(t, leaf)
 }
 
@@ -122,7 +129,9 @@ func TestGetDocumentSigningTree_EmptyEmbeddedData(t *testing.T) {
 	cds := &coredocumentpb.CoreDocumentSalts{}
 	proofs.FillSalts(cd, cds)
 	cd.CoredocumentSalts = cds
-	tree, err := GetDocumentSigningTree(cd)
+	tree, err := GetDocumentSigningTree(cd, func() (bytes []byte, e error) {
+		return cd.DataRoot, nil
+	})
 	assert.NotNil(t, err)
 	assert.Nil(t, tree)
 }
@@ -229,6 +238,92 @@ func TestNewWithCollaborators(t *testing.T) {
 	assert.NotNil(t, cd.Collaborators)
 	assert.NotNil(t, cd.CoredocumentSalts)
 	assert.Equal(t, [][]byte{c1, c2}, cd.Collaborators)
+}
+
+func TestCreateProofs(t *testing.T) {
+	h := sha256.New()
+	testTree := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: sha256.New()})
+	err := testTree.AddLeaf(proofs.LeafNode{Hash: utils.RandomSlice(32), Hashed: true, Property: proofs.NewProperty("sample_field")})
+	assert.NoError(t, err)
+	err = testTree.AddLeaf(proofs.LeafNode{Hash: utils.RandomSlice(32), Hashed: true, Property: proofs.NewProperty("sample_field2")})
+	assert.NoError(t, err)
+	err = testTree.Generate()
+	assert.NoError(t, err)
+	docAny := &any.Any{
+		TypeUrl: documenttypes.InvoiceDataTypeUrl,
+		Value:   []byte{},
+	}
+	cd := New()
+	cd.EmbeddedData = docAny
+	cd.DocumentIdentifier = utils.RandomSlice(32)
+	cd.NextVersion = utils.RandomSlice(32)
+	cd.Collaborators = [][]byte{utils.RandomSlice(32), utils.RandomSlice(32)}
+	err = FillSalts(cd)
+	assert.NoError(t, err)
+	err = CalculateSigningRoot(cd, func() (bytes []byte, e error) {
+		return testTree.RootHash(), nil
+	})
+	assert.NoError(t, err)
+	err = CalculateDocumentRoot(cd)
+	assert.NoError(t, err)
+	cdTree, err := GetCoreDocTree(cd)
+	assert.NoError(t, err)
+	tests := []struct {
+		fieldName   string
+		fromCoreDoc bool
+		proofLength int
+	}{
+		{
+			"sample_field",
+			false,
+			3,
+		},
+		{
+			"document_identifier",
+			true,
+			6,
+		},
+		{
+			"sample_field2",
+			false,
+			3,
+		},
+		{
+			"collaborators[0]",
+			true,
+			6,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.fieldName, func(t *testing.T) {
+			p, err := CreateProofs(&testTree, cd, []string{test.fieldName})
+			assert.NoError(t, err)
+			assert.Equal(t, test.proofLength, len(p[0].SortedHashes))
+			var l *proofs.LeafNode
+			if test.fromCoreDoc {
+				_, l = cdTree.GetLeafByProperty(test.fieldName)
+			} else {
+				_, l = testTree.GetLeafByProperty(test.fieldName)
+			}
+			valid, err := proofs.ValidateProofSortedHashes(l.Hash, p[0].SortedHashes, cd.DocumentRoot, h)
+			assert.NoError(t, err)
+			assert.True(t, valid)
+		})
+	}
+
+}
+
+func Test(t *testing.T) {
+	tests := []struct {
+		name string
+	}{
+		// TODO: test cases
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+
+		})
+	}
 }
 
 func TestGetExternalCollaborators(t *testing.T) {

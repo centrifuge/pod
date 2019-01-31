@@ -318,7 +318,9 @@ func prepareDocumentForP2PHandler(t *testing.T, doc *coredocumentpb.CoreDocument
 	if doc == nil {
 		doc = testingcoredocument.GenerateCoreDocument()
 	}
-	tree, err := coredocument.GetDocumentSigningTree(doc)
+	tree, err := coredocument.GetDocumentSigningTree(doc, func() (bytes []byte, e error) {
+		return doc.DataRoot, nil
+	})
 	assert.NoError(t, err)
 	doc.SigningRoot = tree.RootHash()
 	sig := identity.Sign(idConfig, identity.KeyPurposeSigning, doc.SigningRoot)

@@ -80,12 +80,6 @@ func (s service) calculateDataRoot(ctx context.Context, old, new documents.Model
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalidType, errors.New("unknown document type: %T", new))
 	}
 
-	// create data root, has to be done at the model level to access fields
-	err = po.calculateDataRoot()
-	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
-	}
-
 	// validate the invoice
 	err = validator.Validate(old, po)
 	if err != nil {
