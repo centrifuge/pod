@@ -20,7 +20,7 @@ const (
 func GenerateKeyFilesForTest(t *testing.T, curve string) (publicKey, privateKey []byte) {
 	publicFileName := "publicKeyFile"
 	privateFileName := "privateKeyFile"
-	GenerateCryptoKeyPair(publicFileName, privateFileName, curve)
+	GenerateSigningKeyPair(publicFileName, privateFileName, curve)
 
 	_, err := os.Stat(publicFileName)
 	assert.False(t, err != nil, "public key file not generated")

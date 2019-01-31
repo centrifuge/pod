@@ -129,7 +129,7 @@ func generateAccountKeys(keystore string, acc *Account, CID identity.CentID) (*A
 	if err != nil {
 		return nil, err
 	}
-	acc.P2PKeyPair = KeyPair{
+	acc.SigningKeyPair = KeyPair{
 		Pub:  sPub,
 		Priv: sPriv,
 	}
@@ -145,11 +145,11 @@ func generateAccountKeys(keystore string, acc *Account, CID identity.CentID) (*A
 		Pub:  ePub,
 		Priv: ePriv,
 	}
-	err = crypto.GenerateCryptoKeyPair(acc.P2PKeyPair.Pub, acc.P2PKeyPair.Priv, crypto.CurveEd25519)
+	err = crypto.GenerateSigningKeyPair(acc.SigningKeyPair.Pub, acc.SigningKeyPair.Priv, crypto.CurveEd25519)
 	if err != nil {
 		return nil, err
 	}
-	err = crypto.GenerateCryptoKeyPair(acc.EthAuthKeyPair.Pub, acc.EthAuthKeyPair.Priv, crypto.CurveSecp256K1)
+	err = crypto.GenerateSigningKeyPair(acc.EthAuthKeyPair.Pub, acc.EthAuthKeyPair.Priv, crypto.CurveSecp256K1)
 	if err != nil {
 		return nil, err
 	}

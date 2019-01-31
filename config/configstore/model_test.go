@@ -264,6 +264,7 @@ func TestNewAccountConfig(t *testing.T) {
 	c.On("GetEthereumDefaultAccountName").Return("dummyAcc").Once()
 	c.On("GetReceiveEventNotificationEndpoint").Return("dummyNotifier").Once()
 	c.On("GetIdentityID").Return(utils.RandomSlice(6), nil).Once()
+	c.On("GetP2PKeyPair").Return("pub", "priv").Once()
 	c.On("GetSigningKeyPair").Return("pub", "priv").Once()
 	c.On("GetEthAuthKeyPair").Return("pub", "priv").Once()
 	c.On("GetEthereumContextWaitTimeout").Return(time.Second).Once()
@@ -298,6 +299,7 @@ func TestAccountProtobuf_validationFailures(t *testing.T) {
 	c.On("GetEthereumDefaultAccountName").Return("dummyAcc")
 	c.On("GetReceiveEventNotificationEndpoint").Return("dummyNotifier")
 	c.On("GetIdentityID").Return(utils.RandomSlice(6), nil)
+	c.On("GetP2PKeyPair").Return("pub", "priv")
 	c.On("GetSigningKeyPair").Return("pub", "priv")
 	c.On("GetEthAuthKeyPair").Return("pub", "priv")
 	c.On("GetEthereumContextWaitTimeout").Return(time.Second)
@@ -328,6 +330,13 @@ func TestAccountProtobuf_validationFailures(t *testing.T) {
 	assert.Error(t, err)
 	accpb.EthAccount = ethacc.(*accountpb.EthereumAccount)
 
+	// Nil P2PKeyPair
+	p2pKey := proto.Clone(accpb.P2PKeyPair)
+	accpb.P2PKeyPair = nil
+	err = tco.loadFromProtobuf(accpb)
+	assert.Error(t, err)
+	accpb.P2PKeyPair = p2pKey.(*accountpb.KeyPair)
+
 	// Nil SigningKeyPair
 	signKey := proto.Clone(accpb.SigningKeyPair)
 	accpb.SigningKeyPair = nil
@@ -349,6 +358,7 @@ func TestAccountConfigProtobuf(t *testing.T) {
 	c.On("GetEthereumDefaultAccountName").Return("dummyAcc").Once()
 	c.On("GetReceiveEventNotificationEndpoint").Return("dummyNotifier").Once()
 	c.On("GetIdentityID").Return(utils.RandomSlice(6), nil).Once()
+	c.On("GetP2PKeyPair").Return("pub", "priv").Once()
 	c.On("GetSigningKeyPair").Return("pub", "priv").Once()
 	c.On("GetEthAuthKeyPair").Return("pub", "priv").Once()
 	c.On("GetEthereumContextWaitTimeout").Return(time.Second).Once()
@@ -386,6 +396,7 @@ func createMockConfig() *mockConfig {
 	c.On("GetWorkerWaitTimeMS").Return(1).Once()
 	c.On("GetEthereumNodeURL").Return("dummyNode").Once()
 	c.On("GetIdentityID").Return(utils.RandomSlice(6), nil).Once()
+	c.On("GetP2PKeyPair").Return("pub", "priv").Once()
 	c.On("GetSigningKeyPair").Return("pub", "priv").Once()
 	c.On("GetEthAuthKeyPair").Return("pub", "priv").Once()
 	c.On("GetReceiveEventNotificationEndpoint").Return("dummyNotifier").Once()

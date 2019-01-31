@@ -15,7 +15,7 @@ func TestVerifyMessageED25519(t *testing.T) {
 	privateKeyFile := "privateKey"
 	testMsg := "test"
 
-	GenerateCryptoKeyPair(publicKeyFile, privateKeyFile, CurveEd25519)
+	GenerateSigningKeyPair(publicKeyFile, privateKeyFile, CurveEd25519)
 	privateKey, err := utils.ReadKeyFromPemFile(privateKeyFile, utils.PrivateKey)
 	assert.Nil(t, err)
 	signature, err := SignMessage(privateKey, []byte(testMsg), CurveEd25519, false)

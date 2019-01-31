@@ -401,6 +401,7 @@ func convertStringMapToSmartContractAddresses(addrs map[string]string) (map[conf
 func NewNodeConfig(c config.Configuration) config.Configuration {
 	mainAccount, _ := c.GetEthereumAccount(c.GetEthereumDefaultAccountName())
 	mainIdentity, _ := c.GetIdentityID()
+	p2pPub, p2pPriv := c.GetP2PKeyPair()
 	signPub, signPriv := c.GetSigningKeyPair()
 	ethAuthPub, ethAuthPriv := c.GetEthAuthKeyPair()
 
@@ -414,6 +415,10 @@ func NewNodeConfig(c config.Configuration) config.Configuration {
 			EthereumDefaultAccountName:       c.GetEthereumDefaultAccountName(),
 			IdentityID:                       mainIdentity,
 			ReceiveEventNotificationEndpoint: c.GetReceiveEventNotificationEndpoint(),
+			P2PKeyPair: KeyPair{
+				Pub:  p2pPub,
+				Priv: p2pPriv,
+			},
 			SigningKeyPair: KeyPair{
 				Pub:  signPub,
 				Priv: signPriv,
@@ -543,6 +548,10 @@ func (acc *Account) CreateProtobuf() (*accountpb.AccountData, error) {
 		EthDefaultAccountName:            acc.EthereumDefaultAccountName,
 		ReceiveEventNotificationEndpoint: acc.ReceiveEventNotificationEndpoint,
 		IdentityId:                       hexutil.Encode(acc.IdentityID),
+		P2PKeyPair: &accountpb.KeyPair{
+			Pub: acc.P2PKeyPair.Pub,
+			Pvt: acc.P2PKeyPair.Priv,
+		},
 		SigningKeyPair: &accountpb.KeyPair{
 			Pub: acc.SigningKeyPair.Pub,
 			Pvt: acc.SigningKeyPair.Priv,
@@ -561,6 +570,9 @@ func (acc *Account) loadFromProtobuf(data *accountpb.AccountData) error {
 	if data.EthAccount == nil {
 		return errors.NewTypedError(ErrNilParameter, errors.New("nil EthAccount field"))
 	}
+	if data.P2PKeyPair == nil {
+		return errors.NewTypedError(ErrNilParameter, errors.New("nil P2PKeyPair field"))
+	}
 	if data.SigningKeyPair == nil {
 		return errors.NewTypedError(ErrNilParameter, errors.New("nil SigningKeyPair field"))
 	}
@@ -575,6 +587,10 @@ func (acc *Account) loadFromProtobuf(data *accountpb.AccountData) error {
 	acc.EthereumDefaultAccountName = data.EthDefaultAccountName
 	acc.IdentityID, _ = hexutil.Decode(data.IdentityId)
 	acc.ReceiveEventNotificationEndpoint = data.ReceiveEventNotificationEndpoint
+	acc.P2PKeyPair = KeyPair{
+		Pub:  data.P2PKeyPair.Pub,
+		Priv: data.P2PKeyPair.Pvt,
+	}
 	acc.SigningKeyPair = KeyPair{
 		Pub:  data.SigningKeyPair.Pub,
 		Priv: data.SigningKeyPair.Pvt,
@@ -602,6 +618,7 @@ func NewAccount(ethAccountName string, c config.Configuration) (config.Account, 
 		EthereumContextWaitTimeout:       c.GetEthereumContextWaitTimeout(),
 		IdentityID:                       id,
 		ReceiveEventNotificationEndpoint: c.GetReceiveEventNotificationEndpoint(),
+		P2PKeyPair:                       NewKeyPair(c.GetP2PKeyPair()),
 		SigningKeyPair:                   NewKeyPair(c.GetSigningKeyPair()),
 		EthAuthKeyPair:                   NewKeyPair(c.GetEthAuthKeyPair()),
 	}, nil
@@ -618,6 +635,7 @@ func TempAccount(ethAccountName string, c config.Configuration) (config.Account,
 		EthereumDefaultAccountName:       c.GetEthereumDefaultAccountName(),
 		IdentityID:                       []byte{},
 		ReceiveEventNotificationEndpoint: c.GetReceiveEventNotificationEndpoint(),
+		P2PKeyPair:                       NewKeyPair(c.GetP2PKeyPair()),
 		SigningKeyPair:                   NewKeyPair(c.GetSigningKeyPair()),
 		EthAuthKeyPair:                   NewKeyPair(c.GetEthAuthKeyPair()),
 	}, nil

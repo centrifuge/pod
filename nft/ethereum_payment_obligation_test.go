@@ -202,6 +202,7 @@ func TestPaymentObligationService(t *testing.T) {
 				configMock.On("GetEthereumAccount").Return(&config.AccountConfig{}, nil)
 				configMock.On("GetEthereumContextWaitTimeout").Return(time.Second)
 				configMock.On("GetReceiveEventNotificationEndpoint").Return("")
+				configMock.On("GetP2PKeyPair").Return("", "")
 				configMock.On("GetSigningKeyPair").Return("", "")
 				configMock.On("GetEthAuthKeyPair").Return("", "")
 				queueSrv := new(testingutils.MockQueue)

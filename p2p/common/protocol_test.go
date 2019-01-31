@@ -91,6 +91,10 @@ func TestPrepareP2PEnvelope(t *testing.T) {
 	spk, ssk := cfg.GetSigningKeyPair()
 	acc := &configstore.Account{
 		IdentityID: id,
+		P2PKeyPair: configstore.KeyPair{
+			Priv: ssk,
+			Pub:  spk,
+		},
 		SigningKeyPair: configstore.KeyPair{
 			Priv: ssk,
 			Pub:  spk,

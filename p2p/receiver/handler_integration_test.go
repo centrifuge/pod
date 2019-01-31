@@ -295,11 +295,18 @@ func createIdentity(t *testing.T) identity.CentID {
 
 	idConfig, err := identity.GetIdentityConfig(cfg)
 	// Add Keys
-	pubKey := idConfig.Keys[identity.KeyPurposeSigning].PublicKey
-	confirmations, err = id.AddKeyToIdentity(context.Background(), identity.KeyPurposeSigning, pubKey)
+	pubKey := idConfig.Keys[identity.KeyPurposeP2P].PublicKey
+	confirmations, err = id.AddKeyToIdentity(context.Background(), identity.KeyPurposeP2P, pubKey)
 	assert.Nil(t, err, "should not error out when adding key to identity")
 	assert.NotNil(t, confirmations, "confirmations channel should not be nil")
 	watchReceivedIdentity := <-confirmations
+	assert.Equal(t, centrifugeId, watchReceivedIdentity.Identity.CentID(), "Resulting Identity should have the same ID as the input")
+
+	sPubKey := idConfig.Keys[identity.KeyPurposeSigning].PublicKey
+	confirmations, err = id.AddKeyToIdentity(context.Background(), identity.KeyPurposeSigning, sPubKey)
+	assert.Nil(t, err, "should not error out when adding key to identity")
+	assert.NotNil(t, confirmations, "confirmations channel should not be nil")
+	watchReceivedIdentity = <-confirmations
 	assert.Equal(t, centrifugeId, watchReceivedIdentity.Identity.CentID(), "Resulting Identity should have the same ID as the input")
 
 	secPubKey := idConfig.Keys[identity.KeyPurposeEthMsgAuth].PublicKey
