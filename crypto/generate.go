@@ -8,8 +8,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils"
 )
 
-// GenerateSigningKeyPair generates based on the curveType and writes keys to file paths given.
-func GenerateSigningKeyPair(publicFileName, privateFileName, curveType string) (err error) {
+// GenerateCryptoKeyPair generates based on the curveType and writes keys to file paths given.
+func GenerateCryptoKeyPair(publicFileName, privateFileName, curveType string) (err error) {
 	var publicKey, privateKey []byte
 	switch strings.ToLower(curveType) {
 	case CurveSecp256K1:

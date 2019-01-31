@@ -34,10 +34,12 @@ func createIdentity(ctx context.Context, idService identity.Service) (identity.C
 }
 
 func generateKeys(config config.Configuration) {
-	p2pPub, p2pPvt := config.GetSigningKeyPair()
+	p2pPub, p2pPvt := config.GetP2PKeyPair()
+	signPub, signPvt := config.GetSigningKeyPair()
 	ethAuthPub, ethAuthPvt := config.GetEthAuthKeyPair()
-	crypto.GenerateSigningKeyPair(p2pPub, p2pPvt, "ed25519")
-	crypto.GenerateSigningKeyPair(ethAuthPub, ethAuthPvt, "secp256k1")
+	crypto.GenerateCryptoKeyPair(p2pPub, p2pPvt, "ed25519")
+	crypto.GenerateCryptoKeyPair(signPub, signPvt, "ed25519")
+	crypto.GenerateCryptoKeyPair(ethAuthPub, ethAuthPvt, "secp256k1")
 }
 
 func addKeys(config config.Configuration, idService identity.Service) error {

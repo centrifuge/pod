@@ -246,6 +246,11 @@ func (nc *NodeConfig) GetIdentityID() ([]byte, error) {
 	return nc.MainIdentity.IdentityID, nil
 }
 
+// GetP2PKeyPair refer the interface
+func (nc *NodeConfig) GetP2PKeyPair() (pub, priv string) {
+	return nc.MainIdentity.P2PKeyPair.Pub, nc.MainIdentity.P2PKeyPair.Priv
+}
+
 // GetSigningKeyPair refer the interface
 func (nc *NodeConfig) GetSigningKeyPair() (pub, priv string) {
 	return nc.MainIdentity.SigningKeyPair.Pub, nc.MainIdentity.SigningKeyPair.Priv
@@ -482,6 +487,11 @@ func (acc *Account) GetReceiveEventNotificationEndpoint() string {
 // GetIdentityID gets IdentityID
 func (acc *Account) GetIdentityID() ([]byte, error) {
 	return acc.IdentityID, nil
+}
+
+// GetP2PKeyPair gets P2PKeyPair
+func (acc *Account) GetP2PKeyPair() (pub, priv string) {
+	return acc.P2PKeyPair.Pub, acc.P2PKeyPair.Priv
 }
 
 // GetSigningKeyPair gets SigningKeyPair

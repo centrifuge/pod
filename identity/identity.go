@@ -78,6 +78,7 @@ func (c CentID) BigInt() *big.Int {
 type Config interface {
 	GetEthereumDefaultAccountName() string
 	GetIdentityID() ([]byte, error)
+	GetP2PKeyPair() (pub, priv string)
 	GetSigningKeyPair() (pub, priv string)
 	GetEthAuthKeyPair() (pub, priv string)
 	GetEthereumContextWaitTimeout() time.Duration
