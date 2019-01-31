@@ -5,6 +5,8 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/coredocument"
+
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -73,7 +75,7 @@ func newEthereumPaymentObligation(
 	}
 }
 
-func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, documentID []byte, depositAddress string, proofFields []string) (MintRequest, error) {
+func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, tokenID TokenID, documentID []byte, depositAddress string, proofFields []string) (MintRequest, error) {
 	model, err := s.docSrv.GetCurrentVersion(ctx, documentID)
 	if err != nil {
 		return MintRequest{}, err
@@ -101,7 +103,7 @@ func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, docu
 		return MintRequest{}, err
 	}
 
-	requestData, err := NewMintRequest(toAddress, anchorID, proofs.FieldProofs, rootHash)
+	requestData, err := NewMintRequest(tokenID, toAddress, anchorID, proofs.FieldProofs, rootHash)
 	if err != nil {
 		return MintRequest{}, err
 	}
@@ -117,22 +119,6 @@ func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, documentID []by
 		return nil, err
 	}
 
-	requestData, err := s.prepareMintRequest(ctx, documentID, depositAddress, proofFields)
-	if err != nil {
-		return nil, errors.New("failed to prepare mint request: %v", err)
-	}
-
-	opts, err := s.ethClient.GetTxOpts(tc.GetEthereumDefaultAccountName())
-	if err != nil {
-		return nil, err
-	}
-
-	registry := common.HexToAddress(registryAddress)
-	contract, err := s.bindContract(registry, s.ethClient)
-	if err != nil {
-		return nil, err
-	}
-
 	cidBytes, err := tc.GetIdentityID()
 	if err != nil {
 		return nil, err
@@ -143,15 +129,100 @@ func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, documentID []by
 		return nil, err
 	}
 
-	txID, err := s.sendMintTransaction(cid, contract, opts, requestData, registry, documentID)
+	tokenID := NewTokenID()
+	// Mint NFT within transaction
+	// We use context.Background() for now so that the transaction is only limited by ethereum timeouts
+	txID, _, err := s.txManager.ExecuteWithinTX(context.Background(), cid, uuid.Nil, "Minting NFT",
+		s.minter(ctx, tokenID, documentID, registryAddress, depositAddress, proofFields))
+
 	if err != nil {
-		return nil, errors.New("failed to send transaction: %v", err)
+		return nil, err
 	}
 
 	return &MintNFTResponse{
 		TransactionID: txID.String(),
-		TokenID:       requestData.TokenID.String(),
+		TokenID:       tokenID.String(),
 	}, nil
+}
+
+func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID, documentID []byte, registryAddress, depositAddress string, proofFields []string) func(accountID identity.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
+	return func(accountID identity.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
+		tc, err := contextutil.Account(ctx)
+		if err != nil {
+			errOut <- err
+		}
+
+		// registry address
+		registry := common.HexToAddress(registryAddress)
+
+		model, err := s.docSrv.GetCurrentVersion(ctx, documentID)
+		if err != nil {
+			errOut <- err
+		}
+
+		cd, err := model.PackCoreDocument()
+		if err != nil {
+			errOut <- err
+		}
+
+		data := cd.EmbeddedData
+		cd, err = coredocument.PrepareNewVersion(*cd, nil)
+		if err != nil {
+			errOut <- err
+		}
+
+		cd.EmbeddedData = data
+		err = coredocument.AddNFTToReadRules(cd, registry, tokenID[:])
+		if err != nil {
+			errOut <- err
+		}
+
+		model, err = s.docSrv.DeriveFromCoreDocument(cd)
+		if err != nil {
+			errOut <- err
+		}
+
+		_, _, err = s.docSrv.Update(contextutil.WithTX(ctx, txID), model)
+		if err != nil {
+			errOut <- err
+		}
+
+		requestData, err := s.prepareMintRequest(ctx, tokenID, documentID, depositAddress, proofFields)
+		if err != nil {
+			errOut <- errors.New("failed to prepare mint request: %v", err)
+		}
+
+		opts, err := s.ethClient.GetTxOpts(tc.GetEthereumDefaultAccountName())
+		if err != nil {
+			errOut <- err
+		}
+
+		contract, err := s.bindContract(registry, s.ethClient)
+		if err != nil {
+			errOut <- err
+		}
+
+		ethTX, err := s.ethClient.SubmitTransactionWithRetries(contract.Mint, opts, requestData.To, requestData.TokenID, requestData.TokenURI, requestData.AnchorID,
+			requestData.MerkleRoot, requestData.Values, requestData.Salts, requestData.Proofs)
+		if err != nil {
+			errOut <- err
+		}
+
+		log.Infof("Sent off ethTX to mint [tokenID: %s, anchor: %x, registry: %s] to payment obligation contract. Ethereum transaction hash [%s] and Nonce [%d] and Check [%v]",
+			requestData.TokenID, requestData.AnchorID, requestData.To, ethTX.Hash(), ethTX.Nonce(), ethTX.CheckNonce())
+		log.Infof("Transfer pending: 0x%x\n", ethTX.Hash())
+
+		res, err := ethereum.QueueEthTXStatusTask(accountID, txID, ethTX.Hash(), true, s.queue)
+		if err != nil {
+			errOut <- err
+		}
+
+		_, err = res.Get(s.cfg.GetEthereumContextWaitTimeout())
+		if err != nil {
+			errOut <- err
+		}
+		errOut <- nil
+	}
 }
 
 // OwnerOf returns the owner of the NFT token on ethereum chain
@@ -165,57 +236,6 @@ func (s *ethereumPaymentObligation) OwnerOf(registry common.Address, tokenID []b
 	defer cancF()
 
 	return contract.OwnerOf(opts, utils.ByteSliceToBigInt(tokenID))
-}
-
-// sendMintTransaction sends the actual transaction to mint the NFT
-func (s *ethereumPaymentObligation) sendMintTransaction(
-	cid identity.CentID,
-	contract ethereumPaymentObligationContract,
-	opts *bind.TransactOpts,
-	requestData MintRequest,
-	registry common.Address,
-	documentID []byte) (uuid.UUID, error) {
-
-	r := requestData.copy()
-
-	// Run within transaction
-	// We use context.Background() for now so that the transaction is only limited by ethereum timeouts
-	txID, _, err := s.txManager.ExecuteWithinTX(context.Background(), cid, uuid.Nil, "Minting NFT", func(accountID identity.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
-		ethTX, err := s.ethClient.SubmitTransactionWithRetries(contract.Mint, opts, r.To, r.TokenID, r.TokenURI, r.AnchorID,
-			r.MerkleRoot, r.Values, r.Salts, r.Proofs)
-		if err != nil {
-			errOut <- err
-		}
-
-		log.Infof("Sent off ethTX to mint [tokenID: %x, anchor: %x, registry: %x] to payment obligation contract. Ethereum transaction hash [%x] and Nonce [%v] and Check [%v]",
-			requestData.TokenID, requestData.AnchorID, requestData.To, ethTX.Hash(), ethTX.Nonce(), ethTX.CheckNonce())
-		log.Infof("Transfer pending: 0x%x\n", ethTX.Hash())
-
-		res, err := ethereum.QueueEthTXStatusTask(accountID, txID, ethTX.Hash(), true, s.queue)
-		if err != nil {
-			errOut <- err
-		}
-
-		_, err = res.Get(s.cfg.GetEthereumContextWaitTimeout())
-		if err != nil {
-			errOut <- err
-		}
-
-		res, err = documents.InitNFTCreatedTask(
-			s.queue, txID, accountID, documentID, registry, requestData.TokenID.Bytes())
-		if err != nil {
-			errOut <- err
-		}
-
-		_, err = res.Get(s.cfg.GetEthereumContextWaitTimeout())
-		if err != nil {
-			errOut <- err
-		}
-
-		errOut <- nil
-	})
-
-	return txID, err
 }
 
 // MintRequest holds the data needed to mint and NFT from a Centrifuge document
@@ -247,12 +267,7 @@ type MintRequest struct {
 }
 
 // NewMintRequest converts the parameters and returns a struct with needed parameter for minting
-func NewMintRequest(to common.Address, anchorID anchors.AnchorID, proofs []*proofspb.Proof, rootHash [32]byte) (MintRequest, error) {
-
-	// tokenID is uint256 in Solidity (256 bits | max value is 2^256-1)
-	// tokenID should be random 32 bytes (32 byte = 256 bits)
-	tokenID := utils.ByteSliceToBigInt(utils.RandomSlice(32))
-	tokenURI := "http:=//www.centrifuge.io/DUMMY_URI_SERVICE"
+func NewMintRequest(tokenID TokenID, to common.Address, anchorID anchors.AnchorID, proofs []*proofspb.Proof, rootHash [32]byte) (MintRequest, error) {
 	proofData, err := createProofData(proofs)
 	if err != nil {
 		return MintRequest{}, err
@@ -260,26 +275,13 @@ func NewMintRequest(to common.Address, anchorID anchors.AnchorID, proofs []*proo
 
 	return MintRequest{
 		To:         to,
-		TokenID:    tokenID,
-		TokenURI:   tokenURI,
+		TokenID:    tokenID.BigInt(),
+		TokenURI:   tokenID.URI(),
 		AnchorID:   anchorID.BigInt(),
 		MerkleRoot: rootHash,
 		Values:     proofData.Values,
 		Salts:      proofData.Salts,
 		Proofs:     proofData.Proofs}, nil
-}
-
-func (m MintRequest) copy() MintRequest {
-	return MintRequest{
-		m.To,
-		new(big.Int).Set(m.TokenID),
-		m.TokenURI,
-		new(big.Int).Set(m.AnchorID),
-		m.MerkleRoot,
-		m.Values,
-		m.Salts,
-		m.Proofs,
-	}
 }
 
 type proofData struct {
