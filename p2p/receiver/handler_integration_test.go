@@ -117,7 +117,7 @@ func TestHandler_HandleInterceptorReqSignature(t *testing.T) {
 	req := getSignatureRequest(doc)
 	p2pEnv, err := p2pcommon.PrepareP2PEnvelope(ctxh, cfg.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, req)
 
-	pub, _ := cfg.GetSigningKeyPair()
+	pub, _ := cfg.GetP2PKeyPair()
 	publicKey, err := cented25519.GetPublicSigningKey(pub)
 	assert.NoError(t, err)
 	var bPk [32]byte
