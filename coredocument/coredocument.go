@@ -27,7 +27,7 @@ func getDataProofHashes(document *coredocumentpb.CoreDocument) (hashes [][]byte,
 		return
 	}
 
-	rootProofHashes, err := getSigningProofHashes(document)
+	rootProofHashes, err := getSigningRootProofHashes(document)
 	if err != nil {
 		return
 	}
@@ -35,9 +35,9 @@ func getDataProofHashes(document *coredocumentpb.CoreDocument) (hashes [][]byte,
 	return append(signingProof.SortedHashes, rootProofHashes...), err
 }
 
-// getSigningProofHashes returns the hashes needed to create a proof for fields from SigningRoot to DataRoot. This method is used
+// getSigningRootProofHashes returns the hashes needed to create a proof for fields from SigningRoot to DocumentRoot. This method is used
 // to create field proofs
-func getSigningProofHashes(document *coredocumentpb.CoreDocument) (hashes [][]byte, err error) {
+func getSigningRootProofHashes(document *coredocumentpb.CoreDocument) (hashes [][]byte, err error) {
 	tree, err := GetDocumentRootTree(document)
 	if err != nil {
 		return
@@ -94,7 +94,10 @@ func GetDocumentRootTree(document *coredocumentpb.CoreDocument) (tree *proofs.Do
 		Salt:     make([]byte, 32),
 		Value:    fmt.Sprintf("%d", len(document.Signatures)),
 	}
-	sigLengthNode.HashNode(h, false)
+	err = sigLengthNode.HashNode(h, false)
+	if err != nil {
+		return nil, err
+	}
 	sigLeafList[0] = sigLengthNode
 	for i, sig := range document.Signatures {
 		payload := sha256.Sum256(append(sig.EntityId, append(sig.PublicKey, sig.Signature...)...))
@@ -103,7 +106,10 @@ func GetDocumentRootTree(document *coredocumentpb.CoreDocument) (tree *proofs.Do
 			Hashed:   true,
 			Property: sigProperty.SliceElemProp(proofs.FieldNumForSliceLength(i)),
 		}
-		leaf.HashNode(h, false)
+		err = leaf.HashNode(h, false)
+		if err != nil {
+			return nil, err
+		}
 		sigLeafList[i+1] = leaf
 	}
 	err = tree.AddLeaves(sigLeafList)
@@ -117,8 +123,8 @@ func GetDocumentRootTree(document *coredocumentpb.CoreDocument) (tree *proofs.Do
 	return tree, nil
 }
 
-// GetDocumentSigningTree returns the merkle tree for the signing root
-func GetDocumentSigningTree(document *coredocumentpb.CoreDocument) (tree *proofs.DocumentTree, err error) {
+// GetDocumentCDTree returns the merkle tree for the coredoc root
+func GetDocumentCDTree(document *coredocumentpb.CoreDocument) (tree *proofs.DocumentTree, err error) {
 	h := sha256.New()
 	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: h})
 	tree = &t
@@ -136,7 +142,12 @@ func GetDocumentSigningTree(document *coredocumentpb.CoreDocument) (tree *proofs
 		Salt:     make([]byte, 32),
 		Value:    document.EmbeddedData.TypeUrl,
 	}
-	documentTypeNode.HashNode(h, false)
+
+	err = documentTypeNode.HashNode(h, false)
+	if err != nil {
+		return nil, err
+	}
+
 	err = tree.AddLeaf(documentTypeNode)
 	if err != nil {
 		return nil, err
@@ -146,6 +157,44 @@ func GetDocumentSigningTree(document *coredocumentpb.CoreDocument) (tree *proofs
 	if err != nil {
 		return nil, err
 	}
+	return tree, nil
+}
+
+// GetDocumentSigningTree returns the merkle tree for the signing root
+func GetDocumentSigningTree(document *coredocumentpb.CoreDocument) (tree *proofs.DocumentTree, err error) {
+	h := sha256.New()
+
+	// coredoc tree
+	coreDocTree, err := GetDocumentCDTree(document)
+	if err != nil {
+		return nil, err
+	}
+
+	// create the signing tree with data root and coredoc root as siblings
+	t2 := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: h})
+	tree = &t2
+	err = tree.AddLeaves([]proofs.LeafNode{
+		{
+			Property: proofs.NewProperty("data_root"),
+			Hash:     document.DataRoot,
+			Hashed:   true,
+		},
+		{
+			Property: proofs.NewProperty("coredoc_root"),
+			Hash:     coreDocTree.RootHash(),
+			Hashed:   true,
+		},
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	err = tree.Generate()
+	if err != nil {
+		return nil, err
+	}
+
 	return tree, nil
 }
 
@@ -170,7 +219,10 @@ func PrepareNewVersion(oldCD coredocumentpb.CoreDocument, collaborators []string
 	// copy read rules and roles
 	ncd.Roles = oldCD.Roles
 	ncd.ReadRules = oldCD.ReadRules
-	addCollaboratorsToReadSignRules(ncd, ucs)
+	err = addCollaboratorsToReadSignRules(ncd, ucs)
+	if err != nil {
+		return nil, err
+	}
 
 	err = FillSalts(ncd)
 	if err != nil {
@@ -283,17 +335,12 @@ func GetTypeURL(coreDocument *coredocumentpb.CoreDocument) (string, error) {
 
 // CreateProofs util function that takes document data tree, coreDocument and a list fo fields and generates proofs
 func CreateProofs(dataTree *proofs.DocumentTree, coreDoc *coredocumentpb.CoreDocument, fields []string) (proofs []*proofspb.Proof, err error) {
-	dataRootHashes, err := getDataProofHashes(coreDoc)
+	signingRootProofHashes, err := getSigningRootProofHashes(coreDoc)
 	if err != nil {
 		return nil, errors.New("createProofs error %v", err)
 	}
 
-	signingRootHashes, err := getSigningProofHashes(coreDoc)
-	if err != nil {
-		return nil, errors.New("createProofs error %v", err)
-	}
-
-	cdtree, err := GetDocumentSigningTree(coreDoc)
+	cdtree, err := GetDocumentCDTree(coreDoc)
 	if err != nil {
 		return nil, errors.New("createProofs error %v", err)
 	}
@@ -301,7 +348,6 @@ func CreateProofs(dataTree *proofs.DocumentTree, coreDoc *coredocumentpb.CoreDoc
 	// We support fields that belong to different document trees, as we do not prepend a tree prefix to the field, the approach
 	// is to try in both trees to find the field and create the proof accordingly
 	for _, field := range fields {
-		rootHashes := dataRootHashes
 		proof, err := dataTree.CreateProof(field)
 		if err != nil {
 			if strings.Contains(err.Error(), "No such field") {
@@ -309,12 +355,11 @@ func CreateProofs(dataTree *proofs.DocumentTree, coreDoc *coredocumentpb.CoreDoc
 				if err != nil {
 					return nil, errors.New("createProofs error %v", err)
 				}
-				rootHashes = signingRootHashes
 			} else {
 				return nil, errors.New("createProofs error %v", err)
 			}
 		}
-		proof.SortedHashes = append(proof.SortedHashes, rootHashes...)
+		proof.SortedHashes = append(proof.SortedHashes, signingRootProofHashes...)
 		proofs = append(proofs, &proof)
 	}
 

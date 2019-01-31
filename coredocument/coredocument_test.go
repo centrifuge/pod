@@ -61,7 +61,7 @@ func TestGetSigningProofHashes(t *testing.T) {
 	err = CalculateDocumentRoot(cd)
 	assert.Nil(t, err)
 
-	hashes, err := getSigningProofHashes(cd)
+	hashes, err := getSigningRootProofHashes(cd)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(hashes))
 
