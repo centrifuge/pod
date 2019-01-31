@@ -2,7 +2,6 @@ package invoice
 
 import (
 	"context"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/coredocument"
@@ -266,6 +265,7 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *clientinv
 	}
 
 	collaborators := append([]string{idConf.ID.String()}, payload.Collaborators...)
+
 	inv.CoreDocument, err = coredocument.PrepareNewVersion(*oldCD, collaborators)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentPrepareCoreDocument, err)
@@ -273,3 +273,4 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *clientinv
 
 	return inv, nil
 }
+

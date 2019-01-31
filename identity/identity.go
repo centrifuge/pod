@@ -74,6 +74,11 @@ func (c CentID) BigInt() *big.Int {
 	return utils.ByteSliceToBigInt(c[:])
 }
 
+// Bytes returns CentID in bytes
+func (c CentID) Bytes() []byte {
+	return c.BigInt().Bytes()
+}
+
 // Config defines methods required for the package identity.
 type Config interface {
 	GetEthereumDefaultAccountName() string
