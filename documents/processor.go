@@ -178,16 +178,6 @@ func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Model) erro
 		return errors.New("failed to get document root: %v", err)
 	}
 
-	id, err := dp.config.GetIdentityID()
-	if err != nil {
-		return errors.New("failed to get self cent ID: %v", err)
-	}
-
-	centID, err := identity.ToCentID(id)
-	if err != nil {
-		return errors.New("centID invalid: %v", err)
-	}
-
 	anchorID, err := anchors.ToAnchorID(cd.CurrentVersion)
 	if err != nil {
 		return errors.New("failed to get anchor ID: %v", err)
@@ -199,13 +189,13 @@ func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Model) erro
 	}
 
 	// generate message authentication code for the anchor call
-	mac, err := secp256k1.SignEthereum(anchors.GenerateCommitHash(anchorID, centID, rootHash), self.Keys[identity.KeyPurposeEthMsgAuth].PrivateKey)
+	mac, err := secp256k1.SignEthereum(anchors.GenerateCommitHash(anchorID, self.ID, rootHash), self.Keys[identity.KeyPurposeEthMsgAuth].PrivateKey)
 	if err != nil {
 		return errors.New("failed to generate ethereum MAC: %v", err)
 	}
 
 	log.Infof("Anchoring document with identifiers: [document: %#x, current: %#x, next: %#x], rootHash: %#x", cd.DocumentIdentifier, cd.CurrentVersion, cd.NextVersion, cd.DocumentRoot)
-	confirmations, err := dp.anchorRepository.CommitAnchor(ctx, anchorID, rootHash, centID, [][anchors.DocumentProofLength]byte{utils.RandomByte32()}, mac)
+	confirmations, err := dp.anchorRepository.CommitAnchor(ctx, anchorID, rootHash, self.ID, [][anchors.DocumentProofLength]byte{utils.RandomByte32()}, mac)
 	if err != nil {
 		return errors.New("failed to commit anchor: %v", err)
 	}

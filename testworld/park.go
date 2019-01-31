@@ -66,6 +66,9 @@ type hostManager struct {
 	// niceHosts are the happy and nice hosts at the Testworld such as Teddy
 	niceHosts map[string]*host
 
+	// tempHosts are hosts created at runtime, they should be part of niceHosts/naughtyHosts as well
+	tempHosts map[string]*host
+
 	// TODO create evil hosts such as William (or Eve)
 
 	// canc is the cancel signal for all hosts
@@ -90,6 +93,7 @@ func newHostManager(
 		txPoolAccess:      txPoolAccess,
 		contractAddresses: smartContractAddrs,
 		niceHosts:         make(map[string]*host),
+		tempHosts:         make(map[string]*host),
 	}
 }
 
@@ -167,6 +171,30 @@ func (r *hostManager) getHost(name string) *host {
 
 func (r *hostManager) stop() {
 	r.canc()
+}
+
+func (r *hostManager) addNiceHost(name string, host *host) {
+	r.niceHosts[name] = host
+}
+
+func (r *hostManager) createTempHost(name, twConfigName, p2pTimeout string, apiPort, p2pPort int64, createConfig, multiAccount bool, bootstraps []string) *host {
+	tempHost := r.createHost(name, twConfigName, p2pTimeout, apiPort, p2pPort, createConfig, multiAccount, bootstraps)
+	r.tempHosts[name] = tempHost
+	return tempHost
+}
+
+func (r *hostManager) startTempHost(name string) error {
+	tempHost, ok := r.tempHosts[name]
+	if !ok {
+		return errors.New("host %s not found as temp host", name)
+	}
+	err := tempHost.init()
+	if err != nil {
+		return err
+	}
+	go tempHost.live(r.cancCtx)
+
+	return nil
 }
 
 func (r *hostManager) createHost(name, twConfigName, p2pTimeout string, apiPort, p2pPort int64, createConfig, multiAccount bool, bootstraps []string) *host {

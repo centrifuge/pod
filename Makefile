@@ -13,6 +13,8 @@ PATH=$(shell printenv PATH):$(GOBIN)
 # If you need to overwrite PROTOTOOL_BIN, you can set this environment variable.
 PROTOTOOL_BIN ?=$(shell which prototool)
 
+# Lock metalinter version
+GOMETALINTER_VERSION="v2.0.12"
 
 .PHONY: help
 
@@ -26,7 +28,7 @@ install-deps: ## Install Dependencies
 	@command -v dep >/dev/null 2>&1 || go get -u github.com/golang/dep/...
 	@dep ensure
 	@npm --prefix ./build  install
-	@curl -L https://git.io/vp6lP | sh
+	@curl -L https://git.io/vp6lP | sh -s ${GOMETALINTER_VERSION}
 	@mv ./bin/* $(GOPATH)/bin/; rm -rf ./bin
 
 lint-check: ## runs linters on go code
@@ -56,6 +58,7 @@ vendorinstall: ## Installs all protobuf dependencies with go-vendorinstall
 	go-vendorinstall github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
 	go-vendorinstall github.com/golang/protobuf/protoc-gen-go
 	go-vendorinstall github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
+	go-vendorinstall golang.org/x/tools/cmd/goimports
 	go get -u github.com/jteeuwen/go-bindata/...
 
 install: ## Builds and Install binary for development
