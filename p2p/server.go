@@ -73,7 +73,7 @@ func (s *peer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- 
 
 	// Make a host that listens on the given multiaddress
 	// first obtain the keys configured
-	priv, pub, err := s.createSigningKey(nc.GetSigningKeyPair())
+	priv, pub, err := s.createSigningKey(nc.GetP2PKeyPair())
 	if err != nil {
 		startupErr <- err
 		return

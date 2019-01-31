@@ -102,6 +102,7 @@ type Configuration interface {
 	GetEthereumDefaultAccountName() string
 	GetReceiveEventNotificationEndpoint() string
 	GetIdentityID() ([]byte, error)
+	GetP2PKeyPair() (pub, priv string)
 	GetSigningKeyPair() (pub, priv string)
 	GetEthAuthKeyPair() (pub, priv string)
 
@@ -120,6 +121,7 @@ type Account interface {
 	GetEthereumDefaultAccountName() string
 	GetReceiveEventNotificationEndpoint() string
 	GetIdentityID() ([]byte, error)
+	GetP2PKeyPair() (pub, priv string)
 	GetSigningKeyPair() (pub, priv string)
 	GetEthAuthKeyPair() (pub, priv string)
 	GetEthereumContextWaitTimeout() time.Duration
@@ -383,6 +385,11 @@ func (c *configuration) GetIdentityID() ([]byte, error) {
 		return nil, centerrors.Wrap(err, "can't read identityId from config")
 	}
 	return id, err
+}
+
+// GetP2PKeyPair returns the P2P key pair.
+func (c *configuration) GetP2PKeyPair() (pub, priv string) {
+	return c.GetString("keys.p2p.publicKey"), c.GetString("keys.p2p.privateKey")
 }
 
 // GetSigningKeyPair returns the signing key pair.

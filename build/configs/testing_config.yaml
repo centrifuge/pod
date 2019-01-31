@@ -17,6 +17,9 @@ queue:
   workerWaitTimeMS: 1
 
 keys:
+  p2p:
+    publicKey: ../../build/resources/p2pKey.pub.pem
+    privateKey: ../../build/resources/p2pKey.key.pem
   signing:
     publicKey: ../../build/resources/signingKey.pub.pem
     privateKey: ../../build/resources/signingKey.key.pem
