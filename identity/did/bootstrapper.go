@@ -48,7 +48,14 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	service := NewService(cfg, factoryContract, client)
 	context[BootstrappedDIDService] = service
 
-	identity := NewIdentity(cfg, client)
+	//TODO config needs to store correct did format
+	id, err := cfg.GetIdentityID()
+	if err != nil {
+		return err
+	}
+	did := NewDID(common.BytesToAddress(id))
+
+	identity := NewIdentity(cfg, client, &did)
 	context[BootstrappedDID] = identity
 
 	return nil
