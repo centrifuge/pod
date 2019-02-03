@@ -178,7 +178,7 @@ func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID,
 		}
 
 		cd.EmbeddedData = data
-		err = coredocument.AddNFTToReadRules(cd, registry, tokenID[:])
+		err = coredocument.AddNFTToReadRules(cd, registry, tokenID.BigInt().Bytes())
 		if err != nil {
 			errOut <- err
 			return
