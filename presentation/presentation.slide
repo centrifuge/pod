@@ -1,0 +1,42 @@
+Welcome to go-centrifuge
+
+
+An overview of architecture and evolution
+Tags: golang, go-centrifuge, supply-chain-financing, fintech
+
+
+
+
+_Brought_ _to_ _you_ _by_ *go-centrifuge* contributors
+
+https://www.centrifuge.io
+https://developer.centrifuge.io
+
+* Intro
+
+*go-centrifuge* is the go implementation of the Centrifuge OS interacting with the peer to peer network and our Ethereum smart contracts.
+
+* What is this presentation?
+
+- An overview of how *go-centrifuge* works
+- It documents the current state of *go-centrifuge* architecture
+- It helps in driving discussion where we want to _evolve_ the architecture
+
+* Stuff
+
+evolutionary architecture
+
+What is the goal of having this discussion
+We need to make it simple for someone to understand code to maintain it
+
+Talk about how evolution works, starting point is important to know where the algo converges, hard to know without experience building stuff.
+
+Defining constraints for evolution ?
+
+Why follow same stupid pattern everywhere? Because consistency trumps stupidness when it comes to maintenance
+
+Go conventions in managing cyclic deps, and naming
+
+Layer diagram
+
+
