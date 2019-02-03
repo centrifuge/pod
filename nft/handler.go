@@ -38,6 +38,7 @@ func (g grpcHandler) MintNFT(ctx context.Context, request *nftpb.NFTMintRequest)
 	if err != nil {
 		return nil, err
 	}
+
 	identifier, err := hexutil.Decode(request.Identifier)
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, err.Error())
@@ -55,7 +56,6 @@ func (g grpcHandler) MintNFT(ctx context.Context, request *nftpb.NFTMintRequest)
 }
 
 func validateParameters(request *nftpb.NFTMintRequest) error {
-
 	if !common.IsHexAddress(request.RegistryAddress) {
 		return centerrors.New(code.Unknown, "registryAddress is not a valid Ethereum address")
 	}
@@ -63,7 +63,6 @@ func validateParameters(request *nftpb.NFTMintRequest) error {
 	if !common.IsHexAddress(request.DepositAddress) {
 		return centerrors.New(code.Unknown, "DepositAddress is not a valid Ethereum address")
 	}
-
 	return nil
 
 }
