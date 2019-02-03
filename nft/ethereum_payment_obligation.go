@@ -152,6 +152,7 @@ func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID,
 		tc, err := contextutil.Account(ctx)
 		if err != nil {
 			errOut <- err
+			return
 		}
 
 		// registry address
@@ -160,60 +161,71 @@ func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID,
 		model, err := s.docSrv.GetCurrentVersion(ctx, documentID)
 		if err != nil {
 			errOut <- err
+			return
 		}
 
 		cd, err := model.PackCoreDocument()
 		if err != nil {
 			errOut <- err
+			return
 		}
 
 		data := cd.EmbeddedData
 		cd, err = coredocument.PrepareNewVersion(*cd, nil)
 		if err != nil {
 			errOut <- err
+			return
 		}
 
 		cd.EmbeddedData = data
 		err = coredocument.AddNFTToReadRules(cd, registry, tokenID[:])
 		if err != nil {
 			errOut <- err
+			return
 		}
 
 		model, err = s.docSrv.DeriveFromCoreDocument(cd)
 		if err != nil {
 			errOut <- err
+			return
 		}
 
 		_, _, done, err := s.docSrv.Update(contextutil.WithTX(ctx, txID), model)
 		if err != nil {
 			errOut <- err
+			return
 		}
 
 		isDone := <-done
 		if !isDone {
 			// some problem occured in a child task
 			errOut <- errors.New("update document failed for document %s and transaction %s", hexutil.Encode(documentID), txID)
+			return
 		}
 
 		requestData, err := s.prepareMintRequest(ctx, tokenID, documentID, depositAddress, proofFields)
 		if err != nil {
 			errOut <- errors.New("failed to prepare mint request: %v", err)
+			return
 		}
 
 		opts, err := s.ethClient.GetTxOpts(tc.GetEthereumDefaultAccountName())
 		if err != nil {
 			errOut <- err
+			return
 		}
 
 		contract, err := s.bindContract(registry, s.ethClient)
 		if err != nil {
 			errOut <- err
+			return
 		}
 
 		ethTX, err := s.ethClient.SubmitTransactionWithRetries(contract.Mint, opts, requestData.To, requestData.TokenID, requestData.TokenURI, requestData.AnchorID,
 			requestData.MerkleRoot, requestData.Values, requestData.Salts, requestData.Proofs)
 		if err != nil {
 			errOut <- err
+			return
 		}
 
 		log.Infof("Sent off ethTX to mint [tokenID: %s, anchor: %x, registry: %s] to payment obligation contract. Ethereum transaction hash [%s] and Nonce [%d] and Check [%v]",
@@ -223,11 +235,13 @@ func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID,
 		res, err := ethereum.QueueEthTXStatusTask(accountID, txID, ethTX.Hash(), s.queue)
 		if err != nil {
 			errOut <- err
+			return
 		}
 
 		_, err = res.Get(txMan.GetDefaultTaskTimeout())
 		if err != nil {
 			errOut <- err
+			return
 		}
 		errOut <- nil
 	}

@@ -146,10 +146,12 @@ func CreateAnchorTransaction(txMan transactions.Manager, tq queue.TaskQueuer, se
 		tr, err := InitDocumentAnchorTask(txMan, tq, accountID, documentID, TID)
 		if err != nil {
 			errChan <- err
+			return
 		}
 		_, err = tr.Get(txMan.GetDefaultTaskTimeout())
 		if err != nil {
 			errChan <- err
+			return
 		}
 		errChan <- nil
 	})
