@@ -50,7 +50,7 @@ func (d *documentAnchorTask) TaskTypeName() string {
 
 // ParseKwargs parses the kwargs.
 func (d *documentAnchorTask) ParseKwargs(kwargs map[string]interface{}) error {
-	err := d.ParseTransactionID(kwargs)
+	err := d.ParseTransactionID(d.TaskTypeName(), kwargs)
 	if err != nil {
 		return err
 	}
@@ -90,7 +90,7 @@ func (d *documentAnchorTask) Copy() (gocelery.CeleryTask, error) {
 
 // RunTask anchors the document.
 func (d *documentAnchorTask) RunTask() (res interface{}, err error) {
-	log.Infof("starting anchor task: %v\n", d.TxID.String())
+	log.Infof("starting anchor task for transaction: %s\n", d.TxID)
 	defer func() {
 		err = d.UpdateTransaction(d.accountID, d.TaskTypeName(), err)
 	}()
@@ -119,31 +119,39 @@ func (d *documentAnchorTask) RunTask() (res interface{}, err error) {
 	return true, nil
 }
 
-// InitDocumentAnchorTask enqueues a new document anchor task and returns the txID.
-// TODO [TXManager] migrate this to use TxManager
-func InitDocumentAnchorTask(tq queue.TaskQueuer, txService transactions.Manager, accountID identity.CentID, modelID []byte, txID uuid.UUID) (uuid.UUID, error) {
-	var tx *transactions.Transaction
-	var err error
-	if txID != uuid.Nil {
-		tx, err = txService.GetTransaction(accountID, txID)
-	} else {
-		tx, err = txService.CreateTransaction(accountID, documentAnchorTaskName)
-	}
-
-	if err != nil {
-		return uuid.Nil, err
-	}
-
+// InitDocumentAnchorTask enqueues a new document anchor task for a given combination of accountID/modelID/txID.
+func InitDocumentAnchorTask(txMan transactions.Manager, tq queue.TaskQueuer, accountID identity.CentID, modelID []byte, txID uuid.UUID) (queue.TaskResult, error) {
 	params := map[string]interface{}{
-		transactions.TxIDParam: tx.ID.String(),
+		transactions.TxIDParam: txID.String(),
 		DocumentIDParam:        hexutil.Encode(modelID),
 		AccountIDParam:         accountID.String(),
 	}
 
-	_, err = tq.EnqueueJob(documentAnchorTaskName, params)
+	err := txMan.UpdateTaskStatus(accountID, txID, transactions.Pending, documentAnchorTaskName, "init")
 	if err != nil {
-		return uuid.Nil, err
+		return nil, err
 	}
 
-	return tx.ID, nil
+	tr, err := tq.EnqueueJob(documentAnchorTaskName, params)
+	if err != nil {
+		return nil, err
+	}
+
+	return tr, nil
+}
+
+// CreateAnchorTransaction creates a transaction for anchoring a document using transaction manager
+func CreateAnchorTransaction(txMan transactions.Manager, tq queue.TaskQueuer, self identity.CentID, txID uuid.UUID, documentID []byte) (uuid.UUID, chan bool, error) {
+	txID, done, err := txMan.ExecuteWithinTX(context.Background(), self, txID, "anchor document", func(accountID identity.CentID, TID uuid.UUID, txMan transactions.Manager, errChan chan<- error) {
+		tr, err := InitDocumentAnchorTask(txMan, tq, accountID, documentID, TID)
+		if err != nil {
+			errChan <- err
+		}
+		_, err = tr.Get(txMan.GetDefaultTaskTimeout())
+		if err != nil {
+			errChan <- err
+		}
+		errChan <- nil
+	})
+	return txID, done, err
 }

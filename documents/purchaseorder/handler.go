@@ -43,7 +43,7 @@ func (h grpcHandler) Create(ctx context.Context, req *clientpurchaseorderpb.Purc
 	}
 
 	// validate, persist, and anchor
-	doc, txID, err := h.service.Create(ctxh, doc)
+	doc, txID, _, err := h.service.Create(ctxh, doc)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "could not create document")
@@ -74,7 +74,7 @@ func (h grpcHandler) Update(ctx context.Context, payload *clientpurchaseorderpb.
 		return nil, centerrors.Wrap(err, "could not derive update payload")
 	}
 
-	doc, txID, err := h.service.Update(ctxHeader, doc)
+	doc, txID, _, err := h.service.Update(ctxHeader, doc)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "could not update document")

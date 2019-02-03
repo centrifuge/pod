@@ -71,7 +71,7 @@ func TestPaymentObligationService_mint(t *testing.T) {
 		},
 	})
 	assert.Nil(t, err, "should not error out when creating invoice model")
-	modelUpdated, txID, err := invoiceService.Create(contextHeader, model)
+	modelUpdated, txID, _, err := invoiceService.Create(contextHeader, model)
 	err = txManager.WaitForTransaction(cid, txID)
 	assert.Nil(t, err)
 
@@ -82,7 +82,7 @@ func TestPaymentObligationService_mint(t *testing.T) {
 	// assert no error
 	depositAddr := "0xf72855759a39fb75fc7341139f5d7a3974d4da08"
 	registry := cfg.GetContractAddress(config.PaymentObligation)
-	resp, err := payOb.MintNFT(
+	resp, done, err := payOb.MintNFT(
 		contextHeader,
 		ID,
 		registry.String(),
@@ -91,6 +91,7 @@ func TestPaymentObligationService_mint(t *testing.T) {
 	)
 	assert.Nil(t, err, "should not error out when minting an invoice")
 	assert.NotNil(t, resp.TokenID, "token id should be present")
+	<-done
 	assert.NoError(t, txManager.WaitForTransaction(cid, uuid.Must(uuid.FromString(resp.TransactionID))))
 	b := new(big.Int)
 	b.SetString(resp.TokenID, 10)

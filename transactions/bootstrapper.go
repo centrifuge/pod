@@ -1,6 +1,7 @@
 package transactions
 
 import (
+	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/storage"
 )
@@ -21,6 +22,11 @@ type Bootstrapper struct{}
 
 // Bootstrap adds transaction.Repository into context.
 func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
+	cfg, err := configstore.RetrieveConfig(false, ctx)
+	if err != nil {
+		return err
+	}
+
 	repo, ok := ctx[storage.BootstrappedDB].(storage.Repository)
 	if !ok {
 		return ErrTransactionBootstrap
@@ -29,7 +35,7 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	txRepo := NewRepository(repo)
 	ctx[BootstrappedRepo] = txRepo
 
-	txSrv := NewManager(txRepo)
+	txSrv := NewManager(cfg, txRepo)
 	ctx[BootstrappedService] = txSrv
 	return nil
 }

@@ -43,7 +43,7 @@ func (g grpcHandler) MintNFT(ctx context.Context, request *nftpb.NFTMintRequest)
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
 
-	resp, err := g.service.MintNFT(ctxHeader, identifier, request.RegistryAddress, request.DepositAddress, request.ProofFields)
+	resp, _, err := g.service.MintNFT(ctxHeader, identifier, request.RegistryAddress, request.DepositAddress, request.ProofFields)
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}

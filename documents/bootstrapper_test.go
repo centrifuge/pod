@@ -25,7 +25,7 @@ func TestBootstrapper_Bootstrap(t *testing.T) {
 	repo := leveldb.NewLevelDBRepository(db)
 	ctx[bootstrap.BootstrappedConfig] = &testingconfig.MockConfig{}
 	ctx[storage.BootstrappedDB] = repo
-	ctx[transactions.BootstrappedService] = transactions.NewManager(transactions.NewRepository(repo))
+	ctx[transactions.BootstrappedService] = transactions.NewManager(&testingconfig.MockConfig{}, transactions.NewRepository(repo))
 	ctx[identity.BootstrappedIDService] = new(testingcommons.MockIDService)
 	ctx[anchors.BootstrappedAnchorRepo] = new(testinganchors.MockAnchorRepo)
 	err = Bootstrapper{}.Bootstrap(ctx)

@@ -41,7 +41,7 @@ func (t TokenID) String() string {
 // PaymentObligation handles transactions related to minting of NFTs
 type PaymentObligation interface {
 	// MintNFT mints an NFT
-	MintNFT(ctx context.Context, documentID []byte, registryAddress, depositAddress string, proofFields []string) (*MintNFTResponse, error)
+	MintNFT(ctx context.Context, documentID []byte, registryAddress, depositAddress string, proofFields []string) (*MintNFTResponse, chan bool, error)
 }
 
 // MintNFTResponse holds tokenID and transaction ID.

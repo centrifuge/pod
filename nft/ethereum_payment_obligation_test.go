@@ -40,20 +40,20 @@ type MockTxManager struct {
 	mock.Mock
 }
 
+func (m MockTxManager) GetDefaultTaskTimeout() time.Duration {
+	panic("implement me")
+}
+
+func (m MockTxManager) UpdateTaskStatus(accountID identity.CentID, id uuid.UUID, status transactions.Status, taskName, message string) error {
+	panic("implement me")
+}
+
 func (m MockTxManager) ExecuteWithinTX(ctx context.Context, accountID identity.CentID, existingTxID uuid.UUID, desc string, work func(accountID identity.CentID, txID uuid.UUID, txMan transactions.Manager, err chan<- error)) (txID uuid.UUID, done chan bool, err error) {
 	args := m.Called(ctx, accountID, existingTxID, desc, work)
 	return args.Get(0).(uuid.UUID), args.Get(1).(chan bool), args.Error(2)
 }
 
-func (MockTxManager) CreateTransaction(accountID identity.CentID, desc string) (*transactions.Transaction, error) {
-	panic("implement me")
-}
-
 func (MockTxManager) GetTransaction(accountID identity.CentID, id uuid.UUID) (*transactions.Transaction, error) {
-	panic("implement me")
-}
-
-func (MockTxManager) SaveTransaction(tx *transactions.Transaction) error {
 	panic("implement me")
 }
 
@@ -226,7 +226,7 @@ func TestPaymentObligationService(t *testing.T) {
 				return &EthereumPaymentObligationContract{}, nil
 			}, txMan, func() (uint64, error) { return 10, nil })
 			ctxh := testingconfig.CreateAccountContext(t, &mockCfg)
-			_, err := service.MintNFT(ctxh, decodeHex(test.request.Identifier), test.request.RegistryAddress, test.request.DepositAddress, test.request.ProofFields)
+			_, _, err := service.MintNFT(ctxh, decodeHex(test.request.Identifier), test.request.RegistryAddress, test.request.DepositAddress, test.request.ProofFields)
 			if test.err != nil {
 				assert.Equal(t, test.err.Error(), err.Error())
 			} else if err != nil {

@@ -5,6 +5,8 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common/hexutil"
+
 	"github.com/centrifuge/go-centrifuge/coredocument"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -113,36 +115,36 @@ func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, toke
 }
 
 // MintNFT mints an NFT
-func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, documentID []byte, registryAddress, depositAddress string, proofFields []string) (*MintNFTResponse, error) {
+func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, documentID []byte, registryAddress, depositAddress string, proofFields []string) (*MintNFTResponse, chan bool, error) {
 	tc, err := contextutil.Account(ctx)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	cidBytes, err := tc.GetIdentityID()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	cid, err := identity.ToCentID(cidBytes)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	tokenID := NewTokenID()
 	// Mint NFT within transaction
 	// We use context.Background() for now so that the transaction is only limited by ethereum timeouts
-	txID, _, err := s.txManager.ExecuteWithinTX(context.Background(), cid, uuid.Nil, "Minting NFT",
+	txID, done, err := s.txManager.ExecuteWithinTX(context.Background(), cid, uuid.Nil, "Minting NFT",
 		s.minter(ctx, tokenID, documentID, registryAddress, depositAddress, proofFields))
 
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	return &MintNFTResponse{
 		TransactionID: txID.String(),
 		TokenID:       tokenID.String(),
-	}, nil
+	}, done, nil
 }
 
 func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID, documentID []byte, registryAddress, depositAddress string, proofFields []string) func(accountID identity.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
@@ -182,9 +184,15 @@ func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID,
 			errOut <- err
 		}
 
-		_, _, err = s.docSrv.Update(contextutil.WithTX(ctx, txID), model)
+		_, _, done, err := s.docSrv.Update(contextutil.WithTX(ctx, txID), model)
 		if err != nil {
 			errOut <- err
+		}
+
+		isDone := <-done
+		if !isDone {
+			// some problem occured in a child task
+			errOut <- errors.New("update document failed for document %s and transaction %s", hexutil.Encode(documentID), txID)
 		}
 
 		requestData, err := s.prepareMintRequest(ctx, tokenID, documentID, depositAddress, proofFields)
@@ -212,12 +220,12 @@ func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID,
 			requestData.TokenID, requestData.AnchorID, requestData.To, ethTX.Hash(), ethTX.Nonce(), ethTX.CheckNonce())
 		log.Infof("Transfer pending: 0x%x\n", ethTX.Hash())
 
-		res, err := ethereum.QueueEthTXStatusTask(accountID, txID, ethTX.Hash(), true, s.queue)
+		res, err := ethereum.QueueEthTXStatusTask(accountID, txID, ethTX.Hash(), s.queue)
 		if err != nil {
 			errOut <- err
 		}
 
-		_, err = res.Get(s.cfg.GetEthereumContextWaitTimeout())
+		_, err = res.Get(txMan.GetDefaultTaskTimeout())
 		if err != nil {
 			errOut <- err
 		}
