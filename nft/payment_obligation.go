@@ -4,6 +4,8 @@ import (
 	"context"
 	"math/big"
 
+	"github.com/centrifuge/go-centrifuge/errors"
+
 	"github.com/ethereum/go-ethereum/common/hexutil"
 
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -21,6 +23,19 @@ func NewTokenID() TokenID {
 	var tid [TokenIDLength]byte
 	copy(tid[:], utils.RandomSlice(TokenIDLength))
 	return tid
+}
+
+func FromString(hexStr string) (TokenID, error) {
+	tokenIDBytes, err := hexutil.Decode(hexStr)
+	if err != nil {
+		return NewTokenID(), err
+	}
+	if len(tokenIDBytes) != TokenIDLength {
+		return NewTokenID(), errors.New("the provided hex string doesn't match the TokenID representation length")
+	}
+	var tid [TokenIDLength]byte
+	copy(tid[:], tokenIDBytes)
+	return tid, nil
 }
 
 // BigInt converts tokenID to big int

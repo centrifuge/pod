@@ -3,7 +3,6 @@
 package nft_test
 
 import (
-	"math/big"
 	"os"
 	"testing"
 	"time"
@@ -91,11 +90,11 @@ func TestPaymentObligationService_mint(t *testing.T) {
 	)
 	assert.Nil(t, err, "should not error out when minting an invoice")
 	assert.NotNil(t, resp.TokenID, "token id should be present")
+	tokenID, err := nft.FromString(resp.TokenID)
+	assert.Nil(t, err, "should not error out when getting tokenID hex")
 	<-done
 	assert.NoError(t, txManager.WaitForTransaction(cid, uuid.Must(uuid.FromString(resp.TransactionID))))
-	b := new(big.Int)
-	b.SetString(resp.TokenID, 10)
-	owner, err := tokenRegistry.OwnerOf(registry, b.Bytes())
+	owner, err := tokenRegistry.OwnerOf(registry, tokenID.BigInt().Bytes())
 	assert.NoError(t, err)
 	assert.Equal(t, common.HexToAddress(depositAddr), owner)
 	doc, err := invoiceService.GetCurrentVersion(contextHeader, ID)
@@ -105,7 +104,7 @@ func TestPaymentObligationService_mint(t *testing.T) {
 	assert.Len(t, cd.Roles, 2)
 	assert.Len(t, cd.Roles[1].Nfts, 1)
 	nft := cd.Roles[1].Nfts[0]
-	enft, err := coredocument.ConstructNFT(registry, b.Bytes())
+	enft, err := coredocument.ConstructNFT(registry, tokenID.BigInt().Bytes())
 	assert.NoError(t, err)
 	assert.Equal(t, enft, nft)
 }
