@@ -25,6 +25,7 @@ func NewTokenID() TokenID {
 	return tid
 }
 
+// FromString converts given hex string to a TokenID
 func FromString(hexStr string) (TokenID, error) {
 	tokenIDBytes, err := hexutil.Decode(hexStr)
 	if err != nil {
