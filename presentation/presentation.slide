@@ -7,7 +7,7 @@ Tags: golang, go-centrifuge, supply-chain-financing, fintech
 
 
 
-_Brought_ _to_ _you_ _by_ *go-centrifuge* contributors
+_Brought_ _to_ _you_ by *go-centrifuge* contributors
 
 https://www.centrifuge.io
 https://developer.centrifuge.io
@@ -16,11 +16,41 @@ https://developer.centrifuge.io
 
 *go-centrifuge* is the go implementation of the Centrifuge OS interacting with the peer to peer network and our Ethereum smart contracts.
 
-* What is this presentation?
+* What is this presentation about?
 
 - An overview of how *go-centrifuge* works
 - It documents the current state of *go-centrifuge* architecture
 - It helps in driving discussion where we want to _evolve_ the architecture
+
+
+* A High Level View
+
+- Layer diagram here
+
+* Bootstrappers
+
+- Why they are needed
+- IOC flow
+
+* Node Init
+
+- How background services are initialised
+
+* Lets evolve the architecture
+
+- Evolution is an optimisation process
+- Constraints guide the evolution
+  Eg: 1. Testworld constrains code not to use global variables
+      2. Separating interface and implementations makes code more modular and extensible
+
+* Constraints
+
+* Models
+
+- All documents are `Model`s
+.code ../documents/model.go /Model/,/^}/
+
+- Service interfaces
 
 * Stuff
 
