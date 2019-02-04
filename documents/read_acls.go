@@ -1,4 +1,4 @@
-package coredocument
+package documents
 
 import (
 	"bytes"

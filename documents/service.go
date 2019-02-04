@@ -91,7 +91,7 @@ func DefaultService(
 }
 
 func getIDs(model Model) ([]byte, []byte, error) {
-	cd, err := model.PackCoreDocument()
+	cd, err := model.packCoreDocument()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -173,7 +173,7 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model) (*co
 		return nil, errors.NewTypedError(ErrDocumentInvalid, err)
 	}
 
-	doc, err := model.PackCoreDocument()
+	doc, err := model.packCoreDocument()
 	if err != nil {
 		return nil, errors.NewTypedError(ErrDocumentPackingCoreDocument, err)
 	}
@@ -186,7 +186,7 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model) (*co
 	}
 	sig := crypto.Sign(idConf.ID[:], idKeys.PrivateKey, idKeys.PublicKey, doc.SigningRoot)
 	doc.Signatures = append(doc.Signatures, sig)
-	err = model.UnpackCoreDocument(doc)
+	err = model.unpackCoreDocument(doc)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrDocumentUnPackingCoreDocument, err)
 	}
@@ -220,7 +220,7 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, model Model, sende
 		return errors.NewTypedError(ErrDocumentInvalid, err)
 	}
 
-	doc, err := model.PackCoreDocument()
+	doc, err := model.packCoreDocument()
 	if err != nil {
 		return errors.NewTypedError(ErrDocumentPackingCoreDocument, err)
 	}
@@ -265,7 +265,7 @@ func (s service) getVersion(ctx context.Context, documentID, version []byte) (Mo
 		return nil, errors.NewTypedError(ErrDocumentVersionNotFound, err)
 	}
 
-	cd, err := model.PackCoreDocument()
+	cd, err := model.packCoreDocument()
 	if err != nil {
 		return nil, err
 	}
@@ -308,7 +308,7 @@ func (s service) Update(ctx context.Context, model Model) (Model, uuid.UUID, err
 }
 
 func (s service) getService(model Model) (Service, error) {
-	cd, err := model.PackCoreDocument()
+	cd, err := model.packCoreDocument()
 	if err != nil {
 		return nil, err
 	}

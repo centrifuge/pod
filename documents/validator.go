@@ -120,7 +120,7 @@ func getCoreDocument(model Model) (*coredocumentpb.CoreDocument, error) {
 		return nil, errors.New("nil model")
 	}
 
-	cd, err := model.PackCoreDocument()
+	cd, err := model.packCoreDocument()
 	if err != nil {
 		return nil, errors.New("failed to pack core document: %v", err)
 	}
