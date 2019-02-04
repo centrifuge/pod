@@ -47,9 +47,8 @@ type Invoice struct {
 	DueDate          *timestamp.Timestamp
 	DateCreated      *timestamp.Timestamp
 	ExtraData        []byte
-
 	InvoiceSalts *invoicepb.InvoiceDataSalts
-	CoreDocument *coredocumentpb.CoreDocument
+	CoreDocument      *coredocumentpb.CoreDocument
 }
 
 // getClientData returns the client data from the invoice model
