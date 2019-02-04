@@ -24,10 +24,10 @@ type mockPaymentObligationService struct {
 	mock.Mock
 }
 
-func (m *mockPaymentObligationService) MintNFT(ctx context.Context, documentID []byte, registryAddress, depositAddress string, proofFields []string) (*MintNFTResponse, error) {
+func (m *mockPaymentObligationService) MintNFT(ctx context.Context, documentID []byte, registryAddress, depositAddress string, proofFields []string) (*MintNFTResponse, chan bool, error) {
 	args := m.Called(ctx, documentID, registryAddress, depositAddress, proofFields)
 	resp, _ := args.Get(0).(*MintNFTResponse)
-	return resp, args.Error(1)
+	return resp, nil, args.Error(1)
 }
 
 func TestNFTMint_success(t *testing.T) {

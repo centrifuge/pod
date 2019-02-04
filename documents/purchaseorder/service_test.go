@@ -66,7 +66,7 @@ func TestService_Update(t *testing.T) {
 	// pack failed
 	model := &testingdocuments.MockModel{}
 	model.On("PackCoreDocument").Return(nil, errors.New("pack error")).Once()
-	_, _, err := poSrv.Update(ctxh, model)
+	_, _, _, err := poSrv.Update(ctxh, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "pack error")
@@ -75,7 +75,7 @@ func TestService_Update(t *testing.T) {
 	model = &testingdocuments.MockModel{}
 	cd := coredocument.New()
 	model.On("PackCoreDocument").Return(cd, nil).Once()
-	_, _, err = poSrv.Update(ctxh, model)
+	_, _, _, err = poSrv.Update(ctxh, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "document not found")
@@ -93,7 +93,7 @@ func TestService_Update(t *testing.T) {
 	// calculate data root fails
 	model = &testingdocuments.MockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
-	_, _, err = poSrv.Update(ctxh, model)
+	_, _, _, err = poSrv.Update(ctxh, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "unknown document type")
@@ -113,7 +113,7 @@ func TestService_Update(t *testing.T) {
 	newData, err := poSrv.DerivePurchaseOrderData(newInv)
 	assert.Nil(t, err)
 	assert.Equal(t, data, newData)
-	po, _, err = poSrv.Update(ctxh, newInv)
+	po, _, _, err = poSrv.Update(ctxh, newInv)
 	assert.Nil(t, err)
 	assert.NotNil(t, po)
 
@@ -273,7 +273,7 @@ func TestService_Create(t *testing.T) {
 	_, poSrv := getServiceWithMockedLayers()
 
 	// calculate data root fails
-	m, _, err := poSrv.Create(ctxh, &testingdocuments.MockModel{})
+	m, _, _, err := poSrv.Create(ctxh, &testingdocuments.MockModel{})
 	assert.Nil(t, m)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "unknown document type")
@@ -281,7 +281,7 @@ func TestService_Create(t *testing.T) {
 	// anchor fails
 	po, err := poSrv.DeriveFromCreatePayload(ctxh, testingdocuments.CreatePOPayload())
 	assert.Nil(t, err)
-	m, _, err = poSrv.Create(ctxh, po)
+	m, _, _, err = poSrv.Create(ctxh, po)
 	assert.Nil(t, err)
 	assert.NotNil(t, m)
 

@@ -3,12 +3,11 @@
 package nft
 
 import (
-	"context"
 	"math/big"
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/transactions"
+	"github.com/centrifuge/go-centrifuge/testingutils/testingtx"
 	"github.com/satori/go.uuid"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -24,7 +23,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
-	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
@@ -35,35 +33,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
-
-type MockTxManager struct {
-	mock.Mock
-}
-
-func (m MockTxManager) ExecuteWithinTX(ctx context.Context, accountID identity.CentID, existingTxID uuid.UUID, desc string, work func(accountID identity.CentID, txID uuid.UUID, txMan transactions.Manager, err chan<- error)) (txID uuid.UUID, done chan bool, err error) {
-	args := m.Called(ctx, accountID, existingTxID, desc, work)
-	return args.Get(0).(uuid.UUID), args.Get(1).(chan bool), args.Error(2)
-}
-
-func (MockTxManager) CreateTransaction(accountID identity.CentID, desc string) (*transactions.Transaction, error) {
-	panic("implement me")
-}
-
-func (MockTxManager) GetTransaction(accountID identity.CentID, id uuid.UUID) (*transactions.Transaction, error) {
-	panic("implement me")
-}
-
-func (MockTxManager) SaveTransaction(tx *transactions.Transaction) error {
-	panic("implement me")
-}
-
-func (MockTxManager) GetTransactionStatus(accountID identity.CentID, id uuid.UUID) (*transactionspb.TransactionStatusResponse, error) {
-	panic("implement me")
-}
-
-func (MockTxManager) WaitForTransaction(accountID identity.CentID, txID uuid.UUID) error {
-	panic("implement me")
-}
 
 func TestCreateProofData(t *testing.T) {
 	sortedHashes := [][]byte{utils.RandomSlice(32), utils.RandomSlice(32)}
@@ -172,14 +141,14 @@ func (m *MockPaymentObligation) Mint(opts *bind.TransactOpts, _to common.Address
 func TestPaymentObligationService(t *testing.T) {
 	tests := []struct {
 		name    string
-		mocker  func() (testingdocuments.MockService, *MockPaymentObligation, testingcommons.MockIDService, testingcommons.MockEthClient, testingconfig.MockConfig, *testingutils.MockQueue, *MockTxManager)
+		mocker  func() (testingdocuments.MockService, *MockPaymentObligation, testingcommons.MockIDService, testingcommons.MockEthClient, testingconfig.MockConfig, *testingutils.MockQueue, *testingtx.MockTxManager)
 		request *nftpb.NFTMintRequest
 		err     error
 		result  string
 	}{
 		{
 			"happypath",
-			func() (testingdocuments.MockService, *MockPaymentObligation, testingcommons.MockIDService, testingcommons.MockEthClient, testingconfig.MockConfig, *testingutils.MockQueue, *MockTxManager) {
+			func() (testingdocuments.MockService, *MockPaymentObligation, testingcommons.MockIDService, testingcommons.MockEthClient, testingconfig.MockConfig, *testingutils.MockQueue, *testingtx.MockTxManager) {
 				coreDoc := coredocument.New()
 				coreDoc.DocumentRoot = utils.RandomSlice(32)
 				proof := getDummyProof(coreDoc)
@@ -206,7 +175,7 @@ func TestPaymentObligationService(t *testing.T) {
 				configMock.On("GetSigningKeyPair").Return("", "")
 				configMock.On("GetEthAuthKeyPair").Return("", "")
 				queueSrv := new(testingutils.MockQueue)
-				txMan := &MockTxManager{}
+				txMan := &testingtx.MockTxManager{}
 				txMan.On("ExecuteWithinTX", mock.Anything, mock.Anything, mock.Anything, mock.Anything,
 					mock.Anything, mock.Anything).Return(uuid.Nil, make(chan bool), nil)
 				return docServiceMock, paymentObligationMock, idServiceMock, ethClientMock, configMock, queueSrv, txMan
@@ -227,18 +196,15 @@ func TestPaymentObligationService(t *testing.T) {
 				return &EthereumPaymentObligationContract{}, nil
 			}, txMan, func() (uint64, error) { return 10, nil })
 			ctxh := testingconfig.CreateAccountContext(t, &mockCfg)
-			_, err := service.MintNFT(ctxh, decodeHex(test.request.Identifier), test.request.RegistryAddress, test.request.DepositAddress, test.request.ProofFields)
+			_, _, err := service.MintNFT(ctxh, decodeHex(test.request.Identifier), test.request.RegistryAddress, test.request.DepositAddress, test.request.ProofFields)
 			if test.err != nil {
 				assert.Equal(t, test.err.Error(), err.Error())
 			} else if err != nil {
 				panic(err)
 			}
-			docService.AssertExpectations(t)
 			paymentOb.AssertExpectations(t)
 			idService.AssertExpectations(t)
-			//ethClient.AssertExpectations(t)
 			mockCfg.AssertExpectations(t)
-			//queueSrv.AssertExpectations(t)
 		})
 	}
 }
