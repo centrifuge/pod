@@ -201,12 +201,9 @@ func TestPaymentObligationService(t *testing.T) {
 			} else if err != nil {
 				panic(err)
 			}
-			//docService.AssertExpectations(t)
 			paymentOb.AssertExpectations(t)
 			idService.AssertExpectations(t)
-			//ethClient.AssertExpectations(t)
 			mockCfg.AssertExpectations(t)
-			//queueSrv.AssertExpectations(t)
 		})
 	}
 }
