@@ -40,7 +40,7 @@ func dataRootValidator() documents.Validator {
 			return errors.New("nil document")
 		}
 
-		coreDoc, err := model.PackCoreDocument()
+		coreDoc, err := model.packCoreDocument()
 		if err != nil {
 			return errors.New("failed to pack coredocument: %v", err)
 		}

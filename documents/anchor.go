@@ -25,7 +25,7 @@ type updaterFunc func(id []byte, model Model) error
 // AnchorDocument add signature, requests signatures, anchors document, and sends the anchored document
 // to collaborators
 func AnchorDocument(ctx context.Context, model Model, proc AnchorProcessor, updater updaterFunc) (Model, error) {
-	cd, err := model.PackCoreDocument()
+	cd, err := model.packCoreDocument()
 	if err != nil {
 		return nil, err
 	}

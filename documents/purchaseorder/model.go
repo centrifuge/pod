@@ -3,13 +3,13 @@ package purchaseorder
 import (
 	"crypto/sha256"
 	"encoding/json"
+	"github.com/centrifuge/go-centrifuge/documents"
 	"reflect"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centerrors"
-	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
@@ -51,6 +51,8 @@ type PurchaseOrder struct {
 	ExtraData         []byte
 	PurchaseOrderSalt *purchaseorderpb.PurchaseOrderDataSalts
 	CoreDocument      *coredocumentpb.CoreDocument
+
+	DocumentModel *documents.DocumentModel
 }
 
 // ID returns the DocumentIdentifier for this document
@@ -153,10 +155,11 @@ func (p *PurchaseOrder) InitPurchaseOrderInput(payload *clientpurchaseorderpb.Pu
 	}
 
 	collaborators := append([]string{self}, payload.Collaborators...)
-	p.CoreDocument, err = coredocument.NewWithCollaborators(collaborators)
+	cd, err := p.DocumentModel.NewWithCollaborators(collaborators)
 	if err != nil {
 		return errors.New("failed to init core document: %v", err)
 	}
+	p.CoreDocument = cd.GetDocument()
 
 	return nil
 }
@@ -379,6 +382,6 @@ func (p *PurchaseOrder) CreateProofs(fields []string) (coreDoc *coredocumentpb.C
 		return coreDoc, nil, errors.New("createProofs error %v", err)
 	}
 
-	proofs, err = coredocument.CreateProofs(tree, coreDoc, fields)
+	proofs, err = p.DocumentModel.CreateProofs(tree, fields)
 	return coreDoc, proofs, err
 }

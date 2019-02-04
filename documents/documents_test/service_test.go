@@ -20,7 +20,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/identity/ethid"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
@@ -318,7 +317,7 @@ func TestService_GetCurrentVersion_successful(t *testing.T) {
 	model, err := service.GetCurrentVersion(ctxh, documentIdentifier)
 	assert.Nil(t, err)
 
-	cd, err := model.PackCoreDocument()
+	cd, err := model.packCoreDocument()
 	assert.Nil(t, err)
 
 	assert.Equal(t, cd.CurrentVersion, currentVersion, "should return latest version")

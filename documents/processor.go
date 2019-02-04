@@ -70,7 +70,7 @@ func (dp defaultProcessor) Send(ctx context.Context, coreDocument *coredocumentp
 
 // PrepareForSignatureRequests gets the core document from the model, and adds the node's own signature
 func (dp defaultProcessor) PrepareForSignatureRequests(ctx context.Context, model Model) error {
-	cd, err := model.PackCoreDocument()
+	cd, err := model.packCoreDocument()
 	if err != nil {
 		return errors.New("failed to pack core document: %v", err)
 	}
@@ -89,7 +89,7 @@ func (dp defaultProcessor) PrepareForSignatureRequests(ctx context.Context, mode
 	sig := identity.Sign(self, identity.KeyPurposeSigning, cd.SigningRoot)
 	cd.Signatures = append(cd.Signatures, sig)
 
-	err = model.UnpackCoreDocument(cd)
+	err = model.unpackCoreDocument(cd)
 	if err != nil {
 		return errors.New("failed to unpack the core document: %v", err)
 	}
@@ -100,7 +100,7 @@ func (dp defaultProcessor) PrepareForSignatureRequests(ctx context.Context, mode
 // RequestSignatures gets the core document from the model, validates pre signature requirements,
 // collects signatures, and validates the signatures,
 func (dp defaultProcessor) RequestSignatures(ctx context.Context, model Model) error {
-	cd, err := model.PackCoreDocument()
+	cd, err := model.packCoreDocument()
 	if err != nil {
 		return errors.New("failed to pack core document: %v", err)
 	}
@@ -126,7 +126,7 @@ func (dp defaultProcessor) RequestSignatures(ctx context.Context, model Model) e
 		return errors.New("failed to collect signatures from the collaborators: %v", err)
 	}
 
-	err = model.UnpackCoreDocument(cd)
+	err = model.unpackCoreDocument(cd)
 	if err != nil {
 		return errors.New("failed to unpack core document: %v", err)
 	}
@@ -136,7 +136,7 @@ func (dp defaultProcessor) RequestSignatures(ctx context.Context, model Model) e
 
 // PrepareForAnchoring validates the signatures and generates the document root
 func (dp defaultProcessor) PrepareForAnchoring(model Model) error {
-	cd, err := model.PackCoreDocument()
+	cd, err := model.packCoreDocument()
 	if err != nil {
 		return errors.New("failed to pack core document: %v", err)
 	}
@@ -152,7 +152,7 @@ func (dp defaultProcessor) PrepareForAnchoring(model Model) error {
 		return errors.New("failed to generate document root: %v", err)
 	}
 
-	err = model.UnpackCoreDocument(cd)
+	err = model.unpackCoreDocument(cd)
 	if err != nil {
 		return errors.New("failed to unpack core document: %v", err)
 	}
@@ -162,7 +162,7 @@ func (dp defaultProcessor) PrepareForAnchoring(model Model) error {
 
 // AnchorDocument validates the model, and anchors the document
 func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Model) error {
-	cd, err := model.PackCoreDocument()
+	cd, err := model.packCoreDocument()
 	if err != nil {
 		return errors.New("failed to pack core document: %v", err)
 	}
@@ -207,7 +207,7 @@ func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Model) erro
 
 // SendDocument does post anchor validations and sends the document to collaborators
 func (dp defaultProcessor) SendDocument(ctx context.Context, model Model) error {
-	cd, err := model.PackCoreDocument()
+	cd, err := model.packCoreDocument()
 	if err != nil {
 		return errors.New("failed to pack core document: %v", err)
 	}
