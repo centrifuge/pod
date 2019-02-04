@@ -1,0 +1,3 @@
+package documents
+
+var FetchUniqueCollaborators = fetchUniqueCollaborators
