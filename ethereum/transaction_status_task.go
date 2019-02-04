@@ -90,7 +90,7 @@ func (tst *TransactionStatusTask) Copy() (gocelery.CeleryTask, error) {
 
 // ParseKwargs - define a method to parse CentID
 func (tst *TransactionStatusTask) ParseKwargs(kwargs map[string]interface{}) (err error) {
-	err = tst.ParseTransactionID(kwargs)
+	err = tst.ParseTransactionID(tst.TaskTypeName(), kwargs)
 	if err != nil {
 		return err
 	}

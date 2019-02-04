@@ -102,60 +102,58 @@ func (s service) calculateDataRoot(ctx context.Context, old, new documents.Model
 }
 
 // Create validates, persists, and anchors a purchase order
-func (s service) Create(ctx context.Context, po documents.Model) (documents.Model, uuid.UUID, error) {
+func (s service) Create(ctx context.Context, po documents.Model) (documents.Model, uuid.UUID, chan bool, error) {
 	self, err := contextutil.Self(ctx)
 	if err != nil {
-		return nil, uuid.Nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
+		return nil, uuid.Nil, nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
 	}
 
 	po, err = s.calculateDataRoot(ctx, nil, po, CreateValidator())
 	if err != nil {
-		return nil, uuid.Nil, err
+		return nil, uuid.Nil, nil, err
 	}
 
 	cd, err := po.PackCoreDocument()
 	if err != nil {
-		return nil, uuid.Nil, err
+		return nil, uuid.Nil, nil, err
 	}
 
 	txID := contextutil.TX(ctx)
-	txID, err = documents.InitDocumentAnchorTask(s.queueSrv, s.txManager, self.ID, cd.CurrentVersion, txID)
+	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, self.ID, txID, cd.CurrentVersion)
 	if err != nil {
-		return nil, uuid.Nil, err
+		return nil, uuid.Nil, nil, nil
 	}
-
-	return po, txID, nil
+	return po, txID, done, nil
 }
 
 // Update validates, persists, and anchors a new version of purchase order
-func (s service) Update(ctx context.Context, po documents.Model) (documents.Model, uuid.UUID, error) {
+func (s service) Update(ctx context.Context, po documents.Model) (documents.Model, uuid.UUID, chan bool, error) {
 	self, err := contextutil.Self(ctx)
 	if err != nil {
-		return nil, uuid.Nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
+		return nil, uuid.Nil, nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
 	}
 
 	cd, err := po.PackCoreDocument()
 	if err != nil {
-		return nil, uuid.Nil, errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
+		return nil, uuid.Nil, nil, errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
 	}
 
 	old, err := s.GetCurrentVersion(ctx, cd.DocumentIdentifier)
 	if err != nil {
-		return nil, uuid.Nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
+		return nil, uuid.Nil, nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
 	}
 
 	po, err = s.calculateDataRoot(ctx, old, po, UpdateValidator())
 	if err != nil {
-		return nil, uuid.Nil, err
+		return nil, uuid.Nil, nil, err
 	}
 
 	txID := contextutil.TX(ctx)
-	txID, err = documents.InitDocumentAnchorTask(s.queueSrv, s.txManager, self.ID, cd.CurrentVersion, txID)
+	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, self.ID, txID, cd.CurrentVersion)
 	if err != nil {
-		return nil, uuid.Nil, err
+		return nil, uuid.Nil, nil, err
 	}
-
-	return po, txID, nil
+	return po, txID, done, nil
 }
 
 // DeriveFromCreatePayload derives purchase order from create payload
