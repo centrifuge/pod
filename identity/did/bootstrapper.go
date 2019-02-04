@@ -20,9 +20,6 @@ type Bootstrapper struct{}
 // BootstrappedDIDService stores the id of the service
 const BootstrappedDIDService string = "BootstrappedDIDService"
 
-// BootstrappedDID stores the id of the identity
-const BootstrappedDID string = "BootstrappedDID"
-
 var smartContractAddresses *config.SmartContractAddresses
 
 // Bootstrap initializes the factory contract
@@ -47,17 +44,6 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 
 	service := NewService(cfg, factoryContract, client)
 	context[BootstrappedDIDService] = service
-
-	//TODO config needs to store correct did format
-	id, err := cfg.GetIdentityID()
-	if err != nil {
-		return err
-	}
-	did := NewDID(common.BytesToAddress(id))
-
-	identity := NewIdentity(cfg, client, &did)
-	context[BootstrappedDID] = identity
-
 	return nil
 }
 
