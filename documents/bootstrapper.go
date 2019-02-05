@@ -102,14 +102,6 @@ func (PostBootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		modelSaveFunc: repo.Update,
 	}
 
-	nftTask := &nftCreatedTask{
-		BaseTask: transactions.BaseTask{
-			TxManager: txMan,
-		},
-		docSrv: ctx[BootstrappedDocumentService].(Service),
-		cfgSrv: cfgService,
-	}
 	queueSrv.RegisterTaskType(documentAnchorTaskName, anchorTask)
-	queueSrv.RegisterTaskType(nftCreatedTaskName, nftTask)
 	return nil
 }

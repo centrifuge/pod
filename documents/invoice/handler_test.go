@@ -31,10 +31,10 @@ func (m *mockService) DeriveFromCreatePayload(ctx context.Context, payload *clie
 	return model, args.Error(1)
 }
 
-func (m *mockService) Create(ctx context.Context, model documents.Model) (documents.Model, uuid.UUID, error) {
+func (m *mockService) Create(ctx context.Context, model documents.Model) (documents.Model, uuid.UUID, chan bool, error) {
 	args := m.Called(ctx, model)
 	model, _ = args.Get(0).(documents.Model)
-	return model, contextutil.TX(ctx), args.Error(2)
+	return model, contextutil.TX(ctx), nil, args.Error(2)
 }
 
 func (m *mockService) GetCurrentVersion(ctx context.Context, documentID []byte) (documents.Model, error) {
@@ -61,10 +61,10 @@ func (m *mockService) DeriveInvoiceResponse(doc documents.Model) (*clientinvoice
 	return data, args.Error(1)
 }
 
-func (m *mockService) Update(ctx context.Context, model documents.Model) (documents.Model, uuid.UUID, error) {
+func (m *mockService) Update(ctx context.Context, model documents.Model) (documents.Model, uuid.UUID, chan bool, error) {
 	args := m.Called(ctx, model)
 	doc1, _ := args.Get(0).(documents.Model)
-	return doc1, contextutil.TX(ctx), args.Error(2)
+	return doc1, contextutil.TX(ctx), nil, args.Error(2)
 }
 
 func (m *mockService) DeriveFromUpdatePayload(ctx context.Context, payload *clientinvoicepb.InvoiceUpdatePayload) (documents.Model, error) {

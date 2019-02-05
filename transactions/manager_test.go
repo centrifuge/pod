@@ -5,6 +5,7 @@ package transactions
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -12,6 +13,12 @@ import (
 	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 )
+
+type mockConfig struct{}
+
+func (mockConfig) GetEthereumContextWaitTimeout() time.Duration {
+	panic("implement me")
+}
 
 func TestService_ExecuteWithinTX_happy(t *testing.T) {
 	cid := identity.RandomCentID()
@@ -101,21 +108,21 @@ func TestService_GetTransaction(t *testing.T) {
 }
 
 func TestService_CreateTransaction(t *testing.T) {
-	srv := ctx[BootstrappedService].(Manager)
+	srv := ctx[BootstrappedService].(extendedManager)
 	cid := identity.RandomCentID()
-	tx, err := srv.CreateTransaction(cid, "test")
+	tx, err := srv.createTransaction(cid, "test")
 	assert.NoError(t, err)
 	assert.NotNil(t, tx)
 	assert.Equal(t, cid.String(), tx.CID.String())
 }
 
 func TestService_WaitForTransaction(t *testing.T) {
-	srv := ctx[BootstrappedService].(Manager)
+	srv := ctx[BootstrappedService].(extendedManager)
 	repo := ctx[BootstrappedRepo].(Repository)
 	cid := identity.RandomCentID()
 
 	// failed
-	tx, err := srv.CreateTransaction(cid, "test")
+	tx, err := srv.createTransaction(cid, "test")
 	assert.NoError(t, err)
 	assert.NotNil(t, tx)
 	assert.Equal(t, cid.String(), tx.CID.String())
