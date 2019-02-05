@@ -3,6 +3,8 @@
 package documents
 
 import (
+	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"os"
 	"testing"
 
@@ -18,8 +20,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/queue"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/transactions"
-	testingcommons 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -104,4 +106,35 @@ func Test_fetchUniqueCollaborators(t *testing.T) {
 
 		assert.Equal(t, c.result, uc)
 	}
+}
+
+func TestCoreDocumentModel_PrepareNewVersion(t *testing.T) {
+	dm := NewCoreDocModel()
+	cd, err := dm.GetDocument()
+	assert.NotNil(t, cd)
+
+	//collaborators need to be hex string
+	collabs := []string{"some ID"}
+	newDocModel, err := dm.PrepareNewVersion(collabs)
+	assert.Error(t, err)
+	assert.Nil(t, newDocModel)
+
+	// missing DocumentRoot
+	c1 := utils.RandomSlice(6)
+	c2 := utils.RandomSlice(6)
+	c := []string{hexutil.Encode(c1), hexutil.Encode(c2)}
+	ndm, err := dm.PrepareNewVersion(c)
+	assert.NotNil(t, err)
+	assert.Nil(t, ndm)
+
+	// successful preparation of new version upon addition of DocumentRoot
+	cd.DocumentRoot = utils.RandomSlice(32)
+	ndm, err = dm.PrepareNewVersion(c)
+	assert.Nil(t, err)
+	assert.NotNil(t, ndm)
+
+	// successful updating of version in new Document
+	ncd, err := ndm.GetDocument()
+	ocd, err := dm.GetDocument()
+	assert.Equal(t, ncd.PreviousVersion, ocd.CurrentVersion)
 }
