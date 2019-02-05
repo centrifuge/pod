@@ -118,9 +118,21 @@ func (s service) GenerateAccount() (config.Account, error) {
 	return acc, nil
 }
 
-// generateAccountKeys at the moment generates only ethauth keys
+// generateAccountKeys generates signing and ethauth keys
 func generateAccountKeys(keystore string, acc *Account, CID identity.CentID) (*Account, error) {
 	acc.IdentityID = CID[:]
+	sPub, err := createKeyPath(keystore, CID, signingPubKeyName)
+	if err != nil {
+		return nil, err
+	}
+	sPriv, err := createKeyPath(keystore, CID, signingPrivKeyName)
+	if err != nil {
+		return nil, err
+	}
+	acc.SigningKeyPair = KeyPair{
+		Pub:  sPub,
+		Priv: sPriv,
+	}
 	ePub, err := createKeyPath(keystore, CID, ethAuthPubKeyName)
 	if err != nil {
 		return nil, err
@@ -132,6 +144,10 @@ func generateAccountKeys(keystore string, acc *Account, CID identity.CentID) (*A
 	acc.EthAuthKeyPair = KeyPair{
 		Pub:  ePub,
 		Priv: ePriv,
+	}
+	err = crypto.GenerateSigningKeyPair(acc.SigningKeyPair.Pub, acc.SigningKeyPair.Priv, crypto.CurveEd25519)
+	if err != nil {
+		return nil, err
 	}
 	err = crypto.GenerateSigningKeyPair(acc.EthAuthKeyPair.Pub, acc.EthAuthKeyPair.Priv, crypto.CurveSecp256K1)
 	if err != nil {

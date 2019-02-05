@@ -152,6 +152,11 @@ func (m *MockConfig) GetIdentityID() ([]byte, error) {
 	return args.Get(0).([]byte), args.Error(1)
 }
 
+func (m *MockConfig) GetP2PKeyPair() (pub, priv string) {
+	args := m.Called()
+	return args.Get(0).(string), args.Get(1).(string)
+}
+
 func (m *MockConfig) GetSigningKeyPair() (pub, priv string) {
 	args := m.Called()
 	return args.Get(0).(string), args.Get(1).(string)

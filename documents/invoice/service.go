@@ -122,68 +122,58 @@ func (s service) calculateDataRoot(ctx context.Context, old, new documents.Model
 }
 
 // Create takes and invoice model and does required validation checks, tries to persist to DB
-func (s service) Create(ctx context.Context, inv documents.Model) (documents.Model, uuid.UUID, error) {
+func (s service) Create(ctx context.Context, inv documents.Model) (documents.Model, uuid.UUID, chan bool, error) {
 	self, err := contextutil.Self(ctx)
 	if err != nil {
-		return nil, uuid.Nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
+		return nil, uuid.Nil, nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
 	}
 
 	inv, err = s.calculateDataRoot(ctx, nil, inv, CreateValidator())
 	if err != nil {
-		return nil, uuid.Nil, err
+		return nil, uuid.Nil, nil, err
 	}
 
 	cd, err := inv.PackCoreDocument()
 	if err != nil {
-		return nil, uuid.Nil, err
+		return nil, uuid.Nil, nil, err
 	}
 
 	txID := contextutil.TX(ctx)
-	txID, err = documents.InitDocumentAnchorTask(
-		s.queueSrv,
-		s.txManager,
-		self.ID,
-		cd.CurrentVersion, txID)
+	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, self.ID, txID, cd.CurrentVersion)
 	if err != nil {
-		return nil, uuid.Nil, err
+		return nil, uuid.Nil, nil, err
 	}
-
-	return inv, txID, nil
+	return inv, txID, done, nil
 }
 
 // Update finds the old document, validates the new version and persists the updated document
-func (s service) Update(ctx context.Context, inv documents.Model) (documents.Model, uuid.UUID, error) {
+func (s service) Update(ctx context.Context, inv documents.Model) (documents.Model, uuid.UUID, chan bool, error) {
 	self, err := contextutil.Self(ctx)
 	if err != nil {
-		return nil, uuid.Nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
+		return nil, uuid.Nil, nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
 	}
 
 	cd, err := inv.PackCoreDocument()
 	if err != nil {
-		return nil, uuid.Nil, errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
+		return nil, uuid.Nil, nil, errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
 	}
 
 	old, err := s.GetCurrentVersion(ctx, cd.DocumentIdentifier)
 	if err != nil {
-		return nil, uuid.Nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
+		return nil, uuid.Nil, nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
 	}
 
 	inv, err = s.calculateDataRoot(ctx, old, inv, UpdateValidator())
 	if err != nil {
-		return nil, uuid.Nil, err
+		return nil, uuid.Nil, nil, err
 	}
 
 	txID := contextutil.TX(ctx)
-	txID, err = documents.InitDocumentAnchorTask(
-		s.queueSrv,
-		s.txManager,
-		self.ID,
-		cd.CurrentVersion, txID)
+	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, self.ID, txID, cd.CurrentVersion)
 	if err != nil {
-		return nil, uuid.Nil, err
+		return nil, uuid.Nil, nil, err
 	}
-
-	return inv, txID, nil
+	return inv, txID, done, nil
 }
 
 // DeriveInvoiceResponse returns create response from invoice model

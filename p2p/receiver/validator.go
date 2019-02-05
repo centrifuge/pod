@@ -92,7 +92,7 @@ func peerValidator(idService identity.Service) Validator {
 		if err != nil {
 			return err
 		}
-		return idService.ValidateKey(*centID, idKey, identity.KeyPurposeSigning)
+		return idService.ValidateKey(*centID, idKey, identity.KeyPurposeP2P)
 	})
 }
 

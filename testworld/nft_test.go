@@ -100,16 +100,6 @@ func TestPaymentObligationMint_errors(t *testing.T) {
 				"depositAddress":  "abc",
 			},
 		},
-		{
-			"document not found in the system database",
-			http.StatusInternalServerError,
-			map[string]interface{}{
-
-				"identifier":      "0x12121212",
-				"registryAddress": "0xf72855759a39fb75fc7341139f5d7a3974d4da08", //dummy address
-				"depositAddress":  "0xf72855759a39fb75fc7341139f5d7a3974d4da08", //dummy address
-			},
-		},
 	}
 	for _, test := range tests {
 		t.Run(test.errorMsg, func(t *testing.T) {

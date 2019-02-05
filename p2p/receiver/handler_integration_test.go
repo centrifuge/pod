@@ -117,7 +117,7 @@ func TestHandler_HandleInterceptorReqSignature(t *testing.T) {
 	req := getSignatureRequest(doc)
 	p2pEnv, err := p2pcommon.PrepareP2PEnvelope(ctxh, cfg.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, req)
 
-	pub, _ := cfg.GetSigningKeyPair()
+	pub, _ := cfg.GetP2PKeyPair()
 	publicKey, err := cented25519.GetPublicSigningKey(pub)
 	assert.NoError(t, err)
 	var bPk [32]byte
@@ -295,11 +295,18 @@ func createIdentity(t *testing.T) identity.CentID {
 
 	idConfig, err := identity.GetIdentityConfig(cfg)
 	// Add Keys
-	pubKey := idConfig.Keys[identity.KeyPurposeSigning].PublicKey
-	confirmations, err = id.AddKeyToIdentity(context.Background(), identity.KeyPurposeSigning, pubKey)
+	pubKey := idConfig.Keys[identity.KeyPurposeP2P].PublicKey
+	confirmations, err = id.AddKeyToIdentity(context.Background(), identity.KeyPurposeP2P, pubKey)
 	assert.Nil(t, err, "should not error out when adding key to identity")
 	assert.NotNil(t, confirmations, "confirmations channel should not be nil")
 	watchReceivedIdentity := <-confirmations
+	assert.Equal(t, centrifugeId, watchReceivedIdentity.Identity.CentID(), "Resulting Identity should have the same ID as the input")
+
+	sPubKey := idConfig.Keys[identity.KeyPurposeSigning].PublicKey
+	confirmations, err = id.AddKeyToIdentity(context.Background(), identity.KeyPurposeSigning, sPubKey)
+	assert.Nil(t, err, "should not error out when adding key to identity")
+	assert.NotNil(t, confirmations, "confirmations channel should not be nil")
+	watchReceivedIdentity = <-confirmations
 	assert.Equal(t, centrifugeId, watchReceivedIdentity.Identity.CentID(), "Resulting Identity should have the same ID as the input")
 
 	secPubKey := idConfig.Keys[identity.KeyPurposeEthMsgAuth].PublicKey
