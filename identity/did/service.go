@@ -2,10 +2,10 @@ package did
 
 import (
 	"context"
-	"fmt"
+
+	"github.com/centrifuge/go-centrifuge/errors"
 
 	"github.com/centrifuge/go-centrifuge/contextutil"
-	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -54,8 +54,8 @@ func CalculateCreatedAddress(address common.Address, nonce uint64) common.Addres
 func (s *service) createIdentityTX(opts *bind.TransactOpts) func(accountID id.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
 	return func(accountID id.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
 		ethTX, err := s.client.SubmitTransactionWithRetries(s.factoryContract.CreateIdentity, opts)
-		fmt.Println("trans submitted")
 		if err != nil {
+			errOut <- err
 			log.Infof("Failed to send identity for creation [txHash: %s] : %v", ethTX.Hash(), err)
 			return
 		}
@@ -99,11 +99,10 @@ func (s *service) isIdentityContract(identityAddress common.Address) error {
 
 	deployedContractByte := common.Bytes2Hex(contractCode)
 	identityContractByte := getIdentityByteCode()[2:] // remove 0x prefix
-	if deployedContractByte == identityContractByte {
-		return nil
+	if deployedContractByte != identityContractByte {
+		return errors.New("deployed identity contract bytecode not correct")
 	}
-
-	return errors.New("deployed identity contract bytecode not correct")
+	return nil
 
 }
 
@@ -129,7 +128,7 @@ func (s *service) CreateIdentity(ctx context.Context) (did *DID, err error) {
 		return nil, err
 	}
 
-	txID, done, err := s.txManager.ExecuteWithinTX(context.Background(), idConfig.ID, uuid.Nil, "Check TX status", s.createIdentityTX(opts))
+	txID, done, err := s.txManager.ExecuteWithinTX(context.Background(), idConfig.ID, uuid.Nil, "Check TX for create identity status", s.createIdentityTX(opts))
 	if err != nil {
 		return nil, err
 	}
@@ -137,10 +136,7 @@ func (s *service) CreateIdentity(ctx context.Context) (did *DID, err error) {
 	isDone := <-done
 	// non async task
 	if !isDone {
-		err = s.txManager.WaitForTransaction(idConfig.ID, txID)
-		if err != nil {
-			return nil, err
-		}
+		return nil, errors.New("Create Identity TX failed: txID:%s", txID.String())
 
 	}
 

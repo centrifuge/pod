@@ -51,10 +51,10 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		return errors.New("transactions repository not initialised")
 	}
 
-	if _, ok := context[bootstrap.BootstrappedQueueServer]; !ok {
+	queueSrv, ok := context[bootstrap.BootstrappedQueueServer].(*queue.Server)
+	if !ok {
 		return errors.New("queue hasn't been initialized")
 	}
-	queueSrv := context[bootstrap.BootstrappedQueueServer].(*queue.Server)
 
 	service := NewService(cfg, factoryContract, client, txManager, queueSrv)
 	context[BootstrappedDIDService] = service
