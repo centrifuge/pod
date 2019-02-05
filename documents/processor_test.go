@@ -364,6 +364,7 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 		Value:   []byte("some data"),
 	}
 	cd.Collaborators = [][]byte{[]byte("some id")}
+	model.On("CalculateDataRoot").Return(cd.DataRoot, nil)
 	assert.Nil(t, coredocument.FillSalts(cd))
 	assert.Nil(t, coredocument.CalculateSigningRoot(cd, model.CalculateDataRoot))
 	model = mockModel{}
@@ -372,6 +373,7 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	assert.Nil(t, err)
 	s := identity.Sign(c, identity.KeyPurposeSigning, cd.SigningRoot)
 	cd.Signatures = []*coredocumentpb.Signature{s}
+	model.On("CalculateDataRoot").Return(cd.DataRoot, nil)
 	assert.Nil(t, coredocument.CalculateDocumentRoot(cd))
 	docRoot, err := anchors.ToDocumentRoot(cd.DocumentRoot)
 	assert.Nil(t, err)

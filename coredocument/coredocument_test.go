@@ -57,7 +57,9 @@ func TestGetSigningProofHashes(t *testing.T) {
 	assert.Nil(t, err)
 
 	cd.CoredocumentSalts = cds
-	err = CalculateSigningRoot(cd, nil)
+	err = CalculateSigningRoot(cd, func() (bytes []byte, e error) {
+		return cd.DataRoot, nil
+	})
 	assert.Nil(t, err)
 
 	err = CalculateDocumentRoot(cd)
@@ -86,7 +88,9 @@ func TestGetDataProofHashes(t *testing.T) {
 
 	cd.CoredocumentSalts = cds
 
-	err = CalculateSigningRoot(cd, nil)
+	err = CalculateSigningRoot(cd, func() (bytes []byte, e error) {
+		return cd.DataRoot, nil
+	})
 	assert.Nil(t, err)
 
 	err = CalculateDocumentRoot(cd)

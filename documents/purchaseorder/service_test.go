@@ -485,7 +485,7 @@ func TestService_calculateDataRoot(t *testing.T) {
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 
 	// type mismatch
-	po, err := poSrv.calculateDataRoot(ctxh, nil, &testingdocuments.MockModel{}, nil)
+	po, err := poSrv.validateAndPersist(ctxh, nil, &testingdocuments.MockModel{}, nil)
 	assert.Nil(t, po)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "unknown document type")
@@ -493,11 +493,10 @@ func TestService_calculateDataRoot(t *testing.T) {
 	// failed validator
 	po, err = poSrv.DeriveFromCreatePayload(ctxh, testingdocuments.CreatePOPayload())
 	assert.Nil(t, err)
-	assert.Nil(t, po.(*PurchaseOrder).CoreDocument.DataRoot)
 	v := documents.ValidatorFunc(func(_, _ documents.Model) error {
 		return errors.New("validations fail")
 	})
-	po, err = poSrv.calculateDataRoot(ctxh, nil, po, v)
+	po, err = poSrv.validateAndPersist(ctxh, nil, po, v)
 	assert.Nil(t, po)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "validations fail")
@@ -508,7 +507,7 @@ func TestService_calculateDataRoot(t *testing.T) {
 	assert.Nil(t, po.(*PurchaseOrder).CoreDocument.DataRoot)
 	err = poSrv.repo.Create(accountID, po.(*PurchaseOrder).CoreDocument.CurrentVersion, po)
 	assert.Nil(t, err)
-	po, err = poSrv.calculateDataRoot(ctxh, nil, po, CreateValidator())
+	po, err = poSrv.validateAndPersist(ctxh, nil, po, CreateValidator())
 	assert.Nil(t, po)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), storage.ErrRepositoryModelCreateKeyExists)
@@ -517,10 +516,9 @@ func TestService_calculateDataRoot(t *testing.T) {
 	po, err = poSrv.DeriveFromCreatePayload(ctxh, testingdocuments.CreatePOPayload())
 	assert.Nil(t, err)
 	assert.Nil(t, po.(*PurchaseOrder).CoreDocument.DataRoot)
-	po, err = poSrv.calculateDataRoot(ctxh, nil, po, CreateValidator())
+	po, err = poSrv.validateAndPersist(ctxh, nil, po, CreateValidator())
 	assert.Nil(t, err)
 	assert.NotNil(t, po)
-	assert.NotNil(t, po.(*PurchaseOrder).CoreDocument.DataRoot)
 }
 
 var testRepoGlobal documents.Repository

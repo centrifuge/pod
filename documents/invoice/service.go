@@ -88,8 +88,8 @@ func (s service) DeriveFromCreatePayload(ctx context.Context, payload *clientinv
 	return invoiceModel, nil
 }
 
-// calculateDataRoot validates the document, calculates the data root, and persists to DB
-func (s service) calculateDataRoot(ctx context.Context, old, new documents.Model, validator documents.Validator) (documents.Model, error) {
+// validateAndPersist validates the document, calculates the data root, and persists to DB
+func (s service) validateAndPersist(ctx context.Context, old, new documents.Model, validator documents.Validator) (documents.Model, error) {
 	self, err := contextutil.Self(ctx)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
@@ -98,12 +98,6 @@ func (s service) calculateDataRoot(ctx context.Context, old, new documents.Model
 	inv, ok := new.(*Invoice)
 	if !ok {
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalidType, errors.New("unknown document type: %T", new))
-	}
-
-	// create data root, has to be done at the model level to access fields
-	_, err = inv.CalculateDataRoot()
-	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
 
 	// validate the invoice
@@ -128,7 +122,7 @@ func (s service) Create(ctx context.Context, inv documents.Model) (documents.Mod
 		return nil, uuid.Nil, nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
 	}
 
-	inv, err = s.calculateDataRoot(ctx, nil, inv, CreateValidator())
+	inv, err = s.validateAndPersist(ctx, nil, inv, CreateValidator())
 	if err != nil {
 		return nil, uuid.Nil, nil, err
 	}
@@ -163,7 +157,7 @@ func (s service) Update(ctx context.Context, inv documents.Model) (documents.Mod
 		return nil, uuid.Nil, nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
 	}
 
-	inv, err = s.calculateDataRoot(ctx, old, inv, UpdateValidator())
+	inv, err = s.validateAndPersist(ctx, old, inv, UpdateValidator())
 	if err != nil {
 		return nil, uuid.Nil, nil, err
 	}

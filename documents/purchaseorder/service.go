@@ -68,8 +68,8 @@ func (s service) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (docume
 	return model, nil
 }
 
-// calculateDataRoot validates the document, calculates the data root, and persists to DB
-func (s service) calculateDataRoot(ctx context.Context, old, new documents.Model, validator documents.Validator) (documents.Model, error) {
+// validateAndPersist validates the document, and persists to DB
+func (s service) validateAndPersist(ctx context.Context, old, new documents.Model, validator documents.Validator) (documents.Model, error) {
 	self, err := contextutil.Self(ctx)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
@@ -102,7 +102,7 @@ func (s service) Create(ctx context.Context, po documents.Model) (documents.Mode
 		return nil, uuid.Nil, nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
 	}
 
-	po, err = s.calculateDataRoot(ctx, nil, po, CreateValidator())
+	po, err = s.validateAndPersist(ctx, nil, po, CreateValidator())
 	if err != nil {
 		return nil, uuid.Nil, nil, err
 	}
@@ -137,7 +137,7 @@ func (s service) Update(ctx context.Context, po documents.Model) (documents.Mode
 		return nil, uuid.Nil, nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
 	}
 
-	po, err = s.calculateDataRoot(ctx, old, po, UpdateValidator())
+	po, err = s.validateAndPersist(ctx, old, po, UpdateValidator())
 	if err != nil {
 		return nil, uuid.Nil, nil, err
 	}
