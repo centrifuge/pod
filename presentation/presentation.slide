@@ -118,9 +118,9 @@ We have a few conventions around error handling,
 * P2P
 
 - P2P layer of go-centrifuge implements
-.link https://github.com/centrifuge/go-centrifuge/blob/develop/p2p/doc.go Centrifuge Wire Protocol
+.link https://godoc.org/github.com/centrifuge/go-centrifuge/p2p Centrifuge Wire Protocol
 - Implemented using
-.link https://libp2p.io/ Uses Libp2p
+.link https://libp2p.io/ Libp2p
 - Every Account in the node has the libp2p keypair used by the node in their Ethereum identity
 - Centrifuge ID concatenated to the protocol identifier is used for multiplexing requests to each Account
 
