@@ -205,13 +205,11 @@ func QueueEthTXStatusTask(
 	accountID identity.CentID,
 	txID uuid.UUID,
 	txHash common.Hash,
-	next bool,
 	queuer queue.TaskQueuer) (res queue.TaskResult, err error) {
 	return queuer.EnqueueJobWithMaxTries(EthTXStatusTaskName, map[string]interface{}{
 		transactions.TxIDParam:  txID.String(),
 		TransactionAccountParam: accountID.String(),
 		TransactionTxHashParam:  txHash.String(),
-		transactions.TxNextTask: next,
 	})
 }
 

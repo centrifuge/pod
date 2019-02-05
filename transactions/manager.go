@@ -12,30 +12,61 @@ import (
 	"github.com/satori/go.uuid"
 )
 
-// Manager manages transaction in go-centrifuge.
+// Config is the config interface for transactions package
+type Config interface {
+	GetEthereumContextWaitTimeout() time.Duration
+}
+
+// Manager is a manager for centrifuge transactions.
 type Manager interface {
-
-	// ExecuteWithinTX executes a unit of work within a transaction
+	// ExecuteWithinTX executes a transaction within a transaction
 	ExecuteWithinTX(ctx context.Context, accountID identity.CentID, existingTxID uuid.UUID, desc string, work func(accountID identity.CentID, txID uuid.UUID, txMan Manager, err chan<- error)) (txID uuid.UUID, done chan bool, err error)
-
-	// CreateTransaction
-	// TODO [TXManager] remove this once TX Manager update is complete
-	CreateTransaction(accountID identity.CentID, desc string) (*Transaction, error)
 	GetTransaction(accountID identity.CentID, id uuid.UUID) (*Transaction, error)
-	SaveTransaction(tx *Transaction) error
+	UpdateTaskStatus(accountID identity.CentID, id uuid.UUID, status Status, taskName, message string) error
 	GetTransactionStatus(accountID identity.CentID, id uuid.UUID) (*transactionspb.TransactionStatusResponse, error)
 	WaitForTransaction(accountID identity.CentID, txID uuid.UUID) error
+	GetDefaultTaskTimeout() time.Duration
+}
+
+// extendedManager exposes package specific functions.
+type extendedManager interface {
+	Manager
+
+	// saveTransaction only exposed for testing within package.
+	// DO NOT use this outside of the package, use ExecuteWithinTX to initiate a transaction with management.
+	saveTransaction(tx *Transaction) error
+
+	// createTransaction only exposed for testing within package.
+	// DO NOT use this outside of the package, use ExecuteWithinTX to initiate a transaction with management.
+	createTransaction(accountID identity.CentID, desc string) (*Transaction, error)
 }
 
 // NewManager returns a Manager implementation.
-func NewManager(repo Repository) Manager {
-	return &service{repo: repo}
+func NewManager(config Config, repo Repository) Manager {
+	return &service{config: config, repo: repo}
 }
 
 // service implements Manager.
 // TODO [TXManager] convert this into an implementation of node.Server and start it at node start so that we can bring down transaction go routines cleanly
 type service struct {
-	repo Repository
+	config Config
+	repo   Repository
+}
+
+func (s *service) GetDefaultTaskTimeout() time.Duration {
+	return s.config.GetEthereumContextWaitTimeout()
+}
+
+func (s *service) UpdateTaskStatus(accountID identity.CentID, id uuid.UUID, status Status, taskName, message string) error {
+	tx, err := s.GetTransaction(accountID, id)
+	if err != nil {
+		return err
+	}
+
+	// status particular to the task
+	tx.TaskStatus[taskName] = status
+	tx.Logs = append(tx.Logs, NewLog(taskName, message))
+	return s.saveTransaction(tx)
 }
 
 // ExecuteWithinTX executes a transaction within a transaction.
@@ -43,7 +74,7 @@ func (s *service) ExecuteWithinTX(ctx context.Context, accountID identity.CentID
 	t, err := s.repo.Get(accountID, existingTxID)
 	if err != nil {
 		t = newTransaction(accountID, desc)
-		err := s.SaveTransaction(t)
+		err := s.saveTransaction(t)
 		if err != nil {
 			return uuid.Nil, nil, err
 		}
@@ -55,20 +86,34 @@ func (s *service) ExecuteWithinTX(ctx context.Context, accountID identity.CentID
 
 		select {
 		case e := <-err:
-			if e != nil {
-				t.Status = Failed
-			} else {
-				t.Status = Success
+			tempTx, err := s.repo.Get(accountID, t.ID)
+			if err != nil {
+				log.Error(e, err)
+				break
 			}
-			e = s.SaveTransaction(t)
+			// update tx success status only if this wasn't an existing TX.
+			// Otherwise if might update an existing tx pending status to success without actually being a success,
+			// it is assumed that status updated is already handles per task in that case.
+			// Checking individual task success is upto the transaction manager calling code.
+			if e == nil && existingTxID == uuid.Nil {
+				tempTx.Status = Success
+			} else if e != nil {
+				tempTx.Status = Failed
+			}
+			e = s.saveTransaction(tempTx)
 			if e != nil {
 				log.Error(e)
 			}
 		case <-ctx.Done():
 			msg := fmt.Sprintf("Transaction %s for account %s with description \"%s\" is stopped because of context close", t.ID.String(), t.CID, t.Description)
 			log.Warningf(msg)
-			t.Logs = append(t.Logs, NewLog("context closed", msg))
-			e := s.SaveTransaction(t)
+			tempTx, err := s.repo.Get(accountID, t.ID)
+			if err != nil {
+				log.Error(err)
+				break
+			}
+			tempTx.Logs = append(tempTx.Logs, NewLog("context closed", msg))
+			e := s.saveTransaction(tempTx)
 			if e != nil {
 				log.Error(e)
 			}
@@ -78,8 +123,8 @@ func (s *service) ExecuteWithinTX(ctx context.Context, accountID identity.CentID
 	return t.ID, done, nil
 }
 
-// SaveTransaction saves the transaction.
-func (s *service) SaveTransaction(tx *Transaction) error {
+// saveTransaction saves the transaction.
+func (s *service) saveTransaction(tx *Transaction) error {
 	err := s.repo.Save(tx)
 	if err != nil {
 		return err
@@ -92,15 +137,16 @@ func (s *service) GetTransaction(accountID identity.CentID, id uuid.UUID) (*Tran
 	return s.repo.Get(accountID, id)
 }
 
-// CreateTransaction creates a new transaction and saves it to the DB.
-func (s *service) CreateTransaction(accountID identity.CentID, desc string) (*Transaction, error) {
+// createTransaction creates a new transaction and saves it to the DB.
+func (s *service) createTransaction(accountID identity.CentID, desc string) (*Transaction, error) {
 	tx := newTransaction(accountID, desc)
-	return tx, s.SaveTransaction(tx)
+	return tx, s.saveTransaction(tx)
 }
 
 // WaitForTransaction blocks until transaction status is moved from pending state.
 // Note: use it with caution as this will block.
 func (s *service) WaitForTransaction(accountID identity.CentID, txID uuid.UUID) error {
+	// TODO change this to use a pre-saved done channel from ExecuteWithinTX, instead of a for loop, may require significant refactoring to handle the case of restarted node
 	for {
 		resp, err := s.GetTransactionStatus(accountID, txID)
 		if err != nil {
