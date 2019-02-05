@@ -19,7 +19,7 @@ type Config interface {
 
 // Manager is a manager for centrifuge transactions.
 type Manager interface {
-	// ExecuteWithinTX executes a transaction within a transaction
+	// ExecuteWithinTX executes a unit of work within a transaction
 	ExecuteWithinTX(ctx context.Context, accountID identity.CentID, existingTxID uuid.UUID, desc string, work func(accountID identity.CentID, txID uuid.UUID, txMan Manager, err chan<- error)) (txID uuid.UUID, done chan bool, err error)
 	GetTransaction(accountID identity.CentID, id uuid.UUID) (*Transaction, error)
 	UpdateTaskStatus(accountID identity.CentID, id uuid.UUID, status Status, taskName, message string) error
