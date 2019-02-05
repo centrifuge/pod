@@ -339,7 +339,7 @@ func (p *PurchaseOrder) Type() reflect.Type {
 	return reflect.TypeOf(p)
 }
 
-// calculateDataRoot calculates the data root and sets the root to core document
+// CalculateDataRoot calculates the data root and sets the root to core document
 func (p *PurchaseOrder) CalculateDataRoot() ([]byte, error) {
 	t, err := p.getDocumentDataTree()
 	if err != nil {
