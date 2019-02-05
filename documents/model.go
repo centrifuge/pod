@@ -21,32 +21,14 @@ type Model interface {
 	storage.Model
 	// PackCoreDocument packs the implementing document into a core document
 	// should create the identifiers for the core document if not present
-	PackCoreDocument() (*CoreDocumentModel, error)
+	PackCoreDocument() (*coredocumentpb.CoreDocument, error)
 
 	// UnpackCoreDocument must return the document.Model
 	// assumes that core document has valid identifiers set
-	UnpackCoreDocument(model *CoreDocumentModel) error
+	UnpackCoreDocument(cd *coredocumentpb.CoreDocument) error
 
 	// CreateProofs creates precise-proofs for given fields
 	CreateProofs(fields []string) (coreDoc *coredocumentpb.CoreDocument, proofs []*proofspb.Proof, err error)
-}
-
-// The CoreDocument interface handles model-level Document interactions
-// These encompass interactions which create, mutate, or read data from a Document model
-type CoreDocument interface {
-
-	ID() ([]byte, error)
-	New() *CoreDocumentModel
-	NewWithCollaborators(collaborators []string) (*CoreDocumentModel, error)
-	PrepareNewVersion (collaborators []string) (*CoreDocumentModel, error)
-	FillSalts(doc *CoreDocumentModel) error
-	GetExternalCollaborators(selfCentID identity.CentID)  ([][]byte, error)
-	// below methods handle precise-proof related functionality
-	CreateProofs(dataTree *proofs.DocumentTree, fields []string) (proofs []*proofspb.Proof, err error)
-	CalculateSigningRoot() error
-	CalculateDocumentRoot() error
-	GetDocumentRootTree() (tree *proofs.DocumentTree, err error)
-	GetDocumentSigningTree() (tree *proofs.DocumentTree, err error)
 }
 
 type CoreDocumentModel struct {
@@ -55,7 +37,7 @@ type CoreDocumentModel struct {
 
 // New returns a new core document
 // Note: collaborators and salts are to be filled by the caller
-func (m *CoreDocumentModel) New() *CoreDocumentModel {
+func newDocModel() *CoreDocumentModel {
 	id := utils.RandomSlice(32)
 	cd := &coredocumentpb.CoreDocument{
 		DocumentIdentifier: id,
@@ -71,88 +53,64 @@ func (m *CoreDocumentModel) GetDocument() *coredocumentpb.CoreDocument {
 	return m.document
 }
 
-func (m *CoreDocumentModel) SetDocument(updatedDocument *coredocumentpb.CoreDocument) {
-	m.document = updatedDocument
+func (m *CoreDocumentModel) SetDocument(updatedDocumentModel *CoreDocumentModel) *CoreDocumentModel{
+	ud := updatedDocumentModel.GetDocument()
+	m.document = ud
+	return m
 }
 
-// NewWithCollaborators generates new core document, adds collaborators, adds read rules and fills salts
-// TODO: this method will be changed when collaborators are moved one level down
-//func (m *CoreDocumentModel) NewWithCollaborators(collaborators []string) (*DocumentModel, error) {
-//	model :=  m.New()
-//	ids, err := identity.CentIDsFromStrings(collaborators)
-//	if err != nil {
-//		return nil, errors.New("failed to decode collaborator: %v", err)
-//	}
-//
-//	for i := range ids {
-//		model.document.Collaborators = append(model.document.Collaborators, ids[i][:])
-//	}
-//
-//	err = initReadRules(model.document, ids)
-//	if err != nil {
-//		return nil, errors.New("failed to init read rules: %v", err)
-//	}
-//
-//	err = m.FillSalts()
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	return model, nil
-//}
 // PrepareNewVersion creates a copy of the passed coreDocument with the version fields updated
 // Adds collaborators and fills salts
 // Note: new collaborators are added to the list with old collaborators.
-// TODO: this method will be changed when collaborators are moved one level down
-//func (m *CoreDocumentModel) PrepareNewVersion (collaborators []string) (*DocumentModel, error) {
-//	ncd := m.New()
-//	ucs, err := fetchUniqueCollaborators(m.document.Collaborators, collaborators)
-//	if err != nil {
-//		return nil, errors.New("failed to decode collaborator: %v", err)
-//	}
-//
-//	cs := m.document.Collaborators
-//	for _, c := range ucs {
-//		c := c
-//		cs = append(cs, c[:])
-//	}
-//
-//	ncd.document.Collaborators = cs
-//
-//	// copy read rules and roles
-//	ncd.document.Roles = m.document.Roles
-//	ncd.document.ReadRules = m.document.ReadRules
-//	addCollaboratorsToReadSignRules(ncd.document, ucs)
-//
-//	err = ncd.FillSalts()
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	if m.document.DocumentIdentifier == nil {
-//		return nil, errors.New("coredocument.DocumentIdentifier is nil")
-//	}
-//	ncd.document.DocumentIdentifier = m.document.DocumentIdentifier
-//
-//	if m.document.CurrentVersion == nil {
-//		return nil, errors.New("coredocument.CurrentVersion is nil")
-//	}
-//	ncd.document.PreviousVersion = m.document.CurrentVersion
-//
-//	if m.document.NextVersion == nil {
-//		return nil, errors.New("coredocument.NextVersion is nil")
-//	}
-//	ncd.document.CurrentVersion = m.document.NextVersion
-//	ncd.document.NextVersion = utils.RandomSlice(32)
-//	if m.document.DocumentRoot == nil {
-//		return nil, errors.New("coredocument.DocumentRoot is nil")
-//	}
-//	ncd.document.PreviousRoot = m.document.DocumentRoot
-//	return ncd, nil
-//}
+func (m *CoreDocumentModel) PrepareNewVersion (collaborators []string) (*CoreDocumentModel, error) {
+	ncd := newDocModel()
+	ucs, err := fetchUniqueCollaborators(m.document.Collaborators, collaborators)
+	if err != nil {
+		return nil, errors.New("failed to decode collaborator: %v", err)
+	}
+
+	cs := m.document.Collaborators
+	for _, c := range ucs {
+		c := c
+		cs = append(cs, c[:])
+	}
+
+	ncd.document.Collaborators = cs
+
+	// copy read rules and roles
+	ncd.document.Roles = m.document.Roles
+	ncd.document.ReadRules = m.document.ReadRules
+	addCollaboratorsToReadSignRules(ncd.document, ucs)
+
+	err = ncd.fillSalts()
+	if err != nil {
+		return nil, err
+	}
+
+	if m.document.DocumentIdentifier == nil {
+		return nil, errors.New("coredocument.DocumentIdentifier is nil")
+	}
+	ncd.document.DocumentIdentifier = m.document.DocumentIdentifier
+
+	if m.document.CurrentVersion == nil {
+		return nil, errors.New("coredocument.CurrentVersion is nil")
+	}
+	ncd.document.PreviousVersion = m.document.CurrentVersion
+
+	if m.document.NextVersion == nil {
+		return nil, errors.New("coredocument.NextVersion is nil")
+	}
+	ncd.document.CurrentVersion = m.document.NextVersion
+	ncd.document.NextVersion = utils.RandomSlice(32)
+	if m.document.DocumentRoot == nil {
+		return nil, errors.New("coredocument.DocumentRoot is nil")
+	}
+	ncd.document.PreviousRoot = m.document.DocumentRoot
+	return ncd, nil
+}
 
 // FillSalts creates a new coredocument.Salts and fills it
-func (m *CoreDocumentModel) FillSalts() error {
+func (m *CoreDocumentModel) fillSalts() error {
 	salts := new(coredocumentpb.CoreDocumentSalts)
 	err := proofs.FillSalts(m.document, salts)
 	if err != nil {

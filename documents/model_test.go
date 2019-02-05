@@ -10,8 +10,6 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
-
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 
 	"github.com/centrifuge/go-centrifuge/config/configstore"
@@ -21,6 +19,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/transactions"
+	testingcommons 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/stretchr/testify/assert"
 )
 
 var ctx map[string]interface{}
@@ -53,4 +53,53 @@ func TestMain(m *testing.M) {
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)
+}
+
+func Test_fetchUniqueCollaborators(t *testing.T) {
+	tests := []struct {
+		old    [][]byte
+		new    []string
+		result []identity.CentID
+		err    bool
+	}{
+		{
+			new:    []string{"0x010203040506"},
+			result: []identity.CentID{{1, 2, 3, 4, 5, 6}},
+		},
+
+		{
+			old:    [][]byte{{1, 2, 3, 2, 3, 1}},
+			new:    []string{"0x010203040506"},
+			result: []identity.CentID{{1, 2, 3, 4, 5, 6}},
+		},
+
+		{
+			old: [][]byte{{1, 2, 3, 2, 3, 1}, {1, 2, 3, 4, 5, 6}},
+			new: []string{"0x010203040506"},
+		},
+
+		{
+			old: [][]byte{{1, 2, 3, 2, 3, 1}, {1, 2, 3, 4, 5, 6}},
+		},
+
+		// new collaborator with wrong format
+		{
+			old: [][]byte{{1, 2, 3, 2, 3, 1}, {1, 2, 3, 4, 5, 6}},
+			new: []string{"0x0102030405"},
+			err: true,
+		},
+	}
+
+	for _, c := range tests {
+		uc, err := fetchUniqueCollaborators(c.old, c.new)
+		if err != nil {
+			if c.err {
+				continue
+			}
+
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, c.result, uc)
+	}
 }

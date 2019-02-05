@@ -1,4 +1,4 @@
-package coredocument
+package documents
 
 import (
 	"bytes"
@@ -72,48 +72,11 @@ func addNewRule(cd *coredocumentpb.CoreDocument, role *coredocumentpb.Role, acti
 	cd.ReadRules = append(cd.ReadRules, rule)
 }
 
-// AddNFTToReadRules adds NFT token to the read rules of core document.
-func AddNFTToReadRules(cd *coredocumentpb.CoreDocument, registry common.Address, tokenID []byte) error {
-	nft, err := ConstructNFT(registry, tokenID)
-	if err != nil {
-		return errors.New("failed to construct NFT: %v", err)
-	}
 
-	role := new(coredocumentpb.Role)
-	rk, err := utils.ConvertIntToByte32(len(cd.Roles))
-	if err != nil {
-		return err
-	}
-	role.RoleKey = rk[:]
-	role.Nfts = append(role.Nfts, nft)
-	addNewRule(cd, role, coredocumentpb.Action_ACTION_READ)
-	return FillSalts(cd)
-}
-
-// ConstructNFT appends registry and tokenID to byte slice
-func ConstructNFT(registry common.Address, tokenID []byte) ([]byte, error) {
-	var nft []byte
-	// first 20 bytes of registry
-	nft = append(nft, registry.Bytes()...)
-
-	// next 32 bytes of the tokenID
-	nft = append(nft, tokenID...)
-
-	if len(nft) != nftByteCount {
-		return nil, errors.New("byte length mismatch")
-	}
-
-	return nft, nil
-}
 
 // ReadAccessValidator defines validator functions for account .
 type ReadAccessValidator interface {
 	AccountCanRead(cd *coredocumentpb.CoreDocument, account identity.CentID) bool
-	NFTOwnerCanRead(
-		cd *coredocumentpb.CoreDocument,
-		registry common.Address,
-		tokenID []byte,
-		account identity.CentID) error
 }
 
 // readAccessValidator implements ReadAccessValidator.
@@ -156,48 +119,6 @@ func AccountValidator() ReadAccessValidator {
 	return readAccessValidator{}
 }
 
-// NftValidator returns the ReadAccessValidator for nft owner verification.
-func NftValidator(tr TokenRegistry) ReadAccessValidator {
-	return readAccessValidator{tokenRegistry: tr}
-}
-
-// NFTOwnerCanRead checks if the nft owner/account can read the document
-// Note: signature should be calculated from the hash which is calculated as
-// keccak256("\x19Ethereum Signed Message:\n"${message length}${message}).
-func (r readAccessValidator) NFTOwnerCanRead(
-	cd *coredocumentpb.CoreDocument,
-	registry common.Address,
-	tokenID []byte,
-	account identity.CentID) error {
-
-	// check if the account can read the doc
-	if r.AccountCanRead(cd, account) {
-		return nil
-	}
-
-	// check if the nft is present in read rules
-	found := findRole(cd, coredocumentpb.Action_ACTION_READ, func(role *coredocumentpb.Role) bool {
-		return isNFTInRole(role, registry, tokenID)
-	})
-
-	if !found {
-		return errors.New("nft missing")
-	}
-
-	// get the owner of the NFT
-	owner, err := r.tokenRegistry.OwnerOf(registry, tokenID)
-	if err != nil {
-		return errors.New("failed to get NFT owner: %v", err)
-	}
-
-	// TODO(ved): this will always fail until we roll out identity v2 with CentID type as common.Address
-	if !bytes.Equal(owner.Bytes(), account[:]) {
-		return errors.New("account (%v) not owner of the NFT", account.String())
-	}
-
-	return nil
-}
-
 // findRole calls OnRole for every role,
 // if onRole returns true, returns true
 // else returns false
@@ -228,18 +149,3 @@ func findRole(
 	return false
 }
 
-// isNFTInRole checks if the given nft(registry + token) is part of the core document role.
-func isNFTInRole(role *coredocumentpb.Role, registry common.Address, tokenID []byte) bool {
-	enft, err := ConstructNFT(registry, tokenID)
-	if err != nil {
-		return false
-	}
-
-	for _, n := range role.Nfts {
-		if bytes.Equal(n, enft) {
-			return true
-		}
-	}
-
-	return false
-}

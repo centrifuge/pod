@@ -1,8 +1,9 @@
 // +build unit
 
-package coredocument
+package documents
 
 import (
+	"github.com/centrifuge/go-centrifuge/coredocument"
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -15,7 +16,7 @@ import (
 )
 
 func TestReadACLs_initReadRules(t *testing.T) {
-	cd := New()
+	cd := coredocument.New()
 	err := initReadRules(cd, nil)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(ErrZeroCollaborators, err))
@@ -37,7 +38,7 @@ func TestReadAccessValidator_AccountCanRead(t *testing.T) {
 	account, err := identity.CentIDFromString("0x010203040506")
 	assert.NoError(t, err)
 
-	cd, err := NewWithCollaborators([]string{account.String()})
+	cd, err := coredocument.NewWithCollaborators([]string{account.String()})
 	assert.NoError(t, err)
 	assert.NotNil(t, cd.ReadRules)
 	assert.NotNil(t, cd.Roles)
@@ -55,17 +56,17 @@ func Test_addNFTToReadRules(t *testing.T) {
 	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
 	tokenID := utils.RandomSlice(34)
 
-	err := AddNFTToReadRules(nil, registry, tokenID)
+	err := coredocument.AddNFTToReadRules(nil, registry, tokenID)
 	assert.Error(t, err)
 
-	cd, err := NewWithCollaborators([]string{"0x010203040506"})
+	cd, err := coredocument.NewWithCollaborators([]string{"0x010203040506"})
 	assert.NoError(t, err)
 	assert.Len(t, cd.ReadRules, 1)
 	assert.Equal(t, cd.ReadRules[0].Action, coredocumentpb.Action_ACTION_READ_SIGN)
 	assert.Len(t, cd.Roles, 1)
 
 	tokenID = utils.RandomSlice(32)
-	err = AddNFTToReadRules(cd, registry, tokenID)
+	err = coredocument.AddNFTToReadRules(cd, registry, tokenID)
 	assert.NoError(t, err)
 	assert.Len(t, cd.ReadRules, 2)
 	assert.Equal(t, cd.ReadRules[1].Action, coredocumentpb.Action_ACTION_READ)
@@ -86,13 +87,13 @@ func TestReadAccessValidator_NFTOwnerCanRead(t *testing.T) {
 	account, err := identity.CentIDFromString("0x010203040506")
 	assert.NoError(t, err)
 
-	cd, err := NewWithCollaborators([]string{account.String()})
+	cd, err := coredocument.NewWithCollaborators([]string{account.String()})
 	assert.NoError(t, err)
 
 	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
 
 	// account can read
-	validator := NftValidator(nil)
+	validator := coredocument.NftValidator(nil)
 	err = validator.NFTOwnerCanRead(cd, registry, nil, account)
 	assert.NoError(t, err)
 
@@ -105,8 +106,8 @@ func TestReadAccessValidator_NFTOwnerCanRead(t *testing.T) {
 
 	tr := mockRegistry{}
 	tr.On("OwnerOf", registry, tokenID).Return(nil, errors.New("failed to get owner of")).Once()
-	AddNFTToReadRules(cd, registry, tokenID)
-	validator = NftValidator(tr)
+	coredocument.AddNFTToReadRules(cd, registry, tokenID)
+	validator = coredocument.NftValidator(tr)
 	err = validator.NFTOwnerCanRead(cd, registry, tokenID, account)
 	assert.Error(t, err)
 	assert.Contains(t, err, "failed to get owner of")
@@ -116,7 +117,7 @@ func TestReadAccessValidator_NFTOwnerCanRead(t *testing.T) {
 	owner := common.BytesToAddress(utils.RandomSlice(20))
 	tr = mockRegistry{}
 	tr.On("OwnerOf", registry, tokenID).Return(owner, nil).Once()
-	validator = NftValidator(tr)
+	validator = coredocument.NftValidator(tr)
 	err = validator.NFTOwnerCanRead(cd, registry, tokenID, account)
 	assert.Error(t, err)
 	tr.AssertExpectations(t)
