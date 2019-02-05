@@ -100,7 +100,17 @@ We have a few conventions around error handling,
 
 * Queuing
 
-* TX (Async)
+* Transactions (Async)
+
+- A transaction represents a single unit of work in centrifuge OS
+  eg: 1. Creating a document
+      2. Updating a document
+      3. Minting an NFT
+- A transaction must be considered a failure if any of the actions in it fails.
+
+* TX Manager
+
+.code ../transactions/manager.go /Manager/,/^}/
 
 * Ethereum interactions
 

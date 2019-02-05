@@ -12,10 +12,10 @@ import (
 	"github.com/satori/go.uuid"
 )
 
-// Manager wraps the repository and exposes specific functions.
+// Manager manages transaction in go-centrifuge.
 type Manager interface {
 
-	// ExecuteWithinTX executes a transaction within a transaction
+	// ExecuteWithinTX executes a unit of work within a transaction
 	ExecuteWithinTX(ctx context.Context, accountID identity.CentID, existingTxID uuid.UUID, desc string, work func(accountID identity.CentID, txID uuid.UUID, txMan Manager, err chan<- error)) (txID uuid.UUID, done chan bool, err error)
 
 	// CreateTransaction
