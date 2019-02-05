@@ -7,7 +7,10 @@ IMAGE_NAME?=centrifugeio/go-centrifuge
 LD_FLAGS?="-X github.com/centrifuge/go-centrifuge/version.gitCommit=${GIT_COMMIT}"
 GCLOUD_SERVICE?="./build/peak-vista-185616-9f70002df7eb.json"
 
-# GOBIN needs to be set to ensure govendor can actually be found and executed 
+# Default TAGINSTANCE for standalone targets
+TAGINSTANCE="${TAG}"
+
+# GOBIN needs to be set to ensure govendor can actually be found and executed
 PATH=$(shell printenv PATH):$(GOBIN)
 
 # If you need to overwrite PROTOTOOL_BIN, you can set this environment variable.
