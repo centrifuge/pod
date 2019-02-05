@@ -42,8 +42,8 @@ https://developer.centrifuge.io
   |     |Log |                      +-------+ |
   |     |    +----------------------+ Model +-------+----+
   |     |    |      Service         |       | |     |    |
-  |     |    |                      |       | |     |    |
-  |Config    +----------------------+       +-+ TX  |ETH |
+  |     |    |                      |   +---+ |     |    |
+  |Config    +----------------------+   |CD +-+ TX  |ETH |
   |     |    |                      +-------+ |     |    |
   |     |    | Controller (Handler)           |     |    |
   |     |    +---------------+----------------------+----+
@@ -117,6 +117,12 @@ We have a few conventions around error handling,
 
 * P2P
 
+- P2P layer of go-centrifuge implements
+.link https://github.com/centrifuge/go-centrifuge/blob/develop/p2p/doc.go Centrifuge Wire Protocol
+- Implemented using
+.link https://libp2p.io/ Uses Libp2p
+- Every Account in the node has the libp2p keypair used by the node in their Ethereum identity
+- Centrifuge ID concatenated to the protocol identifier is used for multiplexing requests to each Account
 
 * API
 
@@ -144,6 +150,7 @@ A document in Centrifuge OS is represented by a Model in go-centrifuge
 * Model Rules
 
 For ease of use and encapsulation models are constrained by following rules
+
 - A model must not have any runtime dependencies such as database. Using a compile time dep such as a lib is fine
 - A model must wrap all coredocument operations
 - No direct access to internal fields must be allowed
