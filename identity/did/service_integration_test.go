@@ -50,7 +50,7 @@ func TestCreateIdentity_successful(t *testing.T) {
 
 	accountCtx := testingconfig.CreateAccountContext(t, cfg)
 
-	did, _, err := service.CreateIdentity(accountCtx)
+	did, err := service.CreateIdentity(accountCtx)
 	assert.Nil(t, err, "create identity should be successful")
 
 	client := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)

@@ -22,7 +22,7 @@ var log = logging.Logger("identity")
 
 // Service is the interface for identity related interactions
 type Service interface {
-	CreateIdentity(ctx context.Context) (id *DID, confirmations chan *id.WatchIdentity, err error)
+	CreateIdentity(ctx context.Context) (id *DID, err error)
 }
 
 type service struct {
@@ -107,31 +107,31 @@ func (s *service) isIdentityContract(identityAddress common.Address) error {
 
 }
 
-func (s *service) CreateIdentity(ctx context.Context) (did *DID, confirmations chan *id.WatchIdentity, err error) {
+func (s *service) CreateIdentity(ctx context.Context) (did *DID, err error) {
 	tc, err := contextutil.Account(ctx)
 	if err != nil {
-		return nil, confirmations, err
+		return nil, err
 	}
 
 	opts, err := s.client.GetTxOpts(tc.GetEthereumDefaultAccountName())
 	if err != nil {
 		log.Infof("Failed to get txOpts from Ethereum client: %v", err)
-		return nil, nil, err
+		return nil, err
 	}
 
 	idConfig, err := contextutil.Self(ctx)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	identityAddress, err := s.calculateIdentityAddress(ctx)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	txID, done, err := s.txManager.ExecuteWithinTX(context.Background(), idConfig.ID, uuid.Nil, "Check TX status", s.createIdentityTX(opts))
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	isDone := <-done
@@ -139,16 +139,16 @@ func (s *service) CreateIdentity(ctx context.Context) (did *DID, confirmations c
 	if !isDone {
 		err = s.txManager.WaitForTransaction(idConfig.ID, txID)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 
 	}
 
 	err = s.isIdentityContract(*identityAddress)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	createdDID := NewDID(*identityAddress)
-	return &createdDID, nil, nil
+	return &createdDID, nil
 }
