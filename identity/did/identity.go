@@ -36,16 +36,16 @@ func NewDIDFromString(address string) DID {
 // Identity interface contains the methods to interact with the identity contract
 type Identity interface {
 	// AddKey adds a key to identity contract
-	AddKey(did *DID, key Key) (chan *ethereum.WatchTransaction, error)
+	AddKey(key Key) (chan *ethereum.WatchTransaction, error)
 
 	// GetKey return a key from the identity contract
-	GetKey(did *DID, key [32]byte) (*KeyResponse, error)
+	GetKey(key [32]byte) (*KeyResponse, error)
 
 	// RawExecute calls the execute method on the identity contract
-	RawExecute(did *DID, to common.Address, data []byte) (chan *ethereum.WatchTransaction, error)
+	RawExecute(to common.Address, data []byte) (chan *ethereum.WatchTransaction, error)
 
 	// Execute creates the abi encoding an calls the execute method on the identity contract
-	Execute(did *DID, to common.Address, contractAbi, methodName string, args ...interface{}) (chan *ethereum.WatchTransaction, error)
+	Execute(to common.Address, contractAbi, methodName string, args ...interface{}) (chan *ethereum.WatchTransaction, error)
 }
 
 type contract interface {
@@ -66,6 +66,7 @@ type contract interface {
 type identity struct {
 	config id.Config
 	client ethereum.Client
+	did    *DID
 }
 
 func (i identity) prepareTransaction(did DID) (contract, *bind.TransactOpts, error) {
@@ -107,8 +108,9 @@ func (i identity) bindContract(did DID) (contract, error) {
 }
 
 // NewIdentity creates a instance of an identity
-func NewIdentity(config id.Config, client ethereum.Client) Identity {
-	return identity{config: config, client: client}
+func NewIdentity(config id.Config, client ethereum.Client, did *DID) Identity {
+	// TODO use DID stored in config file
+	return identity{config: config, client: client, did: did}
 }
 
 // TODO: will be replaced with statusTask
@@ -127,8 +129,8 @@ func logTxHash(tx *types.Transaction) {
 	log.Infof("Transfer pending: 0x%x\n", tx.Hash())
 }
 
-func (i identity) AddKey(did *DID, key Key) (chan *ethereum.WatchTransaction, error) {
-	contract, opts, err := i.prepareTransaction(*did)
+func (i identity) AddKey(key Key) (chan *ethereum.WatchTransaction, error) {
+	contract, opts, err := i.prepareTransaction(*i.did)
 	if err != nil {
 		return nil, err
 	}
@@ -149,8 +151,8 @@ func (i identity) AddKey(did *DID, key Key) (chan *ethereum.WatchTransaction, er
 
 }
 
-func (i identity) GetKey(did *DID, key [32]byte) (*KeyResponse, error) {
-	contract, opts, _, err := i.prepareCall(*did)
+func (i identity) GetKey(key [32]byte) (*KeyResponse, error) {
+	contract, opts, _, err := i.prepareCall(*i.did)
 	if err != nil {
 		return nil, err
 	}
@@ -165,8 +167,8 @@ func (i identity) GetKey(did *DID, key [32]byte) (*KeyResponse, error) {
 
 }
 
-func (i identity) RawExecute(did *DID, to common.Address, data []byte) (chan *ethereum.WatchTransaction, error) {
-	contract, opts, err := i.prepareTransaction(*did)
+func (i identity) RawExecute(to common.Address, data []byte) (chan *ethereum.WatchTransaction, error) {
+	contract, opts, err := i.prepareTransaction(*i.did)
 	if err != nil {
 		return nil, err
 	}
@@ -189,7 +191,7 @@ func (i identity) RawExecute(did *DID, to common.Address, data []byte) (chan *et
 
 }
 
-func (i identity) Execute(did *DID, to common.Address, contractAbi, methodName string, args ...interface{}) (chan *ethereum.WatchTransaction, error) {
+func (i identity) Execute(to common.Address, contractAbi, methodName string, args ...interface{}) (chan *ethereum.WatchTransaction, error) {
 	abi, err := abi.JSON(strings.NewReader(contractAbi))
 	if err != nil {
 		return nil, err
@@ -200,5 +202,5 @@ func (i identity) Execute(did *DID, to common.Address, contractAbi, methodName s
 	if err != nil {
 		return nil, err
 	}
-	return i.RawExecute(did, to, data)
+	return i.RawExecute(to, data)
 }

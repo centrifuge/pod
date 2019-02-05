@@ -78,6 +78,7 @@ func (c CentID) BigInt() *big.Int {
 type Config interface {
 	GetEthereumDefaultAccountName() string
 	GetIdentityID() ([]byte, error)
+	GetP2PKeyPair() (pub, priv string)
 	GetSigningKeyPair() (pub, priv string)
 	GetEthAuthKeyPair() (pub, priv string)
 	GetEthereumContextWaitTimeout() time.Duration
@@ -155,11 +156,17 @@ func GetIdentityConfig(config Config) (*IDConfig, error) {
 
 	//ed25519 keys
 	keys := map[int]IDKey{}
-	pk, sk, err := ed25519.GetSigningKeyPair(config.GetSigningKeyPair())
+
+	pk, sk, err := ed25519.GetSigningKeyPair(config.GetP2PKeyPair())
 	if err != nil {
 		return nil, err
 	}
 	keys[KeyPurposeP2P] = IDKey{PublicKey: pk, PrivateKey: sk}
+
+	pk, sk, err = ed25519.GetSigningKeyPair(config.GetSigningKeyPair())
+	if err != nil {
+		return nil, err
+	}
 	keys[KeyPurposeSigning] = IDKey{PublicKey: pk, PrivateKey: sk}
 
 	//secp256k1 keys

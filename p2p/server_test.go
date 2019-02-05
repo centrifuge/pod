@@ -109,7 +109,7 @@ func TestCentP2PServer_makeBasicHostNoExternalIP(t *testing.T) {
 	c = updateKeys(c)
 	listenPort := 38202
 	cp2p := &peer{config: cfg}
-	pu, pr := c.GetSigningKeyPair()
+	pu, pr := c.GetP2PKeyPair()
 	priv, pub, err := cp2p.createSigningKey(pu, pr)
 	h, err := makeBasicHost(priv, pub, "", listenPort)
 	assert.Nil(t, err)
@@ -123,7 +123,7 @@ func TestCentP2PServer_makeBasicHostWithExternalIP(t *testing.T) {
 	externalIP := "100.100.100.100"
 	listenPort := 38202
 	cp2p := &peer{config: cfg}
-	pu, pr := c.GetSigningKeyPair()
+	pu, pr := c.GetP2PKeyPair()
 	priv, pub, err := cp2p.createSigningKey(pu, pr)
 	h, err := makeBasicHost(priv, pub, externalIP, listenPort)
 	assert.Nil(t, err)
@@ -141,7 +141,7 @@ func TestCentP2PServer_makeBasicHostWithWrongExternalIP(t *testing.T) {
 	externalIP := "100.200.300.400"
 	listenPort := 38202
 	cp2p := &peer{config: cfg}
-	pu, pr := c.GetSigningKeyPair()
+	pu, pr := c.GetP2PKeyPair()
 	priv, pub, err := cp2p.createSigningKey(pu, pr)
 	h, err := makeBasicHost(priv, pub, externalIP, listenPort)
 	assert.NotNil(t, err)
@@ -150,6 +150,8 @@ func TestCentP2PServer_makeBasicHostWithWrongExternalIP(t *testing.T) {
 
 func updateKeys(c config.Configuration) config.Configuration {
 	n := c.(*configstore.NodeConfig)
+	n.MainIdentity.P2PKeyPair.Pub = "../build/resources/p2pKey.pub.pem"
+	n.MainIdentity.P2PKeyPair.Priv = "../build/resources/p2pKey.key.pem"
 	n.MainIdentity.SigningKeyPair.Pub = "../build/resources/signingKey.pub.pem"
 	n.MainIdentity.SigningKeyPair.Priv = "../build/resources/signingKey.key.pem"
 	n.MainIdentity.EthAuthKeyPair.Pub = "../build/resources/ethauth.pub.pem"

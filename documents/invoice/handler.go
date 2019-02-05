@@ -44,7 +44,7 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientinvoicepb.InvoiceCr
 	}
 
 	// validate and persist
-	doc, txID, err := h.service.Create(cctx, doc)
+	doc, txID, _, err := h.service.Create(cctx, doc)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "could not create document")
@@ -75,7 +75,7 @@ func (h *grpcHandler) Update(ctx context.Context, payload *clientinvoicepb.Invoi
 		return nil, centerrors.Wrap(err, "could not derive update payload")
 	}
 
-	doc, txID, err := h.service.Update(ctxHeader, doc)
+	doc, txID, _, err := h.service.Update(ctxHeader, doc)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "could not update document")

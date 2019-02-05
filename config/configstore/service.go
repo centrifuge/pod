@@ -72,11 +72,11 @@ func (s service) GenerateAccount() (config.Account, error) {
 	}
 
 	// copy the main account for basic settings
-	mtc, err := NewAccount(nc.GetEthereumDefaultAccountName(), nc)
+	acc, err := NewAccount(nc.GetEthereumDefaultAccountName(), nc)
 	if nil != err {
 		return nil, err
 	}
-	ctx, err := contextutil.New(context.Background(), mtc)
+	ctx, err := contextutil.New(context.Background(), acc)
 	if err != nil {
 		return nil, err
 	}
@@ -87,22 +87,13 @@ func (s service) GenerateAccount() (config.Account, error) {
 	}
 	<-confirmations
 
-	// copy the main account again to create the new account
-	acc, err := NewAccount(nc.GetEthereumDefaultAccountName(), nc)
-	if err != nil {
-		return nil, err
-	}
-
 	CID := id.CentID()
 	acc, err = generateAccountKeys(nc.GetAccountsKeystore(), acc.(*Account), CID)
 	if err != nil {
 		return nil, err
 	}
 
-	// minor hack to set same p2p keys as node to account: Set the new account ID to copy of main account and create p2p keys
-	mtcc := mtc.(*Account)
-	mtcc.IdentityID = CID[:]
-	err = s.idService.AddKeyFromConfig(mtcc, identity.KeyPurposeP2P)
+	err = s.idService.AddKeyFromConfig(acc, identity.KeyPurposeP2P)
 	if err != nil {
 		return nil, err
 	}
@@ -127,19 +118,20 @@ func (s service) GenerateAccount() (config.Account, error) {
 	return acc, nil
 }
 
+// generateAccountKeys generates signing and ethauth keys
 func generateAccountKeys(keystore string, acc *Account, CID identity.CentID) (*Account, error) {
 	acc.IdentityID = CID[:]
-	Pub, err := createKeyPath(keystore, CID, signingPubKeyName)
+	sPub, err := createKeyPath(keystore, CID, signingPubKeyName)
 	if err != nil {
 		return nil, err
 	}
-	Priv, err := createKeyPath(keystore, CID, signingPrivKeyName)
+	sPriv, err := createKeyPath(keystore, CID, signingPrivKeyName)
 	if err != nil {
 		return nil, err
 	}
 	acc.SigningKeyPair = KeyPair{
-		Pub:  Pub,
-		Priv: Priv,
+		Pub:  sPub,
+		Priv: sPriv,
 	}
 	ePub, err := createKeyPath(keystore, CID, ethAuthPubKeyName)
 	if err != nil {
@@ -153,11 +145,11 @@ func generateAccountKeys(keystore string, acc *Account, CID identity.CentID) (*A
 		Pub:  ePub,
 		Priv: ePriv,
 	}
-	err = crypto.GenerateSigningKeyPair(acc.SigningKeyPair.Pub, acc.SigningKeyPair.Priv, "ed25519")
+	err = crypto.GenerateSigningKeyPair(acc.SigningKeyPair.Pub, acc.SigningKeyPair.Priv, crypto.CurveEd25519)
 	if err != nil {
 		return nil, err
 	}
-	err = crypto.GenerateSigningKeyPair(acc.EthAuthKeyPair.Pub, acc.EthAuthKeyPair.Priv, "secp256k1")
+	err = crypto.GenerateSigningKeyPair(acc.EthAuthKeyPair.Pub, acc.EthAuthKeyPair.Priv, crypto.CurveSecp256K1)
 	if err != nil {
 		return nil, err
 	}
