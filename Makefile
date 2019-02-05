@@ -1,13 +1,16 @@
 TRAVIS_BRANCH?=`git rev-parse --abbrev-ref HEAD`
 GIT_COMMIT=`git rev-parse HEAD`
 GIT_SHORT_COMMIT=`git rev-parse --short HEAD`
-TIMESTAMP=`date -u +%Y%m%d%H`
+TIMESTAMP=`date -u +%Y%m%d%H%M%S`
 TAG="${TRAVIS_BRANCH}-${TIMESTAMP}-${GIT_SHORT_COMMIT}"
 IMAGE_NAME?=centrifugeio/go-centrifuge
 LD_FLAGS?="-X github.com/centrifuge/go-centrifuge/version.gitCommit=${GIT_COMMIT}"
 GCLOUD_SERVICE?="./build/peak-vista-185616-9f70002df7eb.json"
 
-# GOBIN needs to be set to ensure govendor can actually be found and executed 
+# Default TAGINSTANCE for standalone targets
+TAGINSTANCE="${TAG}"
+
+# GOBIN needs to be set to ensure govendor can actually be found and executed
 PATH=$(shell printenv PATH):$(GOBIN)
 
 # If you need to overwrite PROTOTOOL_BIN, you can set this environment variable.
@@ -75,20 +78,21 @@ build-linux-amd64: install-xgo
 	@mkdir -p build/linux-amd64
 	@xgo -go 1.11.x -dest build/linux-amd64 -targets=linux/amd64 -ldflags=${LD_FLAGS} ./cmd/centrifuge/
 	@mv build/linux-amd64/centrifuge-linux-amd64 build/linux-amd64/centrifuge
-	@tar -zcvf cent-api-linux-amd64-${TAG}.tar.gz -C build/linux-amd64/ .
+	$(eval TAGINSTANCE := $(shell echo ${TAG}))
+	@tar -zcvf cent-api-linux-amd64-${TAGINSTANCE}.tar.gz -C build/linux-amd64/ .
 
 build-docker: ## Build Docker Image
 build-docker:
 	@echo "Building Docker Image"
-	@docker build -t ${IMAGE_NAME}:${TAG} .
+	@docker build -t ${IMAGE_NAME}:${TAGINSTANCE} .
 
 build-ci: ## Builds + Push all artifacts
 build-ci: build-linux-amd64 build-docker
 	@echo "Building/Pushing Artifacts for CI"
 	@gcloud auth activate-service-account --key-file ${GCLOUD_SERVICE}
-	@gsutil cp cent-api-*-${TAG}.tar.gz gs://centrifuge-artifact-releases/
-	@gsutil acl ch -u AllUsers:R gs://centrifuge-artifact-releases/cent-api-*-${TAG}.tar.gz
+	@gsutil cp cent-api-*-${TAGINSTANCE}.tar.gz gs://centrifuge-artifact-releases/
+	@gsutil acl ch -u AllUsers:R gs://centrifuge-artifact-releases/cent-api-*-${TAGINSTANCE}.tar.gz
 	@echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
-	@docker tag "${IMAGE_NAME}:${TAG}" "${IMAGE_NAME}:latest"
+	@docker tag "${IMAGE_NAME}:${TAGINSTANCE}" "${IMAGE_NAME}:latest"
 	@docker push ${IMAGE_NAME}:latest
-	@docker push ${IMAGE_NAME}:${TAG}
+	@docker push ${IMAGE_NAME}:${TAGINSTANCE}
