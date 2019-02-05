@@ -2,7 +2,12 @@ package did
 
 import (
 	"context"
+	"fmt"
 	"github.com/centrifuge/go-centrifuge/contextutil"
+	"github.com/centrifuge/go-centrifuge/queue"
+	"github.com/centrifuge/go-centrifuge/transactions"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/satori/go.uuid"
 
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	id "github.com/centrifuge/go-centrifuge/identity"
@@ -22,12 +27,14 @@ type service struct {
 	config          id.Config
 	factoryContract *FactoryContract
 	client          ethereum.Client
+	txManager transactions.Manager
+	queue            *queue.Server
 }
 
 // NewService returns a new identity service
-func NewService(config id.Config, factoryContract *FactoryContract, client ethereum.Client) Service {
+func NewService(config id.Config, factoryContract *FactoryContract, client ethereum.Client, txManager transactions.Manager, queue *queue.Server) Service {
 
-	return &service{config: config, factoryContract: factoryContract, client: client}
+	return &service{config: config, factoryContract: factoryContract, client: client, txManager:txManager,queue:queue}
 }
 
 func (s *service) getNonceAt(ctx context.Context, address common.Address) (uint64, error) {
@@ -42,7 +49,38 @@ func CalculateCreatedAddress(address common.Address, nonce uint64) common.Addres
 	return crypto.CreateAddress(address, nonce)
 }
 
-func (s *service) CreateIdentity(ctx context.Context) (id *DID, confirmations chan *id.WatchIdentity, err error) {
+
+func (s *service) createIdentityTX(opts *bind.TransactOpts) func(accountID id.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error)  {
+	return func(accountID id.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
+
+		ethTX, err := s.client.SubmitTransactionWithRetries(s.factoryContract.CreateIdentity, opts)
+		if err != nil {
+			log.Infof("Failed to send identity for creation [txHash: %s] : %v", ethTX.Hash(), err)
+			return
+		}
+
+		log.Infof("Sent off identity creation Ethereum transaction hash [%x] and Nonce [%v] and Check [%v]", ethTX.Hash(), ethTX.Nonce(), ethTX.CheckNonce())
+		log.Infof("Transfer pending: 0x%x\n", ethTX.Hash())
+
+
+		res, err := ethereum.QueueEthTXStatusTask(accountID, txID, ethTX.Hash(), s.queue)
+		if err != nil {
+			errOut <- err
+			return
+		}
+
+		_, err = res.Get(txMan.GetDefaultTaskTimeout())
+		if err != nil {
+			errOut <- err
+			return
+		}
+		errOut <- nil
+	}
+
+}
+
+
+func (s *service) CreateIdentity(ctx context.Context) (did *DID, confirmations chan *id.WatchIdentity, err error) {
 	tc, err := contextutil.Account(ctx)
 	if err != nil {
 		return nil, confirmations, err
@@ -54,17 +92,22 @@ func (s *service) CreateIdentity(ctx context.Context) (id *DID, confirmations ch
 		return nil, nil, err
 	}
 
-
-	tx, err := s.client.SubmitTransactionWithRetries(s.factoryContract.CreateIdentity, opts)
+	idConfig, err := contextutil.Self(ctx)
 	if err != nil {
-		log.Infof("Failed to send identity for creation [txHash: %s] : %v", tx.Hash(), err)
 		return nil, nil, err
 	}
 
-	log.Infof("Sent off identity creation Ethereum transaction hash [%x] and Nonce [%v] and Check [%v]", tx.Hash(), tx.Nonce(), tx.CheckNonce())
-	log.Infof("Transfer pending: 0x%x\n", tx.Hash())
+	txID, done, err := s.txManager.ExecuteWithinTX(context.Background(), idConfig.ID, uuid.Nil, "Check TX status", s.createIdentityTX(opts))
 
-	// TODO use transactionStatusTask and following code as a statusHandler
+	<- done
+
+	fmt.Println("is not done")
+	err = s.txManager.WaitForTransaction(idConfig.ID, txID)
+
+	if err != nil {
+			return nil, nil, err
+	}
+
 
 	factoryAddress := getFactoryAddress()
 	nonce, err := s.getNonceAt(ctx, factoryAddress)
@@ -75,7 +118,7 @@ func (s *service) CreateIdentity(ctx context.Context) (id *DID, confirmations ch
 	identityAddress := CalculateCreatedAddress(factoryAddress, nonce)
 	log.Infof("Address of created identity contract: 0x%x\n", identityAddress)
 
-	did := NewDID(identityAddress)
+	createdDID := NewDID(identityAddress)
 
-	return &did, nil, nil
+	return &createdDID, nil, nil
 }

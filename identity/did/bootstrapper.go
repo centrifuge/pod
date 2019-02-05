@@ -1,6 +1,9 @@
 package did
 
 import (
+	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/queue"
+	"github.com/centrifuge/go-centrifuge/transactions"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -42,7 +45,18 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		return err
 	}
 
-	service := NewService(cfg, factoryContract, client)
+	txManager, ok := context[transactions.BootstrappedService].(transactions.Manager)
+	if !ok {
+		return errors.New("transactions repository not initialised")
+	}
+
+	if _, ok := context[bootstrap.BootstrappedQueueServer]; !ok {
+		return errors.New("queue hasn't been initialized")
+	}
+	queueSrv := context[bootstrap.BootstrappedQueueServer].(*queue.Server)
+
+
+	service := NewService(cfg, factoryContract, client, txManager,queueSrv)
 	context[BootstrappedDIDService] = service
 	return nil
 }
