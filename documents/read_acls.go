@@ -72,8 +72,6 @@ func addNewRule(cd *coredocumentpb.CoreDocument, role *coredocumentpb.Role, acti
 	cd.ReadRules = append(cd.ReadRules, rule)
 }
 
-
-
 // ReadAccessValidator defines validator functions for account .
 type ReadAccessValidator interface {
 	AccountCanRead(cd *coredocumentpb.CoreDocument, account identity.CentID) bool
@@ -148,4 +146,3 @@ func findRole(
 
 	return false
 }
-

@@ -3,10 +3,11 @@
 package documents
 
 import (
-	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"os"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
 
@@ -60,6 +61,7 @@ func TestMain(m *testing.M) {
 }
 
 func Test_fetchUniqueCollaborators(t *testing.T) {
+
 	tests := []struct {
 		old    [][]byte
 		new    []string

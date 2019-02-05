@@ -28,11 +28,13 @@ type Model interface {
 	CreateProofs(fields []string) (coreDoc *coredocumentpb.CoreDocument, proofs []*proofspb.Proof, err error)
 }
 
+// CoreDocumentModel contains methods which handle all interactions mutating or reading from a core document
+// Access to a core document should always go through this model
 type CoreDocumentModel struct {
 	document *coredocumentpb.CoreDocument
 }
 
-// New returns a new CoreDocumentModel
+// NewCoreDocModel returns a new CoreDocumentModel
 // Note: collaborators and salts are to be filled by the caller
 func NewCoreDocModel() *CoreDocumentModel {
 	id := utils.RandomSlice(32)
@@ -46,6 +48,7 @@ func NewCoreDocModel() *CoreDocumentModel {
 	}
 }
 
+// GetDocument returns the coredocument from the CoreDocumentModel
 func (m *CoreDocumentModel) GetDocument() (*coredocumentpb.CoreDocument, error) {
 	cd := m.document
 	if cd == nil {
@@ -54,19 +57,26 @@ func (m *CoreDocumentModel) GetDocument() (*coredocumentpb.CoreDocument, error) 
 	return m.document, nil
 }
 
-func (m *CoreDocumentModel) SetDocument(ncd *coredocumentpb.CoreDocument) (*CoreDocumentModel, error) {
+// SetDocument set the coredocument in the CoreDocumentModel to an updated coredocument
+func (m *CoreDocumentModel) SetDocument(ncd *coredocumentpb.CoreDocument) *CoreDocumentModel {
 	m.document = ncd
-	return m, nil
+	return m
 }
 
 // PrepareNewVersion creates a new CoreDocumentModel with the version fields updated
 // Adds collaborators and fills salts
 // Note: new collaborators are added to the list with old collaborators.
 //TODO: this will change when collaborators are moved down to next level
-func (m *CoreDocumentModel) PrepareNewVersion (collaborators []string) (*CoreDocumentModel, error) {
+func (m *CoreDocumentModel) PrepareNewVersion(collaborators []string) (*CoreDocumentModel, error) {
 	ndm := NewCoreDocModel()
 	ncd, err := ndm.GetDocument()
+	if err != nil {
+		return nil, err
+	}
 	ocd, err := m.GetDocument()
+	if err != nil {
+		return nil, err
+	}
 	ucs, err := fetchUniqueCollaborators(ocd.Collaborators, collaborators)
 	if err != nil {
 		return nil, errors.New("failed to decode collaborator: %v", err)
@@ -91,34 +101,28 @@ func (m *CoreDocumentModel) PrepareNewVersion (collaborators []string) (*CoreDoc
 	}
 
 	cd, err := m.GetDocument()
-
-	if cd.DocumentIdentifier == nil {
-		return nil, errors.New("DocumentIdentifier is nil")
+	if err != nil {
+		return nil, err
 	}
-	ncd.DocumentIdentifier = cd.DocumentIdentifier
 
-	if cd.CurrentVersion == nil {
-		return nil, errors.New("CurrentVersion is nil")
-	}
-	ncd.PreviousVersion = cd.CurrentVersion
-
-	if cd.NextVersion == nil {
-		return nil, errors.New("NextVersion is nil")
-	}
 	ncd.CurrentVersion = cd.NextVersion
 	ncd.NextVersion = utils.RandomSlice(32)
 	if cd.DocumentRoot == nil {
 		return nil, errors.New("DocumentRoot is nil")
 	}
 	ncd.PreviousRoot = cd.DocumentRoot
-	ndm.SetDocument(ncd)
-	return ndm, nil
+	dm := ndm.SetDocument(ncd)
+
+	return dm, nil
 }
 
 // FillSalts creates a new coredocument.Salts and fills it
 func (m *CoreDocumentModel) fillSalts() error {
 	salts := new(coredocumentpb.CoreDocumentSalts)
 	cd, err := m.GetDocument()
+	if err != nil {
+		return err
+	}
 	err = proofs.FillSalts(cd, salts)
 	if err != nil {
 		return errors.New("failed to fill coredocument salts: %v", err)
