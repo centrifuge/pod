@@ -5,10 +5,8 @@ package did
 import (
 	"context"
 	"fmt"
-	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
@@ -18,6 +16,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity/ethid"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/stretchr/testify/assert"
 )
@@ -55,8 +54,6 @@ func TestCreateIdentity_successful(t *testing.T) {
 	assert.Nil(t, err, "create identity should be successful")
 
 	client := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
-
-	time.Sleep(2000 * time.Millisecond)
 
 	contractCode, err := client.GetEthClient().CodeAt(context.Background(), did.toAddress(), nil)
 	assert.Nil(t, err, "should be successful to get the contract code")
