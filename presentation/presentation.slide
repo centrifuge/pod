@@ -137,7 +137,16 @@ We have a few conventions around error handling,
 
 * Documents
 
-- Model
+A document in Centrifuge OS is represented by a Model in go-centrifuge
+
+.code ../documents/model.go /Model/,/^}/
+
+* Model Rules
+
+For ease of use and encapsulation models are constrained by following rules
+- A model must not have any runtime dependencies such as database. Using a compile time dep such as a lib is fine
+- A model must wrap all coredocument operations
+- No direct access to internal fields must be allowed
 
 * Testworld
 
