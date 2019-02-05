@@ -2,6 +2,7 @@ package did
 
 import (
 	"context"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	id "github.com/centrifuge/go-centrifuge/identity"
@@ -42,11 +43,17 @@ func CalculateCreatedAddress(address common.Address, nonce uint64) common.Addres
 }
 
 func (s *service) CreateIdentity(ctx context.Context) (id *DID, confirmations chan *id.WatchIdentity, err error) {
-	opts, err := s.client.GetTxOpts(s.config.GetEthereumDefaultAccountName())
+	tc, err := contextutil.Account(ctx)
+	if err != nil {
+		return nil, confirmations, err
+	}
+
+	opts, err := s.client.GetTxOpts(tc.GetEthereumDefaultAccountName())
 	if err != nil {
 		log.Infof("Failed to get txOpts from Ethereum client: %v", err)
 		return nil, nil, err
 	}
+
 
 	tx, err := s.client.SubmitTransactionWithRetries(s.factoryContract.CreateIdentity, opts)
 	if err != nil {

@@ -5,6 +5,7 @@ package did
 import (
 	"context"
 	"fmt"
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"os"
 	"testing"
 	"time"
@@ -47,7 +48,10 @@ func TestMain(m *testing.M) {
 
 func TestCreateIdentity_successful(t *testing.T) {
 	service := ctx[BootstrappedDIDService].(Service)
-	did, _, err := service.CreateIdentity(context.Background())
+
+	accountCtx := testingconfig.CreateAccountContext(t, cfg)
+
+	did, _, err := service.CreateIdentity(accountCtx)
 	assert.Nil(t, err, "create identity should be successful")
 
 	client := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
