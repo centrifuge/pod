@@ -92,13 +92,49 @@ We have a few conventions around error handling,
 .code ../config/configstore/model.go /Account exposes/,/^}/
 
 - An account hold information regarding a single centrifuge identity
+- By default any `context` inside the node hold information regarding the Account that action is being executed on. Check
 
-* Node Init
+.link https://github.com/centrifuge/go-centrifuge/blob/develop/contextutil/context.go contextutil
 
--
+* Node
 
+- Node encapsulates the runtime daemon services of go-centrifuge.
+- It manages initialises and manages the background go routines that represent the services.
+- A critical function of the Node is to handle runtime errors gracefully.
+
+* Node Server Children
+
+- Following interface represents a `Server` which can be managed by the `Node`
+.code ../node/node.go /Server/,/^}/
+- Current implementations are API Server, P2P Server and the Queue
+
+* Node Server Management
+
+.code ../node/node.go /Start starts all services/,/^}/
 
 * Queuing
+
+- `go-centrifuge` uses
+.link https://github.com/centrifuge/gocelery gocelery for queueing
+
+      -                                      +----------+
+                                             | +--------------+
+                                             | |              |
+                                             +-+     +--------+---+
+                                               |     |   Tasks    |
+                                               +-----+            |
+      -                                               |            |
+      message with             +------------+        +----+-------+
+      task type        +-----> | Queue      |             |
+      and params               |            |             |
+                               +---------+--+             ^
+                                         |        +-------+------+
+                                         |        |              |
+                                         +------> |   Workers    |
+                                                  |              |
+                                                  +--------------+
+
+
 
 * Transactions (Async)
 
@@ -114,6 +150,7 @@ We have a few conventions around error handling,
 
 * Ethereum interactions
 
+- ?
 
 * P2P
 
@@ -140,6 +177,10 @@ We have a few conventions around error handling,
 
 * Storage
 
+- Any storage implementation for data store needs to comply with,
+.code ../storage/repository.go /Repository/,/^}/
+
+- Current implementation is leveldb based.
 
 * Documents
 
@@ -154,6 +195,14 @@ For ease of use and encapsulation models are constrained by following rules
 - A model must not have any runtime dependencies such as database. Using a compile time dep such as a lib is fine
 - A model must wrap all coredocument operations
 - No direct access to internal fields must be allowed
+
+* Document Services
+
+- A Service must be defined to handle all business logic related to a single Model.
+- Some service functions are generic enough for them to be in the `DefaultService`.
+
+* Service Interface
+.code ../documents/service.go /Service/,/^}/
 
 * Testworld
 

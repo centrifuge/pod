@@ -4,18 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/satori/go.uuid"
-
-	"github.com/ethereum/go-ethereum/common/hexutil"
-
-	"github.com/centrifuge/go-centrifuge/config"
-
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/code"
-
-	"github.com/centrifuge/go-centrifuge/identity"
-
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/satori/go.uuid"
 )
 
 type contextKey string
