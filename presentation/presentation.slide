@@ -21,7 +21,7 @@ https://developer.centrifuge.io
 - An overview of how *go-centrifuge* works
 - It documents the current state of *go-centrifuge* architecture
 - It helps in driving discussion where we want to _evolve_ the architecture
-- An architecture checkpoint so that we can understand our pro
+- An architecture checkpoint in git so that we can understand our progress through time
 
 
 * What this presentation is NOT about?
@@ -50,6 +50,9 @@ https://developer.centrifuge.io
   |     |    |  API          |   P2P          |Queue     |
   |     |    |               |                |          |
   +-----+----+---------------+----------------+----------+
+  |                       Node                           |
+  |                                                      |
+  +------------------------------------------------------+
 
 
 * Wait but first about Errors :)
@@ -61,8 +64,12 @@ We have a few conventions around error handling,
 
 * Bootstrappers
 
-- Why they are needed
-- IOC flow
+.code ../bootstrap/bootstrapper.go /Bootstrapper/,/^}/
+
+- Bootstrappers are little helpers in each package that need runtime initialization
+- If those packages contain for example a service that needs dependencies such as configs its passed here
+- Key is the *context map[string]interface{}* which holds already instantiated objects in the node for consumption
+.link https://en.wikipedia.org/wiki/Inversion_of_control This is basically a form of inversion of control
 
 * Configuration
 
@@ -78,7 +85,13 @@ We have a few conventions around error handling,
 - When the node starts following flow is executed
 
 
+
+
 * Accounts
+
+.code ../config/configstore/model.go /Account exposes/,/^}/
+
+- An account hold information regarding a single centrifuge identity
 
 * Node Init
 
@@ -87,7 +100,7 @@ We have a few conventions around error handling,
 
 * Queuing
 
-* Handling Async
+* TX (Async)
 
 * Ethereum interactions
 
