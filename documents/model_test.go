@@ -112,7 +112,7 @@ func Test_fetchUniqueCollaborators(t *testing.T) {
 
 func TestCoreDocumentModel_PrepareNewVersion(t *testing.T) {
 	dm := newCoreDocModel()
-	cd, err := dm.GetDocument()
+	cd := dm.Document
 	assert.NotNil(t, cd)
 
 	//collaborators need to be hex string

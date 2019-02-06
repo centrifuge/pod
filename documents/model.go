@@ -35,7 +35,7 @@ type Model interface {
 // CoreDocumentModel contains methods which handle all interactions mutating or reading from a core document
 // Access to a core document should always go through this model
 type CoreDocumentModel struct {
-	document *coredocumentpb.CoreDocument
+	Document *coredocumentpb.CoreDocument
 }
 
 // NewCoreDocModel returns a new CoreDocumentModel
@@ -53,18 +53,12 @@ func newCoreDocModel() *CoreDocumentModel {
 }
 
 // GetDocument returns the coredocument from the CoreDocumentModel
-func (m *CoreDocumentModel) GetDocument() (*coredocumentpb.CoreDocument, error) {
-	cd := m.document
+func (m *CoreDocumentModel) GetDocument() (coredocumentpb.CoreDocument, error) {
+	cd := m.Document
 	if cd == nil {
-		return nil, errors.New("error getting document in CoreDocModel")
+		return coredocumentpb.CoreDocument{}, errors.New("error getting document in CoreDocModel")
 	}
-	return m.document, nil
-}
-
-// SetDocument set the coredocument in the CoreDocumentModel to an updated coredocument
-func (m *CoreDocumentModel) SetDocument(ncd *coredocumentpb.CoreDocument) *CoreDocumentModel {
-	m.document = ncd
-	return m
+	return *cd, nil
 }
 
 // PrepareNewVersion creates a new CoreDocumentModel with the version fields updated
@@ -73,14 +67,8 @@ func (m *CoreDocumentModel) SetDocument(ncd *coredocumentpb.CoreDocument) *CoreD
 //TODO: this will change when collaborators are moved down to next level
 func (m *CoreDocumentModel) PrepareNewVersion(collaborators []string) (*CoreDocumentModel, error) {
 	ndm := newCoreDocModel()
-	ncd, err := ndm.GetDocument()
-	if err != nil {
-		return nil, err
-	}
-	ocd, err := m.GetDocument()
-	if err != nil {
-		return nil, err
-	}
+	ncd := ndm.Document
+	ocd := m.Document
 	ucs, err := fetchUniqueCollaborators(ocd.Collaborators, collaborators)
 	if err != nil {
 		return nil, errors.New("failed to decode collaborator: %v", err)
@@ -95,8 +83,8 @@ func (m *CoreDocumentModel) PrepareNewVersion(collaborators []string) (*CoreDocu
 	ncd.Collaborators = cs
 
 	// copy read rules and roles
-	ncd.Roles = m.document.Roles
-	ncd.ReadRules = m.document.ReadRules
+	ncd.Roles = m.Document.Roles
+	ncd.ReadRules = m.Document.ReadRules
 	addCollaboratorsToReadSignRules(ncd, ucs)
 
 	err = ndm.fillSalts()
@@ -129,19 +117,15 @@ func (m *CoreDocumentModel) PrepareNewVersion(collaborators []string) (*CoreDocu
 		return nil, errors.New("DocumentRoot is nil")
 	}
 	ncd.PreviousRoot = cd.DocumentRoot
-	dm := ndm.SetDocument(ncd)
 
-	return dm, nil
+	return ndm, nil
 }
 
 // FillSalts creates a new coredocument.Salts and fills it
 func (m *CoreDocumentModel) fillSalts() error {
 	salts := new(coredocumentpb.CoreDocumentSalts)
-	cd, err := m.GetDocument()
-	if err != nil {
-		return err
-	}
-	err = proofs.FillSalts(cd, salts)
+	cd := m.Document
+	err := proofs.FillSalts(cd, salts)
 	if err != nil {
 		return errors.New("failed to fill coredocument salts: %v", err)
 	}
