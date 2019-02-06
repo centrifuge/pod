@@ -46,10 +46,10 @@ type Identity interface {
 	GetKey(ctx context.Context, key [32]byte) (*KeyResponse, error)
 
 	// RawExecute calls the execute method on the identity contract
-	RawExecute(ctx context.Context, to common.Address, data []byte) (chan *ethereum.WatchTransaction, error)
+	RawExecute(ctx context.Context, to common.Address, data []byte) error
 
 	// Execute creates the abi encoding an calls the execute method on the identity contract
-	Execute(ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) (chan *ethereum.WatchTransaction, error)
+	Execute(ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) error
 }
 
 type contract interface {
@@ -178,8 +178,32 @@ func waitForTransaction(client ethereum.Client, txHash common.Hash, txStatus cha
 
 func (i identity) addKeyTX(opts *bind.TransactOpts,identityContract contract, key Key) func(accountID id.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
 	return func(accountID id.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
-
 		ethTX, err := i.client.SubmitTransactionWithRetries(identityContract.AddKey, opts, key.GetKey(), key.GetPurpose(), key.GetType())
+		if err != nil {
+			errOut <- err
+			return
+		}
+		logTxHash(ethTX)
+
+		res, err := ethereum.QueueEthTXStatusTask(accountID, txID, ethTX.Hash(), i.queue)
+		if err != nil {
+			errOut <- err
+			return
+		}
+
+		_, err = res.Get(txMan.GetDefaultTaskTimeout())
+		if err != nil {
+			errOut <- err
+			return
+		}
+		errOut <- nil
+	}
+
+}
+
+func (i identity) rawExecuteTX(opts *bind.TransactOpts,identityContract contract, to common.Address, value *big.Int, data []byte) func(accountID id.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
+	return func(accountID id.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
+		ethTX, err := i.client.SubmitTransactionWithRetries(identityContract.Execute, opts, to, value, data)
 		if err != nil {
 			errOut <- err
 			return
@@ -222,44 +246,47 @@ func (i identity) GetKey(ctx context.Context, key [32]byte) (*KeyResponse, error
 
 }
 
-func (i identity) RawExecute(ctx context.Context, to common.Address, data []byte) (chan *ethereum.WatchTransaction, error) {
+func (i identity) RawExecute(ctx context.Context, to common.Address, data []byte) error {
 	did, err := i.getDID(ctx)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	contract, opts, err := i.prepareTransaction(did)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// default: no ether should be send
 	value := big.NewInt(0)
 
-	tx, err := i.client.SubmitTransactionWithRetries(contract.Execute, opts, to, value, data)
+
+	// TODO: did can be passed instead of randomCentID after CentID is DID
+	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), id.RandomCentID(), uuid.Nil, "Check TX for execute", i.rawExecuteTX(opts,contract, to,value,data))
 	if err != nil {
-		log.Infof("could not call execute method on identity contract: %v[txHash: %s] toAddress: %s : %v", tx.Hash(), to.String(), err)
-		return nil, errors.New("could not execute to identity contract: %v", err)
+		return err
 	}
-	logTxHash(tx)
 
-	txStatus := make(chan *ethereum.WatchTransaction)
-	// TODO will be replaced with transaction Status task
-	go waitForTransaction(i.client, tx.Hash(), txStatus)
+	isDone := <-done
+	// non async task
+	if !isDone {
+		return errors.New("raw execute TX failed: txID:%s", txID.String())
 
-	return txStatus, nil
+	}
+	return nil
+
 
 }
 
-func (i identity) Execute(ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) (chan *ethereum.WatchTransaction, error) {
+func (i identity) Execute(ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) error {
 	abi, err := abi.JSON(strings.NewReader(contractAbi))
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Pack encodes the parameters and additionally checks if the method and arguments are defined correctly
 	data, err := abi.Pack(methodName, args...)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	return i.RawExecute(ctx, to, data)
 }

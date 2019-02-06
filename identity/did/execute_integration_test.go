@@ -37,11 +37,8 @@ func TestExecute_successful(t *testing.T) {
 	testRootHash, _ := anchors.ToDocumentRoot(rootHash)
 	proofs := [][anchors.DocumentProofLength]byte{utils.RandomByte32()}
 
-	watchTrans, err := idSrv.Execute(aCtx, anchorAddress, anchors.AnchorContractABI, "commit", testAnchorId.BigInt(), testRootHash, proofs)
+	err := idSrv.Execute(aCtx, anchorAddress, anchors.AnchorContractABI, "commit", testAnchorId.BigInt(), testRootHash, proofs)
 	assert.Nil(t, err, "Execute method calls should be successful")
-
-	txStatus := <-watchTrans
-	assert.Equal(t, ethereum.TransactionStatusSuccess, txStatus.Status, "transaction should be successful")
 
 	checkAnchor(t, testAnchorId, rootHash)
 
@@ -60,9 +57,9 @@ func TestExecute_fail_falseMethodName(t *testing.T) {
 
 	proofs := [][anchors.DocumentProofLength]byte{utils.RandomByte32()}
 
-	watchTrans, err := idSrv.Execute(aCtx, anchorAddress, anchors.AnchorContractABI, "fakeMethod", testAnchorId.BigInt(), testRootHash, proofs)
+	err := idSrv.Execute(aCtx, anchorAddress, anchors.AnchorContractABI, "fakeMethod", testAnchorId.BigInt(), testRootHash, proofs)
 	assert.Error(t, err, "should throw an error because method is not existing in abi")
-	assert.Nil(t, watchTrans, "no channel should be returned")
+
 }
 
 func TestExecute_fail_MissingParam(t *testing.T) {
@@ -75,9 +72,8 @@ func TestExecute_fail_MissingParam(t *testing.T) {
 	rootHash := utils.RandomSlice(32)
 	testRootHash, _ := anchors.ToDocumentRoot(rootHash)
 
-	watchTrans, err := idSrv.Execute(aCtx, anchorAddress, anchors.AnchorContractABI, "commit", testAnchorId.BigInt(), testRootHash)
+	err := idSrv.Execute(aCtx, anchorAddress, anchors.AnchorContractABI, "commit", testAnchorId.BigInt(), testRootHash)
 	assert.Error(t, err, "should throw an error because method is not existing in abi")
-	assert.Nil(t, watchTrans, "no channel should be returned")
 }
 
 func checkAnchor(t *testing.T, anchorId anchors.AnchorID, expectedRootHash []byte) {
