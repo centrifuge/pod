@@ -323,7 +323,7 @@ func TestInvoiceModel_getDocumentDataTree(t *testing.T) {
 func createMockInvoice(t *testing.T) (*Invoice, *coredocumentpb.CoreDocument, error) {
 	i := &Invoice{InvoiceNumber: "3213121", NetAmount: 2, GrossAmount: 2, Currency: "USD", CoreDocument: coredocument.New()}
 	i.CoreDocument.Collaborators = [][]byte{{1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}}
-	_, err := i.CalculateDataRoot()
+	dataRoot, err := i.CalculateDataRoot()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -333,7 +333,7 @@ func createMockInvoice(t *testing.T) (*Invoice, *coredocumentpb.CoreDocument, er
 		return nil, nil, err
 	}
 	assert.Nil(t, coredocument.FillSalts(corDoc))
-	err = coredocument.CalculateSigningRoot(corDoc, i.CalculateDataRoot)
+	err = coredocument.CalculateSigningRoot(corDoc, dataRoot)
 	if err != nil {
 		return nil, nil, err
 	}

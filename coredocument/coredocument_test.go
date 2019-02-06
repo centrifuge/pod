@@ -57,9 +57,7 @@ func TestGetSigningProofHashes(t *testing.T) {
 	assert.Nil(t, err)
 
 	cd.CoredocumentSalts = cds
-	err = CalculateSigningRoot(cd, func() (bytes []byte, e error) {
-		return cd.DataRoot, nil
-	})
+	err = CalculateSigningRoot(cd, cd.DataRoot)
 	assert.Nil(t, err)
 
 	err = CalculateDocumentRoot(cd)
@@ -88,17 +86,13 @@ func TestGetDataProofHashes(t *testing.T) {
 
 	cd.CoredocumentSalts = cds
 
-	err = CalculateSigningRoot(cd, func() (bytes []byte, e error) {
-		return cd.DataRoot, nil
-	})
+	err = CalculateSigningRoot(cd, cd.DataRoot)
 	assert.Nil(t, err)
 
 	err = CalculateDocumentRoot(cd)
 	assert.Nil(t, err)
 
-	hashes, err := getDataProofHashes(cd, func() (bytes []byte, e error) {
-		return cd.DataRoot, nil
-	})
+	hashes, err := getDataProofHashes(cd, cd.DataRoot)
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(hashes))
 
@@ -117,9 +111,7 @@ func TestGetDocumentSigningTree(t *testing.T) {
 	cds := &coredocumentpb.CoreDocumentSalts{}
 	proofs.FillSalts(cd, cds)
 	cd.CoredocumentSalts = cds
-	tree, err := GetDocumentSigningTree(cd, func() (bytes []byte, e error) {
-		return cd.DataRoot, nil
-	})
+	tree, err := GetDocumentSigningTree(cd, cd.DataRoot)
 	assert.Nil(t, err)
 	assert.NotNil(t, tree)
 
@@ -135,9 +127,7 @@ func TestGetDocumentSigningTree_EmptyEmbeddedData(t *testing.T) {
 	cds := &coredocumentpb.CoreDocumentSalts{}
 	proofs.FillSalts(cd, cds)
 	cd.CoredocumentSalts = cds
-	tree, err := GetDocumentSigningTree(cd, func() (bytes []byte, e error) {
-		return cd.DataRoot, nil
-	})
+	tree, err := GetDocumentSigningTree(cd, cd.DataRoot)
 	assert.NotNil(t, err)
 	assert.Nil(t, tree)
 }
@@ -266,9 +256,7 @@ func TestCreateProofs(t *testing.T) {
 	cd.Collaborators = [][]byte{utils.RandomSlice(32), utils.RandomSlice(32)}
 	err = FillSalts(cd)
 	assert.NoError(t, err)
-	err = CalculateSigningRoot(cd, func() (bytes []byte, e error) {
-		return testTree.RootHash(), nil
-	})
+	err = CalculateSigningRoot(cd, testTree.RootHash())
 	assert.NoError(t, err)
 	err = CalculateDocumentRoot(cd)
 	assert.NoError(t, err)

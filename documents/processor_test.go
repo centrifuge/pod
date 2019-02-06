@@ -219,7 +219,7 @@ func TestDefaultProcessor_PrepareForAnchoring(t *testing.T) {
 	}
 	assert.Nil(t, coredocument.FillSalts(cd))
 	model.On("CalculateDataRoot").Return(cd.DataRoot, nil)
-	err = coredocument.CalculateSigningRoot(cd, model.CalculateDataRoot)
+	err = coredocument.CalculateSigningRoot(cd, cd.DataRoot)
 	assert.Nil(t, err)
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Times(4)
@@ -297,9 +297,7 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 		Value:   []byte("some data"),
 	}
 	assert.Nil(t, coredocument.FillSalts(cd))
-	assert.Nil(t, coredocument.CalculateSigningRoot(cd, func() (bytes []byte, e error) {
-		return cd.DataRoot, nil
-	}))
+	assert.Nil(t, coredocument.CalculateSigningRoot(cd, cd.DataRoot))
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Times(5)
 	model.On("CalculateDataRoot").Return(cd.DataRoot, nil)
@@ -366,7 +364,7 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	cd.Collaborators = [][]byte{[]byte("some id")}
 	model.On("CalculateDataRoot").Return(cd.DataRoot, nil)
 	assert.Nil(t, coredocument.FillSalts(cd))
-	assert.Nil(t, coredocument.CalculateSigningRoot(cd, model.CalculateDataRoot))
+	assert.Nil(t, coredocument.CalculateSigningRoot(cd, cd.DataRoot))
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Times(6)
 	c, err := identity.GetIdentityConfig(cfg)

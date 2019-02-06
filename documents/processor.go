@@ -75,8 +75,13 @@ func (dp defaultProcessor) PrepareForSignatureRequests(ctx context.Context, mode
 		return errors.New("failed to pack core document: %v", err)
 	}
 
+	dataRoot, err := model.CalculateDataRoot()
+	if err != nil {
+		return err
+	}
+
 	// calculate the signing root
-	err = coredocument.CalculateSigningRoot(cd, model.CalculateDataRoot)
+	err = coredocument.CalculateSigningRoot(cd, dataRoot)
 	if err != nil {
 		return errors.New("failed to calculate signing root: %v", err)
 	}

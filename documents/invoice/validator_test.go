@@ -42,10 +42,10 @@ func TestFieldValidator_Validate(t *testing.T) {
 
 func TestCreateValidator(t *testing.T) {
 	cv := CreateValidator()
-	assert.Len(t, cv, 2)
+	assert.Len(t, cv, 1)
 }
 
 func TestUpdateValidator(t *testing.T) {
 	uv := UpdateValidator()
-	assert.Len(t, uv, 3)
+	assert.Len(t, uv, 2)
 }

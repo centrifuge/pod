@@ -190,7 +190,12 @@ func signingRootValidator() Validator {
 			return errors.New("signing root missing")
 		}
 
-		tree, err := coredocument.GetDocumentSigningTree(cd, model.CalculateDataRoot)
+		dataRoot, err := model.CalculateDataRoot()
+		if err != nil {
+			return err
+		}
+
+		tree, err := coredocument.GetDocumentSigningTree(cd, dataRoot)
 		if err != nil {
 			return errors.New("failed to calculate signing root: %v", err)
 		}

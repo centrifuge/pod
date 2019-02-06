@@ -261,7 +261,7 @@ func TestValidator_signingRootValidator(t *testing.T) {
 	assert.Contains(t, err.Error(), "signing root mismatch")
 
 	// success
-	tree, err := coredocument.GetDocumentSigningTree(cd, model.CalculateDataRoot)
+	tree, err := coredocument.GetDocumentSigningTree(cd, cd.DataRoot)
 	assert.Nil(t, err)
 	cd.SigningRoot = tree.RootHash()
 	model = mockModel{}

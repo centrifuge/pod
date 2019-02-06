@@ -16,8 +16,8 @@ import (
 
 // getDataProofHashes returns the hashes needed to create a proof from DataRoot to SigningRoot. This method is used
 // to create field proofs
-func getDataProofHashes(document *coredocumentpb.CoreDocument, dataRootCalculator func() ([]byte, error)) (hashes [][]byte, err error) {
-	tree, err := GetDocumentSigningTree(document, dataRootCalculator)
+func getDataProofHashes(document *coredocumentpb.CoreDocument, dataRoot []byte) (hashes [][]byte, err error) {
+	tree, err := GetDocumentSigningTree(document, dataRoot)
 	if err != nil {
 		return
 	}
@@ -50,8 +50,8 @@ func getSigningRootProofHashes(document *coredocumentpb.CoreDocument) (hashes []
 }
 
 // CalculateSigningRoot calculates the signing root of the core document
-func CalculateSigningRoot(doc *coredocumentpb.CoreDocument, dataRootCalculator func() ([]byte, error)) error {
-	tree, err := GetDocumentSigningTree(doc, dataRootCalculator)
+func CalculateSigningRoot(doc *coredocumentpb.CoreDocument, dataRoot []byte) error {
+	tree, err := GetDocumentSigningTree(doc, dataRoot)
 	if err != nil {
 		return err
 	}
@@ -161,16 +161,11 @@ func GetCoreDocTree(document *coredocumentpb.CoreDocument) (tree *proofs.Documen
 }
 
 // GetDocumentSigningTree returns the merkle tree for the signing root
-func GetDocumentSigningTree(document *coredocumentpb.CoreDocument, dataRootCalculator func() ([]byte, error)) (tree *proofs.DocumentTree, err error) {
+func GetDocumentSigningTree(document *coredocumentpb.CoreDocument, dataRoot []byte) (tree *proofs.DocumentTree, err error) {
 	h := sha256.New()
 
 	// coredoc tree
 	coreDocTree, err := GetCoreDocTree(document)
-	if err != nil {
-		return nil, err
-	}
-
-	dataRoot, err := dataRootCalculator()
 	if err != nil {
 		return nil, err
 	}

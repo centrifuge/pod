@@ -295,7 +295,7 @@ func TestPOModel_getDocumentDataTree(t *testing.T) {
 func createMockPurchaseOrder(t *testing.T) (*PurchaseOrder, *coredocumentpb.CoreDocument, error) {
 	poModel := &PurchaseOrder{PoNumber: "3213121", NetAmount: 2, OrderAmount: 2, Currency: "USD", CoreDocument: coredocument.New()}
 	poModel.CoreDocument.Collaborators = [][]byte{{1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}}
-	_, err := poModel.CalculateDataRoot()
+	dataRoot, err := poModel.CalculateDataRoot()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -305,7 +305,7 @@ func createMockPurchaseOrder(t *testing.T) (*PurchaseOrder, *coredocumentpb.Core
 		return nil, nil, err
 	}
 	assert.Nil(t, coredocument.FillSalts(corDoc))
-	err = coredocument.CalculateSigningRoot(corDoc, poModel.CalculateDataRoot)
+	err = coredocument.CalculateSigningRoot(corDoc, dataRoot)
 	if err != nil {
 		return nil, nil, err
 	}
