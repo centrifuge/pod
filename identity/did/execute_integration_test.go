@@ -27,7 +27,8 @@ import (
 
 func TestExecute_successful(t *testing.T) {
 	did := deployIdentityContract(t)
-	idSrv := initIdentity(cfg, ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client), did)
+	aCtx := getTestDIDContext(t, *did)
+	idSrv := initIdentity(cfg, ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client))
 	anchorAddress := getAnchorAddress()
 
 	// init params
@@ -36,7 +37,7 @@ func TestExecute_successful(t *testing.T) {
 	testRootHash, _ := anchors.ToDocumentRoot(rootHash)
 	proofs := [][anchors.DocumentProofLength]byte{utils.RandomByte32()}
 
-	watchTrans, err := idSrv.Execute(anchorAddress, anchors.AnchorContractABI, "commit", testAnchorId.BigInt(), testRootHash, proofs)
+	watchTrans, err := idSrv.Execute(aCtx, anchorAddress, anchors.AnchorContractABI, "commit", testAnchorId.BigInt(), testRootHash, proofs)
 	assert.Nil(t, err, "Execute method calls should be successful")
 
 	txStatus := <-watchTrans
@@ -48,7 +49,9 @@ func TestExecute_successful(t *testing.T) {
 
 func TestExecute_fail_falseMethodName(t *testing.T) {
 	did := deployIdentityContract(t)
-	idSrv := initIdentity(cfg, ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client), did)
+	aCtx := getTestDIDContext(t, *did)
+
+	idSrv := initIdentity(cfg, ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client))
 	anchorAddress := getAnchorAddress()
 
 	testAnchorId, _ := anchors.ToAnchorID(utils.RandomSlice(32))
@@ -57,21 +60,22 @@ func TestExecute_fail_falseMethodName(t *testing.T) {
 
 	proofs := [][anchors.DocumentProofLength]byte{utils.RandomByte32()}
 
-	watchTrans, err := idSrv.Execute(anchorAddress, anchors.AnchorContractABI, "fakeMethod", testAnchorId.BigInt(), testRootHash, proofs)
+	watchTrans, err := idSrv.Execute(aCtx, anchorAddress, anchors.AnchorContractABI, "fakeMethod", testAnchorId.BigInt(), testRootHash, proofs)
 	assert.Error(t, err, "should throw an error because method is not existing in abi")
 	assert.Nil(t, watchTrans, "no channel should be returned")
 }
 
 func TestExecute_fail_MissingParam(t *testing.T) {
 	did := deployIdentityContract(t)
-	idSrv := initIdentity(cfg, ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client), did)
+	aCtx := getTestDIDContext(t, *did)
+	idSrv := initIdentity(cfg, ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client))
 	anchorAddress := getAnchorAddress()
 
 	testAnchorId, _ := anchors.ToAnchorID(utils.RandomSlice(32))
 	rootHash := utils.RandomSlice(32)
 	testRootHash, _ := anchors.ToDocumentRoot(rootHash)
 
-	watchTrans, err := idSrv.Execute(anchorAddress, anchors.AnchorContractABI, "commit", testAnchorId.BigInt(), testRootHash)
+	watchTrans, err := idSrv.Execute(aCtx, anchorAddress, anchors.AnchorContractABI, "commit", testAnchorId.BigInt(), testRootHash)
 	assert.Error(t, err, "should throw an error because method is not existing in abi")
 	assert.Nil(t, watchTrans, "no channel should be returned")
 }
