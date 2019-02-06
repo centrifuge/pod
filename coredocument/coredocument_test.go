@@ -307,19 +307,6 @@ func TestCreateProofs(t *testing.T) {
 
 }
 
-func Test(t *testing.T) {
-	tests := []struct {
-		name string
-	}{
-		// TODO: test cases
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-
-		})
-	}
-}
-
 func TestGetExternalCollaborators(t *testing.T) {
 	c1 := utils.RandomSlice(6)
 	c2 := utils.RandomSlice(6)
