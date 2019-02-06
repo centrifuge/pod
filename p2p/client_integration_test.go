@@ -7,6 +7,9 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
+	"github.com/golang/protobuf/proto"
+
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
@@ -26,10 +29,11 @@ import (
 )
 
 var (
-	client    documents.Client
-	cfg       config.Configuration
-	idService identity.Service
-	cfgStore  config.Service
+	client     documents.Client
+	cfg        config.Configuration
+	idService  identity.Service
+	cfgStore   config.Service
+	docService documents.Service
 )
 
 func TestMain(m *testing.M) {
@@ -39,6 +43,7 @@ func TestMain(m *testing.M) {
 	cfgStore = ctx[config.BootstrappedConfigStorage].(config.Service)
 	idService = ctx[identity.BootstrappedIDService].(identity.Service)
 	client = ctx[bootstrap.BootstrappedPeer].(documents.Client)
+	docService = ctx[documents.BootstrappedDocumentService].(documents.Service)
 	testingidentity.CreateIdentityWithKeys(cfg, idService)
 	result := m.Run()
 	testingbootstrap.TestFunctionalEthereumTearDown()
@@ -94,24 +99,44 @@ func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte) *coredoc
 	idConfig, err := identity.GetIdentityConfig(cfg)
 	assert.Nil(t, err)
 	identifier := utils.RandomSlice(32)
+
+	dataSalts := &invoicepb.InvoiceDataSalts{}
+	invData := &invoicepb.InvoiceData{}
+	err = proofs.FillSalts(invData, dataSalts)
+	assert.Nil(t, err)
+
+	serializedInv, err := proto.Marshal(invData)
+	assert.Nil(t, err)
+	serializedInvSalts, err := proto.Marshal(dataSalts)
+	assert.Nil(t, err)
+
 	salts := &coredocumentpb.CoreDocumentSalts{}
 	doc := &coredocumentpb.CoreDocument{
 		Collaborators:      collaborators,
-		DataRoot:           utils.RandomSlice(32),
 		DocumentIdentifier: identifier,
 		CurrentVersion:     identifier,
 		NextVersion:        utils.RandomSlice(32),
 		CoredocumentSalts:  salts,
 		EmbeddedData: &any.Any{
 			TypeUrl: documenttypes.InvoiceDataTypeUrl,
+			Value:   serializedInv,
 		},
 		EmbeddedDataSalts: &any.Any{
 			TypeUrl: documenttypes.InvoiceSaltsTypeUrl,
+			Value:   serializedInvSalts,
 		},
 	}
+
 	err = proofs.FillSalts(doc, salts)
 	assert.Nil(t, err)
-	tree, _ := coredocument.GetDocumentSigningTree(doc)
+
+	m, err := docService.DeriveFromCoreDocument(doc)
+	assert.Nil(t, err)
+
+	droot, err := m.CalculateDataRoot()
+	assert.Nil(t, err)
+
+	tree, _ := coredocument.GetDocumentSigningTree(doc, droot)
 	doc.SigningRoot = tree.RootHash()
 	sig := identity.Sign(idConfig, identity.KeyPurposeSigning, doc.SigningRoot)
 	doc.Signatures = append(doc.Signatures, sig)

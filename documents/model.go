@@ -28,6 +28,9 @@ type Model interface {
 	// assumes that core document has valid identifiers set
 	UnpackCoreDocument(cd *coredocumentpb.CoreDocument) error
 
+	// CalculateDataRoot calculates the dataroot of precise-proofs tree of the model
+	CalculateDataRoot() ([]byte, error)
+
 	// CreateProofs creates precise-proofs for given fields
 	CreateProofs(fields []string) (coreDoc *coredocumentpb.CoreDocument, proofs []*proofspb.Proof, err error)
 }

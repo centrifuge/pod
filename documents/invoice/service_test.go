@@ -441,7 +441,7 @@ func TestService_calculateDataRoot(t *testing.T) {
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 
 	// type mismatch
-	inv, err := invSrv.calculateDataRoot(ctxh, nil, &testingdocuments.MockModel{}, nil)
+	inv, err := invSrv.validateAndPersist(ctxh, nil, &testingdocuments.MockModel{}, nil)
 	assert.Nil(t, inv)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "unknown document type")
@@ -453,7 +453,7 @@ func TestService_calculateDataRoot(t *testing.T) {
 	v := documents.ValidatorFunc(func(_, _ documents.Model) error {
 		return errors.New("validations fail")
 	})
-	inv, err = invSrv.calculateDataRoot(ctxh, nil, inv, v)
+	inv, err = invSrv.validateAndPersist(ctxh, nil, inv, v)
 	assert.Nil(t, inv)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "validations fail")
@@ -464,7 +464,7 @@ func TestService_calculateDataRoot(t *testing.T) {
 	assert.Nil(t, inv.(*Invoice).CoreDocument.DataRoot)
 	err = invSrv.repo.Create(accountID, inv.(*Invoice).CoreDocument.CurrentVersion, inv)
 	assert.Nil(t, err)
-	inv, err = invSrv.calculateDataRoot(ctxh, nil, inv, CreateValidator())
+	inv, err = invSrv.validateAndPersist(ctxh, nil, inv, CreateValidator())
 	assert.Nil(t, inv)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "db repository could not create the given model, key already exists")
@@ -473,10 +473,9 @@ func TestService_calculateDataRoot(t *testing.T) {
 	inv, err = invSrv.DeriveFromCreatePayload(ctxh, testingdocuments.CreateInvoicePayload())
 	assert.Nil(t, err)
 	assert.Nil(t, inv.(*Invoice).CoreDocument.DataRoot)
-	inv, err = invSrv.calculateDataRoot(ctxh, nil, inv, CreateValidator())
+	inv, err = invSrv.validateAndPersist(ctxh, nil, inv, CreateValidator())
 	assert.Nil(t, err)
 	assert.NotNil(t, inv)
-	assert.NotNil(t, inv.(*Invoice).CoreDocument.DataRoot)
 }
 
 var testRepoGlobal documents.Repository

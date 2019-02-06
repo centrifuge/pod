@@ -43,6 +43,11 @@ func (m mockModel) UnpackCoreDocument(cd *coredocumentpb.CoreDocument) error {
 	return args.Error(0)
 }
 
+func (m mockModel) CalculateDataRoot() ([]byte, error) {
+	args := m.Called()
+	return args.Get(0).([]byte), args.Error(1)
+}
+
 func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 	srv := &testingcommons.MockIDService{}
 	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
@@ -77,6 +82,7 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
 	model.On("UnpackCoreDocument", cd).Return(errors.New("error")).Once()
+	model.On("CalculateDataRoot").Return(cd.DataRoot, nil)
 	err = dp.PrepareForSignatureRequests(ctxh, model)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to unpack the core document")
@@ -87,6 +93,7 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
 	model.On("UnpackCoreDocument", cd).Return(nil).Once()
+	model.On("CalculateDataRoot").Return(cd.DataRoot, nil)
 	err = dp.PrepareForSignatureRequests(ctxh, model)
 	model.AssertExpectations(t)
 	assert.Nil(t, err)
@@ -139,6 +146,7 @@ func TestDefaultProcessor_RequestSignatures(t *testing.T) {
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
 	model.On("UnpackCoreDocument", cd).Return(nil).Once()
+	model.On("CalculateDataRoot").Return(cd.DataRoot, nil)
 	err = dp.PrepareForSignatureRequests(ctxh, model)
 	assert.Nil(t, err)
 	model.AssertExpectations(t)
@@ -147,6 +155,7 @@ func TestDefaultProcessor_RequestSignatures(t *testing.T) {
 	dp.p2pClient = c
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Times(4)
+	model.On("CalculateDataRoot").Return(cd.DataRoot, nil)
 	err = dp.RequestSignatures(ctxh, model)
 	model.AssertExpectations(t)
 	c.AssertExpectations(t)
@@ -160,6 +169,7 @@ func TestDefaultProcessor_RequestSignatures(t *testing.T) {
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Times(4)
 	model.On("UnpackCoreDocument", cd).Return(errors.New("error")).Once()
+	model.On("CalculateDataRoot").Return(cd.DataRoot, nil)
 	err = dp.RequestSignatures(ctxh, model)
 	model.AssertExpectations(t)
 	c.AssertExpectations(t)
@@ -173,6 +183,7 @@ func TestDefaultProcessor_RequestSignatures(t *testing.T) {
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Times(4)
 	model.On("UnpackCoreDocument", cd).Return(nil).Once()
+	model.On("CalculateDataRoot").Return(cd.DataRoot, nil)
 	err = dp.RequestSignatures(ctxh, model)
 	model.AssertExpectations(t)
 	c.AssertExpectations(t)
@@ -207,11 +218,13 @@ func TestDefaultProcessor_PrepareForAnchoring(t *testing.T) {
 		Value:   []byte("some data"),
 	}
 	assert.Nil(t, coredocument.FillSalts(cd))
-	err = coredocument.CalculateSigningRoot(cd)
+	model.On("CalculateDataRoot").Return(cd.DataRoot, nil)
+	err = coredocument.CalculateSigningRoot(cd, cd.DataRoot)
 	assert.Nil(t, err)
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Times(4)
 	model.On("UnpackCoreDocument", cd).Return(errors.New("error")).Once()
+	model.On("CalculateDataRoot").Return(cd.DataRoot, nil)
 	c, err := identity.GetIdentityConfig(cfg)
 	assert.Nil(t, err)
 	s := identity.Sign(c, identity.KeyPurposeSigning, cd.SigningRoot)
@@ -229,6 +242,7 @@ func TestDefaultProcessor_PrepareForAnchoring(t *testing.T) {
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Times(4)
 	model.On("UnpackCoreDocument", cd).Return(nil).Once()
+	model.On("CalculateDataRoot").Return(cd.DataRoot, nil)
 	err = dp.PrepareForAnchoring(model)
 	model.AssertExpectations(t)
 	srv.AssertExpectations(t)
@@ -283,9 +297,10 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 		Value:   []byte("some data"),
 	}
 	assert.Nil(t, coredocument.FillSalts(cd))
-	assert.Nil(t, coredocument.CalculateSigningRoot(cd))
+	assert.Nil(t, coredocument.CalculateSigningRoot(cd, cd.DataRoot))
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Times(5)
+	model.On("CalculateDataRoot").Return(cd.DataRoot, nil)
 	c, err := identity.GetIdentityConfig(cfg)
 	assert.Nil(t, err)
 	s := identity.Sign(c, identity.KeyPurposeSigning, cd.SigningRoot)
@@ -302,6 +317,7 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	// success
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Times(5)
+	model.On("CalculateDataRoot").Return(cd.DataRoot, nil)
 	srv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil).Once()
 
 	repo := mockRepo{}
@@ -346,14 +362,16 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 		Value:   []byte("some data"),
 	}
 	cd.Collaborators = [][]byte{[]byte("some id")}
+	model.On("CalculateDataRoot").Return(cd.DataRoot, nil)
 	assert.Nil(t, coredocument.FillSalts(cd))
-	assert.Nil(t, coredocument.CalculateSigningRoot(cd))
+	assert.Nil(t, coredocument.CalculateSigningRoot(cd, cd.DataRoot))
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Times(6)
 	c, err := identity.GetIdentityConfig(cfg)
 	assert.Nil(t, err)
 	s := identity.Sign(c, identity.KeyPurposeSigning, cd.SigningRoot)
 	cd.Signatures = []*coredocumentpb.Signature{s}
+	model.On("CalculateDataRoot").Return(cd.DataRoot, nil)
 	assert.Nil(t, coredocument.CalculateDocumentRoot(cd))
 	docRoot, err := anchors.ToDocumentRoot(cd.DocumentRoot)
 	assert.Nil(t, err)
