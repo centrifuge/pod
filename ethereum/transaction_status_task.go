@@ -150,11 +150,9 @@ func (tst *TransactionStatusTask) RunTask() (resp interface{}, err error) {
 	}()
 
 	_, isPending, err := tst.transactionByHash(ctx, common.HexToHash(tst.txHash))
-	if err != nil {
-		return nil, err
-	}
-
-	if isPending {
+	if err != nil || isPending {
+		// if the tx is not propagated, this will error out with "Not found"
+		// lets retry in this scenario as well
 		return nil, gocelery.ErrTaskRetryable
 	}
 
