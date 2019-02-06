@@ -71,6 +71,7 @@ func TestAddKey_successful(t *testing.T) {
 	assert.Nil(t, err, "get Key should be successful")
 
 	assert.Equal(t, testKey.GetPurpose(), response.Purposes[0], "key should have the same purpose")
+	resetDefaultCentID()
 }
 
 func TestAddKey_fail(t *testing.T) {
@@ -84,5 +85,6 @@ func TestAddKey_fail(t *testing.T) {
 
 	_, err = idSrv.GetKey(aCtx, testKey.GetKey())
 	assert.Error(t, err, "no contract code at given address")
+	resetDefaultCentID()
 
 }

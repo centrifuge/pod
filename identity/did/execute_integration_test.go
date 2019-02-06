@@ -31,6 +31,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// TODO will be removed after migration
+func resetDefaultCentID() {
+	cfg.Set("identityId", "0x010101010101")
+}
+
 func TestExecute_successful(t *testing.T) {
 	did := deployIdentityContract(t)
 	aCtx := getTestDIDContext(t, *did)
@@ -47,7 +52,7 @@ func TestExecute_successful(t *testing.T) {
 	assert.Nil(t, err, "Execute method calls should be successful")
 
 	checkAnchor(t, testAnchorId, rootHash)
-
+	resetDefaultCentID()
 }
 
 func TestExecute_fail_falseMethodName(t *testing.T) {
@@ -66,6 +71,7 @@ func TestExecute_fail_falseMethodName(t *testing.T) {
 	err := idSrv.Execute(aCtx, anchorAddress, anchors.AnchorContractABI, "fakeMethod", testAnchorId.BigInt(), testRootHash, proofs)
 	assert.Error(t, err, "should throw an error because method is not existing in abi")
 
+	resetDefaultCentID()
 }
 
 func TestExecute_fail_MissingParam(t *testing.T) {
@@ -80,6 +86,7 @@ func TestExecute_fail_MissingParam(t *testing.T) {
 
 	err := idSrv.Execute(aCtx, anchorAddress, anchors.AnchorContractABI, "commit", testAnchorId.BigInt(), testRootHash)
 	assert.Error(t, err, "should throw an error because method is not existing in abi")
+	resetDefaultCentID()
 }
 
 func checkAnchor(t *testing.T, anchorId anchors.AnchorID, expectedRootHash []byte) {
