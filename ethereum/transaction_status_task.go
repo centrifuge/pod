@@ -4,14 +4,14 @@ import (
 	"context"
 	"time"
 
-	"github.com/ethereum/go-ethereum/core/types"
-
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/gocelery"
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 )
 
 const (
@@ -151,6 +151,12 @@ func (tst *TransactionStatusTask) RunTask() (resp interface{}, err error) {
 
 	_, isPending, err := tst.transactionByHash(ctx, common.HexToHash(tst.txHash))
 	if err != nil {
+		// if the tx is not propagated, this will error out with "Not found"
+		// lets retry in this scenario as well
+		if err == ethereum.NotFound {
+			err = gocelery.ErrTaskRetryable
+		}
+
 		return nil, err
 	}
 
