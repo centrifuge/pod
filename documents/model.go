@@ -40,7 +40,7 @@ type CoreDocumentModel struct {
 
 // NewCoreDocModel returns a new CoreDocumentModel
 // Note: collaborators and salts are to be filled by the caller
-func newCoreDocModel() *CoreDocumentModel {
+func NewCoreDocModel() *CoreDocumentModel {
 	id := utils.RandomSlice(32)
 	cd := &coredocumentpb.CoreDocument{
 		DocumentIdentifier: id,
@@ -52,21 +52,12 @@ func newCoreDocModel() *CoreDocumentModel {
 	}
 }
 
-// GetDocument returns the coredocument from the CoreDocumentModel
-func (m *CoreDocumentModel) GetDocument() (coredocumentpb.CoreDocument, error) {
-	cd := m.Document
-	if cd == nil {
-		return coredocumentpb.CoreDocument{}, errors.New("error getting document in CoreDocModel")
-	}
-	return *cd, nil
-}
-
 // PrepareNewVersion creates a new CoreDocumentModel with the version fields updated
 // Adds collaborators and fills salts
 // Note: new collaborators are added to the list with old collaborators.
 //TODO: this will change when collaborators are moved down to next level
 func (m *CoreDocumentModel) PrepareNewVersion(collaborators []string) (*CoreDocumentModel, error) {
-	ndm := newCoreDocModel()
+	ndm := NewCoreDocModel()
 	ncd := ndm.Document
 	ocd := m.Document
 	ucs, err := fetchUniqueCollaborators(ocd.Collaborators, collaborators)
@@ -92,31 +83,26 @@ func (m *CoreDocumentModel) PrepareNewVersion(collaborators []string) (*CoreDocu
 		return nil, err
 	}
 
-	cd, err := m.GetDocument()
-	if err != nil {
-		return nil, err
-	}
-
-	if cd.DocumentIdentifier == nil {
+	if ocd.DocumentIdentifier == nil {
 		return nil, errors.New("coredocument.DocumentIdentifier is nil")
 	}
-	ncd.DocumentIdentifier = cd.DocumentIdentifier
+	ncd.DocumentIdentifier = ocd.DocumentIdentifier
 
-	if cd.CurrentVersion == nil {
+	if ocd.CurrentVersion == nil {
 		return nil, errors.New("coredocument.CurrentVersion is nil")
 	}
-	ncd.PreviousVersion = cd.CurrentVersion
+	ncd.PreviousVersion = ocd.CurrentVersion
 
-	if cd.NextVersion == nil {
+	if ocd.NextVersion == nil {
 		return nil, errors.New("coredocument.NextVersion is nil")
 	}
 
-	ncd.CurrentVersion = cd.NextVersion
+	ncd.CurrentVersion = ocd.NextVersion
 	ncd.NextVersion = utils.RandomSlice(32)
-	if cd.DocumentRoot == nil {
+	if ocd.DocumentRoot == nil {
 		return nil, errors.New("DocumentRoot is nil")
 	}
-	ncd.PreviousRoot = cd.DocumentRoot
+	ncd.PreviousRoot = ocd.DocumentRoot
 
 	return ndm, nil
 }
