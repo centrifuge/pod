@@ -8,8 +8,6 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 
-	"github.com/centrifuge/go-centrifuge/testingutils/config"
-
 	"github.com/centrifuge/go-centrifuge/config"
 
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -77,7 +75,7 @@ func TestAddKey_fail(t *testing.T) {
 	aCtx := getTestDIDContext(t, did)
 	idSrv := initIdentity(cfg, ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client))
 
-	watchTrans, err := idSrv.AddKey(nil, testKey)
+	watchTrans, err := idSrv.AddKey(aCtx, testKey)
 	assert.Nil(t, err, "add key should be successful")
 
 	txStatus := <-watchTrans
