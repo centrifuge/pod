@@ -6,6 +6,10 @@ import (
 	"os/exec"
 	"path"
 
+	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/queue"
+	"github.com/centrifuge/go-centrifuge/transactions"
+
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -42,7 +46,17 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		return err
 	}
 
-	service := NewService(cfg, factoryContract, client)
+	txManager, ok := context[transactions.BootstrappedService].(transactions.Manager)
+	if !ok {
+		return errors.New("transactions repository not initialised")
+	}
+
+	queueSrv, ok := context[bootstrap.BootstrappedQueueServer].(*queue.Server)
+	if !ok {
+		return errors.New("queue hasn't been initialized")
+	}
+
+	service := NewService(cfg, factoryContract, client, txManager, queueSrv)
 	context[BootstrappedDIDService] = service
 	return nil
 }
@@ -101,22 +115,37 @@ func getSmartContractAddresses() *config.SmartContractAddresses {
 	anchorRepoAddrOp := getOpForContract(".contracts.AnchorRepository.address")
 	payObAddrOp := getOpForContract(".contracts.PaymentObligation.address")
 	return &config.SmartContractAddresses{
-		IdentityFactoryAddr:   getOpAddr(idFactoryAddrOp, dat),
-		AnchorRepositoryAddr:  getOpAddr(anchorRepoAddrOp, dat),
-		PaymentObligationAddr: getOpAddr(payObAddrOp, dat),
+		IdentityFactoryAddr:   getOpField(idFactoryAddrOp, dat),
+		AnchorRepositoryAddr:  getOpField(anchorRepoAddrOp, dat),
+		PaymentObligationAddr: getOpField(payObAddrOp, dat),
 	}
 }
-
-// TODO: func will be removed after migration
-func findContractDeployJSON() ([]byte, error) {
+func getFileFromContractRepo(filePath string) ([]byte, error) {
 	gp := os.Getenv("GOPATH")
 	projDir := path.Join(gp, "src", "github.com", "centrifuge", "go-centrifuge")
-	deployJSONFile := path.Join(projDir, "vendor", "github.com", "manuelpolzhofer", "centrifuge-ethereum-contracts", "deployments", "localgeth.json")
+	deployJSONFile := path.Join(projDir, "vendor", "github.com", "manuelpolzhofer", "centrifuge-ethereum-contracts", filePath)
 	dat, err := ioutil.ReadFile(deployJSONFile)
 	if err != nil {
 		return nil, err
 	}
 	return dat, nil
+}
+
+// TODO: func will be refactored after migration
+func getIdentityByteCode() string {
+	dat, err := findContractDeployJSON()
+	if err != nil {
+		panic(err)
+	}
+	optByte := getOpForContract(".contracts.Identity.bytecode")
+	byteCodeHex := getOpField(optByte, dat)
+	return byteCodeHex
+
+}
+
+// TODO: func will be removed after migration
+func findContractDeployJSON() ([]byte, error) {
+	return getFileFromContractRepo(path.Join("deployments", "localgeth.json"))
 }
 
 // TODO: func will be removed after migration
@@ -129,7 +158,7 @@ func getOpForContract(selector string) jq.Op {
 }
 
 // TODO: func will be removed after migration
-func getOpAddr(addrOp jq.Op, dat []byte) string {
+func getOpField(addrOp jq.Op, dat []byte) string {
 	addr, err := addrOp.Apply(dat)
 	if err != nil {
 		panic(err)
