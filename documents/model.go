@@ -40,7 +40,7 @@ type CoreDocumentModel struct {
 
 // NewCoreDocModel returns a new CoreDocumentModel
 // Note: collaborators and salts are to be filled by the caller
-func NewCoreDocModel() *CoreDocumentModel {
+func newCoreDocModel() *CoreDocumentModel {
 	id := utils.RandomSlice(32)
 	cd := &coredocumentpb.CoreDocument{
 		DocumentIdentifier: id,
@@ -72,7 +72,7 @@ func (m *CoreDocumentModel) SetDocument(ncd *coredocumentpb.CoreDocument) *CoreD
 // Note: new collaborators are added to the list with old collaborators.
 //TODO: this will change when collaborators are moved down to next level
 func (m *CoreDocumentModel) PrepareNewVersion(collaborators []string) (*CoreDocumentModel, error) {
-	ndm := NewCoreDocModel()
+	ndm := newCoreDocModel()
 	ncd, err := ndm.GetDocument()
 	if err != nil {
 		return nil, err
@@ -107,6 +107,20 @@ func (m *CoreDocumentModel) PrepareNewVersion(collaborators []string) (*CoreDocu
 	cd, err := m.GetDocument()
 	if err != nil {
 		return nil, err
+	}
+
+	if cd.DocumentIdentifier == nil {
+		return nil, errors.New("coredocument.DocumentIdentifier is nil")
+	}
+	ncd.DocumentIdentifier = cd.DocumentIdentifier
+
+	if cd.CurrentVersion == nil {
+		return nil, errors.New("coredocument.CurrentVersion is nil")
+	}
+	ncd.PreviousVersion = cd.CurrentVersion
+
+	if cd.NextVersion == nil {
+		return nil, errors.New("coredocument.NextVersion is nil")
 	}
 
 	ncd.CurrentVersion = cd.NextVersion

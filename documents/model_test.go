@@ -111,7 +111,7 @@ func Test_fetchUniqueCollaborators(t *testing.T) {
 }
 
 func TestCoreDocumentModel_PrepareNewVersion(t *testing.T) {
-	dm := NewCoreDocModel()
+	dm := newCoreDocModel()
 	cd, err := dm.GetDocument()
 	assert.NotNil(t, cd)
 
@@ -139,4 +139,11 @@ func TestCoreDocumentModel_PrepareNewVersion(t *testing.T) {
 	ncd, err := ndm.GetDocument()
 	ocd, err := dm.GetDocument()
 	assert.Equal(t, ncd.PreviousVersion, ocd.CurrentVersion)
+	assert.Equal(t, ncd.CurrentVersion, ocd.NextVersion)
+
+	// DocumentIdentifier has not changed
+	assert.Equal(t, ncd.DocumentIdentifier, ocd.DocumentIdentifier)
+
+	// DocumentRoot was updated
+	assert.Equal(t, ncd.PreviousRoot, ocd.DocumentRoot)
 }
