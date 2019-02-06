@@ -16,12 +16,18 @@ correct implementation.
 package did
 
 import (
+	"context"
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
+	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/ethereum"
+	id "github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/queue"
+	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -99,8 +105,7 @@ func TestAnchorWithoutExecute_successful(t *testing.T) {
 	testRootHash, _ := anchors.ToDocumentRoot(rootHash)
 
 	//commit without execute method
-	txStatus := commitAnchorWithoutExecute(t, anchorContract, testAnchorId, testRootHash)
-	assert.Equal(t, ethereum.TransactionStatusSuccess, txStatus.Status, "transaction should be successful")
+	commitAnchorWithoutExecute(t, anchorContract, testAnchorId, testRootHash)
 
 	opts, _ := client.GetGethCallOpts(false)
 	result, err := anchorContract.GetAnchorById(opts, testAnchorId.BigInt())
@@ -116,13 +121,41 @@ func commitAnchorWithoutExecute(t *testing.T, anchorContract *anchors.AnchorCont
 	proofs := [][anchors.DocumentProofLength]byte{utils.RandomByte32()}
 
 	opts, err := client.GetTxOpts(cfg.GetEthereumDefaultAccountName())
-	tx, err := client.SubmitTransactionWithRetries(anchorContract.Commit, opts, anchorId.BigInt(), rootHash, proofs)
 
-	assert.Nil(t, err, "submit transaction should be successful")
+	queue := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
+	txManager := ctx[transactions.BootstrappedService].(transactions.Manager)
 
-	watchTrans := make(chan *ethereum.WatchTransaction)
-	go waitForTransaction(client, tx.Hash(), watchTrans)
-	return <-watchTrans
+	// TODO: did can be passed instead of randomCentID after CentID is DID
+	_, done, err := txManager.ExecuteWithinTX(context.Background(), id.RandomCentID(), uuid.Nil, "Check TX add execute",
+		func(accountID id.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
+			ethTX, err := client.SubmitTransactionWithRetries(anchorContract.Commit, opts, anchorId.BigInt(), rootHash, proofs)
+			if err != nil {
+				errOut <- err
+				return
+			}
+			logTxHash(ethTX)
+
+			res, err := ethereum.QueueEthTXStatusTask(accountID, txID, ethTX.Hash(), queue)
+			if err != nil {
+				errOut <- err
+				return
+			}
+
+			_, err = res.Get(txMan.GetDefaultTaskTimeout())
+			if err != nil {
+				errOut <- err
+				return
+			}
+			errOut <- nil
+		})
+	assert.Nil(t, err, "add anchor commit tx should be successful ")
+	isDone := <-done
+	// non async task
+
+	assert.True(t, isDone, "add anchor commit tx should be successful ")
+
+	return nil
+
 }
 
 func bindAnchorContract(t *testing.T, address common.Address) *anchors.AnchorContract {

@@ -4,10 +4,11 @@ package did
 
 import (
 	"context"
+	"testing"
+
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/transactions"
-	"testing"
 
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 
@@ -27,7 +28,7 @@ func initIdentity(config config.Configuration) Identity {
 	client := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
 	txManager := ctx[transactions.BootstrappedService].(transactions.Manager)
 	queue := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
-	return NewIdentity(config, client, txManager,queue)
+	return NewIdentity(config, client, txManager, queue)
 }
 
 func getTestDIDContext(t *testing.T, did DID) context.Context {

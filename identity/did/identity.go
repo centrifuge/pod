@@ -2,15 +2,14 @@ package did
 
 import (
 	"context"
+	"math/big"
+	"strings"
+
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/transactions"
-	"github.com/satori/go.uuid"
-	"math/big"
-	"strings"
-	"time"
-
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/satori/go.uuid"
 
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
@@ -68,10 +67,10 @@ type contract interface {
 }
 
 type identity struct {
-	config id.Config
-	client ethereum.Client
-	txManager       transactions.Manager
-	queue           *queue.Server
+	config    id.Config
+	client    ethereum.Client
+	txManager transactions.Manager
+	queue     *queue.Server
 }
 
 func (i identity) prepareTransaction(did DID) (contract, *bind.TransactOpts, error) {
@@ -114,7 +113,7 @@ func (i identity) bindContract(did DID) (contract, error) {
 
 // NewIdentity creates a instance of an identity
 func NewIdentity(config id.Config, client ethereum.Client, txManager transactions.Manager, queue *queue.Server) Identity {
-	return identity{config: config, client: client, txManager:txManager,queue:queue}
+	return identity{config: config, client: client, txManager: txManager, queue: queue}
 }
 
 func logTxHash(tx *types.Transaction) {
@@ -149,7 +148,7 @@ func (i identity) AddKey(ctx context.Context, key Key) error {
 	}
 
 	// TODO: did can be passed instead of randomCentID after CentID is DID
-	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), id.RandomCentID(), uuid.Nil, "Check TX for add key", i.addKeyTX(opts,contract, key))
+	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), id.RandomCentID(), uuid.Nil, "Check TX for add key", i.addKeyTX(opts, contract, key))
 	if err != nil {
 		return err
 	}
@@ -162,21 +161,9 @@ func (i identity) AddKey(ctx context.Context, key Key) error {
 	}
 	return nil
 
-
 }
 
-// TODO: will be replaced with statusTask
-func waitForTransaction(client ethereum.Client, txHash common.Hash, txStatus chan *ethereum.WatchTransaction) {
-	time.Sleep(3000 * time.Millisecond)
-	receipt, err := client.TransactionReceipt(context.Background(), txHash)
-	if err != nil {
-		txStatus <- &ethereum.WatchTransaction{Error: err}
-	}
-	txStatus <- &ethereum.WatchTransaction{Status: receipt.Status}
-
-}
-
-func (i identity) addKeyTX(opts *bind.TransactOpts,identityContract contract, key Key) func(accountID id.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
+func (i identity) addKeyTX(opts *bind.TransactOpts, identityContract contract, key Key) func(accountID id.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
 	return func(accountID id.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
 		ethTX, err := i.client.SubmitTransactionWithRetries(identityContract.AddKey, opts, key.GetKey(), key.GetPurpose(), key.GetType())
 		if err != nil {
@@ -201,7 +188,7 @@ func (i identity) addKeyTX(opts *bind.TransactOpts,identityContract contract, ke
 
 }
 
-func (i identity) rawExecuteTX(opts *bind.TransactOpts,identityContract contract, to common.Address, value *big.Int, data []byte) func(accountID id.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
+func (i identity) rawExecuteTX(opts *bind.TransactOpts, identityContract contract, to common.Address, value *big.Int, data []byte) func(accountID id.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
 	return func(accountID id.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
 		ethTX, err := i.client.SubmitTransactionWithRetries(identityContract.Execute, opts, to, value, data)
 		if err != nil {
@@ -259,9 +246,8 @@ func (i identity) RawExecute(ctx context.Context, to common.Address, data []byte
 	// default: no ether should be send
 	value := big.NewInt(0)
 
-
 	// TODO: did can be passed instead of randomCentID after CentID is DID
-	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), id.RandomCentID(), uuid.Nil, "Check TX for execute", i.rawExecuteTX(opts,contract, to,value,data))
+	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), id.RandomCentID(), uuid.Nil, "Check TX for execute", i.rawExecuteTX(opts, contract, to, value, data))
 	if err != nil {
 		return err
 	}
@@ -273,7 +259,6 @@ func (i identity) RawExecute(ctx context.Context, to common.Address, data []byte
 
 	}
 	return nil
-
 
 }
 
