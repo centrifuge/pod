@@ -2,11 +2,13 @@ package did
 
 import (
 	"context"
+	"github.com/centrifuge/go-centrifuge/contextutil"
+	"github.com/centrifuge/go-centrifuge/queue"
+	"github.com/centrifuge/go-centrifuge/transactions"
+	"github.com/satori/go.uuid"
 	"math/big"
 	"strings"
 	"time"
-
-	"github.com/centrifuge/go-centrifuge/contextutil"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 
@@ -38,7 +40,7 @@ func NewDIDFromString(address string) DID {
 // Identity interface contains the methods to interact with the identity contract
 type Identity interface {
 	// AddKey adds a key to identity contract
-	AddKey(ctx context.Context, key Key) (chan *ethereum.WatchTransaction, error)
+	AddKey(ctx context.Context, key Key) error
 
 	// GetKey return a key from the identity contract
 	GetKey(ctx context.Context, key [32]byte) (*KeyResponse, error)
@@ -68,6 +70,8 @@ type contract interface {
 type identity struct {
 	config id.Config
 	client ethereum.Client
+	txManager       transactions.Manager
+	queue           *queue.Server
 }
 
 func (i identity) prepareTransaction(did DID) (contract, *bind.TransactOpts, error) {
@@ -109,19 +113,8 @@ func (i identity) bindContract(did DID) (contract, error) {
 }
 
 // NewIdentity creates a instance of an identity
-func NewIdentity(config id.Config, client ethereum.Client) Identity {
-	return identity{config: config, client: client}
-}
-
-// TODO: will be replaced with statusTask
-func waitForTransaction(client ethereum.Client, txHash common.Hash, txStatus chan *ethereum.WatchTransaction) {
-	time.Sleep(3000 * time.Millisecond)
-	receipt, err := client.TransactionReceipt(context.Background(), txHash)
-	if err != nil {
-		txStatus <- &ethereum.WatchTransaction{Error: err}
-	}
-	txStatus <- &ethereum.WatchTransaction{Status: receipt.Status}
-
+func NewIdentity(config id.Config, client ethereum.Client, txManager transactions.Manager, queue *queue.Server) Identity {
+	return identity{config: config, client: client, txManager:txManager,queue:queue}
 }
 
 func logTxHash(tx *types.Transaction) {
@@ -144,30 +137,68 @@ func (i identity) getDID(ctx context.Context) (did DID, err error) {
 
 }
 
-func (i identity) AddKey(ctx context.Context, key Key) (chan *ethereum.WatchTransaction, error) {
+func (i identity) AddKey(ctx context.Context, key Key) error {
 	did, err := i.getDID(ctx)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	contract, opts, err := i.prepareTransaction(did)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	tx, err := i.client.SubmitTransactionWithRetries(contract.AddKey, opts, key.GetKey(), key.GetPurpose(), key.GetType())
+	// TODO: did can be passed instead of randomCentID after CentID is DID
+	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), id.RandomCentID(), uuid.Nil, "Check TX for add key", i.addKeyTX(opts,contract, key))
 	if err != nil {
-		log.Infof("could not addKey to identity contract: %v[txHash: %s] : %v", tx.Hash(), err)
-		return nil, errors.New("could not addKey to identity contract: %v", err)
+		return err
 	}
-	logTxHash(tx)
 
-	txStatus := make(chan *ethereum.WatchTransaction)
+	isDone := <-done
+	// non async task
+	if !isDone {
+		return errors.New("add key  TX failed: txID:%s", txID.String())
 
-	// TODO will be replaced with transaction Status task
-	go waitForTransaction(i.client, tx.Hash(), txStatus)
+	}
+	return nil
 
-	return txStatus, nil
+
+}
+
+// TODO: will be replaced with statusTask
+func waitForTransaction(client ethereum.Client, txHash common.Hash, txStatus chan *ethereum.WatchTransaction) {
+	time.Sleep(3000 * time.Millisecond)
+	receipt, err := client.TransactionReceipt(context.Background(), txHash)
+	if err != nil {
+		txStatus <- &ethereum.WatchTransaction{Error: err}
+	}
+	txStatus <- &ethereum.WatchTransaction{Status: receipt.Status}
+
+}
+
+func (i identity) addKeyTX(opts *bind.TransactOpts,identityContract contract, key Key) func(accountID id.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
+	return func(accountID id.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
+
+		ethTX, err := i.client.SubmitTransactionWithRetries(identityContract.AddKey, opts, key.GetKey(), key.GetPurpose(), key.GetType())
+		if err != nil {
+			errOut <- err
+			return
+		}
+		logTxHash(ethTX)
+
+		res, err := ethereum.QueueEthTXStatusTask(accountID, txID, ethTX.Hash(), i.queue)
+		if err != nil {
+			errOut <- err
+			return
+		}
+
+		_, err = res.Get(txMan.GetDefaultTaskTimeout())
+		if err != nil {
+			errOut <- err
+			return
+		}
+		errOut <- nil
+	}
 
 }
 

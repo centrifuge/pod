@@ -28,7 +28,7 @@ import (
 func TestExecute_successful(t *testing.T) {
 	did := deployIdentityContract(t)
 	aCtx := getTestDIDContext(t, *did)
-	idSrv := initIdentity(cfg, ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client))
+	idSrv := initIdentity(cfg)
 	anchorAddress := getAnchorAddress()
 
 	// init params
@@ -51,7 +51,7 @@ func TestExecute_fail_falseMethodName(t *testing.T) {
 	did := deployIdentityContract(t)
 	aCtx := getTestDIDContext(t, *did)
 
-	idSrv := initIdentity(cfg, ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client))
+	idSrv := initIdentity(cfg)
 	anchorAddress := getAnchorAddress()
 
 	testAnchorId, _ := anchors.ToAnchorID(utils.RandomSlice(32))
@@ -68,7 +68,7 @@ func TestExecute_fail_falseMethodName(t *testing.T) {
 func TestExecute_fail_MissingParam(t *testing.T) {
 	did := deployIdentityContract(t)
 	aCtx := getTestDIDContext(t, *did)
-	idSrv := initIdentity(cfg, ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client))
+	idSrv := initIdentity(cfg)
 	anchorAddress := getAnchorAddress()
 
 	testAnchorId, _ := anchors.ToAnchorID(utils.RandomSlice(32))

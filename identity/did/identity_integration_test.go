@@ -4,6 +4,9 @@ package did
 
 import (
 	"context"
+	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/queue"
+	"github.com/centrifuge/go-centrifuge/transactions"
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
@@ -20,8 +23,11 @@ func getTestKey() Key {
 	return &key{Key: utils.RandomByte32(), Purpose: utils.ByteSliceToBigInt([]byte{123}), Type: utils.ByteSliceToBigInt([]byte{123})}
 }
 
-func initIdentity(config config.Configuration, client ethereum.Client) Identity {
-	return NewIdentity(config, client)
+func initIdentity(config config.Configuration) Identity {
+	client := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
+	txManager := ctx[transactions.BootstrappedService].(transactions.Manager)
+	queue := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
+	return NewIdentity(config, client, txManager,queue)
 }
 
 func getTestDIDContext(t *testing.T, did DID) context.Context {
@@ -53,15 +59,12 @@ func deployIdentityContract(t *testing.T) *DID {
 func TestAddKey_successful(t *testing.T) {
 	did := deployIdentityContract(t)
 	aCtx := getTestDIDContext(t, *did)
-	idSrv := initIdentity(cfg, ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client))
+	idSrv := initIdentity(cfg)
 
 	testKey := getTestKey()
 
-	watchTrans, err := idSrv.AddKey(aCtx, testKey)
+	err := idSrv.AddKey(aCtx, testKey)
 	assert.Nil(t, err, "add key should be successful")
-
-	txStatus := <-watchTrans
-	assert.Equal(t, ethereum.TransactionStatusSuccess, txStatus.Status, "transactions should be successful")
 
 	response, err := idSrv.GetKey(aCtx, testKey.GetKey())
 	assert.Nil(t, err, "get Key should be successful")
@@ -73,14 +76,10 @@ func TestAddKey_fail(t *testing.T) {
 	testKey := getTestKey()
 	did := NewDIDFromString("0x123")
 	aCtx := getTestDIDContext(t, did)
-	idSrv := initIdentity(cfg, ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client))
+	idSrv := initIdentity(cfg)
 
-	watchTrans, err := idSrv.AddKey(aCtx, testKey)
+	err := idSrv.AddKey(aCtx, testKey)
 	assert.Nil(t, err, "add key should be successful")
-
-	txStatus := <-watchTrans
-	// contract is not existing but status is successful
-	assert.Equal(t, ethereum.TransactionStatusSuccess, txStatus.Status, "transactions")
 
 	_, err = idSrv.GetKey(aCtx, testKey.GetKey())
 	assert.Error(t, err, "no contract code at given address")
