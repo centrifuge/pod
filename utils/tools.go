@@ -65,8 +65,8 @@ func CheckMultiple32BytesFilled(b []byte, bs ...[]byte) bool {
 	return true
 }
 
-// AddressTo32Bytes converts an address to 32 byte array
-// address length is 20 bytes. beginning 12 bytes are filled with 0
+// AddressTo32Bytes converts an address to 32 a byte array
+// The length of an address is 20 bytes. First 12 bytes are filled with zeros.
 func AddressTo32Bytes(address common.Address) [32]byte {
 	addressBytes := address.Bytes()
 	address32Byte := [32]byte{}
