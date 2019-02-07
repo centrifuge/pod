@@ -152,10 +152,6 @@ func baseValidator() Validator {
 			err = errors.AppendError(err, NewError("cd_next_version", centerrors.RequiredField))
 		}
 
-		if utils.IsEmptyByteSlice(cd.DataRoot) {
-			err = errors.AppendError(err, NewError("cd_data_root", centerrors.RequiredField))
-		}
-
 		// double check the identifiers
 		isSameBytes := utils.IsSameByteSlice
 
@@ -194,7 +190,12 @@ func signingRootValidator() Validator {
 			return errors.New("signing root missing")
 		}
 
-		tree, err := coredocument.GetDocumentSigningTree(cd)
+		dataRoot, err := model.CalculateDataRoot()
+		if err != nil {
+			return err
+		}
+
+		tree, err := coredocument.GetDocumentSigningTree(cd, dataRoot)
 		if err != nil {
 			return errors.New("failed to calculate signing root: %v", err)
 		}

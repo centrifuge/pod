@@ -5,14 +5,8 @@ package purchaseorder
 import (
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/testingutils/config"
-
-	"github.com/centrifuge/go-centrifuge/contextutil"
-
-	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
-	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -47,67 +41,12 @@ func TestFieldValidator_Validate(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestDataRootValidation_Validate(t *testing.T) {
-	drv := dataRootValidator()
-	contextHeader := testingconfig.CreateAccountContext(t, cfg)
-
-	// nil error
-	err := drv.Validate(nil, nil)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "nil document")
-
-	// pack coredoc failed
-	model := &testingdocuments.MockModel{}
-	model.On("PackCoreDocument").Return(nil, errors.New("error")).Once()
-	err = drv.Validate(nil, model)
-	model.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to pack coredocument")
-
-	// missing data root
-	model = &testingdocuments.MockModel{}
-	model.On("PackCoreDocument").Return(coredocument.New(), nil).Once()
-	err = drv.Validate(nil, model)
-	model.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "data root missing")
-
-	// unknown doc type
-	cd := coredocument.New()
-	cd.DataRoot = utils.RandomSlice(32)
-	model = &testingdocuments.MockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Once()
-	err = drv.Validate(nil, model)
-	model.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "unknown document type")
-
-	// mismatch
-	id, _ := contextutil.Self(contextHeader)
-	po := new(PurchaseOrder)
-	err = po.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), id.ID.String())
-	assert.Nil(t, err)
-	po.CoreDocument = cd
-	err = drv.Validate(nil, po)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "mismatched data root")
-
-	// success
-	po = new(PurchaseOrder)
-	err = po.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), id.ID.String())
-	assert.Nil(t, err)
-	err = po.calculateDataRoot()
-	assert.Nil(t, err)
-	err = drv.Validate(nil, po)
-	assert.Nil(t, err)
-}
-
 func TestCreateValidator(t *testing.T) {
 	cv := CreateValidator()
-	assert.Len(t, cv, 2)
+	assert.Len(t, cv, 1)
 }
 
 func TestUpdateValidator(t *testing.T) {
 	uv := UpdateValidator()
-	assert.Len(t, uv, 3)
+	assert.Len(t, uv, 2)
 }

@@ -339,14 +339,13 @@ func (p *PurchaseOrder) Type() reflect.Type {
 	return reflect.TypeOf(p)
 }
 
-// calculateDataRoot calculates the data root and sets the root to core document
-func (p *PurchaseOrder) calculateDataRoot() error {
+// CalculateDataRoot calculates the data root and sets the root to core document
+func (p *PurchaseOrder) CalculateDataRoot() ([]byte, error) {
 	t, err := p.getDocumentDataTree()
 	if err != nil {
-		return errors.New("calculateDataRoot error %v", err)
+		return nil, errors.New("calculateDataRoot error %v", err)
 	}
-	p.CoreDocument.DataRoot = t.RootHash()
-	return nil
+	return t.RootHash(), nil
 }
 
 // getDocumentDataTree creates precise-proofs data tree for the model

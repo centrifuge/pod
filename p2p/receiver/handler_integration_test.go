@@ -8,6 +8,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
+
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
@@ -42,6 +44,7 @@ var (
 	cfg        config.Configuration
 	idService  identity.Service
 	cfgService config.Service
+	docSrv     documents.Service
 )
 
 func TestMain(m *testing.M) {
@@ -49,7 +52,7 @@ func TestMain(m *testing.M) {
 	ctx := testingbootstrap.TestFunctionalEthereumBootstrap()
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfgService = ctx[config.BootstrappedConfigStorage].(config.Service)
-	docSrv := ctx[documents.BootstrappedDocumentService].(documents.Service)
+	docSrv = ctx[documents.BootstrappedDocumentService].(documents.Service)
 	anchorRepo = ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
 	idService = ctx[identity.BootstrappedIDService].(identity.Service)
 	handler = receiver.New(cfgService, receiver.HandshakeValidator(cfg.GetNetworkID(), idService), docSrv)
@@ -325,7 +328,14 @@ func prepareDocumentForP2PHandler(t *testing.T, doc *coredocumentpb.CoreDocument
 	if doc == nil {
 		doc = testingcoredocument.GenerateCoreDocument()
 	}
-	tree, err := coredocument.GetDocumentSigningTree(doc)
+
+	m, err := docSrv.DeriveFromCoreDocument(doc)
+	assert.Nil(t, err)
+
+	droot, err := m.CalculateDataRoot()
+	assert.Nil(t, err)
+
+	tree, err := coredocument.GetDocumentSigningTree(doc, droot)
 	assert.NoError(t, err)
 	doc.SigningRoot = tree.RootHash()
 	sig := identity.Sign(idConfig, identity.KeyPurposeSigning, doc.SigningRoot)
@@ -337,16 +347,26 @@ func prepareDocumentForP2PHandler(t *testing.T, doc *coredocumentpb.CoreDocument
 }
 
 func updateDocumentForP2Phandler(t *testing.T, doc *coredocumentpb.CoreDocument) {
+	dataSalts := &invoicepb.InvoiceDataSalts{}
+	invData := &invoicepb.InvoiceData{}
+	proofs.FillSalts(invData, dataSalts)
+
+	serializedInv, err := proto.Marshal(invData)
+	assert.NoError(t, err)
+	serializedInvSalts, err := proto.Marshal(dataSalts)
+	assert.NoError(t, err)
+
 	salts := &coredocumentpb.CoreDocumentSalts{}
 	doc.CoredocumentSalts = salts
-	doc.DataRoot = utils.RandomSlice(32)
 	doc.EmbeddedData = &any.Any{
 		TypeUrl: documenttypes.InvoiceDataTypeUrl,
+		Value:   serializedInv,
 	}
 	doc.EmbeddedDataSalts = &any.Any{
 		TypeUrl: documenttypes.InvoiceSaltsTypeUrl,
+		Value:   serializedInvSalts,
 	}
-	err := proofs.FillSalts(doc, salts)
+	err = proofs.FillSalts(doc, salts)
 	assert.Nil(t, err)
 }
 

@@ -89,7 +89,7 @@ func createAnchoredMockDocument(t *testing.T, skipSave bool) (*invoice.Invoice, 
 		GrossAmount:   60,
 		CoreDocument:  coredocument.New(),
 	}
-	err := i.CalculateDataRoot()
+	dataRoot, err := i.CalculateDataRoot()
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +99,8 @@ func createAnchoredMockDocument(t *testing.T, skipSave bool) (*invoice.Invoice, 
 		return nil, err
 	}
 	assert.Nil(t, coredocument.FillSalts(corDoc))
-	err = coredocument.CalculateSigningRoot(corDoc)
+
+	err = coredocument.CalculateSigningRoot(corDoc, dataRoot)
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +143,7 @@ func createAnchoredMockDocument(t *testing.T, skipSave bool) (*invoice.Invoice, 
 
 func updatedAnchoredMockDocument(t *testing.T, i *invoice.Invoice) (*invoice.Invoice, error) {
 	i.GrossAmount = 50
-	err := i.CalculateDataRoot()
+	dataRoot, err := i.CalculateDataRoot()
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +158,7 @@ func updatedAnchoredMockDocument(t *testing.T, i *invoice.Invoice) (*invoice.Inv
 	if err != nil {
 		return nil, err
 	}
-	err = coredocument.CalculateSigningRoot(corDoc)
+	err = coredocument.CalculateSigningRoot(corDoc, dataRoot)
 	if err != nil {
 		return nil, err
 	}
