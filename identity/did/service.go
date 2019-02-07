@@ -36,8 +36,8 @@ func NewDIDFromString(address string) DID {
 	return DID(common.HexToAddress(address))
 }
 
-// Identity interface contains the methods to interact with the identity contract
-type Identity interface {
+// Service interface contains the methods to interact with the identity contract
+type Service interface {
 	// AddKey adds a key to identity contract
 	AddKey(ctx context.Context, key Key) error
 
@@ -53,26 +53,26 @@ type Identity interface {
 
 type contract interface {
 
-	// calls
+	// Ethereum Calls
 	GetKey(opts *bind.CallOpts, _key [32]byte) (struct {
 		Key       [32]byte
 		Purposes  []*big.Int
 		RevokedAt *big.Int
 	}, error)
 
-	// transactions
+	// Ethereum Transactions
 	AddKey(opts *bind.TransactOpts, _key [32]byte, _purpose *big.Int, _keyType *big.Int) (*types.Transaction, error)
 
 	Execute(opts *bind.TransactOpts, _to common.Address, _value *big.Int, _data []byte) (*types.Transaction, error)
 }
 
-type identity struct {
+type service struct {
 	client    ethereum.Client
 	txManager transactions.Manager
 	queue     *queue.Server
 }
 
-func (i identity) prepareTransaction(ctx context.Context, did DID) (contract, *bind.TransactOpts, error) {
+func (i service) prepareTransaction(ctx context.Context, did DID) (contract, *bind.TransactOpts, error) {
 	tc, err := contextutil.Account(ctx)
 	if err != nil {
 		return nil, nil, err
@@ -93,7 +93,7 @@ func (i identity) prepareTransaction(ctx context.Context, did DID) (contract, *b
 
 }
 
-func (i identity) prepareCall(did DID) (contract, *bind.CallOpts, context.CancelFunc, error) {
+func (i service) prepareCall(did DID) (contract, *bind.CallOpts, context.CancelFunc, error) {
 	opts, cancelFunc := i.client.GetGethCallOpts(false)
 
 	contract, err := i.bindContract(did)
@@ -105,7 +105,7 @@ func (i identity) prepareCall(did DID) (contract, *bind.CallOpts, context.Cancel
 
 }
 
-func (i identity) bindContract(did DID) (contract, error) {
+func (i service) bindContract(did DID) (contract, error) {
 	contract, err := NewIdentityContract(did.toAddress(), i.client.GetEthClient())
 	if err != nil {
 		return nil, errors.New("Could not bind identity contract: %v", err)
@@ -115,9 +115,9 @@ func (i identity) bindContract(did DID) (contract, error) {
 
 }
 
-// NewIdentity creates a instance of an identity
-func NewIdentity(client ethereum.Client, txManager transactions.Manager, queue *queue.Server) Identity {
-	return identity{client: client, txManager: txManager, queue: queue}
+// NewService creates a instance of the identity service
+func NewService(client ethereum.Client, txManager transactions.Manager, queue *queue.Server) Service {
+	return service{client: client, txManager: txManager, queue: queue}
 }
 
 func logTxHash(tx *types.Transaction) {
@@ -125,7 +125,7 @@ func logTxHash(tx *types.Transaction) {
 	log.Infof("Transfer pending: 0x%x\n", tx.Hash())
 }
 
-func (i identity) getDID(ctx context.Context) (did DID, err error) {
+func (i service) getDID(ctx context.Context) (did DID, err error) {
 	tc, err := contextutil.Account(ctx)
 	if err != nil {
 		return did, err
@@ -140,7 +140,7 @@ func (i identity) getDID(ctx context.Context) (did DID, err error) {
 
 }
 
-func (i identity) AddKey(ctx context.Context, key Key) error {
+func (i service) AddKey(ctx context.Context, key Key) error {
 	did, err := i.getDID(ctx)
 	if err != nil {
 		return err
@@ -167,7 +167,7 @@ func (i identity) AddKey(ctx context.Context, key Key) error {
 
 }
 
-func (i identity) addKeyTX(opts *bind.TransactOpts, identityContract contract, key Key) func(accountID id.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
+func (i service) addKeyTX(opts *bind.TransactOpts, identityContract contract, key Key) func(accountID id.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
 	return func(accountID id.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
 		ethTX, err := i.client.SubmitTransactionWithRetries(identityContract.AddKey, opts, key.GetKey(), key.GetPurpose(), key.GetType())
 		if err != nil {
@@ -192,7 +192,7 @@ func (i identity) addKeyTX(opts *bind.TransactOpts, identityContract contract, k
 
 }
 
-func (i identity) rawExecuteTX(opts *bind.TransactOpts, identityContract contract, to common.Address, value *big.Int, data []byte) func(accountID id.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
+func (i service) rawExecuteTX(opts *bind.TransactOpts, identityContract contract, to common.Address, value *big.Int, data []byte) func(accountID id.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
 	return func(accountID id.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
 		ethTX, err := i.client.SubmitTransactionWithRetries(identityContract.Execute, opts, to, value, data)
 		if err != nil {
@@ -217,7 +217,7 @@ func (i identity) rawExecuteTX(opts *bind.TransactOpts, identityContract contrac
 
 }
 
-func (i identity) GetKey(ctx context.Context, key [32]byte) (*KeyResponse, error) {
+func (i service) GetKey(ctx context.Context, key [32]byte) (*KeyResponse, error) {
 	did, err := i.getDID(ctx)
 	if err != nil {
 		return nil, err
@@ -237,7 +237,7 @@ func (i identity) GetKey(ctx context.Context, key [32]byte) (*KeyResponse, error
 
 }
 
-func (i identity) RawExecute(ctx context.Context, to common.Address, data []byte) error {
+func (i service) RawExecute(ctx context.Context, to common.Address, data []byte) error {
 	did, err := i.getDID(ctx)
 	if err != nil {
 		return err
@@ -266,7 +266,7 @@ func (i identity) RawExecute(ctx context.Context, to common.Address, data []byte
 
 }
 
-func (i identity) Execute(ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) error {
+func (i service) Execute(ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) error {
 	abi, err := abi.JSON(strings.NewReader(contractAbi))
 	if err != nil {
 		return err

@@ -20,7 +20,7 @@ import (
 
 var log = logging.Logger("identity")
 
-// Service is the interface for identity related interactions
+// Factory is the interface for factory related interactions
 type Factory interface {
 	CreateIdentity(ctx context.Context) (id *DID, err error)
 }
@@ -33,7 +33,7 @@ type factory struct {
 	queue           *queue.Server
 }
 
-// NewService returns a new identity service
+// NewFactory returns a new identity factory service
 func NewFactory(config id.Config, factoryContract *FactoryContract, client ethereum.Client, txManager transactions.Manager, queue *queue.Server) Factory {
 
 	return &factory{config: config, factoryContract: factoryContract, client: client, txManager: txManager, queue: queue}

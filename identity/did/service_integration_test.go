@@ -22,11 +22,11 @@ func getTestKey() Key {
 	return &key{Key: utils.RandomByte32(), Purpose: utils.ByteSliceToBigInt([]byte{123}), Type: utils.ByteSliceToBigInt([]byte{123})}
 }
 
-func initIdentity() Identity {
+func initIdentity() Service {
 	client := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
 	txManager := ctx[transactions.BootstrappedService].(transactions.Manager)
 	queue := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
-	return NewIdentity(client, txManager, queue)
+	return NewService(client, txManager, queue)
 }
 
 func getTestDIDContext(t *testing.T, did DID) context.Context {
