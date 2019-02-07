@@ -215,7 +215,7 @@ func TestValidator_baseValidator(t *testing.T) {
 	model.On("PackCoreDocument").Return(cd, nil).Once()
 	err = bv.Validate(nil, model)
 	assert.Error(t, err)
-	assert.Equal(t, "cd_salts : Required field", errors.GetErrs(err)[1].Error())
+	assert.Equal(t, "cd_salts : Required field", errors.GetErrs(err)[0].Error())
 
 	// success
 	model = mockModel{}
@@ -254,17 +254,19 @@ func TestValidator_signingRootValidator(t *testing.T) {
 	}
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
+	model.On("CalculateDataRoot").Return(cd.DataRoot, nil)
 	err = sv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "signing root mismatch")
 
 	// success
-	tree, err := coredocument.GetDocumentSigningTree(cd)
+	tree, err := coredocument.GetDocumentSigningTree(cd, cd.DataRoot)
 	assert.Nil(t, err)
 	cd.SigningRoot = tree.RootHash()
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
+	model.On("CalculateDataRoot").Return(cd.DataRoot, nil)
 	err = sv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Nil(t, err)
@@ -511,50 +513,13 @@ func TestValidate_baseValidator(t *testing.T) {
 				DocumentIdentifier: id2,
 				CurrentVersion:     id3,
 				NextVersion:        id4,
-				DataRoot:           id5,
 				CoredocumentSalts: &coredocumentpb.CoreDocumentSalts{
 					DocumentIdentifier: id1,
 					CurrentVersion:     id2,
 					NextVersion:        id3,
-					DataRoot:           id4,
 				},
 			},
 			key: "[cd_salts : Required field]",
-		},
-
-		// missing identifiers in core document
-		{
-			doc: &coredocumentpb.CoreDocument{
-				DocumentRoot:       id1,
-				DocumentIdentifier: id2,
-				CurrentVersion:     id3,
-				NextVersion:        id4,
-				CoredocumentSalts: &coredocumentpb.CoreDocumentSalts{
-					DocumentIdentifier: id1,
-					CurrentVersion:     id2,
-					NextVersion:        id3,
-					DataRoot:           id4,
-					PreviousRoot:       id5,
-				},
-			},
-			key: "[cd_data_root : Required field]",
-		},
-
-		// missing identifiers in core document and salts
-		{
-			doc: &coredocumentpb.CoreDocument{
-				DocumentRoot:       id1,
-				DocumentIdentifier: id2,
-				CurrentVersion:     id3,
-				NextVersion:        id4,
-				CoredocumentSalts: &coredocumentpb.CoreDocumentSalts{
-					DocumentIdentifier: id1,
-					CurrentVersion:     id2,
-					NextVersion:        id3,
-					DataRoot:           id4,
-				},
-			},
-			key: "[cd_data_root : Required field; cd_salts : Required field]",
 		},
 
 		// repeated identifiers
@@ -569,7 +534,6 @@ func TestValidate_baseValidator(t *testing.T) {
 					DocumentIdentifier: id1,
 					CurrentVersion:     id2,
 					NextVersion:        id3,
-					DataRoot:           id4,
 					PreviousRoot:       id5,
 				},
 			},
@@ -588,7 +552,6 @@ func TestValidate_baseValidator(t *testing.T) {
 					DocumentIdentifier: id1,
 					CurrentVersion:     id2,
 					NextVersion:        id3,
-					DataRoot:           id4,
 					PreviousRoot:       id5,
 				},
 			},
@@ -607,7 +570,6 @@ func TestValidate_baseValidator(t *testing.T) {
 					DocumentIdentifier: id1,
 					CurrentVersion:     id2,
 					NextVersion:        id3,
-					DataRoot:           id4,
 					PreviousRoot:       id5,
 				},
 			},
@@ -617,7 +579,6 @@ func TestValidate_baseValidator(t *testing.T) {
 	baseValidator := baseValidator()
 
 	for _, c := range tests {
-
 		model := mockModel{}
 		model.On("PackCoreDocument", mock.Anything).Return(c.doc, nil).Once()
 
