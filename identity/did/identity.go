@@ -12,7 +12,6 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
-	id "github.com/centrifuge/go-centrifuge/identity"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -66,12 +65,16 @@ type contract interface {
 }
 
 type identity struct {
-	config id.Config
 	client ethereum.Client
 }
 
-func (i identity) prepareTransaction(did DID) (contract, *bind.TransactOpts, error) {
-	opts, err := i.client.GetTxOpts(i.config.GetEthereumDefaultAccountName())
+func (i identity) prepareTransaction(ctx context.Context, did DID) (contract, *bind.TransactOpts, error) {
+	tc, err := contextutil.Account(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	opts, err := i.client.GetTxOpts(tc.GetEthereumDefaultAccountName())
 	if err != nil {
 		log.Infof("Failed to get txOpts from Ethereum client: %v", err)
 		return nil, nil, err
@@ -109,8 +112,8 @@ func (i identity) bindContract(did DID) (contract, error) {
 }
 
 // NewIdentity creates a instance of an identity
-func NewIdentity(config id.Config, client ethereum.Client) Identity {
-	return identity{config: config, client: client}
+func NewIdentity(client ethereum.Client) Identity {
+	return identity{client: client}
 }
 
 // TODO: will be replaced with statusTask
@@ -150,7 +153,7 @@ func (i identity) AddKey(ctx context.Context, key Key) (chan *ethereum.WatchTran
 		return nil, err
 	}
 
-	contract, opts, err := i.prepareTransaction(did)
+	contract, opts, err := i.prepareTransaction(ctx, did)
 	if err != nil {
 		return nil, err
 	}
@@ -196,7 +199,7 @@ func (i identity) RawExecute(ctx context.Context, to common.Address, data []byte
 	if err != nil {
 		return nil, err
 	}
-	contract, opts, err := i.prepareTransaction(did)
+	contract, opts, err := i.prepareTransaction(ctx, did)
 	if err != nil {
 		return nil, err
 	}

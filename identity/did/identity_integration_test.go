@@ -8,8 +8,6 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 
-	"github.com/centrifuge/go-centrifuge/config"
-
 	"github.com/centrifuge/go-centrifuge/utils"
 
 	"github.com/centrifuge/go-centrifuge/ethereum"
@@ -20,8 +18,8 @@ func getTestKey() Key {
 	return &key{Key: utils.RandomByte32(), Purpose: utils.ByteSliceToBigInt([]byte{123}), Type: utils.ByteSliceToBigInt([]byte{123})}
 }
 
-func initIdentity(config config.Configuration, client ethereum.Client) Identity {
-	return NewIdentity(config, client)
+func initIdentity(client ethereum.Client) Identity {
+	return NewIdentity(client)
 }
 
 func getTestDIDContext(t *testing.T, did DID) context.Context {
@@ -53,7 +51,7 @@ func deployIdentityContract(t *testing.T) *DID {
 func TestAddKey_successful(t *testing.T) {
 	did := deployIdentityContract(t)
 	aCtx := getTestDIDContext(t, *did)
-	idSrv := initIdentity(cfg, ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client))
+	idSrv := initIdentity(ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client))
 
 	testKey := getTestKey()
 
@@ -74,7 +72,7 @@ func TestAddKey_fail(t *testing.T) {
 	testKey := getTestKey()
 	did := NewDIDFromString("0x123")
 	aCtx := getTestDIDContext(t, did)
-	idSrv := initIdentity(cfg, ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client))
+	idSrv := initIdentity(ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client))
 
 	watchTrans, err := idSrv.AddKey(aCtx, testKey)
 	assert.Nil(t, err, "add key should be successful")
