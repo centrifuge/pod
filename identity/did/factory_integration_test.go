@@ -58,5 +58,5 @@ func TestCreateIdentity_successful(t *testing.T) {
 	assert.Nil(t, err, "should be successful to get the contract code")
 
 	assert.Equal(t, true, len(contractCode) > 3000, "current contract code should be arround 3378 bytes")
-	
+
 }
