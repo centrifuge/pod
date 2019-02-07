@@ -26,7 +26,6 @@ type Factory interface {
 }
 
 type factory struct {
-	config          id.Config
 	factoryContract *FactoryContract
 	client          ethereum.Client
 	txManager       transactions.Manager
@@ -34,9 +33,9 @@ type factory struct {
 }
 
 // NewFactory returns a new identity factory service
-func NewFactory(config id.Config, factoryContract *FactoryContract, client ethereum.Client, txManager transactions.Manager, queue *queue.Server) Factory {
+func NewFactory(factoryContract *FactoryContract, client ethereum.Client, txManager transactions.Manager, queue *queue.Server) Factory {
 
-	return &factory{config: config, factoryContract: factoryContract, client: client, txManager: txManager, queue: queue}
+	return &factory{factoryContract: factoryContract, client: client, txManager: txManager, queue: queue}
 }
 
 func (s *factory) getNonceAt(ctx context.Context, address common.Address) (uint64, error) {
