@@ -22,7 +22,7 @@ import (
 type Bootstrapper struct{}
 
 // BootstrappedDIDService stores the id of the service
-const BootstrappedDIDService string = "BootstrappedDIDService"
+const BootstrappedDIDFactory  string = "BootstrappedDIDFactory"
 
 var smartContractAddresses *config.SmartContractAddresses
 
@@ -56,8 +56,8 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		return errors.New("queue hasn't been initialized")
 	}
 
-	service := NewService(cfg, factoryContract, client, txManager, queueSrv)
-	context[BootstrappedDIDService] = service
+	factory := NewFactory(cfg, factoryContract, client, txManager, queueSrv)
+	context[BootstrappedDIDFactory] = factory
 	return nil
 }
 

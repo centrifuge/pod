@@ -46,11 +46,11 @@ func TestMain(m *testing.M) {
 }
 
 func TestCreateIdentity_successful(t *testing.T) {
-	service := ctx[BootstrappedDIDService].(Service)
+	factory := ctx[BootstrappedDIDFactory].(Factory)
 
 	accountCtx := testingconfig.CreateAccountContext(t, cfg)
 
-	did, err := service.CreateIdentity(accountCtx)
+	did, err := factory.CreateIdentity(accountCtx)
 	assert.Nil(t, err, "create identity should be successful")
 
 	client := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)

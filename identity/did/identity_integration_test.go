@@ -40,9 +40,9 @@ func getTestDIDContext(t *testing.T, did DID) context.Context {
 }
 
 func deployIdentityContract(t *testing.T) *DID {
-	service := ctx[BootstrappedDIDService].(Service)
+	factory := ctx[BootstrappedDIDFactory].(Factory)
 	accountCtx := testingconfig.CreateAccountContext(t, cfg)
-	did, err := service.CreateIdentity(accountCtx)
+	did, err := factory.CreateIdentity(accountCtx)
 	assert.Nil(t, err, "create identity should be successful")
 
 	client := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
