@@ -20,26 +20,25 @@ import (
 
 var log = logging.Logger("identity")
 
-// Service is the interface for identity related interactions
-type Service interface {
+// Factory is the interface for factory related interactions
+type Factory interface {
 	CreateIdentity(ctx context.Context) (id *DID, err error)
 }
 
-type service struct {
-	config          id.Config
+type factory struct {
 	factoryContract *FactoryContract
 	client          ethereum.Client
 	txManager       transactions.Manager
 	queue           *queue.Server
 }
 
-// NewService returns a new identity service
-func NewService(config id.Config, factoryContract *FactoryContract, client ethereum.Client, txManager transactions.Manager, queue *queue.Server) Service {
+// NewFactory returns a new identity factory service
+func NewFactory(factoryContract *FactoryContract, client ethereum.Client, txManager transactions.Manager, queue *queue.Server) Factory {
 
-	return &service{config: config, factoryContract: factoryContract, client: client, txManager: txManager, queue: queue}
+	return &factory{factoryContract: factoryContract, client: client, txManager: txManager, queue: queue}
 }
 
-func (s *service) getNonceAt(ctx context.Context, address common.Address) (uint64, error) {
+func (s *factory) getNonceAt(ctx context.Context, address common.Address) (uint64, error) {
 	// TODO: add blockNumber of the transaction which created the contract
 	return s.client.GetEthClient().NonceAt(ctx, getFactoryAddress(), nil)
 }
@@ -51,7 +50,7 @@ func CalculateCreatedAddress(address common.Address, nonce uint64) common.Addres
 	return crypto.CreateAddress(address, nonce)
 }
 
-func (s *service) createIdentityTX(opts *bind.TransactOpts) func(accountID id.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
+func (s *factory) createIdentityTX(opts *bind.TransactOpts) func(accountID id.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
 	return func(accountID id.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
 		ethTX, err := s.client.SubmitTransactionWithRetries(s.factoryContract.CreateIdentity, opts)
 		if err != nil {
@@ -79,7 +78,7 @@ func (s *service) createIdentityTX(opts *bind.TransactOpts) func(accountID id.Ce
 
 }
 
-func (s *service) calculateIdentityAddress(ctx context.Context) (*common.Address, error) {
+func (s *factory) calculateIdentityAddress(ctx context.Context) (*common.Address, error) {
 	factoryAddress := getFactoryAddress()
 	nonce, err := s.getNonceAt(ctx, factoryAddress)
 	if err != nil {
@@ -91,7 +90,7 @@ func (s *service) calculateIdentityAddress(ctx context.Context) (*common.Address
 	return &identityAddress, nil
 }
 
-func (s *service) isIdentityContract(identityAddress common.Address) error {
+func (s *factory) isIdentityContract(identityAddress common.Address) error {
 	contractCode, err := s.client.GetEthClient().CodeAt(context.Background(), identityAddress, nil)
 	if err != nil {
 		return err
@@ -106,7 +105,7 @@ func (s *service) isIdentityContract(identityAddress common.Address) error {
 
 }
 
-func (s *service) CreateIdentity(ctx context.Context) (did *DID, err error) {
+func (s *factory) CreateIdentity(ctx context.Context) (did *DID, err error) {
 	tc, err := contextutil.Account(ctx)
 	if err != nil {
 		return nil, err

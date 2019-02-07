@@ -11,7 +11,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/transactions"
 
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/ethereum/go-ethereum/common"
@@ -21,6 +20,9 @@ import (
 // Bootstrapper implements bootstrap.Bootstrapper.
 type Bootstrapper struct{}
 
+// BootstrappedDIDFactory stores the id of the factory
+const BootstrappedDIDFactory string = "BootstrappedDIDFactory"
+
 // BootstrappedDIDService stores the id of the service
 const BootstrappedDIDService string = "BootstrappedDIDService"
 
@@ -28,11 +30,6 @@ var smartContractAddresses *config.SmartContractAddresses
 
 // Bootstrap initializes the factory contract
 func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
-	cfg, err := configstore.RetrieveConfig(false, context)
-	if err != nil {
-		return err
-	}
-
 	if _, ok := context[ethereum.BootstrappedEthereumClient]; !ok {
 		return errors.New("ethereum client hasn't been initialized")
 	}
@@ -56,8 +53,12 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		return errors.New("queue hasn't been initialized")
 	}
 
-	service := NewService(cfg, factoryContract, client, txManager, queueSrv)
+	factory := NewFactory(factoryContract, client, txManager, queueSrv)
+	context[BootstrappedDIDFactory] = factory
+
+	service := NewService(client, txManager, queueSrv)
 	context[BootstrappedDIDService] = service
+
 	return nil
 }
 

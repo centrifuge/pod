@@ -16,12 +16,18 @@ correct implementation.
 package did
 
 import (
+	"context"
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
+	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/ethereum"
+	id "github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/queue"
+	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -33,7 +39,7 @@ func resetDefaultCentID() {
 func TestExecute_successful(t *testing.T) {
 	did := deployIdentityContract(t)
 	aCtx := getTestDIDContext(t, *did)
-	idSrv := initIdentity(ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client))
+	idSrv := initIdentity()
 	anchorAddress := getAnchorAddress()
 
 	// init params
@@ -42,11 +48,8 @@ func TestExecute_successful(t *testing.T) {
 	testRootHash, _ := anchors.ToDocumentRoot(rootHash)
 	proofs := [][anchors.DocumentProofLength]byte{utils.RandomByte32()}
 
-	watchTrans, err := idSrv.Execute(aCtx, anchorAddress, anchors.AnchorContractABI, "commit", testAnchorId.BigInt(), testRootHash, proofs)
+	err := idSrv.Execute(aCtx, anchorAddress, anchors.AnchorContractABI, "commit", testAnchorId.BigInt(), testRootHash, proofs)
 	assert.Nil(t, err, "Execute method calls should be successful")
-
-	txStatus := <-watchTrans
-	assert.Equal(t, ethereum.TransactionStatusSuccess, txStatus.Status, "transaction should be successful")
 
 	checkAnchor(t, testAnchorId, rootHash)
 	resetDefaultCentID()
@@ -56,7 +59,7 @@ func TestExecute_fail_falseMethodName(t *testing.T) {
 	did := deployIdentityContract(t)
 	aCtx := getTestDIDContext(t, *did)
 
-	idSrv := initIdentity(ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client))
+	idSrv := initIdentity()
 	anchorAddress := getAnchorAddress()
 
 	testAnchorId, _ := anchors.ToAnchorID(utils.RandomSlice(32))
@@ -65,25 +68,24 @@ func TestExecute_fail_falseMethodName(t *testing.T) {
 
 	proofs := [][anchors.DocumentProofLength]byte{utils.RandomByte32()}
 
-	watchTrans, err := idSrv.Execute(aCtx, anchorAddress, anchors.AnchorContractABI, "fakeMethod", testAnchorId.BigInt(), testRootHash, proofs)
+	err := idSrv.Execute(aCtx, anchorAddress, anchors.AnchorContractABI, "fakeMethod", testAnchorId.BigInt(), testRootHash, proofs)
 	assert.Error(t, err, "should throw an error because method is not existing in abi")
-	assert.Nil(t, watchTrans, "no channel should be returned")
+
 	resetDefaultCentID()
 }
 
 func TestExecute_fail_MissingParam(t *testing.T) {
 	did := deployIdentityContract(t)
 	aCtx := getTestDIDContext(t, *did)
-	idSrv := initIdentity(ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client))
+	idSrv := initIdentity()
 	anchorAddress := getAnchorAddress()
 
 	testAnchorId, _ := anchors.ToAnchorID(utils.RandomSlice(32))
 	rootHash := utils.RandomSlice(32)
 	testRootHash, _ := anchors.ToDocumentRoot(rootHash)
 
-	watchTrans, err := idSrv.Execute(aCtx, anchorAddress, anchors.AnchorContractABI, "commit", testAnchorId.BigInt(), testRootHash)
+	err := idSrv.Execute(aCtx, anchorAddress, anchors.AnchorContractABI, "commit", testAnchorId.BigInt(), testRootHash)
 	assert.Error(t, err, "should throw an error because method is not existing in abi")
-	assert.Nil(t, watchTrans, "no channel should be returned")
 	resetDefaultCentID()
 }
 
@@ -110,8 +112,7 @@ func TestAnchorWithoutExecute_successful(t *testing.T) {
 	testRootHash, _ := anchors.ToDocumentRoot(rootHash)
 
 	//commit without execute method
-	txStatus := commitAnchorWithoutExecute(t, anchorContract, testAnchorId, testRootHash)
-	assert.Equal(t, ethereum.TransactionStatusSuccess, txStatus.Status, "transaction should be successful")
+	commitAnchorWithoutExecute(t, anchorContract, testAnchorId, testRootHash)
 
 	opts, _ := client.GetGethCallOpts(false)
 	result, err := anchorContract.GetAnchorById(opts, testAnchorId.BigInt())
@@ -127,13 +128,41 @@ func commitAnchorWithoutExecute(t *testing.T, anchorContract *anchors.AnchorCont
 	proofs := [][anchors.DocumentProofLength]byte{utils.RandomByte32()}
 
 	opts, err := client.GetTxOpts(cfg.GetEthereumDefaultAccountName())
-	tx, err := client.SubmitTransactionWithRetries(anchorContract.Commit, opts, anchorId.BigInt(), rootHash, proofs)
 
-	assert.Nil(t, err, "submit transaction should be successful")
+	queue := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
+	txManager := ctx[transactions.BootstrappedService].(transactions.Manager)
 
-	watchTrans := make(chan *ethereum.WatchTransaction)
-	go waitForTransaction(client, tx.Hash(), watchTrans)
-	return <-watchTrans
+	// TODO: did can be passed instead of randomCentID after CentID is DID
+	_, done, err := txManager.ExecuteWithinTX(context.Background(), id.RandomCentID(), uuid.Nil, "Check TX add execute",
+		func(accountID id.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
+			ethTX, err := client.SubmitTransactionWithRetries(anchorContract.Commit, opts, anchorId.BigInt(), rootHash, proofs)
+			if err != nil {
+				errOut <- err
+				return
+			}
+			logTxHash(ethTX)
+
+			res, err := ethereum.QueueEthTXStatusTask(accountID, txID, ethTX.Hash(), queue)
+			if err != nil {
+				errOut <- err
+				return
+			}
+
+			_, err = res.Get(txMan.GetDefaultTaskTimeout())
+			if err != nil {
+				errOut <- err
+				return
+			}
+			errOut <- nil
+		})
+	assert.Nil(t, err, "add anchor commit tx should be successful ")
+	isDone := <-done
+	// non async task
+
+	assert.True(t, isDone, "add anchor commit tx should be successful ")
+
+	return nil
+
 }
 
 func bindAnchorContract(t *testing.T, address common.Address) *anchors.AnchorContract {

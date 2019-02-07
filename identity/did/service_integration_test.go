@@ -4,53 +4,45 @@ package did
 
 import (
 	"context"
-	"fmt"
-	"os"
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/config/configstore"
-	"github.com/centrifuge/go-centrifuge/ethereum"
-	"github.com/centrifuge/go-centrifuge/identity/ethid"
 	"github.com/centrifuge/go-centrifuge/queue"
-	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/transactions"
+
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
+
+	"github.com/centrifuge/go-centrifuge/utils"
+
+	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/stretchr/testify/assert"
 )
 
-var cfg config.Configuration
-var ctx = map[string]interface{}{}
-
-func TestMain(m *testing.M) {
-	var bootstappers = []bootstrap.TestBootstrapper{
-		&testlogging.TestLoggingBootstrapper{},
-		&config.Bootstrapper{},
-		&leveldb.Bootstrapper{},
-		transactions.Bootstrapper{},
-		&queue.Bootstrapper{},
-		ethereum.Bootstrapper{},
-		&ethid.Bootstrapper{},
-		&configstore.Bootstrapper{},
-		&Bootstrapper{},
-		&queue.Starter{},
-	}
-
-	bootstrap.RunTestBootstrappers(bootstappers, ctx)
-	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-	result := m.Run()
-	bootstrap.RunTestTeardown(bootstappers)
-	os.Exit(result)
+func getTestKey() Key {
+	return &key{Key: utils.RandomByte32(), Purpose: utils.ByteSliceToBigInt([]byte{123}), Type: utils.ByteSliceToBigInt([]byte{123})}
 }
 
-func TestCreateIdentity_successful(t *testing.T) {
-	service := ctx[BootstrappedDIDService].(Service)
+func initIdentity() Service {
+	client := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
+	txManager := ctx[transactions.BootstrappedService].(transactions.Manager)
+	queue := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
+	return NewService(client, txManager, queue)
+}
 
+func getTestDIDContext(t *testing.T, did DID) context.Context {
+	cfg.Set("identityId", did.toAddress().String())
+	cfg.Set("keys.ethauth.publicKey", "../../build/resources/ethauth.pub.pem")
+	cfg.Set("keys.ethauth.privateKey", "../../build/resources/ethauth.key.pem")
+	aCtx := testingconfig.CreateAccountContext(t, cfg)
+
+	return aCtx
+
+}
+
+func deployIdentityContract(t *testing.T) *DID {
+	factory := ctx[BootstrappedDIDFactory].(Factory)
 	accountCtx := testingconfig.CreateAccountContext(t, cfg)
-
-	did, err := service.CreateIdentity(accountCtx)
+	did, err := factory.CreateIdentity(accountCtx)
 	assert.Nil(t, err, "create identity should be successful")
 
 	client := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
@@ -59,7 +51,38 @@ func TestCreateIdentity_successful(t *testing.T) {
 	assert.Nil(t, err, "should be successful to get the contract code")
 
 	assert.Equal(t, true, len(contractCode) > 3000, "current contract code should be arround 3378 bytes")
+	return did
 
-	fmt.Println(did)
+}
+
+func TestAddKey_successful(t *testing.T) {
+	did := deployIdentityContract(t)
+	aCtx := getTestDIDContext(t, *did)
+	idSrv := initIdentity()
+
+	testKey := getTestKey()
+
+	err := idSrv.AddKey(aCtx, testKey)
+	assert.Nil(t, err, "add key should be successful")
+
+	response, err := idSrv.GetKey(aCtx, testKey.GetKey())
+	assert.Nil(t, err, "get Key should be successful")
+
+	assert.Equal(t, testKey.GetPurpose(), response.Purposes[0], "key should have the same purpose")
+	resetDefaultCentID()
+}
+
+func TestAddKey_fail(t *testing.T) {
+	testKey := getTestKey()
+	did := NewDIDFromString("0x123")
+	aCtx := getTestDIDContext(t, did)
+	idSrv := initIdentity()
+
+	err := idSrv.AddKey(aCtx, testKey)
+	assert.Nil(t, err, "add key should be successful")
+
+	_, err = idSrv.GetKey(aCtx, testKey.GetKey())
+	assert.Error(t, err, "no contract code at given address")
+	resetDefaultCentID()
 
 }
