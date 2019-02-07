@@ -144,6 +144,7 @@ func (m *CoreDocumentModel) fillSalts() error {
 
 // initReadRules initiates the read rules for a given CoreDocumentModel.
 // Collaborators are given Read_Sign action.
+// if the rules are created already, this is a no-op.
 func (m *CoreDocumentModel) initReadRules (collabs []identity.CentID) error {
 	cd := m.Document
 	if len(cd.Roles) > 0 && len(cd.ReadRules) > 0 {
