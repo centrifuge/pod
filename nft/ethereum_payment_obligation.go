@@ -146,7 +146,9 @@ func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, documentID []by
 	}
 
 	registry := common.HexToAddress(registryAddress)
-	if isNFTMinted(cd.Nfts, registry.Bytes()) {
+	mt := getStoredNFT(cd.Nfts, registry.Bytes())
+	// check if the nft is successfully minted
+	if mt != nil && s.isNFTMinted(registry, mt.TokenId) {
 		return nil, nil, errors.NewTypedError(ErrNFTMinted, errors.New("registry %v", registry.String()))
 	}
 
@@ -154,7 +156,6 @@ func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, documentID []by
 	// We use context.Background() for now so that the transaction is only limited by ethereum timeouts
 	txID, done, err := s.txManager.ExecuteWithinTX(context.Background(), cid, uuid.Nil, "Minting NFT",
 		s.minter(ctx, tokenID, model, registry, depositAddress, proofFields))
-
 	if err != nil {
 		return nil, nil, err
 	}
@@ -163,6 +164,13 @@ func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, documentID []by
 		TransactionID: txID.String(),
 		TokenID:       tokenID.String(),
 	}, done, nil
+}
+
+func (s *ethereumPaymentObligation) isNFTMinted(registry common.Address, tokenID []byte) bool {
+	// since OwnerOf throws when owner is zero address,
+	// if err is not thrown, we can assume that NFT is minted
+	_, err := s.OwnerOf(registry, tokenID)
+	return err == nil
 }
 
 func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID, model documents.Model, registry common.Address, depositAddress string, proofFields []string) func(accountID identity.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
@@ -257,23 +265,29 @@ func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID,
 	}
 }
 
-func isNFTMinted(nfts []*coredocumentpb.NFT, registry []byte) bool {
+func getStoredNFT(nfts []*coredocumentpb.NFT, registry []byte) *coredocumentpb.NFT {
 	for _, nft := range nfts {
 		if bytes.Equal(nft.RegistryId[:20], registry) {
-			return true
+			return nft
 		}
 	}
 
-	return false
+	return nil
 }
 
+// addNFT adds/replaces the NFT
+// Note: this is replace operation. Ensure existing token is not minted
 func addNFT(cd *coredocumentpb.CoreDocument, registry, tokenID []byte) {
-	nft := new(coredocumentpb.NFT)
-	// add 12 empty bytes
-	eb := make([]byte, 12, 12)
-	nft.RegistryId = append(registry, eb...)
+	nft := getStoredNFT(cd.Nfts, registry)
+	if nft == nil {
+		nft = new(coredocumentpb.NFT)
+		// add 12 empty bytes
+		eb := make([]byte, 12, 12)
+		nft.RegistryId = append(registry, eb...)
+		cd.Nfts = append(cd.Nfts, nft)
+	}
+
 	nft.TokenId = tokenID
-	cd.Nfts = append(cd.Nfts, nft)
 }
 
 // OwnerOf returns the owner of the NFT token on ethereum chain

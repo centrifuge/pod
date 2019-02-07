@@ -260,6 +260,12 @@ func Test_addNFT(t *testing.T) {
 	addNFT(cd, registry.Bytes(), tokenID)
 	assert.Len(t, cd.Nfts, 1)
 	assert.Len(t, cd.Nfts[0].RegistryId, 32)
-	assert.True(t, isNFTMinted(cd.Nfts, registry.Bytes()))
-	assert.False(t, isNFTMinted(cd.Nfts, registry2.Bytes()))
+	assert.Equal(t, tokenID, getStoredNFT(cd.Nfts, registry.Bytes()).TokenId)
+	assert.Nil(t, getStoredNFT(cd.Nfts, registry2.Bytes()))
+
+	tokenID = utils.RandomSlice(32)
+	addNFT(cd, registry.Bytes(), tokenID)
+	assert.Len(t, cd.Nfts, 1)
+	assert.Len(t, cd.Nfts[0].RegistryId, 32)
+	assert.Equal(t, tokenID, getStoredNFT(cd.Nfts, registry.Bytes()).TokenId)
 }
