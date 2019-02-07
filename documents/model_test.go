@@ -3,6 +3,7 @@
 package documents
 
 import (
+	"github.com/centrifuge/go-centrifuge/errors"
 	"os"
 	"testing"
 
@@ -147,3 +148,42 @@ func TestCoreDocumentModel_PrepareNewVersion(t *testing.T) {
 	// DocumentRoot was updated
 	assert.Equal(t, ncd.PreviousRoot, ocd.DocumentRoot)
 }
+
+func TestReadACLs_initReadRules(t *testing.T) {
+	dm := NewCoreDocModel()
+	cd := dm.Document
+	err := dm.initReadRules(nil)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(ErrZeroCollaborators, err))
+
+	cs := []identity.CentID{identity.RandomCentID()}
+	err = dm.initReadRules(cs)
+	assert.NoError(t, err)
+	assert.Len(t, cd.ReadRules, 1)
+	assert.Len(t, cd.Roles, 1)
+
+	err = dm.initReadRules(cs)
+	assert.NoError(t, err)
+	assert.Len(t, cd.ReadRules, 1)
+	assert.Len(t, cd.Roles, 1)
+}
+
+func TestReadAccessValidator_AccountCanRead(t *testing.T) {
+	dm := NewCoreDocModel()
+	account, err := identity.CentIDFromString("0x010203040506")
+	assert.NoError(t, err)
+
+	ndm, err := dm.PrepareNewVersion([]string{account.String()})
+	cd := ndm.Document
+	assert.NoError(t, err)
+	assert.NotNil(t, cd.ReadRules)
+	assert.NotNil(t, cd.Roles)
+
+	// account who cant access
+	rcid := identity.RandomCentID()
+	assert.False(t, ndm.AccountCanRead(rcid))
+
+	// account can access
+	assert.True(t, ndm.AccountCanRead(account))
+}
+
