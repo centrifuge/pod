@@ -118,7 +118,6 @@ func (m *CoreDocumentModel) PrepareNewVersion(collaborators []string) (*CoreDocu
 	if ocd.DocumentRoot == nil {
 		return nil, errors.New("DocumentRoot is nil")
 	}
-	//how do we handle DocumentRoots
 	ncd.PreviousRoot = ocd.DocumentRoot
 
 	return ndm, nil

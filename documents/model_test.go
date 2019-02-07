@@ -179,6 +179,7 @@ func TestReadAccessValidator_AccountCanRead(t *testing.T) {
 	account, err := identity.CentIDFromString("0x010203040506")
 	assert.NoError(t, err)
 
+	dm.Document.DocumentRoot = utils.RandomSlice(32)
 	ndm, err := dm.PrepareNewVersion([]string{account.String()})
 	cd := ndm.Document
 	assert.NoError(t, err)
