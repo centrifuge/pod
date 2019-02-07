@@ -249,3 +249,17 @@ func decodeHex(hex string) []byte {
 	h, _ := hexutil.Decode(hex)
 	return h
 }
+
+func Test_addNFT(t *testing.T) {
+	cd := coredocument.New()
+	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
+	registry2 := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da02")
+	tokenID := utils.RandomSlice(32)
+	assert.Nil(t, cd.Nfts)
+
+	addNFT(cd, registry.Bytes(), tokenID)
+	assert.Len(t, cd.Nfts, 1)
+	assert.Len(t, cd.Nfts[0].RegistryId, 32)
+	assert.True(t, isNFTMinted(cd.Nfts, registry.Bytes()))
+	assert.False(t, isNFTMinted(cd.Nfts, registry2.Bytes()))
+}

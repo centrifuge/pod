@@ -14,6 +14,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
@@ -56,10 +57,10 @@ func TestPaymentObligationService_mint(t *testing.T) {
 	// create invoice (anchor)
 	service, err := registry.LocateService(documenttypes.InvoiceDataTypeUrl)
 	assert.Nil(t, err, "should not error out when getting invoice service")
-	contextHeader := testingconfig.CreateAccountContext(t, cfg)
+	ctx := testingconfig.CreateAccountContext(t, cfg)
 	invoiceService := service.(invoice.Service)
 	dueDate := time.Now().Add(4 * 24 * time.Hour)
-	model, err := invoiceService.DeriveFromCreatePayload(contextHeader, &invoicepb.InvoiceCreatePayload{
+	model, err := invoiceService.DeriveFromCreatePayload(ctx, &invoicepb.InvoiceCreatePayload{
 		Collaborators: []string{},
 		Data: &invoicepb.InvoiceData{
 			InvoiceNumber: "2132131",
@@ -70,7 +71,7 @@ func TestPaymentObligationService_mint(t *testing.T) {
 		},
 	})
 	assert.Nil(t, err, "should not error out when creating invoice model")
-	modelUpdated, txID, _, err := invoiceService.Create(contextHeader, model)
+	modelUpdated, txID, _, err := invoiceService.Create(ctx, model)
 	err = txManager.WaitForTransaction(cid, txID)
 	assert.Nil(t, err)
 
@@ -82,7 +83,7 @@ func TestPaymentObligationService_mint(t *testing.T) {
 	depositAddr := "0xf72855759a39fb75fc7341139f5d7a3974d4da08"
 	registry := cfg.GetContractAddress(config.PaymentObligation)
 	resp, done, err := payOb.MintNFT(
-		contextHeader,
+		ctx,
 		ID,
 		registry.String(),
 		depositAddr,
@@ -97,14 +98,23 @@ func TestPaymentObligationService_mint(t *testing.T) {
 	owner, err := tokenRegistry.OwnerOf(registry, tokenID.BigInt().Bytes())
 	assert.NoError(t, err)
 	assert.Equal(t, common.HexToAddress(depositAddr), owner)
-	doc, err := invoiceService.GetCurrentVersion(contextHeader, ID)
+	doc, err := invoiceService.GetCurrentVersion(ctx, ID)
 	assert.NoError(t, err)
 	cd, err := doc.PackCoreDocument()
 	assert.NoError(t, err)
 	assert.Len(t, cd.Roles, 2)
 	assert.Len(t, cd.Roles[1].Nfts, 1)
-	nft := cd.Roles[1].Nfts[0]
+	newNFT := cd.Roles[1].Nfts[0]
 	enft, err := coredocument.ConstructNFT(registry, tokenID.BigInt().Bytes())
 	assert.NoError(t, err)
-	assert.Equal(t, enft, nft)
+	assert.Equal(t, enft, newNFT)
+
+	// try to mint the NFT again
+	_, _, err = payOb.MintNFT(ctx,
+		ID,
+		registry.String(),
+		depositAddr,
+		[]string{"invoice.gross_amount", "invoice.currency", "invoice.due_date", "collaborators[0]"})
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(nft.ErrNFTMinted, err))
 }
