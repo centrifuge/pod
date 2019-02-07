@@ -6,11 +6,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/contextutil"
+
 	"github.com/ethereum/go-ethereum/accounts/abi"
 
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
-	id "github.com/centrifuge/go-centrifuge/identity"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -36,16 +37,16 @@ func NewDIDFromString(address string) DID {
 // Identity interface contains the methods to interact with the identity contract
 type Identity interface {
 	// AddKey adds a key to identity contract
-	AddKey(key Key) (chan *ethereum.WatchTransaction, error)
+	AddKey(ctx context.Context, key Key) (chan *ethereum.WatchTransaction, error)
 
 	// GetKey return a key from the identity contract
-	GetKey(key [32]byte) (*KeyResponse, error)
+	GetKey(ctx context.Context, key [32]byte) (*KeyResponse, error)
 
 	// RawExecute calls the execute method on the identity contract
-	RawExecute(to common.Address, data []byte) (chan *ethereum.WatchTransaction, error)
+	RawExecute(ctx context.Context, to common.Address, data []byte) (chan *ethereum.WatchTransaction, error)
 
 	// Execute creates the abi encoding an calls the execute method on the identity contract
-	Execute(to common.Address, contractAbi, methodName string, args ...interface{}) (chan *ethereum.WatchTransaction, error)
+	Execute(ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) (chan *ethereum.WatchTransaction, error)
 }
 
 type contract interface {
@@ -64,13 +65,16 @@ type contract interface {
 }
 
 type identity struct {
-	config id.Config
 	client ethereum.Client
-	did    *DID
 }
 
-func (i identity) prepareTransaction(did DID) (contract, *bind.TransactOpts, error) {
-	opts, err := i.client.GetTxOpts(i.config.GetEthereumDefaultAccountName())
+func (i identity) prepareTransaction(ctx context.Context, did DID) (contract, *bind.TransactOpts, error) {
+	tc, err := contextutil.Account(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	opts, err := i.client.GetTxOpts(tc.GetEthereumDefaultAccountName())
 	if err != nil {
 		log.Infof("Failed to get txOpts from Ethereum client: %v", err)
 		return nil, nil, err
@@ -108,9 +112,8 @@ func (i identity) bindContract(did DID) (contract, error) {
 }
 
 // NewIdentity creates a instance of an identity
-func NewIdentity(config id.Config, client ethereum.Client, did *DID) Identity {
-	// TODO use DID stored in config file
-	return identity{config: config, client: client, did: did}
+func NewIdentity(client ethereum.Client) Identity {
+	return identity{client: client}
 }
 
 // TODO: will be replaced with statusTask
@@ -129,8 +132,28 @@ func logTxHash(tx *types.Transaction) {
 	log.Infof("Transfer pending: 0x%x\n", tx.Hash())
 }
 
-func (i identity) AddKey(key Key) (chan *ethereum.WatchTransaction, error) {
-	contract, opts, err := i.prepareTransaction(*i.did)
+func (i identity) getDID(ctx context.Context) (did DID, err error) {
+	tc, err := contextutil.Account(ctx)
+	if err != nil {
+		return did, err
+	}
+
+	addressByte, err := tc.GetIdentityID()
+	if err != nil {
+		return did, err
+	}
+	did = NewDID(common.BytesToAddress(addressByte))
+	return did, nil
+
+}
+
+func (i identity) AddKey(ctx context.Context, key Key) (chan *ethereum.WatchTransaction, error) {
+	did, err := i.getDID(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	contract, opts, err := i.prepareTransaction(ctx, did)
 	if err != nil {
 		return nil, err
 	}
@@ -151,8 +174,12 @@ func (i identity) AddKey(key Key) (chan *ethereum.WatchTransaction, error) {
 
 }
 
-func (i identity) GetKey(key [32]byte) (*KeyResponse, error) {
-	contract, opts, _, err := i.prepareCall(*i.did)
+func (i identity) GetKey(ctx context.Context, key [32]byte) (*KeyResponse, error) {
+	did, err := i.getDID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	contract, opts, _, err := i.prepareCall(did)
 	if err != nil {
 		return nil, err
 	}
@@ -167,8 +194,12 @@ func (i identity) GetKey(key [32]byte) (*KeyResponse, error) {
 
 }
 
-func (i identity) RawExecute(to common.Address, data []byte) (chan *ethereum.WatchTransaction, error) {
-	contract, opts, err := i.prepareTransaction(*i.did)
+func (i identity) RawExecute(ctx context.Context, to common.Address, data []byte) (chan *ethereum.WatchTransaction, error) {
+	did, err := i.getDID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	contract, opts, err := i.prepareTransaction(ctx, did)
 	if err != nil {
 		return nil, err
 	}
@@ -191,7 +222,7 @@ func (i identity) RawExecute(to common.Address, data []byte) (chan *ethereum.Wat
 
 }
 
-func (i identity) Execute(to common.Address, contractAbi, methodName string, args ...interface{}) (chan *ethereum.WatchTransaction, error) {
+func (i identity) Execute(ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) (chan *ethereum.WatchTransaction, error) {
 	abi, err := abi.JSON(strings.NewReader(contractAbi))
 	if err != nil {
 		return nil, err
@@ -202,5 +233,5 @@ func (i identity) Execute(to common.Address, contractAbi, methodName string, arg
 	if err != nil {
 		return nil, err
 	}
-	return i.RawExecute(to, data)
+	return i.RawExecute(ctx, to, data)
 }
