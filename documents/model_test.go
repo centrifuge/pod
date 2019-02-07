@@ -4,13 +4,14 @@ package documents
 
 import (
 	"crypto/sha256"
+	"os"
+	"testing"
+
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/golang/protobuf/ptypes/any"
-	"os"
-	"testing"
 
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -221,7 +222,6 @@ func TestGetSigningProofHashes(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-
 func TestGetDataProofHashes(t *testing.T) {
 	docAny := &any.Any{
 		TypeUrl: documenttypes.InvoiceDataTypeUrl,
@@ -251,7 +251,6 @@ func TestGetDataProofHashes(t *testing.T) {
 	assert.True(t, valid)
 	assert.Nil(t, err)
 }
-
 
 func TestGetDocumentSigningTree(t *testing.T) {
 	docAny := &any.Any{

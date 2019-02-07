@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"fmt"
+	"strings"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -12,7 +14,6 @@ import (
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"strings"
 )
 
 // Model is an interface to abstract away model specificness like invoice or purchaseOrder
@@ -200,7 +201,6 @@ func (m *CoreDocumentModel) GetCoreDocTree() (tree *proofs.DocumentTree, err err
 	return tree, nil
 }
 
-
 // GetDocumentSigningTree returns the merkle tree for the signing root
 func (m *CoreDocumentModel) GetDocumentSigningTree(dataRoot []byte) (tree *proofs.DocumentTree, err error) {
 	h := sha256.New()
@@ -287,7 +287,6 @@ func (m *CoreDocumentModel) GetDocumentRootTree() (tree *proofs.DocumentTree, er
 	}
 	return tree, nil
 }
-
 
 // CalculateDocumentRoot calculates the document root of the core document
 func (m *CoreDocumentModel) CalculateDocumentRoot() error {
@@ -377,7 +376,7 @@ func (m *CoreDocumentModel) fillSalts() error {
 // initReadRules initiates the read rules for a given CoreDocumentModel.
 // Collaborators are given Read_Sign action.
 // if the rules are created already, this is a no-op.
-func (m *CoreDocumentModel) initReadRules (collabs []identity.CentID) error {
+func (m *CoreDocumentModel) initReadRules(collabs []identity.CentID) error {
 	cd := m.Document
 	if len(cd.Roles) > 0 && len(cd.ReadRules) > 0 {
 		return nil
@@ -401,11 +400,10 @@ func (m *CoreDocumentModel) addNewRule(role *coredocumentpb.Role, action coredoc
 	cd.ReadRules = append(cd.ReadRules, rule)
 }
 
-
 // findRole calls OnRole for every role,
 // if onRole returns true, returns true
 // else returns false
-func (m *CoreDocumentModel) findRole( action coredocumentpb.Action, onRole func(role *coredocumentpb.Role) bool) bool {
+func (m *CoreDocumentModel) findRole(action coredocumentpb.Action, onRole func(role *coredocumentpb.Role) bool) bool {
 	cd := m.Document
 	for _, rule := range cd.ReadRules {
 		if rule.Action != action {
@@ -451,7 +449,7 @@ func getRole(key []byte, roles []*coredocumentpb.Role) (*coredocumentpb.Role, er
 	return nil, errors.New("role %d not found", key)
 }
 
-func (m *CoreDocumentModel) addCollaboratorsToReadSignRules (collabs []identity.CentID) error {
+func (m *CoreDocumentModel) addCollaboratorsToReadSignRules(collabs []identity.CentID) error {
 	if len(collabs) == 0 {
 		return nil
 	}
