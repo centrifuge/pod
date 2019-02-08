@@ -55,6 +55,11 @@ type Service interface {
 
 	// AddMultiPurposeKey adds a key with multiple purposes
 	AddMultiPurposeKey(context context.Context, key [32]byte, purposes []*big.Int, keyType *big.Int) error
+
+	// RevokeKey revokes an existing key in the smart contract
+	RevokeKey(ctx context.Context, key [32]byte) error
+
+
 }
 
 type contract interface {
@@ -74,6 +79,8 @@ type contract interface {
 	Execute(opts *bind.TransactOpts, _to common.Address, _value *big.Int, _data []byte) (*types.Transaction, error)
 
 	AddMultiPurposeKey(opts *bind.TransactOpts, _key [32]byte, _purposes []*big.Int, _keyType *big.Int) (*types.Transaction, error)
+
+	RevokeKey(opts *bind.TransactOpts, _key [32]byte) (*types.Transaction, error)
 }
 
 type service struct {
@@ -202,6 +209,34 @@ func (i service) AddMultiPurposeKey(ctx context.Context, key [32]byte, purposes 
 	// non async task
 	if !isDone {
 		return errors.New("add key multi purpose  TX failed: txID:%s", txID.String())
+
+	}
+	return nil
+}
+
+// RevokeKey revokes an existing key in the smart contract
+func (i service) RevokeKey(ctx context.Context, key [32]byte) error{
+	did, err := i.getDID(ctx)
+	if err != nil {
+		return err
+	}
+
+	contract, opts, err := i.prepareTransaction(ctx, did)
+	if err != nil {
+		return err
+	}
+
+	// TODO: did can be passed instead of randomCentID after CentID is DID
+	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), id.RandomCentID(), uuid.Nil, "Check TX for revoke key",
+		i.ethereumTX(opts, contract.RevokeKey, key))
+	if err != nil {
+		return err
+	}
+
+	isDone := <-done
+	// non async task
+	if !isDone {
+		return errors.New("revoke key TX failed: txID:%s", txID.String())
 
 	}
 	return nil
