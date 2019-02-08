@@ -6,6 +6,8 @@ import (
 	"encoding/binary"
 	"testing"
 
+	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 )
@@ -231,6 +233,18 @@ func TestConvertIntToBytes(t *testing.T) {
 	assert.NoError(t, err)
 	ni := ConvertByte32ToInt(nb)
 	assert.Equal(t, n, ni)
+}
+
+func TestAddressTo32Bytes(t *testing.T) {
+	address := RandomSlice(common.AddressLength)
+	address32bytes := AddressTo32Bytes(common.BytesToAddress(address))
+	for i := 0; i < common.AddressLength; i++ {
+
+		assert.Equal(t, address[i], address32bytes[i+32-common.AddressLength], "every byte should be equal")
+	}
+	for i := 0; i < 32-common.AddressLength; i++ {
+		assert.Equal(t, uint8(0x0), address32bytes[i], "first 12 bytes need to be equal 0")
+	}
 }
 
 func verifyHex(t *testing.T, val string) {

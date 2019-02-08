@@ -49,6 +49,9 @@ type Service interface {
 
 	// Execute creates the abi encoding an calls the execute method on the identity contract
 	Execute(ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) error
+
+	// IsSignedWithPurpose verifies if a message is signed with one of the identities specific purpose keys
+	IsSignedWithPurpose(ctx context.Context, message [32]byte, _signature []byte, _purpose *big.Int) (bool, error)
 }
 
 type contract interface {
@@ -59,6 +62,8 @@ type contract interface {
 		Purposes  []*big.Int
 		RevokedAt *big.Int
 	}, error)
+
+	IsSignedWithPurpose(opts *bind.CallOpts, message [32]byte, _signature []byte, _purpose *big.Int) (bool, error)
 
 	// Ethereum Transactions
 	AddKey(opts *bind.TransactOpts, _key [32]byte, _purpose *big.Int, _keyType *big.Int) (*types.Transaction, error)
@@ -140,6 +145,7 @@ func (i service) getDID(ctx context.Context) (did DID, err error) {
 
 }
 
+// AddKey adds a key to identity contract
 func (i service) AddKey(ctx context.Context, key Key) error {
 	did, err := i.getDID(ctx)
 	if err != nil {
@@ -217,6 +223,7 @@ func (i service) rawExecuteTX(opts *bind.TransactOpts, identityContract contract
 
 }
 
+// GetKey return a key from the identity contract
 func (i service) GetKey(ctx context.Context, key [32]byte) (*KeyResponse, error) {
 	did, err := i.getDID(ctx)
 	if err != nil {
@@ -237,6 +244,22 @@ func (i service) GetKey(ctx context.Context, key [32]byte) (*KeyResponse, error)
 
 }
 
+// IsSignedWithPurpose verifies if a message is signed with one of the identities specific purpose keys
+func (i service) IsSignedWithPurpose(ctx context.Context, message [32]byte, _signature []byte, _purpose *big.Int) (bool, error) {
+	did, err := i.getDID(ctx)
+	if err != nil {
+		return false, err
+	}
+	contract, opts, _, err := i.prepareCall(did)
+	if err != nil {
+		return false, err
+	}
+
+	return contract.IsSignedWithPurpose(opts, message, _signature, _purpose)
+
+}
+
+// RawExecute calls the execute method on the identity contract
 func (i service) RawExecute(ctx context.Context, to common.Address, data []byte) error {
 	did, err := i.getDID(ctx)
 	if err != nil {
@@ -266,6 +289,7 @@ func (i service) RawExecute(ctx context.Context, to common.Address, data []byte)
 
 }
 
+// Execute creates the abi encoding an calls the execute method on the identity contract
 func (i service) Execute(ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) error {
 	abi, err := abi.JSON(strings.NewReader(contractAbi))
 	if err != nil {
