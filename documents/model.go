@@ -513,7 +513,6 @@ func fetchUniqueCollaborators(oldCollabs [][]byte, newCollabs []string) (ids []i
 	return ids, nil
 }
 
-
 // NFTOwnerCanRead checks if the nft owner/account can read the document
 // Note: signature should be calculated from the hash which is calculated as
 // keccak256("\x19Ethereum Signed Message:\n"${message length}${message}).
@@ -546,7 +545,6 @@ func (m *CoreDocumentModel) NFTOwnerCanRead( registry common.Address, tokenID []
 	return nil
 }
 
-
 // ConstructNFT appends registry and tokenID to byte slice
 func ConstructNFT(registry common.Address, tokenID []byte) ([]byte, error) {
 	var nft []byte
@@ -562,7 +560,6 @@ func ConstructNFT(registry common.Address, tokenID []byte) ([]byte, error) {
 
 	return nft, nil
 }
-
 
 // AddNFTToReadRules adds NFT token to the read rules of core document.
 func (m *CoreDocumentModel) AddNFTToReadRules(registry common.Address, tokenID []byte) error {
