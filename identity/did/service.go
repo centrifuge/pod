@@ -192,7 +192,7 @@ func (i service) AddMultiPurposeKey(ctx context.Context, key [32]byte, purposes 
 	}
 
 	// TODO: did can be passed instead of randomCentID after CentID is DID
-	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), id.RandomCentID(), uuid.Nil, "Check TX for add key",
+	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), id.RandomCentID(), uuid.Nil, "Check TX for add multi purpose key",
 		i.ethereumTX(opts, contract.AddMultiPurposeKey, key, purposes, keyType))
 	if err != nil {
 		return err
@@ -201,7 +201,7 @@ func (i service) AddMultiPurposeKey(ctx context.Context, key [32]byte, purposes 
 	isDone := <-done
 	// non async task
 	if !isDone {
-		return errors.New("add key  TX failed: txID:%s", txID.String())
+		return errors.New("add key multi purpose  TX failed: txID:%s", txID.String())
 
 	}
 	return nil
