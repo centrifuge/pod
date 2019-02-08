@@ -278,22 +278,27 @@ func Test_addNFT(t *testing.T) {
 	assert.Equal(t, tokenID, getStoredNFT(cd.Nfts, registry.Bytes()).TokenId)
 }
 
-func Test_isRoleExists(t *testing.T) {
+func Test_getRoleForAccount(t *testing.T) {
 	cd := coredocument.New()
 	roleName := "supplier"
 	id := identity.RandomCentID()
-	assert.False(t, isRoleExists(cd, roleName, id))
+	_, r := getRoleForAccount(cd, roleName, id)
+	assert.Nil(t, r)
 
 	// add role
 	rk := sha256.Sum256([]byte(roleName))
 	role := new(coredocumentpb.Role)
 	role.RoleKey = rk[:]
 	cd.Roles = append(cd.Roles, role)
-	assert.False(t, isRoleExists(cd, roleName, id))
+	_, r = getRoleForAccount(cd, roleName, id)
+	assert.Nil(t, r)
 
 	// add id
 	role.Collaborators = append(role.Collaborators, id[:])
-	assert.True(t, isRoleExists(cd, roleName, id))
+	_, r = getRoleForAccount(cd, roleName, id)
+	assert.NotNil(t, r)
+	assert.Equal(t, r.RoleKey, rk[:])
+	assert.Equal(t, r.Collaborators[0], id[:])
 }
 
 func Test_createTokenProof_error(t *testing.T) {
@@ -352,6 +357,7 @@ func Test_createNFTReadAccessProof_missing_nft(t *testing.T) {
 	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
 	_, err = createNFTReadAccessProof(cd, cdTree, registry, utils.RandomSlice(32))
 	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(ErrNFTRoleMissing, err))
 }
 
 func Test_createNFTReadAccessProof(t *testing.T) {
@@ -378,4 +384,47 @@ func Test_createNFTReadAccessProof(t *testing.T) {
 	valid, err := cdTree.ValidateProof(&pf)
 	assert.NoError(t, err)
 	assert.True(t, valid)
+}
+
+func Test_createRoleProof_missing_role(t *testing.T) {
+	cid := identity.RandomCentID()
+	cd, err := coredocument.NewWithCollaborators([]string{cid.String()})
+	assert.Nil(t, err)
+	cd.EmbeddedData = &any.Any{
+		Value:   utils.RandomSlice(32),
+		TypeUrl: "some type",
+	}
+
+	cdTree, err := coredocument.GetCoreDocTree(cd)
+	assert.Nil(t, err)
+
+	_, err = createRoleProof(cd, cdTree, "Some key", cid)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(ErrNFTRoleMissing, err))
+}
+
+func Test_createRoleProof(t *testing.T) {
+	cid := identity.RandomCentID()
+	cd := coredocument.New()
+	cd.EmbeddedData = &any.Any{
+		Value:   utils.RandomSlice(32),
+		TypeUrl: "some type",
+	}
+
+	role := new(coredocumentpb.Role)
+	rk := sha256.Sum256([]byte("supplier"))
+	role.RoleKey = rk[:]
+	role.Collaborators = append(role.Collaborators, cid[:])
+	cd.Roles = append(cd.Roles, role)
+
+	assert.Nil(t, coredocument.FillSalts(cd))
+	cdTree, err := coredocument.GetCoreDocTree(cd)
+	assert.Nil(t, err)
+
+	pf, err := createRoleProof(cd, cdTree, "supplier", cid)
+	assert.NoError(t, err)
+
+	pk := fmt.Sprintf("roles[%s].collaborators[0]", hexutil.Encode(rk[:]))
+	assert.Equal(t, pf.GetReadableName(), pk)
+	assert.Equal(t, pf.Value, cid.String())
 }

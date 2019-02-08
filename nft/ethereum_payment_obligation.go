@@ -88,51 +88,62 @@ func newEthereumPaymentObligation(
 	}
 }
 
-func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, tokenID TokenID, documentID []byte, depositAddress string, proofFields []string) (MintRequest, error) {
-	model, err := s.docSrv.GetCurrentVersion(ctx, documentID)
+func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, tokenID TokenID, cid identity.CentID, req MintNFTRequest) (mreq MintRequest, err error) {
+	model, err := s.docSrv.GetCurrentVersion(ctx, req.DocumentID)
 	if err != nil {
-		return MintRequest{}, err
+		return mreq, err
 	}
 
 	corDoc, err := model.PackCoreDocument()
 	if err != nil {
-		return MintRequest{}, err
+		return mreq, err
 	}
 
-	proofs, err := s.docSrv.CreateProofs(ctx, documentID, proofFields)
+	docProofs, err := s.docSrv.CreateProofs(ctx, req.DocumentID, req.ProofFields)
 	if err != nil {
-		return MintRequest{}, err
+		return mreq, err
 	}
 
-	toAddress := common.HexToAddress(depositAddress)
+	nftProofs, err := getNFTProofs(corDoc, req, tokenID, cid)
+	if err != nil {
+		return mreq, err
+	}
+
+	var pfs []*proofspb.Proof
+	pfs = append(pfs, docProofs.FieldProofs...)
+	for _, p := range nftProofs {
+		pfs = append(pfs, &p)
+	}
+
+	toAddress := common.HexToAddress(req.DepositAddress)
 
 	anchorID, err := anchors.ToAnchorID(corDoc.CurrentVersion)
 	if err != nil {
-		return MintRequest{}, err
+		return mreq, err
 	}
 
 	rootHash, err := anchors.ToDocumentRoot(corDoc.DocumentRoot)
 	if err != nil {
-		return MintRequest{}, err
+		return mreq, err
 	}
 
-	requestData, err := NewMintRequest(tokenID, toAddress, anchorID, proofs.FieldProofs, rootHash)
+	requestData, err := NewMintRequest(tokenID, toAddress, anchorID, pfs, rootHash)
 	if err != nil {
-		return MintRequest{}, err
+		return mreq, err
 	}
 
 	return requestData, nil
 
 }
 
-// getNFTProofs generates required NFT proofs
-func getNFTProofs(cd *coredocumentpb.CoreDocument, req MintNFTRequest, tokenID TokenID) ([]proofspb.Proof, error) {
+// getNFTProofs generates required NFT uniqueness proofs
+func getNFTProofs(cd *coredocumentpb.CoreDocument, req MintNFTRequest, tokenID TokenID, cid identity.CentID) ([]proofspb.Proof, error) {
 	cdTree, err := coredocument.GetCoreDocTree(cd)
 	if err != nil {
 		return nil, err
 	}
 
-	var proofs []proofspb.Proof
+	var pfs []proofspb.Proof
 	registry := common.HexToAddress(req.RegistryAddress)
 	if req.SubmitTokenProof {
 		pf, err := createTokenProof(cd, cdTree, registry)
@@ -140,7 +151,7 @@ func getNFTProofs(cd *coredocumentpb.CoreDocument, req MintNFTRequest, tokenID T
 			return nil, err
 		}
 
-		proofs = append(proofs, pf)
+		pfs = append(pfs, pf)
 	}
 
 	if req.GrantNFTReadAccess && req.SubmitNFTReadAccessProof {
@@ -149,10 +160,29 @@ func getNFTProofs(cd *coredocumentpb.CoreDocument, req MintNFTRequest, tokenID T
 			return nil, err
 		}
 
-		proofs = append(proofs, pf)
+		pfs = append(pfs, pf)
 	}
 
-	return proofs, nil
+	if req.SubmitRoleProof != "" {
+		pf, err := createRoleProof(cd, cdTree, req.SubmitRoleProof, cid)
+		if err != nil {
+			return nil, err
+		}
+
+		pfs = append(pfs, pf)
+	}
+
+	return pfs, nil
+}
+
+func createRoleProof(cd *coredocumentpb.CoreDocument, cdTree *proofs.DocumentTree, roleKey string, cid identity.CentID) (proof proofspb.Proof, err error) {
+	idx, role := getRoleForAccount(cd, roleKey, cid)
+	if role == nil {
+		return proof, ErrNFTRoleMissing
+	}
+
+	pk := fmt.Sprintf("roles[%s].collaborators[%d]", hexutil.Encode(role.RoleKey), idx)
+	return cdTree.CreateProof(pk)
 }
 
 // createNFTReadAccessProof creates proof that nft exists in the role
@@ -170,7 +200,7 @@ func createNFTReadAccessProof(cd *coredocumentpb.CoreDocument, cdTree *proofs.Do
 	})
 
 	if !found {
-		return proof, errors.New("nft not found in the roles")
+		return proof, ErrNFTRoleMissing
 	}
 
 	pk := fmt.Sprintf("roles[%s].nfts[%d]", hexutil.Encode(ridx), nftidx)
@@ -219,8 +249,15 @@ func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, request MintNFT
 	// if the role_proof is given check if the role exists with account id as collaborator
 	// at the moment, since we generate role key randomly, this will not work
 	// but once we figure out acls on the client API, this will continue working with out any chnages
-	if request.SubmitRoleProof != "" && !isRoleExists(cd, request.SubmitRoleProof, cid) {
-		return nil, nil, ErrNFTRoleMissing
+	if request.SubmitRoleProof != "" {
+		_, role := getRoleForAccount(cd, request.SubmitRoleProof, cid)
+		if role == nil {
+			return nil, nil, ErrNFTRoleMissing
+		}
+	}
+
+	if !request.GrantNFTReadAccess && request.SubmitNFTReadAccessProof {
+		return nil, nil, errors.New("enabled grant nft access to generate NFT read access proof")
 	}
 
 	registry := common.HexToAddress(request.RegistryAddress)
@@ -308,7 +345,7 @@ func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID,
 			return
 		}
 
-		requestData, err := s.prepareMintRequest(ctx, tokenID, cd.DocumentIdentifier, req.DepositAddress, req.ProofFields)
+		requestData, err := s.prepareMintRequest(ctx, tokenID, accountID, req)
 		if err != nil {
 			errOut <- errors.New("failed to prepare mint request: %v", err)
 			return
@@ -362,15 +399,21 @@ func getStoredNFT(nfts []*coredocumentpb.NFT, registry []byte) *coredocumentpb.N
 	return nil
 }
 
-func isRoleExists(cd *coredocumentpb.CoreDocument, roleName string, id identity.CentID) bool {
+// getRoleForAccount returns the matching role and index of the account
+func getRoleForAccount(cd *coredocumentpb.CoreDocument, roleName string, id identity.CentID) (idx int, role *coredocumentpb.Role) {
 	sha := sha256.New()
 	sha.Write([]byte(roleName))
 	role, err := coredocument.GetRole(sha.Sum(nil), cd.Roles)
 	if err != nil {
-		return false
+		return idx, nil
 	}
 
-	return coredocument.IsAccountInRole(role, id)
+	idx, found := coredocument.IsAccountInRole(role, id)
+	if !found {
+		return 0, nil
+	}
+
+	return idx, role
 }
 
 // addNFT adds/replaces the NFT

@@ -128,34 +128,86 @@ func TestPaymentObligationService_mint_grant_read_access(t *testing.T) {
 	assert.True(t, errors.IsOfType(nft.ErrNFTMinted, err))
 }
 
+func failMintNFT(t *testing.T, grantNFT, nftReadAccess bool, roleProof string) {
+	ctx, id, registry, depositAddr, _, _ := prepareForNFTMinting(t)
+	req := nft.MintNFTRequest{
+		DocumentID:               id,
+		RegistryAddress:          registry.String(),
+		DepositAddress:           depositAddr,
+		ProofFields:              []string{"invoice.gross_amount", "invoice.currency", "invoice.due_date", "collaborators[0]"},
+		GrantNFTReadAccess:       grantNFT,
+		SubmitRoleProof:          roleProof,
+		SubmitNFTReadAccessProof: nftReadAccess,
+	}
+
+	_, _, err := payOb.MintNFT(ctx, req)
+	assert.Error(t, err)
+	if !nftReadAccess {
+		assert.True(t, errors.IsOfType(nft.ErrNFTRoleMissing, err))
+	}
+}
+
+func TestEthereumPaymentObligation_MintNFT_role_not_exists(t *testing.T) {
+	failMintNFT(t, true, false, "Supplier")
+}
+
 func TestEthereumPaymentObligation_MintNFT_no_grant_access(t *testing.T) {
+	failMintNFT(t, false, true, "")
+}
+
+func mintNFTWithProofs(t *testing.T, grantAccess, tokenProof, readAccessProof bool) {
 	ctx, id, registry, depositAddr, invSrv, cid := prepareForNFTMinting(t)
 	req := nft.MintNFTRequest{
-		DocumentID:      id,
-		RegistryAddress: registry.String(),
-		DepositAddress:  depositAddr,
-		ProofFields:     []string{"invoice.gross_amount", "invoice.currency", "invoice.due_date", "collaborators[0]"},
+		DocumentID:               id,
+		RegistryAddress:          registry.String(),
+		DepositAddress:           depositAddr,
+		ProofFields:              []string{"invoice.gross_amount", "invoice.currency", "invoice.due_date", "collaborators[0]"},
+		GrantNFTReadAccess:       grantAccess,
+		SubmitTokenProof:         tokenProof,
+		SubmitNFTReadAccessProof: readAccessProof,
 	}
 	mintNFT(t, ctx, req, cid, registry)
 	doc, err := invSrv.GetCurrentVersion(ctx, id)
 	assert.NoError(t, err)
 	cd, err := doc.PackCoreDocument()
 	assert.NoError(t, err)
-	assert.Len(t, cd.Roles, 1)
+	roleCount := 1
+	if grantAccess {
+		roleCount++
+	}
+	assert.Len(t, cd.Roles, roleCount)
 }
 
-func TestEthereumPaymentObligation_MintNFT_role_not_exists(t *testing.T) {
-	ctx, id, registry, depositAddr, _, _ := prepareForNFTMinting(t)
-	req := nft.MintNFTRequest{
-		DocumentID:         id,
-		RegistryAddress:    registry.String(),
-		DepositAddress:     depositAddr,
-		ProofFields:        []string{"invoice.gross_amount", "invoice.currency", "invoice.due_date", "collaborators[0]"},
-		GrantNFTReadAccess: true,
-		SubmitRoleProof:    "Supplier",
+func TestEthereumPaymentObligation_MintNFT(t *testing.T) {
+	tests := []struct {
+		grantAccess, tokenProof, readAccessProof bool
+	}{
+		{
+			grantAccess: true,
+		},
+
+		{
+			tokenProof: true,
+		},
+
+		{
+			grantAccess: true,
+			tokenProof:  true,
+		},
+
+		{
+			grantAccess:     true,
+			readAccessProof: true,
+		},
+
+		{
+			grantAccess:     true,
+			tokenProof:      true,
+			readAccessProof: true,
+		},
 	}
 
-	_, _, err := payOb.MintNFT(ctx, req)
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(nft.ErrNFTRoleMissing, err))
+	for _, c := range tests {
+		mintNFTWithProofs(t, c.grantAccess, c.tokenProof, c.readAccessProof)
+	}
 }

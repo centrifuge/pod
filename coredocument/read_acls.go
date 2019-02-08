@@ -125,7 +125,8 @@ type readAccessValidator struct {
 func (r readAccessValidator) AccountCanRead(cd *coredocumentpb.CoreDocument, account identity.CentID) bool {
 	// loop though read rules
 	return FindRole(cd, coredocumentpb.Action_ACTION_READ_SIGN, func(role *coredocumentpb.Role) bool {
-		return IsAccountInRole(role, account)
+		_, found := IsAccountInRole(role, account)
+		return found
 	})
 }
 
@@ -141,14 +142,14 @@ func GetRole(key []byte, roles []*coredocumentpb.Role) (*coredocumentpb.Role, er
 }
 
 // IsAccountInRole returns true if account is in the given role as collaborators.
-func IsAccountInRole(role *coredocumentpb.Role, account identity.CentID) bool {
-	for _, id := range role.Collaborators {
+func IsAccountInRole(role *coredocumentpb.Role, account identity.CentID) (int, bool) {
+	for i, id := range role.Collaborators {
 		if bytes.Equal(id, account[:]) {
-			return true
+			return i, true
 		}
 	}
 
-	return false
+	return 0, false
 }
 
 // AccountValidator returns the ReadAccessValidator to verify account .
