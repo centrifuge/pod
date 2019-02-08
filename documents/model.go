@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common"
 	"strings"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -40,19 +41,31 @@ type Model interface {
 	CreateProofs(fields []string) (coreDoc *coredocumentpb.CoreDocument, proofs []*proofspb.Proof, err error)
 }
 
+// TODO: could eventually be part of the CoreDocModel
+// TokenRegistry defines NFT retrieval functions.
+type TokenRegistry interface {
+	// OwnerOf to retrieve owner of the tokenID
+	OwnerOf(registry common.Address, tokenID []byte) (common.Address, error)
+}
+
 // CoreDocumentModel contains methods which handle all interactions mutating or reading from a core document
 // Access to a core document should always go through this model
 type CoreDocumentModel struct {
 	Document *coredocumentpb.CoreDocument
+	TokenRegistry
 }
 
 const (
 	// ErrZeroCollaborators error when no collaborators are passed
 	ErrZeroCollaborators = errors.Error("require at least one collaborator")
+
+	// nftByteCount is the length of combined bytes of registry and tokenID
+	nftByteCount = 52
 )
 
 // NewCoreDocModel returns a new CoreDocumentModel
 // Note: collaborators and salts are to be filled by the caller
+// TODO: double check if registry should be initialised as nil
 func NewCoreDocModel() *CoreDocumentModel {
 	id := utils.RandomSlice(32)
 	cd := &coredocumentpb.CoreDocument{
@@ -62,6 +75,7 @@ func NewCoreDocModel() *CoreDocumentModel {
 	}
 	return &CoreDocumentModel{
 		cd,
+		nil,
 	}
 }
 
@@ -119,6 +133,8 @@ func (m *CoreDocumentModel) PrepareNewVersion(collaborators []string) (*CoreDocu
 		return nil, errors.New("DocumentRoot is nil")
 	}
 	ncd.PreviousRoot = ocd.DocumentRoot
+	// copy over token registry
+	ndm.TokenRegistry = m.TokenRegistry
 
 	return ndm, nil
 }
@@ -495,4 +511,90 @@ func fetchUniqueCollaborators(oldCollabs [][]byte, newCollabs []string) (ids []i
 	}
 
 	return ids, nil
+}
+
+
+// NFTOwnerCanRead checks if the nft owner/account can read the document
+// Note: signature should be calculated from the hash which is calculated as
+// keccak256("\x19Ethereum Signed Message:\n"${message length}${message}).
+func (m *CoreDocumentModel) NFTOwnerCanRead( registry common.Address, tokenID []byte, account identity.CentID) error {
+	// check if the account can read the doc
+	if m.AccountCanRead(account) {
+		return nil
+	}
+
+	// check if the nft is present in read rules
+	found := m.findRole(coredocumentpb.Action_ACTION_READ, func(role *coredocumentpb.Role) bool {
+		return isNFTInRole(role, registry, tokenID)
+	})
+
+	if !found {
+		return errors.New("nft missing")
+	}
+
+	// get the owner of the NFT
+	owner, err := m.TokenRegistry.OwnerOf(registry, tokenID)
+	if err != nil {
+		return errors.New("failed to get NFT owner: %v", err)
+	}
+
+	// TODO(ved): this will always fail until we roll out identity v2 with CentID type as common.Address
+	if !bytes.Equal(owner.Bytes(), account[:]) {
+		return errors.New("account (%v) not owner of the NFT", account.String())
+	}
+
+	return nil
+}
+
+
+// ConstructNFT appends registry and tokenID to byte slice
+func ConstructNFT(registry common.Address, tokenID []byte) ([]byte, error) {
+	var nft []byte
+	// first 20 bytes of registry
+	nft = append(nft, registry.Bytes()...)
+
+	// next 32 bytes of the tokenID
+	nft = append(nft, tokenID...)
+
+	if len(nft) != nftByteCount {
+		return nil, errors.New("byte length mismatch")
+	}
+
+	return nft, nil
+}
+
+
+// AddNFTToReadRules adds NFT token to the read rules of core document.
+func (m *CoreDocumentModel) AddNFTToReadRules(registry common.Address, tokenID []byte) error {
+	cd := m.Document
+	nft, err := ConstructNFT(registry, tokenID)
+	if err != nil {
+		return errors.New("failed to construct NFT: %v", err)
+	}
+
+	role := new(coredocumentpb.Role)
+	rk, err := utils.ConvertIntToByte32(len(cd.Roles))
+	if err != nil {
+		return err
+	}
+	role.RoleKey = rk[:]
+	role.Nfts = append(role.Nfts, nft)
+	m.addNewRule(role, coredocumentpb.Action_ACTION_READ)
+	return m.fillSalts()
+}
+
+// isNFTInRole checks if the given nft(registry + token) is part of the core document role.
+func isNFTInRole(role *coredocumentpb.Role, registry common.Address, tokenID []byte) bool {
+	enft, err := ConstructNFT(registry, tokenID)
+	if err != nil {
+		return false
+	}
+
+	for _, n := range role.Nfts {
+		if bytes.Equal(n, enft) {
+			return true
+		}
+	}
+
+	return false
 }

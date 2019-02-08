@@ -4,6 +4,8 @@ package documents
 
 import (
 	"crypto/sha256"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/stretchr/testify/mock"
 	"os"
 	"testing"
 
@@ -153,6 +155,9 @@ func TestCoreDocumentModel_PrepareNewVersion(t *testing.T) {
 
 	// DocumentRoot was updated
 	assert.Equal(t, ncd.PreviousRoot, ocd.DocumentRoot)
+	
+	// TokenRegistry was copied over
+	assert.Equal(t, ndm.TokenRegistry, dm.TokenRegistry)
 }
 
 func TestReadACLs_initReadRules(t *testing.T) {
@@ -367,5 +372,78 @@ func TestCreateProofs(t *testing.T) {
 			assert.True(t, valid)
 		})
 	}
+}
 
+type mockRegistry struct {
+	mock.Mock
+}
+
+func (m mockRegistry) OwnerOf(registry common.Address, tokenID []byte) (common.Address, error) {
+	args := m.Called(registry, tokenID)
+	addr, _ := args.Get(0).(common.Address)
+	return addr, args.Error(1)
+}
+
+func Test_addNFTToReadRules(t *testing.T) {
+	dm := NewCoreDocModel()
+	// wrong registry or token format
+	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
+	tokenID := utils.RandomSlice(34)
+	err := dm.AddNFTToReadRules(registry, tokenID)
+	assert.Error(t, err)
+
+	dm.Document.DocumentRoot = utils.RandomSlice(32)
+	dm, err = dm.PrepareNewVersion([]string{"0x010203040506"})
+	cd := dm.Document
+	assert.NoError(t, err)
+	assert.Len(t, cd.ReadRules, 1)
+	assert.Equal(t, cd.ReadRules[0].Action, coredocumentpb.Action_ACTION_READ_SIGN)
+	assert.Len(t, cd.Roles, 1)
+
+	tokenID = utils.RandomSlice(32)
+	err = dm.AddNFTToReadRules(registry, tokenID)
+	assert.NoError(t, err)
+	assert.Len(t, cd.ReadRules, 2)
+	assert.Equal(t, cd.ReadRules[1].Action, coredocumentpb.Action_ACTION_READ)
+	assert.Len(t, cd.Roles, 2)
+}
+
+func TestReadAccessValidator_NFTOwnerCanRead(t *testing.T) {
+	dm := NewCoreDocModel()
+	dm.Document.DocumentRoot = utils.RandomSlice(32)
+	account, err := identity.CentIDFromString("0x010203040506")
+	assert.NoError(t, err)
+
+	dm, err = dm.PrepareNewVersion([]string{account.String()})
+	assert.NoError(t, err)
+
+	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
+
+	// account can read
+	err = dm.NFTOwnerCanRead(registry, nil, account)
+	assert.NoError(t, err)
+
+	// account not in read rules and nft missing
+	account, err = identity.CentIDFromString("0x010203040505")
+	assert.NoError(t, err)
+	tokenID := utils.RandomSlice(32)
+	err = dm.NFTOwnerCanRead(registry, tokenID, account)
+	assert.Error(t, err)
+
+	tr := mockRegistry{}
+	tr.On("OwnerOf", registry, tokenID).Return(nil, errors.New("failed to get owner of")).Once()
+	dm.TokenRegistry = tr
+	dm.AddNFTToReadRules(registry, tokenID)
+	err = dm.NFTOwnerCanRead(registry, tokenID, account)
+	assert.Error(t, err)
+	assert.Contains(t, err, "failed to get owner of")
+	tr.AssertExpectations(t)
+
+	// not the same owner
+	owner := common.BytesToAddress(utils.RandomSlice(20))
+	tr.On("OwnerOf", registry, tokenID).Return(owner, nil).Once()
+	dm.TokenRegistry = tr
+	err = dm.NFTOwnerCanRead(registry, tokenID, account)
+	assert.Error(t, err)
+	tr.AssertExpectations(t)
 }
