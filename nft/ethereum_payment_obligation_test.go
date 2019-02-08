@@ -4,12 +4,10 @@ package nft
 
 import (
 	"crypto/sha256"
+	"fmt"
 	"math/big"
 	"testing"
 	"time"
-
-	"github.com/centrifuge/go-centrifuge/testingutils/testingtx"
-	"github.com/satori/go.uuid"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
@@ -24,6 +22,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
+	"github.com/centrifuge/go-centrifuge/testingutils/testingtx"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
@@ -31,6 +30,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/golang/protobuf/ptypes/any"
+	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -293,4 +294,46 @@ func Test_isRoleExists(t *testing.T) {
 	// add id
 	role.Collaborators = append(role.Collaborators, id[:])
 	assert.True(t, isRoleExists(cd, roleName, id))
+}
+
+func Test_createTokenProof_error(t *testing.T) {
+	cd, err := coredocument.NewWithCollaborators([]string{"0x010203040506"})
+	assert.Nil(t, err)
+	cd.EmbeddedData = &any.Any{
+		Value:   utils.RandomSlice(32),
+		TypeUrl: "some type",
+	}
+
+	cdTree, err := coredocument.GetCoreDocTree(cd)
+	assert.Nil(t, err)
+
+	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
+
+	// no nft registered yet
+	_, err = createTokenProof(cd, cdTree, registry)
+	assert.Error(t, err)
+}
+
+func Test_createTokenProof(t *testing.T) {
+	cd := coredocument.New()
+	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
+	tokenID := utils.RandomSlice(32)
+	addNFT(cd, registry.Bytes(), tokenID)
+	cd.EmbeddedData = &any.Any{
+		Value:   utils.RandomSlice(32),
+		TypeUrl: "some type",
+	}
+	assert.Nil(t, coredocument.FillSalts(cd))
+
+	cdTree, err := coredocument.GetCoreDocTree(cd)
+	assert.Nil(t, err)
+
+	pf, err := createTokenProof(cd, cdTree, registry)
+	assert.Nil(t, err)
+	rk := hexutil.Encode(append(registry.Bytes(), make([]byte, 12, 12)...))
+	assert.Equal(t, pf.GetReadableName(), fmt.Sprintf("nfts[%s]", rk))
+	assert.Equal(t, pf.Value, hexutil.Encode(tokenID))
+	valid, err := cdTree.ValidateProof(&pf)
+	assert.NoError(t, err)
+	assert.True(t, valid)
 }

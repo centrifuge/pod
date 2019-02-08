@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"fmt"
 	"math/big"
 	"time"
 
@@ -18,6 +19,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -121,6 +123,37 @@ func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, toke
 
 	return requestData, nil
 
+}
+
+// getNFTProofs generates required NFT proofs
+func getNFTProofs(cd *coredocumentpb.CoreDocument, req MintNFTRequest) ([]proofspb.Proof, error) {
+	cdTree, err := coredocument.GetCoreDocTree(cd)
+	if err != nil {
+		return nil, err
+	}
+
+	var proofs []proofspb.Proof
+	if req.SubmitTokenProof {
+		pf, err := createTokenProof(cd, cdTree, common.HexToAddress(req.RegistryAddress))
+		if err != nil {
+			return nil, err
+		}
+
+		proofs = append(proofs, pf)
+	}
+
+	return proofs, nil
+}
+
+func createTokenProof(cd *coredocumentpb.CoreDocument, cdTree *proofs.DocumentTree, registry common.Address) (proof proofspb.Proof, err error) {
+	nft := getStoredNFT(cd.Nfts, registry.Bytes())
+	if nft == nil {
+		return proof, errors.New("nft is missing from the p2p document")
+	}
+
+	key := hexutil.Encode(nft.RegistryId)
+	pk := fmt.Sprintf("nfts[%s]", key)
+	return cdTree.CreateProof(pk)
 }
 
 // MintNFT mints an NFT

@@ -54,6 +54,7 @@ func (t TokenID) String() string {
 	return hexutil.Encode(t[:])
 }
 
+// MintNFTRequest holds required fields for minting NFT
 type MintNFTRequest struct {
 	DocumentID               []byte
 	RegistryAddress          string
