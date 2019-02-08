@@ -46,7 +46,7 @@ func VerifySignature(pubKey, message, signature []byte) error {
 // assumes that signing root for the document is generated
 func Sign(centIDBytes []byte, privateKey []byte, pubKey []byte, payload []byte) *coredocumentpb.Signature {
 	return &coredocumentpb.Signature{
-		EntityId:  centIDBytes,
+		SignerId:  centIDBytes,
 		PublicKey: pubKey,
 		Signature: ed25519.Sign(privateKey, payload),
 		Timestamp: utils.ToTimestamp(time.Now().UTC()),

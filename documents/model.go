@@ -3,7 +3,6 @@ package documents
 import (
 	"bytes"
 	"crypto/sha256"
-	"fmt"
 	"strings"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -238,6 +237,36 @@ func (m *CoreDocumentModel) GetDocumentSigningTree(dataRoot []byte) (tree *proof
 	return tree, nil
 }
 
+func (m *CoreDocumentModel) getSignatureDataSalts(signatureData *coredocumentpb.SignatureData) (*coredocumentpb.SignatureDataSalts, error) {
+	if m.Document.SignatureDataSalts == nil {
+		signatureSalts := new(coredocumentpb.SignatureDataSalts)
+		err := proofs.FillSalts(signatureData, signatureSalts)
+		if err != nil {
+			return nil, err
+		}
+		m.Document.SignatureDataSalts = signatureSalts
+	}
+	return m.Document.SignatureDataSalts, nil
+}
+
+func (m *CoreDocumentModel) GetSignatureDataTree() (*proofs.DocumentTree, error) {
+	h := sha256.New()
+	tree := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: h})
+	signatureSalts, err := m.getSignatureDataSalts(m.Document.SignatureData)
+	if err != nil {
+		return nil, err
+	}
+	err = tree.AddLeavesFromDocument(m.Document.SignatureData, signatureSalts)
+	if err != nil {
+		return nil, err
+	}
+	err = tree.Generate()
+	if err != nil {
+		return nil, err
+	}
+	return &tree, nil
+}
+
 // GetDocumentRootTree returns the merkle tree for the document root
 func (m *CoreDocumentModel) GetDocumentRootTree() (tree *proofs.DocumentTree, err error) {
 	document := m.Document
@@ -250,36 +279,17 @@ func (m *CoreDocumentModel) GetDocumentRootTree() (tree *proofs.DocumentTree, er
 	if err != nil {
 		return nil, err
 	}
-	// For every signature we create a LeafNode
-	sigProperty := proofs.NewProperty("signatures")
-	sigLeafList := make([]proofs.LeafNode, len(document.Signatures)+1)
-	sigLengthNode := proofs.LeafNode{
-		Property: sigProperty.LengthProp(),
-		Salt:     make([]byte, 32),
-		Value:    fmt.Sprintf("%d", len(document.Signatures)),
-	}
-	err = sigLengthNode.HashNode(h, false)
+
+	signatureTree, err := m.GetSignatureDataTree()
 	if err != nil {
 		return nil, err
 	}
-	sigLeafList[0] = sigLengthNode
-	for i, sig := range document.Signatures {
-		payload := sha256.Sum256(append(sig.EntityId, append(sig.PublicKey, sig.Signature...)...))
-		leaf := proofs.LeafNode{
-			Hash:     payload[:],
-			Hashed:   true,
-			Property: sigProperty.SliceElemProp(proofs.FieldNumForSliceLength(i)),
-		}
-		err = leaf.HashNode(h, false)
-		if err != nil {
-			return nil, err
-		}
-		sigLeafList[i+1] = leaf
-	}
-	err = tree.AddLeaves(sigLeafList)
+	// The second leave added is the signature_data_root
+	err = tree.AddLeaf(proofs.LeafNode{Hash: signatureTree.RootHash(), Hashed: true, Property: proofs.NewProperty("signature_data_root")})
 	if err != nil {
 		return nil, err
 	}
+
 	err = tree.Generate()
 	if err != nil {
 		return nil, err

@@ -92,7 +92,10 @@ func (dp defaultProcessor) PrepareForSignatureRequests(ctx context.Context, mode
 	}
 
 	sig := identity.Sign(self, identity.KeyPurposeSigning, cd.SigningRoot)
-	cd.Signatures = append(cd.Signatures, sig)
+	if cd.SignatureData == nil {
+		cd.SignatureData = new(coredocumentpb.SignatureData)
+	}
+	cd.SignatureData.Signatures = append(cd.SignatureData.Signatures, sig)
 
 	err = model.UnpackCoreDocument(cd)
 	if err != nil {

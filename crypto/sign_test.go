@@ -24,7 +24,7 @@ func TestSign(t *testing.T) {
 	sig := Sign(id1, key1, key1Pub, key1Pub)
 	assert.NotNil(t, sig)
 	assert.Equal(t, sig.PublicKey, []byte(key1Pub))
-	assert.Equal(t, sig.EntityId, id1)
+	assert.Equal(t, sig.SignerId, id1)
 	assert.NotEmpty(t, sig.Signature)
 	assert.Len(t, sig.Signature, 64)
 	assert.Equal(t, sig.Signature, signature)

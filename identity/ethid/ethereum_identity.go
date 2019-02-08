@@ -559,7 +559,7 @@ func (ids *ethereumIdentityService) AddKeyFromConfig(config identity.Config, pur
 
 // ValidateSignature validates a signature on a message based on identity data
 func (ids *ethereumIdentityService) ValidateSignature(signature *coredocumentpb.Signature, message []byte) error {
-	centID, err := identity.ToCentID(signature.EntityId)
+	centID, err := identity.ToCentID(signature.SignerId)
 	if err != nil {
 		return err
 	}

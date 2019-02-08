@@ -255,7 +255,7 @@ func (s *peer) GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb
 			continue
 		}
 
-		doc.Signatures = append(doc.Signatures, resp.resp.Signature)
+		doc.SignatureData.Signatures = append(doc.SignatureData.Signatures, resp.resp.Signature)
 	}
 
 	return nil
@@ -276,7 +276,7 @@ func validateSignatureResp(identityService identity.Service, receiver identity.C
 		return version.IncompatibleVersionError(header.NodeVersion)
 	}
 
-	err := identity.ValidateCentrifugeIDBytes(resp.Signature.EntityId, receiver)
+	err := identity.ValidateCentrifugeIDBytes(resp.Signature.SignerId, receiver)
 	if err != nil {
 		return centerrors.New(code.AuthenticationFailed, err.Error())
 	}

@@ -245,13 +245,13 @@ func readyForSignaturesValidator(centIDBytes, priv, pub []byte) Validator {
 			return err
 		}
 
-		if len(cd.Signatures) != 1 {
+		if cd.SignatureData == nil || len(cd.SignatureData.Signatures) != 1 {
 			return errors.New("expecting only one signature")
 		}
 
 		s := crypto.Sign(centIDBytes, priv, pub, cd.SigningRoot)
-		sh := cd.Signatures[0]
-		if !utils.IsSameByteSlice(s.EntityId, sh.EntityId) {
+		sh := cd.SignatureData.Signatures[0]
+		if !utils.IsSameByteSlice(s.SignerId, sh.SignerId) {
 			err = errors.AppendError(err, NewError("cd_entity_id", "entity ID mismatch"))
 		}
 
@@ -278,16 +278,16 @@ func signaturesValidator(idService identity.Service) Validator {
 			return err
 		}
 
-		if len(cd.Signatures) < 1 {
+		if cd.SignatureData == nil || len(cd.SignatureData.Signatures) < 1 {
 			return errors.New("atleast one signature expected")
 		}
 
-		for _, sig := range cd.Signatures {
+		for _, sig := range cd.SignatureData.Signatures {
 			if erri := idService.ValidateSignature(sig, cd.SigningRoot); erri != nil {
 				err = errors.AppendError(
 					err,
 					NewError(
-						fmt.Sprintf("signature_%s", hexutil.Encode(sig.EntityId)),
+						fmt.Sprintf("signature_%s", hexutil.Encode(sig.SignerId)),
 						fmt.Sprintf("signature verification failed: %v", erri)))
 			}
 		}

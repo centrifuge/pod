@@ -185,7 +185,10 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model) (*co
 		return nil, errors.NewTypedError(ErrDocumentSigning, errors.New("missing signing key"))
 	}
 	sig := crypto.Sign(idConf.ID[:], idKeys.PrivateKey, idKeys.PublicKey, doc.SigningRoot)
-	doc.Signatures = append(doc.Signatures, sig)
+	if doc.SignatureData == nil {
+		doc.SignatureData = new(coredocumentpb.SignatureData)
+	}
+	doc.SignatureData.Signatures = append(doc.SignatureData.Signatures, sig)
 	err = model.UnpackCoreDocument(doc)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrDocumentUnPackingCoreDocument, err)
