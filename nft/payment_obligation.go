@@ -25,8 +25,8 @@ func NewTokenID() TokenID {
 	return tid
 }
 
-// FromString converts given hex string to a TokenID
-func FromString(hexStr string) (TokenID, error) {
+// TokenIDFromString converts given hex string to a TokenID
+func TokenIDFromString(hexStr string) (TokenID, error) {
 	tokenIDBytes, err := hexutil.Decode(hexStr)
 	if err != nil {
 		return NewTokenID(), err
@@ -54,10 +54,21 @@ func (t TokenID) String() string {
 	return hexutil.Encode(t[:])
 }
 
+type MintNFTRequest struct {
+	DocumentID               []byte
+	RegistryAddress          string
+	DepositAddress           string
+	ProofFields              []string
+	GrantNFTReadAccess       bool
+	SubmitTokenProof         bool
+	SubmitRoleProof          string
+	SubmitNFTReadAccessProof bool
+}
+
 // PaymentObligation handles transactions related to minting of NFTs
 type PaymentObligation interface {
 	// MintNFT mints an NFT
-	MintNFT(ctx context.Context, documentID []byte, registryAddress, depositAddress string, proofFields []string) (*MintNFTResponse, chan bool, error)
+	MintNFT(ctx context.Context, request MintNFTRequest) (*MintNFTResponse, chan bool, error)
 }
 
 // MintNFTResponse holds tokenID and transaction ID.

@@ -3,6 +3,7 @@
 package nft_test
 
 import (
+	"context"
 	"os"
 	"testing"
 	"time"
@@ -49,7 +50,7 @@ func TestMain(m *testing.M) {
 	os.Exit(result)
 }
 
-func TestPaymentObligationService_mint(t *testing.T) {
+func prepareForNFTMinting(t *testing.T) (context.Context, []byte, common.Address, string, documents.Service, identity.CentID) {
 	// create identity
 	log.Debug("Create Identity for Testing")
 	cid := testingidentity.CreateIdentityWithKeys(cfg, idService)
@@ -58,9 +59,9 @@ func TestPaymentObligationService_mint(t *testing.T) {
 	service, err := registry.LocateService(documenttypes.InvoiceDataTypeUrl)
 	assert.Nil(t, err, "should not error out when getting invoice service")
 	ctx := testingconfig.CreateAccountContext(t, cfg)
-	invoiceService := service.(invoice.Service)
+	invSrv := service.(invoice.Service)
 	dueDate := time.Now().Add(4 * 24 * time.Hour)
-	model, err := invoiceService.DeriveFromCreatePayload(ctx, &invoicepb.InvoiceCreatePayload{
+	model, err := invSrv.DeriveFromCreatePayload(ctx, &invoicepb.InvoiceCreatePayload{
 		Collaborators: []string{},
 		Data: &invoicepb.InvoiceData{
 			InvoiceNumber: "2132131",
@@ -71,34 +72,46 @@ func TestPaymentObligationService_mint(t *testing.T) {
 		},
 	})
 	assert.Nil(t, err, "should not error out when creating invoice model")
-	modelUpdated, txID, _, err := invoiceService.Create(ctx, model)
+	modelUpdated, txID, _, err := invSrv.Create(ctx, model)
 	err = txManager.WaitForTransaction(cid, txID)
 	assert.Nil(t, err)
 
 	// get ID
-	ID, err := modelUpdated.ID()
+	id, err := modelUpdated.ID()
 	assert.Nil(t, err, "should not error out when getting invoice ID")
 	// call mint
 	// assert no error
 	depositAddr := "0xf72855759a39fb75fc7341139f5d7a3974d4da08"
 	registry := cfg.GetContractAddress(config.PaymentObligation)
-	resp, done, err := payOb.MintNFT(
-		ctx,
-		ID,
-		registry.String(),
-		depositAddr,
-		[]string{"invoice.gross_amount", "invoice.currency", "invoice.due_date", "collaborators[0]"},
-	)
+
+	return ctx, id, registry, depositAddr, invSrv, cid
+}
+
+func mintNFT(t *testing.T, ctx context.Context, req nft.MintNFTRequest, cid identity.CentID, registry common.Address) nft.TokenID {
+	resp, done, err := payOb.MintNFT(ctx, req)
 	assert.Nil(t, err, "should not error out when minting an invoice")
 	assert.NotNil(t, resp.TokenID, "token id should be present")
-	tokenID, err := nft.FromString(resp.TokenID)
+	tokenID, err := nft.TokenIDFromString(resp.TokenID)
 	assert.Nil(t, err, "should not error out when getting tokenID hex")
 	<-done
 	assert.NoError(t, txManager.WaitForTransaction(cid, uuid.Must(uuid.FromString(resp.TransactionID))))
 	owner, err := tokenRegistry.OwnerOf(registry, tokenID.BigInt().Bytes())
 	assert.NoError(t, err)
-	assert.Equal(t, common.HexToAddress(depositAddr), owner)
-	doc, err := invoiceService.GetCurrentVersion(ctx, ID)
+	assert.Equal(t, common.HexToAddress(req.DepositAddress), owner)
+	return tokenID
+}
+
+func TestPaymentObligationService_mint_grant_read_access(t *testing.T) {
+	ctx, id, registry, depositAddr, invSrv, cid := prepareForNFTMinting(t)
+	req := nft.MintNFTRequest{
+		DocumentID:         id,
+		RegistryAddress:    registry.String(),
+		DepositAddress:     depositAddr,
+		ProofFields:        []string{"invoice.gross_amount", "invoice.currency", "invoice.due_date", "collaborators[0]"},
+		GrantNFTReadAccess: true,
+	}
+	tokenID := mintNFT(t, ctx, req, cid, registry)
+	doc, err := invSrv.GetCurrentVersion(ctx, id)
 	assert.NoError(t, err)
 	cd, err := doc.PackCoreDocument()
 	assert.NoError(t, err)
@@ -110,11 +123,39 @@ func TestPaymentObligationService_mint(t *testing.T) {
 	assert.Equal(t, enft, newNFT)
 
 	// try to mint the NFT again
-	_, _, err = payOb.MintNFT(ctx,
-		ID,
-		registry.String(),
-		depositAddr,
-		[]string{"invoice.gross_amount", "invoice.currency", "invoice.due_date", "collaborators[0]"})
+	_, _, err = payOb.MintNFT(ctx, req)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(nft.ErrNFTMinted, err))
+}
+
+func TestEthereumPaymentObligation_MintNFT_no_grant_access(t *testing.T) {
+	ctx, id, registry, depositAddr, invSrv, cid := prepareForNFTMinting(t)
+	req := nft.MintNFTRequest{
+		DocumentID:      id,
+		RegistryAddress: registry.String(),
+		DepositAddress:  depositAddr,
+		ProofFields:     []string{"invoice.gross_amount", "invoice.currency", "invoice.due_date", "collaborators[0]"},
+	}
+	mintNFT(t, ctx, req, cid, registry)
+	doc, err := invSrv.GetCurrentVersion(ctx, id)
+	assert.NoError(t, err)
+	cd, err := doc.PackCoreDocument()
+	assert.NoError(t, err)
+	assert.Len(t, cd.Roles, 1)
+}
+
+func TestEthereumPaymentObligation_MintNFT_role_not_exists(t *testing.T) {
+	ctx, id, registry, depositAddr, _, _ := prepareForNFTMinting(t)
+	req := nft.MintNFTRequest{
+		DocumentID:         id,
+		RegistryAddress:    registry.String(),
+		DepositAddress:     depositAddr,
+		ProofFields:        []string{"invoice.gross_amount", "invoice.currency", "invoice.due_date", "collaborators[0]"},
+		GrantNFTReadAccess: true,
+		SubmitRoleProof:    "Supplier",
+	}
+
+	_, _, err := payOb.MintNFT(ctx, req)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(nft.ErrNFTRoleMissing, err))
 }

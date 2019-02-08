@@ -3,6 +3,7 @@ package nft
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"math/big"
 	"time"
 
@@ -28,8 +29,13 @@ import (
 
 var log = logging.Logger("nft")
 
-// ErrNFTMinted error for NFT already minted for registry
-const ErrNFTMinted = errors.Error("NFT already minted")
+const (
+	// ErrNFTMinted error for NFT already minted for registry
+	ErrNFTMinted = errors.Error("NFT already minted")
+
+	// ErrNFTRoleMissing errors when role to generate proof doesn't exist
+	ErrNFTRoleMissing = errors.Error("Role doesn't exist")
+)
 
 // ethereumPaymentObligationContract is an abstraction over the contract code to help in mocking it out
 type ethereumPaymentObligationContract interface {
@@ -118,7 +124,7 @@ func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, toke
 }
 
 // MintNFT mints an NFT
-func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, documentID []byte, registryAddress, depositAddress string, proofFields []string) (*MintNFTResponse, chan bool, error) {
+func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, request MintNFTRequest) (*MintNFTResponse, chan bool, error) {
 	tc, err := contextutil.Account(ctx)
 	if err != nil {
 		return nil, nil, err
@@ -135,7 +141,7 @@ func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, documentID []by
 	}
 
 	tokenID := NewTokenID()
-	model, err := s.docSrv.GetCurrentVersion(ctx, documentID)
+	model, err := s.docSrv.GetCurrentVersion(ctx, request.DocumentID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -145,7 +151,14 @@ func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, documentID []by
 		return nil, nil, err
 	}
 
-	registry := common.HexToAddress(registryAddress)
+	// if the role_proof is given check if the role exists with account id as collaborator
+	// at the moment, since we generate role key randomly, this will not work
+	// but once we figure out acls on the client API, this will continue working with out any chnages
+	if request.SubmitRoleProof != "" && !isRoleExists(cd, request.SubmitRoleProof, cid) {
+		return nil, nil, ErrNFTRoleMissing
+	}
+
+	registry := common.HexToAddress(request.RegistryAddress)
 	mt := getStoredNFT(cd.Nfts, registry.Bytes())
 	// check if the nft is successfully minted
 	if mt != nil && s.isNFTMinted(registry, mt.TokenId) {
@@ -155,7 +168,7 @@ func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, documentID []by
 	// Mint NFT within transaction
 	// We use context.Background() for now so that the transaction is only limited by ethereum timeouts
 	txID, done, err := s.txManager.ExecuteWithinTX(context.Background(), cid, uuid.Nil, "Minting NFT",
-		s.minter(ctx, tokenID, model, registry, depositAddress, proofFields))
+		s.minter(ctx, tokenID, model, request))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -173,7 +186,7 @@ func (s *ethereumPaymentObligation) isNFTMinted(registry common.Address, tokenID
 	return err == nil
 }
 
-func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID, model documents.Model, registry common.Address, depositAddress string, proofFields []string) func(accountID identity.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
+func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID, model documents.Model, req MintNFTRequest) func(accountID identity.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
 	return func(accountID identity.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
 		tc, err := contextutil.Account(ctx)
 		if err != nil {
@@ -195,8 +208,17 @@ func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID,
 		}
 
 		cd.EmbeddedData = data
+		registry := common.HexToAddress(req.RegistryAddress)
 		addNFT(cd, registry.Bytes(), tokenID[:])
-		err = coredocument.AddNFTToReadRules(cd, registry, tokenID.BigInt().Bytes())
+		if req.GrantNFTReadAccess {
+			err = coredocument.AddNFTToReadRules(cd, registry, tokenID.BigInt().Bytes())
+			if err != nil {
+				errOut <- err
+				return
+			}
+		}
+
+		err = coredocument.FillSalts(cd)
 		if err != nil {
 			errOut <- err
 			return
@@ -221,7 +243,7 @@ func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID,
 			return
 		}
 
-		requestData, err := s.prepareMintRequest(ctx, tokenID, cd.DocumentIdentifier, depositAddress, proofFields)
+		requestData, err := s.prepareMintRequest(ctx, tokenID, cd.DocumentIdentifier, req.DepositAddress, req.ProofFields)
 		if err != nil {
 			errOut <- errors.New("failed to prepare mint request: %v", err)
 			return
@@ -273,6 +295,17 @@ func getStoredNFT(nfts []*coredocumentpb.NFT, registry []byte) *coredocumentpb.N
 	}
 
 	return nil
+}
+
+func isRoleExists(cd *coredocumentpb.CoreDocument, roleName string, id identity.CentID) bool {
+	sha := sha256.New()
+	sha.Write([]byte(roleName))
+	role, err := coredocument.GetRole(sha.Sum(nil), cd.Roles)
+	if err != nil {
+		return false
+	}
+
+	return coredocument.IsAccountInRole(role, id)
 }
 
 // addNFT adds/replaces the NFT

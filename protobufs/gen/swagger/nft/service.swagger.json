@@ -63,6 +63,25 @@
           "items": {
             "type": "string"
           }
+        },
+        "submit_token_proof": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "proof that nft is part of p2p document"
+        },
+        "submit_role_proof": {
+          "type": "string",
+          "title": "proof that role exists on p2p document"
+        },
+        "submit_nft_owner_access_proof": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "proof that nft owner can access the document if nft_grant_access is true"
+        },
+        "grant_nft_access": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "grant nft read access to the document"
         }
       }
     },

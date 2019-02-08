@@ -37,29 +37,24 @@ func initReadRules(cd *coredocumentpb.CoreDocument, collabs []identity.CentID) e
 		return ErrZeroCollaborators
 	}
 
-	return addCollaboratorsToReadSignRules(cd, collabs)
+	addCollaboratorsToReadSignRules(cd, collabs)
+	return nil
 }
 
-func addCollaboratorsToReadSignRules(cd *coredocumentpb.CoreDocument, collabs []identity.CentID) error {
+func addCollaboratorsToReadSignRules(cd *coredocumentpb.CoreDocument, collabs []identity.CentID) {
 	if len(collabs) == 0 {
-		return nil
+		return
 	}
 
 	// create a role for given collaborators
 	role := new(coredocumentpb.Role)
-	rk, err := utils.ConvertIntToByte32(len(cd.Roles))
-	if err != nil {
-		return err
-	}
-	role.RoleKey = rk[:]
+	role.RoleKey = utils.RandomSlice(32)
 	for _, c := range collabs {
 		c := c
 		role.Collaborators = append(role.Collaborators, c[:])
 	}
 
 	addNewRule(cd, role, coredocumentpb.Action_ACTION_READ_SIGN)
-
-	return nil
 }
 
 // addNewRule creates a new rule as per the role and action.
@@ -87,7 +82,7 @@ func AddNFTToReadRules(cd *coredocumentpb.CoreDocument, registry common.Address,
 	role.RoleKey = rk[:]
 	role.Nfts = append(role.Nfts, nft)
 	addNewRule(cd, role, coredocumentpb.Action_ACTION_READ)
-	return FillSalts(cd)
+	return nil
 }
 
 // ConstructNFT appends registry and tokenID to byte slice
@@ -126,11 +121,12 @@ type readAccessValidator struct {
 func (r readAccessValidator) AccountCanRead(cd *coredocumentpb.CoreDocument, account identity.CentID) bool {
 	// loop though read rules
 	return findRole(cd, coredocumentpb.Action_ACTION_READ_SIGN, func(role *coredocumentpb.Role) bool {
-		return isAccountInRole(role, account)
+		return IsAccountInRole(role, account)
 	})
 }
 
-func getRole(key []byte, roles []*coredocumentpb.Role) (*coredocumentpb.Role, error) {
+// GetRole returns the role matching the key
+func GetRole(key []byte, roles []*coredocumentpb.Role) (*coredocumentpb.Role, error) {
 	for _, role := range roles {
 		if utils.IsSameByteSlice(role.RoleKey, key) {
 			return role, nil
@@ -140,8 +136,8 @@ func getRole(key []byte, roles []*coredocumentpb.Role) (*coredocumentpb.Role, er
 	return nil, errors.New("role %d not found", key)
 }
 
-// isAccountInRole returns true if account is in the given role as collaborators.
-func isAccountInRole(role *coredocumentpb.Role, account identity.CentID) bool {
+// IsAccountInRole returns true if account is in the given role as collaborators.
+func IsAccountInRole(role *coredocumentpb.Role, account identity.CentID) bool {
 	for _, id := range role.Collaborators {
 		if bytes.Equal(id, account[:]) {
 			return true
@@ -211,7 +207,7 @@ func findRole(
 		}
 
 		for _, rk := range rule.Roles {
-			role, err := getRole(rk, cd.Roles)
+			role, err := GetRole(rk, cd.Roles)
 			if err != nil {
 				// seems like roles and rules are not in sync
 				// skip to next one

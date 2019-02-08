@@ -3,6 +3,7 @@
 package nft
 
 import (
+	"crypto/sha256"
 	"math/big"
 	"testing"
 	"time"
@@ -196,7 +197,13 @@ func TestPaymentObligationService(t *testing.T) {
 				return &EthereumPaymentObligationContract{}, nil
 			}, txMan, func() (uint64, error) { return 10, nil })
 			ctxh := testingconfig.CreateAccountContext(t, &mockCfg)
-			_, _, err := service.MintNFT(ctxh, decodeHex(test.request.Identifier), test.request.RegistryAddress, test.request.DepositAddress, test.request.ProofFields)
+			req := MintNFTRequest{
+				DocumentID:      decodeHex(test.request.Identifier),
+				RegistryAddress: test.request.RegistryAddress,
+				DepositAddress:  test.request.DepositAddress,
+				ProofFields:     test.request.ProofFields,
+			}
+			_, _, err := service.MintNFT(ctxh, req)
 			if test.err != nil {
 				assert.Equal(t, test.err.Error(), err.Error())
 			} else if err != nil {
@@ -268,4 +275,22 @@ func Test_addNFT(t *testing.T) {
 	assert.Len(t, cd.Nfts, 1)
 	assert.Len(t, cd.Nfts[0].RegistryId, 32)
 	assert.Equal(t, tokenID, getStoredNFT(cd.Nfts, registry.Bytes()).TokenId)
+}
+
+func Test_isRoleExists(t *testing.T) {
+	cd := coredocument.New()
+	roleName := "supplier"
+	id := identity.RandomCentID()
+	assert.False(t, isRoleExists(cd, roleName, id))
+
+	// add role
+	rk := sha256.Sum256([]byte(roleName))
+	role := new(coredocumentpb.Role)
+	role.RoleKey = rk[:]
+	cd.Roles = append(cd.Roles, role)
+	assert.False(t, isRoleExists(cd, roleName, id))
+
+	// add id
+	role.Collaborators = append(role.Collaborators, id[:])
+	assert.True(t, isRoleExists(cd, roleName, id))
 }
