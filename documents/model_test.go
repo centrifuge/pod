@@ -3,8 +3,15 @@
 package documents
 
 import (
+	"crypto/sha256"
 	"os"
 	"testing"
+
+	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/precise-proofs/proofs"
+	"github.com/golang/protobuf/ptypes/any"
 
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -146,4 +153,219 @@ func TestCoreDocumentModel_PrepareNewVersion(t *testing.T) {
 
 	// DocumentRoot was updated
 	assert.Equal(t, ncd.PreviousRoot, ocd.DocumentRoot)
+}
+
+func TestReadACLs_initReadRules(t *testing.T) {
+	dm := NewCoreDocModel()
+	cd := dm.Document
+	err := dm.initReadRules(nil)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(ErrZeroCollaborators, err))
+
+	cs := []identity.CentID{identity.RandomCentID()}
+	err = dm.initReadRules(cs)
+	assert.NoError(t, err)
+	assert.Len(t, cd.ReadRules, 1)
+	assert.Len(t, cd.Roles, 1)
+
+	err = dm.initReadRules(cs)
+	assert.NoError(t, err)
+	assert.Len(t, cd.ReadRules, 1)
+	assert.Len(t, cd.Roles, 1)
+}
+
+func TestReadAccessValidator_AccountCanRead(t *testing.T) {
+	dm := NewCoreDocModel()
+	account, err := identity.CentIDFromString("0x010203040506")
+	assert.NoError(t, err)
+
+	dm.Document.DocumentRoot = utils.RandomSlice(32)
+	ndm, err := dm.PrepareNewVersion([]string{account.String()})
+	cd := ndm.Document
+	assert.NoError(t, err)
+	assert.NotNil(t, cd.ReadRules)
+	assert.NotNil(t, cd.Roles)
+
+	// account who cant access
+	rcid := identity.RandomCentID()
+	assert.False(t, ndm.AccountCanRead(rcid))
+
+	// account can access
+	assert.True(t, ndm.AccountCanRead(account))
+}
+
+func TestGetSigningProofHashes(t *testing.T) {
+	docAny := &any.Any{
+		TypeUrl: documenttypes.InvoiceDataTypeUrl,
+		Value:   []byte{},
+	}
+	dm := NewCoreDocModel()
+	cd := dm.Document
+	cd.EmbeddedData = docAny
+	cd.DataRoot = utils.RandomSlice(32)
+	salts := new(coredocumentpb.CoreDocumentSalts)
+	err := proofs.FillSalts(cd, salts)
+	assert.Nil(t, err)
+
+	cd.CoredocumentSalts = salts
+	err = dm.CalculateSigningRoot(cd.DataRoot)
+	assert.Nil(t, err)
+
+	err = dm.CalculateDocumentRoot()
+	assert.Nil(t, err)
+
+	hashes, err := dm.getSigningRootProofHashes()
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(hashes))
+
+	valid, err := proofs.ValidateProofSortedHashes(cd.SigningRoot, hashes, cd.DocumentRoot, sha256.New())
+	assert.True(t, valid)
+	assert.Nil(t, err)
+}
+
+func TestGetDataProofHashes(t *testing.T) {
+	docAny := &any.Any{
+		TypeUrl: documenttypes.InvoiceDataTypeUrl,
+		Value:   []byte{},
+	}
+	dm := NewCoreDocModel()
+	cd := dm.Document
+	cd.EmbeddedData = docAny
+	cd.DataRoot = utils.RandomSlice(32)
+	cds := &coredocumentpb.CoreDocumentSalts{}
+	err := proofs.FillSalts(cd, cds)
+	assert.Nil(t, err)
+
+	cd.CoredocumentSalts = cds
+
+	err = dm.CalculateSigningRoot(cd.DataRoot)
+	assert.Nil(t, err)
+
+	err = dm.CalculateDocumentRoot()
+	assert.Nil(t, err)
+
+	hashes, err := dm.getDataProofHashes(cd.DataRoot)
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(hashes))
+
+	valid, err := proofs.ValidateProofSortedHashes(cd.DataRoot, hashes, cd.DocumentRoot, sha256.New())
+	assert.True(t, valid)
+	assert.Nil(t, err)
+}
+
+func TestGetDocumentSigningTree(t *testing.T) {
+	docAny := &any.Any{
+		TypeUrl: documenttypes.InvoiceDataTypeUrl,
+		Value:   []byte{},
+	}
+	dm := NewCoreDocModel()
+	cd := dm.Document
+	cd.EmbeddedData = docAny
+	cds := &coredocumentpb.CoreDocumentSalts{}
+	proofs.FillSalts(cd, cds)
+	cd.CoredocumentSalts = cds
+	tree, err := dm.GetDocumentSigningTree(cd.DataRoot)
+	assert.Nil(t, err)
+	assert.NotNil(t, tree)
+
+	_, leaf := tree.GetLeafByProperty("data_root")
+	assert.NotNil(t, leaf)
+
+	_, leaf = tree.GetLeafByProperty("cd_root")
+	assert.NotNil(t, leaf)
+}
+
+func TestGetDocumentSigningTree_EmptyEmbeddedData(t *testing.T) {
+	dm := NewCoreDocModel()
+	cd := dm.Document
+	cds := &coredocumentpb.CoreDocumentSalts{}
+	proofs.FillSalts(cd, cds)
+	cd.CoredocumentSalts = cds
+	tree, err := dm.GetDocumentSigningTree(cd.DataRoot)
+	assert.NotNil(t, err)
+	assert.Nil(t, tree)
+}
+
+// TestGetDocumentRootTree tests that the documentroottree is properly calculated
+func TestGetDocumentRootTree(t *testing.T) {
+	dm := NewCoreDocModel()
+	cd := &coredocumentpb.CoreDocument{SigningRoot: []byte{0x72, 0xee, 0xb8, 0x88, 0x92, 0xf7, 0x6, 0x19, 0x82, 0x76, 0xe9, 0xe7, 0xfe, 0xcc, 0x33, 0xa, 0x66, 0x78, 0xd4, 0xa6, 0x5f, 0xf6, 0xa, 0xca, 0x2b, 0xe4, 0x17, 0xa9, 0xf6, 0x15, 0x67, 0xa1}}
+	dm.Document = cd
+	tree, err := dm.GetDocumentRootTree()
+
+	// Manually constructing the two node tree:
+	signaturesLengthLeaf := sha256.Sum256(append([]byte("signatures.length0"), make([]byte, 32)...))
+	expectedRootHash := sha256.Sum256(append(signaturesLengthLeaf[:], dm.Document.SigningRoot...))
+	assert.Nil(t, err)
+	assert.Equal(t, expectedRootHash[:], tree.RootHash())
+}
+
+func TestCreateProofs(t *testing.T) {
+	h := sha256.New()
+	testTree := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: sha256.New()})
+	err := testTree.AddLeaf(proofs.LeafNode{Hash: utils.RandomSlice(32), Hashed: true, Property: proofs.NewProperty("sample_field")})
+	assert.NoError(t, err)
+	err = testTree.AddLeaf(proofs.LeafNode{Hash: utils.RandomSlice(32), Hashed: true, Property: proofs.NewProperty("sample_field2")})
+	assert.NoError(t, err)
+	err = testTree.Generate()
+	assert.NoError(t, err)
+	docAny := &any.Any{
+		TypeUrl: documenttypes.InvoiceDataTypeUrl,
+		Value:   []byte{},
+	}
+	dm := NewCoreDocModel()
+	cd := dm.Document
+	cd.EmbeddedData = docAny
+	cd.Collaborators = [][]byte{utils.RandomSlice(32), utils.RandomSlice(32)}
+	err = dm.fillSalts()
+	assert.NoError(t, err)
+	err = dm.CalculateSigningRoot(testTree.RootHash())
+	assert.NoError(t, err)
+	err = dm.CalculateDocumentRoot()
+	assert.NoError(t, err)
+	cdTree, err := dm.GetCoreDocTree()
+	assert.NoError(t, err)
+	tests := []struct {
+		fieldName   string
+		fromCoreDoc bool
+		proofLength int
+	}{
+		{
+			"sample_field",
+			false,
+			3,
+		},
+		{
+			"document_identifier",
+			true,
+			6,
+		},
+		{
+			"sample_field2",
+			false,
+			3,
+		},
+		{
+			"collaborators[0]",
+			true,
+			6,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.fieldName, func(t *testing.T) {
+			p, err := dm.CreateProofs(&testTree, []string{test.fieldName})
+			assert.NoError(t, err)
+			assert.Equal(t, test.proofLength, len(p[0].SortedHashes))
+			var l *proofs.LeafNode
+			if test.fromCoreDoc {
+				_, l = cdTree.GetLeafByProperty(test.fieldName)
+			} else {
+				_, l = testTree.GetLeafByProperty(test.fieldName)
+			}
+			valid, err := proofs.ValidateProofSortedHashes(l.Hash, p[0].SortedHashes, cd.DocumentRoot, h)
+			assert.NoError(t, err)
+			assert.True(t, valid)
+		})
+	}
+
 }

@@ -1,6 +1,11 @@
 package documents
 
 import (
+	"bytes"
+	"crypto/sha256"
+	"fmt"
+	"strings"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -41,6 +46,11 @@ type CoreDocumentModel struct {
 	Document *coredocumentpb.CoreDocument
 }
 
+const (
+	// ErrZeroCollaborators error when no collaborators are passed
+	ErrZeroCollaborators = errors.Error("require at least one collaborator")
+)
+
 // NewCoreDocModel returns a new CoreDocumentModel
 // Note: collaborators and salts are to be filled by the caller
 func NewCoreDocModel() *CoreDocumentModel {
@@ -79,25 +89,28 @@ func (m *CoreDocumentModel) PrepareNewVersion(collaborators []string) (*CoreDocu
 	// copy read rules and roles
 	ncd.Roles = m.Document.Roles
 	ncd.ReadRules = m.Document.ReadRules
-	addCollaboratorsToReadSignRules(ncd, ucs)
-
+	err = ndm.addCollaboratorsToReadSignRules(ucs)
+	if err != nil {
+		return nil, err
+	}
 	err = ndm.fillSalts()
+
 	if err != nil {
 		return nil, err
 	}
 
 	if ocd.DocumentIdentifier == nil {
-		return nil, errors.New("coredocument.DocumentIdentifier is nil")
+		return nil, errors.New("Document.DocumentIdentifier is nil")
 	}
 	ncd.DocumentIdentifier = ocd.DocumentIdentifier
 
 	if ocd.CurrentVersion == nil {
-		return nil, errors.New("coredocument.CurrentVersion is nil")
+		return nil, errors.New("Document.CurrentVersion is nil")
 	}
 	ncd.PreviousVersion = ocd.CurrentVersion
 
 	if ocd.NextVersion == nil {
-		return nil, errors.New("coredocument.NextVersion is nil")
+		return nil, errors.New("Document.NextVersion is nil")
 	}
 
 	ncd.CurrentVersion = ocd.NextVersion
@@ -110,16 +123,350 @@ func (m *CoreDocumentModel) PrepareNewVersion(collaborators []string) (*CoreDocu
 	return ndm, nil
 }
 
+// CreateProofs util function that takes document data tree, coreDocument and a list fo fields and generates proofs
+func (m *CoreDocumentModel) CreateProofs(dataTree *proofs.DocumentTree, fields []string) (proofs []*proofspb.Proof, err error) {
+	signingRootProofHashes, err := m.getSigningRootProofHashes()
+	if err != nil {
+		return nil, errors.New("createProofs error %v", err)
+	}
+
+	cdtree, err := m.GetCoreDocTree()
+	if err != nil {
+		return nil, errors.New("createProofs error %v", err)
+	}
+
+	dataRoot := dataTree.RootHash()
+	cdRoot := cdtree.RootHash()
+
+	// We support fields that belong to different document trees, as we do not prepend a tree prefix to the field, the approach
+	// is to try in both trees to find the field and create the proof accordingly
+	for _, field := range fields {
+		proof, err := dataTree.CreateProof(field)
+		if err != nil {
+			if strings.Contains(err.Error(), "No such field") {
+				proof, err = cdtree.CreateProof(field)
+				if err != nil {
+					return nil, errors.New("createProofs error %v", err)
+				}
+				proof.SortedHashes = append(proof.SortedHashes, dataRoot)
+			} else {
+				return nil, errors.New("createProofs error %v", err)
+			}
+		} else {
+			proof.SortedHashes = append(proof.SortedHashes, cdRoot)
+		}
+		proof.SortedHashes = append(proof.SortedHashes, signingRootProofHashes...)
+		proofs = append(proofs, &proof)
+	}
+
+	return proofs, nil
+}
+
+// GetCoreDocTree returns the merkle tree for the coredoc root
+func (m *CoreDocumentModel) GetCoreDocTree() (tree *proofs.DocumentTree, err error) {
+	document := m.Document
+	h := sha256.New()
+	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: h})
+	tree = &t
+	err = tree.AddLeavesFromDocument(document, document.CoredocumentSalts)
+	if err != nil {
+		return nil, err
+	}
+
+	if document.EmbeddedData == nil {
+		return nil, errors.New("EmbeddedData cannot be nil when generating signing tree")
+	}
+	// Adding document type as it is an excluded field in the tree
+	documentTypeNode := proofs.LeafNode{
+		Property: proofs.NewProperty("document_type"),
+		Salt:     make([]byte, 32),
+		Value:    document.EmbeddedData.TypeUrl,
+	}
+
+	err = documentTypeNode.HashNode(h, false)
+	if err != nil {
+		return nil, err
+	}
+
+	err = tree.AddLeaf(documentTypeNode)
+	if err != nil {
+		return nil, err
+	}
+
+	err = tree.Generate()
+	if err != nil {
+		return nil, err
+	}
+	return tree, nil
+}
+
+// GetDocumentSigningTree returns the merkle tree for the signing root
+func (m *CoreDocumentModel) GetDocumentSigningTree(dataRoot []byte) (tree *proofs.DocumentTree, err error) {
+	h := sha256.New()
+
+	// coredoc tree
+	coreDocTree, err := m.GetCoreDocTree()
+	if err != nil {
+		return nil, err
+	}
+
+	// create the signing tree with data root and coredoc root as siblings
+	t2 := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: h})
+	tree = &t2
+	err = tree.AddLeaves([]proofs.LeafNode{
+		{
+			Property: proofs.NewProperty("data_root"),
+			Hash:     dataRoot,
+			Hashed:   true,
+		},
+		{
+			Property: proofs.NewProperty("cd_root"),
+			Hash:     coreDocTree.RootHash(),
+			Hashed:   true,
+		},
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	err = tree.Generate()
+	if err != nil {
+		return nil, err
+	}
+
+	return tree, nil
+}
+
+// GetDocumentRootTree returns the merkle tree for the document root
+func (m *CoreDocumentModel) GetDocumentRootTree() (tree *proofs.DocumentTree, err error) {
+	document := m.Document
+	h := sha256.New()
+	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: h})
+	tree = &t
+
+	// The first leave added is the signing_root
+	err = tree.AddLeaf(proofs.LeafNode{Hash: document.SigningRoot, Hashed: true, Property: proofs.NewProperty("signing_root")})
+	if err != nil {
+		return nil, err
+	}
+	// For every signature we create a LeafNode
+	sigProperty := proofs.NewProperty("signatures")
+	sigLeafList := make([]proofs.LeafNode, len(document.Signatures)+1)
+	sigLengthNode := proofs.LeafNode{
+		Property: sigProperty.LengthProp(),
+		Salt:     make([]byte, 32),
+		Value:    fmt.Sprintf("%d", len(document.Signatures)),
+	}
+	err = sigLengthNode.HashNode(h, false)
+	if err != nil {
+		return nil, err
+	}
+	sigLeafList[0] = sigLengthNode
+	for i, sig := range document.Signatures {
+		payload := sha256.Sum256(append(sig.EntityId, append(sig.PublicKey, sig.Signature...)...))
+		leaf := proofs.LeafNode{
+			Hash:     payload[:],
+			Hashed:   true,
+			Property: sigProperty.SliceElemProp(proofs.FieldNumForSliceLength(i)),
+		}
+		err = leaf.HashNode(h, false)
+		if err != nil {
+			return nil, err
+		}
+		sigLeafList[i+1] = leaf
+	}
+	err = tree.AddLeaves(sigLeafList)
+	if err != nil {
+		return nil, err
+	}
+	err = tree.Generate()
+	if err != nil {
+		return nil, err
+	}
+	return tree, nil
+}
+
+// CalculateDocumentRoot calculates the document root of the core document
+func (m *CoreDocumentModel) CalculateDocumentRoot() error {
+	document := m.Document
+	if len(document.SigningRoot) != 32 {
+		return errors.New("signing root invalid")
+	}
+
+	tree, err := m.GetDocumentRootTree()
+	if err != nil {
+		return err
+	}
+
+	document.DocumentRoot = tree.RootHash()
+	return nil
+}
+
+// getDataProofHashes returns the hashes needed to create a proof from DataRoot to SigningRoot. This method is used
+// to create field proofs
+func (m *CoreDocumentModel) getDataProofHashes(dataRoot []byte) (hashes [][]byte, err error) {
+	tree, err := m.GetDocumentSigningTree(dataRoot)
+	if err != nil {
+		return
+	}
+
+	signingProof, err := tree.CreateProof("data_root")
+	if err != nil {
+		return
+	}
+
+	rootProofHashes, err := m.getSigningRootProofHashes()
+	if err != nil {
+		return
+	}
+
+	return append(signingProof.SortedHashes, rootProofHashes...), err
+}
+
+// getSigningRootProofHashes returns the hashes needed to create a proof for fields from SigningRoot to DocumentRoot. This method is used
+// to create field proofs
+func (m *CoreDocumentModel) getSigningRootProofHashes() (hashes [][]byte, err error) {
+	tree, err := m.GetDocumentRootTree()
+	if err != nil {
+		return
+	}
+	rootProof, err := tree.CreateProof("signing_root")
+	if err != nil {
+		return
+	}
+	return rootProof.SortedHashes, err
+}
+
+// CalculateSigningRoot calculates the signing root of the core document
+func (m *CoreDocumentModel) CalculateSigningRoot(dataRoot []byte) error {
+	doc := m.Document
+	tree, err := m.GetDocumentSigningTree(dataRoot)
+	if err != nil {
+		return err
+	}
+
+	doc.SigningRoot = tree.RootHash()
+	return nil
+}
+
+// AccountCanRead validate if the core document can be read by the account .
+// Returns an error if not.
+func (m *CoreDocumentModel) AccountCanRead(account identity.CentID) bool {
+	// loop though read rules
+	return m.findRole(coredocumentpb.Action_ACTION_READ_SIGN, func(role *coredocumentpb.Role) bool {
+		return isAccountInRole(role, account)
+	})
+}
+
 // FillSalts creates a new coredocument.Salts and fills it
 func (m *CoreDocumentModel) fillSalts() error {
 	salts := new(coredocumentpb.CoreDocumentSalts)
 	cd := m.Document
 	err := proofs.FillSalts(cd, salts)
 	if err != nil {
-		return errors.New("failed to fill coredocument salts: %v", err)
+		return errors.New("failed to fill Document salts: %v", err)
 	}
 
 	cd.CoredocumentSalts = salts
+	return nil
+}
+
+// initReadRules initiates the read rules for a given CoreDocumentModel.
+// Collaborators are given Read_Sign action.
+// if the rules are created already, this is a no-op.
+func (m *CoreDocumentModel) initReadRules(collabs []identity.CentID) error {
+	cd := m.Document
+	if len(cd.Roles) > 0 && len(cd.ReadRules) > 0 {
+		return nil
+	}
+
+	if len(collabs) < 1 {
+		return ErrZeroCollaborators
+	}
+
+	return m.addCollaboratorsToReadSignRules(collabs)
+}
+
+// addNewRule creates a new rule as per the role and action.
+func (m *CoreDocumentModel) addNewRule(role *coredocumentpb.Role, action coredocumentpb.Action) {
+	cd := m.Document
+	cd.Roles = append(cd.Roles, role)
+
+	rule := new(coredocumentpb.ReadRule)
+	rule.Roles = append(rule.Roles, role.RoleKey)
+	rule.Action = action
+	cd.ReadRules = append(cd.ReadRules, rule)
+}
+
+// findRole calls OnRole for every role,
+// if onRole returns true, returns true
+// else returns false
+func (m *CoreDocumentModel) findRole(action coredocumentpb.Action, onRole func(role *coredocumentpb.Role) bool) bool {
+	cd := m.Document
+	for _, rule := range cd.ReadRules {
+		if rule.Action != action {
+			continue
+		}
+
+		for _, rk := range rule.Roles {
+			role, err := getRole(rk, cd.Roles)
+			if err != nil {
+				// seems like roles and rules are not in sync
+				// skip to next one
+				continue
+			}
+
+			if onRole(role) {
+				return true
+			}
+
+		}
+	}
+
+	return false
+}
+
+// isAccountInRole returns true if account is in the given role as collaborators.
+func isAccountInRole(role *coredocumentpb.Role, account identity.CentID) bool {
+	for _, id := range role.Collaborators {
+		if bytes.Equal(id, account[:]) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func getRole(key []byte, roles []*coredocumentpb.Role) (*coredocumentpb.Role, error) {
+	for _, role := range roles {
+		if utils.IsSameByteSlice(role.RoleKey, key) {
+			return role, nil
+		}
+	}
+
+	return nil, errors.New("role %d not found", key)
+}
+
+func (m *CoreDocumentModel) addCollaboratorsToReadSignRules(collabs []identity.CentID) error {
+	if len(collabs) == 0 {
+		return nil
+	}
+	// create a role for given collaborators
+	role := new(coredocumentpb.Role)
+	cd := m.Document
+	rk, err := utils.ConvertIntToByte32(len(cd.Roles))
+	if err != nil {
+		return err
+	}
+	role.RoleKey = rk[:]
+	for _, c := range collabs {
+		c := c
+		role.Collaborators = append(role.Collaborators, c[:])
+	}
+
+	m.addNewRule(role, coredocumentpb.Action_ACTION_READ_SIGN)
+
 	return nil
 }
 
