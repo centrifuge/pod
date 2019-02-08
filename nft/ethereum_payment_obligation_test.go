@@ -337,3 +337,45 @@ func Test_createTokenProof(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, valid)
 }
+
+func Test_createNFTReadAccessProof_missing_nft(t *testing.T) {
+	cd, err := coredocument.NewWithCollaborators([]string{"0x010203040506"})
+	assert.Nil(t, err)
+	cd.EmbeddedData = &any.Any{
+		Value:   utils.RandomSlice(32),
+		TypeUrl: "some type",
+	}
+
+	cdTree, err := coredocument.GetCoreDocTree(cd)
+	assert.Nil(t, err)
+
+	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
+	_, err = createNFTReadAccessProof(cd, cdTree, registry, utils.RandomSlice(32))
+	assert.Error(t, err)
+}
+
+func Test_createNFTReadAccessProof(t *testing.T) {
+	cd := coredocument.New()
+	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
+	tokenID := utils.RandomSlice(32)
+	cd.EmbeddedData = &any.Any{
+		Value:   utils.RandomSlice(32),
+		TypeUrl: "some type",
+	}
+	assert.NoError(t, coredocument.AddNFTToReadRules(cd, registry, tokenID))
+	assert.Nil(t, coredocument.FillSalts(cd))
+
+	cdTree, err := coredocument.GetCoreDocTree(cd)
+	assert.Nil(t, err)
+
+	pf, err := createNFTReadAccessProof(cd, cdTree, registry, tokenID)
+	assert.NoError(t, err)
+	assert.Equal(t, pf.GetReadableName(), fmt.Sprintf("roles[%s].nfts[0]", hexutil.Encode(make([]byte, 32, 32))))
+
+	enft, err := coredocument.ConstructNFT(registry, tokenID)
+	assert.NoError(t, err)
+	assert.Equal(t, pf.Value, hexutil.Encode(enft))
+	valid, err := cdTree.ValidateProof(&pf)
+	assert.NoError(t, err)
+	assert.True(t, valid)
+}

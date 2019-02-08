@@ -37,24 +37,28 @@ func initReadRules(cd *coredocumentpb.CoreDocument, collabs []identity.CentID) e
 		return ErrZeroCollaborators
 	}
 
-	addCollaboratorsToReadSignRules(cd, collabs)
-	return nil
+	return addCollaboratorsToReadSignRules(cd, collabs)
 }
 
-func addCollaboratorsToReadSignRules(cd *coredocumentpb.CoreDocument, collabs []identity.CentID) {
+func addCollaboratorsToReadSignRules(cd *coredocumentpb.CoreDocument, collabs []identity.CentID) error {
 	if len(collabs) == 0 {
-		return
+		return nil
 	}
 
 	// create a role for given collaborators
 	role := new(coredocumentpb.Role)
-	role.RoleKey = utils.RandomSlice(32)
+	rk, err := utils.ConvertIntToByte32(len(cd.Roles))
+	if err != nil {
+		return err
+	}
+	role.RoleKey = rk[:]
 	for _, c := range collabs {
 		c := c
 		role.Collaborators = append(role.Collaborators, c[:])
 	}
 
 	addNewRule(cd, role, coredocumentpb.Action_ACTION_READ_SIGN)
+	return nil
 }
 
 // addNewRule creates a new rule as per the role and action.
@@ -120,7 +124,7 @@ type readAccessValidator struct {
 // Returns an error if not.
 func (r readAccessValidator) AccountCanRead(cd *coredocumentpb.CoreDocument, account identity.CentID) bool {
 	// loop though read rules
-	return findRole(cd, coredocumentpb.Action_ACTION_READ_SIGN, func(role *coredocumentpb.Role) bool {
+	return FindRole(cd, coredocumentpb.Action_ACTION_READ_SIGN, func(role *coredocumentpb.Role) bool {
 		return IsAccountInRole(role, account)
 	})
 }
@@ -172,8 +176,9 @@ func (r readAccessValidator) NFTOwnerCanRead(
 	}
 
 	// check if the nft is present in read rules
-	found := findRole(cd, coredocumentpb.Action_ACTION_READ, func(role *coredocumentpb.Role) bool {
-		return isNFTInRole(role, registry, tokenID)
+	found := FindRole(cd, coredocumentpb.Action_ACTION_READ, func(role *coredocumentpb.Role) bool {
+		_, found := IsNFTInRole(role, registry, tokenID)
+		return found
 	})
 
 	if !found {
@@ -194,10 +199,10 @@ func (r readAccessValidator) NFTOwnerCanRead(
 	return nil
 }
 
-// findRole calls OnRole for every role,
+// FindRole calls OnRole for every role,
 // if onRole returns true, returns true
 // else returns false
-func findRole(
+func FindRole(
 	cd *coredocumentpb.CoreDocument,
 	action coredocumentpb.Action,
 	onRole func(role *coredocumentpb.Role) bool) bool {
@@ -224,18 +229,18 @@ func findRole(
 	return false
 }
 
-// isNFTInRole checks if the given nft(registry + token) is part of the core document role.
-func isNFTInRole(role *coredocumentpb.Role, registry common.Address, tokenID []byte) bool {
+// IsNFTInRole checks if the given nft(registry + token) is part of the core document role.
+func IsNFTInRole(role *coredocumentpb.Role, registry common.Address, tokenID []byte) (int, bool) {
 	enft, err := ConstructNFT(registry, tokenID)
 	if err != nil {
-		return false
+		return 0, false
 	}
 
-	for _, n := range role.Nfts {
+	for i, n := range role.Nfts {
 		if bytes.Equal(n, enft) {
-			return true
+			return i, true
 		}
 	}
 
-	return false
+	return 0, false
 }
