@@ -23,7 +23,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/p2p/receiver"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
 	ma "github.com/multiformats/go-multiaddr"
@@ -40,7 +39,7 @@ func TestMain(m *testing.M) {
 	ethClient := &testingcommons.MockEthClient{}
 	ethClient.On("GetEthClient").Return(nil)
 	ctx[ethereum.BootstrappedEthereumClient] = ethClient
-	ibootstappers := []bootstrap.TestBootstrapper{
+	ibootstrappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
 		&leveldb.Bootstrapper{},
@@ -52,10 +51,10 @@ func TestMain(m *testing.M) {
 	}
 	idService = &testingcommons.MockIDService{}
 	ctx[identity.BootstrappedIDService] = idService
-	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
+	bootstrap.RunTestBootstrappers(ibootstrappers, ctx)
 	cfg = ctx[config.BootstrappedConfigStorage].(config.Service)
 	result := m.Run()
-	bootstrap.RunTestTeardown(ibootstappers)
+	bootstrap.RunTestTeardown(ibootstrappers)
 	os.Exit(result)
 }
 

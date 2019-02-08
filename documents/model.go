@@ -28,17 +28,17 @@ type Model interface {
 
 	// PackCoreDocument packs the implementing document into a core document
 	// should create the identifiers for the core document if not present
-	PackCoreDocument() (*coredocumentpb.CoreDocument, error)
+	PackCoreDocument() (*CoreDocumentModel, error)
 
 	// UnpackCoreDocument must return the document.Model
 	// assumes that core document has valid identifiers set
-	UnpackCoreDocument(cd *coredocumentpb.CoreDocument) error
+	UnpackCoreDocument(model *CoreDocumentModel) error
 
 	// CalculateDataRoot calculates the dataroot of precise-proofs tree of the model
 	CalculateDataRoot() ([]byte, error)
 
 	// CreateProofs creates precise-proofs for given fields
-	CreateProofs(fields []string) (coreDoc *coredocumentpb.CoreDocument, proofs []*proofspb.Proof, err error)
+	CreateProofs(fields []string) (coreDocModel *CoreDocumentModel, proofs []*proofspb.Proof, err error)
 }
 
 // TODO: could eventually be part of the CoreDocModel
@@ -137,6 +137,31 @@ func (m *CoreDocumentModel) PrepareNewVersion(collaborators []string) (*CoreDocu
 	ndm.TokenRegistry = m.TokenRegistry
 
 	return ndm, nil
+}
+
+// NewWithCollaborators generates new core document, adds collaborators, adds read rules and fills salts
+func (m *CoreDocumentModel) NewWithCollaborators(collaborators []string) (*CoreDocumentModel, error) {
+	dm := NewCoreDocModel()
+	ids, err := identity.CentIDsFromStrings(collaborators)
+	if err != nil {
+		return nil, errors.New("failed to decode collaborator: %v", err)
+	}
+	cd := dm.Document
+	for i := range ids {
+		cd.Collaborators = append(cd.Collaborators, ids[i][:])
+	}
+
+	err = dm.initReadRules(ids)
+	if err != nil {
+		return nil, errors.New("failed to init read rules: %v", err)
+	}
+
+	err = dm.fillSalts()
+	if err != nil {
+		return nil, err
+	}
+
+	return dm, nil
 }
 
 // CreateProofs util function that takes document data tree, coreDocument and a list fo fields and generates proofs
@@ -511,6 +536,23 @@ func fetchUniqueCollaborators(oldCollabs [][]byte, newCollabs []string) (ids []i
 	}
 
 	return ids, nil
+}
+
+// GetExternalCollaborators returns collaborators of a document without the own centID.
+func (m *CoreDocumentModel) GetExternalCollaborators(selfCentID identity.CentID) ([][]byte, error) {
+	var collabs [][]byte
+
+	for _, collab := range m.Document.Collaborators {
+		collabID, err := identity.ToCentID(collab)
+		if err != nil {
+			return nil, errors.New("failed to convert to CentID: %v", err)
+		}
+		if !selfCentID.Equal(collabID) {
+			collabs = append(collabs, collab)
+		}
+	}
+
+	return collabs, nil
 }
 
 // NFTOwnerCanRead checks if the nft owner/account can read the document

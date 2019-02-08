@@ -28,7 +28,6 @@ import (
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/testingutils/testingtx"
@@ -52,7 +51,7 @@ func TestMain(m *testing.M) {
 	done := make(chan bool)
 	txMan.On("ExecuteWithinTX", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(uuid.Nil, done, nil)
 
-	ibootstappers := []bootstrap.TestBootstrapper{
+	ibootstrappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
 		&leveldb.Bootstrapper{},
@@ -66,12 +65,12 @@ func TestMain(m *testing.M) {
 		&Bootstrapper{},
 		&queue.Starter{},
 	}
-	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
+	bootstrap.RunTestBootstrappers(ibootstrappers, ctx)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfg.Set("identityId", cid.String())
 	configService = ctx[config.BootstrappedConfigStorage].(config.Service)
 	result := m.Run()
-	bootstrap.RunTestTeardown(ibootstappers)
+	bootstrap.RunTestTeardown(ibootstrappers)
 	os.Exit(result)
 }
 

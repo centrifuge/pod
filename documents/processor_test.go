@@ -7,12 +7,12 @@ import (
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/golang/protobuf/ptypes/any"
@@ -32,14 +32,14 @@ type mockModel struct {
 	Model
 }
 
-func (m mockModel) PackCoreDocument() (*coredocumentpb.CoreDocument, error) {
+func (m mockModel) PackCoreDocument() (*CoreDocumentModel, error) {
 	args := m.Called()
-	cd, _ := args.Get(0).(*coredocumentpb.CoreDocument)
+	cd, _ := args.Get(0).(*CoreDocumentModel)
 	return cd, args.Error(1)
 }
 
-func (m mockModel) UnpackCoreDocument(cd *coredocumentpb.CoreDocument) error {
-	args := m.Called(cd)
+func (m mockModel) UnpackCoreDocument(model *CoreDocumentModel) error {
+	args := m.Called(model)
 	return args.Error(0)
 }
 
@@ -109,8 +109,8 @@ type p2pClient struct {
 	Client
 }
 
-func (p p2pClient) GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocument) error {
-	args := p.Called(ctx, doc)
+func (p p2pClient) GetSignaturesForDocument(ctx context.Context, model *CoreDocumentModel) error {
+	args := p.Called(ctx, model)
 	return args.Error(0)
 }
 

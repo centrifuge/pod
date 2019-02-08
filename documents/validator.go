@@ -2,11 +2,8 @@ package documents
 
 import (
 	"fmt"
-
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/centerrors"
-	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -56,15 +53,17 @@ func UpdateVersionValidator() Validator {
 			return errors.New("need both the old and new model")
 		}
 
-		oldCD, err := old.PackCoreDocument()
+		oldDM, err := old.PackCoreDocument()
 		if err != nil {
 			return errors.New("failed to fetch old core document: %v", err)
 		}
 
-		newCD, err := new.PackCoreDocument()
+		newDM, err := new.PackCoreDocument()
 		if err != nil {
 			return errors.New("failed to fetch new core document: %v", err)
 		}
+		oldCD := oldDM.Document
+		newCD := newDM.Document
 
 		checks := []struct {
 			name string
@@ -114,28 +113,15 @@ func UpdateVersionValidator() Validator {
 	})
 }
 
-// getCoreDocument takes an model and returns the core document of the model
-func getCoreDocument(model Model) (*coredocumentpb.CoreDocument, error) {
-	if model == nil {
-		return nil, errors.New("nil model")
-	}
-
-	cd, err := model.PackCoreDocument()
-	if err != nil {
-		return nil, errors.New("failed to pack core document: %v", err)
-	}
-
-	return cd, nil
-}
 
 // baseValidator validates the core document basic fields like identifier, versions, and salts
 func baseValidator() Validator {
 	return ValidatorFunc(func(_, model Model) error {
-		cd, err := getCoreDocument(model)
+		dm, err := model.PackCoreDocument()
 		if err != nil {
 			return err
 		}
-
+		cd := dm.Document
 		if cd == nil {
 			return errors.New("nil document")
 		}
@@ -181,11 +167,12 @@ func baseValidator() Validator {
 // recalculates the signing root and compares with existing one
 func signingRootValidator() Validator {
 	return ValidatorFunc(func(_, model Model) error {
-		cd, err := getCoreDocument(model)
+		dm, err := model.PackCoreDocument()
 		if err != nil {
 			return err
 		}
 
+		cd := dm.Document
 		if utils.IsEmptyByteSlice(cd.SigningRoot) {
 			return errors.New("signing root missing")
 		}
@@ -195,7 +182,7 @@ func signingRootValidator() Validator {
 			return err
 		}
 
-		tree, err := coredocument.GetDocumentSigningTree(cd, dataRoot)
+		tree, err := dm.GetDocumentSigningTree(dataRoot)
 		if err != nil {
 			return errors.New("failed to calculate signing root: %v", err)
 		}
@@ -212,16 +199,17 @@ func signingRootValidator() Validator {
 // recalculates the document root and compares with existing one
 func documentRootValidator() Validator {
 	return ValidatorFunc(func(_, model Model) error {
-		cd, err := getCoreDocument(model)
+		dm, err := model.PackCoreDocument()
 		if err != nil {
 			return err
 		}
 
+		cd := dm.Document
 		if utils.IsEmptyByteSlice(cd.DocumentRoot) {
 			return errors.New("document root missing")
 		}
 
-		tree, err := coredocument.GetDocumentRootTree(cd)
+		tree, err := dm.GetDocumentRootTree()
 		if err != nil {
 			return errors.New("failed to calculate document root: %v", err)
 		}
@@ -240,11 +228,12 @@ func documentRootValidator() Validator {
 // Note: this needs to used only before document is sent for signatures from the collaborators
 func readyForSignaturesValidator(centIDBytes, priv, pub []byte) Validator {
 	return ValidatorFunc(func(_, model Model) error {
-		cd, err := getCoreDocument(model)
+		dm, err := model.PackCoreDocument()
 		if err != nil {
 			return err
 		}
 
+		cd := dm.Document
 		if len(cd.Signatures) != 1 {
 			return errors.New("expecting only one signature")
 		}
@@ -273,11 +262,12 @@ func readyForSignaturesValidator(centIDBytes, priv, pub []byte) Validator {
 // Note: this will break the current flow where we proceed to anchor even signatures verification fails
 func signaturesValidator(idService identity.Service) Validator {
 	return ValidatorFunc(func(_, model Model) error {
-		cd, err := getCoreDocument(model)
+		dm, err := model.PackCoreDocument()
 		if err != nil {
 			return err
 		}
 
+		cd := dm.Document
 		if len(cd.Signatures) < 1 {
 			return errors.New("atleast one signature expected")
 		}
@@ -300,11 +290,12 @@ func signaturesValidator(idService identity.Service) Validator {
 // assumes document root is generated and verified
 func anchoredValidator(repo anchors.AnchorRepository) Validator {
 	return ValidatorFunc(func(_, new Model) error {
-		cd, err := getCoreDocument(new)
+		dm, err := new.PackCoreDocument()
 		if err != nil {
 			return errors.New("failed to get core document: %v", err)
 		}
 
+		cd := dm.Document
 		anchorID, err := anchors.ToAnchorID(cd.CurrentVersion)
 		if err != nil {
 			return errors.New("failed to get anchorID: %v", err)

@@ -3,9 +3,7 @@ package purchaseorder
 import (
 	"context"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/contextutil"
-	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -57,10 +55,10 @@ func DefaultService(
 	}
 }
 
-// DeriveFromCoreDocument takes a core document and returns a purchase order
-func (s service) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (documents.Model, error) {
+// DeriveFromCoreDocument takes a core document model and returns a purchase order
+func (s service) DeriveFromCoreDocumentModel(coreDocModel *documents.CoreDocumentModel) (documents.Model, error) {
 	var model documents.Model = new(PurchaseOrder)
-	err := model.UnpackCoreDocument(cd)
+	err := model.UnpackCoreDocument(coreDocModel)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentUnPackingCoreDocument, err)
 	}
@@ -87,7 +85,7 @@ func (s service) validateAndPersist(ctx context.Context, old, new documents.Mode
 	}
 
 	// we use CurrentVersion as the id since that will be unique across multiple versions of the same document
-	err = s.repo.Create(self.ID[:], po.CoreDocument.CurrentVersion, po)
+	err = s.repo.Create(self.ID[:], po.CoreDocumentModel.Document.CurrentVersion, po)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentPersistence, err)
 	}
@@ -107,13 +105,13 @@ func (s service) Create(ctx context.Context, po documents.Model) (documents.Mode
 		return nil, uuid.Nil, nil, err
 	}
 
-	cd, err := po.PackCoreDocument()
+	dm, err := po.PackCoreDocument()
 	if err != nil {
 		return nil, uuid.Nil, nil, err
 	}
 
 	txID := contextutil.TX(ctx)
-	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, self.ID, txID, cd.CurrentVersion)
+	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, self.ID, txID, dm.Document.CurrentVersion)
 	if err != nil {
 		return nil, uuid.Nil, nil, nil
 	}
@@ -127,12 +125,12 @@ func (s service) Update(ctx context.Context, po documents.Model) (documents.Mode
 		return nil, uuid.Nil, nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
 	}
 
-	cd, err := po.PackCoreDocument()
+	dm, err := po.PackCoreDocument()
 	if err != nil {
 		return nil, uuid.Nil, nil, errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
 	}
 
-	old, err := s.GetCurrentVersion(ctx, cd.DocumentIdentifier)
+	old, err := s.GetCurrentVersion(ctx, dm.Document.DocumentIdentifier)
 	if err != nil {
 		return nil, uuid.Nil, nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
 	}
@@ -143,7 +141,7 @@ func (s service) Update(ctx context.Context, po documents.Model) (documents.Mode
 	}
 
 	txID := contextutil.TX(ctx)
-	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, self.ID, txID, cd.CurrentVersion)
+	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, self.ID, txID, dm.Document.CurrentVersion)
 	if err != nil {
 		return nil, uuid.Nil, nil, err
 	}
@@ -195,7 +193,7 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *clientpop
 	}
 
 	// update core document
-	oldCD, err := old.PackCoreDocument()
+	oldDM, err := old.PackCoreDocument()
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
 	}
@@ -206,7 +204,7 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *clientpop
 	}
 
 	collaborators := append([]string{idConf.ID.String()}, payload.Collaborators...)
-	po.CoreDocument, err = coredocument.PrepareNewVersion(*oldCD, collaborators)
+	po.CoreDocumentModel, err = oldDM.PrepareNewVersion(collaborators)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentPrepareCoreDocument, err)
 	}
@@ -226,11 +224,11 @@ func (s service) DerivePurchaseOrderData(doc documents.Model) (*clientpopb.Purch
 
 // DerivePurchaseOrderResponse returns po response from the model
 func (s service) DerivePurchaseOrderResponse(doc documents.Model) (*clientpopb.PurchaseOrderResponse, error) {
-	cd, err := doc.PackCoreDocument()
+	dm, err := doc.PackCoreDocument()
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
 	}
-
+	cd := dm.Document
 	collaborators := make([]string, len(cd.Collaborators))
 	for i, c := range cd.Collaborators {
 		cid, err := identity.ToCentID(c)
