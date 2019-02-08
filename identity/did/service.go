@@ -164,7 +164,7 @@ func (i service) AddKey(ctx context.Context, key Key) error {
 
 	// TODO: did can be passed instead of randomCentID after CentID is DID
 	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), id.RandomCentID(), uuid.Nil, "Check TX for add key",
-		i.ethereumTX(opts, contract.AddKey, key.GetKey(),key.GetPurpose(),key.GetType()))
+		i.ethereumTX(opts, contract.AddKey, key.GetKey(), key.GetPurpose(), key.GetType()))
 	if err != nil {
 		return err
 	}
@@ -179,11 +179,8 @@ func (i service) AddKey(ctx context.Context, key Key) error {
 
 }
 
-
-
-
 // AddMultiPurposeKey adds a key with multiple purposes
-func (i service) AddMultiPurposeKey(ctx context.Context, key [32]byte, purposes []*big.Int, keyType *big.Int)  error {
+func (i service) AddMultiPurposeKey(ctx context.Context, key [32]byte, purposes []*big.Int, keyType *big.Int) error {
 	did, err := i.getDID(ctx)
 	if err != nil {
 		return err
@@ -196,7 +193,7 @@ func (i service) AddMultiPurposeKey(ctx context.Context, key [32]byte, purposes 
 
 	// TODO: did can be passed instead of randomCentID after CentID is DID
 	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), id.RandomCentID(), uuid.Nil, "Check TX for add key",
-		i.ethereumTX(opts, contract.AddMultiPurposeKey, key,purposes,keyType))
+		i.ethereumTX(opts, contract.AddMultiPurposeKey, key, purposes, keyType))
 	if err != nil {
 		return err
 	}
@@ -211,7 +208,7 @@ func (i service) AddMultiPurposeKey(ctx context.Context, key [32]byte, purposes 
 }
 
 // ethereumTX is submitting an Ethereum transaction and starts a task to wait for the transaction result
-func (i service) ethereumTX(opts *bind.TransactOpts, contractMethod interface{}, params ... interface{}) func(accountID id.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
+func (i service) ethereumTX(opts *bind.TransactOpts, contractMethod interface{}, params ...interface{}) func(accountID id.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
 	return func(accountID id.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
 		ethTX, err := i.client.SubmitTransactionWithRetries(contractMethod, opts, params...)
 		if err != nil {
