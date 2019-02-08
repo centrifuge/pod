@@ -1,16 +1,15 @@
 package nft
 
 import (
+	"bytes"
 	"context"
 	"math/big"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
-
-	"github.com/centrifuge/go-centrifuge/coredocument"
-
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
+	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
@@ -21,12 +20,16 @@ import (
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	logging "github.com/ipfs/go-log"
 	"github.com/satori/go.uuid"
 )
 
 var log = logging.Logger("nft")
+
+// ErrNFTMinted error for NFT already minted for registry
+const ErrNFTMinted = errors.Error("NFT already minted")
 
 // ethereumPaymentObligationContract is an abstraction over the contract code to help in mocking it out
 type ethereumPaymentObligationContract interface {
@@ -132,11 +135,27 @@ func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, documentID []by
 	}
 
 	tokenID := NewTokenID()
+	model, err := s.docSrv.GetCurrentVersion(ctx, documentID)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	cd, err := model.PackCoreDocument()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	registry := common.HexToAddress(registryAddress)
+	mt := getStoredNFT(cd.Nfts, registry.Bytes())
+	// check if the nft is successfully minted
+	if mt != nil && s.isNFTMinted(registry, mt.TokenId) {
+		return nil, nil, errors.NewTypedError(ErrNFTMinted, errors.New("registry %v", registry.String()))
+	}
+
 	// Mint NFT within transaction
 	// We use context.Background() for now so that the transaction is only limited by ethereum timeouts
 	txID, done, err := s.txManager.ExecuteWithinTX(context.Background(), cid, uuid.Nil, "Minting NFT",
-		s.minter(ctx, tokenID, documentID, registryAddress, depositAddress, proofFields))
-
+		s.minter(ctx, tokenID, model, registry, depositAddress, proofFields))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -147,18 +166,16 @@ func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, documentID []by
 	}, done, nil
 }
 
-func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID, documentID []byte, registryAddress, depositAddress string, proofFields []string) func(accountID identity.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
+func (s *ethereumPaymentObligation) isNFTMinted(registry common.Address, tokenID []byte) bool {
+	// since OwnerOf throws when owner is zero address,
+	// if err is not thrown, we can assume that NFT is minted
+	_, err := s.OwnerOf(registry, tokenID)
+	return err == nil
+}
+
+func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID, model documents.Model, registry common.Address, depositAddress string, proofFields []string) func(accountID identity.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
 	return func(accountID identity.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
 		tc, err := contextutil.Account(ctx)
-		if err != nil {
-			errOut <- err
-			return
-		}
-
-		// registry address
-		registry := common.HexToAddress(registryAddress)
-
-		model, err := s.docSrv.GetCurrentVersion(ctx, documentID)
 		if err != nil {
 			errOut <- err
 			return
@@ -178,6 +195,7 @@ func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID,
 		}
 
 		cd.EmbeddedData = data
+		addNFT(cd, registry.Bytes(), tokenID[:])
 		err = coredocument.AddNFTToReadRules(cd, registry, tokenID.BigInt().Bytes())
 		if err != nil {
 			errOut <- err
@@ -199,11 +217,11 @@ func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID,
 		isDone := <-done
 		if !isDone {
 			// some problem occured in a child task
-			errOut <- errors.New("update document failed for document %s and transaction %s", hexutil.Encode(documentID), txID)
+			errOut <- errors.New("update document failed for document %s and transaction %s", hexutil.Encode(cd.DocumentIdentifier), txID)
 			return
 		}
 
-		requestData, err := s.prepareMintRequest(ctx, tokenID, documentID, depositAddress, proofFields)
+		requestData, err := s.prepareMintRequest(ctx, tokenID, cd.DocumentIdentifier, depositAddress, proofFields)
 		if err != nil {
 			errOut <- errors.New("failed to prepare mint request: %v", err)
 			return
@@ -245,6 +263,31 @@ func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID,
 		}
 		errOut <- nil
 	}
+}
+
+func getStoredNFT(nfts []*coredocumentpb.NFT, registry []byte) *coredocumentpb.NFT {
+	for _, nft := range nfts {
+		if bytes.Equal(nft.RegistryId[:20], registry) {
+			return nft
+		}
+	}
+
+	return nil
+}
+
+// addNFT adds/replaces the NFT
+// Note: this is replace operation. Ensure existing token is not minted
+func addNFT(cd *coredocumentpb.CoreDocument, registry, tokenID []byte) {
+	nft := getStoredNFT(cd.Nfts, registry)
+	if nft == nil {
+		nft = new(coredocumentpb.NFT)
+		// add 12 empty bytes
+		eb := make([]byte, 12, 12)
+		nft.RegistryId = append(registry, eb...)
+		cd.Nfts = append(cd.Nfts, nft)
+	}
+
+	nft.TokenId = tokenID
 }
 
 // OwnerOf returns the owner of the NFT token on ethereum chain
