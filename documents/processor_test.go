@@ -89,7 +89,7 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 	model.AssertExpectations(t)
 
 	// success
-	cd.Signatures = nil
+	cd.SignatureData.Signatures = nil
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
 	model.On("UnpackCoreDocument", cd).Return(nil).Once()
@@ -97,9 +97,9 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 	err = dp.PrepareForSignatureRequests(ctxh, model)
 	model.AssertExpectations(t)
 	assert.Nil(t, err)
-	assert.NotNil(t, cd.Signatures)
-	assert.Len(t, cd.Signatures, 1)
-	sig := cd.Signatures[0]
+	assert.NotNil(t, cd.SignatureData.Signatures)
+	assert.Len(t, cd.SignatureData.Signatures, 1)
+	sig := cd.SignatureData.Signatures[0]
 	self, _ := contextutil.Self(ctxh)
 	assert.True(t, ed25519.Verify(self.Keys[identity.KeyPurposeSigning].PublicKey, cd.SigningRoot, sig.Signature))
 }
@@ -228,7 +228,7 @@ func TestDefaultProcessor_PrepareForAnchoring(t *testing.T) {
 	c, err := identity.GetIdentityConfig(cfg)
 	assert.Nil(t, err)
 	s := identity.Sign(c, identity.KeyPurposeSigning, cd.SigningRoot)
-	cd.Signatures = []*coredocumentpb.Signature{s}
+	cd.SignatureData.Signatures = []*coredocumentpb.Signature{s}
 	assert.Nil(t, err)
 	srv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
 	dp = DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
@@ -304,7 +304,7 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	c, err := identity.GetIdentityConfig(cfg)
 	assert.Nil(t, err)
 	s := identity.Sign(c, identity.KeyPurposeSigning, cd.SigningRoot)
-	cd.Signatures = []*coredocumentpb.Signature{s}
+	cd.SignatureData.Signatures = []*coredocumentpb.Signature{s}
 	assert.Nil(t, coredocument.CalculateDocumentRoot(cd))
 	assert.Nil(t, err)
 	srv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil).Once()
@@ -370,7 +370,7 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	c, err := identity.GetIdentityConfig(cfg)
 	assert.Nil(t, err)
 	s := identity.Sign(c, identity.KeyPurposeSigning, cd.SigningRoot)
-	cd.Signatures = []*coredocumentpb.Signature{s}
+	cd.SignatureData.Signatures = []*coredocumentpb.Signature{s}
 	model.On("CalculateDataRoot").Return(cd.DataRoot, nil)
 	assert.Nil(t, coredocument.CalculateDocumentRoot(cd))
 	docRoot, err := anchors.ToDocumentRoot(cd.DocumentRoot)

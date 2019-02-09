@@ -338,10 +338,10 @@ func TestValidator_selfSignatureValidator(t *testing.T) {
 	cd.SigningRoot = utils.RandomSlice(32)
 	s := &coredocumentpb.Signature{
 		Signature: utils.RandomSlice(32),
-		EntityId:  utils.RandomSlice(6),
+		SignerId:  utils.RandomSlice(6),
 		PublicKey: utils.RandomSlice(32),
 	}
-	cd.Signatures = append(cd.Signatures, s)
+	cd.SignatureData.Signatures = append(cd.SignatureData.Signatures, s)
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
 	err = rfsv.Validate(nil, model)
@@ -354,7 +354,7 @@ func TestValidator_selfSignatureValidator(t *testing.T) {
 	c, err := identity.GetIdentityConfig(cfg)
 	assert.Nil(t, err)
 	s = identity.Sign(c, identity.KeyPurposeSigning, cd.SigningRoot)
-	cd.Signatures = []*coredocumentpb.Signature{s}
+	cd.SignatureData.Signatures = []*coredocumentpb.Signature{s}
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
 	err = rfsv.Validate(nil, model)
@@ -387,8 +387,8 @@ func TestValidator_signatureValidator(t *testing.T) {
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
 	srv.On("ValidateSignature", mock.Anything, mock.Anything).Return(errors.New("fail")).Once()
-	s := &coredocumentpb.Signature{EntityId: utils.RandomSlice(7)}
-	cd.Signatures = append(cd.Signatures, s)
+	s := &coredocumentpb.Signature{SignerId: utils.RandomSlice(7)}
+	cd.SignatureData.Signatures = append(cd.SignatureData.Signatures, s)
 	err = ssv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
@@ -399,7 +399,7 @@ func TestValidator_signatureValidator(t *testing.T) {
 	model.On("PackCoreDocument").Return(cd, nil).Once()
 	srv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil).Once()
 	cd.SigningRoot = utils.RandomSlice(32)
-	cd.Signatures = []*coredocumentpb.Signature{{}}
+	cd.SignatureData.Signatures = []*coredocumentpb.Signature{{}}
 
 	err = ssv.Validate(nil, model)
 	model.AssertExpectations(t)

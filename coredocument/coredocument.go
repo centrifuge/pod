@@ -75,6 +75,36 @@ func CalculateDocumentRoot(document *coredocumentpb.CoreDocument) error {
 	return nil
 }
 
+func getSignatureDataSalts(document *coredocumentpb.CoreDocument) (*coredocumentpb.SignatureDataSalts, error) {
+	if document.SignatureDataSalts == nil {
+		signatureSalts := new(coredocumentpb.SignatureDataSalts)
+		err := proofs.FillSalts(document.SignatureData, signatureSalts)
+		if err != nil {
+			return nil, err
+		}
+		document.SignatureDataSalts = signatureSalts
+	}
+	return document.SignatureDataSalts, nil
+}
+
+func GetSignatureDataTree(document *coredocumentpb.CoreDocument) (*proofs.DocumentTree, error) {
+	h := sha256.New()
+	tree := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: h})
+	signatureSalts, err := getSignatureDataSalts(document)
+	if err != nil {
+		return nil, err
+	}
+	err = tree.AddLeavesFromDocument(document.SignatureData, signatureSalts)
+	if err != nil {
+		return nil, err
+	}
+	err = tree.Generate()
+	if err != nil {
+		return nil, err
+	}
+	return &tree, nil
+}
+
 // GetDocumentRootTree returns the merkle tree for the document root
 func GetDocumentRootTree(document *coredocumentpb.CoreDocument) (tree *proofs.DocumentTree, err error) {
 	h := sha256.New()
@@ -259,6 +289,7 @@ func New() *coredocumentpb.CoreDocument {
 		DocumentIdentifier: id,
 		CurrentVersion:     id,
 		NextVersion:        utils.RandomSlice(32),
+		SignatureData:      new(coredocumentpb.SignatureData),
 	}
 }
 

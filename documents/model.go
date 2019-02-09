@@ -58,6 +58,7 @@ func NewCoreDocModel() *CoreDocumentModel {
 		DocumentIdentifier: id,
 		CurrentVersion:     id,
 		NextVersion:        utils.RandomSlice(32),
+		SignatureData:      new(coredocumentpb.SignatureData),
 	}
 	return &CoreDocumentModel{
 		cd,
@@ -237,10 +238,11 @@ func (m *CoreDocumentModel) GetDocumentSigningTree(dataRoot []byte) (tree *proof
 	return tree, nil
 }
 
-func (m *CoreDocumentModel) getSignatureDataSalts(signatureData *coredocumentpb.SignatureData) (*coredocumentpb.SignatureDataSalts, error) {
+func (m *CoreDocumentModel) getSignatureDataSalts() (*coredocumentpb.SignatureDataSalts, error) {
 	if m.Document.SignatureDataSalts == nil {
 		signatureSalts := new(coredocumentpb.SignatureDataSalts)
-		err := proofs.FillSalts(signatureData, signatureSalts)
+		proofs.Salts{}
+		err := proofs.FillSalts(m.Document.SignatureData, signatureSalts)
 		if err != nil {
 			return nil, err
 		}
@@ -252,14 +254,27 @@ func (m *CoreDocumentModel) getSignatureDataSalts(signatureData *coredocumentpb.
 func (m *CoreDocumentModel) GetSignatureDataTree() (*proofs.DocumentTree, error) {
 	h := sha256.New()
 	tree := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: h})
-	signatureSalts, err := m.getSignatureDataSalts(m.Document.SignatureData)
+	signatureSalts, err := m.getSignatureDataSalts()
 	if err != nil {
 		return nil, err
 	}
-	err = tree.AddLeavesFromDocument(m.Document.SignatureData, signatureSalts)
-	if err != nil {
-		return nil, err
-	}
+
+	//if len(m.Document.SignatureData.Signatures) == 0 {
+	//	err = tree.AddLeaf(proofs.LeafNode{Hash: []byte{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}, Hashed: true, Property: proofs.NewProperty("signature_data_root")})
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//	err = tree.AddLeaf(proofs.LeafNode{Hash: []byte{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}, Hashed: true, Property: proofs.NewProperty("signature_data_root1")})
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//} else {
+		err = tree.AddLeavesFromDocument(m.Document.SignatureData, signatureSalts)
+		if err != nil {
+			return nil, err
+		}
+	//}
+
 	err = tree.Generate()
 	if err != nil {
 		return nil, err

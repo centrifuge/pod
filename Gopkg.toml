@@ -28,7 +28,7 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts","github.com/ma
 
 [[constraint]]
   name = "github.com/centrifuge/centrifuge-protobufs"
-  revision = "bd89b98222a00c561d882fdc68bfa2869889ccdd"
+  revision = "76a6e20ca4e3f9a81b658e200eee5e7cca1caf5e"
   source = "github.com/mikiquantum/centrifuge-protobufs"
 
 [[override]]
@@ -45,7 +45,8 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts","github.com/ma
 
 [[override]]
   name = "github.com/centrifuge/precise-proofs"
-  revision = "8c3b6a26b7929ec269302dc50d17c9ceb9772dda"
+  revision = "0c99b738c9eca158157cdd283844bc8d82638ec8"
+  source = "github.com/mikiquantum/precise-proofs"
 
 [[constraint]]
   name = "github.com/centrifuge/gocelery"
