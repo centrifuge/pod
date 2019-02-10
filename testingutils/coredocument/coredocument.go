@@ -13,13 +13,14 @@ import (
 	"github.com/golang/protobuf/ptypes/any"
 )
 
-func GenerateCoreDocument() *coredocumentpb.CoreDocument {
+func GenerateCoreDocumentWithCollaborators(collaborators [][]byte) *coredocumentpb.CoreDocument {
 	identifier := utils.RandomSlice(32)
 	invData := &invoicepb.InvoiceData{}
 	dataSalts, _ := documents.GenerateNewSalts(invData, "invoice")
 
 	serializedInv, _ := proto.Marshal(invData)
 	doc := &coredocumentpb.CoreDocument{
+		Collaborators:      collaborators,
 		DocumentIdentifier: identifier,
 		CurrentVersion:     identifier,
 		NextVersion:        utils.RandomSlice(32),
@@ -32,4 +33,8 @@ func GenerateCoreDocument() *coredocumentpb.CoreDocument {
 	cdSalts, _ := documents.GenerateNewSalts(doc, "")
 	doc.CoredocumentSalts = documents.ConvertToProtoSalts(cdSalts)
 	return doc
+}
+
+func GenerateCoreDocument() *coredocumentpb.CoreDocument {
+	return GenerateCoreDocumentWithCollaborators(nil)
 }

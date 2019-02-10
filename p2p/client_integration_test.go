@@ -7,10 +7,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
-	"github.com/golang/protobuf/proto"
+	"github.com/centrifuge/go-centrifuge/testingutils/coredocument"
 
-	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -23,8 +21,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/centrifuge/precise-proofs/proofs"
-	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -98,37 +94,8 @@ func createLocalCollaborator(t *testing.T, corruptID bool) (*configstore.Account
 func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte) *coredocumentpb.CoreDocument {
 	idConfig, err := identity.GetIdentityConfig(cfg)
 	assert.Nil(t, err)
-	identifier := utils.RandomSlice(32)
 
-	dataSalts := &invoicepb.InvoiceDataSalts{}
-	invData := &invoicepb.InvoiceData{}
-	err = proofs.FillSalts(invData, dataSalts)
-	assert.Nil(t, err)
-
-	serializedInv, err := proto.Marshal(invData)
-	assert.Nil(t, err)
-	serializedInvSalts, err := proto.Marshal(dataSalts)
-	assert.Nil(t, err)
-
-	salts := &coredocumentpb.CoreDocumentSalts{}
-	doc := &coredocumentpb.CoreDocument{
-		Collaborators:      collaborators,
-		DocumentIdentifier: identifier,
-		CurrentVersion:     identifier,
-		NextVersion:        utils.RandomSlice(32),
-		CoredocumentSalts:  salts,
-		EmbeddedData: &any.Any{
-			TypeUrl: documenttypes.InvoiceDataTypeUrl,
-			Value:   serializedInv,
-		},
-		EmbeddedDataSalts: &any.Any{
-			TypeUrl: documenttypes.InvoiceSaltsTypeUrl,
-			Value:   serializedInvSalts,
-		},
-	}
-
-	err = proofs.FillSalts(doc, salts)
-	assert.Nil(t, err)
+	doc := testingcoredocument.GenerateCoreDocumentWithCollaborators(collaborators)
 
 	m, err := docService.DeriveFromCoreDocument(doc)
 	assert.Nil(t, err)

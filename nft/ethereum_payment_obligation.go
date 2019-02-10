@@ -321,8 +321,8 @@ type MintRequest struct {
 	// MerkleRoot is the root hash of the merkle proof/doc
 	MerkleRoot [32]byte
 
-	// Values are the values of the leafs that is being proved and concatenated for proof verification as outlined in precise-proofs library.
-	Values [][]byte
+	// Values are the values of the leafs that is being proved Will be converted to string and concatenated for proof verification as outlined in precise-proofs library.
+	Values []string
 
 	// salts are the salts for the field that is being proved Will be concatenated for proof verification as outlined in precise-proofs library.
 	Salts [][32]byte
@@ -350,18 +350,18 @@ func NewMintRequest(tokenID TokenID, to common.Address, anchorID anchors.AnchorI
 }
 
 type proofData struct {
-	Values [][]byte
+	Values []string
 	Salts  [][32]byte
 	Proofs [][][32]byte
 }
 
 func createProofData(proofspb []*proofspb.Proof) (*proofData, error) {
-	var values = make([][]byte, len(proofspb))
+	var values = make([]string, len(proofspb))
 	var salts = make([][32]byte, len(proofspb))
 	var proofs = make([][][32]byte, len(proofspb))
 
 	for i, p := range proofspb {
-		values[i] = p.Value
+		values[i] = hexutil.Encode(p.Value)
 		salt32, err := utils.SliceToByte32(p.Salt)
 		if err != nil {
 			return nil, err
