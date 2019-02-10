@@ -58,8 +58,6 @@ type Service interface {
 
 	// RevokeKey revokes an existing key in the smart contract
 	RevokeKey(ctx context.Context, key [32]byte) error
-
-
 }
 
 type contract interface {
@@ -215,7 +213,7 @@ func (i service) AddMultiPurposeKey(ctx context.Context, key [32]byte, purposes 
 }
 
 // RevokeKey revokes an existing key in the smart contract
-func (i service) RevokeKey(ctx context.Context, key [32]byte) error{
+func (i service) RevokeKey(ctx context.Context, key [32]byte) error {
 	did, err := i.getDID(ctx)
 	if err != nil {
 		return err
