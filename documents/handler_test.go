@@ -156,7 +156,7 @@ func TestConvertDocProofToClientFormat(t *testing.T) {
 				FieldProofs: []*proofspb.Proof{
 					{
 						Property: proofs.ReadableName("prop1"),
-						Value:    "val1",
+						Value:    []byte("val1"),
 						Salt:     []byte{1, 2, 3},
 						Hash:     []byte{1, 2, 4},
 						SortedHashes: [][]byte{
@@ -176,7 +176,7 @@ func TestConvertDocProofToClientFormat(t *testing.T) {
 				FieldProofs: []*documentpb.Proof{
 					{
 						Property: "prop1",
-						Value:    "val1",
+						Value:    hexutil.Encode([]byte("val1")),
 						Salt:     "0x010203",
 						Hash:     "0x010204",
 						SortedHashes: []string{
@@ -214,7 +214,7 @@ func TestConvertProofsToClientFormat(t *testing.T) {
 	clientFormat := documents.ConvertProofsToClientFormat([]*proofspb.Proof{
 		{
 			Property: proofs.ReadableName("prop1"),
-			Value:    "val1",
+			Value:    []byte("val1"),
 			Salt:     utils.RandomSlice(32),
 			Hash:     utils.RandomSlice(32),
 			SortedHashes: [][]byte{
@@ -225,7 +225,7 @@ func TestConvertProofsToClientFormat(t *testing.T) {
 		},
 		{
 			Property: proofs.ReadableName("prop2"),
-			Value:    "val2",
+			Value:    []byte("val2"),
 			Salt:     utils.RandomSlice(32),
 			Hash:     utils.RandomSlice(32),
 			SortedHashes: [][]byte{

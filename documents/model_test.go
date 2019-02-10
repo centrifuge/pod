@@ -203,11 +203,9 @@ func TestGetSigningProofHashes(t *testing.T) {
 	cd := dm.Document
 	cd.EmbeddedData = docAny
 	cd.DataRoot = utils.RandomSlice(32)
-	salts := new(coredocumentpb.CoreDocumentSalts)
-	err := proofs.FillSalts(cd, salts)
-	assert.Nil(t, err)
+	_, err := dm.getCoreDocumentSalts()
+	assert.NoError(t, err)
 
-	cd.CoredocumentSalts = salts
 	err = dm.CalculateSigningRoot(cd.DataRoot)
 	assert.Nil(t, err)
 
@@ -232,11 +230,8 @@ func TestGetDataProofHashes(t *testing.T) {
 	cd := dm.Document
 	cd.EmbeddedData = docAny
 	cd.DataRoot = utils.RandomSlice(32)
-	cds := &coredocumentpb.CoreDocumentSalts{}
-	err := proofs.FillSalts(cd, cds)
-	assert.Nil(t, err)
-
-	cd.CoredocumentSalts = cds
+	_, err := dm.getCoreDocumentSalts()
+	assert.NoError(t, err)
 
 	err = dm.CalculateSigningRoot(cd.DataRoot)
 	assert.Nil(t, err)
@@ -261,9 +256,8 @@ func TestGetDocumentSigningTree(t *testing.T) {
 	dm := NewCoreDocModel()
 	cd := dm.Document
 	cd.EmbeddedData = docAny
-	cds := &coredocumentpb.CoreDocumentSalts{}
-	proofs.FillSalts(cd, cds)
-	cd.CoredocumentSalts = cds
+	_, err := dm.getCoreDocumentSalts()
+	assert.NoError(t, err)
 	tree, err := dm.GetDocumentSigningTree(cd.DataRoot)
 	assert.Nil(t, err)
 	assert.NotNil(t, tree)
@@ -278,9 +272,8 @@ func TestGetDocumentSigningTree(t *testing.T) {
 func TestGetDocumentSigningTree_EmptyEmbeddedData(t *testing.T) {
 	dm := NewCoreDocModel()
 	cd := dm.Document
-	cds := &coredocumentpb.CoreDocumentSalts{}
-	proofs.FillSalts(cd, cds)
-	cd.CoredocumentSalts = cds
+	_, err := dm.getCoreDocumentSalts()
+	assert.NoError(t, err)
 	tree, err := dm.GetDocumentSigningTree(cd.DataRoot)
 	assert.NotNil(t, err)
 	assert.Nil(t, tree)
@@ -317,7 +310,7 @@ func TestCreateProofs(t *testing.T) {
 	cd := dm.Document
 	cd.EmbeddedData = docAny
 	cd.Collaborators = [][]byte{utils.RandomSlice(32), utils.RandomSlice(32)}
-	err = dm.fillSalts()
+	_, err = dm.getCoreDocumentSalts()
 	assert.NoError(t, err)
 	err = dm.CalculateSigningRoot(testTree.RootHash())
 	assert.NoError(t, err)

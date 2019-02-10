@@ -15,7 +15,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
-	"github.com/centrifuge/go-centrifuge/testingutils/coredocument"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -52,11 +51,9 @@ func TestGetSigningProofHashes(t *testing.T) {
 	cd := New()
 	cd.EmbeddedData = docAny
 	cd.DataRoot = utils.RandomSlice(32)
-	cds := &coredocumentpb.CoreDocumentSalts{}
-	err := proofs.FillSalts(cd, cds)
-	assert.Nil(t, err)
+	err := FillSalts(cd)
+	assert.NoError(t, err)
 
-	cd.CoredocumentSalts = cds
 	err = CalculateSigningRoot(cd, cd.DataRoot)
 	assert.Nil(t, err)
 
@@ -80,11 +77,8 @@ func TestGetDataProofHashes(t *testing.T) {
 	cd := New()
 	cd.EmbeddedData = docAny
 	cd.DataRoot = utils.RandomSlice(32)
-	cds := &coredocumentpb.CoreDocumentSalts{}
-	err := proofs.FillSalts(cd, cds)
-	assert.Nil(t, err)
-
-	cd.CoredocumentSalts = cds
+	err := FillSalts(cd)
+	assert.NoError(t, err)
 
 	err = CalculateSigningRoot(cd, cd.DataRoot)
 	assert.Nil(t, err)
@@ -108,9 +102,8 @@ func TestGetDocumentSigningTree(t *testing.T) {
 	}
 	cd := New()
 	cd.EmbeddedData = docAny
-	cds := &coredocumentpb.CoreDocumentSalts{}
-	proofs.FillSalts(cd, cds)
-	cd.CoredocumentSalts = cds
+	err := FillSalts(cd)
+	assert.NoError(t, err)
 	tree, err := GetDocumentSigningTree(cd, cd.DataRoot)
 	assert.Nil(t, err)
 	assert.NotNil(t, tree)
@@ -124,9 +117,8 @@ func TestGetDocumentSigningTree(t *testing.T) {
 
 func TestGetDocumentSigningTree_EmptyEmbeddedData(t *testing.T) {
 	cd := New()
-	cds := &coredocumentpb.CoreDocumentSalts{}
-	proofs.FillSalts(cd, cds)
-	cd.CoredocumentSalts = cds
+	err := FillSalts(cd)
+	assert.NoError(t, err)
 	tree, err := GetDocumentSigningTree(cd, cd.DataRoot)
 	assert.NotNil(t, err)
 	assert.Nil(t, tree)
@@ -142,21 +134,6 @@ func TestGetDocumentRootTree(t *testing.T) {
 	expectedRootHash := sha256.Sum256(append(signaturesLengthLeaf[:], cd.SigningRoot...))
 	assert.Nil(t, err)
 	assert.Equal(t, expectedRootHash[:], tree.RootHash())
-}
-
-func TestGetTypeUrl(t *testing.T) {
-	coreDocument := testingcoredocument.GenerateCoreDocument()
-
-	documentType, err := GetTypeURL(coreDocument)
-	assert.Nil(t, err, "should not throw an error because coreDocument has a type")
-	assert.NotEqual(t, documentType, "", "document type shouldn't be empty")
-
-	_, err = GetTypeURL(nil)
-	assert.Error(t, err, "nil should throw an error")
-
-	coreDocument.EmbeddedData.TypeUrl = ""
-	_, err = GetTypeURL(nil)
-	assert.Error(t, err, "should throw an error because typeUrl is not set")
 }
 
 func TestPrepareNewVersion(t *testing.T) {
