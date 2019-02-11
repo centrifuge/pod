@@ -2,6 +2,12 @@ package cmd
 
 import (
 	"context"
+	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
+	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
+	"github.com/centrifuge/go-centrifuge/identity/did"
+	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"math/big"
 
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -55,6 +61,150 @@ func addKeys(config config.Configuration, idService identity.Service) error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func getKeyPairsFromConfig(config config.Configuration) (map[int]did.Key, error) {
+
+	keys := map[int]did.Key{}
+	var pk []byte
+
+	// ed25519 keys
+	// KeyPurposeP2P
+	pk, _, err := ed25519.GetSigningKeyPair(config.GetP2PKeyPair())
+	if err != nil {
+		return nil, err
+	}
+	pk32, err := utils.SliceToByte32(pk)
+	if err != nil {
+		return nil, err
+	}
+	keys[identity.KeyPurposeP2P] = did.NewKey(pk32, big.NewInt(identity.KeyPurposeP2P),big.NewInt(did.KeyTypeECDSA))
+
+	// KeyPurposeSigning
+	pk, _, err = ed25519.GetSigningKeyPair(config.GetSigningKeyPair())
+	if err != nil {
+		return nil, err
+	}
+	keys[identity.KeyPurposeSigning] = did.NewKey(pk32, big.NewInt(identity.KeyPurposeSigning),big.NewInt(did.KeyTypeECDSA))
+
+	// secp256k1 keys
+	// KeyPurposeEthMsgAuth
+	pk, _, err = secp256k1.GetEthAuthKey(config.GetEthAuthKeyPair())
+	if err != nil {
+		return nil, err
+	}
+	pubKey, err := hexutil.Decode(secp256k1.GetAddress(pk))
+	if err != nil {
+		return nil, err
+	}
+	pk32, err = utils.SliceToByte32(pubKey)
+	if err != nil {
+		return nil, err
+	}
+
+	keys[identity.KeyPurposeEthMsgAuth] = did.NewKey(pk32, big.NewInt(identity.KeyPurposeEthMsgAuth),big.NewInt(did.KeyTypeECDSA))
+
+	return keys, nil
+}
+
+
+func addKeysFromConfig(config config.Configuration, tctx context.Context,idSrv did.Service) error {
+	keys, err := getKeyPairsFromConfig(config)
+	if err != nil {
+		return err
+	}
+	err = idSrv.AddKey(tctx, keys[identity.KeyPurposeP2P])
+	if err != nil {
+		return err
+	}
+
+	err = idSrv.AddKey(tctx, keys[identity.KeyPurposeSigning])
+	if err != nil {
+		return err
+	}
+
+	err = idSrv.AddKey(tctx, keys[identity.KeyPurposeEthMsgAuth])
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// CreateConfig creates a config file using provide parameters and the default config
+func CreateConfig(
+	targetDataDir, ethNodeURL, accountKeyPath, accountPassword, network string,
+	apiPort, p2pPort int64,
+	bootstraps []string,
+	txPoolAccess bool,
+	p2pConnectionTimeout string,
+	smartContractAddrs *config.SmartContractAddresses) error {
+
+	data := map[string]interface{}{
+		"targetDataDir":     targetDataDir,
+		"accountKeyPath":    accountKeyPath,
+		"accountPassword":   accountPassword,
+		"network":           network,
+		"ethNodeURL":        ethNodeURL,
+		"bootstraps":        bootstraps,
+		"apiPort":           apiPort,
+		"p2pPort":           p2pPort,
+		"p2pConnectTimeout": p2pConnectionTimeout,
+		"txpoolaccess":      txPoolAccess,
+	}
+	if smartContractAddrs != nil {
+		data["smartContractAddresses"] = smartContractAddrs
+	}
+	v, err := config.CreateConfigFile(data)
+	if err != nil {
+		return err
+	}
+	log.Infof("Config File Created: %s\n", v.ConfigFileUsed())
+	ctx, canc, _ := CommandBootstrap(v.ConfigFileUsed())
+	cfg := ctx[bootstrap.BootstrappedConfig].(config.Configuration)
+
+	// create keys locally
+	generateKeys(cfg)
+
+	tc, err := configstore.TempAccount(cfg.GetEthereumDefaultAccountName(), cfg)
+	if err != nil {
+		return err
+	}
+
+	tctx, err := contextutil.New(context.Background(), tc)
+	if err != nil {
+		return err
+	}
+
+	identityFactory := ctx[did.BootstrappedDIDFactory].(did.Factory)
+	idService := ctx[did.BootstrappedDIDService].(did.Service)
+
+	did, err := identityFactory.CreateIdentity(tctx)
+	if err != nil {
+		return err
+	}
+
+	v.Set("identityId", did.ToAddress().String())
+	err = v.WriteConfig()
+	if err != nil {
+		return err
+	}
+	cfg.Set("identityId", did.ToAddress().String())
+	log.Infof("Identity created [%s]", did.ToAddress().String())
+
+
+	err = addKeysFromConfig(cfg,tctx,idService)
+	if err != nil {
+		return err
+	}
+
+	canc()
+	db := ctx[storage.BootstrappedDB].(storage.Repository)
+	dbCfg := ctx[storage.BootstrappedConfigDB].(storage.Repository)
+	db.Close()
+	dbCfg.Close()
+	log.Infof("---------Centrifuge node configuration file successfully created!---------")
+	log.Infof("Please run the Centrifuge node using the following command: centrifuge run -c %s\n", v.ConfigFileUsed())
 	return nil
 }
 

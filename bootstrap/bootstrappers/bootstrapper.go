@@ -10,6 +10,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/ethereum"
+	"github.com/centrifuge/go-centrifuge/identity/did"
 	"github.com/centrifuge/go-centrifuge/identity/ethid"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/node"
@@ -59,10 +60,12 @@ func (m *MainBootstrapper) PopulateCommandBootstrappers() {
 		transactions.Bootstrapper{},
 		&queue.Bootstrapper{},
 		ethereum.Bootstrapper{},
+		&did.Bootstrapper{},
 		&anchors.Bootstrapper{},
 		&ethid.Bootstrapper{},
 	}
 }
+
 
 // PopulateRunBootstrappers adds blocking Node bootstrapper at the end.
 // Note: Node bootstrapper must be the last bootstrapper to be invoked as it won't return until node is shutdown

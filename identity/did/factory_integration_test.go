@@ -54,7 +54,7 @@ func TestCreateIdentity_successful(t *testing.T) {
 
 	client := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
 
-	contractCode, err := client.GetEthClient().CodeAt(context.Background(), did.toAddress(), nil)
+	contractCode, err := client.GetEthClient().CodeAt(context.Background(), did.ToAddress(), nil)
 	assert.Nil(t, err, "should be successful to get the contract code")
 
 	assert.Equal(t, true, len(contractCode) > 3000, "current contract code should be arround 3378 bytes")

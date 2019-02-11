@@ -22,7 +22,7 @@ import (
 // DID stores the identity address of the user
 type DID common.Address
 
-func (d DID) toAddress() common.Address {
+func (d DID) ToAddress() common.Address {
 	return common.Address(d)
 }
 
@@ -111,7 +111,7 @@ func (i service) prepareCall(did DID) (contract, *bind.CallOpts, context.CancelF
 }
 
 func (i service) bindContract(did DID) (contract, error) {
-	contract, err := NewIdentityContract(did.toAddress(), i.client.GetEthClient())
+	contract, err := NewIdentityContract(did.ToAddress(), i.client.GetEthClient())
 	if err != nil {
 		return nil, errors.New("Could not bind identity contract: %v", err)
 	}
