@@ -22,6 +22,7 @@ import (
 // DID stores the identity address of the user
 type DID common.Address
 
+// ToAddress returns the DID as common.Address
 func (d DID) ToAddress() common.Address {
 	return common.Address(d)
 }

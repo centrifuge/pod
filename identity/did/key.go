@@ -7,7 +7,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 )
 
-
 // KeyTypeECDSA has the value one in the ERC725 identity contract
 const KeyTypeECDSA = 1
 
@@ -35,8 +34,8 @@ type key struct {
 }
 
 //NewKey returns a new key struct
-func NewKey(pk [32]byte,purpose *big.Int, keyType *big.Int) Key {
-	return &key{pk,purpose,big.NewInt(0), keyType}
+func NewKey(pk [32]byte, purpose *big.Int, keyType *big.Int) Key {
+	return &key{pk, purpose, big.NewInt(0), keyType}
 }
 
 // GetKey returns the public key

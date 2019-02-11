@@ -2,12 +2,13 @@ package cmd
 
 import (
 	"context"
+	"math/big"
+
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/centrifuge/go-centrifuge/identity/did"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"math/big"
 
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -79,14 +80,14 @@ func getKeyPairsFromConfig(config config.Configuration) (map[int]did.Key, error)
 	if err != nil {
 		return nil, err
 	}
-	keys[identity.KeyPurposeP2P] = did.NewKey(pk32, big.NewInt(identity.KeyPurposeP2P),big.NewInt(did.KeyTypeECDSA))
+	keys[identity.KeyPurposeP2P] = did.NewKey(pk32, big.NewInt(identity.KeyPurposeP2P), big.NewInt(did.KeyTypeECDSA))
 
 	// KeyPurposeSigning
 	pk, _, err = ed25519.GetSigningKeyPair(config.GetSigningKeyPair())
 	if err != nil {
 		return nil, err
 	}
-	keys[identity.KeyPurposeSigning] = did.NewKey(pk32, big.NewInt(identity.KeyPurposeSigning),big.NewInt(did.KeyTypeECDSA))
+	keys[identity.KeyPurposeSigning] = did.NewKey(pk32, big.NewInt(identity.KeyPurposeSigning), big.NewInt(did.KeyTypeECDSA))
 
 	// secp256k1 keys
 	// KeyPurposeEthMsgAuth
@@ -103,13 +104,12 @@ func getKeyPairsFromConfig(config config.Configuration) (map[int]did.Key, error)
 		return nil, err
 	}
 
-	keys[identity.KeyPurposeEthMsgAuth] = did.NewKey(pk32, big.NewInt(identity.KeyPurposeEthMsgAuth),big.NewInt(did.KeyTypeECDSA))
+	keys[identity.KeyPurposeEthMsgAuth] = did.NewKey(pk32, big.NewInt(identity.KeyPurposeEthMsgAuth), big.NewInt(did.KeyTypeECDSA))
 
 	return keys, nil
 }
 
-
-func addKeysFromConfig(config config.Configuration, tctx context.Context,idSrv did.Service) error {
+func addKeysFromConfig(tctx context.Context, config config.Configuration, idSrv did.Service) error {
 	keys, err := getKeyPairsFromConfig(config)
 	if err != nil {
 		return err
@@ -192,8 +192,7 @@ func CreateConfig(
 	cfg.Set("identityId", did.ToAddress().String())
 	log.Infof("Identity created [%s]", did.ToAddress().String())
 
-
-	err = addKeysFromConfig(cfg,tctx,idService)
+	err = addKeysFromConfig(tctx, cfg, idService)
 	if err != nil {
 		return err
 	}
@@ -208,7 +207,7 @@ func CreateConfig(
 	return nil
 }
 
-// CreateConfig creates a config file using provide parameters and the default config
+// CreateConfigDeprecated creates a config file using provide parameters and the default config
 // Deprecated
 func CreateConfigDeprecated(
 	targetDataDir, ethNodeURL, accountKeyPath, accountPassword, network string,

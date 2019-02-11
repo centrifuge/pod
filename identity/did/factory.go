@@ -117,17 +117,13 @@ func (s *factory) CreateIdentity(ctx context.Context) (did *DID, err error) {
 		return nil, err
 	}
 
-	idConfig, err := contextutil.Self(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	identityAddress, err := s.calculateIdentityAddress(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	txID, done, err := s.txManager.ExecuteWithinTX(context.Background(), idConfig.ID, uuid.Nil, "Check TX for create identity status", s.createIdentityTX(opts))
+	// TODO refactor randomCentID
+	txID, done, err := s.txManager.ExecuteWithinTX(context.Background(), id.RandomCentID(), uuid.Nil, "Check TX for create identity status", s.createIdentityTX(opts))
 	if err != nil {
 		return nil, err
 	}

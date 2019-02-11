@@ -66,7 +66,6 @@ func (m *MainBootstrapper) PopulateCommandBootstrappers() {
 	}
 }
 
-
 // PopulateRunBootstrappers adds blocking Node bootstrapper at the end.
 // Note: Node bootstrapper must be the last bootstrapper to be invoked as it won't return until node is shutdown
 func (m *MainBootstrapper) PopulateRunBootstrappers() {
