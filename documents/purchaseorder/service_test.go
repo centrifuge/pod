@@ -256,7 +256,7 @@ func TestService_DeriveFromCoreDocument(t *testing.T) {
 
 	// successful
 	data := testingdocuments.CreatePOData()
-	cd := testingdocuments.CreateCDWithEmbeddedPO(t, data)
+	cd := CreateCDWithEmbeddedPO(t, data)
 	m, err := poSrv.DeriveFromCoreDocument(cd)
 	assert.Nil(t, err, "must return model")
 	assert.NotNil(t, m, "model must be non-nil")

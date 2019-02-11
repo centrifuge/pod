@@ -95,7 +95,7 @@ func TestInvoice_FromCoreDocuments_invalidParameter(t *testing.T) {
 func TestInvoice_InitCoreDocument_successful(t *testing.T) {
 	invoiceModel := &Invoice{}
 
-	coreDocument := testingdocuments.CreateCDWithEmbeddedInvoice(t, testingdocuments.CreateInvoiceData())
+	coreDocument := CreateCDWithEmbeddedInvoice(t, testingdocuments.CreateInvoiceData())
 	err := invoiceModel.UnpackCoreDocument(coreDocument)
 	assert.Nil(t, err, "valid coredocument shouldn't produce an error")
 }
@@ -103,7 +103,7 @@ func TestInvoice_InitCoreDocument_successful(t *testing.T) {
 func TestInvoice_InitCoreDocument_invalidCentId(t *testing.T) {
 	invoiceModel := &Invoice{}
 
-	coreDocument := testingdocuments.CreateCDWithEmbeddedInvoice(t, invoicepb.InvoiceData{
+	coreDocument := CreateCDWithEmbeddedInvoice(t, invoicepb.InvoiceData{
 		Recipient:   utils.RandomSlice(identity.CentIDLength + 1),
 		Sender:      utils.RandomSlice(identity.CentIDLength),
 		Payee:       utils.RandomSlice(identity.CentIDLength),
@@ -120,7 +120,7 @@ func TestInvoice_CoreDocument_successful(t *testing.T) {
 	invoiceModel := &Invoice{}
 
 	//init model with a CoreDoc
-	coreDocument := testingdocuments.CreateCDWithEmbeddedInvoice(t, testingdocuments.CreateInvoiceData())
+	coreDocument := CreateCDWithEmbeddedInvoice(t, testingdocuments.CreateInvoiceData())
 	invoiceModel.UnpackCoreDocument(coreDocument)
 
 	returnedCoreDocument, err := invoiceModel.PackCoreDocument()
@@ -146,7 +146,7 @@ func TestInvoice_JSON(t *testing.T) {
 	invoiceModel := &Invoice{}
 
 	//init model with a CoreDoc
-	coreDocument := testingdocuments.CreateCDWithEmbeddedInvoice(t, testingdocuments.CreateInvoiceData())
+	coreDocument := CreateCDWithEmbeddedInvoice(t, testingdocuments.CreateInvoiceData())
 	invoiceModel.UnpackCoreDocument(coreDocument)
 
 	jsonBytes, err := invoiceModel.JSON()
@@ -174,7 +174,7 @@ func TestInvoiceModel_UnpackCoreDocument(t *testing.T) {
 	assert.Error(t, err, "unpack must fail due to missing embed data")
 
 	// successful
-	coreDocument := testingdocuments.CreateCDWithEmbeddedInvoice(t, testingdocuments.CreateInvoiceData())
+	coreDocument := CreateCDWithEmbeddedInvoice(t, testingdocuments.CreateInvoiceData())
 	err = model.UnpackCoreDocument(coreDocument)
 	assert.Nil(t, err, "valid core document with embedded invoice shouldn't produce an error")
 
