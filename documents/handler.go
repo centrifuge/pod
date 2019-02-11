@@ -105,7 +105,7 @@ func ConvertProofsToClientFormat(proofs []*proofspb.Proof) []*documentpb.Proof {
 func ConvertProofToClientFormat(proof *proofspb.Proof) *documentpb.Proof {
 	return &documentpb.Proof{
 		Property:     proof.GetReadableName(),
-		Value:        hexutil.Encode(proof.Value),
+		Value:        proof.Value,
 		Salt:         hexutil.Encode(proof.Salt),
 		Hash:         hexutil.Encode(proof.Hash),
 		SortedHashes: utils.SliceOfByteSlicesToHexStringSlice(proof.SortedHashes),

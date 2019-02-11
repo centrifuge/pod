@@ -182,7 +182,7 @@ func (m *CoreDocumentModel) GetCoreDocTree() (tree *proofs.DocumentTree, err err
 	documentTypeNode := proofs.LeafNode{
 		Property: proofs.NewProperty("document_type"),
 		Salt:     make([]byte, 32),
-		Value:    []byte(document.EmbeddedData.TypeUrl),
+		Value:    document.EmbeddedData.TypeUrl,
 	}
 
 	err = documentTypeNode.HashNode(h, false)
@@ -258,7 +258,7 @@ func (m *CoreDocumentModel) GetDocumentRootTree() (tree *proofs.DocumentTree, er
 	sigLengthNode := proofs.LeafNode{
 		Property: sigProperty.LengthProp(proofs.DefaultSaltsLengthSuffix),
 		Salt:     make([]byte, 32),
-		Value:    []byte(fmt.Sprintf("%d", len(document.Signatures))),
+		Value:    fmt.Sprintf("%d", len(document.Signatures)),
 	}
 	err = sigLengthNode.HashNode(h, false)
 	if err != nil {

@@ -289,7 +289,7 @@ func TestInvoiceModel_createProofs(t *testing.T) {
 	assert.True(t, valid)
 
 	// Validate '0x' Hex format in []byte value
-	assert.Equal(t, i.CoreDocument.Collaborators[0], proof[1].Value)
+	assert.Equal(t, hexutil.Encode(i.CoreDocument.Collaborators[0]), proof[1].Value)
 
 	// Validate document_type
 	valid, err = tree.ValidateProof(proof[2])

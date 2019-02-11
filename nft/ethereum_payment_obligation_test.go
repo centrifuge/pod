@@ -37,10 +37,8 @@ import (
 func TestCreateProofData(t *testing.T) {
 	sortedHashes := [][]byte{utils.RandomSlice(32), utils.RandomSlice(32)}
 	salt := utils.RandomSlice(32)
-	v1hex := "0x76616c756531"
-	v2hex := "0x76616c756532"
-	v1, _ := hexutil.Decode(v1hex)
-	v2, _ := hexutil.Decode(v2hex)
+	v1 := "value1"
+	v2 := "value2"
 	tests := []struct {
 		name   string
 		proofs []*proofspb.Proof
@@ -64,7 +62,7 @@ func TestCreateProofData(t *testing.T) {
 				},
 			},
 			proofData{
-				Values: []string{v1hex, v2hex},
+				Values: []string{v1, v2},
 				Proofs: [][][32]byte{{byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}, {byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}},
 				Salts:  [][32]byte{byteSliceToByteArray32(salt), byteSliceToByteArray32(salt)},
 			},
@@ -87,7 +85,7 @@ func TestCreateProofData(t *testing.T) {
 				},
 			},
 			proofData{
-				Values: []string{v1hex, v2hex},
+				Values: []string{v1, v2},
 				Proofs: [][][32]byte{{byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}, {byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}},
 				Salts:  [][32]byte{byteSliceToByteArray32(salt), byteSliceToByteArray32(salt)},
 			},
@@ -110,7 +108,7 @@ func TestCreateProofData(t *testing.T) {
 				},
 			},
 			proofData{
-				Values: []string{v1hex, v2hex},
+				Values: []string{v1, v2},
 				Proofs: [][][32]byte{{byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}, {byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}},
 				Salts:  [][32]byte{byteSliceToByteArray32(salt), byteSliceToByteArray32(salt)},
 			},
@@ -221,7 +219,7 @@ func getDummyProof(coreDoc *coredocumentpb.CoreDocument) *documents.DocumentProo
 		FieldProofs: []*proofspb.Proof{
 			{
 				Property: proofs.ReadableName("prop1"),
-				Value:    []byte("val1"),
+				Value:    "val1",
 				Salt:     utils.RandomSlice(32),
 				Hash:     utils.RandomSlice(32),
 				SortedHashes: [][]byte{
@@ -232,7 +230,7 @@ func getDummyProof(coreDoc *coredocumentpb.CoreDocument) *documents.DocumentProo
 			},
 			{
 				Property: proofs.ReadableName("prop2"),
-				Value:    []byte("val2"),
+				Value:    "val2",
 				Salt:     utils.RandomSlice(32),
 				Hash:     utils.RandomSlice(32),
 				SortedHashes: [][]byte{

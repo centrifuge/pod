@@ -361,7 +361,7 @@ func createProofData(proofspb []*proofspb.Proof) (*proofData, error) {
 	var proofs = make([][][32]byte, len(proofspb))
 
 	for i, p := range proofspb {
-		values[i] = hexutil.Encode(p.Value)
+		values[i] = p.Value
 		salt32, err := utils.SliceToByte32(p.Salt)
 		if err != nil {
 			return nil, err
