@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common"
 	"strings"
+
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -558,7 +559,7 @@ func (m *CoreDocumentModel) GetExternalCollaborators(selfCentID identity.CentID)
 // NFTOwnerCanRead checks if the nft owner/account can read the document
 // Note: signature should be calculated from the hash which is calculated as
 // keccak256("\x19Ethereum Signed Message:\n"${message length}${message}).
-func (m *CoreDocumentModel) NFTOwnerCanRead( registry common.Address, tokenID []byte, account identity.CentID) error {
+func (m *CoreDocumentModel) NFTOwnerCanRead(registry common.Address, tokenID []byte, account identity.CentID) error {
 	// check if the account can read the doc
 	if m.AccountCanRead(account) {
 		return nil

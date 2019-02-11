@@ -3,8 +3,9 @@ package invoice
 import (
 	"crypto/sha256"
 	"encoding/json"
-	"github.com/centrifuge/go-centrifuge/documents"
 	"reflect"
+
+	"github.com/centrifuge/go-centrifuge/documents"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -48,7 +49,7 @@ type Invoice struct {
 	DateCreated      *timestamp.Timestamp
 	ExtraData        []byte
 
-	InvoiceSalts *invoicepb.InvoiceDataSalts
+	InvoiceSalts      *invoicepb.InvoiceDataSalts
 	CoreDocumentModel *documents.CoreDocumentModel
 }
 

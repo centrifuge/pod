@@ -3,8 +3,9 @@ package purchaseorder
 import (
 	"crypto/sha256"
 	"encoding/json"
-	"github.com/centrifuge/go-centrifuge/documents"
 	"reflect"
+
+	"github.com/centrifuge/go-centrifuge/documents"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -50,7 +51,7 @@ type PurchaseOrder struct {
 	DateCreated       *timestamp.Timestamp // purchase order date
 	ExtraData         []byte
 	PurchaseOrderSalt *purchaseorderpb.PurchaseOrderDataSalts
-	CoreDocumentModel      *documents.CoreDocumentModel
+	CoreDocumentModel *documents.CoreDocumentModel
 }
 
 // ID returns the DocumentIdentifier for this document

@@ -2,6 +2,7 @@ package documents
 
 import (
 	"fmt"
+
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/crypto"
@@ -112,7 +113,6 @@ func UpdateVersionValidator() Validator {
 		return err
 	})
 }
-
 
 // baseValidator validates the core document basic fields like identifier, versions, and salts
 func baseValidator() Validator {

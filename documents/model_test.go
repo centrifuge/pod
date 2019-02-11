@@ -4,10 +4,11 @@ package documents
 
 import (
 	"crypto/sha256"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/stretchr/testify/mock"
 	"os"
 	"testing"
+
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/stretchr/testify/mock"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -155,7 +156,7 @@ func TestCoreDocumentModel_PrepareNewVersion(t *testing.T) {
 
 	// DocumentRoot was updated
 	assert.Equal(t, ncd.PreviousRoot, ocd.DocumentRoot)
-	
+
 	// TokenRegistry was copied over
 	assert.Equal(t, ndm.TokenRegistry, dm.TokenRegistry)
 }
