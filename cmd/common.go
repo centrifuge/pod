@@ -59,7 +59,8 @@ func addKeys(config config.Configuration, idService identity.Service) error {
 }
 
 // CreateConfig creates a config file using provide parameters and the default config
-func CreateConfig(
+// Deprecated
+func CreateConfigDeprecated(
 	targetDataDir, ethNodeURL, accountKeyPath, accountPassword, network string,
 	apiPort, p2pPort int64,
 	bootstraps []string,
