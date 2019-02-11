@@ -104,7 +104,7 @@ func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, toke
 		return mreq, err
 	}
 
-	nftProofs, err := getNFTProofs(corDoc, req, tokenID, cid)
+	nftProofs, err := generateNFTProofs(corDoc, req, tokenID, cid)
 	if err != nil {
 		return mreq, err
 	}
@@ -112,6 +112,7 @@ func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, toke
 	var pfs []*proofspb.Proof
 	pfs = append(pfs, docProofs.FieldProofs...)
 	for _, p := range nftProofs {
+		p := p
 		pfs = append(pfs, &p)
 	}
 
@@ -136,8 +137,8 @@ func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, toke
 
 }
 
-// getNFTProofs generates required NFT uniqueness proofs
-func getNFTProofs(cd *coredocumentpb.CoreDocument, req MintNFTRequest, tokenID TokenID, cid identity.CentID) ([]proofspb.Proof, error) {
+// generateNFTProofs generates required NFT uniqueness proofs
+func generateNFTProofs(cd *coredocumentpb.CoreDocument, req MintNFTRequest, tokenID TokenID, cid identity.CentID) ([]proofspb.Proof, error) {
 	cdTree, err := coredocument.GetCoreDocTree(cd)
 	if err != nil {
 		return nil, err
