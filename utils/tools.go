@@ -54,15 +54,33 @@ func Byte32ToSlice(in [32]byte) []byte {
 	return in[:]
 }
 
+// Check32BytesFilled ensures byte slice is of length 32 and don't contain all 0x0 bytes.
+func Check32BytesFilled(b []byte) bool {
+	return !IsEmptyByteSlice(b) && (len(b) == 32)
+}
+
 // CheckMultiple32BytesFilled takes multiple []byte slices and ensures they are all of length 32 and don't contain all 0x0 bytes.
 func CheckMultiple32BytesFilled(b []byte, bs ...[]byte) bool {
 	bs = append(bs, b)
 	for _, v := range bs {
-		if IsEmptyByteSlice(v) || len(v) != 32 {
+		if !Check32BytesFilled(v) {
 			return false
 		}
 	}
 	return true
+}
+
+// AddressTo32Bytes converts an address to 32 a byte array
+// The length of an address is 20 bytes. First 12 bytes are filled with zeros.
+func AddressTo32Bytes(address common.Address) [32]byte {
+	addressBytes := address.Bytes()
+	address32Byte := [32]byte{}
+	for i := 1; i <= common.AddressLength; i++ {
+
+		address32Byte[32-i] = addressBytes[common.AddressLength-i]
+	}
+	return address32Byte
+
 }
 
 // RandomSlice returns a randomly filled byte array with length of given size

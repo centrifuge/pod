@@ -64,7 +64,7 @@
   revision = "978840734a4a2fccd5d8dc7e462d9108079c5b5d"
 
 [[projects]]
-  digest = "1:48b74185a0ab0361a458c480f2f8bfdb9470a990741bda70b7a1920efe2096ee"
+  digest = "1:dfe1a0223d1205b5d387f9409d72e88877c7470c79930dd00da6d63f4b0af963"
   name = "github.com/centrifuge/centrifuge-protobufs"
   packages = [
     "documenttypes",
@@ -76,8 +76,7 @@
     "gen/go/purchaseorder",
   ]
   pruneopts = "T"
-  revision = "76a6e20ca4e3f9a81b658e200eee5e7cca1caf5e"
-  source = "github.com/mikiquantum/centrifuge-protobufs"
+  revision = "5615ef01001f185e1ecbe10eb9604b5eeaae0b04"
 
 [[projects]]
   digest = "1:6c7200e9917373ebe3c248ca47f9ee8a7924aa003c137cbfee2c763d7bc0643f"
@@ -87,15 +86,14 @@
   revision = "fb11151a227ae41660e15f6c10e2e22eb1556531"
 
 [[projects]]
-  digest = "1:0340d52fc3ee6cb9b9f78a691cc77a330e9f312f7ac06e9e23b5856eb2e1ee1f"
+  digest = "1:1d46f9f40eca1a4f235a3e0bf118489b0aa4eae84d045f6f2c33611a3030d0ac"
   name = "github.com/centrifuge/precise-proofs"
   packages = [
     "proofs",
     "proofs/proto",
   ]
   pruneopts = "UT"
-  revision = "0c99b738c9eca158157cdd283844bc8d82638ec8"
-  source = "github.com/mikiquantum/precise-proofs"
+  revision = "4b2df6595f0b4e119ce20df5d9f1bac358c8589e"
 
 [[projects]]
   digest = "1:0ef770954bca104ee99b3b6b7f9b240605ac03517d9f98cbc1893daa03f3c038"
@@ -1297,7 +1295,6 @@
   packages = ["."]
   pruneopts = "UT"
   revision = "fbb7cafc5ae411e13e718172f5af7917ad6c3ed7"
-  source = "github.com/mikiquantum/go-merkle"
 
 [[projects]]
   branch = "master"
