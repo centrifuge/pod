@@ -3,6 +3,7 @@ package p2p
 import (
 	"context"
 	"fmt"
+
 	"github.com/centrifuge/go-centrifuge/documents"
 
 	"github.com/centrifuge/go-centrifuge/p2p/common"

@@ -3,6 +3,7 @@
 package testingdocuments
 
 import (
+	"github.com/centrifuge/go-centrifuge/documents"
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
@@ -25,7 +26,7 @@ func CreateInvoiceData() invoicepb.InvoiceData {
 	}
 }
 
-func CreateCDWithEmbeddedInvoice(t *testing.T, invoiceData invoicepb.InvoiceData) *coredocumentpb.CoreDocument {
+func CreateCDWithEmbeddedInvoice(t *testing.T, invoiceData invoicepb.InvoiceData) *documents.CoreDocumentModel {
 	identifier := []byte("1")
 	invoiceSalts := invoicepb.InvoiceDataSalts{}
 
@@ -48,7 +49,11 @@ func CreateCDWithEmbeddedInvoice(t *testing.T, invoiceData invoicepb.InvoiceData
 		EmbeddedData:       &invoiceAny,
 		EmbeddedDataSalts:  &invoiceSaltsAny,
 	}
-	return coreDocument
+	dm := &documents.CoreDocumentModel{
+		coreDocument,
+		nil,
+	}
+	return dm
 }
 
 func CreateInvoicePayload() *clientinvoicepb.InvoiceCreatePayload {

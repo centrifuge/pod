@@ -42,7 +42,6 @@ type Model interface {
 	CreateProofs(fields []string) (coreDocModel *CoreDocumentModel, proofs []*proofspb.Proof, err error)
 }
 
-// TODO: could eventually be part of the CoreDocModel
 // TokenRegistry defines NFT retrieval functions.
 type TokenRegistry interface {
 	// OwnerOf to retrieve owner of the tokenID
@@ -108,7 +107,7 @@ func (m *CoreDocumentModel) PrepareNewVersion(collaborators []string) (*CoreDocu
 	if err != nil {
 		return nil, err
 	}
-	err = ndm.fillSalts()
+	err = ndm.FillSalts()
 
 	if err != nil {
 		return nil, err
@@ -157,7 +156,7 @@ func (m *CoreDocumentModel) NewWithCollaborators(collaborators []string) (*CoreD
 		return nil, errors.New("failed to init read rules: %v", err)
 	}
 
-	err = dm.fillSalts()
+	err = dm.FillSalts()
 	if err != nil {
 		return nil, err
 	}
@@ -402,7 +401,7 @@ func (m *CoreDocumentModel) AccountCanRead(account identity.CentID) bool {
 }
 
 // FillSalts creates a new coredocument.Salts and fills it
-func (m *CoreDocumentModel) fillSalts() error {
+func (m *CoreDocumentModel) FillSalts() error {
 	salts := new(coredocumentpb.CoreDocumentSalts)
 	cd := m.Document
 	err := proofs.FillSalts(cd, salts)
@@ -620,7 +619,7 @@ func (m *CoreDocumentModel) AddNFTToReadRules(registry common.Address, tokenID [
 	role.RoleKey = rk[:]
 	role.Nfts = append(role.Nfts, nft)
 	m.addNewRule(role, coredocumentpb.Action_ACTION_READ)
-	return m.fillSalts()
+	return m.FillSalts()
 }
 
 // isNFTInRole checks if the given nft(registry + token) is part of the core document role.

@@ -214,11 +214,12 @@ func (srv *Handler) GetDocument(ctx context.Context, docReq *p2ppb.GetDocumentRe
 	if err != nil {
 		return nil, err
 	}
-	doc, err := model.PackCoreDocument()
+	dm, err := model.PackCoreDocument()
 	if err != nil {
 		return nil, err
 	}
 
+	doc := dm.Document
 	err = DocumentAccessValidator(doc, docReq, requesterCentID)
 	if err != nil {
 		return &p2ppb.GetDocumentResponse{Document: doc}, nil
