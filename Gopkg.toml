@@ -44,15 +44,12 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts","github.com/ma
 
 [[override]]
   name = "github.com/centrifuge/precise-proofs"
-  revision = "4b2df6595f0b4e119ce20df5d9f1bac358c8589e"
+  revision = "dfaebde6cb581ae714f3efa4dcfd69f3869c25c6"
+  source = "github.com/mikiquantum/precise-proofs"
 
 [[constraint]]
   name = "github.com/centrifuge/gocelery"
   revision = "fb11151a227ae41660e15f6c10e2e22eb1556531"
-
-[[override]]
-  name = "github.com/xsleonard/go-merkle"
-  revision = "fbb7cafc5ae411e13e718172f5af7917ad6c3ed7"
 
 [[override]]
   name = "github.com/ethereum/go-ethereum"
