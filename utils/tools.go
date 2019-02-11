@@ -65,6 +65,19 @@ func CheckMultiple32BytesFilled(b []byte, bs ...[]byte) bool {
 	return true
 }
 
+// AddressTo32Bytes converts an address to 32 a byte array
+// The length of an address is 20 bytes. First 12 bytes are filled with zeros.
+func AddressTo32Bytes(address common.Address) [32]byte {
+	addressBytes := address.Bytes()
+	address32Byte := [32]byte{}
+	for i := 1; i <= common.AddressLength; i++ {
+
+		address32Byte[32-i] = addressBytes[common.AddressLength-i]
+	}
+	return address32Byte
+
+}
+
 // RandomSlice returns a randomly filled byte array with length of given size
 func RandomSlice(size int) (out []byte) {
 	r := make([]byte, size)
