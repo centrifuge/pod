@@ -138,6 +138,7 @@ func TestService_IsSignedWithPurpose(t *testing.T) {
 	signed, err = idSrv.IsSignedWithPurpose(aCtx, msg, signature, purpose)
 	assert.Nil(t, err, "sign verify should not throw an error")
 	assert.False(t, signed, "signature should be wrong key pair")
+	resetDefaultCentID()
 
 }
 
