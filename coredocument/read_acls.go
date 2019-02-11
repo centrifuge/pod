@@ -141,7 +141,7 @@ func GetRole(key []byte, roles []*coredocumentpb.Role) (*coredocumentpb.Role, er
 	return nil, errors.New("role %d not found", key)
 }
 
-// IsAccountInRole returns true if account is in the given role as collaborators.
+// IsAccountInRole returns true and the index of the collaborator if account is in the given role as collaborators.
 func IsAccountInRole(role *coredocumentpb.Role, account identity.CentID) (int, bool) {
 	for i, id := range role.Collaborators {
 		if bytes.Equal(id, account[:]) {
