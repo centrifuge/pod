@@ -124,7 +124,7 @@ type readAccessValidator struct {
 // Returns an error if not.
 func (r readAccessValidator) AccountCanRead(cd *coredocumentpb.CoreDocument, account identity.CentID) bool {
 	// loop though read rules
-	return FindRole(cd, coredocumentpb.Action_ACTION_READ_SIGN, func(role *coredocumentpb.Role) bool {
+	return FindRole(cd, coredocumentpb.Action_ACTION_READ_SIGN, func(_, _ int, role *coredocumentpb.Role) bool {
 		_, found := IsAccountInRole(role, account)
 		return found
 	})
@@ -177,7 +177,7 @@ func (r readAccessValidator) NFTOwnerCanRead(
 	}
 
 	// check if the nft is present in read rules
-	found := FindRole(cd, coredocumentpb.Action_ACTION_READ, func(role *coredocumentpb.Role) bool {
+	found := FindRole(cd, coredocumentpb.Action_ACTION_READ, func(_, _ int, role *coredocumentpb.Role) bool {
 		_, found := IsNFTInRole(role, registry, tokenID)
 		return found
 	})
@@ -206,13 +206,13 @@ func (r readAccessValidator) NFTOwnerCanRead(
 func FindRole(
 	cd *coredocumentpb.CoreDocument,
 	action coredocumentpb.Action,
-	onRole func(role *coredocumentpb.Role) bool) bool {
-	for _, rule := range cd.ReadRules {
+	onRole func(rridx, ridx int, role *coredocumentpb.Role) bool) bool {
+	for i, rule := range cd.ReadRules {
 		if rule.Action != action {
 			continue
 		}
 
-		for _, rk := range rule.Roles {
+		for j, rk := range rule.Roles {
 			role, err := GetRole(rk, cd.Roles)
 			if err != nil {
 				// seems like roles and rules are not in sync
@@ -220,7 +220,7 @@ func FindRole(
 				continue
 			}
 
-			if onRole(role) {
+			if onRole(i, j, role) {
 				return true
 			}
 

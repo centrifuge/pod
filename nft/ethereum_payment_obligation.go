@@ -160,7 +160,7 @@ func getNFTProofs(cd *coredocumentpb.CoreDocument, req MintNFTRequest, tokenID T
 			return nil, err
 		}
 
-		pfs = append(pfs, pf)
+		pfs = append(pfs, pf...)
 	}
 
 	if req.SubmitRoleProof != "" {
@@ -186,13 +186,16 @@ func createRoleProof(cd *coredocumentpb.CoreDocument, cdTree *proofs.DocumentTre
 }
 
 // createNFTReadAccessProof creates proof that nft exists in the role
-func createNFTReadAccessProof(cd *coredocumentpb.CoreDocument, cdTree *proofs.DocumentTree, registry common.Address, tokenID []byte) (proof proofspb.Proof, err error) {
-	var ridx []byte
-	var nftidx int
-	found := coredocument.FindRole(cd, coredocumentpb.Action_ACTION_READ, func(role *coredocumentpb.Role) bool {
+func createNFTReadAccessProof(cd *coredocumentpb.CoreDocument, cdTree *proofs.DocumentTree, registry common.Address, tokenID []byte) (proofs []proofspb.Proof, err error) {
+
+	var rridx, ridx, nftidx int
+	var rk []byte
+	found := coredocument.FindRole(cd, coredocumentpb.Action_ACTION_READ, func(i, j int, role *coredocumentpb.Role) bool {
 		si, found := coredocument.IsNFTInRole(role, registry, tokenID)
 		if found {
-			ridx = role.RoleKey
+			rridx = i
+			ridx = j
+			rk = role.RoleKey
 			nftidx = si
 		}
 
@@ -200,11 +203,24 @@ func createNFTReadAccessProof(cd *coredocumentpb.CoreDocument, cdTree *proofs.Do
 	})
 
 	if !found {
-		return proof, ErrNFTRoleMissing
+		return nil, ErrNFTRoleMissing
 	}
 
-	pk := fmt.Sprintf("roles[%s].nfts[%d]", hexutil.Encode(ridx), nftidx)
-	return cdTree.CreateProof(pk)
+	fields := []string{
+		fmt.Sprintf("read_rules[%d].roles[%d]", rridx, ridx),          // proof that a read rule exists with the nft role
+		fmt.Sprintf("roles[%s].nfts[%d]", hexutil.Encode(rk), nftidx), // proof that role with nft exists
+		fmt.Sprintf("read_rules[%d].action", rridx),                   // proof that this read rule has read access
+	}
+
+	for _, f := range fields {
+		pf, err := cdTree.CreateProof(f)
+		if err != nil {
+			return nil, err
+		}
+		proofs = append(proofs, pf)
+	}
+
+	return proofs, nil
 }
 
 func createTokenProof(cd *coredocumentpb.CoreDocument, cdTree *proofs.DocumentTree, registry common.Address) (proof proofspb.Proof, err error) {

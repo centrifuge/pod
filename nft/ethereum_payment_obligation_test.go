@@ -374,14 +374,28 @@ func Test_createNFTReadAccessProof(t *testing.T) {
 	cdTree, err := coredocument.GetCoreDocTree(cd)
 	assert.Nil(t, err)
 
-	pf, err := createNFTReadAccessProof(cd, cdTree, registry, tokenID)
+	pfs, err := createNFTReadAccessProof(cd, cdTree, registry, tokenID)
 	assert.NoError(t, err)
-	assert.Equal(t, pf.GetReadableName(), fmt.Sprintf("roles[%s].nfts[0]", hexutil.Encode(make([]byte, 32, 32))))
+	assert.Len(t, pfs, 3)
 
+	rk := hexutil.Encode(make([]byte, 32, 32))
+	assert.Equal(t, pfs[0].GetReadableName(), "read_rules[0].roles[0]")
+	assert.Equal(t, pfs[0].Value, rk)
+	valid, err := cdTree.ValidateProof(&pfs[0])
+	assert.NoError(t, err)
+	assert.True(t, valid)
+
+	assert.Equal(t, pfs[1].GetReadableName(), fmt.Sprintf("roles[%s].nfts[0]", rk))
 	enft, err := coredocument.ConstructNFT(registry, tokenID)
 	assert.NoError(t, err)
-	assert.Equal(t, pf.Value, hexutil.Encode(enft))
-	valid, err := cdTree.ValidateProof(&pf)
+	assert.Equal(t, pfs[1].Value, hexutil.Encode(enft))
+	valid, err = cdTree.ValidateProof(&pfs[1])
+	assert.NoError(t, err)
+	assert.True(t, valid)
+
+	assert.Equal(t, pfs[2].GetReadableName(), "read_rules[0].action")
+	assert.Equal(t, pfs[2].Value, "1")
+	valid, err = cdTree.ValidateProof(&pfs[2])
 	assert.NoError(t, err)
 	assert.True(t, valid)
 }
