@@ -93,8 +93,7 @@
     "proofs/proto",
   ]
   pruneopts = "UT"
-  revision = "dfaebde6cb581ae714f3efa4dcfd69f3869c25c6"
-  source = "github.com/mikiquantum/precise-proofs"
+  revision = "13d3af957299c614237c42cdc331f7acd7c7d201"
 
 [[projects]]
   digest = "1:0ef770954bca104ee99b3b6b7f9b240605ac03517d9f98cbc1893daa03f3c038"
