@@ -375,11 +375,11 @@ func GenerateNewSalts(document proto.Message, prefix string) (*proofs.Salts, err
 
 // ConvertToProtoSalts converts proofSalts into protocolSalts
 func ConvertToProtoSalts(proofSalts *proofs.Salts) []*coredocumentpb.DocumentSalt {
-	protoSalts := make([]*coredocumentpb.DocumentSalt, len(*proofSalts))
 	if proofSalts == nil {
 		return nil
 	}
 
+	protoSalts := make([]*coredocumentpb.DocumentSalt, len(*proofSalts))
 	for i, pSalt := range *proofSalts {
 		protoSalts[i] = &coredocumentpb.DocumentSalt{Value: pSalt.Value, Compact: pSalt.Compact}
 	}
@@ -389,11 +389,11 @@ func ConvertToProtoSalts(proofSalts *proofs.Salts) []*coredocumentpb.DocumentSal
 
 // ConvertToProofSalts converts protocolSalts into proofSalts
 func ConvertToProofSalts(protoSalts []*coredocumentpb.DocumentSalt) *proofs.Salts {
-	proofSalts := make(proofs.Salts, len(protoSalts))
 	if protoSalts == nil {
 		return nil
 	}
 
+	proofSalts := make(proofs.Salts, len(protoSalts))
 	for i, pSalt := range protoSalts {
 		proofSalts[i] = proofs.Salt{Value: pSalt.Value, Compact: pSalt.Compact}
 	}
