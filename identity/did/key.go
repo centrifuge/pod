@@ -7,9 +7,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 )
 
-// KeyTypeECDSA has the value one in the ERC725 identity contract
-const KeyTypeECDSA = 1
-
 // Key defines a single ERC725 identity key
 type Key interface {
 	GetKey() [32]byte

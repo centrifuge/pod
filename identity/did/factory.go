@@ -3,6 +3,9 @@ package did
 import (
 	"context"
 
+	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/config/configstore"
+
 	"github.com/centrifuge/go-centrifuge/errors"
 
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -142,4 +145,27 @@ func (s *factory) CreateIdentity(ctx context.Context) (did *DID, err error) {
 
 	createdDID := NewDID(*identityAddress)
 	return &createdDID, nil
+}
+
+// CreateIdentity creates an identity contract
+func CreateIdentity(ctx map[string]interface{}, cfg config.Configuration) (*DID, error) {
+	tc, err := configstore.TempAccount(cfg.GetEthereumDefaultAccountName(), cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	tctx, err := contextutil.New(context.Background(), tc)
+	if err != nil {
+		return nil, err
+	}
+
+	identityFactory := ctx[BootstrappedDIDFactory].(Factory)
+
+	did, err := identityFactory.CreateIdentity(tctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return did, nil
+
 }

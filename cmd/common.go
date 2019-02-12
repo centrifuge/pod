@@ -2,19 +2,11 @@ package cmd
 
 import (
 	"context"
-	"math/big"
-
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/spf13/viper"
-
-	"github.com/centrifuge/go-centrifuge/config/configstore"
-	"github.com/centrifuge/go-centrifuge/contextutil"
-	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
-	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
-	"github.com/centrifuge/go-centrifuge/identity/did"
-	"github.com/centrifuge/go-centrifuge/utils"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers"
+	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/contextutil"
+	"github.com/centrifuge/go-centrifuge/identity/did"
 
 	"github.com/centrifuge/go-centrifuge/storage"
 
@@ -68,110 +60,6 @@ func addKeysDeprecated(config config.Configuration, idService identity.Service) 
 	return nil
 }
 
-func getKeyPairsFromConfig(config config.Configuration) (map[int]did.Key, error) {
-	keys := map[int]did.Key{}
-	var pk []byte
-
-	// ed25519 keys
-	// KeyPurposeP2P
-	pk, _, err := ed25519.GetSigningKeyPair(config.GetP2PKeyPair())
-	if err != nil {
-		return nil, err
-	}
-	pk32, err := utils.SliceToByte32(pk)
-	if err != nil {
-		return nil, err
-	}
-	keys[identity.KeyPurposeP2P] = did.NewKey(pk32, big.NewInt(identity.KeyPurposeP2P), big.NewInt(did.KeyTypeECDSA))
-
-	// KeyPurposeSigning
-	pk, _, err = ed25519.GetSigningKeyPair(config.GetSigningKeyPair())
-	if err != nil {
-		return nil, err
-	}
-	pk32, err = utils.SliceToByte32(pk)
-	if err != nil {
-		return nil, err
-	}
-	keys[identity.KeyPurposeSigning] = did.NewKey(pk32, big.NewInt(identity.KeyPurposeSigning), big.NewInt(did.KeyTypeECDSA))
-
-	// secp256k1 keys
-	// KeyPurposeEthMsgAuth
-	pk, _, err = secp256k1.GetEthAuthKey(config.GetEthAuthKeyPair())
-	if err != nil {
-		return nil, err
-	}
-
-	address32Bytes := utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(pk)))
-	keys[identity.KeyPurposeEthMsgAuth] = did.NewKey(address32Bytes, big.NewInt(identity.KeyPurposeEthMsgAuth), big.NewInt(did.KeyTypeECDSA))
-
-	return keys, nil
-}
-
-func addKeysFromConfig(ctx map[string]interface{}, cfg config.Configuration) error {
-	idSrv := ctx[did.BootstrappedDIDService].(did.Service)
-
-	tc, err := configstore.NewAccount(cfg.GetEthereumDefaultAccountName(), cfg)
-	if err != nil {
-		return err
-	}
-
-	tctx, err := contextutil.New(context.Background(), tc)
-	if err != nil {
-		return err
-	}
-
-	keys, err := getKeyPairsFromConfig(cfg)
-	if err != nil {
-		return err
-	}
-	err = idSrv.AddKey(tctx, keys[identity.KeyPurposeP2P])
-	if err != nil {
-		return err
-	}
-
-	err = idSrv.AddKey(tctx, keys[identity.KeyPurposeSigning])
-	if err != nil {
-		return err
-	}
-
-	err = idSrv.AddKey(tctx, keys[identity.KeyPurposeEthMsgAuth])
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func createIdentity(ctx map[string]interface{}, cfg config.Configuration, configFile *viper.Viper) error {
-	tc, err := configstore.TempAccount(cfg.GetEthereumDefaultAccountName(), cfg)
-	if err != nil {
-		return err
-	}
-
-	tctx, err := contextutil.New(context.Background(), tc)
-	if err != nil {
-		return err
-	}
-
-	identityFactory := ctx[did.BootstrappedDIDFactory].(did.Factory)
-
-	did, err := identityFactory.CreateIdentity(tctx)
-	if err != nil {
-		return err
-	}
-
-	configFile.Set("identityId", did.ToAddress().String())
-	err = configFile.WriteConfig()
-	if err != nil {
-		return err
-	}
-	cfg.Set("identityId", did.ToAddress().String())
-	log.Infof("Identity created [%s]", did.ToAddress().String())
-
-	return nil
-
-}
-
 // CreateConfig creates a config file using provide parameters and the default config
 func CreateConfig(
 	targetDataDir, ethNodeURL, accountKeyPath, accountPassword, network string,
@@ -207,12 +95,20 @@ func CreateConfig(
 	// create keys locally
 	generateKeys(cfg)
 
-	err = createIdentity(ctx, cfg, configFile)
+	id, err := did.CreateIdentity(ctx, cfg)
 	if err != nil {
 		return err
 	}
 
-	err = addKeysFromConfig(ctx, cfg)
+	configFile.Set("identityId", id.ToAddress().String())
+	err = configFile.WriteConfig()
+	if err != nil {
+		return err
+	}
+	cfg.Set("identityId", id.ToAddress().String())
+	log.Infof("Identity created [%s]", id.ToAddress().String())
+
+	err = did.AddKeysFromConfig(ctx, cfg)
 	if err != nil {
 		return err
 	}
