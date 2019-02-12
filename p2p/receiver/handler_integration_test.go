@@ -8,9 +8,10 @@ import (
 	"os"
 	"testing"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
-
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
+	"github.com/golang/protobuf/ptypes/any"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -31,9 +32,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/coredocument"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/crypto/ed25519"
 )
@@ -347,27 +346,19 @@ func prepareDocumentForP2PHandler(t *testing.T, doc *coredocumentpb.CoreDocument
 }
 
 func updateDocumentForP2Phandler(t *testing.T, doc *coredocumentpb.CoreDocument) {
-	dataSalts := &invoicepb.InvoiceDataSalts{}
 	invData := &invoicepb.InvoiceData{}
-	proofs.FillSalts(invData, dataSalts)
+	dataSalts, _ := documents.GenerateNewSalts(invData, "invoice")
 
 	serializedInv, err := proto.Marshal(invData)
 	assert.NoError(t, err)
-	serializedInvSalts, err := proto.Marshal(dataSalts)
-	assert.NoError(t, err)
 
-	salts := &coredocumentpb.CoreDocumentSalts{}
-	doc.CoredocumentSalts = salts
 	doc.EmbeddedData = &any.Any{
 		TypeUrl: documenttypes.InvoiceDataTypeUrl,
 		Value:   serializedInv,
 	}
-	doc.EmbeddedDataSalts = &any.Any{
-		TypeUrl: documenttypes.InvoiceSaltsTypeUrl,
-		Value:   serializedInvSalts,
-	}
-	err = proofs.FillSalts(doc, salts)
-	assert.Nil(t, err)
+	doc.EmbeddedDataSalts = documents.ConvertToProtoSalts(dataSalts)
+	cdSalts, _ := documents.GenerateNewSalts(doc, "")
+	doc.CoredocumentSalts = documents.ConvertToProtoSalts(cdSalts)
 }
 
 func getAnchoredRequest(doc *coredocumentpb.CoreDocument) *p2ppb.AnchorDocumentRequest {

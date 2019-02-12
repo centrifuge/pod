@@ -53,6 +53,12 @@ type Service interface {
 
 	// IsSignedWithPurpose verifies if a message is signed with one of the identities specific purpose keys
 	IsSignedWithPurpose(ctx context.Context, message [32]byte, _signature []byte, _purpose *big.Int) (bool, error)
+
+	// AddMultiPurposeKey adds a key with multiple purposes
+	AddMultiPurposeKey(context context.Context, key [32]byte, purposes []*big.Int, keyType *big.Int) error
+
+	// RevokeKey revokes an existing key in the smart contract
+	RevokeKey(ctx context.Context, key [32]byte) error
 }
 
 type contract interface {
@@ -70,6 +76,10 @@ type contract interface {
 	AddKey(opts *bind.TransactOpts, _key [32]byte, _purpose *big.Int, _keyType *big.Int) (*types.Transaction, error)
 
 	Execute(opts *bind.TransactOpts, _to common.Address, _value *big.Int, _data []byte) (*types.Transaction, error)
+
+	AddMultiPurposeKey(opts *bind.TransactOpts, _key [32]byte, _purposes []*big.Int, _keyType *big.Int) (*types.Transaction, error)
+
+	RevokeKey(opts *bind.TransactOpts, _key [32]byte) (*types.Transaction, error)
 }
 
 type service struct {
@@ -160,7 +170,8 @@ func (i service) AddKey(ctx context.Context, key Key) error {
 
 	// TODO: did can be passed instead of randomCentID after CentID is DID
 	log.Info("Add key to identity contract %s", did.ToAddress().String())
-	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), id.RandomCentID(), uuid.Nil, "Check TX for add key", i.addKeyTX(opts, contract, key))
+	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), id.RandomCentID(), uuid.Nil, "Check TX for add key",
+		i.ethereumTX(opts, contract.AddKey, key.GetKey(), key.GetPurpose(), key.GetType()))
 	if err != nil {
 		return err
 	}
@@ -175,34 +186,66 @@ func (i service) AddKey(ctx context.Context, key Key) error {
 
 }
 
-func (i service) addKeyTX(opts *bind.TransactOpts, identityContract contract, key Key) func(accountID id.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
-	return func(accountID id.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
-		ethTX, err := i.client.SubmitTransactionWithRetries(identityContract.AddKey, opts, key.GetKey(), key.GetPurpose(), key.GetType())
-		if err != nil {
-			errOut <- err
-			return
-		}
-		logTxHash(ethTX)
-
-		res, err := ethereum.QueueEthTXStatusTask(accountID, txID, ethTX.Hash(), i.queue)
-		if err != nil {
-			errOut <- err
-			return
-		}
-
-		_, err = res.Get(txMan.GetDefaultTaskTimeout())
-		if err != nil {
-			errOut <- err
-			return
-		}
-		errOut <- nil
+// AddMultiPurposeKey adds a key with multiple purposes
+func (i service) AddMultiPurposeKey(ctx context.Context, key [32]byte, purposes []*big.Int, keyType *big.Int) error {
+	did, err := i.getDID(ctx)
+	if err != nil {
+		return err
 	}
 
+	contract, opts, err := i.prepareTransaction(ctx, did)
+	if err != nil {
+		return err
+	}
+
+	// TODO: did can be passed instead of randomCentID after CentID is DID
+	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), id.RandomCentID(), uuid.Nil, "Check TX for add multi purpose key",
+		i.ethereumTX(opts, contract.AddMultiPurposeKey, key, purposes, keyType))
+	if err != nil {
+		return err
+	}
+
+	isDone := <-done
+	// non async task
+	if !isDone {
+		return errors.New("add key multi purpose  TX failed: txID:%s", txID.String())
+
+	}
+	return nil
 }
 
-func (i service) rawExecuteTX(opts *bind.TransactOpts, identityContract contract, to common.Address, value *big.Int, data []byte) func(accountID id.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
+// RevokeKey revokes an existing key in the smart contract
+func (i service) RevokeKey(ctx context.Context, key [32]byte) error {
+	did, err := i.getDID(ctx)
+	if err != nil {
+		return err
+	}
+
+	contract, opts, err := i.prepareTransaction(ctx, did)
+	if err != nil {
+		return err
+	}
+
+	// TODO: did can be passed instead of randomCentID after CentID is DID
+	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), id.RandomCentID(), uuid.Nil, "Check TX for revoke key",
+		i.ethereumTX(opts, contract.RevokeKey, key))
+	if err != nil {
+		return err
+	}
+
+	isDone := <-done
+	// non async task
+	if !isDone {
+		return errors.New("revoke key TX failed: txID:%s", txID.String())
+
+	}
+	return nil
+}
+
+// ethereumTX is submitting an Ethereum transaction and starts a task to wait for the transaction result
+func (i service) ethereumTX(opts *bind.TransactOpts, contractMethod interface{}, params ...interface{}) func(accountID id.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
 	return func(accountID id.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
-		ethTX, err := i.client.SubmitTransactionWithRetries(identityContract.Execute, opts, to, value, data)
+		ethTX, err := i.client.SubmitTransactionWithRetries(contractMethod, opts, params...)
 		if err != nil {
 			errOut <- err
 			return
@@ -222,7 +265,6 @@ func (i service) rawExecuteTX(opts *bind.TransactOpts, identityContract contract
 		}
 		errOut <- nil
 	}
-
 }
 
 // GetKey return a key from the identity contract
@@ -276,7 +318,7 @@ func (i service) RawExecute(ctx context.Context, to common.Address, data []byte)
 	value := big.NewInt(0)
 
 	// TODO: did can be passed instead of randomCentID after CentID is DID
-	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), id.RandomCentID(), uuid.Nil, "Check TX for execute", i.rawExecuteTX(opts, contract, to, value, data))
+	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), id.RandomCentID(), uuid.Nil, "Check TX for execute", i.ethereumTX(opts, contract.Execute, to, value, data))
 	if err != nil {
 		return err
 	}

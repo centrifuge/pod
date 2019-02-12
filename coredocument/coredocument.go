@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/golang/protobuf/proto"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -78,7 +80,7 @@ func CalculateDocumentRoot(document *coredocumentpb.CoreDocument) error {
 // GetDocumentRootTree returns the merkle tree for the document root
 func GetDocumentRootTree(document *coredocumentpb.CoreDocument) (tree *proofs.DocumentTree, err error) {
 	h := sha256.New()
-	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: h})
+	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: h, Salts: ConvertToProofSalts(document.CoredocumentSalts)})
 	tree = &t
 
 	// The first leave added is the signing_root
@@ -90,7 +92,7 @@ func GetDocumentRootTree(document *coredocumentpb.CoreDocument) (tree *proofs.Do
 	sigProperty := proofs.NewProperty("signatures")
 	sigLeafList := make([]proofs.LeafNode, len(document.Signatures)+1)
 	sigLengthNode := proofs.LeafNode{
-		Property: sigProperty.LengthProp(),
+		Property: sigProperty.LengthProp(proofs.DefaultSaltsLengthSuffix),
 		Salt:     make([]byte, 32),
 		Value:    fmt.Sprintf("%d", len(document.Signatures)),
 	}
@@ -126,9 +128,9 @@ func GetDocumentRootTree(document *coredocumentpb.CoreDocument) (tree *proofs.Do
 // GetCoreDocTree returns the merkle tree for the coredoc root
 func GetCoreDocTree(document *coredocumentpb.CoreDocument) (tree *proofs.DocumentTree, err error) {
 	h := sha256.New()
-	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: h})
+	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: h, Salts: ConvertToProofSalts(document.CoredocumentSalts)})
 	tree = &t
-	err = tree.AddLeavesFromDocument(document, document.CoredocumentSalts)
+	err = tree.AddLeavesFromDocument(document)
 	if err != nil {
 		return nil, err
 	}
@@ -171,7 +173,7 @@ func GetDocumentSigningTree(document *coredocumentpb.CoreDocument, dataRoot []by
 	}
 
 	// create the signing tree with data root and coredoc root as siblings
-	t2 := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: h})
+	t2 := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: h, Salts: ConvertToProofSalts(document.CoredocumentSalts)})
 	tree = &t2
 	err = tree.AddLeaves([]proofs.LeafNode{
 		{
@@ -304,15 +306,54 @@ func GetExternalCollaborators(selfCentID identity.CentID, doc *coredocumentpb.Co
 	return collabs, nil
 }
 
-// FillSalts creates a new coredocument.Salts and fills it
-func FillSalts(doc *coredocumentpb.CoreDocument) error {
-	salts := new(coredocumentpb.CoreDocumentSalts)
-	err := proofs.FillSalts(doc, salts)
+// GenerateNewSalts generates salts for new document
+func GenerateNewSalts(document proto.Message, prefix string) (*proofs.Salts, error) {
+	docSalts := &proofs.Salts{}
+	prop := proofs.NewProperty(prefix)
+	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: sha256.New(), ParentPrefix: prop, Salts: docSalts})
+	err := t.AddLeavesFromDocument(document)
 	if err != nil {
-		return errors.New("failed to fill coredocument salts: %v", err)
+		return nil, err
+	}
+	return docSalts, nil
+}
+
+// ConvertToProtoSalts converts proofSalts into protocolSalts
+func ConvertToProtoSalts(proofSalts *proofs.Salts) []*coredocumentpb.DocumentSalt {
+	protoSalts := make([]*coredocumentpb.DocumentSalt, len(*proofSalts))
+	if proofSalts == nil {
+		return nil
 	}
 
-	doc.CoredocumentSalts = salts
+	for i, pSalt := range *proofSalts {
+		protoSalts[i] = &coredocumentpb.DocumentSalt{Value: pSalt.Value, Compact: pSalt.Compact}
+	}
+
+	return protoSalts
+}
+
+// ConvertToProofSalts converts protocolSalts into proofSalts
+func ConvertToProofSalts(protoSalts []*coredocumentpb.DocumentSalt) *proofs.Salts {
+	proofSalts := make(proofs.Salts, len(protoSalts))
+	if protoSalts == nil {
+		return nil
+	}
+
+	for _, pSalt := range protoSalts {
+		proofSalts = append(proofSalts, proofs.Salt{Value: pSalt.Value, Compact: pSalt.Compact})
+	}
+
+	return &proofSalts
+}
+
+// FillSalts creates a new coredocument.Salts and fills it
+func FillSalts(doc *coredocumentpb.CoreDocument) error {
+	salts, err := GenerateNewSalts(doc, "")
+	if err != nil {
+		return err
+	}
+
+	doc.CoredocumentSalts = ConvertToProtoSalts(salts)
 	return nil
 }
 

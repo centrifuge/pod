@@ -37,6 +37,8 @@ import (
 func TestCreateProofData(t *testing.T) {
 	sortedHashes := [][]byte{utils.RandomSlice(32), utils.RandomSlice(32)}
 	salt := utils.RandomSlice(32)
+	v1 := "value1"
+	v2 := "value2"
 	tests := []struct {
 		name   string
 		proofs []*proofspb.Proof
@@ -48,19 +50,19 @@ func TestCreateProofData(t *testing.T) {
 			[]*proofspb.Proof{
 				{
 					Property:     proofs.ReadableName("prop1"),
-					Value:        "value1",
+					Value:        v1,
 					Salt:         salt,
 					SortedHashes: sortedHashes,
 				},
 				{
 					Property:     proofs.ReadableName("prop2"),
-					Value:        "value2",
+					Value:        v2,
 					Salt:         salt,
 					SortedHashes: sortedHashes,
 				},
 			},
 			proofData{
-				Values: []string{"value1", "value2"},
+				Values: []string{v1, v2},
 				Proofs: [][][32]byte{{byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}, {byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}},
 				Salts:  [][32]byte{byteSliceToByteArray32(salt), byteSliceToByteArray32(salt)},
 			},
@@ -71,19 +73,19 @@ func TestCreateProofData(t *testing.T) {
 			[]*proofspb.Proof{
 				{
 					Property:     proofs.ReadableName("prop1"),
-					Value:        "value1",
+					Value:        v1,
 					Salt:         salt,
 					SortedHashes: [][]byte{utils.RandomSlice(33), utils.RandomSlice(31)},
 				},
 				{
 					Property:     proofs.ReadableName("prop2"),
-					Value:        "value2",
+					Value:        v2,
 					Salt:         salt,
 					SortedHashes: [][]byte{utils.RandomSlice(33), utils.RandomSlice(31)},
 				},
 			},
 			proofData{
-				Values: []string{"value1", "value2"},
+				Values: []string{v1, v2},
 				Proofs: [][][32]byte{{byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}, {byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}},
 				Salts:  [][32]byte{byteSliceToByteArray32(salt), byteSliceToByteArray32(salt)},
 			},
@@ -94,19 +96,19 @@ func TestCreateProofData(t *testing.T) {
 			[]*proofspb.Proof{
 				{
 					Property:     proofs.ReadableName("prop1"),
-					Value:        "value1",
+					Value:        v1,
 					Salt:         utils.RandomSlice(33),
 					SortedHashes: sortedHashes,
 				},
 				{
 					Property:     proofs.ReadableName("prop2"),
-					Value:        "value2",
+					Value:        v2,
 					Salt:         utils.RandomSlice(32),
 					SortedHashes: sortedHashes,
 				},
 			},
 			proofData{
-				Values: []string{"value1", "value2"},
+				Values: []string{v1, v2},
 				Proofs: [][][32]byte{{byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}, {byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}},
 				Salts:  [][32]byte{byteSliceToByteArray32(salt), byteSliceToByteArray32(salt)},
 			},
