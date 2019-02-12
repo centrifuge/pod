@@ -69,7 +69,6 @@ func addKeysDeprecated(config config.Configuration, idService identity.Service) 
 }
 
 func getKeyPairsFromConfig(config config.Configuration) (map[int]did.Key, error) {
-
 	keys := map[int]did.Key{}
 	var pk []byte
 
