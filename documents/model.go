@@ -18,6 +18,22 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
+const (
+	CDRootField       = "cd_root"
+	DataRootField     = "data_root"
+	DocumentTypeField = "document_type"
+	SignaturesField   = "signatures"
+	SigningRootField  = "signing_root"
+)
+
+var compactProperties = map[string][]byte{
+	CDRootField:       {0, 0, 0, 7},
+	DataRootField:     {0, 0, 0, 5},
+	DocumentTypeField: {0, 0, 0, 100},
+	SignaturesField:   {0, 0, 0, 6},
+	SigningRootField:  {0, 0, 0, 10},
+}
+
 // Model is an interface to abstract away model specificness like invoice or purchaseOrder
 // The interface can cast into the type specified by the model if required
 // It should only handle protocol-level Document actions
@@ -52,6 +68,27 @@ const (
 	// ErrZeroCollaborators error when no collaborators are passed
 	ErrZeroCollaborators = errors.Error("require at least one collaborator")
 )
+
+// NewDefaultTree returns a DocumentTree with default opts
+func NewDefaultTree(salts *proofs.Salts) *proofs.DocumentTree {
+	return NewDefaultTreeWithPrefix(salts, "")
+}
+
+// NewDefaultTreeWithPrefix returns a DocumentTree with default opts passing a prefix to the tree leaves
+func NewDefaultTreeWithPrefix(salts *proofs.Salts, prefix string) *proofs.DocumentTree {
+	var prop proofs.Property
+	if prefix != "" {
+		prop = proofs.NewProperty(prefix)
+	}
+
+	t := proofs.NewDocumentTree(proofs.TreeOptions{CompactProperties: true, EnableHashSorting: true, Hash: sha256.New(), ParentPrefix: prop, Salts: salts})
+	return &t
+}
+
+// NewLeafProperty returns a proof property with the literal and the compact
+func NewLeafProperty(literal string, compact []byte) proofs.Property {
+	return proofs.NewProperty(literal, compact...)
+}
 
 // NewCoreDocModel returns a new CoreDocumentModel
 // Note: collaborators and salts are to be filled by the caller
@@ -168,8 +205,7 @@ func (m *CoreDocumentModel) CreateProofs(dataTree *proofs.DocumentTree, fields [
 func (m *CoreDocumentModel) GetCoreDocTree() (tree *proofs.DocumentTree, err error) {
 	document := m.Document
 	h := sha256.New()
-	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: h, Salts: ConvertToProofSalts(m.Document.CoredocumentSalts)})
-	tree = &t
+	tree = NewDefaultTree(ConvertToProofSalts(m.Document.CoredocumentSalts))
 	err = tree.AddLeavesFromDocument(document)
 	if err != nil {
 		return nil, err
@@ -180,12 +216,12 @@ func (m *CoreDocumentModel) GetCoreDocTree() (tree *proofs.DocumentTree, err err
 	}
 	// Adding document type as it is an excluded field in the tree
 	documentTypeNode := proofs.LeafNode{
-		Property: proofs.NewProperty("document_type"),
+		Property: NewLeafProperty(DocumentTypeField, compactProperties[DocumentTypeField]),
 		Salt:     make([]byte, 32),
 		Value:    []byte(document.EmbeddedData.TypeUrl),
 	}
 
-	err = documentTypeNode.HashNode(h, false)
+	err = documentTypeNode.HashNode(h, true)
 	if err != nil {
 		return nil, err
 	}
@@ -204,8 +240,6 @@ func (m *CoreDocumentModel) GetCoreDocTree() (tree *proofs.DocumentTree, err err
 
 // GetDocumentSigningTree returns the merkle tree for the signing root
 func (m *CoreDocumentModel) GetDocumentSigningTree(dataRoot []byte) (tree *proofs.DocumentTree, err error) {
-	h := sha256.New()
-
 	// coredoc tree
 	coreDocTree, err := m.GetCoreDocTree()
 	if err != nil {
@@ -213,16 +247,15 @@ func (m *CoreDocumentModel) GetDocumentSigningTree(dataRoot []byte) (tree *proof
 	}
 
 	// create the signing tree with data root and coredoc root as siblings
-	t2 := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: h, Salts: ConvertToProofSalts(m.Document.CoredocumentSalts)})
-	tree = &t2
+	tree = NewDefaultTree(ConvertToProofSalts(m.Document.CoredocumentSalts))
 	err = tree.AddLeaves([]proofs.LeafNode{
 		{
-			Property: proofs.NewProperty("data_root"),
+			Property: NewLeafProperty(DataRootField, compactProperties[DataRootField]),
 			Hash:     dataRoot,
 			Hashed:   true,
 		},
 		{
-			Property: proofs.NewProperty("cd_root"),
+			Property: NewLeafProperty(CDRootField, compactProperties[CDRootField]),
 			Hash:     coreDocTree.RootHash(),
 			Hashed:   true,
 		},
@@ -244,23 +277,22 @@ func (m *CoreDocumentModel) GetDocumentSigningTree(dataRoot []byte) (tree *proof
 func (m *CoreDocumentModel) GetDocumentRootTree() (tree *proofs.DocumentTree, err error) {
 	document := m.Document
 	h := sha256.New()
-	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: h, Salts: ConvertToProofSalts(document.CoredocumentSalts)})
-	tree = &t
+	tree = NewDefaultTree(ConvertToProofSalts(document.CoredocumentSalts))
 
 	// The first leave added is the signing_root
-	err = tree.AddLeaf(proofs.LeafNode{Hash: document.SigningRoot, Hashed: true, Property: proofs.NewProperty("signing_root")})
+	err = tree.AddLeaf(proofs.LeafNode{Hash: document.SigningRoot, Hashed: true, Property: NewLeafProperty(SigningRootField, compactProperties[SigningRootField])})
 	if err != nil {
 		return nil, err
 	}
 	// For every signature we create a LeafNode
-	sigProperty := proofs.NewProperty("signatures")
+	sigProperty := NewLeafProperty(SignaturesField, compactProperties[SignaturesField])
 	sigLeafList := make([]proofs.LeafNode, len(document.Signatures)+1)
 	sigLengthNode := proofs.LeafNode{
 		Property: sigProperty.LengthProp(proofs.DefaultSaltsLengthSuffix),
 		Salt:     make([]byte, 32),
 		Value:    []byte(fmt.Sprintf("%d", len(document.Signatures))),
 	}
-	err = sigLengthNode.HashNode(h, false)
+	err = sigLengthNode.HashNode(h, true)
 	if err != nil {
 		return nil, err
 	}
@@ -272,7 +304,7 @@ func (m *CoreDocumentModel) GetDocumentRootTree() (tree *proofs.DocumentTree, er
 			Hashed:   true,
 			Property: sigProperty.SliceElemProp(proofs.FieldNumForSliceLength(i)),
 		}
-		err = leaf.HashNode(h, false)
+		err = leaf.HashNode(h, true)
 		if err != nil {
 			return nil, err
 		}
@@ -364,8 +396,7 @@ func (m *CoreDocumentModel) AccountCanRead(account identity.CentID) bool {
 // GenerateNewSalts generates salts for new document
 func GenerateNewSalts(document proto.Message, prefix string) (*proofs.Salts, error) {
 	docSalts := &proofs.Salts{}
-	prop := proofs.NewProperty(prefix)
-	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: sha256.New(), ParentPrefix: prop, Salts: docSalts})
+	t := NewDefaultTreeWithPrefix(docSalts, prefix)
 	err := t.AddLeavesFromDocument(document)
 	if err != nil {
 		return nil, err

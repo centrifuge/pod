@@ -1,7 +1,6 @@
 package purchaseorder
 
 import (
-	"crypto/sha256"
 	"encoding/json"
 	"reflect"
 
@@ -344,13 +343,12 @@ func (p *PurchaseOrder) CalculateDataRoot() ([]byte, error) {
 
 // getDocumentDataTree creates precise-proofs data tree for the model
 func (p *PurchaseOrder) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
-	prop := proofs.NewProperty(prefix)
 	poProto := p.createP2PProtobuf()
 	salts, err := p.getPurchaseOrderSalts(poProto)
 	if err != nil {
 		return nil, err
 	}
-	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: sha256.New(), ParentPrefix: prop, Salts: salts})
+	t := documents.NewDefaultTreeWithPrefix(salts, prefix)
 	err = t.AddLeavesFromDocument(poProto)
 	if err != nil {
 		return nil, errors.New("getDocumentDataTree error %v", err)
@@ -359,7 +357,7 @@ func (p *PurchaseOrder) getDocumentDataTree() (tree *proofs.DocumentTree, err er
 	if err != nil {
 		return nil, errors.New("getDocumentDataTree error %v", err)
 	}
-	return &t, nil
+	return t, nil
 }
 
 // CreateProofs generates proofs for given fields

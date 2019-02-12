@@ -287,18 +287,20 @@ func TestGetDocumentRootTree(t *testing.T) {
 	tree, err := dm.GetDocumentRootTree()
 
 	// Manually constructing the two node tree:
-	signaturesLengthLeaf := sha256.Sum256(append([]byte("signatures.length0"), make([]byte, 32)...))
-	expectedRootHash := sha256.Sum256(append(signaturesLengthLeaf[:], dm.Document.SigningRoot...))
+	signaturesLengthLeaf := sha256.Sum256(append(append(compactProperties[SignaturesField], []byte{48}...), make([]byte, 32)...))
+	expectedRootHash := sha256.Sum256(append(dm.Document.SigningRoot, signaturesLengthLeaf[:]...))
 	assert.Nil(t, err)
 	assert.Equal(t, expectedRootHash[:], tree.RootHash())
 }
 
 func TestCreateProofs(t *testing.T) {
 	h := sha256.New()
-	testTree := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: sha256.New()})
-	err := testTree.AddLeaf(proofs.LeafNode{Hash: utils.RandomSlice(32), Hashed: true, Property: proofs.NewProperty("sample_field")})
+	testTree := NewDefaultTree(nil)
+	props := []proofs.Property{NewLeafProperty("sample_field", []byte{0, 0, 0, 200}), NewLeafProperty("sample_field2", []byte{0, 0, 0, 202})}
+	compactProps := [][]byte{props[0].Compact, props[1].Compact}
+	err := testTree.AddLeaf(proofs.LeafNode{Hash: utils.RandomSlice(32), Hashed: true, Property: props[0]})
 	assert.NoError(t, err)
-	err = testTree.AddLeaf(proofs.LeafNode{Hash: utils.RandomSlice(32), Hashed: true, Property: proofs.NewProperty("sample_field2")})
+	err = testTree.AddLeaf(proofs.LeafNode{Hash: utils.RandomSlice(32), Hashed: true, Property: props[1]})
 	assert.NoError(t, err)
 	err = testTree.Generate()
 	assert.NoError(t, err)
@@ -346,7 +348,7 @@ func TestCreateProofs(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.fieldName, func(t *testing.T) {
-			p, err := dm.CreateProofs(&testTree, []string{test.fieldName})
+			p, err := dm.CreateProofs(testTree, []string{test.fieldName})
 			assert.NoError(t, err)
 			assert.Equal(t, test.proofLength, len(p[0].SortedHashes))
 			var l *proofs.LeafNode
@@ -354,6 +356,7 @@ func TestCreateProofs(t *testing.T) {
 				_, l = cdTree.GetLeafByProperty(test.fieldName)
 			} else {
 				_, l = testTree.GetLeafByProperty(test.fieldName)
+				assert.Contains(t, compactProps, l.Property.CompactName())
 			}
 			valid, err := proofs.ValidateProofSortedHashes(l.Hash, p[0].SortedHashes, cd.DocumentRoot, h)
 			assert.NoError(t, err)

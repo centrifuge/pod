@@ -1,7 +1,6 @@
 package invoice
 
 import (
-	"crypto/sha256"
 	"encoding/json"
 	"reflect"
 
@@ -357,13 +356,12 @@ func (i *Invoice) CalculateDataRoot() ([]byte, error) {
 
 // getDocumentDataTree creates precise-proofs data tree for the model
 func (i *Invoice) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
-	prop := proofs.NewProperty(prefix)
 	invProto := i.createP2PProtobuf()
 	salts, err := i.getInvoiceSalts(invProto)
 	if err != nil {
 		return nil, err
 	}
-	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: sha256.New(), ParentPrefix: prop, Salts: salts})
+	t := documents.NewDefaultTreeWithPrefix(salts, prefix)
 	err = t.AddLeavesFromDocument(invProto)
 	if err != nil {
 		return nil, errors.New("getDocumentDataTree error %v", err)
@@ -372,7 +370,7 @@ func (i *Invoice) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
 	if err != nil {
 		return nil, errors.New("getDocumentDataTree error %v", err)
 	}
-	return &t, nil
+	return t, nil
 }
 
 // CreateProofs generates proofs for given fields
