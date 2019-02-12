@@ -159,6 +159,7 @@ func (i service) AddKey(ctx context.Context, key Key) error {
 	}
 
 	// TODO: did can be passed instead of randomCentID after CentID is DID
+	log.Info("Add key to identity contract %s", did.ToAddress().String())
 	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), id.RandomCentID(), uuid.Nil, "Check TX for add key", i.addKeyTX(opts, contract, key))
 	if err != nil {
 		return err

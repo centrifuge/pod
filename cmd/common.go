@@ -4,14 +4,15 @@ import (
 	"context"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/spf13/viper"
+
+	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/centrifuge/go-centrifuge/identity/did"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-
-	"github.com/centrifuge/go-centrifuge/config/configstore"
-	"github.com/centrifuge/go-centrifuge/contextutil"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers"
 
@@ -29,7 +30,8 @@ import (
 
 var log = logging.Logger("centrifuge-cmd")
 
-func createIdentity(ctx context.Context, idService identity.Service) (identity.CentID, error) {
+// Deprecated
+func createIdentityDeprecated(ctx context.Context, idService identity.Service) (identity.CentID, error) {
 	centID := identity.RandomCentID()
 	_, confirmations, err := idService.CreateIdentity(ctx, centID)
 	if err != nil {
@@ -49,7 +51,8 @@ func generateKeys(config config.Configuration) {
 	crypto.GenerateSigningKeyPair(ethAuthPub, ethAuthPvt, "secp256k1")
 }
 
-func addKeys(config config.Configuration, idService identity.Service) error {
+// Deprecated
+func addKeysDeprecated(config config.Configuration, idService identity.Service) error {
 	err := idService.AddKeyFromConfig(config, identity.KeyPurposeP2P)
 	if err != nil {
 		return err
@@ -87,6 +90,10 @@ func getKeyPairsFromConfig(config config.Configuration) (map[int]did.Key, error)
 	if err != nil {
 		return nil, err
 	}
+	pk32, err = utils.SliceToByte32(pk)
+	if err != nil {
+		return nil, err
+	}
 	keys[identity.KeyPurposeSigning] = did.NewKey(pk32, big.NewInt(identity.KeyPurposeSigning), big.NewInt(did.KeyTypeECDSA))
 
 	// secp256k1 keys
@@ -95,22 +102,27 @@ func getKeyPairsFromConfig(config config.Configuration) (map[int]did.Key, error)
 	if err != nil {
 		return nil, err
 	}
-	pubKey, err := hexutil.Decode(secp256k1.GetAddress(pk))
-	if err != nil {
-		return nil, err
-	}
-	pk32, err = utils.SliceToByte32(pubKey)
-	if err != nil {
-		return nil, err
-	}
 
-	keys[identity.KeyPurposeEthMsgAuth] = did.NewKey(pk32, big.NewInt(identity.KeyPurposeEthMsgAuth), big.NewInt(did.KeyTypeECDSA))
+	address32Bytes := utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(pk)))
+	keys[identity.KeyPurposeEthMsgAuth] = did.NewKey(address32Bytes, big.NewInt(identity.KeyPurposeEthMsgAuth), big.NewInt(did.KeyTypeECDSA))
 
 	return keys, nil
 }
 
-func addKeysFromConfig(tctx context.Context, config config.Configuration, idSrv did.Service) error {
-	keys, err := getKeyPairsFromConfig(config)
+func addKeysFromConfig(ctx map[string]interface{}, cfg config.Configuration) error {
+	idSrv := ctx[did.BootstrappedDIDService].(did.Service)
+
+	tc, err := configstore.NewAccount(cfg.GetEthereumDefaultAccountName(), cfg)
+	if err != nil {
+		return err
+	}
+
+	tctx, err := contextutil.New(context.Background(), tc)
+	if err != nil {
+		return err
+	}
+
+	keys, err := getKeyPairsFromConfig(cfg)
 	if err != nil {
 		return err
 	}
@@ -129,6 +141,36 @@ func addKeysFromConfig(tctx context.Context, config config.Configuration, idSrv 
 		return err
 	}
 	return nil
+}
+
+func createIdentity(ctx map[string]interface{}, cfg config.Configuration, configFile *viper.Viper) error {
+	tc, err := configstore.TempAccount(cfg.GetEthereumDefaultAccountName(), cfg)
+	if err != nil {
+		return err
+	}
+
+	tctx, err := contextutil.New(context.Background(), tc)
+	if err != nil {
+		return err
+	}
+
+	identityFactory := ctx[did.BootstrappedDIDFactory].(did.Factory)
+
+	did, err := identityFactory.CreateIdentity(tctx)
+	if err != nil {
+		return err
+	}
+
+	configFile.Set("identityId", did.ToAddress().String())
+	err = configFile.WriteConfig()
+	if err != nil {
+		return err
+	}
+	cfg.Set("identityId", did.ToAddress().String())
+	log.Infof("Identity created [%s]", did.ToAddress().String())
+
+	return nil
+
 }
 
 // CreateConfig creates a config file using provide parameters and the default config
@@ -155,44 +197,23 @@ func CreateConfig(
 	if smartContractAddrs != nil {
 		data["smartContractAddresses"] = smartContractAddrs
 	}
-	v, err := config.CreateConfigFile(data)
+	configFile, err := config.CreateConfigFile(data)
 	if err != nil {
 		return err
 	}
-	log.Infof("Config File Created: %s\n", v.ConfigFileUsed())
-	ctx, canc, _ := CommandBootstrap(v.ConfigFileUsed())
+	log.Infof("Config File Created: %s\n", configFile.ConfigFileUsed())
+	ctx, canc, _ := CommandBootstrap(configFile.ConfigFileUsed())
 	cfg := ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 
 	// create keys locally
 	generateKeys(cfg)
 
-	tc, err := configstore.TempAccount(cfg.GetEthereumDefaultAccountName(), cfg)
+	err = createIdentity(ctx, cfg, configFile)
 	if err != nil {
 		return err
 	}
 
-	tctx, err := contextutil.New(context.Background(), tc)
-	if err != nil {
-		return err
-	}
-
-	identityFactory := ctx[did.BootstrappedDIDFactory].(did.Factory)
-	idService := ctx[did.BootstrappedDIDService].(did.Service)
-
-	did, err := identityFactory.CreateIdentity(tctx)
-	if err != nil {
-		return err
-	}
-
-	v.Set("identityId", did.ToAddress().String())
-	err = v.WriteConfig()
-	if err != nil {
-		return err
-	}
-	cfg.Set("identityId", did.ToAddress().String())
-	log.Infof("Identity created [%s]", did.ToAddress().String())
-
-	err = addKeysFromConfig(tctx, cfg, idService)
+	err = addKeysFromConfig(ctx, cfg)
 	if err != nil {
 		return err
 	}
@@ -203,7 +224,7 @@ func CreateConfig(
 	db.Close()
 	dbCfg.Close()
 	log.Infof("---------Centrifuge node configuration file successfully created!---------")
-	log.Infof("Please run the Centrifuge node using the following command: centrifuge run -c %s\n", v.ConfigFileUsed())
+	log.Infof("Please run the Centrifuge node using the following command: centrifuge run -c %s\n", configFile.ConfigFileUsed())
 	return nil
 }
 
@@ -252,7 +273,7 @@ func CreateConfigDeprecated(
 	}
 
 	idService := ctx[identity.BootstrappedIDService].(identity.Service)
-	id, err := createIdentity(tctx, idService)
+	id, err := createIdentityDeprecated(tctx, idService)
 	if err != nil {
 		return err
 	}
@@ -263,7 +284,7 @@ func CreateConfigDeprecated(
 	}
 	cfg.Set("identityId", id.String())
 	log.Infof("Identity created [%s] [%x]", id.String(), id)
-	err = addKeys(cfg, idService)
+	err = addKeysDeprecated(cfg, idService)
 	if err != nil {
 		return err
 	}
