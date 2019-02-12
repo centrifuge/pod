@@ -11,10 +11,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPaymentObligationMint_invoice_successful(t *testing.T) {
-	t.Parallel()
-	paymentObligationMint(t, typeInvoice)
-}
+//
+//func TestPaymentObligationMint_invoice_successful(t *testing.T) {
+//	t.Parallel()
+//	paymentObligationMint(t, typeInvoice)
+//}
 
 /* TODO: testcase not stable
 func TestPaymentObligationMint_po_successful(t *testing.T) {
@@ -74,39 +75,39 @@ func paymentObligationMint(t *testing.T, documentType string) {
 
 }
 
-func TestPaymentObligationMint_errors(t *testing.T) {
-	t.Parallel()
-	alice := doctorFord.getHostTestSuite(t, "Alice")
-	tests := []struct {
-		errorMsg   string
-		httpStatus int
-		payload    map[string]interface{}
-	}{
-		{
-
-			"RegistryAddress is not a valid Ethereum address",
-			http.StatusInternalServerError,
-			map[string]interface{}{
-
-				"registryAddress": "0x123",
-			},
-		},
-		{
-			"DepositAddress is not a valid Ethereum address",
-			http.StatusInternalServerError,
-			map[string]interface{}{
-
-				"registryAddress": "0xf72855759a39fb75fc7341139f5d7a3974d4da08", //dummy address
-				"depositAddress":  "abc",
-			},
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.errorMsg, func(t *testing.T) {
-			t.Parallel()
-			response, err := alice.host.mintNFT(alice.httpExpect, alice.id.String(), test.httpStatus, test.payload)
-			assert.Nil(t, err, "it should be possible to call the API endpoint")
-			response.Value("error").String().Contains(test.errorMsg)
-		})
-	}
-}
+//func TestPaymentObligationMint_errors(t *testing.T) {
+//	t.Parallel()
+//	alice := doctorFord.getHostTestSuite(t, "Alice")
+//	tests := []struct {
+//		errorMsg   string
+//		httpStatus int
+//		payload    map[string]interface{}
+//	}{
+//		{
+//
+//			"RegistryAddress is not a valid Ethereum address",
+//			http.StatusInternalServerError,
+//			map[string]interface{}{
+//
+//				"registryAddress": "0x123",
+//			},
+//		},
+//		{
+//			"DepositAddress is not a valid Ethereum address",
+//			http.StatusInternalServerError,
+//			map[string]interface{}{
+//
+//				"registryAddress": "0xf72855759a39fb75fc7341139f5d7a3974d4da08", //dummy address
+//				"depositAddress":  "abc",
+//			},
+//		},
+//	}
+//	for _, test := range tests {
+//		t.Run(test.errorMsg, func(t *testing.T) {
+//			t.Parallel()
+//			response, err := alice.host.mintNFT(alice.httpExpect, alice.id.String(), test.httpStatus, test.payload)
+//			assert.Nil(t, err, "it should be possible to call the API endpoint")
+//			response.Value("error").String().Contains(test.errorMsg)
+//		})
+//	}
+//}
