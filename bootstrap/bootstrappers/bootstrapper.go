@@ -10,6 +10,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/ethereum"
+	"github.com/centrifuge/go-centrifuge/identity/did"
 	"github.com/centrifuge/go-centrifuge/identity/ethid"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/node"
@@ -59,6 +60,7 @@ func (m *MainBootstrapper) PopulateCommandBootstrappers() {
 		transactions.Bootstrapper{},
 		&queue.Bootstrapper{},
 		ethereum.Bootstrapper{},
+		&did.Bootstrapper{},
 		&anchors.Bootstrapper{},
 		&ethid.Bootstrapper{},
 	}

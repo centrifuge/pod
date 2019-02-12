@@ -36,6 +36,9 @@ const (
 
 	// KeyPurposeEthMsgAuth represents a key used for ethereum txns
 	KeyPurposeEthMsgAuth = 3
+
+	// KeyTypeECDSA has the value one in the ERC725 identity contract
+	KeyTypeECDSA = 1
 )
 
 // CentID represents a CentIDLength identity of an entity

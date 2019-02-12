@@ -21,7 +21,7 @@ func TestVersion(t *testing.T) {
 	assert.Contains(t, string(o), version.CentrifugeNodeVersion)
 }
 
-func TestCreateConfig(t *testing.T) {
+func TestCreateConfigDeprecated(t *testing.T) {
 	dataDir := path.Join(os.Getenv("HOME"), "datadir")
 	scAddrs := testingutils.GetSmartContractAddresses()
 	keyPath := path.Join(testingutils.GetProjectDir(), "build/scripts/test-dependencies/test-ethereum/migrateAccount.json")

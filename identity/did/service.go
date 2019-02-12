@@ -5,6 +5,12 @@ import (
 	"math/big"
 	"strings"
 
+	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
+	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
+	"github.com/centrifuge/go-centrifuge/utils"
+
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/transactions"
@@ -22,7 +28,8 @@ import (
 // DID stores the identity address of the user
 type DID common.Address
 
-func (d DID) toAddress() common.Address {
+// ToAddress returns the DID as common.Address
+func (d DID) ToAddress() common.Address {
 	return common.Address(d)
 }
 
@@ -121,7 +128,7 @@ func (i service) prepareCall(did DID) (contract, *bind.CallOpts, context.CancelF
 }
 
 func (i service) bindContract(did DID) (contract, error) {
-	contract, err := NewIdentityContract(did.toAddress(), i.client.GetEthClient())
+	contract, err := NewIdentityContract(did.ToAddress(), i.client.GetEthClient())
 	if err != nil {
 		return nil, errors.New("Could not bind identity contract: %v", err)
 	}
@@ -168,6 +175,7 @@ func (i service) AddKey(ctx context.Context, key Key) error {
 	}
 
 	// TODO: did can be passed instead of randomCentID after CentID is DID
+	log.Info("Add key to identity contract %s", did.ToAddress().String())
 	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), id.RandomCentID(), uuid.Nil, "Check TX for add key",
 		i.ethereumTX(opts, contract.AddKey, key.GetKey(), key.GetPurpose(), key.GetType()))
 	if err != nil {
@@ -344,4 +352,79 @@ func (i service) Execute(ctx context.Context, to common.Address, contractAbi, me
 		return err
 	}
 	return i.RawExecute(ctx, to, data)
+}
+
+func getKeyPairsFromConfig(config config.Configuration) (map[int]Key, error) {
+	keys := map[int]Key{}
+	var pk []byte
+
+	// ed25519 keys
+	// KeyPurposeP2P
+	pk, _, err := ed25519.GetSigningKeyPair(config.GetP2PKeyPair())
+	if err != nil {
+		return nil, err
+	}
+	pk32, err := utils.SliceToByte32(pk)
+	if err != nil {
+		return nil, err
+	}
+	keys[id.KeyPurposeP2P] = NewKey(pk32, big.NewInt(id.KeyPurposeP2P), big.NewInt(id.KeyTypeECDSA))
+
+	// KeyPurposeSigning
+	pk, _, err = ed25519.GetSigningKeyPair(config.GetSigningKeyPair())
+	if err != nil {
+		return nil, err
+	}
+	pk32, err = utils.SliceToByte32(pk)
+	if err != nil {
+		return nil, err
+	}
+	keys[id.KeyPurposeSigning] = NewKey(pk32, big.NewInt(id.KeyPurposeSigning), big.NewInt(id.KeyTypeECDSA))
+
+	// secp256k1 keys
+	// KeyPurposeEthMsgAuth
+	pk, _, err = secp256k1.GetEthAuthKey(config.GetEthAuthKeyPair())
+	if err != nil {
+		return nil, err
+	}
+
+	address32Bytes := utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(pk)))
+	keys[id.KeyPurposeEthMsgAuth] = NewKey(address32Bytes, big.NewInt(id.KeyPurposeEthMsgAuth), big.NewInt(id.KeyTypeECDSA))
+
+	return keys, nil
+}
+
+// AddKeysFromConfig adds the keys from the config to the smart contracts
+func AddKeysFromConfig(ctx map[string]interface{}, cfg config.Configuration) error {
+	idSrv := ctx[BootstrappedDIDService].(Service)
+
+	tc, err := configstore.NewAccount(cfg.GetEthereumDefaultAccountName(), cfg)
+	if err != nil {
+		return err
+	}
+
+	tctx, err := contextutil.New(context.Background(), tc)
+	if err != nil {
+		return err
+	}
+
+	keys, err := getKeyPairsFromConfig(cfg)
+	if err != nil {
+		return err
+	}
+	err = idSrv.AddKey(tctx, keys[id.KeyPurposeP2P])
+	if err != nil {
+		return err
+	}
+
+	err = idSrv.AddKey(tctx, keys[id.KeyPurposeSigning])
+	if err != nil {
+		return err
+	}
+
+	err = idSrv.AddKey(tctx, keys[id.KeyPurposeEthMsgAuth])
+	if err != nil {
+		return err
+	}
+	return nil
 }
