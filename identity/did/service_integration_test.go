@@ -4,6 +4,7 @@ package did
 
 import (
 	"context"
+	"math/big"
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
@@ -33,7 +34,7 @@ func initIdentity() Service {
 }
 
 func getTestDIDContext(t *testing.T, did DID) context.Context {
-	cfg.Set("identityId", did.toAddress().String())
+	cfg.Set("identityId", did.ToAddress().String())
 	cfg.Set("keys.ethauth.publicKey", "../../build/resources/ethauth.pub.pem")
 	cfg.Set("keys.ethauth.privateKey", "../../build/resources/ethauth.key.pem")
 	aCtx := testingconfig.CreateAccountContext(t, cfg)
@@ -50,11 +51,22 @@ func deployIdentityContract(t *testing.T) *DID {
 
 	client := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
 
-	contractCode, err := client.GetEthClient().CodeAt(context.Background(), did.toAddress(), nil)
+	contractCode, err := client.GetEthClient().CodeAt(context.Background(), did.ToAddress(), nil)
 	assert.Nil(t, err, "should be successful to get the contract code")
 
 	assert.Equal(t, true, len(contractCode) > 3000, "current contract code should be arround 3378 bytes")
 	return did
+
+}
+
+func addKey(aCtx context.Context, t *testing.T, idSrv Service, testKey Key) {
+	err := idSrv.AddKey(aCtx, testKey)
+	assert.Nil(t, err, "add key should be successful")
+
+	response, err := idSrv.GetKey(aCtx, testKey.GetKey())
+	assert.Nil(t, err, "get Key should be successful")
+
+	assert.Equal(t, testKey.GetPurpose(), response.Purposes[0], "key should have the same purpose")
 
 }
 
@@ -64,14 +76,8 @@ func TestServiceAddKey_successful(t *testing.T) {
 	idSrv := initIdentity()
 
 	testKey := getTestKey()
+	addKey(aCtx, t, idSrv, testKey)
 
-	err := idSrv.AddKey(aCtx, testKey)
-	assert.Nil(t, err, "add key should be successful")
-
-	response, err := idSrv.GetKey(aCtx, testKey.GetKey())
-	assert.Nil(t, err, "get Key should be successful")
-
-	assert.Equal(t, testKey.GetPurpose(), response.Purposes[0], "key should have the same purpose")
 	resetDefaultCentID()
 }
 
@@ -132,5 +138,49 @@ func TestService_IsSignedWithPurpose(t *testing.T) {
 	signed, err = idSrv.IsSignedWithPurpose(aCtx, msg, signature, purpose)
 	assert.Nil(t, err, "sign verify should not throw an error")
 	assert.False(t, signed, "signature should be wrong key pair")
+	resetDefaultCentID()
 
+}
+
+func TestService_AddMultiPurposeKey(t *testing.T) {
+	did := deployIdentityContract(t)
+	aCtx := getTestDIDContext(t, *did)
+	idSrv := initIdentity()
+
+	key := utils.RandomByte32()
+	purposeOne := utils.ByteSliceToBigInt([]byte{123})
+	purposeTwo := utils.ByteSliceToBigInt([]byte{42})
+	purposes := []*big.Int{purposeOne, purposeTwo}
+	keyType := utils.ByteSliceToBigInt([]byte{137})
+
+	err := idSrv.AddMultiPurposeKey(aCtx, key, purposes, keyType)
+	assert.Nil(t, err, "add key with multiple purposes should be successful")
+
+	response, err := idSrv.GetKey(aCtx, key)
+	assert.Nil(t, err, "get Key should be successful")
+
+	assert.Equal(t, purposeOne, response.Purposes[0], "key should have the same first purpose")
+	assert.Equal(t, purposeTwo, response.Purposes[1], "key should have the same second purpose")
+	resetDefaultCentID()
+}
+
+func TestService_RevokeKey(t *testing.T) {
+	did := deployIdentityContract(t)
+	aCtx := getTestDIDContext(t, *did)
+	idSrv := initIdentity()
+
+	testKey := getTestKey()
+	addKey(aCtx, t, idSrv, testKey)
+
+	response, err := idSrv.GetKey(aCtx, testKey.GetKey())
+	assert.Equal(t, utils.ByteSliceToBigInt([]byte{0}), response.RevokedAt, "key should be not revoked")
+
+	idSrv.RevokeKey(aCtx, testKey.GetKey())
+
+	//check if key is revoked
+	response, err = idSrv.GetKey(aCtx, testKey.GetKey())
+	assert.Nil(t, err, "get Key should be successful")
+	assert.NotEqual(t, utils.ByteSliceToBigInt([]byte{0}), response.RevokedAt, "key should be revoked")
+
+	resetDefaultCentID()
 }

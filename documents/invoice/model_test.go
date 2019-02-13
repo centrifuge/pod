@@ -295,8 +295,8 @@ func TestInvoiceModel_createProofs(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
-	// Validate '0x' Hex format in []byte value
-	assert.Equal(t, hexutil.Encode(i.CoreDocumentModel.Document.Collaborators[0]), proof[1].Value)
+	// Validate []byte value
+	assert.Equal(t, i.CoreDocument.Collaborators[0], proof[1].Value)
 
 	// Validate document_type
 	valid, err = tree.ValidateProof(proof[2])
@@ -339,7 +339,7 @@ func createMockInvoice(t *testing.T) (*Invoice, *documents.CoreDocumentModel, er
 	if err != nil {
 		return nil, nil, err
 	}
-	assert.Nil(t, corDocModel.FillSalts())
+	assert.Nil(t, corDocModel.Document.GetCoredocumentSalts())
 	err = corDocModel.CalculateSigningRoot(dataRoot)
 	if err != nil {
 		return nil, nil, err

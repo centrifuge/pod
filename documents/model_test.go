@@ -209,11 +209,9 @@ func TestGetSigningProofHashes(t *testing.T) {
 	cd := dm.Document
 	cd.EmbeddedData = docAny
 	cd.DataRoot = utils.RandomSlice(32)
-	salts := new(coredocumentpb.CoreDocumentSalts)
-	err := proofs.FillSalts(cd, salts)
-	assert.Nil(t, err)
+	_, err := dm.getCoreDocumentSalts()
+	assert.NoError(t, err)
 
-	cd.CoredocumentSalts = salts
 	err = dm.CalculateSigningRoot(cd.DataRoot)
 	assert.Nil(t, err)
 
@@ -238,11 +236,8 @@ func TestGetDataProofHashes(t *testing.T) {
 	cd := dm.Document
 	cd.EmbeddedData = docAny
 	cd.DataRoot = utils.RandomSlice(32)
-	cds := &coredocumentpb.CoreDocumentSalts{}
-	err := proofs.FillSalts(cd, cds)
-	assert.Nil(t, err)
-
-	cd.CoredocumentSalts = cds
+	_, err := dm.getCoreDocumentSalts()
+	assert.NoError(t, err)
 
 	err = dm.CalculateSigningRoot(cd.DataRoot)
 	assert.Nil(t, err)
@@ -267,9 +262,8 @@ func TestGetDocumentSigningTree(t *testing.T) {
 	dm := NewCoreDocModel()
 	cd := dm.Document
 	cd.EmbeddedData = docAny
-	cds := &coredocumentpb.CoreDocumentSalts{}
-	proofs.FillSalts(cd, cds)
-	cd.CoredocumentSalts = cds
+	_, err := dm.getCoreDocumentSalts()
+	assert.NoError(t, err)
 	tree, err := dm.GetDocumentSigningTree(cd.DataRoot)
 	assert.Nil(t, err)
 	assert.NotNil(t, tree)
@@ -284,9 +278,8 @@ func TestGetDocumentSigningTree(t *testing.T) {
 func TestGetDocumentSigningTree_EmptyEmbeddedData(t *testing.T) {
 	dm := NewCoreDocModel()
 	cd := dm.Document
-	cds := &coredocumentpb.CoreDocumentSalts{}
-	proofs.FillSalts(cd, cds)
-	cd.CoredocumentSalts = cds
+	_, err := dm.getCoreDocumentSalts()
+	assert.NoError(t, err)
 	tree, err := dm.GetDocumentSigningTree(cd.DataRoot)
 	assert.NotNil(t, err)
 	assert.Nil(t, tree)
@@ -323,7 +316,7 @@ func TestCreateProofs(t *testing.T) {
 	cd := dm.Document
 	cd.EmbeddedData = docAny
 	cd.Collaborators = [][]byte{utils.RandomSlice(32), utils.RandomSlice(32)}
-	err = dm.FillSalts()
+	_, err = dm.getCoreDocumentSalts()
 	assert.NoError(t, err)
 	err = dm.CalculateSigningRoot(testTree.RootHash())
 	assert.NoError(t, err)
@@ -447,4 +440,51 @@ func TestReadAccessValidator_NFTOwnerCanRead(t *testing.T) {
 	err = dm.NFTOwnerCanRead(registry, tokenID, account)
 	assert.Error(t, err)
 	tr.AssertExpectations(t)
+}
+
+func TestGetCoreDocumentSalts(t *testing.T) {
+	dm := NewCoreDocModel()
+	// From empty
+	salts, err := dm.getCoreDocumentSalts()
+	assert.NoError(t, err)
+	assert.NotNil(t, salts)
+	assert.Equal(t, len(dm.Document.CoredocumentSalts), len(salts))
+	assert.Equal(t, dm.Document.CoredocumentSalts[0], salts[0])
+
+	// Return existing
+	cSalts, err := dm.getCoreDocumentSalts()
+	assert.NoError(t, err)
+	assert.NotNil(t, cSalts)
+	assert.Equal(t, len(cSalts), len(salts))
+	assert.Equal(t, cSalts[0], salts[0])
+}
+
+func TestGenerateNewSalts(t *testing.T) {
+	dm := NewCoreDocModel()
+	salts, err := GenerateNewSalts(dm.Document, "")
+	assert.NoError(t, err)
+	assert.NotNil(t, salts)
+}
+
+func TestConvertToProofAndProtoSalts(t *testing.T) {
+	dm := NewCoreDocModel()
+	salts, err := GenerateNewSalts(dm.Document, "")
+	assert.NoError(t, err)
+	assert.NotNil(t, salts)
+
+	nilProto := ConvertToProtoSalts(nil)
+	assert.Nil(t, nilProto)
+
+	nilProof := ConvertToProofSalts(nil)
+	assert.Nil(t, nilProof)
+
+	protoSalts := ConvertToProtoSalts(salts)
+	assert.NotNil(t, protoSalts)
+	assert.Len(t, protoSalts, len(*salts))
+	assert.Equal(t, protoSalts[0].Value, (*salts)[0].Value)
+
+	cSalts := ConvertToProofSalts(protoSalts)
+	assert.NotNil(t, cSalts)
+	assert.Len(t, *cSalts, len(*salts))
+	assert.Equal(t, (*cSalts)[0].Value, (*salts)[0].Value)
 }

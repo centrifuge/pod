@@ -80,7 +80,7 @@ func getAnchorAddress() common.Address {
 // ---------------------------------------------------------------------------------------------------------------------
 func migrateNewIdentityContracts() {
 	runNewSmartContractMigrations()
-	smartContractAddresses = getSmartContractAddresses()
+	smartContractAddresses = GetSmartContractAddresses()
 
 }
 
@@ -107,7 +107,7 @@ func runNewSmartContractMigrations() {
 
 // GetSmartContractAddresses finds migrated smart contract addresses for localgeth
 // TODO: func will be removed after migration
-func getSmartContractAddresses() *config.SmartContractAddresses {
+func GetSmartContractAddresses() *config.SmartContractAddresses {
 	dat, err := findContractDeployJSON()
 	if err != nil {
 		panic(err)

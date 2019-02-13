@@ -50,7 +50,7 @@ type PurchaseOrder struct {
 	DeliveryDate      *timestamp.Timestamp // requested delivery date
 	DateCreated       *timestamp.Timestamp // purchase order date
 	ExtraData         []byte
-	PurchaseOrderSalt *purchaseorderpb.PurchaseOrderDataSalts
+	PurchaseOrderSalt *proofs.Salts
 	CoreDocumentModel *documents.CoreDocumentModel
 }
 
@@ -58,10 +58,13 @@ type PurchaseOrder struct {
 // Note: this is not same as VersionIdentifier
 func (p *PurchaseOrder) ID() ([]byte, error) {
 	coreDocModel, err := p.PackCoreDocument()
-	coreDoc := coreDocModel.Document
 	if err != nil {
 		return []byte{}, err
 	}
+	if coreDocModel.Document == nil {
+		return []byte{}, errors.New("nil core document")
+	}
+	coreDoc := coreDocModel.Document
 
 	return coreDoc.DocumentIdentifier, nil
 }
@@ -246,14 +249,16 @@ func (p *PurchaseOrder) loadFromP2PProtobuf(data *purchaseorderpb.PurchaseOrderD
 }
 
 // getPurchaseOrderSalts returns the purchase oder salts. Initialises if not present
-func (p *PurchaseOrder) getPurchaseOrderSalts(purchaseOrderData *purchaseorderpb.PurchaseOrderData) *purchaseorderpb.PurchaseOrderDataSalts {
-	if p.PurchaseOrderSalt == nil {
-		purchaseOrderSalt := &purchaseorderpb.PurchaseOrderDataSalts{}
-		proofs.FillSalts(purchaseOrderData, purchaseOrderSalt)
-		p.PurchaseOrderSalt = purchaseOrderSalt
+func (p *PurchaseOrder) getPurchaseOrderSalts(purchaseOrderData *purchaseorderpb.PurchaseOrderData) (*proofs.Salts, error) {
+	if p.PurchaseOrderSalts == nil {
+		poSalts, err := documents.GenerateNewSalts(purchaseOrderData, prefix)
+		if err != nil {
+			return nil, errors.New("getPOSalts error %v", err)
+		}
+		p.PurchaseOrderSalts = poSalts
 	}
 
-	return p.PurchaseOrderSalt
+	return p.PurchaseOrderSalts, nil
 }
 
 // PackCoreDocument packs the PurchaseOrder into a Core Document
@@ -270,23 +275,16 @@ func (p *PurchaseOrder) PackCoreDocument() (*documents.CoreDocumentModel, error)
 		Value:   poSerialized,
 	}
 
-	poSalt := p.getPurchaseOrderSalts(poData)
-
-	serializedSalts, err := proto.Marshal(poSalt)
+	poSalts, err := p.getPurchaseOrderSalts(poData)
 	if err != nil {
-		return nil, centerrors.Wrap(err, "couldn't serialise PurchaseOrderSalt")
-	}
-
-	poSaltsAny := any.Any{
-		TypeUrl: documenttypes.PurchaseOrderSaltsTypeUrl,
-		Value:   serializedSalts,
+		return nil, errors.NewTypedError(err, errors.New("couldn't get POSalts"))
 	}
 
 	coreDocModel := new(documents.CoreDocumentModel)
 	coreDocModel.Document = new(coredocumentpb.CoreDocument)
 	//proto.Merge(coreDocModel.Document, p.CoreDocumentModel.Document)
 	coreDocModel.Document.EmbeddedData = &poAny
-	coreDocModel.Document.EmbeddedDataSalts = &poSaltsAny
+	coreDocModel.Document.EmbeddedDataSalts = &documents.ConvertToProtoSalts(poSalts)
 	proto.Merge(coreDocModel.Document, p.CoreDocumentModel.Document)
 	return coreDocModel, err
 }
@@ -316,22 +314,18 @@ func (p *PurchaseOrder) UnpackCoreDocument(coreDocModel *documents.CoreDocumentM
 	p.loadFromP2PProtobuf(poData)
 
 	if coreDoc.EmbeddedDataSalts == nil {
-		p.PurchaseOrderSalt = p.getPurchaseOrderSalts(poData)
-	} else {
-		poSalt := &purchaseorderpb.PurchaseOrderDataSalts{}
-		err = proto.Unmarshal(coreDoc.EmbeddedDataSalts.Value, poSalt)
+		p.PurchaseOrderSalts, err = p.getPurchaseOrderSalts(poData)
 		if err != nil {
 			return err
 		}
-
-		p.PurchaseOrderSalt = poSalt
+	} else {
+		p.PurchaseOrderSalts = documents.ConvertToProofSalts(coreDoc.EmbeddedDataSalts)
 	}
 	p.CoreDocumentModel = new(documents.CoreDocumentModel)
 	p.CoreDocumentModel.Document = new(coredocumentpb.CoreDocument)
 	proto.Merge(p.CoreDocumentModel.Document, coreDoc)
 	p.CoreDocumentModel.Document.EmbeddedDataSalts = nil
 	p.CoreDocumentModel.Document.EmbeddedData = nil
-
 	return err
 }
 
@@ -362,9 +356,13 @@ func (p *PurchaseOrder) CalculateDataRoot() ([]byte, error) {
 // getDocumentDataTree creates precise-proofs data tree for the model
 func (p *PurchaseOrder) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
 	prop := proofs.NewProperty(prefix)
-	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: sha256.New(), ParentPrefix: prop})
-	poData := p.createP2PProtobuf()
-	err = t.AddLeavesFromDocument(poData, p.getPurchaseOrderSalts(poData))
+	poProto := p.createP2PProtobuf()
+	salts, err := p.getPurchaseOrderSalts(poProto)
+	if err != nil {
+		return nil, err
+	}
+	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: sha256.New(), ParentPrefix: prop, Salts: salts})
+	err = t.AddLeavesFromDocument(poProto)
 	if err != nil {
 		return nil, errors.New("getDocumentDataTree error %v", err)
 	}

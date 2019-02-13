@@ -49,7 +49,7 @@ type Invoice struct {
 	DateCreated      *timestamp.Timestamp
 	ExtraData        []byte
 
-	InvoiceSalts      *invoicepb.InvoiceDataSalts
+	InvoiceSalts      *proofs.Salts
 	CoreDocumentModel *documents.CoreDocumentModel
 }
 
@@ -247,14 +247,16 @@ func (i *Invoice) loadFromP2PProtobuf(invoiceData *invoicepb.InvoiceData) {
 }
 
 // getInvoiceSalts returns the invoice salts. Initialises if not present
-func (i *Invoice) getInvoiceSalts(invoiceData *invoicepb.InvoiceData) *invoicepb.InvoiceDataSalts {
+func (i *Invoice) getInvoiceSalts(invoiceData *invoicepb.InvoiceData) (*proofs.Salts, error) {
 	if i.InvoiceSalts == nil {
-		invoiceSalts := &invoicepb.InvoiceDataSalts{}
-		proofs.FillSalts(invoiceData, invoiceSalts)
+		invoiceSalts, err := documents.GenerateNewSalts(invoiceData, prefix)
+		if err != nil {
+			return nil, errors.New("getInvoiceSalts error %v", err)
+		}
 		i.InvoiceSalts = invoiceSalts
 	}
 
-	return i.InvoiceSalts
+	return i.InvoiceSalts, nil
 }
 
 // ID returns document identifier.
@@ -281,23 +283,16 @@ func (i *Invoice) PackCoreDocument() (*documents.CoreDocumentModel, error) {
 		Value:   serializedInvoice,
 	}
 
-	invoiceSalt := i.getInvoiceSalts(invoiceData)
-
-	serializedSalts, err := proto.Marshal(invoiceSalt)
+	invoiceSalts, err := i.getInvoiceSalts(invoiceData)
 	if err != nil {
-		return nil, errors.NewTypedError(err, errors.New("couldn't serialise InvoiceSalts"))
-	}
-
-	invoiceSaltsAny := any.Any{
-		TypeUrl: documenttypes.InvoiceSaltsTypeUrl,
-		Value:   serializedSalts,
+		return nil, errors.NewTypedError(err, errors.New("couldn't get InvoiceSalts"))
 	}
 
 	coreDocModel := new(documents.CoreDocumentModel)
 	coreDocModel.Document = new(coredocumentpb.CoreDocument)
 	//proto.Merge(coreDocModel.Document, i.CoreDocumentModel.Document)
 	coreDocModel.Document.EmbeddedData = &invoiceAny
-	coreDocModel.Document.EmbeddedDataSalts = &invoiceSaltsAny
+	coreDocModel.Document.EmbeddedDataSalts = documents.ConvertToProtoSalts(invoiceSalts)
 	proto.Merge(coreDocModel.Document, i.CoreDocumentModel.Document)
 	return coreDocModel, err
 }
@@ -327,15 +322,12 @@ func (i *Invoice) UnpackCoreDocument(coreDocModel *documents.CoreDocumentModel) 
 	i.loadFromP2PProtobuf(invoiceData)
 
 	if coreDoc.EmbeddedDataSalts == nil {
-		i.InvoiceSalts = i.getInvoiceSalts(invoiceData)
-	} else {
-		invoiceSalts := new(invoicepb.InvoiceDataSalts)
-		err = proto.Unmarshal(coreDoc.EmbeddedDataSalts.Value, invoiceSalts)
+		i.InvoiceSalts, err = i.getInvoiceSalts(invoiceData)
 		if err != nil {
 			return err
 		}
-
-		i.InvoiceSalts = invoiceSalts
+	} else {
+		i.InvoiceSalts = documents.ConvertToProofSalts(coreDoc.EmbeddedDataSalts)
 	}
 
 	i.CoreDocumentModel = new(documents.CoreDocumentModel)
@@ -373,9 +365,13 @@ func (i *Invoice) CalculateDataRoot() ([]byte, error) {
 // getDocumentDataTree creates precise-proofs data tree for the model
 func (i *Invoice) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
 	prop := proofs.NewProperty(prefix)
-	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: sha256.New(), ParentPrefix: prop})
-	invoiceData := i.createP2PProtobuf()
-	err = t.AddLeavesFromDocument(invoiceData, i.getInvoiceSalts(invoiceData))
+	invProto := i.createP2PProtobuf()
+	salts, err := i.getInvoiceSalts(invProto)
+	if err != nil {
+		return nil, err
+	}
+	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: sha256.New(), ParentPrefix: prop, Salts: salts})
+	err = t.AddLeavesFromDocument(invProto)
 	if err != nil {
 		return nil, errors.New("getDocumentDataTree error %v", err)
 	}

@@ -247,12 +247,12 @@ func TestPOModel_calculateDataRoot(t *testing.T) {
 	poModel := new(PurchaseOrder)
 	err := poModel.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), id.ID.String())
 	assert.Nil(t, err, "Init must pass")
-	assert.Nil(t, poModel.PurchaseOrderSalt, "salts must be nil")
+	assert.Nil(t, poModel.PurchaseOrderSalts, "salts must be nil")
 
 	dr, err := poModel.CalculateDataRoot()
 	assert.Nil(t, err, "calculate must pass")
 	assert.False(t, utils.IsEmptyByteSlice(dr))
-	assert.NotNil(t, poModel.PurchaseOrderSalt, "salts must be created")
+	assert.NotNil(t, poModel.PurchaseOrderSalts, "salts must be created")
 }
 func TestPOModel_createProofs(t *testing.T) {
 	poModel, corDoc, err := createMockPurchaseOrder(t)
@@ -273,8 +273,8 @@ func TestPOModel_createProofs(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
-	// Validate '0x' Hex format in []byte value
-	assert.Equal(t, hexutil.Encode(poModel.CoreDocumentModel.Document.Collaborators[0]), proof[1].Value)
+	// Validate []byte value
+	assert.Equal(t, poModel.CoreDocument.Collaborators[0], proof[1].Value)
 
 	// Validate document_type
 	valid, err = tree.ValidateProof(proof[2])
@@ -310,7 +310,7 @@ func createMockPurchaseOrder(t *testing.T) (*PurchaseOrder, *documents.CoreDocum
 	if err != nil {
 		return nil, nil, err
 	}
-	assert.Nil(t, corDocModel.FillSalts())
+	assert.Nil(t, corDocModel.Document.GetCoredocumentSalts())
 	err = corDocModel.CalculateSigningRoot(dataRoot)
 	if err != nil {
 		return nil, nil, err

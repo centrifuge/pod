@@ -248,6 +248,7 @@ func TestService_Exists(t *testing.T) {
 
 	exists = invSrv.Exists(ctxh, utils.RandomSlice(32))
 	assert.False(t, exists, "invoice should not exist")
+
 }
 
 func TestService_Create(t *testing.T) {

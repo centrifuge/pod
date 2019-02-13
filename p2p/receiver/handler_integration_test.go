@@ -9,9 +9,10 @@ import (
 	"os"
 	"testing"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
-
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
+	"github.com/golang/protobuf/ptypes/any"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -30,9 +31,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/crypto/ed25519"
 )
@@ -107,7 +106,7 @@ func TestHandler_GetDocumentSucceeds(t *testing.T) {
 	getReq := getGetDocumentRequest(dm)
 	getDocResp, err := handler.GetDocument(ctxh, getReq, centrifugeId)
 	assert.Nil(t, err)
-	assert.ObjectsAreEqual(getDocResp.Document, &doc)
+	assert.ObjectsAreEqual(getDocResp.Document, doc)
 }
 
 func TestHandler_HandleInterceptorReqSignature(t *testing.T) {
@@ -355,29 +354,20 @@ func prepareDocumentForP2PHandler(t *testing.T, dm *documents.CoreDocumentModel)
 	return dm
 }
 
-func updateDocumentForP2Phandler(t *testing.T, dm *documents.CoreDocumentModel) {
-	dataSalts := &invoicepb.InvoiceDataSalts{}
+func updateDocumentForP2Phandler(t *testing.T, doc *coredocumentpb.CoreDocument) {
 	invData := &invoicepb.InvoiceData{}
-	proofs.FillSalts(invData, dataSalts)
+	dataSalts, _ := documents.GenerateNewSalts(invData, "invoice")
 
 	serializedInv, err := proto.Marshal(invData)
 	assert.NoError(t, err)
-	serializedInvSalts, err := proto.Marshal(dataSalts)
-	assert.NoError(t, err)
 
-	doc := dm.Document
-	salts := &coredocumentpb.CoreDocumentSalts{}
-	doc.CoredocumentSalts = salts
 	doc.EmbeddedData = &any.Any{
 		TypeUrl: documenttypes.InvoiceDataTypeUrl,
 		Value:   serializedInv,
 	}
-	doc.EmbeddedDataSalts = &any.Any{
-		TypeUrl: documenttypes.InvoiceSaltsTypeUrl,
-		Value:   serializedInvSalts,
-	}
-	err = proofs.FillSalts(doc, salts)
-	assert.Nil(t, err)
+	doc.EmbeddedDataSalts = documents.ConvertToProtoSalts(dataSalts)
+	cdSalts, _ := documents.GenerateNewSalts(doc, "")
+	doc.CoredocumentSalts = documents.ConvertToProtoSalts(cdSalts)
 }
 
 func getAnchoredRequest(dm *documents.CoreDocumentModel) *p2ppb.AnchorDocumentRequest {

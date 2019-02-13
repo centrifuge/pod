@@ -26,7 +26,7 @@ func CreateInvoiceData() invoicepb.InvoiceData {
 	}
 }
 
-func CreateCDWithEmbeddedInvoice(t *testing.T, invoiceData invoicepb.InvoiceData) *documents.CoreDocumentModel {
+func CreateDMWithEmbeddedInvoice(t *testing.T, invoiceData invoicepb.InvoiceData) *documents.CoreDocumentModel {
 	identifier := []byte("1")
 	invoiceSalts := invoicepb.InvoiceDataSalts{}
 
