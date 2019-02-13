@@ -5,9 +5,10 @@ package receiver_test
 import (
 	"context"
 	"flag"
-	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"os"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
@@ -192,7 +193,7 @@ func TestHandler_RequestDocumentSignature_UpdateSucceeds(t *testing.T) {
 func TestHandler_RequestDocumentSignatureFirstTimeOnUpdatedDocument(t *testing.T) {
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	dm := prepareDocumentForP2PHandler(t, nil)
-	newDM, err := dm.PrepareNewVersion( nil)
+	newDM, err := dm.PrepareNewVersion(nil)
 	assert.Nil(t, err)
 	newDoc := newDM.Document
 	assert.NotEqual(t, newDoc.DocumentIdentifier, newDoc.CurrentVersion)

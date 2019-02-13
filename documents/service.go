@@ -43,7 +43,7 @@ type Service interface {
 	GetVersion(ctx context.Context, documentID []byte, version []byte) (Model, error)
 
 	// DeriveFromCoreDocumentModel derives a model given the core document model
-	DeriveFromCoreDocument(document *coredocumentpb.CoreDocument) (Model, error)
+	DeriveFromCoreDocumentModel(dm *CoreDocumentModel) (Model, error)
 
 	// CreateProofs creates proofs for the latest version document given the fields
 	CreateProofs(ctx context.Context, documentID []byte, fields []string) (*DocumentProof, error)
@@ -219,7 +219,7 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, model Model, sende
 	if err != nil {
 		return ErrDocumentConfigAccountID
 	}
-	
+
 	if model == nil {
 		return errors.New("no model given")
 	}
@@ -287,17 +287,20 @@ func (s service) getVersion(ctx context.Context, documentID, version []byte) (Mo
 	return model, nil
 }
 
-func (s service) DeriveFromCoreDocumentModel(cd *coredocumentpb.CoreDocument) (Model, error) {
-	if cd == nil || cd.EmbeddedData == nil {
+func (s service) DeriveFromCoreDocumentModel(dm *CoreDocumentModel) (Model, error) {
+	if dm == nil {
+		return nil, errors.New("no core doc model passed")
+	}
+	if dm.Document == nil || dm.Document.EmbeddedData == nil {
 		return nil, errors.New("core document is nil")
 	}
 
-	srv, err := s.registry.LocateService(cd.EmbeddedData.TypeUrl)
+	srv, err := s.registry.LocateService(dm.Document.EmbeddedData.TypeUrl)
 	if err != nil {
 		return nil, err
 	}
 
-	return srv.DeriveFromCoreDocument(cd)
+	return srv.DeriveFromCoreDocumentModel(dm)
 }
 
 func (s service) Create(ctx context.Context, model Model) (Model, uuid.UUID, chan bool, error) {

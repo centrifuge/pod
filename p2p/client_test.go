@@ -4,22 +4,23 @@ package p2p
 
 import (
 	"context"
-	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/testingutils/documents"
+
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/p2p/common"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/golang/protobuf/proto"
-	"github.com/centrifuge/go-centrifuge/errors"
 
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
 	libp2pPeer "github.com/libp2p/go-libp2p-peer"
 	"github.com/libp2p/go-libp2p-protocol"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/identity"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/stretchr/testify/assert"

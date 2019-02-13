@@ -2,6 +2,7 @@ package receiver
 
 import (
 	"fmt"
+
 	"github.com/centrifuge/go-centrifuge/identity"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
@@ -102,26 +103,26 @@ func HandshakeValidator(networkID uint32, idService identity.Service) ValidatorG
 
 // DocumentAccessValidator validates the GetDocument request against the AccessType indicated in the request
 //func DocumentAccessValidator(dm *documents.CoreDocumentModel, docReq *p2ppb.GetDocumentRequest, requesterCentID identity.CentID) error {
-	//av := coredocument.AccountValidator()
-	//// checks which access type is relevant for the request
-	//switch docReq.GetAccessType() {
-	//case p2ppb.AccessType_ACCESS_TYPE_REQUESTER_VERIFICATION:
-	//	if !av.AccountCanRead(doc, requesterCentID) {
-	//		return errors.New("requester does not have access")
-	//	}
-	//case p2ppb.AccessType_ACCESS_TYPE_NFT_OWNER_VERIFICATION:
-	//	registry := common.BytesToAddress(docReq.NftRegistryAddress)
-	//	if av.NFTOwnerCanRead(doc, registry, docReq.NftTokenId, requesterCentID) != nil {
-	//		return errors.New("requester does not have access")
-	//	}
-	////// case AccessTokenValidation
-	//// case p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION:
-	////
-	//// case p2ppb.AccessType_ACCESS_TYPE_INVALID:
-	//default:
-	//	return errors.New("invalid access type ")
-	//}
-	//return nil
+//av := coredocument.AccountValidator()
+//// checks which access type is relevant for the request
+//switch docReq.GetAccessType() {
+//case p2ppb.AccessType_ACCESS_TYPE_REQUESTER_VERIFICATION:
+//	if !av.AccountCanRead(doc, requesterCentID) {
+//		return errors.New("requester does not have access")
+//	}
+//case p2ppb.AccessType_ACCESS_TYPE_NFT_OWNER_VERIFICATION:
+//	registry := common.BytesToAddress(docReq.NftRegistryAddress)
+//	if av.NFTOwnerCanRead(doc, registry, docReq.NftTokenId, requesterCentID) != nil {
+//		return errors.New("requester does not have access")
+//	}
+////// case AccessTokenValidation
+//// case p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION:
+////
+//// case p2ppb.AccessType_ACCESS_TYPE_INVALID:
+//default:
+//	return errors.New("invalid access type ")
+//}
+//return nil
 //}
 
 func incompatibleNetworkError(configNetwork uint32, nodeNetwork uint32) error {

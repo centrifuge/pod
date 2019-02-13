@@ -52,7 +52,7 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
 	// pack failed
 	model := mockModel{}
-	model.On("PackCoreDocument").Return( nil, errors.New("error")).Once()
+	model.On("PackCoreDocument").Return(nil, errors.New("error")).Once()
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	err := dp.PrepareForSignatureRequests(ctxh, model)
 	model.AssertExpectations(t)

@@ -85,8 +85,8 @@ func (r *mockAnchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.D
 func createAnchoredMockDocument(t *testing.T, skipSave bool) (*invoice.Invoice, error) {
 	cdm := documents.NewCoreDocModel()
 	i := &invoice.Invoice{
-		InvoiceNumber: "test_invoice",
-		GrossAmount:   60,
+		InvoiceNumber:     "test_invoice",
+		GrossAmount:       60,
 		CoreDocumentModel: cdm,
 	}
 	dataRoot, err := i.CalculateDataRoot()
@@ -308,7 +308,7 @@ func TestService_GetCurrentVersion_successful(t *testing.T) {
 		inv := &invoice.Invoice{
 			GrossAmount: int64(i + 1),
 			CoreDocumentModel: &documents.CoreDocumentModel{
-				Document: cd,
+				Document:      cd,
 				TokenRegistry: nil,
 			},
 		}
@@ -338,8 +338,8 @@ func TestService_GetVersion_successful(t *testing.T) {
 	documentIdentifier := utils.RandomSlice(32)
 	currentVersion := utils.RandomSlice(32)
 	cd := &coredocumentpb.CoreDocument{
-			DocumentIdentifier: documentIdentifier,
-			CurrentVersion:     currentVersion,
+		DocumentIdentifier: documentIdentifier,
+		CurrentVersion:     currentVersion,
 	}
 	inv := &invoice.Invoice{
 		GrossAmount: 60,
@@ -373,8 +373,8 @@ func TestService_GetCurrentVersion_error(t *testing.T) {
 	assert.True(t, errors.IsOfType(documents.ErrDocumentVersionNotFound, err))
 
 	cd := &coredocumentpb.CoreDocument{
-			DocumentIdentifier: documentIdentifier,
-			CurrentVersion:     documentIdentifier,
+		DocumentIdentifier: documentIdentifier,
+		CurrentVersion:     documentIdentifier,
 	}
 
 	inv := &invoice.Invoice{
@@ -405,9 +405,9 @@ func TestService_GetVersion_error(t *testing.T) {
 	assert.True(t, errors.IsOfType(documents.ErrDocumentVersionNotFound, err))
 
 	cd := &coredocumentpb.CoreDocument{
-			DocumentIdentifier: documentIdentifier,
-			CurrentVersion:     currentVersion,
-}
+		DocumentIdentifier: documentIdentifier,
+		CurrentVersion:     currentVersion,
+	}
 	inv := &invoice.Invoice{
 		GrossAmount: 60,
 		CoreDocumentModel: &documents.CoreDocumentModel{
@@ -449,8 +449,8 @@ func TestService_Exists(t *testing.T) {
 	assert.True(t, errors.IsOfType(documents.ErrDocumentVersionNotFound, err))
 
 	cd := &coredocumentpb.CoreDocument{
-			DocumentIdentifier: documentIdentifier,
-			CurrentVersion:     documentIdentifier,
+		DocumentIdentifier: documentIdentifier,
+		CurrentVersion:     documentIdentifier,
 	}
 	inv := &invoice.Invoice{
 		GrossAmount: 60,

@@ -13,10 +13,10 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/transactions"
@@ -363,17 +363,17 @@ func createMockDocument() (*PurchaseOrder, error) {
 	documentIdentifier := utils.RandomSlice(32)
 	nextIdentifier := utils.RandomSlice(32)
 	coreDoc := &coredocumentpb.CoreDocument{
-			DocumentIdentifier: documentIdentifier,
-			CurrentVersion:     documentIdentifier,
-			NextVersion:        nextIdentifier,
+		DocumentIdentifier: documentIdentifier,
+		CurrentVersion:     documentIdentifier,
+		NextVersion:        nextIdentifier,
 	}
 	coreDocModel := &documents.CoreDocumentModel{
 		coreDoc,
 		nil,
 	}
 	model := &PurchaseOrder{
-		PoNumber:    "test_po",
-		OrderAmount: 42,
+		PoNumber:          "test_po",
+		OrderAmount:       42,
 		CoreDocumentModel: coreDocModel,
 	}
 	err := testRepo().Create(accountID, documentIdentifier, model)
@@ -385,8 +385,8 @@ func TestService_GetVersion_wrongTyp(t *testing.T) {
 	currentVersion := utils.RandomSlice(32)
 	documentIdentifier := utils.RandomSlice(32)
 	coreDoc := &coredocumentpb.CoreDocument{
-			DocumentIdentifier: documentIdentifier,
-			CurrentVersion:     currentVersion,
+		DocumentIdentifier: documentIdentifier,
+		CurrentVersion:     currentVersion,
 	}
 	coreDocModel := &documents.CoreDocumentModel{
 		coreDoc,
@@ -394,7 +394,7 @@ func TestService_GetVersion_wrongTyp(t *testing.T) {
 	}
 	//should be an po
 	po := &invoice.Invoice{
-		GrossAmount: 60,
+		GrossAmount:       60,
 		CoreDocumentModel: coreDocModel,
 	}
 	err := testRepo().Create(accountID, currentVersion, po)
@@ -421,16 +421,16 @@ func TestService_GetCurrentVersion(t *testing.T) {
 	poLoad1, _ := mod1.(*PurchaseOrder)
 	assert.Equal(t, poLoad1.CoreDocumentModel.Document.CurrentVersion, doc.CoreDocumentModel.Document.DocumentIdentifier)
 	coreDoc := &coredocumentpb.CoreDocument{
-			DocumentIdentifier: doc.CoreDocumentModel.Document.DocumentIdentifier,
-			CurrentVersion:     doc.CoreDocumentModel.Document.NextVersion,
-			NextVersion:        thirdIdentifier,
-		}
+		DocumentIdentifier: doc.CoreDocumentModel.Document.DocumentIdentifier,
+		CurrentVersion:     doc.CoreDocumentModel.Document.NextVersion,
+		NextVersion:        thirdIdentifier,
+	}
 	coreDocModel := &documents.CoreDocumentModel{
 		coreDoc,
 		nil,
 	}
 	po2 := &PurchaseOrder{
-		OrderAmount: 42,
+		OrderAmount:       42,
 		CoreDocumentModel: coreDocModel,
 	}
 
@@ -452,16 +452,16 @@ func TestService_GetVersion(t *testing.T) {
 	documentIdentifier := utils.RandomSlice(32)
 	currentVersion := utils.RandomSlice(32)
 	coreDoc := &coredocumentpb.CoreDocument{
-			DocumentIdentifier: documentIdentifier,
-			CurrentVersion:     currentVersion,
-		}
+		DocumentIdentifier: documentIdentifier,
+		CurrentVersion:     currentVersion,
+	}
 	coreDocModel := &documents.CoreDocumentModel{
 		coreDoc,
 		nil,
 	}
 
 	po := &PurchaseOrder{
-		OrderAmount: 42,
+		OrderAmount:       42,
 		CoreDocumentModel: coreDocModel,
 	}
 	err := testRepo().Create(accountID, currentVersion, po)
@@ -482,15 +482,15 @@ func TestService_Exists(t *testing.T) {
 	_, poSrv := getServiceWithMockedLayers()
 	documentIdentifier := utils.RandomSlice(32)
 	coreDoc := &coredocumentpb.CoreDocument{
-			DocumentIdentifier: documentIdentifier,
-			CurrentVersion:     documentIdentifier,
+		DocumentIdentifier: documentIdentifier,
+		CurrentVersion:     documentIdentifier,
 	}
 	coreDocModel := &documents.CoreDocumentModel{
 		coreDoc,
 		nil,
 	}
 	po := &PurchaseOrder{
-		OrderAmount: 42,
+		OrderAmount:       42,
 		CoreDocumentModel: coreDocModel,
 	}
 	err := testRepo().Create(accountID, documentIdentifier, po)

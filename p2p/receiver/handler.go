@@ -221,7 +221,7 @@ func (srv *Handler) GetDocument(ctx context.Context, docReq *p2ppb.GetDocumentRe
 
 	//err = DocumentAccessValidator(dm, docReq, requesterCentID)
 	//if err != nil {
-		return &p2ppb.GetDocumentResponse{Document: dm.Document}, nil
+	return &p2ppb.GetDocumentResponse{Document: dm.Document}, nil
 	//}
 }
 

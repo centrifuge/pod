@@ -26,32 +26,32 @@ const prefix string = "po"
 
 // PurchaseOrder implements the documents.Model keeps track of purchase order related fields and state
 type PurchaseOrder struct {
-	Status            string // status of the Purchase Order
-	PoNumber          string // purchase order number or reference number
-	OrderName         string // name of the ordering company
-	OrderStreet       string // street and address details of the ordering company
-	OrderCity         string
-	OrderZipcode      string
-	OrderCountry      string // country ISO code of the ordering company of this purchase order
-	RecipientName     string // name of the recipient company
-	RecipientStreet   string
-	RecipientCity     string
-	RecipientZipcode  string
-	RecipientCountry  string // country ISO code of the recipient of this purchase order
-	Currency          string // ISO currency code
-	OrderAmount       int64  // ordering gross amount including tax
-	NetAmount         int64  // invoice amount excluding tax
-	TaxAmount         int64
-	TaxRate           int64
-	Recipient         *identity.CentID
-	Order             []byte
-	OrderContact      string
-	Comment           string
-	DeliveryDate      *timestamp.Timestamp // requested delivery date
-	DateCreated       *timestamp.Timestamp // purchase order date
-	ExtraData         []byte
-	PurchaseOrderSalt *proofs.Salts
-	CoreDocumentModel *documents.CoreDocumentModel
+	Status             string // status of the Purchase Order
+	PoNumber           string // purchase order number or reference number
+	OrderName          string // name of the ordering company
+	OrderStreet        string // street and address details of the ordering company
+	OrderCity          string
+	OrderZipcode       string
+	OrderCountry       string // country ISO code of the ordering company of this purchase order
+	RecipientName      string // name of the recipient company
+	RecipientStreet    string
+	RecipientCity      string
+	RecipientZipcode   string
+	RecipientCountry   string // country ISO code of the recipient of this purchase order
+	Currency           string // ISO currency code
+	OrderAmount        int64  // ordering gross amount including tax
+	NetAmount          int64  // invoice amount excluding tax
+	TaxAmount          int64
+	TaxRate            int64
+	Recipient          *identity.CentID
+	Order              []byte
+	OrderContact       string
+	Comment            string
+	DeliveryDate       *timestamp.Timestamp // requested delivery date
+	DateCreated        *timestamp.Timestamp // purchase order date
+	ExtraData          []byte
+	PurchaseOrderSalts *proofs.Salts
+	CoreDocumentModel  *documents.CoreDocumentModel
 }
 
 // ID returns the DocumentIdentifier for this document
@@ -284,7 +284,7 @@ func (p *PurchaseOrder) PackCoreDocument() (*documents.CoreDocumentModel, error)
 	coreDocModel.Document = new(coredocumentpb.CoreDocument)
 	//proto.Merge(coreDocModel.Document, p.CoreDocumentModel.Document)
 	coreDocModel.Document.EmbeddedData = &poAny
-	coreDocModel.Document.EmbeddedDataSalts = &documents.ConvertToProtoSalts(poSalts)
+	coreDocModel.Document.EmbeddedDataSalts = documents.ConvertToProtoSalts(poSalts)
 	proto.Merge(coreDocModel.Document, p.CoreDocumentModel.Document)
 	return coreDocModel, err
 }

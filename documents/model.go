@@ -660,7 +660,11 @@ func (m *CoreDocumentModel) AddNFTToReadRules(registry common.Address, tokenID [
 	role.RoleKey = rk[:]
 	role.Nfts = append(role.Nfts, nft)
 	m.addNewRule(role, coredocumentpb.Action_ACTION_READ)
-	return m.getCoreDocumentSalts()
+	_, err = m.getCoreDocumentSalts()
+	if err != nil {
+		return errors.New("failed to generate CoreDocumentSalts")
+	}
+	return nil
 }
 
 // isNFTInRole checks if the given nft(registry + token) is part of the core document role.

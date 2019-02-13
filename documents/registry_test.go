@@ -14,7 +14,7 @@ func TestRegistry_Register_LocateService_successful(t *testing.T) {
 	registry := documents.NewServiceRegistry()
 	a := &testingdocuments.MockService{}
 	dm := testingdocuments.GenerateCoreDocumentModel()
-	documentType :=  dm.Document.EmbeddedData.TypeUrl
+	documentType := dm.Document.EmbeddedData.TypeUrl
 	err := registry.Register(documentType, a)
 	assert.Nil(t, err, "register didn't work with unused id")
 
