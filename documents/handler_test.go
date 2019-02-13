@@ -156,7 +156,7 @@ func TestConvertDocProofToClientFormat(t *testing.T) {
 				State:      "state",
 				FieldProofs: []*proofspb.Proof{
 					{
-						Property: proofs.ReadableName("prop1"),
+						Property: proofs.CompactName([]byte{0, 0, 1}...),
 						Value:    v1,
 						Salt:     []byte{1, 2, 3},
 						Hash:     []byte{1, 2, 4},
@@ -176,7 +176,7 @@ func TestConvertDocProofToClientFormat(t *testing.T) {
 				},
 				FieldProofs: []*documentpb.Proof{
 					{
-						Property: "prop1",
+						Property: "0x000001",
 						Value:    "0x76616c756531",
 						Salt:     "0x010203",
 						Hash:     "0x010204",

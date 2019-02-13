@@ -24,7 +24,7 @@ import (
 
 const prefix string = "po"
 
-var compactPrefix = []byte{1, 0, 0, 0}
+var compactPrefix = []byte{2, 0, 0, 0}
 
 // PurchaseOrder implements the documents.Model keeps track of purchase order related fields and state
 type PurchaseOrder struct {
