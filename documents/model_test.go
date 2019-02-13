@@ -3,6 +3,7 @@
 package documents
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"os"
 	"testing"
@@ -282,12 +283,6 @@ func TestGetDocumentSigningTree_EmptyEmbeddedData(t *testing.T) {
 func TestGetDocumentRootTree(t *testing.T) {
 	dm := NewCoreDocModel()
 	dm.Document.SigningRoot = utils.RandomSlice(32)
-	//signature := &coredocumentpb.Signature{
-	//	SignatureId: utils.RandomSlice(52),
-	//}
-	//dm.Document.SignatureData = &coredocumentpb.SignatureData{
-	//	Signatures: []*coredocumentpb.Signature{signature},
-	//}
 	_, err := dm.getSignatureDataSalts()
 	assert.NoError(t, err)
 	_, err = dm.getCoreDocumentSalts()
@@ -298,8 +293,13 @@ func TestGetDocumentRootTree(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Manually constructing the two node tree:
-	expectedRootHash2 := sha256.Sum256(append(dm.Document.SigningRoot, signTree.RootHash()...))
-	assert.Equal(t, expectedRootHash2[:], tree.RootHash())
+	var expected [32]byte
+	if bytes.Compare(signTree.RootHash(), dm.Document.SigningRoot) > 0 {
+		expected = sha256.Sum256(append(dm.Document.SigningRoot, signTree.RootHash()...))
+	} else {
+		expected = sha256.Sum256(append(signTree.RootHash(), dm.Document.SigningRoot...))
+	}
+	assert.Equal(t, expected[:], tree.RootHash())
 }
 
 func TestCreateProofs(t *testing.T) {
