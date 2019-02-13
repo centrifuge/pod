@@ -102,32 +102,33 @@ func mintNFT(t *testing.T, ctx context.Context, req nft.MintNFTRequest, cid iden
 	return tokenID
 }
 
-//func TestPaymentObligationService_mint_grant_read_access(t *testing.T) {
-//	ctx, id, registry, depositAddr, invSrv, cid := prepareForNFTMinting(t)
-//	req := nft.MintNFTRequest{
-//		DocumentID:         id,
-//		RegistryAddress:    registry.String(),
-//		DepositAddress:     depositAddr,
-//		ProofFields:        []string{"invoice.gross_amount", "invoice.currency", "invoice.due_date", "collaborators[0]"},
-//		GrantNFTReadAccess: true,
-//	}
-//	tokenID := mintNFT(t, ctx, req, cid, registry)
-//	doc, err := invSrv.GetCurrentVersion(ctx, id)
-//	assert.NoError(t, err)
-//	cd, err := doc.PackCoreDocument()
-//	assert.NoError(t, err)
-//	assert.Len(t, cd.Roles, 2)
-//	assert.Len(t, cd.Roles[1].Nfts, 1)
-//	newNFT := cd.Roles[1].Nfts[0]
-//	enft, err := coredocument.ConstructNFT(registry, tokenID.BigInt().Bytes())
-//	assert.NoError(t, err)
-//	assert.Equal(t, enft, newNFT)
-//
-//	// try to mint the NFT again
-//	_, _, err = payOb.MintNFT(ctx, req)
-//	assert.Error(t, err)
-//	assert.True(t, errors.IsOfType(nft.ErrNFTMinted, err))
-//}
+func TestPaymentObligationService_mint_grant_read_access(t *testing.T) {
+	t.SkipNow()
+	ctx, id, registry, depositAddr, invSrv, cid := prepareForNFTMinting(t)
+	req := nft.MintNFTRequest{
+		DocumentID:         id,
+		RegistryAddress:    registry.String(),
+		DepositAddress:     depositAddr,
+		ProofFields:        []string{"invoice.gross_amount", "invoice.currency", "invoice.due_date", "collaborators[0]"},
+		GrantNFTReadAccess: true,
+	}
+	tokenID := mintNFT(t, ctx, req, cid, registry)
+	doc, err := invSrv.GetCurrentVersion(ctx, id)
+	assert.NoError(t, err)
+	cd, err := doc.PackCoreDocument()
+	assert.NoError(t, err)
+	assert.Len(t, cd.Roles, 2)
+	assert.Len(t, cd.Roles[1].Nfts, 1)
+	newNFT := cd.Roles[1].Nfts[0]
+	enft, err := coredocument.ConstructNFT(registry, tokenID.BigInt().Bytes())
+	assert.NoError(t, err)
+	assert.Equal(t, enft, newNFT)
+
+	// try to mint the NFT again
+	_, _, err = payOb.MintNFT(ctx, req)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(nft.ErrNFTMinted, err))
+}
 
 func failMintNFT(t *testing.T, grantNFT, nftReadAccess bool, roleProof string) {
 	ctx, id, registry, depositAddr, _, _ := prepareForNFTMinting(t)
@@ -149,10 +150,12 @@ func failMintNFT(t *testing.T, grantNFT, nftReadAccess bool, roleProof string) {
 }
 
 func TestEthereumPaymentObligation_MintNFT_role_not_exists(t *testing.T) {
+	t.SkipNow()
 	failMintNFT(t, true, false, "Supplier")
 }
 
 func TestEthereumPaymentObligation_MintNFT_no_grant_access(t *testing.T) {
+	t.SkipNow()
 	failMintNFT(t, false, true, "")
 }
 
@@ -162,7 +165,7 @@ func mintNFTWithProofs(t *testing.T, grantAccess, tokenProof, readAccessProof bo
 		DocumentID:               id,
 		RegistryAddress:          registry.String(),
 		DepositAddress:           depositAddr,
-		ProofFields:              []string{"invoice.gross_amount", "invoice.currency", "invoice.due_date", "collaborators[0]"},
+		ProofFields:              []string{"invoice.gross_amount", "invoice.currency", "invoice.due_date", "collaborators[0]", "next_version"},
 		GrantNFTReadAccess:       grantAccess,
 		SubmitTokenProof:         tokenProof,
 		SubmitNFTReadAccessProof: readAccessProof,
@@ -180,6 +183,7 @@ func mintNFTWithProofs(t *testing.T, grantAccess, tokenProof, readAccessProof bo
 }
 
 func TestEthereumPaymentObligation_MintNFT(t *testing.T) {
+	t.SkipNow()
 	tests := []struct {
 		grantAccess, tokenProof, readAccessProof bool
 	}{
