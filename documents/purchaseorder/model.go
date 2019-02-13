@@ -1,7 +1,6 @@
 package purchaseorder
 
 import (
-	"crypto/sha256"
 	"encoding/json"
 	"reflect"
 
@@ -24,6 +23,8 @@ import (
 )
 
 const prefix string = "po"
+
+var compactPrefix = []byte{2, 0, 0, 0}
 
 // PurchaseOrder implements the documents.Model keeps track of purchase order related fields and state
 type PurchaseOrder struct {
@@ -247,7 +248,7 @@ func (p *PurchaseOrder) loadFromP2PProtobuf(data *purchaseorderpb.PurchaseOrderD
 // getPurchaseOrderSalts returns the purchase oder salts. Initialises if not present
 func (p *PurchaseOrder) getPurchaseOrderSalts(purchaseOrderData *purchaseorderpb.PurchaseOrderData) (*proofs.Salts, error) {
 	if p.PurchaseOrderSalts == nil {
-		poSalts, err := documents.GenerateNewSalts(purchaseOrderData, prefix)
+		poSalts, err := documents.GenerateNewSalts(purchaseOrderData, prefix, compactPrefix)
 		if err != nil {
 			return nil, errors.New("getPOSalts error %v", err)
 		}
@@ -344,13 +345,12 @@ func (p *PurchaseOrder) CalculateDataRoot() ([]byte, error) {
 
 // getDocumentDataTree creates precise-proofs data tree for the model
 func (p *PurchaseOrder) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
-	prop := proofs.NewProperty(prefix)
 	poProto := p.createP2PProtobuf()
 	salts, err := p.getPurchaseOrderSalts(poProto)
 	if err != nil {
 		return nil, err
 	}
-	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: sha256.New(), ParentPrefix: prop, Salts: salts})
+	t := documents.NewDefaultTreeWithPrefix(salts, prefix, compactPrefix)
 	err = t.AddLeavesFromDocument(poProto)
 	if err != nil {
 		return nil, errors.New("getDocumentDataTree error %v", err)
@@ -359,7 +359,7 @@ func (p *PurchaseOrder) getDocumentDataTree() (tree *proofs.DocumentTree, err er
 	if err != nil {
 		return nil, errors.New("getDocumentDataTree error %v", err)
 	}
-	return &t, nil
+	return t, nil
 }
 
 // CreateProofs generates proofs for given fields

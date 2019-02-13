@@ -16,7 +16,7 @@ import (
 func GenerateCoreDocumentWithCollaborators(collaborators [][]byte) *coredocumentpb.CoreDocument {
 	identifier := utils.RandomSlice(32)
 	invData := &invoicepb.InvoiceData{}
-	dataSalts, _ := documents.GenerateNewSalts(invData, "invoice")
+	dataSalts, _ := documents.GenerateNewSalts(invData, "invoice", []byte{1, 0, 0, 0})
 
 	serializedInv, _ := proto.Marshal(invData)
 	doc := &coredocumentpb.CoreDocument{
@@ -30,7 +30,7 @@ func GenerateCoreDocumentWithCollaborators(collaborators [][]byte) *coredocument
 		},
 		EmbeddedDataSalts: documents.ConvertToProtoSalts(dataSalts),
 	}
-	cdSalts, _ := documents.GenerateNewSalts(doc, "")
+	cdSalts, _ := documents.GenerateNewSalts(doc, "", nil)
 	doc.CoredocumentSalts = documents.ConvertToProtoSalts(cdSalts)
 	return doc
 }
