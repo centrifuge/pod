@@ -112,18 +112,19 @@ type WatchIdentity struct {
 }
 
 // Service is used to interact with centrifuge identities
+// Deprecated
 type Service interface {
 
-	// LookupIdentityForID looks up if the identity for given CentID exists on ethereum
+	// LookupIdentityForID looks up if the identity for given CentID exists on ethereum TODO: remove func
 	LookupIdentityForID(centrifugeID CentID) (id Identity, err error)
 
-	// CreateIdentity creates an identity representing the id on ethereum
+	// CreateIdentity creates an identity representing the id on ethereum TODO: edit remove CentID
 	CreateIdentity(ctx context.Context, centrifugeID CentID) (id Identity, confirmations chan *WatchIdentity, err error)
 
 	// CheckIdentityExists checks if the identity represented by id actually exists on ethereum
 	CheckIdentityExists(centrifugeID CentID) (exists bool, err error)
 
-	// GetIdentityAddress gets the address of the ethereum identity contract for the given CentID
+	// GetIdentityAddress gets the address of the ethereum identity contract for the given CentID TODO: remove func
 	GetIdentityAddress(centID CentID) (common.Address, error)
 
 	// GetClientP2PURL returns the p2p url associated with the centID
@@ -133,16 +134,16 @@ type Service interface {
 	// will error out at first failure
 	GetClientsP2PURLs(centIDs []CentID) ([]string, error)
 
-	// GetIdentityKey returns the key for provided identity
+	// GetIdentityKey returns the key for provided identity TODO: change func name
 	GetIdentityKey(identity CentID, pubKey []byte) (keyInfo Key, err error)
 
 	// ValidateKey checks if a given key is valid for the given centrifugeID.
 	ValidateKey(centID CentID, key []byte, purpose int) error
 
-	// AddKeyFromConfig adds a key previously generated and indexed in the configuration file to the identity specified in such config file
+	// AddKeyFromConfig adds a key previously generated and indexed in the configuration file to the identity specified in such config file TODO: not part of the service anymore
 	AddKeyFromConfig(config Config, purpose int) error
 
-	// ValidateSignature validates a signature on a message based on identity data
+	// ValidateSignature validates a signature on a message based on identity data TODO: add purpose parameter
 	ValidateSignature(signature *coredocumentpb.Signature, message []byte) error
 }
 

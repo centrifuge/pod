@@ -409,3 +409,4 @@ func TestConvertToProofAndProtoSalts(t *testing.T) {
 	assert.Len(t, *cSalts, len(*salts))
 	assert.Equal(t, (*cSalts)[0].Value, (*salts)[0].Value)
 }
+

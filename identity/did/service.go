@@ -49,7 +49,7 @@ type Service interface {
 	AddKey(ctx context.Context, key Key) error
 
 	// GetKey return a key from the identity contract
-	GetKey(ctx context.Context, key [32]byte) (*KeyResponse, error)
+	GetKey(did DID, key [32]byte) (*KeyResponse, error)
 
 	// RawExecute calls the execute method on the identity contract
 	RawExecute(ctx context.Context, to common.Address, data []byte) error
@@ -58,13 +58,29 @@ type Service interface {
 	Execute(ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) error
 
 	// IsSignedWithPurpose verifies if a message is signed with one of the identities specific purpose keys
-	IsSignedWithPurpose(ctx context.Context, message [32]byte, _signature []byte, _purpose *big.Int) (bool, error)
+	IsSignedWithPurpose(did DID, message [32]byte, _signature []byte, _purpose *big.Int) (bool, error)
 
 	// AddMultiPurposeKey adds a key with multiple purposes
 	AddMultiPurposeKey(context context.Context, key [32]byte, purposes []*big.Int, keyType *big.Int) error
 
 	// RevokeKey revokes an existing key in the smart contract
 	RevokeKey(ctx context.Context, key [32]byte) error
+
+	// GetClientP2PURL returns the p2p url associated with the did
+	GetClientP2PURL(ctx context.Context, did DID) (string, error)
+
+	//Exists checks if an identity contract exists
+	Exists(ctx context.Context, did DID) error
+
+	// ValidateKey checks if a given key is valid for the given centrifugeID.
+	ValidateKey(ctx context.Context, did DID, key []byte, purpose int64) error
+
+	// GetClientsP2PURLs returns p2p urls associated with each centIDs
+	// will error out at first failure
+	GetClientsP2PURLs(ctx context.Context, did []*DID) ([]string, error)
+
+	// GetKeysByPurpose returns keys grouped by purpose from the identity contract.
+	GetKeysByPurpose(did DID, purpose *big.Int) ([][32]byte, error)
 }
 
 type contract interface {
@@ -77,6 +93,8 @@ type contract interface {
 	}, error)
 
 	IsSignedWithPurpose(opts *bind.CallOpts, message [32]byte, _signature []byte, _purpose *big.Int) (bool, error)
+
+	GetKeysByPurpose(opts *bind.CallOpts, purpose *big.Int) ([][32]byte, error)
 
 	// Ethereum Transactions
 	AddKey(opts *bind.TransactOpts, _key [32]byte, _purpose *big.Int, _keyType *big.Int) (*types.Transaction, error)
@@ -274,11 +292,7 @@ func (i service) ethereumTX(opts *bind.TransactOpts, contractMethod interface{},
 }
 
 // GetKey return a key from the identity contract
-func (i service) GetKey(ctx context.Context, key [32]byte) (*KeyResponse, error) {
-	did, err := i.getDID(ctx)
-	if err != nil {
-		return nil, err
-	}
+func (i service) GetKey(did DID, key [32]byte) (*KeyResponse, error) {
 	contract, opts, _, err := i.prepareCall(did)
 	if err != nil {
 		return nil, err
@@ -295,11 +309,7 @@ func (i service) GetKey(ctx context.Context, key [32]byte) (*KeyResponse, error)
 }
 
 // IsSignedWithPurpose verifies if a message is signed with one of the identities specific purpose keys
-func (i service) IsSignedWithPurpose(ctx context.Context, message [32]byte, _signature []byte, _purpose *big.Int) (bool, error) {
-	did, err := i.getDID(ctx)
-	if err != nil {
-		return false, err
-	}
+func (i service) IsSignedWithPurpose(did DID, message [32]byte, _signature []byte, _purpose *big.Int) (bool, error) {
 	contract, opts, _, err := i.prepareCall(did)
 	if err != nil {
 		return false, err
@@ -352,6 +362,63 @@ func (i service) Execute(ctx context.Context, to common.Address, contractAbi, me
 		return err
 	}
 	return i.RawExecute(ctx, to, data)
+}
+
+
+func (i service)  GetKeysByPurpose(did DID, purpose *big.Int) ([][32]byte, error) {
+	contract, opts, _, err := i.prepareCall(did)
+	if err != nil {
+		return nil, err
+	}
+
+	return contract.GetKeysByPurpose(opts, purpose)
+
+}
+
+
+// GetClientP2PURL returns the p2p url associated with the did
+func (i service)  GetClientP2PURL(ctx context.Context, did DID) (string, error) {
+	// TODO implement
+
+	return "", nil
+}
+
+
+
+//Exists checks if an identity contract exists
+func (i service) Exists(ctx context.Context, did DID) error {
+	return isIdentityContract(did.ToAddress(),i.client)
+}
+
+// ValidateKey checks if a given key is valid for the given centrifugeID.
+func(i service) ValidateKey(ctx context.Context, did DID, key []byte, purpose int64) error {
+	contract, opts, _, err := i.prepareCall(did)
+	if err != nil {
+		return err
+	}
+
+	key32, err := utils.SliceToByte32(key)
+	if err != nil {
+		return err
+	}
+	keys, err := contract.GetKey(opts, key32)
+
+	for _, p := range keys.Purposes {
+		if p.Cmp(big.NewInt(purpose)) == 0 {
+			return nil
+		}
+	}
+
+	return errors.New("identity contract doesn't have a key with requested purpose")
+}
+
+// GetClientsP2PURLs returns p2p urls associated with each centIDs
+// will error out at first failure
+func(i service)  GetClientsP2PURLs(ctx context.Context, did []*DID) ([]string, error) {
+	// TODO implement
+
+
+	return nil, nil
 }
 
 func getKeyPairsFromConfig(config config.Configuration) (map[int]Key, error) {

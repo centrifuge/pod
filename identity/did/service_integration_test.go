@@ -59,11 +59,11 @@ func deployIdentityContract(t *testing.T) *DID {
 
 }
 
-func addKey(aCtx context.Context, t *testing.T, idSrv Service, testKey Key) {
+func addKey(aCtx context.Context, t *testing.T,did DID, idSrv Service, testKey Key) {
 	err := idSrv.AddKey(aCtx, testKey)
 	assert.Nil(t, err, "add key should be successful")
 
-	response, err := idSrv.GetKey(aCtx, testKey.GetKey())
+	response, err := idSrv.GetKey(did, testKey.GetKey())
 	assert.Nil(t, err, "get Key should be successful")
 
 	assert.Equal(t, testKey.GetPurpose(), response.Purposes[0], "key should have the same purpose")
@@ -76,7 +76,7 @@ func TestServiceAddKey_successful(t *testing.T) {
 	idSrv := initIdentity()
 
 	testKey := getTestKey()
-	addKey(aCtx, t, idSrv, testKey)
+	addKey(aCtx, t,*did, idSrv, testKey)
 
 	resetDefaultCentID()
 }
@@ -90,7 +90,7 @@ func TestServiceAddKey_fail(t *testing.T) {
 	err := idSrv.AddKey(aCtx, testKey)
 	assert.Nil(t, err, "add key should be successful")
 
-	_, err = idSrv.GetKey(aCtx, testKey.GetKey())
+	_, err = idSrv.GetKey(did, testKey.GetKey())
 	assert.Error(t, err, "no contract code at given address")
 	resetDefaultCentID()
 
@@ -121,13 +121,13 @@ func TestService_IsSignedWithPurpose(t *testing.T) {
 	assert.Nil(t, err, "should sign a message")
 
 	//correct signature and purpose
-	signed, err := idSrv.IsSignedWithPurpose(aCtx, msg, signature, purpose)
+	signed, err := idSrv.IsSignedWithPurpose(*did, msg, signature, purpose)
 	assert.Nil(t, err, "sign verify should not throw an error")
 	assert.True(t, signed, "signature should be correct")
 
 	//false purpose
 	falsePurpose := utils.ByteSliceToBigInt([]byte{42})
-	signed, err = idSrv.IsSignedWithPurpose(aCtx, msg, signature, falsePurpose)
+	signed, err = idSrv.IsSignedWithPurpose(*did, msg, signature, falsePurpose)
 	assert.Nil(t, err, "sign verify should not throw an error")
 	assert.False(t, signed, "signature should be false (wrong purpose)")
 
@@ -135,7 +135,7 @@ func TestService_IsSignedWithPurpose(t *testing.T) {
 	_, sk2, _ := secp256k1.GenerateSigningKeyPair()
 	signature, err = secp256k1.SignEthereum(msg[:], sk2)
 	assert.Nil(t, err, "should sign a message")
-	signed, err = idSrv.IsSignedWithPurpose(aCtx, msg, signature, purpose)
+	signed, err = idSrv.IsSignedWithPurpose(*did, msg, signature, purpose)
 	assert.Nil(t, err, "sign verify should not throw an error")
 	assert.False(t, signed, "signature should be wrong key pair")
 	resetDefaultCentID()
@@ -156,7 +156,7 @@ func TestService_AddMultiPurposeKey(t *testing.T) {
 	err := idSrv.AddMultiPurposeKey(aCtx, key, purposes, keyType)
 	assert.Nil(t, err, "add key with multiple purposes should be successful")
 
-	response, err := idSrv.GetKey(aCtx, key)
+	response, err := idSrv.GetKey(*did, key)
 	assert.Nil(t, err, "get Key should be successful")
 
 	assert.Equal(t, purposeOne, response.Purposes[0], "key should have the same first purpose")
@@ -170,17 +170,55 @@ func TestService_RevokeKey(t *testing.T) {
 	idSrv := initIdentity()
 
 	testKey := getTestKey()
-	addKey(aCtx, t, idSrv, testKey)
+	addKey(aCtx, t,*did, idSrv, testKey)
 
-	response, err := idSrv.GetKey(aCtx, testKey.GetKey())
+	response, err := idSrv.GetKey(*did, testKey.GetKey())
 	assert.Equal(t, utils.ByteSliceToBigInt([]byte{0}), response.RevokedAt, "key should be not revoked")
 
 	idSrv.RevokeKey(aCtx, testKey.GetKey())
 
 	//check if key is revoked
-	response, err = idSrv.GetKey(aCtx, testKey.GetKey())
+	response, err = idSrv.GetKey(*did, testKey.GetKey())
 	assert.Nil(t, err, "get Key should be successful")
 	assert.NotEqual(t, utils.ByteSliceToBigInt([]byte{0}), response.RevokedAt, "key should be revoked")
 
 	resetDefaultCentID()
+}
+
+func TestExists(t *testing.T) {
+	did := deployIdentityContract(t)
+
+	aCtx := getTestDIDContext(t, *did)
+	idSrv := initIdentity()
+
+	err := idSrv.Exists(aCtx, *did)
+	assert.Nil(t, err, "identity contract should exist")
+
+
+	err = idSrv.Exists(aCtx, NewDIDFromString("0x123"))
+	assert.Error(t, err, "identity contract should not exist")
+	resetDefaultCentID()
+
+}
+
+func TestValidateKey(t *testing.T) {
+	did := deployIdentityContract(t)
+	aCtx := getTestDIDContext(t, *did)
+	idSrv := initIdentity()
+
+	testKey := getTestKey()
+	addKey(aCtx, t,*did, idSrv, testKey)
+
+	key32 := testKey.GetKey()
+
+	var purpose int64
+	purpose = 123 // test purpose
+
+	err := idSrv.ValidateKey(aCtx,*did,utils.Byte32ToSlice(key32),purpose)
+	assert.Nil(t, err, "key with purpose should exist")
+
+	purpose = 1 //false purpose
+	err = idSrv.ValidateKey(aCtx,*did,utils.Byte32ToSlice(key32),purpose)
+	assert.Error(t, err, "key with purpose should not exist")
+
 }
