@@ -202,7 +202,7 @@ func TestDefaultProcessor_PrepareForAnchoring(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to pack core document")
 
 	// failed validations
-	dm := NewCoreDocModel(git)
+	dm := NewCoreDocModel()
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(dm, nil).Times(4)
 	err = dp.PrepareForAnchoring(model)
