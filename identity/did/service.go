@@ -2,6 +2,7 @@ package did
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"strings"
 
@@ -67,7 +68,7 @@ type Service interface {
 	RevokeKey(ctx context.Context, key [32]byte) error
 
 	// GetClientP2PURL returns the p2p url associated with the did
-	GetClientP2PURL(ctx context.Context, did DID) (string, error)
+	GetClientP2PURL(did DID) (string, error)
 
 	//Exists checks if an identity contract exists
 	Exists(ctx context.Context, did DID) error
@@ -77,7 +78,7 @@ type Service interface {
 
 	// GetClientsP2PURLs returns p2p urls associated with each centIDs
 	// will error out at first failure
-	GetClientsP2PURLs(ctx context.Context, did []*DID) ([]string, error)
+	GetClientsP2PURLs(did []*DID) ([]string, error)
 
 	// GetKeysByPurpose returns keys grouped by purpose from the identity contract.
 	GetKeysByPurpose(did DID, purpose *big.Int) ([][32]byte, error)
@@ -364,8 +365,7 @@ func (i service) Execute(ctx context.Context, to common.Address, contractAbi, me
 	return i.RawExecute(ctx, to, data)
 }
 
-
-func (i service)  GetKeysByPurpose(did DID, purpose *big.Int) ([][32]byte, error) {
+func (i service) GetKeysByPurpose(did DID, purpose *big.Int) ([][32]byte, error) {
 	contract, opts, _, err := i.prepareCall(did)
 	if err != nil {
 		return nil, err
@@ -375,23 +375,44 @@ func (i service)  GetKeysByPurpose(did DID, purpose *big.Int) ([][32]byte, error
 
 }
 
-
 // GetClientP2PURL returns the p2p url associated with the did
-func (i service)  GetClientP2PURL(ctx context.Context, did DID) (string, error) {
-	// TODO implement
+func (i service) GetClientP2PURL(did DID) (string, error) {
+	contract, opts, _, err := i.prepareCall(did)
+	if err != nil {
+		return "", err
+	}
 
-	return "", nil
+	keys, err := contract.GetKeysByPurpose(opts, big.NewInt(id.KeyPurposeP2P))
+	if err != nil {
+		return "", err
+	}
+
+	lastIdx := len(keys) - 1
+	key, err := contract.GetKey(opts, keys[lastIdx])
+
+	if err != nil {
+		return "", err
+	}
+
+	if key.RevokedAt.Cmp(big.NewInt(0)) != 0 {
+		return "", errors.New("p2p key has been revoked")
+	}
+
+	p2pID, err := ed25519.PublicKeyToP2PKey(key.Key)
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("/ipfs/%s", p2pID.Pretty()), nil
 }
-
-
 
 //Exists checks if an identity contract exists
 func (i service) Exists(ctx context.Context, did DID) error {
-	return isIdentityContract(did.ToAddress(),i.client)
+	return isIdentityContract(did.ToAddress(), i.client)
 }
 
 // ValidateKey checks if a given key is valid for the given centrifugeID.
-func(i service) ValidateKey(ctx context.Context, did DID, key []byte, purpose int64) error {
+func (i service) ValidateKey(ctx context.Context, did DID, key []byte, purpose int64) error {
 	contract, opts, _, err := i.prepareCall(did)
 	if err != nil {
 		return err
@@ -401,7 +422,11 @@ func(i service) ValidateKey(ctx context.Context, did DID, key []byte, purpose in
 	if err != nil {
 		return err
 	}
+
 	keys, err := contract.GetKey(opts, key32)
+	if err != nil {
+		return err
+	}
 
 	for _, p := range keys.Purposes {
 		if p.Cmp(big.NewInt(purpose)) == 0 {
@@ -414,11 +439,19 @@ func(i service) ValidateKey(ctx context.Context, did DID, key []byte, purpose in
 
 // GetClientsP2PURLs returns p2p urls associated with each centIDs
 // will error out at first failure
-func(i service)  GetClientsP2PURLs(ctx context.Context, did []*DID) ([]string, error) {
-	// TODO implement
+func (i service) GetClientsP2PURLs(dids []*DID) ([]string, error) {
+	urls := make([]string, len(dids))
 
+	for idx, did := range dids {
+		url, err := i.GetClientP2PURL(*did)
+		if err != nil {
+			return nil, err
+		}
+		urls[idx] = url
 
-	return nil, nil
+	}
+
+	return urls, nil
 }
 
 func getKeyPairsFromConfig(config config.Configuration) (map[int]Key, error) {

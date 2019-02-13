@@ -4,8 +4,12 @@ package did
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
+	"github.com/centrifuge/go-centrifuge/identity"
 
 	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/ethereum/go-ethereum/common"
@@ -59,7 +63,7 @@ func deployIdentityContract(t *testing.T) *DID {
 
 }
 
-func addKey(aCtx context.Context, t *testing.T,did DID, idSrv Service, testKey Key) {
+func addKey(aCtx context.Context, t *testing.T, did DID, idSrv Service, testKey Key) {
 	err := idSrv.AddKey(aCtx, testKey)
 	assert.Nil(t, err, "add key should be successful")
 
@@ -76,7 +80,7 @@ func TestServiceAddKey_successful(t *testing.T) {
 	idSrv := initIdentity()
 
 	testKey := getTestKey()
-	addKey(aCtx, t,*did, idSrv, testKey)
+	addKey(aCtx, t, *did, idSrv, testKey)
 
 	resetDefaultCentID()
 }
@@ -170,7 +174,7 @@ func TestService_RevokeKey(t *testing.T) {
 	idSrv := initIdentity()
 
 	testKey := getTestKey()
-	addKey(aCtx, t,*did, idSrv, testKey)
+	addKey(aCtx, t, *did, idSrv, testKey)
 
 	response, err := idSrv.GetKey(*did, testKey.GetKey())
 	assert.Equal(t, utils.ByteSliceToBigInt([]byte{0}), response.RevokedAt, "key should be not revoked")
@@ -194,7 +198,6 @@ func TestExists(t *testing.T) {
 	err := idSrv.Exists(aCtx, *did)
 	assert.Nil(t, err, "identity contract should exist")
 
-
 	err = idSrv.Exists(aCtx, NewDIDFromString("0x123"))
 	assert.Error(t, err, "identity contract should not exist")
 	resetDefaultCentID()
@@ -207,18 +210,62 @@ func TestValidateKey(t *testing.T) {
 	idSrv := initIdentity()
 
 	testKey := getTestKey()
-	addKey(aCtx, t,*did, idSrv, testKey)
+	addKey(aCtx, t, *did, idSrv, testKey)
 
 	key32 := testKey.GetKey()
 
 	var purpose int64
 	purpose = 123 // test purpose
 
-	err := idSrv.ValidateKey(aCtx,*did,utils.Byte32ToSlice(key32),purpose)
+	err := idSrv.ValidateKey(aCtx, *did, utils.Byte32ToSlice(key32), purpose)
 	assert.Nil(t, err, "key with purpose should exist")
 
 	purpose = 1 //false purpose
-	err = idSrv.ValidateKey(aCtx,*did,utils.Byte32ToSlice(key32),purpose)
+	err = idSrv.ValidateKey(aCtx, *did, utils.Byte32ToSlice(key32), purpose)
 	assert.Error(t, err, "key with purpose should not exist")
+	resetDefaultCentID()
+
+}
+
+func addP2PKeyTestGetClientP2PURL(t *testing.T) (*DID, string) {
+	did := deployIdentityContract(t)
+	aCtx := getTestDIDContext(t, *did)
+	idSrv := initIdentity()
+
+	p2pKey := utils.RandomByte32()
+
+	testKey := &key{Key: p2pKey, Purpose: utils.ByteSliceToBigInt([]byte{identity.KeyPurposeP2P}), Type: utils.ByteSliceToBigInt([]byte{123})}
+	addKey(aCtx, t, *did, idSrv, testKey)
+
+	url, err := idSrv.GetClientP2PURL(*did)
+	assert.Nil(t, err, "should return p2p url")
+
+	p2pID, err := ed25519.PublicKeyToP2PKey(p2pKey)
+	assert.Nil(t, err)
+
+	expectedUrl := fmt.Sprintf("/ipfs/%s", p2pID.Pretty())
+
+	assert.Equal(t, expectedUrl, url, "ipfs url not correct")
+	return did, url
+
+}
+
+func TestGetClientP2PURL(t *testing.T) {
+	addP2PKeyTestGetClientP2PURL(t)
+	resetDefaultCentID()
+
+}
+
+func TestGetClientP2PURLs(t *testing.T) {
+	didA, urlA := addP2PKeyTestGetClientP2PURL(t)
+	didB, urlB := addP2PKeyTestGetClientP2PURL(t)
+	idSrv := initIdentity()
+
+	urls, err := idSrv.GetClientsP2PURLs([]*DID{didA, didB})
+	assert.Nil(t, err)
+
+	assert.Equal(t, urlA, urls[0], "p2p url should be the same")
+	assert.Equal(t, urlB, urls[1], "p2p url should be the same")
+	resetDefaultCentID()
 
 }
