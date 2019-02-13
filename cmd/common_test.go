@@ -14,7 +14,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils"
-	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
 
@@ -69,6 +68,8 @@ func TestCreateConfig(t *testing.T) {
 
 	// contract exists
 	id, err := cfg.GetIdentityID()
+	accountId := did.NewDID(common.BytesToAddress(id))
+
 	assert.Nil(t, err, "did should exists")
 	contractCode, err := client.GetEthClient().CodeAt(context.Background(), common.BytesToAddress(id), nil)
 	assert.Nil(t, err, "should be successful to get the contract code")
@@ -76,13 +77,12 @@ func TestCreateConfig(t *testing.T) {
 
 	// Keys exists
 	// type KeyPurposeEthMsgAuth
-	tctx := testingconfig.CreateAccountContext(t, cfg)
 	idSrv := ctx[did.BootstrappedDIDService].(did.Service)
 	pk, _, err := secp256k1.GetEthAuthKey(cfg.GetEthAuthKeyPair())
 	assert.Nil(t, err)
 	address32Bytes := utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(pk)))
 	assert.Nil(t, err)
-	response, err := idSrv.GetKey(tctx, address32Bytes)
+	response, err := idSrv.GetKey(accountId, address32Bytes)
 	assert.Nil(t, err)
 	assert.NotNil(t, response)
 	assert.Equal(t, big.NewInt(identity.KeyPurposeEthMsgAuth), response.Purposes[0], "purpose should be ETHMsgAuth")
@@ -92,7 +92,7 @@ func TestCreateConfig(t *testing.T) {
 	assert.Nil(t, err)
 	pk32, err := utils.SliceToByte32(pk)
 	assert.Nil(t, err)
-	response, _ = idSrv.GetKey(tctx, pk32)
+	response, _ = idSrv.GetKey(accountId, pk32)
 	assert.NotNil(t, response)
 	assert.Equal(t, big.NewInt(identity.KeyPurposeP2P), response.Purposes[0], "purpose should be P2P")
 
@@ -101,7 +101,7 @@ func TestCreateConfig(t *testing.T) {
 	assert.Nil(t, err)
 	pk32, err = utils.SliceToByte32(pk)
 	assert.Nil(t, err)
-	response, _ = idSrv.GetKey(tctx, pk32)
+	response, _ = idSrv.GetKey(accountId, pk32)
 	assert.NotNil(t, response)
 	assert.Equal(t, big.NewInt(identity.KeyPurposeSigning), response.Purposes[0], "purpose should be Signing")
 

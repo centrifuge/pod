@@ -93,8 +93,8 @@ func (s *factory) calculateIdentityAddress(ctx context.Context) (*common.Address
 	return &identityAddress, nil
 }
 
-func (s *factory) isIdentityContract(identityAddress common.Address) error {
-	contractCode, err := s.client.GetEthClient().CodeAt(context.Background(), identityAddress, nil)
+func isIdentityContract(identityAddress common.Address, client ethereum.Client) error {
+	contractCode, err := client.GetEthClient().CodeAt(context.Background(), identityAddress, nil)
 	if err != nil {
 		return err
 	}
@@ -138,7 +138,7 @@ func (s *factory) CreateIdentity(ctx context.Context) (did *DID, err error) {
 
 	}
 
-	err = s.isIdentityContract(*identityAddress)
+	err = isIdentityContract(*identityAddress, s.client)
 	if err != nil {
 		return nil, err
 	}
