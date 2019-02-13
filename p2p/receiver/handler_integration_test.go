@@ -347,7 +347,7 @@ func prepareDocumentForP2PHandler(t *testing.T, doc *coredocumentpb.CoreDocument
 
 func updateDocumentForP2Phandler(t *testing.T, doc *coredocumentpb.CoreDocument) {
 	invData := &invoicepb.InvoiceData{}
-	dataSalts, _ := documents.GenerateNewSalts(invData, "invoice")
+	dataSalts, _ := documents.GenerateNewSalts(invData, "invoice", []byte{1, 0, 0, 0})
 
 	serializedInv, err := proto.Marshal(invData)
 	assert.NoError(t, err)
@@ -357,7 +357,7 @@ func updateDocumentForP2Phandler(t *testing.T, doc *coredocumentpb.CoreDocument)
 		Value:   serializedInv,
 	}
 	doc.EmbeddedDataSalts = documents.ConvertToProtoSalts(dataSalts)
-	cdSalts, _ := documents.GenerateNewSalts(doc, "")
+	cdSalts, _ := documents.GenerateNewSalts(doc, "", nil)
 	doc.CoredocumentSalts = documents.ConvertToProtoSalts(cdSalts)
 }
 

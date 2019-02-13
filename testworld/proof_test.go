@@ -3,6 +3,7 @@
 package testworld
 
 import (
+	"fmt"
 	"net/http"
 	"testing"
 
@@ -50,6 +51,8 @@ func checkProof(objProof *httpexpect.Object, documentType string, docIdentifier 
 	if documentType == typePO {
 		documentType = poPrefix
 	}
+
+	fmt.Println(objProof.Raw())
 
 	objProof.Path("$.header.document_id").String().Equal(docIdentifier)
 	objProof.Path("$.field_proofs[0].property").String().Equal(documentType + ".net_amount")

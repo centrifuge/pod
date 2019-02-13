@@ -385,14 +385,14 @@ func TestGetCoreDocumentSalts(t *testing.T) {
 
 func TestGenerateNewSalts(t *testing.T) {
 	dm := NewCoreDocModel()
-	salts, err := GenerateNewSalts(dm.Document, "")
+	salts, err := GenerateNewSalts(dm.Document, "", nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, salts)
 }
 
 func TestConvertToProofAndProtoSalts(t *testing.T) {
 	dm := NewCoreDocModel()
-	salts, err := GenerateNewSalts(dm.Document, "")
+	salts, err := GenerateNewSalts(dm.Document, "", nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, salts)
 

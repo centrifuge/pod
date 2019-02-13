@@ -71,14 +71,14 @@ const (
 
 // NewDefaultTree returns a DocumentTree with default opts
 func NewDefaultTree(salts *proofs.Salts) *proofs.DocumentTree {
-	return NewDefaultTreeWithPrefix(salts, "")
+	return NewDefaultTreeWithPrefix(salts, "", nil)
 }
 
 // NewDefaultTreeWithPrefix returns a DocumentTree with default opts passing a prefix to the tree leaves
-func NewDefaultTreeWithPrefix(salts *proofs.Salts, prefix string) *proofs.DocumentTree {
+func NewDefaultTreeWithPrefix(salts *proofs.Salts, prefix string, compactPrefix []byte) *proofs.DocumentTree {
 	var prop proofs.Property
 	if prefix != "" {
-		prop = proofs.NewProperty(prefix)
+		prop = NewLeafProperty(prefix, compactPrefix)
 	}
 
 	t := proofs.NewDocumentTree(proofs.TreeOptions{CompactProperties: true, EnableHashSorting: true, Hash: sha256.New(), ParentPrefix: prop, Salts: salts})
@@ -394,9 +394,9 @@ func (m *CoreDocumentModel) AccountCanRead(account identity.CentID) bool {
 }
 
 // GenerateNewSalts generates salts for new document
-func GenerateNewSalts(document proto.Message, prefix string) (*proofs.Salts, error) {
+func GenerateNewSalts(document proto.Message, prefix string, compactPrefix []byte) (*proofs.Salts, error) {
 	docSalts := &proofs.Salts{}
-	t := NewDefaultTreeWithPrefix(docSalts, prefix)
+	t := NewDefaultTreeWithPrefix(docSalts, prefix, compactPrefix)
 	err := t.AddLeavesFromDocument(document)
 	if err != nil {
 		return nil, err
@@ -435,7 +435,7 @@ func ConvertToProofSalts(protoSalts []*coredocumentpb.DocumentSalt) *proofs.Salt
 // getCoreDocumentSalts creates a new coredocument.Salts and fills it in case that is not initialized yet
 func (m *CoreDocumentModel) getCoreDocumentSalts() ([]*coredocumentpb.DocumentSalt, error) {
 	if m.Document.CoredocumentSalts == nil {
-		pSalts, err := GenerateNewSalts(m.Document, "")
+		pSalts, err := GenerateNewSalts(m.Document, "", nil)
 		if err != nil {
 			return nil, err
 		}

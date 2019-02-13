@@ -24,6 +24,8 @@ import (
 
 const prefix string = "po"
 
+var compactPrefix = []byte{1, 0, 0, 0}
+
 // PurchaseOrder implements the documents.Model keeps track of purchase order related fields and state
 type PurchaseOrder struct {
 	Status             string // status of the Purchase Order
@@ -246,7 +248,7 @@ func (p *PurchaseOrder) loadFromP2PProtobuf(data *purchaseorderpb.PurchaseOrderD
 // getPurchaseOrderSalts returns the purchase oder salts. Initialises if not present
 func (p *PurchaseOrder) getPurchaseOrderSalts(purchaseOrderData *purchaseorderpb.PurchaseOrderData) (*proofs.Salts, error) {
 	if p.PurchaseOrderSalts == nil {
-		poSalts, err := documents.GenerateNewSalts(purchaseOrderData, prefix)
+		poSalts, err := documents.GenerateNewSalts(purchaseOrderData, prefix, compactPrefix)
 		if err != nil {
 			return nil, errors.New("getPOSalts error %v", err)
 		}
@@ -348,7 +350,7 @@ func (p *PurchaseOrder) getDocumentDataTree() (tree *proofs.DocumentTree, err er
 	if err != nil {
 		return nil, err
 	}
-	t := documents.NewDefaultTreeWithPrefix(salts, prefix)
+	t := documents.NewDefaultTreeWithPrefix(salts, prefix, compactPrefix)
 	err = t.AddLeavesFromDocument(poProto)
 	if err != nil {
 		return nil, errors.New("getDocumentDataTree error %v", err)
