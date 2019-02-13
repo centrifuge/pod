@@ -11,7 +11,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	cc "github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -33,7 +32,7 @@ var cfg config.Configuration
 var idService identity.Service
 var payOb nft.PaymentObligation
 var txManager transactions.Manager
-var tokenRegistry coredocument.TokenRegistry
+var tokenRegistry documents.TokenRegistry
 
 func TestMain(m *testing.M) {
 	log.Debug("Test PreSetup for NFT")
@@ -43,7 +42,7 @@ func TestMain(m *testing.M) {
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	payOb = ctx[nft.BootstrappedPayObService].(nft.PaymentObligation)
 	txManager = ctx[transactions.BootstrappedService].(transactions.Manager)
-	tokenRegistry = ctx[nft.BootstrappedPayObService].(coredocument.TokenRegistry)
+	tokenRegistry = ctx[nft.BootstrappedPayObService].(documents.TokenRegistry)
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()
 	os.Exit(result)
@@ -100,12 +99,13 @@ func TestPaymentObligationService_mint(t *testing.T) {
 	assert.Equal(t, common.HexToAddress(depositAddr), owner)
 	doc, err := invoiceService.GetCurrentVersion(ctx, ID)
 	assert.NoError(t, err)
-	cd, err := doc.PackCoreDocument()
+	dm, err := doc.PackCoreDocument()
+	cd := dm.Document
 	assert.NoError(t, err)
 	assert.Len(t, cd.Roles, 2)
 	assert.Len(t, cd.Roles[1].Nfts, 1)
 	newNFT := cd.Roles[1].Nfts[0]
-	enft, err := coredocument.ConstructNFT(registry, tokenID.BigInt().Bytes())
+	enft, err := documents.ConstructNFT(registry, tokenID.BigInt().Bytes())
 	assert.NoError(t, err)
 	assert.Equal(t, enft, newNFT)
 

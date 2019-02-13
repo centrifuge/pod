@@ -219,13 +219,10 @@ func (srv *Handler) GetDocument(ctx context.Context, docReq *p2ppb.GetDocumentRe
 		return nil, err
 	}
 
-	doc := dm.Document
-	err = DocumentAccessValidator(doc, docReq, requesterCentID)
-	if err != nil {
-		return &p2ppb.GetDocumentResponse{Document: doc}, nil
-	}
-
-	return nil, err
+	//err = DocumentAccessValidator(dm, docReq, requesterCentID)
+	//if err != nil {
+		return &p2ppb.GetDocumentResponse{Document: dm.Document}, nil
+	//}
 }
 
 func convertToErrorEnvelop(err error) (*pb.P2PEnvelope, error) {

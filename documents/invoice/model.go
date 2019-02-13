@@ -294,19 +294,24 @@ func (i *Invoice) PackCoreDocument() (*documents.CoreDocumentModel, error) {
 	}
 
 	coreDocModel := new(documents.CoreDocumentModel)
-	coreDoc := coreDocModel.Document
-	proto.Merge(coreDoc, i.CoreDocumentModel.Document)
-	coreDoc.EmbeddedData = &invoiceAny
-	coreDoc.EmbeddedDataSalts = &invoiceSaltsAny
+	coreDocModel.Document = new(coredocumentpb.CoreDocument)
+	//proto.Merge(coreDocModel.Document, i.CoreDocumentModel.Document)
+	coreDocModel.Document.EmbeddedData = &invoiceAny
+	coreDocModel.Document.EmbeddedDataSalts = &invoiceSaltsAny
+	proto.Merge(coreDocModel.Document, i.CoreDocumentModel.Document)
 	return coreDocModel, err
 }
 
 // UnpackCoreDocument unpacks the core document into Invoice
 func (i *Invoice) UnpackCoreDocument(coreDocModel *documents.CoreDocumentModel) error {
-	coreDoc := coreDocModel.Document
-	if coreDoc == nil {
-		return errors.New("core document provided is nil %v", coreDoc)
+	if coreDocModel == nil {
+		return errors.New("coredocmodel is nil %v", coreDocModel)
 	}
+	if coreDocModel.Document == nil {
+		return errors.New("core document provided is nil %v", coreDocModel.Document)
+	}
+
+	coreDoc := coreDocModel.Document
 
 	if coreDoc.EmbeddedData == nil ||
 		coreDoc.EmbeddedData.TypeUrl != documenttypes.InvoiceDataTypeUrl {
@@ -333,6 +338,7 @@ func (i *Invoice) UnpackCoreDocument(coreDocModel *documents.CoreDocumentModel) 
 		i.InvoiceSalts = invoiceSalts
 	}
 
+	i.CoreDocumentModel = new(documents.CoreDocumentModel)
 	i.CoreDocumentModel.Document = new(coredocumentpb.CoreDocument)
 	proto.Merge(i.CoreDocumentModel.Document, coreDoc)
 	i.CoreDocumentModel.Document.EmbeddedDataSalts = nil

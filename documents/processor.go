@@ -50,10 +50,13 @@ func DefaultProcessor(idService identity.Service, p2pClient Client, repository a
 
 // Send sends the given defaultProcessor to the given recipient on the P2P layer
 func (dp defaultProcessor) Send(ctx context.Context, coreDocModel *CoreDocumentModel, recipient identity.CentID) (err error) {
-	coreDocument := coreDocModel.Document
-	if coreDocument == nil {
+	if coreDocModel == nil {
+		return errors.New("passed coreDocModel is nil")
+	}
+	if coreDocModel.Document == nil {
 		return errors.New("passed coreDoc is nil")
 	}
+	coreDocument := coreDocModel.Document
 	log.Infof("sending coredocument %x to recipient %x", coreDocument.DocumentIdentifier, recipient)
 
 	c, _ := context.WithTimeout(ctx, dp.config.GetP2PConnectionTimeout())
@@ -70,11 +73,11 @@ func (dp defaultProcessor) Send(ctx context.Context, coreDocModel *CoreDocumentM
 // PrepareForSignatureRequests gets the core document from the model, and adds the node's own signature
 func (dp defaultProcessor) PrepareForSignatureRequests(ctx context.Context, model Model) error {
 	dm, err := model.PackCoreDocument()
-	cd := dm.Document
+
 	if err != nil {
 		return errors.New("failed to pack core document: %v", err)
 	}
-
+	cd := dm.Document
 	dataRoot, err := model.CalculateDataRoot()
 	if err != nil {
 		return err

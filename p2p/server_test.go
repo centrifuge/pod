@@ -26,6 +26,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
 	ma "github.com/multiformats/go-multiaddr"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/stretchr/testify/assert"
 )
 

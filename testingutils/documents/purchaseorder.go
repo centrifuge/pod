@@ -3,6 +3,7 @@
 package testingdocuments
 
 import (
+	"github.com/centrifuge/go-centrifuge/documents"
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
@@ -23,7 +24,8 @@ func CreatePOData() purchaseorderpb.PurchaseOrderData {
 	}
 }
 
-func CreateCDWithEmbeddedPO(t *testing.T, poData purchaseorderpb.PurchaseOrderData) *coredocumentpb.CoreDocument {
+func CreateCDWithEmbeddedPO(t *testing.T, poData purchaseorderpb.PurchaseOrderData) *documents.CoreDocumentModel {
+	dm := documents.NewCoreDocModel()
 	identifier := []byte("1")
 	poSalt := purchaseorderpb.PurchaseOrderDataSalts{}
 
@@ -46,7 +48,8 @@ func CreateCDWithEmbeddedPO(t *testing.T, poData purchaseorderpb.PurchaseOrderDa
 		EmbeddedData:       &poAny,
 		EmbeddedDataSalts:  &poAnySalt,
 	}
-	return coreDocument
+	dm.Document = coreDocument
+	return dm
 }
 
 func CreatePOPayload() *clientpurchaseorderpb.PurchaseOrderCreatePayload {

@@ -283,19 +283,24 @@ func (p *PurchaseOrder) PackCoreDocument() (*documents.CoreDocumentModel, error)
 	}
 
 	coreDocModel := new(documents.CoreDocumentModel)
-	coreDoc := coreDocModel.Document
+	coreDocModel.Document = new(coredocumentpb.CoreDocument)
+	//proto.Merge(coreDocModel.Document, p.CoreDocumentModel.Document)
+	coreDocModel.Document.EmbeddedData = &poAny
+	coreDocModel.Document.EmbeddedDataSalts = &poSaltsAny
 	proto.Merge(coreDocModel.Document, p.CoreDocumentModel.Document)
-	coreDoc.EmbeddedData = &poAny
-	coreDoc.EmbeddedDataSalts = &poSaltsAny
 	return coreDocModel, err
 }
 
 // UnpackCoreDocument unpacks the core document into PurchaseOrder
 func (p *PurchaseOrder) UnpackCoreDocument(coreDocModel *documents.CoreDocumentModel) error {
-	coreDoc := coreDocModel.Document
-	if coreDoc == nil {
-		return errors.New("core document provided is nil %v", coreDoc)
+	if coreDocModel == nil {
+		return errors.New("coredocmodel is nil %v", coreDocModel)
 	}
+	if coreDocModel.Document == nil {
+		return errors.New("core document provided is nil %v", coreDocModel.Document)
+	}
+
+	coreDoc := coreDocModel.Document
 
 	if coreDoc.EmbeddedData == nil ||
 		coreDoc.EmbeddedData.TypeUrl != documenttypes.PurchaseOrderDataTypeUrl {
@@ -321,11 +326,12 @@ func (p *PurchaseOrder) UnpackCoreDocument(coreDocModel *documents.CoreDocumentM
 
 		p.PurchaseOrderSalt = poSalt
 	}
-
+	p.CoreDocumentModel = new(documents.CoreDocumentModel)
 	p.CoreDocumentModel.Document = new(coredocumentpb.CoreDocument)
 	proto.Merge(p.CoreDocumentModel.Document, coreDoc)
 	p.CoreDocumentModel.Document.EmbeddedDataSalts = nil
 	p.CoreDocumentModel.Document.EmbeddedData = nil
+
 	return err
 }
 

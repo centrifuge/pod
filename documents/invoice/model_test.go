@@ -103,7 +103,7 @@ func TestInvoice_InitCoreDocument_successful(t *testing.T) {
 
 	dm := testingdocuments.CreateCDWithEmbeddedInvoice(t, testingdocuments.CreateInvoiceData())
 	err := invoiceModel.UnpackCoreDocument(dm)
-	assert.Nil(t, err, "valid coredocument shouldn't produce an error")
+	assert.Nil(t, err, "valid coredocumentmodel shouldn't produce an error")
 }
 
 func TestInvoice_InitCoreDocument_invalidCentId(t *testing.T) {

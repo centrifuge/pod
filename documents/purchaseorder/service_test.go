@@ -8,16 +8,15 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
-	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/transactions"
@@ -73,8 +72,8 @@ func TestService_Update(t *testing.T) {
 
 	// missing last version
 	model = &testingdocuments.MockModel{}
-	cd := coredocument.New()
-	model.On("PackCoreDocument").Return(cd, nil).Once()
+	dm := documents.NewCoreDocModel()
+	model.On("PackCoreDocument").Return(dm, nil).Once()
 	_, _, _, err = poSrv.Update(ctxh, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
@@ -84,15 +83,15 @@ func TestService_Update(t *testing.T) {
 	payload.Collaborators = []string{"0x010203040506"}
 	po, err := poSrv.DeriveFromCreatePayload(ctxh, payload)
 	assert.Nil(t, err)
-	cd, err = po.PackCoreDocument()
+	dm, err = po.PackCoreDocument()
 	assert.Nil(t, err)
-	cd.DocumentRoot = utils.RandomSlice(32)
-	po.(*PurchaseOrder).CoreDocument = cd
-	testRepo().Create(accountID, cd.CurrentVersion, po)
+	dm.Document.DocumentRoot = utils.RandomSlice(32)
+	po.(*PurchaseOrder).CoreDocumentModel = dm
+	testRepo().Create(accountID, dm.Document.CurrentVersion, po)
 
 	// calculate data root fails
 	model = &testingdocuments.MockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Once()
+	model.On("PackCoreDocument").Return(dm, nil).Once()
 	_, _, _, err = poSrv.Update(ctxh, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
@@ -104,20 +103,21 @@ func TestService_Update(t *testing.T) {
 	data.OrderAmount = 100
 	data.ExtraData = hexutil.Encode(utils.RandomSlice(32))
 	collab := hexutil.Encode(utils.RandomSlice(6))
-	newInv, err := poSrv.DeriveFromUpdatePayload(ctxh, &clientpurchaseorderpb.PurchaseOrderUpdatePayload{
-		Identifier:    hexutil.Encode(cd.DocumentIdentifier),
+	newPO, err := poSrv.DeriveFromUpdatePayload(ctxh, &clientpurchaseorderpb.PurchaseOrderUpdatePayload{
+		Identifier:    hexutil.Encode(dm.Document.DocumentIdentifier),
 		Collaborators: []string{collab},
 		Data:          data,
 	})
 	assert.Nil(t, err)
-	newData, err := poSrv.DerivePurchaseOrderData(newInv)
+	newData, err := poSrv.DerivePurchaseOrderData(newPO)
 	assert.Nil(t, err)
 	assert.Equal(t, data, newData)
-	po, _, _, err = poSrv.Update(ctxh, newInv)
+	po, _, _, err = poSrv.Update(ctxh, newPO)
 	assert.Nil(t, err)
 	assert.NotNil(t, po)
 
-	newCD, err := po.PackCoreDocument()
+	newDM, err := po.PackCoreDocument()
+	newCD := newDM.Document
 	assert.Nil(t, err)
 	assert.True(t, testRepo().Exists(accountID, newCD.DocumentIdentifier))
 	assert.True(t, testRepo().Exists(accountID, newCD.CurrentVersion))
@@ -167,9 +167,10 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	old := new(PurchaseOrder)
 	err = old.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), self.ID.String())
 	assert.Nil(t, err)
-	old.CoreDocument.DocumentIdentifier = id
-	old.CoreDocument.CurrentVersion = id
-	old.CoreDocument.DocumentRoot = utils.RandomSlice(32)
+	oldCD := old.CoreDocumentModel.Document
+	oldCD.DocumentIdentifier = id
+	oldCD.CurrentVersion = id
+	oldCD.DocumentRoot = utils.RandomSlice(32)
 	err = testRepo().Create(accountID, id, old)
 	assert.Nil(t, err)
 	payload.Data = &clientpurchaseorderpb.PurchaseOrderData{
@@ -197,11 +198,13 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	doc, err = poSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Nil(t, err)
 	assert.NotNil(t, doc)
-	cd, err := doc.PackCoreDocument()
+	dm, err := doc.PackCoreDocument()
+	cd := dm.Document
 	assert.Nil(t, err)
 	assert.Equal(t, wantCollab, cd.Collaborators[2])
 	assert.Len(t, cd.Collaborators, 3)
-	oldCD, err := old.PackCoreDocument()
+	oldDM, err := old.PackCoreDocument()
+	oldCD = oldDM.Document
 	assert.Nil(t, err)
 	assert.Equal(t, oldCD.DocumentIdentifier, cd.DocumentIdentifier)
 	assert.Equal(t, payload.Identifier, hexutil.Encode(cd.DocumentIdentifier))
@@ -251,13 +254,13 @@ func TestService_DeriveFromCreatePayload(t *testing.T) {
 func TestService_DeriveFromCoreDocument(t *testing.T) {
 	// nil doc
 	poSrv := service{repo: testRepo()}
-	_, err := poSrv.DeriveFromCoreDocument(nil)
+	_, err := poSrv.DeriveFromCoreDocumentModel(nil)
 	assert.Error(t, err, "must fail to derive")
 
 	// successful
 	data := testingdocuments.CreatePOData()
-	cd := testingdocuments.CreateCDWithEmbeddedPO(t, data)
-	m, err := poSrv.DeriveFromCoreDocument(cd)
+	dm := testingdocuments.CreateCDWithEmbeddedPO(t, data)
+	m, err := poSrv.DeriveFromCoreDocumentModel(dm)
 	assert.Nil(t, err, "must return model")
 	assert.NotNil(t, m, "model must be non-nil")
 	po, ok := m.(*PurchaseOrder)
@@ -285,7 +288,8 @@ func TestService_Create(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, m)
 
-	newCD, err := m.PackCoreDocument()
+	newDM, err := m.PackCoreDocument()
+	newCD := newDM.Document
 	assert.Nil(t, err)
 	assert.True(t, testRepo().Exists(accountID, newCD.DocumentIdentifier))
 	assert.True(t, testRepo().Exists(accountID, newCD.CurrentVersion))
@@ -324,10 +328,11 @@ func TestService_DerivePurchaseOrderResponse(t *testing.T) {
 	assert.Contains(t, err.Error(), "pack core document failed")
 
 	// cent id failed
-	cd := coredocument.New()
+	dm := documents.NewCoreDocModel()
+	cd := dm.Document
 	cd.Collaborators = [][]byte{{1, 2, 3, 4, 5, 6}, {5, 6, 7}}
 	m = &testingdocuments.MockModel{}
-	m.On("PackCoreDocument").Return(cd, nil).Once()
+	m.On("PackCoreDocument").Return(dm, nil).Once()
 	r, err = poSrv.DerivePurchaseOrderResponse(m)
 	m.AssertExpectations(t)
 	assert.Nil(t, r)
@@ -337,7 +342,7 @@ func TestService_DerivePurchaseOrderResponse(t *testing.T) {
 	// derive data failed
 	cd.Collaborators = [][]byte{{1, 2, 3, 4, 5, 6}}
 	m = &testingdocuments.MockModel{}
-	m.On("PackCoreDocument").Return(cd, nil).Once()
+	m.On("PackCoreDocument").Return(dm, nil).Once()
 	r, err = poSrv.DerivePurchaseOrderResponse(m)
 	m.AssertExpectations(t)
 	assert.Nil(t, r)
@@ -357,15 +362,19 @@ func TestService_DerivePurchaseOrderResponse(t *testing.T) {
 func createMockDocument() (*PurchaseOrder, error) {
 	documentIdentifier := utils.RandomSlice(32)
 	nextIdentifier := utils.RandomSlice(32)
-
-	model := &PurchaseOrder{
-		PoNumber:    "test_po",
-		OrderAmount: 42,
-		CoreDocument: &coredocumentpb.CoreDocument{
+	coreDoc := &coredocumentpb.CoreDocument{
 			DocumentIdentifier: documentIdentifier,
 			CurrentVersion:     documentIdentifier,
 			NextVersion:        nextIdentifier,
-		},
+	}
+	coreDocModel := &documents.CoreDocumentModel{
+		coreDoc,
+		nil,
+	}
+	model := &PurchaseOrder{
+		PoNumber:    "test_po",
+		OrderAmount: 42,
+		CoreDocumentModel: coreDocModel,
 	}
 	err := testRepo().Create(accountID, documentIdentifier, model)
 	return model, err
@@ -375,14 +384,18 @@ func TestService_GetVersion_wrongTyp(t *testing.T) {
 	_, poSrv := getServiceWithMockedLayers()
 	currentVersion := utils.RandomSlice(32)
 	documentIdentifier := utils.RandomSlice(32)
-
+	coreDoc := &coredocumentpb.CoreDocument{
+			DocumentIdentifier: documentIdentifier,
+			CurrentVersion:     currentVersion,
+	}
+	coreDocModel := &documents.CoreDocumentModel{
+		coreDoc,
+		nil,
+	}
 	//should be an po
 	po := &invoice.Invoice{
 		GrossAmount: 60,
-		CoreDocument: &coredocumentpb.CoreDocument{
-			DocumentIdentifier: documentIdentifier,
-			CurrentVersion:     currentVersion,
-		},
+		CoreDocumentModel: coreDocModel,
 	}
 	err := testRepo().Create(accountID, currentVersion, po)
 	assert.Nil(t, err)
@@ -402,30 +415,34 @@ func TestService_GetCurrentVersion(t *testing.T) {
 	assert.Nil(t, err)
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 
-	mod1, err := poSrv.GetCurrentVersion(ctxh, doc.CoreDocument.DocumentIdentifier)
+	mod1, err := poSrv.GetCurrentVersion(ctxh, doc.CoreDocumentModel.Document.DocumentIdentifier)
 	assert.Nil(t, err)
 
 	poLoad1, _ := mod1.(*PurchaseOrder)
-	assert.Equal(t, poLoad1.CoreDocument.CurrentVersion, doc.CoreDocument.DocumentIdentifier)
-
+	assert.Equal(t, poLoad1.CoreDocumentModel.Document.CurrentVersion, doc.CoreDocumentModel.Document.DocumentIdentifier)
+	coreDoc := &coredocumentpb.CoreDocument{
+			DocumentIdentifier: doc.CoreDocumentModel.Document.DocumentIdentifier,
+			CurrentVersion:     doc.CoreDocumentModel.Document.NextVersion,
+			NextVersion:        thirdIdentifier,
+		}
+	coreDocModel := &documents.CoreDocumentModel{
+		coreDoc,
+		nil,
+	}
 	po2 := &PurchaseOrder{
 		OrderAmount: 42,
-		CoreDocument: &coredocumentpb.CoreDocument{
-			DocumentIdentifier: doc.CoreDocument.DocumentIdentifier,
-			CurrentVersion:     doc.CoreDocument.NextVersion,
-			NextVersion:        thirdIdentifier,
-		},
+		CoreDocumentModel: coreDocModel,
 	}
 
-	err = testRepo().Create(accountID, doc.CoreDocument.NextVersion, po2)
+	err = testRepo().Create(accountID, doc.CoreDocumentModel.Document.NextVersion, po2)
 	assert.Nil(t, err)
 
-	mod2, err := poSrv.GetCurrentVersion(ctxh, doc.CoreDocument.DocumentIdentifier)
+	mod2, err := poSrv.GetCurrentVersion(ctxh, doc.CoreDocumentModel.Document.DocumentIdentifier)
 	assert.Nil(t, err)
 
 	poLoad2, _ := mod2.(*PurchaseOrder)
-	assert.Equal(t, poLoad2.CoreDocument.CurrentVersion, doc.CoreDocument.NextVersion)
-	assert.Equal(t, poLoad2.CoreDocument.NextVersion, thirdIdentifier)
+	assert.Equal(t, poLoad2.CoreDocumentModel.Document.CurrentVersion, doc.CoreDocumentModel.Document.NextVersion)
+	assert.Equal(t, poLoad2.CoreDocumentModel.Document.NextVersion, thirdIdentifier)
 }
 
 func TestService_GetVersion(t *testing.T) {
@@ -434,13 +451,18 @@ func TestService_GetVersion(t *testing.T) {
 	_, poSrv := getServiceWithMockedLayers()
 	documentIdentifier := utils.RandomSlice(32)
 	currentVersion := utils.RandomSlice(32)
+	coreDoc := &coredocumentpb.CoreDocument{
+			DocumentIdentifier: documentIdentifier,
+			CurrentVersion:     currentVersion,
+		}
+	coreDocModel := &documents.CoreDocumentModel{
+		coreDoc,
+		nil,
+	}
 
 	po := &PurchaseOrder{
 		OrderAmount: 42,
-		CoreDocument: &coredocumentpb.CoreDocument{
-			DocumentIdentifier: documentIdentifier,
-			CurrentVersion:     currentVersion,
-		},
+		CoreDocumentModel: coreDocModel,
 	}
 	err := testRepo().Create(accountID, currentVersion, po)
 	assert.Nil(t, err)
@@ -449,8 +471,8 @@ func TestService_GetVersion(t *testing.T) {
 	mod, err := poSrv.GetVersion(ctxh, documentIdentifier, currentVersion)
 	assert.Nil(t, err)
 	loadpo, _ := mod.(*PurchaseOrder)
-	assert.Equal(t, loadpo.CoreDocument.CurrentVersion, currentVersion)
-	assert.Equal(t, loadpo.CoreDocument.DocumentIdentifier, documentIdentifier)
+	assert.Equal(t, loadpo.CoreDocumentModel.Document.CurrentVersion, currentVersion)
+	assert.Equal(t, loadpo.CoreDocumentModel.Document.DocumentIdentifier, documentIdentifier)
 
 	mod, err = poSrv.GetVersion(ctxh, documentIdentifier, []byte{})
 	assert.Error(t, err)
@@ -459,12 +481,17 @@ func TestService_GetVersion(t *testing.T) {
 func TestService_Exists(t *testing.T) {
 	_, poSrv := getServiceWithMockedLayers()
 	documentIdentifier := utils.RandomSlice(32)
-	po := &PurchaseOrder{
-		OrderAmount: 42,
-		CoreDocument: &coredocumentpb.CoreDocument{
+	coreDoc := &coredocumentpb.CoreDocument{
 			DocumentIdentifier: documentIdentifier,
 			CurrentVersion:     documentIdentifier,
-		},
+	}
+	coreDocModel := &documents.CoreDocumentModel{
+		coreDoc,
+		nil,
+	}
+	po := &PurchaseOrder{
+		OrderAmount: 42,
+		CoreDocumentModel: coreDocModel,
 	}
 	err := testRepo().Create(accountID, documentIdentifier, po)
 	assert.Nil(t, err)
@@ -504,8 +531,8 @@ func TestService_calculateDataRoot(t *testing.T) {
 	// create failed
 	po, err = poSrv.DeriveFromCreatePayload(ctxh, testingdocuments.CreatePOPayload())
 	assert.Nil(t, err)
-	assert.Nil(t, po.(*PurchaseOrder).CoreDocument.DataRoot)
-	err = poSrv.repo.Create(accountID, po.(*PurchaseOrder).CoreDocument.CurrentVersion, po)
+	assert.Nil(t, po.(*PurchaseOrder).CoreDocumentModel.Document.DataRoot)
+	err = poSrv.repo.Create(accountID, po.(*PurchaseOrder).CoreDocumentModel.Document.CurrentVersion, po)
 	assert.Nil(t, err)
 	po, err = poSrv.validateAndPersist(ctxh, nil, po, CreateValidator())
 	assert.Nil(t, po)
@@ -515,7 +542,7 @@ func TestService_calculateDataRoot(t *testing.T) {
 	// success
 	po, err = poSrv.DeriveFromCreatePayload(ctxh, testingdocuments.CreatePOPayload())
 	assert.Nil(t, err)
-	assert.Nil(t, po.(*PurchaseOrder).CoreDocument.DataRoot)
+	assert.Nil(t, po.(*PurchaseOrder).CoreDocumentModel.Document.DataRoot)
 	po, err = poSrv.validateAndPersist(ctxh, nil, po, CreateValidator())
 	assert.Nil(t, err)
 	assert.NotNil(t, po)

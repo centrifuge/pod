@@ -219,6 +219,10 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, model Model, sende
 	if err != nil {
 		return ErrDocumentConfigAccountID
 	}
+	
+	if model == nil {
+		return errors.New("no model given")
+	}
 
 	if err := PostAnchoredValidator(s.identityService, s.anchorRepository).Validate(nil, model); err != nil {
 		return errors.NewTypedError(ErrDocumentInvalid, err)
@@ -226,6 +230,9 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, model Model, sende
 
 	docModel, err := model.PackCoreDocument()
 	if err != nil {
+		return errors.NewTypedError(ErrDocumentPackingCoreDocument, err)
+	}
+	if docModel.Document == nil {
 		return errors.NewTypedError(ErrDocumentPackingCoreDocument, err)
 	}
 	doc := docModel.Document

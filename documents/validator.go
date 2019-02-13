@@ -63,6 +63,12 @@ func UpdateVersionValidator() Validator {
 		if err != nil {
 			return errors.New("failed to fetch new core document: %v", err)
 		}
+		if oldDM.Document == nil {
+			return errors.New("coredoc is nil")
+		}
+		if newDM.Document == nil {
+			return errors.New("coredoc is nil")
+		}
 		oldCD := oldDM.Document
 		newCD := newDM.Document
 
@@ -121,10 +127,10 @@ func baseValidator() Validator {
 		if err != nil {
 			return err
 		}
-		cd := dm.Document
-		if cd == nil {
+		if dm.Document == nil {
 			return errors.New("nil document")
 		}
+		cd := dm.Document
 
 		if utils.IsEmptyByteSlice(cd.DocumentIdentifier) {
 			err = errors.AppendError(err, NewError("cd_identifier", centerrors.RequiredField))

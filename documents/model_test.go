@@ -323,7 +323,7 @@ func TestCreateProofs(t *testing.T) {
 	cd := dm.Document
 	cd.EmbeddedData = docAny
 	cd.Collaborators = [][]byte{utils.RandomSlice(32), utils.RandomSlice(32)}
-	err = dm.fillSalts()
+	err = dm.FillSalts()
 	assert.NoError(t, err)
 	err = dm.CalculateSigningRoot(testTree.RootHash())
 	assert.NoError(t, err)
