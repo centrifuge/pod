@@ -4,7 +4,6 @@ package nft
 
 import (
 	"crypto/sha256"
-	"fmt"
 	"math/big"
 	"testing"
 	"time"
@@ -343,9 +342,7 @@ func Test_createTokenProof(t *testing.T) {
 
 	pf, err := createTokenProof(cd, cdTree, registry)
 	assert.Nil(t, err)
-	rk := hexutil.Encode(append(registry.Bytes(), make([]byte, 12, 12)...))
-	assert.Equal(t, pf.GetReadableName(), fmt.Sprintf("nfts[%s]", rk))
-	assert.Equal(t, pf.Value, hexutil.Encode(tokenID))
+	assert.Equal(t, pf.Value, tokenID)
 	valid, err := cdTree.ValidateProof(&pf)
 	assert.NoError(t, err)
 	assert.True(t, valid)
@@ -385,24 +382,20 @@ func Test_createNFTReadAccessProof(t *testing.T) {
 	pfs, err := createNFTReadAccessProof(cd, cdTree, registry, tokenID)
 	assert.NoError(t, err)
 	assert.Len(t, pfs, 3)
-
-	rk := hexutil.Encode(make([]byte, 32, 32))
-	assert.Equal(t, pfs[0].GetReadableName(), "read_rules[0].roles[0]")
+	rk := make([]byte, 32, 32)
 	assert.Equal(t, pfs[0].Value, rk)
 	valid, err := cdTree.ValidateProof(&pfs[0])
 	assert.NoError(t, err)
 	assert.True(t, valid)
 
-	assert.Equal(t, pfs[1].GetReadableName(), fmt.Sprintf("roles[%s].nfts[0]", rk))
 	enft, err := coredocument.ConstructNFT(registry, tokenID)
 	assert.NoError(t, err)
-	assert.Equal(t, pfs[1].Value, hexutil.Encode(enft))
+	assert.Equal(t, pfs[1].Value, enft)
 	valid, err = cdTree.ValidateProof(&pfs[1])
 	assert.NoError(t, err)
 	assert.True(t, valid)
 
-	assert.Equal(t, pfs[2].GetReadableName(), "read_rules[0].action")
-	assert.Equal(t, pfs[2].Value, "1")
+	assert.Equal(t, pfs[2].Value, []byte{0, 0, 0, 0, 0, 0, 0, 1})
 	valid, err = cdTree.ValidateProof(&pfs[2])
 	assert.NoError(t, err)
 	assert.True(t, valid)
@@ -445,8 +438,5 @@ func Test_createRoleProof(t *testing.T) {
 
 	pf, err := createRoleProof(cd, cdTree, "supplier", cid)
 	assert.NoError(t, err)
-
-	pk := fmt.Sprintf("roles[%s].collaborators[0]", hexutil.Encode(rk[:]))
-	assert.Equal(t, pf.GetReadableName(), pk)
-	assert.Equal(t, pf.Value, cid.String())
+	assert.Equal(t, pf.Value, cid[:])
 }
