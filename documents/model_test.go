@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/golang/protobuf/ptypes/any"
@@ -28,7 +27,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/queue"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/stretchr/testify/assert"
 )
@@ -282,23 +281,35 @@ func TestGetDocumentSigningTree_EmptyEmbeddedData(t *testing.T) {
 // TestGetDocumentRootTree tests that the documentroottree is properly calculated
 func TestGetDocumentRootTree(t *testing.T) {
 	dm := NewCoreDocModel()
-	cd := &coredocumentpb.CoreDocument{SigningRoot: []byte{0x72, 0xee, 0xb8, 0x88, 0x92, 0xf7, 0x6, 0x19, 0x82, 0x76, 0xe9, 0xe7, 0xfe, 0xcc, 0x33, 0xa, 0x66, 0x78, 0xd4, 0xa6, 0x5f, 0xf6, 0xa, 0xca, 0x2b, 0xe4, 0x17, 0xa9, 0xf6, 0x15, 0x67, 0xa1}}
-	dm.Document = cd
+	dm.Document.SigningRoot = utils.RandomSlice(32)
+	//signature := &coredocumentpb.Signature{
+	//	SignatureId: utils.RandomSlice(52),
+	//}
+	//dm.Document.SignatureData = &coredocumentpb.SignatureData{
+	//	Signatures: []*coredocumentpb.Signature{signature},
+	//}
+	_, err := dm.getSignatureDataSalts()
+	assert.NoError(t, err)
+	_, err = dm.getCoreDocumentSalts()
+	assert.NoError(t, err)
 	tree, err := dm.GetDocumentRootTree()
+	assert.NoError(t, err)
+	signTree, err := dm.GetSignatureDataTree()
+	assert.NoError(t, err)
 
 	// Manually constructing the two node tree:
-	signaturesLengthLeaf := sha256.Sum256(append([]byte("signatures.length0"), make([]byte, 32)...))
-	expectedRootHash := sha256.Sum256(append(signaturesLengthLeaf[:], dm.Document.SigningRoot...))
-	assert.Nil(t, err)
-	assert.Equal(t, expectedRootHash[:], tree.RootHash())
+	expectedRootHash2 := sha256.Sum256(append(dm.Document.SigningRoot, signTree.RootHash()...))
+	assert.Equal(t, expectedRootHash2[:], tree.RootHash())
 }
 
 func TestCreateProofs(t *testing.T) {
 	h := sha256.New()
-	testTree := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: sha256.New()})
-	err := testTree.AddLeaf(proofs.LeafNode{Hash: utils.RandomSlice(32), Hashed: true, Property: proofs.NewProperty("sample_field")})
+	testTree := NewDefaultTree(nil)
+	props := []proofs.Property{NewLeafProperty("sample_field", []byte{0, 0, 0, 200}), NewLeafProperty("sample_field2", []byte{0, 0, 0, 202})}
+	compactProps := [][]byte{props[0].Compact, props[1].Compact}
+	err := testTree.AddLeaf(proofs.LeafNode{Hash: utils.RandomSlice(32), Hashed: true, Property: props[0]})
 	assert.NoError(t, err)
-	err = testTree.AddLeaf(proofs.LeafNode{Hash: utils.RandomSlice(32), Hashed: true, Property: proofs.NewProperty("sample_field2")})
+	err = testTree.AddLeaf(proofs.LeafNode{Hash: utils.RandomSlice(32), Hashed: true, Property: props[1]})
 	assert.NoError(t, err)
 	err = testTree.Generate()
 	assert.NoError(t, err)
@@ -346,7 +357,7 @@ func TestCreateProofs(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.fieldName, func(t *testing.T) {
-			p, err := dm.CreateProofs(&testTree, []string{test.fieldName})
+			p, err := dm.CreateProofs(testTree, []string{test.fieldName})
 			assert.NoError(t, err)
 			assert.Equal(t, test.proofLength, len(p[0].SortedHashes))
 			var l *proofs.LeafNode
@@ -354,6 +365,7 @@ func TestCreateProofs(t *testing.T) {
 				_, l = cdTree.GetLeafByProperty(test.fieldName)
 			} else {
 				_, l = testTree.GetLeafByProperty(test.fieldName)
+				assert.Contains(t, compactProps, l.Property.CompactName())
 			}
 			valid, err := proofs.ValidateProofSortedHashes(l.Hash, p[0].SortedHashes, cd.DocumentRoot, h)
 			assert.NoError(t, err)
@@ -382,14 +394,14 @@ func TestGetCoreDocumentSalts(t *testing.T) {
 
 func TestGenerateNewSalts(t *testing.T) {
 	dm := NewCoreDocModel()
-	salts, err := GenerateNewSalts(dm.Document, "")
+	salts, err := GenerateNewSalts(dm.Document, "", nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, salts)
 }
 
 func TestConvertToProofAndProtoSalts(t *testing.T) {
 	dm := NewCoreDocModel()
-	salts, err := GenerateNewSalts(dm.Document, "")
+	salts, err := GenerateNewSalts(dm.Document, "", nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, salts)
 

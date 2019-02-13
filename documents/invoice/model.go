@@ -1,7 +1,6 @@
 package invoice
 
 import (
-	"crypto/sha256"
 	"encoding/json"
 	"reflect"
 
@@ -23,6 +22,8 @@ import (
 )
 
 const prefix string = "invoice"
+
+var compactPrefix = []byte{1, 0, 0, 0}
 
 // Invoice implements the documents.Model keeps track of invoice related fields and state
 type Invoice struct {
@@ -250,7 +251,7 @@ func (i *Invoice) loadFromP2PProtobuf(invoiceData *invoicepb.InvoiceData) {
 // getInvoiceSalts returns the invoice salts. Initialises if not present
 func (i *Invoice) getInvoiceSalts(invoiceData *invoicepb.InvoiceData) (*proofs.Salts, error) {
 	if i.InvoiceSalts == nil {
-		invoiceSalts, err := documents.GenerateNewSalts(invoiceData, prefix)
+		invoiceSalts, err := documents.GenerateNewSalts(invoiceData, prefix, compactPrefix)
 		if err != nil {
 			return nil, errors.New("getInvoiceSalts error %v", err)
 		}
@@ -357,13 +358,12 @@ func (i *Invoice) CalculateDataRoot() ([]byte, error) {
 
 // getDocumentDataTree creates precise-proofs data tree for the model
 func (i *Invoice) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
-	prop := proofs.NewProperty(prefix)
 	invProto := i.createP2PProtobuf()
 	salts, err := i.getInvoiceSalts(invProto)
 	if err != nil {
 		return nil, err
 	}
-	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: sha256.New(), ParentPrefix: prop, Salts: salts})
+	t := documents.NewDefaultTreeWithPrefix(salts, prefix, compactPrefix)
 	err = t.AddLeavesFromDocument(invProto)
 	if err != nil {
 		return nil, errors.New("getDocumentDataTree error %v", err)
@@ -372,7 +372,7 @@ func (i *Invoice) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
 	if err != nil {
 		return nil, errors.New("getDocumentDataTree error %v", err)
 	}
-	return &t, nil
+	return t, nil
 }
 
 // CreateProofs generates proofs for given fields

@@ -3,10 +3,10 @@ package cmd
 import (
 	"context"
 
+	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
-
-	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers"
+	"github.com/centrifuge/go-centrifuge/identity/did"
 
 	"github.com/centrifuge/go-centrifuge/storage"
 
@@ -22,7 +22,8 @@ import (
 
 var log = logging.Logger("centrifuge-cmd")
 
-func createIdentity(ctx context.Context, idService identity.Service) (identity.CentID, error) {
+// Deprecated
+func createIdentityDeprecated(ctx context.Context, idService identity.Service) (identity.CentID, error) {
 	centID := identity.RandomCentID()
 	_, confirmations, err := idService.CreateIdentity(ctx, centID)
 	if err != nil {
@@ -42,7 +43,8 @@ func generateKeys(config config.Configuration) {
 	crypto.GenerateSigningKeyPair(ethAuthPub, ethAuthPvt, "secp256k1")
 }
 
-func addKeys(config config.Configuration, idService identity.Service) error {
+// Deprecated
+func addKeysDeprecated(config config.Configuration, idService identity.Service) error {
 	err := idService.AddKeyFromConfig(config, identity.KeyPurposeP2P)
 	if err != nil {
 		return err
@@ -60,6 +62,70 @@ func addKeys(config config.Configuration, idService identity.Service) error {
 
 // CreateConfig creates a config file using provide parameters and the default config
 func CreateConfig(
+	targetDataDir, ethNodeURL, accountKeyPath, accountPassword, network string,
+	apiPort, p2pPort int64,
+	bootstraps []string,
+	txPoolAccess bool,
+	p2pConnectionTimeout string,
+	smartContractAddrs *config.SmartContractAddresses) error {
+
+	data := map[string]interface{}{
+		"targetDataDir":     targetDataDir,
+		"accountKeyPath":    accountKeyPath,
+		"accountPassword":   accountPassword,
+		"network":           network,
+		"ethNodeURL":        ethNodeURL,
+		"bootstraps":        bootstraps,
+		"apiPort":           apiPort,
+		"p2pPort":           p2pPort,
+		"p2pConnectTimeout": p2pConnectionTimeout,
+		"txpoolaccess":      txPoolAccess,
+	}
+	if smartContractAddrs != nil {
+		data["smartContractAddresses"] = smartContractAddrs
+	}
+	configFile, err := config.CreateConfigFile(data)
+	if err != nil {
+		return err
+	}
+	log.Infof("Config File Created: %s\n", configFile.ConfigFileUsed())
+	ctx, canc, _ := CommandBootstrap(configFile.ConfigFileUsed())
+	cfg := ctx[bootstrap.BootstrappedConfig].(config.Configuration)
+
+	// create keys locally
+	generateKeys(cfg)
+
+	id, err := did.CreateIdentity(ctx, cfg)
+	if err != nil {
+		return err
+	}
+
+	configFile.Set("identityId", id.ToAddress().String())
+	err = configFile.WriteConfig()
+	if err != nil {
+		return err
+	}
+	cfg.Set("identityId", id.ToAddress().String())
+	log.Infof("Identity created [%s]", id.ToAddress().String())
+
+	err = did.AddKeysFromConfig(ctx, cfg)
+	if err != nil {
+		return err
+	}
+
+	canc()
+	db := ctx[storage.BootstrappedDB].(storage.Repository)
+	dbCfg := ctx[storage.BootstrappedConfigDB].(storage.Repository)
+	db.Close()
+	dbCfg.Close()
+	log.Infof("---------Centrifuge node configuration file successfully created!---------")
+	log.Infof("Please run the Centrifuge node using the following command: centrifuge run -c %s\n", configFile.ConfigFileUsed())
+	return nil
+}
+
+// CreateConfigDeprecated creates a config file using provide parameters and the default config
+// Deprecated
+func CreateConfigDeprecated(
 	targetDataDir, ethNodeURL, accountKeyPath, accountPassword, network string,
 	apiPort, p2pPort int64,
 	bootstraps []string,
@@ -102,7 +168,7 @@ func CreateConfig(
 	}
 
 	idService := ctx[identity.BootstrappedIDService].(identity.Service)
-	id, err := createIdentity(tctx, idService)
+	id, err := createIdentityDeprecated(tctx, idService)
 	if err != nil {
 		return err
 	}
@@ -113,7 +179,7 @@ func CreateConfig(
 	}
 	cfg.Set("identityId", id.String())
 	log.Infof("Identity created [%s] [%x]", id.String(), id)
-	err = addKeys(cfg, idService)
+	err = addKeysDeprecated(cfg, idService)
 	if err != nil {
 		return err
 	}
