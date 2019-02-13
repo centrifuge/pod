@@ -136,15 +136,13 @@ func (m *CoreDocumentModel) PrepareNewVersion(collaborators []string) (*CoreDocu
 		return nil, errors.New("failed to decode collaborator: %v", err)
 	}
 
-	cs := ncd.Collaborators
+	cs := ocd.Collaborators
 	for _, c := range ucs {
 		c := c
 		cs = append(cs, c[:])
 	}
 
 	ncd.Collaborators = cs
-
-	// copy read rules and roles
 	ncd.Roles = m.Document.Roles
 	ncd.ReadRules = m.Document.ReadRules
 	err = ndm.addCollaboratorsToReadSignRules(ucs)
@@ -243,7 +241,7 @@ func (m *CoreDocumentModel) CreateProofs(dataTree *proofs.DocumentTree, fields [
 		proof.SortedHashes = append(proof.SortedHashes, signingRootProofHashes...)
 		proofs = append(proofs, &proof)
 	}
-
+fmt.Println(cdtree)
 	return proofs, nil
 }
 

@@ -2,7 +2,6 @@ package invoice
 
 import (
 	"context"
-
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -253,6 +252,5 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *clientinv
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentPrepareCoreDocument, err)
 	}
-
 	return inv, nil
 }

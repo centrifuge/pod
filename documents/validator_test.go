@@ -399,17 +399,13 @@ func TestPreAnchorValidator(t *testing.T) {
 func TestValidator_anchoredValidator(t *testing.T) {
 	av := anchoredValidator(mockRepo{})
 
-	// fail get core document
-	err := av.Validate(nil, nil)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to get core document")
-
 	// failed anchorID
 	model := &mockModel{}
 	dm := NewCoreDocModel()
 	cd := dm.Document
+	cd.CurrentVersion = utils.RandomSlice(30)
 	model.On("PackCoreDocument").Return(dm, nil).Once()
-	err = av.Validate(nil, model)
+	err := av.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to get anchorID")
@@ -566,7 +562,7 @@ func TestValidate_baseValidator(t *testing.T) {
 
 	for _, c := range tests {
 		model := mockModel{}
-		model.On("PackCoreDocument", mock.Anything).Return(c.doc, nil).Once()
+		model.On("PackCoreDocument", mock.Anything).Return(&CoreDocumentModel{c.doc,nil,}, nil).Once()
 
 		err := baseValidator.Validate(nil, &model)
 		if c.key == "" {

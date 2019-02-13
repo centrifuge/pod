@@ -4,6 +4,7 @@ package purchaseorder
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"reflect"
 	"testing"
@@ -34,7 +35,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/p2p"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/queue"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -260,8 +261,8 @@ func TestPOModel_createProofs(t *testing.T) {
 	proof, err := poModel.CreateProofs([]string{"po.po_number", "collaborators[0]", "document_type"})
 	assert.Nil(t, err)
 	assert.NotNil(t, proof)
-	tree, _ := poModel.CoreDocumentModel.GetDocumentRootTree()
-
+	tree, err := poModel.CoreDocumentModel.GetDocumentRootTree()
+fmt.Println(tree)
 	// Validate po_number
 	valid, err := tree.ValidateProof(proof[0])
 	assert.Nil(t, err)

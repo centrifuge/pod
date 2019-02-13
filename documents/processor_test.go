@@ -349,7 +349,7 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 
 	// failed validations
 	model = mockModel{}
-	dm := new(CoreDocumentModel)
+	dm := NewCoreDocModel()
 	model.On("PackCoreDocument").Return(dm, nil).Times(6)
 	err = dp.SendDocument(ctxh, model)
 	model.AssertExpectations(t)
@@ -369,7 +369,7 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	dm.getCoreDocumentSalts()
 	assert.Nil(t, dm.CalculateSigningRoot(cd.DataRoot))
 	model = mockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Times(6)
+	model.On("PackCoreDocument").Return(dm, nil).Times(6)
 	c, err := identity.GetIdentityConfig(cfg)
 	assert.Nil(t, err)
 	s := identity.Sign(c, identity.KeyPurposeSigning, cd.SigningRoot)
