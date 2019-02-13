@@ -506,17 +506,18 @@ func TestValidate_baseValidator(t *testing.T) {
 			key: "[cd_salts : Required field]",
 		},
 
-		// salts missing previous root
+		// salts wrong length previous root
 		{
 			doc: &coredocumentpb.CoreDocument{
 				DocumentRoot:       id1,
 				DocumentIdentifier: id2,
 				CurrentVersion:     id3,
 				NextVersion:        id4,
-				CoredocumentSalts: &coredocumentpb.CoreDocumentSalts{
-					DocumentIdentifier: id1,
-					CurrentVersion:     id2,
-					NextVersion:        id3,
+				CoredocumentSalts: []*coredocumentpb.DocumentSalt{
+					{Value: id1},
+					{Value: id2},
+					{Value: id3},
+					{Value: id5[5:]},
 				},
 			},
 			key: "[cd_salts : Required field]",
@@ -530,11 +531,11 @@ func TestValidate_baseValidator(t *testing.T) {
 				CurrentVersion:     id3,
 				NextVersion:        id3,
 				DataRoot:           id5,
-				CoredocumentSalts: &coredocumentpb.CoreDocumentSalts{
-					DocumentIdentifier: id1,
-					CurrentVersion:     id2,
-					NextVersion:        id3,
-					PreviousRoot:       id5,
+				CoredocumentSalts: []*coredocumentpb.DocumentSalt{
+					{Value: id1},
+					{Value: id2},
+					{Value: id3},
+					{Value: id5},
 				},
 			},
 			key: "[cd_overall : Identifier re-used]",
@@ -548,11 +549,11 @@ func TestValidate_baseValidator(t *testing.T) {
 				CurrentVersion:     id3,
 				NextVersion:        id2,
 				DataRoot:           id5,
-				CoredocumentSalts: &coredocumentpb.CoreDocumentSalts{
-					DocumentIdentifier: id1,
-					CurrentVersion:     id2,
-					NextVersion:        id3,
-					PreviousRoot:       id5,
+				CoredocumentSalts: []*coredocumentpb.DocumentSalt{
+					{Value: id1},
+					{Value: id2},
+					{Value: id3},
+					{Value: id5},
 				},
 			},
 			key: "[cd_overall : Identifier re-used]",
@@ -566,11 +567,11 @@ func TestValidate_baseValidator(t *testing.T) {
 				CurrentVersion:     id3,
 				NextVersion:        id4,
 				DataRoot:           id5,
-				CoredocumentSalts: &coredocumentpb.CoreDocumentSalts{
-					DocumentIdentifier: id1,
-					CurrentVersion:     id2,
-					NextVersion:        id3,
-					PreviousRoot:       id5,
+				CoredocumentSalts: []*coredocumentpb.DocumentSalt{
+					{Value: id1},
+					{Value: id2},
+					{Value: id3},
+					{Value: id5},
 				},
 			},
 		},

@@ -93,7 +93,7 @@ func TestService_DeriveFromCoreDocument(t *testing.T) {
 
 	// successful
 	data := testingdocuments.CreateInvoiceData()
-	coreDoc := testingdocuments.CreateCDWithEmbeddedInvoice(t, data)
+	coreDoc := CreateCDWithEmbeddedInvoice(t, data)
 	model, err := invSrv.DeriveFromCoreDocument(coreDoc)
 	assert.Nil(t, err, "must return model")
 	assert.NotNil(t, model, "model must be non-nil")

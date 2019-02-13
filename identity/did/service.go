@@ -5,6 +5,12 @@ import (
 	"math/big"
 	"strings"
 
+	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
+	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
+	"github.com/centrifuge/go-centrifuge/utils"
+
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/transactions"
@@ -22,7 +28,8 @@ import (
 // DID stores the identity address of the user
 type DID common.Address
 
-func (d DID) toAddress() common.Address {
+// ToAddress returns the DID as common.Address
+func (d DID) ToAddress() common.Address {
 	return common.Address(d)
 }
 
@@ -52,6 +59,12 @@ type Service interface {
 
 	// IsSignedWithPurpose verifies if a message is signed with one of the identities specific purpose keys
 	IsSignedWithPurpose(ctx context.Context, message [32]byte, _signature []byte, _purpose *big.Int) (bool, error)
+
+	// AddMultiPurposeKey adds a key with multiple purposes
+	AddMultiPurposeKey(context context.Context, key [32]byte, purposes []*big.Int, keyType *big.Int) error
+
+	// RevokeKey revokes an existing key in the smart contract
+	RevokeKey(ctx context.Context, key [32]byte) error
 }
 
 type contract interface {
@@ -69,6 +82,10 @@ type contract interface {
 	AddKey(opts *bind.TransactOpts, _key [32]byte, _purpose *big.Int, _keyType *big.Int) (*types.Transaction, error)
 
 	Execute(opts *bind.TransactOpts, _to common.Address, _value *big.Int, _data []byte) (*types.Transaction, error)
+
+	AddMultiPurposeKey(opts *bind.TransactOpts, _key [32]byte, _purposes []*big.Int, _keyType *big.Int) (*types.Transaction, error)
+
+	RevokeKey(opts *bind.TransactOpts, _key [32]byte) (*types.Transaction, error)
 }
 
 type service struct {
@@ -111,7 +128,7 @@ func (i service) prepareCall(did DID) (contract, *bind.CallOpts, context.CancelF
 }
 
 func (i service) bindContract(did DID) (contract, error) {
-	contract, err := NewIdentityContract(did.toAddress(), i.client.GetEthClient())
+	contract, err := NewIdentityContract(did.ToAddress(), i.client.GetEthClient())
 	if err != nil {
 		return nil, errors.New("Could not bind identity contract: %v", err)
 	}
@@ -158,7 +175,9 @@ func (i service) AddKey(ctx context.Context, key Key) error {
 	}
 
 	// TODO: did can be passed instead of randomCentID after CentID is DID
-	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), id.RandomCentID(), uuid.Nil, "Check TX for add key", i.addKeyTX(opts, contract, key))
+	log.Info("Add key to identity contract %s", did.ToAddress().String())
+	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), id.RandomCentID(), uuid.Nil, "Check TX for add key",
+		i.ethereumTX(opts, contract.AddKey, key.GetKey(), key.GetPurpose(), key.GetType()))
 	if err != nil {
 		return err
 	}
@@ -173,34 +192,66 @@ func (i service) AddKey(ctx context.Context, key Key) error {
 
 }
 
-func (i service) addKeyTX(opts *bind.TransactOpts, identityContract contract, key Key) func(accountID id.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
-	return func(accountID id.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
-		ethTX, err := i.client.SubmitTransactionWithRetries(identityContract.AddKey, opts, key.GetKey(), key.GetPurpose(), key.GetType())
-		if err != nil {
-			errOut <- err
-			return
-		}
-		logTxHash(ethTX)
-
-		res, err := ethereum.QueueEthTXStatusTask(accountID, txID, ethTX.Hash(), i.queue)
-		if err != nil {
-			errOut <- err
-			return
-		}
-
-		_, err = res.Get(txMan.GetDefaultTaskTimeout())
-		if err != nil {
-			errOut <- err
-			return
-		}
-		errOut <- nil
+// AddMultiPurposeKey adds a key with multiple purposes
+func (i service) AddMultiPurposeKey(ctx context.Context, key [32]byte, purposes []*big.Int, keyType *big.Int) error {
+	did, err := i.getDID(ctx)
+	if err != nil {
+		return err
 	}
 
+	contract, opts, err := i.prepareTransaction(ctx, did)
+	if err != nil {
+		return err
+	}
+
+	// TODO: did can be passed instead of randomCentID after CentID is DID
+	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), id.RandomCentID(), uuid.Nil, "Check TX for add multi purpose key",
+		i.ethereumTX(opts, contract.AddMultiPurposeKey, key, purposes, keyType))
+	if err != nil {
+		return err
+	}
+
+	isDone := <-done
+	// non async task
+	if !isDone {
+		return errors.New("add key multi purpose  TX failed: txID:%s", txID.String())
+
+	}
+	return nil
 }
 
-func (i service) rawExecuteTX(opts *bind.TransactOpts, identityContract contract, to common.Address, value *big.Int, data []byte) func(accountID id.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
+// RevokeKey revokes an existing key in the smart contract
+func (i service) RevokeKey(ctx context.Context, key [32]byte) error {
+	did, err := i.getDID(ctx)
+	if err != nil {
+		return err
+	}
+
+	contract, opts, err := i.prepareTransaction(ctx, did)
+	if err != nil {
+		return err
+	}
+
+	// TODO: did can be passed instead of randomCentID after CentID is DID
+	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), id.RandomCentID(), uuid.Nil, "Check TX for revoke key",
+		i.ethereumTX(opts, contract.RevokeKey, key))
+	if err != nil {
+		return err
+	}
+
+	isDone := <-done
+	// non async task
+	if !isDone {
+		return errors.New("revoke key TX failed: txID:%s", txID.String())
+
+	}
+	return nil
+}
+
+// ethereumTX is submitting an Ethereum transaction and starts a task to wait for the transaction result
+func (i service) ethereumTX(opts *bind.TransactOpts, contractMethod interface{}, params ...interface{}) func(accountID id.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
 	return func(accountID id.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
-		ethTX, err := i.client.SubmitTransactionWithRetries(identityContract.Execute, opts, to, value, data)
+		ethTX, err := i.client.SubmitTransactionWithRetries(contractMethod, opts, params...)
 		if err != nil {
 			errOut <- err
 			return
@@ -220,7 +271,6 @@ func (i service) rawExecuteTX(opts *bind.TransactOpts, identityContract contract
 		}
 		errOut <- nil
 	}
-
 }
 
 // GetKey return a key from the identity contract
@@ -274,7 +324,7 @@ func (i service) RawExecute(ctx context.Context, to common.Address, data []byte)
 	value := big.NewInt(0)
 
 	// TODO: did can be passed instead of randomCentID after CentID is DID
-	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), id.RandomCentID(), uuid.Nil, "Check TX for execute", i.rawExecuteTX(opts, contract, to, value, data))
+	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), id.RandomCentID(), uuid.Nil, "Check TX for execute", i.ethereumTX(opts, contract.Execute, to, value, data))
 	if err != nil {
 		return err
 	}
@@ -302,4 +352,79 @@ func (i service) Execute(ctx context.Context, to common.Address, contractAbi, me
 		return err
 	}
 	return i.RawExecute(ctx, to, data)
+}
+
+func getKeyPairsFromConfig(config config.Configuration) (map[int]Key, error) {
+	keys := map[int]Key{}
+	var pk []byte
+
+	// ed25519 keys
+	// KeyPurposeP2P
+	pk, _, err := ed25519.GetSigningKeyPair(config.GetP2PKeyPair())
+	if err != nil {
+		return nil, err
+	}
+	pk32, err := utils.SliceToByte32(pk)
+	if err != nil {
+		return nil, err
+	}
+	keys[id.KeyPurposeP2P] = NewKey(pk32, big.NewInt(id.KeyPurposeP2P), big.NewInt(id.KeyTypeECDSA))
+
+	// KeyPurposeSigning
+	pk, _, err = ed25519.GetSigningKeyPair(config.GetSigningKeyPair())
+	if err != nil {
+		return nil, err
+	}
+	pk32, err = utils.SliceToByte32(pk)
+	if err != nil {
+		return nil, err
+	}
+	keys[id.KeyPurposeSigning] = NewKey(pk32, big.NewInt(id.KeyPurposeSigning), big.NewInt(id.KeyTypeECDSA))
+
+	// secp256k1 keys
+	// KeyPurposeEthMsgAuth
+	pk, _, err = secp256k1.GetEthAuthKey(config.GetEthAuthKeyPair())
+	if err != nil {
+		return nil, err
+	}
+
+	address32Bytes := utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(pk)))
+	keys[id.KeyPurposeEthMsgAuth] = NewKey(address32Bytes, big.NewInt(id.KeyPurposeEthMsgAuth), big.NewInt(id.KeyTypeECDSA))
+
+	return keys, nil
+}
+
+// AddKeysFromConfig adds the keys from the config to the smart contracts
+func AddKeysFromConfig(ctx map[string]interface{}, cfg config.Configuration) error {
+	idSrv := ctx[BootstrappedDIDService].(Service)
+
+	tc, err := configstore.NewAccount(cfg.GetEthereumDefaultAccountName(), cfg)
+	if err != nil {
+		return err
+	}
+
+	tctx, err := contextutil.New(context.Background(), tc)
+	if err != nil {
+		return err
+	}
+
+	keys, err := getKeyPairsFromConfig(cfg)
+	if err != nil {
+		return err
+	}
+	err = idSrv.AddKey(tctx, keys[id.KeyPurposeP2P])
+	if err != nil {
+		return err
+	}
+
+	err = idSrv.AddKey(tctx, keys[id.KeyPurposeSigning])
+	if err != nil {
+		return err
+	}
+
+	err = idSrv.AddKey(tctx, keys[id.KeyPurposeEthMsgAuth])
+	if err != nil {
+		return err
+	}
+	return nil
 }

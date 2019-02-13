@@ -102,7 +102,7 @@ func TestPO_InitCoreDocument_successful(t *testing.T) {
 
 	poData := testingdocuments.CreatePOData()
 
-	coreDocument := testingdocuments.CreateCDWithEmbeddedPO(t, poData)
+	coreDocument := CreateCDWithEmbeddedPO(t, poData)
 	err := poModel.UnpackCoreDocument(coreDocument)
 	assert.Nil(t, err, "valid coredocument shouldn't produce an error")
 }
@@ -110,7 +110,7 @@ func TestPO_InitCoreDocument_successful(t *testing.T) {
 func TestPO_InitCoreDocument_invalidCentId(t *testing.T) {
 	poModel := &PurchaseOrder{}
 
-	coreDocument := testingdocuments.CreateCDWithEmbeddedPO(t, purchaseorderpb.PurchaseOrderData{
+	coreDocument := CreateCDWithEmbeddedPO(t, purchaseorderpb.PurchaseOrderData{
 		Recipient: utils.RandomSlice(identity.CentIDLength + 1)})
 
 	err := poModel.UnpackCoreDocument(coreDocument)
@@ -124,7 +124,7 @@ func TestPO_CoreDocument_successful(t *testing.T) {
 	//init model with a CoreDoc
 	poData := testingdocuments.CreatePOData()
 
-	coreDocument := testingdocuments.CreateCDWithEmbeddedPO(t, poData)
+	coreDocument := CreateCDWithEmbeddedPO(t, poData)
 	poModel.UnpackCoreDocument(coreDocument)
 
 	returnedCoreDocument, err := poModel.PackCoreDocument()
@@ -149,7 +149,7 @@ func TestPO_Type(t *testing.T) {
 func TestPO_JSON(t *testing.T) {
 	poModel := &PurchaseOrder{}
 	poData := testingdocuments.CreatePOData()
-	coreDocument := testingdocuments.CreateCDWithEmbeddedPO(t, poData)
+	coreDocument := CreateCDWithEmbeddedPO(t, poData)
 	poModel.UnpackCoreDocument(coreDocument)
 
 	jsonBytes, err := poModel.JSON()
@@ -177,7 +177,7 @@ func TestPOModel_UnpackCoreDocument(t *testing.T) {
 	assert.Error(t, err, "unpack must fail due to missing embed data")
 
 	// successful
-	coreDocument := testingdocuments.CreateCDWithEmbeddedPO(t, testingdocuments.CreatePOData())
+	coreDocument := CreateCDWithEmbeddedPO(t, testingdocuments.CreatePOData())
 	err = model.UnpackCoreDocument(coreDocument)
 	assert.Nil(t, err, "valid core document with embedded purchase order shouldn't produce an error")
 
@@ -241,12 +241,12 @@ func TestPOModel_calculateDataRoot(t *testing.T) {
 	poModel := new(PurchaseOrder)
 	err := poModel.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), id.ID.String())
 	assert.Nil(t, err, "Init must pass")
-	assert.Nil(t, poModel.PurchaseOrderSalt, "salts must be nil")
+	assert.Nil(t, poModel.PurchaseOrderSalts, "salts must be nil")
 
 	dr, err := poModel.CalculateDataRoot()
 	assert.Nil(t, err, "calculate must pass")
 	assert.False(t, utils.IsEmptyByteSlice(dr))
-	assert.NotNil(t, poModel.PurchaseOrderSalt, "salts must be created")
+	assert.NotNil(t, poModel.PurchaseOrderSalts, "salts must be created")
 }
 func TestPOModel_createProofs(t *testing.T) {
 	poModel, corDoc, err := createMockPurchaseOrder(t)
@@ -267,8 +267,8 @@ func TestPOModel_createProofs(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
-	// Validate '0x' Hex format in []byte value
-	assert.Equal(t, hexutil.Encode(poModel.CoreDocument.Collaborators[0]), proof[1].Value)
+	// Validate []byte value
+	assert.Equal(t, poModel.CoreDocument.Collaborators[0], proof[1].Value)
 
 	// Validate document_type
 	valid, err = tree.ValidateProof(proof[2])

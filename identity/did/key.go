@@ -30,6 +30,11 @@ type key struct {
 	Type      *big.Int
 }
 
+//NewKey returns a new key struct
+func NewKey(pk [32]byte, purpose *big.Int, keyType *big.Int) Key {
+	return &key{pk, purpose, big.NewInt(0), keyType}
+}
+
 // GetKey returns the public key
 func (idk *key) GetKey() [32]byte {
 	return idk.Key

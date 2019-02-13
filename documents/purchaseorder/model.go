@@ -1,9 +1,10 @@
 package purchaseorder
 
 import (
-	"crypto/sha256"
 	"encoding/json"
 	"reflect"
+
+	"github.com/centrifuge/go-centrifuge/documents"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -23,34 +24,36 @@ import (
 
 const prefix string = "po"
 
+var compactPrefix = []byte{2, 0, 0, 0}
+
 // PurchaseOrder implements the documents.Model keeps track of purchase order related fields and state
 type PurchaseOrder struct {
-	Status            string // status of the Purchase Order
-	PoNumber          string // purchase order number or reference number
-	OrderName         string // name of the ordering company
-	OrderStreet       string // street and address details of the ordering company
-	OrderCity         string
-	OrderZipcode      string
-	OrderCountry      string // country ISO code of the ordering company of this purchase order
-	RecipientName     string // name of the recipient company
-	RecipientStreet   string
-	RecipientCity     string
-	RecipientZipcode  string
-	RecipientCountry  string // country ISO code of the recipient of this purchase order
-	Currency          string // ISO currency code
-	OrderAmount       int64  // ordering gross amount including tax
-	NetAmount         int64  // invoice amount excluding tax
-	TaxAmount         int64
-	TaxRate           int64
-	Recipient         *identity.CentID
-	Order             []byte
-	OrderContact      string
-	Comment           string
-	DeliveryDate      *timestamp.Timestamp // requested delivery date
-	DateCreated       *timestamp.Timestamp // purchase order date
-	ExtraData         []byte
-	PurchaseOrderSalt *purchaseorderpb.PurchaseOrderDataSalts
-	CoreDocument      *coredocumentpb.CoreDocument
+	Status             string // status of the Purchase Order
+	PoNumber           string // purchase order number or reference number
+	OrderName          string // name of the ordering company
+	OrderStreet        string // street and address details of the ordering company
+	OrderCity          string
+	OrderZipcode       string
+	OrderCountry       string // country ISO code of the ordering company of this purchase order
+	RecipientName      string // name of the recipient company
+	RecipientStreet    string
+	RecipientCity      string
+	RecipientZipcode   string
+	RecipientCountry   string // country ISO code of the recipient of this purchase order
+	Currency           string // ISO currency code
+	OrderAmount        int64  // ordering gross amount including tax
+	NetAmount          int64  // invoice amount excluding tax
+	TaxAmount          int64
+	TaxRate            int64
+	Recipient          *identity.CentID
+	Order              []byte
+	OrderContact       string
+	Comment            string
+	DeliveryDate       *timestamp.Timestamp // requested delivery date
+	DateCreated        *timestamp.Timestamp // purchase order date
+	ExtraData          []byte
+	PurchaseOrderSalts *proofs.Salts
+	CoreDocument       *coredocumentpb.CoreDocument
 }
 
 // ID returns the DocumentIdentifier for this document
@@ -243,14 +246,16 @@ func (p *PurchaseOrder) loadFromP2PProtobuf(data *purchaseorderpb.PurchaseOrderD
 }
 
 // getPurchaseOrderSalts returns the purchase oder salts. Initialises if not present
-func (p *PurchaseOrder) getPurchaseOrderSalts(purchaseOrderData *purchaseorderpb.PurchaseOrderData) *purchaseorderpb.PurchaseOrderDataSalts {
-	if p.PurchaseOrderSalt == nil {
-		purchaseOrderSalt := &purchaseorderpb.PurchaseOrderDataSalts{}
-		proofs.FillSalts(purchaseOrderData, purchaseOrderSalt)
-		p.PurchaseOrderSalt = purchaseOrderSalt
+func (p *PurchaseOrder) getPurchaseOrderSalts(purchaseOrderData *purchaseorderpb.PurchaseOrderData) (*proofs.Salts, error) {
+	if p.PurchaseOrderSalts == nil {
+		poSalts, err := documents.GenerateNewSalts(purchaseOrderData, prefix, compactPrefix)
+		if err != nil {
+			return nil, errors.New("getPOSalts error %v", err)
+		}
+		p.PurchaseOrderSalts = poSalts
 	}
 
-	return p.PurchaseOrderSalt
+	return p.PurchaseOrderSalts, nil
 }
 
 // PackCoreDocument packs the PurchaseOrder into a Core Document
@@ -267,22 +272,15 @@ func (p *PurchaseOrder) PackCoreDocument() (*coredocumentpb.CoreDocument, error)
 		Value:   poSerialized,
 	}
 
-	poSalt := p.getPurchaseOrderSalts(poData)
-
-	serializedSalts, err := proto.Marshal(poSalt)
+	poSalts, err := p.getPurchaseOrderSalts(poData)
 	if err != nil {
-		return nil, centerrors.Wrap(err, "couldn't serialise PurchaseOrderSalt")
-	}
-
-	poSaltsAny := any.Any{
-		TypeUrl: documenttypes.PurchaseOrderSaltsTypeUrl,
-		Value:   serializedSalts,
+		return nil, errors.NewTypedError(err, errors.New("couldn't get POSalts"))
 	}
 
 	coreDoc := new(coredocumentpb.CoreDocument)
 	proto.Merge(coreDoc, p.CoreDocument)
 	coreDoc.EmbeddedData = &poAny
-	coreDoc.EmbeddedDataSalts = &poSaltsAny
+	coreDoc.EmbeddedDataSalts = documents.ConvertToProtoSalts(poSalts)
 	return coreDoc, err
 }
 
@@ -306,15 +304,12 @@ func (p *PurchaseOrder) UnpackCoreDocument(coreDoc *coredocumentpb.CoreDocument)
 	p.loadFromP2PProtobuf(poData)
 
 	if coreDoc.EmbeddedDataSalts == nil {
-		p.PurchaseOrderSalt = p.getPurchaseOrderSalts(poData)
-	} else {
-		poSalt := &purchaseorderpb.PurchaseOrderDataSalts{}
-		err = proto.Unmarshal(coreDoc.EmbeddedDataSalts.Value, poSalt)
+		p.PurchaseOrderSalts, err = p.getPurchaseOrderSalts(poData)
 		if err != nil {
 			return err
 		}
-
-		p.PurchaseOrderSalt = poSalt
+	} else {
+		p.PurchaseOrderSalts = documents.ConvertToProofSalts(coreDoc.EmbeddedDataSalts)
 	}
 
 	p.CoreDocument = new(coredocumentpb.CoreDocument)
@@ -350,10 +345,13 @@ func (p *PurchaseOrder) CalculateDataRoot() ([]byte, error) {
 
 // getDocumentDataTree creates precise-proofs data tree for the model
 func (p *PurchaseOrder) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
-	prop := proofs.NewProperty(prefix)
-	t := proofs.NewDocumentTree(proofs.TreeOptions{EnableHashSorting: true, Hash: sha256.New(), ParentPrefix: prop})
-	poData := p.createP2PProtobuf()
-	err = t.AddLeavesFromDocument(poData, p.getPurchaseOrderSalts(poData))
+	poProto := p.createP2PProtobuf()
+	salts, err := p.getPurchaseOrderSalts(poProto)
+	if err != nil {
+		return nil, err
+	}
+	t := documents.NewDefaultTreeWithPrefix(salts, prefix, compactPrefix)
+	err = t.AddLeavesFromDocument(poProto)
 	if err != nil {
 		return nil, errors.New("getDocumentDataTree error %v", err)
 	}
@@ -361,7 +359,7 @@ func (p *PurchaseOrder) getDocumentDataTree() (tree *proofs.DocumentTree, err er
 	if err != nil {
 		return nil, errors.New("getDocumentDataTree error %v", err)
 	}
-	return &t, nil
+	return t, nil
 }
 
 // CreateProofs generates proofs for given fields
