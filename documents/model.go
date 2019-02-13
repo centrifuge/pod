@@ -19,11 +19,16 @@ import (
 )
 
 const (
-	CDRootField       = "cd_root"
-	DataRootField     = "data_root"
+	// CDRootField represents the coredocument root property of a tree
+	CDRootField = "cd_root"
+	// DataRootField represents the data root property of a tree
+	DataRootField = "data_root"
+	// DocumentTypeField represents the doc type property of a tree
 	DocumentTypeField = "document_type"
-	SignaturesField   = "signatures"
-	SigningRootField  = "signing_root"
+	// SignaturesField represents the signatures property of a tree
+	SignaturesField = "signatures"
+	// SigningRootField represents the signature root property of a tree
+	SigningRootField = "signing_root"
 )
 
 var compactProperties = map[string][]byte{
