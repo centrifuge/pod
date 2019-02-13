@@ -283,7 +283,7 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 
 	// validations failed
 	model = mockModel{}
-	dm := new(CoreDocumentModel)
+	dm := NewCoreDocModel()
 	model.On("PackCoreDocument").Return(dm, nil).Times(5)
 	err = dp.AnchorDocument(ctxh, model)
 	model.AssertExpectations(t)
