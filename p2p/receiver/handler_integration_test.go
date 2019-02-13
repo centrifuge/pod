@@ -14,7 +14,6 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/golang/protobuf/ptypes/any"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -355,13 +354,13 @@ func prepareDocumentForP2PHandler(t *testing.T, dm *documents.CoreDocumentModel)
 	return dm
 }
 
-func updateDocumentForP2Phandler(t *testing.T, doc *coredocumentpb.CoreDocument) {
+func updateDocumentForP2Phandler(t *testing.T, model *documents.CoreDocumentModel) {
 	invData := &invoicepb.InvoiceData{}
 	dataSalts, _ := documents.GenerateNewSalts(invData, "invoice")
 
 	serializedInv, err := proto.Marshal(invData)
 	assert.NoError(t, err)
-
+	doc := model.Document
 	doc.EmbeddedData = &any.Any{
 		TypeUrl: documenttypes.InvoiceDataTypeUrl,
 		Value:   serializedInv,

@@ -12,6 +12,7 @@ import (
 func CreateCDWithEmbeddedInvoice(t *testing.T, invoiceData invoicepb.InvoiceData) *documents.CoreDocumentModel {
 	identifier := []byte("1")
 	invoiceModel := &Invoice{}
+	invoiceModel.CoreDocumentModel = documents.NewCoreDocModel()
 	invoiceModel.loadFromP2PProtobuf(&invoiceData)
 	_, err := invoiceModel.getInvoiceSalts(&invoiceData)
 	assert.NoError(t, err)

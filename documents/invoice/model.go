@@ -290,11 +290,11 @@ func (i *Invoice) PackCoreDocument() (*documents.CoreDocumentModel, error) {
 
 	coreDocModel := new(documents.CoreDocumentModel)
 	coreDocModel.Document = new(coredocumentpb.CoreDocument)
-	//proto.Merge(coreDocModel.Document, i.CoreDocumentModel.Document)
+	proto.Merge(coreDocModel.Document, i.CoreDocumentModel.Document)
 	coreDocModel.Document.EmbeddedData = &invoiceAny
 	coreDocModel.Document.EmbeddedDataSalts = documents.ConvertToProtoSalts(invoiceSalts)
-	proto.Merge(coreDocModel.Document, i.CoreDocumentModel.Document)
-	return coreDocModel, err
+	i.CoreDocumentModel = coreDocModel
+	return i.CoreDocumentModel, err
 }
 
 // UnpackCoreDocument unpacks the core document into Invoice
@@ -383,19 +383,19 @@ func (i *Invoice) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
 }
 
 // CreateProofs generates proofs for given fields
-func (i *Invoice) CreateProofs(fields []string) (coreDocModel *documents.CoreDocumentModel, proofs []*proofspb.Proof, err error) {
+func (i *Invoice) CreateProofs(fields []string) (proofs []*proofspb.Proof, err error) {
 	// There can be failure scenarios where the core doc for the particular document
 	// is still not saved with roots in db due to failures during getting signatures.
-	coreDocModel, err = i.PackCoreDocument()
+	_, err = i.PackCoreDocument()
 	if err != nil {
-		return nil, nil, errors.New("createProofs error %v", err)
+		return nil, errors.New("createProofs error %v", err)
 	}
 
 	tree, err := i.getDocumentDataTree()
 	if err != nil {
-		return coreDocModel, nil, errors.New("createProofs error %v", err)
+		return nil, errors.New("createProofs error %v", err)
 	}
 
 	proofs, err = i.CoreDocumentModel.CreateProofs(tree, fields)
-	return coreDocModel, proofs, err
+	return proofs, err
 }

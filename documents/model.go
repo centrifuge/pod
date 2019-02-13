@@ -41,7 +41,7 @@ type Model interface {
 	CalculateDataRoot() ([]byte, error)
 
 	// CreateProofs creates precise-proofs for given fields
-	CreateProofs(fields []string) (coreDocModel *CoreDocumentModel, proofs []*proofspb.Proof, err error)
+	CreateProofs(fields []string) (proofs []*proofspb.Proof, err error)
 }
 
 // TokenRegistry defines NFT retrieval functions.

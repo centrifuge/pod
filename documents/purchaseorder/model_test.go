@@ -108,7 +108,7 @@ func TestPO_InitCoreDocument_successful(t *testing.T) {
 
 	poData := testingdocuments.CreatePOData()
 
-	coreDocumentModel := testingdocuments.CreateCDWithEmbeddedPO(t, poData)
+	coreDocumentModel := CreateCDWithEmbeddedPO(t, poData)
 	err := poModel.UnpackCoreDocument(coreDocumentModel)
 	assert.Nil(t, err, "valid coredocumentmodel shouldn't produce an error")
 }
@@ -116,7 +116,7 @@ func TestPO_InitCoreDocument_successful(t *testing.T) {
 func TestPO_InitCoreDocument_invalidCentId(t *testing.T) {
 	poModel := &PurchaseOrder{}
 
-	coreDocumentModel := testingdocuments.CreateCDWithEmbeddedPO(t, purchaseorderpb.PurchaseOrderData{
+	coreDocumentModel := CreateCDWithEmbeddedPO(t, purchaseorderpb.PurchaseOrderData{
 		Recipient: utils.RandomSlice(identity.CentIDLength + 1)})
 
 	err := poModel.UnpackCoreDocument(coreDocumentModel)
@@ -130,7 +130,7 @@ func TestPO_CoreDocument_successful(t *testing.T) {
 	//init model with a CoreDoc
 	poData := testingdocuments.CreatePOData()
 
-	coreDocumentModel := testingdocuments.CreateCDWithEmbeddedPO(t, poData)
+	coreDocumentModel := CreateCDWithEmbeddedPO(t, poData)
 	poModel.UnpackCoreDocument(coreDocumentModel)
 
 	returnedCoreDocumentModel, err := poModel.PackCoreDocument()
@@ -155,7 +155,7 @@ func TestPO_Type(t *testing.T) {
 func TestPO_JSON(t *testing.T) {
 	poModel := &PurchaseOrder{}
 	poData := testingdocuments.CreatePOData()
-	coreDocumentModel := testingdocuments.CreateCDWithEmbeddedPO(t, poData)
+	coreDocumentModel := CreateCDWithEmbeddedPO(t, poData)
 	poModel.UnpackCoreDocument(coreDocumentModel)
 
 	jsonBytes, err := poModel.JSON()
@@ -183,7 +183,7 @@ func TestPOModel_UnpackCoreDocument(t *testing.T) {
 	assert.Error(t, err, "unpack must fail due to missing embed data")
 
 	// successful
-	coreDocumentModel := testingdocuments.CreateCDWithEmbeddedPO(t, testingdocuments.CreatePOData())
+	coreDocumentModel := CreateCDWithEmbeddedPO(t, testingdocuments.CreatePOData())
 	err = model.UnpackCoreDocument(coreDocumentModel)
 	assert.Nil(t, err, "valid core document with embedded purchase order shouldn't produce an error")
 
@@ -274,7 +274,7 @@ func TestPOModel_createProofs(t *testing.T) {
 	assert.True(t, valid)
 
 	// Validate []byte value
-	assert.Equal(t, poModel.CoreDocument.Collaborators[0], proof[1].Value)
+	assert.Equal(t, poModel.CoreDocumentModel.Document.Collaborators[0], proof[1].Value)
 
 	// Validate document_type
 	valid, err = tree.ValidateProof(proof[2])

@@ -145,14 +145,14 @@ func (s service) createProofs(model Model, fields []string) (*DocumentProof, err
 	if err := PostAnchoredValidator(s.identityService, s.anchorRepository).Validate(nil, model); err != nil {
 		return nil, errors.NewTypedError(ErrDocumentInvalid, err)
 	}
-	coreDocModel, proofs, err := model.CreateProofs(fields)
+	proofs, err := model.CreateProofs(fields)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrDocumentProof, err)
 	}
-	coreDoc := coreDocModel.Document
+	coreDocModel, err := model.PackCoreDocument()
 	return &DocumentProof{
-		DocumentID:  coreDoc.DocumentIdentifier,
-		VersionID:   coreDoc.CurrentVersion,
+		DocumentID:  coreDocModel.Document.DocumentIdentifier,
+		VersionID:   coreDocModel.Document.CurrentVersion,
 		FieldProofs: proofs,
 	}, nil
 

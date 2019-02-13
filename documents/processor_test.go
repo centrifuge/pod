@@ -71,7 +71,7 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 		TypeUrl: "some type",
 		Value:   []byte("some data"),
 	}
-	assert.Nil(t, dm.FillSalts())
+	dm.getCoreDocumentSalts()
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(dm, nil).Once()
 	cfg.Set("keys.signing.publicKey", pub)
@@ -142,7 +142,7 @@ func TestDefaultProcessor_RequestSignatures(t *testing.T) {
 		TypeUrl: "some type",
 		Value:   []byte("some data"),
 	}
-	assert.Nil(t, dm.FillSalts())
+	dm.getCoreDocumentSalts()
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(dm, nil).Once()
 	model.On("UnpackCoreDocument", dm).Return(nil).Once()
@@ -218,7 +218,7 @@ func TestDefaultProcessor_PrepareForAnchoring(t *testing.T) {
 		TypeUrl: "some type",
 		Value:   []byte("some data"),
 	}
-	assert.Nil(t, dm.FillSalts())
+	dm.getCoreDocumentSalts()
 	model.On("CalculateDataRoot").Return(cd.DataRoot, nil)
 	err = dm.CalculateSigningRoot(cd.DataRoot)
 	assert.Nil(t, err)
@@ -298,7 +298,7 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 		TypeUrl: "some type",
 		Value:   []byte("some data"),
 	}
-	assert.Nil(t, dm.FillSalts())
+	dm.getCoreDocumentSalts()
 	assert.Nil(t, dm.CalculateSigningRoot(cd.DataRoot))
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(dm, nil).Times(5)
@@ -366,7 +366,7 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	}
 	cd.Collaborators = [][]byte{[]byte("some id")}
 	model.On("CalculateDataRoot").Return(cd.DataRoot, nil)
-	assert.Nil(t, dm.FillSalts())
+	dm.getCoreDocumentSalts()
 	assert.Nil(t, dm.CalculateSigningRoot(cd.DataRoot))
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Times(6)

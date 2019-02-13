@@ -12,6 +12,7 @@ import (
 func CreateCDWithEmbeddedPO(t *testing.T, poData purchaseorderpb.PurchaseOrderData) *documents.CoreDocumentModel {
 	identifier := []byte("1")
 	poModel := &PurchaseOrder{}
+	poModel.CoreDocumentModel = documents.NewCoreDocModel()
 	poModel.loadFromP2PProtobuf(&poData)
 	_, err := poModel.getPurchaseOrderSalts(&poData)
 	assert.NoError(t, err)

@@ -282,11 +282,11 @@ func (p *PurchaseOrder) PackCoreDocument() (*documents.CoreDocumentModel, error)
 
 	coreDocModel := new(documents.CoreDocumentModel)
 	coreDocModel.Document = new(coredocumentpb.CoreDocument)
-	//proto.Merge(coreDocModel.Document, p.CoreDocumentModel.Document)
+	proto.Merge(coreDocModel.Document, p.CoreDocumentModel.Document)
 	coreDocModel.Document.EmbeddedData = &poAny
 	coreDocModel.Document.EmbeddedDataSalts = documents.ConvertToProtoSalts(poSalts)
-	proto.Merge(coreDocModel.Document, p.CoreDocumentModel.Document)
-	return coreDocModel, err
+	p.CoreDocumentModel = coreDocModel
+	return p.CoreDocumentModel, err
 }
 
 // UnpackCoreDocument unpacks the core document into PurchaseOrder
@@ -374,19 +374,19 @@ func (p *PurchaseOrder) getDocumentDataTree() (tree *proofs.DocumentTree, err er
 }
 
 // CreateProofs generates proofs for given fields
-func (p *PurchaseOrder) CreateProofs(fields []string) (coreDocMode *documents.CoreDocumentModel, proofs []*proofspb.Proof, err error) {
+func (p *PurchaseOrder) CreateProofs(fields []string) (proofs []*proofspb.Proof, err error) {
 	// There can be failure scenarios where the core doc for the particular document
 	// is still not saved with roots in db due to failures during getting signatures.
-	coreDocModel, err := p.PackCoreDocument()
+	_, err = p.PackCoreDocument()
 	if err != nil {
-		return nil, nil, errors.New("createProofs error %v", err)
+		return nil, errors.New("createProofs error %v", err)
 	}
 
 	tree, err := p.getDocumentDataTree()
 	if err != nil {
-		return coreDocModel, nil, errors.New("createProofs error %v", err)
+		return nil, errors.New("createProofs error %v", err)
 	}
 
-	proofs, err = coreDocModel.CreateProofs(tree, fields)
-	return coreDocModel, proofs, err
+	proofs, err = p.CoreDocumentModel.CreateProofs(tree, fields)
+	return proofs, err
 }

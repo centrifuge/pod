@@ -3,14 +3,12 @@ package testingdocuments
 import (
 	"context"
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
-	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/centrifuge/precise-proofs/proofs"
-	"github.com/gogo/protobuf/proto"
-	"github.com/golang/protobuf/ptypes/any"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
+	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -77,32 +75,30 @@ func (m *MockModel) JSON() ([]byte, error) {
 	return data, args.Error(1)
 }
 
-func GenerateCoreDocumentModel() *documents.CoreDocumentModel {
-	docModel := documents.NewCoreDocModel()
+func GenerateCoreDocumentModelWithCollaborators(collaborators [][]byte) *documents.CoreDocumentModel {
 	identifier := utils.RandomSlice(32)
-	dataSalts := &invoicepb.InvoiceDataSalts{}
 	invData := &invoicepb.InvoiceData{}
-	proofs.FillSalts(invData, dataSalts)
+	dataSalts, _ := documents.GenerateNewSalts(invData, "invoice")
 
 	serializedInv, _ := proto.Marshal(invData)
-	serializedInvSalts, _ := proto.Marshal(dataSalts)
-	salts := &coredocumentpb.CoreDocumentSalts{}
 	doc := &coredocumentpb.CoreDocument{
+		Collaborators:      collaborators,
 		DocumentIdentifier: identifier,
 		CurrentVersion:     identifier,
 		NextVersion:        utils.RandomSlice(32),
-		CoredocumentSalts:  salts,
-		DocumentRoot: identifier,
 		EmbeddedData: &any.Any{
 			TypeUrl: documenttypes.InvoiceDataTypeUrl,
 			Value:   serializedInv,
 		},
-		EmbeddedDataSalts: &any.Any{
-			TypeUrl: documenttypes.InvoiceSaltsTypeUrl,
-			Value:   serializedInvSalts,
-		},
+		EmbeddedDataSalts: documents.ConvertToProtoSalts(dataSalts),
 	}
-	proofs.FillSalts(doc, salts)
-	docModel.Document = doc
-	return docModel
+	cdSalts, _ := documents.GenerateNewSalts(doc, "")
+	doc.CoredocumentSalts = documents.ConvertToProtoSalts(cdSalts)
+	dm := documents.NewCoreDocModel()
+	dm.Document = doc
+	return dm
+}
+
+func GenerateCoreDocumentModel() *documents.CoreDocumentModel {
+	return GenerateCoreDocumentModelWithCollaborators(nil)
 }
