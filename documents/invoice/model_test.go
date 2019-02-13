@@ -277,13 +277,12 @@ func TestInvoiceModel_calculateDataRoot(t *testing.T) {
 }
 
 func TestInvoiceModel_createProofs(t *testing.T) {
-	i, corDocModel, err := createMockInvoice(t)
+	i, err := createMockInvoice(t)
 	assert.Nil(t, err)
-	corDocModel, proof, err := i.CreateProofs([]string{"invoice.invoice_number", "collaborators[0]", "document_type"})
+	proof, err := i.CreateProofs([]string{"invoice.invoice_number", "collaborators[0]", "document_type"})
 	assert.Nil(t, err)
 	assert.NotNil(t, proof)
-	assert.NotNil(t, corDocModel)
-	tree, _ := corDocModel.GetDocumentRootTree()
+	tree, _ := i.CoreDocumentModel.GetDocumentRootTree()
 
 	// Validate invoice_number
 	valid, err := tree.ValidateProof(proof[0])
@@ -305,17 +304,17 @@ func TestInvoiceModel_createProofs(t *testing.T) {
 }
 
 func TestInvoiceModel_createProofsFieldDoesNotExist(t *testing.T) {
-	i, _, err := createMockInvoice(t)
+	i, err := createMockInvoice(t)
 	assert.Nil(t, err)
-	_, _, err = i.CreateProofs([]string{"nonexisting"})
+	 _, err = i.CreateProofs([]string{"nonexisting"})
 	assert.NotNil(t, err)
 }
 
 func TestInvoiceModel_GetDocumentID(t *testing.T) {
-	i, corDocModel, err := createMockInvoice(t)
+	i, err := createMockInvoice(t)
 	assert.Nil(t, err)
 	ID, err := i.ID()
-	assert.Equal(t, corDocModel.Document.DocumentIdentifier, ID)
+	assert.Equal(t, i.CoreDocumentModel.Document.DocumentIdentifier, ID)
 }
 
 func TestInvoiceModel_getDocumentDataTree(t *testing.T) {
@@ -327,27 +326,28 @@ func TestInvoiceModel_getDocumentDataTree(t *testing.T) {
 	assert.Equal(t, "invoice.invoice_number", leaf.Property.ReadableName())
 }
 
-func createMockInvoice(t *testing.T) (*Invoice, *documents.CoreDocumentModel, error) {
+func createMockInvoice(t *testing.T) (*Invoice, error) {
 	i := &Invoice{InvoiceNumber: "3213121", NetAmount: 2, GrossAmount: 2, Currency: "USD", CoreDocumentModel: documents.NewCoreDocModel()}
 	i.CoreDocumentModel.Document.Collaborators = [][]byte{{1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}}
 	dataRoot, err := i.CalculateDataRoot()
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	// get the coreDoc for the invoice
-	corDocModel, err := i.PackCoreDocument()
+
+	cdm, err := i.PackCoreDocument()
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	assert.Nil(t, corDocModel.Document.GetCoredocumentSalts())
-	err = corDocModel.CalculateSigningRoot(dataRoot)
+	assert.Nil(t, cdm.Document.GetCoredocumentSalts())
+	err = cdm.CalculateSigningRoot(dataRoot)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	err = corDocModel.CalculateDocumentRoot()
+	err = cdm.CalculateDocumentRoot()
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	i.UnpackCoreDocument(corDocModel)
-	return i, corDocModel, nil
+	i.UnpackCoreDocument(cdm)
+	return i, nil
 }

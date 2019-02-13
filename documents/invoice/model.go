@@ -288,12 +288,8 @@ func (i *Invoice) PackCoreDocument() (*documents.CoreDocumentModel, error) {
 		return nil, errors.NewTypedError(err, errors.New("couldn't get InvoiceSalts"))
 	}
 
-	coreDocModel := new(documents.CoreDocumentModel)
-	coreDocModel.Document = new(coredocumentpb.CoreDocument)
-	proto.Merge(coreDocModel.Document, i.CoreDocumentModel.Document)
-	coreDocModel.Document.EmbeddedData = &invoiceAny
-	coreDocModel.Document.EmbeddedDataSalts = documents.ConvertToProtoSalts(invoiceSalts)
-	i.CoreDocumentModel = coreDocModel
+	i.CoreDocumentModel.Document.EmbeddedData = &invoiceAny
+	i.CoreDocumentModel.Document.EmbeddedDataSalts = documents.ConvertToProtoSalts(invoiceSalts)
 	return i.CoreDocumentModel, err
 }
 

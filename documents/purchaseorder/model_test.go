@@ -255,13 +255,12 @@ func TestPOModel_calculateDataRoot(t *testing.T) {
 	assert.NotNil(t, poModel.PurchaseOrderSalts, "salts must be created")
 }
 func TestPOModel_createProofs(t *testing.T) {
-	poModel, corDoc, err := createMockPurchaseOrder(t)
+	poModel, err := createMockPurchaseOrder(t)
 	assert.Nil(t, err)
-	cdm, proof, err := poModel.CreateProofs([]string{"po.po_number", "collaborators[0]", "document_type"})
+	proof, err := poModel.CreateProofs([]string{"po.po_number", "collaborators[0]", "document_type"})
 	assert.Nil(t, err)
 	assert.NotNil(t, proof)
-	assert.NotNil(t, corDoc)
-	tree, _ := cdm.GetDocumentRootTree()
+	tree, _ := poModel.CoreDocumentModel.GetDocumentRootTree()
 
 	// Validate po_number
 	valid, err := tree.ValidateProof(proof[0])
@@ -283,9 +282,9 @@ func TestPOModel_createProofs(t *testing.T) {
 }
 
 func TestPOModel_createProofsFieldDoesNotExist(t *testing.T) {
-	poModel, _, err := createMockPurchaseOrder(t)
+	poModel, err := createMockPurchaseOrder(t)
 	assert.Nil(t, err)
-	_, _, err = poModel.CreateProofs([]string{"nonexisting"})
+	_, err = poModel.CreateProofs([]string{"nonexisting"})
 	assert.NotNil(t, err)
 }
 
@@ -298,27 +297,27 @@ func TestPOModel_getDocumentDataTree(t *testing.T) {
 	assert.Equal(t, "po.po_number", leaf.Property.ReadableName())
 }
 
-func createMockPurchaseOrder(t *testing.T) (*PurchaseOrder, *documents.CoreDocumentModel, error) {
+func createMockPurchaseOrder(t *testing.T) (*PurchaseOrder, error) {
 	poModel := &PurchaseOrder{PoNumber: "3213121", NetAmount: 2, OrderAmount: 2, Currency: "USD", CoreDocumentModel: documents.NewCoreDocModel()}
 	poModel.CoreDocumentModel.Document.Collaborators = [][]byte{{1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}}
 	dataRoot, err := poModel.CalculateDataRoot()
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	// get the coreDoc for the purchaseOrder
 	corDocModel, err := poModel.PackCoreDocument()
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	assert.Nil(t, corDocModel.Document.GetCoredocumentSalts())
 	err = corDocModel.CalculateSigningRoot(dataRoot)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	err = corDocModel.CalculateDocumentRoot()
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	poModel.UnpackCoreDocument(corDocModel)
-	return poModel, corDocModel, nil
+	return poModel, nil
 }

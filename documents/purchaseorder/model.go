@@ -280,12 +280,8 @@ func (p *PurchaseOrder) PackCoreDocument() (*documents.CoreDocumentModel, error)
 		return nil, errors.NewTypedError(err, errors.New("couldn't get POSalts"))
 	}
 
-	coreDocModel := new(documents.CoreDocumentModel)
-	coreDocModel.Document = new(coredocumentpb.CoreDocument)
-	proto.Merge(coreDocModel.Document, p.CoreDocumentModel.Document)
-	coreDocModel.Document.EmbeddedData = &poAny
-	coreDocModel.Document.EmbeddedDataSalts = documents.ConvertToProtoSalts(poSalts)
-	p.CoreDocumentModel = coreDocModel
+	p.CoreDocumentModel.Document.EmbeddedData = &poAny
+	p.CoreDocumentModel.Document.EmbeddedDataSalts = documents.ConvertToProtoSalts(poSalts)
 	return p.CoreDocumentModel, err
 }
 

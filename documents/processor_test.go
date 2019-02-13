@@ -126,7 +126,7 @@ func TestDefaultProcessor_RequestSignatures(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to pack core document")
 
 	// validations failed
-	dm := new(CoreDocumentModel)
+	dm := NewCoreDocModel()
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(dm, nil).Times(4)
 	err = dp.RequestSignatures(ctxh, model)
