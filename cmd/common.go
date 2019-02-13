@@ -60,72 +60,71 @@ func addKeysDeprecated(config config.Configuration, idService identity.Service) 
 	return nil
 }
 
+//// CreateConfig creates a config file using provide parameters and the default config
+//func CreateConfig(
+//	targetDataDir, ethNodeURL, accountKeyPath, accountPassword, network string,
+//	apiPort, p2pPort int64,
+//	bootstraps []string,
+//	txPoolAccess bool,
+//	p2pConnectionTimeout string,
+//	smartContractAddrs *config.SmartContractAddresses) error {
+//
+//	data := map[string]interface{}{
+//		"targetDataDir":     targetDataDir,
+//		"accountKeyPath":    accountKeyPath,
+//		"accountPassword":   accountPassword,
+//		"network":           network,
+//		"ethNodeURL":        ethNodeURL,
+//		"bootstraps":        bootstraps,
+//		"apiPort":           apiPort,
+//		"p2pPort":           p2pPort,
+//		"p2pConnectTimeout": p2pConnectionTimeout,
+//		"txpoolaccess":      txPoolAccess,
+//	}
+//	if smartContractAddrs != nil {
+//		data["smartContractAddresses"] = smartContractAddrs
+//	}
+//	configFile, err := config.CreateConfigFile(data)
+//	if err != nil {
+//		return err
+//	}
+//	log.Infof("Config File Created: %s\n", configFile.ConfigFileUsed())
+//	ctx, canc := CommandBootstrap(configFile.ConfigFileUsed())
+//	cfg := ctx[bootstrap.BootstrappedConfig].(config.Configuration)
+//
+//	// create keys locally
+//	generateKeys(cfg)
+//
+//	id, err := did.CreateIdentity(ctx, cfg)
+//	if err != nil {
+//		return err
+//	}
+//
+//	configFile.Set("identityId", id.ToAddress().String())
+//	err = configFile.WriteConfig()
+//	if err != nil {
+//		return err
+//	}
+//	cfg.Set("identityId", id.ToAddress().String())
+//	log.Infof("Identity created [%s]", id.ToAddress().String())
+//
+//	err = did.AddKeysFromConfig(ctx, cfg)
+//	if err != nil {
+//		return err
+//	}
+//
+//	canc()
+//	db := ctx[storage.BootstrappedDB].(storage.Repository)
+//	dbCfg := ctx[storage.BootstrappedConfigDB].(storage.Repository)
+//	db.Close()
+//	dbCfg.Close()
+//	log.Infof("---------Centrifuge node configuration file successfully created!---------")
+//	log.Infof("Please run the Centrifuge node using the following command: centrifuge run -c %s\n", configFile.ConfigFileUsed())
+//	return nil
+//}
+
 // CreateConfig creates a config file using provide parameters and the default config
 func CreateConfig(
-	targetDataDir, ethNodeURL, accountKeyPath, accountPassword, network string,
-	apiPort, p2pPort int64,
-	bootstraps []string,
-	txPoolAccess bool,
-	p2pConnectionTimeout string,
-	smartContractAddrs *config.SmartContractAddresses) error {
-
-	data := map[string]interface{}{
-		"targetDataDir":     targetDataDir,
-		"accountKeyPath":    accountKeyPath,
-		"accountPassword":   accountPassword,
-		"network":           network,
-		"ethNodeURL":        ethNodeURL,
-		"bootstraps":        bootstraps,
-		"apiPort":           apiPort,
-		"p2pPort":           p2pPort,
-		"p2pConnectTimeout": p2pConnectionTimeout,
-		"txpoolaccess":      txPoolAccess,
-	}
-	if smartContractAddrs != nil {
-		data["smartContractAddresses"] = smartContractAddrs
-	}
-	configFile, err := config.CreateConfigFile(data)
-	if err != nil {
-		return err
-	}
-	log.Infof("Config File Created: %s\n", configFile.ConfigFileUsed())
-	ctx, canc, _ := CommandBootstrap(configFile.ConfigFileUsed())
-	cfg := ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-
-	// create keys locally
-	generateKeys(cfg)
-
-	id, err := did.CreateIdentity(ctx, cfg)
-	if err != nil {
-		return err
-	}
-
-	configFile.Set("identityId", id.ToAddress().String())
-	err = configFile.WriteConfig()
-	if err != nil {
-		return err
-	}
-	cfg.Set("identityId", id.ToAddress().String())
-	log.Infof("Identity created [%s]", id.ToAddress().String())
-
-	err = did.AddKeysFromConfig(ctx, cfg)
-	if err != nil {
-		return err
-	}
-
-	canc()
-	db := ctx[storage.BootstrappedDB].(storage.Repository)
-	dbCfg := ctx[storage.BootstrappedConfigDB].(storage.Repository)
-	db.Close()
-	dbCfg.Close()
-	log.Infof("---------Centrifuge node configuration file successfully created!---------")
-	log.Infof("Please run the Centrifuge node using the following command: centrifuge run -c %s\n", configFile.ConfigFileUsed())
-	return nil
-}
-
-// CreateConfigDeprecated creates a config file using provide parameters and the default config
-// Deprecated
-func CreateConfigDeprecated(
 	targetDataDir, ethNodeURL, accountKeyPath, accountPassword, network string,
 	apiPort, p2pPort int64,
 	bootstraps []string,
@@ -153,9 +152,16 @@ func CreateConfigDeprecated(
 		return err
 	}
 	log.Infof("Config File Created: %s\n", v.ConfigFileUsed())
-	ctx, canc, _ := CommandBootstrap(v.ConfigFileUsed())
+	ctx, canc := CommandBootstrap(v.ConfigFileUsed())
 	cfg := ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	generateKeys(cfg)
+
+	ndid, err := did.CreateIdentity(ctx, cfg)
+	if err != nil {
+		return err
+	}
+
+	v.Set("did", ndid.ToAddress().String())
 
 	tc, err := configstore.TempAccount(cfg.GetEthereumDefaultAccountName(), cfg)
 	if err != nil {
@@ -221,7 +227,7 @@ func ExecCmdBootstrap(cfgFile string) map[string]interface{} {
 }
 
 // CommandBootstrap bootstraps the node for one time commands
-func CommandBootstrap(cfgFile string) (map[string]interface{}, context.CancelFunc, error) {
+func CommandBootstrap(cfgFile string) (map[string]interface{}, context.CancelFunc) {
 	ctx := ExecCmdBootstrap(cfgFile)
 	queueSrv := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
 	// init node with only the queue server which is needed by commands
@@ -229,5 +235,5 @@ func CommandBootstrap(cfgFile string) (map[string]interface{}, context.CancelFun
 	cx, canc := context.WithCancel(context.Background())
 	e := make(chan error)
 	go n.Start(cx, e)
-	return ctx, canc, nil
+	return ctx, canc
 }

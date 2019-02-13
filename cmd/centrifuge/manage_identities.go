@@ -25,7 +25,7 @@ var createIdentityCmd = &cobra.Command{
 	Run: func(cm *cobra.Command, args []string) {
 		//cm requires a config file
 		cfgFile = ensureConfigFile()
-		ctx, canc, _ := cmd.CommandBootstrap(cfgFile)
+		ctx, canc := cmd.CommandBootstrap(cfgFile)
 		var centID identity.CentID
 		var err error
 		if centIDString == "" {
@@ -74,7 +74,7 @@ var addKeyCmd = &cobra.Command{
 	Run: func(cm *cobra.Command, args []string) {
 		//cm requires a config file
 		cfgFile = ensureConfigFile()
-		ctx, canc, _ := cmd.CommandBootstrap(cfgFile)
+		ctx, canc := cmd.CommandBootstrap(cfgFile)
 		var purposeInt int
 
 		switch purpose {
