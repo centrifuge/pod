@@ -4,6 +4,7 @@ package cmd
 
 import (
 	"context"
+	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"math/big"
 	"os"
 	"os/exec"
@@ -22,7 +23,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/ethereum"
-	"github.com/centrifuge/go-centrifuge/identity/did"
+
 	"github.com/centrifuge/go-centrifuge/identity/ethid"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
@@ -68,7 +69,7 @@ func TestCreateConfig(t *testing.T) {
 
 	// contract exists
 	id, err := cfg.GetIdentityID()
-	accountId := ideth.NewDID(common.BytesToAddress(id))
+	accountId := identity.NewDID(common.BytesToAddress(id))
 
 	assert.Nil(t, err, "did should exists")
 	contractCode, err := client.GetEthClient().CodeAt(context.Background(), common.BytesToAddress(id), nil)
@@ -77,7 +78,7 @@ func TestCreateConfig(t *testing.T) {
 
 	// Keys exists
 	// type KeyPurposeEthMsgAuth
-	idSrv := ctx[ideth.BootstrappedDIDService].(ideth.Service)
+	idSrv := ctx[ideth.BootstrappedDIDService].(identity.ServiceDID)
 	pk, _, err := secp256k1.GetEthAuthKey(cfg.GetEthAuthKeyPair())
 	assert.Nil(t, err)
 	address32Bytes := utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(pk)))
