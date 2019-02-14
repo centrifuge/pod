@@ -3,6 +3,7 @@
 package coredocument
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"flag"
 	"os"
@@ -127,13 +128,23 @@ func TestGetDocumentSigningTree_EmptyEmbeddedData(t *testing.T) {
 // TestGetDocumentRootTree tests that the documentroottree is properly calculated
 func TestGetDocumentRootTree(t *testing.T) {
 	cd := &coredocumentpb.CoreDocument{SignatureData: new(coredocumentpb.SignatureData), SigningRoot: []byte{0x72, 0xee, 0xb8, 0x88, 0x92, 0xf7, 0x6, 0x19, 0x82, 0x76, 0xe9, 0xe7, 0xfe, 0xcc, 0x33, 0xa, 0x66, 0x78, 0xd4, 0xa6, 0x5f, 0xf6, 0xa, 0xca, 0x2b, 0xe4, 0x17, 0xa9, 0xf6, 0x15, 0x67, 0xa1}}
+	_, err := getSignatureDataSalts(cd)
+	assert.NoError(t, err)
+	err = FillSalts(cd)
+	assert.NoError(t, err)
 	tree, err := GetDocumentRootTree(cd)
+	assert.NoError(t, err)
+	signTree, err := GetSignatureDataTree(cd)
+	assert.NoError(t, err)
 
 	// Manually constructing the two node tree:
-	signaturesLengthLeaf := sha256.Sum256(append([]byte("signatures.length0"), make([]byte, 32)...))
-	expectedRootHash := sha256.Sum256(append(signaturesLengthLeaf[:], cd.SigningRoot...))
-	assert.Nil(t, err)
-	assert.Equal(t, expectedRootHash[:], tree.RootHash())
+	var expected [32]byte
+	if bytes.Compare(signTree.RootHash(), cd.SigningRoot) > 0 {
+		expected = sha256.Sum256(append(cd.SigningRoot, signTree.RootHash()...))
+	} else {
+		expected = sha256.Sum256(append(signTree.RootHash(), cd.SigningRoot...))
+	}
+	assert.Equal(t, expected[:], tree.RootHash())
 }
 
 func TestPrepareNewVersion(t *testing.T) {

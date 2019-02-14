@@ -283,9 +283,7 @@ func TestGetDocumentSigningTree_EmptyEmbeddedData(t *testing.T) {
 func TestGetDocumentRootTree(t *testing.T) {
 	dm := NewCoreDocModel()
 	dm.Document.SigningRoot = utils.RandomSlice(32)
-	_, err := dm.getSignatureDataSalts()
-	assert.NoError(t, err)
-	_, err = dm.getCoreDocumentSalts()
+	_, err := dm.getCoreDocumentSalts()
 	assert.NoError(t, err)
 	tree, err := dm.GetDocumentRootTree()
 	assert.NoError(t, err)

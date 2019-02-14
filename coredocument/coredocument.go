@@ -394,6 +394,11 @@ func ConvertToProofSalts(protoSalts []*coredocumentpb.DocumentSalt) *proofs.Salt
 
 // FillSalts creates a new coredocument.Salts and fills it
 func FillSalts(doc *coredocumentpb.CoreDocument) error {
+	_, err := getSignatureDataSalts(doc)
+	if err != nil {
+		return err
+	}
+
 	salts, err := GenerateNewSalts(doc, "", nil)
 	if err != nil {
 		return err

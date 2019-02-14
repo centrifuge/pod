@@ -46,6 +46,7 @@ func VerifySignature(pubKey, message, signature []byte) error {
 // assumes that signing root for the document is generated
 func Sign(centIDBytes []byte, privateKey []byte, pubKey []byte, payload []byte) *coredocumentpb.Signature {
 	return &coredocumentpb.Signature{
+		SignatureId: append(centIDBytes, pubKey...),
 		SignerId:  centIDBytes,
 		PublicKey: pubKey,
 		Signature: ed25519.Sign(privateKey, payload),

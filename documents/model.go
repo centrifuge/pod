@@ -446,6 +446,10 @@ func ConvertToProofSalts(protoSalts []*coredocumentpb.DocumentSalt) *proofs.Salt
 
 // getCoreDocumentSalts creates a new coredocument.Salts and fills it in case that is not initialized yet
 func (m *CoreDocumentModel) getCoreDocumentSalts() ([]*coredocumentpb.DocumentSalt, error) {
+	_, err := m.getSignatureDataSalts()
+	if err != nil {
+		return nil, err
+	}
 	if m.Document.CoredocumentSalts == nil {
 		pSalts, err := GenerateNewSalts(m.Document, "", nil)
 		if err != nil {
