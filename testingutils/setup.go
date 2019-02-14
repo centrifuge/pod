@@ -54,12 +54,10 @@ func GetSmartContractAddresses() *config.SmartContractAddresses {
 		panic(err)
 	}
 	idFactoryAddrOp := getOpForContract(".contracts.IdentityFactory.address")
-	idRegistryAddrOp := getOpForContract(".contracts.IdentityRegistry.address")
 	anchorRepoAddrOp := getOpForContract(".contracts.AnchorRepository.address")
 	payObAddrOp := getOpForContract(".contracts.PaymentObligation.address")
 	return &config.SmartContractAddresses{
 		IdentityFactoryAddr:   getOpAddr(idFactoryAddrOp, dat),
-		IdentityRegistryAddr:  getOpAddr(idRegistryAddrOp, dat),
 		AnchorRepositoryAddr:  getOpAddr(anchorRepoAddrOp, dat),
 		PaymentObligationAddr: getOpAddr(payObAddrOp, dat),
 	}
@@ -141,7 +139,7 @@ func SetupSmartContractAddresses(cfg config.Configuration, sca *config.SmartCont
 func BuildIntegrationTestingContext() map[string]interface{} {
 	projDir := GetProjectDir()
 	StartPOAGeth()
-	RunSmartContractMigrations()
+	//RunSmartContractMigrations()
 	addresses := GetSmartContractAddresses()
 	cfg := LoadTestConfig()
 	cfg.Set("keys.p2p.publicKey", fmt.Sprintf("%s/build/resources/p2pKey.pub.pem", projDir))

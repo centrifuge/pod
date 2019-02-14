@@ -43,9 +43,7 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	}
 	client := context[ethereum.BootstrappedEthereumClient].(ethereum.Client)
 
-	factoryAddress := common.HexToAddress("0x0490f72BB148e511d7b66ac6476e3E7A8A2e2740")
-	getFactoryAddress(cfg)
-
+	factoryAddress := getFactoryAddress(cfg)
 
 
 	factoryContract, err := bindFactory(factoryAddress, client)
