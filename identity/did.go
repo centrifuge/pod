@@ -28,7 +28,7 @@ func NewDIDFromString(address string) DID {
 }
 
 // Service interface contains the methods to interact with the identity contract
-type Service interface {
+type ServiceDID interface {
 	// AddKey adds a key to identity contract
 	AddKey(ctx context.Context, key KeyDID) error
 
