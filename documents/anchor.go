@@ -28,8 +28,7 @@ func AnchorDocument(ctx context.Context, model Model, proc AnchorProcessor, upda
 	if err != nil {
 		return nil, err
 	}
-	cd := dm.Document
-	id := cd.CurrentVersion
+	id := dm.Document.CurrentVersion
 	err = proc.PrepareForSignatureRequests(ctx, model)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrDocumentAnchoring, errors.New("failed to prepare document for signatures: %v", err))

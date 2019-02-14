@@ -188,11 +188,10 @@ func (m *CoreDocumentModel) NewWithCollaborators(collaborators []string) (*CoreD
 	if err != nil {
 		return nil, errors.New("failed to decode collaborator: %v", err)
 	}
-	cd := dm.Document
-	for i := range ids {
-		cd.Collaborators = append(cd.Collaborators, ids[i][:])
-	}
 
+	for i := range ids {
+		dm.Document.Collaborators = append(dm.Document.Collaborators, ids[i][:])
+	}
 	err = dm.initReadRules(ids)
 	if err != nil {
 		return nil, errors.New("failed to init read rules: %v", err)

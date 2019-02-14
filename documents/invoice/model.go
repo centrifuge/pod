@@ -7,7 +7,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -330,11 +329,7 @@ func (i *Invoice) UnpackCoreDocument(coreDocModel *documents.CoreDocumentModel) 
 		i.InvoiceSalts = documents.ConvertToProofSalts(coreDoc.EmbeddedDataSalts)
 	}
 
-	i.CoreDocumentModel = new(documents.CoreDocumentModel)
-	i.CoreDocumentModel.Document = new(coredocumentpb.CoreDocument)
-	proto.Merge(i.CoreDocumentModel.Document, coreDoc)
-	i.CoreDocumentModel.Document.EmbeddedDataSalts = nil
-	i.CoreDocumentModel.Document.EmbeddedData = nil
+	err = i.CoreDocumentModel.PackCoreDocument(nil, nil)
 	return err
 }
 

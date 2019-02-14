@@ -7,7 +7,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -65,9 +64,9 @@ func (p *PurchaseOrder) ID() ([]byte, error) {
 	if coreDocModel.Document == nil {
 		return []byte{}, errors.New("nil core document")
 	}
-	coreDoc := coreDocModel.Document
 
-	return coreDoc.DocumentIdentifier, nil
+
+	return coreDocModel.Document.DocumentIdentifier, nil
 }
 
 // getClientData returns the client data from the purchaseOrder model
@@ -320,11 +319,8 @@ func (p *PurchaseOrder) UnpackCoreDocument(coreDocModel *documents.CoreDocumentM
 	} else {
 		p.PurchaseOrderSalts = documents.ConvertToProofSalts(coreDoc.EmbeddedDataSalts)
 	}
-	p.CoreDocumentModel = new(documents.CoreDocumentModel)
-	p.CoreDocumentModel.Document = new(coredocumentpb.CoreDocument)
-	proto.Merge(p.CoreDocumentModel.Document, coreDoc)
-	p.CoreDocumentModel.Document.EmbeddedDataSalts = nil
-	p.CoreDocumentModel.Document.EmbeddedData = nil
+	err = p.CoreDocumentModel.PackCoreDocument(nil, nil)
+	
 	return err
 }
 

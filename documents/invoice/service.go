@@ -130,9 +130,8 @@ func (s service) Create(ctx context.Context, inv documents.Model) (documents.Mod
 		return nil, uuid.Nil, nil, err
 	}
 
-	cd := dm.Document
 	txID := contextutil.TX(ctx)
-	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, self.ID, txID, cd.CurrentVersion)
+	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, self.ID, txID, dm.Document.CurrentVersion)
 	if err != nil {
 		return nil, uuid.Nil, nil, err
 	}
@@ -150,8 +149,7 @@ func (s service) Update(ctx context.Context, inv documents.Model) (documents.Mod
 	if err != nil {
 		return nil, uuid.Nil, nil, errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
 	}
-	cd := dm.Document
-	old, err := s.GetCurrentVersion(ctx, cd.DocumentIdentifier)
+	old, err := s.GetCurrentVersion(ctx, dm.Document.DocumentIdentifier)
 	if err != nil {
 		return nil, uuid.Nil, nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
 	}
@@ -162,7 +160,7 @@ func (s service) Update(ctx context.Context, inv documents.Model) (documents.Mod
 	}
 
 	txID := contextutil.TX(ctx)
-	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, self.ID, txID, cd.CurrentVersion)
+	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, self.ID, txID, dm.Document.CurrentVersion)
 	if err != nil {
 		return nil, uuid.Nil, nil, err
 	}
