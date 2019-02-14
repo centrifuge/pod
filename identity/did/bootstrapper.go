@@ -1,11 +1,9 @@
 package did
 
 import (
-	"fmt"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"path"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -75,96 +73,30 @@ func bindFactory(factoryAddress common.Address, client ethereum.Client) (*Factor
 }
 
 func getFactoryAddress(cfg config.Configuration) common.Address {
-	fmt.Println("factory contract")
-	fmt.Println(cfg.GetContractAddress(config.IdentityFactory))
 	return cfg.GetContractAddress(config.IdentityFactory)
-
 }
 
-// Note: this block will be removed after the identity migration is done
-// currently we are using two versions of centrifuge contracts to not break the compatiblitiy
-// ---------------------------------------------------------------------------------------------------------------------
-func migrateNewIdentityContracts() {
-	runNewSmartContractMigrations()
-	smartContractAddresses = GetSmartContractAddresses()
-
-}
-
-// RunNewSmartContractMigrations migrates smart contracts to localgeth
-// TODO: func will be removed after migration
-func runNewSmartContractMigrations() {
-
-	gp := os.Getenv("GOPATH")
-	projDir := path.Join(gp, "src", "github.com", "centrifuge", "go-centrifuge")
-
-	smartContractDir := path.Join(projDir, "vendor", "github.com", "manuelpolzhofer", "centrifuge-ethereum-contracts")
-	smartContractDirStandard := path.Join(projDir, "vendor", "github.com", "centrifuge", "centrifuge-ethereum-contracts")
-
-	os.Setenv("CENT_ETHEREUM_CONTRACTS_DIR", smartContractDir)
-
-	migrationScript := path.Join(projDir, "build", "scripts", "migrate.sh")
-	_, err := exec.Command(migrationScript, projDir).Output()
-	if err != nil {
-		log.Fatal(err)
-	}
-	os.Setenv("CENT_ETHEREUM_CONTRACTS_DIR", smartContractDirStandard)
-
-}
-
-// GetSmartContractAddresses finds migrated smart contract addresses for localgeth
-// TODO: func will be removed after migration
-func GetSmartContractAddresses() *config.SmartContractAddresses {
-	dat, err := findContractDeployJSON()
-	if err != nil {
-		panic(err)
-	}
-	idFactoryAddrOp := getOpForContract(".contracts.IdentityFactory.address")
-	anchorRepoAddrOp := getOpForContract(".contracts.AnchorRepository.address")
-	payObAddrOp := getOpForContract(".contracts.PaymentObligation.address")
-	return &config.SmartContractAddresses{
-		IdentityFactoryAddr:   getOpField(idFactoryAddrOp, dat),
-		AnchorRepositoryAddr:  getOpField(anchorRepoAddrOp, dat),
-		PaymentObligationAddr: getOpField(payObAddrOp, dat),
-	}
-}
-func getFileFromContractRepo(filePath string) ([]byte, error) {
+// TODO: store identity bytecode in config and remove func
+func getIdentityByteCode() string {
+	filePath := path.Join("deployments", "localgeth.json")
 	gp := os.Getenv("GOPATH")
 	projDir := path.Join(gp, "src", "github.com", "centrifuge", "go-centrifuge")
 	deployJSONFile := path.Join(projDir, "vendor", "github.com", "centrifuge", "centrifuge-ethereum-contracts", filePath)
 	dat, err := ioutil.ReadFile(deployJSONFile)
-	if err != nil {
-		return nil, err
-	}
-	return dat, nil
-}
 
-// TODO: func will be refactored after migration
-func getIdentityByteCode() string {
-	dat, err := findContractDeployJSON()
 	if err != nil {
 		panic(err)
 	}
-	optByte := getOpForContract(".contracts.Identity.bytecode")
+
+	optByte, err := jq.Parse(".contracts.Identity.bytecode")
+	if err != nil {
+		panic(err)
+	}
 	byteCodeHex := getOpField(optByte, dat)
 	return byteCodeHex
 
 }
-
-// TODO: func will be removed after migration
-func findContractDeployJSON() ([]byte, error) {
-	return getFileFromContractRepo(path.Join("deployments", "localgeth.json"))
-}
-
-// TODO: func will be removed after migration
-func getOpForContract(selector string) jq.Op {
-	addrOp, err := jq.Parse(selector)
-	if err != nil {
-		panic(err)
-	}
-	return addrOp
-}
-
-// TODO: func will be removed after migration
+// TODO: store identity bytecode in config and remove func
 func getOpField(addrOp jq.Op, dat []byte) string {
 	addr, err := addrOp.Apply(dat)
 	if err != nil {
@@ -182,4 +114,3 @@ func getOpField(addrOp jq.Op, dat []byte) string {
 	return addrStr
 }
 
-// ---------------------------------------------------------------------------------------------------------------------

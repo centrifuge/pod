@@ -24,7 +24,7 @@
 #   go-tests = true
 #   unused-packages = true
 
-required = ["github.com/centrifuge/centrifuge-ethereum-contracts","github.com/manuelpolzhofer/centrifuge-ethereum-contracts", "github.com/roboll/go-vendorinstall", "github.com/golang/protobuf/protoc-gen-go", "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway", "golang.org/x/tools/cmd/goimports"]
+required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/roboll/go-vendorinstall", "github.com/golang/protobuf/protoc-gen-go", "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway", "golang.org/x/tools/cmd/goimports"]
 
 [[constraint]]
   name = "github.com/centrifuge/centrifuge-protobufs"
@@ -32,10 +32,6 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts","github.com/ma
 
 [[override]]
   name = "github.com/centrifuge/centrifuge-ethereum-contracts"
-  revision = "33c46d6fffa366e64fc48aff3a8a173a86eaebf6"
-
-[[override]]
-  name = "github.com/manuelpolzhofer/centrifuge-ethereum-contracts"
   revision = "33c46d6fffa366e64fc48aff3a8a173a86eaebf6"
 
 [[constraint]]
@@ -268,10 +264,6 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts","github.com/ma
 
 [[prune.project]]
     name = "github.com/centrifuge/centrifuge-ethereum-contracts"
-    unused-packages = false
-
-[[prune.project]]
-    name = "github.com/manuelpolzhofer/centrifuge-ethereum-contracts"
     unused-packages = false
 
 [[prune.project]]
