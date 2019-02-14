@@ -384,7 +384,6 @@ func (p *PurchaseOrder) CreateProofs(fields []string) (proofs []*proofspb.Proof,
 	if err != nil {
 		return nil, errors.New("createProofs error %v", err)
 	}
-
 	proofs, err = p.CoreDocumentModel.CreateProofs(tree, fields)
 	return proofs, err
 }
