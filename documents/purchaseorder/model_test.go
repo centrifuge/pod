@@ -4,7 +4,6 @@ package purchaseorder
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"reflect"
 	"testing"
@@ -262,7 +261,7 @@ func TestPOModel_createProofs(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, proof)
 	tree, err := poModel.CoreDocumentModel.GetDocumentRootTree()
-fmt.Println(tree)
+
 	// Validate po_number
 	valid, err := tree.ValidateProof(proof[0])
 	assert.Nil(t, err)
@@ -310,7 +309,7 @@ func createMockPurchaseOrder(t *testing.T) (*PurchaseOrder, error) {
 	if err != nil {
 		return nil, err
 	}
-	assert.Nil(t, corDocModel.Document.GetCoredocumentSalts())
+
 	err = corDocModel.CalculateSigningRoot(dataRoot)
 	if err != nil {
 		return nil, err

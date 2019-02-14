@@ -209,7 +209,7 @@ func TestGetSigningProofHashes(t *testing.T) {
 	cd := dm.Document
 	cd.EmbeddedData = docAny
 	cd.DataRoot = utils.RandomSlice(32)
-	_, err := dm.getCoreDocumentSalts()
+	err := dm.setCoreDocumentSalts()
 	assert.NoError(t, err)
 
 	err = dm.CalculateSigningRoot(cd.DataRoot)
@@ -236,7 +236,7 @@ func TestGetDataProofHashes(t *testing.T) {
 	cd := dm.Document
 	cd.EmbeddedData = docAny
 	cd.DataRoot = utils.RandomSlice(32)
-	_, err := dm.getCoreDocumentSalts()
+	err := dm.setCoreDocumentSalts()
 	assert.NoError(t, err)
 
 	err = dm.CalculateSigningRoot(cd.DataRoot)
@@ -262,7 +262,7 @@ func TestGetDocumentSigningTree(t *testing.T) {
 	dm := NewCoreDocModel()
 	cd := dm.Document
 	cd.EmbeddedData = docAny
-	_, err := dm.getCoreDocumentSalts()
+	err := dm.setCoreDocumentSalts()
 	assert.NoError(t, err)
 	tree, err := dm.GetDocumentSigningTree(cd.DataRoot)
 	assert.Nil(t, err)
@@ -278,7 +278,7 @@ func TestGetDocumentSigningTree(t *testing.T) {
 func TestGetDocumentSigningTree_EmptyEmbeddedData(t *testing.T) {
 	dm := NewCoreDocModel()
 	cd := dm.Document
-	_, err := dm.getCoreDocumentSalts()
+	err := dm.setCoreDocumentSalts()
 	assert.NoError(t, err)
 	tree, err := dm.GetDocumentSigningTree(cd.DataRoot)
 	assert.NotNil(t, err)
@@ -318,13 +318,13 @@ func TestCreateProofs(t *testing.T) {
 	cd := dm.Document
 	cd.EmbeddedData = docAny
 	cd.Collaborators = [][]byte{utils.RandomSlice(32), utils.RandomSlice(32)}
-	_, err = dm.getCoreDocumentSalts()
+	err = dm.setCoreDocumentSalts()
 	assert.NoError(t, err)
 	err = dm.CalculateSigningRoot(testTree.RootHash())
 	assert.NoError(t, err)
 	err = dm.CalculateDocumentRoot()
 	assert.NoError(t, err)
-	cdTree, err := dm.GetCoreDocTree()
+	cdTree, err := dm.GetDocumentTree()
 	assert.NoError(t, err)
 	tests := []struct {
 		fieldName   string
@@ -448,18 +448,16 @@ func TestReadAccessValidator_NFTOwnerCanRead(t *testing.T) {
 func TestGetCoreDocumentSalts(t *testing.T) {
 	dm := NewCoreDocModel()
 	// From empty
-	salts, err := dm.getCoreDocumentSalts()
+	err := dm.setCoreDocumentSalts()
 	assert.NoError(t, err)
-	assert.NotNil(t, salts)
-	assert.Equal(t, len(dm.Document.CoredocumentSalts), len(salts))
-	assert.Equal(t, dm.Document.CoredocumentSalts[0], salts[0])
+	assert.NotNil(t, dm.Document.CoredocumentSalts)
+	salts := dm.Document.CoredocumentSalts
 
 	// Return existing
-	cSalts, err := dm.getCoreDocumentSalts()
+	err = dm.setCoreDocumentSalts()
 	assert.NoError(t, err)
-	assert.NotNil(t, cSalts)
-	assert.Equal(t, len(cSalts), len(salts))
-	assert.Equal(t, cSalts[0], salts[0])
+	assert.NotNil(t, dm.Document.CoredocumentSalts)
+	assert.Equal(t, salts, dm.Document.CoredocumentSalts)
 }
 
 func TestGenerateNewSalts(t *testing.T) {

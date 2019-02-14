@@ -6,10 +6,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/golang/protobuf/proto"
-
-	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -17,7 +13,10 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes/any"
 )
 
 const (
@@ -149,9 +148,8 @@ func (m *CoreDocumentModel) PrepareNewVersion(collaborators []string) (*CoreDocu
 	if err != nil {
 		return nil, err
 	}
-	_, err = ndm.getCoreDocumentSalts()
 
-	if err != nil {
+	if err := ndm.setCoreDocumentSalts(); err != nil {
 		return nil, err
 	}
 
@@ -198,8 +196,7 @@ func (m *CoreDocumentModel) NewWithCollaborators(collaborators []string) (*CoreD
 		return nil, errors.New("failed to init read rules: %v", err)
 	}
 
-	_, err = dm.getCoreDocumentSalts()
-	if err != nil {
+	if err := dm.setCoreDocumentSalts(); err != nil {
 		return nil, err
 	}
 
@@ -213,7 +210,7 @@ func (m *CoreDocumentModel) CreateProofs(dataTree *proofs.DocumentTree, fields [
 		return nil, errors.New("createProofs error %v", err)
 	}
 
-	cdtree, err := m.GetCoreDocTree()
+	cdtree, err := m.GetDocumentTree()
 	if err != nil {
 		return nil, errors.New("createProofs error %v", err)
 	}
@@ -241,14 +238,13 @@ func (m *CoreDocumentModel) CreateProofs(dataTree *proofs.DocumentTree, fields [
 		proof.SortedHashes = append(proof.SortedHashes, signingRootProofHashes...)
 		proofs = append(proofs, &proof)
 	}
-fmt.Println(cdtree)
+
 	return proofs, nil
 }
 
-// GetCoreDocTree returns the merkle tree for the coredoc root
-func (m *CoreDocumentModel) GetCoreDocTree() (tree *proofs.DocumentTree, err error) {
+// GetDocumentTree returns the merkle tree for the coredoc root
+func (m *CoreDocumentModel) GetDocumentTree() (tree *proofs.DocumentTree, err error) {
 	document := m.Document
-	h := sha256.New()
 	tree = NewDefaultTree(ConvertToProofSalts(m.Document.CoredocumentSalts))
 	err = tree.AddLeavesFromDocument(document)
 	if err != nil {
@@ -265,7 +261,7 @@ func (m *CoreDocumentModel) GetCoreDocTree() (tree *proofs.DocumentTree, err err
 		Value:    []byte(document.EmbeddedData.TypeUrl),
 	}
 
-	err = documentTypeNode.HashNode(h, true)
+	err = documentTypeNode.HashNode(sha256.New(), true)
 	if err != nil {
 		return nil, err
 	}
@@ -279,13 +275,14 @@ func (m *CoreDocumentModel) GetCoreDocTree() (tree *proofs.DocumentTree, err err
 	if err != nil {
 		return nil, err
 	}
+
 	return tree, nil
 }
 
 // GetDocumentSigningTree returns the merkle tree for the signing root
 func (m *CoreDocumentModel) GetDocumentSigningTree(dataRoot []byte) (tree *proofs.DocumentTree, err error) {
 	// coredoc tree
-	coreDocTree, err := m.GetCoreDocTree()
+	coreDocTree, err := m.GetDocumentTree()
 	if err != nil {
 		return nil, err
 	}
@@ -320,7 +317,6 @@ func (m *CoreDocumentModel) GetDocumentSigningTree(dataRoot []byte) (tree *proof
 // GetDocumentRootTree returns the merkle tree for the document root
 func (m *CoreDocumentModel) GetDocumentRootTree() (tree *proofs.DocumentTree, err error) {
 	document := m.Document
-	h := sha256.New()
 	tree = NewDefaultTree(ConvertToProofSalts(document.CoredocumentSalts))
 
 	// The first leave added is the signing_root
@@ -328,6 +324,7 @@ func (m *CoreDocumentModel) GetDocumentRootTree() (tree *proofs.DocumentTree, er
 	if err != nil {
 		return nil, err
 	}
+
 	// For every signature we create a LeafNode
 	sigProperty := NewLeafProperty(SignaturesField, compactProperties[SignaturesField])
 	sigLeafList := make([]proofs.LeafNode, len(document.Signatures)+1)
@@ -336,6 +333,8 @@ func (m *CoreDocumentModel) GetDocumentRootTree() (tree *proofs.DocumentTree, er
 		Salt:     make([]byte, 32),
 		Value:    []byte(fmt.Sprintf("%d", len(document.Signatures))),
 	}
+
+	h := sha256.New()
 	err = sigLengthNode.HashNode(h, true)
 	if err != nil {
 		return nil, err
@@ -358,10 +357,12 @@ func (m *CoreDocumentModel) GetDocumentRootTree() (tree *proofs.DocumentTree, er
 	if err != nil {
 		return nil, err
 	}
+
 	err = tree.Generate()
 	if err != nil {
 		return nil, err
 	}
+
 	return tree, nil
 }
 
@@ -413,6 +414,7 @@ func (m *CoreDocumentModel) getSigningRootProofHashes() (hashes [][]byte, err er
 	if err != nil {
 		return
 	}
+
 	return rootProof.SortedHashes, err
 }
 
@@ -476,16 +478,25 @@ func ConvertToProofSalts(protoSalts []*coredocumentpb.DocumentSalt) *proofs.Salt
 	return &proofSalts
 }
 
-// getCoreDocumentSalts creates a new coredocument.Salts and fills it in case that is not initialized yet
-func (m *CoreDocumentModel) getCoreDocumentSalts() ([]*coredocumentpb.DocumentSalt, error) {
+// setCoreDocumentSalts creates a new coredocument.Salts and fills it in case that is not initialized yet
+func (m *CoreDocumentModel) setCoreDocumentSalts() error {
 	if m.Document.CoredocumentSalts == nil {
 		pSalts, err := GenerateNewSalts(m.Document, "", nil)
 		if err != nil {
-			return nil, err
+			return err
 		}
+
 		m.Document.CoredocumentSalts = ConvertToProtoSalts(pSalts)
 	}
-	return m.Document.CoredocumentSalts, nil
+
+	return nil
+}
+
+// PackCoreDocument sets the embed data and embed saltsm and generate core doc salts if not exists
+func (m *CoreDocumentModel) PackCoreDocument(embedData *any.Any, embedSalts []*coredocumentpb.DocumentSalt) error {
+	m.Document.EmbeddedData = embedData
+	m.Document.EmbeddedDataSalts = embedSalts
+	return m.setCoreDocumentSalts()
 }
 
 // initReadRules initiates the read rules for a given CoreDocumentModel.
@@ -631,8 +642,6 @@ func (m *CoreDocumentModel) GetExternalCollaborators(selfCentID identity.CentID)
 }
 
 // NFTOwnerCanRead checks if the nft owner/account can read the document
-// Note: signature should be calculated from the hash which is calculated as
-// keccak256("\x19Ethereum Signed Message:\n"${message length}${message}).
 func (m *CoreDocumentModel) NFTOwnerCanRead(registry common.Address, tokenID []byte, account identity.CentID) error {
 	// check if the account can read the doc
 	if m.AccountCanRead(account) {
@@ -694,8 +703,7 @@ func (m *CoreDocumentModel) AddNFTToReadRules(registry common.Address, tokenID [
 	role.RoleKey = rk[:]
 	role.Nfts = append(role.Nfts, nft)
 	m.addNewRule(role, coredocumentpb.Action_ACTION_READ)
-	_, err = m.getCoreDocumentSalts()
-	if err != nil {
+	if err := m.setCoreDocumentSalts(); err != nil {
 		return errors.New("failed to generate CoreDocumentSalts")
 	}
 	return nil

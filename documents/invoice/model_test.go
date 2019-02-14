@@ -27,7 +27,7 @@ import (
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/testingutils/testingtx"
@@ -282,7 +282,8 @@ func TestInvoiceModel_createProofs(t *testing.T) {
 	proof, err := i.CreateProofs([]string{"invoice.invoice_number", "collaborators[0]", "document_type"})
 	assert.Nil(t, err)
 	assert.NotNil(t, proof)
-	tree, _ := i.CoreDocumentModel.GetDocumentRootTree()
+	tree, err := i.CoreDocumentModel.GetDocumentRootTree()
+	assert.NoError(t, err)
 
 	// Validate invoice_number
 	valid, err := tree.ValidateProof(proof[0])
@@ -306,7 +307,7 @@ func TestInvoiceModel_createProofs(t *testing.T) {
 func TestInvoiceModel_createProofsFieldDoesNotExist(t *testing.T) {
 	i, err := createMockInvoice(t)
 	assert.Nil(t, err)
-	 _, err = i.CreateProofs([]string{"nonexisting"})
+	_, err = i.CreateProofs([]string{"nonexisting"})
 	assert.NotNil(t, err)
 }
 
@@ -339,7 +340,7 @@ func createMockInvoice(t *testing.T) (*Invoice, error) {
 	if err != nil {
 		return nil, err
 	}
-	assert.Nil(t, cdm.Document.GetCoredocumentSalts())
+
 	err = cdm.CalculateSigningRoot(dataRoot)
 	if err != nil {
 		return nil, err

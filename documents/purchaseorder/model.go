@@ -281,9 +281,12 @@ func (p *PurchaseOrder) PackCoreDocument() (*documents.CoreDocumentModel, error)
 		return nil, errors.NewTypedError(err, errors.New("couldn't get POSalts"))
 	}
 
-	p.CoreDocumentModel.Document.EmbeddedData = &poAny
-	p.CoreDocumentModel.Document.EmbeddedDataSalts = documents.ConvertToProtoSalts(poSalts)
-	return p.CoreDocumentModel, err
+	err = p.CoreDocumentModel.PackCoreDocument(&poAny, documents.ConvertToProtoSalts(poSalts))
+	if err != nil {
+		return nil, err
+	}
+
+	return p.CoreDocumentModel, nil
 }
 
 // UnpackCoreDocument unpacks the core document into PurchaseOrder
@@ -296,7 +299,6 @@ func (p *PurchaseOrder) UnpackCoreDocument(coreDocModel *documents.CoreDocumentM
 	}
 
 	coreDoc := coreDocModel.Document
-
 	if coreDoc.EmbeddedData == nil ||
 		coreDoc.EmbeddedData.TypeUrl != documenttypes.PurchaseOrderDataTypeUrl {
 		return errors.New("trying to convert document with incorrect schema")

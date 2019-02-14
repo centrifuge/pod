@@ -289,9 +289,12 @@ func (i *Invoice) PackCoreDocument() (*documents.CoreDocumentModel, error) {
 		return nil, errors.NewTypedError(err, errors.New("couldn't get InvoiceSalts"))
 	}
 
-	i.CoreDocumentModel.Document.EmbeddedData = &invoiceAny
-	i.CoreDocumentModel.Document.EmbeddedDataSalts = documents.ConvertToProtoSalts(invoiceSalts)
-	return i.CoreDocumentModel, err
+	err = i.CoreDocumentModel.PackCoreDocument(&invoiceAny, documents.ConvertToProtoSalts(invoiceSalts))
+	if err != nil {
+		return nil, err
+	}
+
+	return i.CoreDocumentModel, nil
 }
 
 // UnpackCoreDocument unpacks the core document into Invoice

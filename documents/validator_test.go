@@ -199,7 +199,7 @@ func TestValidator_baseValidator(t *testing.T) {
 	// success
 	model = mockModel{}
 	cd.DataRoot = utils.RandomSlice(32)
-	dm.getCoreDocumentSalts()
+	dm.setCoreDocumentSalts()
 	model.On("PackCoreDocument").Return(dm, nil).Once()
 	err = bv.Validate(nil, model)
 	assert.Nil(t, err)
@@ -218,7 +218,7 @@ func TestValidator_signingRootValidator(t *testing.T) {
 	// missing signing_root
 	dm := NewCoreDocModel()
 	cd := dm.Document
-dm.getCoreDocumentSalts()
+	dm.setCoreDocumentSalts()
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(dm, nil).Once()
 	err = sv.Validate(nil, model)
@@ -265,7 +265,7 @@ func TestValidator_documentRootValidator(t *testing.T) {
 	// missing document root
 	dm := NewCoreDocModel()
 	cd := dm.Document
-dm.getCoreDocumentSalts()
+	dm.setCoreDocumentSalts()
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(dm, nil).Once()
 	err = dv.Validate(nil, model)
@@ -309,7 +309,7 @@ func TestValidator_selfSignatureValidator(t *testing.T) {
 	dm := NewCoreDocModel()
 	cd := dm.Document
 	cd.DocumentRoot = utils.RandomSlice(32)
-	dm.getCoreDocumentSalts()
+	dm.setCoreDocumentSalts()
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(dm, nil).Once()
 	err = rfsv.Validate(nil, model)
@@ -359,7 +359,7 @@ func TestValidator_signatureValidator(t *testing.T) {
 	// signature length mismatch
 	dm := NewCoreDocModel()
 	cd := dm.Document
-	dm.getCoreDocumentSalts()
+	dm.setCoreDocumentSalts()
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(dm, nil).Once()
 	err = ssv.Validate(nil, model)
@@ -562,7 +562,7 @@ func TestValidate_baseValidator(t *testing.T) {
 
 	for _, c := range tests {
 		model := mockModel{}
-		model.On("PackCoreDocument", mock.Anything).Return(&CoreDocumentModel{c.doc,nil,}, nil).Once()
+		model.On("PackCoreDocument", mock.Anything).Return(&CoreDocumentModel{c.doc, nil}, nil).Once()
 
 		err := baseValidator.Validate(nil, &model)
 		if c.key == "" {
