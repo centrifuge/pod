@@ -65,7 +65,6 @@ func (p *PurchaseOrder) ID() ([]byte, error) {
 		return []byte{}, errors.New("nil core document")
 	}
 
-
 	return coreDocModel.Document.DocumentIdentifier, nil
 }
 
@@ -320,7 +319,7 @@ func (p *PurchaseOrder) UnpackCoreDocument(coreDocModel *documents.CoreDocumentM
 		p.PurchaseOrderSalts = documents.ConvertToProofSalts(coreDoc.EmbeddedDataSalts)
 	}
 	err = p.CoreDocumentModel.PackCoreDocument(nil, nil)
-	
+
 	return err
 }
 
