@@ -4,9 +4,10 @@ package p2p_test
 
 import (
 	"flag"
-	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"os"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/bootstrap"

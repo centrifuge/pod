@@ -306,7 +306,7 @@ func TestInvoiceModel_createProofs(t *testing.T) {
 func TestInvoiceModel_createProofsFieldDoesNotExist(t *testing.T) {
 	i, err := createMockInvoice(t)
 	assert.Nil(t, err)
-	 _, err = i.CreateProofs([]string{"nonexisting"})
+	_, err = i.CreateProofs([]string{"nonexisting"})
 	assert.NotNil(t, err)
 }
 

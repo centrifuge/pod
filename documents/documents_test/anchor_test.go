@@ -5,8 +5,9 @@ package documents_test
 import (
 	"context"
 	"errors"
-	"github.com/centrifuge/go-centrifuge/documents"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/documents"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/identity"

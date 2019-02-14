@@ -150,6 +150,9 @@ func (s service) createProofs(model Model, fields []string) (*DocumentProof, err
 		return nil, errors.NewTypedError(ErrDocumentProof, err)
 	}
 	coreDocModel, err := model.PackCoreDocument()
+	if err != nil {
+		return nil, errors.New("creating proofs failed while packing core document")
+	}
 	return &DocumentProof{
 		DocumentID:  coreDocModel.Document.DocumentIdentifier,
 		VersionID:   coreDocModel.Document.CurrentVersion,

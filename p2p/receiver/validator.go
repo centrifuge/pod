@@ -2,6 +2,7 @@ package receiver
 
 import (
 	"fmt"
+
 	"github.com/centrifuge/go-centrifuge/identity"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"

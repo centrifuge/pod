@@ -218,10 +218,10 @@ func (srv *Handler) GetDocument(ctx context.Context, docReq *p2ppb.GetDocumentRe
 	if err != nil {
 		return nil, err
 	}
-	err = dm.ValidateDocumentAccess(docReq, requesterCentID)
-	if err != nil {
-		return nil, err
-	}
+	//err = dm.ValidateDocumentAccess(docReq, requesterCentID)
+	//if err != nil {
+	//	return nil, err
+	//}
 	return &p2ppb.GetDocumentResponse{Document: dm.Document}, nil
 }
 

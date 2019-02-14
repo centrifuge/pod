@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"fmt"
+	"strings"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
-	"strings"
 
 	"github.com/golang/protobuf/proto"
 
@@ -703,8 +704,7 @@ func (m *CoreDocumentModel) AddNFTToReadRules(registry common.Address, tokenID [
 	return nil
 }
 
-
-//DocumentAccessValidator validates the GetDocument request against the AccessType indicated in the request
+//ValidateDocumentAccess validates the GetDocument request against the AccessType indicated in the request
 func (m *CoreDocumentModel) ValidateDocumentAccess(docReq *p2ppb.GetDocumentRequest, requesterCentID identity.CentID) error {
 	// checks which access type is relevant for the request
 	switch docReq.GetAccessType() {
@@ -744,7 +744,7 @@ func isNFTInRole(role *coredocumentpb.Role, registry common.Address, tokenID []b
 }
 
 // assembleAccessToken assembles a Read Access Token from the payload received
-func assembleAccessToken (dm *CoreDocumentModel, id identity.IDConfig, payload documentpb.AccessTokenParams) (*coredocumentpb.AccessToken, error) {
+func assembleAccessToken(dm *CoreDocumentModel, id identity.IDConfig, payload documentpb.AccessTokenParams) (*coredocumentpb.AccessToken, error) {
 	tokenIdentifier := utils.RandomSlice(32)
 	granterID := id.ID[:]
 	// think about if roleId should be derived here or one step up
@@ -758,7 +758,7 @@ func assembleAccessToken (dm *CoreDocumentModel, id identity.IDConfig, payload d
 		return nil, err
 	}
 	// assemble access token message to be signed
-	tm := append(tokenIdentifier, granterID...,)
+	tm := append(tokenIdentifier, granterID...)
 	tm = append(tm, grantee...)
 	tm = append(tm, roleID)
 	tm = append(tm, docID...)
@@ -785,7 +785,7 @@ func assembleAccessToken (dm *CoreDocumentModel, id identity.IDConfig, payload d
 }
 
 // AddAccessTokenToReadRules adds the AccessToken(s) to the read rules of the document
-func (m *CoreDocumentModel) AddAccessTokenToReadRules (id identity.IDConfig, payload documentpb.AccessTokenParams) error {
+func (m *CoreDocumentModel) AddAccessTokenToReadRules(id identity.IDConfig, payload documentpb.AccessTokenParams) error {
 	at, err := assembleAccessToken(m, id, payload)
 	if err != nil {
 		return errors.New("failed to construct AT: %v", err)
