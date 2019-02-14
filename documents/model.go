@@ -717,10 +717,11 @@ func (m *CoreDocumentModel) ValidateDocumentAccess(docReq *p2ppb.GetDocumentRequ
 		if m.NFTOwnerCanRead(registry, docReq.NftTokenId, requesterCentID) != nil {
 			return errors.New("requester does not have access")
 		}
-		//// case AccessTokenValidation
-		// case p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION:
-		//
-		// case p2ppb.AccessType_ACCESS_TYPE_INVALID:
+		// case AccessTokenValidation
+		case p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION:
+			if m.ATOwnerCanRead(docReq.AccessTokenRequest)
+
+		case p2ppb.AccessType_ACCESS_TYPE_INVALID:
 	default:
 		return errors.New("invalid access type ")
 	}
@@ -807,7 +808,15 @@ func (m *CoreDocumentModel) AddAccessTokenToReadRules(id identity.IDConfig, payl
 }
 
 // ATOwnerCanRead checks if the owner of the AT can read the document
-func (m *CoreDocumentModel) ATOwnerCanRead(token coredocumentpb.AccessToken, account identity.CentID) error {
+func (m *CoreDocumentModel) ATOwnerCanRead(tokenReq p2ppb.AccessTokenRequest , account identity.CentID) error {
+
+	// check if the access token is present in read rules
+	token, err := m.findRole(coredocumentpb.Action_ACTION_READ, func(role *coredocumentpb.Role) {
+		return isATInRole(role, tokenReq.AccessTokenId)
+	})
+	if !found {
+		return errors.New("access token missing")
+	}
 
 	granterID, err := identity.ToCentID(token.Granter)
 	if err != nil {
@@ -828,13 +837,7 @@ func (m *CoreDocumentModel) ATOwnerCanRead(token coredocumentpb.AccessToken, acc
 	if err != nil {
 		return err
 	}
-	// check if the access token is present in read rules
-	found := m.findRole(coredocumentpb.Action_ACTION_READ, func(role *coredocumentpb.Role) bool {
-		return isATInRole(role, token)
-	})
-	if !found {
-		return errors.New("access token missing")
-	}
+
 	return nil
 }
 
@@ -855,11 +858,11 @@ func validateAT (publicKey []byte, token coredocumentpb.AccessToken) error {
 }
 
 // isATInRole checks if the given access token is part of the core document role.
-func isATInRole(role *coredocumentpb.Role, token coredocumentpb.AccessToken ) bool {
+func isATInRole(role *coredocumentpb.Role, tokenID []byte) (*coredocumentpb.AccessToken, error) {
 	for _, a := range role.AccessTokens{
-		if bytes.Equal(token.Identifier, a.Identifier) {
-			return true
+		if bytes.Equal(tokenID, a.Identifier) {
+			return a, nil
 		}
 	}
-	return false
+	return nil, errors.New("access token not found")
 }
