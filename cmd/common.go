@@ -2,10 +2,9 @@ package cmd
 
 import (
 	"context"
+	"github.com/centrifuge/go-centrifuge/identity/ideth"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers"
-	"github.com/centrifuge/go-centrifuge/identity/did"
-
 	"github.com/centrifuge/go-centrifuge/storage"
 
 	logging "github.com/ipfs/go-log"
