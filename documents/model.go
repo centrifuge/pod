@@ -493,14 +493,14 @@ func (m *CoreDocumentModel) setCoreDocumentSalts() error {
 	return nil
 }
 
-// PackCoreDocument sets the embed data and embed saltsm and generate core doc salts if not exists
+// PackCoreDocument sets the embed data and embed salts and generates core doc salts if not exists
 func (m *CoreDocumentModel) PackCoreDocument(embedData *any.Any, embedSalts []*coredocumentpb.DocumentSalt) error {
 	m.Document.EmbeddedData = embedData
 	m.Document.EmbeddedDataSalts = embedSalts
 	return m.setCoreDocumentSalts()
 }
 
-// UnpackCoreDocument sets the embed data and embed saltsm and generate core doc salts if not exists
+// UnpackCoreDocument sets the embed data and embed salts and generates core doc salts if not exists
 func (m *CoreDocumentModel) UnpackCoreDocument() error {
 	m.Document.EmbeddedData = nil
 	m.Document.EmbeddedDataSalts = nil
