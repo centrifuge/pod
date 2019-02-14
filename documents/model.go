@@ -805,3 +805,13 @@ func (m *CoreDocumentModel) AddAccessTokenToReadRules(id identity.IDConfig, payl
 	}
 	return nil
 }
+
+// ATOwnerCanRead checks if the owner of the AT can read the document
+func (m *CoreDocumentModel) ATOwnerCanRead(registry common.Address, tokenID []byte, account identity.CentID) error {
+	
+}
+
+// isATInRole checks if the given nft(registry + token) is part of the core document role.
+func isATInRole(tokenID ) bool {
+
+}
