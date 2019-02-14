@@ -33,7 +33,7 @@ var bootstappers = []bootstrap.TestBootstrapper{
 	&queue.Bootstrapper{},
 	ethereum.Bootstrapper{},
 	&ethid.Bootstrapper{},
-	&did.Bootstrapper{},
+	&ideth.Bootstrapper{},
 	&configstore.Bootstrapper{},
 	anchors.Bootstrapper{},
 	documents.Bootstrapper{},

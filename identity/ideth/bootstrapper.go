@@ -1,4 +1,4 @@
-package did
+package ideth
 
 import (
 	"io/ioutil"

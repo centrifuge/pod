@@ -1,6 +1,6 @@
 // +build unit
 
-package did
+package ideth
 
 import (
 	"testing"

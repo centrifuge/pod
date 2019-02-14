@@ -63,7 +63,7 @@ func CreateConfig(
 	// create keys locally
 	generateKeys(cfg)
 
-	id, err := did.CreateIdentity(ctx, cfg)
+	id, err := ideth.CreateIdentity(ctx, cfg)
 	if err != nil {
 		return err
 	}
@@ -76,7 +76,7 @@ func CreateConfig(
 	cfg.Set("identityId", id.ToAddress().String())
 	log.Infof("Identity created [%s]", id.ToAddress().String())
 
-	err = did.AddKeysFromConfig(ctx, cfg)
+	err = ideth.AddKeysFromConfig(ctx, cfg)
 	if err != nil {
 		return err
 	}
