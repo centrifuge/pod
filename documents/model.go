@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"fmt"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"strings"
 
 	"github.com/golang/protobuf/proto"
@@ -241,7 +242,6 @@ func (m *CoreDocumentModel) CreateProofs(dataTree *proofs.DocumentTree, fields [
 		proof.SortedHashes = append(proof.SortedHashes, signingRootProofHashes...)
 		proofs = append(proofs, &proof)
 	}
-fmt.Println(cdtree)
 	return proofs, nil
 }
 
@@ -697,6 +697,31 @@ func (m *CoreDocumentModel) AddNFTToReadRules(registry common.Address, tokenID [
 	_, err = m.getCoreDocumentSalts()
 	if err != nil {
 		return errors.New("failed to generate CoreDocumentSalts")
+	}
+	return nil
+}
+
+
+//DocumentAccessValidator validates the GetDocument request against the AccessType indicated in the request
+
+func (m *CoreDocumentModel) ValidateDocumentAccess(docReq *p2ppb.GetDocumentRequest, requesterCentID identity.CentID) error {
+	// checks which access type is relevant for the request
+	switch docReq.GetAccessType() {
+	case p2ppb.AccessType_ACCESS_TYPE_REQUESTER_VERIFICATION:
+		if m.AccountCanRead(requesterCentID) {
+			return errors.New("requester does not have access")
+		}
+	case p2ppb.AccessType_ACCESS_TYPE_NFT_OWNER_VERIFICATION:
+		registry := common.BytesToAddress(docReq.NftRegistryAddress)
+		if m.NFTOwnerCanRead(registry, docReq.NftTokenId, requesterCentID) != nil {
+			return errors.New("requester does not have access")
+		}
+		//// case AccessTokenValidation
+		// case p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION:
+		//
+		// case p2ppb.AccessType_ACCESS_TYPE_INVALID:
+	default:
+		return errors.New("invalid access type ")
 	}
 	return nil
 }
