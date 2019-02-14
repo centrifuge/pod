@@ -19,6 +19,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/config"
+
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/ethereum"
@@ -36,11 +38,15 @@ func resetDefaultCentID() {
 	cfg.Set("identityId", "0x010101010101")
 }
 
+func getAnchorAddress(cfg config.Configuration) common.Address {
+	return cfg.GetContractAddress(config.AnchorRepo)
+}
+
 func TestExecute_successful(t *testing.T) {
 	did := deployIdentityContract(t)
 	aCtx := getTestDIDContext(t, *did)
 	idSrv := initIdentity()
-	anchorAddress := getAnchorAddress()
+	anchorAddress := getAnchorAddress(cfg)
 
 	// init params
 	testAnchorId, _ := anchors.ToAnchorID(utils.RandomSlice(32))
@@ -60,7 +66,7 @@ func TestExecute_fail_falseMethodName(t *testing.T) {
 	aCtx := getTestDIDContext(t, *did)
 
 	idSrv := initIdentity()
-	anchorAddress := getAnchorAddress()
+	anchorAddress := getAnchorAddress(cfg)
 
 	testAnchorId, _ := anchors.ToAnchorID(utils.RandomSlice(32))
 	rootHash := utils.RandomSlice(32)
@@ -78,7 +84,7 @@ func TestExecute_fail_MissingParam(t *testing.T) {
 	did := deployIdentityContract(t)
 	aCtx := getTestDIDContext(t, *did)
 	idSrv := initIdentity()
-	anchorAddress := getAnchorAddress()
+	anchorAddress := getAnchorAddress(cfg)
 
 	testAnchorId, _ := anchors.ToAnchorID(utils.RandomSlice(32))
 	rootHash := utils.RandomSlice(32)
@@ -90,7 +96,7 @@ func TestExecute_fail_MissingParam(t *testing.T) {
 }
 
 func checkAnchor(t *testing.T, anchorId anchors.AnchorID, expectedRootHash []byte) {
-	anchorAddress := getAnchorAddress()
+	anchorAddress := getAnchorAddress(cfg)
 	client := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
 
 	// check if anchor has been added
@@ -104,7 +110,7 @@ func checkAnchor(t *testing.T, anchorId anchors.AnchorID, expectedRootHash []byt
 // Checks the standard behaviour of the anchor contract
 func TestAnchorWithoutExecute_successful(t *testing.T) {
 	client := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
-	anchorAddress := getAnchorAddress()
+	anchorAddress := getAnchorAddress(cfg)
 	anchorContract := bindAnchorContract(t, anchorAddress)
 
 	testAnchorId, _ := anchors.ToAnchorID(utils.RandomSlice(32))

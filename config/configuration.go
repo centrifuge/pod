@@ -462,7 +462,7 @@ func (c *configuration) initializeViper() {
 
 // SmartContractAddresses encapsulates the smart contract addresses ne
 type SmartContractAddresses struct {
-	IdentityFactoryAddr, IdentityRegistryAddr, AnchorRepositoryAddr, PaymentObligationAddr string
+	IdentityFactoryAddr, AnchorRepositoryAddr, PaymentObligationAddr string
 }
 
 // CreateConfigFile creates minimum config file with arguments
@@ -531,7 +531,6 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 
 	if smartContractAddresses, ok := args["smartContractAddresses"].(*SmartContractAddresses); ok {
 		v.Set("networks."+network+".contractAddresses.identityFactory", smartContractAddresses.IdentityFactoryAddr)
-		v.Set("networks."+network+".contractAddresses.identityRegistry", smartContractAddresses.IdentityRegistryAddr)
 		v.Set("networks."+network+".contractAddresses.anchorRepository", smartContractAddresses.AnchorRepositoryAddr)
 		v.Set("networks."+network+".contractAddresses.paymentObligation", smartContractAddresses.PaymentObligationAddr)
 	}
@@ -547,7 +546,6 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 
 func (c *configuration) SetupSmartContractAddresses(network string, smartContractAddresses *SmartContractAddresses) {
 	c.v.Set("networks."+network+".contractAddresses.identityFactory", smartContractAddresses.IdentityFactoryAddr)
-	c.v.Set("networks."+network+".contractAddresses.identityRegistry", smartContractAddresses.IdentityRegistryAddr)
 	c.v.Set("networks."+network+".contractAddresses.anchorRepository", smartContractAddresses.AnchorRepositoryAddr)
 	c.v.Set("networks."+network+".contractAddresses.paymentObligation", smartContractAddresses.PaymentObligationAddr)
 }
