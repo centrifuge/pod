@@ -25,7 +25,7 @@ var log = logging.Logger("identity")
 
 // Factory is the interface for factory related interactions
 type Factory interface {
-	CreateIdentity(ctx context.Context) (id *DID, err error)
+	CreateIdentity(ctx context.Context) (id *id.DID, err error)
 }
 
 type factory struct {
@@ -108,7 +108,7 @@ func isIdentityContract(identityAddress common.Address, client ethereum.Client) 
 
 }
 
-func (s *factory) CreateIdentity(ctx context.Context) (did *DID, err error) {
+func (s *factory) CreateIdentity(ctx context.Context) (did *id.DID, err error) {
 	tc, err := contextutil.Account(ctx)
 	if err != nil {
 		return nil, err
@@ -143,12 +143,12 @@ func (s *factory) CreateIdentity(ctx context.Context) (did *DID, err error) {
 		return nil, err
 	}
 
-	createdDID := NewDID(*identityAddress)
+	createdDID := id.NewDID(*identityAddress)
 	return &createdDID, nil
 }
 
 // CreateIdentity creates an identity contract
-func CreateIdentity(ctx map[string]interface{}, cfg config.Configuration) (*DID, error) {
+func CreateIdentity(ctx map[string]interface{}, cfg config.Configuration) (*id.DID, error) {
 	tc, err := configstore.TempAccount(cfg.GetEthereumDefaultAccountName(), cfg)
 	if err != nil {
 		return nil, err

@@ -55,7 +55,7 @@ type service struct {
 	queue     *queue.Server
 }
 
-func (i service) prepareTransaction(ctx context.Context, did DID) (contract, *bind.TransactOpts, error) {
+func (i service) prepareTransaction(ctx context.Context, did id.DID) (contract, *bind.TransactOpts, error) {
 	tc, err := contextutil.Account(ctx)
 	if err != nil {
 		return nil, nil, err
@@ -76,7 +76,7 @@ func (i service) prepareTransaction(ctx context.Context, did DID) (contract, *bi
 
 }
 
-func (i service) prepareCall(did DID) (contract, *bind.CallOpts, context.CancelFunc, error) {
+func (i service) prepareCall(did id.DID) (contract, *bind.CallOpts, context.CancelFunc, error) {
 	opts, cancelFunc := i.client.GetGethCallOpts(false)
 
 	contract, err := i.bindContract(did)
@@ -88,7 +88,7 @@ func (i service) prepareCall(did DID) (contract, *bind.CallOpts, context.CancelF
 
 }
 
-func (i service) bindContract(did DID) (contract, error) {
+func (i service) bindContract(did id.DID) (contract, error) {
 	contract, err := NewIdentityContract(did.ToAddress(), i.client.GetEthClient())
 	if err != nil {
 		return nil, errors.New("Could not bind identity contract: %v", err)
@@ -99,7 +99,7 @@ func (i service) bindContract(did DID) (contract, error) {
 }
 
 // NewService creates a instance of the identity service
-func NewService(client ethereum.Client, txManager transactions.Manager, queue *queue.Server) Service {
+func NewService(client ethereum.Client, txManager transactions.Manager, queue *queue.Server) id.ServiceDID {
 	return service{client: client, txManager: txManager, queue: queue}
 }
 
@@ -108,7 +108,7 @@ func logTxHash(tx *types.Transaction) {
 	log.Infof("Transfer pending: 0x%x\n", tx.Hash())
 }
 
-func (i service) getDID(ctx context.Context) (did DID, err error) {
+func (i service) getDID(ctx context.Context) (did id.DID, err error) {
 	tc, err := contextutil.Account(ctx)
 	if err != nil {
 		return did, err
@@ -118,13 +118,13 @@ func (i service) getDID(ctx context.Context) (did DID, err error) {
 	if err != nil {
 		return did, err
 	}
-	did = NewDID(common.BytesToAddress(addressByte))
+	did = id.NewDID(common.BytesToAddress(addressByte))
 	return did, nil
 
 }
 
 // AddKey adds a key to identity contract
-func (i service) AddKey(ctx context.Context, key Key) error {
+func (i service) AddKey(ctx context.Context, key id.KeyDID) error {
 	did, err := i.getDID(ctx)
 	if err != nil {
 		return err
@@ -235,7 +235,7 @@ func (i service) ethereumTX(opts *bind.TransactOpts, contractMethod interface{},
 }
 
 // GetKey return a key from the identity contract
-func (i service) GetKey(did DID, key [32]byte) (*KeyResponse, error) {
+func (i service) GetKey(did id.DID, key [32]byte) (*id.KeyResponse, error) {
 	contract, opts, _, err := i.prepareCall(did)
 	if err != nil {
 		return nil, err
@@ -247,12 +247,12 @@ func (i service) GetKey(did DID, key [32]byte) (*KeyResponse, error) {
 		return nil, errors.New("Could not call identity contract: %v", err)
 	}
 
-	return &KeyResponse{result.Key, result.Purposes, result.RevokedAt}, nil
+	return &id.KeyResponse{result.Key, result.Purposes, result.RevokedAt}, nil
 
 }
 
 // IsSignedWithPurpose verifies if a message is signed with one of the identities specific purpose keys
-func (i service) IsSignedWithPurpose(did DID, message [32]byte, _signature []byte, _purpose *big.Int) (bool, error) {
+func (i service) IsSignedWithPurpose(did id.DID, message [32]byte, _signature []byte, _purpose *big.Int) (bool, error) {
 	contract, opts, _, err := i.prepareCall(did)
 	if err != nil {
 		return false, err
@@ -307,7 +307,7 @@ func (i service) Execute(ctx context.Context, to common.Address, contractAbi, me
 	return i.RawExecute(ctx, to, data)
 }
 
-func (i service) GetKeysByPurpose(did DID, purpose *big.Int) ([][32]byte, error) {
+func (i service) GetKeysByPurpose(did id.DID, purpose *big.Int) ([][32]byte, error) {
 	contract, opts, _, err := i.prepareCall(did)
 	if err != nil {
 		return nil, err
@@ -318,7 +318,7 @@ func (i service) GetKeysByPurpose(did DID, purpose *big.Int) ([][32]byte, error)
 }
 
 // GetClientP2PURL returns the p2p url associated with the did
-func (i service) GetClientP2PURL(did DID) (string, error) {
+func (i service) GetClientP2PURL(did id.DID) (string, error) {
 	contract, opts, _, err := i.prepareCall(did)
 	if err != nil {
 		return "", err
@@ -349,12 +349,12 @@ func (i service) GetClientP2PURL(did DID) (string, error) {
 }
 
 //Exists checks if an identity contract exists
-func (i service) Exists(ctx context.Context, did DID) error {
+func (i service) Exists(ctx context.Context, did id.DID) error {
 	return isIdentityContract(did.ToAddress(), i.client)
 }
 
 // ValidateKey checks if a given key is valid for the given centrifugeID.
-func (i service) ValidateKey(ctx context.Context, did DID, key []byte, purpose int64) error {
+func (i service) ValidateKey(ctx context.Context, did id.DID, key []byte, purpose int64) error {
 	contract, opts, _, err := i.prepareCall(did)
 	if err != nil {
 		return err
@@ -381,7 +381,7 @@ func (i service) ValidateKey(ctx context.Context, did DID, key []byte, purpose i
 
 // GetClientsP2PURLs returns p2p urls associated with each centIDs
 // will error out at first failure
-func (i service) GetClientsP2PURLs(dids []*DID) ([]string, error) {
+func (i service) GetClientsP2PURLs(dids []*id.DID) ([]string, error) {
 	urls := make([]string, len(dids))
 
 	for idx, did := range dids {
@@ -396,8 +396,8 @@ func (i service) GetClientsP2PURLs(dids []*DID) ([]string, error) {
 	return urls, nil
 }
 
-func getKeyPairsFromConfig(config config.Configuration) (map[int]Key, error) {
-	keys := map[int]Key{}
+func getKeyPairsFromConfig(config config.Configuration) (map[int]id.KeyDID, error) {
+	keys := map[int]id.KeyDID{}
 	var pk []byte
 
 	// ed25519 keys
@@ -410,7 +410,7 @@ func getKeyPairsFromConfig(config config.Configuration) (map[int]Key, error) {
 	if err != nil {
 		return nil, err
 	}
-	keys[id.KeyPurposeP2P] = NewKey(pk32, big.NewInt(id.KeyPurposeP2P), big.NewInt(id.KeyTypeECDSA))
+	keys[id.KeyPurposeP2P] = id.NewKey(pk32, big.NewInt(id.KeyPurposeP2P), big.NewInt(id.KeyTypeECDSA))
 
 	// KeyPurposeSigning
 	pk, _, err = ed25519.GetSigningKeyPair(config.GetSigningKeyPair())
@@ -421,7 +421,7 @@ func getKeyPairsFromConfig(config config.Configuration) (map[int]Key, error) {
 	if err != nil {
 		return nil, err
 	}
-	keys[id.KeyPurposeSigning] = NewKey(pk32, big.NewInt(id.KeyPurposeSigning), big.NewInt(id.KeyTypeECDSA))
+	keys[id.KeyPurposeSigning] = id.NewKey(pk32, big.NewInt(id.KeyPurposeSigning), big.NewInt(id.KeyTypeECDSA))
 
 	// secp256k1 keys
 	// KeyPurposeEthMsgAuth
@@ -431,14 +431,14 @@ func getKeyPairsFromConfig(config config.Configuration) (map[int]Key, error) {
 	}
 
 	address32Bytes := utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(pk)))
-	keys[id.KeyPurposeEthMsgAuth] = NewKey(address32Bytes, big.NewInt(id.KeyPurposeEthMsgAuth), big.NewInt(id.KeyTypeECDSA))
+	keys[id.KeyPurposeEthMsgAuth] = id.NewKey(address32Bytes, big.NewInt(id.KeyPurposeEthMsgAuth), big.NewInt(id.KeyTypeECDSA))
 
 	return keys, nil
 }
 
 // AddKeysFromConfig adds the keys from the config to the smart contracts
 func AddKeysFromConfig(ctx map[string]interface{}, cfg config.Configuration) error {
-	idSrv := ctx[BootstrappedDIDService].(Service)
+	idSrv := ctx[BootstrappedDIDService].(id.ServiceDID)
 
 	tc, err := configstore.NewAccount(cfg.GetEthereumDefaultAccountName(), cfg)
 	if err != nil {
