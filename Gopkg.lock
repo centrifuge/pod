@@ -57,11 +57,11 @@
   revision = "cff30e1d23fc9e800b2b5b4b41ef1817dda07e9f"
 
 [[projects]]
-  digest = "1:4542fc4bb0f0bab4d9fad7bf85ca7152cf706eb0ccb1f501899f625af6865d34"
+  digest = "1:bedc0b304fccce285e74ebae57d61c4b190b1a420b0c07afb1d4c2da56d164b8"
   name = "github.com/centrifuge/centrifuge-ethereum-contracts"
   packages = ["."]
   pruneopts = "T"
-  revision = "978840734a4a2fccd5d8dc7e462d9108079c5b5d"
+  revision = "33c46d6fffa366e64fc48aff3a8a173a86eaebf6"
 
 [[projects]]
   digest = "1:dfe1a0223d1205b5d387f9409d72e88877c7470c79930dd00da6d63f4b0af963"

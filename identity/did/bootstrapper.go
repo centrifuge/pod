@@ -1,6 +1,8 @@
 package did
 
 import (
+	"fmt"
+	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -30,15 +32,23 @@ var smartContractAddresses *config.SmartContractAddresses
 
 // Bootstrap initializes the factory contract
 func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
+	// we have to allow loading from file in case this is coming from create config cmd where we don't add configs to db
+	cfg, err := configstore.RetrieveConfig(false, context)
+	if err != nil {
+		return err
+	}
+
 	if _, ok := context[ethereum.BootstrappedEthereumClient]; !ok {
 		return errors.New("ethereum client hasn't been initialized")
 	}
 	client := context[ethereum.BootstrappedEthereumClient].(ethereum.Client)
 
-	// TODO line will be removed after migration
-	migrateNewIdentityContracts()
+	factoryAddress := common.HexToAddress("0x0490f72BB148e511d7b66ac6476e3E7A8A2e2740")
+	getFactoryAddress(cfg)
 
-	factoryContract, err := bindFactory(getFactoryAddress(), client)
+
+
+	factoryContract, err := bindFactory(factoryAddress, client)
 	if err != nil {
 		return err
 	}
@@ -53,7 +63,7 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		return errors.New("queue hasn't been initialized")
 	}
 
-	factory := NewFactory(factoryContract, client, txManager, queueSrv)
+	factory := NewFactory(factoryContract, client, txManager, queueSrv,factoryAddress)
 	context[BootstrappedDIDFactory] = factory
 
 	service := NewService(client, txManager, queueSrv)
@@ -66,13 +76,11 @@ func bindFactory(factoryAddress common.Address, client ethereum.Client) (*Factor
 	return NewFactoryContract(factoryAddress, client.GetEthClient())
 }
 
-func getFactoryAddress() common.Address {
-	return common.HexToAddress(smartContractAddresses.IdentityFactoryAddr)
+func getFactoryAddress(cfg config.Configuration) common.Address {
+	fmt.Println("factory contract")
+	fmt.Println(cfg.GetContractAddress(config.IdentityFactory))
+	return cfg.GetContractAddress(config.IdentityFactory)
 
-}
-
-func getAnchorAddress() common.Address {
-	return common.HexToAddress(smartContractAddresses.AnchorRepositoryAddr)
 }
 
 // Note: this block will be removed after the identity migration is done
@@ -124,7 +132,7 @@ func GetSmartContractAddresses() *config.SmartContractAddresses {
 func getFileFromContractRepo(filePath string) ([]byte, error) {
 	gp := os.Getenv("GOPATH")
 	projDir := path.Join(gp, "src", "github.com", "centrifuge", "go-centrifuge")
-	deployJSONFile := path.Join(projDir, "vendor", "github.com", "manuelpolzhofer", "centrifuge-ethereum-contracts", filePath)
+	deployJSONFile := path.Join(projDir, "vendor", "github.com", "centrifuge", "centrifuge-ethereum-contracts", filePath)
 	dat, err := ioutil.ReadFile(deployJSONFile)
 	if err != nil {
 		return nil, err

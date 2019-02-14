@@ -4,6 +4,12 @@ package did
 
 import (
 	"context"
+	"github.com/centrifuge/go-centrifuge/anchors"
+	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/documents/invoice"
+	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
+	"github.com/centrifuge/go-centrifuge/nft"
+	"github.com/centrifuge/go-centrifuge/p2p"
 	"os"
 	"testing"
 
@@ -24,6 +30,7 @@ var cfg config.Configuration
 var ctx = map[string]interface{}{}
 
 func TestMain(m *testing.M) {
+
 	var bootstappers = []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
@@ -33,6 +40,13 @@ func TestMain(m *testing.M) {
 		ethereum.Bootstrapper{},
 		&ethid.Bootstrapper{},
 		&configstore.Bootstrapper{},
+		anchors.Bootstrapper{},
+		documents.Bootstrapper{},
+		p2p.Bootstrapper{},
+		&invoice.Bootstrapper{},
+		&purchaseorder.Bootstrapper{},
+		documents.PostBootstrapper{},
+		&nft.Bootstrapper{},
 		&Bootstrapper{},
 		&queue.Starter{},
 	}
@@ -45,6 +59,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestCreateIdentity_successful(t *testing.T) {
+
 	factory := ctx[BootstrappedDIDFactory].(Factory)
 
 	accountCtx := testingconfig.CreateAccountContext(t, cfg)

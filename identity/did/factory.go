@@ -29,6 +29,7 @@ type Factory interface {
 }
 
 type factory struct {
+	factoryAddress common.Address
 	factoryContract *FactoryContract
 	client          ethereum.Client
 	txManager       transactions.Manager
@@ -36,14 +37,14 @@ type factory struct {
 }
 
 // NewFactory returns a new identity factory service
-func NewFactory(factoryContract *FactoryContract, client ethereum.Client, txManager transactions.Manager, queue *queue.Server) Factory {
+func NewFactory(factoryContract *FactoryContract, client ethereum.Client, txManager transactions.Manager, queue *queue.Server, factoryAddress common.Address) Factory {
 
-	return &factory{factoryContract: factoryContract, client: client, txManager: txManager, queue: queue}
+	return &factory{factoryAddress: factoryAddress, factoryContract: factoryContract, client: client, txManager: txManager, queue: queue}
 }
 
 func (s *factory) getNonceAt(ctx context.Context, address common.Address) (uint64, error) {
 	// TODO: add blockNumber of the transaction which created the contract
-	return s.client.GetEthClient().NonceAt(ctx, getFactoryAddress(), nil)
+	return s.client.GetEthClient().NonceAt(ctx, s.factoryAddress, nil)
 }
 
 // CalculateCreatedAddress calculates the Ethereum address based on address and nonce
@@ -82,13 +83,12 @@ func (s *factory) createIdentityTX(opts *bind.TransactOpts) func(accountID id.Ce
 }
 
 func (s *factory) calculateIdentityAddress(ctx context.Context) (*common.Address, error) {
-	factoryAddress := getFactoryAddress()
-	nonce, err := s.getNonceAt(ctx, factoryAddress)
+	nonce, err := s.getNonceAt(ctx, s.factoryAddress)
 	if err != nil {
 		return nil, err
 	}
 
-	identityAddress := CalculateCreatedAddress(factoryAddress, nonce)
+	identityAddress := CalculateCreatedAddress(s.factoryAddress, nonce)
 	log.Infof("Calculated Address of the identity contract: 0x%x\n", identityAddress)
 	return &identityAddress, nil
 }
