@@ -43,7 +43,7 @@ func TestMain(m *testing.M) {
 		ethereum.Bootstrapper{},
 		&ethid.Bootstrapper{},
 		&configstore.Bootstrapper{},
-		&did.Bootstrapper{},
+		&ideth.Bootstrapper{},
 		&queue.Starter{},
 	}
 
@@ -68,7 +68,7 @@ func TestCreateConfig(t *testing.T) {
 
 	// contract exists
 	id, err := cfg.GetIdentityID()
-	accountId := did.NewDID(common.BytesToAddress(id))
+	accountId := ideth.NewDID(common.BytesToAddress(id))
 
 	assert.Nil(t, err, "did should exists")
 	contractCode, err := client.GetEthClient().CodeAt(context.Background(), common.BytesToAddress(id), nil)
@@ -77,7 +77,7 @@ func TestCreateConfig(t *testing.T) {
 
 	// Keys exists
 	// type KeyPurposeEthMsgAuth
-	idSrv := ctx[did.BootstrappedDIDService].(did.Service)
+	idSrv := ctx[ideth.BootstrappedDIDService].(ideth.Service)
 	pk, _, err := secp256k1.GetEthAuthKey(cfg.GetEthAuthKeyPair())
 	assert.Nil(t, err)
 	address32Bytes := utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(pk)))

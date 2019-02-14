@@ -13,7 +13,7 @@ correct implementation.
 
 */
 
-package did
+package ideth
 
 import (
 	"context"

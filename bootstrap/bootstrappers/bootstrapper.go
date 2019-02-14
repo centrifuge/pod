@@ -60,7 +60,7 @@ func (m *MainBootstrapper) PopulateCommandBootstrappers() {
 		transactions.Bootstrapper{},
 		&queue.Bootstrapper{},
 		ethereum.Bootstrapper{},
-		&did.Bootstrapper{},
+		&ideth.Bootstrapper{},
 		&anchors.Bootstrapper{},
 		&ethid.Bootstrapper{},
 	}

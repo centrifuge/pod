@@ -1,6 +1,6 @@
 // +build integration
 
-package did
+package ideth
 
 import (
 	"context"
