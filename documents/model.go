@@ -500,6 +500,13 @@ func (m *CoreDocumentModel) PackCoreDocument(embedData *any.Any, embedSalts []*c
 	return m.setCoreDocumentSalts()
 }
 
+// UnpackCoreDocument sets the embed data and embed saltsm and generate core doc salts if not exists
+func (m *CoreDocumentModel) UnpackCoreDocument() error {
+	m.Document.EmbeddedData = nil
+	m.Document.EmbeddedDataSalts = nil
+	return m.setCoreDocumentSalts()
+}
+
 // initReadRules initiates the read rules for a given CoreDocumentModel.
 // Collaborators are given Read_Sign action.
 // if the rules are created already, this is a no-op.

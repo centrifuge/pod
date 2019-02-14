@@ -318,9 +318,10 @@ func (p *PurchaseOrder) UnpackCoreDocument(coreDocModel *documents.CoreDocumentM
 	} else {
 		p.PurchaseOrderSalts = documents.ConvertToProofSalts(coreDoc.EmbeddedDataSalts)
 	}
-	err = p.CoreDocumentModel.PackCoreDocument(nil, nil)
 
+	err = p.CoreDocumentModel.UnpackCoreDocument()
 	return err
+
 }
 
 // JSON marshals PurchaseOrder into a json bytes

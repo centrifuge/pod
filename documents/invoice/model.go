@@ -329,8 +329,9 @@ func (i *Invoice) UnpackCoreDocument(coreDocModel *documents.CoreDocumentModel) 
 		i.InvoiceSalts = documents.ConvertToProofSalts(coreDoc.EmbeddedDataSalts)
 	}
 
-	err = i.CoreDocumentModel.PackCoreDocument(nil, nil)
+	err = i.CoreDocumentModel.UnpackCoreDocument()
 	return err
+
 }
 
 // JSON marshals Invoice into a json bytes
