@@ -747,7 +747,6 @@ func isNFTInRole(role *coredocumentpb.Role, registry common.Address, tokenID []b
 func assembleAccessToken(dm *CoreDocumentModel, id identity.IDConfig, payload documentpb.AccessTokenParams) (*coredocumentpb.AccessToken, error) {
 	tokenIdentifier := utils.RandomSlice(32)
 	granterID := id.ID[:]
-	// think about if roleId should be derived here or one step up
 	roleID := byte(len(dm.Document.Roles))
 	grantee, err := hexutil.Decode(payload.GetGrantee())
 	if err != nil {
@@ -762,10 +761,11 @@ func assembleAccessToken(dm *CoreDocumentModel, id identity.IDConfig, payload do
 	tm = append(tm, grantee...)
 	tm = append(tm, roleID)
 	tm = append(tm, docID...)
-	// fetch key pair from identity
 
+	// fetch key pair from identity
 	privateKey := id.Keys[identity.KeyPurposeSigning].PrivateKey
 	pubKey := id.Keys[identity.KeyPurposeSigning].PublicKey
+
 	// sign the assembled access token message, return signature
 	sig, err := crypto.SignMessage(privateKey, tm, "CurveSecp256K1", true)
 	if err != nil {
@@ -807,11 +807,59 @@ func (m *CoreDocumentModel) AddAccessTokenToReadRules(id identity.IDConfig, payl
 }
 
 // ATOwnerCanRead checks if the owner of the AT can read the document
-func (m *CoreDocumentModel) ATOwnerCanRead(registry common.Address, tokenID []byte, account identity.CentID) error {
-	
+func (m *CoreDocumentModel) ATOwnerCanRead(token coredocumentpb.AccessToken, account identity.CentID) error {
+
+	granterID, err := identity.ToCentID(token.Granter)
+	if err != nil {
+		return err
+	}
+	// check that the token granter has the correct access type for the document
+	validGranter := m.AccountCanRead(granterID)
+	if !validGranter {
+		return errors.New("invalid access token granter")
+	}
+	// check that the account requesting access is the grantee of the access token
+	if !bytes.Equal(account[:], token.Grantee) {
+		return errors.New("access token grantee is not the same as the account requesting access")
+	}
+	// how do we get a public key here?
+	// validate the access token
+	err = validateAT(token)
+	if err != nil {
+		return err
+	}
+	// check if the access token is present in read rules
+	found := m.findRole(coredocumentpb.Action_ACTION_READ, func(role *coredocumentpb.Role) bool {
+		return isATInRole(role, token)
+	})
+	if !found {
+		return errors.New("access token missing")
+	}
+	return nil
 }
 
-// isATInRole checks if the given nft(registry + token) is part of the core document role.
-func isATInRole(tokenID ) bool {
+// validateAT validates that given access token against its signature
+// ethereum specific variation is currently false
 
+func validateAT (publicKey []byte, token coredocumentpb.AccessToken) error {
+	tm := append(token.Identifier, token.Granter...)
+	tm = append(tm, token.Grantee...)
+	tm = append(tm, token.RoleIdentifier...)
+	tm = append(tm, token.DocumentIdentifier...)
+
+	validated := crypto.VerifyMessage(publicKey, tm, token.Signature, "CurveSecp256K1", false)
+	if !validated {
+		return errors.New("access token is invalid")
+	}
+	return nil
+}
+
+// isATInRole checks if the given access token is part of the core document role.
+func isATInRole(role *coredocumentpb.Role, token coredocumentpb.AccessToken ) bool {
+	for _, a := range role.AccessTokens{
+		if bytes.Equal(token.Identifier, a.Identifier) {
+			return true
+		}
+	}
+	return false
 }
