@@ -1,10 +1,11 @@
 package did
 
 import (
-	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"io/ioutil"
 	"os"
 	"path"
+
+	"github.com/centrifuge/go-centrifuge/config/configstore"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/queue"
@@ -26,7 +27,6 @@ const BootstrappedDIDFactory string = "BootstrappedDIDFactory"
 // BootstrappedDIDService stores the id of the service
 const BootstrappedDIDService string = "BootstrappedDIDService"
 
-var smartContractAddresses *config.SmartContractAddresses
 
 // Bootstrap initializes the factory contract
 func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
@@ -43,7 +43,6 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 
 	factoryAddress := getFactoryAddress(cfg)
 
-
 	factoryContract, err := bindFactory(factoryAddress, client)
 	if err != nil {
 		return err
@@ -59,7 +58,7 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		return errors.New("queue hasn't been initialized")
 	}
 
-	factory := NewFactory(factoryContract, client, txManager, queueSrv,factoryAddress)
+	factory := NewFactory(factoryContract, client, txManager, queueSrv, factoryAddress)
 	context[BootstrappedDIDFactory] = factory
 
 	service := NewService(client, txManager, queueSrv)
@@ -96,6 +95,7 @@ func getIdentityByteCode() string {
 	return byteCodeHex
 
 }
+
 // TODO: store identity bytecode in config and remove func
 func getOpField(addrOp jq.Op, dat []byte) string {
 	addr, err := addrOp.Apply(dat)
@@ -113,4 +113,3 @@ func getOpField(addrOp jq.Op, dat []byte) string {
 	}
 	return addrStr
 }
-

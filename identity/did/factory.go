@@ -29,7 +29,7 @@ type Factory interface {
 }
 
 type factory struct {
-	factoryAddress common.Address
+	factoryAddress  common.Address
 	factoryContract *FactoryContract
 	client          ethereum.Client
 	txManager       transactions.Manager

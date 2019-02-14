@@ -17,8 +17,9 @@ package did
 
 import (
 	"context"
-	"github.com/centrifuge/go-centrifuge/config"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/config"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
