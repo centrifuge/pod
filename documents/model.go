@@ -764,8 +764,8 @@ func assembleAccessToken(dm *CoreDocumentModel, id identity.IDConfig, payload do
 	tm = append(tm, docID...)
 
 	// fetch key pair from identity
-	privateKey := id.Keys[identity.KeyPurposeSigning].PrivateKey
-	pubKey := id.Keys[identity.KeyPurposeSigning].PublicKey
+	privateKey := id.Keys[identity.KeyPurposeEthMsgAuth].PrivateKey
+	pubKey := id.Keys[identity.KeyPurposeEthMsgAuth].PublicKey
 
 	// sign the assembled access token message, return signature
 	sig, err := crypto.SignMessage(privateKey, tm, "CurveSecp256K1", true)
@@ -809,7 +809,6 @@ func (m *CoreDocumentModel) AddAccessTokenToReadRules(id identity.IDConfig, payl
 
 // ATOwnerCanRead checks if the owner of the AT can read the document
 func (m *CoreDocumentModel) ATOwnerCanRead(tokenReq p2ppb.AccessTokenRequest , account identity.CentID) error {
-
 	// check if the access token is present in read rules
 	token, err := m.findRole(coredocumentpb.Action_ACTION_READ, func(role *coredocumentpb.Role) {
 		return isATInRole(role, tokenReq.AccessTokenId)
@@ -827,6 +826,7 @@ func (m *CoreDocumentModel) ATOwnerCanRead(tokenReq p2ppb.AccessTokenRequest , a
 	if !validGranter {
 		return errors.New("invalid access token granter")
 	}
+	// check that the granter is the owner of the public key on the access token
 	// check that the account requesting access is the grantee of the access token
 	if !bytes.Equal(account[:], token.Grantee) {
 		return errors.New("access token grantee is not the same as the account requesting access")
