@@ -5,6 +5,8 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	"github.com/centrifuge/go-centrifuge/crypto"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	"strings"
 
 	"github.com/golang/protobuf/proto"
@@ -703,7 +705,6 @@ func (m *CoreDocumentModel) AddNFTToReadRules(registry common.Address, tokenID [
 
 
 //DocumentAccessValidator validates the GetDocument request against the AccessType indicated in the request
-
 func (m *CoreDocumentModel) ValidateDocumentAccess(docReq *p2ppb.GetDocumentRequest, requesterCentID identity.CentID) error {
 	// checks which access type is relevant for the request
 	switch docReq.GetAccessType() {
@@ -740,4 +741,67 @@ func isNFTInRole(role *coredocumentpb.Role, registry common.Address, tokenID []b
 	}
 
 	return false
+}
+
+// assembleAccessToken assembles a Read Access Token from the payload received
+func assembleAccessToken (dm *CoreDocumentModel, id identity.IDConfig, payload documentpb.AccessTokenParams) (*coredocumentpb.AccessToken, error) {
+	tokenIdentifier := utils.RandomSlice(32)
+	granterID := id.ID[:]
+	// think about if roleId should be derived here or one step up
+	roleID := byte(len(dm.Document.Roles))
+	grantee, err := hexutil.Decode(payload.GetGrantee())
+	if err != nil {
+		return nil, err
+	}
+	docID, err := hexutil.Decode(payload.GetDocumentIdentifier())
+	if err != nil {
+		return nil, err
+	}
+	// assemble access token message to be signed
+	tm := append(tokenIdentifier, granterID...,)
+	tm = append(tm, grantee...)
+	tm = append(tm, roleID)
+	tm = append(tm, docID...)
+	// fetch key pair from identity
+
+	privateKey := id.Keys[identity.KeyPurposeSigning].PrivateKey
+	pubKey := id.Keys[identity.KeyPurposeSigning].PublicKey
+	// sign the assembled access token message, return signature
+	sig, err := crypto.SignMessage(privateKey, tm, "CurveSecp256K1", true)
+	if err != nil {
+		return nil, err
+	}
+	// assemble the access token, appending the signature and public keys
+	at := new(coredocumentpb.AccessToken)
+	at.Identifier = tokenIdentifier
+	at.Granter = granterID
+	at.Grantee = grantee
+	at.RoleIdentifier = []byte{roleID}
+	at.DocumentIdentifier = docID
+	at.Signature = sig
+	at.Key = pubKey
+
+	return at, nil
+}
+
+// AddAccessTokenToReadRules adds the AccessToken(s) to the read rules of the document
+func (m *CoreDocumentModel) AddAccessTokenToReadRules (id identity.IDConfig, payload documentpb.AccessTokenParams) error {
+	at, err := assembleAccessToken(m, id, payload)
+	if err != nil {
+		return errors.New("failed to construct AT: %v", err)
+	}
+
+	role := new(coredocumentpb.Role)
+	rk, err := utils.ConvertIntToByte32(len(m.Document.Roles))
+	if err != nil {
+		return err
+	}
+	role.RoleKey = rk[:]
+	role.AccessTokens = append(role.AccessTokens, at)
+	m.addNewRule(role, coredocumentpb.Action_ACTION_READ)
+	_, err = m.getCoreDocumentSalts()
+	if err != nil {
+		return errors.New("failed to generate CoreDocumentSalts")
+	}
+	return nil
 }
