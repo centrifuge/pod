@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"fmt"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	"github.com/golang/protobuf/ptypes/any"
 	"strings"
 
 	"github.com/centrifuge/go-centrifuge/crypto"
@@ -810,7 +812,7 @@ func (m *CoreDocumentModel) AddAccessTokenToReadRules(id identity.IDConfig, payl
 	role.RoleKey = rk[:]
 	role.AccessTokens = append(role.AccessTokens, at)
 	m.addNewRule(role, coredocumentpb.Action_ACTION_READ)
-	_, err = m.getCoreDocumentSalts()
+	err = m.setCoreDocumentSalts()
 	if err != nil {
 		return errors.New("failed to generate CoreDocumentSalts")
 	}
@@ -820,11 +822,11 @@ func (m *CoreDocumentModel) AddAccessTokenToReadRules(id identity.IDConfig, payl
 // ATOwnerCanRead checks if the owner of the AT can read the document
 func (m *CoreDocumentModel) ATOwnerCanRead(tokenReq p2ppb.AccessTokenRequest , account identity.CentID) error {
 	// check if the access token is present in read rules
-	token, err := m.findRole(coredocumentpb.Action_ACTION_READ, func(role *coredocumentpb.Role) {
+	token, err := m.findAT(coredocumentpb.Action_ACTION_READ, tokenReq.AccessTokenId, func(role *coredocumentpb.Role, tokenID []byte) (*coredocumentpb.AccessToken, error){
 		return isATInRole(role, tokenReq.AccessTokenId)
 	})
-	if !found {
-		return errors.New("access token missing")
+	if err != nil {
+		return err
 	}
 
 	granterID, err := identity.ToCentID(token.Granter)
@@ -836,14 +838,14 @@ func (m *CoreDocumentModel) ATOwnerCanRead(tokenReq p2ppb.AccessTokenRequest , a
 	if !validGranter {
 		return errors.New("invalid access token granter")
 	}
-	// check that the granter is the owner of the public key on the access token
+	// TODO:  check that the granter is the owner of the public key on the access token
+	
 	// check that the account requesting access is the grantee of the access token
 	if !bytes.Equal(account[:], token.Grantee) {
 		return errors.New("access token grantee is not the same as the account requesting access")
 	}
-	// how do we get a public key here?
 	// validate the access token
-	err = validateAT(token)
+	err = validateAT(token.Key, token)
 	if err != nil {
 		return err
 	}
@@ -854,13 +856,13 @@ func (m *CoreDocumentModel) ATOwnerCanRead(tokenReq p2ppb.AccessTokenRequest , a
 // validateAT validates that given access token against its signature
 // ethereum specific variation is currently false
 
-func validateAT (publicKey []byte, token coredocumentpb.AccessToken) error {
+func validateAT (publicKey []byte, token *coredocumentpb.AccessToken) error {
 	tm := append(token.Identifier, token.Granter...)
 	tm = append(tm, token.Grantee...)
 	tm = append(tm, token.RoleIdentifier...)
 	tm = append(tm, token.DocumentIdentifier...)
 
-	validated := crypto.VerifyMessage(publicKey, tm, token.Signature, "CurveSecp256K1", false)
+	validated := crypto.VerifyMessage(publicKey, tm, token.Signature, "CurveSecp256K1", true)
 	if !validated {
 		return errors.New("access token is invalid")
 	}
@@ -875,4 +877,32 @@ func isATInRole(role *coredocumentpb.Role, tokenID []byte) (*coredocumentpb.Acce
 		}
 	}
 	return nil, errors.New("access token not found")
+}
+
+// findAT calls OnRole for every role, returns the access token if it is found in the Roles of the document
+func (m *CoreDocumentModel) findAT (action coredocumentpb.Action, tokenID []byte, onRole func(role *coredocumentpb.Role, tokenID []byte) (*coredocumentpb.AccessToken, error)) (*coredocumentpb.AccessToken, error) {
+	cd := m.Document
+	var token coredocumentpb.AccessToken
+	for _, rule := range cd.ReadRules {
+		if rule.Action != action {
+			continue
+		}
+
+		for _, rk := range rule.Roles {
+			role, err := getRole(rk, cd.Roles)
+			if err != nil {
+				// seems like roles and rules are not in sync
+				// skip to next one
+				continue
+			}
+
+			at, err := onRole(role, tokenID)
+			if err != nil {
+				return nil, err
+			}
+			token = *at
+			return at, nil
+		}
+	}
+	return &token, nil
 }
