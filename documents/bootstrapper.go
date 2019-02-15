@@ -6,6 +6,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/transactions"
@@ -45,7 +46,14 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("anchor repository not initialised")
 	}
 
-	ctx[BootstrappedDocumentService] = DefaultService(repo, idService, anchorRepo, registry)
+
+	didService, ok :=ctx[ideth.BootstrappedDIDService].(identity.ServiceDID)
+	if !ok {
+		return errors.New("identity service not initialized")
+	}
+
+
+	ctx[BootstrappedDocumentService] = DefaultService(repo, idService, anchorRepo, registry, didService)
 	ctx[BootstrappedRegistry] = registry
 	ctx[BootstrappedDocumentRepository] = repo
 	return nil

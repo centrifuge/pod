@@ -28,6 +28,7 @@ func TestBootstrapper_Bootstrap(t *testing.T) {
 	ctx[transactions.BootstrappedService] = transactions.NewManager(&testingconfig.MockConfig{}, transactions.NewRepository(repo))
 	ctx[identity.BootstrappedIDService] = new(testingcommons.MockIDService)
 	ctx[anchors.BootstrappedAnchorRepo] = new(testinganchors.MockAnchorRepo)
+
 	err = Bootstrapper{}.Bootstrap(ctx)
 	assert.Nil(t, err)
 	assert.NotNil(t, ctx[BootstrappedRegistry])

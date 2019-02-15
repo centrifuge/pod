@@ -252,13 +252,13 @@ func (i service) GetKey(did id.DID, key [32]byte) (*id.KeyResponse, error) {
 }
 
 // IsSignedWithPurpose verifies if a message is signed with one of the identities specific purpose keys
-func (i service) IsSignedWithPurpose(did id.DID, message [32]byte, _signature []byte, _purpose *big.Int) (bool, error) {
+func (i service) IsSignedWithPurpose(did id.DID, message [32]byte, signature []byte, purpose *big.Int) (bool, error) {
 	contract, opts, _, err := i.prepareCall(did)
 	if err != nil {
 		return false, err
 	}
 
-	return contract.IsSignedWithPurpose(opts, message, _signature, _purpose)
+	return contract.IsSignedWithPurpose(opts, message, signature, purpose)
 
 }
 
