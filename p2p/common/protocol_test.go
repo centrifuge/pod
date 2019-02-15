@@ -47,7 +47,7 @@ func TestExtractCID(t *testing.T) {
 
 func TestProtocolForCID(t *testing.T) {
 	cid := identity.RandomCentID()
-	p := ProtocolForCID(cid)
+	p := ProtocolForDID(cid)
 	assert.Contains(t, p, cid.String())
 	cidE, err := ExtractCID(p)
 	assert.NoError(t, err)

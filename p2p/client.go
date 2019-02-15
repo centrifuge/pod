@@ -62,7 +62,7 @@ func (s *peer) SendAnchoredDocument(ctx context.Context, receiverID identity.Cen
 	recv, err := s.mes.SendMessage(
 		ctx, pid,
 		envelope,
-		p2pcommon.ProtocolForCID(receiverID))
+		p2pcommon.ProtocolForDID(receiverID))
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +167,7 @@ func (s *peer) getSignatureForDocument(ctx context.Context, doc coredocumentpb.C
 			return nil, err
 		}
 		log.Infof("Requesting signature from %s\n", receiverPeer)
-		recv, err := s.mes.SendMessage(ctx, receiverPeer, envelope, p2pcommon.ProtocolForCID(receiverCentID))
+		recv, err := s.mes.SendMessage(ctx, receiverPeer, envelope, p2pcommon.ProtocolForDID(receiverCentID))
 		if err != nil {
 			return nil, err
 		}

@@ -21,13 +21,17 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	if !ok {
 		return errors.NewTypedError(config.ErrConfigBootstrap, errors.New("could not find the storage repository"))
 	}
-	idService, ok := context[identity.BootstrappedIDService].(identity.Service)
+	idFactory, ok := context[identity.BootstrappedDIDFactory].(identity.Factory)
+	if !ok {
+		return errors.New("identity service not initialised")
+	}
+	idService, ok := context[identity.BootstrappedDIDService].(identity.ServiceDID)
 	if !ok {
 		return errors.New("identity service not initialised")
 	}
 
 	repo := &repo{configdb}
-	service := &service{repo, idService, func() ProtocolSetter {
+	service := &service{repo, idFactory, idService, func() ProtocolSetter {
 		return context[bootstrap.BootstrappedPeer].(ProtocolSetter)
 	}}
 

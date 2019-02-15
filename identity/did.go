@@ -3,11 +3,18 @@ package identity
 import (
 	"context"
 	"fmt"
+	"github.com/centrifuge/go-centrifuge/config"
 	"math/big"
 
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	"github.com/ethereum/go-ethereum/common"
 )
+
+// BootstrappedDIDFactory stores the id of the factory
+const BootstrappedDIDFactory string = "BootstrappedDIDFactory"
+
+// BootstrappedDIDService stores the id of the service
+const BootstrappedDIDService string = "BootstrappedDIDService"
 
 // DID stores the identity address of the user
 type DID common.Address
@@ -15,6 +22,11 @@ type DID common.Address
 // ToAddress returns the DID as common.Address
 func (d DID) ToAddress() common.Address {
 	return common.Address(d)
+}
+
+// String returns the DID as HEX String
+func (d DID) String() string {
+	return d.ToAddress().String()
 }
 
 // NewDID returns a DID based on a common.Address
@@ -27,10 +39,23 @@ func NewDIDFromString(address string) DID {
 	return DID(common.HexToAddress(address))
 }
 
+// NewDIDFromBytes returns a DID based on a bytes input
+func NewDIDFromBytes(bAddr []byte) DID {
+	return DID(common.BytesToAddress(bAddr))
+}
+
+// Factory is the interface for factory related interactions
+type Factory interface {
+	CreateIdentity(ctx context.Context) (id *DID, err error)
+}
+
 // Service interface contains the methods to interact with the identity contract
 type ServiceDID interface {
 	// AddKey adds a key to identity contract
 	AddKey(ctx context.Context, key KeyDID) error
+
+	// AddKeysForAccount adds key from configuration
+  AddKeysForAccount(acc config.Account) error
 
 	// GetKey return a key from the identity contract
 	GetKey(did DID, key [32]byte) (*KeyResponse, error)

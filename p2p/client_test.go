@@ -60,7 +60,7 @@ func TestGetSignatureForDocument_fail_connect(t *testing.T) {
 	_, err = p2pcommon.PrepareP2PEnvelope(ctx, c.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: coreDoc})
 	assert.NoError(t, err, "signature request could not be created")
 
-	m.On("SendMessage", ctx, mock.Anything, mock.Anything, p2pcommon.ProtocolForCID(centrifugeId)).Return(nil, errors.New("some error"))
+	m.On("SendMessage", ctx, mock.Anything, mock.Anything, p2pcommon.ProtocolForDID(centrifugeId)).Return(nil, errors.New("some error"))
 	resp, err := testClient.getSignatureForDocument(ctx, *coreDoc, centrifugeId)
 	m.AssertExpectations(t)
 	assert.Error(t, err, "must fail")
@@ -83,7 +83,7 @@ func TestGetSignatureForDocument_fail_version_check(t *testing.T) {
 	_, err = p2pcommon.PrepareP2PEnvelope(ctx, c.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: coreDoc})
 	assert.NoError(t, err, "signature request could not be created")
 
-	m.On("SendMessage", ctx, mock.Anything, mock.Anything, p2pcommon.ProtocolForCID(centrifugeId)).Return(testClient.createSignatureResp("", nil), nil)
+	m.On("SendMessage", ctx, mock.Anything, mock.Anything, p2pcommon.ProtocolForDID(centrifugeId)).Return(testClient.createSignatureResp("", nil), nil)
 	resp, err := testClient.getSignatureForDocument(ctx, *coreDoc, centrifugeId)
 	m.AssertExpectations(t)
 	assert.Error(t, err, "must fail")
@@ -109,7 +109,7 @@ func TestGetSignatureForDocument_fail_centrifugeId(t *testing.T) {
 
 	randomBytes := utils.RandomSlice(identity.CentIDLength)
 	signature := &coredocumentpb.Signature{EntityId: randomBytes, PublicKey: utils.RandomSlice(32)}
-	m.On("SendMessage", ctx, mock.Anything, mock.Anything, p2pcommon.ProtocolForCID(centrifugeId)).Return(testClient.createSignatureResp(version.GetVersion().String(), signature), nil)
+	m.On("SendMessage", ctx, mock.Anything, mock.Anything, p2pcommon.ProtocolForDID(centrifugeId)).Return(testClient.createSignatureResp(version.GetVersion().String(), signature), nil)
 
 	resp, err := testClient.getSignatureForDocument(ctx, *coreDoc, centrifugeId)
 

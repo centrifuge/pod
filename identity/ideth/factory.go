@@ -23,10 +23,6 @@ import (
 
 var log = logging.Logger("identity")
 
-// Factory is the interface for factory related interactions
-type Factory interface {
-	CreateIdentity(ctx context.Context) (id *id.DID, err error)
-}
 
 type factory struct {
 	factoryAddress  common.Address
@@ -37,8 +33,7 @@ type factory struct {
 }
 
 // NewFactory returns a new identity factory service
-func NewFactory(factoryContract *FactoryContract, client ethereum.Client, txManager transactions.Manager, queue *queue.Server, factoryAddress common.Address) Factory {
-
+func NewFactory(factoryContract *FactoryContract, client ethereum.Client, txManager transactions.Manager, queue *queue.Server, factoryAddress common.Address) id.Factory {
 	return &factory{factoryAddress: factoryAddress, factoryContract: factoryContract, client: client, txManager: txManager, queue: queue}
 }
 
@@ -159,7 +154,7 @@ func CreateIdentity(ctx map[string]interface{}, cfg config.Configuration) (*id.D
 		return nil, err
 	}
 
-	identityFactory := ctx[BootstrappedDIDFactory].(Factory)
+	identityFactory := ctx[BootstrappedDIDFactory].(id.Factory)
 
 	did, err := identityFactory.CreateIdentity(tctx)
 	if err != nil {

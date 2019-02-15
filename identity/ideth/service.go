@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -396,13 +395,13 @@ func (i service) GetClientsP2PURLs(dids []*id.DID) ([]string, error) {
 	return urls, nil
 }
 
-func getKeyPairsFromConfig(config config.Configuration) (map[int]id.KeyDID, error) {
+func getKeyPairsFromAccount(acc config.Account) (map[int]id.KeyDID, error) {
 	keys := map[int]id.KeyDID{}
 	var pk []byte
 
 	// ed25519 keys
 	// KeyPurposeP2P
-	pk, _, err := ed25519.GetSigningKeyPair(config.GetP2PKeyPair())
+	pk, _, err := ed25519.GetSigningKeyPair(acc.GetP2PKeyPair())
 	if err != nil {
 		return nil, err
 	}
@@ -413,7 +412,7 @@ func getKeyPairsFromConfig(config config.Configuration) (map[int]id.KeyDID, erro
 	keys[id.KeyPurposeP2P] = id.NewKey(pk32, big.NewInt(id.KeyPurposeP2P), big.NewInt(id.KeyTypeECDSA))
 
 	// KeyPurposeSigning
-	pk, _, err = ed25519.GetSigningKeyPair(config.GetSigningKeyPair())
+	pk, _, err = ed25519.GetSigningKeyPair(acc.GetSigningKeyPair())
 	if err != nil {
 		return nil, err
 	}
@@ -425,7 +424,7 @@ func getKeyPairsFromConfig(config config.Configuration) (map[int]id.KeyDID, erro
 
 	// secp256k1 keys
 	// KeyPurposeEthMsgAuth
-	pk, _, err = secp256k1.GetEthAuthKey(config.GetEthAuthKeyPair())
+	pk, _, err = secp256k1.GetEthAuthKey(acc.GetEthAuthKeyPair())
 	if err != nil {
 		return nil, err
 	}
@@ -436,35 +435,28 @@ func getKeyPairsFromConfig(config config.Configuration) (map[int]id.KeyDID, erro
 	return keys, nil
 }
 
-// AddKeysFromConfig adds the keys from the config to the smart contracts
-func AddKeysFromConfig(ctx map[string]interface{}, cfg config.Configuration) error {
-	idSrv := ctx[BootstrappedDIDService].(id.ServiceDID)
-
-	tc, err := configstore.NewAccount(cfg.GetEthereumDefaultAccountName(), cfg)
+// AddKeysForAccount adds the keys from the config to the smart contracts
+func (i service) AddKeysForAccount(acc config.Account) error {
+	tctx, err := contextutil.New(context.Background(), acc)
 	if err != nil {
 		return err
 	}
 
-	tctx, err := contextutil.New(context.Background(), tc)
+	keys, err := getKeyPairsFromAccount(acc)
+	if err != nil {
+		return err
+	}
+	err = i.AddKey(tctx, keys[id.KeyPurposeP2P])
 	if err != nil {
 		return err
 	}
 
-	keys, err := getKeyPairsFromConfig(cfg)
-	if err != nil {
-		return err
-	}
-	err = idSrv.AddKey(tctx, keys[id.KeyPurposeP2P])
+	err = i.AddKey(tctx, keys[id.KeyPurposeSigning])
 	if err != nil {
 		return err
 	}
 
-	err = idSrv.AddKey(tctx, keys[id.KeyPurposeSigning])
-	if err != nil {
-		return err
-	}
-
-	err = idSrv.AddKey(tctx, keys[id.KeyPurposeEthMsgAuth])
+	err = i.AddKey(tctx, keys[id.KeyPurposeEthMsgAuth])
 	if err != nil {
 		return err
 	}

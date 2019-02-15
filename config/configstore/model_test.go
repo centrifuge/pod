@@ -221,6 +221,11 @@ func (m *mockConfig) GetContractAddress(contractName config.ContractName) common
 	return args.Get(0).(common.Address)
 }
 
+func (m *mockConfig) GetContractBytecode(contractName config.ContractName) string {
+	args := m.Called()
+	return args.Get(0).(string)
+}
+
 func (m *mockConfig) GetBootstrapPeers() []string {
 	args := m.Called()
 	return args.Get(0).([]string)
@@ -413,6 +418,7 @@ func createMockConfig() *mockConfig {
 	c.On("GetBootstrapPeers").Return([]string{"p1", "p2"}).Once()
 	c.On("GetNetworkID").Return(uint32(1)).Once()
 	c.On("GetContractAddress", mock.Anything).Return(common.Address{})
+	c.On("GetContractBytecode", mock.Anything).Return("")
 	c.On("IsPProfEnabled", mock.Anything).Return(true)
 	return c
 }

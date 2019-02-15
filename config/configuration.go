@@ -94,6 +94,7 @@ type Configuration interface {
 	GetNetworkKey(k string) string
 	GetContractAddressString(address string) string
 	GetContractAddress(contractName ContractName) common.Address
+	GetContractBytecode(contractName ContractName) string
 	GetBootstrapPeers() []string
 	GetNetworkID() uint32
 
@@ -366,6 +367,11 @@ func (c *configuration) GetContractAddressString(contract string) (address strin
 // GetContractAddress returns the deployed contract address for a given contract.
 func (c *configuration) GetContractAddress(contractName ContractName) common.Address {
 	return common.HexToAddress(c.GetContractAddressString(string(contractName)))
+}
+
+// GetContractBytecode returns the deployed contract address for a given contract.
+func (c *configuration) GetContractBytecode(contractName ContractName) string {
+	return c.GetString(c.GetNetworkKey(fmt.Sprintf("contractByteCode.%s", contractName)))
 }
 
 // GetBootstrapPeers returns the list of configured bootstrap nodes for the given network.

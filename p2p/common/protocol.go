@@ -71,9 +71,9 @@ func MessageTypeFromString(ht string) MessageType {
 	return messageType
 }
 
-// ProtocolForCID creates the protocol string for the given CID
-func ProtocolForCID(CID identity.CentID) protocol.ID {
-	return protocol.ID(fmt.Sprintf("%s/%s", CentrifugeProtocol, CID.String()))
+// ProtocolForDID creates the protocol string for the given CID
+func ProtocolForDID(DID *identity.DID) protocol.ID {
+	return protocol.ID(fmt.Sprintf("%s/%s", CentrifugeProtocol, DID.String()))
 }
 
 // ExtractCID extracts CID from a protocol string
