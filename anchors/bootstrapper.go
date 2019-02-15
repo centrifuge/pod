@@ -1,7 +1,6 @@
 package anchors
 
 import (
-	"fmt"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -29,9 +28,6 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("ethereum client hasn't been initialized")
 	}
 	client := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
-
-	fmt.Println("anchors")
-	fmt.Println(cfg.GetContractAddress(config.AnchorRepo))
 
 	repositoryContract, err := NewEthereumAnchorRepositoryContract(cfg.GetContractAddress(config.AnchorRepo), client.GetEthClient())
 	if err != nil {
