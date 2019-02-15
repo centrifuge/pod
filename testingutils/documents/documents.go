@@ -5,7 +5,6 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/gogo/protobuf/proto"
@@ -96,11 +95,11 @@ func GenerateCoreDocumentModelWithCollaborators(collaborators [][]byte) *documen
 	cdSalts, _ := documents.GenerateNewSalts(doc, "", nil)
 	doc.CoredocumentSalts = documents.ConvertToProtoSalts(cdSalts)
 	dm := documents.NewCoreDocModel()
-	inv := invoice.Invoice{
+	mockModel := MockModel {
 		CoreDocumentModel: dm,
 	}
 	dm.Document = doc
-	return inv.CoreDocumentModel
+	return mockModel.CoreDocumentModel
 }
 
 func GenerateCoreDocumentModel() *documents.CoreDocumentModel {
