@@ -99,11 +99,16 @@ func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte) *documen
 	droot, err := m.CalculateDataRoot()
 	assert.Nil(t, err)
 
-	tree, _ := dm.GetDocumentSigningTree(droot)
+	dm, err = m.PackCoreDocument()
+	assert.NoError(t, err)
+
+	tree, err := dm.GetDocumentSigningTree(droot)
+	assert.NoError(t, err)
 	dm.Document.SigningRoot = tree.RootHash()
 	sig := identity.Sign(idConfig, identity.KeyPurposeSigning, dm.Document.SigningRoot)
 	dm.Document.Signatures = append(dm.Document.Signatures, sig)
-	tree, _ = dm.GetDocumentRootTree()
+	tree, err = dm.GetDocumentRootTree()
+	assert.NoError(t, err)
 	dm.Document.DocumentRoot = tree.RootHash()
 	return dm
 }

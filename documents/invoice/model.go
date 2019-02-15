@@ -7,7 +7,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -289,9 +288,12 @@ func (i *Invoice) PackCoreDocument() (*documents.CoreDocumentModel, error) {
 		return nil, errors.NewTypedError(err, errors.New("couldn't get InvoiceSalts"))
 	}
 
-	i.CoreDocumentModel.Document.EmbeddedData = &invoiceAny
-	i.CoreDocumentModel.Document.EmbeddedDataSalts = documents.ConvertToProtoSalts(invoiceSalts)
-	return i.CoreDocumentModel, err
+	err = i.CoreDocumentModel.PackCoreDocument(&invoiceAny, documents.ConvertToProtoSalts(invoiceSalts))
+	if err != nil {
+		return nil, err
+	}
+
+	return i.CoreDocumentModel, nil
 }
 
 // UnpackCoreDocument unpacks the core document into Invoice
@@ -327,12 +329,9 @@ func (i *Invoice) UnpackCoreDocument(coreDocModel *documents.CoreDocumentModel) 
 		i.InvoiceSalts = documents.ConvertToProofSalts(coreDoc.EmbeddedDataSalts)
 	}
 
-	i.CoreDocumentModel = new(documents.CoreDocumentModel)
-	i.CoreDocumentModel.Document = new(coredocumentpb.CoreDocument)
-	proto.Merge(i.CoreDocumentModel.Document, coreDoc)
-	i.CoreDocumentModel.Document.EmbeddedDataSalts = nil
-	i.CoreDocumentModel.Document.EmbeddedData = nil
+	err = i.CoreDocumentModel.UnpackCoreDocument()
 	return err
+
 }
 
 // JSON marshals Invoice into a json bytes

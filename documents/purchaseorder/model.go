@@ -7,7 +7,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -65,9 +64,8 @@ func (p *PurchaseOrder) ID() ([]byte, error) {
 	if coreDocModel.Document == nil {
 		return []byte{}, errors.New("nil core document")
 	}
-	coreDoc := coreDocModel.Document
 
-	return coreDoc.DocumentIdentifier, nil
+	return coreDocModel.Document.DocumentIdentifier, nil
 }
 
 // getClientData returns the client data from the purchaseOrder model
@@ -281,9 +279,12 @@ func (p *PurchaseOrder) PackCoreDocument() (*documents.CoreDocumentModel, error)
 		return nil, errors.NewTypedError(err, errors.New("couldn't get POSalts"))
 	}
 
-	p.CoreDocumentModel.Document.EmbeddedData = &poAny
-	p.CoreDocumentModel.Document.EmbeddedDataSalts = documents.ConvertToProtoSalts(poSalts)
-	return p.CoreDocumentModel, err
+	err = p.CoreDocumentModel.PackCoreDocument(&poAny, documents.ConvertToProtoSalts(poSalts))
+	if err != nil {
+		return nil, err
+	}
+
+	return p.CoreDocumentModel, nil
 }
 
 // UnpackCoreDocument unpacks the core document into PurchaseOrder
@@ -296,7 +297,6 @@ func (p *PurchaseOrder) UnpackCoreDocument(coreDocModel *documents.CoreDocumentM
 	}
 
 	coreDoc := coreDocModel.Document
-
 	if coreDoc.EmbeddedData == nil ||
 		coreDoc.EmbeddedData.TypeUrl != documenttypes.PurchaseOrderDataTypeUrl {
 		return errors.New("trying to convert document with incorrect schema")
@@ -318,12 +318,10 @@ func (p *PurchaseOrder) UnpackCoreDocument(coreDocModel *documents.CoreDocumentM
 	} else {
 		p.PurchaseOrderSalts = documents.ConvertToProofSalts(coreDoc.EmbeddedDataSalts)
 	}
-	p.CoreDocumentModel = new(documents.CoreDocumentModel)
-	p.CoreDocumentModel.Document = new(coredocumentpb.CoreDocument)
-	proto.Merge(p.CoreDocumentModel.Document, coreDoc)
-	p.CoreDocumentModel.Document.EmbeddedDataSalts = nil
-	p.CoreDocumentModel.Document.EmbeddedData = nil
+
+	err = p.CoreDocumentModel.UnpackCoreDocument()
 	return err
+
 }
 
 // JSON marshals PurchaseOrder into a json bytes

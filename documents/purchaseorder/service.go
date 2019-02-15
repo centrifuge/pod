@@ -57,7 +57,9 @@ func DefaultService(
 
 // DeriveFromCoreDocumentModel takes a core document model and returns a purchase order
 func (s service) DeriveFromCoreDocumentModel(coreDocModel *documents.CoreDocumentModel) (documents.Model, error) {
-	var model documents.Model = new(PurchaseOrder)
+	var model documents.Model = &PurchaseOrder{
+		CoreDocumentModel: coreDocModel,
+	}
 	err := model.UnpackCoreDocument(coreDocModel)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentUnPackingCoreDocument, err)

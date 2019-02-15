@@ -95,8 +95,11 @@ func GenerateCoreDocumentModelWithCollaborators(collaborators [][]byte) *documen
 	cdSalts, _ := documents.GenerateNewSalts(doc, "", nil)
 	doc.CoredocumentSalts = documents.ConvertToProtoSalts(cdSalts)
 	dm := documents.NewCoreDocModel()
+	mockModel := MockModel {
+		CoreDocumentModel: dm,
+	}
 	dm.Document = doc
-	return dm
+	return mockModel.CoreDocumentModel
 }
 
 func GenerateCoreDocumentModel() *documents.CoreDocumentModel {

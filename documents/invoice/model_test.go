@@ -8,9 +8,6 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/satori/go.uuid"
-	"github.com/stretchr/testify/mock"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -35,7 +32,9 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/any"
+	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 var ctx = map[string]interface{}{}
@@ -102,6 +101,7 @@ func TestInvoice_InitCoreDocument_successful(t *testing.T) {
 	invoiceModel := &Invoice{}
 
 	dm := CreateCDWithEmbeddedInvoice(t, testingdocuments.CreateInvoiceData())
+	invoiceModel.CoreDocumentModel = dm
 	err := invoiceModel.UnpackCoreDocument(dm)
 	assert.Nil(t, err, "valid coredocumentmodel shouldn't produce an error")
 }
@@ -115,6 +115,7 @@ func TestInvoice_InitCoreDocument_invalidCentId(t *testing.T) {
 		Payee:       utils.RandomSlice(identity.CentIDLength),
 		GrossAmount: 42,
 	})
+	invoiceModel.CoreDocumentModel = dm
 	err := invoiceModel.UnpackCoreDocument(dm)
 	assert.Nil(t, err)
 	assert.NotNil(t, invoiceModel.Sender)
@@ -128,6 +129,7 @@ func TestInvoice_CoreDocument_successful(t *testing.T) {
 	//init model with a CoreDocModel
 
 	coreDocumentModel := CreateCDWithEmbeddedInvoice(t, testingdocuments.CreateInvoiceData())
+	invoiceModel.CoreDocumentModel = coreDocumentModel
 	invoiceModel.UnpackCoreDocument(coreDocumentModel)
 
 	returnedCoreDocumentModel, err := invoiceModel.PackCoreDocument()
@@ -154,6 +156,7 @@ func TestInvoice_JSON(t *testing.T) {
 
 	//init model with a CoreDocModel
 	coreDocumentModel := CreateCDWithEmbeddedInvoice(t, testingdocuments.CreateInvoiceData())
+	invoiceModel.CoreDocumentModel = coreDocumentModel
 	invoiceModel.UnpackCoreDocument(coreDocumentModel)
 
 	jsonBytes, err := invoiceModel.JSON()
@@ -169,7 +172,7 @@ func TestInvoice_JSON(t *testing.T) {
 }
 
 func TestInvoiceModel_UnpackCoreDocument(t *testing.T) {
-	var model documents.Model = new(Invoice)
+	var model = new(Invoice)
 	var err error
 
 	// nil core doc
@@ -182,6 +185,7 @@ func TestInvoiceModel_UnpackCoreDocument(t *testing.T) {
 
 	// successful
 	coreDocumentModel := CreateCDWithEmbeddedInvoice(t, testingdocuments.CreateInvoiceData())
+	model.CoreDocumentModel = coreDocumentModel
 	err = model.UnpackCoreDocument(coreDocumentModel)
 	assert.Nil(t, err, "valid core document with embedded invoice shouldn't produce an error")
 
@@ -282,7 +286,8 @@ func TestInvoiceModel_createProofs(t *testing.T) {
 	proof, err := i.CreateProofs([]string{"invoice.invoice_number", "collaborators[0]", "document_type"})
 	assert.Nil(t, err)
 	assert.NotNil(t, proof)
-	tree, _ := i.CoreDocumentModel.GetDocumentRootTree()
+	tree, err := i.CoreDocumentModel.GetDocumentRootTree()
+	assert.NoError(t, err)
 
 	// Validate invoice_number
 	valid, err := tree.ValidateProof(proof[0])
@@ -339,7 +344,7 @@ func createMockInvoice(t *testing.T) (*Invoice, error) {
 	if err != nil {
 		return nil, err
 	}
-	assert.Nil(t, cdm.Document.GetCoredocumentSalts())
+
 	err = cdm.CalculateSigningRoot(dataRoot)
 	if err != nil {
 		return nil, err
