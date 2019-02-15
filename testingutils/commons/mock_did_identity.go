@@ -2,6 +2,8 @@ package testingcommons
 
 import (
 	"context"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/mock"
@@ -9,7 +11,7 @@ import (
 	"math/big"
 )
 
-// MockIDService implements Service
+// MockIdentityService implements Service
 type MockIdentityService struct {
 	mock.Mock
 }
@@ -18,6 +20,12 @@ type MockIdentityService struct {
 // AddKey adds a key to identity contract
 func (i* MockIdentityService) AddKey(ctx context.Context, key identity.KeyDID) error {
 	args := i.Called(ctx, key)
+	return args.Error(0)
+}
+
+// AddKeysForAccount adds key from configuration
+func (i* MockIdentityService) AddKeysForAccount(acc config.Account) error {
+	args := i.Called(acc)
 	return args.Error(0)
 }
 
@@ -78,6 +86,18 @@ func (i* MockIdentityService) ValidateKey(ctx context.Context, did identity.DID,
 	return args.Error(0)
 }
 
+// ValidateSignature checks if signature is valid for given identity
+func (i *MockIdentityService) ValidateSignature(signature *coredocumentpb.Signature, message []byte) error {
+	args := i.Called(signature, message)
+	return args.Error(0)
+}
+
+// CurrentP2PKey retrieves the last P2P key stored in the identity
+func (i *MockIdentityService) CurrentP2PKey(did identity.DID) (ret string, err error) {
+	args := i.Called(did)
+	return args.Get(0).(string),args.Error(1)
+}
+
 // GetClientsP2PURLs returns p2p urls associated with each centIDs
 // will error out at first failure
 func (i* MockIdentityService) GetClientsP2PURLs(dids []*identity.DID) ([]string, error) {
@@ -90,4 +110,14 @@ func (i* MockIdentityService) GetClientsP2PURLs(dids []*identity.DID) ([]string,
 func (i* MockIdentityService) GetKeysByPurpose(did identity.DID, purpose *big.Int) ([][32]byte, error) {
 	args := i.Called(did, purpose)
 	return args.Get(0).([][32]byte),args.Error(1)
+}
+
+// MockIdentityFactory implements Service
+type MockIdentityFactory struct {
+	mock.Mock
+}
+
+func (s *MockIdentityFactory) CreateIdentity(ctx context.Context) (did *identity.DID, err error) {
+	args := s.Called(ctx)
+	return args.Get(0).(*identity.DID),args.Error(1)
 }

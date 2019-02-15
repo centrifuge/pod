@@ -3,6 +3,8 @@ package ideth
 import (
 	"context"
 	"fmt"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/crypto"
 	"math/big"
 	"strings"
 
@@ -316,6 +318,21 @@ func (i service) GetKeysByPurpose(did id.DID, purpose *big.Int) ([][32]byte, err
 
 }
 
+// CurrentP2PKey returns the latest P2P key
+func (i service) CurrentP2PKey(did id.DID) (ret string, err error) {
+	keys, err := i.GetKeysByPurpose(did, big.NewInt(id.KeyPurposeP2P))
+	if err != nil {
+		return ret, err
+	}
+	lastKey := keys[len(keys)-1]
+	p2pID, err := ed25519.PublicKeyToP2PKey(lastKey)
+	if err != nil {
+		return ret, err
+	}
+
+	return p2pID.Pretty(), nil
+}
+
 // GetClientP2PURL returns the p2p url associated with the did
 func (i service) GetClientP2PURL(did id.DID) (string, error) {
 	contract, opts, _, err := i.prepareCall(did)
@@ -460,5 +477,27 @@ func (i service) AddKeysForAccount(acc config.Account) error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+// ValidateSignature validates a signature on a message based on identity data
+func (i service) ValidateSignature(signature *coredocumentpb.Signature, message []byte) error {
+	centID := id.NewDIDFromBytes(signature.EntityId)
+
+	err := i.ValidateKey(nil, centID, signature.PublicKey, id.KeyPurposeSigning)
+	if err != nil {
+		return err
+	}
+
+	return crypto.VerifySignature(signature.PublicKey, message, signature.Signature)
+}
+
+// ValidateCentrifugeIDBytes validates a centrifuge ID given as bytes
+func ValidateCentrifugeIDBytes(givenCentID []byte, centrifugeID id.DID) error {
+	calcCentID := id.NewDIDFromBytes(givenCentID)
+	if !centrifugeID.Equal(calcCentID) {
+		return errors.New("provided bytes doesn't match centID")
+	}
+
 	return nil
 }

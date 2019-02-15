@@ -61,11 +61,7 @@ func (srv *Handler) HandleInterceptor(ctx context.Context, peer peer.ID, protoc 
 	if err != nil {
 		return convertToErrorEnvelop(err)
 	}
-	fromID, err := identity.ToCentID(envelope.Header.SenderId)
-	if err != nil {
-		return convertToErrorEnvelop(err)
-	}
-
+	fromID := identity.NewDIDFromBytes(envelope.Header.SenderId)
 	err = srv.handshakeValidator.Validate(envelope.Header, &fromID, &peer)
 	if err != nil {
 		return convertToErrorEnvelop(err)

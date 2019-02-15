@@ -3,6 +3,7 @@ package identity
 import (
 	"context"
 	"fmt"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
 	"math/big"
 
@@ -10,11 +11,31 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// BootstrappedDIDFactory stores the id of the factory
-const BootstrappedDIDFactory string = "BootstrappedDIDFactory"
+const (
+	// BootstrappedDIDFactory stores the id of the factory
+	BootstrappedDIDFactory string = "BootstrappedDIDFactory"
 
-// BootstrappedDIDService stores the id of the service
-const BootstrappedDIDService string = "BootstrappedDIDService"
+	// BootstrappedDIDService stores the id of the service
+	BootstrappedDIDService string = "BootstrappedDIDService"
+
+	// BootstrappedIDService is used as a key to map the configured ID Service through context.
+	BootstrappedIDService string = "BootstrappedIDService"
+
+	// CentIDLength is the length in bytes of the CentrifugeID
+	CentIDLength = 6
+
+	// KeyPurposeP2P represents a key used for p2p txns
+	KeyPurposeP2P = 1
+
+	// KeyPurposeSigning represents a key used for signing
+	KeyPurposeSigning = 2
+
+	// KeyPurposeEthMsgAuth represents a key used for ethereum txns
+	KeyPurposeEthMsgAuth = 3
+
+	// KeyTypeECDSA has the value one in the ERC725 identity contract
+	KeyTypeECDSA = 1
+)
 
 // DID stores the identity address of the user
 type DID common.Address
@@ -27,6 +48,16 @@ func (d DID) ToAddress() common.Address {
 // String returns the DID as HEX String
 func (d DID) String() string {
 	return d.ToAddress().String()
+}
+
+// Equal checks if d == other
+func (d DID) Equal(other DID) bool {
+	for i := range d {
+		if d[i] != other[i] {
+			return false
+		}
+	}
+	return true
 }
 
 // NewDID returns a DID based on a common.Address
@@ -83,6 +114,12 @@ type ServiceDID interface {
 
 	// ValidateKey checks if a given key is valid for the given centrifugeID.
 	ValidateKey(ctx context.Context, did DID, key []byte, purpose int64) error
+
+	// ValidateSignature checks if signature is valid for given identity
+	ValidateSignature(signature *coredocumentpb.Signature, message []byte) error
+
+	// CurrentP2PKey retrieves the last P2P key stored in the identity
+	CurrentP2PKey(did DID) (ret string, err error)
 
 	// GetClientsP2PURLs returns p2p urls associated with each centIDs
 	// will error out at first failure

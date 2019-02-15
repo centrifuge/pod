@@ -120,8 +120,8 @@ func TestGetSignatureForDocument_fail_centrifugeId(t *testing.T) {
 
 }
 
-func getIDMocks(centrifugeId identity.CentID) *testingcommons.MockIDService {
-	idService := &testingcommons.MockIDService{}
+func getIDMocks(centrifugeId identity.CentID) *testingcommons.MockIdentityService {
+	idService := &testingcommons.MockIdentityService{}
 	id := &testingcommons.MockID{}
 	id.On("CurrentP2PKey").Return("5dsgvJGnvAfiR3K6HCBc4hcokSfmjj", nil)
 	idService.On("LookupIdentityForID", centrifugeId).Return(id, nil)
