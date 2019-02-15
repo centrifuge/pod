@@ -342,6 +342,9 @@ func prepareDocumentForP2PHandler(t *testing.T, dm *documents.CoreDocumentModel)
 	droot, err := m.CalculateDataRoot()
 	assert.Nil(t, err)
 
+	dm, err = m.PackCoreDocument()
+	assert.NoError(t, err)
+
 	tree, err := dm.GetDocumentSigningTree(droot)
 	assert.NoError(t, err)
 	doc := dm.Document
