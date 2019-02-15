@@ -3,6 +3,7 @@
 package documents
 
 import (
+	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -28,6 +29,8 @@ func TestBootstrapper_Bootstrap(t *testing.T) {
 	ctx[transactions.BootstrappedService] = transactions.NewManager(&testingconfig.MockConfig{}, transactions.NewRepository(repo))
 	ctx[identity.BootstrappedIDService] = new(testingcommons.MockIDService)
 	ctx[anchors.BootstrappedAnchorRepo] = new(testinganchors.MockAnchorRepo)
+	ctx[ideth.BootstrappedDIDService] = new(testingcommons.MockIdentityService)
+
 	err = Bootstrapper{}.Bootstrap(ctx)
 	assert.Nil(t, err)
 	assert.NotNil(t, ctx[BootstrappedRegistry])

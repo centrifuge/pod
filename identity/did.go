@@ -67,7 +67,7 @@ type ServiceDID interface {
 	Execute(ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) error
 
 	// IsSignedWithPurpose verifies if a message is signed with one of the identities specific purpose keys
-	IsSignedWithPurpose(did DID, message [32]byte, _signature []byte, _purpose *big.Int) (bool, error)
+	IsSignedWithPurpose(did DID, message [32]byte, signature []byte, purpose *big.Int) (bool, error)
 
 	// AddMultiPurposeKey adds a key with multiple purposes
 	AddMultiPurposeKey(context context.Context, key [32]byte, purposes []*big.Int, keyType *big.Int) error
@@ -86,7 +86,7 @@ type ServiceDID interface {
 
 	// GetClientsP2PURLs returns p2p urls associated with each centIDs
 	// will error out at first failure
-	GetClientsP2PURLs(did []*DID) ([]string, error)
+	GetClientsP2PURLs(dids []*DID) ([]string, error)
 
 	// GetKeysByPurpose returns keys grouped by purpose from the identity contract.
 	GetKeysByPurpose(did DID, purpose *big.Int) ([][32]byte, error)

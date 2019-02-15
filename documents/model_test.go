@@ -4,6 +4,7 @@ package documents
 
 import (
 	"crypto/sha256"
+	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"os"
 	"testing"
 
@@ -28,7 +29,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/queue"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/stretchr/testify/assert"
 )
@@ -53,6 +54,7 @@ func TestMain(m *testing.M) {
 		&Bootstrapper{},
 	}
 	ctx[identity.BootstrappedIDService] = &testingcommons.MockIDService{}
+	ctx[ideth.BootstrappedDIDService] = &testingcommons.MockIdentityService{}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 	ConfigService = ctx[config.BootstrappedConfigStorage].(config.Service)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
