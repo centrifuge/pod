@@ -79,7 +79,6 @@ var srvLog = logging.Logger("document-service")
 // DefaultService returns the default implementation of the service
 func DefaultService(
 	repo Repository,
-	idService identity.Service,
 	anchorRepo anchors.AnchorRepository,
 	registry *ServiceRegistry,
 	didService identity.ServiceDID) Service {
@@ -87,7 +86,6 @@ func DefaultService(
 		repo:             repo,
 		anchorRepository: anchorRepo,
 		notifier:         notification.NewWebhookSender(),
-		identityService:  idService,
 		registry:         registry,
 		didService: didService,
 	}

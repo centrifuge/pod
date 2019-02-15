@@ -36,10 +36,6 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	}
 
 	repo := NewDBRepository(ldb)
-	idService, ok := ctx[identity.BootstrappedIDService].(identity.Service)
-	if !ok {
-		return errors.New("identity service not initialised")
-	}
 
 	anchorRepo, ok := ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
 	if !ok {
@@ -53,7 +49,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	}
 
 
-	ctx[BootstrappedDocumentService] = DefaultService(repo, idService, anchorRepo, registry, didService)
+	ctx[BootstrappedDocumentService] = DefaultService(repo, anchorRepo, registry, didService)
 	ctx[BootstrappedRegistry] = registry
 	ctx[BootstrappedDocumentRepository] = repo
 	return nil
