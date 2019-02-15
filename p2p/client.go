@@ -205,8 +205,8 @@ type signatureResponseWrap struct {
 	err  error
 }
 
-func (s *peer) getSignatureAsync(ctx context.Context, model *documents.CoreDocumentModel, receiverCentID identity.CentID, out chan<- signatureResponseWrap) {
-	resp, err := s.getSignatureForDocument(ctx, *model, receiverCentID)
+func (s *peer) getSignatureAsync(ctx context.Context, model documents.CoreDocumentModel, receiverCentID identity.CentID, out chan<- signatureResponseWrap) {
+	resp, err := s.getSignatureForDocument(ctx, model, receiverCentID)
 	out <- signatureResponseWrap{
 		resp: resp,
 		err:  err,
@@ -242,7 +242,10 @@ func (s *peer) GetSignaturesForDocument(ctx context.Context, model *documents.Co
 			return centerrors.Wrap(err, "failed to convert to CentID")
 		}
 		count++
-		go s.getSignatureAsync(peerCtx, model, collaboratorID, in)
+		m := *model
+		nd := *doc
+		m.Document = &nd
+		go s.getSignatureAsync(peerCtx, m, collaboratorID, in)
 	}
 
 	var responses []signatureResponseWrap

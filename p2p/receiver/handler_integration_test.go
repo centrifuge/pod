@@ -82,7 +82,8 @@ func TestHandler_GetDocumentSucceeds(t *testing.T) {
 	// Add signature received
 	doc := dm.Document
 	doc.Signatures = append(doc.Signatures, resp.Signature)
-	tree, _ := dm.GetDocumentRootTree()
+	tree, err := dm.GetDocumentRootTree()
+	assert.NoError(t, err)
 	doc.DocumentRoot = tree.RootHash()
 
 	// Anchor document
@@ -374,13 +375,13 @@ func updateDocumentForP2Phandler(t *testing.T, model *documents.CoreDocumentMode
 }
 
 func getAnchoredRequest(dm *documents.CoreDocumentModel) *p2ppb.AnchorDocumentRequest {
-	doc := dm.Document
-	return &p2ppb.AnchorDocumentRequest{Document: doc}
+	doc := *dm.Document
+	return &p2ppb.AnchorDocumentRequest{Document: &doc}
 }
 
 func getSignatureRequest(dm *documents.CoreDocumentModel) *p2ppb.SignatureRequest {
-	doc := dm.Document
-	return &p2ppb.SignatureRequest{Document: doc}
+	doc := *dm.Document
+	return &p2ppb.SignatureRequest{Document: &doc}
 }
 
 func getGetDocumentRequest(dm *documents.CoreDocumentModel) *p2ppb.GetDocumentRequest {
