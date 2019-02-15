@@ -20,21 +20,20 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 
-	"github.com/centrifuge/go-centrifuge/contextutil"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/p2p"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/queue"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -109,6 +108,7 @@ func TestPO_InitCoreDocument_successful(t *testing.T) {
 	poData := testingdocuments.CreatePOData()
 
 	coreDocumentModel := CreateCDWithEmbeddedPO(t, poData)
+	poModel.CoreDocumentModel = coreDocumentModel
 	err := poModel.UnpackCoreDocument(coreDocumentModel)
 	assert.Nil(t, err, "valid coredocumentmodel shouldn't produce an error")
 }
@@ -118,7 +118,7 @@ func TestPO_InitCoreDocument_invalidCentId(t *testing.T) {
 
 	coreDocumentModel := CreateCDWithEmbeddedPO(t, purchaseorderpb.PurchaseOrderData{
 		Recipient: utils.RandomSlice(identity.CentIDLength + 1)})
-
+	poModel.CoreDocumentModel = coreDocumentModel
 	err := poModel.UnpackCoreDocument(coreDocumentModel)
 	assert.Nil(t, err)
 	assert.Nil(t, poModel.Recipient)
@@ -131,6 +131,7 @@ func TestPO_CoreDocument_successful(t *testing.T) {
 	poData := testingdocuments.CreatePOData()
 
 	coreDocumentModel := CreateCDWithEmbeddedPO(t, poData)
+	poModel.CoreDocumentModel = coreDocumentModel
 	poModel.UnpackCoreDocument(coreDocumentModel)
 
 	returnedCoreDocumentModel, err := poModel.PackCoreDocument()
@@ -156,6 +157,7 @@ func TestPO_JSON(t *testing.T) {
 	poModel := &PurchaseOrder{}
 	poData := testingdocuments.CreatePOData()
 	coreDocumentModel := CreateCDWithEmbeddedPO(t, poData)
+	poModel.CoreDocumentModel = coreDocumentModel
 	poModel.UnpackCoreDocument(coreDocumentModel)
 
 	jsonBytes, err := poModel.JSON()
@@ -171,7 +173,7 @@ func TestPO_JSON(t *testing.T) {
 }
 
 func TestPOModel_UnpackCoreDocument(t *testing.T) {
-	var model documents.Model = new(PurchaseOrder)
+	var model = new(PurchaseOrder)
 	var err error
 
 	// nil core doc
@@ -184,6 +186,7 @@ func TestPOModel_UnpackCoreDocument(t *testing.T) {
 
 	// successful
 	coreDocumentModel := CreateCDWithEmbeddedPO(t, testingdocuments.CreatePOData())
+	model.CoreDocumentModel = coreDocumentModel
 	err = model.UnpackCoreDocument(coreDocumentModel)
 	assert.Nil(t, err, "valid core document with embedded purchase order shouldn't produce an error")
 

@@ -47,7 +47,6 @@ var compactProperties = map[string][]byte{
 // It should only handle protocol-level Document actions
 type Model interface {
 	storage.Model
-
 	// Get the ID of the document represented by this model
 	ID() ([]byte, error)
 

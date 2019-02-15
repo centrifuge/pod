@@ -57,7 +57,9 @@ func DefaultService(
 
 // DeriveFromCoreDocumentModel takes a core document model and returns an invoice
 func (s service) DeriveFromCoreDocumentModel(dm *documents.CoreDocumentModel) (documents.Model, error) {
-	var model documents.Model = new(Invoice)
+	var model documents.Model = &Invoice{
+		CoreDocumentModel: dm,
+	}
 	err := model.UnpackCoreDocument(dm)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentUnPackingCoreDocument, err)
