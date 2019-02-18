@@ -542,7 +542,7 @@ func (m *CoreDocumentModel) addNewRule(role *coredocumentpb.Role, action coredoc
 	cd.ReadRules = append(cd.ReadRules, rule)
 }
 
-// findRole calls OnRole for every role
+// findRole calls OnRole for every role that matches the actions passed in
 func (m *CoreDocumentModel) findRole(onRole func(rridx, ridx int, role *coredocumentpb.Role) bool, actions ...coredocumentpb.Action) bool {
 	cd := m.Document
 	am := make(map[int32]struct{})
