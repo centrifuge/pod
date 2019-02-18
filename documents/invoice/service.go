@@ -11,7 +11,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/satori/go.uuid"
 )
 
 // Service defines specific functions for invoice
@@ -116,55 +115,55 @@ func (s service) validateAndPersist(ctx context.Context, old, new documents.Mode
 }
 
 // Create takes and invoice model and does required validation checks, tries to persist to DB
-func (s service) Create(ctx context.Context, inv documents.Model) (documents.Model, uuid.UUID, chan bool, error) {
+func (s service) Create(ctx context.Context, inv documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
 	self, err := contextutil.Self(ctx)
 	if err != nil {
-		return nil, uuid.Nil, nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
+		return nil, transactions.NilTxID(), nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
 	}
 
 	inv, err = s.validateAndPersist(ctx, nil, inv, CreateValidator())
 	if err != nil {
-		return nil, uuid.Nil, nil, err
+		return nil, transactions.NilTxID(), nil, err
 	}
 
 	dm, err := inv.PackCoreDocument()
 	if err != nil {
-		return nil, uuid.Nil, nil, err
+		return nil, transactions.NilTxID(), nil, err
 	}
 
 	txID := contextutil.TX(ctx)
 	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, self.ID, txID, dm.Document.CurrentVersion)
 	if err != nil {
-		return nil, uuid.Nil, nil, err
+		return nil, transactions.NilTxID(), nil, err
 	}
 	return inv, txID, done, nil
 }
 
 // Update finds the old document, validates the new version and persists the updated document
-func (s service) Update(ctx context.Context, inv documents.Model) (documents.Model, uuid.UUID, chan bool, error) {
+func (s service) Update(ctx context.Context, inv documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
 	self, err := contextutil.Self(ctx)
 	if err != nil {
-		return nil, uuid.Nil, nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
+		return nil, transactions.NilTxID(), nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
 	}
 
 	dm, err := inv.PackCoreDocument()
 	if err != nil {
-		return nil, uuid.Nil, nil, errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
+		return nil, transactions.NilTxID(), nil, errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
 	}
 	old, err := s.GetCurrentVersion(ctx, dm.Document.DocumentIdentifier)
 	if err != nil {
-		return nil, uuid.Nil, nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
+		return nil, transactions.NilTxID(), nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
 	}
 
 	inv, err = s.validateAndPersist(ctx, old, inv, UpdateValidator())
 	if err != nil {
-		return nil, uuid.Nil, nil, err
+		return nil, transactions.NilTxID(), nil, err
 	}
 
 	txID := contextutil.TX(ctx)
 	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, self.ID, txID, dm.Document.CurrentVersion)
 	if err != nil {
-		return nil, uuid.Nil, nil, err
+		return nil, transactions.NilTxID(), nil, err
 	}
 	return inv, txID, done, nil
 }

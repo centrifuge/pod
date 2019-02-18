@@ -22,7 +22,6 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	logging "github.com/ipfs/go-log"
-	"github.com/satori/go.uuid"
 )
 
 var log = logging.Logger("nft")
@@ -155,7 +154,7 @@ func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, documentID []by
 
 	// Mint NFT within transaction
 	// We use context.Background() for now so that the transaction is only limited by ethereum timeouts
-	txID, done, err := s.txManager.ExecuteWithinTX(context.Background(), cid, uuid.Nil, "Minting NFT",
+	txID, done, err := s.txManager.ExecuteWithinTX(context.Background(), cid, transactions.NilTxID(), "Minting NFT",
 		s.minter(ctx, tokenID, model, registry, depositAddress, proofFields))
 	if err != nil {
 		return nil, nil, err
@@ -174,8 +173,8 @@ func (s *ethereumPaymentObligation) isNFTMinted(registry common.Address, tokenID
 	return err == nil
 }
 
-func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID, model documents.Model, registry common.Address, depositAddress string, proofFields []string) func(accountID identity.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
-	return func(accountID identity.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
+func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID, model documents.Model, registry common.Address, depositAddress string, proofFields []string) func(accountID identity.CentID, txID transactions.TxID, txMan transactions.Manager, errOut chan<- error) {
+	return func(accountID identity.CentID, txID transactions.TxID, txMan transactions.Manager, errOut chan<- error) {
 		tc, err := contextutil.Account(ctx)
 		if err != nil {
 			errOut <- err
