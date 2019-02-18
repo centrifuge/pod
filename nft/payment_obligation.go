@@ -5,10 +5,9 @@ import (
 	"math/big"
 
 	"github.com/centrifuge/go-centrifuge/errors"
-
-	"github.com/ethereum/go-ethereum/common/hexutil"
-
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 // TokenIDLength is the length of an NFT token ID
@@ -57,12 +56,12 @@ func (t TokenID) String() string {
 // MintNFTRequest holds required fields for minting NFT
 type MintNFTRequest struct {
 	DocumentID               []byte
-	RegistryAddress          string
-	DepositAddress           string
+	RegistryAddress          common.Address
+	DepositAddress           common.Address
 	ProofFields              []string
 	GrantNFTReadAccess       bool
 	SubmitTokenProof         bool
-	SubmitRoleProof          string
+	SubmitRoleProof          []byte
 	SubmitNFTReadAccessProof bool
 }
 

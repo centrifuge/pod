@@ -3,7 +3,6 @@
 package nft
 
 import (
-	"crypto/sha256"
 	"math/big"
 	"testing"
 	"time"
@@ -17,7 +16,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/nft"
 	"github.com/centrifuge/go-centrifuge/testingutils"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/testingutils/testingtx"
@@ -28,7 +27,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/golang/protobuf/ptypes/any"
 	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -205,8 +203,8 @@ func TestPaymentObligationService(t *testing.T) {
 			ctxh := testingconfig.CreateAccountContext(t, &mockCfg)
 			req := MintNFTRequest{
 				DocumentID:      decodeHex(test.request.Identifier),
-				RegistryAddress: test.request.RegistryAddress,
-				DepositAddress:  test.request.DepositAddress,
+				RegistryAddress: common.HexToAddress(test.request.RegistryAddress),
+				DepositAddress:  common.HexToAddress(test.request.DepositAddress),
 				ProofFields:     test.request.ProofFields,
 			}
 			_, _, err := service.MintNFT(ctxh, req)
@@ -263,182 +261,4 @@ func byteSliceToByteArray32(input []byte) (out [32]byte) {
 func decodeHex(hex string) []byte {
 	h, _ := hexutil.Decode(hex)
 	return h
-}
-
-func Test_addNFT(t *testing.T) {
-	dm := documents.NewCoreDocModel()
-	cd := dm.Document
-	cd.DocumentRoot = utils.RandomSlice(32)
-	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
-	registry2 := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da02")
-	tokenID := utils.RandomSlice(32)
-	assert.Nil(t, cd.Nfts)
-
-	addNFT(dm, registry.Bytes(), tokenID)
-	assert.Len(t, cd.Nfts, 1)
-	assert.Len(t, cd.Nfts[0].RegistryId, 32)
-	assert.Equal(t, tokenID, getStoredNFT(cd.Nfts, registry.Bytes()).TokenId)
-	assert.Nil(t, getStoredNFT(cd.Nfts, registry2.Bytes()))
-
-	tokenID = utils.RandomSlice(32)
-	addNFT(dm, registry.Bytes(), tokenID)
-	assert.Len(t, cd.Nfts, 1)
-	assert.Len(t, cd.Nfts[0].RegistryId, 32)
-	assert.Equal(t, tokenID, getStoredNFT(cd.Nfts, registry.Bytes()).TokenId)
-}
-
-func Test_getRoleForAccount(t *testing.T) {
-	cd := coredocument.New()
-	roleName := "supplier"
-	id := identity.RandomCentID()
-	_, r := getRoleForAccount(cd, roleName, id)
-	assert.Nil(t, r)
-
-	// add role
-	rk := sha256.Sum256([]byte(roleName))
-	role := new(coredocumentpb.Role)
-	role.RoleKey = rk[:]
-	cd.Roles = append(cd.Roles, role)
-	_, r = getRoleForAccount(cd, roleName, id)
-	assert.Nil(t, r)
-
-	// add id
-	role.Collaborators = append(role.Collaborators, id[:])
-	_, r = getRoleForAccount(cd, roleName, id)
-	assert.NotNil(t, r)
-	assert.Equal(t, r.RoleKey, rk[:])
-	assert.Equal(t, r.Collaborators[0], id[:])
-}
-
-func Test_createTokenProof_error(t *testing.T) {
-	cd, err := coredocument.NewWithCollaborators([]string{"0x010203040506"})
-	assert.Nil(t, err)
-	cd.EmbeddedData = &any.Any{
-		Value:   utils.RandomSlice(32),
-		TypeUrl: "some type",
-	}
-
-	cdTree, err := coredocument.GetCoreDocTree(cd)
-	assert.Nil(t, err)
-
-	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
-
-	// no nft registered yet
-	_, err = createTokenProof(cd, cdTree, registry)
-	assert.Error(t, err)
-}
-
-func Test_createTokenProof(t *testing.T) {
-	cd := coredocument.New()
-	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
-	tokenID := utils.RandomSlice(32)
-	addNFT(cd, registry.Bytes(), tokenID)
-	cd.EmbeddedData = &any.Any{
-		Value:   utils.RandomSlice(32),
-		TypeUrl: "some type",
-	}
-	assert.Nil(t, coredocument.FillSalts(cd))
-
-	cdTree, err := coredocument.GetCoreDocTree(cd)
-	assert.Nil(t, err)
-
-	pf, err := createTokenProof(cd, cdTree, registry)
-	assert.Nil(t, err)
-	assert.Equal(t, pf.Value, tokenID)
-	valid, err := cdTree.ValidateProof(&pf)
-	assert.NoError(t, err)
-	assert.True(t, valid)
-}
-
-func Test_createNFTReadAccessProof_missing_nft(t *testing.T) {
-	cd, err := coredocument.NewWithCollaborators([]string{"0x010203040506"})
-	assert.Nil(t, err)
-	cd.EmbeddedData = &any.Any{
-		Value:   utils.RandomSlice(32),
-		TypeUrl: "some type",
-	}
-
-	cdTree, err := coredocument.GetCoreDocTree(cd)
-	assert.Nil(t, err)
-
-	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
-	_, err = createNFTReadAccessProof(cd, cdTree, registry, utils.RandomSlice(32))
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(ErrNFTRoleMissing, err))
-}
-
-func Test_createNFTReadAccessProof(t *testing.T) {
-	cd := coredocument.New()
-	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
-	tokenID := utils.RandomSlice(32)
-	cd.EmbeddedData = &any.Any{
-		Value:   utils.RandomSlice(32),
-		TypeUrl: "some type",
-	}
-	assert.NoError(t, coredocument.AddNFTToReadRules(cd, registry, tokenID))
-	assert.Nil(t, coredocument.FillSalts(cd))
-
-	cdTree, err := coredocument.GetCoreDocTree(cd)
-	assert.Nil(t, err)
-
-	pfs, err := createNFTReadAccessProof(cd, cdTree, registry, tokenID)
-	assert.NoError(t, err)
-	assert.Len(t, pfs, 3)
-	rk := make([]byte, 32, 32)
-	assert.Equal(t, pfs[0].Value, rk)
-	valid, err := cdTree.ValidateProof(&pfs[0])
-	assert.NoError(t, err)
-	assert.True(t, valid)
-
-	enft, err := coredocument.ConstructNFT(registry, tokenID)
-	assert.NoError(t, err)
-	assert.Equal(t, pfs[1].Value, enft)
-	valid, err = cdTree.ValidateProof(&pfs[1])
-	assert.NoError(t, err)
-	assert.True(t, valid)
-
-	assert.Equal(t, pfs[2].Value, []byte{0, 0, 0, 0, 0, 0, 0, 1})
-	valid, err = cdTree.ValidateProof(&pfs[2])
-	assert.NoError(t, err)
-	assert.True(t, valid)
-}
-
-func Test_createRoleProof_missing_role(t *testing.T) {
-	cid := identity.RandomCentID()
-	cd, err := coredocument.NewWithCollaborators([]string{cid.String()})
-	assert.Nil(t, err)
-	cd.EmbeddedData = &any.Any{
-		Value:   utils.RandomSlice(32),
-		TypeUrl: "some type",
-	}
-
-	cdTree, err := coredocument.GetCoreDocTree(cd)
-	assert.Nil(t, err)
-
-	_, err = createRoleProof(cd, cdTree, "Some key", cid)
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(ErrNFTRoleMissing, err))
-}
-
-func Test_createRoleProof(t *testing.T) {
-	cid := identity.RandomCentID()
-	cd := coredocument.New()
-	cd.EmbeddedData = &any.Any{
-		Value:   utils.RandomSlice(32),
-		TypeUrl: "some type",
-	}
-
-	role := new(coredocumentpb.Role)
-	rk := sha256.Sum256([]byte("supplier"))
-	role.RoleKey = rk[:]
-	role.Collaborators = append(role.Collaborators, cid[:])
-	cd.Roles = append(cd.Roles, role)
-
-	assert.Nil(t, coredocument.FillSalts(cd))
-	cdTree, err := coredocument.GetCoreDocTree(cd)
-	assert.Nil(t, err)
-
-	pf, err := createRoleProof(cd, cdTree, "supplier", cid)
-	assert.NoError(t, err)
-	assert.Equal(t, pf.Value, cid[:])
 }

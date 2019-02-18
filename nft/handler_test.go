@@ -8,13 +8,11 @@ import (
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/config"
-
-	"github.com/centrifuge/go-centrifuge/testingutils/config"
-
 	"github.com/centrifuge/go-centrifuge/config/configstore"
-
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/nft"
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -40,8 +38,8 @@ func TestNFTMint_success(t *testing.T) {
 	nftResponse := &MintNFTResponse{TokenID: tokID.String()}
 	req := MintNFTRequest{
 		DocumentID:      docID,
-		RegistryAddress: nftMintRequest.RegistryAddress,
-		DepositAddress:  nftMintRequest.DepositAddress,
+		RegistryAddress: common.HexToAddress(nftMintRequest.RegistryAddress),
+		DepositAddress:  common.HexToAddress(nftMintRequest.DepositAddress),
 		ProofFields:     nftMintRequest.ProofFields,
 	}
 	mockService.On("MintNFT", mock.Anything, req).Return(nftResponse, nil)
@@ -75,8 +73,8 @@ func TestNFTMint_ServiceError(t *testing.T) {
 	docID, _ := hexutil.Decode(nftMintRequest.Identifier)
 	req := MintNFTRequest{
 		DocumentID:      docID,
-		RegistryAddress: nftMintRequest.RegistryAddress,
-		DepositAddress:  nftMintRequest.DepositAddress,
+		RegistryAddress: common.HexToAddress(nftMintRequest.RegistryAddress),
+		DepositAddress:  common.HexToAddress(nftMintRequest.DepositAddress),
 		ProofFields:     nftMintRequest.ProofFields,
 	}
 

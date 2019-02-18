@@ -9,24 +9,23 @@ import (
 	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
-	"github.com/centrifuge/go-centrifuge/documents/invoice"
-	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
-	"github.com/centrifuge/go-centrifuge/testingutils/config"
-	"github.com/centrifuge/go-centrifuge/testingutils/identity"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/golang/protobuf/ptypes/timestamp"
-	"github.com/satori/go.uuid"
-	"github.com/stretchr/testify/assert"
-
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	cc "github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/documents/invoice"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/nft"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/transactions"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/golang/protobuf/ptypes/timestamp"
+	"github.com/satori/go.uuid"
+	"github.com/stretchr/testify/assert"
 )
 
 var registry *documents.ServiceRegistry
@@ -97,7 +96,7 @@ func mintNFT(t *testing.T, ctx context.Context, req nft.MintNFTRequest, cid iden
 	assert.NoError(t, txManager.WaitForTransaction(cid, uuid.Must(uuid.FromString(resp.TransactionID))))
 	owner, err := tokenRegistry.OwnerOf(registry, tokenID.BigInt().Bytes())
 	assert.NoError(t, err)
-	assert.Equal(t, common.HexToAddress(req.DepositAddress), owner)
+	assert.Equal(t, req.DepositAddress, owner)
 	return tokenID
 }
 
@@ -106,20 +105,21 @@ func TestPaymentObligationService_mint_grant_read_access(t *testing.T) {
 	ctx, id, registry, depositAddr, invSrv, cid := prepareForNFTMinting(t)
 	req := nft.MintNFTRequest{
 		DocumentID:         id,
-		RegistryAddress:    registry.String(),
-		DepositAddress:     depositAddr,
+		RegistryAddress:    registry,
+		DepositAddress:     common.HexToAddress(depositAddr),
 		ProofFields:        []string{"invoice.gross_amount", "invoice.currency", "invoice.due_date", "collaborators[0]"},
 		GrantNFTReadAccess: true,
 	}
 	tokenID := mintNFT(t, ctx, req, cid, registry)
 	doc, err := invSrv.GetCurrentVersion(ctx, id)
 	assert.NoError(t, err)
-	cd, err := doc.PackCoreDocument()
+	md, err := doc.PackCoreDocument()
 	assert.NoError(t, err)
+	cd := md.Document
 	assert.Len(t, cd.Roles, 2)
 	assert.Len(t, cd.Roles[1].Nfts, 1)
 	newNFT := cd.Roles[1].Nfts[0]
-	enft, err := coredocument.ConstructNFT(registry, tokenID.BigInt().Bytes())
+	enft, err := documents.ConstructNFT(registry, tokenID.BigInt().Bytes())
 	assert.NoError(t, err)
 	assert.Equal(t, enft, newNFT)
 
@@ -129,12 +129,12 @@ func TestPaymentObligationService_mint_grant_read_access(t *testing.T) {
 	assert.True(t, errors.IsOfType(nft.ErrNFTMinted, err))
 }
 
-func failMintNFT(t *testing.T, grantNFT, nftReadAccess bool, roleProof string) {
+func failMintNFT(t *testing.T, grantNFT, nftReadAccess bool, roleProof []byte) {
 	ctx, id, registry, depositAddr, _, _ := prepareForNFTMinting(t)
 	req := nft.MintNFTRequest{
 		DocumentID:               id,
-		RegistryAddress:          registry.String(),
-		DepositAddress:           depositAddr,
+		RegistryAddress:          registry,
+		DepositAddress:           common.HexToAddress(depositAddr),
 		ProofFields:              []string{"invoice.gross_amount", "invoice.currency", "invoice.due_date", "collaborators[0]"},
 		GrantNFTReadAccess:       grantNFT,
 		SubmitRoleProof:          roleProof,
@@ -144,26 +144,26 @@ func failMintNFT(t *testing.T, grantNFT, nftReadAccess bool, roleProof string) {
 	_, _, err := payOb.MintNFT(ctx, req)
 	assert.Error(t, err)
 	if !nftReadAccess {
-		assert.True(t, errors.IsOfType(nft.ErrNFTRoleMissing, err))
+		assert.True(t, errors.IsOfType(documents.ErrNFTRoleMissing, err))
 	}
 }
 
 func TestEthereumPaymentObligation_MintNFT_role_not_exists(t *testing.T) {
 	t.SkipNow()
-	failMintNFT(t, true, false, "Supplier")
+	failMintNFT(t, true, false, []byte("Supplier"))
 }
 
 func TestEthereumPaymentObligation_MintNFT_no_grant_access(t *testing.T) {
 	t.SkipNow()
-	failMintNFT(t, false, true, "")
+	failMintNFT(t, false, true, nil)
 }
 
 func mintNFTWithProofs(t *testing.T, grantAccess, tokenProof, readAccessProof bool) {
 	ctx, id, registry, depositAddr, invSrv, cid := prepareForNFTMinting(t)
 	req := nft.MintNFTRequest{
 		DocumentID:               id,
-		RegistryAddress:          registry.String(),
-		DepositAddress:           depositAddr,
+		RegistryAddress:          registry,
+		DepositAddress:           common.HexToAddress(depositAddr),
 		ProofFields:              []string{"invoice.gross_amount", "invoice.currency", "invoice.due_date", "collaborators[0]", "next_version"},
 		GrantNFTReadAccess:       grantAccess,
 		SubmitTokenProof:         tokenProof,
@@ -178,7 +178,7 @@ func mintNFTWithProofs(t *testing.T, grantAccess, tokenProof, readAccessProof bo
 	if grantAccess {
 		roleCount++
 	}
-	assert.Len(t, cd.Roles, roleCount)
+	assert.Len(t, cd.Document.Roles, roleCount)
 }
 
 func TestEthereumPaymentObligation_MintNFT(t *testing.T) {
