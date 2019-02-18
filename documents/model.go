@@ -769,7 +769,7 @@ func assembleTokenMessage(tokenIdentifier []byte, granterID []byte, granteeID []
 }
 
 // assembleAccessToken assembles a Read Access Token from the payload received
-func (m *CoreDocumentModel) assembleAccessToken( id identity.IDConfig, payload documentpb.AccessTokenParams) (*coredocumentpb.AccessToken, error) {
+func (m *CoreDocumentModel) assembleAccessToken(id identity.IDConfig, payload documentpb.AccessTokenParams) (*coredocumentpb.AccessToken, error) {
 	tokenIdentifier := utils.RandomSlice(32)
 	granterID := id.ID[:]
 	roleID, err := utils.ConvertIntToByte32(len(m.Document.Roles))
@@ -799,13 +799,13 @@ func (m *CoreDocumentModel) assembleAccessToken( id identity.IDConfig, payload d
 	}
 	// assemble the access token, appending the signature and public keys
 	at := &coredocumentpb.AccessToken{
-		Identifier: tokenIdentifier,
-		Granter: granterID,
-		Grantee: granteeID,
-		RoleIdentifier: roleID[:],
+		Identifier:         tokenIdentifier,
+		Granter:            granterID,
+		Grantee:            granteeID,
+		RoleIdentifier:     roleID[:],
 		DocumentIdentifier: docID,
-		Signature: sig,
-		Key: pubKey,
+		Signature:          sig,
+		Key:                pubKey,
 	}
 
 	return at, nil
@@ -890,7 +890,6 @@ func isATInRole(role *coredocumentpb.Role, tokenID []byte) (*coredocumentpb.Acce
 	return nil, errors.New("access token not found")
 }
 
-
 // findAT calls OnRole for every role, returns the access token if it is found in the Roles of the document
 func (m *CoreDocumentModel) findAT(action coredocumentpb.Action, tokenID []byte) (*coredocumentpb.AccessToken, error) {
 	cd := m.Document
@@ -900,20 +899,19 @@ func (m *CoreDocumentModel) findAT(action coredocumentpb.Action, tokenID []byte)
 			continue
 		}
 		ruleRoles := rule.GetRoles()
-			for _, rk := range ruleRoles {
-				role, err := getRole(rk, cd.Roles)
-				if err != nil {
-					// seems like roles and rules are not in sync
-					// skip to next one
-					continue
-				}
-				at, err := isATInRole(role, tokenID)
-				if err != nil {
-					return nil, err
-				}
-				token = *at
+		for _, rk := range ruleRoles {
+			role, err := getRole(rk, cd.Roles)
+			if err != nil {
+				// seems like roles and rules are not in sync
+				// skip to next one
+				continue
 			}
+			at, err := isATInRole(role, tokenID)
+			if err != nil {
+				return nil, err
+			}
+			token = *at
 		}
-		return &token, nil
+	}
+	return &token, nil
 }
-
