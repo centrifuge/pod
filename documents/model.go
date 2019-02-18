@@ -441,8 +441,8 @@ func (m *CoreDocumentModel) CalculateSigningRoot(dataRoot []byte) error {
 // AccountCanRead validate if the core document can be read by the account .
 // Returns an error if not.
 func (m *CoreDocumentModel) AccountCanRead(account identity.CentID) bool {
-	// loop though read rules
-	return m.findRole(coredocumentpb.Action_ACTION_READ_SIGN, func(_, _ int, role *coredocumentpb.Role) bool {
+	// loop though read rules, check all the rules
+	return m.findRole(nil, func(_, _ int, role *coredocumentpb.Role) bool {
 		_, found := isAccountInRole(role, account)
 		return found
 	})
@@ -543,10 +543,10 @@ func (m *CoreDocumentModel) addNewRule(role *coredocumentpb.Role, action coredoc
 }
 
 // findRole calls OnRole for every role
-func (m *CoreDocumentModel) findRole(action coredocumentpb.Action, onRole func(rridx, ridx int, role *coredocumentpb.Role) bool) bool {
+func (m *CoreDocumentModel) findRole(action *coredocumentpb.Action, onRole func(rridx, ridx int, role *coredocumentpb.Role) bool) bool {
 	cd := m.Document
 	for i, rule := range cd.ReadRules {
-		if rule.Action != action {
+		if action != nil && rule.Action != *action {
 			continue
 		}
 
@@ -663,7 +663,8 @@ func (m *CoreDocumentModel) NFTOwnerCanRead(registry common.Address, tokenID []b
 	}
 
 	// check if the nft is present in read rules
-	found := m.findRole(coredocumentpb.Action_ACTION_READ, func(_, _ int, role *coredocumentpb.Role) bool {
+	action := coredocumentpb.Action_ACTION_READ
+	found := m.findRole(&action, func(_, _ int, role *coredocumentpb.Role) bool {
 		_, found := isNFTInRole(role, registry, tokenID)
 		return found
 	})
@@ -895,7 +896,8 @@ func getReadAccessProofKeys(m *CoreDocumentModel, registry common.Address, token
 	var nftIdx int // index of the NFT in the above role
 	var rk []byte  // role key of the above role
 
-	found := m.findRole(coredocumentpb.Action_ACTION_READ, func(i, j int, role *coredocumentpb.Role) bool {
+	action := coredocumentpb.Action_ACTION_READ
+	found := m.findRole(&action, func(i, j int, role *coredocumentpb.Role) bool {
 		z, found := isNFTInRole(role, registry, tokenID)
 		if found {
 			rridx = i
