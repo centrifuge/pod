@@ -36,7 +36,7 @@ func (m *ResponseHeader) Reset()         { *m = ResponseHeader{} }
 func (m *ResponseHeader) String() string { return proto.CompactTextString(m) }
 func (*ResponseHeader) ProtoMessage()    {}
 func (*ResponseHeader) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_2c807f5c344dc4ec, []int{0}
+	return fileDescriptor_service_716d6a9db0e24428, []int{0}
 }
 func (m *ResponseHeader) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ResponseHeader.Unmarshal(m, b)
@@ -70,9 +70,9 @@ type NFTMintRequest struct {
 	RegistryAddress string   `protobuf:"bytes,2,opt,name=registry_address,json=registryAddress,proto3" json:"registry_address,omitempty"`
 	DepositAddress  string   `protobuf:"bytes,3,opt,name=deposit_address,json=depositAddress,proto3" json:"deposit_address,omitempty"`
 	ProofFields     []string `protobuf:"bytes,4,rep,name=proof_fields,json=proofFields,proto3" json:"proof_fields,omitempty"`
-	// proof that nft is part of p2p document
+	// proof that nft is part of document
 	SubmitTokenProof bool `protobuf:"varint,5,opt,name=submit_token_proof,json=submitTokenProof,proto3" json:"submit_token_proof,omitempty"`
-	// proof that role exists on p2p document
+	// proof that role exists on document
 	SubmitRoleProof string `protobuf:"bytes,6,opt,name=submit_role_proof,json=submitRoleProof,proto3" json:"submit_role_proof,omitempty"`
 	// proof that nft owner can access the document if nft_grant_access is true
 	SubmitNftOwnerAccessProof bool `protobuf:"varint,7,opt,name=submit_nft_owner_access_proof,json=submitNftOwnerAccessProof,proto3" json:"submit_nft_owner_access_proof,omitempty"`
@@ -87,7 +87,7 @@ func (m *NFTMintRequest) Reset()         { *m = NFTMintRequest{} }
 func (m *NFTMintRequest) String() string { return proto.CompactTextString(m) }
 func (*NFTMintRequest) ProtoMessage()    {}
 func (*NFTMintRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_2c807f5c344dc4ec, []int{1}
+	return fileDescriptor_service_716d6a9db0e24428, []int{1}
 }
 func (m *NFTMintRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_NFTMintRequest.Unmarshal(m, b)
@@ -175,7 +175,7 @@ func (m *NFTMintResponse) Reset()         { *m = NFTMintResponse{} }
 func (m *NFTMintResponse) String() string { return proto.CompactTextString(m) }
 func (*NFTMintResponse) ProtoMessage()    {}
 func (*NFTMintResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_2c807f5c344dc4ec, []int{2}
+	return fileDescriptor_service_716d6a9db0e24428, []int{2}
 }
 func (m *NFTMintResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_NFTMintResponse.Unmarshal(m, b)
@@ -287,9 +287,9 @@ var _NFTService_serviceDesc = grpc.ServiceDesc{
 	Metadata: "nft/service.proto",
 }
 
-func init() { proto.RegisterFile("nft/service.proto", fileDescriptor_service_2c807f5c344dc4ec) }
+func init() { proto.RegisterFile("nft/service.proto", fileDescriptor_service_716d6a9db0e24428) }
 
-var fileDescriptor_service_2c807f5c344dc4ec = []byte{
+var fileDescriptor_service_716d6a9db0e24428 = []byte{
 	// 500 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x64, 0x92, 0xc1, 0x6e, 0xd3, 0x40,
 	0x10, 0x40, 0x95, 0x84, 0x26, 0xe9, 0xa6, 0x24, 0xe9, 0xc2, 0x21, 0x8d, 0x00, 0x99, 0x48, 0x40,

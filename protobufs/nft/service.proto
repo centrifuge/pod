@@ -34,9 +34,9 @@ message NFTMintRequest {
   string registry_address = 2;
   string deposit_address = 3;
   repeated string proof_fields = 4;
-  // proof that nft is part of p2p document
+  // proof that nft is part of document
   bool submit_token_proof = 5;
-  // proof that role exists on p2p document
+  // proof that role exists on document
   string submit_role_proof = 6;
   // proof that nft owner can access the document if nft_grant_access is true
   bool submit_nft_owner_access_proof = 7;

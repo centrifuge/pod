@@ -748,10 +748,11 @@ func (m *CoreDocumentModel) ValidateDocumentAccess(docReq *p2ppb.GetDocumentRequ
 }
 
 // isNFTInRole checks if the given nft(registry + token) is part of the core document role.
-func isNFTInRole(role *coredocumentpb.Role, registry common.Address, tokenID []byte) (roleIdx int, found bool) {
+// If found, returns the index of the nft in the role and true
+func isNFTInRole(role *coredocumentpb.Role, registry common.Address, tokenID []byte) (nftIdx int, found bool) {
 	enft, err := ConstructNFT(registry, tokenID)
 	if err != nil {
-		return roleIdx, false
+		return nftIdx, false
 	}
 
 	for i, n := range role.Nfts {
@@ -760,7 +761,7 @@ func isNFTInRole(role *coredocumentpb.Role, registry common.Address, tokenID []b
 		}
 	}
 
-	return roleIdx, false
+	return nftIdx, false
 }
 
 // AddNFT returns a new CoreDocument model with nft added to the Core document. If grantReadAccess is true, the nft is added
@@ -895,12 +896,12 @@ func getReadAccessProofKeys(m *CoreDocumentModel, registry common.Address, token
 	var rk []byte  // role key of the above role
 
 	found := m.findRole(coredocumentpb.Action_ACTION_READ, func(i, j int, role *coredocumentpb.Role) bool {
-		si, found := isNFTInRole(role, registry, tokenID)
+		z, found := isNFTInRole(role, registry, tokenID)
 		if found {
 			rridx = i
 			ridx = j
 			rk = role.RoleKey
-			nftIdx = si
+			nftIdx = z
 		}
 
 		return found
