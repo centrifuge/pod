@@ -4,15 +4,16 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"fmt"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
-	"github.com/golang/protobuf/ptypes/any"
 	"strings"
 
-	"github.com/centrifuge/go-centrifuge/crypto"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	"github.com/golang/protobuf/ptypes/any"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
@@ -730,10 +731,12 @@ func (m *CoreDocumentModel) ValidateDocumentAccess(docReq *p2ppb.GetDocumentRequ
 		if m.NFTOwnerCanRead(registry, docReq.NftTokenId, requesterCentID) != nil {
 			return errors.New("requester does not have access")
 		}
-		//// case AccessTokenValidation
-		// case p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION:
-		//
-		// case p2ppb.AccessType_ACCESS_TYPE_INVALID:
+	case p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION:
+		if m.ATOwnerCanRead(docReq.AccessTokenRequest, requesterCentID) != nil {
+			return errors.New("requester does not have access")
+		}
+	case p2ppb.AccessType_ACCESS_TYPE_INVALID:
+		return errors.New("invalid access type")
 	default:
 		return errors.New("invalid access type ")
 	}
@@ -820,9 +823,9 @@ func (m *CoreDocumentModel) AddAccessTokenToReadRules(id identity.IDConfig, payl
 }
 
 // ATOwnerCanRead checks if the owner of the AT can read the document
-func (m *CoreDocumentModel) ATOwnerCanRead(tokenReq p2ppb.AccessTokenRequest , account identity.CentID) error {
+func (m *CoreDocumentModel) ATOwnerCanRead(tokenReq *p2ppb.AccessTokenRequest, account identity.CentID) error {
 	// check if the access token is present in read rules
-	token, err := m.findAT(coredocumentpb.Action_ACTION_READ, tokenReq.AccessTokenId, func(role *coredocumentpb.Role, tokenID []byte) (*coredocumentpb.AccessToken, error){
+	token, err := m.findAT(coredocumentpb.Action_ACTION_READ, tokenReq.AccessTokenId, func(role *coredocumentpb.Role, tokenID []byte) (*coredocumentpb.AccessToken, error) {
 		return isATInRole(role, tokenReq.AccessTokenId)
 	})
 	if err != nil {
@@ -839,7 +842,7 @@ func (m *CoreDocumentModel) ATOwnerCanRead(tokenReq p2ppb.AccessTokenRequest , a
 		return errors.New("invalid access token granter")
 	}
 	// TODO:  check that the granter is the owner of the public key on the access token
-	
+
 	// check that the account requesting access is the grantee of the access token
 	if !bytes.Equal(account[:], token.Grantee) {
 		return errors.New("access token grantee is not the same as the account requesting access")
@@ -854,9 +857,8 @@ func (m *CoreDocumentModel) ATOwnerCanRead(tokenReq p2ppb.AccessTokenRequest , a
 }
 
 // validateAT validates that given access token against its signature
-// ethereum specific variation is currently false
 
-func validateAT (publicKey []byte, token *coredocumentpb.AccessToken) error {
+func validateAT(publicKey []byte, token *coredocumentpb.AccessToken) error {
 	tm := append(token.Identifier, token.Granter...)
 	tm = append(tm, token.Grantee...)
 	tm = append(tm, token.RoleIdentifier...)
@@ -871,7 +873,7 @@ func validateAT (publicKey []byte, token *coredocumentpb.AccessToken) error {
 
 // isATInRole checks if the given access token is part of the core document role.
 func isATInRole(role *coredocumentpb.Role, tokenID []byte) (*coredocumentpb.AccessToken, error) {
-	for _, a := range role.AccessTokens{
+	for _, a := range role.AccessTokens {
 		if bytes.Equal(tokenID, a.Identifier) {
 			return a, nil
 		}
@@ -880,7 +882,7 @@ func isATInRole(role *coredocumentpb.Role, tokenID []byte) (*coredocumentpb.Acce
 }
 
 // findAT calls OnRole for every role, returns the access token if it is found in the Roles of the document
-func (m *CoreDocumentModel) findAT (action coredocumentpb.Action, tokenID []byte, onRole func(role *coredocumentpb.Role, tokenID []byte) (*coredocumentpb.AccessToken, error)) (*coredocumentpb.AccessToken, error) {
+func (m *CoreDocumentModel) findAT(action coredocumentpb.Action, tokenID []byte, onRole func(role *coredocumentpb.Role, tokenID []byte) (*coredocumentpb.AccessToken, error)) (*coredocumentpb.AccessToken, error) {
 	cd := m.Document
 	var token coredocumentpb.AccessToken
 	for _, rule := range cd.ReadRules {
