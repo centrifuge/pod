@@ -138,7 +138,7 @@ func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, req MintNFTRequ
 	}
 
 	if !req.GrantNFTReadAccess && req.SubmitNFTReadAccessProof {
-		return nil, nil, errors.New("enabled grant nft access to generate NFT read access proof")
+		return nil, nil, errors.New("enable grant_nft_access to generate Read Access Proof")
 	}
 
 	tokenID := NewTokenID()
