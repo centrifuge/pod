@@ -850,7 +850,7 @@ func (m *CoreDocumentModel) ATOwnerCanRead(tokenReq *p2ppb.AccessTokenRequest, a
 	if err != nil {
 		return err
 	}
-	// check that the token granter has the correct access type for the document
+	// check that the token granter has access to the document
 	if !m.AccountCanRead(granterID) {
 		return errors.New("invalid access token granter")
 	}
