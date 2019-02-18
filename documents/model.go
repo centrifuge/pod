@@ -869,7 +869,6 @@ func (m *CoreDocumentModel) ATOwnerCanRead(tokenReq *p2ppb.AccessTokenRequest, a
 }
 
 // validateAT validates that given access token against its signature
-
 func validateAT(publicKey []byte, token *coredocumentpb.AccessToken) error {
 	// assemble token message from the token for validation
 	tm := assembleTokenMessage(token.Identifier, token.Granter, token.Grantee, token.RoleIdentifier, token.DocumentIdentifier)
