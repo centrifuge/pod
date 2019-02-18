@@ -442,10 +442,10 @@ func (m *CoreDocumentModel) CalculateSigningRoot(dataRoot []byte) error {
 // Returns an error if not.
 func (m *CoreDocumentModel) AccountCanRead(account identity.CentID) bool {
 	// loop though read rules, check all the rules
-	return m.findRole(nil, func(_, _ int, role *coredocumentpb.Role) bool {
+	return m.findRole(func(_, _ int, role *coredocumentpb.Role) bool {
 		_, found := isAccountInRole(role, account)
 		return found
-	})
+	}, coredocumentpb.Action_ACTION_READ, coredocumentpb.Action_ACTION_READ_SIGN)
 }
 
 // GenerateNewSalts generates salts for new document
@@ -543,10 +543,15 @@ func (m *CoreDocumentModel) addNewRule(role *coredocumentpb.Role, action coredoc
 }
 
 // findRole calls OnRole for every role
-func (m *CoreDocumentModel) findRole(action *coredocumentpb.Action, onRole func(rridx, ridx int, role *coredocumentpb.Role) bool) bool {
+func (m *CoreDocumentModel) findRole(onRole func(rridx, ridx int, role *coredocumentpb.Role) bool, actions ...coredocumentpb.Action) bool {
 	cd := m.Document
+	am := make(map[int32]struct{})
+	for _, a := range actions {
+		am[int32(a)] = struct{}{}
+	}
+
 	for i, rule := range cd.ReadRules {
-		if action != nil && rule.Action != *action {
+		if _, ok := am[int32(rule.Action)]; !ok {
 			continue
 		}
 
@@ -663,11 +668,10 @@ func (m *CoreDocumentModel) NFTOwnerCanRead(registry common.Address, tokenID []b
 	}
 
 	// check if the nft is present in read rules
-	action := coredocumentpb.Action_ACTION_READ
-	found := m.findRole(&action, func(_, _ int, role *coredocumentpb.Role) bool {
+	found := m.findRole(func(_, _ int, role *coredocumentpb.Role) bool {
 		_, found := isNFTInRole(role, registry, tokenID)
 		return found
-	})
+	}, coredocumentpb.Action_ACTION_READ)
 
 	if !found {
 		return errors.New("nft missing")
@@ -896,8 +900,7 @@ func getReadAccessProofKeys(m *CoreDocumentModel, registry common.Address, token
 	var nftIdx int // index of the NFT in the above role
 	var rk []byte  // role key of the above role
 
-	action := coredocumentpb.Action_ACTION_READ
-	found := m.findRole(&action, func(i, j int, role *coredocumentpb.Role) bool {
+	found := m.findRole(func(i, j int, role *coredocumentpb.Role) bool {
 		z, found := isNFTInRole(role, registry, tokenID)
 		if found {
 			rridx = i
@@ -907,7 +910,7 @@ func getReadAccessProofKeys(m *CoreDocumentModel, registry common.Address, token
 		}
 
 		return found
-	})
+	}, coredocumentpb.Action_ACTION_READ)
 
 	if !found {
 		return nil, ErrNFTRoleMissing

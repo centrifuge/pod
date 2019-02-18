@@ -107,7 +107,7 @@ func TestPaymentObligationService_mint_grant_read_access(t *testing.T) {
 		DocumentID:         id,
 		RegistryAddress:    registry,
 		DepositAddress:     common.HexToAddress(depositAddr),
-		ProofFields:        []string{"invoice.gross_amount", "invoice.currency", "invoice.due_date", "collaborators[0]"},
+		ProofFields:        []string{"invoice.gross_amount", "invoice.currency", "invoice.due_date"},
 		GrantNFTReadAccess: true,
 	}
 	tokenID := mintNFT(t, ctx, req, cid, registry)
@@ -135,7 +135,7 @@ func failMintNFT(t *testing.T, grantNFT, nftReadAccess bool, roleProof []byte) {
 		DocumentID:               id,
 		RegistryAddress:          registry,
 		DepositAddress:           common.HexToAddress(depositAddr),
-		ProofFields:              []string{"invoice.gross_amount", "invoice.currency", "invoice.due_date", "collaborators[0]"},
+		ProofFields:              []string{"invoice.gross_amount", "invoice.currency", "invoice.due_date"},
 		GrantNFTReadAccess:       grantNFT,
 		SubmitRoleProof:          roleProof,
 		SubmitNFTReadAccessProof: nftReadAccess,
@@ -164,7 +164,7 @@ func mintNFTWithProofs(t *testing.T, grantAccess, tokenProof, readAccessProof bo
 		DocumentID:               id,
 		RegistryAddress:          registry,
 		DepositAddress:           common.HexToAddress(depositAddr),
-		ProofFields:              []string{"invoice.gross_amount", "invoice.currency", "invoice.due_date", "collaborators[0]", "next_version"},
+		ProofFields:              []string{"invoice.gross_amount", "invoice.currency", "invoice.due_date", "next_version"},
 		GrantNFTReadAccess:       grantAccess,
 		SubmitTokenProof:         tokenProof,
 		SubmitNFTReadAccessProof: readAccessProof,
