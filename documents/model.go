@@ -184,25 +184,25 @@ func (m *CoreDocumentModel) PrepareNewVersion(collaborators []string) (*CoreDocu
 
 // NewWithCollaborators generates new core document, adds collaborators, adds read rules and fills salts
 func (m *CoreDocumentModel) NewWithCollaborators(collaborators []string) (*CoreDocumentModel, error) {
-	dm := NewCoreDocModel()
+
 	ids, err := identity.CentIDsFromStrings(collaborators)
 	if err != nil {
 		return nil, errors.New("failed to decode collaborator: %v", err)
 	}
 
 	for i := range ids {
-		dm.Document.Collaborators = append(dm.Document.Collaborators, ids[i][:])
+		m.Document.Collaborators = append(m.Document.Collaborators, ids[i][:])
 	}
-	err = dm.initReadRules(ids)
+	err = m.initReadRules(ids)
 	if err != nil {
 		return nil, errors.New("failed to init read rules: %v", err)
 	}
 
-	if err := dm.setCoreDocumentSalts(); err != nil {
+	if err := m.setCoreDocumentSalts(); err != nil {
 		return nil, err
 	}
 
-	return dm, nil
+	return m, nil
 }
 
 // CreateProofs util function that takes document data tree, coreDocument and a list fo fields and generates proofs
@@ -698,6 +698,7 @@ func ConstructNFT(registry common.Address, tokenID []byte) ([]byte, error) {
 
 // AddNFTToReadRules adds NFT token to the read rules of core document.
 func (m *CoreDocumentModel) AddNFTToReadRules(registry common.Address, tokenID []byte) error {
+	// TODO: prepare new version/anchor document after adding nft to read rules
 	cd := m.Document
 	nft, err := ConstructNFT(registry, tokenID)
 	if err != nil {
@@ -814,11 +815,11 @@ func (m *CoreDocumentModel) assembleAccessToken(id identity.IDConfig, payload do
 
 // AddAccessTokenToReadRules adds the AccessToken(s) to the read rules of the document
 func (m *CoreDocumentModel) AddAccessTokenToReadRules(id identity.IDConfig, payload documentpb.AccessTokenParams) error {
+	// TODO: prepare new version/anchor document after adding token to read rules
 	at, err := m.assembleAccessToken(id, payload)
 	if err != nil {
 		return errors.New("failed to construct AT: %v", err)
 	}
-
 	role := new(coredocumentpb.Role)
 	rk, err := utils.ConvertIntToByte32(len(m.Document.Roles))
 	if err != nil {
@@ -827,8 +828,7 @@ func (m *CoreDocumentModel) AddAccessTokenToReadRules(id identity.IDConfig, payl
 	role.RoleKey = rk[:]
 	role.AccessTokens = append(role.AccessTokens, at)
 	m.addNewRule(role, coredocumentpb.Action_ACTION_READ)
-	err = m.setCoreDocumentSalts()
-	if err != nil {
+	if err := m.setCoreDocumentSalts(); err != nil {
 		return errors.New("failed to generate CoreDocumentSalts")
 	}
 	return nil

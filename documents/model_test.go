@@ -4,6 +4,9 @@ package documents
 
 import (
 	"crypto/sha256"
+	"fmt"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	"os"
 	"testing"
 
@@ -31,7 +34,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/queue"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/stretchr/testify/assert"
 )
@@ -443,6 +446,88 @@ func TestReadAccessValidator_NFTOwnerCanRead(t *testing.T) {
 	err = dm.NFTOwnerCanRead(registry, tokenID, account)
 	assert.Error(t, err)
 	tr.AssertExpectations(t)
+}
+
+func TestCoreDocumentModel_AddAccessTokenToReadRules(t *testing.T) {
+	m := NewCoreDocModel()
+	m.Document.DocumentRoot = utils.RandomSlice(32)
+	idConfig, err := identity.GetIdentityConfig(cfg)
+	assert.NoError(t, err)
+
+	dm, err := m.PrepareNewVersion([]string{"0x010203040506"})
+	cd := dm.Document
+	assert.Len(t, cd.ReadRules, 1)
+	assert.Equal(t, cd.ReadRules[0].Action, coredocumentpb.Action_ACTION_READ_SIGN)
+	assert.Len(t, cd.Roles, 1)
+
+	// invalid access token payload
+	payload := documentpb.AccessTokenParams{
+		// invalid grantee format
+		Grantee: "randomCentID",
+		DocumentIdentifier: "randomDocID",
+	}
+
+	err = dm.AddAccessTokenToReadRules(*idConfig, payload)
+    assert.Error(t, err, "	failed to construct AT: hex string without 0x prefix")
+
+		payload = documentpb.AccessTokenParams{
+		// invalid doc id format
+		Grantee: "0x010203040507",
+		DocumentIdentifier: "randomDocID",
+	}
+		err = dm.AddAccessTokenToReadRules(*idConfig, payload)
+    assert.Error(t, err, "failed to construct AT: hex string without 0x prefix")
+
+	// valid access token payload
+		payload = documentpb.AccessTokenParams{
+		Grantee: "0x010203040507",
+		DocumentIdentifier: "0x010203040508",
+	}
+	err = dm.AddAccessTokenToReadRules(*idConfig, payload)
+	assert.NoError(t, err)
+	assert.Len(t, cd.ReadRules, 2)
+	assert.Equal(t, cd.ReadRules[1].Action, coredocumentpb.Action_ACTION_READ)
+	assert.Len(t, cd.Roles, 2)
+}
+
+func TestCoreDocumentModel_ATOwnerCanRead(t *testing.T) {
+m := NewCoreDocModel()
+	m.Document.DocumentRoot = utils.RandomSlice(32)
+	idConfig, err := identity.GetIdentityConfig(cfg)
+	assert.NoError(t, err)
+
+	dm, err := m.PrepareNewVersion([]string{"0x010203040506"})
+	assert.NoError(t, err)
+
+	cd := dm.Document
+	payload := documentpb.AccessTokenParams{
+		Grantee: "0x010203040508",
+		DocumentIdentifier: "0x010203040508",
+	}
+	err = dm.AddAccessTokenToReadRules(*idConfig, payload)
+	docRoles := cd.GetRoles()
+	fmt.Print(docRoles)
+	at := docRoles[1].AccessTokens[0]
+	fmt.Print(at)
+	// wrong token identifier
+	tr := &p2ppb.AccessTokenRequest{
+		DelegatingDocumentIdentifier: []byte{1,2,3,4},
+		AccessTokenId: []byte{1,2,3,4,5},
+	}
+	err = dm.ATOwnerCanRead(tr, idConfig.ID)
+	assert.Error(t, err, "access token not found")
+	// invalid access token
+	tr = &p2ppb.AccessTokenRequest{
+		DelegatingDocumentIdentifier: []byte{1,2,3,4},
+		AccessTokenId: at.Identifier,
+	}
+	err = dm.ATOwnerCanRead(tr, idConfig.ID)
+	assert.Error(t, err, "access token is invalid")
+	// TODO: how to mock dm in order to get valid AT/success test?
+}
+
+func TestCoreDocumentModel_ValidateDocumentAccess(t *testing.T) {
+
 }
 
 func TestGetCoreDocumentSalts(t *testing.T) {
