@@ -719,24 +719,22 @@ func (m *CoreDocumentModel) AddNFTToReadRules(registry common.Address, tokenID [
 }
 
 //ValidateDocumentAccess validates the GetDocument request against the AccessType indicated in the request
-func (m *CoreDocumentModel) ValidateDocumentAccess(docReq *p2ppb.GetDocumentRequest, requesterCentID identity.CentID) error {
+func (m *CoreDocumentModel) ValidateDocumentAccess(docReq *p2ppb.GetDocumentRequest, peer identity.CentID) error {
 	// checks which access type is relevant for the request
 	switch docReq.GetAccessType() {
 	case p2ppb.AccessType_ACCESS_TYPE_REQUESTER_VERIFICATION:
-		if m.AccountCanRead(requesterCentID) {
+		if m.AccountCanRead(peer) {
 			return errors.New("requester does not have access")
 		}
 	case p2ppb.AccessType_ACCESS_TYPE_NFT_OWNER_VERIFICATION:
 		registry := common.BytesToAddress(docReq.NftRegistryAddress)
-		if m.NFTOwnerCanRead(registry, docReq.NftTokenId, requesterCentID) != nil {
+		if m.NFTOwnerCanRead(registry, docReq.NftTokenId, peer) != nil {
 			return errors.New("requester does not have access")
 		}
 	case p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION:
-		if m.ATOwnerCanRead(docReq.AccessTokenRequest, requesterCentID) != nil {
+		if m.ATOwnerCanRead(docReq.AccessTokenRequest, peer) != nil {
 			return errors.New("requester does not have access")
 		}
-	case p2ppb.AccessType_ACCESS_TYPE_INVALID:
-		return errors.New("invalid access type")
 	default:
 		return errors.New("invalid access type ")
 	}
@@ -759,12 +757,26 @@ func isNFTInRole(role *coredocumentpb.Role, registry common.Address, tokenID []b
 	return false
 }
 
+// assembleTokenMessage assembles a token message
+func assembleTokenMessage(tokenIdentifier []byte, granterID []byte, granteeID []byte, roleID []byte, docID []byte) []byte {
+	tm := append(tokenIdentifier, granterID...)
+	tm = append(tm, granteeID...)
+	tm = append(tm, roleID...)
+	tm = append(tm, docID...)
+
+	return tm
+
+}
+
 // assembleAccessToken assembles a Read Access Token from the payload received
-func assembleAccessToken(dm *CoreDocumentModel, id identity.IDConfig, payload documentpb.AccessTokenParams) (*coredocumentpb.AccessToken, error) {
+func (m *CoreDocumentModel) assembleAccessToken( id identity.IDConfig, payload documentpb.AccessTokenParams) (*coredocumentpb.AccessToken, error) {
 	tokenIdentifier := utils.RandomSlice(32)
 	granterID := id.ID[:]
-	roleID := byte(len(dm.Document.Roles))
-	grantee, err := hexutil.Decode(payload.GetGrantee())
+	roleID, err := utils.ConvertIntToByte32(len(m.Document.Roles))
+	if err != nil {
+		return nil, err
+	}
+	granteeID, err := hexutil.Decode(payload.GetGrantee())
 	if err != nil {
 		return nil, err
 	}
@@ -772,37 +784,37 @@ func assembleAccessToken(dm *CoreDocumentModel, id identity.IDConfig, payload do
 	if err != nil {
 		return nil, err
 	}
+
 	// assemble access token message to be signed
-	tm := append(tokenIdentifier, granterID...)
-	tm = append(tm, grantee...)
-	tm = append(tm, roleID)
-	tm = append(tm, docID...)
+	tm := assembleTokenMessage(tokenIdentifier, granterID, granteeID, roleID[:], docID)
 
 	// fetch key pair from identity
 	privateKey := id.Keys[identity.KeyPurposeEthMsgAuth].PrivateKey
 	pubKey := id.Keys[identity.KeyPurposeEthMsgAuth].PublicKey
 
 	// sign the assembled access token message, return signature
-	sig, err := crypto.SignMessage(privateKey, tm, "CurveSecp256K1", true)
+	sig, err := crypto.SignMessage(privateKey, tm, crypto.CurveSecp256K1, true)
 	if err != nil {
 		return nil, err
 	}
 	// assemble the access token, appending the signature and public keys
-	at := new(coredocumentpb.AccessToken)
-	at.Identifier = tokenIdentifier
-	at.Granter = granterID
-	at.Grantee = grantee
-	at.RoleIdentifier = []byte{roleID}
-	at.DocumentIdentifier = docID
-	at.Signature = sig
-	at.Key = pubKey
+	at := &coredocumentpb.AccessToken{
+		Identifier: tokenIdentifier,
+		Granter: granterID,
+		Grantee: granteeID,
+		RoleIdentifier: roleID[:],
+		DocumentIdentifier: docID,
+		Signature: sig,
+		Key: pubKey,
+	}
 
 	return at, nil
+
 }
 
 // AddAccessTokenToReadRules adds the AccessToken(s) to the read rules of the document
 func (m *CoreDocumentModel) AddAccessTokenToReadRules(id identity.IDConfig, payload documentpb.AccessTokenParams) error {
-	at, err := assembleAccessToken(m, id, payload)
+	at, err := m.assembleAccessToken(id, payload)
 	if err != nil {
 		return errors.New("failed to construct AT: %v", err)
 	}
@@ -825,46 +837,43 @@ func (m *CoreDocumentModel) AddAccessTokenToReadRules(id identity.IDConfig, payl
 // ATOwnerCanRead checks if the owner of the AT can read the document
 func (m *CoreDocumentModel) ATOwnerCanRead(tokenReq *p2ppb.AccessTokenRequest, account identity.CentID) error {
 	// check if the access token is present in read rules
-	token, err := m.findAT(coredocumentpb.Action_ACTION_READ, tokenReq.AccessTokenId, func(role *coredocumentpb.Role, tokenID []byte) (*coredocumentpb.AccessToken, error) {
-		return isATInRole(role, tokenReq.AccessTokenId)
-	})
+	token, err := m.findAT(coredocumentpb.Action_ACTION_READ, tokenReq.AccessTokenId)
 	if err != nil {
 		return err
-	}
-
-	granterID, err := identity.ToCentID(token.Granter)
-	if err != nil {
-		return err
-	}
-	// check that the token granter has the correct access type for the document
-	validGranter := m.AccountCanRead(granterID)
-	if !validGranter {
-		return errors.New("invalid access token granter")
-	}
-	// TODO:  check that the granter is the owner of the public key on the access token
-
-	// check that the account requesting access is the grantee of the access token
-	if !bytes.Equal(account[:], token.Grantee) {
-		return errors.New("access token grantee is not the same as the account requesting access")
 	}
 	// validate the access token
 	err = validateAT(token.Key, token)
 	if err != nil {
 		return err
 	}
+	granterID, err := identity.ToCentID(token.Granter)
+	if err != nil {
+		return err
+	}
+	// check that the token granter has the correct access type for the document
+	if !m.AccountCanRead(granterID) {
+		return errors.New("invalid access token granter")
+	}
+	// TODO:  check that the granter is the owner of the public key on the access token
+	// check that the account requesting access is the grantee of the access token
+	granteeID, err := identity.ToCentID(token.Grantee)
+	if err != nil {
+		return err
+	}
+	if account.Equal(granteeID) {
+		return errors.New("access token grantee is not the same as the account requesting access")
+	}
 
 	return nil
+
 }
 
 // validateAT validates that given access token against its signature
 
 func validateAT(publicKey []byte, token *coredocumentpb.AccessToken) error {
-	tm := append(token.Identifier, token.Granter...)
-	tm = append(tm, token.Grantee...)
-	tm = append(tm, token.RoleIdentifier...)
-	tm = append(tm, token.DocumentIdentifier...)
-
-	validated := crypto.VerifyMessage(publicKey, tm, token.Signature, "CurveSecp256K1", true)
+	// assemble token message from the token for validation
+	tm := assembleTokenMessage(token.Identifier, token.Granter, token.Grantee, token.RoleIdentifier, token.DocumentIdentifier)
+	validated := crypto.VerifyMessage(publicKey, tm, token.Signature, crypto.CurveSecp256K1, true)
 	if !validated {
 		return errors.New("access token is invalid")
 	}
@@ -881,30 +890,30 @@ func isATInRole(role *coredocumentpb.Role, tokenID []byte) (*coredocumentpb.Acce
 	return nil, errors.New("access token not found")
 }
 
+
 // findAT calls OnRole for every role, returns the access token if it is found in the Roles of the document
-func (m *CoreDocumentModel) findAT(action coredocumentpb.Action, tokenID []byte, onRole func(role *coredocumentpb.Role, tokenID []byte) (*coredocumentpb.AccessToken, error)) (*coredocumentpb.AccessToken, error) {
+func (m *CoreDocumentModel) findAT(action coredocumentpb.Action, tokenID []byte) (*coredocumentpb.AccessToken, error) {
 	cd := m.Document
 	var token coredocumentpb.AccessToken
 	for _, rule := range cd.ReadRules {
 		if rule.Action != action {
 			continue
 		}
-
-		for _, rk := range rule.Roles {
-			role, err := getRole(rk, cd.Roles)
-			if err != nil {
-				// seems like roles and rules are not in sync
-				// skip to next one
-				continue
+		ruleRoles := rule.GetRoles()
+			for _, rk := range ruleRoles {
+				role, err := getRole(rk, cd.Roles)
+				if err != nil {
+					// seems like roles and rules are not in sync
+					// skip to next one
+					continue
+				}
+				at, err := isATInRole(role, tokenID)
+				if err != nil {
+					return nil, err
+				}
+				token = *at
 			}
-
-			at, err := onRole(role, tokenID)
-			if err != nil {
-				return nil, err
-			}
-			token = *at
-			return at, nil
 		}
-	}
-	return &token, nil
+		return &token, nil
 }
+
