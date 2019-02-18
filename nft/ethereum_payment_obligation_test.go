@@ -10,7 +10,6 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -18,7 +17,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/nft"
 	"github.com/centrifuge/go-centrifuge/testingutils"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/testingutils/testingtx"
@@ -156,11 +155,12 @@ func TestPaymentObligationService(t *testing.T) {
 		{
 			"happypath",
 			func() (testingdocuments.MockService, *MockPaymentObligation, testingcommons.MockIDService, testingcommons.MockEthClient, testingconfig.MockConfig, *testingutils.MockQueue, *testingtx.MockTxManager) {
-				coreDoc := coredocument.New()
+				coreDocModel := documents.NewCoreDocModel()
+				coreDoc := coreDocModel.Document
 				coreDoc.DocumentRoot = utils.RandomSlice(32)
 				proof := getDummyProof(coreDoc)
 				docServiceMock := testingdocuments.MockService{}
-				docServiceMock.On("GetCurrentVersion", decodeHex("0x1212")).Return(&invoice.Invoice{InvoiceNumber: "1232", CoreDocument: coreDoc}, nil)
+				docServiceMock.On("GetCurrentVersion", decodeHex("0x1212")).Return(&invoice.Invoice{InvoiceNumber: "1232", CoreDocumentModel: coreDocModel}, nil)
 				docServiceMock.On("CreateProofs", decodeHex("0x1212"), []string{"collaborators[0]"}).Return(proof, nil)
 				paymentObligationMock := &MockPaymentObligation{}
 				idServiceMock := testingcommons.MockIDService{}
@@ -266,20 +266,22 @@ func decodeHex(hex string) []byte {
 }
 
 func Test_addNFT(t *testing.T) {
-	cd := coredocument.New()
+	dm := documents.NewCoreDocModel()
+	cd := dm.Document
+	cd.DocumentRoot = utils.RandomSlice(32)
 	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
 	registry2 := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da02")
 	tokenID := utils.RandomSlice(32)
 	assert.Nil(t, cd.Nfts)
 
-	addNFT(cd, registry.Bytes(), tokenID)
+	addNFT(dm, registry.Bytes(), tokenID)
 	assert.Len(t, cd.Nfts, 1)
 	assert.Len(t, cd.Nfts[0].RegistryId, 32)
 	assert.Equal(t, tokenID, getStoredNFT(cd.Nfts, registry.Bytes()).TokenId)
 	assert.Nil(t, getStoredNFT(cd.Nfts, registry2.Bytes()))
 
 	tokenID = utils.RandomSlice(32)
-	addNFT(cd, registry.Bytes(), tokenID)
+	addNFT(dm, registry.Bytes(), tokenID)
 	assert.Len(t, cd.Nfts, 1)
 	assert.Len(t, cd.Nfts[0].RegistryId, 32)
 	assert.Equal(t, tokenID, getStoredNFT(cd.Nfts, registry.Bytes()).TokenId)

@@ -106,10 +106,10 @@ type mockModel struct {
 	CoreDocument *coredocumentpb.CoreDocument
 }
 
-func (m *mockModel) PackCoreDocument() (*coredocumentpb.CoreDocument, error) {
+func (m *mockModel) PackCoreDocument() (*documents.CoreDocumentModel, error) {
 	args := m.Called()
-	cd, _ := args.Get(0).(*coredocumentpb.CoreDocument)
-	return cd, args.Error(1)
+	dm, _ := args.Get(0).(*documents.CoreDocumentModel)
+	return dm, args.Error(1)
 }
 
 func (m *mockModel) JSON() ([]byte, error) {

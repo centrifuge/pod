@@ -8,10 +8,11 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/coredocument"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
-	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
@@ -94,11 +95,12 @@ func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, toke
 		return mreq, err
 	}
 
-	corDoc, err := model.PackCoreDocument()
+	corDocModel, err := model.PackCoreDocument()
 	if err != nil {
 		return mreq, err
 	}
 
+	corDoc := corDocModel.Document
 	docProofs, err := s.docSrv.CreateProofs(ctx, req.DocumentID, req.ProofFields)
 	if err != nil {
 		return mreq, err
@@ -258,11 +260,12 @@ func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, request MintNFT
 		return nil, nil, err
 	}
 
-	cd, err := model.PackCoreDocument()
+	dm, err := model.PackCoreDocument()
 	if err != nil {
 		return nil, nil, err
 	}
 
+	cd := dm.Document
 	// if the role_proof is given check if the role exists with account id as collaborator
 	// at the moment, since we generate role key randomly, this will not work
 	// but once we figure out acls on the client API, this will continue working with out any chnages
@@ -313,19 +316,20 @@ func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID,
 			return
 		}
 
-		cd, err := model.PackCoreDocument()
+		dm, err := model.PackCoreDocument()
 		if err != nil {
 			errOut <- err
 			return
 		}
 
-		data := cd.EmbeddedData
-		cd, err = coredocument.PrepareNewVersion(*cd, nil)
+		data := dm.Document.EmbeddedData
+		newDM, err := dm.PrepareNewVersion(nil)
 		if err != nil {
 			errOut <- err
 			return
 		}
 
+		cd := newDM.Document
 		cd.EmbeddedData = data
 		registry := common.HexToAddress(req.RegistryAddress)
 		addNFT(cd, registry.Bytes(), tokenID[:])
@@ -343,7 +347,7 @@ func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID,
 			return
 		}
 
-		model, err = s.docSrv.DeriveFromCoreDocument(cd)
+		model, err = s.docSrv.DeriveFromCoreDocumentModel(newDM)
 		if err != nil {
 			errOut <- err
 			return
@@ -358,7 +362,7 @@ func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID,
 		isDone := <-done
 		if !isDone {
 			// some problem occured in a child task
-			errOut <- errors.New("update document failed for document %s and transaction %s", hexutil.Encode(cd.DocumentIdentifier), txID)
+			errOut <- errors.New("update document failed for document %s and transaction %s", hexutil.Encode(newCD.DocumentIdentifier), txID)
 			return
 		}
 
@@ -435,7 +439,8 @@ func getRoleForAccount(cd *coredocumentpb.CoreDocument, roleName string, id iden
 
 // addNFT adds/replaces the NFT
 // Note: this is replace operation. Ensure existing token is not minted
-func addNFT(cd *coredocumentpb.CoreDocument, registry, tokenID []byte) {
+func addNFT(dm *documents.CoreDocumentModel, registry, tokenID []byte) {
+	cd := dm.Document
 	nft := getStoredNFT(cd.Nfts, registry)
 	if nft == nil {
 		nft = new(coredocumentpb.NFT)

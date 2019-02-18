@@ -4,18 +4,18 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/centrifuge/go-centrifuge/documents"
+
 	"github.com/centrifuge/go-centrifuge/p2p/common"
 
 	"github.com/golang/protobuf/proto"
 
 	"github.com/centrifuge/go-centrifuge/contextutil"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/errors"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/code"
-	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/version"
@@ -127,7 +127,7 @@ func (s *peer) getPeerID(id identity.Identity) (libp2pPeer.ID, error) {
 }
 
 // getSignatureForDocument requests the target node to sign the document
-func (s *peer) getSignatureForDocument(ctx context.Context, doc coredocumentpb.CoreDocument, receiverCentID identity.CentID) (*p2ppb.SignatureResponse, error) {
+func (s *peer) getSignatureForDocument(ctx context.Context, model documents.CoreDocumentModel, receiverCentID identity.CentID) (*p2ppb.SignatureResponse, error) {
 	nc, err := s.config.GetConfig()
 	if err != nil {
 		return nil, err
@@ -135,6 +135,7 @@ func (s *peer) getSignatureForDocument(ctx context.Context, doc coredocumentpb.C
 
 	var resp *p2ppb.SignatureResponse
 	var header *p2ppb.Header
+	doc := model.Document
 
 	tc, err := s.config.GetAccount(receiverCentID[:])
 	if err == nil {
@@ -146,7 +147,7 @@ func (s *peer) getSignatureForDocument(ctx context.Context, doc coredocumentpb.C
 			return nil, err
 		}
 
-		resp, err = h.RequestDocumentSignature(localPeerCtx, &p2ppb.SignatureRequest{Document: &doc})
+		resp, err = h.RequestDocumentSignature(localPeerCtx, &p2ppb.SignatureRequest{Document: doc})
 		if err != nil {
 			return nil, err
 		}
@@ -162,7 +163,7 @@ func (s *peer) getSignatureForDocument(ctx context.Context, doc coredocumentpb.C
 		if err != nil {
 			return nil, err
 		}
-		envelope, err := p2pcommon.PrepareP2PEnvelope(ctx, nc.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: &doc})
+		envelope, err := p2pcommon.PrepareP2PEnvelope(ctx, nc.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: doc})
 		if err != nil {
 			return nil, err
 		}
@@ -190,7 +191,7 @@ func (s *peer) getSignatureForDocument(ctx context.Context, doc coredocumentpb.C
 		header = recvEnvelope.Header
 	}
 
-	err = validateSignatureResp(s.idService, receiverCentID, &doc, header, resp)
+	err = validateSignatureResp(s.idService, receiverCentID, &model, header, resp)
 	if err != nil {
 		return nil, err
 	}
@@ -204,8 +205,8 @@ type signatureResponseWrap struct {
 	err  error
 }
 
-func (s *peer) getSignatureAsync(ctx context.Context, doc *coredocumentpb.CoreDocument, receiverCentID identity.CentID, out chan<- signatureResponseWrap) {
-	resp, err := s.getSignatureForDocument(ctx, *doc, receiverCentID)
+func (s *peer) getSignatureAsync(ctx context.Context, model documents.CoreDocumentModel, receiverCentID identity.CentID, out chan<- signatureResponseWrap) {
+	resp, err := s.getSignatureForDocument(ctx, model, receiverCentID)
 	out <- signatureResponseWrap{
 		resp: resp,
 		err:  err,
@@ -213,7 +214,7 @@ func (s *peer) getSignatureAsync(ctx context.Context, doc *coredocumentpb.CoreDo
 }
 
 // GetSignaturesForDocument requests peer nodes for the signature and verifies them
-func (s *peer) GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocument) error {
+func (s *peer) GetSignaturesForDocument(ctx context.Context, model *documents.CoreDocumentModel) error {
 	in := make(chan signatureResponseWrap)
 	defer close(in)
 
@@ -227,11 +228,12 @@ func (s *peer) GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb
 		return centerrors.Wrap(err, "failed to get self")
 	}
 
-	extCollaborators, err := coredocument.GetExternalCollaborators(self.ID, doc)
+	extCollaborators, err := model.GetExternalCollaborators(self.ID)
 	if err != nil {
 		return centerrors.Wrap(err, "failed to get external collaborators")
 	}
 
+	doc := model.Document
 	var count int
 	peerCtx, _ := context.WithTimeout(ctx, nc.GetP2PConnectionTimeout())
 	for _, collaborator := range extCollaborators {
@@ -240,7 +242,10 @@ func (s *peer) GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb
 			return centerrors.Wrap(err, "failed to convert to CentID")
 		}
 		count++
-		go s.getSignatureAsync(peerCtx, doc, collaboratorID, in)
+		m := *model
+		nd := *doc
+		m.Document = &nd
+		go s.getSignatureAsync(peerCtx, m, collaboratorID, in)
 	}
 
 	var responses []signatureResponseWrap
@@ -270,7 +275,7 @@ func convertClientError(recv *p2ppb.Envelope) error {
 	return errors.New(resp.Message)
 }
 
-func validateSignatureResp(identityService identity.Service, receiver identity.CentID, doc *coredocumentpb.CoreDocument, header *p2ppb.Header, resp *p2ppb.SignatureResponse) error {
+func validateSignatureResp(identityService identity.Service, receiver identity.CentID, model *documents.CoreDocumentModel, header *p2ppb.Header, resp *p2ppb.SignatureResponse) error {
 	compatible := version.CheckVersion(header.NodeVersion)
 	if !compatible {
 		return version.IncompatibleVersionError(header.NodeVersion)
@@ -281,6 +286,7 @@ func validateSignatureResp(identityService identity.Service, receiver identity.C
 		return centerrors.New(code.AuthenticationFailed, err.Error())
 	}
 
+	doc := model.Document
 	err = identityService.ValidateSignature(resp.Signature, doc.SigningRoot)
 	if err != nil {
 		return centerrors.New(code.AuthenticationFailed, "signature invalid")

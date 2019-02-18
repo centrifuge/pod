@@ -3,9 +3,7 @@ package invoice
 import (
 	"context"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/contextutil"
-	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -57,10 +55,12 @@ func DefaultService(
 	}
 }
 
-// DeriveFromCoreDocument unpacks the core document into a model
-func (s service) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (documents.Model, error) {
-	var model documents.Model = new(Invoice)
-	err := model.UnpackCoreDocument(cd)
+// DeriveFromCoreDocumentModel takes a core document model and returns an invoice
+func (s service) DeriveFromCoreDocumentModel(dm *documents.CoreDocumentModel) (documents.Model, error) {
+	var model documents.Model = &Invoice{
+		CoreDocumentModel: dm,
+	}
+	err := model.UnpackCoreDocument(dm)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentUnPackingCoreDocument, err)
 	}
@@ -107,7 +107,7 @@ func (s service) validateAndPersist(ctx context.Context, old, new documents.Mode
 	}
 
 	// we use CurrentVersion as the id since that will be unique across multiple versions of the same document
-	err = s.repo.Create(self.ID[:], inv.CoreDocument.CurrentVersion, inv)
+	err = s.repo.Create(self.ID[:], inv.CoreDocumentModel.Document.CurrentVersion, inv)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentPersistence, err)
 	}
@@ -127,13 +127,13 @@ func (s service) Create(ctx context.Context, inv documents.Model) (documents.Mod
 		return nil, uuid.Nil, nil, err
 	}
 
-	cd, err := inv.PackCoreDocument()
+	dm, err := inv.PackCoreDocument()
 	if err != nil {
 		return nil, uuid.Nil, nil, err
 	}
 
 	txID := contextutil.TX(ctx)
-	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, self.ID, txID, cd.CurrentVersion)
+	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, self.ID, txID, dm.Document.CurrentVersion)
 	if err != nil {
 		return nil, uuid.Nil, nil, err
 	}
@@ -147,12 +147,11 @@ func (s service) Update(ctx context.Context, inv documents.Model) (documents.Mod
 		return nil, uuid.Nil, nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
 	}
 
-	cd, err := inv.PackCoreDocument()
+	dm, err := inv.PackCoreDocument()
 	if err != nil {
 		return nil, uuid.Nil, nil, errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
 	}
-
-	old, err := s.GetCurrentVersion(ctx, cd.DocumentIdentifier)
+	old, err := s.GetCurrentVersion(ctx, dm.Document.DocumentIdentifier)
 	if err != nil {
 		return nil, uuid.Nil, nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
 	}
@@ -163,7 +162,7 @@ func (s service) Update(ctx context.Context, inv documents.Model) (documents.Mod
 	}
 
 	txID := contextutil.TX(ctx)
-	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, self.ID, txID, cd.CurrentVersion)
+	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, self.ID, txID, dm.Document.CurrentVersion)
 	if err != nil {
 		return nil, uuid.Nil, nil, err
 	}
@@ -172,11 +171,11 @@ func (s service) Update(ctx context.Context, inv documents.Model) (documents.Mod
 
 // DeriveInvoiceResponse returns create response from invoice model
 func (s service) DeriveInvoiceResponse(doc documents.Model) (*clientinvoicepb.InvoiceResponse, error) {
-	cd, err := doc.PackCoreDocument()
+	dm, err := doc.PackCoreDocument()
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
 	}
-
+	cd := dm.Document
 	collaborators := make([]string, len(cd.Collaborators))
 	for i, c := range cd.Collaborators {
 		cid, err := identity.ToCentID(c)
@@ -239,7 +238,7 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *clientinv
 	}
 
 	// update core document
-	oldCD, err := old.PackCoreDocument()
+	oldDM, err := old.PackCoreDocument()
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
 	}
@@ -250,10 +249,9 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *clientinv
 	}
 
 	collaborators := append([]string{idConf.ID.String()}, payload.Collaborators...)
-	inv.CoreDocument, err = coredocument.PrepareNewVersion(*oldCD, collaborators)
+	inv.CoreDocumentModel, err = oldDM.PrepareNewVersion(collaborators)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentPrepareCoreDocument, err)
 	}
-
 	return inv, nil
 }
