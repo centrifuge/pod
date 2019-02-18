@@ -49,7 +49,7 @@ func (m mockModel) CalculateDataRoot() ([]byte, error) {
 }
 
 func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
-	srv := &testingcommons.MockIDService{}
+	srv := &testingcommons.MockIdentityService{}
 	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
 	// pack failed
 	model := mockModel{}
@@ -115,7 +115,7 @@ func (p p2pClient) GetSignaturesForDocument(ctx context.Context, doc *coredocume
 }
 
 func TestDefaultProcessor_RequestSignatures(t *testing.T) {
-	srv := &testingcommons.MockIDService{}
+	srv := &testingcommons.MockIdentityService{}
 	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	// pack failed
@@ -191,7 +191,7 @@ func TestDefaultProcessor_RequestSignatures(t *testing.T) {
 }
 
 func TestDefaultProcessor_PrepareForAnchoring(t *testing.T) {
-	srv := &testingcommons.MockIDService{}
+	srv := &testingcommons.MockIdentityService{}
 	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
 	// pack failed
 	model := mockModel{}
@@ -268,7 +268,7 @@ func (m mockRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.Document
 }
 
 func TestDefaultProcessor_AnchorDocument(t *testing.T) {
-	srv := &testingcommons.MockIDService{}
+	srv := &testingcommons.MockIdentityService{}
 	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 
@@ -333,7 +333,7 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 }
 
 func TestDefaultProcessor_SendDocument(t *testing.T) {
-	srv := &testingcommons.MockIDService{}
+	srv := &testingcommons.MockIdentityService{}
 	srv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
 	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
 	ctxh := testingconfig.CreateAccountContext(t, cfg)

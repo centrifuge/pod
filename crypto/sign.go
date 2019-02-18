@@ -44,9 +44,10 @@ func VerifySignature(pubKey, message, signature []byte) error {
 
 // Sign the document with the private key and return the signature along with the public key for the verification
 // assumes that signing root for the document is generated
-func Sign(centIDBytes []byte, privateKey []byte, pubKey []byte, payload []byte) *coredocumentpb.Signature {
+// Deprecated
+func Sign(didBytes []byte, privateKey []byte, pubKey []byte, payload []byte) *coredocumentpb.Signature {
 	return &coredocumentpb.Signature{
-		EntityId:  centIDBytes,
+		EntityId:  didBytes,
 		PublicKey: pubKey,
 		Signature: ed25519.Sign(privateKey, payload),
 		Timestamp: utils.ToTimestamp(time.Now().UTC()),

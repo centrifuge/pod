@@ -3,7 +3,11 @@ package identity
 import (
 	"context"
 	"fmt"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/crypto"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"math/big"
+	"time"
 
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	"github.com/ethereum/go-ethereum/common"
@@ -11,6 +15,7 @@ import (
 
 // DID stores the identity address of the user
 type DID common.Address
+
 
 // ToAddress returns the DID as common.Address
 func (d DID) ToAddress() common.Address {
@@ -25,6 +30,10 @@ func NewDID(address common.Address) DID {
 // NewDIDFromString returns a DID based on a hex string
 func NewDIDFromString(address string) DID {
 	return DID(common.HexToAddress(address))
+}
+
+func NewDIDFromByte(did []byte) DID {
+	return DID(common.BytesToAddress(did))
 }
 
 // Service interface contains the methods to interact with the identity contract
@@ -120,3 +129,20 @@ func (idk *key) String() string {
 	peerID, _ := ed25519.PublicKeyToP2PKey(idk.Key)
 	return fmt.Sprintf("%s", peerID.Pretty())
 }
+
+
+// SignMsg signs a message based on a secp256k1 private key
+func SignMsg(did DID,privateKey []byte,publicKey []byte, msg []byte) (*coredocumentpb.Signature, error) {
+	signature, err := crypto.SignMessage(privateKey,msg,crypto.CurveSecp256K1,true)
+	if err != nil {
+		return nil, err
+	}
+
+	return &coredocumentpb.Signature{
+		EntityId:  did.ToAddress().Bytes(),
+		PublicKey: publicKey,
+		Signature: signature,
+		Timestamp: utils.ToTimestamp(time.Now().UTC()),
+	},nil
+}
+

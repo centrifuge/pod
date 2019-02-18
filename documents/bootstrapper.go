@@ -80,9 +80,9 @@ func (PostBootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("document repository not initialised")
 	}
 
-	idService, ok := ctx[identity.BootstrappedIDService].(identity.Service)
+	didService, ok :=ctx[ideth.BootstrappedDIDService].(identity.ServiceDID)
 	if !ok {
-		return errors.New("identity service not initialised")
+		return errors.New("identity service not initialized")
 	}
 
 	anchorRepo, ok := ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
@@ -101,7 +101,7 @@ func (PostBootstrapper) Bootstrap(ctx map[string]interface{}) error {
 			TxManager: txMan,
 		},
 		config:        cfgService,
-		processor:     DefaultProcessor(idService, p2pClient, anchorRepo, cfg),
+		processor:     DefaultProcessor(didService, p2pClient, anchorRepo, cfg),
 		modelGetFunc:  repo.Get,
 		modelSaveFunc: repo.Update,
 	}

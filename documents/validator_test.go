@@ -314,6 +314,7 @@ func TestValidator_documentRootValidator(t *testing.T) {
 
 func TestValidator_selfSignatureValidator(t *testing.T) {
 	self, _ := contextutil.Self(testingconfig.CreateAccountContext(t, cfg))
+
 	idKeys := self.Keys[identity.KeyPurposeSigning]
 	rfsv := readyForSignaturesValidator(self.ID[:], idKeys.PrivateKey, idKeys.PublicKey)
 
@@ -363,7 +364,7 @@ func TestValidator_selfSignatureValidator(t *testing.T) {
 }
 
 func TestValidator_signatureValidator(t *testing.T) {
-	srv := &testingcommons.MockIDService{}
+	srv := &testingcommons.MockIdentityService{}
 	ssv := signaturesValidator(srv)
 
 	// fail getCoreDoc
