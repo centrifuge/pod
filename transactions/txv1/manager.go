@@ -77,9 +77,9 @@ func (s *manager) ExecuteWithinTX(ctx context.Context, accountID identity.CentID
 				break
 			}
 			// update tx success status only if this wasn't an existing TX.
-			// Otherwise if might update an existing tx pending status to success without actually being a success,
-			// it is assumed that status updated is already handles per task in that case.
-			// Checking individual task success is upto the transaction manager calling code.
+			// Otherwise it might update an existing tx pending status to success without actually being a success,
+			// It is assumed that status update is already handled per task in that case.
+			// Checking individual task success is upto the transaction manager users.
 			if e == nil && transactions.TxIDEqual(existingTxID, transactions.NilTxID()) {
 				tempTx.Status = transactions.Success
 			} else if e != nil {
