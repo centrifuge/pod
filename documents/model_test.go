@@ -490,7 +490,7 @@ func TestCoreDocumentModel_ATOwnerCanRead(t *testing.T) {
 	granteeID := idConfig.ID.String()
 	payload := documentpb.AccessTokenParams{
 		Grantee:            granteeID,
-		DocumentIdentifier: string(m.Document.DocumentIdentifier),
+		DocumentIdentifier: hexutil.Encode(m.Document.DocumentIdentifier),
 	}
 	dm, err := m.AddAccessTokenToReadRules(*idConfig, payload)
 	assert.NoError(t, err)
@@ -507,7 +507,7 @@ func TestCoreDocumentModel_ATOwnerCanRead(t *testing.T) {
 		AccessType:         p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION,
 		AccessTokenRequest: tr,
 	}
-	err = dm.ATOwnerCanRead(dr, idConfig.ID)
+	err = dm.accessTokenOwnerCanRead(dr, idConfig.ID)
 	assert.Error(t, err, "access token not found")
 	// valid access token
 	tr = &p2ppb.AccessTokenRequest{
@@ -515,11 +515,16 @@ func TestCoreDocumentModel_ATOwnerCanRead(t *testing.T) {
 		AccessTokenId:                at.Identifier,
 	}
 	dr.AccessTokenRequest = tr
-	err = dm.ATOwnerCanRead(dr, idConfig.ID)
+	err = dm.accessTokenOwnerCanRead(dr, idConfig.ID)
 	assert.NoError(t, err)
 }
 
 func TestCoreDocumentModel_ValidateDocumentAccess(t *testing.T) {
+	//m := NewCoreDocModel()
+	//m.Document.DocumentRoot = utils.RandomSlice(32)
+	//idConfig, err := identity.GetIdentityConfig(cfg)
+	//assert.NoError(t, err)
+
 
 }
 

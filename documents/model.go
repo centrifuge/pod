@@ -741,7 +741,7 @@ func (m *CoreDocumentModel) ValidateDocumentAccess(docReq *p2ppb.GetDocumentRequ
 			return errors.New("requester does not have access")
 		}
 	case p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION:
-		err := m.ATOwnerCanRead(docReq, peer)
+		err := m.accessTokenOwnerCanRead(docReq, peer)
 		if err != nil {
 			return errors.New("requester does not have access")
 		}
@@ -789,7 +789,10 @@ func (m *CoreDocumentModel) assembleAccessToken(id identity.IDConfig, payload do
 		return nil, err
 	}
 	// assemble access token message to be signed
-	docID := []byte(payload.DocumentIdentifier)
+	docID, err := hexutil.Decode(payload.DocumentIdentifier)
+	if err != nil {
+		return nil, err
+	}
 	tm := assembleTokenMessage(tokenIdentifier, granterID, granteeID[:], roleID[:], docID)
 
 	// fetch key pair from identity
@@ -843,7 +846,7 @@ func (m *CoreDocumentModel) AddAccessTokenToReadRules(id identity.IDConfig, payl
 }
 
 // ATOwnerCanRead checks that the owner AT can read the document requested
-func (m *CoreDocumentModel) ATOwnerCanRead(docReq *p2ppb.GetDocumentRequest, account identity.CentID) error {
+func (m *CoreDocumentModel) accessTokenOwnerCanRead(docReq *p2ppb.GetDocumentRequest, account identity.CentID) error {
 	// check if the access token is present in read rules of the document indicated in the AT request
 	token, err := m.findAT(ACLRead, docReq.AccessTokenRequest.AccessTokenId)
 	if err != nil {
