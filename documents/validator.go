@@ -290,22 +290,19 @@ func signaturesValidator(idService identity.ServiceDID) Validator {
 		for _, sig := range cd.Signatures {
 
 			did := identity.NewDIDFromByte(sig.EntityId)
-			msg, err := utils.SliceToByte32(cd.SigningRoot)
-			if err != nil {
-				return err
+			msg, errS := utils.SliceToByte32(cd.SigningRoot)
+			if errS != nil {
+				return errS
 			}
 
-			signed, err := idService.IsSignedWithPurpose(did,msg,sig.Signature,big.NewInt(identity.KeyPurposeSigning))
-			if !signed || err != nil {
-			//if erri := idService.IsSignedWithPurpose(sig, cd.SigningRoot); erri != nil {
+			signed, erri := idService.IsSignedWithPurpose(did,msg,sig.Signature,big.NewInt(identity.KeyPurposeSigning))
+			if !signed || erri != nil {
 				err = errors.AppendError(
-					err,
-					NewError(
-						fmt.Sprintf("signature_%s", hexutil.Encode(sig.EntityId)),
-						fmt.Sprintf("signature verification failed: %v", err)))
+					erri,
+					errors.New(fmt.Sprintf("signature_%s", hexutil.Encode(sig.EntityId)), fmt.Sprintf("signature verification failed: %v", err)))
 			}
 		}
-		return nil
+		return err
 	})
 }
 
