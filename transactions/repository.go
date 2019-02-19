@@ -17,7 +17,7 @@ const (
 
 // Repository can be implemented by a type that handles storage for transactions.
 type Repository interface {
-	Get(cid identity.CentID, id uuid.UUID) (*Transaction, error)
+	Get(cid identity.DID, id uuid.UUID) (*Transaction, error)
 	Save(transaction *Transaction) error
 }
 
@@ -35,7 +35,7 @@ func NewRepository(repo storage.Repository) Repository {
 
 // getKey appends identity with id.
 // With identity coming at first, we can even fetch transactions belonging to specific identity through prefix.
-func getKey(cid identity.CentID, id uuid.UUID) ([]byte, error) {
+func getKey(cid identity.DID, id uuid.UUID) ([]byte, error) {
 	if uuid.Equal(uuid.Nil, id) {
 		return nil, errors.New("transaction ID is not valid")
 	}
@@ -44,7 +44,7 @@ func getKey(cid identity.CentID, id uuid.UUID) ([]byte, error) {
 }
 
 // Get returns the transaction associated with identity and id.
-func (r *txRepository) Get(cid identity.CentID, id uuid.UUID) (*Transaction, error) {
+func (r *txRepository) Get(cid identity.DID, id uuid.UUID) (*Transaction, error) {
 	key, err := getKey(cid, id)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrKeyConstructionFailed, err)
@@ -60,7 +60,7 @@ func (r *txRepository) Get(cid identity.CentID, id uuid.UUID) (*Transaction, err
 
 // Save saves the transaction to the repository.
 func (r *txRepository) Save(tx *Transaction) error {
-	key, err := getKey(tx.CID, tx.ID)
+	key, err := getKey(tx.DID, tx.ID)
 	if err != nil {
 		return errors.NewTypedError(ErrKeyConstructionFailed, err)
 	}

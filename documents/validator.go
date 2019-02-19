@@ -275,7 +275,7 @@ func readyForSignaturesValidator(centIDBytes, priv, pub []byte) Validator {
 // assumes signing root is verified
 // Note: can be used when during the signature request on collaborator side and post signature collection on sender side
 // Note: this will break the current flow where we proceed to anchor even signatures verification fails
-func signaturesValidator(idService identity.Service) Validator {
+func signaturesValidator(idService identity.ServiceDID) Validator {
 	return ValidatorFunc(func(_, model Model) error {
 		cd, err := getCoreDocument(model)
 		if err != nil {
@@ -337,7 +337,7 @@ func anchoredValidator(repo anchors.AnchorRepository) Validator {
 // signing root validator
 // signatures validator
 // should be used when node receives a document requesting for signature
-func SignatureRequestValidator(idService identity.Service) ValidatorGroup {
+func SignatureRequestValidator(idService identity.ServiceDID) ValidatorGroup {
 	return PostSignatureRequestValidator(idService)
 }
 
@@ -347,7 +347,7 @@ func SignatureRequestValidator(idService identity.Service) ValidatorGroup {
 // document root validator
 // signatures validator
 // should be called before pre anchoring
-func PreAnchorValidator(idService identity.Service) ValidatorGroup {
+func PreAnchorValidator(idService identity.ServiceDID) ValidatorGroup {
 	return ValidatorGroup{
 		PostSignatureRequestValidator(idService),
 		documentRootValidator(),
@@ -358,7 +358,7 @@ func PreAnchorValidator(idService identity.Service) ValidatorGroup {
 // PreAnchorValidator
 // anchoredValidator
 // should be called after anchoring the document/when received anchored document
-func PostAnchoredValidator(idService identity.Service, repo anchors.AnchorRepository) ValidatorGroup {
+func PostAnchoredValidator(idService identity.ServiceDID, repo anchors.AnchorRepository) ValidatorGroup {
 	return ValidatorGroup{
 		PreAnchorValidator(idService),
 		anchoredValidator(repo),
@@ -383,7 +383,7 @@ func PreSignatureRequestValidator(centIDBytes, priv, pub []byte) ValidatorGroup 
 // signingRootValidator
 // signaturesValidator
 // should be called after the signature collection/before preparing for anchoring
-func PostSignatureRequestValidator(idService identity.Service) ValidatorGroup {
+func PostSignatureRequestValidator(idService identity.ServiceDID) ValidatorGroup {
 	return ValidatorGroup{
 		baseValidator(),
 		signingRootValidator(),

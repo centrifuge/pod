@@ -112,8 +112,9 @@ func (s service) Create(ctx context.Context, po documents.Model) (documents.Mode
 		return nil, uuid.Nil, nil, err
 	}
 
+	did := identity.NewDIDFromBytes(self.ID[:])
 	txID := contextutil.TX(ctx)
-	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, self.ID, txID, cd.CurrentVersion)
+	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, did, txID, cd.CurrentVersion)
 	if err != nil {
 		return nil, uuid.Nil, nil, nil
 	}
@@ -142,8 +143,9 @@ func (s service) Update(ctx context.Context, po documents.Model) (documents.Mode
 		return nil, uuid.Nil, nil, err
 	}
 
+	did := identity.NewDIDFromBytes(self.ID[:])
 	txID := contextutil.TX(ctx)
-	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, self.ID, txID, cd.CurrentVersion)
+	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, did, txID, cd.CurrentVersion)
 	if err != nil {
 		return nil, uuid.Nil, nil, err
 	}

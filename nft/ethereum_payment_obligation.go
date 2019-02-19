@@ -49,7 +49,7 @@ type Config interface {
 // ethereumPaymentObligation handles all interactions related to minting of NFTs for payment obligations on Ethereum
 type ethereumPaymentObligation struct {
 	cfg             Config
-	identityService identity.Service
+	identityService identity.ServiceDID
 	ethClient       ethereum.Client
 	queue           queue.TaskQueuer
 	docSrv          documents.Service
@@ -61,7 +61,7 @@ type ethereumPaymentObligation struct {
 // newEthereumPaymentObligation creates ethereumPaymentObligation given the parameters
 func newEthereumPaymentObligation(
 	cfg Config,
-	identityService identity.Service,
+	identityService identity.ServiceDID,
 	ethClient ethereum.Client,
 	queue queue.TaskQueuer,
 	docSrv documents.Service,
@@ -129,10 +129,7 @@ func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, documentID []by
 		return nil, nil, err
 	}
 
-	cid, err := identity.ToCentID(cidBytes)
-	if err != nil {
-		return nil, nil, err
-	}
+	cid := identity.NewDIDFromBytes(cidBytes)
 
 	tokenID := NewTokenID()
 	model, err := s.docSrv.GetCurrentVersion(ctx, documentID)
@@ -173,8 +170,8 @@ func (s *ethereumPaymentObligation) isNFTMinted(registry common.Address, tokenID
 	return err == nil
 }
 
-func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID, model documents.Model, registry common.Address, depositAddress string, proofFields []string) func(accountID identity.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
-	return func(accountID identity.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
+func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID, model documents.Model, registry common.Address, depositAddress string, proofFields []string) func(accountID identity.DID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
+	return func(accountID identity.DID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
 		tc, err := contextutil.Account(ctx)
 		if err != nil {
 			errOut <- err

@@ -39,7 +39,7 @@ func NewLog(action, message string) Log {
 // Transaction contains details of transaction.
 type Transaction struct {
 	ID          uuid.UUID
-	CID         identity.CentID
+	DID         identity.DID
 	Description string
 
 	// Status is the overall status of the transaction
@@ -69,10 +69,10 @@ func (t *Transaction) Type() reflect.Type {
 }
 
 // newTransaction returns a new transaction with a pending state
-func newTransaction(identity identity.CentID, description string) *Transaction {
+func newTransaction(identity identity.DID, description string) *Transaction {
 	return &Transaction{
 		ID:          uuid.Must(uuid.NewV4()),
-		CID:         identity,
+		DID:         identity,
 		Description: description,
 		Status:      Pending,
 		TaskStatus:  make(map[string]Status),

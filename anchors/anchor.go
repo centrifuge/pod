@@ -85,7 +85,7 @@ type CommitData struct {
 	BlockHeight    uint64
 	AnchorID       AnchorID
 	DocumentRoot   DocumentRoot
-	CentrifugeID   identity.CentID
+	CentrifugeID   identity.DID
 	DocumentProofs [][DocumentProofLength]byte
 	Signature      []byte
 	SchemaVersion  uint
@@ -121,7 +121,7 @@ func newPreCommitData(anchorID AnchorID, signingRoot DocumentRoot, centrifugeID 
 }
 
 // NewCommitData returns a CommitData with passed in details
-func NewCommitData(blockHeight uint64, anchorID AnchorID, documentRoot DocumentRoot, centrifugeID identity.CentID, documentProofs [][32]byte, signature []byte) (commitData *CommitData) {
+func NewCommitData(blockHeight uint64, anchorID AnchorID, documentRoot DocumentRoot, centrifugeID identity.DID, documentProofs [][32]byte, signature []byte) (commitData *CommitData) {
 	return &CommitData{
 		BlockHeight:    blockHeight,
 		AnchorID:       anchorID,
@@ -133,7 +133,7 @@ func NewCommitData(blockHeight uint64, anchorID AnchorID, documentRoot DocumentR
 }
 
 // GenerateCommitHash generates Keccak256 message from AnchorID, CentID, DocumentRoot
-func GenerateCommitHash(anchorID AnchorID, centrifugeID identity.CentID, documentRoot DocumentRoot) []byte {
+func GenerateCommitHash(anchorID AnchorID, centrifugeID identity.DID, documentRoot DocumentRoot) []byte {
 	msg := append(anchorID[:], documentRoot[:]...)
 	msg = append(msg, centrifugeID[:]...)
 	return crypto.Keccak256(msg)

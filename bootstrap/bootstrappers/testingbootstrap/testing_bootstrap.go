@@ -12,8 +12,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/ethereum"
-	"github.com/centrifuge/go-centrifuge/identity/did"
-	"github.com/centrifuge/go-centrifuge/identity/ethid"
+	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/p2p"
 	"github.com/centrifuge/go-centrifuge/queue"
@@ -32,7 +31,6 @@ var bootstappers = []bootstrap.TestBootstrapper{
 	transactions.Bootstrapper{},
 	&queue.Bootstrapper{},
 	ethereum.Bootstrapper{},
-	&ethid.Bootstrapper{},
 	&ideth.Bootstrapper{},
 	&configstore.Bootstrapper{},
 	anchors.Bootstrapper{},

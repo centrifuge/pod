@@ -67,7 +67,7 @@ type Service interface {
 // service implements Service
 type service struct {
 	repo             Repository
-	identityService  identity.Service
+	identityService  identity.ServiceDID
 	notifier         notification.Sender
 	anchorRepository anchors.AnchorRepository
 	registry         *ServiceRegistry

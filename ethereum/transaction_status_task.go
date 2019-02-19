@@ -49,7 +49,7 @@ type TransactionStatusTask struct {
 
 	//txHash is the id of an Ethereum transaction
 	txHash    string
-	accountID identity.CentID
+	accountID identity.DID
 }
 
 // NewTransactionStatusTask returns a the struct for the task
@@ -100,7 +100,7 @@ func (tst *TransactionStatusTask) ParseKwargs(kwargs map[string]interface{}) (er
 		return errors.New("missing account ID")
 	}
 
-	tst.accountID, err = identity.CentIDFromString(accountID)
+	tst.accountID, err = identity.NewDIDFromString(accountID)
 	if err != nil {
 		return err
 	}

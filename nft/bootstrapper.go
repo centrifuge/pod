@@ -38,7 +38,7 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("document service not initialised")
 	}
 
-	idService, ok := ctx[identity.BootstrappedIDService].(identity.Service)
+	idService, ok := ctx[identity.BootstrappedDIDService].(identity.ServiceDID)
 	if !ok {
 		return errors.New("identity service not initialised")
 	}

@@ -108,12 +108,12 @@ func ConstructNFT(registry common.Address, tokenID []byte) ([]byte, error) {
 
 // ReadAccessValidator defines validator functions for account .
 type ReadAccessValidator interface {
-	AccountCanRead(cd *coredocumentpb.CoreDocument, account identity.CentID) bool
+	AccountCanRead(cd *coredocumentpb.CoreDocument, account identity.DID) bool
 	NFTOwnerCanRead(
 		cd *coredocumentpb.CoreDocument,
 		registry common.Address,
 		tokenID []byte,
-		account identity.CentID) error
+		account identity.DID) error
 }
 
 // readAccessValidator implements ReadAccessValidator.
@@ -123,7 +123,7 @@ type readAccessValidator struct {
 
 // AccountCanRead validate if the core document can be read by the account .
 // Returns an error if not.
-func (r readAccessValidator) AccountCanRead(cd *coredocumentpb.CoreDocument, account identity.CentID) bool {
+func (r readAccessValidator) AccountCanRead(cd *coredocumentpb.CoreDocument, account identity.DID) bool {
 	// loop though read rules
 	return findRole(cd, coredocumentpb.Action_ACTION_READ_SIGN, func(role *coredocumentpb.Role) bool {
 		return isAccountInRole(role, account)
@@ -141,7 +141,7 @@ func getRole(key []byte, roles []*coredocumentpb.Role) (*coredocumentpb.Role, er
 }
 
 // isAccountInRole returns true if account is in the given role as collaborators.
-func isAccountInRole(role *coredocumentpb.Role, account identity.CentID) bool {
+func isAccountInRole(role *coredocumentpb.Role, account identity.DID) bool {
 	for _, id := range role.Collaborators {
 		if bytes.Equal(id, account[:]) {
 			return true
@@ -168,7 +168,7 @@ func (r readAccessValidator) NFTOwnerCanRead(
 	cd *coredocumentpb.CoreDocument,
 	registry common.Address,
 	tokenID []byte,
-	account identity.CentID) error {
+	account identity.DID) error {
 
 	// check if the account can read the doc
 	if r.AccountCanRead(cd, account) {

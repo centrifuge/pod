@@ -78,7 +78,7 @@ func (ethRepository *ethereumAnchorRepository) PreCommitAnchor(ctx context.Conte
 }
 
 // CommitAnchor will send a commit transaction to Ethereum.
-func (ethRepository *ethereumAnchorRepository) CommitAnchor(ctx context.Context, anchorID AnchorID, documentRoot DocumentRoot, centID identity.CentID, documentProofs [][32]byte, signature []byte) (confirmations <-chan *WatchCommit, err error) {
+func (ethRepository *ethereumAnchorRepository) CommitAnchor(ctx context.Context, anchorID AnchorID, documentRoot DocumentRoot, centID identity.DID, documentProofs [][32]byte, signature []byte) (confirmations <-chan *WatchCommit, err error) {
 	tc, err := contextutil.Account(ctx)
 	if err != nil {
 		return nil, err

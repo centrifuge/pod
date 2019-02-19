@@ -2,7 +2,6 @@ package receiver
 
 import (
 	"context"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/code"
@@ -47,12 +46,12 @@ func (srv *Handler) HandleInterceptor(ctx context.Context, peer peer.ID, protoc 
 		return convertToErrorEnvelop(err)
 	}
 
-	cid, err := p2pcommon.ExtractCID(protoc)
+	did, err := p2pcommon.ExtractDID(protoc)
 	if err != nil {
 		return convertToErrorEnvelop(err)
 	}
 
-	tc, err := srv.config.GetAccount(cid[:])
+	tc, err := srv.config.GetAccount(did[:])
 	if err != nil {
 		return convertToErrorEnvelop(err)
 	}
@@ -177,10 +176,7 @@ func (srv *Handler) HandleGetDocument(ctx context.Context, peer peer.ID, protoc 
 		return convertToErrorEnvelop(err)
 	}
 
-	requesterCentID, err := identity.ToCentID(msg.Header.SenderId)
-	if err != nil {
-		return convertToErrorEnvelop(err)
-	}
+	requesterCentID := identity.NewDIDFromBytes(msg.Header.SenderId)
 
 	res, err := srv.GetDocument(ctx, m, requesterCentID)
 	if err != nil {
@@ -201,7 +197,7 @@ func (srv *Handler) HandleGetDocument(ctx context.Context, peer peer.ID, protoc 
 }
 
 // GetDocument receives document identifier and retrieves the corresponding CoreDocument from the repository
-func (srv *Handler) GetDocument(ctx context.Context, docReq *p2ppb.GetDocumentRequest, requesterCentID identity.CentID) (*p2ppb.GetDocumentResponse, error) {
+func (srv *Handler) GetDocument(ctx context.Context, docReq *p2ppb.GetDocumentRequest, requesterCentID identity.DID) (*p2ppb.GetDocumentResponse, error) {
 	model, err := srv.docSrv.GetCurrentVersion(ctx, docReq.DocumentIdentifier)
 
 	if err != nil {

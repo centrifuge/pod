@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"math/big"
 
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
@@ -12,6 +14,10 @@ import (
 )
 
 const (
+
+	// ErrMalformedAddress standard error for malformed address
+	ErrMalformedAddress = errors.Error("malformed address provided")
+
 	// BootstrappedDIDFactory stores the id of the factory
 	BootstrappedDIDFactory string = "BootstrappedDIDFactory"
 
@@ -50,6 +56,11 @@ func (d DID) String() string {
 	return d.ToAddress().String()
 }
 
+// BigInt returns DID in bigInt
+func (c DID) BigInt() *big.Int {
+	return utils.ByteSliceToBigInt(c[:])
+}
+
 // Equal checks if d == other
 func (d DID) Equal(other DID) bool {
 	for i := range d {
@@ -66,8 +77,11 @@ func NewDID(address common.Address) DID {
 }
 
 // NewDIDFromString returns a DID based on a hex string
-func NewDIDFromString(address string) DID {
-	return DID(common.HexToAddress(address))
+func NewDIDFromString(address string) (DID, error) {
+	if !common.IsHexAddress(address) {
+		return DID{}, ErrMalformedAddress
+	}
+	return DID(common.HexToAddress(address)), nil
 }
 
 // NewDIDFromBytes returns a DID based on a bytes input
@@ -78,6 +92,7 @@ func NewDIDFromBytes(bAddr []byte) DID {
 // Factory is the interface for factory related interactions
 type Factory interface {
 	CreateIdentity(ctx context.Context) (id *DID, err error)
+	CalculateIdentityAddress(ctx context.Context) (*common.Address, error)
 }
 
 // Service interface contains the methods to interact with the identity contract

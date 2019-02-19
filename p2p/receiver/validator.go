@@ -106,7 +106,7 @@ func HandshakeValidator(networkID uint32, idService identity.ServiceDID) Validat
 }
 
 // DocumentAccessValidator validates the GetDocument request against the AccessType indicated in the request
-func DocumentAccessValidator(doc *coredocumentpb.CoreDocument, docReq *p2ppb.GetDocumentRequest, requesterCentID identity.CentID) error {
+func DocumentAccessValidator(doc *coredocumentpb.CoreDocument, docReq *p2ppb.GetDocumentRequest, requesterCentID identity.DID) error {
 	av := coredocument.AccountValidator()
 	// checks which access type is relevant for the request
 	switch docReq.GetAccessType() {

@@ -76,11 +76,11 @@ func ProtocolForDID(DID *identity.DID) protocol.ID {
 	return protocol.ID(fmt.Sprintf("%s/%s", CentrifugeProtocol, DID.String()))
 }
 
-// ExtractCID extracts CID from a protocol string
-func ExtractCID(id protocol.ID) (identity.CentID, error) {
+// ExtractDID extracts DID from a protocol string
+func ExtractDID(id protocol.ID) (identity.DID, error) {
 	parts := strings.Split(string(id), "/")
 	cidHexStr := parts[len(parts)-1]
-	return identity.CentIDFromString(cidHexStr)
+	return identity.NewDIDFromString(cidHexStr)
 }
 
 // ResolveDataEnvelope unwraps Content Envelope out of p2pEnvelope
@@ -105,12 +105,15 @@ func ResolveDataEnvelope(mes proto.Message) (*p2ppb.Envelope, error) {
 
 // PrepareP2PEnvelope wraps content message into p2p envelope
 func PrepareP2PEnvelope(ctx context.Context, networkID uint32, messageType MessageType, mes proto.Message) (*protocolpb.P2PEnvelope, error) {
-	self, err := contextutil.Self(ctx)
+	self, err := contextutil.Account(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	centIDBytes := self.ID[:]
+	centIDBytes, err := self.GetIdentityID()
+	if err != nil {
+		return nil, err
+	}
 	p2pheader := &p2ppb.Header{
 		SenderId:          centIDBytes,
 		NodeVersion:       version.GetVersion().String(),

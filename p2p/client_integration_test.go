@@ -4,6 +4,7 @@ package p2p_test
 
 import (
 	"flag"
+	"github.com/ethereum/go-ethereum/common"
 	"os"
 	"testing"
 
@@ -27,7 +28,8 @@ import (
 var (
 	client     documents.Client
 	cfg        config.Configuration
-	idService  identity.Service
+	idService  identity.ServiceDID
+	idFactory  identity.Factory
 	cfgStore   config.Service
 	docService documents.Service
 )
@@ -37,10 +39,12 @@ func TestMain(m *testing.M) {
 	ctx := testingbootstrap.TestFunctionalEthereumBootstrap()
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfgStore = ctx[config.BootstrappedConfigStorage].(config.Service)
-	idService = ctx[identity.BootstrappedIDService].(identity.Service)
+	idService = ctx[identity.BootstrappedDIDService].(identity.ServiceDID)
+	idFactory = ctx[identity.BootstrappedDIDFactory].(identity.Factory)
 	client = ctx[bootstrap.BootstrappedPeer].(documents.Client)
 	docService = ctx[documents.BootstrappedDocumentService].(documents.Service)
-	testingidentity.CreateIdentityWithKeys(cfg, idService)
+	tc, _ := configstore.TempAccount("", cfg)
+	testingidentity.CreateAccountIDWithKeys(cfg.GetEthereumContextWaitTimeout(), tc.(*configstore.Account), idService, idFactory)
 	result := m.Run()
 	testingbootstrap.TestFunctionalEthereumTearDown()
 	os.Exit(result)
@@ -70,25 +74,26 @@ func TestClient_SendAnchoredDocument(t *testing.T) {
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	doc := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID})
 
-	_, err = client.SendAnchoredDocument(ctxh, cid.CentID(), &p2ppb.AnchorDocumentRequest{Document: doc})
+	_, err = client.SendAnchoredDocument(ctxh, cid, &p2ppb.AnchorDocumentRequest{Document: doc})
 	if assert.Error(t, err) {
 		assert.Equal(t, "[1]document is invalid: [mismatched document roots]", err.Error())
 	}
 }
 
-func createLocalCollaborator(t *testing.T, corruptID bool) (*configstore.Account, identity.Identity, error) {
-	tcID := identity.RandomCentID()
+func createLocalCollaborator(t *testing.T, corruptID bool) (*configstore.Account, identity.DID, error) {
+	tcID := testingidentity.GenerateRandomDID()
 	tc, err := configstore.TempAccount("", cfg)
 	assert.NoError(t, err)
 	tcr := tc.(*configstore.Account)
 	tcr.IdentityID = tcID[:]
-	id := testingidentity.CreateAccountIDWithKeys(cfg.GetEthereumContextWaitTimeout(), tcr, idService)
+	did := testingidentity.CreateAccountIDWithKeys(cfg.GetEthereumContextWaitTimeout(), tcr, idService, idFactory)
 	if corruptID {
-		tcr.IdentityID = utils.RandomSlice(identity.CentIDLength)
+		tcr.IdentityID = utils.RandomSlice(common.AddressLength)
 	}
+	tcr.IdentityID = did[:]
 	tc, err = cfgStore.CreateAccount(tcr)
 	assert.NoError(t, err)
-	return tcr, id, err
+	return tcr, tcID, err
 }
 
 func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte) *coredocumentpb.CoreDocument {
