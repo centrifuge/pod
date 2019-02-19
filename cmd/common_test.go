@@ -4,12 +4,13 @@ package cmd
 
 import (
 	"context"
-	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"math/big"
 	"os"
 	"os/exec"
 	"path"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/identity/ideth"
 
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"

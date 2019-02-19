@@ -67,11 +67,10 @@ type Service interface {
 // service implements Service
 type service struct {
 	repo             Repository
-	identityService  identity.ServiceDID
 	notifier         notification.Sender
 	anchorRepository anchors.AnchorRepository
 	registry         *ServiceRegistry
-	didService identity.ServiceDID
+	idService        identity.ServiceDID
 }
 
 var srvLog = logging.Logger("document-service")
@@ -81,13 +80,13 @@ func DefaultService(
 	repo Repository,
 	anchorRepo anchors.AnchorRepository,
 	registry *ServiceRegistry,
-	didService identity.ServiceDID) Service {
+	idService identity.ServiceDID) Service {
 	return service{
 		repo:             repo,
 		anchorRepository: anchorRepo,
 		notifier:         notification.NewWebhookSender(),
 		registry:         registry,
-		didService: didService,
+		idService:        idService,
 	}
 }
 
@@ -143,7 +142,7 @@ func (s service) CreateProofs(ctx context.Context, documentID []byte, fields []s
 }
 
 func (s service) createProofs(model Model, fields []string) (*DocumentProof, error) {
-	if err := PostAnchoredValidator(s.identityService, s.anchorRepository).Validate(nil, model); err != nil {
+	if err := PostAnchoredValidator(s.idService, s.anchorRepository).Validate(nil, model); err != nil {
 		return nil, errors.NewTypedError(ErrDocumentInvalid, err)
 	}
 	proofs, err := model.CreateProofs(fields)
@@ -176,7 +175,7 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model) (*co
 		return nil, ErrDocumentConfigAccountID
 	}
 
-	if err := SignatureRequestValidator(s.didService).Validate(nil, model); err != nil {
+	if err := SignatureRequestValidator(s.idService).Validate(nil, model); err != nil {
 		return nil, errors.NewTypedError(ErrDocumentInvalid, err)
 	}
 
@@ -228,7 +227,7 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, model Model, sende
 		return errors.New("no model given")
 	}
 
-	if err := PostAnchoredValidator(s.didService, s.anchorRepository).Validate(nil, model); err != nil {
+	if err := PostAnchoredValidator(s.idService, s.anchorRepository).Validate(nil, model); err != nil {
 		return errors.NewTypedError(ErrDocumentInvalid, err)
 	}
 

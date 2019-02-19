@@ -6,6 +6,13 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/crypto"
+	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
+	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
+	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/utils"
+
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
@@ -549,6 +556,72 @@ func (acc *Account) GetEthAuthKeyPair() (pub, priv string) {
 // GetEthereumContextWaitTimeout gets EthereumContextWaitTimeout
 func (acc *Account) GetEthereumContextWaitTimeout() time.Duration {
 	return acc.EthereumContextWaitTimeout
+}
+
+// SignMsg signs a message with the signing key
+func (acc *Account) SignMsg(msg []byte) (*coredocumentpb.Signature, error) {
+	//TODO change signing keys to curve ed25519
+	publicKey, privateKey, err := ed25519.GetSigningKeyPair(acc.GetSigningKeyPair())
+	if err != nil {
+		return nil, err
+	}
+	signature, err := crypto.SignMessage(privateKey, msg, crypto.CurveEd25519, true)
+	if err != nil {
+		return nil, err
+	}
+
+	did, err := acc.GetIdentityID()
+	if err != nil {
+		return nil, err
+	}
+
+	return &coredocumentpb.Signature{
+		EntityId:  did,
+		PublicKey: publicKey,
+		Signature: signature,
+		Timestamp: utils.ToTimestamp(time.Now().UTC()),
+	}, nil
+}
+
+// GetKeys returns the keys of an account
+// TODO remove GetKeys and add signing methods to account
+func (acc *Account) GetKeys() (idKeys config.IDKeys, err error) {
+	keys := map[int]config.IDKey{}
+
+	pk, sk, err := ed25519.GetSigningKeyPair(acc.GetP2PKeyPair())
+	if err != nil {
+		return idKeys, err
+	}
+	keys[identity.KeyPurposeP2P] = config.IDKey{
+		PublicKey:  pk,
+		PrivateKey: sk}
+
+	pk, sk, err = ed25519.GetSigningKeyPair(acc.GetSigningKeyPair())
+	if err != nil {
+		return idKeys, err
+	}
+	keys[identity.KeyPurposeSigning] = config.IDKey{
+		PublicKey:  pk,
+		PrivateKey: sk}
+
+	//secp256k1 keys
+	pk, sk, err = secp256k1.GetEthAuthKey(acc.GetEthAuthKeyPair())
+	if err != nil {
+		return idKeys, err
+	}
+	address32Bytes := utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(pk)))
+
+	keys[identity.KeyPurposeEthMsgAuth] = config.IDKey{
+		PublicKey:  address32Bytes[:],
+		PrivateKey: sk}
+
+	id, err := acc.GetIdentityID()
+	if err != nil {
+		return idKeys, err
+	}
+	idKeys = config.IDKeys{ID: id, Keys: keys}
+	return idKeys, nil
+
 }
 
 // ID Get the ID of the document represented by this model

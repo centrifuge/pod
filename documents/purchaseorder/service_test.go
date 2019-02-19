@@ -44,15 +44,15 @@ func (r *mockAnchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.D
 	return docRoot, args.Error(1)
 }
 
-func getServiceWithMockedLayers() (*testingcommons.MockIDService, Service) {
-	idService := &testingcommons.MockIDService{}
-	idService.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
+func getServiceWithMockedLayers() (*testingcommons.MockIdentityService, Service) {
+	idService := &testingcommons.MockIdentityService{}
+	idService.On("IsSignedWithPurpose", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(true, nil).Once()
 	queueSrv := new(testingutils.MockQueue)
 	queueSrv.On("EnqueueJob", mock.Anything, mock.Anything).Return(&gocelery.AsyncResult{}, nil)
 	txManager := ctx[transactions.BootstrappedService].(transactions.Manager)
 	repo := testRepo()
 	mockAnchor := &mockAnchorRepo{}
-	docSrv := documents.DefaultService(repo, idService, mockAnchor, documents.NewServiceRegistry())
+	docSrv := documents.DefaultService(repo, mockAnchor, documents.NewServiceRegistry(), idService)
 	return idService, DefaultService(docSrv, repo, queueSrv, txManager)
 }
 

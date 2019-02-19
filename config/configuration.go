@@ -16,6 +16,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
@@ -117,7 +118,8 @@ type Configuration interface {
 // Account exposes account options
 type Account interface {
 	storage.Model
-
+	GetKeys() (IDKeys, error)
+	SignMsg(msg []byte) (*coredocumentpb.Signature, error)
 	GetEthereumAccount() *AccountConfig
 	GetEthereumDefaultAccountName() string
 	GetReceiveEventNotificationEndpoint() string
@@ -141,6 +143,18 @@ type Service interface {
 	GenerateAccount() (Account, error)
 	UpdateAccount(data Account) (Account, error)
 	DeleteAccount(identifier []byte) error
+}
+
+// IDKey represents a key pair
+type IDKey struct {
+	PublicKey  []byte
+	PrivateKey []byte
+}
+
+// IDKeys holds key of an identity
+type IDKeys struct {
+	ID   []byte
+	Keys map[int]IDKey
 }
 
 // configuration holds the configuration details for the node.

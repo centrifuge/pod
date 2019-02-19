@@ -3,8 +3,9 @@
 package documents
 
 import (
-	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/identity/ideth"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"

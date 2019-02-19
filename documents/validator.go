@@ -2,6 +2,7 @@ package documents
 
 import (
 	"fmt"
+	"math/big"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 
@@ -238,7 +239,7 @@ func documentRootValidator() Validator {
 // re-calculates the signature and compares with existing one
 // assumes signing_root is already generated and verified
 // Note: this needs to used only before document is sent for signatures from the collaborators
-func readyForSignaturesValidator(centIDBytes, priv, pub []byte) Validator {
+func readyForSignaturesValidator(didBytes, priv, pub []byte) Validator {
 	return ValidatorFunc(func(_, model Model) error {
 		dm, err := model.PackCoreDocument()
 		if err != nil {
@@ -250,7 +251,7 @@ func readyForSignaturesValidator(centIDBytes, priv, pub []byte) Validator {
 			return errors.New("expecting only one signature")
 		}
 
-		s := crypto.Sign(centIDBytes, priv, pub, cd.SigningRoot)
+		s := crypto.Sign(didBytes, priv, pub, cd.SigningRoot)
 		sh := cd.Signatures[0]
 		if !utils.IsSameByteSlice(s.EntityId, sh.EntityId) {
 			err = errors.AppendError(err, NewError("cd_entity_id", "entity ID mismatch"))
@@ -285,15 +286,20 @@ func signaturesValidator(idService identity.ServiceDID) Validator {
 		}
 
 		for _, sig := range cd.Signatures {
-			if erri := idService.ValidateSignature(sig, cd.SigningRoot); erri != nil {
+
+			did := identity.NewDIDFromByte(sig.EntityId)
+			msg, errS := utils.SliceToByte32(cd.SigningRoot)
+			if errS != nil {
+				return errS
+			}
+
+			signed, erri := idService.IsSignedWithPurpose(did, msg, sig.Signature, big.NewInt(identity.KeyPurposeSigning))
+			if !signed || erri != nil {
 				err = errors.AppendError(
-					err,
-					NewError(
-						fmt.Sprintf("signature_%s", hexutil.Encode(sig.EntityId)),
-						fmt.Sprintf("signature verification failed: %v", erri)))
+					erri,
+					errors.New(fmt.Sprintf("signature_%s", hexutil.Encode(sig.EntityId)), fmt.Sprintf("signature verification failed: %v", err)))
 			}
 		}
-
 		return err
 	})
 }

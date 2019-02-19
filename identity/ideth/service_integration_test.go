@@ -15,10 +15,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/queue"
-	"github.com/centrifuge/go-centrifuge/transactions"
 	id "github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
+	"github.com/centrifuge/go-centrifuge/transactions"
 
 	"github.com/centrifuge/go-centrifuge/utils"
 
@@ -27,7 +27,7 @@ import (
 )
 
 func getTestKey() id.KeyDID {
-	return id.NewKey(utils.RandomByte32(),utils.ByteSliceToBigInt([]byte{123}),utils.ByteSliceToBigInt([]byte{123}))
+	return id.NewKey(utils.RandomByte32(), utils.ByteSliceToBigInt([]byte{123}), utils.ByteSliceToBigInt([]byte{123}))
 }
 
 func initIdentity() id.ServiceDID {
@@ -115,7 +115,7 @@ func TestService_IsSignedWithPurpose(t *testing.T) {
 	did := deployIdentityContract(t)
 	aCtx := getTestDIDContext(t, *did)
 	idSrv := initIdentity()
-	key := id.NewKey(address32Bytes,purpose,utils.ByteSliceToBigInt([]byte{123}))
+	key := id.NewKey(address32Bytes, purpose, utils.ByteSliceToBigInt([]byte{123}))
 
 	err = idSrv.AddKey(aCtx, key)
 	assert.Nil(t, err, "add key should be successful")
@@ -234,8 +234,8 @@ func addP2PKeyTestGetClientP2PURL(t *testing.T) (*id.DID, string) {
 	idSrv := initIdentity()
 
 	p2pKey := utils.RandomByte32()
-	
-	testKey := id.NewKey(p2pKey,utils.ByteSliceToBigInt([]byte{identity.KeyPurposeP2P}),utils.ByteSliceToBigInt([]byte{123}))
+
+	testKey := id.NewKey(p2pKey, utils.ByteSliceToBigInt([]byte{identity.KeyPurposeP2P}), utils.ByteSliceToBigInt([]byte{123}))
 	addKey(aCtx, t, *did, idSrv, testKey)
 
 	url, err := idSrv.GetClientP2PURL(*did)

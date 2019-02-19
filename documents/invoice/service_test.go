@@ -3,6 +3,8 @@
 package invoice
 
 import (
+	"fmt"
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -11,11 +13,10 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/transactions"
@@ -27,7 +28,7 @@ import (
 )
 
 var (
-	cid         = identity.RandomCentID()
+	cid         = testingidentity.GenerateRandomDID()
 	centIDBytes = cid[:]
 	accountID   = cid[:]
 )
@@ -50,17 +51,17 @@ func TestDefaultService(t *testing.T) {
 	assert.NotNil(t, srv, "must be non-nil")
 }
 
-func getServiceWithMockedLayers() (testingcommons.MockIDService, Service) {
+func getServiceWithMockedLayers() (testingcommons.MockIdentityService, Service) {
 	c := &testingconfig.MockConfig{}
 	c.On("GetIdentityID").Return(centIDBytes, nil)
-	idService := testingcommons.MockIDService{}
-	idService.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
+	idService := testingcommons.MockIdentityService{}
+	idService.On("IsSignedWithPurpose", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(true, nil).Once()
 	queueSrv := new(testingutils.MockQueue)
 	queueSrv.On("EnqueueJob", mock.Anything, mock.Anything).Return(&gocelery.AsyncResult{}, nil)
 
 	repo := testRepo()
 	mockAnchor := &mockAnchorRepo{}
-	docSrv := documents.DefaultService(repo, &idService, mockAnchor, documents.NewServiceRegistry())
+	docSrv := documents.DefaultService(repo, mockAnchor, documents.NewServiceRegistry(), &idService)
 	return idService, DefaultService(
 		docSrv,
 		repo,
@@ -375,14 +376,15 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.Nil(t, doc)
 
 	// success
-	wantCollab := utils.RandomSlice(6)
-	payload.Collaborators = []string{hexutil.Encode(wantCollab)}
+	wantCollab := testingidentity.GenerateRandomDID()
+	payload.Collaborators = []string{wantCollab.String()}
 	doc, err = invSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Nil(t, err)
 	assert.NotNil(t, doc)
 	dm, err := doc.PackCoreDocument()
 	assert.Nil(t, err)
-	assert.Equal(t, wantCollab, dm.Document.Collaborators[2])
+	fmt.Println(dm.Document.Collaborators)
+	assert.Equal(t, wantCollab[:], dm.Document.Collaborators[2])
 	assert.Len(t, dm.Document.Collaborators, 3)
 	oldDM, err := old.PackCoreDocument()
 	assert.Nil(t, err)

@@ -8,6 +8,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/identity/ideth"
+
 	"github.com/centrifuge/go-centrifuge/testingutils/testingtx"
 	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/mock"
@@ -61,6 +63,7 @@ func TestMain(m *testing.M) {
 		&leveldb.Bootstrapper{},
 		&queue.Bootstrapper{},
 		&ethid.Bootstrapper{},
+		&ideth.Bootstrapper{},
 		&configstore.Bootstrapper{},
 		anchors.Bootstrapper{},
 		documents.Bootstrapper{},

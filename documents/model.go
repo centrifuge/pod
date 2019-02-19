@@ -183,7 +183,7 @@ func (m *CoreDocumentModel) PrepareNewVersion(collaborators []string) (*CoreDocu
 // NewWithCollaborators generates new core document, adds collaborators, adds read rules and fills salts
 func (m *CoreDocumentModel) NewWithCollaborators(collaborators []string) (*CoreDocumentModel, error) {
 	dm := NewCoreDocModel()
-	ids, err := identity.CentIDsFromStrings(collaborators)
+	ids, err := identity.NewDIDsFromStrings(collaborators)
 	if err != nil {
 		return nil, errors.New("failed to decode collaborator: %v", err)
 	}
@@ -509,7 +509,7 @@ func (m *CoreDocumentModel) UnpackCoreDocument() error {
 // initReadRules initiates the read rules for a given CoreDocumentModel.
 // Collaborators are given Read_Sign action.
 // if the rules are created already, this is a no-op.
-func (m *CoreDocumentModel) initReadRules(collabs []identity.CentID) error {
+func (m *CoreDocumentModel) initReadRules(collabs []identity.DID) error {
 	cd := m.Document
 	if len(cd.Roles) > 0 && len(cd.ReadRules) > 0 {
 		return nil
@@ -582,7 +582,7 @@ func getRole(key []byte, roles []*coredocumentpb.Role) (*coredocumentpb.Role, er
 	return nil, errors.New("role %d not found", key)
 }
 
-func (m *CoreDocumentModel) addCollaboratorsToReadSignRules(collabs []identity.CentID) error {
+func (m *CoreDocumentModel) addCollaboratorsToReadSignRules(collabs []identity.DID) error {
 	if len(collabs) == 0 {
 		return nil
 	}
@@ -604,7 +604,7 @@ func (m *CoreDocumentModel) addCollaboratorsToReadSignRules(collabs []identity.C
 	return nil
 }
 
-func fetchUniqueCollaborators(oldCollabs [][]byte, newCollabs []string) (ids []identity.CentID, err error) {
+func fetchUniqueCollaborators(oldCollabs [][]byte, newCollabs []string) (ids []identity.DID, err error) {
 	ocsm := make(map[string]struct{})
 	for _, c := range oldCollabs {
 		ocsm[hexutil.Encode(c)] = struct{}{}
@@ -620,7 +620,7 @@ func fetchUniqueCollaborators(oldCollabs [][]byte, newCollabs []string) (ids []i
 	}
 
 	for _, c := range uc {
-		id, err := identity.CentIDFromString(c)
+		id, err := identity.NewDIDFromString(c)
 		if err != nil {
 			return nil, err
 		}
