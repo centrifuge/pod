@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"fmt"
+	"strings"
+
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
-	"strings"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/golang/protobuf/ptypes/any"
@@ -41,12 +42,10 @@ const (
 	// nftByteCount is the length of combined bytes of registry and tokenID
 	nftByteCount = 52
 
-	// ACL_ReadSign represents the read/sign action for ACLS
-	ACL_ReadSign = coredocumentpb.Action_ACTION_READ_SIGN
-	// ACL_Read represents the read action for ACLS
-	ACL_Read = coredocumentpb.Action_ACTION_READ
-
-
+	// ACLReadSign represents the read/sign action for ACLS
+	ACLReadSign = coredocumentpb.Action_ACTION_READ_SIGN
+	// ACLRead represents the read action for ACLS
+	ACLRead = coredocumentpb.Action_ACTION_READ
 )
 
 var compactProperties = map[string][]byte{
@@ -441,7 +440,7 @@ func (m *CoreDocumentModel) CalculateSigningRoot(dataRoot []byte) error {
 // Returns an error if not.
 func (m *CoreDocumentModel) AccountCanRead(account identity.CentID) bool {
 	// loop though read rules
-	return m.findRole(ACL_ReadSign, func(role *coredocumentpb.Role) bool {
+	return m.findRole(ACLReadSign, func(role *coredocumentpb.Role) bool {
 		return isAccountInRole(role, account)
 	})
 }
@@ -606,7 +605,7 @@ func (m *CoreDocumentModel) addCollaboratorsToReadSignRules(collabs []identity.C
 		role.Collaborators = append(role.Collaborators, c[:])
 	}
 
-	m.addNewRule(role, ACL_ReadSign)
+	m.addNewRule(role, ACLReadSign)
 
 	return nil
 }
@@ -663,7 +662,7 @@ func (m *CoreDocumentModel) NFTOwnerCanRead(registry common.Address, tokenID []b
 	}
 
 	// check if the nft is present in read rules
-	found := m.findRole(ACL_Read, func(role *coredocumentpb.Role) bool {
+	found := m.findRole(ACLRead, func(role *coredocumentpb.Role) bool {
 		return isNFTInRole(role, registry, tokenID)
 	})
 
@@ -718,7 +717,10 @@ func (m *CoreDocumentModel) AddNFTToReadRules(registry common.Address, tokenID [
 	role.Nfts = append(role.Nfts, nft)
 	// prepare a new version of the coredocumentmodel onto which the access token will be appended
 	nm, err := m.PrepareNewVersion(nil)
-	nm.addNewRule(role, ACL_Read)
+	if err != nil {
+		return nil, err
+	}
+	nm.addNewRule(role, ACLRead)
 	if err := nm.setCoreDocumentSalts(); err != nil {
 		return nil, errors.New("failed to generate CoreDocumentSalts")
 	}
@@ -833,7 +835,7 @@ func (m *CoreDocumentModel) AddAccessTokenToReadRules(id identity.IDConfig, payl
 	}
 	role.RoleKey = rk[:]
 	role.AccessTokens = append(role.AccessTokens, at)
-	nm.addNewRule(role, ACL_Read)
+	nm.addNewRule(role, ACLRead)
 	if err := nm.setCoreDocumentSalts(); err != nil {
 		return nil, errors.New("failed to generate CoreDocumentSalts")
 	}
@@ -843,7 +845,7 @@ func (m *CoreDocumentModel) AddAccessTokenToReadRules(id identity.IDConfig, payl
 // ATOwnerCanRead checks that the owner AT can read the document requested
 func (m *CoreDocumentModel) ATOwnerCanRead(docReq *p2ppb.GetDocumentRequest, account identity.CentID) error {
 	// check if the access token is present in read rules of the document indicated in the AT request
-	token, err := m.findAT(ACL_Read, docReq.AccessTokenRequest.AccessTokenId)
+	token, err := m.findAT(ACLRead, docReq.AccessTokenRequest.AccessTokenId)
 	if err != nil {
 		return err
 	}
@@ -868,7 +870,7 @@ func validateAT(publicKey []byte, token *coredocumentpb.AccessToken, account ide
 	fmt.Println("pubkey second assemble", hexutil.Encode(publicKey))
 	fmt.Println("tm in second assemble", hexutil.Encode(secp256k1.SignHash(tm)))
 	fmt.Println("sig in second assemble", hexutil.Encode(token.Signature))
-	validated := crypto.VerifyMessage(publicKey, tm, token.Signature, crypto.CurveSecp256K1,true)
+	validated := crypto.VerifyMessage(publicKey, tm, token.Signature, crypto.CurveSecp256K1, true)
 	if !validated {
 		return errors.New("access token is invalid")
 	}

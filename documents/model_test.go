@@ -4,10 +4,11 @@ package documents
 
 import (
 	"crypto/sha256"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	"os"
 	"testing"
+
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/mock"
@@ -460,16 +461,16 @@ func TestCoreDocumentModel_AddAccessTokenToReadRules(t *testing.T) {
 	// invalid access token payload
 	payload := documentpb.AccessTokenParams{
 		// invalid grantee format
-		Grantee: "randomCentID",
+		Grantee:            "randomCentID",
 		DocumentIdentifier: "randomDocID",
 	}
 	_, err = m.AddAccessTokenToReadRules(*idConfig, payload)
-    assert.Error(t, err, "	failed to construct AT: hex string without 0x prefix")
+	assert.Error(t, err, "	failed to construct AT: hex string without 0x prefix")
 
 	// valid access token payload
 	id := idConfig.ID.String()
-		payload = documentpb.AccessTokenParams{
-		Grantee: id,
+	payload = documentpb.AccessTokenParams{
+		Grantee:            id,
 		DocumentIdentifier: string(m.Document.DocumentIdentifier),
 	}
 	dm, err := m.AddAccessTokenToReadRules(*idConfig, payload)
@@ -480,7 +481,7 @@ func TestCoreDocumentModel_AddAccessTokenToReadRules(t *testing.T) {
 }
 
 func TestCoreDocumentModel_ATOwnerCanRead(t *testing.T) {
-m := NewCoreDocModel()
+	m := NewCoreDocModel()
 	m.Document.DocumentRoot = utils.RandomSlice(32)
 	idConfig, err := identity.GetIdentityConfig(cfg)
 	assert.NoError(t, err)
@@ -488,7 +489,7 @@ m := NewCoreDocModel()
 	assert.NoError(t, err)
 	granteeID := idConfig.ID.String()
 	payload := documentpb.AccessTokenParams{
-		Grantee: granteeID,
+		Grantee:            granteeID,
 		DocumentIdentifier: string(m.Document.DocumentIdentifier),
 	}
 	dm, err := m.AddAccessTokenToReadRules(*idConfig, payload)
@@ -499,11 +500,11 @@ m := NewCoreDocModel()
 	// wrong token identifier
 	tr := &p2ppb.AccessTokenRequest{
 		DelegatingDocumentIdentifier: dm.Document.DocumentIdentifier,
-		AccessTokenId: []byte("randomtokenID"),
+		AccessTokenId:                []byte("randomtokenID"),
 	}
 	dr := &p2ppb.GetDocumentRequest{
 		DocumentIdentifier: m.Document.DocumentIdentifier,
-		AccessType: p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION,
+		AccessType:         p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION,
 		AccessTokenRequest: tr,
 	}
 	err = dm.ATOwnerCanRead(dr, idConfig.ID)
@@ -511,7 +512,7 @@ m := NewCoreDocModel()
 	// valid access token
 	tr = &p2ppb.AccessTokenRequest{
 		DelegatingDocumentIdentifier: dm.Document.DocumentIdentifier,
-		AccessTokenId: at.Identifier,
+		AccessTokenId:                at.Identifier,
 	}
 	dr.AccessTokenRequest = tr
 	err = dm.ATOwnerCanRead(dr, idConfig.ID)

@@ -189,20 +189,15 @@ func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID,
 		}
 
 		data := dm.Document.EmbeddedData
-		newDM, err := dm.PrepareNewVersion(nil)
+
+		newDM, err := dm.AddNFTToReadRules(registry, tokenID.BigInt().Bytes())
 		if err != nil {
 			errOut <- err
 			return
 		}
-
 		newCD := newDM.Document
 		newCD.EmbeddedData = data
 		addNFT(newDM, registry.Bytes(), tokenID[:])
-		err = newDM.AddNFTToReadRules(registry, tokenID.BigInt().Bytes())
-		if err != nil {
-			errOut <- err
-			return
-		}
 
 		model, err = s.docSrv.DeriveFromCoreDocumentModel(newDM)
 		if err != nil {
