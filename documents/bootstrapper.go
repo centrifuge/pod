@@ -9,6 +9,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/transactions"
+	"github.com/centrifuge/go-centrifuge/transactions/txv1"
 )
 
 const (
@@ -93,7 +94,7 @@ func (PostBootstrapper) Bootstrap(ctx map[string]interface{}) error {
 
 	txMan := ctx[transactions.BootstrappedService].(transactions.Manager)
 	anchorTask := &documentAnchorTask{
-		BaseTask: transactions.BaseTask{
+		BaseTask: txv1.BaseTask{
 			TxManager: txMan,
 		},
 		config:        cfgService,

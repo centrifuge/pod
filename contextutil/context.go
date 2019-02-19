@@ -4,18 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/satori/go.uuid"
-
-	"github.com/ethereum/go-ethereum/common/hexutil"
-
-	"github.com/centrifuge/go-centrifuge/config"
-
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/code"
-
-	"github.com/centrifuge/go-centrifuge/identity"
-
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/transactions"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 type contextKey string
@@ -35,7 +30,7 @@ func New(ctx context.Context, cfg config.Account) (context.Context, error) {
 }
 
 // WithTX returns a context with TX ID
-func WithTX(ctx context.Context, txID uuid.UUID) context.Context {
+func WithTX(ctx context.Context, txID transactions.TxID) context.Context {
 	return context.WithValue(ctx, tx, txID)
 }
 
@@ -49,10 +44,10 @@ func Self(ctx context.Context) (*identity.IDConfig, error) {
 }
 
 // TX returns current txID
-func TX(ctx context.Context) uuid.UUID {
-	tid, ok := ctx.Value(tx).(uuid.UUID)
+func TX(ctx context.Context) transactions.TxID {
+	tid, ok := ctx.Value(tx).(transactions.TxID)
 	if !ok {
-		return uuid.Nil
+		return transactions.NilTxID()
 	}
 	return tid
 }

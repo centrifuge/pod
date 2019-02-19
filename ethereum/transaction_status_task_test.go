@@ -8,14 +8,13 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestMintingConfirmationTask_ParseKwargs_success(t *testing.T) {
 	task := TransactionStatusTask{}
 	txHash := "0xd18036d7c1fe109af377e8ce1d9096e69a5df0741fba7e4f3507f8e6aa573515"
-	txID := uuid.Must(uuid.NewV4()).String()
+	txID := transactions.NewTxID().String()
 	cid := identity.RandomCentID()
 
 	kwargs := map[string]interface{}{
@@ -39,7 +38,7 @@ func TestMintingConfirmationTask_ParseKwargs_fail(t *testing.T) {
 	task := TransactionStatusTask{}
 	tests := []map[string]interface{}{
 		{
-			transactions.TxIDParam:  uuid.Must(uuid.NewV4()).String(),
+			transactions.TxIDParam:  transactions.NewTxID().String(),
 			TransactionAccountParam: identity.RandomCentID().String(),
 		},
 		{
@@ -47,7 +46,7 @@ func TestMintingConfirmationTask_ParseKwargs_fail(t *testing.T) {
 			TransactionTxHashParam:  "0xd18036d7c1fe109af377e8ce1d9096e69a5df0741fba7e4f3507f8e6aa573515",
 		},
 		{
-			transactions.TxIDParam: uuid.Must(uuid.NewV4()).String(),
+			transactions.TxIDParam: transactions.NewTxID().String(),
 			TransactionTxHashParam: "0xd18036d7c1fe109af377e8ce1d9096e69a5df0741fba7e4f3507f8e6aa573515",
 		},
 		{
