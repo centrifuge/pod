@@ -3,14 +3,9 @@ package identity
 import (
 	"context"
 	"fmt"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/crypto"
-	"github.com/centrifuge/go-centrifuge/utils"
-	"math/big"
-	"time"
-
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	"github.com/ethereum/go-ethereum/common"
+	"math/big"
 )
 
 // DID stores the identity address of the user
@@ -130,19 +125,15 @@ func (idk *key) String() string {
 	return fmt.Sprintf("%s", peerID.Pretty())
 }
 
+// IDKey represents a key pair
+type IDKey struct {
+	PublicKey  []byte
+	PrivateKey []byte
+}
 
-// SignMsg signs a message based on a secp256k1 private key
-func SignMsg(did DID,privateKey []byte,publicKey []byte, msg []byte) (*coredocumentpb.Signature, error) {
-	signature, err := crypto.SignMessage(privateKey,msg,crypto.CurveSecp256K1,true)
-	if err != nil {
-		return nil, err
-	}
-
-	return &coredocumentpb.Signature{
-		EntityId:  did.ToAddress().Bytes(),
-		PublicKey: publicKey,
-		Signature: signature,
-		Timestamp: utils.ToTimestamp(time.Now().UTC()),
-	},nil
+// Keys holds key of an identity
+type IDKeys struct {
+	Id   []byte
+	Keys map[int]IDKey
 }
 

@@ -8,6 +8,8 @@ package config
 import (
 	"bytes"
 	"fmt"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"io/ioutil"
 	"math/big"
 	"os"
@@ -116,7 +118,8 @@ type Configuration interface {
 // Account exposes account options
 type Account interface {
 	storage.Model
-
+	GetKeys() (identity.IDKeys, error)
+	SignMsg(msg []byte) (*coredocumentpb.Signature, error)
 	GetEthereumAccount() *AccountConfig
 	GetEthereumDefaultAccountName() string
 	GetReceiveEventNotificationEndpoint() string

@@ -45,16 +45,13 @@ const (
 type CentID [CentIDLength]byte
 
 // IDConfig holds information about the identity
+// Deprecated
 type IDConfig struct {
 	ID   CentID
 	Keys map[int]IDKey
 }
 
-// IDKey represents a key pair
-type IDKey struct {
-	PublicKey  []byte
-	PrivateKey []byte
-}
+
 
 // Equal checks if c == other
 func (c CentID) Equal(other CentID) bool {

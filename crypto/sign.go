@@ -25,7 +25,7 @@ func SignMessage(privateKey, message []byte, curveType string, ethereumSign bool
 
 		return secp256k1.Sign(msg, privateKey)
 	case CurveEd25519:
-		return nil, errors.New("curve ed25519 not supported yet")
+		return ed25519.Sign(privateKey, message), nil
 	default:
 		return nil, errors.New("curve %s not supported", curveType)
 	}
