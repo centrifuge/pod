@@ -729,7 +729,7 @@ func (m *CoreDocumentModel) ValidateDocumentAccess(docReq *p2ppb.GetDocumentRequ
 	// checks which access type is relevant for the request
 	switch docReq.GetAccessType() {
 	case p2ppb.AccessType_ACCESS_TYPE_REQUESTER_VERIFICATION:
-		if m.AccountCanRead(peer) {
+		if !m.AccountCanRead(peer) {
 			return errors.New("requester does not have access")
 		}
 	case p2ppb.AccessType_ACCESS_TYPE_NFT_OWNER_VERIFICATION:
@@ -738,7 +738,8 @@ func (m *CoreDocumentModel) ValidateDocumentAccess(docReq *p2ppb.GetDocumentRequ
 			return errors.New("requester does not have access")
 		}
 	case p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION:
-		if m.ATOwnerCanRead(docReq.AccessTokenRequest, peer) != nil {
+		err := m.ATOwnerCanRead(docReq, peer)
+		if err != nil {
 			return errors.New("requester does not have access")
 		}
 	default:
@@ -841,26 +842,22 @@ func (m *CoreDocumentModel) AddAccessTokenToReadRules(id identity.IDConfig, payl
 	return nm, nil
 }
 
-// ATOwnerCanRead checks if the owner of the AT can read the document
-func (m *CoreDocumentModel) ATOwnerCanRead(tokenReq *p2ppb.AccessTokenRequest, account identity.CentID) error {
-	// check if the access token is present in read rules
-	token, err := m.findAT(ACL_Read, tokenReq.AccessTokenId)
+// ATOwnerCanRead checks that the owner AT can read the document requested
+func (m *CoreDocumentModel) ATOwnerCanRead(docReq *p2ppb.GetDocumentRequest, account identity.CentID) error {
+	// check if the access token is present in read rules of the document indicated in the AT request
+	token, err := m.findAT(ACL_Read, docReq.AccessTokenRequest.AccessTokenId)
 	if err != nil {
 		return err
+	}
+	// check if the requested document is the document indicated in the access token
+	if !bytes.Equal(token.DocumentIdentifier, docReq.DocumentIdentifier) {
+		return errors.New("the document requested does not match the document to which the access token grants access")
 	}
 	// validate the access token
 	// TODO: fetch public key from Ethereum chain
 	err = validateAT(token.Key, token, account)
 	if err != nil {
 		return err
-	}
-	granterID, err := identity.ToCentID(token.Granter)
-	if err != nil {
-		return err
-	}
-	// check that the token granter has access to the document
-	if !m.AccountCanRead(granterID) {
-		return errors.New("invalid access token granter")
 	}
 	return nil
 
