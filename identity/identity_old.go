@@ -45,15 +45,10 @@ const (
 type CentID [CentIDLength]byte
 
 // IDConfig holds information about the identity
+// Deprecated
 type IDConfig struct {
 	ID   CentID
 	Keys map[int]IDKey
-}
-
-// IDKey represents a key pair
-type IDKey struct {
-	PublicKey  []byte
-	PrivateKey []byte
 }
 
 // Equal checks if c == other
@@ -249,6 +244,7 @@ func ValidateCentrifugeIDBytes(givenCentID []byte, centrifugeID CentID) error {
 
 // Sign the document with the private key and return the signature along with the public key for the verification
 // assumes that signing root for the document is generated
+// Deprecated
 func Sign(idConfig *IDConfig, purpose int, payload []byte) *coredocumentpb.Signature {
 	return crypto.Sign(idConfig.ID[:], idConfig.Keys[purpose].PrivateKey, idConfig.Keys[purpose].PublicKey, payload)
 }

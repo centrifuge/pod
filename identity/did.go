@@ -27,7 +27,12 @@ func NewDIDFromString(address string) DID {
 	return DID(common.HexToAddress(address))
 }
 
-// Service interface contains the methods to interact with the identity contract
+// NewDIDFromByte returns a DID based on a byte slice
+func NewDIDFromByte(did []byte) DID {
+	return DID(common.BytesToAddress(did))
+}
+
+// ServiceDID interface contains the methods to interact with the identity contract
 type ServiceDID interface {
 	// AddKey adds a key to identity contract
 	AddKey(ctx context.Context, key KeyDID) error
@@ -67,7 +72,7 @@ type ServiceDID interface {
 	GetKeysByPurpose(did DID, purpose *big.Int) ([][32]byte, error)
 }
 
-// Key defines a single ERC725 identity key
+// KeyDID defines a single ERC725 identity key
 type KeyDID interface {
 	GetKey() [32]byte
 	GetPurpose() *big.Int
@@ -119,4 +124,16 @@ func (idk *key) GetType() *big.Int {
 func (idk *key) String() string {
 	peerID, _ := ed25519.PublicKeyToP2PKey(idk.Key)
 	return fmt.Sprintf("%s", peerID.Pretty())
+}
+
+// IDKey represents a key pair
+type IDKey struct {
+	PublicKey  []byte
+	PrivateKey []byte
+}
+
+// IDKeys holds key of an identity
+type IDKeys struct {
+	ID   []byte
+	Keys map[int]IDKey
 }
