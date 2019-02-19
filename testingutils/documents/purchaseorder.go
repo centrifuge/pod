@@ -6,6 +6,7 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/identity"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 )
 
@@ -24,6 +25,6 @@ func CreatePOPayload() *clientpurchaseorderpb.PurchaseOrderCreatePayload {
 			ExtraData:   "0x01020302010203",
 			Currency:    "EUR",
 		},
-		Collaborators: []string{"0x010101010101"},
+		Collaborators: []string{testingidentity.GenerateRandomDID().String()},
 	}
 }

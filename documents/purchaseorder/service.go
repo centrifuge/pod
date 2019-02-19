@@ -235,10 +235,7 @@ func (s service) DerivePurchaseOrderResponse(doc documents.Model) (*clientpopb.P
 	cd := dm.Document
 	collaborators := make([]string, len(cd.Collaborators))
 	for i, c := range cd.Collaborators {
-		cid, err := identity.ToCentID(c)
-		if err != nil {
-			return nil, errors.NewTypedError(documents.ErrDocumentCollaborator, err)
-		}
+		cid := identity.NewDIDFromBytes(c)
 		collaborators[i] = cid.String()
 	}
 
