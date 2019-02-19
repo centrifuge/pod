@@ -352,7 +352,7 @@ func TestValidator_selfSignatureValidator(t *testing.T) {
 	assert.Equal(t, 3, errors.Len(err))
 
 	// success
-	cd.SigningRoot = utils.RandomSlice(32)
+	cd.SigningRoot = utils.RandomSlice(32) 
 
 	signature, err := account.SignMsg(cd.SigningRoot)
 	assert.Nil(t,err)
