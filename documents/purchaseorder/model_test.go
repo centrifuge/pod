@@ -4,6 +4,7 @@ package purchaseorder
 
 import (
 	"encoding/json"
+	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"os"
 	"reflect"
 	"testing"
@@ -63,6 +64,7 @@ func TestMain(m *testing.M) {
 		&leveldb.Bootstrapper{},
 		&queue.Bootstrapper{},
 		&ethid.Bootstrapper{},
+		&ideth.Bootstrapper{},
 		&configstore.Bootstrapper{},
 		anchors.Bootstrapper{},
 		documents.Bootstrapper{},
