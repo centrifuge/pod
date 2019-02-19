@@ -632,14 +632,11 @@ func fetchUniqueCollaborators(oldCollabs [][]byte, newCollabs []string) (ids []i
 }
 
 // GetExternalCollaborators returns collaborators of a document without the own centID.
-func (m *CoreDocumentModel) GetExternalCollaborators(selfCentID identity.CentID) ([][]byte, error) {
+func (m *CoreDocumentModel) GetExternalCollaborators(selfCentID identity.DID) ([][]byte, error) {
 	var collabs [][]byte
 
 	for _, collab := range m.Document.Collaborators {
-		collabID, err := identity.ToCentID(collab)
-		if err != nil {
-			return nil, errors.New("failed to convert to CentID: %v", err)
-		}
+		collabID := identity.NewDIDFromBytes(collab)
 		if !selfCentID.Equal(collabID) {
 			collabs = append(collabs, collab)
 		}

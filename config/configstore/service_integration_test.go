@@ -32,7 +32,7 @@ func TestMain(m *testing.M) {
 	ctx := testingbootstrap.TestFunctionalEthereumBootstrap()
 	cfg = ctx[config.BootstrappedConfigStorage].(config.Service)
 	ctx[bootstrap.BootstrappedPeer] = &MockProtocolSetter{}
-	identityService = ctx[identity.BootstrappedIDService].(identity.ServiceDID)
+	identityService = ctx[identity.BootstrappedDIDService].(identity.ServiceDID)
 	result := m.Run()
 	testingbootstrap.TestFunctionalEthereumTearDown()
 	os.Exit(result)

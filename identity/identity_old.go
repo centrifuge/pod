@@ -46,7 +46,7 @@ type CentID [CentIDLength]byte
 
 // IDConfig holds information about the identity
 type IDConfig struct {
-	ID   CentID
+	ID   DID
 	Keys map[int]IDKey
 }
 
@@ -153,10 +153,7 @@ func GetIdentityConfig(config Config) (*IDConfig, error) {
 	if err != nil {
 		return nil, err
 	}
-	centID, err := ToCentID(centIDBytes)
-	if err != nil {
-		return nil, err
-	}
+	centID := NewDIDFromBytes(centIDBytes)
 
 	//ed25519 keys
 	keys := map[int]IDKey{}

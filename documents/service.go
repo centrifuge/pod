@@ -176,7 +176,7 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model) (*co
 		return nil, ErrDocumentConfigAccountID
 	}
 
-	if err := SignatureRequestValidator(s.identityService).Validate(nil, model); err != nil {
+	if err := SignatureRequestValidator(s.didService).Validate(nil, model); err != nil {
 		return nil, errors.NewTypedError(ErrDocumentInvalid, err)
 	}
 
@@ -228,7 +228,7 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, model Model, sende
 		return errors.New("no model given")
 	}
 
-	if err := PostAnchoredValidator(s.identityService, s.anchorRepository).Validate(nil, model); err != nil {
+	if err := PostAnchoredValidator(s.didService, s.anchorRepository).Validate(nil, model); err != nil {
 		return errors.NewTypedError(ErrDocumentInvalid, err)
 	}
 

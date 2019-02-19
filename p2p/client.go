@@ -287,7 +287,7 @@ func validateSignatureResp(identityService identity.ServiceDID, receiver identit
 	doc := model.Document
 	err = identityService.ValidateSignature(resp.Signature, doc.SigningRoot)
 	if err != nil {
-		return centerrors.New(code.AuthenticationFailed, "signature invalid")
+		return centerrors.New(code.AuthenticationFailed, fmt.Sprintf("signature invalid with err: %s", err.Error()))
 	}
 	return nil
 }

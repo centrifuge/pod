@@ -18,10 +18,13 @@ import (
 
 func CreateAccountIDWithKeys(contextTimeout time.Duration, acc *configstore.Account, idService identity.ServiceDID, idFactory identity.Factory) (identity.DID, error) {
 	ctxh, _ := contextutil.New(context.Background(), acc)
-	idConfig, _ := identity.GetIdentityConfig(acc)
+	idConfig, err := identity.GetIdentityConfig(acc)
+	if err != nil {
+		return identity.DID{}, err
+	}
 	var did *identity.DID
 	// only create identity if it doesn't exist
-	err := idService.Exists(ctxh, identity.NewDIDFromBytes(acc.IdentityID))
+	err = idService.Exists(ctxh, identity.NewDIDFromBytes(acc.IdentityID))
 	if err != nil {
 		did, err = idFactory.CreateIdentity(ctxh)
 		if err != nil {
@@ -32,23 +35,35 @@ func CreateAccountIDWithKeys(contextTimeout time.Duration, acc *configstore.Acco
 	}
 
 	// only add key if it doesn't exist
-	keys, err := idService.GetKeysByPurpose(*did, big.NewInt(identity.KeyPurposeEthMsgAuth))
 	ctx, cancel := ethereum.DefaultWaitForTransactionMiningContext(contextTimeout)
-	ctxh, _ = contextutil.New(ctx, acc)
+	ctxh, err = contextutil.New(ctx, acc)
+	if err != nil {
+		return identity.DID{}, nil
+	}
+	keys, err := idService.GetKeysByPurpose(*did, big.NewInt(identity.KeyPurposeEthMsgAuth))
+	if err != nil {
+		return identity.DID{}, nil
+	}
 	defer cancel()
 	if err != nil || len(keys) == 0 {
 		pk, _ := utils.SliceToByte32(idConfig.Keys[identity.KeyPurposeEthMsgAuth].PublicKey)
 		keyDID := identity.NewKey(pk, big.NewInt(identity.KeyPurposeEthMsgAuth), big.NewInt(identity.KeyTypeECDSA))
-		_ = idService.AddKey(ctxh, keyDID)
+		err = idService.AddKey(ctxh, keyDID)
+		if err != nil {
+			return identity.DID{}, nil
+		}
 	}
 	keys, err = idService.GetKeysByPurpose(*did, big.NewInt(identity.KeyPurposeSigning))
 	ctx, cancel = ethereum.DefaultWaitForTransactionMiningContext(contextTimeout)
 	ctxh, _ = contextutil.New(ctx, acc)
 	defer cancel()
-	if err != nil {
+	if err != nil || len(keys) == 0 {
 		pk, _ := utils.SliceToByte32(idConfig.Keys[identity.KeyPurposeSigning].PublicKey)
 		keyDID := identity.NewKey(pk, big.NewInt(identity.KeyPurposeSigning), big.NewInt(identity.KeyTypeECDSA))
-		_ = idService.AddKey(ctxh, keyDID)
+		err = idService.AddKey(ctxh, keyDID)
+		if err != nil {
+			return identity.DID{}, nil
+		}
 	}
 
 	return *did, nil

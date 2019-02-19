@@ -124,7 +124,7 @@ func (s *factory) CreateIdentity(ctx context.Context) (did *id.DID, err error) {
 	}
 
 	createdDID := id.NewDID(*identityAddress)
-	log.Infof("CreatedDID: %s\n", createdDID.String())
+
 	txID, done, err := s.txManager.ExecuteWithinTX(context.Background(), createdDID, uuid.Nil, "Check TX for create identity status", s.createIdentityTX(opts))
 	if err != nil {
 		return nil, err

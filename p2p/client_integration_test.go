@@ -3,6 +3,7 @@
 package p2p_test
 
 import (
+	"context"
 	"flag"
 	"github.com/ethereum/go-ethereum/common"
 	"os"
@@ -30,6 +31,7 @@ var (
 	idFactory  identity.Factory
 	cfgStore   config.Service
 	docService documents.Service
+	defaultDID identity.DID
 )
 
 func TestMain(m *testing.M) {
@@ -42,7 +44,13 @@ func TestMain(m *testing.M) {
 	client = ctx[bootstrap.BootstrappedPeer].(documents.Client)
 	docService = ctx[documents.BootstrappedDocumentService].(documents.Service)
 	tc, _ := configstore.TempAccount("", cfg)
-	testingidentity.CreateAccountIDWithKeys(cfg.GetEthereumContextWaitTimeout(), tc.(*configstore.Account), idService, idFactory)
+	didAddr, err := idFactory.CalculateIdentityAddress(context.Background())
+	assert.NoError(&testing.T{}, err)
+	acc := tc.(*configstore.Account)
+	acc.IdentityID = didAddr.Bytes()
+	did, err := testingidentity.CreateAccountIDWithKeys(cfg.GetEthereumContextWaitTimeout(), acc, idService, idFactory)
+	assert.NoError(&testing.T{}, err)
+	defaultDID = did
 	result := m.Run()
 	testingbootstrap.TestFunctionalEthereumTearDown()
 	os.Exit(result)
@@ -51,7 +59,7 @@ func TestMain(m *testing.M) {
 func TestClient_GetSignaturesForDocument(t *testing.T) {
 	tc, _, err := createLocalCollaborator(t, false)
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	dm := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID})
+	dm := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID}, defaultDID)
 	err = client.GetSignaturesForDocument(ctxh, dm)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(dm.Document.Signatures))
@@ -60,7 +68,7 @@ func TestClient_GetSignaturesForDocument(t *testing.T) {
 func TestClient_GetSignaturesForDocumentValidationCheck(t *testing.T) {
 	tc, _, err := createLocalCollaborator(t, true)
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	dm := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID})
+	dm := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID}, defaultDID)
 	err = client.GetSignaturesForDocument(ctxh, dm)
 	assert.NoError(t, err)
 	// one signature would be missing
@@ -70,7 +78,7 @@ func TestClient_GetSignaturesForDocumentValidationCheck(t *testing.T) {
 func TestClient_SendAnchoredDocument(t *testing.T) {
 	tc, cid, err := createLocalCollaborator(t, false)
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	dm := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID})
+	dm := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID}, defaultDID)
 
 	_, err = client.SendAnchoredDocument(ctxh, cid, &p2ppb.AnchorDocumentRequest{Document: dm.Document})
 	if assert.Error(t, err) {
@@ -79,24 +87,31 @@ func TestClient_SendAnchoredDocument(t *testing.T) {
 }
 
 func createLocalCollaborator(t *testing.T, corruptID bool) (*configstore.Account, identity.DID, error) {
-	tcID := testingidentity.GenerateRandomDID()
+	didAddr, err := idFactory.CalculateIdentityAddress(context.Background())
+	assert.NoError(t, err)
+	did := identity.NewDID(*didAddr)
 	tc, err := configstore.TempAccount("", cfg)
 	assert.NoError(t, err)
 	tcr := tc.(*configstore.Account)
-	tcr.IdentityID = tcID[:]
-	did := testingidentity.CreateAccountIDWithKeys(cfg.GetEthereumContextWaitTimeout(), tcr, idService, idFactory)
+	tcr.IdentityID = did[:]
+	cdid, err := testingidentity.CreateAccountIDWithKeys(cfg.GetEthereumContextWaitTimeout(), tcr, idService, idFactory)
+	assert.NoError(t, err)
+	if !cdid.Equal(did) {
+		assert.True(t, false, "Race condition identified when creating accounts")
+	}
+	tcr.IdentityID = did[:]
 	if corruptID {
 		tcr.IdentityID = utils.RandomSlice(common.AddressLength)
 	}
-	tcr.IdentityID = did[:]
 	tc, err = cfgStore.CreateAccount(tcr)
 	assert.NoError(t, err)
-	return tcr, tcID, err
+	return tcr, did, err
 }
 
-func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte) *documents.CoreDocumentModel {
+func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte, localID identity.DID) *documents.CoreDocumentModel {
 	idConfig, err := identity.GetIdentityConfig(cfg)
 	assert.Nil(t, err)
+	idConfig.ID = localID
 	dm := testingdocuments.GenerateCoreDocumentModelWithCollaborators(collaborators)
 	m, err := docService.DeriveFromCoreDocumentModel(dm)
 	assert.Nil(t, err)

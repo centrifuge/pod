@@ -4,7 +4,6 @@ package p2p
 
 import (
 	"context"
-	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
@@ -21,7 +20,7 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/identity"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/stretchr/testify/assert"
@@ -40,11 +39,6 @@ func (mm *MockMessenger) SendMessage(ctx context.Context, p libp2pPeer.ID, pmes 
 	args := mm.Called(ctx, p, pmes, protoc)
 	resp, _ := args.Get(0).(*protocolpb.P2PEnvelope)
 	return resp, args.Error(1)
-}
-
-func TestBlabla(t *testing.T) {
-	did := testingidentity.GenerateRandomDID()
-	assert.Equal(t, did, []byte{0,1,2})
 }
 
 func TestGetSignatureForDocument_fail_connect(t *testing.T) {
