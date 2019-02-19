@@ -17,7 +17,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
-	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -25,7 +24,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/version"
@@ -181,7 +180,8 @@ func TestHandler_HandleInterceptor_NilDocument(t *testing.T) {
 
 func TestHandler_HandleInterceptor_getServiceAndModel_fail(t *testing.T) {
 	ctx := testingconfig.CreateAccountContext(t, cfg)
-	req := &p2ppb.AnchorDocumentRequest{Document: coredocument.New()}
+	dm := documents.NewCoreDocModel()
+	req := &p2ppb.AnchorDocumentRequest{Document: dm.Document}
 	p2pEnv, err := p2pcommon.PrepareP2PEnvelope(ctx, cfg.GetNetworkID(), p2pcommon.MessageTypeSendAnchoredDoc, req)
 	assert.NoError(t, err)
 

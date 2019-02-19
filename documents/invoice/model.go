@@ -7,9 +7,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
-	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
@@ -51,8 +49,8 @@ type Invoice struct {
 	DateCreated      *timestamp.Timestamp
 	ExtraData        []byte
 
-	InvoiceSalts *proofs.Salts
-	CoreDocument *coredocumentpb.CoreDocument
+	InvoiceSalts      *proofs.Salts
+	CoreDocumentModel *documents.CoreDocumentModel
 }
 
 // getClientData returns the client data from the invoice model
@@ -157,7 +155,7 @@ func (i *Invoice) InitInvoiceInput(payload *clientinvoicepb.InvoiceCreatePayload
 
 	collaborators := append([]string{self}, payload.Collaborators...)
 
-	i.CoreDocument, err = coredocument.NewWithCollaborators(collaborators)
+	i.CoreDocumentModel, err = i.CoreDocumentModel.NewWithCollaborators(collaborators)
 	if err != nil {
 		return errors.New("failed to init core document: %v", err)
 	}
@@ -264,16 +262,16 @@ func (i *Invoice) getInvoiceSalts(invoiceData *invoicepb.InvoiceData) (*proofs.S
 // ID returns document identifier.
 // Note: this is not a unique identifier for each version of the document.
 func (i *Invoice) ID() ([]byte, error) {
-	coreDoc, err := i.PackCoreDocument()
+	coreDocModel, err := i.PackCoreDocument()
 	if err != nil {
 		return []byte{}, err
 	}
-	return coreDoc.DocumentIdentifier, nil
+	return coreDocModel.Document.DocumentIdentifier, nil
 }
 
 // PackCoreDocument packs the Invoice into a Core Document
 // If the, Invoice is new, it creates a valid identifiers
-func (i *Invoice) PackCoreDocument() (*coredocumentpb.CoreDocument, error) {
+func (i *Invoice) PackCoreDocument() (*documents.CoreDocumentModel, error) {
 	invoiceData := i.createP2PProtobuf()
 	serializedInvoice, err := proto.Marshal(invoiceData)
 	if err != nil {
@@ -290,18 +288,24 @@ func (i *Invoice) PackCoreDocument() (*coredocumentpb.CoreDocument, error) {
 		return nil, errors.NewTypedError(err, errors.New("couldn't get InvoiceSalts"))
 	}
 
-	coreDoc := new(coredocumentpb.CoreDocument)
-	proto.Merge(coreDoc, i.CoreDocument)
-	coreDoc.EmbeddedData = &invoiceAny
-	coreDoc.EmbeddedDataSalts = documents.ConvertToProtoSalts(invoiceSalts)
-	return coreDoc, err
+	err = i.CoreDocumentModel.PackCoreDocument(&invoiceAny, documents.ConvertToProtoSalts(invoiceSalts))
+	if err != nil {
+		return nil, err
+	}
+
+	return i.CoreDocumentModel, nil
 }
 
 // UnpackCoreDocument unpacks the core document into Invoice
-func (i *Invoice) UnpackCoreDocument(coreDoc *coredocumentpb.CoreDocument) error {
-	if coreDoc == nil {
-		return errors.New("core document provided is nil %v", coreDoc)
+func (i *Invoice) UnpackCoreDocument(coreDocModel *documents.CoreDocumentModel) error {
+	if coreDocModel == nil {
+		return errors.New("coredocmodel is nil %v", coreDocModel)
 	}
+	if coreDocModel.Document == nil {
+		return errors.New("core document provided is nil %v", coreDocModel.Document)
+	}
+
+	coreDoc := coreDocModel.Document
 
 	if coreDoc.EmbeddedData == nil ||
 		coreDoc.EmbeddedData.TypeUrl != documenttypes.InvoiceDataTypeUrl {
@@ -325,11 +329,9 @@ func (i *Invoice) UnpackCoreDocument(coreDoc *coredocumentpb.CoreDocument) error
 		i.InvoiceSalts = documents.ConvertToProofSalts(coreDoc.EmbeddedDataSalts)
 	}
 
-	i.CoreDocument = new(coredocumentpb.CoreDocument)
-	proto.Merge(i.CoreDocument, coreDoc)
-	i.CoreDocument.EmbeddedDataSalts = nil
-	i.CoreDocument.EmbeddedData = nil
+	err = i.CoreDocumentModel.UnpackCoreDocument()
 	return err
+
 }
 
 // JSON marshals Invoice into a json bytes
@@ -376,19 +378,19 @@ func (i *Invoice) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
 }
 
 // CreateProofs generates proofs for given fields
-func (i *Invoice) CreateProofs(fields []string) (coreDoc *coredocumentpb.CoreDocument, proofs []*proofspb.Proof, err error) {
+func (i *Invoice) CreateProofs(fields []string) (proofs []*proofspb.Proof, err error) {
 	// There can be failure scenarios where the core doc for the particular document
 	// is still not saved with roots in db due to failures during getting signatures.
-	coreDoc, err = i.PackCoreDocument()
+	_, err = i.PackCoreDocument()
 	if err != nil {
-		return nil, nil, errors.New("createProofs error %v", err)
+		return nil, errors.New("createProofs error %v", err)
 	}
 
 	tree, err := i.getDocumentDataTree()
 	if err != nil {
-		return coreDoc, nil, errors.New("createProofs error %v", err)
+		return nil, errors.New("createProofs error %v", err)
 	}
 
-	proofs, err = coredocument.CreateProofs(tree, coreDoc, fields)
-	return coreDoc, proofs, err
+	proofs, err = i.CoreDocumentModel.CreateProofs(tree, fields)
+	return proofs, err
 }

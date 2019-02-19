@@ -8,15 +8,13 @@ import (
 	"os"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/testingutils/coredocument"
+	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
-	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
@@ -53,28 +51,28 @@ func TestMain(m *testing.M) {
 func TestClient_GetSignaturesForDocument(t *testing.T) {
 	tc, _, err := createLocalCollaborator(t, false)
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	doc := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID})
-	err = client.GetSignaturesForDocument(ctxh, doc)
+	dm := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID})
+	err = client.GetSignaturesForDocument(ctxh, dm)
 	assert.NoError(t, err)
-	assert.Equal(t, 2, len(doc.Signatures))
+	assert.Equal(t, 2, len(dm.Document.Signatures))
 }
 
 func TestClient_GetSignaturesForDocumentValidationCheck(t *testing.T) {
 	tc, _, err := createLocalCollaborator(t, true)
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	doc := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID})
-	err = client.GetSignaturesForDocument(ctxh, doc)
+	dm := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID})
+	err = client.GetSignaturesForDocument(ctxh, dm)
 	assert.NoError(t, err)
 	// one signature would be missing
-	assert.Equal(t, 1, len(doc.Signatures))
+	assert.Equal(t, 1, len(dm.Document.Signatures))
 }
 
 func TestClient_SendAnchoredDocument(t *testing.T) {
 	tc, cid, err := createLocalCollaborator(t, false)
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	doc := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID})
+	dm := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID})
 
-	_, err = client.SendAnchoredDocument(ctxh, cid, &p2ppb.AnchorDocumentRequest{Document: doc})
+	_, err = client.SendAnchoredDocument(ctxh, cid, &p2ppb.AnchorDocumentRequest{Document: dm.Document})
 	if assert.Error(t, err) {
 		assert.Equal(t, "[1]document is invalid: [mismatched document roots]", err.Error())
 	}
@@ -96,23 +94,26 @@ func createLocalCollaborator(t *testing.T, corruptID bool) (*configstore.Account
 	return tcr, tcID, err
 }
 
-func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte) *coredocumentpb.CoreDocument {
+func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte) *documents.CoreDocumentModel {
 	idConfig, err := identity.GetIdentityConfig(cfg)
 	assert.Nil(t, err)
-
-	doc := testingcoredocument.GenerateCoreDocumentWithCollaborators(collaborators)
-
-	m, err := docService.DeriveFromCoreDocument(doc)
+	dm := testingdocuments.GenerateCoreDocumentModelWithCollaborators(collaborators)
+	m, err := docService.DeriveFromCoreDocumentModel(dm)
 	assert.Nil(t, err)
 
 	droot, err := m.CalculateDataRoot()
 	assert.Nil(t, err)
 
-	tree, _ := coredocument.GetDocumentSigningTree(doc, droot)
-	doc.SigningRoot = tree.RootHash()
-	sig := identity.Sign(idConfig, identity.KeyPurposeSigning, doc.SigningRoot)
-	doc.Signatures = append(doc.Signatures, sig)
-	tree, _ = coredocument.GetDocumentRootTree(doc)
-	doc.DocumentRoot = tree.RootHash()
-	return doc
+	dm, err = m.PackCoreDocument()
+	assert.NoError(t, err)
+
+	tree, err := dm.GetDocumentSigningTree(droot)
+	assert.NoError(t, err)
+	dm.Document.SigningRoot = tree.RootHash()
+	sig := identity.Sign(idConfig, identity.KeyPurposeSigning, dm.Document.SigningRoot)
+	dm.Document.Signatures = append(dm.Document.Signatures, sig)
+	tree, err = dm.GetDocumentRootTree()
+	assert.NoError(t, err)
+	dm.Document.DocumentRoot = tree.RootHash()
+	return dm
 }

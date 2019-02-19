@@ -42,8 +42,8 @@ type Service interface {
 	// GetVersion reads a document from the database
 	GetVersion(ctx context.Context, documentID []byte, version []byte) (Model, error)
 
-	// DeriveFromCoreDocument derives a model given the core document
-	DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (Model, error)
+	// DeriveFromCoreDocumentModel derives a model given the core document model
+	DeriveFromCoreDocumentModel(dm *CoreDocumentModel) (Model, error)
 
 	// CreateProofs creates proofs for the latest version document given the fields
 	CreateProofs(ctx context.Context, documentID []byte, fields []string) (*DocumentProof, error)
@@ -92,12 +92,14 @@ func DefaultService(
 }
 
 func getIDs(model Model) ([]byte, []byte, error) {
-	cd, err := model.PackCoreDocument()
+	dm, err := model.PackCoreDocument()
 	if err != nil {
 		return nil, nil, err
 	}
+	cd := dm.Document
 
 	return cd.DocumentIdentifier, cd.NextVersion, nil
+
 }
 
 func (s service) searchVersion(ctx context.Context, m Model) (Model, error) {
@@ -144,13 +146,17 @@ func (s service) createProofs(model Model, fields []string) (*DocumentProof, err
 	if err := PostAnchoredValidator(s.identityService, s.anchorRepository).Validate(nil, model); err != nil {
 		return nil, errors.NewTypedError(ErrDocumentInvalid, err)
 	}
-	coreDoc, proofs, err := model.CreateProofs(fields)
+	proofs, err := model.CreateProofs(fields)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrDocumentProof, err)
 	}
+	coreDocModel, err := model.PackCoreDocument()
+	if err != nil {
+		return nil, errors.New("creating proofs failed while packing core document")
+	}
 	return &DocumentProof{
-		DocumentID:  coreDoc.DocumentIdentifier,
-		VersionID:   coreDoc.CurrentVersion,
+		DocumentID:  coreDocModel.Document.DocumentIdentifier,
+		VersionID:   coreDocModel.Document.CurrentVersion,
 		FieldProofs: proofs,
 	}, nil
 
@@ -174,11 +180,12 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model) (*co
 		return nil, errors.NewTypedError(ErrDocumentInvalid, err)
 	}
 
-	doc, err := model.PackCoreDocument()
+	docModel, err := model.PackCoreDocument()
 	if err != nil {
 		return nil, errors.NewTypedError(ErrDocumentPackingCoreDocument, err)
 	}
 
+	doc := docModel.Document
 	srvLog.Infof("coredoc received %x with signing root %x", doc.DocumentIdentifier, doc.SigningRoot)
 
 	idKeys, ok := idConf.Keys[identity.KeyPurposeSigning]
@@ -187,7 +194,7 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model) (*co
 	}
 	sig := crypto.Sign(idConf.ID[:], idKeys.PrivateKey, idKeys.PublicKey, doc.SigningRoot)
 	doc.Signatures = append(doc.Signatures, sig)
-	err = model.UnpackCoreDocument(doc)
+	err = model.UnpackCoreDocument(docModel)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrDocumentUnPackingCoreDocument, err)
 	}
@@ -217,15 +224,22 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, model Model, sende
 		return ErrDocumentConfigAccountID
 	}
 
+	if model == nil {
+		return errors.New("no model given")
+	}
+
 	if err := PostAnchoredValidator(s.identityService, s.anchorRepository).Validate(nil, model); err != nil {
 		return errors.NewTypedError(ErrDocumentInvalid, err)
 	}
 
-	doc, err := model.PackCoreDocument()
+	docModel, err := model.PackCoreDocument()
 	if err != nil {
 		return errors.NewTypedError(ErrDocumentPackingCoreDocument, err)
 	}
-
+	if docModel.Document == nil {
+		return errors.NewTypedError(ErrDocumentPackingCoreDocument, err)
+	}
+	doc := docModel.Document
 	err = s.repo.Update(idConf.ID[:], doc.CurrentVersion, model)
 	if err != nil {
 		return errors.NewTypedError(ErrDocumentPersistence, err)
@@ -266,28 +280,31 @@ func (s service) getVersion(ctx context.Context, documentID, version []byte) (Mo
 		return nil, errors.NewTypedError(ErrDocumentVersionNotFound, err)
 	}
 
-	cd, err := model.PackCoreDocument()
+	dm, err := model.PackCoreDocument()
 	if err != nil {
 		return nil, err
 	}
-
+	cd := dm.Document
 	if !bytes.Equal(cd.DocumentIdentifier, documentID) {
 		return nil, errors.NewTypedError(ErrDocumentVersionNotFound, errors.New("version is not valid for this identifier"))
 	}
 	return model, nil
 }
 
-func (s service) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (Model, error) {
-	if cd == nil || cd.EmbeddedData == nil {
+func (s service) DeriveFromCoreDocumentModel(dm *CoreDocumentModel) (Model, error) {
+	if dm == nil {
+		return nil, errors.New("no core doc model passed")
+	}
+	if dm.Document == nil || dm.Document.EmbeddedData == nil {
 		return nil, errors.New("core document is nil")
 	}
 
-	srv, err := s.registry.LocateService(cd.EmbeddedData.TypeUrl)
+	srv, err := s.registry.LocateService(dm.Document.EmbeddedData.TypeUrl)
 	if err != nil {
 		return nil, err
 	}
 
-	return srv.DeriveFromCoreDocument(cd)
+	return srv.DeriveFromCoreDocumentModel(dm)
 }
 
 func (s service) Create(ctx context.Context, model Model) (Model, uuid.UUID, chan bool, error) {
@@ -309,10 +326,11 @@ func (s service) Update(ctx context.Context, model Model) (Model, uuid.UUID, cha
 }
 
 func (s service) getService(model Model) (Service, error) {
-	cd, err := model.PackCoreDocument()
+	dm, err := model.PackCoreDocument()
 	if err != nil {
 		return nil, err
 	}
+	cd := dm.Document
 
 	return s.registry.LocateService(cd.EmbeddedData.TypeUrl)
 }
