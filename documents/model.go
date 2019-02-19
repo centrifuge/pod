@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"fmt"
+	"github.com/centrifuge/go-centrifuge/crypto"
+	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"strings"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/golang/protobuf/ptypes/any"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
@@ -770,9 +771,7 @@ func assembleTokenMessage(tokenIdentifier []byte, granterID []byte, granteeID []
 	tm = append(tm, granteeID...)
 	tm = append(tm, roleID...)
 	tm = append(tm, docID...)
-
 	return tm
-
 }
 
 // assembleAccessToken assembles a Read Access Token from the payload received
@@ -783,16 +782,13 @@ func (m *CoreDocumentModel) assembleAccessToken(id identity.IDConfig, payload do
 	if err != nil {
 		return nil, err
 	}
-	granteeID, err := hexutil.Decode(payload.GetGrantee())
+	granteeID, err := identity.CentIDFromString(payload.Grantee)
 	if err != nil {
 		return nil, err
 	}
-	if !bytes.Equal([]byte(payload.DocumentIdentifier), m.Document.DocumentIdentifier) {
-		return nil, errors.New("access token creation request sent to the wrong coredocument model")
-	}
-	docID := m.Document.DocumentIdentifier
 	// assemble access token message to be signed
-	tm := assembleTokenMessage(tokenIdentifier, granterID, granteeID, roleID[:], docID)
+	docID := []byte(payload.DocumentIdentifier)
+	tm := assembleTokenMessage(tokenIdentifier, granterID, granteeID[:], roleID[:], docID)
 
 	// fetch key pair from identity
 	privateKey := id.Keys[identity.KeyPurposeEthMsgAuth].PrivateKey
@@ -807,13 +803,15 @@ func (m *CoreDocumentModel) assembleAccessToken(id identity.IDConfig, payload do
 	at := &coredocumentpb.AccessToken{
 		Identifier:         tokenIdentifier,
 		Granter:            granterID,
-		Grantee:            granteeID,
+		Grantee:            granteeID[:],
 		RoleIdentifier:     roleID[:],
 		DocumentIdentifier: docID,
 		Signature:          sig,
 		Key:                pubKey,
 	}
-
+	fmt.Println("sig in first assemble", hexutil.Encode(sig))
+	fmt.Println("tm in first assemble", hexutil.Encode(tm))
+	fmt.Println("pubkey first assemble", hexutil.Encode(pubKey))
 	return at, nil
 
 }
@@ -836,7 +834,7 @@ func (m *CoreDocumentModel) AddAccessTokenToReadRules(id identity.IDConfig, payl
 	role.RoleKey = rk[:]
 	role.AccessTokens = append(role.AccessTokens, at)
 	nm.addNewRule(role, ACL_Read)
-	if err := m.setCoreDocumentSalts(); err != nil {
+	if err := nm.setCoreDocumentSalts(); err != nil {
 		return nil, errors.New("failed to generate CoreDocumentSalts")
 	}
 	return nm, nil
@@ -867,7 +865,10 @@ func (m *CoreDocumentModel) ATOwnerCanRead(docReq *p2ppb.GetDocumentRequest, acc
 func validateAT(publicKey []byte, token *coredocumentpb.AccessToken, account identity.CentID) error {
 	// assemble token message from the token for validation
 	tm := assembleTokenMessage(token.Identifier, token.Granter, account[:], token.RoleIdentifier, token.DocumentIdentifier)
-	validated := crypto.VerifyMessage(publicKey, tm, token.Signature, crypto.CurveSecp256K1, true)
+	fmt.Println("pubkey second assemble", hexutil.Encode(publicKey))
+	fmt.Println("tm in second assemble", hexutil.Encode(secp256k1.SignHash(tm)))
+	fmt.Println("sig in second assemble", hexutil.Encode(token.Signature))
+	validated := crypto.VerifyMessage(publicKey, tm, token.Signature, crypto.CurveSecp256K1,true)
 	if !validated {
 		return errors.New("access token is invalid")
 	}
