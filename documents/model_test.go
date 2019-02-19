@@ -525,7 +525,6 @@ func TestCoreDocumentModel_ValidateDocumentAccess(t *testing.T) {
 	//idConfig, err := identity.GetIdentityConfig(cfg)
 	//assert.NoError(t, err)
 
-
 }
 
 func TestGetCoreDocumentSalts(t *testing.T) {
